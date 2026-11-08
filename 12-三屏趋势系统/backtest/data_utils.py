@@ -3,7 +3,7 @@
 数据获取、预处理、多周期对齐等功能。
 """
 
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Tuple, List  # noqa: I001
 import pandas as pd
 import numpy as np
 
@@ -21,17 +21,19 @@ def prepare_ohlcv_dataframe(candles: List[Dict]) -> pd.DataFrame:
     if not candles:
         return pd.DataFrame(columns=["date", "open", "high", "low", "close", "volume"])
 
-    df = pd.DataFrame([
-        {
-            "date": pd.to_datetime(c["ts"], unit="ms"),
-            "open": float(c["o"]),
-            "high": float(c["h"]),
-            "low": float(c["l"]),
-            "close": float(c["c"]),
-            "volume": float(c.get("vol", 0)),
-        }
-        for c in candles
-    ])
+    df = pd.DataFrame(
+        [
+            {
+                "date": pd.to_datetime(c["ts"], unit="ms"),
+                "open": float(c["o"]),
+                "high": float(c["h"]),
+                "low": float(c["l"]),
+                "close": float(c["c"]),
+                "volume": float(c.get("vol", 0)),
+            }
+            for c in candles
+        ]
+    )
 
     df = df.sort_values("date").reset_index(drop=True)
     return df
@@ -56,8 +58,9 @@ def fetch_historical_data(
     try:
         from data.market_data import fetch_candles
     except ImportError:
-        import sys
+        import sys  # noqa: I001
         import os
+
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from data.market_data import fetch_candles
 
@@ -134,18 +137,24 @@ def generate_sample_data(
             open_prices[i] = close_prices[i - 1]
 
         day_vol = volatility * close_prices[i]
-        high_prices[i] = max(open_prices[i], close_prices[i]) + abs(np.random.normal(0, day_vol * 0.3))
-        low_prices[i] = min(open_prices[i], close_prices[i]) - abs(np.random.normal(0, day_vol * 0.3))
+        high_prices[i] = max(open_prices[i], close_prices[i]) + abs(
+            np.random.normal(0, day_vol * 0.3)
+        )
+        low_prices[i] = min(open_prices[i], close_prices[i]) - abs(
+            np.random.normal(0, day_vol * 0.3)
+        )
 
     volumes = np.random.lognormal(10, 1, n_days) * close_prices * 0.1
 
-    df = pd.DataFrame({
-        "date": dates,
-        "open": open_prices,
-        "high": high_prices,
-        "low": low_prices,
-        "close": close_prices,
-        "volume": volumes,
-    })
+    df = pd.DataFrame(
+        {
+            "date": dates,
+            "open": open_prices,
+            "high": high_prices,
+            "low": low_prices,
+            "close": close_prices,
+            "volume": volumes,
+        }
+    )
 
     return df

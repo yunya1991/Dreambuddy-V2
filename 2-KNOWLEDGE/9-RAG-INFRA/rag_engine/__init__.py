@@ -5,10 +5,10 @@
 再组装为结构化 prompt 供上层 LLM 调用。所有环节遵循 FAIL-OPEN 原则。
 """
 
-from .keyword_search import build_keyword_index, keyword_search
-from .hybrid_retriever import hybrid_search, search_with_feedback
-from .reranker import rerank
 from .generator import generate
+from .hybrid_retriever import hybrid_search, search_with_feedback
+from .keyword_search import build_keyword_index, keyword_search
+from .reranker import rerank
 
 __all__ = [
     "build_keyword_index",

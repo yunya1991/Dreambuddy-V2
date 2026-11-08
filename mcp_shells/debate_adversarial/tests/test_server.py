@@ -1,4 +1,5 @@
 """debate_adversarial MCP shell smoke tests (no real LLM)."""
+
 from __future__ import annotations
 
 import json
@@ -54,14 +55,17 @@ def test_start_debate_and_poll(monkeypatch):
     def fake_run_job(*args, **kwargs):
         debate_id, mode, topic = args[0], args[1], args[2]
         rounds = args[4]
-        server._write_job(debate_id, {
-            "debate_id": debate_id,
-            "status": "completed",
-            "mode": mode,
-            "topic": topic,
-            "rounds": rounds,
-            "result": {"topic": topic, "verdict": {"winner": "bear"}},
-        })
+        server._write_job(
+            debate_id,
+            {
+                "debate_id": debate_id,
+                "status": "completed",
+                "mode": mode,
+                "topic": topic,
+                "rounds": rounds,
+                "result": {"topic": topic, "verdict": {"winner": "bear"}},
+            },
+        )
 
     monkeypatch.setattr(server, "_run_job", fake_run_job)
     start = json.loads(server.start_debate({"topic": "测试", "rounds": 1}))
@@ -97,9 +101,15 @@ def test_invalid_profile_returns_invalid():
 
 
 def test_technical_profile_rejected_for_fast_mode():
-    payload = json.loads(server.start_debate({
-        "topic": "t", "mode": "fast", "profile": "technical",
-    }))
+    payload = json.loads(
+        server.start_debate(
+            {
+                "topic": "t",
+                "mode": "fast",
+                "profile": "technical",
+            }
+        )
+    )
     assert payload["ok"] is False
     assert payload["error_code"] == "invalid"
 
@@ -111,9 +121,13 @@ def test_profile_passed_to_job(monkeypatch):
     def fake_run_job(*args, **kwargs):
         captured["args"] = args
         debate_id = args[0]
-        server._write_job(debate_id, {
-            "debate_id": debate_id, "status": "completed",
-        })
+        server._write_job(
+            debate_id,
+            {
+                "debate_id": debate_id,
+                "status": "completed",
+            },
+        )
 
     monkeypatch.setattr(server, "_run_job", fake_run_job)
     server.start_debate({"topic": "t", "mode": "fast", "profile": "signal"})
@@ -125,10 +139,16 @@ def test_fast_and_deep_modes_start_jobs(monkeypatch):
 
     def fake_run_job(*args, **kwargs):
         debate_id, mode, topic = args[0], args[1], args[2]
-        server._write_job(debate_id, {
-            "debate_id": debate_id, "status": "completed", "mode": mode,
-            "topic": topic, "result": {"topic": topic},
-        })
+        server._write_job(
+            debate_id,
+            {
+                "debate_id": debate_id,
+                "status": "completed",
+                "mode": mode,
+                "topic": topic,
+                "result": {"topic": topic},
+            },
+        )
 
     monkeypatch.setattr(server, "_run_job", fake_run_job)
     for mode in ("fast", "deep"):
@@ -138,6 +158,7 @@ def test_fast_and_deep_modes_start_jobs(monkeypatch):
 
 
 # ── M10 频控 / 并发 / TTL 测试 ─────────────────────────────────
+
 
 def test_rate_limit_blocks_third_call(monkeypatch):
     """≤2 次/分钟：第 3 次 start_debate 返回 timeout。"""
@@ -179,10 +200,15 @@ def test_expired_job_returns_not_found(monkeypatch):
     from datetime import datetime, timedelta
 
     old_created = (datetime.now() - timedelta(days=2)).isoformat()
-    server._write_job(debate_id, {
-        "debate_id": debate_id, "status": "completed",
-        "created_at": old_created, "result": {"topic": "t"},
-    })
+    server._write_job(
+        debate_id,
+        {
+            "debate_id": debate_id,
+            "status": "completed",
+            "created_at": old_created,
+            "result": {"topic": "t"},
+        },
+    )
     payload = json.loads(server.get_debate_result({"debate_id": debate_id}))
     assert payload["ok"] is False
     assert payload["error_code"] == "not_found"
@@ -214,6 +240,7 @@ def test_sweep_jobs_removes_expired(monkeypatch, tmp_path):
     (tmp_path / "old.json").write_text("{}", encoding="utf-8")
     old_ts = _time.time() - server._JOB_TTL_SEC - 10
     import os
+
     os.utime(tmp_path / "old.json", (old_ts, old_ts))
     (tmp_path / "a.json").write_text("{}", encoding="utf-8")
     (tmp_path / "b.json").write_text("{}", encoding="utf-8")

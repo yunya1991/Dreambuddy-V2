@@ -4,10 +4,10 @@ A6 情报监控节点 — 市场状态雷达
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class A6RegimeMonitorNode(BaseNode):
@@ -59,7 +59,7 @@ class A6RegimeMonitorNode(BaseNode):
 
         regime_confidence = min(max(trend_score, 0.3), 0.95)
 
-        rationale.append(f"[A6情报监控] 市场状态分析")
+        rationale.append("[A6情报监控] 市场状态分析")
         rationale.append(f"  趋势得分: {trend_score:.1%}")
         rationale.append(f"  市场模式: {regime}")
         rationale.append(f"  波动状态: {vol_state} (ATR {atr_pct:.1%})")
@@ -83,7 +83,9 @@ class A6RegimeMonitorNode(BaseNode):
             },
         )
 
-    def _calculate_trend_score(self, price: float, ema20: float, ema50: float, ema200: float, change_24h: float) -> float:
+    def _calculate_trend_score(
+        self, price: float, ema20: float, ema50: float, ema200: float, change_24h: float
+    ) -> float:
         score = 0.0
 
         if price > ema20 > ema50 > ema200:

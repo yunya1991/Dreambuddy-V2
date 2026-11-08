@@ -5,6 +5,7 @@
 
 对应 Plan §T_B2: ShadowLogger 类骨架。
 """
+
 from __future__ import annotations
 
 import sys
@@ -17,8 +18,8 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.storage import EvolutionStorageSQLite
-from bcrm2.shadow_logger import ShadowLogger, SHADOW_LOGGER_ENABLED
+from bcrm2.shadow_logger import SHADOW_LOGGER_ENABLED, ShadowLogger  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite  # noqa: E402
 
 
 @pytest.fixture
@@ -41,6 +42,7 @@ def shadow_logger(tmp_storage):
 # ================================================================
 # T_B2: ShadowLogger 类骨架
 # ================================================================
+
 
 class TestShadowLoggerClass:
     """验证 ShadowLogger 类可实例化且核心方法存在。"""

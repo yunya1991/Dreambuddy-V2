@@ -14,6 +14,7 @@ verify 验收方式（按节点来源分派，禁止新阈值）:
   - node_id/criteria 键保持（C 层 _run_node 与既有测试消费）
   - criteria 一律为字符串（禁止裸 dict 透传）
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List

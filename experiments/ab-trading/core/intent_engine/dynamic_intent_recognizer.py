@@ -21,93 +21,94 @@
 - dreambuddy-os/SKILL.md (v1.1.0) 意图识别引擎
 """
 
-import re
-import json
-import time
 import hashlib
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
+import json
+import re
+import time
 from collections import defaultdict
-
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 动态意图类型定义
 # ============================================================
 
+
 @dataclass
 class DynamicIntentType:
     """动态意图类型定义"""
-    intent_id: str              # 意图唯一ID
-    name: str                   # 意图名称
-    category: str               # 意图分类: trading/analysis/risk/portfolio/education/research/custom
-    description: str            # 意图描述
-    keywords: List[str]         # 关键词列表
-    patterns: List[str]         # 正则模式列表
-    domain_tags: List[str]      # 领域标签
-    confidence_base: float      # 基础置信度
-    recommended_chain: str      # 推荐思维链: S/C/F
-    priority: int               # 优先级
-    is_custom: bool = False     # 是否用户自定义
+
+    intent_id: str  # 意图唯一ID
+    name: str  # 意图名称
+    category: str  # 意图分类: trading/analysis/risk/portfolio/education/research/custom
+    description: str  # 意图描述
+    keywords: List[str]  # 关键词列表
+    patterns: List[str]  # 正则模式列表
+    domain_tags: List[str]  # 领域标签
+    confidence_base: float  # 基础置信度
+    recommended_chain: str  # 推荐思维链: S/C/F
+    priority: int  # 优先级
+    is_custom: bool = False  # 是否用户自定义
     created_at: float = field(default_factory=time.time)
-    learned_count: int = 0      # 学习次数（从LLM结果学习）
+    learned_count: int = 0  # 学习次数（从LLM结果学习）
 
     def to_dict(self) -> Dict:
         return {
-            'intent_id': self.intent_id,
-            'name': self.name,
-            'category': self.category,
-            'description': self.description,
-            'keywords': self.keywords,
-            'patterns': self.patterns,
-            'domain_tags': self.domain_tags,
-            'confidence_base': self.confidence_base,
-            'recommended_chain': self.recommended_chain,
-            'priority': self.priority,
-            'is_custom': self.is_custom,
-            'created_at': self.created_at,
-            'learned_count': self.learned_count,
+            "intent_id": self.intent_id,
+            "name": self.name,
+            "category": self.category,
+            "description": self.description,
+            "keywords": self.keywords,
+            "patterns": self.patterns,
+            "domain_tags": self.domain_tags,
+            "confidence_base": self.confidence_base,
+            "recommended_chain": self.recommended_chain,
+            "priority": self.priority,
+            "is_custom": self.is_custom,
+            "created_at": self.created_at,
+            "learned_count": self.learned_count,
         }
 
 
 @dataclass
 class DynamicIntentResult:
     """动态意图识别结果"""
-    intent_type: str                    # 意图类型ID
-    intent_name: str                    # 意图名称
-    confidence: float                   # 置信度 (0-1)
-    recognition_source: str             # 识别来源: local/llm_s_chain/learned/custom
-    rationale: str                      # 识别理由
-    keywords_matched: List[str]         # 匹配的关键词
-    patterns_matched: List[str]         # 匹配的模式
-    domain_context: Dict[str, Any]      # 领域上下文
-    recommended_chain: str              # 推荐思维链
-    suggested_nodes: List[str]          # 建议执行节点
-    clarify_needed: bool = False        # 是否需要澄清
+
+    intent_type: str  # 意图类型ID
+    intent_name: str  # 意图名称
+    confidence: float  # 置信度 (0-1)
+    recognition_source: str  # 识别来源: local/llm_s_chain/learned/custom
+    rationale: str  # 识别理由
+    keywords_matched: List[str]  # 匹配的关键词
+    patterns_matched: List[str]  # 匹配的模式
+    domain_context: Dict[str, Any]  # 领域上下文
+    recommended_chain: str  # 推荐思维链
+    suggested_nodes: List[str]  # 建议执行节点
+    clarify_needed: bool = False  # 是否需要澄清
     clarify_question: Optional[str] = None
     clarify_options: Optional[List[Dict]] = None
-    llm_tokens_used: int = 0            # LLM消耗Token数
-    latency_ms: float = 0.0             # 识别耗时
+    llm_tokens_used: int = 0  # LLM消耗Token数
+    latency_ms: float = 0.0  # 识别耗时
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict:
         return {
-            'intent_type': self.intent_type,
-            'intent_name': self.intent_name,
-            'confidence': self.confidence,
-            'recognition_source': self.recognition_source,
-            'rationale': self.rationale,
-            'keywords_matched': self.keywords_matched,
-            'patterns_matched': self.patterns_matched,
-            'domain_context': self.domain_context,
-            'recommended_chain': self.recommended_chain,
-            'suggested_nodes': self.suggested_nodes,
-            'clarify_needed': self.clarify_needed,
-            'clarify_question': self.clarify_question,
-            'clarify_options': self.clarify_options,
-            'llm_tokens_used': self.llm_tokens_used,
-            'latency_ms': self.latency_ms,
-            'metadata': self.metadata,
+            "intent_type": self.intent_type,
+            "intent_name": self.intent_name,
+            "confidence": self.confidence,
+            "recognition_source": self.recognition_source,
+            "rationale": self.rationale,
+            "keywords_matched": self.keywords_matched,
+            "patterns_matched": self.patterns_matched,
+            "domain_context": self.domain_context,
+            "recommended_chain": self.recommended_chain,
+            "suggested_nodes": self.suggested_nodes,
+            "clarify_needed": self.clarify_needed,
+            "clarify_question": self.clarify_question,
+            "clarify_options": self.clarify_options,
+            "llm_tokens_used": self.llm_tokens_used,
+            "latency_ms": self.latency_ms,
+            "metadata": self.metadata,
         }
 
 
@@ -117,281 +118,405 @@ class DynamicIntentResult:
 
 FINANCE_INTENT_KNOWLEDGE_BASE = {
     # ===== 交易类 =====
-    'trading': {
-        'spot_trade': DynamicIntentType(
-            intent_id='spot_trade',
-            name='现货交易',
-            category='trading',
-            description='现货买卖交易决策',
-            keywords=['现货', '买卖', '下单', '成交', 'spot', 'buy', 'sell'],
-            patterns=[r'(买|卖|交易).*(币|现货)', r'spot.*(trade|buy|sell)'],
-            domain_tags=['trading', 'spot'],
+    "trading": {
+        "spot_trade": DynamicIntentType(
+            intent_id="spot_trade",
+            name="现货交易",
+            category="trading",
+            description="现货买卖交易决策",
+            keywords=["现货", "买卖", "下单", "成交", "spot", "buy", "sell"],
+            patterns=[r"(买|卖|交易).*(币|现货)", r"spot.*(trade|buy|sell)"],
+            domain_tags=["trading", "spot"],
             confidence_base=0.7,
-            recommended_chain='S',
+            recommended_chain="S",
             priority=8,
         ),
-        'futures_trade': DynamicIntentType(
-            intent_id='futures_trade',
-            name='合约交易',
-            category='trading',
-            description='期货/合约交易决策',
-            keywords=['合约', '期货', '做多', '做空', '杠杆', 'futures', 'long', 'short', 'leverage'],
-            patterns=[r'(合约|期货|做多|做空)', r'futures.*trade', r'long.*short'],
-            domain_tags=['trading', 'futures', 'derivative'],
+        "futures_trade": DynamicIntentType(
+            intent_id="futures_trade",
+            name="合约交易",
+            category="trading",
+            description="期货/合约交易决策",
+            keywords=[
+                "合约",
+                "期货",
+                "做多",
+                "做空",
+                "杠杆",
+                "futures",
+                "long",
+                "short",
+                "leverage",
+            ],
+            patterns=[r"(合约|期货|做多|做空)", r"futures.*trade", r"long.*short"],
+            domain_tags=["trading", "futures", "derivative"],
             confidence_base=0.75,
-            recommended_chain='S+C',
+            recommended_chain="S+C",
             priority=9,
         ),
-        'order_management': DynamicIntentType(
-            intent_id='order_management',
-            name='订单管理',
-            category='trading',
-            description='订单创建、修改、取消管理',
-            keywords=['订单', '挂单', '撤单', '改单', 'order', 'cancel', 'modify'],
-            patterns=[r'(挂|撤|改|取消).*(单|订单)'],
-            domain_tags=['trading', 'order'],
+        "order_management": DynamicIntentType(
+            intent_id="order_management",
+            name="订单管理",
+            category="trading",
+            description="订单创建、修改、取消管理",
+            keywords=["订单", "挂单", "撤单", "改单", "order", "cancel", "modify"],
+            patterns=[r"(挂|撤|改|取消).*(单|订单)"],
+            domain_tags=["trading", "order"],
             confidence_base=0.65,
-            recommended_chain='T',
+            recommended_chain="T",
             priority=6,
         ),
-        'position_management': DynamicIntentType(
-            intent_id='position_management',
-            name='仓位管理',
-            category='trading',
-            description='持仓查看、调整、平仓管理',
-            keywords=['仓位', '持仓', '平仓', '加仓', '减仓', 'position', 'holding'],
-            patterns=[r'(仓位|持仓|平仓|加仓|减仓)'],
-            domain_tags=['trading', 'position'],
+        "position_management": DynamicIntentType(
+            intent_id="position_management",
+            name="仓位管理",
+            category="trading",
+            description="持仓查看、调整、平仓管理",
+            keywords=["仓位", "持仓", "平仓", "加仓", "减仓", "position", "holding"],
+            patterns=[r"(仓位|持仓|平仓|加仓|减仓)"],
+            domain_tags=["trading", "position"],
             confidence_base=0.7,
-            recommended_chain='S+A',
+            recommended_chain="S+A",
             priority=7,
         ),
     },
-
     # ===== 分析类 =====
-    'analysis': {
-        'technical_analysis': DynamicIntentType(
-            intent_id='technical_analysis',
-            name='技术分析',
-            category='analysis',
-            description='技术指标、图表形态分析',
-            keywords=['技术分析', '指标', 'K线', '形态', '支撑', '阻力', 'MACD', 'RSI', '均线',
-                     'technical', 'indicator', 'chart', 'pattern', 'support', 'resistance'],
-            patterns=[r'(技术|指标|K线|形态).*分析', r'(MACD|RSI|均线|EMA)'],
-            domain_tags=['analysis', 'technical'],
+    "analysis": {
+        "technical_analysis": DynamicIntentType(
+            intent_id="technical_analysis",
+            name="技术分析",
+            category="analysis",
+            description="技术指标、图表形态分析",
+            keywords=[
+                "技术分析",
+                "指标",
+                "K线",
+                "形态",
+                "支撑",
+                "阻力",
+                "MACD",
+                "RSI",
+                "均线",
+                "technical",
+                "indicator",
+                "chart",
+                "pattern",
+                "support",
+                "resistance",
+            ],
+            patterns=[r"(技术|指标|K线|形态).*分析", r"(MACD|RSI|均线|EMA)"],
+            domain_tags=["analysis", "technical"],
             confidence_base=0.75,
-            recommended_chain='C',
+            recommended_chain="C",
             priority=7,
         ),
-        'fundamental_analysis': DynamicIntentType(
-            intent_id='fundamental_analysis',
-            name='基本面分析',
-            category='analysis',
-            description='基本面、宏观经济、项目价值分析',
-            keywords=['基本面', '宏观', '经济', '项目', '价值', '估值', '新闻', '事件',
-                     'fundamental', 'macro', 'economics', 'valuation'],
-            patterns=[r'(基本面|宏观|经济).*分析', r'(项目|代币).*价值'],
-            domain_tags=['analysis', 'fundamental'],
+        "fundamental_analysis": DynamicIntentType(
+            intent_id="fundamental_analysis",
+            name="基本面分析",
+            category="analysis",
+            description="基本面、宏观经济、项目价值分析",
+            keywords=[
+                "基本面",
+                "宏观",
+                "经济",
+                "项目",
+                "价值",
+                "估值",
+                "新闻",
+                "事件",
+                "fundamental",
+                "macro",
+                "economics",
+                "valuation",
+            ],
+            patterns=[r"(基本面|宏观|经济).*分析", r"(项目|代币).*价值"],
+            domain_tags=["analysis", "fundamental"],
             confidence_base=0.7,
-            recommended_chain='F',
+            recommended_chain="F",
             priority=7,
         ),
-        'sentiment_analysis': DynamicIntentType(
-            intent_id='sentiment_analysis',
-            name='情绪分析',
-            category='analysis',
-            description='市场情绪、社交媒体舆情分析',
-            keywords=['情绪', '舆情', '恐惧贪婪', '恐慌', '贪婪', '社交', 'Twitter', 'Reddit',
-                     'sentiment', 'fear', 'greed', 'social'],
-            patterns=[r'(情绪|舆情|恐惧贪婪).*分析'],
-            domain_tags=['analysis', 'sentiment'],
+        "sentiment_analysis": DynamicIntentType(
+            intent_id="sentiment_analysis",
+            name="情绪分析",
+            category="analysis",
+            description="市场情绪、社交媒体舆情分析",
+            keywords=[
+                "情绪",
+                "舆情",
+                "恐惧贪婪",
+                "恐慌",
+                "贪婪",
+                "社交",
+                "Twitter",
+                "Reddit",
+                "sentiment",
+                "fear",
+                "greed",
+                "social",
+            ],
+            patterns=[r"(情绪|舆情|恐惧贪婪).*分析"],
+            domain_tags=["analysis", "sentiment"],
             confidence_base=0.65,
-            recommended_chain='F',
+            recommended_chain="F",
             priority=6,
         ),
-        'volume_analysis': DynamicIntentType(
-            intent_id='volume_analysis',
-            name='成交量分析',
-            category='analysis',
-            description='成交量、资金流向分析',
-            keywords=['成交量', '量能', '资金流', '流入', '流出', 'volume', 'money flow', 'flow'],
-            patterns=[r'(成交量|量能|资金流).*分析'],
-            domain_tags=['analysis', 'volume'],
+        "volume_analysis": DynamicIntentType(
+            intent_id="volume_analysis",
+            name="成交量分析",
+            category="analysis",
+            description="成交量、资金流向分析",
+            keywords=["成交量", "量能", "资金流", "流入", "流出", "volume", "money flow", "flow"],
+            patterns=[r"(成交量|量能|资金流).*分析"],
+            domain_tags=["analysis", "volume"],
             confidence_base=0.7,
-            recommended_chain='C+F',
+            recommended_chain="C+F",
             priority=6,
         ),
-        'whale_tracking': DynamicIntentType(
-            intent_id='whale_tracking',
-            name='巨鲸追踪',
-            category='analysis',
-            description='大户、巨鲸动向追踪分析',
-            keywords=['巨鲸', '大户', '鲸鱼', '地址', '链上', '转账', 'whale', 'large holder', 'on-chain'],
-            patterns=[r'(巨鲸|大户|鲸鱼).*追踪', r'链上.*(动向|转账)'],
-            domain_tags=['analysis', 'whale', 'on-chain'],
+        "whale_tracking": DynamicIntentType(
+            intent_id="whale_tracking",
+            name="巨鲸追踪",
+            category="analysis",
+            description="大户、巨鲸动向追踪分析",
+            keywords=[
+                "巨鲸",
+                "大户",
+                "鲸鱼",
+                "地址",
+                "链上",
+                "转账",
+                "whale",
+                "large holder",
+                "on-chain",
+            ],
+            patterns=[r"(巨鲸|大户|鲸鱼).*追踪", r"链上.*(动向|转账)"],
+            domain_tags=["analysis", "whale", "on-chain"],
             confidence_base=0.65,
-            recommended_chain='F',
+            recommended_chain="F",
             priority=5,
         ),
     },
-
     # ===== 风险类 =====
-    'risk': {
-        'risk_assessment': DynamicIntentType(
-            intent_id='risk_assessment',
-            name='风险评估',
-            category='risk',
-            description='交易风险、仓位风险评估',
-            keywords=['风险', '评估', '风控', '止损', '止盈', '爆仓', 'risk', 'stop loss', 'take profit'],
-            patterns=[r'风险.*评估', r'(止损|止盈|爆仓).*风险'],
-            domain_tags=['risk', 'assessment'],
+    "risk": {
+        "risk_assessment": DynamicIntentType(
+            intent_id="risk_assessment",
+            name="风险评估",
+            category="risk",
+            description="交易风险、仓位风险评估",
+            keywords=[
+                "风险",
+                "评估",
+                "风控",
+                "止损",
+                "止盈",
+                "爆仓",
+                "risk",
+                "stop loss",
+                "take profit",
+            ],
+            patterns=[r"风险.*评估", r"(止损|止盈|爆仓).*风险"],
+            domain_tags=["risk", "assessment"],
             confidence_base=0.75,
-            recommended_chain='S+A',
+            recommended_chain="S+A",
             priority=8,
         ),
-        'liquidation_check': DynamicIntentType(
-            intent_id='liquidation_check',
-            name='爆仓检查',
-            category='risk',
-            description='爆仓风险检查与预警',
-            keywords=['爆仓', '清算', '强平', '保证金', '维持保证金', 'liquidation', 'margin'],
-            patterns=[r'(爆仓|清算|强平).*检查', r'保证金.*(不足|风险)'],
-            domain_tags=['risk', 'liquidation'],
+        "liquidation_check": DynamicIntentType(
+            intent_id="liquidation_check",
+            name="爆仓检查",
+            category="risk",
+            description="爆仓风险检查与预警",
+            keywords=["爆仓", "清算", "强平", "保证金", "维持保证金", "liquidation", "margin"],
+            patterns=[r"(爆仓|清算|强平).*检查", r"保证金.*(不足|风险)"],
+            domain_tags=["risk", "liquidation"],
             confidence_base=0.8,
-            recommended_chain='S',
+            recommended_chain="S",
             priority=9,
         ),
-        'rebalance_suggestion': DynamicIntentType(
-            intent_id='rebalance_suggestion',
-            name='再平衡建议',
-            category='risk',
-            description='投资组合再平衡建议',
-            keywords=['再平衡', '调仓', '均衡', 'rebalance', 'rebalancing'],
-            patterns=[r'再平衡.*建议', r'调仓.*方案'],
-            domain_tags=['risk', 'portfolio'],
+        "rebalance_suggestion": DynamicIntentType(
+            intent_id="rebalance_suggestion",
+            name="再平衡建议",
+            category="risk",
+            description="投资组合再平衡建议",
+            keywords=["再平衡", "调仓", "均衡", "rebalance", "rebalancing"],
+            patterns=[r"再平衡.*建议", r"调仓.*方案"],
+            domain_tags=["risk", "portfolio"],
             confidence_base=0.65,
-            recommended_chain='S+F',
+            recommended_chain="S+F",
             priority=6,
         ),
     },
-
     # ===== 投资组合类 =====
-    'portfolio': {
-        'portfolio_review': DynamicIntentType(
-            intent_id='portfolio_review',
-            name='组合回顾',
-            category='portfolio',
-            description='投资组合综合回顾与绩效分析',
-            keywords=['组合', '回顾', '绩效', '收益', '盈亏', 'portfolio', 'performance', 'pnl'],
-            patterns=[r'(组合|持仓).*回顾', r'(绩效|收益).*分析'],
-            domain_tags=['portfolio', 'review'],
+    "portfolio": {
+        "portfolio_review": DynamicIntentType(
+            intent_id="portfolio_review",
+            name="组合回顾",
+            category="portfolio",
+            description="投资组合综合回顾与绩效分析",
+            keywords=["组合", "回顾", "绩效", "收益", "盈亏", "portfolio", "performance", "pnl"],
+            patterns=[r"(组合|持仓).*回顾", r"(绩效|收益).*分析"],
+            domain_tags=["portfolio", "review"],
             confidence_base=0.7,
-            recommended_chain='S',
+            recommended_chain="S",
             priority=6,
         ),
-        'asset_allocation': DynamicIntentType(
-            intent_id='asset_allocation',
-            name='资产配置',
-            category='portfolio',
-            description='资产配置建议与优化',
-            keywords=['配置', '分配', '权重', '组合优化', 'allocation', 'weight', 'optimize'],
-            patterns=[r'(资产|资金).*配置', r'(权重|配置).*建议'],
-            domain_tags=['portfolio', 'allocation'],
+        "asset_allocation": DynamicIntentType(
+            intent_id="asset_allocation",
+            name="资产配置",
+            category="portfolio",
+            description="资产配置建议与优化",
+            keywords=["配置", "分配", "权重", "组合优化", "allocation", "weight", "optimize"],
+            patterns=[r"(资产|资金).*配置", r"(权重|配置).*建议"],
+            domain_tags=["portfolio", "allocation"],
             confidence_base=0.65,
-            recommended_chain='S+F',
+            recommended_chain="S+F",
             priority=7,
         ),
-        'diversification_check': DynamicIntentType(
-            intent_id='diversification_check',
-            name='分散化检查',
-            category='portfolio',
-            description='投资组合分散化程度检查',
-            keywords=['分散', '多元化', '相关性', 'diversification', 'correlation'],
-            patterns=[r'(分散|多元化).*检查', r'相关性.*分析'],
-            domain_tags=['portfolio', 'diversification'],
+        "diversification_check": DynamicIntentType(
+            intent_id="diversification_check",
+            name="分散化检查",
+            category="portfolio",
+            description="投资组合分散化程度检查",
+            keywords=["分散", "多元化", "相关性", "diversification", "correlation"],
+            patterns=[r"(分散|多元化).*检查", r"相关性.*分析"],
+            domain_tags=["portfolio", "diversification"],
             confidence_base=0.6,
-            recommended_chain='F',
+            recommended_chain="F",
             priority=5,
         ),
     },
-
     # ===== 教育与研究类 =====
-    'education': {
-        'concept_explanation': DynamicIntentType(
-            intent_id='concept_explanation',
-            name='概念解释',
-            category='education',
-            description='金融/交易概念解释与学习',
-            keywords=['什么是', '解释', '定义', '概念', '含义', '怎么理解', 'what is', 'explain', 'define'],
-            patterns=[r'什么是.*', r'请解释.*', r'.*是什么意思', r'.*怎么理解'],
-            domain_tags=['education', 'concept'],
+    "education": {
+        "concept_explanation": DynamicIntentType(
+            intent_id="concept_explanation",
+            name="概念解释",
+            category="education",
+            description="金融/交易概念解释与学习",
+            keywords=[
+                "什么是",
+                "解释",
+                "定义",
+                "概念",
+                "含义",
+                "怎么理解",
+                "what is",
+                "explain",
+                "define",
+            ],
+            patterns=[r"什么是.*", r"请解释.*", r".*是什么意思", r".*怎么理解"],
+            domain_tags=["education", "concept"],
             confidence_base=0.7,
-            recommended_chain='T',
+            recommended_chain="T",
             priority=4,
         ),
-        'strategy_learning': DynamicIntentType(
-            intent_id='strategy_learning',
-            name='策略学习',
-            category='education',
-            description='交易策略学习方法与教程',
-            keywords=['如何交易', '怎么操作', '学习', '教程', '指南', '方法', 'learn', 'tutorial', 'guide'],
-            patterns=[r'如何.*交易', r'怎么.*操作', r'(学习|教程).*策略'],
-            domain_tags=['education', 'strategy'],
+        "strategy_learning": DynamicIntentType(
+            intent_id="strategy_learning",
+            name="策略学习",
+            category="education",
+            description="交易策略学习方法与教程",
+            keywords=[
+                "如何交易",
+                "怎么操作",
+                "学习",
+                "教程",
+                "指南",
+                "方法",
+                "learn",
+                "tutorial",
+                "guide",
+            ],
+            patterns=[r"如何.*交易", r"怎么.*操作", r"(学习|教程).*策略"],
+            domain_tags=["education", "strategy"],
             confidence_base=0.65,
-            recommended_chain='T',
+            recommended_chain="T",
             priority=5,
         ),
-        'indicator_usage': DynamicIntentType(
-            intent_id='indicator_usage',
-            name='指标使用',
-            category='education',
-            description='技术指标使用方法指导',
-            keywords=['如何使用', '指标用法', '怎么看', '指标应用', '指标使用', '怎么用',
-                     'how to use', 'indicator usage', '指标方法'],
-            patterns=[r'如何使用.*指标', r'指标.*怎么看', r'(MACD|RSI|布林带).*怎么用', r'指标.*使用'],
-            domain_tags=['education', 'indicator'],
+        "indicator_usage": DynamicIntentType(
+            intent_id="indicator_usage",
+            name="指标使用",
+            category="education",
+            description="技术指标使用方法指导",
+            keywords=[
+                "如何使用",
+                "指标用法",
+                "怎么看",
+                "指标应用",
+                "指标使用",
+                "怎么用",
+                "how to use",
+                "indicator usage",
+                "指标方法",
+            ],
+            patterns=[
+                r"如何使用.*指标",
+                r"指标.*怎么看",
+                r"(MACD|RSI|布林带).*怎么用",
+                r"指标.*使用",
+            ],
+            domain_tags=["education", "indicator"],
             confidence_base=0.7,
-            recommended_chain='C+T',
+            recommended_chain="C+T",
             priority=5,
         ),
     },
-
-    'research': {
-        'market_research': DynamicIntentType(
-            intent_id='market_research',
-            name='市场调研',
-            category='research',
-            description='市场深度调研与信息收集',
-            keywords=['调研', '研究', '调查', '分析报告', '市场调研', 'market research',
-                     'research', 'investigation', 'report', '市场研究'],
-            patterns=[r'(调研|研究).*市场', r'市场.*(调查|分析|调研)', r'市场调研'],
-            domain_tags=['research', 'market'],
+    "research": {
+        "market_research": DynamicIntentType(
+            intent_id="market_research",
+            name="市场调研",
+            category="research",
+            description="市场深度调研与信息收集",
+            keywords=[
+                "调研",
+                "研究",
+                "调查",
+                "分析报告",
+                "市场调研",
+                "market research",
+                "research",
+                "investigation",
+                "report",
+                "市场研究",
+            ],
+            patterns=[r"(调研|研究).*市场", r"市场.*(调查|分析|调研)", r"市场调研"],
+            domain_tags=["research", "market"],
             confidence_base=0.65,
-            recommended_chain='A',
+            recommended_chain="A",
             priority=6,
         ),
-        'project_research': DynamicIntentType(
-            intent_id='project_research',
-            name='项目调研',
-            category='research',
-            description='特定项目/代币深度调研',
-            keywords=['项目调研', '代币研究', '项目分析', '币种调研', 'project research', 'token analysis'],
-            patterns=[r'(项目|代币|币种).*调研', r'研究.*项目'],
-            domain_tags=['research', 'project'],
+        "project_research": DynamicIntentType(
+            intent_id="project_research",
+            name="项目调研",
+            category="research",
+            description="特定项目/代币深度调研",
+            keywords=[
+                "项目调研",
+                "代币研究",
+                "项目分析",
+                "币种调研",
+                "project research",
+                "token analysis",
+            ],
+            patterns=[r"(项目|代币|币种).*调研", r"研究.*项目"],
+            domain_tags=["research", "project"],
             confidence_base=0.7,
-            recommended_chain='A+F',
+            recommended_chain="A+F",
             priority=7,
         ),
-        'comparative_analysis': DynamicIntentType(
-            intent_id='comparative_analysis',
-            name='对比分析',
-            category='research',
-            description='多个项目/币种对比分析',
-            keywords=['对比', '比较', '哪个好', '哪个更强', '对比分析', 'compare', 'comparison', 'versus'],
-            patterns=[r'(对比|比较).*分析', r'.*(vs|versus).*', r'哪个.*好'],
-            domain_tags=['research', 'comparison'],
+        "comparative_analysis": DynamicIntentType(
+            intent_id="comparative_analysis",
+            name="对比分析",
+            category="research",
+            description="多个项目/币种对比分析",
+            keywords=[
+                "对比",
+                "比较",
+                "哪个好",
+                "哪个更强",
+                "对比分析",
+                "compare",
+                "comparison",
+                "versus",
+            ],
+            patterns=[r"(对比|比较).*分析", r".*(vs|versus).*", r"哪个.*好"],
+            domain_tags=["research", "comparison"],
             confidence_base=0.7,
-            recommended_chain='A+F',
+            recommended_chain="A+F",
             priority=6,
         ),
     },
@@ -401,6 +526,7 @@ FINANCE_INTENT_KNOWLEDGE_BASE = {
 # ============================================================
 # S思维链LLM降级识别器
 # ============================================================
+
 
 class SChainLLMRecognizer:
     """
@@ -417,10 +543,10 @@ class SChainLLMRecognizer:
 
     def __init__(self, config: Optional[Dict] = None):
         self.config = config or {
-            'llm_preference': ['deepseek', 'openai'],
-            'max_tokens': 2000,
-            'temperature': 0.3,
-            'timeout_ms': 10000,
+            "llm_preference": ["deepseek", "openai"],
+            "max_tokens": 2000,
+            "temperature": 0.3,
+            "timeout_ms": 10000,
         }
         self._llm_client = None
         self._learned_intents: Dict[str, DynamicIntentType] = {}
@@ -458,9 +584,9 @@ class SChainLLMRecognizer:
         if result.confidence >= 0.6:
             self._learn_from_llm_result(result)
 
-        result.recognition_source = 'llm_s_chain'
+        result.recognition_source = "llm_s_chain"
         result.latency_ms = (time.time() - start_time) * 1000
-        result.llm_tokens_used = llm_response.get('tokens_used', 0)
+        result.llm_tokens_used = llm_response.get("tokens_used", 0)
 
         return result
 
@@ -557,7 +683,8 @@ class SChainLLMRecognizer:
     def _call_deepseek(self, prompt: str) -> Dict:
         """调用DeepSeek API"""
         import os
-        api_key = os.environ.get('DEEPSEEK_API_KEY', '')
+
+        api_key = os.environ.get("DEEPSEEK_API_KEY", "")
         if not api_key:
             raise ValueError("DEEPSEEK_API_KEY not set")
 
@@ -568,7 +695,8 @@ class SChainLLMRecognizer:
     def _call_openai(self, prompt: str) -> Dict:
         """调用OpenAI API"""
         import os
-        api_key = os.environ.get('OPENAI_API_KEY', '')
+
+        api_key = os.environ.get("OPENAI_API_KEY", "")
         if not api_key:
             raise ValueError("OPENAI_API_KEY not set")
 
@@ -584,83 +712,93 @@ class SChainLLMRecognizer:
         返回一个合理的意图识别结果。
         """
         # 从Prompt中提取用户输入
-        user_msg_match = re.search(r'## 用户输入\n(.+?)\n##', prompt)
+        user_msg_match = re.search(r"## 用户输入\n(.+?)\n##", prompt)
         user_message = user_msg_match.group(1) if user_msg_match else ""
 
         # 简单规则匹配（模拟LLM理解）
-        intent_type = 'custom'
-        intent_name = '自定义意图'
+        intent_type = "custom"
+        intent_name = "自定义意图"
         confidence = 0.5
-        recommended_chain = 'S'
-        suggested_nodes = ['dream-contradiction-theory', 'dream-first-principles']
-        rationale = '本地模拟LLM响应'
+        recommended_chain = "S"
+        suggested_nodes = ["dream-contradiction-theory", "dream-first-principles"]
+        rationale = "本地模拟LLM响应"
 
         # 关键词匹配
-        if re.search(r'(买|卖|交易|做多|做空)', user_message):
-            intent_type = 'trading_decision'
-            intent_name = '交易决策'
+        if re.search(r"(买|卖|交易|做多|做空)", user_message):
+            intent_type = "trading_decision"
+            intent_name = "交易决策"
             confidence = 0.75
-            recommended_chain = 'S+C'
-            suggested_nodes = ['classic-indicator-scan', 'fundamental-fund-flow', 'dream-contradiction-theory']
-            rationale = '识别到交易操作关键词'
-        elif re.search(r'(分析|研究|调研)', user_message):
-            intent_type = 'deep_analysis'
-            intent_name = '深度分析'
+            recommended_chain = "S+C"
+            suggested_nodes = [
+                "classic-indicator-scan",
+                "fundamental-fund-flow",
+                "dream-contradiction-theory",
+            ]
+            rationale = "识别到交易操作关键词"
+        elif re.search(r"(分析|研究|调研)", user_message):
+            intent_type = "deep_analysis"
+            intent_name = "深度分析"
             confidence = 0.7
-            recommended_chain = 'A+F'
-            suggested_nodes = ['fundamental-sentiment', 'fundamental-fund-flow', 'dream-first-principles']
-            rationale = '识别到分析研究关键词'
-        elif re.search(r'(风险|止损|止盈)', user_message):
-            intent_type = 'risk_assessment'
-            intent_name = '风险评估'
+            recommended_chain = "A+F"
+            suggested_nodes = [
+                "fundamental-sentiment",
+                "fundamental-fund-flow",
+                "dream-first-principles",
+            ]
+            rationale = "识别到分析研究关键词"
+        elif re.search(r"(风险|止损|止盈)", user_message):
+            intent_type = "risk_assessment"
+            intent_name = "风险评估"
             confidence = 0.75
-            recommended_chain = 'S+A'
-            suggested_nodes = ['dream-contradiction-theory', 'gate-guard']
-            rationale = '识别到风险管理关键词'
-        elif re.search(r'(什么是|解释|概念)', user_message):
-            intent_type = 'concept_explanation'
-            intent_name = '概念解释'
+            recommended_chain = "S+A"
+            suggested_nodes = ["dream-contradiction-theory", "gate-guard"]
+            rationale = "识别到风险管理关键词"
+        elif re.search(r"(什么是|解释|概念)", user_message):
+            intent_type = "concept_explanation"
+            intent_name = "概念解释"
             confidence = 0.7
-            recommended_chain = 'T'
-            suggested_nodes = ['knowledge-retrieval']
-            rationale = '识别到学习解释关键词'
-        elif re.search(r'(持仓|组合|仓位)', user_message):
-            intent_type = 'portfolio_review'
-            intent_name = '组合回顾'
+            recommended_chain = "T"
+            suggested_nodes = ["knowledge-retrieval"]
+            rationale = "识别到学习解释关键词"
+        elif re.search(r"(持仓|组合|仓位)", user_message):
+            intent_type = "portfolio_review"
+            intent_name = "组合回顾"
             confidence = 0.7
-            recommended_chain = 'S'
-            suggested_nodes = ['position-review', 'pnl-analysis']
-            rationale = '识别到组合管理关键词'
+            recommended_chain = "S"
+            suggested_nodes = ["position-review", "pnl-analysis"]
+            rationale = "识别到组合管理关键词"
 
         return {
-            'content': json.dumps({
-                'layer1_objective': {
-                    'title': intent_name,
-                    'type': intent_type,
-                    'domain': intent_type.split('_')[0] if '_' in intent_type else 'custom',
-                    'confidence': confidence,
-                    'keywords_matched': [],
-                },
-                'layer2_okr': {
-                    'mode': 'single',
-                    'complexity': 'standard',
-                    'key_results': [{'title': '完成意图识别', 'metric': '置信度'}],
-                },
-                'layer3_blueprint': {
-                    'recommended_chain': recommended_chain,
-                    'suggested_nodes': suggested_nodes,
-                    'execution_mode': 'sequential',
-                },
-                'final_result': {
-                    'intent_type': intent_type,
-                    'intent_name': intent_name,
-                    'confidence': confidence,
-                    'rationale': rationale,
-                    'clarify_needed': False,
-                    'clarify_question': None,
-                },
-            }),
-            'tokens_used': 500,  # 模拟Token消耗
+            "content": json.dumps(
+                {
+                    "layer1_objective": {
+                        "title": intent_name,
+                        "type": intent_type,
+                        "domain": intent_type.split("_")[0] if "_" in intent_type else "custom",
+                        "confidence": confidence,
+                        "keywords_matched": [],
+                    },
+                    "layer2_okr": {
+                        "mode": "single",
+                        "complexity": "standard",
+                        "key_results": [{"title": "完成意图识别", "metric": "置信度"}],
+                    },
+                    "layer3_blueprint": {
+                        "recommended_chain": recommended_chain,
+                        "suggested_nodes": suggested_nodes,
+                        "execution_mode": "sequential",
+                    },
+                    "final_result": {
+                        "intent_type": intent_type,
+                        "intent_name": intent_name,
+                        "confidence": confidence,
+                        "rationale": rationale,
+                        "clarify_needed": False,
+                        "clarify_question": None,
+                    },
+                }
+            ),
+            "tokens_used": 500,  # 模拟Token消耗
         }
 
     def _parse_llm_response(
@@ -669,46 +807,46 @@ class SChainLLMRecognizer:
         user_message: str,
     ) -> DynamicIntentResult:
         """解析LLM响应为DynamicIntentResult"""
-        content = llm_response.get('content', '')
+        content = llm_response.get("content", "")
 
         try:
             parsed = json.loads(content)
-            final = parsed.get('final_result', {})
-            layer3 = parsed.get('layer3_blueprint', {})
-            layer1 = parsed.get('layer1_objective', {})
+            final = parsed.get("final_result", {})
+            layer3 = parsed.get("layer3_blueprint", {})
+            layer1 = parsed.get("layer1_objective", {})
 
             return DynamicIntentResult(
-                intent_type=final.get('intent_type', 'custom'),
-                intent_name=final.get('intent_name', '自定义意图'),
-                confidence=final.get('confidence', 0.5),
-                recognition_source='llm_s_chain',
-                rationale=final.get('rationale', 'LLM识别'),
-                keywords_matched=layer1.get('keywords_matched', []),
+                intent_type=final.get("intent_type", "custom"),
+                intent_name=final.get("intent_name", "自定义意图"),
+                confidence=final.get("confidence", 0.5),
+                recognition_source="llm_s_chain",
+                rationale=final.get("rationale", "LLM识别"),
+                keywords_matched=layer1.get("keywords_matched", []),
                 patterns_matched=[],
                 domain_context={
-                    'layer1': layer1,
-                    'layer2': parsed.get('layer2_okr', {}),
-                    'layer3': layer3,
+                    "layer1": layer1,
+                    "layer2": parsed.get("layer2_okr", {}),
+                    "layer3": layer3,
                 },
-                recommended_chain=layer3.get('recommended_chain', 'S'),
-                suggested_nodes=layer3.get('suggested_nodes', []),
-                clarify_needed=final.get('clarify_needed', False),
-                clarify_question=final.get('clarify_question'),
-                llm_tokens_used=llm_response.get('tokens_used', 0),
+                recommended_chain=layer3.get("recommended_chain", "S"),
+                suggested_nodes=layer3.get("suggested_nodes", []),
+                clarify_needed=final.get("clarify_needed", False),
+                clarify_question=final.get("clarify_question"),
+                llm_tokens_used=llm_response.get("tokens_used", 0),
             )
         except json.JSONDecodeError:
             # 解析失败，返回默认结果
             return DynamicIntentResult(
-                intent_type='custom',
-                intent_name='自定义意图',
+                intent_type="custom",
+                intent_name="自定义意图",
                 confidence=0.4,
-                recognition_source='llm_s_chain_parse_error',
-                rationale='LLM响应解析失败',
+                recognition_source="llm_s_chain_parse_error",
+                rationale="LLM响应解析失败",
                 keywords_matched=[],
                 patterns_matched=[],
                 domain_context={},
-                recommended_chain='S',
-                suggested_nodes=['dream-contradiction-theory'],
+                recommended_chain="S",
+                suggested_nodes=["dream-contradiction-theory"],
             )
 
     def _learn_from_llm_result(self, result: DynamicIntentResult):
@@ -730,11 +868,11 @@ class SChainLLMRecognizer:
             self._learned_intents[intent_type] = DynamicIntentType(
                 intent_id=intent_type,
                 name=result.intent_name,
-                category='custom',
-                description=f'从LLM学习获得的意图类型',
+                category="custom",
+                description="从LLM学习获得的意图类型",
                 keywords=result.keywords_matched,
                 patterns=[],
-                domain_tags=['learned', 'dynamic'],
+                domain_tags=["learned", "dynamic"],
                 confidence_base=result.confidence,
                 recommended_chain=result.recommended_chain,
                 priority=5,
@@ -750,6 +888,7 @@ class SChainLLMRecognizer:
 # ============================================================
 # 动态意图识别器主类
 # ============================================================
+
 
 class DynamicIntentRecognizer:
     """
@@ -776,10 +915,10 @@ class DynamicIntentRecognizer:
         knowledge_base: Optional[Dict] = None,
     ):
         self.config = config or {
-            'llm_fallback_threshold': self.LLM_FALLBACK_THRESHOLD,
-            'enable_learning': True,
-            'enable_cache': True,
-            'custom_intents': {},
+            "llm_fallback_threshold": self.LLM_FALLBACK_THRESHOLD,
+            "enable_learning": True,
+            "enable_cache": True,
+            "custom_intents": {},
         }
 
         # 加载知识库
@@ -788,7 +927,7 @@ class DynamicIntentRecognizer:
         self._load_knowledge_base()
 
         # 加载自定义意图
-        for intent_id, intent_def in self.config.get('custom_intents', {}).items():
+        for intent_id, intent_def in self.config.get("custom_intents", {}).items():  # noqa: B007
             self.register_custom_intent(intent_def)
 
         # S思维链LLM识别器
@@ -799,17 +938,17 @@ class DynamicIntentRecognizer:
 
         # 统计
         self._stats = {
-            'total_calls': 0,
-            'local_success': 0,
-            'llm_fallback': 0,
-            'llm_success': 0,
-            'learned_intents': 0,
-            'cache_hits': 0,
+            "total_calls": 0,
+            "local_success": 0,
+            "llm_fallback": 0,
+            "llm_success": 0,
+            "learned_intents": 0,
+            "cache_hits": 0,
         }
 
     def _load_knowledge_base(self):
         """加载金融领域意图知识库"""
-        for category, intents in self.knowledge_base.items():
+        for category, intents in self.knowledge_base.items():  # noqa: B007
             for intent_id, intent_type in intents.items():
                 self._all_intents[intent_id] = intent_type
 
@@ -833,25 +972,25 @@ class DynamicIntentRecognizer:
             DynamicIntentResult
         """
         start_time = time.time()
-        self._stats['total_calls'] += 1
+        self._stats["total_calls"] += 1
 
         # Step 1: 检查缓存
         cache_key = self._get_cache_key(user_message, context)
-        if self.config.get('enable_cache') and cache_key in self._intent_cache:
+        if self.config.get("enable_cache") and cache_key in self._intent_cache:
             cached_result = self._intent_cache[cache_key]
-            cached_result.metadata['cache_hit'] = True
-            self._stats['cache_hits'] += 1
+            cached_result.metadata["cache_hit"] = True
+            self._stats["cache_hits"] += 1
             return cached_result
 
         # Step 2: 本地规则识别
         local_result = self._local_recognize(user_message, context, mkt_data)
 
         # Step 3: 判断是否需要LLM降级
-        threshold = self.config.get('llm_fallback_threshold', self.LLM_FALLBACK_THRESHOLD)
+        threshold = self.config.get("llm_fallback_threshold", self.LLM_FALLBACK_THRESHOLD)
 
         if force_llm or local_result.confidence < threshold:
             # 触发S思维链LLM降级
-            self._stats['llm_fallback'] += 1
+            self._stats["llm_fallback"] += 1
             llm_result = self.llm_recognizer.recognize_with_llm(
                 user_message,
                 context,
@@ -859,20 +998,20 @@ class DynamicIntentRecognizer:
             )
 
             if llm_result.confidence >= 0.5:
-                self._stats['llm_success'] += 1
+                self._stats["llm_success"] += 1
                 result = llm_result
             else:
                 # LLM结果也不理想，使用本地结果但标记为低置信度
                 result = local_result
-                result.metadata['llm_attempted'] = True
-                result.metadata['llm_confidence'] = llm_result.confidence
+                result.metadata["llm_attempted"] = True
+                result.metadata["llm_confidence"] = llm_result.confidence
         else:
             # 本地识别成功
-            self._stats['local_success'] += 1
+            self._stats["local_success"] += 1
             result = local_result
 
         # Step 4: 缓存结果
-        if self.config.get('enable_cache'):
+        if self.config.get("enable_cache"):
             self._intent_cache[cache_key] = result
 
         result.latency_ms = (time.time() - start_time) * 1000
@@ -910,7 +1049,9 @@ class DynamicIntentRecognizer:
 
             if kw_score > 0:
                 # 增强基础置信度乘数
-                scores[intent_id] = scores.get(intent_id, 0) + kw_score * intent_type.confidence_base * 1.5
+                scores[intent_id] = (
+                    scores.get(intent_id, 0) + kw_score * intent_type.confidence_base * 1.5
+                )
 
         # Step 2: 正则模式匹配
         for intent_id, intent_type in self._all_intents.items():
@@ -930,16 +1071,16 @@ class DynamicIntentRecognizer:
         if not scores:
             # 无匹配，返回自定义意图
             return DynamicIntentResult(
-                intent_type='custom',
-                intent_name='自定义意图',
+                intent_type="custom",
+                intent_name="自定义意图",
                 confidence=0.2,
-                recognition_source='local_no_match',
-                rationale='本地规则未匹配到任何意图',
+                recognition_source="local_no_match",
+                rationale="本地规则未匹配到任何意图",
                 keywords_matched=[],
                 patterns_matched=[],
                 domain_context={},
-                recommended_chain='S',
-                suggested_nodes=['dream-contradiction-theory'],
+                recommended_chain="S",
+                suggested_nodes=["dream-contradiction-theory"],
             )
 
         sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
@@ -954,13 +1095,13 @@ class DynamicIntentRecognizer:
             intent_type=best_intent_id,
             intent_name=best_intent.name,
             confidence=confidence,
-            recognition_source='local',
-            rationale=f'本地关键词匹配: {matched_keywords[best_intent_id]}',
+            recognition_source="local",
+            rationale=f"本地关键词匹配: {matched_keywords[best_intent_id]}",
             keywords_matched=matched_keywords[best_intent_id],
             patterns_matched=matched_patterns[best_intent_id],
             domain_context={
-                'category': best_intent.category,
-                'domain_tags': best_intent.domain_tags,
+                "category": best_intent.category,
+                "domain_tags": best_intent.domain_tags,
             },
             recommended_chain=best_intent.recommended_chain,
             suggested_nodes=self._get_suggested_nodes(best_intent),
@@ -971,8 +1112,8 @@ class DynamicIntentRecognizer:
             result.clarify_needed = True
             result.clarify_question = f"您是想进行「{best_intent.name}」吗？"
             result.clarify_options = [
-                {'label': '是的', 'value': 'confirm'},
-                {'label': '不是', 'value': 'reject'},
+                {"label": "是的", "value": "confirm"},
+                {"label": "不是", "value": "reject"},
             ]
 
         return result
@@ -983,14 +1124,14 @@ class DynamicIntentRecognizer:
         nodes = []
 
         # 根据推荐链选择节点
-        if 'S' in chain or 'A' in chain:
-            nodes.extend(['dream-contradiction-theory', 'dream-first-principles'])
-        if 'C' in chain:
-            nodes.extend(['classic-indicator-scan'])
-        if 'F' in chain:
-            nodes.extend(['fundamental-fund-flow', 'fundamental-sentiment'])
-        if 'T' in chain:
-            nodes.extend(['knowledge-retrieval'])
+        if "S" in chain or "A" in chain:
+            nodes.extend(["dream-contradiction-theory", "dream-first-principles"])
+        if "C" in chain:
+            nodes.extend(["classic-indicator-scan"])
+        if "F" in chain:
+            nodes.extend(["fundamental-fund-flow", "fundamental-sentiment"])
+        if "T" in chain:
+            nodes.extend(["knowledge-retrieval"])
 
         return nodes[:5]  # 最多返回5个节点
 
@@ -1009,21 +1150,21 @@ class DynamicIntentRecognizer:
         Returns:
             是否注册成功
         """
-        if 'intent_id' not in definition or 'name' not in definition:
+        if "intent_id" not in definition or "name" not in definition:
             return False
 
-        intent_id = definition['intent_id']
+        intent_id = definition["intent_id"]
         custom_intent = DynamicIntentType(
             intent_id=intent_id,
-            name=definition.get('name', intent_id),
-            category=definition.get('category', 'custom'),
-            description=definition.get('description', ''),
-            keywords=definition.get('keywords', []),
-            patterns=definition.get('patterns', []),
-            domain_tags=definition.get('domain_tags', ['custom']),
-            confidence_base=definition.get('confidence_base', 0.6),
-            recommended_chain=definition.get('recommended_chain', 'S'),
-            priority=definition.get('priority', 5),
+            name=definition.get("name", intent_id),
+            category=definition.get("category", "custom"),
+            description=definition.get("description", ""),
+            keywords=definition.get("keywords", []),
+            patterns=definition.get("patterns", []),
+            domain_tags=definition.get("domain_tags", ["custom"]),
+            confidence_base=definition.get("confidence_base", 0.6),
+            recommended_chain=definition.get("recommended_chain", "S"),
+            priority=definition.get("priority", 5),
             is_custom=True,
         )
 
@@ -1037,16 +1178,16 @@ class DynamicIntentRecognizer:
         for intent_id, intent_type in self.llm_recognizer.get_learned_intents().items():
             if intent_id not in all_intents:
                 all_intents[intent_id] = intent_type
-                self._stats['learned_intents'] += 1
+                self._stats["learned_intents"] += 1
         return all_intents
 
     def get_stats(self) -> Dict:
         """获取统计信息"""
         return {
             **self._stats,
-            'total_intent_types': len(self._all_intents),
-            'learned_intent_types': len(self.llm_recognizer.get_learned_intents()),
-            'cache_size': len(self._intent_cache),
+            "total_intent_types": len(self._all_intents),
+            "learned_intent_types": len(self.llm_recognizer.get_learned_intents()),
+            "cache_size": len(self._intent_cache),
         }
 
     def clear_cache(self):
@@ -1059,9 +1200,9 @@ class DynamicIntentRecognizer:
 # ============================================================
 
 __all__ = [
-    'DynamicIntentType',
-    'DynamicIntentResult',
-    'DynamicIntentRecognizer',
-    'SChainLLMRecognizer',
-    'FINANCE_INTENT_KNOWLEDGE_BASE',
+    "DynamicIntentType",
+    "DynamicIntentResult",
+    "DynamicIntentRecognizer",
+    "SChainLLMRecognizer",
+    "FINANCE_INTENT_KNOWLEDGE_BASE",
 ]

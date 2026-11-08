@@ -21,12 +21,9 @@ Phase D · BiLSTM-Attention 爆仓预测训练脚本
 from __future__ import annotations
 
 import argparse
-import json
-import os
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import torch
@@ -114,17 +111,20 @@ def main(argv=None):
     ap.add_argument("--data", type=str, default="data/ai_datasets/phase_d_train_all.npz")
     ap.add_argument("--val", type=str, default="data/ai_datasets/phase_d_test_all.npz")
     ap.add_argument("--out", type=str, default="data/ai_models/phase_d_bilstm_v1.pt")
-    ap.add_argument("--epochs", type=int, default=30)   # v2: 20 → 30，配合 EarlyStop
+    ap.add_argument("--epochs", type=int, default=30)  # v2: 20 → 30，配合 EarlyStop
     ap.add_argument("--batch", type=int, default=64)
-    ap.add_argument("--lr", type=float, default=8e-4)   # v2: 1e-3 → 8e-4，稳
-    ap.add_argument("--hidden", type=int, default=32)   # v2: 48 → 32，减少容量防泛化
+    ap.add_argument("--lr", type=float, default=8e-4)  # v2: 1e-3 → 8e-4，稳
+    ap.add_argument("--hidden", type=int, default=32)  # v2: 48 → 32，减少容量防泛化
     ap.add_argument("--n-layers", type=int, default=2)
     ap.add_argument("--dropout", type=float, default=0.30)  # v2: 加强正则
     ap.add_argument("--weight-decay", type=float, default=5e-4)  # v2: 1e-4 → 5e-4
-    ap.add_argument("--early-stop-patience", type=int, default=6, help="val AUC 连续几轮无上升则早停")
+    ap.add_argument(
+        "--early-stop-patience", type=int, default=6, help="val AUC 连续几轮无上升则早停"
+    )
     ap.add_argument("--pos-weight-cap", type=float, default=15.0, help="正样本权重上限")
-    ap.add_argument("--quick-smoke", action="store_true",
-                    help="跳过读NPZ，使用内置假数据，用于CLI冒烟测试")
+    ap.add_argument(
+        "--quick-smoke", action="store_true", help="跳过读NPZ，使用内置假数据，用于CLI冒烟测试"
+    )
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args(argv)
 
@@ -142,11 +142,14 @@ def main(argv=None):
     va_ld = DataLoader(va_ds, batch_size=args.batch * 2, shuffle=False)
 
     model = BiLSTMAttentionBust(
-        hidden=args.hidden, n_layers=args.n_layers,
+        hidden=args.hidden,
+        n_layers=args.n_layers,
         dropout=args.dropout,  # v2: 更强正则
     ).to(device)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"[BiLSTM] params={n_params:,}  device={device}  train_samples={len(tr_ds)}  val_samples={len(va_ds)}")
+    print(
+        f"[BiLSTM] params={n_params:,}  device={device}  train_samples={len(tr_ds)}  val_samples={len(va_ds)}"
+    )
     opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, args.epochs))
 
@@ -156,7 +159,9 @@ def main(argv=None):
     patience_left = int(args.early_stop_patience)
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
-        tr_loss, tr_acc = train_one_epoch(model, tr_ld, opt, device, pos_weight_cap=args.pos_weight_cap)
+        tr_loss, tr_acc = train_one_epoch(
+            model, tr_ld, opt, device, pos_weight_cap=args.pos_weight_cap
+        )
         metrics = evaluate(model, va_ld, device)
         sched.step()
         dt = time.time() - t0
@@ -181,11 +186,17 @@ def main(argv=None):
     payload = {
         "state_dict": best_state,
         "meta": {
-            "ohlcv_len": 60, "n_channels": 5, "n_scalar": 7,
-            "hidden": args.hidden, "n_layers": args.n_layers,
-            "dropout": args.dropout, "weight_decay": args.weight_decay,
+            "ohlcv_len": 60,
+            "n_channels": 5,
+            "n_scalar": 7,
+            "hidden": args.hidden,
+            "n_layers": args.n_layers,
+            "dropout": args.dropout,
+            "weight_decay": args.weight_decay,
             "pos_weight_cap": args.pos_weight_cap,
-            "best_val_auc": best_auc, "epochs": args.epochs, "seed": args.seed,
+            "best_val_auc": best_auc,
+            "epochs": args.epochs,
+            "seed": args.seed,
             "quick_smoke": bool(args.quick_smoke),
             "train_date": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "version": "v2",

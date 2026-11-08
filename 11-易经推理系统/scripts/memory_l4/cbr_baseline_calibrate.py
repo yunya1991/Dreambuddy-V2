@@ -41,7 +41,7 @@ if str(_THIS_DIR) not in sys.path:
 THETA_GRID: List[float] = [round(0.65 + i * 0.03, 2) for i in range(11)]
 GAMMA_GRID: List[float] = [round(0.05 + i * 0.03, 2) for i in range(8)]
 assert len(THETA_GRID) == 11, f"θ 必须 11 档，实际 {len(THETA_GRID)}"
-assert len(GAMMA_GRID) == 8,  f"γ 必须 8 档，实际 {len(GAMMA_GRID)}"
+assert len(GAMMA_GRID) == 8, f"γ 必须 8 档，实际 {len(GAMMA_GRID)}"
 GRID_TOTAL = len(THETA_GRID) * len(GAMMA_GRID)
 assert GRID_TOTAL == 88, f"必须 88 组合，实际 {GRID_TOTAL}"
 
@@ -91,10 +91,19 @@ def _family_similarity(case_a: Dict[str, Any], case_b: Dict[str, Any]) -> float:
     score5 = 0.0
     score5 += 1.0 if case_a.get("symbol") == case_b.get("symbol") else 0.0
     score5 += 1.0 if str(case_a.get("direction")) == str(case_b.get("direction")) else 0.0
-    score5 += 1.0 if (es_a.get("hexagram_name") and
-                      es_a.get("hexagram_name") == es_b.get("hexagram_name")) else 0.0
-    score5 += 1.0 if (es_a.get("bcrm_confidence_bucket") and
-                      es_a.get("bcrm_confidence_bucket") == es_b.get("bcrm_confidence_bucket")) else 0.0
+    score5 += (
+        1.0
+        if (es_a.get("hexagram_name") and es_a.get("hexagram_name") == es_b.get("hexagram_name"))
+        else 0.0
+    )
+    score5 += (
+        1.0
+        if (
+            es_a.get("bcrm_confidence_bucket")
+            and es_a.get("bcrm_confidence_bucket") == es_b.get("bcrm_confidence_bucket")
+        )
+        else 0.0
+    )
     lab_a = es_a.get("p1_output_label", "")
     lab_b = es_b.get("p1_output_label", "")
     if lab_a and lab_b:
@@ -113,8 +122,9 @@ def _family_similarity(case_a: Dict[str, Any], case_b: Dict[str, Any]) -> float:
     return max(0.20, min(1.0, sim))
 
 
-def _evaluate_one_pair(theta: float, gamma: float,
-                       cases: List[Dict[str, Any]], top_k: int = 3) -> Dict[str, Any]:
+def _evaluate_one_pair(
+    theta: float, gamma: float, cases: List[Dict[str, Any]], top_k: int = 3
+) -> Dict[str, Any]:
     """对单个 (θ, γ) 计算 signal_gain（LOO：留一法）。
 
     signal_gain = mean(pnl_pct | top1_match ≥ θ) − mean(pnl_pct | 未命中)
@@ -122,9 +132,12 @@ def _evaluate_one_pair(theta: float, gamma: float,
     """
     if not cases:
         return {
-            "theta": theta, "gamma": gamma,
-            "n_hit": 0, "n_miss": 0,
-            "pnl_hit": 0.0, "pnl_miss": 0.0,
+            "theta": theta,
+            "gamma": gamma,
+            "n_hit": 0,
+            "n_miss": 0,
+            "pnl_hit": 0.0,
+            "pnl_miss": 0.0,
             "signal_gain": 0.0,
         }
 
@@ -166,8 +179,9 @@ def _evaluate_one_pair(theta: float, gamma: float,
 # ============================================================
 # §3：88 组合网格搜索主算法
 # ============================================================
-def grid_search(cases: List[Dict[str, Any]], top_k: int = 3,
-                dry_run: bool = False) -> Dict[str, Any]:
+def grid_search(
+    cases: List[Dict[str, Any]], top_k: int = 3, dry_run: bool = False
+) -> Dict[str, Any]:
     """枚举 88 组合，返回最佳 (θ*, γ*) 与完整结果表。
 
     dry_run=True：跳过逐组合 _evaluate_one_pair，只用占位 target=0，
@@ -177,9 +191,15 @@ def grid_search(cases: List[Dict[str, Any]], top_k: int = 3,
     best: Optional[Dict[str, Any]] = None
     for theta, gamma in enumerate_grid():
         if dry_run:
-            row = {"theta": theta, "gamma": gamma,
-                   "n_hit": 0, "n_miss": 0,
-                   "pnl_hit": 0.0, "pnl_miss": 0.0, "signal_gain": 0.0}
+            row = {
+                "theta": theta,
+                "gamma": gamma,
+                "n_hit": 0,
+                "n_miss": 0,
+                "pnl_hit": 0.0,
+                "pnl_miss": 0.0,
+                "signal_gain": 0.0,
+            }
         else:
             row = _evaluate_one_pair(theta, gamma, cases, top_k=top_k)
         results.append(row)
@@ -198,8 +218,9 @@ def grid_search(cases: List[Dict[str, Any]], top_k: int = 3,
 # ============================================================
 # §4：输出最优参数到 cbr_baseline_params.json（CBRJsonlStore 读它）
 # ============================================================
-def _write_output(output_path: Path, best: Dict[str, Any], quarter: str,
-                  dry_run_best_only: bool = False) -> None:
+def _write_output(
+    output_path: Path, best: Dict[str, Any], quarter: str, dry_run_best_only: bool = False
+) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "theta_match_star": float(best["theta"]),
@@ -224,19 +245,24 @@ def _write_output(output_path: Path, best: Dict[str, Any], quarter: str,
 # ============================================================
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="CBR v3.0 基线家族 θ×γ 88 组合季度校准（最大化 signal_gain）")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="只验证 88 组合枚举 + 占位写默认最优，不跑目标函数")
-    parser.add_argument("--cases", type=Path,
-                        default=_THIS_DIR / "runtime" / "cbr_cases_v03.jsonl")
-    parser.add_argument("--output", type=Path,
-                        default=_THIS_DIR / "runtime" / "cbr_baseline_params.jsonl")
-    parser.add_argument("--output-params", type=Path,
-                        default=_THIS_DIR / "runtime" / "cbr_baseline_params.json")
-    parser.add_argument("--quarter", default=f"{datetime.now().year}-Q{(datetime.now().month-1)//3+1}",
-                        help="校准季度标签（元数据），如 2026-Q3")
-    parser.add_argument("--top-k", type=int, default=3,
-                        help="predict_topk 的 top_k（默认 3）")
+        description="CBR v3.0 基线家族 θ×γ 88 组合季度校准（最大化 signal_gain）"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="只验证 88 组合枚举 + 占位写默认最优，不跑目标函数"
+    )
+    parser.add_argument("--cases", type=Path, default=_THIS_DIR / "runtime" / "cbr_cases_v03.jsonl")
+    parser.add_argument(
+        "--output", type=Path, default=_THIS_DIR / "runtime" / "cbr_baseline_params.jsonl"
+    )
+    parser.add_argument(
+        "--output-params", type=Path, default=_THIS_DIR / "runtime" / "cbr_baseline_params.json"
+    )
+    parser.add_argument(
+        "--quarter",
+        default=f"{datetime.now().year}-Q{(datetime.now().month-1)//3+1}",
+        help="校准季度标签（元数据），如 2026-Q3",
+    )
+    parser.add_argument("--top-k", type=int, default=3, help="predict_topk 的 top_k（默认 3）")
     args = parser.parse_args(argv)
 
     print(f"[CBR-CALIB] Grid size: {len(THETA_GRID)} θ × {len(GAMMA_GRID)} γ = {GRID_TOTAL}")
@@ -251,8 +277,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     best = report["best"] or {"theta": 0.80, "gamma": 0.20, "signal_gain": 0.0}
 
     # 写最优参数 JSON（CBRJsonlStore 读的那个）
-    _write_output(args.output_params, best, args.quarter,
-                  dry_run_best_only=args.dry_run)
+    _write_output(args.output_params, best, args.quarter, dry_run_best_only=args.dry_run)
 
     # 写完整报告（调试用，大 JSON）
     args.output.parent.mkdir(parents=True, exist_ok=True)

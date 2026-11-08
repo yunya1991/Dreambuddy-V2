@@ -5,6 +5,7 @@
 - 记录器回流与 FAIL-OPEN（缺陷 2：记录器未接入生产链路）
 - 做梦抽样限制（缺陷 3：全量重放性能）
 """
+
 import os
 import sys
 import tempfile
@@ -15,10 +16,10 @@ _PROJECT_ROOT = os.path.dirname(_THIS_DIR)
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from core.reflection.replay_simulator import ReplayPool
-from core.reflection.recorder import AnalysisRecorder
-from core.reflection.seed_cases import SEED_CASES, build_seed_tree
-from core.reflection.dreaming import DreamingLoop
+from core.reflection.dreaming import DreamingLoop  # noqa: E402
+from core.reflection.recorder import AnalysisRecorder  # noqa: E402
+from core.reflection.replay_simulator import ReplayPool  # noqa: E402
+from core.reflection.seed_cases import SEED_CASES, build_seed_tree  # noqa: E402
 
 
 def _fill_pool(pool_dir, n=10):
@@ -60,8 +61,14 @@ class TestAnalysisRecorder(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             rec = AnalysisRecorder(pool_dir=tmp)
             self.assertTrue(rec.begin({"target": "t", "task_type": "analyze"}))
-            self.assertTrue(rec.record("dependency_graph", params={"target": "t"},
-                                       poe_score=0.8, evidence_refs=[{"source": "s"}]))
+            self.assertTrue(
+                rec.record(
+                    "dependency_graph",
+                    params={"target": "t"},
+                    poe_score=0.8,
+                    evidence_refs=[{"source": "s"}],
+                )
+            )
             tree_id = rec.commit()
             self.assertIsNotNone(tree_id)
             pool = ReplayPool(tmp)
@@ -84,8 +91,12 @@ class TestDreamingLoop(unittest.TestCase):
             _fill_pool(tmp, n=10)
             pool = ReplayPool(tmp)
             seq = [s["analyzer"] for s in SEED_CASES[0]["steps"]]
-            current = {"budget": {"max_calls": 10}, "parallelism": 1,
-                       "analyzer_sequence": seq, "transform": "current"}
+            current = {
+                "budget": {"max_calls": 10},
+                "parallelism": 1,
+                "analyzer_sequence": seq,
+                "transform": "current",
+            }
             result = DreamingLoop(pool).dream(current)
             self.assertIn("best_v", result)
             self.assertIn("current_v", result)
@@ -96,8 +107,12 @@ class TestDreamingLoop(unittest.TestCase):
             _fill_pool(tmp, n=30)
             pool = ReplayPool(tmp)
             seq = [s["analyzer"] for s in SEED_CASES[0]["steps"]]
-            current = {"budget": {"max_calls": 10}, "parallelism": 1,
-                       "analyzer_sequence": seq, "transform": "current"}
+            current = {
+                "budget": {"max_calls": 10},
+                "parallelism": 1,
+                "analyzer_sequence": seq,
+                "transform": "current",
+            }
             loop = DreamingLoop(pool, max_trees=10)
             r = loop.evaluate_strategy(current)
             self.assertEqual(r["tree_count"], 10)
@@ -108,6 +123,7 @@ class TestDreamNodeRegression(unittest.TestCase):
 
     def test_dream_node_default_current(self):
         from dsh_nodes import DSH_NODE_REGISTRY
+
         with tempfile.TemporaryDirectory() as tmp:
             _fill_pool(tmp, n=10)
             out = DSH_NODE_REGISTRY["s33_rea_dream"]({"pool_dir": tmp})
@@ -118,20 +134,28 @@ class TestDreamNodeRegression(unittest.TestCase):
 
     def test_dream_node_explicit_current(self):
         from dsh_nodes import DSH_NODE_REGISTRY
+
         with tempfile.TemporaryDirectory() as tmp:
             _fill_pool(tmp, n=10)
             seq = [s["analyzer"] for s in SEED_CASES[0]["steps"]]
-            out = DSH_NODE_REGISTRY["s33_rea_dream"]({
-                "pool_dir": tmp,
-                "current": {"budget": {"max_calls": 10}, "parallelism": 1,
-                            "analyzer_sequence": seq, "transform": "current"},
-            })
+            out = DSH_NODE_REGISTRY["s33_rea_dream"](
+                {
+                    "pool_dir": tmp,
+                    "current": {
+                        "budget": {"max_calls": 10},
+                        "parallelism": 1,
+                        "analyzer_sequence": seq,
+                        "transform": "current",
+                    },
+                }
+            )
             self.assertTrue(out.get("ok"))
             r = out.get("result") or {}
             self.assertFalse(r.get("current_derived_from_pool"))
 
     def test_dream_node_pool_not_ready(self):
         from dsh_nodes import DSH_NODE_REGISTRY
+
         with tempfile.TemporaryDirectory() as tmp:
             _fill_pool(tmp, n=2)
             out = DSH_NODE_REGISTRY["s33_rea_dream"]({"pool_dir": tmp})
@@ -144,20 +168,25 @@ class TestAnalyzeNodeRecorder(unittest.TestCase):
 
     def test_analyze_reflow_and_fail_open(self):
         from dsh_nodes import DSH_NODE_REGISTRY
+
         with tempfile.TemporaryDirectory() as tmp:
-            out = DSH_NODE_REGISTRY["s33_rea_analyze"]({
-                "target": os.path.join(_PROJECT_ROOT, "core", "reflection"),
-                "pool_dir": tmp,
-            })
+            out = DSH_NODE_REGISTRY["s33_rea_analyze"](
+                {
+                    "target": os.path.join(_PROJECT_ROOT, "core", "reflection"),
+                    "pool_dir": tmp,
+                }
+            )
             self.assertTrue(out.get("ok"), "analyze failed: %s" % out.get("error"))
             r = out.get("result") or {}
             self.assertTrue(r.get("replay_tree_id"), "recorder did not reflow")
             self.assertGreaterEqual(ReplayPool(tmp).count(), 1)
             # FAIL-OPEN：池不可写时分析仍成功
-            out2 = DSH_NODE_REGISTRY["s33_rea_analyze"]({
-                "target": os.path.join(_PROJECT_ROOT, "core", "reflection", "recorder.py"),
-                "pool_dir": "/nonexistent/readonly/pool",
-            })
+            out2 = DSH_NODE_REGISTRY["s33_rea_analyze"](
+                {
+                    "target": os.path.join(_PROJECT_ROOT, "core", "reflection", "recorder.py"),
+                    "pool_dir": "/nonexistent/readonly/pool",
+                }
+            )
             self.assertTrue(out2.get("ok"), "FAIL-OPEN violated")
 
 

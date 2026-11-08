@@ -9,6 +9,7 @@
     python 2-KNOWLEDGE/9-RAG-INFRA/scripts/rebuild_indexes.py
     python .../rebuild_indexes.py --skip-meta   # 只重建分块/关键词
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,7 +30,6 @@ from vector_store.config import KNOWLEDGE_BASE_DIR  # noqa: E402
 def _reset_chroma() -> dict:
     """删除 Chroma 集合与哈希账本，确保不残留已删除文件的旧块。"""
     import chromadb
-
     from vector_store.config import CHROMA_DB_PATH, COLLECTION_NAME
 
     client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
@@ -48,14 +48,14 @@ def _reset_chroma() -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true",
-                        help="先删除 Chroma 集合与哈希账本，再全量重建")
-    parser.add_argument("--skip-meta", action="store_true",
-                        help="跳过 dreambuddy_index 元数据索引")
-    parser.add_argument("--skip-chunks", action="store_true",
-                        help="跳过 dreambuddy_knowledge 分块索引")
-    parser.add_argument("--skip-keyword", action="store_true",
-                        help="跳过 BM25 关键词索引")
+    parser.add_argument(
+        "--reset", action="store_true", help="先删除 Chroma 集合与哈希账本，再全量重建"
+    )
+    parser.add_argument("--skip-meta", action="store_true", help="跳过 dreambuddy_index 元数据索引")
+    parser.add_argument(
+        "--skip-chunks", action="store_true", help="跳过 dreambuddy_knowledge 分块索引"
+    )
+    parser.add_argument("--skip-keyword", action="store_true", help="跳过 BM25 关键词索引")
     args = parser.parse_args()
 
     results = {}
@@ -66,9 +66,7 @@ def main() -> int:
             "entries": IndexQueryService().build_index(),
         }
     if not args.skip_chunks:
-        results["chroma_chunks"] = build_vector_index(
-            KNOWLEDGE_BASE_DIR, force=True
-        )
+        results["chroma_chunks"] = build_vector_index(KNOWLEDGE_BASE_DIR, force=True)
     if not args.skip_keyword:
         results["keyword_index"] = build_keyword_index(KNOWLEDGE_BASE_DIR)
 

@@ -15,6 +15,7 @@
 边界: L3 的『判断』仍是观察性结论（矛盾状态/背离程度/演化方向），
       交易决策归 23 门禁体系（§8.2/§9.7 强制）
 """
+
 import json
 import os
 from collections import defaultdict
@@ -29,10 +30,10 @@ EVENT_LINES_PATH = os.path.join(_SYS_DIR, "event_lines.json")
 OUT_PATH = os.path.join(_SYS_DIR, "l3_synthesis.json")
 
 # ── 预注册参数（禁止事后调整）──
-OBS_WINDOW_H = 48     # 观测窗：最近 48h
-CTRL_WINDOW_H = 48    # 对照窗：观测窗前 48h
+OBS_WINDOW_H = 48  # 观测窗：最近 48h
+CTRL_WINDOW_H = 48  # 对照窗：观测窗前 48h
 EXTREME_LOW, EXTREME_HIGH = 25.0, 75.0
-CONTRA_HEAT_RATIO = 1.5   # 矛盾升温判定：观测窗计数 >= 对照窗 1.5 倍
+CONTRA_HEAT_RATIO = 1.5  # 矛盾升温判定：观测窗计数 >= 对照窗 1.5 倍
 
 
 def _parse_ts(ts):
@@ -131,17 +132,25 @@ def main():
     fr_now = _state_at(fr, now)
     fr_state = None
     if fr_now is not None:
-        fr_state = "多头主导（正费率）" if fr_now > 0 else ("空头主导（负费率）" if fr_now < 0 else "平衡")
+        fr_state = (
+            "多头主导（正费率）" if fr_now > 0 else ("空头主导（负费率）" if fr_now < 0 else "平衡")
+        )
 
     # ── 维度三：矛盾观测镜像（观测窗 vs 对照窗）──
     contra_obs = [c for c in contra if obs_start <= _parse_ts(c.get("window_end", "")) <= now]
-    contra_ctrl = [c for c in contra if ctrl_start <= _parse_ts(c.get("window_end", "")) < obs_start]
+    contra_ctrl = [
+        c for c in contra if ctrl_start <= _parse_ts(c.get("window_end", "")) < obs_start
+    ]
     n_obs, n_ctrl = len(contra_obs), len(contra_ctrl)
     by_type_obs = defaultdict(int)
     for c in contra_obs:
         by_type_obs[c.get("contradiction_type", "?")] += 1
     if n_ctrl == 0:
-        heat = "升温期（对照窗无矛盾记录，观测窗出现矛盾）" if n_obs > 0 else "平稳期（两窗均无矛盾检出）"
+        heat = (
+            "升温期（对照窗无矛盾记录，观测窗出现矛盾）"
+            if n_obs > 0
+            else "平稳期（两窗均无矛盾检出）"
+        )
     elif n_obs >= n_ctrl * CONTRA_HEAT_RATIO:
         heat = f"升温期（观测窗 {n_obs} 条 vs 对照窗 {n_ctrl} 条，≥{CONTRA_HEAT_RATIO}倍）"
     elif n_obs <= n_ctrl / CONTRA_HEAT_RATIO:
@@ -151,21 +160,28 @@ def main():
 
     # ── 维度四：L2 量变信号（事件线频维/量维共振）──
     active_signals = []
-    for l in lines_data.get("lines", []):
+    for l in lines_data.get("lines", []):  # noqa: E741
         qs = l.get("quantity_signal", "")
         if "加速" in qs:
             active_signals.append(f"{l.get('topic')}（量变加速积累）")
         vol = l.get("volume_dimension") or {}
-        if vol.get("surge_events", 0) > vol.get("shrink_events", 0) * 2 and vol.get("surge_events", 0) > 0:
+        if (
+            vol.get("surge_events", 0) > vol.get("shrink_events", 0) * 2
+            and vol.get("surge_events", 0) > 0
+        ):
             active_signals.append(f"{l.get('topic')}（放量主导）")
 
     # ── 综合结论（描述性，观察性判断）──
     conclusions = []
     # 背离检测：情绪 vs 资金费率
     if fg_zone in ("极度贪婪", "贪婪区") and fr_state == "空头主导（负费率）":
-        conclusions.append("情绪与资金费率背离：市场情绪偏贪婪，持仓结构空头主导——观察性结论，背离程度待后续窗口验证")
+        conclusions.append(
+            "情绪与资金费率背离：市场情绪偏贪婪，持仓结构空头主导——观察性结论，背离程度待后续窗口验证"
+        )
     elif fg_zone in ("极度恐慌", "恐慌区") and fr_state == "多头主导（正费率）":
-        conclusions.append("情绪与资金费率背离：市场情绪偏恐慌，持仓结构多头主导——观察性结论，背离程度待后续窗口验证")
+        conclusions.append(
+            "情绪与资金费率背离：市场情绪偏恐慌，持仓结构多头主导——观察性结论，背离程度待后续窗口验证"
+        )
     elif fg_zone and fr_state:
         conclusions.append(f"情绪与持仓结构同向：情绪 {fg_zone}，{fr_state}——未检出背离")
     # 矛盾演化
@@ -189,8 +205,10 @@ def main():
             "sentiment": {"fear_greed": fg_now, "zone": fg_zone, "trajectory_note": fg_note},
             "indicator": {"funding_rate": fr_now, "state": fr_state},
             "contradiction_mirror": {
-                "obs_window_count": n_obs, "ctrl_window_count": n_ctrl,
-                "by_type": dict(by_type_obs), "heat": heat,
+                "obs_window_count": n_obs,
+                "ctrl_window_count": n_ctrl,
+                "by_type": dict(by_type_obs),
+                "heat": heat,
             },
             "l2_quantity_signals": active_signals,
         },

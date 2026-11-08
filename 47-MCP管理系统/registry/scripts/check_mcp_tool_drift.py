@@ -94,18 +94,21 @@ def probe_shell(
     env["PYTHONIOENCODING"] = "utf-8"
     env.setdefault("ANONYMIZED_TELEMETRY", "False")
 
-    payload = json.dumps(
-        {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "initialize",
-            "params": {
-                "protocolVersion": PROTOCOL_VERSION,
-                "capabilities": {},
-                "clientInfo": {"name": "mcp-drift-check", "version": "0.1"},
-            },
-        }
-    ) + "\n"
+    payload = (
+        json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": PROTOCOL_VERSION,
+                    "capabilities": {},
+                    "clientInfo": {"name": "mcp-drift-check", "version": "0.1"},
+                },
+            }
+        )
+        + "\n"
+    )
     payload += json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}) + "\n"
 
     proc = subprocess.Popen(
@@ -152,9 +155,7 @@ def diff_tools(
 ) -> Tuple[List[str], List[str], List[Tuple[str, bool, bool]]]:
     """返回 (extra, missing, annotation_mismatch)。"""
     reg = {
-        t["name"]: t
-        for t in (shell.get("tools") or [])
-        if isinstance(t, dict) and t.get("name")
+        t["name"]: t for t in (shell.get("tools") or []) if isinstance(t, dict) and t.get("name")
     }
     act = {t["name"]: t for t in actual_tools if t.get("name")}
     extra = sorted(set(act) - set(reg))

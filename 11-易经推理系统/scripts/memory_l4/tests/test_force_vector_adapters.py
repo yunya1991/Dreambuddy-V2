@@ -3,9 +3,11 @@
 验证 LeastResistanceAdapter / SignalEngineAdapter 正确复用 9-基本面 引擎输出。
 对应 Spec §二 ForceVector 核心字段映射。
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 # 将 memory_l4 加入 sys.path（force_vector 包所在目录）
 _L4_DIR = Path(__file__).resolve().parent.parent
@@ -18,9 +20,9 @@ _9_FUND = _ROOT / "9-基本面分析"
 if _9_FUND.is_dir() and str(_9_FUND) not in sys.path:
     sys.path.insert(0, str(_9_FUND))
 
-from force_vector.adapters import LeastResistanceAdapter, SignalEngineAdapter
-from engines.least_resistance import compute_resistance_3d
-from engines.signal_engine import SignalEngine
+from engines.least_resistance import compute_resistance_3d  # noqa: E402
+from engines.signal_engine import SignalEngine  # noqa: E402
+from force_vector.adapters import LeastResistanceAdapter, SignalEngineAdapter  # noqa: E402
 
 
 class TestLeastResistanceAdapter:

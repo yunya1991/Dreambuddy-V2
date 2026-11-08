@@ -1,10 +1,10 @@
 """llm_compat 单元测试：provider 自动探测、客户端构造、健康检查。"""
+
 import asyncio
 
 import pytest
-
 from core import llm_compat
-from core.llm_compat import LLMUnavailable, LLMSettings, create_llm_client, health_check
+from core.llm_compat import LLMSettings, LLMUnavailable, create_llm_client, health_check
 
 
 def _clear_llm_env(monkeypatch):

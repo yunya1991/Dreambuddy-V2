@@ -23,14 +23,13 @@
 - LLM 调用使用 DeepSeek API（与 screen_executor.py 共享配置）
 """
 
-import os
+import os  # noqa: I001
 import json
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Optional
-
+from typing import Optional
 
 # ── 配置加载 ─────────────────────────────────────────────────────────────
+
 
 # 支持从多个位置加载 .env（可选，不强制）
 # 优先级：进程环境变量 > experiments/ab-trading/config/.env > 12-三屏趋势系统/.env
@@ -62,12 +61,13 @@ DEEPSEEK_BASE = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1
 DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 
 # LLM 触发阈值
-LLM_TRIGGER_LOW = 40.0     # 低于此值必触发
-LLM_TRIGGER_HIGH = 60.0    # 高于此值不触发（除非有矛盾）
-LLM_DAILY_LIMIT = 50       # 每日 LLM 调用上限
+LLM_TRIGGER_LOW = 40.0  # 低于此值必触发
+LLM_TRIGGER_HIGH = 60.0  # 高于此值不触发（除非有矛盾）
+LLM_DAILY_LIMIT = 50  # 每日 LLM 调用上限
 
 
 # ── 触发判断 ──────────────────────────────────────────────────────────────
+
 
 def should_trigger_llm(ensemble_pred: dict, full_signal: dict) -> tuple:
     """判断是否需要触发 LLM 辩证推理
@@ -147,14 +147,13 @@ def _detect_contradictions(full_signal: dict) -> list:
     weekly_reversal = tc.get("weekly", {}).get("reversal_score", 0)
     daily_reversal = tc.get("daily", {}).get("reversal_score", 0)
     if weekly_reversal > 50 or daily_reversal > 50:
-        contradictions.append(
-            f"逆转信号偏高: 周线{weekly_reversal:.0f} 日线{daily_reversal:.0f}"
-        )
+        contradictions.append(f"逆转信号偏高: 周线{weekly_reversal:.0f} 日线{daily_reversal:.0f}")
 
     return contradictions
 
 
 # ── 提示词构建 ────────────────────────────────────────────────────────────
+
 
 def _build_system_prompt() -> str:
     """构建系统提示词"""
@@ -184,8 +183,7 @@ def _build_system_prompt() -> str:
 - 不确定时宁可 WAIT（NEUTRAL），不要猜方向"""
 
 
-def _build_reasoning_prompt(full_signal: dict, ensemble_pred: dict,
-                            contradictions: list) -> str:
+def _build_reasoning_prompt(full_signal: dict, ensemble_pred: dict, contradictions: list) -> str:
     """构建推理提示词"""
     tc = full_signal.get("trend_consistency", {})
     bc = full_signal.get("bayesian_confidence", {})
@@ -254,6 +252,7 @@ Freqtrade一致: {'是' if fs.get('freqtrade_consistent') else '否'}
 
 # ── LLM 调用 ──────────────────────────────────────────────────────────────
 
+
 def _call_deepseek(prompt: str, system: str, max_tokens: int = 1000) -> Optional[str]:
     """调用 DeepSeek API
 
@@ -264,6 +263,7 @@ def _call_deepseek(prompt: str, system: str, max_tokens: int = 1000) -> Optional
         return None
     try:
         import requests
+
         s = requests.Session()
         s.trust_env = False
         r = s.post(
@@ -325,6 +325,7 @@ def _parse_llm_response(reply: str) -> Optional[dict]:
 
 
 # ── 主入口 ────────────────────────────────────────────────────────────────
+
 
 def reason_with_llm(full_signal: dict, ensemble_pred: dict) -> dict:
     """LLM 辩证推理主入口

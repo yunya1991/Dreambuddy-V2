@@ -5,6 +5,7 @@
 
 输出列数 ≈ 44（11+10+6+17），满足 btc_morph_v6 集合 shape ≥ 40 要求。
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,6 +35,7 @@ def _ensure_fr_modules():
     if _FR_LOADED:
         return
     import importlib
+
     for mod in (
         "bcrm2.classic_experience_features",
         "bcrm2.ma200_cycle_features",
@@ -58,7 +60,10 @@ def compute(
     from feature_hub.hub.feature_registry import FeatureRegistry
 
     feats, _ = FeatureRegistry.compute_all(
-        df=df, ref_df=ref_df, macro_df=macro_df,
-        symbol=symbol, enabled=_MODULES,
+        df=df,
+        ref_df=ref_df,
+        macro_df=macro_df,
+        symbol=symbol,
+        enabled=_MODULES,
     )
     return feats

@@ -1,15 +1,18 @@
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_distills_dir, workbuddy_dir
-
+from scripts.memory_l4.paths import (  # noqa: E402
+    memory_l4_cases_dir,
+    memory_l4_distills_dir,
+    workbuddy_dir,
+)  # noqa: E402, I001
 
 DEFAULT_WEIGHTS = {"struct": 0.4, "num": 0.4, "strategy": 0.2}
 
@@ -115,9 +118,16 @@ def _extract_evidence_chain_features(case: Dict[str, Any]) -> Dict[str, Any]:
         "strategy_count": len(ec.get("strategy_refs") or []),
         "historical_count": len(ec.get("historical_refs") or []),
         "constraint_count": len(ec.get("constraint_refs") or []),
-        "total_refs": sum(len(ec.get(k) or []) for k in
-                          ("market_data_refs", "signal_refs", "strategy_refs",
-                           "historical_refs", "constraint_refs")),
+        "total_refs": sum(
+            len(ec.get(k) or [])
+            for k in (
+                "market_data_refs",
+                "signal_refs",
+                "strategy_refs",
+                "historical_refs",
+                "constraint_refs",
+            )
+        ),
     }
 
 
@@ -188,9 +198,11 @@ def _case_review_detailed(case: Dict[str, Any]) -> Dict[str, Any]:
         "consistency": review.get("theory_practice_consistency"),
         "review_record_id": review.get("review_record_id"),
         "lessons": _case_review_lessons(case),
-        "avg_mistake_severity": round(
-            sum(m.get("severity") or 0 for m in mistakes) / len(mistakes), 3
-        ) if mistakes else None,
+        "avg_mistake_severity": (
+            round(sum(m.get("severity") or 0 for m in mistakes) / len(mistakes), 3)
+            if mistakes
+            else None
+        ),
     }
 
 
@@ -201,7 +213,13 @@ def _build_index_summary(
     """构建索引全局摘要 (v0.2 新增)。"""
     total = len(case_features)
     if total == 0:
-        return {"total_cases": 0, "v02_ratio": 0, "stage_coverage": {}, "l4_status": {}, "quadrant_center": {}}
+        return {
+            "total_cases": 0,
+            "v02_ratio": 0,
+            "stage_coverage": {},
+            "l4_status": {},
+            "quadrant_center": {},
+        }
 
     # v0.2 占比
     v02_count = sum(1 for f in case_features.values() if f.get("version") == "v0.2")
@@ -244,7 +262,7 @@ def build_index_data(
     cases: List[Dict[str, Any]],
     distills: List[Dict[str, Any]],
     episodes_by_path: Dict[str, Dict[str, Any]],
-    weights: Optional[Dict[str, float]] = None
+    weights: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
     w = weights or DEFAULT_WEIGHTS
 
@@ -306,18 +324,22 @@ def build_index_data(
             "kind": d.get("kind"),
             "claim": str(d.get("claim") or "").strip(),
             "actionable_rules": [str(x) for x in (d.get("actionable_rules") or []) if str(x)],
-            "supporting_case_ids": [str(x) for x in (d.get("supporting_case_ids") or []) if str(x)]
+            "supporting_case_ids": [str(x) for x in (d.get("supporting_case_ids") or []) if str(x)],
         }
 
     return {
         "metadata": {
             "snapshot_ts": snapshot_ts,
             "feature_version": "v0.2",
-            "weights": {"struct": float(w["struct"]), "num": float(w["num"]), "strategy": float(w["strategy"])}
+            "weights": {
+                "struct": float(w["struct"]),
+                "num": float(w["num"]),
+                "strategy": float(w["strategy"]),
+            },
         },
         "summary": summary,
         "case_features": case_features,
-        "distill_features": distill_features
+        "distill_features": distill_features,
     }
 
 
@@ -337,7 +359,9 @@ def default_index_path() -> Path:
 
 def write_index(index_data: Dict[str, Any], out_path: Path) -> Path:
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(index_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    out_path.write_text(
+        json.dumps(index_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return out_path
 
 
@@ -360,4 +384,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

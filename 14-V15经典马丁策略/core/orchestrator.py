@@ -9,6 +9,7 @@
 3. Agent 自主申请：agents 写入 self_schedule.json 申请提前运行
 4. 紧急信号：市场波动超阈值时触发（BTC 1H变动 > 3%）
 """
+
 import json
 import os
 import subprocess
@@ -274,7 +275,7 @@ def run_agents(reason: str):
         )
         key_lines = [
             l
-            for l in result.stdout.split("\n")
+            for l in result.stdout.split("\n")  # noqa: E741
             if any(
                 kw in l
                 for kw in [

@@ -39,12 +39,12 @@ def extract_documented_modules(design_doc: Path) -> Dict[str, List[str]]:
 
     # 提取模块名（格式：模块名 (filename.py)）
     # 例如：统一持仓查询模块 (unified_position_query.py)
-    module_pattern = r'\*+[\s\*]*[\u4e00-\u9fa5\w\s]+\s+\(([a-zA-Z_][a-zA-Z0-9_]*\.py)\)'
+    module_pattern = r"\*+[\s\*]*[\u4e00-\u9fa5\w\s]+\s+\(([a-zA-Z_][a-zA-Z0-9_]*\.py)\)"
     matches = re.findall(module_pattern, content)
 
     # 提取代码块中的文件名引用
     # 例如：unified_position_query.py, skill_engine.py
-    code_file_pattern = r'`([a-zA-Z_][a-zA-Z0-9_]*\.py)`'
+    code_file_pattern = r"`([a-zA-Z_][a-zA-Z0-9_]*\.py)`"
     code_files = re.findall(code_file_pattern, content)
 
     # 去重
@@ -116,7 +116,7 @@ def main():
     result = check_module_coverage(subsystem_dir)
     summary = result["summary"]
 
-    print(f"\n📊 覆盖度概览:")
+    print("\n📊 覆盖度概览:")
     print(f"   代码文件总数: {summary['total_code_files']}")
     print(f"   已文档化: {summary['documented_files']}")
     print(f"   ✅ 覆盖: {summary['covered']}")
@@ -126,7 +126,7 @@ def main():
     # 显示未覆盖的重要文件
     uncovered = result["uncovered_files"]
     if uncovered:
-        print(f"\n❓ 未文档化的文件（前10个）:")
+        print("\n❓ 未文档化的文件（前10个）:")
         for f in uncovered[:10]:
             print(f"   - {f}.py")
         if len(uncovered) > 10:
@@ -135,7 +135,7 @@ def main():
     # 显示多余文档化的文件
     extra_doc = result["extra_documented"]
     if extra_doc:
-        print(f"\n⚠️ 文档中提到但代码目录未找到:")
+        print("\n⚠️ 文档中提到但代码目录未找到:")
         for f in extra_doc[:10]:
             print(f"   - {f}.py")
 
@@ -152,4 +152,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

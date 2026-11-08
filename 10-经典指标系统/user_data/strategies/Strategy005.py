@@ -11,7 +11,13 @@ import json
 import requests
 from urllib.parse import urlparse
 
-from freqtrade.strategy import IStrategy, IntParameter, DecimalParameter, merge_informative_pair, stoploss_from_open
+from freqtrade.strategy import (
+    IStrategy,
+    IntParameter,
+    DecimalParameter,
+    merge_informative_pair,
+    stoploss_from_open,
+)
 from freqtrade.persistence import Trade
 
 
@@ -23,6 +29,7 @@ class Strategy005(IStrategy):
     - 低层：1h（入场触发）
     - 5个独立经典策略，任一满足即入场
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "1h"
@@ -31,13 +38,7 @@ class Strategy005(IStrategy):
     can_short = False
     position_adjustment_enable = True
 
-    minimal_roi = {
-        "0": 0.20,
-        "360": 0.12,
-        "720": 0.08,
-        "1440": 0.04,
-        "2880": 0
-    }
+    minimal_roi = {"0": 0.20, "360": 0.12, "720": 0.08, "1440": 0.04, "2880": 0}
 
     stoploss = -0.15
 
@@ -136,7 +137,7 @@ class Strategy005(IStrategy):
             if not kk:
                 continue
             if kk.startswith("s005_"):
-                kk = kk[len("s005_"):]
+                kk = kk[len("s005_") :]
             if not kk:
                 continue
             if not hasattr(self, kk):
@@ -301,13 +302,7 @@ class Strategy005(IStrategy):
     # }
 
     # ROI parameters:
-    minimal_roi = {
-        "0": 0.30,
-        "240": 0.10,
-        "480": 0.05,
-        "960": 0.02,
-        "1440": 0
-    }
+    minimal_roi = {"0": 0.30, "240": 0.10, "480": 0.05, "960": 0.02, "1440": 0}
 
     # Stoploss parameters:
     stoploss = -0.206
@@ -376,17 +371,17 @@ class Strategy005(IStrategy):
     tighten_stop_min = DecimalParameter(0.005, 0.15, default=0.043, space="sell")
     tighten_stop_atr_pct_mult = DecimalParameter(0.2, 8.0, default=0.35, space="sell")
     tighten_stop_max = DecimalParameter(0.01, 0.25, default=0.056, space="sell")
-    
+
     # Panic Entry Parameters (Added for tuning)
     panic_entry_enable = IntParameter(0, 1, default=0, space="buy")
     panic_entry_rsi_long = IntParameter(50, 70, default=55, space="buy")
     panic_entry_rsi_short = IntParameter(30, 50, default=45, space="sell")
     panic_entry_volume_ratio = DecimalParameter(1.0, 3.0, default=1.5, space="sell")
-    
+
     # Strategy 8: Daily Reversal Short Parameters
     daily_rsi_short_min = IntParameter(40, 70, default=50, space="sell")
     daily_willr_short_min = IntParameter(-50, -10, default=-20, space="sell")
-    
+
     loss_cut_min = DecimalParameter(0.005, 0.15, default=0.02, space="sell")
     loss_cut_atr_pct_mult = DecimalParameter(0.2, 6.0, default=4.0, space="sell")
     loss_cut_max = DecimalParameter(0.01, 0.25, default=0.139, space="sell")
@@ -403,7 +398,7 @@ class Strategy005(IStrategy):
     # 1. 震荡/假突破过滤器参数 (Regime Filter)
     # 默认关闭，因为Bayesian优化显示在当前数据下开启会导致过度过滤或选择高点入场
     regime_gate_enable = IntParameter(0, 1, default=0, space="buy")
-    
+
     # 均值回归参数 (Mean Reversion)
     bollinger_mean_reversion_enable = IntParameter(0, 1, default=1, space="buy")
     mr_bb_period = IntParameter(14, 40, default=14, space="buy")
@@ -417,12 +412,12 @@ class Strategy005(IStrategy):
     # CHOP: Lower is stricter (requires stronger trend/less chop). Default 61.8 -> 58.0
     chop_period = IntParameter(10, 30, default=20, space="buy")
     chop_threshold = DecimalParameter(50.0, 70.0, default=62.66, space="buy")
-    
+
     # ADX: Higher is stricter (requires stronger trend). Default 18 -> 25
     entry_adx_h_threshold = IntParameter(10, 35, default=28, space="buy")
     entry_adx_slope_lookback = IntParameter(1, 6, default=1, space="buy")
     entry_adx_slope_thr = DecimalParameter(0.0, 3.0, default=1.675, space="buy")
-    
+
     # BBW Expansion: Higher is stricter (requires more expansion relative to MA). Default 1.0 -> 1.2
     bbw_period = IntParameter(14, 40, default=40, space="buy")
     bbw_ma_len = IntParameter(20, 120, default=67, space="buy")
@@ -482,26 +477,37 @@ class Strategy005(IStrategy):
 
             btc_daily = btc_daily.dropna(subset=["date", "close"]).sort_values("date")
             base = btc_daily[["date", "open", "high", "low", "close", "volume"]].copy()
-            base["week_start"] = base["date"] - pd.to_timedelta((base["date"].dt.dayofweek + 1) % 7, unit="D")
+            base["week_start"] = base["date"] - pd.to_timedelta(
+                (base["date"].dt.dayofweek + 1) % 7, unit="D"
+            )
             btc_weekly = (
                 base.groupby("week_start", as_index=False)
-                .agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"})
+                .agg(
+                    {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+                )
                 .dropna(subset=["close"])
             )
             btc_weekly["date"] = pd.to_datetime(btc_weekly["week_start"], utc=True, errors="coerce")
-            btc_weekly = btc_weekly.drop(columns=["week_start"]).dropna(subset=["date"]).sort_values("date")
+            btc_weekly = (
+                btc_weekly.drop(columns=["week_start"]).dropna(subset=["date"]).sort_values("date")
+            )
 
             macd = ta.MACD(btc_weekly)
             btc_weekly["btc_macdhist_w"] = pd.to_numeric(macd["macdhist"], errors="coerce")
-            btc_weekly["btc_adx_w"] = pd.to_numeric(ta.ADX(btc_weekly, timeperiod=14), errors="coerce")
-            btc_weekly["btc_macdhist_slope"] = btc_weekly["btc_macdhist_w"] - btc_weekly["btc_macdhist_w"].shift(1)
-            btc_weekly["btc_macdhist_slope_pct"] = btc_weekly["btc_macdhist_slope"] / btc_weekly["close"].replace(0, 1e-10)
+            btc_weekly["btc_adx_w"] = pd.to_numeric(
+                ta.ADX(btc_weekly, timeperiod=14), errors="coerce"
+            )
+            btc_weekly["btc_macdhist_slope"] = btc_weekly["btc_macdhist_w"] - btc_weekly[
+                "btc_macdhist_w"
+            ].shift(1)
+            btc_weekly["btc_macdhist_slope_pct"] = btc_weekly["btc_macdhist_slope"] / btc_weekly[
+                "close"
+            ].replace(0, 1e-10)
 
             slope_thr = float(self.btc_weekly_macd_slope_pct_thr.value)
             adx_thr = float(self.btc_weekly_adx_threshold.value)
-            btc_hist_down = (
-                (btc_weekly["btc_macdhist_w"] < 0)
-                & (btc_weekly["btc_macdhist_w"] < btc_weekly["btc_macdhist_w"].shift(1))
+            btc_hist_down = (btc_weekly["btc_macdhist_w"] < 0) & (
+                btc_weekly["btc_macdhist_w"] < btc_weekly["btc_macdhist_w"].shift(1)
             )
             btc_weekly["btc_weekly_short_ok"] = (
                 btc_hist_down
@@ -516,12 +522,16 @@ class Strategy005(IStrategy):
             btc_daily_map["week_start"] = btc_daily_map["date"] - pd.to_timedelta(
                 (btc_daily_map["date"].dt.dayofweek + 1) % 7, unit="D"
             )
-            btc_weekly_map = btc_weekly[["date", "btc_weekly_short_ok", "btc_macdhist_slope_pct", "btc_adx_w"]].copy()
+            btc_weekly_map = btc_weekly[
+                ["date", "btc_weekly_short_ok", "btc_macdhist_slope_pct", "btc_adx_w"]
+            ].copy()
             btc_weekly_map = btc_weekly_map.rename(columns={"date": "week_start"})
             btc_daily_map = btc_daily_map.merge(btc_weekly_map, on="week_start", how="left")
             btc_daily_map = btc_daily_map.drop(columns=["week_start"])
 
-            dataframe = merge_informative_pair(dataframe, btc_daily_map, self.timeframe, "1d", ffill=True)
+            dataframe = merge_informative_pair(
+                dataframe, btc_daily_map, self.timeframe, "1d", ffill=True
+            )
             dataframe.rename(
                 columns={
                     "btc_weekly_short_ok_1d": "btc_weekly_short_ok",
@@ -540,12 +550,16 @@ class Strategy005(IStrategy):
         if daily_df is not None and len(daily_df) >= self.daily_ema_slow.value:
             daily_df["ema_fast_d"] = ta.EMA(daily_df, timeperiod=self.daily_ema_fast.value)
             daily_df["ema_slow_d"] = ta.EMA(daily_df, timeperiod=self.daily_ema_slow.value)
-            daily_df["ma_cross_fast_d"] = ta.EMA(daily_df, timeperiod=self.daily_ma_cross_fast.value)
-            daily_df["ma_cross_slow_d"] = ta.EMA(daily_df, timeperiod=self.daily_ma_cross_slow.value)
+            daily_df["ma_cross_fast_d"] = ta.EMA(
+                daily_df, timeperiod=self.daily_ma_cross_fast.value
+            )
+            daily_df["ma_cross_slow_d"] = ta.EMA(
+                daily_df, timeperiod=self.daily_ma_cross_slow.value
+            )
 
             # Fix Lookahead Bias: Shift daily indicators by 1 day so we use yesterday's values
             daily_cols = ["ema_fast_d", "ema_slow_d", "ma_cross_fast_d", "ma_cross_slow_d"]
-            
+
             # Additional Indicators for Strategy 8
             daily_df["rsi_d"] = ta.RSI(daily_df, timeperiod=14)
             daily_df["willr_d"] = ta.WILLR(daily_df, timeperiod=14)
@@ -553,33 +567,46 @@ class Strategy005(IStrategy):
             daily_df["macdhist_d"] = macd_d["macdhist"]
             daily_df["macd_d"] = macd_d["macd"]
             daily_df["macdsignal_d"] = macd_d["macdsignal"]
-            
+
             daily_cols.extend(["rsi_d", "willr_d", "macdhist_d", "macd_d", "macdsignal_d"])
-            
+
             daily_df[daily_cols] = daily_df[daily_cols].shift(1)
 
             base = daily_df[["date", "open", "high", "low", "close", "volume"]].copy()
             base["date"] = pd.to_datetime(base["date"], utc=True, errors="coerce")
             base = base.dropna(subset=["date"]).sort_values("date")
-            base["week_start"] = base["date"] - pd.to_timedelta((base["date"].dt.dayofweek + 1) % 7, unit="D")
+            base["week_start"] = base["date"] - pd.to_timedelta(
+                (base["date"].dt.dayofweek + 1) % 7, unit="D"
+            )
             weekly = (
                 base.groupby("week_start", as_index=False)
-                .agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"})
+                .agg(
+                    {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+                )
                 .dropna(subset=["close"])
             )
             weekly["date"] = pd.to_datetime(weekly["week_start"], utc=True, errors="coerce")
-            weekly = weekly.drop(columns=["week_start"]).dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+            weekly = (
+                weekly.drop(columns=["week_start"])
+                .dropna(subset=["date"])
+                .sort_values("date")
+                .reset_index(drop=True)
+            )
 
             if len(weekly) >= int(self.weekly_ema_slow.value):
                 weekly["ema_fast_w"] = ta.EMA(weekly, timeperiod=int(self.weekly_ema_fast.value))
                 weekly["ema_slow_w"] = ta.EMA(weekly, timeperiod=int(self.weekly_ema_slow.value))
                 weekly["adx_w"] = ta.ADX(weekly, timeperiod=14)
-                weekly[["ema_fast_w", "ema_slow_w", "adx_w"]] = weekly[["ema_fast_w", "ema_slow_w", "adx_w"]].shift(1)
+                weekly[["ema_fast_w", "ema_slow_w", "adx_w"]] = weekly[
+                    ["ema_fast_w", "ema_slow_w", "adx_w"]
+                ].shift(1)
 
                 daily_map = daily_df[["date"]].copy()
                 daily_map["date"] = pd.to_datetime(daily_map["date"], utc=True, errors="coerce")
                 daily_map = daily_map.dropna(subset=["date"]).sort_values("date")
-                daily_map["week_start"] = daily_map["date"] - pd.to_timedelta((daily_map["date"].dt.dayofweek + 1) % 7, unit="D")
+                daily_map["week_start"] = daily_map["date"] - pd.to_timedelta(
+                    (daily_map["date"].dt.dayofweek + 1) % 7, unit="D"
+                )
 
                 weekly_map = weekly[["date", "ema_fast_w", "ema_slow_w", "adx_w"]].copy()
                 weekly_map = weekly_map.rename(columns={"date": "week_start"})
@@ -592,9 +619,27 @@ class Strategy005(IStrategy):
                 if c not in daily_df.columns:
                     daily_df[c] = np.nan
 
-            daily_df = daily_df[["date", "ema_fast_d", "ema_slow_d", "ma_cross_fast_d", "ma_cross_slow_d", "ema_fast_w", "ema_slow_w", "adx_w", "rsi_d", "willr_d", "macdhist_d", "macd_d", "macdsignal_d"]].copy()
+            daily_df = daily_df[
+                [
+                    "date",
+                    "ema_fast_d",
+                    "ema_slow_d",
+                    "ma_cross_fast_d",
+                    "ma_cross_slow_d",
+                    "ema_fast_w",
+                    "ema_slow_w",
+                    "adx_w",
+                    "rsi_d",
+                    "willr_d",
+                    "macdhist_d",
+                    "macd_d",
+                    "macdsignal_d",
+                ]
+            ].copy()
 
-            dataframe = merge_informative_pair(dataframe, daily_df, self.timeframe, "1d", ffill=True)
+            dataframe = merge_informative_pair(
+                dataframe, daily_df, self.timeframe, "1d", ffill=True
+            )
             dataframe.rename(
                 columns={
                     "ema_fast_d_1d": "ema_fast_d",
@@ -660,12 +705,16 @@ class Strategy005(IStrategy):
         bbw_ma_len = int(self.bbw_ma_len.value)
         bbw_ma_len = max(2, bbw_ma_len)
         dataframe["bb_width_ma"] = dataframe["bb_width"].rolling(bbw_ma_len).mean()
-        dataframe["bb_width_ratio"] = dataframe["bb_width"] / dataframe["bb_width_ma"].replace(0, np.nan)
+        dataframe["bb_width_ratio"] = dataframe["bb_width"] / dataframe["bb_width_ma"].replace(
+            0, np.nan
+        )
 
         # 均值回归专用布林带 (独立参数)
         mr_bb_period = int(self.mr_bb_period.value)
         mr_bb_dev = float(self.mr_bb_std_dev.value)
-        mr_bb = ta.BBANDS(dataframe, timeperiod=mr_bb_period, nbdevup=mr_bb_dev, nbdevdn=mr_bb_dev, matype=0)
+        mr_bb = ta.BBANDS(
+            dataframe, timeperiod=mr_bb_period, nbdevup=mr_bb_dev, nbdevdn=mr_bb_dev, matype=0
+        )
         dataframe["mr_bb_upper"] = mr_bb["upperband"]
         dataframe["mr_bb_middle"] = mr_bb["middleband"]
         dataframe["mr_bb_lower"] = mr_bb["lowerband"]
@@ -690,12 +739,16 @@ class Strategy005(IStrategy):
         v_mean = dataframe["volume"].rolling(20).mean()
         v_std = dataframe["volume"].rolling(20).std(ddof=0).replace(0, np.nan)
         dataframe["vol_z_20"] = (dataframe["volume"] - v_mean) / v_std
-        dataframe["vol_ratio_delta"] = dataframe["volume_ratio"] - dataframe["volume_ratio"].shift(1)
+        dataframe["vol_ratio_delta"] = dataframe["volume_ratio"] - dataframe["volume_ratio"].shift(
+            1
+        )
 
         dataframe["pot_adx_delta"] = dataframe["adx_h"] - dataframe["adx_h"].shift(1)
         dataframe["pot_atr_pct"] = dataframe["atr_pct"]
         ema50 = ta.EMA(dataframe, timeperiod=50)
-        dataframe["pot_dist_to_ema50"] = (dataframe["close"] - ema50) / dataframe["close"].replace(0, np.nan)
+        dataframe["pot_dist_to_ema50"] = (dataframe["close"] - ema50) / dataframe["close"].replace(
+            0, np.nan
+        )
 
         # 填充NaN
         dataframe.ffill(inplace=True)
@@ -717,7 +770,13 @@ class Strategy005(IStrategy):
                 (weekly_trend_strong & weekly_down & daily_down),
                 (weekly_trend_strong & weekly_down & daily_up),
             ],
-            ["chop", "uptrend_strong", "uptrend_reversal", "downtrend_strong", "downtrend_reversal"],
+            [
+                "chop",
+                "uptrend_strong",
+                "uptrend_reversal",
+                "downtrend_strong",
+                "downtrend_reversal",
+            ],
             default="chop",
         )
         try:
@@ -744,21 +803,25 @@ class Strategy005(IStrategy):
             chop_ok = dataframe.get("chop_h", 0).fillna(0) < float(self.chop_threshold.value)
             adx_h = dataframe.get("adx_h", 0).fillna(0)
             adx_ok = adx_h > float(self.entry_adx_h_threshold.value)
-            adx_slope_ok = dataframe.get("adx_h_slope", 0).fillna(0) > float(self.entry_adx_slope_thr.value)
-            bbw_ratio_ok = dataframe.get("bb_width_ratio", 0).fillna(0) > float(self.bbw_ratio_thr.value)
+            adx_slope_ok = dataframe.get("adx_h_slope", 0).fillna(0) > float(
+                self.entry_adx_slope_thr.value
+            )
+            bbw_ratio_ok = dataframe.get("bb_width_ratio", 0).fillna(0) > float(
+                self.bbw_ratio_thr.value
+            )
             total_gate_ok = chop_ok & (adx_ok | adx_slope_ok) & bbw_ratio_ok
 
         btc_slope = dataframe.get("btc_macdhist_slope_pct", 0).fillna(0)
         btc_slope_thr = float(self.btc_weekly_macd_slope_pct_thr.value)
         weekly_down_loose = (
-            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"]) |
-            (dataframe["close"] < dataframe["ema_slow_w"]) |
-            (btc_slope < -0.003)
+            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"])
+            | (dataframe["close"] < dataframe["ema_slow_w"])
+            | (btc_slope < -0.003)
         )
         weekly_up_loose = (
-            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"]) |
-            (dataframe["close"] > dataframe["ema_slow_w"]) |
-            (btc_slope > 0.003)
+            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"])
+            | (dataframe["close"] > dataframe["ema_slow_w"])
+            | (btc_slope > 0.003)
         )
 
         adx_h_base = dataframe.get("adx_h", 0).fillna(0)
@@ -786,203 +849,203 @@ class Strategy005(IStrategy):
         confirm_n = max(1, confirm_n)
 
         turtle_long = (
-            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"]) &
-            (dataframe["adx_w"] > self.weekly_adx_threshold.value) &
-            (dataframe["close"] > dataframe["donchian_upper_h"].shift(confirm_n)) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_long_market
+            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"])
+            & (dataframe["adx_w"] > self.weekly_adx_threshold.value)
+            & (dataframe["close"] > dataframe["donchian_upper_h"].shift(confirm_n))
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_long_market
         )
         turtle_short = (
-            weekly_down_loose &
-            (dataframe["adx_w"] > self.weekly_adx_threshold.value) &
-            (dataframe["close"] < dataframe["donchian_lower_h"].shift(confirm_n)) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_short_market
+            weekly_down_loose
+            & (dataframe["adx_w"] > self.weekly_adx_threshold.value)
+            & (dataframe["close"] < dataframe["donchian_lower_h"].shift(confirm_n))
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_short_market
         )
 
         # ==================== 策略2：多重移动平均线交叉 ====================
         ma_cross_long = (
-            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"]) &
-            (dataframe["ma_cross_fast_d"] > dataframe["ma_cross_slow_d"]) &
-            (dataframe["ema_short_h"] > dataframe["ema_long_h"]) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_long_market
+            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"])
+            & (dataframe["ma_cross_fast_d"] > dataframe["ma_cross_slow_d"])
+            & (dataframe["ema_short_h"] > dataframe["ema_long_h"])
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_long_market
         )
         ma_cross_short = (
-            weekly_down_loose &
-            (dataframe["ma_cross_fast_d"] < dataframe["ma_cross_slow_d"]) &
-            (dataframe["ema_short_h"] < dataframe["ema_long_h"]) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_short_market
+            weekly_down_loose
+            & (dataframe["ma_cross_fast_d"] < dataframe["ma_cross_slow_d"])
+            & (dataframe["ema_short_h"] < dataframe["ema_long_h"])
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_short_market
         )
 
         # ==================== 策略3：一目均衡表（Ichimoku）简化版 ====================
         # 周线云趋势 + 日线转换/基准交叉 + 1h价格突破云（用EMA模拟云）
         ichimoku_long = (
-            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"]) &
-            (dataframe["ema_fast_d"] > dataframe["ema_slow_d"]) &
-            (dataframe["close"] > dataframe["ema_long_h"]) &
-            (dataframe["rsi_h"] > self.rsi_oversold.value) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_long_market
+            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"])
+            & (dataframe["ema_fast_d"] > dataframe["ema_slow_d"])
+            & (dataframe["close"] > dataframe["ema_long_h"])
+            & (dataframe["rsi_h"] > self.rsi_oversold.value)
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_long_market
         )
         ichimoku_short = (
-            weekly_down_loose &
-            (dataframe["ema_fast_d"] < dataframe["ema_slow_d"]) &
-            (dataframe["close"] < dataframe["ema_long_h"]) &
-            (dataframe["rsi_h"] < self.rsi_overbought.value) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_short_market
+            weekly_down_loose
+            & (dataframe["ema_fast_d"] < dataframe["ema_slow_d"])
+            & (dataframe["close"] < dataframe["ema_long_h"])
+            & (dataframe["rsi_h"] < self.rsi_overbought.value)
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_short_market
         )
 
         # ==================== 策略4：Donchian通道多时间框架突破 ====================
         donchian_long = (
-            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"]) &
-            (dataframe["close"] > dataframe["donchian_upper_h"].shift(confirm_n)) &
-            (dataframe["close"] > dataframe["close"].shift(1)) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_long_market
+            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"])
+            & (dataframe["close"] > dataframe["donchian_upper_h"].shift(confirm_n))
+            & (dataframe["close"] > dataframe["close"].shift(1))
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_long_market
         )
         donchian_short = (
-            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"]) &
-            (dataframe["close"] < dataframe["donchian_lower_h"].shift(confirm_n)) &
-            (dataframe["close"] < dataframe["close"].shift(1)) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_short_market
+            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"])
+            & (dataframe["close"] < dataframe["donchian_lower_h"].shift(confirm_n))
+            & (dataframe["close"] < dataframe["close"].shift(1))
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_short_market
         )
 
         # ==================== 策略5：ADX + RSI 多时间框架 ====================
         adx_rsi_long = (
-            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"]) &
-            (dataframe["adx_w"] > self.weekly_adx_threshold.value) &
-            (dataframe["rsi_h"] < self.rsi_oversold.value) &
-            (dataframe["close"] > dataframe["ema_short_h"]) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_long_market
+            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"])
+            & (dataframe["adx_w"] > self.weekly_adx_threshold.value)
+            & (dataframe["rsi_h"] < self.rsi_oversold.value)
+            & (dataframe["close"] > dataframe["ema_short_h"])
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_long_market
         )
         adx_rsi_short = (
-            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"]) &
-            (dataframe["adx_w"] > self.weekly_adx_threshold.value) &
-            (dataframe["rsi_h"] > self.rsi_overbought.value) &
-            (dataframe["close"] < dataframe["ema_short_h"]) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_short_market
+            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"])
+            & (dataframe["adx_w"] > self.weekly_adx_threshold.value)
+            & (dataframe["rsi_h"] > self.rsi_overbought.value)
+            & (dataframe["close"] < dataframe["ema_short_h"])
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_short_market
         )
 
         # ==================== Strategy: ADX Slope ====================
         adx_slope_long = (
-            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"]) &
-            (dataframe["adx_h_slope"] > self.entry_adx_slope_thr.value) &
-            (dataframe["close"] > dataframe["ema_short_h"]) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_long_market
+            (dataframe["ema_fast_w"] > dataframe["ema_slow_w"])
+            & (dataframe["adx_h_slope"] > self.entry_adx_slope_thr.value)
+            & (dataframe["close"] > dataframe["ema_short_h"])
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_long_market
         )
         adx_slope_short = (
-            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"]) &
-            (dataframe["adx_h_slope"] > self.entry_adx_slope_thr.value) &
-            (dataframe["close"] < dataframe["ema_short_h"]) &
-            volume_ok &
-            total_gate_ok &
-            vol_gate_ok &
-            is_trend_short_market
+            (dataframe["ema_fast_w"] < dataframe["ema_slow_w"])
+            & (dataframe["adx_h_slope"] > self.entry_adx_slope_thr.value)
+            & (dataframe["close"] < dataframe["ema_short_h"])
+            & volume_ok
+            & total_gate_ok
+            & vol_gate_ok
+            & is_trend_short_market
         )
 
         # ==================== 策略6：布林带均值回归 (Bollinger Reversion) ====================
         # 仅在低波动/震荡市场开启 (ADX < Threshold)
         # 逻辑：价格跌破下轨 + RSI超卖 -> 回归中轨
-        
+
         # New Strategy 7: Panic Short (Dedicated Short Strategy)
         # Trigger: Relaxed Weekly Down Trend + 1h Breakdown
         panic_enabled = int(self.panic_entry_enable.value) == 1
         panic_short_entry = (
-            panic_enabled &
-            weekly_down_loose &
-            is_trend_short_market &
-            (dataframe["close"] < dataframe["donchian_lower_h"].shift(confirm_n)) &
-            (dataframe["close"] < dataframe["ema_short_h"]) &
-            (dataframe["close"] < dataframe["ema_long_h"]) &
-            (dataframe["rsi_h"] < self.panic_entry_rsi_short.value) &
-            (dataframe["volume_ratio"] > self.panic_entry_volume_ratio.value) &
-            total_gate_ok
+            panic_enabled
+            & weekly_down_loose
+            & is_trend_short_market
+            & (dataframe["close"] < dataframe["donchian_lower_h"].shift(confirm_n))
+            & (dataframe["close"] < dataframe["ema_short_h"])
+            & (dataframe["close"] < dataframe["ema_long_h"])
+            & (dataframe["rsi_h"] < self.panic_entry_rsi_short.value)
+            & (dataframe["volume_ratio"] > self.panic_entry_volume_ratio.value)
+            & total_gate_ok
         )
-        
+
         # New Strategy 7b: Panic Long (Symmetric)
         panic_long = (
-            panic_enabled &
-            weekly_up_loose &
-            is_trend_long_market &
-            (dataframe["close"] > dataframe["donchian_upper_h"].shift(confirm_n)) &
-            (dataframe["close"] > dataframe["ema_short_h"]) &
-            (dataframe["close"] > dataframe["ema_long_h"]) &
-            (dataframe["rsi_h"] > self.panic_entry_rsi_long.value) &
-            (dataframe["volume_ratio"] > self.panic_entry_volume_ratio.value) &
-            total_gate_ok
+            panic_enabled
+            & weekly_up_loose
+            & is_trend_long_market
+            & (dataframe["close"] > dataframe["donchian_upper_h"].shift(confirm_n))
+            & (dataframe["close"] > dataframe["ema_short_h"])
+            & (dataframe["close"] > dataframe["ema_long_h"])
+            & (dataframe["rsi_h"] > self.panic_entry_rsi_long.value)
+            & (dataframe["volume_ratio"] > self.panic_entry_volume_ratio.value)
+            & total_gate_ok
         )
 
         mr_long = (
-            (dataframe["close"] < dataframe["mr_bb_lower"]) &
-            (dataframe["rsi_h"] < self.mr_rsi_oversold.value) &
-            is_range_market &
-            volume_ok
+            (dataframe["close"] < dataframe["mr_bb_lower"])
+            & (dataframe["rsi_h"] < self.mr_rsi_oversold.value)
+            & is_range_market
+            & volume_ok
         )
-        
+
         mr_short = (
-            (dataframe["close"] > dataframe["mr_bb_upper"]) &
-            (dataframe["rsi_h"] > self.mr_rsi_overbought.value) &
-            is_range_market &
-            volume_ok
+            (dataframe["close"] > dataframe["mr_bb_upper"])
+            & (dataframe["rsi_h"] > self.mr_rsi_overbought.value)
+            & is_range_market
+            & volume_ok
         )
 
         # 任意策略满足即可入场
         # 趋势策略需要 total_gate_ok (高波动/强趋势确认)
         # 回归策略需要 is_range_market (低波动确认)，且不需要 total_gate_ok
-        
+
         # ==================== Strategy 8: Daily Reversal Short ====================
         # User Request: Daily MA Death Cross + RSI Overbought + MACD Death Cross
         # Added Williams %R as alternative "Overbought" check (TradFi standard)
-        
+
         # 1. Trend: Daily MA Death Cross (Fast < Slow)
-        daily_trend_down = (dataframe["ma_cross_fast_d"] < dataframe["ma_cross_slow_d"])
-        
+        daily_trend_down = dataframe["ma_cross_fast_d"] < dataframe["ma_cross_slow_d"]
+
         # 2. Momentum: Daily MACD Death Cross (MACD < Signal) or MACD Hist turning down
         # Checking if MACD is below Signal (Bearish Momentum)
-        daily_macd_down = (dataframe["macd_d"] < dataframe["macdsignal_d"])
-        
+        daily_macd_down = dataframe["macd_d"] < dataframe["macdsignal_d"]
+
         # 3. Overbought Condition: RSI or Williams %R was high
         # Since we are in a downtrend (MA Cross), RSI might not be super high (>70)
         # So we use a tunable threshold (default > 50 for pullbacks in downtrend)
-        daily_rsi_check = (dataframe["rsi_d"] > self.daily_rsi_short_min.value)
-        daily_willr_check = (dataframe["willr_d"] > self.daily_willr_short_min.value)
-        
+        daily_rsi_check = dataframe["rsi_d"] > self.daily_rsi_short_min.value
+        daily_willr_check = dataframe["willr_d"] > self.daily_willr_short_min.value
+
         daily_short_strategy = (
-            daily_trend_down &
-            daily_macd_down &
-            (daily_rsi_check | daily_willr_check) &
-            volume_ok &
-            total_gate_ok &
-            is_trend_short_market
+            daily_trend_down
+            & daily_macd_down
+            & (daily_rsi_check | daily_willr_check)
+            & volume_ok
+            & total_gate_ok
+            & is_trend_short_market
         )
 
         dataframe.loc[turtle_long, "enter_long"] = 1
@@ -992,7 +1055,7 @@ class Strategy005(IStrategy):
         dataframe.loc[adx_rsi_long, "enter_long"] = 1
         dataframe.loc[adx_slope_long, "enter_long"] = 1
         dataframe.loc[panic_long, "enter_long"] = 1
-        
+
         # Mean Reversion Entry (Only if enabled)
         if int(self.bollinger_mean_reversion_enable.value) == 1:
             dataframe.loc[mr_long, "enter_long"] = 1
@@ -1030,6 +1093,7 @@ class Strategy005(IStrategy):
         dataframe.loc[panic_short_entry, "enter_tag"] = "panic_short"
         dataframe.loc[daily_short_strategy, "enter_tag"] = "daily_short_strategy"
         try:
+
             def _normalize_signals_url(raw: str) -> str:
                 raw = str(raw or "").strip()
                 if not raw:
@@ -1066,6 +1130,7 @@ class Strategy005(IStrategy):
             if feature_url or decision_url:
                 pair = metadata.get("pair")
                 if pair:
+
                     def _sf(v: object, default: float = 0.0) -> float:
                         try:
                             if v is None or pd.isna(v):
@@ -1100,7 +1165,9 @@ class Strategy005(IStrategy):
                     now_ms = int(pd.Timestamp.utcnow().timestamp() * 1000)
 
                     if "enter_long" in dataframe.columns and "enter_short" in dataframe.columns:
-                        sig_df = dataframe.loc[(dataframe["enter_long"] == 1) | (dataframe["enter_short"] == 1)]
+                        sig_df = dataframe.loc[
+                            (dataframe["enter_long"] == 1) | (dataframe["enter_short"] == 1)
+                        ]
                     else:
                         sig_df = dataframe.iloc[0:0]
 
@@ -1118,14 +1185,22 @@ class Strategy005(IStrategy):
                         if last_any is not None:
                             try:
                                 if "date" in sig_df.columns:
-                                    sig_df = sig_df.loc[pd.to_datetime(sig_df["date"], utc=True, errors="coerce").astype("int64") // 1_000_000 > int(last_any)]
+                                    sig_df = sig_df.loc[
+                                        pd.to_datetime(
+                                            sig_df["date"], utc=True, errors="coerce"
+                                        ).astype("int64")
+                                        // 1_000_000
+                                        > int(last_any)
+                                    ]
                             except Exception:
                                 pass
 
                         try:
                             bounds = getattr(self, "_ml_export_ts_bounds_ms", None)
                             if bounds is None:
-                                bounds_raw = str(os.environ.get("ML_EXPORT_TIMERANGE", "") or "").strip()
+                                bounds_raw = str(
+                                    os.environ.get("ML_EXPORT_TIMERANGE", "") or ""
+                                ).strip()
                                 lo_ms = None
                                 hi_ms = None
                                 if bounds_raw and "-" in bounds_raw:
@@ -1134,12 +1209,16 @@ class Strategy005(IStrategy):
                                     b = b.strip()
                                     if a:
                                         try:
-                                            lo_ms = int(pd.Timestamp(a, tz="UTC").timestamp() * 1000)
+                                            lo_ms = int(
+                                                pd.Timestamp(a, tz="UTC").timestamp() * 1000
+                                            )
                                         except Exception:
                                             lo_ms = None
                                     if b:
                                         try:
-                                            hi_ms = int(pd.Timestamp(b, tz="UTC").timestamp() * 1000)
+                                            hi_ms = int(
+                                                pd.Timestamp(b, tz="UTC").timestamp() * 1000
+                                            )
                                         except Exception:
                                             hi_ms = None
                                 bounds = (lo_ms, hi_ms)
@@ -1148,20 +1227,38 @@ class Strategy005(IStrategy):
                             if bounds and "date" in sig_df.columns:
                                 lo_ms, hi_ms = bounds
                                 if lo_ms is not None or hi_ms is not None:
-                                    dt_ms = pd.to_datetime(sig_df["date"], utc=True, errors="coerce").astype("int64") // 1_000_000
+                                    dt_ms = (
+                                        pd.to_datetime(
+                                            sig_df["date"], utc=True, errors="coerce"
+                                        ).astype("int64")
+                                        // 1_000_000
+                                    )
                                     if lo_ms is not None:
                                         sig_df = sig_df.loc[dt_ms >= int(lo_ms)]
                                     if (not sig_df.empty) and hi_ms is not None:
-                                        dt_ms = pd.to_datetime(sig_df["date"], utc=True, errors="coerce").astype("int64") // 1_000_000
+                                        dt_ms = (
+                                            pd.to_datetime(
+                                                sig_df["date"], utc=True, errors="coerce"
+                                            ).astype("int64")
+                                            // 1_000_000
+                                        )
                                         sig_df = sig_df.loc[dt_ms < int(hi_ms)]
                         except Exception:
                             pass
 
                         try:
                             if tf_ms > 0 and "date" in sig_df.columns:
-                                dt_ms = pd.to_datetime(sig_df["date"], utc=True, errors="coerce").astype("int64") // 1_000_000
+                                dt_ms = (
+                                    pd.to_datetime(
+                                        sig_df["date"], utc=True, errors="coerce"
+                                    ).astype("int64")
+                                    // 1_000_000
+                                )
                                 max_age_ms = int(max(int(2 * tf_ms), int(10 * 60 * 1000)))
-                                sig_df = sig_df.loc[(dt_ms.notna()) & ((dt_ms + int(tf_ms)) >= int(now_ms - max_age_ms))]
+                                sig_df = sig_df.loc[
+                                    (dt_ms.notna())
+                                    & ((dt_ms + int(tf_ms)) >= int(now_ms - max_age_ms))
+                                ]
                                 if not sig_df.empty:
                                     sig_df = sig_df.sort_values("date").tail(3)
                             elif ("date" in sig_df.columns) and (not sig_df.empty):
@@ -1170,7 +1267,14 @@ class Strategy005(IStrategy):
                             pass
 
                         if not sig_df.empty:
-                            def _emit(url: str, allow_trigger_decision: bool, row: pd.Series, ts_ms: int, side: str) -> None:
+
+                            def _emit(
+                                url: str,
+                                allow_trigger_decision: bool,
+                                row: pd.Series,
+                                ts_ms: int,
+                                side: str,
+                            ) -> None:
                                 try:
                                     pth = ""
                                     try:
@@ -1185,24 +1289,44 @@ class Strategy005(IStrategy):
                                     close_v = _sf(row.get("close", 0.0) or 0.0)
                                     atr_h_v = _sf(row.get("atr_h", 0.0) or 0.0)
                                     adx_val = _sf(row.get("adx_h", 0.0) or 0.0)
-                                    regime = "trend" if adx_val > float(self.mr_adx_max.value) else "chop"
+                                    regime = (
+                                        "trend"
+                                        if adx_val > float(self.mr_adx_max.value)
+                                        else "chop"
+                                    )
 
                                     ema_short_h_v = _sf(row.get("ema_short_h", 0.0) or 0.0)
                                     ema_long_h_v = _sf(row.get("ema_long_h", 0.0) or 0.0)
-                                    donchian_upper_h_v = _sf(row.get("donchian_upper_h", 0.0) or 0.0)
-                                    donchian_lower_h_v = _sf(row.get("donchian_lower_h", 0.0) or 0.0)
+                                    donchian_upper_h_v = _sf(
+                                        row.get("donchian_upper_h", 0.0) or 0.0
+                                    )
+                                    donchian_lower_h_v = _sf(
+                                        row.get("donchian_lower_h", 0.0) or 0.0
+                                    )
                                     ema_fast_w_v = _sf(row.get("ema_fast_w", 0.0) or 0.0)
                                     ema_slow_w_v = _sf(row.get("ema_slow_w", 0.0) or 0.0)
 
                                     btc_weekly_short_ok_raw = row.get("btc_weekly_short_ok", False)
-                                    if btc_weekly_short_ok_raw is None or pd.isna(btc_weekly_short_ok_raw):
+                                    if btc_weekly_short_ok_raw is None or pd.isna(
+                                        btc_weekly_short_ok_raw
+                                    ):
                                         btc_weekly_short_ok_v = 0.0
                                     else:
-                                        btc_weekly_short_ok_v = 1.0 if bool(btc_weekly_short_ok_raw) else 0.0
+                                        btc_weekly_short_ok_v = (
+                                            1.0 if bool(btc_weekly_short_ok_raw) else 0.0
+                                        )
 
-                                    group_id = str(os.environ.get("ML_GROUP_ID", "trend_4h_mtf") or "trend_4h_mtf")
-                                    feature_set_id = str(os.environ.get("ML_FEATURE_SET_ID", "trend_4h_mtf_v1") or "trend_4h_mtf_v1")
-                                    strategy_version = str(os.environ.get("ML_STRATEGY_VERSION", "1.0.0") or "1.0.0")
+                                    group_id = str(
+                                        os.environ.get("ML_GROUP_ID", "trend_4h_mtf")
+                                        or "trend_4h_mtf"
+                                    )
+                                    feature_set_id = str(
+                                        os.environ.get("ML_FEATURE_SET_ID", "trend_4h_mtf_v1")
+                                        or "trend_4h_mtf_v1"
+                                    )
+                                    strategy_version = str(
+                                        os.environ.get("ML_STRATEGY_VERSION", "1.0.0") or "1.0.0"
+                                    )
                                     bar_close_ms = int(ts_ms)
                                     if tf_ms > 0:
                                         bar_close_ms = int(ts_ms) + int(tf_ms)
@@ -1229,37 +1353,97 @@ class Strategy005(IStrategy):
                                             "rsi_d": _sf(row.get("rsi_d", 0.0) or 0.0),
                                             "willr_d": _sf(row.get("willr_d", 0.0) or 0.0),
                                             "macd_d": _sf(row.get("macd_d", 0.0) or 0.0),
-                                            "macdsignal_d": _sf(row.get("macdsignal_d", 0.0) or 0.0),
-                                            "ma_cross_fast_d": _sf(row.get("ma_cross_fast_d", 0.0) or 0.0),
-                                            "ma_cross_slow_d": _sf(row.get("ma_cross_slow_d", 0.0) or 0.0),
+                                            "macdsignal_d": _sf(
+                                                row.get("macdsignal_d", 0.0) or 0.0
+                                            ),
+                                            "ma_cross_fast_d": _sf(
+                                                row.get("ma_cross_fast_d", 0.0) or 0.0
+                                            ),
+                                            "ma_cross_slow_d": _sf(
+                                                row.get("ma_cross_slow_d", 0.0) or 0.0
+                                            ),
                                             "regime": regime,
                                             "atr_h": atr_h_v,
-                                            "atr_pct": (atr_h_v / close_v) if close_v > 0.0 else 0.0,
+                                            "atr_pct": (
+                                                (atr_h_v / close_v) if close_v > 0.0 else 0.0
+                                            ),
                                             "atr_ratio": _sf(row.get("atr_ratio", 0.0) or 0.0),
                                             "adx_h": adx_val,
                                             "chop_h": _sf(row.get("chop_h", 0.0) or 0.0),
-                                            "bb_width_ratio": _sf(row.get("bb_width_ratio", 0.0) or 0.0),
-                                            "volume_ratio": _sf(row.get("volume_ratio", 0.0) or 0.0),
-                                            "ema_short_dist": ((close_v - ema_short_h_v) / close_v) if close_v > 0.0 else 0.0,
-                                            "ema_long_dist": ((close_v - ema_long_h_v) / close_v) if close_v > 0.0 else 0.0,
-                                            "donchian_upper_dist": ((close_v - donchian_upper_h_v) / close_v) if close_v > 0.0 else 0.0,
-                                            "donchian_lower_dist": ((close_v - donchian_lower_h_v) / close_v) if close_v > 0.0 else 0.0,
-                                            "donchian_mid_dist": ((close_v - ((donchian_upper_h_v + donchian_lower_h_v) / 2.0)) / close_v) if close_v > 0.0 else 0.0,
-                                            "btc_macdhist_slope_pct": _sf(row.get("btc_macdhist_slope_pct", 0.0) or 0.0),
-                                            "weekly_state": 1.0 if ema_fast_w_v > ema_slow_w_v else (-1.0 if ema_fast_w_v < ema_slow_w_v else 0.0),
+                                            "bb_width_ratio": _sf(
+                                                row.get("bb_width_ratio", 0.0) or 0.0
+                                            ),
+                                            "volume_ratio": _sf(
+                                                row.get("volume_ratio", 0.0) or 0.0
+                                            ),
+                                            "ema_short_dist": (
+                                                ((close_v - ema_short_h_v) / close_v)
+                                                if close_v > 0.0
+                                                else 0.0
+                                            ),
+                                            "ema_long_dist": (
+                                                ((close_v - ema_long_h_v) / close_v)
+                                                if close_v > 0.0
+                                                else 0.0
+                                            ),
+                                            "donchian_upper_dist": (
+                                                ((close_v - donchian_upper_h_v) / close_v)
+                                                if close_v > 0.0
+                                                else 0.0
+                                            ),
+                                            "donchian_lower_dist": (
+                                                ((close_v - donchian_lower_h_v) / close_v)
+                                                if close_v > 0.0
+                                                else 0.0
+                                            ),
+                                            "donchian_mid_dist": (
+                                                (
+                                                    (
+                                                        close_v
+                                                        - (
+                                                            (
+                                                                donchian_upper_h_v
+                                                                + donchian_lower_h_v
+                                                            )
+                                                            / 2.0
+                                                        )
+                                                    )
+                                                    / close_v
+                                                )
+                                                if close_v > 0.0
+                                                else 0.0
+                                            ),
+                                            "btc_macdhist_slope_pct": _sf(
+                                                row.get("btc_macdhist_slope_pct", 0.0) or 0.0
+                                            ),
+                                            "weekly_state": (
+                                                1.0
+                                                if ema_fast_w_v > ema_slow_w_v
+                                                else (-1.0 if ema_fast_w_v < ema_slow_w_v else 0.0)
+                                            ),
                                             "btc_weekly_short_ok": btc_weekly_short_ok_v,
                                         },
                                     }
 
                                     if tf_ms > 0:
-                                        payload["bar_closed"] = bool(int(now_ms) >= int(ts_ms) + int(tf_ms) - 2_000)
+                                        payload["bar_closed"] = bool(
+                                            int(now_ms) >= int(ts_ms) + int(tf_ms) - 2_000
+                                        )
 
                                     if allow_trigger_decision:
                                         if not is_decision:
-                                            trigger_raw = str(os.environ.get("ML_EXPORT_TRIGGER_DECISION", "")).strip().lower()
+                                            trigger_raw = (
+                                                str(
+                                                    os.environ.get("ML_EXPORT_TRIGGER_DECISION", "")
+                                                )
+                                                .strip()
+                                                .lower()
+                                            )
                                             if trigger_raw in ("1", "true", "yes", "y", "on"):
                                                 payload["trigger_decision"] = True
-                                        thr_raw = str(os.environ.get("ML_EXPORT_THRESHOLD", "")).strip()
+                                        thr_raw = str(
+                                            os.environ.get("ML_EXPORT_THRESHOLD", "")
+                                        ).strip()
                                         if thr_raw:
                                             try:
                                                 payload["threshold"] = float(thr_raw)
@@ -1278,7 +1462,12 @@ class Strategy005(IStrategy):
 
                                     timeout_s = 0.5
                                     try:
-                                        timeout_s = float(str(os.environ.get("ML_EXPORT_TIMEOUT", "0.5") or "0.5").strip() or 0.5)
+                                        timeout_s = float(
+                                            str(
+                                                os.environ.get("ML_EXPORT_TIMEOUT", "0.5") or "0.5"
+                                            ).strip()
+                                            or 0.5
+                                        )
                                     except Exception:
                                         timeout_s = 0.5
 
@@ -1301,7 +1490,9 @@ class Strategy005(IStrategy):
                                 ts_ms = None
                                 try:
                                     if "date" in r and r.get("date") is not None:
-                                        dt = pd.to_datetime(r.get("date"), utc=True, errors="coerce")
+                                        dt = pd.to_datetime(
+                                            r.get("date"), utc=True, errors="coerce"
+                                        )
                                         if dt is not None and (not pd.isna(dt)):
                                             ts_ms = int(pd.Timestamp(dt).timestamp() * 1000)
                                 except Exception:
@@ -1316,7 +1507,10 @@ class Strategy005(IStrategy):
 
                                     min_interval_s = 0.0
                                     try:
-                                        raw = os.environ.get("ML_FEATURE_EXPORT_MIN_INTERVAL_SEC", os.environ.get("ML_EXPORT_MIN_INTERVAL_SEC", "0"))
+                                        raw = os.environ.get(
+                                            "ML_FEATURE_EXPORT_MIN_INTERVAL_SEC",
+                                            os.environ.get("ML_EXPORT_MIN_INTERVAL_SEC", "0"),
+                                        )
                                         min_interval_s = float(str(raw or "0").strip() or 0.0)
                                     except Exception:
                                         min_interval_s = 0.0
@@ -1329,12 +1523,28 @@ class Strategy005(IStrategy):
                                     last_ts = self._ml_decision_last_ts_by_pair.get(pair)
                                     return last_ts is None or ts_ms > int(last_ts)
 
-                                if feature_url and _feature_ok_to_send() and (feature_url != decision_url):
-                                    _emit(feature_url, allow_trigger_decision=False, row=r, ts_ms=ts_ms, side=side)
+                                if (
+                                    feature_url
+                                    and _feature_ok_to_send()
+                                    and (feature_url != decision_url)
+                                ):
+                                    _emit(
+                                        feature_url,
+                                        allow_trigger_decision=False,
+                                        row=r,
+                                        ts_ms=ts_ms,
+                                        side=side,
+                                    )
                                     self._ml_export_last_ts_by_pair[pair] = int(ts_ms)
 
                                 if decision_url and _decision_ok_to_send():
-                                    _emit(decision_url, allow_trigger_decision=True, row=r, ts_ms=ts_ms, side=side)
+                                    _emit(
+                                        decision_url,
+                                        allow_trigger_decision=True,
+                                        row=r,
+                                        ts_ms=ts_ms,
+                                        side=side,
+                                    )
                                     self._ml_decision_last_ts_by_pair[pair] = int(ts_ms)
                                     if decision_url == feature_url:
                                         self._ml_export_last_ts_by_pair[pair] = int(ts_ms)
@@ -1382,7 +1592,9 @@ class Strategy005(IStrategy):
             return proposed_stake
 
         scale = target / atr_pct
-        scale = float(np.clip(scale, float(self.stake_scale_min.value), float(self.stake_scale_max.value)))
+        scale = float(
+            np.clip(scale, float(self.stake_scale_min.value), float(self.stake_scale_max.value))
+        )
 
         stake = proposed_stake * scale
         stake = float(np.clip(stake, min_stake, max_stake))
@@ -1422,8 +1634,12 @@ class Strategy005(IStrategy):
         atr_h = pd.to_numeric(dataframe.get("atr_h"), errors="coerce").fillna(0.0)
         atr_ratio = pd.to_numeric(dataframe.get("atr_ratio"), errors="coerce").fillna(0.0)
 
-        weekly_flip_down = (ema_fast_w < ema_slow_w) & (adx_w > float(self.weekly_adx_threshold.value))
-        weekly_flip_up = (ema_fast_w > ema_slow_w) & (adx_w > float(self.weekly_adx_threshold.value))
+        weekly_flip_down = (ema_fast_w < ema_slow_w) & (
+            adx_w > float(self.weekly_adx_threshold.value)
+        )
+        weekly_flip_up = (ema_fast_w > ema_slow_w) & (
+            adx_w > float(self.weekly_adx_threshold.value)
+        )
 
         daily_bear = ma_fast_d < ma_slow_d
         daily_bull = ma_fast_d > ma_slow_d
@@ -1447,11 +1663,29 @@ class Strategy005(IStrategy):
         weak_confirm_long = (atr_ratio > 1.05) | (rsi_h < 35) | down_2
         weak_confirm_short = (atr_ratio > 1.05) | (rsi_h > 65) | up_2
 
-        bounce_long = (atr_ratio < 1.15) & (rsi_h > 40) & (rsi_h > rsi_h.shift(1)) & (close > close.shift(1))
-        bounce_short = (atr_ratio < 1.15) & (rsi_h < 60) & (rsi_h < rsi_h.shift(1)) & (close < close.shift(1))
+        bounce_long = (
+            (atr_ratio < 1.15) & (rsi_h > 40) & (rsi_h > rsi_h.shift(1)) & (close > close.shift(1))
+        )
+        bounce_short = (
+            (atr_ratio < 1.15) & (rsi_h < 60) & (rsi_h < rsi_h.shift(1)) & (close < close.shift(1))
+        )
 
-        loss_long = below_short_2 & daily_bear & (close < ema_long_dn) & weak_confirm_long & (~bounce_long) & (~(weekly_up & (atr_ratio < 1.05) & (rsi_h > 38)))
-        loss_short = above_short_2 & daily_bull & (close > ema_long_up) & weak_confirm_short & (~bounce_short) & (~(weekly_down & (atr_ratio < 1.05) & (rsi_h < 62)))
+        loss_long = (
+            below_short_2
+            & daily_bear
+            & (close < ema_long_dn)
+            & weak_confirm_long
+            & (~bounce_long)
+            & (~(weekly_up & (atr_ratio < 1.05) & (rsi_h > 38)))
+        )
+        loss_short = (
+            above_short_2
+            & daily_bull
+            & (close > ema_long_up)
+            & weak_confirm_short
+            & (~bounce_short)
+            & (~(weekly_down & (atr_ratio < 1.05) & (rsi_h < 62)))
+        )
 
         em_mult = float(self.emergency_atr_mult.value)
         atr_thr = float(self.atr_ratio_thr.value)
@@ -1459,8 +1693,14 @@ class Strategy005(IStrategy):
         panic_rsi_long = float(self.panic_rsi_long.value)
         panic_rsi_short = float(self.panic_rsi_short.value)
 
-        emergency_long = ((close < (ema_long - atr_h * em_mult)) | ((close < ema_long) & (atr_ratio > atr_thr) & (rsi_h < 40))).fillna(False)
-        emergency_short = ((close > (ema_long + atr_h * em_mult)) | ((close > ema_long) & (atr_ratio > atr_thr) & (rsi_h > 60))).fillna(False)
+        emergency_long = (
+            (close < (ema_long - atr_h * em_mult))
+            | ((close < ema_long) & (atr_ratio > atr_thr) & (rsi_h < 40))
+        ).fillna(False)
+        emergency_short = (
+            (close > (ema_long + atr_h * em_mult))
+            | ((close > ema_long) & (atr_ratio > atr_thr) & (rsi_h > 60))
+        ).fillna(False)
 
         panic_long = (
             (close < ema_long_dn)
@@ -1485,8 +1725,20 @@ class Strategy005(IStrategy):
         weekly_exit_long = weekly_flip_down & daily_bear
         weekly_exit_short = weekly_flip_up & daily_bull
 
-        exit_long = (weekly_exit_long | (loss_long & ~trend_protect_long) | overbought_reversal | emergency_long | panic_long).fillna(False)
-        exit_short = (weekly_exit_short | (loss_short & ~trend_protect_short) | oversold_reversal | emergency_short | panic_short).fillna(False)
+        exit_long = (
+            weekly_exit_long
+            | (loss_long & ~trend_protect_long)
+            | overbought_reversal
+            | emergency_long
+            | panic_long
+        ).fillna(False)
+        exit_short = (
+            weekly_exit_short
+            | (loss_short & ~trend_protect_short)
+            | oversold_reversal
+            | emergency_short
+            | panic_short
+        ).fillna(False)
 
         dataframe.loc[exit_long, "exit_long"] = 1
         dataframe.loc[exit_short, "exit_short"] = 1
@@ -1512,7 +1764,9 @@ class Strategy005(IStrategy):
         except Exception:
             return 0.0
 
-    def _l12_hold_risk(self, is_short: bool, dd: float, rsi: float, adx: float, chop: float, atr_pct: float) -> float:
+    def _l12_hold_risk(
+        self, is_short: bool, dd: float, rsi: float, adx: float, chop: float, atr_pct: float
+    ) -> float:
         dd_risk = self._l12_clip(dd, 0.0, 1.0)
         adx_weak = self._l12_clip((20.0 - float(adx)) / 12.0, 0.0, 1.0)
         chop_risk = 0.0
@@ -1533,7 +1787,9 @@ class Strategy005(IStrategy):
         else:
             rsi_risk = self._l12_clip((float(rsi) - 60.0) / 20.0, 0.0, 1.0)
 
-        risk = 0.45 * dd_risk + 0.20 * rsi_risk + 0.15 * chop_risk + 0.10 * adx_weak + 0.10 * atr_risk
+        risk = (
+            0.45 * dd_risk + 0.20 * rsi_risk + 0.15 * chop_risk + 0.10 * adx_weak + 0.10 * atr_risk
+        )
         return self._l12_clip(float(risk), 0.0, 1.0)
 
     def _l12_trade_value(self, trade: Trade, current_rate: float) -> float:
@@ -1565,7 +1821,9 @@ class Strategy005(IStrategy):
         current_exit_profit: float,
         **kwargs,
     ) -> Optional[float]:
-        if (not bool(getattr(self, "_exit_l1_enabled", False))) and (not bool(getattr(self, "_exit_l2_enabled", False))):
+        if (not bool(getattr(self, "_exit_l1_enabled", False))) and (
+            not bool(getattr(self, "_exit_l2_enabled", False))
+        ):
             return None
         if current_profit is None:
             return None
@@ -1617,16 +1875,28 @@ class Strategy005(IStrategy):
         risk = float(self._l12_hold_risk(is_short, dd, rsi_h, adx_h, chop_h, atr_pct))
 
         regime_is_trend = adx_h > float(self.mr_adx_max.value)
-        thr_adj = float(self._l12_thr_shift(row=row, regime_is_trend=bool(regime_is_trend), atr_pct=float(atr_pct)))
+        thr_adj = float(
+            self._l12_thr_shift(
+                row=row, regime_is_trend=bool(regime_is_trend), atr_pct=float(atr_pct)
+            )
+        )
         l1_thr = float(getattr(self, "_exit_l1_risk_thr", 0.0) or 0.0) + thr_adj
         l2_thr = float(getattr(self, "_exit_l2_risk_thr", 0.0) or 0.0) + thr_adj
 
         level = None
         reduce_frac = 0.0
-        if bool(getattr(self, "_exit_l2_enabled", False)) and float(current_profit) >= float(getattr(self, "_exit_l2_min_profit", 0.0) or 0.0) and risk >= l2_thr:
+        if (
+            bool(getattr(self, "_exit_l2_enabled", False))
+            and float(current_profit) >= float(getattr(self, "_exit_l2_min_profit", 0.0) or 0.0)
+            and risk >= l2_thr
+        ):
             level = "l2"
             reduce_frac = float(getattr(self, "_exit_l2_reduce_frac", 0.0) or 0.0)
-        elif bool(getattr(self, "_exit_l1_enabled", False)) and float(current_profit) >= float(getattr(self, "_exit_l1_min_profit", 0.0) or 0.0) and risk >= l1_thr:
+        elif (
+            bool(getattr(self, "_exit_l1_enabled", False))
+            and float(current_profit) >= float(getattr(self, "_exit_l1_min_profit", 0.0) or 0.0)
+            and risk >= l1_thr
+        ):
             level = "l1"
             reduce_frac = float(getattr(self, "_exit_l1_reduce_frac", 0.0) or 0.0)
 
@@ -1655,9 +1925,6 @@ class Strategy005(IStrategy):
 
         self._l12_last_reduce_ts_by_pair[pair] = int(now_s)
         return -float(reduce_value)
-
-
-
 
     def custom_stoploss(
         self,
@@ -1735,19 +2002,35 @@ class Strategy005(IStrategy):
                             panic_stop = min(panic_stop, atr_pct * 2.0)
                         open_relative_stop = max(open_relative_stop, -float(panic_stop))
 
-                    loss_gate = max(float(self.loss_gate_min.value), atr_pct * float(self.loss_gate_atr_pct_mult.value))
+                    loss_gate = max(
+                        float(self.loss_gate_min.value),
+                        atr_pct * float(self.loss_gate_atr_pct_mult.value),
+                    )
                     loss_gate = min(loss_gate, float(self.loss_gate_max.value))
 
-                    tighten_trigger = max(float(self.tighten_trigger_min.value), atr_pct * float(self.tighten_trigger_atr_pct_mult.value))
+                    tighten_trigger = max(
+                        float(self.tighten_trigger_min.value),
+                        atr_pct * float(self.tighten_trigger_atr_pct_mult.value),
+                    )
 
-                    tighten_stop = max(float(self.tighten_stop_min.value), atr_pct * float(self.tighten_stop_atr_pct_mult.value))
+                    tighten_stop = max(
+                        float(self.tighten_stop_min.value),
+                        atr_pct * float(self.tighten_stop_atr_pct_mult.value),
+                    )
                     tighten_stop = min(tighten_stop, float(self.tighten_stop_max.value))
 
-                    loss_cut_gate = max(float(self.loss_cut_min.value), atr_pct * float(self.loss_cut_atr_pct_mult.value))
+                    loss_cut_gate = max(
+                        float(self.loss_cut_min.value),
+                        atr_pct * float(self.loss_cut_atr_pct_mult.value),
+                    )
                     loss_cut_gate = min(loss_cut_gate, float(self.loss_cut_max.value))
 
-                    weekly_up = (ema_fast_w > ema_slow_w) and (adx_w > float(self.weekly_adx_threshold.value))
-                    weekly_down = (ema_fast_w < ema_slow_w) and (adx_w > float(self.weekly_adx_threshold.value))
+                    weekly_up = (ema_fast_w > ema_slow_w) and (
+                        adx_w > float(self.weekly_adx_threshold.value)
+                    )
+                    weekly_down = (ema_fast_w < ema_slow_w) and (
+                        adx_w > float(self.weekly_adx_threshold.value)
+                    )
 
                     buf_mult = float(self.exit_atr_buffer_mult.value)
                     ema_long_dn = ema_long - (atr_h * buf_mult)
@@ -1764,12 +2047,22 @@ class Strategy005(IStrategy):
                     open_relative_stop = max(open_relative_stop, -hard_stop_pct)
 
                     if bool(getattr(trade, "is_short", False)):
-                        if (current_profit <= -tighten_trigger) and (volume_ratio > 2.0) and (atr_ratio > 0.9) and (close > ema_long_up):
+                        if (
+                            (current_profit <= -tighten_trigger)
+                            and (volume_ratio > 2.0)
+                            and (atr_ratio > 0.9)
+                            and (close > ema_long_up)
+                        ):
                             open_relative_stop = max(open_relative_stop, -tighten_stop)
                         if (not trend_protect_short) and (current_profit <= -loss_cut_gate):
                             open_relative_stop = max(open_relative_stop, -loss_gate)
                     else:
-                        if (current_profit <= -tighten_trigger) and (volume_ratio > 2.0) and (atr_ratio > 0.9) and (close < ema_long_dn):
+                        if (
+                            (current_profit <= -tighten_trigger)
+                            and (volume_ratio > 2.0)
+                            and (atr_ratio > 0.9)
+                            and (close < ema_long_dn)
+                        ):
                             open_relative_stop = max(open_relative_stop, -tighten_stop)
                         if (not trend_protect_long) and (current_profit <= -loss_cut_gate):
                             open_relative_stop = max(open_relative_stop, -loss_gate)
@@ -1796,7 +2089,9 @@ class Strategy005(IStrategy):
 
         enter_tag = str(getattr(trade, "enter_tag", "") or "")
 
-        if bool(getattr(self, "_exit_l1_enabled", False)) or bool(getattr(self, "_exit_l2_enabled", False)):
+        if bool(getattr(self, "_exit_l1_enabled", False)) or bool(
+            getattr(self, "_exit_l2_enabled", False)
+        ):
             try:
                 ts = pd.Timestamp(current_time)
                 if ts.tz is None:
@@ -1815,8 +2110,14 @@ class Strategy005(IStrategy):
                     dataframe = None
                     if getattr(self, "dp", None) is not None:
                         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-                    if dataframe is not None and (not dataframe.empty) and ("date" in dataframe.columns):
-                        df = dataframe.loc[pd.to_datetime(dataframe["date"], utc=True, errors="coerce") < ts]
+                    if (
+                        dataframe is not None
+                        and (not dataframe.empty)
+                        and ("date" in dataframe.columns)
+                    ):
+                        df = dataframe.loc[
+                            pd.to_datetime(dataframe["date"], utc=True, errors="coerce") < ts
+                        ]
                         if not df.empty:
                             row = df.iloc[-1]
                             close = float(row.get("close", current_rate) or current_rate)
@@ -1827,28 +2128,48 @@ class Strategy005(IStrategy):
                             chop_h = float(row.get("chop_h", 0.0) or 0.0)
 
                             peak_profit = float(self._l12_peak_profit(trade, current_rate))
-                            if peak_profit >= float(getattr(self, "_exit_l12_min_peak_profit", 0.0) or 0.0):
+                            if peak_profit >= float(
+                                getattr(self, "_exit_l12_min_peak_profit", 0.0) or 0.0
+                            ):
                                 dd = (peak_profit - float(current_profit)) / max(peak_profit, 1e-9)
                                 dd = self._l12_clip(dd, 0.0, 1.0)
                                 if dd >= float(getattr(self, "_exit_l12_min_dd", 0.0) or 0.0):
                                     is_short = bool(getattr(trade, "is_short", False))
-                                    risk = float(self._l12_hold_risk(is_short, dd, rsi_h, adx_h, chop_h, atr_pct))
+                                    risk = float(
+                                        self._l12_hold_risk(
+                                            is_short, dd, rsi_h, adx_h, chop_h, atr_pct
+                                        )
+                                    )
 
                                     regime_is_trend = adx_h > float(self.mr_adx_max.value)
-                                    thr_adj = float(self._l12_thr_shift(row=row, regime_is_trend=bool(regime_is_trend), atr_pct=float(atr_pct)))
-                                    l1_thr = float(getattr(self, "_exit_l1_risk_thr", 0.0) or 0.0) + thr_adj
-                                    l2_thr = float(getattr(self, "_exit_l2_risk_thr", 0.0) or 0.0) + thr_adj
+                                    thr_adj = float(
+                                        self._l12_thr_shift(
+                                            row=row,
+                                            regime_is_trend=bool(regime_is_trend),
+                                            atr_pct=float(atr_pct),
+                                        )
+                                    )
+                                    l1_thr = (
+                                        float(getattr(self, "_exit_l1_risk_thr", 0.0) or 0.0)
+                                        + thr_adj
+                                    )
+                                    l2_thr = (
+                                        float(getattr(self, "_exit_l2_risk_thr", 0.0) or 0.0)
+                                        + thr_adj
+                                    )
 
                                     level = None
                                     if (
                                         bool(getattr(self, "_exit_l2_enabled", False))
-                                        and float(current_profit) >= float(getattr(self, "_exit_l2_min_profit", 0.0) or 0.0)
+                                        and float(current_profit)
+                                        >= float(getattr(self, "_exit_l2_min_profit", 0.0) or 0.0)
                                         and risk >= l2_thr
                                     ):
                                         level = "l2"
                                     elif (
                                         bool(getattr(self, "_exit_l1_enabled", False))
-                                        and float(current_profit) >= float(getattr(self, "_exit_l1_min_profit", 0.0) or 0.0)
+                                        and float(current_profit)
+                                        >= float(getattr(self, "_exit_l1_min_profit", 0.0) or 0.0)
                                         and risk >= l1_thr
                                     ):
                                         level = "l1"
@@ -1875,8 +2196,8 @@ class Strategy005(IStrategy):
         if enter_tag == "mr_long" or enter_tag == "mr_short":
             # Target Profit
             if current_profit >= float(self.mr_profit_target.value):
-                 return f"mr_profit_target_{enter_tag}"
-            
+                return f"mr_profit_target_{enter_tag}"
+
             # BB Midband
             bb_mid = float(row.get("mr_bb_middle", 0.0))
             if enter_tag == "mr_long":
@@ -1898,24 +2219,38 @@ class Strategy005(IStrategy):
 
         atr_pct = (atr_h / close) if close > 0 else 0.0
 
-        struct_gate = max(float(self.struct_profit_thr.value), atr_pct * float(self.struct_atr_pct_mult.value))
+        struct_gate = max(
+            float(self.struct_profit_thr.value), atr_pct * float(self.struct_atr_pct_mult.value)
+        )
         struct_gate = min(struct_gate, 0.06)
-        time_gate = max(float(self.time_vol_profit_thr.value), atr_pct * float(self.time_vol_atr_pct_mult.value))
+        time_gate = max(
+            float(self.time_vol_profit_thr.value), atr_pct * float(self.time_vol_atr_pct_mult.value)
+        )
         time_gate = min(time_gate, 0.06)
 
-        loss_cut_gate = max(float(self.loss_cut_min.value), atr_pct * float(self.loss_cut_atr_pct_mult.value))
+        loss_cut_gate = max(
+            float(self.loss_cut_min.value), atr_pct * float(self.loss_cut_atr_pct_mult.value)
+        )
         loss_cut_gate = min(loss_cut_gate, float(self.loss_cut_max.value))
 
-        time_cut_gate = max(float(self.time_cut_min.value), atr_pct * float(self.time_cut_atr_pct_mult.value))
+        time_cut_gate = max(
+            float(self.time_cut_min.value), atr_pct * float(self.time_cut_atr_pct_mult.value)
+        )
         time_cut_gate = min(time_cut_gate, float(self.time_cut_max.value))
         time_cut_hours = float(self.time_cut_hours.value)
 
-        dd_cut_gate = max(float(self.dd_cut_min.value), atr_pct * float(self.dd_cut_atr_pct_mult.value))
+        dd_cut_gate = max(
+            float(self.dd_cut_min.value), atr_pct * float(self.dd_cut_atr_pct_mult.value)
+        )
         dd_cut_gate = min(dd_cut_gate, float(self.dd_cut_max.value))
 
         donchian_lower = float(row.get("donchian_lower_h", 0.0))
         donchian_upper = float(row.get("donchian_upper_h", 0.0))
-        donchian_mid = (donchian_upper + donchian_lower) / 2.0 if (donchian_upper > 0 and donchian_lower > 0) else 0.0
+        donchian_mid = (
+            (donchian_upper + donchian_lower) / 2.0
+            if (donchian_upper > 0 and donchian_lower > 0)
+            else 0.0
+        )
 
         ema_fast_w = float(row.get("ema_fast_w", 0.0))
         ema_slow_w = float(row.get("ema_slow_w", 0.0))
@@ -1965,13 +2300,24 @@ class Strategy005(IStrategy):
                 if (donchian_mid > 0.0) and (close < donchian_mid) and (atr_ratio > struct_ar):
                     return "mid_break_long"
 
-            if (current_profit <= -time_gate) and (age_hours >= time_h) and (atr_ratio > struct_ar) and (close < ema_short) and (not trend_protect_long):
+            if (
+                (current_profit <= -time_gate)
+                and (age_hours >= time_h)
+                and (atr_ratio > struct_ar)
+                and (close < ema_short)
+                and (not trend_protect_long)
+            ):
                 return "time_vol_cut_long"
 
             if current_profit <= -dd_cut_gate:
                 return "dd_cut_long"
 
-            if (current_profit <= -time_cut_gate) and (age_hours >= time_cut_hours) and (close < ema_long) and (not trend_protect_long):
+            if (
+                (current_profit <= -time_cut_gate)
+                and (age_hours >= time_cut_hours)
+                and (close < ema_long)
+                and (not trend_protect_long)
+            ):
                 return "time_cut_long"
 
             accel_cut = down_2 and (close < ema_short) and (close < ema_long) and (atr_ratio > 1.08)
@@ -1983,7 +2329,12 @@ class Strategy005(IStrategy):
         if bool(getattr(trade, "is_short", False)):
             dump_gate = max(0.05, atr_pct * 1.6)
             dump_ar = max(struct_ar, 1.08)
-            if (current_profit <= -dump_gate) and (atr_ratio > dump_ar) and (close > ema_short) and (not trend_protect_short):
+            if (
+                (current_profit <= -dump_gate)
+                and (atr_ratio > dump_ar)
+                and (close > ema_short)
+                and (not trend_protect_short)
+            ):
                 return "dump_cut_short"
 
             if (current_profit <= -struct_gate) and (not trend_protect_short):
@@ -1994,13 +2345,24 @@ class Strategy005(IStrategy):
                 if (donchian_mid > 0.0) and (close > donchian_mid) and (atr_ratio > struct_ar):
                     return "mid_break_short"
 
-            if (current_profit <= -time_gate) and (age_hours >= time_h) and (atr_ratio > struct_ar) and (close > ema_short) and (not trend_protect_short):
+            if (
+                (current_profit <= -time_gate)
+                and (age_hours >= time_h)
+                and (atr_ratio > struct_ar)
+                and (close > ema_short)
+                and (not trend_protect_short)
+            ):
                 return "time_vol_cut_short"
 
             if current_profit <= -dd_cut_gate:
                 return "dd_cut_short"
 
-            if (current_profit <= -time_cut_gate) and (age_hours >= time_cut_hours) and (close > ema_long) and (not trend_protect_short):
+            if (
+                (current_profit <= -time_cut_gate)
+                and (age_hours >= time_cut_hours)
+                and (close > ema_long)
+                and (not trend_protect_short)
+            ):
                 return "time_cut_short"
 
             accel_cut = up_2 and (close > ema_short) and (close > ema_long) and (atr_ratio > 1.08)
@@ -2010,7 +2372,6 @@ class Strategy005(IStrategy):
             return None
 
         return None
-
 
     @property
     def plot_config(self):
@@ -2026,6 +2387,6 @@ class Strategy005(IStrategy):
                 "Regime": {
                     "trend_long": {"color": "green", "type": "bar"},
                     "trend_short": {"color": "red", "type": "bar"},
-                }
-            }
+                },
+            },
         }

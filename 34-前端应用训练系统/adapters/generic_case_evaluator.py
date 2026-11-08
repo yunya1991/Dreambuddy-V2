@@ -11,10 +11,10 @@
   - 决策: overall ≥ 0.5 → INGEST; ≥ 0.3 → DEFERRED; else SKIP
   - FAIL-OPEN：TDR 不可用时 novelty=0.5（中性）
 """
+
 import os
 import sys
-import json
-from typing import Dict, Any
+from typing import Any, Dict
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +26,7 @@ for _p in [_THIS_DIR, _34_DIR, _SCRIPTS_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.case_evaluator import CaseEvaluator, CaseEvaluation, IngestDecision
+from interfaces.case_evaluator import CaseEvaluation, CaseEvaluator, IngestDecision  # noqa: E402
 
 
 class GenericCaseEvaluator(CaseEvaluator):
@@ -44,6 +44,7 @@ class GenericCaseEvaluator(CaseEvaluator):
         if self._tdr_retrieve is None:
             try:
                 from case_bank_server import retrieve_cases
+
                 self._tdr_retrieve = retrieve_cases
             except Exception:
                 self._tdr_retrieve = None

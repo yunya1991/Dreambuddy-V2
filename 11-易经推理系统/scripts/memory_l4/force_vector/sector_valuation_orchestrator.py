@@ -14,6 +14,7 @@
   - R4 FAIL-OPEN：异常返回中性结果，不阻塞 BDSM 快照生成
   - R5 跟涨需龙头动量确认：catalyst 已含 leader_momentum
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,10 +23,10 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 # 复用已有模块（from import 形式，便于测试 mock）
-from force_vector.coin_fundamental_crypto import SECTOR_MAP, DEFAULT_DB_PATH
-from force_vector.sector_waterline import compute_sector_waterline, SectorWaterline
-from force_vector.sector_undervalued_scanner import scan_sector_undervalued, SectorUndervaluedScan
+from force_vector.coin_fundamental_crypto import DEFAULT_DB_PATH, SECTOR_MAP
 from force_vector.multi_dim_valuation import compute_multi_dim_valuation
+from force_vector.sector_undervalued_scanner import SectorUndervaluedScan, scan_sector_undervalued
+from force_vector.sector_waterline import SectorWaterline, compute_sector_waterline
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 # G3 过热信号三重确认阈值（SPEC §5.3）
-_OVERHEAT_WATERLINE_THRESHOLD = 85.0      # 条件1：水位 >= 85
+_OVERHEAT_WATERLINE_THRESHOLD = 85.0  # 条件1：水位 >= 85
 _OVERHEAT_LEADER_MOMENTUM_THRESHOLD = -0.1  # 条件2：龙头动量 < -0.1
 _OVERHEAT_OVERVALUED_RATIO_THRESHOLD = 0.6  # 条件3：高估币占比 >= 0.6
 
@@ -49,6 +50,7 @@ _CONFIDENCE_SCALE = 15.0
 # ---------------------------------------------------------------------------
 # Dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SectorOverheatSignal:
@@ -66,6 +68,7 @@ class SectorOverheatSignal:
         overvalued_ratio: 赛道内 undervalued_score < -0.3 的币占比 [0, 1]
         confidence: 信号置信度 [0, 1]
     """
+
     sector: str
     waterline: float
     leader_momentum: float
@@ -83,6 +86,7 @@ class SectorValuationResult:
         undervalued_scan: 低估扫描结果（G1）
         overheat_signals: 过热做空信号（G3）
     """
+
     timestamp: str
     waterlines: List[SectorWaterline] = field(default_factory=list)
     undervalued_scan: Optional[SectorUndervaluedScan] = None
@@ -92,6 +96,7 @@ class SectorValuationResult:
 # ---------------------------------------------------------------------------
 # 纯函数
 # ---------------------------------------------------------------------------
+
 
 def compute_overvalued_ratio(scores: List[float]) -> float:
     """计算赛道内 undervalued_score < -0.3 的币占比。
@@ -150,6 +155,7 @@ def _compute_confidence(waterline: float) -> float:
 # ---------------------------------------------------------------------------
 # 编排器
 # ---------------------------------------------------------------------------
+
 
 class SectorValuationOrchestrator:
     """同赛道估值对比编排器（SPEC §4.6）。
@@ -216,13 +222,15 @@ class SectorValuationOrchestrator:
                         overvalued_ratio=overvalued_ratio,
                     ):
                         confidence = _compute_confidence(wl.median_percentile)
-                        overheat_signals.append(SectorOverheatSignal(
-                            sector=sector,
-                            waterline=wl.median_percentile,
-                            leader_momentum=wl.leader_momentum_7d,
-                            overvalued_ratio=overvalued_ratio,
-                            confidence=confidence,
-                        ))
+                        overheat_signals.append(
+                            SectorOverheatSignal(
+                                sector=sector,
+                                waterline=wl.median_percentile,
+                                leader_momentum=wl.leader_momentum_7d,
+                                overvalued_ratio=overvalued_ratio,
+                                confidence=confidence,
+                            )
+                        )
                 except Exception as e:
                     logger.warning("overheat detection fail-open for %s: %s", sector, e)
 

@@ -15,13 +15,11 @@
          • 5 板块权重 == 均匀 (各 0.20)
        确保「前置层无偏 → 系统等价于直通」，不干扰 BCRM + 弹簧力场原链路。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import numpy as np
-import pytest
 
 _THIS_DIR = Path(__file__).resolve().parent
 _BCRM2_ROOT = _THIS_DIR.parent
@@ -32,11 +30,15 @@ if str(_BCRM2_ROOT) not in sys.path:
 
 def _stats_row(L_p10=-3.0, L_p90=+3.0, T_p10=-2.5, T_p90=+2.8) -> dict:
     """合成 1 行 stats_row（用于 ParameterMapper.map_global_parameters 的 stats 锚点）"""
-    return dict(
-        L_p10_60d=L_p10, L_p90_60d=L_p90,
-        T_p10_60d=T_p10, T_p90_60d=T_p90,
-        L_p10_252d=L_p10, L_p90_252d=L_p90,
-        T_p10_252d=T_p10, T_p90_252d=T_p90,
+    return dict(  # noqa: C408
+        L_p10_60d=L_p10,
+        L_p90_60d=L_p90,
+        T_p10_60d=T_p10,
+        T_p90_60d=T_p90,
+        L_p10_252d=L_p10,
+        L_p90_252d=L_p90,
+        T_p10_252d=T_p10,
+        T_p90_252d=T_p90,
     )
 
 
@@ -53,13 +55,20 @@ def _ranges_width(rng: tuple[float, float]) -> float:
 # ================================================================
 def test_parameter_mapper_ranges_monotonic():
     from bcrm2.parameter_mapper import ParameterMapper
+
     pm = ParameterMapper()
 
     # (1) C=1 → 带宽 ≤ C=0
     r_lowC = pm.map_global_parameters(L=0.0, T=0.0, C=0.0, stats_row=_stats_row())
     r_hiC = pm.map_global_parameters(L=0.0, T=0.0, C=1.0, stats_row=_stats_row())
-    for k in ("global_position_mult", "ls_ratio_cap", "long_bias", "short_bias",
-              "long_threshold_mult", "short_threshold_mult"):
+    for k in (
+        "global_position_mult",
+        "ls_ratio_cap",
+        "long_bias",
+        "short_bias",
+        "long_threshold_mult",
+        "short_threshold_mult",
+    ):
         assert _ranges_width(r_hiC[k]) <= _ranges_width(r_lowC[k]), (
             f"{k}: C=1 带宽={_ranges_width(r_hiC[k]):.4f} > C=0 带宽={_ranges_width(r_lowC[k]):.4f}，违反"
             "「共识越高范围越窄」规则"
@@ -67,26 +76,26 @@ def test_parameter_mapper_ranges_monotonic():
 
     # (2) L=+4,T=+4 → mult 中心 ≥ 1.4
     r_bull = pm.map_global_parameters(L=4.0, T=4.0, C=0.8, stats_row=_stats_row())
-    assert _ranges_center(r_bull["global_position_mult"]) >= 1.4, (
-        f"L=+4,T=+4 的 global_position_mult 中心 = {_ranges_center(r_bull['global_position_mult']):.3f} < 1.4"
-    )
+    assert (
+        _ranges_center(r_bull["global_position_mult"]) >= 1.4
+    ), f"L=+4,T=+4 的 global_position_mult 中心 = {_ranges_center(r_bull['global_position_mult']):.3f} < 1.4"
 
     # (3) L=-4,T=-4 → mult 中心 ≤ 0.5
     r_bear = pm.map_global_parameters(L=-4.0, T=-4.0, C=0.8, stats_row=_stats_row())
-    assert _ranges_center(r_bear["global_position_mult"]) <= 0.5, (
-        f"L=-4,T=-4 的 global_position_mult 中心 = {_ranges_center(r_bear['global_position_mult']):.3f} > 0.5"
-    )
+    assert (
+        _ranges_center(r_bear["global_position_mult"]) <= 0.5
+    ), f"L=-4,T=-4 的 global_position_mult 中心 = {_ranges_center(r_bear['global_position_mult']):.3f} > 0.5"
 
     # (4) BTC 牛市 L=+3,T=+2 → long_threshold_mult 中心 ≤ 1.0（降低做多门槛）
     r_bull2 = pm.map_global_parameters(L=3.0, T=2.0, C=0.9, stats_row=_stats_row())
-    assert _ranges_center(r_bull2["long_threshold_mult"]) <= 1.0, (
-        f"BTC 牛市 long_threshold_mult 中心 = {_ranges_center(r_bull2['long_threshold_mult']):.3f} > 1.0"
-    )
+    assert (
+        _ranges_center(r_bull2["long_threshold_mult"]) <= 1.0
+    ), f"BTC 牛市 long_threshold_mult 中心 = {_ranges_center(r_bull2['long_threshold_mult']):.3f} > 1.0"
     # 熊市 L=-3,T=-2 → short_threshold_mult 中心 ≤ 1.0
     r_bear2 = pm.map_global_parameters(L=-3.0, T=-2.0, C=0.9, stats_row=_stats_row())
-    assert _ranges_center(r_bear2["short_threshold_mult"]) <= 1.0, (
-        f"BTC 熊市 short_threshold_mult 中心 = {_ranges_center(r_bear2['short_threshold_mult']):.3f} > 1.0"
-    )
+    assert (
+        _ranges_center(r_bear2["short_threshold_mult"]) <= 1.0
+    ), f"BTC 熊市 short_threshold_mult 中心 = {_ranges_center(r_bear2['short_threshold_mult']):.3f} > 1.0"
 
 
 # ================================================================
@@ -94,14 +103,15 @@ def test_parameter_mapper_ranges_monotonic():
 # ================================================================
 def test_sector_weights_sum_to_one_and_monotonic_beta():
     from bcrm2.parameter_mapper import ParameterMapper
+
     pm = ParameterMapper()
     # L=+3 牛市：DeFi β=1.5 α=+0.05；MEME β=0.5 α=-0.03；其他 1.0
     betas = {
         "defi": (1.5, 0.05, 0.8),
-        "ai":   (1.0, 0.02, 0.75),
-        "rwa":  (1.1, 0.00, 0.7),
+        "ai": (1.0, 0.02, 0.75),
+        "rwa": (1.1, 0.00, 0.7),
         "meme": (0.5, -0.03, 0.6),
-        "l2":   (1.0, 0.01, 0.72),
+        "l2": (1.0, 0.01, 0.72),
     }
     sw_result = pm.map_sector_weights(L=3.0, T=2.0, C=0.8, sector_betas=betas)
     # 兼容新结构 {weights, sector_tp_mult, sector_sl_mult} 与旧 {sector: weight}
@@ -130,6 +140,7 @@ def test_sector_weights_sum_to_one_and_monotonic_beta():
 # ================================================================
 def test_parameter_mapper_neutral_identity_passthrough():
     from bcrm2.parameter_mapper import ParameterMapper
+
     pm = ParameterMapper()
 
     # --- 6 个全局范围参数：中心必须严格等于默认直通值 ---
@@ -137,10 +148,10 @@ def test_parameter_mapper_neutral_identity_passthrough():
 
     DEFAULTS = {
         "global_position_mult": 1.0,
-        "ls_ratio_cap":         0.5,
-        "long_bias":            0.0,
-        "short_bias":           0.0,
-        "long_threshold_mult":  1.0,
+        "ls_ratio_cap": 0.5,
+        "long_bias": 0.0,
+        "short_bias": 0.0,
+        "long_threshold_mult": 1.0,
         "short_threshold_mult": 1.0,
     }
     for k, expected_center in DEFAULTS.items():
@@ -153,11 +164,11 @@ def test_parameter_mapper_neutral_identity_passthrough():
     # --- 5 板块权重：必须均匀 0.20 ---
     # 中性直通下，所有板块的 β/α/corr 差异都应被「共识极低」平滑为均匀分配
     betas_uniform_scan = {
-        "defi": (1.5, 0.05, 0.8),     # 故意差异大
-        "ai":   (1.0, 0.02, 0.75),
-        "rwa":  (1.1, 0.00, 0.7),
+        "defi": (1.5, 0.05, 0.8),  # 故意差异大
+        "ai": (1.0, 0.02, 0.75),
+        "rwa": (1.1, 0.00, 0.7),
         "meme": (0.5, -0.03, 0.6),
-        "l2":   (0.9, 0.01, 0.72),
+        "l2": (0.9, 0.01, 0.72),
     }
     sw_result = pm.map_sector_weights(L=0.0, T=0.0, C=0.0, sector_betas=betas_uniform_scan)
     # 兼容新返回结构 {weights, sector_tp_mult, sector_sl_mult} 与旧 flat

@@ -23,6 +23,7 @@
   - 缺列时跳过，不抛异常（fail-open）
   - 所有特征归一化到合理范围，便于 signal_engine 加权
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -83,13 +84,13 @@ def compute(
     # 5. trend_strength：趋势强度 = |20日斜率| / 波动率
     slope = close_proxy.diff(20) / 20.0
     result["trend_strength"] = (
-        slope.abs() / (result["volatility_20d"] + 1e-10)
-    ).clip(-10, 10).fillna(0.0)
+        (slope.abs() / (result["volatility_20d"] + 1e-10)).clip(-10, 10).fillna(0.0)
+    )
 
     # 6. mean_reversion：均值回归压力 = (当前值 - 20日均值) / 20日标准差
     result["mean_reversion"] = (
-        (close_proxy - roll_mean) / (roll_std + 1e-10)
-    ).clip(-5, 5).fillna(0.0)
+        ((close_proxy - roll_mean) / (roll_std + 1e-10)).clip(-5, 5).fillna(0.0)
+    )
 
     # 7. rate_of_change_3d：3日变化率
     result["rate_of_change_3d"] = close_proxy.diff(3).fillna(0.0)

@@ -4,12 +4,13 @@
 并做全面的场景对比。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
+import pandas as pd  # noqa: I001
 import numpy as np
 
 from backtest.strategy import EnhancedMA200Strategy
@@ -38,7 +39,9 @@ def final_comparison():
 
     # v2基线
     v2 = EnhancedMA200Strategy(is_btc=True)
-    v2_r = engine.run_scenario_backtest(prices, v2, "v2_baseline", symbol="BTC", experiment_name="final_v2")
+    v2_r = engine.run_scenario_backtest(
+        prices, v2, "v2_baseline", symbol="BTC", experiment_name="final_v2"
+    )
 
     # 做空优化
     # 测试几个不同的L2仓位
@@ -48,18 +51,26 @@ def final_comparison():
         ("L1=0, L2=0.6", {"bear_short_level1_pct": 0.0, "bear_short_level2_pct": 0.6}),
         ("L1=0, L2=0.7", {"bear_short_level1_pct": 0.0, "bear_short_level2_pct": 0.7}),
         ("L1=0, L2=0.8", {"bear_short_level1_pct": 0.0, "bear_short_level2_pct": 0.8}),
-        ("L1=0, L2=0.6, fib=False", {"bear_short_level1_pct": 0.0, "bear_short_level2_pct": 0.6, "fib_take_profit": False}),
+        (
+            "L1=0, L2=0.6, fib=False",
+            {"bear_short_level1_pct": 0.0, "bear_short_level2_pct": 0.6, "fib_take_profit": False},
+        ),
     ]
 
-    print(f"{'配置':<25} {'总收益':>10} {'夏普':>8} {'卡玛':>8} {'回撤':>10} {'胜率':>8} {'评分':>8}")
+    print(
+        f"{'配置':<25} {'总收益':>10} {'夏普':>8} {'卡玛':>8} {'回撤':>10} {'胜率':>8} {'评分':>8}"
+    )
     print("-" * 80)
 
     results = []
     for name, kwargs in configs:
         strategy = EnhancedMA200Strategy(is_btc=True, **kwargs)
         result = engine.run_scenario_backtest(
-            prices, strategy, name.replace(" ", "_"),
-            symbol="BTC", experiment_name=f"final_{name.replace(' ', '_')}",
+            prices,
+            strategy,
+            name.replace(" ", "_"),
+            symbol="BTC",
+            experiment_name=f"final_{name.replace(' ', '_')}",
         )
         marker = " ⭐" if result.composite_score > v2_r.composite_score else ""
         print(
@@ -87,8 +98,12 @@ def final_comparison():
         best_m = best_result.objective_metrics.get(obj)
         if v2_m and best_m:
             print(f"  {obj}:")
-            print(f"    v2:   胜率 {v2_m.win_rate:.2%}, 平均收益 {v2_m.avg_return:.2%}, 盈亏比 {v2_m.profit_factor:.2f}")
-            print(f"    best: 胜率 {best_m.win_rate:.2%}, 平均收益 {best_m.avg_return:.2%}, 盈亏比 {best_m.profit_factor:.2f}")
+            print(
+                f"    v2:   胜率 {v2_m.win_rate:.2%}, 平均收益 {v2_m.avg_return:.2%}, 盈亏比 {v2_m.profit_factor:.2f}"
+            )
+            print(
+                f"    best: 胜率 {best_m.win_rate:.2%}, 平均收益 {best_m.avg_return:.2%}, 盈亏比 {best_m.profit_factor:.2f}"
+            )
             win_diff = best_m.win_rate - v2_m.win_rate
             ret_diff = best_m.avg_return - v2_m.avg_return
             print(f"    变化: 胜率 {win_diff:+.2%}, 收益 {ret_diff:+.2%}")
@@ -103,16 +118,22 @@ def final_comparison():
         strat_ret = signals.shift(1).fillna(0) * daily_ret
 
         closes = prices["close"].values
-        pos = signals.values
+        pos = signals.values  # noqa: F841
         ma = pd.Series(closes).rolling(200, min_periods=200).mean().values
         slope = np.zeros(len(closes))
         for i in range(250, len(closes)):
-            if not np.isnan(ma[i]) and not np.isnan(ma[i-5]):
-                slope[i] = (ma[i] / ma[i-5] - 1) * 100
+            if not np.isnan(ma[i]) and not np.isnan(ma[i - 5]):
+                slope[i] = (ma[i] / ma[i - 5] - 1) * 100
 
         weekly_ma200 = strategy._compute_weekly_ma200(prices)
 
-        scenario_rets = {"bull": 0, "dip_buy": 0, "bear_short_l2": 0, "bear_short_l1": 0, "sideways": 0}
+        scenario_rets = {
+            "bull": 0,
+            "dip_buy": 0,
+            "bear_short_l2": 0,
+            "bear_short_l1": 0,
+            "sideways": 0,
+        }
 
         for i in range(1, len(closes)):
             if i < 250 or np.isnan(ma[i]):

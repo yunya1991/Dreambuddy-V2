@@ -9,10 +9,11 @@ V1-C4: C 层能力域接口测试
   4. 外部传入 market_data 时使用传入数据
   5. 直接暴露节点的方法(c2_momentum/c3_volatility)仍可用但不作为主要能力接口
 """
+
 import json
+import os
 import subprocess
 import sys
-import os
 
 SERVER = os.path.join(os.path.dirname(__file__), "..", "packages", "python-server", "server.py")
 PYTHON = sys.executable
@@ -70,12 +71,21 @@ print("\n--- execute_c_chain 能力域接口 ---")
 resp = call("execute_c_chain", {"symbol": "BTC", "timeframe": "4H"})
 result = resp["result"]
 
-check("返回 capability 字段", result.get("capability") == "os.c_layer.execute_c_chain",
-      f"capability={result.get('capability')}")
-check("返回 direction", result.get("direction") in ["LONG", "SHORT", "HOLD"],
-      f"direction={result.get('direction')}")
-check("返回 confidence (0-1)", 0 <= result.get("confidence", 0) <= 1,
-      f"conf={result.get('confidence')}")
+check(
+    "返回 capability 字段",
+    result.get("capability") == "os.c_layer.execute_c_chain",
+    f"capability={result.get('capability')}",
+)
+check(
+    "返回 direction",
+    result.get("direction") in ["LONG", "SHORT", "HOLD"],
+    f"direction={result.get('direction')}",
+)
+check(
+    "返回 confidence (0-1)",
+    0 <= result.get("confidence", 0) <= 1,
+    f"conf={result.get('confidence')}",
+)
 check("返回 details", "details" in result)
 check("details 含 C1", "C1" in result.get("details", {}))
 check("details 含 C2", "C2" in result.get("details", {}))
@@ -89,25 +99,40 @@ print(f"    C3={result['details']['C3']['direction']}({result['details']['C3']['
 # ── 2. 外部传入 market_data ─────────────────────────────
 print("\n--- 外部传入 market_data ---")
 bull_mkt = {
-    "price": 70000, "change_1h": 0.5, "change_4h": 1.2, "change_24h": 5.0,
-    "rsi14": 62, "macd": 150.0, "macd_signal": 100.0, "macd_hist": 50.0,
-    "ema20": 68000, "ema50": 65000, "ema200": 60000,
-    "atr": 850.0, "atr_pct": 0.025,
-    "bb_upper": 72000, "bb_middle": 67000, "bb_lower": 62000,
-    "bb_width": 0.15, "vol_ratio": 1.2, "atr_change": 0.1,
+    "price": 70000,
+    "change_1h": 0.5,
+    "change_4h": 1.2,
+    "change_24h": 5.0,
+    "rsi14": 62,
+    "macd": 150.0,
+    "macd_signal": 100.0,
+    "macd_hist": 50.0,
+    "ema20": 68000,
+    "ema50": 65000,
+    "ema200": 60000,
+    "atr": 850.0,
+    "atr_pct": 0.025,
+    "bb_upper": 72000,
+    "bb_middle": 67000,
+    "bb_lower": 62000,
+    "bb_width": 0.15,
+    "vol_ratio": 1.2,
+    "atr_change": 0.1,
 }
 resp = call("execute_c_chain", {"symbol": "BTC", "market_data": bull_mkt})
 result = resp["result"]
-check("牛市数据 → 综合方向非 HOLD", result["direction"] in ["LONG", "SHORT"],
-      f"direction={result['direction']}")
+check(
+    "牛市数据 → 综合方向非 HOLD",
+    result["direction"] in ["LONG", "SHORT"],
+    f"direction={result['direction']}",
+)
 check("C2 牛市 → LONG", result["details"]["C2"]["direction"] == "LONG")
 print(f"    direction={result['direction']}, confidence={result['confidence']}")
 
 # ── 3. 验证不再直接暴露节点作为能力接口 ──────────────────
 print("\n--- 架构边界验证 ---")
 # execute_c_chain 的返回中不直接暴露 node_id 作为顶层字段
-check("顶层无 node_id（能力域接口不暴露节点）", "node_id" not in result,
-      "顶层无 node_id 字段")
+check("顶层无 node_id（能力域接口不暴露节点）", "node_id" not in result, "顶层无 node_id 字段")
 check("顶层用 capability 标识", "capability" in result)
 
 # ── 4. 直接节点方法仍存在但标记为内部 ────────────────────

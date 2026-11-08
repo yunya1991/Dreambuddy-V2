@@ -17,6 +17,7 @@ test_assertion: assert backtest_waterline_exit(80)['avg_return_30d'] < 0
 铁律（SPEC §0.2）：
   R4 FAIL-OPEN：数据不足不触发信号
 """
+
 from __future__ import annotations
 
 import os
@@ -29,10 +30,10 @@ if _THIS_DIR not in sys.path:
 
 from force_vector.coin_fundamental_crypto import DEFAULT_DB_PATH  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # 纯函数：从触发的收益率列表计算统计
 # ---------------------------------------------------------------------------
+
 
 def compute_backtest_stats(triggered_returns: List[float]) -> Dict[str, object]:
     """从触发的收益率列表计算回测统计。
@@ -73,6 +74,7 @@ def compute_backtest_stats(triggered_returns: List[float]) -> Dict[str, object]:
 # 数据获取：历史 waterline + 30d 收益率（占位，真实实现需查 db 历史数据）
 # ---------------------------------------------------------------------------
 
+
 def _fetch_historical_waterlines_with_returns(db_path: str) -> List[Dict[str, object]]:
     """获取历史 waterline 序列 + 对应 30d 后收益率。
 
@@ -100,6 +102,7 @@ def _fetch_historical_waterlines_with_returns(db_path: str) -> List[Dict[str, ob
 # ---------------------------------------------------------------------------
 # 主函数：backtest_waterline_exit
 # ---------------------------------------------------------------------------
+
 
 def backtest_waterline_exit(
     threshold: float = 80.0,
@@ -159,7 +162,7 @@ def backtest_waterline_exit(
 
 # 阈值（与 sector_valuation_orchestrator 一致，SPEC §5.3）
 _OVERHEAT_WATERLINE_THRESHOLD = 85.0
-_OVERHEAT_LEADER_MOMENTUM_THRESHOLD = -0.1   # 严格小于
+_OVERHEAT_LEADER_MOMENTUM_THRESHOLD = -0.1  # 严格小于
 _OVERHEAT_OVERVALUED_RATIO_THRESHOLD = 0.6
 
 

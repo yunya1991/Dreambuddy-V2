@@ -25,7 +25,9 @@
   python3 step_controller.py all            # 全部完成
   python3 step_controller.py check          # 🔒 快速门禁检查（CI用）
 """
-import json, os, sys
+
+import json
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -33,6 +35,7 @@ BASE = Path.home() / "archives" / "Dreambuddy-V2-main"
 STATE_FILE = BASE / "0-NOTEBOOK" / ".step_state.json"
 SESSION_GATE = BASE / "0-NOTEBOOK" / ".session_gate"
 GATE_TIMEOUT_HOURS = 24
+
 
 # ── Gate 0: Session 入口门禁 ──────────────────
 def gate0_check():
@@ -81,10 +84,10 @@ def _print_gate0_blocked(reason: str):
     print("║  本 Session 未初始化！                           ║")
     print("║  必须先运行:                                    ║")
     print("║                                                ║")
-    print("║    step_controller.py start \"任务名\"          ║")
+    print('║    step_controller.py start "任务名"          ║')
     print("║                                                ║")
     print("║  D-Z-E 项目级任务还需:                          ║")
-    print("║    chain_guard.py init \"任务描述\"              ║")
+    print('║    chain_guard.py init "任务描述"              ║')
     print("╚══════════════════════════════════════════════════╝")
     print()
 
@@ -106,18 +109,28 @@ def _require_active(state=None):
     if not state.get("session_id"):
         print("=" * 50)
         print("🔒 Gate 1 BLOCKED：未启动任务")
-        print("  请先运行: step_controller.py start \"任务名\"")
+        print('  请先运行: step_controller.py start "任务名"')
         print()
         print("  D-Z-E 项目级任务还需:")
-        print("  chain_guard.py init \"任务描述\"   ← 三链阶段管理")
+        print('  chain_guard.py init "任务描述"   ← 三链阶段管理')
         print("=" * 50)
         sys.exit(1)
 
+
 # ── Gate 2: 收工门禁 ──────────────────────────
 END_FORMAT_CHECK_LIST = [
-    ("步进结束格式", "数字选择", lambda n: any(kw in n for kw in ["1️⃣","2️⃣","3️⃣","1.","2.","3.","下一步"])),
-    ("步进结束格式", "推荐意见", lambda n: any(kw in n for kw in ["推荐","建议","我建议","建议你"])),
+    (
+        "步进结束格式",
+        "数字选择",
+        lambda n: any(kw in n for kw in ["1️⃣", "2️⃣", "3️⃣", "1.", "2.", "3.", "下一步"]),
+    ),
+    (
+        "步进结束格式",
+        "推荐意见",
+        lambda n: any(kw in n for kw in ["推荐", "建议", "我建议", "建议你"]),
+    ),
 ]
+
 
 def _check_end_format(note: str) -> list:
     """检查收工时的输出格式"""
@@ -127,29 +140,59 @@ def _check_end_format(note: str) -> list:
             issues.append(f"⚠️ {category}: 缺少「{check_name}」")
     return issues
 
+
 STEPS = [
-    {"id": 1, "name": "需求解析", "emoji": "🎯",
-     "desc": "理解用户需求 → 更新笔记本TODO → 初始化chain_guard",
-     "systems": ["笔记本"]},
-    {"id": 2, "name": "D-Z-E", "emoji": "🔗",
-     "desc": "D-Z-E方法论：D调研→Z规划→E执行（用户可跳步）",
-     "systems": ["思维链", "chain_guard"]},
-    {"id": 3, "name": "知识库检索与回补", "emoji": "📚",
-     "desc": "查2-KNOWLEDGE/ → 知识不足时联网搜 → 搜到必回补",
-     "systems": ["知识库"]},
-    {"id": 4, "name": "A系列方法论借鉴", "emoji": "🧠",
-     "desc": "加载相关dream-* skill → 矛盾论/第一性原理等理论框架",
-     "systems": ["A系列SKILL"]},
-    {"id": 5, "name": "索引系统更新", "emoji": "🔍",
-     "desc": "相关INDEX.md更新 → 确保全系统可索引查",
-     "systems": ["索引系统"]},
-    {"id": 6, "name": "飞书协作归档", "emoji": "✈️",
-     "desc": "Base同步 / 审批提案 / Wiki更新（如有需要）",
-     "systems": ["飞书协作"]},
-    {"id": 7, "name": "记忆蒸馏", "emoji": "🧪",
-     "desc": "关键发现蒸馏 → memory更新 → 知识库追加 → 演化日志",
-     "systems": ["记忆系统"]},
+    {
+        "id": 1,
+        "name": "需求解析",
+        "emoji": "🎯",
+        "desc": "理解用户需求 → 更新笔记本TODO → 初始化chain_guard",
+        "systems": ["笔记本"],
+    },
+    {
+        "id": 2,
+        "name": "D-Z-E",
+        "emoji": "🔗",
+        "desc": "D-Z-E方法论：D调研→Z规划→E执行（用户可跳步）",
+        "systems": ["思维链", "chain_guard"],
+    },
+    {
+        "id": 3,
+        "name": "知识库检索与回补",
+        "emoji": "📚",
+        "desc": "查2-KNOWLEDGE/ → 知识不足时联网搜 → 搜到必回补",
+        "systems": ["知识库"],
+    },
+    {
+        "id": 4,
+        "name": "A系列方法论借鉴",
+        "emoji": "🧠",
+        "desc": "加载相关dream-* skill → 矛盾论/第一性原理等理论框架",
+        "systems": ["A系列SKILL"],
+    },
+    {
+        "id": 5,
+        "name": "索引系统更新",
+        "emoji": "🔍",
+        "desc": "相关INDEX.md更新 → 确保全系统可索引查",
+        "systems": ["索引系统"],
+    },
+    {
+        "id": 6,
+        "name": "飞书协作归档",
+        "emoji": "✈️",
+        "desc": "Base同步 / 审批提案 / Wiki更新（如有需要）",
+        "systems": ["飞书协作"],
+    },
+    {
+        "id": 7,
+        "name": "记忆蒸馏",
+        "emoji": "🧪",
+        "desc": "关键发现蒸馏 → memory更新 → 知识库追加 → 演化日志",
+        "systems": ["记忆系统"],
+    },
 ]
+
 
 def _load():
     if STATE_FILE.exists():
@@ -161,8 +204,11 @@ def _load():
             return {"session_id": None, "current_step": 0, "steps": {}, "created_at": None}
     return {"session_id": None, "current_step": 0, "steps": {}, "created_at": None}
 
+
 def _save(state):
     STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+
+
 def cmd_start(session_title: str = ""):
     state = _load()
     state["session_id"] = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -175,12 +221,17 @@ def cmd_start(session_title: str = ""):
 
     # ── 🔒 创建 .session_gate 文件（Gate 0 的物理锚点）──
     SESSION_GATE.parent.mkdir(parents=True, exist_ok=True)
-    SESSION_GATE.write_text(json.dumps({
-        "session_id": state["session_id"],
-        "title": state["title"],
-        "created_at": state["created_at"],
-        "expires_after_hours": GATE_TIMEOUT_HOURS,
-    }, indent=2))
+    SESSION_GATE.write_text(
+        json.dumps(
+            {
+                "session_id": state["session_id"],
+                "title": state["title"],
+                "created_at": state["created_at"],
+                "expires_after_hours": GATE_TIMEOUT_HOURS,
+            },
+            indent=2,
+        )
+    )
 
     print(f"✅ 步进式启动: Step 1 — {STEPS[0]['emoji']} {STEPS[0]['name']}")
     print(f"   任务: {state['title']}")
@@ -214,6 +265,7 @@ def cmd_status():
             print(f"      备注: {st['note']}")
     print()
 
+
 def cmd_step(step_id: int, note: str = ""):
     gate0_check()  # ── 🔒 Gate 0 ──
     state = _load()
@@ -227,10 +279,10 @@ def cmd_step(step_id: int, note: str = ""):
     if step_id == len(STEPS):
         issues = _check_end_format(note)
         if issues:
-            print(f"🔔 Gate 2 收工门禁 — 输出格式警告:")
+            print("🔔 Gate 2 收工门禁 — 输出格式警告:")
             for i in issues:
                 print(f"  {i}")
-            print(f"  建议修复后再提交，使用: step {len(STEPS)} \"正确格式备注\"")
+            print(f'  建议修复后再提交，使用: step {len(STEPS)} "正确格式备注"')
     # 自动推进到下一步
     next_id = step_id + 1
     if next_id <= len(STEPS):
@@ -246,6 +298,7 @@ def cmd_step(step_id: int, note: str = ""):
         print(f"▶️  下一步: Step {next_id} — {next_step['emoji']} {next_step['name']}")
     else:
         print("🎉 全部7步完成！")
+
 
 def cmd_skip(step_id: int):
     gate0_check()  # ── 🔒 Gate 0 ──
@@ -267,6 +320,7 @@ def cmd_skip(step_id: int):
     _save(state)
     print(f"⏭️ Step {step_id} ({STEPS[step_id-1]['emoji']} {STEPS[step_id-1]['name']}) 已跳过")
 
+
 def cmd_jump(target_id: int):
     """跳到指定步骤（跳过中间所有）"""
     gate0_check()  # ── 🔒 Gate 0 ──
@@ -280,6 +334,7 @@ def cmd_jump(target_id: int):
     state["current_step"] = target_id
     _save(state)
     print(f"🚀 跳到 Step {target_id}: {STEPS[target_id-1]['emoji']} {STEPS[target_id-1]['name']}")
+
 
 def cmd_all():
     """标记所有步骤为完成"""
@@ -302,13 +357,14 @@ def cmd_all():
                 print(f"  {i}")
     print("🚀 全部7步标记完成（直接执行模式）")
 
+
 def cmd_check():
     """🔒 快速门禁检查 — 用于 session 开始的强制验证"""
     if not SESSION_GATE.exists():
         _print_gate0_blocked("门禁未初始化")
         sys.exit(1)
     gate_data = gate0_check()
-    print(f"🔒 Gate 0 通过")
+    print("🔒 Gate 0 通过")
     print(f"   Session: {gate_data['session_id']}")
     print(f"   任务: {gate_data.get('title', '未知')}")
     print(f"   创建: {gate_data['created_at']}")
@@ -348,6 +404,7 @@ def main():
         cmd_all()
     else:
         print(f"未知命令: {cmd}")
+
 
 if __name__ == "__main__":
     main()

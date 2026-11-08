@@ -7,6 +7,7 @@ CD-DONCHIAN-10-BREAK: 10日唐奇安通道突破（更敏感，下突破能及�
 CD-NECKLINE-BREAK: 颈线跌破信号（头肩顶颈线有效跌破 → 做空）
   - 方向固定 short（顶部反转做空信号）
 """
+
 from __future__ import annotations
 
 import json
@@ -25,6 +26,7 @@ COND_DIR = REPO / "dreambuddy_evolution" / "gene_data" / "strategy_genes" / "con
 
 def _import_shadow_backtest():
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
         "shadow_backtest", SCRIPTS_DIR / "shadow_backtest.py"
     )
@@ -37,8 +39,16 @@ def _make_trend_up(n=60):
     klines = []
     for i in range(n):
         close = 100.0 + i * 2.0
-        klines.append({"timestamp": f"2026-01-{i+1:02d}", "open": close-0.5,
-                        "high": close+1.0, "low": close-1.0, "close": close, "volume": 1000.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
     return klines
 
 
@@ -46,8 +56,16 @@ def _make_trend_down(n=60):
     klines = []
     for i in range(n):
         close = 200.0 - i * 2.0
-        klines.append({"timestamp": f"2026-01-{i+1:02d}", "open": close+0.5,
-                        "high": close+1.0, "low": close-1.0, "close": close, "volume": 1000.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close + 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
     return klines
 
 
@@ -57,29 +75,61 @@ def _make_head_and_shoulders_top(n=70):
     # 阶段1: 左肩 100→110→105 (15 bar)
     for i in range(15):
         close = 100.0 + i * 0.67
-        klines.append({"timestamp": f"2026-01-{i+1:02d}", "open": close-0.5,
-                        "high": close+1.0, "low": close-1.0, "close": close, "volume": 1000.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
     # 阶段2: 头部 105→120→110 (15 bar)
     for i in range(15):
         if i < 8:
             close = 110.0 + i * 1.25
         else:
             close = 120.0 - (i - 8) * 1.25
-        klines.append({"timestamp": f"2026-01-{i+16:02d}", "open": close-0.5,
-                        "high": close+1.0, "low": close-1.0, "close": close, "volume": 800.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+16:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 800.0,
+            }
+        )
     # 阶段3: 右肩 110→115→108 (15 bar)
     for i in range(15):
         if i < 5:
             close = 110.0 + i
         else:
             close = 115.0 - (i - 5) * 1.0
-        klines.append({"timestamp": f"2026-01-{i+31:02d}", "open": close-0.5,
-                        "high": close+1.0, "low": close-1.0, "close": close, "volume": 600.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+31:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 600.0,
+            }
+        )
     # 阶段4: 颈线跌破 108→95 (25 bar，放量)
     for i in range(25):
         close = 108.0 - i * 0.5
-        klines.append({"timestamp": f"2026-01-{i+46:02d}", "open": close+0.3,
-                        "high": close+0.8, "low": close-1.2, "close": close, "volume": 1200.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+46:02d}",
+                "open": close + 0.3,
+                "high": close + 0.8,
+                "low": close - 1.2,
+                "close": close,
+                "volume": 1200.0,
+            }
+        )
     return klines
 
 

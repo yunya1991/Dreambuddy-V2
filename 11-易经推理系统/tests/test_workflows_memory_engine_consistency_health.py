@@ -64,13 +64,23 @@ def test_memory_engine_check_consistency_validates_full_chain_schema():
     # case missing required "intent"
     cases = [{"case_id": "TC_1", "execution": {"episode_refs": []}, "review": {}, "quadrant": {}}]
     # distill has invalid enum kind + missing claim
-    distills = [{"distill_id": "D_1", "kind": "unknown", "supporting_case_ids": ["TC_1"], "quadrant": {}, "migration_history": []}]
+    distills = [
+        {
+            "distill_id": "D_1",
+            "kind": "unknown",
+            "supporting_case_ids": ["TC_1"],
+            "quadrant": {},
+            "migration_history": [],
+        }
+    ]
     # stats missing required "points"
     stats = {"snapshot_ts": "2026-01-01T00:00:00+08:00"}
     # index missing metadata/weights
     index_data = {"case_features": {"TC_1": {}}, "distill_features": {"D_1": {}}}
 
-    memory = MemoryEngine(index_data=index_data, cases=cases, distills=distills, stats=stats, episodes_by_path={})
+    memory = MemoryEngine(
+        index_data=index_data, cases=cases, distills=distills, stats=stats, episodes_by_path={}
+    )
     report = memory.check_consistency()
 
     codes = {i["code"] for i in report["issues"]}

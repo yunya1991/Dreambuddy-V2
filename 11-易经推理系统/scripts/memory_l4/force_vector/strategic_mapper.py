@@ -3,6 +3,7 @@
 对应 Spec §四 strategic_mapper。
 FAIL-OPEN: 异常时返回保守默认（FREEZE, cap=0.1, 仅 emergency）。
 """
+
 from __future__ import annotations
 
 import os as _os
@@ -13,10 +14,10 @@ from dataclasses import replace
 # 注入「9-基本面分析」到 sys.path（与 force_vector_calculator 保持一致）
 # ============================================================
 try:  # noqa: E402
-    _HERE = _os.path.dirname(_os.path.abspath(__file__))          # force_vector
-    _SCRIPTS = _os.path.dirname(_HERE)                            # scripts
-    _YIJING = _os.path.dirname(_SCRIPTS)                          # 11-易经推理系统
-    _ROOT = _os.path.dirname(_YIJING)                             # dreambuddy-v2
+    _HERE = _os.path.dirname(_os.path.abspath(__file__))  # force_vector
+    _SCRIPTS = _os.path.dirname(_HERE)  # scripts
+    _YIJING = _os.path.dirname(_SCRIPTS)  # 11-易经推理系统
+    _ROOT = _os.path.dirname(_YIJING)  # dreambuddy-v2
     _9_FUND_PATH = _os.path.join(_ROOT, "9-基本面分析")
     if _os.path.isdir(_9_FUND_PATH) and _9_FUND_PATH not in _sys.path:
         _sys.path.insert(0, _9_FUND_PATH)
@@ -28,7 +29,6 @@ from force_vector.models import (  # noqa: E402
     StrategicLayerOutput,
 )
 
-
 # 样式键集合（固定，保证下游 mask 字段一致）
 _STYLE_KEYS = ("trend_follow", "breakout", "momentum", "mean_revert", "emergency")
 
@@ -36,8 +36,9 @@ _STYLE_KEYS = ("trend_follow", "breakout", "momentum", "mean_revert", "emergency
 _MAG_REF = 1.0
 
 
-def _mask(trend_follow: bool, breakout: bool, momentum: bool,
-          mean_revert: bool, emergency: bool) -> dict:
+def _mask(
+    trend_follow: bool, breakout: bool, momentum: bool, mean_revert: bool, emergency: bool
+) -> dict:
     """构造 style_mask 字典，保证键集合固定。"""
     return {
         "trend_follow": trend_follow,
@@ -63,13 +64,17 @@ class StrategicMapper:
       - enable_force_vector=False → force_vectors=None（字节等价）
     """
 
-    def map(self, final_direction: float, final_magnitude: float,
-            resonance_state: str,
-            contradiction: ContradictionTransform = None,
-            force_vectors: dict = None,
-            five_scores: dict = None,
-            enable_force_vector: bool = False,
-            max_position: float = 1.0) -> StrategicLayerOutput:
+    def map(
+        self,
+        final_direction: float,
+        final_magnitude: float,
+        resonance_state: str,
+        contradiction: ContradictionTransform = None,
+        force_vectors: dict = None,
+        five_scores: dict = None,
+        enable_force_vector: bool = False,
+        max_position: float = 1.0,
+    ) -> StrategicLayerOutput:
         """映射到 war_state/cap/mask + force_vectors。
 
         Args:
@@ -78,49 +83,61 @@ class StrategicMapper:
         """
         try:
             return self._map_impl(
-                final_direction, final_magnitude, resonance_state,
-                contradiction, force_vectors, five_scores, enable_force_vector,
+                final_direction,
+                final_magnitude,
+                resonance_state,
+                contradiction,
+                force_vectors,
+                five_scores,
+                enable_force_vector,
                 max_position,
             )
         except Exception:
             # FAIL-OPEN: 任何异常 → 保守默认
             return self._conservative_default(
-                final_direction, final_magnitude, resonance_state,
-                contradiction, five_scores,
+                final_direction,
+                final_magnitude,
+                resonance_state,
+                contradiction,
+                five_scores,
             )
 
     # ============================================================
     # 内部实现
     # ============================================================
-    def _map_impl(self, final_direction, final_magnitude, resonance_state,
-                  contradiction, force_vectors, five_scores, enable_force_vector,
-                  max_position=1.0):
+    def _map_impl(
+        self,
+        final_direction,
+        final_magnitude,
+        resonance_state,
+        contradiction,
+        force_vectors,
+        five_scores,
+        enable_force_vector,
+        max_position=1.0,
+    ):
         # final_score: [-1,+1] → [0,100]
         final_score = (final_direction + 1) / 2 * 100
 
         # 基准 war_state / cap / mask
         war_state = self._war_state(final_score, resonance_state)
-        cap, mask = self._base_cap_and_mask(
-            final_direction, final_magnitude, resonance_state)
+        cap, mask = self._base_cap_and_mask(final_direction, final_magnitude, resonance_state)
         # Phase 3：仓位上限约束（metal 回撤控制）
         cap = min(cap, max(0.0, float(max_position)))
         position_mult = 1.0
 
         # 力向量透传（enable_force_vector=False → None，字节等价保证）
-        out_force_vectors = self._resolve_force_vectors(
-            force_vectors, enable_force_vector)
+        out_force_vectors = self._resolve_force_vectors(force_vectors, enable_force_vector)
 
         # 矛盾转化调整（transforming=True 时生效）
         if contradiction is not None and contradiction.transforming:
-            cap, mask, war_state, position_mult, out_force_vectors = \
-                self._apply_contradiction(
-                    contradiction, cap, mask, war_state, position_mult,
-                    out_force_vectors)
+            cap, mask, war_state, position_mult, out_force_vectors = self._apply_contradiction(
+                contradiction, cap, mask, war_state, position_mult, out_force_vectors
+            )
 
         # 监控点透传
         monitoring_points = (
-            list(contradiction.monitoring_points)
-            if contradiction is not None else []
+            list(contradiction.monitoring_points) if contradiction is not None else []
         )
 
         return StrategicLayerOutput(
@@ -203,8 +220,9 @@ class StrategicMapper:
     # ------------------------------------------------------------
     # 矛盾转化调整
     # ------------------------------------------------------------
-    def _apply_contradiction(self, contradiction, cap, mask, war_state,
-                             position_mult, out_force_vectors):
+    def _apply_contradiction(
+        self, contradiction, cap, mask, war_state, position_mult, out_force_vectors
+    ):
         ttype = contradiction.transform_type
         if ttype == "elasticity_decay":
             # cap ×0.5, 禁 trend_follow/breakout, war_state=COOLDOWN
@@ -253,8 +271,9 @@ class StrategicMapper:
     # FAIL-OPEN 保守默认
     # ------------------------------------------------------------
     @staticmethod
-    def _conservative_default(final_direction, final_magnitude, resonance_state,
-                              contradiction, five_scores):
+    def _conservative_default(
+        final_direction, final_magnitude, resonance_state, contradiction, five_scores
+    ):
         """异常兜底：FREEZE, cap=0.1, 仅 emergency。"""
         return StrategicLayerOutput(
             war_state="FREEZE",
@@ -271,6 +290,7 @@ class StrategicMapper:
             elasticity_beta=None,
             contradiction_transform=contradiction,
             primary_contradiction="",
-            monitoring_points=list(contradiction.monitoring_points)
-            if contradiction is not None else [],
+            monitoring_points=(
+                list(contradiction.monitoring_points) if contradiction is not None else []
+            ),
         )

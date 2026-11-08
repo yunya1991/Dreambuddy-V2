@@ -11,36 +11,48 @@
   3. 三屏交易系统: 潮汐(长周期)-波浪(中周期)-涟漪(短周期)
 """
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
-from typing import Dict, List, Optional, Tuple
-
+from typing import Dict, List, Optional
 
 # ============================================================
 # 工具函数: 多时间框架重采样
 # ============================================================
 
+
 def _resample_to_daily(df: pd.DataFrame) -> pd.DataFrame:
     """将1H数据重采样为日线"""
-    daily = df.resample("1D").agg({
-        "open": "first",
-        "high": "max",
-        "low": "min",
-        "close": "last",
-        "volume": "sum",
-    }).dropna()
+    daily = (
+        df.resample("1D")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
     return daily
 
 
 def _resample_to_weekly(df: pd.DataFrame) -> pd.DataFrame:
     """将1H数据重采样为周线"""
-    weekly = df.resample("1W").agg({
-        "open": "first",
-        "high": "max",
-        "low": "min",
-        "close": "last",
-        "volume": "sum",
-    }).dropna()
+    weekly = (
+        df.resample("1W")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
     return weekly
 
 
@@ -54,6 +66,7 @@ def _align_to_hourly(daily_val: pd.Series, hourly_index: pd.Index) -> pd.Series:
 # ============================================================
 # 1. 牛熊分界线特征
 # ============================================================
+
 
 def bull_bear_line_features(
     df: pd.DataFrame,
@@ -109,9 +122,12 @@ def bull_bear_line_features(
         feats[f"bb_dma{period}_slope"] = _align_to_hourly(slope, df.index)
 
         # 是否在MA上方 (1=上方, -1=下方, 0=灰区±1%)
-        above = np.where(daily["close"] > ma * 1.01, 1.0,
-                         np.where(daily["close"] < ma * 0.99, -1.0, 0.0))
-        feats[f"bb_dma{period}_above"] = _align_to_hourly(pd.Series(above, index=daily.index), df.index)
+        above = np.where(
+            daily["close"] > ma * 1.01, 1.0, np.where(daily["close"] < ma * 0.99, -1.0, 0.0)
+        )
+        feats[f"bb_dma{period}_above"] = _align_to_hourly(
+            pd.Series(above, index=daily.index), df.index
+        )
 
         # 三日确认: 连续N日收在MA上方/下方
         above_series = (daily["close"] > ma).astype(int)
@@ -141,9 +157,7 @@ def bull_bear_line_features(
         feats[f"bb_dma{period}_confirm_down"] = _align_to_hourly(
             (streak_down >= confirm_bars).astype(float), df.index
         )
-        feats[f"bb_dma{period}_streak"] = _align_to_hourly(
-            streak_up - streak_down, df.index
-        )
+        feats[f"bb_dma{period}_streak"] = _align_to_hourly(streak_up - streak_down, df.index)
 
     # ---- 周线MA位置 ----
     weekly = _resample_to_weekly(df)
@@ -159,7 +173,9 @@ def bull_bear_line_features(
         feats[f"bb_wma{period}_slope"] = _align_to_hourly(slope, df.index)
 
         above = np.where(weekly["close"] > ma, 1.0, -1.0)
-        feats[f"bb_wma{period}_above"] = _align_to_hourly(pd.Series(above, index=weekly.index), df.index)
+        feats[f"bb_wma{period}_above"] = _align_to_hourly(
+            pd.Series(above, index=weekly.index), df.index
+        )
 
     # ---- 牛熊状态编码 ----
     # 综合日线MA200 + 周线MA50判断牛熊
@@ -198,10 +214,16 @@ def bull_bear_line_features(
 def _bb_feature_names(daily_periods: List[int], weekly_periods: List[int]) -> List[str]:
     names = []
     for p in daily_periods:
-        names.extend([
-            f"bb_dma{p}_pos", f"bb_dma{p}_slope", f"bb_dma{p}_above",
-            f"bb_dma{p}_confirm_up", f"bb_dma{p}_confirm_down", f"bb_dma{p}_streak",
-        ])
+        names.extend(
+            [
+                f"bb_dma{p}_pos",
+                f"bb_dma{p}_slope",
+                f"bb_dma{p}_above",
+                f"bb_dma{p}_confirm_up",
+                f"bb_dma{p}_confirm_down",
+                f"bb_dma{p}_streak",
+            ]
+        )
     for p in weekly_periods:
         names.extend([f"bb_wma{p}_pos", f"bb_wma{p}_slope", f"bb_wma{p}_above"])
     names.extend(["bb_daily_bull", "bb_weekly_bull", "bb_bull_score"])
@@ -211,6 +233,7 @@ def _bb_feature_names(daily_periods: List[int], weekly_periods: List[int]) -> Li
 # ============================================================
 # 2. Elder-ray 指标
 # ============================================================
+
 
 def elder_ray_features(
     df: pd.DataFrame,
@@ -297,31 +320,35 @@ def elder_ray_features(
     bear_rolling = bear_power.rolling(divergence_lookback).min()
     price_new_low = low <= low_rolling * 1.005  # 接近新低
     bear_not_new_low = bear_power > bear_rolling * 0.8  # Bear Power没那么低
-    feats["er_bullish_divergence"] = (price_new_low & bear_not_new_low & (bear_power < 0)).astype(float)
+    feats["er_bullish_divergence"] = (price_new_low & bear_not_new_low & (bear_power < 0)).astype(
+        float
+    )
 
     # 看跌背离 (Bearish divergence on Bull Power): 价格新高, Bull Power不新高
     high_rolling = high.rolling(divergence_lookback).max()
     bull_rolling = bull_power.rolling(divergence_lookback).max()
     price_new_high = high >= high_rolling * 0.995
     bull_not_new_high = bull_power < bull_rolling * 1.2
-    feats["er_bearish_divergence"] = (price_new_high & bull_not_new_high & (bull_power > 0)).astype(float)
+    feats["er_bearish_divergence"] = (price_new_high & bull_not_new_high & (bull_power > 0)).astype(
+        float
+    )
 
     # ---- 经典做多/做空信号 ----
     # 做多: EMA向上 + Bear<0 + 看涨背离 + Bear上升
     long_setup = (
-        (ema_slope > 0) &
-        (bear_power < 0) &
-        (bear_change > 0) &
-        (feats["er_bullish_divergence"] > 0)
+        (ema_slope > 0)
+        & (bear_power < 0)
+        & (bear_change > 0)
+        & (feats["er_bullish_divergence"] > 0)
     )
     feats["er_long_signal"] = long_setup.astype(float)
 
     # 做空: EMA向下 + Bull>0 + 看跌背离 + Bull下降
     short_setup = (
-        (ema_slope < 0) &
-        (bull_power > 0) &
-        (bull_change < 0) &
-        (feats["er_bearish_divergence"] > 0)
+        (ema_slope < 0)
+        & (bull_power > 0)
+        & (bull_change < 0)
+        & (feats["er_bearish_divergence"] > 0)
     )
     feats["er_short_signal"] = short_setup.astype(float)
 
@@ -336,11 +363,12 @@ def elder_ray_features(
 # 3. 三屏交易系统特征 (Triple Screen Trading System)
 # ============================================================
 
+
 def triple_screen_features(
     df: pd.DataFrame,
-    long_period: str = "1D",    # 第一屏: 潮汐 (日线)
-    mid_period: str = "4h",     # 第二屏: 波浪 (4小时)
-    short_period: str = "1h",   # 第三屏: 涟漪 (1小时 = 当前周期)
+    long_period: str = "1D",  # 第一屏: 潮汐 (日线)
+    mid_period: str = "4h",  # 第二屏: 波浪 (4小时)
+    short_period: str = "1h",  # 第三屏: 涟漪 (1小时 = 当前周期)
 ) -> pd.DataFrame:
     """
     三屏交易系统特征 — Alexander Elder的经典三重滤网
@@ -379,12 +407,8 @@ def triple_screen_features(
         daily_dif = daily_ema12 - daily_ema26
         daily_dea = daily_dif.ewm(span=9, adjust=False).mean()
         daily_macd_hist = daily_dif - daily_dea
-        feats["ts_tide_macd_hist"] = _align_to_hourly(
-            daily_macd_hist / daily["close"], df.index
-        )
-        feats["ts_tide_macd_up"] = _align_to_hourly(
-            (daily_macd_hist > 0).astype(float), df.index
-        )
+        feats["ts_tide_macd_hist"] = _align_to_hourly(daily_macd_hist / daily["close"], df.index)
+        feats["ts_tide_macd_up"] = _align_to_hourly((daily_macd_hist > 0).astype(float), df.index)
     else:
         feats["ts_tide_direction"] = 0.0
         feats["ts_tide_strength"] = 0.0
@@ -393,16 +417,25 @@ def triple_screen_features(
 
     # ---- 第二屏: 波浪 (中周期震荡) ----
     # 用4小时重采样
-    four_h = df.resample("4h").agg({
-        "open": "first", "high": "max", "low": "min",
-        "close": "last", "volume": "sum",
-    }).dropna()
+    four_h = (
+        df.resample("4h")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
 
     if len(four_h) >= 30:
         # 4h EMA13 + Elder-ray = 波浪震荡
         mid_ema = four_h["close"].ewm(span=13, adjust=False).mean()
-        mid_bull = four_h["high"] - mid_ema
-        mid_bear = four_h["low"] - mid_ema
+        mid_bull = four_h["high"] - mid_ema  # noqa: F841
+        mid_bear = four_h["low"] - mid_ema  # noqa: F841
 
         # 中期回调: 长趋势向上但中期向下 = 买入回撤
         # (用MACD柱状图的方向表示中期震荡)
@@ -446,19 +479,11 @@ def triple_screen_features(
     feats["ts_alignment_score"] = alignment_score
 
     # 三屏经典做多: 潮汐向上 + 波浪回调(向下) + 涟漪向上突破 = 买入回撤
-    long_three = (
-        (tide > 0) &
-        (wave < 0) &
-        (feats["ts_ripple_break_high3"] > 0)
-    )
+    long_three = (tide > 0) & (wave < 0) & (feats["ts_ripple_break_high3"] > 0)
     feats["ts_triple_long"] = long_three.astype(float)
 
     # 三屏经典做空: 潮汐向下 + 波浪反弹(向上) + 涟漪向下跌破 = 卖出反弹
-    short_three = (
-        (tide < 0) &
-        (wave > 0) &
-        (feats["ts_ripple_break_low3"] > 0)
-    )
+    short_three = (tide < 0) & (wave > 0) & (feats["ts_ripple_break_low3"] > 0)
     feats["ts_triple_short"] = short_three.astype(float)
 
     # 填充
@@ -471,6 +496,7 @@ def triple_screen_features(
 # ============================================================
 # P0-01: ADX(14) + DI（Wilder 1978 标准实现）
 # ============================================================
+
 
 def _wilder_ema(values: np.ndarray, period: int) -> np.ndarray:
     """Wilder 平滑：相当于 alpha=1/period 的 EMA。
@@ -590,6 +616,7 @@ def compute_adx_features(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
 # P0-02: Hurst 指数（R/S 分析法）
 # ============================================================
 
+
 def _compute_hurst_rs(series: np.ndarray, min_n: int = 8, max_n: int = 60) -> float:
     """工程近似 Hurst Exponent（数值稳定、对震荡/趋势/随机游走三类可区分）。
 
@@ -636,7 +663,7 @@ def _compute_hurst_rs(series: np.ndarray, min_n: int = 8, max_n: int = 60) -> fl
     amplitudes = []
     step = max(1, w // 2)
     for start in range(0, len(s) - w + 1, step):
-        seg = s[start:start + w]
+        seg = s[start : start + w]
         seg_min = float(np.nanmin(seg))
         seg_max = float(np.nanmax(seg))
         if seg_min > 1e-18:
@@ -693,11 +720,7 @@ def _compute_hurst_rs(series: np.ndarray, min_n: int = 8, max_n: int = 60) -> fl
 
     # ===== 综合加权 =====
     ws = {"lin": 0.45, "amp": 0.35, "scale": 0.20}
-    H = (
-        ws["lin"] * H_lin
-        + ws["amp"] * H_amp
-        + ws["scale"] * H_scale
-    )
+    H = ws["lin"] * H_lin + ws["amp"] * H_amp + ws["scale"] * H_scale
     return float(np.clip(H, 0.0, 1.0))
 
 
@@ -709,7 +732,11 @@ def compute_hurst_features(close: pd.Series) -> dict:
       - hurst_exp_100: min_n=10, max_n=100
       - hurst_category: 0(H<0.45 均值回归) / 1(0.45≤H≤0.55 随机) / 2(H>0.55 趋势)
     """
-    arr = close.to_numpy(dtype=float) if isinstance(close, pd.Series) else np.asarray(close, dtype=float)
+    arr = (
+        close.to_numpy(dtype=float)
+        if isinstance(close, pd.Series)
+        else np.asarray(close, dtype=float)
+    )
     h50 = _compute_hurst_rs(arr, min_n=8, max_n=50)
     h100 = _compute_hurst_rs(arr, min_n=10, max_n=100)
     # 分类使用 h100（更稳定）
@@ -730,7 +757,10 @@ def compute_hurst_features(close: pd.Series) -> dict:
 # P0-03: 布林带宽度百分位（20日 BB / 252 日回看）+ squeeze
 # ============================================================
 
-def compute_bb_width_features(close: pd.Series, bb_period: int = 20, lookback: int = 252) -> pd.DataFrame:
+
+def compute_bb_width_features(
+    close: pd.Series, bb_period: int = 20, lookback: int = 252
+) -> pd.DataFrame:
     """布林带宽度在最近 lookback 期的百分位 + squeeze 信号。
 
     输出: DataFrame with:
@@ -747,7 +777,9 @@ def compute_bb_width_features(close: pd.Series, bb_period: int = 20, lookback: i
     percentile = bb_width.rolling(lookback, min_periods=max(20, bb_period)).rank(pct=True)
     pct_vals = percentile.to_numpy(dtype=float)
     squeeze = np.where(np.isfinite(pct_vals) & (pct_vals < 0.10), 1.0, 0.0)
-    feats["bb_width_percentile_252"] = pd.Series(np.nan_to_num(pct_vals, nan=0.5, posinf=1.0, neginf=0.0), index=idx)
+    feats["bb_width_percentile_252"] = pd.Series(
+        np.nan_to_num(pct_vals, nan=0.5, posinf=1.0, neginf=0.0), index=idx
+    )
     feats["bb_squeeze_signal"] = pd.Series(squeeze, index=idx)
     return feats
 
@@ -755,6 +787,7 @@ def compute_bb_width_features(close: pd.Series, bb_period: int = 20, lookback: i
 # ============================================================
 # P0-04: 距 60/120 日高点比例
 # ============================================================
+
 
 def compute_distance_to_high_features(close: pd.Series) -> pd.DataFrame:
     """距 N 日高点的回撤比例 (ratio = close / rolling_max_close, 0-1)。
@@ -770,14 +803,19 @@ def compute_distance_to_high_features(close: pd.Series) -> pd.DataFrame:
     hi120 = s.rolling(120, min_periods=1).max()
     r60 = (s / (hi60 + 1e-12)).clip(0, 1.5)
     r120 = (s / (hi120 + 1e-12)).clip(0, 1.5)
-    feats["distance_to_high_60d"] = pd.Series(np.nan_to_num(r60.to_numpy(dtype=float), nan=1.0), index=idx)
-    feats["distance_to_high_120d"] = pd.Series(np.nan_to_num(r120.to_numpy(dtype=float), nan=1.0), index=idx)
+    feats["distance_to_high_60d"] = pd.Series(
+        np.nan_to_num(r60.to_numpy(dtype=float), nan=1.0), index=idx
+    )
+    feats["distance_to_high_120d"] = pd.Series(
+        np.nan_to_num(r120.to_numpy(dtype=float), nan=1.0), index=idx
+    )
     return feats
 
 
 # ============================================================
 # 主入口: 经典经验特征引擎
 # ============================================================
+
 
 class ClassicExperienceFeatures:
     """
@@ -832,6 +870,7 @@ class ClassicExperienceFeatures:
 # 单独注册，方便 enabled_set=btc_morphology 时只加载该模块
 # ============================================================
 
+
 class MorphologyCoreFeatures:
     """Phase 0 形态核心组：ADX + Hurst + BB宽度百分位 + 距高比例
 
@@ -840,7 +879,9 @@ class MorphologyCoreFeatures:
 
     def compute(self, df: pd.DataFrame) -> pd.DataFrame:
         feats = pd.DataFrame(index=df.index)
-        close_series = df["close"] if "close" in df.columns else pd.Series(df.iloc[:, -1], index=df.index)
+        close_series = (
+            df["close"] if "close" in df.columns else pd.Series(df.iloc[:, -1], index=df.index)
+        )
 
         # P0-01: ADX(14) + DI + trend_strength_bucket（4 列）
         adx_feats = compute_adx_features(df)

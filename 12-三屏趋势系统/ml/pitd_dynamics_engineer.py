@@ -14,14 +14,14 @@
 文件: ml/pitd_dynamics_engineer.py
 """
 
-import os
 import json
-import time
+import os
+from typing import List, Optional
+from urllib.error import URLError
+from urllib.request import Request, urlopen
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional
-from urllib.request import urlopen, Request
-from urllib.error import URLError
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -36,17 +36,17 @@ class DynamicsEngineer:
 
     FEATURE_NAMES: List[str] = [
         # 基础动力学量 (4维)
-        "dyn_force_net",            # 合力 F = m×a - μ×m×σ
-        "dyn_momentum",             # 动量 P = m×v
-        "dyn_kinetic_energy",       # 动能 E_k = ½×m×v²
-        "dyn_mass",                 # 质量m（流动性环境）
+        "dyn_force_net",  # 合力 F = m×a - μ×m×σ
+        "dyn_momentum",  # 动量 P = m×v
+        "dyn_kinetic_energy",  # 动能 E_k = ½×m×v²
+        "dyn_mass",  # 质量m（流动性环境）
         # 周线动力学 (2维)
-        "dyn_force_W",              # 周线合力
-        "dyn_momentum_W",           # 周线动量
+        "dyn_force_W",  # 周线合力
+        "dyn_momentum_W",  # 周线动量
         # 动量传递效率 (3维) — 理论1核心
-        "dyn_coupling_eta",         # 大小周期动量传递效率
-        "dyn_force_ratio_WD",       # 大小周期力比 |F_W|/|F_D|
-        "dyn_friction_ratio",       # 摩擦力占比 μ×m×σ/(m×|a|+ε)
+        "dyn_coupling_eta",  # 大小周期动量传递效率
+        "dyn_force_ratio_WD",  # 大小周期力比 |F_W|/|F_D|
+        "dyn_friction_ratio",  # 摩擦力占比 μ×m×σ/(m×|a|+ε)
     ]
 
     def __init__(
@@ -132,8 +132,11 @@ class DynamicsEngineer:
             with open(self.stablecoin_cache_path, "w") as f:
                 json.dump(df_reset.to_dict("records"), f)
 
-            print("  [Dynamics] DefiLlama获取成功: {}条, 范围 {} ~ {}".format(
-                len(df), df.index[0].date(), df.index[-1].date()))
+            print(
+                "  [Dynamics] DefiLlama获取成功: {}条, 范围 {} ~ {}".format(
+                    len(df), df.index[0].date(), df.index[-1].date()
+                )
+            )
             self._stablecoin_data = df
             return df
 
@@ -198,7 +201,7 @@ class DynamicsEngineer:
         返回:
             DataFrame, 9维动力学特征
         """
-        n = len(prices)
+        n = len(prices)  # noqa: F841
         result = pd.DataFrame(index=prices.index, columns=self.FEATURE_NAMES, dtype=float)
 
         # 计算质量
@@ -236,7 +239,7 @@ class DynamicsEngineer:
         result["dyn_momentum"] = mass * v_D
 
         # 动能 E_k = ½×m×v²
-        result["dyn_kinetic_energy"] = 0.5 * mass * v_D ** 2
+        result["dyn_kinetic_energy"] = 0.5 * mass * v_D**2
 
         # 质量m
         result["dyn_mass"] = mass
@@ -315,8 +318,14 @@ class DynamicsEngineer:
             "eta_strong_weak_ratio": float(eta_ratio),
             "mass_range": (float(mass.min()), float(mass.max())),
             "eta_range": (float(eta.min()), float(eta.max())),
-            "verdict": "✅ 物理意义合理" if (
-                mass_positive > 0.99 and momentum_sign_ok > 0.95
-                and kinetic_nonneg > 0.99 and eta_in_range > 0.95
-            ) else "⚠️ 需检查",
+            "verdict": (
+                "✅ 物理意义合理"
+                if (
+                    mass_positive > 0.99
+                    and momentum_sign_ok > 0.95
+                    and kinetic_nonneg > 0.99
+                    and eta_in_range > 0.95
+                )
+                else "⚠️ 需检查"
+            ),
         }

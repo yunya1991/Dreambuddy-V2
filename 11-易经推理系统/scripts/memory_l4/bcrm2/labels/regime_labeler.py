@@ -8,6 +8,7 @@
 TREND_UP_STRONG, TREND_UP_MILD, RANGE_BOUND, CONSOLIDATION,
 REVERSAL, VOLATILE_DROP, FOMO_RALLY, DISTRIBUTION
 """
+
 from __future__ import annotations
 
 import math
@@ -15,7 +16,6 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-
 
 # 8 态顺序 / 枚举（与 MarketRegimeClassifier 不完全一致；Spec §4.1 定义新的 8 态）
 REGIME_ORDER: list = [
@@ -108,17 +108,19 @@ def generate_8state_label(
         z20 = _rolling_zscore(close, 20)
         z20_prev = z20.shift(10)
         reversal_proxy = (
-            ((z20_prev > 1.8) & (z20 < 0.4)) |
-            ((z20_prev < -1.8) & (z20 > -0.4))
+            ((z20_prev > 1.8) & (z20 < 0.4)) | ((z20_prev < -1.8) & (z20 > -0.4))
         ).astype(float)
         ret_10 = close.pct_change(10)
         # 注意：去掉 fut_10 依赖，只用「已实现收益 + 价格 z-score 转折」构造
         # 10 日强正收益后，价格又从高点回撤 → 视为反转概率上升
-        price_from_peak = (close - close.rolling(10, min_periods=3).max()) / close.rolling(10, min_periods=3).max()
-        price_from_trough = (close - close.rolling(10, min_periods=3).min()) / close.rolling(10, min_periods=3).min()
-        contrarian = (
-            ((ret_10 > 0.06) & (price_from_peak < -0.04)) |
-            ((ret_10 < -0.06) & (price_from_trough > 0.04))
+        price_from_peak = (close - close.rolling(10, min_periods=3).max()) / close.rolling(
+            10, min_periods=3
+        ).max()
+        price_from_trough = (close - close.rolling(10, min_periods=3).min()) / close.rolling(
+            10, min_periods=3
+        ).min()
+        contrarian = ((ret_10 > 0.06) & (price_from_peak < -0.04)) | (
+            (ret_10 < -0.06) & (price_from_trough > 0.04)
         )
         bocpd_prob = 0.5 * reversal_proxy + 0.5 * contrarian.astype(float)
 
@@ -126,9 +128,11 @@ def generate_8state_label(
     # 经典经验：日线站上 MA200 = 牛市环境，跌破 = 熊市环境
     # 注意：MA200/周期特征已作为模型输入特征，标签生成不硬编码周期阶段
     ma200 = close.rolling(200, min_periods=100).mean()
-    ma200_above = (close > ma200).astype(float)
-    ma200_distance_pct = ((close - ma200) / ma200 * 100.0).replace([np.inf, -np.inf], 0.0)
-    ma200_slope_20d = ma200.pct_change(20).replace([np.inf, -np.inf], 0.0)
+    ma200_above = (close > ma200).astype(float)  # noqa: F841
+    ma200_distance_pct = ((close - ma200) / ma200 * 100.0).replace(  # noqa: F841
+        [np.inf, -np.inf], 0.0
+    )  # noqa: F841
+    ma200_slope_20d = ma200.pct_change(20).replace([np.inf, -np.inf], 0.0)  # noqa: F841
 
     # ===== 未来收益：仅作为辅助弱校验，不作为主判定 =====
     # 只用「绝对正负」或「极端幅度」，避免引入过度复杂的不可预测分位信息
@@ -165,10 +169,7 @@ def generate_8state_label(
 
     # ----- REVERSAL（转折点）：主靠 BOCPD 代理 -----
     # 要求：转折信号强 + 趋势绝对值已经不大（即真的"转"了，不是趋势中途的噪声）
-    is_reversal = (
-        (bocpd_prob > 0.30) &
-        (trend_60.abs() < 0.15)
-    )
+    is_reversal = (bocpd_prob > 0.30) & (trend_60.abs() < 0.15)
 
     # ----- FOMO_RALLY（狂热上涨）：主靠「强趋势 + 高波动」当前特征 -----
     # MA200/周期作为特征输入让模型学习，不在标签中硬编码
@@ -193,9 +194,10 @@ def generate_8state_label(
 
     # ----- DISTRIBUTION（派发）：趋势略负 + ADX 疲弱 + BB 偏宽 -----
     is_distribution = (
-        (trend_60 < trend_q40) &
-        (adx < 28) &
-        (bb_width_pct > 0.50) &
+        (trend_60 < trend_q40)
+        & (adx < 28)
+        & (bb_width_pct > 0.50)
+        &
         # 弱校验：未来 20 日没有极端暴涨（避免把 FOMO 启动点错判为派发）
         (future_ret_simple < 0.05)
     )
@@ -211,25 +213,14 @@ def generate_8state_label(
     # ----- TREND_UP_MILD：趋势中强 + ADX 中强 -----
     is_mild_up = (
         # 主判定：top40% 趋势 + ADX>14，且没有被「强多 / FOMO」捕获
-        (
-            (trend_60 > trend_q60) &
-            (adx > 14) &
-            (~is_strong_up) &
-            (~is_fomo)
-        )
+        ((trend_60 > trend_q60) & (adx > 14) & (~is_strong_up) & (~is_fomo))
         # 兜底：60 日收益 > +5% 的绝对弱上涨，防漏掉
-        | (
-            (trend_60 > 0.05) &
-            (~is_strong_up) &
-            (~is_fomo)
-        )
+        | ((trend_60 > 0.05) & (~is_strong_up) & (~is_fomo))
     )
 
     # ----- CONSOLIDATION（横盘）：低波动 + 窄布林 + 小趋势绝对值 -----
     is_consolidation = (
-        (vol_20 < vol_q50 * 0.9 + vol_q25 * 0.1) &
-        (bb_width_pct < 0.55) &
-        (trend_60.abs() < 0.10)
+        (vol_20 < vol_q50 * 0.9 + vol_q25 * 0.1) & (bb_width_pct < 0.55) & (trend_60.abs() < 0.10)
     )
 
     # 按优先级赋值：兜底 → 横盘/弱趋势 → 强趋势 → 派发 → 极端事件
@@ -252,12 +243,13 @@ def generate_8state_label(
     invalid_mask[:lookback] = True
     invalid_mask[-forward_days:] = True
     invalid_mask |= (
-        trend_60.isna().values |
-        vol_20.isna().values |
-        adx.isna().values |
-        bb_width_pct.isna().values |
-        trend_q60.isna().values |
-        vol_q50.isna().values |
+        trend_60.isna().values
+        | vol_20.isna().values
+        | adx.isna().values
+        | bb_width_pct.isna().values
+        | trend_q60.isna().values
+        | vol_q50.isna().values
+        |
         # 保留 future_ret 作为辅助时，仍然要求其非 NaN（最后 forward_days 已置）
         future_ret.isna().values
     )
@@ -296,16 +288,11 @@ def _balance_labels(
     result = labels.copy()
 
     for label in regime_order:
-        mask = (result == label)
+        mask = result == label
         count = mask.sum()
         if count > max_per_class and count > min_count:
             # 按 trend_60 绝对值排序，最弱的降级
-            weak_indices = (
-                trend_60[mask]
-                .abs()
-                .sort_values()
-                .index[:count - max_per_class]
-            )
+            weak_indices = trend_60[mask].abs().sort_values().index[: count - max_per_class]
             result.loc[weak_indices] = "RANGE_BOUND"
 
     return result

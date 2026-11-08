@@ -26,6 +26,7 @@ RPC 方法：
 
 FAIL-OPEN: 网络异常/解析失败 → 返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -76,9 +77,7 @@ class SolanaNativeCollector(BaseCollector):
 
         sol_price = self._fetch_sol_price()
 
-        return [self._build_record(
-            supply_data, vote_data, epoch_data, perf_data, sol_price
-        )]
+        return [self._build_record(supply_data, vote_data, epoch_data, perf_data, sol_price)]
 
     def _rpc_call(self, method: str, params: list) -> dict | None:
         """调用 Solana RPC 方法。"""
@@ -111,8 +110,12 @@ class SolanaNativeCollector(BaseCollector):
             return 0.0
 
     def _build_record(
-        self, supply: dict, vote: dict | None, epoch: dict | None,
-        perf: list | None, sol_price: float,
+        self,
+        supply: dict,
+        vote: dict | None,
+        epoch: dict | None,
+        perf: list | None,
+        sol_price: float,
     ) -> DataRecord:
         """构建 DataRecord。"""
         now = datetime.now(timezone.utc).isoformat()
@@ -153,9 +156,7 @@ class SolanaNativeCollector(BaseCollector):
         tps = 0.0
         if perf and isinstance(perf, list) and len(perf) > 0:
             sample = perf[0] if isinstance(perf[0], dict) else {}
-            tps = float(sample.get("numTransactions", 0)) / float(
-                sample.get("numSlots", 1) or 1
-            )
+            tps = float(sample.get("numTransactions", 0)) / float(sample.get("numSlots", 1) or 1)
             # 更准确：numTransactions / samplePeriod（秒）
             period = float(sample.get("samplePeriodSecs", 1) or 1)
             tps = float(sample.get("numTransactions", 0)) / period if period > 0 else 0.0

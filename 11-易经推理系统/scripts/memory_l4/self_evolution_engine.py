@@ -22,6 +22,7 @@
   - scripts/memory_l4/tavily_macro.py（联网）
   - scripts/memory_l4/bcrm/walk_forward.py（回测验证）
 """
+
 import json
 import os
 import warnings
@@ -802,7 +803,7 @@ class SelfEvolutionEngine:
             proposals = []
             lines = {
                 l.split(":")[0].strip(): ":".join(l.split(":")[1:]).strip()
-                for l in reply.strip().split("\n")
+                for l in reply.strip().split("\n")  # noqa: E741
                 if ":" in l
             }
             if lines.get("参数名"):

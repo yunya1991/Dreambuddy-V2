@@ -5,10 +5,11 @@ dreambuddy_dal.protocols.knowledge_repo — 知识库只读 Repository Protocol
 只读方法：vector_search / fts_search / hybrid_search
 写入（ingest/vectorize）走 knowledge-ingest 工作流，不在此 Protocol 暴露。
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List
 
 
 class KnowledgeRepository(ABC):

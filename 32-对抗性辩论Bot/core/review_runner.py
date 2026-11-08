@@ -8,6 +8,7 @@ transcript + verdict + 元数据，便于其他系统直接消费。
     result = run_review_sync("命题", background="背景", rounds=2)
     print(result["verdict"])
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -16,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from core.agents import BullAgent, BearAgent, JudgeAgent
+from core.agents import BearAgent, BullAgent, JudgeAgent
 from core.cross_exam import run_cross_examination
 from core.llm_compat import LLMSettings, create_llm_client
 from core.models import Turn
@@ -69,7 +70,10 @@ class ReviewResult:
 
 
 def _adjudicate_sync(
-    judge_llm: Any, topic: str, transcript: list[dict], verdict: dict,
+    judge_llm: Any,
+    topic: str,
+    transcript: list[dict],
+    verdict: dict,
 ) -> dict:
     """同步调用 DSH Adjudicator（在线程中执行）。"""
     from core.dsh_backend import _load_dsh
@@ -90,17 +94,27 @@ def _adjudicate_sync(
 
 
 async def _run_adjudication(
-    judge_llm: Any, topic: str, transcript: list[dict], verdict: dict,
+    judge_llm: Any,
+    topic: str,
+    transcript: list[dict],
+    verdict: dict,
     adjudicator: Any = None,
 ) -> Any:
     """执行 6 维 adjudication；注入 adjudicator 便于测试/复用。"""
     if adjudicator is not None:
         result = await asyncio.to_thread(
-            adjudicator.adjudicate, topic, transcript, verdict,
+            adjudicator.adjudicate,
+            topic,
+            transcript,
+            verdict,
         )
     else:
         result = await asyncio.to_thread(
-            _adjudicate_sync, judge_llm, topic, transcript, verdict,
+            _adjudicate_sync,
+            judge_llm,
+            topic,
+            transcript,
+            verdict,
         )
     return result.to_dict() if hasattr(result, "to_dict") else result
 
@@ -163,10 +177,7 @@ async def run_review(
 
     bull = BullAgent(debater_llm, max_tokens=2000, profile=profile_obj)
     bear = BearAgent(debater_llm, max_tokens=2000, profile=profile_obj)
-    judge_agent = (
-        JudgeAgent(judge_llm, max_tokens=1600, profile=profile_obj)
-        if judge else None
-    )
+    judge_agent = JudgeAgent(judge_llm, max_tokens=1600, profile=profile_obj) if judge else None
 
     transcript: list[Turn] = []
     degraded_turns: list[dict] = []
@@ -183,7 +194,11 @@ async def run_review(
 
         if cross_examination and round_index == 1:
             await run_cross_examination(
-                bull, bear, topic, transcript, background=background,
+                bull,
+                bear,
+                topic,
+                transcript,
+                background=background,
                 round_num=round_index,
             )
 
@@ -198,7 +213,9 @@ async def run_review(
     if adjudication:
         try:
             adjudication_result = await _run_adjudication(
-                judge_llm, topic, [_turn_dict(t) for t in transcript],
+                judge_llm,
+                topic,
+                [_turn_dict(t) for t in transcript],
                 verdict.__dict__ if verdict is not None else {},
                 adjudicator=adjudicator,
             )
@@ -241,6 +258,7 @@ def run_review_sync(
     **kwargs: Any,
 ) -> ReviewResult:
     """同步入口；timeout 为整场评审（含 research）的总超时秒数。"""
+
     async def _runner() -> ReviewResult:
         coro = run_review(topic, **kwargs)
         if timeout is None:

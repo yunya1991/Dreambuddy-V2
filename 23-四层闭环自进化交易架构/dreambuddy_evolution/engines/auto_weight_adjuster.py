@@ -17,6 +17,7 @@ HC: FAIL-OPEN 异常不调整
 持久化:
   内存中实时调整，定期持久化到 library.json
 """
+
 from __future__ import annotations
 
 import logging
@@ -107,7 +108,10 @@ class AutoWeightAdjuster:
 
             current_weight = float(meta["weight"])
             new_weight = self._compute_new_weight(
-                current_weight, win_rate, sample_count, combo.get("combo_id", ""),
+                current_weight,
+                win_rate,
+                sample_count,
+                combo.get("combo_id", ""),
             )
             meta["weight"] = round(new_weight, 4)
 
@@ -140,7 +144,10 @@ class AutoWeightAdjuster:
 
             current_weight = float(gene_data["weight"])
             new_weight = self._compute_new_weight(
-                current_weight, win_rate, sample_count, gene_id,
+                current_weight,
+                win_rate,
+                sample_count,
+                gene_id,
             )
             gene_data["weight"] = round(new_weight, 4)
 
@@ -159,12 +166,20 @@ class AutoWeightAdjuster:
             new_weight = current_weight * self.WEIGHT_UPGRADE_FACTOR
             logger.info(
                 "[AutoWeight] %s 升级: %.3f → %.3f (win_rate=%.2f, n=%d)",
-                gene_id, current_weight, new_weight, win_rate, sample_count,
+                gene_id,
+                current_weight,
+                new_weight,
+                win_rate,
+                sample_count,
             )
         elif win_rate < self.WEIGHT_DOWNGRADE_THRESHOLD:
             new_weight = current_weight * self.WEIGHT_DOWNGRADE_FACTOR
             logger.info(
                 "[AutoWeight] %s 降级: %.3f → %.3f (win_rate=%.2f, n=%d)",
-                gene_id, current_weight, new_weight, win_rate, sample_count,
+                gene_id,
+                current_weight,
+                new_weight,
+                win_rate,
+                sample_count,
             )
         return max(self.WEIGHT_FLOOR, min(self.WEIGHT_CEILING, new_weight))

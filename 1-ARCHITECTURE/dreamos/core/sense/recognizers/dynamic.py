@@ -18,13 +18,15 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 
-from .base import BaseRecognizer
-from ..types import (
-    IntentInput, RecognizerResult, IntentType,
-    register_intent_type, get_intent_definition,
-)
 from dreamos.shared.utils import Timer
 
+from ..types import (
+    IntentInput,
+    IntentType,
+    RecognizerResult,
+    register_intent_type,
+)
+from .base import BaseRecognizer
 
 # 自定义识别函数类型
 RecognizerFn = Callable[[IntentInput], Optional[RecognizerResult]]
@@ -123,12 +125,14 @@ class DynamicIntentRecognizer(BaseRecognizer):
                     results.append(result)
             except Exception as e:
                 # 单个策略失败不影响整体
-                results.append(RecognizerResult(
-                    recognizer=f"{self.name}/{name}",
-                    intent_type=IntentType.UNCERTAIN.value,
-                    confidence=0.0,
-                    rationale=f"策略执行异常: {e}",
-                ))
+                results.append(
+                    RecognizerResult(
+                        recognizer=f"{self.name}/{name}",
+                        intent_type=IntentType.UNCERTAIN.value,
+                        confidence=0.0,
+                        rationale=f"策略执行异常: {e}",
+                    )
+                )
 
         with timer:
             pass
@@ -143,8 +147,7 @@ class DynamicIntentRecognizer(BaseRecognizer):
 
         # 附加其他候选结果到 context
         best.context["all_results"] = [
-            {"recognizer": r.recognizer, "intent_type": r.intent_type,
-             "confidence": r.confidence}
+            {"recognizer": r.recognizer, "intent_type": r.intent_type, "confidence": r.confidence}
             for r in results
         ]
 

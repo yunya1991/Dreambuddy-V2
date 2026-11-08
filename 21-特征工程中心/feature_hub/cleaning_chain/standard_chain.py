@@ -3,6 +3,7 @@
 顺序：① InfNaNImpute → ② RobustScalerIQR → ③ VIFDropper → ④ IVDropper
 L1 fail-open：任一步异常 → Raw 透传 + log.warning（永不阻塞）
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,14 +35,20 @@ class StandardCleaningChain:
         self.steps = [
             ("InfNaNImpute", InfNaNImpute()),
             ("RobustScalerIQR", RobustScalerIQR()),
-            ("VIFDropper", VIFDropper(
-                threshold=vif_threshold,
-                skip_if=vif_skip_if or (lambda X: len(X) < 1000),
-            )),
-            ("IVDropper", IVDropper(
-                threshold=iv_threshold,
-                skip_if=iv_skip_if or (lambda y: y is None),
-            )),
+            (
+                "VIFDropper",
+                VIFDropper(
+                    threshold=vif_threshold,
+                    skip_if=vif_skip_if or (lambda X: len(X) < 1000),
+                ),
+            ),
+            (
+                "IVDropper",
+                IVDropper(
+                    threshold=iv_threshold,
+                    skip_if=iv_skip_if or (lambda y: y is None),
+                ),
+            ),
         ]
 
     def fit_transform(
@@ -60,7 +67,9 @@ class StandardCleaningChain:
             except Exception as exc:
                 logger.warning(
                     "[FeatureHub] cleaning step '%s' failed: %s — "
-                    "returning raw features (fail-open)", name, exc,
+                    "returning raw features (fail-open)",
+                    name,
+                    exc,
                 )
                 return out
         return out

@@ -11,20 +11,15 @@
 调研: 记忆 VM-1789089211280（segfault 源于 cv2/numpy ABI 不兼容）
 """
 
-import json
+import json  # noqa: I001
 import os
 import subprocess
 import sys
 
-import pytest
-
-SERVER_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "packages", "python-server"
-)
+SERVER_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "packages", "python-server")
 sys.path.insert(0, SERVER_DIR)
 
 from server import lazy_import_heavy  # noqa: E402
-
 
 # 重原生库白名单（绝不允许出现在模块级 import）
 HEAVY_NATIVE_LIBS = ["cv2", "numpy", "causalml", "shap", "torch", "tensorflow"]
@@ -83,22 +78,16 @@ class TestF06ModuleLevelIsolation:
             "print(json.dumps(loaded))"
         )
         result = _run_in_subprocess(script)
-        assert result.returncode == 0, (
-            f"子进程 import server 失败: stderr={result.stderr}"
-        )
+        assert result.returncode == 0, f"子进程 import server 失败: stderr={result.stderr}"
         loaded_heavy = json.loads(result.stdout.strip())
-        assert loaded_heavy == [], (
-            f"模块级 import 了重原生库: {loaded_heavy}"
-        )
+        assert loaded_heavy == [], f"模块级 import 了重原生库: {loaded_heavy}"
 
     def test_heavy_libs_not_module_attributes(self):
         """重原生库不是 server 模块的属性"""
         import server
 
         for lib in HEAVY_NATIVE_LIBS:
-            assert not hasattr(server, lib), (
-                f"server 模块级暴露了重原生库属性: {lib}"
-            )
+            assert not hasattr(server, lib), f"server 模块级暴露了重原生库属性: {lib}"
 
     def test_module_level_imports_only_lightweight(self):
         """模块级 import 只有轻量库（json/sys/os/time/uuid/traceback）"""
@@ -110,17 +99,14 @@ class TestF06ModuleLevelIsolation:
             "print(json.dumps(missing))"
         )
         result = _run_in_subprocess(script)
-        assert result.returncode == 0, (
-            f"子进程 import server 失败: stderr={result.stderr}"
-        )
+        assert result.returncode == 0, f"子进程 import server 失败: stderr={result.stderr}"
         missing_light = json.loads(result.stdout.strip())
-        assert missing_light == [], (
-            f"轻量库未被 import: {missing_light}"
-        )
+        assert missing_light == [], f"轻量库未被 import: {missing_light}"
 
     def test_no_top_level_heavy_import_in_source(self):
         """server.py 源码模块级不包含重原生库的 import 语句"""
         import inspect
+
         import server
 
         source = inspect.getsource(server)
@@ -134,9 +120,7 @@ class TestF06ModuleLevelIsolation:
                 continue
             # 只看顶格（无缩进）的 import 行
             if not line.startswith(" ") and not line.startswith("\t"):
-                if stripped.startswith("import ") or stripped.startswith(
-                    "from "
-                ):
+                if stripped.startswith("import ") or stripped.startswith("from "):
                     module_level_imports.append(stripped)
 
         for lib in HEAVY_NATIVE_LIBS:
@@ -145,6 +129,4 @@ class TestF06ModuleLevelIsolation:
                 # 检查是否直接 import 了重库
                 assert not (
                     f"import {lib}" in imp_line or f"from {lib}" in imp_line
-                ), (
-                    f"server.py 模块级 import 了重原生库: {imp_line}"
-                )
+                ), f"server.py 模块级 import 了重原生库: {imp_line}"

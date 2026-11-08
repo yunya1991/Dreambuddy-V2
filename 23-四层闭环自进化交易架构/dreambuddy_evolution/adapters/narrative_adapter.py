@@ -10,6 +10,7 @@ SPEC §2.3 / Phase 2
 
 FAIL-OPEN: 查询失败/无数据 → 返回 None（修饰子不生效）
 """
+
 from __future__ import annotations
 
 import json
@@ -25,14 +26,14 @@ _DB_TIMEOUT = 2.0
 
 # 事件类型权重：不同事件对叙事驱动力的影响程度
 _EVENT_TYPE_WEIGHT: dict[str, float] = {
-    "regulatory": 1.3,           # 监管 — 高影响
-    "monetary_policy": 1.2,      # 货币政策 — 高影响
-    "project_ecosystem": 1.15,   # 项目生态 — 中高影响
-    "market_sentiment": 1.0,     # 市场情绪 — 基准
-    "partnership": 1.0,          # 合作 — 基准
-    "integration": 1.0,          # 集成 — 基准
-    "exchange_listing": 1.1,     # 交易所上线 — 中高
-    "security_breach": 0.8,      # 安全事件 — 低（负面情绪由 sentiment 体现）
+    "regulatory": 1.3,  # 监管 — 高影响
+    "monetary_policy": 1.2,  # 货币政策 — 高影响
+    "project_ecosystem": 1.15,  # 项目生态 — 中高影响
+    "market_sentiment": 1.0,  # 市场情绪 — 基准
+    "partnership": 1.0,  # 合作 — 基准
+    "integration": 1.0,  # 集成 — 基准
+    "exchange_listing": 1.1,  # 交易所上线 — 中高
+    "security_breach": 0.8,  # 安全事件 — 低（负面情绪由 sentiment 体现）
 }
 
 # 关注度类型偏移
@@ -99,7 +100,7 @@ class NarrativeAdapter:
 
             # 查询最近 lookback_hours 内的 odaily 快讯
             # 用 published_ms 过滤（比 timestamp 更可靠）
-            cutoff_ms = int((time.time() - self._lookback_hours * 3600) * 1000)
+            cutoff_ms = int((time.time() - self._lookback_hours * 3600) * 1000)  # noqa: F841
 
             cursor.execute(
                 "SELECT metrics, events, raw, timestamp FROM records "
@@ -137,9 +138,7 @@ class NarrativeAdapter:
             return []
 
     # ------------------------------------------------------------------ 计算
-    def _compute_narrative(
-        self, records: list[dict[str, Any]], symbol: str
-    ) -> float | None:
+    def _compute_narrative(self, records: list[dict[str, Any]], symbol: str) -> float | None:
         """
         从 odaily 记录计算叙事驱动力评分。
 
@@ -222,6 +221,7 @@ class NarrativeAdapter:
             ts = record.get("timestamp")
             if ts:
                 from datetime import datetime
+
                 dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
                 age_s = time.time() - dt.timestamp()
                 return max(0.0, age_s / 3600.0)

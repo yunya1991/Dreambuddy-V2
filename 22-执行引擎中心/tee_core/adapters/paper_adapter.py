@@ -5,6 +5,7 @@ Dependency-injected just like :class:`OkxAdapter`: callers construct the
 raw V15PaperClient outside TEE, hand it in here. This keeps TEE core free
 of any strategy-package imports (NFR-4).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
@@ -50,9 +51,17 @@ class PaperAdapter:
         max_slippage_bps: Optional[float] = None,
     ) -> Dict[str, Any]:
         return self._raw.place_order(
-            inst_id=inst_id, side=side, ord_type=ord_type, sz=sz, px=px,
-            td_mode=td_mode, pos_side=pos_side, tag=tag, reason=reason,
-            leverage=leverage, max_slippage_bps=max_slippage_bps,
+            inst_id=inst_id,
+            side=side,
+            ord_type=ord_type,
+            sz=sz,
+            px=px,
+            td_mode=td_mode,
+            pos_side=pos_side,
+            tag=tag,
+            reason=reason,
+            leverage=leverage,
+            max_slippage_bps=max_slippage_bps,
         )
 
     def cancel_order(self, inst_id: str, ord_id: str) -> Dict[str, Any]:

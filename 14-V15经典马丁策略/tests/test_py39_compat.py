@@ -11,8 +11,8 @@ Bug 重现（v15_20260901.log）:
   2. 所有交易代码路径中 zip(..., strict=False) 被改为 zip(...)（strict kwarg 移除）
   3. 运行get_type_hints对实盘关键函数不再触发 | TypeError
 """
+
 import importlib
-import os
 import sys
 import typing
 from pathlib import Path
@@ -36,12 +36,11 @@ def _count_kwarg_in_file(rel: str, kw: str) -> int:
     if not p.exists():
         return 0
     import ast
+
     tree = ast.parse(p.read_text())
     count = 0
     for node in ast.walk(tree):
-        if (isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Name)
-                and node.func.id == "zip"):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "zip":
             if any(k.arg == kw for k in node.keywords):
                 count += 1
     return count
@@ -62,8 +61,9 @@ def test_capital_manager_budget_pool_import_and_type_hints_ok():
     annotation = hints["v15_used_usd"]
     origin = getattr(annotation, "__origin__", None)
     args = getattr(annotation, "__args__", ())
-    assert origin is typing.Union or type(None) in args or annotation is float, \
-        f"期望 Union/Optional/float，实际={annotation!r}"
+    assert (
+        origin is typing.Union or type(None) in args or annotation is float
+    ), f"期望 Union/Optional/float，实际={annotation!r}"
 
 
 # ── RED 2 ─────────────────────────────────────────────
@@ -111,6 +111,7 @@ def test_dataset_generator_and_test_files_union_not_pep604():
     """离线脚本/测试里的 str | Path / dict | None 也改为 typing.Union/Optional，
     保证import不崩。"""
     import ast
+
     risky = []
     for rel in [
         "phase_d_dataset_generator.py",

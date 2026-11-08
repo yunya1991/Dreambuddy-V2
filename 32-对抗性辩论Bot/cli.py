@@ -8,6 +8,7 @@ P1：不依赖 Telegram，直接在终端运行一场辩论并查看输出。
     python cli.py "BTC 是数字黄金" --rounds 3 --no-judge
     python cli.py "BTC 是数字黄金" --background "BTC 2024年减半" --output result.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -17,9 +18,8 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any
 
-from core.config import AppConfig, load_config
+from core.config import load_config
 from core.llm_compat import LLMSettings, health_check
 from core.models import DebateResult
 from core.orchestrator import DebateOrchestrator
@@ -43,6 +43,7 @@ def _configure_stdio() -> None:
 
 # ─── 静默 Telegram Bot（CLI 模式不发真实消息） ───────────────────
 
+
 class QuietTelegramBot:
     """CLI 模式用：实现 TelegramBotClient Protocol，不发真实消息，仅打印。"""
 
@@ -60,53 +61,60 @@ class QuietTelegramBot:
 
 # ─── argparse ────────────────────────────────────────────────────
 
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """解析 CLI 参数。"""
     parser = argparse.ArgumentParser(
         description="对抗性辩论 Bot — 手动触发辩论（调试用）",
     )
     parser.add_argument("topic", nargs="?", default="", help="辩论话题")
-    parser.add_argument("--rounds", type=int, default=2,
-                        help="辩论轮次（默认 2）")
-    parser.add_argument("--background", default="",
-                        help="背景材料（可选）")
-    parser.add_argument("--background-file", default=None,
-                        help="从文件读取背景材料（可选）")
-    parser.add_argument("--judge", dest="judge", action="store_true",
-                        default=True, help="启用裁判（默认）")
-    parser.add_argument("--no-judge", dest="judge", action="store_false",
-                        help="禁用裁判")
-    parser.add_argument("--config", default=None,
-                        help="配置文件路径（默认 config.yaml）")
-    parser.add_argument("--output", default=None,
-                        help="将完整结果保存为 JSON 文件")
-    parser.add_argument("--provider", default=None,
-                        help="LLM provider：auto/anthropic/openai_compat/langchain")
-    parser.add_argument("--model", default=None,
-                        help="覆盖模型名")
-    parser.add_argument("--doctor", action="store_true",
-                        help="只做 LLM 连通性自检，不运行辩论")
-    parser.add_argument("--json", action="store_true",
-                        help="输出结构化 JSON（评审模式，不含营销/质量）")
-    parser.add_argument("--review", action="store_true",
-                        help="评审模式（等价于 --json，强调对抗评审）")
-    parser.add_argument("--no-marketing", action="store_true",
-                        help="跳过营销素材/质量评分，直接输出评审 JSON")
-    parser.add_argument("--research", action="store_true",
-                        help="启用 Research Prepass（只读 L0 MCP + 本地代码检索）")
-    parser.add_argument("--research-sources", default="",
-                        help="逗号分隔：unified_search,recall,code（默认全部）")
-    parser.add_argument("--research-max-items", type=int, default=8,
-                        help="最多引用条数（默认 8）")
-    parser.add_argument("--research-timeout", type=float, default=20.0,
-                        help="单源检索超时秒（默认 20）")
-    parser.add_argument("--cross-exam", action="store_true",
-                        help="第 1 轮后启用双向交叉质询（v2.0-rc3 §4.2）")
-    parser.add_argument("--profile", default=None,
-                        choices=["marketing", "technical", "signal"],
-                        help="角色 profile（默认：营销路径 marketing；评审路径 technical）")
-    parser.add_argument("--no-adjudication", action="store_true",
-                        help="评审模式不生成 6 维 adjudication")
+    parser.add_argument("--rounds", type=int, default=2, help="辩论轮次（默认 2）")
+    parser.add_argument("--background", default="", help="背景材料（可选）")
+    parser.add_argument("--background-file", default=None, help="从文件读取背景材料（可选）")
+    parser.add_argument(
+        "--judge", dest="judge", action="store_true", default=True, help="启用裁判（默认）"
+    )
+    parser.add_argument("--no-judge", dest="judge", action="store_false", help="禁用裁判")
+    parser.add_argument("--config", default=None, help="配置文件路径（默认 config.yaml）")
+    parser.add_argument("--output", default=None, help="将完整结果保存为 JSON 文件")
+    parser.add_argument(
+        "--provider", default=None, help="LLM provider：auto/anthropic/openai_compat/langchain"
+    )
+    parser.add_argument("--model", default=None, help="覆盖模型名")
+    parser.add_argument("--doctor", action="store_true", help="只做 LLM 连通性自检，不运行辩论")
+    parser.add_argument(
+        "--json", action="store_true", help="输出结构化 JSON（评审模式，不含营销/质量）"
+    )
+    parser.add_argument(
+        "--review", action="store_true", help="评审模式（等价于 --json，强调对抗评审）"
+    )
+    parser.add_argument(
+        "--no-marketing", action="store_true", help="跳过营销素材/质量评分，直接输出评审 JSON"
+    )
+    parser.add_argument(
+        "--research",
+        action="store_true",
+        help="启用 Research Prepass（只读 L0 MCP + 本地代码检索）",
+    )
+    parser.add_argument(
+        "--research-sources", default="", help="逗号分隔：unified_search,recall,code（默认全部）"
+    )
+    parser.add_argument("--research-max-items", type=int, default=8, help="最多引用条数（默认 8）")
+    parser.add_argument(
+        "--research-timeout", type=float, default=20.0, help="单源检索超时秒（默认 20）"
+    )
+    parser.add_argument(
+        "--cross-exam", action="store_true", help="第 1 轮后启用双向交叉质询（v2.0-rc3 §4.2）"
+    )
+    parser.add_argument(
+        "--profile",
+        default=None,
+        choices=["marketing", "technical", "signal"],
+        help="角色 profile（默认：营销路径 marketing；评审路径 technical）",
+    )
+    parser.add_argument(
+        "--no-adjudication", action="store_true", help="评审模式不生成 6 维 adjudication"
+    )
     args = parser.parse_args(argv)
     if not args.doctor and not args.topic:
         parser.error("topic is required unless --doctor is used")
@@ -115,14 +123,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 # ─── 运行辩论 ────────────────────────────────────────────────────
 
-def run_cli(topic: str, rounds: int = 2, background: str = "",
-            judge: bool = True, output: str | None = None,
-            config_path: str | None = None, research: bool = False,
-            research_sources: list[str] | None = None,
-            research_max_items: int = 8,
-            research_timeout: float = 20.0,
-            cross_examination: bool = False,
-            profile: str | None = None) -> DebateResult:
+
+def run_cli(
+    topic: str,
+    rounds: int = 2,
+    background: str = "",
+    judge: bool = True,
+    output: str | None = None,
+    config_path: str | None = None,
+    research: bool = False,
+    research_sources: list[str] | None = None,
+    research_max_items: int = 8,
+    research_timeout: float = 20.0,
+    cross_examination: bool = False,
+    profile: str | None = None,
+) -> DebateResult:
     """运行一场辩论并返回结果。
 
     Args:
@@ -157,7 +172,8 @@ def run_cli(topic: str, rounds: int = 2, background: str = "",
         from core.research import collect_research, merge_background
 
         brief = collect_research(
-            topic, background,
+            topic,
+            background,
             sources=research_sources,
             max_items=research_max_items,
             timeout=research_timeout,
@@ -170,7 +186,7 @@ def run_cli(topic: str, rounds: int = 2, background: str = "",
     # 临时替换 create_llm_adapter 的导入在 main 中已存在
     models = config.llm.models or config.debate.models
 
-    from core.agents import BullAgent, BearAgent, JudgeAgent
+    from core.agents import BearAgent, BullAgent, JudgeAgent
     from core.marketing import MarketingExtractor
     from core.quality import QualityEvaluator
     from core.telegram_bot import TelegramDualBot
@@ -181,31 +197,41 @@ def run_cli(topic: str, rounds: int = 2, background: str = "",
     def _max_tokens(role: str, default: int) -> int:
         return int(config.llm.max_tokens.get(role, default))
 
-    debater_llm = main.create_llm_adapter(config=config.llm, model_name=_model("debater", "qwen-turbo"))
+    debater_llm = main.create_llm_adapter(
+        config=config.llm, model_name=_model("debater", "qwen-turbo")
+    )
     judge_llm = main.create_llm_adapter(config=config.llm, model_name=_model("judge", "qwen-plus"))
-    marketing_llm = main.create_llm_adapter(config=config.llm, model_name=_model("marketing", "qwen-plus"))
-    quality_llm = main.create_llm_adapter(config=config.llm, model_name=_model("quality", "qwen-plus"))
+    marketing_llm = main.create_llm_adapter(
+        config=config.llm, model_name=_model("marketing", "qwen-plus")
+    )
+    quality_llm = main.create_llm_adapter(
+        config=config.llm, model_name=_model("quality", "qwen-plus")
+    )
 
     resolved_profile = profile or config.debate.profile
     bull_agent = BullAgent(
-        debater_llm, max_tokens=_max_tokens("debater", 2000),
+        debater_llm,
+        max_tokens=_max_tokens("debater", 2000),
         profile=resolved_profile,
     )
     bear_agent = BearAgent(
-        debater_llm, max_tokens=_max_tokens("debater", 2000),
+        debater_llm,
+        max_tokens=_max_tokens("debater", 2000),
         profile=resolved_profile,
     )
     judge_agent = (
-        JudgeAgent(judge_llm, max_tokens=_max_tokens("judge", 1600),
-                   profile=resolved_profile)
-        if judge else None
+        JudgeAgent(judge_llm, max_tokens=_max_tokens("judge", 1600), profile=resolved_profile)
+        if judge
+        else None
     )
 
     marketing_extractor = MarketingExtractor(
-        marketing_llm, max_tokens=_max_tokens("marketing", 1000),
+        marketing_llm,
+        max_tokens=_max_tokens("marketing", 1000),
     )
     quality_evaluator = QualityEvaluator(
-        quality_llm, max_tokens=_max_tokens("quality", 1000),
+        quality_llm,
+        max_tokens=_max_tokens("quality", 1000),
     )
 
     # CLI 模式用静默 bot（不发真实 Telegram 消息）
@@ -233,9 +259,14 @@ def run_cli(topic: str, rounds: int = 2, background: str = "",
     if background:
         print(f"📄 背景：{background[:100]}")
 
-    result = asyncio.run(orchestrator.run(
-        topic=topic, chat_id=0, max_rounds=rounds, background=background,
-    ))
+    result = asyncio.run(
+        orchestrator.run(
+            topic=topic,
+            chat_id=0,
+            max_rounds=rounds,
+            background=background,
+        )
+    )
 
     # 打印营销素材
     _print_marketing(result)
@@ -290,6 +321,7 @@ def _print_quality(result: DebateResult):
 
 # ─── 主入口 ──────────────────────────────────────────────────────
 
+
 def main():
     _configure_stdio()
     args = parse_args()
@@ -334,9 +366,7 @@ def main():
         debater_llm = debate_main.create_llm_adapter(
             config=config.llm, model_name=roles.get("debater")
         )
-        judge_llm = debate_main.create_llm_adapter(
-            config=config.llm, model_name=roles.get("judge")
-        )
+        judge_llm = debate_main.create_llm_adapter(config=config.llm, model_name=roles.get("judge"))
         research_sources = [
             s.strip() for s in (args.research_sources or "").split(",") if s.strip()
         ] or None

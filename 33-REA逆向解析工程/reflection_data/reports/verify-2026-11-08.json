@@ -1,0 +1,416 @@
+{
+  "generated_at": "2026-11-08T04:00:25",
+  "dry_run": false,
+  "limit": 40,
+  "stale_days": 30,
+  "checked": 40,
+  "targets": 40,
+  "verified_ok": 39,
+  "admissible": 28,
+  "errors": [],
+  "paused_memory": false,
+  "mem_available_mb": 10132.3,
+  "mem_total_mb": 15609.2,
+  "mem_peak_available_mb": 10115.5,
+  "items": [
+    {
+      "id": "evals",
+      "location": "https://github.com/openai/evals",
+      "verified": true,
+      "reason": "license=NOASSERTION",
+      "stars": 19713,
+      "language": "Python",
+      "license": "NOASSERTION",
+      "admissible": false
+    },
+    {
+      "id": "granger-causality-trading",
+      "location": "https://github.com/suenot/117-granger-causality-trading",
+      "verified": true,
+      "reason": "stars=0<300",
+      "stars": 0,
+      "language": null,
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "graphrag",
+      "location": "https://github.com/microsoft/graphrag",
+      "verified": true,
+      "reason": "ok",
+      "stars": 36590,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "iisignature",
+      "location": "https://github.com/iisignature/iisignature",
+      "verified": false,
+      "reason": "repo_not_found",
+      "stars": null,
+      "language": null,
+      "license": null
+    },
+    {
+      "id": "iisignature-2",
+      "location": "https://github.com/bottler/iisignature",
+      "verified": true,
+      "reason": "language=C++",
+      "stars": 126,
+      "language": "C++",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "jesse",
+      "location": "https://github.com/jesse-ai/jesse",
+      "verified": true,
+      "reason": "ok",
+      "stars": 8777,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "langchain",
+      "location": "https://github.com/langchain-ai/langchain",
+      "verified": true,
+      "reason": "ok",
+      "stars": 149168,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "langgraph",
+      "location": "https://github.com/langchain-ai/langgraph",
+      "verified": true,
+      "reason": "ok",
+      "stars": 44622,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "letta",
+      "location": "https://github.com/letta-ai/letta",
+      "verified": true,
+      "reason": "ok",
+      "stars": 25379,
+      "language": null,
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "llama_index",
+      "location": "https://github.com/run-llama/llama_index",
+      "verified": true,
+      "reason": "ok",
+      "stars": 52840,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "lm-evaluation-harness",
+      "location": "https://github.com/EleutherAI/lm-evaluation-harness",
+      "verified": true,
+      "reason": "ok",
+      "stars": 14423,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "mcp-python-sdk",
+      "location": "https://github.com/modelcontextprotocol/python-sdk",
+      "verified": true,
+      "reason": "ok",
+      "stars": 24794,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "mcp-servers",
+      "location": "https://github.com/modelcontextprotocol/servers",
+      "verified": true,
+      "reason": "ok",
+      "stars": 91854,
+      "language": "TypeScript",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "mem0",
+      "location": "https://github.com/mem0ai/mem0",
+      "verified": true,
+      "reason": "ok",
+      "stars": 68574,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "moment",
+      "location": "https://github.com/moment-timeseries-foundation-model/moment",
+      "verified": true,
+      "reason": "ok",
+      "stars": 869,
+      "language": "TypeScript",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "nautilus_trader",
+      "location": "https://github.com/nautechsystems/nautilus_trader",
+      "verified": true,
+      "reason": "language=Rust",
+      "stars": 31339,
+      "language": "Rust",
+      "license": "LGPL-3.0",
+      "admissible": false
+    },
+    {
+      "id": "nextjs",
+      "location": "https://github.com/vercel/next.js",
+      "verified": true,
+      "reason": "language=JavaScript",
+      "stars": 143381,
+      "language": "JavaScript",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "nixtla",
+      "location": "https://github.com/Nixtla/nixtla",
+      "verified": true,
+      "reason": "ok",
+      "stars": 4043,
+      "language": "Jupyter Notebook",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "openai-swarm",
+      "location": "https://github.com/openai/swarm",
+      "verified": true,
+      "reason": "ok",
+      "stars": 22113,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "peft",
+      "location": "https://github.com/huggingface/peft",
+      "verified": true,
+      "reason": "ok",
+      "stars": 21877,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "pluggy",
+      "location": "https://github.com/pytest-dev/pluggy",
+      "verified": true,
+      "reason": "ok",
+      "stars": 1714,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "prefect",
+      "location": "https://github.com/PrefectHQ/prefect",
+      "verified": true,
+      "reason": "ok",
+      "stars": 24130,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "pycg",
+      "location": "https://github.com/vitsalis/PyCG",
+      "verified": true,
+      "reason": "archived",
+      "stars": 364,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": false
+    },
+    {
+      "id": "pydeps",
+      "location": "https://github.com/thebjorn/pydeps",
+      "verified": true,
+      "reason": "ok",
+      "stars": 2121,
+      "language": "Python",
+      "license": "BSD-2-Clause",
+      "admissible": true
+    },
+    {
+      "id": "pyright",
+      "location": "https://github.com/microsoft/pyright",
+      "verified": true,
+      "reason": "ok",
+      "stars": 15732,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "pytorch-lightning",
+      "location": "https://github.com/Lightning-AI/pytorch-lightning",
+      "verified": true,
+      "reason": "ok",
+      "stars": 31446,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "qlib",
+      "location": "https://github.com/microsoft/qlib",
+      "verified": true,
+      "reason": "ok",
+      "stars": 50103,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "rasa",
+      "location": "https://github.com/RasaHQ/rasa",
+      "verified": true,
+      "reason": "ok",
+      "stars": 21374,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "reflexion",
+      "location": "https://github.com/noahshinn/reflexion",
+      "verified": true,
+      "reason": "ok",
+      "stars": 3412,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "regimes",
+      "location": "https://github.com/knightianuncertainty/regimes",
+      "verified": true,
+      "reason": "stars=17<300",
+      "stars": 17,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "scrapy",
+      "location": "https://github.com/scrapy/scrapy",
+      "verified": true,
+      "reason": "ok",
+      "stars": 65263,
+      "language": "Python",
+      "license": "BSD-3-Clause",
+      "admissible": true
+    },
+    {
+      "id": "semantic-kernel",
+      "location": "https://github.com/microsoft/semantic-kernel",
+      "verified": true,
+      "reason": "language=C#",
+      "stars": 28744,
+      "language": "C#",
+      "license": "MIT",
+      "admissible": false
+    },
+    {
+      "id": "semgrep",
+      "location": "https://github.com/semgrep/semgrep",
+      "verified": true,
+      "reason": "language=C",
+      "stars": 17541,
+      "language": "C",
+      "license": "LGPL-2.1",
+      "admissible": false
+    },
+    {
+      "id": "shadcn-ui",
+      "location": "https://github.com/shadcn-ui/ui",
+      "verified": true,
+      "reason": "ok",
+      "stars": 127576,
+      "language": "TypeScript",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "signatory",
+      "location": "https://github.com/patrick-kidger/signatory",
+      "verified": true,
+      "reason": "language=C++",
+      "stars": 314,
+      "language": "C++",
+      "license": "Apache-2.0",
+      "admissible": false
+    },
+    {
+      "id": "signature-method-in-ML",
+      "location": "https://github.com/kormilitzin/the-signature-method-in-machine-learning",
+      "verified": true,
+      "reason": "language=HTML",
+      "stars": 106,
+      "language": "HTML",
+      "license": "unknown",
+      "admissible": false
+    },
+    {
+      "id": "skfolio",
+      "location": "https://github.com/skfolio/skfolio",
+      "verified": true,
+      "reason": "ok",
+      "stars": 2605,
+      "language": "Python",
+      "license": "BSD-3-Clause",
+      "admissible": true
+    },
+    {
+      "id": "skill-compose",
+      "location": "https://github.com/MooseGoose0701/skill-compose",
+      "verified": true,
+      "reason": "ok",
+      "stars": 1107,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    },
+    {
+      "id": "sqlalchemy",
+      "location": "https://github.com/sqlalchemy/sqlalchemy",
+      "verified": true,
+      "reason": "ok",
+      "stars": 12274,
+      "language": "Python",
+      "license": "MIT",
+      "admissible": true
+    },
+    {
+      "id": "sqlite-utils",
+      "location": "https://github.com/simonw/sqlite-utils",
+      "verified": true,
+      "reason": "ok",
+      "stars": 2187,
+      "language": "Python",
+      "license": "Apache-2.0",
+      "admissible": true
+    }
+  ]
+}

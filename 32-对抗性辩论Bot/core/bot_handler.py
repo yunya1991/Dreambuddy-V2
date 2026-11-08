@@ -11,6 +11,7 @@ SPEC 第十章管理员命令集：
 - 话题黑名单过滤
 - 群白名单过滤
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -40,7 +41,10 @@ class CommandHandler:
         return topic.strip(), background.strip()
 
     async def handle_command(
-        self, text: str, chat_id: int, user_id: int,
+        self,
+        text: str,
+        chat_id: int,
+        user_id: int,
         is_admin: bool,
     ) -> str:
         """处理用户命令，返回回复文本。
@@ -79,8 +83,7 @@ class CommandHandler:
 
     # ─── /debate ──────────────────────────────────────────────
 
-    async def _handle_debate(self, topic: str, chat_id: int,
-                             is_admin: bool) -> str:
+    async def _handle_debate(self, topic: str, chat_id: int, is_admin: bool) -> str:
         if not is_admin:
             return "⚠️ 仅群主/管理员可操作此命令"
         topic, background = self._parse_topic_background(topic)
@@ -100,9 +103,7 @@ class CommandHandler:
 
         # 后台启动辩论
         max_rounds = self.config.debate.max_rounds
-        asyncio.create_task(
-            self.orchestrator.run(topic, chat_id, max_rounds, background)
-        )
+        asyncio.create_task(self.orchestrator.run(topic, chat_id, max_rounds, background))
         logger.info("辩论启动 (chat_id=%s, topic=%s)", chat_id, topic)
         return f"🎤 辩论开始：{topic}（{max_rounds} 轮）"
 
@@ -150,9 +151,7 @@ class CommandHandler:
                 return f"⚠️ 话题包含敏感关键词「{kw}」，请修改后重试"
         # 启动新辩论
         max_rounds = self.config.debate.max_rounds
-        asyncio.create_task(
-            self.orchestrator.run(topic, chat_id, max_rounds, background)
-        )
+        asyncio.create_task(self.orchestrator.run(topic, chat_id, max_rounds, background))
         return f"🔄 话题切换：{topic}（旧辩论已停止，新辩论启动中）"
 
     # ─── 帮助文本 ──────────────────────────────────────────────

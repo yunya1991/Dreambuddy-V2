@@ -6,14 +6,14 @@ SPEC 3.4 差异化核心：将辩论转化为可传播的营销素材。
 - 精华段落：Judge 综合 + 最强论点；无 Judge 时 fallback 拼接
 - 短文案/标题：LLM 生成，失败 fallback
 """
+
 from __future__ import annotations
 
-import json
 import logging
 import re
 
 from core.agents import LLMClient, _extract_json
-from core.models import Argument, CrossExamination, Turn, Verdict, MarketingMaterial
+from core.models import Argument, CrossExamination, MarketingMaterial, Turn, Verdict
 
 logger = logging.getLogger("debate.marketing")
 
@@ -42,10 +42,10 @@ _HASHTAG_STOP_CHARS = "是了吗呢吧啊呀的么个"
 def _keyword_candidates(text: str) -> list[str]:
     """从一段文本提取英文词/中文短语（中文去掉首尾语气词）。"""
     candidates: list[str] = []
-    for match in re.findall(r'[A-Za-z][A-Za-z0-9]{1,}', text):
+    for match in re.findall(r"[A-Za-z][A-Za-z0-9]{1,}", text):
         candidates.append(match)
-    cleaned = re.sub(r'[？?！!。，,、；;：:（）()\[\]【】\s]', '', text)
-    for match in re.findall(r'[一-鿿]{2,8}', cleaned):
+    cleaned = re.sub(r"[？?！!。，,、；;：:（）()\[\]【】\s]", "", text)
+    for match in re.findall(r"[一-鿿]{2,8}", cleaned):
         match = match.strip(_HASHTAG_STOP_CHARS)
         if len(match) >= 2:
             candidates.append(match)
@@ -78,8 +78,7 @@ def _extract_hashtags(topic: str, transcript: list[Turn]) -> list[str]:
     return hashtags[:5]
 
 
-def _build_highlight(transcript: list[Turn],
-                     verdict: Verdict | None) -> str:
+def _build_highlight(transcript: list[Turn], verdict: Verdict | None) -> str:
     """构建精华段落。
 
     有 Verdict：Judge 总结 + 双方最强论点。
@@ -98,23 +97,25 @@ def _build_highlight(transcript: list[Turn],
     for turn in transcript:
         if isinstance(turn.content, Argument):
             if turn.speaker == "bull" and (
-                    bull_best is None
-                    or turn.content.confidence > bull_best.confidence):
+                bull_best is None or turn.content.confidence > bull_best.confidence
+            ):
                 bull_best = turn.content
             elif turn.speaker == "bear" and (
-                    bear_best is None
-                    or turn.content.confidence > bear_best.confidence):
+                bear_best is None or turn.content.confidence > bear_best.confidence
+            ):
                 bear_best = turn.content
 
     if bull_best:
-        parts.append(f"【正方核心观点】{bull_best.thesis}："
-                     f"{'；'.join(bull_best.arguments[:2])}")
+        parts.append(
+            f"【正方核心观点】{bull_best.thesis}：" f"{'；'.join(bull_best.arguments[:2])}"
+        )
         if bull_best.quote:
             parts.append(f"正方金句：「{bull_best.quote}」")
 
     if bear_best:
-        parts.append(f"【反方核心观点】{bear_best.thesis}："
-                     f"{'；'.join(bear_best.arguments[:2])}")
+        parts.append(
+            f"【反方核心观点】{bear_best.thesis}：" f"{'；'.join(bear_best.arguments[:2])}"
+        )
         if bear_best.quote:
             parts.append(f"反方金句：「{bear_best.quote}」")
 
@@ -124,13 +125,13 @@ def _build_highlight(transcript: list[Turn],
 class MarketingExtractor:
     """营销素材提取器。"""
 
-    def __init__(self, llm_client: LLMClient | None = None,
-                 max_tokens: int = 800):
+    def __init__(self, llm_client: LLMClient | None = None, max_tokens: int = 800):
         self.llm = llm_client
         self.max_tokens = max_tokens
 
-    async def extract(self, topic: str, transcript: list[Turn],
-                      verdict: Verdict | None = None) -> MarketingMaterial:
+    async def extract(
+        self, topic: str, transcript: list[Turn], verdict: Verdict | None = None
+    ) -> MarketingMaterial:
         """从辩论记录提取营销素材。"""
         # 规则部分（无需 LLM）
         quotes = _extract_quotes(transcript)
@@ -139,7 +140,8 @@ class MarketingExtractor:
 
         # LLM 部分（短文案 + 标题）
         short_copy, debate_title = await self._generate_copy_and_title(
-            topic, transcript,
+            topic,
+            transcript,
         )
         # 交叉质询精彩 Q&A 直接作为短文案素材（规则部分，无需 LLM）
         short_copy = short_copy + self._extract_cross_exam_highlights(transcript)
@@ -153,7 +155,9 @@ class MarketingExtractor:
         )
 
     async def _generate_copy_and_title(
-        self, topic: str, transcript: list[Turn],
+        self,
+        topic: str,
+        transcript: list[Turn],
     ) -> tuple[list[str], str]:
         """调用 LLM 生成短文案和标题，失败时 fallback。"""
         if self.llm is None:
@@ -169,7 +173,9 @@ class MarketingExtractor:
 
         try:
             raw = await self.llm.chat(
-                _MARKETING_SYSTEM_PROMPT, user_prompt, self.max_tokens,
+                _MARKETING_SYSTEM_PROMPT,
+                user_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("营销 LLM 调用异常: %s", e)
@@ -189,17 +195,16 @@ class MarketingExtractor:
         return copies, title
 
     def _fallback_copy_and_title(
-        self, topic: str, transcript: list[Turn],
+        self,
+        topic: str,
+        transcript: list[Turn],
     ) -> tuple[list[str], str]:
         """无 LLM 或失败时的 fallback。"""
         # 标题直接用 topic
         title = topic if len(topic) <= 30 else topic[:28] + "…"
 
         # 短文案从论点拼接
-        theses = [
-            t.content.thesis for t in transcript
-            if isinstance(t.content, Argument)
-        ]
+        theses = [t.content.thesis for t in transcript if isinstance(t.content, Argument)]
         if theses:
             copy = f"{' vs '.join(theses[:2])} — 谁更有道理？"
         else:
@@ -222,7 +227,7 @@ class MarketingExtractor:
         for turn in transcript:
             if not isinstance(turn.content, CrossExamination):
                 continue
-            for q, a in zip(turn.content.questions, turn.content.answers):
+            for q, a in zip(turn.content.questions, turn.content.answers):  # noqa: B905
                 # 犀利问题或简短回答（被问倒）→ 高传播价值
                 is_sharp = any(kw in q for kw in sharp_keywords)
                 is_stumped = len(a) < 20

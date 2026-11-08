@@ -15,15 +15,15 @@
 Hold-out：最后 20% 数据独立验证
 基线对比：全维度开启 vs 最优子集
 """
-import sys
-import os
-import json
-import time
-import logging
+
 import importlib
+import json
+import logging
+import os
+import sys
+import time
 
 import numpy as np
-import pandas as pd
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,10 +31,11 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # 避免 inspect.py 冲突
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 
-import optuna
+import optuna  # noqa: E402
+
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -48,6 +49,7 @@ _REF_DF_CACHE = None
 def load_klines(symbol, timeframe="1H", max_bars=3000):
     if symbol not in _KLINE_CACHE:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         df = get_klines(symbol, timeframe, max_bars=max_bars)
         _KLINE_CACHE[symbol] = df
     return _KLINE_CACHE[symbol]
@@ -57,6 +59,7 @@ def get_ref_df():
     global _REF_DF_CACHE
     if _REF_DF_CACHE is None:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         _REF_DF_CACHE = get_klines("BTC", "1H", max_bars=3200)
     return _REF_DF_CACHE
 
@@ -182,16 +185,19 @@ def objective(trial: optuna.Trial) -> float:
     trial.set_user_attr("n_enabled", len(enabled_dims))
 
     elapsed = time.time() - t0
-    print(f"    Trial #{trial.number}: 得分={score:.4f}, 夏普={avg_sharpe:.2f}, "
-          f"收益={avg_return:.1f}%, 回撤={avg_dd:.1f}%, 胜率={avg_wr:.1%}, "
-          f"维度={len(enabled_dims)}/6 ({','.join(enabled_dims)}) ({elapsed:.0f}秒)", flush=True)
+    print(
+        f"    Trial #{trial.number}: 得分={score:.4f}, 夏普={avg_sharpe:.2f}, "
+        f"收益={avg_return:.1f}%, 回撤={avg_dd:.1f}%, 胜率={avg_wr:.1%}, "
+        f"维度={len(enabled_dims)}/6 ({','.join(enabled_dims)}) ({elapsed:.0f}秒)",
+        flush=True,
+    )
 
     return score
 
 
 def run_baseline_all_on():
     """运行基线回测（全维度开启 = 当前默认）"""
-    print(f"\n  [基线] 运行全维度开启回测...")
+    print("\n  [基线] 运行全维度开启回测...")
     macro_config = {f"macro_enable_{d}": True for d in DIMENSIONS}
     symbols = ["BTC", "ETH", "SOL"]
     baseline_scores = {}
@@ -204,7 +210,9 @@ def run_baseline_all_on():
 
         sharpe = compute_sharpe_from_trades(result.all_trades)
         n_trades = len(result.all_trades)
-        win_rate = sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+        win_rate = (
+            sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+        )
         total_ret = sum(t.pnl_pct for t in result.all_trades)
         max_loss = min((t.pnl_pct for t in result.all_trades), default=0)
         max_dd = abs(max_loss) if max_loss < 0 else 0
@@ -216,7 +224,9 @@ def run_baseline_all_on():
             "trades": n_trades,
             "win_rate": win_rate,
         }
-        print(f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 回撤={max_dd:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}")
+        print(
+            f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 回撤={max_dd:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}"
+        )
 
     avg_sharpe = np.mean([s["sharpe"] for s in baseline_scores.values()])
     avg_return = np.mean([s["return"] for s in baseline_scores.values()])
@@ -229,7 +239,7 @@ def run_baseline_all_on():
 
 def run_baseline_no_macro():
     """运行无宏观特征基线（macro 模块完全禁用）"""
-    print(f"\n  [基线] 运行无宏观特征回测 (baseline-v1 等效)...")
+    print("\n  [基线] 运行无宏观特征回测 (baseline-v1 等效)...")
     # 全部维度关闭 = 等效于不启用 macro 模块
     macro_config = {f"macro_enable_{d}": False for d in DIMENSIONS}
     symbols = ["BTC", "ETH", "SOL"]
@@ -243,7 +253,9 @@ def run_baseline_no_macro():
 
         sharpe = compute_sharpe_from_trades(result.all_trades)
         n_trades = len(result.all_trades)
-        win_rate = sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+        win_rate = (
+            sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+        )
         total_ret = sum(t.pnl_pct for t in result.all_trades)
         max_loss = min((t.pnl_pct for t in result.all_trades), default=0)
         max_dd = abs(max_loss) if max_loss < 0 else 0
@@ -255,7 +267,9 @@ def run_baseline_no_macro():
             "trades": n_trades,
             "win_rate": win_rate,
         }
-        print(f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 回撤={max_dd:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}")
+        print(
+            f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 回撤={max_dd:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}"
+        )
 
     avg_sharpe = np.mean([s["sharpe"] for s in baseline_scores.values()])
     avg_return = np.mean([s["return"] for s in baseline_scores.values()])
@@ -268,7 +282,7 @@ def run_baseline_no_macro():
 
 def run_holdout(best_macro_config):
     """用最后 20% 数据做 hold-out 验证"""
-    print(f"\n  [Hold-out] 用最后 20% 数据独立验证最优维度组合...")
+    print("\n  [Hold-out] 用最后 20% 数据独立验证最优维度组合...")
     holdout_results = {}
 
     for symbol in ["BTC", "ETH", "SOL"]:
@@ -286,7 +300,9 @@ def run_holdout(best_macro_config):
             result = run_backtest_with_config(symbol, holdout_df, best_macro_config, n_folds=2)
             sharpe = compute_sharpe_from_trades(result.all_trades)
             n_trades = len(result.all_trades)
-            win_rate = sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+            win_rate = (
+                sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+            )
             total_ret = sum(t.pnl_pct for t in result.all_trades)
 
             holdout_results[symbol] = {
@@ -295,7 +311,9 @@ def run_holdout(best_macro_config):
                 "win_rate": win_rate,
                 "trades": n_trades,
             }
-            print(f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}")
+            print(
+                f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}"
+            )
         except Exception as e:
             print(f"    {symbol}: hold-out 失败: {e}")
 
@@ -347,7 +365,7 @@ def main():
     print(f"    启用维度: {best.user_attrs.get('enabled_dims', [])}")
     print(f"    维度数: {best.user_attrs.get('n_enabled', 0)}/6")
 
-    print(f"\n  最优维度开关：")
+    print("\n  最优维度开关：")
     for dim in DIMENSIONS:
         key = f"macro_enable_{dim}"
         val = best.params.get(key, True)
@@ -361,7 +379,9 @@ def main():
 
     # Hold-out 验证（仅当优于无宏观基线时）
     if improvement_vs_no_macro > 0:
-        best_macro_config = {f"macro_enable_{d}": best.params[f"macro_enable_{d}"] for d in DIMENSIONS}
+        best_macro_config = {
+            f"macro_enable_{d}": best.params[f"macro_enable_{d}"] for d in DIMENSIONS
+        }
         holdout_results = run_holdout(best_macro_config)
 
         # 保存结果
@@ -374,7 +394,7 @@ def main():
             "improvement_vs_all_on": improvement_vs_all_on,
             "best_macro_config": best_macro_config,
             "best_enabled_dims": best.user_attrs.get("enabled_dims", []),
-            "best_user_attrs": {k: v for k, v in best.user_attrs.items()},
+            "best_user_attrs": {k: v for k, v in best.user_attrs.items()},  # noqa: C416
             "no_macro_scores": no_macro_scores,
             "all_on_scores": all_on_scores,
             "holdout_results": holdout_results,
@@ -389,7 +409,9 @@ def main():
             ],
         }
 
-        output_path = os.path.join(SCRIPT_DIR, "..", "..", "..", "data", "baseline", "macro_bayesian_optimal.json")
+        output_path = os.path.join(
+            SCRIPT_DIR, "..", "..", "..", "data", "baseline", "macro_bayesian_optimal.json"
+        )
         output_path = os.path.abspath(output_path)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:
@@ -398,13 +420,13 @@ def main():
 
         # 判断是否可落地
         if improvement_vs_no_macro > 0.1 and improvement_vs_all_on > 0:
-            print(f"\n  ✓ 宏观特征最优子集通过验证，可进入实盘配置")
+            print("\n  ✓ 宏观特征最优子集通过验证，可进入实盘配置")
             print(f"    启用维度: {best.user_attrs.get('enabled_dims', [])}")
-            print(f"    下一步：用最优子集跑 9 币种 5 折完整回测，与 baseline-v1 对比")
+            print("    下一步：用最优子集跑 9 币种 5 折完整回测，与 baseline-v1 对比")
         else:
-            print(f"\n  △ 最优子集优于全维度但优势有限，建议进一步分析")
+            print("\n  △ 最优子集优于全维度但优势有限，建议进一步分析")
     else:
-        print(f"\n  ✗ 最优子集未超过无宏观基线，宏观特征暂不建议启用")
+        print("\n  ✗ 最优子集未超过无宏观基线，宏观特征暂不建议启用")
         # 仍然保存结果供分析
         output = {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -412,7 +434,9 @@ def main():
             "all_on_baseline_score": all_on_score,
             "best_score": best.value,
             "improvement_vs_no_macro": improvement_vs_no_macro,
-            "best_macro_config": {f"macro_enable_{d}": best.params.get(f"macro_enable_{d}", True) for d in DIMENSIONS},
+            "best_macro_config": {
+                f"macro_enable_{d}": best.params.get(f"macro_enable_{d}", True) for d in DIMENSIONS
+            },
             "all_trials": [
                 {
                     "number": t.number,
@@ -423,7 +447,9 @@ def main():
                 for t in study.trials
             ],
         }
-        output_path = os.path.join(SCRIPT_DIR, "..", "..", "..", "data", "baseline", "macro_bayesian_optimal.json")
+        output_path = os.path.join(
+            SCRIPT_DIR, "..", "..", "..", "data", "baseline", "macro_bayesian_optimal.json"
+        )
         output_path = os.path.abspath(output_path)
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:

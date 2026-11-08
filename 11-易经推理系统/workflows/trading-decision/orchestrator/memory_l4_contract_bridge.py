@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import json
 import importlib.util
@@ -49,7 +49,9 @@ def _load_mappings(migration_out: Dict[str, Any]) -> List[Dict[str, Any]]:
     return []
 
 
-def run_trading_memory_l4_contract(payload: Dict[str, Any], output_dir: Optional[Path] = None) -> Dict[str, Any]:
+def run_trading_memory_l4_contract(
+    payload: Dict[str, Any], output_dir: Optional[Path] = None
+) -> Dict[str, Any]:
     l4 = _load_l4_entrypoint_module()
     trace_id = str(payload.get("trace_id") or "")
     if not trace_id:

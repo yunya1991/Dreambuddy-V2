@@ -3,8 +3,8 @@
 提供 Evidence 数据结构、分析器基类、Python/TS 分析器、依赖图、调用链追踪、git 历史溯源。
 """
 
-from .evidence import Evidence, EvidenceLevel, reverse_evidence
 from .analyzer_base import AnalyzerBase, AnalyzeResult
+from .evidence import Evidence, EvidenceLevel, reverse_evidence
 
 __all__ = [
     "Evidence",

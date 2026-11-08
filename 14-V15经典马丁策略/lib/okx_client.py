@@ -8,18 +8,19 @@ OKX 交易客户端 - V15经典马丁策略专用
 - 支持实盘/模拟盘切换
 - 所有下单操作记录审计日志
 """
-import os
-import json
-import time
-import hmac
-import math
+
 import base64
 import hashlib
-import requests
-from typing import Dict, List, Optional, Tuple
+import hmac
+import json
+import math
+import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Dict, List, Optional
 
+import requests
 
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "data" / "okx_client"
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -34,7 +35,7 @@ DEFAULT_CONFIG = {
     "dry_run": True,
     "base_url": "https://www.okx.com",
     "default_inst_id": "BTC-USDT-SWAP",
-    "default_usdt_amount": 100,   # 名义价值，会在 _load_config 中根据保证金和杠杆重新计算
+    "default_usdt_amount": 100,  # 名义价值，会在 _load_config 中根据保证金和杠杆重新计算
     "default_leverage": 5.0,
 }
 
@@ -127,9 +128,13 @@ def _save_config(cfg: Dict) -> None:
     os.chmod(config_path, 0o600)
 
 
-def configure(api_key: str = None, secret_key: str = None,
-              passphrase: str = None, simulated: bool = None,
-              dry_run: bool = None) -> Dict:
+def configure(
+    api_key: str = None,
+    secret_key: str = None,
+    passphrase: str = None,
+    simulated: bool = None,
+    dry_run: bool = None,
+) -> Dict:
     """配置 OKX 模拟交易参数"""
     cfg = _load_config()
     if api_key is not None:
@@ -166,7 +171,6 @@ def _friendly_okx_error(e: Exception) -> str:
 
 class _CustomDNSAdapter(requests.adapters.HTTPAdapter):
     def init_poolmanager(self, *args, **kwargs):
-        import urllib3
         from urllib3.poolmanager import PoolManager
 
         class CustomPoolManager(PoolManager):
@@ -174,8 +178,8 @@ class _CustomDNSAdapter(requests.adapters.HTTPAdapter):
                 host = _CUSTOM_HOSTS.get(host, host)
                 return super()._new_pool(scheme, host, port, request_context=request_context)
 
-        kwargs.setdefault('num_pools', 10)
-        kwargs.setdefault('maxsize', 10)
+        kwargs.setdefault("num_pools", 10)
+        kwargs.setdefault("maxsize", 10)
         self.poolmanager = CustomPoolManager(**kwargs)
 
 
@@ -245,6 +249,7 @@ class OKXSimulatedClient:
             for port in (7890, 7891, 14122, 38324):
                 try:
                     import socket as _sock
+
                     with _sock.create_connection(("127.0.0.1", port), timeout=0.3):
                         proxies = {
                             "http": f"http://127.0.0.1:{port}",
@@ -261,7 +266,7 @@ class OKXSimulatedClient:
         return bool(self.api_key and self.secret_key and self.passphrase)
 
     def _headers(self, method: str, path: str, body: str = "") -> Dict:
-        ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
         msg = ts + method + path + body
         sign = base64.b64encode(
             hmac.new(self.secret_key.encode(), msg.encode(), hashlib.sha256).digest()
@@ -277,8 +282,7 @@ class OKXSimulatedClient:
             headers["x-simulated-trading"] = "1"
         return headers
 
-    def _get(self, path: str, params: Optional[Dict] = None,
-             auth: bool = True) -> Dict:
+    def _get(self, path: str, params: Optional[Dict] = None, auth: bool = True) -> Dict:
         sign_path = path
         if params:
             qs = "&".join(f"{k}={v}" for k, v in params.items())
@@ -286,8 +290,7 @@ class OKXSimulatedClient:
         headers = self._headers("GET", sign_path) if auth else {}
         try:
             resp = self.session.get(
-                self.base_url + path, params=params,
-                headers=headers, timeout=(5, 8)
+                self.base_url + path, params=params, headers=headers, timeout=(5, 8)
             )
             return resp.json()
         except Exception as e:
@@ -298,8 +301,7 @@ class OKXSimulatedClient:
         headers = self._headers("POST", path, body_str) if auth else {}
         try:
             resp = self.session.post(
-                self.base_url + path, data=body_str,
-                headers=headers, timeout=(5, 8)
+                self.base_url + path, data=body_str, headers=headers, timeout=(5, 8)
             )
             return resp.json()
         except Exception as e:
@@ -365,14 +367,20 @@ class OKXSimulatedClient:
             # Synthesise from ticker so estimator works offline / paper
             t = self.get_ticker(inst_id)
             if not t.get("ok"):
-                return {"ok": False, "error": t.get("error", "get_ticker failed"),
-                        "inst_id": inst_id, "bids": [], "asks": [],
-                        "ts": str(int(time.time() * 1000))}
+                return {
+                    "ok": False,
+                    "error": t.get("error", "get_ticker failed"),
+                    "inst_id": inst_id,
+                    "bids": [],
+                    "asks": [],
+                    "ts": str(int(time.time() * 1000)),
+                }
             last_bid = str(t.get("bid", t.get("last", 0)))
             last_ask = str(t.get("ask", t.get("last", 0)))
             bid_sz = ask_sz = "1.0"
             return {
-                "ok": True, "inst_id": inst_id,
+                "ok": True,
+                "inst_id": inst_id,
                 "bids": [[last_bid, bid_sz, "1", "1"]],
                 "asks": [[last_ask, ask_sz, "1", "1"]],
                 "ts": str(int(time.time() * 1000)),
@@ -382,9 +390,14 @@ class OKXSimulatedClient:
         params = {"instId": inst_id, "sz": str(int(sz or 10))}
         r = self._get("/api/v5/market/books", params, auth=False)
         if r.get("code") != "0":
-            return {"ok": False, "error": r.get("msg", "unknown"),
-                    "inst_id": inst_id, "bids": [], "asks": [],
-                    "ts": str(int(time.time() * 1000))}
+            return {
+                "ok": False,
+                "error": r.get("msg", "unknown"),
+                "inst_id": inst_id,
+                "bids": [],
+                "asks": [],
+                "ts": str(int(time.time() * 1000)),
+            }
         data = r["data"][0]
         return {
             "ok": True,
@@ -397,7 +410,9 @@ class OKXSimulatedClient:
     def get_instrument(self, inst_id: str = None) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         # 使用 public/instruments 接口（market/instruments 对股票永续等部分合约返回 Not Found）
-        r = self._get("/api/v5/public/instruments", {"instType": "SWAP", "instId": inst_id}, auth=False)
+        r = self._get(
+            "/api/v5/public/instruments", {"instType": "SWAP", "instId": inst_id}, auth=False
+        )
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown")}
         d = r["data"][0]
@@ -435,7 +450,13 @@ class OKXSimulatedClient:
 
         # SymbolMapper 合约参数覆盖（贵金属等 TradFi 资产）
         try:
-            from symbol_mapper import from_swap as _from_swap, get_contract_overrides as _get_overrides
+            from symbol_mapper import (
+                from_swap as _from_swap,
+            )
+            from symbol_mapper import (
+                get_contract_overrides as _get_overrides,
+            )
+
             coin = _from_swap(inst_id)
             if coin:
                 overrides = _get_overrides(coin)
@@ -476,32 +497,32 @@ class OKXSimulatedClient:
         else:
             return round(aligned_sz, 4)
 
-    def get_kline(self, inst_id: str = None, bar: str = "1H",
-                  limit: int = 100) -> Dict:
+    def get_kline(self, inst_id: str = None, bar: str = "1H", limit: int = 100) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         r = self._get(
             "/api/v5/market/candles",
             {"instId": inst_id, "bar": bar, "limit": str(limit)},
-            auth=False
+            auth=False,
         )
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown")}
         candles = []
         for d in r["data"]:
-            candles.append({
-                "ts": int(d[0]),
-                "o": float(d[1]),
-                "h": float(d[2]),
-                "l": float(d[3]),
-                "c": float(d[4]),
-                "vol": float(d[5]),
-            })
+            candles.append(
+                {
+                    "ts": int(d[0]),
+                    "o": float(d[1]),
+                    "h": float(d[2]),
+                    "l": float(d[3]),
+                    "c": float(d[4]),
+                    "vol": float(d[5]),
+                }
+            )
         return {"ok": True, "inst_id": inst_id, "bar": bar, "candles": candles}
 
     # ── 衍生品数据（自进化架构 R 向量用）────────────────────────
 
-    def get_long_short_ratio(self, inst_id: str = None,
-                             period: str = "1H") -> Dict:
+    def get_long_short_ratio(self, inst_id: str = None, period: str = "1H") -> Dict:
         """OKX 公开多空持仓比 → R_up/R_down 筹码维度
 
         接口: /api/v5/rubik/stat/contracts/long-short-account-ratio (无需认证)
@@ -651,7 +672,11 @@ class OKXSimulatedClient:
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
         if self.cfg["dry_run"]:
-            return {"ok": True, "dry_run": True, "transfer": {"ccy": ccy, "amt": amt, "from": from_acct, "to": to_acct}}
+            return {
+                "ok": True,
+                "dry_run": True,
+                "transfer": {"ccy": ccy, "amt": amt, "from": from_acct, "to": to_acct},
+            }
         body = {
             "ccy": ccy,
             "amt": str(amt),
@@ -667,11 +692,20 @@ class OKXSimulatedClient:
 
     # ── 交易下单 ──────────────────────────────────────────────
 
-    def place_order(self, inst_id, side, ord_type="market",
-                    sz=None, px=None,
-                    td_mode="isolated", pos_side="net",
-                    tag="yijingsim", reason="",
-                    leverage=None, max_slippage_bps: float = None):
+    def place_order(
+        self,
+        inst_id,
+        side,
+        ord_type="market",
+        sz=None,
+        px=None,
+        td_mode="isolated",
+        pos_side="net",
+        tag="yijingsim",
+        reason="",
+        leverage=None,
+        max_slippage_bps: float = None,
+    ):
         """
         下单（默认 dry_run 模式，仅记录不下单）
         **重要：下单前先调set_leverage同步交易所端杠杆，防止币种默认杠杆与本地不一致**
@@ -696,8 +730,7 @@ class OKXSimulatedClient:
                 字节等价于历史行为（TR-2.3 的基线兼容性保障）。
         """
         if not self._has_credentials():
-            return {"ok": False, "error": "missing api credentials",
-                    "dry_run_result": None}
+            return {"ok": False, "error": "missing api credentials", "dry_run_result": None}
 
         # ── 先同步杠杆（SOL交易所默认可能是10x，代码LEVERAGE=5x）──
         _lev = self.default_leverage if leverage is None else leverage
@@ -706,9 +739,7 @@ class OKXSimulatedClient:
             pass
         elif _sl_resp.get("code") not in ("0", None) and not _sl_resp.get("dry_run"):
             # set_leverage失败但非致命（如币种不支持该杠杆），记录告警，继续下单
-            self._audit_log("set_leverage_warn",
-                           {"inst_id": inst_id, "leverage": _lev},
-                           _sl_resp)
+            self._audit_log("set_leverage_warn", {"inst_id": inst_id, "leverage": _lev}, _sl_resp)
 
         # ── 滑点硬闸：合约市价单 → 限价偏移 ──────────────────────
         # NOTE: 仅当 max_slippage_bps 明确传入且 ord_type=market 时生效。
@@ -767,7 +798,7 @@ class OKXSimulatedClient:
                 "simulated": self.simulated,
                 "inst_id": inst_id,
                 "side": side,
-                "ord_type": ord_type,         # return caller's original type
+                "ord_type": ord_type,  # return caller's original type
                 "effective_ord_type": _effective_ord_type,  # hint about rewrite
                 "sz": sz,
                 "px": px,
@@ -779,19 +810,29 @@ class OKXSimulatedClient:
                 "reason": reason,
                 "ord_id": f"dry_run_{int(time.time()*1000)}",
             }
-            self._audit_log("place_order_dry", body, {
-                "code": "0", "msg": "dry_run", "data": [dry_result],
-            })
+            self._audit_log(
+                "place_order_dry",
+                body,
+                {
+                    "code": "0",
+                    "msg": "dry_run",
+                    "data": [dry_result],
+                },
+            )
             return dry_result
 
         r = self._post("/api/v5/trade/order", body)
-        self._audit_log("place_order", {
-            **body,
-            "__orig_ordType": ord_type,
-            "__max_slippage_bps": max_slippage_bps,
-            "__slippage_applied": _slippage_applied,
-            "__slippage_fallback_reason": _slippage_fallback_reason,
-        }, r)
+        self._audit_log(
+            "place_order",
+            {
+                **body,
+                "__orig_ordType": ord_type,
+                "__max_slippage_bps": max_slippage_bps,
+                "__slippage_applied": _slippage_applied,
+                "__slippage_fallback_reason": _slippage_fallback_reason,
+            },
+            r,
+        )
 
         ok = r.get("code") == "0"
         return {
@@ -806,26 +847,36 @@ class OKXSimulatedClient:
             "raw": r,
         }
 
-    def market_open_long(self, inst_id: str = None, usdt_amount: float = None,
-                         reason: str = "") -> Dict:
+    def market_open_long(
+        self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
+    ) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
         sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
-            inst_id=inst_id, side="buy", ord_type="market",
-            sz=sz, pos_side="long", td_mode="isolated",
-            reason=reason or "bcrm_reasoning_open_long"
+            inst_id=inst_id,
+            side="buy",
+            ord_type="market",
+            sz=sz,
+            pos_side="long",
+            td_mode="isolated",
+            reason=reason or "bcrm_reasoning_open_long",
         )
 
-    def market_open_short(self, inst_id: str = None, usdt_amount: float = None,
-                          reason: str = "") -> Dict:
+    def market_open_short(
+        self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
+    ) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
         sz = self._usdt_to_sz(inst_id, usdt_amount)
         return self.place_order(
-            inst_id=inst_id, side="sell", ord_type="market",
-            sz=sz, pos_side="short", td_mode="isolated",
-            reason=reason or "bcrm_reasoning_open_short"
+            inst_id=inst_id,
+            side="sell",
+            ord_type="market",
+            sz=sz,
+            pos_side="short",
+            td_mode="isolated",
+            reason=reason or "bcrm_reasoning_open_short",
         )
 
     def market_close_long(self, inst_id: str = None, reason: str = "") -> Dict:
@@ -834,15 +885,18 @@ class OKXSimulatedClient:
         pos = self.get_positions(inst_id)
         if not pos["ok"]:
             return pos
-        long_pos = [p for p in pos["positions"]
-                    if p["pos_side"] == "long" and p["pos"] > 0]
+        long_pos = [p for p in pos["positions"] if p["pos_side"] == "long" and p["pos"] > 0]
         if not long_pos:
             return {"ok": False, "error": "no long position to close"}
         sz = long_pos[0]["pos"]
         return self.place_order(
-            inst_id=inst_id, side="sell", ord_type="market",
-            sz=sz, pos_side="long", td_mode="isolated",
-            reason=reason or "bcrm_reasoning_close_long"
+            inst_id=inst_id,
+            side="sell",
+            ord_type="market",
+            sz=sz,
+            pos_side="long",
+            td_mode="isolated",
+            reason=reason or "bcrm_reasoning_close_long",
         )
 
     def market_close_short(self, inst_id: str = None, reason: str = "") -> Dict:
@@ -851,25 +905,31 @@ class OKXSimulatedClient:
         pos = self.get_positions(inst_id)
         if not pos["ok"]:
             return pos
-        short_pos = [p for p in pos["positions"]
-                     if p["pos_side"] == "short" and p["pos"] > 0]
+        short_pos = [p for p in pos["positions"] if p["pos_side"] == "short" and p["pos"] > 0]
         if not short_pos:
             return {"ok": False, "error": "no short position to close"}
         sz = short_pos[0]["pos"]
         return self.place_order(
-            inst_id=inst_id, side="buy", ord_type="market",
-            sz=sz, pos_side="short", td_mode="isolated",
-            reason=reason or "bcrm_reasoning_close_short"
+            inst_id=inst_id,
+            side="buy",
+            ord_type="market",
+            sz=sz,
+            pos_side="short",
+            td_mode="isolated",
+            reason=reason or "bcrm_reasoning_close_short",
         )
 
     # ── 止盈止损单（OKX Algo Order） ──────────────────────────
 
-    def place_stop_loss_take_profit(self, inst_id: str = None,
-                                     pos_side: str = "long",
-                                     stop_loss_px: float = 0,
-                                     take_profit_px: float = 0,
-                                     sz: float = None,
-                                     reason: str = "") -> Dict:
+    def place_stop_loss_take_profit(
+        self,
+        inst_id: str = None,
+        pos_side: str = "long",
+        stop_loss_px: float = 0,
+        take_profit_px: float = 0,
+        sz: float = None,
+        reason: str = "",
+    ) -> Dict:
         """
         设置止盈止损单（OKX algo order: OCO 条件单）
 
@@ -894,8 +954,9 @@ class OKXSimulatedClient:
             pos_data = self.get_positions(inst_id)
             if not pos_data["ok"]:
                 return pos_data
-            matched = [p for p in pos_data["positions"]
-                       if p["pos_side"] == pos_side and p["pos"] > 0]
+            matched = [
+                p for p in pos_data["positions"] if p["pos_side"] == pos_side and p["pos"] > 0
+            ]
             if not matched:
                 return {"ok": False, "error": f"无 {pos_side} 持仓可设置止盈止损"}
             sz = matched[0]["pos"]
@@ -912,29 +973,43 @@ class OKXSimulatedClient:
                 "sz": str(sz),
                 "posSide": pos_side,
                 "slTriggerPx": str(stop_loss_px),
-                "slOrdPx": "-1",   # 市价触发
+                "slOrdPx": "-1",  # 市价触发
                 "tpTriggerPx": str(take_profit_px),
                 "tpOrdPx": "-1",
                 "tag": "yijingsltp",
             }
             if self.dry_run:
-                result = {"ok": True, "dry_run": True, "type": "oco",
-                          "stop_loss_px": stop_loss_px, "take_profit_px": take_profit_px,
-                          "sz": sz, "side": side,
-                          "algo_id": f"dry_oco_{int(time.time()*1000)}"}
+                result = {
+                    "ok": True,
+                    "dry_run": True,
+                    "type": "oco",
+                    "stop_loss_px": stop_loss_px,
+                    "take_profit_px": take_profit_px,
+                    "sz": sz,
+                    "side": side,
+                    "algo_id": f"dry_oco_{int(time.time()*1000)}",
+                }
             else:
                 r = self._post("/api/v5/trade/order-algo", body)
-                result = {"ok": r.get("code") == "0",
-                          "dry_run": False, "type": "oco",
-                          "stop_loss_px": stop_loss_px,
-                          "take_profit_px": take_profit_px,
-                          "sz": sz, "side": side,
-                          "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
-                          "raw": r}
+                result = {
+                    "ok": r.get("code") == "0",
+                    "dry_run": False,
+                    "type": "oco",
+                    "stop_loss_px": stop_loss_px,
+                    "take_profit_px": take_profit_px,
+                    "sz": sz,
+                    "side": side,
+                    "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
+                    "raw": r,
+                }
                 self._audit_log("oco_sltp_order", body, r)
-            return {"orders": [result], "stop_loss": result,
-                    "take_profit": result, "ok": result.get("ok"),
-                    "reason": reason or "bcrm_risk_management"}
+            return {
+                "orders": [result],
+                "stop_loss": result,
+                "take_profit": result,
+                "ok": result.get("ok"),
+                "reason": reason or "bcrm_risk_management",
+            }
 
         # 仅止损或仅止盈（conditional 单，使用 tpTriggerPx/slTriggerPx 参数）
         if stop_loss_px:
@@ -951,19 +1026,34 @@ class OKXSimulatedClient:
                 "tag": "yijingsl",
             }
             if self.dry_run:
-                sl_result = {"ok": True, "dry_run": True, "type": "stop_loss",
-                             "trigger_px": stop_loss_px, "sz": sz, "side": sl_side,
-                             "algo_id": f"dry_sl_{int(time.time()*1000)}"}
+                sl_result = {
+                    "ok": True,
+                    "dry_run": True,
+                    "type": "stop_loss",
+                    "trigger_px": stop_loss_px,
+                    "sz": sz,
+                    "side": sl_side,
+                    "algo_id": f"dry_sl_{int(time.time()*1000)}",
+                }
             else:
                 r = self._post("/api/v5/trade/order-algo", body)
-                sl_result = {"ok": r.get("code") == "0",
-                             "dry_run": False, "type": "stop_loss",
-                             "trigger_px": stop_loss_px, "sz": sz, "side": sl_side,
-                             "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
-                             "raw": r}
+                sl_result = {
+                    "ok": r.get("code") == "0",
+                    "dry_run": False,
+                    "type": "stop_loss",
+                    "trigger_px": stop_loss_px,
+                    "sz": sz,
+                    "side": sl_side,
+                    "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
+                    "raw": r,
+                }
                 self._audit_log("stop_loss_order", body, r)
-            return {"orders": [sl_result], "stop_loss": sl_result,
-                    "ok": sl_result.get("ok"), "reason": reason or "bcrm_risk_management"}
+            return {
+                "orders": [sl_result],
+                "stop_loss": sl_result,
+                "ok": sl_result.get("ok"),
+                "reason": reason or "bcrm_risk_management",
+            }
 
         # 仅止盈
         tp_side = "sell" if pos_side == "long" else "buy"
@@ -979,22 +1069,42 @@ class OKXSimulatedClient:
             "tag": "yijingtp",
         }
         if self.dry_run:
-            tp_result = {"ok": True, "dry_run": True, "type": "take_profit",
-                         "trigger_px": take_profit_px, "sz": sz, "side": tp_side,
-                         "algo_id": f"dry_tp_{int(time.time()*1000)}"}
+            tp_result = {
+                "ok": True,
+                "dry_run": True,
+                "type": "take_profit",
+                "trigger_px": take_profit_px,
+                "sz": sz,
+                "side": tp_side,
+                "algo_id": f"dry_tp_{int(time.time()*1000)}",
+            }
         else:
             r = self._post("/api/v5/trade/order-algo", body)
-            tp_result = {"ok": r.get("code") == "0",
-                         "dry_run": False, "type": "take_profit",
-                         "trigger_px": take_profit_px, "sz": sz, "side": tp_side,
-                         "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
-                         "raw": r}
+            tp_result = {
+                "ok": r.get("code") == "0",
+                "dry_run": False,
+                "type": "take_profit",
+                "trigger_px": take_profit_px,
+                "sz": sz,
+                "side": tp_side,
+                "algo_id": r.get("data", [{}])[0].get("algoId") if r.get("data") else None,
+                "raw": r,
+            }
             self._audit_log("take_profit_order", body, r)
-        return {"orders": [tp_result], "take_profit": tp_result,
-                "ok": tp_result.get("ok"), "reason": reason or "bcrm_risk_management"}
+        return {
+            "orders": [tp_result],
+            "take_profit": tp_result,
+            "ok": tp_result.get("ok"),
+            "reason": reason or "bcrm_risk_management",
+        }
 
-    def reduce_position(self, inst_id: str = None, pos_side: str = "long",
-                        reduce_ratio: float = 0.5, reason: str = "") -> Dict:
+    def reduce_position(
+        self,
+        inst_id: str = None,
+        pos_side: str = "long",
+        reduce_ratio: float = 0.5,
+        reason: str = "",
+    ) -> Dict:
         """
         减仓操作（按比例减少持仓）
 
@@ -1011,21 +1121,27 @@ class OKXSimulatedClient:
         if not pos_data["ok"]:
             return pos_data
 
-        matched = [p for p in pos_data["positions"]
-                   if p["pos_side"] == pos_side and p["pos"] > 0]
+        matched = [p for p in pos_data["positions"] if p["pos_side"] == pos_side and p["pos"] > 0]
         if not matched:
             return {"ok": False, "error": f"无 {pos_side} 持仓可减仓"}
 
         full_sz = matched[0]["pos"]
         reduce_sz = int(full_sz * reduce_ratio)
         if reduce_sz < 1:
-            return {"ok": False, "error": f"减仓数量不足（持仓 {full_sz}，减仓比例 {reduce_ratio}）"}
+            return {
+                "ok": False,
+                "error": f"减仓数量不足（持仓 {full_sz}，减仓比例 {reduce_ratio}）",
+            }
 
         side = "sell" if pos_side == "long" else "buy"
         result = self.place_order(
-            inst_id=inst_id, side=side, ord_type="market",
-            sz=reduce_sz, pos_side=pos_side, td_mode="isolated",
-            reason=reason or f"bcrm_reduce_{int(reduce_ratio*100)}pct"
+            inst_id=inst_id,
+            side=side,
+            ord_type="market",
+            sz=reduce_sz,
+            pos_side=pos_side,
+            td_mode="isolated",
+            reason=reason or f"bcrm_reduce_{int(reduce_ratio*100)}pct",
         )
         result["reduce_ratio"] = reduce_ratio
         result["original_pos"] = full_sz
@@ -1041,8 +1157,9 @@ class OKXSimulatedClient:
 
         algo_ids = []
         for ord_type in ("conditional", "oco"):
-            r = self._get("/api/v5/trade/orders-algo-pending",
-                           {"instId": inst_id, "ordType": ord_type})
+            r = self._get(
+                "/api/v5/trade/orders-algo-pending", {"instId": inst_id, "ordType": ord_type}
+            )
             if r.get("code") != "0":
                 continue
             algo_ids.extend(d["algoId"] for d in r.get("data", []))
@@ -1067,32 +1184,34 @@ class OKXSimulatedClient:
             return {"ok": False, "error": "missing api credentials"}
         orders = []
         for ord_type in ("conditional", "oco"):
-            r = self._get("/api/v5/trade/orders-algo-pending",
-                           {"instId": inst_id, "ordType": ord_type})
+            r = self._get(
+                "/api/v5/trade/orders-algo-pending", {"instId": inst_id, "ordType": ord_type}
+            )
             if r.get("code") != "0":
                 continue
             for d in r.get("data", []):
-                orders.append({
-                    "algo_id": d.get("algoId"),
-                    "ord_type": ord_type,
-                    "side": d.get("side"),
-                    "pos_side": d.get("posSide"),
-                    "sz": float(d.get("sz", 0) or 0),
-                    "trigger_px": float(d.get("triggerPx", 0) or 0),
-                    "sl_trigger_px": float(d.get("slTriggerPx", 0) or 0),
-                    "tp_trigger_px": float(d.get("tpTriggerPx", 0) or 0),
-                    "order_px": d.get("orderPx"),
-                    "state": d.get("state"),
-                    "actual_px": float(d.get("actualPx", 0) or 0),
-                    "tag": d.get("tag", ""),
-                })
+                orders.append(
+                    {
+                        "algo_id": d.get("algoId"),
+                        "ord_type": ord_type,
+                        "side": d.get("side"),
+                        "pos_side": d.get("posSide"),
+                        "sz": float(d.get("sz", 0) or 0),
+                        "trigger_px": float(d.get("triggerPx", 0) or 0),
+                        "sl_trigger_px": float(d.get("slTriggerPx", 0) or 0),
+                        "tp_trigger_px": float(d.get("tpTriggerPx", 0) or 0),
+                        "order_px": d.get("orderPx"),
+                        "state": d.get("state"),
+                        "actual_px": float(d.get("actualPx", 0) or 0),
+                        "tag": d.get("tag", ""),
+                    }
+                )
         return {"ok": True, "orders": orders, "count": len(orders)}
 
     def get_order(self, inst_id: str, ord_id: str) -> Dict:
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
-        r = self._get("/api/v5/trade/order",
-                      {"instId": inst_id, "ordId": ord_id})
+        r = self._get("/api/v5/trade/order", {"instId": inst_id, "ordId": ord_id})
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown")}
         d = r["data"][0]
@@ -1116,22 +1235,23 @@ class OKXSimulatedClient:
         inst_id = inst_id or self.cfg["default_inst_id"]
         if not self._has_credentials():
             return {"ok": False, "error": "missing api credentials"}
-        r = self._get("/api/v5/trade/orders-pending",
-                      {"instId": inst_id, "instType": "SWAP"})
+        r = self._get("/api/v5/trade/orders-pending", {"instId": inst_id, "instType": "SWAP"})
         if r.get("code") != "0":
             return {"ok": False, "error": r.get("msg", "unknown")}
         orders = []
         for d in r.get("data", []):
-            orders.append({
-                "ord_id": d.get("ordId"),
-                "side": d.get("side"),
-                "pos_side": d.get("posSide"),
-                "ord_type": d.get("ordType"),
-                "sz": float(d.get("sz", 0) or 0),
-                "px": float(d.get("px", 0) or 0),
-                "state": d.get("state"),
-                "tag": d.get("tag", ""),
-            })
+            orders.append(
+                {
+                    "ord_id": d.get("ordId"),
+                    "side": d.get("side"),
+                    "pos_side": d.get("posSide"),
+                    "ord_type": d.get("ordType"),
+                    "sz": float(d.get("sz", 0) or 0),
+                    "px": float(d.get("px", 0) or 0),
+                    "state": d.get("state"),
+                    "tag": d.get("tag", ""),
+                }
+            )
         return {"ok": True, "orders": orders, "count": len(orders)}
 
     def cancel_order(self, inst_id: str, ord_id: str) -> Dict:
@@ -1147,9 +1267,9 @@ class OKXSimulatedClient:
 
     # ── 模拟交易训练闭环 ────────────────────────────────────
 
-    def simulate_trade_from_bcrm(self, bcrm_result: Dict,
-                                 inst_id: str = None,
-                                 usdt_amount: float = None) -> Dict:
+    def simulate_trade_from_bcrm(
+        self, bcrm_result: Dict, inst_id: str = None, usdt_amount: float = None
+    ) -> Dict:
         """
         根据 BCRM 推理结果执行模拟交易（含止盈止损/减仓风控）
 
@@ -1168,13 +1288,17 @@ class OKXSimulatedClient:
         usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
 
         action = bcrm_result.get("action", "hold")
-        reason = f"卦象:{bcrm_result.get('hexagram','?')} 两仪:{bcrm_result.get('two_yi_state','?')}"
+        reason = (
+            f"卦象:{bcrm_result.get('hexagram','?')} 两仪:{bcrm_result.get('two_yi_state','?')}"
+        )
         stop_loss_px = bcrm_result.get("stop_loss_px", 0)
         take_profit_px = bcrm_result.get("take_profit_px", 0)
         reduce_ratio = bcrm_result.get("reduce_ratio", 0)
 
         result = {
-            "action": action, "reason": reason, "executed": False,
+            "action": action,
+            "reason": reason,
+            "executed": False,
             "risk_management": None,
         }
 
@@ -1185,9 +1309,12 @@ class OKXSimulatedClient:
             # 开仓后设置止盈止损
             if r.get("ok") and (stop_loss_px or take_profit_px):
                 sl_tp = self.place_stop_loss_take_profit(
-                    inst_id=inst_id, pos_side="long",
-                    stop_loss_px=stop_loss_px, take_profit_px=take_profit_px,
-                    reason=reason)
+                    inst_id=inst_id,
+                    pos_side="long",
+                    stop_loss_px=stop_loss_px,
+                    take_profit_px=take_profit_px,
+                    reason=reason,
+                )
                 result["risk_management"] = sl_tp
 
         elif action == "open_short":
@@ -1196,9 +1323,12 @@ class OKXSimulatedClient:
             result["executed"] = r.get("ok", False)
             if r.get("ok") and (stop_loss_px or take_profit_px):
                 sl_tp = self.place_stop_loss_take_profit(
-                    inst_id=inst_id, pos_side="short",
-                    stop_loss_px=stop_loss_px, take_profit_px=take_profit_px,
-                    reason=reason)
+                    inst_id=inst_id,
+                    pos_side="short",
+                    stop_loss_px=stop_loss_px,
+                    take_profit_px=take_profit_px,
+                    reason=reason,
+                )
                 result["risk_management"] = sl_tp
 
         elif action == "close_long":
@@ -1213,8 +1343,9 @@ class OKXSimulatedClient:
 
         elif action == "reduce_long":
             ratio = reduce_ratio or 0.5
-            r = self.reduce_position(inst_id=inst_id, pos_side="long",
-                                      reduce_ratio=ratio, reason=reason)
+            r = self.reduce_position(
+                inst_id=inst_id, pos_side="long", reduce_ratio=ratio, reason=reason
+            )
             result["order_result"] = r
             result["executed"] = r.get("ok", False)
             # 减仓后更新止盈止损（撤旧设新）
@@ -1223,15 +1354,20 @@ class OKXSimulatedClient:
                 remaining = r.get("remaining_pos", 0)
                 if remaining > 0:
                     sl_tp = self.place_stop_loss_take_profit(
-                        inst_id=inst_id, pos_side="long",
-                        stop_loss_px=stop_loss_px, take_profit_px=take_profit_px,
-                        sz=remaining, reason=reason)
+                        inst_id=inst_id,
+                        pos_side="long",
+                        stop_loss_px=stop_loss_px,
+                        take_profit_px=take_profit_px,
+                        sz=remaining,
+                        reason=reason,
+                    )
                     result["risk_management"] = sl_tp
 
         elif action == "reduce_short":
             ratio = reduce_ratio or 0.5
-            r = self.reduce_position(inst_id=inst_id, pos_side="short",
-                                      reduce_ratio=ratio, reason=reason)
+            r = self.reduce_position(
+                inst_id=inst_id, pos_side="short", reduce_ratio=ratio, reason=reason
+            )
             result["order_result"] = r
             result["executed"] = r.get("ok", False)
             if r.get("ok") and (stop_loss_px or take_profit_px):
@@ -1239,9 +1375,13 @@ class OKXSimulatedClient:
                 remaining = r.get("remaining_pos", 0)
                 if remaining > 0:
                     sl_tp = self.place_stop_loss_take_profit(
-                        inst_id=inst_id, pos_side="short",
-                        stop_loss_px=stop_loss_px, take_profit_px=take_profit_px,
-                        sz=remaining, reason=reason)
+                        inst_id=inst_id,
+                        pos_side="short",
+                        stop_loss_px=stop_loss_px,
+                        take_profit_px=take_profit_px,
+                        sz=remaining,
+                        reason=reason,
+                    )
                     result["risk_management"] = sl_tp
 
         else:
@@ -1268,12 +1408,13 @@ class OKXSimulatedClient:
     def get_performance_summary(self) -> Dict:
         """模拟交易绩效汇总"""
         logs = self.get_audit_logs(limit=1000)
-        trade_logs = [l for l in logs
-                       if l.get("action", "").startswith("place_order")]
+        trade_logs = [
+            l for l in logs if l.get("action", "").startswith("place_order")  # noqa: E741
+        ]  # noqa: E741
 
         total_orders = len(trade_logs)
-        dry_run_count = sum(1 for l in trade_logs if l.get("dry_run"))
-        sim_count = sum(1 for l in trade_logs if l.get("simulated"))
+        dry_run_count = sum(1 for l in trade_logs if l.get("dry_run"))  # noqa: E741
+        sim_count = sum(1 for l in trade_logs if l.get("simulated"))  # noqa: E741
 
         return {
             "total_orders": total_orders,
@@ -1286,6 +1427,7 @@ class OKXSimulatedClient:
 
 def cli():
     import sys
+
     if len(sys.argv) < 2:
         print("Usage: python -m scripts.memory_l4.okx_simulated <command> [args]")
         print("Commands:")
@@ -1310,11 +1452,14 @@ def cli():
         i = 2
         while i < len(sys.argv):
             if sys.argv[i] == "--key" and i + 1 < len(sys.argv):
-                kwargs["api_key"] = sys.argv[i + 1]; i += 2
+                kwargs["api_key"] = sys.argv[i + 1]
+                i += 2
             elif sys.argv[i] == "--secret" and i + 1 < len(sys.argv):
-                kwargs["secret_key"] = sys.argv[i + 1]; i += 2
+                kwargs["secret_key"] = sys.argv[i + 1]
+                i += 2
             elif sys.argv[i] == "--pass" and i + 1 < len(sys.argv):
-                kwargs["passphrase"] = sys.argv[i + 1]; i += 2
+                kwargs["passphrase"] = sys.argv[i + 1]
+                i += 2
             else:
                 i += 1
         result = configure(**kwargs)
@@ -1385,15 +1530,19 @@ def cli():
         i = 2
         while i < len(sys.argv):
             if sys.argv[i] == "--side" and i + 1 < len(sys.argv):
-                pos_side = sys.argv[i + 1]; i += 2
+                pos_side = sys.argv[i + 1]
+                i += 2
             elif sys.argv[i] == "--sl" and i + 1 < len(sys.argv):
-                sl_px = float(sys.argv[i + 1]); i += 2
+                sl_px = float(sys.argv[i + 1])
+                i += 2
             elif sys.argv[i] == "--tp" and i + 1 < len(sys.argv):
-                tp_px = float(sys.argv[i + 1]); i += 2
+                tp_px = float(sys.argv[i + 1])
+                i += 2
             else:
                 i += 1
         r = client.place_stop_loss_take_profit(
-            pos_side=pos_side, stop_loss_px=sl_px, take_profit_px=tp_px)
+            pos_side=pos_side, stop_loss_px=sl_px, take_profit_px=tp_px
+        )
         print(json.dumps(r, indent=2, ensure_ascii=False))
         return
 
@@ -1404,9 +1553,11 @@ def cli():
         i = 2
         while i < len(sys.argv):
             if sys.argv[i] == "--side" and i + 1 < len(sys.argv):
-                pos_side = sys.argv[i + 1]; i += 2
+                pos_side = sys.argv[i + 1]
+                i += 2
             elif sys.argv[i] == "--ratio" and i + 1 < len(sys.argv):
-                ratio = float(sys.argv[i + 1]); i += 2
+                ratio = float(sys.argv[i + 1])
+                i += 2
             else:
                 i += 1
         r = client.reduce_position(pos_side=pos_side, reduce_ratio=ratio)

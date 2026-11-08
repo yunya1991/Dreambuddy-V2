@@ -14,6 +14,7 @@
 
 启动: python3 mcp_server.py（由 MCP 客户端以 stdio 方式拉起）
 """
+
 import json
 import os
 import re
@@ -59,15 +60,27 @@ def tool_query_entity(message):
     m = re.search(r"([A-Z]{2,10})", (message or "").upper())
     if m:
         return {"symbol": m.group(1), "matched_alias": None, "method": "regex"}
-    return {"symbol": None, "need_clarification": True,
-            "hint": "未识别到标的，请提供币种名（如：以太坊、BTC、黄金）"}
+    return {
+        "symbol": None,
+        "need_clarification": True,
+        "hint": "未识别到标的，请提供币种名（如：以太坊、BTC、黄金）",
+    }
 
 
 def _load_term_tables():
     """加载九大术语表（五大域 + P-术语四类新域）。"""
     tables = {}
-    for d in ("indicator", "strategy", "theory", "finance", "algorithm",
-              "people", "tokenomics", "sector", "macro"):
+    for d in (
+        "indicator",
+        "strategy",
+        "theory",
+        "finance",
+        "algorithm",
+        "people",
+        "tokenomics",
+        "sector",
+        "macro",
+    ):
         p = os.path.join(_SYS_DIR, f"{d}_terms.json")
         try:
             with open(p, "r", encoding="utf-8") as f:
@@ -88,8 +101,12 @@ def tool_semantic_lookup(term):
         return {"symbol": term, "aliases": aliases[term], "type": "entity"}
     resolved = tool_query_entity(term)
     if resolved.get("symbol") and resolved["symbol"] in aliases:
-        return {"symbol": resolved["symbol"], "aliases": aliases[resolved["symbol"]],
-                "type": "entity", "matched_via": resolved.get("method")}
+        return {
+            "symbol": resolved["symbol"],
+            "aliases": aliases[resolved["symbol"]],
+            "type": "entity",
+            "matched_via": resolved.get("method"),
+        }
     # 2) 术语域命中（精确 + 包含匹配）
     tables = _load_term_tables()
     for domain, table in tables.items():
@@ -99,8 +116,11 @@ def tool_semantic_lookup(term):
         for t in table.get("terms", []):
             if term in t["term"] or t["term"] in term:
                 return {"type": "term", "domain": domain, "matched_via": "fuzzy", **t}
-    return {"symbol": None, "type": "unknown",
-            "hint": f"术语『{term}』暂未入库，可作为蒸馏候选（阶段二三圈扩散触发信号）"}
+    return {
+        "symbol": None,
+        "type": "unknown",
+        "hint": f"术语『{term}』暂未入库，可作为蒸馏候选（阶段二三圈扩散触发信号）",
+    }
 
 
 def tool_distill_aliases(pool, with_llm=False):
@@ -123,10 +143,11 @@ def tool_training_feed(layer, batch):
         return {"error": "batch must be non-empty list"}
     try:
         import urllib.request
+
         body = json.dumps({"action": "feed", "data": {"batch": batch}}).encode("utf-8")
         req = urllib.request.Request(
-            f"{_TRAINING_URL}/{layer}", data=body,
-            headers={"Content-Type": "application/json"})
+            f"{_TRAINING_URL}/{layer}", data=body, headers={"Content-Type": "application/json"}
+        )
         with urllib.request.urlopen(req, timeout=15) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except Exception as e:
@@ -138,32 +159,54 @@ TOOLS = [
     {
         "name": "query_entity",
         "description": "实体解析: 从用户消息中解析金融标的代号（中文别名优先，如『以太坊』→ETH）。只读。",
-        "inputSchema": {"type": "object", "properties": {
-            "message": {"type": "string", "description": "用户消息原文"}},
-            "required": ["message"]},
+        "inputSchema": {
+            "type": "object",
+            "properties": {"message": {"type": "string", "description": "用户消息原文"}},
+            "required": ["message"],
+        },
     },
     {
         "name": "semantic_lookup",
         "description": "金融语义查询: 查询标的别名/技术指标/交易策略/交易理论/金融概念/交易算法/金融人物/代币机制/金融板块/宏观术语的语义信息与定义。只读。",
-        "inputSchema": {"type": "object", "properties": {
-            "term": {"type": "string", "description": "术语或标的名"}},
-            "required": ["term"]},
+        "inputSchema": {
+            "type": "object",
+            "properties": {"term": {"type": "string", "description": "术语或标的名"}},
+            "required": ["term"],
+        },
     },
     {
         "name": "distill_aliases",
         "description": "蒸馏管线: 权威源校验+交易池增量检测+可选 LLM 线索蒸馏。写操作，需用户确认后执行。",
-        "inputSchema": {"type": "object", "properties": {
-            "pool": {"type": "string", "description": "交易池标的（逗号分隔，可选）"},
-            "with_llm": {"type": "boolean", "description": "启用 LLM 线索蒸馏（默认 false，零成本）"}},
-            "required": []},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pool": {"type": "string", "description": "交易池标的（逗号分隔，可选）"},
+                "with_llm": {
+                    "type": "boolean",
+                    "description": "启用 LLM 线索蒸馏（默认 false，零成本）",
+                },
+            },
+            "required": [],
+        },
     },
     {
         "name": "training_feed",
         "description": "训练喂入: 将样本批量喂入 34 训练系统指定层。写操作，需用户确认后执行。",
-        "inputSchema": {"type": "object", "properties": {
-            "layer": {"type": "string", "enum": ["S", "DSH", "C", "G", "LLM"], "description": "训练层"},
-            "batch": {"type": "array", "description": "训练样本列表 [{message,intent_type,quality}]"}},
-            "required": ["layer", "batch"]},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "layer": {
+                    "type": "string",
+                    "enum": ["S", "DSH", "C", "G", "LLM"],
+                    "description": "训练层",
+                },
+                "batch": {
+                    "type": "array",
+                    "description": "训练样本列表 [{message,intent_type,quality}]",
+                },
+            },
+            "required": ["layer", "batch"],
+        },
     },
 ]
 
@@ -175,30 +218,62 @@ def _record_reasoning_trace(tool, args, result, elapsed_ms, llm_involved=False):
     FAIL-OPEN：记录失败不影响主链路。
     """
     import time
+
     try:
         trace = {
             "schema_version": "0.5",
             "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "tool": tool,
-            "input": {k: v for k, v in (args or {}).items() if isinstance(v, (str, bool, int, float))},
+            "input": {
+                k: v for k, v in (args or {}).items() if isinstance(v, (str, bool, int, float))
+            },
             "semantic_hits": [],
             "conclusion": {},
             "elapsed_ms": round(elapsed_ms, 2),
             "llm_involved": llm_involved,
-            "token_budget_note": "distill with_llm=true 时 LLM 参与，token 预算由蒸馏管线控制" if llm_involved else None,
+            "token_budget_note": (
+                "distill with_llm=true 时 LLM 参与，token 预算由蒸馏管线控制"
+                if llm_involved
+                else None
+            ),
         }
         if isinstance(result, dict):
             # 各层语义命中提取（实体层/术语域层/匹配方式）
             if result.get("type"):
                 trace["semantic_hits"].append({"layer": "result_type", "value": result.get("type")})
             if result.get("symbol"):
-                trace["semantic_hits"].append({"layer": "entity", "value": result.get("symbol"), "matched_via": result.get("matched_via") or result.get("method")})
+                trace["semantic_hits"].append(
+                    {
+                        "layer": "entity",
+                        "value": result.get("symbol"),
+                        "matched_via": result.get("matched_via") or result.get("method"),
+                    }
+                )
             if result.get("domain"):
-                trace["semantic_hits"].append({"layer": "term_domain", "value": result.get("domain")})
+                trace["semantic_hits"].append(
+                    {"layer": "term_domain", "value": result.get("domain")}
+                )
             if result.get("need_clarification"):
-                trace["semantic_hits"].append({"layer": "clarification", "value": result.get("hint")})
+                trace["semantic_hits"].append(
+                    {"layer": "clarification", "value": result.get("hint")}
+                )
             # 综合结论（去除大字段，保留摘要）
-            trace["conclusion"] = {k: v for k, v in result.items() if k in ("symbol", "type", "domain", "term", "method", "matched_via", "error", "hint", "need_clarification")}
+            trace["conclusion"] = {
+                k: v
+                for k, v in result.items()
+                if k
+                in (
+                    "symbol",
+                    "type",
+                    "domain",
+                    "term",
+                    "method",
+                    "matched_via",
+                    "error",
+                    "hint",
+                    "need_clarification",
+                )
+            }
         trace_path = os.path.join(_SYS_DIR, "reasoning_trace.jsonl")
         with open(trace_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(trace, ensure_ascii=False) + "\n")
@@ -208,6 +283,7 @@ def _record_reasoning_trace(tool, args, result, elapsed_ms, llm_involved=False):
 
 def _dispatch(name, args):
     import time as _time
+
     _t0 = _time.time()
     if name == "query_entity":
         _r = tool_query_entity(args.get("message", ""))

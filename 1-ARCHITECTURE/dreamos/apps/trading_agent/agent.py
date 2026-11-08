@@ -20,31 +20,28 @@ Dreambuddy OS — Trading Agent 应用
 
 from __future__ import annotations
 
+import logging
 import os
 import time
-import logging
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-from dreamos.shared.state import State, new_state
-from dreamos.shared.utils import gen_cycle_id
-
-from dreamos.core.sense import IntentEngine, IntentResult
-from dreamos.core.arrange import GraphPlanner, ExecutionPlan
-from dreamos.core.compute import GraphExecutor, ExecutionReport
-from dreamos.core.graph_store import GraphStore
-from dreamos.budget import GlobalBudgetManager, CostTracker
-
-from dreamos.registry import NodeRegistry, get_default_registry
-
-from dreamos.core.capability import (
+from dreamos.budget import CostTracker, GlobalBudgetManager  # noqa: E402
+from dreamos.capabilities.trading import TradingCapability  # noqa: E402
+from dreamos.core.arrange import ExecutionPlan, GraphPlanner  # noqa: E402
+from dreamos.core.capability import (  # noqa: E402
     CapabilityRegistry,
     CapabilityRouter,
     RoutingResult,
     get_default_capability_registry,
 )
-from dreamos.capabilities.trading import TradingCapability
+from dreamos.core.compute import ExecutionReport, GraphExecutor  # noqa: E402
+from dreamos.core.graph_store import GraphStore  # noqa: E402
+from dreamos.core.sense import IntentEngine, IntentResult  # noqa: E402
+from dreamos.registry import NodeRegistry, get_default_registry  # noqa: E402
+from dreamos.shared.state import State, new_state  # noqa: E402
+from dreamos.shared.utils import gen_cycle_id  # noqa: E402
 
 
 class TradingAgent:
@@ -66,13 +63,15 @@ class TradingAgent:
         - L0 工作记忆：WorkingMemoryManager 管理任务上下文
     """
 
-    def __init__(self,
-                 registry: Optional[NodeRegistry] = None,
-                 capability_registry: Optional[CapabilityRegistry] = None,
-                 budget_mode: str = "standard",
-                 auto_register: bool = True,
-                 default_capability: str = "trading",
-                 enable_working_memory: bool = True):
+    def __init__(
+        self,
+        registry: Optional[NodeRegistry] = None,
+        capability_registry: Optional[CapabilityRegistry] = None,
+        budget_mode: str = "standard",
+        auto_register: bool = True,
+        default_capability: str = "trading",
+        enable_working_memory: bool = True,
+    ):
         self.registry = registry or get_default_registry()
         self.capability_registry = capability_registry or get_default_capability_registry()
         self.capability_registry.attach_node_registry(self.registry)
@@ -111,11 +110,13 @@ class TradingAgent:
             try:
                 import sys
                 from pathlib import Path as _Path
+
                 _root = _Path(__file__).resolve().parents[4]
                 _wm_path = str(_root / "4-MEMORY" / "9-工具与接口")
                 if _wm_path not in sys.path:
                     sys.path.insert(0, _wm_path)
                 from working_memory_manager import WorkingMemoryManager
+
                 self._wm_class = WorkingMemoryManager
             except ImportError:
                 self._wm_class = None
@@ -131,9 +132,9 @@ class TradingAgent:
         以获取 TYPESAFE_API_KEY / ENABLE_JEV_JUDGE 等配置。
         """
         import os
+
         dsh_env = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..",
-            "dream-harness-bridge", ".env"
+            os.path.dirname(__file__), "..", "..", "..", "dream-harness-bridge", ".env"
         )
         dsh_env = os.path.abspath(dsh_env)
         if not os.path.exists(dsh_env):
@@ -166,11 +167,17 @@ class TradingAgent:
 
             # DSH jev_judge 路径
             jev_path = os.path.join(
-                os.path.dirname(__file__), "..", "..", "..",
-                "dream-harness-bridge", "packages", "python-server"
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "dream-harness-bridge",
+                "packages",
+                "python-server",
             )
             jev_path = os.path.abspath(jev_path)
             import sys
+
             if jev_path not in sys.path:
                 sys.path.insert(0, jev_path)
 
@@ -198,11 +205,17 @@ class TradingAgent:
             self._load_dsh_env()
 
             jev_path = os.path.join(
-                os.path.dirname(__file__), "..", "..", "..",
-                "dream-harness-bridge", "packages", "python-server"
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "dream-harness-bridge",
+                "packages",
+                "python-server",
             )
             jev_path = os.path.abspath(jev_path)
             import sys
+
             if jev_path not in sys.path:
                 sys.path.insert(0, jev_path)
 
@@ -218,7 +231,7 @@ class TradingAgent:
     def _inject_wm_to_llm_recognizer(self) -> None:
         """将工作记忆注入到 IntentEngine 的 LLMBasedRecognizer"""
         from dreamos.core.sense.recognizers import LLMBasedRecognizer
-        
+
         for recognizer in self.intent_engine._recognizers:
             if isinstance(recognizer, LLMBasedRecognizer):
                 recognizer.set_working_memory(self.working_memory)
@@ -226,8 +239,9 @@ class TradingAgent:
 
     # ── L0 工作记忆辅助方法 ────────────────────────
 
-    def _init_working_memory(self, cycle_id: str, user_input: str,
-                              market_data: Dict, context: Dict) -> None:
+    def _init_working_memory(
+        self, cycle_id: str, user_input: str, market_data: Dict, context: Dict
+    ) -> None:
         """初始化 L0 工作记忆（在每次 run() 开始时调用）"""
         if not self._enable_working_memory or self._wm_class is None:
             return
@@ -242,7 +256,7 @@ class TradingAgent:
             wm.set_context("symbol", market_data.get("symbol", "BTC"))
             wm.set_context("price", str(market_data.get("price", 0)))
             self.working_memory = wm
-            
+
             # 同步注入到 LLMBasedRecognizer（让 LLM 可以读取工作记忆）
             self._inject_wm_to_llm_recognizer()
         except Exception as e:
@@ -319,11 +333,13 @@ class TradingAgent:
             trading_cap = TradingCapability()
             self.capability_registry.register(trading_cap)
 
-    def run(self,
-            user_input: str = "",
-            market_data: Optional[Dict[str, Any]] = None,
-            context: Optional[Dict[str, Any]] = None,
-            budget_mode: Optional[str] = None) -> Dict[str, Any]:
+    def run(
+        self,
+        user_input: str = "",
+        market_data: Optional[Dict[str, Any]] = None,
+        context: Optional[Dict[str, Any]] = None,
+        budget_mode: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """执行一次完整的交易分析周期
 
         Args:
@@ -361,20 +377,21 @@ class TradingAgent:
         # ── 1.2 能力域路由 ───────────────────
         routing_result = self._route_capability(intent_result)
         if not routing_result.success:
-            logger.warning(
-                f"能力域路由失败: {routing_result.rationale}，回退到默认交易能力域"
-            )
+            logger.warning(f"能力域路由失败: {routing_result.rationale}，回退到默认交易能力域")
 
         # ── 1.3 写入 S 层结果到工作记忆 ─────────────────
         self._wm_set_context("intent_type", intent_result.intent_type)
         self._wm_set_context("intent_confidence", f"{intent_result.confidence:.2f}")
         self._wm_set_context("recommended_chain", intent_result.recommended_chain)
-        self._wm_set_scratch("intent_result", {
-            "type": intent_result.intent_type,
-            "confidence": intent_result.confidence,
-            "chain": intent_result.recommended_chain,
-            "rationale": getattr(intent_result, "rationale", ""),
-        })
+        self._wm_set_scratch(
+            "intent_result",
+            {
+                "type": intent_result.intent_type,
+                "confidence": intent_result.confidence,
+                "chain": intent_result.recommended_chain,
+                "rationale": getattr(intent_result, "rationale", ""),
+            },
+        )
 
         # ── 2. 构建 State ───────────────────
         state = new_state(cycle_id=cycle_id)
@@ -436,25 +453,33 @@ class TradingAgent:
         plan = self._arrange(intent_result, state)
 
         # ── 3.1 写入 A 层结果到工作记忆 ─────────────────
-        self._wm_set_scratch("arrange_result", {
-            "chain": getattr(plan, "planned_chain", ""),
-            "node_count": len(plan.node_ids) if hasattr(plan, "node_ids") else 0,
-            "node_ids": plan.node_ids if hasattr(plan, "node_ids") else [],
-            "budget_allocated": getattr(plan.budget, "total", 0) if hasattr(plan, "budget") else 0,
-        })
+        self._wm_set_scratch(
+            "arrange_result",
+            {
+                "chain": getattr(plan, "planned_chain", ""),
+                "node_count": len(plan.node_ids) if hasattr(plan, "node_ids") else 0,
+                "node_ids": plan.node_ids if hasattr(plan, "node_ids") else [],
+                "budget_allocated": (
+                    getattr(plan.budget, "total", 0) if hasattr(plan, "budget") else 0
+                ),
+            },
+        )
 
         # ── 4. C 层：执行 ────────────────────
         report = self._compute(state, plan)
 
         # ── 4.1 写入 C 层结果到工作记忆 ─────────────────
-        self._wm_set_scratch("compute_result", {
-            "executed_nodes": getattr(report, "executed_nodes", 0),
-            "success_nodes": getattr(report, "success_nodes", 0),
-            "skipped_nodes": getattr(report, "skipped_nodes", 0),
-            "total_nodes": getattr(report, "total_nodes", 0),
-            "total_tokens": getattr(report, "total_tokens", 0),
-            "early_terminated": getattr(report, "early_terminated", False),
-        })
+        self._wm_set_scratch(
+            "compute_result",
+            {
+                "executed_nodes": getattr(report, "executed_nodes", 0),
+                "success_nodes": getattr(report, "success_nodes", 0),
+                "skipped_nodes": getattr(report, "skipped_nodes", 0),
+                "total_nodes": getattr(report, "total_nodes", 0),
+                "total_tokens": getattr(report, "total_tokens", 0),
+                "early_terminated": getattr(report, "early_terminated", False),
+            },
+        )
 
         # ── 5. G 层：存储 ────────────────────
         self._store(state, report)
@@ -464,8 +489,9 @@ class TradingAgent:
 
         # ── 6. 预算结算 ──────────────────────
         total_tokens = getattr(report, "total_tokens", 0)
-        self.budget.end_cycle(tokens_total=total_tokens,
-                              status="success" if state.final_action else "degraded")
+        self.budget.end_cycle(
+            tokens_total=total_tokens, status="success" if state.final_action else "degraded"
+        )
 
         # ── 7. 组装结果 ──────────────────────
         latency_ms = (time.time() - start_time) * 1000
@@ -477,12 +503,15 @@ class TradingAgent:
         self._wm_set_context("final_action", final_action)
         self._wm_set_context("final_confidence", f"{final_confidence:.2f}")
         self._wm_set_context("latency_ms", f"{latency_ms:.0f}")
-        self._wm_set_scratch("final_result", {
-            "action": final_action,
-            "confidence": final_confidence,
-            "latency_ms": round(latency_ms, 1),
-            "tokens_used": total_tokens,
-        })
+        self._wm_set_scratch(
+            "final_result",
+            {
+                "action": final_action,
+                "confidence": final_confidence,
+                "latency_ms": round(latency_ms, 1),
+                "tokens_used": total_tokens,
+            },
+        )
 
         # 收集所有节点输出
         outputs = self._collect_outputs(state)
@@ -518,7 +547,9 @@ class TradingAgent:
             "plan": {
                 "chain": getattr(plan, "planned_chain", ""),
                 "nodes": plan.node_ids if hasattr(plan, "node_ids") else [],
-                "budget_allocated": getattr(plan.budget, "total", 0) if hasattr(plan, "budget") else 0,
+                "budget_allocated": (
+                    getattr(plan.budget, "total", 0) if hasattr(plan, "budget") else 0
+                ),
             },
             "execution": {
                 "nodes_planned": len(plan.node_ids) if hasattr(plan, "node_ids") else 0,
@@ -558,6 +589,7 @@ class TradingAgent:
             return None
         try:
             from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
             if not hasattr(self, "_scenario_classifier"):
                 self._scenario_classifier = ScenarioClassifier()
             result = self._scenario_classifier.classify(market_data)
@@ -571,10 +603,12 @@ class TradingAgent:
         try:
             import sys as _sys
             from pathlib import Path as _Path
+
             _cog_path = str(_Path(__file__).resolve().parents[4] / "4-MEMORY" / "9-工具与接口")
             if _cog_path not in _sys.path:
                 _sys.path.insert(0, _cog_path)
             from cognitive_loop_entry import get_cle
+
             _cle = get_cle()
             _hits = _cle.recall(user_input or "交易意图", top_k=3)
             if not _hits:
@@ -594,8 +628,7 @@ class TradingAgent:
             # FAIL-OPEN: 认知系统不可用 → 无先验，走原链路
             return None
 
-    def _sense(self, user_input: str, market_data: Dict,
-               context: Dict) -> IntentResult:
+    def _sense(self, user_input: str, market_data: Dict, context: Dict) -> IntentResult:
         """S 层：意图识别（P1 认知接入版）
 
         - 认知先验: recall 相关经验作为 memory 注入（数据源的坑/历史教训）
@@ -746,9 +779,9 @@ class TradingAgent:
                 outputs[node_id] = result.outputs
         return outputs
 
-    def _synthesize_trade_order(self, action: str, confidence: float,
-                                market_data: Dict[str, Any],
-                                state: State = None) -> Dict[str, Any]:
+    def _synthesize_trade_order(
+        self, action: str, confidence: float, market_data: Dict[str, Any], state: State = None
+    ) -> Dict[str, Any]:
         """从最终决策合成交易订单（当 A5 未在链路中执行时）
 
         A5 节点仅在 A 链中存在。当使用 C/F/G 链路时，
@@ -774,9 +807,9 @@ class TradingAgent:
         calibrated_confidence = a7_gate.get("calibrated_confidence", confidence)
 
         from dreamos.capabilities.trading.nodes.a5_execution import (
-            calc_dynamic_leverage,
             calc_dynamic_position_and_leverage,
         )
+
         atr_pct = market_data.get("atr_pct", 0.02)
         symbol = market_data.get("symbol", "BTC")
 
@@ -820,18 +853,21 @@ class TradingAgent:
             "_kelly": dyn,
         }
 
-    def _run_a7_gate(self, state: State, direction: str, confidence: float,
-                     market_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _run_a7_gate(
+        self, state: State, direction: str, confidence: float, market_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """P3-1: 运行 A7 实践论门禁
 
         用于 C/F/G 链路（不含 A5）时补充门禁校验。
         """
         try:
             from dreamos.capabilities.trading.nodes.a7_practice_gate import A7PracticeGateNode
+
             a7_node = A7PracticeGateNode()
 
             if state is None:
                 from dreamos.shared.state import new_state
+
                 state = new_state(cycle_id="synth_a7")
 
             state.intent = {
@@ -862,7 +898,7 @@ class TradingAgent:
         """从各节点结果中收集 rationale"""
         rationale = []
         results = state.results if state.results else {}
-        for node_id, result in results.items():
+        for node_id, result in results.items():  # noqa: B007
             if hasattr(result, "outputs") and result.outputs:
                 node_rationale = result.outputs.get("rationale", [])
                 if isinstance(node_rationale, list):
@@ -951,7 +987,9 @@ class TradingAgent:
 
     def __repr__(self) -> str:
         wm_status = "on" if self.working_memory is not None else "off"
-        return (f"<TradingAgent cycles={self._cycle_count} "
-                f"nodes={len(self.registry)} "
-                f"budget={self.budget.level()} "
-                f"wm={wm_status}>")
+        return (
+            f"<TradingAgent cycles={self._cycle_count} "
+            f"nodes={len(self.registry)} "
+            f"budget={self.budget.level()} "
+            f"wm={wm_status}>"
+        )

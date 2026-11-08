@@ -1,9 +1,9 @@
 """P1 DSH fast/deep backend tests (fake engine/adjudicator, no LLM)."""
+
 import json
 from pathlib import Path
 
 import jsonschema
-
 from core.dsh_backend import run_dsh_debate_sync
 
 CONTRACTS = Path(__file__).resolve().parents[1] / "contracts"
@@ -22,13 +22,23 @@ class FakeEngine:
         return {
             "topic": topic,
             "transcript": [
-                {"speaker": "bull", "round": 1,
-                 "content": {"thesis": "bull-deep", "arguments": ["a"], "confidence": 0.7}},
-                {"speaker": "bear", "round": 1,
-                 "content": {"thesis": "bear-deep", "arguments": ["b"], "confidence": 0.6}},
+                {
+                    "speaker": "bull",
+                    "round": 1,
+                    "content": {"thesis": "bull-deep", "arguments": ["a"], "confidence": 0.7},
+                },
+                {
+                    "speaker": "bear",
+                    "round": 1,
+                    "content": {"thesis": "bear-deep", "arguments": ["b"], "confidence": 0.6},
+                },
             ],
-            "verdict": {"summary": "deep", "winner": "bull",
-                        "key_insights": ["k"], "topic_angle": "t"},
+            "verdict": {
+                "summary": "deep",
+                "winner": "bull",
+                "key_insights": ["k"],
+                "topic_angle": "t",
+            },
         }
 
 
@@ -48,7 +58,10 @@ def _schema():
 
 def test_fast_mode_contract():
     result = run_dsh_debate_sync(
-        "fast", "topic", engine=FakeEngine(), adjudicator=FakeAdjudicator(),
+        "fast",
+        "topic",
+        engine=FakeEngine(),
+        adjudicator=FakeAdjudicator(),
     )
     assert result["mode"] == "fast"
     assert result["adjudication"] is None
@@ -58,7 +71,10 @@ def test_fast_mode_contract():
 
 def test_deep_mode_has_adjudication():
     result = run_dsh_debate_sync(
-        "deep", "topic", engine=FakeEngine(), adjudicator=FakeAdjudicator(),
+        "deep",
+        "topic",
+        engine=FakeEngine(),
+        adjudicator=FakeAdjudicator(),
     )
     assert result["mode"] == "deep"
     assert result["adjudication"]["winner"] == "bull"
@@ -81,9 +97,12 @@ def test_signal_profile_routes_to_32_review(monkeypatch):
 
     class FakeResult:
         def to_dict(self):
-            return {"status": "completed", "transcript": [],
-                    "verdict": {"signal": {"direction": "long"}},
-                    "meta": {}}
+            return {
+                "status": "completed",
+                "transcript": [],
+                "verdict": {"signal": {"direction": "long"}},
+                "meta": {},
+            }
 
     def fake_run(topic, **kwargs):
         captured.update(kwargs)
@@ -106,7 +125,10 @@ def test_deep_mode_normalizes_unknown_winner():
             return data
 
     result = run_dsh_debate_sync(
-        "deep", "topic", engine=DrawEngine(), adjudicator=FakeAdjudicator(),
+        "deep",
+        "topic",
+        engine=DrawEngine(),
+        adjudicator=FakeAdjudicator(),
     )
     assert result["verdict"]["winner"] is None
     jsonschema.validate(result, _schema())

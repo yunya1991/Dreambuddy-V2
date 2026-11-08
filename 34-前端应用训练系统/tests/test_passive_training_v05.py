@@ -11,10 +11,11 @@
   8. coaching_loop v0.2 calculate_improvement 前后模型对比
   9. FAIL-OPEN: trigger_incremental 异常不崩溃
 """
+
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,10 +27,9 @@ for _p in [_THIS_DIR, _34_DIR, _CORE_DIR, _ADAPTERS_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_executor import TrainingLayer, TrainingResult
-from interfaces.training_data_provider import TrainingCase
-from dual_mode_orchestrator import DualModeTrainingOrchestrator
-from coaching_loop import CoachingSession
+from coaching_loop import CoachingSession  # noqa: E402
+from dual_mode_orchestrator import DualModeTrainingOrchestrator  # noqa: E402
+from interfaces.training_executor import TrainingLayer, TrainingResult  # noqa: E402
 
 
 def _make_mock_executor(layer: TrainingLayer):
@@ -39,9 +39,7 @@ def _make_mock_executor(layer: TrainingLayer):
     executor.get_bucket_threshold.return_value = 50
     executor.get_bucket_count.return_value = 0
     executor.add_case.return_value = True
-    executor.train.return_value = TrainingResult(
-        layer=layer, success=True, message="trained"
-    )
+    executor.train.return_value = TrainingResult(layer=layer, success=True, message="trained")
     # v0.5 方法
     executor.trigger_incremental.return_value = TrainingResult(
         layer=layer, success=True, metrics={"incremental_step": 1}, message="incremental"
@@ -82,8 +80,11 @@ class TriggerPassiveV05Test(unittest.TestCase):
         self.executor_llm = _make_mock_executor(TrainingLayer.LLM)
 
         self.executors = [
-            self.executor_s, self.executor_dsh, self.executor_c,
-            self.executor_g, self.executor_llm,
+            self.executor_s,
+            self.executor_dsh,
+            self.executor_c,
+            self.executor_g,
+            self.executor_llm,
         ]
 
         # mock case evaluator → INGEST
@@ -116,7 +117,7 @@ class TriggerPassiveV05Test(unittest.TestCase):
     def test_calls_trigger_incremental_not_just_add(self):
         """trigger_incremental() 被调用，不只是 add_case。"""
         case = _make_wrapup_case()
-        result = self.orchestrator.trigger_passive_training(case)
+        result = self.orchestrator.trigger_passive_training(case)  # noqa: F841
 
         # 至少一个 executor 被调用了 trigger_incremental
         incremental_calls = [e.trigger_incremental.called for e in self.executors]
@@ -159,8 +160,9 @@ class TriggerPassiveV05Test(unittest.TestCase):
                     if mc[0] == "trigger_incremental" and incr_idx is None:
                         incr_idx = i
                 if chkpt_idx is not None and incr_idx is not None:
-                    self.assertLess(chkpt_idx, incr_idx,
-                        "checkpoint 必须在 trigger_incremental 之前调用")
+                    self.assertLess(
+                        chkpt_idx, incr_idx, "checkpoint 必须在 trigger_incremental 之前调用"
+                    )
                     break
 
     def test_incremental_exception_fail_open(self):
@@ -279,15 +281,18 @@ class CoachingLoopV02Test(unittest.TestCase):
             },
             pre_models={
                 "DSH": {"step": 0, "weights": {"func_a": 0.1, "func_b": 0.1, "func_c": 0.1}},
-            }
+            },
         )
         session = CoachingSession(ctx)
         session.run_coaching_cycle()
 
         report = session.to_report()
         # DSH 层监控应通过（call_chain 节点权重提升）
-        dsh_checks = [r for r in report["monitoring_log"]
-                      if "DSH" in r.get("check_name", "") or "执行路径" in r.get("detail", "")]
+        dsh_checks = [  # noqa: F841
+            r
+            for r in report["monitoring_log"]
+            if "DSH" in r.get("check_name", "") or "执行路径" in r.get("detail", "")
+        ]
         # 至少有一项监控通过
         passed = [r for r in report["monitoring_log"] if r["passed"]]
         self.assertGreater(len(passed), 0)
@@ -310,7 +315,7 @@ class CoachingLoopV02Test(unittest.TestCase):
             },
             pre_models={
                 "DSH": {"step": 0, "weights": {"intent_classifier": 0.3}},
-            }
+            },
         )
         session = CoachingSession(ctx)
         session.run_coaching_cycle()

@@ -20,7 +20,7 @@ Principal 门禁表（§0.5.2）：
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, Callable, Dict, FrozenSet, Optional
+from typing import Any, Callable, Dict, FrozenSet
 
 
 class PrincipalMissingError(Exception):

@@ -58,11 +58,11 @@
         "lags_min": 25
       },
       "search↔data": {
-        "coupling": 0.985,
+        "coupling": 0.0155,
         "lags_min": 55
       },
       "search↔eval": {
-        "coupling": 0.984,
+        "coupling": 0.0155,
         "lags_min": 45
       },
       "semantic↔data": {
@@ -74,7 +74,7 @@
         "lags_min": 40
       },
       "data↔eval": {
-        "coupling": 0.985,
+        "coupling": 0.0155,
         "lags_min": 30
       }
     }

@@ -39,10 +39,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-
 # ============================================================
 # 链路规格
 # ============================================================
+
 
 @dataclass
 class ChainSpec:
@@ -56,7 +56,8 @@ class ChainSpec:
             维度1 gap_score路由: A9→A7→A8→A1/A2/A3 (知行合一闭环)
             维度2 做梦部: 独立潜意识分析 (不串入 gap_score 链)
     """
-    chain_id: str                          # A / C / F / G(治理) / I(情报)
+
+    chain_id: str  # A / C / F / G(治理) / I(情报)
     name: str = ""
     description: str = ""
     node_ids: List[str] = field(default_factory=list)
@@ -79,6 +80,7 @@ class ChainSpec:
 
         # 通配符匹配（如 "BULL_*"）
         import fnmatch
+
         for pattern, pattern_nodes in self.scenario_nodes.items():
             if "*" in pattern and fnmatch.fnmatch(scenario_id, pattern):
                 return pattern_nodes
@@ -205,18 +207,19 @@ STANDARD_CHAINS: Dict[str, ChainSpec] = {
 # 此代码保留作为回退路径，下一版本确认无回归后可彻底删除。
 # 迁移指南: 新增意图类型应在 registry.json 的 SKILL triggers 中定义。
 INTENT_CHAIN_MAP: Dict[str, str] = {
-    "TREND_FOLLOWING":   "A",    # C1→F2/F3→A2→A4 (趋势跟随, 走A链精简)
-    "MEAN_REVERSION":    "A",    # C1→F2/F3→A2→A4 (均值回归, 走A链精简)
-    "FUNDAMENTAL_PLAY":  "F",    # A1→F1→F5→A2→A4 (基本面驱动, 走F链)
-    "BREAKOUT":          "C",    # C1→A2→C3→A4 (突破, 走C链)
-    "KNOWLEDGE_MATCH":   "C",    # C3→A4 (知识库快捷路径)
-    "UNCERTAIN":         "A",    # C1→A1→A2→A4 (不确定, 走A链完整)
+    "TREND_FOLLOWING": "A",  # C1→F2/F3→A2→A4 (趋势跟随, 走A链精简)
+    "MEAN_REVERSION": "A",  # C1→F2/F3→A2→A4 (均值回归, 走A链精简)
+    "FUNDAMENTAL_PLAY": "F",  # A1→F1→F5→A2→A4 (基本面驱动, 走F链)
+    "BREAKOUT": "C",  # C1→A2→C3→A4 (突破, 走C链)
+    "KNOWLEDGE_MATCH": "C",  # C3→A4 (知识库快捷路径)
+    "UNCERTAIN": "A",  # C1→A1→A2→A4 (不确定, 走A链完整)
 }
 
 
 # ============================================================
 # 节点元信息
 # ============================================================
+
 
 @dataclass
 class NodeMeta:
@@ -228,16 +231,17 @@ class NodeMeta:
         - 依赖关系 (depends_on)
         - 执行条件 (condition)
     """
+
     node_id: str
     name: str = ""
     chain: str = ""
-    priority: int = 0                       # 0=必须, 1=高优, 2=可选
-    estimated_tokens: int = 0              # 预估 Token 消耗
-    allocated_tokens: int = 0               # 分配的 Token 预算
+    priority: int = 0  # 0=必须, 1=高优, 2=可选
+    estimated_tokens: int = 0  # 预估 Token 消耗
+    allocated_tokens: int = 0  # 分配的 Token 预算
     estimated_latency_ms: int = 0
     depends_on: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
-    condition: Optional[str] = None         # 执行条件描述（调试用）
+    condition: Optional[str] = None  # 执行条件描述（调试用）
 
     @property
     def is_required(self) -> bool:
@@ -261,6 +265,7 @@ class NodeMeta:
 # 预算分配
 # ============================================================
 
+
 @dataclass
 class BudgetAllocation:
     """预算分配方案 — A 层对 Token 预算的分配
@@ -270,10 +275,11 @@ class BudgetAllocation:
         - 高优节点 (priority=1): 按权重分配
         - 可选节点 (priority=2): 剩余分配
     """
+
     total_budget: int = 0
-    allocated: Dict[str, int] = field(default_factory=dict)   # node_id → tokens
-    reserved: int = 0                                        # 预留给反射/重试
-    mode: str = "standard"                                    # lean / standard / full
+    allocated: Dict[str, int] = field(default_factory=dict)  # node_id → tokens
+    reserved: int = 0  # 预留给反射/重试
+    mode: str = "standard"  # lean / standard / full
 
     @property
     def total_allocated(self) -> int:
@@ -302,6 +308,7 @@ class BudgetAllocation:
 # 执行计划 (A层最终输出)
 # ============================================================
 
+
 @dataclass
 class ExecutionPlan:
     """A 层最终输出 — 执行计划
@@ -312,15 +319,16 @@ class ExecutionPlan:
         - 预算分配
         - 链路信息
     """
-    planned_chain: str = ""                 # 选中的主链 (A/C/F)
+
+    planned_chain: str = ""  # 选中的主链 (A/C/F)
     selected_nodes: List[NodeMeta] = field(default_factory=list)
     budget: BudgetAllocation = field(default_factory=BudgetAllocation)
     chain_spec: Optional[ChainSpec] = None
     conditions: Dict[str, str] = field(default_factory=dict)  # 节点执行条件
-    rationale: str = ""                     # 编排理由
+    rationale: str = ""  # 编排理由
     estimated_total_tokens: int = 0
     estimated_total_latency_ms: int = 0
-    capability_id: str = ""                # 能力域 ID（用于追溯路由结果）
+    capability_id: str = ""  # 能力域 ID（用于追溯路由结果）
 
     # ── 渐进式编排（PROP-20260829D Phase 2）──────────────
     # phase=None: 完整编排（向后兼容，零回归）
@@ -328,7 +336,7 @@ class ExecutionPlan:
     # phase=2:    完整执行（与 phase=None 等价，语义上为"深化"）
     phase: Optional[int] = None
     deferred_nodes: List[str] = field(default_factory=list)  # phase=1 延期的可选节点
-    next_step_hint: str = ""               # 深化提示（供对话层呈现"先呈现后追问"）
+    next_step_hint: str = ""  # 深化提示（供对话层呈现"先呈现后追问"）
 
     @property
     def node_ids(self) -> List[str]:

@@ -8,6 +8,7 @@
   result = recall_with_skills("TDD 开发 bug 修复")
   # result = {"memories": [...], "memory_count": N, "skill_candidates": [...], "skill_count": M}
 """
+
 from __future__ import annotations
 
 import json
@@ -22,11 +23,12 @@ if _COGNITIVE_DIR.exists() and str(_COGNITIVE_DIR) not in sys.path:
 
 try:
     from cognitive_loop_entry import get_cle
+
     _HAS_COGNITIVE = True
 except Exception:
     _HAS_COGNITIVE = False
 
-from skill_indexer import scan_skills, recall_hook, ALL_SKILL_ROOTS
+from skill_indexer import ALL_SKILL_ROOTS, recall_hook, scan_skills  # noqa: E402
 
 # 复用 skill_indexer 的 ALL_SKILL_ROOTS（项目自有 SKILL 全量目录）
 DEFAULT_SKILL_ROOTS = ALL_SKILL_ROOTS

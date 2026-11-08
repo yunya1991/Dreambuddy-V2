@@ -9,16 +9,15 @@ safe_call — Phase 3 P0-4 FAIL-OPEN 登记制核心模块
 蓝图: SPEC-自进化系统逆向解析改进 v0.3 §P0-4
 硬约束: 不破坏现有热路径 FAIL-OPEN 语义; ring buffer 64KB mmap 持久化.
 """
+
 from __future__ import annotations
 
 import hashlib
 import json
 import logging
 import mmap
-import os
 import struct
 import time
-import traceback
 from pathlib import Path
 from typing import Any, Callable
 
@@ -34,9 +33,7 @@ _BODY_SIZE = _RING_BUFFER_SIZE - _HEADER_SIZE
 _MAX_ENTRY_LEN = 4096
 
 # 默认 ring buffer 文件路径: dreambuddy_evolution/data/error_ring.bin
-_DEFAULT_RING_PATH = (
-    Path(__file__).resolve().parent.parent / "data" / "error_ring.bin"
-)
+_DEFAULT_RING_PATH = Path(__file__).resolve().parent.parent / "data" / "error_ring.bin"
 
 
 class ErrorRingBuffer:
@@ -129,7 +126,7 @@ class ErrorRingBuffer:
             line = json.dumps(entry, ensure_ascii=False, default=str)
             # 截断保护
             if len(line) > _MAX_ENTRY_LEN:
-                line = line[:_MAX_ENTRY_LEN - 50] + '"...truncated"}'
+                line = line[: _MAX_ENTRY_LEN - 50] + '"...truncated"}'
             line_bytes = (line + "\n").encode("utf-8")
             line_len = len(line_bytes)
 
@@ -237,6 +234,7 @@ def _cognitive_enabled() -> bool:
     """
     try:
         from dreambuddy_evolution.agi_config import is_enabled
+
         return is_enabled("enable_cognitive_record")
     except Exception:  # noqa: BLE001
         return False

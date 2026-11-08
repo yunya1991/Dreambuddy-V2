@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
-
 
 StageRunner = Callable[[Dict[str, Any], Optional[Path]], Dict[str, Any]]
 
@@ -52,7 +51,14 @@ def should_trigger_a8(now_ts: str) -> bool:
     return dt.hour == 14 and dt.minute == 0
 
 
-def _transition_message(proto, source: str, target: str, trace_id: str, correlation_id: Optional[str], payload: Dict[str, Any]):
+def _transition_message(
+    proto,
+    source: str,
+    target: str,
+    trace_id: str,
+    correlation_id: Optional[str],
+    payload: Dict[str, Any],
+):
     return proto.build_envelope(
         source=source,
         target=target,

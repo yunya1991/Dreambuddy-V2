@@ -12,21 +12,21 @@
 5. 降级功能验证
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import unittest
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.nodes.node_registry import get_node_registry, NodeInfo
+from core.nodes.node_registry import get_node_registry  # noqa: I001
 from core.c_execution_layer.unified_executor import UnifiedNodeExecutor
 from core.modules.unified_types import ModuleResult
-
 
 # ============================================================
 # 测试用市场数据
 # ============================================================
+
 
 def create_test_mkt() -> Dict[str, Any]:
     """创建测试用市场数据"""
@@ -110,6 +110,7 @@ def create_test_data() -> Dict[str, Any]:
 # 模块接口基础测试
 # ============================================================
 
+
 class TestAllNodesExecutable(unittest.TestCase):
     """测试所有已注册节点都能执行"""
 
@@ -133,11 +134,14 @@ class TestAllNodesExecutable(unittest.TestCase):
             with self.subTest(node=node.node_id):
                 self.assertTrue(node.node_id, "节点ID不能为空")
                 self.assertTrue(node.name, f"节点 {node.node_id} 名称不能为空")
-                self.assertIn(node.chain, ["A", "C", "F", "G", "T"],
-                              f"节点 {node.node_id} 链标识无效")
-                self.assertIn(node.node_type,
-                              ["skill_node", "api_node", "local_node", "composite_node"],
-                              f"节点 {node.node_id} 类型无效")
+                self.assertIn(
+                    node.chain, ["A", "C", "F", "G", "T"], f"节点 {node.node_id} 链标识无效"
+                )
+                self.assertIn(
+                    node.node_type,
+                    ["skill_node", "api_node", "local_node", "composite_node"],
+                    f"节点 {node.node_id} 类型无效",
+                )
 
     def test_all_nodes_executable_via_unified_executor(self):
         """测试所有节点都能通过统一执行器执行"""
@@ -168,7 +172,7 @@ class TestAllNodesExecutable(unittest.TestCase):
 
         print(f"\n  可执行节点: {success_count}/{len(self.all_nodes)}")
         if failed_nodes:
-            print(f"  失败节点:")
+            print("  失败节点:")
             for nid, err in failed_nodes:
                 print(f"    - {nid}: {err}")
 
@@ -186,12 +190,12 @@ class TestAllNodesExecutable(unittest.TestCase):
                 result = self.executor.execute(node.node_id, inputs, context)
 
                 # 检查必须有的字段
-                self.assertTrue(hasattr(result, 'success'))
-                self.assertTrue(hasattr(result, 'capability_id'))
-                self.assertTrue(hasattr(result, 'outputs'))
-                self.assertTrue(hasattr(result, 'confidence'))
-                self.assertTrue(hasattr(result, 'latency_ms'))
-                self.assertTrue(hasattr(result, 'metadata'))
+                self.assertTrue(hasattr(result, "success"))
+                self.assertTrue(hasattr(result, "capability_id"))
+                self.assertTrue(hasattr(result, "outputs"))
+                self.assertTrue(hasattr(result, "confidence"))
+                self.assertTrue(hasattr(result, "latency_ms"))
+                self.assertTrue(hasattr(result, "metadata"))
 
                 # confidence 范围检查（百分制）
                 if result.success:
@@ -202,6 +206,7 @@ class TestAllNodesExecutable(unittest.TestCase):
 # ============================================================
 # A链模块接口测试
 # ============================================================
+
 
 class TestAChainModules(unittest.TestCase):
     """A链模块接口测试"""
@@ -225,7 +230,7 @@ class TestAChainModules(unittest.TestCase):
         result = self.executor.execute(
             "dream-contradiction-theory",
             {"mkt": self.test_mkt, "memory": self.test_memory, "data": self.test_data},
-            {"session_id": "test-a0"}
+            {"session_id": "test-a0"},
         )
         print(f"\n  A0矛盾论: success={result.success}, confidence={result.confidence:.1f}")
         self.assertIsInstance(result, ModuleResult)
@@ -235,7 +240,7 @@ class TestAChainModules(unittest.TestCase):
         result = self.executor.execute(
             "dream-first-principles",
             {"mkt": self.test_mkt, "memory": self.test_memory, "data": self.test_data},
-            {"session_id": "test-a2"}
+            {"session_id": "test-a2"},
         )
         print(f"\n  A2第一性原理: success={result.success}, confidence={result.confidence:.1f}")
         self.assertIsInstance(result, ModuleResult)
@@ -256,6 +261,7 @@ class TestAChainModules(unittest.TestCase):
 # ============================================================
 # C链模块接口测试
 # ============================================================
+
 
 class TestCChainModules(unittest.TestCase):
     """C链模块接口测试"""
@@ -279,7 +285,7 @@ class TestCChainModules(unittest.TestCase):
         result = self.executor.execute(
             "classic-indicator-scan",
             {"mkt": self.test_mkt, "memory": self.test_memory, "data": self.test_data},
-            {"session_id": "test-c1"}
+            {"session_id": "test-c1"},
         )
         print(f"\n  C1技术扫描: success={result.success}, confidence={result.confidence:.1f}")
         self.assertTrue(result.success)
@@ -290,20 +296,18 @@ class TestCChainModules(unittest.TestCase):
         result = self.executor.execute(
             "classic-indicator-scan",
             {"mkt": self.test_mkt, "memory": self.test_memory, "data": self.test_data},
-            {"session_id": "test-c1-dir"}
+            {"session_id": "test-c1-dir"},
         )
-        outputs = result.outputs.to_dict() if hasattr(result.outputs, 'to_dict') else {}
+        outputs = result.outputs.to_dict() if hasattr(result.outputs, "to_dict") else {}
         # direction 可能在 outputs 的字段里
-        has_direction = (
-            'direction' in outputs or
-            hasattr(result.outputs, 'direction')
-        )
+        has_direction = "direction" in outputs or hasattr(result.outputs, "direction")
         print(f"\n  C1有direction字段: {has_direction}")
 
 
 # ============================================================
 # F链模块接口测试
 # ============================================================
+
 
 class TestFChainModules(unittest.TestCase):
     """F链模块接口测试"""
@@ -327,7 +331,7 @@ class TestFChainModules(unittest.TestCase):
         result = self.executor.execute(
             "fundamental-news-analysis",
             {"mkt": self.test_mkt, "memory": self.test_memory, "data": self.test_data},
-            {"session_id": "test-f1"}
+            {"session_id": "test-f1"},
         )
         print(f"\n  F1新闻分析: success={result.success}, confidence={result.confidence:.1f}")
         self.assertIsInstance(result, ModuleResult)
@@ -337,7 +341,7 @@ class TestFChainModules(unittest.TestCase):
         result = self.executor.execute(
             "fundamental-fund-flow",
             {"mkt": self.test_mkt, "memory": self.test_memory, "data": self.test_data},
-            {"session_id": "test-f2"}
+            {"session_id": "test-f2"},
         )
         print(f"\n  F2资金流分析: success={result.success}, confidence={result.confidence:.1f}")
         self.assertTrue(result.success)
@@ -347,7 +351,7 @@ class TestFChainModules(unittest.TestCase):
         result = self.executor.execute(
             "fundamental-sentiment",
             {"mkt": self.test_mkt, "memory": self.test_memory, "data": self.test_data},
-            {"session_id": "test-f3"}
+            {"session_id": "test-f3"},
         )
         print(f"\n  F3情绪分析: success={result.success}, confidence={result.confidence:.1f}")
         self.assertTrue(result.success)
@@ -366,6 +370,7 @@ class TestFChainModules(unittest.TestCase):
 # ============================================================
 # 节点Schema验证测试
 # ============================================================
+
 
 class TestNodeSchemas(unittest.TestCase):
     """节点Schema验证测试"""
@@ -403,16 +408,16 @@ class TestNodeSchemas(unittest.TestCase):
                 with self.subTest(node=nid):
                     # 检查mkt在required或optional字段中
                     all_fields = (
-                        node.input_schema.required_fields +
-                        node.input_schema.optional_fields
+                        node.input_schema.required_fields + node.input_schema.optional_fields
                     )
-                    has_mkt = 'mkt' in all_fields or 'mkt' in str(node.input_schema.field_types)
+                    has_mkt = "mkt" in all_fields or "mkt" in str(node.input_schema.field_types)
                     self.assertTrue(has_mkt, f"{nid} 应该有mkt输入")
 
 
 # ============================================================
 # 执行器统计测试
 # ============================================================
+
 
 class TestExecutorStats(unittest.TestCase):
     """执行器统计测试"""
@@ -442,14 +447,17 @@ class TestExecutorStats(unittest.TestCase):
         self.assertIn("success_rate", stats)
         self.assertGreater(stats["total_latency_ms"], 0)
 
-        print(f"\n  执行统计: {stats['success']}/{stats['total_calls']} 成功, "
-              f"平均延迟: {stats['avg_latency_ms']:.1f}ms, "
-              f"成功率: {stats['success_rate']*100:.1f}%")
+        print(
+            f"\n  执行统计: {stats['success']}/{stats['total_calls']} 成功, "
+            f"平均延迟: {stats['avg_latency_ms']:.1f}ms, "
+            f"成功率: {stats['success_rate']*100:.1f}%"
+        )
 
 
 # ============================================================
 # 节点分类索引测试
 # ============================================================
+
 
 class TestNodeIndexing(unittest.TestCase):
     """节点分类索引测试"""
@@ -497,5 +505,5 @@ class TestNodeIndexing(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

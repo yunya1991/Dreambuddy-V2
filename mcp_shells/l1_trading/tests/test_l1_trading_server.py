@@ -1,4 +1,5 @@
 """l1.trading.mcp 十工具契约测试（无真实交易/无外部状态）。"""
+
 from __future__ import annotations
 
 import json
@@ -53,8 +54,12 @@ def state_files(tmp_path, monkeypatch):
             "contradiction_shift": {"shifted_from": "a", "shifted_to": "b"},
             "cross_validation": {"consistent": True, "confidence_mult": 1.1},
             "elastic_result": {"position_mult": 1.0},
-            "path": {"optimal_path": "P1", "hjb_value": 1.2,
-                     "path_score": 0.9, "resistance_vector": [0.1, 0.2]},
+            "path": {
+                "optimal_path": "P1",
+                "hjb_value": 1.2,
+                "path_score": 0.9,
+                "resistance_vector": [0.1, 0.2],
+            },
         },
     }
     bus = {
@@ -74,8 +79,7 @@ def state_files(tmp_path, monkeypatch):
     strategy = {
         "generated_at": "2026-11-08T00:00:00Z",
         "inputs": {"quadrant": "overheat"},
-        "strategy_suggestion": {"stance": "防御性进攻",
-                                "position_band_pct": [30, 60]},
+        "strategy_suggestion": {"stance": "防御性进攻", "position_band_pct": [30, 60]},
     }
     strategic = {
         "signal_id": "sig-43",
@@ -83,8 +87,11 @@ def state_files(tmp_path, monkeypatch):
         "strategic_tier": "attack",
     }
     training = {
-        "status": "ok", "epochs": 100, "n_windows": 3000,
-        "final_loss": 0.01, "best_val_loss": 0.009,
+        "status": "ok",
+        "epochs": 100,
+        "n_windows": 3000,
+        "final_loss": 0.01,
+        "best_val_loss": 0.009,
     }
 
     paths = {
@@ -114,22 +121,24 @@ def state_files(tmp_path, monkeypatch):
 
 
 def test_tools_list_has_ten_tools():
-    resp = server._handle_request(
-        {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
-    )
+    resp = server._handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     names = {tool["name"] for tool in resp["result"]["tools"]}
     assert names == {
-        "get_signal_state", "get_bus_state", "get_constraint_state",
-        "get_cycle_state", "get_strategic_extension",
-        "get_decision_diagnostics", "get_training_status",
-        "get_positions", "get_balance", "forward_signal",
+        "get_signal_state",
+        "get_bus_state",
+        "get_constraint_state",
+        "get_cycle_state",
+        "get_strategic_extension",
+        "get_decision_diagnostics",
+        "get_training_status",
+        "get_positions",
+        "get_balance",
+        "forward_signal",
     }
 
 
 def test_initialize_and_ping():
-    init = server._handle_request(
-        {"jsonrpc": "2.0", "id": 1, "method": "initialize"}
-    )
+    init = server._handle_request({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
     assert init["result"]["serverInfo"]["name"] == "l1.trading.mcp"
     ping = server._handle_request({"jsonrpc": "2.0", "id": 2, "method": "ping"})
     assert ping["result"] == {}
@@ -144,11 +153,14 @@ def test_get_signal_state(state_files):
 
 def test_get_signal_state_falls_back_to_11(state_files):
     state_files["SIGNAL_STATE_PATH"].unlink()
-    _write(state_files["SIGNAL_FALLBACK_PATH"], {
-        "updated_at": "2026-11-08T00:00:00Z",
-        "symbol": "BTC",
-        "mode": "shadow",
-    })
+    _write(
+        state_files["SIGNAL_FALLBACK_PATH"],
+        {
+            "updated_at": "2026-11-08T00:00:00Z",
+            "symbol": "BTC",
+            "mode": "shadow",
+        },
+    )
     payload = json.loads(server.get_signal_state({}))
     assert payload["data"]["fallback"] is True
     assert payload["degraded"] is True
@@ -194,7 +206,8 @@ def test_get_training_status(state_files):
 
 def test_get_positions_and_balance_proxy(state_files, monkeypatch):
     monkeypatch.setattr(
-        server, "_call_l0",
+        server,
+        "_call_l0",
         lambda tool, args: ({"count": 1, "positions": []}, False, "", ""),
     )
     positions = json.loads(server.get_positions({"symbol": "BTC-USDT-SWAP"}))
@@ -219,11 +232,14 @@ def test_forward_signal_happy_path(state_files, monkeypatch):
     assert calls[0][1]["signal"]["source"] == "23-evolution"
 
 
-@pytest.mark.parametrize("patch", [
-    {"source": "42"},
-    {"mode": "paper"},
-    {"shadow": True},
-])
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"source": "42"},
+        {"mode": "paper"},
+        {"shadow": True},
+    ],
+)
 def test_forward_signal_rejects_invalid(state_files, monkeypatch, patch):
     from mcp_shells.l1_trading import server as srv
 

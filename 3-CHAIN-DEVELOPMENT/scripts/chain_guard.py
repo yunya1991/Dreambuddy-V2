@@ -22,9 +22,17 @@ STATE_FILE = os.path.join(STATE_DIR, "chain_state.json")
 
 # ── 阶段定义 ────────────────────────────────────
 PHASES_ORDER = [
-    "d1", "d2", "d3", "d4",
-    "z1", "z2", "z3", "z4",
-    "e1", "e2", "e3",
+    "d1",
+    "d2",
+    "d3",
+    "d4",
+    "z1",
+    "z2",
+    "z3",
+    "z4",
+    "e1",
+    "e2",
+    "e3",
 ]
 
 PHASE_NAMES = {
@@ -58,12 +66,15 @@ PHASE_METHODOLOGIES = {
 # Z系列只能在Z系列内部顺序跳转
 # 跨链只允许: D4→Z1, Z4→E1
 
+
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
+
 
 def _get_chain(phase_id):
     prefix = phase_id[0] if phase_id else None
     return prefix if prefix in ("d", "z", "e") else None
+
 
 def _default_state():
     return {
@@ -75,6 +86,7 @@ def _default_state():
         "relay_history": [],
     }
 
+
 def _load():
     if not os.path.exists(STATE_FILE):
         return _default_state()
@@ -85,6 +97,7 @@ def _load():
         # 损坏/空JSON -> 重置为默认状态
         return _default_state()
 
+
 def _save(state):
     os.makedirs(STATE_DIR, exist_ok=True)
     state["modified_at"] = _now_iso()
@@ -93,6 +106,7 @@ def _save(state):
 
 
 # ── Guard 函数 ──────────────────────────────────
+
 
 def chain_init(scope):
     """初始化新任务的状态文件"""
@@ -106,16 +120,18 @@ def chain_init(scope):
     for pid in PHASES_ORDER:
         name = PHASE_NAMES.get(pid, pid)
         methodology = PHASE_METHODOLOGIES.get(pid, "")
-        state["phases"].append({
-            "id": pid,
-            "name": name,
-            "methodology": methodology,
-            "status": "in_progress" if pid == "d1" else "pending",
-            "approval": "pending",
-            "output_ref": None,
-            "completed_at": None,
-            "step_count": 0,
-        })
+        state["phases"].append(
+            {
+                "id": pid,
+                "name": name,
+                "methodology": methodology,
+                "status": "in_progress" if pid == "d1" else "pending",
+                "approval": "pending",
+                "output_ref": None,
+                "completed_at": None,
+                "step_count": 0,
+            }
+        )
     _save(state)
     return state
 
@@ -136,13 +152,17 @@ def chain_check(state, from_phase, to_phase):
 
     # 规则1: from_phase 必须已完成或已跳过
     if from_p["status"] not in ("completed", "skipped"):
-        return {"allowed": False,
-                "reason": f"{from_phase}({from_p['name']}) 尚未完成（status={from_p['status']}）"}
+        return {
+            "allowed": False,
+            "reason": f"{from_phase}({from_p['name']}) 尚未完成（status={from_p['status']}）",
+        }
 
     # 规则2: to_phase 必须是 pending
     if to_p["status"] != "pending":
-        return {"allowed": False,
-                "reason": f"{to_phase}({to_p['name']}) 状态不是 pending（当前={to_p['status']}）"}
+        return {
+            "allowed": False,
+            "reason": f"{to_phase}({to_p['name']}) 状态不是 pending（当前={to_p['status']}）",
+        }
 
     # 规则3: 跨链检查
     from_chain = _get_chain(from_phase)
@@ -154,9 +174,11 @@ def chain_check(state, from_phase, to_phase):
         if from_chain == "z" and to_chain == "e" and from_phase == "z4" and to_phase == "e1":
             allowed_cross = True
         if not allowed_cross:
-            return {"allowed": False,
-                    "reason": f"跨链跳转 {from_phase}({from_chain})→{to_phase}({to_chain}) 不允许"
-                              f"（只允许 D4→Z1 和 Z4→E1）"}
+            return {
+                "allowed": False,
+                "reason": f"跨链跳转 {from_phase}({from_chain})→{to_phase}({to_chain}) 不允许"
+                f"（只允许 D4→Z1 和 Z4→E1）",
+            }
 
     # 规则4: 同链内必须顺序跳转
     if from_chain == to_chain:
@@ -165,12 +187,16 @@ def chain_check(state, from_phase, to_phase):
             from_idx = chain_phases.index(from_phase)
             to_idx = chain_phases.index(to_phase)
         except ValueError:
-            return {"allowed": False, "reason": f"阶段不在链中"}
+            return {"allowed": False, "reason": "阶段不在链中"}
         if to_idx != from_idx + 1:
-            expected = chain_phases[from_idx + 1] if from_idx + 1 < len(chain_phases) else "无下一步"
-            return {"allowed": False,
-                    "reason": f"同链跳转必须按顺序（{from_phase}→{to_phase}，"
-                              f"但应为 {from_phase}→{expected}）"}
+            expected = (
+                chain_phases[from_idx + 1] if from_idx + 1 < len(chain_phases) else "无下一步"
+            )
+            return {
+                "allowed": False,
+                "reason": f"同链跳转必须按顺序（{from_phase}→{to_phase}，"
+                f"但应为 {from_phase}→{expected}）",
+            }
 
     return {"allowed": True, "reason": None}
 
@@ -192,13 +218,15 @@ def chain_transition(state, from_phase, to_phase):
             p["status"] = "in_progress"
 
     state["current_phase"] = to_phase
-    state["relay_history"].append({
-        "from": from_phase,
-        "to": to_phase,
-        "trigger": "chain_transition",
-        "reason": None,
-        "at": now,
-    })
+    state["relay_history"].append(
+        {
+            "from": from_phase,
+            "to": to_phase,
+            "trigger": "chain_transition",
+            "reason": None,
+            "at": now,
+        }
+    )
     _save(state)
     return {"success": True, "state": state}
 
@@ -229,13 +257,15 @@ def chain_override(state, from_phase, to_phase, reason):
             p["status"] = "in_progress"
 
     state["current_phase"] = to_phase
-    state["relay_history"].append({
-        "from": from_phase,
-        "to": to_phase,
-        "trigger": "chain_override",
-        "reason": reason,
-        "at": now,
-    })
+    state["relay_history"].append(
+        {
+            "from": from_phase,
+            "to": to_phase,
+            "trigger": "chain_override",
+            "reason": reason,
+            "at": now,
+        }
+    )
     _save(state)
     return {"success": True, "state": state}
 
@@ -255,13 +285,15 @@ def chain_approve(phase_id):
             if p["status"] in ("in_progress", "pending"):
                 p["status"] = "completed"
                 p["completed_at"] = now
-    state["relay_history"].append({
-        "from": state["current_phase"],
-        "to": phase_id,
-        "trigger": "user_approval",
-        "reason": None,
-        "at": _now_iso(),
-    })
+    state["relay_history"].append(
+        {
+            "from": state["current_phase"],
+            "to": phase_id,
+            "trigger": "user_approval",
+            "reason": None,
+            "at": _now_iso(),
+        }
+    )
     _save(state)
     return state
 
@@ -279,12 +311,13 @@ def chain_mark_in_progress(phase_id):
 
 # ── CLI ─────────────────────────────────────────
 
+
 def _cli():
     if len(sys.argv) < 2:
         print("Chain Guard — 三链接力协议")
         print()
         print("命令:")
-        print("  init \"描述\"       初始化新任务")
+        print('  init "描述"       初始化新任务')
         print("  status             查看当前状态")
         print("  check <从> <到>     检查跳转合法性")
         print("  transition <从> <到> 执行合法跳转")
@@ -298,9 +331,9 @@ def _cli():
     if cmd == "init":
         scope = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else "未知任务"
         result = chain_init(scope)
-        print(f"✅ 初始化完成")
+        print("✅ 初始化完成")
         print(f"   任务: {scope}")
-        print(f"   当前: D1 深度调研")
+        print("   当前: D1 深度调研")
 
     elif cmd == "status":
         result = chain_status()

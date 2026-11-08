@@ -16,10 +16,11 @@ verdict 三态: pass / degraded / fail
   - evidence_backed / gap_closed: 首版不做证据比对，action 正常 → degraded(evidence_pending)
 整体: any fail → fail；else any degraded 或 extras → degraded；else pass；空节点 → degraded
 """
+
 from __future__ import annotations
+
 import json
 import os
-
 from typing import Any, Dict, List, Optional
 
 from core.okr_nodes import VERIFY_C_ACTION
@@ -56,26 +57,44 @@ FINANCE_DOMAIN = "finance_research"
 FINANCE_DIMENSIONS = ("practice", "theory", "backtest", "data_source")
 FABRICATED_SOURCES = frozenset({"fabricated", "synthetic", "mock"})
 # 样本外纪律标记（Bailey & López de Prado: 样本外是唯一算数的意见）
-OOS_MARKERS = ("样本外", "walk-forward", "walk_forward", "walkforward",
-               "out-of-sample", "out_of_sample", "滚动回测", "前向验证")
+OOS_MARKERS = (
+    "样本外",
+    "walk-forward",
+    "walk_forward",
+    "walkforward",
+    "out-of-sample",
+    "out_of_sample",
+    "滚动回测",
+    "前向验证",
+)
 # 含糊来源（不可核验；精确匹配避免误伤 "OKX 公开数据导出" 这类具体来源）
-VAGUE_SOURCES = frozenset({
-    "网络", "互联网", "网上", "网上资料", "网络公开数据",
-    "公开数据", "公开资料", "公开信息", "公开渠道",
-    "public data", "online", "internet", "web",
-})
+VAGUE_SOURCES = frozenset(
+    {
+        "网络",
+        "互联网",
+        "网上",
+        "网上资料",
+        "网络公开数据",
+        "公开数据",
+        "公开资料",
+        "公开信息",
+        "公开渠道",
+        "public data",
+        "online",
+        "internet",
+        "web",
+    }
+)
 REASON_DATA_FABRICATED = "data_fabricated"
 REASON_DATA_UNVERIFIED = "data_unverified"
 REASON_OOS_PENDING = "oos_pending"
 REASON_SOURCE_VAGUE = "source_vague"
 
 
-def _evaluate_finance_node(entry: Dict[str, Any],
-                           result: Dict[str, Any]) -> Dict[str, Any]:
+def _evaluate_finance_node(entry: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
     """金融 domain 节点四维验收。动作硬失败优先；无证据载体 FAIL-OPEN 全维 degraded。"""
     detail = result.get("detail")
-    evidence = (detail.get("finance_evidence")
-                if isinstance(detail, dict) else None)
+    evidence = detail.get("finance_evidence") if isinstance(detail, dict) else None
     evidence = evidence if isinstance(evidence, dict) else {}
 
     dimensions: Dict[str, str] = {}
@@ -122,8 +141,7 @@ def _evaluate_finance_node(entry: Dict[str, Any],
     return entry
 
 
-def _evaluate_node(node: Dict[str, Any],
-                   result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def _evaluate_node(node: Dict[str, Any], result: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """单节点验收：按 verify 类型分派规则，产出 verdict + reason（证据）。"""
     node_id = str(node.get("node_id") or "N?")
     verify = str(node.get("verify") or VERIFY_C_ACTION)
@@ -156,9 +174,9 @@ def _evaluate_node(node: Dict[str, Any],
     return entry
 
 
-def evaluate_nodes(nodes: Optional[List[Dict[str, Any]]],
-                   node_results: Optional[List[Dict[str, Any]]]
-                   ) -> Dict[str, Any]:
+def evaluate_nodes(
+    nodes: Optional[List[Dict[str, Any]]], node_results: Optional[List[Dict[str, Any]]]
+) -> Dict[str, Any]:
     """C 层结果回传验收：逐节点核对（对账式），汇总整体 verdict。
 
     FAIL-OPEN: 任何非法输入返回 degraded 骨架，绝不抛错。
@@ -166,8 +184,11 @@ def evaluate_nodes(nodes: Optional[List[Dict[str, Any]]],
     try:
         nodes = list(nodes or [])
         node_results = list(node_results or [])
-        by_id = {str(r.get("node_id")): r for r in node_results
-                 if isinstance(r, dict) and r.get("node_id")}
+        by_id = {
+            str(r.get("node_id")): r
+            for r in node_results
+            if isinstance(r, dict) and r.get("node_id")
+        }
 
         verdicts: List[Dict[str, Any]] = []
         for node in nodes:
@@ -202,27 +223,20 @@ def evaluate_nodes(nodes: Optional[List[Dict[str, Any]]],
             _results = verdicts if isinstance(verdicts, list) else []
 
             _case = {
-
                 "ts": _dt.now().isoformat(timespec="seconds"),
-
                 "schema_version": "v2",
-
                 "case_type": "arch_layer",
-
                 "payload": {
-
                     "node_count": len(nodes) if nodes else 0,
-
                     "result_count": len(_results),
-
                     "overall": overall,
                     "counts": counts,
-
                 },
-
             }
 
-            _store = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "l1_case_store.jsonl")
+            _store = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "l1_case_store.jsonl"
+            )
 
             with open(_store, "a", encoding="utf-8") as _f:
 

@@ -17,16 +17,18 @@
 - 动能充沛 → 加仓
 - 三者综合 → 最优仓位
 """
+
+import json
 import os
 import sys
-import json
 import time
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -44,6 +46,7 @@ def load_coin_data(symbol: str) -> pd.DataFrame:
 
 def generate_wave_signals(prices, zigzag_threshold=0.03):
     from ml.ewave_recognizer import ElliottWaveRecognizer
+
     recognizer = ElliottWaveRecognizer(zigzag_threshold=zigzag_threshold)
     n = len(prices)
     signals = []
@@ -66,15 +69,18 @@ def generate_wave_signals(prices, zigzag_threshold=0.03):
 
 
 def compute_physics_features(prices):
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-    from ml.pitd_kinematics_engineer import KinematicsEngineer
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
     from ml.pitd_dynamics_engineer import DynamicsEngineer
+    from ml.pitd_kinematics_engineer import KinematicsEngineer
 
     n = len(prices)
     weights = ConfidenceWeights(
-        w_eta=0.211, w_reversal=0.368,
-        w_support=0.211, w_kinetic=0.211,
-        position_lower=0.6, position_scale=1.0,
+        w_eta=0.211,
+        w_reversal=0.368,
+        w_support=0.211,
+        w_kinetic=0.211,
+        position_lower=0.6,
+        position_scale=1.0,
     )
     scorer = PhysicsConfidenceScorer(weights)
     kin_fe = KinematicsEngineer()
@@ -97,7 +103,9 @@ def compute_physics_features(prices):
     highs = prices["high"].values
     lows = prices["low"].values
     prev_closes = np.concatenate([[closes[0]], closes[:-1]])
-    tr = np.maximum(highs - lows, np.maximum(np.abs(highs - prev_closes), np.abs(lows - prev_closes)))
+    tr = np.maximum(
+        highs - lows, np.maximum(np.abs(highs - prev_closes), np.abs(lows - prev_closes))
+    )
     atr = pd.Series(tr).rolling(14, min_periods=1).mean().values
     volatility = atr / closes  # 归一化波动率
 
@@ -122,7 +130,10 @@ def compute_physics_features(prices):
 
 
 def compute_wave_position_with_sizing(
-    prices, wave_signals, wave_confs, physics_feats,
+    prices,
+    wave_signals,
+    wave_confs,
+    physics_feats,
     base_position=0.3,
     wave_conf_threshold=0.7,
     phys_conf_threshold=0.5,
@@ -147,14 +158,14 @@ def compute_wave_position_with_sizing(
     highs = prices["high"].values
     lows = prices["low"].values
 
-    eta_series = physics_feats["eta"]
+    eta_series = physics_feats["eta"]  # noqa: F841
     phys_conf = physics_feats["phys_conf"]
     trend_score = physics_feats["trend_score"]
     reversal_score = physics_feats["reversal_score"]
     kinetic_score = physics_feats["kinetic_score"]
-    momentum = physics_feats["momentum"]
-    kinetic_energy = physics_feats["kinetic_energy"]
-    friction_ratio = physics_feats["friction_ratio"]
+    momentum = physics_feats["momentum"]  # noqa: F841
+    kinetic_energy = physics_feats["kinetic_energy"]  # noqa: F841
+    friction_ratio = physics_feats["friction_ratio"]  # noqa: F841
     vol_rank = physics_feats["vol_rank"]
 
     position = np.zeros(n)
@@ -173,10 +184,13 @@ def compute_wave_position_with_sizing(
     wave_short_signals = ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
 
     stats = {
-        "total_enter": 0, "total_exit_by_trailing": 0,
-        "total_exit_by_tp": 0, "total_exit_by_signal": 0,
+        "total_enter": 0,
+        "total_exit_by_trailing": 0,
+        "total_exit_by_tp": 0,
+        "total_exit_by_signal": 0,
         "position_sizes": [],
-        "pos_min": 1.0, "pos_max": 0.0,
+        "pos_min": 1.0,
+        "pos_max": 0.0,
     }
 
     # 凯利公式的滚动胜率估计
@@ -221,7 +235,7 @@ def compute_wave_position_with_sizing(
 
             elif sizing_mode == "eta":
                 # η趋势仓位：趋势越强，仓位越大
-                ts = float(trend_score[i]) if not np.isnan(trend_score[i]) else 0.5
+                ts = float(trend_score[i]) if not np.isnan(trend_score[i]) else 0.5  # noqa: B023
                 # 映射到 [0.5×base, 2.0×base]
                 size = base_position * (0.5 + 1.5 * ts)
                 return np.clip(size, 0.1, 1.0)
@@ -229,7 +243,7 @@ def compute_wave_position_with_sizing(
             elif sizing_mode == "risk_budget":
                 # 风险预算：波动率越高，仓位越小（反比）
                 # vol_rank 0~1，1=最高波动率
-                vr = float(vol_rank[i]) if not np.isnan(vol_rank[i]) else 0.5
+                vr = float(vol_rank[i]) if not np.isnan(vol_rank[i]) else 0.5  # noqa: B023
                 # 波动率排名映射到仓位因子 [0.3, 1.5]
                 # 低波动(rank=0) → 1.5×base，高波动(rank=1) → 0.3×base
                 risk_factor = 1.5 - 1.2 * vr
@@ -238,15 +252,19 @@ def compute_wave_position_with_sizing(
 
             elif sizing_mode == "kinetic":
                 # 动能力度仓位：动能充沛时加仓
-                ks = float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5
+                ks = (
+                    float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5  # noqa: B023
+                )  # noqa: B023
                 size = base_position * (0.5 + 1.5 * ks)
                 return np.clip(size, 0.1, 1.0)
 
             elif sizing_mode == "combo":
                 # 综合物理仓位：η趋势(0.3) + 动能(0.3) + 风险预算(0.4)
-                ts = float(trend_score[i]) if not np.isnan(trend_score[i]) else 0.5
-                ks = float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5
-                vr = float(vol_rank[i]) if not np.isnan(vol_rank[i]) else 0.5
+                ts = float(trend_score[i]) if not np.isnan(trend_score[i]) else 0.5  # noqa: B023
+                ks = (
+                    float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5  # noqa: B023
+                )  # noqa: B023
+                vr = float(vol_rank[i]) if not np.isnan(vol_rank[i]) else 0.5  # noqa: B023
                 # 趋势+动能加成
                 momentum_boost = 0.5 + 1.0 * (ts * 0.5 + ks * 0.5)
                 # 风险预算约束
@@ -258,11 +276,11 @@ def compute_wave_position_with_sizing(
             elif sizing_mode == "kelly":
                 # 凯利式物理仓位
                 # 胜率估计：基于物理置信度
-                pc = float(phys_conf[i]) if not np.isnan(phys_conf[i]) else 0.5
+                pc = float(phys_conf[i]) if not np.isnan(phys_conf[i]) else 0.5  # noqa: B023
                 # 物理置信度映射到胜率 [0.35, 0.65]
                 win_prob = 0.35 + 0.30 * pc
                 # 赔率估计：基于止盈/止损比
-                odds = tp_pct / trail_pct if trail_pct > 0 else 2.0
+                odds = tp_pct / trail_pct if trail_pct > 0 else 2.0  # noqa: B023
                 # 凯利公式：f = (p * b - (1-p)) / b
                 kelly_f = (win_prob * odds - (1 - win_prob)) / odds
                 # 半凯利（更保守）
@@ -281,7 +299,11 @@ def compute_wave_position_with_sizing(
 
                 if current_dir != 0:
                     # 记录上一笔交易结果
-                    pnl = (closes[i] - current_entry) / current_entry if current_dir == 1 else (current_entry - closes[i]) / current_entry
+                    pnl = (
+                        (closes[i] - current_entry) / current_entry
+                        if current_dir == 1
+                        else (current_entry - closes[i]) / current_entry
+                    )
                     trade_results.append(pnl)
                     current_pos = 0.0
                     current_dir = 0
@@ -303,7 +325,11 @@ def compute_wave_position_with_sizing(
                 new_pos = min(new_pos, 1.0)
 
                 if current_dir != 0:
-                    pnl = (closes[i] - current_entry) / current_entry if current_dir == 1 else (current_entry - closes[i]) / current_entry
+                    pnl = (
+                        (closes[i] - current_entry) / current_entry
+                        if current_dir == 1
+                        else (current_entry - closes[i]) / current_entry
+                    )
                     trade_results.append(pnl)
                     current_pos = 0.0
                     current_dir = 0
@@ -320,7 +346,11 @@ def compute_wave_position_with_sizing(
                 stats["pos_max"] = max(stats["pos_max"], new_pos)
 
         elif sig in ("EXIT_LONG", "EXIT_SHORT", "WAIT") and current_dir != 0:
-            pnl = (closes[i] - current_entry) / current_entry if current_dir == 1 else (current_entry - closes[i]) / current_entry
+            pnl = (
+                (closes[i] - current_entry) / current_entry
+                if current_dir == 1
+                else (current_entry - closes[i]) / current_entry
+            )
             trade_results.append(pnl)
             current_pos = 0.0
             current_dir = 0
@@ -381,17 +411,24 @@ def compute_wave_position_with_sizing(
     stats["trade_count"] = len(trade_results)
     stats["win_trades"] = sum(1 for r in trade_results if r > 0)
     stats["lose_trades"] = sum(1 for r in trade_results if r <= 0)
-    stats["win_rate"] = stats["win_trades"] / stats["trade_count"] if stats["trade_count"] > 0 else 0
-    stats["avg_win"] = np.mean([r for r in trade_results if r > 0]) if stats["win_trades"] > 0 else 0
-    stats["avg_lose"] = np.mean([r for r in trade_results if r <= 0]) if stats["lose_trades"] > 0 else 0
+    stats["win_rate"] = (
+        stats["win_trades"] / stats["trade_count"] if stats["trade_count"] > 0 else 0
+    )
+    stats["avg_win"] = (
+        np.mean([r for r in trade_results if r > 0]) if stats["win_trades"] > 0 else 0
+    )
+    stats["avg_lose"] = (
+        np.mean([r for r in trade_results if r <= 0]) if stats["lose_trades"] > 0 else 0
+    )
 
     abs_position = np.abs(position)
     direction_arr = np.sign(position)
     return abs_position, direction_arr, stats
 
 
-def compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir,
-                         add_ratio=0.5, bottom_ratio=0.25, max_position=1.0):
+def compute_smart_fusion(
+    v4_pos, v4_dir, wave_pos, wave_dir, add_ratio=0.5, bottom_ratio=0.25, max_position=1.0
+):
     n = len(v4_pos)
     fusion_pos = np.zeros(n)
     fusion_dir = np.zeros(n)
@@ -488,8 +525,11 @@ def run_sizing_experiment(symbol="BTC"):
 
     print("[3/5] 计算V4仓位...")
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
-    is_btc = (symbol == "BTC")
-    strategy = HalvingTopExitStrategy(symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None)
+
+    is_btc = symbol == "BTC"
+    strategy = HalvingTopExitStrategy(
+        symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None
+    )
     v4_series = strategy.generate_signals(prices)
     v4_pos = np.abs(v4_series.values)
     v4_dir = np.sign(v4_series.values)
@@ -497,8 +537,10 @@ def run_sizing_experiment(symbol="BTC"):
     valid_start = 365
 
     # 物理量分布统计
-    print(f"\n[4/5] 物理量分布统计:")
-    print(f"  η (耦合效率):  均值={np.nanmean(physics_feats['eta']):.4f}, 范围=[{np.nanmin(physics_feats['eta']):.4f}, {np.nanmax(physics_feats['eta']):.4f}]")
+    print("\n[4/5] 物理量分布统计:")
+    print(
+        f"  η (耦合效率):  均值={np.nanmean(physics_feats['eta']):.4f}, 范围=[{np.nanmin(physics_feats['eta']):.4f}, {np.nanmax(physics_feats['eta']):.4f}]"
+    )
     print(f"  波动率排名:    均值={np.nanmean(physics_feats['vol_rank']):.4f}")
     print(f"  动能评分:      均值={np.nanmean(physics_feats['kinetic_score']):.4f}")
     print(f"  物理置信度:    均值={np.nanmean(physics_feats['phys_conf']):.4f}")
@@ -516,15 +558,20 @@ def run_sizing_experiment(symbol="BTC"):
 
     print(f"\n[5/5] 测试 {len(configs)} 种仓位管理配置...")
     print(f"\n{'='*120}")
-    print(f"  纯波浪策略 - 不同仓位管理对比")
+    print("  纯波浪策略 - 不同仓位管理对比")
     print(f"{'='*120}")
-    print(f"{'配置':<22} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'胜率':>7} {'均仓':>6} {'仓位范围':>12} {'交易':>5} {'盈亏比':>7}")
+    print(
+        f"{'配置':<22} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'胜率':>7} {'均仓':>6} {'仓位范围':>12} {'交易':>5} {'盈亏比':>7}"
+    )
     print(f"{'-'*115}")
 
     wave_results = {}
     for name, sizing_mode in configs:
         wave_pos, wave_dir, stats = compute_wave_position_with_sizing(
-            prices, wave_signals, wave_confs, physics_feats,
+            prices,
+            wave_signals,
+            wave_confs,
+            physics_feats,
             base_position=0.3,
             wave_conf_threshold=0.7,
             phys_conf_threshold=0.5,
@@ -534,7 +581,9 @@ def run_sizing_experiment(symbol="BTC"):
             take_profit_mode="kinetic",
             base_take_profit_pct=0.25,
         )
-        m = backtest_position(wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            wave_pos[valid_start:], wave_dir[valid_start:], prices.iloc[valid_start:]
+        )
         wave_results[name] = {"metrics": m, "stats": stats}
 
         pos_range = f"{stats['pos_min']:.2f}~{stats['pos_max']:.2f}"
@@ -544,19 +593,26 @@ def run_sizing_experiment(symbol="BTC"):
         avg_lose = abs(stats["avg_lose"]) * 100
         profit_factor = avg_win / avg_lose if avg_lose > 0 else 0
 
-        print(f"{name:<22} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {win_rate:>6.1f}% {m['avg_position']:>6.3f} {pos_range:>12} {trade_count:>5} {profit_factor:>7.2f}")
+        print(
+            f"{name:<22} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {win_rate:>6.1f}% {m['avg_position']:>6.3f} {pos_range:>12} {trade_count:>5} {profit_factor:>7.2f}"
+        )
 
     # 融合策略对比
     print(f"\n{'='*120}")
-    print(f"  智能融合策略 - 不同仓位管理对比（加仓50%/抄底25%）")
+    print("  智能融合策略 - 不同仓位管理对比（加仓50%/抄底25%）")
     print(f"{'='*120}")
-    print(f"{'配置':<22} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}")
+    print(
+        f"{'配置':<22} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>6}"
+    )
     print(f"{'-'*80}")
 
     fusion_results = {}
     for name, sizing_mode in configs:
         wave_pos, wave_dir, stats = compute_wave_position_with_sizing(
-            prices, wave_signals, wave_confs, physics_feats,
+            prices,
+            wave_signals,
+            wave_confs,
+            physics_feats,
             base_position=0.3,
             wave_conf_threshold=0.7,
             phys_conf_threshold=0.5,
@@ -567,16 +623,22 @@ def run_sizing_experiment(symbol="BTC"):
             base_take_profit_pct=0.25,
         )
         smart_pos, smart_dir = compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir)
-        m = backtest_position(smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:]
+        )
         fusion_results[name] = m
-        print(f"{name:<22} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>6.3f}")
+        print(
+            f"{name:<22} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>8.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>6.3f}"
+        )
 
     m_v4 = backtest_position(v4_pos[valid_start:], v4_dir[valid_start:], prices.iloc[valid_start:])
-    print(f"{'纯V4 (参考)':<22} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}")
+    print(
+        f"{'纯V4 (参考)':<22} {m_v4['ann_return']*100:>7.2f}% {m_v4['total_return']*100:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['max_drawdown']*100:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['avg_position']:>6.3f}"
+    )
 
     # 增量分析
     print(f"\n{'='*120}")
-    print(f"  相对基线的增量（融合策略）")
+    print("  相对基线的增量（融合策略）")
     print(f"{'='*120}")
     print(f"{'配置':<22} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'综合评分':>10}")
     print(f"{'-'*75}")
@@ -585,15 +647,17 @@ def run_sizing_experiment(symbol="BTC"):
     best_score = -999
     best_name = ""
     for name, m in fusion_results.items():
-        ann_delta = (m['ann_return'] - base_m['ann_return']) * 100
-        sharpe_delta = m['sharpe'] - base_m['sharpe']
-        mdd_delta = (m['max_drawdown'] - base_m['max_drawdown']) * 100
+        ann_delta = (m["ann_return"] - base_m["ann_return"]) * 100
+        sharpe_delta = m["sharpe"] - base_m["sharpe"]
+        mdd_delta = (m["max_drawdown"] - base_m["max_drawdown"]) * 100
         score = sharpe_delta * 0.4 + ann_delta * 0.01 * 0.3 + (-mdd_delta) * 0.01 * 0.3
         mark = " ✅" if score > 0 else ""
         if score > best_score:
             best_score = score
             best_name = name
-        print(f"{name:<22} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}")
+        print(
+            f"{name:<22} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}{mark}"
+        )
 
     print(f"\n最优配置: {best_name} (综合评分: {best_score:.4f})")
 
@@ -601,7 +665,13 @@ def run_sizing_experiment(symbol="BTC"):
     os.makedirs("ml/backtest_results", exist_ok=True)
     save_data = {
         "symbol": symbol,
-        "wave_results": {k: {"metrics": v["metrics"], "stats": {kk: vv for kk, vv in v["stats"].items() if isinstance(vv, (int, float))}} for k, v in wave_results.items()},
+        "wave_results": {
+            k: {
+                "metrics": v["metrics"],
+                "stats": {kk: vv for kk, vv in v["stats"].items() if isinstance(vv, (int, float))},
+            }
+            for k, v in wave_results.items()
+        },
         "fusion_results": fusion_results,
         "v4_baseline": m_v4,
         "best_config": best_name,
@@ -615,6 +685,7 @@ def run_sizing_experiment(symbol="BTC"):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="物理驱动动态仓位管理实验")
     parser.add_argument("--symbol", type=str, default="BTC")
     args = parser.parse_args()

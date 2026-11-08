@@ -4,6 +4,7 @@
 
 来源: SPEC v0.3 §2.B — kline_event_handler 多职责缝合体拆分
 """
+
 from __future__ import annotations
 
 import json
@@ -33,6 +34,7 @@ class EventReceiver:
             self._router = router
         else:
             from dreambuddy_evolution.engines.engine_router import EngineRouter
+
             self._router = EngineRouter()
 
     def receive_kline(
@@ -79,7 +81,9 @@ class EventReceiver:
                         }
                         logger.debug(
                             "[AGI-A] %s signature dim=%d norm=%.4f",
-                            symbol, agi_signature["dim"], agi_signature["norm"],
+                            symbol,
+                            agi_signature["dim"],
+                            agi_signature["norm"],
                         )
         except Exception as e:
             logger.debug("[FO-AGI-A] signature fail: %s", e)
@@ -135,8 +139,10 @@ class EventReceiver:
             event_dominance: dict = {}
             try:
                 from dreambuddy_evolution.agi_config import get_switch as _gs_ed
+
                 if _gs_ed("enable_event_dominance", False):
                     from event_driven.event_dominance_controller import EventDominanceController
+
                     _edc = EventDominanceController()
                     _conviction = float(signal_dict.get("conviction", 0.5))
                     _macro_dir = str(signal_dict.get("macro_direction", "neutral"))
@@ -148,10 +154,14 @@ class EventReceiver:
                         data_quality=_data_quality,
                         in_fomc_cycle=_in_fomc,
                     )
-                    event_dominance = _dd.to_dict() if hasattr(_dd, "to_dict") else {
-                        "filter_level": getattr(_dd, "filter_level", "none"),
-                        "active": getattr(_dd, "active", False),
-                    }
+                    event_dominance = (
+                        _dd.to_dict()
+                        if hasattr(_dd, "to_dict")
+                        else {
+                            "filter_level": getattr(_dd, "filter_level", "none"),
+                            "active": getattr(_dd, "active", False),
+                        }
+                    )
             except Exception as _e:
                 logger.debug("[EventDominance] FAIL-OPEN: %s", _e)
 

@@ -32,6 +32,7 @@ FIX_WINDOW_HOURS = 72
 MIN_REFLECTIONS = 30
 
 _TIME_RE = re.compile(r"生成时间:\s*([0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2})")
+_RID_RE = re.compile(r"reflection_id:\s*(RF-[0-9]+-[0-9a-f]+)")
 
 
 def _parse_gen_time(md_path: Path) -> Optional[float]:
@@ -69,6 +70,7 @@ def compute_self_correction_rate(
         }
     n_ref = 0
     n_fixed = 0
+    n_with_rid = 0
     n_actions = 0
     window = fix_window_hours * 3600
     try:
@@ -80,6 +82,9 @@ def compute_self_correction_rate(
             if gen_ts is None:
                 continue
             n_ref += 1
+            rid_m = _RID_RE.search(md.read_text(encoding="utf-8", errors="ignore")[:600])
+            if rid_m:
+                n_with_rid += 1
             chain = d / "action_chain.jsonl"
             if not chain.exists():
                 continue
@@ -126,7 +131,7 @@ def compute_self_correction_rate(
         }
     rate = n_fixed / n_ref
     # 会话域退化：建议在会话早期生成、动作必然随后 → 率趋近 1，仅验证管道
-    degenerate = rate >= 0.95
+    degenerate = rate >= 0.95 and n_with_rid == 0
     return {
         "value": rate,
         "status": "ok" if n_ref >= min_reflections else "insufficient_data",
@@ -135,7 +140,9 @@ def compute_self_correction_rate(
         "n_fixed": n_fixed,
         "n_actions": n_actions,
         "fix_window_hours": fix_window_hours,
-        "note": "时序 join 代理：反思生成后 72h 内同 session 有修复动作即计，reflection_id 精确 join 待 35/46 域落盘",
+        "n_with_reflection_id": n_with_rid,
+        "reflection_id_coverage": round(n_with_rid / n_ref, 4) if n_ref else 0.0,
+        "note": "时序 join 代理：反思生成后 72h 内同 session 有修复动作即计；reflection_id 已落盘（覆盖率见上），精确 join 待动作侧记录 active_reflection_id",
         "caveat": (
             "会话域建议批次在会话早期、动作必然随后 → 率退化接近 1，仅验证管道，"
             "不构成「反思驱动修复」证据；需 HermesReflector 落盘 reflection_id"

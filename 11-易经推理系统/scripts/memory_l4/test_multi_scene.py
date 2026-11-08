@@ -11,15 +11,22 @@
 7. CBR语义相似度检索
 8. 异常处理与边界条件
 """
-import json
+
 import os
 import sys
 
 sys.path.insert(0, ".")
-from scripts.memory_l4.app_memory_interface import (
-    search, add, update, get, stats, distill_candidates, healthcheck,
+from scripts.memory_l4.app_memory_interface import (  # noqa: I001
+    search,
+    add,
+    update,
+    get,
+    stats,
+    distill_candidates,
+    healthcheck,
     search_similar_cases,
-    APP_MEMORY_ID, APP_MEMORY_VERSION,
+    APP_MEMORY_ID,
+    APP_MEMORY_VERSION,
 )
 
 PASS = 0
@@ -93,7 +100,7 @@ check("Distill 搜索有结果", len(distill_results) > 0)
 check("Distill 结果类型正确", all(r["type"] == "distill" for r in distill_results))
 
 all_results = search(memory_type="all", top_k=10)
-check("All 搜索返回多类型", len(set(r["type"] for r in all_results)) >= 2)
+check("All 搜索返回多类型", len(set(r["type"] for r in all_results)) >= 2)  # noqa: C401
 
 
 # ════════════════════════════════════════════════════════════
@@ -119,14 +126,17 @@ check("inst_id 过滤生效", all(r["data"].get("inst_id") == "ETH-USDT-SWAP" fo
 check("能找到刚添加的ETH案例", len(eth_results) > 0)
 
 src_results = search(filters={"system_source": "multi_scene_test"}, memory_type="case", top_k=10)
-check("system_source 过滤生效", all(r["data"].get("system_source") == "multi_scene_test" for r in src_results))
+check(
+    "system_source 过滤生效",
+    all(r["data"].get("system_source") == "multi_scene_test" for r in src_results),
+)
 check("能找到2条测试数据", len(src_results) >= 2)
 
 profit_results = search(filters={"is_profit": False}, memory_type="case", top_k=50)
-check("is_profit=False 过滤生效", all(
-    (r["data"].get("decision_outcome") or {}).get("pnl_pct", 0) <= 0
-    for r in profit_results
-))
+check(
+    "is_profit=False 过滤生效",
+    all((r["data"].get("decision_outcome") or {}).get("pnl_pct", 0) <= 0 for r in profit_results),
+)
 
 
 # ════════════════════════════════════════════════════════════
@@ -136,10 +146,10 @@ section("4. 关键词搜索 — 带query vs 不带query")
 
 kw_results = search(query="BTC", memory_type="case", top_k=5)
 check("关键词搜索有结果", len(kw_results) > 0)
-check("关键词搜索按分数排序", all(
-    kw_results[i]["score"] >= kw_results[i + 1]["score"]
-    for i in range(len(kw_results) - 1)
-))
+check(
+    "关键词搜索按分数排序",
+    all(kw_results[i]["score"] >= kw_results[i + 1]["score"] for i in range(len(kw_results) - 1)),
+)
 
 no_q_results = search(query="", memory_type="case", top_k=5)
 check("空query返回全部", len(no_q_results) == 5)
@@ -194,8 +204,14 @@ check("stats by_type有review", "review" in st.get("by_type", {}))
 check("stats by_type有distill", "distill" in st.get("by_type", {}))
 check("stats 包含health", "health" in st)
 check("stats 包含evolution", "evolution" in st)
-check("stats total = case + review + distill + stats",
-      st["total_memories"] == st["by_type"]["case"] + st["by_type"]["review"] + st["by_type"]["distill"] + st["by_type"]["stats_snapshot"])
+check(
+    "stats total = case + review + distill + stats",
+    st["total_memories"]
+    == st["by_type"]["case"]
+    + st["by_type"]["review"]
+    + st["by_type"]["distill"]
+    + st["by_type"]["stats_snapshot"],
+)
 
 
 # ════════════════════════════════════════════════════════════
@@ -204,7 +220,9 @@ check("stats total = case + review + distill + stats",
 section("7. CBR语义相似度检索 — search_similar_cases")
 
 try:
-    similar = search_similar_cases(inst_id="BTC-USDT-SWAP", regime="trending_up", decision="LONG", top_k=3)
+    similar = search_similar_cases(
+        inst_id="BTC-USDT-SWAP", regime="trending_up", decision="LONG", top_k=3
+    )
     check("CBR检索不抛异常", True)
     check("CBR返回列表", isinstance(similar, list))
     if similar:
@@ -214,10 +232,13 @@ try:
         if is_cbr_mode:
             check("CBR模式 — 有similarity字段", True)
             check("CBR模式 — 有case字段", "case" in similar[0])
-            check("CBR相似度排序", all(
-                similar[i]["similarity"] >= similar[i + 1]["similarity"]
-                for i in range(len(similar) - 1)
-            ))
+            check(
+                "CBR相似度排序",
+                all(
+                    similar[i]["similarity"] >= similar[i + 1]["similarity"]
+                    for i in range(len(similar) - 1)
+                ),
+            )
         else:
             check("回退模式 — 普通搜索结果", "score" in similar[0])
             check("回退模式 — 有type字段", "type" in similar[0])
@@ -264,7 +285,10 @@ check("Add 无review_id时自动生成", auto_rev_id.startswith("AM-TRD-001-REV-
 print(f"\n{SEP}")
 print(f"  清理 {len(TEST_IDS)} 条测试数据...")
 print(f"{SEP}")
-from scripts.memory_l4.app_memory_interface import memory_l4_cases_dir, memory_l4_reviews_dir
+from scripts.memory_l4.app_memory_interface import (  # noqa: E402
+    memory_l4_cases_dir,
+    memory_l4_reviews_dir,
+)  # noqa: E402, I001
 
 cleaned = 0
 for tid in TEST_IDS:
@@ -285,7 +309,7 @@ print(f"  清理完成: {cleaned} 条")
 # 汇总
 # ════════════════════════════════════════════════════════════
 print(f"\n{SEP}")
-print(f"  测试结果汇总")
+print("  测试结果汇总")
 print(f"{SEP}")
 print(f"  通过: {PASS}")
 print(f"  失败: {FAIL}")

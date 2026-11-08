@@ -18,11 +18,11 @@
 - auto_activate 仅从 shadow→active，不跳过 proposed
 - auto_deprecate 仅从 active/shadow→deprecated，不删文件
 """
+
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Optional
-
+from typing import Callable, Optional
 
 # 阈值
 MIN_INVOCATIONS = 3

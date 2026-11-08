@@ -13,10 +13,10 @@ FAIL-OPEN: BCRM2.0 不可用时返回 HOLD 方向 + 低置信度，不阻塞主�
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,9 @@ class BCRM2Node(BaseNode):
 
                 rationale.append(f"[BCRM2.0] {symbol} {timeframe} 辩证ML推理")
                 if hexagram:
-                    rationale.append(f"  卦象: {hexagram.get('name', 'N/A')} ({hexagram.get('symbol', 'N/A')})")
+                    rationale.append(
+                        f"  卦象: {hexagram.get('name', 'N/A')} ({hexagram.get('symbol', 'N/A')})"
+                    )
                 rationale.append(f"  方向: {direction} | 置信度: {confidence:.1%}")
 
                 return NodeResult(
@@ -92,20 +94,28 @@ class BCRM2Node(BaseNode):
             },
         )
 
-    def _call_bcrm2(self, symbol: str, timeframe: str, klines: Optional[list]) -> Optional[Dict[str, Any]]:
+    def _call_bcrm2(
+        self, symbol: str, timeframe: str, klines: Optional[list]
+    ) -> Optional[Dict[str, Any]]:
         """调用 BCRM2.0 适配器
 
         动态导入避免在未安装依赖时阻塞。
         """
         try:
-            import sys
             import os
+            import sys
 
             # 添加 BCRM2.0 所在路径
             bcrm_path = os.path.join(
                 os.path.dirname(__file__),
-                "..", "..", "..", "..", "..",
-                "11-易经推理系统", "scripts", "memory_l4"
+                "..",
+                "..",
+                "..",
+                "..",
+                "..",
+                "11-易经推理系统",
+                "scripts",
+                "memory_l4",
             )
             bcrm_path = os.path.abspath(bcrm_path)
             if bcrm_path not in sys.path:

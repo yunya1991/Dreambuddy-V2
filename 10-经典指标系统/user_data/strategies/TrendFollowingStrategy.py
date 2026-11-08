@@ -21,6 +21,7 @@ class TrendFollowingStrategy(IStrategy):
     趋势跟随策略
     使用EMA快慢线交叉配合RSI确认趋势方向，顺势入场并设置止损。
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "1h"
@@ -106,7 +107,7 @@ class TrendFollowingStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 functools.reduce(lambda x, y: x & y, conditions),
-                'enter_long',
+                "enter_long",
             ] = 1
 
         return dataframe
@@ -130,7 +131,7 @@ class TrendFollowingStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 functools.reduce(lambda x, y: x & y, conditions),
-                'exit_long',
+                "exit_long",
             ] = 1
 
         return dataframe

@@ -18,9 +18,9 @@ Epsilon 退火策略:
   - 模块化开关: ENABLE_EVOLUTION_EXPLORATION 默认 False, 关断时 should_explore 永远返回 False
   - rng_seed 可注入, 保证测试可复现
 """
+
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -38,7 +38,7 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from dreamos.evolution.exploration_policy import ExplorationPolicy
+from dreamos.evolution.exploration_policy import ExplorationPolicy  # noqa: E402
 
 
 class TestEpsilonValues:
@@ -125,10 +125,7 @@ class TestShouldExplore:
         """不同 rng_seed → 结果可能不同 (验证不是固定值)."""
         policy = ExplorationPolicy()
         # 跑多个 seed, 确保至少有一个 True 和一个 False (epsilon=0.30)
-        results = [
-            policy.should_explore(case_count=5, rng_seed=s)
-            for s in range(100)
-        ]
+        results = [policy.should_explore(case_count=5, rng_seed=s) for s in range(100)]
         assert True in results, "epsilon=0.30 应至少有一次探索"
         assert False in results, "epsilon=0.30 应至少有一次不探索"
 
@@ -136,8 +133,7 @@ class TestShouldExplore:
         """稳定期 epsilon=0.05, 100 次中探索次数应 < 20."""
         policy = ExplorationPolicy()
         explore_count = sum(
-            1 for s in range(100)
-            if policy.should_explore(case_count=150, rng_seed=s)
+            1 for s in range(100) if policy.should_explore(case_count=150, rng_seed=s)
         )
         assert explore_count < 20, f"稳定期探索频率过高: {explore_count}/100"
 
@@ -145,8 +141,7 @@ class TestShouldExplore:
         """冷启动 epsilon=0.30, 100 次中探索次数应 > 15."""
         policy = ExplorationPolicy()
         explore_count = sum(
-            1 for s in range(100)
-            if policy.should_explore(case_count=5, rng_seed=s)
+            1 for s in range(100) if policy.should_explore(case_count=5, rng_seed=s)
         )
         assert explore_count > 15, f"冷启动探索频率过低: {explore_count}/100"
 
@@ -178,10 +173,7 @@ class TestShouldExploreSwitch:
         """ENABLE_EVOLUTION_EXPLORATION=1 + case_count=5 → 有时探索."""
         monkeypatch.setenv("ENABLE_EVOLUTION_EXPLORATION", "1")
         policy = ExplorationPolicy()
-        results = [
-            policy.should_explore(case_count=5, rng_seed=s)
-            for s in range(100)
-        ]
+        results = [policy.should_explore(case_count=5, rng_seed=s) for s in range(100)]
         assert True in results
 
 

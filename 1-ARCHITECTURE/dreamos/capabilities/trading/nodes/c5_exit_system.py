@@ -13,18 +13,18 @@ C5 离场系统节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List, Optional
 from enum import Enum
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class ExitAction(str, Enum):
     CLOSE = "close"
     REDUCE = "reduce"
     HOLD = "hold"
-    RAISE_TP = "raise_tp"    # 提高止盈价（强反弹时让利润奔跑）
+    RAISE_TP = "raise_tp"  # 提高止盈价（强反弹时让利润奔跑）
 
 
 class C5ExitSystemNode(BaseNode):
@@ -49,7 +49,7 @@ class C5ExitSystemNode(BaseNode):
 
         price = mkt.get("price", 0)
         entry_price = position.get("entry_price", price)
-        position_size = position.get("size", 0)
+        position_size = position.get("size", 0)  # noqa: F841
         direction = position.get("direction", "LONG")
         leverage = position.get("leverage", 1)
         pnl = self._calculate_pnl(price, entry_price, direction, leverage)
@@ -72,7 +72,9 @@ class C5ExitSystemNode(BaseNode):
             scores.append(("CLOSE", 1.0, f"最大亏损触发(-{pnl_pct:.1f}% > -{max_loss_pct}%)"))
         elif hold_duration > max_hold_hours:
             action = ExitAction.CLOSE
-            scores.append(("CLOSE", 1.0, f"最大持仓时间触发({hold_duration:.0f}h > {max_hold_hours}h)"))
+            scores.append(
+                ("CLOSE", 1.0, f"最大持仓时间触发({hold_duration:.0f}h > {max_hold_hours}h)")
+            )
 
         # ── P1: 价值-风险评估 ──────────────────────────
         if action == ExitAction.HOLD:
@@ -106,7 +108,13 @@ class C5ExitSystemNode(BaseNode):
                     else:
                         new_tp_price = price * (1.0 - new_tp_pct)
                     action = ExitAction.RAISE_TP
-                    scores.append(("RAISE_TP", 0.65, f"提高止盈价(v={hold_value:.2f},risk={hold_risk:.2f},new_tp={raise_tp_atr_mult:.1f}xATR)"))
+                    scores.append(
+                        (
+                            "RAISE_TP",
+                            0.65,
+                            f"提高止盈价(v={hold_value:.2f},risk={hold_risk:.2f},new_tp={raise_tp_atr_mult:.1f}xATR)",
+                        )
+                    )
 
         # ── P2: Triple Barrier（三重屏障） ──────────────
         if action == ExitAction.HOLD:
@@ -127,7 +135,9 @@ class C5ExitSystemNode(BaseNode):
             elif direction == "LONG" and price >= take_profit:
                 action = ExitAction.REDUCE
                 reduce_frac = 0.5
-                scores.append(("REDUCE", 0.8, f"止盈触发(现价{price:.2f} >= 止盈{take_profit:.2f})"))
+                scores.append(
+                    ("REDUCE", 0.8, f"止盈触发(现价{price:.2f} >= 止盈{take_profit:.2f})")
+                )
 
             if direction == "SHORT" and price >= stop_loss:
                 action = ExitAction.CLOSE
@@ -135,21 +145,28 @@ class C5ExitSystemNode(BaseNode):
             elif direction == "SHORT" and price <= take_profit:
                 action = ExitAction.REDUCE
                 reduce_frac = 0.5
-                scores.append(("REDUCE", 0.8, f"止盈触发(现价{price:.2f} <= 止盈{take_profit:.2f})"))
+                scores.append(
+                    ("REDUCE", 0.8, f"止盈触发(现价{price:.2f} <= 止盈{take_profit:.2f})")
+                )
 
         # ── P3: 执行层约束 ──────────────────────────────
         if action == ExitAction.HOLD:
             trailing_stop_activated = position.get("trailing_stop_activated", False)
             if trailing_stop_activated:
                 trail_distance = mkt.get("atr", 0) * 1.5
-                trail_stop = price - trail_distance if direction == "LONG" else price + trail_distance
+                trail_stop = (
+                    price - trail_distance if direction == "LONG" else price + trail_distance
+                )
                 if direction == "LONG" and price - trail_distance <= trail_stop:
                     action = ExitAction.CLOSE
                     scores.append(("CLOSE", 0.7, "跟踪止损触发"))
 
         # ── 综合输出 ────────────────────────────────────
         rationale = [r for _, _, r in scores[:6]]
-        rationale.insert(0, f"[C5离场] 持仓:{direction} | 入场:{entry_price:.2f} | 现价:{price:.2f} | P&L:{pnl_pct:+.1%}")
+        rationale.insert(
+            0,
+            f"[C5离场] 持仓:{direction} | 入场:{entry_price:.2f} | 现价:{price:.2f} | P&L:{pnl_pct:+.1%}",
+        )
         rationale.append(f"  动作: {action.value} | 减仓比例: {reduce_frac}")
 
         outputs = {
@@ -181,7 +198,9 @@ class C5ExitSystemNode(BaseNode):
             return (price - entry) * leverage
         return (entry - price) * leverage
 
-    def _calculate_pnl_pct(self, price: float, entry: float, direction: str, leverage: float) -> float:
+    def _calculate_pnl_pct(
+        self, price: float, entry: float, direction: str, leverage: float
+    ) -> float:
         if entry == 0:
             return 0
         if direction == "LONG":
@@ -194,7 +213,7 @@ class C5ExitSystemNode(BaseNode):
             risk += 0.3
         if atr_pct > 0.04:
             risk += 0.2
-        if (rsi > 70 or rsi < 30):
+        if rsi > 70 or rsi < 30:
             risk += 0.2
         return min(1.0, risk)
 
@@ -222,4 +241,10 @@ class C5ExitSystemNode(BaseNode):
             return state.position
         if isinstance(state.intent, dict) and "position" in state.intent:
             return state.intent["position"]
-        return {"entry_price": 0, "size": 0, "direction": "LONG", "leverage": 1, "hold_duration_hours": 0}
+        return {
+            "entry_price": 0,
+            "size": 0,
+            "direction": "LONG",
+            "leverage": 1,
+            "hold_duration_hours": 0,
+        }

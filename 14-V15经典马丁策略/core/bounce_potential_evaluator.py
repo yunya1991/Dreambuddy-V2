@@ -12,6 +12,7 @@
 6. RSI超卖 - RSI低于超卖线的程度
 7. 成交量恐慌 - 下跌时成交量是否异常放大
 """
+
 import json
 import time
 from pathlib import Path
@@ -161,7 +162,7 @@ def evaluate_bounce_potential(
         return {"coin": coin, "method": method, "score": 0.0, "valid": False}
 
     window = lookback
-    recent_closes = closes[-window:]
+    recent_closes = closes[-window:]  # noqa: F841
     recent_highs = highs[-window:]
     recent_lows = lows[-window:]
 
@@ -387,7 +388,7 @@ def evaluate_signals(coin: str, klines_4h: List[Dict], lookback: int = 60) -> Di
     if len(closes) < max(lookback, 50):
         return {"coin": coin, "valid": False, "signals": {}, "n_triggered": 0}
 
-    recent_closes = closes[-lookback:]
+    recent_closes = closes[-lookback:]  # noqa: F841
     recent_highs = highs[-lookback:]
     recent_lows = lows[-lookback:]
     current = closes[-1]

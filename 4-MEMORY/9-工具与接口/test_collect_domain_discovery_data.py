@@ -71,7 +71,9 @@ def test_training_sample_schema(isolated_store):
 def test_drift_matches_psi(isolated_store):
     """每个域的 drift 档必须等于 classify_drift(psi) — 硬同步约束。"""
     _write_trajectory(isolated_store, "rea")
-    sample = cdd.build_training_sample(json.loads(isolated_store.read_text(encoding="utf-8").splitlines()[0]))
+    sample = cdd.build_training_sample(
+        json.loads(isolated_store.read_text(encoding="utf-8").splitlines()[0])
+    )
     states = sample["input"]["domain_states"]
     for d, s in states.items():
         assert s["drift"] == classify_drift(s["psi"]), f"{d} drift/psi 不同步"
@@ -79,7 +81,9 @@ def test_drift_matches_psi(isolated_store):
 
 def test_reward_verify_rate_equals_beta_mean_average(isolated_store):
     _write_trajectory(isolated_store, "rea")
-    sample = cdd.build_training_sample(json.loads(isolated_store.read_text(encoding="utf-8").splitlines()[0]))
+    sample = cdd.build_training_sample(
+        json.loads(isolated_store.read_text(encoding="utf-8").splitlines()[0])
+    )
     states = sample["input"]["domain_states"]
     # participate 域只有 rea；beta_mean 桥接 confidence_mean
     expected = states["rea"]["confidence_mean"]

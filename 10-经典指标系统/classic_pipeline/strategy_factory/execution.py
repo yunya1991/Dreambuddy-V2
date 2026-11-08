@@ -2,6 +2,7 @@
 
 动态加载 IStrategy 子类，调用 populate_indicators/entry/exit 三钩子产生信号。
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -17,6 +18,7 @@ except Exception:
 
 def _dep(name: str):
     import ml_trade_service as _mts
+
     return getattr(_mts, name)
 
 
@@ -50,14 +52,19 @@ def _run_freqtrade_strategy_signal_hyperliquid(
         mod = importlib.import_module(str(strategy_module))
         cls = getattr(mod, str(class_name))
     except Exception as e:
-        return {"ok": False, "error": f"strategy_import_failed:{e}", "module": str(strategy_module), "class": str(class_name)}
+        return {
+            "ok": False,
+            "error": f"strategy_import_failed:{e}",
+            "module": str(strategy_module),
+            "class": str(class_name),
+        }
 
     pair = f"{_hl_coin_from_pair(coin)}-PERP"
     dp = _InlineDataProvider(base_pair=pair)
     try:
         strat = _instantiate_strategy(cls)
-        setattr(strat, "dp", dp)
-        setattr(strat, "config", {"trading_mode": "futures", "exchange": {"name": "hyperliquid"}})
+        strat.dp = dp
+        strat.config = {"trading_mode": "futures", "exchange": {"name": "hyperliquid"}}
     except Exception as e:
         return {"ok": False, "error": f"strategy_init_failed:{e}"}
 
@@ -95,7 +102,14 @@ def _run_freqtrade_strategy_signal_hyperliquid(
             return {"ok": False, "error": "no_candles", "pair": pair, "timeframe": tf}
         need = int(getattr(strat, "startup_candle_count", 200) or 200)
         if len(base_df) < need:
-            return {"ok": False, "error": "insufficient_candles", "pair": pair, "timeframe": tf, "count": int(len(base_df)), "need": int(need)}
+            return {
+                "ok": False,
+                "error": "insufficient_candles",
+                "pair": pair,
+                "timeframe": tf,
+                "count": int(len(base_df)),
+                "need": int(need),
+            }
 
         meta = {"pair": pair}
         with _suppress_strategy_export_env():
@@ -157,7 +171,9 @@ def _run_freqtrade_strategy_signal_hyperliquid(
             "side": side,
             "tag": (None if tag is None or (pd is not None and pd.isna(tag)) else str(tag)),
             "row": _json_sanitize(row.to_dict() if hasattr(row, "to_dict") else {}),
-            "prev_row": _json_sanitize(prev_row.to_dict() if prev_row is not None and hasattr(prev_row, "to_dict") else {}),
+            "prev_row": _json_sanitize(
+                prev_row.to_dict() if prev_row is not None and hasattr(prev_row, "to_dict") else {}
+            ),
             "params": _json_sanitize(dict(params or {})),
         }
     except Exception as e:

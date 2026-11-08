@@ -8,7 +8,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 MIN_LEVERAGE = 1
 MAX_LEVERAGE = 5
@@ -73,17 +73,23 @@ def calc_dynamic_position_and_leverage(
     tier1 = {"BTC", "ETH"}
     tier2 = {"SOL", "BNB", "XRP"}
     tier_small_min = {"OP", "ARB", "DOGE", "SHIB", "PEPE", "DOT"}
-    max_single_pct = 0.25 if symbol.upper() in tier1 else (0.18 if symbol.upper() in tier2 else 0.15)
+    max_single_pct = (
+        0.25 if symbol.upper() in tier1 else (0.18 if symbol.upper() in tier2 else 0.15)
+    )
     min_position_usdt = 5.0 if symbol.upper() in tier_small_min else 3.0
     position = eq * kelly_half * conf_score * vol_score
     position = max(min_position_usdt, min(position, eq * max_single_pct))
     position = round(position, 2)
     leverage = calc_dynamic_leverage(
-        confidence=confidence, min_lev=min_lev, max_lev=max_lev,
-        threshold=threshold, atr_pct=atr_pct,
+        confidence=confidence,
+        min_lev=min_lev,
+        max_lev=max_lev,
+        threshold=threshold,
+        atr_pct=atr_pct,
     )
     return {
-        "position_size": position, "leverage": float(leverage),
+        "position_size": position,
+        "leverage": float(leverage),
         "confidence_score": round(conf_score, 3),
         "vol_score": round(vol_score, 3),
         "kelly_pct": round(kelly_half, 4),
@@ -113,7 +119,7 @@ class A3StrategyNode(BaseNode):
         price = mkt.get("price", 0)
         coin = mkt.get("coin", "BTC")
         atr_pct = mkt.get("atr_pct", 0.02)
-        atr = price * atr_pct
+        atr = price * atr_pct  # noqa: F841
 
         rationale: List[str] = []
         strategy: Dict[str, Any] = {}
@@ -193,7 +199,9 @@ class A3StrategyNode(BaseNode):
             f"conf={dyn['confidence_score']:.2f} vol={dyn['vol_score']:.2f} "
             f"max_single={dyn['max_single_pct']:.0%}"
         )
-        rationale.append(f"  仓位: {position_size:.2f} USDT ({position_size/equity*100:.1f}% of equity)")
+        rationale.append(
+            f"  仓位: {position_size:.2f} USDT ({position_size/equity*100:.1f}% of equity)"
+        )
         rationale.append(f"  杠杆: {leverage}x (置信度={confidence:.2f} ATR%={atr_pct*100:.1f}%)")
         rationale.append(f"  止损: ${stop_loss:.4f} ({abs(price-stop_loss)/price*100:.1f}%)")
         rationale.append(f"  止盈: ${take_profit:.4f} ({abs(take_profit-price)/price*100:.1f}%)")
@@ -227,7 +235,7 @@ class A3StrategyNode(BaseNode):
         confidence = 0.0
 
         results = state.results if state.results else {}
-        for node_id, result in results.items():
+        for node_id, result in results.items():  # noqa: B007
             if hasattr(result, "direction") and result.direction and result.direction != "HOLD":
                 if hasattr(result, "confidence") and result.confidence > confidence:
                     direction = result.direction
@@ -243,7 +251,11 @@ class A3StrategyNode(BaseNode):
         """从 state 中获取 A0 矛盾论数据"""
         results = state.results if state.results else {}
         for node_id, result in results.items():
-            if node_id == "A0" or (hasattr(result, "outputs") and result.outputs and "main_contradiction" in result.outputs):
+            if node_id == "A0" or (
+                hasattr(result, "outputs")
+                and result.outputs
+                and "main_contradiction" in result.outputs
+            ):
                 if hasattr(result, "outputs"):
                     return result.outputs
         return {}

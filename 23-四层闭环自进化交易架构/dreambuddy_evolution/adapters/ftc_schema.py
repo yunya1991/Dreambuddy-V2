@@ -11,12 +11,12 @@ FTC 三步基因类型:
   - condition + action 必须形成完整执行链
   - 每条 FTC 有 knowledge_alignment 字段，记录与金融知识锚点的相似度
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from typing import Optional, Literal
 import uuid
-
+from dataclasses import asdict, dataclass, field
+from typing import Literal, Optional
 
 StepType = Literal["condition", "inference", "action"]
 Track = Literal["exploit", "mixed", "explore", "discard"]
@@ -26,18 +26,19 @@ Source = Literal["experience_seed", "exploration", "ripple", "reflection", "muta
 @dataclass
 class FTCStep:
     """FTC 的单一步骤"""
+
     step_id: str
     type: StepType
     description: str
 
     # condition 专用
-    gene_ref: Optional[str] = None          # 如 "CD-VOL-SURGE"
+    gene_ref: Optional[str] = None  # 如 "CD-VOL-SURGE"
     data_required: list[str] = field(default_factory=list)
     threshold: Optional[float] = None
 
     # inference 专用
-    logic: Optional[str] = None             # 因果推理文本
-    knowledge_ref: Optional[str] = None     # 关联的金融理论名
+    logic: Optional[str] = None  # 因果推理文本
+    knowledge_ref: Optional[str] = None  # 关联的金融理论名
 
     # action 专用
     # action 也用 gene_ref (如 "AC-LONG")
@@ -53,6 +54,7 @@ class FTCStep:
 @dataclass
 class KnowledgeAlignment:
     """FTC 与某个金融知识锚点的相似度"""
+
     theory: str
     similarity: float  # 0.0 - 1.0
 
@@ -60,6 +62,7 @@ class KnowledgeAlignment:
 @dataclass
 class FTC:
     """金融思维链"""
+
     ftc_id: str
     name: str
     steps: list[FTCStep] = field(default_factory=list)

@@ -4,7 +4,14 @@ from pathlib import Path
 
 
 def _load_module():
-    module_path = Path(__file__).resolve().parent.parent / "ops" / "nanoclaw" / "core_task1" / "scripts" / "run_news_digest_on_demand.py"
+    module_path = (
+        Path(__file__).resolve().parent.parent
+        / "ops"
+        / "nanoclaw"
+        / "core_task1"
+        / "scripts"
+        / "run_news_digest_on_demand.py"
+    )
     spec = importlib.util.spec_from_file_location("core_task1_news_digest", module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # type: ignore[union-attr]

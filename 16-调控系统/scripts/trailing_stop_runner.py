@@ -44,7 +44,7 @@ from pathlib import Path
 from typing import List, Optional
 
 # 路径初始化
-BASE_DIR = Path(__file__).resolve().parent.parent          # 16-调控系统
+BASE_DIR = Path(__file__).resolve().parent.parent  # 16-调控系统
 CORE_DIR = BASE_DIR / "core"
 sys.path.insert(0, str(CORE_DIR))
 sys.path.insert(0, str(BASE_DIR / "scripts"))
@@ -96,9 +96,12 @@ class TrailingExecutor:
         if mode == "real":
             try:
                 from exit_executor import create_executor_from_env
+
                 os.environ["EXIT_MODE"] = "real"
                 self._executor = create_executor_from_env()
-                _log(f"ExitExecutor 初始化完成（mode=real, max_exec={self._executor.max_executions_per_cycle}）")
+                _log(
+                    f"ExitExecutor 初始化完成（mode=real, max_exec={self._executor.max_executions_per_cycle}）"
+                )
             except Exception as e:
                 _log(f"ExitExecutor 初始化失败，降级为 dry_run: {e}", "WARN")
                 self.mode = "dry_run"
@@ -143,18 +146,25 @@ class TrailingExecutor:
             # 注意：fetch_all_positions() 的各系统持仓在 "by_system"/"systems" 键下，
             # 顶层没有 "positions" 键 —— 需按键展平，否则永远匹配不到目标持仓。
             from unified_position_query import fetch_all_positions
+
             all_data = fetch_all_positions()
             by_sys_raw = all_data.get("by_system") or all_data.get("systems") or {}
             positions = []
             for _name, _sys_data in (by_sys_raw.items() if isinstance(by_sys_raw, dict) else []):
-                positions.extend((_sys_data.get("positions") if isinstance(_sys_data, dict) else None) or [])
+                positions.extend(
+                    (_sys_data.get("positions") if isinstance(_sys_data, dict) else None) or []
+                )
 
             target_pos = None
             for p in positions:
-                if (p.get("system") == system
+                if (
+                    p.get("system") == system
                     and p.get("symbol") == symbol
-                    and (p.get("direction", "").upper() == direction.upper()
-                         or p.get("direction", "").upper() == direction.upper())):
+                    and (
+                        p.get("direction", "").upper() == direction.upper()
+                        or p.get("direction", "").upper() == direction.upper()
+                    )
+                ):
                     target_pos = p
                     break
 
@@ -245,10 +255,7 @@ def run_single_cycle(
     for sk, r in snapshot.by_state.items():
         if r.action.value == "TRIGGER_CLOSE":
             trigger_count += 1
-            _log(
-                f"触发平仓: {sk} → {r.reason[:100]}  "
-                f"锁定盈利={r.locked_profit_pct:.2%}"
-            )
+            _log(f"触发平仓: {sk} → {r.reason[:100]}  " f"锁定盈利={r.locked_profit_pct:.2%}")
             # 记录详细信息
             trigger_info = {
                 "state_key": sk,
@@ -262,10 +269,12 @@ def run_single_cycle(
                 "reason": r.reason,
             }
             result = executor.execute_trigger(trigger_info)
-            exec_results.append({
-                "trigger": trigger_info,
-                "execution": result,
-            })
+            exec_results.append(
+                {
+                    "trigger": trigger_info,
+                    "execution": result,
+                }
+            )
 
     # 3. 打印 ARMED 状态
     for sk, r in snapshot.by_state.items():
@@ -309,41 +318,51 @@ def main():
         ),
     )
     parser.add_argument(
-        "--interval", type=int, default=300,
+        "--interval",
+        type=int,
+        default=300,
         help="轮询间隔秒数（默认 300 = 5 分钟）",
     )
     parser.add_argument(
-        "--dry-run", action="store_true", default=True,
+        "--dry-run",
+        action="store_true",
+        default=True,
         help="模拟模式（不执行真实交易，默认）",
     )
     parser.add_argument(
-        "--real", action="store_true",
+        "--real",
+        action="store_true",
         help="实盘模式（触发时执行真实平仓）",
     )
     parser.add_argument(
-        "--once", action="store_true",
+        "--once",
+        action="store_true",
         help="仅执行一次后退出（不循环）",
     )
     parser.add_argument(
-        "--system", action="append", default=None,
+        "--system",
+        action="append",
+        default=None,
         help="限定评估的系统（可多次指定，默认全部）",
     )
     parser.add_argument(
-        "--config", type=str, default=None,
+        "--config",
+        type=str,
+        default=None,
         help="自定义配置文件路径",
     )
     args = parser.parse_args()
 
     # 模式
     mode = "real" if args.real else "dry_run"
-    _log(f"移动止盈调度器启动")
+    _log("移动止盈调度器启动")
     _log(f"  模式: {mode}")
     _log(f"  间隔: {args.interval}s ({args.interval / 60:.1f} 分钟)")
     _log(f"  单次: {'是' if args.once else '否'}")
     _log(f"  系统: {args.system or '全部'}")
 
     # 初始化组件
-    from trailing_stop import TrailingStopComponent, TrailingAction
+    from trailing_stop import TrailingStopComponent
 
     config_path = Path(args.config) if args.config else None
     component = TrailingStopComponent(config_path=config_path)

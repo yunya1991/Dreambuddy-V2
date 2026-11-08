@@ -1,12 +1,11 @@
 """IntentEvalGate eval 回归门测试"""
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.intent_sample_pipeline import IntentSample, IntentSamplePipeline
+from core.intent_sample_pipeline import IntentSample, IntentSamplePipeline  # noqa: I001
 from training.eval_gate import IntentEvalGate, EvalReport
 
 
@@ -27,7 +26,7 @@ class TestIntentEvalGate:
     def test_run_eval_returns_report(self, tmp_path):
         """返回 EvalReport"""
         pipeline = IntentSamplePipeline(storage_path=tmp_path, bucket_threshold=30)
-        for i in range(3):
+        for i in range(3):  # noqa: B007
             pipeline.ingest(_make_eval_sample())
         # route_fn 全返回正确意图
         gate = IntentEvalGate(
@@ -42,7 +41,7 @@ class TestIntentEvalGate:
     def test_accuracy_below_target_fails(self, tmp_path):
         """准确率 < 75% 不通过"""
         pipeline = IntentSamplePipeline(storage_path=tmp_path, bucket_threshold=30)
-        for i in range(4):
+        for i in range(4):  # noqa: B007
             pipeline.ingest(_make_eval_sample())
         # route_fn 全返回错误意图 → 0% 准确率
         gate = IntentEvalGate(
@@ -57,7 +56,7 @@ class TestIntentEvalGate:
     def test_drift_exceeds_limit_fails(self, tmp_path):
         """波动 ≥3% 不通过"""
         pipeline = IntentSamplePipeline(storage_path=tmp_path, bucket_threshold=30)
-        for i in range(4):
+        for i in range(4):  # noqa: B007
             pipeline.ingest(_make_eval_sample())
         gate = IntentEvalGate(
             pipeline,
@@ -135,8 +134,9 @@ class TestClassificationMetrics:
             ("breakout", "breakout", "5", "q5"),
             ("breakout", "breakout", "6", "q6"),
         ]
-        prec, rec, f1, f1_macro, cm, labels, fn, fp = \
+        prec, rec, f1, f1_macro, cm, labels, fn, fp = (
             IntentEvalGate._compute_classification_metrics(predictions)
+        )
 
         # labels 字母序
         assert labels == ["breakout", "mean_reversion", "trend_following"]

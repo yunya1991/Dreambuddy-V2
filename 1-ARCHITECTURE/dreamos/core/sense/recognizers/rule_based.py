@@ -17,11 +17,12 @@ DreamOS S层 — 规则识别器（零 Token）
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-from .base import BaseRecognizer
-from ..types import IntentInput, RecognizerResult, IntentType, get_intent_definition
 from dreamos.shared.utils import Timer
+
+from ..types import IntentInput, IntentType, RecognizerResult, get_intent_definition
+from .base import BaseRecognizer
 
 
 class RuleBasedRecognizer(BaseRecognizer):
@@ -44,8 +45,18 @@ class RuleBasedRecognizer(BaseRecognizer):
     # ── A系列深度分析显式标记（确定性路由，零 Token，跳过 LLM 复判） ──
     # 这些是用户显式指令词，语义无歧义，直接路由到 A_HERMES_SKILL 桥接
     _DEEP_MARKERS = (
-        "深度分析", "深度调研", "深度报告", "调研报告", "战略分析", "战略研究",
-        "矛盾论", "主要矛盾", "第一性原理", "六因子", "a系列", "a链",
+        "深度分析",
+        "深度调研",
+        "深度报告",
+        "调研报告",
+        "战略分析",
+        "战略研究",
+        "矛盾论",
+        "主要矛盾",
+        "第一性原理",
+        "六因子",
+        "a系列",
+        "a链",
     )
     # 裸节点代号 A0/A1/A2/A3（带边界，避免误伤 MA200/a3 等子串）
     _DEEP_NODE_RE = re.compile(r"(?<![a-z0-9])a[0-3](?![0-9a-z])")
@@ -137,7 +148,11 @@ class RuleBasedRecognizer(BaseRecognizer):
             rationale = f"所有意图得分较低（最高 {best_score:.2f}），需要更多信息"
         elif gap < 0.05 and len(sorted_scores) > 1:
             # 差距太小，标记为需要澄清
-            top_types = [t for t, s in sorted(scores.items(), key=lambda x: x[1], reverse=True)[:3] if s > 0.1]
+            top_types = [
+                t
+                for t, s in sorted(scores.items(), key=lambda x: x[1], reverse=True)[:3]
+                if s > 0.1
+            ]
             rationale = f"多意图接近（{', '.join(top_types)}），需要进一步确认"
         else:
             rationale = "; ".join(reasons.get(best_type, [])) or f"规则打分: {best_score:.2f}"
@@ -187,25 +202,32 @@ class RuleBasedRecognizer(BaseRecognizer):
         tf = 0.0
         # 均线多头/空头排列
         if price > ema20 > ema50 > ema200:
-            tf += 0.30; reasons["TREND_FOLLOWING"].append("均线多头排列")
+            tf += 0.30
+            reasons["TREND_FOLLOWING"].append("均线多头排列")
         elif price < ema20 < ema50 < ema200:
-            tf += 0.30; reasons["TREND_FOLLOWING"].append("均线空头排列")
+            tf += 0.30
+            reasons["TREND_FOLLOWING"].append("均线空头排列")
         elif price > ema50 and ema20 > ema50:
-            tf += 0.18; reasons["TREND_FOLLOWING"].append("中短期趋势向上")
+            tf += 0.18
+            reasons["TREND_FOLLOWING"].append("中短期趋势向上")
         elif price < ema50 and ema20 < ema50:
-            tf += 0.18; reasons["TREND_FOLLOWING"].append("中短期趋势向下")
+            tf += 0.18
+            reasons["TREND_FOLLOWING"].append("中短期趋势向下")
 
         # 24H 涨跌幅
         if abs(ch24) > 5:
-            tf += 0.25; reasons["TREND_FOLLOWING"].append(f"24H大幅变动 {ch24:+.1f}%")
+            tf += 0.25
+            reasons["TREND_FOLLOWING"].append(f"24H大幅变动 {ch24:+.1f}%")
         elif abs(ch24) > 3:
-            tf += 0.15; reasons["TREND_FOLLOWING"].append(f"24H变动 {ch24:+.1f}%")
+            tf += 0.15
+            reasons["TREND_FOLLOWING"].append(f"24H变动 {ch24:+.1f}%")
         elif abs(ch24) > 1.5:
             tf += 0.08
 
         # ADX 趋势强度
         if adx > 30:
-            tf += 0.15; reasons["TREND_FOLLOWING"].append(f"ADX={adx} 趋势强")
+            tf += 0.15
+            reasons["TREND_FOLLOWING"].append(f"ADX={adx} 趋势强")
         elif adx > 20:
             tf += 0.08
 
@@ -215,25 +237,31 @@ class RuleBasedRecognizer(BaseRecognizer):
         mr = 0.0
         # RSI 超买超卖
         if rsi > 75:
-            mr += 0.30; reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 超买")
+            mr += 0.30
+            reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 超买")
         elif rsi < 25:
-            mr += 0.30; reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 超卖")
+            mr += 0.30
+            reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 超卖")
         elif rsi > 65:
-            mr += 0.18; reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 偏强")
+            mr += 0.18
+            reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 偏强")
         elif rsi < 35:
-            mr += 0.18; reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 偏弱")
+            mr += 0.18
+            reasons["MEAN_REVERSION"].append(f"RSI={rsi:.0f} 偏弱")
 
         # 偏离均线程度
         if price > 0:
             deviation = abs(price - ema20) / price * 100 if ema20 else 0
             if deviation > 4:
-                mr += 0.20; reasons["MEAN_REVERSION"].append(f"偏离EMA20 {deviation:.1f}%")
+                mr += 0.20
+                reasons["MEAN_REVERSION"].append(f"偏离EMA20 {deviation:.1f}%")
             elif deviation > 2:
                 mr += 0.10
 
         # 低波动 → 回归概率高
         if vol_ratio < 0.7:
-            mr += 0.12; reasons["MEAN_REVERSION"].append(f"成交量低 vol={vol_ratio:.2f}")
+            mr += 0.12
+            reasons["MEAN_REVERSION"].append(f"成交量低 vol={vol_ratio:.2f}")
 
         scores["MEAN_REVERSION"] = mr
 
@@ -241,13 +269,15 @@ class RuleBasedRecognizer(BaseRecognizer):
         fp = 0.0
         # 资金费率异常
         if abs(funding) > 0.01:
-            fp += 0.25; reasons["FUNDAMENTAL_PLAY"].append(f"资金费率异常 {funding:+.3%}")
+            fp += 0.25
+            reasons["FUNDAMENTAL_PLAY"].append(f"资金费率异常 {funding:+.3%}")
         elif abs(funding) > 0.005:
             fp += 0.15
 
         # regime 识别为基本面行情
         if regime and "fund" in regime.lower():
-            fp += 0.20; reasons["FUNDAMENTAL_PLAY"].append(f"市场状态: {regime}")
+            fp += 0.20
+            reasons["FUNDAMENTAL_PLAY"].append(f"市场状态: {regime}")
 
         scores["FUNDAMENTAL_PLAY"] = fp
 
@@ -255,13 +285,15 @@ class RuleBasedRecognizer(BaseRecognizer):
         bo = 0.0
         # 成交量放大
         if vol_ratio > 2.0:
-            bo += 0.25; reasons["BREAKOUT"].append(f"成交量放大 {vol_ratio:.1f}x")
+            bo += 0.25
+            reasons["BREAKOUT"].append(f"成交量放大 {vol_ratio:.1f}x")
         elif vol_ratio > 1.5:
             bo += 0.15
 
         # 短期大幅波动（可能是突破）
         if abs(ch4h) > 2:
-            bo += 0.20; reasons["BREAKOUT"].append(f"4H波动 {ch4h:+.1f}%")
+            bo += 0.20
+            reasons["BREAKOUT"].append(f"4H波动 {ch4h:+.1f}%")
         elif abs(ch4h) > 1:
             bo += 0.10
 
@@ -271,9 +303,11 @@ class RuleBasedRecognizer(BaseRecognizer):
         if high24 > low24:
             range_pos = (price - low24) / (high24 - low24)
             if range_pos > 0.9:
-                bo += 0.15; reasons["BREAKOUT"].append("接近24H高点")
+                bo += 0.15
+                reasons["BREAKOUT"].append("接近24H高点")
             elif range_pos < 0.1:
-                bo += 0.15; reasons["BREAKOUT"].append("接近24H低点")
+                bo += 0.15
+                reasons["BREAKOUT"].append("接近24H低点")
 
         scores["BREAKOUT"] = bo
 
@@ -316,7 +350,7 @@ class RuleBasedRecognizer(BaseRecognizer):
 
     def _score_by_signals(self, signals: List[Dict]) -> Dict[str, float]:
         """基于外部信号打分"""
-        scores: Dict[str, float] = {t: 0.0 for t in IntentType.all_types()}
+        scores: Dict[str, float] = dict.fromkeys(IntentType.all_types(), 0.0)
 
         for sig in signals:
             sig_type = sig.get("type", "").upper()
@@ -354,19 +388,25 @@ class RuleBasedRecognizer(BaseRecognizer):
         """
         chain_map = {
             # 通用用户意图
-            "MARKET_QUERY":      ["S0_DIRECT_ANSWER"],
-            "EXECUTE_TRADE":     ["S1_RESEARCH", "S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE", "S5_EXECUTE"],
-            "STRATEGY_VERIFY":   ["S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE"],
-            "SCENARIO_SIM":      ["S1_RESEARCH", "S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE"],
-            "SIMPLE_QA":         ["S0_DIRECT_ANSWER"],
+            "MARKET_QUERY": ["S0_DIRECT_ANSWER"],
+            "EXECUTE_TRADE": [
+                "S1_RESEARCH",
+                "S2_ANALYSIS",
+                "S3_DESIGN",
+                "S4_VALIDATE",
+                "S5_EXECUTE",
+            ],
+            "STRATEGY_VERIFY": ["S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE"],
+            "SCENARIO_SIM": ["S1_RESEARCH", "S2_ANALYSIS", "S3_DESIGN", "S4_VALIDATE"],
+            "SIMPLE_QA": ["S0_DIRECT_ANSWER"],
             # 交易策略意图
-            "TREND_FOLLOWING":   ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
-            "MEAN_REVERSION":    ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
-            "FUNDAMENTAL_PLAY":  ["A1", "F1", "F5", "A2", "A4", "A5", "A9"],
-            "BREAKOUT":          ["C1", "A2", "C3", "A4", "A5", "A9"],
-            "KNOWLEDGE_MATCH":   ["C3", "A4", "A5", "A9"],
+            "TREND_FOLLOWING": ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
+            "MEAN_REVERSION": ["C1", "F2", "F3", "A2", "A4", "A5", "A9"],
+            "FUNDAMENTAL_PLAY": ["A1", "F1", "F5", "A2", "A4", "A5", "A9"],
+            "BREAKOUT": ["C1", "A2", "C3", "A4", "A5", "A9"],
+            "KNOWLEDGE_MATCH": ["C3", "A4", "A5", "A9"],
             # A系列深度分析: 委托 Hermes 大模型 SKILL 桥接（A0/A1/A2 重 LLM 任务）
-            "DEEP_ANALYSIS":     ["A_HERMES_SKILL"],
-            "UNCERTAIN":         ["C1", "A1", "A2", "A4", "A5", "A9"],
+            "DEEP_ANALYSIS": ["A_HERMES_SKILL"],
+            "UNCERTAIN": ["C1", "A1", "A2", "A4", "A5", "A9"],
         }
         return chain_map.get(intent_type, ["C1", "A1", "A2", "A4", "A5", "A9"])

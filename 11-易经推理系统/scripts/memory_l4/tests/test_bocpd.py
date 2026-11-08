@@ -13,6 +13,7 @@ Spec §2.4 规则4：
   T4. test_bocpd_volume_threshold             — P>0.7 但量能 < 1.5× 均量时不触发调整
   T5. test_bocpd_compose_no_regression        — bocpd_enabled=False 时输出与 Phase 0 完全一致
 """
+
 from __future__ import annotations
 
 import sys
@@ -20,7 +21,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 # —— 路径处理：tests/ 与 bcrm2/ 同级在 memory_l4 下
 _THIS_DIR = Path(__file__).resolve().parent
@@ -29,7 +29,7 @@ assert _BCRM2_ROOT.name == "memory_l4", "tests 需放在 memory_l4/tests 下"
 if str(_BCRM2_ROOT) not in sys.path:
     sys.path.insert(0, str(_BCRM2_ROOT))
 
-from bcrm2.temporal_smoother import TemporalSmoother, SmootherOutput  # noqa: E402
+from bcrm2.temporal_smoother import SmootherOutput, TemporalSmoother  # noqa: E402
 
 
 # ====================================================================
@@ -74,15 +74,11 @@ def test_bocpd_detects_regime_change():
     # 第一个突变 return 位于 rets[200] → 对应 close 索引 201
     # 突变点附近（close 201~210）应出现高变点概率
     window = probs[201:211]
-    assert window.max() > 0.5, (
-        f"突变点附近最大变点概率 {window.max():.4f}，期望 > 0.5"
-    )
+    assert window.max() > 0.5, f"突变点附近最大变点概率 {window.max():.4f}，期望 > 0.5"
 
     # 平稳期中位数应较低（z-score 噪声偶有 2σ 毛刺，但中位数远 < 0.5）
     stable_median = float(np.median(probs[:195]))
-    assert stable_median < 0.5, (
-        f"平稳期变点概率中位数 {stable_median:.4f}，期望 < 0.5"
-    )
+    assert stable_median < 0.5, f"平稳期变点概率中位数 {stable_median:.4f}，期望 < 0.5"
 
 
 # ====================================================================
@@ -112,9 +108,7 @@ def test_bocpd_trend_adjustment_progressive():
     # 变点前（含变点日 i=10）无调整
     assert np.allclose(out[:11], 0.0), f"变点前 trend 被调整: {out[:11]}"
     # 变点后 5 天（i+1..i+5 = 11..15）每天 += 0.06
-    assert np.allclose(out[11:16], [0.06, 0.12, 0.18, 0.24, 0.30]), (
-        f"渐进调整不符: {out[11:16]}"
-    )
+    assert np.allclose(out[11:16], [0.06, 0.12, 0.18, 0.24, 0.30]), f"渐进调整不符: {out[11:16]}"
     # 5 天后调整停止（值保持）
     assert np.allclose(out[16:], 0.30), f"5 天后未停止: {out[16:]}"
     # 总调整量 = +0.30
@@ -122,11 +116,10 @@ def test_bocpd_trend_adjustment_progressive():
 
     # —— 对称校验：close 单调下跌 → sign=-1，每天 -= 0.06
     close_down = np.arange(n, 0, -1, dtype=float)  # n, n-1, ..., 1
-    out_down = smoother._apply_bocpd_trend_adjustment(
-        np.zeros(n), close_down, volume, bocpd_probs)
-    assert np.allclose(out_down[11:16], [-0.06, -0.12, -0.18, -0.24, -0.30]), (
-        f"负向渐进调整不符: {out_down[11:16]}"
-    )
+    out_down = smoother._apply_bocpd_trend_adjustment(np.zeros(n), close_down, volume, bocpd_probs)
+    assert np.allclose(
+        out_down[11:16], [-0.06, -0.12, -0.18, -0.24, -0.30]
+    ), f"负向渐进调整不符: {out_down[11:16]}"
     assert abs(out_down[15] - out_down[10] + 0.30) < 1e-9, "负向总调整量 != -0.30"
 
 
@@ -192,13 +185,8 @@ def test_bocpd_compose_no_regression():
     assert np.all(np.asarray(out_a.bocpd_cp_prob) == 0.0)
 
     # 所有字段完全一致
-    np.testing.assert_array_equal(
-        np.asarray(out_a.level_smooth), np.asarray(out_b.level_smooth))
-    np.testing.assert_array_equal(
-        np.asarray(out_a.trend_smooth), np.asarray(out_b.trend_smooth))
-    np.testing.assert_array_equal(
-        np.asarray(out_a.hmm_state), np.asarray(out_b.hmm_state))
-    np.testing.assert_array_equal(
-        np.asarray(out_a.ema_level), np.asarray(out_b.ema_level))
-    np.testing.assert_array_equal(
-        np.asarray(out_a.bocpd_cp_prob), np.asarray(out_b.bocpd_cp_prob))
+    np.testing.assert_array_equal(np.asarray(out_a.level_smooth), np.asarray(out_b.level_smooth))
+    np.testing.assert_array_equal(np.asarray(out_a.trend_smooth), np.asarray(out_b.trend_smooth))
+    np.testing.assert_array_equal(np.asarray(out_a.hmm_state), np.asarray(out_b.hmm_state))
+    np.testing.assert_array_equal(np.asarray(out_a.ema_level), np.asarray(out_b.ema_level))
+    np.testing.assert_array_equal(np.asarray(out_a.bocpd_cp_prob), np.asarray(out_b.bocpd_cp_prob))

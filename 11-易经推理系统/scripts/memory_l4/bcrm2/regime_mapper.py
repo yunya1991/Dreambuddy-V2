@@ -21,6 +21,7 @@ P1.3 点阵图支持度（Spec §2.4 Panel 2 + tasks.md L295-303）：
   在线推理：给定指标值 v → 查询在 regime X 的 ECDF 得分位数 q ∈ [0,1]
            支持度 = 1 - 2*|q - 0.5|（中位数=1.0，极端分位=0.0）
 """
+
 from __future__ import annotations
 
 import json
@@ -29,7 +30,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
-
 from bcrm2.labels.regime_labeler import REGIME_ORDER
 
 __all__ = ["RegimeMapper", "REGIME_ORDER", "REGIME_CENTERS", "DOTPLOT_INDICATORS"]
@@ -37,24 +37,32 @@ __all__ = ["RegimeMapper", "REGIME_ORDER", "REGIME_CENTERS", "DOTPLOT_INDICATORS
 
 # Spec §2.4 Panel 2 点阵图行（12 指标，与 IndicatorBank.MAIN_INDICATORS 一致）
 DOTPLOT_INDICATORS: List[str] = [
-    "ma200_above_3d", "ma50_above", "ma20_vs_ma50_order",
-    "cycle_position_365d", "ma_alignment_score", "ma200_slope_signed",
-    "dow_hhhl_score", "log_ret_90d", "log_ret_30d",
-    "ma_slope_wavg", "volume_trend_conf", "vol_60d_pct",
+    "ma200_above_3d",
+    "ma50_above",
+    "ma20_vs_ma50_order",
+    "cycle_position_365d",
+    "ma_alignment_score",
+    "ma200_slope_signed",
+    "dow_hhhl_score",
+    "log_ret_90d",
+    "log_ret_30d",
+    "ma_slope_wavg",
+    "volume_trend_conf",
+    "vol_60d_pct",
 ]
 
 
 # Phase 0 冷启动中心（人工经验，Phase 3 P3.1 脚本会用 BTC 真实标签统计替换）
 # 设计：L ∈ [-3, +3], T ∈ [-3, +3]，负 L/负 T 均有足够锚点，避免真实熊市样本全坍缩到 CONSOLIDATION。
 REGIME_CENTERS: Dict[str, Tuple[float, float]] = {
-    "TREND_UP_STRONG":   (+2.0, +3.0),
-    "TREND_UP_MILD":     (+1.0, +2.0),
-    "FOMO_RALLY":        (+3.0, +2.0),
-    "REVERSAL":          (-3.0, +2.0),
-    "RANGE_BOUND":       ( 0.0,  0.0),
-    "CONSOLIDATION":     (-2.0,  0.0),
-    "VOLATILE_DROP":     ( 0.0, -3.0),
-    "DISTRIBUTION":      (+3.0, -2.0),
+    "TREND_UP_STRONG": (+2.0, +3.0),
+    "TREND_UP_MILD": (+1.0, +2.0),
+    "FOMO_RALLY": (+3.0, +2.0),
+    "REVERSAL": (-3.0, +2.0),
+    "RANGE_BOUND": (0.0, 0.0),
+    "CONSOLIDATION": (-2.0, 0.0),
+    "VOLATILE_DROP": (0.0, -3.0),
+    "DISTRIBUTION": (+3.0, -2.0),
 }
 
 # 高斯协方差的「基宽」：Phase 3 真实 BTC 校准表明类间距更紧，默认值收紧以提高共识度。
@@ -91,16 +99,19 @@ def _entropy_normed8(p: np.ndarray) -> float:
 class RegimeMapper:
     """Layer 4：Level-Trend → 8 态软分配（高斯 + softmax）。"""
 
-    def __init__(self,
-                 centers: Optional[Dict[str, Tuple[float, float]]] = None,
-                 cov_L: float = _DEFAULT_COV_L,
-                 cov_T: float = _DEFAULT_COV_T,
-                 softmax_temperature: float = 0.6,
-                 w_mapper: float = 0.7,
-                 w_lgbm: float = 0.3,
-                 lgbm_predictor: Optional[Any] = None,
-                 ):
-        self.centers: Dict[str, Tuple[float, float]] = dict(centers if centers is not None else REGIME_CENTERS)
+    def __init__(
+        self,
+        centers: Optional[Dict[str, Tuple[float, float]]] = None,
+        cov_L: float = _DEFAULT_COV_L,
+        cov_T: float = _DEFAULT_COV_T,
+        softmax_temperature: float = 0.6,
+        w_mapper: float = 0.7,
+        w_lgbm: float = 0.3,
+        lgbm_predictor: Optional[Any] = None,
+    ):
+        self.centers: Dict[str, Tuple[float, float]] = dict(
+            centers if centers is not None else REGIME_CENTERS
+        )
         # 补齐缺失标签：用 REGIME_ORDER 中值兜底（便于冷启动数据覆盖不全时）
         for r in REGIME_ORDER:
             if r not in self.centers:
@@ -124,11 +135,12 @@ class RegimeMapper:
     # ====================================================================
     # 单帧计算（接口最稳定）
     # ====================================================================
-    def map_frame(self,
-                  level_smooth: float,
-                  trend_smooth: float,
-                  feature_row: Optional[np.ndarray] = None,
-                  ) -> Dict[str, Any]:
+    def map_frame(
+        self,
+        level_smooth: float,
+        trend_smooth: float,
+        feature_row: Optional[np.ndarray] = None,
+    ) -> Dict[str, Any]:
         """计算单帧 (L,T) → Dict。
 
         Args:
@@ -203,14 +215,15 @@ class RegimeMapper:
     # ====================================================================
     # 序列计算（批量，给 trajectory 用）
     # ====================================================================
-    def transform_sequence(self,
-                           level_smooth: Sequence[float],
-                           trend_smooth: Sequence[float],
-                           indicators: Optional[Dict[str, pd.Series]] = None,
-                           feature_matrix: Optional[np.ndarray] = None,
-                           hmm_state: Optional[Sequence[int]] = None,
-                           bocpd_cp_prob: Optional[Sequence[float]] = None,
-                           ) -> List[Dict[str, Any]]:
+    def transform_sequence(
+        self,
+        level_smooth: Sequence[float],
+        trend_smooth: Sequence[float],
+        indicators: Optional[Dict[str, pd.Series]] = None,
+        feature_matrix: Optional[np.ndarray] = None,
+        hmm_state: Optional[Sequence[int]] = None,
+        bocpd_cp_prob: Optional[Sequence[float]] = None,
+    ) -> List[Dict[str, Any]]:
         """按序遍历，返回与输入等长的 frame 列表。每个 frame 包含完整字段 + hmm_state/bocpd。"""
         L_seq = np.asarray(level_smooth, dtype=float)
         T_seq = np.asarray(trend_smooth, dtype=float)
@@ -245,12 +258,13 @@ class RegimeMapper:
     # 冷启动中心校准（静态方法，Spec §3.4 — Phase 3 P3.1 脚本复用）
     # ====================================================================
     @staticmethod
-    def calibrate_centers(labels: pd.Series,
-                          level: pd.Series,
-                          trend: pd.Series,
-                          min_samples: int = 20,
-                          fallback: Dict[str, Tuple[float, float]] = None,
-                          ) -> Dict[str, Tuple[float, float]]:
+    def calibrate_centers(
+        labels: pd.Series,
+        level: pd.Series,
+        trend: pd.Series,
+        min_samples: int = 20,
+        fallback: Dict[str, Tuple[float, float]] = None,
+    ) -> Dict[str, Tuple[float, float]]:
         """用标签序列 + (L, T) 序列统计 8 类中心。
 
         算法：对每个 regime 在标签中出现的样本，直接取该类的 level.mean(), trend.mean()。
@@ -299,9 +313,7 @@ class RegimeMapper:
         return xs, ys
 
     @staticmethod
-    def _query_cdf(value: float,
-                   xs: np.ndarray,
-                   ys: np.ndarray) -> float:
+    def _query_cdf(value: float, xs: np.ndarray, ys: np.ndarray) -> float:
         """在线查询 value 在 ECDF 中的分位数 q ∈ [0, 1]。
 
         - value 严格小于 xs[0] → 返回 ys[0] × 0.5（保守下伸）
@@ -314,8 +326,8 @@ class RegimeMapper:
             return 0.5
         value = float(value)
         # 等值区间 [lo, hi)
-        lo = int(np.searchsorted(xs, value, side='left'))
-        hi = int(np.searchsorted(xs, value, side='right'))
+        lo = int(np.searchsorted(xs, value, side="left"))
+        hi = int(np.searchsorted(xs, value, side="right"))
         if lo < hi:
             # value 命中 xs 中某些点，返回该区间分位数的中位数
             q_vals = ys[lo:hi]
@@ -354,12 +366,13 @@ class RegimeMapper:
         s = 1.0 - 2.0 * abs(q - 0.5)
         return float(max(0.0, min(1.0, s)))
 
-    def compute_dotplot_support(self,
-                                indicators: Dict[str, pd.Series],
-                                regime_labels: pd.Series,
-                                min_samples: int = 20,
-                                target_index: Optional[int] = None,
-                                ) -> Dict[str, Any]:
+    def compute_dotplot_support(
+        self,
+        indicators: Dict[str, pd.Series],
+        regime_labels: pd.Series,
+        min_samples: int = 20,
+        target_index: Optional[int] = None,
+    ) -> Dict[str, Any]:
         """离线训练：构建 8 态 × 12 指标的 CDF LUT，并计算目标日的 12×8 支持度矩阵。
 
         Spec §2.4 Panel 2 + tasks.md L295-303：
@@ -448,10 +461,7 @@ class RegimeMapper:
             "sample_counts": sample_counts,
         }
 
-    def indicator_support(self,
-                          value: float,
-                          indicator_name: str,
-                          regime: str) -> float:
+    def indicator_support(self, value: float, indicator_name: str, regime: str) -> float:
         """在线查询：某指标值对某 regime 的支持度 ∈ [0, 1]。
 
         需先调用 compute_dotplot_support 构建 cdf_lut；未构建时返回中性 0.5。
@@ -466,9 +476,7 @@ class RegimeMapper:
         q = self._query_cdf(value, xs, ys)
         return self._support_from_quantile(q)
 
-    def indicator_support_row(self,
-                              indicators_row: Dict[str, float],
-                              regime: str) -> List[float]:
+    def indicator_support_row(self, indicators_row: Dict[str, float], regime: str) -> List[float]:
         """在线查询：一整行 12 指标对指定 regime 的支持度向量。
 
         Args:
@@ -477,8 +485,10 @@ class RegimeMapper:
         Returns:
             长度 12 的支持度列表，顺序同 DOTPLOT_INDICATORS
         """
-        return [self.indicator_support(float(indicators_row.get(name, 0.0)), name, regime)
-                for name in self._dotplot_indicators]
+        return [
+            self.indicator_support(float(indicators_row.get(name, 0.0)), name, regime)
+            for name in self._dotplot_indicators
+        ]
 
     def save_dotplot_lut(self, path: Path) -> None:
         """将 cdf_lut 持久化为 JSON 文件（xs/ys 转为 list）。

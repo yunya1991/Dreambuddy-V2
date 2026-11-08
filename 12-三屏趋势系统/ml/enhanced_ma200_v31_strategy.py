@@ -11,9 +11,10 @@
 目标：验证"抄底优化"本身能否带来整体收益提升。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
@@ -86,10 +87,7 @@ class EnhancedMA200V31Strategy(EnhancedMA200Strategy):
         if weekly_below_pct <= 0:
             return 0.0
 
-        levels_filled = min(
-            int(weekly_below_pct / self.dip_buy_step_pct),
-            self.dip_buy_levels
-        )
+        levels_filled = min(int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels)
         if levels_filled <= 0:
             return 0.0
 
@@ -111,7 +109,9 @@ class EnhancedMA200V31Strategy(EnhancedMA200Strategy):
         positions = np.zeros(n)
         close = prices["close"].values
 
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -119,8 +119,14 @@ class EnhancedMA200V31Strategy(EnhancedMA200Strategy):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
 
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
 
         last_state = "init"
         short_entry_price = None
@@ -154,7 +160,11 @@ class EnhancedMA200V31Strategy(EnhancedMA200Strategy):
                 elif not price_above:
                     # 价格在MA200下方
                     dip_buy_pos = 0.0
-                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                    if (
+                        self.weekly_ma200_dip_buy
+                        and not np.isnan(weekly_ma200[i])
+                        and weekly_ma200[i] > 0
+                    ):
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                         dip_buy_pos = self._calc_dip_position(weekly_below_pct)
 
@@ -179,7 +189,11 @@ class EnhancedMA200V31Strategy(EnhancedMA200Strategy):
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
 
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -194,7 +208,11 @@ class EnhancedMA200V31Strategy(EnhancedMA200Strategy):
                     # 价格在MA200上方但斜率不为正（震荡）
                     # v2逻辑：如果有抄底信号则抄底，否则空仓
                     dip_buy_pos = 0.0
-                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                    if (
+                        self.weekly_ma200_dip_buy
+                        and not np.isnan(weekly_ma200[i])
+                        and weekly_ma200[i] > 0
+                    ):
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                         dip_buy_pos = self._calc_dip_position(weekly_below_pct)
 
@@ -273,9 +291,15 @@ if __name__ == "__main__":
     print("=" * 60)
     print(f"{'指标':<15} {'v2':>12} {'v3.1':>12}")
     print("-" * 60)
-    print(f"{'总收益':<15} {v2_result['metrics']['total_return_pct']:>12.2%} {v31_result['metrics']['total_return_pct']:>12.2%}")
-    print(f"{'夏普':<15} {v2_result['metrics']['sharpe_ratio']:>12.3f} {v31_result['metrics']['sharpe_ratio']:>12.3f}")
-    print(f"{'最大回撤':<15} {v2_result['metrics']['max_drawdown_pct']:>12.2%} {v31_result['metrics']['max_drawdown_pct']:>12.2%}")
+    print(
+        f"{'总收益':<15} {v2_result['metrics']['total_return_pct']:>12.2%} {v31_result['metrics']['total_return_pct']:>12.2%}"
+    )
+    print(
+        f"{'夏普':<15} {v2_result['metrics']['sharpe_ratio']:>12.3f} {v31_result['metrics']['sharpe_ratio']:>12.3f}"
+    )
+    print(
+        f"{'最大回撤':<15} {v2_result['metrics']['max_drawdown_pct']:>12.2%} {v31_result['metrics']['max_drawdown_pct']:>12.2%}"
+    )
     print(f"{'交易次数':<15} {len(v2_result['trades']):>12} {len(v31_result['trades']):>12}")
     print()
     print("v3.1 状态统计:")

@@ -13,11 +13,12 @@
     python3 ml/real_data_eval.py --symbol BTC-USDT
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import json
+import json  # noqa: I001
 import argparse
 import numpy as np
 import pandas as pd
@@ -40,7 +41,9 @@ def fetch_real_data(inst_id: str, bar: str = "1D", limit: int = 600) -> pd.DataF
         df = pd.DataFrame(candles)
         df["timestamp"] = pd.to_datetime(df["ts"], unit="ms")
         df = df.set_index("timestamp")
-        df = df.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"})
+        df = df.rename(
+            columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
+        )
         return df[["open", "high", "low", "close", "volume"]]
     except Exception as e:
         print(f"  [ERROR] 获取 {inst_id} 数据失败: {e}")
@@ -57,13 +60,22 @@ class PureRuleStrategy:
         n = len(prices)
         positions = np.zeros(n)
 
-        weekly = prices.resample('W').agg({
-            'open': 'first', 'high': 'max', 'low': 'min',
-            'close': 'last', 'volume': 'sum',
-        }).dropna()
+        weekly = (
+            prices.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
 
         for i in range(self.lookback, n):
-            daily_slice = prices.iloc[:i + 1]
+            daily_slice = prices.iloc[: i + 1]
             last_date = prices.index[i]
             weekly_slice = weekly[weekly.index <= last_date]
 
@@ -93,16 +105,24 @@ def get_fundamental_data():
     """模拟基本面数据（真实基本面数据需从6-TRADING和9-基本面分析模块获取）"""
     return {
         "screen1": {
-            "composite_score": 65.0, "momentum_score": 70.0,
-            "value_score": 60.0, "growth_score": 65.0,
-            "quality_score": 68.0, "sentiment_score": 55.0,
+            "composite_score": 65.0,
+            "momentum_score": 70.0,
+            "value_score": 60.0,
+            "growth_score": 65.0,
+            "quality_score": 68.0,
+            "sentiment_score": 55.0,
         },
         "fundamental_9": {
-            "pe_ttm": 15.0, "pb": 2.0, "roe": 12.0,
-            "revenue_growth": 20.0, "profit_growth": 18.0,
-            "debt_ratio": 45.0, "cash_ratio": 30.0,
-            "gross_margin": 35.0, "net_margin": 15.0,
-        }
+            "pe_ttm": 15.0,
+            "pb": 2.0,
+            "roe": 12.0,
+            "revenue_growth": 20.0,
+            "profit_growth": 18.0,
+            "debt_ratio": 45.0,
+            "cash_ratio": 30.0,
+            "gross_margin": 35.0,
+            "net_margin": 15.0,
+        },
     }
 
 
@@ -113,8 +133,10 @@ def run_strategy_test(name, strategy, prices, engine):
         signals = strategy.generate_signals(prices)
         result = engine.run(prices["close"], signals)
         m = result["metrics"]
-        print(f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} "
-              f"回撤: {m['max_drawdown_pct']:.2f}% 交易: {m['total_trades']}")
+        print(
+            f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} "
+            f"回撤: {m['max_drawdown_pct']:.2f}% 交易: {m['total_trades']}"
+        )
         return m
     except Exception as e:
         print(f"失败: {e}")
@@ -131,7 +153,7 @@ def evaluate_symbol(inst_id: str, symbol_name: str = None):
     print("=" * 70)
 
     # 获取数据
-    print(f"\n1. 获取真实数据...", end=" ", flush=True)
+    print("\n1. 获取真实数据...", end=" ", flush=True)
     prices = fetch_real_data(inst_id, bar="1D", limit=600)
     if prices.empty:
         print("✗ 数据获取失败")
@@ -141,7 +163,7 @@ def evaluate_symbol(inst_id: str, symbol_name: str = None):
     print(f"   价格范围: {prices['close'].min():.2f} ~ {prices['close'].max():.2f}")
 
     # 计算真实买入持有收益作为基准
-    buy_hold_return = (prices['close'].iloc[-1] / prices['close'].iloc[0] - 1) * 100
+    buy_hold_return = (prices["close"].iloc[-1] / prices["close"].iloc[0] - 1) * 100
     print(f"   买入持有收益: {buy_hold_return:.2f}%")
 
     fundamental_data = get_fundamental_data()
@@ -151,15 +173,16 @@ def evaluate_symbol(inst_id: str, symbol_name: str = None):
 
     # 策略1: 纯规则引擎
     engine = BacktestEngine(initial_capital=10000, commission=0.001, slippage=0.001)
-    results["纯规则引擎"] = run_strategy_test(
-        "纯规则引擎", PureRuleStrategy(), prices, engine
-    )
+    results["纯规则引擎"] = run_strategy_test("纯规则引擎", PureRuleStrategy(), prices, engine)
 
     # 策略2: AI V1（单任务+静态权重，技术面）
     engine = BacktestEngine(initial_capital=10000, commission=0.001, slippage=0.001)
     ai_v1 = LeastResistanceAIStrategy(
-        label_lookahead=7, train_window=200, retrain_interval=30,
-        ml_weight=0.4, enable_walk_forward=True,
+        label_lookahead=7,
+        train_window=200,
+        retrain_interval=30,
+        ml_weight=0.4,
+        enable_walk_forward=True,
         feature_engineer=LeastResistanceFeatureEngineer(enable_fundamental=False),
     )
     results["AI V1(技术面)"] = run_strategy_test("AI V1(技术面)", ai_v1, prices, engine)
@@ -167,9 +190,14 @@ def evaluate_symbol(inst_id: str, symbol_name: str = None):
     # 策略3: AI V2 基线（base_rule_weight=0.55，对应baseline_config.json）
     engine = BacktestEngine(initial_capital=10000, commission=0.001, slippage=0.001)
     ai_v2_baseline = LeastResistanceAIStrategyV2(
-        label_lookahead=7, train_window=100, retrain_interval=20,
-        min_ml_confidence=0.05, enable_fundamental=True, enable_multitask=True,
-        enable_dynamic_weight=True, enable_feature_selection=False,
+        label_lookahead=7,
+        train_window=100,
+        retrain_interval=20,
+        min_ml_confidence=0.05,
+        enable_fundamental=True,
+        enable_multitask=True,
+        enable_dynamic_weight=True,
+        enable_feature_selection=False,
         base_rule_weight=0.55,  # 基线配置
         fundamental_data=fundamental_data,
     )
@@ -184,9 +212,14 @@ def evaluate_symbol(inst_id: str, symbol_name: str = None):
     # 策略4: AI V2 优化（base_rule_weight=0.3，对应optimized_config.json）
     engine = BacktestEngine(initial_capital=10000, commission=0.001, slippage=0.001)
     ai_v2_opt = LeastResistanceAIStrategyV2(
-        label_lookahead=7, train_window=100, retrain_interval=20,
-        min_ml_confidence=0.05, enable_fundamental=True, enable_multitask=True,
-        enable_dynamic_weight=True, enable_feature_selection=False,
+        label_lookahead=7,
+        train_window=100,
+        retrain_interval=20,
+        min_ml_confidence=0.05,
+        enable_fundamental=True,
+        enable_multitask=True,
+        enable_dynamic_weight=True,
+        enable_feature_selection=False,
         base_rule_weight=0.3,  # 优化配置
         fundamental_data=fundamental_data,
     )
@@ -207,13 +240,20 @@ def evaluate_symbol(inst_id: str, symbol_name: str = None):
 
     for name, m in results.items():
         if m:
-            print(f"{name:>14} {m['total_return_pct']:>9.2f}% {m['sharpe_ratio']:>8.3f} "
-                  f"{m['max_drawdown_pct']:>7.2f}% {m.get('win_rate', 0):>7.1f}% {m['total_trades']:>6d}")
+            print(
+                f"{name:>14} {m['total_return_pct']:>9.2f}% {m['sharpe_ratio']:>8.3f} "
+                f"{m['max_drawdown_pct']:>7.2f}% {m.get('win_rate', 0):>7.1f}% {m['total_trades']:>6d}"
+            )
 
     print(f"{'买入持有':>14} {buy_hold_return:>9.2f}% {'':>8} {'':>8} {'':>8} {'':>6}")
 
-    return {"symbol": symbol_name, "inst_id": inst_id, "n_days": len(prices),
-            "buy_hold_return": buy_hold_return, "results": results}
+    return {
+        "symbol": symbol_name,
+        "inst_id": inst_id,
+        "n_days": len(prices),
+        "buy_hold_return": buy_hold_return,
+        "results": results,
+    }
 
 
 def main():
@@ -264,7 +304,9 @@ def main():
                     sharpes.append(m["sharpe_ratio"])
                     drawdowns.append(m["max_drawdown_pct"])
             if rets:
-                print(f"{sname:>14} {np.mean(rets):>9.2f}% {np.mean(sharpes):>10.3f} {np.mean(drawdowns):>9.2f}%")
+                print(
+                    f"{sname:>14} {np.mean(rets):>9.2f}% {np.mean(sharpes):>10.3f} {np.mean(drawdowns):>9.2f}%"
+                )
 
         # 买入持有平均
         bh_rets = [r["buy_hold_return"] for r in all_results]
@@ -272,7 +314,9 @@ def main():
 
     # 保存结果
     os.makedirs("ml/optimization_results", exist_ok=True)
-    result_file = f"ml/optimization_results/real_data_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    result_file = (
+        f"ml/optimization_results/real_data_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
 
     def clean_val(v):
         if isinstance(v, (np.floating, float)):
@@ -294,13 +338,15 @@ def main():
         "symbols": [],
     }
     for r in all_results:
-        output["symbols"].append({
-            "symbol": r["symbol"],
-            "inst_id": r["inst_id"],
-            "n_days": r["n_days"],
-            "buy_hold_return": clean_val(r["buy_hold_return"]),
-            "results": {k: clean_metrics(v) for k, v in r["results"].items()},
-        })
+        output["symbols"].append(
+            {
+                "symbol": r["symbol"],
+                "inst_id": r["inst_id"],
+                "n_days": r["n_days"],
+                "buy_hold_return": clean_val(r["buy_hold_return"]),
+                "results": {k: clean_metrics(v) for k, v in r["results"].items()},
+            }
+        )
 
     with open(result_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)

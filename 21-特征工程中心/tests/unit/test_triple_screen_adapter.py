@@ -3,6 +3,7 @@
 验证 SklearnStyleAdapter(TrendFeatureEngineer).compute(ohlcv) 与
 TrendFeatureEngineer.create_features(ohlcv) 逐列 diff < 1e-9。
 """
+
 from __future__ import annotations
 
 import sys
@@ -19,13 +20,16 @@ sys.path.insert(0, str(_PROJECT_ROOT / "12-三屏趋势系统"))
 def _make_ohlcv(n: int = 300) -> pd.DataFrame:
     rng = np.random.default_rng(42)
     close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.004, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
 
 def test_t15_triple_screen_adapter_equivalence():

@@ -35,11 +35,11 @@
     若需接入真实历史数据，请修改 run_backtest()，替换为 backtest_engine.py
 """
 
-import json
+import logging
 import math
 import random
-import logging
 from datetime import datetime, timedelta
+
 from flask import Blueprint, jsonify, request
 
 # ============= 日志 =============
@@ -142,7 +142,7 @@ def run_backtest(
 
     # 定义交易参数
     long_stop = support * 0.99  # 支撑位下方1%
-    long_target = resistance    # 阻力位
+    long_target = resistance  # 阻力位
     short_stop = resistance * 1.01  # 阻力位上方1%
     short_target = support
 
@@ -175,25 +175,73 @@ def run_backtest(
             # 检查止损/止盈
             if position["direction"] == "long":
                 if p <= position["stop"]:
-                    pnl = (position["stop"] - position["entry"]) / position["entry"] * position["pos_size"]
+                    pnl = (
+                        (position["stop"] - position["entry"])
+                        / position["entry"]
+                        * position["pos_size"]
+                    )
                     capital += pnl
-                    trades.append({"entry": position["entry"], "exit": p, "pnl": pnl, "direction": "long", "reason": "stop_loss"})
+                    trades.append(
+                        {
+                            "entry": position["entry"],
+                            "exit": p,
+                            "pnl": pnl,
+                            "direction": "long",
+                            "reason": "stop_loss",
+                        }
+                    )
                     position = None
                 elif p >= position["target"]:
-                    pnl = (position["target"] - position["entry"]) / position["entry"] * position["pos_size"]
+                    pnl = (
+                        (position["target"] - position["entry"])
+                        / position["entry"]
+                        * position["pos_size"]
+                    )
                     capital += pnl
-                    trades.append({"entry": position["entry"], "exit": p, "pnl": pnl, "direction": "long", "reason": "take_profit"})
+                    trades.append(
+                        {
+                            "entry": position["entry"],
+                            "exit": p,
+                            "pnl": pnl,
+                            "direction": "long",
+                            "reason": "take_profit",
+                        }
+                    )
                     position = None
             else:  # short
                 if p >= position["stop"]:
-                    pnl = (position["entry"] - position["stop"]) / position["entry"] * position["pos_size"]
+                    pnl = (
+                        (position["entry"] - position["stop"])
+                        / position["entry"]
+                        * position["pos_size"]
+                    )
                     capital += pnl
-                    trades.append({"entry": position["entry"], "exit": p, "pnl": pnl, "direction": "short", "reason": "stop_loss"})
+                    trades.append(
+                        {
+                            "entry": position["entry"],
+                            "exit": p,
+                            "pnl": pnl,
+                            "direction": "short",
+                            "reason": "stop_loss",
+                        }
+                    )
                     position = None
                 elif p <= position["target"]:
-                    pnl = (position["entry"] - position["target"]) / position["entry"] * position["pos_size"]
+                    pnl = (
+                        (position["entry"] - position["target"])
+                        / position["entry"]
+                        * position["pos_size"]
+                    )
                     capital += pnl
-                    trades.append({"entry": position["entry"], "exit": p, "pnl": pnl, "direction": "short", "reason": "take_profit"})
+                    trades.append(
+                        {
+                            "entry": position["entry"],
+                            "exit": p,
+                            "pnl": pnl,
+                            "direction": "short",
+                            "reason": "take_profit",
+                        }
+                    )
                     position = None
 
         # 跟踪最大回撤
@@ -224,7 +272,9 @@ def run_backtest(
     sharpe = (mean / std) * math.sqrt(252) if std > 0 else 1.2
 
     # 建议仓位（基于 volatility 和 盈亏比）
-    kelly_f = (win_rate * profit_factor - (1 - win_rate)) / profit_factor if profit_factor > 0 else 0.15
+    kelly_f = (
+        (win_rate * profit_factor - (1 - win_rate)) / profit_factor if profit_factor > 0 else 0.15
+    )
     kelly_f = max(0.01, min(kelly_f, 0.08))  # 限制在 1%-8%
     half_kelly = kelly_f * 0.5
 
@@ -298,6 +348,7 @@ def run_backtest(
 
 # ============= API 端点 =============
 
+
 @strategy_bp.route("/backtest", methods=["POST", "OPTIONS"])
 def backtest_endpoint():
     """策略回测端点"""
@@ -328,8 +379,10 @@ def backtest_endpoint():
         if support >= resistance:
             support, resistance = min(price * 0.98, support), max(price * 1.02, resistance)
 
-        logger.info(f"[backtest] symbol={symbol}, price={price}, "
-                    f"support={support}, resistance={resistance}")
+        logger.info(
+            f"[backtest] symbol={symbol}, price={price}, "
+            f"support={support}, resistance={resistance}"
+        )
 
         result = run_backtest(symbol, price, support, resistance, context)
         resp = jsonify(result)
@@ -338,20 +391,27 @@ def backtest_endpoint():
 
     except Exception as e:
         logger.exception(f"[backtest] error: {e}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @strategy_bp.route("/health", methods=["GET"])
 def strategy_health():
     """策略服务健康检查"""
-    resp = jsonify({
-        "status": "healthy",
-        "service": "strategy-backtest",
-        "timestamp": datetime.now().isoformat(),
-    })
+    resp = jsonify(
+        {
+            "status": "healthy",
+            "service": "strategy-backtest",
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
     resp.headers["Access-Control-Allow-Origin"] = "*"
     return resp
 
@@ -359,20 +419,22 @@ def strategy_health():
 @strategy_bp.route("/info", methods=["GET"])
 def strategy_info():
     """回测服务元信息"""
-    resp = jsonify({
-        "name": "Dream Strategy Backtest Engine",
-        "version": "1.0.0",
-        "supported_symbols": list(ASSET_PROFILE.keys()) + ["OTHER"],
-        "algorithms": [
-            "区间突破双轨 (Range Breakout Dual Rail)",
-            "几何布朗运动价格模拟 (GBM Price Simulation)",
-            "凯利公式仓位优化 (Kelly Criterion Position Sizing)",
-        ],
-        "endpoints": {
-            "POST /api/strategy/backtest": "执行回测",
-            "GET /api/strategy/health": "健康检查",
-            "GET /api/strategy/info": "服务信息",
-        },
-    })
+    resp = jsonify(
+        {
+            "name": "Dream Strategy Backtest Engine",
+            "version": "1.0.0",
+            "supported_symbols": list(ASSET_PROFILE.keys()) + ["OTHER"],
+            "algorithms": [
+                "区间突破双轨 (Range Breakout Dual Rail)",
+                "几何布朗运动价格模拟 (GBM Price Simulation)",
+                "凯利公式仓位优化 (Kelly Criterion Position Sizing)",
+            ],
+            "endpoints": {
+                "POST /api/strategy/backtest": "执行回测",
+                "GET /api/strategy/health": "健康检查",
+                "GET /api/strategy/info": "服务信息",
+            },
+        }
+    )
     resp.headers["Access-Control-Allow-Origin"] = "*"
     return resp

@@ -11,16 +11,15 @@
   B7. test_portfolio_mode_ranked_tp_cta_mode — cta_risk_on → 组合级 enable_ranked_tp=False
   B8. test_single_trade_still_routed_by_type — cta 组合但 breakout 单笔仍按 exit_config (路径A仍在)
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict
 from unittest.mock import MagicMock
 
-import pytest
-
-from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -29,14 +28,19 @@ if str(ROOT) not in sys.path:
 _MOD_LOADED: Dict[str, Any] = {"ok": False}
 try:
     from scripts.memory_l4.bcrm2.exit_manager import (  # noqa: E402
-        ExitManager, ExitContext, ExitDecision, ExitStrategy,
+        ExitContext,
+        ExitDecision,
+        ExitManager,
+        ExitStrategy,
     )
+
     # 路径 B 新增：组合级聚类约束（挂在 polling_trader 级辅助函数，放 strategy_algo_layer 作为纯函数）
     from scripts.memory_l4.strategy_algo_layer import (  # noqa: E402
+        PORTFOLIO_MODE_CHAINS,  # 4 档模式预设配置
         enforce_cluster_cap,
-        PORTFOLIO_MODE_CHAINS,    # 4 档模式预设配置
         get_ranktp_allow_for_mode,  # 组合级 RankedTp 开关路由
     )
+
     _MOD_LOADED["ok"] = True
     _MOD_LOADED["ExitManager"] = ExitManager
     _MOD_LOADED["ExitContext"] = ExitContext
@@ -67,9 +71,9 @@ class TestPortfolioModeChains:
         assert "default" in chains, "4 档模式链必须含 default"
         # 默认链：至少包含 5 个 ExitStrategy，priority 升序
         default_strategies = chains["default"]
-        assert len(default_strategies) >= 5, (
-            f"路径B 默认链至少 5 策略（实盘5），实际={len(default_strategies)}"
-        )
+        assert (
+            len(default_strategies) >= 5
+        ), f"路径B 默认链至少 5 策略（实盘5），实际={len(default_strategies)}"
         priorities = [getattr(s, "priority", -1) for s in default_strategies]
         # priority 应为升序（ExitManager 会再排序，但默认链需是有序的）
         assert priorities == sorted(priorities), f"默认链 priority 未升序：{priorities}"
@@ -85,12 +89,12 @@ class TestPortfolioModeChains:
         names = [getattr(s, "name", "") for s in ro_strategies]
         # 验证风险关链更紧：至少 1 个策略 priority ≤ 15（P3更早触发）
         prios = [getattr(s, "priority", 9999) for s in ro_strategies]
-        any_early = any(p <= 15 for p in prios)
+        any_early = any(p <= 15 for p in prios)  # noqa: F841
         # 或：TimeOutStrategy.timeout_hours 显式 ≤ 6（或基类 BASE × factor ≤ 6）
         # RED简化要求：risk_off_emergency 链必须存在且策略数量 ≥ 5
-        assert len(ro_strategies) >= 5, (
-            f"Risk-Off 链不应少于默认 5 策略（全部收紧），实际={len(ro_strategies)}"
-        )
+        assert (
+            len(ro_strategies) >= 5
+        ), f"Risk-Off 链不应少于默认 5 策略（全部收紧），实际={len(ro_strategies)}"
         # 模式名包含正确
         assert any("risk" in n.lower() or "emg" in n.lower() or len(n) > 0 for n in names)
 
@@ -99,13 +103,19 @@ class TestPortfolioModeChains:
         assert _loaded(), f"RED阶段缺失：{_MOD_LOADED.get('err')}"
         get_ranktp = _MOD_LOADED["get_ranktp_allow_for_mode"]
         # 模式映射矩阵：
-        assert get_ranktp("default") is True, "default 模式 RankedTp 默认允许（§4.13.3 breakout/mom/mr保留）"
-        assert get_ranktp("cta_risk_on") is False, "cta_risk_on 必须关闭 RankedTp（让利润跑→不换仓）"
+        assert (
+            get_ranktp("default") is True
+        ), "default 模式 RankedTp 默认允许（§4.13.3 breakout/mom/mr保留）"
+        assert (
+            get_ranktp("cta_risk_on") is False
+        ), "cta_risk_on 必须关闭 RankedTp（让利润跑→不换仓）"
         assert get_ranktp("mean_revert_mode") is True, "震荡模式 RankedTp 开启（均值回归要换仓）"
         # risk_off_emergency：可以True也可以False（因为现金优先，但是组合级G10不允许单笔开新仓）
         # 所以只测3个确定模式。
         # 未知模式 → 回退到 default True
-        assert get_ranktp("unknown_fantasy_mode_xyz") is True, "未知模式应回退 default=True（fail-open安全）"
+        assert (
+            get_ranktp("unknown_fantasy_mode_xyz") is True
+        ), "未知模式应回退 default=True（fail-open安全）"
 
 
 # ================================================================
@@ -145,9 +155,7 @@ class TestG9ClusterCap:
             total_equity=total_equity,
             cap_pct=cap_pct,
         )
-        assert ok is False, (
-            f"同桶超限应拒绝（600已有+400新=1000 > 600 cap），实际返回ok={ok}"
-        )
+        assert ok is False, f"同桶超限应拒绝（600已有+400新=1000 > 600 cap），实际返回ok={ok}"
 
     def test_B4_cluster_allows_when_diversified_buckets(self):
         """B4：LONG+trend 已有300；再开 SHORT+mean_revert 300 → 跨桶无超限 → True允许。"""
@@ -164,9 +172,7 @@ class TestG9ClusterCap:
             total_equity=total_equity,
             cap_pct=cap_pct,
         )
-        assert ok is True, (
-            f"跨桶（LONG趋势 vs SHORT均值回归）分散，应允许开仓，ok={ok}"
-        )
+        assert ok is True, f"跨桶（LONG趋势 vs SHORT均值回归）分散，应允许开仓，ok={ok}"
         # 同向但不同风格：LONG+trend 300 + LONG+mean 300 = 分两个桶；总=300+300<600 → True
         ok2 = fn(
             positions_dict={"BTC": self._pos("BTC", True, "trend_follow", 300.0)},
@@ -191,6 +197,7 @@ class TestInternalBranchByType:
         from scripts.memory_l4.strategy_algo_layer import (
             internal_branch_triggered as bt_fn,
         )
+
         # 假突破条件（简化版）：regime='RANGE_TIGHT' 且 age<1h 且 浮亏 < -0.015 → 触发
         ctx = SimpleNamespace(
             strategy_type="breakout",
@@ -200,8 +207,12 @@ class TestInternalBranchByType:
         )
         assert bt_fn("breakout_fail", ctx) is True, "假突破（突破震荡+1h内浮亏>1.5%）应触发B5分支"
         # 反向：非breakout → False
-        ctx2 = SimpleNamespace(strategy_type="trend_follow", regime_label="RANGE_TIGHT",
-                               age_hours=0.5, unrealized_pnl_pct=-0.03)
+        ctx2 = SimpleNamespace(
+            strategy_type="trend_follow",
+            regime_label="RANGE_TIGHT",
+            age_hours=0.5,
+            unrealized_pnl_pct=-0.03,
+        )
         assert bt_fn("breakout_fail", ctx2) is False, "非breakout不应触发B5分支"
 
     def test_B6_mean_revert_internal_branch_triggers_target_reach(self):
@@ -209,26 +220,33 @@ class TestInternalBranchByType:
         from scripts.memory_l4.strategy_algo_layer import (
             internal_branch_triggered as bt_fn,
         )
+
         ctx = SimpleNamespace(
             strategy_type="mean_revert",
             age_hours=4.0,
             unrealized_pnl_pct=0.028,  # 浮盈 2.8% ≥ 2%
             distance_from_ma_pct=0.003,  # 回中 0.3% ≤ 0.5%
         )
-        assert bt_fn("mean_revert_target", ctx) is True, (
-            "均值回归：浮盈≥2% 且 距离MA≤0.5% → B6分支触发"
-        )
+        assert (
+            bt_fn("mean_revert_target", ctx) is True
+        ), "均值回归：浮盈≥2% 且 距离MA≤0.5% → B6分支触发"
         # 反向：盈利不够 → False
-        ctx2 = SimpleNamespace(strategy_type="mean_revert", age_hours=4.0,
-                               unrealized_pnl_pct=0.012, distance_from_ma_pct=0.003)
+        ctx2 = SimpleNamespace(
+            strategy_type="mean_revert",
+            age_hours=4.0,
+            unrealized_pnl_pct=0.012,
+            distance_from_ma_pct=0.003,
+        )
         assert bt_fn("mean_revert_target", ctx2) is False
 
     def test_B8_CTA_mode_but_breakout_single_still_uses_breakout_routing(self):
         """B8：组合=cta_risk_on → strategy_type=breakout的单笔单，仍按breakout的exit_config（
         calibration_biases.sl_mult_factor=0.90而非trend的1.10），不被组合级链覆盖单笔差异化。"""
         from scripts.memory_l4.strategy_algo_layer import (
-            StrategyAlgorithmLayer, StrategyAlgoConfig, STYLE_ORDER,
+            StrategyAlgoConfig,
+            StrategyAlgorithmLayer,
         )
+
         cfg = StrategyAlgoConfig(
             enable_strategy_layer=True,
             enable_strategy_layer_relax_allowed=False,
@@ -236,7 +254,7 @@ class TestInternalBranchByType:
         layer = StrategyAlgorithmLayer(cfg=cfg)
         scores = {"dao": 80, "tian": 90, "di": 75, "jiang": 85, "fa": 85}  # 高分 breakout 友好
         # 手动强制 selection.strategy_type = breakout（绕过select随机）
-        from dataclasses import replace as _replace
+
         base = layer.select("crypto_usdt", scores, {"phase": "TREND_STRONG"}, "G1", None)
         if base.strategy_type != "breakout":
             # 修正：再构造一个更"恰好breakout"的评分（di=68 breakout最佳）

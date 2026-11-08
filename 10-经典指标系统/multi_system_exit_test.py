@@ -18,10 +18,9 @@
   S6: 正常持仓（HOLD）
 """
 
-import sys
 import os
+import sys
 import time
-import json
 
 # ── 路径准备 ──────────────────────────────────────────────────────────────
 
@@ -36,6 +35,7 @@ for p in (CLASSIC_PATH, SCREEN_PATH, YIJING_PATH):
 
 
 # ── 生成测试 K 线 ──────────────────────────────────────────────────────────
+
 
 def gen_candles(trend="up", count=100, start=100.0, volatility=0.03):
     """生成测试 K 线，volatility 控制 ATR 大小"""
@@ -53,13 +53,15 @@ def gen_candles(trend="up", count=100, start=100.0, volatility=0.03):
                 price *= 1 + volatility * 0.4
             else:
                 price *= 1 - volatility * 0.4
-        candles.append({
-            "c": round(price, 4),
-            "o": round(price * (1 - volatility * 0.1), 4),
-            "h": round(price * (1 + volatility * 0.2), 4),
-            "l": round(price * (1 - volatility * 0.2), 4),
-            "v": 1000000 + i * 5000,
-        })
+        candles.append(
+            {
+                "c": round(price, 4),
+                "o": round(price * (1 - volatility * 0.1), 4),
+                "h": round(price * (1 + volatility * 0.2), 4),
+                "l": round(price * (1 - volatility * 0.2), 4),
+                "v": 1000000 + i * 5000,
+            }
+        )
     return candles
 
 
@@ -77,11 +79,14 @@ SCENARIOS = [
         "id": "S1",
         "name": "L0 最大亏损止损",
         "position": {
-            "coin": "BTC", "side": "long",
-            "entry_price": 120.0, "current_price": 94.0,
+            "coin": "BTC",
+            "side": "long",
+            "entry_price": 120.0,
+            "current_price": 94.0,
             "position_age_sec": 7200,
             "unrealized_pnl_pct": (94.0 - 120.0) / 120.0,
-            "leverage": 3.0, "atr_pct": 0.025,
+            "leverage": 3.0,
+            "atr_pct": 0.025,
         },
         "candles": CANDLES_DOWN,
         "regime": "trend",
@@ -92,11 +97,14 @@ SCENARIOS = [
         "id": "S2",
         "name": "L0 强平安全缓冲",
         "position": {
-            "coin": "ETH", "side": "long",
-            "entry_price": 100.0, "current_price": 92.0,
+            "coin": "ETH",
+            "side": "long",
+            "entry_price": 100.0,
+            "current_price": 92.0,
             "position_age_sec": 1800,
             "unrealized_pnl_pct": -0.03,
-            "leverage": 1.0, "atr_pct": 0.03,
+            "leverage": 1.0,
+            "atr_pct": 0.03,
             "liq_price": 91.6,
         },
         "candles": CANDLES_UP,
@@ -108,11 +116,14 @@ SCENARIOS = [
         "id": "S3",
         "name": "Triple Barrier 止盈",
         "position": {
-            "coin": "SOL", "side": "long",
-            "entry_price": 70.0, "current_price": 94.0,
+            "coin": "SOL",
+            "side": "long",
+            "entry_price": 70.0,
+            "current_price": 94.0,
             "position_age_sec": 1800,
             "unrealized_pnl_pct": (94.0 - 70.0) / 70.0,
-            "leverage": 1.0, "atr_pct": 0.025,
+            "leverage": 1.0,
+            "atr_pct": 0.025,
         },
         "candles": CANDLES_UP,
         "regime": "trend",
@@ -123,11 +134,14 @@ SCENARIOS = [
         "id": "S4",
         "name": "跟踪止损触发",
         "position": {
-            "coin": "BNB", "side": "long",
-            "entry_price": 80.0, "current_price": 85.0,
+            "coin": "BNB",
+            "side": "long",
+            "entry_price": 80.0,
+            "current_price": 85.0,
             "position_age_sec": 1800,
             "unrealized_pnl_pct": (85.0 - 80.0) / 80.0,
-            "leverage": 1.0, "atr_pct": 0.03,
+            "leverage": 1.0,
+            "atr_pct": 0.03,
             "trailing_armed": True,
             "trailing_stop_price": 85.5,
         },
@@ -140,11 +154,14 @@ SCENARIOS = [
         "id": "S5",
         "name": "TSTP 时间止盈（8h close_if_weak）",
         "position": {
-            "coin": "ADA", "side": "long",
-            "entry_price": 80.0, "current_price": 83.2,
+            "coin": "ADA",
+            "side": "long",
+            "entry_price": 80.0,
+            "current_price": 83.2,
             "position_age_sec": 28800,
             "unrealized_pnl_pct": 0.04,
-            "leverage": 2.0, "atr_pct": 0.03,
+            "leverage": 2.0,
+            "atr_pct": 0.03,
         },
         "candles": CANDLES_UP,
         "regime": "trend",
@@ -155,11 +172,14 @@ SCENARIOS = [
         "id": "S6",
         "name": "正常持仓（HOLD）",
         "position": {
-            "coin": "DOT", "side": "long",
-            "entry_price": 93.0, "current_price": 94.0,
+            "coin": "DOT",
+            "side": "long",
+            "entry_price": 93.0,
+            "current_price": 94.0,
             "position_age_sec": 600,
             "unrealized_pnl_pct": (94.0 - 93.0) / 93.0,
-            "leverage": 1.0, "atr_pct": 0.02,
+            "leverage": 1.0,
+            "atr_pct": 0.02,
         },
         "candles": CANDLES_UP,
         "regime": "trend",
@@ -171,8 +191,8 @@ SCENARIOS = [
 
 def check_result(scenario, action, reason):
     """验证单个场景结果"""
-    sid = scenario["id"]
-    sname = scenario["name"]
+    sid = scenario["id"]  # noqa: F841
+    sname = scenario["name"]  # noqa: F841
     expect_action = scenario["expect_action"]
     expect_kw = scenario["expect_keyword"]
 
@@ -198,6 +218,7 @@ def check_result(scenario, action, reason):
 # ═══════════════════════════════════════════════════════════════════════════
 # 调用方式 1: API 模式（Flask test_client）
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 def test_via_api():
     print("\n" + "=" * 72)
@@ -239,8 +260,10 @@ def test_via_api():
             print(f"    confidence={dec['confidence']:.2f}  priority={dec['priority']}")
             if dec.get("features"):
                 f = dec["features"]
-                print(f"    hold_risk={f['hold_risk']:.2f}  hold_value={f['hold_value']:.2f}  "
-                      f"trend={f['trend_shape']}  rsi={f['rsi']:.1f}")
+                print(
+                    f"    hold_risk={f['hold_risk']:.2f}  hold_value={f['hold_value']:.2f}  "
+                    f"trend={f['trend_shape']}  rsi={f['rsi']:.1f}"
+                )
 
     passed = sum(1 for _, _, st, _ in results if st == "PASS")
     print(f"\n  汇总: {passed}/{len(results)} 通过")
@@ -251,16 +274,16 @@ def test_via_api():
 # 调用方式 2: 直接导入（模拟三屏趋势系统 exit_integration.py 路径）
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def test_via_screen_system():
     print("\n" + "=" * 72)
     print("调用方式 2: 直接导入（模拟三屏趋势系统 exit_integration.py）")
     print("=" * 72)
 
     from exit_integration import (
-        get_exit_system_classic,
         PositionInfo,
         evaluate_exit,
-        ExitAction as ScreenExitAction,
+        get_exit_system_classic,
     )
 
     classic_sys = get_exit_system_classic()
@@ -316,6 +339,7 @@ def test_via_screen_system():
 # 调用方式 3: 直接导入（模拟易经推理系统 test_exit_system.py 路径）
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def test_via_yijing_system():
     print("\n" + "=" * 72)
     print("调用方式 3: 直接导入（模拟易经推理系统 test_exit_system.py）")
@@ -324,7 +348,6 @@ def test_via_yijing_system():
     from classic_exit_system import (
         ClassicExitSystem,
         PositionState,
-        ExitAction,
     )
 
     system = ClassicExitSystem()
@@ -360,8 +383,10 @@ def test_via_yijing_system():
         print(f"    confidence={decision.confidence:.2f}  priority={decision.priority.value}")
         if decision.features:
             f = decision.features
-            print(f"    hold_risk={f.hold_risk:.2f}  hold_value={f.hold_value:.2f}  "
-                  f"trend={f.trend_shape.value}  rsi={f.rsi:.1f}")
+            print(
+                f"    hold_risk={f.hold_risk:.2f}  hold_value={f.hold_value:.2f}  "
+                f"trend={f.trend_shape.value}  rsi={f.rsi:.1f}"
+            )
 
     passed = sum(1 for _, _, st, _ in results if st == "PASS")
     print(f"\n  汇总: {passed}/{len(results)} 通过")
@@ -371,6 +396,7 @@ def test_via_yijing_system():
 # ═══════════════════════════════════════════════════════════════════════════
 # 调用方式 4: 批量评估模式
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 def test_via_batch():
     print("\n" + "=" * 72)
@@ -419,6 +445,7 @@ def test_via_batch():
 # 调用方式 5: 多系统并发调用（状态隔离验证）
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def test_concurrent_isolation():
     print("\n" + "=" * 72)
     print("调用方式 5: 多系统并发调用（验证 per-coin 状态隔离）")
@@ -443,11 +470,14 @@ def test_concurrent_isolation():
         p = s["position"]
         p = {**p, "coin": coin}
         pos = PositionState(
-            coin=coin, side=p["side"],
-            entry_price=p["entry_price"], current_price=p["current_price"],
+            coin=coin,
+            side=p["side"],
+            entry_price=p["entry_price"],
+            current_price=p["current_price"],
             position_age_sec=p["position_age_sec"],
             unrealized_pnl_pct=p["unrealized_pnl_pct"],
-            leverage=p["leverage"], atr_pct=p["atr_pct"],
+            leverage=p["leverage"],
+            atr_pct=p["atr_pct"],
             liq_price=p.get("liq_price", 0),
             trailing_armed=p.get("trailing_armed", False),
             trailing_stop_price=p.get("trailing_stop_price", 0),
@@ -466,23 +496,28 @@ def test_concurrent_isolation():
         rg = system.state.risk_gate.get(coin)
         l2 = system.state.l2_armed.get(coin)
         cd = system.state.cooldown.get(coin)
-        print(f"    {coin}: risk_gate={'有' if rg else '无'}  l2_armed={'有' if l2 else '无'}  "
-              f"cooldown={'有' if cd else '无'}")
+        print(
+            f"    {coin}: risk_gate={'有' if rg else '无'}  l2_armed={'有' if l2 else '无'}  "
+            f"cooldown={'有' if cd else '无'}"
+        )
 
     # 再次调用同一币种，验证状态延续
     print("\n  二次调用验证（状态延续）:")
     s = scenarios_map["BTC"]
     p = {**s["position"], "coin": "BTC"}
     pos = PositionState(
-        coin="BTC", side=p["side"],
-        entry_price=p["entry_price"], current_price=p["current_price"],
+        coin="BTC",
+        side=p["side"],
+        entry_price=p["entry_price"],
+        current_price=p["current_price"],
         position_age_sec=p["position_age_sec"],
         unrealized_pnl_pct=p["unrealized_pnl_pct"],
-        leverage=p["leverage"], atr_pct=p["atr_pct"],
+        leverage=p["leverage"],
+        atr_pct=p["atr_pct"],
     )
     dec2 = system.evaluate_full(pos, s["candles"], regime=s["regime"])
     print(f"    BTC 二次调用: action={dec2.action.value} reason={dec2.reason or '(hold)'}")
-    print(f"    （状态隔离正常：每次 reset_state 后独立运行）")
+    print("    （状态隔离正常：每次 reset_state 后独立运行）")
 
     passed = sum(1 for _, st, _ in all_results if st == "PASS")
     print(f"\n  汇总: {passed}/{len(all_results)} 通过")
@@ -499,7 +534,7 @@ if __name__ == "__main__":
     print("=" * 72)
     print(f"时间: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"场景数: {len(SCENARIOS)}")
-    print(f"调用方式: 5 种")
+    print("调用方式: 5 种")
 
     all_results = []
 

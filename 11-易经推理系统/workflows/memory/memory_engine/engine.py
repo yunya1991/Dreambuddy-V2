@@ -10,10 +10,16 @@ from scripts.memory_l4.migration_mapper import build_cross_market_migration
 from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
 from workflows.memory.memory_engine.consistency import check_consistency_report
 from workflows.memory.memory_engine.health import compute_health_score
-from workflows.memory.memory_engine.optimizer import score_with_ucb, update_bandit_scores, write_bandit_audit_artifact
+from workflows.memory.memory_engine.optimizer import (
+    score_with_ucb,
+    update_bandit_scores,
+    write_bandit_audit_artifact,
+)
+from workflows.memory.memory_engine.retrievers.semantic import (
+    retrieve_semantic,
+    write_vector_artifacts,
+)
 from workflows.memory.memory_engine.retrievers.structured import retrieve_structured
-from workflows.memory.memory_engine.retrievers.semantic import retrieve_semantic, write_vector_artifacts
-
 
 StructuredRetriever = Callable[[Dict[str, Any], int], List[Dict[str, Any]]]
 SemanticRetriever = Callable[[Dict[str, Any], int], List[Dict[str, Any]]]
@@ -45,7 +51,11 @@ class MemoryEngine:
         self._vector_dir = vector_dir or Path(".workbuddy/memory_l4/index/vector")
         self._audit_dir = audit_dir or Path("artifacts/memory_engine")
         self._max_audit_files_per_day = max(1, int(max_audit_files_per_day))
-        self._bandit_state_path = Path(bandit_state_path) if bandit_state_path is not None else Path(".workbuddy/memory_l4/bandit_state/latest.json")
+        self._bandit_state_path = (
+            Path(bandit_state_path)
+            if bandit_state_path is not None
+            else Path(".workbuddy/memory_l4/bandit_state/latest.json")
+        )
         self._cases = cases
         self._distills = distills
         self._stats = stats
@@ -83,7 +93,9 @@ class MemoryEngine:
                     vector_dir=self._vector_dir,
                 )
                 if semantic:
-                    semantic_source = dict((semantic[0].get("vector_source") or {"kind": "memory_fallback"}))
+                    semantic_source = dict(
+                        (semantic[0].get("vector_source") or {"kind": "memory_fallback"})
+                    )
                 if pinecone_error:
                     semantic_source["pinecone_error"] = pinecone_error
 
@@ -111,7 +123,9 @@ class MemoryEngine:
                 out["audit"]["artifact_error"] = str(e)
         return out
 
-    def _merge_rankings(self, structured: List[Dict[str, Any]], semantic: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _merge_rankings(
+        self, structured: List[Dict[str, Any]], semantic: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         by_id: Dict[str, Dict[str, Any]] = {}
         for item in structured:
             item_id = str(item.get("id") or "")
@@ -180,7 +194,11 @@ class MemoryEngine:
         return str(path)
 
     def _rotate_audit_files(self, day_dir: Path) -> None:
-        files = sorted([p for p in day_dir.glob("*.json") if p.is_file()], key=lambda p: p.stat().st_mtime, reverse=True)
+        files = sorted(
+            [p for p in day_dir.glob("*.json") if p.is_file()],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         for p in files[self._max_audit_files_per_day :]:
             p.unlink(missing_ok=True)
 
@@ -216,16 +234,22 @@ class MemoryEngine:
         perf_weight_by_id = context.get("performance_weight_by_id") or {}
         use_bandit = bool(context.get("use_bandit"))
         bandit_state = self._load_bandit_state() if use_bandit else {}
-        total_steps = sum(max(0, int((v or {}).get("n") or 0)) for v in (bandit_state or {}).values())
+        total_steps = sum(
+            max(0, int((v or {}).get("n") or 0)) for v in (bandit_state or {}).values()
+        )
 
         items: List[Dict[str, Any]] = []
-        for row in (decision.get("merged") or []):
+        for row in decision.get("merged") or []:
             item_id = str(row.get("id") or "")
             structured_score = float(row.get("structured_score") or 0.0)
             semantic_score = float(row.get("semantic_score") or 0.0)
             merged_score = float(row.get("merged_score") or 0.0)
             perf_w = float(perf_weight_by_id.get(item_id) or 0.0)
-            bandit_w = score_with_ucb(item_id, bandit_state, total_steps=max(1, total_steps)) if use_bandit else 0.0
+            bandit_w = (
+                score_with_ucb(item_id, bandit_state, total_steps=max(1, total_steps))
+                if use_bandit
+                else 0.0
+            )
             relevance = 0.5 * merged_score + 0.1 * semantic_score + 0.4 * perf_w + 0.1 * bandit_w
             items.append(
                 {
@@ -243,7 +267,15 @@ class MemoryEngine:
             )
 
         items.sort(key=lambda x: float(x.get("relevance") or 0.0), reverse=True)
-        matrix = [[item["components"]["structured"], item["components"]["semantic"], item["components"]["performance_weight"], item["relevance"]] for item in items]
+        matrix = [
+            [
+                item["components"]["structured"],
+                item["components"]["semantic"],
+                item["components"]["performance_weight"],
+                item["relevance"],
+            ]
+            for item in items
+        ]
         return {
             "version": "v0.1",
             "query": {"query_text": str(context.get("query_text") or "")},
@@ -316,7 +348,9 @@ class MemoryEngine:
         dest_file = day_dir / audit_file.name
         try:
             if dest_file != audit_file:
-                dest_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                dest_file.write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+                )
         except Exception:
             return
 
@@ -330,7 +364,9 @@ class MemoryEngine:
                     rc = old.get("reason_counts") or {}
                     if isinstance(rc, dict):
                         summary["reason_counts"] = {str(k): int(v) for k, v in rc.items()}
-                    summary["recommended_alert_threshold_pct"] = float(old.get("recommended_alert_threshold_pct") or 40.0)
+                    summary["recommended_alert_threshold_pct"] = float(
+                        old.get("recommended_alert_threshold_pct") or 40.0
+                    )
             except Exception:
                 pass
 
@@ -369,9 +405,13 @@ class MemoryEngine:
         recommended, meta = self._compute_recommended_threshold(daily_ratios)
         summary["recommended_alert_threshold_pct"] = recommended
         summary["threshold_meta"] = meta
-        summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        summary_path.write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
 
-    def _compute_recommended_threshold(self, daily_ratios: List[float]) -> tuple[float, Dict[str, Any]]:
+    def _compute_recommended_threshold(
+        self, daily_ratios: List[float]
+    ) -> tuple[float, Dict[str, Any]]:
         min_cap = 30.0
         max_cap = 70.0
         default = 40.0

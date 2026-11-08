@@ -8,6 +8,7 @@
 复用 l0_foundation.settle 分流（案例库 jsonl + 认知价值 record），
 FAIL-OPEN：任何异常输出 {"success": false}，不阻塞调用方。
 """
+
 import json
 import os
 import sys
@@ -39,6 +40,7 @@ def main() -> int:
     }
     try:
         from l0_foundation import get_l0
+
         context = {"intent": intent, "message": message}
         # P1.5 扩展字段（spec §9.1）：complexity/entities 透传（可选）
         for _k in ("complexity", "entities"):

@@ -8,6 +8,7 @@ SPEC-美国宏观事件驱动交易策略.md §4.5.1
 HC: 异常必须 FAIL-OPEN，返回 neutral 兜底
 HC: 模块化开关 enable_primary_contradiction_detector 关断时返回中性默认
 """
+
 from __future__ import annotations
 
 import pytest
@@ -16,7 +17,8 @@ import pytest
 @pytest.fixture(autouse=False)
 def enable_detector(monkeypatch):
     """启用主要矛盾识别器开关（非开关测试用）"""
-    from dreambuddy_evolution.agi_config import set_switch, reset_switches
+    from dreambuddy_evolution.agi_config import reset_switches, set_switch
+
     reset_switches()
     set_switch("enable_agi_core", True)
     set_switch("enable_contradiction_driven_layer", True)
@@ -31,9 +33,10 @@ class TestPrimaryContradictionDetector:
     def test_module_importable(self):
         """RED: 模块可导入"""
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
-            PrimaryContradictionDetector,
             ContradictionInfo,
+            PrimaryContradictionDetector,
         )
+
         assert PrimaryContradictionDetector is not None
         assert ContradictionInfo is not None
 
@@ -42,6 +45,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "event_context": {
@@ -65,6 +69,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "cpi_actual": 5.2,
@@ -83,6 +88,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "credit_growth": -2.0,  # 信贷负增长
@@ -101,6 +107,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "ai_cycle_score": 0.85,
@@ -118,6 +125,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         # fomc_prob=0.85, prob_trend=rising (映射为 0.3)
         # intensity = min(0.85*0.6 + 0.3*0.4, 0.95) = min(0.51 + 0.12, 0.95) = 0.63
@@ -137,6 +145,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {"event_context": {"in_fomc_cycle": False, "cycle_phase": "neutral"}}
         result = detector.detect(kline_data)
@@ -149,6 +158,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         # 传入非法数据
         result = detector.detect(None)
@@ -157,10 +167,11 @@ class TestPrimaryContradictionDetector:
 
     def test_switch_off_returns_neutral(self):
         """HC: 开关关断时返回中性默认，字节等价'模块不存在'"""
-        from dreambuddy_evolution.agi_config import set_switch, reset_switches
+        from dreambuddy_evolution.agi_config import reset_switches, set_switch
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         reset_switches()
         set_switch("enable_agi_core", True)
         set_switch("enable_contradiction_driven_layer", False)
@@ -180,10 +191,11 @@ class TestPrimaryContradictionDetector:
 
     def test_switch_on_activates_detection(self):
         """开关启用时正常识别"""
-        from dreambuddy_evolution.agi_config import set_switch, reset_switches
+        from dreambuddy_evolution.agi_config import reset_switches, set_switch
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         reset_switches()
         set_switch("enable_agi_core", True)
         set_switch("enable_contradiction_driven_layer", True)
@@ -206,6 +218,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "event_context": {
@@ -225,6 +238,7 @@ class TestPrimaryContradictionDetector:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         result = detector.detect({"event_context": {"in_fomc_cycle": False}})
         d = result.to_dict()
@@ -251,6 +265,7 @@ class TestPrimaryContradictionDetectorP0T5:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "cesi": 2.0,  # 强于 1.5σ
@@ -263,15 +278,18 @@ class TestPrimaryContradictionDetectorP0T5:
             },
         }
         result = detector.detect(kline_data)
-        assert result.primary == "fomc_rate_decision", (
-            f"CESI 触发应识别为 fomc_rate_decision，但返回 primary={result.primary}"
-        )
+        assert (
+            result.primary == "fomc_rate_decision"
+        ), f"CESI 触发应识别为 fomc_rate_decision，但返回 primary={result.primary}"
 
-    def test_not_in_fomc_but_negative_cesi_trigger_returns_fomc_rate_decision(self, enable_detector):
+    def test_not_in_fomc_but_negative_cesi_trigger_returns_fomc_rate_decision(
+        self, enable_detector
+    ):
         """非 FOMC + CESI=-1.8 + event_type='nfp' + hike_prob=0.6 → primary=fomc_rate_decision。"""
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "cesi": -1.8,  # 负向强超预期
@@ -284,15 +302,18 @@ class TestPrimaryContradictionDetectorP0T5:
             },
         }
         result = detector.detect(kline_data)
-        assert result.primary == "fomc_rate_decision", (
-            f"负向 CESI 触发应识别为 fomc_rate_decision，但返回 primary={result.primary}"
-        )
+        assert (
+            result.primary == "fomc_rate_decision"
+        ), f"负向 CESI 触发应识别为 fomc_rate_decision，但返回 primary={result.primary}"
 
-    def test_not_in_fomc_but_ppi_event_type_with_cesi_returns_fomc_rate_decision(self, enable_detector):
+    def test_not_in_fomc_but_ppi_event_type_with_cesi_returns_fomc_rate_decision(
+        self, enable_detector
+    ):
         """非 FOMC + CESI=1.6 + event_type='ppi' + hike_prob=0.5 → primary=fomc_rate_decision。"""
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "cesi": 1.6,  # 略高于 1.5σ
@@ -312,6 +333,7 @@ class TestPrimaryContradictionDetectorP0T5:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "cesi": 0.8,  # 弱于 1.5σ
@@ -323,15 +345,16 @@ class TestPrimaryContradictionDetectorP0T5:
             },
         }
         result = detector.detect(kline_data)
-        assert result.primary != "fomc_rate_decision", (
-            f"CESI 未达阈值不应识别为 fomc_rate_decision，但返回 primary={result.primary}"
-        )
+        assert (
+            result.primary != "fomc_rate_decision"
+        ), f"CESI 未达阈值不应识别为 fomc_rate_decision，但返回 primary={result.primary}"
 
     def test_not_in_fomc_cesi_trigger_but_unknown_event_type_returns_unknown(self, enable_detector):
         """非 FOMC + CESI=2.0 + event_type='unknown'（非 nfp/cpi/ppi）→ 不应识别为 fomc_rate_decision。"""
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "cesi": 2.0,
@@ -358,6 +381,7 @@ class TestPrimaryContradictionDetectorP0T5:
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         # baseline：FOMC 周期内，无 CESI
         baseline_kd = {
@@ -384,15 +408,16 @@ class TestPrimaryContradictionDetectorP0T5:
         }
         cesi_result = detector.detect(cesi_kd)
 
-        assert cesi_result.intensity > baseline.intensity, (
-            f"CESI 应放大 intensity: baseline={baseline.intensity}, cesi={cesi_result.intensity}"
-        )
+        assert (
+            cesi_result.intensity > baseline.intensity
+        ), f"CESI 应放大 intensity: baseline={baseline.intensity}, cesi={cesi_result.intensity}"
 
     def test_cesi_threshold_boundary_at_exactly_1_5(self, enable_detector):
         """CESI 恰好 1.5σ 应触发（边界值，>= 阈值）。"""
         from dreambuddy_evolution.engines.primary_contradiction_detector import (
             PrimaryContradictionDetector,
         )
+
         detector = PrimaryContradictionDetector()
         kline_data = {
             "cesi": 1.5,  # 恰好 1.5σ

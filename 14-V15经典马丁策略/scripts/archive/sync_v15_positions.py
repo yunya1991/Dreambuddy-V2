@@ -2,12 +2,13 @@
 """V15马丁系统持仓同步 - 简化版
 复用易经系统的OKX客户端，但在初始化前覆盖环境变量为V15的配置
 """
+
+import json
 import os
 import sys
-import json
 import time
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # ===== 步骤0：切换到V15根目录 + 加载V15环境变量（必须最先做）=====
 _v15_root = Path(__file__).resolve().parent
@@ -41,10 +42,10 @@ _stdlib_paths = [p for p in sys.path if "site-packages" in p or "Frameworks/Pyth
 # 重新排序避免inspect.py冲突
 sys.path = _stdlib_paths + [str(_yj_root), str(_v15_root)]
 
-from dotenv import load_dotenv as _noop  # 已经手动加载了
 
 # 导入OKX客户端（使用易经系统的已验证版本）
-from scripts.memory_l4.okx_simulated import OKXSimulatedClient
+from scripts.memory_l4.okx_simulated import OKXSimulatedClient  # noqa: E402
+
 
 def main():
     print("=" * 70)
@@ -61,7 +62,27 @@ def main():
     if not r.get("ok"):
         print(f"  全部持仓查询失败: {r.get('error')}，尝试逐个币种...")
         all_positions = []
-        coins = ["BTC", "ETH", "SOL", "BNB", "OKB", "PUMP", "UNI", "AMZN", "XAU", "HYPE", "MU", "SKHYNIX", "NVDA", "GOOGL", "XAG", "CRCL", "COIN", "BMNR", "MSTR"]
+        coins = [
+            "BTC",
+            "ETH",
+            "SOL",
+            "BNB",
+            "OKB",
+            "PUMP",
+            "UNI",
+            "AMZN",
+            "XAU",
+            "HYPE",
+            "MU",
+            "SKHYNIX",
+            "NVDA",
+            "GOOGL",
+            "XAG",
+            "CRCL",
+            "COIN",
+            "BMNR",
+            "MSTR",
+        ]
         for coin in coins:
             inst_id = f"{coin}-USDT-SWAP"
             rr = okx.get_positions(inst_id)
@@ -74,7 +95,9 @@ def main():
 
     print(f"  OKX端实际持仓: {len(positions)} 个")
     for p in positions:
-        print(f"    - {p['inst_id']} {p['pos_side']} sz={p['pos']} avg={p['avg_px']} upl={p.get('upl')}")
+        print(
+            f"    - {p['inst_id']} {p['pos_side']} sz={p['pos']} avg={p['avg_px']} upl={p.get('upl')}"
+        )
 
     # 步骤2：读取本地state
     print("\n[步骤2] 读取本地 v15_state.json...")
@@ -86,7 +109,9 @@ def main():
     local_positions = state.get("positions", {})
     print(f"  本地原记录持仓: {len(local_positions)} 个")
     for coin, pos in local_positions.items():
-        print(f"    - {coin} {pos.get('direction')} sz={pos.get('sz')} entry={pos.get('entry_price')}")
+        print(
+            f"    - {coin} {pos.get('direction')} sz={pos.get('sz')} entry={pos.get('entry_price')}"
+        )
 
     # 步骤3：OKX → 本地同步
     print("\n[步骤3] 同步 OKX → 本地...")
@@ -114,7 +139,9 @@ def main():
                 kept += 1
                 continue
             else:
-                print(f"  ↻ {coin:<8} 记录不匹配，更新: {old_dir} sz={old_sz} → {direction} sz={sz_abs}")
+                print(
+                    f"  ↻ {coin:<8} 记录不匹配，更新: {old_dir} sz={old_sz} → {direction} sz={sz_abs}"
+                )
 
         # 写入最小结构（V15的light_poll或orchestrator下一轮会补全addon_grid等完整字段）
         mark_px = float(p.get("mark_px", p["avg_px"]) or 0)
@@ -171,10 +198,13 @@ def main():
     print(f"[V15同步完成] 新增/更新={synced}  匹配保留={kept}  清理残留={removed}")
     print(f"[V15当前本地持仓] {len(local_positions)} 个")
     for coin, pos in local_positions.items():
-        print(f"  - {coin:<8} {pos['direction']:<5} entry={pos['entry_price']:<12} sz={pos['sz']:<8}")
+        print(
+            f"  - {coin:<8} {pos['direction']:<5} entry={pos['entry_price']:<12} sz={pos['sz']:<8}"
+        )
     if not local_positions:
         print("  （零持仓，系统从零开始 ✓）")
     print("=" * 70)
+
 
 if __name__ == "__main__":
     main()

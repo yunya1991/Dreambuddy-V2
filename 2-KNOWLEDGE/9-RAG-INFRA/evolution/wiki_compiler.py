@@ -34,10 +34,10 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 # === 路径设置 ===
-_THIS_DIR = Path(__file__).resolve().parent          # .../9-RAG-INFRA/evolution
-_RAG_INFRA_DIR = _THIS_DIR.parent                     # .../9-RAG-INFRA
-_KNOWLEDGE_DIR = _RAG_INFRA_DIR.parent                # .../2-KNOWLEDGE
-WIKI_ROOT = _KNOWLEDGE_DIR / "wiki"                   # .../2-KNOWLEDGE/wiki
+_THIS_DIR = Path(__file__).resolve().parent  # .../9-RAG-INFRA/evolution
+_RAG_INFRA_DIR = _THIS_DIR.parent  # .../9-RAG-INFRA
+_KNOWLEDGE_DIR = _RAG_INFRA_DIR.parent  # .../2-KNOWLEDGE
+WIKI_ROOT = _KNOWLEDGE_DIR / "wiki"  # .../2-KNOWLEDGE/wiki
 
 # 页面子目录
 SOURCES_DIR = WIKI_ROOT / "sources"
@@ -53,6 +53,7 @@ for d in (SOURCES_DIR, ENTITIES_DIR, CONCEPTS_DIR, SYNTHESES_DIR):
 @dataclass
 class ExtractedEntity:
     """抽取的实体"""
+
     name: str
     category: str = "unknown"  # person | org | product | strategy | module
     description: str = ""
@@ -61,6 +62,7 @@ class ExtractedEntity:
 @dataclass
 class ExtractedConcept:
     """抽取的概念"""
+
     name: str
     category: str = "unknown"  # theory | method | algorithm | metric
     definition: str = ""
@@ -69,20 +71,23 @@ class ExtractedConcept:
 @dataclass
 class CompileResult:
     """编译结果"""
+
     status: str = "ok"  # ok | degraded | failed
     source_identifier: str = ""
-    source_page: str = ""          # sources/ 页面文件名
-    entity_pages: List[str] = field(default_factory=list)   # entities/ 页面文件名列表
+    source_page: str = ""  # sources/ 页面文件名
+    entity_pages: List[str] = field(default_factory=list)  # entities/ 页面文件名列表
     concept_pages: List[str] = field(default_factory=list)  # concepts/ 页面文件名列表
-    synthesis_page: str = ""         # syntheses/ 综合分析页文件名
-    core_conclusion: str = ""      # 核心结论（用于认知记忆沉淀）
+    synthesis_page: str = ""  # syntheses/ 综合分析页文件名
+    core_conclusion: str = ""  # 核心结论（用于认知记忆沉淀）
     entities: List[Dict] = field(default_factory=list)
     concepts: List[Dict] = field(default_factory=list)
     # 可观测性字段（P2-7）
-    pages: List[str] = field(default_factory=list)       # 所有生成页面清单
-    duration_ms: float = 0.0          # 编译耗时（毫秒）
-    token_estimate: int = 0           # LLM Token 消耗估算
-    related_pages: List[str] = field(default_factory=list)  # C5（41 SPEC §13.3）：41 search 相关页面候选
+    pages: List[str] = field(default_factory=list)  # 所有生成页面清单
+    duration_ms: float = 0.0  # 编译耗时（毫秒）
+    token_estimate: int = 0  # LLM Token 消耗估算
+    related_pages: List[str] = field(
+        default_factory=list
+    )  # C5（41 SPEC §13.3）：41 search 相关页面候选
     error: str = ""
 
 
@@ -107,8 +112,9 @@ def _yaml_escape(value: str) -> str:
     return value
 
 
-def _build_frontmatter(title: str, page_type: str, sources: List[str],
-                       tags: List[str], status: str = "active") -> str:
+def _build_frontmatter(
+    title: str, page_type: str, sources: List[str], tags: List[str], status: str = "active"
+) -> str:
     """构建 YAML frontmatter。"""
     today = _today_iso()
     lines = [
@@ -148,10 +154,14 @@ class WikiCompiler:
         """加载默认 LLM 客户端（DeepSeekLLMClient），失败返回 None。"""
         try:
             import sys
-            dreamos_shared = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/shared")
+
+            dreamos_shared = Path(
+                "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dreamos/shared"
+            )
             if str(dreamos_shared) not in sys.path:
                 sys.path.insert(0, str(dreamos_shared))
             from llm_client import DeepSeekLLMClient
+
             client = DeepSeekLLMClient()
             # 检查是否有 API key
             if not client.api_key:
@@ -162,8 +172,9 @@ class WikiCompiler:
             logger.warning(f"加载 DeepSeekLLMClient 失败: {e}，编译层降级为规则提取")
             return None
 
-    def ingest(self, source: str, source_type: str = "auto",
-               two_pass: bool = False) -> CompileResult:
+    def ingest(
+        self, source: str, source_type: str = "auto", two_pass: bool = False
+    ) -> CompileResult:
         """编译素材为 Wiki 页面。
 
         Args:
@@ -194,7 +205,7 @@ class WikiCompiler:
                         f"分析以下素材的结构和核心主题，给出大纲（3-5个要点），\n"
                         f"用于辅助后续实体/概念提取。\n\n素材前500字：{content[:500]}"
                     )
-                    resp = self.llm.chat([LLMMessage(role="user", content=prompt)])
+                    resp = self.llm.chat([LLMMessage(role="user", content=prompt)])  # noqa: F821
                     if resp and resp.content:
                         analysis_hint = resp.content.strip()[:500]
                         result.token_estimate += len(content[:500]) // 4 + len(analysis_hint) // 4
@@ -225,25 +236,30 @@ class WikiCompiler:
             try:
                 import json as _json
                 import subprocess as _sp
+
                 _query = (core_conclusion or " ".join(concepts[:3]) or source_identifier)[:80]
                 _proc = _sp.run(
-                    ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
+                    [
+                        "/home/ubuntu/fis-p0/.venv/bin/python",
+                        "/home/ubuntu/fis-p0/scripts/search_cli.py",
+                    ],
                     input=_json.dumps({"query": _query, "limit": 5, "filters": {"type": ["wiki"]}}),
-                    capture_output=True, text=True, timeout=10,
-                    env={**os.environ, "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD")},
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    env={
+                        **os.environ,  # noqa: F821
+                        "FIS_PG_PASSWORD": os.environ.get("FIS_PG_PASSWORD"),  # noqa: F821
+                    },  # noqa: F821
                 )
                 _res = _json.loads(_proc.stdout or "{}")
                 if _res.get("success"):
-                    result.related_pages = [
-                        h["source"]["path"]
-                        for h in _res.get("hits", [])
-                    ]
+                    result.related_pages = [h["source"]["path"] for h in _res.get("hits", [])]
             except Exception:
                 pass  # FAIL-OPEN：相关页面候选失败不阻塞编译
             # 3. 生成 sources/ 页面
             source_page = self._write_source_page(
-                source_identifier, content, core_conclusion, key_points,
-                entities, concepts, quotes
+                source_identifier, content, core_conclusion, key_points, entities, concepts, quotes
             )
             result.source_page = source_page
 
@@ -265,7 +281,9 @@ class WikiCompiler:
 
             # 5.5. 生成 syntheses 综合分析页（P0 改进：四类页面闭环）
             try:
-                synthesis_topic = source_identifier[:50] if source_identifier else core_conclusion[:50]
+                synthesis_topic = (
+                    source_identifier[:50] if source_identifier else core_conclusion[:50]
+                )
                 syn_page = self._write_synthesis_page(
                     topic=synthesis_topic,
                     entities=entities,
@@ -319,8 +337,9 @@ class WikiCompiler:
             result.duration_ms = (time.monotonic() - t0) * 1000
             return result
 
-    def ingest_batch(self, sources: List[str], source_type: str = "auto",
-                     two_pass: bool = False) -> List[CompileResult]:
+    def ingest_batch(
+        self, sources: List[str], source_type: str = "auto", two_pass: bool = False
+    ) -> List[CompileResult]:
         """批量编译多个素材（P2-9）。
 
         顺序处理，单个失败不影响其他。
@@ -342,7 +361,9 @@ class WikiCompiler:
         Returns:
             (content, source_identifier)
         """
-        if source_type == "text" or (source_type == "auto" and not source.startswith(("http://", "https://"))):
+        if source_type == "text" or (
+            source_type == "auto" and not source.startswith(("http://", "https://"))
+        ):
             # 文本素材 — 优先取第一个 H1 标题作为标识
             h1_match = re.search(r"^#\s+(.+?)\s*$", source, re.MULTILINE)
             if h1_match:
@@ -354,9 +375,12 @@ class WikiCompiler:
         # URL 素材 — 尝试用 requests 获取
         try:
             import requests
-            resp = requests.get(source, timeout=15, headers={
-                "User-Agent": "Mozilla/5.0 (compatible; DreamBuddyWikiBot/1.0)"
-            })
+
+            resp = requests.get(
+                source,
+                timeout=15,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; DreamBuddyWikiBot/1.0)"},
+            )
             if resp.status_code == 200:
                 # 简单 HTML 转文本（去除标签）
                 text = re.sub(r"<script[^>]*>.*?</script>", "", resp.text, flags=re.DOTALL)
@@ -435,10 +459,11 @@ class WikiCompiler:
             sys_path_added = False
             try:
                 import sys
+
                 kg_dir = str(_RAG_INFRA_DIR / "knowledge_graph")
                 if kg_dir not in sys.path:
                     sys.path.insert(0, kg_dir)
-                    sys_path_added = True
+                    sys_path_added = True  # noqa: F841
                 from entity_extractor import extract_entities
                 from schema import NodeType
 
@@ -473,9 +498,24 @@ class WikiCompiler:
 
             # 关键要点：取 ## 开头的行（排除 H1 和常见章节标题词）
             _SECTION_NOISE = {
-                "核心论点", "关键要点", "详细笔记", "涉及实体", "涉及概念",
-                "关键引文", "概述", "定义", "关联实体", "关联概念", "出现于",
-                "背景", "总结", "结论", "参考", "附录", "目录", "简介",
+                "核心论点",
+                "关键要点",
+                "详细笔记",
+                "涉及实体",
+                "涉及概念",
+                "关键引文",
+                "概述",
+                "定义",
+                "关联实体",
+                "关联概念",
+                "出现于",
+                "背景",
+                "总结",
+                "结论",
+                "参考",
+                "附录",
+                "目录",
+                "简介",
             }
             key_points = []
             for line in content.split("\n"):
@@ -504,9 +544,16 @@ class WikiCompiler:
                 "quotes": [],
             }
 
-    def _write_source_page(self, source_id: str, content: str, core_conclusion: str,
-                           key_points: List[str], entities: List[Dict],
-                           concepts: List[Dict], quotes: List[str]) -> str:
+    def _write_source_page(
+        self,
+        source_id: str,
+        content: str,
+        core_conclusion: str,
+        key_points: List[str],
+        entities: List[Dict],
+        concepts: List[Dict],
+        quotes: List[str],
+    ) -> str:
         """生成并写入 sources/ 素材摘要页。"""
         title = source_id[:50] if source_id else "untitled-source"
         filename = _kebab_case(title) + ".md"
@@ -569,7 +616,9 @@ class WikiCompiler:
                     updated = re.sub(
                         r"^updated: .*$",
                         f"updated: {_today_iso()}",
-                        existing, count=1, flags=re.MULTILINE
+                        existing,
+                        count=1,
+                        flags=re.MULTILINE,
                     )
                     filepath.write_text(updated, encoding="utf-8")
                     return filename
@@ -616,16 +665,19 @@ class WikiCompiler:
                     updated = re.sub(
                         r"^updated: .*$",
                         f"updated: {_today_iso()}",
-                        existing, count=1, flags=re.MULTILINE
+                        existing,
+                        count=1,
+                        flags=re.MULTILINE,
                     )
                     if "## 出现于" in updated:
                         updated = updated.replace(
-                            "## 出现于\n",
-                            f"## 出现于\n- [[{source_page.replace('.md', '')}]]\n",
-                            1
+                            "## 出现于\n", f"## 出现于\n- [[{source_page.replace('.md', '')}]]\n", 1
                         )
                     else:
-                        updated = updated.rstrip() + f"\n\n## 出现于\n- [[{source_page.replace('.md', '')}]]\n"
+                        updated = (
+                            updated.rstrip()
+                            + f"\n\n## 出现于\n- [[{source_page.replace('.md', '')}]]\n"
+                        )
                     filepath.write_text(updated, encoding="utf-8")
                     return filename
             except Exception:
@@ -660,13 +712,19 @@ class WikiCompiler:
         try:
             existing = existing_path.read_text(encoding="utf-8")
             import difflib
+
             return difflib.SequenceMatcher(None, new_content, existing).ratio()
         except Exception:
             return 0.0
 
-    def _write_synthesis_page(self, topic: str, entities: List[Dict],
-                              concepts: List[Dict], core_conclusion: str,
-                              source_ids: List[str]) -> str:
+    def _write_synthesis_page(
+        self,
+        topic: str,
+        entities: List[Dict],
+        concepts: List[Dict],
+        core_conclusion: str,
+        source_ids: List[str],
+    ) -> str:
         """生成并写入 syntheses/ 综合分析页。
 
         Returns:
@@ -680,10 +738,16 @@ class WikiCompiler:
         filepath = SYNTHESES_DIR / filename
 
         # 构建实体/概念的 [[wikilink]] 列表
-        ent_links = [f"- [[{_kebab_case(e.get('name', ''))}]] — {e.get('description', '')[:50]}"
-                     for e in entities if e.get("name")]
-        con_links = [f"- [[{_kebab_case(c.get('name', ''))}]] — {c.get('definition', '')[:50]}"
-                     for c in concepts if c.get("name")]
+        ent_links = [
+            f"- [[{_kebab_case(e.get('name', ''))}]] — {e.get('description', '')[:50]}"
+            for e in entities
+            if e.get("name")
+        ]
+        con_links = [
+            f"- [[{_kebab_case(c.get('name', ''))}]] — {c.get('definition', '')[:50]}"
+            for c in concepts
+            if c.get("name")
+        ]
 
         # 交叉分析：优先用 LLM 生成，降级为基于核心结论的模板
         cross_analysis = core_conclusion or "（待补充交叉分析）"
@@ -698,7 +762,7 @@ class WikiCompiler:
                     f"实体：{', '.join(ent_names)}\n"
                     f"概念：{', '.join(con_names)}\n"
                 )
-                resp = self.llm.chat([LLMMessage(role="user", content=prompt)])
+                resp = self.llm.chat([LLMMessage(role="user", content=prompt)])  # noqa: F821
                 if resp and resp.content:
                     cross_analysis = resp.content.strip()[:800]
             except Exception as e:
@@ -812,6 +876,7 @@ class WikiCompiler:
 
         try:
             import sys
+
             kg_dir = str(_RAG_INFRA_DIR / "knowledge_graph")
             if kg_dir not in sys.path:
                 sys.path.insert(0, kg_dir)
@@ -831,10 +896,12 @@ class WikiCompiler:
         # 同步 ChromaDB 向量索引（增量）
         try:
             import sys
+
             vs_dir = str(_RAG_INFRA_DIR / "vector_store")
             if vs_dir not in sys.path:
                 sys.path.insert(0, vs_dir)
             from build_index import build_index
+
             stats = build_index(_KNOWLEDGE_DIR)
             logger.info(
                 f"向量索引同步完成: {stats.get('total_chunks', 0)} chunks, "
@@ -846,14 +913,14 @@ class WikiCompiler:
         # 同步 Whoosh 关键词索引
         try:
             import sys
+
             re_dir = str(_RAG_INFRA_DIR / "rag_engine")
             if re_dir not in sys.path:
                 sys.path.insert(0, re_dir)
             from keyword_search import build_keyword_index
+
             stats = build_keyword_index(_KNOWLEDGE_DIR)
-            logger.info(
-                f"关键词索引同步完成: {stats.get('total_docs', 0)} docs"
-            )
+            logger.info(f"关键词索引同步完成: {stats.get('total_docs', 0)} docs")
         except Exception as e:
             logger.warning(f"关键词索引同步异常: {e}")
 
@@ -863,8 +930,9 @@ class WikiCompiler:
         except Exception:
             pass
 
-    def query(self, question: str, top_k: int = 5,
-              enable_write_back: bool = True) -> Dict[str, Any]:
+    def query(
+        self, question: str, top_k: int = 5, enable_write_back: bool = True
+    ) -> Dict[str, Any]:
         """Wiki 查询 + 高价值结果回写为 syntheses。
 
         Args:
@@ -890,9 +958,7 @@ class WikiCompiler:
 
             from rag_engine.hybrid_retriever import hybrid_search
 
-            closed_loop = _os.environ.get(
-                "DREAMBUDDY_RAG_CLOSED_LOOP", "1"
-            ).strip().lower()
+            closed_loop = _os.environ.get("DREAMBUDDY_RAG_CLOSED_LOOP", "1").strip().lower()
             if closed_loop not in {"0", "false", "off", "no"}:
                 from rag_engine.hybrid_retriever import search_with_feedback
 
@@ -923,7 +989,8 @@ class WikiCompiler:
             try:
                 summary = "; ".join(
                     r.get("title", "") + ": " + r.get("content", "")[:100]
-                    for r in results[:3] if isinstance(r, dict)
+                    for r in results[:3]
+                    if isinstance(r, dict)
                 )
                 prompt = (
                     f'评估以下 Wiki 检索结果是否具有"综合分析价值"，值得沉淀为永久 syntheses 页面。\n'
@@ -931,9 +998,10 @@ class WikiCompiler:
                     f"查询：{question}\n结果摘要：{summary[:800]}\n"
                     f"判定标准：结果覆盖多个实体/概念且有交叉洞察=高分；单一事实/低关联=低分。"
                 )
-                resp = self.llm.chat([LLMMessage(role="user", content=prompt)])
+                resp = self.llm.chat([LLMMessage(role="user", content=prompt)])  # noqa: F821
                 if resp and resp.content:
                     import re as _re
+
                     m = _re.search(r'"score"\s*:\s*([\d.]+)', resp.content)
                     if m:
                         score = float(m.group(1))
@@ -997,7 +1065,9 @@ class WikiCompiler:
             f"concepts={','.join(con_names)}"
         )
 
-        tags = "wiki,编译," + (result.entities[0].get("category", "unknown") if result.entities else "general")
+        tags = "wiki,编译," + (
+            result.entities[0].get("category", "unknown") if result.entities else "general"
+        )
 
         try:
             memory_id = self._cognitive_record(content, tags)
@@ -1017,10 +1087,12 @@ class WikiCompiler:
         # 尝试 1: cognitive_loop_adapter（Harness 桥接层）
         try:
             import sys
+
             bridge_dir = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/dream-harness-bridge/integration"
             if bridge_dir not in sys.path:
                 sys.path.insert(0, bridge_dir)
             from cognitive_loop_adapter import CognitiveLoopAdapter
+
             adapter = CognitiveLoopAdapter()
             mid = adapter.record(content=content, tags=tags, quality_level="C")
             if mid:
@@ -1031,10 +1103,12 @@ class WikiCompiler:
         # 尝试 2: 直接调用 cognitive_loop_entry
         try:
             import sys
+
             cog_dir = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口"
             if cog_dir not in sys.path:
                 sys.path.insert(0, cog_dir)
             from cognitive_loop_entry import CognitiveLoopEntry
+
             entry = CognitiveLoopEntry()
             result = entry.record(content=content, tags=tags.split(","), source="wiki-compiler")
             if isinstance(result, dict):
@@ -1065,6 +1139,13 @@ def ingest(source: str, source_type: str = "auto") -> CompileResult:
 
 
 __all__ = [
-    "WikiCompiler", "CompileResult", "ingest", "get_compiler",
-    "WIKI_ROOT", "SOURCES_DIR", "ENTITIES_DIR", "CONCEPTS_DIR", "SYNTHESES_DIR",
+    "WikiCompiler",
+    "CompileResult",
+    "ingest",
+    "get_compiler",
+    "WIKI_ROOT",
+    "SOURCES_DIR",
+    "ENTITIES_DIR",
+    "CONCEPTS_DIR",
+    "SYNTHESES_DIR",
 ]

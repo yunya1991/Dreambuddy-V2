@@ -15,10 +15,10 @@ DreamOS G层 — 检查点管理器
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
-from collections import OrderedDict
 import json
 import os
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional
 
 from dreamos.shared.state import State
 from dreamos.shared.utils import gen_cycle_id, safe_json
@@ -42,9 +42,9 @@ class Checkpointer:
     # 默认最大检查点数
     DEFAULT_MAX_CHECKPOINTS = 50
 
-    def __init__(self,
-                 max_checkpoints: int = DEFAULT_MAX_CHECKPOINTS,
-                 storage_dir: Optional[str] = None):
+    def __init__(
+        self, max_checkpoints: int = DEFAULT_MAX_CHECKPOINTS, storage_dir: Optional[str] = None
+    ):
         self._max = max_checkpoints
         self._storage_dir = storage_dir
         self._checkpoints: OrderedDict[str, Checkpoint] = OrderedDict()
@@ -54,8 +54,11 @@ class Checkpointer:
             # ── 修复 Bug 2：启动时扫描磁盘已有 ckpt，超过 max 的立即删除，保留的加载进 FIFO ──
             # 防止每次重启后，上一次启动留下的 ckpt 没人管导致再次无限膨胀
             try:
-                existing = [f for f in os.listdir(storage_dir)
-                            if f.startswith("ckpt_") and f.endswith(".json")]
+                existing = [
+                    f
+                    for f in os.listdir(storage_dir)
+                    if f.startswith("ckpt_") and f.endswith(".json")
+                ]
             except OSError:
                 existing = []
             if existing:
@@ -63,13 +66,13 @@ class Checkpointer:
                 existing.sort()
                 # 超过 max 的直接删文件（只保留最新的 max 个）
                 if len(existing) > self._max:
-                    to_del = existing[:len(existing) - self._max]
+                    to_del = existing[: len(existing) - self._max]
                     for _fname in to_del:
                         try:
                             os.remove(os.path.join(self._storage_dir, _fname))
                         except OSError:
                             pass
-                    existing = existing[len(to_del):]  # 剩下保留的 max 个（最新）
+                    existing = existing[len(to_del) :]  # 剩下保留的 max 个（最新）
                 # 保留的加载进 OrderedDict（按时间顺序插入=先进先出）
                 for _fname in existing:
                     _ckpt_id = _fname[:-5]  # 去掉 .json
@@ -83,8 +86,9 @@ class Checkpointer:
                         except OSError:
                             pass
 
-    def save(self, state: State, node_id: str = "",
-             metadata: Optional[Dict[str, Any]] = None) -> str:
+    def save(
+        self, state: State, node_id: str = "", metadata: Optional[Dict[str, Any]] = None
+    ) -> str:
         """保存检查点
 
         Args:
@@ -157,12 +161,14 @@ class Checkpointer:
         for cp in self._checkpoints.values():
             if cycle_id and cp.cycle_id != cycle_id:
                 continue
-            result.append({
-                "checkpoint_id": cp.checkpoint_id,
-                "cycle_id": cp.cycle_id,
-                "node_id": cp.node_id,
-                "created_at": cp.created_at,
-            })
+            result.append(
+                {
+                    "checkpoint_id": cp.checkpoint_id,
+                    "cycle_id": cp.cycle_id,
+                    "node_id": cp.node_id,
+                    "created_at": cp.created_at,
+                }
+            )
         return result
 
     def get_checkpoint(self, checkpoint_id: str) -> Optional[Checkpoint]:

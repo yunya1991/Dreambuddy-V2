@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import os
 import subprocess
-from collections import Counter
 from typing import Any
 
 from .evidence import Evidence
@@ -63,24 +62,28 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
     # 检查仓库有效性
     rc, out, err = _run_git(["rev-parse", "--is-inside-work-tree"], repo_path)
     if rc != 0 or out.strip() != "true":
-        result["evidence"].append(Evidence(
-            result=f"非 git 仓库或路径无效: {repo_path}",
-            provenance={"repo": repo_path, "stderr": err.strip()},
-            confidence=1.0,
-            known_gaps=["无法执行 git 操作，目标可能不是 git 仓库"],
-            level="observation",
-        ))
+        result["evidence"].append(
+            Evidence(
+                result=f"非 git 仓库或路径无效: {repo_path}",
+                provenance={"repo": repo_path, "stderr": err.strip()},
+                confidence=1.0,
+                known_gaps=["无法执行 git 操作，目标可能不是 git 仓库"],
+                level="observation",
+            )
+        )
         return result
 
     # 检查文件是否存在（路径解析失败：显式标注 unknown，不静默返回空）
     if not os.path.isfile(target_path):
-        result["evidence"].append(Evidence(
-            result=f"文件不存在: {target_path}",
-            provenance={"repo": repo_path, "target": target_path},
-            confidence=1.0,
-            known_gaps=[f"路径解析失败: 文件不存在: {target_path}"],
-            level="unknown",
-        ))
+        result["evidence"].append(
+            Evidence(
+                result=f"文件不存在: {target_path}",
+                provenance={"repo": repo_path, "target": target_path},
+                confidence=1.0,
+                known_gaps=[f"路径解析失败: 文件不存在: {target_path}"],
+                level="unknown",
+            )
+        )
         return result
 
     # 相对路径（git 需要相对路径）
@@ -97,17 +100,19 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
 
     # git log 执行失败：路径解析失败，显式标注 unknown 而非静默空（Provider 确定性）
     if rc != 0:
-        result["evidence"].append(Evidence(
-            result=f"git log 执行失败: {log_err.strip()[:200]}",
-            provenance={
-                "repo": repo_path,
-                "target": target_path,
-                "rel_path": rel_path,
-            },
-            confidence=1.0,
-            known_gaps=[f"路径解析失败: git log 返回 rc={rc}: {log_err.strip()[:200]}"],
-            level="unknown",
-        ))
+        result["evidence"].append(
+            Evidence(
+                result=f"git log 执行失败: {log_err.strip()[:200]}",
+                provenance={
+                    "repo": repo_path,
+                    "target": target_path,
+                    "rel_path": rel_path,
+                },
+                confidence=1.0,
+                known_gaps=[f"路径解析失败: git log 返回 rc={rc}: {log_err.strip()[:200]}"],
+                level="unknown",
+            )
+        )
         return result
 
     commits: list[dict[str, str]] = []
@@ -115,11 +120,13 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
         for line in log_out.strip().split("\n"):
             parts = line.split("|", 2)
             if len(parts) == 3:
-                commits.append({
-                    "author": parts[0],
-                    "date": parts[1],
-                    "hash": parts[2],
-                })
+                commits.append(
+                    {
+                        "author": parts[0],
+                        "date": parts[1],
+                        "hash": parts[2],
+                    }
+                )
 
     # 解析结果
     authors_set: set[str] = set()
@@ -130,7 +137,7 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
     result["change_count"] = len(commits)
     if commits:
         result["first_commit"] = commits[-1]["date"]  # 最旧的在最后
-        result["last_commit"] = commits[0]["date"]     # 最新的在第一行
+        result["last_commit"] = commits[0]["date"]  # 最新的在第一行
 
     # git blame 获取行级作者信息
     rc2, blame_out, _ = _run_git(
@@ -146,17 +153,19 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
         for line in blame_out.split("\n"):
             if line.startswith("\t"):
                 current_line += 1
-                line_authors.append({
-                    "line": current_line,
-                    "author": current_author,
-                    "commit": current_commit[:8],
-                })
+                line_authors.append(
+                    {
+                        "line": current_line,
+                        "author": current_author,
+                        "commit": current_commit[:8],
+                    }
+                )
             elif line.startswith("author "):
-                current_author = line[len("author "):]
+                current_author = line[len("author ") :]
             elif line.startswith("hash "):
-                current_commit = line[len("hash "):]
+                current_commit = line[len("hash ") :]
             elif line.startswith("revision "):
-                current_commit = line[len("revision "):]
+                current_commit = line[len("revision ") :]
 
     # 热点行：按 commit 分组，变更多的 commit 关联的行是热点
     commit_lines: dict[str, list[int]] = {}
@@ -173,11 +182,13 @@ def trace_git_history(repo_path: str, target_path: str) -> dict[str, Any]:
                 (la["author"] for la in line_authors if la["line"] == ln),
                 "unknown",
             )
-            hot_lines.append({
-                "line": ln,
-                "author": author,
-                "commit": commit_hash,
-            })
+            hot_lines.append(
+                {
+                    "line": ln,
+                    "author": author,
+                    "commit": commit_hash,
+                }
+            )
 
     result["hot_lines"] = hot_lines
 
@@ -206,65 +217,73 @@ def _build_evidence(
 ) -> list[Evidence]:
     evidence: list[Evidence] = []
 
-    evidence.append(Evidence(
-        result=f"变更历史: {change_count} 次提交, {len(authors)} 位作者",
-        provenance={
-            "repo": repo_path,
-            "target": target_path,
-            "analysis": "git_log",
-        },
-        confidence=1.0,
-        known_gaps=[
-            "git log --follow 只能追踪文件重命名，不追踪内容拆分/合并",
-            "合并提交默认不展开（no --cc/-m 选项）",
-        ],
-        level="observation",
-    ))
-
-    if first_commit and last_commit:
-        evidence.append(Evidence(
-            result=f"首次提交: {first_commit}, 最后提交: {last_commit}",
+    evidence.append(
+        Evidence(
+            result=f"变更历史: {change_count} 次提交, {len(authors)} 位作者",
             provenance={
                 "repo": repo_path,
                 "target": target_path,
-                "analysis": "git_log_dates",
+                "analysis": "git_log",
             },
             confidence=1.0,
-            known_gaps=["时区为提交者本地时区，跨时区可能不准确"],
-            level="derivation",
-        ))
+            known_gaps=[
+                "git log --follow 只能追踪文件重命名，不追踪内容拆分/合并",
+                "合并提交默认不展开（no --cc/-m 选项）",
+            ],
+            level="observation",
+        )
+    )
+
+    if first_commit and last_commit:
+        evidence.append(
+            Evidence(
+                result=f"首次提交: {first_commit}, 最后提交: {last_commit}",
+                provenance={
+                    "repo": repo_path,
+                    "target": target_path,
+                    "analysis": "git_log_dates",
+                },
+                confidence=1.0,
+                known_gaps=["时区为提交者本地时区，跨时区可能不准确"],
+                level="derivation",
+            )
+        )
 
     if authors:
-        evidence.append(Evidence(
-            result=f"作者: {', '.join(authors)}",
-            provenance={
-                "repo": repo_path,
-                "target": target_path,
-                "analysis": "git_log_authors",
-            },
-            confidence=0.9,
-            known_gaps=[
-                "作者名取自 git config user.name，可能与真实身份不一致",
-                "多人维护的文件作者列表可能不完整（默认无 --all 选项）",
-            ],
-            level="derivation",
-        ))
+        evidence.append(
+            Evidence(
+                result=f"作者: {', '.join(authors)}",
+                provenance={
+                    "repo": repo_path,
+                    "target": target_path,
+                    "analysis": "git_log_authors",
+                },
+                confidence=0.9,
+                known_gaps=[
+                    "作者名取自 git config user.name，可能与真实身份不一致",
+                    "多人维护的文件作者列表可能不完整（默认无 --all 选项）",
+                ],
+                level="derivation",
+            )
+        )
 
     if hot_line_count > 0:
-        evidence.append(Evidence(
-            result=f"热点行: {hot_line_count} 行关联高频变更提交",
-            provenance={
-                "repo": repo_path,
-                "target": target_path,
-                "analysis": "git_blame",
-            },
-            confidence=0.8,
-            known_gaps=[
-                "git blame 只显示最后一次变更的作者，历史作者被覆盖",
-                "行号基于当前 HEAD，文件修改后行号会变化",
-                "合并冲突解决的行可能归属不准确",
-            ],
-            level="inference",
-        ))
+        evidence.append(
+            Evidence(
+                result=f"热点行: {hot_line_count} 行关联高频变更提交",
+                provenance={
+                    "repo": repo_path,
+                    "target": target_path,
+                    "analysis": "git_blame",
+                },
+                confidence=0.8,
+                known_gaps=[
+                    "git blame 只显示最后一次变更的作者，历史作者被覆盖",
+                    "行号基于当前 HEAD，文件修改后行号会变化",
+                    "合并冲突解决的行可能归属不准确",
+                ],
+                level="inference",
+            )
+        )
 
     return evidence

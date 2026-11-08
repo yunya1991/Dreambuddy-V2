@@ -4,6 +4,7 @@
 def test_default_all_off():
     """默认所有层关闭。"""
     from module_switches import ModuleSwitches
+
     sw = ModuleSwitches()
     assert sw.all_off() is True
     assert sw.L0_observer is False
@@ -14,6 +15,7 @@ def test_default_all_off():
 
 def test_enable_all():
     from module_switches import ModuleSwitches
+
     sw = ModuleSwitches()
     sw.enable_all()
     assert sw.all_off() is False
@@ -25,6 +27,7 @@ def test_enable_all():
 
 def test_disable_all():
     from module_switches import ModuleSwitches
+
     sw = ModuleSwitches()
     sw.enable_all()
     sw.disable_all()
@@ -33,6 +36,7 @@ def test_disable_all():
 
 def test_to_dict():
     from module_switches import ModuleSwitches
+
     sw = ModuleSwitches(L1_verifiers=True)
     d = sw.to_dict()
     assert d["L0_observer"] is False
@@ -43,6 +47,7 @@ def test_to_dict():
 
 def test_from_env(monkeypatch):
     from module_switches import ModuleSwitches
+
     monkeypatch.setenv("COGNITIVE_L1", "1")
     monkeypatch.setenv("COGNITIVE_L3", "true")
     sw = ModuleSwitches.from_env()
@@ -55,6 +60,7 @@ def test_from_env(monkeypatch):
 def test_independent_switches():
     """各层开关独立，互不影响。"""
     from module_switches import ModuleSwitches
+
     sw = ModuleSwitches(L0_observer=True, L2_aggregation=True)
     assert sw.L0_observer is True
     assert sw.L1_verifiers is False

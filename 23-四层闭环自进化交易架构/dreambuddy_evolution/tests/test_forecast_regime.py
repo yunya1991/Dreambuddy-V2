@@ -22,6 +22,7 @@ TDD 覆盖:
   - T2 _PathSignatureDriftNet regime one-hot (本会话)
   - 调研 spec VM-1791190210830 §方案 A 步骤 4
 """
+
 from __future__ import annotations
 
 import sys
@@ -43,7 +44,7 @@ if str(REPO) not in sys.path:
 def test_forecast_accepts_regime_kwarg():
     """T4.1: forecast(history, horizon, n_paths, state, regime=None) 不抛异常."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -76,7 +77,7 @@ def test_forecast_accepts_regime_kwarg():
 def test_forecast_regime_int_finite_paths():
     """T4.2: regime=0/1/2 各自不抛异常, path 应有限."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -116,6 +117,7 @@ def test_forecast_different_regimes_give_different_outputs():
     model._activated = True
     # 训练一会, 让 drift_net regime 维度有梯度 (非默认初始化)
     from dreambuddy_evolution.core.neural_sde_model import NeuralSDETrainer
+
     trainer = NeuralSDETrainer(model=model, seq_len=32, horizon=10, batch_size=8)
     closes = 100.0 + np.cumsum(np.random.randn(200) * 0.5)
     regime_labels = np.arange(200) % 3
@@ -129,8 +131,7 @@ def test_forecast_different_regimes_give_different_outputs():
     paths_bear = model.forecast(history, horizon=10, n_paths=16, regime=2)
     diff = np.abs(paths_bull - paths_bear).mean()
     assert diff > 1e-6, (
-        f"regime=0 vs regime=2 输出完全一致 (diff={diff:.2e}), "
-        "推理路径未传 regime 给 drift_net"
+        f"regime=0 vs regime=2 输出完全一致 (diff={diff:.2e}), " "推理路径未传 regime 给 drift_net"
     )
 
 
@@ -142,7 +143,7 @@ def test_forecast_different_regimes_give_different_outputs():
 def test_forecast_euler_maruyama_accepts_regime():
     """T4.4: forecast_euler_maruyama 接受 regime 参数, 设 _current_regime 上下文."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -160,7 +161,9 @@ def test_forecast_euler_maruyama_accepts_regime():
     assert paths.shape == (4, 9)
 
     # regime=2 (bear)
-    paths_bear = model.forecast_euler_maruyama(state, horizon=8, n_paths=4, log_sig=log_sig, regime=2)
+    paths_bear = model.forecast_euler_maruyama(
+        state, horizon=8, n_paths=4, log_sig=log_sig, regime=2
+    )
     assert paths_bear.shape == (4, 9)
 
     # 推理后上下文应被清理

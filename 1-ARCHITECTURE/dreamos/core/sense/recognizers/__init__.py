@@ -9,9 +9,9 @@ DreamOS S层 — Recognizers 识别器包
 """
 
 from .base import BaseRecognizer
-from .rule_based import RuleBasedRecognizer
-from .llm_based import LLMBasedRecognizer
 from .dynamic import DynamicIntentRecognizer
+from .llm_based import LLMBasedRecognizer
+from .rule_based import RuleBasedRecognizer
 
 __all__ = [
     "BaseRecognizer",

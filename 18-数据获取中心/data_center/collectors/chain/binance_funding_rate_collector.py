@@ -10,6 +10,7 @@
 
 FAIL-OPEN 铁律: API 异常 → 返回空列表不阻塞，不抛错。
 """
+
 from __future__ import annotations
 
 import logging

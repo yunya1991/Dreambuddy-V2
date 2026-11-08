@@ -11,6 +11,7 @@
 
 用于 AGI 蓝图 L1 数据层 + BDSM E5/E6/E7 信号 + 五维"地"维度。
 """
+
 from __future__ import annotations
 
 import os
@@ -51,10 +52,7 @@ class BGeometricsCollector(BaseCollector):
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
-        self._token: str = (
-            self.config.get("token")
-            or os.environ.get("BGEOMETRICS_TOKEN", "")
-        )
+        self._token: str = self.config.get("token") or os.environ.get("BGEOMETRICS_TOKEN", "")
 
     def is_available(self) -> bool:
         return True  # free tier 无需 token，最近7天数据延迟（v1.7 限制）
@@ -169,11 +167,13 @@ class BGeometricsCollector(BaseCollector):
             field = _ENDPOINTS.get(name, ("", "value"))[1]
             if isinstance(items, list):
                 for item in items[-10:]:  # 最近10条
-                    ts_list.append({
-                        "metric": name,
-                        "date": str(item.get("d", item.get("date", item.get("timestamp", "")))),
-                        "value": float(item.get(field, item.get("value", 0))),
-                    })
+                    ts_list.append(
+                        {
+                            "metric": name,
+                            "date": str(item.get("d", item.get("date", item.get("timestamp", "")))),
+                            "value": float(item.get(field, item.get("value", 0))),
+                        }
+                    )
         except (ValueError, TypeError, KeyError):
             pass
         return ts_list

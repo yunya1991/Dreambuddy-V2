@@ -1,9 +1,8 @@
 """MCPClient stdio 协议测试（使用临时 fake shell，无网络）。"""
-import json
+
 import sys
 
 import pytest
-
 from core.mcp_client import MCPClient, MCPError
 
 

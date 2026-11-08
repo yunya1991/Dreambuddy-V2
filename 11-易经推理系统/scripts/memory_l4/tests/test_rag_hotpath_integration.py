@@ -6,12 +6,13 @@
 
 运行: pytest test_rag_hotpath_integration.py -v
 """
+
 import os
 import sys
 import time
 import unittest
 from pathlib import Path
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import MagicMock, patch
 
 # 把 memory_l4 加入 path，使 polling_trader 可被测试导入
 _THIS = Path(__file__).resolve()
@@ -34,6 +35,7 @@ class TestRagHotpathDisabled(unittest.TestCase):
 
     def test_rag_disabled_by_env(self):
         from scripts.memory_l4.polling_trader import _rag_hotpath_lookup
+
         with patch.dict(os.environ, {"ENABLE_RAG_HOTPATH": "0"}):
             result = _rag_hotpath_lookup(_FakeTrader(), "BTC long 风控")
         self.assertEqual(result, [])
@@ -45,11 +47,13 @@ class TestRagFailOpenOnException(unittest.TestCase):
     def test_rag_fail_open_on_exception(self):
         # 重置单例，强制走初始化路径
         import scripts.memory_l4.polling_trader as pt
+
         old = getattr(pt, "_RAG_CLIENT", None)
         pt._RAG_CLIENT = None
         try:
             # 让 import rag_engine 抛异常
             import builtins
+
             real_import = builtins.__import__
 
             def _fake_import(name, *args, **kwargs):
@@ -70,6 +74,7 @@ class TestRagTimeoutReturnsEmpty(unittest.TestCase):
 
     def test_rag_timeout_returns_empty(self):
         import scripts.memory_l4.polling_trader as pt
+
         old_client = getattr(pt, "_RAG_CLIENT", None)
         old_exec = getattr(pt, "_RAG_EXECUTOR", None)
 
@@ -79,6 +84,7 @@ class TestRagTimeoutReturnsEmpty(unittest.TestCase):
 
         # 用独立 executor 避免阻塞后续测试
         from concurrent.futures import ThreadPoolExecutor as _TPE
+
         pt._RAG_CLIENT = _slow_search
         pt._RAG_EXECUTOR = _TPE(max_workers=1, thread_name_prefix="rag-test-slow")
         try:
@@ -99,11 +105,16 @@ class TestRagNormalReturnsList(unittest.TestCase):
 
     def test_rag_normal_returns_list(self):
         import scripts.memory_l4.polling_trader as pt
+
         old_client = getattr(pt, "_RAG_CLIENT", None)
         old_exec = getattr(pt, "_RAG_EXECUTOR", None)
 
         _fake_results = [
-            {"heading": "BCRM2推理引擎", "final_score": 0.85, "source_file": "1-TRADING/BCRM2推理引擎.md"},
+            {
+                "heading": "BCRM2推理引擎",
+                "final_score": 0.85,
+                "source_file": "1-TRADING/BCRM2推理引擎.md",
+            },
             {"heading": "风控体系", "final_score": 0.72, "source_file": "1-TRADING/风控体系.md"},
         ]
 
@@ -112,6 +123,7 @@ class TestRagNormalReturnsList(unittest.TestCase):
 
         # 用全新 executor，避免被前一个测试的慢任务阻塞
         from concurrent.futures import ThreadPoolExecutor as _TPE
+
         pt._RAG_CLIENT = _mock_search
         pt._RAG_EXECUTOR = _TPE(max_workers=1, thread_name_prefix="rag-test-normal")
         try:
@@ -139,9 +151,13 @@ class TestExitContextHasRagContext(unittest.TestCase):
         # 这个测试验证 context schema，直接构造模拟 context
         # 真实代码在 _evolution_check_exit L9122 后注入
         context = {
-            "symbol": "BTC", "inst_id": "BTC-USDT-SWAP", "pos_side": "long",
-            "entry_price": 50000.0, "current_price": 51000.0,
-            "upl": 100.0, "upl_ratio": 0.02,
+            "symbol": "BTC",
+            "inst_id": "BTC-USDT-SWAP",
+            "pos_side": "long",
+            "entry_price": 50000.0,
+            "current_price": 51000.0,
+            "upl": 100.0,
+            "upl_ratio": 0.02,
             "has_stronger_signal": False,
         }
         # 模拟 RAG 注入逻辑
@@ -165,28 +181,36 @@ class TestRagFeedbackToMemory(unittest.TestCase):
     def test_rag_feedback_disabled_by_env(self):
         """ENABLE_RAG_FEEDBACK=0 时不触发 record。"""
         import importlib
+
         import polling_trader as pt
+
         importlib.reload(pt)
         with patch.dict(os.environ, {"ENABLE_RAG_FEEDBACK": "0"}):
-            with patch.object(pt, '_rag_record_to_memory') as mock_rec:
+            with patch.object(pt, "_rag_record_to_memory") as mock_rec:
                 # mock _RAG_CLIENT 避免 real RAG
-                with patch.object(pt, '_RAG_CLIENT', MagicMock(return_value=[{"content": "x"}])):
-                    res = pt._rag_hotpath_lookup(pt.PollingTrader.__new__(pt.PollingTrader), "q", top_k=1)
+                with patch.object(pt, "_RAG_CLIENT", MagicMock(return_value=[{"content": "x"}])):
+                    res = pt._rag_hotpath_lookup(  # noqa: F841
+                        pt.PollingTrader.__new__(pt.PollingTrader), "q", top_k=1
+                    )
                     # record 不应被调用
                     mock_rec.assert_not_called()
 
     def test_rag_feedback_fail_open(self):
         """record 异常时不影响检索结果。"""
         import importlib
+
         import polling_trader as pt
+
         importlib.reload(pt)
         with patch.dict(os.environ, {"ENABLE_RAG_FEEDBACK": "1"}):
             # _rag_record_to_memory 抛异常
-            with patch.object(pt, '_rag_record_to_memory', side_effect=RuntimeError("boom")):
+            with patch.object(pt, "_rag_record_to_memory", side_effect=RuntimeError("boom")):
                 # ThreadPoolExecutor.submit 会吞异常（不影响主线程）
                 # 检索结果不受影响
-                with patch.object(pt, '_RAG_CLIENT', MagicMock(return_value=[{"content": "x"}])):
-                    res = pt._rag_hotpath_lookup(pt.PollingTrader.__new__(pt.PollingTrader), "q", top_k=1)
+                with patch.object(pt, "_RAG_CLIENT", MagicMock(return_value=[{"content": "x"}])):
+                    res = pt._rag_hotpath_lookup(
+                        pt.PollingTrader.__new__(pt.PollingTrader), "q", top_k=1
+                    )
                     self.assertEqual(len(res), 1)
 
 
@@ -213,10 +237,12 @@ class TestCaseDistillToKnowledge(unittest.TestCase):
     def test_distill_disabled_by_env(self):
         """ENABLE_CASE_DISTILL=0 时不生成文件。"""
         import importlib
+
         import polling_trader as pt
+
         importlib.reload(pt)
         with patch.dict(os.environ, {"ENABLE_CASE_DISTILL": "0"}):
-            with patch('builtins.open') as mock_open:
+            with patch("builtins.open") as mock_open:
                 trader = pt.PollingTrader.__new__(pt.PollingTrader)
                 pt._distill_trade_to_knowledge(trader, self._make_mock_trade_rec())
                 mock_open.assert_not_called()
@@ -224,11 +250,13 @@ class TestCaseDistillToKnowledge(unittest.TestCase):
     def test_distill_fail_open(self):
         """蒸馏异常时不影响 trade_rec（不抛异常）。"""
         import importlib
+
         import polling_trader as pt
+
         importlib.reload(pt)
         with patch.dict(os.environ, {"ENABLE_CASE_DISTILL": "1"}):
             # Path.mkdir 抛异常
-            with patch('pathlib.Path.mkdir', side_effect=OSError("disk full")):
+            with patch("pathlib.Path.mkdir", side_effect=OSError("disk full")):
                 trader = pt.PollingTrader.__new__(pt.PollingTrader)
                 trader._log = MagicMock()
                 # 不应抛异常
@@ -238,9 +266,11 @@ class TestCaseDistillToKnowledge(unittest.TestCase):
 
     def test_distill_generates_md(self):
         """正常蒸馏时生成 md 文件内容。"""
-        import tempfile
         import importlib
+        import tempfile
+
         import polling_trader as pt
+
         importlib.reload(pt)
         with patch.dict(os.environ, {"ENABLE_CASE_DISTILL": "1"}):
             with tempfile.TemporaryDirectory() as tmpdir:
@@ -249,7 +279,7 @@ class TestCaseDistillToKnowledge(unittest.TestCase):
                 # 所以 _cases_dir = tmpdir/2-KNOWLEDGE/1-TRADING/cases
                 tmp_cases = Path(tmpdir) / "2-KNOWLEDGE" / "1-TRADING" / "cases"
 
-                with patch.object(pt, '_ingest_case'):
+                with patch.object(pt, "_ingest_case"):
                     orig_resolve = Path.resolve
                     _pol_path = Path(pt.__file__).resolve()
 
@@ -258,7 +288,7 @@ class TestCaseDistillToKnowledge(unittest.TestCase):
                             return Path(tmpdir) / "a" / "b" / "c" / "polling_trader.py"
                         return orig_resolve(self)
 
-                    with patch.object(Path, 'resolve', _fake_resolve):
+                    with patch.object(Path, "resolve", _fake_resolve):
                         trader = pt.PollingTrader.__new__(pt.PollingTrader)
                         trader._log = MagicMock()
                         rec = self._make_mock_trade_rec()

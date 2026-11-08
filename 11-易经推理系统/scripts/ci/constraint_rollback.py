@@ -4,7 +4,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List
 
 
 def _load_json(path: Path) -> Dict[str, Any]:
@@ -17,7 +17,9 @@ def _write_json(path: Path, payload: Dict[str, Any]) -> None:
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Execute constraint rollback from rollback pointer")
+    parser = argparse.ArgumentParser(
+        description="Execute constraint rollback from rollback pointer"
+    )
     parser.add_argument("--rollback-pointer-json", required=True)
     parser.add_argument("--execution-mode", choices=["dry-run", "apply"], default="dry-run")
     parser.add_argument("--allow-apply", action="store_true")

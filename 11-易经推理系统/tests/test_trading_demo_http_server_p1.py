@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -21,7 +20,10 @@ def test_demo_http_server_accepts_envelope_and_persists(tmp_path: Path):
     server = mod.build_server(host="127.0.0.1", port=0, inbox_dir=tmp_path)
     try:
         host, port = server.server_address
-        envelope = {"header": {"trace_id": "t1", "loop_type": "execution", "target": "A4"}, "payload": {"k": "v"}}
+        envelope = {
+            "header": {"trace_id": "t1", "loop_type": "execution", "target": "A4"},
+            "payload": {"k": "v"},
+        }
         req = Request(
             f"http://{host}:{port}/a4/validation",
             data=json.dumps(envelope).encode("utf-8"),
@@ -38,4 +40,3 @@ def test_demo_http_server_accepts_envelope_and_persists(tmp_path: Path):
     finally:
         server.shutdown()
         server.server_close()
-

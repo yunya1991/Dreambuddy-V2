@@ -31,6 +31,7 @@ FAIL-OPEN 原则:
   - 知识库: 2-KNOWLEDGE/ (ChromaDB 4540 chunks)
   - 文档: 0-系统文档管理/ (46 INDEX)
 """
+
 import re
 from typing import Any, Dict, List, Optional
 
@@ -64,6 +65,7 @@ MULTI_PATH_PATTERNS = [
 # Tier 3 触发判断
 # ============================================================
 
+
 def should_research(match_score: float, case_density: int) -> bool:
     """判断是否需要触发调研（Tier 3 条件）。
 
@@ -80,6 +82,7 @@ def should_research(match_score: float, case_density: int) -> bool:
 # ============================================================
 # 知识库检索（零 token）
 # ============================================================
+
 
 def search_knowledge_base(
     query: str,
@@ -111,28 +114,35 @@ def search_knowledge_base(
     # 实际检索逻辑（非 mock 模式）
     # B4（41 SPEC §13.2）：41 search/recall 作为检索底座（优先），失败或空结果降级 ChromaDB
     try:
-        import json as _json
+        import json as _json  # noqa: I001
         import subprocess as _sp
         import os as _os
+
         proc = _sp.run(
             ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
             input=_json.dumps({"query": str(query), "limit": 5}),
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
             env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
         )
         res = _json.loads(proc.stdout or "{}")
         if res.get("success") and res.get("hits"):
             return [
-                {"content": h.get("snippet", ""), "score": float(h.get("score", 0.0)),
-                 "path": (h.get("source") or {}).get("path")}
+                {
+                    "content": h.get("snippet", ""),
+                    "score": float(h.get("score", 0.0)),
+                    "path": (h.get("source") or {}).get("path"),
+                }
                 for h in res["hits"]
             ]
     except Exception:
         pass  # FAIL-OPEN：41 不可用降级 ChromaDB
     try:
         # 尝试导入知识库检索器
-        import sys
+        import sys  # noqa: I001
         import os
+
         kb_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             "2-KNOWLEDGE",
@@ -142,6 +152,7 @@ def search_knowledge_base(
         # 尝试 ChromaDB 检索
         try:
             import chromadb
+
             client = chromadb.PersistentClient(path=os.path.join(kb_path, "chromadb"))
             collection = client.get_or_create_collection("knowledge_base")
             results = collection.query(query_texts=[query], n_results=5)
@@ -149,7 +160,7 @@ def search_knowledge_base(
             dists = results.get("distances", [[]])[0]
             return [
                 {"content": doc, "score": max(0.0, 1.0 - dist)}
-                for doc, dist in zip(docs, dists)
+                for doc, dist in zip(docs, dists)  # noqa: B905
             ]
         except Exception:
             # ChromaDB 不可用 → 返回空（FAIL-OPEN）
@@ -162,6 +173,7 @@ def search_knowledge_base(
 # ============================================================
 # LLM+SKILL 调研
 # ============================================================
+
 
 def invoke_skill_research(
     query: str,
@@ -216,6 +228,7 @@ def invoke_skill_research(
 # 多路径检测
 # ============================================================
 
+
 def _detect_multi_path(report: str) -> bool:
     """检测调研报告中是否包含多路径信号。
 
@@ -236,6 +249,7 @@ def _detect_multi_path(report: str) -> bool:
 # ============================================================
 # 完整调研链路
 # ============================================================
+
 
 def research_and_analyze(
     match_score: float,
@@ -301,7 +315,8 @@ def research_and_analyze(
         llm_invoked = True
         if mock_mode:
             skill_result = invoke_skill_research(
-                query, mock_mode=True,
+                query,
+                mock_mode=True,
                 force_error=force_skill_error,
             )
             skill_report = skill_result.get("report", "")
@@ -317,9 +332,7 @@ def research_and_analyze(
     knowledge = kb_results + ([{"content": skill_report}] if skill_report else [])
 
     # 6. 多路径检测
-    combined_text = " ".join(
-        str(k.get("content", "")) for k in knowledge
-    )
+    combined_text = " ".join(str(k.get("content", "")) for k in knowledge)
     multi_path = _detect_multi_path(combined_text)
 
     # 7. 如果全部失败 → 降级

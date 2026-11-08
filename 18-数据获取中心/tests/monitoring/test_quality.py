@@ -1,9 +1,8 @@
 """M5-T2 Red — QualityChecker 数据质量测试。"""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-
-import pytest
 
 from data_center.core.contract import DataRecord
 
@@ -69,8 +68,7 @@ def test_invalid_metrics_type_triggers_contract_invalid():
     """metrics 含嵌套 dict/list → CONTRACT_INVALID。"""
     from data_center.monitoring.quality import QualityChecker, QualityIssueCode
 
-    bad = _new_record(source="tavily", category="news",
-                      sub_category="rss", metrics={"a": "ok"})
+    bad = _new_record(source="tavily", category="news", sub_category="rss", metrics={"a": "ok"})
     bad.metrics = {"nested": {"a": 1}}
 
     issues = QualityChecker().check_all([bad], source="tavily", category="news")
@@ -81,9 +79,7 @@ def test_invalid_metrics_type_triggers_contract_invalid():
 def test_valid_records_no_contract_issue():
     from data_center.monitoring.quality import QualityChecker, QualityIssueCode
 
-    issues = QualityChecker().check_all(
-        [_new_record()], source="fred", category="macro"
-    )
+    issues = QualityChecker().check_all([_new_record()], source="fred", category="macro")
     codes = [i.code for i in issues]
     assert QualityIssueCode.CONTRACT_INVALID not in codes
 
@@ -111,11 +107,15 @@ def test_different_keys_no_duplicate():
     from data_center.monitoring.quality import QualityChecker, QualityIssueCode
 
     r1 = _new_record(
-        source="fred", category="macro", sub_category="FEDFUNDS",
+        source="fred",
+        category="macro",
+        sub_category="FEDFUNDS",
         metrics={"value": 5.25, "date": "2026-08-23"},
     )
     r2 = _new_record(
-        source="fred", category="macro", sub_category="FEDFUNDS",
+        source="fred",
+        category="macro",
+        sub_category="FEDFUNDS",
         metrics={"value": 5.25, "date": "2026-08-24"},
     )
     issues = QualityChecker().check_all([r1, r2], source="fred", category="macro")

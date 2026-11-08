@@ -1,4 +1,5 @@
 """M0-02 / M0-05 tests path setup."""
+
 from __future__ import annotations
 
 import sys

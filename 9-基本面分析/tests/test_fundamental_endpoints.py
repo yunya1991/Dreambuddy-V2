@@ -1,4 +1,5 @@
 """用 python urllib 测试各端点。"""
+
 import json
 import urllib.request
 
@@ -37,7 +38,9 @@ for path in endpoints:
         if isinstance(rec.get("narratives"), list):
             titles = [n.get("name") for n in rec["narratives"][:3]]
             print("   top narratives:", titles, "overall_sentiment:", rec.get("overall_sentiment"))
-    print(f"[OK={ok}] {path} | content_len={content_len} | summary={summary} | keys={list(data.keys())[:10]}")
+    print(
+        f"[OK={ok}] {path} | content_len={content_len} | summary={summary} | keys={list(data.keys())[:10]}"
+    )
 
     # print first line of content (if string)
     content = data.get("content") or ""

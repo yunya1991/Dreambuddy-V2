@@ -13,10 +13,11 @@ ftc_combiner — FTC 步骤自由组合（基因重组 + gmax 变异）
 
 gmax 范围 [0.1, 0.5]，来自 ReflectionEngine 的 gmax 值。
 """
+
 from __future__ import annotations
 
-import random
 import logging
+import random
 from typing import Optional
 
 from .ftc_schema import FTC, FTCStep, gen_ftc_id, gen_step_id
@@ -26,14 +27,54 @@ logger = logging.getLogger(__name__)
 
 # 可用于变异的 condition 基因池（从经验路径拆解得到的基因类型）
 MUTATION_CONDITION_POOL = [
-    {"gene_ref": "CD-VOL-SURGE", "description": "成交量放大", "data_required": ["vol_5", "vol_20"], "threshold": 1.3},
-    {"gene_ref": "CD-PRICE-BREAKOUT", "description": "价格站上MA20", "data_required": ["close"], "threshold": True},
-    {"gene_ref": "CD-ADX-STRONG", "description": "趋势强度ADX>20", "data_required": ["adx"], "threshold": 20},
-    {"gene_ref": "CD-CAPITAL-ROTATION", "description": "资金轮动信号", "data_required": ["capital_rotation"], "threshold": 0.1},
-    {"gene_ref": "CD-CAPITAL-INFLOW", "description": "资金流入", "data_required": ["capital_flow"], "threshold": 0.0},
-    {"gene_ref": "CD-OI-DIVERGENCE", "description": "OI与价格背离", "data_required": ["oi_change_pct"], "threshold": 0.05},
-    {"gene_ref": "CD-FUNDING-EXTREME", "description": "费率极端", "data_required": ["funding_rate"], "threshold": 0.001},
-    {"gene_ref": "CD-ZSCORE-EXTREME", "description": "z_score偏离均值", "data_required": ["close", "ma20"], "threshold": 2.0},
+    {
+        "gene_ref": "CD-VOL-SURGE",
+        "description": "成交量放大",
+        "data_required": ["vol_5", "vol_20"],
+        "threshold": 1.3,
+    },
+    {
+        "gene_ref": "CD-PRICE-BREAKOUT",
+        "description": "价格站上MA20",
+        "data_required": ["close"],
+        "threshold": True,
+    },
+    {
+        "gene_ref": "CD-ADX-STRONG",
+        "description": "趋势强度ADX>20",
+        "data_required": ["adx"],
+        "threshold": 20,
+    },
+    {
+        "gene_ref": "CD-CAPITAL-ROTATION",
+        "description": "资金轮动信号",
+        "data_required": ["capital_rotation"],
+        "threshold": 0.1,
+    },
+    {
+        "gene_ref": "CD-CAPITAL-INFLOW",
+        "description": "资金流入",
+        "data_required": ["capital_flow"],
+        "threshold": 0.0,
+    },
+    {
+        "gene_ref": "CD-OI-DIVERGENCE",
+        "description": "OI与价格背离",
+        "data_required": ["oi_change_pct"],
+        "threshold": 0.05,
+    },
+    {
+        "gene_ref": "CD-FUNDING-EXTREME",
+        "description": "费率极端",
+        "data_required": ["funding_rate"],
+        "threshold": 0.001,
+    },
+    {
+        "gene_ref": "CD-ZSCORE-EXTREME",
+        "description": "z_score偏离均值",
+        "data_required": ["close", "ma20"],
+        "threshold": 2.0,
+    },
     {"gene_ref": "CD-REGIME-RANGING", "description": "震荡市", "data_required": ["regime"]},
     {"gene_ref": "CD-REGIME-TREND", "description": "趋势市", "data_required": ["regime"]},
 ]
@@ -86,15 +127,19 @@ def combine_ftcs(
     # 变异: 以 gmax 概率替换 action
     if random.random() < gmax:
         mut = random.choice(MUTATION_ACTION_POOL)
-        actions = [FTCStep(
-            step_id=gen_step_id(),
-            type="action",
-            description=mut["description"],
-            gene_ref=mut["gene_ref"],
-            depends_on=[inferences[-1].step_id] if inferences else (
-                [conditions[-1].step_id] if conditions else []
-            ),
-        )]
+        actions = [
+            FTCStep(
+                step_id=gen_step_id(),
+                type="action",
+                description=mut["description"],
+                gene_ref=mut["gene_ref"],
+                depends_on=(
+                    [inferences[-1].step_id]
+                    if inferences
+                    else ([conditions[-1].step_id] if conditions else [])
+                ),
+            )
+        ]
 
     # 变异: 以 gmax/2 概率删除一个 condition（避免组合过长）
     if len(conditions) > 2 and random.random() < gmax / 2:

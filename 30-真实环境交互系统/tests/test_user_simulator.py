@@ -1,8 +1,9 @@
 """用户行为模拟层单元测试"""
+
 import sys
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 

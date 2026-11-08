@@ -11,13 +11,12 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
-
-EMA13_ALPHA = 2.0 / (13 + 1)        # ≈ 0.142857（Elder 原典固定，不允许配置化修改）
-SLOPE_NOISE_BPS_PCT = 0.003         # 0.3%/日 防噪阈值（Spec §三.2.1 保留 v1.1）
-CACHE_TTL_MS = 86400 * 1000         # 24h（Spec E3 ≥12h 建议上限）
+EMA13_ALPHA = 2.0 / (13 + 1)  # ≈ 0.142857（Elder 原典固定，不允许配置化修改）
+SLOPE_NOISE_BPS_PCT = 0.003  # 0.3%/日 防噪阈值（Spec §三.2.1 保留 v1.1）
+CACHE_TTL_MS = 86400 * 1000  # 24h（Spec E3 ≥12h 建议上限）
 
 # ──────── 3×5 决策矩阵（Spec §3.3 表）────────
 # 行：P1 输出（"STANDARD" / "WEAK" / "BLOCK"）
@@ -26,27 +25,27 @@ CACHE_TTL_MS = 86400 * 1000         # 24h（Spec E3 ≥12h 建议上限）
 #   None multiplier = 矩阵建议 BLOCK（仅 F3 唯一场景：WEAK + DIVERGE_SEVERE）
 DECISION_MATRIX_3X5: Dict[str, Dict[str, Tuple[Optional[float], str]]] = {
     "STANDARD": {
-        "ALIGN_FULL":       (1.15, "PREMIUM +15% (Full alignment)"),
-        "ALIGN_BASIC":      (1.00, "HOLD"),
-        "NEUTRAL":          (1.00, "HOLD"),
-        "DIVERGE_BASIC":    (0.70, "DOWNGRADE -30% (weak counter-signal)"),
-        "DIVERGE_SEVERE":   (0.55, "STRONG_DOWNGRADE -45% (severe counter)"),
+        "ALIGN_FULL": (1.15, "PREMIUM +15% (Full alignment)"),
+        "ALIGN_BASIC": (1.00, "HOLD"),
+        "NEUTRAL": (1.00, "HOLD"),
+        "DIVERGE_BASIC": (0.70, "DOWNGRADE -30% (weak counter-signal)"),
+        "DIVERGE_SEVERE": (0.55, "STRONG_DOWNGRADE -45% (severe counter)"),
     },
     "WEAK": {
-        "ALIGN_FULL":       (0.80, "UPGRADE → HALF_STANDARD ×0.80 (≠1.0, F2 safety)"),
-        "ALIGN_BASIC":      (0.40, "HOLD (original WEAK size)"),
-        "NEUTRAL":          (0.40, "HOLD (original WEAK size)"),
-        "DIVERGE_BASIC":    (0.30, "FURTHER_SHRINK_25% (from 0.40 → 0.30)"),
-        "DIVERGE_SEVERE":   (None, "DOWNGRADE_TO_BLOCK (F3 UNIQUE SCENARIO)"),
+        "ALIGN_FULL": (0.80, "UPGRADE → HALF_STANDARD ×0.80 (≠1.0, F2 safety)"),
+        "ALIGN_BASIC": (0.40, "HOLD (original WEAK size)"),
+        "NEUTRAL": (0.40, "HOLD (original WEAK size)"),
+        "DIVERGE_BASIC": (0.30, "FURTHER_SHRINK_25% (from 0.40 → 0.30)"),
+        "DIVERGE_SEVERE": (None, "DOWNGRADE_TO_BLOCK (F3 UNIQUE SCENARIO)"),
     },
     # BLOCK: F1 铁则，永远不推翻。此表用于 BLOCK 时，调用方应直接 BLOCK，不经过 Elder。
     #        此处作为 fail-safe fallback，全标记 F1_RESPECT_BLOCK。
     "BLOCK": {
-        "ALIGN_FULL":       (None, "F1_RESPECT_BLOCK"),
-        "ALIGN_BASIC":      (None, "F1_RESPECT_BLOCK"),
-        "NEUTRAL":          (None, "F1_RESPECT_BLOCK"),
-        "DIVERGE_BASIC":    (None, "F1_RESPECT_BLOCK"),
-        "DIVERGE_SEVERE":   (None, "F1_RESPECT_BLOCK"),
+        "ALIGN_FULL": (None, "F1_RESPECT_BLOCK"),
+        "ALIGN_BASIC": (None, "F1_RESPECT_BLOCK"),
+        "NEUTRAL": (None, "F1_RESPECT_BLOCK"),
+        "DIVERGE_BASIC": (None, "F1_RESPECT_BLOCK"),
+        "DIVERGE_SEVERE": (None, "F1_RESPECT_BLOCK"),
     },
 }
 
@@ -58,19 +57,20 @@ class ElderRayResult:
     注意 Phase1 语义约束：`multiplier_actual` 永远 = 1.00（G5 红线）；
     `multiplier_predicted` 仅做预测记录供 Phase2 回测校准对比，绝不进入实盘仓位乘法。
     """
-    slope_ema13_pct: float              # (EMA_today - EMA_yesterday) / EMA_yesterday 原始百分比/日
-    bull_power: float                   # High - EMA13（多头力量，正值=买方把价格推到共识之上）
-    bear_power: float                   # Low - EMA13（空头力量，负值=卖方把价格压到共识之下）
-    slope_state: str                    # "SLOPE_UP" / "SLOPE_DOWN" / "SLOPE_NEUTRAL"（防噪后）
-    judge_level: str                    # ALIGN_FULL / ALIGN_BASIC / NEUTRAL / DIVERGE_BASIC / DIVERGE_SEVERE
-    multiplier_predicted: float         # 3×5 矩阵预测值（仅记录；None=建议 BLOCK，此处占位 1.0）
-    multiplier_actual: float            # Phase1 = 1.00（强制 G5），Phase2 才会介入乘法链
-    action_tag: str                     # 人类友好动作标签（日志可读）
+
+    slope_ema13_pct: float  # (EMA_today - EMA_yesterday) / EMA_yesterday 原始百分比/日
+    bull_power: float  # High - EMA13（多头力量，正值=买方把价格推到共识之上）
+    bear_power: float  # Low - EMA13（空头力量，负值=卖方把价格压到共识之下）
+    slope_state: str  # "SLOPE_UP" / "SLOPE_DOWN" / "SLOPE_NEUTRAL"（防噪后）
+    judge_level: str  # ALIGN_FULL / ALIGN_BASIC / NEUTRAL / DIVERGE_BASIC / DIVERGE_SEVERE
+    multiplier_predicted: float  # 3×5 矩阵预测值（仅记录；None=建议 BLOCK，此处占位 1.0）
+    multiplier_actual: float  # Phase1 = 1.00（强制 G5），Phase2 才会介入乘法链
+    action_tag: str  # 人类友好动作标签（日志可读）
     # 三个持仓预警标签（仅供记录/离场层参考，Phase1 不触发任何动作=Spec F4/E6 铁则）：
-    bull_loss_control: bool = False     # 做空持仓：Bull<0 → 多头失控（对手完全凌驾）
-    bear_loss_control: bool = False     # 做多持仓：Bear>0 → 空头失控（对手完全凌驾）
-    both_weakening: bool = False        # 双方减弱：Bull>0 连降3日 & Bear<0 连升3日 → 即将变盘
-    fail_open_triggered: bool = False   # True = 本次结果为 fail-open 中性兜底
+    bull_loss_control: bool = False  # 做空持仓：Bull<0 → 多头失控（对手完全凌驾）
+    bear_loss_control: bool = False  # 做多持仓：Bear>0 → 空头失控（对手完全凌驾）
+    both_weakening: bool = False  # 双方减弱：Bull>0 连降3日 & Bear<0 连升3日 → 即将变盘
+    fail_open_triggered: bool = False  # True = 本次结果为 fail-open 中性兜底
 
 
 class ElderRayEngine:
@@ -97,7 +97,9 @@ class ElderRayEngine:
 
     # ──────── 核心数值计算（三指标：EMA13/Bull/Bear，原典公式）────────
     @staticmethod
-    def _calc_ema_bull_bear(daily_klines: List[Dict[str, float]]) -> Tuple[float, float, float, float]:
+    def _calc_ema_bull_bear(
+        daily_klines: List[Dict[str, float]],
+    ) -> Tuple[float, float, float, float]:
         """从 daily_klines（≥30 根，oldest first）返回 (ema13_curr, ema13_prev_day, bull, bear).
 
         抛出 ValueError 如果样本不足 30 → 调用方捕获 → fail-open neutral。
@@ -131,9 +133,12 @@ class ElderRayEngine:
         return "SLOPE_NEUTRAL"
 
     @staticmethod
-    def _detect_divergence_last_5(daily_klines: List[Dict[str, float]],
-                                  bull_latest: float, bear_latest: float,
-                                  ema_latest: float) -> Dict[str, bool]:
+    def _detect_divergence_last_5(
+        daily_klines: List[Dict[str, float]],
+        bull_latest: float,
+        bear_latest: float,
+        ema_latest: float,
+    ) -> Dict[str, bool]:
         """5 日滚动窗口（Spec §3.2.3）：看跌背离 / 看涨背离 / 双方减弱 3 日趋势。
 
         返回 dict：bearish, bullish, bull_desc_3d, bear_asc_3d。
@@ -141,14 +146,13 @@ class ElderRayEngine:
         Elder 原典中背离判断本质是相对结构而非精确数值）。
         """
         if len(daily_klines) < 5:
-            return {"bearish": False, "bullish": False,
-                    "bull_desc_3d": False, "bear_asc_3d": False}
+            return {"bearish": False, "bullish": False, "bull_desc_3d": False, "bear_asc_3d": False}
         last5 = daily_klines[-5:]
         highs = [float(k["h"]) for k in last5]
         lows = [float(k["l"]) for k in last5]
         # 近似 Bull/Bear 序列（用于 5 日相对结构）
         bulls = [h - ema_latest for h in highs]
-        bears = [l - ema_latest for l in lows]
+        bears = [l - ema_latest for l in lows]  # noqa: E741
 
         # 看跌背离：最新 High 创 5 日新高，但 Bull 没创新高（价格新高无能量新高）
         bearish = (highs[-1] >= max(highs[:-1])) and (bulls[-1] < max(bulls[:-1]))
@@ -157,11 +161,15 @@ class ElderRayEngine:
 
         # 双方减弱：Bull>0 连续 3 日下降；Bear<0 连续 3 日上升
         def _desc3_positive(vals: List[float]) -> bool:
-            return (len(vals) >= 3 and vals[-1] < vals[-2] < vals[-3]
-                    and all(v > 0 for v in vals[-3:]))
+            return (
+                len(vals) >= 3 and vals[-1] < vals[-2] < vals[-3] and all(v > 0 for v in vals[-3:])
+            )
+
         def _asc3_negative(vals: List[float]) -> bool:
-            return (len(vals) >= 3 and vals[-1] > vals[-2] > vals[-3]
-                    and all(v < 0 for v in vals[-3:]))
+            return (
+                len(vals) >= 3 and vals[-1] > vals[-2] > vals[-3] and all(v < 0 for v in vals[-3:])
+            )
+
         return {
             "bearish": bool(bearish),
             "bullish": bool(bullish),
@@ -170,8 +178,9 @@ class ElderRayEngine:
         }
 
     @staticmethod
-    def _judge_5level(decision: str, slope_state: str, bull: float, bear: float,
-                      div: Dict[str, bool]) -> str:
+    def _judge_5level(
+        decision: str, slope_state: str, bull: float, bear: float, div: Dict[str, bool]
+    ) -> str:
         """五级判定（Spec §3.2.4）。decision: "LONG" / "SHORT"。
 
         判定优先级（从高到低，先判反信极端，再判前提，再判一致）：
@@ -181,12 +190,12 @@ class ElderRayEngine:
         """
         direction = str(decision).upper()[:1]  # L / S
         if direction == "L":
-            prem_ok = (slope_state == "SLOPE_UP")
+            prem_ok = slope_state == "SLOPE_UP"
             align_basic = (bear < 0) and (bull > 0)
             align_full_cond = prem_ok and align_basic and bool(div.get("bullish"))
             severe = (slope_state == "SLOPE_DOWN") and (bear > 0)  # 空头完全凌驾
         else:  # SHORT（或未知，保守按 SHORT 对称）
-            prem_ok = (slope_state == "SLOPE_DOWN")
+            prem_ok = slope_state == "SLOPE_DOWN"
             align_basic = (bull > 0) and (bear < 0)
             align_full_cond = prem_ok and align_basic and bool(div.get("bearish"))
             severe = (slope_state == "SLOPE_UP") and (bull < 0)  # 多头完全凌驾
@@ -211,8 +220,13 @@ class ElderRayEngine:
         return "NEUTRAL"
 
     # ──────── 外部主入口（供 polling_trader 调用）────────
-    def calc_and_record(self, symbol: str, decision: str, p1_output: str,
-                        daily_klines: Optional[List[Dict[str, float]]]) -> ElderRayResult:
+    def calc_and_record(
+        self,
+        symbol: str,
+        decision: str,
+        p1_output: str,
+        daily_klines: Optional[List[Dict[str, float]]],
+    ) -> ElderRayResult:
         """计算 Elder-ray + 矩阵映射 + Phase1 G5 恒 1.00 旁路。
 
         Parameters

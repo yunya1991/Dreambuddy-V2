@@ -9,6 +9,7 @@
   - 只读/计算；不产生交易、不写外部状态；
   - 不常驻；一次辩论一个子进程，结束即关闭。
 """
+
 from __future__ import annotations
 
 import json
@@ -41,15 +42,11 @@ class DebateMCPClient:
         timeout: float | None = None,
     ):
         self.server_path = Path(
-            server_path
-            or os.environ.get("DEBATE_MCP_SERVER_PATH")
-            or _DEFAULT_SERVER
+            server_path or os.environ.get("DEBATE_MCP_SERVER_PATH") or _DEFAULT_SERVER
         )
         self.python_bin = python_bin or sys.executable
         self.timeout = float(
-            timeout
-            if timeout is not None
-            else os.environ.get("DEBATE_MCP_TIMEOUT_SEC", "60")
+            timeout if timeout is not None else os.environ.get("DEBATE_MCP_TIMEOUT_SEC", "60")
         )
         self._proc: subprocess.Popen | None = None
         self._next_id = 1
@@ -105,9 +102,7 @@ class DebateMCPClient:
                 line = future.result(timeout=self.timeout)
             except FutureTimeout as exc:
                 self.close()
-                raise DebateMCPError(
-                    f"{method} timeout after {self.timeout}s"
-                ) from exc
+                raise DebateMCPError(f"{method} timeout after {self.timeout}s") from exc
         if not line:
             raise DebateMCPError("empty response (shell exited?)")
         try:
@@ -115,9 +110,7 @@ class DebateMCPClient:
         except json.JSONDecodeError as exc:
             raise DebateMCPError(f"invalid JSON-RPC response: {line[:200]}") from exc
         if resp.get("id") != req_id:
-            raise DebateMCPError(
-                f"id mismatch: expected {req_id}, got {resp.get('id')}"
-            )
+            raise DebateMCPError(f"id mismatch: expected {req_id}, got {resp.get('id')}")
         if "error" in resp:
             raise DebateMCPError(str(resp["error"]))
         return resp
@@ -178,9 +171,7 @@ class DebateMCPClient:
         while time.monotonic() < deadline:
             job_env = self.call("get_debate_result", {"debate_id": debate_id})
             if not job_env.get("ok", False):
-                raise DebateMCPError(
-                    f"get_debate_result failed: {job_env.get('error_code')}"
-                )
+                raise DebateMCPError(f"get_debate_result failed: {job_env.get('error_code')}")
             job = job_env.get("data") or {}
             status = str(job.get("status", ""))
             last_status = status
@@ -193,9 +184,7 @@ class DebateMCPClient:
                 raise DebateMCPError(f"debate job error: {job.get('error')}")
             time.sleep(0.2)
 
-        raise DebateMCPError(
-            f"debate timeout after {self.timeout}s (last_status={last_status})"
-        )
+        raise DebateMCPError(f"debate timeout after {self.timeout}s (last_status={last_status})")
 
     def close(self) -> None:
         proc, self._proc = self._proc, None

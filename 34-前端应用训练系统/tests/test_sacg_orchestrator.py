@@ -6,11 +6,10 @@
       → S(规划) → A(OKR 节点) → C(节点执行，复用 CDriveV3Router 决策门) → G(收尾)。
 P3.1 只落骨架与流转；S/A/C/G 各层实质内容由 P3.2-P3.5 接入。
 """
-import os
+
+import os  # noqa: I001
 import sys
 from types import SimpleNamespace
-
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -34,8 +33,7 @@ class FakeRouter:
         self.calls = []
         self._action = action
 
-    def run_v3(self, node_id, result, state, signals=None,
-               l1_intent_hint=None):
+    def run_v3(self, node_id, result, state, signals=None, l1_intent_hint=None):
         self.calls.append({"node_id": node_id, "confidence": result.confidence})
         return {
             "action": self._action,
@@ -60,8 +58,7 @@ class TestRouteGate:
     def test_l1_direct_short_circuits_without_orchestration(self):
         router = FakeRouter()
         orch = SACGOrchestrator(router=router)
-        out = orch.handle("BTC什么价", l1_intent_hint="price_query",
-                          memories=_mems([0.95] * 5))
+        out = orch.handle("BTC什么价", l1_intent_hint="price_query", memories=_mems([0.95] * 5))
         assert out["route"] == "L1_DIRECT"
         assert out["orchestrated"] is False
         assert out["stages"] == []
@@ -85,16 +82,17 @@ class TestSACGFlow:
 
         def a_fn(plan):
             flow.append("A")
-            return [{"node_id": "N1", "criteria": plan["plan_items"][0]},
-                    {"node_id": "N2", "criteria": plan["plan_items"][1]}]
+            return [
+                {"node_id": "N1", "criteria": plan["plan_items"][0]},
+                {"node_id": "N2", "criteria": plan["plan_items"][1]},
+            ]
 
         def g_fn(plan, node_results):
             flow.append("G")
             return {"compressed": True, "settled": True}
 
         router = FakeRouter()
-        orch = SACGOrchestrator(
-            router=router, s_planner=s_fn, a_decomposer=a_fn, g_closer=g_fn)
+        orch = SACGOrchestrator(router=router, s_planner=s_fn, a_decomposer=a_fn, g_closer=g_fn)
         out = orch.handle("深度任务", l1_intent_hint="research", memories=[])
 
         # C 阶段在 A 之后、G 之前由编排器内部驱动（flow 中显式标记 S/A/G，C 见节点结果）
@@ -149,8 +147,7 @@ class TestFailOpen:
 
     def test_c_node_exception_isolated(self):
         class PartialBoomRouter(FakeRouter):
-            def run_v3(self, node_id, result, state, signals=None,
-               l1_intent_hint=None):
+            def run_v3(self, node_id, result, state, signals=None, l1_intent_hint=None):
                 if node_id == "N2":
                     raise RuntimeError("node exec failed")
                 return super().run_v3(node_id, result, state, signals)
@@ -159,11 +156,9 @@ class TestFailOpen:
             return {"plan_items": ["a", "b"]}
 
         def a_fn(plan):
-            return [{"node_id": "N1", "criteria": "a"},
-                    {"node_id": "N2", "criteria": "b"}]
+            return [{"node_id": "N1", "criteria": "a"}, {"node_id": "N2", "criteria": "b"}]
 
-        orch = SACGOrchestrator(router=PartialBoomRouter(),
-                                s_planner=s_fn, a_decomposer=a_fn)
+        orch = SACGOrchestrator(router=PartialBoomRouter(), s_planner=s_fn, a_decomposer=a_fn)
         out = orch.handle("任务", memories=[])
         assert out["stages"] == ["S", "A", "C", "G"]
         assert out["degraded"] is True
@@ -189,8 +184,7 @@ class TestSLayerHintDeepening:
     def test_registered_hint_expands_plan_with_spec(self):
         """命中档案的 hint → plan_items 按模板展开（多步）+ spec 草案"""
         orch = SACGOrchestrator(router=FakeRouter())
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=[])
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=[])
         plan = out["plan"]
         assert plan["intent_hint"] == "event_analysis"
         spec = plan["spec"]
@@ -204,8 +198,7 @@ class TestSLayerHintDeepening:
 
     def test_unregistered_hint_falls_back_to_single_item(self):
         orch = SACGOrchestrator(router=FakeRouter())
-        out = orch.handle("随便一句", l1_intent_hint="not_registered",
-                          memories=[])
+        out = orch.handle("随便一句", l1_intent_hint="not_registered", memories=[])
         assert len(out["plan"]["plan_items"]) == 1
         assert out["plan"]["spec"] is None
 
@@ -219,22 +212,23 @@ class TestSLayerHintDeepening:
         """S 层消费的 hint 必须透传到 C 层节点决策门（c_drive_v3_router）"""
 
         class HintCapturingRouter(FakeRouter):
-            def run_v3(self, node_id, result, state, signals=None,
-                       l1_intent_hint=None):
-                self.calls.append({"node_id": node_id,
-                                   "l1_intent_hint": l1_intent_hint})
+            def run_v3(self, node_id, result, state, signals=None, l1_intent_hint=None):
+                self.calls.append({"node_id": node_id, "l1_intent_hint": l1_intent_hint})
                 return {
-                    "action": "CONTINUE", "reason": "cap",
+                    "action": "CONTINUE",
+                    "reason": "cap",
                     "confidence": result.confidence,
-                    "steps_executed": [], "match_score": 0.9,
-                    "case_density": 3, "tier": "Tier1",
-                    "jev_final": "CONTINUE", "effort_level": "light",
+                    "steps_executed": [],
+                    "match_score": 0.9,
+                    "case_density": 3,
+                    "tier": "Tier1",
+                    "jev_final": "CONTINUE",
+                    "effort_level": "light",
                 }
 
         router = HintCapturingRouter()
         orch = SACGOrchestrator(router=router)
-        out = orch.handle("查持仓风控", l1_intent_hint="risk_control",
-                          memories=[])
+        out = orch.handle("查持仓风控", l1_intent_hint="risk_control", memories=[])
         assert out["orchestrated"] is True
         assert router.calls, "C 层应至少执行一个节点"
         assert all(c["l1_intent_hint"] == "risk_control" for c in router.calls)
@@ -243,10 +237,18 @@ class TestSLayerHintDeepening:
         """L1 十意图全部有 S 层档案（与 l1-intent-registry 对齐）"""
         from core.sacg_orchestrator import S_LAYER_INTENT_PROFILES
 
-        for name in ("data_query", "data_insight", "contradiction_insight",
-                     "path_insight", "technical_analysis", "fundamental_valuation",
-                     "asset_class_trend", "event_analysis", "risk_control",
-                     "price_query"):
+        for name in (
+            "data_query",
+            "data_insight",
+            "contradiction_insight",
+            "path_insight",
+            "technical_analysis",
+            "fundamental_valuation",
+            "asset_class_trend",
+            "event_analysis",
+            "risk_control",
+            "price_query",
+        ):
             profile = S_LAYER_INTENT_PROFILES[name]
             assert profile["plan"], name
             assert profile["depth"] in ("light", "standard", "deep"), name

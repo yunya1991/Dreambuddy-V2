@@ -17,13 +17,12 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §1.3 + §4.3 P3-7
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import inspect
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:

@@ -10,9 +10,9 @@
   需求端: total_demand, jewellery, bar_and_coin, gold_etfs, central_banks, technology
   衍生:   supply_demand_balance(=supply-demand), central_bank_yoy_pct
 """
+
 from __future__ import annotations
 
-import re
 from datetime import datetime, timezone
 
 import requests
@@ -26,7 +26,9 @@ class GoldSupplyDemandCollector(BaseCollector):
     source = "gold_supply_demand"
     category = "chain"
 
-    BASE_URL = "https://www.gold.org/goldhub/research/gold-demand-trends/gold-demand-trends-q{q}-{y}/"
+    BASE_URL = (
+        "https://www.gold.org/goldhub/research/gold-demand-trends/gold-demand-trends-q{q}-{y}/"
+    )
     SECTIONS = ("supply", "central-banks", "investment", "jewellery", "technology")
 
     HEADERS = {
@@ -161,7 +163,9 @@ class GoldSupplyDemandCollector(BaseCollector):
         metrics["jewellery"] = self._get(jew, "World Total")
         metrics["bar_and_coin"] = self._get(inv, "Bar and Coin")
         metrics["gold_etfs"] = self._get(inv, "Gold ETFs")
-        metrics["central_banks"] = self._get(cb, "Central Banks") or self._get(cb, "Central Banks andOther")
+        metrics["central_banks"] = self._get(cb, "Central Banks") or self._get(
+            cb, "Central Banks andOther"
+        )
         metrics["technology"] = self._get(tech, "Technology")
 
         # 计算总需求（各板块求和，不含 OTC）
@@ -187,17 +191,13 @@ class GoldSupplyDemandCollector(BaseCollector):
         cb_curr = metrics.get("central_banks")
         cb_prev = self._get_prev(cb, "Central Banks")
         if isinstance(cb_curr, (int, float)) and isinstance(cb_prev, (int, float)) and cb_prev != 0:
-            metrics["central_bank_yoy_pct"] = round(
-                (cb_curr - cb_prev) / abs(cb_prev) * 100, 1
-            )
+            metrics["central_bank_yoy_pct"] = round((cb_curr - cb_prev) / abs(cb_prev) * 100, 1)
 
         # 金矿产量同比
         mp_curr = metrics.get("mine_production")
         mp_prev = self._get_prev(supply, "Mine production")
         if isinstance(mp_curr, (int, float)) and isinstance(mp_prev, (int, float)) and mp_prev != 0:
-            metrics["mine_production_yoy_pct"] = round(
-                (mp_curr - mp_prev) / abs(mp_prev) * 100, 1
-            )
+            metrics["mine_production_yoy_pct"] = round((mp_curr - mp_prev) / abs(mp_prev) * 100, 1)
 
         return metrics
 

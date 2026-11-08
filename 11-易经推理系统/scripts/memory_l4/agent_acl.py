@@ -1,7 +1,9 @@
 from typing import Any, Dict, Optional
 
 
-def authorize(agent_id: str, action: str, acl_config: Optional[Dict[str, Dict[str, Any]]]) -> Dict[str, Any]:
+def authorize(
+    agent_id: str, action: str, acl_config: Optional[Dict[str, Dict[str, Any]]]
+) -> Dict[str, Any]:
     aid = str(agent_id or "unknown")
     act = str(action or "").strip().lower()
     if not act:

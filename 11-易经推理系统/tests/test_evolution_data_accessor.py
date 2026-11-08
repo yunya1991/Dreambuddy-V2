@@ -14,19 +14,26 @@ TDD RED 阶段：先写失败测试，再写实现
 - test_get_evolution_detail_reflection
 - test_get_evolution_detail_not_found
 """
+
 import json
-import os
-import tempfile
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
 
 # ── 辅助：构造测试用 all_trades.jsonl ──────────────────────────────────────
-def _make_trade(trade_id, coin, direction, entry_price, exit_price, pnl, strategy_source,
-                exit_time_iso, entry_time_iso=None, pnl_pct=None):
+def _make_trade(
+    trade_id,
+    coin,
+    direction,
+    entry_price,
+    exit_price,
+    pnl,
+    strategy_source,
+    exit_time_iso,
+    entry_time_iso=None,
+    pnl_pct=None,
+):
     """构造单条 all_trades.jsonl 记录"""
     if entry_time_iso is None:
         entry_time_iso = exit_time_iso
@@ -58,19 +65,37 @@ def _make_trade(trade_id, coin, direction, entry_price, exit_price, pnl, strateg
 def tmp_trades_file(tmp_path):
     """创建临时 all_trades.jsonl，含 evolution + bcrm 各2笔"""
     now = datetime.now(timezone.utc)
-    iso_fmt = lambda dt: dt.isoformat()
+    iso_fmt = lambda dt: dt.isoformat()  # noqa: E731
 
     trades = [
         # evolution 子池 2 笔（1胜1负）
-        _make_trade("evo_001", "BTC", "long", 58000, 58500, 1.2, "evolution",
-                    iso_fmt(now - timedelta(days=10))),
-        _make_trade("evo_002", "ETH", "short", 3000, 3050, -0.5, "evolution",
-                    iso_fmt(now - timedelta(days=5))),
+        _make_trade(
+            "evo_001",
+            "BTC",
+            "long",
+            58000,
+            58500,
+            1.2,
+            "evolution",
+            iso_fmt(now - timedelta(days=10)),
+        ),
+        _make_trade(
+            "evo_002",
+            "ETH",
+            "short",
+            3000,
+            3050,
+            -0.5,
+            "evolution",
+            iso_fmt(now - timedelta(days=5)),
+        ),
         # main_pool (bcrm) 2 笔（2胜）
-        _make_trade("bcrm_001", "SOL", "long", 100, 105, 2.0, "bcrm",
-                    iso_fmt(now - timedelta(days=30))),
-        _make_trade("bcrm_002", "ADA", "long", 0.5, 0.55, 0.8, "bcrm",
-                    iso_fmt(now - timedelta(days=1))),
+        _make_trade(
+            "bcrm_001", "SOL", "long", 100, 105, 2.0, "bcrm", iso_fmt(now - timedelta(days=30))
+        ),
+        _make_trade(
+            "bcrm_002", "ADA", "long", 0.5, 0.55, 0.8, "bcrm", iso_fmt(now - timedelta(days=1))
+        ),
     ]
     trades_file = tmp_path / "all_trades.jsonl"
     with open(trades_file, "w", encoding="utf-8") as f:
@@ -105,6 +130,7 @@ def tmp_perf_file(tmp_path):
 def accessor(tmp_trades_file, tmp_perf_file, monkeypatch):
     """构造 evolution_data_accessor 实例，指向临时文件"""
     from scripts.evolution_data_accessor import EvolutionDataAccessor
+
     acc = EvolutionDataAccessor(
         trades_file=str(tmp_trades_file),
         perf_file=str(tmp_perf_file),
@@ -150,10 +176,10 @@ def test_get_evolution_overview_range_filter(accessor):
 def test_get_evolution_overview_empty_evolution(tmp_path, tmp_perf_file):
     """evolution 无平仓记录时降级返回 null"""
     from scripts.evolution_data_accessor import EvolutionDataAccessor
+
     # 仅含 bcrm 交易
     now = datetime.now(timezone.utc)
-    trades = [_make_trade("bcrm_001", "SOL", "long", 100, 105, 2.0, "bcrm",
-                          now.isoformat())]
+    trades = [_make_trade("bcrm_001", "SOL", "long", 100, 105, 2.0, "bcrm", now.isoformat())]
     trades_file = tmp_path / "all_trades.jsonl"
     with open(trades_file, "w") as f:
         for t in trades:
@@ -192,6 +218,7 @@ def test_get_evolution_timeline_cumulative_daily(accessor):
 def test_get_evolution_timeline_empty(tmp_path, tmp_perf_file):
     """无平仓记录时返回空数组"""
     from scripts.evolution_data_accessor import EvolutionDataAccessor
+
     trades_file = tmp_path / "all_trades.jsonl"
     trades_file.write_text("")  # 空文件
 

@@ -13,13 +13,13 @@ SKILL.md 兼容导入器 — 借鉴 Grok Build 的「读 Claude/Cursor MCP 配�
   python -m scripts.skill_importer list
   python -m scripts.skill_importer validate <skill_path>
 """
+
 import argparse
-import json
 import re
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
-import sys
+from typing import Any, Callable, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
@@ -114,7 +114,7 @@ class SKILLMdParser:
 
                 if val.startswith("["):
                     end_bracket = self._find_matching_bracket(lines, i, "[")
-                    list_content = "\n".join(lines[i:end_bracket + 1])
+                    list_content = "\n".join(lines[i : end_bracket + 1])
                     result[key] = list_content
                     i = end_bracket + 1
                     continue
@@ -167,9 +167,9 @@ class SKILLMdParser:
 
             if i + 1 < len(matches):
                 next_match = matches[i + 1]
-                phase_content = content[match.end():next_match.start()]
+                phase_content = content[match.end() : next_match.start()]
             else:
-                phase_content = content[match.end():]
+                phase_content = content[match.end() :]
 
             description = self._extract_description(phase_content)
             inputs, outputs = self._extract_parameters(phase_content)
@@ -191,7 +191,12 @@ class SKILLMdParser:
         description_lines = []
         for line in lines:
             stripped = line.strip()
-            if stripped and not stripped.startswith("###") and not stripped.startswith("|") and not stripped.startswith("```"):
+            if (
+                stripped
+                and not stripped.startswith("###")
+                and not stripped.startswith("|")
+                and not stripped.startswith("```")
+            ):
                 description_lines.append(stripped)
             else:
                 break
@@ -221,7 +226,11 @@ class SKILLMdParser:
             if match:
                 cols = [c.strip() for c in match.groups()]
                 if len(cols) >= 2 and cols[0] != "参数":
-                    param = {"name": cols[0], "type": cols[1] if len(cols) > 1 else "", "description": cols[2] if len(cols) > 2 else ""}
+                    param = {
+                        "name": cols[0],
+                        "type": cols[1] if len(cols) > 1 else "",
+                        "description": cols[2] if len(cols) > 2 else "",
+                    }
                     if in_input_section:
                         inputs.append(param)
                     elif in_output_section:
@@ -232,7 +241,10 @@ class SKILLMdParser:
     def _detect_format(self, frontmatter: Dict) -> str:
         if frontmatter.get("superpowers_version") or frontmatter.get("format") == "superpowers":
             return "superpowers"
-        if frontmatter.get("claude_version") or "anthropic" in str(frontmatter.get("provider", "")).lower():
+        if (
+            frontmatter.get("claude_version")
+            or "anthropic" in str(frontmatter.get("provider", "")).lower()
+        ):
             return "claude"
         return "native"
 
@@ -273,16 +285,20 @@ class SkillImporter:
         for skill_md in skills_dir.rglob("SKILL.md"):
             try:
                 meta = self.import_one(skill_md)
-                results["success"].append({
-                    "name": meta.skill_name,
-                    "version": meta.version,
-                    "path": str(skill_md),
-                })
+                results["success"].append(
+                    {
+                        "name": meta.skill_name,
+                        "version": meta.version,
+                        "path": str(skill_md),
+                    }
+                )
             except Exception as e:
-                results["failed"].append({
-                    "path": str(skill_md),
-                    "error": str(e),
-                })
+                results["failed"].append(
+                    {
+                        "path": str(skill_md),
+                        "error": str(e),
+                    }
+                )
 
         return results
 

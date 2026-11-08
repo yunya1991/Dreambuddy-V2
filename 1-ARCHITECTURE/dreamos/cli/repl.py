@@ -13,9 +13,8 @@ REPL 交互会话 — Claude Code 风格的交互式终端
 from __future__ import annotations
 
 import json
-import sys
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from .base import CommandContext, get_command, list_commands
 
@@ -59,6 +58,7 @@ class REPLSession:
                 self.ctx.error(f"处理失败: {e}")
                 if self.ctx.verbose:
                     import traceback
+
                     traceback.print_exc()
 
         return 0
@@ -70,7 +70,9 @@ class REPLSession:
         print("  \033[1m\033[96m🤖 Dreambuddy OS\033[0m  —  智能交易分析终端")
         print("\033[96m" + "=" * 60 + "\033[0m")
         print()
-        print("  \033[90m输入自然语言进行市场分析，或使用 \033[0m\033[93m/help\033[0m\033[90m 查看命令\033[0m")
+        print(
+            "  \033[90m输入自然语言进行市场分析，或使用 \033[0m\033[93m/help\033[0m\033[90m 查看命令\033[0m"
+        )
         print()
 
     def _read_input(self) -> str:
@@ -85,12 +87,12 @@ class REPLSession:
         """处理 slash 命令"""
         # 移除开头的斜杠，然后去除空白
         raw_content = user_input[1:]
-        
+
         # 处理空命令或只有空白的情况
         if not raw_content.strip():
             self.ctx.warning("请输入命令名，如 /help")
             return
-        
+
         # 解析命令名和参数
         parts = raw_content.strip().split(maxsplit=1)
         cmd_name = parts[0].lower() if parts else ""
@@ -147,6 +149,7 @@ class REPLSession:
                 self.ctx.error(f"命令执行失败: {e}")
                 if self.ctx.verbose:
                     import traceback
+
                     traceback.print_exc()
             return
 
@@ -257,13 +260,17 @@ class REPLSession:
         print()
         intent_info = result.get("intent", {})
         plan_info = result.get("plan", {})
-        exec_info = result.get("execution", {})
+        exec_info = result.get("execution", {})  # noqa: F841
 
         print(f"  \033[90m周期ID:\033[0m   {result.get('cycle_id', '-')}")
-        print(f"  \033[90m意图:\033[0m     {intent_info.get('type', '-')} "
-              f"\033[90m({intent_info.get('confidence', 0):.0%})\033[0m")
-        print(f"  \033[90m链路:\033[0m     {plan_info.get('chain', '-')} "
-              f"\033[90m({', '.join(plan_info.get('nodes', []))})\033[0m")
+        print(
+            f"  \033[90m意图:\033[0m     {intent_info.get('type', '-')} "
+            f"\033[90m({intent_info.get('confidence', 0):.0%})\033[0m"
+        )
+        print(
+            f"  \033[90m链路:\033[0m     {plan_info.get('chain', '-')} "
+            f"\033[90m({', '.join(plan_info.get('nodes', []))})\033[0m"
+        )
         print(f"  \033[90m耗时:\033[0m     {result.get('latency_ms', 0):.0f}ms")
         print(f"  \033[90mToken:\033[0m    {result.get('tokens_used', 0)}")
 
@@ -280,7 +287,9 @@ class REPLSession:
         if self.ctx.verbose:
             print()
             print("  \033[1m🔍 完整数据\033[0m")
-            print(f"  \033[90m{json.dumps(result, indent=2, ensure_ascii=False, default=str)}\033[0m")
+            print(
+                f"  \033[90m{json.dumps(result, indent=2, ensure_ascii=False, default=str)}\033[0m"
+            )
 
         print(flush=True)  # 确保 stdout flush，让用户看到提示符
 
@@ -314,7 +323,9 @@ class REPLSession:
             print("  \033[96m插件命令:\033[0m")
             for cmd in registered:
                 aliases = f" (/{', /'.join(cmd.aliases)})" if cmd.aliases else ""
-                print(f"    \033[93m/{cmd.name:<10s}\033[0m {cmd.description}\033[90m{aliases}\033[0m")
+                print(
+                    f"    \033[93m/{cmd.name:<10s}\033[0m {cmd.description}\033[90m{aliases}\033[0m"
+                )
 
         print()
         print("  \033[90m💡 直接输入自然语言进行对话分析\033[0m")
@@ -329,6 +340,7 @@ class REPLSession:
 
         try:
             from dreamos.apps.trading_agent import TradingAgent
+
             self.ctx.agent = TradingAgent(budget_mode=self.ctx.budget_mode)
             print("\r\033[K", end="", flush=True)
             return self.ctx.agent
@@ -337,5 +349,6 @@ class REPLSession:
             self.ctx.error(f"初始化 Agent 失败: {e}")
             if self.ctx.verbose:
                 import traceback
+
                 traceback.print_exc()
             return None

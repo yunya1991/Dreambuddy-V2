@@ -4,6 +4,7 @@ P2 §5.3: 止损/止盈/超时参数的逆向优化
   - 若多次"方向对但被扫损"（CS≥0.7 & SL）→ 放宽止损
   - 若多次"方向对但超时" → 延长持仓时间
 """
+
 import sys
 from pathlib import Path
 
@@ -68,8 +69,10 @@ def test_true_failure_does_not_widen_stop_loss():
 def test_adjustments_bounded():
     """RED: 参数调整有边界（防止过度调整）。"""
     opt = ParameterReverseOptimizer(
-        false_failure_threshold=2, timeout_threshold=2,
-        max_stop_loss_mult=2.0, max_timeout_mult=3.0,
+        false_failure_threshold=2,
+        timeout_threshold=2,
+        max_stop_loss_mult=2.0,
+        max_timeout_mult=3.0,
     )
     # 大量假失败 + 超时
     for _ in range(10):

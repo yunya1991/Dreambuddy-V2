@@ -16,14 +16,12 @@ BCRM 2.0 Phase 0 — 基线验证主入口
 
 import argparse
 import sys
-import os
 from pathlib import Path
 
 # 确保包路径正确
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 import pandas as pd
-import numpy as np
 
 from .data_fetcher import get_klines
 from .walk_forward_backtester import WalkForwardBacktester, generate_report
@@ -31,46 +29,53 @@ from .walk_forward_backtester import WalkForwardBacktester, generate_report
 
 def main():
     parser = argparse.ArgumentParser(description="BCRM 2.0 Phase 0 基线验证")
-    parser.add_argument("--symbols", type=str, default="BTC,ETH",
-                        help="交易对，逗号分隔，默认 BTC,ETH")
-    parser.add_argument("--timeframe", type=str, default="1H",
-                        help="K线周期，默认1H")
-    parser.add_argument("--n-folds", type=int, default=5,
-                        help="Walk-Forward折数，默认5")
-    parser.add_argument("--conf-threshold", type=float, default=0.40,
-                        help="开仓置信度阈值，默认0.40")
-    parser.add_argument("--tp-atr", type=float, default=3.0,
-                        help="止盈ATR倍数，默认3.0")
-    parser.add_argument("--sl-atr", type=float, default=2.0,
-                        help="止损ATR倍数，默认2.0")
-    parser.add_argument("--max-hold-bars", type=int, default=60,
-                        help="最大持仓bar数，默认60")
-    parser.add_argument("--max-bars", type=int, default=3000,
-                        help="使用的最大K线数，默认3000")
-    parser.add_argument("--refresh", action="store_true",
-                        help="强制刷新K线数据")
-    parser.add_argument("--output", type=str, default=None,
-                        help="报告输出目录")
-    parser.add_argument("--no-pivot", action="store_true",
-                        help="禁用枢纽点特征")
-    parser.add_argument("--no-rsi", action="store_true",
-                        help="禁用RSI情绪特征")
-    parser.add_argument("--no-wdh", action="store_true",
-                        help="禁用周/日/时三屏+量变积累特征")
-    parser.add_argument("--wdh-weekly-only", action="store_true",
-                        help="WDH仅保留周线量变积累层 (消融实验)")
-    parser.add_argument("--feature-selection", action="store_true", default=True,
-                        help="启用特征选择 (LightGBM重要性+相关性去冗余), 默认启用")
-    parser.add_argument("--no-feature-selection", action="store_true",
-                        help="禁用特征选择")
-    parser.add_argument("--fs-imp-threshold", type=float, default=0.05,
-                        help="特征重要性阈值 (占最高重要性的比例), 默认0.05")
-    parser.add_argument("--fs-corr-threshold", type=float, default=0.85,
-                        help="特征相关性阈值, 高于此值的冗余特征将被剔除, 默认0.85")
-    parser.add_argument("--portfolio", action="store_true",
-                        help="启用多币种组合回测 (资金分配+组合层指标)")
-    parser.add_argument("--enable-incremental", action="store_true",
-                        help="启用增量学习闭环 (交易数据存储+模型版本管理)")
+    parser.add_argument(
+        "--symbols", type=str, default="BTC,ETH", help="交易对，逗号分隔，默认 BTC,ETH"
+    )
+    parser.add_argument("--timeframe", type=str, default="1H", help="K线周期，默认1H")
+    parser.add_argument("--n-folds", type=int, default=5, help="Walk-Forward折数，默认5")
+    parser.add_argument(
+        "--conf-threshold", type=float, default=0.40, help="开仓置信度阈值，默认0.40"
+    )
+    parser.add_argument("--tp-atr", type=float, default=3.0, help="止盈ATR倍数，默认3.0")
+    parser.add_argument("--sl-atr", type=float, default=2.0, help="止损ATR倍数，默认2.0")
+    parser.add_argument("--max-hold-bars", type=int, default=60, help="最大持仓bar数，默认60")
+    parser.add_argument("--max-bars", type=int, default=3000, help="使用的最大K线数，默认3000")
+    parser.add_argument("--refresh", action="store_true", help="强制刷新K线数据")
+    parser.add_argument("--output", type=str, default=None, help="报告输出目录")
+    parser.add_argument("--no-pivot", action="store_true", help="禁用枢纽点特征")
+    parser.add_argument("--no-rsi", action="store_true", help="禁用RSI情绪特征")
+    parser.add_argument("--no-wdh", action="store_true", help="禁用周/日/时三屏+量变积累特征")
+    parser.add_argument(
+        "--wdh-weekly-only", action="store_true", help="WDH仅保留周线量变积累层 (消融实验)"
+    )
+    parser.add_argument(
+        "--feature-selection",
+        action="store_true",
+        default=True,
+        help="启用特征选择 (LightGBM重要性+相关性去冗余), 默认启用",
+    )
+    parser.add_argument("--no-feature-selection", action="store_true", help="禁用特征选择")
+    parser.add_argument(
+        "--fs-imp-threshold",
+        type=float,
+        default=0.05,
+        help="特征重要性阈值 (占最高重要性的比例), 默认0.05",
+    )
+    parser.add_argument(
+        "--fs-corr-threshold",
+        type=float,
+        default=0.85,
+        help="特征相关性阈值, 高于此值的冗余特征将被剔除, 默认0.85",
+    )
+    parser.add_argument(
+        "--portfolio", action="store_true", help="启用多币种组合回测 (资金分配+组合层指标)"
+    )
+    parser.add_argument(
+        "--enable-incremental",
+        action="store_true",
+        help="启用增量学习闭环 (交易数据存储+模型版本管理)",
+    )
 
     args = parser.parse_args()
     args.enable_pivot = not args.no_pivot
@@ -114,7 +119,7 @@ def main():
         print("-" * 70)
 
         # 1. 获取数据
-        print(f"\n[1/4] 获取K线数据...")
+        print("\n[1/4] 获取K线数据...")
         df = get_klines(
             symbol=symbol,
             timeframe=args.timeframe,
@@ -132,14 +137,16 @@ def main():
         # 跨资产参考: 非BTC币种使用BTC作为参考资产
         ref_df = None
         if symbol != "BTC":
-            print(f"  加载BTC参考数据 (跨资产特征)...")
-            ref_df = get_klines("BTC", timeframe=args.timeframe, use_cache=True, max_bars=args.max_bars)
+            print("  加载BTC参考数据 (跨资产特征)...")
+            ref_df = get_klines(
+                "BTC", timeframe=args.timeframe, use_cache=True, max_bars=args.max_bars
+            )
             if len(ref_df) < 200:
-                print(f"  ⚠️  BTC参考数据不足，跳过跨资产特征")
+                print("  ⚠️  BTC参考数据不足，跳过跨资产特征")
                 ref_df = None
 
         # 2. Walk-Forward回测
-        print(f"\n[2/4] Walk-Forward回测...")
+        print("\n[2/4] Walk-Forward回测...")
         backtester = WalkForwardBacktester(
             symbol=symbol,
             n_folds=args.n_folds,
@@ -155,7 +162,9 @@ def main():
 
         try:
             result = backtester.run(
-                df, ref_df=ref_df, verbose=True,
+                df,
+                ref_df=ref_df,
+                verbose=True,
                 enable_pivot=args.enable_pivot,
                 enable_rsi=args.enable_rsi,
                 enable_wdh=args.enable_wdh,
@@ -165,37 +174,40 @@ def main():
         except Exception as e:
             print(f"  ❌ 回测失败: {e}")
             import traceback
+
             traceback.print_exc()
             continue
 
         all_results[symbol] = result
 
         # 3. 生成报告
-        print(f"\n[3/4] 生成报告...")
+        print("\n[3/4] 生成报告...")
         report_path = output_dir / f"report_{symbol}_{args.timeframe}.txt"
         report = generate_report(result, str(report_path))
         print(report)
 
         # 4. 保存交易明细
-        print(f"\n[4/4] 保存交易明细...")
-        trades_df = pd.DataFrame([
-            {
-                "entry_time": df.index[t.entry_bar] if t.entry_bar < len(df) else "N/A",
-                "exit_time": df.index[t.exit_bar] if t.exit_bar < len(df) else "N/A",
-                "direction": "LONG" if t.direction == 1 else "SHORT",
-                "entry_price": round(t.entry_price, 4),
-                "exit_price": round(t.exit_price, 4),
-                "pnl_pct": round(t.pnl_pct, 3),
-                "hold_bars": t.hold_bars,
-                "exit_reason": t.exit_reason,
-                "confidence": t.confidence,
-                "hexagram": t.hexagram_name,
-                "upper_gua": t.upper_gua,
-                "lower_gua": t.lower_gua,
-                "position_factor": t.position_factor,
-            }
-            for t in result.all_trades
-        ])
+        print("\n[4/4] 保存交易明细...")
+        trades_df = pd.DataFrame(
+            [
+                {
+                    "entry_time": df.index[t.entry_bar] if t.entry_bar < len(df) else "N/A",
+                    "exit_time": df.index[t.exit_bar] if t.exit_bar < len(df) else "N/A",
+                    "direction": "LONG" if t.direction == 1 else "SHORT",
+                    "entry_price": round(t.entry_price, 4),
+                    "exit_price": round(t.exit_price, 4),
+                    "pnl_pct": round(t.pnl_pct, 3),
+                    "hold_bars": t.hold_bars,
+                    "exit_reason": t.exit_reason,
+                    "confidence": t.confidence,
+                    "hexagram": t.hexagram_name,
+                    "upper_gua": t.upper_gua,
+                    "lower_gua": t.lower_gua,
+                    "position_factor": t.position_factor,
+                }
+                for t in result.all_trades
+            ]
+        )
         trades_path = output_dir / f"trades_{symbol}_{args.timeframe}.csv"
         trades_df.to_csv(trades_path, index=False, encoding="utf-8-sig")
         print(f"  交易明细已保存: {trades_path}")
@@ -206,17 +218,21 @@ def main():
         print("  汇总结果")
         print("=" * 70)
         print()
-        print(f"  {'交易对':<10} {'交易数':<8} {'胜率':<8} {'总收益':<10} "
-              f"{'最大回撤':<10} {'盈亏比':<8} {'夏普':<8}")
+        print(
+            f"  {'交易对':<10} {'交易数':<8} {'胜率':<8} {'总收益':<10} "
+            f"{'最大回撤':<10} {'盈亏比':<8} {'夏普':<8}"
+        )
         print(f"  {'-'*10} {'-'*8} {'-'*8} {'-'*10} {'-'*10} {'-'*8} {'-'*8}")
 
         for symbol, result in all_results.items():
-            print(f"  {symbol:<10} {result.total_trades:<8} "
-                  f"{result.overall_win_rate*100:<7.1f}% "
-                  f"{result.total_return:<9.2f}% "
-                  f"{result.max_drawdown:<9.2f}% "
-                  f"{result.profit_factor:<7.2f} "
-                  f"{result.sharpe_ratio:<7.2f}")
+            print(
+                f"  {symbol:<10} {result.total_trades:<8} "
+                f"{result.overall_win_rate*100:<7.1f}% "
+                f"{result.total_return:<9.2f}% "
+                f"{result.max_drawdown:<9.2f}% "
+                f"{result.profit_factor:<7.2f} "
+                f"{result.sharpe_ratio:<7.2f}"
+            )
 
         print()
         print(f"  报告目录: {output_dir}")
@@ -231,12 +247,16 @@ def main():
         passed = 0
         for symbol, result in all_results.items():
             if result.overall_win_rate > 0.5 and result.sharpe_ratio > 1.0:
-                print(f"  ✅ {symbol}: 通过 (胜率{result.overall_win_rate*100:.1f}%, "
-                      f"夏普{result.sharpe_ratio:.2f})")
+                print(
+                    f"  ✅ {symbol}: 通过 (胜率{result.overall_win_rate*100:.1f}%, "
+                    f"夏普{result.sharpe_ratio:.2f})"
+                )
                 passed += 1
             else:
-                print(f"  ⚠️  {symbol}: 待优化 (胜率{result.overall_win_rate*100:.1f}%, "
-                      f"夏普{result.sharpe_ratio:.2f})")
+                print(
+                    f"  ⚠️  {symbol}: 待优化 (胜率{result.overall_win_rate*100:.1f}%, "
+                    f"夏普{result.sharpe_ratio:.2f})"
+                )
 
         print()
         if passed >= 1:
@@ -258,7 +278,7 @@ def main():
         btc_ref = None
         for symbol in symbols:
             df = get_klines(symbol, args.timeframe, max_bars=args.max_bars)
-            df = df.iloc[-args.max_bars:] if len(df) > args.max_bars else df
+            df = df.iloc[-args.max_bars :] if len(df) > args.max_bars else df
             data_dict[symbol] = df
             if symbol == "BTC":
                 btc_ref = df
@@ -304,7 +324,7 @@ def main():
         print("  异常检测 (混合架构)")
         print("=" * 70)
 
-        from .anomaly_detector import HybridAnomalyDetector, create_anomaly_report
+        from .anomaly_detector import HybridAnomalyDetector
 
         detector = HybridAnomalyDetector(
             if_contamination=0.02,
@@ -320,9 +340,11 @@ def main():
                 print(f"  {symbol}:")
                 print(f"    异常数: {summary['anomaly_count']} / {summary['total_bars']} 根K线")
                 print(f"    异常率: {summary['anomaly_rate']*100:.2f}%")
-                if summary['latest_anomaly']:
-                    latest = summary['latest_anomaly']
-                    print(f"    最新异常: {latest['type']} ({latest['severity']}) @ {latest['time']}")
+                if summary["latest_anomaly"]:
+                    latest = summary["latest_anomaly"]
+                    print(
+                        f"    最新异常: {latest['type']} ({latest['severity']}) @ {latest['time']}"
+                    )
         print()
 
     # 增量学习闭环
@@ -339,22 +361,32 @@ def main():
         for symbol, result in all_results.items():
             trades_data = []
             for t in result.all_trades:
-                trades_data.append({
-                    "symbol": symbol,
-                    "direction": t.direction,
-                    "entry_time": str(df.index[t.entry_bar]) if 'df' in dir() and t.entry_bar < len(df) else "",
-                    "exit_time": str(df.index[t.exit_bar]) if 'df' in dir() and t.exit_bar < len(df) else "",
-                    "entry_price": t.entry_price,
-                    "exit_price": t.exit_price,
-                    "pnl_pct": t.pnl_pct,
-                    "hold_bars": t.hold_bars,
-                    "exit_reason": t.exit_reason,
-                    "confidence": t.confidence,
-                    "hexagram": t.hexagram_name,
-                    "upper_gua": t.upper_gua,
-                    "lower_gua": t.lower_gua,
-                    "position_factor": t.position_factor,
-                })
+                trades_data.append(
+                    {
+                        "symbol": symbol,
+                        "direction": t.direction,
+                        "entry_time": (
+                            str(df.index[t.entry_bar])
+                            if "df" in dir() and t.entry_bar < len(df)
+                            else ""
+                        ),
+                        "exit_time": (
+                            str(df.index[t.exit_bar])
+                            if "df" in dir() and t.exit_bar < len(df)
+                            else ""
+                        ),
+                        "entry_price": t.entry_price,
+                        "exit_price": t.exit_price,
+                        "pnl_pct": t.pnl_pct,
+                        "hold_bars": t.hold_bars,
+                        "exit_reason": t.exit_reason,
+                        "confidence": t.confidence,
+                        "hexagram": t.hexagram_name,
+                        "upper_gua": t.upper_gua,
+                        "lower_gua": t.lower_gua,
+                        "position_factor": t.position_factor,
+                    }
+                )
 
             if trades_data:
                 n_saved = learner.log_trades_batch(trades_data)

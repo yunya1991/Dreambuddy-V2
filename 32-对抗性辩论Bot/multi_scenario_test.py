@@ -17,23 +17,20 @@ agents → orchestrator → marketing → quality
 - 质量评分（S/A/B/C 分级）
 - 状态机流转正确
 """
+
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
 import sys
-from dataclasses import asdict
 from pathlib import Path
-from typing import Any
 
 # 确保 core 可导入
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from core.agents import BullAgent, BearAgent, JudgeAgent
-from core.config import AppConfig, DebateConfig, TelegramConfig
+from core.agents import BullAgent, BearAgent, JudgeAgent  # noqa: I001
 from core.marketing import MarketingExtractor
-from core.models import Argument, Turn, Verdict
 from core.orchestrator import DebateOrchestrator
 from core.quality import QualityEvaluator
 from core.telegram_bot import TelegramDualBot
@@ -42,6 +39,7 @@ logging.basicConfig(level=logging.WARNING)  # 测试时只看警告
 
 
 # ─── 模拟 LLM 客户端 ─────────────────────────────────────────────
+
 
 class ScenarioLLM:
     """模拟 LLM，根据 prompt 内容返回不同角色的真实感输出。
@@ -55,8 +53,7 @@ class ScenarioLLM:
         self.bull_round = 0
         self.bear_round = 0
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
         # 判断角色
         if "正方" in system_prompt or "支持" in system_prompt:
             return self._bull_response()
@@ -124,43 +121,53 @@ class ScenarioLLM:
         return json.dumps(responses[idx], ensure_ascii=False)
 
     def _judge_response(self) -> str:
-        return json.dumps({
-            "summary": f"双方围绕{self.topic}展开了激烈交锋。正方从趋势、效率、生态等维度论证其必然性，反方则从估值、技术瓶颈、监管风险等角度提出质疑。综合来看，{self.topic}具备长期潜力但短期存在泡沫风险。",
-            "winner": "bull",
-            "key_insights": [
-                "正方在趋势判断上更具说服力",
-                "反方对短期风险的警示值得重视",
-                "核心分歧在于技术成熟度的预期",
-            ],
-            "topic_angle": "从'技术成熟度曲线'视角看，{self.topic}正处于期望膨胀期向幻灭低谷期过渡的关键节点，理性看待才能把握真正机会",
-        }, ensure_ascii=False)
+        return json.dumps(
+            {
+                "summary": f"双方围绕{self.topic}展开了激烈交锋。正方从趋势、效率、生态等维度论证其必然性，反方则从估值、技术瓶颈、监管风险等角度提出质疑。综合来看，{self.topic}具备长期潜力但短期存在泡沫风险。",
+                "winner": "bull",
+                "key_insights": [
+                    "正方在趋势判断上更具说服力",
+                    "反方对短期风险的警示值得重视",
+                    "核心分歧在于技术成熟度的预期",
+                ],
+                "topic_angle": "从'技术成熟度曲线'视角看，{self.topic}正处于期望膨胀期向幻灭低谷期过渡的关键节点，理性看待才能把握真正机会",
+            },
+            ensure_ascii=False,
+        )
 
     def _marketing_response(self) -> str:
-        return json.dumps({
-            "copies": [
-                f"🔥 {self.topic}，是风口还是泡沫？一场精彩辩论告诉你答案！",
-                f"💡 正方：趋势不可挡 | 反方：泡沫终破裂  你站哪边？",
-                f"🎯 关于{self.topic}的真相，看完这场辩论你就懂了",
-            ],
-            "title": f"{self.topic}：未来已来还是泡沫将至？正反方激辩",
-        }, ensure_ascii=False)
+        return json.dumps(
+            {
+                "copies": [
+                    f"🔥 {self.topic}，是风口还是泡沫？一场精彩辩论告诉你答案！",
+                    "💡 正方：趋势不可挡 | 反方：泡沫终破裂  你站哪边？",
+                    f"🎯 关于{self.topic}的真相，看完这场辩论你就懂了",
+                ],
+                "title": f"{self.topic}：未来已来还是泡沫将至？正反方激辩",
+            },
+            ensure_ascii=False,
+        )
 
     def _quality_response(self) -> str:
-        return json.dumps({
-            "conflict_intensity": 8.0,
-            "topic_elevation": 7.0,
-            "copy_convertibility": 8.5,
-            "highlights": [
-                "双方论点针锋相对，冲突感强",
-                "金句频出，适合二次传播",
-            ],
-            "suggestions": [
-                "可增加数据支撑提升说服力",
-            ],
-        }, ensure_ascii=False)
+        return json.dumps(
+            {
+                "conflict_intensity": 8.0,
+                "topic_elevation": 7.0,
+                "copy_convertibility": 8.5,
+                "highlights": [
+                    "双方论点针锋相对，冲突感强",
+                    "金句频出，适合二次传播",
+                ],
+                "suggestions": [
+                    "可增加数据支撑提升说服力",
+                ],
+            },
+            ensure_ascii=False,
+        )
 
 
 # ─── 静默 Telegram Bot ──────────────────────────────────────────
+
 
 class QuietBot:
     async def send_message(self, chat_id: int, text: str) -> dict:
@@ -186,12 +193,16 @@ def build_orchestrator(topic: str, judge_enabled: bool) -> DebateOrchestrator:
     marketing = MarketingExtractor(llm)
     quality = QualityEvaluator(llm)
     telegram = TelegramDualBot(
-        bull_bot=QuietBot(), bear_bot=QuietBot(),
+        bull_bot=QuietBot(),
+        bear_bot=QuietBot(),
         judge_bot=QuietBot() if judge_enabled else None,
     )
     return DebateOrchestrator(
-        bull_agent=bull, bear_agent=bear, judge_agent=judge,
-        marketing_extractor=marketing, quality_evaluator=quality,
+        bull_agent=bull,
+        bear_agent=bear,
+        judge_agent=judge,
+        marketing_extractor=marketing,
+        quality_evaluator=quality,
         telegram_dual_bot=telegram,
     )
 
@@ -204,7 +215,10 @@ async def run_scenario(scenario: dict) -> dict:
 
     orchestrator = build_orchestrator(topic, judge_enabled)
     result = await orchestrator.run(
-        topic=topic, chat_id=0, max_rounds=rounds, background="",
+        topic=topic,
+        chat_id=0,
+        max_rounds=rounds,
+        background="",
     )
 
     # 验证
@@ -214,11 +228,13 @@ async def run_scenario(scenario: dict) -> dict:
         "expected_transcript": rounds * 2 + (1 if judge_enabled else 0),
         "all_bull_stand_support": all(
             "支持" in t.content.thesis or "趋势" in t.content.thesis
-            for t in result.transcript if t.speaker == "bull"
+            for t in result.transcript
+            if t.speaker == "bull"
         ),
         "all_bear_stand_oppose": all(
             "反对" in t.content.thesis or "泡沫" in t.content.thesis
-            for t in result.transcript if t.speaker == "bear"
+            for t in result.transcript
+            if t.speaker == "bear"
         ),
         "verdict_present": (result.verdict is not None) == judge_enabled,
         "material_has_quotes": len(result.material.quotes) > 0,
@@ -245,7 +261,9 @@ async def main():
 
     results = []
     for scenario in SCENARIOS:
-        print(f"\n▶ 场景: {scenario['topic']} (轮次={scenario['rounds']}, 裁判={'是' if scenario['judge'] else '否'})")
+        print(
+            f"\n▶ 场景: {scenario['topic']} (轮次={scenario['rounds']}, 裁判={'是' if scenario['judge'] else '否'})"
+        )
         res = await run_scenario(scenario)
         results.append(res)
 
@@ -288,14 +306,16 @@ async def main():
     output_path = Path(__file__).parent / "scenario_test_result.json"
     detailed = []
     for r in results:
-        detailed.append({
-            "topic": r["topic"],
-            "rounds": r["rounds"],
-            "judge": r["judge"],
-            "checks": r["checks"],
-            "all_passed": r["all_passed"],
-            "result": r["result"].to_dict(),
-        })
+        detailed.append(
+            {
+                "topic": r["topic"],
+                "rounds": r["rounds"],
+                "judge": r["judge"],
+                "checks": r["checks"],
+                "all_passed": r["all_passed"],
+                "result": r["result"].to_dict(),
+            }
+        )
     output_path.write_text(
         json.dumps(detailed, ensure_ascii=False, indent=2),
         encoding="utf-8",

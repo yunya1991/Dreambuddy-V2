@@ -22,20 +22,21 @@
 - is_easing: 是否处于降息周期(1/0)
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
 
 
 def load_btc_data() -> pd.DataFrame:
@@ -150,35 +151,51 @@ def compute_all_fed_features(fe: PhilosophyFeatureEngineer, prices: pd.DataFrame
     if level_std > 0:
         rate_zscore = (fed_level - level_mean) / level_std
 
-    return pd.DataFrame({
-        "fed_rate_action": fed_action,
-        "fed_months_in_cycle": fed_months,
-        "fed_rate_level": fed_level,
-        # 方向1：利率状态特征
-        "rate_change_6m": rate_change_6m,
-        "rate_change_12m": rate_change_12m,
-        "rate_zscore": rate_zscore,
-        "rate_change_freq": rate_change_freq,
-        # 方向3：利率周期阶段
-        "rate_cycle_phase": rate_cycle_phase,
-        "rate_cycle_progress": rate_cycle_progress,
-        "is_tightening": is_tightening,
-        "is_easing": is_easing,
-    }, index=prices.index)
+    return pd.DataFrame(
+        {
+            "fed_rate_action": fed_action,
+            "fed_months_in_cycle": fed_months,
+            "fed_rate_level": fed_level,
+            # 方向1：利率状态特征
+            "rate_change_6m": rate_change_6m,
+            "rate_change_12m": rate_change_12m,
+            "rate_zscore": rate_zscore,
+            "rate_change_freq": rate_change_freq,
+            # 方向3：利率周期阶段
+            "rate_cycle_phase": rate_cycle_phase,
+            "rate_cycle_progress": rate_cycle_progress,
+            "is_tightening": is_tightening,
+            "is_easing": is_easing,
+        },
+        index=prices.index,
+    )
 
 
-def compute_interaction_features(phil_features: pd.DataFrame, fed_features: pd.DataFrame) -> pd.DataFrame:
+def compute_interaction_features(
+    phil_features: pd.DataFrame, fed_features: pd.DataFrame
+) -> pd.DataFrame:
     """方向2：利率×价格交互特征"""
-    return pd.DataFrame({
-        "fed_level_x_ath_dd": fed_features["fed_rate_level"] * phil_features["ath_drawdown_pct"],
-        "fed_level_x_ma200_dist": fed_features["fed_rate_level"] * phil_features["weekly_ma200_distance"],
-        "fed_level_x_halving": fed_features["fed_rate_level"] * phil_features["halving_months_after"],
-        "fed_action_x_btc_bull": fed_features["fed_rate_action"] * phil_features["btc_bull_confirmed"],
-        "fed_level_x_dd_vs_hist": fed_features["fed_rate_level"] * phil_features["drawdown_vs_hist_avg"],
-        "fed_level_x_cycle_sim": fed_features["fed_rate_level"] * phil_features["cycle_path_similarity"],
-        "rate_change6m_x_ath_dd": fed_features["rate_change_6m"] * phil_features["ath_drawdown_pct"],
-        "is_easing_x_ma200_below": fed_features["is_easing"] * (phil_features["weekly_ma200_distance"] < 0).astype(float),
-    }, index=phil_features.index)
+    return pd.DataFrame(
+        {
+            "fed_level_x_ath_dd": fed_features["fed_rate_level"]
+            * phil_features["ath_drawdown_pct"],
+            "fed_level_x_ma200_dist": fed_features["fed_rate_level"]
+            * phil_features["weekly_ma200_distance"],
+            "fed_level_x_halving": fed_features["fed_rate_level"]
+            * phil_features["halving_months_after"],
+            "fed_action_x_btc_bull": fed_features["fed_rate_action"]
+            * phil_features["btc_bull_confirmed"],
+            "fed_level_x_dd_vs_hist": fed_features["fed_rate_level"]
+            * phil_features["drawdown_vs_hist_avg"],
+            "fed_level_x_cycle_sim": fed_features["fed_rate_level"]
+            * phil_features["cycle_path_similarity"],
+            "rate_change6m_x_ath_dd": fed_features["rate_change_6m"]
+            * phil_features["ath_drawdown_pct"],
+            "is_easing_x_ma200_below": fed_features["is_easing"]
+            * (phil_features["weekly_ma200_distance"] < 0).astype(float),
+        },
+        index=phil_features.index,
+    )
 
 
 def generate_labels(closes, lookahead, threshold, mode="drop"):
@@ -195,8 +212,9 @@ def generate_labels(closes, lookahead, threshold, mode="drop"):
     return labels
 
 
-def walk_forward_validation(features, labels, feature_names,
-                            n_splits=12, train_days=730, test_days=180, step_days=180):
+def walk_forward_validation(
+    features, labels, feature_names, n_splits=12, train_days=730, test_days=180, step_days=180
+):
     n = len(features)
     feature_importances = []
     train_aucs, test_aucs = [], []
@@ -220,10 +238,15 @@ def walk_forward_validation(features, labels, feature_names,
         if y_train.sum() < 5 or y_test.sum() < 2:
             continue
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
         train_pred = model.predict_proba(X_train)[:, 1]
@@ -237,7 +260,11 @@ def walk_forward_validation(features, labels, feature_names,
     avg_test = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay = 1.0 - (avg_test / avg_train) if avg_train > 0 else 0.0
-    avg_imp = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_imp = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
     return avg_test, avg_train, float(decay), avg_imp
 
 
@@ -282,7 +309,11 @@ def main():
     interaction_features = compute_interaction_features(phil_features, fed_features)
 
     # V5.4基线（已包含fed_rate_level）
-    v54_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v54_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v54_names = list(v54_base.columns)
 
     print("  趋势特征: {}维".format(trend_features.shape[1]))
@@ -298,8 +329,12 @@ def main():
 
     # V5.4基线AUC
     print("\n【V5.4基线】")
-    v54_top, v54_top_tr, v54_top_dec, _ = walk_forward_validation(v54_base, top_exit_labels, v54_names)
-    v54_dip, v54_dip_tr, v54_dip_dec, _ = walk_forward_validation(v54_base, dip_buy_labels, v54_names)
+    v54_top, v54_top_tr, v54_top_dec, _ = walk_forward_validation(
+        v54_base, top_exit_labels, v54_names
+    )
+    v54_dip, v54_dip_tr, v54_dip_dec, _ = walk_forward_validation(
+        v54_base, dip_buy_labels, v54_names
+    )
     print("  TOP_EXIT: {:.4f} (decay={:.1%})".format(v54_top, v54_top_dec))
     print("  DIP_BUY:  {:.4f} (decay={:.1%})".format(v54_dip, v54_dip_dec))
 
@@ -319,21 +354,38 @@ def main():
         ("D1: 全部4个", direction1_feats),
     ]
 
-    print("  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 80)
 
     d1_results = []
     for name, feats in direction1_combos:
         top_auc, dip_auc, top_dec, dip_dec, _, _, _ = run_combo(
-            v54_base, v54_names, fed_features, feats, top_exit_labels, dip_buy_labels, name)
+            v54_base, v54_names, fed_features, feats, top_exit_labels, dip_buy_labels, name
+        )
         d_top = top_auc - v54_top
         d_dip = dip_auc - v54_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        d1_results.append({"name": name, "features": feats, "top_auc": top_auc, "dip_auc": dip_auc,
-                           "delta_top": d_top, "delta_dip": d_dip, "top_decay": top_dec, "dip_decay": dip_dec})
+        print(
+            "  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        d1_results.append(
+            {
+                "name": name,
+                "features": feats,
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "delta_top": d_top,
+                "delta_dip": d_dip,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+            }
+        )
 
     # ========== 方向2：利率×价格交互特征 ==========
     print("\n" + "=" * 80)
@@ -351,24 +403,44 @@ def main():
         ("D2: + rate_change6m_x_ath_dd", ["rate_change6m_x_ath_dd"]),
         ("D2: + is_easing_x_ma200_below", ["is_easing_x_ma200_below"]),
         ("D2: 全部8个", direction2_feats),
-        ("D2: 精选3个", ["fed_level_x_ath_dd", "fed_level_x_dd_vs_hist", "is_easing_x_ma200_below"]),
+        (
+            "D2: 精选3个",
+            ["fed_level_x_ath_dd", "fed_level_x_dd_vs_hist", "is_easing_x_ma200_below"],
+        ),
     ]
 
-    print("  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 80)
 
     d2_results = []
     for name, feats in direction2_combos:
         top_auc, dip_auc, top_dec, dip_dec, _, _, _ = run_combo(
-            v54_base, v54_names, interaction_features, feats, top_exit_labels, dip_buy_labels, name)
+            v54_base, v54_names, interaction_features, feats, top_exit_labels, dip_buy_labels, name
+        )
         d_top = top_auc - v54_top
         d_dip = dip_auc - v54_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        d2_results.append({"name": name, "features": feats, "top_auc": top_auc, "dip_auc": dip_auc,
-                          "delta_top": d_top, "delta_dip": d_dip, "top_decay": top_dec, "dip_decay": dip_dec})
+        print(
+            "  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        d2_results.append(
+            {
+                "name": name,
+                "features": feats,
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "delta_top": d_top,
+                "delta_dip": d_dip,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+            }
+        )
 
     # ========== 方向3：利率周期阶段分类特征 ==========
     print("\n" + "=" * 80)
@@ -386,21 +458,38 @@ def main():
         ("D3: 全部4个", direction3_feats),
     ]
 
-    print("  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<40s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 80)
 
     d3_results = []
     for name, feats in direction3_combos:
         top_auc, dip_auc, top_dec, dip_dec, _, _, _ = run_combo(
-            v54_base, v54_names, fed_features, feats, top_exit_labels, dip_buy_labels, name)
+            v54_base, v54_names, fed_features, feats, top_exit_labels, dip_buy_labels, name
+        )
         d_top = top_auc - v54_top
         d_dip = dip_auc - v54_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        d3_results.append({"name": name, "features": feats, "top_auc": top_auc, "dip_auc": dip_auc,
-                          "delta_top": d_top, "delta_dip": d_dip, "top_decay": top_dec, "dip_decay": dip_dec})
+        print(
+            "  {:<40s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        d3_results.append(
+            {
+                "name": name,
+                "features": feats,
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "delta_top": d_top,
+                "delta_dip": d_dip,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+            }
+        )
 
     # ========== 跨方向组合 ==========
     print("\n" + "=" * 80)
@@ -410,17 +499,38 @@ def main():
     # 从每个方向选最佳1-2个
     cross_combos = [
         ("跨: D1最佳 + D2最佳", None),  # 动态填充
-        ("跨: rate_zscore + is_easing + fed_level_x_dd_vs_hist",
-         {"rate_zscore": fed_features, "is_easing": fed_features, "fed_level_x_dd_vs_hist": interaction_features}),
-        ("跨: rate_change_freq + is_easing + is_easing_x_ma200_below",
-         {"rate_change_freq": fed_features, "is_easing": fed_features, "is_easing_x_ma200_below": interaction_features}),
-        ("跨: rate_zscore + rate_change_freq + is_easing + fed_level_x_dd_vs_hist",
-         {"rate_zscore": fed_features, "rate_change_freq": fed_features,
-          "is_easing": fed_features, "fed_level_x_dd_vs_hist": interaction_features}),
+        (
+            "跨: rate_zscore + is_easing + fed_level_x_dd_vs_hist",
+            {
+                "rate_zscore": fed_features,
+                "is_easing": fed_features,
+                "fed_level_x_dd_vs_hist": interaction_features,
+            },
+        ),
+        (
+            "跨: rate_change_freq + is_easing + is_easing_x_ma200_below",
+            {
+                "rate_change_freq": fed_features,
+                "is_easing": fed_features,
+                "is_easing_x_ma200_below": interaction_features,
+            },
+        ),
+        (
+            "跨: rate_zscore + rate_change_freq + is_easing + fed_level_x_dd_vs_hist",
+            {
+                "rate_zscore": fed_features,
+                "rate_change_freq": fed_features,
+                "is_easing": fed_features,
+                "fed_level_x_dd_vs_hist": interaction_features,
+            },
+        ),
     ]
 
-    print("  {:<55s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<55s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 95)
 
     cross_results = []
@@ -433,16 +543,34 @@ def main():
                 extra_df[feat_name] = source_df[feat_name]
 
         top_auc, dip_auc, top_dec, dip_dec, _, _, _ = run_combo(
-            v54_base, v54_names, extra_df, list(extra_df.columns), top_exit_labels, dip_buy_labels, name)
+            v54_base,
+            v54_names,
+            extra_df,
+            list(extra_df.columns),
+            top_exit_labels,
+            dip_buy_labels,
+            name,
+        )
         d_top = top_auc - v54_top
         d_dip = dip_auc - v54_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<55s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        cross_results.append({"name": name, "features": list(extra_df.columns),
-                             "top_auc": top_auc, "dip_auc": dip_auc,
-                             "delta_top": d_top, "delta_dip": d_dip,
-                             "top_decay": top_dec, "dip_decay": dip_dec})
+        print(
+            "  {:<55s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        cross_results.append(
+            {
+                "name": name,
+                "features": list(extra_df.columns),
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "delta_top": d_top,
+                "delta_dip": d_dip,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+            }
+        )
 
     # ========== 总结 ==========
     print("\n" + "=" * 80)
@@ -457,13 +585,21 @@ def main():
     print("\n  双场景均提升的组合 ({}个):".format(len(both_positive)))
     for r in both_positive[:10]:
         comp = (r["delta_top"] + r["delta_dip"]) / 2
-        print("  综合={:+.4f} {:<45s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
-            comp, r["name"], r["delta_top"], r["delta_dip"], r["top_decay"], r["dip_decay"]))
+        print(
+            "  综合={:+.4f} {:<45s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
+                comp, r["name"], r["delta_top"], r["delta_dip"], r["top_decay"], r["dip_decay"]
+            )
+        )
 
     # 保存结果
     output = {
         "analysis_date": str(pd.Timestamp.now()),
-        "v54_baseline": {"top_exit": v54_top, "dip_buy": v54_dip, "top_decay": v54_top_dec, "dip_decay": v54_dip_dec},
+        "v54_baseline": {
+            "top_exit": v54_top,
+            "dip_buy": v54_dip,
+            "top_decay": v54_top_dec,
+            "dip_decay": v54_dip_dec,
+        },
         "direction1_results": d1_results,
         "direction2_results": d2_results,
         "direction3_results": d3_results,
@@ -471,7 +607,7 @@ def main():
         "best_both_positive": both_positive[:5] if both_positive else [],
     }
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/v55_direction123_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
     print("\n  结果已保存: {}".format(output_path))
 

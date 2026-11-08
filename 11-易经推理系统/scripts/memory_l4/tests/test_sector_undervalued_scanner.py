@@ -8,29 +8,29 @@
   - 过滤 undervalued_score > 0.3，按 opportunity_score 降序输出 Top N
   - FAIL-OPEN：异常返回空 scan
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
 from unittest.mock import patch
-from dataclasses import fields as dataclass_fields
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.sector_undervalued_scanner import (
-    UndervaluedCoin,
+from force_vector.sector_undervalued_scanner import (  # noqa: E402
     SectorUndervaluedScan,
-    scan_sector_undervalued,
+    UndervaluedCoin,
     compute_opportunity_score,
     compute_rank,
+    scan_sector_undervalued,
 )
-
 
 # ---------------------------------------------------------------------------
 # 1. Import & Dataclass 字段完整性
 # ---------------------------------------------------------------------------
+
 
 class TestImport:
     """模块可导入且关键符号存在。"""
@@ -58,9 +58,13 @@ class TestDataclassFields:
         """UndervaluedCoin 应有 7 个字段：coin/sector/undervalued_score/multi_dim_details/leader_momentum/opportunity_score/rank。"""
         names = {f.name for f in dataclass_fields(UndervaluedCoin)}
         assert names == {
-            "coin", "sector", "undervalued_score",
-            "multi_dim_details", "leader_momentum",
-            "opportunity_score", "rank",
+            "coin",
+            "sector",
+            "undervalued_score",
+            "multi_dim_details",
+            "leader_momentum",
+            "opportunity_score",
+            "rank",
         }
 
     def test_sector_undervalued_scan_has_three_fields(self):
@@ -72,6 +76,7 @@ class TestDataclassFields:
 # ---------------------------------------------------------------------------
 # 2. compute_opportunity_score 纯函数
 # ---------------------------------------------------------------------------
+
 
 class TestComputeOpportunityScore:
     """验证机会分计算（SPEC §4.3 公式 4）。
@@ -114,6 +119,7 @@ class TestComputeOpportunityScore:
 # 3. compute_rank 纯函数
 # ---------------------------------------------------------------------------
 
+
 class TestComputeRank:
     """验证 rank 体系（同 BDSM rank：S/A/B/C）。"""
 
@@ -154,13 +160,58 @@ _TEST_SECTOR_MAP = {
 def _mock_multi_dim(coin, db_path=None):
     """根据币种返回不同低估分。"""
     table = {
-        "UNI": {"multi_dim_score": 0.7, "mc_fees_pct": 20.0, "mc_tvl_pct": 25.0, "peg_pct": 30.0, "confirmed_low": True, "dimensions_available": 3},
-        "1INCH": {"multi_dim_score": 0.5, "mc_fees_pct": 30.0, "mc_tvl_pct": 35.0, "peg_pct": 40.0, "confirmed_low": True, "dimensions_available": 3},
-        "SUSHI": {"multi_dim_score": -0.3, "mc_fees_pct": 75.0, "mc_tvl_pct": 80.0, "peg_pct": 70.0, "confirmed_low": False, "dimensions_available": 3},
-        "ETH": {"multi_dim_score": 0.4, "mc_fees_pct": 35.0, "mc_tvl_pct": 0.0, "peg_pct": 0.0, "confirmed_low": False, "dimensions_available": 1},
-        "SOL": {"multi_dim_score": -0.5, "mc_fees_pct": 90.0, "mc_tvl_pct": 0.0, "peg_pct": 0.0, "confirmed_low": False, "dimensions_available": 1},
+        "UNI": {
+            "multi_dim_score": 0.7,
+            "mc_fees_pct": 20.0,
+            "mc_tvl_pct": 25.0,
+            "peg_pct": 30.0,
+            "confirmed_low": True,
+            "dimensions_available": 3,
+        },
+        "1INCH": {
+            "multi_dim_score": 0.5,
+            "mc_fees_pct": 30.0,
+            "mc_tvl_pct": 35.0,
+            "peg_pct": 40.0,
+            "confirmed_low": True,
+            "dimensions_available": 3,
+        },
+        "SUSHI": {
+            "multi_dim_score": -0.3,
+            "mc_fees_pct": 75.0,
+            "mc_tvl_pct": 80.0,
+            "peg_pct": 70.0,
+            "confirmed_low": False,
+            "dimensions_available": 3,
+        },
+        "ETH": {
+            "multi_dim_score": 0.4,
+            "mc_fees_pct": 35.0,
+            "mc_tvl_pct": 0.0,
+            "peg_pct": 0.0,
+            "confirmed_low": False,
+            "dimensions_available": 1,
+        },
+        "SOL": {
+            "multi_dim_score": -0.5,
+            "mc_fees_pct": 90.0,
+            "mc_tvl_pct": 0.0,
+            "peg_pct": 0.0,
+            "confirmed_low": False,
+            "dimensions_available": 1,
+        },
     }
-    return table.get(coin, {"multi_dim_score": 0.0, "mc_fees_pct": 0.0, "mc_tvl_pct": 0.0, "peg_pct": 0.0, "confirmed_low": False, "dimensions_available": 0})
+    return table.get(
+        coin,
+        {
+            "multi_dim_score": 0.0,
+            "mc_fees_pct": 0.0,
+            "mc_tvl_pct": 0.0,
+            "peg_pct": 0.0,
+            "confirmed_low": False,
+            "dimensions_available": 0,
+        },
+    )
 
 
 def _mock_catalyst(sector, db_path=None):
@@ -179,17 +230,33 @@ class TestScanSectorUndervalued:
 
     def test_returns_dataclass(self):
         """主函数应返回 SectorUndervaluedScan。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         assert isinstance(result, SectorUndervaluedScan)
 
     def test_scan_includes_undervalued_coin(self):
         """UNDervalued_score > 0.3 的币应进入 sectors 列表。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         # UNI(0.7) 和 1INCH(0.5) 应在 DEX 赛道
         dex_coins = result.sectors.get("DEX", [])
@@ -199,9 +266,17 @@ class TestScanSectorUndervalued:
 
     def test_scan_filters_out_high_valuation(self):
         """undervalued_score <= 0.3 的币不应出现。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         # SUSHI(-0.3) 和 SOL(-0.5) 不应出现
         all_coins = {c.coin for coins in result.sectors.values() for c in coins}
@@ -210,9 +285,17 @@ class TestScanSectorUndervalued:
 
     def test_scan_filters_eth_below_threshold(self):
         """ETH(0.4) > 0.3 应在 L1 赛道，但机会分受 catalyst 影响。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         l1_coins = result.sectors.get("L1", [])
         coin_names = {c.coin for c in l1_coins}
@@ -220,27 +303,51 @@ class TestScanSectorUndervalued:
 
     def test_opportunity_score_correct(self):
         """验证 opportunity_score 计算正确：UNI(0.7, catalyst=0.48) → 0.7*0.6 + 0.48*0.4 = 0.42 + 0.192 = 0.612"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         uni = next(c for c in result.top_opportunities if c.coin == "UNI")
         assert abs(uni.opportunity_score - 0.612) < 1e-3
 
     def test_top_opportunities_sorted_desc(self):
         """top_opportunities 应按 opportunity_score 降序排列。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         scores = [c.opportunity_score for c in result.top_opportunities]
         assert scores == sorted(scores, reverse=True), f"未按降序排列: {scores}"
 
     def test_top_opportunities_contains_all_undervalued(self):
         """top_opportunities 应包含所有 undervalued_score > 0.3 的币（跨赛道）。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         # UNI(0.7), 1INCH(0.5), ETH(0.4) 共 3 个低估币
         assert len(result.top_opportunities) == 3
@@ -249,27 +356,51 @@ class TestScanSectorUndervalued:
 
     def test_rank_assigned(self):
         """每个 UndervaluedCoin 应有 rank 字段（S/A/B/C）。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         for coin in result.top_opportunities:
             assert coin.rank in {"S", "A", "B", "C"}, f"非法 rank: {coin.rank}"
 
     def test_leader_momentum_populated(self):
         """UndervaluedCoin.leader_momentum 应从 catalyst 结果中提取。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         uni = next(c for c in result.top_opportunities if c.coin == "UNI")
         assert abs(uni.leader_momentum - 0.6) < 1e-6
 
     def test_multi_dim_details_populated(self):
         """UndervaluedCoin.multi_dim_details 应包含三个百分位字段。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         uni = next(c for c in result.top_opportunities if c.coin == "UNI")
         assert "mc_fees_pct" in uni.multi_dim_details
@@ -278,17 +409,30 @@ class TestScanSectorUndervalued:
 
     def test_timestamp_present(self):
         """结果应包含 ISO 格式 timestamp。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_mock_catalyst):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_mock_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         assert result.timestamp
         assert "T" in result.timestamp  # ISO 格式
 
     def test_failopen_on_exception(self):
         """异常时返回空 SectorUndervaluedScan（FAIL-OPEN）。"""
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=RuntimeError("boom")):
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=RuntimeError("boom"),
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         assert isinstance(result, SectorUndervaluedScan)
         assert result.top_opportunities == []
@@ -306,15 +450,27 @@ class TestScanSectorUndervalued:
 
         验证：undervalued_score>0.3 是进入 sectors 的硬过滤，opportunity_score 只影响排名
         """
+
         def _zero_catalyst(sector, db_path=None):
             return {
-                "leader": "UNI", "leader_momentum": 0.0,
-                "sector_breadth": 0.0, "catalyst": 0.0,
+                "leader": "UNI",
+                "leader_momentum": 0.0,
+                "sector_breadth": 0.0,
+                "catalyst": 0.0,
                 "timestamp": "2026-10-07T00:00:00+00:00",
             }
-        with patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_undervalued_scanner.compute_multi_dim_valuation", side_effect=_mock_multi_dim), \
-             patch("force_vector.sector_undervalued_scanner.compute_follow_up_catalyst", side_effect=_zero_catalyst):
+
+        with (
+            patch("force_vector.sector_undervalued_scanner.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim,
+            ),
+            patch(
+                "force_vector.sector_undervalued_scanner.compute_follow_up_catalyst",
+                side_effect=_zero_catalyst,
+            ),
+        ):
             result = scan_sector_undervalued(db_path="/fake/db.db")
         # UNI(0.7) 仍在 sectors 中（undervalued_score > 0.3）
         dex_coins = {c.coin for c in result.sectors.get("DEX", [])}

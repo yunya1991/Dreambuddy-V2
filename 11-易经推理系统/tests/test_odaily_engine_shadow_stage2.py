@@ -15,17 +15,14 @@ Spec §5.3（红线 Shadow 模式）：
   TC-5 (T35) Lifecycle & 3D stress（None/缺字段/空字符串 odaily）→ shadow 全吞不 throw，result 字节稳定
   TC-6 (T36) PermissionError（目录只读）→ shadow 不 throw，result 字节等价
 """
+
 from __future__ import annotations
 
-import io
 import json
 import os
 import sys
-import tempfile
-import time
-import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import pytest
 
@@ -34,7 +31,8 @@ _REPO = THIS_DIR.parent
 _ROOT = str(_REPO)
 _ML4 = str(_REPO / "scripts" / "memory_l4")
 for p in (_ML4, _ROOT):
-    if p not in sys.path: sys.path.insert(0, p)
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 
 # ============================================================
@@ -42,10 +40,12 @@ for p in (_ML4, _ROOT):
 # ============================================================
 def _mk_computer(tmp_path: Path, shadow_enable: bool, override_runtime_dir: Optional[Path] = None):
     from five_domain_feature_computer import FiveDomainFeatureComputer
+
     c = FiveDomainFeatureComputer(enable=True)
     # RED 断言：类属性默认 False（红线）
-    assert hasattr(FiveDomainFeatureComputer, "enable_odaily_engine_boost"), \
-        "RED 阶段：缺失 enable_odaily_engine_boost 类属性（红线保护）"
+    assert hasattr(
+        FiveDomainFeatureComputer, "enable_odaily_engine_boost"
+    ), "RED 阶段：缺失 enable_odaily_engine_boost 类属性（红线保护）"
     c.enable_odaily_engine_boost = shadow_enable  # TC 显式设置
     # 注入测试用 runtime 路径：FiveDomainFeatureComputer 提供 override 属性
     runtime_dir = override_runtime_dir or (tmp_path / "runtime")
@@ -80,7 +80,8 @@ def _read_jsonl(path: str) -> list:
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line: continue
+            if not line:
+                continue
             out.append(json.loads(line))
     return out
 
@@ -113,9 +114,16 @@ def test_tc2_shadow_enabled_appends_jsonl_schema(tmp_path: Path):
     assert len(recs) >= 1, f"enable=True 未写 JSONL（n={len(recs)}）"
     rec = recs[-1]
     # schema：阶段2 GREEN 实现的最小 8 字段
-    REQUIRED = {"ts_ms", "asset_class_cnt", "coin_classes",
-                "dao_boost_mean", "tian_boost_mean", "policy_ts_20_len",
-                "shadow_reason_code", "import_fail_count"}
+    REQUIRED = {
+        "ts_ms",
+        "asset_class_cnt",
+        "coin_classes",
+        "dao_boost_mean",
+        "tian_boost_mean",
+        "policy_ts_20_len",
+        "shadow_reason_code",
+        "import_fail_count",
+    }
     missing = REQUIRED - rec.keys()
     assert not missing, f"JSONL 缺字段：{missing}  实际有：{sorted(rec.keys())}"
     # 基本类型断言
@@ -123,13 +131,21 @@ def test_tc2_shadow_enabled_appends_jsonl_schema(tmp_path: Path):
     assert isinstance(rec["asset_class_cnt"], int)
     assert isinstance(rec["coin_classes"], list)
     assert isinstance(rec["policy_ts_20_len"], int)
-    assert 0 <= rec["policy_ts_20_len"] <= 20, f"policy_ts_20 len∈[0,20]，实际={rec['policy_ts_20_len']}"
-    assert rec["shadow_reason_code"] in {"OD_OK", "OD_NO_ODAILY_FIELDS", "OD_IMPORT_ERROR",
-                                         "OD_PERMISSION", "OD_GENERIC_ERR"}, rec["shadow_reason_code"]
+    assert (
+        0 <= rec["policy_ts_20_len"] <= 20
+    ), f"policy_ts_20 len∈[0,20]，实际={rec['policy_ts_20_len']}"
+    assert rec["shadow_reason_code"] in {
+        "OD_OK",
+        "OD_NO_ODAILY_FIELDS",
+        "OD_IMPORT_ERROR",
+        "OD_PERMISSION",
+        "OD_GENERIC_ERR",
+    }, rec["shadow_reason_code"]
     # result 确定性稳定（enable=True 再跑一遍 → 字节一致；shadow 不引入随机性）
     r_again = c.compute(coin_data=SAMPLE_OD_COIN, system_state={})
-    assert json.dumps(r, sort_keys=True) == json.dumps(r_again, sort_keys=True), \
-        "FAIL：enable=True 两次跑 result 不一致（shadow 引入了随机性）"
+    assert json.dumps(r, sort_keys=True) == json.dumps(
+        r_again, sort_keys=True
+    ), "FAIL：enable=True 两次跑 result 不一致（shadow 引入了随机性）"
 
 
 # ============================================================
@@ -137,28 +153,33 @@ def test_tc2_shadow_enabled_appends_jsonl_schema(tmp_path: Path):
 # ============================================================
 def test_tc3_sentiment_import_error_marks_import_fail(tmp_path: Path, monkeypatch):
     """阶段2 GREEN 实现：policy_ts_20 通过 lazy import sentiment_engine 生成，
-       若 ImportError → reason_code=OD_IMPORT_ERROR 且 import_fail_count>=1。"""
-    real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
+    若 ImportError → reason_code=OD_IMPORT_ERROR 且 import_fail_count>=1。"""
+    real_import = __builtins__.__import__ if hasattr(__builtins__, "__import__") else __import__
     bad_modules = {"engines", "engines.sentiment_engine"}
+
     def _imp_stub(name, *a, **kw):
         base = name.split(".")[0]
         if base in bad_modules or name in bad_modules:
             raise ImportError(f"simulated stub: cannot import {name}")
         return real_import(name, *a, **kw)
+
     monkeypatch.setattr("builtins.__import__", _imp_stub)
 
     c = _mk_computer(tmp_path, shadow_enable=True)
     r = c.compute(coin_data=SAMPLE_OD_COIN, system_state={})
     jl = c._od_shadow_jsonl_path
     recs = _read_jsonl(jl)
-    assert len(recs) >= 1, f"ImportError 场景 shadow 也必须写一条 err 记录"
+    assert len(recs) >= 1, "ImportError 场景 shadow 也必须写一条 err 记录"
     last = recs[-1]
-    assert last.get("shadow_reason_code") == "OD_IMPORT_ERROR", f"reason_code={last.get('shadow_reason_code')}!=OD_IMPORT_ERROR"
+    assert (
+        last.get("shadow_reason_code") == "OD_IMPORT_ERROR"
+    ), f"reason_code={last.get('shadow_reason_code')}!=OD_IMPORT_ERROR"
     assert int(last.get("import_fail_count", 0)) >= 1, "import_fail_count 应≥1"
     # IMPORT_FAIL 场景 result 确定性稳定（Fail-open：两次跑 result 一致）
     r_again = c.compute(coin_data=SAMPLE_OD_COIN, system_state={})
-    assert json.dumps(r, sort_keys=True) == json.dumps(r_again, sort_keys=True), \
-        "FAIL：IMPORT_ERROR 场景 result 不稳定"
+    assert json.dumps(r, sort_keys=True) == json.dumps(
+        r_again, sort_keys=True
+    ), "FAIL：IMPORT_ERROR 场景 result 不稳定"
 
 
 # ============================================================
@@ -168,7 +189,7 @@ def test_tc4_4_engine_like_mock_produces_policy_ts_20_of_20(tmp_path: Path, mock
     """阶段2：policy_ts_20 由 4 引擎-like 重采样生成。
     这里 RED 期望：FiveDomainFeatureComputer._shadow_infer_policy_ts_20(coin_data) 返回 20 个合法 float。
     """
-    from five_domain_feature_computer import FiveDomainFeatureComputer
+
     c = _mk_computer(tmp_path, shadow_enable=True)
     ts = c._shadow_infer_policy_ts_20(SAMPLE_OD_COIN)
     assert isinstance(ts, list), f"policy_ts_20 类型：{type(ts)} 不是 list"
@@ -185,13 +206,23 @@ def test_tc4_4_engine_like_mock_produces_policy_ts_20_of_20(tmp_path: Path, mock
 # ============================================================
 # T35 TC-5 生命周期 & 3D stress → 吞异常 + result 字节稳定
 # ============================================================
-@pytest.mark.parametrize("coin_data_desc,coin_data", [
-    ("None", None),
-    ("缺 odaily_*", {"atr_percentile": 0.4, "liquidity_score": 0.55,
-                     "merrill_phase": "RECOVERY", "cycle4y_t_rel": 0.3}),
-    ("空字符串 odaily policy sent", dict(SAMPLE_OD_COIN, odaily_policy_sentiment_3d="")),
-    ("int odaily", 42),
-])
+@pytest.mark.parametrize(
+    "coin_data_desc,coin_data",
+    [
+        ("None", None),
+        (
+            "缺 odaily_*",
+            {
+                "atr_percentile": 0.4,
+                "liquidity_score": 0.55,
+                "merrill_phase": "RECOVERY",
+                "cycle4y_t_rel": 0.3,
+            },
+        ),
+        ("空字符串 odaily policy sent", dict(SAMPLE_OD_COIN, odaily_policy_sentiment_3d="")),
+        ("int odaily", 42),
+    ],
+)
 def test_tc5_lifecycle_3d_stress_failopen(tmp_path: Path, coin_data_desc, coin_data):
     c_on = _mk_computer(tmp_path, shadow_enable=True)
     try:
@@ -203,8 +234,9 @@ def test_tc5_lifecycle_3d_stress_failopen(tmp_path: Path, coin_data_desc, coin_d
         r_on2 = c_on.compute(coin_data=coin_data, system_state={})
     except Exception as e:  # noqa: BLE001
         pytest.fail(f"shadow=True {coin_data_desc} 二次跑抛异常：{type(e).__name__}: {e}")
-    assert json.dumps(r_on, sort_keys=True) == json.dumps(r_on2, sort_keys=True), \
-        f"{coin_data_desc}: enable=True 两次跑 result 不一致"
+    assert json.dumps(r_on, sort_keys=True) == json.dumps(
+        r_on2, sort_keys=True
+    ), f"{coin_data_desc}: enable=True 两次跑 result 不一致"
 
 
 # ============================================================
@@ -218,17 +250,18 @@ def test_tc6_permission_error_swallowed_result_intact(tmp_path: Path, monkeypatc
     Path(jl).touch()
     os.chmod(jl, 0o444)
     # 捕获 open(..., 'a') 抛 PermissionError → 必须吞掉
-    c_off = _mk_computer(tmp_path, shadow_enable=False)
+    c_off = _mk_computer(tmp_path, shadow_enable=False)  # noqa: F841
     try:
         r_on = c.compute(coin_data=SAMPLE_OD_COIN, system_state={})
     except PermissionError as e:
         pytest.fail(f"PermissionError 没被 shadow 吞：{e}")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001, F841
         # 允许非 Permission 异常被 总开关 try/except 吞
         pass
     finally:
         os.chmod(jl, 0o644)
     # result 确定性稳定（两次跑一致；Permission 不引入随机性）
     r_again = c.compute(coin_data=SAMPLE_OD_COIN, system_state={})
-    assert json.dumps(r_on, sort_keys=True) == json.dumps(r_again, sort_keys=True), \
-        "Permission 场景 result 不稳定"
+    assert json.dumps(r_on, sort_keys=True) == json.dumps(
+        r_again, sort_keys=True
+    ), "Permission 场景 result 不稳定"

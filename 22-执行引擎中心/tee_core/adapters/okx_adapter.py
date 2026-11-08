@@ -13,6 +13,7 @@ and makes TEE unusable by other strategy layers without also pulling in
 the first strategy's entire dependency tree. DI keeps this module fully
 agnostic about where its raw_client was created.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
@@ -75,9 +76,16 @@ class OkxAdapter:
         leverage: Optional[float] = None,
         max_slippage_bps: Optional[float] = None,
     ) -> Dict[str, Any]:
-        kwargs = dict(
-            inst_id=inst_id, side=side, ord_type=ord_type, sz=sz, px=px,
-            td_mode=td_mode, pos_side=pos_side, tag=tag, reason=reason,
+        kwargs = dict(  # noqa: C408
+            inst_id=inst_id,
+            side=side,
+            ord_type=ord_type,
+            sz=sz,
+            px=px,
+            td_mode=td_mode,
+            pos_side=pos_side,
+            tag=tag,
+            reason=reason,
             leverage=leverage,
         )
         # Only forward max_slippage_bps when the raw client supports it
@@ -90,15 +98,13 @@ class OkxAdapter:
         fn = getattr(self._raw, "cancel_order", None)
         if callable(fn):
             return fn(inst_id=inst_id, ord_id=ord_id)
-        return {"ok": False, "error": "cancel_order not implemented on raw_client",
-                "dry_run": True}
+        return {"ok": False, "error": "cancel_order not implemented on raw_client", "dry_run": True}
 
     def get_order(self, inst_id: str, ord_id: str) -> Dict[str, Any]:
         fn = getattr(self._raw, "get_order", None)
         if callable(fn):
             return fn(inst_id=inst_id, ord_id=ord_id)
-        return {"ok": False, "error": "get_order not implemented on raw_client",
-                "dry_run": True}
+        return {"ok": False, "error": "get_order not implemented on raw_client", "dry_run": True}
 
     # ── contract info ─────────────────────────────────────────────────
     def get_contract_info(self, inst_id: str) -> Tuple[float, float]:
@@ -108,6 +114,7 @@ class OkxAdapter:
         # Protocol-same fallback path via imported helper from v15 utils.
         # Delayed import here keeps module top-level free of V15 references.
         from typing import Any as _A
+
         get_info: _A = getattr(self._raw, "_get_contract_info", None)
         if callable(get_info):
             return get_info(inst_id)

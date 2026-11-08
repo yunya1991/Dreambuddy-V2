@@ -4,6 +4,7 @@ SPEC v2.0-rc3 第 7 节：NullBot 用于 C-Drive 内部辩论模式。
 实现 TelegramDualBot 的接口但不发送消息，只存储在内存中。
 用于不需要 Telegram 发送的场景（如 C-Drive 自驱动辩论）。
 """
+
 from __future__ import annotations
 
 import logging

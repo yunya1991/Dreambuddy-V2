@@ -26,23 +26,24 @@
 基线: V5.5 (TOP_EXIT 0.7433, DIP_BUY 0.6935)
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.pitd_kinematics_engineer import KinematicsEngineer
-from ml.pitd_dynamics_engineer import DynamicsEngineer
-from ml.pitd_potential_field import PotentialFieldEngineer
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.pitd_dynamics_engineer import DynamicsEngineer  # noqa: E402
+from ml.pitd_kinematics_engineer import KinematicsEngineer  # noqa: E402
+from ml.pitd_potential_field import PotentialFieldEngineer  # noqa: E402
 
 
 def load_btc_data() -> pd.DataFrame:
@@ -71,8 +72,13 @@ def generate_labels(closes, lookahead, threshold, mode="drop"):
 
 
 def walk_forward_validation(
-    features, labels, feature_names,
-    n_splits=12, train_days=730, test_days=180, step_days=180,
+    features,
+    labels,
+    feature_names,
+    n_splits=12,
+    train_days=730,
+    test_days=180,
+    step_days=180,
 ):
     n = len(features)
     feature_importances = []
@@ -97,10 +103,15 @@ def walk_forward_validation(
         if y_train.sum() < 5 or y_test.sum() < 2:
             continue
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
         train_pred = model.predict_proba(X_train)[:, 1]
@@ -114,7 +125,11 @@ def walk_forward_validation(
     avg_test = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay = 1.0 - (avg_test / avg_train) if avg_train > 0 else 0.0
-    avg_imp = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_imp = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
     return avg_test, avg_train, float(decay), avg_imp
 
 
@@ -165,7 +180,9 @@ def build_interaction_features(phil_feats, kin_feats, dyn_feats, pf_feats) -> pd
 
     # 速度比（大小周期速度比）×周期偏离
     speed_ratio = kin_feats["kin_speed_ratio_WD"]
-    interactions["speed_ratio_x_drawdown_vs_hist"] = speed_ratio * phil_feats["drawdown_vs_hist_avg"]
+    interactions["speed_ratio_x_drawdown_vs_hist"] = (
+        speed_ratio * phil_feats["drawdown_vs_hist_avg"]
+    )
 
     # === 非对称交互 ===
     # (1-η) × drawdown: 趋势弱 + 周期偏离 → 反转预警
@@ -227,7 +244,11 @@ def main():
     print("  计算耗时: {:.2f}s".format(time.time() - t0))
 
     # 2. 构建基线
-    v55_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v55_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v55_names = list(v55_base.columns)
 
     top_exit_labels = generate_labels(closes, 20, 0.20, "drop")
@@ -237,32 +258,47 @@ def main():
     print("\n【2. Walk-Forward验证】")
 
     print("\n  2.1 V5.5基线")
-    v55_top, v55_top_tr, v55_top_dec, _ = walk_forward_validation(v55_base, top_exit_labels, v55_names)
-    v55_dip, v55_dip_tr, v55_dip_dec, _ = walk_forward_validation(v55_base, dip_buy_labels, v55_names)
+    v55_top, v55_top_tr, v55_top_dec, _ = walk_forward_validation(
+        v55_base, top_exit_labels, v55_names
+    )
+    v55_dip, v55_dip_tr, v55_dip_dec, _ = walk_forward_validation(
+        v55_base, dip_buy_labels, v55_names
+    )
     print("    TOP_EXIT: {:.4f} (decay={:.1%})".format(v55_top, v55_top_dec))
     print("    DIP_BUY:  {:.4f} (decay={:.1%})".format(v55_dip, v55_dip_dec))
 
     # 4. 逐个交互特征消融实验
     print("\n【3. 逐个交互特征消融实验】")
-    print("  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "交互特征", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "交互特征", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 85)
 
     single_results = []
     interaction_features = interaction_features.fillna(0.0).replace([np.inf, -np.inf], 0.0)
 
     for feat in interaction_features.columns:
-        exp_feats = pd.concat([v55_base, interaction_features[[feat]]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, interaction_features[[feat]]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
         top_auc, _, _, _ = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
         dip_auc, _, _, _ = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            feat, top_auc, d_top, dip_auc, d_dip, verdict))
-        single_results.append({"feat": feat, "d_top": d_top, "d_dip": d_dip,
-                               "top_auc": top_auc, "dip_auc": dip_auc})
+        print(
+            "  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                feat, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        single_results.append(
+            {"feat": feat, "d_top": d_top, "d_dip": d_dip, "top_auc": top_auc, "dip_auc": dip_auc}
+        )
 
     # 5. 按物理量分组测试
     print("\n【4. 按物理量分组测试】")
@@ -270,14 +306,27 @@ def main():
     groups = {
         "η交互(5维)": [f for f in interaction_features.columns if f.startswith("eta_")],
         "梯度交互(5维)": [f for f in interaction_features.columns if f.startswith("grad")],
-        "动量交互(4维)": [f for f in interaction_features.columns if f.startswith("mom") or f.startswith("kinetic")],
-        "运动学交互(3维)": [f for f in interaction_features.columns if f.startswith("jerk") or f.startswith("speed")],
+        "动量交互(4维)": [
+            f
+            for f in interaction_features.columns
+            if f.startswith("mom") or f.startswith("kinetic")
+        ],
+        "运动学交互(3维)": [
+            f for f in interaction_features.columns if f.startswith("jerk") or f.startswith("speed")
+        ],
         "非对称交互(2维)": [f for f in interaction_features.columns if f.startswith("decoupling")],
-        "条件交互(2维)": [f for f in interaction_features.columns if f.startswith("strong") or f.startswith("weak")],
+        "条件交互(2维)": [
+            f
+            for f in interaction_features.columns
+            if f.startswith("strong") or f.startswith("weak")
+        ],
     }
 
-    print("  {:<25s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "分组", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<25s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "分组", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 75)
 
     group_results = []
@@ -285,18 +334,34 @@ def main():
         available = [f for f in feats if f in interaction_features.columns]
         if not available:
             continue
-        exp_feats = pd.concat([v55_base, interaction_features[available]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, interaction_features[available]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
         top_auc, _, top_dec, _ = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
         dip_auc, _, dip_dec, _ = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<25s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        group_results.append({"name": name, "feats": available, "d_top": d_top, "d_dip": d_dip,
-                              "top_auc": top_auc, "dip_auc": dip_auc,
-                              "top_decay": top_dec, "dip_decay": dip_dec})
+        print(
+            "  {:<25s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        group_results.append(
+            {
+                "name": name,
+                "feats": available,
+                "d_top": d_top,
+                "d_dip": d_dip,
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+            }
+        )
 
     # 6. 精选最佳交互特征组合
     print("\n【5. 精选组合测试】")
@@ -304,8 +369,9 @@ def main():
     # 选出单特征测试中双场景提升或接近提升的
     promising = [r for r in single_results if r["d_top"] > -0.005 and r["d_dip"] > -0.005]
     promising.sort(key=lambda x: x["d_top"] + x["d_dip"], reverse=True)
-    print("  有潜力的交互特征({}个): {}".format(
-        len(promising), [r["feat"] for r in promising[:10]]))
+    print(
+        "  有潜力的交互特征({}个): {}".format(len(promising), [r["feat"] for r in promising[:10]])
+    )
 
     combos = [
         ("全部交互特征", list(interaction_features.columns)),
@@ -315,8 +381,11 @@ def main():
         ("梯度交互Top3", [r["feat"] for r in promising if r["feat"].startswith("grad")][:3]),
     ]
 
-    print("\n  {:<25s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "\n  {:<25s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 75)
 
     combo_results = []
@@ -324,24 +393,39 @@ def main():
         available = [f for f in feats if f in interaction_features.columns]
         if not available:
             continue
-        exp_feats = pd.concat([v55_base, interaction_features[available]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, interaction_features[available]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
-        top_auc, _, top_dec, top_imp = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
+        top_auc, _, top_dec, top_imp = walk_forward_validation(
+            exp_feats, top_exit_labels, exp_names
+        )
         dip_auc, _, dip_dec, dip_imp = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<25s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        combo_results.append({
-            "name": name, "feats": available,
-            "top_auc": top_auc, "dip_auc": dip_auc,
-            "d_top": d_top, "d_dip": d_dip,
-            "top_decay": top_dec, "dip_decay": dip_dec,
-            "top_imp": top_imp.tolist() if hasattr(top_imp, 'tolist') else list(top_imp),
-            "dip_imp": dip_imp.tolist() if hasattr(dip_imp, 'tolist') else list(dip_imp),
-            "exp_names": exp_names,
-        })
+        print(
+            "  {:<25s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        combo_results.append(
+            {
+                "name": name,
+                "feats": available,
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "d_top": d_top,
+                "d_dip": d_dip,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+                "top_imp": top_imp.tolist() if hasattr(top_imp, "tolist") else list(top_imp),
+                "dip_imp": dip_imp.tolist() if hasattr(dip_imp, "tolist") else list(dip_imp),
+                "exp_names": exp_names,
+            }
+        )
 
     # 7. 特征重要性排名（最佳组合）
     if combo_results:
@@ -353,20 +437,26 @@ def main():
             best = max(combo_results, key=lambda x: (x["d_top"] + x["d_dip"]) / 2)
 
         print("\n【6. 最佳组合特征重要性排名】")
-        print("  最佳组合: {} (TOP {:+.4f}, DIP {:+.4f})".format(
-            best["name"], best["d_top"], best["d_dip"]))
+        print(
+            "  最佳组合: {} (TOP {:+.4f}, DIP {:+.4f})".format(
+                best["name"], best["d_top"], best["d_dip"]
+            )
+        )
 
         for scenario, imp_key in [("TOP_EXIT", "top_imp"), ("DIP_BUY", "dip_imp")]:
             print("\n  {} 场景:".format(scenario))
             imp = best[imp_key]
             names = best["exp_names"]
-            fi = sorted(zip(names, imp), key=lambda x: x[1], reverse=True)
+            fi = sorted(zip(names, imp), key=lambda x: x[1], reverse=True)  # noqa: B905
             total = len(names)
             for rank, (feat, importance) in enumerate(fi, 1):
                 if feat in interaction_features.columns:
                     pct = int(rank / total * 100)
-                    print("    #{:>3d} {:<35s}  重要性={:>8.1f}  Top{}%".format(
-                        rank, feat, importance, pct))
+                    print(
+                        "    #{:>3d} {:<35s}  重要性={:>8.1f}  Top{}%".format(
+                            rank, feat, importance, pct
+                        )
+                    )
 
     # 8. 总结
     print("\n" + "=" * 80)
@@ -379,8 +469,11 @@ def main():
     print("\n  双场景提升的组合 ({}个):".format(len(both_positive)))
     for r in both_positive[:5]:
         comp = (r["d_top"] + r["d_dip"]) / 2
-        print("  综合={:+.4f} {:<25s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
-            comp, r["name"], r["d_top"], r["d_dip"], r["top_decay"], r["dip_decay"]))
+        print(
+            "  综合={:+.4f} {:<25s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
+                comp, r["name"], r["d_top"], r["d_dip"], r["top_decay"], r["dip_decay"]
+            )
+        )
 
     # 单特征双场景提升
     single_both_pos = [r for r in single_results if r["d_top"] > 0 and r["d_dip"] > 0]
@@ -414,14 +507,16 @@ def main():
         "phase": "Phase 3.5 - Physics-Philosophy Interaction",
         "v55_baseline": {"top_exit": v55_top, "dip_buy": v55_dip},
         "single_results": single_results,
-        "group_results": [{k: v for k, v in r.items()} for r in group_results],
-        "combo_results": [{k: v for k, v in r.items() if k not in ["top_imp", "dip_imp", "exp_names"]}
-                          for r in combo_results],
+        "group_results": [{k: v for k, v in r.items()} for r in group_results],  # noqa: C416
+        "combo_results": [
+            {k: v for k, v in r.items() if k not in ["top_imp", "dip_imp", "exp_names"]}
+            for r in combo_results
+        ],
         "best_combo": both_positive[0] if both_positive else None,
         "decision": decision,
     }
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/pitd_phase35_interaction_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False, default=str)
     print("\n  结果已保存: {}".format(output_path))
 

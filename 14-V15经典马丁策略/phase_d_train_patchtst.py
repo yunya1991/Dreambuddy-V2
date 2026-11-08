@@ -16,7 +16,6 @@ Phase D · PatchTST 回撤深度预测训练脚本
 from __future__ import annotations
 
 import argparse
-import math
 import sys
 import time
 from pathlib import Path
@@ -45,7 +44,7 @@ def _make_smoke_dataset(n=128, seed=1):
     x = torch.randn(n, 120, 5, generator=rng)
     # 标签生成：取窗口最小值占比近似
     mins = x[:, -24:, 2].min(dim=1).values  # 未来 24 low (本窗口中最后24)
-    lasts = x[:, -24:-23, 3].squeeze(1)      # 起点收盘价
+    lasts = x[:, -24:-23, 3].squeeze(1)  # 起点收盘价
     y = (mins - lasts) / lasts.clamp_min(1e-6)
     y = y.unsqueeze(-1).float().clamp_min(-1.0).clamp_max(0.0)
     return TensorDataset(x, y), TensorDataset(x[-32:], y[-32:])
@@ -124,12 +123,19 @@ def main(argv=None):
     va_ld = DataLoader(va_ds, batch_size=args.batch * 2, shuffle=False)
 
     model = PatchTSTForDrawdown(
-        c_in=5, seq_len=120, patch_len=args.patch_len, stride=args.stride,
-        d_model=args.d_model, n_layers=args.n_layers, n_heads=args.n_heads,
+        c_in=5,
+        seq_len=120,
+        patch_len=args.patch_len,
+        stride=args.stride,
+        d_model=args.d_model,
+        n_layers=args.n_layers,
+        n_heads=args.n_heads,
     ).to(device)
     n_params = sum(p.numel() for p in model.parameters())
-    print(f"[PatchTST] params={n_params:,}  num_patches={model.num_patches}  device={device}  "
-          f"train_samples={len(tr_ds)}  val_samples={len(va_ds)}")
+    print(
+        f"[PatchTST] params={n_params:,}  num_patches={model.num_patches}  device={device}  "
+        f"train_samples={len(tr_ds)}  val_samples={len(va_ds)}"
+    )
     opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, args.epochs))
 
@@ -155,9 +161,16 @@ def main(argv=None):
     payload = {
         "state_dict": best_state,
         "meta": {
-            "c_in": 5, "seq_len": 120, "patch_len": args.patch_len, "stride": args.stride,
-            "d_model": args.d_model, "n_layers": args.n_layers, "n_heads": args.n_heads,
-            "best_val_mse": best_mse, "epochs": args.epochs, "seed": args.seed,
+            "c_in": 5,
+            "seq_len": 120,
+            "patch_len": args.patch_len,
+            "stride": args.stride,
+            "d_model": args.d_model,
+            "n_layers": args.n_layers,
+            "n_heads": args.n_heads,
+            "best_val_mse": best_mse,
+            "epochs": args.epochs,
+            "seed": args.seed,
             "quick_smoke": bool(args.quick_smoke),
             "train_date": time.strftime("%Y-%m-%dT%H:%M:%S"),
         },

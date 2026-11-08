@@ -16,11 +16,13 @@
 设计决策（SPEC §4.2）：水位用「纵向百分位的中位数」而非「横向百分位的中位数」。
 纵向 = 该币自身 MC/Fees 在历史序列中的百分位；中位数反映赛道整体泡沫程度。
 """
-import pytest
+
 import sys
+from dataclasses import is_dataclass
 from pathlib import Path
 from unittest.mock import patch
-from dataclasses import is_dataclass
+
+import pytest
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
@@ -32,12 +34,14 @@ if str(_L4_DIR) not in sys.path:
 # 导入：RED 阶段预期 ImportError（模块尚未实现）
 # ---------------------------------------------------------------------------
 
+
 def _import_sector_waterline():
     """辅助：延迟导入 sector_waterline 模块。"""
     from force_vector.sector_waterline import (
-        compute_sector_waterline,
         SectorWaterline,
+        compute_sector_waterline,
     )
+
     return compute_sector_waterline, SectorWaterline
 
 
@@ -45,13 +49,16 @@ def _import_sector_waterline():
 # 测试数据辅助
 # ---------------------------------------------------------------------------
 
+
 def _fake_query_percentile_map(percentile_map: dict):
     """构造一个 mock query_valuation_percentile，按币种返回固定百分位。
 
     percentile_map: {"UNI": 30.0, "CRV": 20.0, ...}
     """
+
     def _mock(coin, db_path=None):
         return percentile_map.get(coin.upper(), 50.0)  # 缺省中性
+
     return _mock
 
 
@@ -60,14 +67,17 @@ def _fake_fetch_coin_info_map(info_map: dict):
 
     info_map: {"uniswap": {"market_cap_usd": 10_000_000_000, "price_7d_ago": 5.0, "price_now": 6.0}, ...}
     """
+
     def _mock(db_path, coin_id):
         return info_map.get(coin_id, {})
+
     return _mock
 
 
 # ---------------------------------------------------------------------------
 # TDD-SVC-001 测试：SectorWaterline
 # ---------------------------------------------------------------------------
+
 
 class TestSectorWaterlineImport:
     """RED: 模块与符号必须可导入。"""
@@ -82,11 +92,17 @@ class TestSectorWaterlineImport:
         """SectorWaterline dataclass 字段完整。"""
         _, SectorWaterline = _import_sector_waterline()
         import dataclasses
+
         fields = {f.name for f in dataclasses.fields(SectorWaterline)}
         expected = {
-            "sector", "median_percentile", "member_count",
-            "overheated", "undervalued",
-            "leader", "leader_momentum_7d", "timestamp",
+            "sector",
+            "median_percentile",
+            "member_count",
+            "overheated",
+            "undervalued",
+            "leader",
+            "leader_momentum_7d",
+            "timestamp",
         }
         assert expected.issubset(fields), f"缺字段: {expected - fields}"
 
@@ -97,16 +113,21 @@ class TestSectorWaterlineMedian:
     def test_normal_waterline_three_members(self):
         """3 币纵向百分位 [20, 30, 40] → median=30，中性区间。"""
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 20.0, "CRV": 30.0, "1INCH": 40.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {"market_cap_usd": 10_000_000_000},
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 20.0, "CRV": 30.0, "1INCH": 40.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {"market_cap_usd": 10_000_000_000},
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -118,16 +139,21 @@ class TestSectorWaterlineMedian:
     def test_overheated_waterline(self):
         """3 币纵向百分位 [85, 90, 95] → median=90，overheated=True。"""
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 85.0, "CRV": 90.0, "1INCH": 95.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {"market_cap_usd": 10_000_000_000},
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 85.0, "CRV": 90.0, "1INCH": 95.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {"market_cap_usd": 10_000_000_000},
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -138,16 +164,21 @@ class TestSectorWaterlineMedian:
     def test_undervalued_waterline(self):
         """3 币纵向百分位 [10, 15, 20] → median=15，undervalued=True。"""
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 10.0, "CRV": 15.0, "1INCH": 20.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {"market_cap_usd": 10_000_000_000},
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 10.0, "CRV": 15.0, "1INCH": 20.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {"market_cap_usd": 10_000_000_000},
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -159,16 +190,21 @@ class TestSectorWaterlineMedian:
         """R2: 中位数抗异常值。一个极端值不拉偏中位数。"""
         compute_fn, _ = _import_sector_waterline()
         # 一个币 99（极端高估），其余 [40, 45] → median=45（不是均值 61.3）
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 99.0, "CRV": 40.0, "1INCH": 45.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {"market_cap_usd": 10_000_000_000},
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 99.0, "CRV": 40.0, "1INCH": 45.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {"market_cap_usd": 10_000_000_000},
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -196,16 +232,21 @@ class TestSectorWaterlineFailOpen:
         如果赛道内所有币都是 50.0，说明赛道整体数据不足，应 FAIL-OPEN。
         """
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 50.0, "CRV": 50.0, "1INCH": 50.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {"market_cap_usd": 10_000_000_000},
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 50.0, "CRV": 50.0, "1INCH": 50.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {"market_cap_usd": 10_000_000_000},
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is None
@@ -230,28 +271,33 @@ class TestSectorWaterlineLeader:
     def test_leader_is_largest_market_cap(self):
         """龙头 = 赛道市值最大币。"""
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {
-                    "market_cap_usd": 15_000_000_000,
-                    "price_now": 10.0,
-                    "price_7d_ago": 8.0,
-                },
-                "curve-dao-token": {
-                    "market_cap_usd": 5_000_000_000,
-                    "price_now": 5.0,
-                    "price_7d_ago": 5.0,
-                },
-                "1inch": {
-                    "market_cap_usd": 1_000_000_000,
-                    "price_now": 2.0,
-                    "price_7d_ago": 2.0,
-                },
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {
+                            "market_cap_usd": 15_000_000_000,
+                            "price_now": 10.0,
+                            "price_7d_ago": 8.0,
+                        },
+                        "curve-dao-token": {
+                            "market_cap_usd": 5_000_000_000,
+                            "price_now": 5.0,
+                            "price_7d_ago": 5.0,
+                        },
+                        "1inch": {
+                            "market_cap_usd": 1_000_000_000,
+                            "price_now": 2.0,
+                            "price_7d_ago": 2.0,
+                        },
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -262,24 +308,29 @@ class TestSectorWaterlineLeader:
         compute_fn, _ = _import_sector_waterline()
         # UNI 是龙头，price 8.0 → 10.0 = +25% 收益率
         # 归一化：±20% 为满量程，所以 25% 应映射到接近 +1
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {
-                    "market_cap_usd": 15_000_000_000,
-                    "price_now": 10.0,
-                    "price_7d_ago": 8.0,
-                },
-                "curve-dao-token": {
-                    "market_cap_usd": 5_000_000_000,
-                },
-                "1inch": {
-                    "market_cap_usd": 1_000_000_000,
-                },
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {
+                            "market_cap_usd": 15_000_000_000,
+                            "price_now": 10.0,
+                            "price_7d_ago": 8.0,
+                        },
+                        "curve-dao-token": {
+                            "market_cap_usd": 5_000_000_000,
+                        },
+                        "1inch": {
+                            "market_cap_usd": 1_000_000_000,
+                        },
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -290,20 +341,25 @@ class TestSectorWaterlineLeader:
     def test_leader_momentum_negative_when_price_drops(self):
         """龙头价格下跌 → 动量为负。"""
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {
-                    "market_cap_usd": 15_000_000_000,
-                    "price_now": 8.0,
-                    "price_7d_ago": 10.0,  # -20% 跌幅
-                },
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {
+                            "market_cap_usd": 15_000_000_000,
+                            "price_now": 8.0,
+                            "price_7d_ago": 10.0,  # -20% 跌幅
+                        },
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -312,16 +368,21 @@ class TestSectorWaterlineLeader:
     def test_leader_momentum_zero_when_price_data_missing(self):
         """龙头价格数据缺失 → 动量 = 0.0（FAIL-OPEN 中性）。"""
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {"market_cap_usd": 15_000_000_000},  # 无 price 字段
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {"market_cap_usd": 15_000_000_000},  # 无 price 字段
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None
@@ -334,16 +395,21 @@ class TestSectorWaterlineTimestamp:
     def test_timestamp_is_iso_string(self):
         """timestamp 是非空 ISO 字符串。"""
         compute_fn, _ = _import_sector_waterline()
-        with patch(
-            "force_vector.sector_waterline.query_valuation_percentile",
-            side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
-        ), patch(
-            "force_vector.sector_waterline._fetch_coin_info",
-            side_effect=_fake_fetch_coin_info_map({
-                "uniswap": {"market_cap_usd": 15_000_000_000},
-                "curve-dao-token": {"market_cap_usd": 5_000_000_000},
-                "1inch": {"market_cap_usd": 1_000_000_000},
-            }),
+        with (
+            patch(
+                "force_vector.sector_waterline.query_valuation_percentile",
+                side_effect=_fake_query_percentile_map({"UNI": 30.0, "CRV": 40.0, "1INCH": 60.0}),
+            ),
+            patch(
+                "force_vector.sector_waterline._fetch_coin_info",
+                side_effect=_fake_fetch_coin_info_map(
+                    {
+                        "uniswap": {"market_cap_usd": 15_000_000_000},
+                        "curve-dao-token": {"market_cap_usd": 5_000_000_000},
+                        "1inch": {"market_cap_usd": 1_000_000_000},
+                    }
+                ),
+            ),
         ):
             result = compute_fn("DEX", "/fake/db.db")
         assert result is not None

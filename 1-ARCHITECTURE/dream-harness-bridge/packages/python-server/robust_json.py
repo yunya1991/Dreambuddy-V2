@@ -8,6 +8,7 @@
 - 32 不可用时（DSH 独立运行，如 C-Drive 自驱动）回退到同算法的本地实现，
   保证行为一致、不静默失败。
 """
+
 from __future__ import annotations
 
 import json

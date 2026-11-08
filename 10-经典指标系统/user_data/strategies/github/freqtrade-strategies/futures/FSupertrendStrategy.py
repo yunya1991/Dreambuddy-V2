@@ -11,12 +11,10 @@ Supertrend strategy:
             2. The implementation for `supertrend` on this strategy is not validated; meaning this that is not proven to match the results by the paper where it was originally introduced or any other trusted academic resources
 """
 
-import logging
-import math
-from freqtrade.strategy import IStrategy, IntParameter
-from pandas import DataFrame
-import talib.abstract as ta
 import numpy as np
+import talib.abstract as ta
+from freqtrade.strategy import IntParameter, IStrategy
+from pandas import DataFrame
 
 
 class FSupertrendStrategy(IStrategy):
@@ -117,46 +115,18 @@ class FSupertrendStrategy(IStrategy):
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         dataframe.loc[
-            (
-                dataframe[f"supertrend_1_buy_{self.buy_m1.value}_{self.buy_p1.value}"]
-                == "up"
-            )
-            & (
-                dataframe[f"supertrend_2_buy_{self.buy_m2.value}_{self.buy_p2.value}"]
-                == "up"
-            )
-            & (
-                dataframe[f"supertrend_3_buy_{self.buy_m3.value}_{self.buy_p3.value}"]
-                == "up"
-            )
-            & (  # The three indicators are 'up' for the current candle
-                dataframe["volume"] > 0
-            ),
+            (dataframe[f"supertrend_1_buy_{self.buy_m1.value}_{self.buy_p1.value}"] == "up")
+            & (dataframe[f"supertrend_2_buy_{self.buy_m2.value}_{self.buy_p2.value}"] == "up")
+            & (dataframe[f"supertrend_3_buy_{self.buy_m3.value}_{self.buy_p3.value}"] == "up")
+            & (dataframe["volume"] > 0),  # The three indicators are 'up' for the current candle
             "enter_long",
         ] = 1
 
         dataframe.loc[
-            (
-                dataframe[
-                    f"supertrend_1_sell_{self.sell_m1.value}_{self.sell_p1.value}"
-                ]
-                == "down"
-            )
-            & (
-                dataframe[
-                    f"supertrend_2_sell_{self.sell_m2.value}_{self.sell_p2.value}"
-                ]
-                == "down"
-            )
-            & (
-                dataframe[
-                    f"supertrend_3_sell_{self.sell_m3.value}_{self.sell_p3.value}"
-                ]
-                == "down"
-            )
-            & (  # The three indicators are 'down' for the current candle
-                dataframe["volume"] > 0
-            ),
+            (dataframe[f"supertrend_1_sell_{self.sell_m1.value}_{self.sell_p1.value}"] == "down")
+            & (dataframe[f"supertrend_2_sell_{self.sell_m2.value}_{self.sell_p2.value}"] == "down")
+            & (dataframe[f"supertrend_3_sell_{self.sell_m3.value}_{self.sell_p3.value}"] == "down")
+            & (dataframe["volume"] > 0),  # The three indicators are 'down' for the current candle
             "enter_short",
         ] = 1
 
@@ -164,20 +134,12 @@ class FSupertrendStrategy(IStrategy):
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
-            (
-                dataframe[
-                    f"supertrend_2_sell_{self.sell_m2.value}_{self.sell_p2.value}"
-                ]
-                == "down"
-            ),
+            (dataframe[f"supertrend_2_sell_{self.sell_m2.value}_{self.sell_p2.value}"] == "down"),
             "exit_long",
         ] = 1
 
         dataframe.loc[
-            (
-                dataframe[f"supertrend_2_buy_{self.buy_m2.value}_{self.buy_p2.value}"]
-                == "up"
-            ),
+            (dataframe[f"supertrend_2_buy_{self.buy_m2.value}_{self.buy_p2.value}"] == "up"),
             "exit_short",
         ] = 1
 
@@ -225,21 +187,25 @@ class FSupertrendStrategy(IStrategy):
                 df["final_ub"].iat[i]
                 if df[st].iat[i - 1] == df["final_ub"].iat[i - 1]
                 and df["close"].iat[i] <= df["final_ub"].iat[i]
-                else df["final_lb"].iat[i]
-                if df[st].iat[i - 1] == df["final_ub"].iat[i - 1]
-                and df["close"].iat[i] > df["final_ub"].iat[i]
-                else df["final_lb"].iat[i]
-                if df[st].iat[i - 1] == df["final_lb"].iat[i - 1]
-                and df["close"].iat[i] >= df["final_lb"].iat[i]
-                else df["final_ub"].iat[i]
-                if df[st].iat[i - 1] == df["final_lb"].iat[i - 1]
-                and df["close"].iat[i] < df["final_lb"].iat[i]
-                else 0.00
+                else (
+                    df["final_lb"].iat[i]
+                    if df[st].iat[i - 1] == df["final_ub"].iat[i - 1]
+                    and df["close"].iat[i] > df["final_ub"].iat[i]
+                    else (
+                        df["final_lb"].iat[i]
+                        if df[st].iat[i - 1] == df["final_lb"].iat[i - 1]
+                        and df["close"].iat[i] >= df["final_lb"].iat[i]
+                        else (
+                            df["final_ub"].iat[i]
+                            if df[st].iat[i - 1] == df["final_lb"].iat[i - 1]
+                            and df["close"].iat[i] < df["final_lb"].iat[i]
+                            else 0.00
+                        )
+                    )
+                )
             )
         # Mark the trend direction up/down
-        df[stx] = np.where(
-            (df[st] > 0.00), np.where((df["close"] < df[st]), "down", "up"), None
-        )
+        df[stx] = np.where((df[st] > 0.00), np.where((df["close"] < df[st]), "down", "up"), None)
 
         # Remove basic and final bands from the columns
         df.drop(["basic_ub", "basic_lb", "final_ub", "final_lb"], inplace=True, axis=1)

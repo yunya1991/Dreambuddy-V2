@@ -12,11 +12,11 @@
   9. record_outcome 风险注意力更新
   10. 风险注意力权重边界与衰减
 """
-import sys
-import os
+
 import importlib
+import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -43,7 +43,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(MEMORY_L4_DIR))
 
 # 现在 safe import triangle_verifier
-from scripts.memory_l4.triangle_verifier import (
+from scripts.memory_l4.triangle_verifier import (  # noqa: E402
     PentagonParams,
     TriangleVerificationResult,
     TriangleVerifier,
@@ -77,15 +77,21 @@ def verifier_mocked(monkeypatch):
     v._mock_tda_warning = False
     v._mock_tda_strength = 0.0
 
-    monkeypatch.setattr(v, "_run_force_engine", lambda snap, df=None: (
-        0, v._mock_force_reversal, v._mock_force_strength, {}
-    ))
-    monkeypatch.setattr(v, "_run_ising_detector", lambda snap, df=None: (
-        0, v._mock_ising_alert, v._mock_ising_phase, {}
-    ))
-    monkeypatch.setattr(v, "_run_tda_detector", lambda snap, df=None: (
-        0, v._mock_tda_warning, v._mock_tda_strength, {}
-    ))
+    monkeypatch.setattr(
+        v,
+        "_run_force_engine",
+        lambda snap, df=None: (0, v._mock_force_reversal, v._mock_force_strength, {}),
+    )
+    monkeypatch.setattr(
+        v,
+        "_run_ising_detector",
+        lambda snap, df=None: (0, v._mock_ising_alert, v._mock_ising_phase, {}),
+    )
+    monkeypatch.setattr(
+        v,
+        "_run_tda_detector",
+        lambda snap, df=None: (0, v._mock_tda_warning, v._mock_tda_strength, {}),
+    )
     return v
 
 
@@ -449,7 +455,7 @@ class TestRiskAttentionUpdate:
 
     def test_record_outcome_no_crash_without_pnl(self, verifier_mocked):
         """record_outcome 无 pnl_pct 时不崩溃（退化模式）"""
-        result = verifier_mocked.verify("UP", 0.5, make_a0_result(0.0), {})
+        result = verifier_mocked.verify("UP", 0.5, make_a0_result(0.0), {})  # noqa: F841
         verifier_mocked.record_outcome(
             source_directions={"bcrm2": 1, "force": 0, "a0": 0, "ising": 0, "tda": 0},
             actual_direction=1,
@@ -631,7 +637,11 @@ class TestAttentionImpactOnScore:
         """权重不需要归一化（verify 内部归一化）"""
         # 手动设置不等权重
         verifier_mocked._risk_dynamic_weights = {
-            "bcrm2": 0.40, "force": 0.10, "a0": 0.10, "ising": 0.10, "tda": 0.40
+            "bcrm2": 0.40,
+            "force": 0.10,
+            "a0": 0.10,
+            "ising": 0.10,
+            "tda": 0.40,
         }
         result = verifier_mocked.verify("UP", 0.5, make_a0_result(0.3), {})
         # 应正常计算，不报错

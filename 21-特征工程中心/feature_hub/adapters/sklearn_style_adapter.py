@@ -1,4 +1,5 @@
 """SklearnStyleAdapter — 包装 sklearn-style create_features(X) 类"""
+
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -28,8 +29,10 @@ class SklearnStyleAdapter(BaseAdapter):
         #    有些环境（如系统 talib vs shim talib）返回值类型不一致，
         #    create_features 内常直接 df["close"].pct_change()，必须 Series。
         safe_df = pd.DataFrame(
-            {col: s if isinstance(s, pd.Series) else pd.Series(s, index=df.index)
-             for col, s in df.items()},
+            {
+                col: s if isinstance(s, pd.Series) else pd.Series(s, index=df.index)
+                for col, s in df.items()
+            },
             index=df.index,
         )
 

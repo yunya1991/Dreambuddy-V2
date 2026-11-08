@@ -15,7 +15,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-
 # ── SKILL 映射表 (与 6-TRADING/bridge/api/skill_router_api.py SKILL_MAP 一致) ──
 SKILL_MAP = {
     "A0": "dream-contradiction-theory",
@@ -39,9 +38,10 @@ SKILL_DESCRIPTIONS = {
 @dataclass
 class EnhancementHint:
     """增强提示: 告诉前端/IDE 应该调用哪个 SKILL 及原因"""
-    skill_key: str          # SKILL 映射键 (如 "A0", "regime")
-    skill_name: str         # 实际 SKILL 名称
-    reason: str             # 触发原因 (人类可读)
+
+    skill_key: str  # SKILL 映射键 (如 "A0", "regime")
+    skill_name: str  # 实际 SKILL 名称
+    reason: str  # 触发原因 (人类可读)
     target_modules: List[str] = field(default_factory=list)  # 涉及的模块
     priority: str = "medium"  # high / medium / low
 
@@ -122,13 +122,15 @@ def detect_enhancement_triggers(
                 if mod not in data_gap_modules:
                     data_gap_modules.append(mod)
     if data_gap_modules:
-        hints.append(EnhancementHint(
-            skill_key="A1",
-            skill_name=SKILL_MAP["A1"],
-            reason=f"以下维度数据不足: {', '.join(data_gap_modules)}",
-            target_modules=data_gap_modules,
-            priority="high",
-        ))
+        hints.append(
+            EnhancementHint(
+                skill_key="A1",
+                skill_name=SKILL_MAP["A1"],
+                reason=f"以下维度数据不足: {', '.join(data_gap_modules)}",
+                target_modules=data_gap_modules,
+                priority="high",
+            )
+        )
 
     # ── 规则2: 模块间信号冲突 → A0 矛盾论 ──
     module_directions: Dict[str, List[str]] = {}
@@ -143,16 +145,17 @@ def detect_enhancement_triggers(
     has_bear = any("bear" in dirs for dirs in module_directions.values())
     if has_bull and has_bear:
         conflict_modules = [
-            mod for mod, dirs in module_directions.items()
-            if "bull" in dirs or "bear" in dirs
+            mod for mod, dirs in module_directions.items() if "bull" in dirs or "bear" in dirs
         ]
-        hints.append(EnhancementHint(
-            skill_key="A0",
-            skill_name=SKILL_MAP["A0"],
-            reason="多模块信号存在多空冲突, 需矛盾论分析识别主要矛盾",
-            target_modules=conflict_modules,
-            priority="high",
-        ))
+        hints.append(
+            EnhancementHint(
+                skill_key="A0",
+                skill_name=SKILL_MAP["A0"],
+                reason="多模块信号存在多空冲突, 需矛盾论分析识别主要矛盾",
+                target_modules=conflict_modules,
+                priority="high",
+            )
+        )
 
     # ── 规则3: 盘整/方向不明 → regime 检测 ──
     ranging_modules: List[str] = []
@@ -163,23 +166,27 @@ def detect_enhancement_triggers(
                 if mod not in ranging_modules:
                     ranging_modules.append(mod)
     if ranging_modules and not has_bull and not has_bear:
-        hints.append(EnhancementHint(
-            skill_key="regime",
-            skill_name=SKILL_MAP["regime"],
-            reason="市场处于盘整/方向不明状态, 需识别当前 Regime",
-            target_modules=ranging_modules,
-            priority="medium",
-        ))
+        hints.append(
+            EnhancementHint(
+                skill_key="regime",
+                skill_name=SKILL_MAP["regime"],
+                reason="市场处于盘整/方向不明状态, 需识别当前 Regime",
+                target_modules=ranging_modules,
+                priority="medium",
+            )
+        )
 
     # ── 规则4: 整体低置信度 → A2 第一性原理 ──
     if overall_confidence is not None and overall_confidence < 0.4:
-        hints.append(EnhancementHint(
-            skill_key="A2",
-            skill_name=SKILL_MAP["A2"],
-            reason=f"整体置信度偏低 ({overall_confidence:.2f}), 需从第一性原理重新解析",
-            target_modules=[],
-            priority="medium",
-        ))
+        hints.append(
+            EnhancementHint(
+                skill_key="A2",
+                skill_name=SKILL_MAP["A2"],
+                reason=f"整体置信度偏低 ({overall_confidence:.2f}), 需从第一性原理重新解析",
+                target_modules=[],
+                priority="medium",
+            )
+        )
 
     # 去重 (同 skill_key 只保留优先级最高的)
     seen: Dict[str, EnhancementHint] = {}

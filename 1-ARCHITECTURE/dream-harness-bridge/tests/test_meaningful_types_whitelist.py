@@ -5,10 +5,9 @@
 - file_edit/shell_command 仍被过滤
 """
 
-import json
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -40,9 +39,9 @@ def test_new_event_types_not_filtered():
         with patch("subprocess.Popen") as mock_popen, patch("server._try_mcp_record") as mock_mcp:
             _trigger_cognitive_record(event_entry)
             # 如果事件类型通过过滤，会尝试调用 subprocess.Popen
-            assert mock_popen.called or mock_mcp.called, (
-                f"事件类型 '{event_type}' 被过滤了（不应被过滤）"
-            )
+            assert (
+                mock_popen.called or mock_mcp.called
+            ), f"事件类型 '{event_type}' 被过滤了（不应被过滤）"
 
 
 def test_noise_events_still_filtered():
@@ -61,12 +60,8 @@ def test_noise_events_still_filtered():
         with patch("subprocess.Popen") as mock_popen, patch("server._try_mcp_record") as mock_mcp:
             _trigger_cognitive_record(event_entry)
             # 噪音事件应该被过滤，不调用 subprocess.Popen
-            assert not mock_popen.called, (
-                f"事件类型 '{event_type}' 未被过滤（应被过滤）"
-            )
-            assert not mock_mcp.called, (
-                f"事件类型 '{event_type}' 未被过滤（应被过滤）"
-            )
+            assert not mock_popen.called, f"事件类型 '{event_type}' 未被过滤（应被过滤）"
+            assert not mock_mcp.called, f"事件类型 '{event_type}' 未被过滤（应被过滤）"
 
 
 def test_existing_events_still_pass():
@@ -84,9 +79,9 @@ def test_existing_events_still_pass():
 
         with patch("subprocess.Popen") as mock_popen, patch("server._try_mcp_record") as mock_mcp:
             _trigger_cognitive_record(event_entry)
-            assert mock_popen.called or mock_mcp.called, (
-                f"原有事件类型 '{event_type}' 被过滤了（不应被过滤）"
-            )
+            assert (
+                mock_popen.called or mock_mcp.called
+            ), f"原有事件类型 '{event_type}' 被过滤了（不应被过滤）"
 
 
 if __name__ == "__main__":

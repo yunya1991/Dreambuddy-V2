@@ -2,10 +2,9 @@
 NarrativeAdapter 测试 — odaily 叙事标签库
 覆盖: ticker 匹配 / 情绪 + 重要性 + 事件权重 + 时间衰减 / FAIL-OPEN
 """
+
 import json
 import sqlite3
-import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -46,7 +45,9 @@ def mock_db(tmp_path):
                 "od_decay_hl_hrs": 6.0,
                 "od_tickers_hit_csl": "BTC",
             },
-            "events": [{"event_type": "project_ecosystem", "importance": 1, "published_ms": now_ms}],
+            "events": [
+                {"event_type": "project_ecosystem", "importance": 1, "published_ms": now_ms}
+            ],
             "raw": {"title": "BTC 生态重大升级"},
         },
         # BTC 普通中性
@@ -190,7 +191,10 @@ class TestNarrativeAdapter:
         conn = sqlite3.connect(str(db_path))
         c = conn.cursor()
         c.execute("CREATE TABLE records (metrics TEXT, events TEXT, raw TEXT, timestamp TEXT)")
-        c.execute("INSERT INTO records VALUES (?, ?, ?, ?)", ("{invalid", "[]", "{}", "2026-01-01T00:00:00"))
+        c.execute(
+            "INSERT INTO records VALUES (?, ?, ?, ?)",
+            ("{invalid", "[]", "{}", "2026-01-01T00:00:00"),
+        )
         conn.commit()
         conn.close()
         adapter = NarrativeAdapter(db_path=str(db_path))

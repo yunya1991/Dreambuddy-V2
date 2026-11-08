@@ -19,9 +19,10 @@ DreamBuddy 全系统 Launchd 统一安装脚本
   python3 install_all_launchd.py status       # 查看状态
   python3 install_all_launchd.py install dreamos  # 仅安装 dreamos
 """
+
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 UID = os.getuid()
@@ -73,6 +74,7 @@ def install_service(label, src_plist):
 
     # 复制 plist
     import shutil
+
     shutil.copy2(src_plist, dst)
 
     # 验证语法
@@ -103,7 +105,7 @@ def install_service(label, src_plist):
                 break
         return True
     else:
-        print(f"  [警告] 服务可能未正常加载")
+        print("  [警告] 服务可能未正常加载")
         return False
 
 
@@ -160,10 +162,10 @@ def do_install(targets=None):
 
         print(f"  [{label}]")
         if install_service(label, src):
-            print(f"  → 安装成功")
+            print("  → 安装成功")
             success += 1
         else:
-            print(f"  → 安装失败")
+            print("  → 安装失败")
             failed += 1
         print()
 
@@ -182,7 +184,7 @@ def do_uninstall(targets=None):
     for label in labels:
         print(f"  [{label}]")
         uninstall_service(label)
-        print(f"  → 已卸载")
+        print("  → 已卸载")
     print()
     print("  全部卸载完成")
 

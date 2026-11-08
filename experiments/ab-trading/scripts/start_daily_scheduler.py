@@ -16,6 +16,7 @@
   3. 停止：              kill $(cat .workbuddy/daily_scheduler_pid.txt)
   4. 安装 launchd 守护： bash scripts/install_daily_scheduler_launchd.sh
 """
+
 import os
 import subprocess
 import sys
@@ -66,11 +67,13 @@ def _pkill_old():
     try:
         subprocess.run(
             ["pgrep", "-f", "daily_scheduler_daemon.py"],
-            capture_output=True, check=False,
+            capture_output=True,
+            check=False,
         )
         subprocess.run(
             ["pkill", "-f", "daily_scheduler_daemon.py"],
-            capture_output=True, check=False,
+            capture_output=True,
+            check=False,
         )
         time.sleep(1)
     except FileNotFoundError:
@@ -79,7 +82,8 @@ def _pkill_old():
 
 def _launch():
     cmd = [
-        PYTHON, "-u",
+        PYTHON,
+        "-u",
         os.path.join(WORK_DIR, "daily_scheduler_daemon.py"),
     ]
     print(f"[2/4] 启动命令: {' '.join(cmd)}")
@@ -120,8 +124,8 @@ def _launch():
 def _print_status_hint():
     print()
     print("调度配置：")
-    print(f"  策略优化 每日 02:00 → logs/agent_b.log")
-    print(f"  记忆清理 每日 02:05 → logs/memory_cleanup.log")
+    print("  策略优化 每日 02:00 → logs/agent_b.log")
+    print("  记忆清理 每日 02:05 → logs/memory_cleanup.log")
     print()
     print("常用命令：")
     print(f"  守护日志（调度心跳/错误）: tail -f {LOG_DIR}/daily_scheduler_daemon.log")

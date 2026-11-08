@@ -15,6 +15,7 @@
         df=df, ref_df=ref_df, symbol="BTC",
     )
 """
+
 import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -29,27 +30,38 @@ logger = logging.getLogger(__name__)
 # Enabled Sets：配置化的特征启用集合（一键启用组合）
 # ============================================================
 ENABLED_SETS: Dict[str, List[str]] = {
-    "btc_morphology": ["morphology_core", "breadth_market"],   # Phase 0 12 项形态+广度特征
+    "btc_morphology": ["morphology_core", "breadth_market"],  # Phase 0 12 项形态+广度特征
     "btc_morphology_v2": ["morphology_core", "breadth_market", "ma200_cycle"],  # +MA200+4年周期
     "btc_morphology_v3": ["morphology_core", "ma200_cycle"],  # 移除无效广度特征，保留高重要性特征
-    "btc_morphology_v5": ["morphology_core", "ma200_cycle", "multi_timeframe"],  # v2周期 + 多时间框架
+    "btc_morphology_v5": [
+        "morphology_core",
+        "ma200_cycle",
+        "multi_timeframe",
+    ],  # v2周期 + 多时间框架
     # 🔄 Phase 1 更新（2026-08-19）：btc_morphology_v4 改为 4 基础模块形态 + 滚动统计
     #   LGBM 校正器池 = morphology_core + ma200_cycle + multi_timeframe（前 3 个）
     #   ParameterMapper 池 = rolling_regime_stats
     "btc_morphology_v4": [
-        "morphology_core", "ma200_cycle", "multi_timeframe",
+        "morphology_core",
+        "ma200_cycle",
+        "multi_timeframe",
         "rolling_regime_stats",
     ],
     # Layer 1（板块龙头权重用）：v4 + sector_beta_pool
     "btc_morphology_v4_layer1": [
-        "morphology_core", "ma200_cycle", "multi_timeframe",
-        "rolling_regime_stats", "sector_beta_pool",
+        "morphology_core",
+        "ma200_cycle",
+        "multi_timeframe",
+        "rolling_regime_stats",
+        "sector_beta_pool",
     ],
     # 🔄 Macro F1 优化（2026-08-19）：v6 = v5 + rolling_regime_stats（16 列滚动分位/熵/量zscore）
     #   rolling_regime_stats 全部基于历史 rolling 窗口，无标签泄露；L/T 滚动分位提供
     #   形态的相对历史位置信息，有助于小类（TREND_UP_STRONG/REVERSAL）识别。
     "btc_morphology_v6": [
-        "morphology_core", "ma200_cycle", "multi_timeframe",
+        "morphology_core",
+        "ma200_cycle",
+        "multi_timeframe",
         "rolling_regime_stats",
     ],
     "default_all": None,  # None = 启用所有 default_enabled=True 的模块
@@ -59,14 +71,15 @@ ENABLED_SETS: Dict[str, List[str]] = {
 @dataclass
 class FeatureModuleSpec:
     """特征模块规格定义"""
-    name: str                                       # 注册名
-    factory: Callable                               # 工厂函数/类 → 实例
-    participates_in_gua: bool = False               # 是否参与卦象推导（8卦维度）
-    requires_ref_df: bool = False                   # 是否需要参考资产(如BTC)
-    requires_macro_df: bool = False                 # 是否需要宏观数据(P1)
-    requires_symbol: bool = False                   # 构造函数是否需要 symbol
-    requires_cycle_phase: bool = False              # 是否需要 cycle 模块输出
-    default_enabled: bool = True                    # 默认是否启用
+
+    name: str  # 注册名
+    factory: Callable  # 工厂函数/类 → 实例
+    participates_in_gua: bool = False  # 是否参与卦象推导（8卦维度）
+    requires_ref_df: bool = False  # 是否需要参考资产(如BTC)
+    requires_macro_df: bool = False  # 是否需要宏观数据(P1)
+    requires_symbol: bool = False  # 构造函数是否需要 symbol
+    requires_cycle_phase: bool = False  # 是否需要 cycle 模块输出
+    default_enabled: bool = True  # 默认是否启用
     # 子模块 feature_names_by_gua 拆分规则（如 wdh 按前缀拆 4 个子 key）
     sub_key_splitter: Optional[Callable[[List[str]], Dict[str, List[str]]]] = None
     # bagua 特殊：feature_names_by_gua 来自实例属性而非拆分器
@@ -168,12 +181,13 @@ class FeatureRegistry:
         if enabled is None and enabled_set is not None:
             enabled = ENABLED_SETS.get(enabled_set)
             if enabled is None:
-                logger.warning(f"FeatureRegistry: enabled_set='{enabled_set}' 未在 ENABLED_SETS 中注册，回退为所有 default_enabled=True")
+                logger.warning(
+                    f"FeatureRegistry: enabled_set='{enabled_set}' 未在 ENABLED_SETS 中注册，回退为所有 default_enabled=True"
+                )
 
         # 确定启用列表
         if enabled is None:
-            enabled_list = [n for n in cls._order
-                           if cls._registry[n].default_enabled]
+            enabled_list = [n for n in cls._order if cls._registry[n].default_enabled]
         else:
             enabled_list = [n for n in cls._order if n in enabled]
 
@@ -249,7 +263,9 @@ class FeatureRegistry:
                     feats = instance.compute(df, coins_closes=ctx["coins_closes"])
                 elif spec.requires_macro_df:
                     # 提取 macro_ 前缀的维度开关配置传给宏观特征模块
-                    macro_config = {k: v for k, v in ctx["config"].items() if k.startswith("macro_")}
+                    macro_config = {
+                        k: v for k, v in ctx["config"].items() if k.startswith("macro_")
+                    }
                     feats = instance.compute(df, macro_df=macro_df, config=macro_config)
                 else:
                     feats = instance.compute(df)
@@ -308,9 +324,15 @@ class FeatureRegistry:
         """
         # (1) 强制触发 v4 所有模块的 import（触发内部 FeatureRegistry.register）
         import importlib
-        for mod in ("morphology_core", "ma200_cycle", "multi_timeframe",
-                    "rolling_regime_stats", "sector_beta_pool",
-                    "breadth_market"):
+
+        for mod in (
+            "morphology_core",
+            "ma200_cycle",
+            "multi_timeframe",
+            "rolling_regime_stats",
+            "sector_beta_pool",
+            "breadth_market",
+        ):
             try:
                 importlib.import_module(f"bcrm2.{mod}")
             except Exception:
@@ -320,13 +342,16 @@ class FeatureRegistry:
         n = 300
         t = np.linspace(100, 200, n) * (1 + rng.normal(0, 0.01, n))
         idx = pd.date_range("2021-01-01", periods=n, freq="D")
-        df = pd.DataFrame({
-            "open":  t * (1 + rng.normal(0, 0.004, n)),
-            "high":  t * (1 + np.abs(rng.normal(0, 0.01, n))),
-            "low":   t * (1 - np.abs(rng.normal(0, 0.01, n))),
-            "close": t,
-            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-        }, index=idx)
+        df = pd.DataFrame(
+            {
+                "open": t * (1 + rng.normal(0, 0.004, n)),
+                "high": t * (1 + np.abs(rng.normal(0, 0.01, n))),
+                "low": t * (1 - np.abs(rng.normal(0, 0.01, n))),
+                "close": t,
+                "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+            },
+            index=idx,
+        )
         modules = ENABLED_SETS.get(set_name)
         if modules is None:
             modules = list(cls._order)
@@ -370,6 +395,7 @@ class FeatureRegistry:
 # ============================================================
 def _sync_module_aliases():
     import sys as _sys
+
     # 当前文件真实路径形式：module.__name__ =
     #   "scripts.memory_l4.bcrm2.feature_registry"  或
     #   "bcrm2.feature_registry"
@@ -402,7 +428,9 @@ def _sync_module_aliases():
                     if hasattr(other_cls, attr_name):
                         continue
                     our_val = getattr(our_cls, attr_name)
-                    if callable(our_val) or isinstance(our_val, (classmethod, staticmethod, property)):
+                    if callable(our_val) or isinstance(
+                        our_val, (classmethod, staticmethod, property)
+                    ):
                         setattr(other_cls, attr_name, our_val)
 
 

@@ -6,7 +6,12 @@ Aster/Hyperliquid 执行层 v2
 - 市价单（IOC + 滑点保护）
 - 止损/止盈单
 """
-import os, json, time, hashlib, requests, warnings, struct
+
+import os  # noqa: I001
+import json
+import time
+import requests
+import warnings
 from typing import Dict, Optional, Any, List
 from pathlib import Path
 from dotenv import load_dotenv
@@ -14,9 +19,9 @@ from dotenv import load_dotenv
 warnings.filterwarnings("ignore")
 load_dotenv(Path(__file__).parent.parent / "config" / ".env")
 
-HL_INFO     = "https://api.hyperliquid.xyz/info"
+HL_INFO = "https://api.hyperliquid.xyz/info"
 HL_EXCHANGE = "https://api.hyperliquid.xyz/exchange"
-TIMEOUT     = 15
+TIMEOUT = 15
 
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 1.0
@@ -28,6 +33,7 @@ _cache_ttl = {}
 def float_to_wire(x):
     """Hyperliquid 价格/数量转换函数"""
     from decimal import Decimal
+
     rounded = f"{x:.8f}"
     return f"{Decimal(rounded).normalize():f}"
 
@@ -37,6 +43,7 @@ def _try_import_hyperliquid_utils():
     # 先尝试本地包（与 aster_spot.py 同目录）
     try:
         from .hyperliquid.utils.signing import float_to_wire as local_float
+
         return local_float
     except ImportError:
         pass
@@ -44,6 +51,7 @@ def _try_import_hyperliquid_utils():
     # 再尝试官方 SDK
     try:
         from hyperliquid.utils.signing import float_to_wire as sdk_float
+
         return sdk_float
     except ImportError:
         pass
@@ -62,12 +70,34 @@ try:
     from eth_account import Account
     from eth_account.messages import encode_typed_data
     from eth_utils import keccak, to_hex
+
     HAS_ETH = True
 except ImportError:
     HAS_ETH = False
 
 # ── 交易标的池（实验允许范围） ───────────────────────────────────────────────
-UNIVERSE = ["BTC", "ETH", "HYPE", "UNI", "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP"]
+UNIVERSE = [
+    "BTC",
+    "ETH",
+    "HYPE",
+    "UNI",
+    "SOL",
+    "ZEC",
+    "LIT",
+    "ARB",
+    "XRP",
+    "WLD",
+    "NEAR",
+    "SUI",
+    "LDO",
+    "ADA",
+    "ZRO",
+    "ENA",
+    "ETHFI",
+    "JUP",
+    "JTO",
+    "SYRUP",
+]
 MAX_LEVERAGE = 5
 DEFAULT_LEVERAGE = 5
 
@@ -94,7 +124,7 @@ def _info_with_retry(session, payload: Dict, proxies=None) -> Any:
         try:
             r = session.post(HL_INFO, json=payload, proxies=proxies, timeout=TIMEOUT)
             if r.status_code == 429:
-                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                delay = RETRY_BASE_DELAY * (2**attempt)
                 time.sleep(delay)
                 last_err = f"rate_limited_429_attempt_{attempt+1}"
                 continue
@@ -103,7 +133,7 @@ def _info_with_retry(session, payload: Dict, proxies=None) -> Any:
         except requests.exceptions.RequestException as e:
             last_err = str(e)
             if attempt < MAX_RETRIES - 1:
-                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                delay = RETRY_BASE_DELAY * (2**attempt)
                 time.sleep(delay)
             else:
                 raise
@@ -118,6 +148,7 @@ def _info(payload: Dict, proxies=None) -> Any:
 
 # ── 市场数据（公开，无需签名）────────────────────────────────────────────────
 
+
 def get_all_mids(proxies=None) -> Dict[str, float]:
     cache_key = "all_mids"
     cached = _cache_get(cache_key, ttl_seconds=15)
@@ -128,6 +159,7 @@ def get_all_mids(proxies=None) -> Dict[str, float]:
     _cache_set(cache_key, result)
     return result
 
+
 def get_meta(proxies=None) -> Dict:
     cache_key = "meta"
     cached = _cache_get(cache_key, ttl_seconds=60)
@@ -137,8 +169,8 @@ def get_meta(proxies=None) -> Dict:
     _cache_set(cache_key, result)
     return result
 
-def get_candles(coin: str, interval: str = "1h", count: int = 48,
-                proxies=None) -> List[Dict]:
+
+def get_candles(coin: str, interval: str = "1h", count: int = 48, proxies=None) -> List[Dict]:
     cache_key = f"candles_{coin}_{interval}_{count}"
     cached = _cache_get(cache_key, ttl_seconds=60)
     if cached is not None:
@@ -147,21 +179,34 @@ def get_candles(coin: str, interval: str = "1h", count: int = 48,
     # PROP-20260816C: 补全 HL 官方支持的周期映射（V15 日线策略需要 1d；原字典缺 1d 时
     # 会静默按 1h 计算 startTime，interval 却传 1d → 返回数据严重不足）
     intervals = {
-        "1m": 60000, "3m": 3*60000, "5m": 5*60000, "15m": 15*60000, "30m": 30*60000,
-        "1h": 3600000, "2h": 2*3600000, "4h": 4*3600000, "8h": 8*3600000,
-        "12h": 12*3600000, "1d": 24*3600000, "3d": 3*24*3600000,
-        "1w": 7*24*3600000, "1M": 30*24*3600000,
+        "1m": 60000,
+        "3m": 3 * 60000,
+        "5m": 5 * 60000,
+        "15m": 15 * 60000,
+        "30m": 30 * 60000,
+        "1h": 3600000,
+        "2h": 2 * 3600000,
+        "4h": 4 * 3600000,
+        "8h": 8 * 3600000,
+        "12h": 12 * 3600000,
+        "1d": 24 * 3600000,
+        "3d": 3 * 24 * 3600000,
+        "1w": 7 * 24 * 3600000,
+        "1M": 30 * 24 * 3600000,
     }
     ms = intervals.get(interval, 3600000)
     start = now_ms - ms * count
-    data = _info({
-        "type": "candleSnapshot",
-        "req": {"coin": coin, "interval": interval,
-                "startTime": start, "endTime": now_ms}
-    }, proxies)
+    data = _info(
+        {
+            "type": "candleSnapshot",
+            "req": {"coin": coin, "interval": interval, "startTime": start, "endTime": now_ms},
+        },
+        proxies,
+    )
     result = data if isinstance(data, list) else []
     _cache_set(cache_key, result)
     return result
+
 
 def _get_meta_and_ctxs(proxies=None):
     cache_key = "meta_and_asset_ctxs"
@@ -178,13 +223,14 @@ def get_funding_rate(coin: str, proxies=None) -> float:
     try:
         data = _get_meta_and_ctxs(proxies)
         meta_list = data[0].get("universe", []) if isinstance(data, list) else []
-        ctx_list  = data[1] if isinstance(data, list) and len(data) > 1 else []
+        ctx_list = data[1] if isinstance(data, list) and len(data) > 1 else []
         for i, m in enumerate(meta_list):
             if m.get("name") == coin and i < len(ctx_list):
                 return float(ctx_list[i].get("funding", 0))
     except Exception:
         pass
     return 0.0
+
 
 def scan_opportunities(proxies=None) -> List[Dict]:
     """
@@ -196,10 +242,12 @@ def scan_opportunities(proxies=None) -> List[Dict]:
     try:
         data = _get_meta_and_ctxs(proxies)
         meta_list = data[0].get("universe", []) if isinstance(data, list) else []
-        ctx_list  = data[1] if isinstance(data, list) and len(data) > 1 else []
-        ctx_map = {m["name"]: ctx_list[i]
-                   for i, m in enumerate(meta_list)
-                   if m.get("name") in UNIVERSE and i < len(ctx_list)}
+        ctx_list = data[1] if isinstance(data, list) and len(data) > 1 else []
+        ctx_map = {
+            m["name"]: ctx_list[i]
+            for i, m in enumerate(meta_list)
+            if m.get("name") in UNIVERSE and i < len(ctx_list)
+        }
     except Exception:
         ctx_map = {}
 
@@ -212,42 +260,45 @@ def scan_opportunities(proxies=None) -> List[Dict]:
         open_interest = float(ctx.get("openInterest", 0))
         # 资金费率极值 → 拥挤信号（反向操作机会）
         funding_signal = abs(funding) > 0.0003  # >0.03% 为极端
-        funding_dir    = "SHORT" if funding > 0.0003 else ("LONG" if funding < -0.0003 else "NEUTRAL")
+        funding_dir = "SHORT" if funding > 0.0003 else ("LONG" if funding < -0.0003 else "NEUTRAL")
 
-        results.append({
-            "coin":          coin,
-            "price":         price,
-            "funding":       funding,
-            "funding_signal": funding_signal,
-            "funding_dir":   funding_dir,
-            "open_interest": open_interest,
-        })
+        results.append(
+            {
+                "coin": coin,
+                "price": price,
+                "funding": funding,
+                "funding_signal": funding_signal,
+                "funding_dir": funding_dir,
+                "open_interest": open_interest,
+            }
+        )
 
     return results
 
 
 # ── 签名工具（EIP-712）────────────────────────────────────────────────────────
 
+
 def _action_hash(action: Dict, vault_address: Optional[str], nonce: int) -> bytes:
     """Hyperliquid action hash：msgpack 编码后 keccak256"""
     try:
         import msgpack
+
         packed = msgpack.packb(
-            {"action": action, "vaultAddress": vault_address, "nonce": nonce},
-            use_bin_type=True
+            {"action": action, "vaultAddress": vault_address, "nonce": nonce}, use_bin_type=True
         )
     except ImportError:
         packed = json.dumps(
-            {"action": action, "vaultAddress": vault_address, "nonce": nonce},
-            sort_keys=True
+            {"action": action, "vaultAddress": vault_address, "nonce": nonce}, sort_keys=True
         ).encode()
-    from eth_account._utils.legacy_transactions import serializable_unsigned_transaction_from_dict
     from web3 import Web3
+
     return Web3.keccak(packed)
 
 
-def _action_hash_hl(action: Dict, vault_address: Optional[str],
-                    nonce: int, expires_after: Optional[int] = None) -> bytes:
+def _action_hash_hl(
+    action: Dict, vault_address: Optional[str], nonce: int, expires_after: Optional[int] = None
+) -> bytes:
     """官方实现：msgpack(action) + nonce(8B big) + vault_flag + expires_flag"""
     data = msgpack.packb(action)
     data += nonce.to_bytes(8, "big")
@@ -255,16 +306,18 @@ def _action_hash_hl(action: Dict, vault_address: Optional[str],
         data += b"\x00"
     else:
         data += b"\x01"
-        data += bytes.fromhex(vault_address[2:] if vault_address.startswith("0x") else vault_address)
+        data += bytes.fromhex(
+            vault_address[2:] if vault_address.startswith("0x") else vault_address
+        )
     if expires_after is not None:
         data += b"\x00"
         data += expires_after.to_bytes(8, "big")
     return keccak(data)
 
 
-def _sign_l1_action(private_key: str, action: Dict,
-                    vault_address: Optional[str] = None,
-                    nonce: Optional[int] = None) -> Dict:
+def _sign_l1_action(
+    private_key: str, action: Dict, vault_address: Optional[str] = None, nonce: Optional[int] = None
+) -> Dict:
     """官方 sign_l1_action 实现"""
     if not HAS_ETH:
         raise RuntimeError("pip install eth-account msgpack eth-utils")
@@ -276,25 +329,25 @@ def _sign_l1_action(private_key: str, action: Dict,
 
     typed_data = {
         "domain": {
-            "chainId":           1337,
-            "name":              "Exchange",
+            "chainId": 1337,
+            "name": "Exchange",
             "verifyingContract": "0x0000000000000000000000000000000000000000",
-            "version":           "1",
+            "version": "1",
         },
         "types": {
             "Agent": [
-                {"name": "source",       "type": "string"},
+                {"name": "source", "type": "string"},
                 {"name": "connectionId", "type": "bytes32"},
             ],
             "EIP712Domain": [
-                {"name": "name",              "type": "string"},
-                {"name": "version",           "type": "string"},
-                {"name": "chainId",           "type": "uint256"},
+                {"name": "name", "type": "string"},
+                {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"},
                 {"name": "verifyingContract", "type": "address"},
             ],
         },
         "primaryType": "Agent",
-        "message":     phantom_agent,
+        "message": phantom_agent,
     }
 
     wallet = Account.from_key(private_key)
@@ -302,18 +355,20 @@ def _sign_l1_action(private_key: str, action: Dict,
     signed = wallet.sign_message(structured)
 
     return {
-        "action":       action,
-        "nonce":        nonce,
-        "signature":    {"r": to_hex(signed["r"]), "s": to_hex(signed["s"]), "v": signed["v"]},
+        "action": action,
+        "nonce": nonce,
+        "signature": {"r": to_hex(signed["r"]), "s": to_hex(signed["s"]), "v": signed["v"]},
         "vaultAddress": vault_address,
     }
 
 
 # ── 客户端 ───────────────────────────────────────────────────────────────────
 
+
 class HyperliquidClient:
     def __init__(self, agent_id: str):
         self.agent_id = agent_id.lower()
+
         # 注: 此类连接 Hyperliquid 交易所 (api.hyperliquid.xyz)
         #     兼容 HYPERLIQUID 和 ASTER 两种前缀（优先 HYPERLIQUID）
         def _get_env(name: str) -> str:
@@ -321,8 +376,9 @@ class HyperliquidClient:
             if val:
                 return val
             return os.environ.get(f"AGENT_{agent_id.upper()}_ASTER_{name}", "")
-        self.user_addr   = _get_env("USER")
-        self.api_addr    = _get_env("SIGNER")
+
+        self.user_addr = _get_env("USER")
+        self.api_addr = _get_env("SIGNER")
         self.private_key = _get_env("SIGNER_PRIVATE_KEY")
 
         proxy_url = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
@@ -337,14 +393,13 @@ class HyperliquidClient:
         return _info_with_retry(self._s, payload, self.proxies)
 
     def _exchange(self, action: Dict) -> Dict:
-        nonce   = _now_ms()
+        nonce = _now_ms()
         payload = _sign_l1_action(self.private_key, action, nonce=nonce)
         last_err = None
         for attempt in range(MAX_RETRIES):
-            r = self._s.post(HL_EXCHANGE, json=payload,
-                             proxies=self.proxies, timeout=TIMEOUT)
+            r = self._s.post(HL_EXCHANGE, json=payload, proxies=self.proxies, timeout=TIMEOUT)
             if r.status_code == 429:
-                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                delay = RETRY_BASE_DELAY * (2**attempt)
                 time.sleep(delay)
                 last_err = f"rate_limited_429_attempt_{attempt+1}"
                 continue
@@ -360,19 +415,19 @@ class HyperliquidClient:
         margin = r.get("marginSummary", {})
         positions = {}
         for p in r.get("assetPositions", []):
-            pos  = p.get("position", {})
+            pos = p.get("position", {})
             coin = pos.get("coin", "")
-            szi  = float(pos.get("szi", 0))
+            szi = float(pos.get("szi", 0))
             if abs(szi) > 0:
                 positions[coin] = {
-                    "size":     szi,
+                    "size": szi,
                     "entry_px": float(pos.get("entryPx") or 0),
-                    "upnl":     float(pos.get("unrealizedPnl") or 0),
+                    "upnl": float(pos.get("unrealizedPnl") or 0),
                     "leverage": float((pos.get("leverage") or {}).get("value", 1)),
                 }
 
         perp_equity = float(margin.get("accountValue", 0))
-        avail       = float(margin.get("marginAvailable") or 0)
+        avail = float(margin.get("marginAvailable") or 0)
         if avail == 0:
             avail = float(r.get("withdrawable", 0))
         if avail == 0:
@@ -382,29 +437,29 @@ class HyperliquidClient:
         # 统一账户模式：现货 USDC 也可作为保证金，合并计算
         if avail == 0 and perp_equity == 0:
             try:
-                r2    = self._info({"type": "spotClearinghouseState", "user": self.user_addr})
+                r2 = self._info({"type": "spotClearinghouseState", "user": self.user_addr})
                 spot_usdc = next(
-                    (float(b["total"]) for b in r2.get("balances", [])
-                     if b.get("coin") == "USDC"), 0
+                    (float(b["total"]) for b in r2.get("balances", []) if b.get("coin") == "USDC"),
+                    0,
                 )
                 if spot_usdc > 0:
                     # 统一账户：现货 USDC 视为可用保证金
                     return {
-                        "ok":        True,
-                        "equity":    spot_usdc,
-                        "avail":     spot_usdc,
+                        "ok": True,
+                        "equity": spot_usdc,
+                        "avail": spot_usdc,
                         "positions": positions,
-                        "mode":      "unified_spot",
+                        "mode": "unified_spot",
                     }
             except Exception:
                 pass
 
         return {
-            "ok":        True,
-            "equity":    perp_equity,
-            "avail":     avail,
+            "ok": True,
+            "equity": perp_equity,
+            "avail": avail,
             "positions": positions,
-            "mode":      "perp",
+            "mode": "perp",
         }
 
     def get_balance(self) -> Dict:
@@ -445,23 +500,27 @@ class HyperliquidClient:
 
     # ── 杠杆设置 ────────────────────────────────────────────────────────────
 
-    def set_leverage(self, coin: str, leverage: int,
-                     is_cross: bool = True) -> Dict:
+    def set_leverage(self, coin: str, leverage: int, is_cross: bool = True) -> Dict:
         leverage = min(max(1, leverage), MAX_LEVERAGE)
         action = {
-            "type":      "updateLeverage",
-            "asset":     self._asset_index(coin),
-            "isCross":   is_cross,
-            "leverage":  leverage,
+            "type": "updateLeverage",
+            "asset": self._asset_index(coin),
+            "isCross": is_cross,
+            "leverage": leverage,
         }
         return self._exchange(action)
 
     # ── 下单 ────────────────────────────────────────────────────────────────
 
-    def market_order(self, coin: str, is_buy: bool, sz: float,
-                     leverage: int = DEFAULT_LEVERAGE,
-                     reduce_only: bool = False,
-                     tag: str = "ab") -> Dict:
+    def market_order(
+        self,
+        coin: str,
+        is_buy: bool,
+        sz: float,
+        leverage: int = DEFAULT_LEVERAGE,
+        reduce_only: bool = False,
+        tag: str = "ab",
+    ) -> Dict:
         """合约市价单（IOC + 3% 滑点）"""
         leverage = min(max(1, leverage), MAX_LEVERAGE)
         # 先设置杠杆
@@ -476,14 +535,16 @@ class HyperliquidClient:
 
         action = {
             "type": "order",
-            "orders": [{
-                "a":  self._asset_index(coin),
-                "b":  is_buy,
-                "p":  _price_to_wire(limit_px, coin),
-                "s":  float_to_wire(round(sz, _size_decimals(coin))),
-                "r":  reduce_only,
-                "t":  {"limit": {"tif": "Ioc"}},
-            }],
+            "orders": [
+                {
+                    "a": self._asset_index(coin),
+                    "b": is_buy,
+                    "p": _price_to_wire(limit_px, coin),
+                    "s": float_to_wire(round(sz, _size_decimals(coin))),
+                    "r": reduce_only,
+                    "t": {"limit": {"tif": "Ioc"}},
+                }
+            ],
             "grouping": "na",
         }
         resp = self._exchange(action)
@@ -494,19 +555,25 @@ class HyperliquidClient:
         except Exception:
             pass
         return {
-            "ok":       ok,
-            "coin":     coin,
-            "side":     "BUY" if is_buy else "SELL",
-            "sz":       sz,
+            "ok": ok,
+            "coin": coin,
+            "side": "BUY" if is_buy else "SELL",
+            "sz": sz,
             "leverage": leverage,
-            "filled":   filled,
-            "raw":      resp,
+            "filled": filled,
+            "raw": resp,
         }
 
-    def limit_order(self, coin: str, is_buy: bool, sz: float, px: float,
-                    leverage: int = DEFAULT_LEVERAGE,
-                    reduce_only: bool = False,
-                    tag: str = "ab") -> Dict:
+    def limit_order(
+        self,
+        coin: str,
+        is_buy: bool,
+        sz: float,
+        px: float,
+        leverage: int = DEFAULT_LEVERAGE,
+        reduce_only: bool = False,
+        tag: str = "ab",
+    ) -> Dict:
         """合约限价单（GTC - Good Till Cancel）
 
         用于加仓网格挂单等需要持续挂着的限价单。
@@ -520,14 +587,16 @@ class HyperliquidClient:
 
         action = {
             "type": "order",
-            "orders": [{
-                "a":  self._asset_index(coin),
-                "b":  is_buy,
-                "p":  _price_to_wire(px, coin),
-                "s":  float_to_wire(round(sz, _size_decimals(coin))),
-                "r":  reduce_only,
-                "t":  {"limit": {"tif": "Gtc"}},
-            }],
+            "orders": [
+                {
+                    "a": self._asset_index(coin),
+                    "b": is_buy,
+                    "p": _price_to_wire(px, coin),
+                    "s": float_to_wire(round(sz, _size_decimals(coin))),
+                    "r": reduce_only,
+                    "t": {"limit": {"tif": "Gtc"}},
+                }
+            ],
             "grouping": "na",
         }
         resp = self._exchange(action)
@@ -537,16 +606,16 @@ class HyperliquidClient:
             filled = resp.get("response", {}).get("data", {}).get("statuses", [{}])[0]
             if "error" in filled:
                 return {
-                    "ok":       False,
-                    "coin":     coin,
-                    "side":     "BUY" if is_buy else "SELL",
-                    "sz":       sz,
-                    "px":       px,
+                    "ok": False,
+                    "coin": coin,
+                    "side": "BUY" if is_buy else "SELL",
+                    "sz": sz,
+                    "px": px,
                     "leverage": leverage,
-                    "filled":   filled,
-                    "ord_id":   None,
-                    "error":    filled["error"],
-                    "raw":      resp,
+                    "filled": filled,
+                    "ord_id": None,
+                    "error": filled["error"],
+                    "raw": resp,
                 }
             if "resting" in filled:
                 oid = filled["resting"].get("oid")
@@ -556,15 +625,15 @@ class HyperliquidClient:
             pass
         ok = resp.get("status") == "ok" and oid is not None
         return {
-            "ok":       ok,
-            "coin":     coin,
-            "side":     "BUY" if is_buy else "SELL",
-            "sz":       sz,
-            "px":       px,
+            "ok": ok,
+            "coin": coin,
+            "side": "BUY" if is_buy else "SELL",
+            "sz": sz,
+            "px": px,
             "leverage": leverage,
-            "filled":   filled,
-            "ord_id":   oid,
-            "raw":      resp,
+            "filled": filled,
+            "ord_id": oid,
+            "raw": resp,
         }
 
     def cancel_order(self, coin: str, oid: int) -> Dict:
@@ -591,8 +660,9 @@ class HyperliquidClient:
         except Exception as e:
             return {"ok": False, "error": str(e), "cancelled": 0}
 
-    def open_long(self, coin: str, usdt_amount: float,
-                  leverage: int = DEFAULT_LEVERAGE, tag: str = "ab") -> Dict:
+    def open_long(
+        self, coin: str, usdt_amount: float, leverage: int = DEFAULT_LEVERAGE, tag: str = "ab"
+    ) -> Dict:
         """开多：指定 USDT 名义价值，自动保证最小名义 $11"""
         px = self.get_mid_price(coin)
         sz = usdt_amount * leverage / px
@@ -601,8 +671,9 @@ class HyperliquidClient:
         sz = max(sz, min_sz)
         return self.market_order(coin, True, sz, leverage, False, tag)
 
-    def open_short(self, coin: str, usdt_amount: float,
-                   leverage: int = DEFAULT_LEVERAGE, tag: str = "ab") -> Dict:
+    def open_short(
+        self, coin: str, usdt_amount: float, leverage: int = DEFAULT_LEVERAGE, tag: str = "ab"
+    ) -> Dict:
         """开空：指定 USDT 名义价值，自动保证最小名义 $11"""
         px = self.get_mid_price(coin)
         sz = usdt_amount * leverage / px
@@ -613,19 +684,22 @@ class HyperliquidClient:
     def close_position(self, coin: str, tag: str = "ab") -> Dict:
         """平仓（reduce-only 市价单）"""
         acct = self.get_account()
-        pos  = acct["positions"].get(coin)
+        pos = acct["positions"].get(coin)
         if not pos:
             return {"ok": False, "error": "no_position"}
-        sz      = abs(pos["size"])
-        is_buy  = pos["size"] < 0
+        sz = abs(pos["size"])
+        is_buy = pos["size"] < 0
         return self.market_order(coin, is_buy, sz, 1, True, tag)
 
     # ── 条件单（止盈止损 Trigger Order）──────────────────────────────────────
 
-    def set_tpsl_orders(self, coin: str,
-                        stop_loss_price: Optional[float] = None,
-                        take_profit_price: Optional[float] = None,
-                        is_market: bool = True) -> Dict:
+    def set_tpsl_orders(
+        self,
+        coin: str,
+        stop_loss_price: Optional[float] = None,
+        take_profit_price: Optional[float] = None,
+        is_market: bool = True,
+    ) -> Dict:
         """
         为当前仓位设置止盈止损条件单
         - 使用 Hyperliquid 原生 trigger order
@@ -745,20 +819,25 @@ class HyperliquidClient:
     def get_open_orders(self, coin: Optional[str] = None) -> List[Dict]:
         """获取挂单（含 trigger 条件单）"""
         try:
-            r = self._info({
-                "type": "openOrders",
-                "user": self.user_addr,
-            })
+            r = self._info(
+                {
+                    "type": "openOrders",
+                    "user": self.user_addr,
+                }
+            )
             if coin:
                 return [o for o in r if o.get("coin") == coin]
             return r
         except Exception:
             return []
 
-    def modify_tpsl(self, coin: str,
-                    new_sl: Optional[float] = None,
-                    new_tp: Optional[float] = None,
-                    is_market: bool = True) -> Dict:
+    def modify_tpsl(
+        self,
+        coin: str,
+        new_sl: Optional[float] = None,
+        new_tp: Optional[float] = None,
+        is_market: bool = True,
+    ) -> Dict:
         """
         修改止盈止损：先取消现有 tpsl，再重新设置
         - 对于 LONG 仓位：止损只能向上移动（保护利润），止盈可上下调整
@@ -840,14 +919,13 @@ class HyperliquidClient:
         balances = {}
         for b in r.get("balances", []):
             total = float(b.get("total", 0))
-            hold  = float(b.get("hold", 0))
+            hold = float(b.get("hold", 0))
             if total > 0.000001:
                 balances[b["coin"]] = {"total": total, "avail": total - hold}
         usdc = balances.get("USDC", {}).get("avail", 0)
         return {"ok": True, "usdc_avail": usdc, "balances": balances}
 
-    def spot_market_buy(self, coin: str, usdc_amount: float,
-                        tag: str = "ab") -> Dict:
+    def spot_market_buy(self, coin: str, usdc_amount: float, tag: str = "ab") -> Dict:
         """现货市价买入：花费 usdc_amount USDC 买 coin"""
         px = self.get_mid_price(coin)
         if px <= 0:
@@ -860,15 +938,17 @@ class HyperliquidClient:
         limit_px = round(px * 1.03, _price_decimals(coin))  # 3% 滑点
         action = {
             "type": "order",
-            "orders": [{
-                "a":  token_id,
-                "b":  True,
-                "p":  str(limit_px),
-                "s":  str(sz),
-                "r":  False,
-                "t":  {"limit": {"tif": "Ioc"}},
-                "c":  tag[:10],
-            }],
+            "orders": [
+                {
+                    "a": token_id,
+                    "b": True,
+                    "p": str(limit_px),
+                    "s": str(sz),
+                    "r": False,
+                    "t": {"limit": {"tif": "Ioc"}},
+                    "c": tag[:10],
+                }
+            ],
             "grouping": "na",
         }
         resp = self._exchange(action)
@@ -878,11 +958,17 @@ class HyperliquidClient:
             filled = resp.get("response", {}).get("data", {}).get("statuses", [{}])[0]
         except Exception:
             pass
-        return {"ok": ok, "coin": coin, "side": "BUY",
-                "usdc_spent": usdc_amount, "sz": sz, "filled": filled, "raw": resp}
+        return {
+            "ok": ok,
+            "coin": coin,
+            "side": "BUY",
+            "usdc_spent": usdc_amount,
+            "sz": sz,
+            "filled": filled,
+            "raw": resp,
+        }
 
-    def spot_market_sell(self, coin: str, sz: float,
-                         tag: str = "ab") -> Dict:
+    def spot_market_sell(self, coin: str, sz: float, tag: str = "ab") -> Dict:
         """现货市价卖出：卖出 sz 个 coin"""
         token_id = _SPOT_TOKEN.get(coin.upper())
         if token_id is None:
@@ -891,15 +977,17 @@ class HyperliquidClient:
         limit_px = round(px * 0.97, _price_decimals(coin))
         action = {
             "type": "order",
-            "orders": [{
-                "a":  token_id,
-                "b":  False,
-                "p":  str(limit_px),
-                "s":  str(round(sz, _size_decimals(coin))),
-                "r":  False,
-                "t":  {"limit": {"tif": "Ioc"}},
-                "c":  tag[:10],
-            }],
+            "orders": [
+                {
+                    "a": token_id,
+                    "b": False,
+                    "p": str(limit_px),
+                    "s": str(round(sz, _size_decimals(coin))),
+                    "r": False,
+                    "t": {"limit": {"tif": "Ioc"}},
+                    "c": tag[:10],
+                }
+            ],
             "grouping": "na",
         }
         resp = self._exchange(action)
@@ -909,8 +997,7 @@ class HyperliquidClient:
             filled = resp.get("response", {}).get("data", {}).get("statuses", [{}])[0]
         except Exception:
             pass
-        return {"ok": ok, "coin": coin, "side": "SELL",
-                "sz": sz, "filled": filled, "raw": resp}
+        return {"ok": ok, "coin": coin, "side": "SELL", "sz": sz, "filled": filled, "raw": resp}
 
     # ── 辅助 ────────────────────────────────────────────────────────────────
 
@@ -922,15 +1009,46 @@ class HyperliquidClient:
 
 # 永续合约 asset index
 _ASSET_INDEX = {
-    "BTC": 0, "ETH": 1, "HYPE": 159, "UNI": 39, "SOL": 5, "ZEC": 214, "LIT": 223, "ARB": 11, "XRP": 25, "WLD": 31, "NEAR": 74, "SUI": 14, "LDO": 17, "ADA": 65, "ZRO": 46, "ENA": 122, "ETHFI": 121, "JUP": 90, "JTO": 94, "SYRUP": 199,
-    "AVAX": 6, "DOGE": 12, "INJ": 13, "AAVE": 28, "ONDO": 106, "TAO": 116, "KAITO": 185, "HEMI": 211,
+    "BTC": 0,
+    "ETH": 1,
+    "HYPE": 159,
+    "UNI": 39,
+    "SOL": 5,
+    "ZEC": 214,
+    "LIT": 223,
+    "ARB": 11,
+    "XRP": 25,
+    "WLD": 31,
+    "NEAR": 74,
+    "SUI": 14,
+    "LDO": 17,
+    "ADA": 65,
+    "ZRO": 46,
+    "ENA": 122,
+    "ETHFI": 121,
+    "JUP": 90,
+    "JTO": 94,
+    "SYRUP": 199,
+    "AVAX": 6,
+    "DOGE": 12,
+    "INJ": 13,
+    "AAVE": 28,
+    "ONDO": 106,
+    "TAO": 116,
+    "KAITO": 185,
+    "HEMI": 211,
 }
 
 # 现货 token ID（Hyperliquid spot，asset = token_id + 10000）
 _SPOT_TOKEN = {
-    "USDC": 10000, "BTC": 10001, "ETH": 10002, "SOL": 10006,
-    "HYPE": 10150, "AVAX": 10007,
+    "USDC": 10000,
+    "BTC": 10001,
+    "ETH": 10002,
+    "SOL": 10006,
+    "HYPE": 10150,
+    "AVAX": 10007,
 }
+
 
 def _price_to_wire(px: float, coin: str = "") -> str:
     """按币种精度格式化价格，替代旧的5位有效数字方案。
@@ -944,14 +1062,70 @@ def _price_to_wire(px: float, coin: str = "") -> str:
     decimals = _price_decimals(coin) if coin else 4
     return float_to_wire(round(px, decimals))
 
+
 def _price_decimals(coin: str) -> int:
-    return {"BTC": 0, "ETH": 1, "HYPE": 3, "UNI": 3, "SOL": 3, "ZEC": 3, "LIT": 5, "ARB": 4, "XRP": 5, "WLD": 4, "NEAR": 4, "SUI": 4, "LDO": 4, "ADA": 5, "ZRO": 4, "ENA": 5, "ETHFI": 4, "JUP": 5, "JTO": 5, "SYRUP": 5,
-            "AVAX": 4, "DOGE": 5, "INJ": 4, "AAVE": 3, "ONDO": 4, "TAO": 3, "KAITO": 4, "HEMI": 6}.get(coin, 4)
+    return {
+        "BTC": 0,
+        "ETH": 1,
+        "HYPE": 3,
+        "UNI": 3,
+        "SOL": 3,
+        "ZEC": 3,
+        "LIT": 5,
+        "ARB": 4,
+        "XRP": 5,
+        "WLD": 4,
+        "NEAR": 4,
+        "SUI": 4,
+        "LDO": 4,
+        "ADA": 5,
+        "ZRO": 4,
+        "ENA": 5,
+        "ETHFI": 4,
+        "JUP": 5,
+        "JTO": 5,
+        "SYRUP": 5,
+        "AVAX": 4,
+        "DOGE": 5,
+        "INJ": 4,
+        "AAVE": 3,
+        "ONDO": 4,
+        "TAO": 3,
+        "KAITO": 4,
+        "HEMI": 6,
+    }.get(coin, 4)
+
 
 def _size_decimals(coin: str) -> int:
     return {
-        "BTC": 5, "ETH": 4, "HYPE": 2, "UNI": 1, "SOL": 2, "ZEC": 2, "LIT": 0, "ARB": 1, "XRP": 0, "WLD": 1, "NEAR": 1, "SUI": 1, "LDO": 1, "ADA": 0, "ZRO": 1, "ENA": 0, "ETHFI": 1, "JUP": 0, "JTO": 0, "SYRUP": 0,
-        "AVAX": 2, "DOGE": 0, "INJ": 1, "AAVE": 2, "ONDO": 0, "TAO": 3, "KAITO": 0, "HEMI": 0,
+        "BTC": 5,
+        "ETH": 4,
+        "HYPE": 2,
+        "UNI": 1,
+        "SOL": 2,
+        "ZEC": 2,
+        "LIT": 0,
+        "ARB": 1,
+        "XRP": 0,
+        "WLD": 1,
+        "NEAR": 1,
+        "SUI": 1,
+        "LDO": 1,
+        "ADA": 0,
+        "ZRO": 1,
+        "ENA": 0,
+        "ETHFI": 1,
+        "JUP": 0,
+        "JTO": 0,
+        "SYRUP": 0,
+        "AVAX": 2,
+        "DOGE": 0,
+        "INJ": 1,
+        "AAVE": 2,
+        "ONDO": 0,
+        "TAO": 3,
+        "KAITO": 0,
+        "HEMI": 0,
     }.get(coin, 2)
 
 
@@ -965,6 +1139,7 @@ def _min_notional_sz(coin: str, px: float, min_usd: float = 11.0) -> float:
 
 # ── 快速连通测试 ──────────────────────────────────────────────────────────────
 
+
 def test_connection(agent_id: str = "b"):
     client = HyperliquidClient(agent_id)
     print(f"\n[Agent {agent_id.upper()}] Aster/Hyperliquid 连接测试")
@@ -977,7 +1152,8 @@ def test_connection(agent_id: str = "b"):
             if c in mids:
                 print(f"  {c}: ${mids[c]:,.2f}")
     except Exception as e:
-        print(f"  价格查询失败: {e}"); return False
+        print(f"  价格查询失败: {e}")
+        return False
 
     # 账户
     try:
@@ -987,25 +1163,26 @@ def test_connection(agent_id: str = "b"):
         for coin, p in acct["positions"].items():
             print(f"  仓位 {coin}: sz={p['size']} lev={p['leverage']}x upnl={p['upnl']:.2f}")
         if not acct["positions"]:
-            print(f"  无持仓")
+            print("  无持仓")
     except Exception as e:
         print(f"  账户查询失败: {e}")
 
     # 扫描机会
-    print(f"\n  交易标的池扫描:")
+    print("\n  交易标的池扫描:")
     try:
         opps = client.scan_opportunities()
         for o in opps[:5]:
-            fr = o['funding'] * 100
-            signal = f"→{o['funding_dir']}" if o['funding_signal'] else ""
+            fr = o["funding"] * 100
+            signal = f"→{o['funding_dir']}" if o["funding_signal"] else ""
             print(f"    {o['coin']:6s} ${o['price']:>12,.2f}  资金费率:{fr:+.4f}% {signal}")
     except Exception as e:
         print(f"  扫描失败: {e}")
 
-    print(f"\n  ✅ 连接正常")
+    print("\n  ✅ 连接正常")
     return True
 
 
 if __name__ == "__main__":
     import sys
+
     test_connection(sys.argv[1] if len(sys.argv) > 1 else "b")

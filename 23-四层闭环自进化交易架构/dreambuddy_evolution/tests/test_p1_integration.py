@@ -12,6 +12,7 @@ P1-2: 基因 weight 字段接入 shadow_backtest
   T6. weight=0 的基因不参与交易
   T7. weight=2.0 的基因 PnL 翻倍
 """
+
 from __future__ import annotations
 
 import sys
@@ -23,12 +24,12 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.engines.regime_gate import RegimeGateSwitch
-
+from dreambuddy_evolution.engines.regime_gate import RegimeGateSwitch  # noqa: E402
 
 # ====================================================================
 # P1-1: PatternDetector 接入 regime_gate
 # ====================================================================
+
 
 def _make_head_shoulders_klines():
     """构造头肩顶 K线数据"""
@@ -76,7 +77,7 @@ def test_route_strategy_top_drop_returns_short():
     """T2: route_strategy 对 TOP_DROP 返回 short 方向"""
     klines = _make_head_shoulders_klines()
     closes = [k["close"] for k in klines]
-    kline_data = {"close": closes, "high": [c+1 for c in closes], "low": [c-1 for c in closes]}
+    kline_data = {"close": closes, "high": [c + 1 for c in closes], "low": [c - 1 for c in closes]}
 
     result = RegimeGateSwitch.route_strategy("TOP_DROP", kline_data, {}, klines=klines)
     assert result["engine"] == "pattern_short"
@@ -88,7 +89,7 @@ def test_top_drop_not_trend_following():
     """T3: TOP_DROP 时不路由到 trend_following"""
     klines = _make_head_shoulders_klines()
     closes = [k["close"] for k in klines]
-    kline_data = {"close": closes, "high": [c+1 for c in closes], "low": [c-1 for c in closes]}
+    kline_data = {"close": closes, "high": [c + 1 for c in closes], "low": [c - 1 for c in closes]}
 
     result = RegimeGateSwitch.route_strategy("TOP_DROP", kline_data, {}, klines=klines)
     assert result["engine"] != "trend_following", "TOP_DROP 不应路由到趋势跟踪做多"
@@ -98,9 +99,11 @@ def test_top_drop_not_trend_following():
 # P1-2: 基因 weight 字段接入 shadow_backtest
 # ====================================================================
 
+
 def test_load_gene_weight():
     """T4: 能从基因 JSON 加载 weight 字段"""
     from dreambuddy_evolution.scripts.shadow_backtest import load_gene_weight
+
     weight = load_gene_weight("CD-ADX-GT25-TREND")
     assert weight is not None, "应能加载 weight"
     assert 0.0 <= weight <= 2.0, f"weight 应在 [0,2] 范围，实际={weight}"
@@ -109,6 +112,7 @@ def test_load_gene_weight():
 def test_weight_affects_pnl():
     """T5: weight 影响最终 PnL 评分"""
     from dreambuddy_evolution.scripts.shadow_backtest import calc_weighted_pnl
+
     avg_pnl = 0.05
     weight = 0.5
     weighted = calc_weighted_pnl(avg_pnl, weight)
@@ -118,9 +122,10 @@ def test_weight_affects_pnl():
 def test_weight_zero_blocks_trading():
     """T6: weight=0 的基因不参与交易"""
     from dreambuddy_evolution.scripts.shadow_backtest import should_trade
-    assert should_trade(weight=0.0) == False, "weight=0 不应交易"
-    assert should_trade(weight=0.5) == True, "weight=0.5 应交易"
-    assert should_trade(weight=2.0) == True, "weight=2.0 应交易"
+
+    assert should_trade(weight=0.0) == False, "weight=0 不应交易"  # noqa: E712
+    assert should_trade(weight=0.5) == True, "weight=0.5 应交易"  # noqa: E712
+    assert should_trade(weight=2.0) == True, "weight=2.0 应交易"  # noqa: E712
 
 
 if __name__ == "__main__":

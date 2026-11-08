@@ -2,7 +2,7 @@
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .types import CleanedEvent
 
@@ -59,7 +59,7 @@ class DriftMonitor:
         psi_x = self._compute_psi(baseline_x_dist, current_x_dist)
 
         # 性能漂移
-        recent = events[-self.recent_window:]
+        recent = events[-self.recent_window :]
         recent_pnls = [e.pnl_pct for e in recent if e.pnl_pct is not None]
         perf_drift = self._detect_performance_drift(
             recent_pnls,
@@ -68,10 +68,7 @@ class DriftMonitor:
         )
 
         # 综合判断
-        drift_detected = (
-            psi_x >= self.psi_threshold
-            or perf_drift >= self.perf_z_threshold
-        )
+        drift_detected = psi_x >= self.psi_threshold or perf_drift >= self.perf_z_threshold
 
         if psi_x >= self.psi_threshold:
             drift_type = "DISTRIBUTION"
@@ -142,13 +139,12 @@ class DriftMonitor:
             return 0.0
 
         import statistics as _stats
+
         recent_mean = _stats.mean(recent_pnls)
         z_score = abs(recent_mean - baseline_mean) / baseline_std
         return round(z_score, 4)
 
-    def build_baseline_stats(
-        self, events: List[CleanedEvent]
-    ) -> Dict[str, Any]:
+    def build_baseline_stats(self, events: List[CleanedEvent]) -> Dict[str, Any]:
         """从历史数据构建基线统计。"""
         if not events:
             return {}
@@ -157,9 +153,7 @@ class DriftMonitor:
         pnl_mean = sum(pnls) / max(len(pnls), 1)
         pnl_std = 0.0
         if len(pnls) >= 2:
-            pnl_std = math.sqrt(
-                sum((p - pnl_mean) ** 2 for p in pnls) / (len(pnls) - 1)
-            )
+            pnl_std = math.sqrt(sum((p - pnl_mean) ** 2 for p in pnls) / (len(pnls) - 1))
 
         return {
             "x_distribution": self._bin_quadrant_x(events),

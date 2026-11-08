@@ -15,17 +15,14 @@ F3 估值分析节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
 from dreamos.capabilities.trading.stats_utils import (
-    normalize_tanh,
-    normalize_signed,
     aggregate_signals,
-    z_score,
-    percentile_rank,
+    normalize_signed,
 )
+from dreamos.registry.base import BaseNode
+from dreamos.shared.state import NodeResult, State
 
 
 class F3ValuationNode(BaseNode):
@@ -63,9 +60,13 @@ class F3ValuationNode(BaseNode):
         # 统计标准化：线性归一化到 [-1, 1]，区间 [0.95, 1.05]
         sopr_norm = normalize_signed(sopr, 0.95, 1.05)
         if sopr_norm < -0.5:
-            scores.append(("LONG", 0.20, f"SOPR={sopr:.4f} (z={sopr_norm:.2f})，亏损区，洗盘接近尾声"))
+            scores.append(
+                ("LONG", 0.20, f"SOPR={sopr:.4f} (z={sopr_norm:.2f})，亏损区，洗盘接近尾声")
+            )
         elif sopr_norm > 0.5:
-            scores.append(("SHORT", 0.15, f"SOPR={sopr:.4f} (z={sopr_norm:.2f})，盈利区，警惕获利回吐"))
+            scores.append(
+                ("SHORT", 0.15, f"SOPR={sopr:.4f} (z={sopr_norm:.2f})，盈利区，警惕获利回吐")
+            )
 
         # ── 3. AHR999 ────────────────────────────────────
         ahr999 = mkt.get("ahr999", 0.5)

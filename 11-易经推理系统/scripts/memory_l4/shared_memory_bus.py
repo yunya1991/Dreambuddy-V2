@@ -1,15 +1,15 @@
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.agent_acl import authorize
-from scripts.memory_l4.paths import artifacts_memory_l4_dir
+from scripts.memory_l4.agent_acl import authorize  # noqa: E402
+from scripts.memory_l4.paths import artifacts_memory_l4_dir  # noqa: E402
 
 
 def _default_bus_path() -> Path:
@@ -31,10 +31,16 @@ def publish_shared_memory_event(
             "denied": True,
             "reason": str(acl_decision.get("reason") or "acl_denied"),
             "acl_decision": acl_decision,
-            "bus_path": str((Path(output_dir) / "events.jsonl") if output_dir is not None else _default_bus_path()),
+            "bus_path": str(
+                (Path(output_dir) / "events.jsonl")
+                if output_dir is not None
+                else _default_bus_path()
+            ),
         }
 
-    bus_path = (Path(output_dir) / "events.jsonl") if output_dir is not None else _default_bus_path()
+    bus_path = (
+        (Path(output_dir) / "events.jsonl") if output_dir is not None else _default_bus_path()
+    )
     bus_path.parent.mkdir(parents=True, exist_ok=True)
     event = {
         "version": "v0.1",

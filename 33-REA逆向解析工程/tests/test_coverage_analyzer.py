@@ -2,6 +2,7 @@
 
 测试策略：创建临时 coverage.xml 文件，验证解析逻辑。
 """
+
 import os
 import sys
 import tempfile
@@ -11,9 +12,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.coverage_analyzer import analyze_coverage
 
-
 # Cobertura XML 格式示例
-SAMPLE_COVERAGE_XML = '''<?xml version="1.0" ?>
+SAMPLE_COVERAGE_XML = """<?xml version="1.0" ?>
 <coverage version="6.5.0" timestamp="1700000000000" lines-valid="100" lines-covered="80" line-rate="0.8" branches-covered="5" branches-valid="8" branch-rate="0.625" complexity="0">
   <packages>
     <package name="core" line-rate="0.8" branch-rate="0.625" complexity="0">
@@ -48,7 +48,7 @@ SAMPLE_COVERAGE_XML = '''<?xml version="1.0" ?>
     </package>
   </packages>
 </coverage>
-'''
+"""
 
 
 def test_coverage_analyzer_parses_xml():
@@ -83,14 +83,11 @@ def test_coverage_analyzer_identifies_uncovered_lines():
         result = analyze_coverage(d)
 
     # 找到 analyzer.py 的未覆盖行
-    analyzer_file = [
-        f for f in result["files"]
-        if "analyzer.py" in f.get("filename", "")
-    ]
+    analyzer_file = [f for f in result["files"] if "analyzer.py" in f.get("filename", "")]
     assert len(analyzer_file) == 1
-    uncovered = [l for l in analyzer_file[0].get("lines", []) if l.get("hits") == 0]
+    uncovered = [l for l in analyzer_file[0].get("lines", []) if l.get("hits") == 0]  # noqa: E741
     assert len(uncovered) >= 1
-    assert 10 in [l["number"] for l in uncovered]
+    assert 10 in [l["number"] for l in uncovered]  # noqa: E741
 
 
 def test_coverage_analyzer_returns_evidence():

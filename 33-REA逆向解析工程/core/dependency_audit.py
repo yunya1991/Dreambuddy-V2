@@ -17,11 +17,10 @@ from typing import Any
 
 from .evidence import Evidence
 
-
 # 依赖版本说明符正则
 _SPEC_RE = re.compile(
     r"^([a-zA-Z0-9_-]+)\s*"  # 包名
-    r"([<>=!~]=?)?\s*"        # 操作符
+    r"([<>=!~]=?)?\s*"  # 操作符
     r"([\d.]+[a-zA-Z0-9.*+]*)?"  # 版本号
 )
 
@@ -48,13 +47,15 @@ def audit_dependencies(target: str) -> dict[str, Any]:
     }
 
     if not os.path.isdir(target):
-        result["evidence"].append(Evidence(
-            result=f"目标不是目录: {target}",
-            provenance={"target": target},
-            confidence=1.0,
-            known_gaps=["无法审计非目录路径"],
-            level="observation",
-        ))
+        result["evidence"].append(
+            Evidence(
+                result=f"目标不是目录: {target}",
+                provenance={"target": target},
+                confidence=1.0,
+                known_gaps=["无法审计非目录路径"],
+                level="observation",
+            )
+        )
         return result
 
     # 查找依赖清单文件
@@ -81,12 +82,13 @@ def audit_dependencies(target: str) -> dict[str, Any]:
     result["manifests_found"] = manifests
 
     result["summary"] = (
-        f"依赖审计: {len(manifests)} 个清单文件, "
-        f"{len(result['declared'])} 个声明依赖"
+        f"依赖审计: {len(manifests)} 个清单文件, " f"{len(result['declared'])} 个声明依赖"
     )
 
     result["evidence"] = _build_evidence(
-        result["declared"], manifests, target,
+        result["declared"],
+        manifests,
+        target,
     )
 
     return result
@@ -96,6 +98,7 @@ def audit_dependencies(target: str) -> dict[str, Any]:
 # 解析器
 # ---------------------------------------------------------------------------
 
+
 def _parse_pyproject(path: str) -> list[dict[str, str]]:
     """解析 pyproject.toml 中的 [project.dependencies]。
 
@@ -104,6 +107,7 @@ def _parse_pyproject(path: str) -> list[dict[str, str]]:
     deps: list[dict[str, str]] = []
     try:
         import tomllib
+
         with open(path, "rb") as f:
             data = tomllib.load(f)
         project = data.get("project", {})
@@ -176,12 +180,14 @@ def _parse_package_json(path: str) -> list[dict[str, str]]:
         section_deps = data.get(section, {})
         if isinstance(section_deps, dict):
             for name, version in section_deps.items():
-                deps.append({
-                    "name": name,
-                    "operator": _extract_operator(str(version)),
-                    "version": _clean_version(str(version)),
-                    "source": f"package.json[{section}]",
-                })
+                deps.append(
+                    {
+                        "name": name,
+                        "operator": _extract_operator(str(version)),
+                        "version": _clean_version(str(version)),
+                        "source": f"package.json[{section}]",
+                    }
+                )
 
     return deps
 
@@ -189,6 +195,7 @@ def _parse_package_json(path: str) -> list[dict[str, str]]:
 # ---------------------------------------------------------------------------
 # 辅助
 # ---------------------------------------------------------------------------
+
 
 def _parse_version_spec(spec: str) -> dict[str, str] | None:
     """解析版本说明符（如 'requests>=2.28.0'）。"""
@@ -222,7 +229,7 @@ def _extract_operator(version: str) -> str:
 
 def _clean_version(version: str) -> str:
     """清理 npm 版本号前缀。"""
-    return version.lstrip("^~>=<" )
+    return version.lstrip("^~>=<")
 
 
 def _read_file(path: str) -> str:
@@ -237,28 +244,32 @@ def _build_evidence(
 ) -> list[Evidence]:
     evidence: list[Evidence] = []
 
-    evidence.append(Evidence(
-        result=f"找到 {len(manifests)} 个依赖清单文件",
-        provenance={"target": target, "manifests": manifests},
-        confidence=1.0,
-        known_gaps=[
-            "未解析 lock 文件（poetry.lock/package-lock.json），无法对比声明版本与锁定版本",
-            "setup.py 中的动态依赖未解析",
-            "可选依赖 (extras) 未完全展开",
-        ],
-        level="observation",
-    ))
+    evidence.append(
+        Evidence(
+            result=f"找到 {len(manifests)} 个依赖清单文件",
+            provenance={"target": target, "manifests": manifests},
+            confidence=1.0,
+            known_gaps=[
+                "未解析 lock 文件（poetry.lock/package-lock.json），无法对比声明版本与锁定版本",
+                "setup.py 中的动态依赖未解析",
+                "可选依赖 (extras) 未完全展开",
+            ],
+            level="observation",
+        )
+    )
 
     if declared:
-        evidence.append(Evidence(
-            result=f"声明 {len(declared)} 个依赖",
-            provenance={"target": target, "analysis": "dependency_audit"},
-            confidence=0.9,
-            known_gaps=[
-                "版本约束语义不同：>= vs ~= vs ^ 不等价",
-                "传递依赖未解析（只审计直接声明）",
-            ],
-            level="derivation",
-        ))
+        evidence.append(
+            Evidence(
+                result=f"声明 {len(declared)} 个依赖",
+                provenance={"target": target, "analysis": "dependency_audit"},
+                confidence=0.9,
+                known_gaps=[
+                    "版本约束语义不同：>= vs ~= vs ^ 不等价",
+                    "传递依赖未解析（只审计直接声明）",
+                ],
+                level="derivation",
+            )
+        )
 
     return evidence

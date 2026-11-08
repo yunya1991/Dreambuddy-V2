@@ -9,24 +9,22 @@
 集成相关的轻量方法（_init_shadow_logger / _record_shadow_log），通过在
 PollingTrader 子类中 stub 掉重依赖来隔离测试。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
-
-from bcrm2.shadow_logger import ShadowLogger, SHADOW_LOGGER_ENABLED
 
 
 # ================================================================
 # 轻量 stub：绕过 PollingTrader.__init__ 的重依赖
 # ================================================================
+
 
 def _make_stub_trader():
     """构造一个只挂载 ShadowLogger 集成方法的 stub trader。
@@ -47,17 +45,20 @@ def _make_stub_trader():
 # T_B5: polling_trader 集成 + 开关
 # ================================================================
 
+
 class TestShadowLoggerIntegration:
     """验证 polling_trader 中 ShadowLogger 集成相关方法。"""
 
     def test_init_shadow_logger_method_exists(self):
         """T_B5.0: PollingTrader 有 _init_shadow_logger 方法。"""
         from scripts.memory_l4.polling_trader import PollingTrader
+
         assert hasattr(PollingTrader, "_init_shadow_logger")
 
     def test_record_shadow_log_method_exists(self):
         """T_B5.0b: PollingTrader 有 _record_shadow_log 方法。"""
         from scripts.memory_l4.polling_trader import PollingTrader
+
         assert hasattr(PollingTrader, "_record_shadow_log")
 
     def test_disabled_sets_shadow_logger_none(self):
@@ -113,9 +114,13 @@ class TestShadowLoggerIntegration:
         trader = _make_stub_trader()
 
         # 通过 patch 让 MorphCyclePredictor 构造抛异常（更可靠）
-        with patch("scripts.memory_l4.polling_trader.SHADOW_LOGGER_ENABLED", True), \
-             patch("scripts.memory_l4.bcrm2.morph_cycle_predictor.MorphCyclePredictor",
-                   side_effect=RuntimeError("predictor init failed")):
+        with (
+            patch("scripts.memory_l4.polling_trader.SHADOW_LOGGER_ENABLED", True),
+            patch(
+                "scripts.memory_l4.bcrm2.morph_cycle_predictor.MorphCyclePredictor",
+                side_effect=RuntimeError("predictor init failed"),
+            ),
+        ):
             trader._init_shadow_logger()
 
         assert getattr(trader, "_shadow_logger", None) is None

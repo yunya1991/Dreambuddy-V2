@@ -25,7 +25,7 @@ import os
 import shlex
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -34,16 +34,16 @@ _CORE_DIR = _REPO_ROOT / "34-前端应用训练系统"
 if str(_CORE_DIR) not in sys.path:
     sys.path.insert(0, str(_CORE_DIR))
 
+from core.shell_handles import ShellHandleManager  # noqa: E402
+from core.ssh_shell_launcher import ssh_launcher  # noqa: E402
+from core.stdio_shell_launcher import stdio_launcher  # noqa: E402
+
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
 from mcp_shells._shared.shell_runtime import (  # noqa: E402
     SERVER_VERSION,
     load_registry_doc,
     negotiate_protocol_version,
 )
-
-from core.shell_handles import ShellHandleManager  # noqa: E402
-from core.ssh_shell_launcher import ssh_launcher  # noqa: E402
-from core.stdio_shell_launcher import stdio_launcher  # noqa: E402
 
 GATEWAY_SOURCE = "l0.gateway.mcp"
 REGISTRY_DEFAULT = _REPO_ROOT / "47-MCP管理系统" / "registry" / "mcp_capabilities.yaml"
@@ -187,9 +187,7 @@ class L0Gateway:
                         "description": live.get("description", ""),
                         "inputSchema": live.get("inputSchema")
                         or {"type": "object", "properties": {}},
-                        "annotations": tool.get("annotations")
-                        or live.get("annotations")
-                        or {},
+                        "annotations": tool.get("annotations") or live.get("annotations") or {},
                     }
                 )
 

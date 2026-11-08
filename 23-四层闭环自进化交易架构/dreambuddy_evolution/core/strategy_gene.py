@@ -7,6 +7,7 @@ L2 Strategy Gene Schema Interface（MVP Spec §3.2 & §3.4 Public API）
   4. search_genes_by_category(root, cat) → 读 gene_index.json 倒排，sorted list[gene_id]
 FAIL-OPEN：任何 schema 校验异常/IO 异常 → skip + log，不 crash（FO-4）。
 """
+
 from __future__ import annotations
 
 import json
@@ -21,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.weights import WEIGHTS  # 4 权重组（硬约束唯一权威源）
+from dreambuddy_evolution.weights import WEIGHTS  # 4 权重组（硬约束唯一权威源）  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
     """
     root_p = Path(root)
     cond_dir = root_p / "strategy_genes" / "conditions"
-    act_dir  = root_p / "strategy_genes" / "actions"
+    act_dir = root_p / "strategy_genes" / "actions"
     comb_dir = root_p / "strategy_combinations"
     schemas_dir = root_p / "schemas"
 
@@ -51,28 +52,52 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
 
     try:
         SCH_COND = _schema("condition")
-        SCH_ACT  = _schema("action")
+        SCH_ACT = _schema("action")
         SCH_COMB = _schema("combination")
     except Exception as e:  # pragma: no cover
         logger.warning("[FO-4] schemas load fail → return empty library: %s", e)
-        return {"conditions": [], "actions": [], "combinations": [],
-                "counts": {k: 0 for k in ("cond_valid", "cond_invalid",
-                                          "act_valid", "act_invalid",
-                                          "comb_valid", "comb_invalid")},
-                "bad_genes_log": None,
-                "root": str(root_p)}
+        return {
+            "conditions": [],
+            "actions": [],
+            "combinations": [],
+            "counts": dict.fromkeys(
+                (
+                    "cond_valid",
+                    "cond_invalid",
+                    "act_valid",
+                    "act_invalid",
+                    "comb_valid",
+                    "comb_invalid",
+                ),
+                0,
+            ),
+            "bad_genes_log": None,
+            "root": str(root_p),
+        }
 
     bad_log_path = root_p / "strategy_genes" / "bad_genes.log"
-    counts = {"cond_valid": 0, "cond_invalid": 0,
-              "act_valid":  0, "act_invalid":  0,
-              "comb_valid": 0, "comb_invalid": 0}
+    counts = {
+        "cond_valid": 0,
+        "cond_invalid": 0,
+        "act_valid": 0,
+        "act_invalid": 0,
+        "comb_valid": 0,
+        "comb_invalid": 0,
+    }
     conditions: list[dict] = []
     actions: list[dict] = []
     combinations: list[dict] = []
-    seen_ids: dict[str, str] = {}  # gene_id → file_path（TR-SG-04 唯一性：同 id 多次出现直接 FO-4 skip）
+    seen_ids: dict[str, str] = (
+        {}
+    )  # gene_id → file_path（TR-SG-04 唯一性：同 id 多次出现直接 FO-4 skip）
 
-    def _iter_and_validate(directory: Path, schema: dict, count_key_valid: str,
-                           count_key_invalid: str, id_key: str = "gene_id") -> list[dict]:
+    def _iter_and_validate(
+        directory: Path,
+        schema: dict,
+        count_key_valid: str,
+        count_key_invalid: str,
+        id_key: str = "gene_id",
+    ) -> list[dict]:
         result = []
         if not directory.exists():
             logger.warning("[FO-4] directory missing: %s — skip (return [])", directory)
@@ -84,7 +109,9 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
                 gid = str(obj.get(id_key, ""))
                 # TR-SG-04 唯一性：重复 id 直接记 bad_genes.log 跳过（不接受重复写）
                 if gid in seen_ids and seen_ids[gid] != str(file):
-                    raise ValueError(f"duplicate {id_key}={gid!r} already exists at {seen_ids[gid]}")
+                    raise ValueError(
+                        f"duplicate {id_key}={gid!r} already exists at {seen_ids[gid]}"
+                    )
                 if gid:
                     seen_ids[gid] = str(file)
                 # TR-SG-09: parameters range low <= high 断言（每个参数都要过）
@@ -108,19 +135,31 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
                 counts[count_key_invalid] += 1
                 try:
                     with bad_log_path.open("a", encoding="utf-8") as fh:
-                        fh.write(json.dumps({
-                            "file": str(file.name),
-                            "kind": count_key_invalid,
-                            "error": f"{type(exc).__name__}: {exc!s:.300s}",
-                            "traceback": traceback.format_exc(limit=2),
-                        }, ensure_ascii=False) + "\n")
+                        fh.write(
+                            json.dumps(
+                                {
+                                    "file": str(file.name),
+                                    "kind": count_key_invalid,
+                                    "error": f"{type(exc).__name__}: {exc!s:.300s}",
+                                    "traceback": traceback.format_exc(limit=2),
+                                },
+                                ensure_ascii=False,
+                            )
+                            + "\n"
+                        )
                 except Exception as log_err:  # pragma: no cover — 连日志都写不进来直接 stderr
-                    logger.error("Cannot write bad_genes.log (%s) during FO-4: %s", bad_log_path, log_err)
+                    logger.error(
+                        "Cannot write bad_genes.log (%s) during FO-4: %s", bad_log_path, log_err
+                    )
         return result
 
-    conditions   = _iter_and_validate(cond_dir, SCH_COND, "cond_valid", "cond_invalid")
-    actions      = _iter_and_validate(act_dir,  SCH_ACT,  "act_valid",  "act_invalid")
-    combinations = _iter_and_validate(comb_dir / "library.json", SCH_COMB, "comb_valid", "comb_invalid") if False else []
+    conditions = _iter_and_validate(cond_dir, SCH_COND, "cond_valid", "cond_invalid")
+    actions = _iter_and_validate(act_dir, SCH_ACT, "act_valid", "act_invalid")
+    combinations = (
+        _iter_and_validate(comb_dir / "library.json", SCH_COMB, "comb_valid", "comb_invalid")
+        if False
+        else []
+    )
     # combinations 是一个文件 library.json（数组），不是每个文件 1 个。单独循环加载：
     comb_file = comb_dir / "library.json"
     if comb_file.exists():
@@ -131,8 +170,17 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
         except Exception as exc:
             comb_list = []
             with bad_log_path.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps({"file": "library.json", "kind": "comb_invalid",
-                                     "error": f"{type(exc).__name__}: {exc!s:.300s}"}, ensure_ascii=False) + "\n")
+                fh.write(
+                    json.dumps(
+                        {
+                            "file": "library.json",
+                            "kind": "comb_invalid",
+                            "error": f"{type(exc).__name__}: {exc!s:.300s}",
+                        },
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
             counts["comb_invalid"] += 1
         for c in comb_list:
             cid = str(c.get("combo_id", "")) if isinstance(c, dict) else ""
@@ -155,12 +203,18 @@ def load_gene_library(root: str | Path) -> dict[str, Any]:
                 counts["comb_invalid"] += 1
                 try:
                     with bad_log_path.open("a", encoding="utf-8") as fh:
-                        fh.write(json.dumps({
-                            "file": "library.json",
-                            "combo_id": cid,
-                            "kind": "comb_invalid",
-                            "error": f"{type(exc).__name__}: {exc!s:.300s}",
-                        }, ensure_ascii=False) + "\n")
+                        fh.write(
+                            json.dumps(
+                                {
+                                    "file": "library.json",
+                                    "combo_id": cid,
+                                    "kind": "comb_invalid",
+                                    "error": f"{type(exc).__name__}: {exc!s:.300s}",
+                                },
+                                ensure_ascii=False,
+                            )
+                            + "\n"
+                        )
                 except Exception as e:  # pragma: no cover
                     logger.debug("[FO] bad_genes 日志写入 fail: %s", e)
     return {
@@ -195,8 +249,10 @@ def calculate_ess(combination_meta: dict[str, Any]) -> float:
     S = float(combination_meta.get("S", meta.get("S", 0.0)) or 0.0)
     N = float(combination_meta.get("N", combination_meta.get("n_samples", meta.get("N", 0))) or 0)
     W = WEIGHTS["ESS"]
-    H_w = float(W["H"]); S_w = float(W["S"])
-    N_w = float(W["N_ratio"]); N_s = float(W["N_scale"])
+    H_w = float(W["H"])
+    S_w = float(W["S"])
+    N_w = float(W["N_ratio"])
+    N_s = float(W["N_scale"])
     n_term = math.sqrt(max(N, 0.0) / max(N_s, 1.0)) if N_s > 0 else 0.0
     n_clamped = 0.0 if math.isnan(n_term) else min(1.0, max(0.0, n_term))
     raw = H_w * H + S_w * S + N_w * n_clamped
@@ -217,15 +273,17 @@ def top_combinations_by_ess(library: dict[str, Any], min_sample: int = 30) -> li
         if n < min_sample:
             continue
         ess = calculate_ess(c)
-        out.append({
-            "combo_id":     str(c.get("combo_id", "")),
-            "ess":          ess,
-            "n_samples":    n,
-            "condition_ids": list(c.get("condition_ids", []) or []),
-            "action_ids":   list(c.get("action_ids", []) or []),
-            "strategy_type": (c.get("meta", {}) or {}).get("strategy_type"),
-            "ess_raw_source": c.get("ess"),
-        })
+        out.append(
+            {
+                "combo_id": str(c.get("combo_id", "")),
+                "ess": ess,
+                "n_samples": n,
+                "condition_ids": list(c.get("condition_ids", []) or []),
+                "action_ids": list(c.get("action_ids", []) or []),
+                "strategy_type": (c.get("meta", {}) or {}).get("strategy_type"),
+                "ess_raw_source": c.get("ess"),
+            }
+        )
     out.sort(key=lambda x: x["ess"], reverse=True)  # 严格降序（TR-SG-07 断言顺序）
     return out
 
@@ -252,14 +310,16 @@ def find_combinations_by_strategy_type(library: dict[str, Any], strategy_type: s
         if not isinstance(meta, dict):
             continue
         if meta.get("strategy_type") == strategy_type:
-            out.append({
-                "combo_id": str(c.get("combo_id", "")),
-                "strategy_type": strategy_type,
-                "ess": c.get("ess"),
-                "n_samples": c.get("n_samples", 0),
-                "condition_ids": list(c.get("condition_ids", []) or []),
-                "action_ids": list(c.get("action_ids", []) or []),
-            })
+            out.append(
+                {
+                    "combo_id": str(c.get("combo_id", "")),
+                    "strategy_type": strategy_type,
+                    "ess": c.get("ess"),
+                    "n_samples": c.get("n_samples", 0),
+                    "condition_ids": list(c.get("condition_ids", []) or []),
+                    "action_ids": list(c.get("action_ids", []) or []),
+                }
+            )
     return out
 
 

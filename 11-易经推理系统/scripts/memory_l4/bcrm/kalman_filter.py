@@ -18,14 +18,18 @@
     力学引擎负责物理推理，卡尔曼负责噪声过滤，职责分离
 """
 
-from typing import Dict, Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
 from pykalman import KalmanFilter
 
 from ._constants import (
-    KALMAN_PROCESS_NOISE_VEL, KALMAN_PROCESS_NOISE_ACC,
-    KALMAN_OBS_NOISE_BASE, KALMAN_VOLATILITY_FACTOR,
-    KALMAN_SPREAD_FACTOR, KALMA_INITIAL_COV,
+    KALMA_INITIAL_COV,
+    KALMAN_OBS_NOISE_BASE,
+    KALMAN_PROCESS_NOISE_ACC,
+    KALMAN_PROCESS_NOISE_VEL,
+    KALMAN_SPREAD_FACTOR,
+    KALMAN_VOLATILITY_FACTOR,
 )
 
 
@@ -95,10 +99,12 @@ class VelocityKalmanFilter:
         r = self.obs_noise_base * spread_factor
 
         # 状态转移矩阵：匀加速运动
-        transition_matrices = np.array([
-            [1.0, self.dt],
-            [0.0, 1.0],
-        ])
+        transition_matrices = np.array(
+            [
+                [1.0, self.dt],
+                [0.0, 1.0],
+            ]
+        )
         # 观测矩阵：只观测速度
         observation_matrices = np.array([[1.0, 0.0]])
         # 过程噪声协方差
@@ -203,7 +209,11 @@ class VelocityKalmanFilter:
         """获取当前滤波器内部状态（调试用）。"""
         return {
             "step_count": self._step_count,
-            "filtered_velocity": float(self._filtered_state[0]) if self._filtered_state is not None else 0.0,
-            "filtered_acceleration": float(self._filtered_state[1]) if self._filtered_state is not None else 0.0,
+            "filtered_velocity": (
+                float(self._filtered_state[0]) if self._filtered_state is not None else 0.0
+            ),
+            "filtered_acceleration": (
+                float(self._filtered_state[1]) if self._filtered_state is not None else 0.0
+            ),
             "filtered_cov": self._filtered_cov.tolist() if self._filtered_cov is not None else None,
         }

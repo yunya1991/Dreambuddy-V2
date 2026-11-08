@@ -8,11 +8,8 @@
 """
 
 import sys
-import os
-import json
-import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 _PROJECT = Path(__file__).resolve().parents[3]
 _CORE = _PROJECT / "16-调控系统" / "core"
@@ -22,20 +19,16 @@ for _p in (_CORE, _RISK, _RISK_CORE):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-import pytest
+import pytest  # noqa: E402
 
 try:
-    from core.registry import RuleRegistry, RuleCategory, DEFAULT_RULES
+    from core.registry import DEFAULT_RULES, RuleCategory, RuleRegistry  # noqa: F401
 except ImportError:
-    from registry import RuleRegistry, RuleCategory, DEFAULT_RULES
-from capital_control.types import (
-    AccountType,
-    CapitalMode,
-    CapitalResult,
+    from registry import RuleCategory, RuleRegistry
+from capital_control.types import (  # noqa: E402
     CapitalSnapshot,
     HealthLevel,
 )
-
 
 # =========================================================================
 # RuleRegistry CAPITAL 类别测试
@@ -49,12 +42,7 @@ class TestRuleRegistryCapital:
     def test_load_defaults_loads_capital_rules(self):
         """import 4 条规则后 load_defaults 应载入 capital 类"""
         # import 触发 @register_capital
-        from capital_control.capital_rules import (
-            okx_live_rule,
-            okx_simulated_rule,
-            hyperliquid_rule,
-            aster_rule,
-        )
+
         registry = RuleRegistry()
         loaded = registry.load_defaults()
         assert loaded >= 4
@@ -62,12 +50,7 @@ class TestRuleRegistryCapital:
         assert len(capital_rules) >= 4
 
     def test_priority_ordering(self):
-        from capital_control.capital_rules import (
-            okx_live_rule,
-            okx_simulated_rule,
-            hyperliquid_rule,
-            aster_rule,
-        )
+
         registry = RuleRegistry()
         registry.load_defaults()
         rules = registry.get_rules(RuleCategory.CAPITAL)
@@ -77,7 +60,7 @@ class TestRuleRegistryCapital:
         assert priorities[-1] == 40  # aster
 
     def test_enable_disable(self):
-        from capital_control.capital_rules import okx_live_rule
+
         registry = RuleRegistry()
         registry.load_defaults()
         # disable
@@ -88,7 +71,7 @@ class TestRuleRegistryCapital:
         assert registry.get_rule("capital.okx_live").enabled is True
 
     def test_list_all_includes_capital(self):
-        from capital_control.capital_rules import okx_live_rule
+
         registry = RuleRegistry()
         registry.load_defaults()
         all_cats = registry.list_all()
@@ -132,6 +115,7 @@ class TestCapitalControlComponent:
     def test_import_and_init(self):
         """组件可导入和实例化"""
         from capital_control import CapitalControlComponent, CapitalMode
+
         c = CapitalControlComponent(mode=CapitalMode.DYNAMIC)
         assert c is not None
 
@@ -139,14 +123,16 @@ class TestCapitalControlComponent:
         """evaluate 使用 mock 数据返回 CapitalSnapshot"""
         from capital_control import CapitalControlComponent, CapitalMode
 
-        mock_data = _mock_fetch_all_positions({
-            "v15_martin": 260.0,
-            "yijing_bcrm": 150.0,
-            "agent_a": 60.0,
-            "agent_b": 60.0,
-            "agent_c_memory": 60.0,
-            "three_screen": 200.0,
-        })
+        mock_data = _mock_fetch_all_positions(
+            {
+                "v15_martin": 260.0,
+                "yijing_bcrm": 150.0,
+                "agent_a": 60.0,
+                "agent_b": 60.0,
+                "agent_c_memory": 60.0,
+                "three_screen": 200.0,
+            }
+        )
         with patch("unified_position_query.fetch_all_positions", return_value=mock_data):
             c = CapitalControlComponent(mode=CapitalMode.DYNAMIC)
             snap = c.evaluate()
@@ -169,14 +155,16 @@ class TestCapitalControlComponent:
         """单系统失败不影响整体"""
         from capital_control import CapitalControlComponent, CapitalMode
 
-        mock_data = _mock_fetch_all_positions({
-            "v15_martin": 260.0,
-            "yijing_bcrm": 150.0,
-            "agent_a": 60.0,
-            "agent_b": 60.0,
-            "agent_c_memory": 60.0,
-            "three_screen": 0.0,  # 降级
-        })
+        mock_data = _mock_fetch_all_positions(
+            {
+                "v15_martin": 260.0,
+                "yijing_bcrm": 150.0,
+                "agent_a": 60.0,
+                "agent_b": 60.0,
+                "agent_c_memory": 60.0,
+                "three_screen": 0.0,  # 降级
+            }
+        )
         with patch("unified_position_query.fetch_all_positions", return_value=mock_data):
             c = CapitalControlComponent(mode=CapitalMode.DYNAMIC)
             snap = c.evaluate()
@@ -261,11 +249,15 @@ class TestCapitalControlComponent:
             "systems": {
                 "v15_martin": {
                     "equity": 100.0,
-                    "extra": {"avail_balance": 10.0, "used_margin": 90.0, "account_type": "okx_live"},
+                    "extra": {
+                        "avail_balance": 10.0,
+                        "used_margin": 90.0,
+                        "account_type": "okx_live",
+                    },
                 },
             }
         }
-        config_path = _CORE.parent / "config" / "capital_control.json"
+        config_path = _CORE.parent / "config" / "capital_control.json"  # noqa: F841
         with patch("unified_position_query.fetch_all_positions", return_value=mock_data):
             c = CapitalControlComponent(mode=CapitalMode.DYNAMIC)
             # 手动开启 phase2

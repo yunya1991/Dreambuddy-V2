@@ -13,7 +13,7 @@
     P3 - 执行层行为约束（跟踪止损、TSTP等）
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import time
 from typing import Dict, Optional, List, Any
@@ -25,12 +25,13 @@ class ExitAction(str, Enum):
     CLOSE = "close"
     REDUCE = "reduce"
     HOLD = "hold"
-    RAISE_TP = "raise_tp"    # 提高止盈价（强反弹时让利润奔跑）
+    RAISE_TP = "raise_tp"  # 提高止盈价（强反弹时让利润奔跑）
 
 
 @dataclass
 class PositionInfo:
     """持仓信息"""
+
     symbol: str
     side: str = "long"
     entry_price: float = 0.0
@@ -52,14 +53,15 @@ class PositionInfo:
 @dataclass
 class ExitDecisionResult:
     """离场决策结果"""
+
     action: ExitAction
     confidence: float = 0.0
     reason: str = ""
     priority: str = ""
     reduce_fraction: float = 0.0
     suggested_price: float = 0.0
-    new_tp_price: float = 0.0    # RAISE_TP 新止盈价
-    new_tp_pct: float = 0.0      # RAISE_TP 新止盈比例
+    new_tp_price: float = 0.0  # RAISE_TP 新止盈价
+    new_tp_pct: float = 0.0  # RAISE_TP 新止盈比例
     raw_data: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -71,12 +73,12 @@ def get_exit_system_classic() -> Optional[Any]:
     """
     try:
         classic_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "10-经典指标系统"
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "10-经典指标系统"
         )
         if classic_path not in sys.path:
             sys.path.insert(0, classic_path)
-        from classic_exit_system import ClassicExitSystem, get_default_system
+        from classic_exit_system import get_default_system
+
         return get_default_system()
     except Exception:
         return None
@@ -132,7 +134,11 @@ def evaluate_exit_via_api(
     data = resp["data"]
     if isinstance(data, dict):
         action_str = (data.get("action") or "hold").lower()
-        action = ExitAction(action_str) if action_str in [e.value for e in ExitAction] else ExitAction.HOLD
+        action = (
+            ExitAction(action_str)
+            if action_str in [e.value for e in ExitAction]
+            else ExitAction.HOLD
+        )
 
         return ExitDecisionResult(
             action=action,
@@ -140,13 +146,17 @@ def evaluate_exit_via_api(
             reason=data.get("reason", ""),
             priority=data.get("priority", ""),
             reduce_fraction=float(data.get("reduce_fraction", 0) or 0),
-            suggested_price=float(data.get("suggested_price", position.current_price) or position.current_price),
+            suggested_price=float(
+                data.get("suggested_price", position.current_price) or position.current_price
+            ),
             new_tp_price=float(data.get("new_tp_price", 0) or 0),
             new_tp_pct=float(data.get("new_tp_pct", 0) or 0),
             raw_data=data,
         )
 
-    return ExitDecisionResult(action=ExitAction.HOLD, reason="未知响应格式", priority="unknown", raw_data=data)
+    return ExitDecisionResult(
+        action=ExitAction.HOLD, reason="未知响应格式", priority="unknown", raw_data=data
+    )
 
 
 def evaluate_exit(
@@ -178,6 +188,7 @@ def evaluate_exit(
     if classic_sys is not None:
         try:
             from classic_exit_system import PositionState as ClassicPosState
+
             classic_pos = ClassicPosState(
                 coin=position.symbol,
                 side=position.side,
@@ -199,8 +210,14 @@ def evaluate_exit(
                 },
             )
             decision = classic_sys.evaluate_full(classic_pos, candles_1h, regime)
-            action_val = decision.action.value if hasattr(decision.action, 'value') else str(decision.action)
-            result_action = ExitAction(action_val) if action_val in [e.value for e in ExitAction] else ExitAction.HOLD
+            action_val = (
+                decision.action.value if hasattr(decision.action, "value") else str(decision.action)
+            )
+            result_action = (
+                ExitAction(action_val)
+                if action_val in [e.value for e in ExitAction]
+                else ExitAction.HOLD
+            )
             return ExitDecisionResult(
                 action=result_action,
                 confidence=decision.confidence,
@@ -208,8 +225,8 @@ def evaluate_exit(
                 priority=decision.priority.value if decision.priority else "",
                 reduce_fraction=decision.reduce_frac,
                 suggested_price=decision.suggested_price,
-                new_tp_price=getattr(decision, 'new_tp_price', 0.0),
-                new_tp_pct=getattr(decision, 'new_tp_pct', 0.0),
+                new_tp_price=getattr(decision, "new_tp_price", 0.0),
+                new_tp_pct=getattr(decision, "new_tp_pct", 0.0),
                 raw_data={"source": "direct_import", "features": decision.features},
             )
         except Exception as e:

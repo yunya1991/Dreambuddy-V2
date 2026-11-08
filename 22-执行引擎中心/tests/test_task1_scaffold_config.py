@@ -6,6 +6,7 @@ Task 1 TRs:
 - TR-1.2 (rule): tee_core must NOT import V15/易经/三屏 strategy directories
     (verify via static grep on source tree).
 """
+
 from __future__ import annotations
 
 import sys
@@ -116,6 +117,7 @@ class TestPackageImports:
     def test_import_protocol(self):
         """ExchangeClient protocol is a runtime_checkable Protocol."""
         import typing
+
         from tee_core.core.protocol import ExchangeClient  # type: ignore
 
         assert isinstance(ExchangeClient, type(typing.Protocol))
@@ -124,13 +126,19 @@ class TestPackageImports:
             ExchangeClient, "_is_protocol", False
         )
         # Must define at least the 5 required methods.
-        required = {"get_orderbook", "get_ticker", "place_order",
-                    "cancel_order", "get_order", "get_contract_info"}
+        required = {
+            "get_orderbook",
+            "get_ticker",
+            "place_order",
+            "cancel_order",
+            "get_order",
+            "get_contract_info",
+        }
         protocol_methods = {a for a in dir(ExchangeClient) if not a.startswith("_")}
         for method_name in required:
-            assert method_name in protocol_methods, (
-                f"ExchangeClient missing required method '{method_name}'"
-            )
+            assert (
+                method_name in protocol_methods
+            ), f"ExchangeClient missing required method '{method_name}'"
 
     def test_import_contracts(self):
         """ParentRequest / ExecutionResult / EstimateResult dataclasses
@@ -143,12 +151,25 @@ class TestPackageImports:
 
         # ParentRequest: required fields per FR-2.1
         pr_fields = {f.name for f in ParentRequest.__dataclass_fields__.values()}
-        for f in ("inst_id", "side", "sz", "pos_side", "td_mode",
-                  "leverage", "decision_px", "source"):
+        for f in (
+            "inst_id",
+            "side",
+            "sz",
+            "pos_side",
+            "td_mode",
+            "leverage",
+            "decision_px",
+            "source",
+        ):
             assert f in pr_fields, f"ParentRequest missing field '{f}'"
         # optional fields (presence)
-        for f in ("notional_usdt", "algo_override", "algo_params_override",
-                  "max_slippage_bps", "urgency"):
+        for f in (
+            "notional_usdt",
+            "algo_override",
+            "algo_params_override",
+            "max_slippage_bps",
+            "urgency",
+        ):
             assert f in pr_fields, f"ParentRequest missing optional field '{f}'"
 
         # Urgency enum LOW / MEDIUM / HIGH
@@ -158,9 +179,18 @@ class TestPackageImports:
 
         # ExecutionResult: FR-2.1 fields
         er_fields = {f.name for f in ExecutionResult.__dataclass_fields__.values()}
-        for f in ("ok", "parent_id", "final_vwap", "final_slippage_bps",
-                  "total_filled_sz", "remaining_sz", "duration_ms",
-                  "kill_switch_triggered", "fail_open_reason", "child_count"):
+        for f in (
+            "ok",
+            "parent_id",
+            "final_vwap",
+            "final_slippage_bps",
+            "total_filled_sz",
+            "remaining_sz",
+            "duration_ms",
+            "kill_switch_triggered",
+            "fail_open_reason",
+            "child_count",
+        ):
             assert f in er_fields, f"ExecutionResult missing field '{f}'"
 
 
@@ -193,14 +223,14 @@ def _grep_tokens_occurrences(package_dir: Path, tokens):
 
 
 class TestNoStrategyCoupling:
-    @pytest.mark.parametrize("group,tokens", FORBIDDEN_TOKEN_REFS,
-                             ids=[g for g, _ in FORBIDDEN_TOKEN_REFS])
+    @pytest.mark.parametrize(
+        "group,tokens", FORBIDDEN_TOKEN_REFS, ids=[g for g, _ in FORBIDDEN_TOKEN_REFS]
+    )
     def test_no_strategy_imports(self, group, tokens):
         """tee_core source must not reference V15/易经/三屏 by name."""
         hits = _grep_tokens_occurrences(PACKAGE_DIR, tokens)
-        assert hits == [], (
-            f"Found forbidden {group} references in tee_core:\n  "
-            + "\n  ".join(hits[:20])
+        assert hits == [], f"Found forbidden {group} references in tee_core:\n  " + "\n  ".join(
+            hits[:20]
         )
 
     def test_adapters_do_not_import_v15_client_directly(self):
@@ -214,6 +244,6 @@ class TestNoStrategyCoupling:
         # Scanning globals for path-like strings that leak into strategy dirs
         for name, value in vars(okx_adapter).items():
             if isinstance(value, str):
-                assert "V15经典马丁策略" not in value, (
-                    f"adapter global '{name}' contains path to V15 dir."
-                )
+                assert (
+                    "V15经典马丁策略" not in value
+                ), f"adapter global '{name}' contains path to V15 dir."

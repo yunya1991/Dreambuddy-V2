@@ -1,14 +1,14 @@
 import json
 import math
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import workbuddy_dir
+from scripts.memory_l4.paths import workbuddy_dir  # noqa: E402
 
 
 def _jaccard(a: List[str], b: List[str]) -> float:
@@ -43,7 +43,7 @@ def _norm_score(v: Any) -> float:
 def _cosine(v1: List[float], v2: List[float]) -> float:
     if not v1 or not v2 or len(v1) != len(v2):
         return 0.0
-    dot = sum(a * b for a, b in zip(v1, v2))
+    dot = sum(a * b for a, b in zip(v1, v2))  # noqa: B905
     n1 = math.sqrt(sum(a * a for a in v1))
     n2 = math.sqrt(sum(b * b for b in v2))
     if n1 == 0.0 or n2 == 0.0:
@@ -59,7 +59,9 @@ def _strategy_score(a: Dict[str, Any], b: Dict[str, Any]) -> float:
     return 0.0
 
 
-def _collect_distill_refs(index_data: Dict[str, Any], case_id: str, limit: int = 3) -> Dict[str, List[str]]:
+def _collect_distill_refs(
+    index_data: Dict[str, Any], case_id: str, limit: int = 3
+) -> Dict[str, List[str]]:
     distills = index_data.get("distill_features") or {}
     claims: List[str] = []
     rules: List[str] = []
@@ -69,7 +71,7 @@ def _collect_distill_refs(index_data: Dict[str, Any], case_id: str, limit: int =
         c = str(d.get("claim") or "").strip()
         if c:
             claims.append(c)
-        for r in (d.get("actionable_rules") or []):
+        for r in d.get("actionable_rules") or []:
             rs = str(r).strip()
             if rs:
                 rules.append(rs)
@@ -110,13 +112,17 @@ def _explain(a: Dict[str, Any], b: Dict[str, Any], score_keys: List[str]) -> Dic
         "struct_hits": {
             "regime_match": _bool_match(a.get("regime"), b.get("regime")),
             "decision_match": _bool_match(a.get("decision"), b.get("decision")),
-            "reason_overlap": overlap
+            "reason_overlap": overlap,
         },
         "num_hits": num_hits,
         "strategy_hits": {
-            "matched_strategy": a.get("matched_strategy") if a.get("matched_strategy") == b.get("matched_strategy") else None,
-            "category_match": _bool_match(a.get("category"), b.get("category"))
-        }
+            "matched_strategy": (
+                a.get("matched_strategy")
+                if a.get("matched_strategy") == b.get("matched_strategy")
+                else None
+            ),
+            "category_match": _bool_match(a.get("category"), b.get("category")),
+        },
     }
 
 
@@ -132,7 +138,11 @@ def similarity(index_data: Dict[str, Any], a_id: str, b_id: str) -> Tuple[float,
     feats = index_data.get("case_features") or {}
     a = feats.get(a_id) or {}
     b = feats.get(b_id) or {}
-    weights = (index_data.get("metadata") or {}).get("weights") or {"struct": 0.4, "num": 0.4, "strategy": 0.2}
+    weights = (index_data.get("metadata") or {}).get("weights") or {
+        "struct": 0.4,
+        "num": 0.4,
+        "strategy": 0.2,
+    }
 
     sim_struct = 0.0
     sim_struct += 0.4 * _bool_match(a.get("regime"), b.get("regime"))
@@ -157,7 +167,11 @@ def similarity(index_data: Dict[str, Any], a_id: str, b_id: str) -> Tuple[float,
     sim_num = _cosine(va, vb)
     sim_strategy = _strategy_score(a, b)
 
-    sim = float(weights.get("struct", 0.4)) * sim_struct + float(weights.get("num", 0.4)) * sim_num + float(weights.get("strategy", 0.2)) * sim_strategy
+    sim = (
+        float(weights.get("struct", 0.4)) * sim_struct
+        + float(weights.get("num", 0.4)) * sim_num
+        + float(weights.get("strategy", 0.2)) * sim_strategy
+    )
 
     # v0.2: 加入象限与思维链相似度加权
     sim_v2 = _v2_similarity_bonus(a, b)
@@ -222,17 +236,14 @@ def query_similar_cases(index_data: Dict[str, Any], case_id: str, topk: int = 10
                 "explain": expl,
                 "references": {
                     "case_lessons": _case_lessons(f, limit=3),
-                    "distill_refs": _collect_distill_refs(index_data, oid, limit=3)
-                }
+                    "distill_refs": _collect_distill_refs(index_data, oid, limit=3),
+                },
             }
         )
 
     return {
-        "query": {
-            "case_id": case_id,
-            "weights": (index_data.get("metadata") or {}).get("weights")
-        },
-        "results": results
+        "query": {"case_id": case_id, "weights": (index_data.get("metadata") or {}).get("weights")},
+        "results": results,
     }
 
 
@@ -268,9 +279,11 @@ def main() -> None:
 # v0.2 A0-A9 thinking chain & regime-based queries
 # ---------------------------------------------------------------------------
 
+
 def _load_all_cases() -> List[Dict[str, Any]]:
     """加载所有 TradeCase 文件。"""
     from scripts.memory_l4.paths import memory_l4_cases_dir
+
     cases_dir = memory_l4_cases_dir()
     if not cases_dir.is_dir():
         return []
@@ -294,14 +307,16 @@ def query_by_stage(stage: str, topk: int = 20) -> Dict[str, Any]:
         chain = c.get("thinking_chain") or []
         for entry in chain:
             if entry.get("stage") == stage:
-                matched.append({
-                    "case_id": c.get("case_id"),
-                    "inst_id": c.get("inst_id"),
-                    "l4_status": c.get("l4_status"),
-                    "decision": entry.get("decision"),
-                    "rationale": entry.get("rationale"),
-                    "evidence_refs": entry.get("evidence_refs", []),
-                })
+                matched.append(
+                    {
+                        "case_id": c.get("case_id"),
+                        "inst_id": c.get("inst_id"),
+                        "l4_status": c.get("l4_status"),
+                        "decision": entry.get("decision"),
+                        "rationale": entry.get("rationale"),
+                        "evidence_refs": entry.get("evidence_refs", []),
+                    }
+                )
                 break
     matched.sort(key=lambda x: x.get("case_id", ""))
     return {"stage": stage, "total": len(matched), "cases": matched[:topk]}
@@ -324,15 +339,17 @@ def query_by_regime_and_outcome(regime: str, outcome: str = None, topk: int = 20
                 continue
             if outcome == "loss" and pnl >= 0:
                 continue
-        matched.append({
-            "case_id": c.get("case_id"),
-            "inst_id": c.get("inst_id"),
-            "regime": regime,
-            "pnl_pct": (c.get("decision_outcome") or {}).get("pnl_pct"),
-            "l4_status": c.get("l4_status"),
-            "quadrant_x": (c.get("quadrant") or {}).get("x"),
-            "quadrant_y": (c.get("quadrant") or {}).get("y"),
-        })
+        matched.append(
+            {
+                "case_id": c.get("case_id"),
+                "inst_id": c.get("inst_id"),
+                "regime": regime,
+                "pnl_pct": (c.get("decision_outcome") or {}).get("pnl_pct"),
+                "l4_status": c.get("l4_status"),
+                "quadrant_x": (c.get("quadrant") or {}).get("x"),
+                "quadrant_y": (c.get("quadrant") or {}).get("y"),
+            }
+        )
     matched.sort(key=lambda x: (x.get("pnl_pct") or 0) * (-1 if outcome == "loss" else 1))
     return {"regime": regime, "outcome": outcome, "total": len(matched), "cases": matched[:topk]}
 
@@ -383,16 +400,18 @@ def query_by_tags(tags: List[str], topk: int = 20) -> Dict[str, Any]:
     for c in cases:
         case_tags = set(c.get("tags") or [])
         if tag_set & case_tags:  # intersection
-            matched.append({
-                "case_id": c.get("case_id"),
-                "inst_id": c.get("inst_id"),
-                "tags": list(tag_set & case_tags),
-                "regime": (c.get("environment_snapshot") or {}).get("regime"),
-                "pnl_pct": (c.get("decision_outcome") or {}).get("pnl_pct"),
-                "l4_status": c.get("l4_status"),
-                "quadrant_x": (c.get("quadrant") or {}).get("x"),
-                "quadrant_y": (c.get("quadrant") or {}).get("y"),
-            })
+            matched.append(
+                {
+                    "case_id": c.get("case_id"),
+                    "inst_id": c.get("inst_id"),
+                    "tags": list(tag_set & case_tags),
+                    "regime": (c.get("environment_snapshot") or {}).get("regime"),
+                    "pnl_pct": (c.get("decision_outcome") or {}).get("pnl_pct"),
+                    "l4_status": c.get("l4_status"),
+                    "quadrant_x": (c.get("quadrant") or {}).get("x"),
+                    "quadrant_y": (c.get("quadrant") or {}).get("y"),
+                }
+            )
     matched.sort(key=lambda x: abs(x.get("quadrant_x") or 0), reverse=True)
     return {"tags": tags, "total": len(matched), "cases": matched[:topk]}
 
@@ -429,20 +448,29 @@ def query_library(
         y = q.get("y", 0)
         if x < min_x or x > max_x or y < min_y or y > max_y:
             continue
-        matched.append({
-            "case_id": c.get("case_id"),
-            "inst_id": c.get("inst_id"),
-            "regime": (c.get("environment_snapshot") or {}).get("regime"),
-            "category": next((t for t in (c.get("tags") or []) if category and category in str(t)), None),
-            "x": x,
-            "y": y,
-            "pnl_pct": (c.get("decision_outcome") or {}).get("pnl_pct"),
-            "thinking_chain_length": len(c.get("thinking_chain") or []),
-            "l4_status": c.get("l4_status"),
-        })
+        matched.append(
+            {
+                "case_id": c.get("case_id"),
+                "inst_id": c.get("inst_id"),
+                "regime": (c.get("environment_snapshot") or {}).get("regime"),
+                "category": next(
+                    (t for t in (c.get("tags") or []) if category and category in str(t)), None
+                ),
+                "x": x,
+                "y": y,
+                "pnl_pct": (c.get("decision_outcome") or {}).get("pnl_pct"),
+                "thinking_chain_length": len(c.get("thinking_chain") or []),
+                "l4_status": c.get("l4_status"),
+            }
+        )
     matched.sort(key=lambda r: (r.get("y") or 0) * (abs(r.get("x") or 0) + 1), reverse=True)
     return {
-        "filters": {"regime": regime, "category": category, "x_range": [min_x, max_x], "y_range": [min_y, max_y]},
+        "filters": {
+            "regime": regime,
+            "category": category,
+            "x_range": [min_x, max_x],
+            "y_range": [min_y, max_y],
+        },
         "total": len(matched),
         "cases": matched[:topk],
     }
@@ -465,4 +493,3 @@ def _stage_coverage(chain: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     main()
-

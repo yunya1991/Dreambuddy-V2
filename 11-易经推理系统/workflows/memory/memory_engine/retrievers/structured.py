@@ -11,7 +11,12 @@ def load_index_data(default_path: Path) -> Optional[Dict[str, Any]]:
     return json.loads(default_path.read_text(encoding="utf-8"))
 
 
-def retrieve_structured(context: Dict[str, Any], topk: int, index_data: Optional[Dict[str, Any]], default_index_path: Path) -> List[Dict[str, Any]]:
+def retrieve_structured(
+    context: Dict[str, Any],
+    topk: int,
+    index_data: Optional[Dict[str, Any]],
+    default_index_path: Path,
+) -> List[Dict[str, Any]]:
     case_id = context.get("case_id")
     if not case_id:
         return []
@@ -35,8 +40,7 @@ def retrieve_structured(context: Dict[str, Any], topk: int, index_data: Optional
                 "score": float(r.get("similarity") or 0.0),
                 "refs": {"case_id": str(cid)},
                 "explain": r.get("explain"),
-                "references": r.get("references")
+                "references": r.get("references"),
             }
         )
     return items
-

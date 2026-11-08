@@ -22,12 +22,11 @@ StreamingSampleStore API:
   - JSONL 迁移
   - FAIL-OPEN 降级（sqlite 异常时降级内存）
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
-from pathlib import Path
 
-import pytest
 
 from dreambuddy_evolution.core.streaming_sample_store import StreamingSampleStore
 

@@ -18,6 +18,7 @@
 - 对比 GARCH baseline MAE
 - 闸门: neural_sde_mae <= 1.2 * garch_mae
 """
+
 from __future__ import annotations
 
 import json
@@ -31,8 +32,11 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402, I001
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 
 def load_closes(path: Path) -> np.ndarray:
@@ -83,7 +87,11 @@ def evaluate_mae_path_dependent(
         "neural_sde_mae": round(sde_mae, 6),
         "garch_mae": round(garch_mae, 6),
         "improvement": round(garch_mae - sde_mae, 6) if sde_mae != float("inf") else 0.0,
-        "ratio": round(sde_mae / garch_mae, 4) if garch_mae > 0 and sde_mae != float("inf") else float("inf"),
+        "ratio": (
+            round(sde_mae / garch_mae, 4)
+            if garch_mae > 0 and sde_mae != float("inf")
+            else float("inf")
+        ),
     }
 
 
@@ -106,9 +114,16 @@ def main():
         print("[FAIL] torch 不可用")
         return 1
     trainer = NeuralSDETrainer(
-        model, lr=1e-4, seq_len=64, horizon=20, batch_size=64, loss_type="multitask",
+        model,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="multitask",
     )
-    print(f"[2] 模型初始化: sig_dim={model.sig_dim} (不截断), n_step={model.n_step}, loss_type=multitask")
+    print(
+        f"[2] 模型初始化: sig_dim={model.sig_dim} (不截断), n_step={model.n_step}, loss_type=multitask"
+    )
 
     # 3. 训练 200 epochs (大数据量 → 训练时间会变长)
     t0 = time.time()
@@ -117,23 +132,27 @@ def main():
     if report["status"] != "ok":
         print(f"[FAIL] 训练失败: {report}")
         return 1
-    print(f"[3] 训练完成: 200 ep, final_loss={report['final_loss']:.6f}, n_windows={report['n_windows']}, 耗时={elapsed:.1f}s")
+    print(
+        f"[3] 训练完成: 200 ep, final_loss={report['final_loss']:.6f}, n_windows={report['n_windows']}, 耗时={elapsed:.1f}s"
+    )
     print(f"    loss_type={report.get('loss_type')}, sig_dim={report.get('sig_dim')}")
 
     # 4. 评估 MAE (路径依赖 forecast)
     garch = GARCHFallback()
     mae = evaluate_mae_path_dependent(model, garch, closes, horizon=20, n_paths=200)
-    print(f"[4] MAE 对比:")
+    print("[4] MAE 对比:")
     print(f"    NeuralSDE (路径依赖+multitask+sig15+zsc+88k): {mae['neural_sde_mae']:.4f}")
     print(f"    GARCH baseline:                                {mae['garch_mae']:.4f}")
-    print(f"    improvement:                                    {mae['improvement']:.4f} (正=优于GARCH)")
+    print(
+        f"    improvement:                                    {mae['improvement']:.4f} (正=优于GARCH)"
+    )
     print(f"    ratio (sde/garch):                              {mae['ratio']}")
-    print(f"    [基线对照] PoC v2 (MSE+17k): MAE=269.51, ratio=0.31")
+    print("    [基线对照] PoC v2 (MSE+17k): MAE=269.51, ratio=0.31")
 
     # 5. PoC 闸门: neural_sde_mae <= 1.2 * garch_mae
     threshold = 1.2 * mae["garch_mae"]
     passed = mae["neural_sde_mae"] <= threshold
-    print(f"[5] PoC 闸门: neural_sde_mae <= 1.2 × garch_mae")
+    print("[5] PoC 闸门: neural_sde_mae <= 1.2 × garch_mae")
     print(f"    {mae['neural_sde_mae']:.4f} <= {threshold:.4f} ? {'PASS' if passed else 'FAIL'}")
 
     print("=" * 70)

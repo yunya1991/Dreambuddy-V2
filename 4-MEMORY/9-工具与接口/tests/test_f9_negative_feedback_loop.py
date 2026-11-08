@@ -12,9 +12,7 @@ F9: 负反馈闭环建设。
 通过"末位末用自动负反馈"平衡当前98%全verify(True)导致boost全1.1的倾斜。
 """
 
-import json
 import sys
-import os
 from pathlib import Path
 
 import pytest
@@ -23,7 +21,7 @@ _COG_DIR = Path(__file__).resolve().parent.parent
 if str(_COG_DIR) not in sys.path:
     sys.path.insert(0, str(_COG_DIR))
 
-from cognitive_loop_entry import CognitiveLoopEntry
+from cognitive_loop_entry import CognitiveLoopEntry  # noqa: E402
 
 
 @pytest.fixture
@@ -39,13 +37,15 @@ def cle_isolated(tmp_path):
 
 def _insert(cle, content, quality, vc=0, source="cognitive-session", score=None):
     mid = cle._vm.add(
-        content=content, quality_level=quality,
+        content=content,
+        quality_level=quality,
         confidence=0.3 if quality == "C" else (0.4 if quality == "B" else 0.7),
-        tags=["f9test"], source=source, memory_type="experience",
+        tags=["f9test"],
+        source=source,
+        memory_type="experience",
     )
     if vc > 0:
-        cle._vm.db.execute(
-            "UPDATE memories SET verify_count = ? WHERE id = ?", (vc, mid))
+        cle._vm.db.execute("UPDATE memories SET verify_count = ? WHERE id = ?", (vc, mid))
         cle._vm.db.commit()
     # get() 返回 dict（直接SQL行结构），含 id/content/quality_level/confidence/verify_count 等
     row = cle._vm.get(mid) or {}
@@ -67,8 +67,8 @@ def _insert(cle, content, quality, vc=0, source="cognitive-session", score=None)
 def test_f9_last_unused_non_adopted_is_verified_false(cle_isolated):
     """末位最低score且未采用的记忆(B/C+vc<3)应自动verify(False)。"""
     cle = cle_isolated
-    m1 = _insert(cle, "Top1 有用", "B", vc=1, score=0.9)   # adopted
-    m2 = _insert(cle, "Top2 一般", "C", vc=0, score=0.5)   # adopted
+    m1 = _insert(cle, "Top1 有用", "B", vc=1, score=0.9)  # adopted
+    m2 = _insert(cle, "Top2 一般", "C", vc=0, score=0.5)  # adopted
     m3 = _insert(cle, "Top3 末位不用", "C", vc=0, score=0.2)  # 末位 未采用
 
     results = [m1, m2, m3]
@@ -135,6 +135,7 @@ def test_f9_fail_open_swallows_errors(monkeypatch, cle_isolated):
     # 替换 cle.verify 为抛错函数
     def boom(*a, **kw):
         raise RuntimeError("boom")
+
     monkeypatch.setattr(cle, "verify", boom)
 
     # 应FAIL-OPEN不抛

@@ -2,16 +2,16 @@
 
 验证三屏信号决策逻辑为纯函数，输出结构符合契约。
 """
+
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
-
 
 # ---------------------------------------------------------------------------
 # 测试用 OHLCV 数据生成
 # ---------------------------------------------------------------------------
+
 
 def _make_ohlcv(n: int = 50, trend: str = "flat") -> pd.DataFrame:
     """构造 OHLCV DataFrame。"""
@@ -28,14 +28,21 @@ def _make_ohlcv(n: int = 50, trend: str = "flat") -> pd.DataFrame:
     low = close * (1 - np.abs(np.random.randn(n)) * 0.005)
     open_ = close * (1 + np.random.randn(n) * 0.003)
     volume = np.random.randint(1000, 5000, n).astype(float)
-    return pd.DataFrame({
-        "open": open_, "high": high, "low": low, "close": close, "volume": volume,
-    })
+    return pd.DataFrame(
+        {
+            "open": open_,
+            "high": high,
+            "low": low,
+            "close": close,
+            "volume": volume,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # confirm_gate — 5m 信号确认
 # ---------------------------------------------------------------------------
+
 
 class TestConfirmGate:
     def test_bos_long_confirmed(self):
@@ -105,6 +112,7 @@ class TestConfirmGate:
 # compute — 最终信号计算
 # ---------------------------------------------------------------------------
 
+
 class TestCompute:
     def test_compute_returns_signal_structure(self):
         """compute 返回结构包含 direction/confidence/strategy/reject_reason。"""
@@ -113,10 +121,14 @@ class TestCompute:
         df_5m = _make_ohlcv(50, trend="up")
         df_daily = _make_ohlcv(50, trend="up")
 
-        result = compute(df_5m, df_daily, config={
-            "confirm_set": ["bos"],
-            "bos_lookback_bars": 8,
-        })
+        result = compute(
+            df_5m,
+            df_daily,
+            config={
+                "confirm_set": ["bos"],
+                "bos_lookback_bars": 8,
+            },
+        )
         assert "direction" in result
         assert "confidence" in result
         assert "strategy" in result
@@ -137,10 +149,14 @@ class TestCompute:
         df_5m = _make_ohlcv(50, trend="up")
         df_daily = _make_ohlcv(50, trend="down")  # 日线向下
 
-        result = compute(df_5m, df_daily, config={
-            "confirm_set": ["bos"],
-            "require_daily_alignment": True,
-        })
+        result = compute(
+            df_5m,
+            df_daily,
+            config={
+                "confirm_set": ["bos"],
+                "require_daily_alignment": True,
+            },
+        )
         # 日线向下，即使 5m 有 BOS 也不应做多
         assert result["direction"] in ("neutral", "short")
 
@@ -149,10 +165,12 @@ class TestCompute:
 # 纯函数验证
 # ---------------------------------------------------------------------------
 
+
 class TestPureFunction:
     def test_no_global_state_dependency(self):
         """signals 模块不依赖全局状态。"""
         import inspect
+
         from classic_pipeline.signals import three_screen
 
         for name, func in inspect.getmembers(three_screen, inspect.isfunction):

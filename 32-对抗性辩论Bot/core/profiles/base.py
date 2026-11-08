@@ -8,6 +8,7 @@
 
 profile 只改变“角色设定与输出语义”，不改变通用辩论循环/状态机。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

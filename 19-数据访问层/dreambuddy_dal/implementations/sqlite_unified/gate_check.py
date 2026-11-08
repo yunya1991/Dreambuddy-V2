@@ -15,6 +15,7 @@ G-5: 冷备份可用性（PRAGMA integrity_check + 抽样）
 
 G-4/G-5 未提供数据时默认 PASS（留待现场操作时填入）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,6 +37,7 @@ _DB_LOCKED_PATTERN = re.compile(r"database is locked", re.IGNORECASE)
 @dataclass
 class GateCheckResult:
     """G-1~G-5 五项门禁检查结果。"""
+
     g1_pass: bool = True
     g2_pass: bool = True
     g3_pass: bool = True
@@ -45,8 +47,7 @@ class GateCheckResult:
 
     @property
     def all_pass(self) -> bool:
-        return all([self.g1_pass, self.g2_pass, self.g3_pass,
-                     self.g4_pass, self.g5_pass])
+        return all([self.g1_pass, self.g2_pass, self.g3_pass, self.g4_pass, self.g5_pass])
 
     def summary(self) -> str:
         lines = [
@@ -55,7 +56,7 @@ class GateCheckResult:
             f"G-3 (影子读一致率 ≥ 99.99%): {'PASS' if self.g3_pass else 'FAIL'} — {self.details.get('g3', '')}",
             f"G-4 (回滚演练零事故): {'PASS' if self.g4_pass else 'FAIL'} — {self.details.get('g4', '')}",
             f"G-5 (冷备份可用性): {'PASS' if self.g5_pass else 'FAIL'} — {self.details.get('g5', '')}",
-            f"════════════════════════════════════════",
+            "════════════════════════════════════════",
             f"  ALL PASS: {'✅ YES — 可切读' if self.all_pass else '❌ NO — 延长观察期'}",
         ]
         return "\n".join(lines)
@@ -109,9 +110,7 @@ def _check_g5(db_path: str, backup_db_path: Optional[str]) -> tuple:
             if row is None or row[0] != "ok":
                 return False, f"integrity_check: {row[0] if row else 'None'}"
             # 抽样 10 条
-            sample = conn.execute(
-                "SELECT trade_id, symbol FROM tr_trades LIMIT 10"
-            ).fetchall()
+            sample = conn.execute("SELECT trade_id, symbol FROM tr_trades LIMIT 10").fetchall()
             detail = f"integrity=ok, sampled {len(sample)} trades"
         return True, detail
     except Exception as exc:
@@ -143,7 +142,9 @@ def run_gate_check(
 
     # G-4
     result.g4_pass = rollback_drill_pass
-    result.details["g4"] = "manual: rollback drill passed" if rollback_drill_pass else "manual: rollback drill FAILED"
+    result.details["g4"] = (
+        "manual: rollback drill passed" if rollback_drill_pass else "manual: rollback drill FAILED"
+    )
 
     # G-5
     g5_pass, g5_detail = _check_g5(db_path, backup_db_path)

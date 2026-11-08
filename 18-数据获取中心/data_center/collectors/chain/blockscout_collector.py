@@ -13,6 +13,7 @@
 
 用于 AGI 蓝图 L1 数据层 ETH 链上数据，与 etherscan 互补。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -58,11 +59,21 @@ class BlockscoutCollector(BaseCollector):
         block_num_data = self._get({"module": "proxy", "action": "eth_block_number"})
         supply_data = self._get({"module": "stats", "action": "ethsupply"})
 
-        block_num_hex = block_num_data.get("result", "0x0") if isinstance(block_num_data, dict) else "0x0"
-        block_num = int(block_num_hex, 16) if isinstance(block_num_hex, str) and block_num_hex.startswith("0x") else 0
+        block_num_hex = (
+            block_num_data.get("result", "0x0") if isinstance(block_num_data, dict) else "0x0"
+        )
+        block_num = (
+            int(block_num_hex, 16)
+            if isinstance(block_num_hex, str) and block_num_hex.startswith("0x")
+            else 0
+        )
 
         supply_wei = supply_data.get("result", "0") if isinstance(supply_data, dict) else "0"
-        supply_eth = float(int(supply_wei)) / 1e18 if isinstance(supply_wei, str) and supply_wei.isdigit() else 0.0
+        supply_eth = (
+            float(int(supply_wei)) / 1e18
+            if isinstance(supply_wei, str) and supply_wei.isdigit()
+            else 0.0
+        )
 
         rec = DataRecord(
             source="blockscout",

@@ -12,6 +12,7 @@ SPEC-Phase2 §3.2-3.3:
 输出 schema 与 FOMCEventWindowTracker 一致。
 FAIL-OPEN: 无 event_date 或未知 event_type 时返回中性 context。
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,13 +23,14 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class BaseEventWindowTracker(ABC):
+class BaseEventWindowTracker(ABC):  # noqa: B024
     """事件窗口追踪器抽象基类。
 
     子类:
       - FOMCEventWindowTracker（现有 EventWindowTracker，6 阶段 + 概率模型）
       - GeneralEventWindowTracker（5 阶段，不依赖概率模型）
     """
+
     pass
 
 
@@ -37,7 +39,7 @@ class GeneralEventWindowTracker(BaseEventWindowTracker):
 
     # 按 event_type 的半衰期（天）—— 经验假设 v0，待回测验证后校准（SPEC M4）
     HALF_LIFE = {
-        "tech_upgrade": 1.0,           # 硬分叉影响较短（窗口±3天）
+        "tech_upgrade": 1.0,  # 硬分叉影响较短（窗口±3天）
         "congressional_hearing": 2.5,  # 听证会影响中等（窗口±7.5天）
     }
 

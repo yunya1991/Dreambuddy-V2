@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """E2E-PIPELINE · blockbeats 全链路验收脚本
-  采集 → Silver 清洗 → Gold 特征 → 战略层消费
-  不依赖 Playwright 真实渲染：复用已落库的 theblockbeats 16 条 Bronze 记录 +
-  必要时调用 Dispatcher.fetch 跑完整 Dispatcher 中间件 (含 EN_SILVER)
+采集 → Silver 清洗 → Gold 特征 → 战略层消费
+不依赖 Playwright 真实渲染：复用已落库的 theblockbeats 16 条 Bronze 记录 +
+必要时调用 Dispatcher.fetch 跑完整 Dispatcher 中间件 (含 EN_SILVER)
 """
+
 from __future__ import annotations
 
-import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -36,6 +35,7 @@ def _banner(title: str) -> None:
 # ─────────────────────────────────────────────────────────────────────
 def stage1_bronze() -> list[Any]:
     from data_center.storage.sink_sqlite import SqliteSink
+
     sink = SqliteSink(DB_PATH)
     all_recs = sink.query_records(source="theblockbeats_dataview", limit=50)
     # 取最大 id 对应一次批次（同一 timestamp 组）
@@ -44,7 +44,9 @@ def stage1_bronze() -> list[Any]:
         by_ts.setdefault(r.timestamp, []).append(r)
     latest_ts = sorted(by_ts.keys())[-1]
     batch = by_ts[latest_ts]
-    print(f"[STAGE 1 Bronze] source=theblockbeats_dataview latest_ts={latest_ts} n_records={len(batch)}")
+    print(
+        f"[STAGE 1 Bronze] source=theblockbeats_dataview latest_ts={latest_ts} n_records={len(batch)}"
+    )
     sub_counter: dict[str, int] = {}
     for r in batch:
         sub_counter[r.sub_category] = sub_counter.get(r.sub_category, 0) + 1
@@ -61,24 +63,32 @@ def stage1_bronze() -> list[Any]:
 # STAGE 2 · Silver 清洗管道
 # ─────────────────────────────────────────────────────────────────────
 def stage2_silver(batch: list[Any]) -> Any:
-    from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
     from datetime import timedelta as _td
-    pipe = DataCleaningPipeline(PipelineConfig(
-        enforce_hard_block=False,
-        fail_open=False,
-        freshness_threshold=_td(hours=48),
-        enable_unit_normalize=True,
-    ))
+
+    from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
+
+    pipe = DataCleaningPipeline(
+        PipelineConfig(
+            enforce_hard_block=False,
+            fail_open=False,
+            freshness_threshold=_td(hours=48),
+            enable_unit_normalize=True,
+        )
+    )
     silver = pipe.clean(batch, source="theblockbeats_dataview", category="news")
     print(f"[STAGE 2 Silver] gate_passed={silver.gate_passed}  bronze_id={silver.bronze_id}")
     print(f"             df.shape={silver.df.shape}  schema_tag={silver.schema_tag!r}")
-    print(f"             ┌─ CleaningTrace ─┐")
+    print("             ┌─ CleaningTrace ─┐")
     for act in silver.trace.actions:
-        print(f"             │ {act.step:<28s} in={act.input_rows:>3d} out={act.output_rows:>3d} "
-              f"clip={act.clipped_count} imp={act.imputed_count} blk={act.blocked_count} "
-              f"{act.note}")
-    print(f"             └─ total_clipped={silver.trace.total_clipped} "
-          f"total_imputed={silver.trace.total_imputed} ─┘")
+        print(
+            f"             │ {act.step:<28s} in={act.input_rows:>3d} out={act.output_rows:>3d} "
+            f"clip={act.clipped_count} imp={act.imputed_count} blk={act.blocked_count} "
+            f"{act.note}"
+        )
+    print(
+        f"             └─ total_clipped={silver.trace.total_clipped} "
+        f"total_imputed={silver.trace.total_imputed} ─┘"
+    )
     if silver.df is not None and not silver.df.empty:
         cols_show = [c for c in silver.df.columns if c not in ("fetched_at", "source")][:8]
         with pd_ctx():
@@ -111,8 +121,9 @@ def stage3_gold_from_sqlite() -> tuple[dict, dict[str, dict[str, int]]]:
     Returns:
         (snap 原始宏观字段dict, five_scores {crypto/us/precious: {dao..fa:int}})
     """
-    from scripts.memory_l4.five_domain_sqlite_reader import read_macro_from_sqlite
     from scripts.memory_l4.five_domain_feature_computer import FiveDomainFeatureComputer
+    from scripts.memory_l4.five_domain_sqlite_reader import read_macro_from_sqlite
+
     snap = read_macro_from_sqlite(DB_PATH)
     print(f"[STAGE 3 Gold · sqlite_reader] keys={len(snap)}")
     _focus = [k for k in list(snap.keys()) if k.startswith("blockbeats")]
@@ -125,17 +136,22 @@ def stage3_gold_from_sqlite() -> tuple[dict, dict[str, dict[str, int]]]:
 
     # 构造三类分层 coin_data（与 polling_trader L1303-1377 一致，仅宏代理部分用 snap 填）
     import datetime as _dt
+
     _month = _dt.date.today().month
     _t_rel = max(0.0, min(1.0, ((_dt.date.today().year - 2024) * 12 + (_month - 4)) / 48.0))
     _merrill = snap.get("merrill_phase") or "RECOVERY"
     _atr_proxy = snap.get("atr_percentile_proxy")
     _liq = snap.get("liquidity_score")
     _crypto_coin = {
-        "cycle4y_t_rel": _t_rel, "merrill_phase": _merrill,
+        "cycle4y_t_rel": _t_rel,
+        "merrill_phase": _merrill,
         "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.62,
         "liquidity_score": _liq if _liq is not None else 0.65,
         "regime": "trend_up" if _t_rel < 0.35 else "ranging",
-        "spring_force_score": 70, "price_amplitude": 4.2, "atr": 1.15, "ftd_signal": 1 if _t_rel < 0.25 else 0,
+        "spring_force_score": 70,
+        "price_amplitude": 4.2,
+        "atr": 1.15,
+        "ftd_signal": 1 if _t_rel < 0.25 else 0,
         "ma200_distance_percentile": 0.68,
         "vix_close": snap.get("vix_close"),
         "stablecoin_mcap_bln": snap.get("stablecoin_mcap_bln"),
@@ -155,22 +171,32 @@ def stage3_gold_from_sqlite() -> tuple[dict, dict[str, dict[str, int]]]:
         "blockbeats_inflow_top10_symbols": snap.get("blockbeats_inflow_top10_symbols"),
     }
     _stock_coin = {
-        "cycle4y_t_rel": _t_rel, "merrill_phase": _merrill,
+        "cycle4y_t_rel": _t_rel,
+        "merrill_phase": _merrill,
         "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.42,
         "liquidity_score": _liq if _liq is not None else 0.52,
-        "regime": "ranging", "spring_force_score": 58, "price_amplitude": 2.1, "atr": 0.78,
-        "ftd_signal": 0, "ma200_distance_percentile": 0.46,
+        "regime": "ranging",
+        "spring_force_score": 58,
+        "price_amplitude": 2.1,
+        "atr": 0.78,
+        "ftd_signal": 0,
+        "ma200_distance_percentile": 0.46,
         "vix_close": snap.get("vix_close"),
         "fedfunds_rate": snap.get("fedfunds_rate"),
         # 美股不消费律动字段（只加密）
     }
     _metal_phase = "STAGFLATION" if _merrill in ("OVERHEAT", "STAGFLATION") else "RECOVERY"
     _metal_coin = {
-        "cycle4y_t_rel": _t_rel, "merrill_phase": _metal_phase,
+        "cycle4y_t_rel": _t_rel,
+        "merrill_phase": _metal_phase,
         "atr_percentile": _atr_proxy if _atr_proxy is not None else 0.50,
         "liquidity_score": _liq if _liq is not None else 0.56,
-        "regime": "ranging", "spring_force_score": 66, "price_amplitude": 2.7, "atr": 0.92,
-        "ftd_signal": 0, "ma200_distance_percentile": 0.60,
+        "regime": "ranging",
+        "spring_force_score": 66,
+        "price_amplitude": 2.7,
+        "atr": 0.92,
+        "ftd_signal": 0,
+        "ma200_distance_percentile": 0.60,
         "vix_close": snap.get("vix_close"),
         "fedfunds_rate": snap.get("fedfunds_rate"),
     }
@@ -194,18 +220,26 @@ def stage3_gold_from_sqlite() -> tuple[dict, dict[str, dict[str, int]]]:
         "has_position_cap": True,
         "implemented_strategies": [True, True, True, True, False, True],
         "strategy_match_pct": 0.70,
-        "risk_rules": {"stop_loss": True, "drawdown_limit": True, "position_cap": True, "correlation_limit": False},
+        "risk_rules": {
+            "stop_loss": True,
+            "drawdown_limit": True,
+            "position_cap": True,
+            "correlation_limit": False,
+        },
         "backtest_metrics": {"sharpe": 2.6, "max_drawdown": 0.14},
         "has_review_cycle": True,
         "has_strategy_retirement": True,
     }
     fc = FiveDomainFeatureComputer(enable=True)
     five_scores = fc.compute(coin_data=coin_data, system_state=system_state)
-    print(f"         ── FiveDomainFeatureComputer.compute() 五维评分(0-100) ──")
+    print("         ── FiveDomainFeatureComputer.compute() 五维评分(0-100) ──")
     for cls, dims in five_scores.items():
         total = sum(dims.values())
-        print(f"           · {cls:<16s} " + "  ".join(f"{k}={v:>3d}" for k, v in dims.items())
-              + f"  Σ={total:>4d}")
+        print(
+            f"           · {cls:<16s} "
+            + "  ".join(f"{k}={v:>3d}" for k, v in dims.items())
+            + f"  Σ={total:>4d}"
+        )
     return snap, five_scores
 
 
@@ -214,13 +248,16 @@ def stage3_gold_from_sqlite() -> tuple[dict, dict[str, dict[str, int]]]:
 # ─────────────────────────────────────────────────────────────────────
 def stage4_strategy(five_scores: dict[str, dict[str, int]]) -> Any:
     from scripts.memory_l4.five_domain_scorer import FiveDomainHeuristicScorer, FiveDomainState
-    cache_path = _YJ_PATH / "scripts" / "memory_l4" / "runtime" / "five_domain_state_pipeline_check.json"
+
+    cache_path = (
+        _YJ_PATH / "scripts" / "memory_l4" / "runtime" / "five_domain_state_pipeline_check.json"
+    )
     scorer = FiveDomainHeuristicScorer(enable=True, state_cache_path=str(cache_path))
     # 直接用 five_scores 构造输入（score_and_decide 也接受外部 coin_data/系统状态）
     # 这里用：先 override default five_scores = 传进来的
     import json as _json
-    import tempfile
     from dataclasses import asdict as _asdict
+
     # hack：从 five_domain_state.default_fail_open() 覆写 five_scores 后再跑 Scorer 决策不等式
     default_state = FiveDomainState.default_fail_open()
     for cls, sd in five_scores.items():
@@ -229,6 +266,7 @@ def stage4_strategy(five_scores: dict[str, dict[str, int]]) -> Any:
     # 保存到缓存 JSON（因为 score_and_decide 先读 cache + 如果日期不对再重算，重算又会再 call FeatureComputer）
     # 为了"验证 Scorer 消费我们 computed_five_scores"，先写 mock JSON，用今日日期骗过缓存命中
     import datetime as _dt
+
     today_str = _dt.date.today().isoformat()
     payload = {
         "_meta": {
@@ -242,16 +280,20 @@ def stage4_strategy(five_scores: dict[str, dict[str, int]]) -> Any:
     with cache_path.open("w", encoding="utf-8") as f:
         _json.dump(payload, f, ensure_ascii=False, indent=2, default=str)
     state = scorer.score_and_decide(persist=True)
-    print(f"[STAGE 4 Strategy · Scorer决策输出]")
+    print("[STAGE 4 Strategy · Scorer决策输出]")
     print(f"         war_state          → {dict(state.war_state)}")
-    print(f"         total_score(crypto)→ {scorer._weighted_total(state.five_scores['crypto_usdt'], 'crypto_usdt')}")
+    print(
+        f"         total_score(crypto)→ {scorer._weighted_total(state.five_scores['crypto_usdt'], 'crypto_usdt')}"
+    )
     print(f"         aggregate_pos_cap  → {dict(state.aggregate_position_cap_pct)}")
     print(f"         position_mult      → {dict(state.position_mult)}")
     if getattr(state, "dimension_veto_flags", None):
         print(f"         dimension_veto     → {dict(state.dimension_veto_flags)}")
-    print(f"         style_mask (crypto_asset) → "
-          f"{state.cross_asset_multiplier.get('crypto_usdt')}, "
-          f"style={getattr(state, 'style_mask', {}).get('crypto_usdt') if hasattr(state, 'style_mask') else 'N/A'}")
+    print(
+        f"         style_mask (crypto_asset) → "
+        f"{state.cross_asset_multiplier.get('crypto_usdt')}, "
+        f"style={getattr(state, 'style_mask', {}).get('crypto_usdt') if hasattr(state, 'style_mask') else 'N/A'}"
+    )
     print(f"         (缓存文件: {cache_path})")
     return state
 
@@ -259,13 +301,14 @@ def stage4_strategy(five_scores: dict[str, dict[str, int]]) -> Any:
 # ─────────────────────────────────────────────────────────────────────
 # 小工具
 # ─────────────────────────────────────────────────────────────────────
-import contextlib
+import contextlib  # noqa: E402
 
 
 @contextlib.contextmanager
 def pd_ctx():
     """临时设置 pandas print 宽度"""
     import pandas as _pd
+
     old_w = _pd.get_option("display.width")
     old_cols = _pd.get_option("display.max_columns")
     old_rows = _pd.get_option("display.max_rows")
@@ -304,14 +347,22 @@ def main() -> int:
 
     # ── 打印最终摘要 ──
     _banner("✅ E2E PIPELINE FULL-PASS SUMMARY")
-    print(f"  Bronze(采集落地)  : n={len(batch)} theblockbeats_dataview @ {batch[0].timestamp[:16]}")
-    print(f"  Silver(清洗门禁)  : gate_passed={silver.gate_passed}  rows in→out "
-          f"{silver.trace.actions[0].input_rows if silver.trace.actions else '?'}→"
-          f"{silver.trace.actions[-1].output_rows if silver.trace.actions else '?'}")
-    print(f"  Gold(五维特征)    : crypto Σ={sum(five_scores['crypto_usdt'].values())}  "
-          f"dao/tian/di/jiang/fa = {list(five_scores['crypto_usdt'].values())}")
-    print(f"  Strategy(消费决策): crypto war_state={state.war_state.get('crypto_usdt')!r}  "
-          f"cap={state.aggregate_position_cap_pct.get('crypto_usdt')!r}")
+    print(
+        f"  Bronze(采集落地)  : n={len(batch)} theblockbeats_dataview @ {batch[0].timestamp[:16]}"
+    )
+    print(
+        f"  Silver(清洗门禁)  : gate_passed={silver.gate_passed}  rows in→out "
+        f"{silver.trace.actions[0].input_rows if silver.trace.actions else '?'}→"
+        f"{silver.trace.actions[-1].output_rows if silver.trace.actions else '?'}"
+    )
+    print(
+        f"  Gold(五维特征)    : crypto Σ={sum(five_scores['crypto_usdt'].values())}  "
+        f"dao/tian/di/jiang/fa = {list(five_scores['crypto_usdt'].values())}"
+    )
+    print(
+        f"  Strategy(消费决策): crypto war_state={state.war_state.get('crypto_usdt')!r}  "
+        f"cap={state.aggregate_position_cap_pct.get('crypto_usdt')!r}"
+    )
     print()
     # 关键 blockbeats 字段 → 影响五维 对比证明
     print("  ★ blockbeats 贡献字段 → 五维影响：")
@@ -324,7 +375,7 @@ def main() -> int:
     print(f"    · 脉动指数 {pulse} (情绪归一 {sent})  → tian(时间/情绪) 天维度加分")
     print(f"    · 11信号综合 {sig} (∈[-1,1])         → tian/di/jiang 三维信号加权平均融合")
     print(f"    · 榜首流入 {top1} ${top1_v/1e6:.2f}M / Top10合计 ${tot_inflow/1e6:.2f}M")
-    print(f"                                      → di(链上资金) 地维度 smart money 加分")
+    print("                                      → di(链上资金) 地维度 smart money 加分")
     print(f"    · policy_sentiment_score(脉动fallback)={sent} → dao(道/政策情绪) 加分")
     return 0
 

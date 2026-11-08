@@ -11,7 +11,9 @@ SPEC-41-文件索引系统 v0.6 §4.1（存储层 PostgreSQL 迁移）
   2. FAIL-OPEN：连接失败返回明确异常，由上层降级处理（对齐 §5.5/§11）
 位置: 41-文件索引系统/core/db.py
 """
+
 from __future__ import annotations
+
 import os
 import re
 import threading
@@ -29,9 +31,11 @@ _ENV_PATTERN = re.compile(r"\$\{([A-Z_]+)(?::([^}]*))?\}")
 
 def _resolve_env(value: str) -> str:
     """解析 ${VAR} / ${VAR:default} 形式的环境变量引用。"""
+
     def _sub(m: re.Match) -> str:
         var, default = m.group(1), m.group(2)
         return os.environ.get(var, default if default is not None else "")
+
     return _ENV_PATTERN.sub(_sub, value)
 
 
@@ -50,7 +54,9 @@ class Database:
 
     def __init__(self, config_path: Optional[str] = None) -> None:
         project_root = Path(__file__).resolve().parent.parent
-        self.config_path = Path(config_path) if config_path else project_root / "config" / "database.yaml"
+        self.config_path = (
+            Path(config_path) if config_path else project_root / "config" / "database.yaml"
+        )
         cfg = yaml.safe_load(self.config_path.read_text(encoding="utf-8"))
         self.host = _resolve_env(cfg["host"])
         self.port = int(_resolve_env(str(cfg["port"])))
@@ -124,9 +130,7 @@ class Database:
             if not exists:
                 self._apply_schema_sql(conn)
                 return
-            row = conn.execute(
-                "SELECT value FROM meta WHERE key='schema_version'"
-            ).fetchone()
+            row = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
             if row is None:
                 self._apply_schema_sql(conn)
 
@@ -159,12 +163,10 @@ class Database:
             with conn.cursor() as cur:
                 cur.execute(sql, params)
                 cols = [d[0] for d in cur.description]
-                return [dict(zip(cols, row)) for row in cur.fetchall()]
+                return [dict(zip(cols, row)) for row in cur.fetchall()]  # noqa: B905
 
     def schema_version(self) -> str:
         """返回当前库中记录的 schema 版本（status() 暴露）。"""
         with self.connection() as conn:
-            row = conn.execute(
-                "SELECT value FROM meta WHERE key='schema_version'"
-            ).fetchone()
+            row = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
             return row[0] if row else ""

@@ -2,13 +2,14 @@
 """
 百炼API验证脚本
 """
-import sys
+
+import sys  # noqa: I001
 import os
 
 # 添加模块路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.bailian_client import BailianClient, BailianAPIError
+from src.bailian_client import BailianClient, BailianAPIError  # noqa: I001
 
 
 def get_api_key() -> str:
@@ -20,16 +21,14 @@ def get_api_key() -> str:
 
     # 从配置文件读取
     config_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "config",
-        "api_key.txt"
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "api_key.txt"
     )
     if os.path.exists(config_path):
         with open(config_path, "r") as f:
             return f.read().strip()
 
     # 使用默认测试Key (仅用于测试)
-    return "sk-c233489e73e94b9591e4776d89ec8cb8"
+    return "sk-c233489e73e94b9591e4776d89ec8cb8"  # secret-scan: allow
 
 
 def test_health(api_key: str):
@@ -52,15 +51,15 @@ def test_chat(api_key: str):
 
     client = BailianClient(api_key=api_key)
 
-    response = client.chat([
-        {"role": "user", "content": "请用一句话介绍你自己"}
-    ], max_tokens=100)
+    response = client.chat([{"role": "user", "content": "请用一句话介绍你自己"}], max_tokens=100)
 
     content = response["choices"][0]["message"]["content"]
     usage = response.get("usage", {})
 
     print(f"✅ 响应: {content}")
-    print(f"📊 Token使用: prompt={usage.get('prompt_tokens', 0)}, completion={usage.get('completion_tokens', 0)}, total={usage.get('total_tokens', 0)}")
+    print(
+        f"📊 Token使用: prompt={usage.get('prompt_tokens', 0)}, completion={usage.get('completion_tokens', 0)}, total={usage.get('total_tokens', 0)}"
+    )
 
     return True
 
@@ -88,9 +87,9 @@ def test_model(api_key: str, model_name: str):
     client = BailianClient(api_key=api_key, default_model=model_name)
 
     try:
-        response = client.chat([
-            {"role": "user", "content": "say 'OK' if you can hear me"}
-        ], max_tokens=10)
+        response = client.chat(
+            [{"role": "user", "content": "say 'OK' if you can hear me"}], max_tokens=10
+        )
 
         content = response["choices"][0]["message"]["content"]
         print(f"✅ 响应: {content}")

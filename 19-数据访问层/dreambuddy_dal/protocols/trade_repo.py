@@ -2,6 +2,7 @@
 dreambuddy_dal.protocols.trade_repo — TradeRepository Protocol（交易域）
 严格对齐 TECHNICAL_DESIGN.md §2.2「1）TradeRepository：交易记录（核心账本）」方法签名
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

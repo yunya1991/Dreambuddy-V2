@@ -12,6 +12,7 @@ SCHEMA_DESIGN 触发器自动 +1。
 对 rs_cases（§6.2 风控告警案例）：RiskCaseRecord 字段是 rule_id / rule_name /
 severity_score / resolution_notes 等，rs_cases DDL 列名不完全一致 → 全部补列 + 旧列兼容。
 """
+
 from __future__ import annotations
 
 import json
@@ -196,9 +197,7 @@ class SqliteRiskRepository(RiskRepository):
           style_exposure, extra_payload,
           version, created_at, updated_at"""
         with get_sqlite_connection(self.db_path) as conn:
-            row = conn.execute(
-                f"SELECT {cols} FROM rs_state WHERE id = ?", (id,)
-            ).fetchone()
+            row = conn.execute(f"SELECT {cols} FROM rs_state WHERE id = ?", (id,)).fetchone()
         if row is None:
             return None
         return _row_to_risk_state(row)
@@ -317,31 +316,29 @@ class SqliteRiskRepository(RiskRepository):
             if isinstance(case.extra_payload, dict) and case.extra_payload
             else None
         )
-        severity_score_raw = (
-            int(case.severity_score) if case.severity_score is not None else 0
-        )
+        severity_score_raw = int(case.severity_score) if case.severity_score is not None else 0
         # rs_cases.severity（旧列）CHECK 0-5；severity_score（补列）保持 0-100 原值
         severity_0_5 = max(0, min(5, severity_score_raw // 20))
         # rs_cases.related_trade_id REFERENCES tr_trades(trade_id)：
         # 旧列统一用占位行 __NO_LINK__ 以避免 FK 失败（case.trade_id 原值存补列 trade_id）
         fk_trade_id = "__NO_LINK__"
         bind = (
-            case.case_id,                                  # case_id PK
-            case.rule_id,                                  # rule_id（补列）
-            case.rule_name,                                # rule_name（补列）
-            case.rule_id,                                  # case_type（旧列）= rule_id
-            case.severity_score,                           # severity_score（补列）
-            severity_0_5,                                  # severity（旧列 INTEGER CHECK 0-5）
-            risk_val,                                      # risk_level（补列 TEXT）
+            case.case_id,  # case_id PK
+            case.rule_id,  # rule_id（补列）
+            case.rule_name,  # rule_name（补列）
+            case.rule_id,  # case_type（旧列）= rule_id
+            case.severity_score,  # severity_score（补列）
+            severity_0_5,  # severity（旧列 INTEGER CHECK 0-5）
+            risk_val,  # risk_level（补列 TEXT）
             case.symbol,
             direction_db,
-            case.trade_id,                                 # trade_id（补列）
-            fk_trade_id,                                   # related_trade_id（旧列 FK）
-            detected_s,                                    # alert_ts（旧列）
-            detected_s,                                    # detected_at（补列）
+            case.trade_id,  # trade_id（补列）
+            fk_trade_id,  # related_trade_id（旧列 FK）
+            detected_s,  # alert_ts（旧列）
+            detected_s,  # detected_at（补列）
             case.action_taken,
-            evidence_json,                                 # evidence_json（补列）
-            state_snapshot,                                # state_snapshot（旧列 NOT NULL）
+            evidence_json,  # evidence_json（补列）
+            state_snapshot,  # state_snapshot（旧列 NOT NULL）
             case.resolution_notes,
             resolved_s,
             extra_s,
@@ -396,11 +393,27 @@ class SqliteRiskRepository(RiskRepository):
 # ============================================================
 def _row_to_risk_state(row) -> RiskState:
     (
-        id_, total_equity_usd, gross_exposure_usd, net_exposure_usd,
-        gross_leverage, max_position_pct_usd, win_rate_7d, max_drawdown_active,
-        equity_curve_avg, equity_curve_std, active_symbols_count, overall_risk,
-        next_allowed_trade_ts, active_alert_ids, war_state, strategy_mask,
-        style_exposure, extra_payload_raw, version, _ca, _ua,
+        id_,
+        total_equity_usd,
+        gross_exposure_usd,
+        net_exposure_usd,
+        gross_leverage,
+        max_position_pct_usd,
+        win_rate_7d,
+        max_drawdown_active,
+        equity_curve_avg,
+        equity_curve_std,
+        active_symbols_count,
+        overall_risk,
+        next_allowed_trade_ts,
+        active_alert_ids,
+        war_state,
+        strategy_mask,
+        style_exposure,
+        extra_payload_raw,
+        version,
+        _ca,
+        _ua,
     ) = row
     extra: Dict[str, Any] = {}
     if extra_payload_raw:
@@ -426,9 +439,7 @@ def _row_to_risk_state(row) -> RiskState:
         next_allowed_trade_ts=_parse_iso_utc(next_allowed_trade_ts),
         active_alert_ids=str(active_alert_ids or ""),
         war_state=str(war_state) if war_state not in (None, "") else None,
-        strategy_mask=(
-            int(strategy_mask) if strategy_mask is not None else None
-        ),
+        strategy_mask=(int(strategy_mask) if strategy_mask is not None else None),
         style_exposure=str(style_exposure) if style_exposure not in (None, "") else None,
         extra_payload=extra,
         version=int(version or 0),
@@ -439,9 +450,20 @@ def _row_to_risk_state(row) -> RiskState:
 
 def _row_to_case(row) -> RiskCaseRecord:
     (
-        case_id, detected_at, risk_level_raw, rule_id, rule_name,
-        action_taken, symbol, direction_raw, severity_score, trade_id,
-        evidence_json, resolution_notes, resolved_at, extra_payload_raw,
+        case_id,
+        detected_at,
+        risk_level_raw,
+        rule_id,
+        rule_name,
+        action_taken,
+        symbol,
+        direction_raw,
+        severity_score,
+        trade_id,
+        evidence_json,
+        resolution_notes,
+        resolved_at,
+        extra_payload_raw,
     ) = row
     extra: Dict[str, Any] = {}
     if extra_payload_raw:
@@ -460,14 +482,10 @@ def _row_to_case(row) -> RiskCaseRecord:
         action_taken=str(action_taken or ""),
         symbol=str(symbol) if symbol not in (None, "") else None,
         direction=_from_enum(TradeDirection, direction_raw, None, case_insensitive=True),
-        severity_score=(
-            int(severity_score) if severity_score is not None else None
-        ),
+        severity_score=(int(severity_score) if severity_score is not None else None),
         trade_id=str(trade_id) if trade_id not in (None, "") else None,
         evidence_json=str(evidence_json) if evidence_json not in (None, "") else None,
-        resolution_notes=(
-            str(resolution_notes) if resolution_notes not in (None, "") else None
-        ),
+        resolution_notes=(str(resolution_notes) if resolution_notes not in (None, "") else None),
         resolved_at=_parse_iso_utc(resolved_at),
         extra_payload=extra,
     )

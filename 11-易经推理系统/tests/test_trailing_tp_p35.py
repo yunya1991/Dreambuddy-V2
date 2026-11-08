@@ -23,14 +23,13 @@ _L4_PATH = os.path.abspath(
 if _L4_PATH not in sys.path:
     sys.path.insert(0, _L4_PATH)
 
-import numpy as np
-
-from classic_exit_system import (
+import numpy as np  # noqa: E402
+from classic_exit_system import (  # noqa: E402
     ClassicExitSystem,
-    PositionState,
     ExitAction,
     ExitConfig,
     ExitFeatureSet,
+    PositionState,
 )
 
 
@@ -61,6 +60,7 @@ def _make_features() -> ExitFeatureSet:
 # ──────────────────────────────────────────────────────────────────
 # 实盘侧 _check_trailing_tp 边界场景
 # ──────────────────────────────────────────────────────────────────
+
 
 def test_live_mfe_below_arm_pct_holds():
     """Case A: MFE < 1.5% → HOLD（未激活）"""
@@ -134,9 +134,11 @@ def test_live_no_leverage_when_apply_leverage_false():
 # 回测侧 _evaluate_classic_exit P3.5 触发
 # ──────────────────────────────────────────────────────────────────
 
+
 def _make_backtester():
     """构造一个 WalkForwardBacktester 实例（不实际运行回测，仅用其方法）"""
     from bcrm2.walk_forward_backtester import WalkForwardBacktester
+
     return WalkForwardBacktester(symbol="TEST", n_folds=1)
 
 
@@ -149,7 +151,7 @@ def test_backtest_trailing_tp_triggers():
     entry_price = 100.0
     current_price = 101.0
     high = np.array([100.5, 101.0])  # 不触发 TP（tp_price 设很高）
-    low = np.array([99.8, 100.8])    # 不触发 SL（sl_price 设很低）
+    low = np.array([99.8, 100.8])  # 不触发 SL（sl_price 设很低）
     atr_values = np.array([0.0, 0.0])  # ATR=0 → 跳过 P3 跟踪止损
     position = {"mfe_pnl_pct": 0.02}  # 已记录的 MFE = 2.0%
 
@@ -163,15 +165,15 @@ def test_backtest_trailing_tp_triggers():
         hold_bars=10,
         max_hold=60,
         tp_price=200.0,  # 高到不会触发
-        sl_price=50.0,   # 低到不会触发
+        sl_price=50.0,  # 低到不会触发
         atr_values=atr_values,
         position=position,
     )
 
     assert result["action"] == "close", f"expected close got {result}"
-    assert result["exit_reason"] == "classic_trailing_tp", (
-        f"expected classic_trailing_tp got {result['exit_reason']}"
-    )
+    assert (
+        result["exit_reason"] == "classic_trailing_tp"
+    ), f"expected classic_trailing_tp got {result['exit_reason']}"
     assert result["exit_price"] == current_price
 
 
@@ -233,13 +235,16 @@ def test_backtest_mfe_updated_inplace():
         position=position,
     )
 
-    assert position["mfe_pnl_pct"] == 0.03, f"MFE should be updated to 3.0%, got {position['mfe_pnl_pct']}"
+    assert (
+        position["mfe_pnl_pct"] == 0.03
+    ), f"MFE should be updated to 3.0%, got {position['mfe_pnl_pct']}"
     assert result["action"] == "hold", f"expected hold (retrace=0), got {result}"
 
 
 # ──────────────────────────────────────────────────────────────────
 # 主测试入口
 # ──────────────────────────────────────────────────────────────────
+
 
 def run_all():
     tests = [

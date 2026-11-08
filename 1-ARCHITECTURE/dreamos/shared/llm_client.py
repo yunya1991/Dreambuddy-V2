@@ -12,14 +12,12 @@ P0 阶段提供接口和基础实现，具体 provider 适配在 P1+ 补充。
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, AsyncIterator
-from dataclasses import dataclass, field
-from datetime import datetime
-import json
+import logging
 import os
 import time
-import logging
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +25,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LLMMessage:
     """LLM 消息"""
-    role: str                              # system / user / assistant / tool
+
+    role: str  # system / user / assistant / tool
     content: str
     name: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -36,6 +35,7 @@ class LLMMessage:
 @dataclass
 class LLMResponse:
     """LLM 响应"""
+
     content: str
     role: str = "assistant"
     model: str = ""
@@ -58,20 +58,26 @@ class LLMClient(ABC):
     """
 
     @abstractmethod
-    def chat(self, messages: List[LLMMessage],
-             model: Optional[str] = None,
-             temperature: float = 0.7,
-             max_tokens: Optional[int] = None,
-             tools: Optional[List[Dict]] = None) -> LLMResponse:
+    def chat(
+        self,
+        messages: List[LLMMessage],
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        tools: Optional[List[Dict]] = None,
+    ) -> LLMResponse:
         """同步对话"""
         ...
 
     @abstractmethod
-    async def achat(self, messages: List[LLMMessage],
-                    model: Optional[str] = None,
-                    temperature: float = 0.7,
-                    max_tokens: Optional[int] = None,
-                    tools: Optional[List[Dict]] = None) -> LLMResponse:
+    async def achat(
+        self,
+        messages: List[LLMMessage],
+        model: Optional[str] = None,
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = None,
+        tools: Optional[List[Dict]] = None,
+    ) -> LLMResponse:
         """异步对话"""
         ...
 
@@ -84,6 +90,7 @@ class LLMClient(ABC):
 # ============================================================
 # 基础实现：NoOp LLM（开发/测试用）
 # ============================================================
+
 
 class NoOpLLMClient(LLMClient):
     """空操作 LLM 客户端 — 用于测试和开发阶段"""
@@ -107,6 +114,7 @@ class NoOpLLMClient(LLMClient):
 # DeepSeek LLM (OpenAI 兼容接口, V4-Pro)
 # ============================================================
 
+
 class DeepSeekLLMClient(LLMClient):
     """DeepSeek LLM 客户端 — OpenAI 兼容接口
 
@@ -114,12 +122,16 @@ class DeepSeekLLMClient(LLMClient):
     失败时降级返回 NoOp 响应,确保节点不会因 LLM 异常而中断。
     """
 
-    def __init__(self,
-                 api_key: Optional[str] = None,
-                 base_url: Optional[str] = None,
-                 model: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         self.api_key = api_key or os.environ.get("DEEPSEEK_API_KEY", "")
-        self.base_url = (base_url or os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+        ).rstrip("/")
         self.model = model or os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
         self._session = None
         self._max_retries = 2
@@ -128,6 +140,7 @@ class DeepSeekLLMClient(LLMClient):
         # 延迟导入 requests,避免无网络环境加载失败
         try:
             import requests
+
             self._requests = requests
         except ImportError:
             self._requests = None
@@ -230,6 +243,7 @@ class DeepSeekLLMClient(LLMClient):
 # Qwen (通义千问) LLM — DashScope/百炼 OpenAI 兼容接口
 # ============================================================
 
+
 class QwenLLMClient(LLMClient):
     """千问 LLM 客户端 — 阿里云 DashScope/百炼 OpenAI 兼容层
 
@@ -244,12 +258,16 @@ class QwenLLMClient(LLMClient):
     _DEFAULT_BASE_URL = "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
     _NO_RETRY_STATUS = {402}  # 余额不足等,重试无意义
 
-    def __init__(self,
-                 api_key: Optional[str] = None,
-                 base_url: Optional[str] = None,
-                 model: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         self.api_key = api_key or os.environ.get("QWEN_API_KEY", "")
-        self.base_url = (base_url or os.environ.get("QWEN_BASE_URL", self._DEFAULT_BASE_URL)).rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("QWEN_BASE_URL", self._DEFAULT_BASE_URL)
+        ).rstrip("/")
         self.model = model or os.environ.get("QWEN_MODEL", "qwen3.8-max")
         self._session = None
         self._max_retries = 2
@@ -257,6 +275,7 @@ class QwenLLMClient(LLMClient):
         self.last_error = ""
         try:
             import requests
+
             self._requests = requests
         except ImportError:
             self._requests = None
@@ -350,6 +369,7 @@ class QwenLLMClient(LLMClient):
 # 降级链客户端 — 多 provider 顺序降级 + 熔断器
 # ============================================================
 
+
 class FallbackChainLLMClient(LLMClient):
     """多 provider 降级链: 按注册顺序尝试, 失败切换下一个
 
@@ -359,9 +379,9 @@ class FallbackChainLLMClient(LLMClient):
     - 全部失败 → NoOp 兜底, 节点永不因 LLM 中断
     """
 
-    def __init__(self, clients: List[LLMClient],
-                 failure_threshold: int = 2,
-                 cooldown_seconds: int = 1800):
+    def __init__(
+        self, clients: List[LLMClient], failure_threshold: int = 2, cooldown_seconds: int = 1800
+    ):
         self.clients = [c for c in clients if c is not None]
         self.failure_threshold = failure_threshold
         self.cooldown_seconds = cooldown_seconds
@@ -438,7 +458,9 @@ def get_default_client() -> LLMClient:
             logger.info(f"LLM 默认客户端: 降级链 [{chain_desc}] (熔断后自动切换)")
         elif len(clients) == 1:
             _default_client = clients[0]
-            logger.info(f"LLM 默认客户端: {type(_default_client).__name__} (model={getattr(_default_client, 'model', 'n/a')})")
+            logger.info(
+                f"LLM 默认客户端: {type(_default_client).__name__} (model={getattr(_default_client, 'model', 'n/a')})"
+            )
         else:
             _default_client = NoOpLLMClient()
             logger.info("LLM 默认客户端: NoOp (未配置 DEEPSEEK_API_KEY / QWEN_API_KEY)")
@@ -451,8 +473,9 @@ def set_default_client(client: LLMClient) -> None:
     _default_client = client
 
 
-def make_messages(system: str = "", user: str = "",
-                 history: Optional[List[LLMMessage]] = None) -> List[LLMMessage]:
+def make_messages(
+    system: str = "", user: str = "", history: Optional[List[LLMMessage]] = None
+) -> List[LLMMessage]:
     """便捷构造消息列表"""
     msgs: List[LLMMessage] = []
     if system:

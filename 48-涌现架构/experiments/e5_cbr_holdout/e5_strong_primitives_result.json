@@ -1,0 +1,155 @@
+{
+  "ts": "2026-11-07T04:31:40.277802+00:00",
+  "status": "ok",
+  "source": "shadow_rl_strong_primitives",
+  "n_features": 6,
+  "state_keys": [
+    "R_up",
+    "R_down",
+    "R_smooth",
+    "R_flow",
+    "R_reflexivity",
+    "quality_score"
+  ],
+  "feature_design": "6 state dims incl quality_score + is_short (next_state empty in data, deltas unavailable)",
+  "label_mode": "median",
+  "compositor": "both",
+  "n_cases_loaded": 2857,
+  "n_cases": 2857,
+  "pos_ratio": 0.49947497374868743,
+  "n_eligible_cells": 36,
+  "n_evaluated_cells": 8,
+  "verdict": "inconclusive",
+  "n_eval": 447,
+  "acc_composition": 0.5302013422818792,
+  "acc_knn": 0.5167785234899329,
+  "improvement": 0.01342281879194629,
+  "p_value": 0.7217278272172782,
+  "obs_diff": 0.013422818791946308,
+  "direction_positive": true,
+  "homomorphism_error": 0.010824483895108932,
+  "per_cell": [
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n": 125,
+      "acc_composition": 0.584,
+      "acc_knn": 0.52,
+      "acc_composition_linear": 0.424
+    },
+    {
+      "cell": [
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      "n": 11,
+      "acc_composition": 0.36363636363636365,
+      "acc_knn": 0.36363636363636365,
+      "acc_composition_linear": 0.36363636363636365
+    },
+    {
+      "cell": [
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n": 40,
+      "acc_composition": 0.5,
+      "acc_knn": 0.575,
+      "acc_composition_linear": 0.45
+    },
+    {
+      "cell": [
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      "n": 15,
+      "acc_composition": 0.4,
+      "acc_knn": 0.3333333333333333,
+      "acc_composition_linear": 0.7333333333333333
+    },
+    {
+      "cell": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "n": 126,
+      "acc_composition": 0.47619047619047616,
+      "acc_knn": 0.4603174603174603,
+      "acc_composition_linear": 0.5555555555555556
+    },
+    {
+      "cell": [
+        1,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0
+      ],
+      "n": 16,
+      "acc_composition": 0.375,
+      "acc_knn": 0.3125,
+      "acc_composition_linear": 0.4375
+    },
+    {
+      "cell": [
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "n": 98,
+      "acc_composition": 0.6428571428571429,
+      "acc_knn": 0.6020408163265306,
+      "acc_composition_linear": 0.5
+    },
+    {
+      "cell": [
+        1,
+        0,
+        1,
+        0,
+        1,
+        1,
+        0
+      ],
+      "n": 16,
+      "acc_composition": 0.3125,
+      "acc_knn": 0.75,
+      "acc_composition_linear": 0.5
+    }
+  ],
+  "acc_composition_linear": 0.49217002237136465,
+  "improvement_linear": -0.02460850111856827
+}

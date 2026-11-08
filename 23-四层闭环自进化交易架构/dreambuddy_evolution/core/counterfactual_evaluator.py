@@ -16,10 +16,11 @@ CounterfactualEvaluator — 反事实评估器（Phase 2.2）
 
 FAIL-OPEN：合成控制失败 → 用市场均值作为反事实基准
 """
+
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -106,9 +107,17 @@ class CounterfactualEvaluator:
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] synthetic_control failed: %s", e)
             # FAIL-OPEN：等权重
-            N = control_returns.shape[1] if hasattr(control_returns, "shape") and control_returns.ndim > 1 else 1
+            N = (
+                control_returns.shape[1]
+                if hasattr(control_returns, "shape") and control_returns.ndim > 1
+                else 1
+            )
             weights = np.ones(N) / N
-            synthetic = np.asarray(control_returns) @ weights if N > 1 else np.asarray(control_returns).ravel()
+            synthetic = (
+                np.asarray(control_returns) @ weights
+                if N > 1
+                else np.asarray(control_returns).ravel()
+            )
             return synthetic, weights
 
     # ------------------------------------------------------------------
@@ -169,7 +178,11 @@ class CounterfactualEvaluator:
             return {
                 "counterfactual_pnl": 0.0,
                 "alpha": 0.0,
-                "synthetic_returns": np.zeros_like(target_returns) if hasattr(target_returns, "__len__") else np.array([0.0]),
+                "synthetic_returns": (
+                    np.zeros_like(target_returns)
+                    if hasattr(target_returns, "__len__")
+                    else np.array([0.0])
+                ),
                 "weights": np.array([1.0]),
                 "pnl_attribution": {"alpha": 0.0, "beta": 0.0},
             }

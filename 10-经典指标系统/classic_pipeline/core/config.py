@@ -89,7 +89,7 @@ def _cfg_str_opt(key: str) -> Optional[str]:
         s = str(v).strip()
     except Exception:
         return None
-    return (s if s else None)
+    return s if s else None
 
 
 def _cfg_loss_limit_pct(system_id: str, kind: str, default: float) -> float:

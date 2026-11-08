@@ -15,7 +15,7 @@ def test_memory_engine_default_structured_retriever_by_case_id():
                 "matched_strategy": "sunzi_003",
                 "category": "兵力部署",
                 "directive_bias": "WAIT",
-                "references": {"case_lessons": ["L1"]}
+                "references": {"case_lessons": ["L1"]},
             },
             "TC_B": {
                 "regime": "RANGE_BOUND",
@@ -28,12 +28,17 @@ def test_memory_engine_default_structured_retriever_by_case_id():
                 "matched_strategy": "sunzi_003",
                 "category": "兵力部署",
                 "directive_bias": "WAIT",
-                "references": {"case_lessons": ["B1"]}
-            }
+                "references": {"case_lessons": ["B1"]},
+            },
         },
         "distill_features": {
-            "D_1": {"kind": "risk_signal", "claim": "c", "actionable_rules": ["R1", "R2"], "supporting_case_ids": ["TC_B"]}
-        }
+            "D_1": {
+                "kind": "risk_signal",
+                "claim": "c",
+                "actionable_rules": ["R1", "R2"],
+                "supporting_case_ids": ["TC_B"],
+            }
+        },
     }
 
     memory = MemoryEngine(index_data=index_data)
@@ -42,4 +47,3 @@ def test_memory_engine_default_structured_retriever_by_case_id():
     assert out["structured_topk"][0]["id"] == "TC_B"
     assert out["structured_topk"][0]["refs"]["case_id"] == "TC_B"
     assert out["merged"][0]["id"] == "TC_B"
-

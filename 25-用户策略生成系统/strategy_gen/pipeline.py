@@ -10,8 +10,9 @@
   S4_VALIDATE  → 回测验证 + 未来函数检测
   S5_EXECUTE   → 检查清单 + 策略保存
 """
-from typing import Any, Dict, Optional
+
 import time
+from typing import Any, Dict
 
 from .intent import generate_from_intent
 
@@ -64,7 +65,10 @@ def run_pipeline(intent: str, **kwargs) -> Dict[str, Any]:
     strategy = result.get("strategy", {})
     s3_detail = f"生成策略: {strategy.get('name', '?')}"
     if not strategy.get("syntax_valid"):
-        steps["S3_DESIGN"] = {"status": "error", "detail": f"语法错误: {strategy.get('syntax_error', '')}"}
+        steps["S3_DESIGN"] = {
+            "status": "error",
+            "detail": f"语法错误: {strategy.get('syntax_error', '')}",
+        }
         return {
             "ok": False,
             "stage": "design_failed",
@@ -92,9 +96,7 @@ def run_pipeline(intent: str, **kwargs) -> Dict[str, Any]:
     }
 
     # S5: 执行 — 检查清单
-    all_checks_pass = all(
-        v for k, v in checks.items() if v is not None
-    )
+    all_checks_pass = all(v for k, v in checks.items() if v is not None)
     s5_parts = [f"{'✓' if v else '✗'}{k}" for k, v in checks.items()]
     steps["S5_EXECUTE"] = {
         "status": "done" if all_checks_pass else "warning",

@@ -15,7 +15,7 @@ from .l1_assessor import ExitFeatureSet, L1Mode, L1ValueRiskAssessor, L2Hysteres
 from .ml_model import CommitteeModel, MLModelRegistry, MLRiskModel, ModelPrediction
 from .position_sizer import PositionSizer
 from .pre_trade_gate import PreTradeGate
-from .registry import RuleRegistry, RuleCategory
+from .registry import RuleCategory, RuleRegistry
 
 __all__ = [
     "RiskEngine",

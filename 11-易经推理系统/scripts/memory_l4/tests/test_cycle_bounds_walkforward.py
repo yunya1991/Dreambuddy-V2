@@ -5,31 +5,32 @@
 
 对应 Spec §3bis.9 T_CB8 + §3bis.10 T11。
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2 import morph_cycle_predictor as mcp
-from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame  # noqa: E402
 
 
 def _make_synthetic_frames(days: int, seed: int = 42) -> list:
     """构造合成数据。"""
     rng = np.random.default_rng(seed)
     t = np.arange(days, dtype=float)
-    level_raw = (2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
-                 + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
-                 + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
-                 + rng.normal(0, 0.15, days))
+    level_raw = (
+        2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
+        + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
+        + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
+        + rng.normal(0, 0.15, days)
+    )
     smooth = np.zeros(days)
     smooth[0] = level_raw[0]
     for i in range(1, days):
@@ -40,27 +41,31 @@ def _make_synthetic_frames(days: int, seed: int = 42) -> list:
     frames = []
     for i in range(days):
         from datetime import date, timedelta
+
         d = date(2026, 1, 1) + timedelta(days=i)
-        frames.append(RegimeStateFrame(
-            t=d.strftime("%Y-%m-%d"),
-            price=float(price_base[i]),
-            level_raw=float(level_raw[i]),
-            trend_raw=float(trend_smooth[i]),
-            level_smooth=float(smooth[i]),
-            trend_smooth=float(trend_smooth[i] * 5.0),
-            regime_probs={},
-            top3=[["TREND_BULL", 0.4]],
-            consensus=0.7,
-            hmm_state=2 if smooth[i] > 0 else 0,
-            bocpd_cp_prob=0.01,
-            indicators={},
-        ))
+        frames.append(
+            RegimeStateFrame(
+                t=d.strftime("%Y-%m-%d"),
+                price=float(price_base[i]),
+                level_raw=float(level_raw[i]),
+                trend_raw=float(trend_smooth[i]),
+                level_smooth=float(smooth[i]),
+                trend_smooth=float(trend_smooth[i] * 5.0),
+                regime_probs={},
+                top3=[["TREND_BULL", 0.4]],
+                consensus=0.7,
+                hmm_state=2 if smooth[i] > 0 else 0,
+                bocpd_cp_prob=0.01,
+                indicators={},
+            )
+        )
     return frames
 
 
 # ================================================================
 # T_CB8: WalkForward 回测验证
 # ================================================================
+
 
 class TestWalkForwardMethodExists:
     """验证 walkforward_compare 方法存在。"""
@@ -116,7 +121,11 @@ class TestWalkForwardCompare:
         assert "improvement_pct" in comp
         assert "recommended" in comp
         # improvement_pct = (disabled_mae - enabled_mae) / disabled_mae × 100
-        exp_improvement = (result["disabled_mae"] - result["enabled_mae"]) / max(result["disabled_mae"], 1e-6) * 100
+        exp_improvement = (
+            (result["disabled_mae"] - result["enabled_mae"])
+            / max(result["disabled_mae"], 1e-6)
+            * 100
+        )
         assert abs(comp["improvement_pct"] - exp_improvement) < 0.1
         storage.close()
 

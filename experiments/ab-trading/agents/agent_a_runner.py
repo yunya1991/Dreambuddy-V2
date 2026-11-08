@@ -18,44 +18,84 @@ Agent A Runner — 完整升级版
   7. 自主调度（申请提前触发）
   8. 同步评论到 GitHub PR（可选）
 """
-import os, sys, json, warnings
+
+import os  # noqa: I001
+import sys
+import warnings
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
+
 load_dotenv(str(Path(__file__).parent.parent / "config" / ".env"))
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
-from scoring.scorecard import DecisionLog, _cycle_id
-from orchestrator import request_early_run
-from core.agent_a_memory import (
-    load_memory, save_memory, add_lesson, record_trade,
-    update_equity_stats, maybe_switch_master, get_top_lessons,
-    record_closed_trade, update_hold_streak, get_evolution_params,
-    check_loss_protection_timeout, get_loss_protection_countdown,
+from execution.aster_spot import HyperliquidClient, get_candles  # noqa: E402, I001
+from scoring.scorecard import DecisionLog, _cycle_id  # noqa: E402
+from orchestrator import request_early_run  # noqa: E402
+from core.agent_a_memory import (  # noqa: E402
+    load_memory,
+    save_memory,
+    add_lesson,
+    record_trade,
+    update_equity_stats,
+    maybe_switch_master,
+    get_top_lessons,
+    record_closed_trade,
+    update_hold_streak,
+    get_evolution_params,
+    check_loss_protection_timeout,
+    get_loss_protection_countdown,
     LOSS_PROTECTION_TRIGGER,
 )
-from core.exit_module import run_exit_check, init_position, update_position_exit_levels
-from core.agent_a_llm import agent_a_llm_decide, get_quota_status, get_available_provider, detect_market_regime
+from core.exit_module import (  # noqa: E402
+    run_exit_check,
+    init_position,
+    update_position_exit_levels,
+)  # noqa: E402
+from core.agent_a_llm import (  # noqa: E402
+    agent_a_llm_decide,
+    get_quota_status,
+    get_available_provider,
+    detect_market_regime,
+)
 
 # ── 配置 ───────────────────────────────────────────────────────────────────
-AUTO_EXECUTE  = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
-BUDGET_USDC   = 60.0
+AUTO_EXECUTE = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
+BUDGET_USDC = 60.0
 PER_TRADE_PCT = float(os.environ.get("PER_TRADE_PCT", "0.05"))
-DEFAULT_LEV   = 3
+DEFAULT_LEV = 3
 STOP_LOSS_PCT = 0.04
-TP_PCT        = 0.08
+TP_PCT = 0.08
 
 UNIVERSE_A = [
-    "BTC", "ETH", "HYPE", "UNI",
-    "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP",
+    "BTC",
+    "ETH",
+    "HYPE",
+    "UNI",
+    "SOL",
+    "ZEC",
+    "LIT",
+    "ARB",
+    "XRP",
+    "WLD",
+    "NEAR",
+    "SUI",
+    "LDO",
+    "ADA",
+    "ZRO",
+    "ENA",
+    "ETHFI",
+    "JUP",
+    "JTO",
+    "SYRUP",
 ]
 
 
 # ── 市场数据采集 ──────────────────────────────────────────────────────────
+
 
 def fetch_market_context(client: HyperliquidClient) -> dict:
     """采集所有标的的市场数据（1H K线 + 资金费率）"""
@@ -69,14 +109,14 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
             continue
         try:
             candles = get_candles(coin, "1h", 100, client.proxies)
-            closes  = [float(c["c"]) for c in candles if "c" in c]
-            vols    = [float(c["v"]) for c in candles if "v" in c]
+            closes = [float(c["c"]) for c in candles if "c" in c]
+            vols = [float(c["v"]) for c in candles if "v" in c]
         except Exception:
             closes, vols = [], []
 
         ch24 = ((closes[0] - closes[23]) / closes[23] * 100) if len(closes) > 23 else 0
-        ch4h = ((closes[0] - closes[3])  / closes[3]  * 100) if len(closes) > 3  else 0
-        ch1h = ((closes[0] - closes[1])  / closes[1]  * 100) if len(closes) > 1  else 0
+        ch4h = ((closes[0] - closes[3]) / closes[3] * 100) if len(closes) > 3 else 0
+        ch1h = ((closes[0] - closes[1]) / closes[1] * 100) if len(closes) > 1 else 0
 
         avg_vol = sum(vols) / len(vols) if vols else 0
         cur_vol = vols[0] if vols else 0
@@ -96,8 +136,8 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
                 e = p * k + e * (1 - k)
             return e
 
-        ema20  = ema(closes[::-1], 20)
-        ema50  = ema(closes[::-1], 50) if len(closes) >= 50 else ema20
+        ema20 = ema(closes[::-1], 20)
+        ema50 = ema(closes[::-1], 50) if len(closes) >= 50 else ema20
         ema200 = ema(closes[::-1], min(200, len(closes)))
 
         # RSI(14) — 使用最新数据
@@ -105,12 +145,12 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
             if len(prices) < n + 1:
                 return 50.0
             # 取最新 n+1 根 K 线计算差分
-            recent = prices[-(n+1):]
-            deltas = [recent[i] - recent[i-1] for i in range(1, len(recent))]
-            gains  = [max(d, 0) for d in deltas]
+            recent = prices[-(n + 1) :]
+            deltas = [recent[i] - recent[i - 1] for i in range(1, len(recent))]
+            gains = [max(d, 0) for d in deltas]
             losses = [max(-d, 0) for d in deltas]
-            avg_g  = sum(gains) / n
-            avg_l  = sum(losses) / n
+            avg_g = sum(gains) / n
+            avg_l = sum(losses) / n
             if avg_l == 0:
                 return 100.0
             rs = avg_g / avg_l
@@ -119,27 +159,28 @@ def fetch_market_context(client: HyperliquidClient) -> dict:
         rsi14 = rsi(closes[::-1])
 
         coin_data[coin] = {
-            "price":     price,
-            "ch24":      round(ch24, 2),
-            "ch4h":      round(ch4h, 2),
-            "ch1h":      round(ch1h, 2),
+            "price": price,
+            "ch24": round(ch24, 2),
+            "ch4h": round(ch4h, 2),
+            "ch1h": round(ch1h, 2),
             "vol_ratio": round(cur_vol / avg_vol, 2) if avg_vol > 0 else 1.0,
-            "ema20":     round(ema20, 2),
-            "ema50":     round(ema50, 2),
-            "ema200":    round(ema200, 2),
-            "rsi14":     round(rsi14, 1),
+            "ema20": round(ema20, 2),
+            "ema50": round(ema50, 2),
+            "ema200": round(ema200, 2),
+            "rsi14": round(rsi14, 1),
         }
 
     opp_map = {o["coin"]: o for o in opps}
 
     return {
-        "coins":   coin_data,
+        "coins": coin_data,
         "opp_map": opp_map,
-        "ts_utc":  datetime.utcnow().isoformat(),
+        "ts_utc": datetime.utcnow().isoformat(),
     }
 
 
 # ── 主流程 ────────────────────────────────────────────────────────────────
+
 
 def run():
     cycle = _cycle_id()
@@ -157,13 +198,19 @@ def run():
     top_lessons = get_top_lessons(memory, 10)
     evolution_params = get_evolution_params(memory)
     print(f"[记忆] 当前大师: {memory['current_master']}")
-    print(f"[记忆] 总交易: {memory['total_trades']} | "
-          f"连胜: {memory['win_streak']} | 连败: {memory['loss_streak']}")
+    print(
+        f"[记忆] 总交易: {memory['total_trades']} | "
+        f"连胜: {memory['win_streak']} | 连败: {memory['loss_streak']}"
+    )
     if countdown:
-        print(f"[风控] 连败保护倒计时: 已过{countdown['elapsed_hours']}h / 剩余{countdown['remaining_hours']}h "
-              f"(最大{countdown['max_hours']}h, 连败{countdown['loss_streak']}次)")
-    print(f"[记忆] Lessons: {len(memory['lessons'])} 条 | "
-          f"最大回撤: {memory.get('max_drawdown_pct', 0):.1f}%")
+        print(
+            f"[风控] 连败保护倒计时: 已过{countdown['elapsed_hours']}h / 剩余{countdown['remaining_hours']}h "
+            f"(最大{countdown['max_hours']}h, 连败{countdown['loss_streak']}次)"
+        )
+    print(
+        f"[记忆] Lessons: {len(memory['lessons'])} 条 | "
+        f"最大回撤: {memory.get('max_drawdown_pct', 0):.1f}%"
+    )
     if evolution_params:
         print(f"[进化] 已采纳参数: {evolution_params}")
     print(f"[LLM]  可用: {get_available_provider()} | 配额: {get_quota_status()}")
@@ -183,7 +230,9 @@ def run():
         equity = max(memory.get("peak_equity", BUDGET_USDC), BUDGET_USDC)
         positions = {}
         print(f"[账户] 模拟模式（无有效账户）: {e}")
-    print(f"[账户] 权益: {equity:.2f} USDC | 持仓: {list(positions.keys()) or '无'} | 模式: {'模拟' if sim_mode else '实盘'}")
+    print(
+        f"[账户] 权益: {equity:.2f} USDC | 持仓: {list(positions.keys()) or '无'} | 模式: {'模拟' if sim_mode else '实盘'}"
+    )
 
     # 更新权益统计
     memory = update_equity_stats(memory, equity)
@@ -193,18 +242,22 @@ def run():
         memory["active_positions"] = {}
 
     # ── 2.5 L1 离场检查（基础止损止盈 + 移动止损）──────────────────────
-    print(f"\n[离场] L1 基础离场检查...")
+    print("\n[离场] L1 基础离场检查...")
     acct_for_exit = acct if not sim_mode else None
     memory["active_positions"], closed_trades = run_exit_check(
-        client, memory.get("active_positions", {}),
-        agent_id="a", enable_trailing=True,
+        client,
+        memory.get("active_positions", {}),
+        agent_id="a",
+        enable_trailing=True,
         account_data=acct_for_exit,
     )
     if closed_trades:
         for ct in closed_trades:
-            print(f"[离场] 平仓 {ct['coin']}: {ct['exit_reason']} "
-                  f"PnL={ct['pnl_pct']*100:+.2f}% "
-                  f"@ {ct['exit_price']}")
+            print(
+                f"[离场] 平仓 {ct['coin']}: {ct['exit_reason']} "
+                f"PnL={ct['pnl_pct']*100:+.2f}% "
+                f"@ {ct['exit_price']}"
+            )
             memory = record_closed_trade(memory, ct, 0.0, memory["current_master"])
     else:
         print(f"[离场] 无触发，当前持仓: {list(memory['active_positions'].keys()) or '无'}")
@@ -214,14 +267,16 @@ def run():
     if max_dd >= 15:
         print(f"[风控] 最大回撤{max_dd:.1f}%≥15%，暂停交易，全面复盘")
         log = DecisionLog("a", cycle)
-        log.data.update({
-            "action": "HOLD",
-            "confidence": 0,
-            "reasoning_steps": [f"最大回撤保护：{max_dd:.1f}%≥15%，强制暂停"],
-            "decision_rationale": "最大回撤保护触发",
-            "memory_loaded": True,
-            "system_features_used": ["max_drawdown_protection"],
-        })
+        log.data.update(
+            {
+                "action": "HOLD",
+                "confidence": 0,
+                "reasoning_steps": [f"最大回撤保护：{max_dd:.1f}%≥15%，强制暂停"],
+                "decision_rationale": "最大回撤保护触发",
+                "memory_loaded": True,
+                "system_features_used": ["max_drawdown_protection"],
+            }
+        )
         path = log.save()
         save_memory(memory)
         print(f"[Agent A] 日志: {path}")
@@ -238,11 +293,13 @@ def run():
         "active_positions": memory.get("active_positions", {}),
     }
 
-    print(f"\n[决策] 调用 LLM 进行决策（SKILL 框架）...")
+    print("\n[决策] 调用 LLM 进行决策（SKILL 框架）...")
     decision, provider = agent_a_llm_decide(mkt, memory, account_data, max_tokens=8000)
     print(f"[决策] Provider: {provider}")
-    print(f"[决策] 结果: {decision.get('action')} {decision.get('coin','')} "
-          f"conf={decision.get('confidence',0):.0%}")
+    print(
+        f"[决策] 结果: {decision.get('action')} {decision.get('coin','')} "
+        f"conf={decision.get('confidence',0):.0%}"
+    )
     print(f"[决策] 理由: {decision.get('decision_rationale','')[:80]}")
 
     # 连续HOLD检测：超过10轮HOLD时降低入场门槛，打破保守死循环
@@ -257,7 +314,9 @@ def run():
         countdown = get_loss_protection_countdown(memory)
         print(f"[风控] 连败{memory['loss_streak']}次，强制观望一轮")
         if countdown:
-            print(f"[风控] 保护倒计时: 剩余{countdown['remaining_hours']}h (已过{countdown['elapsed_hours']}h/{countdown['max_hours']}h)")
+            print(
+                f"[风控] 保护倒计时: 剩余{countdown['remaining_hours']}h (已过{countdown['elapsed_hours']}h/{countdown['max_hours']}h)"
+            )
         original_action = decision.get("action", "HOLD")
         original_conf = decision.get("confidence", 0)
         decision["original_action"] = original_action
@@ -291,18 +350,23 @@ def run():
             reason = sug.get("reason", "LLM_SIGNAL_EXIT")
             if coin and coin in active_pos:
                 from core.exit_module import execute_exit
+
                 memory["active_positions"], closed_info, exec_res = execute_exit(
-                    client, memory["active_positions"], coin,
-                    f"SMART_{reason[:20]}", tag=f"a_exit_smart"
+                    client,
+                    memory["active_positions"],
+                    coin,
+                    f"SMART_{reason[:20]}",
+                    tag="a_exit_smart",
                 )
                 if closed_info:
                     smart_exits.append(closed_info)
                     memory = record_closed_trade(
-                        memory, closed_info, decision.get("confidence", 0),
-                        memory["current_master"]
+                        memory, closed_info, decision.get("confidence", 0), memory["current_master"]
                     )
-                    print(f"[离场] L2智能平仓 {coin}: {reason} "
-                          f"PnL={closed_info['pnl_pct']*100:+.2f}%")
+                    print(
+                        f"[离场] L2智能平仓 {coin}: {reason} "
+                        f"PnL={closed_info['pnl_pct']*100:+.2f}%"
+                    )
 
         # 处理止损止盈调整建议
         for sug in update_suggestions:
@@ -311,9 +375,13 @@ def run():
             new_tp = sug.get("new_take_profit")
             if coin and coin in memory["active_positions"]:
                 memory["active_positions"] = update_position_exit_levels(
-                    memory["active_positions"], coin, new_sl, new_tp,
-                    sl_source="llm_smart", tp_source="llm_smart",
-                    client=client if (not sim_mode and AUTO_EXECUTE) else None
+                    memory["active_positions"],
+                    coin,
+                    new_sl,
+                    new_tp,
+                    sl_source="llm_smart",
+                    tp_source="llm_smart",
+                    client=client if (not sim_mode and AUTO_EXECUTE) else None,
                 )
                 print(f"[离场] L2调整 {coin}: SL→{new_sl}, TP→{new_tp}")
 
@@ -359,10 +427,12 @@ def run():
                     client=client,
                 )
                 pos_info = memory["active_positions"][coin]
-                print(f"[离场] L1 预设: SL={pos_info['stop_loss_price']} "
-                      f"({pos_info['sl_source']}), "
-                      f"TP={pos_info['take_profit_price']} "
-                      f"({pos_info['tp_source']})")
+                print(
+                    f"[离场] L1 预设: SL={pos_info['stop_loss_price']} "
+                    f"({pos_info['sl_source']}), "
+                    f"TP={pos_info['take_profit_price']} "
+                    f"({pos_info['tp_source']})"
+                )
         except Exception as e:
             print(f"[执行] ❌ 执行失败: {e}")
             exec_result = {"ok": False, "error": str(e), "exception_type": type(e).__name__}
@@ -371,44 +441,48 @@ def run():
         pos_usdt = max(min(pos_usdt, effective_equity * PER_TRADE_PCT), 5.0)
         print(f"[执行] [模拟] {action} {coin} {pos_usdt} USDC × {leverage}x（模拟模式，不下单）")
     else:
-        print(f"[执行] 跳过（模式:{'模拟' if sim_mode else '实盘'}, AUTO_EXECUTE={AUTO_EXECUTE}, action={action}）")
+        print(
+            f"[执行] 跳过（模式:{'模拟' if sim_mode else '实盘'}, AUTO_EXECUTE={AUTO_EXECUTE}, action={action}）"
+        )
 
     # ── 6. 记录决策日志 ──────────────────────────────────────────
     log = DecisionLog("a", cycle)
-    log.data.update({
-        "market_regime":       decision.get("market_regime", "UNKNOWN"),
-        "reasoning_steps":     decision.get("reasoning_steps", []),
-        "confidence":          conf,
-        "action":              action,
-        "coin":                coin,
-        "leverage":            leverage,
-        "entry_price":         decision.get("entry_price"),
-        "position_size_usdt":  pos_usdt,
-        "stop_loss_price":     decision.get("stop_loss_price"),
-        "take_profit_price":   decision.get("take_profit_price"),
-        "decision_rationale":  decision.get("decision_rationale", ""),
-        "system_features_used": [
-            f"llm_provider:{provider}",
-            "skill:agent-a-trading",
-            "memory_system",
-            "exit_module:l1+l2",
-            "master_style:" + str(decision.get("current_master", memory["current_master"])),
-            "sim_mode" if sim_mode else "live_mode",
-        ],
-        "memory_loaded":       True,
-        "sim_mode":            sim_mode,
-        "current_master":      decision.get("current_master", memory["current_master"]),
-        "llm_provider":        provider,
-        "top_lessons":         [l["content"] for l in top_lessons[:5]],
-        "active_positions":    memory.get("active_positions", {}),
-        "smart_exits":         smart_exits,
-        # 风控门禁相关字段
-        "risk_gate_blocked":   decision.get("risk_gate_blocked", False),
-        "block_reason":        decision.get("block_reason"),
-        "original_action":     decision.get("original_action"),
-        "original_confidence": decision.get("original_confidence"),
-        "loss_protection_countdown": decision.get("loss_protection_countdown"),
-    })
+    log.data.update(
+        {
+            "market_regime": decision.get("market_regime", "UNKNOWN"),
+            "reasoning_steps": decision.get("reasoning_steps", []),
+            "confidence": conf,
+            "action": action,
+            "coin": coin,
+            "leverage": leverage,
+            "entry_price": decision.get("entry_price"),
+            "position_size_usdt": pos_usdt,
+            "stop_loss_price": decision.get("stop_loss_price"),
+            "take_profit_price": decision.get("take_profit_price"),
+            "decision_rationale": decision.get("decision_rationale", ""),
+            "system_features_used": [
+                f"llm_provider:{provider}",
+                "skill:agent-a-trading",
+                "memory_system",
+                "exit_module:l1+l2",
+                "master_style:" + str(decision.get("current_master", memory["current_master"])),
+                "sim_mode" if sim_mode else "live_mode",
+            ],
+            "memory_loaded": True,
+            "sim_mode": sim_mode,
+            "current_master": decision.get("current_master", memory["current_master"]),
+            "llm_provider": provider,
+            "top_lessons": [l["content"] for l in top_lessons[:5]],  # noqa: E741
+            "active_positions": memory.get("active_positions", {}),
+            "smart_exits": smart_exits,
+            # 风控门禁相关字段
+            "risk_gate_blocked": decision.get("risk_gate_blocked", False),
+            "block_reason": decision.get("block_reason"),
+            "original_action": decision.get("original_action"),
+            "original_confidence": decision.get("original_confidence"),
+            "loss_protection_countdown": decision.get("loss_protection_countdown"),
+        }
+    )
     if exec_result:
         log.data["execution"] = exec_result
 
@@ -456,7 +530,7 @@ def run():
     print(f"[记忆] 连续HOLD: {memory.get('hold_streak', 0)} 轮")
 
     save_memory(memory)
-    print(f"[记忆] 已更新并保存")
+    print("[记忆] 已更新并保存")
 
     # ── 8. 自主调度 ──────────────────────────────────────────────
     _self_schedule(decision, mkt, memory)
@@ -472,6 +546,7 @@ def run():
 
 # ── 打破保守循环机制 ──────────────────────────────────────────────────────
 
+
 def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_data: dict):
     """
     当连续多轮HOLD时，降低入场门槛，强制寻找交易机会
@@ -479,34 +554,35 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
     使用进化参数动态调整阈值
     """
     from core.agent_a_memory import get_evolution_params
+
     evo_params = get_evolution_params(memory)
 
     coins = mkt.get("coins", {})
     opp_map = mkt.get("opp_map", {})
-    
+
     best_coin = None
     best_score = 0
     best_side = "LONG"
     best_info = {}
-    
+
     # 使用进化参数，回退到默认值
     mom_threshold = evo_params.get("momentum_threshold", 0.02)
     vol_threshold = evo_params.get("volume_threshold", 1.2)
     rsi_oversold = evo_params.get("rsi_oversold", 40)
     rsi_overbought = evo_params.get("rsi_overbought", 60)
     use_ema_cross = evo_params.get("use_ema_cross", True)
-    
+
     for coin, d in coins.items():
         score = 0
         side = "LONG"
-        
+
         ch24 = d.get("ch24", 0)
         ch4h = d.get("ch4h", 0)
         vr = d.get("vol_ratio", 1.0)
         rsi_val = d.get("rsi14", 50)
         ema20 = d.get("ema20", 0)
         ema50 = d.get("ema50", 0)
-        
+
         # 动量信号（使用进化阈值）
         if ch24 > mom_threshold * 100 or ch4h > mom_threshold * 100 * 0.4:
             score += 2
@@ -514,18 +590,18 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
         elif ch24 < -mom_threshold * 100 or ch4h < -mom_threshold * 100 * 0.4:
             score += 2
             side = "SHORT"
-        
+
         # 量比信号（使用进化阈值）
         if vr > vol_threshold:
             score += 1
-        
+
         # 资金费率信号
         opp = opp_map.get(coin, {})
         fr = opp.get("funding", 0)
         if abs(fr) > 0.0002:
             score += 1
             side = "SHORT" if fr > 0 else "LONG"
-        
+
         # RSI 信号（使用进化阈值）
         if rsi_val < rsi_oversold:
             score += 1
@@ -533,7 +609,7 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
         elif rsi_val > rsi_overbought:
             score += 1
             side = "SHORT"
-        
+
         # EMA 交叉信号（使用进化开关）
         if use_ema_cross and ema20 > 0 and ema50 > 0:
             if ema20 > ema50:
@@ -544,57 +620,64 @@ def _break_conservative_loop(decision: dict, mkt: dict, memory: dict, account_da
                 score += 1
                 if side != "LONG":
                     side = "SHORT"
-        
+
         if score > best_score:
             best_score = score
             best_coin = coin
             best_side = side
             best_info = d
-    
+
     # 保守循环打破时入场门槛应低于正常（正常=1，此处用1）
     if best_score >= 1 and best_coin:
         confidence = min(0.4 + best_score * 0.05, 0.6)
         equity = min(account_data.get("equity", 60.0), 60.0)
         pos_usdt = max(round(equity * 0.03, 2), 3.0)
         leverage = min(3, max(1, int(confidence * 4)))
-        
+
         px = best_info.get("price", 0)
         sl_pct = 0.03
         tp_pct = 0.06
         sl = round(px * (1 - sl_pct) if best_side == "LONG" else px * (1 + sl_pct), 2)
         tp = round(px * (1 + tp_pct) if best_side == "LONG" else px * (1 - tp_pct), 2)
-        
-        decision.update({
-            "action": best_side,
-            "coin": best_coin,
-            "confidence": confidence,
-            "leverage": leverage,
-            "position_size_usdt": pos_usdt,
-            "entry_price": px,
-            "stop_loss_price": sl,
-            "take_profit_price": tp,
-            "market_regime": detect_market_regime(mkt),
-            "decision_rationale": f"[保守循环打破] {best_coin} {best_side} score={best_score} "
-                                 f"conf={confidence:.0%}（连续HOLD触发强制入场）",
-            "reasoning_steps": decision.get("reasoning_steps", []) + [
-                f"连续HOLD触发保守循环打破机制",
-                f"选择 {best_coin} {best_side} score={best_score}",
-                f"仓位: {pos_usdt} USDC × {leverage}x"
-            ],
-        })
-        print(f"[风控] 保守循环打破: {best_coin} {best_side} score={best_score} conf={confidence:.0%}")
+
+        decision.update(
+            {
+                "action": best_side,
+                "coin": best_coin,
+                "confidence": confidence,
+                "leverage": leverage,
+                "position_size_usdt": pos_usdt,
+                "entry_price": px,
+                "stop_loss_price": sl,
+                "take_profit_price": tp,
+                "market_regime": detect_market_regime(mkt),
+                "decision_rationale": f"[保守循环打破] {best_coin} {best_side} score={best_score} "
+                f"conf={confidence:.0%}（连续HOLD触发强制入场）",
+                "reasoning_steps": decision.get("reasoning_steps", [])
+                + [
+                    "连续HOLD触发保守循环打破机制",
+                    f"选择 {best_coin} {best_side} score={best_score}",
+                    f"仓位: {pos_usdt} USDC × {leverage}x",
+                ],
+            }
+        )
+        print(
+            f"[风控] 保守循环打破: {best_coin} {best_side} score={best_score} conf={confidence:.0%}"
+        )
     else:
         print(f"[风控] 保守循环打破: 无足够信号（最高score={best_score}），继续HOLD")
 
 
 # ── 自主调度 ──────────────────────────────────────────────────────────────
 
+
 def _self_schedule(decision: dict, mkt: dict, memory: dict):
     """根据本轮信号决定下次触发时机"""
     import time as _t
+
     now = _t.time()
     action = decision.get("action", "HOLD")
-    conf   = decision.get("confidence", 0.5)
+    conf = decision.get("confidence", 0.5)
     loss_streak = memory.get("loss_streak", 0)
 
     # 场景1：高置信度信号 → 1H后复查
@@ -633,6 +716,7 @@ def _self_schedule(decision: dict, mkt: dict, memory: dict):
 
 
 # ── GitHub PR 评论同步 ────────────────────────────────────────────────────
+
 
 def _post_to_github_pr(log_data: dict, sim_mode: bool):
     """执行完成后，写评论到固定交易 PR（用于 Actions 检查新鲜度）"""

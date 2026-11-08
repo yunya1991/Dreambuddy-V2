@@ -13,6 +13,7 @@
   - P3 只扫描 33-REA/tests/ (22文件),专攻 REA 域
   - P0 source="tdd:xxx", P3 source="rea_test:xxx"
 """
+
 import os
 import sys
 from typing import List, Optional, Tuple
@@ -25,8 +26,7 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 默认 REA 测试目录
 _DEFAULT_REA_TEST_DIRS = [
@@ -55,6 +55,7 @@ class REATestCollector(TrainingDataProvider):
         """延迟导入 TddTestCollector,避免循环依赖。"""
         if self._delegate is None:
             from tdd_test_collector import TddTestCollector
+
             self._delegate = TddTestCollector(scan_dirs=self.scan_dirs)
         return self._delegate
 
@@ -64,9 +65,7 @@ class REATestCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "B"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从 REA 测试文件采集训练案例。
 
         委托 TddTestCollector 做 AST 解析,但替换 source 标签。

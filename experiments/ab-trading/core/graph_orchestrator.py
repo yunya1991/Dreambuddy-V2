@@ -25,48 +25,50 @@ WorkBuddy OS 图编排引擎核心 (Graph Orchestrator)
 
 import time
 import uuid
-from typing import Dict, List, Optional, Any, Tuple, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple
 
 from .modules import (
-    get_module_registry,
-    get_module_executor,
     ExecutionContext,
-    ModuleResult,
     ModuleOutputs,
     create_default_context,
+    get_module_executor,
+    get_module_registry,
 )
-
 
 # ============================================================
 # 枚举类型
 # ============================================================
 
+
 class ExecutionMode(str, Enum):
     """执行模式"""
-    SEQUENTIAL = "sequential"      # 顺序执行
-    PARALLEL = "parallel"          # 并行执行
-    CONDITIONAL = "conditional"    # 条件执行
-    PIPELINE = "pipeline"          # 流水线执行
+
+    SEQUENTIAL = "sequential"  # 顺序执行
+    PARALLEL = "parallel"  # 并行执行
+    CONDITIONAL = "conditional"  # 条件执行
+    PIPELINE = "pipeline"  # 流水线执行
 
 
 class NodeDependency(str, Enum):
     """节点依赖关系"""
-    NONE = "none"                 # 无依赖
-    BEFORE = "before"              # 必须在某节点之前
-    AFTER = "after"               # 必须在某节点之后
-    REQUIRES = "requires"         # 需要某节点结果
+
+    NONE = "none"  # 无依赖
+    BEFORE = "before"  # 必须在某节点之前
+    AFTER = "after"  # 必须在某节点之后
+    REQUIRES = "requires"  # 需要某节点结果
 
 
 # ============================================================
 # 执行图结构
 # ============================================================
 
+
 @dataclass
 class NodeExecution:
     """节点执行配置"""
+
     module_id: str
     execution_order: int = 0
     mode: ExecutionMode = ExecutionMode.SEQUENTIAL
@@ -80,6 +82,7 @@ class NodeExecution:
 @dataclass
 class ExecutionGraph:
     """执行图"""
+
     graph_id: str
     nodes: List[NodeExecution] = field(default_factory=list)
     parallel_groups: List[List[str]] = field(default_factory=list)
@@ -89,6 +92,7 @@ class ExecutionGraph:
 @dataclass
 class NodeExecutionResult:
     """节点执行结果"""
+
     module_id: str
     success: bool
     outputs: ModuleOutputs
@@ -106,6 +110,7 @@ class NodeExecutionResult:
 @dataclass
 class GraphExecutionResult:
     """图执行结果"""
+
     graph_id: str
     success: bool
     final_direction: str
@@ -122,6 +127,7 @@ class GraphExecutionResult:
 # ============================================================
 # 动态节点选择器
 # ============================================================
+
 
 class NodeSelector:
     """
@@ -162,23 +168,23 @@ class NodeSelector:
 
     def _determine_strategy(self, intent: str, context: ExecutionContext) -> str:
         """确定节点选择策略"""
-        market_condition = context.market_condition or 'unknown'
+        market_condition = context.market_condition or "unknown"
 
         strategy_map = {
-            'market_query': 'fast_scan',           # 快速扫描
-            'deep_analysis': 'full_analysis',       # 完整分析
-            'trading_decision': 'trading',         # 交易决策
-            'risk_assessment': 'risk_check',       # 风险评估
-            'portfolio_review': 'portfolio',         # 组合回顾
+            "market_query": "fast_scan",  # 快速扫描
+            "deep_analysis": "full_analysis",  # 完整分析
+            "trading_decision": "trading",  # 交易决策
+            "risk_assessment": "risk_check",  # 风险评估
+            "portfolio_review": "portfolio",  # 组合回顾
         }
 
-        base_strategy = strategy_map.get(intent, 'fast_scan')
+        base_strategy = strategy_map.get(intent, "fast_scan")
 
         # 根据市场条件调整
-        if market_condition == 'volatile':
-            base_strategy += '_volatile'
-        elif market_condition == 'trending':
-            base_strategy += '_trending'
+        if market_condition == "volatile":
+            base_strategy += "_volatile"
+        elif market_condition == "trending":
+            base_strategy += "_trending"
 
         return base_strategy
 
@@ -191,84 +197,74 @@ class NodeSelector:
         """根据策略选择节点"""
         # 默认节点序列
         default_nodes = [
-            'dream-contradiction-theory',
-            'dream-first-principles',
+            "dream-contradiction-theory",
+            "dream-first-principles",
         ]
 
         strategies = {
             # 快速扫描策略
-            'fast_scan': [
-                'dream-contradiction-theory',  # A0: 快速矛盾检测
-                'classic-indicator-scan',       # C1: 技术扫描
+            "fast_scan": [
+                "dream-contradiction-theory",  # A0: 快速矛盾检测
+                "classic-indicator-scan",  # C1: 技术扫描
             ],
-
             # 完整分析策略
-            'full_analysis': [
-                'dream-contradiction-theory',  # A0: 矛盾检测
-                'dream-first-principles',        # A2: 第一性原理
-                'dream-strategy-research',       # A1: 策略研究
-                'dream-exit-skill-v2',          # A9: 离场评估
+            "full_analysis": [
+                "dream-contradiction-theory",  # A0: 矛盾检测
+                "dream-first-principles",  # A2: 第一性原理
+                "dream-strategy-research",  # A1: 策略研究
+                "dream-exit-skill-v2",  # A9: 离场评估
             ],
-
             # 交易决策策略
-            'trading': [
-                'dream-contradiction-theory',   # A0: 矛盾检测
-                'dream-first-principles',       # A2: 第一性原理
-                'dream-strategy-designer',       # A3: 策略设计
-                'dream-risk-position-sizing',    # 风险仓位
-                'dream-gate-keeper',            # A4: 门禁
+            "trading": [
+                "dream-contradiction-theory",  # A0: 矛盾检测
+                "dream-first-principles",  # A2: 第一性原理
+                "dream-strategy-designer",  # A3: 策略设计
+                "dream-risk-position-sizing",  # 风险仓位
+                "dream-gate-keeper",  # A4: 门禁
             ],
-
             # 风险评估策略
-            'risk_check': [
-                'classic-regime-detection',     # C2: Regime识别
-                'dream-contradiction-theory',   # A0: 矛盾检测
-                'dream-risk-assessment',        # 风险评估
+            "risk_check": [
+                "classic-regime-detection",  # C2: Regime识别
+                "dream-contradiction-theory",  # A0: 矛盾检测
+                "dream-risk-assessment",  # 风险评估
             ],
-
             # 组合回顾策略
-            'portfolio': [
-                'dream-portfolio-overview',     # 组合概览
-                'dream-exit-skill-v2',          # A9: 离场评估
-                'dream-performance-review',     # 绩效回顾
+            "portfolio": [
+                "dream-portfolio-overview",  # 组合概览
+                "dream-exit-skill-v2",  # A9: 离场评估
+                "dream-performance-review",  # 绩效回顾
             ],
-
             # A链核心策略 - 三大闭环
-            'a_chain_core': [
-                'dream-contradiction-theory',   # A0: 执行闭环 - 矛盾检测
-                'dream-first-principles',       # A2: 执行闭环 - 第一性原理
-                'dream-strategy-designer',     # A3: 执行闭环 - 策略设计
-                'dream-gate-keeper',           # A4: 执行闭环 - 门禁
+            "a_chain_core": [
+                "dream-contradiction-theory",  # A0: 执行闭环 - 矛盾检测
+                "dream-first-principles",  # A2: 执行闭环 - 第一性原理
+                "dream-strategy-designer",  # A3: 执行闭环 - 策略设计
+                "dream-gate-keeper",  # A4: 执行闭环 - 门禁
             ],
-
             # 三屏交易策略
-            'three_screen': [
-                'dream-screen1-first',          # Screen1: 周线方向
-                'dream-screen2-swing',          # Screen2: 日线预设
-                'dream-screen3-intra',          # Screen3: 实时执行
+            "three_screen": [
+                "dream-screen1-first",  # Screen1: 周线方向
+                "dream-screen2-swing",  # Screen2: 日线预设
+                "dream-screen3-intra",  # Screen3: 实时执行
             ],
-
             # C链经典量化策略
-            'c_chain_classic': [
-                'classic-indicator-scan',       # C1: 技术扫描
-                'classic-regime-detection',     # C2: Regime识别
-                'classic-trade-signal',        # C3: 交易信号
+            "c_chain_classic": [
+                "classic-indicator-scan",  # C1: 技术扫描
+                "classic-regime-detection",  # C2: Regime识别
+                "classic-trade-signal",  # C3: 交易信号
             ],
-
             # 标准策略
-            'standard': default_nodes,
-
+            "standard": default_nodes,
             # 波动市场变体
-            'fast_scan_volatile': [
-                'dream-contradiction-theory',   # A0: 矛盾检测
-                'classic-regime-detection',      # C2: Regime识别
+            "fast_scan_volatile": [
+                "dream-contradiction-theory",  # A0: 矛盾检测
+                "classic-regime-detection",  # C2: Regime识别
             ],
-
             # 趋势市场变体
-            'full_analysis_trending': [
-                'dream-contradiction-theory',   # A0: 矛盾检测
-                'dream-first-principles',       # A2: 第一性原理
-                'dream-strategy-designer',     # A3: 策略设计
+            "full_analysis_trending": [
+                "dream-contradiction-theory",  # A0: 矛盾检测
+                "dream-first-principles",  # A2: 第一性原理
+                "dream-strategy-designer",  # A3: 策略设计
             ],
         }
 
@@ -304,7 +300,7 @@ class NodeSelector:
                 continue
 
             # 检查安全等级
-            if context.user_role == 'FREE' and mod.security_level in ('R2', 'R3'):
+            if context.user_role == "FREE" and mod.security_level in ("R2", "R3"):
                 continue
 
             # 检查适用意图
@@ -313,7 +309,7 @@ class NodeSelector:
                 pass
 
             # 检查适用市场条件
-            if context.market_condition and context.market_condition != 'unknown':
+            if context.market_condition and context.market_condition != "unknown":
                 # 只有在明确指定市场条件时才过滤
                 if context.market_condition not in mod.market_conditions and mod.market_conditions:
                     # 市场条件不匹配时跳过
@@ -346,26 +342,26 @@ class NodeSelector:
     def select_three_screen(self) -> List[str]:
         """选择三屏交易节点"""
         return [
-            'dream-screen1-first',   # Screen1: 周线方向
-            'dream-screen2-swing',  # Screen2: 日线预设
-            'dream-screen3-intra',  # Screen3: 实时执行
+            "dream-screen1-first",  # Screen1: 周线方向
+            "dream-screen2-swing",  # Screen2: 日线预设
+            "dream-screen3-intra",  # Screen3: 实时执行
         ]
 
     def select_a_chain_core(self) -> List[str]:
         """选择A链核心节点（三大闭环）"""
         return [
-            'dream-contradiction-theory',  # A0: 执行闭环 - 矛盾检测
-            'dream-first-principles',       # A2: 执行闭环 - 第一性原理
-            'dream-strategy-designer',     # A3: 执行闭环 - 策略设计
-            'dream-gate-keeper',           # A4: 执行闭环 - 门禁
+            "dream-contradiction-theory",  # A0: 执行闭环 - 矛盾检测
+            "dream-first-principles",  # A2: 执行闭环 - 第一性原理
+            "dream-strategy-designer",  # A3: 执行闭环 - 策略设计
+            "dream-gate-keeper",  # A4: 执行闭环 - 门禁
         ]
 
     def select_c_chain_classic(self) -> List[str]:
         """选择C链经典量化节点"""
         return [
-            'classic-indicator-scan',      # C1: 技术扫描
-            'classic-regime-detection',   # C2: Regime识别
-            'classic-trade-signal',      # C3: 交易信号
+            "classic-indicator-scan",  # C1: 技术扫描
+            "classic-regime-detection",  # C2: Regime识别
+            "classic-trade-signal",  # C3: 交易信号
         ]
 
     def get_available_nodes(self) -> List[Dict[str, Any]]:
@@ -373,21 +369,23 @@ class NodeSelector:
         modules = self.registry.get_all()
         return [
             {
-                'id': m.id,
-                'name': m.name,
-                'chain': m.chain,
-                'category': m.category,
-                'stage': m.applicable_stages,
-                'intent': m.applicable_intents,
-                'confidence_range': m.confidence_range,
+                "id": m.id,
+                "name": m.name,
+                "chain": m.chain,
+                "category": m.category,
+                "stage": m.applicable_stages,
+                "intent": m.applicable_intents,
+                "confidence_range": m.confidence_range,
             }
-            for m in modules if self.registry.is_active(m.id)
+            for m in modules
+            if self.registry.is_active(m.id)
         ]
 
 
 # ============================================================
 # 结果聚合器
 # ============================================================
+
 
 class ResultAggregator:
     """
@@ -397,9 +395,9 @@ class ResultAggregator:
 
     def __init__(self, chain_weights: Dict[str, float] = None):
         self.chain_weights = chain_weights or {
-            'A': 0.35,
-            'C': 0.45,
-            'F': 0.20,
+            "A": 0.35,
+            "C": 0.45,
+            "F": 0.20,
         }
 
     def aggregate(
@@ -418,7 +416,7 @@ class ResultAggregator:
             (最终方向, 最终置信度)
         """
         if not results:
-            return 'HOLD', 0.3
+            return "HOLD", 0.3
 
         # 按链分组
         by_chain: Dict[str, List[NodeExecutionResult]] = {}
@@ -475,23 +473,22 @@ class ResultAggregator:
     ) -> Tuple[str, float]:
         """聚合单个链的结果"""
         if not results:
-            return 'HOLD', 0.3
+            return "HOLD", 0.3
 
         # 同向结果加权平均
         direction_scores: Dict[str, List[float]] = {}
         for r in results:
-            direction = r.outputs.direction or 'HOLD'
+            direction = r.outputs.direction or "HOLD"
             if direction not in direction_scores:
                 direction_scores[direction] = []
             direction_scores[direction].append(r.confidence)
 
         if not direction_scores:
-            return 'HOLD', 0.3
+            return "HOLD", 0.3
 
         # 选择置信度最高的方向
         best_direction = max(
-            direction_scores.items(),
-            key=lambda x: sum(x[1]) / len(x[1]) if x[1] else 0
+            direction_scores.items(), key=lambda x: sum(x[1]) / len(x[1]) if x[1] else 0
         )[0]
 
         # 计算该方向的加权置信度
@@ -509,6 +506,7 @@ class ResultAggregator:
 # ============================================================
 # 图编排引擎核心
 # ============================================================
+
 
 class GraphOrchestrator:
     """
@@ -563,8 +561,8 @@ class GraphOrchestrator:
         else:
             # 默认执行A链核心节点
             selected_nodes = [
-                'dream-contradiction-theory',
-                'dream-first-principles',
+                "dream-contradiction-theory",
+                "dream-first-principles",
             ]
 
         # 2. 构建执行图
@@ -594,9 +592,9 @@ class GraphOrchestrator:
             skipped_nodes=sum(1 for r in node_results if r.skipped),
             failed_nodes=sum(1 for r in node_results if not r.success and not r.skipped),
             metadata={
-                'intent': intent,
-                'execution_mode': execution_mode.value,
-                'selected_nodes': selected_nodes,
+                "intent": intent,
+                "execution_mode": execution_mode.value,
+                "selected_nodes": selected_nodes,
             },
         )
 
@@ -626,10 +624,10 @@ class GraphOrchestrator:
             )
 
             # 根据适配器类型设置超时
-            adapter_type = mod_info.adapter.get('type', 'skill')
-            if adapter_type == 'api':
+            adapter_type = mod_info.adapter.get("type", "skill")
+            if adapter_type == "api":
                 node_exec.timeout_ms = 30000  # API调用超时30秒
-            elif adapter_type == 'skill':
+            elif adapter_type == "skill":
                 node_exec.timeout_ms = mod_info.estimated_latency_ms or 120000  # SKILL调用超时2分钟
             else:
                 node_exec.timeout_ms = 10000  # 本地执行超时10秒
@@ -646,8 +644,11 @@ class GraphOrchestrator:
             nodes=nodes,
             parallel_groups=parallel_groups,
             metadata={
-                'mode': mode.value,
-                'nodes_config': [self.registry.get(nid).__dict__ if self.registry.get(nid) else {} for nid in node_ids]
+                "mode": mode.value,
+                "nodes_config": [
+                    self.registry.get(nid).__dict__ if self.registry.get(nid) else {}
+                    for nid in node_ids
+                ],
             },
         )
 
@@ -657,9 +658,9 @@ class GraphOrchestrator:
         context: ExecutionContext,
     ) -> List[NodeExecutionResult]:
         """执行图（支持顺序/并行/条件执行）"""
-        results = []
+        results = []  # noqa: F841
 
-        if graph.metadata.get('mode') == 'parallel':
+        if graph.metadata.get("mode") == "parallel":
             # 并行执行所有节点
             return self._execute_parallel(graph, context)
         else:
@@ -678,15 +679,17 @@ class GraphOrchestrator:
         for node_exec in graph.nodes:
             # 条件执行：检查前置条件
             if not self._check_execution_condition(node_exec, results, prior_outputs):
-                results.append(NodeExecutionResult(
-                    module_id=node_exec.module_id,
-                    success=True,
-                    outputs=ModuleOutputs(),
-                    confidence=0.0,
-                    latency_ms=0,
-                    skipped=True,
-                    skip_reason="条件不满足",
-                ))
+                results.append(
+                    NodeExecutionResult(
+                        module_id=node_exec.module_id,
+                        success=True,
+                        outputs=ModuleOutputs(),
+                        confidence=0.0,
+                        latency_ms=0,
+                        skipped=True,
+                        skip_reason="条件不满足",
+                    )
+                )
                 continue
 
             # 更新上下文（携带前置节点结果）
@@ -703,7 +706,7 @@ class GraphOrchestrator:
             # 如果执行失败且节点是必须的，停止执行
             if not result.success and node_exec.required:
                 # 记录失败原因
-                prior_outputs['_last_error'] = result.error
+                prior_outputs["_last_error"] = result.error
                 # 可选：继续执行或停止
                 # return results  # 取消注释以在失败时停止
 
@@ -731,14 +734,13 @@ class GraphOrchestrator:
             }
 
             # 按原始顺序收集结果
-            node_to_future = {id(f): node for f, node in future_to_node.items()}
+            node_to_future = {id(f): node for f, node in future_to_node.items()}  # noqa: F841
             results = [None] * len(graph.nodes)
 
             for future in concurrent.futures.as_completed(future_to_node):
                 node_exec = future_to_node[future]
                 idx = next(
-                    i for i, n in enumerate(graph.nodes)
-                    if n.module_id == node_exec.module_id
+                    i for i, n in enumerate(graph.nodes) if n.module_id == node_exec.module_id
                 )
                 try:
                     result = future.result()
@@ -775,29 +777,29 @@ class GraphOrchestrator:
         # 解析条件表达式
         # 支持: confidence_above_50, direction_long, has_error 等
 
-        if condition == 'confidence_above_50':
+        if condition == "confidence_above_50":
             if prior_outputs:
                 last_result = list(prior_outputs.values())[-1]
                 if isinstance(last_result, NodeExecutionResult):
                     return last_result.confidence >= 50.0
             return False
 
-        if condition == 'direction_long':
+        if condition == "direction_long":
             if prior_outputs:
                 for output in prior_outputs.values():
                     if isinstance(output, NodeExecutionResult):
-                        if output.outputs.direction == 'long':
+                        if output.outputs.direction == "long":
                             return True
             return False
 
-        if condition == 'no_error':
-            return '_last_error' not in prior_outputs
+        if condition == "no_error":
+            return "_last_error" not in prior_outputs
 
-        if condition == 'has_direction':
+        if condition == "has_direction":
             if prior_outputs:
                 for output in prior_outputs.values():
                     if isinstance(output, NodeExecutionResult):
-                        if output.outputs.direction and output.outputs.direction != 'HOLD':
+                        if output.outputs.direction and output.outputs.direction != "HOLD":
                             return True
             return False
 
@@ -814,9 +816,9 @@ class GraphOrchestrator:
         for node_id, result in prior_outputs.items():
             if isinstance(result, NodeExecutionResult):
                 prior_summary[node_id] = {
-                    'direction': result.outputs.direction,
-                    'confidence': result.confidence,
-                    'analysis': result.outputs.analysis,
+                    "direction": result.outputs.direction,
+                    "confidence": result.confidence,
+                    "analysis": result.outputs.analysis,
                 }
 
         # 更新上下文
@@ -881,11 +883,11 @@ class GraphOrchestrator:
             )
 
             # 判断来源
-            source = 'skill'
+            source = "skill"
             if result.fallback_used:
-                source = 'local_fallback'
-            elif result.metadata.get('source') == 'local_fallback':
-                source = 'local_fallback'
+                source = "local_fallback"
+            elif result.metadata.get("source") == "local_fallback":
+                source = "local_fallback"
 
             return NodeExecutionResult(
                 module_id=module_id,
@@ -913,10 +915,10 @@ class GraphOrchestrator:
         total = len(self._execution_history)
         if total == 0:
             return {
-                'total_executions': 0,
-                'success_rate': 0.0,
-                'avg_execution_time_ms': 0,
-                'avg_nodes_per_execution': 0,
+                "total_executions": 0,
+                "success_rate": 0.0,
+                "avg_execution_time_ms": 0,
+                "avg_nodes_per_execution": 0,
             }
 
         success_count = sum(1 for r in self._execution_history if r.success)
@@ -924,18 +926,18 @@ class GraphOrchestrator:
         total_nodes = sum(r.total_nodes for r in self._execution_history)
 
         return {
-            'total_executions': total,
-            'success_rate': success_count / total,
-            'avg_execution_time_ms': total_time / total,
-            'avg_nodes_per_execution': total_nodes / total,
-            'by_intent': self._aggregate_by_intent(),
+            "total_executions": total,
+            "success_rate": success_count / total,
+            "avg_execution_time_ms": total_time / total,
+            "avg_nodes_per_execution": total_nodes / total,
+            "by_intent": self._aggregate_by_intent(),
         }
 
     def _aggregate_by_intent(self) -> Dict[str, Dict[str, Any]]:
         """按意图聚合统计"""
         by_intent: Dict[str, List[GraphExecutionResult]] = {}
         for r in self._execution_history:
-            intent = r.metadata.get('intent', 'unknown')
+            intent = r.metadata.get("intent", "unknown")
             if intent not in by_intent:
                 by_intent[intent] = []
             by_intent[intent].append(r)
@@ -944,9 +946,9 @@ class GraphOrchestrator:
         for intent, results in by_intent.items():
             success = sum(1 for r in results if r.success)
             result[intent] = {
-                'count': len(results),
-                'success_rate': success / len(results) if results else 0,
-                'avg_confidence': sum(r.final_confidence for r in results) / len(results),
+                "count": len(results),
+                "success_rate": success / len(results) if results else 0,
+                "avg_confidence": sum(r.final_confidence for r in results) / len(results),
             }
 
         return result
@@ -967,12 +969,12 @@ class GraphOrchestrator:
             GraphExecutionResult
         """
         # 从配置中提取节点序列
-        nodes = graph_config.get('nodes', [])
+        nodes = graph_config.get("nodes", [])
         if not nodes:
             # 尝试从dependencies构建依赖图
             nodes = self._build_dependency_order(graph_config)
 
-        mode = ExecutionMode(graph_config.get('mode', 'sequential'))
+        mode = ExecutionMode(graph_config.get("mode", "sequential"))
 
         return self.execute(
             context=context,
@@ -985,21 +987,24 @@ class GraphOrchestrator:
         # 获取所有节点
         all_nodes = set()
         for node_id, node_config in config.items():
-            if isinstance(node_config, dict) and 'dependencies' in node_config:
+            if isinstance(node_config, dict) and "dependencies" in node_config:
                 all_nodes.add(node_id)
-                all_nodes.update(node_config.get('dependencies', []))
+                all_nodes.update(node_config.get("dependencies", []))
             elif isinstance(node_config, dict):
                 all_nodes.add(node_id)
 
         # 简单拓扑排序
         result = []
         remaining = set(all_nodes)
-        dependencies = {k: v.get('dependencies', []) if isinstance(v, dict) else [] for k, v in config.items()}
+        dependencies = {
+            k: v.get("dependencies", []) if isinstance(v, dict) else [] for k, v in config.items()
+        }
 
         while remaining:
             # 找到没有依赖或依赖已完成的节点
             ready = [
-                n for n in remaining
+                n
+                for n in remaining
                 if not dependencies.get(n) or all(d not in remaining for d in dependencies[n])
             ]
             if not ready:
@@ -1019,24 +1024,24 @@ class GraphOrchestrator:
             return None
 
         return {
-            'id': mod.id,
-            'name': mod.name,
-            'description': mod.description,
-            'version': mod.version,
-            'chain': mod.chain,
-            'category': mod.category,
-            'security_level': mod.security_level,
-            'estimated_tokens': mod.estimated_tokens,
-            'estimated_latency_ms': mod.estimated_latency_ms,
-            'confidence_range': mod.confidence_range,
-            'applicable_stages': mod.applicable_stages,
-            'applicable_intents': mod.applicable_intents,
-            'market_conditions': mod.market_conditions,
-            'historical_accuracy': mod.historical_accuracy,
-            'dependencies': mod.dependencies,
-            'adapter': mod.adapter,
-            'fallback': mod.fallback,
-            'is_active': self.registry.is_active(node_id),
+            "id": mod.id,
+            "name": mod.name,
+            "description": mod.description,
+            "version": mod.version,
+            "chain": mod.chain,
+            "category": mod.category,
+            "security_level": mod.security_level,
+            "estimated_tokens": mod.estimated_tokens,
+            "estimated_latency_ms": mod.estimated_latency_ms,
+            "confidence_range": mod.confidence_range,
+            "applicable_stages": mod.applicable_stages,
+            "applicable_intents": mod.applicable_intents,
+            "market_conditions": mod.market_conditions,
+            "historical_accuracy": mod.historical_accuracy,
+            "dependencies": mod.dependencies,
+            "adapter": mod.adapter,
+            "fallback": mod.fallback,
+            "is_active": self.registry.is_active(node_id),
         }
 
     def validate_execution_plan(
@@ -1077,6 +1082,7 @@ class GraphOrchestrator:
 # 快捷函数
 # ============================================================
 
+
 def create_orchestrator(config: Dict[str, Any] = None) -> GraphOrchestrator:
     """创建编排器"""
     return GraphOrchestrator(config)
@@ -1085,7 +1091,7 @@ def create_orchestrator(config: Dict[str, Any] = None) -> GraphOrchestrator:
 def quick_analyze(
     intent: str,
     mkt: Dict[str, Any],
-    symbol: str = 'BTC/USDT',
+    symbol: str = "BTC/USDT",
 ) -> GraphExecutionResult:
     """
     快速分析（快捷函数）
@@ -1108,15 +1114,15 @@ def quick_analyze(
 
 
 __all__ = [
-    'ExecutionMode',
-    'NodeDependency',
-    'NodeExecution',
-    'ExecutionGraph',
-    'NodeExecutionResult',
-    'GraphExecutionResult',
-    'NodeSelector',
-    'ResultAggregator',
-    'GraphOrchestrator',
-    'create_orchestrator',
-    'quick_analyze',
+    "ExecutionMode",
+    "NodeDependency",
+    "NodeExecution",
+    "ExecutionGraph",
+    "NodeExecutionResult",
+    "GraphExecutionResult",
+    "NodeSelector",
+    "ResultAggregator",
+    "GraphOrchestrator",
+    "create_orchestrator",
+    "quick_analyze",
 ]

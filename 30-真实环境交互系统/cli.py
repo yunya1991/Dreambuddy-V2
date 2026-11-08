@@ -13,6 +13,7 @@
     # 检查 Chrome CDP 连接状态
     python cli.py check
 """
+
 from __future__ import annotations
 
 import argparse
@@ -25,7 +26,7 @@ import yaml
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.browser_connector import BrowserConnector, BrowserMode
+from core.browser_connector import BrowserConnector, BrowserMode  # noqa: I001
 from core.user_simulator import UserSimulator
 from core.result_verifier import ResultVerifier
 from core.scenario_runner import ScenarioRunner
@@ -71,8 +72,8 @@ def cmd_run(args):
             "launch_headless": BrowserMode.LAUNCH_HEADLESS,
         }
         mode = mode_map[args.mode]
-        browser = connector.connect(mode=mode, cdp_url=args.cdp_url)
-        context = connector.new_context()
+        browser = connector.connect(mode=mode, cdp_url=args.cdp_url)  # noqa: F841
+        context = connector.new_context()  # noqa: F841
         page = connector.new_page()
 
         # 运行场景
@@ -121,8 +122,8 @@ def cmd_run_batch(args):
             "launch_headless": BrowserMode.LAUNCH_HEADLESS,
         }
         mode = mode_map[args.mode]
-        browser = connector.connect(mode=mode, cdp_url=args.cdp_url)
-        context = connector.new_context()
+        browser = connector.connect(mode=mode, cdp_url=args.cdp_url)  # noqa: F841
+        context = connector.new_context()  # noqa: F841
         page = connector.new_page()
 
         # 收集场景文件
@@ -144,7 +145,7 @@ def cmd_run_batch(args):
         # 输出汇总
         passed = sum(1 for r in results if r.passed)
         print(f"\n{'='*60}")
-        print(f"Batch Run Summary")
+        print("Batch Run Summary")
         print(f"Total: {len(results)}, Passed: {passed}, Failed: {len(results) - passed}")
         print(f"{'='*60}")
 
@@ -179,13 +180,14 @@ def cmd_launch(args):
     connector = BrowserConnector(config)
 
     try:
-        browser = connector.connect(mode=BrowserMode.LAUNCH_HEADED)
-        print(f"✓ Chrome launched and connected")
+        browser = connector.connect(mode=BrowserMode.LAUNCH_HEADED)  # noqa: F841
+        print("✓ Chrome launched and connected")
         print(f"  CDP URL: {connector.get_cdp_url()}")
-        print(f"  Press Ctrl+C to stop...")
+        print("  Press Ctrl+C to stop...")
 
         # 保持运行
         import time
+
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
@@ -279,6 +281,7 @@ def cmd_agent_browser_run(args):
 
     # 校验 agent-browser 可执行文件是否在 PATH
     import shutil
+
     executable = config.get("agent_browser", {}).get("executable", "agent-browser")
     if not shutil.which(executable):
         logger.error(
@@ -308,14 +311,16 @@ def cmd_agent_browser_run(args):
     # 输出结果
     print("\n" + "=" * 60)
     print(f"场景: {scenario.get('name', 'unnamed')}")
-    print(f"模式: agent_browser (线2)")
+    print("模式: agent_browser (线2)")
     print(f"结果: {'PASSED' if result.passed else 'FAILED'}")
     print(f"耗时: {result.duration_ms:.0f}ms")
     print(f"步骤数: {len(result.steps)}")
     for i, step in enumerate(result.steps, 1):
         symbol = "✓" if step.exit_code == 0 else "✗"
-        print(f"  {symbol} step{i}: exit={step.exit_code} "
-              f"({step.duration_ms:.0f}ms) {step.command[:80]}")
+        print(
+            f"  {symbol} step{i}: exit={step.exit_code} "
+            f"({step.duration_ms:.0f}ms) {step.command[:80]}"
+        )
         if step.stderr:
             print(f"    stderr: {step.stderr[:200]}")
     if result.verification:
@@ -338,6 +343,7 @@ def cmd_bsk_run(args):
 
     # 校验 bsk 可执行文件是否在 PATH
     import shutil
+
     executable = config.get("bsk", {}).get("executable", "bsk")
     if not shutil.which(executable):
         logger.error(
@@ -367,14 +373,16 @@ def cmd_bsk_run(args):
     # 输出结果
     print("\n" + "=" * 60)
     print(f"场景: {scenario.get('name', 'unnamed')}")
-    print(f"模式: bsk (线4 腾讯 BrowserSkill)")
+    print("模式: bsk (线4 腾讯 BrowserSkill)")
     print(f"结果: {'PASSED' if result.passed else 'FAILED'}")
     print(f"耗时: {result.duration_ms:.0f}ms")
     print(f"步骤数: {len(result.steps)}")
     for i, step in enumerate(result.steps, 1):
         symbol = "✓" if step.exit_code == 0 else "✗"
-        print(f"  {symbol} step{i}: exit={step.exit_code} "
-              f"({step.duration_ms:.0f}ms) {step.command[:80]}")
+        print(
+            f"  {symbol} step{i}: exit={step.exit_code} "
+            f"({step.duration_ms:.0f}ms) {step.command[:80]}"
+        )
         if step.stderr:
             print(f"    stderr: {step.stderr[:200]}")
     if result.verification:
@@ -417,16 +425,24 @@ def cmd_computer_use_run(args):
     # 输出 JSON plan（供 trae 主对话读入并逐条喂给 Agent(subagent_type=computer_use)）
     print("\n" + "=" * 60)
     print(f"场景: {scenario.get('name', 'unnamed')}")
-    print(f"模式: computer_use (线5 trae 电脑控制插件)")
+    print("模式: computer_use (线5 trae 电脑控制插件)")
     print(f"结果: {'PLAN_READY' if result.passed else 'FAILED'}")
     print(f"步骤数: {len(result.plan)}")
     print("\n--- PLAN JSON（喂给 trae 主对话）---")
-    print(_json.dumps({
-        "task": scenario.get("name", ""),
-        "subagent_type": config.get("computer_use", {}).get("subagent_type", "computer_use"),
-        "plan": result.plan,
-        "assertions": scenario.get("assertions", []),
-    }, ensure_ascii=False, indent=2))
+    print(
+        _json.dumps(
+            {
+                "task": scenario.get("name", ""),
+                "subagent_type": config.get("computer_use", {}).get(
+                    "subagent_type", "computer_use"
+                ),
+                "plan": result.plan,
+                "assertions": scenario.get("assertions", []),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     print("\n--- 执行说明 ---")
     print("将上述 plan 中的每条 prompt 依次通过 Agent(subagent_type=computer_use) 调用执行。")
     print("执行完后用 parse_step_response 解析响应，再用 _run_verification 收尾。")
@@ -466,24 +482,24 @@ def cmd_desktop_run(args):
         try:
             import pyautogui  # noqa: F401
         except ImportError:
-            logger.error(
-                "pyautogui 未安装。请运行: pip install pyautogui"
-            )
+            logger.error("pyautogui 未安装。请运行: pip install pyautogui")
             return 1
 
     result = runner.run_task_from_yaml(scenario)
 
     print("\n" + "=" * 60)
     print(f"场景: {scenario.get('name', 'unnamed')}")
-    print(f"模式: desktop_native (线5 纯 Python 桌面控制)")
+    print("模式: desktop_native (线5 纯 Python 桌面控制)")
     print(f"结果: {'PASSED' if result.passed else 'FAILED'}")
     print(f"耗时: {result.duration_ms:.0f}ms")
     print(f"步骤数: {len(result.steps)}")
     for i, step in enumerate(result.steps, 1):
         symbol = "✓" if step.success else "✗"
-        print(f"  {symbol} step{i}: {list(step.step.keys())[0] if step.step else '?'}"
-              f" ({step.duration_ms:.0f}ms)"
-              f" output={step.output[:80] if step.output else ''}")
+        print(
+            f"  {symbol} step{i}: {list(step.step.keys())[0] if step.step else '?'}"
+            f" ({step.duration_ms:.0f}ms)"
+            f" output={step.output[:80] if step.output else ''}"
+        )
         if step.error:
             print(f"    error: {step.error[:200]}")
     if result.verification:
@@ -508,9 +524,7 @@ def load_scenario(path: str) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="30-真实环境交互系统 — 真实浏览器环境测试工具"
-    )
+    parser = argparse.ArgumentParser(description="30-真实环境交互系统 — 真实浏览器环境测试工具")
     parser.add_argument("--config", default="config.yaml", help="配置文件路径")
 
     subparsers = parser.add_subparsers(dest="command", help="子命令")
@@ -519,7 +533,8 @@ def main():
     run_parser = subparsers.add_parser("run", help="运行单个场景")
     run_parser.add_argument("--scenario", required=True, help="场景文件路径")
     run_parser.add_argument(
-        "--mode", default="playwright_chromium",
+        "--mode",
+        default="playwright_chromium",
         choices=["playwright_chromium", "connect", "launch_headed", "launch_headless"],
         help="浏览器模式: playwright_chromium(沙箱内可用,默认) | connect(连接真实Chrome) | launch_headed | launch_headless",
     )
@@ -531,7 +546,8 @@ def main():
     batch_parser = subparsers.add_parser("run-batch", help="批量运行场景")
     batch_parser.add_argument("--scenarios", required=True, help="场景目录或文件")
     batch_parser.add_argument(
-        "--mode", default="playwright_chromium",
+        "--mode",
+        default="playwright_chromium",
         choices=["playwright_chromium", "connect", "launch_headed", "launch_headless"],
     )
     batch_parser.add_argument("--cdp-url", help="CDP 连接地址")
@@ -548,76 +564,75 @@ def main():
 
     # ai-run 子命令 — AI 驱动的语义化测试（Browser Use Agent）
     ai_run_parser = subparsers.add_parser(
-        "ai-run",
-        help="运行 AI 驱动的语义化场景（Browser Use Agent）"
+        "ai-run", help="运行 AI 驱动的语义化场景（Browser Use Agent）"
     )
-    ai_run_parser.add_argument(
-        "--scenario", help="AI 场景 YAML 文件路径（含 task 和 assertions）"
-    )
-    ai_run_parser.add_argument(
-        "--task", help="直接传入自然语言任务（覆盖 --scenario 的 task）"
-    )
+    ai_run_parser.add_argument("--scenario", help="AI 场景 YAML 文件路径（含 task 和 assertions）")
+    ai_run_parser.add_argument("--task", help="直接传入自然语言任务（覆盖 --scenario 的 task）")
     ai_run_parser.add_argument(
         "--browser-mode",
         default="from_system_chrome",
         choices=["from_system_chrome", "playwright_chromium", "connect_cdp"],
-        help="Browser Use Browser 模式"
+        help="Browser Use Browser 模式",
     )
     ai_run_parser.add_argument("--report", action="store_true", help="生成报告")
     ai_run_parser.set_defaults(func=cmd_ai_run)
 
     # agent-browser-run 子命令 — agent-browser CLI 引擎（线2，省 token）
     ab_run_parser = subparsers.add_parser(
-        "agent-browser-run",
-        help="运行 agent-browser 引擎场景（GLM-5.2 + CLI，省 token）"
+        "agent-browser-run", help="运行 agent-browser 引擎场景（GLM-5.2 + CLI，省 token）"
     )
     ab_run_parser.add_argument(
-        "--scenario", required=True,
+        "--scenario",
+        required=True,
         help="agent-browser 场景 YAML 文件路径（原生命令风格）",
     )
     ab_run_parser.add_argument(
-        "--session", help="覆盖 config 中的 default_session",
+        "--session",
+        help="覆盖 config 中的 default_session",
     )
     ab_run_parser.add_argument("--report", action="store_true", help="生成报告")
     ab_run_parser.set_defaults(func=cmd_agent_browser_run)
 
     # bsk-run 子命令 — 腾讯 BrowserSkill CLI 引擎（线4，DSH 原生）
     bsk_run_parser = subparsers.add_parser(
-        "bsk-run",
-        help="运行 bsk 引擎场景（腾讯 BrowserSkill CLI，DSH 原生）"
+        "bsk-run", help="运行 bsk 引擎场景（腾讯 BrowserSkill CLI，DSH 原生）"
     )
     bsk_run_parser.add_argument(
-        "--scenario", required=True,
+        "--scenario",
+        required=True,
         help="bsk 场景 YAML 文件路径（原生命令风格）",
     )
     bsk_run_parser.add_argument(
-        "--session", help="覆盖 config 中的 default_session（用作 bsk session start --name）",
+        "--session",
+        help="覆盖 config 中的 default_session（用作 bsk session start --name）",
     )
     bsk_run_parser.add_argument("--report", action="store_true", help="生成报告")
     bsk_run_parser.set_defaults(func=cmd_bsk_run)
 
     # computer-use-run 子命令 — 线5 trae 电脑控制插件（模式 A，plan-only）
     cu_run_parser = subparsers.add_parser(
-        "computer-use-run",
-        help="运行线5 computer_use 引擎场景（trae 电脑控制插件，仅生成 plan）"
+        "computer-use-run", help="运行线5 computer_use 引擎场景（trae 电脑控制插件，仅生成 plan）"
     )
     cu_run_parser.add_argument(
-        "--scenario", required=True,
+        "--scenario",
+        required=True,
         help="computer_use 场景 YAML 文件路径（自然语言 prompt 风格）",
     )
     cu_run_parser.add_argument(
-        "--plan-only", action="store_true", default=True,
+        "--plan-only",
+        action="store_true",
+        default=True,
         help="仅生成 plan（模式 A 物理限制：必须由 trae 主对话介入执行）",
     )
     cu_run_parser.set_defaults(func=cmd_computer_use_run)
 
     # desktop-run 子命令 — 线5 桌面原生（模式 B，纯 Python）
     desktop_run_parser = subparsers.add_parser(
-        "desktop-run",
-        help="运行线5 desktop_native 引擎场景（纯 Python pyautogui + osascript）"
+        "desktop-run", help="运行线5 desktop_native 引擎场景（纯 Python pyautogui + osascript）"
     )
     desktop_run_parser.add_argument(
-        "--scenario", required=True,
+        "--scenario",
+        required=True,
         help="desktop_native 场景 YAML 文件路径",
     )
     desktop_run_parser.add_argument("--report", action="store_true", help="生成报告")

@@ -12,6 +12,7 @@
 import json
 import os
 import sys
+
 import numpy as np
 import pandas as pd
 
@@ -118,10 +119,12 @@ def compute_peak_to_bottom_path(prices: pd.DataFrame, peak_date, bottom_date) ->
         return pd.DataFrame()
 
     # 计算累计跌幅%
-    path = pd.DataFrame({
-        "close": monthly.values,
-        "months_after_peak": range(len(monthly)),
-    })
+    path = pd.DataFrame(
+        {
+            "close": monthly.values,
+            "months_after_peak": range(len(monthly)),
+        }
+    )
     path["drawdown_pct"] = (path["close"] - peak_price) / peak_price * 100
     return path
 
@@ -151,10 +154,12 @@ def compute_volume_path(prices: pd.DataFrame, peak_date, bottom_date) -> pd.Data
     if len(monthly_vol) == 0:
         return pd.DataFrame()
 
-    path = pd.DataFrame({
-        "vol_ma30": monthly_vol.values,
-        "months_after_peak": range(len(monthly_vol)),
-    })
+    path = pd.DataFrame(
+        {
+            "vol_ma30": monthly_vol.values,
+            "months_after_peak": range(len(monthly_vol)),
+        }
+    )
     if peak_vol > 0:
         path["vol_change_pct"] = (path["vol_ma30"] - peak_vol) / peak_vol * 100
     else:
@@ -173,7 +178,7 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
     print("  (按月采样，相对峰值价格的累计跌幅%)")
     print()
     print("  {:>6} | {:>30}".format("月份", "周期1 / 周期2 / 周期3"))
-    print("  {} | {}".format("-"*6, "-"*30))
+    print("  {} | {}".format("-" * 6, "-" * 30))
 
     paths_drawdown = {}
     for cyc in HISTORICAL_CYCLES[:3]:  # 前3个完整周期
@@ -206,15 +211,18 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
         if vals:
             avg = np.mean(vals)
             avg_drawdowns.append(avg)
-            print("    月{:>2}: 平均 {:+.1f}% (范围 {:+.1f}% ~ {:+.1f}%)".format(
-                m, avg, min(vals), max(vals)))
+            print(
+                "    月{:>2}: 平均 {:+.1f}% (范围 {:+.1f}% ~ {:+.1f}%)".format(
+                    m, avg, min(vals), max(vals)
+                )
+            )
 
     # 2. 成交量（市值代理）变化
     print("\n【2. 历次周期顶到底的成交量变化】")
     print("  (30日均量，相对量能峰值的变化%)")
     print()
     print("  {:>6} | {:>30}".format("月份", "周期1 / 周期2 / 周期3"))
-    print("  {} | {}".format("-"*6, "-"*30))
+    print("  {} | {}".format("-" * 6, "-" * 30))
 
     paths_vol = {}
     for cyc in HISTORICAL_CYCLES[:3]:
@@ -234,9 +242,12 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
         if vals:
             avg = np.mean(vals)
             avg_vol_changes.append(avg)
-            print("  {:>6} | {:>30}".format(
-                m,
-                " / ".join(["{:+.1f}%".format(v) if not np.isnan(v) else "N/A" for v in vals])))
+            print(
+                "  {:>6} | {:>30}".format(
+                    m,
+                    " / ".join(["{:+.1f}%".format(v) if not np.isnan(v) else "N/A" for v in vals]),
+                )
+            )
 
     # 3. 周期相似性：当前周期 vs 历史周期
     print("\n【3. 当前周期（第4周期）与历史周期相似性】")
@@ -257,7 +268,11 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
         current_price = prices["close"].iloc[-1]
         current_drawdown = (current_price - current_peak_price) / current_peak_price * 100
 
-        print("  当前周期峰值: ${:,.0f} ({})".format(current_peak_price, str(current_peak_date.date())))
+        print(
+            "  当前周期峰值: ${:,.0f} ({})".format(
+                current_peak_price, str(current_peak_date.date())
+            )
+        )
         print("  当前价格: ${:,.0f}".format(current_price))
         print("  距峰值月数: {:.1f}".format(months_since_peak))
         print("  当前累计跌幅: {:+.1f}%".format(current_drawdown))
@@ -265,9 +280,12 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
         # 与历史周期同月数对比
         print()
         print("  与历史周期同月数对比:")
-        print("  {:>6} | {:>20} | {:>20} | {:>15}".format(
-            "月数", "当前跌幅", "历史平均跌幅", "相似度"))
-        print("  {} | {} | {} | {}".format("-"*6, "-"*20, "-"*20, "-"*15))
+        print(
+            "  {:>6} | {:>20} | {:>20} | {:>15}".format(
+                "月数", "当前跌幅", "历史平均跌幅", "相似度"
+            )
+        )
+        print("  {} | {} | {} | {}".format("-" * 6, "-" * 20, "-" * 20, "-" * 15))
 
         m_int = int(months_since_peak)
         similarities = []
@@ -296,8 +314,11 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
                 diff = abs(current_dd - hist_avg)
                 sim = max(0.0, 1.0 - diff / 100.0)
                 similarities.append((m, current_dd, hist_avg, sim))
-                print("  {:>6} | {:+.1f}%            | {:+.1f}%             | {:.2f}".format(
-                    m, current_dd, hist_avg, sim))
+                print(
+                    "  {:>6} | {:+.1f}%            | {:+.1f}%             | {:.2f}".format(
+                        m, current_dd, hist_avg, sim
+                    )
+                )
 
         # 整体相似度评分（最近3个月的平均）
         if len(similarities) >= 1:
@@ -343,11 +364,17 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
         else:
             acc_vol = 0
 
-        print("  周期{}: 牛市量能中位数 {:,.0f} | 熊市 {:,.0f} | 累积 {:,.0f}".format(
-            cyc["cycle"], bull_vol, bear_vol, acc_vol))
+        print(
+            "  周期{}: 牛市量能中位数 {:,.0f} | 熊市 {:,.0f} | 累积 {:,.0f}".format(
+                cyc["cycle"], bull_vol, bear_vol, acc_vol
+            )
+        )
         if bull_vol > 0:
-            print("         熊市/牛市 = {:.2f}x | 累积/牛市 = {:.2f}x".format(
-                bear_vol / bull_vol, acc_vol / bull_vol if bull_vol > 0 else 0))
+            print(
+                "         熊市/牛市 = {:.2f}x | 累积/牛市 = {:.2f}x".format(
+                    bear_vol / bull_vol, acc_vol / bull_vol if bull_vol > 0 else 0
+                )
+            )
 
     # 5. 特征设计建议
     print("\n【5. 增强型周期特征设计建议】")
@@ -388,7 +415,7 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
         "months_since_peak": float(months_since_peak) if current_peak_date else None,
     }
 
-    if 'similarities' in dir() and similarities:
+    if "similarities" in dir() and similarities:
         result["similarities"] = [
             {"month": m, "current_dd": cdd, "hist_avg_dd": hdd, "similarity": s}
             for m, cdd, hdd, s in similarities
@@ -405,6 +432,7 @@ def analyze_cycle_similarity(prices: pd.DataFrame):
 
 if __name__ == "__main__":
     prices = load_btc_data()
-    print("数据: {}天, {} ~ {}\n".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "数据: {}天, {} ~ {}\n".format(len(prices), prices.index[0].date(), prices.index[-1].date())
+    )
     analyze_cycle_similarity(prices)

@@ -2,6 +2,7 @@
 
 SDK 轨所有 collector 继承此类，设置 source/category 并实现 fetch() -> list[DataRecord]。
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

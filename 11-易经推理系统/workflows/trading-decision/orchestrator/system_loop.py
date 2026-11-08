@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-
 LoopRunner = Callable[..., Dict[str, Any]]
 
 
@@ -48,16 +47,24 @@ def _loop_failed(loop_output: Dict[str, Any]) -> bool:
     return False
 
 
-def _collect_metrics(trace_id: str, loops: Dict[str, Dict[str, Any]], message_count: int) -> Dict[str, Any]:
+def _collect_metrics(
+    trace_id: str, loops: Dict[str, Dict[str, Any]], message_count: int
+) -> Dict[str, Any]:
     loop_count = len(loops)
     failure_distribution = {name: int(_loop_failed(output)) for name, output in loops.items()}
     success_count = loop_count - sum(failure_distribution.values())
     retry_count = 0
     for output in loops.values():
         stage_outputs = output.get("stage_outputs") or {}
-        retry_count += sum(1 for key in stage_outputs.keys() if "retry" in key.lower() or "recheck" in key.lower())
+        retry_count += sum(
+            1 for key in stage_outputs.keys() if "retry" in key.lower() or "recheck" in key.lower()
+        )
     avg_duration_ms = 0
-    known_durations = [int(output.get("duration_ms") or 0) for output in loops.values() if int(output.get("duration_ms") or 0) > 0]
+    known_durations = [
+        int(output.get("duration_ms") or 0)
+        for output in loops.values()
+        if int(output.get("duration_ms") or 0) > 0
+    ]
     if known_durations:
         avg_duration_ms = int(sum(known_durations) / len(known_durations))
     return {
@@ -108,7 +115,9 @@ def run_system_loop(
     base = Path(output_dir) if output_dir is not None else Path("artifacts/trading")
     base.mkdir(parents=True, exist_ok=True)
     metrics_path = base / f"system_metrics_{trace_id}.json"
-    metrics_path.write_text(json.dumps(metrics, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    metrics_path.write_text(
+        json.dumps(metrics, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     return {
         "trace_id": trace_id,

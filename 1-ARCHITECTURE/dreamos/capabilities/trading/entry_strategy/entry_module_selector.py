@@ -30,7 +30,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("entry_module_selector")
 
@@ -39,14 +39,16 @@ logger = logging.getLogger("entry_module_selector")
 # 数据结构
 # ============================================================
 
+
 @dataclass
 class EntryModuleChoice:
     """入场模块选择结果"""
-    module_name: str                 # 被选中的模块名
-    score: float = 0.0               # 综合得分 [0, 1]
-    confidence: float = 0.0          # 选择置信度（L0~L3 层级决定）
-    fallback_level: int = 3          # 0=L0 精确, 1=L1, 2=L2, 3=L3默认, 5=场景强降级
-    source_scenario: str = ""        # 命中的场景（精确/趋势×波动率/趋势）
+
+    module_name: str  # 被选中的模块名
+    score: float = 0.0  # 综合得分 [0, 1]
+    confidence: float = 0.0  # 选择置信度（L0~L3 层级决定）
+    fallback_level: int = 3  # 0=L0 精确, 1=L1, 2=L2, 3=L3默认, 5=场景强降级
+    source_scenario: str = ""  # 命中的场景（精确/趋势×波动率/趋势）
     top_modules: List[Tuple[str, float]] = None  # 前3模块，调试用
 
     def __post_init__(self):
@@ -56,18 +58,19 @@ class EntryModuleChoice:
 
 # 默认优先级（无回测数据时 L3 fallback）
 DEFAULT_MODULE_PRIORITY: List[str] = [
-    "scenario_ema",   # 0. 基线最稳
-    "s3_trend",       # 1. 三屏趋势（多周期共振稳）
-    "a2_fusion",      # 2. A2 综合（跨链融合）
-    "c2_momentum",    # 3. C2 动量
-    "yj_infer",       # 4. 易经推理
-    "martin_v15",     # 5. 马丁 V15（仅震荡+特定触发，排最后）
+    "scenario_ema",  # 0. 基线最稳
+    "s3_trend",  # 1. 三屏趋势（多周期共振稳）
+    "a2_fusion",  # 2. A2 综合（跨链融合）
+    "c2_momentum",  # 3. C2 动量
+    "yj_infer",  # 4. 易经推理
+    "martin_v15",  # 5. 马丁 V15（仅震荡+特定触发，排最后）
 ]
 
 
 # ============================================================
 # 选择器
 # ============================================================
+
 
 class EntryModuleSelector:
     """入场模块择优选择器
@@ -89,8 +92,10 @@ class EntryModuleSelector:
         if not memory_path:
             memory_path = os.environ.get(
                 "DREAMOS_ENTRY_PERF_MEMORY",
-                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                             "core/memory/entry_performance_memory.json")
+                os.path.join(
+                    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                    "core/memory/entry_performance_memory.json",
+                ),
             )
         self.memory_path = memory_path
         self.min_trades_l0 = min_trades_l0
@@ -115,7 +120,10 @@ class EntryModuleSelector:
     def get_adapter(self, module_name: str):
         """获取入场模块适配器实例（None 则走 fallback 基线）"""
         try:
-            from dreamos.capabilities.trading.entry_strategy.entry_module_adapter import create_entry_adapter
+            from dreamos.capabilities.trading.entry_strategy.entry_module_adapter import (
+                create_entry_adapter,
+            )
+
             return create_entry_adapter(module_name)
         except Exception as e:
             logger.debug(f"获取入场适配器 {module_name} 失败: {e}")
@@ -158,7 +166,9 @@ class EntryModuleSelector:
         if is_ranging:
             return EntryModuleChoice(
                 module_name="scenario_ema",
-                score=0.0, confidence=0.45, fallback_level=5,
+                score=0.0,
+                confidence=0.45,
+                fallback_level=5,
                 source_scenario=f"override_low_vol_ranging({scenario_id})",
             )
         return None
@@ -185,8 +195,12 @@ class EntryModuleSelector:
             if top:
                 name, score = top[0]
                 return EntryModuleChoice(
-                    module_name=name, score=score, confidence=0.9, fallback_level=0,
-                    source_scenario=f"L0精确({scenario_id})", top_modules=top,
+                    module_name=name,
+                    score=score,
+                    confidence=0.9,
+                    fallback_level=0,
+                    source_scenario=f"L0精确({scenario_id})",
+                    top_modules=top,
                 )
 
         # L1: 趋势 × 波动率
@@ -210,8 +224,12 @@ class EntryModuleSelector:
             if top:
                 name, score = top[0]
                 return EntryModuleChoice(
-                    module_name=name, score=score, confidence=0.7, fallback_level=1,
-                    source_scenario=f"L1趋势×波动率({l1_key})", top_modules=top,
+                    module_name=name,
+                    score=score,
+                    confidence=0.7,
+                    fallback_level=1,
+                    source_scenario=f"L1趋势×波动率({l1_key})",
+                    top_modules=top,
                 )
 
         # L2: 仅趋势
@@ -234,8 +252,12 @@ class EntryModuleSelector:
             if top:
                 name, score = top[0]
                 return EntryModuleChoice(
-                    module_name=name, score=score, confidence=0.5, fallback_level=2,
-                    source_scenario=f"L2仅趋势({trend})", top_modules=top,
+                    module_name=name,
+                    score=score,
+                    confidence=0.5,
+                    fallback_level=2,
+                    source_scenario=f"L2仅趋势({trend})",
+                    top_modules=top,
                 )
 
         # L3: 默认优先级（无回测数据）
@@ -244,13 +266,19 @@ class EntryModuleSelector:
     def _default_choice(self, reason: str) -> EntryModuleChoice:
         for name in DEFAULT_MODULE_PRIORITY:
             adapter = self.get_adapter(name)
-            if adapter is not None and getattr(adapter, 'is_available', True):
+            if adapter is not None and getattr(adapter, "is_available", True):
                 return EntryModuleChoice(
-                    module_name=name, score=0.0, confidence=0.3, fallback_level=3,
+                    module_name=name,
+                    score=0.0,
+                    confidence=0.3,
+                    fallback_level=3,
                     source_scenario=f"L3默认({reason})",
                 )
         return EntryModuleChoice(
-            module_name="scenario_ema", score=0.0, confidence=0.0, fallback_level=3,
+            module_name="scenario_ema",
+            score=0.0,
+            confidence=0.0,
+            fallback_level=3,
             source_scenario=f"L3保底({reason})",
         )
 
@@ -265,7 +293,8 @@ class EntryModuleSelector:
         for r in records:
             m = self._metrics_from_record(r)
             t = int(r.get("trades") or 0) or 1
-            w_sum += t; t_sum += t
+            w_sum += t
+            t_sum += t
             s_sum += m["sharpe"] * t
             r_sum += m["return"] * t
             dd_sum += m["max_dd"] * t
@@ -299,7 +328,7 @@ class EntryModuleSelector:
         def _norm(vals: List[float], higher_better: bool) -> Dict[float, float]:
             mn, mx = min(vals), max(vals)
             if abs(mx - mn) < 1e-9:
-                return {v: 0.5 for v in vals}
+                return dict.fromkeys(vals, 0.5)
             if higher_better:
                 return {v: (v - mn) / (mx - mn) for v in vals}
             return {v: (mx - v) / (mx - mn) for v in vals}

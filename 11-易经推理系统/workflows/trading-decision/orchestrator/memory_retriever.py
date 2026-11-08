@@ -19,14 +19,21 @@ if str(_SCRIPTS_ROOT) not in sys.path:
 
 def _safe_retrieve(stage_id: str, payload: Dict[str, Any], topk: int) -> List[Dict[str, Any]]:
     """Internal retrieval logic (called inside a try/except by the public API)."""
-    from scripts.memory_l4.index_builder import default_index_path, load_cases, load_distills, load_episodes_for_cases, build_index_data
-    from scripts.memory_l4.query_similar import query_similar_cases, query_by_regime_and_outcome
+    from scripts.memory_l4.index_builder import (
+        build_index_data,
+        default_index_path,
+        load_cases,
+        load_distills,
+        load_episodes_for_cases,
+    )
+    from scripts.memory_l4.query_similar import query_by_regime_and_outcome, query_similar_cases
 
     index_path = default_index_path()
     index_data = None
 
     if index_path.exists():
         import json
+
         try:
             index_data = json.loads(index_path.read_text(encoding="utf-8"))
         except Exception:
@@ -40,6 +47,7 @@ def _safe_retrieve(stage_id: str, payload: Dict[str, Any], topk: int) -> List[Di
         distills = load_distills()
         episodes = load_episodes_for_cases(cases)
         from datetime import datetime
+
         ts = datetime.now().astimezone().isoformat(timespec="seconds")
         index_data = build_index_data(ts, cases, distills, episodes)
 

@@ -3,7 +3,14 @@
 OKX 现货执行层 - 双账户版
 支持 Agent A / Agent B 两个独立账户
 """
-import os, json, time, hmac, base64, hashlib, requests
+
+import os  # noqa: I001
+import json
+import time
+import hmac
+import base64
+import hashlib
+import requests
 from typing import Dict, Optional
 from dotenv import load_dotenv
 
@@ -15,23 +22,25 @@ BASE_URL = "https://www.okx.com"
 # 如果未设置则不走代理（服务器环境直连）
 _PROXIES: Optional[Dict] = None
 _https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
-_http_proxy  = os.environ.get("HTTP_PROXY")  or os.environ.get("http_proxy")
+_http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
 if _https_proxy or _http_proxy:
     _PROXIES = {}
-    if _https_proxy: _PROXIES["https"] = _https_proxy
-    if _http_proxy:  _PROXIES["http"]  = _http_proxy
+    if _https_proxy:
+        _PROXIES["https"] = _https_proxy
+    if _http_proxy:
+        _PROXIES["http"] = _http_proxy
 
 
 class OKXSpotClient:
     def __init__(self, agent_id: str):
         prefix = f"AGENT_{agent_id.upper()}_OKX"
-        self.api_key     = os.environ[f"{prefix}_KEY"]
-        self.secret_key  = os.environ[f"{prefix}_SECRET"]
-        self.passphrase  = os.environ[f"{prefix}_PASSPHRASE"]
-        self.agent_id    = agent_id
+        self.api_key = os.environ[f"{prefix}_KEY"]
+        self.secret_key = os.environ[f"{prefix}_SECRET"]
+        self.passphrase = os.environ[f"{prefix}_PASSPHRASE"]
+        self.agent_id = agent_id
 
     def _headers(self, method: str, path: str, body: str = "") -> Dict:
-        ts = time.strftime('%Y-%m-%dT%H:%M:%S.000Z', time.gmtime())
+        ts = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
         msg = ts + method + path + body
         sign = base64.b64encode(
             hmac.new(self.secret_key.encode(), msg.encode(), hashlib.sha256).digest()
@@ -49,16 +58,24 @@ class OKXSpotClient:
         if params:
             qs = "&".join(f"{k}={v}" for k, v in params.items())
             sign_path = f"{path}?{qs}"
-        resp = requests.get(BASE_URL + path, params=params,
-                            headers=self._headers("GET", sign_path),
-                            proxies=_PROXIES, timeout=15)
+        resp = requests.get(
+            BASE_URL + path,
+            params=params,
+            headers=self._headers("GET", sign_path),
+            proxies=_PROXIES,
+            timeout=15,
+        )
         return resp.json()
 
     def _post(self, path: str, body: Dict) -> Dict:
         body_str = json.dumps(body)
-        resp = requests.post(BASE_URL + path, data=body_str,
-                             headers=self._headers("POST", path, body_str),
-                             proxies=_PROXIES, timeout=15)
+        resp = requests.post(
+            BASE_URL + path,
+            data=body_str,
+            headers=self._headers("POST", path, body_str),
+            proxies=_PROXIES,
+            timeout=15,
+        )
         return resp.json()
 
     # ── 账户信息 ──────────────────────────────────────────────────
@@ -102,24 +119,25 @@ class OKXSpotClient:
 
     # ── 下单 ──────────────────────────────────────────────────────
 
-    def market_buy(self, inst_id: str, usdt_amount: float,
-                   tag: str = "ab_experiment") -> Dict:
+    def market_buy(self, inst_id: str, usdt_amount: float, tag: str = "ab_experiment") -> Dict:
         """市价买入，指定 USDT 金额"""
         body = {
             "instId": inst_id,
             "tdMode": "cash",
             "side": "buy",
             "ordType": "market",
-            "tgtCcy": "quote_ccy",   # 以 USDT 计量
+            "tgtCcy": "quote_ccy",  # 以 USDT 计量
             "sz": str(round(usdt_amount, 2)),
             "tag": tag,
         }
         r = self._post("/api/v5/trade/order", body)
-        return {"ok": r.get("code") == "0", "raw": r,
-                "ord_id": r["data"][0]["ordId"] if r.get("code") == "0" else None}
+        return {
+            "ok": r.get("code") == "0",
+            "raw": r,
+            "ord_id": r["data"][0]["ordId"] if r.get("code") == "0" else None,
+        }
 
-    def market_sell(self, inst_id: str, btc_amount: float,
-                    tag: str = "ab_experiment") -> Dict:
+    def market_sell(self, inst_id: str, btc_amount: float, tag: str = "ab_experiment") -> Dict:
         """市价卖出，指定 BTC 数量"""
         body = {
             "instId": inst_id,
@@ -130,11 +148,15 @@ class OKXSpotClient:
             "tag": tag,
         }
         r = self._post("/api/v5/trade/order", body)
-        return {"ok": r.get("code") == "0", "raw": r,
-                "ord_id": r["data"][0]["ordId"] if r.get("code") == "0" else None}
+        return {
+            "ok": r.get("code") == "0",
+            "raw": r,
+            "ord_id": r["data"][0]["ordId"] if r.get("code") == "0" else None,
+        }
 
-    def limit_buy(self, inst_id: str, usdt_amount: float, price: float,
-                  tag: str = "ab_experiment") -> Dict:
+    def limit_buy(
+        self, inst_id: str, usdt_amount: float, price: float, tag: str = "ab_experiment"
+    ) -> Dict:
         btc_sz = round(usdt_amount / price, 8)
         body = {
             "instId": inst_id,
@@ -146,8 +168,11 @@ class OKXSpotClient:
             "tag": tag,
         }
         r = self._post("/api/v5/trade/order", body)
-        return {"ok": r.get("code") == "0", "raw": r,
-                "ord_id": r["data"][0]["ordId"] if r.get("code") == "0" else None}
+        return {
+            "ok": r.get("code") == "0",
+            "raw": r,
+            "ord_id": r["data"][0]["ordId"] if r.get("code") == "0" else None,
+        }
 
     def get_order(self, inst_id: str, ord_id: str) -> Dict:
         r = self._get("/api/v5/trade/order", {"instId": inst_id, "ordId": ord_id})
@@ -155,20 +180,21 @@ class OKXSpotClient:
             return {"ok": False, "error": r}
         d = r["data"][0]
         return {
-            "ok": True, "ord_id": ord_id,
-            "state": d["state"],       # live / filled / canceled
+            "ok": True,
+            "ord_id": ord_id,
+            "state": d["state"],  # live / filled / canceled
             "filled_sz": float(d.get("fillSz", 0)),
             "avg_px": float(d.get("avgPx", 0) or 0),
         }
 
     def cancel_order(self, inst_id: str, ord_id: str) -> Dict:
-        r = self._post("/api/v5/trade/cancel-order",
-                       {"instId": inst_id, "ordId": ord_id})
+        r = self._post("/api/v5/trade/cancel-order", {"instId": inst_id, "ordId": ord_id})
         return {"ok": r.get("code") == "0", "raw": r}
 
 
 if __name__ == "__main__":
     import sys
+
     agent_id = sys.argv[1] if len(sys.argv) > 1 else "a"
     client = OKXSpotClient(agent_id)
     bal = client.get_balance()

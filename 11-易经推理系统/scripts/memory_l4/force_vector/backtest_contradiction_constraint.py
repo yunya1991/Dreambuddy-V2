@@ -12,18 +12,16 @@
 净收益 = TP平均亏损金额 - FP平均盈利金额（被拦截交易的盈亏差）
 最优参数 = 净收益最大化 + FN最小化
 """
-from __future__ import annotations
 
-import csv
+from __future__ import annotations  # noqa: I001
+
 import glob
 import json
 import os
 import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
-
-import pandas as pd
 
 # 路径设置
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -38,6 +36,7 @@ for _p in (_BDSM_DIR, _BASE_11, os.path.join(_BASE_11, "scripts", "memory_l4", "
 @dataclass
 class SnapshotRecord:
     """单条快照信号记录。"""
+
     date: str
     coin: str
     bds_score: float
@@ -51,6 +50,7 @@ class SnapshotRecord:
 @dataclass
 class TradeRecord:
     """单条历史交易记录。"""
+
     case_id: str
     coin: str
     trade_date: str
@@ -66,16 +66,18 @@ def load_snapshot_records() -> list[SnapshotRecord]:
         date = os.path.basename(sf).replace("bdsm_snapshot_", "").replace(".json", "")
         for coin, c in d.get("coins", {}).items():
             ve = c.get("value_exit") or {}
-            records.append(SnapshotRecord(
-                date=date,
-                coin=coin,
-                bds_score=float(c.get("bds_score", 0.0) or 0.0),
-                confidence=float(c.get("confidence", 0.0) or 0.0),
-                data_quality=str(c.get("data_quality", "insufficient")),
-                direction_old=str(c.get("direction_constraint", "NEUTRAL")),
-                value_exit_action=str(ve.get("action", "none") or "none"),
-                valuation_percentile=float(c.get("valuation_percentile", 50.0) or 50.0),
-            ))
+            records.append(
+                SnapshotRecord(
+                    date=date,
+                    coin=coin,
+                    bds_score=float(c.get("bds_score", 0.0) or 0.0),
+                    confidence=float(c.get("confidence", 0.0) or 0.0),
+                    data_quality=str(c.get("data_quality", "insufficient")),
+                    direction_old=str(c.get("direction_constraint", "NEUTRAL")),
+                    value_exit_action=str(ve.get("action", "none") or "none"),
+                    valuation_percentile=float(c.get("valuation_percentile", 50.0) or 50.0),
+                )
+            )
     return records
 
 
@@ -101,19 +103,22 @@ def load_trade_records() -> list[TradeRecord]:
             what = mistakes[0].get("what", "")
             # 格式: "交易亏损 -3.5%" 或 "交易盈利 2.1%"
             import re
+
             m = re.search(r"(-?[\d.]+)%", what)
             if m:
                 pnl_pct = float(m.group(1))
                 if "亏损" in what and pnl_pct > 0:
                     pnl_pct = -pnl_pct
 
-        records.append(TradeRecord(
-            case_id=case_id,
-            coin=coin,
-            trade_date=trade_date,
-            direction=direction,
-            pnl_pct=pnl_pct,
-        ))
+        records.append(
+            TradeRecord(
+                case_id=case_id,
+                coin=coin,
+                trade_date=trade_date,
+                direction=direction,
+                pnl_pct=pnl_pct,
+            )
+        )
     return records
 
 
@@ -138,18 +143,10 @@ def compute_direction_v2_with_params(
     if bds_score < -effective_threshold:
         return "SHORT_ONLY"
 
-    if (
-        value_exit_action == "full_exit"
-        and bds_score < 0.0
-        and confidence >= l2_conf_threshold
-    ):
+    if value_exit_action == "full_exit" and bds_score < 0.0 and confidence >= l2_conf_threshold:
         return "LONG_BLOCKED"
 
-    if (
-        valuation_percentile > l3_val_threshold
-        and bds_score < 0.0
-        and data_quality == "sufficient"
-    ):
+    if valuation_percentile > l3_val_threshold and bds_score < 0.0 and data_quality == "sufficient":
         return "LONG_BLOCKED"
 
     return "NEUTRAL"
@@ -319,27 +316,37 @@ def main() -> None:
 
     # 输出 Top 10
     print("\nTop 10 参数组合（按净收益排序）:")
-    print(f"{'排名':<4} {'base':<6} {'disc':<6} {'l2c':<6} {'l3v':<6} {'TP':<4} {'FP':<4} {'FN':<4} {'TN':<4} {'精确率':<8} {'召回率':<8} {'净收益':<10}")
+    print(
+        f"{'排名':<4} {'base':<6} {'disc':<6} {'l2c':<6} {'l3v':<6} {'TP':<4} {'FP':<4} {'FN':<4} {'TN':<4} {'精确率':<8} {'召回率':<8} {'净收益':<10}"
+    )
     for i, r in enumerate(results[:10]):
         p = r["params"]
-        print(f"{i+1:<4} {p['base_threshold']:<6} {p['conf_discount']:<6} {p['l2_conf_threshold']:<6} {p['l3_val_threshold']:<6} "
-              f"{r['tp']:<4} {r['fp']:<4} {r['fn']:<4} {r['tn']:<4} {r['precision']:<8.2%} {r['recall']:<8.2%} {r['net_benefit_pct']:<10.2f}")
+        print(
+            f"{i+1:<4} {p['base_threshold']:<6} {p['conf_discount']:<6} {p['l2_conf_threshold']:<6} {p['l3_val_threshold']:<6} "
+            f"{r['tp']:<4} {r['fp']:<4} {r['fn']:<4} {r['tn']:<4} {r['precision']:<8.2%} {r['recall']:<8.2%} {r['net_benefit_pct']:<10.2f}"
+        )
 
     # 推荐参数
     print("\n" + "=" * 80)
     best = results[0]
     p = best["params"]
-    print(f"推荐参数: base={p['base_threshold']}, disc={p['conf_discount']}, "
-          f"l2c={p['l2_conf_threshold']}, l3v={p['l3_val_threshold']}")
+    print(
+        f"推荐参数: base={p['base_threshold']}, disc={p['conf_discount']}, "
+        f"l2c={p['l2_conf_threshold']}, l3v={p['l3_val_threshold']}"
+    )
     print(f"  TP={best['tp']} FP={best['fp']} FN={best['fn']} TN={best['tn']}")
     print(f"  精确率={best['precision']:.2%} 召回率={best['recall']:.2%}")
     print(f"  净收益={best['net_benefit_pct']:.2f}%")
 
     # 与当前参数对比
     if best["net_benefit_pct"] > baseline["net_benefit_pct"]:
-        print(f"\n✓ 推荐参数比当前参数净收益提升: {best['net_benefit_pct'] - baseline['net_benefit_pct']:.2f}%")
+        print(
+            f"\n✓ 推荐参数比当前参数净收益提升: {best['net_benefit_pct'] - baseline['net_benefit_pct']:.2f}%"
+        )
     else:
-        print(f"\n当前参数已是最优或接近最优（差异: {best['net_benefit_pct'] - baseline['net_benefit_pct']:.2f}%）")
+        print(
+            f"\n当前参数已是最优或接近最优（差异: {best['net_benefit_pct'] - baseline['net_benefit_pct']:.2f}%）"
+        )
 
 
 if __name__ == "__main__":

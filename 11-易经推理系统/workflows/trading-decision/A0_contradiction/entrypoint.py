@@ -1,6 +1,6 @@
 import importlib.util
-from typing import Any, Dict, List
 from pathlib import Path
+from typing import Any, Dict, List
 
 
 def _load_protocol_module():
@@ -22,11 +22,11 @@ def run_a0_contradiction_analysis(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     result = proto.ensure_contract_fields(
         {
-        "stage_id": "A0",
-        "trace_id": payload.get("trace_id"),
-        "primary_contradiction": primary,
-        "direction": direction,
-        "total_contradictions": len(items),
+            "stage_id": "A0",
+            "trace_id": payload.get("trace_id"),
+            "primary_contradiction": primary,
+            "direction": direction,
+            "total_contradictions": len(items),
         },
         producer="workflows/trading-decision/A0_contradiction",
     )

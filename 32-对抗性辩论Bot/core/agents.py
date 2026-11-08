@@ -5,6 +5,7 @@
 - LLM 调用 → JSON 解析 → 失败重试 1 次 → FAIL-OPEN 兜底
 - 上下文注入：transcript 对方上轮 + background + injected_views
 """
+
 from __future__ import annotations
 
 import logging
@@ -13,8 +14,9 @@ from typing import Protocol
 from core.models import Argument, Turn, Verdict
 from core.profiles import DebateProfile, get_profile
 from core.prompts import (
-    build_user_prompt, build_cross_exam_question_prompt,
     build_cross_exam_answer_prompt,
+    build_cross_exam_question_prompt,
+    build_user_prompt,
 )
 from core.robust_json import extract_json_object
 
@@ -24,8 +26,7 @@ logger = logging.getLogger("debate.agents")
 class LLMClient(Protocol):
     """LLM 客户端接口（duck-typed）。"""
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
         """调用 LLM，返回文本响应。"""
         ...
 
@@ -90,9 +91,14 @@ def _string_list(value: object, limit: int) -> list[str]:
 class BaseAgent:
     """辩手基类：立场 prompt + LLM 调用 + JSON 解析 + 重试 + FAIL-OPEN。"""
 
-    def __init__(self, llm_client: LLMClient, system_prompt: str,
-                 side: str, max_tokens: int = 2000,
-                 profile: DebateProfile | str | None = None):
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        system_prompt: str,
+        side: str,
+        max_tokens: int = 2000,
+        profile: DebateProfile | str | None = None,
+    ):
         self.llm = llm_client
         self.system_prompt = system_prompt
         self.side = side  # 'bull' or 'bear'
@@ -102,12 +108,16 @@ class BaseAgent:
         self.profile = get_profile(profile)
 
     async def _chat_json(
-        self, system_prompt: str, user_prompt: str,
+        self,
+        system_prompt: str,
+        user_prompt: str,
     ) -> dict | None:
         """调用 LLM 并解析 JSON；失败重试 1 次，仍失败返回 None。"""
         try:
             raw = await self.llm.chat(
-                system_prompt, user_prompt, self.max_tokens,
+                system_prompt,
+                user_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("%s 交叉质询 LLM 调用异常: %s", self.side, e)
@@ -122,7 +132,9 @@ class BaseAgent:
         )
         try:
             raw2 = await self.llm.chat(
-                system_prompt, retry_prompt, self.max_tokens,
+                system_prompt,
+                retry_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("%s 交叉质询重试异常: %s", self.side, e)
@@ -130,7 +142,9 @@ class BaseAgent:
         return extract_json_object(raw2)
 
     async def cross_examine(
-        self, topic: str, transcript: list[Turn],
+        self,
+        topic: str,
+        transcript: list[Turn],
         background: str = "",
         injected_views: list[str] | None = None,
     ) -> list[str]:
@@ -138,11 +152,15 @@ class BaseAgent:
         opponent_last = _get_opponent_thesis(transcript, self.side)
         opponent_label = "反方" if self.side == "bull" else "正方"
         user_prompt = build_cross_exam_question_prompt(
-            topic, opponent_last, background, injected_views,
+            topic,
+            opponent_last,
+            background,
+            injected_views,
             opponent_label=opponent_label,
         )
         system_prompt = self.profile.question_system.format(
-            side_name=self.side_name, stance=self.stance,
+            side_name=self.side_name,
+            stance=self.stance,
         )
         data = await self._chat_json(system_prompt, user_prompt)
         if data is None:
@@ -151,7 +169,10 @@ class BaseAgent:
         return _string_list(data.get("questions"), limit=3)
 
     async def answer_cross(
-        self, topic: str, questions: list[str], transcript: list[Turn],
+        self,
+        topic: str,
+        questions: list[str],
+        transcript: list[Turn],
         background: str = "",
         injected_views: list[str] | None = None,
     ) -> list[str]:
@@ -159,36 +180,48 @@ class BaseAgent:
         if not questions:
             return []
         user_prompt = build_cross_exam_answer_prompt(
-            topic, questions, background, injected_views,
+            topic,
+            questions,
+            background,
+            injected_views,
         )
         system_prompt = self.profile.answer_system.format(
-            side_name=self.side_name, stance=self.stance,
+            side_name=self.side_name,
+            stance=self.stance,
         )
         data = await self._chat_json(system_prompt, user_prompt)
         answers = (
-            _string_list(data.get("answers"), limit=len(questions))
-            if data is not None else []
+            _string_list(data.get("answers"), limit=len(questions)) if data is not None else []
         )
         # 解析失败/数量不足时补齐，保证 answers 与 questions 一一对应
         if len(answers) < len(questions):
             answers += ["（本方未能回答）"] * (len(questions) - len(answers))
-        return answers[:len(questions)]
+        return answers[: len(questions)]
 
-    async def _speak(self, topic: str, transcript: list[Turn],
-                     background: str = "",
-                     injected_views: list[str] | None = None) -> Argument:
+    async def _speak(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
         """核心逻辑：构建 prompt → LLM 调用 → JSON 解析 → 重试 → 兜底。"""
         opponent_last = _get_opponent_thesis(transcript, self.side)
         opponent_label = "反方" if self.side == "bull" else "正方"
         user_prompt = build_user_prompt(
-            topic, opponent_last, background, injected_views,
+            topic,
+            opponent_last,
+            background,
+            injected_views,
             opponent_label=opponent_label,
         )
 
         # 第一次调用
         try:
             raw = await self.llm.chat(
-                self.system_prompt, user_prompt, self.max_tokens,
+                self.system_prompt,
+                user_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("%s 第一次 LLM 调用异常: %s", self.side, e)
@@ -205,7 +238,9 @@ class BaseAgent:
         )
         try:
             raw2 = await self.llm.chat(
-                self.system_prompt, retry_prompt, self.max_tokens,
+                self.system_prompt,
+                retry_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("%s 重试 LLM 调用异常: %s", self.side, e)
@@ -216,23 +251,31 @@ class BaseAgent:
             return arg2
 
         # 两次都失败 → FAIL-OPEN 兜底
-        logger.warning("%s 两次 JSON 解析均失败，返回兜底 Argument（raw=%r）",
-                       self.side, raw2[:300])
+        logger.warning(
+            "%s 两次 JSON 解析均失败，返回兜底 Argument（raw=%r）", self.side, raw2[:300]
+        )
         return Argument.fallback()
 
 
 class BullAgent(BaseAgent):
     """正方辩手：立场锁定为支持话题；profile 决定角色设定。"""
 
-    def __init__(self, llm_client: LLMClient, max_tokens: int = 600,
-                 profile: DebateProfile | str | None = None):
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        max_tokens: int = 600,
+        profile: DebateProfile | str | None = None,
+    ):
         p = get_profile(profile)
-        super().__init__(llm_client, p.bull_system_prompt, "bull",
-                         max_tokens, profile=p)
+        super().__init__(llm_client, p.bull_system_prompt, "bull", max_tokens, profile=p)
 
-    async def argue(self, topic: str, transcript: list[Turn],
-                    background: str = "",
-                    injected_views: list[str] | None = None) -> Argument:
+    async def argue(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
         """正方发言。"""
         return await self._speak(topic, transcript, background, injected_views)
 
@@ -240,20 +283,28 @@ class BullAgent(BaseAgent):
 class BearAgent(BaseAgent):
     """反方辩手：立场锁定为反对话题；profile 决定角色设定。"""
 
-    def __init__(self, llm_client: LLMClient, max_tokens: int = 600,
-                 profile: DebateProfile | str | None = None):
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        max_tokens: int = 600,
+        profile: DebateProfile | str | None = None,
+    ):
         p = get_profile(profile)
-        super().__init__(llm_client, p.bear_system_prompt, "bear",
-                         max_tokens, profile=p)
+        super().__init__(llm_client, p.bear_system_prompt, "bear", max_tokens, profile=p)
 
-    async def rebut(self, topic: str, transcript: list[Turn],
-                    background: str = "",
-                    injected_views: list[str] | None = None) -> Argument:
+    async def rebut(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
         """反方反驳。"""
         return await self._speak(topic, transcript, background, injected_views)
 
 
 # ─── JudgeAgent ───────────────────────────────────────────────────
+
 
 def _parse_verdict(raw: str) -> Verdict | None:
     """解析 LLM 输出为 Verdict，失败返回 None。"""
@@ -268,9 +319,7 @@ def _parse_verdict(raw: str) -> Verdict | None:
             winner = None
         feasibility_raw = data.get("feasibility")
         try:
-            feasibility = (
-                float(feasibility_raw) if feasibility_raw is not None else None
-            )
+            feasibility = float(feasibility_raw) if feasibility_raw is not None else None
         except (TypeError, ValueError):
             feasibility = None
         signal = data.get("signal")
@@ -317,22 +366,16 @@ def _build_judge_user_prompt(
         side_name = "正方" if speaker == "bull" else "反方"
         args = "；".join(turn.content.arguments[:2])
         parts.append(
-            f"【{side_name}·第{turn.round}轮】\n"
-            f"论点：{turn.content.thesis}\n"
-            f"论据：{args}\n"
+            f"【{side_name}·第{turn.round}轮】\n" f"论点：{turn.content.thesis}\n" f"论据：{args}\n"
         )
 
     text = "\n".join(parts)
     if len(text) > max_chars:
         text = text[:max_chars] + "\n...(已截断)"
     hint = output_hint or (
-        '{"summary":"...","winner":"bull|bear|null",'
-        '"key_insights":["..."],"topic_angle":"..."}'
+        '{"summary":"...","winner":"bull|bear|null",' '"key_insights":["..."],"topic_angle":"..."}'
     )
-    text += (
-        f"\n请只输出一个严格 JSON 对象：{hint}。"
-        "不要 markdown/代码围栏/解释文字。"
-    )
+    text += f"\n请只输出一个严格 JSON 对象：{hint}。" "不要 markdown/代码围栏/解释文字。"
     return text
 
 
@@ -387,8 +430,12 @@ class JudgeAgent:
         ),
     }
 
-    def __init__(self, llm_client: LLMClient, max_tokens: int = 1600,
-                 profile: DebateProfile | str | None = None):
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        max_tokens: int = 1600,
+        profile: DebateProfile | str | None = None,
+    ):
         self.llm = llm_client
         self.max_tokens = max_tokens
         self.profile = get_profile(profile)
@@ -396,14 +443,17 @@ class JudgeAgent:
     async def synthesize(self, topic: str, transcript: list[Turn]) -> Verdict:
         """综合双方论点，输出裁决。"""
         user_prompt = _build_judge_user_prompt(
-            topic, transcript,
+            topic,
+            transcript,
             output_hint=self._OUTPUT_HINTS.get(self.profile.name, ""),
         )
 
         # 第一次调用
         try:
             raw = await self.llm.chat(
-                self.profile.judge_system_prompt, user_prompt, self.max_tokens,
+                self.profile.judge_system_prompt,
+                user_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("Judge 第一次 LLM 调用异常: %s", e)
@@ -420,7 +470,9 @@ class JudgeAgent:
         )
         try:
             raw2 = await self.llm.chat(
-                self.profile.judge_system_prompt, retry_prompt, self.max_tokens,
+                self.profile.judge_system_prompt,
+                retry_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("Judge 重试 LLM 调用异常: %s", e)
@@ -431,6 +483,5 @@ class JudgeAgent:
             return verdict2
 
         # FAIL-OPEN 兜底
-        logger.warning("Judge 两次 JSON 解析均失败，使用规则降级裁决（raw=%r）",
-                       raw2[:300])
+        logger.warning("Judge 两次 JSON 解析均失败，使用规则降级裁决（raw=%r）", raw2[:300])
         return _fallback_verdict(transcript)

@@ -11,28 +11,30 @@ DreamOS C层 — Compute 执行层类型定义
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from enum import Enum
 from datetime import datetime
-
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 反射动作
 # ============================================================
 
+
 class ReflectAction(str, Enum):
     """反射决策的动作类型"""
-    CONTINUE = "continue"              # 继续 → 执行下一个节点
-    REDO = "redo"                       # 重做 → 重新执行当前节点
-    INSERT_BEFORE = "insert_before"     # 前插 → 插入新节点后继续
-    JUMP_TO = "jump_to"                # 跳转 → 跳到指定节点
-    EARLY_TERMINATE = "early_terminate" # 提前终止 → 结束执行
-    SKIP = "skip"                       # 跳过 → 跳过当前节点
+
+    CONTINUE = "continue"  # 继续 → 执行下一个节点
+    REDO = "redo"  # 重做 → 重新执行当前节点
+    INSERT_BEFORE = "insert_before"  # 前插 → 插入新节点后继续
+    JUMP_TO = "jump_to"  # 跳转 → 跳到指定节点
+    EARLY_TERMINATE = "early_terminate"  # 提前终止 → 结束执行
+    SKIP = "skip"  # 跳过 → 跳过当前节点
 
 
 # ============================================================
 # 反射决策
 # ============================================================
+
 
 @dataclass
 class ReflectDecision:
@@ -45,11 +47,12 @@ class ReflectDecision:
         - 是否需要跳转到其他节点？
         - 是否提前终止（已有足够信息）？
     """
+
     action: ReflectAction = ReflectAction.CONTINUE
     reason: str = ""
-    confidence: float = 0.0              # 对决策本身的置信度
+    confidence: float = 0.0  # 对决策本身的置信度
     insert_node_id: Optional[str] = None  # INSERT_BEFORE 时要插入的节点
-    jump_to: Optional[str] = None        # JUMP_TO 时要跳转到的节点
+    jump_to: Optional[str] = None  # JUMP_TO 时要跳转到的节点
     suggestions: List[str] = field(default_factory=list)
     extra: Dict[str, Any] = field(default_factory=dict)
 
@@ -76,11 +79,13 @@ class ReflectDecision:
 # 单节点执行记录
 # ============================================================
 
+
 @dataclass
 class NodeExecutionRecord:
     """单个节点的执行记录"""
+
     node_id: str
-    status: str = "success"              # success / failed / degraded / skipped
+    status: str = "success"  # success / failed / degraded / skipped
     confidence: float = 0.0
     direction: Optional[str] = None
     latency_ms: float = 0.0
@@ -109,6 +114,7 @@ class NodeExecutionRecord:
 # 执行报告 (C层最终输出)
 # ============================================================
 
+
 @dataclass
 class ExecutionReport:
     """执行报告 — C 层执行完毕后的完整报告
@@ -120,6 +126,7 @@ class ExecutionReport:
         - 最终聚合结果
         - Token 消耗统计
     """
+
     total_nodes: int = 0
     executed_nodes: int = 0
     success_nodes: int = 0
@@ -133,7 +140,7 @@ class ExecutionReport:
     total_tokens: int = 0
     total_latency_ms: float = 0.0
 
-    final_action: Optional[str] = None       # LONG / SHORT / HOLD
+    final_action: Optional[str] = None  # LONG / SHORT / HOLD
     final_confidence: float = 0.0
     final_direction_scores: Dict[str, float] = field(default_factory=dict)
     final_rationale: List[str] = field(default_factory=list)

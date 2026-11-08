@@ -19,16 +19,15 @@ Spec 对齐：
   §九.1.1 输出：5 参数中位数 → runtime/phase_c_default_params.json + phase_c_pareto_report.md
 """
 
-import sys
-import os
 import json
-import math
-import time
 import logging
-from dataclasses import dataclass, asdict, field
-from typing import Dict, List, Tuple, Optional, Any
+import math
+import sys
+import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import median
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
@@ -40,8 +39,12 @@ _THIS_DIR = Path(__file__).resolve().parent
 _PROJECT_ROOT = _THIS_DIR.parent.parent  # 11-易经推理系统/
 sys.path.insert(0, str(_PROJECT_ROOT))
 
-from scripts.memory_l4.bcrm2.data_fetcher import get_klines
-from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester, BacktestResult, FoldResult
+from scripts.memory_l4.bcrm2.data_fetcher import get_klines  # noqa: E402
+from scripts.memory_l4.bcrm2.walk_forward_backtester import (  # noqa: E402
+    BacktestResult,
+    FoldResult,
+    WalkForwardBacktester,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,13 +61,13 @@ logger = logging.getLogger("phase_c_pareto")
 # §二 Spec v3.0 默认初值（回测未覆盖时 fallback 走这里，字节等价安全）
 # ============================================================
 FROZEN_DEFAULTS = {
-    "cold_start_wp": 0.45,   # w_P
-    "cold_start_we": 0.30,   # w_E
-    "cold_start_wb": 0.25,   # w_B
-    "delta_max": 0.10,       # Δ_max = +0.10 → w_b 最敏感 +20pp
-    "p1_block_cap": 0.10,    # P14* 硬 BLOCK 顶
+    "cold_start_wp": 0.45,  # w_P
+    "cold_start_we": 0.30,  # w_E
+    "cold_start_wb": 0.25,  # w_B
+    "delta_max": 0.10,  # Δ_max = +0.10 → w_b 最敏感 +20pp
+    "p1_block_cap": 0.10,  # P14* 硬 BLOCK 顶
     "global_clip_up": 1.50,  # P15* 全局仓位倍率上界
-    "winprob_g2_n": 30,      # P17* WinProb 样本门槛
+    "winprob_g2_n": 30,  # P17* WinProb 样本门槛
 }
 
 
@@ -73,11 +76,11 @@ FROZEN_DEFAULTS = {
 # ============================================================
 GRID_COLD_START_WEIGHTS: List[Tuple[float, float, float]] = [
     # (w_P, w_E, w_B), Σ=1.0
-    (0.45, 0.30, 0.25),   # Spec 默认经验比
-    (0.50, 0.25, 0.25),   # 偏 P1 大周期
-    (0.40, 0.35, 0.25),   # 偏 Elder 中周期
-    (0.40, 0.30, 0.30),   # 偏 BCRM 小周期
-    (0.35, 0.35, 0.30),   # 中/小周期双强化
+    (0.45, 0.30, 0.25),  # Spec 默认经验比
+    (0.50, 0.25, 0.25),  # 偏 P1 大周期
+    (0.40, 0.35, 0.25),  # 偏 Elder 中周期
+    (0.40, 0.30, 0.30),  # 偏 BCRM 小周期
+    (0.35, 0.35, 0.30),  # 中/小周期双强化
 ]
 GRID_DELTA_MAX: List[float] = [0.08, 0.10, 0.12]
 GRID_P1_BLOCK_CAP: List[float] = [0.08, 0.10, 0.12]
@@ -91,6 +94,7 @@ GRID_WINPROB_G2_N: List[int] = [20, 30, 40]
 @dataclass
 class ParamSet:
     """一组待回测的参数组合"""
+
     param_id: int
     cold_start_wp: float
     cold_start_we: float
@@ -102,19 +106,27 @@ class ParamSet:
 
     @property
     def key(self) -> Tuple:
-        return (self.cold_start_wp, self.cold_start_we, self.cold_start_wb,
-                self.delta_max, self.p1_block_cap, self.global_clip_up, self.winprob_g2_n)
+        return (
+            self.cold_start_wp,
+            self.cold_start_we,
+            self.cold_start_wb,
+            self.delta_max,
+            self.p1_block_cap,
+            self.global_clip_up,
+            self.winprob_g2_n,
+        )
 
 
 @dataclass
 class OOSIndicators:
     """单组合样本外指标（12 fold 聚合）"""
+
     param_id: int
-    oos_sharpe: float         # 年化样本外 Sharpe
-    oos_max_drawdown: float   # 样本外最大回撤（百分比小数，如 0.08 = 8%）
-    oos_total_return: float   # 样本外累计收益率
-    oos_win_rate: float       # 样本外胜率
-    oos_trades: int           # 样本外交易笔数
+    oos_sharpe: float  # 年化样本外 Sharpe
+    oos_max_drawdown: float  # 样本外最大回撤（百分比小数，如 0.08 = 8%）
+    oos_total_return: float  # 样本外累计收益率
+    oos_win_rate: float  # 样本外胜率
+    oos_trades: int  # 样本外交易笔数
     fold_returns: List[float] = field(default_factory=list)
 
 
@@ -124,21 +136,23 @@ class OOSIndicators:
 def enumerate_param_sets() -> List[ParamSet]:
     params: List[ParamSet] = []
     pid = 0
-    for (wp, we, wb) in GRID_COLD_START_WEIGHTS:
+    for wp, we, wb in GRID_COLD_START_WEIGHTS:
         for dm in GRID_DELTA_MAX:
             for pbc in GRID_P1_BLOCK_CAP:
                 for gcu in GRID_GLOBAL_CLIP_UP:
                     for wn in GRID_WINPROB_G2_N:
-                        params.append(ParamSet(
-                            param_id=pid,
-                            cold_start_wp=wp,
-                            cold_start_we=we,
-                            cold_start_wb=wb,
-                            delta_max=dm,
-                            p1_block_cap=pbc,
-                            global_clip_up=gcu,
-                            winprob_g2_n=wn,
-                        ))
+                        params.append(
+                            ParamSet(
+                                param_id=pid,
+                                cold_start_wp=wp,
+                                cold_start_we=we,
+                                cold_start_wb=wb,
+                                delta_max=dm,
+                                p1_block_cap=pbc,
+                                global_clip_up=gcu,
+                                winprob_g2_n=wn,
+                            )
+                        )
                         pid += 1
     return params
 
@@ -146,14 +160,18 @@ def enumerate_param_sets() -> List[ParamSet]:
 # ============================================================
 # fold 时间切分：24 月训练 + 1 月验证 × 12 折
 # ============================================================
-def generate_walk_forward_splits(n_bars: int, bars_per_month: int = 24 * 30,
-                                  train_months: int = 24, test_months: int = 1,
-                                  n_folds: int = 12) -> List[Tuple[int, int, int, int]]:
+def generate_walk_forward_splits(
+    n_bars: int,
+    bars_per_month: int = 24 * 30,
+    train_months: int = 24,
+    test_months: int = 1,
+    n_folds: int = 12,
+) -> List[Tuple[int, int, int, int]]:
     """
     返回 [(train_start, train_end, test_start, test_end), ...]，单位：bar 序号
     bars_per_month 默认 720（24h × 30d，1H K 线）
     """
-    splits = []
+    splits = []  # noqa: F841
     # 先确定最后一个 fold 的 test_end = n_bars - 1，往前倒推
     test_len = bars_per_month * test_months
     train_len = bars_per_month * train_months
@@ -196,9 +214,11 @@ def compute_oos_indicators(param: ParamSet, fold_results: List[FoldResult]) -> O
             score_e = 0.5
             score_b = float(t.confidence)
 
-            consensus = (score_p * param.cold_start_wp +
-                         score_e * param.cold_start_we +
-                         score_b * param.cold_start_wb)
+            consensus = (
+                score_p * param.cold_start_wp
+                + score_e * param.cold_start_we
+                + score_b * param.cold_start_wb
+            )
             base_mult = 0.05 + 0.95 * consensus  # map [0,1] → [0.05, 1.0]
 
             # P1 BLOCK cap: score_p < 0.3 时硬上限（回测中不会触发，保留完整性）
@@ -264,13 +284,15 @@ def pareto_filter(all_indicators: List[OOSIndicators]) -> List[OOSIndicators]:
     threshold_sharpe = 0.95 * best_sharpe
     max_allowed_dd = 0.10  # 10%
     return [
-        ind for ind in all_indicators
+        ind
+        for ind in all_indicators
         if ind.oos_sharpe >= threshold_sharpe and ind.oos_max_drawdown <= max_allowed_dd
     ]
 
 
-def compute_pareto_medians(param_map: Dict[int, ParamSet],
-                            pareto_inds: List[OOSIndicators]) -> Dict[str, float]:
+def compute_pareto_medians(
+    param_map: Dict[int, ParamSet], pareto_inds: List[OOSIndicators]
+) -> Dict[str, float]:
     if not pareto_inds:
         # fail-open：无合格组合 → 返回 Spec 默认初值，不阻塞实盘启动
         logger.warning("[FAIL-OPEN] 0 组合通过 Pareto 过滤，返回 §二 冻结默认初值")
@@ -322,9 +344,15 @@ def write_default_params(medians: Dict[str, float], pareto_count: int, best_shar
     logger.info(f"[OUT] 默认参数写入：{_DEFAULT_PARAMS_JSON}")
 
 
-def write_report(all_indicators: List[OOSIndicators], pareto_inds: List[OOSIndicators],
-                 param_map: Dict[int, ParamSet], medians: Dict[str, float],
-                 n_total: int, n_completed: int, elapsed_sec: float) -> None:
+def write_report(
+    all_indicators: List[OOSIndicators],
+    pareto_inds: List[OOSIndicators],
+    param_map: Dict[int, ParamSet],
+    medians: Dict[str, float],
+    n_total: int,
+    n_completed: int,
+    elapsed_sec: float,
+) -> None:
     lines = []
     lines.append("# 方案 C v3.0 Pareto 参数回测报告")
     lines.append("")
@@ -336,25 +364,33 @@ def write_report(all_indicators: List[OOSIndicators], pareto_inds: List[OOSIndic
     lines.append("")
     lines.append("## 1. 全局最优 Top-10（Sharpe 降序）")
     lines.append("")
-    lines.append("| rank | param_id | w_P | w_E | w_B | Δ_max | P1_cap | clip_up | winprob_N | OOS_Sharpe | OOS_MaxDD | OOS_Return | WinRate | Trades |")
+    lines.append(
+        "| rank | param_id | w_P | w_E | w_B | Δ_max | P1_cap | clip_up | winprob_N | OOS_Sharpe | OOS_MaxDD | OOS_Return | WinRate | Trades |"
+    )
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     top10 = sorted(all_indicators, key=lambda x: x.oos_sharpe, reverse=True)[:10]
     for rank, ind in enumerate(top10, 1):
         p = param_map[ind.param_id]
-        lines.append(f"| {rank} | {ind.param_id} | {p.cold_start_wp:.2f} | {p.cold_start_we:.2f} | {p.cold_start_wb:.2f} | "
-                     f"{p.delta_max:.2f} | {p.p1_block_cap:.2f} | {p.global_clip_up:.2f} | {p.winprob_g2_n} | "
-                     f"{ind.oos_sharpe:.3f} | {ind.oos_max_drawdown:.2%} | {ind.oos_total_return:+.2%} | {ind.oos_win_rate:.2%} | {ind.oos_trades} |")
+        lines.append(
+            f"| {rank} | {ind.param_id} | {p.cold_start_wp:.2f} | {p.cold_start_we:.2f} | {p.cold_start_wb:.2f} | "
+            f"{p.delta_max:.2f} | {p.p1_block_cap:.2f} | {p.global_clip_up:.2f} | {p.winprob_g2_n} | "
+            f"{ind.oos_sharpe:.3f} | {ind.oos_max_drawdown:.2%} | {ind.oos_total_return:+.2%} | {ind.oos_win_rate:.2%} | {ind.oos_trades} |"
+        )
     lines.append("")
     lines.append("## 2. Pareto 合格集（Sharpe ≥ 95% 最优 且 MaxDD ≤ 10%）")
     lines.append("")
     if pareto_inds:
-        lines.append("| param_id | w_P | w_E | w_B | Δ_max | P1_cap | clip_up | winprob_N | OOS_Sharpe | OOS_MaxDD | OOS_Return |")
+        lines.append(
+            "| param_id | w_P | w_E | w_B | Δ_max | P1_cap | clip_up | winprob_N | OOS_Sharpe | OOS_MaxDD | OOS_Return |"
+        )
         lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
         for ind in sorted(pareto_inds, key=lambda x: x.oos_sharpe, reverse=True):
             p = param_map[ind.param_id]
-            lines.append(f"| {ind.param_id} | {p.cold_start_wp:.2f} | {p.cold_start_we:.2f} | {p.cold_start_wb:.2f} | "
-                         f"{p.delta_max:.2f} | {p.p1_block_cap:.2f} | {p.global_clip_up:.2f} | {p.winprob_g2_n} | "
-                         f"{ind.oos_sharpe:.3f} | {ind.oos_max_drawdown:.2%} | {ind.oos_total_return:+.2%} |")
+            lines.append(
+                f"| {ind.param_id} | {p.cold_start_wp:.2f} | {p.cold_start_we:.2f} | {p.cold_start_wb:.2f} | "
+                f"{p.delta_max:.2f} | {p.p1_block_cap:.2f} | {p.global_clip_up:.2f} | {p.winprob_g2_n} | "
+                f"{ind.oos_sharpe:.3f} | {ind.oos_max_drawdown:.2%} | {ind.oos_total_return:+.2%} |"
+            )
     else:
         lines.append("_（0 组合合格，已 fail-open 使用 §二 冻结默认初值）_")
     lines.append("")
@@ -368,7 +404,9 @@ def write_report(all_indicators: List[OOSIndicators], pareto_inds: List[OOSIndic
         else:
             lines.append(f"| {k} | {v:.4f} | {float(FROZEN_DEFAULTS[k]):.4f} |")
     lines.append("")
-    lines.append("## 4. 参数散点图（占位：Task 1~9 子系统接入后再用 matplotlib 画 Sharpe vs MaxDD Pareto 边界）")
+    lines.append(
+        "## 4. 参数散点图（占位：Task 1~9 子系统接入后再用 matplotlib 画 Sharpe vs MaxDD Pareto 边界）"
+    )
     lines.append("")
     lines.append("_骨架版暂不画图，真实接入仓位倍率调整后补图。_")
     lines.append("")
@@ -405,10 +443,19 @@ def run_all(symbols: Optional[List[str]] = None, max_bars: int = 10080) -> int:
         except Exception as e:
             logger.warning(f"[DATA] {sym} 加载失败：{e}，跳过")
     if not dfs:
-        logger.error("[DATA] 所有 symbol 加载失败，直接 fail-open 写默认初值，退出码 = 0（不阻塞实盘）")
+        logger.error(
+            "[DATA] 所有 symbol 加载失败，直接 fail-open 写默认初值，退出码 = 0（不阻塞实盘）"
+        )
         write_default_params({k: float(v) for k, v in FROZEN_DEFAULTS.items()}, 0, 0.0)
-        write_report([], [], param_map, {k: float(v) for k, v in FROZEN_DEFAULTS.items()},
-                     n_total, 0, time.time() - t0)
+        write_report(
+            [],
+            [],
+            param_map,
+            {k: float(v) for k, v in FROZEN_DEFAULTS.items()},
+            n_total,
+            0,
+            time.time() - t0,
+        )
         return 0
 
     # 3. fold 切分：数据量自适应降级（train:test ≈ 2:1，至少 2 折 OOS）
@@ -438,7 +485,9 @@ def run_all(symbols: Optional[List[str]] = None, max_bars: int = 10080) -> int:
     )
     # 如果数据太少还生成不了，兜底：用最后 70% 训练 + 30% 测试 × 1 折（再 × N 个 coin 保证有样本外）
     if len(splits) < 2:
-        logger.warning("[SPLIT] Walk-Forward 滚动折法仍然不足，降级为单折 holdout（70%/30%），N 币组合模拟多折")
+        logger.warning(
+            "[SPLIT] Walk-Forward 滚动折法仍然不足，降级为单折 holdout（70%/30%），N 币组合模拟多折"
+        )
         n = len(ref_df)
         train_end = int(n * 0.7) - 1
         test_start = train_end + 1
@@ -451,7 +500,9 @@ def run_all(symbols: Optional[List[str]] = None, max_bars: int = 10080) -> int:
         f"实际 Walk-Forward {n_folds} folds"
     )
     if n_folds < 6:
-        logger.warning(f"[SPLIT] 数据不足，只有 {n_folds} 折（建议 ≥ 12，结果仅供参考，Pareto合格后可标注「小样本」）")
+        logger.warning(
+            f"[SPLIT] 数据不足，只有 {n_folds} 折（建议 ≥ 12，结果仅供参考，Pareto合格后可标注「小样本」）"
+        )
 
     # 4. 预跑 BCRM2.0 基线回测（每个 symbol 只跑一次，405 组合复用）
     base_folds_per_symbol: Dict[str, List[FoldResult]] = {}
@@ -480,8 +531,15 @@ def run_all(symbols: Optional[List[str]] = None, max_bars: int = 10080) -> int:
     if total_base_trades == 0:
         logger.error("[BASE] 所有 symbol 基线回测均无 trades，fail-open 写默认初值")
         write_default_params({k: float(v) for k, v in FROZEN_DEFAULTS.items()}, 0, 0.0)
-        write_report([], [], param_map, {k: float(v) for k, v in FROZEN_DEFAULTS.items()},
-                     n_total, 0, time.time() - t0)
+        write_report(
+            [],
+            [],
+            param_map,
+            {k: float(v) for k, v in FROZEN_DEFAULTS.items()},
+            n_total,
+            0,
+            time.time() - t0,
+        )
         return 0
 
     # 5. 405 组合 → 仓位倍率叠加（纯数值计算，毫秒级/组合）
@@ -497,14 +555,18 @@ def run_all(symbols: Optional[List[str]] = None, max_bars: int = 10080) -> int:
             all_indicators.append(indicators)
             completed += 1
     except KeyboardInterrupt:
-        logger.warning(f"[CTRL+C] 用户中断，已完成 {completed}/{n_total}，使用已完成数据继续 Pareto 筛选")
+        logger.warning(
+            f"[CTRL+C] 用户中断，已完成 {completed}/{n_total}，使用已完成数据继续 Pareto 筛选"
+        )
 
     elapsed = time.time() - t0
     best_sharpe = max((ind.oos_sharpe for ind in all_indicators), default=0.0)
 
     # 5. Pareto 筛选 + 中位数
     pareto_inds = pareto_filter(all_indicators)
-    logger.info(f"[PARETO] {len(pareto_inds)}/{completed} 组合通过筛选（Sharpe ≥ 95%×{best_sharpe:.3f} 且 MaxDD ≤ 10%）")
+    logger.info(
+        f"[PARETO] {len(pareto_inds)}/{completed} 组合通过筛选（Sharpe ≥ 95%×{best_sharpe:.3f} 且 MaxDD ≤ 10%）"
+    )
     medians = compute_pareto_medians(param_map, pareto_inds)
 
     # 6. 写输出
@@ -530,9 +592,17 @@ def run_all(symbols: Optional[List[str]] = None, max_bars: int = 10080) -> int:
 # ============================================================
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="方案 C v3.0 Pareto 参数网格搜索（405 组合，12-fold walk-forward）")
+
+    parser = argparse.ArgumentParser(
+        description="方案 C v3.0 Pareto 参数网格搜索（405 组合，12-fold walk-forward）"
+    )
     parser.add_argument("--symbols", nargs="+", default=None, help="回测币种，默认 BTC ETH")
-    parser.add_argument("--max-bars", type=int, default=10080, help="1H K线根数，默认 10080 ≈ 14 个月（数据不足自动裁）")
+    parser.add_argument(
+        "--max-bars",
+        type=int,
+        default=10080,
+        help="1H K线根数，默认 10080 ≈ 14 个月（数据不足自动裁）",
+    )
     parser.add_argument("--dry-run", action="store_true", help="只枚举参数网格并打印，不跑回测")
     args = parser.parse_args()
 
@@ -541,12 +611,16 @@ def main():
         print(f"DRY-RUN：参数总数={len(ps)}（预期 405）")
         print("前三组：")
         for p in ps[:3]:
-            print(f"  pid={p.param_id} wp={p.cold_start_wp} we={p.cold_start_we} wb={p.cold_start_wb} "
-                  f"dm={p.delta_max} p1cap={p.p1_block_cap} clipup={p.global_clip_up} wn={p.winprob_g2_n}")
+            print(
+                f"  pid={p.param_id} wp={p.cold_start_wp} we={p.cold_start_we} wb={p.cold_start_wb} "
+                f"dm={p.delta_max} p1cap={p.p1_block_cap} clipup={p.global_clip_up} wn={p.winprob_g2_n}"
+            )
         print("后三组：")
         for p in ps[-3:]:
-            print(f"  pid={p.param_id} wp={p.cold_start_wp} we={p.cold_start_we} wb={p.cold_start_wb} "
-                  f"dm={p.delta_max} p1cap={p.p1_block_cap} clipup={p.global_clip_up} wn={p.winprob_g2_n}")
+            print(
+                f"  pid={p.param_id} wp={p.cold_start_wp} we={p.cold_start_we} wb={p.cold_start_wb} "
+                f"dm={p.delta_max} p1cap={p.p1_block_cap} clipup={p.global_clip_up} wn={p.winprob_g2_n}"
+            )
         return
 
     sys.exit(run_all(args.symbols, args.max_bars))

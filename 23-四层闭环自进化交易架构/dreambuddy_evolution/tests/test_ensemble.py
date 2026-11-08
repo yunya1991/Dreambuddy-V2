@@ -11,6 +11,7 @@ TDD 覆盖:
   P1.1-T2.1 ensemble_forecast: 合并 SDE 和 GARCH 预测
   P1.1-T2.2 ensemble_forecast: SDE 不可用时回退 GARCH
 """
+
 from __future__ import annotations
 
 import sys
@@ -27,14 +28,17 @@ if str(REPO) not in sys.path:
 def test_entropy_to_weight_zero():
     """P1.1-T1.1: 熵=0 → w=1 (全信 SDE)."""
     from dreambuddy_evolution.core.ensemble import entropy_to_weight
+
     w = entropy_to_weight(entropy=0.0, n_regimes=3)
     assert w == 1.0
 
 
 def test_entropy_to_weight_max():
     """P1.1-T1.2: 熵=max → w=0 (全信 GARCH)."""
-    from dreambuddy_evolution.core.ensemble import entropy_to_weight
     import math
+
+    from dreambuddy_evolution.core.ensemble import entropy_to_weight
+
     max_entropy = math.log(3)
     w = entropy_to_weight(entropy=max_entropy, n_regimes=3)
     assert w == pytest.approx(0.0, abs=1e-6)
@@ -42,8 +46,10 @@ def test_entropy_to_weight_max():
 
 def test_entropy_to_weight_mid():
     """P1.1-T1.3: 熵在中间 → w 在 (0,1)."""
-    from dreambuddy_evolution.core.ensemble import entropy_to_weight
     import math
+
+    from dreambuddy_evolution.core.ensemble import entropy_to_weight
+
     mid_entropy = math.log(3) / 2
     w = entropy_to_weight(entropy=mid_entropy, n_regimes=3)
     assert 0.0 < w < 1.0

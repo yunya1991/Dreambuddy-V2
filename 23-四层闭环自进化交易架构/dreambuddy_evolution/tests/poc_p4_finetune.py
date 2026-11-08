@@ -8,6 +8,7 @@
 
 固定: loss_type=return_mse, patience=10, val_split=0.1
 """
+
 from __future__ import annotations
 
 import json
@@ -22,9 +23,12 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -32,21 +36,29 @@ logger = logging.getLogger(__name__)
 
 def train_and_eval(config, closes_train, regime_train, closes_full, regime_full, test_starts):
     import torch
+
     torch.manual_seed(42)
     np.random.seed(42)
 
     model = NeuralSDEModel(device="cpu", n_regimes=3, dropout=config["dropout"])
     trainer = NeuralSDETrainer(
-        model=model, lr=config["lr"], seq_len=64, horizon=20,
-        batch_size=64, loss_type="return_mse",
+        model=model,
+        lr=config["lr"],
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="return_mse",
         weight_decay=config["weight_decay"],
-        patience=10, val_split=0.1,
+        patience=10,
+        val_split=0.1,
     )
 
     t0 = time.time()
     report = trainer.train(
-        closes_train, epochs=config["epochs"],
-        regime_labels=regime_train, regime_balance="natural",
+        closes_train,
+        epochs=config["epochs"],
+        regime_labels=regime_train,
+        regime_balance="natural",
     )
     train_time = time.time() - t0
 
@@ -54,8 +66,8 @@ def train_and_eval(config, closes_train, regime_train, closes_full, regime_full,
     n_paths = 200
     maes = []
     for ts in test_starts:
-        history = closes_full[:ts + 1]
-        actual = closes_full[ts + 1:ts + 1 + horizon]
+        history = closes_full[: ts + 1]
+        actual = closes_full[ts + 1 : ts + 1 + horizon]
         init_price = float(history[-1])
         returns = np.diff(np.log(history))
         init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -77,7 +89,7 @@ def train_and_eval(config, closes_train, regime_train, closes_full, regime_full,
 
     sde_maes = [m["sde_mae"] for m in maes]
     garch_maes = [m["garch_mae"] for m in maes]
-    ratios = [s / g for s, g in zip(sde_maes, garch_maes) if g > 0]
+    ratios = [s / g for s, g in zip(sde_maes, garch_maes) if g > 0]  # noqa: B905
 
     return {
         "dropout": config["dropout"],
@@ -87,7 +99,11 @@ def train_and_eval(config, closes_train, regime_train, closes_full, regime_full,
         "epochs_run": int(report.get("epochs_run", config["epochs"])),
         "early_stopped": bool(report.get("early_stopped", False)),
         "final_train_loss": round(float(report.get("final_loss", 0.0)), 6),
-        "best_val_loss": round(float(report.get("best_val_loss", 0.0)), 6) if report.get("best_val_loss") is not None else None,
+        "best_val_loss": (
+            round(float(report.get("best_val_loss", 0.0)), 6)
+            if report.get("best_val_loss") is not None
+            else None
+        ),
         "train_time": round(train_time, 1),
         "mean_sde_mae": round(float(np.mean(sde_maes)), 4),
         "mean_garch_mae": round(float(np.mean(garch_maes)), 4),
@@ -113,8 +129,11 @@ def main():
 
     n_test = len(closes_full) - train_end
     monthly_step = n_test // 12
-    test_starts = [train_end + i * monthly_step for i in range(12)
-                   if train_end + i * monthly_step + 20 < len(closes_full)]
+    test_starts = [
+        train_end + i * monthly_step
+        for i in range(12)
+        if train_end + i * monthly_step + 20 < len(closes_full)
+    ]
 
     # 精调配置: 围绕 dropout=0.1
     configs = [
@@ -132,14 +151,24 @@ def main():
     results = []
     for i, cfg in enumerate(configs):
         logger.info("=" * 60)
-        logger.info("[%d/%d] dropout=%.2f wd=%.0e lr=%.0e epochs=%d",
-                    i + 1, len(configs), cfg["dropout"], cfg["weight_decay"],
-                    cfg["lr"], cfg["epochs"])
-        r = train_and_eval(cfg, closes_train, regime_train, closes_full,
-                           regime_full, test_starts)
+        logger.info(
+            "[%d/%d] dropout=%.2f wd=%.0e lr=%.0e epochs=%d",
+            i + 1,
+            len(configs),
+            cfg["dropout"],
+            cfg["weight_decay"],
+            cfg["lr"],
+            cfg["epochs"],
+        )
+        r = train_and_eval(cfg, closes_train, regime_train, closes_full, regime_full, test_starts)
         results.append(r)
-        logger.info("  MAE=%.2f ratio=%.4f epochs_run=%d time=%.1fs",
-                    r["mean_sde_mae"], r["mean_ratio"], r["epochs_run"], r["train_time"])
+        logger.info(
+            "  MAE=%.2f ratio=%.4f epochs_run=%d time=%.1fs",
+            r["mean_sde_mae"],
+            r["mean_ratio"],
+            r["epochs_run"],
+            r["train_time"],
+        )
 
     # 按 MAE 排序
     results_sorted = sorted(results, key=lambda x: x["mean_sde_mae"])
@@ -149,9 +178,16 @@ def main():
     logger.info("=== P4-T2 精调结果 (按 MAE 排序) ===")
     for r in results_sorted:
         marker = " <-- BEST" if r is best else ""
-        logger.info("  dropout=%.2f wd=%.0e lr=%.0e ep=%3d | MAE=%8.2f ratio=%.4f%s",
-                    r["dropout"], r["weight_decay"], r["lr"], r["epochs"],
-                    r["mean_sde_mae"], r["mean_ratio"], marker)
+        logger.info(
+            "  dropout=%.2f wd=%.0e lr=%.0e ep=%3d | MAE=%8.2f ratio=%.4f%s",
+            r["dropout"],
+            r["weight_decay"],
+            r["lr"],
+            r["epochs"],
+            r["mean_sde_mae"],
+            r["mean_ratio"],
+            marker,
+        )
 
     out = {
         "tdd": "P4-T2-finetune",

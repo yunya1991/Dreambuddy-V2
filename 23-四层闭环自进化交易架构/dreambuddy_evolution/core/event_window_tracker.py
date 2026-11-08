@@ -12,11 +12,12 @@ SPEC §3.2: 6 阶段 FOMC 周期
 输出 event_context dict，供策略引擎和 ESE 消费。
 FAIL-OPEN: 无 FOMC 数据时返回中性 context。
 """
+
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -58,16 +59,16 @@ class EventWindowTracker:
     """FOMC 事件窗口阶段判定器。"""
 
     # 6 阶段阈值（天数）
-    EXPECTATION_BUILD_MAX_DAYS = 42      # 6 周
-    EXPECTATION_RISE_MAX_DAYS = 28       # 4 周
-    EXPECTATION_JUMP_MAX_DAYS = 14       # 2 周
-    EXPECTATION_DIGEST_MAX_DAYS = 7      # 1 周
-    EVENT_WINDOW_HOURS = 12              # FOMC 当天 ±12h
-    REPRICING_MAX_DAYS = 21              # 3 周
+    EXPECTATION_BUILD_MAX_DAYS = 42  # 6 周
+    EXPECTATION_RISE_MAX_DAYS = 28  # 4 周
+    EXPECTATION_JUMP_MAX_DAYS = 14  # 2 周
+    EXPECTATION_DIGEST_MAX_DAYS = 7  # 1 周
+    EVENT_WINDOW_HOURS = 12  # FOMC 当天 ±12h
+    REPRICING_MAX_DAYS = 21  # 3 周
 
     # repricing 子阶段阈值（SPEC §0.4.4 三阶段动态权衡）
-    RELIEF_MAX_DAYS = 5          # Phase A: 0-5 天（不确定性消除+空头回补）
-    VERIFICATION_MAX_DAYS = 15   # Phase B: 5-15 天（基本面验证）
+    RELIEF_MAX_DAYS = 5  # Phase A: 0-5 天（不确定性消除+空头回补）
+    VERIFICATION_MAX_DAYS = 15  # Phase B: 5-15 天（基本面验证）
     # Phase C: 15-21 天+（债务周期位置主导）
 
     # 概率阈值

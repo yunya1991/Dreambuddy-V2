@@ -2,6 +2,7 @@
 Shadow 自动放量门禁 TDD 测试
 SPEC-Shadow验证自动放量门禁.md §10 #1-#12 + spawn 正/反向
 """
+
 from __future__ import annotations
 
 import json
@@ -17,6 +18,7 @@ GATE_SWITCH = "enable_shadow_auto_activation"
 def _no_real_spawn(monkeypatch):
     """禁止测试起真实评估子进程（DML≈35s）；返回调用计数 spy。"""
     from dreambuddy_evolution.core.shadow_activation_gate import ShadowActivationGate
+
     calls = {"n": 0}
 
     def _fake(self):
@@ -29,13 +31,21 @@ def _no_real_spawn(monkeypatch):
 
 def _gate(tmp_path, switch=SWITCH):
     from dreambuddy_evolution.core.shadow_activation_gate import ShadowActivationGate
+
     return ShadowActivationGate(switch, state_dir=tmp_path)
 
 
-def _obs(date_s, gate_state="B", n=1000, method="causalml_dml",
-         ate=0.0, lb=-0.01, ub=0.01):
-    return {"date": date_s, "gate_state": gate_state, "ate": ate, "lb": lb,
-            "ub": ub, "source": "bootstrap", "n": n, "method": method}
+def _obs(date_s, gate_state="B", n=1000, method="causalml_dml", ate=0.0, lb=-0.01, ub=0.01):
+    return {
+        "date": date_s,
+        "gate_state": gate_state,
+        "ate": ate,
+        "lb": lb,
+        "ub": ub,
+        "source": "bootstrap",
+        "n": n,
+        "method": method,
+    }
 
 
 def _seed_days(gate, days, gate_state="B"):
@@ -45,6 +55,7 @@ def _seed_days(gate, days, gate_state="B"):
 
 def test_defaults():
     from dreambuddy_evolution.agi_config import AGI_SWITCHES
+
     assert AGI_SWITCHES["enable_causal_historical_samples"] is False
     assert AGI_SWITCHES["enable_shadow_auto_activation"] is True
 
@@ -52,6 +63,7 @@ def test_defaults():
 class TestShadowActivationGate:
     def test_1_insufficient_days_no_activation(self, tmp_path):
         from dreambuddy_evolution.agi_config import get_switch, set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, False)
         g = _gate(tmp_path)
@@ -61,6 +73,7 @@ class TestShadowActivationGate:
 
     def test_2_seven_days_no_positive_no_activation(self, tmp_path):
         from dreambuddy_evolution.agi_config import get_switch, set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, False)
         g = _gate(tmp_path)
@@ -70,6 +83,7 @@ class TestShadowActivationGate:
 
     def test_3_seven_days_with_positive_activates(self, tmp_path):
         from dreambuddy_evolution.agi_config import get_switch, set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, False)
         g = _gate(tmp_path)
@@ -101,10 +115,16 @@ class TestShadowActivationGate:
 
     def test_7_reconcile_activates(self, tmp_path):
         from dreambuddy_evolution.agi_config import get_switch, set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, False)
-        state = {"switch": SWITCH, "activated_at": "2026-10-14T18:00:00+08:00",
-                 "min_days": 7, "min_n": 500, "observations": []}
+        state = {
+            "switch": SWITCH,
+            "activated_at": "2026-10-14T18:00:00+08:00",
+            "min_days": 7,
+            "min_n": 500,
+            "observations": [],
+        }
         (tmp_path / f"{SWITCH}.json").write_text(json.dumps(state), encoding="utf-8")
         g = _gate(tmp_path)
         assert g.reconcile_from_disk() is True
@@ -112,6 +132,7 @@ class TestShadowActivationGate:
 
     def test_8_corrupt_state_failopen(self, tmp_path):
         from dreambuddy_evolution.agi_config import get_switch, set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, False)
         (tmp_path / f"{SWITCH}.json").write_text("{not json", encoding="utf-8")
@@ -121,6 +142,7 @@ class TestShadowActivationGate:
 
     def test_9_gate_switch_off_no_spawn(self, tmp_path, _no_real_spawn):
         from dreambuddy_evolution.agi_config import set_switch
+
         set_switch(GATE_SWITCH, False)
         set_switch(SWITCH, False)
         g = _gate(tmp_path)
@@ -129,6 +151,7 @@ class TestShadowActivationGate:
 
     def test_10_no_spawn_when_today_has_obs(self, tmp_path, _no_real_spawn):
         from dreambuddy_evolution.agi_config import set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, False)
         g = _gate(tmp_path)
@@ -138,6 +161,7 @@ class TestShadowActivationGate:
 
     def test_10b_spawns_once_when_no_obs_today(self, tmp_path, _no_real_spawn):
         from dreambuddy_evolution.agi_config import set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, False)
         g = _gate(tmp_path)
@@ -148,6 +172,7 @@ class TestShadowActivationGate:
 
     def test_11_target_already_on_idempotent(self, tmp_path):
         from dreambuddy_evolution.agi_config import set_switch
+
         set_switch(GATE_SWITCH, True)
         set_switch(SWITCH, True)
         g = _gate(tmp_path)

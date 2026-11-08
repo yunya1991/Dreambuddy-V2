@@ -11,6 +11,7 @@
 指标: 样本外夏普 / DSR（Deflated Sharpe）/ PBO（Probability of Backtest Overfitting）
 统计: Holm-Bonferroni 配对校正
 """
+
 from __future__ import annotations
 
 import math
@@ -139,22 +140,32 @@ class FrameworkComparison:
             past_rets = returns[i - 2 * w : i - w]
             past_factors = factors[i - 2 * w : i - w]
             # 用与收益相关性最强的因子维度作为 G_dim
-            corrs = [np.corrcoef(past_factors[:, j], past_rets)[0, 1]
-                     if np.std(past_factors[:, j]) > 1e-10 else 0.0
-                     for j in range(factors.shape[1])]
+            corrs = [
+                (
+                    np.corrcoef(past_factors[:, j], past_rets)[0, 1]
+                    if np.std(past_factors[:, j]) > 1e-10
+                    else 0.0
+                )
+                for j in range(factors.shape[1])
+            ]
             best_g = np.argmax(np.abs(corrs))
             g_dim = factor_dim_map[best_g]
 
             # 现在力：最近窗口因子与收益的相关度作为 attention 权重
             recent_factors = factors[i - w : i]
             recent_rets = returns[i - w : i]
-            attn_weights = np.array([
-                abs(np.corrcoef(recent_factors[:, j], recent_rets)[0, 1])
-                if np.std(recent_factors[:, j]) > 1e-10 else 0.0
-                for j in range(factors.shape[1])
-            ])
+            attn_weights = np.array(
+                [
+                    (
+                        abs(np.corrcoef(recent_factors[:, j], recent_rets)[0, 1])
+                        if np.std(recent_factors[:, j]) > 1e-10
+                        else 0.0
+                    )
+                    for j in range(factors.shape[1])
+                ]
+            )
             # 聚合到 3 维度
-            dim_strength = {d: 0.0 for d in dims}
+            dim_strength = dict.fromkeys(dims, 0.0)
             for j, d in enumerate(factor_dim_map):
                 dim_strength[d] += attn_weights[j]
             total = sum(dim_strength.values())
@@ -168,8 +179,10 @@ class FrameworkComparison:
             vol_shift = vol_recent > vol_past * 1.3 if vol_past > 1e-10 else False
 
             result = gate.compare(
-                G_dim=g_dim, G_conf=abs(corrs[best_g]),
-                A_dim=a_dim, A_strength=dim_strength[a_dim],
+                G_dim=g_dim,
+                G_conf=abs(corrs[best_g]),
+                A_dim=a_dim,
+                A_strength=dim_strength[a_dim],
                 structural_break={"volatility_regime_shift": vol_shift},
             )
             # 信号方向：用 A_dim 对应因子的方向
@@ -185,17 +198,28 @@ class FrameworkComparison:
         sig = np.zeros(n)
         # Bayesian 后验权重：先验均匀，每窗口更新
         prior = np.ones(factors.shape[1]) / factors.shape[1]
-        factor_dim_map = ["technical", "technical", "fundamental", "fundamental", "macro"]
+        factor_dim_map = [  # noqa: F841
+            "technical",
+            "technical",
+            "fundamental",
+            "fundamental",
+            "macro",
+        ]  # noqa: F841
 
         for i in range(w * 2, n):
             recent_factors = factors[i - w : i]
             recent_rets = returns[i - w : i]
             # 似然：因子方向与收益方向一致率
-            likelihood = np.array([
-                np.mean(np.sign(recent_factors[:, j]) == np.sign(recent_rets))
-                if np.std(recent_factors[:, j]) > 1e-10 else 0.5
-                for j in range(factors.shape[1])
-            ])
+            likelihood = np.array(
+                [
+                    (
+                        np.mean(np.sign(recent_factors[:, j]) == np.sign(recent_rets))
+                        if np.std(recent_factors[:, j]) > 1e-10
+                        else 0.5
+                    )
+                    for j in range(factors.shape[1])
+                ]
+            )
             posterior = prior * likelihood
             posterior /= posterior.sum() + 1e-10
             prior = 0.7 * prior + 0.3 * posterior  # EMA 平滑
@@ -211,17 +235,28 @@ class FrameworkComparison:
         """F3: 互信息 + 动态权重."""
         w = self.window
         sig = np.zeros(n)
-        factor_dim_map = ["technical", "technical", "fundamental", "fundamental", "macro"]
+        factor_dim_map = [  # noqa: F841
+            "technical",
+            "technical",
+            "fundamental",
+            "fundamental",
+            "macro",
+        ]  # noqa: F841
 
         for i in range(w * 2, n):
             recent_factors = factors[i - w : i]
             recent_rets = returns[i - w : i]
             # 互信息（简化：用 |相关系数| 作为 MI 代理）
-            mi = np.array([
-                abs(np.corrcoef(recent_factors[:, j], recent_rets)[0, 1])
-                if np.std(recent_factors[:, j]) > 1e-10 else 0.0
-                for j in range(factors.shape[1])
-            ])
+            mi = np.array(
+                [
+                    (
+                        abs(np.corrcoef(recent_factors[:, j], recent_rets)[0, 1])
+                        if np.std(recent_factors[:, j]) > 1e-10
+                        else 0.0
+                    )
+                    for j in range(factors.shape[1])
+                ]
+            )
             mi /= mi.sum() + 1e-10
 
             direction = 0.0
@@ -242,7 +277,9 @@ class FrameworkComparison:
             shapley = np.zeros(factors.shape[1])
             for j in range(factors.shape[1]):
                 if np.std(recent_factors[:, j]) > 1e-10:
-                    beta = np.cov(recent_factors[:, j], recent_rets)[0, 1] / np.var(recent_factors[:, j])
+                    beta = np.cov(recent_factors[:, j], recent_rets)[0, 1] / np.var(
+                        recent_factors[:, j]
+                    )
                     shapley[j] = beta
             total_abs = np.abs(shapley).sum() + 1e-10
             weights = shapley / total_abs
@@ -255,15 +292,26 @@ class FrameworkComparison:
         """F5: 单 Granger 因果链（只用过去因，无 Attention）."""
         w = self.window
         sig = np.zeros(n)
-        factor_dim_map = ["technical", "technical", "fundamental", "fundamental", "macro"]
+        factor_dim_map = [  # noqa: F841
+            "technical",
+            "technical",
+            "fundamental",
+            "fundamental",
+            "macro",
+        ]  # noqa: F841
 
         for i in range(w * 2, n):
             past_rets = returns[i - 2 * w : i - w]
             past_factors = factors[i - 2 * w : i - w]
             # Granger 因果：因子滞后预测收益的能力
-            corrs = [np.corrcoef(past_factors[:-1, j], past_rets[1:])[0, 1]
-                     if np.std(past_factors[:-1, j]) > 1e-10 else 0.0
-                     for j in range(factors.shape[1])]
+            corrs = [
+                (
+                    np.corrcoef(past_factors[:-1, j], past_rets[1:])[0, 1]
+                    if np.std(past_factors[:-1, j]) > 1e-10
+                    else 0.0
+                )
+                for j in range(factors.shape[1])
+            ]
             best_g = np.argmax(np.abs(corrs))
             direction = np.sign(corrs[best_g]) * np.sign(factors[i, best_g])
             sig[i] = 1.0 if direction > 0 else (-1.0 if direction < 0 else 0.0)
@@ -287,8 +335,9 @@ class FrameworkComparison:
         return float(sr)
 
     @staticmethod
-    def deflated_sharpe_ratio(pnl: np.ndarray, n_trials: int = 5,
-                               periods_per_year: int = 17520) -> float:
+    def deflated_sharpe_ratio(
+        pnl: np.ndarray, n_trials: int = 5, periods_per_year: int = 17520
+    ) -> float:
         """DSR — 考虑多重比较后夏普的显著性（Bailey & Lopez de Prado 2014）.
 
         DSR = Φ((SR_hat - SR_0) / σ_hat)
@@ -305,7 +354,7 @@ class FrameworkComparison:
         sr_period = np.mean(pnl) / np.std(pnl, ddof=1)
         g3 = stats.skew(pnl)
         g4 = stats.kurtosis(pnl, fisher=False)
-        sr_var = (1 - g3 * sr_period + (g4 - 1) / 4 * sr_period ** 2) / (T - 1)
+        sr_var = (1 - g3 * sr_period + (g4 - 1) / 4 * sr_period**2) / (T - 1)
         if sr_var <= 0:
             return 0.0
         sr_var_annual = sr_var * periods_per_year  # 年化方差
@@ -331,7 +380,11 @@ class FrameworkComparison:
             min_is = min(half, len(sig))
             is_pnl = sig[:min_is] * returns[:min_is] if min_is > 0 else np.array([])
             min_oos = min(n - half, len(sig) - half)
-            oos_pnl = sig[half:half + min_oos] * returns[half:half + min_oos] if min_oos > 0 else np.array([])
+            oos_pnl = (
+                sig[half : half + min_oos] * returns[half : half + min_oos]
+                if min_oos > 0
+                else np.array([])
+            )
             is_sharpes[name] = self.sharpe_ratio(is_pnl)
             oos_sharpes[name] = self.sharpe_ratio(oos_pnl)
 
@@ -347,7 +400,9 @@ class FrameworkComparison:
             is_idx = perm[:half]
             oos_idx = perm[half:]
             is_sr = {name: self.sharper(signals[name][is_idx], returns[is_idx]) for name in names}
-            oos_sr = {name: self.sharper(signals[name][oos_idx], returns[oos_idx]) for name in names}
+            oos_sr = {
+                name: self.sharper(signals[name][oos_idx], returns[oos_idx]) for name in names
+            }
             # IS 最优框架在 OOS 的秩
             best_is = max(is_sr, key=is_sr.get)
             oos_rank = sorted(oos_sr, key=oos_sr.get, reverse=True).index(best_is)
@@ -385,7 +440,9 @@ class FrameworkComparison:
         """
         n = len(self.prices)
         fold_size = n // (n_folds + 1)
-        results: dict[str, dict] = {name: {"pnls": [], "oos_sharpes": []} for name in FRAMEWORK_NAMES}
+        results: dict[str, dict] = {
+            name: {"pnls": [], "oos_sharpes": []} for name in FRAMEWORK_NAMES
+        }
 
         signals = self.generate_all_signals()
 
@@ -413,7 +470,10 @@ class FrameworkComparison:
             pnls = pnls[np.isfinite(pnls)]
             if len(pnls) == 0:
                 summary[name] = {
-                    "oos_sharpe": 0.0, "dsr": 0.0, "mean_return": 0.0, "win_rate": 0.0,
+                    "oos_sharpe": 0.0,
+                    "dsr": 0.0,
+                    "mean_return": 0.0,
+                    "win_rate": 0.0,
                 }
                 continue
             summary[name] = {
@@ -425,7 +485,9 @@ class FrameworkComparison:
 
         # PBO
         summary["_meta"] = {
-            "pbo": self.probability_of_backtest_overfitting(signals, self.returns, n_splits=n_folds),
+            "pbo": self.probability_of_backtest_overfitting(
+                signals, self.returns, n_splits=n_folds
+            ),
         }
         return summary
 

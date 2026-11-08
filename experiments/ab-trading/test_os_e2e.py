@@ -15,23 +15,18 @@
    - 记忆复用价值
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import unittest
 import time
-from typing import Dict, Any, List
+from typing import Dict, List
 from dataclasses import dataclass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.g_graph_storage import (
+from core.g_graph_storage import (  # noqa: I001
     # 类型
-    BlueprintGraph,
-    ArchitectureGraph,
-    ChronicleGraph,
     BNode,
-    ANode,
-    CNode,
     NodeStatus,
     ComponentType,
     CompressionStrategy,
@@ -44,10 +39,10 @@ from core.g_graph_storage import (
     ExecutionPattern,
 )
 
-
 # ============================================================
 # 模拟数据
 # ============================================================
+
 
 @dataclass
 class MockObjective:
@@ -86,7 +81,13 @@ def create_mock_intent(
 ) -> MockIntentResult:
     """创建模拟意图"""
     if nodes is None:
-        nodes = ["data_collection", "market_analysis", "strategy_build", "risk_check", "execution_plan"]
+        nodes = [
+            "data_collection",
+            "market_analysis",
+            "strategy_build",
+            "risk_check",
+            "execution_plan",
+        ]
 
     return MockIntentResult(
         objective=MockObjective(title=title, description=description),
@@ -97,7 +98,7 @@ def create_mock_intent(
                 "kr_analysis": ["market_analysis"],
                 "kr_strategy": ["strategy_build", "risk_check"],
                 "kr_exec": ["execution_plan"],
-            }
+            },
         ),
     )
 
@@ -105,6 +106,7 @@ def create_mock_intent(
 # ============================================================
 # G层桥接器测试
 # ============================================================
+
 
 class TestGraphStorageBridge(unittest.TestCase):
     """测试G层桥接器"""
@@ -174,6 +176,7 @@ class TestGraphStorageBridge(unittest.TestCase):
 # 历史检索器测试
 # ============================================================
 
+
 class TestHistoryRetriever(unittest.TestCase):
     """测试历史检索器"""
 
@@ -199,7 +202,9 @@ class TestHistoryRetriever(unittest.TestCase):
 
             tags = ["trading", "analysis"] if i % 2 == 0 else ["research", "data"]
             retriever.add_history(
-                bp, arch, chron,
+                bp,
+                arch,
+                chron,
                 success=True,
                 summary=f"任务{i}执行完成",
                 tags=tags,
@@ -285,6 +290,7 @@ class TestHistoryRetriever(unittest.TestCase):
 # 端到端操作系统测试
 # ============================================================
 
+
 class TestOSEndToEnd(unittest.TestCase):
     """操作系统端到端测试"""
 
@@ -321,7 +327,7 @@ class TestOSEndToEnd(unittest.TestCase):
         self.assertIsNotNone(chron)
 
         # === Step 2: 执行中更新（模拟C层） ===
-        node_count = len(chron.nodes)
+        node_count = len(chron.nodes)  # noqa: F841
         for i, nid in enumerate(chron.sequence):
             bridge.update_chronicle_node(
                 exec_id,
@@ -355,7 +361,9 @@ class TestOSEndToEnd(unittest.TestCase):
         # === Step 4: 历史记录 ===
         chron_after = storage.get_chronicle(chron.id)
         history.add_history(
-            bp, arch, chron_after,
+            bp,
+            arch,
+            chron_after,
             success=True,
             summary="BTC趋势分析完成，发现上涨趋势",
             tags=["crypto", "trading", "btc"],
@@ -406,7 +414,9 @@ class TestOSEndToEnd(unittest.TestCase):
 
             bridge.finish_execution(exec_id)
             chron_after = storage.get_chronicle(chron.id)
-            history.add_history(bp, arch, chron_after, success=True, tags=tags, summary=f"{title}完成")
+            history.add_history(
+                bp, arch, chron_after, success=True, tags=tags, summary=f"{title}完成"
+            )
 
         # 验证
         all_records = history.list_history(limit=20)
@@ -428,6 +438,7 @@ class TestOSEndToEnd(unittest.TestCase):
 # ============================================================
 # 图压缩贡献评测
 # ============================================================
+
 
 class TestCompressionContribution(unittest.TestCase):
     """图压缩对操作系统的贡献评测"""
@@ -481,7 +492,7 @@ class TestCompressionContribution(unittest.TestCase):
         print(f"{'='*60}")
         print(f"  执行数量: {num_executions}")
         print(f"  原始总Token: {total_tokens_original}")
-        print(f"  压缩策略: 价值优先 (目标50%)")
+        print("  压缩策略: 价值优先 (目标50%)")
         print(f"  压缩后数量: {compressed_count}")
         print(f"{'='*60}")
 
@@ -536,7 +547,9 @@ class TestCompressionContribution(unittest.TestCase):
                 actual_with_compression += cr.get("compressed_size", 0)
 
             history.add_history(
-                bp, arch, chron_before,
+                bp,
+                arch,
+                chron_before,
                 success=True,
                 tags=["test"],
                 summary=f"任务{i}",
@@ -594,7 +607,9 @@ class TestCompressionContribution(unittest.TestCase):
             bridge.finish_execution(exec_id)
             chron_after = storage.get_chronicle(chron.id)
             history.add_history(
-                bp, arch, chron_after,
+                bp,
+                arch,
+                chron_after,
                 success=True,
                 tags=["trading", "stock", "analysis"],
                 summary=f"股票分析任务{i}完成",
@@ -604,7 +619,7 @@ class TestCompressionContribution(unittest.TestCase):
         new_task_desc = "分析A股市场，制定交易策略"
         matches = history.find_similar_tasks(new_task_desc, top_k=3)
 
-        print(f"  历史任务数: 10")
+        print("  历史任务数: 10")
         print(f"  新任务: {new_task_desc}")
         print(f"  找到相似任务: {len(matches)}")
 
@@ -666,7 +681,9 @@ class TestCompressionContribution(unittest.TestCase):
 
         for strategy, name in strategies:
             for ratio in ratios:
-                chron = storage.create_chronicle_from_architecture(arch.id, f"test_{strategy.value}_{ratio}")
+                chron = storage.create_chronicle_from_architecture(
+                    arch.id, f"test_{strategy.value}_{ratio}"
+                )
                 compressor = storage.compressor
                 compressor.strategy = strategy
                 compressor.target_ratio = ratio
@@ -686,5 +703,5 @@ class TestCompressionContribution(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

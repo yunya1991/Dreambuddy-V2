@@ -4,6 +4,7 @@ All exceptions:
   1. should be CAUGHT by FailOpenManager inside engine.execute();
   2. NEVER bubble up to strategy caller (guaranteed by TEE design).
 """
+
 from __future__ import annotations
 
 

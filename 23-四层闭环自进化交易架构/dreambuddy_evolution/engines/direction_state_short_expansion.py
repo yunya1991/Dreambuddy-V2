@@ -18,6 +18,7 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径C：
 
 生产接线: polling_trader.py 路径C 分支（DirectionStateShortExpansion 解锁判定）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -38,6 +39,7 @@ class DirectionStateShortResult:
         concentration_limit: 做空集中度上限 (0.3 = 30%)
         concentration_exceeded: 当前集中度是否超限
     """
+
     unlocked: bool
     position_multiplier: float
     state: str
@@ -53,9 +55,9 @@ class DirectionStateShortExpansion:
     开关开启时扩展 TREND_BEAR 部分解锁。
     """
 
-    CONCENTRATION_LIMIT = 0.3   # 做空总仓位占比上限 30%
-    TREND_BEAR_POSITION = 0.5   # TREND_BEAR 部分解锁仓位
-    SHORT_ONLY_POSITION = 1.0   # SHORT_ONLY 全解锁仓位
+    CONCENTRATION_LIMIT = 0.3  # 做空总仓位占比上限 30%
+    TREND_BEAR_POSITION = 0.5  # TREND_BEAR 部分解锁仓位
+    SHORT_ONLY_POSITION = 1.0  # SHORT_ONLY 全解锁仓位
 
     def __init__(self) -> None:
         pass
@@ -79,6 +81,7 @@ class DirectionStateShortExpansion:
         # 开关检查（FAIL-OPEN: 异常 → 不解锁）
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             switch_on = get_switch("enable_direction_state_short_expansion")
         except Exception as e:
             logger.debug("[FO] DirectionStateShortExpansion switch check fail: %s", e)

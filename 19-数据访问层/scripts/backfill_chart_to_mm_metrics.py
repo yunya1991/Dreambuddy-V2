@@ -20,6 +20,7 @@ mm_metrics 表，使 query_valuation_percentile 可通过 MarketMacroRepository
   - 幂等（主键 INSERT OR REPLACE）
   - 跳过 market_cap<=0 或非数值的点（数据缺失）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -66,9 +67,10 @@ def _is_numeric(v) -> bool:
 
 def _pg_conn():
     """连接 18 层 PostgreSQL 主库（方案 4 迁移后，替代 SQLite 源库）。"""
-    import os
     import re
+
     import psycopg2
+
     pwd = os.environ.get("DATA_CENTER_PG_PASSWORD", "")
     if not pwd:
         env = Path("/home/luke/dreambuddy/7-产物中台/系统研究索引体系/.env")
@@ -77,8 +79,11 @@ def _pg_conn():
             if m:
                 pwd = m.group(1)
     return psycopg2.connect(
-        host="127.0.0.1", port=5432, user="dreambuddy",
-        password=pwd, dbname="data_center",
+        host="127.0.0.1",
+        port=5432,
+        user="dreambuddy",
+        password=pwd,
+        dbname="data_center",
     )
 
 
@@ -95,16 +100,14 @@ def _iter_chart_metric_rows(src_db: str) -> Iterable[tuple]:
     """
     conn = _pg_conn()
     cur = conn.cursor()
-    cur.execute(
-        """
+    cur.execute("""
         SELECT sub_category, timeseries
         FROM records
         WHERE source='coingecko' AND category='coin'
           AND sub_category LIKE 'chart_%%'
           AND timeseries IS NOT NULL AND timeseries != ''
         ORDER BY sub_category, timestamp DESC
-        """
-    )
+        """)
     seen_subcats: set[str] = set()
     for sub_category, ts_json in cur:
         if not sub_category or sub_category in seen_subcats:
@@ -151,8 +154,7 @@ def backfill(src_db: str, dst_db: str, dry_run: bool = False) -> dict:
     Path(dst_db).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(dst_db)
     try:
-        conn.execute(
-            """
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS mm_metrics (
                 source TEXT NOT NULL,
                 sub_category TEXT NOT NULL,
@@ -161,15 +163,12 @@ def backfill(src_db: str, dst_db: str, dry_run: bool = False) -> dict:
                 timestamp INTEGER NOT NULL,
                 PRIMARY KEY (source, sub_category, metric_name, timestamp)
             ) WITHOUT ROWID
-            """
-        )
+            """)
         # 索引：加速 query_metric_by_time 的 sub_category+metric_name+timestamp 查询
-        conn.execute(
-            """
+        conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_mm_metrics_query
             ON mm_metrics (sub_category, metric_name, timestamp)
-            """
-        )
+            """)
         batch_size = 5000
         inserted = 0
         for i in range(0, total, batch_size):

@@ -17,8 +17,10 @@
   C9  200 条数据 → _rewrite_all（finalize 隐含的重写）耗时 < 0.5s（简单性能阈值）
   C10 engine.enable=False（或构造 disable）时，任何 API 返回 False/None 字节等价
 """
+
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import sys
@@ -27,7 +29,6 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
-import fcntl
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]  # = 11-易经推理系统/
@@ -43,8 +44,11 @@ def _import_or_sentinel() -> Dict[str, Any]:
         _ce = placeholder
     CBRJsonlStore = getattr(_ce, "CBRJsonlStore", placeholder)
     CBR_CANONICAL_5D_KEYS = getattr(_ce, "CBR_CANONICAL_5D_KEYS", placeholder)
-    return {"CBRJsonlStore": CBRJsonlStore, "CBR_CANONICAL_5D_KEYS": CBR_CANONICAL_5D_KEYS,
-            "SENTINEL": placeholder}
+    return {
+        "CBRJsonlStore": CBRJsonlStore,
+        "CBR_CANONICAL_5D_KEYS": CBR_CANONICAL_5D_KEYS,
+        "SENTINEL": placeholder,
+    }
 
 
 # ---------------------------------------------------------------------
@@ -56,16 +60,31 @@ def test_C1_half_entry_writes_valid_v03_schema_line():
     CBRJsonlStore = s["CBRJsonlStore"]
     with tempfile.TemporaryDirectory() as td:
         store = CBRJsonlStore(runtime_dir=Path(td), enable=True)
-        case = {"case_id": "case_BTC_abcd1234", "symbol": "BTC-USDT-SWAP",
-                "asset_class": "CRYPTO", "create_ts": 1724300000000,
-                "entry_snapshot": {"regime": "sprout", "decision": "SHORT",
-                                   "confidence": 0.95, "volatility": 0.035,
-                                   "feature_5d": {"rsi_14": 33.1, "macd_hist": -0.02,
-                                                  "roc_5d": -1.2, "roc_20d": -3.5,
-                                                  "hexagram_confidence": 0.95}}}
+        case = {
+            "case_id": "case_BTC_abcd1234",
+            "symbol": "BTC-USDT-SWAP",
+            "asset_class": "CRYPTO",
+            "create_ts": 1724300000000,
+            "entry_snapshot": {
+                "regime": "sprout",
+                "decision": "SHORT",
+                "confidence": 0.95,
+                "volatility": 0.035,
+                "feature_5d": {
+                    "rsi_14": 33.1,
+                    "macd_hist": -0.02,
+                    "roc_5d": -1.2,
+                    "roc_20d": -3.5,
+                    "hexagram_confidence": 0.95,
+                },
+            },
+        }
         assert store.append_entry_semi(case) is True
-        lines = [ln.strip() for ln in (Path(td) / "cbr_cases_v03.jsonl").read_text(
-            encoding="utf-8").splitlines() if ln.strip()]
+        lines = [
+            ln.strip()
+            for ln in (Path(td) / "cbr_cases_v03.jsonl").read_text(encoding="utf-8").splitlines()
+            if ln.strip()
+        ]
         assert len(lines) == 1
         rec = json.loads(lines[0])
         assert rec["schema"] == "v0.3"
@@ -85,19 +104,39 @@ def test_C2_finalize_fills_exit_snapshot_and_pnl_fields():
     CBRJsonlStore = s["CBRJsonlStore"]
     with tempfile.TemporaryDirectory() as td:
         store = CBRJsonlStore(runtime_dir=Path(td), enable=True)
-        store.append_entry_semi({
-            "case_id": "case_COIN_00aabbcc", "symbol": "COIN-USDT-SWAP",
-            "asset_class": "CRYPTO", "create_ts": 1724300000001,
-            "entry_snapshot": {"decision": "SHORT", "confidence": 0.95, "volatility": 0.04,
-                               "feature_5d": {}}})
-        exit_snap = {"exit_reason": "stop_loss_hit", "hold_hours": 4.5,
-                     "max_drawdown_pct": -2.3, "max_runup_pct": +0.8}
-        ok = store.finalize_by_case_id("case_COIN_00aabbcc", exit_snap, pnl_pct=-2.1,
-                                       pnl_usdt=-42.7, is_profit=False)
+        store.append_entry_semi(
+            {
+                "case_id": "case_COIN_00aabbcc",
+                "symbol": "COIN-USDT-SWAP",
+                "asset_class": "CRYPTO",
+                "create_ts": 1724300000001,
+                "entry_snapshot": {
+                    "decision": "SHORT",
+                    "confidence": 0.95,
+                    "volatility": 0.04,
+                    "feature_5d": {},
+                },
+            }
+        )
+        exit_snap = {
+            "exit_reason": "stop_loss_hit",
+            "hold_hours": 4.5,
+            "max_drawdown_pct": -2.3,
+            "max_runup_pct": +0.8,
+        }
+        ok = store.finalize_by_case_id(
+            "case_COIN_00aabbcc", exit_snap, pnl_pct=-2.1, pnl_usdt=-42.7, is_profit=False
+        )
         assert ok is True
         rec = json.loads(
-            [ln for ln in (Path(td) / "cbr_cases_v03.jsonl").read_text(
-                encoding="utf-8").splitlines() if ln][0])
+            [
+                ln
+                for ln in (Path(td) / "cbr_cases_v03.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if ln
+            ][0]
+        )
         assert rec["exit_snapshot"]["exit_reason"] == "stop_loss_hit"
         assert rec["pnl_pct"] == -2.1
         assert abs(rec["pnl_usdt"] - (-42.7)) < 1e-9
@@ -122,11 +161,20 @@ def test_C3_flock_contention_timeout_failopen_returns_false_not_block():
             store = CBRJsonlStore(runtime_dir=Path(td), enable=True)
             t0 = time.perf_counter()
             # 非阻塞 0.1s 超时内必须返回 False（G3 不阻塞卡主流程）
-            ok = store.append_entry_semi({
-                "case_id": "case_BLOCK_xx", "symbol": "BTC",
-                "asset_class": "CRYPTO", "create_ts": 1,
-                "entry_snapshot": {"decision": "LONG", "confidence": 0.5, "volatility": 0,
-                                   "feature_5d": {}}})
+            ok = store.append_entry_semi(
+                {
+                    "case_id": "case_BLOCK_xx",
+                    "symbol": "BTC",
+                    "asset_class": "CRYPTO",
+                    "create_ts": 1,
+                    "entry_snapshot": {
+                        "decision": "LONG",
+                        "confidence": 0.5,
+                        "volatility": 0,
+                        "feature_5d": {},
+                    },
+                }
+            )
             elapsed_ms = (time.perf_counter() - t0) * 1000
             assert ok is False, f"锁竞争时应 failopen=False，实际={ok}"
             # G3：总耗时不能超过 1.0s（0.1s 超时 + 小 overhead）
@@ -145,14 +193,25 @@ def test_C4_finalize_missing_case_id_returns_false_silently_no_exception():
     CBRJsonlStore = s["CBRJsonlStore"]
     with tempfile.TemporaryDirectory() as td:
         store = CBRJsonlStore(runtime_dir=Path(td), enable=True)
-        store.append_entry_semi({
-            "case_id": "case_X", "symbol": "BTC", "asset_class": "CRYPTO",
-            "create_ts": 1, "entry_snapshot": {
-                "decision": "LONG", "confidence": 0.5, "volatility": 0, "feature_5d": {}}})
+        store.append_entry_semi(
+            {
+                "case_id": "case_X",
+                "symbol": "BTC",
+                "asset_class": "CRYPTO",
+                "create_ts": 1,
+                "entry_snapshot": {
+                    "decision": "LONG",
+                    "confidence": 0.5,
+                    "volatility": 0,
+                    "feature_5d": {},
+                },
+            }
+        )
         # case_id 不存在 → False 不抛
         try:
-            ok = store.finalize_by_case_id("CASE_DOES_NOT_EXIST",
-                                           {"exit_reason": "x"}, -0.1, -1.0, False)
+            ok = store.finalize_by_case_id(
+                "CASE_DOES_NOT_EXIST", {"exit_reason": "x"}, -0.1, -1.0, False
+            )
         except Exception as e:  # noqa: BLE001
             pytest.fail(f"G6 红线违规：找不到 case_id 抛了 {type(e).__name__}: {e}")
         assert ok is False
@@ -167,24 +226,61 @@ def test_C5_duplicate_finalize_is_idempotent_same_output():
     CBRJsonlStore = s["CBRJsonlStore"]
     with tempfile.TemporaryDirectory() as td:
         store = CBRJsonlStore(runtime_dir=Path(td), enable=True)
-        store.append_entry_semi({
-            "case_id": "case_Y", "symbol": "GOLD", "asset_class": "COMMODITY",
-            "create_ts": 7, "entry_snapshot": {"decision": "LONG", "confidence": 0.80,
-                                                "volatility": 0.02, "feature_5d": {}}})
+        store.append_entry_semi(
+            {
+                "case_id": "case_Y",
+                "symbol": "GOLD",
+                "asset_class": "COMMODITY",
+                "create_ts": 7,
+                "entry_snapshot": {
+                    "decision": "LONG",
+                    "confidence": 0.80,
+                    "volatility": 0.02,
+                    "feature_5d": {},
+                },
+            }
+        )
         exit_snap = {"exit_reason": "take_profit", "hold_hours": 72}
         store.finalize_by_case_id("case_Y", exit_snap, +1.8, +90.2, True)
-        first = json.loads([ln for ln in (Path(td) / "cbr_cases_v03.jsonl").read_text(
-            encoding="utf-8").splitlines() if ln][0])
+        first = json.loads(
+            [
+                ln
+                for ln in (Path(td) / "cbr_cases_v03.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if ln
+            ][0]
+        )
         # 第二次同样参数 → close_ts 可能变，但数值字段必须完全一致
         store.finalize_by_case_id("case_Y", exit_snap, +1.8, +90.2, True)
-        second = json.loads([ln for ln in (Path(td) / "cbr_cases_v03.jsonl").read_text(
-            encoding="utf-8").splitlines() if ln][0])
+        second = json.loads(
+            [
+                ln
+                for ln in (Path(td) / "cbr_cases_v03.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if ln
+            ][0]
+        )
         for k in ("pnl_pct", "pnl_usdt", "is_profit", "exit_snapshot"):
-            assert first[k] == second[k], f"幂等失败：字段{k}不同 first={first[k]} second={second[k]}"
-        assert (Path(td) / "cbr_cases_v03.jsonl").read_text(encoding="utf-8").count("\n") == \
-               first.__class__.__len__ is not None or True  # 占位；文件总条数不变（1 行）
-        assert len([ln for ln in (Path(td) / "cbr_cases_v03.jsonl").read_text(
-            encoding="utf-8").splitlines() if ln]) == 1, "重复 finalize 不应产生新行"
+            assert (
+                first[k] == second[k]
+            ), f"幂等失败：字段{k}不同 first={first[k]} second={second[k]}"
+        assert (Path(td) / "cbr_cases_v03.jsonl").read_text(encoding="utf-8").count(
+            "\n"
+        ) == first.__class__.__len__ is not None or True  # 占位；文件总条数不变（1 行）
+        assert (
+            len(
+                [
+                    ln
+                    for ln in (Path(td) / "cbr_cases_v03.jsonl")
+                    .read_text(encoding="utf-8")
+                    .splitlines()
+                    if ln
+                ]
+            )
+            == 1
+        ), "重复 finalize 不应产生新行"
 
 
 # ---------------------------------------------------------------------
@@ -198,12 +294,25 @@ def test_C6_corrupt_line_in_jsonl_is_skipped_without_crash():
         jpath = Path(td) / "cbr_cases_v03.jsonl"
         # 手动写一条合法 + 一条非法垃圾
         jpath.write_text(
-            json.dumps({"schema": "v0.3", "case_id": "case_A", "exit_snapshot": None,
-                        "pnl_pct": None, "pnl_usdt": None, "is_profit": None,
-                        "create_ts": 1, "close_ts": None,
-                        "symbol": "BTC", "asset_class": "CRYPTO",
-                        "entry_snapshot": {"feature_5d": {}}}, ensure_ascii=False)
-            + "\nTHIS LINE IS NOT JSON {{{\n", encoding="utf-8")
+            json.dumps(
+                {
+                    "schema": "v0.3",
+                    "case_id": "case_A",
+                    "exit_snapshot": None,
+                    "pnl_pct": None,
+                    "pnl_usdt": None,
+                    "is_profit": None,
+                    "create_ts": 1,
+                    "close_ts": None,
+                    "symbol": "BTC",
+                    "asset_class": "CRYPTO",
+                    "entry_snapshot": {"feature_5d": {}},
+                },
+                ensure_ascii=False,
+            )
+            + "\nTHIS LINE IS NOT JSON {{{\n",
+            encoding="utf-8",
+        )
         store = CBRJsonlStore(runtime_dir=Path(td), enable=True)
         ok = store.finalize_by_case_id("case_A", {"exit_reason": "tp"}, 1.0, 5.0, True)
         assert ok is True, "坏行存在时不应影响对 case_A 的 finalize（C6 容错违规）"
@@ -217,16 +326,24 @@ def test_C7_canonical_5d_feature_keys_match_spec_v03():
     assert s["CBR_CANONICAL_5D_KEYS"] is not s["SENTINEL"], "RED: 常量未定义"
     C5 = s["CBR_CANONICAL_5D_KEYS"]
     expected_categories = {"momentum", "ma_position", "volatility", "volume", "hexagram_meta"}
-    assert expected_categories.issubset(set(C5.keys())), \
-        f"缺五维分类：少 {expected_categories - set(C5.keys())}"
+    assert expected_categories.issubset(
+        set(C5.keys())
+    ), f"缺五维分类：少 {expected_categories - set(C5.keys())}"
     # 数量检查：momentum 5 / ma_position 5 / volatility 3 / volume 2 / hexagram_meta 2 = 17
     total = sum(len(v) for v in C5.values())
     assert total >= 14, f"Spec 要求≥14维特征键，实际={total}"
     # 必须包含的代表键（不枚举全，避免过度绑死，但要几个关键锚点）
     flat_actual = {k for sub in C5.values() for k in sub}
-    for must_have in ("rsi_14", "ma20_50_gap_pct", "atr14_norm_pct", "vol_ma20_ratio",
-                      "hexagram_risk_level", "macd_hist", "triple_ma_order",
-                      "bollinger_width_pct"):
+    for must_have in (
+        "rsi_14",
+        "ma20_50_gap_pct",
+        "atr14_norm_pct",
+        "vol_ma20_ratio",
+        "hexagram_risk_level",
+        "macd_hist",
+        "triple_ma_order",
+        "bollinger_width_pct",
+    ):
         assert must_have in flat_actual, f"Spec §2.3.1 缺少关键键名：{must_have}"
 
 
@@ -246,9 +363,18 @@ def test_C8_runtime_dir_missing_is_created_automatically_no_exception():
             pytest.fail(f"C8 违规：未自动建目录 → FileNotFoundError: {e}")
         assert nested.exists() and nested.is_dir(), f"目录未创建：{nested}"
         # 写一条成功（路径正确）
-        assert store.append_entry_semi({
-            "case_id": "case_NEST", "symbol": "X", "asset_class": "CRYPTO",
-            "create_ts": 3, "entry_snapshot": {"feature_5d": {}}}) is True
+        assert (
+            store.append_entry_semi(
+                {
+                    "case_id": "case_NEST",
+                    "symbol": "X",
+                    "asset_class": "CRYPTO",
+                    "create_ts": 3,
+                    "entry_snapshot": {"feature_5d": {}},
+                }
+            )
+            is True
+        )
         assert (nested / "cbr_cases_v03.jsonl").exists()
 
 
@@ -266,11 +392,20 @@ def test_C9_200_cases_finalize_rewrite_under_half_second():
         for i in range(n):
             cid = f"case_{i:04d}_perf"
             ids.append(cid)
-            store.append_entry_semi({
-                "case_id": cid, "symbol": "BTC", "asset_class": "CRYPTO",
-                "create_ts": i, "entry_snapshot": {"decision": "LONG", "confidence": 0.5 + i / 2000,
-                                                    "volatility": 0.01,
-                                                    "feature_5d": {"filler": i}}})
+            store.append_entry_semi(
+                {
+                    "case_id": cid,
+                    "symbol": "BTC",
+                    "asset_class": "CRYPTO",
+                    "create_ts": i,
+                    "entry_snapshot": {
+                        "decision": "LONG",
+                        "confidence": 0.5 + i / 2000,
+                        "volatility": 0.01,
+                        "feature_5d": {"filler": i},
+                    },
+                }
+            )
         # 选最后一个 case_id finalize → 触发全量重写，计时
         t0 = time.perf_counter()
         ok = store.finalize_by_case_id(ids[-1], {"exit_reason": "sl"}, -0.5, -1.0, False)
@@ -290,10 +425,20 @@ def test_C10_disabled_engine_is_byte_equivalent_no_side_effects():
         runtime = Path(td) / "runtime"
         store_off = CBRJsonlStore(runtime_dir=runtime, enable=False)
         # 任何写 API 都返回 False
-        assert store_off.append_entry_semi({
-            "case_id": "case_OFF", "symbol": "X", "asset_class": "C",
-            "create_ts": 1, "entry_snapshot": {}}) is False
+        assert (
+            store_off.append_entry_semi(
+                {
+                    "case_id": "case_OFF",
+                    "symbol": "X",
+                    "asset_class": "C",
+                    "create_ts": 1,
+                    "entry_snapshot": {},
+                }
+            )
+            is False
+        )
         assert store_off.finalize_by_case_id("case_OFF", {}, 0, 0, False) is False
         # 副作用检查：runtime 目录 & JSONL 文件都不应被创建（enable=False）
-        assert not (runtime / "cbr_cases_v03.jsonl").exists(), \
-            "enable=False 时不应创建 JSONL 文件（G1 字节等价违规）"
+        assert not (
+            runtime / "cbr_cases_v03.jsonl"
+        ).exists(), "enable=False 时不应创建 JSONL 文件（G1 字节等价违规）"

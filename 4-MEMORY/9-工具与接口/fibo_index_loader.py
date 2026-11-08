@@ -26,15 +26,15 @@
   - SPEC-CognitiveSystem-Evolution.md §4.3 P3-8
   - 协同 fibo_ontology.py (FIBOOntology 主类)
 """
+
 from __future__ import annotations
 
 import hashlib
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from fibo_ontology import FIBOEntity, FIBOOntology
-
+from fibo_ontology import FIBOOntology
 
 # ============================================================
 # 正则：markdown 表格行 / 链接 / 章节标题
@@ -88,7 +88,7 @@ class FIBOIndexLoader:
 
         try:
             lines = text.splitlines()
-            sections = self._extract_sections(lines)
+            sections = self._extract_sections(lines)  # noqa: F841
             tables = self._extract_tables(lines)
 
             entity_count = 0
@@ -149,9 +149,7 @@ class FIBOIndexLoader:
                             relation_count += 1
                         # 推断 covers_topic 关系
                         if topic_id:
-                            self._ont.add_relation(
-                                eid, "covers_topic", topic_id
-                            )
+                            self._ont.add_relation(eid, "covers_topic", topic_id)
                             relation_count += 1
 
             return (entity_count, relation_count)
@@ -171,9 +169,7 @@ class FIBOIndexLoader:
                 sections.append(m.group(2).strip())
         return sections
 
-    def _extract_tables(
-        self, lines: List[str]
-    ) -> List[Tuple[str, List[str]]]:
+    def _extract_tables(self, lines: List[str]) -> List[Tuple[str, List[str]]]:
         """抽取 markdown 表格，按章节分组。
 
         Returns:
@@ -221,9 +217,7 @@ class FIBOIndexLoader:
         """是否为分隔行（|---|---|）。"""
         return bool(_TABLE_SEP_RE.match(row))
 
-    def _extract_path_from_cells(
-        self, cells: List[str], headers: List[str]
-    ) -> Optional[str]:
+    def _extract_path_from_cells(self, cells: List[str], headers: List[str]) -> Optional[str]:
         """从表格行字段中提取文档路径。
 
         策略：
@@ -299,7 +293,7 @@ class FIBOIndexLoader:
 
     def _make_entity_id(self, path: str) -> str:
         """从路径生成稳定实体 ID（哈希前缀）。"""
-        clean = path.lstrip("./").lstrip("../")
+        clean = path.lstrip("./").lstrip("../")  # noqa: B005
         h = hashlib.md5(clean.encode("utf-8")).hexdigest()[:8]
         return f"doc_{h}"
 

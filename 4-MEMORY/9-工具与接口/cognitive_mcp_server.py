@@ -55,8 +55,10 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 from mcp_shells._shared.shell_runtime import (  # noqa: E402
     build_tool_list,
-    handle_request as _runtime_handle,
     run_stdio,
+)
+from mcp_shells._shared.shell_runtime import (  # noqa: E402
+    handle_request as _runtime_handle,
 )
 
 # ============================================================
@@ -67,12 +69,14 @@ COGNITIVE_MCP_MODE = os.environ.get("COGNITIVE_MCP_MODE", "ssh").strip().lower()
 _LOCAL_READONLY = COGNITIVE_MCP_MODE == "local"
 
 
-def _write_denied(tool: str, *, reason: str | None = None,
-                  error_code: str = "conflict") -> str:
+def _write_denied(tool: str, *, reason: str | None = None, error_code: str = "conflict") -> str:
     """写工具拒绝：本地只读或写 scope/principal 不满足（审计留痕 stderr）。"""
     import sys as _sys
 
-    reason = reason or "write tool disabled in local readonly mode (D5); use ssh cloud profile for writes"
+    reason = (
+        reason
+        or "write tool disabled in local readonly mode (D5); use ssh cloud profile for writes"
+    )
     print(
         json.dumps(
             {
@@ -134,7 +138,7 @@ def _write_gate(tool: str, args: Dict[str, Any]) -> Optional[str]:
         return _write_denied(
             tool,
             reason=f"principal={principal!r} not allowed for write; "
-                   f"need one of {sorted(WRITE_ROLES)}",
+            f"need one of {sorted(WRITE_ROLES)}",
             error_code="principal_denied",
         )
     return None
@@ -365,9 +369,7 @@ def _get_cle() -> CognitiveLoopEntry:
     """
     global _cle_instance
     db_path = (
-        os.environ.get("COGNITIVE_MCP_DB_PATH")
-        or os.environ.get("DREAMBUDDY_COGNITIVE_DB")
-        or ""
+        os.environ.get("COGNITIVE_MCP_DB_PATH") or os.environ.get("DREAMBUDDY_COGNITIVE_DB") or ""
     ).strip()
     if not db_path:
         return get_cle()
@@ -383,9 +385,7 @@ def _write_policy_snapshot() -> Dict[str, Any]:
         "write_enabled": (not _LOCAL_READONLY)
         and _env_flag("COGNITIVE_MCP_WRITE_ENABLED", default=False),
         "principal": _write_principal({}),
-        "eval_gate_mode": os.environ.get(
-            "COGNITIVE_MCP_EVAL_GATE_MODE", "shadow"
-        ).strip().lower(),
+        "eval_gate_mode": os.environ.get("COGNITIVE_MCP_EVAL_GATE_MODE", "shadow").strip().lower(),
         "db_path": (
             os.environ.get("COGNITIVE_MCP_DB_PATH")
             or os.environ.get("DREAMBUDDY_COGNITIVE_DB")

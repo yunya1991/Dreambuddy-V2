@@ -15,9 +15,9 @@ Phase A TDD 测试：Donchian 通道 + ATR 计算模块
 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase A
 硬约束：HC-TF-01（SL≥4% 下限保护依赖 ATR）
 """
+
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
@@ -84,7 +84,7 @@ def test_calc_donchian_20day():
     from v15_signal import calc_donchian
 
     highs = list(range(100, 120))  # 100..119
-    lows = list(range(90, 110))     # 90..109
+    lows = list(range(90, 110))  # 90..109
     channel = calc_donchian(highs, lows, period=20)
     assert channel is not None
     # 上轨 = 最近 20 日最高 = 119
@@ -103,7 +103,7 @@ def test_calc_donchian_55day():
     from v15_signal import calc_donchian
 
     highs = list(range(100, 156))  # 100..155 (56 个，取后 55 个 = 101..155)
-    lows = list(range(90, 146))   # 90..145 (56 个，取后 55 个 = 91..145)
+    lows = list(range(90, 146))  # 90..145 (56 个，取后 55 个 = 91..145)
     channel = calc_donchian(highs, lows, period=55)
     assert channel is not None
     assert channel["upper"] == 155.0, f"上轨应为 155，实际={channel['upper']}"
@@ -130,7 +130,7 @@ def test_calc_donchian_insufficient_data():
 # ====================================================================
 def test_donchian_breakout_long():
     """T7: 收盘价突破上轨 → LONG 信号"""
-    from v15_signal import calc_donchian, donchian_breakout_signal
+    from v15_signal import donchian_breakout_signal
 
     # 20 日通道，上轨=119，收盘价=120 > 119
     highs = list(range(100, 120))

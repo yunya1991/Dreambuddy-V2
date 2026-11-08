@@ -7,6 +7,7 @@
 - 持久化：事件写入独立 JSON 文件，可跨实例读取
 - 与核心隔离：独立模块，HC-1a 合规
 """
+
 from __future__ import annotations
 
 import json
@@ -36,9 +37,11 @@ def quality_to_numeric(quality: str) -> float:
 # 事件数据类
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class RecallEvent:
     """一次 recall 调用的观测记录。"""
+
     session_id: str
     context: str
     top_k: int
@@ -51,6 +54,7 @@ class RecallEvent:
 @dataclass(frozen=True)
 class VerifyEvent:
     """一次 verify 调用的观测记录。"""
+
     session_id: str
     memory_id: str
     success: bool
@@ -64,6 +68,7 @@ class VerifyEvent:
 # ---------------------------------------------------------------------------
 # VerificationObserver
 # ---------------------------------------------------------------------------
+
 
 class VerificationObserver:
     """观测层：旁路记录 recall/verify 事件，计算转化率与 oracle gap。
@@ -283,9 +288,11 @@ class VerificationObserver:
 # GoldSetManager
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class GoldSetEntry:
     """gold set 中的一条标注记忆。"""
+
     memory_id: str
     content: str
     gold_quality: str
@@ -365,6 +372,7 @@ class GoldSetManager:
         po = agree / n
         # 期望一致率（各等级边缘概率乘积之和）
         from collections import Counter
+
         count_a = Counter(a for a, _ in paired)
         count_b = Counter(b for _, b in paired)
         pe = sum((count_a[c] / n) * (count_b[c] / n) for c in set(count_a) | set(count_b))

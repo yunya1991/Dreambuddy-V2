@@ -3,26 +3,22 @@
 查看每一折的训练/测试AUC，找出差异来源
 """
 
+import json
 import os
 import sys
-import json
-import time
+
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
-from sklearn.preprocessing import StandardScaler
-
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, BASE_DIR)
 
-from ml.models import LSTMModel
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+
+from ml.models import LSTMModel  # noqa: E402
 
 
 def load_btc_data():
@@ -71,7 +67,11 @@ def main():
     v55_names = list(phil_features.columns)
     v56_names = [f for f in v55_names if f not in redundant_features]
 
-    features = pd.concat([trend_features, phil_features[v56_names]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    features = (
+        pd.concat([trend_features, phil_features[v56_names]], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     feature_names = list(features.columns)
 
     labels = generate_labels(closes, 20, 0.20, "drop")
@@ -96,16 +96,20 @@ def main():
     splits = list(reversed(splits))
 
     print(f"\n  总折数: {len(splits)}")
-    print(f"  {'折':<5s} {'训练区间':<20s} {'训练样本':>10s} {'训练正样本':>12s} {'测试样本':>10s} {'测试正样本':>12s}")
+    print(
+        f"  {'折':<5s} {'训练区间':<20s} {'训练样本':>10s} {'训练正样本':>12s} {'测试样本':>10s} {'测试正样本':>12s}"
+    )
     print("  " + "-" * 75)
 
     for i, (tr_s, tr_e, te_s, te_e) in enumerate(splits):
         y_tr = labels[tr_s:tr_e]
         y_te = labels[te_s:te_e]
-        print(f"  {i+1:<5d} [{tr_s:5d}:{tr_e:5d}]    {tr_e-tr_s:>10d} {y_tr.sum():>12.0f} ({y_tr.mean():.1%}) {te_e-te_s:>10d} {y_te.sum():>12.0f} ({y_te.mean():.1%})")
+        print(
+            f"  {i+1:<5d} [{tr_s:5d}:{tr_e:5d}]    {tr_e-tr_s:>10d} {y_tr.sum():>12.0f} ({y_tr.mean():.1%}) {te_e-te_s:>10d} {y_te.sum():>12.0f} ({y_te.mean():.1%})"
+        )
 
     # 训练每折并记录结果
-    print(f"\n  各折训练结果:")
+    print("\n  各折训练结果:")
     print(f"  {'折':<5s} {'训练AUC':>10s} {'测试AUC':>10s} {'状态':>10s}")
     print("  " + "-" * 40)
 
@@ -162,7 +166,7 @@ def main():
         # 与Step5对比
         step5_top_test = 0.7455
         step5_top_train = 0.9735
-        print(f"\n  与Step5 Config1对比:")
+        print("\n  与Step5 Config1对比:")
         print(f"    Step5 训练AUC: {step5_top_train:.4f}")
         print(f"    当前 训练AUC: {np.mean(train_aucs):.4f}")
         print(f"    Step5 测试AUC: {step5_top_test:.4f}")

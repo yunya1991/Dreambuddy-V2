@@ -14,12 +14,12 @@
 
 FAIL-OPEN: 缓存缺失/过期/异常 → weight_factor=1.0, veto=False
 """
+
 from __future__ import annotations
 
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ class EntryWeightDecision:
         veto: 硬否决标志（True=不开仓，灾难性保护，不进入学习闭环）
         bcrm_reverse_conf: 开仓时 BCRM 反向置信度（写入 TradeRecord 供平仓学习用）
     """
+
     weight_factor: float = 1.0
     veto: bool = False
     bcrm_reverse_conf: float = 0.0
@@ -93,28 +94,32 @@ def compute_bcrm_entry_weight_factor(
 
         # ── FAIL-OPEN: 缓存缺失 → 放行
         if not bcrm_dir:
-            return _apply_pf(EntryWeightDecision(weight_factor=1.0, veto=False, bcrm_reverse_conf=0.0))
+            return _apply_pf(
+                EntryWeightDecision(weight_factor=1.0, veto=False, bcrm_reverse_conf=0.0)
+            )
 
         # ── FAIL-OPEN: 信号过期 → 放行
         if (_now - bcrm_ts) >= _BCRM_REVERSE_STALE_SEC:
-            return _apply_pf(EntryWeightDecision(weight_factor=1.0, veto=False, bcrm_reverse_conf=0.0))
+            return _apply_pf(
+                EntryWeightDecision(weight_factor=1.0, veto=False, bcrm_reverse_conf=0.0)
+            )
 
         # ── 方向冲突检测
-        is_conflict = (
-            (bcrm_dir == "UP" and evo_dir == "SHORT")
-            or (bcrm_dir == "DOWN" and evo_dir == "LONG")
+        is_conflict = (bcrm_dir == "UP" and evo_dir == "SHORT") or (
+            bcrm_dir == "DOWN" and evo_dir == "LONG"
         )
         if not is_conflict:
             # 同向 → 不干预
-            return _apply_pf(EntryWeightDecision(weight_factor=1.0, veto=False, bcrm_reverse_conf=0.0))
+            return _apply_pf(
+                EntryWeightDecision(weight_factor=1.0, veto=False, bcrm_reverse_conf=0.0)
+            )
 
         # ── 分层治理（反向冲突时）
         # BDSM 方向一致判断：
         #   BCRM DOWN + BDSM SHORT_ONLY → 一致（都看空）
         #   BCRM UP + BDSM LONG_ONLY → 一致（都看多）
-        bdsm_consistent = (
-            (bcrm_dir == "DOWN" and "SHORT" in bdsm_constraint)
-            or (bcrm_dir == "UP" and "LONG" in bdsm_constraint)
+        bdsm_consistent = (bcrm_dir == "DOWN" and "SHORT" in bdsm_constraint) or (
+            bcrm_dir == "UP" and "LONG" in bdsm_constraint
         )
 
         # ── ≥0.95 + BDSM 一致 → 硬否决
@@ -124,31 +129,49 @@ def compute_bcrm_entry_weight_factor(
                 bcrm_conf,
             )
             return EntryWeightDecision(
-                weight_factor=0.0, veto=True, bcrm_reverse_conf=0.0,
+                weight_factor=0.0,
+                veto=True,
+                bcrm_reverse_conf=0.0,
             )
 
         # ── ≥0.95（无 BDSM 一致）→ ×0.3
         if bcrm_conf >= 0.95:
-            return _apply_pf(EntryWeightDecision(
-                weight_factor=0.3, veto=False, bcrm_reverse_conf=bcrm_conf,
-            ))
+            return _apply_pf(
+                EntryWeightDecision(
+                    weight_factor=0.3,
+                    veto=False,
+                    bcrm_reverse_conf=bcrm_conf,
+                )
+            )
 
         # ── 0.85-0.95 → ×0.5
         if bcrm_conf >= 0.85:
-            return _apply_pf(EntryWeightDecision(
-                weight_factor=0.5, veto=False, bcrm_reverse_conf=bcrm_conf,
-            ))
+            return _apply_pf(
+                EntryWeightDecision(
+                    weight_factor=0.5,
+                    veto=False,
+                    bcrm_reverse_conf=bcrm_conf,
+                )
+            )
 
         # ── 0.80-0.85 → ×0.7
         if bcrm_conf >= 0.80:
-            return _apply_pf(EntryWeightDecision(
-                weight_factor=0.7, veto=False, bcrm_reverse_conf=bcrm_conf,
-            ))
+            return _apply_pf(
+                EntryWeightDecision(
+                    weight_factor=0.7,
+                    veto=False,
+                    bcrm_reverse_conf=bcrm_conf,
+                )
+            )
 
         # ── <0.80 → 不干预
-        return _apply_pf(EntryWeightDecision(
-            weight_factor=1.0, veto=False, bcrm_reverse_conf=0.0,
-        ))
+        return _apply_pf(
+            EntryWeightDecision(
+                weight_factor=1.0,
+                veto=False,
+                bcrm_reverse_conf=0.0,
+            )
+        )
 
     except Exception as e:
         logger.warning("[FO] compute_bcrm_entry_weight_factor crash: %s", e)
@@ -160,8 +183,8 @@ def compute_bcrm_entry_weight_factor(
 # ============================================================================
 
 # 超时换仓信号阈值
-_ROTATION_CONF_DELTA = 0.15   # 信号需比当前持仓 confidence 高 0.15
-_ROTATION_CONF_FLOOR = 0.65   # 绝对门槛：信号 confidence ≥ 0.65 才考虑
+_ROTATION_CONF_DELTA = 0.15  # 信号需比当前持仓 confidence 高 0.15
+_ROTATION_CONF_FLOOR = 0.65  # 绝对门槛：信号 confidence ≥ 0.65 才考虑
 
 # BCRM 方向 → evolution 方向映射
 _BCRM_DIR_MAP = {"UP": "long", "DOWN": "short"}

@@ -17,6 +17,7 @@ FAIL-OPEN：单条记录解析失败 → 跳过并告警，不阻塞整体管线
   python3 enrich_backtest_trades.py
   python3 enrich_backtest_trades.py --input <path> --output <path>
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,9 +32,7 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 DEFAULT_INPUT = str(PROJECT_ROOT / ".workbuddy" / "trade_index" / "backtest_trades.jsonl")
-DEFAULT_OUTPUT = str(
-    PROJECT_ROOT / ".workbuddy" / "trade_index" / "backtest_trades_enriched.jsonl"
-)
+DEFAULT_OUTPUT = str(PROJECT_ROOT / ".workbuddy" / "trade_index" / "backtest_trades_enriched.jsonl")
 
 # exit_reason 推断阈值
 TP_THRESHOLD = 0.01  # pnl_pct > 1% → tp_hit
@@ -84,9 +83,7 @@ def enrich_file(input_path: str, output_path: str) -> int:
 
     written = 0
     skipped = 0
-    with open(in_path, "r", encoding="utf-8") as fin, open(
-        out_path, "w", encoding="utf-8"
-    ) as fout:
+    with open(in_path, "r", encoding="utf-8") as fin, open(out_path, "w", encoding="utf-8") as fout:
         for lineno, raw in enumerate(fin, 1):
             line = raw.strip()
             if not line:
@@ -99,14 +96,10 @@ def enrich_file(input_path: str, output_path: str) -> int:
                 fout.write(json.dumps(enriched, ensure_ascii=False) + "\n")
                 written += 1
             except Exception as exc:
-                logger.warning(
-                    "跳过 %s 第 %d 行 (FAIL-OPEN): %s", in_path.name, lineno, exc
-                )
+                logger.warning("跳过 %s 第 %d 行 (FAIL-OPEN): %s", in_path.name, lineno, exc)
                 skipped += 1
 
-    logger.info(
-        "富化完成: 写入 %d 条 → %s (跳过 %d 条)", written, out_path, skipped
-    )
+    logger.info("富化完成: 写入 %d 条 → %s (跳过 %d 条)", written, out_path, skipped)
     return written
 
 
@@ -114,12 +107,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="富化 backtest 交易记录：推断 exit_reason + 补充 tier"
     )
-    parser.add_argument(
-        "--input", default=DEFAULT_INPUT, help="输入 jsonl 路径"
-    )
-    parser.add_argument(
-        "--output", default=DEFAULT_OUTPUT, help="输出 jsonl 路径"
-    )
+    parser.add_argument("--input", default=DEFAULT_INPUT, help="输入 jsonl 路径")
+    parser.add_argument("--output", default=DEFAULT_OUTPUT, help="输出 jsonl 路径")
     args = parser.parse_args()
 
     logging.basicConfig(

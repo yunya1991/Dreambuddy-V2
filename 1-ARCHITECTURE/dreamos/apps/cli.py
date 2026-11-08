@@ -12,9 +12,9 @@ import sys
 
 def main() -> int:
     """CLI 主入口（委托给新的 CLI 架构）"""
-    from dreamos.cli import get_default_app
-    from dreamos.cli.commands import *  # noqa: F401, F403
-    from dreamos.cli.analyze_commands import *  # noqa: F401, F403
+    from dreamos.cli import get_default_app  # noqa: I001
+    from dreamos.cli.commands import *  # noqa: F401, F403, F406
+    from dreamos.cli.analyze_commands import *  # noqa: F401, F403, F406
 
     app = get_default_app()
     return app.run()

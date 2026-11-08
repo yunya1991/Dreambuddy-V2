@@ -23,9 +23,9 @@ G层 - 图存储/压缩层 类型定义
 
 import time
 import uuid
-from typing import Dict, List, Optional, Any, Literal, Union
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 def _gen_id(prefix: str) -> str:
@@ -42,6 +42,7 @@ EdgeId = str
 
 class NodeStatus(str, Enum):
     """节点状态"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -52,13 +53,15 @@ class NodeStatus(str, Enum):
 
 class NodeType(str, Enum):
     """节点类型（G.A 用）"""
-    STEP = "step"          # 执行步骤
+
+    STEP = "step"  # 执行步骤
     DECISION = "decision"  # 决策点
     PARALLEL = "parallel"  # 并行分支
 
 
 class ComponentType(str, Enum):
     """组件类型（G.B 用）"""
+
     COMPONENT = "component"
     MODULE = "module"
     SERVICE = "service"
@@ -66,19 +69,22 @@ class ComponentType(str, Enum):
 
 class CompressionStrategy(str, Enum):
     """压缩策略"""
-    VALUE_PRIORITY = "value_priority"   # 价值优先
-    PATH_PRESERVE = "path_preserve"     # 路径保留
-    CRITICAL_ONLY = "critical_only"     # 关键节点
-    SEMANTIC_AWARE = "semantic_aware"   # 语义感知
+
+    VALUE_PRIORITY = "value_priority"  # 价值优先
+    PATH_PRESERVE = "path_preserve"  # 路径保留
+    CRITICAL_ONLY = "critical_only"  # 关键节点
+    SEMANTIC_AWARE = "semantic_aware"  # 语义感知
 
 
 # ============================================================
 # 节点元数据
 # ============================================================
 
+
 @dataclass
 class NodeMetadata:
     """节点元数据"""
+
     token_cost: int = 0
     latency_ms: int = 0
     status: NodeStatus = NodeStatus.PENDING
@@ -110,9 +116,11 @@ class NodeMetadata:
 # G.B - Blueprint 蓝图级
 # ============================================================
 
+
 @dataclass
 class BNode:
     """G.B 节点 - 组件/模块/服务"""
+
     id: NodeId
     name: str
     type: ComponentType = ComponentType.MODULE
@@ -136,6 +144,7 @@ class BNode:
 @dataclass
 class BEdge:
     """G.B 边 - 数据流/控制流"""
+
     id: EdgeId = field(default_factory=lambda: _gen_id("be"))
     source: NodeId = ""
     target: NodeId = ""
@@ -157,6 +166,7 @@ class BEdge:
 @dataclass
 class BlueprintGraph:
     """G.B - 蓝图（顶层架构图）"""
+
     id: str = field(default_factory=lambda: _gen_id("bp"))
     name: str = ""
     description: str = ""
@@ -205,9 +215,11 @@ class BlueprintGraph:
 # G.A - Architecture 架构级（DAG图）
 # ============================================================
 
+
 @dataclass
 class ANode:
     """G.A 节点 - 执行步骤/决策点/并行分支"""
+
     id: NodeId
     name: str
     type: NodeType = NodeType.STEP
@@ -232,6 +244,7 @@ class ANode:
 @dataclass
 class AEdge:
     """G.A 边 - 数据依赖/条件分支"""
+
     id: EdgeId = field(default_factory=lambda: _gen_id("ae"))
     source: NodeId = ""
     target: NodeId = ""
@@ -253,6 +266,7 @@ class AEdge:
 @dataclass
 class ArchitectureGraph:
     """G.A - 架构图（DAG执行步骤）"""
+
     id: str = field(default_factory=lambda: _gen_id("arch"))
     blueprint_id: str = ""
     name: str = ""
@@ -281,7 +295,7 @@ class ArchitectureGraph:
 
     def topological_sort(self) -> List[NodeId]:
         """拓扑排序"""
-        in_degree = {nid: 0 for nid in self.nodes}
+        in_degree = dict.fromkeys(self.nodes, 0)
         for edge in self.edges:
             if edge.target in in_degree:
                 in_degree[edge.target] += 1
@@ -318,9 +332,11 @@ class ArchitectureGraph:
 # G.C - Chronicle 记录级（时间线）
 # ============================================================
 
+
 @dataclass
 class CNode:
     """G.C 节点 - 执行记录"""
+
     id: NodeId
     architecture_node_id: NodeId = ""  # 对应的 G.A 节点
     execution_id: str = ""
@@ -367,6 +383,7 @@ class CNode:
 @dataclass
 class CEdge:
     """G.C 边 - 数据传递记录"""
+
     id: EdgeId = field(default_factory=lambda: _gen_id("ce"))
     source: NodeId = ""
     target: NodeId = ""
@@ -386,6 +403,7 @@ class CEdge:
 @dataclass
 class ChronicleGraph:
     """G.C - 时间线（执行记录）"""
+
     id: str = field(default_factory=lambda: _gen_id("chron"))
     architecture_id: str = ""
     execution_id: str = ""
@@ -442,9 +460,11 @@ class ChronicleGraph:
 # 压缩结果
 # ============================================================
 
+
 @dataclass
 class CompressionResult:
     """压缩结果"""
+
     success: bool = False
     strategy: CompressionStrategy = CompressionStrategy.VALUE_PRIORITY
 

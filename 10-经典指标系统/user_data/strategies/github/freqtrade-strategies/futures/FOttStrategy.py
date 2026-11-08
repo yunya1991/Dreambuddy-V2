@@ -1,11 +1,8 @@
-import logging
-import math
+import freqtrade.vendor.qtpylib.indicators as qtpylib
+import numpy as np
+import talib.abstract as ta
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
-import talib.abstract as ta
-import numpy as np
-import freqtrade.vendor.qtpylib.indicators as qtpylib
-
 
 
 class FOttStrategy(IStrategy):
@@ -54,16 +51,12 @@ class FOttStrategy(IStrategy):
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
-            (
-                dataframe["adx"]>60
-            ),
+            (dataframe["adx"] > 60),
             "exit_long",
         ] = 1
 
         dataframe.loc[
-            (
-                dataframe["adx"]>60
-            ),
+            (dataframe["adx"] > 60),
             "exit_short",
         ] = 1
 
@@ -104,7 +97,7 @@ class FOttStrategy(IStrategy):
         df["longstop"] = 0.0
         df["shortstop"] = 999999999999999999
         # df['dir'] = 1
-        for i in df["UD"]:
+        for _i in df["UD"]:
 
             def maxlongstop():
                 df.loc[(df["newlongstop"] > df["longstop"].shift(1)), "longstop"] = df[
@@ -117,12 +110,12 @@ class FOttStrategy(IStrategy):
                 return df["longstop"]
 
             def minshortstop():
-                df.loc[
-                    (df["newshortstop"] < df["shortstop"].shift(1)), "shortstop"
-                ] = df["newshortstop"]
-                df.loc[
-                    (df["shortstop"].shift(1) < df["newshortstop"]), "shortstop"
-                ] = df["shortstop"].shift(1)
+                df.loc[(df["newshortstop"] < df["shortstop"].shift(1)), "shortstop"] = df[
+                    "newshortstop"
+                ]
+                df.loc[(df["shortstop"].shift(1) < df["newshortstop"]), "shortstop"] = df[
+                    "shortstop"
+                ].shift(1)
 
                 return df["shortstop"]
 
@@ -160,7 +153,7 @@ class FOttStrategy(IStrategy):
 
         df["trend"] = 0
         df["dir"] = 0
-        for i in df["UD"]:
+        for _i in df["UD"]:
             df["trend"] = np.where(
                 ((df["xshortstop"] == 1)),
                 1,

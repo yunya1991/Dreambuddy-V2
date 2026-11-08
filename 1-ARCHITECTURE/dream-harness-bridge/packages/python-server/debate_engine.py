@@ -15,6 +15,7 @@ C-Drive 自驱动时用 self._llm_fn；外部驱动时由调用方提供内容�
 
 位置：dream-harness-bridge/packages/python-server/debate_engine.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -25,7 +26,8 @@ from datetime import datetime
 from typing import Any, Callable, Optional
 
 from persona import (
-    Persona, DEFAULT_BULL, DEFAULT_BEAR, DEFAULT_JUDGE, match_personas,
+    Persona,
+    match_personas,
 )
 from robust_json import extract_json_object
 
@@ -63,6 +65,7 @@ _JUDGE_PROMPT = """你是一位中立裁判。请综合双方辩手的论点，�
 @dataclass
 class _Argument:
     """辩手结构化输出（C-Drive 内部最小实现）。"""
+
     thesis: str = ""
     arguments: list[str] = field(default_factory=list)
     quote: str = ""
@@ -101,6 +104,7 @@ def _get_opponent_thesis(transcript: list[dict], my_side: str) -> str | None:
 
 
 # ── DebateEngine ──────────────────────────────────────────────
+
 
 class DebateEngine:
     """C-Drive 内部辩论引擎。
@@ -185,44 +189,52 @@ class DebateEngine:
             # Bull
             opponent = _get_opponent_thesis(transcript, "bull")
             bull_sys = bull_persona.build_system_prompt(
-                topic, opponent_thesis=opponent,
-                background=background, memories=memory_strs or None,
+                topic,
+                opponent_thesis=opponent,
+                background=background,
+                memories=memory_strs or None,
             )
-            bull_raw = await asyncio.to_thread(
-                self._call_llm, f"{bull_sys}\n话题:{topic}")
+            bull_raw = await asyncio.to_thread(self._call_llm, f"{bull_sys}\n话题:{topic}")
             bull_arg = _Argument.parse(bull_raw)
-            transcript.append({
-                "speaker": "bull", "round": round_num + 1,
-                "content": {
-                    "thesis": bull_arg.thesis,
-                    "arguments": bull_arg.arguments,
-                    "quote": bull_arg.quote,
-                    "confidence": bull_arg.confidence,
-                },
-                "persona": bull_persona.name,
-                "timestamp": datetime.now().isoformat(),
-            })
+            transcript.append(
+                {
+                    "speaker": "bull",
+                    "round": round_num + 1,
+                    "content": {
+                        "thesis": bull_arg.thesis,
+                        "arguments": bull_arg.arguments,
+                        "quote": bull_arg.quote,
+                        "confidence": bull_arg.confidence,
+                    },
+                    "persona": bull_persona.name,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
             # Bear
             opponent = _get_opponent_thesis(transcript, "bear")
             bear_sys = bear_persona.build_system_prompt(
-                topic, opponent_thesis=opponent,
-                background=background, memories=memory_strs or None,
+                topic,
+                opponent_thesis=opponent,
+                background=background,
+                memories=memory_strs or None,
             )
-            bear_raw = await asyncio.to_thread(
-                self._call_llm, f"{bear_sys}\n话题:{topic}")
+            bear_raw = await asyncio.to_thread(self._call_llm, f"{bear_sys}\n话题:{topic}")
             bear_arg = _Argument.parse(bear_raw)
-            transcript.append({
-                "speaker": "bear", "round": round_num + 1,
-                "content": {
-                    "thesis": bear_arg.thesis,
-                    "arguments": bear_arg.arguments,
-                    "quote": bear_arg.quote,
-                    "confidence": bear_arg.confidence,
-                },
-                "persona": bear_persona.name,
-                "timestamp": datetime.now().isoformat(),
-            })
+            transcript.append(
+                {
+                    "speaker": "bear",
+                    "round": round_num + 1,
+                    "content": {
+                        "thesis": bear_arg.thesis,
+                        "arguments": bear_arg.arguments,
+                        "quote": bear_arg.quote,
+                        "confidence": bear_arg.confidence,
+                    },
+                    "persona": bear_persona.name,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # 4. Judge
         verdict = await self._run_judge(topic, transcript)
@@ -249,8 +261,12 @@ class DebateEngine:
         raw = await asyncio.to_thread(self._call_llm, prompt)
         data = extract_json_object(raw)
         if data is None:
-            return {"summary": "裁判裁决生成失败", "winner": None,
-                    "key_insights": [], "topic_angle": ""}
+            return {
+                "summary": "裁判裁决生成失败",
+                "winner": None,
+                "key_insights": [],
+                "topic_angle": "",
+            }
         return {
             "summary": str(data.get("summary", "")),
             "winner": data.get("winner"),
@@ -284,7 +300,10 @@ class DebateEngine:
             return []
 
     def _record_debate(
-        self, topic: str, transcript: list[dict], verdict: dict,
+        self,
+        topic: str,
+        transcript: list[dict],
+        verdict: dict,
     ):
         """将辩论经验写入 4-MEMORY。
 
@@ -296,18 +315,21 @@ class DebateEngine:
             for turn in transcript:
                 content = turn["content"]
                 side = turn["speaker"]
-                record_content = json.dumps({
-                    "type": "argument",
-                    "subtype": "argument-pattern",
-                    "topic": topic,
-                    "side": side,
-                    "thesis": content.get("thesis", ""),
-                    "arguments": content.get("arguments", []),
-                    "quote": content.get("quote", ""),
-                    "confidence": content.get("confidence", 0.0),
-                    "persona": turn.get("persona", ""),
-                    "round": turn.get("round", 0),
-                }, ensure_ascii=False)
+                record_content = json.dumps(
+                    {
+                        "type": "argument",
+                        "subtype": "argument-pattern",
+                        "topic": topic,
+                        "side": side,
+                        "thesis": content.get("thesis", ""),
+                        "arguments": content.get("arguments", []),
+                        "quote": content.get("quote", ""),
+                        "confidence": content.get("confidence", 0.0),
+                        "persona": turn.get("persona", ""),
+                        "round": turn.get("round", 0),
+                    },
+                    ensure_ascii=False,
+                )
                 # 双维度 tags: 辩论维度 + 交易维度
                 tags = f"debate,argument-pattern,{topic[:20]}"
                 self._cognitive.record(
@@ -317,14 +339,17 @@ class DebateEngine:
                 )
             # 记录裁判裁决
             if verdict:
-                verdict_content = json.dumps({
-                    "type": "verdict",
-                    "topic": topic,
-                    "winner": verdict.get("winner"),
-                    "summary": verdict.get("summary", ""),
-                    "key_insights": verdict.get("key_insights", []),
-                    "topic_angle": verdict.get("topic_angle", ""),
-                }, ensure_ascii=False)
+                verdict_content = json.dumps(
+                    {
+                        "type": "verdict",
+                        "topic": topic,
+                        "winner": verdict.get("winner"),
+                        "summary": verdict.get("summary", ""),
+                        "key_insights": verdict.get("key_insights", []),
+                        "topic_angle": verdict.get("topic_angle", ""),
+                    },
+                    ensure_ascii=False,
+                )
                 self._cognitive.record(
                     content=verdict_content,
                     quality_level="B",
@@ -341,10 +366,7 @@ class DebateEngine:
         if not memories:
             return ""
 
-        qualified = [
-            m for m in memories
-            if m.get("quality_score", 0) >= 0.40
-        ]
+        qualified = [m for m in memories if m.get("quality_score", 0) >= 0.40]
         if not qualified:
             return ""
 

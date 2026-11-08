@@ -9,6 +9,7 @@ C3 RED: NeuralSDE Cross-Attention 集成测试
 
 RED 阶段：cross_attention 集成尚未实现 → 测试失败
 """
+
 from __future__ import annotations
 
 import pytest
@@ -145,7 +146,7 @@ class TestNeuralSDEModelCrossAttention:
 
     def test_model_forecast_with_factors(self):
         """forecast() 接受 exogenous_factors 参数。"""
-        from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel
+        from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel  # noqa: I001
         import numpy as np
 
         model = NeuralSDEModel(
@@ -173,7 +174,7 @@ class TestNeuralSDEModelCrossAttention:
 
     def test_model_forecast_fail_open_no_factors(self):
         """forecast() 不传 exogenous_factors 时 FAIL-OPEN，不崩溃。"""
-        from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel
+        from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel  # noqa: I001
         import numpy as np
 
         model = NeuralSDEModel(

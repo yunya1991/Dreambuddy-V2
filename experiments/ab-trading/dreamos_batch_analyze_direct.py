@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json
+import json  # noqa: I001
 import time
 import datetime
 import sys
@@ -20,16 +20,20 @@ def analyze_symbol(agent, symbol: str) -> dict:
         if not mkt_data:
             elapsed = time.time() - start
             print(f"❌ {symbol} 获取市场数据失败")
-            return {"error": "无法获取市场数据", "symbol": symbol, "_elapsed_ms": int(elapsed * 1000)}
-        
+            return {
+                "error": "无法获取市场数据",
+                "symbol": symbol,
+                "_elapsed_ms": int(elapsed * 1000),
+            }
+
         decision = agent.analyze(symbol, mkt_data)
         elapsed = time.time() - start
         decision["_elapsed_ms"] = int(elapsed * 1000)
-        
+
         action = decision.get("action", "UNKNOWN")
         confidence = decision.get("confidence", 0)
         print(f"✅ {symbol} 分析完成 [{elapsed:.2f}s] -> {action} (置信度: {confidence:.3f})")
-        
+
         return decision
     except Exception as e:
         print(f"❌ {symbol} 分析异常: {str(e)}")
@@ -43,8 +47,8 @@ def main():
     print(f"币种列表: {', '.join(SYMBOLS)}")
     print("=" * 60)
 
-    agent = AgentC(agent_id='b')
-    
+    agent = AgentC(agent_id="b")
+
     results = []
     for i, symbol in enumerate(SYMBOLS, 1):
         print(f"\n[{i}/{len(SYMBOLS)}]")
@@ -79,17 +83,22 @@ def main():
     history_dir.mkdir(parents=True, exist_ok=True)
     summary_file = history_dir / f"batch_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(summary_file, "w") as f:
-        json.dump({
-            "timestamp": datetime.datetime.now().isoformat(),
-            "symbols": SYMBOLS,
-            "results": results,
-            "summary": {
-                "long": long_count,
-                "short": short_count,
-                "hold": hold_count,
-                "error": error_count
-            }
-        }, f, indent=2, default=str)
+        json.dump(
+            {
+                "timestamp": datetime.datetime.now().isoformat(),
+                "symbols": SYMBOLS,
+                "results": results,
+                "summary": {
+                    "long": long_count,
+                    "short": short_count,
+                    "hold": hold_count,
+                    "error": error_count,
+                },
+            },
+            f,
+            indent=2,
+            default=str,
+        )
 
     print(f"\n📁 汇总日志已保存: {summary_file}")
 

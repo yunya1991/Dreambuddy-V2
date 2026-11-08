@@ -13,6 +13,7 @@ inference 步骤跳过（不执行），action 步骤决定方向。
 
 FAIL-OPEN: 缺少数据时返回 WAIT，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -38,9 +39,13 @@ def evaluate_ftc(ftc: FTC, kline_data: dict[str, Any]) -> dict[str, Any]:
     """
     conditions = ftc.condition_steps
     if not conditions:
-        return {"signal": "WAIT", "confidence": 0.0,
-                "conditions_met": 0, "conditions_total": 0,
-                "reason": "no conditions"}
+        return {
+            "signal": "WAIT",
+            "confidence": 0.0,
+            "conditions_met": 0,
+            "conditions_total": 0,
+            "reason": "no conditions",
+        }
 
     met_count = 0
     confidences: list[float] = []
@@ -65,9 +70,13 @@ def evaluate_ftc(ftc: FTC, kline_data: dict[str, Any]) -> dict[str, Any]:
     # 所有条件满足 → 执行 action
     action = ftc.action_steps[0] if ftc.action_steps else None
     if not action:
-        return {"signal": "WAIT", "confidence": 1.0,
-                "conditions_met": met_count, "conditions_total": len(conditions),
-                "reason": "conditions met but no action"}
+        return {
+            "signal": "WAIT",
+            "confidence": 1.0,
+            "conditions_met": met_count,
+            "conditions_total": len(conditions),
+            "reason": "conditions met but no action",
+        }
 
     direction = _action_to_direction(action.gene_ref)
     avg_conf = sum(confidences) / len(confidences) if confidences else 1.0
@@ -148,7 +157,9 @@ def _check_condition(cond: FTCStep, kline_data: dict[str, Any]) -> tuple[bool, f
             if gene_ref == "CD-REGIME-RANGING":
                 return regime == "ranging", 1.0 if regime == "ranging" else 0.0
             elif gene_ref == "CD-REGIME-TREND":
-                return regime in ("trend_up", "trend_down"), 1.0 if regime.startswith("trend") else 0.0
+                return regime in ("trend_up", "trend_down"), (
+                    1.0 if regime.startswith("trend") else 0.0
+                )
             else:  # CD-REGIME-DETECT
                 return regime in ("trend_up", "trend_down", "ranging"), 0.5
 

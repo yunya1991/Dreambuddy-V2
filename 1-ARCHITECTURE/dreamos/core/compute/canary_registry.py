@@ -14,29 +14,29 @@ DreamOS Registry 支持版本化节点：node@1.2.3 + node@1.2.4-canary
 import logging
 import random
 import threading
-import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class CanaryStatus(str, Enum):
-    DRAFT = "draft"           # 未上线
-    CANARY = "canary"         # 灰度中
-    PROMOTED = "promoted"     # 全量上线
-    ABORTED = "aborted"       # 回滚
+    DRAFT = "draft"  # 未上线
+    CANARY = "canary"  # 灰度中
+    PROMOTED = "promoted"  # 全量上线
+    ABORTED = "aborted"  # 回滚
     PENDING_DECISION = "pending_decision"  # 等待自动决策
 
 
 @dataclass
 class NodeVersion:
     """节点版本"""
+
     node_id: str
-    version: str              # e.g. "1.0.0" or "1.1.0-canary"
-    node: Any                 # 节点实例
+    version: str  # e.g. "1.0.0" or "1.1.0-canary"
+    node: Any  # 节点实例
     is_canary: bool = False
     traffic_ratio: float = 1.0  # 0.0~1.0
     status: CanaryStatus = CanaryStatus.PROMOTED
@@ -100,6 +100,7 @@ class NodeVersion:
 @dataclass
 class CanaryDecision:
     """灰度自动决策结果"""
+
     action: str  # "promote" | "rollback" | "continue" | "insufficient_data"
     reason: str
     stable_version: str
@@ -140,9 +141,9 @@ class VersionedNodeRegistry:
     """
 
     # 自动决策阈值
-    MIN_SAMPLE_SIZE = 10           # 最少样本数
-    MAX_ERROR_RATE_DELTA = 0.05    # 灰度版错误率不能比稳定版高 5%
-    MIN_CONFIDENCE_DELTA = -0.05   # 灰度版置信度不能比稳定版低 5%
+    MIN_SAMPLE_SIZE = 10  # 最少样本数
+    MAX_ERROR_RATE_DELTA = 0.05  # 灰度版错误率不能比稳定版高 5%
+    MIN_CONFIDENCE_DELTA = -0.05  # 灰度版置信度不能比稳定版低 5%
     MAX_DURATION_DELTA_RATIO = 0.2  # 灰度版耗时不能比稳定版高 20%
 
     def __init__(self):
@@ -174,7 +175,9 @@ class VersionedNodeRegistry:
                 status=CanaryStatus.CANARY if is_canary else CanaryStatus.PROMOTED,
             )
             self._versions[node_id][version] = nv
-            logger.info(f"[VersionedRegistry] 注册 {node_id}@{version} (canary={is_canary}, ratio={traffic_ratio})")
+            logger.info(
+                f"[VersionedRegistry] 注册 {node_id}@{version} (canary={is_canary}, ratio={traffic_ratio})"
+            )
             return nv
 
     # ------------------------------------------------------------------
@@ -192,10 +195,7 @@ class VersionedNodeRegistry:
                 return None
 
             # 过滤掉 aborted 的版本
-            active = {
-                v: nv for v, nv in versions.items()
-                if nv.status != CanaryStatus.ABORTED
-            }
+            active = {v: nv for v, nv in versions.items() if nv.status != CanaryStatus.ABORTED}
             if not active:
                 return None
 
@@ -296,7 +296,9 @@ class VersionedNodeRegistry:
 
             # 3. 耗时
             if stable.avg_duration_ms > 0:
-                duration_ratio = (canary.avg_duration_ms - stable.avg_duration_ms) / stable.avg_duration_ms
+                duration_ratio = (
+                    canary.avg_duration_ms - stable.avg_duration_ms
+                ) / stable.avg_duration_ms
                 if duration_ratio > self.MAX_DURATION_DELTA_RATIO:
                     reasons.append(
                         f"耗时增加: canary={canary.avg_duration_ms:.0f}ms vs stable={stable.avg_duration_ms:.0f}ms (+{duration_ratio:.0%})"
@@ -305,7 +307,9 @@ class VersionedNodeRegistry:
             if reasons:
                 # 回滚
                 canary.status = CanaryStatus.ABORTED
-                logger.warning(f"[VersionedRegistry] 回滚 {node_id}@{canary.version}: {'; '.join(reasons)}")
+                logger.warning(
+                    f"[VersionedRegistry] 回滚 {node_id}@{canary.version}: {'; '.join(reasons)}"
+                )
                 return CanaryDecision(
                     action="rollback",
                     reason="; ".join(reasons),
@@ -345,9 +349,7 @@ class VersionedNodeRegistry:
         with self._lock:
             result = {}
             for node_id, versions in self._versions.items():
-                result[node_id] = {
-                    v: nv.to_dict() for v, nv in versions.items()
-                }
+                result[node_id] = {v: nv.to_dict() for v, nv in versions.items()}
             return result
 
     def reset_metrics(self, node_id: str, version: str = None) -> None:

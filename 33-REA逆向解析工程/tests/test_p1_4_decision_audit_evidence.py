@@ -10,10 +10,9 @@ RED 契约：
   - 有 evidence 时 evidence_entries 非空
   - 每个 entry 可被 EvidenceEntry(**entry) 构造（字段合法）
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -22,21 +21,26 @@ from core.cognitive_integration import (
     prepare_decision_record_params,
 )
 
-
 # ─────────────────────────── 测试用 Evidence mock ───────────────────────────
+
 
 def _make_evidence(content="结论", level="observation", provenance="test", confidence=0.8):
     """构造一个类似 33-REA Evidence 的 mock 对象。"""
-    return type("E", (), {
-        "content": content,
-        "level": type("L", (), {"value": level})(),
-        "provenance": provenance,
-        "source": provenance,
-        "confidence": confidence,
-    })()
+    return type(
+        "E",
+        (),
+        {
+            "content": content,
+            "level": type("L", (), {"value": level})(),
+            "provenance": provenance,
+            "source": provenance,
+            "confidence": confidence,
+        },
+    )()
 
 
 # ─────────────────────────── RED: decision ───────────────────────────
+
 
 def test_decision_record_params_has_evidence_entries_field():
     """RED: prepare_decision_record_params 返回 evidence_entries 字段。"""
@@ -95,6 +99,7 @@ def test_decision_record_params_evidence_entry_structure_legal():
 
 
 # ─────────────────────────── RED: audit ───────────────────────────
+
 
 def test_audit_record_params_has_evidence_entries_field():
     """RED: prepare_audit_record_params 返回 evidence_entries 字段。"""

@@ -1,4 +1,4 @@
-# ADR-0002: Dual Decision Chain and 50-NN Contradiction Evaluator
+﻿# ADR-0002: Dual Decision Chain and 50-NN Contradiction Evaluator
 
 - 状态：accepted（2026-11-07 第二轮复审通过；R0 实施受 MVB 5/5 门禁约束）
 - 日期：2026-11-07

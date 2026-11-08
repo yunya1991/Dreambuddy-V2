@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-11-08T04:00:03",
+  "dry_run": false,
+  "inbox_files": [],
+  "content_hash_before": "dd4450894a435fa40498baeef80365923283d8cc269c223c80e43a3d01cd53f8",
+  "content_hash_after": "dd4450894a435fa40498baeef80365923283d8cc269c223c80e43a3d01cd53f8",
+  "changed": false,
+  "total_sources": 146,
+  "archived": [],
+  "added": 0,
+  "updated": 0,
+  "skipped": 0,
+  "category_conflict": 0,
+  "id_conflict": 0,
+  "retired": 0,
+  "inbox_total": 0,
+  "matched_existing": 0,
+  "new_ids": []
+}

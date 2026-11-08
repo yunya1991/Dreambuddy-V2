@@ -7,6 +7,7 @@
   - 各 Provider 可 fetch_cases 返回 TrainingCase 列表
   - ActiveTrainingCollector 可调度全部 5 个 Provider
 """
+
 import os
 import sys
 import tempfile
@@ -40,47 +41,52 @@ def main():
     # 1. TDR
     try:
         from tdr_data_provider import TDRTrainingDataProvider
+
         providers["tdr"] = TDRTrainingDataProvider()
-        print(f"  [1/5] tdr: ✅ 实例化成功")
+        print("  [1/5] tdr: ✅ 实例化成功")
     except Exception as e:
         print(f"  [1/5] tdr: ❌ 失败: {e}")
 
     # 2. Cognitive
     try:
         from cognitive_memory_collector import CognitiveMemoryCollector
+
         providers["cognitive"] = CognitiveMemoryCollector()
-        print(f"  [2/5] cognitive: ✅ 实例化成功")
+        print("  [2/5] cognitive: ✅ 实例化成功")
     except Exception as e:
         print(f"  [2/5] cognitive: ❌ 失败: {e}")
 
     # 3. Skill
     try:
         from skill_system_collector import SkillSystemCollector
+
         providers["skill"] = SkillSystemCollector()
-        print(f"  [3/5] skill: ✅ 实例化成功")
+        print("  [3/5] skill: ✅ 实例化成功")
     except Exception as e:
         print(f"  [3/5] skill: ❌ 失败: {e}")
 
     # 4. Doc
     try:
         from doc_knowledge_collector import DocKnowledgeCollector
+
         providers["doc"] = DocKnowledgeCollector()
-        print(f"  [4/5] doc: ✅ 实例化成功")
+        print("  [4/5] doc: ✅ 实例化成功")
     except Exception as e:
         print(f"  [4/5] doc: ❌ 失败: {e}")
 
     # 5. REA
     try:
         from rea_batch_collector import REABatchCollector
+
         providers["rea"] = REABatchCollector()
-        print(f"  [5/5] rea: ✅ 实例化成功")
+        print("  [5/5] rea: ✅ 实例化成功")
     except Exception as e:
         print(f"  [5/5] rea: ❌ 失败: {e}")
 
     # ── 验收 2: ActiveTrainingCollector 注册全部5个 ──────────
     print("\n注册到 ActiveTrainingCollector:")
     collector = ActiveTrainingCollector()
-    for name, provider in providers.items():
+    for name, provider in providers.items():  # noqa: B007
         collector.register_provider(provider)
 
     registered = list(collector._providers.keys())
@@ -89,7 +95,7 @@ def main():
     actual = set(registered)
 
     if expected == actual:
-        print(f"  ✅ 5个数据源全部注册成功")
+        print("  ✅ 5个数据源全部注册成功")
     else:
         missing = expected - actual
         print(f"  ❌ 缺少数据源: {missing}")
@@ -108,15 +114,22 @@ def main():
 
     # TDR: 清空后存入一条测试数据
     try:
-        from case_bank_server import store_case, _connect
+        from case_bank_server import _connect, store_case
+
         conn = _connect()
         conn.execute("DELETE FROM solution_cases")
         conn.commit()
         conn.close()
-        store_case({
-            "intent": "f4_tdr_test", "actions": ["a"], "outcome_text": "o",
-            "learned": ["l"], "quality": "B", "source": "tdr",
-        })
+        store_case(
+            {
+                "intent": "f4_tdr_test",
+                "actions": ["a"],
+                "outcome_text": "o",
+                "learned": ["l"],
+                "quality": "B",
+                "source": "tdr",
+            }
+        )
         cases = providers["tdr"].fetch_cases(limit=10)
         print(f"  tdr: {len(cases)} cases ✅")
     except Exception as e:

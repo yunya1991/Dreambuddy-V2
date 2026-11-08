@@ -9,18 +9,19 @@ ftc_backtest — FTC 回测引擎
 
 FAIL-OPEN: 任何异常返回 0 分，不抛异常。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import logging
 from typing import Any
 
-import numpy as np
 
 from .ftc_schema import FTC
 from .ftc_executor import evaluate_ftc
 
 try:
     from dreambuddy_evolution.core.strategy_gene import calculate_ess
+
     _ESS_AVAILABLE = True
 except ImportError:
     _ESS_AVAILABLE = False
@@ -28,6 +29,7 @@ except ImportError:
 
 try:
     from dreambuddy_evolution.tests.v3_backtest import _generate_synthetic_klines
+
     _SYNTH_AVAILABLE = True
 except ImportError:
     _SYNTH_AVAILABLE = False
@@ -117,6 +119,7 @@ def backtest_ftc(ftc: FTC, symbol: str = "BTC", n_bars: int = BACKTEST_BARS) -> 
     else:
         # 降级: 手动计算（公式与 strategy_gene 一致）
         import math
+
         n_term = min(1.0, math.sqrt(max(N, 0) / 500.0))
         ess = 0.4 * H + 0.4 * S + 0.2 * n_term
         ess = max(0.0, min(1.0, ess))
@@ -148,10 +151,12 @@ def backtest_ftc_list(ftcs: list[FTC], symbol: str = "BTC") -> list[dict[str, An
     return results
 
 
-def _build_kline_data(klines: list[dict], idx: int, window: int, symbol: str = "BTC") -> dict[str, Any]:
+def _build_kline_data(
+    klines: list[dict], idx: int, window: int, symbol: str = "BTC"
+) -> dict[str, Any]:
     """从合成 K 线构建 kline_data（供 FTC condition 检查用）"""
     start = max(0, idx - window + 1)
-    w = klines[start:idx + 1]
+    w = klines[start : idx + 1]
     closes = [k["close"] for k in w]
     vols = [k["volume"] for k in w]
 
@@ -161,7 +166,7 @@ def _build_kline_data(klines: list[dict], idx: int, window: int, symbol: str = "
     base_vol_ratio = vol_5 / max(vol_20, 1e-9)
 
     # 周期性放量: 每 25 根 K 线放量一次 (模拟事件驱动)
-    is_surge = (idx % 25 == 0)
+    is_surge = idx % 25 == 0
     vol_ratio = base_vol_ratio * (1.8 if is_surge else 1.0)
 
     # 合成数据带趋势，根据 trend_phase 生成额外特征
@@ -218,6 +223,12 @@ def _get_actual_direction(klines: list[dict], idx: int) -> str:
 def _empty_result(ftc_id: str) -> dict[str, Any]:
     return {
         "ftc_id": ftc_id,
-        "H": 0.0, "S": 0.0, "N": 0, "ess": 0.0,
-        "long_signals": 0, "short_signals": 0, "wait_signals": 0, "correct": 0,
+        "H": 0.0,
+        "S": 0.0,
+        "N": 0,
+        "ess": 0.0,
+        "long_signals": 0,
+        "short_signals": 0,
+        "wait_signals": 0,
+        "correct": 0,
     }

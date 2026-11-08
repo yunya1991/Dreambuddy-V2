@@ -32,13 +32,13 @@
   - Voyager: 自动课程 + 技能库 + self-verification
   - 协同 skill_indexer.py (validate/detect_conflicts/detect_drift)
 """
+
 from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, List, Optional
-
 
 # ============================================================
 # 验证结果 dataclass
@@ -85,9 +85,7 @@ def _import_skill_indexer():
     """
     try:
         repo_root = Path(__file__).resolve().parents[2]
-        skill_idx_dir = (
-            repo_root / "1-ARCHITECTURE" / "skills" / "dream-skill-index-governance"
-        )
+        skill_idx_dir = repo_root / "1-ARCHITECTURE" / "skills" / "dream-skill-index-governance"
         if skill_idx_dir.exists() and str(skill_idx_dir) not in sys.path:
             sys.path.insert(0, str(skill_idx_dir))
         import skill_indexer  # type: ignore[import-not-found]
@@ -281,9 +279,7 @@ class SkillVerificationGate:
             import re
 
             # 匹配 triggers: 后面跟列表或值
-            trigger_match = re.search(
-                r"^triggers:\s*(.+)$", fm_text, re.MULTILINE
-            )
+            trigger_match = re.search(r"^triggers:\s*(.+)$", fm_text, re.MULTILINE)
             if not trigger_match:
                 return False
 
@@ -294,7 +290,7 @@ class SkillVerificationGate:
             # 检查后续行是否有 - 项
             if trigger_val == "" or trigger_val == "~":
                 # 可能是多行列表，检查后续行
-                lines_after = fm_text[trigger_match.end():]
+                lines_after = fm_text[trigger_match.end() :]
                 return bool(re.search(r"^\s*-\s+\S", lines_after, re.MULTILINE))
             return True
         except Exception:

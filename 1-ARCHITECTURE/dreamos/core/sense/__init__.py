@@ -29,32 +29,40 @@ DreamOS S层 — Sense 感知层
     print(result.intent_type, result.confidence)
 """
 
-from .types import (
-    IntentType,
-    IntentInput,
-    IntentResult,
-    RecognizerResult,
-    register_intent_type,
-    get_intent_definition,
-)
 from .intent_engine import IntentEngine
-from .token_budget import TokenBudgetManager, BudgetLevel, BUDGET_MODES
 from .recognizers import (
     BaseRecognizer,
-    RuleBasedRecognizer,
-    LLMBasedRecognizer,
     DynamicIntentRecognizer,
+    LLMBasedRecognizer,
+    RuleBasedRecognizer,
+)
+from .token_budget import BUDGET_MODES, BudgetLevel, TokenBudgetManager
+from .types import (
+    IntentInput,
+    IntentResult,
+    IntentType,
+    RecognizerResult,
+    get_intent_definition,
+    register_intent_type,
 )
 
 __all__ = [
     # types
-    "IntentType", "IntentInput", "IntentResult", "RecognizerResult",
-    "register_intent_type", "get_intent_definition",
+    "IntentType",
+    "IntentInput",
+    "IntentResult",
+    "RecognizerResult",
+    "register_intent_type",
+    "get_intent_definition",
     # engine
     "IntentEngine",
     # budget
-    "TokenBudgetManager", "BudgetLevel", "BUDGET_MODES",
+    "TokenBudgetManager",
+    "BudgetLevel",
+    "BUDGET_MODES",
     # recognizers
-    "BaseRecognizer", "RuleBasedRecognizer", "LLMBasedRecognizer",
+    "BaseRecognizer",
+    "RuleBasedRecognizer",
+    "LLMBasedRecognizer",
     "DynamicIntentRecognizer",
 ]

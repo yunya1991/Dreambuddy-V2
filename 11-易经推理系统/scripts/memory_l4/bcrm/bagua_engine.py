@@ -18,10 +18,9 @@
   选择 S 更小的方向 = 阻力最小方向
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple, Optional
 import math
-
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Tuple
 
 # ============================================================
 # 八卦定义（力场拓扑模式）
@@ -46,21 +45,27 @@ GUA_GEN = "gen"
 GUA_KUN = "kun"
 
 GUA_NAMES_CN = {
-    GUA_QIAN: "乾", GUA_DUI: "兑", GUA_LI: "离", GUA_ZHEN: "震",
-    GUA_XUN: "巽", GUA_KAN: "坎", GUA_GEN: "艮", GUA_KUN: "坤",
+    GUA_QIAN: "乾",
+    GUA_DUI: "兑",
+    GUA_LI: "离",
+    GUA_ZHEN: "震",
+    GUA_XUN: "巽",
+    GUA_KAN: "坎",
+    GUA_GEN: "艮",
+    GUA_KUN: "坤",
 }
 
 # 八卦三爻（从下到上：初/二/三 = 里/中/表）
 # 阳爻=1，阴爻=0；标准卦形编码与《说卦传》一致
 GUA_BINARY = {
     GUA_QIAN: (1, 1, 1),  # 乾☰：纯阳，最强做多
-    GUA_DUI:  (1, 1, 0),  # 兑☱：上缺(三爻阴)
-    GUA_LI:   (1, 0, 1),  # 离☲：中虚(二爻阴，虚火)
+    GUA_DUI: (1, 1, 0),  # 兑☱：上缺(三爻阴)
+    GUA_LI: (1, 0, 1),  # 离☲：中虚(二爻阴，虚火)
     GUA_ZHEN: (1, 0, 0),  # 震☳：一阳在下（初爻阳=启动震动从下起）
-    GUA_XUN:  (0, 1, 1),  # 巽☴：一阴在下（初爻阴=风从下渗）
-    GUA_KAN:  (0, 1, 0),  # 坎☵：中实(二爻阳=险陷)
-    GUA_GEN:  (0, 0, 1),  # 艮☶：一阳在上（三爻阳=山为止于上）
-    GUA_KUN:  (0, 0, 0),  # 坤☷：纯阴，最强做空
+    GUA_XUN: (0, 1, 1),  # 巽☴：一阴在下（初爻阴=风从下渗）
+    GUA_KAN: (0, 1, 0),  # 坎☵：中实(二爻阳=险陷)
+    GUA_GEN: (0, 0, 1),  # 艮☶：一阳在上（三爻阳=山为止于上）
+    GUA_KUN: (0, 0, 0),  # 坤☷：纯阴，最强做空
 }
 
 
@@ -70,10 +75,11 @@ GUA_BINARY = {
 @dataclass
 class SixiangVector:
     """四象向量 — 四个维度的力分量。"""
-    time_force: float = 0.0      # 时：周期力（-1~+1）
-    space_force: float = 0.0     # 空：空间力（-1~+1）
-    surface_force: float = 0.0   # 表：技术力（-1~+1）
-    core_force: float = 0.0      # 里：内驱力（-1~+1）
+
+    time_force: float = 0.0  # 时：周期力（-1~+1）
+    space_force: float = 0.0  # 空：空间力（-1~+1）
+    surface_force: float = 0.0  # 表：技术力（-1~+1）
+    core_force: float = 0.0  # 里：内驱力（-1~+1）
 
     # 各维度的强度（0~1，用于计算确定性）
     time_strength: float = 0.0
@@ -83,15 +89,19 @@ class SixiangVector:
 
     def magnitude(self) -> float:
         """向量模长。"""
-        return math.sqrt(
-            self.time_force**2 + self.space_force**2 +
-            self.surface_force**2 + self.core_force**2
-        ) / 2.0  # 归一化到 ~0-1
+        return (
+            math.sqrt(
+                self.time_force**2
+                + self.space_force**2
+                + self.surface_force**2
+                + self.core_force**2
+            )
+            / 2.0
+        )  # 归一化到 ~0-1
 
     def direction_consistency(self) -> float:
         """方向一致性：各维度符号相同的比例。"""
-        forces = [self.time_force, self.space_force,
-                  self.surface_force, self.core_force]
+        forces = [self.time_force, self.space_force, self.surface_force, self.core_force]
         signs = [1 if f > 0.05 else (-1 if f < -0.05 else 0) for f in forces]
         non_zero = [s for s in signs if s != 0]
         if not non_zero:
@@ -126,6 +136,7 @@ class PotentialField:
 
     阻力最小方向 = 势场梯度的反方向（从高势能到低势能）
     """
+
     # 网格点（价格位置 0~1 映射到 -1~+1）
     grid_points: List[float] = field(default_factory=list)
     # 各点的势能
@@ -158,6 +169,7 @@ class PotentialField:
 @dataclass
 class BaguaResult:
     """八卦力学引擎输出。"""
+
     # 四象力场
     sixiang: SixiangVector = field(default_factory=SixiangVector)
 
@@ -167,7 +179,7 @@ class BaguaResult:
     current_gua_binary: Tuple[int, int, int] = (0, 1, 0)
 
     # 两仪状态
-    liangyi_state: str = "yang"   # yang / yin / balanced
+    liangyi_state: str = "yang"  # yang / yin / balanced
     liangyi_strength: float = 0.0  # 0~1
 
     # 势场与阻力最小路径
@@ -175,7 +187,7 @@ class BaguaResult:
 
     # 核心结论：第一性原理方向
     primary_direction: str = "neutral"  # long / short / neutral
-    primary_confidence: float = 0.0     # 0~1
+    primary_confidence: float = 0.0  # 0~1
 
     # 六十四卦（内卦=当前微观，外卦=环境宏观）
     inner_gua: str = ""
@@ -224,9 +236,9 @@ class BaguaEngine:
     def __init__(self):
         self.grid_size = 20  # 势场网格点数
 
-    def infer(self, snapshot: Dict[str, Any],
-               closes: List[float] = None,
-               volumes: List[float] = None) -> BaguaResult:
+    def infer(
+        self, snapshot: Dict[str, Any], closes: List[float] = None, volumes: List[float] = None
+    ) -> BaguaResult:
         """
         运行八卦力学推理。
 
@@ -268,9 +280,11 @@ class BaguaEngine:
             result.primary_direction = "neutral"
 
         # 置信度 = 阻力差距 × 四象一致性 × 两仪强度
-        conf = (abs(pf.resistance_gap) * 0.5
-                + sixiang.direction_consistency() * 0.3
-                + liangyi_strength * 0.2)
+        conf = (
+            abs(pf.resistance_gap) * 0.5
+            + sixiang.direction_consistency() * 0.3
+            + liangyi_strength * 0.2
+        )
         result.primary_confidence = max(0.0, min(1.0, conf))
 
         # Step 6: 六十四卦（内卦=里+中，外卦=表+环境）
@@ -282,17 +296,16 @@ class BaguaEngine:
         result.hexagram_name_cn = self._build_hexagram_name(inner, outer)
 
         # 统计特征
-        result.feature_stats = self._compute_feature_stats(
-            snapshot, closes, volumes, sixiang)
+        result.feature_stats = self._compute_feature_stats(snapshot, closes, volumes, sixiang)
 
         return result
 
     # ============================================================
     # Step 1: 四象深度量化
     # ============================================================
-    def _compute_sixiang(self, snapshot: Dict[str, Any],
-                          closes: List[float] = None,
-                          volumes: List[float] = None) -> SixiangVector:
+    def _compute_sixiang(
+        self, snapshot: Dict[str, Any], closes: List[float] = None, volumes: List[float] = None
+    ) -> SixiangVector:
         """
         四象深度量化。
 
@@ -369,8 +382,7 @@ class BaguaEngine:
         def period_return(period):
             if period >= n:
                 return 0.0, 0.0
-            rets = [(closes[i] - closes[i - period]) / closes[i - period]
-                    for i in range(period, n)]
+            rets = [(closes[i] - closes[i - period]) / closes[i - period] for i in range(period, n)]
             if not rets:
                 return 0.0, 0.0
             avg_ret = sum(rets) / len(rets)
@@ -399,14 +411,15 @@ class BaguaEngine:
 
         # 强度 = 加权一致性
         signs = [1 if f > 0 else -1 for f in [short_f, mid_f, long_f]]
-        agreement = sum(1 for i in range(len(signs) - 1) if signs[i] == signs[i + 1]) / (len(signs) - 1)
+        agreement = sum(1 for i in range(len(signs) - 1) if signs[i] == signs[i + 1]) / (
+            len(signs) - 1
+        )
         avg_cert = (short_cert + mid_cert + long_cert) / 3
         strength = agreement * 0.6 + avg_cert * 0.4
 
         return combined, min(1.0, strength)
 
-    def _space_force_fractal(self, closes: List[float],
-                               price: float) -> Tuple[float, float]:
+    def _space_force_fractal(self, closes: List[float], price: float) -> Tuple[float, float]:
         """
         空间力：分形 + 支撑阻力能量。
 
@@ -428,7 +441,7 @@ class BaguaEngine:
             return 0.0, 0.5
 
         # 价格位置
-        pos = (price - low) / (high - low)
+        pos = (price - low) / (high - low)  # noqa: F841
 
         # 布林带
         ma20 = sum(closes[-20:]) / 20 if n >= 20 else sum(closes) / n
@@ -439,9 +452,9 @@ class BaguaEngine:
         extremes = []
         window = 3
         for i in range(window, n - window):
-            if closes[i] == max(closes[i - window:i + window + 1]):
+            if closes[i] == max(closes[i - window : i + window + 1]):
                 extremes.append(("high", closes[i]))
-            elif closes[i] == min(closes[i - window:i + window + 1]):
+            elif closes[i] == min(closes[i - window : i + window + 1]):
                 extremes.append(("low", closes[i]))
 
         # 计算当前价格到最近支撑阻力的距离
@@ -459,7 +472,7 @@ class BaguaEngine:
 
         # 空间力 = 支撑近则向上（正），阻力近则向下（负）
         if dist_support < dist_resist:
-            space_f = (1.0 - dist_support * 2)  # 越近支撑力越大
+            space_f = 1.0 - dist_support * 2  # 越近支撑力越大
         else:
             space_f = -(1.0 - dist_resist * 2)  # 越近阻力向下力越大
 
@@ -519,14 +532,14 @@ class BaguaEngine:
 
         # 4. 波动率方向（近5期波动率变化）
         if n >= 15:
-            rets_recent = [(closes[i] - closes[i - 1]) / closes[i - 1]
-                           for i in range(n - 5, n)]
-            rets_prev = [(closes[i] - closes[i - 1]) / closes[i - 1]
-                          for i in range(n - 10, n - 5)]
-            vol_recent = (sum(r ** 2 for r in rets_recent) / len(rets_recent)) ** 0.5
-            vol_prev = (sum(r ** 2 for r in rets_prev) / len(rets_prev)) ** 0.5
+            rets_recent = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(n - 5, n)]
+            rets_prev = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(n - 10, n - 5)]
+            vol_recent = (sum(r**2 for r in rets_recent) / len(rets_recent)) ** 0.5
+            vol_prev = (sum(r**2 for r in rets_prev) / len(rets_prev)) ** 0.5
             # 波动率上升通常是下跌信号
-            signals.append(-1 if vol_recent > vol_prev * 1.1 else (1 if vol_recent < vol_prev * 0.9 else 0))
+            signals.append(
+                -1 if vol_recent > vol_prev * 1.1 else (1 if vol_recent < vol_prev * 0.9 else 0)
+            )
         else:
             signals.append(0)
 
@@ -550,7 +563,7 @@ class BaguaEngine:
             if rsi > 70:
                 signals.append(-1)  # 超买
             elif rsi < 30:
-                signals.append(1)   # 超卖
+                signals.append(1)  # 超卖
             else:
                 signals.append(1 if rsi > 50 else -1)
         else:
@@ -564,7 +577,7 @@ class BaguaEngine:
             if bb_pos > 2:
                 signals.append(-1)  # 上轨以上
             elif bb_pos < -2:
-                signals.append(1)   # 下轨以下
+                signals.append(1)  # 下轨以下
             else:
                 signals.append(1 if bb_pos > 0 else -1)
         else:
@@ -577,7 +590,7 @@ class BaguaEngine:
             recent_lows = min(closes[-5:])
             prev_lows = min(closes[-10:-5])
             if recent_highs > prev_highs and recent_lows > prev_lows:
-                signals.append(1)   # 上升趋势
+                signals.append(1)  # 上升趋势
             elif recent_highs < prev_highs and recent_lows < prev_lows:
                 signals.append(-1)  # 下降趋势
             else:
@@ -589,7 +602,7 @@ class BaguaEngine:
         if n >= 5:
             recent_closes = closes[-5:]
             h = max(recent_closes)
-            l = min(recent_closes)
+            l = min(recent_closes)  # noqa: E741
             if h > l:
                 close_pos = (closes[-1] - l) / (h - l)
                 signals.append(1 if close_pos > 0.6 else (-1 if close_pos < 0.4 else 0))
@@ -618,8 +631,7 @@ class BaguaEngine:
 
         return surface_f, consistency
 
-    def _core_force_energy(self, closes: List[float],
-                            volumes: List[float]) -> Tuple[float, float]:
+    def _core_force_energy(self, closes: List[float], volumes: List[float]) -> Tuple[float, float]:
         """
         里（内驱力）：供需能量差 + 资金流向积分。
 
@@ -671,7 +683,7 @@ class BaguaEngine:
         for i in range(n - lookback, n):
             if i >= 1:
                 chg = (closes[i] - closes[i - 1]) / closes[i - 1]
-                vol_rat = volumes[i] / (sum(volumes[max(0, i - 5):i]) / min(5, i) if i > 0 else 1)
+                vol_rat = volumes[i] / (sum(volumes[max(0, i - 5) : i]) / min(5, i) if i > 0 else 1)
                 flow_score += chg * vol_rat
 
         flow_score = max(-1.0, min(1.0, flow_score * 10))
@@ -699,8 +711,12 @@ class BaguaEngine:
 
         强度 = |合力| × 一致性
         """
-        net = (sixiang.time_force * 0.2 + sixiang.space_force * 0.15
-               + sixiang.surface_force * 0.25 + sixiang.core_force * 0.4)
+        net = (
+            sixiang.time_force * 0.2
+            + sixiang.space_force * 0.15
+            + sixiang.surface_force * 0.25
+            + sixiang.core_force * 0.4
+        )
 
         consistency = sixiang.direction_consistency()
 
@@ -719,8 +735,9 @@ class BaguaEngine:
     # ============================================================
     # Step 3: 八卦映射（力场拓扑）
     # ============================================================
-    def _compute_bagua(self, sixiang: SixiangVector,
-                        liangyi_state: str) -> Tuple[str, Tuple[int, int, int]]:
+    def _compute_bagua(
+        self, sixiang: SixiangVector, liangyi_state: str
+    ) -> Tuple[str, Tuple[int, int, int]]:
         """
         八卦 = 两仪 × 四象。
 
@@ -736,6 +753,7 @@ class BaguaEngine:
         - force < -0.1 → 阴（做空力）
         - 中间        → 随主导方向（两仪）
         """
+
         # 各维度的阴阳
         def to_yao(force_val, default):
             if force_val > 0.1:
@@ -747,8 +765,8 @@ class BaguaEngine:
 
         default = 1 if liangyi_state == "yang" else 0
 
-        yao1 = to_yao(sixiang.core_force, default)     # 初爻 = 里
-        yao2 = to_yao(sixiang.space_force, default)    # 二爻 = 空
+        yao1 = to_yao(sixiang.core_force, default)  # 初爻 = 里
+        yao2 = to_yao(sixiang.space_force, default)  # 二爻 = 空
         yao3 = to_yao(sixiang.surface_force, default)  # 三爻 = 表
 
         binary = (yao1, yao2, yao3)
@@ -764,10 +782,13 @@ class BaguaEngine:
     # ============================================================
     # Step 4-5: 势场构建 + 阻力最小路径
     # ============================================================
-    def _build_potential_field(self, snapshot: Dict[str, Any],
-                                closes: List[float] = None,
-                                volumes: List[float] = None,
-                                sixiang: SixiangVector = None) -> PotentialField:
+    def _build_potential_field(
+        self,
+        snapshot: Dict[str, Any],
+        closes: List[float] = None,
+        volumes: List[float] = None,
+        sixiang: SixiangVector = None,
+    ) -> PotentialField:
         """
         构建价格势场并计算阻力最小路径。
 
@@ -818,10 +839,10 @@ class BaguaEngine:
         window = 3
         n = len(closes)
         for i in range(window, n - window):
-            if closes[i] == max(closes[i - window:i + window + 1]):
+            if closes[i] == max(closes[i - window : i + window + 1]):
                 pos_norm = (closes[i] - low) / (high - low)
                 extremes.append(("high", pos_norm))
-            elif closes[i] == min(closes[i - window:i + window + 1]):
+            elif closes[i] == min(closes[i - window : i + window + 1]):
                 pos_norm = (closes[i] - low) / (high - low)
                 extremes.append(("low", pos_norm))
 
@@ -842,7 +863,7 @@ class BaguaEngine:
 
         # --- 4. 摩擦势（阻力系数）---
         # 成交量大的地方摩擦大，波动大的地方摩擦大
-        avg_vol = sum(volumes) / len(volumes) if volumes else 1
+        avg_vol = sum(volumes) / len(volumes) if volumes else 1  # noqa: F841
         for i in range(n_grid):
             pos = pf.grid_points[i]
             # 基础摩擦
@@ -886,9 +907,9 @@ class BaguaEngine:
 
         return pf
 
-    def _path_energy(self, pf: PotentialField,
-                      start_pos: float, end_pos: float,
-                      direction: str = "up") -> float:
+    def _path_energy(
+        self, pf: PotentialField, start_pos: float, end_pos: float, direction: str = "up"
+    ) -> float:
         """
         计算一条路径的总能量消耗。
 
@@ -938,8 +959,9 @@ class BaguaEngine:
     # ============================================================
     # Step 6: 六十四卦（内外卦）
     # ============================================================
-    def _compute_inner_outer(self, sixiang: SixiangVector,
-                              snapshot: Dict[str, Any]) -> Tuple[str, str]:
+    def _compute_inner_outer(
+        self, sixiang: SixiangVector, snapshot: Dict[str, Any]
+    ) -> Tuple[str, str]:
         """
         六十四卦 = 内卦 × 外卦。
 
@@ -948,6 +970,7 @@ class BaguaEngine:
 
         两卦叠加 = 64 种市场拓扑状态
         """
+
         # 内卦三爻
         def yao(val, threshold=0.1):
             return 1 if val > threshold else (0 if val < -threshold else 0.5)
@@ -1048,10 +1071,13 @@ class BaguaEngine:
     # ============================================================
     # 统计特征汇总
     # ============================================================
-    def _compute_feature_stats(self, snapshot: Dict[str, Any],
-                                closes: List[float],
-                                volumes: List[float],
-                                sixiang: SixiangVector) -> Dict[str, Any]:
+    def _compute_feature_stats(
+        self,
+        snapshot: Dict[str, Any],
+        closes: List[float],
+        volumes: List[float],
+        sixiang: SixiangVector,
+    ) -> Dict[str, Any]:
         """计算所有统计特征，用于调试和分析。"""
         stats = {
             "sixiang_magnitude": round(sixiang.magnitude(), 4),
@@ -1059,15 +1085,19 @@ class BaguaEngine:
         }
 
         if closes and len(closes) > 1:
-            rets = [(closes[i] - closes[i - 1]) / closes[i - 1]
-                    for i in range(1, len(closes))]
+            rets = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(1, len(closes))]
             stats["return_mean"] = round(sum(rets) / len(rets), 6)
-            stats["return_std"] = round(
-                (sum(r ** 2 for r in rets) / len(rets)) ** 0.5, 6)
+            stats["return_std"] = round((sum(r**2 for r in rets) / len(rets)) ** 0.5, 6)
             stats["return_skew"] = round(
-                sum(r ** 3 for r in rets) / len(rets) / (
-                    (sum(r ** 2 for r in rets) / len(rets)) ** 1.5
-                ) if len(rets) > 2 else 0, 4)
+                (
+                    sum(r**3 for r in rets)
+                    / len(rets)
+                    / ((sum(r**2 for r in rets) / len(rets)) ** 1.5)
+                    if len(rets) > 2
+                    else 0
+                ),
+                4,
+            )
 
         if closes and volumes:
             n = min(len(closes), len(volumes))
@@ -1075,8 +1105,7 @@ class BaguaEngine:
                 # 量价相关系数
                 avg_p = sum(closes[:n]) / n
                 avg_v = sum(volumes[:n]) / n
-                cov = sum((closes[i] - avg_p) * (volumes[i] - avg_v)
-                          for i in range(n)) / n
+                cov = sum((closes[i] - avg_p) * (volumes[i] - avg_v) for i in range(n)) / n
                 std_p = (sum((p - avg_p) ** 2 for p in closes[:n]) / n) ** 0.5
                 std_v = (sum((v - avg_v) ** 2 for v in volumes[:n]) / n) ** 0.5
                 if std_p > 0 and std_v > 0:

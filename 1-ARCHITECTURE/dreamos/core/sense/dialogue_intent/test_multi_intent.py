@@ -7,24 +7,25 @@
 
 TDD RED: 本测试在 multi_intent.py 落地前应全部失败（ImportError）。
 """
-import pytest
+
+import sys  # noqa: I001
 from pathlib import Path
-import sys
 
 # 1-ARCHITECTURE/ → sys.path
 BASE = Path(__file__).parent.parent.parent.parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.core.sense.dialogue_intent.multi_intent import MultiIntentDetector
-
+from dreamos.core.sense.dialogue_intent.multi_intent import MultiIntentDetector  # noqa: E402
 
 # ============================================================
 # 1. 模块/类存在性
 # ============================================================
 
+
 def test_import_module():
     """multi_intent 模块可被导入。"""
     from dreamos.core.sense.dialogue_intent import multi_intent
+
     assert hasattr(multi_intent, "MultiIntentDetector")
 
 
@@ -47,6 +48,7 @@ def test_detect_signature_returns_list_of_str():
 # ============================================================
 # 2. Layer 1: 连接词拆分（迁移自 classifier.py:127）
 # ============================================================
+
 
 def test_detect_single_intent():
     """单意图文本返回单元素列表。"""
@@ -89,6 +91,7 @@ def test_detect_three_way_conjunction_split():
 # 3. Layer 2: 标的级拆分（多 stock 文本）
 # ============================================================
 
+
 def test_detect_target_level_split_multi_stock():
     """文本含多个标的时按标的拆分意图。"""
     detector = MultiIntentDetector()
@@ -112,6 +115,7 @@ def test_detect_target_level_split_with_slots():
 # ============================================================
 # 4. Layer 3: 复合意图（单段文本含多意图）
 # ============================================================
+
 
 def test_detect_compound_analysis_and_buy():
     """复合意图: '深度分析并买入' → [deep_analysis, buy]。"""
@@ -141,6 +145,7 @@ def test_detect_compound_screen_and_buy():
 # ============================================================
 # 5. 去重保序 / 边界条件
 # ============================================================
+
 
 def test_detect_dedup_preserve_order():
     """重复意图去重并保留首次出现顺序。"""

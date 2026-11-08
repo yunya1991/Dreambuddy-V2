@@ -20,12 +20,13 @@
   - SECTOR_MAP / _SECTOR_COIN_META / _fetch_coin_info（coin_fundamental_crypto）
   - _identify_sector_leader / _fetch_leader_7d_momentum（sector_waterline，TDD-SVC-001）
 """
+
 from __future__ import annotations
 
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 # C5 第一批：读路径经 _store_port 助手（文件粒度开关，默认 legacy 直连）
 try:
@@ -37,10 +38,8 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from force_vector.coin_fundamental_crypto import (  # noqa: E402
+from force_vector.coin_fundamental_crypto import (  # noqa: E402, I001
     SECTOR_MAP,
-    _SECTOR_COIN_META,
-    _fetch_coin_info,
     _safe_json,
     DEFAULT_DB_PATH,
 )
@@ -49,7 +48,6 @@ from force_vector.sector_waterline import (  # noqa: E402
     _identify_sector_leader,
     _fetch_leader_7d_momentum,
 )
-
 
 # ---------------------------------------------------------------------------
 # 常量
@@ -66,6 +64,7 @@ _CATALYST_LOW_THRESHOLD = -0.3
 # ---------------------------------------------------------------------------
 # 纯函数：compute_catalyst_score
 # ---------------------------------------------------------------------------
+
 
 def compute_catalyst_score(leader_momentum: float, sector_breadth: float) -> float:
     """合成跟涨催化因子：catalyst = leader_momentum × sector_breadth。
@@ -98,6 +97,7 @@ def compute_catalyst_score(leader_momentum: float, sector_breadth: float) -> flo
 # ---------------------------------------------------------------------------
 # 数据获取：赛道内各币 7d 收益率
 # ---------------------------------------------------------------------------
+
 
 def _fetch_coin_7d_returns(sector: str, db_path: str) -> Dict[str, float]:
     """获取赛道内各币的 7d 收益率。
@@ -157,6 +157,7 @@ def _fetch_coin_7d_returns(sector: str, db_path: str) -> Dict[str, float]:
 # 赛道广度：7d 上涨币占比
 # ---------------------------------------------------------------------------
 
+
 def _compute_sector_breadth(sector: str, db_path: str) -> float:
     """计算赛道内 7d 上涨币占比 [0, 1]。
 
@@ -180,9 +181,8 @@ def _compute_sector_breadth(sector: str, db_path: str) -> float:
 # 主函数：compute_follow_up_catalyst
 # ---------------------------------------------------------------------------
 
-def compute_follow_up_catalyst(
-    sector: str, db_path: Optional[str] = None
-) -> Dict[str, object]:
+
+def compute_follow_up_catalyst(sector: str, db_path: Optional[str] = None) -> Dict[str, object]:
     """计算跟涨催化因子（SPEC §4.5）。
 
     流程：

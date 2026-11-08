@@ -14,15 +14,11 @@ Spec: .trae/documents/strengthen-evolution-exploration.md 阶段1
   - 环境变量 EVOLUTION_CASES_DIR 可覆盖默认路径
   - JSON 格式, dataclass asdict 序列化
 """
-from __future__ import annotations
 
-import json
-import os
+from __future__ import annotations  # noqa: I001
+
 import sys
-import tempfile
 from pathlib import Path
-
-import pytest
 
 # ============================================================
 # sys.path 设置
@@ -36,9 +32,11 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from dreamos.evolution.washout_case_library import WashoutCase, WashoutCaseLibrary
-from dreamos.evolution.washout_reversal_case_library import WashoutReversalCaseLibrary
-from dreamos.evolution.pump_dump_reversal_case_library import PumpDumpReversalCaseLibrary
+from dreamos.evolution.pump_dump_reversal_case_library import (  # noqa: E402
+    PumpDumpReversalCaseLibrary,
+)  # noqa: E402, I001
+from dreamos.evolution.washout_case_library import WashoutCase, WashoutCaseLibrary  # noqa: E402
+from dreamos.evolution.washout_reversal_case_library import WashoutReversalCaseLibrary  # noqa: E402
 
 
 def _make_case(case_id: str = "c1", label: str = "washout", pnl: float = 0.05) -> WashoutCase:

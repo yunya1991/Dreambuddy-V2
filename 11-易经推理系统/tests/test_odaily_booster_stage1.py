@@ -18,11 +18,11 @@ Spec §5.2.3 + §5.2.4：
   TC-6 pn+od 乘法上限 clamp / 类型错→0.0（两个测试合并）
   TC-7 R3 sample 值命中区间
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 import pytest
 
@@ -47,20 +47,20 @@ def fx_none():
 @pytest.fixture
 def fx_r3_sample():
     """Fixture 2 — R3 采样（手工对齐 8/27 左右的真实 Odaily 首屏 20 条派生均值，双目标命中）：
-       dao: D1=(0.6-0.5)*0.16=+0.016; D2=0 (reg=0.30 不>0.3且不<0.1; crh=0.15<0.3)
-             D3=0.20*+1*0.08=+0.016 → total=0.032 ≈0.028±0.005 ✓
-       tian: D1=+0.05(rr=0.22>0.15 ∧ s=0.62>0.6); D2=0 (geo=2 ∈(1,3));
-             D3=-0.02 (3/20=0.15>0.1但≤0.2) → total=0.030 ≈0.034±0.005 ✓
+    dao: D1=(0.6-0.5)*0.16=+0.016; D2=0 (reg=0.30 不>0.3且不<0.1; crh=0.15<0.3)
+          D3=0.20*+1*0.08=+0.016 → total=0.032 ≈0.028±0.005 ✓
+    tian: D1=+0.05(rr=0.22>0.15 ∧ s=0.62>0.6); D2=0 (geo=2 ∈(1,3));
+          D3=-0.02 (3/20=0.15>0.1但≤0.2) → total=0.030 ≈0.034±0.005 ✓
     """
     return {
-        "odaily_policy_sentiment_3d": 0.60,     # dao 中线偏暖（0.6 既利于 dao D1 也让 tian D1 s>0.6 成立）
+        "odaily_policy_sentiment_3d": 0.60,  # dao 中线偏暖（0.6 既利于 dao D1 也让 tian D1 s>0.6 成立）
         "odaily_important_ratio_3d": 0.20,
         "odaily_crypto_reg_ratio_3d": 0.15,
         "odaily_reg_policy_ratio_3d": 0.30,
-        "odaily_security_hits_3d": 3,           # 3/20=0.15 → D3 -0.02
-        "odaily_geopolitics_hits_3d": 2,        # 2 不触发 D2 ±
+        "odaily_security_hits_3d": 3,  # 3/20=0.15 → D3 -0.02
+        "odaily_geopolitics_hits_3d": 2,  # 2 不触发 D2 ±
         "odaily_batch_size_3d": 20,
-        "pn_cycle_sentiment_norm": 0.55,        # 让 _pn_* 非 0，验证独立乘法
+        "pn_cycle_sentiment_norm": 0.55,  # 让 _pn_* 非 0，验证独立乘法
     }
 
 
@@ -108,7 +108,7 @@ def fx_tian_geo_risk():
     return {
         "odaily_policy_sentiment_3d": 0.45,
         "odaily_reg_policy_ratio_3d": 0.12,
-        "odaily_security_hits_3d": 1,   # 1/20=0.05（D3 0.05<0.1但>0→暂不减，>0.1或>0.2才减）
+        "odaily_security_hits_3d": 1,  # 1/20=0.05（D3 0.05<0.1但>0→暂不减，>0.1或>0.2才减）
         "odaily_geopolitics_hits_3d": 3,
         "odaily_crypto_reg_ratio_3d": 0.10,
         "odaily_batch_size_3d": 20,
@@ -118,12 +118,12 @@ def fx_tian_geo_risk():
 @pytest.fixture
 def fx_extremes_mul():
     """Fixture 7 — pn × od 乘法极端值 + 类型错误：
-         · pn_boost 最大 (+0.2) × od_boost 最大 (+0.1) = 1.2×1.1=1.32；再 clamp [0,100]
-         · coin_data 非 dict/list（整数）→ boost 方法应静默回 0.0（try/except 保护）
+    · pn_boost 最大 (+0.2) × od_boost 最大 (+0.1) = 1.2×1.1=1.32；再 clamp [0,100]
+    · coin_data 非 dict/list（整数）→ boost 方法应静默回 0.0（try/except 保护）
     """
     return {
-        "odaily_policy_sentiment_3d": "bad_type",   # 类型错 → 中性兜底 0.5，D1=0
-        "odaily_important_ratio_3d": 1.0,          # 1.0+ D3 合法 imp=1
+        "odaily_policy_sentiment_3d": "bad_type",  # 类型错 → 中性兜底 0.5，D1=0
+        "odaily_important_ratio_3d": 1.0,  # 1.0+ D3 合法 imp=1
         "odaily_reg_policy_ratio_3d": 0.05,
         "odaily_crypto_reg_ratio_3d": 0.0,
         "odaily_batch_size_3d": 5,
@@ -142,6 +142,7 @@ def fx_extremes_mul():
 # ============================================================
 def _get_computer_cls():
     from five_domain_feature_computer import FiveDomainFeatureComputer
+
     return FiveDomainFeatureComputer
 
 
@@ -211,6 +212,7 @@ def test_tc6a_pn_od_multiply_upper_clamp_and_normalize(fx_extremes_mul):
     # pn 理论顶 0.2，od 这里 D1=0 D2 弱正 D3 强正，实际 od∈(0,0.08)
     # 关键：_normalize_0_100(50*mul / 100) → 不应溢出 100
     from five_domain_feature_computer import _normalize_0_100
+
     dao_raw_base = 60.0  # 基础分（任意数）
     dao_raw = dao_raw_base * (1.0 + pn) * (1.0 + od)
     norm = _normalize_0_100(dao_raw / 100.0)

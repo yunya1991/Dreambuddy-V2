@@ -1,5 +1,6 @@
 """结果验证层单元测试 — 验证三重验证逻辑"""
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,7 @@ import io
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.result_verifier import ResultVerifier, VerificationMode, VerificationResult
+from core.result_verifier import ResultVerifier, VerificationResult
 
 
 @pytest.fixture

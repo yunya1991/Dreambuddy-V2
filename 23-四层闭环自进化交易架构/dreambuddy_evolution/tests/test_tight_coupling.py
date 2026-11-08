@@ -4,10 +4,8 @@ dreambuddy-v2 紧耦合流 TDD 测试套件
 
 7 步闭环: 观察→推断→实验→测量→反思→学习→泛化→回馈
 """
+
 import sys
-import json
-import math
-import numpy as np
 from pathlib import Path
 
 import pytest
@@ -26,12 +24,18 @@ class TestRippleEngine:
     def test_TR_RE_01_ripple_source_detection_basic(self):
         """龙头检测: leader 在 S_up 簇 + ESS_top1 方向一致 + 放量"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
         re = RippleEngine()
         # 龙头候选: R_up < R_down (上涨有利), ESS top 方向=long, vol_ratio≥2.0
         source = {
             "symbol": "BTC",
-            "r_vector": {"R_up": 0.2, "R_down": 0.8, "R_smooth": 0.3,
-                         "R_flow": 0.6, "R_reflexivity": 0.4},
+            "r_vector": {
+                "R_up": 0.2,
+                "R_down": 0.8,
+                "R_smooth": 0.3,
+                "R_flow": 0.6,
+                "R_reflexivity": 0.4,
+            },
             "ess_top_direction": "long",
             "vol_5": 5000.0,
             "vol_20": 2000.0,
@@ -44,13 +48,20 @@ class TestRippleEngine:
     def test_TR_RE_02_ripple_source_reject_quantum(self):
         """Quantum 档龙头排除 (§0.7.5)"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
         re = RippleEngine()
         source = {
             "symbol": "PEPE",
-            "r_vector": {"R_up": 0.1, "R_down": 0.9, "R_smooth": 0.2,
-                         "R_flow": 0.7, "R_reflexivity": 0.3},
+            "r_vector": {
+                "R_up": 0.1,
+                "R_down": 0.9,
+                "R_smooth": 0.2,
+                "R_flow": 0.7,
+                "R_reflexivity": 0.3,
+            },
             "ess_top_direction": "long",
-            "vol_5": 10000.0, "vol_20": 3000.0,
+            "vol_5": 10000.0,
+            "vol_20": 3000.0,
             "liq_index_change": 0.5,
             "scale_class": "Quantum",  # Quantum 排除
         }
@@ -59,13 +70,20 @@ class TestRippleEngine:
     def test_TR_RE_03_ripple_source_reject_low_volume(self):
         """vol_5/vol_20 < 2.0 → 不是真石头"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
         re = RippleEngine()
         source = {
             "symbol": "BTC",
-            "r_vector": {"R_up": 0.2, "R_down": 0.8, "R_smooth": 0.3,
-                         "R_flow": 0.6, "R_reflexivity": 0.4},
+            "r_vector": {
+                "R_up": 0.2,
+                "R_down": 0.8,
+                "R_smooth": 0.3,
+                "R_flow": 0.6,
+                "R_reflexivity": 0.4,
+            },
             "ess_top_direction": "long",
-            "vol_5": 3000.0, "vol_20": 2500.0,  # ratio=1.2 < 2.0
+            "vol_5": 3000.0,
+            "vol_20": 2500.0,  # ratio=1.2 < 2.0
             "liq_index_change": 0.35,
             "scale_class": "Classical",
         }
@@ -74,6 +92,7 @@ class TestRippleEngine:
     def test_TR_RE_04_compute_ri_three_layers(self):
         """R1/R2/R3 三层涟漪 → RI = 0.4·s1 + 0.35·s2 + 0.25·s3"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
         re = RippleEngine()
         ripples = {
             "R1": {"hits": 8, "candidates": 10, "delta_t_hours": 1.0, "tau": 2.0},
@@ -91,6 +110,7 @@ class TestRippleEngine:
     def test_TR_RE_05_ri_threshold_actions(self):
         """RI 阈值动作表 (§0.7.3)"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
         re = RippleEngine()
         # RI < 0.30 → 不动作
         a1 = re.get_ri_action(0.20)
@@ -111,6 +131,7 @@ class TestRippleEngine:
     def test_TR_RE_06_fail_open_ri_neutral(self):
         """crash/缺数据 → RI=0.50 中性降级"""
         from dreambuddy_evolution.engines.ripple_engine import RippleEngine
+
         re = RippleEngine()
         ri = re.compute_ri({})  # 空 ripples
         assert ri == pytest.approx(0.50, abs=0.01)
@@ -128,11 +149,18 @@ class TestReflectionEngine:
     def test_TR_RF_01_pre_trade_snapshot(self):
         """开仓瞬间快照记录"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
         snap = rf.create_snapshot(
-            symbol="BTC", u_open=0.1, action="long",
-            level0_dstar="long", ess_id="ST-V15-A", ess_dir="long",
-            cbr_sim=0.82, cbr_top1_outcome="TP", cluster_id="S_up_3",
+            symbol="BTC",
+            u_open=0.1,
+            action="long",
+            level0_dstar="long",
+            ess_id="ST-V15-A",
+            ess_dir="long",
+            cbr_sim=0.82,
+            cbr_top1_outcome="TP",
+            cluster_id="S_up_3",
         )
         assert snap["symbol"] == "BTC"
         assert snap["u_open"] == 0.1
@@ -143,10 +171,13 @@ class TestReflectionEngine:
     def test_TR_RF_02_cs_calculation_correct_prediction(self):
         """三源预测全对 → CS≥0.7"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
         snapshot = {
-            "level0_dstar": "long", "ess_dir": "long",
-            "cbr_top1_outcome": "TP", "cluster_id": "S_up_3",
+            "level0_dstar": "long",
+            "ess_dir": "long",
+            "cbr_top1_outcome": "TP",
+            "cluster_id": "S_up_3",
         }
         outcome = {"real_direction": "long", "real_outcome": "TP"}
         cs = rf.calculate_cs(snapshot, outcome)
@@ -157,10 +188,13 @@ class TestReflectionEngine:
     def test_TR_RF_03_cs_calculation_wrong_prediction(self):
         """三源全错 → CS≤-0.2"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
         snapshot = {
-            "level0_dstar": "long", "ess_dir": "long",
-            "cbr_top1_outcome": "TP", "cluster_id": "S_up_3",
+            "level0_dstar": "long",
+            "ess_dir": "long",
+            "cbr_top1_outcome": "TP",
+            "cluster_id": "S_up_3",
         }
         outcome = {"real_direction": "short", "real_outcome": "SL"}
         cs = rf.calculate_cs(snapshot, outcome)
@@ -171,9 +205,11 @@ class TestReflectionEngine:
     def test_TR_RF_04_reward_table_correct_and_tp(self):
         """CS≥0.7 & TP → ESS +0.02"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
-        result = rf.apply_reward(cs=0.8, outcome="TP", cluster_id="S_up_3",
-                                  ess_id="ST-V15-A", gmax=1.0)
+        result = rf.apply_reward(
+            cs=0.8, outcome="TP", cluster_id="S_up_3", ess_id="ST-V15-A", gmax=1.0
+        )
         assert result["ess_delta"] == pytest.approx(0.02)
         assert result["gmax_mult"] == pytest.approx(1.0)  # 不变
         assert result["cluster_weight_mult"] == pytest.approx(1.0)  # +1 加权
@@ -181,36 +217,44 @@ class TestReflectionEngine:
     def test_TR_RF_05_punish_table_wrong_and_sl(self):
         """CS≤-0.2 & SL → ESS -0.05 + gmax×0.5"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
-        result = rf.apply_reward(cs=-0.5, outcome="SL", cluster_id="S_up_3",
-                                  ess_id="ST-V15-A", gmax=1.0)
+        result = rf.apply_reward(
+            cs=-0.5, outcome="SL", cluster_id="S_up_3", ess_id="ST-V15-A", gmax=1.0
+        )
         assert result["ess_delta"] == pytest.approx(-0.05)
         assert result["gmax_mult"] == pytest.approx(0.5)
 
     def test_TR_RF_06_anti_pattern_luck_tp(self):
         """CS≤-0.2 & TP = 运气 → 不更新 ESS（反模式保护）"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
-        result = rf.apply_reward(cs=-0.5, outcome="TP", cluster_id="S_up_3",
-                                  ess_id="ST-V15-A", gmax=1.0)
+        result = rf.apply_reward(
+            cs=-0.5, outcome="TP", cluster_id="S_up_3", ess_id="ST-V15-A", gmax=1.0
+        )
         assert result["ess_delta"] == 0.0  # 不奖励
         assert result.get("anti_pattern_flag") is True
 
     def test_TR_RF_07_false_failure_sl(self):
         """CS≥0.7 & SL = 假失败 → gmax×1.2 放宽"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
-        result = rf.apply_reward(cs=0.8, outcome="SL", cluster_id="S_up_3",
-                                  ess_id="ST-V15-A", gmax=1.0)
+        result = rf.apply_reward(
+            cs=0.8, outcome="SL", cluster_id="S_up_3", ess_id="ST-V15-A", gmax=1.0
+        )
         assert result["ess_delta"] == 0.0  # 不扣（方向对）
         assert result["gmax_mult"] == pytest.approx(1.2)
 
     def test_TR_RF_08_neutral_zone_no_update(self):
         """-0.2≤CS<0.7 → 不更新"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         rf = ReflectionEngine()
-        result = rf.apply_reward(cs=0.3, outcome="TP", cluster_id="S_up_3",
-                                  ess_id="ST-V15-A", gmax=1.0)
+        result = rf.apply_reward(
+            cs=0.3, outcome="TP", cluster_id="S_up_3", ess_id="ST-V15-A", gmax=1.0
+        )
         assert result["ess_delta"] == 0.0
         assert result["gmax_mult"] == pytest.approx(1.0)
 
@@ -223,14 +267,23 @@ class TestTightCouplingOrchestrator:
 
     def test_TR_TC_01_observe_step(self):
         """步骤① 观察: RippleEngine 检测龙头 + 涟漪 → RI"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
         market_data = {
             "leader_symbol": "BTC",
-            "leader_r_vector": {"R_up": 0.2, "R_down": 0.8, "R_smooth": 0.8,
-                                "R_flow": 0.6, "R_reflexivity": 0.5},
+            "leader_r_vector": {
+                "R_up": 0.2,
+                "R_down": 0.8,
+                "R_smooth": 0.8,
+                "R_flow": 0.6,
+                "R_reflexivity": 0.5,
+            },
             "ess_top_direction": "long",
-            "vol_5": 5000.0, "vol_20": 2000.0,
+            "vol_5": 5000.0,
+            "vol_20": 2000.0,
             "liq_index_change": 0.35,
             "scale_class": "Classical",
             "ripples": {
@@ -246,7 +299,10 @@ class TestTightCouplingOrchestrator:
 
     def test_TR_TC_02_hypothesize_step(self):
         """步骤② 推断: RI 阈值表 → 推断标记"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
         obs = {"ri": 0.65, "is_ripple_source": True}
         hyp = tco.hypothesize(obs)
@@ -256,7 +312,10 @@ class TestTightCouplingOrchestrator:
 
     def test_TR_TC_03_no_inference_low_ri(self):
         """RI < 0.30 → 不推断"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
         obs = {"ri": 0.20, "is_ripple_source": True}
         hyp = tco.hypothesize(obs)
@@ -264,37 +323,63 @@ class TestTightCouplingOrchestrator:
 
     def test_TR_TC_04_experiment_step(self):
         """步骤③ 实验: Level0 d* + 对齐 → 小仓 u=0.1 + snapshot"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
         # wait cost = 0.8*0.5=0.4 > long cost=0.2 → d*=long
-        r_vector = {"R_up": 0.2, "R_down": 0.8, "R_smooth": 0.8,
-                    "R_flow": 0.6, "R_reflexivity": 0.5}
+        r_vector = {
+            "R_up": 0.2,
+            "R_down": 0.8,
+            "R_smooth": 0.8,
+            "R_flow": 0.6,
+            "R_reflexivity": 0.5,
+        }
         hyp = {"inference_formed": True, "ess_dir": "long"}
-        exp = tco.experiment(r_vector, hyp, symbol="BTC", ess_id="ST-V15-A",
-                            cbr_sim=0.82, cluster_id="S_up_3")
+        exp = tco.experiment(
+            r_vector, hyp, symbol="BTC", ess_id="ST-V15-A", cbr_sim=0.82, cluster_id="S_up_3"
+        )
         assert exp["u_open"] == pytest.approx(0.1)  # §1.7.6 硬上限
         assert "pre_trade_snapshot" in exp
         assert exp["pre_trade_snapshot"]["level0_dstar"] == "long"
 
     def test_TR_TC_05_experiment_wait_when_not_aligned(self):
         """d* = WAIT → 不建仓"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
-        r_vector = {"R_up": 0.5, "R_down": 0.5, "R_smooth": 0.1,
-                    "R_flow": 0.5, "R_reflexivity": 0.1}  # wait cost=0.01 < 0.5
+        r_vector = {
+            "R_up": 0.5,
+            "R_down": 0.5,
+            "R_smooth": 0.1,
+            "R_flow": 0.5,
+            "R_reflexivity": 0.1,
+        }  # wait cost=0.01 < 0.5
         hyp = {"inference_formed": True, "ess_dir": "long"}
-        exp = tco.experiment(r_vector, hyp, symbol="BTC", ess_id="ST-V15-A",
-                            cbr_sim=0.82, cluster_id="S_up_3")
+        exp = tco.experiment(
+            r_vector, hyp, symbol="BTC", ess_id="ST-V15-A", cbr_sim=0.82, cluster_id="S_up_3"
+        )
         assert exp["u_open"] == 0.0  # WAIT = 不建仓
         assert exp["action"] == "WAIT"
 
     def test_TR_TC_06_reflect_step(self):
         """步骤⑤ 反思: snapshot + outcome → CS + 奖惩"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
-        snapshot = {"level0_dstar": "long", "ess_dir": "long",
-                    "cbr_top1_outcome": "TP", "cluster_id": "S_up_3",
-                    "ess_id": "ST-V15-A", "u_open": 0.1}
+        snapshot = {
+            "level0_dstar": "long",
+            "ess_dir": "long",
+            "cbr_top1_outcome": "TP",
+            "cluster_id": "S_up_3",
+            "ess_id": "ST-V15-A",
+            "u_open": 0.1,
+        }
         outcome = {"real_direction": "long", "real_outcome": "TP"}
         result = tco.reflect(snapshot, outcome)
         assert "cs" in result
@@ -304,15 +389,24 @@ class TestTightCouplingOrchestrator:
 
     def test_TR_TC_07_full_cycle(self):
         """完整 7 步闭环: observe→hypothesize→experiment→measure→reflect→learn→feedback"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
         # ① 观察
         market_data = {
             "leader_symbol": "BTC",
-            "leader_r_vector": {"R_up": 0.2, "R_down": 0.8, "R_smooth": 0.8,
-                                "R_flow": 0.6, "R_reflexivity": 0.5},
+            "leader_r_vector": {
+                "R_up": 0.2,
+                "R_down": 0.8,
+                "R_smooth": 0.8,
+                "R_flow": 0.6,
+                "R_reflexivity": 0.5,
+            },
             "ess_top_direction": "long",
-            "vol_5": 5000.0, "vol_20": 2000.0,
+            "vol_5": 5000.0,
+            "vol_20": 2000.0,
             "liq_index_change": 0.35,
             "scale_class": "Classical",
             "ripples": {
@@ -326,8 +420,14 @@ class TestTightCouplingOrchestrator:
         hyp = tco.hypothesize(obs)
         assert hyp["inference_formed"] is True
         # ③ 实验
-        exp = tco.experiment(obs["leader_r_vector"], hyp, symbol="BTC",
-                            ess_id="ST-V15-A", cbr_sim=0.82, cluster_id="S_up_3")
+        exp = tco.experiment(
+            obs["leader_r_vector"],
+            hyp,
+            symbol="BTC",
+            ess_id="ST-V15-A",
+            cbr_sim=0.82,
+            cluster_id="S_up_3",
+        )
         # ④ 测量 (模拟 TP)
         measure = tco.measure(exp, outcome_direction="long", outcome_result="TP")
         # ⑤ 反思
@@ -342,7 +442,10 @@ class TestTightCouplingOrchestrator:
 
     def test_TR_TC_08_fail_open_never_crash(self):
         """全空输入 → 不崩，输出 WAIT"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator()
         result = tco.observe({})
         assert result.get("ri") == pytest.approx(0.50, abs=0.01)  # FO 降级
@@ -351,7 +454,10 @@ class TestTightCouplingOrchestrator:
 
     def test_TR_TC_09_mvp_loose_coupling(self):
         """MVP 阶段: RI≥0.75 → 只推 Lark，不自动建仓"""
-        from dreambuddy_evolution.engines.tight_coupling_orchestrator import TightCouplingOrchestrator
+        from dreambuddy_evolution.engines.tight_coupling_orchestrator import (
+            TightCouplingOrchestrator,
+        )
+
         tco = TightCouplingOrchestrator(mode="MVP")
         obs = {"ri": 0.80, "is_ripple_source": True}
         hyp = tco.hypothesize(obs)

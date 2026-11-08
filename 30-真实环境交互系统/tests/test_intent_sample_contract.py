@@ -1,9 +1,9 @@
 """IntentSample 数据契约测试"""
+
 import json
 import sys
 from pathlib import Path
 
-import pytest
 import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -20,7 +20,11 @@ class TestIntentSampleContract:
             sample_id="test-001",
             input={"user_query": "BTC 趋势", "scenario_id": "TREND_UP", "market_features": {}},
             gold={"gold_chain": "C", "gold_intent": "trend_following"},
-            recognizer_output={"predicted_intent": "trend_following", "confidence": 0.8, "level": "rule"},
+            recognizer_output={
+                "predicted_intent": "trend_following",
+                "confidence": 0.8,
+                "level": "rule",
+            },
             human_label={"confirmed": True, "corrected_intent": None},
             dataset_split="train",
             created_at="2026-10-04T10:00:00Z",
@@ -38,7 +42,11 @@ class TestIntentSampleContract:
         """JSON 往返序列化（to_dict / from_dict）"""
         original = IntentSample(
             sample_id="test-002",
-            input={"user_query": "test", "scenario_id": "TREND_DOWN", "market_features": {"regime": "trending"}},
+            input={
+                "user_query": "test",
+                "scenario_id": "TREND_DOWN",
+                "market_features": {"regime": "trending"},
+            },
             gold={"gold_chain": "C", "gold_intent": "trend_following"},
             recognizer_output={"predicted_intent": None, "confidence": 0.0, "level": "failopen"},
             human_label={"confirmed": False, "corrected_intent": "trend_following"},

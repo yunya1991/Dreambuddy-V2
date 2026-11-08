@@ -10,16 +10,16 @@
   python -m scripts.memory_l4.system_inspect --watch 60   # 持续监控
   python -m scripts.memory_l4.system_inspect --panels system,positions,knowledge  # 指定面板
 """
+
 import argparse
 import json
-import time
 import subprocess
-import os
+import sys
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-import sys
+from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
@@ -28,18 +28,15 @@ if str(_ROOT) not in sys.path:
 # 加载 .env 配置，确保 os.environ 中包含 POLLING_COINS 等变量
 try:
     from dotenv import load_dotenv
+
     load_dotenv(_ROOT / ".env")
 except Exception:
     pass
 
-from scripts.memory_l4.paths import (
-    workspace_root,
-    workbuddy_dir,
-    memory_l4_dir,
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
-    memory_l4_stats_dir,
-    memory_l4_reviews_dir,
-    memory_l4_distills_dir,
+    workbuddy_dir,
+    workspace_root,
 )
 
 
@@ -87,7 +84,9 @@ class InspectReport:
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
 
     def to_brief(self) -> str:
-        lines = [f"整体状态: {self._status_emoji(self.overall_status)} {self.overall_status.upper()}"]
+        lines = [
+            f"整体状态: {self._status_emoji(self.overall_status)} {self.overall_status.upper()}"
+        ]
         for p in self.panels:
             emoji = self._status_emoji(p.status)
             lines.append(f"  {emoji} {p.name}: {p.summary}")
@@ -98,7 +97,9 @@ class InspectReport:
         lines.append("=" * 80)
         lines.append(f"{'易经推理系统诊断报告':^80}")
         lines.append("=" * 80)
-        lines.append(f"整体状态: {self._status_emoji(self.overall_status)} {self.overall_status.upper()}")
+        lines.append(
+            f"整体状态: {self._status_emoji(self.overall_status)} {self.overall_status.upper()}"
+        )
         lines.append(f"检查时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         lines.append("-" * 80)
 
@@ -368,7 +369,9 @@ class ModelsPanel(BasePanel):
 
     def _get_bcrm2_models_dir(self) -> Path:
         from pathlib import Path
+
         import scripts.memory_l4.bcrm2_adapter as _ba
+
         return Path(_ba.__file__).resolve().parents[1] / "data" / "bcrm2_models"
 
     def _scan_model_dirs(self, models_dir: Path) -> dict:
@@ -416,9 +419,11 @@ class ModelsPanel(BasePanel):
             "l1_count": l1_count,
             "l2_count": l2_count,
             "latest_model": latest_model,
-            "latest_train_time": datetime.fromtimestamp(latest_mtime).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            ) if latest_mtime > 0 else None,
+            "latest_train_time": (
+                datetime.fromtimestamp(latest_mtime).strftime("%Y-%m-%d %H:%M:%S")
+                if latest_mtime > 0
+                else None
+            ),
         }
 
     def check(self) -> PanelResult:
@@ -755,18 +760,10 @@ class SystemInspector:
 
 def main():
     parser = argparse.ArgumentParser(description="易经推理系统诊断工具")
-    parser.add_argument(
-        "--brief", action="store_true", help="摘要模式输出"
-    )
-    parser.add_argument(
-        "--json", action="store_true", help="JSON 格式输出"
-    )
-    parser.add_argument(
-        "--watch", type=int, default=0, help="持续监控模式，指定刷新间隔(秒)"
-    )
-    parser.add_argument(
-        "--panels", type=str, default="", help="指定检查面板，逗号分隔"
-    )
+    parser.add_argument("--brief", action="store_true", help="摘要模式输出")
+    parser.add_argument("--json", action="store_true", help="JSON 格式输出")
+    parser.add_argument("--watch", type=int, default=0, help="持续监控模式，指定刷新间隔(秒)")
+    parser.add_argument("--panels", type=str, default="", help="指定检查面板，逗号分隔")
 
     args = parser.parse_args()
 

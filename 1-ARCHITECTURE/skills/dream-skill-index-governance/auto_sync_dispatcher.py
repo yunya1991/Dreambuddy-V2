@@ -10,6 +10,7 @@ post-commit 时根据变更文件类型自动分发到对应系统：
 FAIL-OPEN：任何子系统失败不阻塞，如实写入日志和待同步队列。
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 零回归 / 只产同步信号
 """
+
 from __future__ import annotations
 
 import argparse
@@ -30,6 +31,7 @@ if str(_HERE) not in sys.path:
 
 def _find_git() -> str:
     import shutil
+
     found = shutil.which("git")
     if found:
         return found
@@ -47,6 +49,7 @@ _PENDING_QUEUE = _HERE / "pending_sync_queue.json"
 
 
 # ─────────────────────────────── 变更分类 ───────────────────────────────
+
 
 def classify_changes(files: list[str]) -> dict[str, list[str]]:
     """将变更文件按目标系统分类。
@@ -102,6 +105,7 @@ def _is_index_or_metadata(filepath: str, name: str) -> bool:
 
 # ─────────────────────────────── 变更检测 ───────────────────────────────
 
+
 def detect_changes(diff_base: str = "HEAD^") -> list[str]:
     """检测本次 commit 或工作区的变更文件列表。
 
@@ -149,6 +153,7 @@ def detect_changes(diff_base: str = "HEAD^") -> list[str]:
 
 # ─────────────────────────────── 各系统同步 ───────────────────────────────
 
+
 def sync_skill_index(skill_files: list[str]) -> dict[str, Any]:
     """SKILL 索引系统：调用 auto_register_skill.py 注册新 SKILL。"""
     if not skill_files:
@@ -159,6 +164,7 @@ def sync_skill_index(skill_files: list[str]) -> dict[str, Any]:
 
     try:
         from auto_register_skill import register_skills
+
         report = register_skills(
             skill_dirs=[Path(d) for d in skill_dirs],
             auto_detect=False,
@@ -211,11 +217,13 @@ def sync_doc_management(doc_files: list[str]) -> dict[str, Any]:
 
     queue = _load_queue()
     for f in doc_files:
-        queue["pending"].append({
-            "path": f,
-            "added_at": datetime.now(timezone.utc).isoformat(),
-            "action": "sync_doc_index",
-        })
+        queue["pending"].append(
+            {
+                "path": f,
+                "added_at": datetime.now(timezone.utc).isoformat(),
+                "action": "sync_doc_index",
+            }
+        )
     _save_queue(queue)
 
     return {
@@ -227,6 +235,7 @@ def sync_doc_management(doc_files: list[str]) -> dict[str, Any]:
 
 
 # ─────────────────────────────── 待同步队列 ───────────────────────────────
+
 
 def _load_queue() -> dict[str, Any]:
     if _PENDING_QUEUE.exists():
@@ -264,6 +273,7 @@ def consume_queue() -> dict[str, Any]:
 
 
 # ─────────────────────────────── 主分发流程 ───────────────────────────────
+
 
 def dispatch(diff_base: str = "HEAD^") -> dict[str, Any]:
     """主分发流程：检测变更 → 分类 → 分发到各系统。"""
@@ -303,6 +313,7 @@ def dispatch(diff_base: str = "HEAD^") -> dict[str, Any]:
 
 
 # ─────────────────────────────── CLI ───────────────────────────────
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(

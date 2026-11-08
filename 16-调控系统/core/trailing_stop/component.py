@@ -36,10 +36,10 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-_TRAIL_DIR = Path(__file__).resolve().parent          # trailing_stop
-_16_CORE_DIR = _TRAIL_DIR.parent                      # 16-调控系统/core
-_PROJECT_DIR = _16_CORE_DIR.parents[1]                # dreambuddy-v2
-_16_SCRIPTS_DIR = _16_CORE_DIR.parent / "scripts"     # 16-调控系统/scripts
+_TRAIL_DIR = Path(__file__).resolve().parent  # trailing_stop
+_16_CORE_DIR = _TRAIL_DIR.parent  # 16-调控系统/core
+_PROJECT_DIR = _16_CORE_DIR.parents[1]  # dreambuddy-v2
+_16_SCRIPTS_DIR = _16_CORE_DIR.parent / "scripts"  # 16-调控系统/scripts
 _ARTIFACTS_DIR = _16_CORE_DIR.parent / "artifacts" / "trailing-stop"
 _STATE_FILE = _ARTIFACTS_DIR / "state.json"
 
@@ -76,11 +76,11 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     "persist_file": "artifacts/trailing-stop/state.json",
     # 算法参数
     "algorithm": {
-        "arm_threshold_pct": 0.20,        # 激活阈值：有效盈利≥20%（含杠杆）
-        "atr_period": 14,                 # ATR 周期
-        "atr_multiplier": 2.5,            # ATR 倍数
-        "min_trail_pct": 0.03,            # 最小追踪距离百分比 3%
-        "atr_fallback_pct": 0.02,         # ATR 缺失时的回退波动率（2%）
+        "arm_threshold_pct": 0.20,  # 激活阈值：有效盈利≥20%（含杠杆）
+        "atr_period": 14,  # ATR 周期
+        "atr_multiplier": 2.5,  # ATR 倍数
+        "min_trail_pct": 0.03,  # 最小追踪距离百分比 3%
+        "atr_fallback_pct": 0.02,  # ATR 缺失时的回退波动率（2%）
     },
     # 触发保护：避免同一仓位在 N 秒内重复触发
     "trigger_cooldown_sec": 300,
@@ -146,7 +146,9 @@ class TrailingStopComponent:
         except (OSError, json.JSONDecodeError):
             pass
         enabled_systems = cfg.get("enabled_systems") or []
-        cfg["enabled_systems"] = [s for s in enabled_systems if s in _DEFAULT_SYSTEMS] or list(_DEFAULT_SYSTEMS)
+        cfg["enabled_systems"] = [s for s in enabled_systems if s in _DEFAULT_SYSTEMS] or list(
+            _DEFAULT_SYSTEMS
+        )
         # algorithm 段合并兜底
         if "algorithm" not in cfg or not isinstance(cfg["algorithm"], dict):
             cfg["algorithm"] = dict(_DEFAULT_CONFIG["algorithm"])
@@ -276,6 +278,7 @@ class TrailingStopComponent:
     def _lazy_fetch_positions(self) -> Dict[str, Any]:
         try:
             from unified_position_query import fetch_all_positions
+
             result = fetch_all_positions()
             return result if isinstance(result, dict) else {}
         except Exception as exc:
@@ -300,7 +303,7 @@ class TrailingStopComponent:
         """在缺少 current_price 时，通过 upl_ratio（无杠杆名义收益率估算）推导。"""
         if entry_price <= 0:
             return 0.0
-        lev = leverage if leverage > 0 else 1.0
+        lev = leverage if leverage > 0 else 1.0  # noqa: F841
         # upl_ratio 通常 = unrealized_pnl / (entry_price * size) 即名义收益率
         # 为兼容含杠杆/无杠杆，直接用 upl_ratio 作为 raw pct
         raw_pct = upl_ratio
@@ -343,6 +346,7 @@ class TrailingStopComponent:
         """
         try:
             from param_center.api import get_sltp_params  # type: ignore
+
             params = get_sltp_params(symbol)
             lo, hi = params.atr_mult_range
             if lo <= 0 or hi <= 0 or hi < lo:
@@ -372,7 +376,9 @@ class TrailingStopComponent:
 
         # 遍历所有系统的 positions
         # fetch_all_positions() 返回的各系统数据在 "by_system" 键下
-        by_sys_raw: Dict[str, Any] = positions_result.get("by_system") or positions_result.get("systems") or {}
+        by_sys_raw: Dict[str, Any] = (
+            positions_result.get("by_system") or positions_result.get("systems") or {}
+        )
         for system_name, sys_data in by_sys_raw.items():
             if system_name not in target_systems:
                 continue
@@ -396,7 +402,8 @@ class TrailingStopComponent:
 
                 # 从参数中心查询 atr_mult_range（按 symbol 路由，FAIL-OPEN 回退到配置默认值）
                 atr_mult_dyn, param_source = self._resolve_atr_multiplier(
-                    coin, atr_multiplier_default,
+                    coin,
+                    atr_multiplier_default,
                 )
                 if coin not in param_center_log:
                     param_center_log[coin] = {
@@ -405,7 +412,7 @@ class TrailingStopComponent:
                     }
 
                 upl_ratio = float(pos.get("upl_ratio") or 0.0)
-                unrealized_pnl = float(pos.get("unrealized_pnl") or 0.0)
+                unrealized_pnl = float(pos.get("unrealized_pnl") or 0.0)  # noqa: F841
 
                 # 当前价估算：优先用 position.meta.last_price / current_price
                 meta = pos.get("meta") or {}
@@ -421,7 +428,10 @@ class TrailingStopComponent:
                         current_price = float(v)
                 if current_price <= 0:
                     current_price = self._estimate_current_price(
-                        entry_price, upl_ratio, leverage, side,
+                        entry_price,
+                        upl_ratio,
+                        leverage,
+                        side,
                     )
                 if current_price <= 0:
                     continue
@@ -473,9 +483,15 @@ class TrailingStopComponent:
                 # 处理已触发后冷却 / 自动关闭
                 if state.status == TrailingStatus.TRIGGERED:
                     try:
-                        from datetime import datetime as _dt, timezone as _tz
+                        from datetime import datetime as _dt
+                        from datetime import timezone as _tz
+
                         trig_ts_iso = state.triggered_ts or ""
-                        trig_dt = _dt.fromisoformat(trig_ts_iso.replace("Z", "+00:00")) if trig_ts_iso else None
+                        trig_dt = (
+                            _dt.fromisoformat(trig_ts_iso.replace("Z", "+00:00"))
+                            if trig_ts_iso
+                            else None
+                        )
                         now_dt = _dt.now(_tz.utc)
                         if trig_dt:
                             elapsed = (now_dt - trig_dt).total_seconds()
@@ -507,7 +523,11 @@ class TrailingStopComponent:
                         state.armed_ts = now_iso()
                         state.arm_pnl_eff_pct = pnl_eff
                         trail_price = calc_atr_trailing_price(
-                            is_long, state.peak_price, atr_value, atr_mult_dyn, min_trail_pct,
+                            is_long,
+                            state.peak_price,
+                            atr_value,
+                            atr_mult_dyn,
+                            min_trail_pct,
                         )
                         state.trailing_stop_price = trail_price
                         action = TrailingAction.ARM
@@ -517,21 +537,29 @@ class TrailingStopComponent:
                         )
                         just_armed = True
                     else:
-                        reason = (
-                            f"[IDLE] 有效盈利 {pnl_eff:.2%} < 激活阈值 {arm_threshold_pct:.2%}"
-                        )
+                        reason = f"[IDLE] 有效盈利 {pnl_eff:.2%} < 激活阈值 {arm_threshold_pct:.2%}"
 
                 # 状态机：ARMED → 更新追踪价 & 检查触发
                 if state.status == TrailingStatus.ARMED and not just_armed:
                     trail_price = calc_atr_trailing_price(
-                        is_long, state.peak_price, atr_value, atr_mult_dyn, min_trail_pct,
+                        is_long,
+                        state.peak_price,
+                        atr_value,
+                        atr_mult_dyn,
+                        min_trail_pct,
                     )
                     # 追踪止损价只向有利方向调整（做多时只上移，不下降）
                     if is_long:
-                        if trail_price > state.trailing_stop_price or state.trailing_stop_price <= 0:
+                        if (
+                            trail_price > state.trailing_stop_price
+                            or state.trailing_stop_price <= 0
+                        ):
                             state.trailing_stop_price = trail_price
                     else:
-                        if (trail_price < state.trailing_stop_price or state.trailing_stop_price <= 0) and trail_price > 0:
+                        if (
+                            trail_price < state.trailing_stop_price
+                            or state.trailing_stop_price <= 0
+                        ) and trail_price > 0:
                             state.trailing_stop_price = trail_price
                     trail_price = state.trailing_stop_price
 
@@ -551,7 +579,9 @@ class TrailingStopComponent:
                         # 冷却保护（防止短时间重复触发，通常一次就够）
                         cooldown_ok = True
                         try:
-                            from datetime import datetime as _dt, timezone as _tz
+                            from datetime import datetime as _dt
+                            from datetime import timezone as _tz
+
                             trig_ts_iso = state.triggered_ts or ""
                             if trig_ts_iso:
                                 trig_dt = _dt.fromisoformat(trig_ts_iso.replace("Z", "+00:00"))
@@ -568,7 +598,10 @@ class TrailingStopComponent:
                             state.trigger_reason = trigger_reason
                             # 相对开仓的有效盈利
                             locked_profit_pct = calc_pnl_eff_pct(
-                                is_long, entry_price, current_price, leverage,
+                                is_long,
+                                entry_price,
+                                current_price,
+                                leverage,
                             )
                             state.locked_profit_pct = locked_profit_pct
                             action = TrailingAction.TRIGGER_CLOSE
@@ -579,9 +612,7 @@ class TrailingStopComponent:
                             )
                         else:
                             action = TrailingAction.HOLD
-                            reason = (
-                                f"[COOLDOWN] 已触发保护期内（≤{trigger_cooldown_sec}s），暂不重复触发"
-                            )
+                            reason = f"[COOLDOWN] 已触发保护期内（≤{trigger_cooldown_sec}s），暂不重复触发"
                     else:
                         # 距离触发还剩多少
                         if trail_price > 0 and state.peak_price > 0:
@@ -604,7 +635,7 @@ class TrailingStopComponent:
                 if state.status == TrailingStatus.CLOSED:
                     locked_profit_pct = state.locked_profit_pct
                     trail_price = state.trailing_stop_price
-                    reason = f"[CLOSED] 追踪已结束"
+                    reason = "[CLOSED] 追踪已结束"
 
                 # 距离（peak → trail 百分比）
                 if state.peak_price > 0 and trail_price > 0:
@@ -642,7 +673,9 @@ class TrailingStopComponent:
             if sk in seen_keys:
                 continue
             try:
-                from datetime import datetime as _dt, timezone as _tz
+                from datetime import datetime as _dt
+                from datetime import timezone as _tz
+
                 updated_iso = state.updated_ts or state.created_ts or ""
                 if not updated_iso:
                     continue
@@ -679,10 +712,9 @@ class TrailingStopComponent:
                 "algorithm": "atr_adaptive",
                 "algorithm_params": dict(algo_cfg),
                 "param_center_status": (
-                    "ok" if any(
-                        v["source"] == "param_center"
-                        for v in param_center_log.values()
-                    ) else "fallback"
+                    "ok"
+                    if any(v["source"] == "param_center" for v in param_center_log.values())
+                    else "fallback"
                 ),
                 "param_center_symbols": dict(param_center_log),
             },

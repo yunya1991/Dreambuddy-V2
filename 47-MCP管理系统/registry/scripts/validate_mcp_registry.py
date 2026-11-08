@@ -232,10 +232,12 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
         for shell in all_shells:
             for t in shell.get("tools", []) or []:
                 if t.get("name"):
-                    tool_index.setdefault(t["name"], []).append({
-                        "shell": shell.get("shell_id"),
-                        "requires_mandate": t.get("requires_mandate") is True,
-                    })
+                    tool_index.setdefault(t["name"], []).append(
+                        {
+                            "shell": shell.get("shell_id"),
+                            "requires_mandate": t.get("requires_mandate") is True,
+                        }
+                    )
 
         for role, spec in (data.get("worker_roles", {}) or {}).items():
             path = f"worker_roles.{role}"

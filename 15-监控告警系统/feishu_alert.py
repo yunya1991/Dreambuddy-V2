@@ -10,12 +10,13 @@
   from feishu_alert import send_alert, notify_heartbeat_timeout
   send_alert("heartbeat", "critical", "进程异常", {"pid": 123})
 """
+
 import json
 import os
-import requests
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict
 
+import requests
 
 FEISHU_APP_ID = os.environ.get("FEISHU_APP_ID", "cli_aa9442bde4b89be9")
 FEISHU_APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70")
@@ -55,10 +56,14 @@ FEISHU_CREDENTIALS_VALID = bool(FEISHU_APP_ID and FEISHU_APP_SECRET)
 
 
 def get_token() -> str:
-    resp = requests.post(TOKEN_URL, json={
-        "app_id": FEISHU_APP_ID,
-        "app_secret": FEISHU_APP_SECRET,
-    }, timeout=10)
+    resp = requests.post(
+        TOKEN_URL,
+        json={
+            "app_id": FEISHU_APP_ID,
+            "app_secret": FEISHU_APP_SECRET,
+        },
+        timeout=10,
+    )
     resp.raise_for_status()
     data = resp.json()
     if data["code"] != 0:
@@ -68,14 +73,19 @@ def get_token() -> str:
 
 def send_message(chat_id: str, msg_type: str, content: dict) -> dict:
     token = get_token()
-    resp = requests.post(MSG_URL, headers={
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }, json={
-        "receive_id": chat_id,
-        "msg_type": msg_type,
-        "content": json.dumps(content, ensure_ascii=False),
-    }, timeout=10)
+    resp = requests.post(
+        MSG_URL,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "receive_id": chat_id,
+            "msg_type": msg_type,
+            "content": json.dumps(content, ensure_ascii=False),
+        },
+        timeout=10,
+    )
     resp.raise_for_status()
     result = resp.json()
     if result["code"] != 0:
@@ -148,19 +158,26 @@ def send_alert(alert_type: str, level: str, message: str, details: Dict = None, 
 def notify_heartbeat_timeout(system: str, idle_minutes: float, threshold: float = 30):
     details = {"空闲时间": f"{idle_minutes:.1f}分钟", "阈值": f"{threshold}分钟"}
     level = "critical" if idle_minutes > threshold * 2 else "error"
-    send_alert("heartbeat", level,
-               f"进程心跳超时！已空闲 {idle_minutes:.0f} 分钟（阈值 {threshold} 分钟）",
-               details, system)
+    send_alert(
+        "heartbeat",
+        level,
+        f"进程心跳超时！已空闲 {idle_minutes:.0f} 分钟（阈值 {threshold} 分钟）",
+        details,
+        system,
+    )
 
 
 def notify_process_error(system: str, error_message: str, context: str = ""):
     details = {"错误信息": error_message[:200], "上下文": context}
-    send_alert("heartbeat", "critical",
-               f"进程异常终止: {error_message[:100]}", details, system)
+    send_alert("heartbeat", "critical", f"进程异常终止: {error_message[:100]}", details, system)
 
 
 def notify_trading_halted(system: str, reason: str, consecutive_losses: int, daily_pnl: float = 0):
-    details = {"连续亏损": f"{consecutive_losses}次", "日盈亏": f"{daily_pnl:.2f} USDT", "原因": reason}
+    details = {
+        "连续亏损": f"{consecutive_losses}次",
+        "日盈亏": f"{daily_pnl:.2f} USDT",
+        "原因": reason,
+    }
     send_alert("trading", "critical", f"交易暂停！{reason}", details, system)
 
 
@@ -175,7 +192,9 @@ def notify_model_error(system: str, error_message: str, symbol: str = ""):
     send_alert("model", "error", f"模型推理异常: {error_message[:100]}", details, system)
 
 
-def notify_position_close(system: str, symbol: str, reason: str, pnl: float = 0, pnl_pct: float = 0):
+def notify_position_close(
+    system: str, symbol: str, reason: str, pnl: float = 0, pnl_pct: float = 0
+):
     details = {"币种": symbol, "离场原因": reason, "盈亏": f"{pnl:.2f} USDT ({pnl_pct:.2f}%)"}
     level = "critical" if pnl_pct < -10 else "warning" if pnl_pct < 0 else "info"
     send_alert("position", level, f"{symbol} 已平仓 | {reason} | {pnl_pct:+.2f}%", details, system)
@@ -186,12 +205,18 @@ def notify_system_error(system: str, error_message: str, component: str = ""):
     send_alert("system", "critical", f"系统错误: {error_message[:100]}", details, system)
 
 
-def notify_performance_degrade(system: str, metric: str, current: float, threshold: float, direction: str = "below"):
+def notify_performance_degrade(
+    system: str, metric: str, current: float, threshold: float, direction: str = "below"
+):
     details = {"指标": metric, "当前值": current, "阈值": threshold, "方向": direction}
     level = "critical" if direction == "below" and current < threshold * 0.5 else "warning"
-    send_alert("performance", level,
-               f"性能指标 {metric} {direction}阈值！当前={current}, 阈值={threshold}",
-               details, system)
+    send_alert(
+        "performance",
+        level,
+        f"性能指标 {metric} {direction}阈值！当前={current}, 阈值={threshold}",
+        details,
+        system,
+    )
 
 
 def notify_status_summary(system: str, health: bool, status: str, detail: Dict):
@@ -215,19 +240,30 @@ def notify_status_summary(system: str, health: bool, status: str, detail: Dict):
     elements.append(md(f"_时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_"))
 
     chat_id = CHAT_IDS["management"]
-    result = send_message(chat_id, "interactive", card(
-        f"[{system}] 状态汇总", level, elements
-    ))
+    result = send_message(chat_id, "interactive", card(f"[{system}] 状态汇总", level, elements))
     print(f"[OK] 状态汇总已发送 -> #management (msg_id: {result['data']['message_id']})")
     return result
 
 
-def notify_trade_execution(system: str, action: str, symbol: str, price: float, pnl: float = 0, pnl_pct: float = 0):
-    details = {"操作": action, "币种": symbol, "价格": f"{price:.2f}", "盈亏": f"{pnl:.2f} USDT ({pnl_pct:+.2f}%)"}
-    level = "critical" if action == "CLOSE" and pnl_pct < -10 else "warning" if pnl_pct < 0 else "info"
-    send_alert("position", level,
-               f"{symbol} {action} | 价格={price:.2f} | {pnl_pct:+.2f}%",
-               details, system)
+def notify_trade_execution(
+    system: str, action: str, symbol: str, price: float, pnl: float = 0, pnl_pct: float = 0
+):
+    details = {
+        "操作": action,
+        "币种": symbol,
+        "价格": f"{price:.2f}",
+        "盈亏": f"{pnl:.2f} USDT ({pnl_pct:+.2f}%)",
+    }
+    level = (
+        "critical" if action == "CLOSE" and pnl_pct < -10 else "warning" if pnl_pct < 0 else "info"
+    )
+    send_alert(
+        "position",
+        level,
+        f"{symbol} {action} | 价格={price:.2f} | {pnl_pct:+.2f}%",
+        details,
+        system,
+    )
 
 
 def notify_system_start(system: str, config: Dict = None):

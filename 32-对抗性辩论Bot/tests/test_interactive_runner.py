@@ -2,20 +2,18 @@
 
 验证 InteractiveRunner 逐步发送 Argument/Verdict/Marketing/Quality 的正确性。
 """
-import asyncio
-from datetime import datetime
 
 import pytest
-
 from core.interactive_runner import InteractiveRunner
-from core.models import Argument, Turn, Verdict, MarketingMaterial, DebateQualityScore, DebateResult
+from core.models import Argument, DebateResult
 from core.telegram_bot import TelegramDualBot
-
 
 # ─── Mock Bot ─────────────────────────────────────────────────
 
+
 class MockBot:
     """记录所有发送消息的 mock bot。"""
+
     def __init__(self, name="mock"):
         self.name = name
         self.messages: list[tuple[int, str]] = []
@@ -25,7 +23,9 @@ class MockBot:
         return {"message_id": len(self.messages)}
 
 
-def make_runner(chat_id: int = -100, judge: bool = True) -> tuple[InteractiveRunner, MockBot, MockBot]:
+def make_runner(
+    chat_id: int = -100, judge: bool = True
+) -> tuple[InteractiveRunner, MockBot, MockBot]:
     bull_bot = MockBot("bull")
     bear_bot = MockBot("bear")
     judge_bot = MockBot("judge") if judge else None
@@ -61,7 +61,7 @@ async def test_send_bear():
     """反方发言：transcript 记录 + Telegram 发送。"""
     runner, bull_bot, bear_bot = make_runner()
     await runner.send_bull("正方论点", ["论据1"])
-    turn = await runner.send_bear("反方反驳", ["反驳1"])
+    turn = await runner.send_bear("反方反驳", ["反驳1"])  # noqa: F841
 
     assert len(runner.transcript) == 2
     assert runner.transcript[1].speaker == "bear"

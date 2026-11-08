@@ -13,6 +13,7 @@ SPEC-主要矛盾识别与最小阻力路径设计.md §4.4
 
 HC-AGI-20: 趋势延续性字段缺失时取 0.5 中性兜底
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,8 +35,14 @@ class TrendContinuationScorer:
 
     # HC-AGI-20: 趋势延续性字段全部缺失时 continuation 取 0.5 中性兜底
     TREND_FIELDS = (
-        "price", "ma50", "ma150", "ma200", "ma200_slope",
-        "low_52w", "high_52w", "contractions",
+        "price",
+        "ma50",
+        "ma150",
+        "ma200",
+        "ma200_slope",
+        "low_52w",
+        "high_52w",
+        "contractions",
     )
 
     def score(self, market_data: dict | Any, direction: str) -> dict:

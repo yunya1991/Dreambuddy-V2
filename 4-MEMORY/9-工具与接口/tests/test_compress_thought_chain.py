@@ -1,4 +1,5 @@
 """_compress_thought_chain 单测（设计节 7.3 + GC8 纯结构化提取）。"""
+
 import sys
 from pathlib import Path
 
@@ -22,8 +23,14 @@ def test_compress_returns_evaluation_sample():
         task_summary="test task",
         skill_ids_injected=["test-driven-development"],
         hard_gate_violations=[],
-        outcome_metrics={"task_completion_success": 1.0, "duration_minutes": 10.0, "follow_score": 0.7,
-                          "hard_gate_violation_count": 0, "rework_count": 0, "tool_call_efficiency": 0.5},
+        outcome_metrics={
+            "task_completion_success": 1.0,
+            "duration_minutes": 10.0,
+            "follow_score": 0.7,
+            "hard_gate_violation_count": 0,
+            "rework_count": 0,
+            "tool_call_efficiency": 0.5,
+        },
     )
     assert isinstance(sample, EvaluationSample)
     assert 1 <= len(sample.thought_chain_compressed) <= 15

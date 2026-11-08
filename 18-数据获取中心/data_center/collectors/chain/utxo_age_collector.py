@@ -13,6 +13,7 @@
 
 FAIL-OPEN 铁律: API 异常 → 返回空列表不阻塞。
 """
+
 from __future__ import annotations
 
 import logging
@@ -73,6 +74,7 @@ class UTXOAgeDistributionCollector(BaseCollector):
         """通过统一存储接口读取 panewslab cycle_signals 的 profit-supply。"""
         try:
             from data_center.storage.sink_postgres import get_sink
+
             sink = get_sink()
             for rec in sink.query_records(source="panewslab", limit=50):
                 if rec.sub_category == "cycle_signals":
@@ -80,6 +82,7 @@ class UTXOAgeDistributionCollector(BaseCollector):
         except Exception:
             pass
         return 50.0
+
     def _build_records(self, utxo_count: int, profit_supply_pct: float) -> list[DataRecord]:
         # 派生: profit-supply 越高 → 短期持有者占比越高
         short_term = round(_clamp(profit_supply_pct * 0.55, 10, 70), 1)

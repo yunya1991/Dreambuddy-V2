@@ -16,10 +16,9 @@
   兑(泽) ☱ → 多周期共振特征 (Multi-TF) — 泽悦而和，周期的共鸣
 """
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
-from typing import Dict, List, Tuple
-
+from typing import Dict, List
 
 # ============================================================
 # 卦象-特征维度映射
@@ -40,6 +39,7 @@ BAGUA_FEATURE_MAP = {
 # ============================================================
 # 乾卦 ☰ 趋势强度特征 (Trend)
 # ============================================================
+
 
 def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
     """乾卦: 天行健，君子以自强不息 — 趋势的力量"""
@@ -73,10 +73,16 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
     low_close = np.abs(df["low"] - df["close"].shift())
     tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
 
-    plus_dm = np.where((df["high"] - df["high"].shift()) > (df["low"].shift() - df["low"]),
-                       np.maximum(df["high"] - df["high"].shift(), 0), 0)
-    minus_dm = np.where((df["low"].shift() - df["low"]) > (df["high"] - df["high"].shift()),
-                        np.maximum(df["low"].shift() - df["low"], 0), 0)
+    plus_dm = np.where(
+        (df["high"] - df["high"].shift()) > (df["low"].shift() - df["low"]),
+        np.maximum(df["high"] - df["high"].shift(), 0),
+        0,
+    )
+    minus_dm = np.where(
+        (df["low"].shift() - df["low"]) > (df["high"] - df["high"].shift()),
+        np.maximum(df["low"].shift() - df["low"], 0),
+        0,
+    )
 
     atr14 = tr.rolling(14).mean()
     plus_di = 100 * pd.Series(plus_dm, index=df.index).rolling(14).mean() / atr14
@@ -96,7 +102,7 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
     ma50 = df["close"].rolling(50).mean()
     ma100 = df["close"].rolling(100).mean()
     ma200 = df["close"].rolling(200).mean()
-    
+
     bull = (ma5 > ma10) & (ma10 > ma20) & (ma20 > ma50)
     bear = (ma5 < ma10) & (ma10 < ma20) & (ma20 < ma50)
     feats["qian_ma_alignment"] = np.where(bull, 1.0, np.where(bear, -1.0, 0.0))
@@ -120,8 +126,9 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
     feats["qian_ichimoku_span_b"] = (df["close"] - span_b) / df["close"]
     feats["qian_ichimoku_cloud_top"] = np.maximum(span_a, span_b)
     feats["qian_ichimoku_cloud_bottom"] = np.minimum(span_a, span_b)
-    feats["qian_ichimoku_in_cloud"] = ((df["close"] >= np.minimum(span_a, span_b)) & 
-                                       (df["close"] <= np.maximum(span_a, span_b))).astype(float)
+    feats["qian_ichimoku_in_cloud"] = (
+        (df["close"] >= np.minimum(span_a, span_b)) & (df["close"] <= np.maximum(span_a, span_b))
+    ).astype(float)
     feats["qian_ichimoku_above_cloud"] = (df["close"] > np.maximum(span_a, span_b)).astype(float)
     feats["qian_ichimoku_below_cloud"] = (df["close"] < np.minimum(span_a, span_b)).astype(float)
 
@@ -131,14 +138,14 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
     af = 0.02
     ep = df["high"].iloc[0]
     trend = 1  # 1=up, -1=down
-    
+
     for i in range(1, len(df)):
-        sar.iloc[i] = sar.iloc[i-1] + af * (ep - sar.iloc[i-1])
-        
+        sar.iloc[i] = sar.iloc[i - 1] + af * (ep - sar.iloc[i - 1])
+
         if trend == 1:
             if df["low"].iloc[i] < sar.iloc[i]:
                 trend = -1
-                sar.iloc[i] = df["high"].rolling(i+1).max().iloc[i]
+                sar.iloc[i] = df["high"].rolling(i + 1).max().iloc[i]
                 ep = df["low"].iloc[i]
                 af = 0.02
             else:
@@ -148,24 +155,32 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
         else:
             if df["high"].iloc[i] > sar.iloc[i]:
                 trend = 1
-                sar.iloc[i] = df["low"].rolling(i+1).min().iloc[i]
+                sar.iloc[i] = df["low"].rolling(i + 1).min().iloc[i]
                 ep = df["high"].iloc[i]
                 af = 0.02
             else:
                 if df["low"].iloc[i] < ep:
                     ep = df["low"].iloc[i]
                     af = min(af + 0.02, 0.2)
-    
+
     feats["qian_sar"] = (df["close"] - sar) / df["close"]
     feats["qian_sar_trend"] = trend * np.ones(len(df))
 
     # 趋势持续时间
     trend_duration = pd.Series(0, index=df.index, dtype=float)
     for i in range(1, len(df)):
-        if df["close"].iloc[i] > df["close"].iloc[i-1]:
-            trend_duration.iloc[i] = trend_duration.iloc[i-1] + 1 if df["close"].iloc[i-1] > df["close"].iloc[i-2] else 1
-        elif df["close"].iloc[i] < df["close"].iloc[i-1]:
-            trend_duration.iloc[i] = trend_duration.iloc[i-1] - 1 if df["close"].iloc[i-1] < df["close"].iloc[i-2] else -1
+        if df["close"].iloc[i] > df["close"].iloc[i - 1]:
+            trend_duration.iloc[i] = (
+                trend_duration.iloc[i - 1] + 1
+                if df["close"].iloc[i - 1] > df["close"].iloc[i - 2]
+                else 1
+            )
+        elif df["close"].iloc[i] < df["close"].iloc[i - 1]:
+            trend_duration.iloc[i] = (
+                trend_duration.iloc[i - 1] - 1
+                if df["close"].iloc[i - 1] < df["close"].iloc[i - 2]
+                else -1
+            )
     feats["qian_trend_duration"] = trend_duration / 20.0
 
     # 斜率特征 (多种周期)
@@ -182,9 +197,9 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 趋势强度综合指标
     feats["qian_trend_strength"] = (
-        feats["qian_adx"] * feats["qian_trend_dir"] +
-        feats["qian_ma_alignment"] * 0.3 +
-        np.sign(feats["qian_slope50"]) * 0.3
+        feats["qian_adx"] * feats["qian_trend_dir"]
+        + feats["qian_ma_alignment"] * 0.3
+        + np.sign(feats["qian_slope50"]) * 0.3
     )
 
     return feats
@@ -193,6 +208,7 @@ def _qian_trend_features(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================
 # 坤卦 ☷ 支撑阻力特征 (Support/Resistance)
 # ============================================================
+
 
 def _kun_sr_features(df: pd.DataFrame) -> pd.DataFrame:
     """坤卦: 地势坤，君子以厚德载物 — 支撑与压力的承载"""
@@ -219,11 +235,14 @@ def _kun_sr_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # Keltner通道
     ema20 = df["close"].ewm(span=20, adjust=False).mean()
-    tr = pd.concat([
-        df["high"] - df["low"],
-        np.abs(df["high"] - df["close"].shift()),
-        np.abs(df["low"] - df["close"].shift())
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            df["high"] - df["low"],
+            np.abs(df["high"] - df["close"].shift()),
+            np.abs(df["low"] - df["close"].shift()),
+        ],
+        axis=1,
+    ).max(axis=1)
     atr10 = tr.rolling(10).mean()
     kupper = ema20 + 2 * atr10
     klower = ema20 - 2 * atr10
@@ -235,10 +254,14 @@ def _kun_sr_features(df: pd.DataFrame) -> pd.DataFrame:
     feats["kun_vwap_pos"] = (df["close"] - vwap) / (vwap + 1e-10)
 
     # 整数关口距离 (价格相对于最近整数的位置)
-    round_levels = [round(df["close"].iloc[i] / (10 ** max(0, int(np.log10(abs(df["close"].iloc[i]))) - 1)))
-                    * (10 ** max(0, int(np.log10(abs(df["close"].iloc[i]))) - 1))
-                    for i in range(len(df))]
-    feats["kun_round_dist"] = np.abs(df["close"].values - np.array(round_levels)) / df["close"].values
+    round_levels = [
+        round(df["close"].iloc[i] / (10 ** max(0, int(np.log10(abs(df["close"].iloc[i]))) - 1)))
+        * (10 ** max(0, int(np.log10(abs(df["close"].iloc[i]))) - 1))
+        for i in range(len(df))
+    ]
+    feats["kun_round_dist"] = (
+        np.abs(df["close"].values - np.array(round_levels)) / df["close"].values
+    )
 
     return feats
 
@@ -246,6 +269,7 @@ def _kun_sr_features(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================
 # 震卦 ☳ 动量突破特征 (Momentum)
 # ============================================================
+
 
 def _zhen_momentum_features(df: pd.DataFrame) -> pd.DataFrame:
     """震卦: 洊雷震，君子以恐惧修省 — 动量与突破的震动"""
@@ -256,8 +280,8 @@ def _zhen_momentum_features(df: pd.DataFrame) -> pd.DataFrame:
         delta = df["close"].diff()
         gain = delta.where(delta > 0, 0)
         loss = -delta.where(delta < 0, 0)
-        avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
-        avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
+        avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
+        avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
         rs = avg_gain / (avg_loss + 1e-10)
         rsi = 100 - (100 / (1 + rs))
         feats[f"zhen_rsi{period}"] = rsi / 100.0
@@ -290,7 +314,8 @@ def _zhen_momentum_features(df: pd.DataFrame) -> pd.DataFrame:
     pos_mf = np.where(df["close"] > df["close"].shift(), mf, 0)
     neg_mf = np.where(df["close"] < df["close"].shift(), mf, 0)
     mr = pd.Series(pos_mf, index=df.index).rolling(14).sum() / (
-        pd.Series(neg_mf, index=df.index).rolling(14).sum() + 1e-10)
+        pd.Series(neg_mf, index=df.index).rolling(14).sum() + 1e-10
+    )
     feats["zhen_mfi"] = 100 - 100 / (1 + mr)
     feats["zhen_mfi"] = feats["zhen_mfi"] / 100.0
 
@@ -303,15 +328,19 @@ def _zhen_momentum_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 突破标记: 突破N日新高/新低
     for period in [20, 60]:
-        feats[f"zhen_break_high{period}"] = (df["close"] > df["high"].rolling(period).max().shift()).astype(float)
-        feats[f"zhen_break_low{period}"] = (df["close"] < df["low"].rolling(period).min().shift()).astype(float)
+        feats[f"zhen_break_high{period}"] = (
+            df["close"] > df["high"].rolling(period).max().shift()
+        ).astype(float)
+        feats[f"zhen_break_low{period}"] = (
+            df["close"] < df["low"].rolling(period).min().shift()
+        ).astype(float)
 
     # === 下跌趋势专用特征 ===
     # 下跌动量强度 (负收益的累积)
     for period in [5, 10, 20, 60]:
         neg_returns = df["close"].pct_change(period).clip(upper=0)
         feats[f"zhen_down_momentum{period}"] = neg_returns
-    
+
     # 下跌速度 (短期跌幅相对于长期跌幅的加速度)
     down_5 = df["close"].pct_change(5).clip(upper=0)
     down_20 = df["close"].pct_change(20).clip(upper=0)
@@ -322,17 +351,20 @@ def _zhen_momentum_features(df: pd.DataFrame) -> pd.DataFrame:
     down_streak = pd.Series(0, index=df.index, dtype=int)
     for i in range(1, len(df)):
         if is_down.iloc[i] == 1:
-            down_streak.iloc[i] = down_streak.iloc[i-1] + 1
+            down_streak.iloc[i] = down_streak.iloc[i - 1] + 1
         else:
             down_streak.iloc[i] = 0
     feats["zhen_down_streak"] = down_streak / 20.0
 
     # 恐慌指标: 大阴线频率 (跌幅超过2倍ATR的K线占比)
-    tr = pd.concat([
-        df["high"] - df["low"],
-        np.abs(df["high"] - df["close"].shift()),
-        np.abs(df["low"] - df["close"].shift())
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            df["high"] - df["low"],
+            np.abs(df["high"] - df["close"].shift()),
+            np.abs(df["low"] - df["close"].shift()),
+        ],
+        axis=1,
+    ).max(axis=1)
     atr14 = tr.rolling(14).mean()
     body = df["close"] - df["open"]
     large_down = (body < -atr14 * 0.5).astype(float)
@@ -365,6 +397,7 @@ def _zhen_momentum_features(df: pd.DataFrame) -> pd.DataFrame:
 # 巽卦 ☴ 波动率特征 (Volatility)
 # ============================================================
 
+
 def _xun_volatility_features(df: pd.DataFrame) -> pd.DataFrame:
     """巽卦: 随风巽，君子以申命行事 — 波动的风性，无形而多变"""
     feats = pd.DataFrame(index=df.index)
@@ -377,11 +410,14 @@ def _xun_volatility_features(df: pd.DataFrame) -> pd.DataFrame:
         feats[f"xun_vol{period}_change"] = vol.pct_change(5)
 
     # ATR真实波幅
-    tr = pd.concat([
-        df["high"] - df["low"],
-        np.abs(df["high"] - df["close"].shift()),
-        np.abs(df["low"] - df["close"].shift())
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            df["high"] - df["low"],
+            np.abs(df["high"] - df["close"].shift()),
+            np.abs(df["low"] - df["close"].shift()),
+        ],
+        axis=1,
+    ).max(axis=1)
     for period in [14, 28]:
         atr = tr.rolling(period).mean()
         feats[f"xun_atr{period}"] = atr / df["close"]
@@ -412,6 +448,7 @@ def _xun_volatility_features(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================
 # 坎卦 ☵ 成交量特征 (Volume)
 # ============================================================
+
 
 def _kan_volume_features(df: pd.DataFrame) -> pd.DataFrame:
     """坎卦: 习坎，有孚维心亨 — 水流无形，资金如流水"""
@@ -464,6 +501,7 @@ def _kan_volume_features(df: pd.DataFrame) -> pd.DataFrame:
 # 离卦 ☲ 蜡烛形态特征 (Candlestick)
 # ============================================================
 
+
 def _li_candlestick_features(df: pd.DataFrame) -> pd.DataFrame:
     """离卦: 明两作离，大人以继明照于四方 — 蜡烛图如火焰照亮市场"""
     feats = pd.DataFrame(index=df.index)
@@ -476,9 +514,9 @@ def _li_candlestick_features(df: pd.DataFrame) -> pd.DataFrame:
     # 基本形态编码
     body = close_p - open_p
     body_abs = np.abs(body)
-    tr = pd.concat([high_p - low_p,
-                    np.abs(high_p - close_p.shift()),
-                    np.abs(low_p - close_p.shift())], axis=1).max(axis=1)
+    tr = pd.concat(
+        [high_p - low_p, np.abs(high_p - close_p.shift()), np.abs(low_p - close_p.shift())], axis=1
+    ).max(axis=1)
 
     # 阴阳线
     feats["li_bull_candle"] = (body > 0).astype(float)
@@ -490,28 +528,28 @@ def _li_candlestick_features(df: pd.DataFrame) -> pd.DataFrame:
     # 锤子/流星 (长下影/长上影 + 小实体)
     upper_shadow = high_p - np.maximum(close_p, open_p)
     lower_shadow = np.minimum(close_p, open_p) - low_p
-    feats["li_hammer"] = ((lower_shadow > 2 * body_abs) &
-                          (upper_shadow < 0.5 * body_abs) &
-                          (body_abs > 0)).astype(float)
-    feats["li_shooting_star"] = ((upper_shadow > 2 * body_abs) &
-                                 (lower_shadow < 0.5 * body_abs) &
-                                 (body_abs > 0)).astype(float)
+    feats["li_hammer"] = (
+        (lower_shadow > 2 * body_abs) & (upper_shadow < 0.5 * body_abs) & (body_abs > 0)
+    ).astype(float)
+    feats["li_shooting_star"] = (
+        (upper_shadow > 2 * body_abs) & (lower_shadow < 0.5 * body_abs) & (body_abs > 0)
+    ).astype(float)
 
     # 吞没形态 (简化版)
     prev_body = body.shift()
-    feats["li_bull_engulf"] = ((prev_body < 0) & (body > 0) &
-                               (open_p <= close_p.shift()) &
-                               (close_p >= open_p.shift())).astype(float)
-    feats["li_bear_engulf"] = ((prev_body > 0) & (body < 0) &
-                               (open_p >= close_p.shift()) &
-                               (close_p <= open_p.shift())).astype(float)
+    feats["li_bull_engulf"] = (
+        (prev_body < 0) & (body > 0) & (open_p <= close_p.shift()) & (close_p >= open_p.shift())
+    ).astype(float)
+    feats["li_bear_engulf"] = (
+        (prev_body > 0) & (body < 0) & (open_p >= close_p.shift()) & (close_p <= open_p.shift())
+    ).astype(float)
 
     # 连续涨跌根数
     direction = np.sign(body)
     streak = pd.Series(0, index=df.index, dtype=float)
     for i in range(1, len(df)):
-        if direction.iloc[i] == direction.iloc[i-1] and direction.iloc[i] != 0:
-            streak.iloc[i] = streak.iloc[i-1] + 1
+        if direction.iloc[i] == direction.iloc[i - 1] and direction.iloc[i] != 0:
+            streak.iloc[i] = streak.iloc[i - 1] + 1
         else:
             streak.iloc[i] = 1.0 if direction.iloc[i] != 0 else 0.0
     feats["li_trend_streak"] = streak * direction
@@ -519,10 +557,11 @@ def _li_candlestick_features(df: pd.DataFrame) -> pd.DataFrame:
     # 跳空缺口
     feats["li_gap_up"] = (open_p > high_p.shift()).astype(float)
     feats["li_gap_down"] = (open_p < low_p.shift()).astype(float)
-    feats["li_gap_size"] = np.where(open_p > high_p.shift(),
-                                    (open_p - high_p.shift()) / close_p.shift(),
-                                    np.where(open_p < low_p.shift(),
-                                             (low_p.shift() - open_p) / close_p.shift(), 0))
+    feats["li_gap_size"] = np.where(
+        open_p > high_p.shift(),
+        (open_p - high_p.shift()) / close_p.shift(),
+        np.where(open_p < low_p.shift(), (low_p.shift() - open_p) / close_p.shift(), 0),
+    )
 
     return feats
 
@@ -530,6 +569,7 @@ def _li_candlestick_features(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================
 # 艮卦 ☶ 市场结构特征 (Structure)
 # ============================================================
+
 
 def _gen_structure_features(df: pd.DataFrame) -> pd.DataFrame:
     """艮卦: 兼山艮，君子以思不出其位 — 市场如山，结构稳定"""
@@ -542,10 +582,16 @@ def _gen_structure_features(df: pd.DataFrame) -> pd.DataFrame:
     high_close = np.abs(df["high"] - df["close"].shift())
     low_close = np.abs(df["low"] - df["close"].shift())
     tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
-    plus_dm = np.where((df["high"] - df["high"].shift()) > (df["low"].shift() - df["low"]),
-                       np.maximum(df["high"] - df["high"].shift(), 0), 0)
-    minus_dm = np.where((df["low"].shift() - df["low"]) > (df["high"] - df["high"].shift()),
-                        np.maximum(df["low"].shift() - df["low"], 0), 0)
+    plus_dm = np.where(
+        (df["high"] - df["high"].shift()) > (df["low"].shift() - df["low"]),
+        np.maximum(df["high"] - df["high"].shift(), 0),
+        0,
+    )
+    minus_dm = np.where(
+        (df["low"].shift() - df["low"]) > (df["high"] - df["high"].shift()),
+        np.maximum(df["low"].shift() - df["low"], 0),
+        0,
+    )
     atr14 = tr.rolling(14).mean()
     plus_di = 100 * pd.Series(plus_dm, index=df.index).rolling(14).mean() / atr14
     minus_di = 100 * pd.Series(minus_dm, index=df.index).rolling(14).mean() / atr14
@@ -564,31 +610,33 @@ def _gen_structure_features(df: pd.DataFrame) -> pd.DataFrame:
             tau.append(np.std(delta))
         if len(tau) < 2:
             return 0.5
-        return np.polyfit(np.log(lags[:len(tau)]), np.log(tau), 1)[0] / 2.0
+        return np.polyfit(np.log(lags[: len(tau)]), np.log(tau), 1)[0] / 2.0
 
     # 滚动Hurst估计
     hurst_vals = pd.Series(0.5, index=df.index, dtype=float)
     log_close = np.log(df["close"])
     for i in range(60, len(df)):
-        hurst_vals.iloc[i] = hurst_approx(log_close.iloc[i-60:i])
+        hurst_vals.iloc[i] = hurst_approx(log_close.iloc[i - 60 : i])
     feats["gen_hurst"] = hurst_vals
 
     # 自相关性
-    feats["gen_autocorr_1"] = returns.rolling(60).apply(
-        lambda x: pd.Series(x).autocorr(1) if len(x) > 10 else 0, raw=False
-    ).fillna(0)
+    feats["gen_autocorr_1"] = (
+        returns.rolling(60)
+        .apply(lambda x: pd.Series(x).autocorr(1) if len(x) > 10 else 0, raw=False)
+        .fillna(0)
+    )
 
     # 波动率聚类 (ARCH效应近似)
-    sq_ret = returns ** 2
+    sq_ret = returns**2
     feats["gen_vol_cluster"] = sq_ret.rolling(20).corr(sq_ret.shift()).fillna(0)
 
     # 局部高点/低点标记 (用前后N根K线比较)
     for period in [5, 10]:
         feats[f"gen_local_high{period}"] = (
-            df["high"] == df["high"].rolling(2*period+1, center=True).max()
+            df["high"] == df["high"].rolling(2 * period + 1, center=True).max()
         ).astype(float)
         feats[f"gen_local_low{period}"] = (
-            df["low"] == df["low"].rolling(2*period+1, center=True).min()
+            df["low"] == df["low"].rolling(2 * period + 1, center=True).min()
         ).astype(float)
 
     # 支撑阻力位强度计数 (简化: 价格触及次数)
@@ -607,6 +655,7 @@ def _gen_structure_features(df: pd.DataFrame) -> pd.DataFrame:
 # 兑卦 ☱ 多周期共振特征 (Multi-TF)
 # ============================================================
 
+
 def _dui_multitf_features(df: pd.DataFrame) -> pd.DataFrame:
     """兑卦: 丽泽兑，君子以朋友讲习 — 多周期如两泽相通，共振则强"""
     feats = pd.DataFrame(index=df.index)
@@ -620,12 +669,14 @@ def _dui_multitf_features(df: pd.DataFrame) -> pd.DataFrame:
     mom_60 = returns.rolling(60).sum()
 
     # 方向一致性比例
-    directions = pd.DataFrame({
-        "m5": np.sign(mom_5),
-        "m10": np.sign(mom_10),
-        "m20": np.sign(mom_20),
-        "m60": np.sign(mom_60),
-    })
+    directions = pd.DataFrame(
+        {
+            "m5": np.sign(mom_5),
+            "m10": np.sign(mom_10),
+            "m20": np.sign(mom_20),
+            "m60": np.sign(mom_60),
+        }
+    )
     feats["dui_dir_consistency"] = directions.abs().mean(axis=1) * np.sign(directions.mean(axis=1))
 
     # 均线多周期排列一致性
@@ -636,10 +687,10 @@ def _dui_multitf_features(df: pd.DataFrame) -> pd.DataFrame:
     ma200 = df["close"].rolling(200).mean()
 
     alignment_score = (
-        (ma5 > ma10).astype(float) +
-        (ma10 > ma20).astype(float) +
-        (ma20 > ma50).astype(float) +
-        (ma50 > ma200).astype(float)
+        (ma5 > ma10).astype(float)
+        + (ma10 > ma20).astype(float)
+        + (ma20 > ma50).astype(float)
+        + (ma50 > ma200).astype(float)
     ) / 4.0
     feats["dui_ma_alignment_score"] = alignment_score * 2 - 1  # -1到1
 
@@ -648,8 +699,8 @@ def _dui_multitf_features(df: pd.DataFrame) -> pd.DataFrame:
         delta = series.diff()
         gain = delta.where(delta > 0, 0)
         loss = -delta.where(delta < 0, 0)
-        avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
-        avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
+        avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
+        avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
         rs = avg_gain / (avg_loss + 1e-10)
         return 100 - (100 / (1 + rs))
 
@@ -679,6 +730,7 @@ def _dui_multitf_features(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================
 # 主入口: 八卦特征引擎
 # ============================================================
+
 
 class BaguaFeatureEngine:
     """八卦特征工程引擎 — 8维度特征对应八卦力学的8种力场模式
@@ -744,7 +796,7 @@ class BaguaFeatureEngine:
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(
     name="bagua",

@@ -3,9 +3,7 @@ import json
 import re
 import subprocess
 import sys
-from pathlib import Path
 from typing import Dict, Tuple
-
 
 REQUIRED_CHECK = "PR Gate Checks"
 
@@ -21,10 +19,7 @@ def parse_repo_input(repo_input: str) -> str:
 
 
 def validate_main_protection(protection_payload: Dict) -> Tuple[bool, str]:
-    checks = (
-        protection_payload.get("required_status_checks", {})
-        .get("checks", [])
-    )
+    checks = protection_payload.get("required_status_checks", {}).get("checks", [])
     contexts = [item.get("context", "") for item in checks]
     if REQUIRED_CHECK not in contexts:
         return False, f"required check missing: {REQUIRED_CHECK}"
@@ -45,7 +40,9 @@ def gh_api_json(path: str) -> Dict:
 
 def main() -> int:
     if len(sys.argv) < 2:
-        print("Usage: python scripts/ci/remote_repo_guard.py <owner/repo|repo_url>", file=sys.stderr)
+        print(
+            "Usage: python scripts/ci/remote_repo_guard.py <owner/repo|repo_url>", file=sys.stderr
+        )
         return 2
 
     repo = parse_repo_input(sys.argv[1])

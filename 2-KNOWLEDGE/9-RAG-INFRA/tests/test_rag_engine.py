@@ -18,29 +18,25 @@ _RAG_INFRA_DIR = Path(__file__).resolve().parent.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-import pytest
+import pytest  # noqa: E402
 
 # 启用 TF-IDF 回退（与向量层测试一致，避免加载 bge 模型）
-from vector_store.embedder import _embedder
+from vector_store.embedder import _embedder  # noqa: E402
+
 _embedder._use_tfidf_fallback = True
 _embedder._model = None
 
-from vector_store import build_index
+from vector_store import build_index  # noqa: E402
 
-pytestmark = pytest.mark.skipif(
-    build_index is None, reason="chromadb 未安装（向量检索为可选依赖）"
-)
+pytestmark = pytest.mark.skipif(build_index is None, reason="chromadb 未安装（向量检索为可选依赖）")
 
+from evolution import annotate_chunk, ingest_document, record_feedback  # noqa: E402
 from knowledge_graph import build_graph  # noqa: E402
-from rag_engine import (
-    hybrid_search,
-    generate,
-    keyword_search,
+from rag_engine import (  # noqa: E402
     build_keyword_index,
-    rerank,
+    generate,
+    hybrid_search,
 )
-from evolution import ingest_document, annotate_chunk, record_feedback
-
 
 # === 测试用 Markdown 固件（3 文件，2 域） ===
 FIXTURES = {
@@ -90,6 +86,7 @@ V9马丁基线策略核心参数。
 
 
 # === 会话级 fixture ===
+
 
 @pytest.fixture(scope="session")
 def kb_dir(tmp_path_factory):
@@ -223,8 +220,9 @@ def test_tc17_positive_feedback(tmp_path):
 
     assert result["source_file"] == "1-TRADING/BCRM2推理引擎.md"
     assert result["heading"] == "核心架构"
-    assert abs(result["new_weight"] - 0.1) < 1e-9, \
-        f"正反馈后权重应为 0.1，实际: {result['new_weight']}"
+    assert (
+        abs(result["new_weight"] - 0.1) < 1e-9
+    ), f"正反馈后权重应为 0.1，实际: {result['new_weight']}"
 
     # 验证持久化
     weights_file = tmp_path / "feedback_weights.json"
@@ -245,8 +243,9 @@ def test_tc18_negative_feedback(tmp_path):
 
     assert result["source_file"] == "1-TRADING/BCRM2推理引擎.md"
     assert result["heading"] == "力向量计算"
-    assert abs(result["new_weight"] - (-0.1)) < 1e-9, \
-        f"负反馈后权重应为 -0.1，实际: {result['new_weight']}"
+    assert (
+        abs(result["new_weight"] - (-0.1)) < 1e-9
+    ), f"负反馈后权重应为 -0.1，实际: {result['new_weight']}"
 
 
 # ---------- TC19：文档采集 ----------
@@ -258,9 +257,11 @@ def test_tc19_ingest_document(tmp_path, monkeypatch):
     # 用临时路径替换默认索引路径，避免污染真实数据
     db_path = str(tmp_path / "chromadb")
     import evolution.ingest as ingest_mod
+
     monkeypatch.setattr(ingest_mod, "CHROMA_DB_PATH", db_path)
 
     import knowledge_graph.schema as schema_mod
+
     monkeypatch.setattr(schema_mod, "DEFAULT_GRAPH_PATH", tmp_path / "graph.pkl")
 
     # 创建测试文档
@@ -291,8 +292,8 @@ def test_tc20_annotate_chunk():
     """annotate 标注：域分类 + 标签 + 质量评分。"""
     chunk = {
         "content": "BCRM2.0 是二元矛盾推理模型，通过逐层推理识别市场矛盾。"
-                    "关键参数 θ_match = 0.71，L1模型共344个推理单元。"
-                    " #trading #策略",
+        "关键参数 θ_match = 0.71，L1模型共344个推理单元。"
+        " #trading #策略",
         "source_file": "1-TRADING/BCRM2推理引擎.md",
         "heading": "核心架构",
         "domain": "",
@@ -323,8 +324,7 @@ def test_tc20_annotate_chunk():
         assert 0.0 <= q[key] <= 1.0, f"{key} 应在 [0,1]: {q[key]}"
 
     # overall 应为三项均值
-    expected_overall = round(
-        (q["completeness"] + q["accuracy"] + q["timeliness"]) / 3, 4
-    )
-    assert abs(q["overall"] - expected_overall) < 1e-9, \
-        f"overall 应为三项均值: {q['overall']} vs {expected_overall}"
+    expected_overall = round((q["completeness"] + q["accuracy"] + q["timeliness"]) / 3, 4)
+    assert (
+        abs(q["overall"] - expected_overall) < 1e-9
+    ), f"overall 应为三项均值: {q['overall']} vs {expected_overall}"

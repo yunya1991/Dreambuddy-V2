@@ -13,12 +13,12 @@ top-level strategy/monitor import. Missing credentials → the underlying
 Feishu helper returns None with a soft print (its existing behaviour)
 which the bridge preserves as a ``None`` return.
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
-
 
 # 4 parents up from adapters/lark_bridge.py → repo root.
 _MONITOR_DIR: Path = Path(__file__).resolve().parents[3] / "15-监控告警系统"
@@ -64,9 +64,7 @@ class LarkBridge:
         merged_details: Dict[str, Any] = dict(details or {})
         if md_body:
             merged_details.setdefault("md_body", str(md_body))
-        merged_message = (
-            f"{title}\n{message}".strip() if message else str(title)
-        )
+        merged_message = f"{title}\n{message}".strip() if message else str(title)
         # NOTE: raises are intentionally propagated out of the bridge so
         # the manager's outer try/except (TR-8.3) can log them fail-safe.
         msg_id = fn(
@@ -88,6 +86,7 @@ class LarkBridge:
             if inserted:
                 sys.path.insert(0, dir_str)
             import feishu_alert  # type: ignore
+
             fn = getattr(feishu_alert, "send_alert", None)
         except Exception:  # noqa: BLE001 — fail-safe, no propagate
             fn = None

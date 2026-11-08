@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Deque, Dict, List, Optional, Tuple
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class _ContinuityEntry:
     ts: datetime
-    direction: str            # "LONG" / "SHORT"
+    direction: str  # "LONG" / "SHORT"
     confidence: float
     hexagram_name: str = ""
 
@@ -40,6 +40,7 @@ class BCRMContinuityObserver:
 
     def __init__(self, window_n: Optional[int] = None, enable: bool = False):
         from . import phase_c_constants as C
+
         self.enable = bool(enable)
         self._window_n: int = int(window_n or C.BCRM_CONTINUITY_WINDOW_N)
         self._per_symbol: Dict[str, Deque[_ContinuityEntry]] = {}
@@ -57,13 +58,14 @@ class BCRMContinuityObserver:
         return self._per_symbol[k]
 
     # ---------------- 公共：追加 & 五级判定 ----------------
-    def append_and_grade(self,
-                         symbol: str,
-                         direction: str,
-                         ts: Optional[datetime] = None,
-                         confidence: float = 0.65,
-                         hexagram_name: str = "",
-                         ) -> Tuple[str, float]:
+    def append_and_grade(
+        self,
+        symbol: str,
+        direction: str,
+        ts: Optional[datetime] = None,
+        confidence: float = 0.65,
+        hexagram_name: str = "",
+    ) -> Tuple[str, float]:
         """
         追加一笔 BCRM 推理结果并返回 (grade, score)。
 
@@ -74,6 +76,7 @@ class BCRMContinuityObserver:
             # enable=False → 旁路 fail-open，不写入 window
             if not self.enable:
                 from . import phase_c_constants as C
+
                 return C.FAILOPEN_CONT_GRADE, float(C.FAILOPEN_CONT_SCORE)
             ts = ts or datetime.now()
             entry = _ContinuityEntry(
@@ -88,8 +91,10 @@ class BCRMContinuityObserver:
             return self._grade_window(window, latest_dir=entry.direction)
 
         except Exception as e:  # noqa: BLE001 - fail-open 兜底
-            from . import phase_c_constants as C
             import datetime as _dt
+
+            from . import phase_c_constants as C
+
             hour_tag = _dt.datetime.now().strftime("%Y-%m-%dT%H")
             if self._last_failopen_logged_hour != hour_tag:
                 logger.warning(
@@ -106,10 +111,13 @@ class BCRMContinuityObserver:
             return self._grade_window(window, latest_dir=str(reference_direction).upper())
         except Exception:  # noqa: BLE001
             from . import phase_c_constants as C
+
             return C.FAILOPEN_CONT_GRADE, float(C.FAILOPEN_CONT_SCORE)
 
     # ---------------- 公共：连续 S_cont（近 20 窗口真实胜率）----------------
-    def get_s_cont(self, symbol: str, history_results: Optional[List[Tuple[str, bool]]] = None) -> float:
+    def get_s_cont(
+        self, symbol: str, history_results: Optional[List[Tuple[str, bool]]] = None
+    ) -> float:
         """
         S_cont：近 N 窗口的 BCRM 连续信号真实胜率（用于 P8 S 合成）。
         history_results: List[(direction_str, win_bool)]，可选外部注入；
@@ -134,7 +142,7 @@ class BCRMContinuityObserver:
 
         # 1) 同向计数（以 latest_dir 为"正方向"）
         same = sum(1 for e in window if e.direction == latest_dir)
-        ratio = same / max(1, n)
+        ratio = same / max(1, n)  # noqa: F841
 
         # 2) 强反信检测：反方向且 conf≥0.85
         strong_opposite = False
@@ -160,14 +168,16 @@ class BCRMContinuityObserver:
 
     # ---------------- 辅助：Score_B 合成 ----------------
     @staticmethod
-    def compose_score_b(continuity_score: float,
-                        single_confidence: float,
-                        ) -> float:
+    def compose_score_b(
+        continuity_score: float,
+        single_confidence: float,
+    ) -> float:
         """
         Score_B = P7 · continuity_score + (1-P7) · pure_conf_linear
         pure_conf_linear = 0.40 + 0.60 × single_confidence → 区间 [0.40, 1.0]
         """
         from . import phase_c_constants as C
+
         conf_linear = 0.40 + 0.60 * max(0.0, min(1.0, float(single_confidence)))
         sc = C.SCORE_B_CONT_WEIGHT * max(0.0, min(1.0, float(continuity_score)))
         sb = C.SCORE_B_CONF_WEIGHT * conf_linear

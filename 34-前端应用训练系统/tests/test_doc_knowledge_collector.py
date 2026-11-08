@@ -7,10 +7,10 @@
   4. 增量采集：INDEX.md 修改时间 > since 时才采集
   5. FAIL-OPEN：INDEX.md 不存在时返回空列表
 """
+
 import os
 import sys
 import tempfile
-import time
 import unittest
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -52,6 +52,7 @@ class DocKnowledgeCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     def test_collect_doc_entries(self):
@@ -87,17 +88,20 @@ class DocKnowledgeCollectorTest(unittest.TestCase):
 
     def test_source_name(self):
         from doc_knowledge_collector import DocKnowledgeCollector
+
         collector = DocKnowledgeCollector(index_path=self._index_path)
         self.assertEqual(collector.get_source_name(), "doc")
 
     def test_quality_threshold(self):
         from doc_knowledge_collector import DocKnowledgeCollector
+
         collector = DocKnowledgeCollector(index_path=self._index_path)
         self.assertEqual(collector.get_quality_threshold(), "B")
 
     def test_fail_open_index_missing(self):
         """INDEX.md 不存在时返回空列表。"""
         from doc_knowledge_collector import DocKnowledgeCollector
+
         collector = DocKnowledgeCollector(index_path="/nonexistent/INDEX.md")
         cases = collector.fetch_cases(limit=10)
         self.assertEqual(cases, [])

@@ -31,13 +31,13 @@ YAML 配置格式:
 
 from __future__ import annotations
 
-import os
 import importlib
-from typing import Any, Dict, List, Optional
+import os
+from typing import Any, Dict, Optional
 
-from dreamos.shared.errors import OSError, ErrorCode
+from dreamos.adapters import APIAdapter, FunctionAdapter, SkillAdapter, get_default_adapter_registry
+from dreamos.shared.errors import ErrorCode, OSError
 from dreamos.shared.interfaces import Node
-from dreamos.adapters import FunctionAdapter, APIAdapter, SkillAdapter, get_default_adapter_registry
 
 from .node_registry import NodeRegistry
 
@@ -55,6 +55,7 @@ class RegistryLoader:
 
     def __init__(self, registry: Optional[NodeRegistry] = None):
         from .node_registry import get_default_registry
+
         self._registry = registry if registry is not None else get_default_registry()
         self._adapter_registry = get_default_adapter_registry()
 
@@ -69,13 +70,14 @@ class RegistryLoader:
 
         try:
             import yaml
+
             with open(filepath, "r") as f:
                 config = yaml.safe_load(f)
         except ImportError:
             # 没有 yaml 库，尝试用简单解析
             config = self._parse_simple_yaml(filepath)
         except Exception as e:
-            raise OSError(ErrorCode.NODE_003, f"加载配置失败: {e}")
+            raise OSError(ErrorCode.NODE_003, f"加载配置失败: {e}")  # noqa: B904
 
         return self.load_from_config(config)
 
@@ -149,15 +151,17 @@ class RegistryLoader:
     def _build_api_node(self, cfg: Dict[str, Any]) -> Node:
         """构建 API 节点"""
         adapter = APIAdapter()
-        node = adapter.to_node({
-            "node_id": cfg.get("node_id") or cfg.get("id", ""),
-            "url": cfg.get("url", cfg.get("endpoint", "")),
-            "method": cfg.get("method", "GET"),
-            "headers": cfg.get("headers", {}),
-            "body": cfg.get("body"),
-            "timeout_ms": cfg.get("timeout_ms", 30000),
-            "response_path": cfg.get("response_path", ""),
-        })
+        node = adapter.to_node(
+            {
+                "node_id": cfg.get("node_id") or cfg.get("id", ""),
+                "url": cfg.get("url", cfg.get("endpoint", "")),
+                "method": cfg.get("method", "GET"),
+                "headers": cfg.get("headers", {}),
+                "body": cfg.get("body"),
+                "timeout_ms": cfg.get("timeout_ms", 30000),
+                "response_path": cfg.get("response_path", ""),
+            }
+        )
         node.name = cfg.get("name", node.name)
         node.description = cfg.get("description", "")
         node.chain = cfg.get("chain", "")
@@ -167,10 +171,12 @@ class RegistryLoader:
     def _build_skill_node(self, cfg: Dict[str, Any]) -> Node:
         """构建 SKILL 节点"""
         adapter = SkillAdapter()
-        node = adapter.to_node({
-            "node_id": cfg.get("node_id") or cfg.get("id", ""),
-            "skill_path": cfg.get("skill_path", ""),
-        })
+        node = adapter.to_node(
+            {
+                "node_id": cfg.get("node_id") or cfg.get("id", ""),
+                "skill_path": cfg.get("skill_path", ""),
+            }
+        )
         node.name = cfg.get("name", node.name)
         node.chain = cfg.get("chain", "")
         node.tags = cfg.get("tags", [])
@@ -198,15 +204,13 @@ class RegistryLoader:
     def _parse_simple_yaml(self, filepath: str) -> Dict[str, Any]:
         """简单的 YAML 解析 fallback（只支持基础格式）"""
         # 没有 PyYAML 时的降级方案
-        raise OSError(
-            ErrorCode.NODE_003,
-            "需要安装 PyYAML 才能加载 YAML 配置: pip install pyyaml"
-        )
+        raise OSError(ErrorCode.NODE_003, "需要安装 PyYAML 才能加载 YAML 配置: pip install pyyaml")
 
 
 # ============================================================
 # 便捷函数
 # ============================================================
+
 
 def load_from_yaml(filepath: str, registry: Optional[NodeRegistry] = None) -> int:
     """从 YAML 文件加载节点（便捷函数）"""

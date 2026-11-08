@@ -12,15 +12,14 @@
 - 过滤 confidence < threshold 的信号（默认 0.55）
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Any, Dict, List
 
-import pytest
 
 from dreamos.capabilities.trading.nodes.c3_backtest_verify import C3BacktestVerifyNode
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 def _make_signal(
@@ -228,7 +227,9 @@ def test_c3_momentum_aligned_enhances_win_rate():
 
 def test_c3_short_signal_validated():
     """SHORT 信号同样可被验证"""
-    signals = [_make_signal(symbol="BTC", direction="SHORT", confidence=0.80, trend=-0.15, momentum=-0.08)]
+    signals = [
+        _make_signal(symbol="BTC", direction="SHORT", confidence=0.80, trend=-0.15, momentum=-0.08)
+    ]
     state = _make_state(signals=signals)
     node = C3BacktestVerifyNode()
     result = node.execute_core(state)

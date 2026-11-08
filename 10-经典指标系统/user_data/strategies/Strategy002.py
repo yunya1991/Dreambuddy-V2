@@ -12,6 +12,7 @@ from freqtrade.persistence import Trade
 from freqtrade.enums import RunMode
 import talib.abstract as ta
 
+
 class FutureTripleStrategy(IStrategy):
     """
     最终优化版经典三屏交易法（合约多空）
@@ -31,12 +32,7 @@ class FutureTripleStrategy(IStrategy):
     timeframe = "1h"  # 第三屏
     can_short = True
 
-    minimal_roi = {
-        "0": 0.15,
-        "60": 0.08,
-        "240": 0.05,
-        "720": 0
-    }
+    minimal_roi = {"0": 0.15, "60": 0.08, "240": 0.05, "720": 0}
 
     stoploss = -0.05
     trailing_stop = True
@@ -88,9 +84,13 @@ class FutureTripleStrategy(IStrategy):
                 btc_weekly["macd_hist"] > btc_weekly["macd_hist"].shift(1)
             )
             btc_weekly["adx"] = ta.ADX(btc_weekly)
-            btc_weekly["trend_up"] = (btc_weekly["macd_hist_up"] & (btc_weekly["adx"] > self.adx_threshold.value))
+            btc_weekly["trend_up"] = btc_weekly["macd_hist_up"] & (
+                btc_weekly["adx"] > self.adx_threshold.value
+            )
 
-            dataframe = merge_informative_pair(dataframe, btc_weekly[["date", "trend_up"]], self.timeframe, "1w", ffill=True)
+            dataframe = merge_informative_pair(
+                dataframe, btc_weekly[["date", "trend_up"]], self.timeframe, "1w", ffill=True
+            )
             dataframe.rename(columns={"trend_up_1w": "btc_weekly_trend_up"}, inplace=True)
         else:
             dataframe["btc_weekly_trend_up"] = True
@@ -110,62 +110,72 @@ class FutureTripleStrategy(IStrategy):
             slowk, _ = ta.STOCH(pair_daily)  # 默认参数(14,3,3)
             pair_daily["stoch_k"] = slowk
             pair_daily["cci"] = ta.CCI(pair_daily, timeperiod=20)
-            
+
             # MACD相关
             _, _, macdhist = ta.MACD(pair_daily)
             pair_daily["macdhist"] = pd.to_numeric(macdhist, errors="coerce")
             pair_daily = pair_daily.loc[pair_daily["macdhist"].notna()]
-            pair_daily["macd_hist_up"] = (pair_daily["macdhist"] > 0) & (pair_daily["macdhist"] > pair_daily["macdhist"].shift(1))
-            pair_daily["macd_hist_down"] = (pair_daily["macdhist"] < 0) & (pair_daily["macdhist"] < pair_daily["macdhist"].shift(1))
-            
+            pair_daily["macd_hist_up"] = (pair_daily["macdhist"] > 0) & (
+                pair_daily["macdhist"] > pair_daily["macdhist"].shift(1)
+            )
+            pair_daily["macd_hist_down"] = (pair_daily["macdhist"] < 0) & (
+                pair_daily["macdhist"] < pair_daily["macdhist"].shift(1)
+            )
+
             # 成交量
             pair_daily["volume_ma"] = pair_daily["volume"].rolling(20).mean()
-            pair_daily["volume_spike"] = pair_daily["volume"] > pair_daily["volume_ma"] * self.volume_multiplier.value
-            
+            pair_daily["volume_spike"] = (
+                pair_daily["volume"] > pair_daily["volume_ma"] * self.volume_multiplier.value
+            )
+
             # ====================
             # 第一组：Elder 原版（多空分开）
             # ====================
             # Force Index (13日EMA版)
-            pair_daily["raw_force"] = (pair_daily["close"] - pair_daily["close"].shift(1)) * pair_daily["volume"]
+            pair_daily["raw_force"] = (
+                pair_daily["close"] - pair_daily["close"].shift(1)
+            ) * pair_daily["volume"]
             pair_daily["force_index"] = ta.EMA(pair_daily["raw_force"], timeperiod=13)
-            
+
             # 多头：看涨背离
             lookback_period = 20
-            pair_daily["price_new_low"] = (
-                pair_daily["close"] < pair_daily["close"].rolling(lookback_period).min().shift(1)
-            )
-            pair_daily["force_higher_low"] = (
-                pair_daily["force_index"] > pair_daily["force_index"].rolling(lookback_period).min().shift(1)
-            )
+            pair_daily["price_new_low"] = pair_daily["close"] < pair_daily["close"].rolling(
+                lookback_period
+            ).min().shift(1)
+            pair_daily["force_higher_low"] = pair_daily["force_index"] > pair_daily[
+                "force_index"
+            ].rolling(lookback_period).min().shift(1)
             pair_daily["force_double_bottom"] = (
-                (pair_daily["force_index"] > pair_daily["force_index"].shift(1)) &
-                (pair_daily["force_index"].shift(1) < pair_daily["force_index"].shift(2))
-            )
-            
+                pair_daily["force_index"] > pair_daily["force_index"].shift(1)
+            ) & (pair_daily["force_index"].shift(1) < pair_daily["force_index"].shift(2))
+
             pair_daily["elder_condition_long"] = (
-                (pair_daily["rsi"] < 30) &  # RSI超卖
-                pair_daily["price_new_low"] &  # 价格创新低
-                (pair_daily["force_higher_low"] | pair_daily["force_double_bottom"])  # Force Index背离
+                (pair_daily["rsi"] < 30)  # RSI超卖
+                & pair_daily["price_new_low"]  # 价格创新低
+                & (
+                    pair_daily["force_higher_low"] | pair_daily["force_double_bottom"]
+                )  # Force Index背离
             )
-            
+
             # 空头：看跌背离
-            pair_daily["price_new_high"] = (
-                pair_daily["close"] > pair_daily["close"].rolling(lookback_period).max().shift(1)
-            )
-            pair_daily["force_lower_high"] = (
-                pair_daily["force_index"] < pair_daily["force_index"].rolling(lookback_period).max().shift(1)
-            )
+            pair_daily["price_new_high"] = pair_daily["close"] > pair_daily["close"].rolling(
+                lookback_period
+            ).max().shift(1)
+            pair_daily["force_lower_high"] = pair_daily["force_index"] < pair_daily[
+                "force_index"
+            ].rolling(lookback_period).max().shift(1)
             pair_daily["force_double_top"] = (
-                (pair_daily["force_index"] < pair_daily["force_index"].shift(1)) &
-                (pair_daily["force_index"].shift(1) > pair_daily["force_index"].shift(2))
-            )
-            
+                pair_daily["force_index"] < pair_daily["force_index"].shift(1)
+            ) & (pair_daily["force_index"].shift(1) > pair_daily["force_index"].shift(2))
+
             pair_daily["elder_condition_short"] = (
-                (pair_daily["rsi"] > 70) &  # RSI超买
-                pair_daily["price_new_high"] &  # 价格创新高
-                (pair_daily["force_lower_high"] | pair_daily["force_double_top"])  # Force Index背离
+                (pair_daily["rsi"] > 70)  # RSI超买
+                & pair_daily["price_new_high"]  # 价格创新高
+                & (
+                    pair_daily["force_lower_high"] | pair_daily["force_double_top"]
+                )  # Force Index背离
             )
-            
+
             # ====================
             # 第二组：Freqtrade 社区热门（多空分开）
             # ====================
@@ -173,140 +183,158 @@ class FutureTripleStrategy(IStrategy):
             pair_daily["rsi_oversold"] = pair_daily["rsi"] < self.rsi_buy.value
             pair_daily["stoch_oversold"] = pair_daily["stoch_k"] < 20
             pair_daily["cci_oversold"] = pair_daily["cci"] < -100
-            
+
             pair_daily["freqtrade_vote_long"] = (
-                pair_daily["rsi_oversold"].astype(int) +
-                pair_daily["stoch_oversold"].astype(int) +
-                pair_daily["cci_oversold"].astype(int)
+                pair_daily["rsi_oversold"].astype(int)
+                + pair_daily["stoch_oversold"].astype(int)
+                + pair_daily["cci_oversold"].astype(int)
             )
             pair_daily["freqtrade_condition_long"] = pair_daily["freqtrade_vote_long"] >= 2
-            
+
             # 空头
             pair_daily["rsi_overbought"] = pair_daily["rsi"] > self.rsi_sell.value
             pair_daily["stoch_overbought"] = pair_daily["stoch_k"] > 80
             pair_daily["cci_overbought"] = pair_daily["cci"] > 100
-            
+
             pair_daily["freqtrade_vote_short"] = (
-                pair_daily["rsi_overbought"].astype(int) +
-                pair_daily["stoch_overbought"].astype(int) +
-                pair_daily["cci_overbought"].astype(int)
+                pair_daily["rsi_overbought"].astype(int)
+                + pair_daily["stoch_overbought"].astype(int)
+                + pair_daily["cci_overbought"].astype(int)
             )
             pair_daily["freqtrade_condition_short"] = pair_daily["freqtrade_vote_short"] >= 2
-            
+
             # ====================
             # 第三组：TradingView Pine Script 经典（多空分开）
             # ====================
             # 多头
-            pair_daily["price_near_ema"] = (
-                (pair_daily["close"] < pair_daily["ema13"] * 1.02) & 
-                (pair_daily["close"] > pair_daily["ema13"] * 0.98)
+            pair_daily["price_near_ema"] = (pair_daily["close"] < pair_daily["ema13"] * 1.02) & (
+                pair_daily["close"] > pair_daily["ema13"] * 0.98
             )
             pair_daily["tradingview_condition_long"] = (
-                (pair_daily["rsi"] < 35) &  # RSI超卖
-                pair_daily["macd_hist_up"] &  # MACD柱状图向上
-                pair_daily["price_near_ema"]  # 价格回调到EMA13附近
+                (pair_daily["rsi"] < 35)  # RSI超卖
+                & pair_daily["macd_hist_up"]  # MACD柱状图向上
+                & pair_daily["price_near_ema"]  # 价格回调到EMA13附近
             )
-            
+
             # 空头
             pair_daily["tradingview_condition_short"] = (
-                (pair_daily["rsi"] > 65) &  # RSI超买
-                pair_daily["macd_hist_down"] &  # MACD柱状图向下
-                pair_daily["price_near_ema"]  # 价格反弹到EMA13附近
+                (pair_daily["rsi"] > 65)  # RSI超买
+                & pair_daily["macd_hist_down"]  # MACD柱状图向下
+                & pair_daily["price_near_ema"]  # 价格反弹到EMA13附近
             )
-            
+
             # ====================
             # 第四组：量化机构风格（多空分开）
             # ====================
             # Williams %R (14日)
             pair_daily["williams_r"] = ta.WILLR(pair_daily, timeperiod=14)
-            
+
             # 多头
             pair_daily["williams_oversold"] = pair_daily["williams_r"] < -80
             pair_daily["rsi_oversold_qf"] = pair_daily["rsi"] < 30
             pair_daily["stoch_oversold_qf"] = pair_daily["stoch_k"] < 20
             pair_daily["qf_oscillator_vote_long"] = (
-                pair_daily["rsi_oversold_qf"].astype(int) +
-                pair_daily["stoch_oversold_qf"].astype(int) +
-                pair_daily["williams_oversold"].astype(int)
+                pair_daily["rsi_oversold_qf"].astype(int)
+                + pair_daily["stoch_oversold_qf"].astype(int)
+                + pair_daily["williams_oversold"].astype(int)
             )
             pair_daily["mean"] = pair_daily["close"].rolling(20).mean()
             pair_daily["std"] = pair_daily["close"].rolling(20).std().replace(0, 1e-10)
             pair_daily["lower_band"] = pair_daily["mean"] - 1.5 * pair_daily["std"]
             pair_daily["mean_reversion_long"] = pair_daily["close"] < pair_daily["lower_band"]
             pair_daily["quant_condition_long"] = (
-                (pair_daily["qf_oscillator_vote_long"] >= 2) &
-                pair_daily["mean_reversion_long"]
-            )
-            
+                pair_daily["qf_oscillator_vote_long"] >= 2
+            ) & pair_daily["mean_reversion_long"]
+
             # 空头
             pair_daily["williams_overbought"] = pair_daily["williams_r"] > -20
             pair_daily["rsi_overbought_qf"] = pair_daily["rsi"] > 70
             pair_daily["stoch_overbought_qf"] = pair_daily["stoch_k"] > 80
             pair_daily["qf_oscillator_vote_short"] = (
-                pair_daily["rsi_overbought_qf"].astype(int) +
-                pair_daily["stoch_overbought_qf"].astype(int) +
-                pair_daily["williams_overbought"].astype(int)
+                pair_daily["rsi_overbought_qf"].astype(int)
+                + pair_daily["stoch_overbought_qf"].astype(int)
+                + pair_daily["williams_overbought"].astype(int)
             )
             pair_daily["upper_band"] = pair_daily["mean"] + 1.5 * pair_daily["std"]
             pair_daily["mean_reversion_short"] = pair_daily["close"] > pair_daily["upper_band"]
             pair_daily["quant_condition_short"] = (
-                (pair_daily["qf_oscillator_vote_short"] >= 2) &
-                pair_daily["mean_reversion_short"]
-            )
-            
+                pair_daily["qf_oscillator_vote_short"] >= 2
+            ) & pair_daily["mean_reversion_short"]
+
             # 合并所有条件到主时间框架
             dataframe = merge_informative_pair(
-                dataframe, 
-                pair_daily[[
-                    "date", 
-                    "elder_condition_long", "elder_condition_short",
-                    "freqtrade_condition_long", "freqtrade_condition_short",
-                    "tradingview_condition_long", "tradingview_condition_short",
-                    "quant_condition_long", "quant_condition_short",
-                    "volume_spike", "macd_hist_up", "macd_hist_down"
-                ]], 
-                self.timeframe, "1d", ffill=True
+                dataframe,
+                pair_daily[
+                    [
+                        "date",
+                        "elder_condition_long",
+                        "elder_condition_short",
+                        "freqtrade_condition_long",
+                        "freqtrade_condition_short",
+                        "tradingview_condition_long",
+                        "tradingview_condition_short",
+                        "quant_condition_long",
+                        "quant_condition_short",
+                        "volume_spike",
+                        "macd_hist_up",
+                        "macd_hist_down",
+                    ]
+                ],
+                self.timeframe,
+                "1d",
+                ffill=True,
             )
-            
-            dataframe.rename(columns={
-                "elder_condition_long_1d": "daily_elder_long",
-                "elder_condition_short_1d": "daily_elder_short",
-                "freqtrade_condition_long_1d": "daily_freqtrade_long",
-                "freqtrade_condition_short_1d": "daily_freqtrade_short",
-                "tradingview_condition_long_1d": "daily_tradingview_long",
-                "tradingview_condition_short_1d": "daily_tradingview_short",
-                "quant_condition_long_1d": "daily_quant_long",
-                "quant_condition_short_1d": "daily_quant_short",
-                "volume_spike_1d": "daily_volume_spike",
-                "macd_hist_up_1d": "daily_macd_hist_up",
-                "macd_hist_down_1d": "daily_macd_hist_down"
-            }, inplace=True)
-            
+
+            dataframe.rename(
+                columns={
+                    "elder_condition_long_1d": "daily_elder_long",
+                    "elder_condition_short_1d": "daily_elder_short",
+                    "freqtrade_condition_long_1d": "daily_freqtrade_long",
+                    "freqtrade_condition_short_1d": "daily_freqtrade_short",
+                    "tradingview_condition_long_1d": "daily_tradingview_long",
+                    "tradingview_condition_short_1d": "daily_tradingview_short",
+                    "quant_condition_long_1d": "daily_quant_long",
+                    "quant_condition_short_1d": "daily_quant_short",
+                    "volume_spike_1d": "daily_volume_spike",
+                    "macd_hist_up_1d": "daily_macd_hist_up",
+                    "macd_hist_down_1d": "daily_macd_hist_down",
+                },
+                inplace=True,
+            )
+
             # NaN处理
             condition_cols = [
-                "daily_elder_long", "daily_elder_short",
-                "daily_freqtrade_long", "daily_freqtrade_short",
-                "daily_tradingview_long", "daily_tradingview_short",
-                "daily_quant_long", "daily_quant_short"
+                "daily_elder_long",
+                "daily_elder_short",
+                "daily_freqtrade_long",
+                "daily_freqtrade_short",
+                "daily_tradingview_long",
+                "daily_tradingview_short",
+                "daily_quant_long",
+                "daily_quant_short",
             ]
             for col in condition_cols:
                 dataframe[col] = dataframe[col].fillna(False)
-            
+
             dataframe["daily_volume_spike"] = dataframe["daily_volume_spike"].fillna(False)
             dataframe["daily_macd_hist_up"] = dataframe["daily_macd_hist_up"].fillna(False)
             dataframe["daily_macd_hist_down"] = dataframe["daily_macd_hist_down"].fillna(False)
-        
+
         else:
             # 如果没有日线数据，将所有条件设为False
             condition_cols = [
-                "daily_elder_long", "daily_elder_short",
-                "daily_freqtrade_long", "daily_freqtrade_short",
-                "daily_tradingview_long", "daily_tradingview_short",
-                "daily_quant_long", "daily_quant_short"
+                "daily_elder_long",
+                "daily_elder_short",
+                "daily_freqtrade_long",
+                "daily_freqtrade_short",
+                "daily_tradingview_long",
+                "daily_tradingview_short",
+                "daily_quant_long",
+                "daily_quant_short",
             ]
             for col in condition_cols:
                 dataframe[col] = False
-            
+
             dataframe["daily_volume_spike"] = False
             dataframe["daily_macd_hist_up"] = False
             dataframe["daily_macd_hist_down"] = False
@@ -338,30 +366,30 @@ class FutureTripleStrategy(IStrategy):
         total_range_safe = total_range.replace(0, 1e-10)
 
         hammer = (
-            (lower_shadow > 2 * body) &
-            (upper_shadow < body * 0.3) &
-            (total_range > 0) &
-            (lower_shadow > total_range_safe * 0.6)
+            (lower_shadow > 2 * body)
+            & (upper_shadow < body * 0.3)
+            & (total_range > 0)
+            & (lower_shadow > total_range_safe * 0.6)
         )
 
         shooting_star = (
-            (upper_shadow > 2 * body) &
-            (lower_shadow < body * 0.3) &
-            (total_range > 0) &
-            (upper_shadow > total_range_safe * 0.6)
+            (upper_shadow > 2 * body)
+            & (lower_shadow < body * 0.3)
+            & (total_range > 0)
+            & (upper_shadow > total_range_safe * 0.6)
         )
 
         engulfing_bull = (
-            (dataframe["close"] > dataframe["open"]) &
-            (dataframe["close"].shift(1) < dataframe["open"].shift(1)) &
-            (dataframe["open"] < dataframe["close"].shift(1)) &
-            (dataframe["close"] > dataframe["open"].shift(1))
+            (dataframe["close"] > dataframe["open"])
+            & (dataframe["close"].shift(1) < dataframe["open"].shift(1))
+            & (dataframe["open"] < dataframe["close"].shift(1))
+            & (dataframe["close"] > dataframe["open"].shift(1))
         )
         engulfing_bear = (
-            (dataframe["close"] < dataframe["open"]) &
-            (dataframe["close"].shift(1) > dataframe["open"].shift(1)) &
-            (dataframe["open"] > dataframe["close"].shift(1)) &
-            (dataframe["close"] < dataframe["open"].shift(1))
+            (dataframe["close"] < dataframe["open"])
+            & (dataframe["close"].shift(1) > dataframe["open"].shift(1))
+            & (dataframe["open"] > dataframe["close"].shift(1))
+            & (dataframe["close"] < dataframe["open"].shift(1))
         )
 
         candle_confirm_long = hammer | engulfing_bull
@@ -378,9 +406,17 @@ class FutureTripleStrategy(IStrategy):
         btc_daily_data = self.dp.get_pair_dataframe("BTC/USDT:USDT", "1d")
         if btc_daily_data is not None and not btc_daily_data.empty:
             btc_daily_data["daily_drop"] = btc_daily_data["close"].pct_change()
-            btc_daily_data["black_swan"] = btc_daily_data["daily_drop"] < -self.black_swan_drop_pct.value / 100
+            btc_daily_data["black_swan"] = (
+                btc_daily_data["daily_drop"] < -self.black_swan_drop_pct.value / 100
+            )
             try:
-                dataframe = merge_informative_pair(dataframe, btc_daily_data[["date", "black_swan"]], self.timeframe, "1d", ffill=True)
+                dataframe = merge_informative_pair(
+                    dataframe,
+                    btc_daily_data[["date", "black_swan"]],
+                    self.timeframe,
+                    "1d",
+                    ffill=True,
+                )
                 dataframe.rename(columns={"black_swan_1d": "daily_black_swan"}, inplace=True)
             except Exception as e:
                 logging.getLogger(__name__).warning("Black swan merge failed: %s", e)
@@ -389,11 +425,13 @@ class FutureTripleStrategy(IStrategy):
             dataframe["daily_black_swan"] = False
 
         # 数据新鲜度检查（区分回测/实盘）
-        runmode = self.config.get('runmode', RunMode.LIVE)
+        runmode = self.config.get("runmode", RunMode.LIVE)
         if runmode in [RunMode.LIVE, RunMode.DRY_RUN]:
             current_time = datetime.utcnow()
         else:
-            current_time = dataframe["date"].iloc[-1] if "date" in dataframe.columns else datetime.utcnow()
+            current_time = (
+                dataframe["date"].iloc[-1] if "date" in dataframe.columns else datetime.utcnow()
+            )
 
         if "date_1d" in dataframe.columns:
             last_date = dataframe["date_1d"].iloc[-1]
@@ -439,25 +477,22 @@ class FutureTripleStrategy(IStrategy):
         third_short = dataframe.get("third_short", False).fillna(False)
 
         long_condition = (
-            daily_elder_long
-            | daily_freqtrade_long
-            | daily_tradingview_long
-            | daily_quant_long
+            daily_elder_long | daily_freqtrade_long | daily_tradingview_long | daily_quant_long
         )
 
         # 空头入场条件（更严格）
         short_condition = (
-            ~btc_weekly_up &
-            (
+            ~btc_weekly_up
+            & (
                 daily_elder_short
                 | daily_freqtrade_short
                 | daily_tradingview_short
                 | daily_quant_short
-            ) &
-            daily_volume_spike &
-            daily_macd_hist_down &
-            third_short &
-            ~daily_black_swan
+            )
+            & daily_volume_spike
+            & daily_macd_hist_down
+            & third_short
+            & ~daily_black_swan
         )
 
         dataframe.loc[long_condition, "enter_long"] = 1
@@ -475,8 +510,15 @@ class FutureTripleStrategy(IStrategy):
 
         return dataframe
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+    def custom_stoploss(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> float:
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         if dataframe is None or len(dataframe) < 3:
             return self.stoploss
@@ -493,17 +535,34 @@ class FutureTripleStrategy(IStrategy):
             stoploss_pct = (stop_price - current_rate) / current_rate
             return max(stoploss_pct, -0.10)  # 确保负值且不小于-10%
 
-    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                            proposed_stake: float, min_stake: float, max_stake: float,
-                            entry_tag: Optional[str], side: str, **kwargs) -> float:
+    def custom_stake_amount(
+        self,
+        pair: str,
+        current_time: datetime,
+        current_rate: float,
+        proposed_stake: float,
+        min_stake: float,
+        max_stake: float,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> float:
         return proposed_stake * 0.5
 
     @property
     def plot_config(self):
         return {
             "main_plot": {
-                "enter_long": {"color": "green", "type": "scatter", "marker": {"symbol": "triangle-up", "size": 12}},
-                "enter_short": {"color": "red", "type": "scatter", "marker": {"symbol": "triangle-down", "size": 12}},
+                "enter_long": {
+                    "color": "green",
+                    "type": "scatter",
+                    "marker": {"symbol": "triangle-up", "size": 12},
+                },
+                "enter_short": {
+                    "color": "red",
+                    "type": "scatter",
+                    "marker": {"symbol": "triangle-down", "size": 12},
+                },
                 "donchian_upper": {"color": "blue"},
                 "donchian_lower": {"color": "blue"},
             },
@@ -511,5 +570,5 @@ class FutureTripleStrategy(IStrategy):
                 "RSI": {"rsi": {"color": "orange"}},
                 "MACD": {"macd": {"color": "blue"}, "macdsignal": {"color": "red"}},
                 "ADX": {"adx": {"color": "purple"}},
-            }
+            },
         }

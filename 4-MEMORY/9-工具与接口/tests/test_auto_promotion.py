@@ -15,17 +15,16 @@
 - ECE > demote_ece_threshold（比 promote 高 → 滞回）
 - PSI > demote_psi_threshold
 """
-import time
-import pytest
 
 
 def test_module_importable():
-    from auto_promotion import AutoPromotionConfig, AutoPromotionManager
+    pass
 
 
 def test_default_state_is_shadow():
     """默认处于 shadow 模式。"""
     from auto_promotion import AutoPromotionManager
+
     mgr = AutoPromotionManager()
     assert mgr.is_shadow_mode() is True
     assert mgr.is_live_mode() is False
@@ -34,6 +33,7 @@ def test_default_state_is_shadow():
 def test_promotion_requires_all_conditions():
     """晋升需要所有条件同时满足。"""
     from auto_promotion import AutoPromotionConfig, AutoPromotionManager
+
     cfg = AutoPromotionConfig(
         min_samples=10,
         promote_auc_threshold=0.7,
@@ -64,6 +64,7 @@ def test_promotion_requires_all_conditions():
 def test_min_shadow_dwell_time():
     """影子模式最短驻留时间未满时不晋升。"""
     from auto_promotion import AutoPromotionConfig, AutoPromotionManager
+
     cfg = AutoPromotionConfig(
         min_samples=1,
         promote_auc_threshold=0.7,
@@ -81,14 +82,15 @@ def test_min_shadow_dwell_time():
 def test_hysteresis_prevents_jitter():
     """滞回：晋升后即使指标轻微回落也不立即降级。"""
     from auto_promotion import AutoPromotionConfig, AutoPromotionManager
+
     cfg = AutoPromotionConfig(
         min_samples=1,
         promote_auc_threshold=0.7,
         promote_ece_threshold=0.15,
         promote_psi_threshold=0.1,
-        demote_auc_threshold=0.5,   # 比 promote 低 0.2 → 滞回
+        demote_auc_threshold=0.5,  # 比 promote 低 0.2 → 滞回
         demote_ece_threshold=0.25,  # 比 promote 高 0.1 → 滞回
-        demote_psi_threshold=0.2,   # 比 promote 高 0.1 → 滞回
+        demote_psi_threshold=0.2,  # 比 promote 高 0.1 → 滞回
         min_shadow_dwell_seconds=0,
         min_live_dwell_seconds=0,
     )
@@ -112,6 +114,7 @@ def test_hysteresis_prevents_jitter():
 def test_min_live_dwell_prevents_premature_demotion():
     """live 模式最短驻留时间未满时不降级。"""
     from auto_promotion import AutoPromotionConfig, AutoPromotionManager
+
     cfg = AutoPromotionConfig(
         min_samples=1,
         promote_auc_threshold=0.7,
@@ -136,6 +139,7 @@ def test_min_live_dwell_prevents_premature_demotion():
 def test_metrics_snapshot_recorded():
     """每次 evaluate 记录指标快照。"""
     from auto_promotion import AutoPromotionManager
+
     mgr = AutoPromotionManager()
     mgr.evaluate(sample_count=5, auc=0.6, ece=0.2, psi=0.05)
     mgr.evaluate(sample_count=10, auc=0.7, ece=0.1, psi=0.03)
@@ -147,10 +151,14 @@ def test_metrics_snapshot_recorded():
 def test_promotion_log():
     """晋升/降级事件有日志记录。"""
     from auto_promotion import AutoPromotionConfig, AutoPromotionManager
+
     cfg = AutoPromotionConfig(
-        min_samples=1, promote_auc_threshold=0.7,
-        promote_ece_threshold=0.15, promote_psi_threshold=0.1,
-        min_shadow_dwell_seconds=0, min_live_dwell_seconds=0,
+        min_samples=1,
+        promote_auc_threshold=0.7,
+        promote_ece_threshold=0.15,
+        promote_psi_threshold=0.1,
+        min_shadow_dwell_seconds=0,
+        min_live_dwell_seconds=0,
     )
     mgr = AutoPromotionManager(config=cfg)
     mgr.evaluate(sample_count=10, auc=0.8, ece=0.1, psi=0.05)

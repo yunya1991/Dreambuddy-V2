@@ -18,7 +18,7 @@ import unittest
 
 # ---- helpers --------------------------------------------------------------
 
-_MINI_CONSTANTS = dict(
+_MINI_CONSTANTS = dict(  # noqa: C408
     FMA_SLOPE_WINDOW=20,
     FMA_SLOPE_ALPHA=0.2,
     FMA_GROUP_WEIGHT_SHORT=0.35,
@@ -36,6 +36,7 @@ def _make_instance():
     Uses full __init__ with mocked balance so all attributes are wired correctly.
     """
     from unittest.mock import patch
+
     from scripts.memory_l4.polling_trader import PollingTrader
 
     with patch("scripts.memory_l4.okx_simulated.OKXSimulatedClient") as mc:
@@ -61,8 +62,8 @@ def _make_instance():
 
 class Calc5MaSpringForceRecursionTests(unittest.TestCase):
     # Lengths chosen to reproduce the on-stack failure: yfinance 5y ~1254 bars.
-    LENGTH_NEAR_LIMIT = 1100   # still below limit?  with old bug it recurs ~900x
-    LENGTH_OVER_LIMIT = 1500   # definitely triggers RecursionError (1054+ stack)
+    LENGTH_NEAR_LIMIT = 1100  # still below limit?  with old bug it recurs ~900x
+    LENGTH_OVER_LIMIT = 1500  # definitely triggers RecursionError (1054+ stack)
 
     @staticmethod
     def _closes(n: int) -> list:
@@ -72,7 +73,7 @@ class Calc5MaSpringForceRecursionTests(unittest.TestCase):
         """
         base = 1500.0
         arr = [base - i * 0.05 for i in range(n)]  # oldest -> newest
-        return arr[::-1]                           # newest -> oldest
+        return arr[::-1]  # newest -> oldest
 
     # -- RED tests (should fail BEFORE the fix) --------------------------------
     def test_daily_index_1500bars_no_recursion_error(self):
@@ -120,6 +121,7 @@ class Calc5MaSpringForceRecursionTests(unittest.TestCase):
         # Swap the method at class level (affects this single-instance class copy
         # only in CPython for user-created classes). Safer: swap the bound attr.
         import types
+
         inst._calc_5ma_spring_force = types.MethodType(_patched, inst)
         # Ensure recursion re-enters _patched by also shadowing through cls:
         cls._calc_5ma_spring_force = _patched
@@ -127,7 +129,8 @@ class Calc5MaSpringForceRecursionTests(unittest.TestCase):
         res = inst._calc_5ma_spring_force(closes, tier="daily_index")
         self.assertIn(res.get("bearish_score"), {"WEAK", "NORMAL", "STRONG"})
         self.assertLessEqual(
-            seen_depth["max"], 2,
+            seen_depth["max"],
+            2,
             f"cascading recursion detected: max depth = {seen_depth['max']}",
         )
 
@@ -137,8 +140,13 @@ class Calc5MaSpringForceRecursionTests(unittest.TestCase):
         closes = self._closes(300)
         res = inst._calc_5ma_spring_force(closes, tier="daily_self")
         for k in (
-            "F_net", "F_total", "bearish_score", "bearish_n",
-            "current_price", "ma_values", "valid_breakdown",
+            "F_net",
+            "F_total",
+            "bearish_score",
+            "bearish_n",
+            "current_price",
+            "ma_values",
+            "valid_breakdown",
             "in_long_term_window",
         ):
             self.assertIn(k, res, f"missing downstream key {k}")

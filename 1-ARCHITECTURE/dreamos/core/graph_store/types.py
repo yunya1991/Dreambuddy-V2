@@ -11,13 +11,13 @@ DreamOS G层 — GraphStore 图存储层类型定义
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
 from datetime import datetime
-
+from typing import Any, Dict, List
 
 # ============================================================
 # 检查点
 # ============================================================
+
 
 @dataclass
 class Checkpoint:
@@ -28,9 +28,10 @@ class Checkpoint:
         - 支持回滚到任意检查点
         - 支持从检查点恢复执行
     """
+
     checkpoint_id: str
     cycle_id: str
-    node_id: str                          # 触发检查点的节点
+    node_id: str  # 触发检查点的节点
     state_snapshot: Dict[str, Any] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
@@ -50,6 +51,7 @@ class Checkpoint:
 # 压缩状态
 # ============================================================
 
+
 @dataclass
 class CompressedState:
     """压缩后的状态
@@ -59,9 +61,10 @@ class CompressedState:
         - 合并旧节点结果为摘要
         - 压缩 market/memory 快照
     """
-    original_size: int = 0                 # 压缩前大小（估算）
-    compressed_size: int = 0              # 压缩后大小
-    compression_ratio: float = 0.0        # 压缩率
+
+    original_size: int = 0  # 压缩前大小（估算）
+    compressed_size: int = 0  # 压缩后大小
+    compression_ratio: float = 0.0  # 压缩率
     summary: Dict[str, Any] = field(default_factory=dict)
     retained_trace_count: int = 0
     removed_trace_count: int = 0
@@ -81,6 +84,7 @@ class CompressedState:
 # 历史记录条目
 # ============================================================
 
+
 @dataclass
 class HistoryEntry:
     """历史记录条目
@@ -90,6 +94,7 @@ class HistoryEntry:
         - 上下文快照
         - 关键指标
     """
+
     cycle_id: str
     intent_type: str = ""
     planned_chain: str = ""
@@ -124,9 +129,11 @@ class HistoryEntry:
 # 回放结果
 # ============================================================
 
+
 @dataclass
 class ReplayResult:
     """历史回放结果"""
+
     cycle_id: str
     entries: List[HistoryEntry] = field(default_factory=list)
     patterns: Dict[str, Any] = field(default_factory=dict)

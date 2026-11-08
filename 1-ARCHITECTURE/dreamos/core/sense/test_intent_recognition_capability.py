@@ -7,12 +7,12 @@
 3. 边界评估 escalation 机制（交易意图强制确认）
 4. 多意图检测能力
 """
-import sys
+
 import os
-import json
+import sys
 
 # 确保 1-ARCHITECTURE 在 sys.path 中
-_ARCH_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+_ARCH_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 if _ARCH_DIR not in sys.path:
     sys.path.insert(0, _ARCH_DIR)
 
@@ -79,13 +79,18 @@ def test_rule_classification_accuracy():
 
 # ── 2. LLM 识别器 SYSTEM_PROMPT 规范测试 ──────────────────
 
+
 def test_llm_prompt_has_anti_slop():
     """LLM SYSTEM_PROMPT 包含反 AI 味负面清单"""
     from dreamos.core.sense.recognizers.llm_based import SYSTEM_PROMPT
 
     anti_slop_keywords = [
-        "总而言之", "值得注意的是", "深入分析",
-        "综上所述", "首先", "其次",
+        "总而言之",
+        "值得注意的是",
+        "深入分析",
+        "综上所述",
+        "首先",
+        "其次",
     ]
     has_slop_guidance = any(kw in SYSTEM_PROMPT for kw in anti_slop_keywords)
     print(f"\n[2a] LLM SYSTEM_PROMPT 反 AI 味清单: {'✓' if has_slop_guidance else '✗'}")
@@ -96,7 +101,9 @@ def test_llm_prompt_has_autonomy_boundary():
     """LLM SYSTEM_PROMPT 包含自主性边界声明"""
     from dreamos.core.sense.recognizers.llm_based import SYSTEM_PROMPT
 
-    has_boundary = "自主" in SYSTEM_PROMPT or "escalation" in SYSTEM_PROMPT or "确认" in SYSTEM_PROMPT
+    has_boundary = (
+        "自主" in SYSTEM_PROMPT or "escalation" in SYSTEM_PROMPT or "确认" in SYSTEM_PROMPT
+    )
     print(f"[2b] LLM SYSTEM_PROMPT 自主性边界: {'✓' if has_boundary else '✗'}")
     assert has_boundary, "SYSTEM_PROMPT 应包含自主性边界声明"
 
@@ -112,9 +119,13 @@ def test_llm_prompt_has_output_format():
 
 # ── 3. 边界评估 escalation 机制测试 ─────────────────────
 
+
 def test_trade_intent_triggers_escalation():
     """交易类意图触发 escalation_required"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (
+        EvalResult,
+        IntentEvaluatorAgent,
+    )
 
     evaluator = IntentEvaluatorAgent()
     eval_result = EvalResult(adjusted_confidence=0.9)
@@ -127,7 +138,10 @@ def test_trade_intent_triggers_escalation():
 
 def test_query_intent_no_escalation():
     """查询类意图不触发 escalation"""
-    from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
+    from dreamos.core.sense.evaluators.intent_evaluator_agent import (
+        EvalResult,
+        IntentEvaluatorAgent,
+    )
 
     evaluator = IntentEvaluatorAgent()
     eval_result = EvalResult(adjusted_confidence=0.95)
@@ -138,6 +152,7 @@ def test_query_intent_no_escalation():
 
 # ── 4. 多意图检测能力测试 ────────────────────────────────
 
+
 def test_multi_intent_detection():
     """多意图检测：复杂查询拆分为多个意图"""
     from dreamos.core.sense.dialogue_intent.multi_intent import MultiIntentDetector
@@ -147,7 +162,9 @@ def test_multi_intent_detection():
     text = "查一下比特币价格，同时分析一下以太坊走势"
     result = detector.detect(text)
     has_multiple = len(result) >= 2
-    print(f"\n[4] 多意图检测: 输入='{text}', 检测到 {len(result)} 个意图={result}, has_multiple={has_multiple}")
+    print(
+        f"\n[4] 多意图检测: 输入='{text}', 检测到 {len(result)} 个意图={result}, has_multiple={has_multiple}"
+    )
     assert has_multiple, f"应检测到至少 2 个意图，实际检测到 {len(result)} 个: {result}"
 
 

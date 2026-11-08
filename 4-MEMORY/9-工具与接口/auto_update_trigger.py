@@ -15,7 +15,7 @@
     python3 auto_update_trigger.py /path/to/16-调控系统 --sync-memory
 """
 
-import json
+import json  # noqa: I001
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -34,21 +34,25 @@ def generate_doc_update_suggestions(report_path: Path) -> list:
 
     # 建议1: 文档超前（未实现）— 需要确认是否已删除或改名
     for func in data.get("doc_only_functions", [])[:5]:
-        suggestions.append({
-            "type": "doc_ahead",
-            "function": func,
-            "action": "确认代码中是否已删除/改名，如已删除则从 API_SPEC 中移除",
-            "priority": "P1",
-        })
+        suggestions.append(
+            {
+                "type": "doc_ahead",
+                "function": func,
+                "action": "确认代码中是否已删除/改名，如已删除则从 API_SPEC 中移除",
+                "priority": "P1",
+            }
+        )
 
     # 建议2: 代码超前（未文档化）— 需要补充到 API_SPEC
     for func in data.get("code_only_functions", [])[:10]:
-        suggestions.append({
-            "type": "code_ahead",
-            "function": func,
-            "action": "新增到 API_SPEC.md 对应章节，补充签名、参数、返回值",
-            "priority": "P2",
-        })
+        suggestions.append(
+            {
+                "type": "code_ahead",
+                "function": func,
+                "action": "新增到 API_SPEC.md 对应章节，补充签名、参数、返回值",
+                "priority": "P2",
+            }
+        )
 
     return suggestions
 
@@ -82,7 +86,7 @@ def sync_to_memory_unit(subsystem_name: str, score: float, suggestions: list) ->
     content = core_path.read_text(encoding="utf-8")
 
     # 检查是否已有 A8 状态段落
-    a8_section = f"\n## A8 校验状态（自动更新）\n\n"
+    a8_section = "\n## A8 校验状态（自动更新）\n\n"
     a8_section += f"- **子系统**: {subsystem_name}\n"
     a8_section += f"- **最后校验**: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
     a8_section += f"- **一致性得分**: {score}%\n"
@@ -111,11 +115,11 @@ def sync_to_memory_unit(subsystem_name: str, score: float, suggestions: list) ->
 def run_bayesian_update(subsystem_name: str, report_dict: dict) -> dict:
     """
     运行贝叶斯更新，基于 A8 校验结果更新记忆置信度。
-    
+
     Args:
         subsystem_name: 子系统名称
         report_dict: A8 校验报告字典
-        
+
     Returns:
         贝叶斯更新结果
     """
@@ -128,46 +132,45 @@ def run_bayesian_update(subsystem_name: str, report_dict: dict) -> dict:
         "14-V15经典马丁策略": "MU-TRD",
     }
     mu_code = mu_map.get(subsystem_name, "MU-DEV")
-    
+
     mu_dir = Path(__file__).parent.parent / {
         "MU-DEV": "1-开发记忆单元",
         "MU-TRD": "2-交易记忆单元",
         "MU-DOC": "3-文档记忆单元",
         "MU-INF": "4-信息记忆单元",
     }.get(mu_code, "1-开发记忆单元")
-    
+
     if not mu_dir.exists():
         return {"status": "skip", "reason": f"记忆单元目录不存在: {mu_dir}"}
-    
+
     updater = BayesianMemoryUpdater(mu_dir)
-    
+
     # 如果没有记忆数据，初始化默认记忆
     if not updater.memories:
         updater = create_default_memories(mu_dir)
         print("   ℹ️  已初始化默认记忆")
-    
+
     # 处理 A8 报告，更新置信度
     results = updater.process_a8_report(report_dict)
-    
+
     # 获取统计信息
     stats = updater.get_stats()
-    
+
     return {
         "status": "success",
         "updater": updater,
         "updated_count": len(results),
         "stats": stats,
-        "results": {
-            k: {"confidence": round(v[0], 4), "level": v[1]}
-            for k, v in results.items()
-        }
+        "results": {k: {"confidence": round(v[0], 4), "level": v[1]} for k, v in results.items()},
     }
 
 
 def main() -> int:
     if len(sys.argv) < 2:
         print("用法: python3 auto_update_trigger.py <子系统目录> [--sync-memory] [--bayes-update]")
-        print("示例: python3 auto_update_trigger.py /path/to/16-调控系统 --sync-memory --bayes-update")
+        print(
+            "示例: python3 auto_update_trigger.py /path/to/16-调控系统 --sync-memory --bayes-update"
+        )
         return 1
 
     subsystem_dir = Path(sys.argv[1])
@@ -208,32 +211,32 @@ def main() -> int:
         if core_path:
             print(f"   ✅ 已同步: {core_path}")
         else:
-            print(f"   ⚠️ 未找到对应记忆单元")
+            print("   ⚠️ 未找到对应记忆单元")
     else:
-        print(f"\n[Step 3/4] 跳过记忆同步（加 --sync-memory 启用）")
+        print("\n[Step 3/4] 跳过记忆同步（加 --sync-memory 启用）")
 
     # Step 4: 贝叶斯更新（可选）
     if bayes_update:
         print("\n[Step 4/4] 执行贝叶斯记忆更新...")
         bayes_result = run_bayesian_update(subsystem_name, report_dict)
-        
+
         if bayes_result["status"] == "success":
             stats = bayes_result["stats"]
             print(f"   ✅ 已更新 {bayes_result['updated_count']} 条记忆")
-            print(f"   📊 记忆统计:")
+            print("   📊 记忆统计:")
             print(f"      - 总数: {stats['total']}")
             print(f"      - 质量分布: {stats['by_quality']}")
             print(f"      - 平均置信度: {stats['avg_confidence']}")
-            
+
             # 显示更新详情
             if bayes_result["results"]:
-                print(f"\n   📝 记忆更新详情:")
+                print("\n   📝 记忆更新详情:")
                 for mid, info in list(bayes_result["results"].items())[:5]:
                     print(f"      - {mid}: 置信度 {info['confidence']:.2f} → 等级 {info['level']}")
         else:
             print(f"   ⚠️  {bayes_result.get('reason', '未知原因')}")
     else:
-        print(f"\n[Step 4/4] 跳过贝叶斯更新（加 --bayes-update 启用）")
+        print("\n[Step 4/4] 跳过贝叶斯更新（加 --bayes-update 启用）")
 
     # 最终判断
     print(f"\n{'='*60}")
@@ -243,12 +246,13 @@ def main() -> int:
     else:
         print(f"⚠️  {subsystem_name} 一致性未达标 ({report.score}%)，请按上述建议更新文档")
         if not sync_memory:
-            print(f"💡 运行加 --sync-memory --bayes-update 可同步记忆并执行贝叶斯更新")
+            print("💡 运行加 --sync-memory --bayes-update 可同步记忆并执行贝叶斯更新")
         return 1
 
 
 if __name__ == "__main__":
     import re
+
     sys.exit(main())
 
 
@@ -256,17 +260,15 @@ if __name__ == "__main__":
 # P3: Suggestions 定时刷新（TTL + 动作计数 双触发）
 # ============================================================
 
-import os as _os
-import re as _re
-import time as _time
-from typing import TYPE_CHECKING, Optional
+import time as _time  # noqa: E402
+from typing import TYPE_CHECKING, Optional  # noqa: E402
 
 if TYPE_CHECKING:
-    from cognitive_session import CognitiveSessionManager, CognitiveSession
+    from cognitive_session import CognitiveSessionManager
 
 
-DEFAULT_SUGGESTIONS_TTL = 15 * 60          # 15 分钟未刷新则强制刷新
-DEFAULT_SUGGESTIONS_ACTION_THRESHOLD = 5   # 5 个新动作则触发刷新（即使 TTL 未到）
+DEFAULT_SUGGESTIONS_TTL = 15 * 60  # 15 分钟未刷新则强制刷新
+DEFAULT_SUGGESTIONS_ACTION_THRESHOLD = 5  # 5 个新动作则触发刷新（即使 TTL 未到）
 META_FILE = "suggestions_meta.json"
 
 
@@ -301,32 +303,28 @@ class SuggestionsRefresher:
     def _read_meta(sdir: Path) -> dict:
         meta_path = sdir / META_FILE
         if not meta_path.exists():
-            return {"refresh_count": 0, "actions_at_last_refresh": 0,
-                    "last_refresh_ts": 0.0}
+            return {"refresh_count": 0, "actions_at_last_refresh": 0, "last_refresh_ts": 0.0}
         try:
             return json.loads(meta_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            return {"refresh_count": 0, "actions_at_last_refresh": 0,
-                    "last_refresh_ts": 0.0}
+            return {"refresh_count": 0, "actions_at_last_refresh": 0, "last_refresh_ts": 0.0}
 
     @staticmethod
     def _write_meta(sdir: Path, meta: dict) -> None:
         meta_path = sdir / META_FILE
         try:
-            meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2),
-                                 encoding="utf-8")
+            meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
         except OSError:
             pass
 
     # ---------- should_refresh 判断 ----------
 
-    def should_refresh(self, manager_or_session,
-                       actions_since_last: int = 0) -> bool:
+    def should_refresh(self, manager_or_session, actions_since_last: int = 0) -> bool:
         """
-        判断是否需要刷新。
+         判断是否需要刷新。
 
-        参数可以是 CognitiveSessionManager（可做 TTL 检查）或 CognitiveSession
-       （仅做动作计数检查）。
+         参数可以是 CognitiveSessionManager（可做 TTL 检查）或 CognitiveSession
+        （仅做动作计数检查）。
         """
         session = None
         sdir = None
@@ -363,8 +361,9 @@ class SuggestionsRefresher:
 
     # ---------- 核心：判断 + 执行 ----------
 
-    def refresh_if_needed(self, manager: "CognitiveSessionManager",
-                          actions_since_last: int = 0) -> bool:
+    def refresh_if_needed(
+        self, manager: "CognitiveSessionManager", actions_since_last: int = 0
+    ) -> bool:
         """
         如果需要刷新则执行并重写 suggestions.md，返回是否实际刷新。
         """
@@ -399,9 +398,9 @@ class SuggestionsRefresher:
         session = manager.current_session
         meta = self._read_meta(sdir)
         meta["refresh_count"] = int(meta.get("refresh_count", 0)) + 1
-        meta["actions_at_last_refresh"] = int(
-            getattr(session, "total_actions", 0) or 0
-        ) + actions_since_last
+        meta["actions_at_last_refresh"] = (
+            int(getattr(session, "total_actions", 0) or 0) + actions_since_last
+        )
         meta["last_refresh_ts"] = now
         meta["last_refresh_reason"] = reason
 
@@ -428,13 +427,15 @@ class SuggestionsRefresher:
             text = sug_file.read_text(encoding="utf-8")
         except OSError:
             return
-        stamp = (f"# 🔄 刷新第 {refresh_count} 次  "
-                 f"| {_time.strftime('%Y-%m-%d %H:%M:%S')}  |  触发: {reason}\n")
+        stamp = (
+            f"# 🔄 刷新第 {refresh_count} 次  "
+            f"| {_time.strftime('%Y-%m-%d %H:%M:%S')}  |  触发: {reason}\n"
+        )
         if text.startswith("# 💡"):
             first_nl = text.find("\n")
             if first_nl != -1:
                 # 插在首行标题之后
-                new_text = text[:first_nl] + "\n" + stamp + text[first_nl + 1:]
+                new_text = text[:first_nl] + "\n" + stamp + text[first_nl + 1 :]
             else:
                 new_text = text + "\n" + stamp
         else:
@@ -443,4 +444,3 @@ class SuggestionsRefresher:
             sug_file.write_text(new_text, encoding="utf-8")
         except OSError:
             pass
-

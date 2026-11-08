@@ -8,16 +8,18 @@
 参考业界量化研究的过拟合防护最佳实践。
 """
 
-from typing import Dict, List, Optional, Callable, Any
+from typing import Dict, List, Callable, Any  # noqa: I001
 import pandas as pd
 import numpy as np
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 
 # ============================================================
 # 1. 参数敏感性分析
 # ============================================================
+
 
 def parameter_sensitivity_analysis(
     prices: pd.DataFrame,
@@ -54,6 +56,7 @@ def parameter_sensitivity_analysis(
     """
     if engine is None:
         from .engine import BacktestEngine
+
         engine = BacktestEngine()
 
     df = _ensure_index(prices)
@@ -67,24 +70,33 @@ def parameter_sensitivity_analysis(
             result = engine.run(close, signals, symbol=f"{param_name}={val}")
             metric_val = result["metrics"].get(metric, 0)
 
-            results.append({
-                "param_value": val,
-                "metric_value": metric_val,
-                "total_return": result["metrics"].get("total_return_pct", 0),
-                "sharpe": result["metrics"].get("sharpe_ratio", 0),
-                "max_dd": result["metrics"].get("max_drawdown_pct", 0),
-                "trades": result["metrics"].get("total_trades", 0),
-            })
+            results.append(
+                {
+                    "param_value": val,
+                    "metric_value": metric_val,
+                    "total_return": result["metrics"].get("total_return_pct", 0),
+                    "sharpe": result["metrics"].get("sharpe_ratio", 0),
+                    "max_dd": result["metrics"].get("max_drawdown_pct", 0),
+                    "trades": result["metrics"].get("total_trades", 0),
+                }
+            )
         except Exception as e:
-            results.append({
-                "param_value": val,
-                "metric_value": 0,
-                "error": str(e)[:80],
-            })
+            results.append(
+                {
+                    "param_value": val,
+                    "metric_value": 0,
+                    "error": str(e)[:80],
+                }
+            )
 
     metric_vals = [r["metric_value"] for r in results if "error" not in r]
     if len(metric_vals) < 2:
-        return {"param_name": param_name, "results": results, "sensitivity_score": 100, "is_robust": False}
+        return {
+            "param_name": param_name,
+            "results": results,
+            "sensitivity_score": 100,
+            "is_robust": False,
+        }
 
     mean_val = np.mean(metric_vals)
     std_val = np.std(metric_vals)
@@ -105,8 +117,12 @@ def parameter_sensitivity_analysis(
         "cv": round(cv, 3),
         "sensitivity_score": round(sensitivity_score, 1),
         "is_robust": is_robust,
-        "best_value": results[best_idx]["param_value"] if "error" not in results[best_idx] else None,
-        "worst_value": results[worst_idx]["param_value"] if "error" not in results[worst_idx] else None,
+        "best_value": (
+            results[best_idx]["param_value"] if "error" not in results[best_idx] else None
+        ),
+        "worst_value": (
+            results[worst_idx]["param_value"] if "error" not in results[worst_idx] else None
+        ),
         "best_metric": round(max(metric_vals), 2),
         "worst_metric": round(min(metric_vals), 2),
     }
@@ -133,7 +149,14 @@ def format_sensitivity_report(result: Dict) -> str:
     else:
         lines.append("  ⚠️ 参数敏感：参数微调可能导致表现大幅变化，过拟合风险高")
 
-    lines.extend(["", "【各参数值详情】", f"{'参数值':>10} {'夏普':>8} {'收益%':>8} {'回撤%':>8} {'交易数':>6}", "-" * 50])
+    lines.extend(
+        [
+            "",
+            "【各参数值详情】",
+            f"{'参数值':>10} {'夏普':>8} {'收益%':>8} {'回撤%':>8} {'交易数':>6}",
+            "-" * 50,
+        ]
+    )
 
     for r in result["results"]:
         if "error" not in r:
@@ -152,6 +175,7 @@ def format_sensitivity_report(result: Dict) -> str:
 # ============================================================
 # 2. 置换检验（Permutation Test）
 # ============================================================
+
 
 def permutation_test(
     prices: pd.DataFrame,
@@ -191,6 +215,7 @@ def permutation_test(
     """
     if engine is None:
         from .engine import BacktestEngine
+
         engine = BacktestEngine()
 
     np.random.seed(seed)
@@ -205,7 +230,7 @@ def permutation_test(
         return {"error": "策略未产生任何有效信号", "actual_metric": 0, "p_value": 1.0}
 
     signal_values = actual_signals.values.copy()
-    n_signals = len(signal_values)
+    n_signals = len(signal_values)  # noqa: F841
 
     permuted_metrics = []
     for i in range(n_permutations):
@@ -223,10 +248,15 @@ def permutation_test(
         "actual_metric": round(actual_metric, 2),
         "p_value": round(p_value, 4),
         "is_significant": p_value < 0.05,
-        "significance_level": "p<0.01 (极显著)" if p_value < 0.01 else
-                              "p<0.05 (显著)" if p_value < 0.05 else
-                              "p<0.10 (弱显著)" if p_value < 0.10 else
-                              "不显著",
+        "significance_level": (
+            "p<0.01 (极显著)"
+            if p_value < 0.01
+            else (
+                "p<0.05 (显著)"
+                if p_value < 0.05
+                else "p<0.10 (弱显著)" if p_value < 0.10 else "不显著"
+            )
+        ),
         "percentile": round(percentile, 1),
         "random_mean": round(np.mean(permuted_metrics), 2),
         "random_std": round(np.std(permuted_metrics), 2),
@@ -273,6 +303,7 @@ def format_permutation_report(result: Dict) -> str:
 # ============================================================
 # 3. 交易成本敏感性测试
 # ============================================================
+
 
 def cost_sensitivity_test(
     prices: pd.DataFrame,
@@ -322,13 +353,15 @@ def cost_sensitivity_test(
         sharpe = result["metrics"].get("sharpe_ratio", 0)
         total_ret = result["metrics"].get("total_return_pct", 0)
 
-        results.append({
-            "cost_pct": round(cost * 100, 3),
-            "sharpe": round(sharpe, 2),
-            "total_return_pct": round(total_ret, 2),
-            "max_dd_pct": round(result["metrics"].get("max_drawdown_pct", 0), 2),
-            "profitable": total_ret > 0,
-        })
+        results.append(
+            {
+                "cost_pct": round(cost * 100, 3),
+                "sharpe": round(sharpe, 2),
+                "total_return_pct": round(total_ret, 2),
+                "max_dd_pct": round(result["metrics"].get("max_drawdown_pct", 0), 2),
+                "profitable": total_ret > 0,
+            }
+        )
 
     profitable_results = [r for r in results if r["profitable"]]
     base_result = results[0] if results else None
@@ -346,7 +379,9 @@ def cost_sensitivity_test(
                 break
 
         if double_cost_result:
-            decay = (base_result["total_return_pct"] - double_cost_result["total_return_pct"]) / abs(base_result["total_return_pct"])
+            decay = (
+                base_result["total_return_pct"] - double_cost_result["total_return_pct"]
+            ) / abs(base_result["total_return_pct"])
             is_robust = decay < 0.3
         else:
             is_robust = len(profitable_results) >= 4
@@ -391,6 +426,7 @@ def format_cost_report(result: Dict) -> str:
 # ============================================================
 # 辅助函数
 # ============================================================
+
 
 def _ensure_index(df: pd.DataFrame) -> pd.DataFrame:
     """确保 DataFrame 有合适的索引"""

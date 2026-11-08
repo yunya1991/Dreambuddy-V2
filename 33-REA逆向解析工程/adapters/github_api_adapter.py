@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import json
-import os
 import urllib.error
 import urllib.request
 from typing import Any
@@ -55,10 +54,7 @@ class GitHubApiAdapter:
         evidence: list[Evidence] = []
         known_gaps: list[str] = []
         if not self._token:
-            known_gaps.append(
-                "无 token，GitHub API rate limit 为 60 req/h，"
-                "高频调用可能被限流"
-            )
+            known_gaps.append("无 token，GitHub API rate limit 为 60 req/h，" "高频调用可能被限流")
 
         try:
             data = self._request(url)
@@ -70,41 +66,47 @@ class GitHubApiAdapter:
                 f"{data.get('forks_count', 0)} forks | "
                 f"branch={data.get('default_branch', '?')}"
             )
-            evidence.append(Evidence(
-                result=f"成功获取 {owner}/{repo} 仓库元数据",
-                provenance={
-                    "api": "github_rest",
-                    "endpoint": url,
-                    "engine": "github_api",
-                },
-                confidence=1.0,
-                known_gaps=known_gaps + [
-                    "GitHub API 返回的 star/fork 数为请求时刻快照，非实时",
-                    "license 字段可能为 null（仓库未声明许可证）",
-                ],
-                level="observation",
-            ))
+            evidence.append(
+                Evidence(
+                    result=f"成功获取 {owner}/{repo} 仓库元数据",
+                    provenance={
+                        "api": "github_rest",
+                        "endpoint": url,
+                        "engine": "github_api",
+                    },
+                    confidence=1.0,
+                    known_gaps=known_gaps
+                    + [
+                        "GitHub API 返回的 star/fork 数为请求时刻快照，非实时",
+                        "license 字段可能为 null（仓库未声明许可证）",
+                    ],
+                    level="observation",
+                )
+            )
             metadata["evidence"] = evidence
             return metadata
 
         except Exception as e:
             error_msg = str(e)
-            evidence.append(Evidence(
-                result=f"GitHub API 请求失败: {error_msg}",
-                provenance={
-                    "api": "github_rest",
-                    "endpoint": url,
-                    "owner": owner,
-                    "repo": repo,
-                },
-                confidence=1.0,
-                known_gaps=known_gaps + [
-                    "404 可能因仓库不存在或为私有（token 无权限）",
-                    "403 可能因 rate limit 耗尽",
-                    "无法获取仓库元数据，分析中断",
-                ],
-                level="unknown",
-            ))
+            evidence.append(
+                Evidence(
+                    result=f"GitHub API 请求失败: {error_msg}",
+                    provenance={
+                        "api": "github_rest",
+                        "endpoint": url,
+                        "owner": owner,
+                        "repo": repo,
+                    },
+                    confidence=1.0,
+                    known_gaps=known_gaps
+                    + [
+                        "404 可能因仓库不存在或为私有（token 无权限）",
+                        "403 可能因 rate limit 耗尽",
+                        "无法获取仓库元数据，分析中断",
+                    ],
+                    level="unknown",
+                )
+            )
             return {
                 "summary": f"GitHub API 请求失败: {error_msg}",
                 "evidence": evidence,
@@ -112,7 +114,10 @@ class GitHubApiAdapter:
             }
 
     def get_directory_tree(
-        self, owner: str, repo: str, path: str = "",
+        self,
+        owner: str,
+        repo: str,
+        path: str = "",
     ) -> dict[str, Any]:
         """获取目录树结构。
 
@@ -131,34 +136,32 @@ class GitHubApiAdapter:
         evidence: list[Evidence] = []
         known_gaps: list[str] = []
         if not self._token:
-            known_gaps.append(
-                "无 token，GitHub API rate limit 为 60 req/h"
-            )
+            known_gaps.append("无 token，GitHub API rate limit 为 60 req/h")
 
         try:
             data = self._request(url)
             entries = self._parse_contents(data)
             n_dirs = sum(1 for e in entries if e["type"] == "dir")
             n_files = sum(1 for e in entries if e["type"] == "file")
-            summary = (
-                f"目录 {owner}/{repo}/{path}: "
-                f"{n_dirs} 目录, {n_files} 文件"
+            summary = f"目录 {owner}/{repo}/{path}: " f"{n_dirs} 目录, {n_files} 文件"
+            evidence.append(
+                Evidence(
+                    result=f"获取 {owner}/{repo}/{path} 目录结构",
+                    provenance={
+                        "api": "github_rest",
+                        "endpoint": url,
+                        "engine": "github_api",
+                    },
+                    confidence=1.0,
+                    known_gaps=known_gaps
+                    + [
+                        "仅返回当前层级，子目录需递归调用",
+                        "GitHub API 每页最多 1000 条，超大型目录可能截断",
+                        "Symlink 目标未展开",
+                    ],
+                    level="observation",
+                )
             )
-            evidence.append(Evidence(
-                result=f"获取 {owner}/{repo}/{path} 目录结构",
-                provenance={
-                    "api": "github_rest",
-                    "endpoint": url,
-                    "engine": "github_api",
-                },
-                confidence=1.0,
-                known_gaps=known_gaps + [
-                    "仅返回当前层级，子目录需递归调用",
-                    "GitHub API 每页最多 1000 条，超大型目录可能截断",
-                    "Symlink 目标未展开",
-                ],
-                level="observation",
-            ))
             return {
                 "entries": entries,
                 "summary": summary,
@@ -167,22 +170,25 @@ class GitHubApiAdapter:
 
         except Exception as e:
             error_msg = str(e)
-            evidence.append(Evidence(
-                result=f"GitHub API 目录请求失败: {error_msg}",
-                provenance={
-                    "api": "github_rest",
-                    "endpoint": url,
-                    "owner": owner,
-                    "repo": repo,
-                    "path": path,
-                },
-                confidence=1.0,
-                known_gaps=known_gaps + [
-                    "404 可能因路径不存在或仓库为空",
-                    "无法获取目录结构，分析中断",
-                ],
-                level="unknown",
-            ))
+            evidence.append(
+                Evidence(
+                    result=f"GitHub API 目录请求失败: {error_msg}",
+                    provenance={
+                        "api": "github_rest",
+                        "endpoint": url,
+                        "owner": owner,
+                        "repo": repo,
+                        "path": path,
+                    },
+                    confidence=1.0,
+                    known_gaps=known_gaps
+                    + [
+                        "404 可能因路径不存在或仓库为空",
+                        "无法获取目录结构，分析中断",
+                    ],
+                    level="unknown",
+                )
+            )
             return {
                 "entries": [],
                 "summary": f"GitHub API 目录请求失败: {error_msg}",
@@ -243,18 +249,22 @@ class GitHubApiAdapter:
             for item in data:
                 if not isinstance(item, dict):
                     continue
-                entries.append({
-                    "name": item.get("name", ""),
-                    "type": item.get("type", "file"),
-                    "path": item.get("path", ""),
-                    "size": item.get("size", 0),
-                })
+                entries.append(
+                    {
+                        "name": item.get("name", ""),
+                        "type": item.get("type", "file"),
+                        "path": item.get("path", ""),
+                        "size": item.get("size", 0),
+                    }
+                )
             return entries
         elif isinstance(data, dict) and data.get("type") == "file":
-            return [{
-                "name": data.get("name", ""),
-                "type": "file",
-                "path": data.get("path", ""),
-                "size": data.get("size", 0),
-            }]
+            return [
+                {
+                    "name": data.get("name", ""),
+                    "type": "file",
+                    "path": data.get("path", ""),
+                    "size": data.get("size", 0),
+                }
+            ]
         return []

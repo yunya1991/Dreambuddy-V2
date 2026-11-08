@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """P0 波次外部真实源拉取（SPEC-33-外部真实源接入 附录 A wave1，11 源）。"""
+
 import subprocess
 import sys
 import time
@@ -33,7 +34,10 @@ print("P0_HARVEST_START", flush=True)
 t0 = time.time()
 outcome = harvester.harvest(sources)
 print(f"harvest done in {time.time() - t0:.1f}s", flush=True)
-print(f"injected={len(outcome.injected_trees)} rejected={len(outcome.rejected)} errors={len(outcome.errors)}", flush=True)
+print(
+    f"injected={len(outcome.injected_trees)} rejected={len(outcome.rejected)} errors={len(outcome.errors)}",
+    flush=True,
+)
 for r in outcome.rejected:
     print(f"REJECTED {r}", flush=True)
 for e in outcome.errors:
@@ -55,7 +59,9 @@ for tree_id in outcome.injected_trees:
     try:
         commit = subprocess.run(
             ["git", "-C", dest, "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         tree.commit = commit.stdout.strip()
     except Exception as exc:

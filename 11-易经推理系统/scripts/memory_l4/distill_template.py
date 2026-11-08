@@ -5,15 +5,15 @@
 """
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import memory_l4_distills_dir
+from scripts.memory_l4.paths import memory_l4_distills_dir  # noqa: E402
 
 
 def create_distill_template(
@@ -38,7 +38,9 @@ def create_distill_template(
         from scripts.memory_l4 import distill_engine
 
         review_record["review_id"] = review_record.get("review_id", f"REV_{distill_id}")
-        review_record["case_id"] = review_record.get("case_id", supporting_case_ids[0] if supporting_case_ids else "")
+        review_record["case_id"] = review_record.get(
+            "case_id", supporting_case_ids[0] if supporting_case_ids else ""
+        )
         distill = distill_engine.init_distill(review_record, kind=kind, distill_id=distill_id)
         distill = distill_engine.run_full_distill_pipeline(review_record, kind=kind)
         distill["distill_id"] = distill_id
@@ -71,10 +73,17 @@ def create_distill_template(
         "supporting_case_ids": supporting_case_ids,
         "actionable_rules": [],
         "process_trace": {
-            "intent": None, "investigation": None, "theory_refs": [],
-            "hypothesis": None, "test_results": None, "conclusion": None,
-            "implementation": None, "monitoring": None, "review_result": None,
-            "reflection": None, "optimization": None,
+            "intent": None,
+            "investigation": None,
+            "theory_refs": [],
+            "hypothesis": None,
+            "test_results": None,
+            "conclusion": None,
+            "implementation": None,
+            "monitoring": None,
+            "review_result": None,
+            "reflection": None,
+            "optimization": None,
         },
         "quadrant": {
             "x": 0.0,
@@ -84,10 +93,10 @@ def create_distill_template(
                 "y_perf": 0.0,
                 "y_consistency": 0.0,
                 "y_human": 0.0,
-                "notes": ""
-            }
+                "notes": "",
+            },
         },
-        "migration_history": []
+        "migration_history": [],
     }
 
 
@@ -114,4 +123,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -19,22 +19,22 @@ RSI市场情绪买卖压力特征 — 数学确定性的超买超卖标尺
   5. RSI与价格的量价关系
 """
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
 from typing import List, Optional, Dict
-
 
 # ============================================================
 # RSI基础计算
 # ============================================================
+
 
 def _calc_rsi(close: pd.Series, period: int) -> pd.Series:
     """计算RSI"""
     delta = close.diff()
     gain = delta.where(delta > 0, 0)
     loss = -delta.where(delta < 0, 0)
-    avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
-    avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
+    avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
+    avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
     rs = avg_gain / (avg_loss + 1e-10)
     return 100 - (100 / (1 + rs))
 
@@ -43,6 +43,7 @@ def _calc_rsi(close: pd.Series, period: int) -> pd.Series:
 # 自适应阈值判断
 # ============================================================
 
+
 def _classify_volatility(df: pd.DataFrame, lookback: int = 120) -> tuple:
     """
     根据波动率自动分类币种类型
@@ -50,7 +51,7 @@ def _classify_volatility(df: pd.DataFrame, lookback: int = 120) -> tuple:
     Returns:
         (rsi_oversold, rsi_overbought): 自适应阈值
         - 大市值低波动: (30, 70)
-        - 中市值中波动: (25, 75) 
+        - 中市值中波动: (25, 75)
         - 小市值高波动: (20, 80)
     """
     returns = df["close"].pct_change()
@@ -70,6 +71,7 @@ def _classify_volatility(df: pd.DataFrame, lookback: int = 120) -> tuple:
 # ============================================================
 # 1. 多周期RSI + 自适应超买超卖
 # ============================================================
+
 
 def rsi_adaptive_features(
     df: pd.DataFrame,
@@ -104,14 +106,10 @@ def rsi_adaptive_features(
 
         # 超买超卖强度 (离阈值有多远)
         feats[f"rsi_{period}_os_strength"] = np.where(
-            rsi < oversold,
-            (oversold - rsi) / oversold,  # 超卖强度 0-1
-            0
+            rsi < oversold, (oversold - rsi) / oversold, 0  # 超卖强度 0-1
         )
         feats[f"rsi_{period}_ob_strength"] = np.where(
-            rsi > overbought,
-            (rsi - overbought) / (100 - overbought),  # 超买强度 0-1
-            0
+            rsi > overbought, (rsi - overbought) / (100 - overbought), 0  # 超买强度 0-1
         )
 
         # RSI变化方向
@@ -134,11 +132,13 @@ def rsi_adaptive_features(
     ).astype(float)
 
     # RSI多周期趋势一致性 (同方向)
-    rsi_direction = pd.DataFrame({
-        "r6": np.sign(rsi6 - 50),
-        "r14": np.sign(rsi14 - 50),
-        "r28": np.sign(rsi28 - 50),
-    })
+    rsi_direction = pd.DataFrame(
+        {
+            "r6": np.sign(rsi6 - 50),
+            "r14": np.sign(rsi14 - 50),
+            "r28": np.sign(rsi28 - 50),
+        }
+    )
     feats["rsi_consistency"] = rsi_direction.mean(axis=1)
 
     return feats
@@ -147,6 +147,7 @@ def rsi_adaptive_features(
 # ============================================================
 # 2. RSI背离检测
 # ============================================================
+
 
 def rsi_divergence_features(
     df: pd.DataFrame,
@@ -176,14 +177,10 @@ def rsi_divergence_features(
     near_new_high = high >= roll_high * 0.995
 
     # 看涨背离: 价格新低, 但RSI没新低
-    feats["rsi_bull_div"] = (
-        near_new_low & (rsi > rsi_at_low * 0.95) & (rsi < 40)
-    ).astype(float)
+    feats["rsi_bull_div"] = (near_new_low & (rsi > rsi_at_low * 0.95) & (rsi < 40)).astype(float)
 
     # 看跌背离: 价格新高, 但RSI没新高
-    feats["rsi_bear_div"] = (
-        near_new_high & (rsi < rsi_at_high * 1.05) & (rsi > 60)
-    ).astype(float)
+    feats["rsi_bear_div"] = (near_new_high & (rsi < rsi_at_high * 1.05) & (rsi > 60)).astype(float)
 
     # 背离强度 (RSI与价格走势的差)
     price_slope = close.pct_change(lookback)
@@ -194,8 +191,8 @@ def rsi_divergence_features(
     div_signal = np.sign(rsi_slope - price_slope)
     div_streak = pd.Series(0, index=df.index, dtype=float)
     for i in range(1, len(df)):
-        if div_signal.iloc[i] == div_signal.iloc[i-1] and div_signal.iloc[i] != 0:
-            div_streak.iloc[i] = div_streak.iloc[i-1] + 1
+        if div_signal.iloc[i] == div_signal.iloc[i - 1] and div_signal.iloc[i] != 0:
+            div_streak.iloc[i] = div_streak.iloc[i - 1] + 1
         else:
             div_streak.iloc[i] = 1.0 if div_signal.iloc[i] != 0 else 0.0
     feats["rsi_div_streak"] = div_streak * div_signal
@@ -206,6 +203,7 @@ def rsi_divergence_features(
 # ============================================================
 # 3. 买卖压力量化
 # ============================================================
+
 
 def rsi_pressure_features(
     df: pd.DataFrame,
@@ -229,7 +227,7 @@ def rsi_pressure_features(
 
     feats["rsi_buy_pressure"] = buy_pressure
     feats["rsi_sell_pressure"] = sell_pressure
-    feats["rsi_net_pressure"] = (buy_pressure - sell_pressure)  # -1到1
+    feats["rsi_net_pressure"] = buy_pressure - sell_pressure  # -1到1
 
     # 压力累积 (过去N个周期的压力总和)
     feats["rsi_buy_cum"] = buy_pressure.rolling(lookback).sum().fillna(0) / lookback
@@ -253,8 +251,12 @@ def rsi_pressure_features(
     feats["rsi_sell_extreme"] = sell_extreme.astype(float)
 
     # 极值后反转 (压力从极值回落)
-    feats["rsi_buy_reversal"] = (buy_extreme.shift(1) & ~buy_extreme & (buy_pressure.diff() < 0)).astype(float)
-    feats["rsi_sell_reversal"] = (sell_extreme.shift(1) & ~sell_extreme & (sell_pressure.diff() < 0)).astype(float)
+    feats["rsi_buy_reversal"] = (
+        buy_extreme.shift(1) & ~buy_extreme & (buy_pressure.diff() < 0)
+    ).astype(float)
+    feats["rsi_sell_reversal"] = (
+        sell_extreme.shift(1) & ~sell_extreme & (sell_pressure.diff() < 0)
+    ).astype(float)
 
     return feats
 
@@ -262,6 +264,7 @@ def rsi_pressure_features(
 # ============================================================
 # 4. RSI区间分析
 # ============================================================
+
 
 def rsi_regime_features(
     df: pd.DataFrame,
@@ -294,7 +297,9 @@ def rsi_regime_features(
     rsi_lower = rsi_mean - 2 * rsi_std
     feats["rsi_at_upper"] = (rsi > rsi_upper).astype(float)
     feats["rsi_at_lower"] = (rsi < rsi_lower).astype(float)
-    feats["rsi_channel_pos"] = ((rsi - rsi_lower) / (rsi_upper - rsi_lower + 1e-10)).fillna(0.5).clip(-0.5, 1.5)
+    feats["rsi_channel_pos"] = (
+        ((rsi - rsi_lower) / (rsi_upper - rsi_lower + 1e-10)).fillna(0.5).clip(-0.5, 1.5)
+    )
 
     # RSI动量加速度 (二阶导数)
     rsi_accel = rsi.diff().diff()
@@ -306,6 +311,7 @@ def rsi_regime_features(
 # ============================================================
 # 5. RSI情绪压力综合引擎
 # ============================================================
+
 
 class RSISentimentFeatures:
     """
@@ -349,6 +355,6 @@ class RSISentimentFeatures:
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(name="rsi_sentiment", factory=RSISentimentFeatures)

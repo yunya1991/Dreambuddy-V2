@@ -18,24 +18,21 @@ C层 - 动态链融合编排器
 5. 执行完成后 → 执行反思进化
 """
 
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional
 
-from .types import (
-    NodeExecutionResult,
-    ChainFusionDecision,
-    ExecutionContext,
-    NodeStatus,
-)
-from .llm_result_analyzer import LLMResultAnalyzer, ResultAnalysis
 from .dynamic_decision_maker import DynamicDecisionMaker
 from .dynamic_replanner import DynamicReplanner, ReplanningResult
-from .execution_reflector import ExecutionReflector, ExecutionReflection
-
+from .execution_reflector import ExecutionReflection, ExecutionReflector
+from .llm_result_analyzer import LLMResultAnalyzer
+from .types import (
+    ChainFusionDecision,
+    NodeExecutionResult,
+)
 
 # ============================================================
 # 融合编排器
 # ============================================================
+
 
 class FusionOrchestrator:
     """动态链融合编排器
@@ -143,9 +140,7 @@ class FusionOrchestrator:
 
         # 1. 分析结果
         analysis_context = {
-            "previous_results": [
-                r.to_dict() for r in self.execution_history[-3:]
-            ],
+            "previous_results": [r.to_dict() for r in self.execution_history[-3:]],
         }
         if context:
             analysis_context.update(context)

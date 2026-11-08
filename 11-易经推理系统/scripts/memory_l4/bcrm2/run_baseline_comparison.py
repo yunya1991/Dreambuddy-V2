@@ -8,9 +8,10 @@ P1 步骤8: 跑宏观特征回测 + BaselineManager 对比验证
 3. 与 baseline-v1 对比（bootstrap p-value）
 4. 输出对比报告 + 通过/不通过结论
 """
-import sys
+
 import json
 import subprocess
+import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -18,10 +19,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from scripts.memory_l4.bcrm2.data_fetcher import get_klines
-from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester
-from scripts.memory_l4.bcrm2.baseline_manager import BaselineManager
-
+from scripts.memory_l4.bcrm2.baseline_manager import BaselineManager  # noqa: E402
+from scripts.memory_l4.bcrm2.data_fetcher import get_klines  # noqa: E402
+from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester  # noqa: E402
 
 # ============================================================
 # 配置（与 baseline_v1 对齐）
@@ -41,10 +41,14 @@ FEATURE_SELECTION = True
 
 def get_git_commit() -> str:
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(PROJECT_ROOT),
-        ).decode().strip()
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(PROJECT_ROOT),
+            )
+            .decode()
+            .strip()
+        )
     except Exception:
         return "unknown"
 
@@ -99,11 +103,13 @@ def run_single_coin(symbol: str, ref_df, verbose: bool = True):
             "long_count": result.long_stats.get("count", 0),
             "short_count": result.short_stats.get("count", 0),
         }
-        print(f"  交易数={metrics['total_trades']} "
-              f"胜率={metrics['win_rate']:.1%} "
-              f"收益={metrics['total_return_pct']:+.2f}% "
-              f"夏普={metrics['sharpe_ratio']:.2f} "
-              f"回撤={metrics['max_drawdown_pct']:.2f}%")
+        print(
+            f"  交易数={metrics['total_trades']} "
+            f"胜率={metrics['win_rate']:.1%} "
+            f"收益={metrics['total_return_pct']:+.2f}% "
+            f"夏普={metrics['sharpe_ratio']:.2f} "
+            f"回撤={metrics['max_drawdown_pct']:.2f}%"
+        )
         return metrics
 
     except Exception as e:
@@ -134,8 +140,8 @@ def main():
     print("  P1 宏观特征回测 + 基线对比验证")
     print("=" * 70)
     print(f"  币种: {', '.join(COINS)}")
-    print(f"  版本: v2-macro (含 25 个宏观特征)")
-    print(f"  基线: baseline-v1")
+    print("  版本: v2-macro (含 25 个宏观特征)")
+    print("  基线: baseline-v1")
     print()
 
     # 获取 BTC ref_df
@@ -195,24 +201,28 @@ def main():
     print(f"  建议: {report.recommendation}")
     print(f"  原因: {report.reason}")
 
-    print(f"\n  指标对比:")
-    print(f"  {'指标':<25} {'基线':>10} {'新版本':>10} {'变化%':>8} {'p-value':>8} {'显著':>6} {'劣化':>6}")
+    print("\n  指标对比:")
+    print(
+        f"  {'指标':<25} {'基线':>10} {'新版本':>10} {'变化%':>8} {'p-value':>8} {'显著':>6} {'劣化':>6}"
+    )
     print(f"  {'-'*80}")
     for mc in report.metric_comparisons:
         sig = "✓" if mc["is_significant"] else ""
         deg = "✗" if mc["is_degraded"] else ""
-        print(f"  {mc['metric']:<25} {mc['baseline_value']:>10.4f} {mc['new_value']:>10.4f} "
-              f"{mc['change_pct']*100:>+7.2f}% {mc['p_value']:>8.4f} {sig:>6} {deg:>6}")
+        print(
+            f"  {mc['metric']:<25} {mc['baseline_value']:>10.4f} {mc['new_value']:>10.4f} "
+            f"{mc['change_pct']*100:>+7.2f}% {mc['p_value']:>8.4f} {sig:>6} {deg:>6}"
+        )
 
     # 保存报告
     report_path = mgr.save_report(report)
     print(f"\n  对比报告已保存: {report_path}")
 
     if report.passed:
-        print(f"\n  ✓ P1 宏观特征通过基线验证，可进入实盘配置")
+        print("\n  ✓ P1 宏观特征通过基线验证，可进入实盘配置")
     else:
-        print(f"\n  ✗ P1 宏观特征未通过基线验证，标记为探索方向")
-        print(f"    下一步: 继续优化特征工程，或调整宏观特征选择策略")
+        print("\n  ✗ P1 宏观特征未通过基线验证，标记为探索方向")
+        print("    下一步: 继续优化特征工程，或调整宏观特征选择策略")
 
     print(f"{'='*70}")
 

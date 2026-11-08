@@ -17,10 +17,10 @@ from typing import Dict
 import networkx as nx
 
 try:
-    from .schema import DEFAULT_GRAPH_PATH, GRAPH_DB_DIR
+    from .schema import DEFAULT_GRAPH_PATH, GRAPH_DB_DIR  # noqa: F401, I001
     from .entity_extractor import extract_entities
 except ImportError:  # 直接以脚本运行时
-    from schema import DEFAULT_GRAPH_PATH, GRAPH_DB_DIR
+    from schema import DEFAULT_GRAPH_PATH  # noqa: I001
     from entity_extractor import extract_entities
 
 
@@ -57,11 +57,9 @@ def _add_edge_to_graph(graph: nx.DiGraph, edge: Dict) -> None:
     src, tgt = edge["source"], edge["target"]
     # 确保端点存在（防止孤立边）
     if src not in graph:
-        graph.add_node(src, name=src.split(":", 1)[-1],
-                       type=src.split(":", 1)[0], source_files=[])
+        graph.add_node(src, name=src.split(":", 1)[-1], type=src.split(":", 1)[0], source_files=[])
     if tgt not in graph:
-        graph.add_node(tgt, name=tgt.split(":", 1)[-1],
-                       type=tgt.split(":", 1)[0], source_files=[])
+        graph.add_node(tgt, name=tgt.split(":", 1)[-1], type=tgt.split(":", 1)[0], source_files=[])
     rel = edge["relation"]
     if graph.has_edge(src, tgt):
         # 已存在同方向边：合并关系类型集合
@@ -70,9 +68,9 @@ def _add_edge_to_graph(graph: nx.DiGraph, edge: Dict) -> None:
             rels.append(rel)
         graph[src][tgt]["relations"] = rels
     else:
-        graph.add_edge(src, tgt, relation=rel,
-                       relations=[rel],
-                       source_file=edge.get("source_file", ""))
+        graph.add_edge(
+            src, tgt, relation=rel, relations=[rel], source_file=edge.get("source_file", "")
+        )
 
 
 def build_graph(knowledge_dir, graph_path=None) -> Dict:
@@ -140,7 +138,7 @@ def build_graph(knowledge_dir, graph_path=None) -> Dict:
 
     edge_by_type: Dict[str, int] = {}
     for _u, _v, data in graph.edges(data=True):
-        for rel in (data.get("relations") or [data.get("relation")]):
+        for rel in data.get("relations") or [data.get("relation")]:
             if rel:
                 edge_by_type[rel] = edge_by_type.get(rel, 0) + 1
 
@@ -154,7 +152,7 @@ def build_graph(knowledge_dir, graph_path=None) -> Dict:
 
 
 if __name__ == "__main__":
-    import sys
+    import sys  # noqa: I001
     import json
 
     # 默认知识库根目录 = 9-RAG-INFRA 的上一级（即项目下的 2-KNOWLEDGE）

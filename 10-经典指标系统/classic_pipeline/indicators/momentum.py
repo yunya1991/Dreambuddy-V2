@@ -1,4 +1,5 @@
 """动量指标计算（纯函数 + talib.abstract）。"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,12 +12,14 @@ def rsi(df: pd.DataFrame, period: int = 14) -> pd.Series:
     值域 [0, 100]，>70 超买，<30 超卖。
     """
     from talib.abstract import RSI
+
     return RSI(df, timeperiod=period)
 
 
 def cci(df: pd.DataFrame, period: int = 14) -> pd.Series:
     """顺势指标 (Commodity Channel Index)。"""
     from talib.abstract import CCI
+
     return CCI(df, timeperiod=period)
 
 

@@ -20,17 +20,13 @@ class SimpleStrategy(IStrategy):
     Simple 5m Strategy - Ultimate Version with Trailing Profit
     RSI + TEMA + Bollinger Bands mean-reversion with dynamic ATR stoploss
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "5m"
     can_short: bool = True
 
-    minimal_roi = {
-        "0": 0.094,
-        "21": 0.069,
-        "63": 0.018,
-        "147": 0
-    }
+    minimal_roi = {"0": 0.094, "21": 0.069, "63": 0.018, "147": 0}
 
     stoploss = -0.271
     trailing_stop = False  # 使用 custom_stoploss 实现动态追踪
@@ -45,7 +41,7 @@ class SimpleStrategy(IStrategy):
     # Hyperopt parameters
     buy_rsi = IntParameter(20, 30, default=27, space="buy")
     sell_rsi = IntParameter(70, 80, default=72, space="sell")
-    
+
     atr_multiplier = DecimalParameter(1.5, 3.0, default=2.0, space="sell")
     trail_atr_multiplier = DecimalParameter(1.0, 2.0, default=1.5, space="sell")
 
@@ -53,13 +49,10 @@ class SimpleStrategy(IStrategy):
         "entry": "limit",
         "exit": "limit",
         "stoploss": "market",
-        "stoploss_on_exchange": False
+        "stoploss_on_exchange": False,
     }
 
-    order_time_in_force = {
-        "entry": "GTC",
-        "exit": "GTC"
-    }
+    order_time_in_force = {"entry": "GTC", "exit": "GTC"}
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         # RSI
@@ -82,10 +75,10 @@ class SimpleStrategy(IStrategy):
 
         # Parabolic SAR
         dataframe["sar"] = ta.SAR(dataframe)
-        
+
         # ATR
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
-        
+
         # Volume mean
         dataframe["volume_mean"] = dataframe["volume"].rolling(window=20).mean()
 
@@ -99,16 +92,16 @@ class SimpleStrategy(IStrategy):
         loose_rsi = min(self.buy_rsi.value + 4, 35)
 
         deep_mr = (
-            (dataframe["rsi"] < self.buy_rsi.value) &
-            (dataframe["tema"] <= dataframe["bb_middleband"]) &
-            (dataframe["tema"] > dataframe["tema"].shift(1)) &
-            (dataframe["volume"] > dataframe["volume_mean"])
+            (dataframe["rsi"] < self.buy_rsi.value)
+            & (dataframe["tema"] <= dataframe["bb_middleband"])
+            & (dataframe["tema"] > dataframe["tema"].shift(1))
+            & (dataframe["volume"] > dataframe["volume_mean"])
         )
 
         mild_mr = (
-            (dataframe["rsi"] < loose_rsi) &
-            (dataframe["tema"] <= dataframe["bb_middleband"]) &
-            (dataframe["volume"] > dataframe["volume_mean"] * 0.5)
+            (dataframe["rsi"] < loose_rsi)
+            & (dataframe["tema"] <= dataframe["bb_middleband"])
+            & (dataframe["volume"] > dataframe["volume_mean"] * 0.5)
         )
 
         dataframe.loc[deep_mr, ["enter_long", "enter_tag"]] = [1, "rsi_deep"]
@@ -117,20 +110,23 @@ class SimpleStrategy(IStrategy):
         loose_sell_rsi = max(self.sell_rsi.value - 4, 65)
 
         deep_mr_short = (
-            (dataframe["rsi"] > self.sell_rsi.value) &
-            (dataframe["tema"] >= dataframe["bb_middleband"]) &
-            (dataframe["tema"] < dataframe["tema"].shift(1)) &
-            (dataframe["volume"] > dataframe["volume_mean"])
+            (dataframe["rsi"] > self.sell_rsi.value)
+            & (dataframe["tema"] >= dataframe["bb_middleband"])
+            & (dataframe["tema"] < dataframe["tema"].shift(1))
+            & (dataframe["volume"] > dataframe["volume_mean"])
         )
 
         mild_mr_short = (
-            (dataframe["rsi"] > loose_sell_rsi) &
-            (dataframe["tema"] >= dataframe["bb_middleband"]) &
-            (dataframe["volume"] > dataframe["volume_mean"] * 0.5)
+            (dataframe["rsi"] > loose_sell_rsi)
+            & (dataframe["tema"] >= dataframe["bb_middleband"])
+            & (dataframe["volume"] > dataframe["volume_mean"] * 0.5)
         )
 
         dataframe.loc[deep_mr_short, ["enter_short", "enter_tag"]] = [1, "short_rsi_deep"]
-        dataframe.loc[mild_mr_short & ~deep_mr_short, ["enter_short", "enter_tag"]] = [1, "short_rsi_mild"]
+        dataframe.loc[mild_mr_short & ~deep_mr_short, ["enter_short", "enter_tag"]] = [
+            1,
+            "short_rsi_mild",
+        ]
 
         conflict = (dataframe["enter_long"] == 1) & (dataframe["enter_short"] == 1)
         dataframe.loc[conflict, ["enter_long", "enter_short", "enter_tag"]] = [0, 0, ""]
@@ -140,31 +136,38 @@ class SimpleStrategy(IStrategy):
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe["exit_long"] = 0
         dataframe["exit_short"] = 0
-        
+
         dataframe.loc[
             (
-                (dataframe["rsi"] > self.sell_rsi.value) &
-                (dataframe["tema"] > dataframe["bb_middleband"]) &
-                (dataframe["tema"] < dataframe["tema"].shift(1)) &
-                (dataframe["volume"] > 0)
+                (dataframe["rsi"] > self.sell_rsi.value)
+                & (dataframe["tema"] > dataframe["bb_middleband"])
+                & (dataframe["tema"] < dataframe["tema"].shift(1))
+                & (dataframe["volume"] > 0)
             ),
-            "exit_long"
+            "exit_long",
         ] = 1
 
         dataframe.loc[
             (
-                (dataframe["rsi"] < self.buy_rsi.value) &
-                (dataframe["tema"] < dataframe["bb_middleband"]) &
-                (dataframe["tema"] > dataframe["tema"].shift(1)) &
-                (dataframe["volume"] > 0)
+                (dataframe["rsi"] < self.buy_rsi.value)
+                & (dataframe["tema"] < dataframe["bb_middleband"])
+                & (dataframe["tema"] > dataframe["tema"].shift(1))
+                & (dataframe["volume"] > 0)
             ),
-            "exit_short"
+            "exit_short",
         ] = 1
 
         return dataframe
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+    def custom_stoploss(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> float:
         try:
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             if dataframe is None or len(dataframe) < 20:
@@ -212,12 +215,17 @@ class SimpleStrategy(IStrategy):
                     stop_price = float(current_rate) + float(trail_distance)
                     if stop_price > float(trade.open_rate):
                         stop_price = float(trade.open_rate)
-                    open_relative_stop = max(open_relative_stop, (float(trade.open_rate) - stop_price) / float(trade.open_rate))
+                    open_relative_stop = max(
+                        open_relative_stop,
+                        (float(trade.open_rate) - stop_price) / float(trade.open_rate),
+                    )
                 else:
                     stop_price = float(current_rate) - float(trail_distance)
                     if stop_price < float(trade.open_rate):
                         stop_price = float(trade.open_rate)
-                    open_relative_stop = max(open_relative_stop, (stop_price / float(trade.open_rate)) - 1.0)
+                    open_relative_stop = max(
+                        open_relative_stop, (stop_price / float(trade.open_rate)) - 1.0
+                    )
 
             sl = float(stoploss_from_open(open_relative_stop, current_profit))
             if sl <= 0.0:
@@ -225,19 +233,26 @@ class SimpleStrategy(IStrategy):
             return sl
 
         except Exception as e:
-            if hasattr(self, 'log'):
+            if hasattr(self, "log"):
                 self.log.error(f"Custom stoploss error for {pair}: {str(e)}")
             return 1.0
 
-    def custom_exit(self, pair: str, trade: Trade, current_time: datetime,
-                    current_rate: float, current_profit: float, **kwargs) -> Optional[str]:
+    def custom_exit(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> Optional[str]:
         """
         Trailing Profit Exit
         """
         if current_profit <= 0:
             return None
 
-        max_profit = trade.max_profit if hasattr(trade, 'max_profit') else current_profit
+        max_profit = trade.max_profit if hasattr(trade, "max_profit") else current_profit
 
         # 盈利 > 5%：允许 3% 回撤
         if max_profit > 0.05 and (max_profit - current_profit) > 0.03:
@@ -264,9 +279,18 @@ class SimpleStrategy(IStrategy):
 
         return None
 
-    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, entry_tag: Optional[str],
-                            side: str, **kwargs) -> bool:
+    def confirm_trade_entry(
+        self,
+        pair: str,
+        order_type: str,
+        amount: float,
+        rate: float,
+        time_in_force: str,
+        current_time: datetime,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> bool:
         """
         确认交易入场
         添加了缺失的 leverage 参数
@@ -279,17 +303,21 @@ class SimpleStrategy(IStrategy):
         prev = dataframe.iloc[-2]
 
         if side == "short":
-            return all([
-                last.get("volume", 0) > 0,
-                last.get("rsi", 0) > 65,
-                last.get("tema", 0) < prev.get("tema", 0),
-            ])
+            return all(
+                [
+                    last.get("volume", 0) > 0,
+                    last.get("rsi", 0) > 65,
+                    last.get("tema", 0) < prev.get("tema", 0),
+                ]
+            )
 
-        return all([
-            last.get("volume", 0) > 0,
-            last.get("rsi", 100) < 35,
-            last.get("tema", 0) > prev.get("tema", 0),
-        ])
+        return all(
+            [
+                last.get("volume", 0) > 0,
+                last.get("rsi", 100) < 35,
+                last.get("tema", 0) > prev.get("tema", 0),
+            ]
+        )
 
     @property
     def plot_config(self):
@@ -314,6 +342,6 @@ class SimpleStrategy(IStrategy):
                 "Volume": {
                     "volume": {"color": "gray", "type": "bar"},
                     "volume_mean": {"color": "blue"},
-                }
-            }
+                },
+            },
         }

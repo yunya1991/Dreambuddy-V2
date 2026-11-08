@@ -6,6 +6,7 @@
   · cleaned_df_to_records(df) → 把清洗后 DataFrame 还原为 DataRecord。
   · 统一：CleanedDF = DataFrame + 其来源 SilverRecord 指针。
 """
+
 from __future__ import annotations
 
 import json
@@ -113,7 +114,9 @@ def records_to_cleaned_df(records: Iterable[DataRecord]) -> CleanedDF:
         dfs.append(frag)
         # AdapterMeta：记录原始 DataRecord 引用信息（Pipeline 出口再映射到 SilverRecord）
         sr = AdapterMeta(
-            source=rec.source, category=rec.category, sub_category=rec.sub_category,
+            source=rec.source,
+            category=rec.category,
+            sub_category=rec.sub_category,
             asset=str(asset),
             fetched_at=fetched_at,
             data={
@@ -128,8 +131,9 @@ def records_to_cleaned_df(records: Iterable[DataRecord]) -> CleanedDF:
 
     df = pd.concat(dfs, ignore_index=True, sort=False) if dfs else pd.DataFrame()
     # primary_key：(source, category, sub_category, asset, timestamp)
-    pk_cols = [c for c in ("source", "category", "sub_category", "asset", "timestamp")
-               if c in df.columns]
+    pk_cols = [
+        c for c in ("source", "category", "sub_category", "asset", "timestamp") if c in df.columns
+    ]
     pk_count = len(df.drop_duplicates(subset=pk_cols)) if pk_cols else len(df)
     return CleanedDF(records=silver_records, df=df, primary_key_count=pk_count)
 
@@ -173,12 +177,18 @@ def cleaned_df_to_records(
         work["sub_category"] = (
             work["sub_category"].where(work["sub_category"].notna(), "").astype(str)
         )
-        group_assets = list(work[["sub_category", asset_col]].drop_duplicates().itertuples(index=False, name=None))
-        group_filter = lambda sub, a: (work["sub_category"] == sub) & (work[asset_col] == a)
+        group_assets = list(
+            work[["sub_category", asset_col]].drop_duplicates().itertuples(index=False, name=None)
+        )
+        group_filter = lambda sub, a: (work["sub_category"] == sub) & (  # noqa: E731
+            work[asset_col] == a
+        )  # noqa: E731
     else:
         assets = work[asset_col].unique() if asset_col in work.columns else [""]
         group_assets = [(None, a) for a in assets]  # sub=None 作为不分组标记
-        group_filter = lambda sub, a: (work[asset_col] == a) if asset_col in work.columns else True
+        group_filter = lambda sub, a: (  # noqa: E731
+            (work[asset_col] == a) if asset_col in work.columns else True
+        )  # noqa: E731
 
     for sub, asset in group_assets:
         grp = work[group_filter(sub, asset)]
@@ -193,13 +203,25 @@ def cleaned_df_to_records(
         # 其他类别（web/macro/finance/chain）应保留在 metrics 中
         _event_excluded = {"title", "importance"} if category == "news" else set()
         metrics_cols = {
-            c for c in grp_cols
+            c
+            for c in grp_cols
             if c not in {"timestamp", "source", "sub_category", "fetched_at", asset_col}
             and c not in _event_excluded
         }
+        # FIX 2026-11-07: timeseries 结构列 {metric, date, value} 泄漏进 metrics
+        # （bgeometrics 等带 timeseries 的 chain 记录，DF 往返后 metrics 混入
+        #   语义不明的 value 键）。检测到 metric 列即表明来自 timeseries 结构，
+        #   将三个结构列排除，防止泄漏。不影响非 timeseries 来源的合法 value 指标
+        #   （如 fear_greed 的 value，其 DF 中无 metric 列）。
+        if "metric" in grp_cols:
+            metrics_cols -= {"metric", "date", "value"}
         if category == "news":
             # events 流
-            ev_cols = [c for c in ("timestamp", "title", "importance", "event_type", "published_ms") if c in grp_cols]
+            ev_cols = [
+                c
+                for c in ("timestamp", "title", "importance", "event_type", "published_ms")
+                if c in grp_cols
+            ]
             events = grp[ev_cols].to_dict(orient="records") if ev_cols else []
             metrics = {asset_col: asset}
             if metrics_cols:
@@ -208,7 +230,14 @@ def cleaned_df_to_records(
                     metrics[c] = sample[c]
             # ★ FIX 2026-10-09: 还原 raw（tickers_hit/title/description/...）供事件驱动策略使用
             raw = {}
-            for _rk in ("tickers_hit", "title", "description", "tags", "newsUrl", "publishTimestamp"):
+            for _rk in (
+                "tickers_hit",
+                "title",
+                "description",
+                "tags",
+                "newsUrl",
+                "publishTimestamp",
+            ):
                 if _rk in grp_cols:
                     _val = grp.iloc[0][_rk]
                     if isinstance(_val, str) and _rk == "tickers_hit":
@@ -219,19 +248,35 @@ def cleaned_df_to_records(
                             raw[_rk] = _val
                     else:
                         raw[_rk] = _val if not (isinstance(_val, float) and pd.isna(_val)) else ""
-            records.append(DataRecord(
-                source=source, category=category, sub_category=grp_sub_category,
-                timestamp=_first_iso(grp, timestamp_col),
-                metrics=metrics, events=events, timeseries=[], raw=raw,
-            ))
+            records.append(
+                DataRecord(
+                    source=source,
+                    category=category,
+                    sub_category=grp_sub_category,
+                    timestamp=_first_iso(grp, timestamp_col),
+                    metrics=metrics,
+                    events=events,
+                    timeseries=[],
+                    raw=raw,
+                )
+            )
         elif category in ("finance", "chain") and {
-            "timestamp", "close", "volume", "open", "high", "low",
+            "timestamp",
+            "close",
+            "volume",
+            "open",
+            "high",
+            "low",
         } & grp_cols >= {"timestamp", "close"}:
             # 时序类（OHLCV）：timeseries = timestamp + 其余数值列
             ts_cols = [timestamp_col] + sorted(metrics_cols)
-            timeseries = grp[ts_cols].rename(
-                columns={timestamp_col: "timestamp"},
-            ).to_dict(orient="records")
+            timeseries = (
+                grp[ts_cols]
+                .rename(
+                    columns={timestamp_col: "timestamp"},
+                )
+                .to_dict(orient="records")
+            )
             metrics = {asset_col: asset}
             # 把分组内首行的其他扁平字段塞进 metrics （如 pair）
             first = grp.iloc[0]
@@ -240,11 +285,18 @@ def cleaned_df_to_records(
                     v = first[c]
                     if not _is_nan(v):
                         metrics[c] = v
-            records.append(DataRecord(
-                source=source, category=category, sub_category=grp_sub_category,
-                timestamp=_first_iso(grp, timestamp_col),
-                metrics=metrics, events=[], timeseries=timeseries, raw={},
-            ))
+            records.append(
+                DataRecord(
+                    source=source,
+                    category=category,
+                    sub_category=grp_sub_category,
+                    timestamp=_first_iso(grp, timestamp_col),
+                    metrics=metrics,
+                    events=[],
+                    timeseries=timeseries,
+                    raw={},
+                )
+            )
         else:
             # macro/默认：按行扁平化 metrics（通常1行）
             for _, row in grp.iterrows():
@@ -257,12 +309,22 @@ def cleaned_df_to_records(
                         metrics[c] = v
                     else:
                         metrics[c] = str(v)
-                records.append(DataRecord(
-                    source=source, category=category, sub_category=grp_sub_category,
-                    timestamp=_to_iso_str(row[timestamp_col]) if timestamp_col in grp_cols
-                    else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    metrics=metrics, events=[], timeseries=[], raw={},
-                ))
+                records.append(
+                    DataRecord(
+                        source=source,
+                        category=category,
+                        sub_category=grp_sub_category,
+                        timestamp=(
+                            _to_iso_str(row[timestamp_col])
+                            if timestamp_col in grp_cols
+                            else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                        ),
+                        metrics=metrics,
+                        events=[],
+                        timeseries=[],
+                        raw={},
+                    )
+                )
     return records
 
 

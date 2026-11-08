@@ -3,7 +3,7 @@
 运行完整回测 - 使用真实历史数据
 """
 
-import json
+import json  # noqa: I001
 from datetime import datetime, timedelta
 from pathlib import Path
 import sys
@@ -26,6 +26,7 @@ def create_mock_news_for_backtest(start_date: str, end_date: str, prices: dict) 
     这是一个简化的测试框架，真实回测需要历史新闻存档
     """
     import random
+
     random.seed(42)  # 可重复结果
 
     news = []
@@ -47,7 +48,7 @@ def create_mock_news_for_backtest(start_date: str, end_date: str, prices: dict) 
             open_p = price_data.get("open", 0)
             close_p = price_data.get("close", 0)
             if open_p > 0:
-                price_change = (close_p - open_p) / open_p
+                price_change = (close_p - open_p) / open_p  # noqa: F841
 
         for i in range(num_news):
             # 新闻发布时间（均匀分布在全天）
@@ -64,7 +65,9 @@ def create_mock_news_for_backtest(start_date: str, end_date: str, prices: dict) 
             prev_date = (current_dt - timedelta(days=1)).strftime("%Y-%m-%d")
             prev_price = prices.get(prev_date, {})
             if prev_price:
-                prev_change = (prev_price.get("close", 0) - prev_price.get("open", 0)) / prev_price.get("open", 1)
+                prev_change = (
+                    prev_price.get("close", 0) - prev_price.get("open", 0)
+                ) / prev_price.get("open", 1)
                 base_sentiment += prev_change * 0.2  # 前一日变化影响今日新闻情绪
 
             # 确保在 -1 到 1 之间
@@ -103,7 +106,7 @@ def create_mock_news_for_backtest(start_date: str, end_date: str, prices: dict) 
                 "impact_horizon": random.choice(["T0", "T1", "T2"]),
                 "sentiment_score": sentiment,
                 "risk_flags": [] if random.random() > 0.2 else ["单源消息"],
-                "category": random.choice(["onchain_data", "fed", "market_analysis"])
+                "category": random.choice(["onchain_data", "fed", "market_analysis"]),
             }
             news.append(news_item)
 
@@ -122,7 +125,7 @@ def run_full_backtest():
         print("[ERROR] 价格数据文件不存在，请先运行 fetch_historical_data.py")
         return None
 
-    with open(price_file, 'r', encoding='utf-8') as f:
+    with open(price_file, "r", encoding="utf-8") as f:
         prices = json.load(f)
 
     # 确定回测期间
@@ -147,6 +150,7 @@ def run_full_backtest():
 
     # 按日期分组保存
     from collections import defaultdict
+
     news_by_date = defaultdict(list)
     for n in news:
         date = n.get("published_at", "")[:10]
@@ -154,7 +158,7 @@ def run_full_backtest():
 
     for date, date_news in news_by_date.items():
         news_file = news_dir / f"news_{date}.json"
-        with open(news_file, 'w', encoding='utf-8') as f:
+        with open(news_file, "w", encoding="utf-8") as f:
             json.dump(date_news, f, indent=2, ensure_ascii=False)
 
     print(f"  新闻数据已保存：{news_dir}")
@@ -168,7 +172,7 @@ def run_full_backtest():
         initial_capital=100000,
         transaction_cost=0.001,
         lookback_days=7,
-        hold_period=1
+        hold_period=1,
     )
 
     backtester = NewsSignalBacktester(config)
@@ -184,7 +188,7 @@ def run_full_backtest():
             "end_date": config.end_date,
             "initial_capital": config.initial_capital,
             "transaction_cost": config.transaction_cost,
-            "lookback_days": config.lookback_days
+            "lookback_days": config.lookback_days,
         },
         "results": {
             "total_return": result.total_return,
@@ -193,13 +197,13 @@ def run_full_backtest():
             "max_drawdown": result.max_drawdown,
             "win_rate": result.win_rate,
             "profit_factor": result.profit_factor,
-            "total_trades": result.total_trades
+            "total_trades": result.total_trades,
         },
-        "daily_equity": result.daily_equity
+        "daily_equity": result.daily_equity,
     }
 
     result_file = data_dir / "backtest_result.json"
-    with open(result_file, 'w', encoding='utf-8') as f:
+    with open(result_file, "w", encoding="utf-8") as f:
         json.dump(result_summary, f, indent=2, ensure_ascii=False)
 
     print(f"\n[✓] 回测结果已保存：{result_file}")

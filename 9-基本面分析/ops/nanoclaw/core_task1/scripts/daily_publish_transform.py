@@ -100,7 +100,17 @@ def _is_relevant_market_state_line(text: str) -> bool:
         return False
     if "http://" in low or "https://" in low or "://" in low:
         return False
-    reject_kw = ["价格预测", "预售", "meme", "presale", "airdrop", "launchpad", "钠电", "锂电", "机器人第一股"]
+    reject_kw = [
+        "价格预测",
+        "预售",
+        "meme",
+        "presale",
+        "airdrop",
+        "launchpad",
+        "钠电",
+        "锂电",
+        "机器人第一股",
+    ]
     if any(k.lower() in low for k in reject_kw):
         return False
     allow_kw = [
@@ -159,7 +169,23 @@ def _extract_actions(parsed: dict[str, str], fallback_text: str) -> list[str]:
     source = sec or fallback_text
     cands = _to_bullets(source, max_items=8)
     actions = [
-        x for x in cands if any(k in x for k in ["建议", "动作", "仓位", "控制", "关注", "观察", "提高", "降低", "止损", "风控"])
+        x
+        for x in cands
+        if any(
+            k in x
+            for k in [
+                "建议",
+                "动作",
+                "仓位",
+                "控制",
+                "关注",
+                "观察",
+                "提高",
+                "降低",
+                "止损",
+                "风控",
+            ]
+        )
     ]
     if len(actions) < 3:
         actions = [
@@ -188,7 +214,9 @@ def _fallback_headlines(cleaned: str, max_items: int = 5) -> list[dict]:
     return rows
 
 
-def _tavily_search(query: str, api_key: str, max_results: int = 5, timeout_sec: int = 12) -> list[dict]:
+def _tavily_search(
+    query: str, api_key: str, max_results: int = 5, timeout_sec: int = 12
+) -> list[dict]:
     if not api_key.strip():
         return []
     url = "https://api.tavily.com/search"
@@ -431,7 +459,11 @@ def _signal_bullets_from_signal_block(block: str) -> list[str]:
 
 def _fetch_btc_indicators(days: int = 120) -> dict:
     try:
-        if str(os.environ.get("REPORT_TRANSFORM_DISABLE_REMOTE") or "").strip() in {"1", "true", "yes"}:
+        if str(os.environ.get("REPORT_TRANSFORM_DISABLE_REMOTE") or "").strip() in {
+            "1",
+            "true",
+            "yes",
+        }:
             return {}
         closes: list[float] = []
         base_dir = Path(__file__).resolve().parents[1]
@@ -474,7 +506,9 @@ def _fetch_btc_indicators(days: int = 120) -> dict:
                     continue
                 ts_ms, px = pair[0], pair[1]
                 try:
-                    day = datetime.fromtimestamp(float(ts_ms) / 1000.0, tz=timezone.utc).strftime("%Y-%m-%d")
+                    day = datetime.fromtimestamp(float(ts_ms) / 1000.0, tz=timezone.utc).strftime(
+                        "%Y-%m-%d"
+                    )
                     by_day[day] = float(px)
                 except Exception:
                     continue
@@ -539,7 +573,7 @@ def _fetch_btc_indicators(days: int = 120) -> dict:
         if len(rets) >= 2:
             mean = sum(rets) / len(rets)
             var = sum((x - mean) ** 2 for x in rets) / (len(rets) - 1)
-            vol20 = var ** 0.5
+            vol20 = var**0.5
         abs_ret20 = (sum(abs(x) for x in rets) / len(rets)) if rets else None
         ret7 = None
         if len(closes) >= 8 and closes[-8] > 0:
@@ -580,8 +614,31 @@ def _normalize_cn_title(text: str, llm_fn: Callable[[str], str] | None = None) -
 
 
 def _classify_sentiment(headlines: list[dict]) -> tuple[list[str], list[str]]:
-    pos_kw = ["获批", "增持", "上涨", "突破", "流入", "合作", "adoption", "inflow", "upgrade", "approval"]
-    neg_kw = ["下跌", "减持", "清算", "漏洞", "攻击", "监管收紧", "outflow", "hack", "exploit", "ban", "lawsuit"]
+    pos_kw = [
+        "获批",
+        "增持",
+        "上涨",
+        "突破",
+        "流入",
+        "合作",
+        "adoption",
+        "inflow",
+        "upgrade",
+        "approval",
+    ]
+    neg_kw = [
+        "下跌",
+        "减持",
+        "清算",
+        "漏洞",
+        "攻击",
+        "监管收紧",
+        "outflow",
+        "hack",
+        "exploit",
+        "ban",
+        "lawsuit",
+    ]
     bull: list[str] = []
     bear: list[str] = []
     for row in headlines:
@@ -678,13 +735,48 @@ def _is_relevant_watch_event(text: str) -> bool:
     ]
     if any(k in s for k in ["stablecoin", "稳定币", "usdt", "usdc"]):
         return True
-    if any(k in s for k in ["macro", "cpi", "pce", "nonfarm", "fomc", "fed", "美联储", "利率", "dxy", "美元指数", "treasury", "yield", "国债", "收益率"]):
+    if any(
+        k in s
+        for k in [
+            "macro",
+            "cpi",
+            "pce",
+            "nonfarm",
+            "fomc",
+            "fed",
+            "美联储",
+            "利率",
+            "dxy",
+            "美元指数",
+            "treasury",
+            "yield",
+            "国债",
+            "收益率",
+        ]
+    ):
         return True
     if any(k in s for k in ["sec", "监管", "policy", "政策", "lawsuit", "诉讼"]):
         return True
-    if any(k in s for k in ["hack", "exploit", "漏洞", "攻击", "exchange", "交易所", "withdraw", "deposit", "暂停", "宕机"]):
+    if any(
+        k in s
+        for k in [
+            "hack",
+            "exploit",
+            "漏洞",
+            "攻击",
+            "exchange",
+            "交易所",
+            "withdraw",
+            "deposit",
+            "暂停",
+            "宕机",
+        ]
+    ):
         return True
-    if any(k in s for k in ["funding", "资金费率", "open interest", "未平仓", "liquidation", "清算", "etf"]):
+    if any(
+        k in s
+        for k in ["funding", "资金费率", "open interest", "未平仓", "liquidation", "清算", "etf"]
+    ):
         return True
     base_asset_kw = ["btc", "bitcoin", "比特币", "eth", "ethereum", "以太坊"]
     if any(k in s for k in base_asset_kw) and any(k in s for k in context_kw):
@@ -699,7 +791,9 @@ def _is_placeholder_text(text: str) -> bool:
         return True
     if low in {"暂无", "tbd", "待补充"}:
         return True
-    if t.startswith("暂无") and any(k in t for k in ["可用", "数据", "条目", "高置信度", "更新", "事件", "信号", "内容"]):
+    if t.startswith("暂无") and any(
+        k in t for k in ["可用", "数据", "条目", "高置信度", "更新", "事件", "信号", "内容"]
+    ):
         return True
     return False
 
@@ -746,7 +840,9 @@ def _extract_source_events(raw_content: str) -> list[dict]:
         url = _clean_line(m.group(2))
         if not title:
             continue
-        rows.append({"title": title, "url": url, "source": _source_label_from_url(url), "kind": "highlight"})
+        rows.append(
+            {"title": title, "url": url, "source": _source_label_from_url(url), "kind": "highlight"}
+        )
 
     in_types = False
     for line in text.split("\n"):
@@ -765,7 +861,9 @@ def _extract_source_events(raw_content: str) -> list[dict]:
         url = _clean_line(m.group(2))
         if not title:
             continue
-        rows.append({"title": title, "url": url, "source": _source_label_from_url(url), "kind": "typed"})
+        rows.append(
+            {"title": title, "url": url, "source": _source_label_from_url(url), "kind": "typed"}
+        )
 
     # dedup by title
     out: list[dict] = []
@@ -802,7 +900,15 @@ def _is_relevant_news_item(text: str, url: str = "") -> bool:
     if any(k.lower() in low for k in reject_kw):
         return False
     src = _source_label_from_url(url)
-    if src in {"CoinDesk", "BlockBeats", "Odaily", "Cointelegraph", "Reuters", "CNBC", "华尔街见闻"}:
+    if src in {
+        "CoinDesk",
+        "BlockBeats",
+        "Odaily",
+        "Cointelegraph",
+        "Reuters",
+        "CNBC",
+        "华尔街见闻",
+    }:
         return True
     allow_kw = [
         "btc",
@@ -880,14 +986,27 @@ def _contains_disallowed_coin_token(text: str) -> bool:
     allow = {"BTC", "ETH", "USDT", "USDC", "USD", "EUR", "DXY", "CPI", "PCE", "FOMC", "FED"}
 
     pairs = re.findall(r"\b([A-Z0-9]{2,10})/(BTC|ETH)\b", s2.upper())
-    for base, quote in pairs:
+    for base, quote in pairs:  # noqa: B007
         if base not in allow and base not in {"BTC", "ETH"}:
             return True
 
     tickers = set(re.findall(r"\b[A-Z0-9]{2,10}\b", s2.upper()))
     disallowed = {t for t in tickers if t not in allow and t not in {"BTC", "ETH"}}
     if disallowed:
-        if any(k in s2.lower() for k in ["binance", "okx", "coinbase", "交易所", "上线", "下架", "移除", "listing", "delist"]):
+        if any(
+            k in s2.lower()
+            for k in [
+                "binance",
+                "okx",
+                "coinbase",
+                "交易所",
+                "上线",
+                "下架",
+                "移除",
+                "listing",
+                "delist",
+            ]
+        ):
             return True
     return False
 
@@ -903,15 +1022,38 @@ def _core_impact_dimension(title: str) -> str:
         return "地缘政治"
     if ("stablecoin" in low) or ("稳定币" in t):
         return "政策监管"
-    if any(k in low for k in ["sec", "regulation", "policy"]) or any(k in t for k in ["监管", "政策", "立法", "执法", "听证会", "制裁"]):
+    if any(k in low for k in ["sec", "regulation", "policy"]) or any(
+        k in t for k in ["监管", "政策", "立法", "执法", "听证会", "制裁"]
+    ):
         return "政策监管"
-    if any(k in low for k in ["fomc", "fed", "rate cut", "rate hike"]) or any(k in t for k in ["美联储", "鲍威尔", "降息", "加息", "议息"]):
+    if any(k in low for k in ["fomc", "fed", "rate cut", "rate hike"]) or any(
+        k in t for k in ["美联储", "鲍威尔", "降息", "加息", "议息"]
+    ):
         return "美联储动态"
-    if any(k in low for k in ["etf", "inflow", "outflow", "institution"]) or any(k in t for k in ["ETF", "净流入", "净流出", "机构", "基金", "Strategy", "贝莱德", "BlackRock"]):
+    if any(k in low for k in ["etf", "inflow", "outflow", "institution"]) or any(
+        k in t
+        for k in ["ETF", "净流入", "净流出", "机构", "基金", "Strategy", "贝莱德", "BlackRock"]
+    ):
         return "机构资金流入"
-    if any(k in low for k in ["whale", "transfer"]) or any(k in t for k in ["巨鲸", "大额转账", "转移", "派盾", "PeckShield"]):
+    if any(k in low for k in ["whale", "transfer"]) or any(
+        k in t for k in ["巨鲸", "大额转账", "转移", "派盾", "PeckShield"]
+    ):
         return "巨鲸转账"
-    if any(k in low for k in ["upgrade", "hardfork", "protocol", "layer2", "rollup"]) or any(k in t for k in ["协议", "升级", "硬分叉", "EIP", "安全漏洞", "攻击", "修复", "Layer2", "Rollup", "链上"]):
+    if any(k in low for k in ["upgrade", "hardfork", "protocol", "layer2", "rollup"]) or any(
+        k in t
+        for k in [
+            "协议",
+            "升级",
+            "硬分叉",
+            "EIP",
+            "安全漏洞",
+            "攻击",
+            "修复",
+            "Layer2",
+            "Rollup",
+            "链上",
+        ]
+    ):
         return "重要技术进展"
     return ""
 
@@ -947,11 +1089,15 @@ def transform_daily_report_v3(
     signal_table_present = ("信号类型" in raw_signal_block) and ("|" in raw_signal_block)
     signal_items, risk_items = _extract_signal_and_risk(raw_content)
     watch_items = _extract_watchlist(raw_content)
-    watch_items = [_normalize_cn_title(x, llm_fn=llm_fn) for x in watch_items if str(x or "").strip()]
+    watch_items = [
+        _normalize_cn_title(x, llm_fn=llm_fn) for x in watch_items if str(x or "").strip()
+    ]
     watch_filtered = [x for x in watch_items if _is_relevant_watch_event(x)]
     watch_filtered_out = max(0, len(watch_items) - len(watch_filtered))
     if not watch_filtered:
-        watch_filtered = ["未发现与BTC/ETH/宏观直接相关的高置信度事件（仅监控FOMC/CPI/监管与交易所状态）。"]
+        watch_filtered = [
+            "未发现与BTC/ETH/宏观直接相关的高置信度事件（仅监控FOMC/CPI/监管与交易所状态）。"
+        ]
     watch_items = watch_filtered[:max_events]
 
     source_events = _extract_source_events(raw_content)
@@ -980,12 +1126,22 @@ def transform_daily_report_v3(
     source_urls: list[str] = []
     tavily_signal_fill_n = 0
     if search_fn is None:
+
         def _default_search(q: str, n: int) -> list[dict]:
             return _tavily_search(q, tavily_api_key, max_results=n)
+
         search_fn = _default_search
 
-    news_rows = search_fn("crypto market breaking news last 24 hours", max_headlines) if tavily_api_key.strip() else []
-    event_rows = search_fn("upcoming crypto events next 72 hours", max_events) if tavily_api_key.strip() else []
+    news_rows = (
+        search_fn("crypto market breaking news last 24 hours", max_headlines)
+        if tavily_api_key.strip()
+        else []
+    )
+    event_rows = (
+        search_fn("upcoming crypto events next 72 hours", max_events)
+        if tavily_api_key.strip()
+        else []
+    )
     if news_rows or event_rows:
         tavily_used = True
 
@@ -1084,10 +1240,16 @@ def transform_daily_report_v3(
                 break
         return out
 
-    cat_rows = {k: [x for x in _dedup(v, 6) if _is_relevant_news_item(x)] for k, v in cat_rows.items()}
+    cat_rows = {
+        k: [x for x in _dedup(v, 6) if _is_relevant_news_item(x)] for k, v in cat_rows.items()
+    }
 
     btc_ind = _fetch_btc_indicators()
-    if btc_src.get("price") and isinstance(btc_ind, dict) and isinstance(btc_ind.get("price"), (int, float)):
+    if (
+        btc_src.get("price")
+        and isinstance(btc_ind, dict)
+        and isinstance(btc_ind.get("price"), (int, float))
+    ):
         try:
             src_px = float(btc_src["price"])
             ind_px = float(btc_ind.get("price"))
@@ -1103,9 +1265,21 @@ def transform_daily_report_v3(
             f"MA100: ${btc_ind.get('ma100'):.0f}" if btc_ind.get("ma100") is not None else "",
             f"MA200: ${btc_ind.get('ma200'):.0f}" if btc_ind.get("ma200") is not None else "",
             f"RSI(14): {btc_ind.get('rsi14'):.1f}" if btc_ind.get("rsi14") is not None else "",
-            f"MACD 柱状: {'向上' if (btc_ind.get('macd_hist') or 0) > 0 else '向下'}" if btc_ind.get("macd_hist") is not None else "",
-            f"20日波动率(近似): {btc_ind.get('vol20'):.2%}" if btc_ind.get("vol20") is not None else "",
-            f"20日平均涨跌幅(绝对值): {btc_ind.get('abs_ret20'):.2%}" if btc_ind.get("abs_ret20") is not None else "",
+            (
+                f"MACD 柱状: {'向上' if (btc_ind.get('macd_hist') or 0) > 0 else '向下'}"
+                if btc_ind.get("macd_hist") is not None
+                else ""
+            ),
+            (
+                f"20日波动率(近似): {btc_ind.get('vol20'):.2%}"
+                if btc_ind.get("vol20") is not None
+                else ""
+            ),
+            (
+                f"20日平均涨跌幅(绝对值): {btc_ind.get('abs_ret20'):.2%}"
+                if btc_ind.get("abs_ret20") is not None
+                else ""
+            ),
             f"7日涨跌幅: {btc_ind.get('ret7'):.2%}" if btc_ind.get("ret7") is not None else "",
             f"30日涨跌幅: {btc_ind.get('ret30'):.2%}" if btc_ind.get("ret30") is not None else "",
         ]
@@ -1146,7 +1320,12 @@ def transform_daily_report_v3(
         elif dim in {"重要技术进展"}:
             cat_rows["项目与技术"].append(_format_with_source(t, u))
 
-    risk_events = [x for x in risk_items if (x not in moved_to_news) and any(k in x for k in ["监管", "宏观", "地缘", "波动", "流动性", "风险"])]
+    risk_events = [
+        x
+        for x in risk_items
+        if (x not in moved_to_news)
+        and any(k in x for k in ["监管", "宏观", "地缘", "波动", "流动性", "风险"])
+    ]
     risk_events = [_normalize_cn_title(x, llm_fn=llm_fn) for x in risk_events]
     risk_events = [x for x in risk_events if x and len(x) >= 6][:3]
     if not risk_events:
@@ -1166,11 +1345,38 @@ def transform_daily_report_v3(
     if not event_lines:
         event_lines = watch_items[:max_events]
 
-    pos_kw = ["获批", "增持", "上涨", "突破", "流入", "合作", "adoption", "inflow", "upgrade", "approval", "net inflow"]
-    neg_kw = ["下跌", "减持", "清算", "漏洞", "攻击", "监管收紧", "outflow", "hack", "exploit", "ban", "lawsuit", "liquidation"]
+    pos_kw = [
+        "获批",
+        "增持",
+        "上涨",
+        "突破",
+        "流入",
+        "合作",
+        "adoption",
+        "inflow",
+        "upgrade",
+        "approval",
+        "net inflow",
+    ]
+    neg_kw = [
+        "下跌",
+        "减持",
+        "清算",
+        "漏洞",
+        "攻击",
+        "监管收紧",
+        "outflow",
+        "hack",
+        "exploit",
+        "ban",
+        "lawsuit",
+        "liquidation",
+    ]
     bull_news: list[str] = []
     bear_news: list[str] = []
-    for row in (source_events[:20] + [{"title": str(x.get("title") or ""), "url": str(x.get("url") or "")} for x in news_rows]):
+    for row in source_events[:20] + [
+        {"title": str(x.get("title") or ""), "url": str(x.get("url") or "")} for x in news_rows
+    ]:
         t = _clean_line(str(row.get("title") or ""))
         u = str(row.get("url") or "").strip()
         if not t or not _is_relevant_news_item(t, url=u):
@@ -1213,11 +1419,17 @@ def transform_daily_report_v3(
 
     def _driver_priority(t: str) -> tuple[int, str, str]:
         low = t.lower()
-        if any(k in low for k in ["btc", "bitcoin", "比特币", "etf", "inflow", "净流入", "资金", "成交", "清算"]):
+        if any(
+            k in low
+            for k in ["btc", "bitcoin", "比特币", "etf", "inflow", "净流入", "资金", "成交", "清算"]
+        ):
             return 0, "P0", "Medium"
         if any(k in low for k in ["sec", "监管", "policy", "stablecoin", "稳定币", "诉讼"]):
             return 1, "P1", "Medium"
-        if any(k in low for k in ["fomc", "fed", "美联储", "cpi", "pce", "伊朗", "地缘", "战争", "谈判"]):
+        if any(
+            k in low
+            for k in ["fomc", "fed", "美联储", "cpi", "pce", "伊朗", "地缘", "战争", "谈判"]
+        ):
             return 2, "P2", "Low"
         return 3, "P2", "Low"
 
@@ -1228,25 +1440,51 @@ def transform_daily_report_v3(
         {"p": "P2", "topic": "宏观与地缘事件扰动", "confidence": "Low"},
     ]
     mainline = "主线=BTC；驱动=资金/流动性；验证=成交深度与资金连续性；失效=关键位失守并放量下跌"
-    px = (btc_src.get("price") if btc_src.get("price") is not None else (btc_ind.get("price") if isinstance(btc_ind, dict) else None))
-    ma20 = (btc_src.get("ma20") if btc_src.get("ma20") is not None else (btc_ind.get("ma20") if isinstance(btc_ind, dict) else None))
-    ma50 = (btc_ind.get("ma50") if isinstance(btc_ind, dict) else None)
+    px = (
+        btc_src.get("price")
+        if btc_src.get("price") is not None
+        else (btc_ind.get("price") if isinstance(btc_ind, dict) else None)
+    )
+    ma20 = (
+        btc_src.get("ma20")
+        if btc_src.get("ma20") is not None
+        else (btc_ind.get("ma20") if isinstance(btc_ind, dict) else None)
+    )
+    ma50 = btc_ind.get("ma50") if isinstance(btc_ind, dict) else None
     rsi = btc_ind.get("rsi14") if isinstance(btc_ind, dict) else None
     macd_hist = btc_ind.get("macd_hist") if isinstance(btc_ind, dict) else None
-    pct20 = None if (not isinstance(px, (int, float)) or not isinstance(ma20, (int, float)) or ma20 == 0) else (float(px) / float(ma20) - 1.0)
-    pct50 = None if (not isinstance(px, (int, float)) or not isinstance(ma50, (int, float)) or ma50 == 0) else (float(px) / float(ma50) - 1.0)
-    trend = "偏强" if (isinstance(pct20, float) and pct20 > 0 and isinstance(pct50, float) and pct50 > 0) else "偏弱/震荡"
+    pct20 = (
+        None
+        if (not isinstance(px, (int, float)) or not isinstance(ma20, (int, float)) or ma20 == 0)
+        else (float(px) / float(ma20) - 1.0)
+    )
+    pct50 = (
+        None
+        if (not isinstance(px, (int, float)) or not isinstance(ma50, (int, float)) or ma50 == 0)
+        else (float(px) / float(ma50) - 1.0)
+    )
+    trend = (
+        "偏强"
+        if (isinstance(pct20, float) and pct20 > 0 and isinstance(pct50, float) and pct50 > 0)
+        else "偏弱/震荡"
+    )
     mom = "向上" if (isinstance(macd_hist, (int, float)) and macd_hist > 0) else "偏弱"
     btc_extension = []
     if isinstance(px, (int, float)) and isinstance(ma20, (int, float)):
         if isinstance(ma50, (int, float)):
-            btc_extension.append(f"趋势: BTC=${px:.0f}，较MA20 {pct20:.2%}、较MA50 {pct50:.2%}，判断={trend}。")
+            btc_extension.append(
+                f"趋势: BTC=${px:.0f}，较MA20 {pct20:.2%}、较MA50 {pct50:.2%}，判断={trend}。"
+            )
         else:
             btc_extension.append(f"趋势: BTC=${px:.0f}，较MA20 {pct20:.2%}，判断={trend}。")
     if rsi is not None:
-        btc_extension.append(f"动能: RSI(14)={float(rsi):.1f}，MACD柱状={mom}，短线动能与趋势一致性需结合成交验证。")
+        btc_extension.append(
+            f"动能: RSI(14)={float(rsi):.1f}，MACD柱状={mom}，短线动能与趋势一致性需结合成交验证。"
+        )
     if top_drivers:
-        btc_extension.append(f"事件: {top_drivers[0]['topic']}，需要用资金与关键位去验证是否能转化为趋势延续。")
+        btc_extension.append(
+            f"事件: {top_drivers[0]['topic']}，需要用资金与关键位去验证是否能转化为趋势延续。"
+        )
     while len(btc_extension) < 3:
         btc_extension.append("风控: 若出现放量回撤+清算上升，应主动降低杠杆并收缩事件仓位。")
     hot_events = []
@@ -1255,9 +1493,13 @@ def transform_daily_report_v3(
         u = str(d.get("url") or "").strip()
         if not t:
             continue
-        hot_events.append({"title": _format_with_source(t, u), "direction": "中性", "horizon": "24-72h"})
+        hot_events.append(
+            {"title": _format_with_source(t, u), "direction": "中性", "horizon": "24-72h"}
+        )
     if not hot_events:
-        hot_events = [{"title": "宏观数据/监管动态/安全事件监控", "direction": "中性", "horizon": "24-72h"}]
+        hot_events = [
+            {"title": "宏观数据/监管动态/安全事件监控", "direction": "中性", "horizon": "24-72h"}
+        ]
     core_impact_lines = [
         f"- {_format_with_source(d['title'], d.get('url',''))}"
         for d in (driver_candidates[:3] or [])
@@ -1267,126 +1509,152 @@ def transform_daily_report_v3(
         core_impact_lines = ["- 未发现符合六维度的主源核心事件（已过滤非BTC/ETH/稳定币相关条目）。"]
     indicator_analysis: list[str] = []
     if isinstance(px, (int, float)) and isinstance(ma20, (int, float)) and isinstance(pct20, float):
-        indicator_analysis.append(f"均线偏离: BTC 相对 MA20 偏离 {pct20:.2%}（用于判断趋势强弱与回撤空间）。")
-    if isinstance(btc_ind, dict) and btc_ind.get("ma100") is not None and btc_ind.get("ma200") is not None:
+        indicator_analysis.append(
+            f"均线偏离: BTC 相对 MA20 偏离 {pct20:.2%}（用于判断趋势强弱与回撤空间）。"
+        )
+    if (
+        isinstance(btc_ind, dict)
+        and btc_ind.get("ma100") is not None
+        and btc_ind.get("ma200") is not None
+    ):
         ma50v = btc_ind.get("ma50")
         ma100v = btc_ind.get("ma100")
         ma200v = btc_ind.get("ma200")
-        if isinstance(ma50v, (int, float)) and isinstance(ma100v, (int, float)) and isinstance(ma200v, (int, float)):
-            indicator_analysis.append(f"均线结构: MA50/MA100/MA200={ma50v:.0f}/{ma100v:.0f}/{ma200v:.0f}（用于判断中期趋势与支撑带）。")
+        if (
+            isinstance(ma50v, (int, float))
+            and isinstance(ma100v, (int, float))
+            and isinstance(ma200v, (int, float))
+        ):
+            indicator_analysis.append(
+                f"均线结构: MA50/MA100/MA200={ma50v:.0f}/{ma100v:.0f}/{ma200v:.0f}（用于判断中期趋势与支撑带）。"
+            )
     if rsi is not None:
-        indicator_analysis.append(f"动能: RSI(14)={float(rsi):.1f}，MACD柱状={mom}（用于判断短线动能是否衰竭/延续）。")
+        indicator_analysis.append(
+            f"动能: RSI(14)={float(rsi):.1f}，MACD柱状={mom}（用于判断短线动能是否衰竭/延续）。"
+        )
     if isinstance(btc_ind, dict) and btc_ind.get("vol20") is not None:
         try:
-            indicator_analysis.append(f"波动: 20日波动率≈{float(btc_ind.get('vol20')):.2%}（用于设置仓位与止损宽度）。")
+            indicator_analysis.append(
+                f"波动: 20日波动率≈{float(btc_ind.get('vol20')):.2%}（用于设置仓位与止损宽度）。"
+            )
         except Exception:
             pass
     if isinstance(btc_ind, dict) and btc_ind.get("ret7") is not None:
         try:
-            indicator_analysis.append(f"收益: 7日涨跌幅 {float(btc_ind.get('ret7')):.2%}（用于判断趋势是否扩散）。")
+            indicator_analysis.append(
+                f"收益: 7日涨跌幅 {float(btc_ind.get('ret7')):.2%}（用于判断趋势是否扩散）。"
+            )
         except Exception:
             pass
     if isinstance(btc_ind, dict) and btc_ind.get("ret30") is not None:
         try:
-            indicator_analysis.append(f"收益: 30日涨跌幅 {float(btc_ind.get('ret30')):.2%}（用于判断中期方向）。")
+            indicator_analysis.append(
+                f"收益: 30日涨跌幅 {float(btc_ind.get('ret30')):.2%}（用于判断中期方向）。"
+            )
         except Exception:
             pass
     if not indicator_analysis:
         indicator_analysis = ["指标补充不足: 仅保留主源图表与信号表，不对指标做过度推断。"]
-    md = "\n".join(
-        [
-            f"# {public_title}",
-            "",
-            "## 本期更新点",
-            *[f"- {x}" for x in update_points],
-            "",
-            "## 适用说明",
-            *[f"- {x}" for x in applicability],
-            "",
-            "## 一、执行摘要（今日建议动作）",
-            "### Top 3 驱动（P0/P1/P2）",
-            *[f"- {d['p']}: {d['topic']}（置信度={d['confidence']}）" for d in top_drivers],
-            "",
-            *[f"- {x}" for x in actions[:4]],
-            "### 核心影响事件（主源）",
-            *core_impact_lines,
-            "",
-            "## 二、市场状态与主要矛盾",
-            f"- {mainline}",
-            *[f"- {x}" for x in market_state[:4]],
-            "",
-            "### 2.0 以 BTC 为分析标的（说人话）",
-            *[f"- {x}" for x in btc_extension],
-            "",
-            "### 2.1 市场状态诊断图表（保留）",
-            *[f"- {x}" for x in chart_items[:8]],
-            "",
-            "### 2.2 热门事件（需重点关注）",
-            *[f"- {e['title']}（方向={e['direction']}，时点={e['horizon']}）" for e in hot_events],
-            "",
-            "### 2.3 技术指标与解读",
-            *[f"- {x}" for x in indicator_analysis[:6]],
-            "",
-            "## 三、重点新闻与分类解读（中文）",
-            "### 3.0 宏观与地缘",
-            *[
-                f"- {x}"
-                for x in (
-                    cat_rows.get("宏观与地缘")
-                    or ["未检索到高置信度条目，建议关注FOMC/CPI与地缘突发事件。"]
-                )
-            ],
-            "",
-            "### 3.1 监管与政策",
-            *[
-                f"- {x}"
-                for x in (
-                    cat_rows.get("监管与政策")
-                    or ["未检索到高置信度条目，建议关注监管口径与执法动态。"]
-                )
-            ],
-            "",
-            "### 3.2 项目与技术",
-            *[
-                f"- {x}"
-                for x in (
-                    cat_rows.get("项目与技术")
-                    or ["未检索到高置信度条目，建议关注头部项目升级/漏洞/治理投票。"]
-                )
-            ],
-            "",
-            "### 3.3 市场与交易",
-            *[
-                f"- {x}"
-                for x in (
-                    cat_rows.get("市场与交易")
-                    or ["未检索到高置信度条目，建议关注成交、资金流与关键价位。"]
-                )
-            ],
-            "",
-            "### 3.4 DeFi / NFT / 链上生态",
-            *[
-                f"- {x}"
-                for x in (
-                    cat_rows.get("DeFi / NFT / 链上生态")
-                    or ["未检索到高置信度条目，建议关注链上资金迁移与安全事件。"]
-                )
-            ],
-            "",
-            "## 四、信号汇总与风险提示（保留）",
-            "### 4.1 多空新闻（24h）",
-            "- 利多:",
-            *[f"  - {x}" for x in bull_news],
-            "- 利空:",
-            *[f"  - {x}" for x in bear_news],
-            "### 4.2 信号汇总",
-            *[f"- {x}" for x in signal_items[:5]],
-            "### 4.3 风险提示（潜在影响事件）",
-            *[f"- {_format_with_source(x, _lookup_url(x))}" for x in risk_events[:5]],
-            "",
-            "",
-        ]
-    ).strip() + "\n"
+    md = (
+        "\n".join(
+            [
+                f"# {public_title}",
+                "",
+                "## 本期更新点",
+                *[f"- {x}" for x in update_points],
+                "",
+                "## 适用说明",
+                *[f"- {x}" for x in applicability],
+                "",
+                "## 一、执行摘要（今日建议动作）",
+                "### Top 3 驱动（P0/P1/P2）",
+                *[f"- {d['p']}: {d['topic']}（置信度={d['confidence']}）" for d in top_drivers],
+                "",
+                *[f"- {x}" for x in actions[:4]],
+                "### 核心影响事件（主源）",
+                *core_impact_lines,
+                "",
+                "## 二、市场状态与主要矛盾",
+                f"- {mainline}",
+                *[f"- {x}" for x in market_state[:4]],
+                "",
+                "### 2.0 以 BTC 为分析标的（说人话）",
+                *[f"- {x}" for x in btc_extension],
+                "",
+                "### 2.1 市场状态诊断图表（保留）",
+                *[f"- {x}" for x in chart_items[:8]],
+                "",
+                "### 2.2 热门事件（需重点关注）",
+                *[
+                    f"- {e['title']}（方向={e['direction']}，时点={e['horizon']}）"
+                    for e in hot_events
+                ],
+                "",
+                "### 2.3 技术指标与解读",
+                *[f"- {x}" for x in indicator_analysis[:6]],
+                "",
+                "## 三、重点新闻与分类解读（中文）",
+                "### 3.0 宏观与地缘",
+                *[
+                    f"- {x}"
+                    for x in (
+                        cat_rows.get("宏观与地缘")
+                        or ["未检索到高置信度条目，建议关注FOMC/CPI与地缘突发事件。"]
+                    )
+                ],
+                "",
+                "### 3.1 监管与政策",
+                *[
+                    f"- {x}"
+                    for x in (
+                        cat_rows.get("监管与政策")
+                        or ["未检索到高置信度条目，建议关注监管口径与执法动态。"]
+                    )
+                ],
+                "",
+                "### 3.2 项目与技术",
+                *[
+                    f"- {x}"
+                    for x in (
+                        cat_rows.get("项目与技术")
+                        or ["未检索到高置信度条目，建议关注头部项目升级/漏洞/治理投票。"]
+                    )
+                ],
+                "",
+                "### 3.3 市场与交易",
+                *[
+                    f"- {x}"
+                    for x in (
+                        cat_rows.get("市场与交易")
+                        or ["未检索到高置信度条目，建议关注成交、资金流与关键价位。"]
+                    )
+                ],
+                "",
+                "### 3.4 DeFi / NFT / 链上生态",
+                *[
+                    f"- {x}"
+                    for x in (
+                        cat_rows.get("DeFi / NFT / 链上生态")
+                        or ["未检索到高置信度条目，建议关注链上资金迁移与安全事件。"]
+                    )
+                ],
+                "",
+                "## 四、信号汇总与风险提示（保留）",
+                "### 4.1 多空新闻（24h）",
+                "- 利多:",
+                *[f"  - {x}" for x in bull_news],
+                "- 利空:",
+                *[f"  - {x}" for x in bear_news],
+                "### 4.2 信号汇总",
+                *[f"- {x}" for x in signal_items[:5]],
+                "### 4.3 风险提示（潜在影响事件）",
+                *[f"- {_format_with_source(x, _lookup_url(x))}" for x in risk_events[:5]],
+                "",
+                "",
+            ]
+        ).strip()
+        + "\n"
+    )
 
     summary = _summary_from_bullets(actions, limit=220)
     banned_pat = re.compile(
@@ -1396,15 +1664,37 @@ def transform_daily_report_v3(
     qa_fail_reasons: list[str] = []
     qa_score = 100
     diff_audit: list[dict] = []
-    diff_audit.append({"type": "apply_sellside_header", "detail": "added title/update/applicability/top3"})
+    diff_audit.append(
+        {"type": "apply_sellside_header", "detail": "added title/update/applicability/top3"}
+    )
     if signal_table_present:
-        diff_audit.append({"type": "signal_table_normalized", "detail": "converted markdown table rows to bullet statements"})
+        diff_audit.append(
+            {
+                "type": "signal_table_normalized",
+                "detail": "converted markdown table rows to bullet statements",
+            }
+        )
     if tavily_signal_fill_n > 0:
-        diff_audit.append({"type": "tavily_signal_fill", "detail": f"filled_missing_signal_items={tavily_signal_fill_n}"})
+        diff_audit.append(
+            {
+                "type": "tavily_signal_fill",
+                "detail": f"filled_missing_signal_items={tavily_signal_fill_n}",
+            }
+        )
     if tavily_api_key.strip() and event_filtered_out > 0:
-        diff_audit.append({"type": "tavily_event_filter", "detail": f"filtered_irrelevant_events={event_filtered_out}"})
+        diff_audit.append(
+            {
+                "type": "tavily_event_filter",
+                "detail": f"filtered_irrelevant_events={event_filtered_out}",
+            }
+        )
     if watch_filtered_out > 0:
-        diff_audit.append({"type": "watchlist_filter", "detail": f"filtered_low_quality_watch_items={watch_filtered_out}"})
+        diff_audit.append(
+            {
+                "type": "watchlist_filter",
+                "detail": f"filtered_low_quality_watch_items={watch_filtered_out}",
+            }
+        )
     if banned_pat.search(md):
         qa_fail_reasons.append("命中禁语")
         qa_score -= 40
@@ -1414,13 +1704,21 @@ def transform_daily_report_v3(
         "市场状态诊断": any("市场状态诊断" in k for k in h2_blocks.keys()),
         "信号汇总": any("信号汇总" in k for k in list(h2_blocks.keys()) + list(h3_blocks.keys())),
         "风险提示": any("风险提示" in k for k in list(h2_blocks.keys()) + list(h3_blocks.keys())),
-        "观察清单": any(("观察清单" in k) or ("明日观察清单" in k) for k in list(h2_blocks.keys()) + list(h3_blocks.keys())),
+        "观察清单": any(
+            ("观察清单" in k) or ("明日观察清单" in k)
+            for k in list(h2_blocks.keys()) + list(h3_blocks.keys())
+        ),
     }
     missing_required = [k for k, ok in required_hits.items() if not ok]
     if missing_required:
         qa_fail_reasons.append(f"源文件关键章节缺失:{'/'.join(missing_required)}")
         qa_score -= 60
-    core_items = list(signal_items or []) + list(risk_items or []) + list(event_lines or []) + list(watch_items or [])
+    core_items = (
+        list(signal_items or [])
+        + list(risk_items or [])
+        + list(event_lines or [])
+        + list(watch_items or [])
+    )
     if any(_is_placeholder_text(x) for x in core_items):
         qa_fail_reasons.append("核心章节出现暂无")
         qa_score -= 40
@@ -1454,7 +1752,10 @@ def transform_daily_report_v3(
     qa_gate = "pass"
     hard_fail_exact = {"命中禁语", "核心章节出现暂无", "信号格式异常"}
     hard_fail_prefix = ("信号汇总条目不足",)
-    hard_fail_hit = any((r in hard_fail_exact) or any(r.startswith(p) for p in hard_fail_prefix) for r in qa_fail_reasons)
+    hard_fail_hit = any(
+        (r in hard_fail_exact) or any(r.startswith(p) for p in hard_fail_prefix)
+        for r in qa_fail_reasons
+    )
     if qa_score < 70 or hard_fail_hit:
         qa_gate = "fail"
     elif qa_score < 85:
@@ -1497,8 +1798,10 @@ def transform_daily_report_v2(
         "upcoming crypto events next 72 hours",
     ]
     if search_fn is None:
+
         def _default_search(q: str, n: int) -> list[dict]:
             return _tavily_search(q, tavily_api_key, max_results=n)
+
         search_fn = _default_search
 
     news_rows = search_fn(queries[0], max_headlines) if tavily_api_key.strip() else []
@@ -1535,39 +1838,42 @@ def transform_daily_report_v2(
 
     public_title = f"{title}｜对外版"
     now_txt = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    md = "\n".join(
-        [
-            f"# {public_title}",
-            "",
-            f"> 发布时间: {now_txt}",
-            "",
-            "## 一、今日建议动作（执行摘要）",
-            *[f"- {x}" for x in actions],
-            "",
-            "## 二、市场状态与主要矛盾",
-            *[f"- {x}" for x in market_state],
-            "",
-            "## 三、关键信号与证据（多维）",
-            "### 3.1 快讯标题（24h）",
-            *[f"- {x}" for x in headlines],
-            "",
-            "### 3.2 利多/利空简析",
-            "- 利多:",
-            *[f"  - {x}" for x in bull],
-            "- 利空:",
-            *[f"  - {x}" for x in bear],
-            "",
-            "## 四、交易约束与失效条件",
-            *[f"- {x}" for x in constraints],
-            "",
-            "## 五、未来24-72小时关键事件日历",
-            *[f"- {x}" for x in event_lines],
-            "",
-            "## 六、说明",
-            "- 本内容仅用于市场信息交流，不构成投资建议。",
-            "",
-        ]
-    ).strip() + "\n"
+    md = (
+        "\n".join(
+            [
+                f"# {public_title}",
+                "",
+                f"> 发布时间: {now_txt}",
+                "",
+                "## 一、今日建议动作（执行摘要）",
+                *[f"- {x}" for x in actions],
+                "",
+                "## 二、市场状态与主要矛盾",
+                *[f"- {x}" for x in market_state],
+                "",
+                "## 三、关键信号与证据（多维）",
+                "### 3.1 快讯标题（24h）",
+                *[f"- {x}" for x in headlines],
+                "",
+                "### 3.2 利多/利空简析",
+                "- 利多:",
+                *[f"  - {x}" for x in bull],
+                "- 利空:",
+                *[f"  - {x}" for x in bear],
+                "",
+                "## 四、交易约束与失效条件",
+                *[f"- {x}" for x in constraints],
+                "",
+                "## 五、未来24-72小时关键事件日历",
+                *[f"- {x}" for x in event_lines],
+                "",
+                "## 六、说明",
+                "- 本内容仅用于市场信息交流，不构成投资建议。",
+                "",
+            ]
+        ).strip()
+        + "\n"
+    )
 
     summary = _summary_from_bullets(actions, limit=220)
     meta = {
@@ -1593,14 +1899,20 @@ def main() -> int:
     # simple manual probe
     sample = os.environ.get("DAILY_REPORT_SAMPLE_MD", "")
     if not sample.strip():
-        print(json.dumps({"ok": False, "error": "DAILY_REPORT_SAMPLE_MD is empty"}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"ok": False, "error": "DAILY_REPORT_SAMPLE_MD is empty"}, ensure_ascii=False
+            )
+        )
         return 2
     out = transform_daily_report_v3(
         raw_content=sample,
         title="AI 市场研究日报",
         tavily_api_key=os.environ.get("TAVILY_API_KEY", ""),
     )
-    print(json.dumps({"ok": True, "summary": out["summary"], "meta": out["meta"]}, ensure_ascii=False))
+    print(
+        json.dumps({"ok": True, "summary": out["summary"], "meta": out["meta"]}, ensure_ascii=False)
+    )
     return 0
 
 

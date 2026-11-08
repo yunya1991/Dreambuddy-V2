@@ -247,7 +247,9 @@ def _run_backtest(
     if timerange:
         cmd.extend(["--timerange", timerange])
     p = subprocess.run(cmd, cwd=str(project_root), capture_output=True, text=True)
-    return BacktestResult(returncode=int(p.returncode), stdout=p.stdout or "", stderr=p.stderr or "", command=cmd)
+    return BacktestResult(
+        returncode=int(p.returncode), stdout=p.stdout or "", stderr=p.stderr or "", command=cmd
+    )
 
 
 def _extract_float(patterns: list[str], text: str) -> float | None:
@@ -279,9 +281,16 @@ def _extract_int(patterns: list[str], text: str) -> int | None:
 def _parse_metrics(stdout: str, stderr: str) -> dict[str, Any]:
     text = (stdout or "") + "\n" + (stderr or "")
     return {
-        "win_rate_pct": _extract_float([r"win(?:ning)?\s*(?:rate|%)\s*[:=]?\s*(-?\d+(?:\.\d+)?)\s*%"], text),
+        "win_rate_pct": _extract_float(
+            [r"win(?:ning)?\s*(?:rate|%)\s*[:=]?\s*(-?\d+(?:\.\d+)?)\s*%"], text
+        ),
         "sharpe": _extract_float([r"sharpe(?:\s*ratio)?\s*[:=]?\s*(-?\d+(?:\.\d+)?)"], text),
-        "max_drawdown_pct": _extract_float([r"(?:max(?:imum)?\s*drawdown|max\s*drawdown|drawdown)\s*[:=]?\s*(-?\d+(?:\.\d+)?)\s*%"], text),
+        "max_drawdown_pct": _extract_float(
+            [
+                r"(?:max(?:imum)?\s*drawdown|max\s*drawdown|drawdown)\s*[:=]?\s*(-?\d+(?:\.\d+)?)\s*%"
+            ],
+            text,
+        ),
         "total_trades": _extract_int([r"(?:total\s*trades|trades)\s*[:=]?\s*(\d+)"], text),
     }
 
@@ -304,10 +313,16 @@ def _strategy_key(strategy_name: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project-root", default="/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统")
+    ap.add_argument(
+        "--project-root", default="/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统"
+    )
     ap.add_argument("--strategy-name", required=True)
     ap.add_argument("--strategy-key", default="")
-    ap.add_argument("--visibility-type", default="open", choices=["open", "protected", "invite_only", "built_in"])
+    ap.add_argument(
+        "--visibility-type",
+        default="open",
+        choices=["open", "protected", "invite_only", "built_in"],
+    )
     ap.add_argument("--is-author", action="store_true")
     ap.add_argument("--source-visible", action="store_true")
     ap.add_argument("--pine-file", default="")
@@ -360,7 +375,12 @@ def main() -> int:
     _write_json(meta_path, meta)
 
     files_for_checksum: list[Path] = [meta_path]
-    output: dict[str, Any] = {"ok": True, "path_type": meta["path_type"], "strategy_key": key, "base_dir": str(base_dir)}
+    output: dict[str, Any] = {
+        "ok": True,
+        "path_type": meta["path_type"],
+        "strategy_key": key,
+        "base_dir": str(base_dir),
+    }
 
     if source_visible:
         pine_dir = source_dir / "pine"
@@ -384,17 +404,25 @@ def main() -> int:
         bt_stderr = backtest_dir / "stderr.log"
         bt_report = backtest_dir / "report.md"
         cfg_snapshot = backtest_dir / "config.snapshot.json"
-        config_path = (project_root / ns.config).resolve() if not Path(ns.config).is_absolute() else Path(ns.config).resolve()
+        config_path = (
+            (project_root / ns.config).resolve()
+            if not Path(ns.config).is_absolute()
+            else Path(ns.config).resolve()
+        )
         if config_path.is_file():
             cfg_snapshot.write_text(config_path.read_text(encoding="utf-8"), encoding="utf-8")
             files_for_checksum.append(cfg_snapshot)
         bt_result = None
         if not ns.skip_backtest:
-            bt_result = _run_backtest(project_root, config_path, strategy_dir, class_name, ns.timeframe, ns.timerange)
+            bt_result = _run_backtest(
+                project_root, config_path, strategy_dir, class_name, ns.timeframe, ns.timerange
+            )
             bt_stdout.write_text(bt_result.stdout, encoding="utf-8")
             bt_stderr.write_text(bt_result.stderr, encoding="utf-8")
             files_for_checksum.extend([bt_stdout, bt_stderr])
-        metrics = _parse_metrics(bt_result.stdout if bt_result else "", bt_result.stderr if bt_result else "")
+        metrics = _parse_metrics(
+            bt_result.stdout if bt_result else "", bt_result.stderr if bt_result else ""
+        )
         bt_meta = {
             "strategy_key": key,
             "strategy_class": class_name,
@@ -424,8 +452,12 @@ def main() -> int:
         blackbox_dir = base_dir / "blackbox"
         blackbox_dir.mkdir(parents=True, exist_ok=True)
         alerts = _read_json_file(Path(ns.alerts_json).resolve() if ns.alerts_json else None, [])
-        params_snapshot = _read_json_file(Path(ns.params_json).resolve() if ns.params_json else None, {})
-        strategy_report = _read_text_file(Path(ns.strategy_report_md).resolve() if ns.strategy_report_md else None, "")
+        params_snapshot = _read_json_file(
+            Path(ns.params_json).resolve() if ns.params_json else None, {}
+        )
+        strategy_report = _read_text_file(
+            Path(ns.strategy_report_md).resolve() if ns.strategy_report_md else None, ""
+        )
         alerts_path = blackbox_dir / "alerts.json"
         params_path = blackbox_dir / "params_snapshot.json"
         report_path = blackbox_dir / "strategy_report.md"

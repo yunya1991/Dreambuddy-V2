@@ -8,13 +8,13 @@
 from __future__ import annotations
 
 import json
-import os
-import math
 import logging
-from dataclasses import dataclass, asdict, field
+import math
+import os
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Dict, Any, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +22,14 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ExecutionFeedback:
     """执行反馈"""
-    scenario_id: str           # "BULL_NORMAL_ACCELERATING"
-    pattern_used: str          # "c_f_chain"
-    timestamp: str             # ISO格式
+
+    scenario_id: str  # "BULL_NORMAL_ACCELERATING"
+    pattern_used: str  # "c_f_chain"
+    timestamp: str  # ISO格式
     trades: List[Dict[str, Any]] = field(default_factory=list)
     actual_sharpe: float = 0.0
     expected_sharpe: float = 0.0
-    deviation: float = 0.0     # (actual - expected) / |expected|
+    deviation: float = 0.0  # (actual - expected) / |expected|
     direction_accuracy: float = 0.0  # 方向准确率
     trigger_evolution: bool = False
 
@@ -48,9 +49,9 @@ class ExecutionFeedbackCollector:
     """
 
     # 触发进化的阈值
-    DIRECTION_ACCURACY_THRESHOLD = 0.5   # 连续3笔方向准确率<50%
-    DEVIATION_THRESHOLD = 0.3            # 偏差>30%
-    MIN_TRADES_FOR_EVAL = 3             # 最少3笔交易才评估
+    DIRECTION_ACCURACY_THRESHOLD = 0.5  # 连续3笔方向准确率<50%
+    DEVIATION_THRESHOLD = 0.3  # 偏差>30%
+    MIN_TRADES_FOR_EVAL = 3  # 最少3笔交易才评估
     # P1-1: 数据有效性阈值 — result=0(未平仓)占比超过此值时暂停进化
     ZERO_RESULT_RATIO_THRESHOLD = 0.8
 
@@ -99,8 +100,9 @@ class ExecutionFeedbackCollector:
 
         self._save()
 
-    def update_exit_result(self, scenario_id: str, symbol: str, entry_price: float,
-                           exit_price: float, result: float) -> bool:
+    def update_exit_result(
+        self, scenario_id: str, symbol: str, entry_price: float, exit_price: float, result: float
+    ) -> bool:
         """P0-1: 平仓时回填实际结果到最近的开仓记录
 
         根据 scenario_id + symbol + entry_price 匹配最近一条 result=0 的开仓记录，
@@ -127,11 +129,12 @@ class ExecutionFeedbackCollector:
                 rec_sym = str(r.get("symbol", "")).upper().strip()
                 rec_entry = float(r.get("entry_price", 0))
                 # entry_price 容差 0.1%（应对浮点精度和滑点）
-                price_match = (rec_entry > 0 and entry_price > 0
-                               and abs(rec_entry - entry_price) < entry_price * 0.001)
-                if (r.get("result", 0) == 0
-                        and rec_sym == sym_upper
-                        and price_match):
+                price_match = (
+                    rec_entry > 0
+                    and entry_price > 0
+                    and abs(rec_entry - entry_price) < entry_price * 0.001
+                )
+                if r.get("result", 0) == 0 and rec_sym == sym_upper and price_match:
                     r["exit_price"] = exit_price
                     r["result"] = result
                     r["exit_timestamp"] = datetime.now().isoformat()
@@ -172,7 +175,7 @@ class ExecutionFeedbackCollector:
             ExecutionFeedback: 反馈结果
         """
         records = self._records.get(scenario_id, [])
-        recent = records[-self.MIN_TRADES_FOR_EVAL * 3:]  # 最近9笔
+        recent = records[-self.MIN_TRADES_FOR_EVAL * 3 :]  # 最近9笔
 
         # 获取预期值
         expected_sharpe = 0.0
@@ -281,7 +284,7 @@ class ExecutionFeedbackCollector:
             "win_rate": round(wins / len(returns), 4) if returns else 0,
             "avg_return": round(sum(returns) / len(returns), 4) if returns else 0,
             "total_return": round(sum(returns), 4) if returns else 0,
-            "patterns_used": list(set(r.get("pattern", "?") for r in records)),
+            "patterns_used": list(set(r.get("pattern", "?") for r in records)),  # noqa: C401
         }
 
     def sync_verification_status(self) -> int:

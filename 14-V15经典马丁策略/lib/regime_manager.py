@@ -20,14 +20,15 @@
 用法（回测）:
     confirmed_list = compute_confirmed_regimes(raw_list, confirm_days=3)
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 from typing import List, Optional, Dict
-
 
 # ===================================================================
 # Phase 2: 减速检测 + 动态确认天数 (替代僵硬的3日收盘确认)
 # ===================================================================
+
 
 def detect_deceleration_zone(a: float, v: float, threshold: float = 0.02) -> str:
     """
@@ -79,8 +80,12 @@ class RegimeManager:
         # Phase 2: 上次使用的检测区（诊断用）
         self.last_zone: Optional[str] = None
 
-    def update(self, raw_regime: str, date_str: Optional[str] = None,
-               mechanistic_ctx: Optional[Dict[str, float]] = None) -> str:
+    def update(
+        self,
+        raw_regime: str,
+        date_str: Optional[str] = None,
+        mechanistic_ctx: Optional[Dict[str, float]] = None,
+    ) -> str:
         """单步更新（实盘用），返回 confirmed_regime
 
         仅在日切（date_str 变化）时才递增 pending_count，
@@ -174,7 +179,8 @@ class RegimeManager:
         if not ref_date:
             return False
         try:
-            from datetime import datetime, timedelta
+            from datetime import datetime
+
             d_change = datetime.strptime(self.last_change_date, "%Y-%m-%d")
             d_now = datetime.strptime(ref_date, "%Y-%m-%d")
             return (d_now - d_change).days < cooldown_days
@@ -235,7 +241,7 @@ def compute_confirmed_regimes_by_date(
     """
     rm = RegimeManager(confirm_days=confirm_days, initial_regime=initial_regime)
     result = []
-    for raw, ds in zip(raw_regimes, date_strs):
+    for raw, ds in zip(raw_regimes, date_strs):  # noqa: B905
         confirmed = rm.update(raw, date_str=ds)
         result.append(confirmed)
     return result
@@ -249,15 +255,24 @@ if __name__ == "__main__":
     # 场景1: 3日确认 + sticky
     rm = RegimeManager(confirm_days=3, initial_regime="LONG_ONLY")
     test_data = [
-        ("LONG", "D1"), ("SHORT", "D2"), ("SHORT", "D3"), ("LONG", "D4"),
-        ("SHORT", "D5"), ("SHORT", "D6"), ("SHORT", "D7"), ("LONG", "D8"),
-        ("LONG", "D9"), ("LONG", "D10"),
+        ("LONG", "D1"),
+        ("SHORT", "D2"),
+        ("SHORT", "D3"),
+        ("LONG", "D4"),
+        ("SHORT", "D5"),
+        ("SHORT", "D6"),
+        ("SHORT", "D7"),
+        ("LONG", "D8"),
+        ("LONG", "D9"),
+        ("LONG", "D10"),
     ]
     print("场景1: 3日确认 + sticky")
     print(f"{'日期':>4} {'raw':>12} {'pending':>12} {'count':>5} {'confirmed':>12}")
     for raw, ds in test_data:
         confirmed = rm.update(raw, date_str=ds)
-        print(f"{ds:>4} {raw:>12} {str(rm.pending_regime):>12} {rm.pending_count:>5} {confirmed:>12}")
+        print(
+            f"{ds:>4} {raw:>12} {str(rm.pending_regime):>12} {rm.pending_count:>5} {confirmed:>12}"
+        )
 
     # 场景2: 同一天多次调用不重复计数
     print("\n场景2: 同一天多次调用不重复计数")
@@ -270,20 +285,35 @@ if __name__ == "__main__":
     rm2.update("SHORT", "D3")  # 第2天
     print(f"  D3 调用1次, pending_count={rm2.pending_count} (应为2)")
     rm2.update("SHORT", "D4")  # 第3天 → 切换
-    print(f"  D4 调用1次, pending_count={rm2.pending_count} (应为0), confirmed={rm2.confirmed_regime} (应为SHORT)")
+    print(
+        f"  D4 调用1次, pending_count={rm2.pending_count} (应为0), confirmed={rm2.confirmed_regime} (应为SHORT)"
+    )
 
     # 场景3: 回测批量计算
     print("\n场景3: 批量计算 compute_confirmed_regimes")
     raws = ["LONG", "SHORT", "SHORT", "LONG", "SHORT", "SHORT", "SHORT", "LONG", "LONG", "LONG"]
     confirmed = compute_confirmed_regimes(raws, confirm_days=3, initial_regime="LONG")
-    for i, (r, c) in enumerate(zip(raws, confirmed)):
+    for i, (r, c) in enumerate(zip(raws, confirmed)):  # noqa: B905
         marker = " ← 切换" if i > 0 and c != confirmed[i - 1] else ""
         print(f"  [{i}] raw={r:>6} → confirmed={c:>6}{marker}")
 
     # 场景4: 按日期去重
     print("\n场景4: 按日期去重 compute_confirmed_regimes_by_date")
-    raws_4h = ["LONG", "LONG", "SHORT", "SHORT", "SHORT", "SHORT", "LONG", "SHORT", "SHORT", "SHORT"]
+    raws_4h = [
+        "LONG",
+        "LONG",
+        "SHORT",
+        "SHORT",
+        "SHORT",
+        "SHORT",
+        "LONG",
+        "SHORT",
+        "SHORT",
+        "SHORT",
+    ]
     dates_4h = ["D1", "D1", "D2", "D2", "D3", "D3", "D4", "D5", "D5", "D6"]
-    confirmed_4h = compute_confirmed_regimes_by_date(raws_4h, dates_4h, confirm_days=3, initial_regime="LONG")
-    for i, (r, d, c) in enumerate(zip(raws_4h, dates_4h, confirmed_4h)):
+    confirmed_4h = compute_confirmed_regimes_by_date(
+        raws_4h, dates_4h, confirm_days=3, initial_regime="LONG"
+    )
+    for i, (r, d, c) in enumerate(zip(raws_4h, dates_4h, confirmed_4h)):  # noqa: B905
         print(f"  [{i}] {d} raw={r:>6} → confirmed={c:>6}")

@@ -23,7 +23,7 @@
 
 bsk CLI v0.3.2 路径：/Users/zhangjiangtao/.local/bin/bsk
 """
-import json
+
 import subprocess
 import sys
 import unittest
@@ -43,6 +43,7 @@ class TestBskRunnerConstruction(unittest.TestCase):
     def test_init_default_session_name(self):
         """默认 session 来自 config['bsk']['default_session']"""
         from core.bsk_runner import BskRunner
+
         config = {"bsk": {"default_session": "real_env_test"}}
         runner = BskRunner(config)
         self.assertEqual(runner._default_session, "real_env_test")
@@ -50,6 +51,7 @@ class TestBskRunnerConstruction(unittest.TestCase):
     def test_init_explicit_session_overrides_config(self):
         """显式 session_name 覆盖 config"""
         from core.bsk_runner import BskRunner
+
         config = {"bsk": {"default_session": "from_config"}}
         runner = BskRunner(config, session_name="override")
         self.assertEqual(runner._session_name, "override")
@@ -57,18 +59,21 @@ class TestBskRunnerConstruction(unittest.TestCase):
     def test_init_default_timeout(self):
         """默认 timeout=120s（bsk 命令默认 120000ms）"""
         from core.bsk_runner import BskRunner
+
         runner = BskRunner({})
         self.assertEqual(runner._timeout, 120)
 
     def test_init_executable_default(self):
         """默认 executable='bsk'（已在 PATH）"""
         from core.bsk_runner import BskRunner
+
         runner = BskRunner({})
         self.assertEqual(runner._executable, "bsk")
 
     def test_init_config_values(self):
         """从 config['bsk'] 读取所有字段"""
         from core.bsk_runner import BskRunner
+
         config = {
             "bsk": {
                 "executable": "/usr/local/bin/bsk",
@@ -88,6 +93,7 @@ class TestBskRunnerConstruction(unittest.TestCase):
     def test_init_json_output_default_true(self):
         """默认 json_output=True（bsk --json 输出结构化数据）"""
         from core.bsk_runner import BskRunner
+
         runner = BskRunner({})
         self.assertTrue(runner._json_output)
 
@@ -100,6 +106,7 @@ class TestStepToArgs(unittest.TestCase):
 
     def setUp(self):
         from core.bsk_runner import BskRunner
+
         self.runner = BskRunner({})
 
     def test_navigate_command(self):
@@ -177,7 +184,9 @@ class TestStepToArgs(unittest.TestCase):
 
     def test_wait_for_navigation(self):
         """wait-for-navigation: {} → ['wait-for-navigation']"""
-        self.assertEqual(self.runner._step_to_args({"wait-for-navigation": {}}), ["wait-for-navigation"])
+        self.assertEqual(
+            self.runner._step_to_args({"wait-for-navigation": {}}), ["wait-for-navigation"]
+        )
 
     def test_wait_ms(self):
         """wait-ms: {ms: 500} → ['wait-ms', '500']"""
@@ -238,6 +247,7 @@ class TestBuildCommand(unittest.TestCase):
     def test_command_with_json_and_session(self):
         """--json 全局 flag + session 注入"""
         from core.bsk_runner import BskRunner
+
         runner = BskRunner({"bsk": {"default_session": "my_sess"}})
         cmd = runner._build_command(["snapshot"])
         # 期望：['bsk', '--json', 'snapshot'] 或带 session
@@ -248,6 +258,7 @@ class TestBuildCommand(unittest.TestCase):
     def test_command_no_session_when_disabled(self):
         """default_session 为空且无显式 session 时不注入"""
         from core.bsk_runner import BskRunner
+
         runner = BskRunner({})
         runner._default_session = None
         runner._session_name = None
@@ -259,6 +270,7 @@ class TestBuildCommand(unittest.TestCase):
     def test_command_no_json_when_disabled(self):
         """json_output=False 时不注入 --json"""
         from core.bsk_runner import BskRunner
+
         runner = BskRunner({"bsk": {"json_output": False}})
         cmd = runner._build_command(["snapshot"])
         self.assertNotIn("--json", cmd)
@@ -272,13 +284,16 @@ class TestRunCommand(unittest.TestCase):
 
     def setUp(self):
         from core.bsk_runner import BskRunner
+
         self.runner = BskRunner({"bsk": {"default_session": "test"}})
 
     @patch("core.bsk_runner.subprocess.run")
     def test_run_command_success(self, mock_run):
         """成功执行：exit_code=0"""
         mock_run.return_value = MagicMock(
-            returncode=0, stdout='{"ok":true,"ref":"@e1"}', stderr="",
+            returncode=0,
+            stdout='{"ok":true,"ref":"@e1"}',
+            stderr="",
         )
         step = self.runner.run_command(["snapshot"])
         self.assertEqual(step.exit_code, 0)
@@ -291,7 +306,9 @@ class TestRunCommand(unittest.TestCase):
     def test_run_command_failure(self, mock_run):
         """命令失败：exit_code!=0"""
         mock_run.return_value = MagicMock(
-            returncode=1, stdout="", stderr="Error: element not found",
+            returncode=1,
+            stdout="",
+            stderr="Error: element not found",
         )
         step = self.runner.run_command(["click", "@e99"])
         self.assertEqual(step.exit_code, 1)
@@ -323,6 +340,7 @@ class TestRunTask(unittest.TestCase):
 
     def setUp(self):
         from core.bsk_runner import BskRunner
+
         self.runner = BskRunner({"bsk": {"default_session": "test"}})
 
     @patch("core.bsk_runner.subprocess.run")
@@ -368,7 +386,7 @@ class TestRunTask(unittest.TestCase):
             {"snapshot": {}},
             {"click": {"ref": "@e1"}},  # 不应执行
         ]
-        result = self.runner.run_task(steps, callback=callback)
+        result = self.runner.run_task(steps, callback=callback)  # noqa: F841
         self.assertEqual(callback.call_count, 2)
         self.assertEqual(mock_run.call_count, 2)  # 第三步不执行
 
@@ -381,6 +399,7 @@ class TestRunTaskFromYAML(unittest.TestCase):
 
     def setUp(self):
         from core.bsk_runner import BskRunner
+
         self.runner = BskRunner({"bsk": {"default_session": "test"}})
 
     @patch("core.bsk_runner.subprocess.run")
@@ -419,6 +438,7 @@ class TestVerificationIntegration(unittest.TestCase):
 
     def setUp(self):
         from core.bsk_runner import BskRunner
+
         self.runner = BskRunner({"bsk": {"default_session": "test"}})
 
     @patch("core.bsk_runner.subprocess.run")
@@ -440,7 +460,7 @@ class TestVerificationIntegration(unittest.TestCase):
         """DOM 断言失败"""
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout='@e1 [button]\n@e2 [input]',
+            stdout="@e1 [button]\n@e2 [input]",
             stderr="",
         )
         assertions = {"dom": [{"selector": ".dashboard", "action": "exists"}]}
@@ -490,16 +510,24 @@ class TestBskResult(unittest.TestCase):
 
     def test_step_default(self):
         from core.bsk_runner import BskStep
+
         step = BskStep(
-            command="bsk snapshot", exit_code=0,
-            stdout="...", stderr="", duration_ms=10.0,
+            command="bsk snapshot",
+            exit_code=0,
+            stdout="...",
+            stderr="",
+            duration_ms=10.0,
         )
         self.assertEqual(step.exit_code, 0)
 
     def test_result_default(self):
         from core.bsk_runner import BskResult
+
         result = BskResult(
-            task="form submit", passed=True, steps=[], duration_ms=100.0,
+            task="form submit",
+            passed=True,
+            steps=[],
+            duration_ms=100.0,
         )
         self.assertTrue(result.passed)
         self.assertIsNone(result.verification)
@@ -507,12 +535,19 @@ class TestBskResult(unittest.TestCase):
 
     def test_result_to_dict(self):
         from core.bsk_runner import BskResult, BskStep
+
         step = BskStep(
             command="bsk navigate https://example.com",
-            exit_code=0, stdout="", stderr="", duration_ms=50.0,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            duration_ms=50.0,
         )
         result = BskResult(
-            task="t", passed=True, steps=[step], duration_ms=100.0,
+            task="t",
+            passed=True,
+            steps=[step],
+            duration_ms=100.0,
         )
         d = result.to_dict()
         self.assertEqual(d["task"], "t")

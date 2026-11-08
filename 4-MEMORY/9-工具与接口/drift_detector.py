@@ -8,15 +8,15 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple, Union
-
-import math
 
 import numpy as np
 
 try:  # scipy 属可选依赖（pyproject trading extra）；缺失时用渐近公式回退
     from scipy import stats
+
     _HAS_SCIPY = True
 except ImportError:  # pragma: no cover - 依赖环境差异
     stats = None
@@ -87,8 +87,7 @@ def _ks_2samp_fallback(a: np.ndarray, b: np.ndarray) -> Tuple[float, float]:
     lam = (math.sqrt(n_eff) + 0.12 + 0.11 / math.sqrt(n_eff)) * d
     if lam <= 0:
         return d, 1.0
-    p = 2.0 * sum((-1) ** (k - 1) * math.exp(-2.0 * k * k * lam * lam)
-                  for k in range(1, 101))
+    p = 2.0 * sum((-1) ** (k - 1) * math.exp(-2.0 * k * k * lam * lam) for k in range(1, 101))
     return d, float(min(1.0, max(0.0, p)))
 
 

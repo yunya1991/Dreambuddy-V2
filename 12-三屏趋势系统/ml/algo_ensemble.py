@@ -20,16 +20,13 @@
 标签：未来N日收益方向（1=涨, 0=跌）
 """
 
-import os
 import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-import numpy as np
 import pandas as pd
-
 
 # ── 路径配置 ──────────────────────────────────────────────────────────────
 
@@ -48,6 +45,7 @@ _MODEL_TTL = 3600  # 1小时缓存
 
 
 # ── 特征提取 ──────────────────────────────────────────────────────────────
+
 
 def _dir_to_num(direction: str) -> int:
     """方向编码: BULL=1, BEAR=-1, NEUTRAL=0"""
@@ -87,31 +85,74 @@ def _safe_bool(val, default=0) -> int:
 # 完整特征名列表（40维 + 15维哲学特征 = 55维）
 FEATURE_NAMES: List[str] = [
     # 趋势一致性 (14维)
-    "tc_weekly_confidence", "tc_weekly_reversal", "tc_weekly_bull", "tc_weekly_bear",
-    "tc_weekly_speed", "tc_weekly_accel", "tc_weekly_static_dir",
-    "tc_daily_confidence", "tc_daily_reversal", "tc_daily_bull", "tc_daily_bear",
-    "tc_daily_speed", "tc_daily_accel", "tc_daily_static_dir",
-    "tc_consistent", "tc_consistency_confidence",
+    "tc_weekly_confidence",
+    "tc_weekly_reversal",
+    "tc_weekly_bull",
+    "tc_weekly_bear",
+    "tc_weekly_speed",
+    "tc_weekly_accel",
+    "tc_weekly_static_dir",
+    "tc_daily_confidence",
+    "tc_daily_reversal",
+    "tc_daily_bull",
+    "tc_daily_bear",
+    "tc_daily_speed",
+    "tc_daily_accel",
+    "tc_daily_static_dir",
+    "tc_consistent",
+    "tc_consistency_confidence",
     # 贝叶斯置信度 (3维)
-    "bayes_confidence", "bayes_bull_prob", "bayes_bear_prob",
+    "bayes_confidence",
+    "bayes_bull_prob",
+    "bayes_bear_prob",
     # 经典指标置信度 (9维)
-    "classic_s1_confidence", "classic_s1_bull", "classic_s1_bear", "classic_s1_dynamics_bonus",
-    "classic_s2_confidence", "classic_s2_bull", "classic_s2_bear", "classic_s2_dynamics_bonus",
-    "classic_overall_confidence", "classic_trend_consistent",
+    "classic_s1_confidence",
+    "classic_s1_bull",
+    "classic_s1_bear",
+    "classic_s1_dynamics_bonus",
+    "classic_s2_confidence",
+    "classic_s2_bull",
+    "classic_s2_bear",
+    "classic_s2_dynamics_bonus",
+    "classic_overall_confidence",
+    "classic_trend_consistent",
     # 技术基本面融合 (4维)
-    "fusion_tech_conf", "fusion_fund_conf", "fusion_consistent", "fusion_conflict_level",
+    "fusion_tech_conf",
+    "fusion_fund_conf",
+    "fusion_consistent",
+    "fusion_conflict_level",
     # 价值风险评估 (4维)
-    "vr_vol_ratio", "vr_rr_ratio", "vr_value_gt_risk", "vr_tp_pct",
+    "vr_vol_ratio",
+    "vr_rr_ratio",
+    "vr_value_gt_risk",
+    "vr_tp_pct",
     # Freqtrade信号 (4维)
-    "ft_1h_signal", "ft_1h_confidence", "ft_4h_signal", "ft_4h_confidence",
+    "ft_1h_signal",
+    "ft_1h_confidence",
+    "ft_4h_signal",
+    "ft_4h_confidence",
     # 最终信号 (5维)
-    "fs_direction", "fs_confidence", "fs_trend_consistent",
-    "fs_fusion_consistent", "fs_freqtrade_consistent",
+    "fs_direction",
+    "fs_confidence",
+    "fs_trend_consistent",
+    "fs_fusion_consistent",
+    "fs_freqtrade_consistent",
     # 哲学贡献特征 (15维) — 来自v2增强版MA200策略哲学提取
-    "ph_btc_regime_label", "ph_btc_alt_divergence", "ph_is_btc_asset", "ph_alt_short_risk_score",
-    "ph_weekly_ma200_distance", "ph_dip_buy_level", "ph_dip_buy_position_ratio", "ph_left_side_buy_signal",
-    "ph_bear_short_layer", "ph_fib_tp_remaining_ratio", "ph_layered_position_target", "ph_position_adjustment",
-    "ph_btc_bull_confirmed", "ph_self_bull_confirmed", "ph_double_bull_score",
+    "ph_btc_regime_label",
+    "ph_btc_alt_divergence",
+    "ph_is_btc_asset",
+    "ph_alt_short_risk_score",
+    "ph_weekly_ma200_distance",
+    "ph_dip_buy_level",
+    "ph_dip_buy_position_ratio",
+    "ph_left_side_buy_signal",
+    "ph_bear_short_layer",
+    "ph_fib_tp_remaining_ratio",
+    "ph_layered_position_target",
+    "ph_position_adjustment",
+    "ph_btc_bull_confirmed",
+    "ph_self_bull_confirmed",
+    "ph_double_bull_score",
 ]
 
 
@@ -238,8 +279,13 @@ def extract_ensemble_features(full_signal: dict) -> Dict[str, float]:
 
 # ── 训练数据收集 ──────────────────────────────────────────────────────────
 
-def collect_sample(full_signal: dict, future_return: Optional[float] = None,
-                   symbol: str = "UNKNOWN", timestamp: Optional[str] = None) -> None:
+
+def collect_sample(
+    full_signal: dict,
+    future_return: Optional[float] = None,
+    symbol: str = "UNKNOWN",
+    timestamp: Optional[str] = None,
+) -> None:
     """收集训练样本到 collected/ 目录
 
     在实盘运行时调用，将五大算法的完整输出保存为训练样本。
@@ -294,6 +340,7 @@ def load_collected_samples() -> pd.DataFrame:
 
 # ── 模型训练 ──────────────────────────────────────────────────────────────
 
+
 def train_ensemble(label_lookahead: int = 7, test_ratio: float = 0.3) -> dict:
     """训练集成推理模型
 
@@ -313,8 +360,9 @@ def train_ensemble(label_lookahead: int = 7, test_ratio: float = 0.3) -> dict:
         训练结果 dict（含 AUC、准确率等）
     """
     import pickle
+
     import lightgbm as lgb
-    from sklearn.metrics import roc_auc_score, accuracy_score
+    from sklearn.metrics import accuracy_score, roc_auc_score
 
     df = load_collected_samples()
     if len(df) < 50:
@@ -363,7 +411,8 @@ def train_ensemble(label_lookahead: int = 7, test_ratio: float = 0.3) -> dict:
     valid_data = lgb.Dataset(X_test, label=y_test, feature_name=feature_cols, reference=train_data)
 
     model = lgb.train(
-        params, train_data,
+        params,
+        train_data,
         num_boost_round=200,
         valid_sets=[train_data, valid_data],
         valid_names=["train", "valid"],
@@ -421,6 +470,7 @@ def train_ensemble(label_lookahead: int = 7, test_ratio: float = 0.3) -> dict:
 
 # ── 推理 ──────────────────────────────────────────────────────────────────
 
+
 def _load_model():
     """加载缓存的集成模型
 
@@ -436,6 +486,7 @@ def _load_model():
 
     try:
         import pickle
+
         with open(MODEL_PATH, "rb") as f:
             model = pickle.load(f)
 
@@ -492,8 +543,8 @@ def predict_ensemble(full_signal: dict) -> dict:
 
     # 构造特征向量（按模型训练时的特征顺序）
     import pandas as pd
-    X = pd.DataFrame([[features.get(f, 0.0) for f in feature_names]],
-                     columns=feature_names)
+
+    X = pd.DataFrame([[features.get(f, 0.0) for f in feature_names]], columns=feature_names)
 
     prob_up = float(model.predict(X)[0])
     prob_down = 1.0 - prob_up

@@ -21,6 +21,7 @@ Dream-RSI 核心洞察：累积发现历史可作为回放模拟器（replay sim
 
 关联：SPEC-33-反思层.md v0.3 §4.1；core/evidence.py；arXiv 2609.14858v2
 """
+
 from __future__ import annotations
 
 import json
@@ -309,8 +310,13 @@ class ReplaySimulator:
         budget = int((strategy.get("budget") or {}).get("max_calls") or 0)
         current = tree.root
         if current is None:
-            return {"path": [], "total_score": 0.0, "total_cost_calls": 0,
-                    "rounds": 0, "terminated_reason": "no_root"}
+            return {
+                "path": [],
+                "total_score": 0.0,
+                "total_cost_calls": 0,
+                "rounds": 0,
+                "terminated_reason": "no_root",
+            }
         path = [current.node_id]
         total_score = 0.0
         total_cost = 0

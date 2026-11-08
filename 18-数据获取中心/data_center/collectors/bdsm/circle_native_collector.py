@@ -19,6 +19,7 @@ requests 可直接获取 HTML，无需浏览器渲染。
 
 FAIL-OPEN: 网络异常/解析失败 → 返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,7 +37,7 @@ logger = logging.getLogger("data_center.collectors.bdsm.circle")
 _CIRCLE_URL = "https://www.circle.com/transparency"
 _HTTP_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
 _HTTP_TIMEOUT = 20
@@ -54,9 +55,7 @@ class CircleNativeCollector(BaseCollector):
     def fetch(self, params: dict) -> list[DataRecord]:
         """采集 Circle transparency 数据，返回 DataRecord。"""
         try:
-            resp = requests.get(
-                _CIRCLE_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT
-            )
+            resp = requests.get(_CIRCLE_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT)
             resp.raise_for_status()
             html = resp.text
         except Exception as exc:
@@ -78,9 +77,7 @@ class CircleNativeCollector(BaseCollector):
         usdc_treasuries = self._extract_data_attr(html, "data-usdc-us-treasuries")
         usdc_months = self._extract_data_attr(html, "data-usdc-months")
 
-        usdc_total_reserves = (
-            usdc_deposits + usdc_cash + usdc_treasuries + usdc_months
-        )
+        usdc_total_reserves = usdc_deposits + usdc_cash + usdc_treasuries + usdc_months
 
         # USDC 发行与赎回（span data-point 属性，单位 $B）
         usdc_issued_7d = self._extract_data_point(html, "usdc-issued-7")
@@ -98,10 +95,10 @@ class CircleNativeCollector(BaseCollector):
         eurc_in_circulation = self._extract_data_point(html, "euro-in-circulation")
         eurc_issued_7d = self._extract_data_point(html, "euro-issued-7")
         eurc_redeemed_7d = self._extract_data_point(html, "euro-redeemed-7")
-        eurc_issued_30d = self._extract_data_point(html, "euro-issued-30")
-        eurc_redeemed_30d = self._extract_data_point(html, "euro-redeemed-30")
-        eurc_issued_365d = self._extract_data_point(html, "euro-issued-365")
-        eurc_redeemed_365d = self._extract_data_point(html, "euro-redeemed-365")
+        eurc_issued_30d = self._extract_data_point(html, "euro-issued-30")  # noqa: F841
+        eurc_redeemed_30d = self._extract_data_point(html, "euro-redeemed-30")  # noqa: F841
+        eurc_issued_365d = self._extract_data_point(html, "euro-issued-365")  # noqa: F841
+        eurc_redeemed_365d = self._extract_data_point(html, "euro-redeemed-365")  # noqa: F841
 
         # 日期
         report_date = ""
@@ -184,13 +181,9 @@ class CircleNativeCollector(BaseCollector):
     @staticmethod
     def _extract_data_point(html: str, element_id: str) -> float:
         """提取 span 的 data-point 属性值（如 id="usdc-issued-7" data-point="11.19" → 11.19）。"""
-        m = re.search(
-            rf'id="{element_id}"[^>]*data-point="([\d.]+)"', html
-        )
+        m = re.search(rf'id="{element_id}"[^>]*data-point="([\d.]+)"', html)
         if not m:
-            m = re.search(
-                rf'data-point="([\d.]+)"[^>]*id="{element_id}"', html
-            )
+            m = re.search(rf'data-point="([\d.]+)"[^>]*id="{element_id}"', html)
         return float(m.group(1)) if m else 0.0
 
 

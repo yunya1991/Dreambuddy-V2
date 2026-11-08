@@ -4,7 +4,6 @@ import importlib.util
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
-
 StageRunner = Callable[[Dict[str, Any], Optional[Path]], Dict[str, Any]]
 
 
@@ -39,7 +38,14 @@ def _default_stage_runners() -> Dict[str, StageRunner]:
     return runners
 
 
-def _transition_message(proto, source: str, target: str, trace_id: str, correlation_id: Optional[str], payload: Dict[str, Any]):
+def _transition_message(
+    proto,
+    source: str,
+    target: str,
+    trace_id: str,
+    correlation_id: Optional[str],
+    payload: Dict[str, Any],
+):
     return proto.build_envelope(
         source=source,
         target=target,
@@ -89,7 +95,9 @@ def run_execution_loop(
 
         if idx + 1 < len(stage_order):
             messages.append(
-                _transition_message(proto, stage, stage_order[idx + 1], trace_id, correlation_id, out)
+                _transition_message(
+                    proto, stage, stage_order[idx + 1], trace_id, correlation_id, out
+                )
             )
 
         if stage == "A4" and out.get("risk_gate") != "PASS" and retry_count < max_retries:
@@ -142,7 +150,9 @@ def run_execution_loop(
     proto.require_contract_fields(a6_out)
     stage_outputs["A6"] = a6_out
     messages.append(
-        _transition_message(proto, "A5", "A6", trace_id, correlation_id, stage_outputs.get("A5", {}))
+        _transition_message(
+            proto, "A5", "A6", trace_id, correlation_id, stage_outputs.get("A5", {})
+        )
     )
 
     # A9 exit
@@ -151,7 +161,11 @@ def run_execution_loop(
     a9_out = proto.ensure_contract_fields(a9_out, producer="workflows/trading-decision/A9")
     proto.require_contract_fields(a9_out)
     stage_outputs["A9"] = a9_out
-    messages.append(_transition_message(proto, "A6", "A9", trace_id, correlation_id, stage_outputs.get("A6", {})))
+    messages.append(
+        _transition_message(
+            proto, "A6", "A9", trace_id, correlation_id, stage_outputs.get("A6", {})
+        )
+    )
 
     # A9 -> A7: 离场触发治理环实践记录 (spec: A9 -> A7 event trigger)
     messages.append(

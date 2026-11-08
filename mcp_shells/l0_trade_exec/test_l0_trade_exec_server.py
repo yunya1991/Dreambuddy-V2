@@ -104,6 +104,12 @@ def test_tools_list_matches_registry(env):
             assert ann.get("readOnlyHint") is True
 
 
+def test_ingest_signal_accepts_50_route(env):
+    tools = _list_tools(env)
+    ingest = next(t for t in tools if t["name"] == "ingest_signal")
+    assert "50" in ingest["inputSchema"]["properties"]["source"]["enum"]
+
+
 def test_execution_rights_live_rejected(env):
     res = _call("place_order", {"symbol": "ETH-USDT-SWAP", "side": "buy", "size": 0.1}, env)
     assert res["ok"] is False

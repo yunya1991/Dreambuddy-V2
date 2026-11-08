@@ -18,6 +18,7 @@ Spec §3.4 C-Drive-Agent 四步循环:
   - llm_fn / jev_judge_fn / cognitive_adapter / reflector 均可注入, 便于测试
   - 无 llm_fn 时用规则提取 Bull/Bear (FAIL-OPEN)
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -43,12 +44,14 @@ def _load_cognitive_adapter():
         try:
             import os as _os
             import sys as _sys
+
             here = _os.path.dirname(_os.path.abspath(__file__))
             # python-server/ → dream-harness-bridge/ → 1-ARCHITECTURE/ → dreambuddy-v2/
-            repo_root = _os.path.abspath(
-                _os.path.join(here, "..", "..", "..", ".."))
+            repo_root = _os.path.abspath(_os.path.join(here, "..", "..", "..", ".."))
             integration_dir = _os.path.join(
-                repo_root, "1-ARCHITECTURE", "dream-harness-bridge",
+                repo_root,
+                "1-ARCHITECTURE",
+                "dream-harness-bridge",
                 "integration",
             )
             if _os.path.isdir(integration_dir) and integration_dir not in _sys.path:
@@ -62,9 +65,10 @@ def _load_cognitive_adapter():
     # 改为导入 cognitive_mcp_server.TOOL_HANDLERS（4-MEMORY/9-工具与接口/），
     # 创建签名适配 wrapper（keyword args → dict arg，JSON string → dict）。
     try:
-        import os as _os2
+        import os as _os2  # noqa: I001
         import sys as _sys2
         import json as _json2
+
         _here = _os2.path.dirname(_os2.path.abspath(__file__))
         _repo_root = _os2.path.abspath(_os2.path.join(_here, "..", "..", "..", ".."))
         _mcp_dir = _os2.path.join(_repo_root, "4-MEMORY", "9-工具与接口")
@@ -77,17 +81,18 @@ def _load_cognitive_adapter():
         # TOOL_HANDLERS 调 dict arg ({"context": ..., "top_k": ...}), 返回 JSON string
         def _recall_fn(context="", top_k=5, min_quality="C", **kw):
             r = TOOL_HANDLERS["recall"](
-                {"context": context, "top_k": top_k, "min_quality": min_quality})
+                {"context": context, "top_k": top_k, "min_quality": min_quality}
+            )
             return _json2.loads(r) if isinstance(r, str) else r
 
         def _record_fn(content="", tags="", quality_level="C", **kw):
             r = TOOL_HANDLERS["record"](
-                {"content": content, "tags": tags, "quality_level": quality_level})
+                {"content": content, "tags": tags, "quality_level": quality_level}
+            )
             return _json2.loads(r) if isinstance(r, str) else r
 
         def _verify_fn(memory_id="", success=True, **kw):
-            r = TOOL_HANDLERS["verify"](
-                {"memory_id": memory_id, "success": success})
+            r = TOOL_HANDLERS["verify"]({"memory_id": memory_id, "success": success})
             return _json2.loads(r) if isinstance(r, str) else r
 
         return CognitiveLoopAdapter(
@@ -107,6 +112,7 @@ def _load_jev_judge_fn():
     """
     try:
         from jev_judge import judge
+
         return judge
     except ImportError:
         return None
@@ -116,8 +122,10 @@ def _load_jev_judge_fn():
 # 动作枚举 (独立于 Reflector.ReflectAction, 不修改 dreamos core)
 # ============================================================
 
+
 class CDriveAction(str, Enum):
     """C-Drive-Agent 决策动作"""
+
     CONTINUE = "continue"
     REDO = "redo"
     JUMP = "jump"
@@ -129,9 +137,11 @@ class CDriveAction(str, Enum):
 # 决策结果
 # ============================================================
 
+
 @dataclass
 class CDriveDecision:
     """C-Drive-Agent 四步循环决策结果"""
+
     action: CDriveAction = CDriveAction.CONTINUE
     reason: str = ""
     confidence: float = 0.0
@@ -192,6 +202,7 @@ class CDriveDecision:
 # C-Drive-Agent
 # ============================================================
 
+
 class CDriveAgent:
     """C 层四步循环驱动器
 
@@ -205,21 +216,21 @@ class CDriveAgent:
     """
 
     # HC-2: 分级触发阈值
-    CONF_SKIP = 0.75           # > 0.75: 跳过四步循环
-    CONF_RECALL_ONLY = 0.65    # 0.65-0.75: 只 recall + reflect
-    CONF_FULL_LOOP = 0.50      # < 0.50: 全链路 (含 jeval + supplement)
+    CONF_SKIP = 0.75  # > 0.75: 跳过四步循环
+    CONF_RECALL_ONLY = 0.65  # 0.65-0.75: 只 recall + reflect
+    CONF_FULL_LOOP = 0.50  # < 0.50: 全链路 (含 jeval + supplement)
 
     # 辩论后决策阈值
-    CONF_REDO = 0.20           # 置信度极低 → REDO
-    CONF_SUPPLEMENT = 0.30     # Bull/Bear 均弱 → SUPPLEMENT
+    CONF_REDO = 0.20  # 置信度极低 → REDO
+    CONF_SUPPLEMENT = 0.30  # Bull/Bear 均弱 → SUPPLEMENT
 
     # D2: Bull/Bear 多轮辩论阈值
-    DEBATE_CLOSE_GAP = 0.15    # |bull-bear| < 0.15 → 触发第二轮辩论
-    MAX_DEBATE_ROUNDS = 2      # 最多 2 轮辩论 (避免无限循环)
+    DEBATE_CLOSE_GAP = 0.15  # |bull-bear| < 0.15 → 触发第二轮辩论
+    MAX_DEBATE_ROUNDS = 2  # 最多 2 轮辩论 (避免无限循环)
 
     # jeval 门控
-    JEV_PASS = 0.85            # noul >= 0.85: 放行
-    JEV_BLOCK = 0.50           # noul < 0.50: 阻止
+    JEV_PASS = 0.85  # noul >= 0.85: 放行
+    JEV_BLOCK = 0.50  # noul < 0.50: 阻止
 
     # 节点→subagent 路由映射
     _NODE_MODULE_MAP = {
@@ -265,22 +276,14 @@ class CDriveAgent:
         self._debate_max_errors = cfg.get("debate_max_consecutive_errors", 3)
 
         # 集成 SPEC P2：C-Drive → agent.debate.mcp 迁移（feature flag + 灰度 + 回滚）
-        self._debate_mcp_enabled = (
-            os.environ.get("DEBATE_MCP_ENABLED", "false").lower() == "true"
-        )
+        self._debate_mcp_enabled = os.environ.get("DEBATE_MCP_ENABLED", "false").lower() == "true"
         try:
-            self._debate_mcp_gray_percent = int(
-                os.environ.get("DEBATE_MCP_GRAY_PERCENT", "100")
-            )
+            self._debate_mcp_gray_percent = int(os.environ.get("DEBATE_MCP_GRAY_PERCENT", "100"))
         except (TypeError, ValueError):
             self._debate_mcp_gray_percent = 100
-        self._debate_mcp_gray_percent = max(
-            0, min(100, self._debate_mcp_gray_percent)
-        )
+        self._debate_mcp_gray_percent = max(0, min(100, self._debate_mcp_gray_percent))
         try:
-            self._debate_mcp_max_errors = int(
-                os.environ.get("DEBATE_MCP_MAX_ERRORS", "3")
-            )
+            self._debate_mcp_max_errors = int(os.environ.get("DEBATE_MCP_MAX_ERRORS", "3"))
         except (TypeError, ValueError):
             self._debate_mcp_max_errors = 3
         self._debate_mcp_error_count = 0
@@ -288,11 +291,9 @@ class CDriveAgent:
         # SPEC §3.4: C-Drive v3 feature flag + 灰度部署
         # CDRIVE_V3=true → 强制全量启用 v3 路由
         # CDRIVE_V3_GRAY_PERCENT=N → 灰度 N% 的 node_id 走 v3
-        self._use_v3_router = os.environ.get(
-            "CDRIVE_V3", "false").lower() == "true"
+        self._use_v3_router = os.environ.get("CDRIVE_V3", "false").lower() == "true"
         try:
-            self._v3_gray_percent = int(
-                os.environ.get("CDRIVE_V3_GRAY_PERCENT", "0"))
+            self._v3_gray_percent = int(os.environ.get("CDRIVE_V3_GRAY_PERCENT", "0"))
         except (ValueError, TypeError):
             self._v3_gray_percent = 0
         self._v3_router = None  # 延迟初始化 CDriveV3Router
@@ -406,17 +407,17 @@ class CDriveAgent:
                     debate2 = self._bull_bear_debate(signals, direction, round_num=2)
                     debate_rounds = 2
                     # 取两轮中更极端的结果 (放大差异, 避免僵局)
-                    debate = debate2 if abs(
-                        debate2["bull_confidence"] - debate2["bear_confidence"]
-                    ) > gap else debate
+                    debate = (
+                        debate2
+                        if abs(debate2["bull_confidence"] - debate2["bear_confidence"]) > gap
+                        else debate
+                    )
                 steps.append("debate")
-                decision = self._reflect_after_debate(
-                    node_id, confidence, suggestions, debate)
+                decision = self._reflect_after_debate(node_id, confidence, suggestions, debate)
                 decision.debate_rounds = debate_rounds
 
             # 动态阈值以下: jeval 判断 (仅 CONTINUE 时)
-            if (confidence < dyn_full
-                    and decision.action == CDriveAction.CONTINUE):
+            if confidence < dyn_full and decision.action == CDriveAction.CONTINUE:
                 if "jeval" in skip_steps:
                     steer_log.append("steer:skip_jeval")
                 else:
@@ -428,8 +429,7 @@ class CDriveAgent:
                         if noul < self.JEV_BLOCK:
                             decision.action = CDriveAction.REDO
                             decision.reason += (
-                                f"; jeval noul={noul:.2f}"
-                                f"<{self.JEV_BLOCK} 阻止放行"
+                                f"; jeval noul={noul:.2f}" f"<{self.JEV_BLOCK} 阻止放行"
                             )
 
             # Step 4: SUPPLEMENT 路由
@@ -439,8 +439,7 @@ class CDriveAgent:
                     decision.action = CDriveAction.CONTINUE
                     decision.reason += "; steer跳过补充"
                 else:
-                    module = self._route_supplement(
-                        intent_type, node_id, direction)
+                    module = self._route_supplement(intent_type, node_id, direction)
                     decision.supplement_module = module
                     steps.append("supplement")
 
@@ -466,6 +465,7 @@ class CDriveAgent:
         if self._v3_gray_percent >= 100:
             return True
         import hashlib as _hl
+
         h = _hl.md5(node_id.encode("utf-8")).hexdigest()
         return int(h[:8], 16) % 100 < self._v3_gray_percent
 
@@ -492,8 +492,7 @@ class CDriveAgent:
             return self._run_v1_fallback(node_id, result, state, signals)
 
         try:
-            v3_result = self._v3_router.run_v3(
-                node_id, result, state, signals)
+            v3_result = self._v3_router.run_v3(node_id, result, state, signals)
         except Exception:
             # v3 异常 → 降级到 v1
             return self._run_v1_fallback(node_id, result, state, signals)
@@ -506,8 +505,7 @@ class CDriveAgent:
             "JUMP_TO": CDriveAction.JUMP,
             "EARLY_TERMINATE": CDriveAction.CONTINUE,  # 降级为 CONTINUE
         }
-        action = action_map.get(
-            v3_result.get("action", "CONTINUE"), CDriveAction.CONTINUE)
+        action = action_map.get(v3_result.get("action", "CONTINUE"), CDriveAction.CONTINUE)
         return CDriveDecision(
             action=action,
             reason=v3_result.get("reason", ""),
@@ -521,15 +519,16 @@ class CDriveAgent:
         try:
             import os as _os
             import sys as _sys
+
             _here = _os.path.dirname(_os.path.abspath(__file__))
-            _repo_root = _os.path.abspath(
-                _os.path.join(_here, "..", "..", "..", ".."))
+            _repo_root = _os.path.abspath(_os.path.join(_here, "..", "..", "..", ".."))
             # c_drive_v3_router.py 用 `from core.xxx import`, 需把
             # 34-前端应用训练系统/ (core 的父目录) 加到 sys.path
             _train_dir = _os.path.join(_repo_root, "34-前端应用训练系统")
             if _os.path.isdir(_train_dir) and _train_dir not in _sys.path:
                 _sys.path.insert(0, _train_dir)
             from core.c_drive_v3_router import CDriveV3Router
+
             return CDriveV3Router(
                 recall_fn=self._make_recall_fn(),
                 record_fn=self._make_record_fn(),
@@ -543,36 +542,41 @@ class CDriveAgent:
         """构造 recall 函数 (注入到 v3 router)"""
         if self._cognitive is None:
             return None
+
         def _recall(context="", top_k=5, min_quality="C", **kw):
             try:
-                return self._cognitive.recall(
-                    context=context, top_k=top_k, min_quality=min_quality)
+                return self._cognitive.recall(context=context, top_k=top_k, min_quality=min_quality)
             except Exception:
                 return []
+
         return _recall
 
     def _make_record_fn(self):
         """构造 record 函数"""
         if self._cognitive is None:
             return None
+
         def _record(content="", tags="", quality_level="C", **kw):
             try:
                 return self._cognitive.record(
-                    content=content, tags=tags, quality_level=quality_level)
+                    content=content, tags=tags, quality_level=quality_level
+                )
             except Exception:
                 return None
+
         return _record
 
     def _make_verify_fn(self):
         """构造 verify 函数"""
         if self._cognitive is None:
             return None
+
         def _verify(memory_id="", success=True, **kw):
             try:
-                return self._cognitive.verify(
-                    memory_id=memory_id, success=success)
+                return self._cognitive.verify(memory_id=memory_id, success=success)
             except Exception:
                 return None
+
         return _verify
 
     def _run_v1_fallback(self, node_id, result, state, signals):
@@ -624,7 +628,7 @@ class CDriveAgent:
         if len(confs) >= 2:
             mean = sum(confs) / len(confs)
             variance = sum((c - mean) ** 2 for c in confs) / len(confs)
-            std = variance ** 0.5
+            std = variance**0.5
             score_dispersion = 0.2 if std > 0.2 else 0.0
         else:
             score_dispersion = 0.0
@@ -633,8 +637,7 @@ class CDriveAgent:
 
     # ── D4: 知识图谱索引 ────────────────────────
 
-    def _index_signals_to_graph(self, signals: Optional[List[Dict]],
-                                graph: Any) -> None:
+    def _index_signals_to_graph(self, signals: Optional[List[Dict]], graph: Any) -> None:
         """将 signals 索引到知识图谱 (HC FAIL-OPEN)
 
         为每个 signal 创建节点, 并建立 signal → indicator 关系。
@@ -642,32 +645,41 @@ class CDriveAgent:
         if not signals:
             return
         try:
-            from dreamos.core.graph_store.types import GraphNode, GraphEdge
+            from dreamos.core.graph_store.types import GraphNode, GraphEdge  # noqa: I001
+
             for sig in signals:
                 sig_name = sig.get("name", "unknown")
                 sig_id = f"signal:{sig_name}"
                 ind_id = f"indicator:{sig_name}"
                 # signal 节点
-                graph.add_node(GraphNode(
-                    node_id=sig_id,
-                    node_type="signal",
-                    label=sig_name,
-                    properties={"direction": sig.get("direction"),
-                                "confidence": sig.get("confidence")},
-                ))
+                graph.add_node(
+                    GraphNode(
+                        node_id=sig_id,
+                        node_type="signal",
+                        label=sig_name,
+                        properties={
+                            "direction": sig.get("direction"),
+                            "confidence": sig.get("confidence"),
+                        },
+                    )
+                )
                 # indicator 节点
-                graph.add_node(GraphNode(
-                    node_id=ind_id,
-                    node_type="indicator",
-                    label=sig_name,
-                ))
+                graph.add_node(
+                    GraphNode(
+                        node_id=ind_id,
+                        node_type="indicator",
+                        label=sig_name,
+                    )
+                )
                 # signal → indicator 关系
-                graph.add_edge(GraphEdge(
-                    from_node=sig_id,
-                    to_node=ind_id,
-                    relation="derived_from",
-                    weight=float(sig.get("confidence", 0.5)),
-                ))
+                graph.add_edge(
+                    GraphEdge(
+                        from_node=sig_id,
+                        to_node=ind_id,
+                        relation="derived_from",
+                        weight=float(sig.get("confidence", 0.5)),
+                    )
+                )
         except Exception:  # noqa: BLE001 FAIL-OPEN
             pass
 
@@ -686,9 +698,7 @@ class CDriveAgent:
             return []
         try:
             context = f"node={node_id},direction={direction}"
-            return self._cognitive.recall(
-                context=context, top_k=5, min_quality="C"
-            )
+            return self._cognitive.recall(context=context, top_k=5, min_quality="C")
         except Exception:  # noqa: BLE001 FAIL-OPEN
             return []
 
@@ -739,18 +749,17 @@ class CDriveAgent:
 
         if confidence < self.CONF_REDO:
             decision.action = CDriveAction.REDO
-            decision.reason = (
-                f"置信度极低({confidence:.2f}),重做节点 {node_id}")
+            decision.reason = f"置信度极低({confidence:.2f}),重做节点 {node_id}"
         elif max(bull_conf, bear_conf) < self.CONF_SUPPLEMENT:
             decision.action = CDriveAction.SUPPLEMENT
             decision.reason = (
-                f"Bull/Bear 均弱(bull={bull_conf:.2f},"
-                f"bear={bear_conf:.2f}),需 subagent 补充")
+                f"Bull/Bear 均弱(bull={bull_conf:.2f}," f"bear={bear_conf:.2f}),需 subagent 补充"
+            )
         else:
             decision.action = CDriveAction.CONTINUE
             decision.reason = (
-                f"辩论后继续(bull={bull_conf:.2f},"
-                f"bear={bear_conf:.2f}),置信度={confidence:.2f}")
+                f"辩论后继续(bull={bull_conf:.2f}," f"bear={bear_conf:.2f}),置信度={confidence:.2f}"
+            )
 
         return decision
 
@@ -780,9 +789,11 @@ class CDriveAgent:
             except Exception as e:  # noqa: BLE001 — FAIL-OPEN 回退本地引擎
                 self._debate_mcp_error_count += 1
                 import logging
+
                 logging.getLogger("cdrive.debate").warning(
                     "MCP 辩论异常 #%d: %s, fallback to local engine",
-                    self._debate_mcp_error_count, e,
+                    self._debate_mcp_error_count,
+                    e,
                 )
                 if self._debate_mcp_error_count >= self._debate_mcp_max_errors:
                     self._debate_mcp_enabled = False
@@ -795,23 +806,26 @@ class CDriveAgent:
             return self._rule_based_debate(bull_signals, bear_signals, round_num)
 
         # SPEC v2.0-rc3 第 6.7 节: v2 feature flag
-        if self._debate_engine_version == "v2" and \
-                self._debate_error_count < self._debate_max_errors:
+        if (
+            self._debate_engine_version == "v2"
+            and self._debate_error_count < self._debate_max_errors
+        ):
             try:
                 return self._v2_debate(sigs, direction)
             except Exception as e:
                 self._debate_error_count += 1
                 import logging
+
                 logging.getLogger("cdrive.debate").warning(
-                    "v2 辩论异常 #%d: %s, fallback to v1", self._debate_error_count, e)
+                    "v2 辩论异常 #%d: %s, fallback to v1", self._debate_error_count, e
+                )
                 if self._debate_error_count >= self._debate_max_errors:
                     self._debate_engine_version = "v1"
                     logging.getLogger("cdrive.debate").error(
-                        "v2 连续 %d 次异常, 切回 v1",
-                        self._debate_error_count)
+                        "v2 连续 %d 次异常, 切回 v1", self._debate_error_count
+                    )
                 # fallback to v1
-                return self._llm_based_debate(
-                    bull_signals, bear_signals, direction, round_num)
+                return self._llm_based_debate(bull_signals, bear_signals, direction, round_num)
 
         return self._llm_based_debate(bull_signals, bear_signals, direction, round_num)
 
@@ -830,27 +844,36 @@ class CDriveAgent:
         return bucket < pct
 
     def _mcp_debate(
-        self, signals: List[Dict], direction: str,
+        self,
+        signals: List[Dict],
+        direction: str,
     ) -> Dict[str, Any]:
         """经 agent.debate.mcp（fast）执行辩论，映射为 v1 兼容格式。"""
-        from debate_mcp_client import DebateMCPClient
-
         import json
+
+        from debate_mcp_client import DebateMCPClient
 
         names = "、".join(str(s.get("name", "?")) for s in signals[:3])
         topic = f"{names} 信号 {direction} 方向判断"
         background = json.dumps(
             {"signals": signals, "direction": direction},
-            ensure_ascii=False, default=str,
+            ensure_ascii=False,
+            default=str,
         )
         with DebateMCPClient() as client:
             result = client.run(
-                topic, mode="fast", background=background,
+                topic,
+                mode="fast",
+                background=background,
                 profile="signal",
                 research=True,
                 research_sources=[
-                    "unified_search", "recall", "code",
-                    "l1_signal", "l1_bus", "l1_cycle",
+                    "unified_search",
+                    "recall",
+                    "code",
+                    "l1_signal",
+                    "l1_bus",
+                    "l1_cycle",
                 ],
             )
 
@@ -874,9 +897,7 @@ class CDriveAgent:
             "bull_confidence": float(bull.get("confidence") or 0.5),
             "bear_confidence": float(bear.get("confidence") or 0.5),
             "signal": signal or None,
-            "risk_flags": list(
-                verdict.get("risks") or signal.get("risk_flags") or []
-            ),
+            "risk_flags": list(verdict.get("risks") or signal.get("risk_flags") or []),
         }
 
     def _v2_debate(self, signals: List[Dict], direction: str) -> Dict[str, Any]:
@@ -887,7 +908,7 @@ class CDriveAgent:
         - bear_thesis → bear_argument
         - bull/bear_confidence 保持不变
         """
-        import asyncio
+        import asyncio  # noqa: I001
         from debate_engine import DebateEngine
 
         # 构建 topic（从 signals 提取关键信息）
@@ -927,11 +948,13 @@ class CDriveAgent:
         bear_arg = "; ".join(bear_names) if bear_names else "无利空信号"
         bull_conf = (
             sum(s.get("confidence", 0.5) for s in bull_signals) / len(bull_signals)
-            if bull_signals else 0.2
+            if bull_signals
+            else 0.2
         )
         bear_conf = (
             sum(s.get("confidence", 0.5) for s in bear_signals) / len(bear_signals)
-            if bear_signals else 0.2
+            if bear_signals
+            else 0.2
         )
         # D2: 第二轮放大差异 (±0.1), 避免僵局
         if round_num >= 2:
@@ -1100,9 +1123,12 @@ def _make_synthesizer_llm_fn():
     无 API key 或导入失败时返回 None, synthesizer 自动降级到规则综合.
     """
     try:
-        from dreamos.shared.llm_client import (
-            get_default_client, LLMMessage, NoOpLLMClient,
+        from dreamos.shared.llm_client import (  # noqa: I001
+            get_default_client,
+            LLMMessage,
+            NoOpLLMClient,
         )
+
         client = get_default_client()
         if isinstance(client, NoOpLLMClient):
             return None
@@ -1144,7 +1170,7 @@ def _resolve_supplement_modules(
     return []
 
 
-def _run_single_subagent(module: str, node_output: dict) -> Optional[SubagentOutput]:
+def _run_single_subagent(module: str, node_output: dict) -> Optional[SubagentOutput]:  # noqa: F821
     """执行单个 subagent, 返回 SubagentOutput 或 None (FAIL-OPEN)"""
     try:
         import_path, handler_name = _MODULE_HANDLER_MAP[module]
@@ -1155,7 +1181,8 @@ def _run_single_subagent(module: str, node_output: dict) -> Optional[SubagentOut
         if not sub_result.get("ok"):
             return None
 
-        from subagent_types import SubagentOutput, Signal, ChartSpec
+        from subagent_types import SubagentOutput, Signal, ChartSpec  # noqa: I001
+
         output_dict = sub_result.get("output", {})
         return SubagentOutput(
             module=output_dict.get("module", module),
@@ -1194,7 +1221,7 @@ def _execute_supplement_and_synthesize(
         # 每个模块只接收其对应节点的 output (e.g. onchain←F4, sentiment←F1)
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        outputs: List[SubagentOutput] = []
+        outputs: List[SubagentOutput] = []  # noqa: F821
         with ThreadPoolExecutor(max_workers=min(len(modules), 5)) as pool:
             future_to_module = {
                 pool.submit(_run_single_subagent, m, _extract_module_node_output(node_output, m)): m
@@ -1210,10 +1237,12 @@ def _execute_supplement_and_synthesize(
 
         # Step 2: 聚合所有 subagent 输出
         from aggregator import aggregate_subagent_outputs
+
         aggregated = aggregate_subagent_outputs(outputs)
 
         # Step 3: LLM 综合 (无 llm_fn 时走规则降级, FAIL-OPEN)
         from synthesizer_agent import SynthesizerAgent
+
         llm_fn = _make_synthesizer_llm_fn()
         synthesizer = SynthesizerAgent(llm_fn=llm_fn)
         cards = synthesizer.synthesize(aggregated)
@@ -1232,6 +1261,7 @@ def _execute_supplement_and_synthesize(
         # Step 5: SKILL 增强触发检测 (FAIL-OPEN, 不阻塞主流程)
         try:
             from skill_enhancement import detect_enhancement_triggers, enhancement_hints_to_dicts
+
             hints = detect_enhancement_triggers(
                 card_dicts,
                 overall_confidence=getattr(decision, "confidence", None),
@@ -1250,6 +1280,7 @@ def _execute_supplement_and_synthesize(
 # ============================================================
 # IPC handler (供 server.py 路由)
 # ============================================================
+
 
 def handle_c_drive_agent(params: dict) -> dict:
     """IPC handler: C-Drive-Agent 四步循环
@@ -1308,6 +1339,7 @@ def handle_c_drive_agent(params: dict) -> dict:
 # 辩论后三层管道 (SPEC v1.2-rc1 §2.2: Verdict 之后异步执行 Layer1→2→3)
 # ============================================================
 
+
 def run_post_debate_pipeline(
     topic: str,
     transcript: list[dict],
@@ -1340,7 +1372,7 @@ def run_post_debate_pipeline(
     Returns:
         {"adjudication": dict, "reflection": dict, "training": dict}
     """
-    from adjudicator import Adjudicator
+    from adjudicator import Adjudicator  # noqa: I001
     from reflector import Reflector
     from debate_trainer import DebateTrainer
 
@@ -1363,21 +1395,26 @@ def run_post_debate_pipeline(
     # Layer 1: 裁判评审
     try:
         adjudicator = Adjudicator(llm_fn=llm_fn)
-        adj_result = adjudicator.adjudicate(
-            topic=topic, transcript=transcript, verdict=verdict)
+        adj_result = adjudicator.adjudicate(topic=topic, transcript=transcript, verdict=verdict)
         result["adjudication"] = adj_result.to_dict()
         result["_adj_obj"] = adj_result  # 内部传递给 Layer 2
     except Exception as e:  # noqa: BLE001 FAIL-OPEN
         import logging
-        logging.getLogger("cdrive.pipeline").warning(
-            "Layer1 评审异常(FAIL-OPEN): %s", e)
+
+        logging.getLogger("cdrive.pipeline").warning("Layer1 评审异常(FAIL-OPEN): %s", e)
         result["adjudication"] = {
-            "topic": topic, "winner": verdict.get("winner", "draw"),
-            "bull_total": 18.0, "bear_total": 18.0,
+            "topic": topic,
+            "winner": verdict.get("winner", "draw"),
+            "bull_total": 18.0,
+            "bear_total": 18.0,
             "rfd": f"[降级] {verdict.get('summary', '')}",
-            "dimension_comparison": {}, "key_clash_points": [],
-            "rebuttal_strength": {}, "evidence_depth": {},
-            "timestamp": "", "bull_turn_scores": [], "bear_turn_scores": [],
+            "dimension_comparison": {},
+            "key_clash_points": [],
+            "rebuttal_strength": {},
+            "evidence_depth": {},
+            "timestamp": "",
+            "bull_turn_scores": [],
+            "bear_turn_scores": [],
         }
 
     # Layer 2: 赛后反思
@@ -1387,33 +1424,42 @@ def run_post_debate_pipeline(
         if adj_obj is None:
             # 降级时重建一个 AdjudicationResult
             from adjudicator import AdjudicationResult
+
             adj_obj = AdjudicationResult(
                 topic=topic,
-                bull_turn_scores=[], bear_turn_scores=[],
+                bull_turn_scores=[],
+                bear_turn_scores=[],
                 bull_total=result["adjudication"].get("bull_total", 18.0),
                 bear_total=result["adjudication"].get("bear_total", 18.0),
                 dimension_comparison=result["adjudication"].get("dimension_comparison", {}),
                 winner=result["adjudication"].get("winner", "draw"),
                 rfd=result["adjudication"].get("rfd", ""),
                 key_clash_points=result["adjudication"].get("key_clash_points", []),
-                rebuttal_strength={}, evidence_depth={},
+                rebuttal_strength={},
+                evidence_depth={},
                 timestamp="",
             )
         refl_result = reflector.reflect(
-            topic=topic, transcript=transcript,
-            adjudication_result=adj_obj)
+            topic=topic, transcript=transcript, adjudication_result=adj_obj
+        )
         result["reflection"] = refl_result.to_dict()
         result["_refl_obj"] = refl_result  # 内部传递给 Layer 3
     except Exception as e:  # noqa: BLE001 FAIL-OPEN
         import logging
-        logging.getLogger("cdrive.pipeline").warning(
-            "Layer2 反思异常(FAIL-OPEN): %s", e)
+
+        logging.getLogger("cdrive.pipeline").warning("Layer2 反思异常(FAIL-OPEN): %s", e)
         result["reflection"] = {
-            "topic": topic, "review": {}, "strategy_analysis": {},
-            "persona_analysis": {}, "evidence_analysis": {},
+            "topic": topic,
+            "review": {},
+            "strategy_analysis": {},
+            "persona_analysis": {},
+            "evidence_analysis": {},
             "gaps": {"evidence_gaps": [], "dropped_args": [], "unused_tactics": []},
-            "recommendations": [], "strategy_tags": [],
-            "persona_suggestions": {}, "memory_id": None, "timestamp": "",
+            "recommendations": [],
+            "strategy_tags": [],
+            "persona_suggestions": {},
+            "memory_id": None,
+            "timestamp": "",
         }
 
     # Layer 3 前置: 质量门控 (方案C, SPEC debate-jev-integration §3)
@@ -1422,10 +1468,12 @@ def run_post_debate_pipeline(
     if enable_quality_gate:
         try:
             from debate_quality_gate import DebateQualityGate
+
             gate = DebateQualityGate(jev_fn=jev_fn)
             adj_obj_for_gate = result.get("_adj_obj")
             gate_result = gate.gate(
-                topic=topic, transcript=transcript,
+                topic=topic,
+                transcript=transcript,
                 adjudication_result=adj_obj_for_gate,
                 debate_count=debate_count,
             )
@@ -1434,8 +1482,8 @@ def run_post_debate_pipeline(
                 gate_reason = gate_result.reason
         except Exception as e:  # noqa: BLE001 FAIL-OPEN
             import logging
-            logging.getLogger("cdrive.pipeline").warning(
-                "质量门控异常(FAIL-OPEN): %s", e)
+
+            logging.getLogger("cdrive.pipeline").warning("质量门控异常(FAIL-OPEN): %s", e)
 
     # Layer 3: 算法训练
     if quality_gated:
@@ -1454,29 +1502,43 @@ def run_post_debate_pipeline(
             refl_obj = result.get("_refl_obj")
             if adj_obj is None:
                 from adjudicator import AdjudicationResult
+
                 adj_obj = AdjudicationResult(
-                    topic=topic, bull_turn_scores=[], bear_turn_scores=[],
-                    bull_total=18.0, bear_total=18.0, dimension_comparison={},
-                    winner=verdict.get("winner", "draw"), rfd="",
-                    key_clash_points=[], rebuttal_strength={}, evidence_depth={},
+                    topic=topic,
+                    bull_turn_scores=[],
+                    bear_turn_scores=[],
+                    bull_total=18.0,
+                    bear_total=18.0,
+                    dimension_comparison={},
+                    winner=verdict.get("winner", "draw"),
+                    rfd="",
+                    key_clash_points=[],
+                    rebuttal_strength={},
+                    evidence_depth={},
                     timestamp="",
                 )
             if refl_obj is None:
                 from reflector import ReflectionReport
+
                 refl_obj = ReflectionReport(
-                    topic=topic, review={}, strategy_analysis={},
-                    persona_analysis={}, evidence_analysis={},
+                    topic=topic,
+                    review={},
+                    strategy_analysis={},
+                    persona_analysis={},
+                    evidence_analysis={},
                     gaps={"evidence_gaps": [], "dropped_args": [], "unused_tactics": []},
-                    recommendations=[], strategy_tags=[],
-                    persona_suggestions={}, memory_id=None, timestamp="",
+                    recommendations=[],
+                    strategy_tags=[],
+                    persona_suggestions={},
+                    memory_id=None,
+                    timestamp="",
                 )
-            train_result = trainer.train(
-                adj_obj, refl_obj, bull_persona, bear_persona)
+            train_result = trainer.train(adj_obj, refl_obj, bull_persona, bear_persona)
             result["training"] = train_result
         except Exception as e:  # noqa: BLE001 FAIL-OPEN
             import logging
-            logging.getLogger("cdrive.pipeline").warning(
-                "Layer3 训练异常(FAIL-OPEN): %s", e)
+
+            logging.getLogger("cdrive.pipeline").warning("Layer3 训练异常(FAIL-OPEN): %s", e)
             result["training"] = {
                 "bayesian_updated": False,
                 "elo_updated": False,
@@ -1493,6 +1555,7 @@ def run_post_debate_pipeline(
 # ============================================================
 # 辩论 IPC (SPEC v2.0-rc3 第 6.3 节)
 # ============================================================
+
 
 def handle_debate(params: dict) -> dict:
     """辩论 IPC 路由 (SPEC v2.0-rc3 第 6.3 节)
@@ -1515,7 +1578,9 @@ def handle_debate(params: dict) -> dict:
             context = params.get("context", "")
             top_k = params.get("top_k", 5)
             result = cog.recall(
-                context=context, top_k=top_k, min_quality="C",
+                context=context,
+                top_k=top_k,
+                min_quality="C",
             )
             # MCP recall 返回 {"memories": [...]} 格式
             if isinstance(result, dict) and "memories" in result:
@@ -1527,13 +1592,14 @@ def handle_debate(params: dict) -> dict:
         elif action == "record":
             cog = _load_cognitive_adapter()
             if cog is None:
-                return {"ok": True, "memory_id": None,
-                        "warning": "cognitive_adapter unavailable"}
+                return {"ok": True, "memory_id": None, "warning": "cognitive_adapter unavailable"}
             content = params.get("content", "")
             quality = params.get("quality", "B")
             tags = params.get("tags", "debate")
             mid = cog.record(
-                content=content, quality_level=quality, tags=tags,
+                content=content,
+                quality_level=quality,
+                tags=tags,
             )
             return {"ok": True, "memory_id": mid}
 
@@ -1555,24 +1621,34 @@ def handle_debate(params: dict) -> dict:
             if os.environ.get("DEBATE_MCP_ENABLED", "false").lower() == "true":
                 try:
                     from debate_mcp_client import DebateMCPClient
+
                     with DebateMCPClient() as client:
                         mcp_result = client.run(
-                            topic, mode=mode, background=background,
+                            topic,
+                            mode=mode,
+                            background=background,
                             profile="signal",
                             research=True,
                             research_sources=[
-                                "unified_search", "recall", "code",
-                                "l1_signal", "l1_bus", "l1_cycle",
+                                "unified_search",
+                                "recall",
+                                "code",
+                                "l1_signal",
+                                "l1_bus",
+                                "l1_cycle",
                             ],
                         )
                     return {
-                        "ok": True, "result": mcp_result,
+                        "ok": True,
+                        "result": mcp_result,
                         "via": "agent.debate.mcp",
                     }
                 except Exception as e:  # noqa: BLE001 — FAIL-OPEN 回退本地
                     import logging
+
                     logging.getLogger("cdrive.debate").warning(
-                        "handle_debate MCP 失败，回退本地引擎: %s", e,
+                        "handle_debate MCP 失败，回退本地引擎: %s",
+                        e,
                     )
 
             llm_fn = _make_synthesizer_llm_fn()
@@ -1580,8 +1656,10 @@ def handle_debate(params: dict) -> dict:
                 return {"ok": False, "error": "LLM not available for debate"}
             cog = _load_cognitive_adapter()
             from debate_engine import DebateEngine
+
             engine = DebateEngine(llm_fn=llm_fn, config={}, cognitive_adapter=cog)
             import asyncio as _asyncio
+
             if mode == "deep":
                 result = _asyncio.run(engine.run_deep(topic, background))
             else:

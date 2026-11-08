@@ -1,4 +1,5 @@
 """B-05: W6 样本持久化与监控测试."""
+
 from __future__ import annotations
 
 import json

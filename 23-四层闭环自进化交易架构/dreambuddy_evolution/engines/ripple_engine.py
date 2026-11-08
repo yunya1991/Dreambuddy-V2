@@ -5,8 +5,9 @@ RippleEngine (§0.7 调研-观察-总结 涟漪扩散引擎)
 龙头检测 + R1/R2/R3 三层涟漪扩散 → RI ∈ [0,1]
 哲学根: 扔石头入水 → 龙头起 → 关联起 → 板块起 → 若可持续则成为真正趋势
 """
-import math
+
 import logging
+import math
 from typing import Any
 
 logger = logging.getLogger(__name__)

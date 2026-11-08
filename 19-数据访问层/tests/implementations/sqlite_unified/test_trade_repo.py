@@ -15,6 +15,7 @@ TDD RED → GREEN: SqliteTradeRepository（严格对齐 P0 Protocol 签名 + uni
 - query_trades start_ts/end_ts 命中 idx_tr_trades_symbol_entry_time
 - DailyStats 字段映射（unified_models 简版 ↔ schema_init 大表 扩展列）
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -54,17 +55,21 @@ def repo(tmp_path: Path):
             ("trading_volume", "'0'"),
         ]:
             try:
-                conn.execute(f"ALTER TABLE tr_daily_stats ADD COLUMN {col} TEXT DEFAULT '{default}'")
+                conn.execute(
+                    f"ALTER TABLE tr_daily_stats ADD COLUMN {col} TEXT DEFAULT '{default}'"
+                )
             except sqlite3.OperationalError:  # duplicate column name = OK
                 pass
     from dreambuddy_dal.implementations.sqlite_unified.trade_impl import SqliteTradeRepository
+
     r = SqliteTradeRepository(str(db))
     assert isinstance(r, TradeRepository), "SqliteTradeRepository 必须是 TradeRepository 子类"
     return r
 
 
-def _sample_trade(tid: str = "TRD-001", sym: str = "BTC-USDT-SWAP",
-                  ts: Optional[datetime] = None) -> TradeRecord:
+def _sample_trade(
+    tid: str = "TRD-001", sym: str = "BTC-USDT-SWAP", ts: Optional[datetime] = None
+) -> TradeRecord:
     return TradeRecord(
         trade_id=tid,
         sub_system="YIJING",
@@ -111,9 +116,9 @@ def test_add_trade_idempotent_duplicate_returns_none_and_preserves_first(repo):
     r2 = repo.add_trade(t2)
     assert r2 is None, f"重复 add_trade 必须返回 None，实际 {r2!r}"
     got = repo.get_trade("TRD-T2")
-    assert got is not None and got.entry_price == Decimal("65000.12345678"), (
-        "幂等性破坏：第二次 add_trade 覆盖了首次 entry_price"
-    )
+    assert got is not None and got.entry_price == Decimal(
+        "65000.12345678"
+    ), "幂等性破坏：第二次 add_trade 覆盖了首次 entry_price"
 
 
 def test_get_trade_not_found_returns_none(repo):
@@ -197,7 +202,8 @@ def test_query_trades_filter_by_symbol_and_time_window(repo):
 
     # status 过滤：先关一条 BTC-0824 → status=CLOSED → 再查 CLOSED 得 1
     repo.close_position(
-        "TRD-T5-2", exit_reason=ExitReason.TP_HIT,
+        "TRD-T5-2",
+        exit_reason=ExitReason.TP_HIT,
         exit_price=Decimal("68000"),
         close_ts=datetime(2026, 8, 24, 20, 0, 0, tzinfo=timezone.utc),
         realized_pnl=Decimal("369"),
@@ -232,10 +238,14 @@ def test_daily_stats_upsert_and_get_by_composite_key(repo):
     r2 = repo.add_or_update_daily_stats(stats)
     assert r2 is True
     # get_daily_stats: Protocol 签名 get_daily_stats(symbol, stat_date, *, sub_system, strategy_name)
-    got = repo.get_daily_stats("BTC-USDT-SWAP", "2026-08-24", sub_system="YIJING", strategy_name="两仪马丁")
+    got = repo.get_daily_stats(
+        "BTC-USDT-SWAP", "2026-08-24", sub_system="YIJING", strategy_name="两仪马丁"
+    )
     assert got is not None, "应能读到 2026-08-24 BTC YIJING 两仪马丁 DailyStats"
     assert got.start_equity == Decimal("10000.00"), f"start_equity 错：{got.start_equity!r}"
-    assert got.end_equity == Decimal("10300.00"), "Upsert 后 end_equity 应该更新（失败就是 UPSERT 没触发）"
+    assert got.end_equity == Decimal(
+        "10300.00"
+    ), "Upsert 后 end_equity 应该更新（失败就是 UPSERT 没触发）"
     assert got.net_pnl == Decimal("300.00")
     assert got.max_drawdown == Decimal("-0.015")
     assert got.win_count == 3

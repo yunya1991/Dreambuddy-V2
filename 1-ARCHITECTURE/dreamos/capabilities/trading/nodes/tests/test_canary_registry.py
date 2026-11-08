@@ -11,8 +11,11 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
-from dreamos.core.compute.canary_registry import (
-    VersionedNodeRegistry, NodeVersion, CanaryStatus, CanaryDecision,
+from dreamos.core.compute.canary_registry import (  # noqa: E402
+    CanaryDecision,
+    CanaryStatus,
+    NodeVersion,
+    VersionedNodeRegistry,
 )
 
 
@@ -84,7 +87,9 @@ class TestVersionedNodeRegistryRegister:
     def test_register_canary(self):
         reg = VersionedNodeRegistry()
         reg.register_version("A1", "1.0.0", make_mock_node("A1", "1.0.0"))
-        nv = reg.register_version("A1", "1.1.0-canary", make_mock_node("A1", "1.1.0"), traffic_ratio=0.1, is_canary=True)
+        nv = reg.register_version(
+            "A1", "1.1.0-canary", make_mock_node("A1", "1.1.0"), traffic_ratio=0.1, is_canary=True
+        )
         assert nv.is_canary is True
         assert nv.traffic_ratio == 0.1
         assert nv.status == CanaryStatus.CANARY
@@ -139,7 +144,9 @@ class TestVersionedNodeRegistrySelect:
         stable = make_mock_node("A1", "1.0.0")
         canary = make_mock_node("A1", "1.1.0")
         reg.register_version("A1", "1.0.0", stable)
-        canary_nv = reg.register_version("A1", "1.1.0-canary", canary, traffic_ratio=0.5, is_canary=True)
+        canary_nv = reg.register_version(
+            "A1", "1.1.0-canary", canary, traffic_ratio=0.5, is_canary=True
+        )
         canary_nv.status = CanaryStatus.ABORTED
 
         # 只应选到稳定版
@@ -159,7 +166,9 @@ class TestCanaryEvaluation:
         """样本不足 → insufficient_data"""
         reg = VersionedNodeRegistry()
         reg.register_version("A1", "1.0.0", make_mock_node("A1", "1.0"))
-        reg.register_version("A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True)
+        reg.register_version(
+            "A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True
+        )
         # 只记录 5 次（< MIN_SAMPLE_SIZE=10）
         for _ in range(5):
             reg.record_result("A1", "1.1.0-canary", True, 100, 0.8)
@@ -171,7 +180,9 @@ class TestCanaryEvaluation:
         """灰度指标达标 → promote"""
         reg = VersionedNodeRegistry()
         reg.register_version("A1", "1.0.0", make_mock_node("A1", "1.0"))
-        reg.register_version("A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True)
+        reg.register_version(
+            "A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True
+        )
 
         # 稳定版记录
         for _ in range(20):
@@ -189,7 +200,9 @@ class TestCanaryEvaluation:
         """灰度错误率过高 → rollback"""
         reg = VersionedNodeRegistry()
         reg.register_version("A1", "1.0.0", make_mock_node("A1", "1.0"))
-        reg.register_version("A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True)
+        reg.register_version(
+            "A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True
+        )
 
         # 稳定版 100% 成功
         for _ in range(20):
@@ -209,7 +222,9 @@ class TestCanaryEvaluation:
         """灰度置信度下降 → rollback"""
         reg = VersionedNodeRegistry()
         reg.register_version("A1", "1.0.0", make_mock_node("A1", "1.0"))
-        reg.register_version("A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True)
+        reg.register_version(
+            "A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True
+        )
 
         # 稳定版高置信度
         for _ in range(20):
@@ -227,7 +242,9 @@ class TestCanaryEvaluation:
         """灰度耗时大增 → rollback"""
         reg = VersionedNodeRegistry()
         reg.register_version("A1", "1.0.0", make_mock_node("A1", "1.0"))
-        reg.register_version("A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True)
+        reg.register_version(
+            "A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True
+        )
 
         # 稳定版 100ms
         for _ in range(20):
@@ -259,7 +276,9 @@ class TestRegistryQuery:
     def test_get_versions(self):
         reg = VersionedNodeRegistry()
         reg.register_version("A1", "1.0.0", make_mock_node("A1", "1.0"))
-        reg.register_version("A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True)
+        reg.register_version(
+            "A1", "1.1.0-canary", make_mock_node("A1", "1.1"), traffic_ratio=0.1, is_canary=True
+        )
         versions = reg.get_versions("A1")
         assert len(versions) == 2
 

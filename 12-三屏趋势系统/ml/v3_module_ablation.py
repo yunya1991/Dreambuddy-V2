@@ -8,13 +8,13 @@
 对比v2基线，量化每个模块的独立贡献。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
-import numpy as np
+import pandas as pd  # noqa: I001
 
 from backtest.strategy import EnhancedMA200Strategy
 from ml.enhanced_ma200_v3_strategy import EnhancedMA200V3Strategy
@@ -43,22 +43,34 @@ def run_ablation():
     print()
 
     configs = [
-        ("v2 基线", {
-            "use_dip_enhanced": False,
-            "use_exit_enhanced": False,
-        }),
-        ("v3 仅抄底优化", {
-            "use_dip_enhanced": True,
-            "use_exit_enhanced": False,
-        }),
-        ("v3 仅逃顶优化", {
-            "use_dip_enhanced": False,
-            "use_exit_enhanced": True,
-        }),
-        ("v3 完整优化", {
-            "use_dip_enhanced": True,
-            "use_exit_enhanced": True,
-        }),
+        (
+            "v2 基线",
+            {
+                "use_dip_enhanced": False,
+                "use_exit_enhanced": False,
+            },
+        ),
+        (
+            "v3 仅抄底优化",
+            {
+                "use_dip_enhanced": True,
+                "use_exit_enhanced": False,
+            },
+        ),
+        (
+            "v3 仅逃顶优化",
+            {
+                "use_dip_enhanced": False,
+                "use_exit_enhanced": True,
+            },
+        ),
+        (
+            "v3 完整优化",
+            {
+                "use_dip_enhanced": True,
+                "use_exit_enhanced": True,
+            },
+        ),
     ]
 
     results = {}
@@ -84,11 +96,16 @@ def run_ablation():
             )
 
         result = engine.run_scenario_backtest(
-            prices, strategy, name.replace(" ", "_"),
-            symbol="BTC", experiment_name=f"ablation_{name.replace(' ', '_')}",
+            prices,
+            strategy,
+            name.replace(" ", "_"),
+            symbol="BTC",
+            experiment_name=f"ablation_{name.replace(' ', '_')}",
         )
         results[name] = result
-        print(f"  ✅ 完成 | 夏普: {result.overall_sharpe:.3f} | 收益: {result.overall_total_return:.1%} | 评分: {result.composite_score:.3f}")
+        print(
+            f"  ✅ 完成 | 夏普: {result.overall_sharpe:.3f} | 收益: {result.overall_total_return:.1%} | 评分: {result.composite_score:.3f}"
+        )
         print()
 
     # === 整体对比表 ===
@@ -96,7 +113,9 @@ def run_ablation():
     print("  一、整体表现对比")
     print("=" * 90)
     print()
-    print(f"{'配置':<18} {'总收益':>12} {'夏普':>8} {'卡玛':>8} {'最大回撤':>10} {'交易数':>8} {'综合评分':>10}")
+    print(
+        f"{'配置':<18} {'总收益':>12} {'夏普':>8} {'卡玛':>8} {'最大回撤':>10} {'交易数':>8} {'综合评分':>10}"
+    )
     print("-" * 90)
 
     for name, result in results.items():
@@ -117,7 +136,9 @@ def run_ablation():
     print("  二、DIP_BUY（牛市抄底）对比")
     print("=" * 90)
     print()
-    print(f"{'配置':<18} {'信号数':>8} {'胜率':>8} {'平均收益':>10} {'Precision':>10} {'Recall':>8} {'F1':>8}")
+    print(
+        f"{'配置':<18} {'信号数':>8} {'胜率':>8} {'平均收益':>10} {'Precision':>10} {'Recall':>8} {'F1':>8}"
+    )
     print("-" * 90)
 
     for name, result in results.items():
@@ -140,7 +161,9 @@ def run_ablation():
     print("  三、TOP_EXIT（牛市离场）对比")
     print("=" * 90)
     print()
-    print(f"{'配置':<18} {'信号数':>8} {'胜率':>8} {'平均收益':>10} {'Precision':>10} {'Recall':>8} {'F1':>8}")
+    print(
+        f"{'配置':<18} {'信号数':>8} {'胜率':>8} {'平均收益':>10} {'Precision':>10} {'Recall':>8} {'F1':>8}"
+    )
     print("-" * 90)
 
     for name, result in results.items():
@@ -167,20 +190,36 @@ def run_ablation():
     v2 = results["v2 基线"]
     dip_only = results["v3 仅抄底优化"]
     exit_only = results["v3 仅逃顶优化"]
-    full = results["v3 完整优化"]
+    full = results["v3 完整优化"]  # noqa: F841
 
     print("📈 抄底优化独立贡献：")
-    print(f"  综合评分: {v2.composite_score:.3f} → {dip_only.composite_score:.3f} ({dip_only.composite_score - v2.composite_score:+.3f})")
-    print(f"  夏普比率: {v2.overall_sharpe:.3f} → {dip_only.overall_sharpe:.3f} ({dip_only.overall_sharpe - v2.overall_sharpe:+.3f})")
-    print(f"  DIP胜率: {v2.objective_metrics['dip_buy'].win_rate:.2%} → {dip_only.objective_metrics['dip_buy'].win_rate:.2%}")
-    print(f"  DIP收益: {v2.objective_metrics['dip_buy'].avg_return:.2%} → {dip_only.objective_metrics['dip_buy'].avg_return:.2%}")
+    print(
+        f"  综合评分: {v2.composite_score:.3f} → {dip_only.composite_score:.3f} ({dip_only.composite_score - v2.composite_score:+.3f})"
+    )
+    print(
+        f"  夏普比率: {v2.overall_sharpe:.3f} → {dip_only.overall_sharpe:.3f} ({dip_only.overall_sharpe - v2.overall_sharpe:+.3f})"
+    )
+    print(
+        f"  DIP胜率: {v2.objective_metrics['dip_buy'].win_rate:.2%} → {dip_only.objective_metrics['dip_buy'].win_rate:.2%}"
+    )
+    print(
+        f"  DIP收益: {v2.objective_metrics['dip_buy'].avg_return:.2%} → {dip_only.objective_metrics['dip_buy'].avg_return:.2%}"
+    )
     print()
 
     print("📉 逃顶优化独立贡献：")
-    print(f"  综合评分: {v2.composite_score:.3f} → {exit_only.composite_score:.3f} ({exit_only.composite_score - v2.composite_score:+.3f})")
-    print(f"  夏普比率: {v2.overall_sharpe:.3f} → {exit_only.overall_sharpe:.3f} ({exit_only.overall_sharpe - v2.overall_sharpe:+.3f})")
-    print(f"  TOP胜率: {v2.objective_metrics['top_exit'].win_rate:.2%} → {exit_only.objective_metrics['top_exit'].win_rate:.2%}")
-    print(f"  TOP收益: {v2.objective_metrics['top_exit'].avg_return:.2%} → {exit_only.objective_metrics['top_exit'].avg_return:.2%}")
+    print(
+        f"  综合评分: {v2.composite_score:.3f} → {exit_only.composite_score:.3f} ({exit_only.composite_score - v2.composite_score:+.3f})"
+    )
+    print(
+        f"  夏普比率: {v2.overall_sharpe:.3f} → {exit_only.overall_sharpe:.3f} ({exit_only.overall_sharpe - v2.overall_sharpe:+.3f})"
+    )
+    print(
+        f"  TOP胜率: {v2.objective_metrics['top_exit'].win_rate:.2%} → {exit_only.objective_metrics['top_exit'].win_rate:.2%}"
+    )
+    print(
+        f"  TOP收益: {v2.objective_metrics['top_exit'].avg_return:.2%} → {exit_only.objective_metrics['top_exit'].avg_return:.2%}"
+    )
     print()
 
     if dip_only.composite_score > v2.composite_score:

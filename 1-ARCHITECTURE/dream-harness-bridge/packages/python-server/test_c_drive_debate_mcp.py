@@ -1,4 +1,5 @@
 """C-Drive → agent.debate.mcp 迁移测试（feature flag / 灰度 / 回滚）。"""
+
 from __future__ import annotations
 
 import json
@@ -13,12 +14,14 @@ if SERVER_DIR not in sys.path:
 
 
 def _mock_llm(prompt, *args, **kwargs):
-    return json.dumps({
-        "thesis": "本地论点",
-        "arguments": ["论据1"],
-        "quote": "金句",
-        "confidence": 0.7,
-    })
+    return json.dumps(
+        {
+            "thesis": "本地论点",
+            "arguments": ["论据1"],
+            "quote": "金句",
+            "confidence": 0.7,
+        }
+    )
 
 
 SIGNALS = [
@@ -40,20 +43,31 @@ class FakeMCPClient:
         return None
 
     def run(self, topic, mode="fast", background="", **kwargs):
-        type(self).calls.append({
-            "topic": topic, "mode": mode, "background": background,
-            **kwargs,
-        })
+        type(self).calls.append(
+            {
+                "topic": topic,
+                "mode": mode,
+                "background": background,
+                **kwargs,
+            }
+        )
         return {
             "transcript": [
-                {"speaker": "bull", "round": 1,
-                 "content": {"thesis": "MCP 多方", "confidence": 0.82}},
-                {"speaker": "bear", "round": 1,
-                 "content": {"thesis": "MCP 空方", "confidence": 0.41}},
+                {
+                    "speaker": "bull",
+                    "round": 1,
+                    "content": {"thesis": "MCP 多方", "confidence": 0.82},
+                },
+                {
+                    "speaker": "bear",
+                    "round": 1,
+                    "content": {"thesis": "MCP 空方", "confidence": 0.41},
+                },
             ],
             "verdict": {
                 "signal": {
-                    "direction": "long", "confidence": 0.78,
+                    "direction": "long",
+                    "confidence": 0.78,
                     "risk_flags": ["high_volatility"],
                 },
                 "risks": [],
@@ -72,10 +86,13 @@ class TestCDriveDebateMCP(unittest.TestCase):
         from c_drive_agent import CDriveAgent
 
         FakeMCPClient.calls = []
-        with patch.dict(os.environ, {
-            "DEBATE_MCP_ENABLED": "true",
-            "DEBATE_MCP_GRAY_PERCENT": "100",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "DEBATE_MCP_ENABLED": "true",
+                "DEBATE_MCP_GRAY_PERCENT": "100",
+            },
+        ):
             with patch("debate_mcp_client.DebateMCPClient", FakeMCPClient):
                 agent = CDriveAgent(llm_fn=_mock_llm)
                 result = agent._bull_bear_debate(SIGNALS, "LONG")
@@ -97,9 +114,12 @@ class TestCDriveDebateMCP(unittest.TestCase):
         from c_drive_agent import CDriveAgent
 
         FakeMCPClient.calls = []
-        with patch.dict(os.environ, {
-            "DEBATE_MCP_ENABLED": "false",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "DEBATE_MCP_ENABLED": "false",
+            },
+        ):
             with patch("debate_mcp_client.DebateMCPClient", FakeMCPClient):
                 agent = CDriveAgent(llm_fn=_mock_llm)
                 result = agent._bull_bear_debate(SIGNALS, "LONG")
@@ -111,10 +131,13 @@ class TestCDriveDebateMCP(unittest.TestCase):
         from c_drive_agent import CDriveAgent
 
         FakeMCPClient.calls = []
-        with patch.dict(os.environ, {
-            "DEBATE_MCP_ENABLED": "true",
-            "DEBATE_MCP_GRAY_PERCENT": "0",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "DEBATE_MCP_ENABLED": "true",
+                "DEBATE_MCP_GRAY_PERCENT": "0",
+            },
+        ):
             with patch("debate_mcp_client.DebateMCPClient", FakeMCPClient):
                 agent = CDriveAgent(llm_fn=_mock_llm)
                 agent._bull_bear_debate(SIGNALS, "LONG")
@@ -124,10 +147,13 @@ class TestCDriveDebateMCP(unittest.TestCase):
     def test_mcp_failure_falls_back_to_local(self):
         from c_drive_agent import CDriveAgent
 
-        with patch.dict(os.environ, {
-            "DEBATE_MCP_ENABLED": "true",
-            "DEBATE_MCP_GRAY_PERCENT": "100",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "DEBATE_MCP_ENABLED": "true",
+                "DEBATE_MCP_GRAY_PERCENT": "100",
+            },
+        ):
             with patch("debate_mcp_client.DebateMCPClient", FailingMCPClient):
                 agent = CDriveAgent(llm_fn=_mock_llm)
                 result = agent._bull_bear_debate(SIGNALS, "LONG")
@@ -139,11 +165,14 @@ class TestCDriveDebateMCP(unittest.TestCase):
     def test_consecutive_errors_rollback_flag(self):
         from c_drive_agent import CDriveAgent
 
-        with patch.dict(os.environ, {
-            "DEBATE_MCP_ENABLED": "true",
-            "DEBATE_MCP_GRAY_PERCENT": "100",
-            "DEBATE_MCP_MAX_ERRORS": "2",
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "DEBATE_MCP_ENABLED": "true",
+                "DEBATE_MCP_GRAY_PERCENT": "100",
+                "DEBATE_MCP_MAX_ERRORS": "2",
+            },
+        ):
             with patch("debate_mcp_client.DebateMCPClient", FailingMCPClient):
                 agent = CDriveAgent(llm_fn=_mock_llm)
                 agent._bull_bear_debate(SIGNALS, "LONG")
@@ -157,7 +186,9 @@ class TestCDriveDebateMCP(unittest.TestCase):
 
         agent = CDriveAgent(llm_fn=_mock_llm)
         decision = agent._reflect_after_debate(
-            "node", 0.6, [],
+            "node",
+            0.6,
+            [],
             {
                 "bull_confidence": 0.74,
                 "bear_confidence": 0.60,
@@ -175,9 +206,13 @@ class TestCDriveDebateMCP(unittest.TestCase):
         FakeMCPClient.calls = []
         with patch.dict(os.environ, {"DEBATE_MCP_ENABLED": "true"}):
             with patch("debate_mcp_client.DebateMCPClient", FakeMCPClient):
-                result = handle_debate({
-                    "action": "run", "topic": "测试", "mode": "fast",
-                })
+                result = handle_debate(
+                    {
+                        "action": "run",
+                        "topic": "测试",
+                        "mode": "fast",
+                    }
+                )
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["via"], "agent.debate.mcp")

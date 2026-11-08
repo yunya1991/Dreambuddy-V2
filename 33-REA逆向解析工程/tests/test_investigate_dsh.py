@@ -1,4 +1,5 @@
 """RED 测试：S33_rea_investigate DSH 节点 — 工作流节点扩展。"""
+
 import os
 import sys
 import tempfile
@@ -6,12 +7,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from dsh_nodes import (
+from dsh_nodes import (  # noqa: I001
     S33_rea_investigate,
     DSH_NODE_REGISTRY,
     dispatch,
 )
-
 
 SAMPLE_PROJECT = '''
 def main():
@@ -65,11 +65,13 @@ def test_s33_investigate_with_feature_and_entry():
     """RED: 支持 feature + entry 参数。"""
     with tempfile.TemporaryDirectory() as d:
         Path(os.path.join(d, "main.py")).write_text(SAMPLE_PROJECT.strip())
-        result = S33_rea_investigate({
-            "target": d,
-            "feature": "数据处理",
-            "entry": "main",
-        })
+        result = S33_rea_investigate(
+            {
+                "target": d,
+                "feature": "数据处理",
+                "entry": "main",
+            }
+        )
 
     assert result["ok"] is True
     assert result["result"].get("feature") == "数据处理"
@@ -79,7 +81,9 @@ def test_s33_investigate_missing_target():
     """RED: 缺少 target 应返回错误。"""
     result = S33_rea_investigate({})
     assert result["ok"] is False
-    assert "missing_target" in result.get("error", "") or "target" in result.get("error", "").lower()
+    assert (
+        "missing_target" in result.get("error", "") or "target" in result.get("error", "").lower()
+    )
 
 
 def test_s33_investigate_invalid_target():
@@ -94,10 +98,12 @@ def test_s33_investigate_trace_id():
     """RED: 应支持 trace_id 参数。"""
     with tempfile.TemporaryDirectory() as d:
         Path(os.path.join(d, "main.py")).write_text("def main():\n    return 1\n")
-        result = S33_rea_investigate({
-            "target": d,
-            "trace_id": "test_trace_001",
-        })
+        result = S33_rea_investigate(
+            {
+                "target": d,
+                "trace_id": "test_trace_001",
+            }
+        )
 
     assert result["trace_id"] == "test_trace_001"
 

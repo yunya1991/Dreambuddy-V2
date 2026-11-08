@@ -9,9 +9,9 @@ EWC (Elastic Weight Consolidation):
   - fine-tune 时, 总 loss = task_loss + (ewc_lambda/2) * Σ F_i * (θ_i - θ*_i)^2
   - 防止灾难性遗忘: 对旧任务重要的权重 (高 F) 受到更强保护
 """
+
 from __future__ import annotations
 
-import copy
 import logging
 import math
 from datetime import datetime
@@ -69,14 +69,16 @@ class NeuralSDEOnlineTrainer:
         """
         closes = np.asarray(closes, dtype=np.float64).ravel()
         if len(closes) > self.rolling_window:
-            return closes[-self.rolling_window:]
+            return closes[-self.rolling_window :]
         return closes
 
     # ------------------------------------------------------------------
     # EWC (Elastic Weight Consolidation)
     # ------------------------------------------------------------------
     def _compute_fisher(
-        self, closes: np.ndarray, regime_labels: Optional[np.ndarray] = None,
+        self,
+        closes: np.ndarray,
+        regime_labels: Optional[np.ndarray] = None,
         n_samples: int = 200,
     ) -> dict[str, Any]:
         """计算 Fisher 信息矩阵 (对角线近似).
@@ -95,10 +97,7 @@ class NeuralSDEOnlineTrainer:
         torch = self._torch
         model = self.model
 
-        fisher = {
-            name: torch.zeros_like(p)
-            for name, p in model.drift_net.named_parameters()
-        }
+        fisher = {name: torch.zeros_like(p) for name, p in model.drift_net.named_parameters()}
 
         closes = self._apply_rolling_window(closes)
         if len(closes) < 100:
@@ -115,8 +114,8 @@ class NeuralSDEOnlineTrainer:
 
         model.drift_net.eval()
         for idx in indices:
-            inp = closes[idx:idx + seq_len]
-            tgt = closes[idx + seq_len:idx + seq_len + horizon]
+            inp = closes[idx : idx + seq_len]
+            tgt = closes[idx + seq_len : idx + seq_len + horizon]
             # 归一化
             price_mean = float(np.mean(inp))
             price_std = float(np.std(inp)) if np.std(inp) > 0 else 1.0
@@ -188,8 +187,7 @@ class NeuralSDEOnlineTrainer:
         if not self.model.is_available:
             return
         self._optimal_params = {
-            name: p.detach().clone()
-            for name, p in self.model.drift_net.named_parameters()
+            name: p.detach().clone() for name, p in self.model.drift_net.named_parameters()
         }
 
     def _backup_full_retrain_state(self) -> None:
@@ -197,8 +195,7 @@ class NeuralSDEOnlineTrainer:
         if not self.model.is_available:
             return
         self._last_full_retrain_state = {
-            name: p.detach().clone()
-            for name, p in self.model.drift_net.named_parameters()
+            name: p.detach().clone() for name, p in self.model.drift_net.named_parameters()
         }
 
     def _restore_full_retrain_state(self) -> None:
@@ -251,14 +248,21 @@ class NeuralSDEOnlineTrainer:
 
         # 构建训练器 (低 lr)
         trainer = NeuralSDETrainer(
-            model=self.model, lr=self.fine_tune_lr,
-            seq_len=64, horizon=20, batch_size=64, loss_type="mse",
+            model=self.model,
+            lr=self.fine_tune_lr,
+            seq_len=64,
+            horizon=20,
+            batch_size=64,
+            loss_type="mse",
         )
 
         # 准备数据
         from .neural_sde_model import MIN_SAMPLES_FOR_ACTIVATION
+
         windows = trainer.prepare_data(
-            closes, regime_labels=regime_labels, regime_balance="natural",
+            closes,
+            regime_labels=regime_labels,
+            regime_balance="natural",
             exogenous_factors=exogenous_factors,
         )
         if len(windows) < MIN_SAMPLES_FOR_ACTIVATION:
@@ -266,8 +270,7 @@ class NeuralSDEOnlineTrainer:
 
         # EWC fine-tune 循环
         optimizer = torch.optim.Adam(
-            list(self.model.drift_net.parameters()) +
-            list(self.model.diffusion_net.parameters()),
+            list(self.model.drift_net.parameters()) + list(self.model.diffusion_net.parameters()),
             lr=self.fine_tune_lr,
         )
 
@@ -278,9 +281,9 @@ class NeuralSDEOnlineTrainer:
         dt = 1.0
         sqrt_dt = math.sqrt(dt)
 
-        for epoch in range(epochs):
+        for epoch in range(epochs):  # noqa: B007
             for i in range(0, len(windows), bs):
-                batch = windows[i:i + bs]
+                batch = windows[i : i + bs]
                 if not batch:
                     continue
                 batch_size = len(batch)
@@ -397,13 +400,19 @@ class NeuralSDEOnlineTrainer:
                 torch.nn.init.zeros_(p)
 
         trainer = NeuralSDETrainer(
-            model=self.model, lr=1e-4, seq_len=64, horizon=20,
-            batch_size=64, loss_type="mse",
+            model=self.model,
+            lr=1e-4,
+            seq_len=64,
+            horizon=20,
+            batch_size=64,
+            loss_type="mse",
         )
 
         report = trainer.train(
-            closes, epochs=epochs,
-            regime_labels=regime_labels, regime_balance="natural",
+            closes,
+            epochs=epochs,
+            regime_labels=regime_labels,
+            regime_balance="natural",
         )
 
         if report.get("status") == "ok":
@@ -419,7 +428,9 @@ class NeuralSDEOnlineTrainer:
     # retrain 调度
     # ------------------------------------------------------------------
     def should_retrain(
-        self, current_time: datetime, last_retrain_time: datetime,
+        self,
+        current_time: datetime,
+        last_retrain_time: datetime,
     ) -> bool:
         """判断是否需要 full retrain (间隔阈值).
 

@@ -3,20 +3,17 @@ L2 自检测: NodeRunner 节点执行器单测
 覆盖: 前置检查/超时/重试/退避/失败回退/预算检查
 """
 
-import sys
+import sys  # noqa: I001
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
-from dreamos.shared.errors import ErrorCode
-from dreamos.core.compute.node_runner import NodeRunner
-from dreamos.core.compute.types import NodeExecutionRecord
+from dreamos.core.compute.node_runner import NodeRunner  # noqa: E402
+from dreamos.shared.errors import ErrorCode  # noqa: E402
+from dreamos.shared.state import NodeResult, NodeStatus, State  # noqa: E402
 
 
 def make_mock_node(node_id="A1", estimated_tokens=100):
@@ -136,7 +133,12 @@ class TestNodeRunnerRetry:
         node = make_mock_node()
         # 第一次失败（可重试），第二次成功
         node.execute.side_effect = [
-            NodeResult(node_id="A1", status=NodeStatus.FAILED, error_code=ErrorCode.EXEC_002, error="retryable"),
+            NodeResult(
+                node_id="A1",
+                status=NodeStatus.FAILED,
+                error_code=ErrorCode.EXEC_002,
+                error="retryable",
+            ),
             NodeResult(node_id="A1", confidence=0.8, direction="LONG"),
         ]
         runner = NodeRunner(max_retries=2)
@@ -148,8 +150,10 @@ class TestNodeRunnerRetry:
         """重试次数耗尽 → 最终失败"""
         node = make_mock_node()
         node.execute.return_value = NodeResult(
-            node_id="A1", status=NodeStatus.FAILED,
-            error_code=ErrorCode.EXEC_002, error="always fail"
+            node_id="A1",
+            status=NodeStatus.FAILED,
+            error_code=ErrorCode.EXEC_002,
+            error="always fail",
         )
         runner = NodeRunner(max_retries=2)
         record = runner.run(node, make_state())
@@ -160,8 +164,10 @@ class TestNodeRunnerRetry:
         """不可重试错误 → 不重试"""
         node = make_mock_node()
         node.execute.return_value = NodeResult(
-            node_id="A1", status=NodeStatus.FAILED,
-            error_code=ErrorCode.NODE_001, error="non-retryable"
+            node_id="A1",
+            status=NodeStatus.FAILED,
+            error_code=ErrorCode.NODE_001,
+            error="non-retryable",
         )
         runner = NodeRunner(max_retries=3)
         record = runner.run(node, make_state())
@@ -171,8 +177,7 @@ class TestNodeRunnerRetry:
         """禁用可重试错误 → 不重试"""
         node = make_mock_node()
         node.execute.return_value = NodeResult(
-            node_id="A1", status=NodeStatus.FAILED,
-            error_code=ErrorCode.EXEC_002, error="retryable"
+            node_id="A1", status=NodeStatus.FAILED, error_code=ErrorCode.EXEC_002, error="retryable"
         )
         runner = NodeRunner(max_retries=3, retryable_errors=False)
         record = runner.run(node, make_state())

@@ -24,6 +24,7 @@ FAIL-OPEN:
 
 C3 匹配度复用 core.cognitive_router.evaluate_match（不重写）。
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -41,12 +42,12 @@ from core.jev_gate import (
 # ============================================================
 
 THRESHOLD_HIGH = 0.7
-CASE_DENSITY_MIN = TIER1_DENSITY_THRESHOLD          # 3
-PREDICTION_ERROR_MAX = PREDICTION_ERROR_THRESHOLD   # 0.3
+CASE_DENSITY_MIN = TIER1_DENSITY_THRESHOLD  # 3
+PREDICTION_ERROR_MAX = PREDICTION_ERROR_THRESHOLD  # 0.3
 
 # FAST_PATH 仅作信号透传；门控决策严格以 route_confidence 公式为准
-FAST_PATH_MATCH_CONST = FAST_PATH_MATCH             # 0.8
-FAST_PATH_DENSITY_CONST = FAST_PATH_DENSITY         # 5
+FAST_PATH_MATCH_CONST = FAST_PATH_MATCH  # 0.8
+FAST_PATH_DENSITY_CONST = FAST_PATH_DENSITY  # 5
 
 # 扣分系数（SSoT §16.5 公式常量）
 PENALTY_PREDICTION_ERROR = 0.3
@@ -88,6 +89,7 @@ class RouteConfidenceResult:
 # C4: 预测误差（actual 取值顺序对齐 jev_gate.jev_gate）
 # ============================================================
 
+
 def compute_prediction_error(
     match_score: float,
     rea_confidence: Optional[float] = None,
@@ -110,6 +112,7 @@ def compute_prediction_error(
 # 公式
 # ============================================================
 
+
 def compute_route_confidence(
     match_score: float,
     case_density: int,
@@ -123,8 +126,11 @@ def compute_route_confidence(
     """
     route_confidence = match_score
     reasons: List[str] = []
-    if c4_available and prediction_error is not None \
-            and prediction_error > PREDICTION_ERROR_MAX + _EPS:
+    if (
+        c4_available
+        and prediction_error is not None
+        and prediction_error > PREDICTION_ERROR_MAX + _EPS
+    ):
         route_confidence -= PENALTY_PREDICTION_ERROR
         reasons.append(R_PREDICTION_ERROR)
     if case_density < CASE_DENSITY_MIN:
@@ -138,6 +144,7 @@ def compute_route_confidence(
 # ============================================================
 # 门控主入口
 # ============================================================
+
 
 def evaluate_route(
     memories: Optional[List[Any]],
@@ -196,8 +203,7 @@ def evaluate_route(
         reasons.append(R_C4_UNAVAILABLE)
     else:
         try:
-            prediction_error = compute_prediction_error(
-                match_score, rea_confidence, debate_result)
+            prediction_error = compute_prediction_error(match_score, rea_confidence, debate_result)
             if prediction_error is None:
                 c4_ok = False
                 reasons.append(R_C4_UNAVAILABLE)
@@ -208,12 +214,10 @@ def evaluate_route(
 
     # 5) 公式 + 路由
     route_confidence, formula_reasons = compute_route_confidence(
-        match_score, case_density, prediction_error, c4_available=c4_ok)
-    reasons = reasons + formula_reasons
-    fast_path = (
-        match_score >= FAST_PATH_MATCH_CONST
-        and case_density >= FAST_PATH_DENSITY_CONST
+        match_score, case_density, prediction_error, c4_available=c4_ok
     )
+    reasons = reasons + formula_reasons
+    fast_path = match_score >= FAST_PATH_MATCH_CONST and case_density >= FAST_PATH_DENSITY_CONST
     return RouteConfidenceResult(
         route_confidence=route_confidence,
         decision=L1_DIRECT if route_confidence >= THRESHOLD_HIGH else L2_HANDOFF,

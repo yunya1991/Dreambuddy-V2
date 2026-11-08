@@ -1,4 +1,5 @@
 """JsonLegacyConfigRepository（P0 内存版本管理器）"""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """polling_trader P2-9 集成测试：开仓事件含 prediction 字段"""
+
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.memory_l4.prediction_bridge import generate_prediction_dict

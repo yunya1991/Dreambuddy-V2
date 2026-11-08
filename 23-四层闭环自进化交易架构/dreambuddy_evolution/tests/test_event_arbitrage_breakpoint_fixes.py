@@ -8,6 +8,7 @@
 
 TDD 铁律：先写测试→正确失败→实现→全绿。
 """
+
 from __future__ import annotations
 
 import sys
@@ -31,28 +32,29 @@ class TestFindCombinationsByStrategyType:
     def test_function_exists(self):
         """函数存在性测试"""
         from dreambuddy_evolution.core import strategy_gene as sgs
-        assert hasattr(sgs, "find_combinations_by_strategy_type"), (
-            "find_combinations_by_strategy_type 函数不存在 — 断点1 未修复"
-        )
+
+        assert hasattr(
+            sgs, "find_combinations_by_strategy_type"
+        ), "find_combinations_by_strategy_type 函数不存在 — 断点1 未修复"
 
     def test_returns_event_arbitrage_combinations_from_real_library(self):
         """从实库中查找 event_arbitrage 组合 — 应返回 CB-EVENT-PRICED-IN"""
         from dreambuddy_evolution.core import strategy_gene as sgs
+
         real_root = REPO / "dreambuddy_evolution" / "gene_data"
         lib = sgs.load_gene_library(real_root)
         results = sgs.find_combinations_by_strategy_type(lib, "event_arbitrage")
         assert isinstance(results, list), "返回值必须是 list"
-        assert len(results) >= 1, (
-            f"实库中至少应有 1 个 event_arbitrage 组合(CB-EVENT-PRICED-IN)，got {len(results)}"
-        )
+        assert (
+            len(results) >= 1
+        ), f"实库中至少应有 1 个 event_arbitrage 组合(CB-EVENT-PRICED-IN)，got {len(results)}"
         combo_ids = [r.get("combo_id") for r in results]
-        assert "CB-EVENT-PRICED-IN" in combo_ids, (
-            f"CB-EVENT-PRICED-IN 未出现在结果中: {combo_ids}"
-        )
+        assert "CB-EVENT-PRICED-IN" in combo_ids, f"CB-EVENT-PRICED-IN 未出现在结果中: {combo_ids}"
 
     def test_returns_empty_for_nonexistent_strategy_type(self):
         """不存在的 strategy_type 返回空列表"""
         from dreambuddy_evolution.core import strategy_gene as sgs
+
         real_root = REPO / "dreambuddy_evolution" / "gene_data"
         lib = sgs.load_gene_library(real_root)
         results = sgs.find_combinations_by_strategy_type(lib, "__NO_SUCH_TYPE__")
@@ -61,6 +63,7 @@ class TestFindCombinationsByStrategyType:
     def test_fail_open_on_exception(self):
         """异常输入返回空列表（FAIL-OPEN）"""
         from dreambuddy_evolution.core import strategy_gene as sgs
+
         # 传入非 dict 类型
         results = sgs.find_combinations_by_strategy_type(None, "event_arbitrage")
         assert results == [], "None 输入应 FAIL-OPEN 返回空列表"
@@ -71,6 +74,7 @@ class TestFindCombinationsByStrategyType:
     def test_result_contains_required_fields(self):
         """返回结果包含 combo_id/condition_ids/action_ids/ess/meta 字段"""
         from dreambuddy_evolution.core import strategy_gene as sgs
+
         real_root = REPO / "dreambuddy_evolution" / "gene_data"
         lib = sgs.load_gene_library(real_root)
         results = sgs.find_combinations_by_strategy_type(lib, "event_arbitrage")
@@ -90,18 +94,20 @@ class TestEventArbitrageInjection:
 
     def test_trigger_build_position_accepts_source_tag(self):
         """_trigger_build_position 支持 source_tag 参数"""
-        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
         import inspect
+
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         sig = inspect.signature(KlineEventHandler._trigger_build_position)
         params = list(sig.parameters.keys())
-        assert "source_tag" in params, (
-            f"_trigger_build_position 必须支持 source_tag 参数，当前参数: {params}"
-        )
+        assert (
+            "source_tag" in params
+        ), f"_trigger_build_position 必须支持 source_tag 参数，当前参数: {params}"
 
     def test_event_arbitrage_injected_when_conditions_met(self):
         """当事件驱动层启用 + FOMC活跃 + long方向 + priced_in≥0.75 时，注入 source_tag=event_arbitrage"""
-        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
         from dreambuddy_evolution.agi_config import AGI_SWITCHES
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
 
         # 启用事件驱动层
         AGI_SWITCHES["enable_contradiction_driven_layer"] = True
@@ -137,25 +143,29 @@ class TestEventArbitrageInjection:
         # mock _apply_macro_event_filter 返回活跃的 long 方向
         with patch.object(handler, "_apply_macro_event_filter") as mock_macro:
             mock_macro.return_value = (
-                "long", 0.60,
+                "long",
+                0.60,
                 {
-                    "active": True, "filter_level": "soft",
-                    "direction": "long", "conviction": 0.80,
-                    "position_params": None, "adjusted_params": None,
+                    "active": True,
+                    "filter_level": "soft",
+                    "direction": "long",
+                    "conviction": 0.80,
+                    "position_params": None,
+                    "adjusted_params": None,
                 },
             )
             handler.on_kline_close(kline_data)
 
         assert len(callback_calls) == 1, f"应调用 1 次回调，got {len(callback_calls)}"
         call = callback_calls[0]
-        assert call.get("source_tag") == "event_arbitrage", (
-            f"事件驱动场景应注入 source_tag=event_arbitrage，got {call.get('source_tag')}"
-        )
+        assert (
+            call.get("source_tag") == "event_arbitrage"
+        ), f"事件驱动场景应注入 source_tag=event_arbitrage，got {call.get('source_tag')}"
 
     def test_no_event_arbitrage_when_switch_off(self):
         """开关关断时不注入 event_arbitrage（保持字节等价）"""
-        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
         from dreambuddy_evolution.agi_config import AGI_SWITCHES
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
 
         AGI_SWITCHES["enable_contradiction_driven_layer"] = False
 
@@ -189,9 +199,7 @@ class TestEventArbitrageInjection:
         handler.on_kline_close(kline_data)
         if callback_calls:
             call = callback_calls[0]
-            assert call.get("source_tag") != "event_arbitrage", (
-                "开关关断时不应注入 event_arbitrage"
-            )
+            assert call.get("source_tag") != "event_arbitrage", "开关关断时不应注入 event_arbitrage"
 
 
 # ==================================================================================
@@ -202,8 +210,8 @@ class TestTierSystemUnification:
 
     def test_ri_based_tier_when_switch_off(self):
         """开关关断时使用 ri-based tier（字节等价）"""
-        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
         from dreambuddy_evolution.agi_config import AGI_SWITCHES
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
 
         AGI_SWITCHES["enable_contradiction_driven_layer"] = False
         AGI_SWITCHES["enable_conviction_position_mapper"] = False
@@ -236,14 +244,14 @@ class TestTierSystemUnification:
         handler.on_kline_close(kline_data)
         assert len(callback_calls) == 1
         # ri=0.65 → standard tier
-        assert callback_calls[0].get("tier") == "standard", (
-            f"ri=0.65 开关关断时应为 standard tier，got {callback_calls[0].get('tier')}"
-        )
+        assert (
+            callback_calls[0].get("tier") == "standard"
+        ), f"ri=0.65 开关关断时应为 standard tier，got {callback_calls[0].get('tier')}"
 
     def test_conviction_based_tier_when_switch_on(self):
         """开关启用时使用 conviction-based tier"""
-        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
         from dreambuddy_evolution.agi_config import AGI_SWITCHES
+        from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
 
         AGI_SWITCHES["enable_contradiction_driven_layer"] = True
         AGI_SWITCHES["enable_conviction_position_mapper"] = True
@@ -264,10 +272,13 @@ class TestTierSystemUnification:
         # mock macro_info 返回高 conviction（应映射到 standard 或更高）
         with patch.object(handler, "_apply_macro_event_filter") as mock_macro:
             mock_macro.return_value = (
-                "long", 0.55,
+                "long",
+                0.55,
                 {
-                    "active": True, "filter_level": "soft",
-                    "direction": "long", "conviction": 0.75,
+                    "active": True,
+                    "filter_level": "soft",
+                    "direction": "long",
+                    "conviction": 0.75,
                     "position_params": {"position_scale": 1.2, "tier": "trend_set"},
                     "adjusted_params": None,
                 },
@@ -290,9 +301,10 @@ class TestTierSystemUnification:
         assert len(callback_calls) == 1
         # conviction=0.75 → trend_set → 映射回 standard tier
         tier = callback_calls[0].get("tier")
-        assert tier in ("standard", "trend"), (
-            f"conviction=0.75 应映射到 standard 或 trend tier，got {tier}"
-        )
+        assert tier in (
+            "standard",
+            "trend",
+        ), f"conviction=0.75 应映射到 standard 或 trend tier，got {tier}"
 
 
 # ==================================================================================
@@ -305,16 +317,15 @@ class TestSourceTagSLTP:
         """event_arbitrage source_tag 使用 SL=2%/TP=4%（小单小止小盈）"""
         # 这个测试验证 _evolution_build_position 中 source_tag 逻辑
         # 由于 polling_trader.py 难以单元测试（重依赖），我们验证函数签名支持 source_tag
-        import inspect
-        import importlib.util
+
         pt_path = PROJECT_ROOT / "11-易经推理系统" / "scripts" / "memory_l4" / "polling_trader.py"
         if not pt_path.exists():
             pytest.skip("polling_trader.py 不存在")
         # 读取源码检查 source_tag 参数是否被支持
         source = pt_path.read_text(encoding="utf-8")
-        assert "event_arbitrage" in source, (
-            "polling_trader.py 必须包含 event_arbitrage source_tag 处理逻辑"
-        )
+        assert (
+            "event_arbitrage" in source
+        ), "polling_trader.py 必须包含 event_arbitrage source_tag 处理逻辑"
         # 检查 _evolution_build_position 支持 source_tag 参数
         assert "source_tag" in source, "polling_trader.py 必须支持 source_tag 参数"
 
@@ -325,11 +336,11 @@ class TestSourceTagSLTP:
             pytest.skip("polling_trader.py 不存在")
         source = pt_path.read_text(encoding="utf-8")
         # 查找 event_arbitrage SL/TP 定义（2%/4%）
-        assert ("0.02" in source and "0.04" in source) or \
-               ("2%" in source and "4%" in source) or \
-               ("sl_pct" in source and "0.02" in source), (
-            "polling_trader.py 必须包含 event_arbitrage 的 SL=2%/TP=4% 定义"
-        )
+        assert (
+            ("0.02" in source and "0.04" in source)
+            or ("2%" in source and "4%" in source)
+            or ("sl_pct" in source and "0.02" in source)
+        ), "polling_trader.py 必须包含 event_arbitrage 的 SL=2%/TP=4% 定义"
 
 
 # ==================================================================================
@@ -345,19 +356,19 @@ class TestProbeToStandardUpgrade:
             pytest.skip("polling_trader.py 不存在")
         source = pt_path.read_text(encoding="utf-8")
         # 检查升级逻辑关键词存在
-        assert "probe" in source and "standard" in source, (
-            "polling_trader.py 必须包含 probe/standard 升级逻辑"
-        )
+        assert (
+            "probe" in source and "standard" in source
+        ), "polling_trader.py 必须包含 probe/standard 升级逻辑"
         # 检查升级方法或逻辑块存在
         has_upgrade = (
-            "_maybe_upgrade_probe_to_standard" in source or
-            "_upgrade_probe_tier" in source or
-            "probe_to_standard" in source or
-            "tier_upgrade" in source
+            "_maybe_upgrade_probe_to_standard" in source
+            or "_upgrade_probe_tier" in source
+            or "probe_to_standard" in source
+            or "tier_upgrade" in source
         )
-        assert has_upgrade, (
-            "polling_trader.py 必须包含 probe→standard 升级方法（如 _maybe_upgrade_probe_to_standard）"
-        )
+        assert (
+            has_upgrade
+        ), "polling_trader.py 必须包含 probe→standard 升级方法（如 _maybe_upgrade_probe_to_standard）"
 
     def test_upgrade_conditions_in_source(self):
         """验证升级条件关键词存在于源码中"""
@@ -366,6 +377,4 @@ class TestProbeToStandardUpgrade:
             pytest.skip("polling_trader.py 不存在")
         source = pt_path.read_text(encoding="utf-8")
         # 升级条件：持仓时长 + 盈利 + tier 标记
-        assert "unrealized_pnl" in source or "pnl" in source.lower(), (
-            "升级逻辑必须检查持仓盈利"
-        )
+        assert "unrealized_pnl" in source or "pnl" in source.lower(), "升级逻辑必须检查持仓盈利"

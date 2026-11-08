@@ -1,4 +1,5 @@
 """review_runner 测试：结构化评审输出、裁判、降级。"""
+
 from core.review_runner import run_review_sync
 
 
@@ -17,17 +18,13 @@ class FakeLLM:
         if "对方质询问题" in user_prompt:
             return '{"answers":["来源是 CoinGecko"]}'
         if "反方" in system_prompt:
-            return (
-                '{"thesis":"反方论点","arguments":["a2","b2"],'
-                '"quote":"q2","confidence":0.7}'
-            )
+            return '{"thesis":"反方论点","arguments":["a2","b2"],' '"quote":"q2","confidence":0.7}'
         return '{"thesis":"正方论点","arguments":["a1","b1"],"quote":"q1","confidence":0.8}'
 
 
 class FakeAdjudication:
     def to_dict(self):
-        return {"winner": "bull", "bull_total": 24, "bear_total": 20,
-                "rfd": "正方论据更充分"}
+        return {"winner": "bull", "bull_total": 24, "bear_total": 20, "rfd": "正方论据更充分"}
 
 
 class FakeAdjudicator:
@@ -45,8 +42,11 @@ class InvalidLLM:
 
 def test_run_review_structured_output():
     result = run_review_sync(
-        "测试命题", background="背景", rounds=2,
-        debater_llm=FakeLLM(), judge_llm=FakeLLM(),
+        "测试命题",
+        background="背景",
+        rounds=2,
+        debater_llm=FakeLLM(),
+        judge_llm=FakeLLM(),
     )
     payload = result.to_dict()
     assert payload["status"] == "completed"
@@ -58,8 +58,11 @@ def test_run_review_structured_output():
 
 def test_run_review_judge_disabled():
     result = run_review_sync(
-        "测试命题", rounds=1, judge=False,
-        debater_llm=FakeLLM(), judge_llm=FakeLLM(),
+        "测试命题",
+        rounds=1,
+        judge=False,
+        debater_llm=FakeLLM(),
+        judge_llm=FakeLLM(),
     )
     payload = result.to_dict()
     assert payload["verdict"] is None
@@ -68,8 +71,10 @@ def test_run_review_judge_disabled():
 
 def test_run_review_adjudication():
     result = run_review_sync(
-        "测试命题", rounds=1,
-        debater_llm=FakeLLM(), judge_llm=FakeLLM(),
+        "测试命题",
+        rounds=1,
+        debater_llm=FakeLLM(),
+        judge_llm=FakeLLM(),
         adjudicator=FakeAdjudicator(),
     )
     payload = result.to_dict()
@@ -79,13 +84,15 @@ def test_run_review_adjudication():
 
 def test_run_review_cross_examination():
     result = run_review_sync(
-        "测试命题", rounds=2, cross_examination=True,
-        debater_llm=FakeLLM(), judge_llm=FakeLLM(),
+        "测试命题",
+        rounds=2,
+        cross_examination=True,
+        debater_llm=FakeLLM(),
+        judge_llm=FakeLLM(),
         adjudication=False,
     )
     payload = result.to_dict()
-    exams = [t for t in payload["transcript"]
-             if "questioner" in t["content"]]
+    exams = [t for t in payload["transcript"] if "questioner" in t["content"]]
     assert len(exams) == 2
     assert exams[0]["content"]["questioner"] == "bear"
     assert exams[1]["content"]["questioner"] == "bull"
@@ -93,8 +100,10 @@ def test_run_review_cross_examination():
 
 def test_run_review_degraded_on_invalid_json():
     result = run_review_sync(
-        "测试命题", rounds=1,
-        debater_llm=InvalidLLM(), judge_llm=InvalidLLM(),
+        "测试命题",
+        rounds=1,
+        debater_llm=InvalidLLM(),
+        judge_llm=InvalidLLM(),
     )
     payload = result.to_dict()
     assert payload["status"] == "completed"

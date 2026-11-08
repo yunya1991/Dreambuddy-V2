@@ -2,10 +2,8 @@
 
 验证爬虫轨全链路：配置加载 → 静态站 requests+Selector → 适配 DataRecord → 去重落库。
 """
-import os
 
 import pytest
-
 from data_center.core.contract import DataRecord
 from data_center.core.dispatcher import DataCenter
 from data_center.crawler.runner import CrawlerRunner
@@ -107,6 +105,7 @@ def test_crawler_disabled_site_skipped(mocker, config_path):
     mock_req = mocker.patch(REQ_MOD)
     # 改 config 使站点 disabled
     import yaml
+
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
     cfg["sites"]["test_news"]["enabled"] = False

@@ -2,12 +2,11 @@
 
 依据：TASKS-工程实践复现器.md TR-7.1 / TR-7.2 / TR-7.3
 """
-import os
+
+import os  # noqa: I001
 import sys
 import tempfile
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -18,7 +17,6 @@ from dsh_nodes import (
     S33_rea_recover_decisions,
     dispatch,
 )
-
 
 UNCOMMENTED_CODE = "def fn():\n    x = 142\n    return x * 3.14\n"
 

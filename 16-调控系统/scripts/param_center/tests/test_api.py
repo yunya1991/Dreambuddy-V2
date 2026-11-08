@@ -10,6 +10,7 @@
   cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2
   python -m pytest 16-调控系统/scripts/param_center/tests/test_api.py -v
 """
+
 from __future__ import annotations
 
 import sys
@@ -21,9 +22,9 @@ import pytest
 
 # 路径设置：让测试能导入 11-易经推理系统/scripts 下的模块
 _THIS = Path(__file__).resolve()
-_PARAM_CENTER = _THIS.parent.parent          # .../16-调控系统/scripts/param_center
-_SCRIPTS_16 = _PARAM_CENTER.parent            # .../16-调控系统/scripts
-_PROJECT_ROOT = _SCRIPTS_16.parent.parent    # dreambuddy-v2
+_PARAM_CENTER = _THIS.parent.parent  # .../16-调控系统/scripts/param_center
+_SCRIPTS_16 = _PARAM_CENTER.parent  # .../16-调控系统/scripts
+_PROJECT_ROOT = _SCRIPTS_16.parent.parent  # dreambuddy-v2
 _YIJING_SCRIPTS = _PROJECT_ROOT / "11-易经推理系统" / "scripts"
 
 for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER]:
@@ -32,9 +33,10 @@ for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER]:
         sys.path.insert(0, sp)
 
 # 导入被测对象（实现尚未编写 → 应抛 ModuleNotFoundError → RED）
+from memory_l4.bcrm2.sl_tp_config import SLTPParams  # noqa: E402
+
 from param_center.api import get_sltp_params  # noqa: E402
 from param_center.repository import ParamRepository  # noqa: E402
-from memory_l4.bcrm2.sl_tp_config import SLTPParams  # noqa: E402
 
 
 # ============================================================================
@@ -46,9 +48,9 @@ def test_get_sltp_params_btc_chop():
     assert isinstance(params, SLTPParams), f"返回类型错误: {type(params)}"
     assert params.sl_floor >= 0.03, f"SL 下限违规: {params.sl_floor}"
     assert params.tp_floor >= 0.12, f"TP 下限违规: {params.tp_floor}"
-    assert params.tp_floor / params.sl_floor >= 2.0, (
-        f"RR 比违规: TP={params.tp_floor}, SL={params.sl_floor}"
-    )
+    assert (
+        params.tp_floor / params.sl_floor >= 2.0
+    ), f"RR 比违规: TP={params.tp_floor}, SL={params.sl_floor}"
     # BTC 应分类为 crypto_major + large
     assert params.sl_floor <= 0.15, f"SL 上限违规: {params.sl_floor}"
     assert params.tp_floor <= 0.30, f"TP 上限违规: {params.tp_floor}"

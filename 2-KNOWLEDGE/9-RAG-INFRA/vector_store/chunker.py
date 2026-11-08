@@ -83,9 +83,15 @@ def _split_long_text(text: str, max_tokens: int = MAX_CHUNK_TOKENS) -> List[str]
     return [c for c in chunks if c]
 
 
-def _make_chunk(content: str, source_file: str, domain: str,
-                chunk_type: str, heading: str, heading_level: int,
-                position: int) -> Dict:
+def _make_chunk(
+    content: str,
+    source_file: str,
+    domain: str,
+    chunk_type: str,
+    heading: str,
+    heading_level: int,
+    position: int,
+) -> Dict:
     """构造单个分块字典（含元数据与 tags）。"""
     return {
         "content": content,
@@ -117,15 +123,22 @@ def chunk_markdown(text: str, source_file: str, domain: str) -> List[Dict]:
     try:
         sys.path.insert(0, "/home/ubuntu/fis-p0")
         from core.chunker import Chunker as _FisChunker
+
         _fis_chunks = _FisChunker().chunk(None, text=text)
         if _fis_chunks:
             _out: List[Dict] = []
             for _c in _fis_chunks:
-                _out.append(_make_chunk(
-                    _c.content, source_file, domain,
-                    "code" if _c.boundary_kind == "code" else "text",
-                    _c.heading or "", 0, _c.position,
-                ))
+                _out.append(
+                    _make_chunk(
+                        _c.content,
+                        source_file,
+                        domain,
+                        "code" if _c.boundary_kind == "code" else "text",
+                        _c.heading or "",
+                        0,
+                        _c.position,
+                    )
+                )
             return _out
     except Exception:
         pass  # FAIL-OPEN：41 分块器不可用走原逻辑
@@ -146,8 +159,9 @@ def chunk_markdown(text: str, source_file: str, domain: str) -> List[Dict]:
         if not content:
             return
         for sub in _split_long_text(content, MAX_CHUNK_TOKENS):
-            chunks.append(_make_chunk(sub, source_file, domain, "text",
-                                      heading, heading_level, position))
+            chunks.append(
+                _make_chunk(sub, source_file, domain, "text", heading, heading_level, position)
+            )
             position += 1
 
     while i < len(lines):
@@ -171,8 +185,9 @@ def chunk_markdown(text: str, source_file: str, domain: str) -> List[Dict]:
                 code_lines.append(lines[i])  # 闭合围栏
                 i += 1
             content = "\n".join(code_lines).strip()
-            chunks.append(_make_chunk(content, source_file, domain, "code",
-                                      heading, heading_level, position))
+            chunks.append(
+                _make_chunk(content, source_file, domain, "code", heading, heading_level, position)
+            )
             position += 1
             continue
         # 表格：连续 | 行整块保留
@@ -184,8 +199,9 @@ def chunk_markdown(text: str, source_file: str, domain: str) -> List[Dict]:
                 table_lines.append(lines[i])
                 i += 1
             content = "\n".join(table_lines).strip()
-            chunks.append(_make_chunk(content, source_file, domain, "table",
-                                      heading, heading_level, position))
+            chunks.append(
+                _make_chunk(content, source_file, domain, "table", heading, heading_level, position)
+            )
             position += 1
             continue
         # 空行作为段落边界

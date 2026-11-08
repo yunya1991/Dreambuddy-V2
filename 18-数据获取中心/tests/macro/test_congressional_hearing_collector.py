@@ -9,9 +9,8 @@ SPEC-Phase2 §6.4:
 
 RED 阶段：CongressionalHearingCollector 类尚未实现，测试应因 ImportError 失败。
 """
-import pytest
-from datetime import datetime, timezone
 
+import pytest
 from data_center.core.contract import DataRecord
 
 HEARING_MOD = "data_center.collectors.macro.congressional_hearing_collector"
@@ -22,10 +21,12 @@ def collector(tmp_path):
     from data_center.collectors.macro.congressional_hearing_collector import (
         CongressionalHearingCollector,
     )
+
     return CongressionalHearingCollector(config={"urls": []})
 
 
 # ---------- 基础属性 ----------
+
 
 def test_source_category(collector):
     assert collector.source == "congress"
@@ -66,6 +67,7 @@ def test_parse_marks_crypto_related(collector):
 
 
 # ---------- fetch 产出 DataRecord ----------
+
 
 def test_fetch_returns_data_records(collector, mocker):
     """fetch 解析 HTML 并构造 DataRecord 列表。"""
@@ -112,6 +114,7 @@ def test_fetch_metrics_contain_date_event(collector, mocker):
 
 # ---------- FAIL-OPEN ----------
 
+
 def test_fail_open_fetch_error(collector, mocker):
     """页面抓取异常 → 返回空列表。"""
     mocker.patch(
@@ -143,6 +146,7 @@ def test_fail_open_parse_invalid_html(collector, mocker):
 
 
 # ---------- 日期解析鲁棒性 ----------
+
 
 def test_parse_various_date_formats(collector):
     """支持多种日期格式（月日年 / 月.日 / ISO）。"""

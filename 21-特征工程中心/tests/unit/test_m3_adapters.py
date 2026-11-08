@@ -5,6 +5,7 @@ T23-2: Martin Features — 5列（DD/martin_level/grid_profit）+ 等价
 T23-3: Fundamental Ratios — ≥8列 无NaN + 等价
 T23-4: commodity_safe_haven 集合存在
 """
+
 from __future__ import annotations
 
 import sys
@@ -24,13 +25,16 @@ for _p in [str(_21_ROOT), str(_21_ROOT / "feature_hub")]:
 def _make_ohlcv(n: int = 300, base_price: float = 50000) -> pd.DataFrame:
     rng = np.random.default_rng(42)
     close = base_price * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.004, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
 
 # ============================================================

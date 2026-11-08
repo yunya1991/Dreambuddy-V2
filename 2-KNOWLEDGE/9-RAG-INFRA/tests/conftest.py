@@ -1,4 +1,5 @@
 """RAG 测试全局隔离：避免污染生产 bridge / Chroma / 知识图谱默认路径。"""
+
 from __future__ import annotations
 
 import pytest

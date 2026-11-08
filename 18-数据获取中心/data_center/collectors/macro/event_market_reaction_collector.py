@@ -10,6 +10,7 @@
 
 FAIL-OPEN：所有异常被捕获，失败时返回空列表。
 """
+
 from __future__ import annotations
 
 import json
@@ -84,7 +85,7 @@ def _parse_price_from_html(html: str) -> float | None:
             price_el = root.select_one('[data-field="regularMarketPrice"]')
         if not price_el:
             # 尝试 fin-streamer 标签
-            price_el = root.select_one('fin-streamer[data-symbol]')
+            price_el = root.select_one("fin-streamer[data-symbol]")
         if price_el:
             return _parse_number(price_el.get_text(strip=True))
     except Exception:
@@ -138,13 +139,15 @@ def _fetch_price_data(symbol: str, start_date: str, end_date: str) -> list[dict]
                 closes = indicators.get("quote", [{}])[0].get("close", [])
 
                 prices = []
-                for ts, close in zip(timestamps, closes):
+                for ts, close in zip(timestamps, closes):  # noqa: B905
                     if close is not None:
                         dt = datetime.fromtimestamp(ts)
-                        prices.append({
-                            "date": dt.strftime("%Y-%m-%d"),
-                            "close": round(float(close), 4),
-                        })
+                        prices.append(
+                            {
+                                "date": dt.strftime("%Y-%m-%d"),
+                                "close": round(float(close), 4),
+                            }
+                        )
                 if prices:
                     return prices
     except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:

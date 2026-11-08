@@ -16,8 +16,9 @@ Spec §8.3 TDD 测试矩阵：
   - test_external_data_off    S7 关闭时等价旧路径（零漂移）
 """
 
-import sys
 import os
+import sys
+
 import numpy as np
 import pytest
 
@@ -30,6 +31,7 @@ sys.path.insert(0, os.path.join(_MEM_L4, "bcrm2"))
 # ══════════════════════════════════════════════════════════════════
 # 测试组 1: CoinGeckoFeed
 # ══════════════════════════════════════════════════════════════════
+
 
 class TestCoinGeckoFeed:
 
@@ -88,6 +90,7 @@ class TestCoinGeckoFeed:
 # 测试组 2: MacroFeed
 # ══════════════════════════════════════════════════════════════════
 
+
 class TestMacroFeed:
 
     def test_vix_fetch(self):
@@ -142,6 +145,7 @@ class TestMacroFeed:
 # 测试组 3: S7 开关零漂移
 # ══════════════════════════════════════════════════════════════════
 
+
 class TestExternalDataSwitch:
 
     def test_external_data_off_equivalent_baseline(self):
@@ -153,8 +157,14 @@ class TestExternalDataSwitch:
         X = np.random.randn(n, nf)
         # 所有 8 个类别都需出现
         regimes8 = [
-            "TREND_UP_STRONG", "TREND_UP_MILD", "RANGE_BOUND", "CONSOLIDATION",
-            "REVERSAL", "VOLATILE_DROP", "FOMO_RALLY", "DISTRIBUTION",
+            "TREND_UP_STRONG",
+            "TREND_UP_MILD",
+            "RANGE_BOUND",
+            "CONSOLIDATION",
+            "REVERSAL",
+            "VOLATILE_DROP",
+            "FOMO_RALLY",
+            "DISTRIBUTION",
         ]
         y = np.array(regimes8 * (n // 8) + [regimes8[0]] * (n % 8), dtype=object)
 
@@ -187,8 +197,14 @@ class TestExternalDataSwitch:
         X = np.random.randn(n, nf)
         # 所有 8 个类别都需出现，否则 predict_proba 列数 < 8
         regimes8 = [
-            "TREND_UP_STRONG", "TREND_UP_MILD", "RANGE_BOUND", "CONSOLIDATION",
-            "REVERSAL", "VOLATILE_DROP", "FOMO_RALLY", "DISTRIBUTION",
+            "TREND_UP_STRONG",
+            "TREND_UP_MILD",
+            "RANGE_BOUND",
+            "CONSOLIDATION",
+            "REVERSAL",
+            "VOLATILE_DROP",
+            "FOMO_RALLY",
+            "DISTRIBUTION",
         ]
         y = np.array(regimes8 * (n // 8) + [regimes8[0]] * (n % 8), dtype=object)
 

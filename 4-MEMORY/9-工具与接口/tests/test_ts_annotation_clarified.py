@@ -3,6 +3,7 @@
 
 Task 20: methodology-executor.ts + superpowers-skill-adapter.ts 头部注释澄清。
 """
+
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent

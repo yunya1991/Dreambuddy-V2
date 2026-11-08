@@ -17,16 +17,15 @@ FAIL-OPEN: 查询失败返回 None 或默认值，不阻断调用方。
 """
 
 import json
-import sqlite3
 import os
-from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
-
+import sqlite3
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 数据路径解析
 # ============================================================
+
 
 def _resolve_db_path() -> Optional[str]:
     """解析 data_center.db 路径 (FAIL-OPEN)"""
@@ -50,9 +49,11 @@ _DB_PATH = _resolve_db_path()
 # 数据结构
 # ============================================================
 
+
 @dataclass
 class FearGreedData:
     """恐贪指数数据"""
+
     value: float = 50.0
     label: str = "NEUTRAL"
     momentum: Optional[float] = None
@@ -64,6 +65,7 @@ class FearGreedData:
 @dataclass
 class NewsItem:
     """新闻条目"""
+
     title: str = ""
     url: str = ""
     source_domain: str = ""
@@ -77,6 +79,7 @@ class NewsItem:
 @dataclass
 class FundFlowData:
     """资金流数据"""
+
     funding_rate: float = 0.0
     options_oi: float = 0.0
     btc_etf_aum: float = 0.0
@@ -89,6 +92,7 @@ class FundFlowData:
 @dataclass
 class OnchainData:
     """链上数据"""
+
     difficulty: float = 0.0
     hashrate: float = 0.0
     total_btc: float = 0.0
@@ -108,6 +112,7 @@ class OnchainData:
 @dataclass
 class MacroData:
     """宏观数据"""
+
     vix: Optional[float] = None
     spy_price: Optional[float] = None
     gld_price: Optional[float] = None
@@ -124,6 +129,7 @@ class MacroData:
 # ============================================================
 # DataCenterClient
 # ============================================================
+
 
 class DataCenterClient:
     """
@@ -144,7 +150,9 @@ class DataCenterClient:
     def is_available(self) -> bool:
         return self._available
 
-    def _query_latest(self, source: str, sub_category: str = None, category: str = None) -> Optional[Dict]:
+    def _query_latest(
+        self, source: str, sub_category: str = None, category: str = None
+    ) -> Optional[Dict]:
         """查询最新一条记录 (FAIL-OPEN)"""
         if not self._available:
             return None
@@ -210,26 +218,30 @@ class DataCenterClient:
         odaily_rows = self._query_latest_n("odaily_newsflash", limit)
         for r in odaily_rows:
             m = self._parse_json(r.get("metrics"))
-            items.append(NewsItem(
-                title=m.get("od_title_hash", ""),
-                source_domain="odaily",
-                event_type=m.get("od_event_type", ""),
-                sentiment=float(m.get("od_policy_sentiment_0_1", 0.5)),
-                is_important=str(m.get("od_is_important", "")).lower() == "true",
-                tickers_hit=m.get("od_tickers_hit_csl", ""),
-            ))
+            items.append(
+                NewsItem(
+                    title=m.get("od_title_hash", ""),
+                    source_domain="odaily",
+                    event_type=m.get("od_event_type", ""),
+                    sentiment=float(m.get("od_policy_sentiment_0_1", 0.5)),
+                    is_important=str(m.get("od_is_important", "")).lower() == "true",
+                    tickers_hit=m.get("od_tickers_hit_csl", ""),
+                )
+            )
 
         # gdelt 新闻
         gdelt_rows = self._query_latest_n("gdelt", max(0, limit - len(items)))
         for r in gdelt_rows:
             m = self._parse_json(r.get("metrics"))
-            items.append(NewsItem(
-                title="",
-                url=m.get("url", ""),
-                source_domain=m.get("domain", ""),
-                source_country=m.get("sourcecountry", ""),
-                sentiment=0.5,  # gdelt 无情绪标签
-            ))
+            items.append(
+                NewsItem(
+                    title="",
+                    url=m.get("url", ""),
+                    source_domain=m.get("domain", ""),
+                    source_country=m.get("sourcecountry", ""),
+                    sentiment=0.5,  # gdelt 无情绪标签
+                )
+            )
 
         return items[:limit]
 
@@ -291,9 +303,13 @@ class DataCenterClient:
         if fg_enh:
             m = self._parse_json(fg_enh.get("metrics"))
             data.momentum = float(m.get("momentum", 0.0)) if m.get("momentum") is not None else None
-            data.volatility = float(m.get("volatility", 0.0)) if m.get("volatility") is not None else None
+            data.volatility = (
+                float(m.get("volatility", 0.0)) if m.get("volatility") is not None else None
+            )
             data.funding = float(m.get("funding", 0.0)) if m.get("funding") is not None else None
-            data.capital_flow = float(m.get("capital_flow", 0.0)) if m.get("capital_flow") is not None else None
+            data.capital_flow = (
+                float(m.get("capital_flow", 0.0)) if m.get("capital_flow") is not None else None
+            )
 
         return data
 
@@ -324,15 +340,29 @@ class DataCenterClient:
         cycle = self._query_latest("panewslab", sub_category="cycle_signals")
         if cycle:
             m = self._parse_json(cycle.get("metrics"))
-            data.cycle_hit_ratio = float(m.get("bottom_hit_ratio_pct", 0.0)) if m.get("bottom_hit_ratio_pct") is not None else None
-            data.mvrv_value = float(m.get("bottom_mvrv_value", 0.0)) if m.get("bottom_mvrv_value") is not None else None
-            data.puell_multiple = float(m.get("bottom_puell-multiple_value", 0.0)) if m.get("bottom_puell-multiple_value") is not None else None
+            data.cycle_hit_ratio = (
+                float(m.get("bottom_hit_ratio_pct", 0.0))
+                if m.get("bottom_hit_ratio_pct") is not None
+                else None
+            )
+            data.mvrv_value = (
+                float(m.get("bottom_mvrv_value", 0.0))
+                if m.get("bottom_mvrv_value") is not None
+                else None
+            )
+            data.puell_multiple = (
+                float(m.get("bottom_puell-multiple_value", 0.0))
+                if m.get("bottom_puell-multiple_value") is not None
+                else None
+            )
 
         # theblockbeats 底部信号
         bottom = self._query_latest("theblockbeats_dataview", sub_category="bottom_signal_di")
         if bottom:
             m = self._parse_json(bottom.get("metrics"))
-            data.bottom_signal_score = float(m.get("score", 0.0)) if m.get("score") is not None else None
+            data.bottom_signal_score = (
+                float(m.get("score", 0.0)) if m.get("score") is not None else None
+            )
             data.bottom_signal_status = str(m.get("status", ""))
 
         return data
@@ -399,19 +429,25 @@ class DataCenterClient:
         ip = self._query_latest("fred", sub_category="INDPRO")
         if ip:
             m = self._parse_json(ip.get("metrics"))
-            data.industrial_production = float(m.get("value", 0.0)) if m.get("value") is not None else None
+            data.industrial_production = (
+                float(m.get("value", 0.0)) if m.get("value") is not None else None
+            )
 
         # fred 10年-2年国债利差
         t10y2y = self._query_latest("fred", sub_category="T10Y2YM")
         if t10y2y:
             m = self._parse_json(t10y2y.get("metrics"))
-            data.treasury_yield_10y_2y = float(m.get("value", 0.0)) if m.get("value") is not None else None
+            data.treasury_yield_10y_2y = (
+                float(m.get("value", 0.0)) if m.get("value") is not None else None
+            )
 
         # fred 美联储资产负债表
         walcl = self._query_latest("fred", sub_category="WALCL")
         if walcl:
             m = self._parse_json(walcl.get("metrics"))
-            data.fed_balance_sheet = float(m.get("value", 0.0)) if m.get("value") is not None else None
+            data.fed_balance_sheet = (
+                float(m.get("value", 0.0)) if m.get("value") is not None else None
+            )
 
         return data
 

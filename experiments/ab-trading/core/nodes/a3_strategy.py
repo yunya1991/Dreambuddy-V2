@@ -5,7 +5,7 @@ A3 策略设计节点
 SKILL.md 调用路径: experiments/ab-trading/core/nodes/a3_strategy
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
@@ -27,7 +27,7 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
     """
     price = mkt.get("price", 0)
     coin = mkt.get("coin", "BTC")
-    rsi = mkt.get("rsi14", 50)
+    rsi = mkt.get("rsi14", 50)  # noqa: F841
     atr = mkt.get("atr14", price * 0.02)
 
     reasoning = []
@@ -45,13 +45,16 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
     dom = a0_data.get("dominant_force", "NEUTRAL")
     reasoning.append(f"[A3-A0验证] 策略方向={direction} vs 矛盾主导={dom}")
 
-    consistent = (dom == "BULL" and direction in ("LONG", "BUY")) or \
-                 (dom == "BEAR" and direction in ("SHORT", "SELL")) or \
-                 dom == "NEUTRAL" or direction == "HOLD"
+    consistent = (
+        (dom == "BULL" and direction in ("LONG", "BUY"))
+        or (dom == "BEAR" and direction in ("SHORT", "SELL"))
+        or dom == "NEUTRAL"
+        or direction == "HOLD"
+    )
 
     if consistent:
         adj_conf = confidence
-        reasoning.append(f"✅ 策略与矛盾一致 ✓")
+        reasoning.append("✅ 策略与矛盾一致 ✓")
     else:
         adj_conf = round(confidence * 0.85, 3)
         reasoning.append(f"⚠️ 策略与矛盾不一致，置信度折扣至 {adj_conf:.0%}")

@@ -13,7 +13,7 @@
 核心思想: ETH的矛盾运动不是孤立的，而是在BTC的"力场"中展开的。
 """
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
 import math
 from typing import Optional, Dict, List
@@ -87,7 +87,9 @@ def compute_cross_asset_features(
     feats["ca_beta"] = beta.fillna(1.0).clip(-3, 5)
 
     # Beta变化率 (Beta增大=ETH对BTC更敏感)
-    feats["ca_beta_change"] = beta.pct_change(12).replace([np.inf, -np.inf], 0).fillna(0).clip(-2, 2)
+    feats["ca_beta_change"] = (
+        beta.pct_change(12).replace([np.inf, -np.inf], 0).fillna(0).clip(-2, 2)
+    )
 
     # Beta稳定性
     feats["ca_beta_stability"] = beta.rolling(beta_window).std().fillna(1).clip(0, 3)
@@ -133,8 +135,8 @@ def compute_cross_asset_features(
         delta = series.diff()
         gain = delta.where(delta > 0, 0)
         loss = -delta.where(delta < 0, 0)
-        avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
-        avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
+        avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
+        avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
         rs = avg_gain / (avg_loss + 1e-10)
         return 100 - (100 / (1 + rs))
 
@@ -149,9 +151,7 @@ def compute_cross_asset_features(
     # BTC均线趋势 (多周期)
     for period in [20, 50, 200]:
         ref_ma = aligned["ref_close"].rolling(period).mean()
-        feats[f"ca_ref_above_ma{period}"] = (
-            (aligned["ref_close"] > ref_ma).astype(float)
-        )
+        feats[f"ca_ref_above_ma{period}"] = (aligned["ref_close"] > ref_ma).astype(float)
 
     # BTC均线排列 (多头=1, 空头=-1)
     ref_ma5 = aligned["ref_close"].rolling(5).mean()
@@ -206,8 +206,8 @@ def compute_cross_asset_features(
     ratio_ma = price_ratio.rolling(120).mean()
     ratio_std = price_ratio.rolling(120).std()
     feats["ca_price_ratio_zscore"] = (
-        (price_ratio - ratio_ma) / (ratio_std + 1e-10)
-    ).fillna(0).clip(-3, 3)
+        ((price_ratio - ratio_ma) / (ratio_std + 1e-10)).fillna(0).clip(-3, 3)
+    )
 
     # ============================================================
     # 8. BTC引导信号 (BTC Leading Signal)
@@ -221,8 +221,7 @@ def compute_cross_asset_features(
     ref_lag1_big = np.abs(ref_returns.shift(1)) > 0.005
     feats["ca_ref_big_move"] = ref_lag1_big.astype(float)
     feats["ca_ref_big_move_dir"] = np.where(
-        ref_returns.shift(1) > 0.005, 1.0,
-        np.where(ref_returns.shift(1) < -0.005, -1.0, 0.0)
+        ref_returns.shift(1) > 0.005, 1.0, np.where(ref_returns.shift(1) < -0.005, -1.0, 0.0)
     )
 
     # 填充NaN和inf
@@ -235,18 +234,40 @@ def compute_cross_asset_features(
 def _feature_names() -> List[str]:
     """返回所有跨资产特征名（用于空数据时占位）"""
     return [
-        "ca_corr", "ca_corr_stability", "ca_same_dir_ratio",
-        "ca_beta", "ca_beta_change", "ca_beta_stability",
-        "ca_vol_ratio", "ca_vol_spread", "ca_ref_vol_rising", "ca_vol_spillover",
-        "ca_rel_return_6", "ca_rel_return_12", "ca_rel_return_24", "ca_rel_return_48",
-        "ca_rel_momentum", "ca_rsi_spread",
-        "ca_ref_above_ma20", "ca_ref_above_ma50", "ca_ref_above_ma200",
-        "ca_ref_trend_alignment", "ca_ref_macd_signal",
-        "ca_ref_momentum_6", "ca_ref_momentum_12", "ca_ref_momentum_24",
-        "ca_bear_divergence", "ca_bull_divergence",
-        "ca_price_ratio", "ca_price_ratio_change", "ca_price_ratio_zscore",
-        "ca_ref_ret_lag1", "ca_ref_ret_lag2", "ca_ref_ret_lag3",
-        "ca_ref_big_move", "ca_ref_big_move_dir",
+        "ca_corr",
+        "ca_corr_stability",
+        "ca_same_dir_ratio",
+        "ca_beta",
+        "ca_beta_change",
+        "ca_beta_stability",
+        "ca_vol_ratio",
+        "ca_vol_spread",
+        "ca_ref_vol_rising",
+        "ca_vol_spillover",
+        "ca_rel_return_6",
+        "ca_rel_return_12",
+        "ca_rel_return_24",
+        "ca_rel_return_48",
+        "ca_rel_momentum",
+        "ca_rsi_spread",
+        "ca_ref_above_ma20",
+        "ca_ref_above_ma50",
+        "ca_ref_above_ma200",
+        "ca_ref_trend_alignment",
+        "ca_ref_macd_signal",
+        "ca_ref_momentum_6",
+        "ca_ref_momentum_12",
+        "ca_ref_momentum_24",
+        "ca_bear_divergence",
+        "ca_bull_divergence",
+        "ca_price_ratio",
+        "ca_price_ratio_change",
+        "ca_price_ratio_zscore",
+        "ca_ref_ret_lag1",
+        "ca_ref_ret_lag2",
+        "ca_ref_ret_lag3",
+        "ca_ref_big_move",
+        "ca_ref_big_move_dir",
     ]
 
 
@@ -255,7 +276,14 @@ def _feature_names() -> List[str]:
 # ============================================================
 
 EIGHT_COINS_BREADTH = [
-    "BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX",
+    "BTC",
+    "ETH",
+    "SOL",
+    "BNB",
+    "XRP",
+    "ADA",
+    "DOGE",
+    "AVAX",
 ]
 
 
@@ -335,7 +363,11 @@ def compute_btc_dominance_change_proxy(coins_closes: dict, lookback: int = 30) -
 
 
 def _safe_list(arr, n):
-    return [float(x) for x in (arr or [])[:n] if x is not None and not (isinstance(x, float) and math.isnan(x))]
+    return [
+        float(x)
+        for x in (arr or [])[:n]
+        if x is not None and not (isinstance(x, float) and math.isnan(x))
+    ]
 
 
 def compute_all_breadth_features(coins_closes: dict) -> dict:
@@ -357,7 +389,9 @@ def compute_all_breadth_features(coins_closes: dict) -> dict:
     out["breadth_ma128_slope"] = float(s)
 
     # BTC.D 变化
-    out["btc_dominance_change_30d"] = float(compute_btc_dominance_change_proxy(coins_closes, lookback=30))
+    out["btc_dominance_change_30d"] = float(
+        compute_btc_dominance_change_proxy(coins_closes, lookback=30)
+    )
 
     # 新高/新低比例 30D
     new_highs = 0
@@ -386,7 +420,9 @@ def compute_all_breadth_features(coins_closes: dict) -> dict:
             continue
         r20 = (arr[0] / (arr[20] + 1e-12)) - 1.0
         returns_20d.append(r20)
-    out["breadth_vol_correlation_20d"] = float(np.std(returns_20d)) if len(returns_20d) >= 3 else 0.0
+    out["breadth_vol_correlation_20d"] = (
+        float(np.std(returns_20d)) if len(returns_20d) >= 3 else 0.0
+    )
 
     # 山寨相对超额（7 山寨等权 30D 收益 - BTC 30D 收益）
     btc_ret30 = None
@@ -446,8 +482,9 @@ class CrossAssetFeatureWrapper:
     def __init__(self):
         pass
 
-    def compute(self, df: pd.DataFrame, ref_df: pd.DataFrame,
-                symbol: str = "ETH", ref_symbol: str = "BTC") -> pd.DataFrame:
+    def compute(
+        self, df: pd.DataFrame, ref_df: pd.DataFrame, symbol: str = "ETH", ref_symbol: str = "BTC"
+    ) -> pd.DataFrame:
         return compute_cross_asset_features(df, ref_df, symbol=symbol, ref_symbol=ref_symbol)
 
 
@@ -463,10 +500,14 @@ class BreadthMarketFeatures:
         if coins_closes is None:
             # 无 8 币 closes → 全部填 0
             all_keys = [
-                "breadth_ma128_align", "breadth_ma128_slope",
-                "btc_dominance_change_30d", "breadth_new_high_low_ratio_30d",
-                "breadth_vol_correlation_20d", "alt_vs_btc_excess_return_30d",
-                "btc_mcap_ma128_slope_proxy", "breadth_momentum_5d",
+                "breadth_ma128_align",
+                "breadth_ma128_slope",
+                "btc_dominance_change_30d",
+                "breadth_new_high_low_ratio_30d",
+                "breadth_vol_correlation_20d",
+                "alt_vs_btc_excess_return_30d",
+                "btc_mcap_ma128_slope_proxy",
+                "breadth_momentum_5d",
             ]
             for k in all_keys:
                 feats[k] = 0.0

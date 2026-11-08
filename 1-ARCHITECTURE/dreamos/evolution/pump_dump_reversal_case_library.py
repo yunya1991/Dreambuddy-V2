@@ -5,6 +5,7 @@
   - actual_label: reversal_short_success / reversal_short_fail
   - 独立于 WashoutReversalCaseLibrary (标签语义不同)
 """
+
 from __future__ import annotations
 
 import json
@@ -114,13 +115,13 @@ class PumpDumpReversalCaseLibrary:
     def __contains__(self, case_id: str) -> bool:
         return case_id in self._index
 
-    def knn_search(self, query: Dict[str, float], k: int = 5
-                   ) -> List[Tuple[float, WashoutCase]]:
+    def knn_search(self, query: Dict[str, float], k: int = 5) -> List[Tuple[float, WashoutCase]]:
         try:
             if not self._cases or k <= 0:
                 return []
-            distances = [(self._euclidean_distance(query, c.features_snapshot), c)
-                         for c in self._cases]
+            distances = [
+                (self._euclidean_distance(query, c.features_snapshot), c) for c in self._cases
+            ]
             distances.sort(key=lambda x: x[0])
             return distances[:k]
         except Exception as e:

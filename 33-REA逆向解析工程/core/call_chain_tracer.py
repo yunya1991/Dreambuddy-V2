@@ -38,12 +38,21 @@ class CallChainTracer:
         """
         files = self._collect_files(target)
         if not files:
-            return {"callers": {}, "callees": {}, "all_functions": [],
-                    "entry_chain": None, "evidence": [
-                Evidence(result="未找到 Python 文件", provenance={"target": target},
-                         confidence=1.0, known_gaps=["目标不是目录或不含 .py 文件"],
-                         level="observation")
-            ]}
+            return {
+                "callers": {},
+                "callees": {},
+                "all_functions": [],
+                "entry_chain": None,
+                "evidence": [
+                    Evidence(
+                        result="未找到 Python 文件",
+                        provenance={"target": target},
+                        confidence=1.0,
+                        known_gaps=["目标不是目录或不含 .py 文件"],
+                        level="observation",
+                    )
+                ],
+            }
 
         callers: dict[str, list[str]] = {}
         callees: dict[str, list[str]] = {}
@@ -84,8 +93,9 @@ class CallChainTracer:
         rel = os.path.relpath(fpath, root)
         return rel.replace(os.sep, ".").removesuffix(".py")
 
-    def _analyze_file(self, fpath: str, module: str,
-                      callers: dict, callees: dict, all_funcs: set) -> None:
+    def _analyze_file(
+        self, fpath: str, module: str, callers: dict, callees: dict, all_funcs: set
+    ) -> None:
         try:
             with open(fpath, "r", encoding="utf-8") as f:
                 tree = ast.parse(f.read(), filename=fpath)
@@ -138,24 +148,31 @@ class CallChainTracer:
             "callees_down": callees.get(entry, []),
         }
 
-    def _build_evidence(self, n_funcs: int, n_callers: int, entry: str | None,
-                        target: str) -> list[Evidence]:
+    def _build_evidence(
+        self, n_funcs: int, n_callers: int, entry: str | None, target: str
+    ) -> list[Evidence]:
         evidence = []
-        evidence.append(Evidence(
-            result=f"调用图: {n_funcs} 函数, {n_callers} 调用关系",
-            provenance={"target": target, "analysis": "call_chain"},
-            confidence=0.9,
-            known_gaps=["动态调用 (getattr/反射) 无法静态追踪",
-                        "装饰器修改的函数名可能不匹配",
-                        "跨模块调用需完整解析 import 链"],
-            level="derivation",
-        ))
+        evidence.append(
+            Evidence(
+                result=f"调用图: {n_funcs} 函数, {n_callers} 调用关系",
+                provenance={"target": target, "analysis": "call_chain"},
+                confidence=0.9,
+                known_gaps=[
+                    "动态调用 (getattr/反射) 无法静态追踪",
+                    "装饰器修改的函数名可能不匹配",
+                    "跨模块调用需完整解析 import 链",
+                ],
+                level="derivation",
+            )
+        )
         if entry:
-            evidence.append(Evidence(
-                result=f"入口函数 {entry} 的调用链已追踪",
-                provenance={"target": target, "entry": entry},
-                confidence=0.8,
-                known_gaps=["入口函数若不在分析范围内，结果为空"],
-                level="inference",
-            ))
+            evidence.append(
+                Evidence(
+                    result=f"入口函数 {entry} 的调用链已追踪",
+                    provenance={"target": target, "entry": entry},
+                    confidence=0.8,
+                    known_gaps=["入口函数若不在分析范围内，结果为空"],
+                    level="inference",
+                )
+            )
         return evidence

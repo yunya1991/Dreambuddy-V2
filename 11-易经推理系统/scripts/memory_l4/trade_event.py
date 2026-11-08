@@ -6,7 +6,7 @@ TradeEvent — 全局交易事件统一数据结构
 
 系统来源标识：
 - yijing_inference: 易经推理模型
-- three_screen: 三屏趋势模型  
+- three_screen: 三屏趋势模型
 - martin_v15: 马丁策略 V15
 - agent_a: Agent A
 - agent_b: Agent B
@@ -14,17 +14,18 @@ TradeEvent — 全局交易事件统一数据结构
 
 数据流转：TradeEvent → UnifiedCaseRegistry → TradeCase v0.3 → L4 案例库
 """
+
 import json
 import uuid
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class TradeEvent:
     """统一交易事件数据结构"""
-    
+
     event_id: str
     system_source: str
     trade_id: str
@@ -32,26 +33,26 @@ class TradeEvent:
     symbol: str
     direction: str
     entry_price: float
-    
+
     ts_exit: Optional[str] = None
     exit_price: Optional[float] = None
     position_size: float = 0.0
-    
+
     pnl: Optional[float] = None
     pnl_pct: Optional[float] = None
     exit_reason: Optional[str] = None
-    
+
     decision_context: Dict[str, Any] = field(default_factory=dict)
     market_snapshot: Dict[str, Any] = field(default_factory=dict)
     risk_events: List[Dict[str, Any]] = field(default_factory=list)
-    
+
     leverage: float = 1.0
     margin_usdt: float = 0.0
-    
+
     @classmethod
     def generate_event_id(cls) -> str:
         return f"evt_{int(datetime.now(timezone.utc).timestamp())}_{uuid.uuid4().hex[:8]}"
-    
+
     @classmethod
     def _normalize_yijing_source(cls, src: str) -> str:
         """将易经推理子系统来源统一归一化为 yijing_inference
@@ -61,14 +62,27 @@ class TradeEvent:
           统一归入 yijing_inference（易经推理系统主类）。
         其他来源（martin_v15/agent_a 等）原样返回。
         """
-        _YIJING_ALIASES = frozenset({
-            "bcrm", "yijing_live", "yijing_engine", "yijing_inference",
-            "liangyi", "scale", "bagua", "yijing", "yijing_force",
-        })
+        _YIJING_ALIASES = frozenset(
+            {
+                "bcrm",
+                "yijing_live",
+                "yijing_engine",
+                "yijing_inference",
+                "liangyi",
+                "scale",
+                "bagua",
+                "yijing",
+                "yijing_force",
+            }
+        )
         if not src:
             return "yijing_inference"
         normalized = str(src).strip().lower()
-        if normalized in _YIJING_ALIASES or normalized.startswith("yijing") or normalized.startswith("bcrm"):
+        if (
+            normalized in _YIJING_ALIASES
+            or normalized.startswith("yijing")
+            or normalized.startswith("bcrm")
+        ):
             return "yijing_inference"
         return normalized
 
@@ -101,9 +115,9 @@ class TradeEvent:
             market_snapshot=record.market_snapshot or {},
             risk_events=[],
         )
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
-    
+
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False, default=str, indent=2)

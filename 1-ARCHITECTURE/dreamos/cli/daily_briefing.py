@@ -17,22 +17,23 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 # F7.5: 产物中台归一存储 (FAIL-OPEN: 导入失败不影响简报生成)
 try:
     from dreamos.core.artifact import ArtifactStore, ArtifactType
+
     _ARTIFACT_STORE = ArtifactStore()
 except Exception:
     _ARTIFACT_STORE = None
 
 
 class BriefingType:
-    PRE_MARKET = "pre_market"      # 盘前综述 (8:00)
-    MID_MARKET = "mid_market"      # 盘中异动 (13:00)
-    POST_MARKET = "post_market"    # 盘后总结 (21:00)
+    PRE_MARKET = "pre_market"  # 盘前综述 (8:00)
+    MID_MARKET = "mid_market"  # 盘中异动 (13:00)
+    POST_MARKET = "post_market"  # 盘后总结 (21:00)
 
     @classmethod
     def from_hour(cls, hour: int) -> str:
@@ -116,7 +117,11 @@ class DailyBriefing:
                 "enabled_jobs": len(enabled),
                 "job_types": list({j.get("job_type", "scan") for j in jobs}),
                 "jobs": [
-                    {"name": j["name"], "cron": j.get("cron_expr"), "enabled": j.get("enabled", True)}
+                    {
+                        "name": j["name"],
+                        "cron": j.get("cron_expr"),
+                        "enabled": j.get("enabled", True),
+                    }
                     for j in jobs
                 ],
             }
@@ -129,7 +134,10 @@ class DailyBriefing:
         try:
             stats_dir = (
                 Path(__file__).resolve().parent.parent.parent.parent
-                / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "stats"
+                / "11-易经推理系统"
+                / ".workbuddy"
+                / "memory_l4"
+                / "stats"
             )
             stats_file = stats_dir / "daily_stats.json"
             if not stats_file.exists():
@@ -162,7 +170,9 @@ class DailyBriefing:
         try:
             bdsm_dir = (
                 Path(__file__).resolve().parent.parent.parent.parent
-                / "11-易经推理系统" / ".workbuddy" / "bdsm"
+                / "11-易经推理系统"
+                / ".workbuddy"
+                / "bdsm"
             )
             snapshots = sorted(bdsm_dir.glob("bdsm_snapshot_*.json"), reverse=True)
             if not snapshots:
@@ -177,14 +187,16 @@ class DailyBriefing:
                 sp = info.get("scaling_plan") or {}
                 accumulated = sp.get("accumulated_notional", 0) or 0
                 if accumulated > 0:
-                    positions.append({
-                        "symbol": symbol,
-                        "accumulated_notional": round(accumulated, 2),
-                        "remaining_budget": round(sp.get("remaining_budget", 0) or 0, 2),
-                        "target_notional": round(sp.get("target_notional_usdt", 0) or 0, 2),
-                        "avg_entry_price": sp.get("avg_entry_price", 0),
-                        "exit_action": info.get("exit_action", "NONE"),
-                    })
+                    positions.append(
+                        {
+                            "symbol": symbol,
+                            "accumulated_notional": round(accumulated, 2),
+                            "remaining_budget": round(sp.get("remaining_budget", 0) or 0, 2),
+                            "target_notional": round(sp.get("target_notional_usdt", 0) or 0, 2),
+                            "avg_entry_price": sp.get("avg_entry_price", 0),
+                            "exit_action": info.get("exit_action", "NONE"),
+                        }
+                    )
             positions.sort(key=lambda x: x["accumulated_notional"], reverse=True)
             total_notional = round(sum(p["accumulated_notional"] for p in positions), 2)
             return {
@@ -201,7 +213,12 @@ class DailyBriefing:
     def _collect_bdsm_status(self) -> Dict[str, Any]:
         """采集 BDSM 出场巡检快照（读取最新 bdsm_snapshot_YYYYMMDD.json）"""
         try:
-            bdsm_dir = Path(__file__).resolve().parent.parent.parent.parent / "11-易经推理系统" / ".workbuddy" / "bdsm"
+            bdsm_dir = (
+                Path(__file__).resolve().parent.parent.parent.parent
+                / "11-易经推理系统"
+                / ".workbuddy"
+                / "bdsm"
+            )
             if not bdsm_dir.exists():
                 return {"status": "unavailable", "note": "BDSM 快照目录不存在"}
             snapshots = sorted(bdsm_dir.glob("bdsm_snapshot_*.json"), reverse=True)
@@ -216,21 +233,23 @@ class DailyBriefing:
             for symbol, info in coins.items():
                 if not isinstance(info, dict):
                     continue
-                coin_summaries.append({
-                    "symbol": symbol,
-                    "confidence": info.get("confidence"),
-                    "score": info.get("score"),
-                    "rank": info.get("rank"),
-                    "phase": info.get("phase"),
-                    "direction_constraint": info.get("direction_constraint"),
-                    "exit_action": info.get("exit_action"),
-                    "exit_triggers": info.get("exit_triggers", []),
-                    # §6.1 sector_valuation 4 字段透传（SPEC 2026-10-07）
-                    "sector_waterline": info.get("sector_waterline", {}),
-                    "multi_dim_valuation": info.get("multi_dim_valuation", {}),
-                    "undervalued_peers": info.get("undervalued_peers", []),
-                    "overheat_signal": info.get("overheat_signal", {}),
-                })
+                coin_summaries.append(
+                    {
+                        "symbol": symbol,
+                        "confidence": info.get("confidence"),
+                        "score": info.get("score"),
+                        "rank": info.get("rank"),
+                        "phase": info.get("phase"),
+                        "direction_constraint": info.get("direction_constraint"),
+                        "exit_action": info.get("exit_action"),
+                        "exit_triggers": info.get("exit_triggers", []),
+                        # §6.1 sector_valuation 4 字段透传（SPEC 2026-10-07）
+                        "sector_waterline": info.get("sector_waterline", {}),
+                        "multi_dim_valuation": info.get("multi_dim_valuation", {}),
+                        "undervalued_peers": info.get("undervalued_peers", []),
+                        "overheat_signal": info.get("overheat_signal", {}),
+                    }
+                )
             # 按 score 降序
             coin_summaries.sort(key=lambda x: x.get("score") or 0, reverse=True)
             return {
@@ -283,13 +302,17 @@ class DailyBriefing:
             lines.append("")
             lines.append("系统就绪状态:")
             if sys_status.get("status") == "ok":
-                lines.append(f"  - 已启用定时任务: {sys_status.get('enabled_jobs', 0)}/{sys_status.get('total_jobs', 0)}")
+                lines.append(
+                    f"  - 已启用定时任务: {sys_status.get('enabled_jobs', 0)}/{sys_status.get('total_jobs', 0)}"
+                )
                 lines.append(f"  - 任务类型: {', '.join(sys_status.get('job_types', []))}")
             lines.append("")
             lines.append("最近执行记录:")
             if history:
                 for h in history:
-                    lines.append(f"  - {h.get('timestamp', '?')} {h.get('symbol', '')} {h.get('action', '')}")
+                    lines.append(
+                        f"  - {h.get('timestamp', '?')} {h.get('symbol', '')} {h.get('action', '')}"
+                    )
             else:
                 lines.append("  (暂无执行记录)")
             lines.append("")
@@ -302,7 +325,9 @@ class DailyBriefing:
             if history:
                 lines.append("近 5 条执行记录:")
                 for h in history:
-                    lines.append(f"  - {h.get('timestamp', '?')} {h.get('symbol', '')} {h.get('action', '')}")
+                    lines.append(
+                        f"  - {h.get('timestamp', '?')} {h.get('symbol', '')} {h.get('action', '')}"
+                    )
             else:
                 lines.append("(暂无执行记录)")
             lines.append("")
@@ -398,11 +423,18 @@ def run_daily_briefing(briefing_type: Optional[str] = None) -> Dict[str, Any]:
 if __name__ == "__main__":
     # 手动测试: python -m dreamos.cli.daily_briefing
     import argparse
+
     parser = argparse.ArgumentParser(description="生成每日简报")
-    parser.add_argument("--type", choices=["pre_market", "mid_market", "post_market"],
-                        default=None, help="简报类型 (默认按当前小时推断)")
+    parser.add_argument(
+        "--type",
+        choices=["pre_market", "mid_market", "post_market"],
+        default=None,
+        help="简报类型 (默认按当前小时推断)",
+    )
     args = parser.parse_args()
     b = run_daily_briefing(args.type)
     filename = f"{b['date']}_{b['type']}.json"
     print(f"已生成简报: {b['id']} ({b['title']})")
-    print(f"持久化路径: {Path(__file__).resolve().parent / 'scheduler_data' / 'briefings' / filename}")
+    print(
+        f"持久化路径: {Path(__file__).resolve().parent / 'scheduler_data' / 'briefings' / filename}"
+    )

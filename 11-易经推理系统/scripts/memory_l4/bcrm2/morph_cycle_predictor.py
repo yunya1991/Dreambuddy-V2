@@ -14,6 +14,7 @@ Spec: 2026-08-19-morph-cycle-dynamic-correction-design.md §3
   • 修正后最大单步变化 < 0.1（T_A4）
   • 连续 N 次修正 MAE 单调不增（T_A5）
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -22,15 +23,14 @@ import numpy as np
 
 from .storage import EvolutionStorageSQLite
 
-
 SECTOR_NAMES = ("defi", "ai", "rwa", "meme", "l2")
 
 # ── BTC 4 年（减半）教科书级理论曲线超参 ─────────────────────────
 # 锚定：第四次减半 2024-04-20 为"复苏起点（均衡→扩张）"
 # 经验：减半后 18 个月（≈548 天）见顶（对应 2025-10 前后）
 # 方法：PCHIP 单调插值 + 真实回测锚点（3 次历史周期均值）
-HALVING_4_START = "2024-04-20"          # 第四次减半日期（BTC 库存周期复苏起点）
-CYCLE4Y_TOTAL_DAYS = 1460               # 4 年主周期总长度（≈4×365）
+HALVING_4_START = "2024-04-20"  # 第四次减半日期（BTC 库存周期复苏起点）
+CYCLE4Y_TOTAL_DAYS = 1460  # 4 年主周期总长度（≈4×365）
 
 # ── 3 次完整 BTC 减半周期真实回测数据 ──
 # 数据来源：CoinMarketCap / CoinGecko 公开历史价格
@@ -39,13 +39,13 @@ CYCLE4Y_HISTORICAL_CYCLES = [
         "id": 1,
         "halving_date": "2012-11-28",
         "peak_date": "2013-12-01",
-        "peak_after_days": 369,     # 减半后 369 天见顶
+        "peak_after_days": 369,  # 减半后 369 天见顶
         "bottom_date": "2015-01-14",
-        "bottom_after_days": 782,   # 减半后 782 天见底
+        "bottom_after_days": 782,  # 减半后 782 天见底
         "next_halving_date": "2016-07-10",
-        "cycle_total_days": 590,    # 早期市场周期较短
-        "peak_gain_pct": 8700,      # 减半价→顶涨幅 %
-        "bottom_drawdown_pct": -78, # 顶→底跌幅 %
+        "cycle_total_days": 590,  # 早期市场周期较短
+        "peak_gain_pct": 8700,  # 减半价→顶涨幅 %
+        "bottom_drawdown_pct": -78,  # 顶→底跌幅 %
     },
     {
         "id": 2,
@@ -78,44 +78,140 @@ CYCLE4Y_HISTORICAL_CYCLES = [
 #   - 时间范围：基于真实减半→见顶→见底→下次减半的天数差异
 #   - Level 范围：基于 7 大形态阶段定义（恐慌 ≤-2.5, 深度衰退 -2.5~-1.25, ...）
 CYCLE4Y_PARAM_RANGES = [
-    {"label": "减半复苏",             "t_rel_range": [0, 0],           "t_rel_mean": 0,     "level_range": [-0.4, 0.4],   "level_mean": 0.0},
-    {"label": "稳健扩张启动",          "t_rel_range": [60, 120],        "t_rel_mean": 90,    "level_range": [0.4, 0.8],    "level_mean": 0.6},
-    {"label": "主升浪加速",            "t_rel_range": [150, 210],       "t_rel_mean": 180,   "level_range": [0.8, 1.6],    "level_mean": 1.2},
-    {"label": "繁荣过热中段",          "t_rel_range": [330, 400],       "t_rel_mean": 365,   "level_range": [1.6, 2.8],    "level_mean": 2.2},
-    {"label": "繁荣过热上限",          "t_rel_range": [309, 528],       "t_rel_mean": 440,   "level_range": [2.5, 3.5],    "level_mean": 3.0},
-    {"label": "极端狂热顶（见顶）",     "t_rel_range": [369, 548],       "t_rel_mean": 480,   "level_range": [3.5, 4.0],    "level_mean": 3.8},
-    {"label": "见顶后快速下跌",        "t_rel_range": [389, 583],       "t_rel_mean": 505,   "level_range": [1.5, 2.5],    "level_mean": 2.0},
-    {"label": "快速下跌完成",          "t_rel_range": [429, 633],       "t_rel_mean": 552,   "level_range": [-0.5, 0.5],   "level_mean": 0.0},
-    {"label": "阴跌中段",              "t_rel_range": [549, 768],       "t_rel_mean": 680,   "level_range": [-2.0, -1.0],  "level_mean": -1.5},
-    {"label": "深度衰退",              "t_rel_range": [639, 868],       "t_rel_mean": 775,   "level_range": [-3.0, -2.0],  "level_mean": -2.5},
-    {"label": "恐慌底（见底）",         "t_rel_range": [782, 930],       "t_rel_mean": 866,   "level_range": [-4.0, -3.5],  "level_mean": -3.8},
-    {"label": "磨底期1（恐慌后反弹）",  "t_rel_range": [862, 1050],      "t_rel_mean": 966,   "level_range": [-3.5, -3.0],  "level_mean": -3.2},
-    {"label": "磨底期2（底部震荡）",    "t_rel_range": [1032, 1280],     "t_rel_mean": 1166,  "level_range": [-3.2, -2.8],  "level_mean": -3.0},
-    {"label": "蓄力启动",              "t_rel_range": [1281, 1360],     "t_rel_mean": 1320,  "level_range": [-2.0, -1.0],  "level_mean": -1.5},
-    {"label": "蓄力加速",              "t_rel_range": [1341, 1410],     "t_rel_mean": 1375,  "level_range": [-0.8, -0.2],  "level_mean": -0.5},
-    {"label": "下一轮减半（新起点）",   "t_rel_range": [1401, 1440],     "t_rel_mean": 1420,  "level_range": [-0.4, 0.4],   "level_mean": 0.0},
+    {
+        "label": "减半复苏",
+        "t_rel_range": [0, 0],
+        "t_rel_mean": 0,
+        "level_range": [-0.4, 0.4],
+        "level_mean": 0.0,
+    },
+    {
+        "label": "稳健扩张启动",
+        "t_rel_range": [60, 120],
+        "t_rel_mean": 90,
+        "level_range": [0.4, 0.8],
+        "level_mean": 0.6,
+    },
+    {
+        "label": "主升浪加速",
+        "t_rel_range": [150, 210],
+        "t_rel_mean": 180,
+        "level_range": [0.8, 1.6],
+        "level_mean": 1.2,
+    },
+    {
+        "label": "繁荣过热中段",
+        "t_rel_range": [330, 400],
+        "t_rel_mean": 365,
+        "level_range": [1.6, 2.8],
+        "level_mean": 2.2,
+    },
+    {
+        "label": "繁荣过热上限",
+        "t_rel_range": [309, 528],
+        "t_rel_mean": 440,
+        "level_range": [2.5, 3.5],
+        "level_mean": 3.0,
+    },
+    {
+        "label": "极端狂热顶（见顶）",
+        "t_rel_range": [369, 548],
+        "t_rel_mean": 480,
+        "level_range": [3.5, 4.0],
+        "level_mean": 3.8,
+    },
+    {
+        "label": "见顶后快速下跌",
+        "t_rel_range": [389, 583],
+        "t_rel_mean": 505,
+        "level_range": [1.5, 2.5],
+        "level_mean": 2.0,
+    },
+    {
+        "label": "快速下跌完成",
+        "t_rel_range": [429, 633],
+        "t_rel_mean": 552,
+        "level_range": [-0.5, 0.5],
+        "level_mean": 0.0,
+    },
+    {
+        "label": "阴跌中段",
+        "t_rel_range": [549, 768],
+        "t_rel_mean": 680,
+        "level_range": [-2.0, -1.0],
+        "level_mean": -1.5,
+    },
+    {
+        "label": "深度衰退",
+        "t_rel_range": [639, 868],
+        "t_rel_mean": 775,
+        "level_range": [-3.0, -2.0],
+        "level_mean": -2.5,
+    },
+    {
+        "label": "恐慌底（见底）",
+        "t_rel_range": [782, 930],
+        "t_rel_mean": 866,
+        "level_range": [-4.0, -3.5],
+        "level_mean": -3.8,
+    },
+    {
+        "label": "磨底期1（恐慌后反弹）",
+        "t_rel_range": [862, 1050],
+        "t_rel_mean": 966,
+        "level_range": [-3.5, -3.0],
+        "level_mean": -3.2,
+    },
+    {
+        "label": "磨底期2（底部震荡）",
+        "t_rel_range": [1032, 1280],
+        "t_rel_mean": 1166,
+        "level_range": [-3.2, -2.8],
+        "level_mean": -3.0,
+    },
+    {
+        "label": "蓄力启动",
+        "t_rel_range": [1281, 1360],
+        "t_rel_mean": 1320,
+        "level_range": [-2.0, -1.0],
+        "level_mean": -1.5,
+    },
+    {
+        "label": "蓄力加速",
+        "t_rel_range": [1341, 1410],
+        "t_rel_mean": 1375,
+        "level_range": [-0.8, -0.2],
+        "level_mean": -0.5,
+    },
+    {
+        "label": "下一轮减半（新起点）",
+        "t_rel_range": [1401, 1440],
+        "t_rel_mean": 1420,
+        "level_range": [-0.4, 0.4],
+        "level_mean": 0.0,
+    },
 ]
 
 # 4 年曲线里程碑（用于前端标注，取自 PARAM_RANGES 的关键节点）
 CYCLE4Y_MILESTONES = [
-    (0,    "减半复苏",              0.0),
-    (90,   "稳健扩张启动",          0.6),
-    (180,  "主升浪加速",            1.2),
-    (365,  "繁荣过热中段",          2.2),
-    (480,  "极端狂热顶（见顶）",     3.8),
-    (552,  "快速下跌完成",          0.0),
-    (775,  "深度衰退",              -2.5),
-    (866,  "恐慌底（见底）",         -3.8),
-    (1166, "磨底期2（底部震荡）",    -3.0),
-    (1375, "蓄力加速",              -0.5),
-    (1420, "下一轮减半（新起点）",   0.0),
+    (0, "减半复苏", 0.0),
+    (90, "稳健扩张启动", 0.6),
+    (180, "主升浪加速", 1.2),
+    (365, "繁荣过热中段", 2.2),
+    (480, "极端狂热顶（见顶）", 3.8),
+    (552, "快速下跌完成", 0.0),
+    (775, "深度衰退", -2.5),
+    (866, "恐慌底（见底）", -3.8),
+    (1166, "磨底期2（底部震荡）", -3.0),
+    (1375, "蓄力加速", -0.5),
+    (1420, "下一轮减半（新起点）", 0.0),
 ]
 
 # ── FFT / Hermite 超参（修正后不应过大，保持平滑） ────────────────
-FFT_MIN_HISTORY = 120        # 至少 120 条历史才做 FFT（防短历史不稳定）
-FFT_HIST_MULT = 2            # FFT 窗口 = hist_days × 此倍数
-FFT_LEARNING_RATE = 0.15     # FFT 权重修正步长（Bayesian 更新）
-FFT_WEIGHT_CLIP = (0.5, 2.0) # 单个分量权重修正倍数范围
+FFT_MIN_HISTORY = 120  # 至少 120 条历史才做 FFT（防短历史不稳定）
+FFT_HIST_MULT = 2  # FFT 窗口 = hist_days × 此倍数
+FFT_LEARNING_RATE = 0.15  # FFT 权重修正步长（Bayesian 更新）
+FFT_WEIGHT_CLIP = (0.5, 2.0)  # 单个分量权重修正倍数范围
 HERMITE_M_CORRECTION_CAP = 1.0  # 切线修正系数范围（防止过修）
 
 # ── 自动修正超参（小修正：FFT 权重 / Hermite 切线） ──────────────
@@ -125,45 +221,50 @@ CORRECT_ON_PREDICT_HOOK = True  # predict() 前自动触发小修正（总开关
 
 # ── 形态切换大调整超参 ───────────────────────────────────────────
 # 与小修正互补：小修正微调 FFT 权重；大调整在形态确认切换后修正周期锚点 t_rel_mean / level_mean
-ANCHOR_SWITCH_COOLDOWN_HOURS = 72   # 两次大调整最少间隔（小时），比小修正更保守
+ANCHOR_SWITCH_COOLDOWN_HOURS = 72  # 两次大调整最少间隔（小时），比小修正更保守
 ANCHOR_SWITCH_MIN_CONFIRM_DAYS = 3  # 形态切换后需连续确认 N 天才算真切换（防假突破）
-ANCHOR_T_REL_ADJUST_RATE = 0.15     # t_rel_mean 单次调整幅度上限（×range 宽度）
-ANCHOR_LEVEL_ADJUST_RATE = 0.20     # level_mean 单次调整幅度上限（×range 宽度）
-ANCHOR_ON_PREDICT_HOOK = True       # predict() 前自动检测形态切换并触发大调整（总开关）
+ANCHOR_T_REL_ADJUST_RATE = 0.15  # t_rel_mean 单次调整幅度上限（×range 宽度）
+ANCHOR_LEVEL_ADJUST_RATE = 0.20  # level_mean 单次调整幅度上限（×range 宽度）
+ANCHOR_ON_PREDICT_HOOK = True  # predict() 前自动检测形态切换并触发大调整（总开关）
 
 # ── 大周期弹性边界约束超参（轨道三） ───────────────────────────
 # 大周期向小周期提供 level_range 作为弹性边界，小周期越界部分按 decay 比例回拉。
 # 详见 Spec §3bis：大小周期弹性边界约束。
-CYCLE_BOUNDS_ENABLED = False         # 总开关（默认 False 以保持 CLI 字节等价）
-CYCLE_BOUNDS_INTERP = True            # 启用插值边界（False 时用硬命中锚点 range）
-CYCLE_BOUNDS_DECAY_DEFAULT = 0.20     # 黔回拉强度（越界部分保留比例）
-CYCLE_BOUNDS_DECAY_BY_PHASE = {       # 按 phase_hint 定制回拉强度
-    "蓄力": 0.15, "上升": 0.20, "顶部": 0.25,
-    "顶点": 0.30, "下跌": 0.25, "底部": 0.20,
-    "底点": 0.30, "磨底": 0.15,
+CYCLE_BOUNDS_ENABLED = False  # 总开关（默认 False 以保持 CLI 字节等价）
+CYCLE_BOUNDS_INTERP = True  # 启用插值边界（False 时用硬命中锚点 range）
+CYCLE_BOUNDS_DECAY_DEFAULT = 0.20  # 黔回拉强度（越界部分保留比例）
+CYCLE_BOUNDS_DECAY_BY_PHASE = {  # 按 phase_hint 定制回拉强度
+    "蓄力": 0.15,
+    "上升": 0.20,
+    "顶部": 0.25,
+    "顶点": 0.30,
+    "下跌": 0.25,
+    "底部": 0.20,
+    "底点": 0.30,
+    "磨底": 0.15,
 }
-CYCLE_BOUNDS_AMPLITUDE_MULT = 1.5     # 振幅上限 = (level_hi - level_mean) × 此倍数
-CYCLE_BOUNDS_OVERSHOOT_TRIGGER = 5    # 现实曲线连续越界 N 天 → 触发锚点大调整（降低冷却门槛）
+CYCLE_BOUNDS_AMPLITUDE_MULT = 1.5  # 振幅上限 = (level_hi - level_mean) × 此倍数
+CYCLE_BOUNDS_OVERSHOOT_TRIGGER = 5  # 现实曲线连续越界 N 天 → 触发锚点大调整（降低冷却门槛）
 
 # 锚点 label → phase_hint 映射（供 decay_strength 查表）
 # phase_hint 取自 8 大阶段：蓄力 / 上升 / 顶部 / 顶点 / 下跌 / 底部 / 底点 / 磨底
 LABEL_TO_PHASE_HINT = {
-    "减半复苏":              "蓄力",
-    "稳健扩张启动":          "上升",
-    "主升浪加速":            "上升",
-    "繁荣过热中段":          "顶部",
-    "繁荣过热上限":          "顶部",
-    "极端狂热顶（见顶）":     "顶点",
-    "见顶后快速下跌":        "下跌",
-    "快速下跌完成":          "下跌",
-    "阴跌中段":              "下跌",
-    "深度衰退":              "底部",
-    "恐慌底（见底）":         "底点",
-    "磨底期1（恐慌后反弹）":  "磨底",
-    "磨底期2（底部震荡）":    "磨底",
-    "蓄力启动":              "蓄力",
-    "蓄力加速":              "上升",
-    "下一轮减半（新起点）":   "蓄力",
+    "减半复苏": "蓄力",
+    "稳健扩张启动": "上升",
+    "主升浪加速": "上升",
+    "繁荣过热中段": "顶部",
+    "繁荣过热上限": "顶部",
+    "极端狂热顶（见顶）": "顶点",
+    "见顶后快速下跌": "下跌",
+    "快速下跌完成": "下跌",
+    "阴跌中段": "下跌",
+    "深度衰退": "底部",
+    "恐慌底（见底）": "底点",
+    "磨底期1（恐慌后反弹）": "磨底",
+    "磨底期2（底部震荡）": "磨底",
+    "蓄力启动": "蓄力",
+    "蓄力加速": "上升",
+    "下一轮减半（新起点）": "蓄力",
 }
 
 # 进程内边界参数缓存：symbol → (t_rel, bounds)
@@ -178,6 +279,7 @@ _CYCLE_BOUNDS_CACHE: Dict[str, Tuple[float, Dict[str, Any]]] = {}
 def _add_days(date_str: str, n: int) -> str:
     """YYYY-MM-DD 加 n 天（Python 内置，避免 pandas 依赖）。"""
     from datetime import datetime, timedelta
+
     try:
         d = datetime.strptime(date_str[:10], "%Y-%m-%d").date()
     except Exception:
@@ -188,6 +290,7 @@ def _add_days(date_str: str, n: int) -> str:
 def _days_between(a_str: str, b_str: str) -> int:
     """返回 (b - a) 天数（忽略时区，用 date 相减）。"""
     from datetime import datetime
+
     try:
         a = datetime.strptime(a_str[:10], "%Y-%m-%d").date()
         b = datetime.strptime(b_str[:10], "%Y-%m-%d").date()
@@ -204,8 +307,11 @@ def _days_between(a_str: str, b_str: str) -> int:
 #   · 7 大形态阶段按 Level 值对齐（恐慌→深度衰→温和衰→均衡→扩张→繁荣→狂热）
 #   · param_ranges 供真实曲线拟合 & 预测曲线在线学习调参边界使用
 # =====================================================================
-def cycle4y_theory(today: Optional[str] = None, samples: int = 365,
-                   anchor_overrides: Optional[Dict[str, Dict[str, float]]] = None) -> Dict[str, Any]:
+def cycle4y_theory(
+    today: Optional[str] = None,
+    samples: int = 365,
+    anchor_overrides: Optional[Dict[str, Dict[str, float]]] = None,
+) -> Dict[str, Any]:
     """生成 BTC 四年教科书级理论周期曲线 + 当前定位 + 参数范围。
 
     anchor_overrides: 形态切换大调整后的锚点覆盖 {label: {t_rel, level}}，可选。
@@ -224,6 +330,7 @@ def cycle4y_theory(today: Optional[str] = None, samples: int = 365,
       }
     """
     from datetime import datetime as _dt
+
     from scipy.interpolate import PchipInterpolator
 
     today_date = _dt.strptime(today[:10], "%Y-%m-%d").date() if today else _dt.utcnow().date()
@@ -270,12 +377,12 @@ def cycle4y_theory(today: Optional[str] = None, samples: int = 365,
     # 7 大形态阶段名
     REGIME_7 = [
         (-10.0, "恐慌"),
-        (-2.5,  "深度衰退"),
+        (-2.5, "深度衰退"),
         (-1.25, "温和衰退"),
-        (-0.4,  "均衡（蓄力）"),
-        ( 0.4,  "稳健扩张"),
-        ( 1.25, "繁荣过热"),
-        ( 2.5,  "极端狂热"),
+        (-0.4, "均衡（蓄力）"),
+        (0.4, "稳健扩张"),
+        (1.25, "繁荣过热"),
+        (2.5, "极端狂热"),
     ]
     stage_name = REGIME_7[0][1]
     for lo, name in REGIME_7:
@@ -285,11 +392,13 @@ def cycle4y_theory(today: Optional[str] = None, samples: int = 365,
     # 里程碑
     milestones = []
     for t_rel_m, label_m, _lv_ref in CYCLE4Y_MILESTONES:
-        milestones.append({
-            "t_rel": int(t_rel_m),
-            "label": label_m,
-            "date": _add_days(HALVING_4_START, int(t_rel_m)),
-        })
+        milestones.append(
+            {
+                "t_rel": int(t_rel_m),
+                "label": label_m,
+                "date": _add_days(HALVING_4_START, int(t_rel_m)),
+            }
+        )
 
     return {
         "total_days": CYCLE4Y_TOTAL_DAYS,
@@ -297,7 +406,7 @@ def cycle4y_theory(today: Optional[str] = None, samples: int = 365,
             "halving_date": HALVING_4_START,
             "historical_cycles": CYCLE4Y_HISTORICAL_CYCLES,
             "method": "PCHIP + 3 次历史周期真实回测锚点均值"
-                     + ("（含形态切换大调整覆盖）" if overrides else ""),
+            + ("（含形态切换大调整覆盖）" if overrides else ""),
         },
         "milestones": milestones,
         "param_ranges": CYCLE4Y_PARAM_RANGES,
@@ -455,9 +564,9 @@ class MorphCyclePredictor:
         return bounds
 
     # ---------------------------------------------------------------- 大周期边界约束：三类动作
-    def _scale_fft_amplitude(self,
-                              theoretical_full: np.ndarray,
-                              bounds: Dict[str, Any]) -> Tuple[np.ndarray, Dict[str, Any]]:
+    def _scale_fft_amplitude(
+        self, theoretical_full: np.ndarray, bounds: Dict[str, Any]
+    ) -> Tuple[np.ndarray, Dict[str, Any]]:
         """动作A：对 FFT 叠加曲线应用大周期振幅约束。
 
         若 FFT 振幅 > amplitude_cap，用 tanh 软缩放（不硬截断）。
@@ -495,9 +604,9 @@ class MorphCyclePredictor:
             "original_amp": round(original_amp, 4),
         }
 
-    def _pullback_forecast(self,
-                            forecast_vals: List[float],
-                            bounds: Dict[str, Any]) -> Tuple[List[float], Dict[str, Any]]:
+    def _pullback_forecast(
+        self, forecast_vals: List[float], bounds: Dict[str, Any]
+    ) -> Tuple[List[float], Dict[str, Any]]:
         """动作B：对预测曲线应用弹性边界回拉。
 
         对每个点 v：
@@ -531,10 +640,9 @@ class MorphCyclePredictor:
             "overshoot_count": overshoot_count,
         }
 
-    def _check_overshoot_events(self,
-                                 level_hist: List[float],
-                                 dates: List[str],
-                                 bounds: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _check_overshoot_events(
+        self, level_hist: List[float], dates: List[str], bounds: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """动作C：检测现实曲线越界事件。
 
         现实曲线不调整，仅记录越界事件。
@@ -560,14 +668,16 @@ class MorphCyclePredictor:
                 else:
                     direction = "down"
                     magnitude = lo - v
-                events.append({
-                    "date": dates[i] if i < len(dates) else "",
-                    "level": float(v),
-                    "bound": [lo, hi],
-                    "direction": direction,
-                    "magnitude": round(float(magnitude), 4),
-                    "need_anchor_correct": streak >= trigger and i == len(level_hist) - 1,
-                })
+                events.append(
+                    {
+                        "date": dates[i] if i < len(dates) else "",
+                        "level": float(v),
+                        "bound": [lo, hi],
+                        "direction": direction,
+                        "magnitude": round(float(magnitude), 4),
+                        "need_anchor_correct": streak >= trigger and i == len(level_hist) - 1,
+                    }
+                )
             else:
                 streak = 0
 
@@ -577,7 +687,7 @@ class MorphCyclePredictor:
             last_consecutive_end = len(events) - 1
             # 回溯找到连续段起点
             streak_back = 0
-            for j in range(len(events) - 1, -1, -1):
+            for j in range(len(events) - 1, -1, -1):  # noqa: B007
                 # 检查 events[j] 是否与 events[j-1] 连续（日期相邻或 level_hist 索引连续）
                 # 简化：只要 streak >= trigger，标记最后一个事件
                 streak_back += 1
@@ -602,12 +712,18 @@ class MorphCyclePredictor:
 
         # 按 Level 映射 stage_name
         def _stage(lv: float) -> str:
-            if lv >= 2.5:  return "极端狂热"
-            if lv >= 1.25: return "繁荣过热"
-            if lv >= 0.4:  return "稳健扩张"
-            if lv >= -0.4: return "均衡蓄力"
-            if lv >= -1.25:return "温和衰退"
-            if lv >= -2.5:return "深度衰退"
+            if lv >= 2.5:
+                return "极端狂热"
+            if lv >= 1.25:
+                return "繁荣过热"
+            if lv >= 0.4:
+                return "稳健扩张"
+            if lv >= -0.4:
+                return "均衡蓄力"
+            if lv >= -1.25:
+                return "温和衰退"
+            if lv >= -2.5:
+                return "深度衰退"
             return "恐慌"
 
         stages = [_stage(f.get("level_smooth", f.get("level", 0))) for f in traj]
@@ -651,6 +767,7 @@ class MorphCyclePredictor:
         anchor_state = self.storage.get_anchor_state(symbol)
         now_iso = None
         from datetime import datetime, timezone
+
         now = datetime.now(timezone.utc)
         now_iso = now.isoformat(timespec="seconds")
 
@@ -687,8 +804,9 @@ class MorphCyclePredictor:
             self.storage.clear_overshoot_hint(symbol)
         return result
 
-    def _correct_on_regime_switch(self, symbol: str,
-                                  switch: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _correct_on_regime_switch(
+        self, symbol: str, switch: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """形态切换大调整：在 param_ranges 边界内修正锚点 t_rel_mean / level_mean。
 
         修正逻辑：
@@ -707,15 +825,25 @@ class MorphCyclePredictor:
         overrides = anchor_state["anchor_overrides"] if anchor_state else {}
 
         # 7 大形态 Level 排序
-        STAGE_ORDER = ["恐慌", "深度衰退", "温和衰退", "均衡蓄力", "均衡（蓄力）",
-                       "稳健扩张", "繁荣过热", "极端狂热"]
+        STAGE_ORDER = [
+            "恐慌",
+            "深度衰退",
+            "温和衰退",
+            "均衡蓄力",
+            "均衡（蓄力）",
+            "稳健扩张",
+            "繁荣过热",
+            "极端狂热",
+        ]
         from_idx = STAGE_ORDER.index(from_stage) if from_stage in STAGE_ORDER else 3
         to_idx = STAGE_ORDER.index(to_stage) if to_stage in STAGE_ORDER else 3
         direction = to_idx - from_idx  # 正=上升，负=下降
 
         # 取实际 Level（用最近 trajectory）
         traj = self.storage.get_trajectory(symbol, window=1)
-        actual_level = float(traj[-1].get("level_smooth", traj[-1].get("level", 0))) if traj else 0.0
+        actual_level = (
+            float(traj[-1].get("level_smooth", traj[-1].get("level", 0))) if traj else 0.0
+        )
 
         # 修正锚点：遍历 PARAM_RANGES，按方向调整
         new_overrides = dict(overrides)
@@ -740,19 +868,23 @@ class MorphCyclePredictor:
             # level_mean 调整：朝实际 Level 微调
             l_delta = ANCHOR_LEVEL_ADJUST_RATE * (actual_level - l_mean) * 0.3
             if abs(l_delta) > ANCHOR_LEVEL_ADJUST_RATE * l_width:
-                l_delta = max(-ANCHOR_LEVEL_ADJUST_RATE * l_width,
-                              min(ANCHOR_LEVEL_ADJUST_RATE * l_width, l_delta))
+                l_delta = max(
+                    -ANCHOR_LEVEL_ADJUST_RATE * l_width,
+                    min(ANCHOR_LEVEL_ADJUST_RATE * l_width, l_delta),
+                )
 
             new_t = max(t_lo, min(t_hi, t_mean + t_delta))
             new_l = max(l_lo, min(l_hi, l_mean + l_delta))
 
             if abs(new_t - t_mean) > 0.01 or abs(new_l - l_mean) > 0.01:
                 new_overrides[label] = {"t_rel": round(new_t, 1), "level": round(new_l, 4)}
-                adjusted.append({
-                    "label": label,
-                    "t_rel": [round(t_mean, 1), round(new_t, 1)],
-                    "level": [round(l_mean, 4), round(new_l, 4)],
-                })
+                adjusted.append(
+                    {
+                        "label": label,
+                        "t_rel": [round(t_mean, 1), round(new_t, 1)],
+                        "level": [round(l_mean, 4), round(new_l, 4)],
+                    }
+                )
 
         if not adjusted:
             return None
@@ -787,6 +919,7 @@ class MorphCyclePredictor:
         state = self.storage.get_correction_state(symbol)
         now_iso = None
         from datetime import datetime, timezone
+
         now = datetime.now(timezone.utc)
         now_iso = now.isoformat(timespec="seconds")
 
@@ -826,10 +959,9 @@ class MorphCyclePredictor:
         return result
 
     # ---------------------------------------------------------------- predict
-    def predict(self,
-                symbol: str = "BTCUSDT",
-                hist_days: int = 60,
-                forecast_days: int = 20) -> Dict[str, Any]:
+    def predict(
+        self, symbol: str = "BTCUSDT", hist_days: int = 60, forecast_days: int = 20
+    ) -> Dict[str, Any]:
         """生成周期曲线预测结果，并记录预测快照。
 
         自动修正 hook：预测执行前先做条件性误差回填 + 在线学习修正。
@@ -870,9 +1002,15 @@ class MorphCyclePredictor:
         # 2. 加载已有的修正状态
         corr_state = storage.get_correction_state(symbol)
         weight_corr = corr_state["weight_correction"] if corr_state else {}
-        tangent_corr = corr_state["tangent_correction"] if corr_state else {
-            "m0_mul": 1.0, "m1_mul": 1.0, "bias": 0.0,
-        }
+        tangent_corr = (
+            corr_state["tangent_correction"]
+            if corr_state
+            else {
+                "m0_mul": 1.0,
+                "m1_mul": 1.0,
+                "bias": 0.0,
+            }
+        )
         correction_applied = {
             "weight_correction_pre": dict(weight_corr),
             "tangent_correction_pre": dict(tangent_corr),
@@ -911,16 +1049,24 @@ class MorphCyclePredictor:
                     mult = float(weight_corr.get(pkey, 1.0))
                     mult = float(np.clip(mult, FFT_WEIGHT_CLIP[0], FFT_WEIGHT_CLIP[1]))
                     amp_i = amp_i * mult
-                    top3_components.append({
-                        "period": round(period_i, 1),
-                        "amplitude": round(amp_i, 4),
-                        "phase": round(phase_i, 4),
-                        "weight": round(weight_i, 4),
-                        "weight_mult_before": round(float(weight_corr.get(pkey, 1.0)), 4),
-                    })
+                    top3_components.append(
+                        {
+                            "period": round(period_i, 1),
+                            "amplitude": round(amp_i, 4),
+                            "phase": round(phase_i, 4),
+                            "weight": round(weight_i, 4),
+                            "weight_mult_before": round(float(weight_corr.get(pkey, 1.0)), 4),
+                        }
+                    )
             if not top3_components:
                 top3_components = [
-                    {"period": 120.0, "amplitude": 1.5, "phase": 0.0, "weight": 1.0, "weight_mult_before": 1.0}
+                    {
+                        "period": 120.0,
+                        "amplitude": 1.5,
+                        "phase": 0.0,
+                        "weight": 1.0,
+                        "weight_mult_before": 1.0,
+                    }
                 ]
 
         # 生成理论曲线 + 振幅缩放对齐历史 std
@@ -953,12 +1099,20 @@ class MorphCyclePredictor:
             m1_base = 0.0
 
         # APPLY 切线修正系数
-        m0_mul = float(np.clip(tangent_corr.get("m0_mul", 1.0),
-                               1.0 - HERMITE_M_CORRECTION_CAP,
-                               1.0 + HERMITE_M_CORRECTION_CAP))
-        m1_mul = float(np.clip(tangent_corr.get("m1_mul", 1.0),
-                               1.0 - HERMITE_M_CORRECTION_CAP,
-                               1.0 + HERMITE_M_CORRECTION_CAP))
+        m0_mul = float(
+            np.clip(
+                tangent_corr.get("m0_mul", 1.0),
+                1.0 - HERMITE_M_CORRECTION_CAP,
+                1.0 + HERMITE_M_CORRECTION_CAP,
+            )
+        )
+        m1_mul = float(
+            np.clip(
+                tangent_corr.get("m1_mul", 1.0),
+                1.0 - HERMITE_M_CORRECTION_CAP,
+                1.0 + HERMITE_M_CORRECTION_CAP,
+            )
+        )
         bias = float(tangent_corr.get("bias", 0.0))
         m0 = m0_base * m0_mul
         m1 = m1_base * m1_mul
@@ -980,10 +1134,12 @@ class MorphCyclePredictor:
             h10 = s**3 - 2 * s**2 + s
             h01 = -2 * s**3 + 3 * s**2
             h11 = s**3 - s**2
-            v_raw = (h00 * L_cur
-                     + h10 * (m0_base) * forecast_days
-                     + h01 * theo_forecast[i]
-                     + h11 * (m1_base) * forecast_days)
+            v_raw = (
+                h00 * L_cur
+                + h10 * (m0_base) * forecast_days
+                + h01 * theo_forecast[i]
+                + h11 * (m1_base) * forecast_days
+            )
             raw_forecast.append(float(v_raw))
 
         for i in range(forecast_days):
@@ -992,21 +1148,25 @@ class MorphCyclePredictor:
             h10 = s**3 - 2 * s**2 + s
             h01 = -2 * s**3 + 3 * s**2
             h11 = s**3 - s**2
-            v = (h00 * L_cur
-                 + h10 * m0 * forecast_days
-                 + h01 * theo_forecast[i]
-                 + h11 * m1 * forecast_days)
+            v = (
+                h00 * L_cur
+                + h10 * m0 * forecast_days
+                + h01 * theo_forecast[i]
+                + h11 * m1 * forecast_days
+            )
             # bias 加性修正：用 h01 基函数形状进入（s³ 启动，s=0 贡献 0，不抖起点）
             v += bias * h01
             # 切线修正平滑：把"修正前后的差"按 tanh(s·3) 渐进引入，保证最大单步变化 <= 0.1
-            delta_from_raw = float(v - raw_forecast[i])
+            delta_from_raw = float(v - raw_forecast[i])  # noqa: F841
             # 限制 Δ per step：修正不应让相邻点突变 > 0.05
             # 对整个 forecast 做后处理：按相邻差 clip（总变差限制）
             v = 4.0 * np.tanh(v / 4.0)
-            forecast_points.append({
-                "t": f"+{i+1}d",
-                "v": round(float(v), 4),
-            })
+            forecast_points.append(
+                {
+                    "t": f"+{i+1}d",
+                    "v": round(float(v), 4),
+                }
+            )
 
         # 总变差约束：对 forecast 数列做相邻差 clip 后处理（保单调不缩范围）
         if forecast_days >= 2:
@@ -1082,12 +1242,16 @@ class MorphCyclePredictor:
             # 若连续越界 ≥ 触发阈值，保存 overshoot_hint 以降低下次大调整冷却
             if overshoot_events and overshoot_events[-1].get("need_anchor_correct") is True:
                 from datetime import datetime, timezone
-                storage.save_overshoot_hint(symbol, {
-                    "reason": "overshoot_streak",
-                    "streak": CYCLE_BOUNDS_OVERSHOOT_TRIGGER,
-                    "need_anchor_correct": True,
-                    "detected_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                })
+
+                storage.save_overshoot_hint(
+                    symbol,
+                    {
+                        "reason": "overshoot_streak",
+                        "streak": CYCLE_BOUNDS_OVERSHOOT_TRIGGER,
+                        "need_anchor_correct": True,
+                        "detected_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    },
+                )
 
         return {
             "ok": True,
@@ -1115,26 +1279,58 @@ class MorphCyclePredictor:
             "cycle_bounds": cycle_bounds,
             "overshoot_events": overshoot_events,
             "correction": {
-                "applied": bool(corr_state is not None
-                                and (weight_corr or any(v != 1.0 for v in tangent_corr.values()) or tangent_corr.get("bias", 0) != 0)),
+                "applied": bool(
+                    corr_state is not None
+                    and (
+                        weight_corr
+                        or any(v != 1.0 for v in tangent_corr.values())
+                        or tangent_corr.get("bias", 0) != 0
+                    )
+                ),
                 "state": corr_state,
                 "auto": {
                     # predict 入口处的自动修正 hook 执行结果
                     "triggered": auto_correction_result is not None,
-                    "backfilled": auto_correction_result.get("backfilled") if auto_correction_result else None,
-                    "filled_total": auto_correction_result.get("filled_total") if auto_correction_result else None,
-                    "mae_before": auto_correction_result.get("mae_before") if auto_correction_result else None,
-                    "mae_after": auto_correction_result.get("mae_after") if auto_correction_result else None,
-                    "reason": auto_correction_result.get("reason") if auto_correction_result else None,
+                    "backfilled": (
+                        auto_correction_result.get("backfilled") if auto_correction_result else None
+                    ),
+                    "filled_total": (
+                        auto_correction_result.get("filled_total")
+                        if auto_correction_result
+                        else None
+                    ),
+                    "mae_before": (
+                        auto_correction_result.get("mae_before") if auto_correction_result else None
+                    ),
+                    "mae_after": (
+                        auto_correction_result.get("mae_after") if auto_correction_result else None
+                    ),
+                    "reason": (
+                        auto_correction_result.get("reason") if auto_correction_result else None
+                    ),
                 },
                 # 形态切换大调整（锚点修正）
                 "anchor": {
                     "triggered": anchor_correction_result is not None,
-                    "from": anchor_correction_result.get("from") if anchor_correction_result else None,
+                    "from": (
+                        anchor_correction_result.get("from") if anchor_correction_result else None
+                    ),
                     "to": anchor_correction_result.get("to") if anchor_correction_result else None,
-                    "direction": anchor_correction_result.get("direction") if anchor_correction_result else None,
-                    "adjusted_anchors": anchor_correction_result.get("adjusted_anchors") if anchor_correction_result else None,
-                    "switch_count": anchor_correction_result.get("switch_count") if anchor_correction_result else None,
+                    "direction": (
+                        anchor_correction_result.get("direction")
+                        if anchor_correction_result
+                        else None
+                    ),
+                    "adjusted_anchors": (
+                        anchor_correction_result.get("adjusted_anchors")
+                        if anchor_correction_result
+                        else None
+                    ),
+                    "switch_count": (
+                        anchor_correction_result.get("switch_count")
+                        if anchor_correction_result
+                        else None
+                    ),
                 },
                 # 大周期弹性边界约束（轨道三）
                 "bounds": bounds_info,
@@ -1142,10 +1338,13 @@ class MorphCyclePredictor:
         }
 
     # ------------------------------------------------------------- evaluate
-    def walkforward_compare(self, symbol: str = "BTCUSDT",
-                             train_days: int = 120,
-                             test_days: int = 20,
-                             step_days: int = 10) -> Dict[str, Any]:
+    def walkforward_compare(
+        self,
+        symbol: str = "BTCUSDT",
+        train_days: int = 120,
+        test_days: int = 20,
+        step_days: int = 10,
+    ) -> Dict[str, Any]:
         """WalkForward 回测对比：开启 vs 关闭边界约束的预测误差。
 
         策略：在 trajectory 上滑动窗口，每次用 train_days 天数据预测 test_days 天，
@@ -1184,17 +1383,17 @@ class MorphCyclePredictor:
         # 滑动窗口
         start = 0
         while start + train_days + test_days <= len(traj):
-            train_slice = traj[start:start + train_days]
-            test_slice = traj[start + train_days:start + train_days + test_days]
+            train_slice = traj[start : start + train_days]
+            test_slice = traj[start + train_days : start + train_days + test_days]
             actual_levels = [float(f.get("level_smooth", 0.0)) for f in test_slice]
             start_date = str(train_slice[0].get("t", ""))
 
             # 关闭边界约束模式
             import bcrm2.morph_cycle_predictor as _self_mod
+
             _self_mod.CYCLE_BOUNDS_ENABLED = False
             try:
-                result_off = self.predict(symbol, hist_days=train_days,
-                                            forecast_days=test_days)
+                result_off = self.predict(symbol, hist_days=train_days, forecast_days=test_days)
             except Exception:
                 result_off = {"ok": False}
             _self_mod.CYCLE_BOUNDS_ENABLED = original_enabled
@@ -1202,8 +1401,7 @@ class MorphCyclePredictor:
             # 开启边界约束模式
             _self_mod.CYCLE_BOUNDS_ENABLED = True
             try:
-                result_on = self.predict(symbol, hist_days=train_days,
-                                          forecast_days=test_days)
+                result_on = self.predict(symbol, hist_days=train_days, forecast_days=test_days)
             except Exception:
                 result_on = {"ok": False}
             _self_mod.CYCLE_BOUNDS_ENABLED = original_enabled
@@ -1213,17 +1411,21 @@ class MorphCyclePredictor:
                 forecast_on = result_on.get("series", {}).get("forecast", [])
                 n = min(len(forecast_off), len(forecast_on), len(actual_levels))
                 if n > 0:
-                    mae_off = float(np.mean([abs(forecast_off[i] - actual_levels[i])
-                                               for i in range(n)]))
-                    mae_on = float(np.mean([abs(forecast_on[i] - actual_levels[i])
-                                              for i in range(n)]))
+                    mae_off = float(
+                        np.mean([abs(forecast_off[i] - actual_levels[i]) for i in range(n)])
+                    )
+                    mae_on = float(
+                        np.mean([abs(forecast_on[i] - actual_levels[i]) for i in range(n)])
+                    )
                     enabled_errors.append(mae_on)
                     disabled_errors.append(mae_off)
-                    windows.append({
-                        "start_date": start_date,
-                        "forecast_mae_enabled": round(mae_on, 4),
-                        "forecast_mae_disabled": round(mae_off, 4),
-                    })
+                    windows.append(
+                        {
+                            "start_date": start_date,
+                            "forecast_mae_enabled": round(mae_on, 4),
+                            "forecast_mae_disabled": round(mae_off, 4),
+                        }
+                    )
 
             start += step_days
 
@@ -1241,8 +1443,9 @@ class MorphCyclePredictor:
             "windows": windows,
         }
 
-    def evaluate_and_correct(self, symbol: str = "BTCUSDT",
-                             min_filled_samples: int = 3) -> Dict[str, Any]:
+    def evaluate_and_correct(
+        self, symbol: str = "BTCUSDT", min_filled_samples: int = 3
+    ) -> Dict[str, Any]:
         """回填已到期预测误差，并根据误差修正 FFT 权重和 Hermite 切线。
 
         返回：
@@ -1290,9 +1493,15 @@ class MorphCyclePredictor:
         # 先读取当前保存的修正，在此基础上迭代
         prev_state = storage.get_correction_state(symbol)
         prev_weight = prev_state["weight_correction"] if prev_state else {}
-        prev_tangent = prev_state["tangent_correction"] if prev_state else {
-            "m0_mul": 1.0, "m1_mul": 1.0, "bias": 0.0,
-        }
+        prev_tangent = (
+            prev_state["tangent_correction"]
+            if prev_state
+            else {
+                "m0_mul": 1.0,
+                "m1_mul": 1.0,
+                "bias": 0.0,
+            }
+        )
 
         # FFT 周期与误差相关性：用每个 FFT 分量的 period 作 key
         # 用当前 horizon 的平均误差作为信号，按周期权重分布修正
@@ -1306,16 +1515,19 @@ class MorphCyclePredictor:
                 except ValueError:
                     continue
                 # period 接近 2*h 的分量对该 horizon 影响最大
-                closeness = np.exp(-((p - 2.0 * h) / (2.0 * max(h, 5))) ** 2)
+                closeness = np.exp(-(((p - 2.0 * h) / (2.0 * max(h, 5))) ** 2))
                 delta_mul = FFT_LEARNING_RATE * avg_err * closeness / max(mae_before, 0.05)
-                new_mult = float(np.clip(float(prev_mult) + delta_mul,
-                                         FFT_WEIGHT_CLIP[0], FFT_WEIGHT_CLIP[1]))
+                new_mult = float(
+                    np.clip(float(prev_mult) + delta_mul, FFT_WEIGHT_CLIP[0], FFT_WEIGHT_CLIP[1])
+                )
                 weight_corr_new[period_key] = round(new_mult, 5)
             # 对未在 prev_weight 的分量，默认 mult=1.0 + delta
             if len(weight_corr_new) == 0:
                 # fallback：用所有误差均值调全局修正
                 mult = 1.0 + FFT_LEARNING_RATE * avg_err / max(mae_before, 0.05)
-                weight_corr_new["global"] = float(np.clip(mult, FFT_WEIGHT_CLIP[0], FFT_WEIGHT_CLIP[1]))
+                weight_corr_new["global"] = float(
+                    np.clip(mult, FFT_WEIGHT_CLIP[0], FFT_WEIGHT_CLIP[1])
+                )
 
         # 若没有历史修正（首次），跳过 FFT 修正，等下次有 baseline 再说
         if not prev_weight:
@@ -1341,16 +1553,16 @@ class MorphCyclePredictor:
             avg_short = float(np.mean(short_errs)) / max(mae_before, 0.05)
             # 正误差（预测偏低）→ 增 m0 让起点上升
             m0_mul = m0_mul + FFT_LEARNING_RATE * 0.5 * avg_short
-            m0_mul = float(np.clip(m0_mul,
-                                   1.0 - HERMITE_M_CORRECTION_CAP,
-                                   1.0 + HERMITE_M_CORRECTION_CAP))
+            m0_mul = float(
+                np.clip(m0_mul, 1.0 - HERMITE_M_CORRECTION_CAP, 1.0 + HERMITE_M_CORRECTION_CAP)
+            )
 
         if long_errs:
             avg_long = float(np.mean(long_errs)) / max(mae_before, 0.05)
             m1_mul = m1_mul + FFT_LEARNING_RATE * 0.5 * avg_long
-            m1_mul = float(np.clip(m1_mul,
-                                   1.0 - HERMITE_M_CORRECTION_CAP,
-                                   1.0 + HERMITE_M_CORRECTION_CAP))
+            m1_mul = float(
+                np.clip(m1_mul, 1.0 - HERMITE_M_CORRECTION_CAP, 1.0 + HERMITE_M_CORRECTION_CAP)
+            )
 
         # 整体 bias 修正
         if errors_all:
@@ -1385,17 +1597,18 @@ class MorphCyclePredictor:
                 "tangent_correction": tangent_corr_new,
             },
             "by_horizon_samples": {
-                str(h): {"count": len(errs),
-                         "avg_signed_err": round(float(np.mean(errs)), 4),
-                         "mae": round(float(np.mean([abs(e) for e in errs])), 4)}
+                str(h): {
+                    "count": len(errs),
+                    "avg_signed_err": round(float(np.mean(errs)), 4),
+                    "mae": round(float(np.mean([abs(e) for e in errs])), 4),
+                }
                 for h, errs in by_horizon_err.items()
             },
             "reason": "ok",
         }
 
     # ----------------------------------------------------- metrics
-    def get_correction_metrics(self, symbol: str = "BTCUSDT",
-                               lookback: int = 30) -> Dict[str, Any]:
+    def get_correction_metrics(self, symbol: str = "BTCUSDT", lookback: int = 30) -> Dict[str, Any]:
         """返回聚合指标 + 修正状态，供前端展示。"""
         symbol = symbol or "BTCUSDT"
         storage = self.storage
@@ -1410,12 +1623,13 @@ class MorphCyclePredictor:
     BTC_REF_SYMBOL = "BTCUSDT"
     BTC_REF_MIN_TRAJ = 20
 
-    def predict_with_fallback(self,
-                              symbol: str = "BTCUSDT",
-                              hist_days: int = 60,
-                              forecast_days: int = 5,
-                              symbol_beta: float = 1.0,
-                              ) -> Dict[str, Any]:
+    def predict_with_fallback(
+        self,
+        symbol: str = "BTCUSDT",
+        hist_days: int = 60,
+        forecast_days: int = 5,
+        symbol_beta: float = 1.0,
+    ) -> Dict[str, Any]:
         """带 BTC 锚定 fallback 的形态预测。
 
         执行顺序：
@@ -1453,8 +1667,9 @@ class MorphCyclePredictor:
             direct_result["fallback_source"] = None
             return direct_result
 
-        btc_result = self.predict(self.BTC_REF_SYMBOL, hist_days=hist_days,
-                                  forecast_days=forecast_days)
+        btc_result = self.predict(
+            self.BTC_REF_SYMBOL, hist_days=hist_days, forecast_days=forecast_days
+        )
         if not btc_result.get("ok"):
             # BTC 也失败 → 返回目标币种的原错误
             direct_result["fallback_used"] = False

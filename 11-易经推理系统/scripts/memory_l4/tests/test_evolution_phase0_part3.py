@@ -4,11 +4,12 @@
   T9. test_storage_cli_json_roundtrip   — CLI 跑 sample.csv → trajectory.json；Storage 能 reload；shape/sum/consensus/连续性都对。
   T10. test_acceptance_btc_full_checklist — 真实 BTC 全量 CSV 跑 CLI 后，检查 6 项 Phase 0 验收项（关键日期象限、共识≥0.30 占 90%、连续性 p99≤1.0、一致性等）。
 """
+
 from __future__ import annotations
 
 import json
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -34,14 +35,16 @@ def synth_csv_path(tmp_path_factory) -> Path:
     t2 = np.linspace(180, 140, 200)
     close = np.concatenate([t1, t2]) * (1 + rng.normal(0, 0.01, n))
     idx = pd.date_range("2020-01-01", periods=n, freq="D")
-    df = pd.DataFrame({
-        "timestamp": idx,
-        "open":  close * (1 + rng.normal(0, 0.004, n)),
-        "high":  close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low":   close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    })
+    df = pd.DataFrame(
+        {
+            "timestamp": idx,
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        }
+    )
     p = tmp_path_factory.mktemp("data") / "sample_500.csv"
     df.to_csv(p, index=False)
     return p
@@ -70,17 +73,25 @@ def test_storage_cli_json_roundtrip(synth_csv_path, tmp_path):
     assert cli_path.exists(), f"CLI 入口 {cli_path} 不存在"
 
     proc = subprocess.run(
-        [sys.executable, str(cli_path),
-         "--csv", str(synth_csv_path),
-         "--window", "60",
-         "--out", str(out_path),
-         "--symbol", "SAMPLE"],
-        capture_output=True, text=True,
+        [
+            sys.executable,
+            str(cli_path),
+            "--csv",
+            str(synth_csv_path),
+            "--window",
+            "60",
+            "--out",
+            str(out_path),
+            "--symbol",
+            "SAMPLE",
+        ],
+        capture_output=True,
+        text=True,
         timeout=180,
     )
-    assert proc.returncode == 0, (
-        f"CLI 非零退出: code={proc.returncode}\n---STDOUT---\n{proc.stdout}\n---STDERR---\n{proc.stderr}"
-    )
+    assert (
+        proc.returncode == 0
+    ), f"CLI 非零退出: code={proc.returncode}\n---STDOUT---\n{proc.stdout}\n---STDERR---\n{proc.stderr}"
     assert out_path.exists(), f"未生成输出 JSON: {out_path}"
 
     with out_path.open("r", encoding="utf-8") as f:
@@ -95,21 +106,31 @@ def test_storage_cli_json_roundtrip(synth_csv_path, tmp_path):
 
     # 逐帧形状 + 概率归一化
     for i, fr in enumerate(traj):
-        for k in ("t", "level_smooth", "trend_smooth", "regime_probs",
-                  "consensus", "hmm_state", "indicators", "price"):
+        for k in (
+            "t",
+            "level_smooth",
+            "trend_smooth",
+            "regime_probs",
+            "consensus",
+            "hmm_state",
+            "indicators",
+            "price",
+        ):
             assert k in fr, f"frame {i} 缺失字段 {k}"
         s = float(sum(fr["regime_probs"].values()))
         assert abs(s - 1.0) < 1e-9, f"frame {i} 概率总和={s}≠1"
         assert 0.0 <= fr["consensus"] <= 1.0
 
     # snapshot_latest 与 trajectory 最后一日日期一致
-    assert data["snapshot_latest"]["t"] == traj[-1]["t"], \
-        f"snapshot t={data['snapshot_latest']['t']} != trajectory[-1] t={traj[-1]['t']}"
+    assert (
+        data["snapshot_latest"]["t"] == traj[-1]["t"]
+    ), f"snapshot t={data['snapshot_latest']['t']} != trajectory[-1] t={traj[-1]['t']}"
 
     # Storage round-trip：load 回 & dump 回（幂等）
     loaded = EvolutionStorageJSON.load(out_path)
-    assert loaded.trajectory[-1].t == traj[-1]["t"], \
-        f"loaded.trajectory[-1].t={loaded.trajectory[-1].t} != json[-1].t={traj[-1]['t']}"
+    assert (
+        loaded.trajectory[-1].t == traj[-1]["t"]
+    ), f"loaded.trajectory[-1].t={loaded.trajectory[-1].t} != json[-1].t={traj[-1]['t']}"
     # 再 dump 一份
     redump_path = tmp_path / "redump.json"
     EvolutionStorageJSON.dump(loaded, redump_path)
@@ -148,17 +169,25 @@ def test_acceptance_btc_full_checklist(tmp_path):
     cli_path = _BCRM2_ROOT / "bcrm2" / "run_evolution_pipeline.py"
 
     proc = subprocess.run(
-        [sys.executable, str(cli_path),
-         "--csv", str(btc_csv),
-         "--window", "90",
-         "--out", str(out_path),
-         "--symbol", "BTCUSDT"],
-        capture_output=True, text=True,
+        [
+            sys.executable,
+            str(cli_path),
+            "--csv",
+            str(btc_csv),
+            "--window",
+            "90",
+            "--out",
+            str(out_path),
+            "--symbol",
+            "BTCUSDT",
+        ],
+        capture_output=True,
+        text=True,
         timeout=300,
     )
-    assert proc.returncode == 0, (
-        f"BTC full CLI 非零退出\n---STDOUT---\n{proc.stdout}\n---STDERR---\n{proc.stderr}"
-    )
+    assert (
+        proc.returncode == 0
+    ), f"BTC full CLI 非零退出\n---STDOUT---\n{proc.stdout}\n---STDERR---\n{proc.stderr}"
 
     data = EvolutionStorageJSON.load(out_path).to_dict()
     traj = data["trajectory"]
@@ -194,22 +223,29 @@ def test_acceptance_btc_full_checklist(tmp_path):
     # (6) 不坍缩检测：对【全样本】而非仅最近 90 天做 top1 覆盖（否则 2024Q4 横盘天然只有 2 态）
     #     直接用 CLI import 子流程 + 用子进程跑一份"全样本覆盖统计"太重；
     #     改为直接把 BTC CSV 作为全样本跑 Layer 1-4（不写 JSON）统计覆盖情况。
-    from bcrm2.indicators import IndicatorBank                 # noqa: E402
-    from bcrm2.score_composer import ScoreComposer             # noqa: E402
-    from bcrm2.temporal_smoother import TemporalSmoother       # noqa: E402
-    from bcrm2.regime_mapper import RegimeMapper               # noqa: E402
+    from bcrm2.indicators import IndicatorBank  # noqa: E402
+    from bcrm2.regime_mapper import RegimeMapper  # noqa: E402
     from bcrm2.run_evolution_pipeline import _read_csv, build_trajectory_frames  # noqa: E402
+    from bcrm2.score_composer import ScoreComposer  # noqa: E402
+    from bcrm2.temporal_smoother import TemporalSmoother  # noqa: E402
 
     df_all = _read_csv(btc_csv)
     indicators = IndicatorBank().compute_all(df_all)
     lr, tr = ScoreComposer().compose(indicators, df_all)
     sm = TemporalSmoother(random_state=42).transform(lr, tr)
     mapper = RegimeMapper(softmax_temperature=0.6)
-    frames_all = build_trajectory_frames(df_all, mapper, indicators,
-                                         lr, tr,
-                                         sm.level_smooth, sm.trend_smooth,
-                                         sm.hmm_state, sm.bocpd_cp_prob)
-    top1_set_full = set(fr.top3[0][0] for fr in frames_all)
+    frames_all = build_trajectory_frames(
+        df_all,
+        mapper,
+        indicators,
+        lr,
+        tr,
+        sm.level_smooth,
+        sm.trend_smooth,
+        sm.hmm_state,
+        sm.bocpd_cp_prob,
+    )
+    top1_set_full = set(fr.top3[0][0] for fr in frames_all)  # noqa: C401
     # 联合覆盖：Top3 里只要概率 ≥ 0.05 就算出现过 1 次的类
     top3_classes: set = set()
     for fr in frames_all:

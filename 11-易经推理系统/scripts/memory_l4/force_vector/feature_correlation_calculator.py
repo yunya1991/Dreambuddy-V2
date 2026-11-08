@@ -3,6 +3,7 @@
 纯 numpy + scipy + sklearn 实现，所有方法 FAIL-OPEN（异常返回中性默认值）。
 对应 Spec §三 Step 4 特征关联度。
 """
+
 from __future__ import annotations
 
 import os as _os
@@ -14,22 +15,19 @@ import sys as _sys
 #   Fail-Open：目录不存在或已在 path → 静默跳过。
 # ============================================================
 try:  # noqa: E402
-    _HERE = _os.path.dirname(_os.path.abspath(__file__))          # force_vector
-    _SCRIPTS = _os.path.dirname(_HERE)                            # scripts
-    _YIJING = _os.path.dirname(_SCRIPTS)                         # 11-易经推理系统
-    _ROOT = _os.path.dirname(_YIJING)                             # dreambuddy-v2
+    _HERE = _os.path.dirname(_os.path.abspath(__file__))  # force_vector
+    _SCRIPTS = _os.path.dirname(_HERE)  # scripts
+    _YIJING = _os.path.dirname(_SCRIPTS)  # 11-易经推理系统
+    _ROOT = _os.path.dirname(_YIJING)  # dreambuddy-v2
     _9_FUND_PATH = _os.path.join(_ROOT, "9-基本面分析")
     if _os.path.isdir(_9_FUND_PATH) and _9_FUND_PATH not in _sys.path:
         _sys.path.insert(0, _9_FUND_PATH)
 except Exception:
     pass
 
-import numpy as np
+import numpy as np  # noqa: I001
 from scipy.stats import spearmanr
 from sklearn.feature_selection import mutual_info_regression
-
-from force_vector.models import FeatureCorrelation
-
 
 # 权重上下界约束（Spec §三 Step 4：每个特征权重 ∈ [0.02, 0.40]）
 _W_MIN = 0.02
@@ -63,7 +61,7 @@ class FeatureCorrelationCalculator:
                 return 0.0
             # 滞后对齐：feature[t] 预测 returns[t+1]
             x = f[:-1]
-            y = r[1:][:len(x)]
+            y = r[1:][: len(x)]
             if len(x) < 3:
                 return 0.0
             rho, _ = spearmanr(x, y)
@@ -76,8 +74,9 @@ class FeatureCorrelationCalculator:
     # ============================================================
     # 互信息 MI（非线性关联度，归一化 [0,1]）
     # ============================================================
-    def compute_mi_normalized(self, feature: np.ndarray, returns: np.ndarray,
-                              n_bins: int = 10) -> float:
+    def compute_mi_normalized(
+        self, feature: np.ndarray, returns: np.ndarray, n_bins: int = 10
+    ) -> float:
         """互信息 MI（非线性关联度），归一化到 [0, 1]
 
         使用 sklearn.mutual_info_regression，然后用 max_mi（=返回值离散化熵）归一化。
@@ -92,16 +91,14 @@ class FeatureCorrelationCalculator:
             # 同期对齐：衡量 feature[t] 与 returns[t] 的非线性关联
             f = f[:n]
             r = r[:n]
-            mi = float(mutual_info_regression(f, r, n_neighbors=3,
-                                              random_state=42)[0])
+            mi = float(mutual_info_regression(f, r, n_neighbors=3, random_state=42)[0])
             # max_mi = H(returns) 离散化为 n_bins 箱（不确定性系数上界）
             r_min = float(r.min())
             r_max = float(r.max())
             if r_max - r_min <= 0:
                 return 0.0  # 返回值无变异 → 无信息
             edges = np.linspace(r_min, r_max + 1e-12, n_bins + 1)
-            idx = np.clip(np.searchsorted(edges[1:-1], r, side='right'),
-                          0, n_bins - 1)
+            idx = np.clip(np.searchsorted(edges[1:-1], r, side="right"), 0, n_bins - 1)
             counts = np.bincount(idx, minlength=n_bins).astype(float)
             total = counts.sum()
             if total <= 0:
@@ -117,9 +114,9 @@ class FeatureCorrelationCalculator:
     # ============================================================
     # 综合关联度
     # ============================================================
-    def compute_combined_score(self, ic: float, mi: float,
-                               w_linear: float = 0.6,
-                               w_nonlinear: float = 0.4) -> float:
+    def compute_combined_score(
+        self, ic: float, mi: float, w_linear: float = 0.6, w_nonlinear: float = 0.4
+    ) -> float:
         """综合关联度 = |IC| * w_linear + MI * w_nonlinear"""
         try:
             return float(abs(ic) * w_linear + mi * w_nonlinear)
@@ -151,6 +148,7 @@ class FeatureCorrelationCalculator:
         """复制 FeatureCorrelation 并更新 rank（不修改原对象）。"""
         try:
             from dataclasses import replace
+
             return replace(c, rank=rank)
         except Exception:
             try:
@@ -162,8 +160,7 @@ class FeatureCorrelationCalculator:
     # ============================================================
     # 最优权重（|IC|^alpha 归一化，约束 ∈ [0.02, 0.40]）
     # ============================================================
-    def compute_optimal_weights(self, correlations: list,
-                                alpha: float = 1.0) -> dict:
+    def compute_optimal_weights(self, correlations: list, alpha: float = 1.0) -> dict:
         """最优权重 = |IC|^alpha 归一化
 
         约束：每个权重 ∈ [0.02, 0.40]
@@ -199,8 +196,7 @@ class FeatureCorrelationCalculator:
     # ============================================================
     # Beta 后验权重融合（复用 signal_engine._adaptive_weight）
     # ============================================================
-    def fuse_with_beta(self, ic_weights: dict, signal_engine,
-                       module_names: dict) -> dict:
+    def fuse_with_beta(self, ic_weights: dict, signal_engine, module_names: dict) -> dict:
         """Beta后验权重融合（复用 signal_engine._adaptive_weight）
 
         feature_weight_i = ic_weight_i * signal_engine._adaptive_weight(module_name_i)

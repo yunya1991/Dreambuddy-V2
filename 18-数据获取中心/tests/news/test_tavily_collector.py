@@ -2,6 +2,7 @@
 
 tavily-python 薄封装，client.search(query) -> results -> DataRecord(category=news)。
 """
+
 from data_center.collectors.news.tavily_collector import TavilyCollector
 from data_center.core.contract import DataRecord
 

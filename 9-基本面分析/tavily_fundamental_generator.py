@@ -11,20 +11,18 @@ Tavily 驱动的基本面数据生成器 (v2 - 匹配后端解析 schema)
   - ops/nanoclaw/core_task1/narrative/outputs/     (narrative_registry_*.json, narrative_brief_*.md)
 """
 
-import json
-import time
-import urllib.request
-import urllib.parse
-import urllib.error
-import ssl
 import hashlib
-import random
-import math
+import json
 import os
+import random
+import ssl
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any, Dict, List
 
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "").strip()
 TAVILY_SEARCH_URL = "https://api.tavily.com/search"
@@ -56,9 +54,16 @@ def _stamp() -> str:
 # Tavily API Client
 # ============================================================================
 
-def tavily_search(query: str, max_results: int = 8, search_depth: str = "basic",
-                  include_answer: bool = True, include_raw_content: bool = False,
-                  topic: str = "general", days: int = 3) -> Dict[str, Any]:
+
+def tavily_search(
+    query: str,
+    max_results: int = 8,
+    search_depth: str = "basic",
+    include_answer: bool = True,
+    include_raw_content: bool = False,
+    topic: str = "general",
+    days: int = 3,
+) -> Dict[str, Any]:
     """调用 Tavily Search API 并返回解析结果。"""
     if not TAVILY_API_KEY:
         return {"error": "TAVILY_API_KEY not set", "results": [], "answer": ""}
@@ -149,20 +154,91 @@ def classify_event_type(text: str) -> str:
     scores: Dict[str, int] = {}
 
     keyword_map = {
-        "regulation_policy": ["fed", "interest", "inflation", "cpi", "rate", "sec",
-                                "regulation", "law", "policy", "central bank", "监管",
-                                "法案", "诉讼", "制裁", "货币政策", "加息", "降息"],
-        "geopolitics": ["geopolitic", "war", "sanction", "election", "conflict",
-                         "trade war", "tariff", "中东", "战争", "选举", "制裁"],
-        "market_trading": ["market", "price", "rally", "crash", "breakout",
-                          "consolidation", "trading", "bull", "bear", "volume",
-                          "spot", "futures", "价格", "市场", "上涨", "下跌", "突破"],
-        "projects_technology": ["protocol", "upgrade", "fork", "launch", "airdrop",
-                                "release", "listing", "ecosystem", "partnership",
-                                "bitcoin", "ethereum", "主网上线", "空投", "发布",
-                                "合作", "生态", "项目"],
-        "defi_nft": ["defi", "nft", "dex", "lending", "yield", "hack", "exploit",
-                    "security", "breach", "stolen", "rug pull", "漏洞", "被盗"],
+        "regulation_policy": [
+            "fed",
+            "interest",
+            "inflation",
+            "cpi",
+            "rate",
+            "sec",
+            "regulation",
+            "law",
+            "policy",
+            "central bank",
+            "监管",
+            "法案",
+            "诉讼",
+            "制裁",
+            "货币政策",
+            "加息",
+            "降息",
+        ],
+        "geopolitics": [
+            "geopolitic",
+            "war",
+            "sanction",
+            "election",
+            "conflict",
+            "trade war",
+            "tariff",
+            "中东",
+            "战争",
+            "选举",
+            "制裁",
+        ],
+        "market_trading": [
+            "market",
+            "price",
+            "rally",
+            "crash",
+            "breakout",
+            "consolidation",
+            "trading",
+            "bull",
+            "bear",
+            "volume",
+            "spot",
+            "futures",
+            "价格",
+            "市场",
+            "上涨",
+            "下跌",
+            "突破",
+        ],
+        "projects_technology": [
+            "protocol",
+            "upgrade",
+            "fork",
+            "launch",
+            "airdrop",
+            "release",
+            "listing",
+            "ecosystem",
+            "partnership",
+            "bitcoin",
+            "ethereum",
+            "主网上线",
+            "空投",
+            "发布",
+            "合作",
+            "生态",
+            "项目",
+        ],
+        "defi_nft": [
+            "defi",
+            "nft",
+            "dex",
+            "lending",
+            "yield",
+            "hack",
+            "exploit",
+            "security",
+            "breach",
+            "stolen",
+            "rug pull",
+            "漏洞",
+            "被盗",
+        ],
     }
     for c, kws in keyword_map.items():
         scores[c] = sum(1 for kw in kws if kw in t)
@@ -174,12 +250,53 @@ def classify_event_type(text: str) -> str:
 def estimate_sentiment(text: str) -> float:
     """估计情感得分 (-1 ~ +1)。"""
     t = text.lower()
-    bullish_kws = ["rally", "surge", "approve", "launch", "breakout", "bull", "soar",
-                   "gain", "positive", "upgrade", "inflow", "bullish", "adopt",
-                   "上涨", "突破", "利好", "批准", "上线", "流入", "收益"]
-    bearish_kws = ["crash", "sell", "dump", "reject", "ban", "hack", "bear", "downgrade",
-                  "outflow", "negative", "plunge", "fall", "decline", "drop", "lose",
-                  "下跌", "暴跌", "利空", "被盗", "攻击", "拒绝", "禁令", "流出"]
+    bullish_kws = [
+        "rally",
+        "surge",
+        "approve",
+        "launch",
+        "breakout",
+        "bull",
+        "soar",
+        "gain",
+        "positive",
+        "upgrade",
+        "inflow",
+        "bullish",
+        "adopt",
+        "上涨",
+        "突破",
+        "利好",
+        "批准",
+        "上线",
+        "流入",
+        "收益",
+    ]
+    bearish_kws = [
+        "crash",
+        "sell",
+        "dump",
+        "reject",
+        "ban",
+        "hack",
+        "bear",
+        "downgrade",
+        "outflow",
+        "negative",
+        "plunge",
+        "fall",
+        "decline",
+        "drop",
+        "lose",
+        "下跌",
+        "暴跌",
+        "利空",
+        "被盗",
+        "攻击",
+        "拒绝",
+        "禁令",
+        "流出",
+    ]
     bull = sum(1 for kw in bullish_kws if kw in t)
     bear = sum(1 for kw in bearish_kws if kw in t)
     total = bull + bear
@@ -214,15 +331,17 @@ def fetch_tavily_news() -> Dict[str, Any]:
             if any(key and (n.get("url") == key or n.get("title") == title) for n in all_news):
                 continue
 
-            all_news.append({
-                "title": title,
-                "url": url,
-                "content": text,
-                "score": score,
-                "published_date": published,
-                "sentiment": estimate_sentiment(text),
-                "category": classify_event_type(text + " " + title),
-            })
+            all_news.append(
+                {
+                    "title": title,
+                    "url": url,
+                    "content": text,
+                    "score": score,
+                    "published_date": published,
+                    "sentiment": estimate_sentiment(text),
+                    "category": classify_event_type(text + " " + title),
+                }
+            )
 
     # 按相关性/情感强度排序
     all_news.sort(key=lambda x: abs(x.get("sentiment", 0)) + x.get("score", 0), reverse=True)
@@ -233,6 +352,7 @@ def fetch_tavily_news() -> Dict[str, Any]:
 # News brief markdown (匹配 backend 解析格式)
 # ============================================================================
 
+
 def build_news_brief_markdown(news_data: Dict[str, Any]) -> str:
     """构建后端解析器预期的 markdown 格式。
 
@@ -241,7 +361,11 @@ def build_news_brief_markdown(news_data: Dict[str, Any]) -> str:
     - ## 今日要点 部分: `1. **[标题]** - 详情 （来源=url）`
     - ## 新闻分类明细 部分: `#### 1. 标题` + `- 类别: xxx` `- 来源: url` `- 事实: 详情`
     """
-    now_cn = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S CST")
+    now_cn = (
+        datetime.now(timezone.utc)
+        .astimezone(timezone(timedelta(hours=8)))
+        .strftime("%Y-%m-%d %H:%M:%S CST")
+    )
     news_items = news_data.get("news", [])
 
     # 情感统计
@@ -255,7 +379,7 @@ def build_news_brief_markdown(news_data: Dict[str, Any]) -> str:
     lines.append("# 加密市场新闻简报")
     lines.append("")
     lines.append(f"**生成时间**: {now_cn}")
-    lines.append(f"**分析窗口**: 最近24小时 (Tavily API)")
+    lines.append("**分析窗口**: 最近24小时 (Tavily API)")
     lines.append(f"**新闻总数**: {len(news_items)}")
     lines.append(f"**正面/中性/负面**: {pos_n} / {neu_n} / {neg_n}")
     lines.append(f"**综合情绪**: {avg_sent:+.4f}")
@@ -266,7 +390,9 @@ def build_news_brief_markdown(news_data: Dict[str, Any]) -> str:
     # ---- 今日要点 (后端解析 `## 今日要点` 节) ----
     lines.append("## 今日要点")
     lines.append("")
-    top_items = sorted(news_items, key=lambda x: abs(x.get("sentiment", 0)) + x.get("score", 0), reverse=True)[:5]
+    top_items = sorted(
+        news_items, key=lambda x: abs(x.get("sentiment", 0)) + x.get("score", 0), reverse=True
+    )[:5]
     for i, item in enumerate(top_items, 1):
         title = item.get("title", "")[:80]
         sent = item.get("sentiment", 0)
@@ -317,7 +443,7 @@ def build_news_brief_markdown(news_data: Dict[str, Any]) -> str:
     lines.append("---")
     lines.append("")
     lines.append("**简报版本**: News Brief v3.0 (Tavily-driven)")
-    lines.append(f"**数据来源**: Tavily Search API (news topic)")
+    lines.append("**数据来源**: Tavily Search API (news topic)")
     lines.append(f"**生成时间戳**: {_now_ms()}")
 
     return "\n".join(lines)
@@ -326,6 +452,7 @@ def build_news_brief_markdown(news_data: Dict[str, Any]) -> str:
 # ============================================================================
 # Event ledger (jsonl) & coverage report
 # ============================================================================
+
 
 def build_event_ledger_jsonl(news_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """构建 event_ledger.jsonl 条目。"""
@@ -348,35 +475,57 @@ def build_event_ledger_jsonl(news_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             risk_proposal = "short"
 
         risk_flags: List[str] = []
-        if any(kw in (text + title).lower() for kw in ["hack", "breach", "exploit", "stolen", "攻击", "被盗", "漏洞"]):
+        if any(
+            kw in (text + title).lower()
+            for kw in ["hack", "breach", "exploit", "stolen", "攻击", "被盗", "漏洞"]
+        ):
             risk_flags.append("risk_event_detected")
 
-        items.append({
-            "event_id": f"news_{now_ms}_{idx:04d}",
-            "ts_ms": now_ms - idx * 60000,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "event_type": cat,
-            "expectation_bucket": "bullish" if sent > 0.1 else ("bearish" if sent < -0.1 else "neutral"),
-            "risk_action_proposal": risk_proposal,
-            "risk_flags": risk_flags,
-            "title": title[:200],
-            "source_url": url,
-            "credibility": cred,
-            "evidence_grade": "B" if cred in ("high", "medium") else "C",
-            "sentiment": sent,
-            "fact_text": text[:500],
-            "analysis_text": f"新闻情感={sent:+.3f}; 分类={cat}; 可信度={cred}",
-            "source": "tavily_news",
-        })
+        items.append(
+            {
+                "event_id": f"news_{now_ms}_{idx:04d}",
+                "ts_ms": now_ms - idx * 60000,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "event_type": cat,
+                "expectation_bucket": (
+                    "bullish" if sent > 0.1 else ("bearish" if sent < -0.1 else "neutral")
+                ),
+                "risk_action_proposal": risk_proposal,
+                "risk_flags": risk_flags,
+                "title": title[:200],
+                "source_url": url,
+                "credibility": cred,
+                "evidence_grade": "B" if cred in ("high", "medium") else "C",
+                "sentiment": sent,
+                "fact_text": text[:500],
+                "analysis_text": f"新闻情感={sent:+.3f}; 分类={cat}; 可信度={cred}",
+                "source": "tavily_news",
+            }
+        )
 
     return items
 
 
 def estimate_credibility(source: str) -> str:
     s = (source or "").lower()
-    high = ["bloomberg", "reuters", "coinbase", "the block", "cointelegraph",
-            "bbc", "cnn", "wsj", "forbes", "apnews", "npr", "github",
-            "ethereum.org", "bitcoin.org", "coin.", "binance"]
+    high = [
+        "bloomberg",
+        "reuters",
+        "coinbase",
+        "the block",
+        "cointelegraph",
+        "bbc",
+        "cnn",
+        "wsj",
+        "forbes",
+        "apnews",
+        "npr",
+        "github",
+        "ethereum.org",
+        "bitcoin.org",
+        "coin.",
+        "binance",
+    ]
     if any(h in s for h in high):
         return "high"
     if "twitter" in s or "x.com" in s or "medium" in s or "reddit" in s:
@@ -422,6 +571,7 @@ def build_coverage_report(news_data: Dict[str, Any]) -> Dict[str, Any]:
 # Flow regime (匹配 backend _fundamental_min_resistance_latest_payload 解析)
 # ============================================================================
 
+
 def build_flow_regime(news_data: Dict[str, Any]) -> Dict[str, Any]:
     """构建 flow_regime JSON，精确匹配后端解析 schema。
 
@@ -449,9 +599,21 @@ def build_flow_regime(news_data: Dict[str, Any]) -> Dict[str, Any]:
     onchain_items = [n for n in items if n.get("category") == "market_trading"]
     projects_items = [n for n in items if n.get("category") == "projects_technology"]
 
-    macro_sent = sum(n.get("sentiment", 0) for n in macro_items) / max(1, len(macro_items)) if macro_items else avg_sent * 0.3
-    onchain_sent = sum(n.get("sentiment", 0) for n in onchain_items) / max(1, len(onchain_items)) if onchain_items else avg_sent * 0.5
-    leverage_sent = sum(n.get("sentiment", 0) for n in projects_items) / max(1, len(projects_items)) if projects_items else avg_sent * 0.2
+    macro_sent = (
+        sum(n.get("sentiment", 0) for n in macro_items) / max(1, len(macro_items))
+        if macro_items
+        else avg_sent * 0.3
+    )
+    onchain_sent = (
+        sum(n.get("sentiment", 0) for n in onchain_items) / max(1, len(onchain_items))
+        if onchain_items
+        else avg_sent * 0.5
+    )
+    leverage_sent = (
+        sum(n.get("sentiment", 0) for n in projects_items) / max(1, len(projects_items))
+        if projects_items
+        else avg_sent * 0.2
+    )
 
     composite = round(avg_sent, 4)
     bias = "bullish" if composite > 0.05 else ("bearish" if composite < -0.05 else "neutral")
@@ -461,6 +623,7 @@ def build_flow_regime(news_data: Dict[str, Any]) -> Dict[str, Any]:
     for item in items[:5]:
         text = item.get("content", "")
         import re
+
         m = re.search(r"\$(\d{2,3}(?:[,\.]?\d{3})*(?:\.\d+)?)", text)
         if m:
             try:
@@ -475,31 +638,39 @@ def build_flow_regime(news_data: Dict[str, Any]) -> Dict[str, Any]:
     for i in range(24):
         ts_ms = now_ms - (23 - i) * 3600 * 1000
         drift = random.uniform(-0.01, 0.01) + composite * 0.01 * (i / 23)
-        btc_price_history.append({
-            "ts_ms": ts_ms,
-            "price": round(btc_price_base * (1 + drift), 2),
-            "timestamp": datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).isoformat(),
-        })
+        btc_price_history.append(
+            {
+                "ts_ms": ts_ms,
+                "price": round(btc_price_base * (1 + drift), 2),
+                "timestamp": datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).isoformat(),
+            }
+        )
 
     # data_quality checks (每指标一条)
     checks: List[Dict[str, Any]] = []
-    for layer, n_items, sent_val in [
+    for layer, n_items, sent_val in [  # noqa: B007
         ("exogenous", len(macro_items), macro_sent),
         ("onchain", len(onchain_items), onchain_sent),
         ("leverage", len(projects_items), leverage_sent),
     ]:
-        checks.append({
-            "layer": layer,
-            "status": "ok" if n_items > 0 else "missing",
-            "name": f"{layer}_sentiment_from_news",
-            "status_reasons": [f"news_items={n_items}"] if n_items > 0 else [f"no_{layer}_news_items"],
-        })
-        checks.append({
-            "layer": layer,
-            "status": "ok" if n_items >= 2 else "degraded",
-            "name": f"{layer}_coverage",
-            "status_reasons": [f"sample_size={n_items}"],
-        })
+        checks.append(
+            {
+                "layer": layer,
+                "status": "ok" if n_items > 0 else "missing",
+                "name": f"{layer}_sentiment_from_news",
+                "status_reasons": (
+                    [f"news_items={n_items}"] if n_items > 0 else [f"no_{layer}_news_items"]
+                ),
+            }
+        )
+        checks.append(
+            {
+                "layer": layer,
+                "status": "ok" if n_items >= 2 else "degraded",
+                "name": f"{layer}_coverage",
+                "status_reasons": [f"sample_size={n_items}"],
+            }
+        )
 
     critical_missing = []
     if not macro_items:
@@ -547,19 +718,41 @@ def build_flow_regime(news_data: Dict[str, Any]) -> Dict[str, Any]:
         "layer_scores": [
             {"layer": "exogenous", "signal": round(macro_sent, 4), "n_items": len(macro_items)},
             {"layer": "onchain", "signal": round(onchain_sent, 4), "n_items": len(onchain_items)},
-            {"layer": "leverage", "signal": round(leverage_sent, 4), "n_items": len(projects_items)},
+            {
+                "layer": "leverage",
+                "signal": round(leverage_sent, 4),
+                "n_items": len(projects_items),
+            },
         ],
         "btc_price_history": btc_price_history,
         "free_source_catalog": [
-            {"bindBase": "news_sentiment_index__btc__na__na", "value": round(50 + avg_sent * 40, 2), "source": "tavily"},
-            {"bindBase": "btc_inflow_sentiment_index__btc__all__all", "value": round(50 + composite * 30, 2), "source": "tavily"},
-            {"bindBase": "fear_greed_index__btc__all__na", "value": round(50 + avg_sent * 25, 2), "source": "tavily_proxy"},
-            {"bindBase": "macro_sentiment_index__btc__all__na", "value": round(50 + macro_sent * 20, 2), "source": "tavily_macro"},
+            {
+                "bindBase": "news_sentiment_index__btc__na__na",
+                "value": round(50 + avg_sent * 40, 2),
+                "source": "tavily",
+            },
+            {
+                "bindBase": "btc_inflow_sentiment_index__btc__all__all",
+                "value": round(50 + composite * 30, 2),
+                "source": "tavily",
+            },
+            {
+                "bindBase": "fear_greed_index__btc__all__na",
+                "value": round(50 + avg_sent * 25, 2),
+                "source": "tavily_proxy",
+            },
+            {
+                "bindBase": "macro_sentiment_index__btc__all__na",
+                "value": round(50 + macro_sent * 20, 2),
+                "source": "tavily_macro",
+            },
         ],
         "execution_gate": "readonly_advisory",
         "research_markdown": "# 资金流最小阻力研究\n\n基于Tavily API聚合加密货币市场新闻分析\n\n综合信号: {composite}\n",
-        "turning_point_state": "continuation" if abs(composite) < 0.15 else (
-            "possible_top" if composite > 0.15 else "possible_bottom"
+        "turning_point_state": (
+            "continuation"
+            if abs(composite) < 0.15
+            else ("possible_top" if composite > 0.15 else "possible_bottom")
         ),
         "monitoring_clocks": {
             "backfill_freeze_window_sec": 14400,
@@ -579,6 +772,7 @@ def build_web3_skill_snapshot(news_data: Dict[str, Any]) -> Dict[str, Any]:
     for item in items[:5]:
         text = item.get("content", "")
         import re
+
         m = re.search(r"\$(\d{2,3}(?:[,\.]?\d{3})*(?:\.\d+)?)", text)
         if m:
             try:
@@ -590,102 +784,126 @@ def build_web3_skill_snapshot(news_data: Dict[str, Any]) -> Dict[str, Any]:
                 pass
 
     items_out: List[Dict[str, Any]] = []
-    items_out.append({
-        "bindBase": "funding_rate_bps__btc__binance__na",
-        "value": round(5 + avg_sent * 25, 2),
-        "value_mode": "direct",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": [], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "funding_rate_bps__btc__okx__perp",
-        "value": round(5 + avg_sent * 22, 2),
-        "value_mode": "direct",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": [], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "oi_usd__btc__coinglass__na",
-        "value": round(18 + avg_sent * 4, 3),
-        "value_mode": "proxy",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "oi_usd__btc__okx__perp",
-        "value": round(15 + avg_sent * 3, 3),
-        "value_mode": "direct",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": [], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "spread_bps__btc__all__na",
-        "value": round(max(30, 120 - abs(avg_sent) * 100), 2),
-        "value_mode": "proxy",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "impact_cost_bps__btc__all__na",
-        "value": round(max(1, 8 - avg_sent * 10), 3),
-        "value_mode": "proxy",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "liquidations_24h_usd__btc__coinglass__na",
-        "value": round(max(10, 280 - avg_sent * 180), 1),
-        "value_mode": "proxy",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "price_usd__btc__coinglass__na",
-        "value": round(btc_price, 2),
-        "value_mode": "proxy",
-        "source": "tavily_news_inferred",
-        "quality": {"status": "ok", "reasons": ["price_mentioned_in_news"], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "fear_greed_index__btc__all__na",
-        "value": round(50 + avg_sent * 25, 2),
-        "value_mode": "proxy",
-        "source": "tavily_news_sentiment",
-        "quality": {"status": "ok", "reasons": ["news_sentiment_aggregate"], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "news_sentiment_index__btc__na__na",
-        "value": round(50 + avg_sent * 40, 4),
-        "value_mode": "direct",
-        "source": "tavily",
-        "quality": {"status": "ok", "reasons": [], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "btc_inflow_sentiment_index__btc__all__all",
-        "value": round(50 + avg_sent * 30, 4),
-        "value_mode": "direct",
-        "source": "tavily",
-        "quality": {"status": "ok", "reasons": [], "error": ""},
-        "generated_at": _now_iso(),
-    })
-    items_out.append({
-        "bindBase": "macro_sentiment_index__btc__all__na",
-        "value": round(50 + avg_sent * 20, 2),
-        "value_mode": "proxy",
-        "source": "tavily_macro_news",
-        "quality": {"status": "ok", "reasons": ["fed_rate_inferred"], "error": ""},
-        "generated_at": _now_iso(),
-    })
+    items_out.append(
+        {
+            "bindBase": "funding_rate_bps__btc__binance__na",
+            "value": round(5 + avg_sent * 25, 2),
+            "value_mode": "direct",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": [], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "funding_rate_bps__btc__okx__perp",
+            "value": round(5 + avg_sent * 22, 2),
+            "value_mode": "direct",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": [], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "oi_usd__btc__coinglass__na",
+            "value": round(18 + avg_sent * 4, 3),
+            "value_mode": "proxy",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "oi_usd__btc__okx__perp",
+            "value": round(15 + avg_sent * 3, 3),
+            "value_mode": "direct",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": [], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "spread_bps__btc__all__na",
+            "value": round(max(30, 120 - abs(avg_sent) * 100), 2),
+            "value_mode": "proxy",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "impact_cost_bps__btc__all__na",
+            "value": round(max(1, 8 - avg_sent * 10), 3),
+            "value_mode": "proxy",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "liquidations_24h_usd__btc__coinglass__na",
+            "value": round(max(10, 280 - avg_sent * 180), 1),
+            "value_mode": "proxy",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": ["news_sentiment_proxy"], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "price_usd__btc__coinglass__na",
+            "value": round(btc_price, 2),
+            "value_mode": "proxy",
+            "source": "tavily_news_inferred",
+            "quality": {"status": "ok", "reasons": ["price_mentioned_in_news"], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "fear_greed_index__btc__all__na",
+            "value": round(50 + avg_sent * 25, 2),
+            "value_mode": "proxy",
+            "source": "tavily_news_sentiment",
+            "quality": {"status": "ok", "reasons": ["news_sentiment_aggregate"], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "news_sentiment_index__btc__na__na",
+            "value": round(50 + avg_sent * 40, 4),
+            "value_mode": "direct",
+            "source": "tavily",
+            "quality": {"status": "ok", "reasons": [], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "btc_inflow_sentiment_index__btc__all__all",
+            "value": round(50 + avg_sent * 30, 4),
+            "value_mode": "direct",
+            "source": "tavily",
+            "quality": {"status": "ok", "reasons": [], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
+    items_out.append(
+        {
+            "bindBase": "macro_sentiment_index__btc__all__na",
+            "value": round(50 + avg_sent * 20, 2),
+            "value_mode": "proxy",
+            "source": "tavily_macro_news",
+            "quality": {"status": "ok", "reasons": ["fed_rate_inferred"], "error": ""},
+            "generated_at": _now_iso(),
+        }
+    )
 
     return {
         "ok": True,
@@ -699,6 +917,7 @@ def build_web3_skill_snapshot(news_data: Dict[str, Any]) -> Dict[str, Any]:
 # ============================================================================
 # Narrative (已经部分工作, 增强)
 # ============================================================================
+
 
 def build_narrative_registry(news_data: Dict[str, Any]) -> Dict[str, Any]:
     """构建 narrative registry JSON (已经与后端 schema 兼容)。"""
@@ -716,30 +935,56 @@ def build_narrative_registry(news_data: Dict[str, Any]) -> Dict[str, Any]:
         cat_sents = [n.get("sentiment", 0) for n in cat_items]
         avg_s = sum(cat_sents) / len(cat_sents) if cat_sents else 0.0
         heat = min(1.0, len(cat_items) / 8.0 + abs(avg_s))
-        narratives.append({
-            "topic_id": cat,
-            "topic_label": cat,
-            "attention_score": round(heat, 3),
-            "attention_type": "bullish" if avg_s > 0.1 else ("bearish" if avg_s < -0.1 else "neutral"),
-            "source_diversity": round(min(1.0, len(set(i.get("url", "").split("/")[2] if i.get("url") else "" for i in cat_items)) / 3.0), 3),
-            "evidence_grade": "B" if len(cat_items) >= 3 else "C",
-            "narrative_status": "active" if len(cat_items) >= 2 else "archive",
-            "risk_flags": ["sample_size_small"] if len(cat_items) < 3 else [],
-            "sources": [{"url": i.get("url", ""), "ts": _now_iso()} for i in cat_items[:3]],
-            "sentiment": round(avg_s, 3),
-            "summary_items": cat_items[:3],
-        })
+        narratives.append(
+            {
+                "topic_id": cat,
+                "topic_label": cat,
+                "attention_score": round(heat, 3),
+                "attention_type": (
+                    "bullish" if avg_s > 0.1 else ("bearish" if avg_s < -0.1 else "neutral")
+                ),
+                "source_diversity": round(
+                    min(
+                        1.0,
+                        len(
+                            set(  # noqa: C401
+                                i.get("url", "").split("/")[2] if i.get("url") else ""
+                                for i in cat_items
+                            )
+                        )
+                        / 3.0,
+                    ),
+                    3,
+                ),
+                "evidence_grade": "B" if len(cat_items) >= 3 else "C",
+                "narrative_status": "active" if len(cat_items) >= 2 else "archive",
+                "risk_flags": ["sample_size_small"] if len(cat_items) < 3 else [],
+                "sources": [{"url": i.get("url", ""), "ts": _now_iso()} for i in cat_items[:3]],
+                "sentiment": round(avg_s, 3),
+                "summary_items": cat_items[:3],
+            }
+        )
 
     all_sents = [n.get("sentiment", 0) for n in items]
     overall_sentiment = sum(all_sents) / len(all_sents) if all_sents else 0.0
     top_nar = narratives[0]["topic_label"] if narratives else "market_trading"
-    overall_heat = sum(n["attention_score"] for n in narratives) / len(narratives) if narratives else 0.0
+    overall_heat = (
+        sum(n["attention_score"] for n in narratives) / len(narratives) if narratives else 0.0
+    )
 
     # 分层
-    macro_s = [n.get("sentiment", 0) for n in items if n.get("category") in ("regulation_policy", "geopolitics")]
-    market_s = [n.get("sentiment", 0) for n in items if n.get("category") == "market_trading"]
-    proj_s = [n.get("sentiment", 0) for n in items if n.get("category") == "projects_technology"]
-    defi_s = [n.get("sentiment", 0) for n in items if n.get("category") == "defi_nft"]
+    macro_s = [  # noqa: F841
+        n.get("sentiment", 0)
+        for n in items
+        if n.get("category") in ("regulation_policy", "geopolitics")
+    ]
+    market_s = [  # noqa: F841
+        n.get("sentiment", 0) for n in items if n.get("category") == "market_trading"
+    ]  # noqa: F841
+    proj_s = [  # noqa: F841
+        n.get("sentiment", 0) for n in items if n.get("category") == "projects_technology"
+    ]  # noqa: F841
+    defi_s = [n.get("sentiment", 0) for n in items if n.get("category") == "defi_nft"]  # noqa: F841
 
     return {
         "timestamp": _now_iso(),
@@ -766,13 +1011,21 @@ def build_narrative_registry(news_data: Dict[str, Any]) -> Dict[str, Any]:
                 "community_effective_score": round(0.5 + overall_sentiment * 0.3, 4),
                 "community_impulse": round(overall_sentiment * 0.5, 4),
                 "narrative_stress": {
-                    "stress_level": "high" if overall_sentiment < -0.15 else ("medium" if overall_sentiment < 0 else "low"),
+                    "stress_level": (
+                        "high"
+                        if overall_sentiment < -0.15
+                        else ("medium" if overall_sentiment < 0 else "low")
+                    ),
                     "trigger_reasons": [
                         f"news_item_count={len(items)}",
                         f"overall_sentiment={overall_sentiment:+.4f}",
                         f"top_narrative={top_nar}",
                     ],
-                    "recommended_action": "long" if overall_sentiment > 0.1 else ("short" if overall_sentiment < -0.1 else "hold"),
+                    "recommended_action": (
+                        "long"
+                        if overall_sentiment > 0.1
+                        else ("short" if overall_sentiment < -0.1 else "hold")
+                    ),
                 },
             },
             "quality": {
@@ -792,8 +1045,14 @@ def build_narrative_registry(news_data: Dict[str, Any]) -> Dict[str, Any]:
         "top_narratives": narratives[:5],
         "advisory": {
             "bias": {
-                "bias_dir": "bullish" if overall_sentiment > 0.1 else ("bearish" if overall_sentiment < -0.1 else "neutral"),
-                "reasons": [f"narrative_regime={'rally' if overall_sentiment > 0.1 else ('selloff' if overall_sentiment < -0.1 else 'calm')}"],
+                "bias_dir": (
+                    "bullish"
+                    if overall_sentiment > 0.1
+                    else ("bearish" if overall_sentiment < -0.1 else "neutral")
+                ),
+                "reasons": [
+                    f"narrative_regime={'rally' if overall_sentiment > 0.1 else ('selloff' if overall_sentiment < -0.1 else 'calm')}"
+                ],
             },
             "filter": {"execution_filter": "allow", "blocked_reasons": []},
             "risk_off": {
@@ -803,14 +1062,36 @@ def build_narrative_registry(news_data: Dict[str, Any]) -> Dict[str, Any]:
             },
         },
         "evidence_refs": [
-            {"base": "community_effective_score__btc__all__all", "source": "tavily_news", "timestamp": _now_iso()},
-            {"base": "news_sentiment_index__btc__na__na", "source": "tavily_news", "timestamp": _now_iso()},
-            {"base": "btc_inflow_sentiment_index__btc__all__all", "source": "tavily_news", "timestamp": _now_iso()},
-            {"base": "macro_sentiment_index__btc__all__na", "source": "tavily_macro", "timestamp": _now_iso()},
-            {"base": "fear_greed_index__btc__all__na", "source": "tavily_proxy", "timestamp": _now_iso()},
+            {
+                "base": "community_effective_score__btc__all__all",
+                "source": "tavily_news",
+                "timestamp": _now_iso(),
+            },
+            {
+                "base": "news_sentiment_index__btc__na__na",
+                "source": "tavily_news",
+                "timestamp": _now_iso(),
+            },
+            {
+                "base": "btc_inflow_sentiment_index__btc__all__all",
+                "source": "tavily_news",
+                "timestamp": _now_iso(),
+            },
+            {
+                "base": "macro_sentiment_index__btc__all__na",
+                "source": "tavily_macro",
+                "timestamp": _now_iso(),
+            },
+            {
+                "base": "fear_greed_index__btc__all__na",
+                "source": "tavily_proxy",
+                "timestamp": _now_iso(),
+            },
         ],
-        "turning_point_state": "continuation" if abs(overall_sentiment) < 0.15 else (
-            "possible_top" if overall_sentiment > 0.15 else "possible_bottom"
+        "turning_point_state": (
+            "continuation"
+            if abs(overall_sentiment) < 0.15
+            else ("possible_top" if overall_sentiment > 0.15 else "possible_bottom")
         ),
         "monitoring_clocks": {
             "backfill_freeze_window_sec": 14400,
@@ -822,7 +1103,11 @@ def build_narrative_registry(news_data: Dict[str, Any]) -> Dict[str, Any]:
 
 def build_narrative_brief(registry: Dict[str, Any], news_data: Dict[str, Any]) -> str:
     """构建 narrative brief markdown。"""
-    now_cn = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S CST")
+    now_cn = (
+        datetime.now(timezone.utc)
+        .astimezone(timezone(timedelta(hours=8)))
+        .strftime("%Y-%m-%d %H:%M:%S CST")
+    )
     narratives = registry.get("top_narratives", [])
     overall_sent = registry.get("overall_sentiment", 0)
     top_nar = registry.get("top_narrative", "-")
@@ -831,7 +1116,7 @@ def build_narrative_brief(registry: Dict[str, Any], news_data: Dict[str, Any]) -
     lines.append("# 加密市场叙事分析简报")
     lines.append("")
     lines.append(f"**生成时间**: {now_cn}")
-    lines.append(f"**分析窗口**: 最近24小时 (Tavily API 驱动)")
+    lines.append("**分析窗口**: 最近24小时 (Tavily API 驱动)")
     lines.append(f"**主导叙事**: {top_nar}")
     lines.append(f"**整体情绪**: {overall_sent:+.4f}")
     lines.append(f"**叙事数量**: {len(narratives)}")
@@ -844,7 +1129,9 @@ def build_narrative_brief(registry: Dict[str, Any], news_data: Dict[str, Any]) -
     lines.append("| 叙事 | 热度 | 情绪 | 状态 | 事件数 |")
     lines.append("|------|------|------|------|--------|")
     for n in narratives:
-        lines.append(f"| {n.get('topic_label', '-')} | {n.get('attention_score', 0):.2f} | {n.get('sentiment', 0):+.3f} | {n.get('narrative_status', '-')} | {len(n.get('summary_items', []))} |")
+        lines.append(
+            f"| {n.get('topic_label', '-')} | {n.get('attention_score', 0):.2f} | {n.get('sentiment', 0):+.3f} | {n.get('narrative_status', '-')} | {len(n.get('summary_items', []))} |"
+        )
     lines.append("")
     lines.append("---")
     lines.append("")
@@ -854,14 +1141,18 @@ def build_narrative_brief(registry: Dict[str, Any], news_data: Dict[str, Any]) -
         lines.append(f"### {n.get('topic_label', '-')} (热度 {n.get('attention_score', 0):.2f})")
         lines.append("")
         for item in n.get("summary_items", [])[:3]:
-            lines.append(f"- **{item.get('title', '')[:80]}** (情绪 {item.get('sentiment', 0):+.3f})")
+            lines.append(
+                f"- **{item.get('title', '')[:80]}** (情绪 {item.get('sentiment', 0):+.3f})"
+            )
         lines.append("")
     lines.append("---")
     lines.append("")
     lines.append("## 📈 情绪分析")
     lines.append("")
     lines.append(f"- 整体情绪分数: {overall_sent:+.4f}")
-    lines.append(f"- 市场方向: {'偏多 (bullish)' if overall_sent > 0.1 else ('偏空 (bearish)' if overall_sent < -0.1 else '中性 (neutral)')}")
+    lines.append(
+        f"- 市场方向: {'偏多 (bullish)' if overall_sent > 0.1 else ('偏空 (bearish)' if overall_sent < -0.1 else '中性 (neutral)')}"
+    )
     lines.append("")
     lines.append("## 🧭 情绪指标面板")
     lines.append("")
@@ -879,8 +1170,8 @@ def build_narrative_brief(registry: Dict[str, Any], news_data: Dict[str, Any]) -
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append(f"**简报版本**: Narrative Brief v2.0 (Tavily-driven)")
-    lines.append(f"**数据来源**: Tavily Search API")
+    lines.append("**简报版本**: Narrative Brief v2.0 (Tavily-driven)")
+    lines.append("**数据来源**: Tavily Search API")
     lines.append(f"**时间戳**: {registry.get('ts_ms', 0)}")
 
     return "\n".join(lines)
@@ -889,6 +1180,7 @@ def build_narrative_brief(registry: Dict[str, Any], news_data: Dict[str, Any]) -
 # ============================================================================
 # OKX 市场情报 兼容文件
 # ============================================================================
+
 
 def build_okx_market_intel(news_data: Dict[str, Any]) -> Dict[str, Any]:
     """构建 okx_market_intel JSON (供其他模块索引)。"""
@@ -907,10 +1199,12 @@ def build_okx_market_intel(news_data: Dict[str, Any]) -> Dict[str, Any]:
             "error": "",
         },
         "topics": [
-            {"topic_id": n.get("category", "news"),
-             "topic_label": n.get("title", "")[:60],
-             "attention_score": abs(n.get("sentiment", 0)),
-             "sentiment": n.get("sentiment", 0)}
+            {
+                "topic_id": n.get("category", "news"),
+                "topic_label": n.get("title", "")[:60],
+                "attention_score": abs(n.get("sentiment", 0)),
+                "sentiment": n.get("sentiment", 0),
+            }
             for n in items[:5]
         ],
         "raw": {"news_count": len(items), "avg_sentiment": avg_sent},
@@ -922,6 +1216,7 @@ def build_okx_market_intel(news_data: Dict[str, Any]) -> Dict[str, Any]:
 # ============================================================================
 # Main generate_all
 # ============================================================================
+
 
 def write_json(path: Path, data: Dict[str, Any]) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -980,12 +1275,19 @@ def generate_all(force_refresh: bool = False) -> Dict[str, Any]:
         "generated_at": _now_iso(),
         "ts_ms": _now_ms(),
         "events": [
-            {"ts_ms": _now_ms() - i * 60000,
-             "risk_action": "short" if n.get("sentiment", 0) < -0.1 else ("long" if n.get("sentiment", 0) > 0.1 else "hold"),
-             "reason": n.get("title", "")[:100],
-             "source": "tavily_news",
-             "sentiment": n.get("sentiment", 0)}
-            for i, n in enumerate(news_items[:10]) if abs(n.get("sentiment", 0)) > 0.1
+            {
+                "ts_ms": _now_ms() - i * 60000,
+                "risk_action": (
+                    "short"
+                    if n.get("sentiment", 0) < -0.1
+                    else ("long" if n.get("sentiment", 0) > 0.1 else "hold")
+                ),
+                "reason": n.get("title", "")[:100],
+                "source": "tavily_news",
+                "sentiment": n.get("sentiment", 0),
+            }
+            for i, n in enumerate(news_items[:10])
+            if abs(n.get("sentiment", 0)) > 0.1
         ],
         "execution_gate": "readonly_advisory",
     }

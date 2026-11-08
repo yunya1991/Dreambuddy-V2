@@ -105,6 +105,7 @@ def _load_evolution_or_none():
     """懒加载 EnhancedEvolutionLoop。FAIL-OPEN：返回 None 不阻塞流程。"""
     try:
         from enhanced_evolution import get_enhanced_evolution
+
         return get_enhanced_evolution()
     except Exception as e:
         print(f"[WARN] 无法加载 EnhancedEvolutionLoop: {e}", file=sys.stderr)
@@ -129,10 +130,11 @@ def _print_human_summary(report: Dict[str, Any], dry_run: bool) -> None:
     print(f"  采纳提议数      : {report.get('proposals_adopted', 0)}")
     per = report.get("per_strategy") or {}
     if per:
-        print(f"  每策略提议数    :", end="")
-        tokens = [f"{sid}={d.get('proposals_generated', '?')}"
-                  if isinstance(d, dict) else f"{sid}=?"
-                  for sid, d in list(per.items())[:5]]
+        print("  每策略提议数    :", end="")
+        tokens = [
+            f"{sid}={d.get('proposals_generated', '?')}" if isinstance(d, dict) else f"{sid}=?"
+            for sid, d in list(per.items())[:5]
+        ]
         print(" " + ", ".join(tokens) + (" …" if len(per) > 5 else ""))
     errors = report.get("errors") or []
     print(f"  错误数          : {len(errors)}")
@@ -147,36 +149,49 @@ def _print_human_summary(report: Dict[str, Any], dry_run: bool) -> None:
 
 def _run(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description=("16-调控系统进化Cron Runner：独立触发 EnhancedEvolutionLoop，"
-                     "生成进化提议、回测、采纳，并产出JSON报告。"),
+        description=(
+            "16-调控系统进化Cron Runner：独立触发 EnhancedEvolutionLoop，"
+            "生成进化提议、回测、采纳，并产出JSON报告。"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="仅分析不写回参数（不触发 adopt 持久化），适合首次跑或开发调试。",
     )
     parser.add_argument(
-        "--strategy-id", action="append", dest="strategy_ids", default=[],
+        "--strategy-id",
+        action="append",
+        dest="strategy_ids",
+        default=[],
         help="只对指定 strategy_id 执行进化，可多次传递；不传则遍历所有已注册策略。",
     )
     parser.add_argument(
-        "--report-dir", type=Path, default=DEFAULT_REPORT_DIR,
+        "--report-dir",
+        type=Path,
+        default=DEFAULT_REPORT_DIR,
         help=f"报告输出目录，默认 {DEFAULT_REPORT_DIR}",
     )
     parser.add_argument(
-        "--no-backtest", action="store_true",
+        "--no-backtest",
+        action="store_true",
         help="跳过回测步骤（只生成提议，不验证/采纳）。",
     )
     parser.add_argument(
-        "--min-samples", type=int, default=DEFAULT_MIN_SAMPLES,
+        "--min-samples",
+        type=int,
+        default=DEFAULT_MIN_SAMPLES,
         help=f"数据驱动调优的最小决策样本门槛，默认 {DEFAULT_MIN_SAMPLES}。",
     )
     parser.add_argument(
-        "--no-report-file", action="store_true",
+        "--no-report-file",
+        action="store_true",
         help="仅 stdout 打印摘要，不写 JSON 报告文件。",
     )
     parser.add_argument(
-        "--no-artifacts", action="store_true",
+        "--no-artifacts",
+        action="store_true",
         help="兼容旧版别名：等价于 --no-report-file（用于最小测试）。",
     )
 
@@ -218,8 +233,12 @@ def _run(argv: Optional[List[str]] = None) -> int:
         else:
             # 进化引擎默认策略 + params 中已有记录的策略（并集）
             explicit_ids = list(getattr(evo, "params", {}).keys()) or [
-                "v15_martin", "screen_trend", "yijing_bcrm",
-                "agent_a", "agent_b", "agent_c",
+                "v15_martin",
+                "screen_trend",
+                "yijing_bcrm",
+                "agent_a",
+                "agent_b",
+                "agent_c",
             ]
         # 过滤空值
         explicit_ids = [s for s in explicit_ids if s]
@@ -234,7 +253,9 @@ def _run(argv: Optional[List[str]] = None) -> int:
         if dry_run:
             try:
                 backup_params = json.loads(json.dumps(evo.params, ensure_ascii=False, default=str))
-                backup_history = json.loads(json.dumps(evo.history, ensure_ascii=False, default=str))
+                backup_history = json.loads(
+                    json.dumps(evo.history, ensure_ascii=False, default=str)
+                )
                 backup_pool = json.loads(json.dumps(evo.pool, ensure_ascii=False, default=str))
             except Exception as e:
                 errors.append(f"[DRY-RUN] 无法备份进化状态（仍将继续，但结果可能写回）: {e}")
@@ -246,14 +267,18 @@ def _run(argv: Optional[List[str]] = None) -> int:
                 run_backtest=run_backtest,
             )
             # 合并 cycle_report 结果到报告
-            for k in ("layers_run", "proposals_generated",
-                      "proposals_backtested", "proposals_adopted",
-                      "per_strategy"):
+            for k in (
+                "layers_run",
+                "proposals_generated",
+                "proposals_backtested",
+                "proposals_adopted",
+                "per_strategy",
+            ):
                 if k in cycle_report:
                     report[k] = cycle_report[k]
             # per_strategy 里补齐 proposals_generated 汇总（用于摘要）
             per = report.get("per_strategy") or {}
-            for sid, d in per.items():
+            for sid, d in per.items():  # noqa: B007
                 if isinstance(d, dict):
                     a8p = (d.get("a8_inspection") or {}).get("proposals", 0)
                     drp = (d.get("dream_analysis") or {}).get("proposals", 0)
@@ -266,9 +291,9 @@ def _run(argv: Optional[List[str]] = None) -> int:
             tb = traceback.format_exc(limit=3).strip().replace("\n", " | ")
             errors.append(f"run_full_evolution_cycle 异常: {e} ({tb})")
         finally:
-            if dry_run and (backup_params is not None
-                            and backup_history is not None
-                            and backup_pool is not None):
+            if dry_run and (
+                backup_params is not None and backup_history is not None and backup_pool is not None
+            ):
                 # 还原状态（尽力而为；即便失败也不抛出）
                 try:
                     evo.params = backup_params
@@ -291,7 +316,7 @@ def _run(argv: Optional[List[str]] = None) -> int:
             report["report_path"] = str(full)
             with open(full, "w", encoding="utf-8") as f:
                 json.dump(report, f, ensure_ascii=False, indent=2, default=str)
-            report_path = str(full)
+            report_path = str(full)  # noqa: F841
         except Exception as e:
             errors.append(f"写报告失败: {e}")
 
@@ -314,19 +339,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 130
     except Exception as e:
         tb = traceback.format_exc(limit=5).strip()
-        print(f"[FATAL] Evolution Cron 顶层异常（已FAIL-OPEN）: {e}\n{tb}",
-              file=sys.stderr)
+        print(f"[FATAL] Evolution Cron 顶层异常（已FAIL-OPEN）: {e}\n{tb}", file=sys.stderr)
         # 即使顶层异常也写一份最小 JSON（若可写）
         try:
             rd = Path(os.environ.get("EVOLUTION_REPORT_DIR") or DEFAULT_REPORT_DIR)
             rd.mkdir(parents=True, exist_ok=True)
             crash = rd / f"crash_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
             with open(crash, "w", encoding="utf-8") as f:
-                json.dump({
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "fatal_error": str(e),
-                    "traceback": tb,
-                }, f, ensure_ascii=False, indent=2)
+                json.dump(
+                    {
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "fatal_error": str(e),
+                        "traceback": tb,
+                    },
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
         except Exception:
             pass
         return 2

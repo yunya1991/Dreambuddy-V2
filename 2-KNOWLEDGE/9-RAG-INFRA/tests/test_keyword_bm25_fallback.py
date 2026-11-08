@@ -1,8 +1,8 @@
 """Whoosh 不可用时的纯 Python BM25 回退测试。"""
+
 from __future__ import annotations
 
 import importlib
-from pathlib import Path
 
 import pytest
 
@@ -20,9 +20,7 @@ def kb_dir(tmp_path):
         "# 风控\n\n止损与仓位管理是交易系统的核心风控规则。\n",
         encoding="utf-8",
     )
-    (tmp_path / "other.md").write_text(
-        "# 其他\n\n这是一篇与查询无关的文档。\n", encoding="utf-8"
-    )
+    (tmp_path / "other.md").write_text("# 其他\n\n这是一篇与查询无关的文档。\n", encoding="utf-8")
     return tmp_path
 
 

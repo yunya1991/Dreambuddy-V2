@@ -13,6 +13,11 @@ import os
 import sys
 
 
+def _clamp(v, lo, hi):
+    """数值截断到 [lo, hi] 区间（计算规则移植自 9-基本面分析）。"""
+    return max(lo, min(hi, v))
+
+
 def _resolve_34_core_dir() -> str:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.normpath(os.path.join(script_dir, "..", "..", "34-前端应用训练系统", "core"))
@@ -101,9 +106,9 @@ def _build_macro(raw: dict, ts: str) -> dict:
     }
 
     breakdown = {
-        "m2_supply": None,  # DAL macro 未暴露 M2NS
+        "m2_supply": raw.get("m2_supply"),  # M2NS 真实值 (FRED)
         "ppi": raw.get("PPI"),  # PPIACO 真实值
-        "industrial_production": None,  # DAL macro 未暴露 INDPRO
+        "industrial_production": raw.get("industrial_production"),  # INDPRO 真实值 (FRED)
         "dot_plot_median": None,
         "balance_sheet": raw.get("Fed_liquidity"),  # WALCL 真实值
         "nasdaq": raw.get("NASDAQ"),  # NASDAQCOM 真实值
@@ -145,16 +150,24 @@ def _build_onchain(raw: dict, ts: str) -> dict:
     mempool = raw.get("mempool_count")
 
     onchain_trend = "积累" if isinstance(diff_pct, (int, float)) and diff_pct > 0.3 else "观望"
+    # 规则移植自 9-基本面分析 collect_onchain: 交易所余额 30 日变化 → 净流向/积累信号
+    _chg30d = raw.get("ex_bal_btc_chg30d_pct")
+    _ex_net_flow = round(-_chg30d * 10, 2) if isinstance(_chg30d, (int, float)) else None
+    _acc_sig = (
+        "积累"
+        if isinstance(_ex_net_flow, (int, float)) and _ex_net_flow < -50
+        else (
+            "分发"
+            if isinstance(_ex_net_flow, (int, float)) and _ex_net_flow > 50
+            else "中性" if _ex_net_flow is not None else None
+        )
+    )
     network_health = "优秀" if isinstance(mempool, (int, float)) and mempool > 50000 else "良好"
 
     core = {
         "onchain_trend": onchain_trend,
-        "accumulation_signal": (
-            "难度上升 + mempool 活跃"
-            if isinstance(diff_pct, (int, float)) and diff_pct > 0.3
-            else None
-        ),
-        "exchange_net_flow": None,
+        "accumulation_signal": _acc_sig,  # 规则移植自 9-基本面分析: 交易所余额30日变化判定
+        "exchange_net_flow": _ex_net_flow,  # 规则移植自 9-基本面分析: -chg30d*10
         "network_health": network_health,
         "difficulty_change_pct": diff_pct,
         "mempool_count": mempool,
@@ -198,7 +211,7 @@ def _build_sentiment(sentiment_raw: dict, macro_raw: dict, ts: str) -> dict:
         "sentiment_classification": classification,
         "market_psychology": classification,  # 收口 P2: SentimentPanel 字段名对齐
         "sentiment_regime": "neutral",
-        "social_volume": None,
+        "social_volume": sentiment_raw.get("social_volume"),  # social_volume 真实值
     }
 
     return {
@@ -219,12 +232,22 @@ def _build_sentiment(sentiment_raw: dict, macro_raw: dict, ts: str) -> dict:
 
 def _build_flow(flow_raw: dict, ts: str) -> dict:
     """flow: DAL flow 命令真实数据 (P1)。"""
+    _etf_flow = flow_raw.get("etf_total_flow")
+    _ffs = (
+        round(_clamp(_etf_flow / 1000.0, -1.0, 1.0), 4)
+        if isinstance(_etf_flow, (int, float))
+        else None
+    )
     core = {
-        "etf_total_flow": flow_raw.get("etf_total_flow"),
-        "fund_flow_score": None,
+        "etf_total_flow": _etf_flow,
+        "fund_flow_score": _ffs,  # 规则移植自 9-基本面分析: ETF净流入/1000 截断 [-1,1]
         "stablecoin_dominance_usdt": flow_raw.get("stablecoin_dominance_usdt"),
         "stablecoin_dominance_usdc": flow_raw.get("stablecoin_dominance_usdc"),  # 收口 P2
-        "flow_regime": None,
+        "flow_regime": (  # 规则移植自 9-基本面分析: ±50M 判定
+            "流入"
+            if isinstance(_etf_flow, (int, float)) and _etf_flow > 50
+            else "流出" if isinstance(_etf_flow, (int, float)) and _etf_flow < -50 else "中性"
+        ),
     }
     has_real = any(isinstance(v, (int, float)) for v in core.values())
     return {
@@ -250,9 +273,18 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
                 "etf_issuer_flows": {
                     k[4:]: flow_raw.get(k)
                     for k in (
-                        "etf_ibit", "etf_fbtc", "etf_arkb", "etf_gbtc", "etf_btco",
-                        "etf_bitb", "etf_ezbc", "etf_btcw", "etf_brrr", "etf_hodl",
-                        "etf_msbt", "etf_btc",
+                        "etf_ibit",
+                        "etf_fbtc",
+                        "etf_arkb",
+                        "etf_gbtc",
+                        "etf_btco",
+                        "etf_bitb",
+                        "etf_ezbc",
+                        "etf_btcw",
+                        "etf_brrr",
+                        "etf_hodl",
+                        "etf_msbt",
+                        "etf_btc",
                     )
                     if isinstance(flow_raw.get(k), (int, float))
                 },
@@ -294,7 +326,7 @@ def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
             mvrv = 1.8
     core = {
         "mvrv_ratio": mvrv,
-        "nvt_z_score": None,
+        "nvt_z_score": chain_raw.get("nvt_ratio"),  # bgeometrics NVT 真实值
         "valuation_zone": valuation_zone,
         "market_price": sp500,
     }
@@ -324,11 +356,23 @@ def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
 
 def _build_breadth(breadth_raw: dict, ts: str) -> dict:
     """breadth: DAL breadth 命令真实数据 (P1)。"""
+    _gchg = breadth_raw.get("global_change_24h")
+    _adl = round(_clamp(_gchg * 10, -60, 70), 2) if isinstance(_gchg, (int, float)) else None
     core = {
         "btc_dominance": breadth_raw.get("btc_dominance_pct"),  # panewslab overview_market 真实值
-        "breadth_confirmation": None,
-        "global_change_24h": None,
-        "market_participation_index": None,
+        "breadth_confirmation": (  # 规则移植自 9-基本面分析: 广度线判定
+            "确认趋势"
+            if _adl is not None and _adl > 30
+            else (
+                "存在分歧"
+                if _adl is not None and _adl > 0
+                else "广度恶化" if _adl is not None else None
+            )
+        ),
+        "global_change_24h": _gchg,
+        "market_participation_index": (  # 规则移植自 9-基本面分析: 50 + ADL*0.3
+            round(_clamp(50 + _adl * 0.3, 0, 100), 2) if _adl is not None else None
+        ),
         "social_volume": breadth_raw.get("social_volume"),
         "news_count_24h": breadth_raw.get("news_count_24h"),
         "defi_tvl_bln": breadth_raw.get("defi_tvl_bln"),  # 收口 P2: DeFi TVL
@@ -385,8 +429,25 @@ def _build_intermarket(im_raw: dict, ts: str) -> dict:
     core = {
         "btc_price": im_raw.get("btc_price"),
         "dxy": im_raw.get("dxy"),
-        "dxy_correlation": None,  # 待定义派生口径
-        "risk_regime": None,  # 待定义派生口径
+        "dxy_correlation": (  # 规则移植自 9-基本面分析: DXY 线性插值
+            round(_clamp(-(im_raw.get("dxy") - 102.0) / 5.0, -1.0, 1.0), 4)
+            if isinstance(im_raw.get("dxy"), (int, float))
+            else None
+        ),
+        "risk_regime": (  # 规则移植自 9-基本面分析: SPX/黄金上涨 + VIX<20
+            (
+                "risk_on"
+                if isinstance(im_raw.get("spx_price"), (int, float))
+                and isinstance(im_raw.get("gold_price"), (int, float))
+                and isinstance(im_raw.get("vix"), (int, float))
+                and im_raw.get("spx_price") > 0
+                and im_raw.get("gold_price") > 0
+                and im_raw.get("vix") < 20
+                else "risk_off"
+            )
+            if isinstance(im_raw.get("spx_price"), (int, float))
+            else None
+        ),
         "us10y_yield": im_raw.get("us10y_yield"),
         "spx_price": im_raw.get("spx_price"),
         "ndx": im_raw.get("ndx"),
@@ -414,6 +475,140 @@ def _build_intermarket(im_raw: dict, ts: str) -> dict:
     }
 
 
+def _build_news(news_raw: dict, ts: str) -> dict:
+    """news: 新闻监控 (DAL newsflash 情绪分布 + 39 层语义事件统计, 移植 9 层 collect_news)."""
+    news_count = news_raw.get("news_count_24h") or 0
+    social_volume = news_raw.get("social_volume") or 0
+    pos = news_raw.get("positive_count") or 0
+    neg = news_raw.get("negative_count") or 0
+    neu = news_raw.get("neutral_count") or 0
+    total = pos + neg + neu
+    has_real = bool(news_count or social_volume or total)
+    # 39 层语义事件统计 (24h 事件数 + 主题分布)
+    sem_count = 0
+    sem_themes = {}
+    try:
+        import json as _json
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
+        from datetime import timezone as _tz
+
+        p39 = "/home/luke/dreambuddy/39-金融语义蒸馏系统/semantic_events.jsonl"
+        cutoff = _dt.now(_tz.utc) - _td(hours=24)
+        with open(p39, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                try:
+                    ev = _json.loads(line)
+                except Exception:
+                    continue
+                try:
+                    evt = _dt.fromisoformat(ev.get("timestamp", ""))
+                except Exception:
+                    continue
+                if evt.tzinfo is None:
+                    evt = evt.replace(tzinfo=_tz.utc)
+                if evt >= cutoff:
+                    sem_count += 1
+                    theme = ev.get("term") or "other"
+                    sem_themes[theme] = sem_themes.get(theme, 0) + 1
+    except Exception:
+        pass
+    top_themes = dict(sorted(sem_themes.items(), key=lambda x: -x[1])[:5])
+    t = total or 1
+    avg_s = news_raw.get("avg_sentiment")
+    if not isinstance(avg_s, (int, float)):
+        avg_s = 0.5
+    core = {
+        "total_articles": int(news_count),
+        "positive_count": pos,
+        "negative_count": neg,
+        "neutral_count": neu,
+        "sentiment": round(float(avg_s), 3),
+        "avg_sentiment": round(float(avg_s), 3),
+        "high_impact_count": news_raw.get("high_impact_count") or 0,
+        "positive_ratio": round(pos / t, 3),
+        "negative_ratio": round(neg / t, 3),
+        "neutral_ratio": round(neu / t, 3),
+        "sentiment_score": round((pos - neg) / t, 3),
+        "semantic_events_24h": sem_count,
+    }
+    return {
+        "timestamp": ts,
+        "data": {"news_count_24h": {"value": news_count, "label": "24h 新闻数"}},
+        "metrics": {
+            "core": core,
+            "breakdown": {
+                "social_volume": social_volume,
+                "total_news_records": news_raw.get("total_news_records"),
+                "semantic_top_themes": top_themes,
+            },
+        },
+        "meta": {
+            "last_update": ts,
+            "source": ["data.dal_query", "semantic_distill"],
+            "data_quality": "good" if has_real else "empty",
+        },
+    }
+
+
+def _build_narrative(narrative_raw: dict, ts: str) -> dict:
+    """narrative: 市场叙事 (fear_greed_enhanced 四子维度, 移植 9 层 collect_narrative)."""
+    fg = narrative_raw.get("fg_value")
+    subs = {
+        "capital_flow": narrative_raw.get("capital_flow"),
+        "funding": narrative_raw.get("funding"),
+        "momentum": narrative_raw.get("momentum"),
+        "volatility": narrative_raw.get("volatility"),
+    }
+    has_real = isinstance(fg, (int, float)) or any(
+        isinstance(v, (int, float)) for v in subs.values()
+    )
+    fg_val = fg if isinstance(fg, (int, float)) else 50.0
+    sm = {k: (v if isinstance(v, (int, float)) else 50.0) for k, v in subs.items()}
+    bullish = sum(1 for v in sm.values() if v > 60)
+    bearish = sum(1 for v in sm.values() if v < 40)
+    neutral = 4 - bullish - bearish
+    avg_sentiment = sum(v / 100.0 for v in sm.values()) / 4
+    consensus = (fg_val / 100.0 + avg_sentiment) / 2
+    narratives = []
+    for name, val in sm.items():
+        if val > 60:
+            narratives.append({"theme": name, "sentiment": "bullish", "score": val})
+        elif val < 40:
+            narratives.append({"theme": name, "sentiment": "bearish", "score": val})
+        else:
+            narratives.append({"theme": name, "sentiment": "neutral", "score": val})
+    core = {
+        "total_narratives": 4,
+        "bullish_narratives": bullish,
+        "bearish_narratives": bearish,
+        "neutral_narratives": neutral,
+        "avg_sentiment": round(avg_sentiment, 3),
+        "avg_momentum": round(sm["momentum"], 1),
+        "consensus": round(consensus, 3),
+        "market_consensus": round(consensus, 3),
+    }
+    return {
+        "timestamp": ts,
+        "data": {"fear_greed": {"value": fg_val, "label": "恐惧贪婪指数"}},
+        "metrics": {
+            "core": core,
+            "breakdown": {n["theme"]: n["score"] for n in narratives},
+        },
+        "events": [
+            {
+                "title": "恐惧贪婪指数 %.0f，%d 项看多 %d 项看空" % (fg_val, bullish, bearish),
+                "ts": ts,
+            }
+        ],
+        "meta": {
+            "last_update": ts,
+            "source": ["data.dal_query"],
+            "data_quality": "good" if has_real else "empty",
+        },
+    }
+
+
 def main():
     # ── 0. 初始化壳层 ────────────────────────────────────────────────
     core_dir = _resolve_34_core_dir()
@@ -427,6 +622,8 @@ def main():
     breadth_raw = _fetch("data.dal_query", "breadth")
     capital_flow_raw = _fetch("data.dal_query", "capital_flow")
     sentiment_raw = _fetch("data.dal_query", "sentiment")
+    news_raw = _fetch("data.dal_query", "news")
+    narrative_raw = _fetch("data.dal_query", "narrative")
     intermarket_raw = _fetch("data.dal_query", "intermarket")
     ts = macro_raw.get("timestamp") or chain_raw.get("timestamp")
 
@@ -440,6 +637,8 @@ def main():
         "breadth": _build_breadth(breadth_raw, ts),
         "capital_flow": _build_capital_flow(capital_flow_raw, ts),
         "intermarket": _build_intermarket(intermarket_raw, ts),
+        "news": _build_news(news_raw, ts),
+        "narrative": _build_narrative(narrative_raw, ts),
     }
 
     has_real = any(

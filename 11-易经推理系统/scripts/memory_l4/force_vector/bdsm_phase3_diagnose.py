@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Phase 3 回测深度诊断脚本 — 胜率和反向丢弃率根因分析。"""
+
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -16,8 +16,8 @@ for p in (str(_THIS_DIR), str(_MEM_L4_DIR), str(_BASE_11)):
 
 from bdsm_snapshot_writer import (  # noqa: E402
     BDSM_COINS,
-    _compute_technical_assessment,
     _compute_cvs,
+    _compute_technical_assessment,
     _compute_trend_stop,
     _compute_value_exit,
     load_today_snapshot,
@@ -31,6 +31,7 @@ B_BUDGET = 167.0
 
 def fetch_klines(coin: str, bar: str = "1D", limit: int = 230) -> list:
     import requests
+
     inst_id = f"{coin}-USDT-SWAP"
     url = "https://www.okx.com/api/v5/market/history-candles"
     params = {"instId": inst_id, "bar": bar, "limit": str(limit)}
@@ -43,14 +44,16 @@ def fetch_klines(coin: str, bar: str = "1D", limit: int = 230) -> list:
         raw = data.get("data", [])
         klines = []
         for k in reversed(raw):
-            klines.append({
-                "ts": int(k[0]),
-                "o": float(k[1]),
-                "h": float(k[2]),
-                "l": float(k[3]),
-                "c": float(k[4]),
-                "v": float(k[5]),
-            })
+            klines.append(
+                {
+                    "ts": int(k[0]),
+                    "o": float(k[1]),
+                    "h": float(k[2]),
+                    "l": float(k[3]),
+                    "c": float(k[4]),
+                    "v": float(k[5]),
+                }
+            )
         return klines
     except Exception:
         return []
@@ -85,7 +88,7 @@ def diagnose_win_rate_per_coin(coin: str, klines: list, bds_score: float) -> dic
         return {"diagnosis": "skipped", "reason": "klines_insufficient_or_bds_below_0.3"}
 
     window = klines[-BACKTEST_DAYS:]
-    pre = klines[-(BACKTEST_DAYS + MA_LONG):-BACKTEST_DAYS]
+    pre = klines[-(BACKTEST_DAYS + MA_LONG) : -BACKTEST_DAYS]
 
     accumulated = 0.0
     total_notional = 0.0
@@ -94,7 +97,7 @@ def diagnose_win_rate_per_coin(coin: str, klines: list, bds_score: float) -> dic
     trade_log = []
 
     for i, day in enumerate(window):
-        hist = pre + window[:i + 1]
+        hist = pre + window[: i + 1]
         if len(hist) < MA_LONG:
             continue
 
@@ -117,22 +120,28 @@ def diagnose_win_rate_per_coin(coin: str, klines: list, bds_score: float) -> dic
             if best in ("full_exit",):
                 pnl_pct = (day["c"] - entry_px_avg) / entry_px_avg if entry_px_avg > 0 else 0
                 pnl_usdt = total_notional * pnl_pct
-                trade_log.append({
-                    "day": i, "type": "exit", "action": "full_exit",
-                    "cvs": round(cvs, 4), "ts": round(ts_score, 4),
-                    "entry_px": round(entry_px_avg, 4), "exit_px": round(day["c"], 4),
-                    "reduce_ratio": 1.0,
-                    "pnl_usdt": round(pnl_usdt, 2),
-                    "win": pnl_usdt > 0,
-                    "causes": {
-                        "trend_action": trend_action,
-                        "value_action": value_action,
-                        "rsi_14": round(ta.get("rsi_14", 0), 2),
-                        "ma200_dev": round(ta.get("ma200_deviation", 0), 2),
-                        "ts_below_days": ts.get("below_ma200_days", 0),
-                        "death_cross": ts.get("death_cross", False),
+                trade_log.append(
+                    {
+                        "day": i,
+                        "type": "exit",
+                        "action": "full_exit",
+                        "cvs": round(cvs, 4),
+                        "ts": round(ts_score, 4),
+                        "entry_px": round(entry_px_avg, 4),
+                        "exit_px": round(day["c"], 4),
+                        "reduce_ratio": 1.0,
+                        "pnl_usdt": round(pnl_usdt, 2),
+                        "win": pnl_usdt > 0,
+                        "causes": {
+                            "trend_action": trend_action,
+                            "value_action": value_action,
+                            "rsi_14": round(ta.get("rsi_14", 0), 2),
+                            "ma200_dev": round(ta.get("ma200_deviation", 0), 2),
+                            "ts_below_days": ts.get("below_ma200_days", 0),
+                            "death_cross": ts.get("death_cross", False),
+                        },
                     }
-                })
+                )
                 position_open = False
                 accumulated = 0.0
                 entry_px_avg = 0.0
@@ -143,23 +152,29 @@ def diagnose_win_rate_per_coin(coin: str, klines: list, bds_score: float) -> dic
                 reduce_ratio = 0.5 if best == "reduce50" else 0.3
                 pnl_pct = (day["c"] - entry_px_avg) / entry_px_avg if entry_px_avg > 0 else 0
                 pnl_usdt = total_notional * reduce_ratio * pnl_pct
-                trade_log.append({
-                    "day": i, "type": "reduce", "action": best,
-                    "cvs": round(cvs, 4), "ts": round(ts_score, 4),
-                    "entry_px": round(entry_px_avg, 4), "exit_px": round(day["c"], 4),
-                    "reduce_ratio": reduce_ratio,
-                    "pnl_usdt": round(pnl_usdt, 2),
-                    "win": pnl_usdt > 0,
-                    "causes": {
-                        "trend_action": trend_action,
-                        "value_action": value_action,
-                        "rsi_14": round(ta.get("rsi_14", 0), 2),
-                        "ma200_dev": round(ta.get("ma200_deviation", 0), 2),
-                        "ts_below_days": ts.get("below_ma200_days", 0),
-                        "death_cross": ts.get("death_cross", False),
+                trade_log.append(
+                    {
+                        "day": i,
+                        "type": "reduce",
+                        "action": best,
+                        "cvs": round(cvs, 4),
+                        "ts": round(ts_score, 4),
+                        "entry_px": round(entry_px_avg, 4),
+                        "exit_px": round(day["c"], 4),
+                        "reduce_ratio": reduce_ratio,
+                        "pnl_usdt": round(pnl_usdt, 2),
+                        "win": pnl_usdt > 0,
+                        "causes": {
+                            "trend_action": trend_action,
+                            "value_action": value_action,
+                            "rsi_14": round(ta.get("rsi_14", 0), 2),
+                            "ma200_dev": round(ta.get("ma200_deviation", 0), 2),
+                            "ts_below_days": ts.get("below_ma200_days", 0),
+                            "death_cross": ts.get("death_cross", False),
+                        },
                     }
-                })
-                total_notional *= (1 - reduce_ratio)
+                )
+                total_notional *= 1 - reduce_ratio
                 if total_notional < 5.0:
                     position_open = False
                     accumulated = 0.0
@@ -178,7 +193,9 @@ def diagnose_win_rate_per_coin(coin: str, klines: list, bds_score: float) -> dic
                 batch = remaining
 
             if total_notional > 0:
-                entry_px_avg = (entry_px_avg * total_notional + day["c"] * batch) / (total_notional + batch)
+                entry_px_avg = (entry_px_avg * total_notional + day["c"] * batch) / (
+                    total_notional + batch
+                )
             else:
                 entry_px_avg = day["c"]
 
@@ -186,30 +203,38 @@ def diagnose_win_rate_per_coin(coin: str, klines: list, bds_score: float) -> dic
             accumulated += batch
             position_open = True
 
-            trade_log.append({
-                "day": i, "type": "entry",
-                "cvs": round(cvs, 4), "ts": round(ts_score, 4),
-                "entry_px": round(day["c"], 4),
-                "batch_usdt": round(batch, 2),
-                "ratio": ratio,
-                "notional_total": round(total_notional, 2),
-                "accumulated": round(accumulated, 2),
-            })
+            trade_log.append(
+                {
+                    "day": i,
+                    "type": "entry",
+                    "cvs": round(cvs, 4),
+                    "ts": round(ts_score, 4),
+                    "entry_px": round(day["c"], 4),
+                    "batch_usdt": round(batch, 2),
+                    "ratio": ratio,
+                    "notional_total": round(total_notional, 2),
+                    "accumulated": round(accumulated, 2),
+                }
+            )
 
     # 平仓剩余
     if position_open and total_notional > 0:
         last_px = window[-1]["c"]
         pnl_pct = (last_px - entry_px_avg) / entry_px_avg if entry_px_avg > 0 else 0
         pnl_usdt = total_notional * pnl_pct
-        trade_log.append({
-            "day": len(window) - 1, "type": "window_end",
-            "cvs": round(cvs, 4), "ts": round(ts_score, 4),
-            "entry_px": round(entry_px_avg, 4),
-            "exit_px": round(last_px, 4),
-            "reduce_ratio": 1.0,
-            "pnl_usdt": round(pnl_usdt, 2),
-            "win": pnl_usdt > 0,
-        })
+        trade_log.append(
+            {
+                "day": len(window) - 1,
+                "type": "window_end",
+                "cvs": round(cvs, 4),
+                "ts": round(ts_score, 4),
+                "entry_px": round(entry_px_avg, 4),
+                "exit_px": round(last_px, 4),
+                "reduce_ratio": 1.0,
+                "pnl_usdt": round(pnl_usdt, 2),
+                "win": pnl_usdt > 0,
+            }
+        )
 
     # 统计盈亏来源
     closed_trades = [t for t in trade_log if t["type"] in ("exit", "reduce", "window_end")]
@@ -249,8 +274,7 @@ def main():
     try:
         snap = load_today_snapshot()
         coins = snap.get("coins") or {}
-        bds_scores = {k.upper(): float(v.get("bds_score", 0.0) or 0.0)
-                      for k, v in coins.items()}
+        bds_scores = {k.upper(): float(v.get("bds_score", 0.0) or 0.0) for k, v in coins.items()}
     except Exception:
         pass
 
@@ -260,8 +284,12 @@ def main():
     print("【诊断 1】反向丢弃率 = {:.1f}%（目标 ≤ 15%）".format(rdr["rate_pct"]))
     print("=" * 80)
     print(f"  BDSM 币种总数: {rdr['total_coins']}")
-    print(f"  丢弃(BDS<0.3): {rdr['dropped_count']} → {' / '.join(f'{c}={b:.3f}' for c,b in rdr['dropped_coins'])}")
-    print(f"  保留(BDS≥0.3): {rdr['kept_count']} → {' / '.join(f'{c}={b:.3f}' for c,b in rdr['kept_coins'])}")
+    print(
+        f"  丢弃(BDS<0.3): {rdr['dropped_count']} → {' / '.join(f'{c}={b:.3f}' for c,b in rdr['dropped_coins'])}"
+    )
+    print(
+        f"  保留(BDS≥0.3): {rdr['kept_count']} → {' / '.join(f'{c}={b:.3f}' for c,b in rdr['kept_coins'])}"
+    )
 
     print("\n  根因分解:")
     for coin, bds in rdr["dropped_coins"]:
@@ -289,14 +317,18 @@ def main():
         klines = fetch_klines(coin)
         diag = diagnose_win_rate_per_coin(coin, klines, bds)
 
-        print(f"\n  ■ {coin} (BDS={bds:.4f}): {diag['win_count']}/{diag['close_count']} 胜 "
-              f"({diag['win_rate_pct']:.1f}%) | 总PnL={diag['total_pnl']:+.2f}U")
+        print(
+            f"\n  ■ {coin} (BDS={bds:.4f}): {diag['win_count']}/{diag['close_count']} 胜 "
+            f"({diag['win_rate_pct']:.1f}%) | 总PnL={diag['total_pnl']:+.2f}U"
+        )
         print(f"    建仓次数: {diag['entry_count']} | 平仓次数: {diag['close_count']}")
 
         if diag["loss_count"] > 0:
-            print(f"    亏损分解: reduce {diag['reduce_loss_count']}次 "
-                  f"({diag['reduce_loss_pnl_sum']:+.2f}U) | exit {diag['exit_loss_count']}次 | "
-                  f"window_end {diag['window_loss_count']}次 ({diag['window_loss_pnl']:+.2f}U)")
+            print(
+                f"    亏损分解: reduce {diag['reduce_loss_count']}次 "
+                f"({diag['reduce_loss_pnl_sum']:+.2f}U) | exit {diag['exit_loss_count']}次 | "
+                f"window_end {diag['window_loss_count']}次 ({diag['window_loss_pnl']:+.2f}U)"
+            )
 
         total_wins += diag["win_count"]
         total_closes += diag["close_count"]
@@ -306,21 +338,26 @@ def main():
 
         # 打印亏损交易详情
         if diag.get("trades"):
-            losses = [t for t in diag["trades"]
-                      if t["type"] in ("exit", "reduce", "window_end") and not t.get("win", False)]
+            losses = [
+                t
+                for t in diag["trades"]
+                if t["type"] in ("exit", "reduce", "window_end") and not t.get("win", False)
+            ]
             if losses:
-                print(f"    亏损交易详情 (Top 5):")
+                print("    亏损交易详情 (Top 5):")
                 for t in losses[:5]:
                     causes = t.get("causes", {})
-                    print(f"      Day{t['day']:2d} {t['type']:10s} "
-                          f"PnL={t['pnl_usdt']:+6.2f}U | "
-                          f"cvs={t.get('cvs', '?')} "
-                          f"trend={causes.get('trend_action','?')} "
-                          f"value={causes.get('value_action','?')} "
-                          f"RSI={causes.get('rsi_14','?')} "
-                          f"MA200dev={causes.get('ma200_dev','?')}% "
-                          f"belowMA200={causes.get('ts_below_days','?')}d "
-                          f"death_cross={causes.get('death_cross','?')}")
+                    print(
+                        f"      Day{t['day']:2d} {t['type']:10s} "
+                        f"PnL={t['pnl_usdt']:+6.2f}U | "
+                        f"cvs={t.get('cvs', '?')} "
+                        f"trend={causes.get('trend_action','?')} "
+                        f"value={causes.get('value_action','?')} "
+                        f"RSI={causes.get('rsi_14','?')} "
+                        f"MA200dev={causes.get('ma200_dev','?')}% "
+                        f"belowMA200={causes.get('ts_below_days','?')}d "
+                        f"death_cross={causes.get('death_cross','?')}"
+                    )
 
     overall_rate = total_wins / total_closes * 100 if total_closes > 0 else 0
     print(f"\n  汇总: {total_wins}/{total_closes} 胜 ({overall_rate:.1f}%)")
@@ -340,14 +377,20 @@ def main():
         data_drop = sum(1 for _, b in rdr_summary["dropped_coins"] if 0.0 <= b < 0.1)
         borderline_drop = sum(1 for _, b in rdr_summary["dropped_coins"] if 0.1 <= b < 0.3)
         print(f"    ① 合理丢弃(BDS<0.0=高估区): {rational_drop} 币 — 正确但拉高分母")
-        print(f"    ② 数据不足(BDS≈0.0=快照insufficient): {data_drop} 币 — 快照数据质量差导致假丢弃")
-        print(f"    ③ 边界丢弃(0.1≤BDS<0.3): {borderline_drop} 币 — 接近阈值，7日估值波动可能越过0.3")
+        print(
+            f"    ② 数据不足(BDS≈0.0=快照insufficient): {data_drop} 币 — 快照数据质量差导致假丢弃"
+        )
+        print(
+            f"    ③ 边界丢弃(0.1≤BDS<0.3): {borderline_drop} 币 — 接近阈值，7日估值波动可能越过0.3"
+        )
 
     print("\n  胜率(63.9% < 90%)的主要原因:")
     if total_reduce_losses > 0:
         reduce_pct = total_reduce_losses / total_closes * 100 if total_closes else 0
-        print(f"    ① 假信号 reduce 亏损占比最高: {total_reduce_losses}笔平仓亏损 "
-              f"({reduce_pct:.1f}% of 总平仓数)")
+        print(
+            f"    ① 假信号 reduce 亏损占比最高: {total_reduce_losses}笔平仓亏损 "
+            f"({reduce_pct:.1f}% of 总平仓数)"
+        )
         print("       - 根因: 趋势止损MA200破位3日触发reduce50，但30日窗口内价格震荡反复，")
         print('         每次reduce都是低位卖出，后续又买回 → 高频低亏（"割肉"假信号）')
     print(f"    ② window_end 强制平仓亏损: {total_window_loss_pnl:+.2f}U")

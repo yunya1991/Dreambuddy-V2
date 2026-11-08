@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ReverseDeriveResult:
     """逆向推导结果。"""
+
     per_dimension_correctness: dict[str, bool] = field(default_factory=dict)
     per_dimension_cs: dict[str, float] = field(default_factory=dict)
     wrong_dimensions: list[str] = field(default_factory=list)
@@ -60,17 +61,20 @@ class ReverseDeriver:
 
             # FAIL-OPEN：缺少必要数据
             if not dim_predictions or not real_direction:
-                return self._neutral_result(snapshot, outcome,
-                    "缺少 dimension_predictions 或 real_direction")
+                return self._neutral_result(
+                    snapshot, outcome, "缺少 dimension_predictions 或 real_direction"
+                )
 
             real_direction = str(real_direction).lower()
             if real_direction not in self.VALID_DIRECTIONS:
-                return self._neutral_result(snapshot, outcome,
-                    f"无效 real_direction: {real_direction}")
+                return self._neutral_result(
+                    snapshot, outcome, f"无效 real_direction: {real_direction}"
+                )
 
             # Step 1: 每维度正确性
             per_dim_correctness, per_dim_cs = self._per_dimension_correctness(
-                dim_predictions, real_direction)
+                dim_predictions, real_direction
+            )
 
             wrong_dims = [d for d, c in per_dim_correctness.items() if not c]
             # 多维度联合归因：排序后的错误维度组合模式（供 CBR 检索）
@@ -78,11 +82,11 @@ class ReverseDeriver:
 
             # Step 2-3: 根因分析
             root_cause, root_cause_type = self._analyze_root_cause(
-                per_dim_correctness, snapshot, outcome)
+                per_dim_correctness, snapshot, outcome
+            )
 
             # Step 4: 优化动作
-            optimization_action = self._recommend_action(
-                wrong_dims, root_cause_type, outcome)
+            optimization_action = self._recommend_action(wrong_dims, root_cause_type, outcome)
 
             # 置信度：反映推导结论的可靠性（数据充分度），而非正确率
             # 维度越多 → 归因越可靠；单维度判断可信度中等（0.333）
@@ -90,17 +94,23 @@ class ReverseDeriver:
             confidence = round(min(1.0, total / 3.0), 3) if total > 0 else 0.0
 
             return self._output_evidence(
-                per_dim_correctness, per_dim_cs, wrong_dims,
-                wrong_dimension_pattern, root_cause, root_cause_type,
-                confidence, optimization_action,
+                per_dim_correctness,
+                per_dim_cs,
+                wrong_dims,
+                wrong_dimension_pattern,
+                root_cause,
+                root_cause_type,
+                confidence,
+                optimization_action,
             )
         except Exception as e:
             logger.warning("[FO] ReverseDeriver fail: %s", e)
             return self._neutral_result(snapshot, outcome, str(e))
 
     # ------------------------------------------------------------------
-    def _per_dimension_correctness(self, dim_predictions: dict,
-                                    real_direction: str) -> tuple[dict, dict]:
+    def _per_dimension_correctness(
+        self, dim_predictions: dict, real_direction: str
+    ) -> tuple[dict, dict]:
         """Step1: 每维度预测方向 vs 实际方向 → 正确性 + 维度CS。"""
         per_dim_correctness: dict[str, bool] = {}
         per_dim_cs: dict[str, float] = {}
@@ -111,9 +121,17 @@ class ReverseDeriver:
             per_dim_cs[dim] = 1.0 if correct else -1.0
         return per_dim_correctness, per_dim_cs
 
-    def _output_evidence(self, per_dim_correctness, per_dim_cs, wrong_dims,
-                         wrong_dimension_pattern, root_cause, root_cause_type,
-                         confidence, optimization_action) -> ReverseDeriveResult:
+    def _output_evidence(
+        self,
+        per_dim_correctness,
+        per_dim_cs,
+        wrong_dims,
+        wrong_dimension_pattern,
+        root_cause,
+        root_cause_type,
+        confidence,
+        optimization_action,
+    ) -> ReverseDeriveResult:
         """Step4: 输出逆向 Evidence（ReverseDeriveResult）。"""
         known_gaps = [
             "维度预测方向来自 PrimaryContradictionIdentifier 输入 paths",
@@ -193,8 +211,9 @@ class ReverseDeriver:
             "root_cause_candidate": root_cause_candidate,
         }
 
-    def _analyze_root_cause(self, per_dim_correctness: dict[str, bool],
-                             snapshot: dict, outcome: dict) -> tuple[str, str]:
+    def _analyze_root_cause(
+        self, per_dim_correctness: dict[str, bool], snapshot: dict, outcome: dict
+    ) -> tuple[str, str]:
         """根因分类。优先使用证据链回溯，回退到错误比例启发式。"""
         wrong_dims = [d for d, c in per_dim_correctness.items() if not c]
         total = len(per_dim_correctness)
@@ -213,11 +232,11 @@ class ReverseDeriver:
             if candidates:
                 # 多数投票决定 root_cause_type
                 from collections import Counter
+
                 counter = Counter(candidates)
                 root_cause_type = counter.most_common(1)[0][0]
                 return (
-                    f"维度{','.join(wrong_dims)}判断错误，"
-                    f"证据链根因: {root_cause_type}",
+                    f"维度{','.join(wrong_dims)}判断错误，" f"证据链根因: {root_cause_type}",
                     root_cause_type,
                 )
 
@@ -226,18 +245,21 @@ class ReverseDeriver:
 
         # 多数维度判断错 → 可能是权重问题（主导维度权重不足）
         if wrong_ratio >= 0.5:
-            return (f"多数维度({len(wrong_dims)}/{total})判断错误，"
-                    f"可能是维度权重分配不当", "weight_error")
+            return (
+                f"多数维度({len(wrong_dims)}/{total})判断错误，" f"可能是维度权重分配不当",
+                "weight_error",
+            )
 
         # 少数维度判断错 → 可能是该维度因子计算问题
         if wrong_ratio < 0.5:
-            return (f"少数维度({','.join(wrong_dims)})判断错误，"
-                    f"可能是因子计算或数据源问题", "factor_error")
+            return (
+                f"少数维度({','.join(wrong_dims)})判断错误，" f"可能是因子计算或数据源问题",
+                "factor_error",
+            )
 
         return "判断错误原因待查", "unknown"
 
-    def _recommend_action(self, wrong_dims: list[str], root_cause_type: str,
-                          outcome: dict) -> str:
+    def _recommend_action(self, wrong_dims: list[str], root_cause_type: str, outcome: dict) -> str:
         """建议优化动作。"""
         if not wrong_dims:
             return "no_adjustment"
@@ -258,8 +280,7 @@ class ReverseDeriver:
 
         return f"监控维度: {wrong_dims}"
 
-    def _neutral_result(self, snapshot: dict, outcome: dict,
-                        reason: str) -> ReverseDeriveResult:
+    def _neutral_result(self, snapshot: dict, outcome: dict, reason: str) -> ReverseDeriveResult:
         """FAIL-OPEN 中性结果。"""
         return ReverseDeriveResult(
             per_dimension_correctness={},
@@ -287,6 +308,7 @@ import re  # noqa: E402  架构域解析需要
 @dataclass
 class ArchitectureDebtResult:
     """架构债务推导结果。"""
+
     debt_dimensions: dict[str, float] = field(default_factory=dict)
     triggered_windows: list[str] = field(default_factory=list)
     refactor_plan: list[dict[str, Any]] = field(default_factory=list)
@@ -336,9 +358,7 @@ class ArchitectureReverseDeriver:
     与交易域 ReverseDeriver 接口隔离，不互相调用。
     """
 
-    def derive_architecture_debt(
-        self, evidence_list: list[Any] | None
-    ) -> ArchitectureDebtResult:
+    def derive_architecture_debt(self, evidence_list: list[Any] | None) -> ArchitectureDebtResult:
         """从架构 Evidence 列表推导设计债务。
 
         Args:
@@ -378,25 +398,23 @@ class ArchitectureReverseDeriver:
             if max_score >= 1.0:  # value >= threshold → 触发 refactor 窗口
                 window_id = f"refactor:{dim}:{max_target}"
                 result.triggered_windows.append(window_id)
-                priority = "P0" if max_score >= 1.0 else (
-                    "P1" if max_score >= 0.8 else "P2"
+                priority = "P0" if max_score >= 1.0 else ("P1" if max_score >= 0.8 else "P2")
+                result.refactor_plan.append(
+                    {
+                        "dimension": dim,
+                        "target": max_target,
+                        "score": result.debt_dimensions[dim],
+                        "action": _DIMENSION_RULES[dim]["action"],
+                        "priority": priority,
+                    }
                 )
-                result.refactor_plan.append({
-                    "dimension": dim,
-                    "target": max_target,
-                    "score": result.debt_dimensions[dim],
-                    "action": _DIMENSION_RULES[dim]["action"],
-                    "priority": priority,
-                })
 
         # refactor_plan 按 score 降序
         result.refactor_plan.sort(key=lambda x: x["score"], reverse=True)
 
         if result.debt_dimensions:
             # 置信度：有数据的维度占比
-            result.confidence = round(
-                len(result.debt_dimensions) / len(_DIMENSION_RULES), 3
-            )
+            result.confidence = round(len(result.debt_dimensions) / len(_DIMENSION_RULES), 3)
 
         return result
 
@@ -420,9 +438,7 @@ class ArchitectureReverseDeriver:
             return str(prov.get("file") or prov.get("target") or "unknown")
         return "unknown"
 
-    def _parse_dimension(
-        self, analysis: str, result_str: str
-    ) -> tuple[str | None, float]:
+    def _parse_dimension(self, analysis: str, result_str: str) -> tuple[str | None, float]:
         """根据 analysis 关键词匹配维度，从 result_str 解析数值并算债务评分。"""
         for dim, rule in _DIMENSION_RULES.items():
             if any(kw in analysis for kw in rule["keywords"]):

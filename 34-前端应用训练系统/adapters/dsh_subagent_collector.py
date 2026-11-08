@@ -12,6 +12,7 @@
 
 依赖 subagent_registry.py 的 SubagentNode.execute()。
 """
+
 import os
 import sys
 from typing import List, Optional
@@ -19,14 +20,15 @@ from typing import List, Optional
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
-_DSH_DIR = os.path.join(_PROJECT_ROOT, "1-ARCHITECTURE", "dream-harness-bridge", "packages", "python-server")
+_DSH_DIR = os.path.join(
+    _PROJECT_ROOT, "1-ARCHITECTURE", "dream-harness-bridge", "packages", "python-server"
+)
 
 for _p in [_THIS_DIR, _34_DIR, _DSH_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # ============================================================
 # Mock node_output 样本 — 覆盖 8 个 subagent 类型
@@ -35,67 +37,103 @@ from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
 
 _SAMPLE_NODE_OUTPUTS = [
     # technical: EMA 排列 + RSI + MACD
-    ("technical", {
-        "indicators": {"price": 45000, "ema20": 44800, "ema50": 44000, "rsi14": 62, "macd": 120, "volume": 1500},
-        "rationale": ["EMA20上穿EMA50", "RSI14处于多头区间", "MACD金叉确认", "量能放大"],
-        "direction": "LONG",
-        "confidence": 0.75,
-    }),
+    (
+        "technical",
+        {
+            "indicators": {
+                "price": 45000,
+                "ema20": 44800,
+                "ema50": 44000,
+                "rsi14": 62,
+                "macd": 120,
+                "volume": 1500,
+            },
+            "rationale": ["EMA20上穿EMA50", "RSI14处于多头区间", "MACD金叉确认", "量能放大"],
+            "direction": "LONG",
+            "confidence": 0.75,
+        },
+    ),
     # sentiment: FGI + 新闻情绪
-    ("sentiment", {
-        "indicators": {"fgi": 72, "news_sentiment": 0.6, "social_volume": 12000},
-        "rationale": ["FGI=72贪婪区间", "新闻情绪偏多", "社交热度上升"],
-        "direction": "LONG",
-        "confidence": 0.65,
-    }),
+    (
+        "sentiment",
+        {
+            "indicators": {"fgi": 72, "news_sentiment": 0.6, "social_volume": 12000},
+            "rationale": ["FGI=72贪婪区间", "新闻情绪偏多", "社交热度上升"],
+            "direction": "LONG",
+            "confidence": 0.65,
+        },
+    ),
     # macro: 利率 + 通胀
-    ("macro", {
-        "indicators": {"cpi": 2.5, "fed_rate": 5.25, "gdp_growth": 2.1},
-        "rationale": ["CPI回落至2.5%", "利率维持高位", "GDP增长稳健"],
-        "direction": "NEUTRAL",
-        "confidence": 0.55,
-    }),
+    (
+        "macro",
+        {
+            "indicators": {"cpi": 2.5, "fed_rate": 5.25, "gdp_growth": 2.1},
+            "rationale": ["CPI回落至2.5%", "利率维持高位", "GDP增长稳健"],
+            "direction": "NEUTRAL",
+            "confidence": 0.55,
+        },
+    ),
     # flow: 资金流向
-    ("flow", {
-        "indicators": {"net_inflow": 50000000, "northbound": 20000000, "stablecoin_mcap": 150000000000},
-        "rationale": ["主力资金净流入", "北向资金加仓", "稳定币市值扩张"],
-        "direction": "LONG",
-        "confidence": 0.70,
-    }),
+    (
+        "flow",
+        {
+            "indicators": {
+                "net_inflow": 50000000,
+                "northbound": 20000000,
+                "stablecoin_mcap": 150000000000,
+            },
+            "rationale": ["主力资金净流入", "北向资金加仓", "稳定币市值扩张"],
+            "direction": "LONG",
+            "confidence": 0.70,
+        },
+    ),
     # onchain: 链上活跃度
-    ("onchain", {
-        "indicators": {"active_addresses": 950000, "exchange_balance": 2.1e6, "mvrv": 1.8},
-        "rationale": ["活跃地址增长", "交易所余额下降", "MVRV处于合理区间"],
-        "direction": "LONG",
-        "confidence": 0.60,
-    }),
+    (
+        "onchain",
+        {
+            "indicators": {"active_addresses": 950000, "exchange_balance": 2.1e6, "mvrv": 1.8},
+            "rationale": ["活跃地址增长", "交易所余额下降", "MVRV处于合理区间"],
+            "direction": "LONG",
+            "confidence": 0.60,
+        },
+    ),
     # valuation: PE/PB
-    ("valuation", {
-        "indicators": {"pe_ratio": 25, "pb_ratio": 3.5, "dcf_fair_value": 50000},
-        "rationale": ["PE处于历史中位", "PB略高于行业中位", "DCF估值合理"],
-        "direction": "NEUTRAL",
-        "confidence": 0.50,
-    }),
+    (
+        "valuation",
+        {
+            "indicators": {"pe_ratio": 25, "pb_ratio": 3.5, "dcf_fair_value": 50000},
+            "rationale": ["PE处于历史中位", "PB略高于行业中位", "DCF估值合理"],
+            "direction": "NEUTRAL",
+            "confidence": 0.50,
+        },
+    ),
     # risk: VaR
-    ("risk", {
-        "indicators": {"var95": -0.08, "var99": -0.15, "stress_loss": -0.25},
-        "rationale": ["VaR95=-8%可接受", "VaR99=-15%触警戒线", "压力损失较大"],
-        "direction": "SHORT",
-        "confidence": 0.65,
-    }),
+    (
+        "risk",
+        {
+            "indicators": {"var95": -0.08, "var99": -0.15, "stress_loss": -0.25},
+            "rationale": ["VaR95=-8%可接受", "VaR99=-15%触警戒线", "压力损失较大"],
+            "direction": "SHORT",
+            "confidence": 0.65,
+        },
+    ),
     # portfolio: 漂移 + 总仓位
-    ("portfolio", {
-        "indicators": {"drift": 0.12, "total_exposure": 0.75, "rebalance_needed": True},
-        "rationale": ["漂移度12%超阈值", "总仓位75%偏高", "需再平衡减仓"],
-        "direction": "SHORT",
-        "confidence": 0.60,
-    }),
+    (
+        "portfolio",
+        {
+            "indicators": {"drift": 0.12, "total_exposure": 0.75, "rebalance_needed": True},
+            "rationale": ["漂移度12%超阈值", "总仓位75%偏高", "需再平衡减仓"],
+            "direction": "SHORT",
+            "confidence": 0.60,
+        },
+    ),
 ]
 
 
 # ============================================================
 # 采集器主体
 # ============================================================
+
 
 class DshSubagentCollector(TrainingDataProvider):
     """DSH 子 Agent reasoning_chain 采集器。
@@ -113,9 +151,7 @@ class DshSubagentCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "A"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """跑样本批次采集 subagent reasoning_chain 序列。
 
         Args:
@@ -149,7 +185,9 @@ class DshSubagentCollector(TrainingDataProvider):
 
                 # reasoning_chain split 为 node_sequence
                 reasoning = result.reasoning_chain or ""
-                rationale_steps = [s.strip() for s in reasoning.split(" | ") if s.strip()] if reasoning else []
+                rationale_steps = (
+                    [s.strip() for s in reasoning.split(" | ") if s.strip()] if reasoning else []
+                )
 
                 # 组装 node_sequence: dispatch → execute → rationale steps → response
                 node_seq = ["subagent.dispatch"]
@@ -162,30 +200,32 @@ class DshSubagentCollector(TrainingDataProvider):
                     node_seq.extend(["subagent.execute", "subagent.response"])
 
                 outcome = "success"
-                cases.append(TrainingCase(
-                    intent=f"subagent.{module_name}",
-                    actions=node_seq,
-                    outcome_text=outcome,
-                    learned=[
-                        f"node_count={len(node_seq)}",
-                        f"module={module_name}",
-                        f"direction={mock_output.get('direction', 'NEUTRAL')}",
-                        f"confidence={result.confidence}",
-                    ],
-                    layer_tags=["DSH"],
-                    quality="A",
-                    confidence=0.8,
-                    source="dsh_subagent",
-                    metadata={
-                        "module": module_name,
-                        "node_id": node.node_id,
-                        "direction": mock_output.get("direction", "NEUTRAL"),
-                        "confidence": result.confidence,
-                        "rationale_count": len(rationale_steps),
-                        "evidence_refs": getattr(result, "evidence_refs", [])[:5],
-                        "node_count": len(node_seq),
-                    },
-                ))
+                cases.append(
+                    TrainingCase(
+                        intent=f"subagent.{module_name}",
+                        actions=node_seq,
+                        outcome_text=outcome,
+                        learned=[
+                            f"node_count={len(node_seq)}",
+                            f"module={module_name}",
+                            f"direction={mock_output.get('direction', 'NEUTRAL')}",
+                            f"confidence={result.confidence}",
+                        ],
+                        layer_tags=["DSH"],
+                        quality="A",
+                        confidence=0.8,
+                        source="dsh_subagent",
+                        metadata={
+                            "module": module_name,
+                            "node_id": node.node_id,
+                            "direction": mock_output.get("direction", "NEUTRAL"),
+                            "confidence": result.confidence,
+                            "rationale_count": len(rationale_steps),
+                            "evidence_refs": getattr(result, "evidence_refs", [])[:5],
+                            "node_count": len(node_seq),
+                        },
+                    )
+                )
             except Exception:
                 continue  # FAIL-OPEN: 单 agent 失败不影响其他
 

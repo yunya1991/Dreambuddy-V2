@@ -2,6 +2,7 @@
 
 提供统一的工厂函数，创建配置好的编排器实例。
 """
+
 import os
 import sys
 
@@ -14,12 +15,12 @@ for _p in [_ADAPTERS_DIR, _THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_executor import TrainingLayer
-from dual_mode_orchestrator import DualModeTrainingOrchestrator
-from tdr_data_provider import TDRTrainingDataProvider
-from ts_http_training_executor import TSHTTPTrainingExecutor
-from generic_case_evaluator import GenericCaseEvaluator
-from rea_native_parser import REANativeParser
+from dual_mode_orchestrator import DualModeTrainingOrchestrator  # noqa: E402
+from generic_case_evaluator import GenericCaseEvaluator  # noqa: E402
+from interfaces.training_executor import TrainingLayer  # noqa: E402
+from rea_native_parser import REANativeParser  # noqa: E402
+from tdr_data_provider import TDRTrainingDataProvider  # noqa: E402
+from ts_http_training_executor import TSHTTPTrainingExecutor  # noqa: E402
 
 
 def create_orchestrator(

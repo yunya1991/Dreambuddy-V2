@@ -2,7 +2,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -28,19 +27,39 @@ def test_version_dashboard_aggregates_decisions_promotions_and_rollbacks(tmp_pat
 
     _write_json(
         decision_dir / "decision-1.json",
-        {"candidate_id": "cand-1", "decision": "approve", "reason_codes": [], "timestamp": "2026-05-12T10:00:00Z"},
+        {
+            "candidate_id": "cand-1",
+            "decision": "approve",
+            "reason_codes": [],
+            "timestamp": "2026-05-12T10:00:00Z",
+        },
     )
     _write_json(
         decision_dir / "decision-2.json",
-        {"candidate_id": "cand-2", "decision": "reject", "reason_codes": ["APPROVAL_TICKET_REQUIRED"], "timestamp": "2026-05-12T10:05:00Z"},
+        {
+            "candidate_id": "cand-2",
+            "decision": "reject",
+            "reason_codes": ["APPROVAL_TICKET_REQUIRED"],
+            "timestamp": "2026-05-12T10:05:00Z",
+        },
     )
     _write_json(
         decision_dir / "promotion-1.json",
-        {"candidate_id": "cand-1", "from_version": "v0.1", "to_version": "v0.1.2", "timestamp": "2026-05-12T10:01:00Z"},
+        {
+            "candidate_id": "cand-1",
+            "from_version": "v0.1",
+            "to_version": "v0.1.2",
+            "timestamp": "2026-05-12T10:01:00Z",
+        },
     )
     _write_json(
         rollback_dir / "rollback-pointer-1.json",
-        {"pointer_id": "rp-1", "from_version": "v0.1", "to_version": "v0.1.2", "created_at": "2026-05-12T10:02:00Z"},
+        {
+            "pointer_id": "rp-1",
+            "from_version": "v0.1",
+            "to_version": "v0.1.2",
+            "created_at": "2026-05-12T10:02:00Z",
+        },
     )
 
     rc = mod.main(

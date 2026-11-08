@@ -8,6 +8,7 @@ dreambuddy_dal.compat — 历史兼容层（解决 Experience 698940：5 处独�
 backtest engine / ab_comparison.py）需要在 P0-7 步骤手工改 `from X import TradeRecord`
 → `from dreambuddy_dal.compat import TradeRecord`（最后再换 direct import from unified_models）
 """
+
 from __future__ import annotations
 
 import warnings
@@ -19,9 +20,19 @@ import dreambuddy_dal.unified_models as _ssot
 # 需要转发的符号集合（对齐 unified_models.__all__）
 _FORWARD_SYMBOLS = {
     # 4 核心 + 辅助
-    "TradeRecord", "PositionState", "DailyStats", "RiskState", "RiskCaseRecord", "CloseInfo",
+    "TradeRecord",
+    "PositionState",
+    "DailyStats",
+    "RiskState",
+    "RiskCaseRecord",
+    "CloseInfo",
     # 6 枚举
-    "TradeDirection", "TradeStatus", "ExitReason", "RiskLevel", "TrialStatus", "PositionStyle",
+    "TradeDirection",
+    "TradeStatus",
+    "ExitReason",
+    "RiskLevel",
+    "TrialStatus",
+    "PositionStyle",
     # 工具
     "LEGACY_TRADE_RECORD_SYMBOLS",
 }

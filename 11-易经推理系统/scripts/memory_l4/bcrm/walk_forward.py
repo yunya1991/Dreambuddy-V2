@@ -4,20 +4,19 @@ Walk-Forward 回测引擎。
 用于 BCRM 模型的滚动窗口回测，验证预测准确率。
 """
 
-import json
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Callable
-from collections import defaultdict
 from random import Random
+from typing import Any, Callable, Dict, List
 
 from .engine import BCRMEngine
-from .output_contract import BCRMOutput
 from .memory_adapter import MockMemoryAdapter
+from .output_contract import BCRMOutput
 
 
 @dataclass
 class WindowData:
     """窗口数据。"""
+
     train_start: int = 0
     train_end: int = 0
     test_start: int = 0
@@ -27,6 +26,7 @@ class WindowData:
 @dataclass
 class WalkForwardResult:
     """Walk-forward 回测结果。"""
+
     total_bars: int = 0
     correct_predictions: int = 0
     wrong_predictions: int = 0
@@ -47,9 +47,7 @@ class WalkForwardResult:
         }
 
 
-def default_direction_label(current_idx: int,
-                             data: List[Dict],
-                             prediction_dict: Dict) -> bool:
+def default_direction_label(current_idx: int, data: List[Dict], prediction_dict: Dict) -> bool:
     """
     默认方向打标函数。
 
@@ -71,13 +69,13 @@ def default_direction_label(current_idx: int,
     if future_start >= len(data):
         return False
 
-    future_prices = [data[i].get("close", data[i].get("price", 0))
-                     for i in range(future_start, future_end)]
+    future_prices = [
+        data[i].get("close", data[i].get("price", 0)) for i in range(future_start, future_end)
+    ]
     if not future_prices:
         return False
 
-    current_price = data[current_idx].get("close",
-                                          data[current_idx].get("price", 0))
+    current_price = data[current_idx].get("close", data[current_idx].get("price", 0))
     avg_future = sum(future_prices) / len(future_prices)
     change_pct = (avg_future - current_price) / current_price
 
@@ -91,10 +89,15 @@ def default_direction_label(current_idx: int,
         # 检查近期趋势是否反转
         if current_idx < 5:
             return False
-        recent_prices = [data[current_idx - j].get("close",
-                          data[current_idx - j].get("price", 0))
-                         for j in range(1, min(6, current_idx + 1))]
-        recent_change = (recent_prices[0] - recent_prices[-1]) / recent_prices[-1] if recent_prices[-1] > 0 else 0
+        recent_prices = [
+            data[current_idx - j].get("close", data[current_idx - j].get("price", 0))
+            for j in range(1, min(6, current_idx + 1))
+        ]
+        recent_change = (
+            (recent_prices[0] - recent_prices[-1]) / recent_prices[-1]
+            if recent_prices[-1] > 0
+            else 0
+        )
         # 近期上涨但未来下跌，或近期下跌但未来上涨 → 转折正确
         if recent_change > 0.002 and change_pct < -0.001:
             return True
@@ -105,8 +108,7 @@ def default_direction_label(current_idx: int,
         return False
 
 
-def generate_synthetic_data(num_bars: int = 200,
-                             seed: int = 42) -> List[Dict]:
+def generate_synthetic_data(num_bars: int = 200, seed: int = 42) -> List[Dict]:
     """
     生成合成测试数据。
 
@@ -146,9 +148,21 @@ def generate_synthetic_data(num_bars: int = 200,
         volume = 1000000 * (1 + rng.gauss(0, 0.3))
 
         # 计算技术指标
-        ma5 = sum(data[-j]["close"] for j in range(1, min(5, len(data)) + 1)) / min(5, len(data)) if data else price
-        ma10 = sum(data[-j]["close"] for j in range(1, min(10, len(data)) + 1)) / min(10, len(data)) if data else price
-        ma20 = sum(data[-j]["close"] for j in range(1, min(20, len(data)) + 1)) / min(20, len(data)) if data else price
+        ma5 = (
+            sum(data[-j]["close"] for j in range(1, min(5, len(data)) + 1)) / min(5, len(data))
+            if data
+            else price
+        )
+        ma10 = (
+            sum(data[-j]["close"] for j in range(1, min(10, len(data)) + 1)) / min(10, len(data))
+            if data
+            else price
+        )
+        ma20 = (
+            sum(data[-j]["close"] for j in range(1, min(20, len(data)) + 1)) / min(20, len(data))
+            if data
+            else price
+        )
 
         # 四维评分 — P2修复: 移除预计算，改由 normalize_snapshot() 统一处理
         # 合成数据提供原始信号字段（rsi/ema/funding_rate等），与实盘链路对齐
@@ -180,11 +194,10 @@ def generate_synthetic_data(num_bars: int = 200,
         # 价格位置（在窗口中的相对位置）
         window_size = min(50, len(data) + 1)
         if window_size > 1:
-            recent_prices = [d["close"] for d in data[-window_size+1:]] + [price]
+            recent_prices = [d["close"] for d in data[-window_size + 1 :]] + [price]
             p_min = min(recent_prices)
             p_max = max(recent_prices)
-            price_position = ((price - p_min) / (p_max - p_min)
-                             if p_max > p_min else 0.5)
+            price_position = (price - p_min) / (p_max - p_min) if p_max > p_min else 0.5
         else:
             price_position = 0.5
 
@@ -197,7 +210,9 @@ def generate_synthetic_data(num_bars: int = 200,
             "low": price * (1 - abs(rng.gauss(0, 0.005))),
             "volume": volume,
             "regime": current_regime,
-            "trend_direction": "UP" if current_regime == "bull" else "DOWN" if current_regime == "bear" else "FLAT",
+            "trend_direction": (
+                "UP" if current_regime == "bull" else "DOWN" if current_regime == "bear" else "FLAT"
+            ),
             "trend_strength": abs(drift) * 100 + rng.random() * 0.3,
             "volatility": volatility,
             "volume_ratio": 0.8 + rng.random() * 0.4,
@@ -220,16 +235,16 @@ def generate_synthetic_data(num_bars: int = 200,
     return data
 
 
-def build_bcrm_predict_fn(engine: BCRMEngine,
-                           num_memory_cases: int = 5) -> Callable:
+def build_bcrm_predict_fn(engine: BCRMEngine, num_memory_cases: int = 5) -> Callable:
     """
     构建 BCRM 预测函数。
 
     返回一个函数: predict(snapshot, train_data) -> BCRMOutput
     """
+
     def predict(snapshot: Dict, train_data: List[Dict]) -> BCRMOutput:
         # 每次预测前重置力学引擎的速度状态，避免跨窗口累积
-        if hasattr(engine, 'force_engine') and hasattr(engine.force_engine, 'reset_velocity'):
+        if hasattr(engine, "force_engine") and hasattr(engine.force_engine, "reset_velocity"):
             engine.force_engine.reset_velocity()
         # 从训练数据生成 mock 记忆
         adapter = MockMemoryAdapter(num_cases=num_memory_cases)
@@ -250,35 +265,41 @@ def build_bcrm_predict_fn(engine: BCRMEngine,
         contradictions = []
         # 主矛盾：趋势方向（与实盘 _build_contradiction_list 一致）
         if change > 0.01:
-            contradictions.append({
-                "thesis": "多头动能释放，趋势向上",
-                "antithesis": "短期超买，回调压力增大",
-                "subject": "趋势方向",
-                "dominant_side": "BULL",
-                "direction": "UP",
-                "tension": max(0.2, min(0.4 + trend_str * 0.4, 0.85)),
-                "consistency": 0.6,
-            })
+            contradictions.append(
+                {
+                    "thesis": "多头动能释放，趋势向上",
+                    "antithesis": "短期超买，回调压力增大",
+                    "subject": "趋势方向",
+                    "dominant_side": "BULL",
+                    "direction": "UP",
+                    "tension": max(0.2, min(0.4 + trend_str * 0.4, 0.85)),
+                    "consistency": 0.6,
+                }
+            )
         elif change < -0.01:
-            contradictions.append({
-                "thesis": "空头动能释放，趋势向下",
-                "antithesis": "短期超卖，反弹预期增强",
-                "subject": "趋势方向",
-                "dominant_side": "BEAR",
-                "direction": "DOWN",
-                "tension": max(0.2, min(0.4 + trend_str * 0.4, 0.85)),
-                "consistency": 0.6,
-            })
+            contradictions.append(
+                {
+                    "thesis": "空头动能释放，趋势向下",
+                    "antithesis": "短期超卖，反弹预期增强",
+                    "subject": "趋势方向",
+                    "dominant_side": "BEAR",
+                    "direction": "DOWN",
+                    "tension": max(0.2, min(0.4 + trend_str * 0.4, 0.85)),
+                    "consistency": 0.6,
+                }
+            )
         else:
-            contradictions.append({
-                "thesis": "多空平衡，震荡整理",
-                "antithesis": "方向选择临近，变盘在即",
-                "subject": "趋势方向",
-                "dominant_side": "EQUAL",
-                "direction": "NEUTRAL",
-                "tension": max(0.2, min(0.3 + vol * 5, 0.85)),
-                "consistency": 0.5,
-            })
+            contradictions.append(
+                {
+                    "thesis": "多空平衡，震荡整理",
+                    "antithesis": "方向选择临近，变盘在即",
+                    "subject": "趋势方向",
+                    "dominant_side": "EQUAL",
+                    "direction": "NEUTRAL",
+                    "tension": max(0.2, min(0.3 + vol * 5, 0.85)),
+                    "consistency": 0.5,
+                }
+            )
 
         # 次矛盾：量价关系
         if abs(vol_ratio - 1.0) > 0.2:
@@ -291,15 +312,19 @@ def build_bcrm_predict_fn(engine: BCRMEngine,
             else:
                 vol_dominant = "EQUAL"
                 vol_direction = "NEUTRAL"
-            contradictions.append({
-                "thesis": "放量运行，资金参与度高" if vol_ratio > 1.2 else "缩量运行，资金参与度低",
-                "antithesis": "量能不可持续" if vol_ratio > 1.2 else "可能蓄势待发",
-                "subject": "量价配合",
-                "dominant_side": vol_dominant,
-                "direction": vol_direction,
-                "tension": max(0.2, min(0.4 + abs(vol_ratio - 1.0) * 0.5, 0.8)),
-                "consistency": 0.6,
-            })
+            contradictions.append(
+                {
+                    "thesis": (
+                        "放量运行，资金参与度高" if vol_ratio > 1.2 else "缩量运行，资金参与度低"
+                    ),
+                    "antithesis": "量能不可持续" if vol_ratio > 1.2 else "可能蓄势待发",
+                    "subject": "量价配合",
+                    "dominant_side": vol_dominant,
+                    "direction": vol_direction,
+                    "tension": max(0.2, min(0.4 + abs(vol_ratio - 1.0) * 0.5, 0.8)),
+                    "consistency": 0.6,
+                }
+            )
 
         return engine.infer(
             market_snapshot=snapshot,
@@ -324,11 +349,13 @@ class WalkForwardEngine:
         self.predict_fn = predict_fn
         self.reset_fn = reset_fn
 
-    def run(self,
-            data: List[Dict],
-            train_window_size: int = 50,
-            test_window_size: int = 10,
-            step_size: int = 10) -> WalkForwardResult:
+    def run(
+        self,
+        data: List[Dict],
+        train_window_size: int = 50,
+        test_window_size: int = 10,
+        step_size: int = 10,
+    ) -> WalkForwardResult:
         """
         运行 walk-forward 回测。
         """
@@ -343,11 +370,10 @@ class WalkForwardEngine:
 
         idx = train_window_size
         while idx + test_window_size <= len(data):
-            train_data = data[idx - train_window_size:idx]
-            test_data = data[idx:idx + test_window_size]
+            train_data = data[idx - train_window_size : idx]
+            test_data = data[idx : idx + test_window_size]
 
-            window_result = self._run_window(
-                train_data, test_data, idx)
+            window_result = self._run_window(train_data, test_data, idx)
             result.per_window_results.append(window_result)
 
             total_correct += window_result["correct"]
@@ -363,17 +389,12 @@ class WalkForwardEngine:
         result.fail_closed_count = fail_closed
 
         total_valid = total_correct + total_wrong
-        result.direction_accuracy = (total_correct / total_valid
-                                      if total_valid > 0 else 0.0)
-        result.avg_confidence = (total_confidence / valid_count
-                                  if valid_count > 0 else 0.0)
+        result.direction_accuracy = total_correct / total_valid if total_valid > 0 else 0.0
+        result.avg_confidence = total_confidence / valid_count if valid_count > 0 else 0.0
 
         return result
 
-    def _run_window(self,
-                    train_data: List[Dict],
-                    test_data: List[Dict],
-                    start_idx: int) -> Dict:
+    def _run_window(self, train_data: List[Dict], test_data: List[Dict], start_idx: int) -> Dict:
         """运行单个窗口。"""
         # 每个窗口开始时重置引擎状态（如 prev_velocity）
         if self.reset_fn:
@@ -391,13 +412,15 @@ class WalkForwardEngine:
 
             if output.is_fail_closed():
                 fail_closed += 1
-                predictions.append({
-                    "index": i,
-                    "bagua": output.bagua,
-                    "regime": bar.get("regime", ""),
-                    "fail_closed": True,
-                    "is_correct": False,
-                })
+                predictions.append(
+                    {
+                        "index": i,
+                        "bagua": output.bagua,
+                        "regime": bar.get("regime", ""),
+                        "fail_closed": True,
+                        "is_correct": False,
+                    }
+                )
                 continue
 
             valid += 1
@@ -419,21 +442,22 @@ class WalkForwardEngine:
                 cur_price = bar.get("close", bar.get("price", 0))
                 next_price = next_bar.get("close", next_bar.get("price", 0))
                 if cur_price > 0:
-                    actual_outcome["price_change"] = (
-                        (next_price - cur_price) / cur_price)
+                    actual_outcome["price_change"] = (next_price - cur_price) / cur_price
 
-            predictions.append({
-                "index": i,
-                "bagua": output.bagua,
-                "hexagram": output.hexagram.hexagram_name,
-                "regime": bar.get("regime", ""),
-                "fail_closed": False,
-                "is_correct": is_correct,
-                "confidence": output.next_state.confidence,
-                "direction": output.next_state.direction,
-                "bcrm_output": prediction_dict,
-                "actual_outcome": actual_outcome,
-            })
+            predictions.append(
+                {
+                    "index": i,
+                    "bagua": output.bagua,
+                    "hexagram": output.hexagram.hexagram_name,
+                    "regime": bar.get("regime", ""),
+                    "fail_closed": False,
+                    "is_correct": is_correct,
+                    "confidence": output.next_state.confidence,
+                    "direction": output.next_state.direction,
+                    "bcrm_output": prediction_dict,
+                    "actual_outcome": actual_outcome,
+                }
+            )
 
         return {
             "train_size": len(train_data),
@@ -448,14 +472,16 @@ class WalkForwardEngine:
         }
 
 
-def run_bcrm_backtest(engine: BCRMEngine,
-                       data: List[Dict] = None,
-                       train_window_size: int = 50,
-                       test_window_size: int = 10,
-                       step_size: int = 10,
-                       memory_adapter=None,
-                       knowledge_base=None,
-                       num_memory_cases: int = 5) -> WalkForwardResult:
+def run_bcrm_backtest(
+    engine: BCRMEngine,
+    data: List[Dict] = None,
+    train_window_size: int = 50,
+    test_window_size: int = 10,
+    step_size: int = 10,
+    memory_adapter=None,
+    knowledge_base=None,
+    num_memory_cases: int = 5,
+) -> WalkForwardResult:
     """
     便捷函数：运行 BCRM walk-forward 回测。
 
@@ -474,24 +500,28 @@ def run_bcrm_backtest(engine: BCRMEngine,
 
     # 如果传入了 memory_adapter，优先使用；否则用 mock
     if memory_adapter is not None:
+
         def predict_fn(snapshot, train_data):
             memory_cases = memory_adapter.retrieve_similar(snapshot, top_k=5)
             memory_dicts = [c.to_dict() for c in memory_cases]
             sd = snapshot.get("supply_demand_score", 0.5)
             tech = snapshot.get("technical_score", 0.5)
-            cf = snapshot.get("capital_flow_score", 0.5)
-            sent = snapshot.get("sentiment_score", 0.5)
-            contradictions = [{
-                "id": "supply_demand_vs_technical",
-                "type": "supply_demand",
-                "tension": max(abs(sd - tech), 0.3),
-                "dominant_side": "BULL" if sd > 0.5 else "BEAR",
-            }]
+            cf = snapshot.get("capital_flow_score", 0.5)  # noqa: F841
+            sent = snapshot.get("sentiment_score", 0.5)  # noqa: F841
+            contradictions = [
+                {
+                    "id": "supply_demand_vs_technical",
+                    "type": "supply_demand",
+                    "tension": max(abs(sd - tech), 0.3),
+                    "dominant_side": "BULL" if sd > 0.5 else "BEAR",
+                }
+            ]
             return engine.infer(
                 market_snapshot=snapshot,
                 contradiction_list=contradictions,
                 memory_cases=memory_dicts,
             )
+
     else:
         predict_fn = build_bcrm_predict_fn(engine, num_memory_cases=num_memory_cases)
 

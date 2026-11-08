@@ -9,6 +9,7 @@
   - Config A: 无外生 (use_exogenous=False) — baseline, ratio=0.963
   - Config B: 有外生 (use_exogenous=True, exogenous_dim=9, 真实 DAL 时序对齐)
 """
+
 from __future__ import annotations
 
 import json
@@ -32,22 +33,27 @@ os.environ.setdefault("DATA_DIR", str(DAL_DIR / "data"))
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer  # noqa: E402
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
 from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402
 from dreambuddy_evolution.core.exogenous_data_bridge import (  # noqa: E402
-    ExogenousDataBridge, build_exogenous_series,
+    ExogenousDataBridge,
+    build_exogenous_series,
 )
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 
-def evaluate_on_windows(model, closes, test_starts, regime_labels,
-                         full_exo_series, n_paths=200, horizon=20):
+def evaluate_on_windows(
+    model, closes, test_starts, regime_labels, full_exo_series, n_paths=200, horizon=20
+):
     results = []
     for ts in test_starts:
         if ts + horizon >= len(closes):
             continue
-        history = closes[:ts + 1]
-        actual = closes[ts + 1:ts + 1 + horizon]
+        history = closes[: ts + 1]
+        actual = closes[ts + 1 : ts + 1 + horizon]
         init_price = float(history[-1])
         returns = np.diff(np.log(history))
         init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -64,8 +70,11 @@ def evaluate_on_windows(model, closes, test_starts, regime_labels,
             exo_snap = np.asarray(full_exo_series[ts], dtype=np.float64).ravel()
 
         sde_paths = model.forecast(
-            history, horizon, n_paths,
-            regime=test_regime, exogenous_snapshot=exo_snap,
+            history,
+            horizon,
+            n_paths,
+            regime=test_regime,
+            exogenous_snapshot=exo_snap,
         )
         if sde_paths is not None:
             sde_pred = np.mean(sde_paths[:, 1:], axis=0)
@@ -74,13 +83,15 @@ def evaluate_on_windows(model, closes, test_starts, regime_labels,
             sde_mae = float("inf")
 
         ratio = sde_mae / garch_mae if garch_mae > 0 else float("inf")
-        results.append({
-            "start_idx": ts,
-            "regime": test_regime,
-            "sde_mae": round(sde_mae, 4),
-            "garch_mae": round(garch_mae, 4),
-            "ratio": round(ratio, 4),
-        })
+        results.append(
+            {
+                "start_idx": ts,
+                "regime": test_regime,
+                "sde_mae": round(sde_mae, 4),
+                "garch_mae": round(garch_mae, 4),
+                "ratio": round(ratio, 4),
+            }
+        )
     return results
 
 
@@ -137,70 +148,96 @@ def main():
     # 12 个月度测试窗口
     monthly_step = max(1, N_TEST_2024 // 12)
     test_starts = [
-        train_end + i * monthly_step
-        for i in range(12)
-        if train_end + i * monthly_step + 20 < n
+        train_end + i * monthly_step for i in range(12) if train_end + i * monthly_step + 20 < n
     ]
     logger.info("测试窗口: %d 个", len(test_starts))
 
     # ===== Config A: 无外生 =====
     logger.info("=== 训练 Config A (无外生) ===")
     import torch
+
     torch.manual_seed(42)
     model_a = NeuralSDEModel(
-        device="cpu", n_regimes=3,
-        use_moe=True, moe_routing="hard",
+        device="cpu",
+        n_regimes=3,
+        use_moe=True,
+        moe_routing="hard",
         dropout=0.05,
     )
     trainer_a = NeuralSDETrainer(
-        model=model_a, lr=1e-4, seq_len=64, horizon=20,
-        batch_size=64, loss_type="return_mse",
-        weight_decay=1e-4, patience=10, val_split=0.1,
+        model=model_a,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="return_mse",
+        weight_decay=1e-4,
+        patience=10,
+        val_split=0.1,
     )
     t0 = time.time()
     report_a = trainer_a.train(
-        closes_train, epochs=250,
+        closes_train,
+        epochs=250,
         regime_labels=regime_train,
         regime_balance="natural",
     )
     time_a = time.time() - t0
-    logger.info("Config A 训练完成: final_loss=%.6f, 耗时=%.1fs",
-                report_a.get("final_loss", 0), time_a)
+    logger.info(
+        "Config A 训练完成: final_loss=%.6f, 耗时=%.1fs", report_a.get("final_loss", 0), time_a
+    )
 
     results_a = evaluate_on_windows(
-        model=model_a, closes=closes_full, test_starts=test_starts,
-        regime_labels=regime_full, full_exo_series=None,
+        model=model_a,
+        closes=closes_full,
+        test_starts=test_starts,
+        regime_labels=regime_full,
+        full_exo_series=None,
     )
 
     # ===== Config B: 有外生 (真实 DAL) =====
     logger.info("=== 训练 Config B (有外生, DAL 真实时序) ===")
     torch.manual_seed(42)
     model_b = NeuralSDEModel(
-        device="cpu", n_regimes=3,
-        use_moe=True, moe_routing="hard",
+        device="cpu",
+        n_regimes=3,
+        use_moe=True,
+        moe_routing="hard",
         dropout=0.05,
-        use_exogenous=True, exogenous_dim=9,
+        use_exogenous=True,
+        exogenous_dim=9,
     )
     trainer_b = NeuralSDETrainer(
-        model=model_b, lr=1e-4, seq_len=64, horizon=20,
-        batch_size=64, loss_type="return_mse",
-        weight_decay=1e-4, patience=10, val_split=0.1,
+        model=model_b,
+        lr=1e-4,
+        seq_len=64,
+        horizon=20,
+        batch_size=64,
+        loss_type="return_mse",
+        weight_decay=1e-4,
+        patience=10,
+        val_split=0.1,
     )
     exo_train = exo_series[:train_end]
     t0 = time.time()
     report_b = trainer_b.train(
-        closes_train, epochs=250,
+        closes_train,
+        epochs=250,
         regime_labels=regime_train,
         regime_balance="natural",
         exogenous_series=exo_train,
     )
     time_b = time.time() - t0
-    logger.info("Config B 训练完成: final_loss=%.6f, 耗时=%.1fs",
-                report_b.get("final_loss", 0), time_b)
+    logger.info(
+        "Config B 训练完成: final_loss=%.6f, 耗时=%.1fs", report_b.get("final_loss", 0), time_b
+    )
 
     results_b = evaluate_on_windows(
-        model=model_b, closes=closes_full, test_starts=test_starts,
-        regime_labels=regime_full, full_exo_series=exo_series,
+        model=model_b,
+        closes=closes_full,
+        test_starts=test_starts,
+        regime_labels=regime_full,
+        full_exo_series=exo_series,
     )
 
     # 汇总
@@ -222,10 +259,18 @@ def main():
 
     logger.info("=" * 60)
     logger.info("=== E7 PoC (A1 真实 DAL 历史外生) 对比结果 ===")
-    logger.info("Config A (无外生):    MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
-                sum_a["mean_sde_mae"], sum_a["mean_ratio"], sum_a["max_ratio"])
-    logger.info("Config B (DAL 外生):  MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
-                sum_b["mean_sde_mae"], sum_b["mean_ratio"], sum_b["max_ratio"])
+    logger.info(
+        "Config A (无外生):    MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
+        sum_a["mean_sde_mae"],
+        sum_a["mean_ratio"],
+        sum_a["max_ratio"],
+    )
+    logger.info(
+        "Config B (DAL 外生):  MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
+        sum_b["mean_sde_mae"],
+        sum_b["mean_ratio"],
+        sum_b["max_ratio"],
+    )
     logger.info("GARCH baseline:       MAE=%.2f", sum_a["mean_garch_mae"])
     logger.info("ratio 变化: %+.2f%% (越负越好)", delta_ratio)
     logger.info("P1 目标 <0.93: %s", "PASS" if sum_b["mean_ratio"] < 0.93 else "FAIL")

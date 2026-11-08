@@ -20,8 +20,8 @@ _RAG_INFRA_DIR = _THIS_DIR.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from .keyword_search import keyword_search
-from .reranker import rerank
+from .keyword_search import keyword_search  # noqa: E402
+from .reranker import rerank  # noqa: E402
 
 # 默认三路召回权重
 DEFAULT_RETRIEVAL_WEIGHTS = {
@@ -35,6 +35,7 @@ def _vector_recall(query: str, top_k: int, db_path=None) -> List[Dict]:
     """向量检索召回。FAIL-OPEN：失败返回空列表。"""
     try:
         from vector_store.search import search as vector_search
+
         results = vector_search(query, top_k=top_k, db_path=db_path)
         for r in results:
             r["retrieval_method"] = "vector"
@@ -51,7 +52,7 @@ def _graph_recall(query: str, top_k: int, graph_path=None) -> List[Dict]:
     FAIL-OPEN：图谱不存在或加载失败返回空列表。
     """
     try:
-        from knowledge_graph.graph_search import graph_search, _load_graph
+        from knowledge_graph.graph_search import _load_graph, graph_search
         from knowledge_graph.schema import DEFAULT_GRAPH_PATH
     except ImportError:
         return []
@@ -63,7 +64,7 @@ def _graph_recall(query: str, top_k: int, graph_path=None) -> List[Dict]:
 
     # 在图谱中查找名称出现在查询中的节点（子串匹配，双向兼容）
     candidates = []
-    for nid, data in graph.nodes(data=True):
+    for nid, data in graph.nodes(data=True):  # noqa: B007
         name = data.get("name", "")
         if name and len(name) >= 2 and name in query:
             candidates.append(name)
@@ -94,15 +95,17 @@ def _graph_recall(query: str, top_k: int, graph_path=None) -> List[Dict]:
         key = (source_file, center["name"])
         if key not in seen_keys:
             seen_keys.add(key)
-            results.append({
-                "content": f"{center['name']}（{center['type']}）",
-                "source_file": source_file,
-                "domain": "",
-                "heading": center["name"],
-                "score": 1.0,
-                "graph_score": 1.0,
-                "retrieval_method": "graph",
-            })
+            results.append(
+                {
+                    "content": f"{center['name']}（{center['type']}）",
+                    "source_file": source_file,
+                    "domain": "",
+                    "heading": center["name"],
+                    "score": 1.0,
+                    "graph_score": 1.0,
+                    "retrieval_method": "graph",
+                }
+            )
 
         # 邻居节点作为结果
         for nb in r["neighbors"]:
@@ -118,15 +121,17 @@ def _graph_recall(query: str, top_k: int, graph_path=None) -> List[Dict]:
 
             # 得分按跳数衰减：1 跳=0.6，2 跳=0.4
             score = round(1.0 / (nb["hops"] + 1), 4)
-            results.append({
-                "content": f"{nb['name']}（{nb['type']}）— 关系: {nb['relation']} → {center['name']}",
-                "source_file": nb_source,
-                "domain": nb_domain,
-                "heading": nb["name"],
-                "score": score,
-                "graph_score": score,
-                "retrieval_method": "graph",
-            })
+            results.append(
+                {
+                    "content": f"{nb['name']}（{nb['type']}）— 关系: {nb['relation']} → {center['name']}",
+                    "source_file": nb_source,
+                    "domain": nb_domain,
+                    "heading": nb["name"],
+                    "score": score,
+                    "graph_score": score,
+                    "retrieval_method": "graph",
+                }
+            )
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]
@@ -195,11 +200,14 @@ def _merge_and_dedup(*result_lists: List[Dict]) -> List[Dict]:
     return list(merged.values())
 
 
-def hybrid_search(query: str, top_k: int = 10,
-                  weights: Optional[Dict] = None,
-                  db_path: Optional[str] = None,
-                  index_path: Optional[Path] = None,
-                  graph_path: Optional[Path] = None) -> List[Dict]:
+def hybrid_search(
+    query: str,
+    top_k: int = 10,
+    weights: Optional[Dict] = None,
+    db_path: Optional[str] = None,
+    index_path: Optional[Path] = None,
+    graph_path: Optional[Path] = None,
+) -> List[Dict]:
     """三路混合检索 + 重排序。
 
     Args:
@@ -235,16 +243,19 @@ def hybrid_search(query: str, top_k: int = 10,
     return ranked[:top_k]
 
 
-def search_with_feedback(query: str, top_k: int = 10,
-                         weights: Optional[Dict] = None,
-                         db_path: Optional[str] = None,
-                         index_path: Optional[Path] = None,
-                         graph_path: Optional[Path] = None,
-                         enable_record: bool = True,
-                         enable_boost: bool = True,
-                         enable_annotate: bool = True,
-                         weight_path: Optional[Path] = None,
-                         map_path: Optional[Path] = None) -> Dict:
+def search_with_feedback(
+    query: str,
+    top_k: int = 10,
+    weights: Optional[Dict] = None,
+    db_path: Optional[str] = None,
+    index_path: Optional[Path] = None,
+    graph_path: Optional[Path] = None,
+    enable_record: bool = True,
+    enable_boost: bool = True,
+    enable_annotate: bool = True,
+    weight_path: Optional[Path] = None,
+    map_path: Optional[Path] = None,
+) -> Dict:
     """认知闭环检索：hybrid_search + 权重反哺 + 质量标注 + 记忆记录。
 
     在 hybrid_search 基础上叠加桥接层，形成完整闭环：
@@ -272,8 +283,13 @@ def search_with_feedback(query: str, top_k: int = 10,
     """
     # 基础检索（不修改 hybrid_search，保持字节等价）
     results = hybrid_search(
-        query, top_k=top_k, weights=weights,
-        db_path=db_path, index_path=index_path, graph_path=graph_path)
+        query,
+        top_k=top_k,
+        weights=weights,
+        db_path=db_path,
+        index_path=index_path,
+        graph_path=graph_path,
+    )
 
     boost_applied = False
     annotations_applied = False
@@ -284,6 +300,7 @@ def search_with_feedback(query: str, top_k: int = 10,
     if enable_boost and results:
         try:
             from bridge.weight_feedback import apply_boost_to_results
+
             results = apply_boost_to_results(results, weight_path)
             boost_applied = True
         except Exception:
@@ -296,6 +313,7 @@ def search_with_feedback(query: str, top_k: int = 10,
     if enable_annotate and results:
         try:
             from evolution.annotate import annotate_chunk
+
             QUALITY_THRESHOLD = 0.5
             QUALITY_PENALTY = 0.9
             any_applied = False
@@ -323,9 +341,11 @@ def search_with_feedback(query: str, top_k: int = 10,
                 except Exception:
                     q_overall = None
 
-                if (q_overall is not None
-                        and isinstance(q_overall, (int, float))
-                        and q_overall < QUALITY_THRESHOLD):
+                if (
+                    q_overall is not None
+                    and isinstance(q_overall, (int, float))
+                    and q_overall < QUALITY_THRESHOLD
+                ):
                     current = r.get("final_score", r.get("score", 0))
                     try:
                         new_score = max(0.0, round(float(current) * QUALITY_PENALTY, 6))
@@ -349,8 +369,8 @@ def search_with_feedback(query: str, top_k: int = 10,
             if any_applied:
                 try:
                     results.sort(
-                        key=lambda x: x.get("final_score", x.get("score", 0)),
-                        reverse=True)
+                        key=lambda x: x.get("final_score", x.get("score", 0)), reverse=True
+                    )
                 except Exception:
                     pass
                 annotations_applied = True
@@ -363,8 +383,8 @@ def search_with_feedback(query: str, top_k: int = 10,
     if enable_record and results:
         try:
             from bridge.memory_bridge import record_retrieval_as_memory
-            memory_mappings = record_retrieval_as_memory(
-                query, results, map_path=map_path)
+
+            memory_mappings = record_retrieval_as_memory(query, results, map_path=map_path)
             record_done = bool(memory_mappings)
         except Exception:
             # 认知系统不可用，跳过记录

@@ -5,6 +5,7 @@
 - Bear 只能反对话题，禁止让步/中立/支持
 - 输出 JSON 格式约束（thesis/arguments/quote/confidence）
 """
+
 from __future__ import annotations
 
 BULL_SYSTEM_PROMPT = """你是正方辩手。你的立场是：必须支持话题。
@@ -99,9 +100,7 @@ def build_cross_exam_answer_prompt(
         for i, view in enumerate(injected_views, 1):
             inject_text += f"{i}. 「{view}」\n"
         parts.append(inject_text)
-    parts.append(
-        f"请逐条回答以上 {len(questions)} 个问题，保持你的立场，输出 JSON。"
-    )
+    parts.append(f"请逐条回答以上 {len(questions)} 个问题，保持你的立场，输出 JSON。")
     return "\n\n".join(parts)
 
 

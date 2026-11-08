@@ -17,10 +17,9 @@ Phase 2 资金调控接入验证脚本
     python 16-调控系统/scripts/verify_phase2.py
 """
 
-import sys
 import json
+import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 # 设置 sys.path
 _PROJECT = Path(__file__).resolve().parents[2]
@@ -31,16 +30,16 @@ for _p in (_CORE, _RISK, _RISK_CORE):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from capital_control import CapitalControlComponent, CapitalMode
-from capital_control.types import (
+from a9_exit_decision import _evaluate_single_position, a9_exit_decision_handler  # noqa: E402
+from capital_control import CapitalControlComponent, CapitalMode  # noqa: E402
+from capital_control.types import (  # noqa: E402
     AccountType,
-    CapitalMode,
+    CapitalMode,  # noqa: F811
     CapitalResult,
     CapitalSnapshot,
     HealthLevel,
     now_iso,
 )
-from a9_exit_decision import a9_exit_decision_handler, _evaluate_single_position
 
 
 def _banner(title):
@@ -131,8 +130,10 @@ def _make_snapshot(by_system):
         total_avail=round(total_avail, 2),
         total_used=round(total_used, 2),
         overall_used_pct=round(overall, 2),
-        health=HealthLevel.CRITICAL if overall >= 80 else (
-            HealthLevel.WARNING if overall >= 50 else HealthLevel.HEALTHY
+        health=(
+            HealthLevel.CRITICAL
+            if overall >= 80
+            else (HealthLevel.WARNING if overall >= 50 else HealthLevel.HEALTHY)
         ),
     )
 
@@ -140,6 +141,7 @@ def _make_snapshot(by_system):
 # =========================================================================
 # 场景 A: HIGH 压力 + RAISE_TP → HOLD
 # =========================================================================
+
 
 def scenario_a_high_pressure_raise_tp():
     _banner("场景 A: phase2 启用 + HIGH 压力 + RAISE_TP → HOLD")
@@ -155,23 +157,34 @@ def scenario_a_high_pressure_raise_tp():
     component._last_eval_ts = float("inf")  # 避免缓存影响
 
     advice = component.get_capital_advice("v15_martin", "RAISE_TP")
-    print(f"  资金建议: pressure={advice['margin_pressure']}, "
-          f"phase2={advice['phase2_enabled']}, "
-          f"allowed={advice['allowed']}, "
-          f"conf_mult={advice['confidence_multiplier']}")
+    print(
+        f"  资金建议: pressure={advice['margin_pressure']}, "
+        f"phase2={advice['phase2_enabled']}, "
+        f"allowed={advice['allowed']}, "
+        f"conf_mult={advice['confidence_multiplier']}"
+    )
     print(f"  blocked_actions={advice['blocked_actions']}")
 
     capital_advice = {"v15_martin": advice}
     ev = _evaluate_single_position(
-        pos, sc["a1"], sc["a2"], sc["a3"], {}, capital_advice,
+        pos,
+        sc["a1"],
+        sc["a2"],
+        sc["a3"],
+        {},
+        capital_advice,
     )
 
     print(f"\n  原始 action (Layer 4): {ev['layers']['layer4_synthesis']['action']}")
     print(f"  最终 action (Layer 5 后): {ev['recommended_action']}")
-    print(f"  原始 confidence: {ev['layers']['layer5_capital_adjustment'].get('original_confidence')}")
+    print(
+        f"  原始 confidence: {ev['layers']['layer5_capital_adjustment'].get('original_confidence')}"
+    )
     print(f"  最终 confidence: {ev['confidence']}")
     print(f"  Layer 5 adjusted: {ev['layers']['layer5_capital_adjustment']['adjusted']}")
-    print(f"  Layer 5 action_adjustment: {ev['layers']['layer5_capital_adjustment'].get('action_adjustment', 'N/A')}")
+    print(
+        f"  Layer 5 action_adjustment: {ev['layers']['layer5_capital_adjustment'].get('action_adjustment', 'N/A')}"
+    )
 
     # 断言
     assert ev["recommended_action"] == "HOLD", f"期望 HOLD, 实际 {ev['recommended_action']}"
@@ -186,6 +199,7 @@ def scenario_a_high_pressure_raise_tp():
 # =========================================================================
 # 场景 B: LOW 压力 + RAISE_TP → 不调整
 # =========================================================================
+
 
 def scenario_b_low_pressure_no_adjust():
     _banner("场景 B: phase2 启用 + LOW 压力 + RAISE_TP → 不调整")
@@ -204,7 +218,12 @@ def scenario_b_low_pressure_no_adjust():
 
     capital_advice = {"v15_martin": advice}
     ev = _evaluate_single_position(
-        pos, sc["a1"], sc["a2"], sc["a3"], {}, capital_advice,
+        pos,
+        sc["a1"],
+        sc["a2"],
+        sc["a3"],
+        {},
+        capital_advice,
     )
 
     print(f"  最终 action: {ev['recommended_action']}")
@@ -221,6 +240,7 @@ def scenario_b_low_pressure_no_adjust():
 # =========================================================================
 # 场景 C: HIGH 压力 + HOLD → confidence×0.8（action 不变）
 # =========================================================================
+
 
 def scenario_c_high_pressure_hold():
     _banner("场景 C: phase2 启用 + HIGH 压力 + HOLD → action 不变, confidence×0.8")
@@ -239,7 +259,12 @@ def scenario_c_high_pressure_hold():
 
     capital_advice = {"v15_martin": advice}
     ev = _evaluate_single_position(
-        pos, sc["a1"], sc["a2"], sc["a3"], {}, capital_advice,
+        pos,
+        sc["a1"],
+        sc["a2"],
+        sc["a3"],
+        {},
+        capital_advice,
     )
 
     print(f"  原始 action (Layer 4): {ev['layers']['layer4_synthesis']['action']}")
@@ -250,13 +275,16 @@ def scenario_c_high_pressure_hold():
     assert ev["recommended_action"] == "HOLD", f"期望 HOLD, 实际 {ev['recommended_action']}"
     assert ev["confidence"] == round(0.5 * 0.8, 2), f"置信度应衰减: {ev['confidence']}"
     assert ev["layers"]["layer5_capital_adjustment"]["adjusted"] is True
-    assert "action_adjustment" not in ev["layers"]["layer5_capital_adjustment"], "HOLD 不应有 action_adjustment"
+    assert (
+        "action_adjustment" not in ev["layers"]["layer5_capital_adjustment"]
+    ), "HOLD 不应有 action_adjustment"
     print("\n  ✅ 场景 C 验证通过：HOLD 保持，confidence 0.5→0.4")
 
 
 # =========================================================================
 # 场景 D: 完整 handler 集成 + decision_layers 验证
 # =========================================================================
+
 
 def scenario_d_full_handler_integration():
     _banner("场景 D: 完整 a9_exit_decision_handler 集成验证")
@@ -283,7 +311,9 @@ def scenario_d_full_handler_integration():
     result = a9_exit_decision_handler(inputs, engine=None)
 
     print(f"  decision_layers keys: {list(result['decision_layers'].keys())}")
-    assert "layer5_capital_adjustment" in result["decision_layers"], "缺少 layer5_capital_adjustment"
+    assert (
+        "layer5_capital_adjustment" in result["decision_layers"]
+    ), "缺少 layer5_capital_adjustment"
 
     ev = result["exit_evaluations"][0]
     print(f"  评估数: {len(result['exit_evaluations'])}")
@@ -300,6 +330,7 @@ def scenario_d_full_handler_integration():
 # 场景 E: 多系统混合压力验证
 # =========================================================================
 
+
 def scenario_e_multi_system_mixed_pressure():
     _banner("场景 E: 多系统混合压力（v15 HIGH / agent_a LOW）")
 
@@ -310,24 +341,32 @@ def scenario_e_multi_system_mixed_pressure():
     component = CapitalControlComponent(mode=CapitalMode.DYNAMIC)
     v15_high = _make_capital_result("v15_martin", used_pct=85.0, total_eq=260.0)
     agent_a_low = _make_capital_result("agent_a", used_pct=15.0, total_eq=60.0)
-    mock_snapshot = _make_snapshot({
-        "v15_martin": v15_high,
-        "agent_a": agent_a_low,
-    })
+    mock_snapshot = _make_snapshot(
+        {
+            "v15_martin": v15_high,
+            "agent_a": agent_a_low,
+        }
+    )
     component._last_snapshot = mock_snapshot
     component._last_eval_ts = float("inf")
 
     advice_v15 = component.get_capital_advice("v15_martin", "RAISE_TP")
     advice_a = component.get_capital_advice("agent_a", "RAISE_TP")
-    print(f"  v15_martin: pressure={advice_v15['margin_pressure']}, allowed={advice_v15['allowed']}")
+    print(
+        f"  v15_martin: pressure={advice_v15['margin_pressure']}, allowed={advice_v15['allowed']}"
+    )
     print(f"  agent_a:    pressure={advice_a['margin_pressure']}, allowed={advice_a['allowed']}")
 
     capital_advice = {"v15_martin": advice_v15, "agent_a": advice_a}
     ev_v15 = _evaluate_single_position(pos_v15, sc["a1"], sc["a2"], sc["a3"], {}, capital_advice)
     ev_a = _evaluate_single_position(pos_a, sc["a1"], sc["a2"], sc["a3"], {}, capital_advice)
 
-    print(f"\n  v15_martin: action={ev_v15['recommended_action']}, conf={ev_v15['confidence']}, adjusted={ev_v15['layers']['layer5_capital_adjustment']['adjusted']}")
-    print(f"  agent_a:    action={ev_a['recommended_action']}, conf={ev_a['confidence']}, adjusted={ev_a['layers']['layer5_capital_adjustment']['adjusted']}")
+    print(
+        f"\n  v15_martin: action={ev_v15['recommended_action']}, conf={ev_v15['confidence']}, adjusted={ev_v15['layers']['layer5_capital_adjustment']['adjusted']}"
+    )
+    print(
+        f"  agent_a:    action={ev_a['recommended_action']}, conf={ev_a['confidence']}, adjusted={ev_a['layers']['layer5_capital_adjustment']['adjusted']}"
+    )
 
     assert ev_v15["recommended_action"] == "HOLD", "v15 HIGH 应转 HOLD"
     assert ev_a["recommended_action"] == "RAISE_TP", "agent_a LOW 应保持 RAISE_TP"
@@ -339,6 +378,7 @@ def scenario_e_multi_system_mixed_pressure():
 # =========================================================================
 # 主入口
 # =========================================================================
+
 
 def main():
     _banner("Phase 2 资金调控接入验证（phase2.enabled=true）")
@@ -352,7 +392,9 @@ def main():
     print(f"  phase2.enabled: {phase2_on}")
     assert phase2_on is True, "phase2 必须启用才能验证"
     print(f"  high_pressure_actions_to_block: {cfg['phase2']['high_pressure_actions_to_block']}")
-    print(f"  high_pressure_confidence_multiplier: {cfg['phase2']['high_pressure_confidence_multiplier']}")
+    print(
+        f"  high_pressure_confidence_multiplier: {cfg['phase2']['high_pressure_confidence_multiplier']}"
+    )
 
     # 执行所有场景
     scenario_a_high_pressure_raise_tp()

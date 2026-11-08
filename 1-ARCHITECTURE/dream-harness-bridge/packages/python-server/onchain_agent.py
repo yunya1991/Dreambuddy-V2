@@ -5,6 +5,7 @@
 输出: SubagentOutput (summary + signals + charts)
 图表: line(折线) + heatmap(热力图)
 """
+
 from __future__ import annotations
 
 import traceback
@@ -32,7 +33,9 @@ class OnchainAgent:
         # D3: 填充 reasoning_chain + evidence_refs + artifact_uri
         reasoning_chain = " | ".join(rationale) if rationale else ""
         evidence_refs = [f"indicator:{k}" for k in indicators.keys()]
-        artifact_uri = f"artifact://onchain/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        artifact_uri = (
+            f"artifact://onchain/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        )
 
         return SubagentOutput(
             module="onchain",
@@ -89,8 +92,9 @@ class OnchainAgent:
 
         return signals
 
-    def _generate_summary(self, signals: List[Signal], rationale: List[str],
-                          direction: str, confidence: float) -> str:
+    def _generate_summary(
+        self, signals: List[Signal], rationale: List[str], direction: str, confidence: float
+    ) -> str:
         if self._llm_fn is not None:
             try:
                 prompt = (
@@ -103,8 +107,7 @@ class OnchainAgent:
                 pass
         long_count = sum(1 for s in signals if s.direction == "long")
         short_count = sum(1 for s in signals if s.direction == "short")
-        return (f"链上面{direction}({confidence:.0%}), "
-                f"多信号{long_count}/空信号{short_count}")
+        return f"链上面{direction}({confidence:.0%}), " f"多信号{long_count}/空信号{short_count}"
 
     def _generate_charts(self, indicators: Dict[str, Any]) -> List[ChartSpec]:
         charts: List[ChartSpec] = []
@@ -113,19 +116,23 @@ class OnchainAgent:
         active = indicators.get("active_addresses")
         hashrate = indicators.get("hashrate")
         if active is not None or hashrate is not None:
-            charts.append(ChartSpec(
-                type="line",
-                title="链上活动趋势",
-                data={
-                    "active_addresses": active or 0,
-                    "hashrate": (hashrate or 0) / 1e12,  # TH/s
-                },
-                config={
-                    "yAxis": [{"type": "value", "name": "活跃地址"},
-                              {"type": "value", "name": "算力(TH/s)"}],
-                    "smooth": True,
-                },
-            ))
+            charts.append(
+                ChartSpec(
+                    type="line",
+                    title="链上活动趋势",
+                    data={
+                        "active_addresses": active or 0,
+                        "hashrate": (hashrate or 0) / 1e12,  # TH/s
+                    },
+                    config={
+                        "yAxis": [
+                            {"type": "value", "name": "活跃地址"},
+                            {"type": "value", "name": "算力(TH/s)"},
+                        ],
+                        "smooth": True,
+                    },
+                )
+            )
 
         # 热力图: 链上指标矩阵
         mvrv = indicators.get("mvrv", 0)
@@ -136,16 +143,18 @@ class OnchainAgent:
             ["NUPL", "当前值", nupl],
             ["交易所流入", "当前值", exchange_inflow],
         ]
-        charts.append(ChartSpec(
-            type="heatmap",
-            title="链上指标热力图",
-            data=heatmap_data,
-            config={
-                "xAxis": {"type": "category", "data": ["MVRV", "NUPL", "交易所流入"]},
-                "yAxis": {"type": "category", "data": ["当前值"]},
-                "visualMap": {"min": -1, "max": 5, "calculable": True},
-            },
-        ))
+        charts.append(
+            ChartSpec(
+                type="heatmap",
+                title="链上指标热力图",
+                data=heatmap_data,
+                config={
+                    "xAxis": {"type": "category", "data": ["MVRV", "NUPL", "交易所流入"]},
+                    "yAxis": {"type": "category", "data": ["当前值"]},
+                    "visualMap": {"min": -1, "max": 5, "calculable": True},
+                },
+            )
+        )
 
         return charts
 
@@ -154,6 +163,7 @@ def handle_onchain_agent(params: dict) -> dict:
     """IPC handler: onchain-agent"""
     try:
         from subagent_registry import get_handler_llm_fn
+
         agent = OnchainAgent(llm_fn=get_handler_llm_fn())
         output = agent.execute(params.get("node_output", {}))
         return {"ok": True, "output": output.to_dict()}

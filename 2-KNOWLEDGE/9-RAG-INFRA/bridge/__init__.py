@@ -12,23 +12,23 @@
 """
 
 from .memory_bridge import (
-    record_retrieval_as_memory,
-    verify_and_feedback,
     purge_temporary_entries,
-    resolve_default_paths,
+    record_retrieval_as_memory,
     resolve_default_map_path,
+    resolve_default_paths,
+    verify_and_feedback,
 )
 from .weight_feedback import (
+    BOOST_FAILURE_FACTOR,
+    BOOST_MAX,
+    BOOST_MIN,
+    BOOST_SUCCESS_FACTOR,
+    DEFAULT_BOOST,
     apply_boost_to_results,
     get_boost,
-    update_boost,
     reset,
     resolve_default_weight_path,
-    BOOST_MIN,
-    BOOST_MAX,
-    BOOST_SUCCESS_FACTOR,
-    BOOST_FAILURE_FACTOR,
-    DEFAULT_BOOST,
+    update_boost,
 )
 
 __all__ = [

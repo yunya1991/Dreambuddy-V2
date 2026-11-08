@@ -3,6 +3,7 @@
 tavily-python 薄封装，TavilyClient.search(query) -> results -> DataRecord(category=news)。
 每条 result 产出一条 DataRecord，metrics 存扁平字段，events 存 content。
 """
+
 from __future__ import annotations
 
 import os
@@ -26,10 +27,7 @@ class TavilyCollector(BaseCollector):
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
-        self._api_key: str = (
-            self.config.get("api_key")
-            or os.environ.get("TAVILY_API_KEY", "")
-        )
+        self._api_key: str = self.config.get("api_key") or os.environ.get("TAVILY_API_KEY", "")
 
     def is_available(self) -> bool:
         return bool(self._api_key)

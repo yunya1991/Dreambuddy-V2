@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """GitHub Token Diagnostic — determine token type, scopes, and repo permissions."""
-import os, requests, sys
+
+import os
+import sys
+
+import requests
 
 token = os.environ.get("GH_TOKEN", sys.argv[1] if len(sys.argv) > 1 else "")
 if not token:
@@ -8,7 +12,11 @@ if not token:
     sys.exit(1)
 
 headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
-token_type = "fine-grained" if token.startswith("github_pat_") else "classic" if token.startswith("ghp_") else "unknown"
+token_type = (
+    "fine-grained"
+    if token.startswith("github_pat_")
+    else "classic" if token.startswith("ghp_") else "unknown"
+)
 
 print(f"Token type: {token_type} (prefix: {token[:12]}...)")
 print(f"Token length: {len(token)}")
@@ -39,16 +47,18 @@ if resp3.status_code == 200:
     perms = resp3.json().get("permissions", {})
     for k, v in perms.items():
         print(f"  {k}: {v}")
-    
+
     # Test write access
-    resp4 = requests.get(f"https://api.github.com/repos/{repo}/contents/README.md", headers=headers, timeout=10)
+    resp4 = requests.get(
+        f"https://api.github.com/repos/{repo}/contents/README.md", headers=headers, timeout=10
+    )
     print(f"\nWrite test (GET contents): {resp4.status_code}")
     if resp4.status_code == 200:
         print("  → Can read files. For write, check 'push' permission above.")
 else:
     print(f"  Error: {resp3.json().get('message')}")
 
-print(f"\nVerdict:")
+print("\nVerdict:")
 if token_type == "classic":
     print("  → Should work with git push over HTTPS")
 elif token_type == "fine-grained":

@@ -47,7 +47,7 @@ SPEC 回答"**为什么这样设计、契约长什么样**"，PLAN 回答"**M1�
 | **adapter** | 壳内的三段之一：把 port 返回包信封、把 MCP 入参解包成 port 入参 | 不是独立模块、不做持久化 |
 | **域内 agent** | 门后自治推理（壳上线之外的私有可迭代层） | 壳零感知、壳不路由到 agent |
 
-> **D1 补充（2026-11-04）**：六 port Protocol 之外新增 [principal.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/dreambuddy_l0/ports/principal.py)（75 行）——`PrincipalMissingError` + `require_principal` 装饰器，对写类 port 方法做 fail-closed 身份硬门禁。它是**写门禁装饰器，不是第 7 个 Protocol**，不计入六 port 上限。
+> **D1 补充（2026-11-04）**：六 port Protocol 之外新增 [principal.py](../../../dreambuddy_l0/ports/principal.py)（75 行）——`PrincipalMissingError` + `require_principal` 装饰器，对写类 port 方法做 fail-closed 身份硬门禁。它是**写门禁装饰器，不是第 7 个 Protocol**，不计入六 port 上限。
 
 ### 1.2 壳不算 port 上限
 

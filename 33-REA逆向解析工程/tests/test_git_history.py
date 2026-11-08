@@ -1,4 +1,5 @@
 """RED 测试：GitHistory — git log/blame 历史溯源。"""
+
 import os
 import subprocess
 import sys
@@ -14,7 +15,9 @@ def _make_test_repo(tmpdir: str) -> str:
     """创建测试用 git 仓库，含2次提交。"""
     # git init
     subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True, check=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True
+    )
     subprocess.run(["git", "config", "user.name", "Tester"], cwd=tmpdir, capture_output=True)
 
     # 第一次提交

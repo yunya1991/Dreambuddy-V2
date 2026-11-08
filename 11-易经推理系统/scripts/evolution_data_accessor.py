@@ -9,10 +9,10 @@ EvolutionDataAccessor — 自进化架构可视化的数据访问层
 
 对应 spec: docs/superpowers/specs/2026-09-05-evolution-arch-visualization-design.md 第6节
 """
+
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
 
 
 class EvolutionDataAccessor:
@@ -213,14 +213,16 @@ class EvolutionDataAccessor:
                     daily_map[date_str] = {"pnl": 0, "pnl_pct": 0, "trades": []}
                 daily_map[date_str]["pnl"] += t.get("pnl", 0)
                 daily_map[date_str]["pnl_pct"] += float(t.get("pnl_pct", 0) or 0)
-                daily_map[date_str]["trades"].append({
-                    "trade_id": t.get("trade_id"),
-                    "date": date_str,
-                    "pnl": t.get("pnl", 0),
-                    "pnl_pct": float(t.get("pnl_pct", 0) or 0),
-                    "symbol": t.get("coin"),
-                    "direction": t.get("direction"),
-                })
+                daily_map[date_str]["trades"].append(
+                    {
+                        "trade_id": t.get("trade_id"),
+                        "date": date_str,
+                        "pnl": t.get("pnl", 0),
+                        "pnl_pct": float(t.get("pnl_pct", 0) or 0),
+                        "symbol": t.get("coin"),
+                        "direction": t.get("direction"),
+                    }
+                )
             return daily_map
 
         evo_daily = _aggregate(evo_trades)
@@ -305,7 +307,14 @@ class EvolutionDataAccessor:
         # ── cs_distribution: confidence 分位数 ──
         def _percentiles(values: list[float]) -> dict:
             if not values:
-                return {"min": None, "p25": None, "median": None, "p75": None, "max": None, "samples": []}
+                return {
+                    "min": None,
+                    "p25": None,
+                    "median": None,
+                    "p75": None,
+                    "max": None,
+                    "samples": [],
+                }
             s = sorted(values)
             n = len(s)
             return {
@@ -330,10 +339,15 @@ class EvolutionDataAccessor:
         # 1) 从 ess_reflection.jsonl 读取历史反思轨迹
         try:
             from pathlib import Path as _Path
+
             _evo_root = str(_Path(__file__).resolve().parents[2] / "23-四层闭环自进化交易架构")
             _refl_path = _Path(_evo_root) / "dreambuddy_evolution" / "data" / "ess_reflection.jsonl"
             if _refl_path.exists():
-                _refl_lines = [json.loads(l) for l in _refl_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+                _refl_lines = [
+                    json.loads(l)
+                    for l in _refl_path.read_text(encoding="utf-8").splitlines()  # noqa: E741
+                    if l.strip()
+                ]
                 # 按日期聚合 ess_delta
                 _by_date: dict[str, dict] = {}
                 _cumulative_ess = 0.0
@@ -366,11 +380,12 @@ class EvolutionDataAccessor:
         try:
             import sys
             from pathlib import Path as _Path
+
             _evo_root = str(_Path(__file__).resolve().parents[2] / "23-四层闭环自进化交易架构")
             if _evo_root not in sys.path:
                 sys.path.insert(0, _evo_root)
 
-            from dreambuddy_evolution.adapters.ftc_orchestrator import FTCOrchestrator
+            from dreambuddy_evolution.adapters.ftc_orchestrator import FTCOrchestrator  # noqa: I001
             from dreambuddy_evolution.adapters.path_library import PathLibrary
             from dreambuddy_evolution.adapters.ftc_evolution_bridge import FTCEvolutionBridge
 
@@ -395,7 +410,9 @@ class EvolutionDataAccessor:
             today_gmax = round(bridge.gmax, 4)
 
             # 持久化到历史轨迹文件（每天最多保留1条，避免重复）
-            _hist_path = _Path(_evo_root) / "dreambuddy_evolution" / "data" / "ess_gmax_history.jsonl"
+            _hist_path = (
+                _Path(_evo_root) / "dreambuddy_evolution" / "data" / "ess_gmax_history.jsonl"
+            )
             _hist_path.parent.mkdir(parents=True, exist_ok=True)
             _today_ts = datetime.now().strftime("%Y-%m-%dT%H:%M")
             _new_point = {
@@ -408,7 +425,11 @@ class EvolutionDataAccessor:
             # 读取已有历史，去重（同一天只保留最新）
             _hist_lines = []
             if _hist_path.exists():
-                _hist_lines = [json.loads(l) for l in _hist_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+                _hist_lines = [
+                    json.loads(l)
+                    for l in _hist_path.read_text(encoding="utf-8").splitlines()  # noqa: E741
+                    if l.strip()
+                ]
             _hist_lines = [p for p in _hist_lines if p.get("date") != today]
             _hist_lines.append(_new_point)
             # 保留最近 365 条
@@ -438,7 +459,9 @@ class EvolutionDataAccessor:
             "reflection_count": {
                 "evolution": len(evo_trades),
                 "main_pool": len(main_trades),
-                "by_date": {k: v["evolution"] + v["main_pool"] for k, v in reflection_by_date.items()},
+                "by_date": {
+                    k: v["evolution"] + v["main_pool"] for k, v in reflection_by_date.items()
+                },
             },
             "cs_distribution": {
                 "evolution": _percentiles(evo_cs),
@@ -512,6 +535,7 @@ class EvolutionDataAccessor:
         try:
             import sys
             from pathlib import Path as _Path
+
             _evo_root = str(_Path(__file__).resolve().parents[2] / "23-四层闭环自进化交易架构")
             if _evo_root not in sys.path:
                 sys.path.insert(0, _evo_root)

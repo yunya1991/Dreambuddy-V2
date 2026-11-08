@@ -1930,8 +1930,8 @@
       "AC-RISK-EQUAL-REBAL"
     ],
     "condition_logic": "majority",
-    "ess": 0.8719,
-    "n_samples": 444,
+    "ess": 0.8219,
+    "n_samples": 445,
     "parameters": {
       "risk_multiplier": 1.0,
       "timeframe": "1h"
@@ -1948,7 +1948,16 @@
       "S0.85"
     ],
     "version": "1.0",
-    "notes": "Auto-gen combo ess=0.872 N=444"
+    "notes": "Auto-gen combo ess=0.872 N=444",
+    "last_updated": "2026-11-05T23:08:43",
+    "trade_history": [
+      {
+        "symbol": "OKB",
+        "ess_delta": -0.05,
+        "ess_type": "entry",
+        "ts": "2026-11-05T23:08:43"
+      }
+    ]
   },
   {
     "combo_id": "CB-GRID-023",
@@ -1991,8 +2000,8 @@
       "AC-STOP-BREAKEVEN"
     ],
     "condition_logic": "all",
-    "ess": 0.8589,
-    "n_samples": 331,
+    "ess": 0.8889,
+    "n_samples": 336,
     "parameters": {
       "risk_multiplier": 1.3,
       "timeframe": "4h"
@@ -2009,7 +2018,40 @@
       "S0.82"
     ],
     "version": "1.0",
-    "notes": "Auto-gen combo ess=0.859 N=331"
+    "notes": "Auto-gen combo ess=0.859 N=331",
+    "last_updated": "2026-11-08T01:38:32",
+    "trade_history": [
+      {
+        "symbol": "PUMP",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-11-08T01:38:32"
+      },
+      {
+        "symbol": "UVXY",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-11-08T01:38:32"
+      },
+      {
+        "symbol": "LINK",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-11-08T01:38:32"
+      },
+      {
+        "symbol": "ARB",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-11-08T01:38:32"
+      },
+      {
+        "symbol": "XAU",
+        "ess_delta": 0.006,
+        "ess_type": "entry",
+        "ts": "2026-11-08T01:38:32"
+      }
+    ]
   },
   {
     "combo_id": "CB-GRID-025",
@@ -2021,8 +2063,8 @@
       "AC-EXIT-HALF-AT-1PCT"
     ],
     "condition_logic": "all",
-    "ess": 1.0,
-    "n_samples": 2293,
+    "ess": 0.85,
+    "n_samples": 2296,
     "parameters": {
       "risk_multiplier": 1.3,
       "timeframe": "1h"
@@ -2040,7 +2082,7 @@
     ],
     "version": "1.0",
     "notes": "Auto-gen combo ess=0.875 N=547",
-    "last_updated": "2026-10-21T01:40:59",
+    "last_updated": "2026-11-05T23:08:43",
     "trade_history": [
       {
         "symbol": "SKHYNIX",
@@ -12517,6 +12559,24 @@
         "ess_delta": 0.006,
         "ess_type": "entry",
         "ts": "2026-10-21T01:40:59"
+      },
+      {
+        "symbol": "MSFT",
+        "ess_delta": -0.05,
+        "ess_type": "entry",
+        "ts": "2026-11-05T21:30:58"
+      },
+      {
+        "symbol": "PUMP",
+        "ess_delta": -0.05,
+        "ess_type": "entry",
+        "ts": "2026-11-05T23:08:43"
+      },
+      {
+        "symbol": "LINK",
+        "ess_delta": -0.05,
+        "ess_type": "entry",
+        "ts": "2026-11-05T23:08:43"
       }
     ]
   },

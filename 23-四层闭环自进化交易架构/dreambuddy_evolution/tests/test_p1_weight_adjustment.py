@@ -8,6 +8,7 @@ P1 TDD 测试：权重调整
   - ATR-EXPANDING（不区分方向）权重 ↓: 0.8 → 0.5
   - ADX-GT25-TREND（不区分方向）权重 ↓: 1.0 → 0.5
 """
+
 from __future__ import annotations
 
 import json

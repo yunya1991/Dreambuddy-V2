@@ -10,6 +10,7 @@ P1 修复：替代硬编码 CONTINUE
   5. 决策多样性验证（批量案例产生 ≥3 种不同决策）
   6. FAIL-OPEN：空输入安全降级
 """
+
 import os
 import sys
 
@@ -19,21 +20,20 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import unittest
-from unittest.mock import MagicMock
-from core.decision_deriver import (
-    derive_expected_decision,
-    derive_expected_decision_from_case,
-    derive_expected_decision_with_cdrive,
-    derive_with_cdrive_reflection,
-    derive_decision_distribution,
+import unittest  # noqa: E402
+from unittest.mock import MagicMock  # noqa: E402
+
+from core.decision_deriver import (  # noqa: E402
     CDRIVE_CONF_REDO,
-    CDRIVE_CONF_SUPPLEMENT,
     CONTINUE,
-    REDO,
+    EARLY_TERMINATE,
     INSERT_BEFORE,
     JUMP_TO,
-    EARLY_TERMINATE,
+    REDO,
+    derive_decision_distribution,
+    derive_expected_decision,
+    derive_expected_decision_with_cdrive,
+    derive_with_cdrive_reflection,
 )
 
 
@@ -42,65 +42,83 @@ class TestOutcomeSignal(unittest.TestCase):
 
     def test_success_returns_continue(self):
         d = derive_expected_decision(
-            intent="test", actions=["do_something"],
-            outcome="success", confidence=0.9,
+            intent="test",
+            actions=["do_something"],
+            outcome="success",
+            confidence=0.9,
         )
         self.assertEqual(d, CONTINUE)
 
     def test_failure_with_retry_action_returns_redo(self):
         d = derive_expected_decision(
-            intent="test", actions=["retry_step"],
-            outcome="failure", confidence=0.2,
+            intent="test",
+            actions=["retry_step"],
+            outcome="failure",
+            confidence=0.2,
         )
         self.assertEqual(d, REDO)
 
     def test_failure_with_supplement_action_returns_insert_before(self):
         d = derive_expected_decision(
-            intent="test", actions=["supplement_info"],
-            outcome="failure", confidence=0.2,
+            intent="test",
+            actions=["supplement_info"],
+            outcome="failure",
+            confidence=0.2,
         )
         self.assertEqual(d, INSERT_BEFORE)
 
     def test_failure_with_skip_action_returns_jump_to(self):
         d = derive_expected_decision(
-            intent="test", actions=["skip_step"],
-            outcome="failure", confidence=0.2,
+            intent="test",
+            actions=["skip_step"],
+            outcome="failure",
+            confidence=0.2,
         )
         self.assertEqual(d, JUMP_TO)
 
     def test_failure_with_abort_action_returns_early_terminate(self):
         d = derive_expected_decision(
-            intent="test", actions=["abort_task"],
-            outcome="failure", confidence=0.2,
+            intent="test",
+            actions=["abort_task"],
+            outcome="failure",
+            confidence=0.2,
         )
         self.assertEqual(d, EARLY_TERMINATE)
 
     def test_failure_no_semantics_returns_early_terminate(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic_action"],
-            outcome="failure", confidence=0.2,
+            intent="test",
+            actions=["generic_action"],
+            outcome="failure",
+            confidence=0.2,
         )
         self.assertEqual(d, EARLY_TERMINATE)
 
     def test_partial_with_redo_learned_returns_redo(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="partial", learned=["should redo this step"],
+            intent="test",
+            actions=["generic"],
+            outcome="partial",
+            learned=["should redo this step"],
             confidence=0.2,
         )
         self.assertEqual(d, REDO)
 
     def test_partial_no_semantics_low_confidence_returns_redo(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="partial", confidence=0.2,
+            intent="test",
+            actions=["generic"],
+            outcome="partial",
+            confidence=0.2,
         )
         self.assertEqual(d, REDO)
 
     def test_partial_no_semantics_medium_confidence_returns_insert_before(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="partial", confidence=0.5,
+            intent="test",
+            actions=["generic"],
+            outcome="partial",
+            confidence=0.5,
         )
         self.assertEqual(d, INSERT_BEFORE)
 
@@ -110,22 +128,28 @@ class TestConfidenceSignal(unittest.TestCase):
 
     def test_unknown_low_confidence_returns_redo(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="unknown", confidence=0.2,
+            intent="test",
+            actions=["generic"],
+            outcome="unknown",
+            confidence=0.2,
         )
         self.assertEqual(d, REDO)
 
     def test_unknown_medium_confidence_returns_insert_before(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="unknown", confidence=0.5,
+            intent="test",
+            actions=["generic"],
+            outcome="unknown",
+            confidence=0.5,
         )
         self.assertEqual(d, INSERT_BEFORE)
 
     def test_unknown_high_confidence_returns_continue(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="unknown", confidence=0.8,
+            intent="test",
+            actions=["generic"],
+            outcome="unknown",
+            confidence=0.8,
         )
         self.assertEqual(d, CONTINUE)
 
@@ -136,32 +160,40 @@ class TestActionKeywords(unittest.TestCase):
     def test_retry_keyword_returns_redo(self):
         for kw in ["retry", "redo", "重做", "重来", "重新"]:
             d = derive_expected_decision(
-                intent="test", actions=[kw],
-                outcome="failure", confidence=0.2,
+                intent="test",
+                actions=[kw],
+                outcome="failure",
+                confidence=0.2,
             )
             self.assertEqual(d, REDO, f"keyword '{kw}' should map to REDO")
 
     def test_supplement_keyword_returns_insert_before(self):
         for kw in ["insert", "supplement", "补充", "插入", "追加"]:
             d = derive_expected_decision(
-                intent="test", actions=[kw],
-                outcome="failure", confidence=0.2,
+                intent="test",
+                actions=[kw],
+                outcome="failure",
+                confidence=0.2,
             )
             self.assertEqual(d, INSERT_BEFORE, f"keyword '{kw}' should map to INSERT_BEFORE")
 
     def test_skip_keyword_returns_jump_to(self):
         for kw in ["skip", "jump", "跳过", "跳转", "换路"]:
             d = derive_expected_decision(
-                intent="test", actions=[kw],
-                outcome="failure", confidence=0.2,
+                intent="test",
+                actions=[kw],
+                outcome="failure",
+                confidence=0.2,
             )
             self.assertEqual(d, JUMP_TO, f"keyword '{kw}' should map to JUMP_TO")
 
     def test_abort_keyword_returns_early_terminate(self):
         for kw in ["abort", "terminate", "终止", "放弃", "中止"]:
             d = derive_expected_decision(
-                intent="test", actions=[kw],
-                outcome="failure", confidence=0.2,
+                intent="test",
+                actions=[kw],
+                outcome="failure",
+                confidence=0.2,
             )
             self.assertEqual(d, EARLY_TERMINATE, f"keyword '{kw}' should map to EARLY_TERMINATE")
 
@@ -171,24 +203,30 @@ class TestLearnedKeywords(unittest.TestCase):
 
     def test_missing_info_learned_returns_insert_before(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="partial", learned=["missing info about X"],
+            intent="test",
+            actions=["generic"],
+            outcome="partial",
+            learned=["missing info about X"],
             confidence=0.5,
         )
         self.assertEqual(d, INSERT_BEFORE)
 
     def test_wrong_path_learned_returns_jump_to(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="partial", learned=["wrong path taken"],
+            intent="test",
+            actions=["generic"],
+            outcome="partial",
+            learned=["wrong path taken"],
             confidence=0.5,
         )
         self.assertEqual(d, JUMP_TO)
 
     def test_should_stop_learned_returns_early_terminate(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="partial", learned=["should stop this immediately"],
+            intent="test",
+            actions=["generic"],
+            outcome="partial",
+            learned=["should stop this immediately"],
             confidence=0.5,
         )
         self.assertEqual(d, EARLY_TERMINATE)
@@ -228,7 +266,8 @@ class TestDecisionDiversity(unittest.TestCase):
         # 至少 3 种不同决策
         non_zero = [k for k, v in dist.items() if v > 0]
         self.assertGreaterEqual(
-            len(non_zero), 3,
+            len(non_zero),
+            3,
             f"Expected ≥3 decision types, got {len(non_zero)}: {dist}",
         )
 
@@ -249,22 +288,30 @@ class TestFailOpen(unittest.TestCase):
 
     def test_empty_actions_returns_continue(self):
         d = derive_expected_decision(
-            intent="", actions=[], outcome="unknown",
+            intent="",
+            actions=[],
+            outcome="unknown",
             confidence=0.8,
         )
         self.assertEqual(d, CONTINUE)
 
     def test_none_learned_safe(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="success", learned=None, confidence=0.9,
+            intent="test",
+            actions=["generic"],
+            outcome="success",
+            learned=None,
+            confidence=0.9,
         )
         self.assertEqual(d, CONTINUE)
 
     def test_empty_metadata_safe(self):
         d = derive_expected_decision(
-            intent="test", actions=["generic"],
-            outcome="unknown", confidence=0.8, metadata=None,
+            intent="test",
+            actions=["generic"],
+            outcome="unknown",
+            confidence=0.8,
+            metadata=None,
         )
         self.assertEqual(d, CONTINUE)
 
@@ -272,6 +319,7 @@ class TestFailOpen(unittest.TestCase):
 # ============================================================
 # P2: C-Drive Agent 集成测试
 # ============================================================
+
 
 class TestCDriveReflectionNoDebate(unittest.TestCase):
     """P2: C-Drive 无辩论反思（c_drive_agent.py _reflect_no_debate）"""
@@ -299,7 +347,8 @@ class TestCDriveReflectionWithDebate(unittest.TestCase):
         """confidence < CDRIVE_CONF_REDO → REDO（优先于辩论结果）"""
         d = derive_with_cdrive_reflection(
             confidence=0.15,
-            bull_confidence=0.8, bear_confidence=0.7,
+            bull_confidence=0.8,
+            bear_confidence=0.7,
         )
         self.assertEqual(d, REDO)
 
@@ -307,7 +356,8 @@ class TestCDriveReflectionWithDebate(unittest.TestCase):
         """max(bull, bear) < CDRIVE_CONF_SUPPLEMENT → INSERT_BEFORE"""
         d = derive_with_cdrive_reflection(
             confidence=0.5,
-            bull_confidence=0.2, bear_confidence=0.25,
+            bull_confidence=0.2,
+            bear_confidence=0.25,
         )
         self.assertEqual(d, INSERT_BEFORE)
 
@@ -315,7 +365,8 @@ class TestCDriveReflectionWithDebate(unittest.TestCase):
         """max(bull, bear) >= CDRIVE_CONF_SUPPLEMENT → None（辩论后继续）"""
         d = derive_with_cdrive_reflection(
             confidence=0.5,
-            bull_confidence=0.6, bear_confidence=0.2,
+            bull_confidence=0.6,
+            bear_confidence=0.2,
         )
         self.assertIsNone(d)
 
@@ -323,7 +374,8 @@ class TestCDriveReflectionWithDebate(unittest.TestCase):
         """bear 方强 → None（辩论后继续）"""
         d = derive_with_cdrive_reflection(
             confidence=0.5,
-            bull_confidence=0.1, bear_confidence=0.7,
+            bull_confidence=0.1,
+            bear_confidence=0.7,
         )
         self.assertIsNone(d)
 
@@ -369,7 +421,10 @@ class TestCDriveCaseIntegration(unittest.TestCase):
     def test_case_with_debate_bull_strong_falls_to_p1(self):
         """有 debate 元数据 + bull 强 → 降级到 P1 语义推导"""
         case = self._mock_case_with_debate(
-            confidence=0.8, bull=0.7, bear=0.2, outcome="success",
+            confidence=0.8,
+            bull=0.7,
+            bear=0.2,
+            outcome="success",
         )
         d = derive_expected_decision_with_cdrive(case)
         self.assertEqual(d, CONTINUE)
@@ -389,7 +444,9 @@ class TestCDriveCaseIntegration(unittest.TestCase):
     def test_case_no_debate_failure_with_retry_falls_to_p1(self):
         """无 debate 元数据 + failure + retry → P1 推导出 REDO"""
         case = self._mock_case_no_debate(
-            confidence=0.5, outcome="failure", actions=["retry_step"],
+            confidence=0.5,
+            outcome="failure",
+            actions=["retry_step"],
         )
         d = derive_expected_decision_with_cdrive(case)
         self.assertEqual(d, REDO)
@@ -403,14 +460,20 @@ class TestCDriveDecisionDiversity(unittest.TestCase):
         cases = [
             # C-Drive: 低 confidence → REDO
             MagicMock(
-                intent="test", actions=["generic"], outcome_text="",
-                learned=[], confidence=0.1,
+                intent="test",
+                actions=["generic"],
+                outcome_text="",
+                learned=[],
+                confidence=0.1,
                 metadata={"outcome": "unknown"},
             ),
             # C-Drive: debate 均弱 → INSERT_BEFORE
             MagicMock(
-                intent="test", actions=["generic"], outcome_text="",
-                learned=[], confidence=0.5,
+                intent="test",
+                actions=["generic"],
+                outcome_text="",
+                learned=[],
+                confidence=0.5,
                 metadata={
                     "outcome": "partial",
                     "debate": {"bull_confidence": 0.2, "bear_confidence": 0.25},
@@ -418,21 +481,28 @@ class TestCDriveDecisionDiversity(unittest.TestCase):
             ),
             # P1: success → CONTINUE
             MagicMock(
-                intent="test", actions=["normal"], outcome_text="",
-                learned=[], confidence=0.9,
+                intent="test",
+                actions=["normal"],
+                outcome_text="",
+                learned=[],
+                confidence=0.9,
                 metadata={"outcome": "success"},
             ),
             # P1: failure + abort → EARLY_TERMINATE
             MagicMock(
-                intent="test", actions=["abort_task"], outcome_text="",
-                learned=[], confidence=0.5,
+                intent="test",
+                actions=["abort_task"],
+                outcome_text="",
+                learned=[],
+                confidence=0.5,
                 metadata={"outcome": "failure"},
             ),
         ]
         decisions = [derive_expected_decision_with_cdrive(c) for c in cases]
         unique = set(decisions)
         self.assertGreaterEqual(
-            len(unique), 3,
+            len(unique),
+            3,
             f"Expected ≥3 unique decisions, got {len(unique)}: {decisions}",
         )
         # 确保不全是 CONTINUE

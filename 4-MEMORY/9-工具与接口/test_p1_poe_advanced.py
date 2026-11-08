@@ -24,13 +24,12 @@ RED 契约（当前全部失败）：
   6. sample 模式 10% 概率时跑 light 验证（mock random 验证调用计数）
   7. sample 模式 90% 概率时直接信任（不跑 light 验证）
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -39,12 +38,18 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 # ─────────────────────────────── P1-5: EvidenceEntry.git_commit_hash ───────────────────────────────
 
+
 def test_evidence_entry_has_git_commit_hash_field():
     """RED: EvidenceEntry 应有 git_commit_hash 字段（默认空字符串）。"""
     from evidence_ledger import EvidenceEntry
+
     entry = EvidenceEntry(
-        subject="s", relation="r", object="o",
-        source="src", confidence=0.8, level="observation",
+        subject="s",
+        relation="r",
+        object="o",
+        source="src",
+        confidence=0.8,
+        level="observation",
     )
     assert hasattr(entry, "git_commit_hash"), "EvidenceEntry 应有 git_commit_hash 字段"
     assert entry.git_commit_hash == "", "git_commit_hash 默认空字符串"
@@ -53,9 +58,14 @@ def test_evidence_entry_has_git_commit_hash_field():
 def test_evidence_entry_git_commit_hash_settable():
     """RED: EvidenceEntry.git_commit_hash 可在构造时设置。"""
     from evidence_ledger import EvidenceEntry
+
     entry = EvidenceEntry(
-        subject="s", relation="r", object="o",
-        source="src", confidence=0.8, level="observation",
+        subject="s",
+        relation="r",
+        object="o",
+        source="src",
+        confidence=0.8,
+        level="observation",
         git_commit_hash="abc123def456",
     )
     assert entry.git_commit_hash == "abc123def456"
@@ -63,11 +73,16 @@ def test_evidence_entry_git_commit_hash_settable():
 
 def test_git_commit_hash_persisted_to_db(tmp_path):
     """RED: append 后 git_commit_hash 持久化到 DB，query 可读回。"""
-    from evidence_ledger import EvidenceLedger, EvidenceEntry
+    from evidence_ledger import EvidenceEntry, EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1.db")
     entry = EvidenceEntry(
-        subject="s", relation="r", object="o",
-        source="src", confidence=0.8, level="observation",
+        subject="s",
+        relation="r",
+        object="o",
+        source="src",
+        confidence=0.8,
+        level="observation",
         git_commit_hash="deadbeef1234",
     )
     ledger.append(entry)
@@ -78,11 +93,16 @@ def test_git_commit_hash_persisted_to_db(tmp_path):
 
 def test_git_commit_hash_default_empty_in_db(tmp_path):
     """RED: 未设置 git_commit_hash 时，DB 中默认空字符串。"""
-    from evidence_ledger import EvidenceLedger, EvidenceEntry
+    from evidence_ledger import EvidenceEntry, EvidenceLedger
+
     ledger = EvidenceLedger(db_path=tmp_path / "test_p1.db")
     entry = EvidenceEntry(
-        subject="s", relation="r", object="o",
-        source="src", confidence=0.8, level="observation",
+        subject="s",
+        relation="r",
+        object="o",
+        source="src",
+        confidence=0.8,
+        level="observation",
     )
     ledger.append(entry)
     entries = ledger.query_all()
@@ -91,9 +111,11 @@ def test_git_commit_hash_default_empty_in_db(tmp_path):
 
 # ─────────────────────────────── P1-1: poe_mode 选择器 ───────────────────────────────
 
+
 def test_cognitive_loop_entry_has_poe_mode_param(tmp_path):
     """RED: CognitiveLoopEntry.__init__ 应接受 poe_mode 参数。"""
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test_p1.db"),
         poe_mode="light",
@@ -108,6 +130,7 @@ def test_cognitive_loop_entry_has_poe_mode_param(tmp_path):
 def test_poe_mode_default_light(tmp_path):
     """RED: poe_mode 默认应为 'light'。"""
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test_p1.db"))
     try:
         assert cle.poe_mode == "light", "默认 poe_mode 应为 light"
@@ -118,6 +141,7 @@ def test_poe_mode_default_light(tmp_path):
 def test_poe_mode_and_enforcement_orthogonal(tmp_path):
     """RED: poe_mode 与 poe_enforcement 正交（可独立设置）。"""
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test_p1.db"),
         poe_mode="light",
@@ -132,9 +156,11 @@ def test_poe_mode_and_enforcement_orthogonal(tmp_path):
 
 # ─────────────────────────────── P1-2: sample 模式 10% 概率重跑 ───────────────────────────────
 
+
 def test_sample_mode_10_percent_triggers_light_reverification(tmp_path):
     """RED: sample 模式 + random < 0.1 → 跑 light 验证（verify_receipt_exists 被调用）。"""
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test_p1.db"),
         poe_mode="sample",
@@ -148,7 +174,9 @@ def test_sample_mode_10_percent_triggers_light_reverification(tmp_path):
         )
         # mock random 返回 0.05（< 0.1，触发 10% 重验）
         with patch("random.random", return_value=0.05):
-            with patch.object(cle.evidence_ledger, "get_receipt_for", return_value="fake_hash") as mock_get:
+            with patch.object(
+                cle.evidence_ledger, "get_receipt_for", return_value="fake_hash"
+            ) as mock_get:
                 trust, receipt = cle._check_poe_trust(memory_id)
                 # 10% 概率重验时调 get_receipt_for（light 路径）
                 assert mock_get.call_count >= 1
@@ -164,6 +192,7 @@ def test_sample_mode_90_percent_skips_light_verification(tmp_path):
     但不重跑 light 验证（receipt_hash 返回 None 表示"抽样跳过"）。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test_p1.db"),
         poe_mode="sample",
@@ -192,6 +221,7 @@ def test_sample_mode_no_receipt_still_returns_false(tmp_path):
     无 receipt 的产出不能被 sample 模式信任。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test_p1.db"),
         poe_mode="sample",
@@ -214,6 +244,7 @@ def test_sample_mode_10_percent_reverification_failure_downgrades_trust(tmp_path
     SPEC §2.3 失效条件 6：抽样重验失败 → 信任降级，触发重型验证。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test_p1.db"),
         poe_mode="sample",
@@ -238,6 +269,7 @@ def test_sample_mode_10_percent_reverification_failure_downgrades_trust(tmp_path
 
 # ─────────────────────────────── P1-1 续: heavy 模式占位 ───────────────────────────────
 
+
 def test_heavy_mode_placeholder_not_implemented(tmp_path):
     """RED: poe_mode='heavy' 当前未实现（33-REA 侧五层证明链待接入）。
 
@@ -245,6 +277,7 @@ def test_heavy_mode_placeholder_not_implemented(tmp_path):
     当前未接入，应返回明确的 NotImplemented 标记（不抛异常，FAIL-OPEN）。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test_p1.db"),
         poe_mode="heavy",

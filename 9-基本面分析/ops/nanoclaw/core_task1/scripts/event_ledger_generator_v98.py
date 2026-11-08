@@ -16,7 +16,7 @@ V9.8 设计原则:
 4. 正负信号均衡
 """
 
-import json
+import json  # noqa: I001
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 class EventType(Enum):
     """事件类型 - 9.1 规范 V9.8"""
+
     ONCHAIN_DATA = "onchain_data"
     KOL_VIEW = "kol_view"
     PROJECT_UPDATE = "project_update"
@@ -50,49 +51,49 @@ ONCHAIN_FLOW_TEMPLATES = [
         "summary": "链上数据显示某未知巨鲸地址从交易所转入 5000 BTC 至冷钱包，长期持有意愿增强",
         "sentiment": 0.6,
         "action": "increase",
-        "source": "woonomic"
+        "source": "woonomic",
     },
     {
         "title": "交易所 BTC 存量下降",
         "summary": "Glassnode 数据：交易所 BTC 存量周减 3 万枚，创 2018 年以来新低，供应紧缩",
         "sentiment": 0.5,
         "action": "increase",
-        "source": "glassnode"
+        "source": "glassnode",
     },
     {
         "title": "MicroStrategy 再增持",
         "summary": "微策略公司宣布再购入 1 万枚 BTC，总持仓突破 20 万枚，成本约 5.8 万美元",
         "sentiment": 0.6,
         "action": "increase",
-        "source": "cz_binance"
+        "source": "cz_binance",
     },
     {
         "title": "ETF 净流入创新高",
         "summary": "贝莱德 IBIT 单日净流入 5 亿美元，创 ETF 获批以来最高，机构配置需求强劲",
         "sentiment": 0.7,
         "action": "increase",
-        "source": "a16zcrypto"
+        "source": "a16zcrypto",
     },
     {
         "title": "稳定币大量铸造",
         "summary": "USDT 过去 24 小时增发 20 亿美元，USDC 增发 5 亿，加密市场流动性充裕",
         "sentiment": 0.5,
         "action": "increase",
-        "source": "VitalikButerin"
+        "source": "VitalikButerin",
     },
     {
         "title": "长期持有者增持",
         "summary": "链上数据：持有 BTC 超过 1 年的地址数量周增 8%，长期持有者比例创新高",
         "sentiment": 0.5,
         "action": "increase",
-        "source": "woonomic"
+        "source": "woonomic",
     },
     {
         "title": "机构托管量上升",
         "summary": "Coinbase 托管 BTC 量突破 100 万枚，机构持仓持续增加",
         "sentiment": 0.4,
         "action": "increase",
-        "source": "a16zcrypto"
+        "source": "a16zcrypto",
     },
     # 负向信号（资金流出/减持）
     {
@@ -100,42 +101,42 @@ ONCHAIN_FLOW_TEMPLATES = [
         "summary": "链上监测：某沉睡 5 年的巨鲸地址向币安转入 1 万 BTC，可能准备抛售",
         "sentiment": -0.6,
         "action": "reduce",
-        "source": "woonomic"
+        "source": "woonomic",
     },
     {
         "title": "ETF 净流出",
         "summary": "灰度 GBTC 单日净流出 3 亿美元，连续 5 日净赎回，抛压担忧",
         "sentiment": -0.5,
         "action": "reduce",
-        "source": "a16zcrypto"
+        "source": "a16zcrypto",
     },
     {
         "title": "交易所存量上升",
         "summary": "Glassnode 数据：交易所 BTC 存量周增 5 万枚，潜在抛压增加",
         "sentiment": -0.4,
         "action": "reduce",
-        "source": "glassnode"
+        "source": "glassnode",
     },
     {
         "title": "稳定币大量销毁",
         "summary": "USDT 过去 24 小时销毁 10 亿美元，USDC 销毁 3 亿，市场流动性收紧",
         "sentiment": -0.5,
         "action": "reduce",
-        "source": "VitalikButerin"
+        "source": "VitalikButerin",
     },
     {
         "title": "机构减持公告",
         "summary": "某上市公司宣布出售 50% BTC 持仓，市场对其他机构效仿表示担忧",
         "sentiment": -0.6,
         "action": "reduce",
-        "source": "cz_binance"
+        "source": "cz_binance",
     },
     {
         "title": "短期持有者比例上升",
         "summary": "链上数据：持有 BTC 少于 1 个月的地址比例月增 15%，投机情绪升温",
         "sentiment": -0.4,
         "action": "reduce",
-        "source": "glassnode"
+        "source": "glassnode",
     },
     # 中性/警示信号
     {
@@ -143,14 +144,14 @@ ONCHAIN_FLOW_TEMPLATES = [
         "summary": "大额转账活跃但净流入流出基本持平，市场处于震荡整理",
         "sentiment": 0.1,
         "action": "hold",
-        "source": "woonomic"
+        "source": "woonomic",
     },
     {
         "title": "杠杆率过高警示",
         "summary": "衍生品未平仓合约创历史新高，建议投资者注意风险",
         "sentiment": -0.3,
         "action": "hedge",
-        "source": "cz_binance"
+        "source": "cz_binance",
     },
 ]
 
@@ -161,35 +162,35 @@ INFLUENCER_DATA = {
         "title": "链上数据分析师",
         "tier": "T1",
         "weight": 1.3,
-        "focus": "链上数据、BTC 分析"
+        "focus": "链上数据、BTC 分析",
     },
     "glassnode": {
         "name": "Glassnode",
         "title": "链上数据分析机构",
         "tier": "T1",
         "weight": 1.3,
-        "focus": "链上指标、市场分析"
+        "focus": "链上指标、市场分析",
     },
     "VitalikButerin": {
         "name": "Vitalik Buterin",
         "title": "以太坊创始人",
         "tier": "T0",
         "weight": 1.5,
-        "focus": "以太坊、稳定币"
+        "focus": "以太坊、稳定币",
     },
     "a16zcrypto": {
         "name": "a16z crypto",
         "title": "顶级 Web3 投资机构",
         "tier": "T0",
         "weight": 1.4,
-        "focus": "机构投资、ETF"
+        "focus": "机构投资、ETF",
     },
     "cz_binance": {
         "name": "CZ",
         "title": "币安创始人",
         "tier": "T0",
         "weight": 1.5,
-        "focus": "交易所、机构"
+        "focus": "交易所、机构",
     },
 }
 
@@ -197,6 +198,7 @@ INFLUENCER_DATA = {
 @dataclass
 class EventLedgerEntry:
     """事件账本条目 - V9.8"""
+
     event_id: str
     timestamp: str
     source: str
@@ -236,7 +238,9 @@ class V98EventLedgerGenerator:
         now = datetime.now()
         return f"EVT-V98-{now.strftime('%Y%m%d%H%M%S')}-{self.event_counter:04d}"
 
-    def create_ledger_entry(self, news_item: Dict, is_onchain_flow: bool = False) -> EventLedgerEntry:
+    def create_ledger_entry(
+        self, news_item: Dict, is_onchain_flow: bool = False
+    ) -> EventLedgerEntry:
         source = news_item.get("source", "")
         influencer = news_item.get("influencer", None)
         category = news_item.get("category", "")
@@ -299,7 +303,7 @@ class V98EventLedgerGenerator:
 
         # 设置失效时间
         published_at = news_item.get("published_at", datetime.now().isoformat())
-        pub_dt = datetime.fromisoformat(published_at.replace('Z', '+00:00').split('+')[0])
+        pub_dt = datetime.fromisoformat(published_at.replace("Z", "+00:00").split("+")[0])
 
         if window == "T0":
             expiry_dt = pub_dt + timedelta(days=1)
@@ -336,10 +340,12 @@ class V98EventLedgerGenerator:
             credibility=confidence,
             cross_market_map=news_item.get("cross_market_map", ""),
             risk_flags=risk_flags,
-            version="9.8"
+            version="9.8",
         )
 
-    def generate_ledger(self, v93_news: List[Dict], onchain_flow_news: List[Dict]) -> List[EventLedgerEntry]:
+    def generate_ledger(
+        self, v93_news: List[Dict], onchain_flow_news: List[Dict]
+    ) -> List[EventLedgerEntry]:
         self.event_counter = 0
         entries = []
 
@@ -362,7 +368,7 @@ class V98EventLedgerGenerator:
 
     def save_jsonl(self, entries: List[EventLedgerEntry], output_path: Path):
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(self.to_jsonl(entries))
         print(f"[✓] 事件账本已保存：{output_path}")
 
@@ -418,19 +424,21 @@ def generate_v93_mock_news(days: int = 90) -> List[Dict]:
             pub_hour = random.randint(8, 20)
             pub_dt = date.replace(hour=pub_hour, minute=random.randint(0, 59))
 
-            news_list.append({
-                "title": template[0],
-                "summary": template[1],
-                "content": template[1],
-                "source": "aggregated",
-                "category": event_type,
-                "source_confidence": "high" if event_type == "onchain_data" else "medium",
-                "impact_horizon": random.choice(["T0", "T1"]),
-                "sentiment_score": template[2] + random.gauss(0, 0.1),
-                "published_at": pub_dt.isoformat(),
-                "cross_market_map": "链上/宏观→加密传导",
-                "risk_flags": []
-            })
+            news_list.append(
+                {
+                    "title": template[0],
+                    "summary": template[1],
+                    "content": template[1],
+                    "source": "aggregated",
+                    "category": event_type,
+                    "source_confidence": "high" if event_type == "onchain_data" else "medium",
+                    "impact_horizon": random.choice(["T0", "T1"]),
+                    "sentiment_score": template[2] + random.gauss(0, 0.1),
+                    "published_at": pub_dt.isoformat(),
+                    "cross_market_map": "链上/宏观→加密传导",
+                    "risk_flags": [],
+                }
+            )
 
     return news_list
 
@@ -467,26 +475,28 @@ def generate_onchain_flow_news(days: int = 90) -> List[Dict]:
                 template = random.choice(neutral_templates)
 
             influencer = template.get("source", "woonomic")
-            info = INFLUENCER_DATA.get(influencer, {"tier": "T2", "weight": 0.8})
+            info = INFLUENCER_DATA.get(influencer, {"tier": "T2", "weight": 0.8})  # noqa: F841
 
             pub_hour = random.randint(9, 22)
             pub_dt = date.replace(hour=pub_hour, minute=random.randint(0, 59))
 
-            news_list.append({
-                "title": template["title"],
-                "summary": template["summary"],
-                "content": template["summary"],
-                "source": f"twitter/{influencer}",
-                "influencer": influencer,
-                "category": "kol_view",
-                "source_confidence": "high",
-                "impact_horizon": random.choice(["T0", "T1"]),
-                "sentiment_score": template["sentiment"] + random.gauss(0, 0.08),
-                "published_at": pub_dt.isoformat(),
-                "cross_market_map": "链上资金→市场情绪→价格",
-                "risk_flags": [],
-                "preset_action": template.get("action", "hold")
-            })
+            news_list.append(
+                {
+                    "title": template["title"],
+                    "summary": template["summary"],
+                    "content": template["summary"],
+                    "source": f"twitter/{influencer}",
+                    "influencer": influencer,
+                    "category": "kol_view",
+                    "source_confidence": "high",
+                    "impact_horizon": random.choice(["T0", "T1"]),
+                    "sentiment_score": template["sentiment"] + random.gauss(0, 0.08),
+                    "published_at": pub_dt.isoformat(),
+                    "cross_market_map": "链上资金→市场情绪→价格",
+                    "risk_flags": [],
+                    "preset_action": template.get("action", "hold"),
+                }
+            )
 
     return news_list
 
@@ -495,9 +505,9 @@ def main():
     """主函数 - 生成 V9.8 事件账本"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='生成 V9.8 事件账本')
-    parser.add_argument('--days', '-d', type=int, default=90, help='生成天数')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出文件')
+    parser = argparse.ArgumentParser(description="生成 V9.8 事件账本")
+    parser.add_argument("--days", "-d", type=int, default=90, help="生成天数")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -532,7 +542,7 @@ def main():
     generator.save_jsonl(entries, output_path)
 
     # 统计
-    print(f"\n【事件账本统计】")
+    print("\n【事件账本统计】")
 
     by_type = {}
     by_influencer = {}

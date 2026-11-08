@@ -2,6 +2,7 @@
 
 基于已有模型, 扫描 w ∈ [0, 1] 找最优 MAE.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,11 +15,15 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+import torch  # noqa: E402, I001
 
-import torch
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
+
 torch.manual_seed(42)
 
 data_path = REPO / "dreambuddy_evolution" / "data" / "btc_close_10y.json"
@@ -36,14 +41,18 @@ regime_test = detector.detect(closes_full[train_end:])
 regime_full = np.concatenate([regime_train, regime_test])
 
 model = NeuralSDEModel(device="cpu")
-trainer = NeuralSDETrainer(model=model, lr=1e-4, seq_len=64, horizon=20,
-                           batch_size=64, loss_type="mse")
+trainer = NeuralSDETrainer(
+    model=model, lr=1e-4, seq_len=64, horizon=20, batch_size=64, loss_type="mse"
+)
 trainer.train(closes_train, epochs=100, regime_labels=regime_train, regime_balance="natural")
 
 n_test = len(closes_full) - train_end
 monthly_step = n_test // 12
-test_starts = [train_end + i * monthly_step for i in range(12)
-               if train_end + i * monthly_step + 20 < len(closes_full)]
+test_starts = [
+    train_end + i * monthly_step
+    for i in range(12)
+    if train_end + i * monthly_step + 20 < len(closes_full)
+]
 
 horizon = 20
 n_paths = 200
@@ -54,8 +63,8 @@ all_garch_preds = []
 all_actuals = []
 
 for ts in test_starts:
-    history = closes_full[:ts + 1]
-    actual = closes_full[ts + 1:ts + 1 + horizon]
+    history = closes_full[: ts + 1]
+    actual = closes_full[ts + 1 : ts + 1 + horizon]
     init_price = float(history[-1])
     returns = np.diff(np.log(history))
     init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -82,7 +91,9 @@ print("-" * 40)
 best_w, best_mae = 0, float("inf")
 for w in np.arange(0, 1.01, 0.1):
     total_mae = 0
-    for sde_pred, garch_pred, actual in zip(all_sde_preds, all_garch_preds, all_actuals):
+    for sde_pred, garch_pred, actual in zip(  # noqa: B905
+        all_sde_preds, all_garch_preds, all_actuals
+    ):  # noqa: B905
         ens = w * sde_pred + (1 - w) * garch_pred
         total_mae += np.mean(np.abs(ens - actual))
     mean_mae = total_mae / len(all_actuals)
@@ -90,12 +101,18 @@ for w in np.arange(0, 1.01, 0.1):
         best_mae = mean_mae
         best_w = w
 
-sde_mae = np.mean([np.mean(np.abs(s - a)) for s, a in zip(all_sde_preds, all_actuals)])
-garch_mae = np.mean([np.mean(np.abs(g - a)) for g, a in zip(all_garch_preds, all_actuals)])
+sde_mae = np.mean(
+    [np.mean(np.abs(s - a)) for s, a in zip(all_sde_preds, all_actuals)]  # noqa: B905
+)  # noqa: B905
+garch_mae = np.mean(
+    [np.mean(np.abs(g - a)) for g, a in zip(all_garch_preds, all_actuals)]  # noqa: B905
+)  # noqa: B905
 
 for w in np.arange(0, 1.01, 0.1):
     total_mae = 0
-    for sde_pred, garch_pred, actual in zip(all_sde_preds, all_garch_preds, all_actuals):
+    for sde_pred, garch_pred, actual in zip(  # noqa: B905
+        all_sde_preds, all_garch_preds, all_actuals
+    ):  # noqa: B905
         ens = w * sde_pred + (1 - w) * garch_pred
         total_mae += np.mean(np.abs(ens - actual))
     mean_mae = total_mae / len(all_actuals)

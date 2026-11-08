@@ -5,6 +5,7 @@ FAIL-OPEN：异常时返回 ok=False，不修改文件。
 
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 零回归
 """
+
 from __future__ import annotations
 
 import json
@@ -24,7 +25,7 @@ def _parse_frontmatter(content: str) -> tuple[dict[str, Any], str]:
     if not m:
         return {}, content
     fm_str = m.group(1)
-    body = content[m.end():]
+    body = content[m.end() :]
     data: dict[str, Any] = {}
     for line in fm_str.splitlines():
         stripped = line.strip()
@@ -126,12 +127,14 @@ def write_lifecycle(
         evo_log = data.get("evolution_log")
         if not isinstance(evo_log, list):
             evo_log = []
-        evo_log.append({
-            "change_summary": f"status: {current_status}→{target_status}",
-            "source_memory_ids": evidence,
-            "changed_by": "human",
-            "changed_at": datetime.now(timezone.utc).isoformat(),
-        })
+        evo_log.append(
+            {
+                "change_summary": f"status: {current_status}→{target_status}",
+                "source_memory_ids": evidence,
+                "changed_by": "human",
+                "changed_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         data["evolution_log"] = evo_log
 
         # 写回
@@ -245,6 +248,7 @@ def _add_link_only(skill_dir: Path, memory_id: str) -> dict[str, Any]:
 
 # ── Task 8: 演化归因 ──────────────────────────────────────────
 
+
 def log_evolution_change(
     skill_dir: Path,
     change_summary: str,
@@ -298,6 +302,7 @@ def log_evolution_change(
 
 # ── FR-R1: 记录 execution_history ───────────────────────────────
 
+
 def record_execution(skill_dir: Path, success: bool, duration: float) -> dict[str, Any]:
     """追加一次执行记录到 SKILL.md 的 execution_history（保留最近 20 条）。
 
@@ -318,11 +323,13 @@ def record_execution(skill_dir: Path, success: bool, duration: float) -> dict[st
         history = data.get("execution_history")
         if not isinstance(history, list):
             history = []
-        history.append({
-            "success": success,
-            "duration": round(duration, 4),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        history.append(
+            {
+                "success": success,
+                "duration": round(duration, 4),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         # 保留最近 20 条
         history = history[-20:]
         data["execution_history"] = history
@@ -335,6 +342,7 @@ def record_execution(skill_dir: Path, success: bool, duration: float) -> dict[st
 
 
 # ── FR-E3: 查询进化历史 ─────────────────────────────────────────
+
 
 def query_evolution_history(skill_dir: Path) -> dict[str, Any]:
     """查询 Skill 的完整进化历史（evolution_log + evolution_log.jsonl）。
@@ -382,9 +390,13 @@ def query_evolution_history(skill_dir: Path) -> dict[str, Any]:
 
 # ── FR-E2: 自动追加 evolution_log ───────────────────────────────
 
-def append_evolution_log_to_frontmatter(skill_dir: Path, change_summary: str,
-                                        changed_by: str = "human",
-                                        source_memory_ids: list[str] | None = None) -> dict[str, Any]:
+
+def append_evolution_log_to_frontmatter(
+    skill_dir: Path,
+    change_summary: str,
+    changed_by: str = "human",
+    source_memory_ids: list[str] | None = None,
+) -> dict[str, Any]:
     """向 SKILL.md frontmatter 的 evolution_log 字段追加一条变更记录。
 
     与 log_evolution_change() 的区别：此函数写入 frontmatter 内嵌字段，
@@ -408,12 +420,16 @@ def append_evolution_log_to_frontmatter(skill_dir: Path, change_summary: str,
         evo_log = data.get("evolution_log")
         if not isinstance(evo_log, list):
             evo_log = []
-        evo_log.append({
-            "change_summary": change_summary[:200],
-            "source_memory_ids": source_memory_ids or [],
-            "changed_by": changed_by if changed_by in ("human", "hermes", "dreaming") else "human",
-            "changed_at": datetime.now(timezone.utc).isoformat(),
-        })
+        evo_log.append(
+            {
+                "change_summary": change_summary[:200],
+                "source_memory_ids": source_memory_ids or [],
+                "changed_by": (
+                    changed_by if changed_by in ("human", "hermes", "dreaming") else "human"
+                ),
+                "changed_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         data["evolution_log"] = evo_log
         new_fm = _serialize_frontmatter(data)
         sep = "" if body.startswith("\n") else "\n"

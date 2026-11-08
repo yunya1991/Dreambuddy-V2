@@ -1,4 +1,5 @@
 """安装器配置生成测试：跨宿主的 env / 只读 / 共享库 / print-config。"""
+
 from __future__ import annotations
 
 import json
@@ -50,7 +51,8 @@ def test_remote_config_read_only():
 
 def test_print_config_outputs_valid_json(capsys, monkeypatch):
     monkeypatch.setattr(
-        sys, "argv",
+        sys,
+        "argv",
         ["install_cognitive_mcp.py", "--print-config", "--target", "claude"],
     )
     inst.main()

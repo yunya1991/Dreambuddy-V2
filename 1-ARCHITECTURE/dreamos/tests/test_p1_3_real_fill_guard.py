@@ -6,28 +6,35 @@
 
 守卫契约: 仅 px_source == "real_fill" (交易所真实成交均价) 进认知层。
 """
-import pytest
-from pathlib import Path
+
 import sys
+from pathlib import Path
+
+import pytest
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.cli.auto_trader import AutoTrader
+from dreamos.cli.auto_trader import AutoTrader  # noqa: E402
 
 
 class _FakeAsterClient:
     """伪造交易所: 1 个 BTC 空头持仓。"""
 
     def _aster_fetch_positions(self):
-        return ([{
-            "coin": "BTC",
-            "entry_px": "100.0",
-            "position_amt": "-1.0",
-            "leverage": "1",
-            "mark_px": "105.0",
-            "unrealized_pnl_u": "-5.0",
-        }], None)
+        return (
+            [
+                {
+                    "coin": "BTC",
+                    "entry_px": "100.0",
+                    "position_amt": "-1.0",
+                    "leverage": "1",
+                    "mark_px": "105.0",
+                    "unrealized_pnl_u": "-5.0",
+                }
+            ],
+            None,
+        )
 
 
 def _make_trader(monkeypatch, feed_calls, exec_result_override=None):
@@ -35,15 +42,19 @@ def _make_trader(monkeypatch, feed_calls, exec_result_override=None):
     monkeypatch.setattr(trader, "get_exchange_client", lambda: _FakeAsterClient())
     # 强制触发离场决策
     monkeypatch.setattr(
-        trader, "check_exit",
+        trader,
+        "check_exit",
         lambda symbol, entry_price, direction: {
-            "exit": True, "exit_price": 105.0, "reason": "SL hit",
+            "exit": True,
+            "exit_price": 105.0,
+            "reason": "SL hit",
         },
     )
     # 阻断旁路写入
     monkeypatch.setattr(trader, "update_exit_feedback", lambda *a, **k: True)
     monkeypatch.setattr(
-        trader, "_feed_cognitive_loop",
+        trader,
+        "_feed_cognitive_loop",
         lambda **kw: feed_calls.append(kw),
     )
     if exec_result_override is not None:
@@ -59,16 +70,15 @@ def test_p1_3_guard_dry_run_exit_not_fed(monkeypatch):
     result = trader.run_exit_check_all()
 
     assert result.get("exits") == 1, f"离场路径应执行一次: {result}"
-    assert feed_calls == [], (
-        f"dry_run 平仓喂入了认知层(污染): {feed_calls}"
-    )
+    assert feed_calls == [], f"dry_run 平仓喂入了认知层(污染): {feed_calls}"
 
 
 def test_p1_3_guard_estimated_exit_not_fed(monkeypatch):
     """实盘但无成交回报(估算价降级) → 不得喂认知层。"""
     feed_calls = []
     trader = _make_trader(
-        monkeypatch, feed_calls,
+        monkeypatch,
+        feed_calls,
         exec_result_override={"dry_run": False, "real_fill_price": 0},
     )
 
@@ -82,7 +92,8 @@ def test_p1_3_guard_real_fill_is_fed(monkeypatch):
     """交易所真实成交平仓 → 必须喂认知层(闭环不得误伤)。"""
     feed_calls = []
     trader = _make_trader(
-        monkeypatch, feed_calls,
+        monkeypatch,
+        feed_calls,
         exec_result_override={"result": "SUCCESS", "dry_run": False, "real_fill_price": "104.8"},
     )
 

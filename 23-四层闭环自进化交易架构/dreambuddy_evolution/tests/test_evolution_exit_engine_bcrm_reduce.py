@@ -12,6 +12,7 @@
 - 信号新鲜度：ts 未超 30min（BCRM_REVERSE_STALE_SEC=1800）
 - 减仓幅度 ±0.01 ess_delta（软信号，幅度减半）
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,6 +31,7 @@ if str(REPO) not in sys.path:
 # 规则 2b：BCRM2.0 反向信号 → partial_close 减仓
 # ============================================================================
 
+
 class TestBCRMReverseReduce:
     """BCRM2.0 反向信号触发分批减仓测试"""
 
@@ -37,6 +39,7 @@ class TestBCRMReverseReduce:
     def engine(self):
         """构造 EvolutionExitEngine 实例（mock 依赖）"""
         from dreambuddy_evolution.engines.exit_engine import EvolutionExitEngine
+
         return EvolutionExitEngine(
             okx_client=None,
             ess_provider=None,
@@ -52,14 +55,22 @@ class TestBCRMReverseReduce:
         持仓 long + BCRM2.0 方向 short + 置信度 0.91 → 应触发 30% 减仓
         """
         return {
-            "symbol": "SKHYNIX", "inst_id": "SKHYNIX-USDT-SWAP", "pos_side": "long",
-            "entry_price": 1292.0, "current_price": 1376.0,
-            "upl": 23.82, "upl_ratio": 0.065,  # +6.5%
+            "symbol": "SKHYNIX",
+            "inst_id": "SKHYNIX-USDT-SWAP",
+            "pos_side": "long",
+            "entry_price": 1292.0,
+            "current_price": 1376.0,
+            "upl": 23.82,
+            "upl_ratio": 0.065,  # +6.5%
             "position_age_sec": 4131 * 60,  # 68h 超时
             "r_vector": {"R_up": 0.6, "R_down": 0.3, "R_smooth": 0.5},
-            "ess": 0.6, "ftc_track": "exploit", "regime": "ranging",
-            "atr_pct": 0.02, "tier": "standard",
-            "current_sl_px": 1228.0, "current_tp_px": 1447.0,
+            "ess": 0.6,
+            "ftc_track": "exploit",
+            "regime": "ranging",
+            "atr_pct": 0.02,
+            "tier": "standard",
+            "current_sl_px": 1228.0,
+            "current_tp_px": 1447.0,
             "okx_algo_triggered": False,
             "has_stronger_signal": False,
             # BCRM2.0 反向信号字段
@@ -69,7 +80,9 @@ class TestBCRMReverseReduce:
             "bdsm_direction_constraint": "",
         }
 
-    def test_bcrm_reverse_high_conf_triggers_partial_close_30pct(self, engine, bcrm_reverse_context):
+    def test_bcrm_reverse_high_conf_triggers_partial_close_30pct(
+        self, engine, bcrm_reverse_context
+    ):
         """置信度 0.91（0.85-0.95 档）→ partial_close 30%"""
         decision = engine.decide(bcrm_reverse_context)
         assert decision.action == "partial_close"
@@ -99,7 +112,7 @@ class TestBCRMReverseReduce:
         ctx["bcrm_reverse_conf"] = 0.80
         decision = engine.decide(ctx)
         # 不应是 external_signal_reduce 的 partial_close
-        assert not ("external_signal_reduce" in (decision.reason or ""))
+        assert "external_signal_reduce" not in (decision.reason or "")
 
     def test_bcrm_signal_missing_fail_open(self, engine, bcrm_reverse_context):
         """context 无 bcrm 字段 → 不触发（FAIL-OPEN）"""
@@ -142,6 +155,7 @@ class TestBCRMReverseReduce:
 # outcome 标签提取：external_signal_reduce → PARTIAL_REDUCE
 # ============================================================================
 
+
 class TestOutcomeExtractionPartialReduce:
     """从 reason 提取 PARTIAL_REDUCE outcome 标签"""
 
@@ -150,9 +164,13 @@ class TestOutcomeExtractionPartialReduce:
         from dreambuddy_evolution.engines.trade_settlement_bridge import (
             TradeSettlementBridge,
         )
+
         reason = "evolution_exit:partial_close:external_signal_reduce_conf0.91"
         outcome = TradeSettlementBridge._extract_outcome_from_reason(
-            reason=reason, okx_algo_triggered=False, pnl=10.0, pos_side="long",
+            reason=reason,
+            okx_algo_triggered=False,
+            pnl=10.0,
+            pos_side="long",
         )
         assert outcome == "PARTIAL_REDUCE"
 
@@ -161,9 +179,13 @@ class TestOutcomeExtractionPartialReduce:
         from dreambuddy_evolution.engines.trade_settlement_bridge import (
             TradeSettlementBridge,
         )
+
         reason = "evolution_exit:partial_close:batch1_r1_pct50%"
         outcome = TradeSettlementBridge._extract_outcome_from_reason(
-            reason=reason, okx_algo_triggered=False, pnl=10.0, pos_side="long",
+            reason=reason,
+            okx_algo_triggered=False,
+            pnl=10.0,
+            pos_side="long",
         )
         assert outcome != "PARTIAL_REDUCE"
 
@@ -172,12 +194,14 @@ class TestOutcomeExtractionPartialReduce:
 # ReflectionEngine：PARTIAL_REDUCE 冷启动中性
 # ============================================================================
 
+
 class TestReflectionPartialReduceColdStart:
     """ReflectionEngine.apply_reward 对 PARTIAL_REDUCE 的冷启动处理"""
 
     def test_reflection_partial_reduce_cold_start_neutral(self):
         """冷启动（样本 < 20）→ ess_delta=0"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         # PARTIAL_REDUCE 冷启动：ess_delta 应为 0
         result = engine.apply_reward(
@@ -194,6 +218,7 @@ class TestReflectionPartialReduceColdStart:
 # ============================================================================
 # 规则 2b 冷却期：BCRM2.0 反向信号减仓 4H 冷却
 # ============================================================================
+
 
 class TestBCRMReverseReduceCooldown:
     """BCRM2.0 反向信号减仓 4H 冷却期测试
@@ -214,6 +239,7 @@ class TestBCRMReverseReduceCooldown:
     def engine(self):
         """构造 EvolutionExitEngine 实例（mock 依赖）"""
         from dreambuddy_evolution.engines.exit_engine import EvolutionExitEngine
+
         return EvolutionExitEngine(
             okx_client=None,
             ess_provider=None,
@@ -226,14 +252,22 @@ class TestBCRMReverseReduceCooldown:
     def bcrm_reverse_context(self):
         """BCRM2.0 高置信度反向信号 context 基础模板"""
         return {
-            "symbol": "SKHYNIX", "inst_id": "SKHYNIX-USDT-SWAP", "pos_side": "long",
-            "entry_price": 1292.0, "current_price": 1376.0,
-            "upl": 23.82, "upl_ratio": 0.065,
+            "symbol": "SKHYNIX",
+            "inst_id": "SKHYNIX-USDT-SWAP",
+            "pos_side": "long",
+            "entry_price": 1292.0,
+            "current_price": 1376.0,
+            "upl": 23.82,
+            "upl_ratio": 0.065,
             "position_age_sec": 4131 * 60,
             "r_vector": {"R_up": 0.6, "R_down": 0.3, "R_smooth": 0.5},
-            "ess": 0.6, "ftc_track": "exploit", "regime": "ranging",
-            "atr_pct": 0.02, "tier": "standard",
-            "current_sl_px": 1228.0, "current_tp_px": 1447.0,
+            "ess": 0.6,
+            "ftc_track": "exploit",
+            "regime": "ranging",
+            "atr_pct": 0.02,
+            "tier": "standard",
+            "current_sl_px": 1228.0,
+            "current_tp_px": 1447.0,
             "okx_algo_triggered": False,
             "has_stronger_signal": False,
             "bcrm_reverse_dir": "short",

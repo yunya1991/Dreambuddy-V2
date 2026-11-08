@@ -12,13 +12,20 @@ DeepSeek-V4 CoT 推理，与千问配合分工。
     python deepseek_analyst.py <task> '<json_data>'
     task: a1 | a2 | a3 | gate_c | process_d
 """
-import urllib.request, json, ssl, sys, io, os, argparse
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+import argparse
+import io
+import json
+import os
+import ssl
+import sys
+import urllib.request
 
-API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
-URL = 'https://api.deepseek.com/chat/completions'
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
+API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+URL = "https://api.deepseek.com/chat/completions"
 
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
@@ -32,48 +39,59 @@ SYSTEM_BASE = (
 )
 
 
-def deepseek_chat(messages, model='deepseek-v4-flash', temperature=0.3, max_tokens=1500):
+def deepseek_chat(messages, model="deepseek-v4-flash", temperature=0.3, max_tokens=1500):
     if not API_KEY:
-        raise RuntimeError('DEEPSEEK_API_KEY not set')
-    data = json.dumps({
-        'model': model,
-        'messages': messages,
-        'temperature': temperature,
-        'max_tokens': max_tokens,
-    }).encode()
-    req = urllib.request.Request(URL, data=data, headers={
-        'Authorization': f'Bearer {API_KEY}',
-        'Content-Type': 'application/json',
-    })
+        raise RuntimeError("DEEPSEEK_API_KEY not set")
+    data = json.dumps(
+        {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+    ).encode()
+    req = urllib.request.Request(
+        URL,
+        data=data,
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+    )
     with urllib.request.urlopen(req, context=ctx, timeout=90) as r:
         result = json.loads(r.read())
-    usage = result.get('usage', {})
-    reasoning_tokens = usage.get('completion_tokens_details', {}).get('reasoning_tokens', 0)
-    output_tokens = usage.get('completion_tokens', 0) - reasoning_tokens
+    usage = result.get("usage", {})
+    reasoning_tokens = usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0)
+    output_tokens = usage.get("completion_tokens", 0) - reasoning_tokens
     print(
         f'[deepseek] model={model} prompt={usage.get("prompt_tokens",0)} '
-        f'reasoning={reasoning_tokens} output={output_tokens}',
-        file=sys.stderr
+        f"reasoning={reasoning_tokens} output={output_tokens}",
+        file=sys.stderr,
     )
-    return result['choices'][0]['message']['content']
+    return result["choices"][0]["message"]["content"]
 
 
 def clean_json(text):
     """去除 ```json ``` 包裹"""
     text = text.strip()
-    if text.startswith('```'):
-        text = text.split('\n', 1)[-1]
-        text = text.rsplit('```', 1)[0]
+    if text.startswith("```"):
+        text = text.split("\n", 1)[-1]
+        text = text.rsplit("```", 1)[0]
     return text.strip()
 
 
 # ─── A1: 日线矛盾分析（deepseek-v4-flash） ────────────────────────────────────
 
-def analyze_a1(ctx_data, historical_context: str = ''):
-    history_section = f"""
+
+def analyze_a1(ctx_data, historical_context: str = ""):
+    history_section = (
+        f"""
 ## 历史记忆参考（memory_db 检索结果）
 {historical_context}
-""" if historical_context else ''
+"""
+        if historical_context
+        else ""
+    )
 
     prompt = f"""
 基于以下 6-TRADING Phase-0 数据，执行 A1 日线矛盾分析。
@@ -103,20 +121,26 @@ def analyze_a1(ctx_data, historical_context: str = ''):
   "summary": "两句话结论"
 }}
 """
-    resp = deepseek_chat([
-        {'role': 'system', 'content': SYSTEM_BASE},
-        {'role': 'user', 'content': prompt}
-    ], model='deepseek-v4-flash', max_tokens=1500)
+    resp = deepseek_chat(
+        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
+        model="deepseek-v4-flash",
+        max_tokens=1500,
+    )
     return json.loads(clean_json(resp))
 
 
 # ─── A2: 第一性原理分析（deepseek-v4-pro，降级备用） ────────────────────────
 
-def analyze_a2(ctx_data, a1_result, historical_context: str = ''):
-    history_section = f"""
+
+def analyze_a2(ctx_data, a1_result, historical_context: str = ""):
+    history_section = (
+        f"""
 ## 历史记忆参考（memory_db 检索结果）
 {historical_context}
-""" if historical_context else ''
+"""
+        if historical_context
+        else ""
+    )
 
     prompt = f"""
 基于 Phase-0 数据和 A1 矛盾分析结论，执行 A2 第一性原理分析。
@@ -146,14 +170,16 @@ def analyze_a2(ctx_data, a1_result, historical_context: str = ''):
   "summary": "两句话结论"
 }}
 """
-    resp = deepseek_chat([
-        {'role': 'system', 'content': SYSTEM_BASE},
-        {'role': 'user', 'content': prompt}
-    ], model='deepseek-v4-pro', max_tokens=1500)
+    resp = deepseek_chat(
+        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
+        model="deepseek-v4-pro",
+        max_tokens=1500,
+    )
     return json.loads(clean_json(resp))
 
 
 # ─── A3: 日线沙盘推演（deepseek-v4-pro，降级备用） ───────────────────────────
+
 
 def analyze_a3(ctx_data, a1_result, a2_result):
     prompt = f"""
@@ -216,14 +242,16 @@ def analyze_a3(ctx_data, a1_result, a2_result):
   }}
 }}
 """
-    resp = deepseek_chat([
-        {'role': 'system', 'content': SYSTEM_BASE},
-        {'role': 'user', 'content': prompt}
-    ], model='deepseek-v4-pro', max_tokens=2500)
+    resp = deepseek_chat(
+        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
+        model="deepseek-v4-pro",
+        max_tokens=2500,
+    )
     return json.loads(clean_json(resp))
 
 
 # ─── Gate C: ACH 竞争性假设分析（deepseek-v4-pro） ───────────────────────────
+
 
 def analyze_gate_c(ctx_data, a7_score, signal_score_pct):
     prompt = f"""
@@ -266,14 +294,16 @@ def analyze_gate_c(ctx_data, a7_score, signal_score_pct):
   "reasoning_quality": "一句话说明 CoT 推理关键决策点"
 }}
 """
-    resp = deepseek_chat([
-        {'role': 'system', 'content': SYSTEM_BASE},
-        {'role': 'user', 'content': prompt}
-    ], model='deepseek-v4-pro', max_tokens=3000)
+    resp = deepseek_chat(
+        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
+        model="deepseek-v4-pro",
+        max_tokens=3000,
+    )
     return json.loads(clean_json(resp))
 
 
 # ─── Process D: A8 复盘分析（deepseek-v4-pro） ───────────────────────────────
+
 
 def analyze_process_d(episodes_summary, weekly_data):
     prompt = f"""
@@ -306,27 +336,28 @@ def analyze_process_d(episodes_summary, weekly_data):
   "summary": "两句话总结"
 }}
 """
-    resp = deepseek_chat([
-        {'role': 'system', 'content': SYSTEM_BASE},
-        {'role': 'user', 'content': prompt}
-    ], model='deepseek-v4-pro', max_tokens=3000)
+    resp = deepseek_chat(
+        [{"role": "system", "content": SYSTEM_BASE}, {"role": "user", "content": prompt}],
+        model="deepseek-v4-pro",
+        max_tokens=3000,
+    )
     return json.loads(clean_json(resp))
 
 
 # ─── CLI 入口 ─────────────────────────────────────────────────────────────────
 
 TASKS = {
-    'a1': lambda d: analyze_a1(d['context'], d.get('historical_context', '')),
-    'a2': lambda d: analyze_a2(d['context'], d['a1'], d.get('historical_context', '')),
-    'a3': lambda d: analyze_a3(d['context'], d['a1'], d['a2']),
-    'gate_c': lambda d: analyze_gate_c(d['context'], d['a7_score'], d['signal_score_pct']),
-    'process_d': lambda d: analyze_process_d(d['episodes'], d['weekly']),
+    "a1": lambda d: analyze_a1(d["context"], d.get("historical_context", "")),
+    "a2": lambda d: analyze_a2(d["context"], d["a1"], d.get("historical_context", "")),
+    "a3": lambda d: analyze_a3(d["context"], d["a1"], d["a2"]),
+    "gate_c": lambda d: analyze_gate_c(d["context"], d["a7_score"], d["signal_score_pct"]),
+    "process_d": lambda d: analyze_process_d(d["episodes"], d["weekly"]),
 }
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('task', choices=list(TASKS.keys()))
-    parser.add_argument('data', help='JSON string with input data')
+    parser.add_argument("task", choices=list(TASKS.keys()))
+    parser.add_argument("data", help="JSON string with input data")
     args = parser.parse_args()
 
     try:
@@ -334,8 +365,8 @@ if __name__ == '__main__':
         result = TASKS[args.task](input_data)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except json.JSONDecodeError as e:
-        print(json.dumps({'error': f'JSON parse failed: {e}'}))
+        print(json.dumps({"error": f"JSON parse failed: {e}"}))
         sys.exit(1)
     except Exception as e:
-        print(json.dumps({'error': str(e)}))
+        print(json.dumps({"error": str(e)}))
         sys.exit(1)

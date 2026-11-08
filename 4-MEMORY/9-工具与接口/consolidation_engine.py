@@ -41,7 +41,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import os
@@ -67,9 +66,18 @@ POST_CONSOLIDATION_TARGET = 0.60  # 压缩后目标 < 60%
 TIER1_DIRS = {
     "1-原则记忆": "ENGINEERING_PRINCIPLES.md",
     "2-方法论记忆": ["A1_RESEARCH_METHOD.md", "A8_THEORY_PRACTICE.md", "CONTRADICTION_METHOD.md"],
-    "3-架构记忆": ["ARCHITECTURE_CURRENT.md", "ARCHITECTURE_HISTORY.md", "ADR-001-memory-architecture.md"],
+    "3-架构记忆": [
+        "ARCHITECTURE_CURRENT.md",
+        "ARCHITECTURE_HISTORY.md",
+        "ADR-001-memory-architecture.md",
+    ],
     "4-文档记忆": "README.md",
-    "5-通用经验": ["TECH_LESSONS.md", "PROCESS_LESSONS.md", "BEST_PRACTICES.md", "ANTI_PATTERNS.md"],
+    "5-通用经验": [
+        "TECH_LESSONS.md",
+        "PROCESS_LESSONS.md",
+        "BEST_PRACTICES.md",
+        "ANTI_PATTERNS.md",
+    ],
 }
 
 # 质量等级排序
@@ -80,9 +88,11 @@ QUALITY_ORDER = {"S": 5, "A": 4, "B": 3, "C": 2, "D": 1}
 # 数据模型
 # ============================================================
 
+
 @dataclass
 class MemoryItem:
     """记忆条目（从 Markdown 解析）"""
+
     line_number: int = 0
     content: str = ""
     quality_level: str = "B"  # 从内容推断或默认
@@ -96,13 +106,13 @@ class MemoryItem:
         text = self.content.strip()
 
         # 去除 markdown 列表前缀
-        text = re.sub(r'^[-*]\s+', '', text)
+        text = re.sub(r"^[-*]\s+", "", text)
         # 去除序号前缀
-        text = re.sub(r'^\d+\.\s+', '', text)
+        text = re.sub(r"^\d+\.\s+", "", text)
         # 压缩多余空格
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
         # 去除冗余的"注意"、"需要"等前缀
-        text = re.sub(r'^(注意：|需要注意：|需要|要注意)\s*', '', text)
+        text = re.sub(r"^(注意：|需要注意：|需要|要注意)\s*", "", text)
 
         # 如果已经足够简洁，直接返回
         if len(text) <= 60:
@@ -116,6 +126,7 @@ class MemoryItem:
 @dataclass
 class ConsolidationReport:
     """压缩报告"""
+
     consolidated: bool = False
     tier: int = 0
     before_chars: int = 0
@@ -155,16 +166,17 @@ class ConsolidationReport:
 @dataclass
 class ArchiveCandidate:
     """归档候选条目（不执行压缩，仅用于人工确认）"""
-    item_id: str = ""               # TL-001 / AP-002
+
+    item_id: str = ""  # TL-001 / AP-002
     title: str = ""
     file_path: str = ""
     line_number: int = 0
     current_quality: str = "B"
-    suggested_quality: str = "C"    # 建议降级到的质量等级
-    reason_type: str = ""           # content_defect / outdated_case / cross_duplicate / low_value_detail
+    suggested_quality: str = "C"  # 建议降级到的质量等级
+    reason_type: str = ""  # content_defect / outdated_case / cross_duplicate / low_value_detail
     reason_detail: str = ""
     char_count: int = 0
-    potential_saving: int = 0       # 归档后可释放字符数
+    potential_saving: int = 0  # 归档后可释放字符数
     duplicate_with: List[str] = field(default_factory=list)  # 跨文件重复的条目ID
 
     def to_dict(self) -> dict:
@@ -186,6 +198,7 @@ class ArchiveCandidate:
 # ============================================================
 # 核心引擎
 # ============================================================
+
 
 class ConsolidationEngine:
     """
@@ -322,7 +335,9 @@ class ConsolidationEngine:
         new_sections: Dict[str, List[MemoryItem]] = {}
 
         for section_name, items in sections.items():
-            kept, compressed, merged, archived, downgraded = self._process_section(section_name, items, report)
+            kept, compressed, merged, archived, downgraded = self._process_section(
+                section_name, items, report
+            )
             new_sections[section_name] = kept
             report.items_compressed += compressed
             report.items_merged += merged
@@ -344,7 +359,9 @@ class ConsolidationEngine:
         # 更新压缩时间戳
         report.details.append(f"压缩前: {original_chars} 字符 ({original_usage:.1%})")
         report.details.append(f"压缩后: {new_chars} 字符 ({new_usage:.1%})")
-        report.details.append(f"节省: {original_chars - new_chars} 字符 ({(1 - new_chars/max(original_chars,1)):.1%})")
+        report.details.append(
+            f"节省: {original_chars - new_chars} 字符 ({(1 - new_chars/max(original_chars,1)):.1%})"
+        )
         report.details.append(f"归档: {archive_path.name}")
 
         return report
@@ -363,7 +380,7 @@ class ConsolidationEngine:
                 current_section = line[3:].strip()
                 current_items = []
             # 检测记忆条目（列表项）
-            elif re.match(r'^[-*]\s+', line) or re.match(r'^\d+\.\s+', line):
+            elif re.match(r"^[-*]\s+", line) or re.match(r"^\d+\.\s+", line):
                 item = MemoryItem(
                     line_number=i,
                     content=line,
@@ -394,7 +411,7 @@ class ConsolidationEngine:
 
     def _infer_quality(self, section_name: str, content: str) -> str:
         """从分区名和内容推断质量等级"""
-        section_lower = section_name.lower()
+        section_lower = section_name.lower()  # noqa: F841
         if "s级" in section_name or "原则" in section_name:
             return "S"
         if "a级" in section_name or "方法论" in section_name or "架构决策" in section_name:
@@ -438,7 +455,9 @@ class ConsolidationEngine:
         downgraded = 0
 
         # 按质量等级排序（高→低）
-        items_sorted = sorted(items, key=lambda x: QUALITY_ORDER.get(x.quality_level, 3), reverse=True)
+        items_sorted = sorted(
+            items, key=lambda x: QUALITY_ORDER.get(x.quality_level, 3), reverse=True
+        )
 
         # 合并相似条目
         merged_items = self._merge_similar(items_sorted)
@@ -493,7 +512,9 @@ class ConsolidationEngine:
                 # 检查相似度
                 if self._is_similar(current.content, item_b.content):
                     # 合并：保留质量更高的
-                    if QUALITY_ORDER.get(item_b.quality_level, 3) > QUALITY_ORDER.get(current.quality_level, 3):
+                    if QUALITY_ORDER.get(item_b.quality_level, 3) > QUALITY_ORDER.get(
+                        current.quality_level, 3
+                    ):
                         current = item_b
                     used[j] = True
 
@@ -504,8 +525,8 @@ class ConsolidationEngine:
     def _is_similar(self, text_a: str, text_b: str) -> bool:
         """判断两个文本是否相似"""
         # 提取关键词
-        words_a = set(re.findall(r'[\w\u4e00-\u9fff]+', text_a.lower()))
-        words_b = set(re.findall(r'[\w\u4e00-\u9fff]+', text_b.lower()))
+        words_a = set(re.findall(r"[\w\u4e00-\u9fff]+", text_a.lower()))
+        words_b = set(re.findall(r"[\w\u4e00-\u9fff]+", text_b.lower()))
 
         if not words_a or not words_b:
             return False
@@ -608,7 +629,9 @@ class ConsolidationEngine:
 
                 # 归档原始版本
                 if compressed > 0 or merged > 0 or archived > 0:
-                    archive_path = self.archive_dir / f"{fname}.bak_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    archive_path = (
+                        self.archive_dir / f"{fname}.bak_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    )
                     archive_path.write_text(original, encoding="utf-8")
 
                 # 重写文件（文档式结构用专用重建器，列表式用原方法）
@@ -625,7 +648,9 @@ class ConsolidationEngine:
                     fpath.write_text(new_content, encoding="utf-8")
                     delta = new_chars - original_chars
                     sign = "-" if delta < 0 else "+"
-                    report.details.append(f"  {fname}: {original_chars}→{new_chars} 字符 ({sign}{abs(delta)})")
+                    report.details.append(
+                        f"  {fname}: {original_chars}→{new_chars} 字符 ({sign}{abs(delta)})"
+                    )
                 else:
                     report.details.append(f"  {fname}: {original_chars} 字符（无变化）")
 
@@ -637,7 +662,10 @@ class ConsolidationEngine:
         report.after_chars = total_after_chars
         report.after_usage = total_after_chars / TIER1_MAX_CHARS
 
-        report.details.insert(0, f"Tier 1 压缩: {t1_chars}→{total_after_chars} 字符 ({t1_usage:.1%}→{report.after_usage:.1%})")
+        report.details.insert(
+            0,
+            f"Tier 1 压缩: {t1_chars}→{total_after_chars} 字符 ({t1_usage:.1%}→{report.after_usage:.1%})",
+        )
 
         return report
 
@@ -657,7 +685,7 @@ class ConsolidationEngine:
         return self._parse_list_items(content)
 
     # 文档式条目标题正则：## TL-001： / ## AP-002： / ## BP-003： / ## PL-004：
-    _DOC_ITEM_PATTERN = re.compile(r'^##\s+([A-Z]{2,4})-(\d{3})[：:]\s*(.+)$')
+    _DOC_ITEM_PATTERN = re.compile(r"^##\s+([A-Z]{2,4})-(\d{3})[：:]\s*(.+)$")
 
     def _is_document_structured(self, content: str) -> bool:
         """检测是否为文档式结构（包含 ## XXX-NNN： 条目）"""
@@ -693,7 +721,7 @@ class ConsolidationEngine:
                 continue
 
             prefix = match.group(1)  # TL / AP / BP / PL
-            num = match.group(2)     # 001
+            num = match.group(2)  # 001
             title = match.group(3).strip()
             item_id = f"{prefix}-{num}"
 
@@ -715,26 +743,28 @@ class ConsolidationEngine:
             # 从标题前缀推断类别
             category = self._prefix_to_category(prefix)
 
-            items.append(MemoryItem(
-                line_number=section_start + 1,
-                content=section_content,
-                quality_level=quality,
-                category=category,
-                tier=1,
-                char_count=len(section_content),
-                tags=[item_id, title],
-            ))
+            items.append(
+                MemoryItem(
+                    line_number=section_start + 1,
+                    content=section_content,
+                    quality_level=quality,
+                    category=category,
+                    tier=1,
+                    char_count=len(section_content),
+                    tags=[item_id, title],
+                )
+            )
 
         return items
 
     def _extract_quality_from_section(self, section: str, prefix: str) -> str:
         """从章节内容的属性表提取质量等级"""
         # 匹配 | **等级** | B（待验证） | 或 | **等级** | A（可信级） |
-        m = re.search(r'\|\s*\*\*等级\*\*\s*\|\s*([SABCD])', section)
+        m = re.search(r"\|\s*\*\*等级\*\*\s*\|\s*([SABCD])", section)
         if m:
             return m.group(1)
         # 匹配 | **危害程度** | 高 | （反模式专用，默认按 A 级处理）
-        m = re.search(r'\|\s*\*\*危害程度\*\*\s*\|\s*([高中低])', section)
+        m = re.search(r"\|\s*\*\*危害程度\*\*\s*\|\s*([高中低])", section)
         if m:
             # 反模式：危害高=A，危害中=B，危害低=C
             return {"高": "A", "中": "B", "低": "C"}.get(m.group(1), "B")
@@ -767,15 +797,17 @@ class ConsolidationEngine:
                 current_section = line[3:].strip()
             elif line.startswith("# ") or line.startswith(">") or not line.strip():
                 continue
-            elif re.match(r'^[-*]\s+', line) or re.match(r'^\d+\.\s+', line):
-                items.append(MemoryItem(
-                    line_number=i,
-                    content=line,
-                    quality_level=self._infer_quality(current_section, line),
-                    category=self._infer_category(current_section),
-                    tier=1,
-                    char_count=len(line),
-                ))
+            elif re.match(r"^[-*]\s+", line) or re.match(r"^\d+\.\s+", line):
+                items.append(
+                    MemoryItem(
+                        line_number=i,
+                        content=line,
+                        quality_level=self._infer_quality(current_section, line),
+                        category=self._infer_category(current_section),
+                        tier=1,
+                        char_count=len(line),
+                    )
+                )
 
         return items
 
@@ -799,7 +831,7 @@ class ConsolidationEngine:
             if original_len > 200:
                 compressed_text = item.compressed_content()
                 if len(compressed_text) < original_len - 20:
-                    prefix_match = re.match(r'^([-*]\s+|\d+\.\s+)', item.content)
+                    prefix_match = re.match(r"^([-*]\s+|\d+\.\s+)", item.content)
                     prefix = prefix_match.group(1) if prefix_match else "- "
                     item.content = prefix + compressed_text
                     compressed += 1
@@ -810,7 +842,7 @@ class ConsolidationEngine:
             if original_len > 80:
                 compressed_text = item.compressed_content()
                 if len(compressed_text) < original_len - 10:
-                    prefix_match = re.match(r'^([-*]\s+|\d+\.\s+)', item.content)
+                    prefix_match = re.match(r"^([-*]\s+|\d+\.\s+)", item.content)
                     prefix = prefix_match.group(1) if prefix_match else "- "
                     item.content = prefix + compressed_text
                     compressed += 1
@@ -826,7 +858,7 @@ class ConsolidationEngine:
         new_lines = []
 
         for line in lines:
-            if re.match(r'^[-*]\s+', line) or re.match(r'^\d+\.\s+', line):
+            if re.match(r"^[-*]\s+", line) or re.match(r"^\d+\.\s+", line):
                 if item_idx < len(items):
                     new_lines.append(items[item_idx].content)
                     item_idx += 1
@@ -895,7 +927,7 @@ class ConsolidationEngine:
     # ============================================================
 
     # 已修复的缺陷标记（用于识别过时案例）
-    _RESOLVED_DEFECT_PATTERN = re.compile(r'D0(4[89]|5[0-9])')  # D048/D049/D05x 系列
+    _RESOLVED_DEFECT_PATTERN = re.compile(r"D0(4[89]|5[0-9])")  # D048/D049/D05x 系列
     # 已修复关键词
     _RESOLVED_KEYWORDS = ["已修复", "已解决", "已关闭", "已处理"]
 
@@ -943,18 +975,20 @@ class ConsolidationEngine:
             # 1.1 内容残缺检测
             defect = self._detect_content_defect(item.content)
             if defect:
-                candidates.append(ArchiveCandidate(
-                    item_id=item_id,
-                    title=title,
-                    file_path=f"{fname}#L{item.line_number}",
-                    line_number=item.line_number,
-                    current_quality=item.quality_level,
-                    suggested_quality="C",
-                    reason_type="content_defect",
-                    reason_detail=defect,
-                    char_count=item.char_count,
-                    potential_saving=item.char_count // 2,  # 残缺条目归档后约省一半
-                ))
+                candidates.append(
+                    ArchiveCandidate(
+                        item_id=item_id,
+                        title=title,
+                        file_path=f"{fname}#L{item.line_number}",
+                        line_number=item.line_number,
+                        current_quality=item.quality_level,
+                        suggested_quality="C",
+                        reason_type="content_defect",
+                        reason_detail=defect,
+                        char_count=item.char_count,
+                        potential_saving=item.char_count // 2,  # 残缺条目归档后约省一半
+                    )
+                )
                 continue  # 残缺条目不再做其他检测
 
             # 1.2 过时案例检测
@@ -962,59 +996,73 @@ class ConsolidationEngine:
             if outdated:
                 # 估算案例部分字符数（### 典型案例 / ### 相关案例 段落）
                 case_chars = self._count_case_section_chars(item.content)
-                candidates.append(ArchiveCandidate(
-                    item_id=item_id,
-                    title=title,
-                    file_path=f"{fname}#L{item.line_number}",
-                    line_number=item.line_number,
-                    current_quality=item.quality_level,
-                    suggested_quality="B",  # 教训本身保留，案例降级归档
-                    reason_type="outdated_case",
-                    reason_detail=outdated,
-                    char_count=item.char_count,
-                    potential_saving=case_chars,
-                ))
-
-            # 1.3 低价值细节检测
-            elif item.char_count > 800:
-                case_chars = self._count_case_section_chars(item.content)
-                if case_chars > 200:
-                    candidates.append(ArchiveCandidate(
+                candidates.append(
+                    ArchiveCandidate(
                         item_id=item_id,
                         title=title,
                         file_path=f"{fname}#L{item.line_number}",
                         line_number=item.line_number,
                         current_quality=item.quality_level,
-                        suggested_quality="B",
-                        reason_type="low_value_detail",
-                        reason_detail=f"案例段落 {case_chars} 字符，可归档到 Tier2 保留结论",
+                        suggested_quality="B",  # 教训本身保留，案例降级归档
+                        reason_type="outdated_case",
+                        reason_detail=outdated,
                         char_count=item.char_count,
                         potential_saving=case_chars,
-                    ))
+                    )
+                )
+
+            # 1.3 低价值细节检测
+            elif item.char_count > 800:
+                case_chars = self._count_case_section_chars(item.content)
+                if case_chars > 200:
+                    candidates.append(
+                        ArchiveCandidate(
+                            item_id=item_id,
+                            title=title,
+                            file_path=f"{fname}#L{item.line_number}",
+                            line_number=item.line_number,
+                            current_quality=item.quality_level,
+                            suggested_quality="B",
+                            reason_type="low_value_detail",
+                            reason_detail=f"案例段落 {case_chars} 字符，可归档到 Tier2 保留结论",
+                            char_count=item.char_count,
+                            potential_saving=case_chars,
+                        )
+                    )
 
         # 2. 跨文件重复检测
         duplicates = self._detect_cross_duplicates(all_items)
         for dup_group in duplicates:
             # 保留质量最高的，其余标记为归档候选
-            sorted_group = sorted(dup_group["items"], key=lambda x: QUALITY_ORDER.get(x[1].quality_level, 3), reverse=True)
-            keep_item = sorted_group[0]
+            sorted_group = sorted(
+                dup_group["items"],
+                key=lambda x: QUALITY_ORDER.get(x[1].quality_level, 3),
+                reverse=True,
+            )
+            keep_item = sorted_group[0]  # noqa: F841
             for fname, item in sorted_group[1:]:
                 item_id = item.tags[0] if item.tags else ""
                 title = item.tags[1] if len(item.tags) > 1 else ""
-                dup_ids = [other_item.tags[0] if other_item.tags else "" for _, other_item in sorted_group if other_item is not item]
-                candidates.append(ArchiveCandidate(
-                    item_id=item_id,
-                    title=title,
-                    file_path=f"{fname}#L{item.line_number}",
-                    line_number=item.line_number,
-                    current_quality=item.quality_level,
-                    suggested_quality="C",
-                    reason_type="cross_duplicate",
-                    reason_detail=f"与 {', '.join(dup_ids)} 主题重复，建议合并或归档",
-                    char_count=item.char_count,
-                    potential_saving=item.char_count,
-                    duplicate_with=dup_ids,
-                ))
+                dup_ids = [
+                    other_item.tags[0] if other_item.tags else ""
+                    for _, other_item in sorted_group
+                    if other_item is not item
+                ]
+                candidates.append(
+                    ArchiveCandidate(
+                        item_id=item_id,
+                        title=title,
+                        file_path=f"{fname}#L{item.line_number}",
+                        line_number=item.line_number,
+                        current_quality=item.quality_level,
+                        suggested_quality="C",
+                        reason_type="cross_duplicate",
+                        reason_detail=f"与 {', '.join(dup_ids)} 主题重复，建议合并或归档",
+                        char_count=item.char_count,
+                        potential_saving=item.char_count,
+                        duplicate_with=dup_ids,
+                    )
+                )
 
         # 汇总
         total_saving = sum(c.potential_saving for c in candidates)
@@ -1031,10 +1079,18 @@ class ConsolidationEngine:
             "projected_usage_after": f"{projected_usage:.1%}",
             "would_resolve_threshold": projected_usage < CONSOLIDATION_THRESHOLD,
             "candidates_by_type": {
-                "content_defect": [c.to_dict() for c in candidates if c.reason_type == "content_defect"],
-                "outdated_case": [c.to_dict() for c in candidates if c.reason_type == "outdated_case"],
-                "cross_duplicate": [c.to_dict() for c in candidates if c.reason_type == "cross_duplicate"],
-                "low_value_detail": [c.to_dict() for c in candidates if c.reason_type == "low_value_detail"],
+                "content_defect": [
+                    c.to_dict() for c in candidates if c.reason_type == "content_defect"
+                ],
+                "outdated_case": [
+                    c.to_dict() for c in candidates if c.reason_type == "outdated_case"
+                ],
+                "cross_duplicate": [
+                    c.to_dict() for c in candidates if c.reason_type == "cross_duplicate"
+                ],
+                "low_value_detail": [
+                    c.to_dict() for c in candidates if c.reason_type == "low_value_detail"
+                ],
             },
             "candidates": [c.to_dict() for c in candidates],
         }
@@ -1048,8 +1104,7 @@ class ConsolidationEngine:
 
     # 案例段落标题正则（### 典型案例 / ### 相关案例 / ### 案例 / ### 已知案例）
     _CASE_SECTION_PATTERN = re.compile(
-        r'^(###\s+(?:典型案例|相关案例|案例|已知案例)\s*\n)'
-        r'([\s\S]*?)(?=^###\s|^##\s|\Z)',
+        r"^(###\s+(?:典型案例|相关案例|案例|已知案例)\s*\n)" r"([\s\S]*?)(?=^###\s|^##\s|\Z)",
         re.MULTILINE,
     )
 
@@ -1080,8 +1135,7 @@ class ConsolidationEngine:
         """
         scan_report = self.identify_archive_candidates()
         candidates = [
-            c for c in scan_report["candidates"]
-            if c["reason_type"] in self._ARCHIVABLE_TYPES
+            c for c in scan_report["candidates"] if c["reason_type"] in self._ARCHIVABLE_TYPES
         ]
 
         # 按候选ID过滤
@@ -1110,7 +1164,7 @@ class ConsolidationEngine:
 
             # 定位条目（## TL-006：... 到下一个 ## 或文件末尾）
             item_pattern = re.compile(
-                r'^##\s+' + re.escape(item_id) + r'[：:].*?(?=^##\s|\Z)',
+                r"^##\s+" + re.escape(item_id) + r"[：:].*?(?=^##\s|\Z)",
                 re.MULTILINE | re.DOTALL,
             )
             item_match = item_pattern.search(content)
@@ -1146,25 +1200,26 @@ class ConsolidationEngine:
             )
 
             replacement = (
-                f"### 典型案例（已归档到 Tier2）\n"
-                f"> 详见 `archive/{archive_fname}`\n\n"
+                f"### 典型案例（已归档到 Tier2）\n" f"> 详见 `archive/{archive_fname}`\n\n"
             )
 
-            archive_plans.append({
-                "item_id": item_id,
-                "title": cand["title"],
-                "file": fname,
-                "fpath": str(fpath),
-                "archive_fname": archive_fname,
-                "archive_fpath": str(archive_fpath),
-                "archive_doc": archive_doc,
-                "case_chars": case_chars,
-                "saving_chars": case_chars - len(replacement),
-                "replacement": replacement,
-                "case_start_in_file": case_start_in_file,
-                "case_end_in_file": case_end_in_file,
-                "reason_type": cand["reason_type"],
-            })
+            archive_plans.append(
+                {
+                    "item_id": item_id,
+                    "title": cand["title"],
+                    "file": fname,
+                    "fpath": str(fpath),
+                    "archive_fname": archive_fname,
+                    "archive_fpath": str(archive_fpath),
+                    "archive_doc": archive_doc,
+                    "case_chars": case_chars,
+                    "saving_chars": case_chars - len(replacement),
+                    "replacement": replacement,
+                    "case_start_in_file": case_start_in_file,
+                    "case_end_in_file": case_end_in_file,
+                    "reason_type": cand["reason_type"],
+                }
+            )
 
         # ===== 阶段2：写入落盘 =====
         # 按文件分组，同一文件的多个归档一起处理（避免位置偏移）
@@ -1187,9 +1242,9 @@ class ConsolidationEngine:
 
             for plan in sorted_plans:
                 new_content = (
-                    new_content[:plan["case_start_in_file"]]
+                    new_content[: plan["case_start_in_file"]]
                     + plan["replacement"]
-                    + new_content[plan["case_end_in_file"]:]
+                    + new_content[plan["case_end_in_file"] :]
                 )
                 total_saving += plan["saving_chars"]
 
@@ -1199,16 +1254,18 @@ class ConsolidationEngine:
                     archive_path.parent.mkdir(parents=True, exist_ok=True)
                     archive_path.write_text(plan["archive_doc"], encoding="utf-8")
 
-                results.append({
-                    "item_id": plan["item_id"],
-                    "title": plan["title"],
-                    "file": fname,
-                    "status": "archived" if not dry_run else "dry_run",
-                    "archive_file": plan["archive_fpath"],
-                    "archive_chars": plan["case_chars"],
-                    "saving_chars": plan["saving_chars"],
-                    "reason_type": plan["reason_type"],
-                })
+                results.append(
+                    {
+                        "item_id": plan["item_id"],
+                        "title": plan["title"],
+                        "file": fname,
+                        "status": "archived" if not dry_run else "dry_run",
+                        "archive_file": plan["archive_fpath"],
+                        "archive_chars": plan["case_chars"],
+                        "saving_chars": plan["saving_chars"],
+                        "reason_type": plan["reason_type"],
+                    }
+                )
 
             if not dry_run and new_content != original_content:
                 fpath.write_text(new_content, encoding="utf-8")
@@ -1283,17 +1340,17 @@ class ConsolidationEngine:
         defects = []
 
         # 先剥离代码块（``` ... ``` 之间），避免代码内容误判
-        code_stripped = re.sub(r'```[\s\S]*?```', '', content)
+        code_stripped = re.sub(r"```[\s\S]*?```", "", content)
 
         # 检测编号混乱：列表项编号不连续（如 1,2,3 但跳到 1,2,3 在另一段落）
         # 找所有 ### 子标题下的列表编号
-        sections = re.split(r'^###\s+', code_stripped, flags=re.MULTILINE)
+        sections = re.split(r"^###\s+", code_stripped, flags=re.MULTILINE)
         for section in sections[1:]:  # 跳过第一段（标题前）
             lines = section.split("\n")
             # 找数字列表项
             num_items = []
             for line in lines:
-                m = re.match(r'^(\d+)\.\s+', line)
+                m = re.match(r"^(\d+)\.\s+", line)
                 if m:
                     num_items.append(int(m.group(1)))
 
@@ -1305,7 +1362,7 @@ class ConsolidationEngine:
 
         # 检测段落截断：句子未以句号/问号/感叹号/冒号/箭头等结尾
         # 允许的结尾：。！？.?!:：；; → ... ）) \``` 引用
-        valid_endings = re.compile(r'[。！？.?!:：；;→\.\.\.\)）]$')
+        valid_endings = re.compile(r"[。！？.?!:：；;→\.\.\.\)）]$")
         for line in code_stripped.split("\n"):
             stripped = line.strip()
             if not stripped:
@@ -1313,7 +1370,11 @@ class ConsolidationEngine:
             # 跳过标题、表格、引用、列表、代码标记
             if stripped.startswith("#") or stripped.startswith("|") or stripped.startswith(">"):
                 continue
-            if stripped.startswith("```") or stripped.startswith("-") or re.match(r'^\d+\.', stripped):
+            if (
+                stripped.startswith("```")
+                or stripped.startswith("-")
+                or re.match(r"^\d+\.", stripped)
+            ):
                 continue
             # 跳过代码内联行（含较多特殊符号）
             if stripped.startswith("`") or stripped.count("`") >= 2:
@@ -1340,7 +1401,7 @@ class ConsolidationEngine:
         """
         # 只在案例段落中检测
         case_sections = re.findall(
-            r'###\s+(典型案例|相关案例|案例|已知案例)(.*?)(?=###|\Z)',
+            r"###\s+(典型案例|相关案例|案例|已知案例)(.*?)(?=###|\Z)",
             content,
             re.DOTALL,
         )
@@ -1362,24 +1423,26 @@ class ConsolidationEngine:
         """统计案例段落字符数"""
         total = 0
         # 匹配 ### 典型案例 / ### 相关案例 / ### 案例 段落
-        for m in re.finditer(r'###\s+(典型案例|相关案例|案例)(.*?)(?=###|\Z)', content, re.DOTALL):
+        for m in re.finditer(r"###\s+(典型案例|相关案例|案例)(.*?)(?=###|\Z)", content, re.DOTALL):
             total += len(m.group(2))
         return total
 
-    def _detect_cross_duplicates(self, all_items: List[Tuple[str, MemoryItem]]) -> List[Dict[str, Any]]:
+    def _detect_cross_duplicates(
+        self, all_items: List[Tuple[str, MemoryItem]]
+    ) -> List[Dict[str, Any]]:
         """检测跨文件重复条目（主题相似度高的）"""
         groups = []
         used = set()
 
         # 提取每个条目的关键词集合（从标题）
         item_keywords = []
-        for fname, item in all_items:
+        for fname, item in all_items:  # noqa: B007
             if not item.tags or len(item.tags) < 2:
                 item_keywords.append(set())
                 continue
             title = item.tags[1]
             # 提取中文词和英文词
-            words = set(re.findall(r'[\u4e00-\u9fff]{2,}|[a-zA-Z_]+', title.lower()))
+            words = set(re.findall(r"[\u4e00-\u9fff]{2,}|[a-zA-Z_]+", title.lower()))
             # 去除常见无意义词
             words -= {"改", "做", "的", "了", "和", "与", "在", "是", "不", "要"}
             item_keywords.append(words)
@@ -1426,6 +1489,7 @@ class ConsolidationEngine:
 # CLI
 # ============================================================
 
+
 def _cli_scan(engine: ConsolidationEngine, args) -> int:
     """扫描归档候选（不执行压缩）"""
     print("=" * 60)
@@ -1442,25 +1506,26 @@ def _cli_scan(engine: ConsolidationEngine, args) -> int:
     print(f"   可达阈值: {'是 ✅' if report['would_resolve_threshold'] else '否 ❌'}")
 
     by_type = report["candidates_by_type"]
-    print(f"\n--- 按类型分组 ---")
+    print("\n--- 按类型分组 ---")
     print(f"  content_defect:    {len(by_type['content_defect'])} 条")
     print(f"  outdated_case:     {len(by_type['outdated_case'])} 条")
     print(f"  cross_duplicate:   {len(by_type['cross_duplicate'])} 条")
     print(f"  low_value_detail:  {len(by_type['low_value_detail'])} 条")
 
     if args.verbose and report["candidates"]:
-        print(f"\n--- 候选详情 ---")
+        print("\n--- 候选详情 ---")
         for c in report["candidates"]:
             print(f"\n  [{c['reason_type']}] {c['item_id']}: {c['title']}")
             print(f"    位置: {c['file_path']}")
             print(f"    质量: {c['current_quality']} → {c['suggested_quality']}")
             print(f"    字符: {c['char_count']} (可释放 {c['potential_saving']})")
             print(f"    原因: {c['reason_detail']}")
-            if c['duplicate_with']:
+            if c["duplicate_with"]:
                 print(f"    重复: {', '.join(c['duplicate_with'])}")
 
     if args.json:
         import json as _json
+
         print("\n" + _json.dumps(report, ensure_ascii=False, indent=2))
 
     return 0
@@ -1470,9 +1535,15 @@ def _cli_capacity(engine: ConsolidationEngine, args) -> int:
     """容量报告"""
     capacity = engine.get_capacity_report()
     print("📊 容量报告")
-    print(f"  Tier 0: {capacity['tier0']['chars']} / {capacity['tier0']['max_chars']} 字符 ({capacity['tier0']['usage']})")
-    print(f"  Tier 1: {capacity['tier1']['chars']} / {capacity['tier1']['max_chars']} 字符 ({capacity['tier1']['usage']})")
-    print(f"  需要压缩: {capacity['tier0']['needs_consolidation'] or capacity['tier1']['needs_consolidation']}")
+    print(
+        f"  Tier 0: {capacity['tier0']['chars']} / {capacity['tier0']['max_chars']} 字符 ({capacity['tier0']['usage']})"
+    )
+    print(
+        f"  Tier 1: {capacity['tier1']['chars']} / {capacity['tier1']['max_chars']} 字符 ({capacity['tier1']['usage']})"
+    )
+    print(
+        f"  需要压缩: {capacity['tier0']['needs_consolidation'] or capacity['tier1']['needs_consolidation']}"
+    )
     return 0
 
 
@@ -1502,7 +1573,7 @@ def _cli_health(engine: ConsolidationEngine, args) -> int:
     health = engine.healthcheck()
     print(f"  状态: {health['status']}")
     print(f"  归档版本数: {health['archive_count']}")
-    cap = health['capacity']
+    cap = health["capacity"]
     print(f"  Tier 0: {cap['tier0']['usage']}")
     print(f"  Tier 1: {cap['tier1']['usage']}")
     return 0
@@ -1535,7 +1606,7 @@ def _cli_archive(engine: ConsolidationEngine, args) -> int:
     print(f"   跳过: {report['total_skipped']} 条")
 
     if report["results"]:
-        print(f"\n   归档详情:")
+        print("\n   归档详情:")
         for r in report["results"]:
             status_icon = "✅" if r["status"] == "archived" else "👁️"
             print(f"     {status_icon} [{r['reason_type']}] {r['item_id']}: {r['title']}")
@@ -1568,7 +1639,9 @@ if __name__ == "__main__":
     p_archive = sub.add_parser("archive", help="执行归档（案例段落到 Tier2）")
     p_archive.add_argument("--ids", help="指定条目ID（逗号分隔），默认归档所有候选")
     p_archive.add_argument("--dry-run", action="store_true", help="预览模式，不实际修改文件")
-    p_archive.add_argument("--force", action="store_true", help="确认执行（非 dry-run 必须带此参数）")
+    p_archive.add_argument(
+        "--force", action="store_true", help="确认执行（非 dry-run 必须带此参数）"
+    )
 
     args = parser.parse_args()
 
@@ -1591,6 +1664,7 @@ if __name__ == "__main__":
 # ============================================================
 # P2b 历史 C 级噪声清理（P1-1 之前 daemon 注入的 C 级低置信0验证记忆）
 # ============================================================
+
 
 def cleanup_legacy_c_noise(
     sqlite_db_path: Optional[str] = None,
@@ -1619,8 +1693,8 @@ def cleanup_legacy_c_noise(
     Returns:
         统计字典（含 sql_* 和 sp_* 两类计数，dry_run 标记）
     """
-    import sqlite3
     import shutil as _shutil
+    import sqlite3
 
     noise_sources = noise_sources or ["cognitive-daemon"]
     stats: Dict[str, Any] = {
@@ -1652,9 +1726,7 @@ def cleanup_legacy_c_noise(
             )
             params = list(noise_sources) + [max_confidence]
             stats["sqlite_noise_total"] = conn.execute(noise_query, params).fetchone()[0]
-            stats["sqlite_scanned"] = conn.execute(
-                "SELECT COUNT(*) FROM memories"
-            ).fetchone()[0]
+            stats["sqlite_scanned"] = conn.execute("SELECT COUNT(*) FROM memories").fetchone()[0]
 
             if not dry_run and stats["sqlite_noise_total"] > 0:
                 cur = conn.execute(
@@ -1662,8 +1734,7 @@ def cleanup_legacy_c_noise(
                     "updated_at=? WHERE "
                     f"source IN ({src_placeholders}) AND quality_level='C' "
                     "AND verify_count=0 AND confidence <= ?",
-                    [time.strftime("%Y-%m-%dT%H:%M:%S")] + list(noise_sources) +
-                    [max_confidence],
+                    [time.strftime("%Y-%m-%dT%H:%M:%S")] + list(noise_sources) + [max_confidence],
                 )
                 stats["sqlite_archived"] = cur.rowcount
                 conn.commit()
@@ -1707,9 +1778,7 @@ def cleanup_legacy_c_noise(
                 # 若重名则加时间戳后缀避免覆盖
                 if os.path.exists(dst):
                     stem, ext = os.path.splitext(fname)
-                    dst = os.path.join(
-                        archived_dir, f"{stem}__archived_{int(time.time())}{ext}"
-                    )
+                    dst = os.path.join(archived_dir, f"{stem}__archived_{int(time.time())}{ext}")
                 try:
                     _shutil.move(src, dst)
                     stats["sp_archived"] += 1
@@ -1717,4 +1786,3 @@ def cleanup_legacy_c_noise(
                     pass
 
     return stats
-

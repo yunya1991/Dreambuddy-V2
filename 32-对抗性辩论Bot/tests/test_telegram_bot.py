@@ -7,16 +7,16 @@
 - 发送前 sleep 规避 rate limit
 - 发送失败重试 1 次（指数退避），仍失败则抛出异常
 """
+
 from __future__ import annotations
 
 from typing import Sequence
 
 import pytest
-
-from core.telegram_bot import TelegramDualBot, TelegramBotClient
-
+from core.telegram_bot import TelegramDualBot
 
 # ─── Mock Telegram Bot ───────────────────────────────────────────
+
 
 class MockTelegramBot:
     """可控的 Telegram Bot mock：可配置成功/失败/返回值。"""
@@ -45,6 +45,7 @@ class MockTelegramBot:
 
 # ─── 初始化测试 ──────────────────────────────────────────────────
 
+
 class TestTelegramDualBotInit:
     """测试 __init__ 初始化。"""
 
@@ -67,6 +68,7 @@ class TestTelegramDualBotInit:
 
 
 # ─── send_as 路由测试 ─────────────────────────────────────────────
+
 
 class TestSendAsRouting:
     """测试 send_as 角色路由。"""
@@ -127,6 +129,7 @@ class TestSendAsRouting:
 
 # ─── 长消息分段测试 ───────────────────────────────────────────────
 
+
 class TestMessageSplitting:
     """测试长消息自动分段（4096 字符限制）。"""
 
@@ -174,6 +177,7 @@ class TestMessageSplitting:
 
 # ─── Sleep 测试 ──────────────────────────────────────────────────
 
+
 class TestSendDelay:
     """测试发送前 sleep 规避 rate limit。"""
 
@@ -181,14 +185,12 @@ class TestSendDelay:
     async def test_sleep_called_before_send(self, monkeypatch):
         """发送前调用 asyncio.sleep。"""
         sleep_calls: list[float] = []
-        original_sleep = __import__("asyncio").sleep
+        original_sleep = __import__("asyncio").sleep  # noqa: F841
 
         async def fake_sleep(seconds):
             sleep_calls.append(seconds)
 
-        monkeypatch.setattr(
-            "core.telegram_bot.asyncio.sleep", fake_sleep
-        )
+        monkeypatch.setattr("core.telegram_bot.asyncio.sleep", fake_sleep)
         bull = MockTelegramBot()
         bot = TelegramDualBot(bull_bot=bull, bear_bot=MockTelegramBot())
         await bot.send_as("bull", chat_id=1, text="hi")
@@ -200,22 +202,24 @@ class TestSendDelay:
 
 # ─── 重试测试 ─────────────────────────────────────────────────────
 
+
 class TestRetry:
     """测试发送失败重试 1 次。"""
 
     @pytest.mark.asyncio
     async def test_retry_succeeds_on_second_attempt(self, monkeypatch):
         """第一次失败，重试成功。"""
+
         async def fake_sleep(seconds):
             pass  # 跳过真实 sleep
 
-        monkeypatch.setattr(
-            "core.telegram_bot.asyncio.sleep", fake_sleep
+        monkeypatch.setattr("core.telegram_bot.asyncio.sleep", fake_sleep)
+        bull = MockTelegramBot(
+            responses=[
+                RuntimeError("network error"),
+                {"message_id": 1, "chat_id": 1, "text": "ok"},
+            ]
         )
-        bull = MockTelegramBot(responses=[
-            RuntimeError("network error"),
-            {"message_id": 1, "chat_id": 1, "text": "ok"},
-        ])
         bot = TelegramDualBot(bull_bot=bull, bear_bot=MockTelegramBot())
         result = await bot.send_as("bull", chat_id=1, text="retry me")
         # 第一次失败 + 重试成功 → 2 次调用
@@ -225,12 +229,11 @@ class TestRetry:
     @pytest.mark.asyncio
     async def test_retry_still_fails_raises(self, monkeypatch):
         """重试仍失败 → 抛出异常。"""
+
         async def fake_sleep(seconds):
             pass
 
-        monkeypatch.setattr(
-            "core.telegram_bot.asyncio.sleep", fake_sleep
-        )
+        monkeypatch.setattr("core.telegram_bot.asyncio.sleep", fake_sleep)
         error = RuntimeError("permanent failure")
         bull = MockTelegramBot(responses=[error, error])
         bot = TelegramDualBot(bull_bot=bull, bear_bot=MockTelegramBot())
@@ -247,13 +250,13 @@ class TestRetry:
         async def fake_sleep(seconds):
             sleep_calls.append(seconds)
 
-        monkeypatch.setattr(
-            "core.telegram_bot.asyncio.sleep", fake_sleep
+        monkeypatch.setattr("core.telegram_bot.asyncio.sleep", fake_sleep)
+        bull = MockTelegramBot(
+            responses=[
+                RuntimeError("fail"),
+                {"message_id": 1, "chat_id": 1, "text": "ok"},
+            ]
         )
-        bull = MockTelegramBot(responses=[
-            RuntimeError("fail"),
-            {"message_id": 1, "chat_id": 1, "text": "ok"},
-        ])
         bot = TelegramDualBot(bull_bot=bull, bear_bot=MockTelegramBot())
         await bot.send_as("bull", chat_id=1, text="backoff test")
         # sleep_calls: [send_delay(~1.5), retry_delay(2.0), send_delay(~1.5)]

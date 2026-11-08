@@ -5,10 +5,12 @@
 - A1日报：每日更新，Screen2 战术参考
 - A6情报：每4h更新，Screen3 执行参考
 """
-import json, re, os
-from datetime import datetime, timezone, timedelta
+
+import json
+import re
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 BASE_DIR = Path(__file__).parent
 REPORT_DIR = BASE_DIR / "A系列研报"
@@ -142,7 +144,9 @@ def load_a1_daily() -> Optional[Dict]:
                 "id": pc.get("id", "") if isinstance(pc, dict) else "",
                 "description": pc.get("description", "") if isinstance(pc, dict) else str(pc),
                 "dominant_side": pc.get("dominant_side", "") if isinstance(pc, dict) else "",
-                "direction_implication": pc.get("direction_implication", "") if isinstance(pc, dict) else "",
+                "direction_implication": (
+                    pc.get("direction_implication", "") if isinstance(pc, dict) else ""
+                ),
             }
             triple = {
                 "week": triple_raw.get("S1_week", triple_raw.get("weekly", {})),
@@ -153,9 +157,9 @@ def load_a1_daily() -> Optional[Dict]:
             # 新格式（2026-07 以后实际格式）
             three = raw.get("three_screen", {})
             triple = {
-                "week":  {"score": three.get("weekly", 0)},
-                "day":   {"score": three.get("daily", 0)},
-                "hour":  {"score": three.get("hourly", 0)},
+                "week": {"score": three.get("weekly", 0)},
+                "day": {"score": three.get("daily", 0)},
+                "hour": {"score": three.get("hourly", 0)},
                 "composite": three.get("composite", 0),
             }
             regime = raw.get("regime", "")
@@ -166,33 +170,33 @@ def load_a1_daily() -> Optional[Dict]:
             contradictions = raw.get("contradictions", [])
             pc_item = next((c for c in contradictions if c.get("id") == dominant_id), {})
             pc_dict = {
-                "id":                  dominant_id,
-                "description":         pc_item.get("name", ""),
-                "dominant_side":       pc_item.get("bias", ""),
+                "id": dominant_id,
+                "description": pc_item.get("name", ""),
+                "dominant_side": pc_item.get("bias", ""),
                 "direction_implication": pc_item.get("change", ""),
             }
 
         data = {
-            "date":              raw.get("date", ""),
-            "regime":            regime,
-            "confidence":        confidence,
-            "level":             raw.get("level", 0),
-            "triple_screen":     triple,
+            "date": raw.get("date", ""),
+            "regime": regime,
+            "confidence": confidence,
+            "level": raw.get("level", 0),
+            "triple_screen": triple,
             "si_index": {
-                "score":           si_score,
-                "components":      raw.get("si_index_components", {}),
+                "score": si_score,
+                "components": raw.get("si_index_components", {}),
             },
-            "key_levels":        raw.get("key_levels", {}),
+            "key_levels": raw.get("key_levels", {}),
             "primary_contradiction": pc_dict,
-            "contradictions":    raw.get("contradictions", []),
+            "contradictions": raw.get("contradictions", []),
             # 价格快照
-            "btc_price":         raw.get("btc_price", 0),
-            "eth_price":         raw.get("eth_price", 0),
-            "sol_price":         raw.get("sol_price", 0),
-            "fgi":               raw.get("fgi", 0),
-            "funding_rate_btc":  raw.get("funding_rate_btc", 0),
-            "etf_1d_usd":        raw.get("etf_1d_usd", 0),
-            "file":              str(f),
+            "btc_price": raw.get("btc_price", 0),
+            "eth_price": raw.get("eth_price", 0),
+            "sol_price": raw.get("sol_price", 0),
+            "fgi": raw.get("fgi", 0),
+            "funding_rate_btc": raw.get("funding_rate_btc", 0),
+            "etf_1d_usd": raw.get("etf_1d_usd", 0),
+            "file": str(f),
         }
         _cache["a1_daily"] = {**data, "_fetched_at": datetime.now(timezone.utc).isoformat()}
         return data

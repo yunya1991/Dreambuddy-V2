@@ -17,11 +17,11 @@
 """
 
 import json
-import time
 import random
+import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 BASE_DIR = Path(__file__).parent.parent.parent
 CACHE_TTL = 60  # 缓存 60 秒
@@ -45,6 +45,7 @@ def _fetch_hyperliquid_price(symbol: str) -> Optional[Dict]:
     """从 Hyperliquid 获取价格数据"""
     try:
         import requests
+
         r = requests.post(
             "https://api.hyperliquid.xyz/info",
             json={"type": "allMids"},
@@ -69,6 +70,7 @@ def _fetch_coingecko_data(coin_ids: List[str]) -> Dict[str, Dict]:
     result = {}
     try:
         import urllib.request
+
         ids = ",".join(coin_ids)
         url = (
             f"https://api.coingecko.com/api/v3/simple/price"
@@ -128,9 +130,9 @@ COINGECKO_ID_MAP = {
     "JTO": "jito-governance-token",
     "ZEC": "zcash",
     "FIL": "filecoin",
-    "ARB": "arbitrum",
+    "ARB": "arbitrum",  # noqa: F601
     "W": "wormhole",
-    "JUP": "jupiter-exchange-solana",
+    "JUP": "jupiter-exchange-solana",  # noqa: F601
     "DRIFT": "drift-protocol",
     "JUPITER": "jupiter-exchange-solana",
     "XAU": "tether-gold",
@@ -162,11 +164,48 @@ def _fetch_market_for_symbols(symbols: List[str]) -> Dict[str, Dict]:
     result = {}
 
     # 1. 尝试 Hyperliquid（只支持特定币种）
-    hl_symbols = [s for s in symbols if s in ["BTC", "ETH", "SOL", "ARB", "OP", "DOGE", "AVAX", "MATIC",
-                                               "LINK", "LTC", "BCH", "XRP", "ADA", "DOT", "NEAR",
-                                               "APT", "SUI", "SEI", "TIA", "WIF", "PEPE", "SHIB",
-                                               "INJ", "ATOM", "LDO", "ENA", "ZRO", "WLD", "PENDLE",
-                                               "JTO", "ZEC", "FIL", "W", "JUP", "DRIFT"]]
+    hl_symbols = [  # noqa: F841
+        s
+        for s in symbols
+        if s
+        in [
+            "BTC",
+            "ETH",
+            "SOL",
+            "ARB",
+            "OP",
+            "DOGE",
+            "AVAX",
+            "MATIC",
+            "LINK",
+            "LTC",
+            "BCH",
+            "XRP",
+            "ADA",
+            "DOT",
+            "NEAR",
+            "APT",
+            "SUI",
+            "SEI",
+            "TIA",
+            "WIF",
+            "PEPE",
+            "SHIB",
+            "INJ",
+            "ATOM",
+            "LDO",
+            "ENA",
+            "ZRO",
+            "WLD",
+            "PENDLE",
+            "JTO",
+            "ZEC",
+            "FIL",
+            "W",
+            "JUP",
+            "DRIFT",
+        ]
+    ]
 
     # 2. 尝试 CoinGecko
     cg_ids = []
@@ -203,17 +242,44 @@ def _fetch_market_for_symbols(symbols: List[str]) -> Dict[str, Dict]:
     for sym in symbols:
         if sym not in result:
             base_prices = {
-                "BTC": 68000.0, "ETH": 3600.0, "SOL": 175.0,
-                "BNB": 580.0, "XRP": 0.55, "ADA": 0.45, "DOGE": 0.12,
-                "DOT": 7.2, "MATIC": 0.65, "LINK": 14.5, "AVAX": 35.0,
-                "UNI": 8.5, "ATOM": 5.8, "LTC": 78.0, "NEAR": 6.5,
-                "APT": 9.2, "ARB": 0.95, "OP": 2.3, "INJ": 28.0,
-                "SUI": 1.2, "SEI": 0.45, "TIA": 12.0, "WIF": 1.8,
-                "PEPE": 0.00001, "SHIB": 0.000018, "LDO": 2.8,
-                "ENA": 0.85, "ZRO": 1.5, "WLD": 2.2, "PENDLE": 3.5,
-                "JTO": 2.8, "ZEC": 65.0, "FIL": 5.8,
-                "XAU": 2350.0, "CL": 78.5, "XCU": 4.25,
-                "TSLA": 245.0, "COIN": 215.0,
+                "BTC": 68000.0,
+                "ETH": 3600.0,
+                "SOL": 175.0,
+                "BNB": 580.0,
+                "XRP": 0.55,
+                "ADA": 0.45,
+                "DOGE": 0.12,
+                "DOT": 7.2,
+                "MATIC": 0.65,
+                "LINK": 14.5,
+                "AVAX": 35.0,
+                "UNI": 8.5,
+                "ATOM": 5.8,
+                "LTC": 78.0,
+                "NEAR": 6.5,
+                "APT": 9.2,
+                "ARB": 0.95,
+                "OP": 2.3,
+                "INJ": 28.0,
+                "SUI": 1.2,
+                "SEI": 0.45,
+                "TIA": 12.0,
+                "WIF": 1.8,
+                "PEPE": 0.00001,
+                "SHIB": 0.000018,
+                "LDO": 2.8,
+                "ENA": 0.85,
+                "ZRO": 1.5,
+                "WLD": 2.2,
+                "PENDLE": 3.5,
+                "JTO": 2.8,
+                "ZEC": 65.0,
+                "FIL": 5.8,
+                "XAU": 2350.0,
+                "CL": 78.5,
+                "XCU": 4.25,
+                "TSLA": 245.0,
+                "COIN": 215.0,
             }
             base = base_prices.get(sym, 100.0)
             chg = random.uniform(-3, 3)
@@ -238,8 +304,9 @@ def _fetch_market_for_symbols(symbols: List[str]) -> Dict[str, Dict]:
     return result
 
 
-def fetch_market_data(positions: Optional[List[Dict]] = None,
-                      extra_symbols: Optional[List[str]] = None) -> Dict[str, Dict]:
+def fetch_market_data(
+    positions: Optional[List[Dict]] = None, extra_symbols: Optional[List[str]] = None
+) -> Dict[str, Dict]:
     """
     获取市场数据（主入口）
 

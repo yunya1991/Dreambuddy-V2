@@ -9,8 +9,9 @@
 """
 
 from typing import Dict, Optional
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 
 def calculate_performance_metrics(
@@ -37,18 +38,14 @@ def calculate_performance_metrics(
 
     metrics.update(_calc_return_metrics(equity, returns, periods_per_year))
     metrics.update(_calc_risk_metrics(equity, returns, periods_per_year))
-    metrics.update(_calc_risk_adjusted_metrics(
-        equity, returns, risk_free_rate, periods_per_year
-    ))
+    metrics.update(_calc_risk_adjusted_metrics(equity, returns, risk_free_rate, periods_per_year))
     metrics.update(_calc_trade_metrics(trades))
     metrics.update(_calc_consistency_metrics(equity, returns, periods_per_year))
 
     return metrics
 
 
-def _calc_return_metrics(
-    equity: pd.Series, returns: pd.Series, periods_per_year: int
-) -> Dict:
+def _calc_return_metrics(equity: pd.Series, returns: pd.Series, periods_per_year: int) -> Dict:
     """收益指标"""
     total_return = equity.iloc[-1] / equity.iloc[0] - 1
     n_periods = len(returns)
@@ -72,9 +69,7 @@ def _calc_return_metrics(
     }
 
 
-def _calc_risk_metrics(
-    equity: pd.Series, returns: pd.Series, periods_per_year: int
-) -> Dict:
+def _calc_risk_metrics(equity: pd.Series, returns: pd.Series, periods_per_year: int) -> Dict:
     """风险指标"""
     daily_vol = returns.std()
     annualized_vol = daily_vol * np.sqrt(periods_per_year)
@@ -254,9 +249,7 @@ def _max_consecutive(series: pd.Series) -> int:
     return max_count
 
 
-def _calc_consistency_metrics(
-    equity: pd.Series, returns: pd.Series, periods_per_year: int
-) -> Dict:
+def _calc_consistency_metrics(equity: pd.Series, returns: pd.Series, periods_per_year: int) -> Dict:
     """一致性指标"""
     monthly_returns = pd.Series(dtype=float)
 

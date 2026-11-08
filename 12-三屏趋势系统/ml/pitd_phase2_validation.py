@@ -9,22 +9,23 @@
 基线: V5.5 (28维哲学特征, TOP_EXIT 0.7433, DIP_BUY 0.6935)
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.pitd_kinematics_engineer import KinematicsEngineer
-from ml.pitd_dynamics_engineer import DynamicsEngineer
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.pitd_dynamics_engineer import DynamicsEngineer  # noqa: E402
+from ml.pitd_kinematics_engineer import KinematicsEngineer  # noqa: E402
 
 
 def load_btc_data() -> pd.DataFrame:
@@ -53,8 +54,13 @@ def generate_labels(closes, lookahead, threshold, mode="drop"):
 
 
 def walk_forward_validation(
-    features, labels, feature_names,
-    n_splits=12, train_days=730, test_days=180, step_days=180,
+    features,
+    labels,
+    feature_names,
+    n_splits=12,
+    train_days=730,
+    test_days=180,
+    step_days=180,
 ):
     n = len(features)
     feature_importances = []
@@ -79,10 +85,15 @@ def walk_forward_validation(
         if y_train.sum() < 5 or y_test.sum() < 2:
             continue
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
         train_pred = model.predict_proba(X_train)[:, 1]
@@ -96,7 +107,11 @@ def walk_forward_validation(
     avg_test = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay = 1.0 - (avg_test / avg_train) if avg_train > 0 else 0.0
-    avg_imp = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_imp = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
     return avg_test, avg_train, float(decay), avg_imp
 
 
@@ -107,8 +122,11 @@ def main():
 
     prices = load_btc_data()
     closes = prices["close"].values
-    print("\n  BTC日线: {}天, {} ~ {}".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "\n  BTC日线: {}天, {} ~ {}".format(
+            len(prices), prices.index[0].date(), prices.index[-1].date()
+        )
+    )
 
     # 1. 计算运动学和动力学特征
     print("\n【1. 特征计算】")
@@ -124,7 +142,9 @@ def main():
         dyn_fe = DynamicsEngineer(mass_mode=mode)
         dyn_feats = dyn_fe.extract_series(prices, kin_features)
         dyn_features_by_mode[mode] = (dyn_fe, dyn_feats)
-        print("  动力学特征({:20s}): {}维  {:.2f}s".format(mode, dyn_feats.shape[1], time.time() - t0))
+        print(
+            "  动力学特征({:20s}): {}维  {:.2f}s".format(mode, dyn_feats.shape[1], time.time() - t0)
+        )
 
     # 2. 物理意义检验
     print("\n【2. 物理意义检验】")
@@ -134,12 +154,18 @@ def main():
         print("\n  质量模式: {}".format(mode))
         print("    质量m>0占比:      {:.1%}".format(check["mass_positive_rate"]))
         print("    质量变异系数CV:    {:.3f} (>0.1表示有变化)".format(check["mass_cv"]))
-        print("    动量方向正确率:    {:.1%} (sign(P)==sign(v))".format(check["momentum_sign_correct"]))
+        print(
+            "    动量方向正确率:    {:.1%} (sign(P)==sign(v))".format(
+                check["momentum_sign_correct"]
+            )
+        )
         print("    动能非负率:        {:.1%}".format(check["kinetic_energy_nonneg"]))
         print("    η在[0,1]占比:     {:.1%}".format(check["eta_in_range"]))
         print("    强趋势η:          {:.4f}".format(check["eta_strong_trend"]))
         print("    弱趋势η:          {:.4f}".format(check["eta_weak_trend"]))
-        print("    强弱η比:          {:.2f}x (>1.0验证理论1)".format(check["eta_strong_weak_ratio"]))
+        print(
+            "    强弱η比:          {:.2f}x (>1.0验证理论1)".format(check["eta_strong_weak_ratio"])
+        )
         print("    m范围: [{:.3f}, {:.3f}]".format(*check["mass_range"]))
         print("    η范围: [{:.4f}, {:.4f}]".format(*check["eta_range"]))
         print("    结论: {}".format(check["verdict"]))
@@ -162,8 +188,14 @@ def main():
         mask = (abs_vW >= lo) & (abs_vW <= hi if i == 4 else abs_vW < hi)
         if mask.sum() > 0:
             eta_mean = eta[mask].mean()
-            print("  {:<15s}  {:>10.5f}  {:>10.4f}  {:>10d}".format(
-                "档{}({:.0%})".format(i + 1, (i + 1) / 5), abs_vW[mask].mean(), eta_mean, mask.sum()))
+            print(
+                "  {:<15s}  {:>10.5f}  {:>10.4f}  {:>10d}".format(
+                    "档{}({:.0%})".format(i + 1, (i + 1) / 5),
+                    abs_vW[mask].mean(),
+                    eta_mean,
+                    mask.sum(),
+                )
+            )
 
     # 4. 构建基线
     print("\n【4. 构建基线】")
@@ -175,7 +207,11 @@ def main():
     phil_fe = PhilosophyFeatureEngineer()
     phil_features = phil_fe.extract_series(prices, symbol="BTC")
 
-    v55_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v55_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v55_names = list(v55_base.columns)
     print("  V5.5基线: {}维".format(len(v55_names)))
 
@@ -186,8 +222,12 @@ def main():
     print("\n【5. Walk-Forward验证】")
 
     print("\n  5.1 V5.5基线")
-    v55_top, v55_top_tr, v55_top_dec, _ = walk_forward_validation(v55_base, top_exit_labels, v55_names)
-    v55_dip, v55_dip_tr, v55_dip_dec, _ = walk_forward_validation(v55_base, dip_buy_labels, v55_names)
+    v55_top, v55_top_tr, v55_top_dec, _ = walk_forward_validation(
+        v55_base, top_exit_labels, v55_names
+    )
+    v55_dip, v55_dip_tr, v55_dip_dec, _ = walk_forward_validation(
+        v55_base, dip_buy_labels, v55_names
+    )
     print("    TOP_EXIT: {:.4f} (decay={:.1%})".format(v55_top, v55_top_dec))
     print("    DIP_BUY:  {:.4f} (decay={:.1%})".format(v55_dip, v55_dip_dec))
 
@@ -196,48 +236,72 @@ def main():
     for mode in mass_modes:
         print("\n  5.2 V5.5 + 动力学({})".format(mode))
         _, dyn_feats = dyn_features_by_mode[mode]
-        exp_feats = pd.concat([v55_base, dyn_feats], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, dyn_feats], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
 
         t0 = time.time()
-        top_auc, top_tr, top_dec, top_imp = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
-        dip_auc, dip_tr, dip_dec, dip_imp = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
+        top_auc, top_tr, top_dec, top_imp = walk_forward_validation(
+            exp_feats, top_exit_labels, exp_names
+        )
+        dip_auc, dip_tr, dip_dec, dip_imp = walk_forward_validation(
+            exp_feats, dip_buy_labels, exp_names
+        )
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
         print("    TOP_EXIT: {:.4f} (Δ{:+.4f}, decay={:.1%})".format(top_auc, d_top, top_dec))
-        print("    DIP_BUY:  {:.4f} (Δ{:+.4f}, decay={:.1%})  {:.1f}s {}".format(
-            dip_auc, d_dip, dip_dec, time.time() - t0, verdict))
+        print(
+            "    DIP_BUY:  {:.4f} (Δ{:+.4f}, decay={:.1%})  {:.1f}s {}".format(
+                dip_auc, d_dip, dip_dec, time.time() - t0, verdict
+            )
+        )
 
         mode_results[mode] = {
-            "top_auc": top_auc, "dip_auc": dip_auc,
-            "d_top": d_top, "d_dip": d_dip,
-            "top_decay": top_dec, "dip_decay": dip_dec,
-            "top_imp": top_imp, "dip_imp": dip_imp,
+            "top_auc": top_auc,
+            "dip_auc": dip_auc,
+            "d_top": d_top,
+            "d_dip": d_dip,
+            "top_decay": top_dec,
+            "dip_decay": dip_dec,
+            "top_imp": top_imp,
+            "dip_imp": dip_imp,
             "exp_names": exp_names,
         }
 
     # 6. 选最佳质量模式做消融实验
-    best_mode = max(mode_results.keys(),
-                    key=lambda m: (mode_results[m]["d_top"] + mode_results[m]["d_dip"]) / 2)
+    best_mode = max(
+        mode_results.keys(), key=lambda m: (mode_results[m]["d_top"] + mode_results[m]["d_dip"]) / 2
+    )
     print("\n【6. 消融实验（最佳质量模式: {}）】".format(best_mode))
 
     _, best_dyn_feats = dyn_features_by_mode[best_mode]
-    print("  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "添加特征", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "添加特征", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 80)
 
     single_results = []
     for feat in best_dyn_feats.columns:
-        exp_feats = pd.concat([v55_base, best_dyn_feats[[feat]]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, best_dyn_feats[[feat]]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
         top_auc, _, _, _ = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
         dip_auc, _, _, _ = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            feat, top_auc, d_top, dip_auc, d_dip, verdict))
+        print(
+            "  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                feat, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
         single_results.append({"feat": feat, "d_top": d_top, "d_dip": d_dip})
 
     # 7. 组合测试
@@ -253,8 +317,11 @@ def main():
         ("动能+质量", ["dyn_kinetic_energy", "dyn_mass"]),
     ]
 
-    print("  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 80)
 
     combo_results = []
@@ -262,21 +329,34 @@ def main():
         available = [f for f in feats if f in best_dyn_feats.columns]
         if not available:
             continue
-        exp_feats = pd.concat([v55_base, best_dyn_feats[available]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, best_dyn_feats[available]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
         top_auc, _, top_dec, _ = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
         dip_auc, _, dip_dec, _ = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        combo_results.append({
-            "name": name, "feats": available,
-            "top_auc": top_auc, "dip_auc": dip_auc,
-            "d_top": d_top, "d_dip": d_dip,
-            "top_decay": top_dec, "dip_decay": dip_dec,
-        })
+        print(
+            "  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        combo_results.append(
+            {
+                "name": name,
+                "feats": available,
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "d_top": d_top,
+                "d_dip": d_dip,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+            }
+        )
 
     # 8. 动力学特征重要性排名
     print("\n【8. 动力学特征重要性排名】")
@@ -286,13 +366,16 @@ def main():
         ("DIP_BUY", best_result["dip_imp"], best_result["exp_names"]),
     ]:
         print("\n  {} 场景:".format(scenario))
-        fi = sorted(zip(names, imp), key=lambda x: x[1], reverse=True)
+        fi = sorted(zip(names, imp), key=lambda x: x[1], reverse=True)  # noqa: B905
         total = len(names)
         for rank, (feat, importance) in enumerate(fi, 1):
             if feat in best_dyn_feats.columns:
                 pct = int(rank / total * 100)
-                print("    #{:>3d} {:<32s}  重要性={:>8.1f}  Top{}%".format(
-                    rank, feat, importance, pct))
+                print(
+                    "    #{:>3d} {:<32s}  重要性={:>8.1f}  Top{}%".format(
+                        rank, feat, importance, pct
+                    )
+                )
 
     # 9. 总结
     print("\n" + "=" * 80)
@@ -305,8 +388,11 @@ def main():
     print("\n  双场景提升的组合 ({}个):".format(len(both_positive)))
     for r in both_positive[:5]:
         comp = (r["d_top"] + r["d_dip"]) / 2
-        print("  综合={:+.4f} {:<35s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
-            comp, r["name"], r["d_top"], r["d_dip"], r["top_decay"], r["dip_decay"]))
+        print(
+            "  综合={:+.4f} {:<35s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
+                comp, r["name"], r["d_top"], r["d_dip"], r["top_decay"], r["dip_decay"]
+            )
+        )
 
     # 决策
     if both_positive:
@@ -333,15 +419,17 @@ def main():
         "phase": "Phase 2 - Dynamics",
         "best_mass_mode": best_mode,
         "v55_baseline": {"top_exit": v55_top, "dip_buy": v55_dip},
-        "mode_results": {k: {kk: vv for kk, vv in v.items() if kk not in ["top_imp", "dip_imp", "exp_names"]}
-                         for k, v in mode_results.items()},
+        "mode_results": {
+            k: {kk: vv for kk, vv in v.items() if kk not in ["top_imp", "dip_imp", "exp_names"]}
+            for k, v in mode_results.items()
+        },
         "single_results": single_results,
         "combo_results": combo_results,
         "best_combo": both_positive[0] if both_positive else None,
         "decision": decision,
     }
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/pitd_phase2_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False, default=str)
     print("\n  结果已保存: {}".format(output_path))
 

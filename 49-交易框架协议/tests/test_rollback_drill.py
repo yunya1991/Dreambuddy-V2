@@ -1,4 +1,5 @@
 """M0-05 rollback drill tests."""
+
 from __future__ import annotations
 
 from rollback_drill import run_drill

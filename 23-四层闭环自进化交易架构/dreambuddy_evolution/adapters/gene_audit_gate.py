@@ -8,6 +8,7 @@ gene_audit_gate — 基因审核门禁（三级校验）
 
 审核日志: gene_data/strategy_genes/audit_log.jsonl
 """
+
 from __future__ import annotations
 
 import json
@@ -42,6 +43,7 @@ class GeneAuditGate:
         """
         try:
             import jsonschema
+
             schema_path = self._gene_root / "schemas" / "condition.json"
             if not schema_path.exists():
                 return {"passed": True, "reason": "schema 文件不存在，跳过校验"}
@@ -55,8 +57,9 @@ class GeneAuditGate:
 
     # ─── 门禁 2: 统计门槛 ─────────────────────────────────────────
 
-    def validate_statistical(self, n_samples: int, ess: float,
-                             min_samples: int = 100, min_ess: float = 0.5) -> dict[str, Any]:
+    def validate_statistical(
+        self, n_samples: int, ess: float, min_samples: int = 100, min_ess: float = 0.5
+    ) -> dict[str, Any]:
         """统计门槛: N ≥ min_samples 且 ESS ≥ min_ess."""
         if n_samples < min_samples:
             return {"passed": False, "reason": f"样本数不足: N={n_samples} < {min_samples}"}
@@ -74,8 +77,9 @@ class GeneAuditGate:
 
     # ─── 综合审核 ────────────────────────────────────────────────
 
-    def audit(self, gene_data: dict, n_samples: int, ess: float,
-              baseline_ess: float = 0.0) -> dict[str, Any]:
+    def audit(
+        self, gene_data: dict, n_samples: int, ess: float, baseline_ess: float = 0.0
+    ) -> dict[str, Any]:
         """三级门禁综合审核.
 
         Returns:
@@ -97,7 +101,9 @@ class GeneAuditGate:
         if not g_stat["passed"]:
             reason_parts.append(g_stat["reason"])
         if not g_rel:
-            reason_parts.append(f"相对提升不足: ess={ess:.4f} ≤ {baseline_ess:.4f}×{RELATIVE_IMPROVEMENT_FACTOR}")
+            reason_parts.append(
+                f"相对提升不足: ess={ess:.4f} ≤ {baseline_ess:.4f}×{RELATIVE_IMPROVEMENT_FACTOR}"
+            )
 
         result = {
             "passed": passed,

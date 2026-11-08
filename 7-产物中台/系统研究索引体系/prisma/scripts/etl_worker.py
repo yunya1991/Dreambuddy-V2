@@ -10,13 +10,12 @@ Usage:
     python etl_worker.py --daemon  # 持续监控模式
 """
 
-import argparse
+import argparse  # noqa: I001
 import json
 import logging
 import os
-import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -25,16 +24,14 @@ from psycopg2.extras import execute_batch, Json
 
 # 配置日志
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # 默认路径
 EVENTS_ROOT = Path(os.environ.get("EVENTS_ROOT", Path.home() / ".workbuddy" / "events"))
 DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://postgres:dreambuddy@127.0.0.1:5432/dreambuddy"
+    "DATABASE_URL", "postgresql://postgres:dreambuddy@127.0.0.1:5432/dreambuddy"
 )
 
 # 系统到表的映射
@@ -60,7 +57,7 @@ def get_connection():
         except Exception as e:
             logger.warning(f"DB connection attempt {i+1}/{max_retries} failed: {e}")
             if i < max_retries - 1:
-                time.sleep(2 ** i)
+                time.sleep(2**i)
     raise RuntimeError("Failed to connect to PostgreSQL after 3 retries")
 
 
@@ -301,7 +298,9 @@ def run_etl(date_str: str, systems: Optional[List[str]] = None):
 
             logger.info(f"Processing {file_path} ({file_path.stat().st_size} bytes)")
             result = process_file(conn, file_path, system)
-            logger.info(f"  → sessions={result['sessions']}, spans={result['spans']}, dsh_calls={result['dsh_calls']}")
+            logger.info(
+                f"  → sessions={result['sessions']}, spans={result['spans']}, dsh_calls={result['dsh_calls']}"
+            )
 
             for k, v in result.items():
                 total[k] += v

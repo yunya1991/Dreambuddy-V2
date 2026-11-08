@@ -19,10 +19,11 @@ gene_data/strategy_genes/conditions/，不修改 strategy_gene.py 4 个冻结接
     - tp_decay_grace_hours: TP 衰减宽限期（默认 12）
     - soft_vote_cooldown_sec: 软投票冷却期（默认 14400）
 """
+
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 
 
 @dataclass

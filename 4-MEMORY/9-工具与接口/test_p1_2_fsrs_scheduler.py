@@ -22,15 +22,12 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §2.3.3 P1-2 + 评审修复 B2
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
-import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -53,7 +50,7 @@ class TestFSRSForgettingScheduler:
 
         scheduler = FSRSForgettingScheduler()
         # 1 天前 verify
-        last_verify = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        last_verify = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()  # noqa: F841
         r = scheduler.compute_retrievability(
             days_since_verify=1,
             verify_count=2,
@@ -221,4 +218,5 @@ class TestCognitiveLoopEntryFSRS:
     def test_schedule_forgetting_method_exists(self):
         """RED: CognitiveLoopEntry 应有 schedule_forgetting() 方法。"""
         from cognitive_loop_entry import CognitiveLoopEntry
+
         assert hasattr(CognitiveLoopEntry, "schedule_forgetting")

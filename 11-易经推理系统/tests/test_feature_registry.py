@@ -1,10 +1,11 @@
 """FeatureRegistry 单元测试 — 验证插件注册机制和特征一致性"""
+
 import sys
-import os
-import pytest
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import pytest
 
 # 确保项目根目录在 path 中
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -33,13 +34,15 @@ def sample_ohlcv():
     open_ = close.shift(1).fillna(close.iloc[0])
     volume = pd.Series(np.random.lognormal(10, 1, n), index=dates)
 
-    df = pd.DataFrame({
-        "open": open_,
-        "high": high,
-        "low": low,
-        "close": close,
-        "volume": volume,
-    })
+    df = pd.DataFrame(
+        {
+            "open": open_,
+            "high": high,
+            "low": low,
+            "close": close,
+            "volume": volume,
+        }
+    )
     return df
 
 
@@ -56,10 +59,15 @@ def btc_ref_df():
     low = pd.Series(close_arr * (1 - np.abs(np.random.normal(0, 0.004, n))), index=dates)
     open_ = close.shift(1).fillna(close.iloc[0])
     volume = pd.Series(np.random.lognormal(11, 1, n), index=dates)
-    return pd.DataFrame({
-        "open": open_, "high": high, "low": low,
-        "close": close, "volume": volume,
-    })
+    return pd.DataFrame(
+        {
+            "open": open_,
+            "high": high,
+            "low": low,
+            "close": close,
+            "volume": volume,
+        }
+    )
 
 
 # ============================================================
@@ -97,9 +105,9 @@ class TestComputeAll:
 
     def test_returns_dataframe_and_gua_map(self, sample_ohlcv):
         """compute_all 返回 (DataFrame, dict) 元组"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         # 触发模块注册
         import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         features, gua_map = FeatureRegistry.compute_all(
             df=sample_ohlcv,
@@ -114,9 +122,9 @@ class TestComputeAll:
 
     def test_enabled_filter_only_runs_specified(self, sample_ohlcv):
         """enabled 参数精确控制启用模块"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa
         import scripts.memory_l4.bcrm2.classic_experience_features  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         _, gua_map = FeatureRegistry.compute_all(
             df=sample_ohlcv,
@@ -127,8 +135,8 @@ class TestComputeAll:
 
     def test_wdh_sub_keys_split(self, sample_ohlcv):
         """wdh 拆为 4 个子 key"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         import scripts.memory_l4.bcrm2.wdh_features  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         _, gua_map = FeatureRegistry.compute_all(
             df=sample_ohlcv,
@@ -142,8 +150,8 @@ class TestComputeAll:
 
     def test_cycle_sub_keys_split(self, sample_ohlcv):
         """cycle 拆为 4 个子 key"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         import scripts.memory_l4.bcrm2.cycle_features  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         _, gua_map = FeatureRegistry.compute_all(
             df=sample_ohlcv,
@@ -157,8 +165,8 @@ class TestComputeAll:
 
     def test_cross_asset_skipped_without_ref_df(self, sample_ohlcv):
         """无 ref_df 时跳过 cross_asset"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         import scripts.memory_l4.bcrm2.cross_asset_features  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         _, gua_map = FeatureRegistry.compute_all(
             df=sample_ohlcv,
@@ -169,8 +177,8 @@ class TestComputeAll:
 
     def test_cross_asset_runs_with_ref_df(self, sample_ohlcv, btc_ref_df):
         """有 ref_df 时计算 cross_asset"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         import scripts.memory_l4.bcrm2.cross_asset_features  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         _, gua_map = FeatureRegistry.compute_all(
             df=sample_ohlcv,
@@ -190,9 +198,8 @@ class TestFeatureConsistency:
 
     def test_bagua_features_match_direct_call(self, sample_ohlcv):
         """bagua 特征值与直接调用 BaguaFeatureEngine 一致"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         from scripts.memory_l4.bcrm2.bagua_feature_engine import BaguaFeatureEngine
-        import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F811
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         # 直接调用
         direct = BaguaFeatureEngine().compute(sample_ohlcv)
@@ -206,16 +213,17 @@ class TestFeatureConsistency:
 
         # 列顺序和值应一致
         pd.testing.assert_frame_equal(
-            direct, registry,
+            direct,
+            registry,
             check_dtype=False,
             check_like=True,  # 忽略列顺序
         )
 
     def test_classic_features_match_direct_call(self, sample_ohlcv):
         """classic_exp 特征值与直接调用一致"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
-        from scripts.memory_l4.bcrm2.classic_experience_features import ClassicExperienceFeatures
         import scripts.memory_l4.bcrm2.classic_experience_features  # noqa
+        from scripts.memory_l4.bcrm2.classic_experience_features import ClassicExperienceFeatures
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         direct = ClassicExperienceFeatures().compute(sample_ohlcv)
         registry, _ = FeatureRegistry.compute_all(
@@ -227,9 +235,9 @@ class TestFeatureConsistency:
 
     def test_fibonacci_features_match_direct_call(self, sample_ohlcv):
         """fibonacci 特征值与直接调用一致"""
+        import scripts.memory_l4.bcrm2.fibonacci_features  # noqa
         from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         from scripts.memory_l4.bcrm2.fibonacci_features import FibonacciFeatures
-        import scripts.memory_l4.bcrm2.fibonacci_features  # noqa
 
         direct = FibonacciFeatures().compute(sample_ohlcv)
         registry, _ = FeatureRegistry.compute_all(
@@ -241,9 +249,9 @@ class TestFeatureConsistency:
 
     def test_pivot_features_match_direct_call(self, sample_ohlcv):
         """pivot_point 特征值与直接调用一致"""
+        import scripts.memory_l4.bcrm2.pivot_point_features  # noqa
         from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         from scripts.memory_l4.bcrm2.pivot_point_features import PivotPointFeatures
-        import scripts.memory_l4.bcrm2.pivot_point_features  # noqa
 
         direct = PivotPointFeatures().compute(sample_ohlcv)
         registry, _ = FeatureRegistry.compute_all(
@@ -255,9 +263,9 @@ class TestFeatureConsistency:
 
     def test_rsi_features_match_direct_call(self, sample_ohlcv):
         """rsi_sentiment 特征值与直接调用一致"""
+        import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa
         from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         from scripts.memory_l4.bcrm2.rsi_sentiment_features import RSISentimentFeatures
-        import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa
 
         direct = RSISentimentFeatures().compute(sample_ohlcv)
         registry, _ = FeatureRegistry.compute_all(
@@ -269,9 +277,9 @@ class TestFeatureConsistency:
 
     def test_wdh_features_match_direct_call(self, sample_ohlcv):
         """wdh 特征值与直接调用一致"""
+        import scripts.memory_l4.bcrm2.wdh_features  # noqa
         from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         from scripts.memory_l4.bcrm2.wdh_features import WDHFeatures
-        import scripts.memory_l4.bcrm2.wdh_features  # noqa
 
         direct = WDHFeatures().compute(sample_ohlcv)
         registry, _ = FeatureRegistry.compute_all(
@@ -283,9 +291,9 @@ class TestFeatureConsistency:
 
     def test_cycle_features_match_direct_call(self, sample_ohlcv):
         """cycle 特征值与直接调用一致"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
-        from scripts.memory_l4.bcrm2.cycle_features import CycleFeatures
         import scripts.memory_l4.bcrm2.cycle_features  # noqa
+        from scripts.memory_l4.bcrm2.cycle_features import CycleFeatures
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         direct = CycleFeatures(symbol="BTC").compute(sample_ohlcv)
         registry, _ = FeatureRegistry.compute_all(
@@ -297,9 +305,9 @@ class TestFeatureConsistency:
 
     def test_market_cap_features_match_direct_call(self, sample_ohlcv):
         """market_cap 特征值与直接调用一致"""
+        import scripts.memory_l4.bcrm2.market_cap  # noqa
         from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         from scripts.memory_l4.bcrm2.market_cap import MarketCapClassifier
-        import scripts.memory_l4.bcrm2.market_cap  # noqa
 
         direct = MarketCapClassifier().get_mcap_features("BTC", sample_ohlcv)
         registry, _ = FeatureRegistry.compute_all(
@@ -311,9 +319,9 @@ class TestFeatureConsistency:
 
     def test_cross_asset_features_match_direct_call(self, sample_ohlcv, btc_ref_df):
         """cross_asset 特征值与直接调用一致"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
-        from scripts.memory_l4.bcrm2.cross_asset_features import compute_cross_asset_features
         import scripts.memory_l4.bcrm2.cross_asset_features  # noqa
+        from scripts.memory_l4.bcrm2.cross_asset_features import compute_cross_asset_features
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         direct = compute_cross_asset_features(sample_ohlcv, btc_ref_df, symbol="ETH")
         registry, _ = FeatureRegistry.compute_all(
@@ -326,16 +334,18 @@ class TestFeatureConsistency:
 
     def test_merrill_features_match_direct_call(self, sample_ohlcv, btc_ref_df):
         """merrill_clock 特征值与直接调用一致（含 cycle_phase 依赖传递）"""
+        import scripts.memory_l4.bcrm2.cycle_features  # noqa
+        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa
+        from scripts.memory_l4.bcrm2.cycle_features import CycleFeatures
         from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         from scripts.memory_l4.bcrm2.merrill_clock_features import MerrillClockFeatures
-        from scripts.memory_l4.bcrm2.cycle_features import CycleFeatures
-        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa
-        import scripts.memory_l4.bcrm2.cycle_features  # noqa
 
         # 直接调用：需要先算 cycle，再传给 merrill
         cycle_feats = CycleFeatures(symbol="BTC").compute(sample_ohlcv)
         direct = MerrillClockFeatures(symbol="BTC").compute(
-            sample_ohlcv, ref_df=btc_ref_df, cycle_phase=cycle_feats,
+            sample_ohlcv,
+            ref_df=btc_ref_df,
+            cycle_phase=cycle_feats,
         )
 
         # 通过 Registry 调用（Registry 内部自动传递 cycle_phase）
@@ -346,13 +356,14 @@ class TestFeatureConsistency:
             enabled=["cycle", "merrill_clock"],
         )
         # 提取 merrill_clock 的特征列
-        merrill_cols = [c for c in registry.columns
-                       if c not in cycle_feats.columns]
+        merrill_cols = [c for c in registry.columns if c not in cycle_feats.columns]
         registry_merrill = registry[merrill_cols]
 
         pd.testing.assert_frame_equal(
-            direct, registry_merrill,
-            check_dtype=False, check_like=True,
+            direct,
+            registry_merrill,
+            check_dtype=False,
+            check_like=True,
         )
 
 
@@ -364,18 +375,18 @@ class TestFullFeatureSet:
 
     def test_all_10_modules_produce_features(self, sample_ohlcv, btc_ref_df):
         """10 个模块全部启用时产出非空特征"""
-        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
         # 触发所有模块注册
         import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa
         import scripts.memory_l4.bcrm2.classic_experience_features  # noqa
+        import scripts.memory_l4.bcrm2.cross_asset_features  # noqa
+        import scripts.memory_l4.bcrm2.cycle_features  # noqa
         import scripts.memory_l4.bcrm2.fibonacci_features  # noqa
+        import scripts.memory_l4.bcrm2.market_cap  # noqa
+        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa
         import scripts.memory_l4.bcrm2.pivot_point_features  # noqa
         import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa
         import scripts.memory_l4.bcrm2.wdh_features  # noqa
-        import scripts.memory_l4.bcrm2.cycle_features  # noqa
-        import scripts.memory_l4.bcrm2.market_cap  # noqa
-        import scripts.memory_l4.bcrm2.cross_asset_features  # noqa
-        import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa
+        from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
 
         features, gua_map = FeatureRegistry.compute_all(
             df=sample_ohlcv,
@@ -389,11 +400,21 @@ class TestFullFeatureSet:
 
         # feature_names_by_gua 应包含所有模块（含子模块 key）
         expected_keys = {
-            "classic_exp", "fibonacci", "pivot_point", "rsi_sentiment",
-            "wdh_weekly_accum", "wdh_daily_confirm", "wdh_hourly_timing",
+            "classic_exp",
+            "fibonacci",
+            "pivot_point",
+            "rsi_sentiment",
+            "wdh_weekly_accum",
+            "wdh_daily_confirm",
+            "wdh_hourly_timing",
             "wdh_qual_trigger",
-            "cycle_halving", "cycle_ath", "cycle_inventory", "cycle_long_term",
-            "market_cap", "cross_asset", "merrill_clock",
+            "cycle_halving",
+            "cycle_ath",
+            "cycle_inventory",
+            "cycle_long_term",
+            "market_cap",
+            "cross_asset",
+            "merrill_clock",
         }
         # bagua 的 key 来自实例属性（qian/kun/zhen/...），不在 expected_keys 中
         actual_keys = set(gua_map.keys())

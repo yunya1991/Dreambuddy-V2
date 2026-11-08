@@ -9,16 +9,16 @@ v0.2 新增模块 — Phase P0
 
 import json
 import math
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import (
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
     memory_l4_distills_dir,
     memory_l4_reviews_dir,
@@ -133,11 +133,11 @@ def compute_event_library(cases: Optional[List[Dict[str, Any]]] = None) -> Dict[
         if isinstance(q, str):
             try:
                 q = json.loads(q)
-            except:
+            except:  # noqa: E722
                 q = {}
         elif q is None:
             q = {}
-        
+
         x = q.get("x")
         y = q.get("y")
         if x is None or y is None:
@@ -167,11 +167,9 @@ def compute_event_library(cases: Optional[List[Dict[str, Any]]] = None) -> Dict[
 # v0.2: evolution_metrics — 演化指标
 # ---------------------------------------------------------------------------
 
+
 def _load_all_distills() -> List[Dict[str, Any]]:
-    return [
-        json.loads(p.read_text(encoding="utf-8"))
-        for p in _list_json(memory_l4_distills_dir())
-    ]
+    return [json.loads(p.read_text(encoding="utf-8")) for p in _list_json(memory_l4_distills_dir())]
 
 
 def _distill_ts(distill: Dict[str, Any]) -> Optional[str]:
@@ -278,7 +276,9 @@ def identify_emerging_patterns(
         for j in range(i + 1, len(points)):
             if visited[j]:
                 continue
-            dist = math.sqrt((points[i][0] - points[j][0]) ** 2 + (points[i][1] - points[j][1]) ** 2)
+            dist = math.sqrt(
+                (points[i][0] - points[j][0]) ** 2 + (points[i][1] - points[j][1]) ** 2
+            )
             if dist <= radius:
                 cluster.append(j)
                 visited[j] = True
@@ -304,15 +304,17 @@ def identify_emerging_patterns(
             cluster_points=pts,
         )
 
-        result.append({
-            "cluster_center": {
-                "x": round(center_x, 3),
-                "y": round(center_y, 3),
-            },
-            "maturity_score": maturity["score"],
-            "case_count": len(all_cases),
-            "consistency": maturity["consistency"],
-        })
+        result.append(
+            {
+                "cluster_center": {
+                    "x": round(center_x, 3),
+                    "y": round(center_y, 3),
+                },
+                "maturity_score": maturity["score"],
+                "case_count": len(all_cases),
+                "consistency": maturity["consistency"],
+            }
+        )
 
     result.sort(key=lambda r: r["maturity_score"], reverse=True)
     return result
@@ -373,7 +375,9 @@ def now_iso_local() -> str:
 def _list_json(dir_path: Path) -> List[Path]:
     if not dir_path.exists():
         return []
-    return sorted([p for p in dir_path.glob("*.json") if p.is_file() and "_v02_backup" not in p.name])
+    return sorted(
+        [p for p in dir_path.glob("*.json") if p.is_file() and "_v02_backup" not in p.name]
+    )
 
 
 def _load_all_cases() -> List[Dict[str, Any]]:
@@ -411,11 +415,11 @@ def compute_quadrant_distribution(cases: Optional[List[Dict[str, Any]]] = None) 
         if isinstance(q, str):
             try:
                 q = json.loads(q)
-            except:
+            except:  # noqa: E722
                 q = {}
         elif q is None:
             q = {}
-        
+
         if isinstance(q, dict) and q.get("x") is not None and q.get("y") is not None:
             xs.append(q["x"])
             ys.append(q["y"])
@@ -505,6 +509,7 @@ def save_stats(stats: Dict[str, Any], out_path: Optional[Path] = None) -> Path:
 # v0.2: migration_trends — from deprecated stats_builder.py
 # ---------------------------------------------------------------------------
 
+
 def build_migration_trends(
     snapshot_ts: str,
     distills: Optional[List[Dict[str, Any]]] = None,
@@ -538,6 +543,7 @@ def build_migration_trends(
 # v0.2: performance — from deprecated stats_builder.py
 # ---------------------------------------------------------------------------
 
+
 def _episode_pnl(ep: Dict[str, Any]) -> Tuple[Optional[float], Optional[float]]:
     """从 episode outcome 提取 pnl (usdt, pct)。"""
     out = ep.get("outcome") or {}
@@ -556,7 +562,7 @@ def _episode_pnl(ep: Dict[str, Any]) -> Tuple[Optional[float], Optional[float]]:
 
 def _extract_episode_ref_path(case: Dict[str, Any]) -> Optional[str]:
     """从 TradeCase 提取 episode 文件路径。"""
-    refs = ((case.get("execution") or {}).get("episode_refs") or [])
+    refs = (case.get("execution") or {}).get("episode_refs") or []
     if not refs:
         return None
     p = str((refs[0] or {}).get("path") or "").strip()

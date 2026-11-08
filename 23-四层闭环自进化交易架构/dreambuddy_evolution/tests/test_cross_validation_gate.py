@@ -9,12 +9,12 @@ RED 阶段断言：
 - FAIL-OPEN: G_dim/A_dim None → 中性结果
 - head_adjustment: 分歧时 A_dim 对应 head boost, G_dim 对应 head decay
 """
-import pytest
 
 
 def test_module_importable():
     """CrossValidationGate 模块可导入。"""
     from dreambuddy_evolution.core.cross_validation_gate import CrossValidationGate
+
     assert CrossValidationGate is not None
 
 
@@ -24,8 +24,10 @@ def test_consistent_boost():
 
     gate = CrossValidationGate(persistence_threshold=5)
     result = gate.compare(
-        G_dim="fundamental", G_conf=0.9,
-        A_dim="fundamental", A_strength=0.8,
+        G_dim="fundamental",
+        G_conf=0.9,
+        A_dim="fundamental",
+        A_strength=0.8,
         structural_break={},
     )
     assert result["confidence_mult"] == 1.15
@@ -39,8 +41,10 @@ def test_divergence_penalty():
 
     gate = CrossValidationGate(persistence_threshold=5)
     result = gate.compare(
-        G_dim="fundamental", G_conf=0.9,
-        A_dim="macro", A_strength=0.7,
+        G_dim="fundamental",
+        G_conf=0.9,
+        A_dim="macro",
+        A_strength=0.7,
         structural_break={},
     )
     assert result["confidence_mult"] == 0.9
@@ -56,8 +60,10 @@ def test_quality_change_on_persistent_divergence():
     sb = {"market_form_shift": True}  # score = 1.0 ≥ 0.4
     for _ in range(3):
         r = gate.compare(
-            G_dim="fundamental", G_conf=0.9,
-            A_dim="macro", A_strength=0.7,
+            G_dim="fundamental",
+            G_conf=0.9,
+            A_dim="macro",
+            A_strength=0.7,
             structural_break=sb,
         )
     assert r["quality_change"] is True
@@ -83,8 +89,10 @@ def test_head_adjustment_on_divergence():
 
     gate = CrossValidationGate(persistence_threshold=5)
     r = gate.compare(
-        G_dim="fundamental", G_conf=0.9,
-        A_dim="macro", A_strength=0.7,
+        G_dim="fundamental",
+        G_conf=0.9,
+        A_dim="macro",
+        A_strength=0.7,
         structural_break={},
     )
     assert r["head_adjustment"]  # 非空
@@ -105,9 +113,12 @@ def test_structural_break_score():
     assert gate._structural_break_score({"market_form_shift": True}) == 1.0
     assert gate._structural_break_score({"correlation_break": True}) == 0.6
     assert gate._structural_break_score({"volatility_regime_shift": True}) == 0.4
-    assert gate._structural_break_score({
-        "market_form_shift": True, "correlation_break": True, "volatility_regime_shift": True
-    }) == 2.0
+    assert (
+        gate._structural_break_score(
+            {"market_form_shift": True, "correlation_break": True, "volatility_regime_shift": True}
+        )
+        == 2.0
+    )
     assert gate._structural_break_score({}) == 0.0
 
 
@@ -117,15 +128,17 @@ def test_sprt_switches_to_neutral_on_low_consistency():
 
     gate = CrossValidationGate()
     # 建立 baseline：双链路一致为 fundamental
-    gate.compare(G_dim="fundamental", G_conf=0.9, A_dim="fundamental",
-                 A_strength=0.8, structural_break={})
+    gate.compare(
+        G_dim="fundamental", G_conf=0.9, A_dim="fundamental", A_strength=0.8, structural_break={}
+    )
     assert gate._baseline_dim == "fundamental"
 
     # 降级模式中持续输出 macro（与 baseline 不一致）
     switched = False
     for _ in range(200):
-        r = gate.compare(G_dim=None, G_conf=None, A_dim="macro",
-                         A_strength=0.7, structural_break={})
+        r = gate.compare(
+            G_dim=None, G_conf=None, A_dim="macro", A_strength=0.7, structural_break={}
+        )
         if r.get("degraded_mode") == "both_none":
             switched = True
             break

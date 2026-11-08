@@ -4,6 +4,7 @@ M3 RED: build_factor_head_mask 维度对齐 mask 构建测试
 验证 mask 从 CROSS_ATTENTION_FACTOR_METRICS 的维度元数据构建，
 而非硬编码索引范围。
 """
+
 from __future__ import annotations
 
 import pytest
@@ -19,9 +20,6 @@ class TestBuildFactorHeadMask:
 
     def test_function_exists(self):
         """build_factor_head_mask 函数可导入。"""
-        from dreambuddy_evolution.core.exogenous_data_bridge import (
-            build_factor_head_mask,
-        )  # noqa: F401
 
     def test_mask_shape(self):
         """mask 形状为 (n_dimensions, n_factors)。"""
@@ -49,7 +47,7 @@ class TestBuildFactorHeadMask:
 
         mask = build_factor_head_mask(override_path=_NONEXISTENT_OVERRIDE_PATH)
         # 只包含 0 和 -inf
-        zeros = (mask == 0.0)
+        zeros = mask == 0.0
         neg_inf = torch.isneginf(mask)
         assert (zeros | neg_inf).all()
 

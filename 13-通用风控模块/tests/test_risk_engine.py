@@ -6,30 +6,26 @@
 """
 
 import sys
-import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-import unittest
-from datetime import datetime, timezone
+import unittest  # noqa: E402
 
-from core.context import (
-    Signal,
-    PositionState,
-    MarketSnapshot,
-    RiskContext,
-    RiskCheckResult,
-    PositionSizeResult,
-    ExitResult,
+from core.context import (  # noqa: E402
+    Direction,
     ExitAction,
     ExitPriority,
-    Direction,
+    PositionSizeResult,
+    PositionState,
     ReasonCode,
+    RiskCheckResult,
+    RiskContext,
+    Signal,
 )
-from core.registry import RuleRegistry, RuleCategory
-from core.engine import RiskEngine
+from core.engine import RiskEngine  # noqa: E402
+from core.registry import RuleCategory, RuleRegistry  # noqa: E402
 
 
 class TestRiskContext(unittest.TestCase):
@@ -72,7 +68,7 @@ class TestRuleRegistry(unittest.TestCase):
         def dummy_rule(signal, context, config, extra=None):
             return RiskCheckResult.pass_result()
 
-        info = registry.register(
+        info = registry.register(  # noqa: F841
             name="test_rule",
             category=RuleCategory.GATE,
             handler=dummy_rule,
@@ -130,26 +126,28 @@ class TestRiskEngine(unittest.TestCase):
     """测试通用风控引擎"""
 
     def setUp(self):
-        self.engine = RiskEngine({
-            "gate": {
-                "daily_drawdown_circuit_breaker": {"max_daily_drawdown_pct": 0.10},
-                "concurrent_position_limit": {"max_concurrent_positions": 5},
-                "consecutive_losses_limit": {"max_consecutive_losses": 5},
-                "confidence_minimum": {"confidence_hard_min": 0.2, "confidence_soft_min": 0.4},
-                "drawdown_warning_degrade": {"drawdown_warn_1": 0.05, "drawdown_warn_2": 0.08},
-            },
-            "position": {
-                "risk_per_trade_pct": 0.02,
-                "max_risk_per_trade_pct": 0.05,
-                "max_position_pct": 0.25,
-                "default_stop_pct": 0.03,
-            },
-            "exit": {
-                "max_loss_stop": {"max_loss_pct": 0.10},
-                "stop_loss_barrier": {"stop_method": "pct", "stop_loss_pct": 0.03},
-                "take_profit_barrier": {"tp_method": "pct", "take_profit_pct": 0.06},
-            },
-        })
+        self.engine = RiskEngine(
+            {
+                "gate": {
+                    "daily_drawdown_circuit_breaker": {"max_daily_drawdown_pct": 0.10},
+                    "concurrent_position_limit": {"max_concurrent_positions": 5},
+                    "consecutive_losses_limit": {"max_consecutive_losses": 5},
+                    "confidence_minimum": {"confidence_hard_min": 0.2, "confidence_soft_min": 0.4},
+                    "drawdown_warning_degrade": {"drawdown_warn_1": 0.05, "drawdown_warn_2": 0.08},
+                },
+                "position": {
+                    "risk_per_trade_pct": 0.02,
+                    "max_risk_per_trade_pct": 0.05,
+                    "max_position_pct": 0.25,
+                    "default_stop_pct": 0.03,
+                },
+                "exit": {
+                    "max_loss_stop": {"max_loss_pct": 0.10},
+                    "stop_loss_barrier": {"stop_method": "pct", "stop_loss_pct": 0.03},
+                    "take_profit_barrier": {"tp_method": "pct", "take_profit_pct": 0.06},
+                },
+            }
+        )
         self.engine.register_default_rules()
 
     def test_engine_initialization(self):

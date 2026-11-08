@@ -20,10 +20,7 @@ TDD RED 阶段：验证 v3.0 的 3 处核心差异。
 from __future__ import annotations
 
 import sys
-import json
-import tempfile
 from pathlib import Path
-from datetime import date
 
 import pytest
 
@@ -38,6 +35,7 @@ sys.path.insert(0, str(_PROJECT_ROOT))
 @pytest.fixture
 def weighter_enabled(tmp_path):
     from scripts.memory_l4.three_layer_weighter import ThreeLayerWeighter
+
     # 用临时目录替代 runtime，避免污染真实参数
     return ThreeLayerWeighter(runtime_dir=tmp_path, enable=True)
 
@@ -45,6 +43,7 @@ def weighter_enabled(tmp_path):
 @pytest.fixture
 def weighter_disabled(tmp_path):
     from scripts.memory_l4.three_layer_weighter import ThreeLayerWeighter
+
     return ThreeLayerWeighter(runtime_dir=tmp_path, enable=False)
 
 
@@ -85,21 +84,18 @@ def test_t3_02_weights_sum_to_one(weighter_enabled):
 def test_t3_03_each_weight_in_clip_bounds(weighter_enabled):
     """极端 match_boost / delta 也不能越界"""
     from scripts.memory_l4 import phase_c_constants as C
+
     w_min = C.THREE_LAYER_WEIGHT_MIN  # 0.05
     w_max = C.THREE_LAYER_WEIGHT_MAX  # 0.80
 
     # 极端负向：S_BCRM=0.0 + match_boost=-0.20 → wb 被压到卡底
-    w1 = weighter_enabled.daily_recalc(
-        stats={"s_bcrm_30": 0.0, "match_boost": -0.20}, force=True
-    )
+    w1 = weighter_enabled.daily_recalc(stats={"s_bcrm_30": 0.0, "match_boost": -0.20}, force=True)
     assert w1.w_p >= w_min - 1e-9 and w1.w_p <= w_max + 1e-9
     assert w1.w_e >= w_min - 1e-9 and w1.w_e <= w_max + 1e-9
     assert w1.w_b >= w_min - 1e-9 and w1.w_b <= w_max + 1e-9
 
     # 极端正向：S_BCRM=1.0 + match_boost=0.20 → wb 被压到卡顶
-    w2 = weighter_enabled.daily_recalc(
-        stats={"s_bcrm_30": 1.0, "match_boost": 0.20}, force=True
-    )
+    w2 = weighter_enabled.daily_recalc(stats={"s_bcrm_30": 1.0, "match_boost": 0.20}, force=True)
     assert w2.w_p >= w_min - 1e-9 and w2.w_p <= w_max + 1e-9
     assert w2.w_e >= w_min - 1e-9 and w2.w_e <= w_max + 1e-9
     assert w2.w_b >= w_min - 1e-9 and w2.w_b <= w_max + 1e-9
@@ -135,6 +131,7 @@ def test_t3_04_s_bcrm_weighted(weighter_enabled):
 def _calc_S_static(s_bcrm: float, s_cont: float | None) -> float:
     """§四.1 差异①：50-50 加权；s_cont=nan/None → 100% s_bcrm 平滑不跳变"""
     import math
+
     if s_cont is None or math.isnan(s_cont):
         return s_bcrm
     return 0.50 * s_bcrm + 0.50 * s_cont  # P8 冻结比 50:50
@@ -154,7 +151,7 @@ def test_t3_05_diff_1_s_composition_50_50():
     assert abs(s2 - 0.70) < 1e-9
 
     # 例 3：S_cont=nan → 同样退化为 S_BCRM
-    import math
+
     s3 = _calc_S_static(0.60, float("nan"))
     assert abs(s3 - 0.60) < 1e-9
 
@@ -205,13 +202,10 @@ def test_t3_07_delta_negative_s040(weighter_enabled):
 def test_t3_08_match_boost_positive_clip(weighter_enabled):
     """传入 match_boost=0.30 → clip 到 0.20，wb 不超加"""
     from scripts.memory_l4 import phase_c_constants as C
-    w = weighter_enabled.daily_recalc(
-        stats={"s_bcrm_30": 0.50, "match_boost": 0.30}, force=True
-    )
+
+    w = weighter_enabled.daily_recalc(stats={"s_bcrm_30": 0.50, "match_boost": 0.30}, force=True)
     # 实际 clip 内部是 max(-0.20, min(0.20, raw))，所以 match_boost 字段=0.20
-    assert abs(w.match_boost - 0.20) < 1e-9, (
-        "match_boost 必须 clip 到 ±0.20 边界"
-    )
+    assert abs(w.match_boost - 0.20) < 1e-9, "match_boost 必须 clip 到 ±0.20 边界"
     # wp 不能被压破 0.05 底（we/wb 不能越界）
     assert w.w_p >= C.THREE_LAYER_WEIGHT_MIN - 1e-9
 
@@ -225,17 +219,14 @@ def test_t3_09_high_loss_negative_match_boost_wb_floor(weighter_enabled):
     S_BCRM=0.5 → delta=0 → wb0=0.25 - 0.1978 = 0.0522 > 0.05 刚好不clip底
     """
     from scripts.memory_l4 import phase_c_constants as C
-    w = weighter_enabled.daily_recalc(
-        stats={"s_bcrm_30": 0.50, "match_boost": -0.1978}, force=True
-    )
+
+    w = weighter_enabled.daily_recalc(stats={"s_bcrm_30": 0.50, "match_boost": -0.1978}, force=True)
     # match_boost 被 clip 到 ≥ -0.20（本例 -0.1978 不 clip）
     assert abs(w.match_boost - (-0.1978)) < 1e-3
     # w_b 归一化后应 ≥ 0.05 不卡底
     assert w.w_b >= C.THREE_LAYER_WEIGHT_MIN - 1e-3
     # 如进一步压到 mb=-0.25，则 clip 到 -0.20
-    w2 = weighter_enabled.daily_recalc(
-        stats={"s_bcrm_30": 0.50, "match_boost": -0.25}, force=True
-    )
+    w2 = weighter_enabled.daily_recalc(stats={"s_bcrm_30": 0.50, "match_boost": -0.25}, force=True)
     assert abs(w2.match_boost - (-0.20)) < 1e-9
 
 
@@ -269,8 +260,14 @@ def test_t3_10_diff_3_s_btc_only_threshold():
 
     # 8 笔 3 胜 5 负 = 0.375 < 0.60 → 不触发 P9 ③
     btc8 = [
-        ("LONG", 0.01), ("LONG", -0.01), ("LONG", 0.005), ("LONG", -0.02),
-        ("SHORT", -0.005), ("SHORT", -0.01), ("SHORT", 0.008), ("SHORT", 0.003),
+        ("LONG", 0.01),
+        ("LONG", -0.01),
+        ("LONG", 0.005),
+        ("LONG", -0.02),
+        ("SHORT", -0.005),
+        ("SHORT", -0.01),
+        ("SHORT", 0.008),
+        ("SHORT", 0.003),
     ]
     s8 = _calc_s_btc_only_static(btc8)
     assert s8 < 0.60

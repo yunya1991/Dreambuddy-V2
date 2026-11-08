@@ -1,4 +1,5 @@
 """网络请求捕获工具 — 捕获和分析浏览器网络请求"""
+
 from __future__ import annotations
 
 import time
@@ -24,13 +25,15 @@ class NetworkCapture:
         self._responses = []
 
         def on_request(request: Request):
-            self._requests.append({
-                "url": request.url,
-                "method": request.method,
-                "headers": dict(request.headers),
-                "post_data": request.post_data,
-                "timestamp": time.time(),
-            })
+            self._requests.append(
+                {
+                    "url": request.url,
+                    "method": request.method,
+                    "headers": dict(request.headers),
+                    "post_data": request.post_data,
+                    "timestamp": time.time(),
+                }
+            )
 
         def on_response(response: Response):
             try:
@@ -46,14 +49,16 @@ class NetworkCapture:
             except Exception:
                 body = ""
 
-            self._responses.append({
-                "url": response.url,
-                "status": response.status,
-                "method": response.request.method,
-                "headers": dict(response.headers),
-                "body": body,
-                "timestamp": time.time(),
-            })
+            self._responses.append(
+                {
+                    "url": response.url,
+                    "status": response.status,
+                    "method": response.request.method,
+                    "headers": dict(response.headers),
+                    "body": body,
+                    "timestamp": time.time(),
+                }
+            )
 
         self._on_request_handler = on_request
         self._on_response_handler = on_response
@@ -106,9 +111,9 @@ class NetworkCapture:
             time.sleep(0.1)
         return None
 
-    def wait_for_response(self, url_pattern: str,
-                          status: Optional[int] = None,
-                          timeout: float = 10.0) -> Optional[Dict]:
+    def wait_for_response(
+        self, url_pattern: str, status: Optional[int] = None, timeout: float = 10.0
+    ) -> Optional[Dict]:
         """等待匹配的响应出现。"""
         start = time.time()
         while time.time() - start < timeout:

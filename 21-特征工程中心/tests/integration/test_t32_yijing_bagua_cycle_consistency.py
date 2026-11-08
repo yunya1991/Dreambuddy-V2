@@ -8,22 +8,19 @@
   3. 关断（EN_FEATUREHUB_YIJING_BTC=false）走 original_fe_fn，与直连
      FeatureRegistry.compute_all 完全一致 — 零回归。
 """
+
 from __future__ import annotations
 
 import os
-import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 # ============================================================
 # 1. 触发 BCRM2 侧 FeatureRegistry.register（bagua / cycle 等）
 # ============================================================
 import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401,E402
 import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401,E402
-
 from feature_hub.hub.feature_registry import FeatureRegistry  # noqa: E402
 
 
@@ -34,13 +31,16 @@ def _synth_ohlcv(n: int = 500, seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
     t = np.linspace(25_000, 70_000, n) * (1 + rng.normal(0, 0.003, n))
     idx = pd.date_range("2023-01-01", periods=n, freq="4h")
-    df = pd.DataFrame({
-        "open":  t * (1 + rng.normal(0, 0.002, n)),
-        "high":  t * (1 + np.abs(rng.normal(0, 0.006, n))),
-        "low":   t * (1 - np.abs(rng.normal(0, 0.006, n))),
-        "close": t,
-        "volume": 1e8 * (1 + rng.uniform(-0.3, 1.2, n)),
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": t * (1 + rng.normal(0, 0.002, n)),
+            "high": t * (1 + np.abs(rng.normal(0, 0.006, n))),
+            "low": t * (1 - np.abs(rng.normal(0, 0.006, n))),
+            "close": t,
+            "volume": 1e8 * (1 + rng.uniform(-0.3, 1.2, n)),
+        },
+        index=idx,
+    )
     return df
 
 
@@ -97,11 +97,12 @@ class TestT32YijingBaguaCycleConsistency:
 
         # FH Native 模块 yijing_cycle
         from feature_hub.modules.yijing_cycle import compute as yijing_compute
+
         fh_feats, fh_gua = yijing_compute(df, enabled=["bagua", "cycle"])
 
-        assert _common_rate(list(orig_feats.columns), list(fh_feats.columns)) >= 0.95, (
-            f"列交集不足: orig={len(orig_feats.columns)} fh={len(fh_feats.columns)}"
-        )
+        assert (
+            _common_rate(list(orig_feats.columns), list(fh_feats.columns)) >= 0.95
+        ), f"列交集不足: orig={len(orig_feats.columns)} fh={len(fh_feats.columns)}"
         common = sorted(set(orig_feats.columns) & set(fh_feats.columns))
         assert len(common) > 150, f"公共列太少: {len(common)}"
         r = _mean_pearson(orig_feats, fh_feats, common)
@@ -110,8 +111,8 @@ class TestT32YijingBaguaCycleConsistency:
 
     def test_pipeline_yijing_bagua_cycle_exports_extra_ctx(self):
         """FeaturePipeline.run → meta['extra_ctx'] 有 yijing_cycle 且可解包为 feature_names_by_gua。"""
-        from feature_hub.pipeline.feature_pipeline import FeaturePipeline
         from feature_hub.modules.loader import load_default_sets
+        from feature_hub.pipeline.feature_pipeline import FeaturePipeline
 
         pipe = FeaturePipeline()
         load_default_sets(pipe)
@@ -152,9 +153,9 @@ class TestT32YijingBaguaCycleConsistency:
         assert isinstance(fh_feats, pd.DataFrame)
         assert isinstance(fh_gua, dict)
         # strip_prefix 去掉 yijing_cycle__ 后列名与 FR 对齐
-        assert _common_rate(list(orig_feats.columns), list(fh_feats.columns)) >= 0.95, (
-            f"H3 列交集不足 orig={list(orig_feats.columns)[:5]} fh={list(fh_feats.columns)[:5]}"
-        )
+        assert (
+            _common_rate(list(orig_feats.columns), list(fh_feats.columns)) >= 0.95
+        ), f"H3 列交集不足 orig={list(orig_feats.columns)[:5]} fh={list(fh_feats.columns)[:5]}"
         common = sorted(set(orig_feats.columns) & set(fh_feats.columns))
         r = _mean_pearson(orig_feats, fh_feats, common)
         assert r >= 0.97, f"H3 Pearson 均值过低: {r:.4f}"

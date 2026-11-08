@@ -8,6 +8,7 @@
   one-hot 5 列：elder_bullish_strong / elder_bullish / elder_neutral / elder_bearish / elder_bearish_strong
   差分 2 列：elder_bull_power_diff / elder_bear_power_diff
 """
+
 from __future__ import annotations
 
 from typing import Optional

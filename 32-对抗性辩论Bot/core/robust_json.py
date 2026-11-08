@@ -6,6 +6,7 @@
 - 嵌套对象/数组（旧实现 `\\{[^{}]*\\}` 会截断）；
 - 输出被截断时仍尽量提取第一个完整对象。
 """
+
 from __future__ import annotations
 
 import json

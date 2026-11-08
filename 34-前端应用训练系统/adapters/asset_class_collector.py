@@ -7,6 +7,7 @@
 
 FAIL-OPEN: 日志缺失/解析失败返回空列表。
 """
+
 import glob
 import json
 import os
@@ -17,11 +18,9 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
-_TRADER_DIR = os.path.join(
-    _PROJECT_ROOT, "11-易经推理系统", "data", "polling_trader"
-)
+_TRADER_DIR = os.path.join(_PROJECT_ROOT, "11-易经推理系统", "data", "polling_trader")
 
 _ASSET_DESC = {
     "crypto_usdt": "加密货币",
@@ -92,38 +91,40 @@ class AssetClassCollector(TrainingDataProvider):
                 break
             tpl = _TEMPLATES[idx % len(_TEMPLATES)]
             message = tpl
-            summary = "/".join(
-                f"{_ASSET_DESC.get(a, a)}:{asset_state[a]}" for a in assets
+            summary = "/".join(f"{_ASSET_DESC.get(a, a)}:{asset_state[a]}" for a in assets)
+            cases.append(
+                TrainingCase(
+                    intent="asset_class_trend",
+                    actions=[f"asset_class:{a}" for a in assets],
+                    outcome_text=message,
+                    learned=[f"跨资产分析: {summary}"],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.6,
+                    source="asset_class_trend",
+                    metadata={
+                        "assets": {a: asset_state[a] for a in assets},
+                        "engine_hint": "11-易经推理系统/战略层",
+                    },
+                )
             )
-            cases.append(TrainingCase(
-                intent="asset_class_trend",
-                actions=[f"asset_class:{a}" for a in assets],
-                outcome_text=message,
-                learned=[f"跨资产分析: {summary}"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.6,
-                source="asset_class_trend",
-                metadata={
-                    "assets": {a: asset_state[a] for a in assets},
-                    "engine_hint": "11-易经推理系统/战略层",
-                },
-            ))
         # 两两资产对比问法补充
         pairs = [("加密货币", "美股"), ("加密货币", "贵金属"), ("美股", "贵金属")]
         for a1, a2 in pairs:
             if len(cases) >= limit:
                 break
             message = f"{a1}和{a2}现在的趋势对比怎么样"
-            cases.append(TrainingCase(
-                intent="asset_class_trend",
-                actions=["asset_class:compare"],
-                outcome_text=message,
-                learned=[f"跨资产分析: {a1}与{a2}趋势对比"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.5,
-                source="asset_class_trend",
-                metadata={"engine_hint": "11-易经推理系统/战略层"},
-            ))
+            cases.append(
+                TrainingCase(
+                    intent="asset_class_trend",
+                    actions=["asset_class:compare"],
+                    outcome_text=message,
+                    learned=[f"跨资产分析: {a1}与{a2}趋势对比"],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.5,
+                    source="asset_class_trend",
+                    metadata={"engine_hint": "11-易经推理系统/战略层"},
+                )
+            )
         return cases

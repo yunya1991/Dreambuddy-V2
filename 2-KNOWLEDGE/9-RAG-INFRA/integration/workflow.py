@@ -17,9 +17,10 @@ _RAG_INFRA_DIR = _THIS_DIR.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from vector_store.config import KNOWLEDGE_BASE_DIR
-from .detector import detect_research
-from .archiver import archive_research
+from vector_store.config import KNOWLEDGE_BASE_DIR  # noqa: E402
+
+from .archiver import archive_research  # noqa: E402
+from .detector import detect_research  # noqa: E402
 
 
 def check_and_prompt(content: str) -> Dict:
@@ -38,19 +39,20 @@ def check_and_prompt(content: str) -> Dict:
     for d in detections:
         tags_str = " ".join(d["tags"][:5]) if d["tags"] else ""
         tag_clause = f"，标签{tags_str}" if tags_str else ""
-        parts.append(
-            f"检测到{d['type']}调研内容，建议归档到{d['suggested_path']}{tag_clause}"
-        )
+        parts.append(f"检测到{d['type']}调研内容，建议归档到{d['suggested_path']}{tag_clause}")
     prompt = "；".join(parts) + "。是否归档？(Y/N)"
     return {"need_archive": True, "detections": detections, "prompt_message": prompt}
 
 
-def archive_from_conversation(content: str, research_topic: str = "",
-                             research_scenario: str = "",
-                             knowledge_dir: Path = None,
-                             enable_memory: bool = True,
-                             enable_verify: bool = True,
-                             map_path: Optional[Path] = None) -> Dict:
+def archive_from_conversation(
+    content: str,
+    research_topic: str = "",
+    research_scenario: str = "",
+    knowledge_dir: Path = None,
+    enable_memory: bool = True,
+    enable_verify: bool = True,
+    map_path: Optional[Path] = None,
+) -> Dict:
     """执行完整归档流程：检测 → 逐条归档 → 触发 ingest → 记录记忆 → 自动verify → 汇总。
 
     在原归档流程基础上，新增两个认知闭环步骤（均 FAIL-OPEN）：
@@ -79,31 +81,40 @@ def archive_from_conversation(content: str, research_topic: str = "",
 
     detections = detect_research(content)
     if not detections:
-        return {"status": "no_research", "archived": [], "detections": [],
-                "memory_recorded": 0, "memory_verified": 0}
+        return {
+            "status": "no_research",
+            "archived": [],
+            "detections": [],
+            "memory_recorded": 0,
+            "memory_verified": 0,
+        }
 
     archived: List[Dict] = []
     memory_recorded = 0
     memory_verified = 0
     for d in detections:
         try:
-            r = archive_research(d, content, knowledge_dir,
-                                 research_topic, research_scenario)
+            r = archive_research(d, content, knowledge_dir, research_topic, research_scenario)
             archived.append(r)
             # 归档成功后，将新知识单元 record 为 C 级记忆（FAIL-OPEN）
             archive_status = r.get("status")
             if enable_memory and archive_status not in ("failed",):
                 try:
                     mem_count, mappings = _record_archive_as_memory(
-                        d, r, research_topic, map_path,
-                        return_mappings=True)
+                        d, r, research_topic, map_path, return_mappings=True
+                    )
                     memory_recorded += mem_count
 
                     # FIX-EV-0: 归档有效（indexed/duplicate）时自动 verify(success=True)
-                    if (enable_verify and mem_count > 0 and mappings
-                            and archive_status in ("indexed", "duplicate")):
+                    if (
+                        enable_verify
+                        and mem_count > 0
+                        and mappings
+                        and archive_status in ("indexed", "duplicate")
+                    ):
                         try:
                             from bridge.memory_bridge import verify_and_feedback
+
                             verify_count = 0
                             for m in mappings:
                                 mid = m.get("memory_id") if isinstance(m, dict) else None
@@ -113,15 +124,14 @@ def archive_from_conversation(content: str, research_topic: str = "",
                                 # 返回结构 {status, success, boost_updated, ...}
                                 # 当 status='done' 或 cle.verify 明确成功时，
                                 # 计数为一次有效正反馈
-                                vr = verify_and_feedback(
-                                    mid, success=True,
-                                    map_path=map_path)
-                                if (isinstance(vr, dict)
-                                        and vr.get("status") == "done"):
+                                vr = verify_and_feedback(mid, success=True, map_path=map_path)
+                                if isinstance(vr, dict) and vr.get("status") == "done":
                                     verify_count += 1
-                                elif (isinstance(vr, dict)
-                                      and vr.get("status") == "skipped"
-                                      and vr.get("error") == "mapping_not_found"):
+                                elif (
+                                    isinstance(vr, dict)
+                                    and vr.get("status") == "skipped"
+                                    and vr.get("error") == "mapping_not_found"
+                                ):
                                     # mapping 写入后立即读取可能存在时序问题，
                                     # 但 record_retrieval_as_memory 已
                                     # _append_map，所以实际不应该触发此分支
@@ -135,20 +145,29 @@ def archive_from_conversation(content: str, research_topic: str = "",
                     pass
         except Exception as e:
             # FAIL-OPEN：单条归档失败不阻塞其余归档
-            archived.append({
-                "status": "failed",
-                "error": str(e),
-                "type": d.get("type"),
-            })
-    return {"status": "done", "archived": archived, "detections": detections,
-            "memory_recorded": memory_recorded,
-            "memory_verified": memory_verified}
+            archived.append(
+                {
+                    "status": "failed",
+                    "error": str(e),
+                    "type": d.get("type"),
+                }
+            )
+    return {
+        "status": "done",
+        "archived": archived,
+        "detections": detections,
+        "memory_recorded": memory_recorded,
+        "memory_verified": memory_verified,
+    }
 
 
-def _record_archive_as_memory(detection: Dict, archive_result: Dict,
-                               research_topic: str,
-                               map_path: Optional[Path] = None,
-                               return_mappings: bool = False):
+def _record_archive_as_memory(
+    detection: Dict,
+    archive_result: Dict,
+    research_topic: str,
+    map_path: Optional[Path] = None,
+    return_mappings: bool = False,
+):
     """将归档的新知识单元 record 为 C 级记忆。
 
     构造伪检索结果，调用 record_retrieval_as_memory 写入记忆系统。
@@ -179,13 +198,14 @@ def _record_archive_as_memory(detection: Dict, archive_result: Dict,
         "heading": research_topic or detection.get("suggested_path", ""),
         "domain": detection.get("category", ""),
         "final_score": 1.0,
-        "content": (f"[归档] {detection.get('type', '')}/"
-                    f"{detection.get('subcategory', '')} | "
-                    f"tags: {' '.join(detection.get('tags', [])[:5])}"),
+        "content": (
+            f"[归档] {detection.get('type', '')}/"
+            f"{detection.get('subcategory', '')} | "
+            f"tags: {' '.join(detection.get('tags', [])[:5])}"
+        ),
     }
     try:
-        mappings = record_retrieval_as_memory(
-            pseudo_query, [pseudo_result], map_path=map_path)
+        mappings = record_retrieval_as_memory(pseudo_query, [pseudo_result], map_path=map_path)
     except Exception:
         mappings = []
 

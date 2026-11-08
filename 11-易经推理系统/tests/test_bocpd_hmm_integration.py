@@ -7,10 +7,10 @@ Spec §7.4 TDD 测试矩阵：
 - test_s6_off_equivalent_lgbm         开关 S6 关闭时等价纯 LGBM
 """
 
-import sys
 import os
+import sys
+
 import numpy as np
-import pytest
 
 # ── 路径设置 ──
 _MEM_L4 = os.path.join(os.path.dirname(__file__), "..", "scripts", "memory_l4")
@@ -24,6 +24,7 @@ np.random.seed(42)
 # 辅助：生成合成数据
 # ══════════════════════════════════════════════════════════════════
 
+
 def _gen_regime_shift_series(n=300, change_point=150, seed=42):
     """生成均值突变序列：前段稳定，change_point 处均值跳变
 
@@ -32,7 +33,7 @@ def _gen_regime_shift_series(n=300, change_point=150, seed=42):
         change_point: 实际变点位置
     """
     rng = np.random.RandomState(seed)
-    pre = rng.normal(0.0, 0.01, change_point)       # 稳定期
+    pre = rng.normal(0.0, 0.01, change_point)  # 稳定期
     post = rng.normal(0.05, 0.02, n - change_point)  # 趋势期
     series = np.concatenate([pre, post])
     return series, change_point
@@ -46,10 +47,10 @@ def _gen_multi_regime_series(n=500, seed=42):
         change_points: list[int] 变点位置列表
     """
     rng = np.random.RandomState(seed)
-    seg1 = rng.normal(0.0, 0.01, 125)     # 稳定期
-    seg2 = rng.normal(0.03, 0.015, 125)   # 上升趋势
-    seg3 = rng.normal(-0.04, 0.03, 125)   # 暴跌
-    seg4 = rng.normal(0.0, 0.005, 125)    # 横盘压缩
+    seg1 = rng.normal(0.0, 0.01, 125)  # 稳定期
+    seg2 = rng.normal(0.03, 0.015, 125)  # 上升趋势
+    seg3 = rng.normal(-0.04, 0.03, 125)  # 暴跌
+    seg4 = rng.normal(0.0, 0.005, 125)  # 横盘压缩
     series = np.concatenate([seg1, seg2, seg3, seg4])
     change_points = [0, 125, 250, 375]
     return series, change_points
@@ -67,17 +68,17 @@ def _gen_synthetic_features_labels(n=400, n_features=12, seed=42):
     features = []
 
     regimes = [
-        ("TREND_UP_STRONG", 0.05, 0.02),    # 强趋势高波动
-        ("TREND_UP_MILD", 0.02, 0.015),     # 弱趋势
-        ("RANGE_BOUND", 0.0, 0.02),         # 震荡
-        ("CONSOLIDATION", 0.0, 0.005),      # 横盘压缩
-        ("REVERSAL", -0.01, 0.03),          # 反转
-        ("VOLATILE_DROP", -0.05, 0.04),      # 暴跌
-        ("FOMO_RALLY", 0.08, 0.03),         # 狂热
-        ("DISTRIBUTION", -0.02, 0.025),      # 派发
+        ("TREND_UP_STRONG", 0.05, 0.02),  # 强趋势高波动
+        ("TREND_UP_MILD", 0.02, 0.015),  # 弱趋势
+        ("RANGE_BOUND", 0.0, 0.02),  # 震荡
+        ("CONSOLIDATION", 0.0, 0.005),  # 横盘压缩
+        ("REVERSAL", -0.01, 0.03),  # 反转
+        ("VOLATILE_DROP", -0.05, 0.04),  # 暴跌
+        ("FOMO_RALLY", 0.08, 0.03),  # 狂热
+        ("DISTRIBUTION", -0.02, 0.025),  # 派发
     ]
 
-    for i, (regime, mean, std) in enumerate(regimes):
+    for i, (regime, mean, std) in enumerate(regimes):  # noqa: B007
         for _ in range(segment_size):
             feat = rng.normal(mean, std, n_features)
             # 加入 regime-specific 特征偏置（增大偏置使 LGBM 有足够区分度）
@@ -103,6 +104,7 @@ def _gen_synthetic_features_labels(n=400, n_features=12, seed=42):
 # 测试组 1: BOCPD
 # ══════════════════════════════════════════════════════════════════
 
+
 class TestBOCPD:
 
     def test_bocpd_detects_trend_change(self):
@@ -115,18 +117,16 @@ class TestBOCPD:
         probs = bocpd.detect(series)
 
         # 1. 变点附近（cp-3 ~ cp+3）应有 changepoint_prob > 0.5
-        window = probs[max(0, cp - 3):cp + 4]
-        assert np.max(window) > 0.5, (
-            f"BOCPD 未在变点 {cp} 附近检测到变点（max prob={np.max(window):.3f}）"
-        )
+        window = probs[max(0, cp - 3) : cp + 4]
+        assert (
+            np.max(window) > 0.5
+        ), f"BOCPD 未在变点 {cp} 附近检测到变点（max prob={np.max(window):.3f}）"
 
         # 2. 检测位置应在变点之前或变点处（提前量 ≥ 0 日，即不滞后太多）
         first_detect = np.where(probs > 0.5)[0]
         if len(first_detect) > 0:
             detection_delay = first_detect[0] - cp
-            assert detection_delay <= 3, (
-                f"BOCPD 检测滞后 {detection_delay} 日（应 ≤ 3）"
-            )
+            assert detection_delay <= 3, f"BOCPD 检测滞后 {detection_delay} 日（应 ≤ 3）"
 
     def test_bocpd_detects_multiple_changes(self):
         """BOCPD 检测多个变点"""
@@ -140,10 +140,10 @@ class TestBOCPD:
         # 阈值 0.05：均值切换检测概率高（>0.5），方差切换检测概率较低（~0.1），
         # 0.05 是 hazard(0.02) 的 2.5 倍，足以触发预警
         for cp in cps[1:]:  # 跳过第一个（起点）
-            window = probs[max(0, cp - 3):cp + 4]
-            assert np.max(window) > 0.05, (
-                f"BOCPD 未在变点 {cp} 附近检测到变点（max prob={np.max(window):.3f}）"
-            )
+            window = probs[max(0, cp - 3) : cp + 4]
+            assert (
+                np.max(window) > 0.05
+            ), f"BOCPD 未在变点 {cp} 附近检测到变点（max prob={np.max(window):.3f}）"
 
     def test_bocpd_stable_no_false_alarm(self):
         """稳定序列不应频繁触发变点预警"""
@@ -156,9 +156,7 @@ class TestBOCPD:
 
         # 稳定期内 changepoint_prob > 0.5 的比例应 < 10%
         false_alarm_rate = np.mean(probs > 0.5)
-        assert false_alarm_rate < 0.10, (
-            f"稳定期误报率 {false_alarm_rate:.2%} 过高（应 < 10%）"
-        )
+        assert false_alarm_rate < 0.10, f"稳定期误报率 {false_alarm_rate:.2%} 过高（应 < 10%）"
 
     def test_bocpd_output_shape(self):
         """BOCPD 输出形状与输入一致"""
@@ -185,13 +183,14 @@ class TestBOCPD:
         probs = np.array(probs)
 
         # 变点附近应有检测
-        window = probs[max(0, cp - 3):cp + 4]
+        window = probs[max(0, cp - 3) : cp + 4]
         assert np.max(window) > 0.3
 
 
 # ══════════════════════════════════════════════════════════════════
 # 测试组 2: HMM
 # ══════════════════════════════════════════════════════════════════
+
 
 class TestHMMRegime:
 
@@ -210,8 +209,7 @@ class TestHMMRegime:
         transmat = hmm.get_transition_matrix()
         diag = np.diag(transmat)
         assert np.sum(diag > 0.5) >= 3, (
-            f"对角线 > 0.5 的状态数={np.sum(diag > 0.5)}/8，期望 ≥ 3\n"
-            f"diag={diag}"
+            f"对角线 > 0.5 的状态数={np.sum(diag > 0.5)}/8，期望 ≥ 3\n" f"diag={diag}"
         )
 
     def test_hmm_predict_proba_shape(self):
@@ -248,13 +246,14 @@ class TestHMMRegime:
         hmm.fit(X)
 
         # 应返回 matplotlib figure 或 None（不抛异常即可）
-        fig = hmm.plot_transition_matrix()
+        fig = hmm.plot_transition_matrix()  # noqa: F841
         # 不抛异常即通过
 
 
 # ══════════════════════════════════════════════════════════════════
 # 测试组 3: LGBM + HMM 集成
 # ══════════════════════════════════════════════════════════════════
+
 
 class TestEnsembleIntegration:
 
@@ -278,8 +277,8 @@ class TestEnsembleIntegration:
 
     def test_ensemble_predict_shape(self):
         """S6 打开时集成预测返回正确形状"""
-        from regime_predictor import RegimePredictor
         from models.hmm_regime import HMMRegime
+        from regime_predictor import RegimePredictor
 
         X, y = _gen_synthetic_features_labels(n=400, n_features=6)
         feature_names = [f"f{i}" for i in range(6)]
@@ -308,9 +307,9 @@ class TestEnsembleIntegration:
         此测试验证集成功能正常工作：集成 F1 应不低于 HMM 单独 F1，
         且远高于随机 baseline（8 分类 = 0.125）。
         """
-        from sklearn.metrics import f1_score
-        from regime_predictor import RegimePredictor
         from models.hmm_regime import HMMRegime
+        from regime_predictor import RegimePredictor
+        from sklearn.metrics import f1_score
 
         X, y = _gen_synthetic_features_labels(n=400, n_features=6)
         feature_names = [f"f{i}" for i in range(6)]
@@ -337,17 +336,13 @@ class TestEnsembleIntegration:
         f1_hmm = f1_score(y, hmm_labels, average="macro")
 
         # 1. 集成 F1 应远高于随机 baseline
-        assert f1_ens > 0.125, (
-            f"集成 Macro F1={f1_ens:.4f} <= 0.125（8分类随机 baseline）"
-        )
+        assert f1_ens > 0.125, f"集成 Macro F1={f1_ens:.4f} <= 0.125（8分类随机 baseline）"
         # 2. 集成 F1 应不低于 HMM 单独 F1（集成不比最差模型差）
-        assert f1_ens >= f1_hmm - 0.05, (
-            f"集成 Macro F1={f1_ens:.4f} < HMM={f1_hmm:.4f} - 0.05（比最差模型还差）"
-        )
+        assert (
+            f1_ens >= f1_hmm - 0.05
+        ), f"集成 Macro F1={f1_ens:.4f} < HMM={f1_hmm:.4f} - 0.05（比最差模型还差）"
         # 3. 纯 LGBM 应有合理表现（验证合成数据质量）
-        assert f1_base > 0.50, (
-            f"纯LGBM Macro F1={f1_base:.4f} < 0.50（合成数据区分度不足）"
-        )
+        assert f1_base > 0.50, f"纯LGBM Macro F1={f1_base:.4f} < 0.50（合成数据区分度不足）"
 
     def test_alpha_parameter(self):
         """集成参数 α=0.7（LGBM 主导）"""
@@ -358,8 +353,8 @@ class TestEnsembleIntegration:
 
     def test_ensemble_uses_hmm_when_enabled(self):
         """S6 打开时 predict_with_ensemble 确实使用了 HMM"""
-        from regime_predictor import RegimePredictor
         from models.hmm_regime import HMMRegime
+        from regime_predictor import RegimePredictor
 
         X, y = _gen_synthetic_features_labels(n=400, n_features=6)
         feature_names = [f"f{i}" for i in range(6)]
@@ -376,6 +371,6 @@ class TestEnsembleIntegration:
         y_lgbm, conf_lgbm, proba_lgbm = predictor.predict(X)
 
         # 集成概率 ≠ 纯 LGBM 概率（确实融合了 HMM）
-        assert not np.allclose(proba_ens, proba_lgbm, atol=1e-6), (
-            "集成概率与纯 LGBM 概率完全相同，HMM 未被使用"
-        )
+        assert not np.allclose(
+            proba_ens, proba_lgbm, atol=1e-6
+        ), "集成概率与纯 LGBM 概率完全相同，HMM 未被使用"

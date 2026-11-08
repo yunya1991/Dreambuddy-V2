@@ -14,6 +14,7 @@
 产出: practical_semantics.json
 用法: python3 induct_practical_semantics.py
 """
+
 import json
 import os
 import re
@@ -24,13 +25,17 @@ _SYS_DIR = os.path.dirname(_THIS_DIR)
 _REPO = os.path.dirname(_SYS_DIR)
 
 TRADER_LOG = "/home/luke/logs/yijing/trader.log"
-TRADES_JSONL = os.path.join(_REPO, "11-易经推理系统", ".workbuddy", "memory_l4", "stats", "all_trades.jsonl")
+TRADES_JSONL = os.path.join(
+    _REPO, "11-易经推理系统", ".workbuddy", "memory_l4", "stats", "all_trades.jsonl"
+)
 OUT_PATH = os.path.join(_SYS_DIR, "practical_semantics.json")
 
 # 核心术语 → 日志匹配模式（第二圈聚焦交易系统核心术语）
 TERM_PATTERNS = {
     "BCRM连续性": re.compile(r"BCRM连续=(\w+)\(([\d.]+)\)"),
-    "弹性门控ElasticGate3L": re.compile(r"ElasticGate3L 将给? ?([\d.]+) ?试错仓|ElasticGate3L 将缩减仓位"),
+    "弹性门控ElasticGate3L": re.compile(
+        r"ElasticGate3L 将给? ?([\d.]+) ?试错仓|ElasticGate3L 将缩减仓位"
+    ),
     "BDSM最低仓位兜底": re.compile(r"BDSM 最低仓位兜底 \| ([\d.]+)U→([\d.]+)U"),
     "三层弹性放行": re.compile(r"方案C 三层弹性放行 \| P1=(\w+) Elder=(\w+) BCRM连续=(\w+)"),
     "P1长多趋势过滤": re.compile(r"P1长多趋势过滤 \| 共振(成功|失败)"),
@@ -42,7 +47,9 @@ TERM_PATTERNS = {
 
 def scan_trader_log(max_lines=400000):
     """扫描交易日志，统计各术语的触发频次与典型场景。"""
-    stats = {name: {"count": 0, "samples": [], "values": defaultdict(int)} for name in TERM_PATTERNS}
+    stats = {
+        name: {"count": 0, "samples": [], "values": defaultdict(int)} for name in TERM_PATTERNS
+    }
     try:
         with open(TRADER_LOG, "r", encoding="utf-8", errors="ignore") as f:
             for i, line in enumerate(f):
@@ -102,9 +109,17 @@ def scan_trades():
         "total_trades": total,
         "win_rate": round(wins / total, 4),
         "avg_pnl_usdt": round(avg_pnl, 2),
-        "by_confidence": {k: {"n": v["n"], "win_rate": round(v["wins"] / v["n"], 4),
-                              "total_pnl": round(v["pnl"], 2)} for k, v in by_conf.items()},
-        "top_hexagrams": {h: {"n": v["n"], "win_rate": round(v["wins"] / v["n"], 4)} for h, v in top_hex},
+        "by_confidence": {
+            k: {
+                "n": v["n"],
+                "win_rate": round(v["wins"] / v["n"], 4),
+                "total_pnl": round(v["pnl"], 2),
+            }
+            for k, v in by_conf.items()
+        },
+        "top_hexagrams": {
+            h: {"n": v["n"], "win_rate": round(v["wins"] / v["n"], 4)} for h, v in top_hex
+        },
     }
 
 
@@ -119,7 +134,7 @@ def main():
         top_values = sorted(s["values"].items(), key=lambda kv: -kv[1])[:3]
         terms[name] = {
             "occurrences": s["count"],
-            "top_values": {k: v for k, v in top_values},
+            "top_values": {k: v for k, v in top_values},  # noqa: C416
             "typical_context": s["samples"],
             "source": "trader.log（真实交易日志归纳）",
             "quality": "A",
@@ -134,8 +149,10 @@ def main():
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"[OK] 实操语义归纳完成: {len(terms)} 个术语 ← {OUT_PATH}")
     if trades_stats:
-        print(f"     交易样本: {trades_stats.get('total_trades')} 笔, "
-              f"胜率: {trades_stats.get('win_rate')}, 均盈亏: {trades_stats.get('avg_pnl_usdt')}U")
+        print(
+            f"     交易样本: {trades_stats.get('total_trades')} 笔, "
+            f"胜率: {trades_stats.get('win_rate')}, 均盈亏: {trades_stats.get('avg_pnl_usdt')}U"
+        )
     for name, s in log_stats.items():
         print(f"     {name}: {s['count']} 次")
 

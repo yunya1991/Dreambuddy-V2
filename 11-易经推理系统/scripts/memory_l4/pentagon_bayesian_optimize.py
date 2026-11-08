@@ -7,14 +7,15 @@
 评估方式：WalkForwardBacktester 3折回测（BTC+ETH+SOL平均）
 Hold-out：最后20%数据独立验证
 """
-import sys
-import os
-import json
-import time
-import logging
+
 import importlib
+import json
+import logging
+import os
+import sys
+import time
+
 import numpy as np
-import pandas as pd
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,10 +24,11 @@ sys.path.insert(0, PROJECT_ROOT)
 sys.path.insert(0, SCRIPT_DIR)
 
 # 避免 inspect.py 冲突
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 
-import optuna
+import optuna  # noqa: E402
+
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -39,6 +41,7 @@ _DATA_CACHE = {}
 def load_klines(symbol, timeframe="1H", max_bars=3000):
     if symbol not in _DATA_CACHE:
         from memory_l4.bcrm2.data_fetcher import get_klines
+
         df = get_klines(symbol, timeframe, max_bars=max_bars)
         _DATA_CACHE[symbol] = df
     return _DATA_CACHE[symbol]
@@ -53,32 +56,26 @@ def build_params(trial: optuna.Trial) -> dict:
         "weight_a0": trial.suggest_float("weight_a0", 0.02, 0.10),
         "weight_ising": trial.suggest_float("weight_ising", 0.02, 0.15),
         "weight_tda": trial.suggest_float("weight_tda", 0.05, 0.25),
-
         # 置信度调整 — 允许很小的调整幅度
         "bonus_strong_agree": trial.suggest_float("bonus_strong_agree", 0.01, 0.15),
         "bonus_majority": trial.suggest_float("bonus_majority", 0.0, 0.08),
         "penalty_divergent": trial.suggest_float("penalty_divergent", -0.06, 0.0),
         "penalty_conflict": trial.suggest_float("penalty_conflict", -0.12, -0.01),
-
         # 预警惩罚
         "penalty_reversal": trial.suggest_float("penalty_reversal", 0.01, 0.08),
         "penalty_ising_alert": trial.suggest_float("penalty_ising_alert", 0.0, 0.06),
         "penalty_tda_warning": trial.suggest_float("penalty_tda_warning", 0.0, 0.05),
         "penalty_double_warning": trial.suggest_float("penalty_double_warning", 0.01, 0.10),
-
         # 总惩罚上限
         "max_total_penalty": trial.suggest_float("max_total_penalty", 0.03, 0.12),
-
         # 仓位系数 — 允许单预警不降仓，强一致可大幅加仓
         "pos_factor_strong_agree": trial.suggest_float("pos_factor_strong_agree", 1.0, 1.40),
         "pos_factor_divergent": trial.suggest_float("pos_factor_divergent", 0.80, 1.0),
         "pos_factor_single_warning": trial.suggest_float("pos_factor_single_warning", 0.85, 1.0),
         "pos_factor_double_warning": trial.suggest_float("pos_factor_double_warning", 0.40, 0.75),
         "pos_factor_reversal": trial.suggest_float("pos_factor_reversal", 0.50, 0.85),
-
         # fail_closed 阈值
         "fail_closed_threshold": trial.suggest_float("fail_closed_threshold", 0.10, 0.30),
-
         # 注意力衰减
         "attention_decay": trial.suggest_float("attention_decay", 0.88, 0.98),
     }
@@ -86,8 +83,8 @@ def build_params(trial: optuna.Trial) -> dict:
 
 def run_backtest_with_params(symbol, df, params_dict, n_folds=3):
     """用指定 PentagonParams 运行回测"""
-    from memory_l4.triangle_verifier import TriangleVerifier, PentagonParams
     from memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester
+    from memory_l4.triangle_verifier import PentagonParams, TriangleVerifier
 
     # 构建 PentagonParams
     pentagon_params = PentagonParams.from_dict(params_dict)
@@ -187,15 +184,18 @@ def objective(trial: optuna.Trial) -> float:
     trial.set_user_attr("avg_win_rate", float(avg_wr))
 
     elapsed = time.time() - t0
-    print(f"    Trial #{trial.number}: 得分={score:.4f}, 夏普={avg_sharpe:.2f}, "
-          f"收益={avg_return:.1f}%, 回撤={avg_dd:.1f}%, 胜率={avg_wr:.1%} ({elapsed:.0f}秒)", flush=True)
+    print(
+        f"    Trial #{trial.number}: 得分={score:.4f}, 夏普={avg_sharpe:.2f}, "
+        f"收益={avg_return:.1f}%, 回撤={avg_dd:.1f}%, 胜率={avg_wr:.1%} ({elapsed:.0f}秒)",
+        flush=True,
+    )
 
     return score
 
 
 def run_baseline():
     """运行基线回测（默认PentagonParams）"""
-    print(f"\n  [基线] 运行默认 PentagonParams 回测...")
+    print("\n  [基线] 运行默认 PentagonParams 回测...")
     from memory_l4.triangle_verifier import PentagonParams
 
     baseline_params = PentagonParams().to_dict()
@@ -210,7 +210,9 @@ def run_baseline():
 
         sharpe = compute_sharpe_from_trades(result.all_trades)
         n_trades = len(result.all_trades)
-        win_rate = sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+        win_rate = (
+            sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+        )
         total_ret = sum(t.pnl_pct for t in result.all_trades)
         max_loss = min((t.pnl_pct for t in result.all_trades), default=0)
         max_dd = abs(max_loss) if max_loss < 0 else 0
@@ -222,7 +224,9 @@ def run_baseline():
             "trades": n_trades,
             "win_rate": win_rate,
         }
-        print(f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 回撤={max_dd:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}")
+        print(
+            f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 回撤={max_dd:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}"
+        )
 
     avg_sharpe = np.mean([s["sharpe"] for s in baseline_scores.values()])
     avg_return = np.mean([s["return"] for s in baseline_scores.values()])
@@ -235,7 +239,7 @@ def run_baseline():
 
 def run_holdout(best_params_dict):
     """用最后 20% 数据做 hold-out 验证"""
-    print(f"\n  [Hold-out] 用最后 20% 数据独立验证最优参数...")
+    print("\n  [Hold-out] 用最后 20% 数据独立验证最优参数...")
     holdout_results = {}
 
     for symbol in ["BTC", "ETH", "SOL"]:
@@ -254,7 +258,9 @@ def run_holdout(best_params_dict):
             result = run_backtest_with_params(symbol, holdout_df, best_params_dict, n_folds=2)
             sharpe = compute_sharpe_from_trades(result.all_trades)
             n_trades = len(result.all_trades)
-            win_rate = sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+            win_rate = (
+                sum(1 for t in result.all_trades if t.pnl_pct > 0) / n_trades if n_trades > 0 else 0
+            )
             total_ret = sum(t.pnl_pct for t in result.all_trades)
 
             holdout_results[symbol] = {
@@ -263,7 +269,9 @@ def run_holdout(best_params_dict):
                 "win_rate": win_rate,
                 "trades": n_trades,
             }
-            print(f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}")
+            print(
+                f"    {symbol}: 夏普={sharpe:.2f}, 收益={total_ret:.1f}%, 胜率={win_rate:.1%}, 交易={n_trades}"
+            )
         except Exception as e:
             print(f"    {symbol}: hold-out 失败: {e}")
 
@@ -299,7 +307,7 @@ def main():
     print(f"    平均收益: {best.user_attrs.get('avg_return', 0):.4f}%")
     print(f"    平均回撤: {best.user_attrs.get('avg_drawdown', 0):.4f}%")
     print(f"    平均胜率: {best.user_attrs.get('avg_win_rate', 0):.4f}")
-    print(f"\n  最优参数：")
+    print("\n  最优参数：")
     for k, v in best.params.items():
         print(f"    {k}: {v:.4f}")
 
@@ -324,16 +332,31 @@ def main():
 
         # 归一化权重
         from memory_l4.triangle_verifier import PentagonParams
+
         optimal_params = PentagonParams.from_dict(best.params)
-        total_w = (optimal_params.weight_bcrm2 + optimal_params.weight_force +
-                   optimal_params.weight_a0 + optimal_params.weight_ising +
-                   optimal_params.weight_tda)
-        print(f"\n  最优权重（归一化前）:")
-        print(f"    BCRM2: {optimal_params.weight_bcrm2:.4f} ({optimal_params.weight_bcrm2/total_w*100:.1f}%)")
-        print(f"    Force: {optimal_params.weight_force:.4f} ({optimal_params.weight_force/total_w*100:.1f}%)")
-        print(f"    A0:    {optimal_params.weight_a0:.4f} ({optimal_params.weight_a0/total_w*100:.1f}%)")
-        print(f"    Ising: {optimal_params.weight_ising:.4f} ({optimal_params.weight_ising/total_w*100:.1f}%)")
-        print(f"    TDA:   {optimal_params.weight_tda:.4f} ({optimal_params.weight_tda/total_w*100:.1f}%)")
+        total_w = (
+            optimal_params.weight_bcrm2
+            + optimal_params.weight_force
+            + optimal_params.weight_a0
+            + optimal_params.weight_ising
+            + optimal_params.weight_tda
+        )
+        print("\n  最优权重（归一化前）:")
+        print(
+            f"    BCRM2: {optimal_params.weight_bcrm2:.4f} ({optimal_params.weight_bcrm2/total_w*100:.1f}%)"
+        )
+        print(
+            f"    Force: {optimal_params.weight_force:.4f} ({optimal_params.weight_force/total_w*100:.1f}%)"
+        )
+        print(
+            f"    A0:    {optimal_params.weight_a0:.4f} ({optimal_params.weight_a0/total_w*100:.1f}%)"
+        )
+        print(
+            f"    Ising: {optimal_params.weight_ising:.4f} ({optimal_params.weight_ising/total_w*100:.1f}%)"
+        )
+        print(
+            f"    TDA:   {optimal_params.weight_tda:.4f} ({optimal_params.weight_tda/total_w*100:.1f}%)"
+        )
 
         # 判断是否采纳
         if improvement > 0.1:
@@ -344,13 +367,13 @@ def main():
                 with open(output_path, "w", encoding="utf-8") as f:
                     json.dump(output, f, ensure_ascii=False, indent=2)
                 print(f"\n  ✅ 优化参数已保存到: {output_path}")
-                print(f"  建议将此参数应用到 TriangleVerifier 默认配置中。")
+                print("  建议将此参数应用到 TriangleVerifier 默认配置中。")
             else:
-                print(f"\n  ⚠️ Hold-out 夏普为负，不建议采纳。")
+                print("\n  ⚠️ Hold-out 夏普为负，不建议采纳。")
         else:
             print(f"\n  ⚠️ 提升幅度不足（{improvement:.4f} < 0.1），不建议采纳。")
     else:
-        print(f"\n  ⚠️ 优化未超过基线，保持默认参数。")
+        print("\n  ⚠️ 优化未超过基线，保持默认参数。")
 
 
 if __name__ == "__main__":

@@ -14,22 +14,21 @@ Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §6.3 / §9.3
   - FAIL-OPEN 铁律: 异常 → 保留原始数据不阻塞
   - project_memory 硬约束: Bronze 保留原始，Silver 清洗，Gold Schema 验证
 """
+
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
+from data_center.processing.gold_layer import (
+    WASHOUT_SCHEMAS,
+    validate_schema,
+)
 from data_center.processing.silver_layer import (
     SilverLayerCleaner,
     dedup_by_timestamp_symbol,
     filter_3sigma,
-    filter_iqr,
     filter_dynamic_atr,
-)
-from data_center.processing.gold_layer import (
-    GoldLayerValidator,
-    validate_schema,
-    WASHOUT_SCHEMAS,
+    filter_iqr,
 )
 
 
@@ -38,12 +37,14 @@ from data_center.processing.gold_layer import (
 # ============================================================
 def test_silver_layer_dedup_unique_constraint():
     """Silver 层去重: (timestamp, symbol) 组合唯一。"""
-    df = pd.DataFrame([
-        {"timestamp": "2026-01-01T00:00:00Z", "symbol": "BTC", "cvd_value": 100.0},
-        {"timestamp": "2026-01-01T00:00:00Z", "symbol": "BTC", "cvd_value": 200.0},  # 重复
-        {"timestamp": "2026-01-01T00:00:00Z", "symbol": "ETH", "cvd_value": 50.0},
-        {"timestamp": "2026-01-01T00:05:00Z", "symbol": "BTC", "cvd_value": 150.0},
-    ])
+    df = pd.DataFrame(
+        [
+            {"timestamp": "2026-01-01T00:00:00Z", "symbol": "BTC", "cvd_value": 100.0},
+            {"timestamp": "2026-01-01T00:00:00Z", "symbol": "BTC", "cvd_value": 200.0},  # 重复
+            {"timestamp": "2026-01-01T00:00:00Z", "symbol": "ETH", "cvd_value": 50.0},
+            {"timestamp": "2026-01-01T00:05:00Z", "symbol": "BTC", "cvd_value": 150.0},
+        ]
+    )
     result = dedup_by_timestamp_symbol(df)
     # 去重后 3 条（第二条 BTC 重复被去除）
     assert len(result) == 3
@@ -113,24 +114,43 @@ def test_gold_layer_schema_validation():
     assert "long_short_ratio_clean" in WASHOUT_SCHEMAS
 
     # 正常数据 → 通过
-    good_cvd = pd.DataFrame([
-        {"timestamp": "2026-01-01T00:00:00Z", "symbol": "BTC",
-         "cvd_value": 100.0, "buy_volume": 500.0, "sell_volume": 400.0},
-    ])
+    good_cvd = pd.DataFrame(
+        [
+            {
+                "timestamp": "2026-01-01T00:00:00Z",
+                "symbol": "BTC",
+                "cvd_value": 100.0,
+                "buy_volume": 500.0,
+                "sell_volume": 400.0,
+            },
+        ]
+    )
     assert validate_schema(good_cvd, "cvd_clean") is True
 
     # 缺字段 → 拦截
-    bad_cvd = pd.DataFrame([
-        {"timestamp": "2026-01-01T00:00:00Z", "symbol": "BTC",
-         "cvd_value": 100.0},  # 缺 buy_volume/sell_volume
-    ])
+    bad_cvd = pd.DataFrame(
+        [
+            {
+                "timestamp": "2026-01-01T00:00:00Z",
+                "symbol": "BTC",
+                "cvd_value": 100.0,
+            },  # 缺 buy_volume/sell_volume
+        ]
+    )
     assert validate_schema(bad_cvd, "cvd_clean") is False
 
     # 类型错误 (cvd_value 是字符串而非数值) → 拦截
-    wrong_type = pd.DataFrame([
-        {"timestamp": "2026-01-01T00:00:00Z", "symbol": "BTC",
-         "cvd_value": "not_a_number", "buy_volume": 500.0, "sell_volume": 400.0},
-    ])
+    wrong_type = pd.DataFrame(
+        [
+            {
+                "timestamp": "2026-01-01T00:00:00Z",
+                "symbol": "BTC",
+                "cvd_value": "not_a_number",
+                "buy_volume": 500.0,
+                "sell_volume": 400.0,
+            },
+        ]
+    )
     assert validate_schema(wrong_type, "cvd_clean") is False
 
 
@@ -142,11 +162,13 @@ def test_silver_layer_cleaner_full_pipeline():
     cleaner = SilverLayerCleaner()
     np.random.seed(42)
     normal = np.random.normal(100, 5, 30)
-    df = pd.DataFrame({
-        "timestamp": [f"2026-01-01T00:{i:02d}:00Z" for i in range(30)],
-        "symbol": ["BTC"] * 30,
-        "cvd_value": normal.tolist(),
-    })
+    df = pd.DataFrame(
+        {
+            "timestamp": [f"2026-01-01T00:{i:02d}:00Z" for i in range(30)],
+            "symbol": ["BTC"] * 30,
+            "cvd_value": normal.tolist(),
+        }
+    )
     # 添加重复行
     df = pd.concat([df, df.iloc[[0]]], ignore_index=True)
     # 添加异常值

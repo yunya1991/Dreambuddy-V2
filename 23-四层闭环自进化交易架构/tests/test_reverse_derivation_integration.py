@@ -3,13 +3,14 @@
 将 PrimaryContradictionIdentifier 的 paths 和 cross_attention 的 last_attn_weights
 转换为 ReverseDeriver 所需的 dimension_predictions 和 attention_weights。
 """
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution" / "engines"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution"))
 
-from reverse_derivation_integration import (
+from reverse_derivation_integration import (  # noqa: I001
     extract_dimension_predictions,
     extract_attention_weights,
 )
@@ -57,6 +58,7 @@ def test_extract_dimension_predictions_fail_open_on_invalid():
 def test_extract_attention_weights_from_tensor():
     """RED: 从 cross_attention last_attn_weights 提取维度权重列表。"""
     import torch
+
     # last_attn_weights shape: (B=1, n_heads=2, 1, N=3)
     weights = torch.tensor([[[[0.2, 0.5, 0.3]], [[0.1, 0.6, 0.3]]]])
     result = extract_attention_weights(weights)

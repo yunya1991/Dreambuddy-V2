@@ -24,6 +24,7 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径D：
 生产接线: three_factor_short.py detect_expanded_factors 委托评估 →
 polling_trader.py 检测阶段触发（路径D）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -46,6 +47,7 @@ class ExpandedFactorResult:
         oi_change_pct: OI 变化百分比
         price_change_pct: 价格变化百分比
     """
+
     funding_rate_satisfied: bool
     oi_price_divergence_satisfied: bool
     liquidation_heatmap_satisfied: bool
@@ -109,6 +111,7 @@ class FactorPoolExpansion:
         """资金费率因子: funding_rate > 0.1% (0.001)"""
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_funding_rate_factor"):
                 return False
         except Exception as e:
@@ -135,6 +138,7 @@ class FactorPoolExpansion:
         """OI-Price 背离因子: OI↑ (oi_change_pct > 0) AND Price↓ (price_change_pct < 0)"""
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_oi_price_divergence_factor"):
                 return False
         except Exception as e:
@@ -163,6 +167,7 @@ class FactorPoolExpansion:
         """清算热力图因子: 降级为可选（需 POC），当前始终 False"""
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_liquidation_heatmap_factor"):
                 return False
         except Exception as e:

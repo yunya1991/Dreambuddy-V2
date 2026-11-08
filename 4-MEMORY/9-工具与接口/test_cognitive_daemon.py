@@ -4,7 +4,7 @@
 验证文件监听daemon的核心逻辑
 """
 
-import os
+import os  # noqa: I001
 import shutil
 import sys
 import tempfile
@@ -44,8 +44,12 @@ def test_daemon_scan_changed_files():
         # 第二次快照，对比变更
         changed = scan_changed_files(tmpdir, snapshot1)
         assert isinstance(changed, dict)
-        assert "code.py" in changed or any("code.py" in k for k in changed), f"应检测到code.py变更: {changed}"
-        assert "new.py" in changed or any("new.py" in k for k in changed), f"应检测到new.py新增: {changed}"
+        assert "code.py" in changed or any(
+            "code.py" in k for k in changed
+        ), f"应检测到code.py变更: {changed}"
+        assert "new.py" in changed or any(
+            "new.py" in k for k in changed
+        ), f"应检测到new.py新增: {changed}"
         # doc.md没变，不应在changed中
         assert "doc.md" not in changed, f"doc.md未变更不应出现: {changed}"
 
@@ -59,21 +63,21 @@ def test_daemon_filter_code_files():
     """daemon：只监听代码文件，忽略无关文件"""
     from cognitive_daemon import is_code_file
 
-    assert is_code_file("hello.py") == True
-    assert is_code_file("hello.js") == True
-    assert is_code_file("hello.ts") == True
-    assert is_code_file("hello.md") == True
-    assert is_code_file("hello.json") == True
-    assert is_code_file("hello.yaml") == True
-    assert is_code_file("hello.sh") == True
+    assert is_code_file("hello.py") == True  # noqa: E712
+    assert is_code_file("hello.js") == True  # noqa: E712
+    assert is_code_file("hello.ts") == True  # noqa: E712
+    assert is_code_file("hello.md") == True  # noqa: E712
+    assert is_code_file("hello.json") == True  # noqa: E712
+    assert is_code_file("hello.yaml") == True  # noqa: E712
+    assert is_code_file("hello.sh") == True  # noqa: E712
 
     # 非代码文件
-    assert is_code_file("image.png") == False
-    assert is_code_file("video.mp4") == False
-    assert is_code_file("data.db") == False
-    assert is_code_file(".DS_Store") == False
-    assert is_code_file("__pycache__/foo.pyc") == False
-    assert is_code_file(".git/config") == False
+    assert is_code_file("image.png") == False  # noqa: E712
+    assert is_code_file("video.mp4") == False  # noqa: E712
+    assert is_code_file("data.db") == False  # noqa: E712
+    assert is_code_file(".DS_Store") == False  # noqa: E712
+    assert is_code_file("__pycache__/foo.pyc") == False  # noqa: E712
+    assert is_code_file(".git/config") == False  # noqa: E712
 
     print("✅ test_daemon_filter_code_files 通过")
     return True
@@ -85,31 +89,50 @@ def test_daemon_exclude_noise_files():
 
     # === 真实 Top 噪声源（来自 action_chain 2026-08-01 体检） ===
     # 1) .workbuddy 目录下的自动产物（整个目录排除）
-    assert is_code_file("11-易经推理系统/.workbuddy/memory_l4/guardian/heartbeat.json") == False, \
-        ".workbuddy/下的heartbeat是噪声应排除"
-    assert is_code_file("11-易经推理系统/.workbuddy/memory_l4/stats/performance.json") == False, \
-        ".workbuddy/下的stats是噪声应排除"
-    assert is_code_file("11-易经推理系统/.workbuddy/memory_l4/evolution/yijing_evolution.json") == False, \
-        ".workbuddy/下的evolution是噪声应排除"
-    assert is_code_file("11-易经推理系统/.workbuddy/memory_l4/index/latest.json") == False, \
-        ".workbuddy/下的index/latest是噪声应排除"
+    assert (
+        is_code_file("11-易经推理系统/.workbuddy/memory_l4/guardian/heartbeat.json")  # noqa: E712
+        == False  # noqa: E712
+    ), ".workbuddy/下的heartbeat是噪声应排除"
+    assert (
+        is_code_file("11-易经推理系统/.workbuddy/memory_l4/stats/performance.json")  # noqa: E712
+        == False  # noqa: E712
+    ), ".workbuddy/下的stats是噪声应排除"
+    assert (
+        is_code_file(  # noqa: E712
+            "11-易经推理系统/.workbuddy/memory_l4/evolution/yijing_evolution.json"
+        )  # noqa: E712
+        == False
+    ), ".workbuddy/下的evolution是噪声应排除"
+    assert (
+        is_code_file("11-易经推理系统/.workbuddy/memory_l4/index/latest.json")  # noqa: E712
+        == False  # noqa: E712
+    ), ".workbuddy/下的index/latest是噪声应排除"
 
     # 2) 隐藏交易时间文件
-    assert is_code_file("1-ARCHITECTURE/dreamos/cli/.trade_time.json") == False, \
-        ".trade_time.json是自动状态文件应排除"
+    assert (
+        is_code_file("1-ARCHITECTURE/dreamos/cli/.trade_time.json") == False  # noqa: E712
+    ), ".trade_time.json是自动状态文件应排除"
     # 更通用的 .xxx_time.json 模式
-    assert is_code_file("any/.signal_time.json") == False, ".xxx_time.json应排除"
+    assert is_code_file("any/.signal_time.json") == False, ".xxx_time.json应排除"  # noqa: E712
 
     # 3) heartbeat.json 在任意位置都应排除
-    assert is_code_file("some/sub/dir/heartbeat.json") == False, "heartbeat.json任何位置应排除"
+    assert (
+        is_code_file("some/sub/dir/heartbeat.json") == False  # noqa: E712
+    ), "heartbeat.json任何位置应排除"  # noqa: E712
 
     # === 反例：真实代码不应被误伤 ===
-    assert is_code_file("11-易经推理系统/scripts/memory_l4/case_registry.py") == True, \
-        "scripts下的代码应保留（scripts不是.workbuddy）"
-    assert is_code_file("14-V15经典马丁策略/core/v15_trader.py") == True, \
-        "真实策略代码应保留"
-    assert is_code_file("1-ARCHITECTURE/dreamos/capabilities/trading/execution/auto_trader.py") == True, \
-        "交易执行代码应保留"
+    assert (
+        is_code_file("11-易经推理系统/scripts/memory_l4/case_registry.py") == True  # noqa: E712
+    ), "scripts下的代码应保留（scripts不是.workbuddy）"
+    assert (
+        is_code_file("14-V15经典马丁策略/core/v15_trader.py") == True  # noqa: E712
+    ), "真实策略代码应保留"  # noqa: E712
+    assert (
+        is_code_file(  # noqa: E712
+            "1-ARCHITECTURE/dreamos/capabilities/trading/execution/auto_trader.py"
+        )  # noqa: E712
+        == True  # noqa: E712
+    ), "交易执行代码应保留"
 
     print("✅ test_daemon_exclude_noise_files 通过")
     return True
@@ -156,7 +179,7 @@ def test_daemon_trigger_record():
 
         assert mock_cle.record.called, "record()应被调用"
         assert result["memory_id"] == "VM-DAEMON-001"
-        assert result["recorded"] == True
+        assert result["recorded"] == True  # noqa: E712
 
         # 验证record的参数包含变更文件信息
         call_args = mock_cle.record.call_args
@@ -180,7 +203,7 @@ def test_daemon_dry_run():
         result = trigger_change_record(changes, dry_run=True)
 
         assert not mock_cle.record.called, "dry_run不应调用record"
-        assert result["dry_run"] == True
+        assert result["dry_run"] == True  # noqa: E712
 
         print("✅ test_daemon_dry_run 通过")
         return True
@@ -195,18 +218,18 @@ def test_daemon_debounce():
 
     # 第一次变更
     triggered1 = dt.trigger()
-    assert triggered1 == False, "首次触发不应立即执行（在窗口内）"
+    assert triggered1 == False, "首次触发不应立即执行（在窗口内）"  # noqa: E712
 
     # 窗口内的第二次变更
     time.sleep(0.1)
     triggered2 = dt.trigger()
-    assert triggered2 == False, "窗口内第二次触发不应执行"
+    assert triggered2 == False, "窗口内第二次触发不应执行"  # noqa: E712
 
     # 等待窗口过期
     time.sleep(0.25)
     triggered3 = dt.trigger()
     # 窗口过期后的触发应该标记为可执行
-    assert triggered3 == True, "窗口过期后应标记可执行"
+    assert triggered3 == True, "窗口过期后应标记可执行"  # noqa: E712
 
     print("✅ test_daemon_debounce 通过")
     return True
@@ -214,7 +237,7 @@ def test_daemon_debounce():
 
 def test_daemon_log_file_redirect():
     """daemon P2a：--log-file 将 verbose 输出写入日志文件（而非 stdout）"""
-    from cognitive_daemon import CognitiveDaemon, _setup_log_redirect
+    from cognitive_daemon import _setup_log_redirect  # noqa: I001
     import io
 
     tmpdir = tempfile.mkdtemp()
@@ -230,6 +253,7 @@ def test_daemon_log_file_redirect():
 
         # 恢复 stdout/stderr（避免影响后续测试）
         import sys as _sys
+
         _sys.stdout.flush()
         _sys.stderr.flush()
         _sys.stdout = prev_stdout
@@ -246,6 +270,7 @@ def test_daemon_log_file_redirect():
     finally:
         # 确保恢复
         import sys as _sys2
+
         if not isinstance(_sys2.stdout, io.TextIOWrapper):
             # 如果测试中途失败，强制恢复
             _sys2.stdout = sys.__stdout__
@@ -260,8 +285,9 @@ def test_daemon_log_file_default_path():
     path = _default_log_path()
     # 项目根 = 4-MEMORY/9-工具与接口/../../
     expected_leaf = os.path.join("logs", "cognitive_daemon.log")
-    assert path.endswith(expected_leaf) or expected_leaf in path, \
-        f"默认路径应指向 logs/cognitive_daemon.log，实际：{path}"
+    assert (
+        path.endswith(expected_leaf) or expected_leaf in path
+    ), f"默认路径应指向 logs/cognitive_daemon.log，实际：{path}"
     assert os.path.isabs(path), "默认日志路径应是绝对路径"
 
     print("✅ test_daemon_log_file_default_path 通过")

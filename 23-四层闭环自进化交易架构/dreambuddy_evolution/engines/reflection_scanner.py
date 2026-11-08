@@ -16,9 +16,10 @@ ReflectionScanner — 反思学习扫描器（自进化闭环第二条起点）
 P0: backtest 来源折扣（source_system="backtest" 施加 0.85 折扣）
 P1a: 跨币种类先验继承（无交易记录的币种从同 asset_class 继承先验）
 """
+
+import logging
 import os
 import time
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +48,9 @@ class ReflectionScanner:
     MAX_HISTORY_DAYS = 90
     CACHE_TTL = 600
 
-    def __init__(self, trades_path: str | Path | None = None, project_root: str | Path | None = None):
+    def __init__(
+        self, trades_path: str | Path | None = None, project_root: str | Path | None = None
+    ):
         if project_root is None:
             project_root = Path.cwd()
         self._project_root = Path(project_root)
@@ -59,6 +62,7 @@ class ReflectionScanner:
     def _get_index_builder(self):
         if self._index_builder is None:
             from dreambuddy_evolution.engines.trade_index_builder import TradeIndexBuilder
+
             self._index_builder = TradeIndexBuilder(project_root=self._project_root)
         return self._index_builder
 
@@ -71,7 +75,8 @@ class ReflectionScanner:
 
     def _is_recent(self, trade: dict[str, Any]) -> bool:
         try:
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timedelta, timezone
+
             exit_time = trade.get("exit_time") or trade.get("entry_time")
             if not exit_time:
                 return True
@@ -114,6 +119,7 @@ class ReflectionScanner:
             avg_pnl = sum(t.get("pnl_pct", 0) for t in stat_trades) / stat_n
 
             from collections import Counter
+
             sources = dict(Counter(t.get("source_system", "unknown") for t in coin_trades))
 
             base_ri = 0.5 + max(0.0, win_rate - 0.5) * 2 * 0.3
@@ -213,6 +219,7 @@ class ReflectionScanner:
         # P1a: 类先验继承
         try:
             from dreambuddy_evolution.engines.asset_class_mapper import get_asset_class
+
             ac = get_asset_class(symbol)
             if ac and ac in self._class_priors:
                 prior = self._class_priors[ac]

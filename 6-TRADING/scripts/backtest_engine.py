@@ -10,30 +10,40 @@
     python3 backtest_engine.py --capital 200
 """
 
-import os
-import sys
-import json
 import argparse
-from datetime import datetime, timezone
+import json
+import sys
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
 
 SCRIPTS_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPTS_DIR.parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from backtest_data_fetcher import (
-    load_or_fetch, dt_to_ts, ts_to_dt,
-    resample_to_weekly, add_technical_indicators, DATA_DIR
+from backtest_data_fetcher import (  # noqa: E402
+    add_technical_indicators,
+    dt_to_ts,
+    load_or_fetch,
+    resample_to_weekly,
+    ts_to_dt,
 )
-from backtest_strategy import (
-    Direction, SignalStrength, StrategyType, ExitReason,
-    Screen1Output, Screen2Output, Position, Trade,
-    run_screen1, run_screen2, check_exit_signals,
-    calc_martin_add_on, recalc_avg_entry, calc_partial_close,
+from backtest_strategy import (  # noqa: E402
     TP_RATIOS,
+    Direction,
+    ExitReason,
+    Position,
+    Screen1Output,
+    Screen2Output,
+    SignalStrength,
+    StrategyType,
+    Trade,
+    calc_martin_add_on,
+    calc_partial_close,
+    check_exit_signals,
+    recalc_avg_entry,
+    run_screen1,
+    run_screen2,
 )
-
 
 # ==================== 回测配置 ====================
 
@@ -41,18 +51,19 @@ DEFAULT_CONFIG = {
     "inst_id": "BTC-USDT-SWAP",
     "start_date": "2025-01-01",
     "end_date": "2026-05-16",
-    "initial_capital": 200.0,     # 真实账户约200U
+    "initial_capital": 200.0,  # 真实账户约200U
     "maker_fee": 0.0002,
     "taker_fee": 0.0005,
     "slippage": 0.0001,
     "max_drawdown": 20.0,
     "warn_drawdown": 15.0,
-    "max_position_pct": 0.20,     # 单层最大仓位
-    "max_total_pct": 0.60,        # 累计最大仓位
+    "max_position_pct": 0.20,  # 单层最大仓位
+    "max_total_pct": 0.60,  # 累计最大仓位
 }
 
 
 # ==================== 回测引擎 ====================
+
 
 class BacktestEngine:
     def __init__(self, config: dict = None, opt_params: dict = None):
@@ -103,9 +114,13 @@ class BacktestEngine:
 
     def _apply_slippage(self, price: float, direction: Direction, is_buy: bool) -> float:
         if direction == Direction.LONG:
-            return price * (1 + self.cfg["slippage"]) if is_buy else price * (1 - self.cfg["slippage"])
+            return (
+                price * (1 + self.cfg["slippage"]) if is_buy else price * (1 - self.cfg["slippage"])
+            )
         else:
-            return price * (1 - self.cfg["slippage"]) if is_buy else price * (1 + self.cfg["slippage"])
+            return (
+                price * (1 - self.cfg["slippage"]) if is_buy else price * (1 + self.cfg["slippage"])
+            )
 
     def _calc_fee(self, size_usd: float) -> float:
         return size_usd * self.cfg["taker_fee"]
@@ -114,9 +129,17 @@ class BacktestEngine:
         if self.position.direction == Direction.WAIT:
             return self.cash
         if self.position.direction == Direction.LONG:
-            unrealized = (price - self.position.entry_price) / self.position.entry_price * self.position.size_usd
+            unrealized = (
+                (price - self.position.entry_price)
+                / self.position.entry_price
+                * self.position.size_usd
+            )
         else:
-            unrealized = (self.position.entry_price - price) / self.position.entry_price * self.position.size_usd
+            unrealized = (
+                (self.position.entry_price - price)
+                / self.position.entry_price
+                * self.position.size_usd
+            )
         return self.cash + self.position.size_usd + unrealized
 
     def _open_position(self, screen2: Screen2Output, screen1: Screen1Output, candle: Dict):
@@ -133,13 +156,13 @@ class BacktestEngine:
         if size_usd < 5:  # 最小开仓量
             return
 
-        self.cash -= (size_usd + fee)
+        self.cash -= size_usd + fee
         dt = ts_to_dt(candle["ts"])
 
         self.position = Position(
             direction=screen1.direction,
             entry_price=price,
-            initial_size_usd=size_usd,   # 记录初始大小 (用于等额加仓)
+            initial_size_usd=size_usd,  # 记录初始大小 (用于等额加仓)
             size_usd=size_usd,
             level=0,
             add_on_levels=screen2.add_on_levels,
@@ -174,7 +197,7 @@ class BacktestEngine:
         price = self._apply_slippage(add_price, self.position.direction, is_buy=True)
         fee = self._calc_fee(add_size)
 
-        self.cash -= (add_size + fee)
+        self.cash -= add_size + fee
         recalc_avg_entry(self.position, price, add_size, self.cfg["taker_fee"])
         self.position.total_cost += fee
 
@@ -189,17 +212,23 @@ class BacktestEngine:
             size_usd=add_size,
             fee=fee,
             signal_strength=self.position.signal_strength,
-            screen1_direction=self.position.screen1.direction if self.position.screen1 else Direction.WAIT,
+            screen1_direction=(
+                self.position.screen1.direction if self.position.screen1 else Direction.WAIT
+            ),
         )
         self.trades.append(trade)
         self.stats["add_on_count"] += 1
 
         # 记录马丁是否完成
         if self.position.is_martin_complete:
-            print(f"   {'[马丁加满]' if self.position.direction == Direction.LONG else '[马丁加满]'} "
-                  f"Level {self.position.level}/3, 启用三层止盈")
+            print(
+                f"   {'[马丁加满]' if self.position.direction == Direction.LONG else '[马丁加满]'} "
+                f"Level {self.position.level}/3, 启用三层止盈"
+            )
 
-    def _partial_close_position(self, candle: Dict, exit_reason: ExitReason, tp_level: int, price: float = None):
+    def _partial_close_position(
+        self, candle: Dict, exit_reason: ExitReason, tp_level: int, price: float = None
+    ):
         """
         分批止盈平仓 (规范: 30%/30%/40%)
 
@@ -217,9 +246,13 @@ class BacktestEngine:
 
         # 计算本次盈亏
         if self.position.direction == Direction.LONG:
-            pnl = (close_price - self.position.entry_price) / self.position.entry_price * close_size - fee
+            pnl = (
+                close_price - self.position.entry_price
+            ) / self.position.entry_price * close_size - fee
         else:
-            pnl = (self.position.entry_price - close_price) / self.position.entry_price * close_size - fee
+            pnl = (
+                self.position.entry_price - close_price
+            ) / self.position.entry_price * close_size - fee
 
         # 更新持仓
         self.position.size_usd -= close_size
@@ -237,7 +270,9 @@ class BacktestEngine:
             size_usd=close_size,
             fee=fee,
             signal_strength=self.position.signal_strength,
-            screen1_direction=self.position.screen1.direction if self.position.screen1 else Direction.WAIT,
+            screen1_direction=(
+                self.position.screen1.direction if self.position.screen1 else Direction.WAIT
+            ),
             exit_reason=exit_reason,
             pnl=round(pnl, 2),
             pnl_pct=round(pnl / (close_size + fee) * 100, 2) if close_size > 0 else 0,
@@ -278,6 +313,7 @@ class BacktestEngine:
             return False
         try:
             from datetime import datetime as dt_cls
+
             last_dt = dt_cls.strptime(self.last_sl_date, "%Y-%m-%d")
             curr_dt = dt_cls.strptime(current_date_str, "%Y-%m-%d")
             days_since_sl = (curr_dt - last_dt).days
@@ -296,12 +332,20 @@ class BacktestEngine:
 
         # 计算盈亏
         if self.position.direction == Direction.LONG:
-            pnl = (close_price - self.position.entry_price) / self.position.entry_price * self.position.size_usd - fee
+            pnl = (
+                close_price - self.position.entry_price
+            ) / self.position.entry_price * self.position.size_usd - fee
         else:
-            pnl = (self.position.entry_price - close_price) / self.position.entry_price * self.position.size_usd - fee
+            pnl = (
+                self.position.entry_price - close_price
+            ) / self.position.entry_price * self.position.size_usd - fee
 
         pnl -= self.position.total_cost
-        pnl_pct = pnl / (self.position.total_cost + self.position.size_usd) if (self.position.total_cost + self.position.size_usd) > 0 else 0
+        pnl_pct = (
+            pnl / (self.position.total_cost + self.position.size_usd)
+            if (self.position.total_cost + self.position.size_usd) > 0
+            else 0
+        )
 
         self.cash += self.position.size_usd + pnl - fee
         current_eq = self.cash
@@ -348,7 +392,9 @@ class BacktestEngine:
             size_usd=self.position.size_usd,
             fee=fee,
             signal_strength=self.position.signal_strength,
-            screen1_direction=self.position.screen1.direction if self.position.screen1 else Direction.WAIT,
+            screen1_direction=(
+                self.position.screen1.direction if self.position.screen1 else Direction.WAIT
+            ),
             exit_reason=exit_reason,
             pnl=round(pnl, 2),
             pnl_pct=round(pnl_pct * 100, 2),
@@ -370,13 +416,17 @@ class BacktestEngine:
         for i, wc in enumerate(self.weekly_candles):
             wc_dt = ts_to_dt(wc["ts"])
             if wc_dt.isocalendar()[:2] == week_key:
-                result = run_screen1(self.weekly_candles, i, candle["close"], opt_params=self.opt_params)
+                result = run_screen1(
+                    self.weekly_candles, i, candle["close"], opt_params=self.opt_params
+                )
                 self.screen1_cache[week_key] = result
                 return result
 
         if self.weekly_candles:
             idx = len(self.weekly_candles) - 1
-            result = run_screen1(self.weekly_candles, idx, candle["close"], opt_params=self.opt_params)
+            result = run_screen1(
+                self.weekly_candles, idx, candle["close"], opt_params=self.opt_params
+            )
             self.screen1_cache[week_key] = result
             return result
 
@@ -401,15 +451,19 @@ class BacktestEngine:
             dd = (self.peak_equity - eq) / self.peak_equity * 100
 
         dt = ts_to_dt(candle["ts"])
-        self.equity_curve.append({
-            "date": dt.strftime("%Y-%m-%d"),
-            "equity": round(eq, 2),
-            "peak": round(self.peak_equity, 2),
-        })
-        self.drawdown_curve.append({
-            "date": dt.strftime("%Y-%m-%d"),
-            "drawdown": round(dd, 2),
-        })
+        self.equity_curve.append(
+            {
+                "date": dt.strftime("%Y-%m-%d"),
+                "equity": round(eq, 2),
+                "peak": round(self.peak_equity, 2),
+            }
+        )
+        self.drawdown_curve.append(
+            {
+                "date": dt.strftime("%Y-%m-%d"),
+                "drawdown": round(dd, 2),
+            }
+        )
 
     def run(self) -> dict:
         """运行回测"""
@@ -419,14 +473,12 @@ class BacktestEngine:
         print("Dream Systematic Trading - 回测引擎 v3.0")
         print("策略: 三屏交易体系 + 马丁策略 (对齐TRADING_WORKFLOW_SPEC_v1)")
         print("=" * 60)
-        print(f"\n获取数据...")
+        print("\n获取数据...")
 
         start_ts = dt_to_ts(self.cfg["start_date"])
         end_ts = dt_to_ts(self.cfg["end_date"])
 
-        self.daily_candles = load_or_fetch(
-            self.cfg["inst_id"], "1D", start_ts, end_ts
-        )
+        self.daily_candles = load_or_fetch(self.cfg["inst_id"], "1D", start_ts, end_ts)
         if not self.daily_candles:
             print("无法获取日线数据")
             return {}
@@ -435,16 +487,18 @@ class BacktestEngine:
         self.weekly_candles = resample_to_weekly(self.daily_candles)
         self.weekly_candles = add_technical_indicators(self.weekly_candles)
 
-        print(f"\n数据准备完成:")
+        print("\n数据准备完成:")
         print(f"   日线: {len(self.daily_candles)} 根")
         print(f"   周线: {len(self.weekly_candles)} 根")
-        print(f"   时间: {ts_to_dt(self.daily_candles[0]['ts']):%Y-%m-%d} ~ {ts_to_dt(self.daily_candles[-1]['ts']):%Y-%m-%d}")
+        print(
+            f"   时间: {ts_to_dt(self.daily_candles[0]['ts']):%Y-%m-%d} ~ {ts_to_dt(self.daily_candles[-1]['ts']):%Y-%m-%d}"
+        )
         print(f"   初始资金: ${self.cfg['initial_capital']:,.2f}")
-        print(f"   止损: 固定20% (硬性约束)")
-        print(f"   加仓: 等额, 最多3次, 总仓位60%上限")
-        print(f"   止盈: 三层(2x/3x/5x ATR), 仅马丁加满后启用")
+        print("   止损: 固定20% (硬性约束)")
+        print("   加仓: 等额, 最多3次, 总仓位60%上限")
+        print("   止盈: 三层(2x/3x/5x ATR), 仅马丁加满后启用")
 
-        print(f"\n开始回测...")
+        print("\n开始回测...")
         warmup = 50
 
         for i in range(warmup, len(self.daily_candles)):
@@ -456,7 +510,9 @@ class BacktestEngine:
             screen1 = self._get_weekly_screen1(candle)
 
             # 第二屏: 日线预设
-            screen2 = run_screen2(self.daily_candles, i, screen1, self.position, opt_params=self.opt_params)
+            screen2 = run_screen2(
+                self.daily_candles, i, screen1, self.position, opt_params=self.opt_params
+            )
 
             # --- 持仓管理 ---
             if self.position.direction == Direction.WAIT:
@@ -466,37 +522,46 @@ class BacktestEngine:
                 # 规范: 第一屏确定方向即可开仓 (WAIT=弱多头LONG也开仓)
                 elif screen1.direction in (Direction.LONG, Direction.SHORT):
                     self._open_position(screen2, screen1, candle)
-                    print(f"   {dt:%Y-%m-%d} 开仓: {screen1.direction.value} ({screen1.market_state}) "
-                          f"| 信号={screen2.signal_score:.0f}({screen2.signal_strength.value}) "
-                          f"| 价位=${price:,.0f} | 单层仓位={screen2.position_pct*100:.1f}% "
-                          f"| 止损=${screen2.stop_loss_price:,.0f}")
+                    print(
+                        f"   {dt:%Y-%m-%d} 开仓: {screen1.direction.value} ({screen1.market_state}) "
+                        f"| 信号={screen2.signal_score:.0f}({screen2.signal_strength.value}) "
+                        f"| 价位=${price:,.0f} | 单层仓位={screen2.position_pct*100:.1f}% "
+                        f"| 止损=${screen2.stop_loss_price:,.0f}"
+                    )
             else:
                 # 持仓中: 检查A9四层离场
                 should_exit, exit_reason, tp_level = check_exit_signals(
-                    self.position, candle, screen1,
-                    self._current_equity(price), self.peak_equity,
-                    len(self.trades)
+                    self.position,
+                    candle,
+                    screen1,
+                    self._current_equity(price),
+                    self.peak_equity,
+                    len(self.trades),
                 )
 
                 if should_exit:
                     if tp_level >= 0:
                         # 分批止盈
                         self._partial_close_position(candle, exit_reason, tp_level)
-                        print(f"   {dt:%Y-%m-%d} 分批止盈(TP{tp_level+1}): 平仓{TP_RATIOS[tp_level]*100:.0f}% "
-                              f"| 剩余={self.position.size_usd:.1f}U")
+                        print(
+                            f"   {dt:%Y-%m-%d} 分批止盈(TP{tp_level+1}): 平仓{TP_RATIOS[tp_level]*100:.0f}% "
+                            f"| 剩余={self.position.size_usd:.1f}U"
+                        )
                     else:
                         # 全仓平仓
                         if exit_reason == ExitReason.STOP_LOSS:
                             close_price = self.position.stop_loss_price
                         else:
                             close_price = price
-                        print(f"   {dt:%Y-%m-%d} 全平: {exit_reason.value} "
-                              f"| Level={self.position.level}/3 {'[马丁完成]' if self.position.is_martin_complete else ''} "
-                              f"| 价格=${close_price:,.0f}")
+                        print(
+                            f"   {dt:%Y-%m-%d} 全平: {exit_reason.value} "
+                            f"| Level={self.position.level}/3 {'[马丁完成]' if self.position.is_martin_complete else ''} "
+                            f"| 价格=${close_price:,.0f}"
+                        )
                         self._close_position(candle, exit_reason, close_price)
 
                         if exit_reason == ExitReason.DRAWDOWN_LIMIT:
-                            print(f"   最大回撤触发, 强制全平!")
+                            print("   最大回撤触发, 强制全平!")
                             break
                 else:
                     # 检查加仓
@@ -506,18 +571,26 @@ class BacktestEngine:
                     if add_info:
                         add_price, add_size = add_info
                         # 回撤警告时暂停加仓
-                        dd = (self.peak_equity - self._current_equity(price)) / self.peak_equity * 100
+                        dd = (
+                            (self.peak_equity - self._current_equity(price))
+                            / self.peak_equity
+                            * 100
+                        )
                         if dd < self.cfg["warn_drawdown"]:
                             self._add_position(add_price, add_size, candle)
-                            print(f"   {dt:%Y-%m-%d} 加仓L{self.position.level}: "
-                                  f"${add_price:,.0f} x{add_size:.1f}U (等额)")
+                            print(
+                                f"   {dt:%Y-%m-%d} 加仓L{self.position.level}: "
+                                f"${add_price:,.0f} x{add_size:.1f}U (等额)"
+                            )
 
             # 记录权益
             self._record_equity(candle, price)
 
             if (i - warmup + 1) % 100 == 0:
                 eq = self.equity_curve[-1]["equity"] if self.equity_curve else 0
-                print(f"   进度: {i - warmup + 1}/{len(self.daily_candles) - warmup} | 权益: ${eq:,.2f}")
+                print(
+                    f"   进度: {i - warmup + 1}/{len(self.daily_candles) - warmup} | 权益: ${eq:,.2f}"
+                )
 
         # 回测结束后如有持仓，按最后价格全平
         if self.position.direction != Direction.WAIT:
@@ -542,7 +615,9 @@ class BacktestEngine:
         else:
             days = 1
 
-        annual_return = ((1 + total_return / 100) ** (365 / max(days, 1)) - 1) * 100 if days > 0 else 0
+        annual_return = (
+            ((1 + total_return / 100) ** (365 / max(days, 1)) - 1) * 100 if days > 0 else 0
+        )
 
         max_dd = 0.0
         if self.drawdown_curve:
@@ -551,12 +626,15 @@ class BacktestEngine:
         if len(self.equity_curve) > 1:
             returns = []
             for i in range(1, len(self.equity_curve)):
-                r = (self.equity_curve[i]["equity"] - self.equity_curve[i-1]["equity"]) / self.equity_curve[i-1]["equity"]
+                r = (
+                    self.equity_curve[i]["equity"] - self.equity_curve[i - 1]["equity"]
+                ) / self.equity_curve[i - 1]["equity"]
                 returns.append(r)
             if returns:
                 avg_ret = sum(returns) / len(returns) * 252
                 import statistics
-                std_ret = statistics.stdev(returns) * (252 ** 0.5) if len(returns) > 1 else 0.01
+
+                std_ret = statistics.stdev(returns) * (252**0.5) if len(returns) > 1 else 0.01
                 sharpe = (avg_ret - 0.02) / std_ret if std_ret > 0 else 0
             else:
                 sharpe = 0
@@ -567,7 +645,9 @@ class BacktestEngine:
         win_rate = (self.stats["win_trades"] / total_closed * 100) if total_closed > 0 else 0
 
         wins = [t.pnl for t in self.trades if t.action in ("close", "partial_close") and t.pnl > 0]
-        losses = [t.pnl for t in self.trades if t.action in ("close", "partial_close") and t.pnl < 0]
+        losses = [
+            t.pnl for t in self.trades if t.action in ("close", "partial_close") and t.pnl < 0
+        ]
         avg_win = sum(wins) / len(wins) if wins else 0
         avg_loss = abs(sum(losses) / len(losses)) if losses else 1
         profit_factor = avg_win / avg_loss if avg_loss > 0 else 0
@@ -610,9 +690,11 @@ class BacktestEngine:
             "initial_capital": init,
             "backtest_days": days,
             "signal_analysis": signal_analysis,
-            "screen1_accuracy": round(
-                self.stats["screen1_correct"] / self.stats["screen1_total"] * 100, 2
-            ) if self.stats["screen1_total"] > 0 else 0,
+            "screen1_accuracy": (
+                round(self.stats["screen1_correct"] / self.stats["screen1_total"] * 100, 2)
+                if self.stats["screen1_total"] > 0
+                else 0
+            ),
             "monthly_returns": monthly_returns,
             "equity_curve": self.equity_curve,
             "drawdown_curve": self.drawdown_curve,
@@ -641,26 +723,28 @@ class BacktestEngine:
     def _print_report(self, result: dict):
         c = self.cfg
         print(f"\n{'=' * 60}")
-        print(f"Dream Systematic Trading - 回测报告 v3.0")
+        print("Dream Systematic Trading - 回测报告 v3.0")
         print(f"{'=' * 60}")
-        print(f"\n回测参数:")
+        print("\n回测参数:")
         print(f"   交易对:     {c['inst_id']}")
         print(f"   时间范围:   {c['start_date']} ~ {c['end_date']} ({result['backtest_days']}天)")
         print(f"   初始资金:   ${c['initial_capital']:,.2f}")
-        print(f"   止损:       固定20% (硬性约束)")
-        print(f"   加仓:       等额, 最多3次")
-        print(f"   止盈:       三层TP (2x/3x/5x ATR), 仅马丁加满后启用")
+        print("   止损:       固定20% (硬性约束)")
+        print("   加仓:       等额, 最多3次")
+        print("   止盈:       三层TP (2x/3x/5x ATR), 仅马丁加满后启用")
 
-        print(f"\n性能指标:")
+        print("\n性能指标:")
         print(f"   总收益率:   {result['total_return']:+.2f}%")
         print(f"   年化收益率: {result['annual_return']:+.2f}%")
-        print(f"   最大回撤:   {result['max_drawdown']:.2f}% {'(<=20% OK)' if result['max_drawdown'] <= 20 else '(>20% FAIL)'}")
+        print(
+            f"   最大回撤:   {result['max_drawdown']:.2f}% {'(<=20% OK)' if result['max_drawdown'] <= 20 else '(>20% FAIL)'}"
+        )
         print(f"   夏普比率:   {result['sharpe_ratio']:.2f}")
         print(f"   胜率:       {result['win_rate']:.2f}%")
         print(f"   盈亏比:     {result['profit_factor']:.2f}")
         print(f"   交易次数:   {result['total_trades']}次 (加仓{result['add_on_count']}次)")
 
-        print(f"\n马丁策略统计:")
+        print("\n马丁策略统计:")
         print(f"   马丁完成:   {result['martin_complete_trades']}次 (加满3层)")
         print(f"   马丁未完成: {result['martin_incomplete_trades']}次 (被止损/信号反转)")
         print(f"   分批止盈:   {result['partial_close_count']}次")
@@ -668,14 +752,16 @@ class BacktestEngine:
         print(f"   TP2触发:    {result['tp2_count']}次 (平30%)")
         print(f"   TP3触发:    {result['tp3_count']}次 (平40%)")
 
-        print(f"\n风险控制:")
-        print(f"   止损出场:   (含在总交易中)")
+        print("\n风险控制:")
+        print("   止损出场:   (含在总交易中)")
         print(f"   回撤强制:   {result['drawdown_limit_count']}次")
         if self.sl_cooldown_days > 0:
-            print(f"   冷却期:     {self.sl_cooldown_days}天 (跳过{result['sl_cooldown_skip_count']}次开仓)")
+            print(
+                f"   冷却期:     {self.sl_cooldown_days}天 (跳过{result['sl_cooldown_skip_count']}次开仓)"
+            )
 
-        print(f"\n信号强度分析:")
-        for s_name, s_data in result['signal_analysis'].items():
+        print("\n信号强度分析:")
+        for s_name, s_data in result["signal_analysis"].items():
             if s_data["count"] > 0:
                 print(f"   {s_name:8s}: {s_data['count']:3d}次 -> 胜率 {s_data['win_rate']:.1f}%")
 
@@ -706,7 +792,9 @@ if __name__ == "__main__":
     result = engine.run()
 
     if result and args.output:
-        save_result = {k: v for k, v in result.items() if k not in ("equity_curve", "drawdown_curve", "trades")}
+        save_result = {
+            k: v for k, v in result.items() if k not in ("equity_curve", "drawdown_curve", "trades")
+        }
         save_result["equity_curve_count"] = len(result.get("equity_curve", []))
         save_result["drawdown_curve_count"] = len(result.get("drawdown_curve", []))
         save_result["trades_count"] = len(result.get("trades", []))

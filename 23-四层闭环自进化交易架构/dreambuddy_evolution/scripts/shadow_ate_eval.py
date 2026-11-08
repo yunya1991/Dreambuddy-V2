@@ -2,6 +2,7 @@
 
 用法: python -m dreambuddy_evolution.scripts.shadow_ate_eval --switch <name>
 """
+
 from __future__ import annotations
 
 import sys

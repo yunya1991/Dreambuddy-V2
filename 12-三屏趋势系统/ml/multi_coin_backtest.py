@@ -11,20 +11,20 @@ BTC趋势跟随逻辑（基线）：
 基线配置：ml/multi_coin_baseline_config.json
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import json
+import json  # noqa: I001
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple
+from typing import Dict
 from datetime import datetime
 
 from data.market_data import fetch_candles
 from ml.lr_ml_strategy_v2 import LeastResistanceAIStrategyV2
 from backtest.engine import BacktestEngine
-
 
 # 币种配置
 COINS = {
@@ -45,7 +45,9 @@ def fetch_coin_data(inst_id: str, bar: str = "1D", limit: int = 600) -> pd.DataF
         df = pd.DataFrame(candles)
         df["timestamp"] = pd.to_datetime(df["ts"], unit="ms")
         df = df.set_index("timestamp")
-        df = df.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"})
+        df = df.rename(
+            columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
+        )
         return df[["open", "high", "low", "close", "volume"]]
     except Exception as e:
         print(f"  [ERROR] 获取 {inst_id} 数据失败: {e}")
@@ -56,16 +58,24 @@ def get_fundamental_data() -> Dict:
     """模拟基本面数据"""
     return {
         "screen1": {
-            "composite_score": 65.0, "momentum_score": 70.0,
-            "value_score": 60.0, "growth_score": 65.0,
-            "quality_score": 68.0, "sentiment_score": 55.0,
+            "composite_score": 65.0,
+            "momentum_score": 70.0,
+            "value_score": 60.0,
+            "growth_score": 65.0,
+            "quality_score": 68.0,
+            "sentiment_score": 55.0,
         },
         "fundamental_9": {
-            "pe_ttm": 15.0, "pb": 2.0, "roe": 12.0,
-            "revenue_growth": 20.0, "profit_growth": 18.0,
-            "debt_ratio": 45.0, "cash_ratio": 30.0,
-            "gross_margin": 35.0, "net_margin": 15.0,
-        }
+            "pe_ttm": 15.0,
+            "pb": 2.0,
+            "roe": 12.0,
+            "revenue_growth": 20.0,
+            "profit_growth": 18.0,
+            "debt_ratio": 45.0,
+            "cash_ratio": 30.0,
+            "gross_margin": 35.0,
+            "net_margin": 15.0,
+        },
     }
 
 
@@ -133,7 +143,9 @@ def create_strategy(baseline_config: Dict = None) -> LeastResistanceAIStrategyV2
     return strategy
 
 
-def run_independent_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config: Dict = None) -> Dict[str, Dict]:
+def run_independent_mode(
+    prices_dict: Dict[str, pd.DataFrame], baseline_config: Dict = None
+) -> Dict[str, Dict]:
     """独立趋势模式：各币种独立运行"""
     print("\n" + "=" * 60)
     print("  模式A: 独立趋势模式")
@@ -154,7 +166,9 @@ def run_independent_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config: 
             result = engine.run(prices["close"], signals)
             m = result["metrics"]
             results[coin] = m
-            print(f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} 交易: {m['total_trades']}")
+            print(
+                f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} 交易: {m['total_trades']}"
+            )
         except Exception as e:
             print(f"失败: {e}")
             results[coin] = None
@@ -162,7 +176,9 @@ def run_independent_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config: 
     return results
 
 
-def run_btc_ma_filter_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config: Dict = None) -> Dict[str, Dict]:
+def run_btc_ma_filter_mode(
+    prices_dict: Dict[str, pd.DataFrame], baseline_config: Dict = None
+) -> Dict[str, Dict]:
     """模式C: BTC均线过滤模式
 
     规则：
@@ -204,7 +220,9 @@ def run_btc_ma_filter_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config
     # 判定"跌至周线MA200后"：过去30天曾触及周线MA200下方（价格<MA200*1.05），且当前价格回升至±15%内
     weekly_ma_dist = (btc_prices["close"] - btc_weekly_ma200_daily) / btc_weekly_ma200_daily
     # 过去30天曾下探到周线MA200附近（±5%下方）
-    touched_weekly_ma200 = (btc_prices["close"] < btc_weekly_ma200_daily * 1.05).rolling(30).sum() >= 1
+    touched_weekly_ma200 = (btc_prices["close"] < btc_weekly_ma200_daily * 1.05).rolling(
+        30
+    ).sum() >= 1
     # 当前价格在周线MA200 ±15% 区间
     near_weekly_ma200 = (weekly_ma_dist > -0.15) & (weekly_ma_dist < 0.15)
     # 组合：触底后回升
@@ -219,7 +237,9 @@ def run_btc_ma_filter_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config
         else:
             return "NORMAL"  # 正常状态
 
-    btc_ma_states = pd.Series([classify_btc_ma_state(i) for i in btc_prices.index], index=btc_prices.index)
+    btc_ma_states = pd.Series(
+        [classify_btc_ma_state(i) for i in btc_prices.index], index=btc_prices.index
+    )
 
     # BTC自身结果
     btc_signals = strategy.generate_signals(btc_prices)
@@ -230,9 +250,11 @@ def run_btc_ma_filter_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config
 
     # 统计BTC状态分布
     state_counts = btc_ma_states.value_counts()
-    print(f"\n  [BTC状态分布] BELOW_MA200:{state_counts.get('BELOW_MA200', 0)} "
-          f"NEAR_WEEKLY_MA200:{state_counts.get('NEAR_WEEKLY_MA200', 0)} "
-          f"NORMAL:{state_counts.get('NORMAL', 0)}")
+    print(
+        f"\n  [BTC状态分布] BELOW_MA200:{state_counts.get('BELOW_MA200', 0)} "
+        f"NEAR_WEEKLY_MA200:{state_counts.get('NEAR_WEEKLY_MA200', 0)} "
+        f"NORMAL:{state_counts.get('NORMAL', 0)}"
+    )
 
     # 小币根据BTC均线状态过滤信号
     for coin, prices in prices_dict.items():
@@ -268,8 +290,10 @@ def run_btc_ma_filter_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config
             result = engine.run(prices["close"], filtered_signals)
             m = result["metrics"]
             results[coin] = m
-            print(f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} "
-                  f"交易: {m['total_trades']} (过滤{n_filtered}个, 保留多{n_long_kept}/空{n_short_kept})")
+            print(
+                f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} "
+                f"交易: {m['total_trades']} (过滤{n_filtered}个, 保留多{n_long_kept}/空{n_short_kept})"
+            )
 
         except Exception as e:
             print(f"失败: {e}")
@@ -279,7 +303,9 @@ def run_btc_ma_filter_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config
     return results
 
 
-def run_btc_follow_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config: Dict = None) -> Dict[str, Dict]:
+def run_btc_follow_mode(
+    prices_dict: Dict[str, pd.DataFrame], baseline_config: Dict = None
+) -> Dict[str, Dict]:
     """模式B: BTC趋势跟随模式（基线）：BTC信号决定小币方向
 
     规则：
@@ -361,8 +387,10 @@ def run_btc_follow_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config: D
             result = engine.run(prices["close"], filtered_signals)
             m = result["metrics"]
             results[coin] = m
-            print(f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} "
-                  f"交易: {m['total_trades']} (过滤{n_filtered}个, 保留多{n_long_kept}/空{n_short_kept})")
+            print(
+                f"收益: {m['total_return_pct']:.2f}% 夏普: {m['sharpe_ratio']:.3f} "
+                f"交易: {m['total_trades']} (过滤{n_filtered}个, 保留多{n_long_kept}/空{n_short_kept})"
+            )
 
         except Exception as e:
             print(f"失败: {e}")
@@ -374,7 +402,9 @@ def run_btc_follow_mode(prices_dict: Dict[str, pd.DataFrame], baseline_config: D
     return results
 
 
-def print_comparison_table(mode_a_results: Dict, mode_b_results: Dict, mode_c_results: Dict = None) -> None:
+def print_comparison_table(
+    mode_a_results: Dict, mode_b_results: Dict, mode_c_results: Dict = None
+) -> None:
     """打印对比表格（支持2-3种模式）"""
     print("\n" + "=" * 80)
     print("  多币种策略对比报告")
@@ -406,7 +436,9 @@ def print_comparison_table(mode_a_results: Dict, mode_b_results: Dict, mode_c_re
             c_ret = c["total_return_pct"] if c else 0
             c_sharpe = c["sharpe_ratio"] if c else 0
 
-            print(f"{coin:>8} {a_ret:>10.2f}% {a_sharpe:>9.3f} {b_ret:>10.2f}% {b_sharpe:>9.3f} {c_ret:>10.2f}% {c_sharpe:>9.3f}")
+            print(
+                f"{coin:>8} {a_ret:>10.2f}% {a_sharpe:>9.3f} {b_ret:>10.2f}% {b_sharpe:>9.3f} {c_ret:>10.2f}% {c_sharpe:>9.3f}"
+            )
 
             if a and b and c:
                 total_a += a_ret
@@ -422,7 +454,9 @@ def print_comparison_table(mode_a_results: Dict, mode_b_results: Dict, mode_c_re
             avg_b = total_b / valid_coins
             avg_c = total_c / valid_coins
             print("-" * 80)
-            print(f"{'平均':>8} {avg_a:>10.2f}% {'':>9} {avg_b:>10.2f}% {'':>9} {avg_c:>10.2f}% {'':>9}")
+            print(
+                f"{'平均':>8} {avg_a:>10.2f}% {'':>9} {avg_b:>10.2f}% {'':>9} {avg_c:>10.2f}% {'':>9}"
+            )
 
             best_avg = max([(avg_a, "A"), (avg_b, "B"), (avg_c, "C")], key=lambda x: x[0])
             print(f"\n结论: 模式{best_avg[1]}最优 (平均收益: {best_avg[0]:.2f}%)")
@@ -446,7 +480,9 @@ def print_comparison_table(mode_a_results: Dict, mode_b_results: Dict, mode_c_re
             b_sharpe = b["sharpe_ratio"] if b else 0
             diff = b_ret - a_ret
 
-            print(f"{coin:>8} {a_ret:>11.2f}% {a_sharpe:>10.3f} {b_ret:>11.2f}% {b_sharpe:>10.3f} {diff:>+7.2f}%")
+            print(
+                f"{coin:>8} {a_ret:>11.2f}% {a_sharpe:>10.3f} {b_ret:>11.2f}% {b_sharpe:>10.3f} {diff:>+7.2f}%"
+            )
 
             if a and b:
                 total_a += a_ret
@@ -457,9 +493,13 @@ def print_comparison_table(mode_a_results: Dict, mode_b_results: Dict, mode_c_re
             avg_a = total_a / valid_coins
             avg_b = total_b / valid_coins
             print("-" * 70)
-            print(f"{'平均':>8} {avg_a:>11.2f}% {'':>10} {avg_b:>11.2f}% {'':>10} {avg_b - avg_a:>+7.2f}%")
+            print(
+                f"{'平均':>8} {avg_a:>11.2f}% {'':>10} {avg_b:>11.2f}% {'':>10} {avg_b - avg_a:>+7.2f}%"
+            )
 
-        print(f"\n结论: {'模式B更优' if avg_b > avg_a else '模式A更优'} (平均收益差: {avg_b - avg_a:+.2f}%)")
+        print(
+            f"\n结论: {'模式B更优' if avg_b > avg_a else '模式A更优'} (平均收益差: {avg_b - avg_a:+.2f}%)"
+        )
 
 
 def main():
@@ -508,7 +548,9 @@ def main():
 
     # 保存结果
     os.makedirs("ml/optimization_results", exist_ok=True)
-    result_file = f"ml/optimization_results/multi_coin_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    result_file = (
+        f"ml/optimization_results/multi_coin_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
 
     def clean_result(r):
         if r is None:
@@ -526,14 +568,23 @@ def main():
         return cleaned
 
     with open(result_file, "w", encoding="utf-8") as f:
-        json.dump({
-            "timestamp": datetime.now().isoformat(),
-            "baseline_version": baseline_config.get("version", "unknown") if baseline_config else "default",
-            "baseline_mode": "btc_trend_follow",
-            "coins": list(COINS.keys()),
-            "mode_a_independent": {k: clean_result(v) for k, v in mode_a_results.items()},
-            "mode_b_btc_follow_baseline": {k: clean_result(v) for k, v in mode_b_results.items()},
-        }, f, indent=2, ensure_ascii=False)
+        json.dump(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "baseline_version": (
+                    baseline_config.get("version", "unknown") if baseline_config else "default"
+                ),
+                "baseline_mode": "btc_trend_follow",
+                "coins": list(COINS.keys()),
+                "mode_a_independent": {k: clean_result(v) for k, v in mode_a_results.items()},
+                "mode_b_btc_follow_baseline": {
+                    k: clean_result(v) for k, v in mode_b_results.items()
+                },
+            },
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
     print(f"\n结果已保存: {result_file}")
 
 

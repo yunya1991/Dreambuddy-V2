@@ -21,53 +21,88 @@ Agent B Runner - Dreambuddy OS v1.0 系统架构验证实验
   Agent A = LLM 驱动实战交易（对照实验）
   Agent B = Dreambuddy OS 架构验证（实验组）
 """
-import os, sys, json, math, requests
-from datetime import datetime, timedelta
+
+import os  # noqa: I001
+import sys
+import json
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
+
 load_dotenv(str(Path(__file__).parent.parent / "config" / ".env"))
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from execution.aster_spot import HyperliquidClient, scan_opportunities, get_candles
-from scoring.scorecard import DecisionLog, _cycle_id
-from orchestrator import request_early_run
+from execution.aster_spot import HyperliquidClient, get_candles  # noqa: E402, I001
+from scoring.scorecard import DecisionLog, _cycle_id  # noqa: E402
+from orchestrator import request_early_run  # noqa: E402
 
 # L4 TradeEvent 注册（跨系统统一交易记录）
 try:
     _L4_ROOT = Path(__file__).resolve().parents[2] / "11-易经推理系统"
     if str(_L4_ROOT) not in sys.path:
         sys.path.insert(0, str(_L4_ROOT))
-    from scripts.memory_l4.trade_event import TradeEvent
+    from scripts.memory_l4.trade_event import TradeEvent  # noqa: I001
     from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+
     _L4_ENABLED = True
 except Exception as _e:
     _L4_ENABLED = False
-from core.exit_module import (
-    run_exit_check, init_position, update_position_exit_levels,
-    check_classical_indicator_exits, check_l3_classical_exits_api, execute_exit,
+from core.exit_module import (  # noqa: E402, I001
+    run_exit_check,
+    init_position,
+    update_position_exit_levels,
+    check_l3_classical_exits_api,
+    execute_exit,
 )
-from core.classic_driver import ClassicDriver, should_use_classic_driver
-from core.trading_memory import TradingMemory
+from core.classic_driver import ClassicDriver, should_use_classic_driver  # noqa: E402
+from core.trading_memory import TradingMemory  # noqa: E402
 
 # ─── 配置 ───────────────────────────────────────────────────────────────────
-AUTO_EXECUTE    = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
-BUDGET_USDC     = 60.0        # 子账户预算（合约）
-PER_TRADE_PCT   = float(os.environ.get("PER_TRADE_PCT", "0.05"))
-STOP_LOSS_PCT   = 0.04        # 合约止损 4%
-TP_PCT          = 0.08        # 合约止盈 8%
+AUTO_EXECUTE = os.environ.get("AUTO_EXECUTE", "false").lower() == "true"
+BUDGET_USDC = 60.0  # 子账户预算（合约）
+PER_TRADE_PCT = float(os.environ.get("PER_TRADE_PCT", "0.05"))
+STOP_LOSS_PCT = 0.04  # 合约止损 4%
+TP_PCT = 0.08  # 合约止盈 8%
 CONFIDENCE_GATE = 0.55
-MAX_LEVERAGE    = 5
+MAX_LEVERAGE = 5
 DEFAULT_LEVERAGE = 5
 # Agent B 用合约，可交易全部标的池（与 A 相同，但决策框架不同）
-UNIVERSE_B = ["BTC", "ETH", "HYPE", "UNI", "SOL", "ZEC", "LIT", "ARB", "XRP", "WLD", "NEAR", "SUI", "LDO", "ADA", "ZRO", "ENA", "ETHFI", "JUP", "JTO", "SYRUP"]
+UNIVERSE_B = [
+    "BTC",
+    "ETH",
+    "HYPE",
+    "UNI",
+    "SOL",
+    "ZEC",
+    "LIT",
+    "ARB",
+    "XRP",
+    "WLD",
+    "NEAR",
+    "SUI",
+    "LDO",
+    "ADA",
+    "ZRO",
+    "ENA",
+    "ETHFI",
+    "JUP",
+    "JTO",
+    "SYRUP",
+]
 
 MEMORY_PATH = Path(__file__).parent.parent / "data" / "agent_b_memory.json"
-GRAPH_LOG   = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
+GRAPH_LOG = Path(__file__).parent.parent / "data" / "agent_b_graph.json"
 
 # Dreambuddy OS SKILL 路径（系统级 SKILL 内核）
-DREAMBUDDY_OS_SKILL = Path(__file__).parent.parent.parent.parent / "1-ARCHITECTURE" / "skills" / "dreambuddy-os" / "SKILL.md"
+DREAMBUDDY_OS_SKILL = (
+    Path(__file__).parent.parent.parent.parent
+    / "1-ARCHITECTURE"
+    / "skills"
+    / "dreambuddy-os"
+    / "SKILL.md"
+)
 
 # D-Z-E 开发链路径
 CHAIN_DEV_SCRIPTS = Path(__file__).parent.parent.parent.parent / "3-CHAIN-DEVELOPMENT" / "scripts"
@@ -77,6 +112,7 @@ GH_TOKEN = os.environ.get("GH_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 PR_NUMBER = "52"
 
 # ─── 记忆层 ─────────────────────────────────────────────────────────────────
+
 
 def load_memory() -> Dict:
     """加载跨session记忆：历史regime、教训、近期决策、上轮PR建议"""
@@ -102,6 +138,7 @@ def load_memory() -> Dict:
     if "next_cycle_suggestions" not in mem:
         mem["next_cycle_suggestions"] = {}
     return mem
+
 
 def normalize_action(action: Optional[str]) -> str:
     """标准化 action 命名：统一为 LONG/SHORT/HOLD"""
@@ -143,7 +180,7 @@ def _extract_closed_pnl_size(item: Dict):
     if pnl is not None:
         pnl_f = _safe_cast(pnl, None)  # type: ignore[arg-type]
         if pnl_f is not None:
-            sz  = item.get("position_size_usdt", 0)
+            sz = item.get("position_size_usdt", 0)
             sz_f = _safe_cast(sz if sz is not None else 0, 0.0)
             return pnl_f, sz_f
     # ── 形态 B：ClassicDriver exit_info 嵌套 ──
@@ -155,7 +192,7 @@ def _extract_closed_pnl_size(item: Dict):
             if pnl is not None:
                 pnl_f = _safe_cast(pnl, None)  # type: ignore[arg-type]
                 if pnl_f is not None:
-                    sz  = closed.get("position_size_usdt", 0)
+                    sz = closed.get("position_size_usdt", 0)
                     sz_f = _safe_cast(sz if sz is not None else 0, 0.0)
                     return pnl_f, sz_f
     return None, 0
@@ -196,9 +233,13 @@ def _aggregate_cycle_pnl_from_decision(decision: Dict) -> Optional[float]:
         return None
 
 
-def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None,
-                next_suggestions: Optional[Dict] = None,
-                memory_path = None):
+def save_memory(
+    memory: Dict,
+    decision: Dict,
+    pnl_pct: Optional[float] = None,
+    next_suggestions: Optional[Dict] = None,
+    memory_path=None,
+):
     """将本次决策写回记忆，提炼教训，保存下轮建议
 
     Args:
@@ -216,14 +257,16 @@ def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None,
 
     # 保留最近20条决策
     recent = memory.get("recent_decisions", [])
-    recent.append({
-        "cycle_id":   decision.get("cycle_id"),
-        "action":     normalize_action(decision.get("action")),
-        "regime":     decision.get("market_regime"),
-        "confidence": decision.get("confidence"),
-        "pnl_pct":    pnl_pct,
-        "ts":         datetime.utcnow().isoformat(),
-    })
+    recent.append(
+        {
+            "cycle_id": decision.get("cycle_id"),
+            "action": normalize_action(decision.get("action")),
+            "regime": decision.get("market_regime"),
+            "confidence": decision.get("confidence"),
+            "pnl_pct": pnl_pct,
+            "ts": datetime.utcnow().isoformat(),
+        }
+    )
     memory["recent_decisions"] = recent[-20:]
 
     # 更新连胜/连败
@@ -231,15 +274,17 @@ def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None,
         # 保存上一轮连败计数（用于连败保护解除检测）
         memory["prev_loss_streaks"] = memory.get("loss_streaks", 0)
         if pnl_pct > 0:
-            memory["win_streaks"]  = memory.get("win_streaks", 0) + 1
+            memory["win_streaks"] = memory.get("win_streaks", 0) + 1
             memory["loss_streaks"] = 0
         else:
             memory["loss_streaks"] = memory.get("loss_streaks", 0) + 1
-            memory["win_streaks"]  = 0
+            memory["win_streaks"] = 0
 
     # 提炼教训：连败3次 → 写入保守偏置教训
     if memory.get("loss_streaks", 0) >= 3:
-        lesson = f"连败{memory['loss_streaks']}次，regime={memory['last_regime']}，提升置信度门槛至0.75"
+        lesson = (
+            f"连败{memory['loss_streaks']}次，regime={memory['last_regime']}，提升置信度门槛至0.75"
+        )
         lessons = memory.get("lessons", [])
         if lesson not in lessons:
             lessons.append(lesson)
@@ -264,6 +309,7 @@ def save_memory(memory: Dict, decision: Dict, pnl_pct: Optional[float] = None,
     with open(memory_path, "w") as f:
         json.dump(memory, f, ensure_ascii=False, indent=2)
 
+
 def apply_lessons(memory: Dict) -> float:
     """根据教训动态调整置信度门槛
 
@@ -274,6 +320,7 @@ def apply_lessons(memory: Dict) -> float:
     loss_streaks = memory.get("loss_streaks", 0)
     if loss_streaks > 0:
         import re
+
         for lesson in memory.get("lessons", []):
             if "提升置信度门槛至" not in lesson:
                 continue
@@ -287,11 +334,21 @@ def apply_lessons(memory: Dict) -> float:
                     pass
     return gate
 
+
 # ─── 市场数据采集 ────────────────────────────────────────────────────────────
 
-def _score_coin(price: float, ch24: float, ch1h: float, vol_ratio: float,
-                rsi: float, funding_rate: float, ema20: float,
-                ema50: float, ema200: float) -> Dict:
+
+def _score_coin(
+    price: float,
+    ch24: float,
+    ch1h: float,
+    vol_ratio: float,
+    rsi: float,
+    funding_rate: float,
+    ema20: float,
+    ema50: float,
+    ema200: float,
+) -> Dict:
     """
     快速扫描评分（0-100分）：评估币种的交易机会强度
     维度：趋势强度(30%) + 动量(20%) + 量能(15%) + 资金费率(15%) + RSI位置(10%) + EMA排列(10%)
@@ -400,7 +457,7 @@ def scan_all_coins(client: HyperliquidClient) -> Dict:
                     return prices[-1]
                 k = 2 / (n + 1)
                 e = prices[-n]
-                for p in prices[-n + 1:]:
+                for p in prices[-n + 1 :]:
                     e = p * k + e * (1 - k)
                 return e
 
@@ -427,8 +484,7 @@ def scan_all_coins(client: HyperliquidClient) -> Dict:
             funding_rate = opp_map[coin].get("funding", 0.0)
 
             result = _score_coin(
-                price, ch24, ch1h, vol_ratio, rsi14,
-                funding_rate, ema20, ema50, ema200
+                price, ch24, ch1h, vol_ratio, rsi14, funding_rate, ema20, ema50, ema200
             )
             all_scores[coin] = result
         except Exception:
@@ -466,7 +522,7 @@ def fetch_market_context(client: HyperliquidClient, primary_coin: Optional[str] 
 
     closes_1h = [float(c["c"]) for c in candles_1h_raw if "c" in c]
     closes_4h = [float(c["c"]) for c in candles_4h_raw if "c" in c]
-    vols_1h   = [float(c["v"]) for c in candles_1h_raw if "v" in c]
+    vols_1h = [float(c["v"]) for c in candles_1h_raw if "v" in c]
 
     # 技术指标计算
     def ema(prices, n):
@@ -474,18 +530,18 @@ def fetch_market_context(client: HyperliquidClient, primary_coin: Optional[str] 
             return prices[-1] if prices else 0
         k = 2 / (n + 1)
         e = prices[-n]
-        for p in prices[-n+1:]:
+        for p in prices[-n + 1 :]:
             e = p * k + e * (1 - k)
         return e
 
     def rsi(prices, n=14):
         if len(prices) < n + 1:
             return 50.0
-        deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
-        gains  = [max(d, 0) for d in deltas[-n:]]
+        deltas = [prices[i] - prices[i - 1] for i in range(1, len(prices))]
+        gains = [max(d, 0) for d in deltas[-n:]]
         losses = [max(-d, 0) for d in deltas[-n:]]
-        avg_g  = sum(gains) / n
-        avg_l  = sum(losses) / n
+        avg_g = sum(gains) / n
+        avg_l = sum(losses) / n
         if avg_l == 0:
             return 100.0
         rs = avg_g / avg_l
@@ -495,22 +551,24 @@ def fetch_market_context(client: HyperliquidClient, primary_coin: Optional[str] 
         if len(raw_candles) < 2:
             return 0
         trs = []
-        for i in range(1, min(n+1, len(raw_candles))):
+        for i in range(1, min(n + 1, len(raw_candles))):
             h = float(raw_candles[i].get("h", 0))
-            l = float(raw_candles[i].get("l", 0))
-            c_prev = float(raw_candles[i-1].get("c", 0))
+            l = float(raw_candles[i].get("l", 0))  # noqa: E741
+            c_prev = float(raw_candles[i - 1].get("c", 0))
             trs.append(max(h - l, abs(h - c_prev), abs(l - c_prev)))
         return sum(trs) / len(trs) if trs else 0
 
-    ema20  = ema(closes_1h, 20)
-    ema50  = ema(closes_1h, 50)
+    ema20 = ema(closes_1h, 20)
+    ema50 = ema(closes_1h, 50)
     ema200 = ema(closes_4h, 20)
-    rsi14  = rsi(closes_1h)
-    atr14  = atr(candles_1h_raw)
+    rsi14 = rsi(closes_1h)
+    atr14 = atr(candles_1h_raw)
 
-    change_1h  = ((closes_1h[0] - closes_1h[1])  / closes_1h[1]  * 100) if len(closes_1h) > 1  else 0
-    change_24h = ((closes_1h[0] - closes_1h[23]) / closes_1h[23] * 100) if len(closes_1h) > 23 else 0
-    change_4h  = ((closes_4h[0] - closes_4h[3])  / closes_4h[3]  * 100) if len(closes_4h) > 3  else 0
+    change_1h = ((closes_1h[0] - closes_1h[1]) / closes_1h[1] * 100) if len(closes_1h) > 1 else 0
+    change_24h = (
+        ((closes_1h[0] - closes_1h[23]) / closes_1h[23] * 100) if len(closes_1h) > 23 else 0
+    )
+    change_4h = ((closes_4h[0] - closes_4h[3]) / closes_4h[3] * 100) if len(closes_4h) > 3 else 0
 
     avg_vol = sum(vols_1h) / len(vols_1h) if vols_1h else 0
     cur_vol = vols_1h[0] if vols_1h else 0
@@ -519,22 +577,26 @@ def fetch_market_context(client: HyperliquidClient, primary_coin: Optional[str] 
     funding_rate = opp_map.get(primary_coin, {}).get("funding", 0.0)
 
     return {
-        "price":        price,
-        "coin":         primary_coin,
-        "opp_map":      opp_map,
-        "change_1h":    round(change_1h, 3),
-        "change_4h":    round(change_4h, 3),
-        "change_24h":   round(change_24h, 3),
-        "ema20":        round(ema20, 2), "ema50": round(ema50, 2), "ema200": round(ema200, 2),
-        "rsi14":        round(rsi14, 1),
-        "atr14":        round(atr14, 2),
-        "vol_ratio":    round(cur_vol / avg_vol, 2) if avg_vol > 0 else 1.0,
+        "price": price,
+        "coin": primary_coin,
+        "opp_map": opp_map,
+        "change_1h": round(change_1h, 3),
+        "change_4h": round(change_4h, 3),
+        "change_24h": round(change_24h, 3),
+        "ema20": round(ema20, 2),
+        "ema50": round(ema50, 2),
+        "ema200": round(ema200, 2),
+        "rsi14": round(rsi14, 1),
+        "atr14": round(atr14, 2),
+        "vol_ratio": round(cur_vol / avg_vol, 2) if avg_vol > 0 else 1.0,
         "funding_rate": funding_rate,
-        "closes_1h":    closes_1h[:8],
+        "closes_1h": closes_1h[:8],
         "ts_utc": datetime.utcnow().isoformat(),
     }
 
+
 # ─── A0 矛盾论 ──────────────────────────────────────────────────────────────
+
 
 def a0_contradiction_analysis(mkt: Dict, memory: Dict) -> Dict:
     """
@@ -542,27 +604,32 @@ def a0_contradiction_analysis(mkt: Dict, memory: Dict) -> Dict:
     每个维度识别多方力量 vs 空方力量，评出主导方和强度
     返回主要矛盾和矛盾清单
     """
-    price  = mkt["price"]
-    ema20  = mkt["ema20"]
-    ema50  = mkt["ema50"]
+    price = mkt["price"]
+    ema20 = mkt["ema20"]
+    ema50 = mkt["ema50"]
     ema200 = mkt["ema200"]
-    rsi14  = mkt["rsi14"]
-    fr     = mkt["funding_rate"]
-    ch24   = mkt["change_24h"]
-    ch1h   = mkt["change_1h"]
-    vr     = mkt["vol_ratio"]
+    rsi14 = mkt["rsi14"]
+    fr = mkt["funding_rate"]
+    ch24 = mkt["change_24h"]
+    ch1h = mkt["change_1h"]
+    vr = mkt["vol_ratio"]
 
     contradictions = []
 
     # C1 资金面矛盾（用资金费率代理OI方向）
     c1_bull = "资金费率正向" if fr > 0.0001 else ""
     c1_bear = "资金费率负向(空头拥挤)" if fr < -0.0001 else ""
-    c1_dom  = "A" if fr > 0.0001 else ("B" if fr < -0.0001 else "EQUAL")
-    contradictions.append({
-        "dim": "C1", "name": "资金面",
-        "bull": c1_bull or "资金费率中性", "bear": c1_bear or "资金费率中性",
-        "dominance": c1_dom, "strength": abs(fr) * 10000,
-    })
+    c1_dom = "A" if fr > 0.0001 else ("B" if fr < -0.0001 else "EQUAL")
+    contradictions.append(
+        {
+            "dim": "C1",
+            "name": "资金面",
+            "bull": c1_bull or "资金费率中性",
+            "bear": c1_bear or "资金费率中性",
+            "dominance": c1_dom,
+            "strength": abs(fr) * 10000,
+        }
+    )
 
     # C2 情绪面矛盾（RSI代理）
     if rsi14 > 65:
@@ -571,73 +638,105 @@ def a0_contradiction_analysis(mkt: Dict, memory: Dict) -> Dict:
         c2_dom, c2_bull, c2_bear = "B", "超卖反弹预期", f"RSI超卖{rsi14:.0f}，空头情绪主导"
     else:
         c2_dom, c2_bull, c2_bear = "EQUAL", f"RSI中性{rsi14:.0f}", f"RSI中性{rsi14:.0f}"
-    contradictions.append({
-        "dim": "C2", "name": "情绪面",
-        "bull": c2_bull, "bear": c2_bear,
-        "dominance": c2_dom, "strength": abs(rsi14 - 50) / 50,
-    })
+    contradictions.append(
+        {
+            "dim": "C2",
+            "name": "情绪面",
+            "bull": c2_bull,
+            "bear": c2_bear,
+            "dominance": c2_dom,
+            "strength": abs(rsi14 - 50) / 50,
+        }
+    )
 
     # C3 技术面矛盾（EMA排列）
     ema_bull = price > ema20 > ema50
     ema_bear = price < ema20 < ema50
     above_200 = price > ema200
     if ema_bull and above_200:
-        c3_dom = "A"; c3_str = 0.85
+        c3_dom = "A"
+        c3_str = 0.85
         c3_bull = f"EMA多头排列，价格>{ema200:.0f}(MA200代理)"
         c3_bear = "短期回调可能"
     elif ema_bear and not above_200:
-        c3_dom = "B"; c3_str = 0.85
+        c3_dom = "B"
+        c3_str = 0.85
         c3_bull = "低位超卖反弹预期"
         c3_bear = f"EMA空头排列，价格<MA200({ema200:.0f})"
     elif above_200:
-        c3_dom = "A"; c3_str = 0.55
-        c3_bull = f"价格在MA200上方，中期结构看多"
+        c3_dom = "A"
+        c3_str = 0.55
+        c3_bull = "价格在MA200上方，中期结构看多"
         c3_bear = "EMA排列混乱，短期方向不清"
     else:
-        c3_dom = "B"; c3_str = 0.55
+        c3_dom = "B"
+        c3_str = 0.55
         c3_bull = "短期技术超卖"
         c3_bear = "价格在MA200下方，中期压力大"
-    contradictions.append({
-        "dim": "C3", "name": "技术面",
-        "bull": c3_bull, "bear": c3_bear,
-        "dominance": c3_dom, "strength": c3_str,
-    })
+    contradictions.append(
+        {
+            "dim": "C3",
+            "name": "技术面",
+            "bull": c3_bull,
+            "bear": c3_bear,
+            "dominance": c3_dom,
+            "strength": c3_str,
+        }
+    )
 
     # C6 时序矛盾（1H vs 24H方向冲突）
     if ch1h * ch24 < 0:  # 方向相反
         c6_dom = "CONFLICT"
         c6_bull = f"1H {'+' if ch1h>0 else ''}{ch1h:.2f}%"
         c6_bear = f"24H {'+' if ch24>0 else ''}{ch24:.2f}%（方向相反）"
-        c6_str  = 0.8
+        c6_str = 0.8
     else:
-        c6_dom  = "A" if ch24 > 0 else "B"
+        c6_dom = "A" if ch24 > 0 else "B"
         c6_bull = f"短长周期方向一致，1H{ch1h:+.2f}%/24H{ch24:+.2f}%"
         c6_bear = "无时序冲突"
-        c6_str  = min(abs(ch24) / 5, 1.0)
-    contradictions.append({
-        "dim": "C6", "name": "时序",
-        "bull": c6_bull if ch24 > 0 else c6_bear,
-        "bear": c6_bear if ch24 > 0 else c6_bull,
-        "dominance": c6_dom, "strength": c6_str,
-    })
+        c6_str = min(abs(ch24) / 5, 1.0)
+    contradictions.append(
+        {
+            "dim": "C6",
+            "name": "时序",
+            "bull": c6_bull if ch24 > 0 else c6_bear,
+            "bear": c6_bear if ch24 > 0 else c6_bull,
+            "dominance": c6_dom,
+            "strength": c6_str,
+        }
+    )
 
     # C7 量价矛盾（成交量验证）
     if vr > 1.5 and ch1h > 0:
-        c7_dom = "A"; c7_bull = f"量价配合，成交量{vr:.1f}x放大+价格上涨"
-        c7_bear = "量能需持续"; c7_str = 0.75
+        c7_dom = "A"
+        c7_bull = f"量价配合，成交量{vr:.1f}x放大+价格上涨"
+        c7_bear = "量能需持续"
+        c7_str = 0.75
     elif vr > 1.5 and ch1h < 0:
-        c7_dom = "B"; c7_bear = f"放量下跌，成交量{vr:.1f}x+价格下跌"
-        c7_bull = "恐慌性下跌可能接近尾声"; c7_str = 0.75
+        c7_dom = "B"
+        c7_bear = f"放量下跌，成交量{vr:.1f}x+价格下跌"
+        c7_bull = "恐慌性下跌可能接近尾声"
+        c7_str = 0.75
     elif vr < 0.6:
-        c7_dom = "EQUAL"; c7_bull = "缩量"; c7_bear = f"成交量萎缩{vr:.1f}x，动能不足"
+        c7_dom = "EQUAL"
+        c7_bull = "缩量"
+        c7_bear = f"成交量萎缩{vr:.1f}x，动能不足"
         c7_str = 0.3
     else:
-        c7_dom = "EQUAL"; c7_bull = "量价中性"; c7_bear = "量价中性"; c7_str = 0.4
-    contradictions.append({
-        "dim": "C7", "name": "量价",
-        "bull": c7_bull, "bear": c7_bear,
-        "dominance": c7_dom, "strength": c7_str,
-    })
+        c7_dom = "EQUAL"
+        c7_bull = "量价中性"
+        c7_bear = "量价中性"
+        c7_str = 0.4
+    contradictions.append(
+        {
+            "dim": "C7",
+            "name": "量价",
+            "bull": c7_bull,
+            "bear": c7_bear,
+            "dominance": c7_dom,
+            "strength": c7_str,
+        }
+    )
 
     # 识别主要矛盾：取强度最高且非EQUAL/CONFLICT的
     primary = None
@@ -651,7 +750,7 @@ def a0_contradiction_analysis(mkt: Dict, memory: Dict) -> Dict:
     # 多空力量汇总
     bull_count = sum(1 for c in contradictions if c["dominance"] == "A")
     bear_count = sum(1 for c in contradictions if c["dominance"] == "B")
-    conflict   = sum(1 for c in contradictions if c["dominance"] == "CONFLICT")
+    conflict = sum(1 for c in contradictions if c["dominance"] == "CONFLICT")
 
     return {
         "contradictions": contradictions,
@@ -659,10 +758,16 @@ def a0_contradiction_analysis(mkt: Dict, memory: Dict) -> Dict:
         "bull_count": bull_count,
         "bear_count": bear_count,
         "conflict_count": conflict,
-        "dominant_force": "BULL" if bull_count > bear_count else ("BEAR" if bear_count > bull_count else "NEUTRAL"),
+        "dominant_force": (
+            "BULL"
+            if bull_count > bear_count
+            else ("BEAR" if bear_count > bull_count else "NEUTRAL")
+        ),
     }
 
+
 # ─── A2 第一性原理 ────────────────────────────────────────────────────────────
+
 
 def a2_first_principles(mkt: Dict, a0: Dict) -> Dict:
     """
@@ -670,21 +775,21 @@ def a2_first_principles(mkt: Dict, a0: Dict) -> Dict:
     原理1: 阻力最小路径 — 市场总沿阻力最小方向运行
     原理2: 趋势延续性  — 趋势延续直到遇到足够反向阻力
     """
-    price   = mkt["price"]
-    atr     = mkt["atr14"]
-    ch24    = mkt["change_24h"]
-    ch4h    = mkt["change_4h"]
-    ema20   = mkt["ema20"]
-    ema50   = mkt["ema50"]
-    ema200  = mkt["ema200"]
-    rsi14   = mkt["rsi14"]
-    dom     = a0["dominant_force"]
+    price = mkt["price"]
+    atr = mkt["atr14"]
+    ch24 = mkt["change_24h"]
+    ch4h = mkt["change_4h"]
+    ema20 = mkt["ema20"]
+    ema50 = mkt["ema50"]
+    ema200 = mkt["ema200"]
+    rsi14 = mkt["rsi14"]
+    dom = a0["dominant_force"]
 
     reasoning = []
 
     # 原理1: 阻力分析
-    reasoning.append(f"【原理1: 阻力最小路径】")
-    resistance_up   = []
+    reasoning.append("【原理1: 阻力最小路径】")
+    resistance_up = []
     resistance_down = []
 
     if price < ema20:
@@ -705,28 +810,36 @@ def a2_first_principles(mkt: Dict, a0: Dict) -> Dict:
     if rsi14 < 30:
         resistance_down.append(f"RSI={rsi14:.0f}超卖，下跌阻力大")
 
-    least_resistance = "UP" if len(resistance_up) < len(resistance_down) else \
-                       ("DOWN" if len(resistance_down) < len(resistance_up) else "NEUTRAL")
+    least_resistance = (
+        "UP"
+        if len(resistance_up) < len(resistance_down)
+        else ("DOWN" if len(resistance_down) < len(resistance_up) else "NEUTRAL")
+    )
     reasoning.append(f"上行阻力: {'; '.join(resistance_up) or '小'}")
     reasoning.append(f"下行阻力: {'; '.join(resistance_down) or '小'}")
     reasoning.append(f"阻力最小方向: {least_resistance}")
 
     # 原理2: 趋势延续
-    reasoning.append(f"【原理2: 趋势延续性】")
+    reasoning.append("【原理2: 趋势延续性】")
     if ch24 > 3 and ch4h > 1 and price > ema20:
-        trend = "STRONG_UP"; trend_score = 0.85
+        trend = "STRONG_UP"
+        trend_score = 0.85
         reasoning.append(f"24H涨{ch24:.1f}%+4H涨{ch4h:.1f}%+价格>EMA20，上升趋势强劲")
     elif ch24 > 1 and price > ema50:
-        trend = "WEAK_UP"; trend_score = 0.6
+        trend = "WEAK_UP"
+        trend_score = 0.6
         reasoning.append(f"24H涨{ch24:.1f}%，趋势偏多但动能一般")
     elif ch24 < -3 and ch4h < -1 and price < ema20:
-        trend = "STRONG_DOWN"; trend_score = 0.15
+        trend = "STRONG_DOWN"
+        trend_score = 0.15
         reasoning.append(f"24H跌{abs(ch24):.1f}%+4H跌{abs(ch4h):.1f}%+价格<EMA20，下降趋势强劲")
     elif ch24 < -1 and price < ema50:
-        trend = "WEAK_DOWN"; trend_score = 0.35
+        trend = "WEAK_DOWN"
+        trend_score = 0.35
         reasoning.append(f"24H跌{abs(ch24):.1f}%，趋势偏空但动能一般")
     else:
-        trend = "RANGE"; trend_score = 0.5
+        trend = "RANGE"
+        trend_score = 0.5
         reasoning.append(f"24H变动{ch24:+.1f}%，处于震荡区间")
 
     # ATR波动度
@@ -734,24 +847,30 @@ def a2_first_principles(mkt: Dict, a0: Dict) -> Dict:
     reasoning.append(f"ATR波动率: {atr_pct:.2f}%（单次预期波幅）")
 
     # 综合A0矛盾分析
-    reasoning.append(f"【矛盾论验证】主力方向: {dom}，与趋势方向{'一致' if (dom=='BULL')==(trend_score>0.5) else '冲突⚠️'}")
+    reasoning.append(
+        f"【矛盾论验证】主力方向: {dom}，与趋势方向{'一致' if (dom=='BULL')==(trend_score>0.5) else '冲突⚠️'}"
+    )
 
     # 置信度合成
     if least_resistance == "UP" and trend in ("STRONG_UP", "WEAK_UP") and dom == "BULL":
         confidence = 0.72 + min(trend_score * 0.1, 0.12)
-        direction  = "LONG"
+        direction = "LONG"
     elif least_resistance == "DOWN" and trend in ("STRONG_DOWN", "WEAK_DOWN") and dom == "BEAR":
         confidence = 0.72 + min((1 - trend_score) * 0.1, 0.12)
-        direction  = "SHORT"
+        direction = "SHORT"
     elif least_resistance == "UP" and dom == "BULL":
-        confidence = 0.62; direction = "LONG"
+        confidence = 0.62
+        direction = "LONG"
     elif least_resistance == "DOWN" and dom == "BEAR":
-        confidence = 0.62; direction = "SHORT"
+        confidence = 0.62
+        direction = "SHORT"
     elif dom == "NEUTRAL" or least_resistance == "NEUTRAL":
-        confidence = 0.45; direction = "HOLD"
+        confidence = 0.45
+        direction = "HOLD"
     else:
         # 矛盾信号冲突，降低置信度
-        confidence = 0.50; direction = "HOLD"
+        confidence = 0.50
+        direction = "HOLD"
         reasoning.append("矛盾信号冲突，建议观望")
 
     return {
@@ -766,20 +885,22 @@ def a2_first_principles(mkt: Dict, a0: Dict) -> Dict:
         "atr_pct": round(atr_pct, 3),
     }
 
+
 # ─── A3 大师研讨（简化版三视角辩论）───────────────────────────────────────────
+
 
 def a3_master_seminar(mkt: Dict, a0: Dict, a2: Dict) -> Dict:
     """
     A3: 多视角辩论（趋势派 vs 均值回归派 vs 风险派）
     三方各给出评分0-10，加权计算最终置信度修正
     """
-    price    = mkt["price"]
-    rsi      = mkt["rsi14"]
-    ch24     = mkt["change_24h"]
-    dom      = a0.get("dominant_force", "NEUTRAL")
-    trend    = a2.get("trend", "RANGE")
-    a2_dir   = a2.get("direction", "HOLD")
-    a2_conf  = a2.get("confidence", 0.5)
+    price = mkt["price"]  # noqa: F841
+    rsi = mkt["rsi14"]
+    ch24 = mkt["change_24h"]
+    dom = a0.get("dominant_force", "NEUTRAL")
+    trend = a2.get("trend", "RANGE")
+    a2_dir = a2.get("direction", "HOLD")
+    a2_conf = a2.get("confidence", 0.5)
     bull_cnt = a0.get("bull_count", 0)
     bear_cnt = a0.get("bear_count", 0)
 
@@ -787,61 +908,77 @@ def a3_master_seminar(mkt: Dict, a0: Dict, a2: Dict) -> Dict:
 
     # 大师1: 趋势追踪者（Jesse Livermore风格）
     if trend in ("STRONG_UP",) and dom == "BULL":
-        m1_score = 8; m1_vote = "LONG"
+        m1_score = 8
+        m1_vote = "LONG"
         m1_reason = f"趋势强劲，顺势而为。{bull_cnt}维多，做多是顺势"
     elif trend in ("STRONG_DOWN",) and dom == "BEAR":
-        m1_score = 8; m1_vote = "SHORT"
+        m1_score = 8
+        m1_vote = "SHORT"
         m1_reason = f"空头趋势延续，{bear_cnt}维空，做空是顺势"
     elif trend in ("WEAK_UP", "WEAK_DOWN"):
-        m1_score = 5; m1_vote = a2_dir
+        m1_score = 5
+        m1_vote = a2_dir
         m1_reason = "趋势偏弱，仓位不宜过重"
     else:
-        m1_score = 3; m1_vote = "HOLD"
+        m1_score = 3
+        m1_vote = "HOLD"
         m1_reason = "无明确趋势，不轻易入场"
-    opinions.append({"master": "趋势派(Livermore)", "vote": m1_vote,
-                     "score": m1_score, "reason": m1_reason})
+    opinions.append(
+        {"master": "趋势派(Livermore)", "vote": m1_vote, "score": m1_score, "reason": m1_reason}
+    )
 
     # 大师2: 均值回归者（Simons量化风格）
     if rsi > 72 and ch24 > 5:
-        m2_score = 7; m2_vote = "SHORT"
+        m2_score = 7
+        m2_vote = "SHORT"
         m2_reason = f"RSI={rsi:.0f}+24H涨{ch24:.1f}%，均值回归压力大"
     elif rsi < 28 and ch24 < -5:
-        m2_score = 7; m2_vote = "LONG"
+        m2_score = 7
+        m2_vote = "LONG"
         m2_reason = f"RSI={rsi:.0f}+24H跌{abs(ch24):.1f}%，超卖反弹概率高"
     elif a2_dir in ("LONG", "BUY") and rsi < 60:
-        m2_score = 6; m2_vote = "LONG"
+        m2_score = 6
+        m2_vote = "LONG"
         m2_reason = f"RSI={rsi:.0f}未超买，做多空间充足"
     elif a2_dir in ("SHORT", "SELL") and rsi > 40:
-        m2_score = 6; m2_vote = "SHORT"
+        m2_score = 6
+        m2_vote = "SHORT"
         m2_reason = f"RSI={rsi:.0f}未超卖，做空空间充足"
     else:
-        m2_score = 4; m2_vote = "HOLD"
+        m2_score = 4
+        m2_vote = "HOLD"
         m2_reason = "均值回归信号中性"
-    opinions.append({"master": "量化派(Simons)", "vote": m2_vote,
-                     "score": m2_score, "reason": m2_reason})
+    opinions.append(
+        {"master": "量化派(Simons)", "vote": m2_vote, "score": m2_score, "reason": m2_reason}
+    )
 
     # 大师3: 风险管理者（Dalio风格）
     conflict_cnt = a0.get("conflict_count", 0)
     if conflict_cnt >= 2:
-        m3_score = 2; m3_vote = "HOLD"
+        m3_score = 2
+        m3_vote = "HOLD"
         m3_reason = f"{conflict_cnt}个维度信号冲突，风险不对称，建议观望"
     elif a2_conf > 0.70 and bull_cnt + bear_cnt >= 3:
-        m3_score = 7; m3_vote = a2_dir
+        m3_score = 7
+        m3_vote = a2_dir
         m3_reason = f"多维印证({bull_cnt+bear_cnt}个维度同向)，风险可控"
     elif a2_conf < 0.60:
-        m3_score = 3; m3_vote = "HOLD"
+        m3_score = 3
+        m3_vote = "HOLD"
         m3_reason = f"置信度{a2_conf:.0%}偏低，仓位过重风险大"
     else:
-        m3_score = 5; m3_vote = a2_dir
+        m3_score = 5
+        m3_vote = a2_dir
         m3_reason = "风险中性，可以小仓参与"
-    opinions.append({"master": "风险派(Dalio)", "vote": m3_vote,
-                     "score": m3_score, "reason": m3_reason})
+    opinions.append(
+        {"master": "风险派(Dalio)", "vote": m3_vote, "score": m3_score, "reason": m3_reason}
+    )
 
     # 投票结果
-    long_votes  = sum(1 for o in opinions if o["vote"] in ("LONG", "BUY"))
+    long_votes = sum(1 for o in opinions if o["vote"] in ("LONG", "BUY"))
     short_votes = sum(1 for o in opinions if o["vote"] in ("SHORT", "SELL"))
     hold_votes = sum(1 for o in opinions if o["vote"] == "HOLD")
-    avg_score  = sum(o["score"] for o in opinions) / len(opinions)
+    avg_score = sum(o["score"] for o in opinions) / len(opinions)
 
     if long_votes >= 2:
         seminar_verdict = "LONG"
@@ -852,9 +989,9 @@ def a3_master_seminar(mkt: Dict, a0: Dict, a2: Dict) -> Dict:
 
     # 置信度修正：大师共识 → 加成；分歧 → 折扣
     if long_votes == 3 or short_votes == 3:
-        conf_adj = +0.08   # 三票同向，强烈加成
+        conf_adj = +0.08  # 三票同向，强烈加成
     elif hold_votes >= 2:
-        conf_adj = -0.12   # 多数观望，大幅折扣
+        conf_adj = -0.12  # 多数观望，大幅折扣
     elif long_votes == 2 or short_votes == 2:
         conf_adj = +0.03
     else:
@@ -863,15 +1000,18 @@ def a3_master_seminar(mkt: Dict, a0: Dict, a2: Dict) -> Dict:
     return {
         "opinions": opinions,
         "verdict": seminar_verdict,
-        "buy_votes": long_votes, "sell_votes": short_votes, "hold_votes": hold_votes,
+        "buy_votes": long_votes,
+        "sell_votes": short_votes,
+        "hold_votes": hold_votes,
         "avg_score": round(avg_score, 1),
         "confidence_adj": conf_adj,
     }
 
+
 # ─── A7 置信度门禁 ───────────────────────────────────────────────────────────
 
-def a7_gate(final_confidence: float, action: str, gate: float,
-            memory: Dict) -> tuple[bool, str]:
+
+def a7_gate(final_confidence: float, action: str, gate: float, memory: Dict) -> tuple[bool, str]:
     """
     A7 实践论门禁
     检查置信度、连败保护、信号一致性
@@ -896,10 +1036,11 @@ def a7_gate(final_confidence: float, action: str, gate: float,
 
     return True, "A7门禁通过"
 
+
 # ─── 图上下文压缩记录 ─────────────────────────────────────────────────────────
 
-def record_graph_context(cycle_id: str, a0: Dict, a2: Dict, a3: Dict,
-                         final: Dict, memory: Dict):
+
+def record_graph_context(cycle_id: str, a0: Dict, a2: Dict, a3: Dict, final: Dict, memory: Dict):
     """
     记录B/A/C三层图节点（简化版，用于跨session上下文传递）
     B层=本轮目标, A层=A0/A2/A3执行步骤, C层=最终决策记录
@@ -917,15 +1058,26 @@ def record_graph_context(cycle_id: str, a0: Dict, a2: Dict, a3: Dict,
             "regime": final.get("market_regime"),
         },
         "A_layer": [
-            {"node": "A0", "dominant_force": a0["dominant_force"],
-             "primary_contradiction": a0["primary_contradiction"]["dim"],
-             "bull_count": a0["bull_count"], "bear_count": a0["bear_count"]},
-            {"node": "A2", "direction": a2["direction"],
-             "confidence": a2["confidence"], "trend": a2["trend"],
-             "least_resistance": a2["least_resistance"]},
-            {"node": "A3", "verdict": a3["verdict"],
-             "votes": f"B{a3['buy_votes']}S{a3['sell_votes']}H{a3['hold_votes']}",
-             "conf_adj": a3["confidence_adj"]},
+            {
+                "node": "A0",
+                "dominant_force": a0["dominant_force"],
+                "primary_contradiction": a0["primary_contradiction"]["dim"],
+                "bull_count": a0["bull_count"],
+                "bear_count": a0["bear_count"],
+            },
+            {
+                "node": "A2",
+                "direction": a2["direction"],
+                "confidence": a2["confidence"],
+                "trend": a2["trend"],
+                "least_resistance": a2["least_resistance"],
+            },
+            {
+                "node": "A3",
+                "verdict": a3["verdict"],
+                "votes": f"B{a3['buy_votes']}S{a3['sell_votes']}H{a3['hold_votes']}",
+                "conf_adj": a3["confidence_adj"],
+            },
         ],
         "C_layer": {
             "action": final.get("action"),
@@ -950,7 +1102,9 @@ def record_graph_context(cycle_id: str, a0: Dict, a2: Dict, a3: Dict,
 
     return len(a0["contradictions"]) + 3  # 矛盾节点 + A层节点数
 
+
 # ─── 经典指标驱动模式 ────────────────────────────────────────────────────────
+
 
 def _run_classic_mode(
     cycle: str,
@@ -961,62 +1115,68 @@ def _run_classic_mode(
 ) -> Dict:
     """
     经典指标系统驱动模式（无 LLM 时的完整回退方案）
-    
+
     通过 ClassicDriver 调用 ml_trade_service 完成：
     - 入场信号扫描 + 决策
     - 离场评估（L0~P3 全优先级）
     - 持仓管理
-    
+
     设计原则：只做驱动不做实现，全部逻辑由 ml_trade_service 负责
     """
-    print(f"\n[Agent B/Classic] ═══ 经典指标系统驱动模式 ═══")
-    print(f"[Agent B/Classic] 目标: 无 LLM 时完整接管交易")
-    print(f"[Agent B/Classic] 数据源: ml_trade_service (10-经典指标系统)")
-    
+    print("\n[Agent B/Classic] ═══ 经典指标系统驱动模式 ═══")
+    print("[Agent B/Classic] 目标: 无 LLM 时完整接管交易")
+    print("[Agent B/Classic] 数据源: ml_trade_service (10-经典指标系统)")
+
     # 初始化 ClassicDriver — 使用实际可用余额进行资金分配
     per_trade_usdc = max(round(equity * PER_TRADE_PCT, 2), 5.0)
-    print(f"[Agent B/Classic] 可用余额={equity:.2f} USDC, 单笔分配={per_trade_usdc:.2f} USDC ({PER_TRADE_PCT:.0%})")
+    print(
+        f"[Agent B/Classic] 可用余额={equity:.2f} USDC, 单笔分配={per_trade_usdc:.2f} USDC ({PER_TRADE_PCT:.0%})"
+    )
     driver = ClassicDriver(
         per_trade_usdc=per_trade_usdc,
         max_positions=3,
         leverage=DEFAULT_LEVERAGE,
         coins=UNIVERSE_B,
     )
-    
+
     # 检查 API 可用性
     api_ok = driver.is_available()
-    print(f"[Agent B/Classic] 服务状态: {'✅ 可用' if api_ok else '❌ 不可用'} "
-          f"({driver.get_status().last_error or 'ok'})")
-    
+    print(
+        f"[Agent B/Classic] 服务状态: {'✅ 可用' if api_ok else '❌ 不可用'} "
+        f"({driver.get_status().last_error or 'ok'})"
+    )
+
     if not api_ok:
         # API 不可用时的兜底：保留 L1 基础离场，不做入场
-        print(f"[Agent B/Classic] ⚠️ ml_trade_service 不可用，仅保留 L1 基础风控")
+        print("[Agent B/Classic] ⚠️ ml_trade_service 不可用，仅保留 L1 基础风控")
         log = DecisionLog("b", cycle)
-        log.data.update({
-            "driver_mode": "CLASSIC",
-            "api_available": False,
-            "api_error": driver.get_status().last_error,
-            "action": "HOLD",
-            "coin": "BTC",
-            "confidence": 0.0,
-            "decision_rationale": "ml_trade_service 不可用，经典模式降级为仅L1风控",
-            "active_positions": memory.get("active_positions", {}),
-            "l1_exits": l1_closed,
-            "l3_exits": [],
-            "a9_exits": [],
-            "market_regime": "UNKNOWN",
-        })
+        log.data.update(
+            {
+                "driver_mode": "CLASSIC",
+                "api_available": False,
+                "api_error": driver.get_status().last_error,
+                "action": "HOLD",
+                "coin": "BTC",
+                "confidence": 0.0,
+                "decision_rationale": "ml_trade_service 不可用，经典模式降级为仅L1风控",
+                "active_positions": memory.get("active_positions", {}),
+                "l1_exits": l1_closed,
+                "l3_exits": [],
+                "a9_exits": [],
+                "market_regime": "UNKNOWN",
+            }
+        )
         path = log.save()
         save_memory(memory, log.data)
         print(f"[Agent B/Classic] 日志已保存: {path}")
         return log.data
-    
+
     # 获取策略能力
     caps = driver.get_strategy_capabilities()
     print(f"[Agent B/Classic] 支持策略: {len(caps)} 个")
     for c in caps[:4]:
         print(f"  - {c.get('strategy_id')}: {c.get('direction_capability')}")
-    
+
     # 获取价格函数
     def _get_price(coin: str) -> float:
         try:
@@ -1024,7 +1184,7 @@ def _run_classic_mode(
             return float(mids.get(coin, 0) or 0)
         except Exception:
             return 0.0
-    
+
     # 执行开仓函数
     def _execute_entry(coin: str, side: str, size_usdc: float, leverage: int, tag: str) -> Dict:
         if not AUTO_EXECUTE:
@@ -1037,7 +1197,7 @@ def _run_classic_mode(
             return {"ok": False, "error": f"invalid_side_{side}"}
         except Exception as e:
             return {"ok": False, "error": str(e)}
-    
+
     # 执行平仓函数
     def _execute_exit(coin: str, reason: str, tag: str) -> Dict:
         if not AUTO_EXECUTE:
@@ -1045,22 +1205,25 @@ def _run_classic_mode(
         try:
             nonlocal memory
             memory["active_positions"], closed_info, exec_res = execute_exit(
-                client, memory.get("active_positions", {}), coin,
-                f"CLASSIC_{reason[:20]}", tag=f"b_classic_{tag}"
+                client,
+                memory.get("active_positions", {}),
+                coin,
+                f"CLASSIC_{reason[:20]}",
+                tag=f"b_classic_{tag}",
             )
             return {"ok": bool(closed_info), "closed": closed_info, "execution": exec_res}
         except Exception as e:
             return {"ok": False, "error": str(e)}
-    
+
     # 执行完整周期
-    print(f"\n[Agent B/Classic] 执行完整交易周期...")
+    print("\n[Agent B/Classic] 执行完整交易周期...")
     cycle_result = driver.run_full_cycle(
         active_positions=memory.get("active_positions", {}),
         get_price_fn=_get_price,
         execute_entry_fn=_execute_entry,
         execute_exit_fn=_execute_exit,
     )
-    
+
     # 处理开仓结果：初始化 active_positions
     classic_entries = []
     for entry in cycle_result.get("entries", []):
@@ -1076,16 +1239,26 @@ def _run_classic_mode(
                 action=entry["side"].upper(),
                 position_size_usdt=driver.per_trade_usdc,
                 leverage=driver.leverage,
-                stop_loss_price=price * (1 - 0.04 / driver.leverage) if entry["side"].upper() in ("LONG", "BUY") else price * (1 + 0.04 / driver.leverage),
-                take_profit_price=price * (1 + 0.08 / driver.leverage) if entry["side"].upper() in ("LONG", "BUY") else price * (1 - 0.08 / driver.leverage),
+                stop_loss_price=(
+                    price * (1 - 0.04 / driver.leverage)
+                    if entry["side"].upper() in ("LONG", "BUY")
+                    else price * (1 + 0.04 / driver.leverage)
+                ),
+                take_profit_price=(
+                    price * (1 + 0.08 / driver.leverage)
+                    if entry["side"].upper() in ("LONG", "BUY")
+                    else price * (1 - 0.08 / driver.leverage)
+                ),
                 cycle_id=cycle,
                 proxies=client.proxies,
                 client=client,
             )
             classic_entries.append(entry)
-            print(f"[Agent B/Classic] ✅ 开仓 {coin} {entry['side']} "
-                  f"({entry['strategy']}, conf={entry['confidence']:.0%})")
-    
+            print(
+                f"[Agent B/Classic] ✅ 开仓 {coin} {entry['side']} "
+                f"({entry['strategy']}, conf={entry['confidence']:.0%})"
+            )
+
     # 处理平仓结果
     classic_exits = []
     for exit_info in cycle_result.get("exits", []):
@@ -1093,20 +1266,24 @@ def _run_classic_mode(
         if result.get("ok"):
             classic_exits.append(exit_info)
             closed = result.get("closed", {})
-            print(f"[Agent B/Classic] 📤 平仓 {exit_info['coin']}: "
-                  f"{exit_info['reason']} "
-                  f"PnL={closed.get('pnl_pct', 0)*100:+.2f}%")
+            print(
+                f"[Agent B/Classic] 📤 平仓 {exit_info['coin']}: "
+                f"{exit_info['reason']} "
+                f"PnL={closed.get('pnl_pct', 0)*100:+.2f}%"
+            )
             # 注册到 L4
             if _L4_ENABLED and closed:
                 try:
-                    coin = exit_info['coin']
-                    trade_id = f"agent_b_{int(datetime.now(timezone.utc).timestamp())}_{coin}"
+                    coin = exit_info["coin"]
+                    trade_id = f"agent_b_{int(datetime.now(timezone.utc).timestamp())}_{coin}"  # noqa: F821
                     event = TradeEvent(
                         event_id=TradeEvent.generate_event_id(),
                         system_source="agent_b",
                         trade_id=trade_id,
-                        ts_entry=closed.get("entry_ts", datetime.now(timezone.utc).isoformat()),
-                        ts_exit=datetime.now(timezone.utc).isoformat(),
+                        ts_entry=closed.get(
+                            "entry_ts", datetime.now(timezone.utc).isoformat()  # noqa: F821
+                        ),  # noqa: F821
+                        ts_exit=datetime.now(timezone.utc).isoformat(),  # noqa: F821
                         symbol=f"{coin}-USDT-SWAP",
                         direction=closed.get("action", "long").lower(),
                         entry_price=closed.get("entry_price", 0),
@@ -1127,65 +1304,73 @@ def _run_classic_mode(
                         print(f"[Agent B] L4 案例已注册: {case_id}")
                 except Exception as e:
                     print(f"[Agent B] L4 注册异常: {e}")
-    
+
     # 输出信号概览
     signals = cycle_result.get("signals", [])
     print(f"\n[Agent B/Classic] 信号扫描: 共 {len(signals)} 个信号")
     for s in signals[:5]:
         print(f"  - {s['coin']} {s['side']} ({s['strategy']}): conf={s['conf']:.0%}")
-    
+
     # 写决策日志
     log = DecisionLog("b", cycle)
-    top_signal = signals[0] if signals else {"coin": "BTC", "side": "hold", "strategy": "none", "conf": 0.0}
-    
-    log.data.update({
-        "driver_mode": "CLASSIC",
-        "api_available": True,
-        "strategies_used": driver.strategies,
-        "coins_scanned": driver.coins,
-        "signals_found": len(signals),
-        "top_signal": top_signal,
-        "classic_entries": classic_entries,
-        "classic_exits": classic_exits,
-        "market_regime": "CLASSIC_DRIVEN",
-        "action": top_signal["side"].upper() if signals else "HOLD",
-        "coin": top_signal["coin"],
-        "leverage": driver.leverage,
-        "confidence": top_signal.get("conf", 0.0),
-        "position_size_usdt": driver.per_trade_usdc,
-        "decision_rationale": (
-            f"经典指标系统驱动模式 | {len(signals)}个信号 | "
-            f"开仓{len(classic_entries)}笔 | 平仓{len(classic_exits)}笔"
-        ),
-        "system_features_used": [
-            "classic_driver", "ml_trade_service", "strategy_feeders",
-            "classic_exit_system", "l1_stop_loss",
-        ],
-        "active_positions": memory.get("active_positions", {}),
-        "l1_exits": l1_closed,
-        "l3_exits": classic_exits,
-        "a9_exits": [],
-        "intent_type": "CLASSIC_FALLBACK",
-        "plan_budget_mode": "classic",
-        "plan_estimated_tokens": 0,
-        "plan_shortcut": True,
-        "plan_rationale": "无LLM时自动回退到经典指标系统驱动",
-    })
-    
+    top_signal = (
+        signals[0] if signals else {"coin": "BTC", "side": "hold", "strategy": "none", "conf": 0.0}
+    )
+
+    log.data.update(
+        {
+            "driver_mode": "CLASSIC",
+            "api_available": True,
+            "strategies_used": driver.strategies,
+            "coins_scanned": driver.coins,
+            "signals_found": len(signals),
+            "top_signal": top_signal,
+            "classic_entries": classic_entries,
+            "classic_exits": classic_exits,
+            "market_regime": "CLASSIC_DRIVEN",
+            "action": top_signal["side"].upper() if signals else "HOLD",
+            "coin": top_signal["coin"],
+            "leverage": driver.leverage,
+            "confidence": top_signal.get("conf", 0.0),
+            "position_size_usdt": driver.per_trade_usdc,
+            "decision_rationale": (
+                f"经典指标系统驱动模式 | {len(signals)}个信号 | "
+                f"开仓{len(classic_entries)}笔 | 平仓{len(classic_exits)}笔"
+            ),
+            "system_features_used": [
+                "classic_driver",
+                "ml_trade_service",
+                "strategy_feeders",
+                "classic_exit_system",
+                "l1_stop_loss",
+            ],
+            "active_positions": memory.get("active_positions", {}),
+            "l1_exits": l1_closed,
+            "l3_exits": classic_exits,
+            "a9_exits": [],
+            "intent_type": "CLASSIC_FALLBACK",
+            "plan_budget_mode": "classic",
+            "plan_estimated_tokens": 0,
+            "plan_shortcut": True,
+            "plan_rationale": "无LLM时自动回退到经典指标系统驱动",
+        }
+    )
+
     path = log.save()
     save_memory(memory, log.data)
     print(f"\n[Agent B/Classic] 日志已保存: {path}")
-    print(f"[Agent B/Classic] ═══ 经典模式执行完成 ═══")
-    
+    print("[Agent B/Classic] ═══ 经典模式执行完成 ═══")
+
     return log.data
 
 
 # ─── 主流程 ──────────────────────────────────────────────────────────────────
 
+
 def run():
     cycle = _cycle_id()
     print(f"[Agent B] 启动 cycle={cycle}")
-    print(f"[Agent B] ═══ Dreambuddy OS v1.0 ═══")
+    print("[Agent B] ═══ Dreambuddy OS v1.0 ═══")
 
     # Step 0: 加载 Dreambuddy OS SKILL
     if DREAMBUDDY_OS_SKILL.exists():
@@ -1196,11 +1381,13 @@ def run():
         print(f"[Agent B/OS] ⚠️ SKILL 文件不存在: {DREAMBUDDY_OS_SKILL}")
 
     # 加载记忆
-    memory  = load_memory()
-    gate    = apply_lessons(memory)
+    memory = load_memory()
+    gate = apply_lessons(memory)
     lessons = memory.get("lessons", [])
-    print(f"[Agent B] 记忆加载: {memory['total_cycles']}轮历史, {len(lessons)}条教训, "
-          f"连败={memory.get('loss_streaks',0)}, 门槛={gate:.0%}")
+    print(
+        f"[Agent B] 记忆加载: {memory['total_cycles']}轮历史, {len(lessons)}条教训, "
+        f"连败={memory.get('loss_streaks',0)}, 门槛={gate:.0%}"
+    )
 
     # Step 0.5: 交易记忆闭环初始化 — 加载上轮建议（系统性核心记忆）
     # 这是系统最重要的记忆能力：上轮建议 → 本轮验证 → 提炼教训 → 下轮建议
@@ -1210,10 +1397,12 @@ def run():
         memory["suggestion_loop"] = trading_mem.memory["suggestion_loop"]
     prior_suggestions = trading_mem.load_prior_suggestions()
     tm_stats = trading_mem.get_stats()
-    print(f"[Agent B/Memory] 交易记忆闭环: 建议{tm_stats['prior_suggestions_count']}条 "
-          f"(cycle={prior_suggestions.get('cycle_id', 'N/A')}), "
-          f"已验证教训{tm_stats['verified_lessons_count']}条, "
-          f"累计建议{tm_stats['total_suggestions']}个")
+    print(
+        f"[Agent B/Memory] 交易记忆闭环: 建议{tm_stats['prior_suggestions_count']}条 "
+        f"(cycle={prior_suggestions.get('cycle_id', 'N/A')}), "
+        f"已验证教训{tm_stats['verified_lessons_count']}条, "
+        f"累计建议{tm_stats['total_suggestions']}个"
+    )
 
     client = HyperliquidClient("b")
     sim_mode = False
@@ -1240,29 +1429,37 @@ def run():
     print(f"[Agent B] 可用余额={equity:.2f} USDC  持仓={list(acct['positions'].keys())}")
 
     # ── L1 基础离场检查（止损止盈 + 移动止损）──────────────────────────
-    print(f"\n[Agent B/Exit] L1 基础离场检查...")
+    print("\n[Agent B/Exit] L1 基础离场检查...")
     memory["active_positions"], l1_closed = run_exit_check(
-        client, memory.get("active_positions", {}),
-        agent_id="b", enable_trailing=True,
+        client,
+        memory.get("active_positions", {}),
+        agent_id="b",
+        enable_trailing=True,
         account_data=acct if not sim_mode else None,
     )
     if l1_closed:
         for ct in l1_closed:
-            print(f"[Agent B/Exit] L1平仓 {ct['coin']}: {ct['exit_reason']} "
-                  f"PnL={ct['pnl_pct']*100:+.2f}%")
+            print(
+                f"[Agent B/Exit] L1平仓 {ct['coin']}: {ct['exit_reason']} "
+                f"PnL={ct['pnl_pct']*100:+.2f}%"
+            )
         # ── L4 注册（BAC_LLM / BAC_RULE 模式下的 L1+sync 平仓）──
         # classic 模式的 L4 注册在 _run_classic_mode 内部处理 classic_exits
         if _L4_ENABLED:
             for ct in l1_closed:
                 try:
-                    coin = ct['coin']
-                    trade_id = f"agent_b_{int(datetime.now(timezone.utc).timestamp())}_{coin}"
+                    coin = ct["coin"]
+                    trade_id = f"agent_b_{int(datetime.now(timezone.utc).timestamp())}_{coin}"  # noqa: F821
                     event = TradeEvent(
                         event_id=TradeEvent.generate_event_id(),
                         system_source="agent_b",
                         trade_id=trade_id,
-                        ts_entry=ct.get("entry_ts", datetime.now(timezone.utc).isoformat()),
-                        ts_exit=ct.get("exit_ts", datetime.now(timezone.utc).isoformat()),
+                        ts_entry=ct.get(
+                            "entry_ts", datetime.now(timezone.utc).isoformat()  # noqa: F821
+                        ),  # noqa: F821
+                        ts_exit=ct.get(
+                            "exit_ts", datetime.now(timezone.utc).isoformat()  # noqa: F821
+                        ),  # noqa: F821
                         symbol=f"{coin}-USDT-SWAP",
                         direction=ct.get("action", "long").lower(),
                         entry_price=ct.get("entry_price", 0),
@@ -1290,6 +1487,7 @@ def run():
     use_classic = should_use_classic_driver()
     try:
         from core.llm_client import llm_available
+
         has_llm = llm_available() != "none"
     except Exception:
         has_llm = False
@@ -1321,14 +1519,15 @@ def run():
     if memory.get("active_positions"):
         try:
             from core.llm_client import llm_available, llm_quota_ok
+
             has_llm_a9 = llm_available() != "none" and llm_quota_ok("a9_exit")
         except Exception:
             has_llm_a9 = False
 
         if has_llm_a9:
-            print(f"[Agent B/Exit] L3跳过（有LLM，将在A9节点执行智能离场评估）")
+            print("[Agent B/Exit] L3跳过（有LLM，将在A9节点执行智能离场评估）")
         else:
-            print(f"[Agent B/Exit] L3 经典指标离场检查（无LLM增强，BAC链路A9用规则引擎）...")
+            print("[Agent B/Exit] L3 经典指标离场检查（无LLM增强，BAC链路A9用规则引擎）...")
             mids = client.get_all_mids()
             for coin in list(memory["active_positions"].keys()):
                 pos = memory["active_positions"][coin]
@@ -1344,26 +1543,33 @@ def run():
                 )
                 if should_exit and AUTO_EXECUTE:
                     memory["active_positions"], closed_info, exec_res = execute_exit(
-                        client, memory["active_positions"], coin,
-                        f"CLASSIC_{reason[:20]}", tag=f"b_exit_classic"
+                        client,
+                        memory["active_positions"],
+                        coin,
+                        f"CLASSIC_{reason[:20]}",
+                        tag="b_exit_classic",
                     )
                     if closed_info:
                         l3_closed.append(closed_info)
-                        print(f"[Agent B/Exit] L3经典平仓 {coin}: {reason} "
-                              f"PnL={closed_info['pnl_pct']*100:+.2f}%")
+                        print(
+                            f"[Agent B/Exit] L3经典平仓 {coin}: {reason} "
+                            f"PnL={closed_info['pnl_pct']*100:+.2f}%"
+                        )
             if not l3_closed:
-                print(f"[Agent B/Exit] L3无触发")
+                print("[Agent B/Exit] L3无触发")
 
     # ── 全币种扫描预筛选：先快速扫描所有币种，选出最优标的做深度分析 ──
-    print(f"\n[Agent B/Scan] 全币种扫描预筛选...")
+    print("\n[Agent B/Scan] 全币种扫描预筛选...")
     scan_result = scan_all_coins(client)
     print(f"[Agent B/Scan] 扫描 {scan_result['total_scanned']} 个币种")
-    print(f"[Agent B/Scan] Top 5:")
+    print("[Agent B/Scan] Top 5:")
     for coin, data in scan_result["ranked"][:5]:
-        print(f"  #{data['score']:5.1f}  {coin:6s}  "
-              f"{data['direction']:5s}  24H={data['ch24']:+6.2f}%  "
-              f"RSI={data['rsi']:5.1f}  vol={data['vol_ratio']:.2f}x  "
-              f"{' | '.join(data['signals'][:2])}")
+        print(
+            f"  #{data['score']:5.1f}  {coin:6s}  "
+            f"{data['direction']:5s}  24H={data['ch24']:+6.2f}%  "
+            f"RSI={data['rsi']:5.1f}  vol={data['vol_ratio']:.2f}x  "
+            f"{' | '.join(data['signals'][:2])}"
+        )
     top_coin = scan_result["top3"][0] if scan_result["top3"] else "BTC"
     print(f"[Agent B/Scan] 选定主标的: {top_coin} (评分最高)")
 
@@ -1374,62 +1580,78 @@ def run():
     mkt["all_coin_scores"] = scan_result["all_scores"]
     # 注入 Regime 到 mkt 供意图识别使用
     mkt["regime"] = (
-        "TREND_UP"   if mkt.get("change_24h", 0) > 2 else
-        "TREND_DOWN" if mkt.get("change_24h", 0) < -2 else "RANGE"
+        "TREND_UP"
+        if mkt.get("change_24h", 0) > 2
+        else "TREND_DOWN" if mkt.get("change_24h", 0) < -2 else "RANGE"
     )
-    print(f"[Agent B] 主标的={mkt['coin']} price={mkt['price']:.2f}, "
-          f"24H={mkt['change_24h']:+.1f}%, RSI={mkt['rsi14']}, regime={mkt['regime']}")
+    print(
+        f"[Agent B] 主标的={mkt['coin']} price={mkt['price']:.2f}, "
+        f"24H={mkt['change_24h']:+.1f}%, RSI={mkt['rsi14']}, regime={mkt['regime']}"
+    )
 
     # ── Step 1: 意图识别（零Token）─────────────────────────────────────────
-    print(f"[Agent B/OS] Step 1/6 — 意图识别")
+    print("[Agent B/OS] Step 1/6 — 意图识别")
     import sys as _sys
+
     _sys.path.insert(0, str(Path(__file__).parent.parent))
-    from core.intent_gateway import detect_intent
+    from core.intent_gateway import detect_intent  # noqa: I001
     from core.chain_planner import ChainPlanner
     from core.chain_router import ChainRouter
 
     intent = detect_intent(mkt, memory, memory.get("active_positions"))
-    print(f"[Agent B/Intent] {intent.intent_type} conf={intent.confidence:.0%} | {intent.rationale[:60]}")
+    print(
+        f"[Agent B/Intent] {intent.intent_type} conf={intent.confidence:.0%} | {intent.rationale[:60]}"
+    )
 
     # ── Step 2: BAC 三层规划（零Token）────────────────────────────────────
-    print(f"[Agent B/OS] Step 2/6 — BAC 三层规划")
+    print("[Agent B/OS] Step 2/6 — BAC 三层规划")
     token_budget = int(os.environ.get("TOKEN_BUDGET", "30000"))
     planner = ChainPlanner(token_budget=token_budget)
-    plan    = planner.plan(intent, mkt, memory)
+    plan = planner.plan(intent, mkt, memory)
 
-    print(f"[Agent B/Plan]   B层蓝图: A1 Feed + Memory + Regime")
+    print("[Agent B/Plan]   B层蓝图: A1 Feed + Memory + Regime")
     print(f"[Agent B/Plan]   A层架构: {len(plan.planned_chain)} 节点")
     print(f"[Agent B/Plan]   C层时间线: cycle={cycle}")
-    print(f"[Agent B/Plan]   模式={plan.budget_mode} 预估={plan.estimated_tokens}t"
-          f"{' 快捷路径' if plan.shortcut_taken else ''}"
-          f"{' ⬆️自适应升级' if plan.auto_escalated else ''}")
+    print(
+        f"[Agent B/Plan]   模式={plan.budget_mode} 预估={plan.estimated_tokens}t"
+        f"{' 快捷路径' if plan.shortcut_taken else ''}"
+        f"{' ⬆️自适应升级' if plan.auto_escalated else ''}"
+    )
     print(f"[Agent B/Plan]   链路: {plan.planned_chain}")
     if plan.auto_escalated:
-        print(f"[Agent B/Plan]   升级原因: {plan.escalation_reason} "
-              f"({plan.original_mode}→{plan.budget_mode}, +{plan.escalation_level}档)")
+        print(
+            f"[Agent B/Plan]   升级原因: {plan.escalation_reason} "
+            f"({plan.original_mode}→{plan.budget_mode}, +{plan.escalation_level}档)"
+        )
     if plan.pruned_nodes:
         print(f"[Agent B/Plan]   剪枝: {[p.split('（')[0] for p in plan.pruned_nodes]}")
     if plan.added_nodes:
         print(f"[Agent B/Plan]   追加: {plan.added_nodes}")
 
     # 把规划结果注入 intent（链路规划器的输出替换基础链）
-    intent.base_chain    = plan.planned_chain
-    intent.extend_nodes  = []  # 规划器已经合并了扩展节点
+    intent.base_chain = plan.planned_chain
+    intent.extend_nodes = []  # 规划器已经合并了扩展节点
 
     # ── Step 3: 动态执行（ChainRouter）────────────────────────────────────
-    print(f"[Agent B/OS] Step 3/6 — 动态执行引擎")
+    print("[Agent B/OS] Step 3/6 — 动态执行引擎")
     router = ChainRouter(client, mkt, memory, intent, BUDGET_USDC, equity=equity)
     chain_result = router.execute()
 
-    print(f"[Agent B/Chain]  执行了 {len(chain_result.node_trace)} 个节点"
-          f"{' (+' + str(len(chain_result.dynamic_nodes_added)) + '动态追加)' if chain_result.dynamic_nodes_added else ''}")
-    print(f"[Agent B/Chain]  最终: {chain_result.final_action} {chain_result.coin} "
-          f"conf={chain_result.final_confidence:.0%} gate={'✅' if chain_result.gate_passed else '❌'}")
-    print(f"[Agent B/A7]  {'✅ 通过' if chain_result.gate_passed else '❌ 拦截'}: {chain_result.gate_reason}")
+    print(
+        f"[Agent B/Chain]  执行了 {len(chain_result.node_trace)} 个节点"
+        f"{' (+' + str(len(chain_result.dynamic_nodes_added)) + '动态追加)' if chain_result.dynamic_nodes_added else ''}"
+    )
+    print(
+        f"[Agent B/Chain]  最终: {chain_result.final_action} {chain_result.coin} "
+        f"conf={chain_result.final_confidence:.0%} gate={'✅' if chain_result.gate_passed else '❌'}"
+    )
+    print(
+        f"[Agent B/A7]  {'✅ 通过' if chain_result.gate_passed else '❌ 拦截'}: {chain_result.gate_reason}"
+    )
 
     # ── Step 3.1: 做梦部强迫性重复检测 → 触发模式升级 + 二次重规划 ──
     if chain_result.compulsive_repetition_detected and not plan.auto_escalated:
-        print(f"\n[Agent B/OS] 🔄 做梦部检测到强迫性重复 → 触发模式升级 + 二次重规划")
+        print("\n[Agent B/OS] 🔄 做梦部检测到强迫性重复 → 触发模式升级 + 二次重规划")
         print(f"[Agent B/Dream] 原因: {chain_result.dream_department_reason}")
 
         # 用升级后的预算重新规划
@@ -1439,7 +1661,7 @@ def run():
         if plan2.auto_escalated and plan2.budget_mode != plan.budget_mode:
             print(f"[Agent B/OS] 预算模式升级: {plan.budget_mode} → {plan2.budget_mode}")
             print(f"[Agent B/OS] 节点数: {len(plan.planned_chain)} → {len(plan2.planned_chain)}")
-            print(f"[Agent B/OS] 重新执行链路...")
+            print("[Agent B/OS] 重新执行链路...")
 
             # 重新注入 intent
             intent.base_chain = plan2.planned_chain
@@ -1450,21 +1672,23 @@ def run():
             chain_result2 = router2.execute()
 
             print(f"[Agent B/Chain]  二次执行: {len(chain_result2.node_trace)} 个节点")
-            print(f"[Agent B/Chain]  二次结果: {chain_result2.final_action} "
-                  f"conf={chain_result2.final_confidence:.0%} "
-                  f"gate={'✅' if chain_result2.gate_passed else '❌'}")
+            print(
+                f"[Agent B/Chain]  二次结果: {chain_result2.final_action} "
+                f"conf={chain_result2.final_confidence:.0%} "
+                f"gate={'✅' if chain_result2.gate_passed else '❌'}"
+            )
 
             # 只有二次执行通过了门禁且结果不是HOLD，才采用二次结果
             if chain_result2.gate_passed and chain_result2.final_action != "HOLD":
-                print(f"[Agent B/OS] ✅ 二次执行通过，采用升级后结果")
+                print("[Agent B/OS] ✅ 二次执行通过，采用升级后结果")
                 chain_result = chain_result2
                 plan = plan2
             else:
-                print(f"[Agent B/OS] ⚠️ 二次执行仍未突破，保持原结果")
+                print("[Agent B/OS] ⚠️ 二次执行仍未突破，保持原结果")
         else:
-            print(f"[Agent B/OS] 已是最高模式，无法继续升级")
+            print("[Agent B/OS] 已是最高模式，无法继续升级")
     elif chain_result.compulsive_repetition_detected and plan.auto_escalated:
-        print(f"[Agent B/Dream] ⚠️ 做梦部检测到强迫性重复，但本轮已自动升级过，不再重复升级")
+        print("[Agent B/Dream] ⚠️ 做梦部检测到强迫性重复，但本轮已自动升级过，不再重复升级")
 
     # ── Step 3.5: 处理 A9 离场评估结果（智能离场）─────────────────────
     a9_exits = []
@@ -1479,13 +1703,18 @@ def run():
                     reason = sug.get("reason", "A9_EXIT")
                     if coin and coin in memory["active_positions"]:
                         memory["active_positions"], closed_info, _ = execute_exit(
-                            client, memory["active_positions"], coin,
-                            f"A9_{reason[:20]}", tag=f"b_exit_a9"
+                            client,
+                            memory["active_positions"],
+                            coin,
+                            f"A9_{reason[:20]}",
+                            tag="b_exit_a9",
                         )
                         if closed_info:
                             a9_exits.append(closed_info)
-                            print(f"[Agent B/Exit] A9智能平仓 {coin}: {reason} "
-                                  f"PnL={closed_info['pnl_pct']*100:+.2f}%")
+                            print(
+                                f"[Agent B/Exit] A9智能平仓 {coin}: {reason} "
+                                f"PnL={closed_info['pnl_pct']*100:+.2f}%"
+                            )
                 # 调整止损止盈
                 for sug in update_sugs:
                     coin = sug.get("coin")
@@ -1493,82 +1722,98 @@ def run():
                     new_tp = sug.get("new_take_profit")
                     if coin and coin in memory["active_positions"]:
                         memory["active_positions"] = update_position_exit_levels(
-                            memory["active_positions"], coin, new_sl, new_tp,
-                            sl_source="a9_smart", tp_source="a9_smart",
-                            client=client if (not sim_mode and AUTO_EXECUTE) else None
+                            memory["active_positions"],
+                            coin,
+                            new_sl,
+                            new_tp,
+                            sl_source="a9_smart",
+                            tp_source="a9_smart",
+                            client=client if (not sim_mode and AUTO_EXECUTE) else None,
                         )
                         print(f"[Agent B/Exit] A9调整 {coin}: SL→{new_sl}, TP→{new_tp}")
                 break
 
-    action     = chain_result.final_action
-    coin       = chain_result.coin
-    leverage   = chain_result.leverage
+    action = chain_result.final_action
+    coin = chain_result.coin
+    leverage = chain_result.leverage
     final_conf = chain_result.final_confidence
-    gate_pass  = chain_result.gate_passed
+    gate_pass = chain_result.gate_passed
     gate_reason = chain_result.gate_reason
     position_size_usdt = chain_result.position_size_usdt
     price = mkt["price"]
 
     # ── 写决策日志 ────────────────────────────────────────────────────────────
     log = DecisionLog("b", cycle)
-    log.data.update({
-        "market_regime":         mkt["regime"],
-        "key_contradictions":    [
-            f"{r.node_id}: {r.direction}({r.confidence:.0%})"
-            for r in chain_result.node_trace if "A0" in r.node_id or "矛盾" in r.node_id
-        ],
-        "reasoning_steps": (
-            [f"[Intent] {intent.intent_type} conf={intent.confidence:.0%}: {intent.rationale[:80]}"]
-            + [f"  [{r.node_id}] {r.direction} conf={r.confidence:.0%}"
-               + (f" (SKIP:{r.skip_reason})" if r.skipped else "")
-               + (" ← 动态追加" if r.node_id in chain_result.dynamic_nodes_added else "")
-               for r in chain_result.node_trace]
-            + [f"[A7门禁] {gate_reason}"]
-        ),
-        "confidence":           final_conf,
-        "intent_confidence":    intent.confidence,
-        "supporting_evidence":  [
-            f"标的: {coin}  杠杆: {leverage}x  意图: {intent.intent_type}",
-            f"EMA: {mkt['ema20']:.2f}/{mkt['ema50']:.2f}/{mkt['ema200']:.2f}",
-            f"RSI={mkt['rsi14']:.1f} 资金费率={mkt['funding_rate']:.6f}",
-            f"规划: {plan.budget_mode}模式 ~{plan.estimated_tokens}t"
-            + (f" 快捷路径" if plan.shortcut_taken else ""),
-            f"规划理由: {plan.plan_rationale[:100]}",
-            f"动态追加节点: {chain_result.dynamic_nodes_added or '无'}",
-        ],
-        "action":               action,
-        "coin":                 coin,
-        "leverage":             leverage,
-        "entry_price":          price,
-        "position_size_usdt":   position_size_usdt,
-        "stop_loss_price":      chain_result.stop_loss,
-        "take_profit_price":    chain_result.take_profit,
-        "decision_rationale":   (gate_reason if not gate_pass else
-                                 f"{coin} {action} {leverage}x | {intent.intent_type} | conf={final_conf:.0%}"),
-        "system_features_used": (
-            ["intent_gateway", "chain_planner", "chain_router", "graph_compression", "memory"]
-            + [r.node_id for r in chain_result.node_trace if not r.skipped]
-        ),
-        "graph_context_nodes":  len(chain_result.node_trace),
-        "memory_loaded":        True,
-        "prior_lessons_applied": lessons[-2:],
-        "prior_pr_suggestions_applied": prior_suggestions.get("cycle_id") if prior_suggestions else None,
-        "intent_type":          intent.intent_type,
-        "dynamic_nodes_added":  chain_result.dynamic_nodes_added,
-        "plan_budget_mode":     plan.budget_mode,
-        "plan_estimated_tokens": plan.estimated_tokens,
-        "plan_pruned_nodes":    [p.split("（")[0] for p in plan.pruned_nodes],
-        "plan_added_nodes":     plan.added_nodes,
-        "plan_shortcut":        plan.shortcut_taken,
-        "plan_rationale":       plan.plan_rationale,
-        "active_positions":     memory.get("active_positions", {}),
-        "l1_exits":             l1_closed,
-        "l3_exits":             l3_closed,
-        "a9_exits":             a9_exits,
-        "account_equity":       round(equity, 2),
-        "win_streaks":          memory.get("win_streaks", 0),
-        "loss_streaks":         memory.get("loss_streaks", 0),
-    })
+    log.data.update(
+        {
+            "market_regime": mkt["regime"],
+            "key_contradictions": [
+                f"{r.node_id}: {r.direction}({r.confidence:.0%})"
+                for r in chain_result.node_trace
+                if "A0" in r.node_id or "矛盾" in r.node_id
+            ],
+            "reasoning_steps": (
+                [
+                    f"[Intent] {intent.intent_type} conf={intent.confidence:.0%}: {intent.rationale[:80]}"
+                ]
+                + [
+                    f"  [{r.node_id}] {r.direction} conf={r.confidence:.0%}"
+                    + (f" (SKIP:{r.skip_reason})" if r.skipped else "")
+                    + (" ← 动态追加" if r.node_id in chain_result.dynamic_nodes_added else "")
+                    for r in chain_result.node_trace
+                ]
+                + [f"[A7门禁] {gate_reason}"]
+            ),
+            "confidence": final_conf,
+            "intent_confidence": intent.confidence,
+            "supporting_evidence": [
+                f"标的: {coin}  杠杆: {leverage}x  意图: {intent.intent_type}",
+                f"EMA: {mkt['ema20']:.2f}/{mkt['ema50']:.2f}/{mkt['ema200']:.2f}",
+                f"RSI={mkt['rsi14']:.1f} 资金费率={mkt['funding_rate']:.6f}",
+                f"规划: {plan.budget_mode}模式 ~{plan.estimated_tokens}t"
+                + (" 快捷路径" if plan.shortcut_taken else ""),
+                f"规划理由: {plan.plan_rationale[:100]}",
+                f"动态追加节点: {chain_result.dynamic_nodes_added or '无'}",
+            ],
+            "action": action,
+            "coin": coin,
+            "leverage": leverage,
+            "entry_price": price,
+            "position_size_usdt": position_size_usdt,
+            "stop_loss_price": chain_result.stop_loss,
+            "take_profit_price": chain_result.take_profit,
+            "decision_rationale": (
+                gate_reason
+                if not gate_pass
+                else f"{coin} {action} {leverage}x | {intent.intent_type} | conf={final_conf:.0%}"
+            ),
+            "system_features_used": (
+                ["intent_gateway", "chain_planner", "chain_router", "graph_compression", "memory"]
+                + [r.node_id for r in chain_result.node_trace if not r.skipped]
+            ),
+            "graph_context_nodes": len(chain_result.node_trace),
+            "memory_loaded": True,
+            "prior_lessons_applied": lessons[-2:],
+            "prior_pr_suggestions_applied": (
+                prior_suggestions.get("cycle_id") if prior_suggestions else None
+            ),
+            "intent_type": intent.intent_type,
+            "dynamic_nodes_added": chain_result.dynamic_nodes_added,
+            "plan_budget_mode": plan.budget_mode,
+            "plan_estimated_tokens": plan.estimated_tokens,
+            "plan_pruned_nodes": [p.split("（")[0] for p in plan.pruned_nodes],
+            "plan_added_nodes": plan.added_nodes,
+            "plan_shortcut": plan.shortcut_taken,
+            "plan_rationale": plan.plan_rationale,
+            "active_positions": memory.get("active_positions", {}),
+            "l1_exits": l1_closed,
+            "l3_exits": l3_closed,
+            "a9_exits": a9_exits,
+            "account_equity": round(equity, 2),
+            "win_streaks": memory.get("win_streaks", 0),
+            "loss_streaks": memory.get("loss_streaks", 0),
+        }
+    )
 
     # ── 执行 ─────────────────────────────────────────────────────────────────
     if AUTO_EXECUTE and gate_pass and position_size_usdt > 0:
@@ -1601,10 +1846,12 @@ def run():
                 client=client,
             )
             pos_info = memory["active_positions"][coin]
-            print(f"[Agent B/Exit] L1预设: SL={pos_info['stop_loss_price']} "
-                  f"({pos_info['sl_source']}), "
-                  f"TP={pos_info['take_profit_price']} "
-                  f"({pos_info['tp_source']})")
+            print(
+                f"[Agent B/Exit] L1预设: SL={pos_info['stop_loss_price']} "
+                f"({pos_info['sl_source']}), "
+                f"TP={pos_info['take_profit_price']} "
+                f"({pos_info['tp_source']})"
+            )
     else:
         print(f"[Agent B] 跳过执行（AUTO_EXECUTE={AUTO_EXECUTE}, gate={gate_pass}）")
 
@@ -1622,9 +1869,11 @@ def run():
         gate_passed=gate_pass,
     )
     if verifications:
-        print(f"[Agent B/Memory] 上轮建议验证: "
-              f"{verify_summary['verified']}验证/{verify_summary['partial']}部分/"
-              f"{verify_summary['pending']}待验证 (共{verify_summary['total']}条)")
+        print(
+            f"[Agent B/Memory] 上轮建议验证: "
+            f"{verify_summary['verified']}验证/{verify_summary['partial']}部分/"
+            f"{verify_summary['pending']}待验证 (共{verify_summary['total']}条)"
+        )
 
     new_lessons = trading_mem.distill_lessons(verifications, cycle)
     if new_lessons:
@@ -1641,10 +1890,12 @@ def run():
         mkt=mkt,
         chain_result=chain_result,
     )
-    print(f"[Agent B/Memory] 生成本轮建议: {len(next_suggestions.get('next_verifications', []))}个待验证, "
-          f"{len(next_suggestions.get('risk_warnings', []))}个风险, "
-          f"{len(next_suggestions.get('bac_adjustments', []))}个BAC调整, "
-          f"{len(next_suggestions.get('dze_triggers', []))}个D-Z-E")
+    print(
+        f"[Agent B/Memory] 生成本轮建议: {len(next_suggestions.get('next_verifications', []))}个待验证, "
+        f"{len(next_suggestions.get('risk_warnings', []))}个风险, "
+        f"{len(next_suggestions.get('bac_adjustments', []))}个BAC调整, "
+        f"{len(next_suggestions.get('dze_triggers', []))}个D-Z-E"
+    )
 
     # 将 trading memory 合并回主 memory
     if "suggestion_loop" in trading_mem.memory:
@@ -1654,60 +1905,70 @@ def run():
     save_memory(memory, log.data, next_suggestions=next_suggestions)
 
     # ── Step 4: 自我进化（A7+A8+gap_score）────────────────────────────────
-    print(f"[Agent B/OS] Step 4/6 — 自我进化引擎")
+    print("[Agent B/OS] Step 4/6 — 自我进化引擎")
     _trigger_self_evolution(log.data, memory)
 
     # ── Step 5: D-Z-E 开发链（按需触发）───────────────────────────────────
-    print(f"[Agent B/OS] Step 5/6 — D-Z-E 开发链检查")
+    print("[Agent B/OS] Step 5/6 — D-Z-E 开发链检查")
     loss_streaks = memory.get("loss_streaks", 0)
     confidence = log.data.get("confidence", 0)
     if loss_streaks >= 3 and confidence > 0.60:
-        print(f"[Agent B/DZE] 触发条件满足，启动 D-Z-E")
+        print("[Agent B/DZE] 触发条件满足，启动 D-Z-E")
     else:
         print(f"[Agent B/DZE] 未触发（连败={loss_streaks}, 置信度={confidence:.0%}）")
 
     # ── Step 6: 预算管理 + 日志归档 + PR 评论 ──────────────────────────────
-    print(f"[Agent B/OS] Step 6/6 — 预算管理 & 报告输出")
-    print(f"[Agent B/Budget] 模式={plan.budget_mode}, 预估={plan.estimated_tokens}t, 实际≈{len(chain_result.node_trace)*300}t")
+    print("[Agent B/OS] Step 6/6 — 预算管理 & 报告输出")
+    print(
+        f"[Agent B/Budget] 模式={plan.budget_mode}, 预估={plan.estimated_tokens}t, 实际≈{len(chain_result.node_trace)*300}t"
+    )
 
     # 日志保存 + Git push
     _save_and_push_logs(cycle, log.data)
 
     # PR 评论
-    pr_report = _build_pr_report(log.data, mkt, plan, chain_result,
-                                 prior_suggestions=prior_suggestions,
-                                 next_suggestions=next_suggestions,
-                                 cycle=cycle)
+    pr_report = _build_pr_report(
+        log.data,
+        mkt,
+        plan,
+        chain_result,
+        prior_suggestions=prior_suggestions,
+        next_suggestions=next_suggestions,
+        cycle=cycle,
+    )
     _comment_pr(pr_report)
 
     # 自主调度
-    print(f"[Agent B/OS] Step 6+ — 自主调度评估")
+    print("[Agent B/OS] Step 6+ — 自主调度评估")
     a0_stub = {"conflict_count": 0, "bull_count": 0, "bear_count": 0}
     a2_stub = {"least_resistance": "NEUTRAL", "confidence": final_conf}
     for r in chain_result.node_trace:
-        if "A0" in r.node_id: a0_stub.update(r.data.get("a0", {}))
-        if "A2" in r.node_id: a2_stub.update(r.data.get("a2", {}))
+        if "A0" in r.node_id:
+            a0_stub.update(r.data.get("a0", {}))
+        if "A2" in r.node_id:
+            a2_stub.update(r.data.get("a2", {}))
     _b_self_schedule(log.data, a0_stub, a2_stub, memory)
 
-    print(f"[Agent B/OS] ═══ 执行完成 ═══")
+    print("[Agent B/OS] ═══ 执行完成 ═══")
     return log.data
 
 
 def _b_self_schedule(final: dict, a0: dict, a2: dict, memory: dict):
     """Agent B 自主申请提前触发——基于矛盾论 + 置信度 + 记忆"""
     import time as _t
+
     now = _t.time()
 
     # 场景1：主要矛盾转化信号（C类信号冲突突然减少）→ 2H后复查
     conflict_cnt = a0.get("conflict_count", 0)
-    bull_cnt     = a0.get("bull_count", 0)
-    bear_cnt     = a0.get("bear_count", 0)
+    bull_cnt = a0.get("bull_count", 0)
+    bear_cnt = a0.get("bear_count", 0)
     if conflict_cnt == 0 and abs(bull_cnt - bear_cnt) >= 3:
         dominant = "多" if bull_cnt > bear_cnt else "空"
         request_early_run(
             reason=f"B矛盾清晰：{dominant}头主导{max(bull_cnt,bear_cnt)}维，2H后入场机会",
             run_at_ts=now + 7200,
-            priority="normal"
+            priority="normal",
         )
 
     # 场景2：A2 判断阻力最小方向 UP 但置信度刚好在门槛附近（60-65%）→ 1H后再试
@@ -1716,20 +1977,19 @@ def _b_self_schedule(final: dict, a0: dict, a2: dict, memory: dict):
         request_early_run(
             reason=f"B置信度{conf:.0%}接近门槛，1H后市场可能更清晰",
             run_at_ts=now + 3600,
-            priority="normal"
+            priority="normal",
         )
 
     # 场景3：连败保护触发后 → 申请6H后重新尝试
     loss_streaks = memory.get("loss_streaks", 0)
     if loss_streaks >= 3:
         request_early_run(
-            reason="B连败保护触发，6H后强制复盘评估市场",
-            run_at_ts=now + 21600,
-            priority="urgent"
+            reason="B连败保护触发，6H后强制复盘评估市场", run_at_ts=now + 21600, priority="urgent"
         )
 
 
 # ─── Dreambuddy OS v1.0：PR 评论 + 自我进化 + D-Z-E ──────────────────────────
+
 
 def _comment_pr(report_md: str) -> bool:
     """在 PR #52 下发交易报告评论"""
@@ -1740,9 +2000,10 @@ def _comment_pr(report_md: str) -> bool:
     headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     body = {"body": report_md}
     import requests as _req
+
     r = _req.post(url, headers=headers, json=body)
     if r.status_code in (200, 201):
-        print(f"[Agent B/PR] 评论成功 ✅")
+        print("[Agent B/PR] 评论成功 ✅")
         return True
     else:
         print(f"[Agent B/PR] 评论失败 ❌ {r.status_code}: {r.text[:100]}")
@@ -1757,6 +2018,7 @@ def _fetch_pr_comments() -> List[Dict]:
     url = f"https://api.github.com/repos/yunya1991/Dreambuddy-V2/issues/{PR_NUMBER}/comments"
     headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     import requests as _req
+
     try:
         r = _req.get(url, headers=headers, timeout=15)
         if r.status_code == 200:
@@ -1824,14 +2086,22 @@ def _extract_prior_suggestions(comment_body: str) -> Dict:
     in_next_section = False
     section_level = 0
 
-    for i, line in enumerate(lines):
-        if "下轮关注建议" in line or "下轮关注" in line or "🔮" in line and ("关注" in line or "建议" in line):
+    for i, line in enumerate(lines):  # noqa: B007
+        if (
+            "下轮关注建议" in line
+            or "下轮关注" in line
+            or "🔮" in line
+            and ("关注" in line or "建议" in line)
+        ):
             in_next_section = True
             section_level = len(line) - len(line.lstrip("#"))
             continue
 
         if in_next_section:
-            if line.strip().startswith("###") and len(line) - len(line.lstrip("#")) <= section_level:
+            if (
+                line.strip().startswith("###")
+                and len(line) - len(line.lstrip("#")) <= section_level
+            ):
                 break
             if line.strip().startswith("##") and len(line) - len(line.lstrip("#")) < section_level:
                 break
@@ -1851,7 +2121,11 @@ def _extract_prior_suggestions(comment_body: str) -> Dict:
             if m and m.group(1).strip():
                 result["next_verifications"].append(m.group(1).strip())
             continue
-        if re.match(r"^\d+\.\s*\*\*风险提示\*\*", stripped) or "风险提示" in stripped and "潜在机会" not in stripped:
+        if (
+            re.match(r"^\d+\.\s*\*\*风险提示\*\*", stripped)
+            or "风险提示" in stripped
+            and "潜在机会" not in stripped
+        ):
             current_list = "risk_warnings"
             m = re.search(r"[：:](.+)", stripped)
             if m and m.group(1).strip():
@@ -1860,20 +2134,30 @@ def _extract_prior_suggestions(comment_body: str) -> Dict:
         if "潜在机会" in stripped:
             current_list = None
             continue
-        if re.match(r"^\d+\.\s*\*\*BAC", stripped) or ("BAC" in stripped and ("调整" in stripped or "链路" in stripped)):
+        if re.match(r"^\d+\.\s*\*\*BAC", stripped) or (
+            "BAC" in stripped and ("调整" in stripped or "链路" in stripped)
+        ):
             current_list = "bac_adjustments"
             m = re.search(r"[：:](.+)", stripped)
             if m and m.group(1).strip():
                 result["bac_adjustments"].append(m.group(1).strip())
             continue
-        if re.match(r"^\d+\.\s*\*\*D-Z-E", stripped) or re.match(r"^\d+\.\s*\*\*DZE", stripped) or ("D-Z-E" in stripped and "触发" in stripped):
+        if (
+            re.match(r"^\d+\.\s*\*\*D-Z-E", stripped)
+            or re.match(r"^\d+\.\s*\*\*DZE", stripped)
+            or ("D-Z-E" in stripped and "触发" in stripped)
+        ):
             current_list = "dze_triggers"
             m = re.search(r"[：:](.+)", stripped)
             if m and m.group(1).strip():
                 result["dze_triggers"].append(m.group(1).strip())
             continue
 
-        if stripped.startswith("-") or stripped.startswith("*") or re.match(r"^\d+[\.\)、]", stripped):
+        if (
+            stripped.startswith("-")
+            or stripped.startswith("*")
+            or re.match(r"^\d+[\.\)、]", stripped)
+        ):
             item = re.sub(r"^[-*\d\.\)、]+\s*", "", stripped).strip()
             if item and current_list and current_list in result:
                 if item.startswith("**") and item.endswith("**"):
@@ -1889,8 +2173,14 @@ def load_prior_pr_suggestions() -> Dict:
 
     返回：同 _extract_prior_suggestions 的结构；若读取失败返回空结构。
     """
-    empty = {"cycle_id": None, "next_verifications": [], "risk_warnings": [],
-             "bac_adjustments": [], "dze_triggers": [], "raw_text": ""}
+    empty = {
+        "cycle_id": None,
+        "next_verifications": [],
+        "risk_warnings": [],
+        "bac_adjustments": [],
+        "dze_triggers": [],
+        "raw_text": "",
+    }
 
     comments = _fetch_pr_comments()
     if not comments:
@@ -1903,13 +2193,19 @@ def load_prior_pr_suggestions() -> Dict:
         return empty
 
     suggestions = _extract_prior_suggestions(last_comment.get("body", ""))
-    total = (len(suggestions["next_verifications"]) + len(suggestions["risk_warnings"])
-             + len(suggestions["bac_adjustments"]) + len(suggestions["dze_triggers"]))
-    print(f"[Agent B/PR] 上轮建议已加载 (cycle={suggestions['cycle_id']}, {total}条): "
-          f"{len(suggestions['next_verifications'])}个待验证, "
-          f"{len(suggestions['risk_warnings'])}个风险, "
-          f"{len(suggestions['bac_adjustments'])}个BAC调整, "
-          f"{len(suggestions['dze_triggers'])}个D-Z-E")
+    total = (
+        len(suggestions["next_verifications"])
+        + len(suggestions["risk_warnings"])
+        + len(suggestions["bac_adjustments"])
+        + len(suggestions["dze_triggers"])
+    )
+    print(
+        f"[Agent B/PR] 上轮建议已加载 (cycle={suggestions['cycle_id']}, {total}条): "
+        f"{len(suggestions['next_verifications'])}个待验证, "
+        f"{len(suggestions['risk_warnings'])}个风险, "
+        f"{len(suggestions['bac_adjustments'])}个BAC调整, "
+        f"{len(suggestions['dze_triggers'])}个D-Z-E"
+    )
     return suggestions
 
 
@@ -1984,10 +2280,15 @@ def build_next_cycle_suggestions(log_data: dict, mkt: dict, chain_result, memory
     }
 
 
-def _build_pr_report(log_data: dict, mkt: dict, plan, chain_result,
-                    prior_suggestions: Optional[Dict] = None,
-                    next_suggestions: Optional[Dict] = None,
-                    cycle: Optional[str] = None) -> str:
+def _build_pr_report(
+    log_data: dict,
+    mkt: dict,
+    plan,
+    chain_result,
+    prior_suggestions: Optional[Dict] = None,
+    next_suggestions: Optional[Dict] = None,
+    cycle: Optional[str] = None,
+) -> str:
     """按 dreambuddy-os SKILL 定义的格式构建 PR 评论"""
     action = log_data.get("action", "HOLD")
     coin = log_data.get("coin", mkt.get("coin", "BTC"))
@@ -2000,16 +2301,22 @@ def _build_pr_report(log_data: dict, mkt: dict, plan, chain_result,
     for coin_sym in ["BTC", "ETH", "SOL", "HYPE", "AVAX"]:
         if coin_sym in opp_map:
             o = opp_map[coin_sym]
-            top3.append(f"{coin_sym} — 24H {o.get('change_24h', 0):+.1f}%，RSI {o.get('rsi', 'N/A')}")
+            top3.append(
+                f"{coin_sym} — 24H {o.get('change_24h', 0):+.1f}%，RSI {o.get('rsi', 'N/A')}"
+            )
             if len(top3) >= 3:
                 break
 
     # BAC 链路
-    bac_chain = " → ".join([r.node_id for r in chain_result.node_trace]) if chain_result.node_trace else str(plan.planned_chain if plan else [])
+    bac_chain = (
+        " → ".join([r.node_id for r in chain_result.node_trace])
+        if chain_result.node_trace
+        else str(plan.planned_chain if plan else [])
+    )
 
     # Lessons
     lessons = log_data.get("prior_lessons_applied", [])
-    lessons_str = ", ".join(lessons[-3:]) if lessons else "无"
+    lessons_str = ", ".join(lessons[-3:]) if lessons else "无"  # noqa: F841
 
     # A7 闸门状态
     confidence = log_data.get("confidence", 0)
@@ -2018,10 +2325,12 @@ def _build_pr_report(log_data: dict, mkt: dict, plan, chain_result,
 
     # 上轮建议落实情况
     prior_section = ""
-    if prior_suggestions and (prior_suggestions.get("next_verifications")
-                               or prior_suggestions.get("risk_warnings")
-                               or prior_suggestions.get("bac_adjustments")
-                               or prior_suggestions.get("dze_triggers")):
+    if prior_suggestions and (
+        prior_suggestions.get("next_verifications")
+        or prior_suggestions.get("risk_warnings")
+        or prior_suggestions.get("bac_adjustments")
+        or prior_suggestions.get("dze_triggers")
+    ):
         prior_lines = []
         prior_cycle = prior_suggestions.get("cycle_id", "未知")
         prior_lines.append(f"\n### 🔁 上轮建议落实 (cycle: {prior_cycle})")
@@ -2061,9 +2370,13 @@ def _build_pr_report(log_data: dict, mkt: dict, plan, chain_result,
             next_lines.append(f"{i}. **待验证假设**：{v}")
 
         for i, rw in enumerate(next_suggestions.get("risk_warnings", []), 1):
-            next_lines.append(f"{i + len(next_suggestions.get('next_verifications', []))}. **风险提示**：{rw}")
+            next_lines.append(
+                f"{i + len(next_suggestions.get('next_verifications', []))}. **风险提示**：{rw}"
+            )
 
-        base_idx = len(next_suggestions.get("next_verifications", [])) + len(next_suggestions.get("risk_warnings", []))
+        base_idx = len(next_suggestions.get("next_verifications", [])) + len(
+            next_suggestions.get("risk_warnings", [])
+        )
         for i, ba in enumerate(next_suggestions.get("bac_adjustments", []), 1):
             next_lines.append(f"{base_idx + i}. **BAC 调整建议**：{ba}")
 
@@ -2129,7 +2442,6 @@ def _trigger_self_evolution(log_data: dict, memory: dict):
     2. 连败 ≥ 3 → 做梦部触发
     3. 置信度 55-64% 反复被拦 → 做梦部触发
     """
-    import subprocess
 
     loss_streaks = memory.get("loss_streaks", 0)
     confidence = log_data.get("confidence", 0)
@@ -2139,7 +2451,7 @@ def _trigger_self_evolution(log_data: dict, memory: dict):
     # 简化：若置信度与实际结果严重背离（如 HOLD 但市场大涨）
     # 这里用连败3次且置信度>0.6 作为 gap_score 代理
     if loss_streaks >= 3 and confidence > 0.60:
-        print(f"[Agent B/Evolution] gap_score 代理 ≥ 0.5，触发 D-Z-E 开发链")
+        print("[Agent B/Evolution] gap_score 代理 ≥ 0.5，触发 D-Z-E 开发链")
         _trigger_dze_chain(
             f"Agent B 连败{loss_streaks}次，置信度{confidence:.0%}仍亏损，"
             f"regime={memory.get('last_regime')}，需重新评估策略框架"
@@ -2151,7 +2463,7 @@ def _trigger_self_evolution(log_data: dict, memory: dict):
 
     # 触发条件3：连败保护刚解除
     if loss_streaks == 0 and memory.get("prev_loss_streaks", 0) >= 3:
-        print(f"[Agent B/Evolution] 连败保护解除，强制复盘")
+        print("[Agent B/Evolution] 连败保护解除，强制复盘")
 
 
 def _trigger_dze_chain(task_description: str):
@@ -2174,13 +2486,17 @@ def _trigger_dze_chain(task_description: str):
         result = subprocess.run(
             ["python3", str(guard_path), "init", task_description],
             cwd=str(CHAIN_DEV_SCRIPTS),
-            capture_output=True, text=True, timeout=30
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if result.returncode == 0:
-            print(f"[Agent B/DZE] D-Z-E 初始化成功 ✅")
+            print("[Agent B/DZE] D-Z-E 初始化成功 ✅")
             print(f"  输出: {result.stdout[:200] if result.stdout else '(无)'}")
         else:
-            print(f"[Agent B/DZE] D-Z-E 初始化失败 ❌: {result.stderr[:200] if result.stderr else result.stdout[:200]}")
+            print(
+                f"[Agent B/DZE] D-Z-E 初始化失败 ❌: {result.stderr[:200] if result.stderr else result.stdout[:200]}"
+            )
     except Exception as e:
         print(f"[Agent B/DZE] 调用失败: {e}")
 
@@ -2196,7 +2512,7 @@ def _save_and_push_logs(cycle_id: str, log_data: dict):
     log_dir = Path(__file__).parent.parent / "logs" / "agent_b"
 
     if not GH_TOKEN:
-        print(f"[Agent B/Logs] 未配置 GH_TOKEN，跳过 git push")
+        print("[Agent B/Logs] 未配置 GH_TOKEN，跳过 git push")
         return
 
     log_file = log_dir / f"{cycle_id}.json"
@@ -2205,28 +2521,39 @@ def _save_and_push_logs(cycle_id: str, log_data: dict):
         return
 
     try:
-        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], cwd=repo_root, check=False)
-        subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], cwd=repo_root, check=False)
+        subprocess.run(
+            ["git", "config", "user.name", "github-actions[bot]"], cwd=repo_root, check=False
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"],
+            cwd=repo_root,
+            check=False,
+        )
 
         rel_path = log_file.relative_to(repo_root)
         subprocess.run(["git", "add", str(rel_path)], cwd=repo_root, check=False)
         r = subprocess.run(
             ["git", "commit", "-m", f"chore(agent-b): save decision log {cycle_id[:8]}"],
-            cwd=repo_root, capture_output=True, text=True
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
         )
         if r.returncode == 0:
-            print(f"[Agent B/Logs] commit 成功 ✅")
+            print("[Agent B/Logs] commit 成功 ✅")
             remote_url = f"https://x-access-token:{GH_TOKEN}@github.com/yunya1991/Dreambuddy-V2.git"
             pr = subprocess.run(
                 ["git", "push", remote_url, "HEAD"],
-                cwd=repo_root, capture_output=True, text=True, timeout=30
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             if pr.returncode == 0:
-                print(f"[Agent B/Logs] push 成功 ✅")
+                print("[Agent B/Logs] push 成功 ✅")
             else:
                 print(f"[Agent B/Logs] push 失败 ❌: {pr.stderr[:200]}")
         else:
-            print(f"[Agent B/Logs] commit 跳过（无变更或失败）")
+            print("[Agent B/Logs] commit 跳过（无变更或失败）")
     except Exception as e:
         print(f"[Agent B/Logs] Git 操作异常: {e}")
 
@@ -2262,14 +2589,14 @@ DEFAULT_STRATEGY_PARAMS = {
 # ── Fix-3: 策略参数安全边界（放宽夹死问题，每维给 TREND/RANGE ×系数 至少 2~3 轮自由空间）
 #    风控下限约束：常规仓 SL≥1.5% / TP≥3.0%，与项目记忆一致
 PARAM_BOUNDS = {
-    "stop_loss_pct":    (0.015, 0.10),   # 止损 1.5%-10%   (低限=常规仓SL下限1.5%)
-    "take_profit_pct":  (0.03,  0.25),   # 止盈 3%-25%     (低限=常规仓TP下限3%)
-    "atr_sl_multiplier": (0.8,   3.0),   # ATR止损乘数 0.8-3.0
-    "atr_tp_multiplier": (1.5,   7.0),   # ATR止盈乘数 1.5-7.0
-    "per_trade_pct":    (0.02,  0.15),   # 单笔仓位 2%-15%
-    "confidence_gate":  (0.40,  0.85),   # 置信度门槛 40%-85%
-    "default_leverage": (1,     5),      # 杠杆 1x-5x
-    "max_positions":    (1,     5),      # 最大持仓数 1-5
+    "stop_loss_pct": (0.015, 0.10),  # 止损 1.5%-10%   (低限=常规仓SL下限1.5%)
+    "take_profit_pct": (0.03, 0.25),  # 止盈 3%-25%     (低限=常规仓TP下限3%)
+    "atr_sl_multiplier": (0.8, 3.0),  # ATR止损乘数 0.8-3.0
+    "atr_tp_multiplier": (1.5, 7.0),  # ATR止盈乘数 1.5-7.0
+    "per_trade_pct": (0.02, 0.15),  # 单笔仓位 2%-15%
+    "confidence_gate": (0.40, 0.85),  # 置信度门槛 40%-85%
+    "default_leverage": (1, 5),  # 杠杆 1x-5x
+    "max_positions": (1, 5),  # 最大持仓数 1-5
 }
 
 
@@ -2334,13 +2661,16 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
     # ── 2. 连胜放宽：连胜3次以上可适度加仓 ──
     if win_streaks >= 5 and loss_streaks == 0:
         adjustments["per_trade_pct"] = min(params["per_trade_pct"] * 1.2, 0.10)
-        adjustments["default_leverage"] = min(params["default_leverage"] + 1, params["max_leverage"])
+        adjustments["default_leverage"] = min(
+            params["default_leverage"] + 1, params["max_leverage"]
+        )
     elif win_streaks >= 3 and loss_streaks == 0:
         adjustments["per_trade_pct"] = min(params["per_trade_pct"] * 1.1, 0.08)
 
     # ── 3. 教训驱动调整（仅当连败数达到教训中记录的阈值时生效）──
     if loss_streaks > 0:
         import re
+
         for lesson in memory.get("lessons", []):
             if "提升置信度门槛至" not in lesson:
                 continue
@@ -2372,15 +2702,29 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
         trend_pct = (regime_counts["TREND_UP"] + regime_counts["TREND_DOWN"]) / total_decisions
         if trend_pct > 0.7:
             # 趋势市：放宽止盈、适当收窄止损（有上限约束）
-            adjustments["take_profit_pct"] = min(params["take_profit_pct"] * 1.15, PARAM_BOUNDS["take_profit_pct"][1])
-            adjustments["stop_loss_pct"] = max(params["stop_loss_pct"] * 0.92, PARAM_BOUNDS["stop_loss_pct"][0])
-            adjustments["atr_tp_multiplier"] = min(params["atr_tp_multiplier"] * 1.1, PARAM_BOUNDS["atr_tp_multiplier"][1])
+            adjustments["take_profit_pct"] = min(
+                params["take_profit_pct"] * 1.15, PARAM_BOUNDS["take_profit_pct"][1]
+            )
+            adjustments["stop_loss_pct"] = max(
+                params["stop_loss_pct"] * 0.92, PARAM_BOUNDS["stop_loss_pct"][0]
+            )
+            adjustments["atr_tp_multiplier"] = min(
+                params["atr_tp_multiplier"] * 1.1, PARAM_BOUNDS["atr_tp_multiplier"][1]
+            )
         elif regime_counts["RANGE"] / total_decisions > 0.6:
             # 震荡市：收窄止盈、放宽止损（有上限约束）
-            adjustments["take_profit_pct"] = max(params["take_profit_pct"] * 0.85, PARAM_BOUNDS["take_profit_pct"][0])
-            adjustments["stop_loss_pct"] = min(params["stop_loss_pct"] * 1.1, PARAM_BOUNDS["stop_loss_pct"][1])
-            adjustments["atr_sl_multiplier"] = min(params["atr_sl_multiplier"] * 1.05, PARAM_BOUNDS["atr_sl_multiplier"][1])
-            adjustments["atr_tp_multiplier"] = max(params["atr_tp_multiplier"] * 0.9, PARAM_BOUNDS["atr_tp_multiplier"][0])
+            adjustments["take_profit_pct"] = max(
+                params["take_profit_pct"] * 0.85, PARAM_BOUNDS["take_profit_pct"][0]
+            )
+            adjustments["stop_loss_pct"] = min(
+                params["stop_loss_pct"] * 1.1, PARAM_BOUNDS["stop_loss_pct"][1]
+            )
+            adjustments["atr_sl_multiplier"] = min(
+                params["atr_sl_multiplier"] * 1.05, PARAM_BOUNDS["atr_sl_multiplier"][1]
+            )
+            adjustments["atr_tp_multiplier"] = max(
+                params["atr_tp_multiplier"] * 0.9, PARAM_BOUNDS["atr_tp_multiplier"][0]
+            )
 
     # ── 5. 胜率统计 → 动态调整仓位比例 ──
     if len(recent_decisions) >= 10:
@@ -2414,10 +2758,7 @@ def _compute_param_adjustments(memory: Dict, recent_decisions: List[Dict]) -> Di
                 return True
         return a != b
 
-    adjustments = {
-        k: v for k, v in adjustments.items()
-        if _val_changed(params.get(k), v)
-    }
+    adjustments = {k: v for k, v in adjustments.items() if _val_changed(params.get(k), v)}
 
     return adjustments
 
@@ -2455,16 +2796,20 @@ def update_classic_strategy_params():
     # 加载记忆
     memory = load_memory()
     recent_decisions = memory.get("recent_decisions", [])
-    logger.info(f"记忆加载: {memory.get('total_cycles', 0)}轮历史, "
-                f"连败={memory.get('loss_streaks', 0)}, 连胜={memory.get('win_streaks', 0)}, "
-                f"教训={len(memory.get('lessons', []))}条")
+    logger.info(
+        f"记忆加载: {memory.get('total_cycles', 0)}轮历史, "
+        f"连败={memory.get('loss_streaks', 0)}, 连胜={memory.get('win_streaks', 0)}, "
+        f"教训={len(memory.get('lessons', []))}条"
+    )
 
     # 加载当前参数
     current_params = _load_strategy_params()
-    logger.info(f"当前策略参数: confidence_gate={current_params['confidence_gate']}, "
-                f"leverage={current_params['default_leverage']}, "
-                f"per_trade_pct={current_params['per_trade_pct']}, "
-                f"SL={current_params['stop_loss_pct']}, TP={current_params['take_profit_pct']}")
+    logger.info(
+        f"当前策略参数: confidence_gate={current_params['confidence_gate']}, "
+        f"leverage={current_params['default_leverage']}, "
+        f"per_trade_pct={current_params['per_trade_pct']}, "
+        f"SL={current_params['stop_loss_pct']}, TP={current_params['take_profit_pct']}"
+    )
 
     # 计算参数调整
     adjustments = _compute_param_adjustments(memory, recent_decisions)
@@ -2484,11 +2829,13 @@ def update_classic_strategy_params():
         # 记录调整历史到 memory
         if "strategy_param_history" not in memory:
             memory["strategy_param_history"] = []
-        memory["strategy_param_history"].append({
-            "ts": datetime.utcnow().isoformat(),
-            "adjustments": adjustments,
-            "trigger": f"连败={memory.get('loss_streaks',0)} 连胜={memory.get('win_streaks',0)}",
-        })
+        memory["strategy_param_history"].append(
+            {
+                "ts": datetime.utcnow().isoformat(),
+                "adjustments": adjustments,
+                "trigger": f"连败={memory.get('loss_streaks',0)} 连胜={memory.get('win_streaks',0)}",
+            }
+        )
         # 保留最近30条调整历史
         memory["strategy_param_history"] = memory["strategy_param_history"][-30:]
         MEMORY_PATH.parent.mkdir(parents=True, exist_ok=True)

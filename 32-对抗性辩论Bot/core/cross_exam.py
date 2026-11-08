@@ -9,6 +9,7 @@
 - 任一方向的质询生成失败 → 跳过该方向（FAIL-OPEN），不阻塞裁判/营销；
 - 生成的 `CrossExamination` Turn 写入 transcript，供后续辩手、裁判与营销提取复用。
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,13 +24,20 @@ class CrossExamAgent(Protocol):
     side: str
 
     async def cross_examine(
-        self, topic: str, transcript: list[Turn], background: str = "",
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
         injected_views: list[str] | None = None,
     ) -> list[str]: ...
 
     async def answer_cross(
-        self, topic: str, questions: list[str], transcript: list[Turn],
-        background: str = "", injected_views: list[str] | None = None,
+        self,
+        topic: str,
+        questions: list[str],
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
     ) -> list[str]: ...
 
 
@@ -55,14 +63,21 @@ async def run_cross_examination(
 
     for questioner, respondent, q_agent, a_agent in directions:
         questions = await q_agent.cross_examine(
-            topic, transcript, background, injected_views,
+            topic,
+            transcript,
+            background,
+            injected_views,
         )
         if not questions:
             logger.info("交叉质询跳过：%s 未生成问题", questioner)
             continue
 
         answers = await a_agent.answer_cross(
-            topic, questions, transcript, background, injected_views,
+            topic,
+            questions,
+            transcript,
+            background,
+            injected_views,
         )
         if not answers:
             logger.info("交叉质询跳过：%s 未生成回答", respondent)

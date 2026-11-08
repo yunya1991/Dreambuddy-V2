@@ -151,9 +151,9 @@ def fetch_okx_klines(
                         "bar": bar,
                         "limit": min(limit, 100),
                     }
-                    if after:
-                        params["after"] = str(after)
-                    return _sess.get(url, params=params, timeout=10)
+                    if after:  # noqa: B023
+                        params["after"] = str(after)  # noqa: B023
+                    return _sess.get(url, params=params, timeout=10)  # noqa: B023
 
                 # 构造候选 instId 列表：现货 → SWAP
                 base_symbol = (

@@ -5,6 +5,7 @@
 
 来源: SPEC v0.3 §2.B — deep_reasoning_engine 多算法缝合体拆分
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,12 +23,14 @@ _TIMESFM_CLS = None
 _TIMESFM_API = "none"
 try:
     from timesfm import TimesFM3Forecaster  # type: ignore  # v3.0+
+
     _TIMESFM_CLS = TimesFM3Forecaster
     _TIMESFM_API = "v3"
     _TIMESFM_AVAILABLE = True
 except Exception:  # noqa: BLE001
     try:
         from timesfm import TimesFm  # type: ignore  # v1/v2 旧版
+
         _TIMESFM_CLS = TimesFm
         _TIMESFM_API = "legacy"
         _TIMESFM_AVAILABLE = True
@@ -38,6 +41,7 @@ except Exception:  # noqa: BLE001
 try:
     # Stable-Neural-SDEs 或 torch 可用
     import torch  # type: ignore
+
     # 修复: PyTorch OpenMP tanh_kernel 在 Apple Silicon 多线程下 SIGSEGV
     torch.set_num_threads(1)
     _TORCH_AVAILABLE = True
@@ -47,6 +51,7 @@ except Exception:  # noqa: BLE001
 # 探测 torchsde（Level 1 加速；缺失则退化到手写 Euler-Maruyama）
 try:
     import torchsde  # type: ignore  # noqa: F401
+
     _TORCHSDE_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _TORCHSDE_AVAILABLE = False
@@ -90,6 +95,7 @@ class SDESolver:
             return None
         try:
             from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel
+
             model = NeuralSDEModel(device="cpu")
             loaded = model.load(self._sde_model_path)
             self._neural_sde_model = model
@@ -107,6 +113,7 @@ class SDESolver:
     def _log_fail_open(self, module: str, exc: Exception) -> None:
         """HC-AGI-03: 记录 6 层堆栈 + 5分钟3次告警."""
         import time
+
         stack = traceback.format_exc()
         logger.warning("[FO-AGI-03] %s 降级: %s\n%s", module, exc, stack)
         now = time.time()
@@ -119,7 +126,8 @@ class SDESolver:
         if len(self._fail_open_counter[module]) >= 3:
             logger.critical(
                 "[FO-AGI-03] %s 5分钟内 %d 次降级，触发 Lark 告警",
-                module, len(self._fail_open_counter[module]),
+                module,
+                len(self._fail_open_counter[module]),
             )
 
     # ------------------------------------------------------------------
@@ -163,6 +171,7 @@ class SDESolver:
 
         # 开关守卫：关闭时跳过 Neural SDE，降级到 GARCH (HC-AGI-07)
         from dreambuddy_evolution.agi_config import is_enabled
+
         if is_enabled("enable_neural_sde"):
             # Level 1+2: 真实 Neural SDE（torchsde 或 EM 积分）
             model = self._get_neural_sde_model()
@@ -170,9 +179,13 @@ class SDESolver:
                 try:
                     # P1+: 传入 cross-attention 外生因子 (模型不支持时自动 FAIL-OPEN)
                     forecast_kwargs = {}
-                    if exogenous_factors is not None and getattr(model, "use_cross_attention", False):
+                    if exogenous_factors is not None and getattr(
+                        model, "use_cross_attention", False
+                    ):
                         forecast_kwargs["exogenous_factors"] = exogenous_factors
-                    if head_multipliers is not None and getattr(model, "use_cross_attention", False):
+                    if head_multipliers is not None and getattr(
+                        model, "use_cross_attention", False
+                    ):
                         forecast_kwargs["head_multipliers"] = head_multipliers
                     paths = model.forecast(state, horizon, n_paths, **forecast_kwargs)
                     if paths is not None:
@@ -187,6 +200,7 @@ class SDESolver:
         try:
             if self._garch is None:
                 from dreambuddy_evolution.core.garch_fallback import GARCHFallback
+
                 self._garch = GARCHFallback()
             # 用 volatility 估算 returns 长度（需要足够样本）
             # 如果 GARCH 未拟合，用 vol 做简单初始化
@@ -206,7 +220,7 @@ class SDESolver:
         dt = 1.0
         drift = 0.0
         Z = np.random.standard_normal((n_paths, horizon))
-        log_returns = (drift - 0.5 * vol ** 2) * dt + vol * np.sqrt(dt) * Z
+        log_returns = (drift - 0.5 * vol**2) * dt + vol * np.sqrt(dt) * Z
         paths = np.zeros((n_paths, horizon + 1))
         paths[:, 0] = init_price
         paths[:, 1:] = init_price * np.exp(np.cumsum(log_returns, axis=1))
@@ -226,6 +240,7 @@ class SDESolver:
 
         # 开关守卫：关闭时降级为统计预测 (HC-AGI-07)
         from dreambuddy_evolution.agi_config import is_enabled
+
         if is_enabled("enable_timesfm_forecast") and self._timesfm_available:
             return self._timesfm_predict_real(history, horizon)
         return self._statistical_forecast(history, horizon)
@@ -250,7 +265,9 @@ class SDESolver:
             if _TIMESFM_API == "v3":
                 # v3 API: predict(context, horizon) -> ForecastOutput
                 forecast_out = self._timesfm_model.predict(history, horizon)
-                forecast = forecast_out.forecast if hasattr(forecast_out, "forecast") else forecast_out
+                forecast = (
+                    forecast_out.forecast if hasattr(forecast_out, "forecast") else forecast_out
+                )
                 arr = np.asarray(forecast, dtype=np.float64)
                 # 兼容 (batch, horizon) 或 (horizon,) 输出
                 return arr[0] if arr.ndim == 2 else arr

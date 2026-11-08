@@ -21,18 +21,17 @@ C层特色：
 4. 执行反思 - 执行完成后反思整个执行过程
 """
 
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 from .types import (
-    NodeExecutionResult,
     ChainFusionDecision,
+    NodeExecutionResult,
 )
-
 
 # ============================================================
 # C层：动态链融合器 - 接口定义
 # ============================================================
+
 
 class LLMAnalyzerInterface:
     """大模型分析器接口
@@ -102,6 +101,7 @@ class LLMAnalyzerInterface:
 # C层：动态链融合器 - 默认实现
 # ============================================================
 
+
 class DefaultLLMAnalyzer(LLMAnalyzerInterface):
     """默认大模型分析器
 
@@ -144,7 +144,9 @@ class DefaultLLMAnalyzer(LLMAnalyzerInterface):
 
         # 默认继续下一个节点
         if available_nodes:
-            current_index = available_nodes.index(current_node_id) if current_node_id in available_nodes else -1
+            current_index = (
+                available_nodes.index(current_node_id) if current_node_id in available_nodes else -1
+            )
             if current_index < len(available_nodes) - 1:
                 decision.action = "continue"
                 decision.next_node_id = available_nodes[current_index + 1]
@@ -180,6 +182,7 @@ class DefaultLLMAnalyzer(LLMAnalyzerInterface):
 # ============================================================
 # C层：动态链融合器 - 核心
 # ============================================================
+
 
 class DynamicChainFusion:
     """动态链融合器
@@ -301,6 +304,7 @@ class DynamicChainFusion:
 # ============================================================
 # C层：动态链融合器 - 集成到执行流程
 # ============================================================
+
 
 class FusionEnabledNodeExecutor:
     """支持动态链融合的节点执行器

@@ -13,6 +13,7 @@ Trae 驱动模式: 论点由 Trae 预先生成（基于 Persona 提示），非�
   cd 32-对抗性辩论Bot
   python e2e_trae_driven.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,24 +29,32 @@ BOT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BOT_DIR))
 
 # python-server 目录 (c_drive_agent, persona 模块)
-PYTHON_SERVER = Path(__file__).resolve().parent.parent / "1-ARCHITECTURE" / "dream-harness-bridge" / "packages" / "python-server"
+PYTHON_SERVER = (
+    Path(__file__).resolve().parent.parent
+    / "1-ARCHITECTURE"
+    / "dream-harness-bridge"
+    / "packages"
+    / "python-server"
+)
 sys.path.insert(0, str(PYTHON_SERVER))
 
 # ── 加载 .env ──────────────────────────────────────────────────
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
+
 load_dotenv(BOT_DIR / ".env")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("e2e")
 
 # ── 导入组件 ──────────────────────────────────────────────────
-from core.telegram_adapter import TelegramHTTPClient
-from core.telegram_bot import TelegramDualBot
-from core.interactive_runner import InteractiveRunner
+from c_drive_agent import handle_debate  # noqa: E402
+from core.interactive_runner import InteractiveRunner  # noqa: E402
+from core.telegram_adapter import TelegramHTTPClient  # noqa: E402
+from core.telegram_bot import TelegramDualBot  # noqa: E402
 
 # C-Drive 模块 (python-server)
-from persona import match_personas, PRESET_PERSONAS, Persona
-from c_drive_agent import handle_debate
+from persona import PRESET_PERSONAS, match_personas  # noqa: E402
+
 
 # ── ipc_fn: 进程内直连 handle_debate ───────────────────────────
 def ipc_fn(params: dict) -> dict:
@@ -123,7 +132,13 @@ MARKETING_TITLE = "AI 能攻破比特币吗？OpenAI 数学突破引发的密码
 
 # 质量评分
 QUALITY_OVERALL = 8.5
-QUALITY_DIMENSIONS = {"论据质量": 9.0, "反驳力度": 8.0, "数据引用": 9.0, "逻辑连贯": 8.0, "时效性": 9.0}
+QUALITY_DIMENSIONS = {
+    "论据质量": 9.0,
+    "反驳力度": 8.0,
+    "数据引用": 9.0,
+    "逻辑连贯": 8.0,
+    "时效性": 9.0,
+}
 QUALITY_HIGHLIGHTS = [
     "正方精确引用 2^256 ≈ 10^77 和宇宙原子数 10^80 的对比",
     "反方准确引用 OpenAI $2000 算力解决千禧年难题",
@@ -139,6 +154,7 @@ QUALITY_SUGGESTIONS = [
 # ============================================================
 # E2E 主流程
 # ============================================================
+
 
 async def run_e2e():
     """执行端到端验证。"""
@@ -221,7 +237,7 @@ async def run_e2e():
     logger.info("Step 4: 正方发言 (加密老兵) → 真实 Telegram")
     logger.info("=" * 60)
 
-    turn1 = await runner.send_bull(
+    turn1 = await runner.send_bull(  # noqa: F841
         thesis=BULL_THESIS,
         arguments=BULL_ARGUMENTS,
         quote=BULL_QUOTE,
@@ -251,7 +267,7 @@ async def run_e2e():
     logger.info("Step 6: 反方反驳 (传统金融人) → 真实 Telegram")
     logger.info("=" * 60)
 
-    turn2 = await runner.send_bear(
+    turn2 = await runner.send_bear(  # noqa: F841
         thesis=BEAR_THESIS,
         arguments=BEAR_ARGUMENTS,
         quote=BEAR_QUOTE,
@@ -338,9 +354,12 @@ async def run_e2e():
     logger.info("Persona 匹配: %s vs %s ✓", bull_persona.name, bear_persona.name)
     logger.info("Telegram 发送: bull/bear/judge/marketing/quality ✓")
     logger.info("IPC recall: %d 条记忆返回 ✓", len(memories))
-    logger.info("IPC record: bull=%s, bear=%s %s",
-                mem_id_bull, mem_id_bear,
-                "✓" if (mem_id_bull or mem_id_bear) else "(FAIL-OPEN)")
+    logger.info(
+        "IPC record: bull=%s, bear=%s %s",
+        mem_id_bull,
+        mem_id_bear,
+        "✓" if (mem_id_bull or mem_id_bear) else "(FAIL-OPEN)",
+    )
     logger.info("Transcript: %d turns ✓", len(runner.transcript))
     logger.info("Verdict winner: %s ✓", verdict.winner)
     logger.info("质量评分: %s/10 (%s级) ✓", quality.overall, quality.grade)

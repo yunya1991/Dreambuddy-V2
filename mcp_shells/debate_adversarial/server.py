@@ -17,6 +17,7 @@
   - DEBATE_PROVIDER / DEBATE_MODEL 可覆盖
   - DEBATE_MAX_ROUNDS（默认 3）、DEBATE_MAX_BACKGROUND_CHARS（默认 20000）
 """
+
 from __future__ import annotations
 
 import json
@@ -101,6 +102,7 @@ def _read_job(debate_id: str) -> dict[str, Any] | None:
 
 # ── M10 频控 / 并发 / TTL 辅助 ──────────────────────────────────
 
+
 def _rate_limit_check() -> tuple[bool, str]:
     """滑动窗口频控：返回 (允许, 原因)。超限不排队，直接拒绝。"""
     now = time.monotonic()
@@ -164,7 +166,10 @@ def _truncate_result(result: dict[str, Any]) -> tuple[dict[str, Any], bool]:
         return result, False
     # 去掉大字段，只保留元信息
     slim = {k: v for k, v in result.items() if k != "result"}
-    slim["result"] = {"truncated": True, "schema_version": result.get("result", {}).get("schema_version")}
+    slim["result"] = {
+        "truncated": True,
+        "schema_version": result.get("result", {}).get("schema_version"),
+    }
     slim["degraded"] = True
     return slim, True
 
@@ -286,21 +291,36 @@ def start_debate(arguments: dict[str, Any]) -> str:
     topic = str(arguments.get("topic") or "").strip()
     if not topic:
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="invalid",
-                 meta={"tool": "start_debate", "reason": "topic required"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"tool": "start_debate", "reason": "topic required"},
+            ),
             ensure_ascii=False,
         )
     if len(topic) > _MAX_TOPIC:
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="invalid",
-                 meta={"tool": "start_debate", "reason": f"topic > {_MAX_TOPIC}"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"tool": "start_debate", "reason": f"topic > {_MAX_TOPIC}"},
+            ),
             ensure_ascii=False,
         )
     mode = str(arguments.get("mode") or "review").strip().lower()
     if mode not in ("review", "fast", "deep"):
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="invalid",
-                 meta={"tool": "start_debate", "reason": f"invalid mode: {mode}"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"tool": "start_debate", "reason": f"invalid mode: {mode}"},
+            ),
             ensure_ascii=False,
         )
     rounds = max(1, min(int(arguments.get("rounds", 2)), _MAX_ROUNDS))
@@ -319,16 +339,24 @@ def start_debate(arguments: dict[str, Any]) -> str:
     profile = str(arguments.get("profile") or "auto").strip().lower()
     if profile not in ("auto", "marketing", "technical", "signal", "generic"):
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="invalid",
-                 meta={"tool": "start_debate",
-                       "reason": f"invalid profile: {profile}"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"tool": "start_debate", "reason": f"invalid profile: {profile}"},
+            ),
             ensure_ascii=False,
         )
     if profile in ("marketing", "technical") and mode != "review":
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="invalid",
-                 meta={"tool": "start_debate",
-                       "reason": f"profile {profile} 仅支持 mode=review"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"tool": "start_debate", "reason": f"profile {profile} 仅支持 mode=review"},
+            ),
             ensure_ascii=False,
         )
 
@@ -339,8 +367,13 @@ def start_debate(arguments: dict[str, Any]) -> str:
     allowed, reason = _rate_limit_check()
     if not allowed:
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="timeout",
-                 meta={"tool": "start_debate", "reason": reason}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="timeout",
+                meta={"tool": "start_debate", "reason": reason},
+            ),
             ensure_ascii=False,
         )
 
@@ -351,9 +384,16 @@ def start_debate(arguments: dict[str, Any]) -> str:
             if _rate_timestamps:
                 _rate_timestamps.pop()
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="timeout",
-                 meta={"tool": "start_debate",
-                       "reason": f"concurrency_limit: max {_MAX_CONCURRENT} running"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="timeout",
+                meta={
+                    "tool": "start_debate",
+                    "reason": f"concurrency_limit: max {_MAX_CONCURRENT} running",
+                },
+            ),
             ensure_ascii=False,
         )
 
@@ -374,9 +414,22 @@ def start_debate(arguments: dict[str, Any]) -> str:
     )
     thread = threading.Thread(
         target=_run_job,
-        args=(debate_id, mode, topic, background, rounds, judge, provider, model,
-              research, research_sources, research_max_items,
-              cross_examination, adjudication, profile),
+        args=(
+            debate_id,
+            mode,
+            topic,
+            background,
+            rounds,
+            judge,
+            provider,
+            model,
+            research,
+            research_sources,
+            research_max_items,
+            cross_examination,
+            adjudication,
+            profile,
+        ),
         daemon=True,
         name=f"debate-{debate_id}",
     )
@@ -395,24 +448,38 @@ def get_debate_result(arguments: dict[str, Any]) -> str:
     debate_id = str(arguments.get("debate_id") or "").strip()
     if not debate_id:
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="invalid",
-                 meta={"tool": "get_debate_result", "reason": "debate_id required"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="invalid",
+                meta={"tool": "get_debate_result", "reason": "debate_id required"},
+            ),
             ensure_ascii=False,
         )
     job = _read_job(debate_id)
     if job is None:
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="not_found",
-                 meta={"tool": "get_debate_result", "debate_id": debate_id}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="not_found",
+                meta={"tool": "get_debate_result", "debate_id": debate_id},
+            ),
             ensure_ascii=False,
         )
     # M10: TTL 过期则清理文件并返回 not_found
     if _is_job_expired(job):
         _job_path(debate_id).unlink(missing_ok=True)
         return json.dumps(
-            wrap({}, SHELL_SOURCE, degraded=True, error_code="not_found",
-                 meta={"tool": "get_debate_result", "debate_id": debate_id,
-                       "reason": "expired"}),
+            wrap(
+                {},
+                SHELL_SOURCE,
+                degraded=True,
+                error_code="not_found",
+                meta={"tool": "get_debate_result", "debate_id": debate_id, "reason": "expired"},
+            ),
             ensure_ascii=False,
         )
     return json.dumps(
@@ -442,6 +509,7 @@ def health(arguments: dict[str, Any]) -> str:
     if deep:
         try:
             import asyncio
+
             from core.llm_compat import health_check
 
             check = asyncio.run(health_check(_settings()))
@@ -451,9 +519,13 @@ def health(arguments: dict[str, Any]) -> str:
             info["llm_check"] = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
             degraded = True
     return json.dumps(
-        wrap(info, SHELL_SOURCE, degraded=degraded,
-             error_code="unavailable" if degraded else "",
-             meta={"tool": "health"}),
+        wrap(
+            info,
+            SHELL_SOURCE,
+            degraded=degraded,
+            error_code="unavailable" if degraded else "",
+            meta={"tool": "health"},
+        ),
         ensure_ascii=False,
     )
 
@@ -471,30 +543,51 @@ _TOOLS = [
             "type": "object",
             "properties": {
                 "topic": {"type": "string", "description": "评审命题"},
-                "mode": {"type": "string", "enum": ["review", "fast", "deep"],
-                         "default": "review",
-                         "description": "review=结构化评审；fast=DSH 1 轮并行；deep=DSH 2 轮+Judge+6 维评分"},
+                "mode": {
+                    "type": "string",
+                    "enum": ["review", "fast", "deep"],
+                    "default": "review",
+                    "description": "review=结构化评审；fast=DSH 1 轮并行；deep=DSH 2 轮+Judge+6 维评分",
+                },
                 "background": {"type": "string", "description": "背景材料（可选）"},
-                "rounds": {"type": "integer", "default": 2, "minimum": 1,
-                           "maximum": _MAX_ROUNDS},
+                "rounds": {"type": "integer", "default": 2, "minimum": 1, "maximum": _MAX_ROUNDS},
                 "judge": {"type": "boolean", "default": True},
-                "research": {"type": "boolean", "default": False,
-                             "description": "启用 Research Prepass（只读 L0 MCP + 本地代码检索）"},
+                "research": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "启用 Research Prepass（只读 L0 MCP + 本地代码检索）",
+                },
                 "research_sources": {
                     "type": "array",
-                    "items": {"type": "string",
-                              "enum": ["unified_search", "recall", "code", "code_search",
-                                       "l1_signal", "l1_bus", "l1_cycle",
-                                       "l1", "l1_trading"]},
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "unified_search",
+                            "recall",
+                            "code",
+                            "code_search",
+                            "l1_signal",
+                            "l1_bus",
+                            "l1_cycle",
+                            "l1",
+                            "l1_trading",
+                        ],
+                    },
                 },
-                "research_max_items": {"type": "integer", "default": 8,
-                                       "minimum": 1, "maximum": 12},
+                "research_max_items": {
+                    "type": "integer",
+                    "default": 8,
+                    "minimum": 1,
+                    "maximum": 12,
+                },
                 "cross_examination": {
-                    "type": "boolean", "default": False,
+                    "type": "boolean",
+                    "default": False,
                     "description": "review 模式第 1 轮后插入双向交叉质询",
                 },
                 "adjudication": {
-                    "type": "boolean", "default": True,
+                    "type": "boolean",
+                    "default": True,
                     "description": "review 模式生成 6 维评分；deep 固定生成，fast 固定 null",
                 },
                 "profile": {
@@ -503,8 +596,10 @@ _TOOLS = [
                     "default": "auto",
                     "description": "角色 profile；auto=review→technical、fast/deep→generic；C-Drive 信号用 signal",
                 },
-                "provider": {"type": "string",
-                             "enum": ["auto", "anthropic", "openai_compat", "langchain"]},
+                "provider": {
+                    "type": "string",
+                    "enum": ["auto", "anthropic", "openai_compat", "langchain"],
+                },
                 "model": {"type": "string"},
             },
             "required": ["topic"],

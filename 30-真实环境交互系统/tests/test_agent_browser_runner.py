@@ -19,6 +19,7 @@
 - 线2 agent-browser 引擎：本模块（GLM-5.2 通过 Bash 编排，零 LLM token）
 - 线3 AI 引擎：ai_agent.py（Browser Use + Qwen VL）
 """
+
 import json
 import subprocess
 import sys
@@ -39,6 +40,7 @@ class TestAgentBrowserRunnerConstruction(unittest.TestCase):
     def test_init_default_session_name(self):
         """默认 session 名来自 config['agent_browser']['default_session']"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         config = {"agent_browser": {"default_session": "real_env_test"}}
         runner = AgentBrowserRunner(config)
         self.assertEqual(runner._default_session, "real_env_test")
@@ -46,6 +48,7 @@ class TestAgentBrowserRunnerConstruction(unittest.TestCase):
     def test_init_explicit_session_overrides_config(self):
         """显式 session_name 覆盖 config 默认值"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         config = {"agent_browser": {"default_session": "from_config"}}
         runner = AgentBrowserRunner(config, session_name="override")
         self.assertEqual(runner._session_name, "override")
@@ -53,18 +56,21 @@ class TestAgentBrowserRunnerConstruction(unittest.TestCase):
     def test_init_default_timeout(self):
         """默认 timeout=30s"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         runner = AgentBrowserRunner({})
         self.assertEqual(runner._timeout, 30)
 
     def test_init_executable_default(self):
         """默认 executable='agent-browser'（已在 PATH）"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         runner = AgentBrowserRunner({})
         self.assertEqual(runner._executable, "agent-browser")
 
     def test_init_config_values(self):
         """从 config['agent_browser'] 读取所有字段"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         config = {
             "agent_browser": {
                 "executable": "/usr/local/bin/agent-browser",
@@ -84,6 +90,7 @@ class TestAgentBrowserRunnerConstruction(unittest.TestCase):
     def test_init_headless_default_true(self):
         """默认 headless=True"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         runner = AgentBrowserRunner({})
         self.assertTrue(runner._headless)
 
@@ -96,6 +103,7 @@ class TestStepToArgs(unittest.TestCase):
 
     def setUp(self):
         from core.agent_browser_runner import AgentBrowserRunner
+
         self.runner = AgentBrowserRunner({})
 
     def test_open_command(self):
@@ -175,15 +183,19 @@ class TestBuildCommand(unittest.TestCase):
     def test_command_with_session_injection(self):
         """默认 session 注入到 executable 后"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         runner = AgentBrowserRunner(
             {"agent_browser": {"default_session": "my_sess"}},
         )
         cmd = runner._build_command(["open", "https://example.com"])
-        self.assertEqual(cmd, ["agent-browser", "--session-name", "my_sess", "open", "https://example.com"])
+        self.assertEqual(
+            cmd, ["agent-browser", "--session-name", "my_sess", "open", "https://example.com"]
+        )
 
     def test_command_with_explicit_session(self):
         """显式 session 覆盖默认"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         runner = AgentBrowserRunner(
             {"agent_browser": {"default_session": "default"}},
         )
@@ -193,6 +205,7 @@ class TestBuildCommand(unittest.TestCase):
     def test_command_no_session_when_disabled(self):
         """default_session 为空且无显式 session 时不注入"""
         from core.agent_browser_runner import AgentBrowserRunner
+
         runner = AgentBrowserRunner({})  # 无配置
         runner._default_session = None
         cmd = runner._build_command(["snapshot"])
@@ -207,13 +220,15 @@ class TestRunCommand(unittest.TestCase):
 
     def setUp(self):
         from core.agent_browser_runner import AgentBrowserRunner
+
         self.runner = AgentBrowserRunner({"agent_browser": {"default_session": "test"}})
 
     @patch("core.agent_browser_runner.subprocess.run")
     def test_run_command_success(self, mock_run):
         """成功执行：exit_code=0，stdout 写入 step"""
         mock_run.return_value = MagicMock(
-            returncode=0, stdout="@e1 [input type='email']\n@e2 [input type='password']",
+            returncode=0,
+            stdout="@e1 [input type='email']\n@e2 [input type='password']",
             stderr="",
         )
         step = self.runner.run_command(["snapshot", "-i"])
@@ -231,7 +246,9 @@ class TestRunCommand(unittest.TestCase):
     def test_run_command_failure(self, mock_run):
         """命令失败：exit_code!=0，stderr 写入 step"""
         mock_run.return_value = MagicMock(
-            returncode=1, stdout="", stderr="Error: element @e1 not found",
+            returncode=1,
+            stdout="",
+            stderr="Error: element @e1 not found",
         )
         step = self.runner.run_command(["click", "@e99"])
         self.assertEqual(step.exit_code, 1)
@@ -263,6 +280,7 @@ class TestRunTask(unittest.TestCase):
 
     def setUp(self):
         from core.agent_browser_runner import AgentBrowserRunner
+
         self.runner = AgentBrowserRunner({"agent_browser": {"default_session": "test"}})
 
     @patch("core.agent_browser_runner.subprocess.run")
@@ -316,6 +334,7 @@ class TestRunTaskFromYAML(unittest.TestCase):
 
     def setUp(self):
         from core.agent_browser_runner import AgentBrowserRunner
+
         self.runner = AgentBrowserRunner({"agent_browser": {"default_session": "test"}})
 
     @patch("core.agent_browser_runner.subprocess.run")
@@ -360,6 +379,7 @@ class TestRunBatch(unittest.TestCase):
 
     def setUp(self):
         from core.agent_browser_runner import AgentBrowserRunner
+
         self.runner = AgentBrowserRunner({"agent_browser": {"default_session": "test"}})
 
     @patch("core.agent_browser_runner.subprocess.run")
@@ -399,6 +419,7 @@ class TestVerificationIntegration(unittest.TestCase):
 
     def setUp(self):
         from core.agent_browser_runner import AgentBrowserRunner
+
         self.runner = AgentBrowserRunner({"agent_browser": {"default_session": "test"}})
 
     @patch("core.agent_browser_runner.subprocess.run")
@@ -437,7 +458,9 @@ class TestVerificationIntegration(unittest.TestCase):
     def test_url_contains_verification(self, mock_run):
         """url_contains 断言：调用 get url，从 stdout 检查"""
         mock_run.return_value = MagicMock(
-            returncode=0, stdout="https://example.com/dashboard", stderr="",
+            returncode=0,
+            stdout="https://example.com/dashboard",
+            stderr="",
         )
         assertions = {"url_contains": "/dashboard"}
         result = self.runner._run_verification(assertions)
@@ -450,7 +473,9 @@ class TestVerificationIntegration(unittest.TestCase):
     def test_url_contains_verification_failed(self, mock_run):
         """url_contains 断言失败"""
         mock_run.return_value = MagicMock(
-            returncode=0, stdout="https://example.com/login", stderr="",
+            returncode=0,
+            stdout="https://example.com/login",
+            stderr="",
         )
         assertions = {"url_contains": "/dashboard"}
         result = self.runner._run_verification(assertions)
@@ -472,17 +497,25 @@ class TestAgentBrowserResult(unittest.TestCase):
 
     def test_step_default(self):
         from core.agent_browser_runner import AgentBrowserStep
+
         step = AgentBrowserStep(
-            command="agent-browser snapshot", exit_code=0,
-            stdout="...", stderr="", duration_ms=10.0,
+            command="agent-browser snapshot",
+            exit_code=0,
+            stdout="...",
+            stderr="",
+            duration_ms=10.0,
         )
         self.assertEqual(step.exit_code, 0)
         self.assertEqual(step.duration_ms, 10.0)
 
     def test_result_default(self):
         from core.agent_browser_runner import AgentBrowserResult
+
         result = AgentBrowserResult(
-            task="form submit", passed=True, steps=[], duration_ms=100.0,
+            task="form submit",
+            passed=True,
+            steps=[],
+            duration_ms=100.0,
         )
         self.assertTrue(result.passed)
         self.assertEqual(result.task, "form submit")
@@ -491,12 +524,19 @@ class TestAgentBrowserResult(unittest.TestCase):
 
     def test_result_to_dict(self):
         from core.agent_browser_runner import AgentBrowserResult, AgentBrowserStep
+
         step = AgentBrowserStep(
             command="agent-browser open https://example.com",
-            exit_code=0, stdout="", stderr="", duration_ms=50.0,
+            exit_code=0,
+            stdout="",
+            stderr="",
+            duration_ms=50.0,
         )
         result = AgentBrowserResult(
-            task="t", passed=True, steps=[step], duration_ms=100.0,
+            task="t",
+            passed=True,
+            steps=[step],
+            duration_ms=100.0,
         )
         d = result.to_dict()
         self.assertEqual(d["task"], "t")

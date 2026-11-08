@@ -7,6 +7,7 @@
 
 关联文档: COGNITIVE_ARCHITECTURE.md §5.4 P2-7 / spec 2026-08-05-cognitive-science-p2-p3-design.md §3
 """
+
 from __future__ import annotations
 
 import json
@@ -19,21 +20,22 @@ from typing import Dict, List
 @dataclass
 class RuminationFinding:
     """反刍发现的模式"""
-    pattern_key: str              # "BTC|ranging|LONG" 格式
-    observed_rate: float          # 观察到的胜率
-    baseline_rate: float          # 基线胜率
-    sample_n: int                 # 样本数
-    deviation_pct: float          # 偏离基线百分比
-    finding_text: str             # 自然语言描述
-    generated_at: str             # ISO 时间戳
+
+    pattern_key: str  # "BTC|ranging|LONG" 格式
+    observed_rate: float  # 观察到的胜率
+    baseline_rate: float  # 基线胜率
+    sample_n: int  # 样本数
+    deviation_pct: float  # 偏离基线百分比
+    finding_text: str  # 自然语言描述
+    generated_at: str  # ISO 时间戳
 
 
 class RuminationEngine:
     """静息态反刍引擎（对齐 DMN 默认模式网络）"""
 
-    DEVIATION_THRESHOLD = 0.15    # 偏离基线 15% 才记录
-    MIN_SAMPLE_SIZE = 3           # 最小样本数
-    LOOKBACK_DAYS = 7             # 默认回看天数
+    DEVIATION_THRESHOLD = 0.15  # 偏离基线 15% 才记录
+    MIN_SAMPLE_SIZE = 3  # 最小样本数
+    LOOKBACK_DAYS = 7  # 默认回看天数
 
     def ruminate(self, episodes_dir: str, lookback_days: int = 7) -> List[RuminationFinding]:
         """从近期 episode 提取模式"""
@@ -55,15 +57,17 @@ class RuminationEngine:
                 continue
             deviation = (observed - baseline) / baseline
             if abs(deviation) >= self.DEVIATION_THRESHOLD:
-                findings.append(RuminationFinding(
-                    pattern_key=key,
-                    observed_rate=round(observed, 4),
-                    baseline_rate=round(baseline, 4),
-                    sample_n=len(group),
-                    deviation_pct=round(deviation, 4),
-                    finding_text=self._build_finding_text(key, observed, baseline, len(group)),
-                    generated_at=datetime.now(timezone.utc).isoformat(),
-                ))
+                findings.append(
+                    RuminationFinding(
+                        pattern_key=key,
+                        observed_rate=round(observed, 4),
+                        baseline_rate=round(baseline, 4),
+                        sample_n=len(group),
+                        deviation_pct=round(deviation, 4),
+                        finding_text=self._build_finding_text(key, observed, baseline, len(group)),
+                        generated_at=datetime.now(timezone.utc).isoformat(),
+                    )
+                )
         return findings
 
     def _load_recent_episodes(self, episodes_dir: str, lookback_days: int) -> List[Dict]:
@@ -113,6 +117,8 @@ class RuminationEngine:
         regime = parts[1] if len(parts) > 1 else "unknown"
         direction = parts[2] if len(parts) > 2 else "UNKNOWN"
         deviation_pct = (observed - baseline) / max(baseline, 0.01) * 100
-        return (f"近{self.LOOKBACK_DAYS}天 {coin} {regime} {direction} "
-                f"胜率 {observed:.1%} vs 基线 {baseline:.1%} "
-                f"(样本{n}, 偏离{deviation_pct:+.1%})")
+        return (
+            f"近{self.LOOKBACK_DAYS}天 {coin} {regime} {direction} "
+            f"胜率 {observed:.1%} vs 基线 {baseline:.1%} "
+            f"(样本{n}, 偏离{deviation_pct:+.1%})"
+        )

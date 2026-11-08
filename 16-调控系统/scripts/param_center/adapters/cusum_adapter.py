@@ -16,6 +16,7 @@ StructuralBreakDetector.detect_all(price, returns=None, benchmark=None) -> dict
   - 突变 + market_form="revert" → 下跌/反转突变 → 宽SL紧TP
   - 突变 + volatility_regime="high_vol" → 高波动 → 提升 ATR 倍数
 """
+
 from __future__ import annotations
 
 import sys as _sys
@@ -27,8 +28,8 @@ from .base import BaseAdapter
 
 # 路径设置：注入 23-四层闭环自进化交易架构 到 sys.path
 _THIS = _Path(__file__).resolve()
-_SCRIPTS_16 = _THIS.parent.parent.parent          # .../16-调控系统/scripts
-_PROJECT_ROOT = _SCRIPTS_16.parent.parent          # dreambuddy-v2
+_SCRIPTS_16 = _THIS.parent.parent.parent  # .../16-调控系统/scripts
+_PROJECT_ROOT = _SCRIPTS_16.parent.parent  # dreambuddy-v2
 _EVO_ROOT = _PROJECT_ROOT / "23-四层闭环自进化交易架构"
 if str(_EVO_ROOT) not in _sys.path:
     _sys.path.insert(0, str(_EVO_ROOT))
@@ -53,6 +54,7 @@ class CusumAdapter(BaseAdapter):
             from dreambuddy_evolution.core.structural_break_detector import (
                 StructuralBreakDetector,
             )
+
             detector = StructuralBreakDetector(min_samples=60)
             # detect_all 接受 price ndarray
             result = detector.detect_all(closes)
@@ -67,7 +69,7 @@ class CusumAdapter(BaseAdapter):
         vrs = result.get("volatility_regime_shift") or {}
 
         current_form = str(mfs.get("current_form", "random"))  # trend/revert/random
-        vol_regime = str(vrs.get("current_regime", "normal"))   # high_vol/low_vol
+        vol_regime = str(vrs.get("current_regime", "normal"))  # high_vol/low_vol
 
         # 基础参数
         sl_floor = 0.05

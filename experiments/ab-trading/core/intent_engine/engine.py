@@ -11,18 +11,17 @@ S链核心：意图识别引擎
 - Layer 3: 落地（线/网 → 可执行蓝图）
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
-from .types import (
-    Objective,
-    KeyResult,
-    OKRSet,
-    ExecutionBlueprint,
-    IntentRecognitionResult,
-)
 from .layer1_intent.objective_extractor import ObjectiveExtractor
 from .layer2_okr.okr_builder import OKRBuilder
 from .layer3_blueprint.blueprint_builder import BlueprintBuilder
+from .types import (
+    ExecutionBlueprint,
+    IntentRecognitionResult,
+    Objective,
+    OKRSet,
+)
 
 
 class IntentRecognitionEngine:
@@ -70,17 +69,15 @@ class IntentRecognitionEngine:
         result = IntentRecognitionResult()
 
         try:
-            objective = self._extract_objective(
-                user_message, mkt_data, signals, context
-            )
+            objective = self._extract_objective(user_message, mkt_data, signals, context)
             result.objective = objective
 
             if objective.clarify_needed:
-                result.state = 'clarifying'
+                result.state = "clarifying"
                 result.confidence = objective.confidence
                 result.clarify_question = objective.clarify_question
                 result.clarify_options = objective.clarify_options
-                result.rationale = f'需要澄清目标：{objective.clarify_question}'
+                result.rationale = f"需要澄清目标：{objective.clarify_question}"
 
                 if session_id:
                     self._sessions[session_id] = result
@@ -93,13 +90,13 @@ class IntentRecognitionEngine:
             blueprint = self._build_blueprint(okr_set)
             result.blueprint = blueprint
 
-            state = 'confirmed' if blueprint.confidence >= 0.3 else 'clarifying'
+            state = "confirmed" if blueprint.confidence >= 0.3 else "clarifying"
             result.state = state
             result.confidence = blueprint.confidence
             result.rationale = (
-                f'[Layer1] 收敛: {objective.title} (置信度:{objective.confidence:.2f}) → '
-                f'[Layer2] 展开: {okr_set.mode}模式, {len(okr_set.key_results)}个KR → '
-                f'[Layer3] 落地: {blueprint.execution_mode}模式, {len(blueprint.node_sequence)}个节点'
+                f"[Layer1] 收敛: {objective.title} (置信度:{objective.confidence:.2f}) → "
+                f"[Layer2] 展开: {okr_set.mode}模式, {len(okr_set.key_results)}个KR → "
+                f"[Layer3] 落地: {blueprint.execution_mode}模式, {len(blueprint.node_sequence)}个节点"
             )
 
             if session_id:
@@ -108,9 +105,9 @@ class IntentRecognitionEngine:
             return result
 
         except Exception as e:
-            result.state = 'error'
+            result.state = "error"
             result.confidence = 0.0
-            result.rationale = f'意图识别失败: {str(e)}'
+            result.rationale = f"意图识别失败: {str(e)}"
             return result
 
     def _extract_objective(
@@ -153,16 +150,16 @@ class IntentRecognitionEngine:
         """
         if session_id not in self._sessions:
             result = IntentRecognitionResult()
-            result.state = 'error'
-            result.rationale = '会话不存在'
+            result.state = "error"
+            result.rationale = "会话不存在"
             return result
 
         prev_result = self._sessions[session_id]
 
-        if prev_result.state != 'clarifying':
+        if prev_result.state != "clarifying":
             return prev_result
 
-        if answer in ['confirm', '是的', '是', '对', 'yes']:
+        if answer in ["confirm", "是的", "是", "对", "yes"]:
             objective = prev_result.objective
             objective.clarify_needed = False
 
@@ -173,21 +170,21 @@ class IntentRecognitionEngine:
                 objective=objective,
                 okr_set=okr_set,
                 blueprint=blueprint,
-                state='confirmed',
+                state="confirmed",
                 confidence=blueprint.confidence,
                 rationale=(
-                    f'确认目标：{objective.title} → '
-                    f'{okr_set.mode}模式 → {blueprint.execution_mode}执行'
+                    f"确认目标：{objective.title} → "
+                    f"{okr_set.mode}模式 → {blueprint.execution_mode}执行"
                 ),
             )
             self._sessions[session_id] = result
             return result
-        elif answer in ['reject', '不是', '否', '不对', 'no']:
+        elif answer in ["reject", "不是", "否", "不对", "no"]:
             result = IntentRecognitionResult(
                 objective=prev_result.objective,
-                state='rejected',
+                state="rejected",
                 confidence=0.0,
-                rationale='用户拒绝目标识别结果',
+                rationale="用户拒绝目标识别结果",
             )
             self._sessions[session_id] = result
             return result
@@ -201,16 +198,17 @@ class IntentRecognitionEngine:
         """注册新的目标类型（可扩展）"""
         from .layer1_intent.objective_types import OBJECTIVE_TYPES
 
-        if not definition or 'id' not in definition:
+        if not definition or "id" not in definition:
             return False
 
-        obj_id = definition['id']
+        obj_id = definition["id"]
         OBJECTIVE_TYPES[obj_id] = definition
         return True
 
     def get_supported_objectives(self) -> List[str]:
         """获取支持的目标类型列表"""
         from .layer1_intent.objective_types import list_objective_types
+
         return list_objective_types()
 
     def get_session_result(self, session_id: str) -> Optional[IntentRecognitionResult]:

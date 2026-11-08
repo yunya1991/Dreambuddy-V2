@@ -11,6 +11,7 @@
 - `health_check()` 可在 CLI/MCP 中做连通性自检；
 - 失败重试 + 超时，不让一次网络抖动毁掉整场辩论。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -26,7 +27,7 @@ class LLMUnavailable(RuntimeError):
 
 @dataclass
 class LLMSettings:
-    provider: str = "auto"          # auto | anthropic | openai_compat | langchain
+    provider: str = "auto"  # auto | anthropic | openai_compat | langchain
     model: str | None = None
     base_url: str | None = None
     api_key: str | None = None
@@ -43,8 +44,9 @@ class BaseLLM:
         self.settings = settings
         self.model = settings.model
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int | None = None) -> str:
+    async def chat(
+        self, system_prompt: str, user_prompt: str, max_tokens: int | None = None
+    ) -> str:
         raise NotImplementedError
 
     def describe(self) -> dict[str, Any]:
@@ -76,7 +78,9 @@ class AnthropicLLM(BaseLLM):
 
         self.api_key = settings.api_key or os.environ.get("ANTHROPIC_AUTH_TOKEN")
         self.settings.base_url = settings.base_url or os.environ.get("ANTHROPIC_BASE_URL")
-        self.model = settings.model or os.environ.get("ANTHROPIC_MODEL") or "claude-sonnet-latest[1M]"
+        self.model = (
+            settings.model or os.environ.get("ANTHROPIC_MODEL") or "claude-sonnet-latest[1M]"
+        )
         if not self.api_key or not self.settings.base_url:
             raise LLMUnavailable(
                 "Anthropic 配置缺失：需要 ANTHROPIC_AUTH_TOKEN 与 ANTHROPIC_BASE_URL"
@@ -89,8 +93,9 @@ class AnthropicLLM(BaseLLM):
             default_headers={"Authorization": f"Bearer {self.api_key}"},
         )
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int | None = None) -> str:
+    async def chat(
+        self, system_prompt: str, user_prompt: str, max_tokens: int | None = None
+    ) -> str:
         last_error: Exception | None = None
         for attempt in range(self.settings.max_retries + 1):
             try:
@@ -105,7 +110,7 @@ class AnthropicLLM(BaseLLM):
                 last_error = exc
                 if attempt >= self.settings.max_retries:
                     break
-                await asyncio.sleep(min(2 ** attempt, 4))
+                await asyncio.sleep(min(2**attempt, 4))
         raise LLMUnavailable(f"Anthropic 调用失败: {last_error}") from last_error
 
 
@@ -138,8 +143,9 @@ class OpenAICompatLLM(BaseLLM):
             max_retries=0,
         )
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int | None = None) -> str:
+    async def chat(
+        self, system_prompt: str, user_prompt: str, max_tokens: int | None = None
+    ) -> str:
         last_error: Exception | None = None
         for attempt in range(self.settings.max_retries + 1):
             try:
@@ -157,7 +163,7 @@ class OpenAICompatLLM(BaseLLM):
                 last_error = exc
                 if attempt >= self.settings.max_retries:
                     break
-                await asyncio.sleep(min(2 ** attempt, 4))
+                await asyncio.sleep(min(2**attempt, 4))
         raise LLMUnavailable(f"OpenAI 兼容调用失败: {last_error}") from last_error
 
 
@@ -175,10 +181,12 @@ class LangChainLLM(BaseLLM):
             ) from exc
         self._inner = create_llm_adapter(model_name=settings.model or "qwen-plus")
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int | None = None) -> str:
+    async def chat(
+        self, system_prompt: str, user_prompt: str, max_tokens: int | None = None
+    ) -> str:
         return await self._inner.chat(
-            system_prompt, user_prompt,
+            system_prompt,
+            user_prompt,
             max_tokens or self.settings.max_tokens,
         )
 

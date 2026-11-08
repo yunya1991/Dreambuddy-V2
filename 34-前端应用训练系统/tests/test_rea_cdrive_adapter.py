@@ -4,23 +4,20 @@
 RED 阶段：assert ModuleNotFoundError / ImportError
 GREEN 阶段：实现 rea_cdrive_adapter.py 使测试通过
 """
-import os
-import sys
-import tempfile
-import textwrap
-from pathlib import Path
 
-import pytest
+import os  # noqa: I001
+import sys
+import textwrap
 
 # 确保能导入 core 模块
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from interfaces.rea_parser import REAParseResult
 
-
 # ============================================================
 # 辅助函数
 # ============================================================
+
 
 def _make_rea_result(
     known_gaps=None,
@@ -46,19 +43,23 @@ def _make_rea_result(
 # 1. 模块导入测试 (RED: ModuleNotFoundError)
 # ============================================================
 
+
 class TestModuleImport:
     """验证 rea_cdrive_adapter 模块可导入"""
 
     def test_import_derive_decision_from_rea(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         assert callable(derive_decision_from_rea)
 
     def test_import_load_keyword_map(self):
         from core.rea_cdrive_adapter import _load_keyword_map
+
         assert callable(_load_keyword_map)
 
     def test_module_constants(self):
         from core.rea_cdrive_adapter import REA_CONF_THRESHOLD, REA_UNKNOWN_LEVEL
+
         assert isinstance(REA_CONF_THRESHOLD, float)
         assert REA_UNKNOWN_LEVEL == "UNKNOWN"
 
@@ -67,61 +68,74 @@ class TestModuleImport:
 # 2. known_gaps 关键词 → 决策映射
 # ============================================================
 
+
 class TestKnownGapsMapping:
     """known_gaps 关键词 → expected_decision 映射"""
 
     def test_missing_gap_returns_insert_before(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["missing function handle_debate"])
         assert derive_decision_from_rea(result) == "INSERT_BEFORE"
 
     def test_missing_gap_chinese(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["缺失未实现的接口"])
         assert derive_decision_from_rea(result) == "INSERT_BEFORE"
 
     def test_wrong_gap_returns_redo(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["wrong implementation in parser"])
         assert derive_decision_from_rea(result) == "REDO"
 
     def test_bug_gap_returns_redo(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["bug in circular reference"])
         assert derive_decision_from_rea(result) == "REDO"
 
     def test_dead_gap_returns_early_terminate(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["dead code path detected"])
         assert derive_decision_from_rea(result) == "EARLY_TERMINATE"
 
     def test_redundant_gap_returns_early_terminate(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["冗余的无用代码块"])
         assert derive_decision_from_rea(result) == "EARLY_TERMINATE"
 
     def test_circular_dependency_returns_redo(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["circular dependency in module A"])
         assert derive_decision_from_rea(result) == "REDO"
 
     def test_circular_dependency_chinese_returns_redo(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["循环依赖 in import chain"])
         assert derive_decision_from_rea(result) == "REDO"
 
     def test_first_matching_gap_wins(self):
         """多个 gaps 时，第一个匹配的 gap 决定决策"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
-        result = _make_rea_result(known_gaps=[
-            "missing interface",   # INSERT_BEFORE
-            "wrong logic",         # REDO (不应到达)
-        ])
+
+        result = _make_rea_result(
+            known_gaps=[
+                "missing interface",  # INSERT_BEFORE
+                "wrong logic",  # REDO (不应到达)
+            ]
+        )
         assert derive_decision_from_rea(result) == "INSERT_BEFORE"
 
     def test_no_matching_gap_returns_none(self):
         """known_gaps 不匹配任何关键词 → None（降级）"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(known_gaps=["unrelated information"])
         assert derive_decision_from_rea(result) is None
 
@@ -130,11 +144,13 @@ class TestKnownGapsMapping:
 # 3. call_chain 断裂检测
 # ============================================================
 
+
 class TestCallChainBreak:
     """call_chain 有断裂 → INSERT_BEFORE"""
 
     def test_empty_call_chain_returns_insert_before(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         # 直接构造 REAParseResult（绕过 helper 的 falsy fallback）
         result = REAParseResult(
             algorithm_patterns=["test"],
@@ -149,6 +165,7 @@ class TestCallChainBreak:
     def test_broken_call_chain_returns_insert_before(self):
         """call_chain 含断裂标记 → INSERT_BEFORE"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(call_chain=["func_a -> ???", "func_b -> func_c"])
         assert derive_decision_from_rea(result) == "INSERT_BEFORE"
 
@@ -157,11 +174,13 @@ class TestCallChainBreak:
 # 4. dependency_graph 循环检测
 # ============================================================
 
+
 class TestDependencyCycle:
     """dependency_graph 有环 → REDO"""
 
     def test_circular_dependency_graph_returns_redo(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         # A→B→C→A 形成环
         dep_graph = {"A": ["B"], "B": ["C"], "C": ["A"]}
         result = _make_rea_result(dependency_graph=dep_graph)
@@ -170,6 +189,7 @@ class TestDependencyCycle:
     def test_no_cycle_in_dependency_graph(self):
         """无环的 dependency_graph 不触发 REDO"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         dep_graph = {"A": ["B"], "B": ["C"], "C": []}
         result = _make_rea_result(dependency_graph=dep_graph, known_gaps=[])
         # 无 gap + 无环 + 高 confidence → None
@@ -180,23 +200,27 @@ class TestDependencyCycle:
 # 5. confidence 阈值
 # ============================================================
 
+
 class TestConfidenceThreshold:
     """confidence < 0.3 → REDO（对齐 CDRIVE_CONF_REDO）"""
 
     def test_low_confidence_returns_redo(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(confidence=0.2, known_gaps=[])
         assert derive_decision_from_rea(result) == "REDO"
 
     def test_boundary_confidence_03_not_redo(self):
         """confidence = 0.3 不触发 REDO（< 0.3 才触发）"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(confidence=0.3, known_gaps=[])
         assert derive_decision_from_rea(result) is None
 
     def test_high_confidence_returns_none(self):
         """高 confidence + 无 gap → None"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(confidence=0.9, known_gaps=[])
         assert derive_decision_from_rea(result) is None
 
@@ -205,17 +229,20 @@ class TestConfidenceThreshold:
 # 6. evidence_level UNKNOWN
 # ============================================================
 
+
 class TestEvidenceLevelUnknown:
     """evidence_level = UNKNOWN → EARLY_TERMINATE"""
 
     def test_unknown_evidence_returns_early_terminate(self):
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(evidence_level="UNKNOWN", known_gaps=[])
         assert derive_decision_from_rea(result) == "EARLY_TERMINATE"
 
     def test_normal_evidence_not_terminate(self):
         """非 UNKNOWN evidence_level 不触发 EARLY_TERMINATE"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(evidence_level="L3", known_gaps=[])
         assert derive_decision_from_rea(result) is None
 
@@ -224,12 +251,14 @@ class TestEvidenceLevelUnknown:
 # 7. FAIL-OPEN 测试
 # ============================================================
 
+
 class TestFailOpen:
     """无信号时返回 None（降级到 P3/P2/P1）"""
 
     def test_clean_result_returns_none(self):
         """无 gap + 高 confidence + 正常 evidence → None"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         result = _make_rea_result(
             known_gaps=[],
             confidence=0.9,
@@ -242,6 +271,7 @@ class TestFailOpen:
     def test_none_result_returns_none(self):
         """rea_result = None → None"""
         from core.rea_cdrive_adapter import derive_decision_from_rea
+
         assert derive_decision_from_rea(None) is None
 
 
@@ -249,23 +279,27 @@ class TestFailOpen:
 # 8. 关键词配置外部化 (YAML)
 # ============================================================
 
+
 class TestKeywordMapYAML:
     """关键词映射外部化到 YAML 配置"""
 
     def test_load_keyword_map_returns_dict(self):
         from core.rea_cdrive_adapter import _load_keyword_map
+
         km = _load_keyword_map()
         assert isinstance(km, dict)
         assert "known_gaps_map" in km
 
     def test_keyword_map_has_entries(self):
         from core.rea_cdrive_adapter import _load_keyword_map
+
         km = _load_keyword_map()
         gaps_map = km["known_gaps_map"]
         assert len(gaps_map) >= 4  # missing/wrong/dead/circular
 
     def test_keyword_map_entries_have_pattern_and_decision(self):
         from core.rea_cdrive_adapter import _load_keyword_map
+
         km = _load_keyword_map()
         for entry in km["known_gaps_map"]:
             assert "pattern" in entry
@@ -274,6 +308,7 @@ class TestKeywordMapYAML:
     def test_keyword_map_fallback_on_missing_file(self, tmp_path):
         """YAML 配置文件不存在时使用内置默认映射"""
         from core.rea_cdrive_adapter import _load_keyword_map
+
         # 指向不存在的路径
         km = _load_keyword_map(config_path="/nonexistent/rea_keyword_map.yaml")
         assert isinstance(km, dict)
@@ -282,7 +317,7 @@ class TestKeywordMapYAML:
 
     def test_keyword_map_custom_config(self, tmp_path):
         """自定义 YAML 配置可覆盖默认映射"""
-        from core.rea_cdrive_adapter import _load_keyword_map, derive_decision_from_rea
+        from core.rea_cdrive_adapter import _load_keyword_map
 
         custom_yaml = tmp_path / "custom_map.yaml"
         custom_yaml.write_text(textwrap.dedent("""\
@@ -299,12 +334,13 @@ class TestKeywordMapYAML:
 # 9. 优先级链测试 (P4 → P2 → P1 降级)
 # ============================================================
 
+
 class TestPriorityChain:
     """P4(33-REA) 优先于 P2(C-Drive) 优先于 P1(语义)"""
 
     def test_p4_signal_takes_priority_over_p1(self):
         """33-REA 产出 REDO 信号时，不被 P1 的 CONTINUE 覆盖"""
-        from core.rea_cdrive_adapter import derive_decision_from_rea
+        from core.rea_cdrive_adapter import derive_decision_from_rea  # noqa: I001
         from core.decision_deriver import derive_expected_decision
 
         rea_result = _make_rea_result(known_gaps=["wrong bug"], confidence=0.9)
@@ -325,7 +361,7 @@ class TestPriorityChain:
 
     def test_p4_none_degrades_to_p1(self):
         """P4 无信号时降级到 P1"""
-        from core.rea_cdrive_adapter import derive_decision_from_rea
+        from core.rea_cdrive_adapter import derive_decision_from_rea  # noqa: I001
         from core.decision_deriver import derive_expected_decision
 
         rea_result = _make_rea_result(known_gaps=[], confidence=0.9)
@@ -345,6 +381,7 @@ class TestPriorityChain:
 # ============================================================
 # 10. 集成测试
 # ============================================================
+
 
 class TestIntegrationChain:
     """P4 集成到训练数据构造链"""
@@ -372,7 +409,7 @@ class TestIntegrationChain:
 
     def test_p4_none_case_falls_through_to_p3_p2_p1(self):
         """P4 无信号时，case 继续走 P3→P2→P1 链"""
-        from types import SimpleNamespace
+        from types import SimpleNamespace  # noqa: I001
         from core.rea_cdrive_adapter import derive_decision_from_rea
         from core.decision_deriver import derive_expected_decision_with_cdrive
 

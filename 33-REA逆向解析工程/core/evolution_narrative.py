@@ -6,17 +6,16 @@ Evidence-First 硬约束：每条结论带 Evidence（NFR-1）。
 Inference 控制：动机推断必须为 inference 级 + known_gaps 非空（NFR-1a）。
 FAIL-OPEN：非 git 仓库/异常时返回 level=unknown Evidence（NFR-7）。
 """
+
 from __future__ import annotations
 
 import os
 import re
 import subprocess
-from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from .evidence import Evidence, EvidenceLevel
-
 
 # 重构动机关键字 → 推断的动机标签
 _REFACTOR_MOTIVATIONS = {
@@ -40,9 +39,11 @@ _DEBT_MARKERS = ("TODO", "FIXME", "XXX", "HACK")
 
 # ---------- 数据结构 ----------
 
+
 @dataclass
 class TurningPoint:
     """架构转折点。"""
+
     commit: str
     message: str
     change_stats: dict[str, int]
@@ -62,6 +63,7 @@ class TurningPoint:
 @dataclass
 class TechDebtItem:
     """技术债时间线条目。"""
+
     commit: str
     file: str
     line: int
@@ -79,6 +81,7 @@ class TechDebtItem:
 
 
 # ---------- 工具函数 ----------
+
 
 def _run_git(args: list[str], cwd: str) -> tuple[int, str, str]:
     """执行 git 子进程（只读）。"""
@@ -103,6 +106,7 @@ def _is_git_repo(target: str) -> bool:
 
 
 # ---------- 叙事生成器 ----------
+
 
 class EvolutionNarrator:
     """演化叙事生成器。
@@ -196,20 +200,23 @@ class EvolutionNarrator:
             all_evidence.append(ev)
 
         # 概览 Evidence
-        all_evidence.insert(0, Evidence(
-            result=f"仓库演化叙事: {len(commits)} 次 commit, {len(turning_points)} 个转折点, {len(debt_items)} 条技术债",
-            level=EvidenceLevel.DERIVATION,
-            provenance={
-                "repo": target,
-                "analysis": "evolution_narrative_summary",
-                "commit_count": len(commits),
-            },
-            confidence=0.9,
-            known_gaps=[
-                "叙事仅基于 git 静态分析，不含运行时行为变化",
-                "无 --cc 选项，合并提交内容未展开",
-            ],
-        ))
+        all_evidence.insert(
+            0,
+            Evidence(
+                result=f"仓库演化叙事: {len(commits)} 次 commit, {len(turning_points)} 个转折点, {len(debt_items)} 条技术债",
+                level=EvidenceLevel.DERIVATION,
+                provenance={
+                    "repo": target,
+                    "analysis": "evolution_narrative_summary",
+                    "commit_count": len(commits),
+                },
+                confidence=0.9,
+                known_gaps=[
+                    "叙事仅基于 git 静态分析，不含运行时行为变化",
+                    "无 --cc 选项，合并提交内容未展开",
+                ],
+            ),
+        )
 
         return {
             "target": target,
@@ -232,20 +239,22 @@ class EvolutionNarrator:
         )
         if rc != 0 or not out:
             # 退化：仅取 hash + message
-            rc, out, _ = _run_git(["log", "--no-merges", f"--format=%H%x01%s"], repo)
+            rc, out, _ = _run_git(["log", "--no-merges", "--format=%H%x01%s"], repo)
             if rc != 0 or not out:
                 return []
             commits = []
             for line in out.strip().split("\n"):
                 parts = line.split("\x01")
                 if len(parts) >= 2:
-                    commits.append({
-                        "hash": parts[0],
-                        "message": parts[1],
-                        "files_changed": 0,
-                        "insertions": 0,
-                        "deletions": 0,
-                    })
+                    commits.append(
+                        {
+                            "hash": parts[0],
+                            "message": parts[1],
+                            "files_changed": 0,
+                            "insertions": 0,
+                            "deletions": 0,
+                        }
+                    )
             return commits
 
         commits = []
@@ -278,13 +287,15 @@ class EvolutionNarrator:
                 if m:
                     deletions = int(m.group(1))
 
-            commits.append({
-                "hash": commit_hash,
-                "message": message,
-                "files_changed": files_changed,
-                "insertions": insertions,
-                "deletions": deletions,
-            })
+            commits.append(
+                {
+                    "hash": commit_hash,
+                    "message": message,
+                    "files_changed": files_changed,
+                    "insertions": insertions,
+                    "deletions": deletions,
+                }
+            )
 
         return commits
 
@@ -340,13 +351,15 @@ class EvolutionNarrator:
                 )
                 commit_hash = blame_out.strip() if rc2 == 0 else "unknown"
 
-                items.append(TechDebtItem(
-                    commit=commit_hash,
-                    file=file_path,
-                    line=line_no,
-                    marker=marker,
-                    comment=content.strip()[:200],
-                ))
+                items.append(
+                    TechDebtItem(
+                        commit=commit_hash,
+                        file=file_path,
+                        line=line_no,
+                        marker=marker,
+                        comment=content.strip()[:200],
+                    )
+                )
 
         return items
 
@@ -370,6 +383,7 @@ class EvolutionNarrator:
 
 
 # ---------- 模块级入口 ----------
+
 
 def generate_narrative(target: str) -> dict[str, Any]:
     """演化叙事生成的模块级入口。

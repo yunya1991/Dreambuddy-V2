@@ -10,6 +10,7 @@ dal_snapshot_provider.py — 9-基本面分析 的 19-DAL 数据源。
   - 仅数值型指标从 mm_metrics 读取；news/narrative 保留 legacy（文本内容）
   - 派生字段（NVT、广度评分等）用已有指标计算，无数据则用合理默认值
 """
+
 from __future__ import annotations
 
 import logging
@@ -47,6 +48,7 @@ class DalSnapshotProvider:
         if self._repo is None:
             try:
                 from dreambuddy_dal import get_market_macro_repo
+
                 self._repo = get_market_macro_repo(backend="sqlite_unified")
             except Exception as exc:
                 logger.warning("[DalSnapshotProvider] 无法获取 DAL repo: %s", exc)
@@ -67,7 +69,9 @@ class DalSnapshotProvider:
                 return None
             return (float(row[1]), str(row[0]))
         except Exception as exc:
-            logger.debug("[DalSnapshotProvider] query_latest %s.%s 失败: %s", sub_category, metric_name, exc)
+            logger.debug(
+                "[DalSnapshotProvider] query_latest %s.%s 失败: %s", sub_category, metric_name, exc
+            )
             return None
 
     def _history(self, sub_category: str, metric_name: str, days: int = 30) -> List[Dict]:
@@ -79,10 +83,7 @@ class DalSnapshotProvider:
             end = datetime.now(timezone.utc)
             start = end - timedelta(days=days)
             rows = repo.query_metric_by_time(sub_category, metric_name, start, end)
-            return [
-                {"value": float(r[2]), "timestamp": r[3].isoformat()}
-                for r in rows
-            ]
+            return [{"value": float(r[2]), "timestamp": r[3].isoformat()} for r in rows]
         except Exception:
             return []
 
@@ -98,7 +99,19 @@ class DalSnapshotProvider:
         if total_flow == 0.0 and self._latest("etf_flow", "total_flow") is None:
             return None  # 无数据，回退 legacy
         etf_breakdown = {}
-        for col in ["FBTC", "IBIT", "GBTC", "EZBC", "BTCO", "BITB", "ARKB", "MSBT", "HODL", "BRRR", "BTCW"]:
+        for col in [
+            "FBTC",
+            "IBIT",
+            "GBTC",
+            "EZBC",
+            "BTCO",
+            "BITB",
+            "ARKB",
+            "MSBT",
+            "HODL",
+            "BRRR",
+            "BTCW",
+        ]:
             v = self._latest("etf_flow", col)
             if v is not None:
                 etf_breakdown[col] = v[0]
@@ -139,11 +152,17 @@ class DalSnapshotProvider:
             smart_money_score += 0.1
         smart_money_score = _clamp(smart_money_score, -1, 1)
         smart_money_direction = (
-            "显著流入" if smart_money_score > 0.3
-            else "流入" if smart_money_score > 0.1
-            else "流出" if smart_money_score < -0.3
-            else "显著流出" if smart_money_score < -0.1
-            else "中性"
+            "显著流入"
+            if smart_money_score > 0.3
+            else (
+                "流入"
+                if smart_money_score > 0.1
+                else (
+                    "流出"
+                    if smart_money_score < -0.3
+                    else "显著流出" if smart_money_score < -0.1 else "中性"
+                )
+            )
         )
 
         ts_data = self._history("etf_flow", "total_flow", days=30)
@@ -159,17 +178,23 @@ class DalSnapshotProvider:
                     "long_short_ratio": long_short_ratio,
                     "whale_activity": whale_activity,
                     "smart_money_direction": smart_money_direction,
-                    "flow_regime": "流入" if total_flow > 50 else "流出" if total_flow < -50 else "中性",
+                    "flow_regime": (
+                        "流入" if total_flow > 50 else "流出" if total_flow < -50 else "中性"
+                    ),
                 },
                 "breakdown": etf_breakdown,
             },
-            "events": [{
-                "title": f"BTC ETF 净流入 {total_flow:+.1f}M USD",
-                "content": f"稳定币占比 USDT {usdt_pct:.1f}% / USDC {usdc_pct:.1f}%；巨鲸净流 {whale_netflow_usd/1e6:+.0f}M USD",
-                "category": "资金流", "impact_score": 0.6,
-                "sentiment": round(smart_money_score, 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"BTC ETF 净流入 {total_flow:+.1f}M USD",
+                    "content": f"稳定币占比 USDT {usdt_pct:.1f}% / USDC {usdc_pct:.1f}%；巨鲸净流 {whale_netflow_usd/1e6:+.0f}M USD",
+                    "category": "资金流",
+                    "impact_score": 0.6,
+                    "sentiment": round(smart_money_score, 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": ts_data,
             "timestamp": _now_iso(),
         }
@@ -188,7 +213,12 @@ class DalSnapshotProvider:
         if cpi_index == 0.0 and fed_funds == 0.0 and cut_prob == 0.0:
             return None
         # 政策评分：降息概率高 + 加息概率低 → 宽松（+）；反之紧缩（-）
-        policy_score = _clamp((cut_prob - hike_prob) * 0.5 + (1.0 if rate_change < 0 else -1.0 if rate_change > 0 else 0.0) * 0.3, -1.0, 1.0)
+        policy_score = _clamp(
+            (cut_prob - hike_prob) * 0.5
+            + (1.0 if rate_change < 0 else -1.0 if rate_change > 0 else 0.0) * 0.3,
+            -1.0,
+            1.0,
+        )
         # 利率周期：按当前市场概率判断，而非历史决议
         if cut_prob > hold_prob and cut_prob > hike_prob:
             rate_cycle = "降息"
@@ -212,17 +242,22 @@ class DalSnapshotProvider:
                     "m2_supply": self._metric("M2SL", "value", 0.0),
                     "ppi": self._metric("PPIACO", "value", 0.0),
                     "industrial_production": self._metric("INDPRO", "value", 0.0),
-                    "dot_plot_median": self._metric("fomc_decision", "dot_plot_median", 0.0) or self._metric("fomc_decision", "rate", 0.0),
+                    "dot_plot_median": self._metric("fomc_decision", "dot_plot_median", 0.0)
+                    or self._metric("fomc_decision", "rate", 0.0),
                     "balance_sheet": self._metric("WALCL", "value", 0.0),
                 },
             },
-            "events": [{
-                "title": f"联邦基金利率 {fed_funds:.2f}%，CPI {cpi_yoy:.2f}",
-                "content": f"降息概率 {cut_prob:.0%} / 持平 {hold_prob:.0%} / 加息 {hike_prob:.0%}",
-                "category": "宏观", "impact_score": 0.75,
-                "sentiment": round(policy_score, 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"联邦基金利率 {fed_funds:.2f}%，CPI {cpi_yoy:.2f}",
+                    "content": f"降息概率 {cut_prob:.0%} / 持平 {hold_prob:.0%} / 加息 {hike_prob:.0%}",
+                    "category": "宏观",
+                    "impact_score": 0.75,
+                    "sentiment": round(policy_score, 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": ts_data,
             "timestamp": _now_iso(),
         }
@@ -238,7 +273,9 @@ class DalSnapshotProvider:
         ppi_surprise = self._metric("ppi", "surprise", 0.0)
         if cpi_actual == 0.0 and nfp_surprise == 0.0 and ppi_surprise == 0.0:
             return None
-        impact = _clamp(abs(cpi_surprise) * 2 + abs(nfp_surprise) * 0.001 + abs(ppi_surprise), 0.0, 1.0)
+        impact = _clamp(
+            abs(cpi_surprise) * 2 + abs(nfp_surprise) * 0.001 + abs(ppi_surprise), 0.0, 1.0
+        )
         return {
             "metrics": {
                 "core": {
@@ -253,13 +290,17 @@ class DalSnapshotProvider:
                     "cpi_previous": self._metric("cpi", "previous", 0.0),
                 },
             },
-            "events": [{
-                "title": f"CPI 意外 {cpi_surprise:+.2f}，NFP 意外 {nfp_surprise:+.0f}",
-                "content": f"CPI 实际 {cpi_actual:.2f} vs 预期 {cpi_forecast:.2f}",
-                "category": "经济日历", "impact_score": round(impact, 3),
-                "sentiment": round(-cpi_surprise * 0.5, 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"CPI 意外 {cpi_surprise:+.2f}，NFP 意外 {nfp_surprise:+.0f}",
+                    "content": f"CPI 实际 {cpi_actual:.2f} vs 预期 {cpi_forecast:.2f}",
+                    "category": "经济日历",
+                    "impact_score": round(impact, 3),
+                    "sentiment": round(-cpi_surprise * 0.5, 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": self._history("cpi", "surprise", days=180),
             "timestamp": _now_iso(),
         }
@@ -272,7 +313,15 @@ class DalSnapshotProvider:
         if fg is None:
             return None
         fg_value = fg[0]
-        classification = "恐惧" if fg_value < 25 else "极度恐惧" if fg_value < 45 else "中性" if fg_value < 55 else "贪婪" if fg_value < 75 else "极度贪婪"
+        classification = (
+            "恐惧"
+            if fg_value < 25
+            else (
+                "极度恐惧"
+                if fg_value < 45
+                else "中性" if fg_value < 55 else "贪婪" if fg_value < 75 else "极度贪婪"
+            )
+        )
         # 增强恐惧贪婪的 4 个子维度（0-100），用于热力图
         vol_score = self._metric("fear_greed_enhanced", "volatility", fg_value)
         mom_score = self._metric("fear_greed_enhanced", "momentum", fg_value)
@@ -295,19 +344,25 @@ class DalSnapshotProvider:
                     "sentiment_index": round(fg_value, 2),
                     "fear_greed_index": round(fg_value, 2),
                     "sentiment_classification": classification,
-                    "sentiment_regime": "恐惧" if fg_value < 45 else "贪婪" if fg_value > 55 else "中性",
+                    "sentiment_regime": (
+                        "恐惧" if fg_value < 45 else "贪婪" if fg_value > 55 else "中性"
+                    ),
                     "social_volume": round(social_volume, 0),
                 },
                 "breakdown": {},
             },
             "heatmap_data": heatmap_data,
-            "events": [{
-                "title": f"恐惧贪婪指数 {fg_value:.0f}（{classification}）",
-                "content": "市场情绪实时读数",
-                "category": "情绪", "impact_score": 0.5,
-                "sentiment": round((fg_value - 50) / 50, 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"恐惧贪婪指数 {fg_value:.0f}（{classification}）",
+                    "content": "市场情绪实时读数",
+                    "category": "情绪",
+                    "impact_score": 0.5,
+                    "sentiment": round((fg_value - 50) / 50, 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": self._history("crypto_fear_greed", "value", days=30),
             "timestamp": _now_iso(),
         }
@@ -332,11 +387,15 @@ class DalSnapshotProvider:
         exchange_net_flow = -ex_bal_chg_30d * 10  # 简化派生
         hash_rate_eh = hash_rate / 1e9 if hash_rate > 1e6 else hash_rate
         network_health = "优秀" if hash_rate_eh > 400 else "良好" if hash_rate_eh > 200 else "偏弱"
-        accumulation_signal = "积累" if exchange_net_flow < -50 else "分发" if exchange_net_flow > 50 else "中性"
+        accumulation_signal = (
+            "积累" if exchange_net_flow < -50 else "分发" if exchange_net_flow > 50 else "中性"
+        )
         # 巨鲸净流 BTC 估算（按 ~8.5万 USD/BTC）
         whale_netflow_btc = round(whale_netflow_usd / 85000, 2) if whale_netflow_usd else 0.0
         # UTXO 年龄分布：优先 utxo_age_distribution 真实分桶，回退到 profit-supply 派生
-        short_term_holder_supply = self._metric("utxo_age_distribution", "short_term_holder_supply_pct", None)
+        short_term_holder_supply = self._metric(
+            "utxo_age_distribution", "short_term_holder_supply_pct", None
+        )
         hodl_waves_1y_plus = self._metric("utxo_age_distribution", "hodl_waves_1y_plus_pct", None)
         if short_term_holder_supply is None or hodl_waves_1y_plus is None:
             profit_supply_pct = self._metric("cycle_signals", "bottom_profit-supply_value", 50.0)
@@ -368,13 +427,17 @@ class DalSnapshotProvider:
                     "profit_supply_pct": round(profit_supply_pct, 2),
                 },
             },
-            "events": [{
-                "title": f"哈希率 {hash_rate_eh:.0f} EH/s，网络{network_health}",
-                "content": f"交易所 BTC 余额 {ex_bal_btc:.0f}，30d 变化 {ex_bal_chg_30d:+.2f}% → {accumulation_signal}；巨鲸净流 {whale_netflow_usd/1e6:+.0f}M USD",
-                "category": "链上", "impact_score": 0.65,
-                "sentiment": round(_clamp(-ex_bal_chg_30d * 5, -1, 1), 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"哈希率 {hash_rate_eh:.0f} EH/s，网络{network_health}",
+                    "content": f"交易所 BTC 余额 {ex_bal_btc:.0f}，30d 变化 {ex_bal_chg_30d:+.2f}% → {accumulation_signal}；巨鲸净流 {whale_netflow_usd/1e6:+.0f}M USD",
+                    "category": "链上",
+                    "impact_score": 0.65,
+                    "sentiment": round(_clamp(-ex_bal_chg_30d * 5, -1, 1), 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": self._history("btc_basics", "hashrate", days=30),
             "timestamp": _now_iso(),
         }
@@ -384,12 +447,22 @@ class DalSnapshotProvider:
     # ------------------------------------------------------------------
     def collect_intermarket(self) -> Optional[Dict]:
         dxy = self._metric("DX-Y.NYB", "value", 0.0)
-        spx = self._metric("^GSPC", "price", 0.0) or self._metric("^GSPC", "value", 0.0) or self._metric("SPY", "price", 0.0) or self._metric("SPY", "value", 0.0)
+        spx = (
+            self._metric("^GSPC", "price", 0.0)
+            or self._metric("^GSPC", "value", 0.0)
+            or self._metric("SPY", "price", 0.0)
+            or self._metric("SPY", "value", 0.0)
+        )
         gold = self._metric("GC=F", "value", 0.0) or self._metric("gold", "value", 0.0)
         us10y = self._metric("^TNX", "value", 0.0) or self._metric("^TNX", "close", 0.0)
         vix = self._metric("^VIX", "value", 0.0)
         btc = self._metric("BTC-USD", "value", 0.0)
-        ndx = self._metric("^IXIC", "price", 0.0) or self._metric("^IXIC", "value", 0.0) or self._metric("QQQ", "price", 0.0) or self._metric("QQQ", "value", 0.0)
+        ndx = (
+            self._metric("^IXIC", "price", 0.0)
+            or self._metric("^IXIC", "value", 0.0)
+            or self._metric("QQQ", "price", 0.0)
+            or self._metric("QQQ", "value", 0.0)
+        )
         wti = self._metric("CL=F", "value", 0.0) or self._metric("CL=F", "price", 0.0)
         if dxy == 0.0 and spx == 0.0 and gold == 0.0:
             return None
@@ -414,13 +487,17 @@ class DalSnapshotProvider:
                     "dxy": round(dxy, 2),
                 },
             },
-            "events": [{
-                "title": f"DXY {dxy:.1f} / VIX {vix:.1f} / 黄金 {gold:.0f}",
-                "content": f"标普 {spx:.0f}，美债10Y {us10y:.2f}%，BTC {btc:,.0f}",
-                "category": "跨市场", "impact_score": 0.55,
-                "sentiment": round(0.5 if risk_on else -0.5, 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"DXY {dxy:.1f} / VIX {vix:.1f} / 黄金 {gold:.0f}",
+                    "content": f"标普 {spx:.0f}，美债10Y {us10y:.2f}%，BTC {btc:,.0f}",
+                    "category": "跨市场",
+                    "impact_score": 0.55,
+                    "sentiment": round(0.5 if risk_on else -0.5, 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": self._history("DX-Y.NYB", "value", days=30),
             "timestamp": _now_iso(),
         }
@@ -449,11 +526,13 @@ class DalSnapshotProvider:
         reserve_risk = self._metric("cycle_signals", "bottom_reserve-risk_value", 0.0)
         # P0 修复：market_cap=0 时不 return None（避免整个模块回退 legacy 导致字段集不兼容）
         # 改为：尝试用 price * supply 估算；估算失败则相关字段标记 None，保持字段集一致
-        market_cap_missing = (market_cap == 0.0)
+        market_cap_missing = market_cap == 0.0
         if market_cap_missing:
             if btc_price > 0 and total_btc > 0:
                 market_cap = btc_price * total_btc
-                logger.info("[valuation] market_cap 缺失，用 btc_price*total_btc 估算: %.0f", market_cap)
+                logger.info(
+                    "[valuation] market_cap 缺失，用 btc_price*total_btc 估算: %.0f", market_cap
+                )
             else:
                 logger.warning("[valuation] market_cap 无法获取，相关字段标记为 None")
 
@@ -478,10 +557,13 @@ class DalSnapshotProvider:
         realized_cap = market_cap / mvrv_ratio if (market_cap > 0 and mvrv_ratio > 0) else 0.0
         realized_price = round(realized_cap / total_btc, 2) if total_btc > 0 else 0.0
         valuation_zone = (
-            "高估" if nvt_z_score is not None and nvt_z_score > 1.5
-            else "低估" if nvt_z_score is not None and nvt_z_score < -1.0
-            else "合理" if nvt_z_score is not None
-            else "数据不足"
+            "高估"
+            if nvt_z_score is not None and nvt_z_score > 1.5
+            else (
+                "低估"
+                if nvt_z_score is not None and nvt_z_score < -1.0
+                else "合理" if nvt_z_score is not None else "数据不足"
+            )
         )
         return {
             "metrics": {
@@ -505,13 +587,21 @@ class DalSnapshotProvider:
                     "reserve_risk": round(reserve_risk, 6),
                 },
             },
-            "events": [{
-                "title": f"估值区间：{valuation_zone}" + (f"（NVT z={nvt_z_score:+.2f}）" if nvt_z_score is not None else ""),
-                "content": f"MVRV {mvrv_ratio:.2f}，NUPL {nupl:.3f}" + (f"，市值 {market_cap/1e12:.2f}T USD" if market_cap > 0 else "，市值数据缺失"),
-                "category": "估值", "impact_score": 0.6,
-                "sentiment": round(-nvt_z_score * 0.3, 3) if nvt_z_score is not None else 0.0,
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"估值区间：{valuation_zone}"
+                    + (f"（NVT z={nvt_z_score:+.2f}）" if nvt_z_score is not None else ""),
+                    "content": f"MVRV {mvrv_ratio:.2f}，NUPL {nupl:.3f}"
+                    + (
+                        f"，市值 {market_cap/1e12:.2f}T USD" if market_cap > 0 else "，市值数据缺失"
+                    ),
+                    "category": "估值",
+                    "impact_score": 0.6,
+                    "sentiment": round(-nvt_z_score * 0.3, 3) if nvt_z_score is not None else 0.0,
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": self._history("btc_basics", "market_cap_usd", days=30),
             "timestamp": _now_iso(),
         }
@@ -530,7 +620,11 @@ class DalSnapshotProvider:
             return None
         # 广度线：全球涨跌 * 系数
         advance_decline_line = round(_clamp(global_change * 10, -60, 70), 2)
-        breadth_confirmation = "确认趋势" if advance_decline_line > 30 else "存在分歧" if advance_decline_line > 0 else "广度恶化"
+        breadth_confirmation = (
+            "确认趋势"
+            if advance_decline_line > 30
+            else "存在分歧" if advance_decline_line > 0 else "广度恶化"
+        )
         return {
             "metrics": {
                 "core": {
@@ -539,20 +633,26 @@ class DalSnapshotProvider:
                     "breadth_confirmation": breadth_confirmation,
                     "global_change_24h": round(global_change, 4),
                     "defi_tvl_bln": round(tvl_bln, 2),
-                    "market_participation_index": round(_clamp(50 + advance_decline_line * 0.3, 0, 100), 2),
+                    "market_participation_index": round(
+                        _clamp(50 + advance_decline_line * 0.3, 0, 100), 2
+                    ),
                 },
                 "breakdown": {
                     "advance_count": round(_clamp(50 + advance_decline_line * 0.5, 0, 100), 2),
                     "decline_count": round(_clamp(50 - advance_decline_line * 0.5, 0, 100), 2),
                 },
             },
-            "events": [{
-                "title": f"BTC 占比 {btc_dominance:.1f}%，全球 24h {global_change:+.2f}%",
-                "content": f"广度状态：{breadth_confirmation}，DeFi TVL {tvl_bln:.0f}B",
-                "category": "广度", "impact_score": 0.55,
-                "sentiment": round(_clamp(advance_decline_line / 60, -1, 1), 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"BTC 占比 {btc_dominance:.1f}%，全球 24h {global_change:+.2f}%",
+                    "content": f"广度状态：{breadth_confirmation}，DeFi TVL {tvl_bln:.0f}B",
+                    "category": "广度",
+                    "impact_score": 0.55,
+                    "sentiment": round(_clamp(advance_decline_line / 60, -1, 1), 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": self._history("overview_market", "btc_dominance_pct", days=30),
             "timestamp": _now_iso(),
         }
@@ -580,8 +680,9 @@ class DalSnapshotProvider:
                 start_ts = int(start_dt.timestamp())
                 end_ts = int(end_dt.timestamp())
                 # newsflash 的 sub_category 形如 newsflash_513701，用 LIKE 匹配
-                import sqlite3 as _sql
                 import os as _os
+                import sqlite3 as _sql
+
                 db_path = _os.environ.get("DAL_DB_PATH", "")
                 if db_path:
                     _conn = _sql.connect(db_path)
@@ -590,7 +691,8 @@ class DalSnapshotProvider:
                            WHERE metric_name='od_policy_sentiment_0_1'
                              AND sub_category LIKE 'newsflash_%'
                              AND timestamp BETWEEN ? AND ?
-                           ORDER BY timestamp DESC LIMIT 200""", (start_ts, end_ts)
+                           ORDER BY timestamp DESC LIMIT 200""",
+                        (start_ts, end_ts),
                     ).fetchall()
                     _conn.close()
                     for _r in _rows:
@@ -692,17 +794,19 @@ class DalSnapshotProvider:
                     "consensus": round(consensus, 3),
                     "market_consensus": round(consensus, 3),
                 },
-                "breakdown": {
-                    n["theme"]: n["score"] for n in narratives
-                },
+                "breakdown": {n["theme"]: n["score"] for n in narratives},
             },
-            "events": [{
-                "title": f"恐惧贪婪指数 {fg_value:.0f}，{bullish} 项看多 {bearish} 项看空",
-                "content": f"叙事分布：{bullish} 多 / {neutral} 中 / {bearish} 空",
-                "category": "叙事", "impact_score": 0.6,
-                "sentiment": round(_clamp(consensus * 2 - 1, -1, 1), 3),
-                "source": "19-DAL", "published_at": _now_iso(),
-            }],
+            "events": [
+                {
+                    "title": f"恐惧贪婪指数 {fg_value:.0f}，{bullish} 项看多 {bearish} 项看空",
+                    "content": f"叙事分布：{bullish} 多 / {neutral} 中 / {bearish} 空",
+                    "category": "叙事",
+                    "impact_score": 0.6,
+                    "sentiment": round(_clamp(consensus * 2 - 1, -1, 1), 3),
+                    "source": "19-DAL",
+                    "published_at": _now_iso(),
+                }
+            ],
             "timeseries": self._history("crypto_fear_greed", "value", days=30),
             "timestamp": _now_iso(),
         }
@@ -730,17 +834,20 @@ class DalSnapshotProvider:
             start = end - timedelta(days=days)
             # BTC/USDT 在 mm_metrics 中的 sub_category
             sub = "BTC/USDT"
-            cols = {"open": "open", "high": "high", "low": "low", "close": "last", "volume": "volume"}
+            cols = {
+                "open": "open",
+                "high": "high",
+                "low": "low",
+                "close": "last",
+                "volume": "volume",
+            }
             series = {}
             for df_col, metric_name in cols.items():
                 try:
                     rows = repo.query_metric_by_time(sub, metric_name, start, end)
                     if rows:
                         # r[3] 已是 datetime 对象
-                        series[df_col] = {
-                            r[3]: float(r[2])
-                            for r in rows
-                        }
+                        series[df_col] = {r[3]: float(r[2]) for r in rows}
                 except Exception:
                     continue
 
@@ -790,10 +897,7 @@ class DalSnapshotProvider:
                     rows = repo.query_metric_by_time(sub_category, metric_name, start, end)
                     if rows:
                         # r[3] 已是 datetime 对象
-                        series[col_name] = {
-                            r[3]: float(r[2])
-                            for r in rows
-                        }
+                        series[col_name] = {r[3]: float(r[2]) for r in rows}
                 except Exception:
                     continue
 
@@ -825,8 +929,8 @@ class DalSnapshotProvider:
         """
         features: Dict[str, float] = {}
         try:
-            from feature_hub.pipeline.feature_pipeline import FeaturePipeline
             from feature_hub.modules.loader import load_default_sets
+            from feature_hub.pipeline.feature_pipeline import FeaturePipeline
         except Exception as exc:
             logger.debug("[DalSnapshotProvider] FeatureHub 导入失败: %s", exc)
             return features
@@ -859,12 +963,15 @@ class DalSnapshotProvider:
             if metrics_df is not None and not metrics_df.empty:
                 try:
                     from feature_hub.modules import fundamental_features
+
                     feat_df = fundamental_features.compute(metrics_df)
                     if not feat_df.empty:
                         latest_row = feat_df.iloc[-1]
                         for k in feat_df.columns:
                             v = latest_row[k]
-                            if isinstance(v, (int, float)) and not (isinstance(v, float) and (v != v)):
+                            if isinstance(v, (int, float)) and not (
+                                isinstance(v, float) and (v != v)
+                            ):
                                 features[f"fund_{k}"] = round(float(v), 6)
                 except Exception as exc:
                     logger.debug("[DalSnapshotProvider] fundamental_features 计算失败: %s", exc)

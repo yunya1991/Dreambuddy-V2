@@ -18,6 +18,7 @@ GREEN 条件 (实现接入后):
   - 所有上述缺口补齐, ENABLE_WASHOUT_DETECTOR=False 时降级为 None / pass,
     链路字节等价 (HC-22).
 """
+
 from __future__ import annotations
 
 import ast
@@ -42,9 +43,7 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
 # ============================================================
 # 静态解析 polling_trader.py
 # ============================================================
-_POLLING_TRADER_PATH = (
-    _BCRM2_SCRIPTS_ROOT / "memory_l4" / "polling_trader.py"
-)
+_POLLING_TRADER_PATH = _BCRM2_SCRIPTS_ROOT / "memory_l4" / "polling_trader.py"
 
 
 def _parse_polling_trader():
@@ -119,25 +118,25 @@ class TestWashoutWireupImports:
         """WashoutDetector 应被导入."""
         _, tree = _parse_polling_trader()
         imports = _collect_imports(tree)
-        assert "WashoutDetector" in imports, (
-            "polling_trader.py 未导入 WashoutDetector — W5 主流程接入缺失"
-        )
+        assert (
+            "WashoutDetector" in imports
+        ), "polling_trader.py 未导入 WashoutDetector — W5 主流程接入缺失"
 
     def test_imports_washout_sl_guard(self):
         """WashoutSLGuard 应被导入."""
         _, tree = _parse_polling_trader()
         imports = _collect_imports(tree)
-        assert "WashoutSLGuard" in imports, (
-            "polling_trader.py 未导入 WashoutSLGuard — Layer 1 SLTP 调节器未接入"
-        )
+        assert (
+            "WashoutSLGuard" in imports
+        ), "polling_trader.py 未导入 WashoutSLGuard — Layer 1 SLTP 调节器未接入"
 
     def test_imports_washout_hold_strategy(self):
         """WashoutHoldStrategy 应被导入 (从 exit_strategies)."""
         _, tree = _parse_polling_trader()
         imports = _collect_imports(tree)
-        assert "WashoutHoldStrategy" in imports, (
-            "polling_trader.py 未导入 WashoutHoldStrategy — Layer 3 持有策略未注册"
-        )
+        assert (
+            "WashoutHoldStrategy" in imports
+        ), "polling_trader.py 未导入 WashoutHoldStrategy — Layer 3 持有策略未注册"
 
 
 # ============================================================
@@ -150,17 +149,17 @@ class TestWashoutWireupClassAttrs:
         """PollingTrader 应有 ENABLE_WASHOUT_DETECTOR 类属性 (默认 False)."""
         _, tree = _parse_polling_trader()
         attrs, _ = _collect_class_attrs(tree)
-        assert "ENABLE_WASHOUT_DETECTOR" in attrs, (
-            "PollingTrader 缺少 ENABLE_WASHOUT_DETECTOR 类属性 — 开关架构未落地"
-        )
+        assert (
+            "ENABLE_WASHOUT_DETECTOR" in attrs
+        ), "PollingTrader 缺少 ENABLE_WASHOUT_DETECTOR 类属性 — 开关架构未落地"
 
     def test_has_init_washout_detector_method(self):
         """PollingTrader 应有 _init_washout_detector 方法."""
         _, tree = _parse_polling_trader()
         _, methods = _collect_class_attrs(tree)
-        assert "_init_washout_detector" in methods, (
-            "PollingTrader 缺少 _init_washout_detector 方法 — 实例化入口未实现"
-        )
+        assert (
+            "_init_washout_detector" in methods
+        ), "PollingTrader 缺少 _init_washout_detector 方法 — 实例化入口未实现"
 
     def test_has_washout_sl_guard_method(self):
         """PollingTrader 应有 _apply_washout_sl_guard 方法 (SLTP 调节入口)."""
@@ -168,11 +167,8 @@ class TestWashoutWireupClassAttrs:
         _, methods = _collect_class_attrs(tree)
         # 方法名候选: _apply_washout_sl_guard / _init_washout_sl_guard
         assert (
-            "_apply_washout_sl_guard" in methods
-            or "_init_washout_sl_guard" in methods
-        ), (
-            "PollingTrader 缺少 _apply_washout_sl_guard / _init_washout_sl_guard 方法"
-        )
+            "_apply_washout_sl_guard" in methods or "_init_washout_sl_guard" in methods
+        ), "PollingTrader 缺少 _apply_washout_sl_guard / _init_washout_sl_guard 方法"
 
 
 # ============================================================
@@ -184,9 +180,9 @@ class TestWashoutWireupP3EarlyExit:
     def test_p3_early_exit_injected_washout_detector(self):
         """P3EarlyExitStrategy(...) 调用应包含 washout_detector= 参数."""
         source, _ = _parse_polling_trader()
-        assert _find_call_with_kwarg(source, "P3EarlyExitStrategy", "washout_detector"), (
-            "P3EarlyExitStrategy 实例化未传入 washout_detector= — Layer 2 洗盘感知未注入"
-        )
+        assert _find_call_with_kwarg(
+            source, "P3EarlyExitStrategy", "washout_detector"
+        ), "P3EarlyExitStrategy 实例化未传入 washout_detector= — Layer 2 洗盘感知未注入"
 
 
 # ============================================================
@@ -199,9 +195,9 @@ class TestWashoutWireupHoldStrategy:
         """ExitManager strategies 列表应包含 WashoutHoldStrategy 实例化."""
         source, _ = _parse_polling_trader()
         # 查找 `WashoutHoldStrategy(` 调用 (实例化)
-        assert "WashoutHoldStrategy(" in source, (
-            "ExitManager.strategies 列表未包含 WashoutHoldStrategy(...) — Layer 3 未注册"
-        )
+        assert (
+            "WashoutHoldStrategy(" in source
+        ), "ExitManager.strategies 列表未包含 WashoutHoldStrategy(...) — Layer 3 未注册"
 
 
 # ============================================================
@@ -215,9 +211,9 @@ class TestWashoutWireupSLTPGuard:
         source, _ = _parse_polling_trader()
         # 查找 self._washout_sl_guard.adjust_sl( 或 _sl_guard.adjust_sl( 等
         # 至少有 `adjust_sl(` 调用, 且上下文与 washout 相关
-        assert "adjust_sl(" in source, (
-            "SLTP 流程未调用 WashoutSLGuard.adjust_sl() — Layer 1 SLTP 调节未接入"
-        )
+        assert (
+            "adjust_sl(" in source
+        ), "SLTP 流程未调用 WashoutSLGuard.adjust_sl() — Layer 1 SLTP 调节未接入"
 
 
 # ============================================================
@@ -235,9 +231,9 @@ class TestWashoutWireupTrialRun:
                 for stmt in node.body:
                     if isinstance(stmt, ast.FunctionDef) and stmt.name == "_open_position":
                         method_src = ast.get_source_segment(source, stmt) or ""
-                        assert "_washout_detector" in method_src, (
-                            "_open_position 方法未引用 _washout_detector — is_trial 分支未接入洗盘判定"
-                        )
+                        assert (
+                            "_washout_detector" in method_src
+                        ), "_open_position 方法未引用 _washout_detector — is_trial 分支未接入洗盘判定"
                         return
         pytest.fail("未找到 PollingTrader._open_position 方法")
 
@@ -252,7 +248,9 @@ class TestWashoutWireupDefaultDisabled:
         """_init_washout_detector(ENABLE_WASHOUT_DETECTOR=False) → self._washout_detector is None."""
         # 用 __new__ 绕过 __init__, 仅测试 _init_washout_detector 方法
         from unittest.mock import patch
+
         from scripts.memory_l4.polling_trader import PollingTrader
+
         trader = PollingTrader.__new__(PollingTrader)
         # mock 开关为 False 验证降级逻辑
         with patch.object(PollingTrader, "ENABLE_WASHOUT_DETECTOR", False):

@@ -7,6 +7,7 @@
 进程内直调 SearchAPI（豁免凭证，SPEC §5.5）；权限过滤由前端 API Route
 按 NextAuth 会话另行执行（本脚本仅返回原始命中）。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -51,7 +52,11 @@ def main() -> int:
         if cmd == "changed":
             # D3（SPEC §13.4）：变更检测统一供给——mtime 比对返回变更文件清单，供 RAG-INFRA 消费
             paths = api.l2._detect_changed_paths()
-            print(json.dumps({"success": True, "changed": paths, "count": len(paths)}, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"success": True, "changed": paths, "count": len(paths)}, ensure_ascii=False
+                )
+            )
             return 0
         if cmd == "status":
             # A5（SPEC §13.1）：索引健康度 + reconcile_diff，供记忆管理页新鲜度展示
@@ -65,7 +70,9 @@ def main() -> int:
                 print(json.dumps({"success": True, "hits": [], "total": 0}, ensure_ascii=False))
                 return 0
             hits = api.recall(query, topK=int(req.get("limit", 50)))
-            print(json.dumps({"success": True, "hits": hits, "total": len(hits)}, ensure_ascii=False))
+            print(
+                json.dumps({"success": True, "hits": hits, "total": len(hits)}, ensure_ascii=False)
+            )
             return 0
         query = str(req.get("query", "")).strip()
         filters = req.get("filters") or None
@@ -74,6 +81,7 @@ def main() -> int:
             return 0
         # D1（SPEC §5 P5）：CLI search 即混合检索入口——开启 L3 向量通道
         import os
+
         os.environ["FIS_L3_VECTOR"] = "1"
         result = api.search(query, filters=filters, limit=limit)
         print(json.dumps({"success": True, **result}, ensure_ascii=False))

@@ -43,7 +43,7 @@ def _normalize_signal(results: List[Dict], key: str) -> Dict[int, float]:
     lo = min(raw.values())
     hi = max(raw.values())
     if hi - lo < 1e-9:
-        return {i: 1.0 for i in raw}
+        return dict.fromkeys(raw, 1.0)
 
     return {i: (v - lo) / (hi - lo) for i, v in raw.items()}
 
@@ -64,8 +64,7 @@ def _freshness(result: Dict) -> float:
     return 1.0
 
 
-def rerank(query: str, results: List[Dict],
-           weights: Optional[Dict] = None) -> List[Dict]:
+def rerank(query: str, results: List[Dict], weights: Optional[Dict] = None) -> List[Dict]:
     """对检索结果做多信号加权重排序。
 
     Args:

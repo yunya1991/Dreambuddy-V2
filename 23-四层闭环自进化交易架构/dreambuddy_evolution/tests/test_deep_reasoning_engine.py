@@ -9,22 +9,24 @@ SPEC-AGI升级蓝图.md §4.2.3
   4. 多路径采样：蒙特卡洛
   5. 最优路径：最小阻力
 """
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 
 class TestDeepReasoningEngineInit:
     def test_engine_instantiates(self):
         """引擎可正常实例化"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         assert engine is not None
 
     def test_engine_reports_backend_status(self):
         """引擎报告各深度学习后端的可用状态"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         status = engine.backend_status()
         assert "timesfm" in status
@@ -37,6 +39,7 @@ class TestPathToSignature:
     def test_returns_signature_vector(self):
         """路径抽象返回签名向量"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         path = np.array([100.0, 101.0, 102.0, 101.5, 103.0])
         sig = engine.path_to_signature(path)
@@ -47,6 +50,7 @@ class TestPathToSignature:
     def test_constant_path_zero_increment(self):
         """常数路径签名价格增量项≈0"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         path = np.array([50.0, 50.0, 50.0])
         sig = engine.path_to_signature(path)
@@ -60,6 +64,7 @@ class TestTimesFMPredict:
     def test_returns_forecast_array(self):
         """TimesFM预测返回预测数组（含降级）"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         history = np.array([100.0, 101.0, 102.0, 103.0, 104.0])
         forecast = engine.timesfm_predict(history, horizon=5)
@@ -69,6 +74,7 @@ class TestTimesFMPredict:
     def test_forecast_finite_values(self):
         """预测值为有限数"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         history = np.cumsum(np.random.randn(50)) * 0.01 + 100
         forecast = engine.timesfm_predict(history, horizon=10)
@@ -77,6 +83,7 @@ class TestTimesFMPredict:
     def test_uptrend_forecast_positive_slope(self):
         """上涨趋势的预测均值应高于历史均值"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         history = np.linspace(100, 120, 50)  # 明确上涨
         forecast = engine.timesfm_predict(history, horizon=20)
@@ -87,6 +94,7 @@ class TestNeuralSDEForecast:
     def test_returns_simulated_paths(self):
         """Neural SDE返回多条模拟路径"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         state = np.array([100.0, 0.02])  # [price, vol]
         paths = engine.neural_sde_forecast(state, horizon=20, n_paths=100)
@@ -96,6 +104,7 @@ class TestNeuralSDEForecast:
     def test_all_paths_start_at_initial_price(self):
         """所有模拟路径从初始价格开始"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         init_price = 150.0
         state = np.array([init_price, 0.01])
@@ -107,6 +116,7 @@ class TestMonteCarloAndResistance:
     def test_monte_carlo_returns_n_paths(self):
         """蒙特卡洛采样返回N条路径"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         paths = engine.monte_carlo_paths(start_price=100.0, horizon=20, n_paths=500)
         assert len(paths) == 500
@@ -115,6 +125,7 @@ class TestMonteCarloAndResistance:
     def test_path_resistance_non_negative(self):
         """路径阻力非负"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         path = np.array([100.0, 101.0, 100.5, 102.0])
         r = engine.compute_path_resistance(path)
@@ -123,15 +134,39 @@ class TestMonteCarloAndResistance:
     def test_smoother_path_lower_resistance(self):
         """平滑路径阻力小于剧烈波动路径"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         smooth = np.linspace(100, 110, 20)
-        rough = np.array([100, 110, 95, 108, 92, 105, 88, 102, 90, 100,
-                          105, 95, 108, 92, 104, 96, 101, 99, 103, 100])
+        rough = np.array(
+            [
+                100,
+                110,
+                95,
+                108,
+                92,
+                105,
+                88,
+                102,
+                90,
+                100,
+                105,
+                95,
+                108,
+                92,
+                104,
+                96,
+                101,
+                99,
+                103,
+                100,
+            ]
+        )
         assert engine.compute_path_resistance(smooth) < engine.compute_path_resistance(rough)
 
     def test_find_min_resistance_path(self):
         """最小阻力路径搜索返回有效结果"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         paths = [
             np.linspace(100, 110, 15),
@@ -154,6 +189,7 @@ class TestFullReasoningPipeline:
     def test_end_to_end_reasoning(self):
         """完整推理流程：签名→SDE→预测→采样→最优路径"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         price_path = np.cumsum(np.random.randn(60)) * 0.01 + 100.0
 
@@ -167,6 +203,7 @@ class TestFullReasoningPipeline:
     def test_fail_open_never_crash_on_empty(self):
         """空输入不崩溃（FAIL-OPEN）"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         result = engine.reason(np.array([]), horizon=5)
         assert result is not None
@@ -175,12 +212,19 @@ class TestFullReasoningPipeline:
     def test_reason_uses_sde_paths(self):
         """reason() 现在调用 neural_sde_forecast（非死代码）"""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         price_path = np.cumsum(np.random.randn(60)) * 0.01 + 100.0
         result = engine.reason(price_path, horizon=10, n_paths=50)
         # SDE backend 字段存在
         assert "sde_backend" in result
-        assert result["sde_backend"] in ("torchsde", "euler_maruyama", "garch", "gbm", "unavailable")
+        assert result["sde_backend"] in (
+            "torchsde",
+            "euler_maruyama",
+            "garch",
+            "gbm",
+            "unavailable",
+        )
         # 路径数量正确
         assert result["n_paths"] == 50
 
@@ -191,6 +235,7 @@ class TestNeuralSDEFailOpen:
     def test_forecast_always_returns_array(self):
         """neural_sde_forecast 始终返回 numpy 数组（不 crash）."""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         state = np.array([100.0, 0.02])
         paths = engine.neural_sde_forecast(state, horizon=10, n_paths=50)
@@ -200,16 +245,24 @@ class TestNeuralSDEFailOpen:
     def test_forecast_backend_status_tracked(self):
         """forecast 后 backend_status 追踪了实际使用的后端."""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         state = np.array([100.0, 0.02])
         engine.neural_sde_forecast(state, horizon=5, n_paths=10)
         status = engine.backend_status()
         assert "neural_sde_backend" in status
-        assert status["neural_sde_backend"] in ("torchsde", "euler_maruyama", "garch", "gbm", "unavailable")
+        assert status["neural_sde_backend"] in (
+            "torchsde",
+            "euler_maruyama",
+            "garch",
+            "gbm",
+            "unavailable",
+        )
 
     def test_paths_finite_no_nan(self):
         """生成的路径无 NaN/Inf."""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         state = np.array([100.0, 0.02])
         paths = engine.neural_sde_forecast(state, horizon=20, n_paths=100)
@@ -218,6 +271,7 @@ class TestNeuralSDEFailOpen:
     def test_paths_start_at_init_price(self):
         """所有路径起点 = 初始价格."""
         from dreambuddy_evolution.engines.deep_reasoning_engine import DeepReasoningEngine
+
         engine = DeepReasoningEngine()
         init_price = 250.0
         state = np.array([init_price, 0.03])

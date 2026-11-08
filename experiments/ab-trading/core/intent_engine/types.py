@@ -10,10 +10,10 @@
 - Layer 3: 落地（线/网 → 可执行蓝图）
 """
 
-import uuid
 import time
-from typing import Dict, List, Optional, Any
+import uuid
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 def _gen_id(prefix: str) -> str:
@@ -24,6 +24,7 @@ def _gen_id(prefix: str) -> str:
 # Layer 1: 意图识别层 - 目标 (Objective)
 # ============================================================
 
+
 @dataclass
 class Objective:
     """目标 (Objective) - 用户想要完成的单点目标
@@ -31,6 +32,7 @@ class Objective:
     Layer 1 的输出：从混沌收敛到单点
     核心特征：只有一个、清晰明确、可被分解
     """
+
     id: str = field(default_factory=lambda: _gen_id("obj"))
     title: str = ""
     description: str = ""
@@ -59,6 +61,7 @@ class Objective:
 # Layer 2: OKR目标分解层 - 关键结果 (KeyResult)
 # ============================================================
 
+
 @dataclass
 class KeyResult:
     """关键结果 (KeyResult) - 衡量目标达成的具体指标
@@ -68,6 +71,7 @@ class KeyResult:
 
     注意：这里不包含模块/节点信息，那是B层的职责
     """
+
     id: str = field(default_factory=lambda: _gen_id("kr"))
     objective_id: str = ""
 
@@ -97,6 +101,7 @@ class OKRSet:
 
     Layer 2 的最终输出：完整的目标结构
     """
+
     objective: Objective
     key_results: List[KeyResult] = field(default_factory=list)
 
@@ -118,6 +123,7 @@ class OKRSet:
 # Layer 3: B层工程化 - 执行蓝图 (ExecutionBlueprint)
 # ============================================================
 
+
 @dataclass
 class ExecutionBlueprint:
     """执行蓝图 - B层工程化输出
@@ -125,6 +131,7 @@ class ExecutionBlueprint:
     Layer 3 的输出：可直接交给 GraphOrchestrator 执行的工程蓝图
     核心特征：包含执行所需的所有工程细节
     """
+
     blueprint_id: str = field(default_factory=lambda: _gen_id("bp"))
     objective_id: str = ""
 
@@ -162,9 +169,11 @@ class ExecutionBlueprint:
 # 最终输出：意图识别结果
 # ============================================================
 
+
 @dataclass
 class IntentRecognitionResult:
     """意图识别最终结果（三层完整输出）"""
+
     objective: Optional[Objective] = None
     okr_set: Optional[OKRSet] = None
     blueprint: Optional[ExecutionBlueprint] = None

@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # ============================================================
 # 触发层测试：cognitive_hook.py
 # ============================================================
+
 
 def test_hook_extract_commit_info():
     """触发层：从git commit提取信息（message, files, diff stats）"""
@@ -123,7 +124,9 @@ def test_hook_trigger_cognitive_loop():
         # 验证 verify 被调用
         assert mock_instance.verify.called, "verify() 应被调用"
         verify_args = mock_instance.verify.call_args
-        assert verify_args[1].get("success", True) or verify_args[0][1] == True, "verify应标记成功"
+        assert (
+            verify_args[1].get("success", True) or verify_args[0][1] == True  # noqa: E712
+        ), "verify应标记成功"  # noqa: E712
 
         # 验证返回结构
         assert "memory_id" in result, f"返回应含memory_id: {result}"
@@ -152,7 +155,7 @@ def test_hook_dry_run_no_side_effects():
         # dry_run 不应调用 record/verify
         assert not mock_instance.record.called, "dry_run不应调用record"
         assert not mock_instance.verify.called, "dry_run不应调用verify"
-        assert result.get("dry_run") == True, "返回应标记dry_run"
+        assert result.get("dry_run") == True, "返回应标记dry_run"  # noqa: E712
 
         print("✅ test_hook_dry_run_no_side_effects 通过")
         return True
@@ -161,6 +164,7 @@ def test_hook_dry_run_no_side_effects():
 # ============================================================
 # 协议层测试：cognitive_mcp_server.py
 # ============================================================
+
 
 def test_mcp_initialize_handshake():
     """协议层：MCP initialize握手返回正确协议信息"""
@@ -185,7 +189,6 @@ def test_mcp_initialize_handshake():
     assert "protocolVersion" in result, "应返回协议版本"
     assert "serverInfo" in result, "应返回server信息"
     assert "cognitive" in result["serverInfo"]["name"].lower(), "服务器名应包含cognitive"
-
 
     print("✅ test_mcp_initialize_handshake 通过")
     return True

@@ -10,6 +10,7 @@
 输出：
   dreambuddy_evolution/data/exit_policy_v2.pt
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,16 +27,12 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from dreambuddy_evolution.core.exit_rl_policy import CQLTrainer
+from dreambuddy_evolution.core.exit_rl_policy import CQLTrainer  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SAMPLES_PATH = str(
-    Path(__file__).resolve().parents[1] / "data" / "exit_rl_samples.jsonl"
-)
-DEFAULT_OUTPUT_PATH = str(
-    Path(__file__).resolve().parents[1] / "data" / "exit_policy_v2.pt"
-)
+DEFAULT_SAMPLES_PATH = str(Path(__file__).resolve().parents[1] / "data" / "exit_rl_samples.jsonl")
+DEFAULT_OUTPUT_PATH = str(Path(__file__).resolve().parents[1] / "data" / "exit_policy_v2.pt")
 STREAM_THRESHOLD = 10_000  # 超过此数量使用流式加载
 
 
@@ -100,18 +97,22 @@ def to_train_batch(samples: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     batch = []
     for s in samples:
         weight = s.get("meta", {}).get("sample_weight", 1.0)
-        batch.append({
-            "state": np.array(s["state"], dtype=np.float32),
-            "action": int(s["action"]),
-            "reward": float(s["reward"]),
-            "next_state": np.array(s["next_state"], dtype=np.float32),
-            "done": bool(s.get("done", False)),
-            "weight": float(weight),
-        })
+        batch.append(
+            {
+                "state": np.array(s["state"], dtype=np.float32),
+                "action": int(s["action"]),
+                "reward": float(s["reward"]),
+                "next_state": np.array(s["next_state"], dtype=np.float32),
+                "done": bool(s.get("done", False)),
+                "weight": float(weight),
+            }
+        )
     return batch
 
 
-def evaluate_q(trainer: CQLTrainer, samples: List[Dict[str, Any]], n: int = 200) -> Dict[str, float]:
+def evaluate_q(
+    trainer: CQLTrainer, samples: List[Dict[str, Any]], n: int = 200
+) -> Dict[str, float]:
     """评估 Q 值分布"""
     subset = samples[:n] if len(samples) > n else samples
     q_values = []
@@ -170,14 +171,19 @@ def run_epochs(
         if (epoch + 1) % 10 == 0 or epoch == 0:
             logger.info(
                 "[%s] Epoch %3d/%d | avg_loss=%.6f",
-                label, epoch + 1, epochs, avg_loss,
+                label,
+                epoch + 1,
+                epochs,
+                avg_loss,
             )
     return losses
 
 
 def main():
     parser = argparse.ArgumentParser(description="CQL 离场策略训练")
-    parser.add_argument("--samples", default=DEFAULT_SAMPLES_PATH, help="样本文件路径（逗号分隔多文件）")
+    parser.add_argument(
+        "--samples", default=DEFAULT_SAMPLES_PATH, help="样本文件路径（逗号分隔多文件）"
+    )
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, help="模型输出路径")
     parser.add_argument("--epochs", type=int, default=100, help="训练轮数")
     parser.add_argument("--batch-size", type=int, default=64, help="batch size")
@@ -219,7 +225,12 @@ def main():
     eval_samples = load_samples(args.samples)[:200]
     logger.info("=== 训练前评估 ===")
     pre_eval = evaluate_q(trainer, eval_samples)
-    logger.info("Q 值: mean=%.4f std=%.4f | 动作分布=%s", pre_eval["mean_q"], pre_eval["std_q"], pre_eval["action_distribution"])
+    logger.info(
+        "Q 值: mean=%.4f std=%.4f | 动作分布=%s",
+        pre_eval["mean_q"],
+        pre_eval["std_q"],
+        pre_eval["action_distribution"],
+    )
 
     losses: List[float] = []
     phase_a_losses: List[float] = []
@@ -230,28 +241,63 @@ def main():
         logger.info("=== Phase A: 回测+真实样本粗训练 (epochs=30, lr=1e-4) ===")
         trainer.optimizer = trainer._optim.Adam(trainer.q_net.parameters(), lr=1e-4)
         data = args.samples if streaming else load_samples(args.samples)
-        phase_a_losses = run_epochs(trainer, data, epochs=30, batch_size=args.batch_size, streaming=streaming, label="PhaseA")
+        phase_a_losses = run_epochs(
+            trainer,
+            data,
+            epochs=30,
+            batch_size=args.batch_size,
+            streaming=streaming,
+            label="PhaseA",
+        )
         losses.extend(phase_a_losses)
 
         # Phase B: 仅真实样本微调（lr=3e-5）
         logger.info("=== Phase B: 仅真实样本微调 (epochs=20, lr=3e-5) ===")
-        real_samples = [s for s in (load_samples(args.samples) if not streaming else load_samples(args.samples)) if s.get("meta", {}).get("meta_source") != "backtest"]
+        real_samples = [
+            s
+            for s in (load_samples(args.samples) if not streaming else load_samples(args.samples))
+            if s.get("meta", {}).get("meta_source") != "backtest"
+        ]
         if not real_samples:
             logger.warning("无真实样本，Phase B 跳过")
         else:
             trainer.optimizer = trainer._optim.Adam(trainer.q_net.parameters(), lr=3e-5)
-            phase_b_losses = run_epochs(trainer, real_samples, epochs=20, batch_size=args.batch_size, streaming=False, label="PhaseB")
+            phase_b_losses = run_epochs(
+                trainer,
+                real_samples,
+                epochs=20,
+                batch_size=args.batch_size,
+                streaming=False,
+                label="PhaseB",
+            )
             losses.extend(phase_b_losses)
     else:
         # 单阶段训练
-        logger.info("=== 开始训练: epochs=%d batch_size=%d samples=%d ===", args.epochs, args.batch_size, n_samples)
+        logger.info(
+            "=== 开始训练: epochs=%d batch_size=%d samples=%d ===",
+            args.epochs,
+            args.batch_size,
+            n_samples,
+        )
         data = args.samples if streaming else load_samples(args.samples)
-        losses = run_epochs(trainer, data, epochs=args.epochs, batch_size=args.batch_size, streaming=streaming, label="train")
+        losses = run_epochs(
+            trainer,
+            data,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            streaming=streaming,
+            label="train",
+        )
 
     # 训练后评估
     logger.info("=== 训练后评估 ===")
     post_eval = evaluate_q(trainer, eval_samples)
-    logger.info("Q 值: mean=%.4f std=%.4f | 动作分布=%s", post_eval["mean_q"], post_eval["std_q"], post_eval["action_distribution"])
+    logger.info(
+        "Q 值: mean=%.4f std=%.4f | 动作分布=%s",
+        post_eval["mean_q"],
+        post_eval["std_q"],
+        post_eval["action_distribution"],
+    )
 
     # 保存模型
     output = Path(args.output)
@@ -274,11 +320,19 @@ def main():
         "final_loss": round(losses[-1], 6) if losses else 0.0,
         "min_loss": round(min(losses), 6) if losses else 0.0,
         "max_loss": round(max(losses), 6) if losses else 0.0,
-        "phase_a": {"epochs": len(phase_a_losses), "final_loss": round(phase_a_losses[-1], 6)} if phase_a_losses else None,
-        "phase_b": {"epochs": len(phase_b_losses), "final_loss": round(phase_b_losses[-1], 6)} if phase_b_losses else None,
+        "phase_a": (
+            {"epochs": len(phase_a_losses), "final_loss": round(phase_a_losses[-1], 6)}
+            if phase_a_losses
+            else None
+        ),
+        "phase_b": (
+            {"epochs": len(phase_b_losses), "final_loss": round(phase_b_losses[-1], 6)}
+            if phase_b_losses
+            else None
+        ),
         "pre_eval": pre_eval,
         "post_eval": post_eval,
-        "loss_curve_last_10": [round(l, 6) for l in losses[-10:]],
+        "loss_curve_last_10": [round(l, 6) for l in losses[-10:]],  # noqa: E741
     }
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)

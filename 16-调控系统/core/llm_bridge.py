@@ -13,13 +13,12 @@ LLM Bridge — 16-调控系统 Phase 2+
 """
 
 import json
-import time
 import os
 import re
+import time
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 BASE_DIR = Path(__file__).parent.parent.parent
 CACHE_TTL = 60
@@ -43,6 +42,7 @@ class LLMResult:
 
 def _get_cache_key(prompt: str, model: str) -> str:
     import hashlib
+
     raw = f"{model}:{prompt[:500]}"
     return hashlib.md5(raw.encode()).hexdigest()
 
@@ -88,11 +88,17 @@ def _load_env_config() -> Dict[str, str]:
     return config
 
 
-def _call_openai_compatible(api_key: str, base_url: str, model: str,
-                            messages: List[Dict], temperature: float,
-                            max_tokens: int) -> Optional[Dict]:
+def _call_openai_compatible(
+    api_key: str,
+    base_url: str,
+    model: str,
+    messages: List[Dict],
+    temperature: float,
+    max_tokens: int,
+) -> Optional[Dict]:
     try:
         import urllib.request
+
         payload = {
             "model": model,
             "messages": messages,
@@ -115,10 +121,14 @@ def _call_openai_compatible(api_key: str, base_url: str, model: str,
         return None
 
 
-def call_llm(prompt: str, system_prompt: str = "",
-             model: str = "", temperature: float = 0.3,
-             max_tokens: int = 2000,
-             expect_json: bool = False) -> LLMResult:
+def call_llm(
+    prompt: str,
+    system_prompt: str = "",
+    model: str = "",
+    temperature: float = 0.3,
+    max_tokens: int = 2000,
+    expect_json: bool = False,
+) -> LLMResult:
     """
     调用 LLM，失败时返回 fallback 结果
 
@@ -147,43 +157,58 @@ def call_llm(prompt: str, system_prompt: str = "",
     # 千问 = 阿里云/通义千问（非百度），OpenAI 兼容协议
     qw_key = config.get("QWEN_API_KEY", "")
     if qw_key:
-        provider_configs.append({
-            "name": "qwen",
-            "api_key": qw_key,
-            "base_url": config.get("QWEN_BASE_URL", "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"),
-            "model": model or config.get("QWEN_MODEL", "qwen3.8-max"),
-        })
+        provider_configs.append(
+            {
+                "name": "qwen",
+                "api_key": qw_key,
+                "base_url": config.get(
+                    "QWEN_BASE_URL",
+                    "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1",
+                ),
+                "model": model or config.get("QWEN_MODEL", "qwen3.8-max"),
+            }
+        )
 
     ds_key = config.get("DEEPSEEK_API_KEY", "")
     if ds_key:
-        provider_configs.append({
-            "name": "deepseek",
-            "api_key": ds_key,
-            "base_url": config.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
-            "model": model or config.get("DEEPSEEK_MODEL", "deepseek-chat"),
-        })
+        provider_configs.append(
+            {
+                "name": "deepseek",
+                "api_key": ds_key,
+                "base_url": config.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
+                "model": model or config.get("DEEPSEEK_MODEL", "deepseek-chat"),
+            }
+        )
 
     oa_key = config.get("OPENAI_API_KEY", "")
     if oa_key:
-        provider_configs.append({
-            "name": "openai",
-            "api_key": oa_key,
-            "base_url": config.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-            "model": model or config.get("OPENAI_MODEL", "gpt-4o-mini"),
-        })
+        provider_configs.append(
+            {
+                "name": "openai",
+                "api_key": oa_key,
+                "base_url": config.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                "model": model or config.get("OPENAI_MODEL", "gpt-4o-mini"),
+            }
+        )
 
     messages = []
     if system_prompt:
         if expect_json:
-            system_prompt += "\n\n请以 JSON 格式输出，不要包含 markdown 代码块标记，直接输出纯 JSON。"
+            system_prompt += (
+                "\n\n请以 JSON 格式输出，不要包含 markdown 代码块标记，直接输出纯 JSON。"
+            )
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": prompt})
 
     last_error = ""
     for pc in provider_configs:
         resp = _call_openai_compatible(
-            pc["api_key"], pc["base_url"], pc["model"],
-            messages, temperature, max_tokens,
+            pc["api_key"],
+            pc["base_url"],
+            pc["model"],
+            messages,
+            temperature,
+            max_tokens,
         )
         if resp and "choices" in resp and len(resp["choices"]) > 0:
             content = resp["choices"][0].get("message", {}).get("content", "")
@@ -278,8 +303,7 @@ def _generate_fallback_response(prompt: str, expect_json: bool) -> Dict:
     return {"content": content, "structured": None}
 
 
-def enhance_a1_research(market_data: Dict, positions: List[Dict],
-                        base_report: Dict) -> LLMResult:
+def enhance_a1_research(market_data: Dict, positions: List[Dict], base_report: Dict) -> LLMResult:
     """用 LLM 增强 A1 调研报告"""
     system_prompt = """你是一位资深加密货币市场分析师，擅长宏观分析、技术面研判和市场情绪解读。
 请基于提供的市场数据，输出一份深度调研分析。"""
@@ -310,8 +334,7 @@ ETH 24h涨跌: {market_data.get('ETH', {}).get('change_24h_pct', 0)}%
     return call_llm(prompt, system_prompt, temperature=0.4, expect_json=True)
 
 
-def enhance_a2_analysis(market_data: Dict, a1_report: Dict,
-                        base_analysis: Dict) -> LLMResult:
+def enhance_a2_analysis(market_data: Dict, a1_report: Dict, base_analysis: Dict) -> LLMResult:
     """用 LLM 增强 A2 第一性原理分析"""
     system_prompt = """你是一位第一性原理思考者，擅长从本质出发推导市场走向。
 请基于基本面和技术面数据，推导出阻力最小路径。"""
@@ -347,8 +370,7 @@ OI变化: {ms.get('oi_delta_pct', 0)}%
     return call_llm(prompt, system_prompt, temperature=0.3, expect_json=True)
 
 
-def enhance_a3_strategy(a1_report: Dict, a2_analysis: Dict,
-                        base_directive: Dict) -> LLMResult:
+def enhance_a3_strategy(a1_report: Dict, a2_analysis: Dict, base_directive: Dict) -> LLMResult:
     """用 LLM 增强 A3 战略合成"""
     system_prompt = """你是一位资深交易策略师，擅长综合宏观、技术、情绪制定交易战略。
 请给出明确的战略方向和仓位管理建议。"""

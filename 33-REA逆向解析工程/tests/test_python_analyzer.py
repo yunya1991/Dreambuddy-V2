@@ -1,5 +1,6 @@
 """RED 测试：PythonAnalyzer — Python AST 分析器。"""
-import sys
+
+import sys  # noqa: I001
 import tempfile
 import os
 from pathlib import Path
@@ -7,7 +8,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.python_analyzer import PythonAnalyzer
-
 
 SAMPLE_PY = '''
 import os

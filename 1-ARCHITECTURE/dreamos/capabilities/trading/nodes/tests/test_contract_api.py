@@ -19,9 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
 # trace_id 格式: 20260929-143022-FE-a3f9k2m1
-TRACE_ID_PATTERN = re.compile(
-    r"^\d{8}-\d{6}-(FE|DOS|DSH|HUB)-[a-zA-Z0-9]{8}$"
-)
+TRACE_ID_PATTERN = re.compile(r"^\d{8}-\d{6}-(FE|DOS|DSH|HUB)-[a-zA-Z0-9]{8}$")
 
 # 系统码白名单
 VALID_SYSTEMS = {"frontend", "dreamos", "dsh", "hub"}
@@ -33,18 +31,21 @@ VALID_STATUSES = {"ok", "fail", "skip"}
 class TestTraceIdFormat:
     """trace_id 格式契约测试"""
 
-    @pytest.mark.parametrize("trace_id,expected", [
-        ("20260929-143022-FE-a3f9k2m1", True),
-        ("20260929-143022-DOS-a3f9k2m1", True),
-        ("20260929-143022-DSH-a3f9k2m1", True),
-        ("20260929-143022-HUB-a3f9k2m1", True),
-        ("20260929-143022-FE-A3F9K2M1", True),   # 大写 nanoid
-        ("invalid", False),
-        ("20260929-FE-a3f9k2m1", False),         # 缺时间
-        ("20260929-143022-XX-a3f9k2m1", False),  # 无效系统码
-        ("20260929-143022-FE-short", False),     # nanoid 太短
-        ("", False),
-    ])
+    @pytest.mark.parametrize(
+        "trace_id,expected",
+        [
+            ("20260929-143022-FE-a3f9k2m1", True),
+            ("20260929-143022-DOS-a3f9k2m1", True),
+            ("20260929-143022-DSH-a3f9k2m1", True),
+            ("20260929-143022-HUB-a3f9k2m1", True),
+            ("20260929-143022-FE-A3F9K2M1", True),  # 大写 nanoid
+            ("invalid", False),
+            ("20260929-FE-a3f9k2m1", False),  # 缺时间
+            ("20260929-143022-XX-a3f9k2m1", False),  # 无效系统码
+            ("20260929-143022-FE-short", False),  # nanoid 太短
+            ("", False),
+        ],
+    )
     def test_trace_id_pattern(self, trace_id, expected):
         """trace_id 必须符合 YYYYMMDD-HHMMSS-{system}-{nanoid8}"""
         match = bool(TRACE_ID_PATTERN.match(trace_id))
@@ -202,8 +203,14 @@ class TestOpsTracesApiContract:
 
     @staticmethod
     def _validate_summary(summary: dict) -> bool:
-        required = {"systems", "layers", "error_count", "total_duration_ms",
-                    "first_event_ts", "last_event_ts"}
+        required = {
+            "systems",
+            "layers",
+            "error_count",
+            "total_duration_ms",
+            "first_event_ts",
+            "last_event_ts",
+        }
         return required.issubset(summary.keys())
 
 

@@ -3,6 +3,7 @@
 基于 ReverseDeriver 的逆向推导结果，对错误维度因子降权、正确维度因子升权，
 类比反向传播中的参数更新（SGD）。
 """
+
 import sys
 from pathlib import Path
 
@@ -26,7 +27,8 @@ def _make_snapshot(dim_predictions=None, dim_factors=None):
         "cbr_top1_outcome": "TP",
         "cluster_id": "C001",
         "dimension_predictions": dim_predictions or {"C1": "long", "C2": "short"},
-        "dimension_factors": dim_factors or {
+        "dimension_factors": dim_factors
+        or {
             "C1": {"资金流入": 0.5, "主力净买": 0.3},
             "C2": {"多空比": 0.4, "恐慌贪婪": 0.2},
         },
@@ -42,8 +44,13 @@ def test_apply_reward_with_derive_returns_factor_adjustments():
 
     derive_result = deriver.derive(snapshot, outcome)
     reward = engine.apply_reward_with_derive(
-        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=-0.5,
+        outcome="SL",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     assert "factor_adjustments" in reward
@@ -68,8 +75,13 @@ def test_wrong_dimension_factors_are_downgraded():
 
     derive_result = deriver.derive(snapshot, outcome)
     reward = engine.apply_reward_with_derive(
-        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=-0.5,
+        outcome="SL",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     # C1 错 → 资金流入降权 ×0.9 = 0.45
@@ -92,8 +104,13 @@ def test_correct_dimension_factors_are_upgraded():
 
     derive_result = deriver.derive(snapshot, outcome)
     reward = engine.apply_reward_with_derive(
-        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=-0.5,
+        outcome="SL",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     # C2 对 → 多空比升权 ×1.05 = 0.42
@@ -115,8 +132,13 @@ def test_no_wrong_dimensions_means_no_downgrade():
 
     derive_result = deriver.derive(snapshot, outcome)
     reward = engine.apply_reward_with_derive(
-        cs=0.9, outcome="TP", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=0.9,
+        outcome="TP",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     # 全部升权
@@ -140,8 +162,13 @@ def test_fail_open_neutral_result_skips_factor_adjustment():
         optimization_action="no_adjustment",
     )
     reward = engine.apply_reward_with_derive(
-        cs=0.0, outcome="SL", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=0.0,
+        outcome="SL",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     # 空调整：不修改任何因子权重
@@ -162,8 +189,13 @@ def test_factor_weight_clamped_to_lower_bound():
 
     derive_result = deriver.derive(snapshot, outcome)
     reward = engine.apply_reward_with_derive(
-        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=-0.5,
+        outcome="SL",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     assert reward["factor_adjustments"]["资金流入"] == pytest.approx(0.1)
@@ -183,8 +215,13 @@ def test_factor_weight_clamped_to_upper_bound():
 
     derive_result = deriver.derive(snapshot, outcome)
     reward = engine.apply_reward_with_derive(
-        cs=0.9, outcome="TP", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=0.9,
+        outcome="TP",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
 
     assert reward["factor_adjustments"]["资金流入"] == pytest.approx(2.0)
@@ -192,7 +229,7 @@ def test_factor_weight_clamped_to_upper_bound():
 
 def test_factor_cooldown_prevents_repeated_adjustment():
     """RED: 冷却期内同一因子不重复调整。"""
-    import time
+
     engine = ReflectionEngine()
     deriver = ReverseDeriver()
     snapshot = _make_snapshot(
@@ -204,15 +241,25 @@ def test_factor_cooldown_prevents_repeated_adjustment():
     # 第一次调整
     derive_result = deriver.derive(snapshot, outcome)
     reward1 = engine.apply_reward_with_derive(
-        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=-0.5,
+        outcome="SL",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
     # C1 错 → 降权 ×0.9 = 0.45
     assert reward1["factor_adjustments"]["资金流入"] == pytest.approx(0.45)
 
     # 立即第二次调整（冷却期内）→ 不应再调整
     reward2 = engine.apply_reward_with_derive(
-        cs=-0.5, outcome="SL", cluster_id="C001", ess_id="e1",
-        gmax=0.3, snapshot=snapshot, derive_result=derive_result,
+        cs=-0.5,
+        outcome="SL",
+        cluster_id="C001",
+        ess_id="e1",
+        gmax=0.3,
+        snapshot=snapshot,
+        derive_result=derive_result,
     )
     assert "资金流入" not in reward2["factor_adjustments"]

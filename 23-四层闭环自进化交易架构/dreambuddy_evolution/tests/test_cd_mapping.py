@@ -1,4 +1,5 @@
 """B-01 / DEC-11: C→D 矛盾维度影子映射测试."""
+
 from __future__ import annotations
 
 from dreambuddy_evolution.core.cd_mapping import (
@@ -77,10 +78,22 @@ class TestCDMapping:
 
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bcrm", "direction": "long",
-             "expected_return": 0.1, "confidence": 0.8, "resistance": 0.2},
-            {"path_id": "p2", "source": "strategic", "direction": "short",
-             "expected_return": 0.05, "confidence": 0.3, "resistance": 0.7},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.1,
+                "confidence": 0.8,
+                "resistance": 0.2,
+            },
+            {
+                "path_id": "p2",
+                "source": "strategic",
+                "direction": "short",
+                "expected_return": 0.05,
+                "confidence": 0.3,
+                "resistance": 0.7,
+            },
         ]
         base = identifier.identify(paths, {}, {})
         shadowed = attach_shadow(dict(base), enabled=True)

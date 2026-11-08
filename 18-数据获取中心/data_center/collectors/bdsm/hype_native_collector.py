@@ -20,6 +20,7 @@
 
 FAIL-OPEN: 网络异常/解析失败 → 返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,10 +34,7 @@ from data_center.core.contract import DataRecord
 
 logger = logging.getLogger("data_center.collectors.bdsm.hype")
 
-_COINGECKO_URL = (
-    "https://api.coingecko.com/api/v3/coins/markets"
-    "?vs_currency=usd&ids=hyperliquid"
-)
+_COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets" "?vs_currency=usd&ids=hyperliquid"
 _HYPERLIQUID_URL = "https://api.hyperliquid.xyz/info"
 _HTTP_TIMEOUT = 15
 _HTTP_HEADERS = {
@@ -73,9 +71,7 @@ class HypeNativeCollector(BaseCollector):
     def _fetch_coingecko(self) -> dict | None:
         """从 CoinGecko 获取 HYPE 代币数据。"""
         try:
-            resp = requests.get(
-                _COINGECKO_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT
-            )
+            resp = requests.get(_COINGECKO_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT)
             resp.raise_for_status()
             data = resp.json()
             return data[0] if data and isinstance(data, list) else None
@@ -118,9 +114,7 @@ class HypeNativeCollector(BaseCollector):
 
         return result
 
-    def _build_record(
-        self, coin: dict, market_meta: dict
-    ) -> DataRecord:
+    def _build_record(self, coin: dict, market_meta: dict) -> DataRecord:
         """构建 DataRecord。"""
         now = datetime.now(timezone.utc).isoformat()
 
@@ -158,7 +152,9 @@ class HypeNativeCollector(BaseCollector):
             # E5 信号数据
             "supply_shrinkage_intensity": round(burned_pct / 100, 4),
             # E6 信号数据
-            "value_capture_delta": round(annualized_revenue / market_cap, 6) if market_cap > 0 else 0.0,
+            "value_capture_delta": (
+                round(annualized_revenue / market_cap, 6) if market_cap > 0 else 0.0
+            ),
         }
 
         timeseries = [
@@ -195,7 +191,7 @@ if __name__ == "__main__":
     recs = c.fetch({})
     if recs:
         r = recs[0]
-        import json
+
         print("metrics:")
         for k, v in r.metrics.items():
             print(f"  {k}: {v}")

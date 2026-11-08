@@ -20,6 +20,7 @@
 
 FAIL-OPEN: 网络异常/解析失败 → 返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,10 +34,7 @@ from data_center.core.contract import DataRecord
 
 logger = logging.getLogger("data_center.collectors.bdsm.uniswap")
 
-_COINGECKO_URL = (
-    "https://api.coingecko.com/api/v3/coins/markets"
-    "?vs_currency=usd&ids=uniswap"
-)
+_COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/markets" "?vs_currency=usd&ids=uniswap"
 _GATEWAY_URL = "https://gateway.uniswap.org/v1/graphql"
 _API_KEY = "wdrv5YJ7MLBDMONNyc3qzwhPF5S8xPAh7aln799ULlw"
 _HTTP_TIMEOUT = 15
@@ -72,9 +70,7 @@ class UniswapNativeCollector(BaseCollector):
     def _fetch_coingecko(self) -> dict | None:
         """从 CoinGecko 获取 UNI 代币数据。"""
         try:
-            resp = requests.get(
-                _COINGECKO_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT
-            )
+            resp = requests.get(_COINGECKO_URL, headers=_HTTP_HEADERS, timeout=_HTTP_TIMEOUT)
             if resp.status_code == 429:
                 logger.warning("CoinGecko rate limit for UNI")
                 return None
@@ -125,7 +121,9 @@ class UniswapNativeCollector(BaseCollector):
             # E5 信号数据
             "supply_shrinkage_intensity": round(burned_pct / 100, 4),
             # E6 信号数据
-            "value_capture_delta": round(annualized_uni_revenue / market_cap, 6) if market_cap > 0 else 0.0,
+            "value_capture_delta": (
+                round(annualized_uni_revenue / market_cap, 6) if market_cap > 0 else 0.0
+            ),
             # API Key 可用性标记
             "api_key_available": True,
             "api_type": "trading_api",

@@ -16,11 +16,11 @@ Phase 2+ 统一 AI 离场评估主脚本 — 接入真实 A1/A2/A3/A9 SKILL 引�
   USE_LLM=1 python 16-调控系统/scripts/phase2_exit_evaluator.py
 """
 
-import sys
-import os
 import json
-from pathlib import Path
+import os
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 MODULE_DIR = Path(__file__).parent.parent
 ARTIFACTS_DIR = MODULE_DIR / "artifacts" / "exit-evaluations"
@@ -28,13 +28,8 @@ CORE_DIR = MODULE_DIR / "core"
 
 sys.path.insert(0, str(CORE_DIR))
 
-from unified_position_query import fetch_all_positions, get_position_summary
-from skill_engine import SkillEngine
-
-import a1_research_adapter
-import a2_first_principles_adapter
-import a3_strategy_adapter
-import a9_exit_decision
+from skill_engine import SkillEngine  # noqa: E402
+from unified_position_query import fetch_all_positions, get_position_summary  # noqa: E402
 
 USE_LLM = os.environ.get("USE_LLM", "").lower() in ("1", "true", "yes", "on")
 USE_REALTIME = os.environ.get("USE_REALTIME", "").lower() in ("1", "true", "yes", "on")
@@ -43,7 +38,12 @@ USE_REALTIME = os.environ.get("USE_REALTIME", "").lower() in ("1", "true", "yes"
 def _fetch_market_data(positions: list) -> dict:
     if USE_REALTIME:
         try:
-            from realtime_market_stream import get_realtime_snapshot, start_realtime_stream, stop_realtime_stream
+            from realtime_market_stream import (
+                get_realtime_snapshot,
+                start_realtime_stream,
+                stop_realtime_stream,
+            )
+
             symbols = []
             for p in positions:
                 sym = p.get("symbol", "").upper()
@@ -53,6 +53,7 @@ def _fetch_market_data(positions: list) -> dict:
                 symbols = ["BTC", "ETH", "SOL"]
             start_realtime_stream(symbols)
             import time
+
             time.sleep(2)
             snapshot = get_realtime_snapshot(symbols)
             if snapshot:
@@ -62,6 +63,7 @@ def _fetch_market_data(positions: list) -> dict:
             pass
 
     from market_data_fetcher import fetch_market_data
+
     return fetch_market_data(positions)
 
 
@@ -84,18 +86,27 @@ def run_phase2_evaluation():
 
     print("\n[步骤 2/6] 获取市场数据...")
     market = _fetch_market_data(positions)
-    print(f"  → BTC: ${market['BTC']['current_price']:,.0f} ({market['BTC']['change_24h_pct']:+.2f}%)")
-    print(f"  → ETH: ${market['ETH']['current_price']:,.0f} ({market['ETH']['change_24h_pct']:+.2f}%)")
-    print(f"  → SOL: ${market['SOL']['current_price']:,.0f} ({market['SOL']['change_24h_pct']:+.2f}%)")
+    print(
+        f"  → BTC: ${market['BTC']['current_price']:,.0f} ({market['BTC']['change_24h_pct']:+.2f}%)"
+    )
+    print(
+        f"  → ETH: ${market['ETH']['current_price']:,.0f} ({market['ETH']['change_24h_pct']:+.2f}%)"
+    )
+    print(
+        f"  → SOL: ${market['SOL']['current_price']:,.0f} ({market['SOL']['change_24h_pct']:+.2f}%)"
+    )
 
     engine = SkillEngine()
 
     print("\n[步骤 3/6] A1 深度调研（dream-strategy-research）...")
-    a1_result = engine.execute("dream-strategy-research", {
-        "market": market,
-        "positions": positions,
-        "use_llm": USE_LLM,
-    })
+    a1_result = engine.execute(
+        "dream-strategy-research",
+        {
+            "market": market,
+            "positions": positions,
+            "use_llm": USE_LLM,
+        },
+    )
     print(f"  → 状态: {a1_result.status}")
     if a1_result.status == "completed":
         rs = a1_result.data.get("research_report", {})
@@ -114,8 +125,17 @@ def run_phase2_evaluation():
             if dream.get("incorporated"):
                 n_suppressed = len(dream.get("suppressed_signals", []))
                 n_nightmare = len(dream.get("nightmare_scenarios", []))
-                latest = dream.get("latest_date", dream.get("products_info", [{}])[0].get("date", "") if dream.get("products_info") else "")
-                print(f"  → 🌙 做梦产物: 已集成 (被压制信号{n_suppressed}个, 噩梦{n_nightmare}个, 最新{latest})")
+                latest = dream.get(
+                    "latest_date",
+                    (
+                        dream.get("products_info", [{}])[0].get("date", "")
+                        if dream.get("products_info")
+                        else ""
+                    ),
+                )
+                print(
+                    f"  → 🌙 做梦产物: 已集成 (被压制信号{n_suppressed}个, 噩梦{n_nightmare}个, 最新{latest})"
+                )
             else:
                 reason = dream.get("note", dream.get("reason", "未找到"))
                 print(f"  → 🌙 做梦产物: 未集成 ({reason})")
@@ -124,22 +144,29 @@ def run_phase2_evaluation():
         if isinstance(archives, list) and archives:
             print(f"  → 📚 历史档案: {len(archives)} 个相似案例")
             for i, arc in enumerate(archives[:2]):
-                print(f"     [{i+1}] 相似度{arc.get('similarity_score', 0):.0%}: {arc.get('case_id', 'N/A')}")
+                print(
+                    f"     [{i+1}] 相似度{arc.get('similarity_score', 0):.0%}: {arc.get('case_id', 'N/A')}"
+                )
 
         llm_enh = rs.get("llm_enhancement")
         if isinstance(llm_enh, dict) and llm_enh.get("used"):
             fb = " (规则降级)" if llm_enh.get("fallback") else ""
-            print(f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)")
+            print(
+                f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)"
+            )
     else:
         print(f"  → 错误: {a1_result.error}")
 
     print("\n[步骤 4/6] A2 第一性原理分析（dream-first-principles）...")
-    a2_result = engine.execute("dream-first-principles", {
-        "market": market,
-        "a1_result": a1_result.data,
-        "positions": positions,
-        "use_llm": USE_LLM,
-    })
+    a2_result = engine.execute(
+        "dream-first-principles",
+        {
+            "market": market,
+            "a1_result": a1_result.data,
+            "positions": positions,
+            "use_llm": USE_LLM,
+        },
+    )
     print(f"  → 状态: {a2_result.status}")
     if a2_result.status == "completed":
         fp = a2_result.data.get("first_principles_analysis", {})
@@ -154,18 +181,23 @@ def run_phase2_evaluation():
         llm_enh = a2_result.data.get("llm_enhancement")
         if isinstance(llm_enh, dict) and llm_enh.get("used"):
             fb = " (规则降级)" if llm_enh.get("fallback") else ""
-            print(f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)")
+            print(
+                f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)"
+            )
     else:
         print(f"  → 错误: {a2_result.error}")
 
     print("\n[步骤 5/6] A3 战略合成（dream-strategy-designer）...")
-    a3_result = engine.execute("dream-strategy-designer", {
-        "a1_result": a1_result.data,
-        "a2_result": a2_result.data,
-        "positions": positions,
-        "market": market,
-        "use_llm": USE_LLM,
-    })
+    a3_result = engine.execute(
+        "dream-strategy-designer",
+        {
+            "a1_result": a1_result.data,
+            "a2_result": a2_result.data,
+            "positions": positions,
+            "market": market,
+            "use_llm": USE_LLM,
+        },
+    )
     print(f"  → 状态: {a3_result.status}")
     if a3_result.status == "completed":
         sd = a3_result.data.get("strategy_directive", {})
@@ -178,18 +210,23 @@ def run_phase2_evaluation():
         llm_enh = a3_result.data.get("llm_enhancement")
         if isinstance(llm_enh, dict) and llm_enh.get("used"):
             fb = " (规则降级)" if llm_enh.get("fallback") else ""
-            print(f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)")
+            print(
+                f"  → 🤖 LLM增强: 已启用{fb} ({llm_enh.get('model', 'N/A')}, {llm_enh.get('latency_ms', 0):.0f}ms)"
+            )
     else:
         print(f"  → 错误: {a3_result.error}")
 
     print("\n[步骤 6/6] A9 离场决策（dream-exit-skill-v2）...")
-    a9_result = engine.execute("dream-exit-skill-v2", {
-        "positions": positions,
-        "a1_result": a1_result.data,
-        "a2_result": a2_result.data,
-        "a3_result": a3_result.data,
-        "market": market,
-    })
+    a9_result = engine.execute(
+        "dream-exit-skill-v2",
+        {
+            "positions": positions,
+            "a1_result": a1_result.data,
+            "a2_result": a2_result.data,
+            "a3_result": a3_result.data,
+            "market": market,
+        },
+    )
     print(f"  → 状态: {a9_result.status}")
     if a9_result.status == "completed":
         os = a9_result.data.get("overall_summary", {})
@@ -197,18 +234,22 @@ def run_phase2_evaluation():
         print(f"  → 整体立场: {os.get('overall_stance', 'N/A')}")
         print(f"  → 理由: {os.get('rationale', 'N/A')}")
         ub = os.get("urgency_breakdown", {})
-        print(f"  → 紧急度: CRITICAL={ub.get('critical', 0)}, HIGH={ub.get('high', 0)}, "
-              f"MEDIUM={ub.get('medium', 0)}, LOW={ub.get('low', 0)}")
+        print(
+            f"  → 紧急度: CRITICAL={ub.get('critical', 0)}, HIGH={ub.get('high', 0)}, "
+            f"MEDIUM={ub.get('medium', 0)}, LOW={ub.get('low', 0)}"
+        )
 
         evaluations = a9_result.data.get("exit_evaluations", [])
-        print(f"\n  各持仓评估明细:")
+        print("\n  各持仓评估明细:")
         for ev in evaluations:
             pos = ev.get("position", {})
             action = ev.get("recommended_action", "N/A")
             urgency = ev.get("urgency", "N/A")
             reason = ev.get("reason", "")[:60]
-            print(f"    [{action:10s}] {pos.get('symbol', '?'):20s} {pos.get('direction', '?'):5s} "
-                  f"PnL={pos.get('unrealized_pnl', 0):+.2f}% | {urgency:8s} | {reason}")
+            print(
+                f"    [{action:10s}] {pos.get('symbol', '?'):20s} {pos.get('direction', '?'):5s} "
+                f"PnL={pos.get('unrealized_pnl', 0):+.2f}% | {urgency:8s} | {reason}"
+            )
     else:
         print(f"  → 错误: {a9_result.error}")
 
@@ -260,10 +301,10 @@ def _generate_markdown_report(report: dict) -> str:
     sd = a3d.get("strategy_directive", {})
 
     lines = []
-    lines.append(f"# Phase 2 统一 AI 离场评估报告")
+    lines.append("# Phase 2 统一 AI 离场评估报告")
     lines.append("")
     lines.append(f"- **时间**: {now}")
-    lines.append(f"- **版本**: Phase 2 v1.0.0 (SKILL 引擎版)")
+    lines.append("- **版本**: Phase 2 v1.0.0 (SKILL 引擎版)")
     lines.append(f"- **评估持仓**: {ps['total_positions']} 个")
     lines.append(f"- **涉及系统**: {ps['total_systems']} 个")
     lines.append(f"- **整体立场**: **{os['overall_stance']}**")
@@ -293,7 +334,9 @@ def _generate_markdown_report(report: dict) -> str:
     lines.append("")
     lines.append(f"- **阻力最小路径**: **{syn.get('least_resistance_path', 'N/A')}**")
     lines.append(f"- **路径置信度**: {syn.get('path_confidence', 0):.2f}")
-    lines.append(f"- **市场状态**: {regime.get('regime', 'N/A')} ({regime.get('confidence', 0):.0f}%)")
+    lines.append(
+        f"- **市场状态**: {regime.get('regime', 'N/A')} ({regime.get('confidence', 0):.0f}%)"
+    )
     ta = fp.get("trend_analysis", {})
     lines.append(f"- **趋势阶段**: {ta.get('trend_phase', 'N/A')}")
     lines.append(f"- **行动建议**: {syn.get('action_recommendation', 'N/A')}")

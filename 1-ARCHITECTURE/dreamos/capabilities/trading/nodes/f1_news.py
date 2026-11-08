@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class F1NewsSentimentNode(BaseNode):
@@ -27,8 +27,8 @@ class F1NewsSentimentNode(BaseNode):
 
     def execute_core(self, state: State) -> NodeResult:
         mkt = self._get_market_data(state)
-        coin = mkt.get("coin", "BTC")
-        price = mkt.get("price", 0)
+        coin = mkt.get("coin", "BTC")  # noqa: F841
+        price = mkt.get("price", 0)  # noqa: F841
 
         rationale: List[str] = []
         sentiment: Dict[str, Any] = {}
@@ -111,7 +111,7 @@ class F1NewsSentimentNode(BaseNode):
         confidence = 0.0
 
         results = state.results if state.results else {}
-        for node_id, result in results.items():
+        for node_id, result in results.items():  # noqa: B007
             if hasattr(result, "direction") and result.direction and result.direction != "HOLD":
                 if hasattr(result, "confidence") and result.confidence > confidence:
                     direction = result.direction

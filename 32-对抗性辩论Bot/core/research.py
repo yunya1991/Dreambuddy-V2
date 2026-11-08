@@ -8,6 +8,7 @@
 输出 ResearchBrief + Citation；fail-open，单源失败不影响辩论。
 `profile=signal` 默认把 L1 状态纳入 citation；其他 profile 保持原 L0/代码来源。
 """
+
 from __future__ import annotations
 
 import json
@@ -37,15 +38,39 @@ CODE_MAX_FILE_BYTES = 200_000
 CODE_MAX_HITS_PER_QUERY = 3
 
 _EXCLUDE_DIRS = {
-    ".git", "node_modules", "__pycache__", ".venv", "venv",
-    "data", "runtime", "logs", ".workbuddy", ".cognitive", ".trae",
+    ".git",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "data",
+    "runtime",
+    "logs",
+    ".workbuddy",
+    ".cognitive",
+    ".trae",
 }
 _CODE_BUDGET_SEC = float(os.environ.get("RESEARCH_CODE_BUDGET_SEC", "6"))
 _CODE_MAX_FILES = int(os.environ.get("RESEARCH_CODE_MAX_FILES", "5000"))
 _EXCLUDE_SUFFIXES = {
-    ".pyc", ".pyo", ".so", ".dll", ".exe", ".bin", ".png", ".jpg",
-    ".jpeg", ".gif", ".zip", ".tar", ".gz", ".pt", ".db", ".sqlite3",
-    ".sqlite", ".pdf",
+    ".pyc",
+    ".pyo",
+    ".so",
+    ".dll",
+    ".exe",
+    ".bin",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".pt",
+    ".db",
+    ".sqlite3",
+    ".sqlite",
+    ".pdf",
 }
 _EXCLUDE_NAME_PATTERNS = (
     re.compile(r"^\.env($|\.)", re.I),
@@ -188,12 +213,14 @@ def _citations_from_unified(env: dict[str, Any]) -> tuple[list[Citation], Source
         ref = str(meta.get("path") or meta.get("memory_id") or hit.get("ref") or "")
         if not ref:
             continue
-        citations.append(Citation(
-            source="unified_search",
-            ref=ref,
-            quote=_quote(hit.get("text") or hit.get("content") or ""),
-            meta={"backend": hit.get("source"), "score": hit.get("score")},
-        ))
+        citations.append(
+            Citation(
+                source="unified_search",
+                ref=ref,
+                quote=_quote(hit.get("text") or hit.get("content") or ""),
+                meta={"backend": hit.get("source"), "score": hit.get("score")},
+            )
+        )
     degraded = not env.get("ok", False) or not hits or bool(degraded_sources)
     reason = ""
     if not env.get("ok", False):
@@ -202,8 +229,9 @@ def _citations_from_unified(env: dict[str, Any]) -> tuple[list[Citation], Source
         reason = "no_results"
     elif degraded_sources:
         reason = f"partial_sources:{','.join(map(str, degraded_sources))}"
-    stat = SourceStat("unified_search", ok=bool(hits), count=len(citations),
-                      degraded=degraded, reason=reason)
+    stat = SourceStat(
+        "unified_search", ok=bool(hits), count=len(citations), degraded=degraded, reason=reason
+    )
     err = "" if not degraded else f"unified_search:{reason}"
     return citations, stat, err
 
@@ -218,18 +246,23 @@ def _citations_from_recall(env: dict[str, Any]) -> tuple[list[Citation], SourceS
         ref = str(memory.get("id") or memory.get("memory_id") or "")
         if not ref:
             continue
-        citations.append(Citation(
-            source="recall",
-            ref=ref,
-            quote=_quote(memory.get("content") or memory.get("text") or ""),
-            meta={"score": memory.get("score", memory.get("confidence"))},
-        ))
+        citations.append(
+            Citation(
+                source="recall",
+                ref=ref,
+                quote=_quote(memory.get("content") or memory.get("text") or ""),
+                meta={"score": memory.get("score", memory.get("confidence"))},
+            )
+        )
     degraded = not env.get("ok", False) or not memories
-    reason = "" if env.get("ok", False) and memories else (
-        "source_unavailable" if not env.get("ok", False) else "no_results"
+    reason = (
+        ""
+        if env.get("ok", False) and memories
+        else ("source_unavailable" if not env.get("ok", False) else "no_results")
     )
-    stat = SourceStat("recall", ok=bool(memories), count=len(citations),
-                      degraded=degraded, reason=reason)
+    stat = SourceStat(
+        "recall", ok=bool(memories), count=len(citations), degraded=degraded, reason=reason
+    )
     err = "" if not degraded else f"recall:{reason}"
     return citations, stat, err
 
@@ -239,23 +272,47 @@ def _rg_hits(term: str, limit: int) -> list[dict[str, Any]]:
     if not rg:
         return []
     globs = [
-        "--glob=!**/.git/**", "--glob=!**/node_modules/**",
-        "--glob=!**/__pycache__/**", "--glob=!**/data/**",
-        "--glob=!**/runtime/**", "--glob=!**/.env", "--glob=!**/.env.*",
-        "--glob=!**/*.key", "--glob=!**/*.pem", "--glob=!**/*.p12",
-        "--glob=!**/*credential*", "--glob=!**/*secret*",
-        "--glob=!**/CHANGELOG.md", "--glob=!**/DEBT_INDEX.md",
-        "--glob=!**/ARCHIVE_INDEX.md", "--glob=!**/ENGINEERING_INDEX.md",
+        "--glob=!**/.git/**",
+        "--glob=!**/node_modules/**",
+        "--glob=!**/__pycache__/**",
+        "--glob=!**/data/**",
+        "--glob=!**/runtime/**",
+        "--glob=!**/.env",
+        "--glob=!**/.env.*",
+        "--glob=!**/*.key",
+        "--glob=!**/*.pem",
+        "--glob=!**/*.p12",
+        "--glob=!**/*credential*",
+        "--glob=!**/*secret*",
+        "--glob=!**/CHANGELOG.md",
+        "--glob=!**/DEBT_INDEX.md",
+        "--glob=!**/ARCHIVE_INDEX.md",
+        "--glob=!**/ENGINEERING_INDEX.md",
     ]
     cmd = [
-        rg, "-n", "--no-heading", "--color", "never",
-        "--max-filesize", "200K", "-m", str(limit), *globs,
-        "--", term, ".",
+        rg,
+        "-n",
+        "--no-heading",
+        "--color",
+        "never",
+        "--max-filesize",
+        "200K",
+        "-m",
+        str(limit),
+        *globs,
+        "--",
+        term,
+        ".",
     ]
     try:
         proc = subprocess.run(
-            cmd, cwd=str(REPO_ROOT), text=True, encoding="utf-8",
-            errors="replace", capture_output=True, timeout=10,
+            cmd,
+            cwd=str(REPO_ROOT),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=10,
         )
     except (OSError, subprocess.TimeoutExpired):
         return []
@@ -282,13 +339,26 @@ def _git_hits(term: str, limit: int) -> list[dict[str, Any]]:
     if not git:
         return []
     cmd = [
-        git, "-c", "core.quotepath=false", "grep", "-n", "-I",
-        "-m", str(limit), "--", term,
+        git,
+        "-c",
+        "core.quotepath=false",
+        "grep",
+        "-n",
+        "-I",
+        "-m",
+        str(limit),
+        "--",
+        term,
     ]
     try:
         proc = subprocess.run(
-            cmd, cwd=str(REPO_ROOT), text=True, encoding="utf-8",
-            errors="replace", capture_output=True, timeout=12,
+            cmd,
+            cwd=str(REPO_ROOT),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=12,
         )
     except (OSError, subprocess.TimeoutExpired):
         return []
@@ -312,7 +382,9 @@ def _git_hits(term: str, limit: int) -> list[dict[str, Any]]:
     return hits
 
 
-def _python_hits(term: str, limit: int, budget_sec: float = _CODE_BUDGET_SEC) -> list[dict[str, Any]]:
+def _python_hits(
+    term: str, limit: int, budget_sec: float = _CODE_BUDGET_SEC
+) -> list[dict[str, Any]]:
     """无 rg 时的兜底扫描：带时间预算 + 源码优先，避免拖死 MCP job。"""
     pattern = re.compile(re.escape(term), re.I)
     hits: list[dict[str, Any]] = []
@@ -343,11 +415,13 @@ def _python_hits(term: str, limit: int, budget_sec: float = _CODE_BUDGET_SEC) ->
                 continue
             for lineno, line in enumerate(text.splitlines(), 1):
                 if pattern.search(line):
-                    hits.append({
-                        "path": str(path.relative_to(REPO_ROOT)).replace("\\", "/"),
-                        "line": lineno,
-                        "snippet": line.strip(),
-                    })
+                    hits.append(
+                        {
+                            "path": str(path.relative_to(REPO_ROOT)).replace("\\", "/"),
+                            "line": lineno,
+                            "snippet": line.strip(),
+                        }
+                    )
                     break
     return hits
 
@@ -388,18 +462,25 @@ def _code_citations(topic: str, limit: int) -> tuple[list[Citation], SourceStat,
             if ref in seen:
                 continue
             seen.add(ref)
-            citations.append(Citation(
-                source="code_search",
-                ref=ref,
-                quote=_quote(hit.get("snippet") or ""),
-                line=hit.get("line"),
-                meta={"keyword": keyword},
-            ))
+            citations.append(
+                Citation(
+                    source="code_search",
+                    ref=ref,
+                    quote=_quote(hit.get("snippet") or ""),
+                    line=hit.get("line"),
+                    meta={"keyword": keyword},
+                )
+            )
             if len(citations) >= limit:
                 break
     degraded = not citations
-    stat = SourceStat("code_search", ok=bool(citations), count=len(citations),
-                      degraded=degraded, reason="no_results" if degraded else "")
+    stat = SourceStat(
+        "code_search",
+        ok=bool(citations),
+        count=len(citations),
+        degraded=degraded,
+        reason="no_results" if degraded else "",
+    )
     err = "" if not degraded else "code_search:no_results"
     return citations, stat, err
 
@@ -473,20 +554,22 @@ def _citations_from_l1_signal(
     payload = signal.get("payload") or {}
     signal_id = signal.get("signal_id") or signal.get("symbol") or "unknown"
     ref = f"l1.signal:{signal_id}"
-    quote = _l1_quote({
-        "signal_id": signal.get("signal_id"),
-        "symbol": signal.get("symbol"),
-        "source": signal.get("source"),
-        "direction": signal.get("direction"),
-        "confidence": signal.get("confidence"),
-        "horizon": signal.get("horizon"),
-        "mode": signal.get("mode"),
-        "expires_at": signal.get("expires_at"),
-        "action": payload.get("action"),
-        "position_tier": payload.get("position_tier"),
-        "regime": payload.get("regime"),
-        "primary_contradiction": payload.get("primary_contradiction"),
-    })
+    quote = _l1_quote(
+        {
+            "signal_id": signal.get("signal_id"),
+            "symbol": signal.get("symbol"),
+            "source": signal.get("source"),
+            "direction": signal.get("direction"),
+            "confidence": signal.get("confidence"),
+            "horizon": signal.get("horizon"),
+            "mode": signal.get("mode"),
+            "expires_at": signal.get("expires_at"),
+            "action": payload.get("action"),
+            "position_tier": payload.get("position_tier"),
+            "regime": payload.get("regime"),
+            "primary_contradiction": payload.get("primary_contradiction"),
+        }
+    )
     fallback = bool(data.get("fallback"))
     citation = Citation(
         source="l1_signal",
@@ -499,7 +582,10 @@ def _citations_from_l1_signal(
         },
     )
     stat = SourceStat(
-        "l1_signal", True, 1, fallback,
+        "l1_signal",
+        True,
+        1,
+        fallback,
         "fallback_11" if fallback else "",
     )
     return [citation], stat, "l1_signal:fallback_11" if fallback else ""
@@ -524,18 +610,18 @@ def _citations_from_l1_bus(
         }
         for s in signals[:3]
     ]
-    path = _rel_path(
-        data.get("path") or "42-神经网络交易协调层/runtime/bus_state.json"
-    )
+    path = _rel_path(data.get("path") or "42-神经网络交易协调层/runtime/bus_state.json")
     citation = Citation(
         source="l1_bus",
         ref=f"l1.bus:{path}",
-        quote=_l1_quote({
-            "generated_at": data.get("generated_at"),
-            "sources": data.get("sources") or [],
-            "signal_count": data.get("signal_count"),
-            "top_signals": top,
-        }),
+        quote=_l1_quote(
+            {
+                "generated_at": data.get("generated_at"),
+                "sources": data.get("sources") or [],
+                "signal_count": data.get("signal_count"),
+                "top_signals": top,
+            }
+        ),
         meta={"tool": "get_bus_state", "path": path},
     )
     stat = SourceStat("l1_bus", True, 1)
@@ -554,19 +640,19 @@ def _citations_from_l1_cycle(
 
     real = cycle.get("real_cycle") or {}
     btc = ((cycle.get("technical_anchor") or {}).get("assets") or {}).get("BTC/USDT") or {}
-    path = _rel_path(
-        data.get("path") or "40-周期神经网络系统/cycle_state.json"
-    )
+    path = _rel_path(data.get("path") or "40-周期神经网络系统/cycle_state.json")
     citation = Citation(
         source="l1_cycle",
         ref=f"l1.cycle:{path}",
-        quote=_l1_quote({
-            "generated_at": cycle.get("generated_at"),
-            "real_cycle_state": real.get("state"),
-            "real_cycle_confidence": real.get("confidence"),
-            "btc_above_ma200": btc.get("above"),
-            "btc_distance_pct": btc.get("distance_pct"),
-        }),
+        quote=_l1_quote(
+            {
+                "generated_at": cycle.get("generated_at"),
+                "real_cycle_state": real.get("state"),
+                "real_cycle_confidence": real.get("confidence"),
+                "btc_above_ma200": btc.get("above"),
+                "btc_distance_pct": btc.get("distance_pct"),
+            }
+        ),
         meta={"tool": "get_cycle_state", "path": path},
     )
     stat = SourceStat("l1_cycle", True, 1)
@@ -602,9 +688,7 @@ def collect_research(
     profile: str | None = None,
 ) -> ResearchBrief:
     """执行调研预检；任何异常都 fail-open，不抛给辩论主流程。"""
-    requested = _expand_sources(
-        sources if sources is not None else _default_sources(profile)
-    )
+    requested = _expand_sources(sources if sources is not None else _default_sources(profile))
     max_items = max(1, min(int(max_items), MAX_CITATIONS))
     buckets: list[list[Citation]] = []
     stats: list[SourceStat] = []
@@ -657,9 +741,14 @@ def collect_research(
                 stats.append(SourceStat("recall", False, 0, True, "source_unavailable"))
             else:
                 try:
-                    env = client.call("recall", {
-                        "context": topic[:300], "top_k": 5, "min_quality": "C",
-                    })
+                    env = client.call(
+                        "recall",
+                        {
+                            "context": topic[:300],
+                            "top_k": 5,
+                            "min_quality": "C",
+                        },
+                    )
                     citations, stat, err = _citations_from_recall(env)
                     if err:
                         errors.append(err)

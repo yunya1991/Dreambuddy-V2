@@ -21,10 +21,10 @@ A0 矛盾论节点 — 内部方法论框架
 
 from __future__ import annotations
 
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class A0ContradictionNode(BaseNode):
@@ -77,10 +77,7 @@ class A0ContradictionNode(BaseNode):
         contradictions["sentiment"] = sent_score
 
         # ── 综合：找出主矛盾 ──────────────────
-        main_dim, main_data = max(
-            contradictions.items(),
-            key=lambda x: x[1]["intensity"]
-        )
+        main_dim, main_data = max(contradictions.items(), key=lambda x: x[1]["intensity"])
         main_direction = main_data["direction"]
         intensity = main_data["intensity"]
 
@@ -92,7 +89,7 @@ class A0ContradictionNode(BaseNode):
         direction = main_direction
 
         rationale.append("[A0矛盾论] 四维矛盾分析")
-        for dim_key, dim_name, weight in self.DIMENSIONS:
+        for dim_key, dim_name, weight in self.DIMENSIONS:  # noqa: B007
             d = contradictions[dim_key]
             rationale.append(f"  {dim_name}: {d['direction']} (强度{d['intensity']:.0%})")
         rationale.append(f"  ★ 主矛盾: {main_data['name']} → 方向{direction}, 强度{intensity:.0%}")
@@ -118,13 +115,13 @@ class A0ContradictionNode(BaseNode):
         ema20 = mkt.get("ema20", price)
         ema50 = mkt.get("ema50", price)
         rsi = mkt.get("rsi14", 50)
-        ch24 = mkt.get("change_24h", 0)
+        ch24 = mkt.get("change_24h", 0)  # noqa: F841
 
         # 趋势方向（EMA）— 放宽判断，不需要完全排列
         trend_bull = price > ema20 and ema20 > ema50
         trend_bear = price < ema20 and ema20 < ema50
         weak_bull = price > ema50  # 价格至少在EMA50之上
-        weak_bear = price < ema50   # 价格至少在EMA50之下
+        weak_bear = price < ema50  # 价格至少在EMA50之下
 
         # 反趋势信号（RSI 极值）
         counter_bull = rsi < 35  # 超卖 = 反弹
@@ -167,7 +164,7 @@ class A0ContradictionNode(BaseNode):
         """量价配合分析"""
         vol_ratio = mkt.get("vol_ratio", 1.0)
         ch24 = mkt.get("change_24h", 0)
-        ch4h = mkt.get("change_4h", 0)
+        ch4h = mkt.get("change_4h", 0)  # noqa: F841
 
         # 量价配合度
         price_up = ch24 > 0
@@ -282,6 +279,7 @@ class A0ContradictionNode(BaseNode):
         if not directions:
             return 0.5
         from collections import Counter
+
         counts = Counter(directions)
         most_common_count = counts.most_common(1)[0][1]
         return most_common_count / len(directions)

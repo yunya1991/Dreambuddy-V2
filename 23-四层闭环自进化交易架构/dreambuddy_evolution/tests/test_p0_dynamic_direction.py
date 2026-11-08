@@ -13,6 +13,7 @@ ADX 趋势：+DI > -DI → long, +DI < -DI → short
   T6. _DYNAMIC_DIRECTION_GENES 包含 ATR-EXPANDING 和 ADX-GT25-TREND
   T7. _GENE_DIRECTION 不再硬编码 ATR-EXPANDING 和 ADX-GT25-TREND
 """
+
 from __future__ import annotations
 
 import sys
@@ -29,6 +30,7 @@ SCRIPTS_DIR = REPO / "dreambuddy_evolution" / "scripts"
 
 def _import_shadow_backtest():
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
         "shadow_backtest", SCRIPTS_DIR / "shadow_backtest.py"
     )
@@ -42,8 +44,16 @@ def _make_trend_up(n=100):
     klines = []
     for i in range(n):
         close = 100.0 + i * 2.0
-        klines.append({"timestamp": f"2026-01-{i+1:02d}", "open": close-0.5,
-                        "high": close+1.0, "low": close-1.0, "close": close, "volume": 1000.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
     return klines
 
 
@@ -52,8 +62,16 @@ def _make_trend_down(n=100):
     klines = []
     for i in range(n):
         close = 300.0 - i * 2.0
-        klines.append({"timestamp": f"2026-01-{i+1:02d}", "open": close+0.5,
-                        "high": close+1.0, "low": close-1.0, "close": close, "volume": 1000.0})
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close + 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
     return klines
 
 

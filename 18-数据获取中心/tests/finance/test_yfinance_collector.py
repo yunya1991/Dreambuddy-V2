@@ -2,9 +2,8 @@
 
 yfinance 薄封装，产出 DataRecord(category=finance)。
 """
-import pandas as pd
-import pytest
 
+import pandas as pd
 from data_center.collectors.finance.yfinance_collector import YFinanceCollector
 from data_center.core.contract import DataRecord
 

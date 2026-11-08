@@ -7,10 +7,10 @@
 """
 
 from . import schema
-from .schema import NodeType, RelationType, NODE_PROPS, node_id, DEFAULT_GRAPH_PATH
-from .entity_extractor import extract_entities
 from .build_graph import build_graph
+from .entity_extractor import extract_entities
 from .graph_search import graph_search
+from .schema import DEFAULT_GRAPH_PATH, NODE_PROPS, NodeType, RelationType, node_id
 
 __all__ = [
     "schema",

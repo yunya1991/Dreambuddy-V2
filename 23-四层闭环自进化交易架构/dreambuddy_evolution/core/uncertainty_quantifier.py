@@ -18,6 +18,7 @@ UncertaintyQuantifier — 不确定性量化器（Phase 5.1）
 
 FAIL-OPEN：任何步骤异常 → uncertainty=1.0（最保守），interval=None
 """
+
 from __future__ import annotations
 
 import logging
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 try:
     import torch
     import torch.nn as nn
+
     _TORCH_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _TORCH_AVAILABLE = False
@@ -39,6 +41,7 @@ except Exception:  # noqa: BLE001
 
 class _SimpleMLP(nn.Module if _TORCH_AVAILABLE else object):
     """简单 MLP 回归器，用于 Deep Ensemble"""
+
     def __init__(self, input_dim: int, hidden_dim: int = 32):
         if _TORCH_AVAILABLE:
             super().__init__()
@@ -61,7 +64,7 @@ class UncertaintyQuantifier:
     """
 
     # HC-AGI-06 阈值
-    UNCERTAINTY_HIGH = 0.4    # 降仓阈值
+    UNCERTAINTY_HIGH = 0.4  # 降仓阈值
     UNCERTAINTY_CRITICAL = 0.7  # 拒开仓阈值
 
     def __init__(
@@ -108,7 +111,9 @@ class UncertaintyQuantifier:
             n = len(y_calib)
 
             if n < self.min_calibration_samples:
-                logger.warning("[FO-AGI-02] 校准样本不足(< %d)，跳过校准", self.min_calibration_samples)
+                logger.warning(
+                    "[FO-AGI-02] 校准样本不足(< %d)，跳过校准", self.min_calibration_samples
+                )
                 return {"conformal_quantile": None, "n_calib": n, "calibrated": False}
 
             # 预测校准集
@@ -223,7 +228,7 @@ class UncertaintyQuantifier:
 
         n = len(y)
         rng = np.random.RandomState(42)
-        for i in range(self.n_ensemble):
+        for i in range(self.n_ensemble):  # noqa: B007
             # bootstrap 采样
             idx = rng.choice(n, n, replace=True)
             reg = LinearRegression()
@@ -258,8 +263,16 @@ class UncertaintyQuantifier:
                 preds.append(p)
 
             preds_arr = np.array(preds)  # (n_models, n_samples)
-            mean = float(np.mean(preds_arr, axis=0)[0]) if preds_arr.ndim > 1 else float(np.mean(preds_arr))
-            std = float(np.std(preds_arr, axis=0)[0]) if preds_arr.ndim > 1 else float(np.std(preds_arr))
+            mean = (
+                float(np.mean(preds_arr, axis=0)[0])
+                if preds_arr.ndim > 1
+                else float(np.mean(preds_arr))
+            )
+            std = (
+                float(np.std(preds_arr, axis=0)[0])
+                if preds_arr.ndim > 1
+                else float(np.std(preds_arr))
+            )
 
             return {
                 "mean": mean,
@@ -306,7 +319,11 @@ class UncertaintyQuantifier:
         """
         try:
             # 防御：prediction 异常 → 最大不确定性
-            if not isinstance(prediction, (int, float)) or np.isnan(prediction) or np.isinf(prediction):
+            if (
+                not isinstance(prediction, (int, float))
+                or np.isnan(prediction)
+                or np.isinf(prediction)
+            ):
                 return {
                     "uncertainty_score": 1.0,
                     "components": {"ensemble": 1.0, "conformal": 1.0, "feature_noise": 1.0},
@@ -323,7 +340,9 @@ class UncertaintyQuantifier:
 
             # 2. Conformal 区间宽度不确定性
             if conformal_width is not None:
-                components["conformal"] = float(min(1.0, conformal_width / (abs(prediction) + 1e-10)))
+                components["conformal"] = float(
+                    min(1.0, conformal_width / (abs(prediction) + 1e-10))
+                )
             else:
                 components["conformal"] = 0.5
 
@@ -412,7 +431,9 @@ class UncertaintyQuantifier:
 
             # 简化：用均值预测器校准 conformal
             class _MeanPredictor:
-                def __init__(self, val): self.val = val
+                def __init__(self, val):
+                    self.val = val
+
                 def predict(self, X):
                     return np.full(len(X), self.val)
 

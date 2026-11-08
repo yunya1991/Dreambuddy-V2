@@ -15,6 +15,7 @@
 必须与策略代码中使用的列名 100% 一致，否则后续逻辑会出现 KeyError 或
 行为偏差（这是 10-经典与 12-三屏 FE 范式的最大差异）。
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -22,10 +23,10 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-
 # 直接尝试使用 talib；不可用时 pandas 兜底（fail-open，保证数值尽量一致）
 try:
     import talib.abstract as _ta  # type: ignore
+
     _HAS_TALIB = True
 except Exception:  # noqa: BLE001
     _HAS_TALIB = False
@@ -61,30 +62,34 @@ def _pandas_bb(close: pd.Series, window: int = 20, stds: float = 2.0):
 
 def _pandas_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     h = df["high"]
-    l = df["low"]
+    l = df["low"]  # noqa: E741
     c = df["close"]
-    tr = pd.concat([
-        h - l,
-        (h - c.shift(1)).abs(),
-        (l - c.shift(1)).abs(),
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            h - l,
+            (h - c.shift(1)).abs(),
+            (l - c.shift(1)).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
     return tr.rolling(period).mean()
 
 
 def _pandas_adx(df: pd.DataFrame, period: int = 14) -> pd.Series:
     h = df["high"]
-    l = df["low"]
+    l = df["low"]  # noqa: E741
     c = df["close"]
-    tr = pd.concat([
-        h - l,
-        (h - c.shift(1)).abs(),
-        (l - c.shift(1)).abs(),
-    ], axis=1).max(axis=1)
+    tr = pd.concat(
+        [
+            h - l,
+            (h - c.shift(1)).abs(),
+            (l - c.shift(1)).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
     atr_s = tr.rolling(period).mean().replace(0, np.nan)
-    plus_dm = (h - h.shift(1)).where(
-        (h - h.shift(1)) > (l.shift(1) - l), 0.0)
-    minus_dm = (l.shift(1) - l).where(
-        (l.shift(1) - l) > (h - h.shift(1)), 0.0)
+    plus_dm = (h - h.shift(1)).where((h - h.shift(1)) > (l.shift(1) - l), 0.0)
+    minus_dm = (l.shift(1) - l).where((l.shift(1) - l) > (h - h.shift(1)), 0.0)
     plus_di = 100.0 * (plus_dm.rolling(period).mean() / atr_s)
     minus_di = 100.0 * (minus_dm.rolling(period).mean() / atr_s)
     dx = 100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di + 1e-12)
@@ -100,8 +105,7 @@ def _pandas_willr(df: pd.DataFrame, period: int = 14) -> pd.Series:
 def _pandas_cci(df: pd.DataFrame, period: int = 20) -> pd.Series:
     tp = (df["high"] + df["low"] + df["close"]) / 3.0
     tp_sma = tp.rolling(period).mean()
-    tp_mad = tp.rolling(period).apply(
-        lambda x: np.mean(np.abs(x - x.mean())), raw=True)
+    tp_mad = tp.rolling(period).apply(lambda x: np.mean(np.abs(x - x.mean())), raw=True)
     return (tp - tp_sma) / (0.015 * tp_mad + 1e-12)
 
 
@@ -123,8 +127,8 @@ def compute(
     """
     out = pd.DataFrame(index=df.index)
     close = df["close"]
-    high = df["high"]
-    low = df["low"]
+    high = df["high"]  # noqa: F841
+    low = df["low"]  # noqa: F841
 
     # --- RSI 14（列名 "rsi"，Bot2StrategyTrend L85 用 ta.RSI 默认 period=14）---
     if _HAS_TALIB:

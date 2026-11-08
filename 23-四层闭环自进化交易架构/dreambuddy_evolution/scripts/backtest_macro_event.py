@@ -12,10 +12,11 @@
   cd 23-四层闭环自进化交易架构
   /usr/bin/python3 dreambuddy_evolution/scripts/backtest_macro_event.py
 """
+
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 # 确保从架构目录运行时能导入 dreambuddy_evolution
 # script 在 dreambuddy_evolution/scripts/ 下，需上溯 3 级到 23-四层闭环自进化交易架构/
@@ -27,12 +28,10 @@ _29_dir = os.path.join(os.path.dirname(_23_dir), "29-事件驱动策略系统")
 if _29_dir not in sys.path:
     sys.path.insert(0, _29_dir)
 
-import numpy as np
-
-from event_driven.event_driven_strategy import EventDrivenStrategy
-from event_driven.conviction_scorer import ConvictionScorer
-from event_driven.event_dominance_controller import EventDominanceController
-from dreambuddy_evolution.core.event_window_tracker import EventWindowTracker
+import numpy as np  # noqa: E402, I001
+from event_driven.conviction_scorer import ConvictionScorer  # noqa: E402
+from event_driven.event_dominance_controller import EventDominanceController  # noqa: E402
+from event_driven.event_driven_strategy import EventDrivenStrategy  # noqa: E402
 
 
 def generate_fomc_cycle_data() -> list[dict]:
@@ -43,12 +42,12 @@ def generate_fomc_cycle_data() -> list[dict]:
 
     phases = [
         # (day_start, day_end, phase_name, hike_prob, trend, cpi_surprise)
-        (0, 14, "expectation_build", 0.30, -0.001, None),       # 预期积累：阴跌
-        (14, 28, "expectation_rise", 0.55, -0.002, None),        # 预期升温：加速跌
-        (28, 42, "expectation_jump", 0.88, -0.003, 0.2),         # 预期跳变：CPI超预期+加速下跌
-        (42, 43, "event", 0.93, -0.005, None),                   # 事件日：急跌
-        (43, 56, "repricing", 0.10, 0.003, None),                # 重定价：relief rally
-        (56, 60, "neutral", 0.05, 0.001, None),                  # 周期外
+        (0, 14, "expectation_build", 0.30, -0.001, None),  # 预期积累：阴跌
+        (14, 28, "expectation_rise", 0.55, -0.002, None),  # 预期升温：加速跌
+        (28, 42, "expectation_jump", 0.88, -0.003, 0.2),  # 预期跳变：CPI超预期+加速下跌
+        (42, 43, "event", 0.93, -0.005, None),  # 事件日：急跌
+        (43, 56, "repricing", 0.10, 0.003, None),  # 重定价：relief rally
+        (56, 60, "neutral", 0.05, 0.001, None),  # 周期外
     ]
 
     records = []
@@ -59,7 +58,7 @@ def generate_fomc_cycle_data() -> list[dict]:
         hike_prob = 0.05
         trend = 0.0
         cpi_surprise = None
-        for (ds, de, name, prob, t, cs) in phases:
+        for ds, de, name, prob, t, cs in phases:
             if ds <= day < de:
                 current_phase = name
                 hike_prob = prob
@@ -91,41 +90,49 @@ def generate_fomc_cycle_data() -> list[dict]:
             us10y_change = -ret * 100
             dxy_change = -ret
 
-        records.append({
-            "day": day,
-            "phase": current_phase,
-            "price": round(new_price, 2),
-            "kline_data": {
-                "symbol": "GOLD",
-                "close": closes,
-                "high": high,
-                "low": low,
-                "open": open_,
-                "cpi_surprise": cpi_surprise,
-                "cpi_actual": 3.5,  # 通胀 3.5%（略低于名义利率 → 实际利率微正 → 预期阶段利空）
-                "cpi_expected": 5.0,
-                "rate_hike_prob": hike_prob,
-                "monetary_cycle": "tightening" if hike_prob > 0.5 else "neutral",
-                "gold_change_pct": gold_change,
-                "us10y_change_bp": us10y_change,
-                "dxy_change_pct": dxy_change,
-                "capital_flow": 0.3 if current_phase == "repricing" else -0.2,
-                # 🆕 FOMC 决议数据（事件日及之后）
-                "fomc_decision": {
-                    "decision": "hike" if current_phase in ("event", "repricing") else "hold",
-                    "rate_change": 0.25 if current_phase in ("event", "repricing") else 0.0,
-                    "dot_plot_median": 0.5 if current_phase in ("event", "repricing") else 0.0,  # 暗示更多加息 → 鹰派
+        records.append(
+            {
+                "day": day,
+                "phase": current_phase,
+                "price": round(new_price, 2),
+                "kline_data": {
+                    "symbol": "GOLD",
+                    "close": closes,
+                    "high": high,
+                    "low": low,
+                    "open": open_,
+                    "cpi_surprise": cpi_surprise,
+                    "cpi_actual": 3.5,  # 通胀 3.5%（略低于名义利率 → 实际利率微正 → 预期阶段利空）
+                    "cpi_expected": 5.0,
+                    "rate_hike_prob": hike_prob,
+                    "monetary_cycle": "tightening" if hike_prob > 0.5 else "neutral",
+                    "gold_change_pct": gold_change,
+                    "us10y_change_bp": us10y_change,
+                    "dxy_change_pct": dxy_change,
+                    "capital_flow": 0.3 if current_phase == "repricing" else -0.2,
+                    # 🆕 FOMC 决议数据（事件日及之后）
+                    "fomc_decision": {
+                        "decision": "hike" if current_phase in ("event", "repricing") else "hold",
+                        "rate_change": 0.25 if current_phase in ("event", "repricing") else 0.0,
+                        "dot_plot_median": (
+                            0.5 if current_phase in ("event", "repricing") else 0.0
+                        ),  # 暗示更多加息 → 鹰派
+                    },
+                    "event_context": {
+                        "cycle_phase": current_phase,
+                        "event_window": (
+                            "event"
+                            if current_phase == "event"
+                            else ("post_event" if current_phase == "repricing" else "pre_event")
+                        ),
+                        "in_fomc_cycle": current_phase != "neutral",
+                        "hike_prob": hike_prob,
+                        "probability_trend": "stable",
+                        "dominant_direction": "short" if hike_prob > 0.5 else "long",
+                    },
                 },
-                "event_context": {
-                    "cycle_phase": current_phase,
-                    "event_window": "event" if current_phase == "event" else ("post_event" if current_phase == "repricing" else "pre_event"),
-                    "in_fomc_cycle": current_phase != "neutral",
-                    "hike_prob": hike_prob,
-                    "probability_trend": "stable",
-                    "dominant_direction": "short" if hike_prob > 0.5 else "long",
-                },
-            },
-        })
+            }
+        )
 
     return records
 
@@ -141,7 +148,9 @@ def run_backtest():
     scorer = ConvictionScorer()
     edc = EventDominanceController()
 
-    print(f"\n{'Day':>4} {'Phase':<20} {'Price':>8} {'Signal':>8} {'Conf':>6} {'Filter':>6} {'FG':>8}")
+    print(
+        f"\n{'Day':>4} {'Phase':<20} {'Price':>8} {'Signal':>8} {'Conf':>6} {'Filter':>6} {'FG':>8}"
+    )
     print("-" * 80)
 
     trade_pnl = 0.0
@@ -194,32 +203,44 @@ def run_backtest():
                 position_size = pos_mult
             elif position != decision.macro_direction:
                 # 平仓反向
-                pnl = (price - entry_price) / entry_price if position == "long" else (entry_price - price) / entry_price
+                pnl = (
+                    (price - entry_price) / entry_price
+                    if position == "long"
+                    else (entry_price - price) / entry_price
+                )
                 trade_pnl += pnl * position_size
                 position = decision.macro_direction
                 entry_price = price
                 position_size = pos_mult
         elif phase == "neutral" and position is not None:
             # 周期结束平仓
-            pnl = (price - entry_price) / entry_price if position == "long" else (entry_price - price) / entry_price
+            pnl = (
+                (price - entry_price) / entry_price
+                if position == "long"
+                else (entry_price - price) / entry_price
+            )
             trade_pnl += pnl * position_size
             position = None
 
     # 最终平仓
     if position is not None:
         final_price = records[-1]["price"]
-        pnl = (final_price - entry_price) / entry_price if position == "long" else (entry_price - final_price) / entry_price
+        pnl = (
+            (final_price - entry_price) / entry_price
+            if position == "long"
+            else (entry_price - final_price) / entry_price
+        )
         trade_pnl += pnl * position_size
 
     print("-" * 80)
-    print(f"\n回测结果:")
+    print("\n回测结果:")
     print(f"  总交易日: {len(records)}")
     print(f"  总盈亏: {trade_pnl * 100:.2f}%")
     print(f"  最终价格: ${records[-1]['price']:.2f} (起始 ${records[0]['price']:.2f})")
     print(f"  买入持有收益: {(records[-1]['price'] / records[0]['price'] - 1) * 100:.2f}%")
 
     # 验证关键断言
-    print(f"\n关键验证:")
+    print("\n关键验证:")
     # 1. 买预期阶段：高 hike_prob → SHORT（利空正在被定价）
     expectation_signals = [r for r in records if r["phase"] == "expectation_jump"]
     if expectation_signals:
@@ -240,7 +261,7 @@ def run_backtest():
     if repricing_signals:
         sig = strategy.evaluate(repricing_signals[-1]["kline_data"]).to_dict()
         print(f"  forward_guidance: {sig.get('forward_guidance', '')} (期望 hawkish)")
-        assert sig.get("forward_guidance") == "hawkish", f"forward_guidance 应为 hawkish"
+        assert sig.get("forward_guidance") == "hawkish", "forward_guidance 应为 hawkish"
 
     print("  ✓ 所有断言通过")
     return trade_pnl

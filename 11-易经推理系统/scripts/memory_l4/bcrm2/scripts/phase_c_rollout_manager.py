@@ -20,6 +20,7 @@ Plan: 2026-08-20-phase-c-alpha-blend-plan.md §T_C6
     mgr.save()
     status = mgr.get_status()
 """
+
 from __future__ import annotations
 
 import json
@@ -34,7 +35,7 @@ _MEMORY_L4 = _THIS.parent.parent.parent
 if str(_MEMORY_L4) not in __import__("sys").path:
     __import__("sys").path.insert(0, str(_MEMORY_L4))
 
-from bcrm2.parameter_mapper import ALPHA_BLEND_MAX, ALPHA_BLEND_STEP
+from bcrm2.parameter_mapper import ALPHA_BLEND_MAX, ALPHA_BLEND_STEP  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +64,11 @@ class RolloutManager:
         # 当 shadow 样本 ≥ fma_min_samples 且 FMA=ON 模拟胜率 - FMA=OFF 实际胜率 ≥ fma_required_delta 时，
         # 自动从 False → True（晋升）。若后续胜率差回落 < delta - 0.01 回滚 → False。
         self.fma_enabled: bool = False
-        self.fma_min_samples: int = 60                     # 样本门槛：用户要求 ≥60 条
-        self.fma_required_delta: float = 0.05              # 胜率差门槛：≥+5%（用户要求）
-        self.fma_rollback_delta: float = 0.04              # 回滚门槛：<+4% 就回滚（防止hysteresis震荡）
-        self.fma_last_checked_at: Optional[str] = None     # ISO 时间戳
-        self.fma_history: List[Dict[str, Any]] = []        # 每次评估的历史
+        self.fma_min_samples: int = 60  # 样本门槛：用户要求 ≥60 条
+        self.fma_required_delta: float = 0.05  # 胜率差门槛：≥+5%（用户要求）
+        self.fma_rollback_delta: float = 0.04  # 回滚门槛：<+4% 就回滚（防止hysteresis震荡）
+        self.fma_last_checked_at: Optional[str] = None  # ISO 时间戳
+        self.fma_history: List[Dict[str, Any]] = []  # 每次评估的历史
         # 尝试加载已有状态
         self.load()
 
@@ -125,7 +126,9 @@ class RolloutManager:
         }
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
         self.state_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-        logger.info(f"[Rollout] 状态已保存: {self.state_path} (FMA={'ON' if self.fma_enabled else 'OFF'})")
+        logger.info(
+            f"[Rollout] 状态已保存: {self.state_path} (FMA={'ON' if self.fma_enabled else 'OFF'})"
+        )
         return self.state_path
 
     def load(self) -> bool:
@@ -214,12 +217,13 @@ class RolloutManager:
         }
         """
         from datetime import datetime
+
         now_iso = datetime.now().isoformat()
 
         # 1. 统计有效样本
         off_total = off_pass = 0
         on_total = on_pass = 0
-        for r in (shadow_records or []):
+        for r in shadow_records or []:
             direction = r.get("actual_direction")
             if not direction or direction == "HOLD":
                 continue
@@ -241,7 +245,7 @@ class RolloutManager:
 
         n_records = len(shadow_records or [])
         win_rate_off = round(off_pass / max(off_total, 1), 4)
-        win_rate_on  = round(on_pass  / max(on_total,  1), 4)
+        win_rate_on = round(on_pass / max(on_total, 1), 4)
         # 只要一组有样本就计算 delta（缺样本的一侧视作 0）
         delta = round(win_rate_on - win_rate_off, 4)
 
@@ -294,18 +298,20 @@ class RolloutManager:
             "new_enabled": bool(self.fma_enabled),
             "n_records": int(n_records),
             "shadow_off_total": int(off_total),
-            "shadow_off_pass":  int(off_pass),
+            "shadow_off_pass": int(off_pass),
             "win_rate_off": win_rate_off,
             "shadow_on_total": int(on_total),
-            "shadow_on_pass":  int(on_pass),
-            "win_rate_on":  win_rate_on,
+            "shadow_on_pass": int(on_pass),
+            "win_rate_on": win_rate_on,
             "delta": delta,
             "reason": reason or "n/a",
         }
-        self.fma_history.append({
-            "checked_at": now_iso,
-            **result,
-        })
+        self.fma_history.append(
+            {
+                "checked_at": now_iso,
+                **result,
+            }
+        )
         # history 控制最多保留 500 条
         if len(self.fma_history) > 500:
             self.fma_history = self.fma_history[-500:]
@@ -326,17 +332,21 @@ class RolloutManager:
         """手动切换 FMA 开关（写入 history + 返回是否发生变更）。"""
         prev = self.fma_enabled
         self.fma_enabled = bool(enabled)
-        self.fma_history.append({
-            "checked_at": datetime.now().isoformat(),
-            "triggered": True,
-            "action": "MANUAL_ON" if self.fma_enabled else "MANUAL_OFF",
-            "prev_enabled": prev,
-            "new_enabled": self.fma_enabled,
-            "reason": reason,
-        })
-        changed = (prev != self.fma_enabled)
+        self.fma_history.append(
+            {
+                "checked_at": datetime.now().isoformat(),
+                "triggered": True,
+                "action": "MANUAL_ON" if self.fma_enabled else "MANUAL_OFF",
+                "prev_enabled": prev,
+                "new_enabled": self.fma_enabled,
+                "reason": reason,
+            }
+        )
+        changed = prev != self.fma_enabled
         if changed:
-            logger.info(f"[Rollout][FMA手动切换] {'ON' if prev else 'OFF'} → {'ON' if self.fma_enabled else 'OFF'} | {reason}")
+            logger.info(
+                f"[Rollout][FMA手动切换] {'ON' if prev else 'OFF'} → {'ON' if self.fma_enabled else 'OFF'} | {reason}"
+            )
         return changed
 
     # ============================================================
@@ -345,12 +355,14 @@ class RolloutManager:
 
     def _record_history(self, action: str, old_alpha: float, new_alpha: float):
         """记录 α 变化历史。"""
-        self.history.append({
-            "timestamp": datetime.now().isoformat(),
-            "action": action,
-            "old_alpha": round(old_alpha, 4),
-            "new_alpha": round(new_alpha, 4),
-        })
+        self.history.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "action": action,
+                "old_alpha": round(old_alpha, 4),
+                "new_alpha": round(new_alpha, 4),
+            }
+        )
 
 
 # ================================================================
@@ -358,11 +370,23 @@ class RolloutManager:
 # ================================================================
 def main():
     import argparse
+
     p = argparse.ArgumentParser(description="Phase C 渐进上线管理器 + FMA 自动渐进")
     p.add_argument("--state", default="rollout_state.json", help="状态文件路径")
-    p.add_argument("--action", choices=["status", "promote", "rollback", "save",
-                                         "fma_status", "fma_on", "fma_off", "fma_eval"],
-                   default="status")
+    p.add_argument(
+        "--action",
+        choices=[
+            "status",
+            "promote",
+            "rollback",
+            "save",
+            "fma_status",
+            "fma_on",
+            "fma_off",
+            "fma_eval",
+        ],
+        default="status",
+    )
     p.add_argument("--alpha", type=float, default=None, help="直接设置 α 值")
     p.add_argument("--reason", default="CLI手动触发", help="FMA 切换的原因说明")
     args = p.parse_args()
@@ -392,13 +416,31 @@ def main():
             _THIS = Path(__file__).resolve()
             _MEMORY_L4 = _THIS.parent.parent.parent
             import sys
+
             if str(_MEMORY_L4) not in sys.path:
                 sys.path.insert(0, str(_MEMORY_L4))
             from bcrm2.run_evolution_pipeline import get_storage
+
             storage = get_storage()
             all_records: List[Any] = []
-            for sym in ["BTC", "SOL", "XAU", "XAG", "NVDA", "GOOGL", "AMZN", "MU",
-                        "SNDK", "SPCX", "OKB", "HYPE", "PUMP", "UNI", "SKHYNIX", "ETH"]:
+            for sym in [
+                "BTC",
+                "SOL",
+                "XAU",
+                "XAG",
+                "NVDA",
+                "GOOGL",
+                "AMZN",
+                "MU",
+                "SNDK",
+                "SPCX",
+                "OKB",
+                "HYPE",
+                "PUMP",
+                "UNI",
+                "SKHYNIX",
+                "ETH",
+            ]:
                 all_records.extend(storage.get_shadow_log(sym, days=7))
             result = mgr.evaluate_fma_toggle(all_records)
             print(json.dumps(result, indent=2, ensure_ascii=False))

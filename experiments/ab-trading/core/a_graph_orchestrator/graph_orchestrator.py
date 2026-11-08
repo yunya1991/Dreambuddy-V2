@@ -18,20 +18,19 @@ A层职责：
 """
 
 import time
-from typing import Dict, List, Optional, Any, Callable, Set
-from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional
 
-from .types import GraphExecutionResult
 from ..shared.interfaces import (
-    NodeExecutorInterface,
-    NodeExecutionStatus,
     ExecutionStrategy,
+    NodeExecutionStatus,
+    NodeExecutorInterface,
 )
-
+from .types import GraphExecutionResult
 
 # ============================================================
 # A层：图编排引擎 - 核心编排器
 # ============================================================
+
 
 class GraphOrchestrator:
     """图编排引擎（A层核心）
@@ -76,7 +75,7 @@ class GraphOrchestrator:
 
     def execute(
         self,
-        blueprint: "ExecutionBlueprint",  # type: ignore
+        blueprint: "ExecutionBlueprint",  # type: ignore  # noqa: F821
         initial_inputs: Optional[Dict[str, Any]] = None,
         context: Optional[Dict[str, Any]] = None,
     ) -> GraphExecutionResult:
@@ -122,22 +121,14 @@ class GraphOrchestrator:
         try:
             # 根据执行模式执行
             if blueprint.execution_mode == "sequential":
-                self._execute_sequential(
-                    blueprint, result, inputs, ctx, node_inputs
-                )
+                self._execute_sequential(blueprint, result, inputs, ctx, node_inputs)
             elif blueprint.execution_mode == "parallel":
-                self._execute_parallel(
-                    blueprint, result, inputs, ctx, node_inputs
-                )
+                self._execute_parallel(blueprint, result, inputs, ctx, node_inputs)
             elif blueprint.execution_mode == "hybrid":
-                self._execute_hybrid(
-                    blueprint, result, inputs, ctx, node_inputs
-                )
+                self._execute_hybrid(blueprint, result, inputs, ctx, node_inputs)
             else:
                 # 默认顺序执行
-                self._execute_sequential(
-                    blueprint, result, inputs, ctx, node_inputs
-                )
+                self._execute_sequential(blueprint, result, inputs, ctx, node_inputs)
 
             # 更新最终状态
             result.end_time = time.time()
@@ -203,7 +194,7 @@ class GraphOrchestrator:
 
     def _execute_sequential(
         self,
-        blueprint: "ExecutionBlueprint",  # type: ignore
+        blueprint: "ExecutionBlueprint",  # type: ignore  # noqa: F821
         result: GraphExecutionResult,
         initial_inputs: Dict[str, Any],
         context: Dict[str, Any],
@@ -248,7 +239,7 @@ class GraphOrchestrator:
 
     def _execute_parallel(
         self,
-        blueprint: "ExecutionBlueprint",  # type: ignore
+        blueprint: "ExecutionBlueprint",  # type: ignore  # noqa: F821
         result: GraphExecutionResult,
         initial_inputs: Dict[str, Any],
         context: Dict[str, Any],
@@ -284,7 +275,7 @@ class GraphOrchestrator:
 
     def _execute_hybrid(
         self,
-        blueprint: "ExecutionBlueprint",  # type: ignore
+        blueprint: "ExecutionBlueprint",  # type: ignore  # noqa: F821
         result: GraphExecutionResult,
         initial_inputs: Dict[str, Any],
         context: Dict[str, Any],
@@ -322,7 +313,9 @@ class GraphOrchestrator:
                         awaitables.append((node_id, node_inputs[node_id]))
 
                 # 并行执行
-                self._execute_parallel_nodes([n[0] for n in awaitables], node_inputs, context, result)
+                self._execute_parallel_nodes(
+                    [n[0] for n in awaitables], node_inputs, context, result
+                )
 
             elif isinstance(group, list):
                 # 普通列表：一组可并行执行的节点
@@ -378,13 +371,13 @@ class GraphOrchestrator:
 
     def _skip_remaining_nodes(
         self,
-        blueprint: "ExecutionBlueprint",  # type: ignore
+        blueprint: "ExecutionBlueprint",  # type: ignore  # noqa: F821
         result: GraphExecutionResult,
         current_node_id: str,
     ):
         """跳过剩余节点"""
         current_index = blueprint.node_sequence.index(current_node_id)
-        for node_id in blueprint.node_sequence[current_index + 1:]:
+        for node_id in blueprint.node_sequence[current_index + 1 :]:
             status = result.get_node_status(node_id)
             if status and status.status == "pending":
                 status.status = "skipped"

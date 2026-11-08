@@ -12,16 +12,13 @@
   对每个 kline → 构造 context → facade.decide(context) → 模拟执行
   → 直到 force_close/partial_close 或 kline 耗尽
 """
+
 from __future__ import annotations
 
-import copy
 import logging
 from typing import Any, Dict, List, Optional
 
 from dreambuddy_evolution.engines.exit_engine.facade import ExitModuleFacade
-from dreambuddy_evolution.engines.exit_engine.exit_strategy_params import (
-    ExitStrategyParams,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -109,11 +106,19 @@ class ExitBacktestRunner:
                     break
 
             # 构造 context
-            upl_pct = (current_price - entry_price) / entry_price if pos_side == "long" else (entry_price - current_price) / entry_price
+            upl_pct = (
+                (current_price - entry_price) / entry_price
+                if pos_side == "long"
+                else (entry_price - current_price) / entry_price
+            )
             r_multiple = 0.0
             tp_distance = abs(current_tp - entry_price)
             if tp_distance > 0:
-                price_gain = (current_price - entry_price) if pos_side == "long" else (entry_price - current_price)
+                price_gain = (
+                    (current_price - entry_price)
+                    if pos_side == "long"
+                    else (entry_price - current_price)
+                )
                 r_multiple = price_gain / tp_distance
 
             # TP 衰减计算
@@ -139,13 +144,15 @@ class ExitBacktestRunner:
             }
 
             decision = self._facade.decide(context)
-            decisions.append({
-                "ts": kline_ts,
-                "action": decision.action,
-                "reason": decision.reason,
-                "sl_px": decision.sl_px or current_sl,
-                "tp_px": decision.tp_px or current_tp,
-            })
+            decisions.append(
+                {
+                    "ts": kline_ts,
+                    "action": decision.action,
+                    "reason": decision.reason,
+                    "sl_px": decision.sl_px or current_sl,
+                    "tp_px": decision.tp_px or current_tp,
+                }
+            )
 
             # 执行决策
             if decision.action == "force_close":
@@ -196,15 +203,18 @@ class ExitBacktestRunner:
         for gene in genes:
             # 加载基因
             import json
+
             self._facade.load_gene(json.dumps(gene))
             # 回测
             result = self.run(trade)
-            results.append({
-                "gene": gene,
-                "final_pnl_pct": result["final_pnl_pct"],
-                "exit_reason": result["exit_reason"],
-                "exit_ts": result["exit_ts"],
-            })
+            results.append(
+                {
+                    "gene": gene,
+                    "final_pnl_pct": result["final_pnl_pct"],
+                    "exit_reason": result["exit_reason"],
+                    "exit_ts": result["exit_ts"],
+                }
+            )
         return results
 
     def run_multi(self, trades: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -237,8 +247,7 @@ class ExitBacktestRunner:
             return _TP_DECAY_BASE
         _decay_progress = min(
             1.0,
-            (_age_hours - _TP_DECAY_GRACE_HOURS)
-            / (_TP_DECAY_FULL_HOURS - _TP_DECAY_GRACE_HOURS),
+            (_age_hours - _TP_DECAY_GRACE_HOURS) / (_TP_DECAY_FULL_HOURS - _TP_DECAY_GRACE_HOURS),
         )
         _decayed = _TP_DECAY_BASE - (_TP_DECAY_BASE - _TP_DECAY_FLOOR) * _decay_progress
         return max(_TP_DECAY_FLOOR, _decayed)

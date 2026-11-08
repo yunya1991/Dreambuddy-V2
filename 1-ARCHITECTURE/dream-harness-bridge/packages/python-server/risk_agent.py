@@ -5,6 +5,7 @@
 输出: SubagentOutput (summary + signals + charts)
 图表: heatmap(热力图) + bar(风险矩阵)
 """
+
 from __future__ import annotations
 
 import traceback
@@ -32,7 +33,9 @@ class RiskAgent:
         # D3: 填充 reasoning_chain + evidence_refs + artifact_uri
         reasoning_chain = " | ".join(rationale) if rationale else ""
         evidence_refs = [f"indicator:{k}" for k in indicators.keys()]
-        artifact_uri = f"artifact://risk/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        artifact_uri = (
+            f"artifact://risk/{hash(str(indicators)) % 100000:05d}" if indicators else None
+        )
 
         return SubagentOutput(
             module="risk",
@@ -52,7 +55,7 @@ class RiskAgent:
         var95 = indicators.get("var_95", 0)
         var99 = indicators.get("var_99", 0)
         corr_btc = indicators.get("correlation_btc", 0)
-        corr_eth = indicators.get("correlation_eth", 0)
+        corr_eth = indicators.get("correlation_eth", 0)  # noqa: F841
         stress = indicators.get("stress_loss", 0)
         max_dd = indicators.get("max_drawdown", 0)
         sharpe = indicators.get("sharpe", 0)
@@ -101,8 +104,9 @@ class RiskAgent:
 
         return signals
 
-    def _generate_summary(self, signals: List[Signal], rationale: List[str],
-                          direction: str, confidence: float) -> str:
+    def _generate_summary(
+        self, signals: List[Signal], rationale: List[str], direction: str, confidence: float
+    ) -> str:
         if self._llm_fn is not None:
             try:
                 prompt = (
@@ -115,8 +119,7 @@ class RiskAgent:
                 pass
         long_count = sum(1 for s in signals if s.direction == "long")
         short_count = sum(1 for s in signals if s.direction == "short")
-        return (f"风险面{direction}({confidence:.0%}), "
-                f"多信号{long_count}/空信号{short_count}")
+        return f"风险面{direction}({confidence:.0%}), " f"多信号{long_count}/空信号{short_count}"
 
     def _generate_charts(self, indicators: Dict[str, Any]) -> List[ChartSpec]:
         charts: List[ChartSpec] = []
@@ -132,17 +135,18 @@ class RiskAgent:
             ["VaR95", "风险值", var95],
             ["压力损失", "风险值", stress],
         ]
-        charts.append(ChartSpec(
-            type="heatmap",
-            title="风险指标热力图",
-            data=heatmap_data,
-            config={
-                "xAxis": {"type": "category",
-                          "data": ["BTC", "ETH", "VaR95", "压力损失"]},
-                "yAxis": {"type": "category", "data": ["相关性", "风险值"]},
-                "visualMap": {"min": 0, "max": 1, "calculable": True},
-            },
-        ))
+        charts.append(
+            ChartSpec(
+                type="heatmap",
+                title="风险指标热力图",
+                data=heatmap_data,
+                config={
+                    "xAxis": {"type": "category", "data": ["BTC", "ETH", "VaR95", "压力损失"]},
+                    "yAxis": {"type": "category", "data": ["相关性", "风险值"]},
+                    "visualMap": {"min": 0, "max": 1, "calculable": True},
+                },
+            )
+        )
 
         # 柱状图: 风险矩阵
         bar_data = [
@@ -151,24 +155,29 @@ class RiskAgent:
             {"name": "压力损失", "value": stress},
             {"name": "最大回撤", "value": indicators.get("max_drawdown", 0)},
         ]
-        charts.append(ChartSpec(
-            type="bar",
-            title="风险矩阵",
-            data=bar_data,
-            config={
-                "xAxis": {"type": "category",
-                          "data": ["VaR95", "VaR99", "压力损失", "最大回撤"]},
-                "yAxis": {"type": "value", "name": "百分比"},
-            },
-        ))
+        charts.append(
+            ChartSpec(
+                type="bar",
+                title="风险矩阵",
+                data=bar_data,
+                config={
+                    "xAxis": {
+                        "type": "category",
+                        "data": ["VaR95", "VaR99", "压力损失", "最大回撤"],
+                    },
+                    "yAxis": {"type": "value", "name": "百分比"},
+                },
+            )
+        )
 
         return charts
 
     # ── D4: ML 压力测试三层 + Portfolio Heat ────────────────
 
     @staticmethod
-    def compute_portfolio_heat(positions: List[Dict[str, Any]],
-                               correlations: Dict[str, float]) -> Dict[str, Any]:
+    def compute_portfolio_heat(
+        positions: List[Dict[str, Any]], correlations: Dict[str, float]
+    ) -> Dict[str, Any]:
         """Portfolio Heat 三层指标
 
         Layer 1: Nominal Heat — 名义暴露
@@ -188,7 +197,7 @@ class RiskAgent:
             nominal_heat.append({"symbol": symbol, "value": weight})
 
             # Layer 2: 相关性调整 (有效暴露 = weight * sqrt(correlation))
-            effective = weight * (corr ** 0.5)
+            effective = weight * (corr**0.5)
             corr_adjusted.append({"symbol": symbol, "value": effective})
 
             # Layer 3: 最大潜在损失 (假设 worst-case shock = 3 * VaR)
@@ -202,8 +211,9 @@ class RiskAgent:
         }
 
     @staticmethod
-    def ml_stress_test(returns_data: List[List[float]],
-                       var_confidence: float = 0.95) -> Dict[str, Any]:
+    def ml_stress_test(
+        returns_data: List[List[float]], var_confidence: float = 0.95
+    ) -> Dict[str, Any]:
         """ML 压力测试: PCA / Autoencoder / VAE 三管线
 
         输入: returns_data (N_days × M_assets 收益率矩阵)
@@ -211,17 +221,14 @@ class RiskAgent:
 
         纯 numpy 实现, 不依赖 sklearn/torch (FAIL-OPEN)。
         """
-        import math
 
         try:
             import numpy as np
         except ImportError:
-            return {"error": "numpy not available", "var": 0.0, "es": 0.0,
-                    "pipelines": {}}
+            return {"error": "numpy not available", "var": 0.0, "es": 0.0, "pipelines": {}}
 
         if not returns_data or len(returns_data) < 2:
-            return {"error": "insufficient data", "var": 0.0, "es": 0.0,
-                    "pipelines": {}}
+            return {"error": "insufficient data", "var": 0.0, "es": 0.0, "pipelines": {}}
 
         data = np.array(returns_data, dtype=float)
         n_samples, n_assets = data.shape
@@ -235,7 +242,7 @@ class RiskAgent:
         if n_assets == 1:
             cov = cov.reshape(1, 1)
 
-        z_score = 1.645 if var_confidence == 0.95 else 2.326  # 95% or 99%
+        z_score = 1.645 if var_confidence == 0.95 else 2.326  # 95% or 99%  # noqa: F841
 
         results = {}
 
@@ -249,7 +256,7 @@ class RiskAgent:
 
             # PCA 重构的协方差
             top_vectors = eigenvectors[:, top_indices]
-            recon_cov = top_vectors @ np.diag(top_eigenvalues) @ top_vectors.T
+            recon_cov = top_vectors @ np.diag(top_eigenvalues) @ top_vectors.T  # noqa: F841
 
             # 投影到主成分空间, 计算组合 VaR
             projected = centered @ top_vectors
@@ -262,7 +269,9 @@ class RiskAgent:
                 "var": abs(pca_var),
                 "es": abs(pca_es),
                 "components": k,
-                "explained_variance": float(top_eigenvalues.sum() / eigenvalues.sum()) if eigenvalues.sum() > 0 else 0,
+                "explained_variance": (
+                    float(top_eigenvalues.sum() / eigenvalues.sum()) if eigenvalues.sum() > 0 else 0
+                ),
             }
         except Exception:  # noqa: BLE001 FAIL-OPEN
             results["pca"] = {"var": 0.0, "es": 0.0, "error": "PCA failed"}
@@ -337,19 +346,21 @@ class RiskAgent:
         var_values = [pipelines[p].get("var", 0) for p in pipe_names]
         es_values = [pipelines[p].get("es", 0) for p in pipe_names]
 
-        charts.append(ChartSpec(
-            type="bar",
-            title="ML 压力测试: VaR vs ES (三管线)",
-            data={"VaR": var_values, "ES": es_values},
-            config={
-                "xAxis": {"type": "category", "data": pipe_names},
-                "yAxis": {"type": "value", "name": "风险值"},
-                "series": [
-                    {"name": "VaR", "type": "bar", "data": var_values},
-                    {"name": "ES", "type": "bar", "data": es_values},
-                ],
-            },
-        ))
+        charts.append(
+            ChartSpec(
+                type="bar",
+                title="ML 压力测试: VaR vs ES (三管线)",
+                data={"VaR": var_values, "ES": es_values},
+                config={
+                    "xAxis": {"type": "category", "data": pipe_names},
+                    "yAxis": {"type": "value", "name": "风险值"},
+                    "series": [
+                        {"name": "VaR", "type": "bar", "data": var_values},
+                        {"name": "ES", "type": "bar", "data": es_values},
+                    ],
+                },
+            )
+        )
 
         return charts
 

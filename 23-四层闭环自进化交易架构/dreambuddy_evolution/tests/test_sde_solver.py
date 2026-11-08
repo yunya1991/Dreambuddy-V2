@@ -8,10 +8,10 @@ P1-1 RED: SDESolver 组件契约测试
 - _statistical_forecast(history, horizon)->np.ndarray
 - status()->dict — 后端可用性 (neural_sde + timesfm)
 """
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 
 class TestSDESolverContract:
@@ -22,6 +22,7 @@ class TestSDESolverContract:
 
     def test_class_instantiates(self):
         from dreambuddy_evolution.engines.sde_solver import SDESolver
+
         solver = SDESolver()
         assert solver is not None
 
@@ -31,6 +32,7 @@ class TestNeuralSdeForecast:
 
     def test_returns_2d_numpy_array(self):
         from dreambuddy_evolution.engines.sde_solver import SDESolver
+
         solver = SDESolver()
         seed = np.array([100.0, 0.02])
         paths = solver.neural_sde_forecast(seed, horizon=10, n_paths=50)
@@ -40,6 +42,7 @@ class TestNeuralSdeForecast:
     def test_supports_head_multipliers_param(self):
         """head_multipliers 形参必须保留 — Phase 5 CrossValidationGate 接线"""
         from dreambuddy_evolution.engines.sde_solver import SDESolver
+
         solver = SDESolver()
         seed = np.array([100.0, 0.02])
         heads = np.array([1.0, 0.9, 0.8])
@@ -48,6 +51,7 @@ class TestNeuralSdeForecast:
 
     def test_supports_exogenous_factors_param(self):
         from dreambuddy_evolution.engines.sde_solver import SDESolver
+
         solver = SDESolver()
         seed = np.array([100.0, 0.02])
         exo = np.array([[0.1]] * 5)
@@ -60,6 +64,7 @@ class TestTimesFMPredict:
 
     def test_returns_1d_numpy_array(self):
         from dreambuddy_evolution.engines.sde_solver import SDESolver
+
         solver = SDESolver()
         history = np.array([100.0, 101.0, 102.0, 103.0, 104.0] * 4)
         forecast = solver.timesfm_predict(history, horizon=10)
@@ -72,6 +77,7 @@ class TestBackendStatus:
 
     def test_status_returns_dict_with_keys(self):
         from dreambuddy_evolution.engines.sde_solver import SDESolver
+
         solver = SDESolver()
         status = solver.status()
         assert isinstance(status, dict)

@@ -10,13 +10,14 @@ BCRM A 股专属桥梁。
 - A 股特有的情绪指标
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from typing import Any, Dict
 
 
 @dataclass
 class AShareSnapshot:
     """A 股市场快照。"""
+
     price: float = 0.0
     volume: float = 0.0
     turnover_rate: float = 0.0
@@ -73,10 +74,9 @@ class AShareBridge:
         self.limit_up_pct = limit_up_pct
         self.limit_down_pct = limit_down_pct
 
-    def normalize_snapshot(self,
-                            snapshot: Dict[str, Any],
-                            a_share: AShareSnapshot = None
-                            ) -> Dict[str, Any]:
+    def normalize_snapshot(
+        self, snapshot: Dict[str, Any], a_share: AShareSnapshot = None
+    ) -> Dict[str, Any]:
         """
         将 A 股快照标准化为 BCRM 输入。
 
@@ -106,8 +106,7 @@ class AShareBridge:
         result["north_bound_score"] = north_score
 
         # 两融评分
-        margin_score = self._normalize_margin(a_share.margin_buy,
-                                               a_share.margin_balance)
+        margin_score = self._normalize_margin(a_share.margin_buy, a_share.margin_balance)
         result["margin_score"] = margin_score
 
         # 情绪指数
@@ -115,7 +114,8 @@ class AShareBridge:
 
         # 市场宽度
         market_breadth = self._compute_market_breadth(
-            a_share.limit_up_count, a_share.limit_down_count)
+            a_share.limit_up_count, a_share.limit_down_count
+        )
         result["market_breadth"] = market_breadth
 
         # 行业联动
@@ -140,18 +140,14 @@ class AShareBridge:
         normalized = min(1.0, ratio / 0.05)
         return normalized
 
-    def _compute_market_breadth(self,
-                                 limit_up_count: int,
-                                 limit_down_count: int) -> float:
+    def _compute_market_breadth(self, limit_up_count: int, limit_down_count: int) -> float:
         """计算市场宽度。"""
         total = limit_up_count + limit_down_count
         if total == 0:
             return 0.5
         return limit_up_count / total
 
-    def adjust_confidence(self,
-                           base_confidence: float,
-                           snapshot: Dict[str, Any]) -> float:
+    def adjust_confidence(self, base_confidence: float, snapshot: Dict[str, Any]) -> float:
         """
         根据 A 股特性调整置信度。
 
@@ -186,9 +182,7 @@ class AShareBridge:
 
         return max(0.0, min(1.0, confidence))
 
-    def adjust_position_size(self,
-                              base_position: float,
-                              snapshot: Dict[str, Any]) -> float:
+    def adjust_position_size(self, base_position: float, snapshot: Dict[str, Any]) -> float:
         """
         根据 A 股特性调整仓位。
 
@@ -214,10 +208,9 @@ class AShareBridge:
 
         return max(0.0, min(1.0, position))
 
-    def apply_t1_rule(self,
-                       strategy: Dict[str, Any],
-                       has_position: bool = False,
-                       position_side: str = "LONG") -> Dict[str, Any]:
+    def apply_t1_rule(
+        self, strategy: Dict[str, Any], has_position: bool = False, position_side: str = "LONG"
+    ) -> Dict[str, Any]:
         """
         应用 T+1 规则。
 
@@ -247,9 +240,7 @@ class AShareBridge:
 
         return result
 
-    def get_sector_rotation_signal(self,
-                                    sector: str,
-                                    sector_map: Dict[str, float] = None) -> float:
+    def get_sector_rotation_signal(self, sector: str, sector_map: Dict[str, float] = None) -> float:
         """
         行业轮动信号。
 
@@ -266,9 +257,9 @@ class AShareBridge:
         sectors = list(sector_map.items())
         sectors.sort(key=lambda x: x[1], reverse=True)
 
-        current_change = sector_map.get(sector, 0)
+        current_change = sector_map.get(sector, 0)  # noqa: F841
         rank = 0
-        for i, (s, c) in enumerate(sectors):
+        for i, (s, c) in enumerate(sectors):  # noqa: B007
             if s == sector:
                 rank = i
                 break
@@ -282,13 +273,14 @@ class AShareBridge:
         signal = 1.0 - normalized_rank * 2  # 映射到 -1 ~ 1
         return signal
 
-    def generate_ashare_strategy(self,
-                                  bcrm_strategy: Dict[str, Any],
-                                  snapshot: Dict[str, Any],
-                                  a_share: AShareSnapshot = None,
-                                  has_position: bool = False,
-                                  position_side: str = "LONG"
-                                  ) -> Dict[str, Any]:
+    def generate_ashare_strategy(
+        self,
+        bcrm_strategy: Dict[str, Any],
+        snapshot: Dict[str, Any],
+        a_share: AShareSnapshot = None,
+        has_position: bool = False,
+        position_side: str = "LONG",
+    ) -> Dict[str, Any]:
         """
         生成 A 股专属策略。
 
@@ -306,20 +298,17 @@ class AShareBridge:
 
         # 调整置信度
         base_conf = strategy.get("confidence", 0.5)
-        strategy["ashare_confidence"] = self.adjust_confidence(
-            base_conf, enhanced)
+        strategy["ashare_confidence"] = self.adjust_confidence(base_conf, enhanced)
 
         # 调整仓位
         base_pos = strategy.get("position_size", 0.0)
-        strategy["ashare_position_size"] = self.adjust_position_size(
-            base_pos, enhanced)
+        strategy["ashare_position_size"] = self.adjust_position_size(base_pos, enhanced)
 
         # 应用 T+1
-        strategy = self.apply_t1_rule(
-            strategy, has_position, position_side)
+        strategy = self.apply_t1_rule(strategy, has_position, position_side)
 
         # 行业轮动信号
-        sector = enhanced.get("sector", "")
+        sector = enhanced.get("sector", "")  # noqa: F841
         strategy["sector_rotation_signal"] = 0.0  # 默认值
 
         # 添加风险提示

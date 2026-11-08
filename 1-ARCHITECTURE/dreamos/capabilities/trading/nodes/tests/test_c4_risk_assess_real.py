@@ -12,15 +12,14 @@
 - 风险预算 = sum(仓位 * 入场价 * 止损比例) / 资金
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Any, Dict, List
 
-import pytest
 
 from dreamos.capabilities.trading.nodes.c4_risk_assess import C4RiskAssessNode
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 def _make_signal(
@@ -225,8 +224,12 @@ def test_c4_config_override_stop_loss_pct():
     """config 可覆盖止损比例"""
     signals = [_make_signal(symbol="BTC", direction="LONG")]
     market_data = {"BTC": {"price": 50000.0}}
-    state_a = _make_state(signals=signals, market_data=market_data, config={"risk_stop_loss_pct": 0.02})
-    state_b = _make_state(signals=signals, market_data=market_data, config={"risk_stop_loss_pct": 0.05})
+    state_a = _make_state(
+        signals=signals, market_data=market_data, config={"risk_stop_loss_pct": 0.02}
+    )
+    state_b = _make_state(
+        signals=signals, market_data=market_data, config={"risk_stop_loss_pct": 0.05}
+    )
     node = C4RiskAssessNode()
     res_a = node.execute_core(state_a)
     res_b = node.execute_core(state_b)

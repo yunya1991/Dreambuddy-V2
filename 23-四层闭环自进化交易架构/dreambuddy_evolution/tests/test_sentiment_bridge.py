@@ -1,9 +1,9 @@
 """test_sentiment_bridge.py — SentimentBridge 单元测试
 覆盖: 情绪聚合, 归一化, SentimentEngine加载失败FO, USE_FINBERT=0降级, 空快讯FO
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
+
 
 from dreambuddy_evolution.adapters.sentiment_bridge import SentimentBridge
 
@@ -18,7 +18,7 @@ class MockSentimentEngine:
     def analyze_text(self, text):
         if self._fail:
             raise RuntimeError("model load failed")
-        for i, (t, s) in enumerate(self._scores):
+        for i, (t, s) in enumerate(self._scores):  # noqa: B007
             if t in text:
                 return {"score": s, "sentiment": "positive" if s > 0 else "negative"}
         return {"score": 0.0, "sentiment": "neutral"}
@@ -26,7 +26,9 @@ class MockSentimentEngine:
 
 def make_mock_db(tmp_path, newsflash_texts=None):
     """创建含 odaily newsflash 的测试 DB"""
-    import json, sqlite3
+    import json
+    import sqlite3
+
     db_path = tmp_path / "data_center.db"
     conn = sqlite3.connect(str(db_path))
     c = conn.cursor()
@@ -39,7 +41,7 @@ def make_mock_db(tmp_path, newsflash_texts=None):
         c.execute(
             "INSERT INTO records (source, category, sub_category, timestamp, metrics) "
             "VALUES ('odaily', 'news', 'newsflash', ?, ?)",
-            (f"2026-09-05T{i:02d}:00:00Z", metrics)
+            (f"2026-09-05T{i:02d}:00:00Z", metrics),
         )
     conn.commit()
     conn.close()
@@ -52,9 +54,12 @@ class TestSentimentBridge:
         """多条快讯情绪聚合"""
         texts = ["Bitcoin surges past 50K", "Market fears correction"]
         db_path = make_mock_db(tmp_path, texts)
-        engine = MockSentimentEngine(scores=[
-            ("surges", 0.8), ("fears", -0.6),
-        ])
+        engine = MockSentimentEngine(
+            scores=[
+                ("surges", 0.8),
+                ("fears", -0.6),
+            ]
+        )
         bridge = SentimentBridge(data_center_db=db_path, sentiment_engine=engine, cache_ttl=0)
         bridge.invalidate_cache()
         score = bridge.get_sentiment_score("BTC")

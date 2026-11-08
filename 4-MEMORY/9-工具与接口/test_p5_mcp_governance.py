@@ -1,4 +1,5 @@
 """P5 契约治理测试：写 scope / principal / 幂等 / eval gate / tool annotations。"""
+
 from __future__ import annotations
 
 import json
@@ -10,9 +11,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _isolate_skill_indexer(monkeypatch):
     """避免写真实 SKILL.md。"""
-    monkeypatch.setattr(
-        "cognitive_mcp_server._find_skill_dir_by_name", lambda *a, **kw: None
-    )
+    monkeypatch.setattr("cognitive_mcp_server._find_skill_dir_by_name", lambda *a, **kw: None)
     monkeypatch.setattr("cognitive_mcp_server._load_skill_indexer", lambda: None)
 
 

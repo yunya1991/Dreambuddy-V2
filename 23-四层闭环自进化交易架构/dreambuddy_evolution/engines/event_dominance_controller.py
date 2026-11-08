@@ -3,6 +3,7 @@
 真实实现：29-事件驱动策略系统/event_driven/event_dominance_controller.py
 迁移日期：2026-10-04
 """
+
 from __future__ import annotations
 
 import sys
@@ -12,8 +13,8 @@ _29_dir = str(Path(__file__).resolve().parents[3] / "29-事件驱动策略系统
 if _29_dir not in sys.path:
     sys.path.insert(0, _29_dir)
 
-from event_driven.event_dominance_controller import *  # noqa: F401,F403
-from event_driven.event_dominance_controller import (  # noqa: F401
+from event_driven.event_dominance_controller import *  # noqa: E402, F401, F403
+from event_driven.event_dominance_controller import (  # noqa: E402, F401
     DominanceDecision,
     EventDominanceController,
 )

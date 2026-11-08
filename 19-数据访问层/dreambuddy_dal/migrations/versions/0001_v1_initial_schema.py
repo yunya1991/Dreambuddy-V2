@@ -7,6 +7,7 @@ Create Date: 2026-08-24
 对齐 SCHEMA_DESIGN.md v1.0 + schema_init.py 的 TARGET_CREATE_TABLES_SQL。
 此 revision 是迁移链起点；后续 Schema 变更必须走 Alembic（ADR-19-005）。
 """
+
 from __future__ import annotations
 
 import os
@@ -26,16 +27,17 @@ def _get_schema_sqls() -> list[str]:
     """从 schema_init.py 引入 DDL 列表，保持单一事实源。"""
     this_dir = os.path.dirname(os.path.abspath(__file__))
     for p in [
-        os.path.join(this_dir, ".."),       # migrations/
+        os.path.join(this_dir, ".."),  # migrations/
         os.path.join(this_dir, "..", ".."),  # dreambuddy_dal/
         os.path.join(this_dir, "..", "..", ".."),  # 19-数据访问层/
     ]:
         if p not in sys.path:
             sys.path.insert(0, p)
     from dreambuddy_dal.implementations.sqlite_unified.schema_init import (
-        _CREATE_TABLES_SQL,
         _CREATE_INDEXES_SQL,
+        _CREATE_TABLES_SQL,
     )
+
     return list(_CREATE_TABLES_SQL) + list(_CREATE_INDEXES_SQL)
 
 
@@ -50,9 +52,7 @@ def upgrade() -> None:
         "VALUES (1, 1, '1.0.0', 'alembic_v1', 'P1 v1.0.0 首次初始化 21 张表 Schema（对齐 SCHEMA_DESIGN.md）')"
     )
     # rs_state 单行种子
-    op.execute(
-        "INSERT OR IGNORE INTO rs_state (id, version) VALUES (1, 1)"
-    )
+    op.execute("INSERT OR IGNORE INTO rs_state (id, version) VALUES (1, 1)")
     # tr_trades 虚拟 FK 种子行
     op.execute(
         "INSERT OR IGNORE INTO tr_trades (trade_id, sub_system, strategy_name, "
@@ -66,14 +66,27 @@ def upgrade() -> None:
 def downgrade() -> None:
     """downgrade 慎用：DROP 全部表。"""
     tables = [
-        "kg_terms_fts", "kg_triples", "kg_entity_aliases", "kg_entities",
+        "kg_terms_fts",
+        "kg_triples",
+        "kg_entity_aliases",
+        "kg_entities",
         "cv_config_versions",
-        "rs_cases", "rs_state",
-        "mm_taker_volume", "mm_long_short_ratio", "mm_liquidation",
-        "mm_open_interest", "mm_funding_rate", "mm_fear_greed",
-        "po_price_refresh_log", "po_positions",
-        "tr_daily_stats_overrides", "tr_daily_stats", "tr_trades",
-        "ma_integrity_log", "ma_migration_audit", "ma_schema_version",
+        "rs_cases",
+        "rs_state",
+        "mm_taker_volume",
+        "mm_long_short_ratio",
+        "mm_liquidation",
+        "mm_open_interest",
+        "mm_funding_rate",
+        "mm_fear_greed",
+        "po_price_refresh_log",
+        "po_positions",
+        "tr_daily_stats_overrides",
+        "tr_daily_stats",
+        "tr_trades",
+        "ma_integrity_log",
+        "ma_migration_audit",
+        "ma_schema_version",
     ]
     for t in tables:
         op.execute(f"DROP TABLE IF EXISTS {t}")

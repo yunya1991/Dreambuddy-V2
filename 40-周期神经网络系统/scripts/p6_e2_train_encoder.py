@@ -14,6 +14,7 @@
 红线：输出为趋势判别语义输入与建议，不产生交易信号；
   交易决策归 23 系统三步门禁。
 """
+
 import argparse
 import json
 import os
@@ -49,14 +50,14 @@ PREREG = {
     "n_classes": 3,
     "max_params": 1_000_000,
     "walk_forward_folds": 5,
-    "seq_len": 32,               # 每样本 token 窗口长度
+    "seq_len": 32,  # 每样本 token 窗口长度
     "label_horizon": {"1W": 4, "1D": 7, "1H": 24},
     "label_threshold_pct": 2.0,  # ±2% 三分类阈值
     "attn_entropy_reg": 0.01,
     "lr": 1e-3,
     "epochs": 30,
     "batch_size": 64,
-    "test_ratio": 0.2,           # 最近 20% 封板纯验证
+    "test_ratio": 0.2,  # 最近 20% 封板纯验证
     "seed": 42,
 }
 SYMBOLS = ["BTC", "ETH", "SOL"]
@@ -92,8 +93,8 @@ def build_labels(tokens: pd.DataFrame) -> pd.DataFrame:
             fut = close.shift(-horizon) / close - 1.0
             thr = PREREG["label_threshold_pct"] / 100.0
             lab = np.where(fut > thr, 1, np.where(fut < -thr, 2, 0))  # 0=N,1=UP,2=DOWN
-            ts2lab = dict(zip(c["ts"], lab))
-            ts2ret = dict(zip(c["ts"], fut))
+            ts2lab = dict(zip(c["ts"], lab))  # noqa: B905
+            ts2ret = dict(zip(c["ts"], fut))  # noqa: B905
             sub["label"] = sub["ts"].map(ts2lab)
             sub["future_return"] = sub["ts"].map(ts2ret)
             labeled.append(sub)
@@ -112,11 +113,17 @@ def make_windows(df: pd.DataFrame):
             row = sub.iloc[end]
             if pd.isna(row["label"]) or pd.isna(row["future_return"]):
                 continue
-            X.append(vals[end - L:end])
+            X.append(vals[end - L : end])
             y.append(int(row["label"]))
             ret.append(float(row["future_return"]))
             meta.append({"symbol": sym, "timeframe": bar, "ts": int(row["ts"])})
-    return np.asarray(X, dtype=np.float32), np.asarray(y), np.asarray(ret, dtype=np.float32), meta, feat_cols
+    return (
+        np.asarray(X, dtype=np.float32),
+        np.asarray(y),
+        np.asarray(ret, dtype=np.float32),
+        meta,
+        feat_cols,
+    )
 
 
 def count_params(model) -> int:
@@ -133,8 +140,11 @@ def build_model(n_features: int):
         def __init__(self):
             super().__init__()
             self.attn = nn.MultiheadAttention(d, PREREG["n_heads"], batch_first=True)
-            self.ffn = nn.Sequential(nn.Linear(d, d * PREREG["ffn_mult"]), nn.GELU(),
-                                    nn.Linear(d * PREREG["ffn_mult"], d))
+            self.ffn = nn.Sequential(
+                nn.Linear(d, d * PREREG["ffn_mult"]),
+                nn.GELU(),
+                nn.Linear(d * PREREG["ffn_mult"], d),
+            )
             self.ln1 = nn.LayerNorm(d)
             self.ln2 = nn.LayerNorm(d)
 
@@ -164,10 +174,10 @@ def build_model(n_features: int):
     return TrendEncoder()
 
 
-def attn_entropy_loss(model) -> "torch.Tensor":
+def attn_entropy_loss(model) -> "torch.Tensor":  # noqa: F821
     """注意力熵正则：对每块注意力权重计算 -H(p)（鼓励分布不过度集中）。
     简化实现：对 QK 投影权重的 L2 正则近似（小模型骨架级）。"""
-    import torch
+
     loss = 0.0
     for blk in model.blocks:
         for p in blk.attn.in_proj_weight:
@@ -199,7 +209,13 @@ def walk_forward_train(X, y, ret, meta, feat_cols):
     X_hold = (X_hold - mu) / sd
 
     tf_map = {"1W": 0, "1D": 1, "1H": 2}
-    tf_tr = np.array([tf_map[m["timeframe"]] for m in meta])[:-n_test][np.argsort([m["ts"] for m in meta][:-n_test])] if False else None
+    tf_tr = (
+        np.array([tf_map[m["timeframe"]] for m in meta])[:-n_test][
+            np.argsort([m["ts"] for m in meta][:-n_test])
+        ]
+        if False
+        else None
+    )
     # 简化：tf 索引按样本顺序构造（order 已排序，重新对齐）
     meta_sorted = [meta[i] for i in order]
     tf_all = np.array([tf_map[m["timeframe"]] for m in meta_sorted], dtype=np.int64)
@@ -230,11 +246,11 @@ def walk_forward_train(X, y, ret, meta, feat_cols):
         if len(tr_idx) < 50 or len(va_idx) < 10:
             continue
         # 重置头部权重（保留编码器主干，模拟滚动重训骨架）
-        for ep in range(PREREG["epochs"]):
+        for ep in range(PREREG["epochs"]):  # noqa: B007
             model.train()
             perm = np.random.permutation(len(tr_idx))
             for s in range(0, len(perm), PREREG["batch_size"]):
-                bidx = tr_idx[perm[s:s + PREREG["batch_size"]]]
+                bidx = tr_idx[perm[s : s + PREREG["batch_size"]]]
                 xb = Xtr_t[bidx]
                 tfb = tftr_t[bidx]
                 yb = ytr_t[bidx]
@@ -253,8 +269,15 @@ def walk_forward_train(X, y, ret, meta, feat_cols):
             ic = float(spearmanr(prob_up[m], ret_tr[va_idx][m]).statistic) if m.sum() >= 10 else 0.0
             if ic != ic:
                 ic = 0.0
-        fold_results.append({"fold": k, "train_n": int(len(tr_idx)), "valid_n": int(len(va_idx)),
-                             "accuracy": acc, "direction_ic": ic})
+        fold_results.append(
+            {
+                "fold": k,
+                "train_n": int(len(tr_idx)),
+                "valid_n": int(len(va_idx)),
+                "accuracy": acc,
+                "direction_ic": ic,
+            }
+        )
         print(f"  [fold {k}] train={len(tr_idx)} valid={len(va_idx)} acc={acc:.4f} ic={ic:.4f}")
 
     # 封板纯验证段评估
@@ -275,11 +298,22 @@ def walk_forward_train(X, y, ret, meta, feat_cols):
         "model": model,
         "n_params": n_params,
         "fold_results": fold_results,
-        "wf_accuracy": float(np.mean([f["accuracy"] for f in fold_results])) if fold_results else 0.0,
-        "wf_direction_ic": float(np.mean([f["direction_ic"] for f in fold_results])) if fold_results else 0.0,
-        "holdout": {"n": int(n_test), "accuracy": hold_acc, "direction_ic": hold_ic,
-                    "class_dist": {"UP": int((pred == 1).sum()), "DOWN": int((pred == 2).sum()),
-                                   "NEUTRAL": int((pred == 0).sum())}},
+        "wf_accuracy": (
+            float(np.mean([f["accuracy"] for f in fold_results])) if fold_results else 0.0
+        ),
+        "wf_direction_ic": (
+            float(np.mean([f["direction_ic"] for f in fold_results])) if fold_results else 0.0
+        ),
+        "holdout": {
+            "n": int(n_test),
+            "accuracy": hold_acc,
+            "direction_ic": hold_ic,
+            "class_dist": {
+                "UP": int((pred == 1).sum()),
+                "DOWN": int((pred == 2).sum()),
+                "NEUTRAL": int((pred == 0).sum()),
+            },
+        },
     }
 
 
@@ -296,7 +330,9 @@ def main() -> int:
         return 1
     X, y, ret, meta, feat_cols = make_windows(labeled)
     print(f"[OK] 窗口样本: {len(X)}（特征 {len(feat_cols)} 列，窗口 {PREREG['seq_len']}）")
-    print(f"     标签分布: UP={int((y==1).sum())} DOWN={int((y==2).sum())} NEUTRAL={int((y==0).sum())}")
+    print(
+        f"     标签分布: UP={int((y==1).sum())} DOWN={int((y==2).sum())} NEUTRAL={int((y==0).sum())}"
+    )
 
     if args.dry_run:
         print("[OK] 干跑验证通过：数据管道与标签生成正确（未训练、未落盘模型）")
@@ -304,6 +340,7 @@ def main() -> int:
 
     # 2) 门槛拦截（SPEC 红线 5：E2 及以后必须以 P1-P5 完成验证为前置门禁）
     from p6_gate import check_gate, save_report
+
     gate = check_gate()
     save_report(gate)
     if not gate["all_passed"]:
@@ -323,18 +360,31 @@ def main() -> int:
     passed = (result["wf_accuracy"] >= b_acc) and (result["wf_direction_ic"] >= b_ic)
 
     import torch
-    torch.save({"state_dict": result["model"].state_dict(), "prereg": PREREG,
-                "feature_cols": feat_cols, "n_params": result["n_params"]}, MODEL_OUT)
+
+    torch.save(
+        {
+            "state_dict": result["model"].state_dict(),
+            "prereg": PREREG,
+            "feature_cols": feat_cols,
+            "n_params": result["n_params"],
+        },
+        MODEL_OUT,
+    )
 
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "module": "P6 E2 拼接式 Encoder 训练（Walk-Forward 5 折）",
         "prereg": PREREG,
         "samples": {"windows": int(len(X)), "holdout": result["holdout"]["n"]},
-        "model": {"n_params": result["n_params"], "within_1m_limit": result["n_params"] <= PREREG["max_params"]},
-        "walk_forward": {"folds": result["fold_results"],
-                         "mean_accuracy": result["wf_accuracy"],
-                         "mean_direction_ic": result["wf_direction_ic"]},
+        "model": {
+            "n_params": result["n_params"],
+            "within_1m_limit": result["n_params"] <= PREREG["max_params"],
+        },
+        "walk_forward": {
+            "folds": result["fold_results"],
+            "mean_accuracy": result["wf_accuracy"],
+            "mean_direction_ic": result["wf_direction_ic"],
+        },
         "holdout": result["holdout"],
         "baseline_comparison": {
             "baseline_accuracy": b_acc,
@@ -348,10 +398,21 @@ def main() -> int:
     }
     with open(REPORT_OUT, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    print(json.dumps({"walk_forward": report["walk_forward"], "holdout": report["holdout"],
-                     "baseline_comparison": report["baseline_comparison"]}, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "walk_forward": report["walk_forward"],
+                "holdout": report["holdout"],
+                "baseline_comparison": report["baseline_comparison"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     print(f"[OK] E2 训练完成 -> {REPORT_OUT} / {MODEL_OUT}")
-    print(f"     晋级判定: {'PASSED（可进入 E3 Shadow）' if passed else 'NOT_PASSED（未超基线，不进入 E3）'}")
+    print(
+        f"     晋级判定: {'PASSED（可进入 E3 Shadow）' if passed else 'NOT_PASSED（未超基线，不进入 E3）'}"
+    )
     return 0
 
 

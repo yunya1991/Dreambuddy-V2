@@ -16,12 +16,12 @@
   - 按章节拆分生成多条 case
   - FAIL-OPEN: 目录不存在/解析异常返回空或跳过
 """
+
 import os
 import re
 from typing import List, Optional, Tuple
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider
 
 # ============================================================
 # A 系列 SKILL 目录名 → 阶段映射
@@ -92,13 +92,13 @@ def _parse_table_rows(md_text: str, section_start: int = 0) -> List[str]:
       | A0-IRON-1 | 矛盾普遍存在 |
     """
     nodes = []
-    for m in re.finditer(r'\|\s*([A-Za-z0-9_\-]+)\s*\|(.+?)(?=\n|$)', md_text):
+    for m in re.finditer(r"\|\s*([A-Za-z0-9_\-]+)\s*\|(.+?)(?=\n|$)", md_text):
         cell_a = m.group(1).strip()
         rest = m.group(2).strip()
         # 跳过表头和分隔行
         if cell_a in ("---", ":", "|", "编号", "原理"):
             continue
-        if re.match(r'^[-:|\s]+$', rest):
+        if re.match(r"^[-:|\s]+$", rest):
             continue
         # 提取第二列内容
         parts = rest.split("|")
@@ -118,11 +118,11 @@ def _parse_a0_contradiction_theory(md_text: str) -> List[Tuple[str, List[str]]]:
     sub_cases = []
 
     # Case 1: 矛盾分类体系
-    classify_section = _extract_section(md_text, r'##\s*二、矛盾分类体系')
+    classify_section = _extract_section(md_text, r"##\s*二、矛盾分类体系")
     if classify_section:
         nodes = ["a0_entry()"]
         # 表格行 C1-C7
-        for m in re.finditer(r'\|\s*(C\d+)\s*\|(.+?)(?=\n|$)', classify_section):
+        for m in re.finditer(r"\|\s*(C\d+)\s*\|(.+?)(?=\n|$)", classify_section):
             c_id = m.group(1)
             rest = m.group(2).strip()
             parts = rest.split("|")
@@ -140,15 +140,14 @@ def _parse_a0_contradiction_theory(md_text: str) -> List[Tuple[str, List[str]]]:
 
     # Case 2: 三步法 (Step 1-3 分别为子 case)
     for step_match in re.finditer(
-        r'###\s*Step\s*(\d+)\s*[:：]\s*(.+?)(?=###\s*Step|\Z)',
-        md_text, re.DOTALL
+        r"###\s*Step\s*(\d+)\s*[:：]\s*(.+?)(?=###\s*Step|\Z)", md_text, re.DOTALL
     ):
         step_num = step_match.group(1)
         step_title = step_match.group(2).strip()
         step_body = step_match.group(2)
         nodes = [f"a0_step{step_num}_entry({step_title[:40]})"]
         # 列表项作为步骤
-        for item_m in re.finditer(r'^-\s+(.+)$', step_body, re.MULTILINE):
+        for item_m in re.finditer(r"^-\s+(.+)$", step_body, re.MULTILINE):
             line = item_m.group(1).strip()
             if 3 < len(line) < 80 and not line.startswith("**"):
                 nodes.append(f"step{step_num}_action({line[:50]})")
@@ -157,10 +156,10 @@ def _parse_a0_contradiction_theory(md_text: str) -> List[Tuple[str, List[str]]]:
             sub_cases.append((f"step{step_num}", nodes))
 
     # Case 3: 铁律
-    iron_section = _extract_section(md_text, r'##\s*四、矛盾论\d+大铁律')
+    iron_section = _extract_section(md_text, r"##\s*四、矛盾论\d+大铁律")
     if iron_section:
         nodes = ["a0_iron_laws_entry()"]
-        for m in re.finditer(r'\|\s*(A0-IRON-\d+)\s*\|\s*(.+?)\s*\|', iron_section):
+        for m in re.finditer(r"\|\s*(A0-IRON-\d+)\s*\|\s*(.+?)\s*\|", iron_section):
             law_id = m.group(1)
             law_content = m.group(2).strip()
             nodes.append(f"iron_law_{law_id}({law_content[:40]})")
@@ -169,10 +168,10 @@ def _parse_a0_contradiction_theory(md_text: str) -> List[Tuple[str, List[str]]]:
             sub_cases.append(("iron_laws", nodes))
 
     # Case 4: 哲学基础 (如果前面 case 不足)
-    phil_section = _extract_section(md_text, r'##\s*一、哲学基础')
+    phil_section = _extract_section(md_text, r"##\s*一、哲学基础")
     if phil_section:
         nodes = ["a0_philosophy_entry()"]
-        for m in re.finditer(r'\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|', phil_section):
+        for m in re.finditer(r"\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|", phil_section):
             principle = m.group(1).strip()
             nodes.append(f"philosophy_principle({principle[:30]})")
         nodes.append("a0_philosophy_exit()")
@@ -193,12 +192,12 @@ def _parse_a2_first_principles(md_text: str) -> List[Tuple[str, List[str]]]:
     sub_cases = []
 
     # Case 1: 阻力来源分解
-    resistance_section = _extract_section(md_text, r'###\s*原理1.*?阻力最小路径')
+    resistance_section = _extract_section(md_text, r"###\s*原理1.*?阻力最小路径")
     if not resistance_section:
-        resistance_section = _extract_section(md_text, r'阻力来源分解')
+        resistance_section = _extract_section(md_text, r"阻力来源分解")
     if resistance_section:
         nodes = ["a2_resistance_entry()"]
-        for m in re.finditer(r'\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|', resistance_section):
+        for m in re.finditer(r"\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|", resistance_section):
             r_type = m.group(1).strip()
             r_metric = m.group(2).strip()
             if r_type and r_type not in ("阻力类型", "---"):
@@ -208,21 +207,21 @@ def _parse_a2_first_principles(md_text: str) -> List[Tuple[str, List[str]]]:
             sub_cases.append(("resistance", nodes))
 
     # Case 2: 趋势延续性
-    trend_section = _extract_section(md_text, r'###\s*原理2.*?趋势延续性')
+    trend_section = _extract_section(md_text, r"###\s*原理2.*?趋势延续性")
     if trend_section:
         nodes = ["a2_trend_entry()"]
-        stage_match = re.search(r'趋势阶段\s*[:：]\s*(.+)', trend_section)
+        stage_match = re.search(r"趋势阶段\s*[:：]\s*(.+)", trend_section)
         if stage_match:
             stages_text = stage_match.group(1).strip()
             # 解析每个阶段: 启动期 → 加速期 → 衰竭期 → 逆转/盘整
-            stages = re.split(r'[→\->]+', stages_text)
+            stages = re.split(r"[→\->]+", stages_text)
             for i, stage in enumerate(stages):
                 stage = stage.strip()
                 if stage and len(stage) > 1:
                     nodes.append(f"determine_trend_stage_{i}({stage[:30]})")
             nodes.append(f"determine_trend_stages({stages_text[:40]})")
         # 列表项
-        for item_m in re.finditer(r'^-\s+(.+)$', trend_section, re.MULTILINE):
+        for item_m in re.finditer(r"^-\s+(.+)$", trend_section, re.MULTILINE):
             line = item_m.group(1).strip()
             if 3 < len(line) < 80:
                 nodes.append(f"trend_action({line[:50]})")
@@ -232,19 +231,18 @@ def _parse_a2_first_principles(md_text: str) -> List[Tuple[str, List[str]]]:
 
     # Case 3+: 执行流程 Phase 0-8 每个 Phase 一条 case
     for phase_m in re.finditer(
-        r'Phase\s*(\d+)\s*[:：]\s*(.+?)(?=Phase\s*\d+|\Z)',
-        md_text, re.DOTALL
+        r"Phase\s*(\d+)\s*[:：]\s*(.+?)(?=Phase\s*\d+|\Z)", md_text, re.DOTALL
     ):
         phase_num = phase_m.group(1)
         phase_body = phase_m.group(2)
         # 提取第一行作为标题
-        lines = phase_body.strip().split('\n')
+        lines = phase_body.strip().split("\n")
         phase_title = lines[0].strip() if lines else ""
         nodes = [f"a2_phase{phase_num}_entry()"]
         if phase_title:
             nodes.append(f"phase{phase_num}_goal({phase_title[:40]})")
         # 列表项
-        for item_m in re.finditer(r'^-\s+(.+)$', phase_body, re.MULTILINE):
+        for item_m in re.finditer(r"^-\s+(.+)$", phase_body, re.MULTILINE):
             line = item_m.group(1).strip()
             if 3 < len(line) < 80:
                 nodes.append(f"phase{phase_num}_action({line[:50]})")
@@ -266,10 +264,10 @@ def _parse_a5_tactical_executor(md_text: str) -> List[Tuple[str, List[str]]]:
     sub_cases = []
 
     # Case 1: 决策链路
-    decision_section = _extract_section(md_text, r'##\s*决策链路')
+    decision_section = _extract_section(md_text, r"##\s*决策链路")
     if decision_section:
         nodes = ["a5_decision_chain_entry()"]
-        for item_m in re.finditer(r'^-\s+(.+)$', decision_section, re.MULTILINE):
+        for item_m in re.finditer(r"^-\s+(.+)$", decision_section, re.MULTILINE):
             line = item_m.group(1).strip()
             if 3 < len(line) < 80:
                 nodes.append(f"decision_step({line[:50]})")
@@ -278,10 +276,10 @@ def _parse_a5_tactical_executor(md_text: str) -> List[Tuple[str, List[str]]]:
             sub_cases.append(("decision_chain", nodes))
 
     # Case 2: 执行前检查
-    check_section = _extract_section(md_text, r'##\s*执行前检查')
+    check_section = _extract_section(md_text, r"##\s*执行前检查")
     if check_section:
         nodes = ["a5_pre_check_entry()"]
-        for m in re.finditer(r'^\d+\.\s+(.+)$', check_section, re.MULTILINE):
+        for m in re.finditer(r"^\d+\.\s+(.+)$", check_section, re.MULTILINE):
             line = m.group(1).strip()
             if 3 < len(line) < 80:
                 nodes.append(f"pre_check({line[:50]})")
@@ -291,8 +289,7 @@ def _parse_a5_tactical_executor(md_text: str) -> List[Tuple[str, List[str]]]:
 
     # Case 3+: 执行流程 Phase
     for phase_m in re.finditer(
-        r'Phase\s*(\d+)\s*[:：]\s*(.+?)(?=Phase\s*\d+|\Z)',
-        md_text, re.DOTALL
+        r"Phase\s*(\d+)\s*[:：]\s*(.+?)(?=Phase\s*\d+|\Z)", md_text, re.DOTALL
     ):
         phase_num = phase_m.group(1)
         phase_title = phase_m.group(2).strip()
@@ -316,17 +313,24 @@ def _parse_a9_exit_skill(md_text: str) -> List[Tuple[str, List[str]]]:
 
     # 四层决策链
     for layer_m in re.finditer(
-        r'###\s*第([一二三四五六七八九十])层\s*[:：]\s*(.+?)(?=###\s*第|\Z)',
-        md_text, re.DOTALL
+        r"###\s*第([一二三四五六七八九十])层\s*[:：]\s*(.+?)(?=###\s*第|\Z)", md_text, re.DOTALL
     ):
         cn_num = layer_m.group(1)
         layer_title = layer_m.group(2).strip()
         layer_body = layer_m.group(2)
-        cn_to_num = {"一": "1", "二": "2", "三": "3", "四": "4",
-                     "五": "5", "六": "6", "七": "7", "八": "8"}
+        cn_to_num = {
+            "一": "1",
+            "二": "2",
+            "三": "3",
+            "四": "4",
+            "五": "5",
+            "六": "6",
+            "七": "7",
+            "八": "8",
+        }
         layer_num = cn_to_num.get(cn_num, "0")
         nodes = [f"a9_layer{layer_num}_entry({layer_title[:40]})"]
-        for item_m in re.finditer(r'^-\s+(.+)$', layer_body, re.MULTILINE):
+        for item_m in re.finditer(r"^-\s+(.+)$", layer_body, re.MULTILINE):
             line = item_m.group(1).strip()
             if 3 < len(line) < 80:
                 nodes.append(f"layer{layer_num}_trigger({line[:50]})")
@@ -348,31 +352,31 @@ def _parse_generic_theory(phase: str, md_text: str) -> List[str]:
     nodes = [f"{phase}_entry()"]
 
     # ## 章节标题作为步骤
-    for m in re.finditer(r'^##\s+(.+)$', md_text, re.MULTILINE):
+    for m in re.finditer(r"^##\s+(.+)$", md_text, re.MULTILINE):
         title = m.group(1).strip()
         if title and not title.startswith("#"):
             nodes.append(f"section({title[:50]})")
 
     # ### 子章节
-    for m in re.finditer(r'^###\s+(.+)$', md_text, re.MULTILINE):
+    for m in re.finditer(r"^###\s+(.+)$", md_text, re.MULTILINE):
         title = m.group(1).strip()
         if title and not title.startswith("#"):
             nodes.append(f"subsection({title[:50]})")
 
     # Step N / Phase N 步骤
-    for m in re.finditer(r'(?:Step|Phase)\s*(\d+)\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"(?:Step|Phase)\s*(\d+)\s*[:：]\s*(.+)", md_text):
         step_num = m.group(1)
         step_title = m.group(2).strip()
         nodes.append(f"step{step_num}({step_title[:40]})")
 
     # 列表项 (短项)
-    for m in re.finditer(r'^-\s+(.+)$', md_text, re.MULTILINE):
+    for m in re.finditer(r"^-\s+(.+)$", md_text, re.MULTILINE):
         line = m.group(1).strip()
         if 3 < len(line) < 80 and not line.startswith("*"):
             nodes.append(f"action({line[:50]})")
 
     # 决议/结论
-    for m in re.finditer(r'\*\*(?:结论|决议|结果)\*\*\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"\*\*(?:结论|决议|结果)\*\*\s*[:：]\s*(.+)", md_text):
         nodes.append(f"resolution({m.group(1).strip()[:60]})")
 
     nodes.append(f"{phase}_exit()")
@@ -395,16 +399,16 @@ def _extract_section(md_text: str, heading_pattern: str) -> str:
     start = m.end()
     # 找到下一个同级标题
     heading_level = 0
-    level_m = re.match(r'^(#+)', m.group(0).strip())
+    level_m = re.match(r"^(#+)", m.group(0).strip())
     if level_m:
         heading_level = len(level_m.group(1))
 
     # 搜索下一个同级或更高级标题
-    next_heading = re.compile(r'^#{1,' + str(heading_level) + r'}\s+', re.MULTILINE)
+    next_heading = re.compile(r"^#{1," + str(heading_level) + r"}\s+", re.MULTILINE)
     rest = md_text[start:]
     next_m = next_heading.search(rest)
     if next_m:
-        return rest[:next_m.start()].strip()
+        return rest[: next_m.start()].strip()
     return rest.strip()
 
 
@@ -431,37 +435,47 @@ def _parse_generic_with_split(phase: str, md_text: str) -> List[Tuple[str, List[
     sub_cases = []
 
     # 按 ## 章节拆分
-    sections = re.split(r'(?=^##\s+)', md_text, flags=re.MULTILINE)
+    sections = re.split(r"(?=^##\s+)", md_text, flags=re.MULTILINE)
     for section in sections:
-        title_m = re.match(r'^##\s+(.+)$', section, re.MULTILINE)
+        title_m = re.match(r"^##\s+(.+)$", section, re.MULTILINE)
         if not title_m:
             continue
         title = title_m.group(1).strip()
         # 跳过不重要的章节 (如 Autonomy Boundary, 合规要求)
-        skip_titles = ["autonomy", "合规", "版本记录", "faq", "踩坑", "邮件",
-                       "投递", "调度", "约束", "集成"]
+        skip_titles = [
+            "autonomy",
+            "合规",
+            "版本记录",
+            "faq",
+            "踩坑",
+            "邮件",
+            "投递",
+            "调度",
+            "约束",
+            "集成",
+        ]
         if any(sk in title.lower() for sk in skip_titles):
             continue
 
         nodes = [f"{phase}_section_entry({title[:40]})"]
         # ### 子章节
-        for m in re.finditer(r'^###\s+(.+)$', section, re.MULTILINE):
+        for m in re.finditer(r"^###\s+(.+)$", section, re.MULTILINE):
             sub_title = m.group(1).strip()
             if sub_title and not sub_title.startswith("#"):
                 nodes.append(f"subsection({sub_title[:50]})")
         # 列表项
-        for m in re.finditer(r'^-\s+(.+)$', section, re.MULTILINE):
+        for m in re.finditer(r"^-\s+(.+)$", section, re.MULTILINE):
             line = m.group(1).strip()
             if 3 < len(line) < 80 and not line.startswith("*"):
                 nodes.append(f"action({line[:50]})")
         # Step/Phase
-        for m in re.finditer(r'(?:Step|Phase)\s*(\d+)\s*[:：]\s*(.+)', section):
+        for m in re.finditer(r"(?:Step|Phase)\s*(\d+)\s*[:：]\s*(.+)", section):
             nodes.append(f"step{m.group(1)}({m.group(2).strip()[:40]})")
         nodes.append(f"{phase}_section_exit()")
 
         if len(nodes) >= 4:
             # 从标题提取 label
-            label = re.sub(r'[^a-zA-Z0-9_\u4e00-\u9fff]', '_', title[:20]).strip("_").lower()
+            label = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fff]", "_", title[:20]).strip("_").lower()
             if not label:
                 label = "section"
             sub_cases.append((label, nodes))
@@ -494,9 +508,7 @@ class ASeriesTheoryCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "A"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从 6-TRADING/skills/ 采集 TrainingCase.
 
         Args:
@@ -543,12 +555,14 @@ class ASeriesTheoryCollector(TrainingDataProvider):
                     continue
 
                 # 从 frontmatter 提取 name
-                name_match = re.search(r'^name:\s*(.+)$', md_text, re.MULTILINE)
+                name_match = re.search(r"^name:\s*(.+)$", md_text, re.MULTILINE)
                 skill_name = name_match.group(1).strip() if name_match else skill_dirname
 
                 # 从标题提取
-                title_match = re.search(r'^#\s+(.+)$', md_text, re.MULTILINE)
-                title = title_match.group(1).strip()[:60] if title_match else f"{phase}.{skill_dirname}"
+                title_match = re.search(r"^#\s+(.+)$", md_text, re.MULTILINE)
+                title = (
+                    title_match.group(1).strip()[:60] if title_match else f"{phase}.{skill_dirname}"
+                )
 
                 topic = PHASE_TO_TOPIC.get(phase, "theory")
 
@@ -563,31 +577,33 @@ class ASeriesTheoryCollector(TrainingDataProvider):
 
                     intent = f"{phase}.{topic}.{sub_label}"
 
-                    cases.append(TrainingCase(
-                        intent=intent,
-                        actions=sub_nodes,
-                        outcome_text="success",
-                        learned=[
-                            f"phase={phase}",
-                            f"skill={skill_name}",
-                            f"sub_case={sub_label}",
-                            f"node_count={len(sub_nodes)}",
-                        ],
-                        layer_tags=["DSH"],
-                        quality="A",
-                        confidence=0.75,
-                        source="a_series_theory",
-                        metadata={
-                            "outcome": "success",
-                            "theory_skill": skill_name,
-                            "phase": phase,
-                            "skill_dir": skill_dirname,
-                            "file": skill_md_path,
-                            "title": title,
-                            "sub_case": sub_label,
-                            "node_count": len(sub_nodes),
-                        },
-                    ))
+                    cases.append(
+                        TrainingCase(
+                            intent=intent,
+                            actions=sub_nodes,
+                            outcome_text="success",
+                            learned=[
+                                f"phase={phase}",
+                                f"skill={skill_name}",
+                                f"sub_case={sub_label}",
+                                f"node_count={len(sub_nodes)}",
+                            ],
+                            layer_tags=["DSH"],
+                            quality="A",
+                            confidence=0.75,
+                            source="a_series_theory",
+                            metadata={
+                                "outcome": "success",
+                                "theory_skill": skill_name,
+                                "phase": phase,
+                                "skill_dir": skill_dirname,
+                                "file": skill_md_path,
+                                "title": title,
+                                "sub_case": sub_label,
+                                "node_count": len(sub_nodes),
+                            },
+                        )
+                    )
             except Exception:
                 # FAIL-OPEN: 单个 SKILL 异常跳过
                 continue

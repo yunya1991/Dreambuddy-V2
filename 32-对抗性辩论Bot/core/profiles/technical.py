@@ -5,10 +5,10 @@
 - 裁判输出技术可行性、风险、证据缺口与建议；
 - 不生成营销素材/传播力评分。
 """
+
 from __future__ import annotations
 
 from core.profiles.base import DebateProfile
-
 
 TECHNICAL_CROSS_EXAM_QUESTION_SYSTEM = """你是{side_name}技术评审员。你的立场是：**必须{stance}提案进入下一阶段**。
 规则：

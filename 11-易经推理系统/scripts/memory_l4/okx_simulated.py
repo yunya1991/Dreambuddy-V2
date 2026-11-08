@@ -8,6 +8,7 @@ OKX 模拟交易客户端 - 易经推理模型训练用
 - 模拟盘使用独立 API Key
 - 所有下单操作记录审计日志
 """
+
 import base64
 import hashlib
 import hmac
@@ -659,8 +660,9 @@ class OKXSimulatedClient:
             "raw": r,
         }
 
-    def set_leverage(self, inst_id: str = None, lever: float = None, mgn_mode: str = None,
-                     pos_side: str = None) -> Dict:
+    def set_leverage(
+        self, inst_id: str = None, lever: float = None, mgn_mode: str = None, pos_side: str = None
+    ) -> Dict:
         """设置 OKX 合约账户 某 交易对 杠杆（Session 2 硬约束：下单前 必须 同步 OKX 端杠杆）。
 
         POST /api/v5/account/set-leverage。dry_run 模式 下 仍 必须 真实 调用 REST，以便
@@ -779,16 +781,21 @@ class OKXSimulatedClient:
 
         # === (A) OCO：SL + TP 一笔 ===
         base_oco = {
-            "instId": inst_id, "tdMode": td_mode, "posSide": pos_side,
-            "algoOrdType": "oco", "sz": sz_s, "side": side, "reduceOnly": "true",
+            "instId": inst_id,
+            "tdMode": td_mode,
+            "posSide": pos_side,
+            "algoOrdType": "oco",
+            "sz": sz_s,
+            "side": side,
+            "reduceOnly": "true",
             "algoClOrdId": f"UNI_OCO_{ts}",
         }
         if stop_loss_px:
             base_oco["slTriggerPx"] = f"{float(stop_loss_px):g}"
-            base_oco["slOrdPx"] = "-1"   # -1 = 触发 后 市价 止 损
+            base_oco["slOrdPx"] = "-1"  # -1 = 触发 后 市价 止 损
         if take_profit_px:
             base_oco["tpTriggerPx"] = f"{float(take_profit_px):g}"
-            base_oco["tpOrdPx"] = "-1"   # -1 = 触发 后 市价 止 盈
+            base_oco["tpOrdPx"] = "-1"  # -1 = 触发 后 市价 止 盈
         for variant_name, extra in [
             ("A1", {}),
             ("A2", {"ordType": "market"}),
@@ -804,10 +811,16 @@ class OKXSimulatedClient:
         sl_res: Optional[Dict] = None
         if stop_loss_px:
             sl_base = {
-                "instId": inst_id, "tdMode": td_mode, "posSide": pos_side,
-                "algoOrdType": "conditional", "sz": sz_s, "side": side, "reduceOnly": "true",
+                "instId": inst_id,
+                "tdMode": td_mode,
+                "posSide": pos_side,
+                "algoOrdType": "conditional",
+                "sz": sz_s,
+                "side": side,
+                "reduceOnly": "true",
                 "algoClOrdId": f"USL_{ts}",
-                "triggerPx": f"{float(stop_loss_px):g}", "triggerPxType": "last",
+                "triggerPx": f"{float(stop_loss_px):g}",
+                "triggerPxType": "last",
                 "orderPx": "-1",
             }
             for name, extra in [
@@ -825,10 +838,16 @@ class OKXSimulatedClient:
         tp_res: Optional[Dict] = None
         if take_profit_px:
             tp_base = {
-                "instId": inst_id, "tdMode": td_mode, "posSide": pos_side,
-                "algoOrdType": "conditional", "sz": sz_s, "side": side, "reduceOnly": "true",
+                "instId": inst_id,
+                "tdMode": td_mode,
+                "posSide": pos_side,
+                "algoOrdType": "conditional",
+                "sz": sz_s,
+                "side": side,
+                "reduceOnly": "true",
                 "algoClOrdId": f"UTP_{ts+1}",
-                "triggerPx": f"{float(take_profit_px):g}", "triggerPxType": "last",
+                "triggerPx": f"{float(take_profit_px):g}",
+                "triggerPxType": "last",
                 "orderPx": "-1",
             }
             for name, extra in [
@@ -849,10 +868,20 @@ class OKXSimulatedClient:
         else:
             ok = sl_res is not None and tp_res is not None
         if ok:
-            return {"ok": True, "mode": "split",
-                    "sl_raw": sl_res, "tp_raw": tp_res, "errors": errors}
-        return {"ok": False, "error": "; ".join(errors[-4:]) if errors else "unknown",
-                "errors": errors, "sl_raw": sl_res, "tp_raw": tp_res}
+            return {
+                "ok": True,
+                "mode": "split",
+                "sl_raw": sl_res,
+                "tp_raw": tp_res,
+                "errors": errors,
+            }
+        return {
+            "ok": False,
+            "error": "; ".join(errors[-4:]) if errors else "unknown",
+            "errors": errors,
+            "sl_raw": sl_res,
+            "tp_raw": tp_res,
+        }
 
     def market_open_long(
         self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
@@ -924,7 +953,7 @@ class OKXSimulatedClient:
 
     # ── 止盈止损单（OKX Algo Order） ──────────────────────────
 
-    def place_stop_loss_take_profit(
+    def place_stop_loss_take_profit(  # noqa: F811
         self,
         inst_id: str = None,
         pos_side: str = "long",
@@ -1549,11 +1578,13 @@ class OKXSimulatedClient:
     def get_performance_summary(self) -> Dict:
         """模拟交易绩效汇总"""
         logs = self.get_audit_logs(limit=1000)
-        trade_logs = [l for l in logs if l.get("action", "").startswith("place_order")]
+        trade_logs = [
+            l for l in logs if l.get("action", "").startswith("place_order")  # noqa: E741
+        ]  # noqa: E741
 
         total_orders = len(trade_logs)
-        dry_run_count = sum(1 for l in trade_logs if l.get("dry_run"))
-        sim_count = sum(1 for l in trade_logs if l.get("simulated"))
+        dry_run_count = sum(1 for l in trade_logs if l.get("dry_run"))  # noqa: E741
+        sim_count = sum(1 for l in trade_logs if l.get("simulated"))  # noqa: E741
 
         return {
             "total_orders": total_orders,

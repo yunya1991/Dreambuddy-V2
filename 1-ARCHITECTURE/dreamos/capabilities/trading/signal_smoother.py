@@ -20,8 +20,8 @@ from typing import Dict, Optional, Tuple
 
 from dreamos.capabilities.trading.stats_utils import (
     ExponentialSmoother,
-    robust_clip,
     mad_outlier_score,
+    robust_clip,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,10 +46,10 @@ class FundamentalSignalSmoother:
     # alpha 越大越响应新数据（弱平滑），越小越平滑（强平滑）
     # 基本面信号本就低频，过强平滑会导致滞后，采用弱平滑
     NODE_ALPHA = {
-        "F1": 0.6,   # 新闻情绪：快速响应
-        "F2": 0.5,   # 资金流：弱平滑
-        "F3": 0.5,   # 估值：弱平滑
-        "F4": 0.5,   # 链上：弱平滑
+        "F1": 0.6,  # 新闻情绪：快速响应
+        "F2": 0.5,  # 资金流：弱平滑
+        "F3": 0.5,  # 估值：弱平滑
+        "F4": 0.5,  # 链上：弱平滑
         "F5": 0.55,  # 宏观：弱平滑
     }
 

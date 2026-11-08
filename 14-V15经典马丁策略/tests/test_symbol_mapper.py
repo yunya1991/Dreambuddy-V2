@@ -8,8 +8,8 @@ SymbolMapper 统一交易对适配层 — 测试套件
 4. 币种池过滤与马丁策略适配
 5. 与 v15_trader / capital_manager / strategy_params 的集成
 """
+
 import sys
-import os
 import unittest
 from pathlib import Path
 
@@ -17,12 +17,19 @@ BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
 sys.path.insert(0, str(BASE_DIR / "core"))
 
-from symbol_mapper import (
-    SymbolMapper, AssetInfo, AssetCategory, Exchange, MarketCapTier,
-    get_mapper, reset_mapper,
-    to_spot, to_swap, from_spot, from_swap,
-    get_category, is_supported, get_contract_overrides,
-    is_martin_safe, filter_martin_safe,
+from symbol_mapper import (  # noqa: E402
+    AssetCategory,
+    AssetInfo,
+    MarketCapTier,
+    SymbolMapper,
+    filter_martin_safe,
+    from_spot,
+    from_swap,
+    is_martin_safe,
+    is_supported,
+    reset_mapper,
+    to_spot,
+    to_swap,
 )
 
 
@@ -143,7 +150,8 @@ class TestRegistryManagement(unittest.TestCase):
     def test_register_custom_asset(self):
         # 模拟注册股票代币
         stock = AssetInfo(
-            symbol="TSLA", name="Tesla Stock Token",
+            symbol="TSLA",
+            name="Tesla Stock Token",
             category=AssetCategory.STOCK,
             exchanges={"okx": False, "binance": True},
             lot_sz_override=0.1,
@@ -241,9 +249,13 @@ class TestMartinSafeFilter(unittest.TestCase):
     def test_is_martin_safe_min_history_days(self):
         # HYPE 上线 2024-11-29，距今 >365 天，但 <10000 天
         # 用极大阈值测试时间过滤
-        self.assertFalse(self.m.is_martin_safe("HYPE", min_tier=MarketCapTier.MID, min_history_days=10000))
+        self.assertFalse(
+            self.m.is_martin_safe("HYPE", min_tier=MarketCapTier.MID, min_history_days=10000)
+        )
         # 正常阈值应通过（时间层面）
-        self.assertTrue(self.m.is_martin_safe("HYPE", min_tier=MarketCapTier.MID, min_history_days=365))
+        self.assertTrue(
+            self.m.is_martin_safe("HYPE", min_tier=MarketCapTier.MID, min_history_days=365)
+        )
 
     def test_filter_martin_safe_batch(self):
         coins = ["BTC", "PEPE", "ETH", "SHIB", "INJ", "WLD", "SOL"]
@@ -285,6 +297,7 @@ class TestV15Integration(unittest.TestCase):
     def test_v15_trader_coins_filtered(self):
         """v15_trader 的 COINS 列表应通过 SymbolMapper 过滤"""
         import v15_trader
+
         # 至少包含原始币种
         self.assertIn("BTC", v15_trader.COINS)
         self.assertIn("ETH", v15_trader.COINS)
@@ -298,11 +311,13 @@ class TestV15Integration(unittest.TestCase):
     def test_v15_trader_coins_count_expanded(self):
         """币种池应至少包含4个强势代币"""
         import v15_trader
+
         self.assertGreaterEqual(len(v15_trader.COINS), 4)
 
     def test_v15_trader_has_us_stock(self):
         """币种池应包含美股个股永续（强势代币候选）"""
         import v15_trader
+
         self.assertIn("MU", v15_trader.COINS)
         self.assertIn("SKHYNIX", v15_trader.COINS)
         self.assertIn("GOOGL", v15_trader.COINS)
@@ -312,7 +327,10 @@ class TestV15Integration(unittest.TestCase):
     def test_capital_manager_coins_filtered(self):
         """capital_manager 币种应通过 SymbolMapper 过滤（若有 V15_COINS 属性）"""
         import capital_manager
-        coins = getattr(capital_manager, "V15_COINS", None) or getattr(capital_manager, "V15CT_COINS", None)
+
+        coins = getattr(capital_manager, "V15_COINS", None) or getattr(
+            capital_manager, "V15CT_COINS", None
+        )
         if coins is None:
             self.skipTest("capital_manager 无 V15_COINS/V15CT_COINS 属性")
         for coin in coins:
@@ -324,7 +342,9 @@ class TestV15Integration(unittest.TestCase):
     def test_capital_manager_to_swap_integration(self):
         """capital_manager 应使用 to_swap 而非硬编码"""
         import inspect
+
         import capital_manager
+
         # 不应再有硬编码的 f"{symbol}-USDT-SWAP" 拼接（除注释外）
         # 检查 get_current_positions 函数体
         get_pos_src = inspect.getsource(capital_manager.get_current_positions)
@@ -334,7 +354,9 @@ class TestV15Integration(unittest.TestCase):
     def test_v15_trader_to_spot_integration(self):
         """v15_trader.get_v15_decision 应使用 to_spot"""
         import inspect
+
         import v15_trader
+
         src = inspect.getsource(v15_trader.get_v15_decision)
         self.assertNotIn('f"{coin}-USDT"', src)
         self.assertIn("to_spot", src)
@@ -342,7 +364,9 @@ class TestV15Integration(unittest.TestCase):
     def test_v15_trader_to_swap_integration(self):
         """v15_trader.execute_open_position 应使用 to_swap"""
         import inspect
+
         import v15_trader
+
         src = inspect.getsource(v15_trader.execute_open_position)
         self.assertNotIn('f"{coin}-USDT-SWAP"', src)
         self.assertIn("to_swap", src)
@@ -350,7 +374,9 @@ class TestV15Integration(unittest.TestCase):
     def test_strategy_params_to_swap_integration(self):
         """strategy_params.get_coin_strategy_params 应使用 to_swap"""
         import inspect
+
         import strategy_params
+
         src = inspect.getsource(strategy_params.get_coin_strategy_params)
         self.assertNotIn('f"{symbol}-USDT-SWAP"', src)
         self.assertIn("to_swap", src)
@@ -360,8 +386,10 @@ class TestNoHardcodedPairs(unittest.TestCase):
     """回归测试：确保不再有新的硬编码拼接"""
 
     def test_v15_trader_no_hardcoded_swap(self):
-        import v15_trader
         import inspect
+
+        import v15_trader
+
         # 检查所有函数源码，不应有 f"...-USDT-SWAP" 硬编码（除降级 fallback）
         for name, fn in inspect.getmembers(v15_trader, inspect.isfunction):
             if fn.__module__ != v15_trader.__name__:

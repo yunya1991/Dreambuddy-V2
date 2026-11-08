@@ -1,15 +1,13 @@
-import unittest
 import json
+import unittest
 from pathlib import Path
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "drift-guard.yml"
 VENDORED_ACTION_DIR = REPO_ROOT / ".github" / "actions" / "drift-guard"
 CONFIG_PATH = REPO_ROOT / ".workbuddy" / "drift-guard.json"
 EXPECTED_USES = (
-    "uses: yunya1991/DREAM-AGENT/.github/workflows/"
-    "reusable-drift-guard.yml@drift-guard/v0.1.3"
+    "uses: yunya1991/DREAM-AGENT/.github/workflows/" "reusable-drift-guard.yml@drift-guard/v0.1.3"
 )
 EXPECTED_SOURCE_REF = "source_ref: drift-guard/v0.1.3"
 

@@ -11,9 +11,9 @@ XGBoost 小模型预测器 — 替换 QMM backtest 的规则预测器。
 - 四维评分：sd/tech/cf/sent
 - 象限特征：quadrant_x + quadrant_y
 """
+
 import json
 import os
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -26,6 +26,7 @@ def _get_xgb():
     global _xgb
     if _xgb is None:
         import xgboost
+
         _xgb = xgboost
     return _xgb
 
@@ -33,30 +34,46 @@ def _get_xgb():
 # 特征名列表
 FEATURE_NAMES = [
     # 四象权重
-    "weight_time", "weight_space", "weight_surface", "weight_core",
+    "weight_time",
+    "weight_space",
+    "weight_surface",
+    "weight_core",
     # 体量参数
-    "market_mass_base", "velocity_decay",
-    "confidence_threshold", "reversal_threshold",
+    "market_mass_base",
+    "velocity_decay",
+    "confidence_threshold",
+    "reversal_threshold",
     # 两仪状态
-    "macro_phase_enc", "micro_phase_enc",
-    "is_resonance", "is_conflict", "resonance_factor",
+    "macro_phase_enc",
+    "micro_phase_enc",
+    "is_resonance",
+    "is_conflict",
+    "resonance_factor",
     "liangyi_strength",
     # 市场指标
-    "price_position", "trend_strength", "volatility",
-    "volume_ratio", "scale",
+    "price_position",
+    "trend_strength",
+    "volatility",
+    "volume_ratio",
+    "scale",
     # 四维评分
-    "sd_score", "tech_score", "cf_score", "sent_score",
+    "sd_score",
+    "tech_score",
+    "cf_score",
+    "sent_score",
     # 象限
-    "quadrant_x", "quadrant_y",
+    "quadrant_x",
+    "quadrant_y",
     # 衍生
-    "score_consistency", "score_mean",
+    "score_consistency",
+    "score_mean",
     "weight_dominant",  # 最大权重维度 (0=time,1=space,2=surface,3=core)
 ]
 
 # 分类标签映射
 # Bug Y4 修复: 使用二元标签（盈利=1/亏损=0）替代三分类（DOWN=0/FLAT=1/UP=2）
 # 原三分类导致 XGBClassifier 期望 [0,1] 但收到 [0,2]，训练报错
-LABEL_MAP = {"DOWN": 0, "FLAT": 0, "UP": 1}   # 合并 FLAT 到 DOWN（保守）
+LABEL_MAP = {"DOWN": 0, "FLAT": 0, "UP": 1}  # 合并 FLAT 到 DOWN（保守）
 LABEL_INVERSE = {0: "DOWN_OR_FLAT", 1: "UP"}
 
 # Phase 编码
@@ -89,8 +106,8 @@ def extract_features_from_case(case: Dict[str, Any]) -> Optional[np.ndarray]:
         ly_strength = float(ly.get("liangyi_strength", 0))
         if ly_strength == 0:
             # 从 liangyi_state 的文字描述里推断
-            macro_season = ly.get("macro_season", "")
-            micro_season = ly.get("micro_season", "")
+            macro_season = ly.get("macro_season", "")  # noqa: F841
+            micro_season = ly.get("micro_season", "")  # noqa: F841
             ly_strength = 0.5  # 默认
 
         # 市场指标
@@ -119,22 +136,39 @@ def extract_features_from_case(case: Dict[str, Any]) -> Optional[np.ndarray]:
         weights = [w_t, w_s, w_sf, w_c]
         w_dominant = float(weights.index(max(weights)))
 
-        features = np.array([
-            w_t, w_s, w_sf, w_c,
-            float(sp.get("market_mass_base", 1.0)),
-            float(sp.get("velocity_decay", 0.85)),
-            float(sp.get("confidence_threshold", 0.375)),
-            float(sp.get("reversal_threshold", 0.175)),
-            float(MACRO_PHASE_ENC.get(macro, 1)),
-            float(MICRO_PHASE_ENC.get(micro, 0)),
-            is_res, is_conf, res_factor,
-            ly_strength,
-            pp, ts_val, vol, vol_ratio, scale,
-            sd, tech, cf, sent,
-            qx, qy,
-            s_consistency, s_mean,
-            w_dominant,
-        ], dtype=np.float32)
+        features = np.array(
+            [
+                w_t,
+                w_s,
+                w_sf,
+                w_c,
+                float(sp.get("market_mass_base", 1.0)),
+                float(sp.get("velocity_decay", 0.85)),
+                float(sp.get("confidence_threshold", 0.375)),
+                float(sp.get("reversal_threshold", 0.175)),
+                float(MACRO_PHASE_ENC.get(macro, 1)),
+                float(MICRO_PHASE_ENC.get(micro, 0)),
+                is_res,
+                is_conf,
+                res_factor,
+                ly_strength,
+                pp,
+                ts_val,
+                vol,
+                vol_ratio,
+                scale,
+                sd,
+                tech,
+                cf,
+                sent,
+                qx,
+                qy,
+                s_consistency,
+                s_mean,
+                w_dominant,
+            ],
+            dtype=np.float32,
+        )
 
         return features
     except Exception:
@@ -213,7 +247,7 @@ class QMMPredictor:
 
         # 默认参数（偏保守，减少过拟合）
         default_params = {
-            "objective": "binary:logistic",   # Bug Y4 修复: 改为二元分类
+            "objective": "binary:logistic",  # Bug Y4 修复: 改为二元分类
             # "num_class": 3,                 # 已移除，二元不需要
             "max_depth": 3,
             "learning_rate": 0.05,
@@ -231,9 +265,9 @@ class QMMPredictor:
 
         # 交叉验证
         from sklearn.model_selection import cross_val_score
+
         clf = xgb.XGBClassifier(**default_params)
-        cv_scores = cross_val_score(clf, X, y, cv=min(n_folds, len(set(y))),
-                                    scoring="accuracy")
+        cv_scores = cross_val_score(clf, X, y, cv=min(n_folds, len(set(y))), scoring="accuracy")
 
         # 全量训练
         clf.fit(X, y)
@@ -247,7 +281,10 @@ class QMMPredictor:
             "ok": True,
             "n_samples": len(X),
             "n_features": self.n_features,
-            "label_dist": {LABEL_INVERSE[k]: int(v) for k, v in zip(*np.unique(y, return_counts=True))},
+            "label_dist": {
+                LABEL_INVERSE[k]: int(v)
+                for k, v in zip(*np.unique(y, return_counts=True))  # noqa: B905
+            },
             "cv_scores": [round(s, 4) for s in cv_scores],
             "cv_mean": round(float(cv_scores.mean()), 4),
             "cv_std": round(float(cv_scores.std()), 4),
@@ -304,11 +341,15 @@ class QMMPredictor:
             # 保存元数据
             meta_path = path + ".meta.json"
             with open(meta_path, "w", encoding="utf-8") as f:
-                json.dump({
-                    "n_features": self.n_features,
-                    "feature_names": self.feature_names,
-                    "label_map": LABEL_MAP,
-                }, f, indent=2)
+                json.dump(
+                    {
+                        "n_features": self.n_features,
+                        "feature_names": self.feature_names,
+                        "label_map": LABEL_MAP,
+                    },
+                    f,
+                    indent=2,
+                )
             return True
         except Exception:
             return False

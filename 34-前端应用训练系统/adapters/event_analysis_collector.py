@@ -12,7 +12,7 @@
 生成 (message, intent_type='event_analysis') 训练案例。
 FAIL-OPEN: 数据缺失/解析失败返回空列表。
 """
-import glob
+
 import json
 import os
 from typing import List, Optional
@@ -21,7 +21,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 实时事件驱动状态（11 系统）
 _EVENT_STATE_PATH = os.path.join(
@@ -81,30 +81,34 @@ class EventAnalysisCollector(TrainingDataProvider):
             guidance = sig.get("forward_guidance", "")
             surprise = scores.get("surprise", 0.0)
             priced_in = scores.get("priced_in", 0.0)
-            score_summary = "/".join(f"{k}:{v:.2f}" for k, v in scores.items())
-            for idx, tpl in enumerate(_TEMPLATES):
+            score_summary = "/".join(f"{k}:{v:.2f}" for k, v in scores.items())  # noqa: F841
+            for idx, tpl in enumerate(_TEMPLATES):  # noqa: B007
                 if len(cases) >= limit:
                     break
                 message = tpl
-                cases.append(TrainingCase(
-                    intent="event_analysis",
-                    actions=[f"event:{event_type}", f"phase:{event_phase}"],
-                    outcome_text=message,
-                    learned=[f"事件分析: 类型{event_type} 阶段{event_phase} 意外度{surprise:.2f} 定价度{priced_in:.2f} → {reason}"],
-                    layer_tags=["S"],
-                    quality="B",
-                    confidence=0.6,
-                    source="event_analysis",
-                    metadata={
-                        "event_type": event_type,
-                        "event_phase": event_phase,
-                        "confidence": confidence,
-                        "scores": scores,
-                        "reason": reason,
-                        "forward_guidance": guidance,
-                        "engine_hint": "29-事件驱动策略系统",
-                    },
-                ))
+                cases.append(
+                    TrainingCase(
+                        intent="event_analysis",
+                        actions=[f"event:{event_type}", f"phase:{event_phase}"],
+                        outcome_text=message,
+                        learned=[
+                            f"事件分析: 类型{event_type} 阶段{event_phase} 意外度{surprise:.2f} 定价度{priced_in:.2f} → {reason}"
+                        ],
+                        layer_tags=["S"],
+                        quality="B",
+                        confidence=0.6,
+                        source="event_analysis",
+                        metadata={
+                            "event_type": event_type,
+                            "event_phase": event_phase,
+                            "confidence": confidence,
+                            "scores": scores,
+                            "reason": reason,
+                            "forward_guidance": guidance,
+                            "engine_hint": "29-事件驱动策略系统",
+                        },
+                    )
+                )
 
         # ---- 数据源 ②: FOMC 历史案例库 ----
         lib = None
@@ -116,7 +120,7 @@ class EventAnalysisCollector(TrainingDataProvider):
         if isinstance(lib, dict):
             items = lib.get("cases") or lib.get("_cases") or []
             if isinstance(items, list):
-                for idx, c in enumerate(items):
+                for idx, c in enumerate(items):  # noqa: B007
                     if len(cases) >= limit:
                         break
                     if not isinstance(c, dict):
@@ -130,23 +134,27 @@ class EventAnalysisCollector(TrainingDataProvider):
                     dec_cn = _DECISION_DESC.get(decision, decision)
                     message = f"{date}美联储{dec_cn}事件怎么分析的"
                     reaction_summary = "/".join(f"{k}:{v}" for k, v in reaction.items())
-                    cases.append(TrainingCase(
-                        intent="event_analysis",
-                        actions=[f"event_case:{date}", f"decision:{decision}"],
-                        outcome_text=message,
-                        learned=[f"事件案例: {date} {dec_cn} 阶段{phase} 市场反应{reaction_summary} → {tag or '无标签'}"],
-                        layer_tags=["S"],
-                        quality="B",
-                        confidence=0.55,
-                        source="event_analysis",
-                        metadata={
-                            "event_date": date,
-                            "decision": decision,
-                            "cycle_phase": phase,
-                            "relief_or_reversal": tag,
-                            "pnl_30d": pnl,
-                            "engine_hint": "29-事件驱动策略系统/EventCaseLibrary",
-                        },
-                    ))
+                    cases.append(
+                        TrainingCase(
+                            intent="event_analysis",
+                            actions=[f"event_case:{date}", f"decision:{decision}"],
+                            outcome_text=message,
+                            learned=[
+                                f"事件案例: {date} {dec_cn} 阶段{phase} 市场反应{reaction_summary} → {tag or '无标签'}"
+                            ],
+                            layer_tags=["S"],
+                            quality="B",
+                            confidence=0.55,
+                            source="event_analysis",
+                            metadata={
+                                "event_date": date,
+                                "decision": decision,
+                                "cycle_phase": phase,
+                                "relief_or_reversal": tag,
+                                "pnl_30d": pnl,
+                                "engine_hint": "29-事件驱动策略系统/EventCaseLibrary",
+                            },
+                        )
+                    )
 
         return cases

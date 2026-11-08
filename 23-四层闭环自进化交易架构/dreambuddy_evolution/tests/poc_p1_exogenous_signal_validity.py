@@ -11,6 +11,7 @@
 
 指标: MAE, out-of-sample R², 有/无外生的差异
 """
+
 from __future__ import annotations
 
 import json
@@ -53,7 +54,9 @@ def load_data():
     prices = np.interp(hour_ts, cap_ts, prices_raw)
 
     # 时变外生
-    sc_rows = repo.query_metric_by_time("stablecoins_top_10", "total_circulating_usd_bln", start, end)
+    sc_rows = repo.query_metric_by_time(
+        "stablecoins_top_10", "total_circulating_usd_bln", start, end
+    )
     sc_ts = np.array([r[3].timestamp() for r in sc_rows])
     sc_vals = np.array([float(r[2]) for r in sc_rows])
     sc_aligned = np.interp(hour_ts, sc_ts, sc_vals, left=sc_vals[0], right=sc_vals[-1])
@@ -72,11 +75,17 @@ def load_data():
     exbal_rows = repo.query_metric_by_time("exchanges_whales", "ex_bal_BTC_chg30d_pct", start, end)
     exbal_ts = np.array([r[3].timestamp() for r in exbal_rows])
     exbal_vals = np.array([float(r[2]) for r in exbal_rows])
-    exbal_aligned = np.interp(hour_ts, exbal_ts, exbal_vals, left=exbal_vals[0], right=exbal_vals[-1])
+    exbal_aligned = np.interp(
+        hour_ts, exbal_ts, exbal_vals, left=exbal_vals[0], right=exbal_vals[-1]
+    )
 
     snapshot = {}
-    for sub, metric, key in [("cpi", "actual", "cpi_actual"), ("cpi", "forecast", "cpi_expected"),
-                              ("fedwatch", "hike_prob", "rate_hike_prob"), ("etf_flow", "total_flow", "etf_net_flow")]:
+    for sub, metric, key in [
+        ("cpi", "actual", "cpi_actual"),
+        ("cpi", "forecast", "cpi_expected"),
+        ("fedwatch", "hike_prob", "rate_hike_prob"),
+        ("etf_flow", "total_flow", "etf_net_flow"),
+    ]:
         row = repo.query_latest_metric(sub, metric)
         if row is not None and row[1] is not None:
             snapshot[key] = float(row[1])
@@ -104,8 +113,8 @@ def build_price_features(prices, lookback=10):
     for i in range(lookback, n):
         for j in range(lookback):
             feats[i, j] = rets[i - j - 1] if i - j - 1 >= 0 else 0.0
-        feats[i, lookback] = np.std(rets[max(0, i - 10):i]) if i > 0 else 0.0
-        ma = np.mean(prices[max(0, i - 20):i + 1])
+        feats[i, lookback] = np.std(rets[max(0, i - 10) : i]) if i > 0 else 0.0
+        ma = np.mean(prices[max(0, i - 20) : i + 1])
         feats[i, lookback + 1] = (prices[i] - ma) / ma if ma > 0 else 0.0
     return feats
 
@@ -129,9 +138,13 @@ def rolling_mlp_eval(X, y, train_ratio=0.7, n_trials=5):
         Xte_s = scaler.transform(Xte)
 
         model = MLPRegressor(
-            hidden_layer_sizes=(16, 8), activation="relu",
-            alpha=0.01, max_iter=500, random_state=42 + trial,
-            early_stopping=True, validation_fraction=0.1,
+            hidden_layer_sizes=(16, 8),
+            activation="relu",
+            alpha=0.01,
+            max_iter=500,
+            random_state=42 + trial,
+            early_stopping=True,
+            validation_fraction=0.1,
         )
         model.fit(Xtr_s, ytr)
         pred = model.predict(Xte_s)
@@ -147,10 +160,14 @@ def rolling_mlp_eval(X, y, train_ratio=0.7, n_trials=5):
 def main():
     prices, per_point_data, hour_ts = load_data()
     n = len(prices)
-    logger.info("数据: %d 点, 价格范围 %.0f~%.0f, 时间 %s~%s",
-                n, prices.min(), prices.max(),
-                datetime.fromtimestamp(hour_ts[0], tz=timezone.utc).strftime("%Y-%m-%d"),
-                datetime.fromtimestamp(hour_ts[-1], tz=timezone.utc).strftime("%Y-%m-%d"))
+    logger.info(
+        "数据: %d 点, 价格范围 %.0f~%.0f, 时间 %s~%s",
+        n,
+        prices.min(),
+        prices.max(),
+        datetime.fromtimestamp(hour_ts[0], tz=timezone.utc).strftime("%Y-%m-%d"),
+        datetime.fromtimestamp(hour_ts[-1], tz=timezone.utc).strftime("%Y-%m-%d"),
+    )
 
     # 目标: 下一期收益
     rets = np.zeros(n)
@@ -212,7 +229,11 @@ def main():
             "target_std": float(np.std(y_v)),
         },
         "model_a": {"mae": round(mae_a, 6), "r2": round(r2_a, 4), "features": "price only (12)"},
-        "model_b": {"mae": round(mae_b, 6), "r2": round(r2_b, 4), "features": "price + exogenous 9 (21)"},
+        "model_b": {
+            "mae": round(mae_b, 6),
+            "r2": round(r2_b, 4),
+            "features": "price + exogenous 9 (21)",
+        },
         "comparison": {
             "delta_mae_pct": round(delta_mae, 4),
             "delta_r2": round(delta_r2, 4),

@@ -16,17 +16,10 @@
 - 每个节点都有完整的元数据描述
 """
 
-from .node_registry import (
-    NodeInfo,
-    IOSchema,
-    NodeRetryPolicy,
-    NodeFallbackPolicy,
-)
-
-
 # ============================================================
 # 节点定义列表
 # ============================================================
+
 
 def get_all_node_definitions() -> list:
     """获取所有节点定义
@@ -97,7 +90,6 @@ def get_all_node_definitions() -> list:
             "tags": ["technical", "indicators", "scan"],
             "legacy_id": "C1_技术扫描",
         },
-
         # ========================================
         # A 链：分析/决策层
         # ========================================
@@ -166,7 +158,6 @@ def get_all_node_definitions() -> list:
             "tags": ["contradiction", "analysis", "multi-dimension"],
             "legacy_id": "A0_矛盾论",
         },
-
         {
             "node_id": "dream-research-v2",
             "name": "A1 调研",
@@ -227,7 +218,6 @@ def get_all_node_definitions() -> list:
             "tags": ["research", "fundamental", "comprehensive"],
             "legacy_id": "A1_调研(含A0)",
         },
-
         {
             "node_id": "dream-first-principles",
             "name": "A2 第一性原理分析",
@@ -292,7 +282,6 @@ def get_all_node_definitions() -> list:
             "tags": ["first_principles", "path_analysis", "ma_trend", "core"],
             "legacy_id": "A2_分析(含A0)",
         },
-
         {
             "node_id": "dream-strategy-engine",
             "name": "A3 策略设计",
@@ -355,7 +344,6 @@ def get_all_node_definitions() -> list:
             "tags": ["strategy", "trading", "plan"],
             "legacy_id": "A3_策略设计(含A0)",
         },
-
         {
             "node_id": "dream-gate-v2",
             "name": "A4 门禁",
@@ -420,7 +408,6 @@ def get_all_node_definitions() -> list:
             "tags": ["risk", "gate", "control"],
             "legacy_id": "A4_门禁",
         },
-
         {
             "node_id": "dream-exit-skill-v2",
             "name": "A9 离场评估",
@@ -485,7 +472,6 @@ def get_all_node_definitions() -> list:
             "tags": ["exit", "risk", "trading"],
             "legacy_id": "A9_离场评估",
         },
-
         # ========================================
         # F 链：基本面层
         # ========================================
@@ -549,7 +535,6 @@ def get_all_node_definitions() -> list:
             "tags": ["news", "fundamental", "event"],
             "legacy_id": "F1_新闻",
         },
-
         {
             "node_id": "fundamental-fund-flow",
             "name": "F2 资金流分析",
@@ -610,7 +595,6 @@ def get_all_node_definitions() -> list:
             "tags": ["fund_flow", "capital", "fundamental"],
             "legacy_id": "F2_资金流",
         },
-
         {
             "node_id": "fundamental-sentiment",
             "name": "F3 情绪分析",
@@ -671,7 +655,6 @@ def get_all_node_definitions() -> list:
             "tags": ["sentiment", "psychology", "fundamental"],
             "legacy_id": "F3_情绪",
         },
-
         # ========================================
         # 其他：潜意识层
         # ========================================
@@ -704,7 +687,13 @@ def get_all_node_definitions() -> list:
             },
             "output_schema": {
                 "required_fields": [],
-                "optional_fields": ["direction", "confidence", "rationale", "data", "dream_content"],
+                "optional_fields": [
+                    "direction",
+                    "confidence",
+                    "rationale",
+                    "data",
+                    "dream_content",
+                ],
                 "field_types": {
                     "direction": "str",
                     "confidence": "float",

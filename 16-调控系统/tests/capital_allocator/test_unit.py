@@ -10,9 +10,7 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -23,20 +21,15 @@ _CORE_ROOT = _16_DIR / "core"
 if str(_CORE_ROOT) not in sys.path:
     sys.path.insert(0, str(_CORE_ROOT))
 
-from capital_allocator.types import (  # noqa: E402
-    AllocatorMode,
-    CoinPerformance,
-    HealthLevel,
-)
-from capital_allocator.layers.kelly_sizer import KellySizer  # noqa: E402
-from capital_allocator.layers.hierarchical_allocator import HierarchicalAllocator  # noqa: E402
 from capital_allocator.layers.expansion_gate import GlobalExpansionGate  # noqa: E402
+from capital_allocator.layers.hierarchical_allocator import HierarchicalAllocator  # noqa: E402
+from capital_allocator.layers.kelly_sizer import KellySizer  # noqa: E402
 from capital_allocator.layers.performance_tracker import PerformanceTracker  # noqa: E402
-
 
 # ============================================================
 # Layer 2: KellySizer
 # ============================================================
+
 
 class TestKellySizer:
     def test_kelly_fraction_basic(self):
@@ -100,6 +93,7 @@ class TestKellySizer:
 # Layer 3: HierarchicalAllocator
 # ============================================================
 
+
 class TestHierarchicalAllocator:
     def test_default_weights(self):
         """默认子池权重"""
@@ -143,6 +137,7 @@ class TestHierarchicalAllocator:
 # Layer 4: GlobalExpansionGate
 # ============================================================
 
+
 class TestGlobalExpansionGate:
     def test_cold_start(self):
         """交易不足 window → 不扩张（1.0）"""
@@ -181,8 +176,10 @@ class TestGlobalExpansionGate:
     def test_safety_clamp(self):
         """安全约束：mult ∈ [0.5, 1.5]"""
         gate = GlobalExpansionGate(
-            window=30, cooldown_hours=0,
-            max_exposure=0.80, min_exposure=0.10,
+            window=30,
+            cooldown_hours=0,
+            max_exposure=0.80,
+            min_exposure=0.10,
         )
         stats = {"w_l_ratio": 100.0, "n_trades": 50}  # 极端高
         mult = gate.get_expansion_multiplier(stats)
@@ -198,6 +195,7 @@ class TestGlobalExpansionGate:
 # ============================================================
 # Layer 1: PerformanceTracker
 # ============================================================
+
 
 class TestPerformanceTracker:
     @pytest.fixture

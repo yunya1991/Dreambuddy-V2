@@ -6,15 +6,16 @@ BCRM 记忆适配器。
 
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
 from random import Random
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class BCRMMemoryCase:
     """BCRM 记忆案例。"""
+
     case_id: str = ""
     bagua: str = ""
     hexagram: str = ""
@@ -64,30 +65,30 @@ class MockMemoryAdapter:
         regimes = ["bull", "bear", "ranging"]
 
         for i in range(self.num_cases):
-            self._cases.append(BCRMMemoryCase(
-                case_id=f"mock_case_{i:03d}",
-                bagua=rng.choice(guas),
-                hexagram="",
-                direction=rng.choice(directions),
-                accumulation=rng.uniform(0.3, 0.9),
-                is_qualitative_change=rng.random() > 0.7,
-                price_change=rng.uniform(-0.05, 0.05),
-                dominant_side_switched=rng.random() > 0.6,
-                gua_flipped=rng.random() > 0.8,
-                similarity=0.0,
-                regime=rng.choice(regimes),
-            ))
+            self._cases.append(
+                BCRMMemoryCase(
+                    case_id=f"mock_case_{i:03d}",
+                    bagua=rng.choice(guas),
+                    hexagram="",
+                    direction=rng.choice(directions),
+                    accumulation=rng.uniform(0.3, 0.9),
+                    is_qualitative_change=rng.random() > 0.7,
+                    price_change=rng.uniform(-0.05, 0.05),
+                    dominant_side_switched=rng.random() > 0.6,
+                    gua_flipped=rng.random() > 0.8,
+                    similarity=0.0,
+                    regime=rng.choice(regimes),
+                )
+            )
 
-    def retrieve_similar(self,
-                         snapshot: Dict[str, Any],
-                         top_k: int = 5) -> List[BCRMMemoryCase]:
+    def retrieve_similar(self, snapshot: Dict[str, Any], top_k: int = 5) -> List[BCRMMemoryCase]:
         """检索相似案例。"""
         rng = Random(hash(json.dumps(snapshot, sort_keys=True, default=str)) % (2**32))
 
         # 随机选择一些案例作为"相似"
         cases = list(self._cases)
         rng.shuffle(cases)
-        selected = cases[:min(top_k, len(cases))]
+        selected = cases[: min(top_k, len(cases))]
 
         # 分配相似度
         for i, c in enumerate(selected):
@@ -95,16 +96,12 @@ class MockMemoryAdapter:
 
         return sorted(selected, key=lambda x: -x.similarity)
 
-    def retrieve_by_gua(self,
-                        gua: str,
-                        top_k: int = 5) -> List[BCRMMemoryCase]:
+    def retrieve_by_gua(self, gua: str, top_k: int = 5) -> List[BCRMMemoryCase]:
         """按卦象检索。"""
         matching = [c for c in self._cases if c.bagua == gua]
         return matching[:top_k]
 
-    def retrieve_by_hexagram(self,
-                             hexagram: str,
-                             top_k: int = 5) -> List[BCRMMemoryCase]:
+    def retrieve_by_hexagram(self, hexagram: str, top_k: int = 5) -> List[BCRMMemoryCase]:
         """按六十四卦检索。"""
         matching = [c for c in self._cases if c.hexagram == hexagram]
         return matching[:top_k]
@@ -134,7 +131,7 @@ class L4MemoryAdapter:
         cases_path = Path(self.cases_dir)
         for f in cases_path.glob("*.json"):
             try:
-                with open(f, 'r', encoding='utf-8') as fp:
+                with open(f, "r", encoding="utf-8") as fp:
                     data = json.load(fp)
                 case = self._parse_case(data)
                 if case:
@@ -167,8 +164,7 @@ class L4MemoryAdapter:
                         bagua = step["bagua"]
                         break
 
-            direction = outcome.get("direction",
-                                    env.get("trend_direction", "UNKNOWN"))
+            direction = outcome.get("direction", env.get("trend_direction", "UNKNOWN"))
 
             return BCRMMemoryCase(
                 case_id=data.get("case_id", ""),
@@ -186,9 +182,7 @@ class L4MemoryAdapter:
         except Exception:
             return None
 
-    def retrieve_similar(self,
-                         snapshot: Dict[str, Any],
-                         top_k: int = 5) -> List[BCRMMemoryCase]:
+    def retrieve_similar(self, snapshot: Dict[str, Any], top_k: int = 5) -> List[BCRMMemoryCase]:
         """检索相似案例。"""
         all_cases = self._load_all_cases()
         if not all_cases:
@@ -213,9 +207,7 @@ class L4MemoryAdapter:
         scored.sort(key=lambda x: -x.similarity)
         return scored[:top_k]
 
-    def retrieve_by_gua(self,
-                        gua: str,
-                        top_k: int = 5) -> List[BCRMMemoryCase]:
+    def retrieve_by_gua(self, gua: str, top_k: int = 5) -> List[BCRMMemoryCase]:
         """按卦象检索。"""
         all_cases = self._load_all_cases()
         matching = [c for c in all_cases if c.bagua == gua]

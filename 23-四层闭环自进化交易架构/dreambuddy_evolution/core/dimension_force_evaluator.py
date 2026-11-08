@@ -17,6 +17,7 @@ SPEC-各维度矛盾计算重建 v0.3 T3 实现。
 
 硬约束: HC-AGI-02（异常→中性兜底）、FAIL-OPEN 铁律。
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,9 +37,9 @@ class DimensionForceEvaluator:
     """各维度矛盾力量评估器（只读 DAL）."""
 
     # z-score 窗口（秒）
-    WINDOW_D1 = 24 * 30 * 24 * 3600   # 24 个月
-    WINDOW_D2 = 30 * 24 * 3600        # 30 天
-    WINDOW_D4 = 90 * 24 * 3600        # 90 天
+    WINDOW_D1 = 24 * 30 * 24 * 3600  # 24 个月
+    WINDOW_D2 = 30 * 24 * 3600  # 30 天
+    WINDOW_D4 = 90 * 24 * 3600  # 90 天
     # 窗口最小样本数（不足降级 percentile→再不足降级 neutral）
     MIN_SAMPLES_D1 = 8
     MIN_SAMPLES_D2 = 30
@@ -48,7 +49,10 @@ class DimensionForceEvaluator:
         if db_path is None:
             # 路径: 本文件位于 <root>/23-.../dreambuddy_evolution/core/ → parents[3] = 项目根
             db_path = str(
-                Path(__file__).resolve().parents[3] / "19-数据访问层" / "data" / "dreambuddy_core.db"
+                Path(__file__).resolve().parents[3]
+                / "19-数据访问层"
+                / "data"
+                / "dreambuddy_core.db"
             )
         self._db_path = db_path
 
@@ -99,6 +103,7 @@ class DimensionForceEvaluator:
         """z-score; 样本<30 降级 percentile 排名映射到 [-2,2]."""
         if len(history) >= 30:
             import math
+
             mu = sum(history) / len(history)
             var = sum((x - mu) ** 2 for x in history) / len(history)
             sd = math.sqrt(var) if var > 0 else 0.0
@@ -214,8 +219,12 @@ class DimensionForceEvaluator:
             raw = raw / weight_sum  # 归一 [-1,1]
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
             strength = self._clamp01(abs(raw))
-            return {"direction": direction, "strength": round(strength, 3),
-                    "raw_z": round(raw, 3), "degraded": None}
+            return {
+                "direction": direction,
+                "strength": round(strength, 3),
+                "raw_z": round(raw, 3),
+                "degraded": None,
+            }
         except Exception as e:
             logger.debug("[DimensionForce] D1 fail: %s", e)
             return self._neutral("d1-error")
@@ -244,8 +253,12 @@ class DimensionForceEvaluator:
             ls = self._query_latest("long_short_ratio", "long_short_ratio")
             if ls is not None and now - ls[1] < _STALE_SEC:
                 ls_value = float(ls[0])
-                hist = [v for v, _ in self._query_history(
-                    "long_short_ratio", "long_short_ratio", self.WINDOW_D2)]
+                hist = [
+                    v
+                    for v, _ in self._query_history(
+                        "long_short_ratio", "long_short_ratio", self.WINDOW_D2
+                    )
+                ]
                 z_ls = self._zscore(ls[0], hist)
                 # 多头拥挤（z 高）→ 空头力量; z 低 → 多头力量
                 ls_part = max(-1.0, min(1.0, z_ls / 2.0))
@@ -274,15 +287,11 @@ class DimensionForceEvaluator:
                 oi_available = True
                 crowding_sign = 0.0
                 if ls_value is not None:
-                    crowding_sign = (
-                        1.0 if ls_value > 1.05 else (-1.0 if ls_value < 0.95 else 0.0)
-                    )
+                    crowding_sign = 1.0 if ls_value > 1.05 else (-1.0 if ls_value < 0.95 else 0.0)
                 elif fr_part is not None:
                     crowding_sign = 1.0 if fr_part > 0 else (-1.0 if fr_part < 0 else 0.0)
                 if crowding_sign != 0.0:
-                    oi_part = crowding_sign * self._clamp01(
-                        abs(float(oi["change_pct_24h"])) / 0.20
-                    )
+                    oi_part = crowding_sign * self._clamp01(abs(float(oi["change_pct_24h"])) / 0.20)
                 components["open_interest"] = {
                     "open_interest": oi["open_interest"],
                     "change_pct_24h": round(float(oi["change_pct_24h"]), 6),
@@ -336,9 +345,7 @@ class DimensionForceEvaluator:
 
             if raw is None:
                 out = self._neutral("flow-stale-or-missing")
-                out.update(
-                    {"coverage": coverage, "components": components, "symbol": symbol}
-                )
+                out.update({"coverage": coverage, "components": components, "symbol": symbol})
                 return out
 
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
@@ -384,13 +391,21 @@ class DimensionForceEvaluator:
                 return self._neutral("fear-greed-stale")
             v = fg[0]  # 0-100
             if v < 25:
-                raw = (25 - v) / 25.0          # 恐惧越深多头反转力量越大 → 负=多头
-                return {"direction": "long", "strength": round(self._clamp01(abs(raw)), 3),
-                        "raw_z": round(-raw, 3), "degraded": None}
+                raw = (25 - v) / 25.0  # 恐惧越深多头反转力量越大 → 负=多头
+                return {
+                    "direction": "long",
+                    "strength": round(self._clamp01(abs(raw)), 3),
+                    "raw_z": round(-raw, 3),
+                    "degraded": None,
+                }
             if v > 75:
                 raw = (v - 75) / 25.0
-                return {"direction": "short", "strength": round(self._clamp01(raw), 3),
-                        "raw_z": round(raw, 3), "degraded": None}
+                return {
+                    "direction": "short",
+                    "strength": round(self._clamp01(raw), 3),
+                    "raw_z": round(raw, 3),
+                    "degraded": None,
+                }
             return self._neutral("fear-greed-mid-range")
         except Exception as e:
             logger.debug("[DimensionForce] D4 fail: %s", e)
@@ -410,15 +425,18 @@ class DimensionForceEvaluator:
             mc = self._query_latest("bitcoin", "market_cap_usd")
             if mc is None or now - mc[1] > _STALE_SEC:
                 return self._neutral("valuation-stale-or-missing")
-            hist = [v for v, _ in self._query_history(
-                "bitcoin", "market_cap_usd", self.WINDOW_D4)]
+            hist = [v for v, _ in self._query_history("bitcoin", "market_cap_usd", self.WINDOW_D4)]
             if len(hist) < 10:
                 return self._neutral("valuation-insufficient-history")
             z = self._zscore(mc[0], hist)
             raw = max(-1.0, min(1.0, z / 2.0))  # z 高 → 估值贵 → 空头
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
-            return {"direction": direction, "strength": round(self._clamp01(abs(raw)), 3),
-                    "raw_z": round(raw, 3), "degraded": None}
+            return {
+                "direction": direction,
+                "strength": round(self._clamp01(abs(raw)), 3),
+                "raw_z": round(raw, 3),
+                "degraded": None,
+            }
         except Exception as e:
             logger.debug("[DimensionForce] C6 fail: %s", e)
             return self._neutral("c6-error")
@@ -444,10 +462,20 @@ class DimensionForceEvaluator:
             total_now = usdt[0] + usdc[0]
             # 7 天前总量
             cutoff = now - 7 * 24 * 3600
-            hist_usdt = [(v, t) for v, t in self._query_history(
-                "stablecoin_hist_usdt", "circulating_usd_bln", 30 * 24 * 3600) if t <= cutoff]
-            hist_usdc = [(v, t) for v, t in self._query_history(
-                "stablecoin_hist_usdc", "circulating_usd_bln", 30 * 24 * 3600) if t <= cutoff]
+            hist_usdt = [
+                (v, t)
+                for v, t in self._query_history(
+                    "stablecoin_hist_usdt", "circulating_usd_bln", 30 * 24 * 3600
+                )
+                if t <= cutoff
+            ]
+            hist_usdc = [
+                (v, t)
+                for v, t in self._query_history(
+                    "stablecoin_hist_usdc", "circulating_usd_bln", 30 * 24 * 3600
+                )
+                if t <= cutoff
+            ]
             if not hist_usdt or not hist_usdc:
                 return self._neutral("stablecoin-insufficient-history")
             total_7d_ago = hist_usdt[-1][0] + hist_usdc[-1][0]
@@ -456,8 +484,12 @@ class DimensionForceEvaluator:
             chg_pct = (total_now / total_7d_ago - 1.0) * 100  # 7 日变化率 %
             raw = max(-1.0, min(1.0, chg_pct / 1.0))  # ±1%/周 满强度
             direction = "long" if raw > 0.1 else ("short" if raw < -0.1 else "neutral")
-            return {"direction": direction, "strength": round(self._clamp01(abs(raw)), 3),
-                    "raw_z": round(raw, 3), "degraded": None}
+            return {
+                "direction": direction,
+                "strength": round(self._clamp01(abs(raw)), 3),
+                "raw_z": round(raw, 3),
+                "degraded": None,
+            }
         except Exception as e:
             logger.debug("[DimensionForce] C7 fail: %s", e)
             return self._neutral("c7-error")
@@ -482,15 +514,19 @@ class DimensionForceEvaluator:
             z = self._zscore(vix[0], hist)
             raw = max(-1.0, min(1.0, z / 2.0))  # VIX z 高 → 恐慌 → 空头
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
-            return {"direction": direction, "strength": round(self._clamp01(abs(raw)), 3),
-                    "raw_z": round(raw, 3), "degraded": None}
+            return {
+                "direction": direction,
+                "strength": round(self._clamp01(abs(raw)), 3),
+                "raw_z": round(raw, 3),
+                "degraded": None,
+            }
         except Exception as e:
             logger.debug("[DimensionForce] C8 fail: %s", e)
             return self._neutral("c8-error")
 
     # ------------------------------------------------------------------
     # news 信息面维度（第二阶段扩展）
-    # ------------------------------------------------------------------    
+    # ------------------------------------------------------------------
     def evaluate_news(self) -> dict[str, Any]:
         """快讯频率 z-score → 信息流强度（事件驱动代理）.
 
@@ -504,7 +540,8 @@ class DimensionForceEvaluator:
             with self._connect() as conn:
                 cnt_24h = conn.execute(
                     "SELECT COUNT(DISTINCT sub_category) FROM mm_metrics "
-                    "WHERE source='odaily_newsflash' AND timestamp > ?", (now - day_sec,)
+                    "WHERE source='odaily_newsflash' AND timestamp > ?",
+                    (now - day_sec,),
                 ).fetchone()[0]
                 cnt_7d = conn.execute(
                     "SELECT COUNT(DISTINCT sub_category) FROM mm_metrics "
@@ -519,8 +556,12 @@ class DimensionForceEvaluator:
             ratio = cnt_24h / daily_avg
             raw = max(-1.0, min(1.0, (ratio - 1.0) / 1.0))  # 频率翻倍 → 满强度
             direction = "short" if raw > 0.3 else "neutral"  # 信息激增 → 谨慎偏向
-            return {"direction": direction, "strength": round(self._clamp01(abs(raw)), 3),
-                    "raw_z": round(raw, 3), "degraded": None}
+            return {
+                "direction": direction,
+                "strength": round(self._clamp01(abs(raw)), 3),
+                "raw_z": round(raw, 3),
+                "degraded": None,
+            }
         except Exception as e:
             logger.debug("[DimensionForce] news fail: %s", e)
             return self._neutral("news-error")
@@ -536,10 +577,12 @@ class DimensionForceEvaluator:
         try:
             import sys
             from pathlib import Path
+
             fb_dir = Path(__file__).resolve().parents[3] / "9-基本面分析"
             if str(fb_dir) not in sys.path:
                 sys.path.insert(0, str(fb_dir))
             from dal_snapshot_provider import DalSnapshotProvider
+
             provider = DalSnapshotProvider()
             self._fundamental_provider = provider
             return provider
@@ -560,14 +603,14 @@ class DimensionForceEvaluator:
             return {"available": False, "note": "fundamental-provider-unavailable"}
         # 维度 → 基本面模块采集方法映射
         dim_to_collector = {
-            "D1": "collect_macro",        # C4 宏观
-            "D2": "collect_flow",         # C1 资金面
-            "D3": "collect_onchain",      # C3 技术面(链上)
-            "D4": "collect_sentiment",    # C2 情绪面
-            "C6": "collect_valuation",    # C6 估值
-            "C7": "collect_breadth",      # C7 隐性/广度
+            "D1": "collect_macro",  # C4 宏观
+            "D2": "collect_flow",  # C1 资金面
+            "D3": "collect_onchain",  # C3 技术面(链上)
+            "D4": "collect_sentiment",  # C2 情绪面
+            "C6": "collect_valuation",  # C6 估值
+            "C7": "collect_breadth",  # C7 隐性/广度
             "C8": "collect_intermarket",  # C8 宏观交叉
-            "NEWS": "collect_news",       # news 信息面
+            "NEWS": "collect_news",  # news 信息面
         }
         result: dict[str, Any] = {"available": True}
         for dim, collector_name in dim_to_collector.items():
@@ -582,8 +625,11 @@ class DimensionForceEvaluator:
                     continue
                 # 提取 events 中的 sentiment（各采集方法的标准化输出）
                 events = data.get("events") or []
-                sentiments = [float(e.get("sentiment", 0.0)) for e in events
-                              if isinstance(e, dict) and e.get("sentiment") is not None]
+                sentiments = [
+                    float(e.get("sentiment", 0.0))
+                    for e in events
+                    if isinstance(e, dict) and e.get("sentiment") is not None
+                ]
                 fund_sent = sum(sentiments) / len(sentiments) if sentiments else None
                 # 与主源对比
                 my_force = forces.get(dim) or {}
@@ -593,7 +639,7 @@ class DimensionForceEvaluator:
                     agree = None  # 任一源中性，无法判定一致性
                 else:
                     fund_dir = "long" if fund_sent > 0 else "short"
-                    agree = (fund_dir == my_dir)
+                    agree = fund_dir == my_dir
                 result[dim] = {
                     "fund_sentiment": round(fund_sent, 3) if fund_sent is not None else None,
                     "my_direction": my_dir,
@@ -629,12 +675,12 @@ class DimensionForceEvaluator:
     ) -> dict[str, dict[str, Any]]:
         """评估全部维度（8 维完整体系）. d3 由调用方传入（现有路径共振结果）."""
         result = {
-            "D1": self.evaluate_d1(),   # C4 宏观
-            "D2": self.evaluate_d2(symbol),   # C1 资金面
-            "D4": self.evaluate_d4(),   # C2 情绪面
-            "C6": self.evaluate_c6(),   # C6 估值
-            "C7": self.evaluate_c7(),   # C7 叙事（稳定币）
-            "C8": self.evaluate_c8(),   # C8 宏观交叉（VIX）
+            "D1": self.evaluate_d1(),  # C4 宏观
+            "D2": self.evaluate_d2(symbol),  # C1 资金面
+            "D4": self.evaluate_d4(),  # C2 情绪面
+            "C6": self.evaluate_c6(),  # C6 估值
+            "C7": self.evaluate_c7(),  # C7 叙事（稳定币）
+            "C8": self.evaluate_c8(),  # C8 宏观交叉（VIX）
             "NEWS": self.evaluate_news(),  # news 信息面
         }
         result["D3"] = d3 or self._neutral("d3-not-provided")  # C3 技术面

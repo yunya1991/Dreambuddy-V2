@@ -20,7 +20,7 @@ import pytest
 
 from dreamos.capabilities.trading.nodes.c8_perf_attribution import C8PerfAttributionNode
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 # ── 测试夹具 ──────────────────────────────────────────────
@@ -51,7 +51,7 @@ def _make_closed_trades(trades: List[Dict[str, Any]] | None = None) -> List[Dict
     if trades is None:
         return [
             _make_closed_trade("BTC", "LONG", 60000.0, 65000.0, 0.5),  # +2500
-            _make_closed_trade("ETH", "LONG", 3000.0, 3300.0, 3.0),   # +900
+            _make_closed_trade("ETH", "LONG", 3000.0, 3300.0, 3.0),  # +900
         ]
     return trades
 
@@ -61,7 +61,8 @@ def _make_c7_outputs(exec_log: Dict[str, Any] | None = None) -> Dict[str, Any]:
         "exec_status": "filled",
         "filled_orders": [],
         "alerts": [],
-        "exec_log": exec_log or {"total": 2, "filled_count": 2, "failed_count": 0, "trace_id": "trace-001"},
+        "exec_log": exec_log
+        or {"total": 2, "filled_count": 2, "failed_count": 0, "trace_id": "trace-001"},
     }
 
 
@@ -92,7 +93,7 @@ def _make_state(
 # ── 1. 契约与导入 ──────────────────────────────────────────
 class TestC8Contract:
     def test_import(self):
-        from dreamos.capabilities.trading.nodes.c8_perf_attribution import C8PerfAttributionNode  # noqa: F401
+        pass  # noqa: F401
 
     def test_node_metadata(self):
         node = C8PerfAttributionNode()
@@ -217,8 +218,8 @@ class TestC8Lessons:
     def test_lessons_contain_losing_insight_when_all_lose(self):
         node = C8PerfAttributionNode()
         trades = [
-            _make_closed_trade("BTC", "LONG", 60000.0, 59000.0, 0.5),   # -500
-            _make_closed_trade("ETH", "LONG", 3000.0, 2900.0, 3.0),     # -300
+            _make_closed_trade("BTC", "LONG", 60000.0, 59000.0, 0.5),  # -500
+            _make_closed_trade("ETH", "LONG", 3000.0, 2900.0, 3.0),  # -300
         ]
         state = _make_state(closed_trades=trades)
         r = node.execute_core(state)
@@ -279,7 +280,7 @@ class TestC8EdgeCases:
         node = C8PerfAttributionNode()
         trades = [
             _make_closed_trade("BTC", "LONG", 60000.0, 65000.0, 0.5),  # +2500 win
-            _make_closed_trade("ETH", "LONG", 3000.0, 2900.0, 3.0),    # -300 loss
+            _make_closed_trade("ETH", "LONG", 3000.0, 2900.0, 3.0),  # -300 loss
         ]
         state = _make_state(closed_trades=trades)
         r = node.execute_core(state)

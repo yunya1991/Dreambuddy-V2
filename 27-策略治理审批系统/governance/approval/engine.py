@@ -3,11 +3,11 @@
 审批请求创建、查询、状态校验。
 不含 LLM 审批分析师（保留在大文件，随通用审批能力拆分）。
 """
+
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 import uuid
 from typing import Any, Dict, Optional
 
@@ -29,7 +29,10 @@ from governance.utils import (
     _tail_lines,
 )
 
-def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft: Dict[str, Any], action: str) -> Optional[str]:
+
+def _approval_request_for_changeset_draft(
+    *, trace_id: str, draft_id: str, draft: Dict[str, Any], action: str
+) -> Optional[str]:
     did = str(draft_id or "").strip()
     if not did:
         return None
@@ -38,7 +41,11 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
     doc_refs = _doc_refs_sanitize(draft.get("doc_refs"))
     evidence = draft.get("evidence") if isinstance(draft.get("evidence"), dict) else {}
     reason = str(chg.get("reason") or action).strip() or str(action or "config.apply")
-    cbd = draft.get("change_bundle_draft") if isinstance(draft.get("change_bundle_draft"), dict) else {}
+    cbd = (
+        draft.get("change_bundle_draft")
+        if isinstance(draft.get("change_bundle_draft"), dict)
+        else {}
+    )
     env = _governance_env_name()
     if isinstance(cbd, dict):
         gov_obj = cbd.get("governance") if isinstance(cbd.get("governance"), dict) else {}
@@ -56,10 +63,18 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
             draft["change_bundle_draft"] = cbd
         return None
 
-    delta_metrics = (cbd.get("delta_metrics") if isinstance(cbd, dict) else None)
-    baseline_ref = (cbd.get("baseline_ref") if isinstance(cbd, dict) else None)
-    has_baseline = bool(str(baseline_ref or "").strip()) and isinstance(delta_metrics, dict) and bool(delta_metrics)
-    baseline_judge = (_governance_baseline_judge(delta_metrics) if bool(has_baseline) else {"ok": False, "decision": "inconclusive", "reasons": ["missing_baseline"]})
+    delta_metrics = cbd.get("delta_metrics") if isinstance(cbd, dict) else None
+    baseline_ref = cbd.get("baseline_ref") if isinstance(cbd, dict) else None
+    has_baseline = (
+        bool(str(baseline_ref or "").strip())
+        and isinstance(delta_metrics, dict)
+        and bool(delta_metrics)
+    )
+    baseline_judge = (
+        _governance_baseline_judge(delta_metrics)
+        if bool(has_baseline)
+        else {"ok": False, "decision": "inconclusive", "reasons": ["missing_baseline"]}
+    )
     baseline_decision = str((baseline_judge or {}).get("decision") or "").strip().lower()
     baseline_worse = bool(has_baseline) and baseline_decision == "hard_reject"
     baseline_soft_warn = bool(has_baseline) and baseline_decision == "soft_warn"
@@ -76,7 +91,11 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
                     "changeset": chg,
                     "gate_results": gate,
                     "doc_refs": doc_refs,
-                    "evidence": {"baseline_ref": baseline_ref, "delta_metrics": _json_sanitize(delta_metrics), "baseline_judge": _json_sanitize(baseline_judge)},
+                    "evidence": {
+                        "baseline_ref": baseline_ref,
+                        "delta_metrics": _json_sanitize(delta_metrics),
+                        "baseline_judge": _json_sanitize(baseline_judge),
+                    },
                     "ts": int(_now_ms()),
                     "scope": "governance",
                 }
@@ -91,7 +110,9 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
                 intent_level="L2",
                 ts_ms=int(_now_ms()),
                 inputs={"action": str(action), "draft_id": did, "baseline_ref": baseline_ref},
-                evidence=[{"type": "approvals_log", "id": rid0, "path": str(_approvals_log_path())}],
+                evidence=[
+                    {"type": "approvals_log", "id": rid0, "path": str(_approvals_log_path())}
+                ],
                 outputs={"ok": False, "error": "baseline_worse_auto_reject", "approval_id": rid0},
                 doc_refs=_doc_refs_default(),
             )
@@ -100,12 +121,19 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
         if isinstance(cbd, dict):
             gov_obj = cbd.get("governance") if isinstance(cbd.get("governance"), dict) else {}
             gov_obj = dict(gov_obj)
-            gov_obj.update({"decision": "auto_reject", "approval_required": False, "reason": "baseline_worse", "baseline_judge": baseline_judge})
+            gov_obj.update(
+                {
+                    "decision": "auto_reject",
+                    "approval_required": False,
+                    "reason": "baseline_worse",
+                    "baseline_judge": baseline_judge,
+                }
+            )
             cbd["governance"] = gov_obj
             draft["change_bundle_draft"] = cbd
         return None
 
-    change_tags = (cbd.get("change_tags") if isinstance(cbd, dict) else None)
+    change_tags = cbd.get("change_tags") if isinstance(cbd, dict) else None
     tighten_only = _governance_tighten_only(change_tags)
     improved = bool(has_baseline) and _governance_has_improvement(delta_metrics)
     if tighten_only and improved and (not baseline_soft_warn):
@@ -127,7 +155,15 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
         if rid2 and isinstance(cbd, dict):
             gov_obj = cbd.get("governance") if isinstance(cbd.get("governance"), dict) else {}
             gov_obj = dict(gov_obj)
-            gov_obj.update({"decision": "auto_approved", "approval_required": False, "approval_id": rid2, "reason": "tighten_only_improved", "baseline_judge": baseline_judge})
+            gov_obj.update(
+                {
+                    "decision": "auto_approved",
+                    "approval_required": False,
+                    "approval_id": rid2,
+                    "reason": "tighten_only_improved",
+                    "baseline_judge": baseline_judge,
+                }
+            )
             cbd["governance"] = gov_obj
             draft["change_bundle_draft"] = cbd
         return rid2
@@ -151,7 +187,14 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
     if isinstance(cbd, dict):
         gov_obj = cbd.get("governance") if isinstance(cbd.get("governance"), dict) else {}
         gov_obj = dict(gov_obj)
-        gov_obj.update({"decision": ("soft_warn" if baseline_soft_warn else "approval_required"), "approval_required": True, "approval_id": rid, "baseline_judge": baseline_judge})
+        gov_obj.update(
+            {
+                "decision": ("soft_warn" if baseline_soft_warn else "approval_required"),
+                "approval_required": True,
+                "approval_id": rid,
+                "baseline_judge": baseline_judge,
+            }
+        )
         cbd["governance"] = gov_obj
         draft["change_bundle_draft"] = cbd
     try:
@@ -172,7 +215,12 @@ def _approval_request_for_changeset_draft(*, trace_id: str, draft_id: str, draft
     try:
         _audit_emit_action(
             "approval.requested",
-            _audit_base_payload(scope="governance", action="approval.requested", trace_id=str(trace_id), extra={"ok": True, "approval_id": rid, "draft_id": did, "action": str(action)}),
+            _audit_base_payload(
+                scope="governance",
+                action="approval.requested",
+                trace_id=str(trace_id),
+                extra={"ok": True, "approval_id": rid, "draft_id": did, "action": str(action)},
+            ),
         )
     except Exception:
         pass
@@ -184,7 +232,9 @@ def _approval_append(entry: Dict[str, Any]) -> Optional[str]:
     obj = dict(entry) if isinstance(entry, dict) else {}
     rid = str(obj.get("id") or "").strip()
     if not rid:
-        rid = hashlib.sha256(f"approval|{now_ms}|{uuid.uuid4().hex}".encode("utf-8")).hexdigest()[:16]
+        rid = hashlib.sha256(f"approval|{now_ms}|{uuid.uuid4().hex}".encode("utf-8")).hexdigest()[
+            :16
+        ]
         obj["id"] = rid
     if obj.get("ts") is None or str(obj.get("ts")).strip() == "":
         obj["ts"] = now_ms
@@ -201,7 +251,9 @@ def _approval_append(entry: Dict[str, Any]) -> Optional[str]:
     return rid
 
 
-def _approval_lookup(approval_id: str, *, max_lines: int = 4000, max_bytes: int = 2_000_000) -> Optional[Dict[str, Any]]:
+def _approval_lookup(
+    approval_id: str, *, max_lines: int = 4000, max_bytes: int = 2_000_000
+) -> Optional[Dict[str, Any]]:
     aid = str(approval_id or "").strip()
     if not aid:
         return None

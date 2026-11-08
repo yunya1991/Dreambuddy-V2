@@ -21,6 +21,7 @@ A.6 首次试探配额（打破冷启动死循环）:
 
 生产接线: polling_trader.py 初始化 DynamicShortBlacklist → is_blacklisted(sym) 过滤。
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 # Beta 分布 CDF — 正则化不完全贝塔函数 I_x(a, b)
 # Numerical Recipes 连续分数法实现（无 scipy 依赖）
 # ---------------------------------------------------------------------------
+
 
 def _betacf(a: float, b: float, x: float) -> float:
     """连续分数法计算不完全 Beta 函数的连续分数部分"""
@@ -102,6 +104,7 @@ def _beta_cdf(x: float, a: float, b: float) -> float:
 # DynamicShortBlacklist
 # ---------------------------------------------------------------------------
 
+
 class DynamicShortBlacklist:
     """滚动胜率驱动的动态做空黑名单
 
@@ -111,20 +114,20 @@ class DynamicShortBlacklist:
     """
 
     # --- 滚动窗口参数 ---
-    ROLLING_WINDOW: int = 20           # 滚动窗口 N
-    WIN_RATE_THRESHOLD: float = 0.35   # 胜率阈值
-    MIN_SAMPLE_SIZE: int = 10          # 最小样本量
-    COOLDOWN_DAYS: int = 7             # 出榜冷却期
+    ROLLING_WINDOW: int = 20  # 滚动窗口 N
+    WIN_RATE_THRESHOLD: float = 0.35  # 胜率阈值
+    MIN_SAMPLE_SIZE: int = 10  # 最小样本量
+    COOLDOWN_DAYS: int = 7  # 出榜冷却期
 
     # --- 贝叶斯先验参数（Beta-Binomial 共轭先验）---
-    BETA_ALPHA: float = 4.0            # 先验 alpha（等效 4 次盈利）
-    BETA_BETA: float = 6.0             # 先验 beta（等效 6 次亏损）
-    POSTERIOR_THRESHOLD: float = 0.7   # 后验概率阈值
+    BETA_ALPHA: float = 4.0  # 先验 alpha（等效 4 次盈利）
+    BETA_BETA: float = 6.0  # 先验 beta（等效 6 次亏损）
+    POSTERIOR_THRESHOLD: float = 0.7  # 后验概率阈值
 
     # --- A.6 首次试探配额参数 ---
-    PROBE_COOLDOWN_DAYS: int = 30      # 试探冷却期
-    PROBE_MAX_COUNT: int = 3           # 累计试探上限
-    PROBE_MIN_FACTOR_COUNT: int = 2    # 最少因子数
+    PROBE_COOLDOWN_DAYS: int = 30  # 试探冷却期
+    PROBE_MAX_COUNT: int = 3  # 累计试探上限
+    PROBE_MIN_FACTOR_COUNT: int = 2  # 最少因子数
     PROBE_ALLOWED_REGIMES = frozenset({"VOLATILE_DROP", "ranging_down"})
 
     # --- 静态回退 ---
@@ -275,9 +278,7 @@ class DynamicShortBlacklist:
             sym = str(symbol or "").strip().upper()
             if not sym:
                 return
-            rec = self._probe_records.setdefault(
-                sym, {"count": 0, "last_probe_ts": 0.0}
-            )
+            rec = self._probe_records.setdefault(sym, {"count": 0, "last_probe_ts": 0.0})
             rec["count"] += 1
             rec["last_probe_ts"] = time.time()
         except Exception as e:
@@ -291,6 +292,7 @@ class DynamicShortBlacklist:
         """检查开关是否开启（FAIL-OPEN: 异常 → False → 静态回退）"""
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             return get_switch(self.SWITCH_NAME)
         except Exception:
             return False

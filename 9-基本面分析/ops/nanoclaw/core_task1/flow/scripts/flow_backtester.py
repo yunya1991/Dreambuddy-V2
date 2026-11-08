@@ -20,22 +20,23 @@
 3. 计算准确率、夏普比率、最大回撤等指标
 """
 
-import json
-import os
+import json  # noqa: I001
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import statistics
 
 # =============================================================================
 # 配置类
 # =============================================================================
 
+
 @dataclass
 class FlowBacktestConfig:
     """资金流回测配置"""
+
     start_date: str = "2024-01-01"
     end_date: str = "2024-12-31"
     initial_capital: float = 100000.0
@@ -50,6 +51,7 @@ class FlowBacktestConfig:
 @dataclass
 class FlowTrade:
     """交易记录"""
+
     entry_date: str
     entry_price: float
     entry_signal: str  # bullish/bearish/neutral
@@ -65,6 +67,7 @@ class FlowTrade:
 @dataclass
 class FlowBacktestResult:
     """回测结果"""
+
     trades: List[FlowTrade]
     total_return: float
     annualized_return: float
@@ -88,6 +91,7 @@ class FlowBacktestResult:
 # =============================================================================
 # 数据加载器
 # =============================================================================
+
 
 class FlowDataLoader:
     """
@@ -175,11 +179,11 @@ class FlowDataLoader:
                             if data:
                                 print(f"[INFO] 从 {price_file.name} 加载价格数据")
                                 return self._normalize_price_data(data)
-                    except:
+                    except:  # noqa: E722
                         continue
 
         # 2. 从 outputs 目录加载
-        outputs_dir = self.data_dir / "outputs"
+        outputs_dir = self.data_dir / "outputs"  # noqa: F841
         # (outputs 目录通常没有价格数据)
 
         # 3. 从 coin_daily_prices.json 加载（共享数据）
@@ -188,9 +192,9 @@ class FlowDataLoader:
             try:
                 with open(shared_prices, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    print(f"[INFO] 从共享目录加载价格数据")
+                    print("[INFO] 从共享目录加载价格数据")
                     return self._normalize_price_data(data)
-            except:
+            except:  # noqa: E722
                 pass
 
         # 4. 尝试从 CoinGecko 获取
@@ -215,7 +219,7 @@ class FlowDataLoader:
                     "high": value.get("high", 0),
                     "low": value.get("low", 0),
                     "close": value.get("close", 0),
-                    "volume": value.get("volume", 0)
+                    "volume": value.get("volume", 0),
                 }
         return normalized
 
@@ -241,7 +245,7 @@ class FlowDataLoader:
                     "high": price * 1.02,
                     "low": price * 0.98,
                     "close": price,
-                    "volume": 0
+                    "volume": 0,
                 }
 
             return result
@@ -252,6 +256,7 @@ class FlowDataLoader:
     def _generate_mock_price_data(self) -> Dict[str, Dict]:
         """生成模拟价格数据"""
         import random
+
         random.seed(42)
 
         prices = {}
@@ -271,7 +276,7 @@ class FlowDataLoader:
                 "high": high,
                 "low": low,
                 "close": close,
-                "volume": volume
+                "volume": volume,
             }
             base_price = close
             current_date += timedelta(days=1)
@@ -282,6 +287,7 @@ class FlowDataLoader:
 # =============================================================================
 # 回测引擎
 # =============================================================================
+
 
 class FlowBacktester:
     """
@@ -308,8 +314,7 @@ class FlowBacktester:
 
         # 加载数据
         regime_records = self.data_loader.load_regime_records(
-            self.config.start_date,
-            self.config.end_date
+            self.config.start_date, self.config.end_date
         )
         price_data = self.data_loader.load_price_data()
 
@@ -327,7 +332,7 @@ class FlowBacktester:
 
         # 按日期遍历
         dates = sorted(price_data.keys())
-        price_lookup = {d: price_data[d]["close"] for d in dates}
+        price_lookup = {d: price_data[d]["close"] for d in dates}  # noqa: F841
 
         # 构建 Regime 查找表
         regime_lookup = {}
@@ -337,7 +342,7 @@ class FlowBacktester:
                 regime_lookup[ts] = record
 
         # 逐日回测
-        for i, date in enumerate(dates):
+        for i, date in enumerate(dates):  # noqa: B007
             if date < self.config.start_date or date > self.config.end_date:
                 continue
 
@@ -346,21 +351,19 @@ class FlowBacktester:
             if not regime:
                 # 无信号日，保持现有仓位
                 self._update_daily_equity(
-                    daily_equity, date, equity, position,
-                    price_data[date], daily_returns
+                    daily_equity, date, equity, position, price_data[date], daily_returns
                 )
                 continue
 
             bias = regime.get("bias", "neutral")
             filter_status = regime.get("filter", "enable")
             confidence = regime.get("confidence", 0.5)
-            composite = regime.get("composite", 0)
+            composite = regime.get("composite", 0)  # noqa: F841
 
             # 跳过 filter=disable 的日子
             if filter_status == "disable":
                 self._update_daily_equity(
-                    daily_equity, date, equity, position,
-                    price_data[date], daily_returns
+                    daily_equity, date, equity, position, price_data[date], daily_returns
                 )
                 continue
 
@@ -386,7 +389,7 @@ class FlowBacktester:
                             entry_price=open_price,
                             entry_signal=bias,
                             entry_confidence=confidence,
-                            position=target_position
+                            position=target_position,
                         )
                     position = target_position
 
@@ -395,7 +398,9 @@ class FlowBacktester:
                 if position > 0.1:  # 当前仓位高于 10%
                     # 平仓
                     if current_trade:
-                        pnl_pct = (open_price - current_trade.entry_price) / current_trade.entry_price
+                        pnl_pct = (
+                            open_price - current_trade.entry_price
+                        ) / current_trade.entry_price
                         pnl = equity * pnl_pct * current_trade.position
                         equity += pnl
 
@@ -422,7 +427,9 @@ class FlowBacktester:
                     equity += pnl
 
                     current_trade.exit_date = date
-                    current_trade.exit_price = current_trade.entry_price * (1 - self.config.stop_loss)
+                    current_trade.exit_price = current_trade.entry_price * (
+                        1 - self.config.stop_loss
+                    )
                     current_trade.exit_reason = "stop_loss"
                     current_trade.pnl = pnl
                     current_trade.pnl_pct = pnl_pct
@@ -442,7 +449,9 @@ class FlowBacktester:
                     equity += pnl
 
                     current_trade.exit_date = date
-                    current_trade.exit_price = current_trade.entry_price * (1 + self.config.take_profit)
+                    current_trade.exit_price = current_trade.entry_price * (
+                        1 + self.config.take_profit
+                    )
                     current_trade.exit_reason = "take_profit"
                     current_trade.pnl = pnl
                     current_trade.pnl_pct = pnl_pct
@@ -451,10 +460,7 @@ class FlowBacktester:
                     position = 0.1
 
             # 更新每日权益
-            self._update_daily_equity(
-                daily_equity, date, equity, position,
-                day_data, daily_returns
-            )
+            self._update_daily_equity(daily_equity, date, equity, position, day_data, daily_returns)
 
         # 处理未平仓交易
         if current_trade and dates:
@@ -481,7 +487,7 @@ class FlowBacktester:
         equity: float,
         position: float,
         day_data: Dict,
-        daily_returns: List[float]
+        daily_returns: List[float],
     ):
         """更新每日权益记录"""
         prev_equity = daily_equity[-1]["equity"] if daily_equity else equity
@@ -495,13 +501,15 @@ class FlowBacktester:
         strategy_return = day_return * position
         new_equity = prev_equity * (1 + strategy_return)
 
-        daily_equity.append({
-            "date": date,
-            "equity": new_equity,
-            "position": position,
-            "day_return": day_return,
-            "strategy_return": strategy_return
-        })
+        daily_equity.append(
+            {
+                "date": date,
+                "equity": new_equity,
+                "position": position,
+                "day_return": day_return,
+                "strategy_return": strategy_return,
+            }
+        )
 
         if daily_equity:
             daily_returns.append(strategy_return)
@@ -511,7 +519,7 @@ class FlowBacktester:
         trades: List[FlowTrade],
         daily_equity: List[Dict],
         daily_returns: List[float],
-        price_data: Dict
+        price_data: Dict,
     ) -> FlowBacktestResult:
         """计算回测指标"""
 
@@ -524,11 +532,13 @@ class FlowBacktester:
 
         # 盈亏统计
         total_pnl = sum(t.pnl for t in trades)
-        total_return = total_pnl / self.config.initial_capital if self.config.initial_capital > 0 else 0
+        total_return = (
+            total_pnl / self.config.initial_capital if self.config.initial_capital > 0 else 0
+        )
 
         gross_profit = sum(t.pnl for t in trades if t.pnl > 0)
         gross_loss = abs(sum(t.pnl for t in trades if t.pnl < 0))
-        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
         avg_trade_pnl = total_pnl / total_trades if total_trades > 0 else 0
         avg_win = gross_profit / winning_trades if winning_trades > 0 else 0
@@ -585,10 +595,7 @@ class FlowBacktester:
                 monthly_returns[month] = []
             monthly_returns[month].append(record["strategy_return"])
 
-        monthly_returns = {
-            k: sum(v) / len(v) if v else 0
-            for k, v in monthly_returns.items()
-        }
+        monthly_returns = {k: sum(v) / len(v) if v else 0 for k, v in monthly_returns.items()}
 
         # 预测准确率（按 bias 类型）
         prediction_accuracy = self._calculate_prediction_accuracy(trades)
@@ -611,7 +618,7 @@ class FlowBacktester:
             losing_trades=losing_trades,
             daily_equity=daily_equity,
             monthly_returns=monthly_returns,
-            prediction_accuracy=prediction_accuracy
+            prediction_accuracy=prediction_accuracy,
         )
 
     def _calculate_prediction_accuracy(self, trades: List[FlowTrade]) -> Dict[str, float]:
@@ -620,7 +627,7 @@ class FlowBacktester:
             "bullish": {"total": 0, "correct": 0},
             "bearish": {"total": 0, "correct": 0},
             "neutral": {"total": 0, "correct": 0},
-            "overall": {"total": 0, "correct": 0}
+            "overall": {"total": 0, "correct": 0},
         }
 
         for trade in trades:
@@ -635,10 +642,26 @@ class FlowBacktester:
                 stats["overall"]["correct"] += 1
 
         return {
-            "bullish": stats["bullish"]["correct"] / stats["bullish"]["total"] if stats["bullish"]["total"] > 0 else 0,
-            "bearish": stats["bearish"]["correct"] / stats["bearish"]["total"] if stats["bearish"]["total"] > 0 else 0,
-            "neutral": stats["neutral"]["correct"] / stats["neutral"]["total"] if stats["neutral"]["total"] > 0 else 0,
-            "overall": stats["overall"]["correct"] / stats["overall"]["total"] if stats["overall"]["total"] > 0 else 0
+            "bullish": (
+                stats["bullish"]["correct"] / stats["bullish"]["total"]
+                if stats["bullish"]["total"] > 0
+                else 0
+            ),
+            "bearish": (
+                stats["bearish"]["correct"] / stats["bearish"]["total"]
+                if stats["bearish"]["total"] > 0
+                else 0
+            ),
+            "neutral": (
+                stats["neutral"]["correct"] / stats["neutral"]["total"]
+                if stats["neutral"]["total"] > 0
+                else 0
+            ),
+            "overall": (
+                stats["overall"]["correct"] / stats["overall"]["total"]
+                if stats["overall"]["total"] > 0
+                else 0
+            ),
         }
 
     def _empty_result(self) -> FlowBacktestResult:
@@ -661,7 +684,7 @@ class FlowBacktester:
             losing_trades=0,
             daily_equity=[],
             monthly_returns={},
-            prediction_accuracy={}
+            prediction_accuracy={},
         )
 
 
@@ -669,10 +692,9 @@ class FlowBacktester:
 # 主函数
 # =============================================================================
 
+
 def run_flow_backtest(
-    start_date: str = None,
-    end_date: str = None,
-    data_dir: str = None
+    start_date: str = None, end_date: str = None, data_dir: str = None
 ) -> FlowBacktestResult:
     """
     执行资金流回测
@@ -694,10 +716,7 @@ def run_flow_backtest(
         data_dir = "/workspace/ops/nanoclaw/core_task1/flow"
 
     # 创建配置
-    config = FlowBacktestConfig(
-        start_date=start_date,
-        end_date=end_date
-    )
+    config = FlowBacktestConfig(start_date=start_date, end_date=end_date)
 
     # 创建回测器
     backtester = FlowBacktester(config)

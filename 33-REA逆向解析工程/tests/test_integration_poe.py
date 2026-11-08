@@ -4,12 +4,11 @@ Task 8 of PoE 工程实践复现器 SPEC。
 依据：TASKS-工程实践复现器.md TR-8.1 / TR-8.2 / AC-6
 端到端：对 33-REA 自身某模块运行 决策还原 → 审计 完整流程。
 """
-import os
+
+import os  # noqa: I001
 import sys
 import tempfile
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -22,7 +21,6 @@ from core.cognitive_integration import (
 from core.design_decision_recovery import recover_decisions
 from core.evolution_narrative import generate_narrative
 from core.methodology_abstraction import abstract_methodology
-
 
 # ---------- 端到端测试 ----------
 
@@ -115,10 +113,7 @@ def test_e2e_poe_pipeline_on_temporary_mvc_project():
 def test_e2e_evidence_first_no_bare_conclusions():
     """AC-6 硬约束：所有新增模块输出全量扫描，无裸结论（每条结论带 Evidence）。"""
     with tempfile.TemporaryDirectory() as d:
-        Path(d, "sample.py").write_text(
-            '"""Sample."""\n'
-            "def fn():\n    return 42\n"
-        )
+        Path(d, "sample.py").write_text('"""Sample."""\n' "def fn():\n    return 42\n")
 
         # 遍历所有新增模块的输出，检查 evidence 字段
         results = {
@@ -155,11 +150,13 @@ def test_e2e_methodology_abstraction_after_investigations():
             Path(d, "models", "x.py").write_text("class X:\n    pass\n")
             # 用 detect_architecture_patterns 作为 mock investigation
             pattern_result = detect_architecture_patterns(d)
-            inv_results.append({
-                "target": f"/mock/{proj}",
-                "patterns": pattern_result.get("patterns", []),
-                "decisions": [],
-            })
+            inv_results.append(
+                {
+                    "target": f"/mock/{proj}",
+                    "patterns": pattern_result.get("patterns", []),
+                    "decisions": [],
+                }
+            )
 
     methodology_result = abstract_methodology(inv_results)
     # 应至少 1 条方法论（3 个项目都检出 MVC）

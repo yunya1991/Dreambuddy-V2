@@ -17,6 +17,7 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径B：
 安全侧 FAIL-OPEN: 异常/缺失 → 不豁免（维持 SHORT_BAN 铁律）
 开关: enable_layered_short_exemption（默认 False → 回退 AND 逻辑：仅 3 因子全满足才豁免）
 """
+
 import sys
 from pathlib import Path
 
@@ -34,7 +35,8 @@ def _auto_enable_layered_short():
 
     Switch 回退测试类内部会 set_switch 覆盖此 fixture。
     """
-    from dreambuddy_evolution.agi_config import set_switch, get_switch
+    from dreambuddy_evolution.agi_config import get_switch, set_switch
+
     _orig = get_switch("enable_layered_short_exemption")
     set_switch("enable_layered_short_exemption", True)
     yield
@@ -42,12 +44,12 @@ def _auto_enable_layered_short():
 
 
 # ---- 因子常量（与 ThreeFactorShortDetector 一致）----
-PF_BEARISH = -0.8      # pattern_factor 满足（<= -0.5）
-PF_NEUTRAL = -0.3      # pattern_factor 不满足（> -0.5）
+PF_BEARISH = -0.8  # pattern_factor 满足（<= -0.5）
+PF_NEUTRAL = -0.3  # pattern_factor 不满足（> -0.5）
 REGIME_WEAK = "WEAK"
 REGIME_STRONG = "STRONG"
-ETF_OUTFLOW = -0.3     # etf_flow_norm 满足（< -0.1）
-ETF_INFLOW = 0.2       # etf_flow_norm 不满足（>= -0.1）
+ETF_OUTFLOW = -0.3  # etf_flow_norm 满足（< -0.1）
+ETF_INFLOW = 0.2  # etf_flow_norm 不满足（>= -0.1）
 
 
 class TestLayeredExemptionResult:
@@ -57,8 +59,8 @@ class TestLayeredExemptionResult:
         """LayeredExemptionResult 包含 layer/exempted/position_multiplier/stop_loss_multiplier/factors_satisfied/allow_add_position"""
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
-            LayeredExemptionResult,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_OUTFLOW)
         assert hasattr(result, "layer")
@@ -78,6 +80,7 @@ class TestSwitchOffFallback:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         set_switch("enable_layered_short_exemption", False)
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_OUTFLOW)
@@ -91,6 +94,7 @@ class TestSwitchOffFallback:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         set_switch("enable_layered_short_exemption", False)
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_INFLOW)
@@ -104,6 +108,7 @@ class TestSwitchOffFallback:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         set_switch("enable_layered_short_exemption", False)
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_STRONG, ETF_INFLOW)
@@ -115,6 +120,7 @@ class TestSwitchOffFallback:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         set_switch("enable_layered_short_exemption", False)
         le = LayeredShortExemption()
         result = le.evaluate(PF_NEUTRAL, REGIME_STRONG, ETF_INFLOW)
@@ -129,6 +135,7 @@ class TestSwitchOnFullExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_OUTFLOW)
         assert result.layer == 2
@@ -139,6 +146,7 @@ class TestSwitchOnFullExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_OUTFLOW)
         assert result.position_multiplier == pytest.approx(0.7)
@@ -148,6 +156,7 @@ class TestSwitchOnFullExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_OUTFLOW)
         assert result.stop_loss_multiplier == pytest.approx(0.5)
@@ -157,6 +166,7 @@ class TestSwitchOnFullExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_OUTFLOW)
         assert result.allow_add_position is True
@@ -166,6 +176,7 @@ class TestSwitchOnFullExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_OUTFLOW)
         assert result.factors_satisfied == 3
@@ -179,6 +190,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_INFLOW)
         assert result.layer == 1
@@ -189,6 +201,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_INFLOW)
         assert result.position_multiplier == pytest.approx(0.2)
@@ -198,6 +211,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_INFLOW)
         assert result.stop_loss_multiplier == pytest.approx(0.5)
@@ -207,6 +221,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_INFLOW)
         assert result.allow_add_position is False
@@ -216,6 +231,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_INFLOW)
         assert result.factors_satisfied == 2
@@ -225,6 +241,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, ETF_INFLOW)
         assert result.layer == 1
@@ -234,6 +251,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_STRONG, ETF_OUTFLOW)
         assert result.layer == 1
@@ -243,6 +261,7 @@ class TestSwitchOnTrialExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_NEUTRAL, REGIME_WEAK, ETF_OUTFLOW)
         assert result.layer == 1
@@ -256,6 +275,7 @@ class TestSwitchOnNoExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_STRONG, ETF_INFLOW)
         assert result.exempted is False
@@ -266,6 +286,7 @@ class TestSwitchOnNoExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_STRONG, ETF_INFLOW)
         assert result.position_multiplier == pytest.approx(0.0)
@@ -275,6 +296,7 @@ class TestSwitchOnNoExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_STRONG, ETF_INFLOW)
         assert result.stop_loss_multiplier == pytest.approx(0.0)
@@ -284,6 +306,7 @@ class TestSwitchOnNoExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_STRONG, ETF_INFLOW)
         assert result.allow_add_position is False
@@ -293,6 +316,7 @@ class TestSwitchOnNoExemption:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_NEUTRAL, REGIME_STRONG, ETF_INFLOW)
         assert result.exempted is False
@@ -308,6 +332,7 @@ class TestFactorBoundary:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(-0.5, REGIME_WEAK, ETF_OUTFLOW)
         assert result.factors_satisfied == 3
@@ -317,6 +342,7 @@ class TestFactorBoundary:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(-0.49, REGIME_WEAK, ETF_OUTFLOW)
         assert result.factors_satisfied == 2
@@ -326,6 +352,7 @@ class TestFactorBoundary:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, -0.1)
         assert result.factors_satisfied == 2
@@ -335,6 +362,7 @@ class TestFactorBoundary:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, -0.11)
         assert result.factors_satisfied == 3
@@ -344,6 +372,7 @@ class TestFactorBoundary:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         for regime in ("weak", "WEAK", "Weak"):
             result = le.evaluate(PF_BEARISH, regime, ETF_OUTFLOW)
@@ -358,6 +387,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(None, REGIME_WEAK, ETF_OUTFLOW)
         assert result.exempted is False
@@ -367,6 +397,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, None, ETF_OUTFLOW)
         assert result.exempted is False
@@ -376,6 +407,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, None)
         assert result.exempted is False
@@ -385,6 +417,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(None, None, None)
         assert result.exempted is False
@@ -394,6 +427,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate("not_a_number", REGIME_WEAK, ETF_OUTFLOW)
         assert result.exempted is False
@@ -403,6 +437,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(float("nan"), REGIME_WEAK, ETF_OUTFLOW)
         assert result.exempted is False
@@ -412,6 +447,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         result = le.evaluate(PF_BEARISH, REGIME_WEAK, float("inf"))
         assert result.exempted is False
@@ -425,9 +461,11 @@ class TestSwitchCrash:
         from dreambuddy_evolution.engines.layered_short_exemption import (
             LayeredShortExemption,
         )
+
         le = LayeredShortExemption()
         # 模拟开关检查异常：patch get_switch 抛异常
         import dreambuddy_evolution.agi_config as agi_config
+
         original = agi_config.get_switch
 
         def _crash(*a, **kw):

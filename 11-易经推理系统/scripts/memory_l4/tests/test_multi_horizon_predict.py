@@ -7,6 +7,7 @@ RED 失败原因:
   - RiskManager.predict_multi_horizon 静态方法不存在
   - PollingTrader._recommend_exit_bars 方法不存在 / 开关短路分支未写
 """
+
 import sys
 import unittest
 from pathlib import Path
@@ -29,10 +30,15 @@ def _make_trader(coins=None, max_positions=3, enable_multi_horizon=True):
     t.enable_ev_radar = True
     t.enable_multi_horizon = enable_multi_horizon
     t.enable_ranked_tp = True
-    t.position_tracker = MagicMock(spec=[
-        "all_open_positions", "all_closed_positions",
-        "get_open_position", "has_open_position", "is_in_cooldown",
-    ])
+    t.position_tracker = MagicMock(
+        spec=[
+            "all_open_positions",
+            "all_closed_positions",
+            "get_open_position",
+            "has_open_position",
+            "is_in_cooldown",
+        ]
+    )
     t.position_tracker.all_open_positions.return_value = []
     t.okx_client = MagicMock()
     t.okx_client.cfg = {"default_leverage": 3}
@@ -66,8 +72,13 @@ class TestPredictMultiHorizonShape(unittest.TestCase):
             "price": 60000.0,
             "volatility": 0.03,
             # 五角校验得分（0~1），越多维度一致 → 长 horizon 置信度高
-            "pentagon_scores": {"bagua": 0.82, "trend": 0.76, "regime": 0.71,
-                                "macro": 0.65, "cross": 0.59},
+            "pentagon_scores": {
+                "bagua": 0.82,
+                "trend": 0.76,
+                "regime": 0.71,
+                "macro": 0.65,
+                "cross": 0.59,
+            },
         }
         k_candidates = [1, 2, 3, 6, 10, 20, 30]
 
@@ -78,10 +89,11 @@ class TestPredictMultiHorizonShape(unittest.TestCase):
         self.assertIn("horizons", result)
         self.assertIn("recommended_action", result)
         self.assertIsInstance(result["horizons"], list)
-        self.assertEqual(len(result["horizons"]), len(k_candidates),
-                         "每个候选 K-bar 对应一个 horizon 条目")
+        self.assertEqual(
+            len(result["horizons"]), len(k_candidates), "每个候选 K-bar 对应一个 horizon 条目"
+        )
         # 每个 horizon 条目: {k_bar, confidence, direction, expected_roi_pct}
-        for h, k_expected in zip(result["horizons"], k_candidates):
+        for h, k_expected in zip(result["horizons"], k_candidates):  # noqa: B905
             self.assertEqual(h["k_bar"], k_expected)
             self.assertIn("confidence", h)
             self.assertIn("direction", h)
@@ -112,21 +124,30 @@ class TestRecommendExitBarsHold(unittest.TestCase):
             for k in k_candidates:
                 # k=20 置信度最高（在候选[1,2,3,6,10,20,30]中）
                 c = 0.5 if k != 20 else 0.91
-                horizons.append({
-                    "k_bar": k, "confidence": c,
-                    "direction": "UP", "expected_roi_pct": 0.05,
-                })
+                horizons.append(
+                    {
+                        "k_bar": k,
+                        "confidence": c,
+                        "direction": "UP",
+                        "expected_roi_pct": 0.05,
+                    }
+                )
             return {"horizons": horizons, "recommended_action": "HOLD"}
 
         tu.RiskManager.predict_multi_horizon = staticmethod(_fake_pred)
 
         # 已持仓 k_bar=10，best=20 → 远没到最佳离场站（20>10+3=13），应 HOLD
         result = t._recommend_exit_bars(
-            coin="BTC", pos_side="long",
+            coin="BTC",
+            pos_side="long",
             held_k_bar=10,  # 持仓 10 根 1H-K ≈ 10h
-            inference={"confidence": 0.80, "direction": "UP",
-                       "price": 60000.0, "volatility": 0.03,
-                       "pentagon_scores": {}},
+            inference={
+                "confidence": 0.80,
+                "direction": "UP",
+                "price": 60000.0,
+                "volatility": 0.03,
+                "pentagon_scores": {},
+            },
             k_candidates=getattr(t, "HORIZON_BAR_CANDIDATES", [1, 2, 3, 6, 10, 20, 30]),
         )
 
@@ -134,8 +155,11 @@ class TestRecommendExitBarsHold(unittest.TestCase):
         self.assertIn("best_k_bar", result)
         self.assertIn("recommended_action", result)
         self.assertEqual(result["best_k_bar"], 20)
-        self.assertEqual(result["recommended_action"], "HOLD",
-                         f"best=20 > held=10+margin=3 → 必须 HOLD，实际={result['recommended_action']}")
+        self.assertEqual(
+            result["recommended_action"],
+            "HOLD",
+            f"best=20 > held=10+margin=3 → 必须 HOLD，实际={result['recommended_action']}",
+        )
 
 
 # =====================================================================
@@ -156,27 +180,36 @@ class TestRecommendExitBarsPrepExit(unittest.TestCase):
                 # 多做 long，但 horizon 的最佳方向为 DOWN（反向）
                 # 且 best_k_bar = 3（最短之一）
                 c = 0.90 if k == 3 else 0.5
-                horizons.append({
-                    "k_bar": k, "confidence": c,
-                    "direction": "DOWN",   # 与持仓 long 相反
-                    "expected_roi_pct": -0.03 if k == 3 else 0.0,
-                })
+                horizons.append(
+                    {
+                        "k_bar": k,
+                        "confidence": c,
+                        "direction": "DOWN",  # 与持仓 long 相反
+                        "expected_roi_pct": -0.03 if k == 3 else 0.0,
+                    }
+                )
             return {"horizons": horizons, "recommended_action": "PREP_EXIT"}
 
         tu.RiskManager.predict_multi_horizon = staticmethod(_fake_pred)
 
         result = t._recommend_exit_bars(
-            coin="BTC", pos_side="long",
+            coin="BTC",
+            pos_side="long",
             held_k_bar=25,  # 持仓已过 25h，远超 best=3
-            inference={"confidence": 0.80, "direction": "UP",
-                       "price": 60000.0, "volatility": 0.03,
-                       "pentagon_scores": {}},
-            k_candidates=getattr(t, "HORIZON_BAR_CANDIDATES"),
+            inference={
+                "confidence": 0.80,
+                "direction": "UP",
+                "price": 60000.0,
+                "volatility": 0.03,
+                "pentagon_scores": {},
+            },
+            k_candidates=t.HORIZON_BAR_CANDIDATES,
         )
 
         self.assertEqual(result["best_k_bar"], 3)
-        self.assertEqual(result["recommended_action"], "PREP_EXIT",
-                         f"反向 + best=3 << held=25 → 必须 PREP_EXIT")
+        self.assertEqual(
+            result["recommended_action"], "PREP_EXIT", "反向 + best=3 << held=25 → 必须 PREP_EXIT"
+        )
 
 
 # =====================================================================
@@ -190,6 +223,7 @@ class TestMultiHorizonSwitchOffBypasses(unittest.TestCase):
         t = _make_trader(enable_multi_horizon=False)  # S3=OFF
 
         import scripts.memory_l4.trading_utils as tu
+
         call_count = {"n": 0}
 
         def _fake_pred(inference, k_candidates):
@@ -200,13 +234,20 @@ class TestMultiHorizonSwitchOffBypasses(unittest.TestCase):
 
         for _ in range(10):
             _ = t._recommend_exit_bars(
-                coin="BTC", pos_side="long", held_k_bar=10,
-                inference={"confidence": 0.8, "direction": "UP",
-                           "price": 60000.0, "volatility": 0.03},
+                coin="BTC",
+                pos_side="long",
+                held_k_bar=10,
+                inference={
+                    "confidence": 0.8,
+                    "direction": "UP",
+                    "price": 60000.0,
+                    "volatility": 0.03,
+                },
             )
 
         self.assertEqual(
-            call_count["n"], 0,
+            call_count["n"],
+            0,
             f"S3=OFF 时 predict_multi_horizon 必须从未被调用，实际 {call_count['n']} 次",
         )
 
@@ -225,7 +266,9 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
     def _make_minimal_trader():
         with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
             t = PollingTrader.__new__(PollingTrader)
-        t.enable_mode_switch = t.enable_ev_radar = t.enable_multi_horizon = t.enable_ranked_tp = True
+        t.enable_mode_switch = t.enable_ev_radar = t.enable_multi_horizon = t.enable_ranked_tp = (
+            True
+        )
         t._cycle_idx = 0
         t._mode_cache = {}
         t._log = MagicMock()
@@ -233,6 +276,7 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
         t.HORIZON_BAR_CANDIDATES = [1, 2, 3, 6, 10, 20, 30]
         t.HORIZON_PREP_EXIT_MARGIN = 3
         import scripts.memory_l4.paths as paths_mod
+
         return t, paths_mod
 
     def test_config_overrides_horizon_margin(self):
@@ -246,7 +290,8 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
             (tmp / "data" / "okx_sim").mkdir(parents=True)
             cfg = {"horizon_prep_exit_margin": 5}
             (tmp / "data" / "okx_sim" / "config.json").write_text(
-                _json.dumps(cfg), encoding="utf-8")
+                _json.dumps(cfg), encoding="utf-8"
+            )
 
             t, paths_mod = self._make_minimal_trader()
             orig_ws = getattr(paths_mod, "workspace_root", None)
@@ -258,8 +303,8 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
                     paths_mod.workspace_root = orig_ws
 
             self.assertEqual(
-                t.HORIZON_PREP_EXIT_MARGIN, 5,
-                msg="reload 后 HORIZON_PREP_EXIT_MARGIN 应覆盖为 5")
+                t.HORIZON_PREP_EXIT_MARGIN, 5, msg="reload 后 HORIZON_PREP_EXIT_MARGIN 应覆盖为 5"
+            )
 
     def test_config_missing_key_keeps_default(self):
         """config.json 不写 horizon_prep_exit_margin → 保持默认 3"""
@@ -271,7 +316,8 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
             tmp = _Path(td)
             (tmp / "data" / "okx_sim").mkdir(parents=True)
             (tmp / "data" / "okx_sim" / "config.json").write_text(
-                _json.dumps({"confidence_threshold": 0.55}), encoding="utf-8")
+                _json.dumps({"confidence_threshold": 0.55}), encoding="utf-8"
+            )
 
             t, paths_mod = self._make_minimal_trader()
             orig_ws = getattr(paths_mod, "workspace_root", None)
@@ -282,8 +328,11 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
                 if orig_ws is not None:
                     paths_mod.workspace_root = orig_ws
 
-            self.assertEqual(t.HORIZON_PREP_EXIT_MARGIN, 3,
-                             msg="config 未写 horizon_prep_exit_margin → 保持默认 3")
+            self.assertEqual(
+                t.HORIZON_PREP_EXIT_MARGIN,
+                3,
+                msg="config 未写 horizon_prep_exit_margin → 保持默认 3",
+            )
 
     def test_config_invalid_value_keeps_default(self):
         """config.json 写非法值（0 / 负数 / 字符串）→ 保持默认"""
@@ -297,7 +346,8 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
             # 0 不在 (0, 20] 范围内 → 应被拒绝
             cfg = {"horizon_prep_exit_margin": 0}
             (tmp / "data" / "okx_sim" / "config.json").write_text(
-                _json.dumps(cfg), encoding="utf-8")
+                _json.dumps(cfg), encoding="utf-8"
+            )
 
             t, paths_mod = self._make_minimal_trader()
             orig_ws = getattr(paths_mod, "workspace_root", None)
@@ -308,8 +358,9 @@ class TestHorizonPrepExitMarginHotConfig(unittest.TestCase):
                 if orig_ws is not None:
                     paths_mod.workspace_root = orig_ws
 
-            self.assertEqual(t.HORIZON_PREP_EXIT_MARGIN, 3,
-                             msg="horizon_prep_exit_margin=0 非法 → 保持默认 3")
+            self.assertEqual(
+                t.HORIZON_PREP_EXIT_MARGIN, 3, msg="horizon_prep_exit_margin=0 非法 → 保持默认 3"
+            )
 
 
 if __name__ == "__main__":

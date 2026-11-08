@@ -11,6 +11,7 @@
 
 运行: python3 -m pytest tests/test_w5_washout_entry_signal_enhanced.py -v -p no:warnings -s
 """
+
 from __future__ import annotations
 
 import sys
@@ -24,11 +25,13 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
+from scripts.memory_l4.bcrm2.washout_classifier import EnhancedWashoutClassifier  # noqa: E402
 from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
-    WashoutDetector, WashoutLabel, WashoutVerdict,
+    WashoutDetector,
+    WashoutLabel,
+    WashoutVerdict,
 )
 from scripts.memory_l4.bcrm2.washout_features import WashoutFeatureExtractor  # noqa: E402
-from scripts.memory_l4.bcrm2.washout_classifier import EnhancedWashoutClassifier  # noqa: E402
 
 
 # ============================================================
@@ -41,15 +44,21 @@ class VolumeOnlyClassifier:
         vol = features.get("volume_ratio_20d", 1.0)
         if vol < 0.8:
             return WashoutVerdict(
-                label=WashoutLabel.WASHOUT, confidence=0.85,
-                trigger_activated=True, feature_snapshot=features,
-                reason="vol_only_low_volume", timestamp="",
+                label=WashoutLabel.WASHOUT,
+                confidence=0.85,
+                trigger_activated=True,
+                feature_snapshot=features,
+                reason="vol_only_low_volume",
+                timestamp="",
             )
         if vol > 1.5:
             return WashoutVerdict(
-                label=WashoutLabel.WEAKNESS, confidence=0.75,
-                trigger_activated=True, feature_snapshot=features,
-                reason="vol_only_high_volume", timestamp="",
+                label=WashoutLabel.WEAKNESS,
+                confidence=0.75,
+                trigger_activated=True,
+                feature_snapshot=features,
+                reason="vol_only_high_volume",
+                timestamp="",
             )
         return WashoutVerdict.unknown()
 
@@ -81,10 +90,16 @@ def _make_ohlcv(seed: int, n: int = 298) -> pd.DataFrame:
     low = prices * 0.995
 
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 def _make_true_washout(seed: int) -> Tuple[pd.DataFrame, Dict]:
@@ -101,7 +116,7 @@ def _make_true_washout(seed: int) -> Tuple[pd.DataFrame, Dict]:
         target = peak_val * rng.uniform(0.95, 1.0)
         frac = (i - 250) / (n - 250)
         prices[i] = recovery_start + (target - recovery_start) * frac
-        prices[i] *= (1 + rng.normal(0, 0.005))
+        prices[i] *= 1 + rng.normal(0, 0.005)
     df["close"] = prices
     df["open"] = prices
     df["high"] = prices * 1.005
@@ -144,7 +159,7 @@ def _make_false_washout(seed: int) -> Tuple[pd.DataFrame, Dict]:
         decline_target = decline_start * 0.85
         frac = (i - 250) / (n - 250)
         prices[i] = decline_start + (decline_target - decline_start) * frac
-        prices[i] *= (1 + rng.normal(0, 0.005))
+        prices[i] *= 1 + rng.normal(0, 0.005)
     df["close"] = prices
     df["open"] = prices
     df["high"] = prices * 1.005
@@ -188,16 +203,12 @@ def run_entry_backtest(
         horizons = [24, 48]
 
     ext = WashoutFeatureExtractor()
-    detector = WashoutDetector(
-        enable=True, classifier=classifier, feature_extractor=ext
-    )
+    detector = WashoutDetector(enable=True, classifier=classifier, feature_extractor=ext)
 
     entries = []
     for df, macro_data in scenarios:
         detection_df = df.iloc[:250]
-        detection_macro = {
-            k: v[:250] if isinstance(v, list) else v for k, v in macro_data.items()
-        }
+        detection_macro = {k: v[:250] if isinstance(v, list) else v for k, v in macro_data.items()}
         verdict = detector.run("BTC", detection_df, detection_macro)
 
         if verdict.label == WashoutLabel.WASHOUT:
@@ -213,8 +224,12 @@ def run_entry_backtest(
     n_entries = len(entries)
     if n_entries == 0:
         return {
-            "n_entries": 0, "wins_24h": 0, "win_rate_24h": 0.0,
-            "avg_return_24h": 0.0, "wins_48h": 0, "win_rate_48h": 0.0,
+            "n_entries": 0,
+            "wins_24h": 0,
+            "win_rate_24h": 0.0,
+            "avg_return_24h": 0.0,
+            "wins_48h": 0,
+            "win_rate_48h": 0.0,
             "avg_return_48h": 0.0,
         }
 
@@ -252,30 +267,33 @@ class TestWashoutEntrySignalEnhanced(unittest.TestCase):
 
     def test_volume_only_entry_signal(self):
         """A) volume-only: 缩量都判为 WASHOUT → 假洗盘大量入场 → 低胜率。"""
-        results = run_entry_backtest(
-            self.all_scenarios, VolumeOnlyClassifier()
-        )
-        print(f"\n[A) volume-only 入场信号]")
+        results = run_entry_backtest(self.all_scenarios, VolumeOnlyClassifier())
+        print("\n[A) volume-only 入场信号]")
         print(f"  入场次数: {results['n_entries']}/40")
-        print(f"  24h 胜率: {results['win_rate_24h']:.1%} "
-              f"({results['wins_24h']}/{results['n_entries']})")
+        print(
+            f"  24h 胜率: {results['win_rate_24h']:.1%} "
+            f"({results['wins_24h']}/{results['n_entries']})"
+        )
         print(f"  24h 平均收益: {results['avg_return_24h']:.4f}")
         print(f"  48h 胜率: {results['win_rate_48h']:.1%}")
         print(f"  48h 平均收益: {results['avg_return_48h']:.4f}")
 
         # volume-only 胜率应 < 60% (假洗盘拖累)
-        self.assertLess(results["win_rate_24h"], 0.60,
-                        f"volume-only 24h 胜率 {results['win_rate_24h']:.1%} < 60%")
+        self.assertLess(
+            results["win_rate_24h"],
+            0.60,
+            f"volume-only 24h 胜率 {results['win_rate_24h']:.1%} < 60%",
+        )
 
     def test_enhanced_entry_signal(self):
         """B) enhanced: OI+CVD 区分真假洗盘 → 高胜率。"""
-        results = run_entry_backtest(
-            self.all_scenarios, EnhancedWashoutClassifier()
-        )
-        print(f"\n[B) enhanced 入场信号]")
+        results = run_entry_backtest(self.all_scenarios, EnhancedWashoutClassifier())
+        print("\n[B) enhanced 入场信号]")
         print(f"  入场次数: {results['n_entries']}/40")
-        print(f"  24h 胜率: {results['win_rate_24h']:.1%} "
-              f"({results['wins_24h']}/{results['n_entries']})")
+        print(
+            f"  24h 胜率: {results['win_rate_24h']:.1%} "
+            f"({results['wins_24h']}/{results['n_entries']})"
+        )
         print(f"  24h 平均收益: {results['avg_return_24h']:.4f}")
         print(f"  48h 胜率: {results['win_rate_48h']:.1%}")
         print(f"  48h 平均收益: {results['avg_return_48h']:.4f}")
@@ -283,8 +301,9 @@ class TestWashoutEntrySignalEnhanced(unittest.TestCase):
         print(f"  最大单笔亏损: {results['min_return']:.4f}")
 
         # enhanced 胜率应 ≥ 60% (只有真洗盘入场)
-        self.assertGreaterEqual(results["win_rate_24h"], 0.60,
-                                f"enhanced 24h 胜率 {results['win_rate_24h']:.1%} ≥ 60%")
+        self.assertGreaterEqual(
+            results["win_rate_24h"], 0.60, f"enhanced 24h 胜率 {results['win_rate_24h']:.1%} ≥ 60%"
+        )
 
     def test_enhanced_beats_volume_only(self):
         """对比: enhanced 胜率比 volume-only 提升 > 20%。"""
@@ -292,32 +311,39 @@ class TestWashoutEntrySignalEnhanced(unittest.TestCase):
         enh = run_entry_backtest(self.all_scenarios, EnhancedWashoutClassifier())
 
         improvement = enh["win_rate_24h"] - vol["win_rate_24h"]
-        print(f"\n[胜率提升对比]")
-        print(f"  volume-only 24h 胜率: {vol['win_rate_24h']:.1%} "
-              f"({vol['wins_24h']}/{vol['n_entries']})")
-        print(f"  enhanced    24h 胜率: {enh['win_rate_24h']:.1%} "
-              f"({enh['wins_24h']}/{enh['n_entries']})")
+        print("\n[胜率提升对比]")
+        print(
+            f"  volume-only 24h 胜率: {vol['win_rate_24h']:.1%} "
+            f"({vol['wins_24h']}/{vol['n_entries']})"
+        )
+        print(
+            f"  enhanced    24h 胜率: {enh['win_rate_24h']:.1%} "
+            f"({enh['wins_24h']}/{enh['n_entries']})"
+        )
         print(f"  提升: {improvement:+.1%}")
 
-        self.assertGreater(improvement, 0.20,
-                           "enhanced 应比 volume-only 胜率提升 > 20%")
+        self.assertGreater(improvement, 0.20, "enhanced 应比 volume-only 胜率提升 > 20%")
 
     def test_entry_signal_accuracy_meets_threshold(self):
         """最终判定: enhanced 24h 胜率 ≥ 60% 且平均收益 > 0。"""
-        results = run_entry_backtest(
-            self.all_scenarios, EnhancedWashoutClassifier()
-        )
+        results = run_entry_backtest(self.all_scenarios, EnhancedWashoutClassifier())
         meets_win_rate = results["win_rate_24h"] >= 0.60
         meets_avg_return = results["avg_return_24h"] > 0.0
 
         print(f"\n{'='*60}")
-        print(f"[入场信号可采用性判定]")
-        print(f"  24h 胜率: {results['win_rate_24h']:.1%} "
-              f"{'✅ ≥60%' if meets_win_rate else '❌ <60%'}")
-        print(f"  24h 平均收益: {results['avg_return_24h']:.4f} "
-              f"{'✅ >0' if meets_avg_return else '❌ ≤0'}")
+        print("[入场信号可采用性判定]")
+        print(
+            f"  24h 胜率: {results['win_rate_24h']:.1%} "
+            f"{'✅ ≥60%' if meets_win_rate else '❌ <60%'}"
+        )
+        print(
+            f"  24h 平均收益: {results['avg_return_24h']:.4f} "
+            f"{'✅ >0' if meets_avg_return else '❌ ≤0'}"
+        )
         print(f"  入场次数: {results['n_entries']}")
-        print(f"  结论: {'✅ 可接入入场信号流' if meets_win_rate and meets_avg_return else '❌ 不宜作为入场信号'}")
+        print(
+            f"  结论: {'✅ 可接入入场信号流' if meets_win_rate and meets_avg_return else '❌ 不宜作为入场信号'}"
+        )
         print(f"{'='*60}")
 
         if meets_win_rate and meets_avg_return:

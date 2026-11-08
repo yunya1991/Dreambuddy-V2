@@ -21,7 +21,7 @@ Dreambuddy OS 节点模块
 - 其他: 做梦部（潜意识层）
 """
 
-from .node_registry import (
+from .node_registry import (  # noqa: I001
     NodeRegistry,
     NodeInfo,
     IOSchema,
@@ -53,7 +53,6 @@ from .f2_fund_flow import execute as f2_execute
 from .f3_sentiment import execute as f3_execute
 from .oneirology import execute as oneirology_execute
 
-
 # ============================================================
 # 执行函数映射（旧版 NODE_HANDLERS，保留向后兼容）
 # ============================================================
@@ -83,6 +82,7 @@ for new_id, handler in _NODE_EXECUTORS.items():
 # 初始化全局节点注册表
 # ============================================================
 
+
 def _init_node_registry():
     """初始化全局节点注册表
 
@@ -110,7 +110,8 @@ _init_node_registry()
 # 对外接口（向后兼容 + 新接口）
 # ============================================================
 
-def get_node_handler(node_id: str):
+
+def get_node_handler(node_id: str):  # noqa: F811
     """获取节点处理器
 
     同时支持新ID和旧ID（自动转换）
@@ -173,9 +174,15 @@ __all__ = [
     "map_new_id",
     # 执行函数（旧版兼容）
     "c1_execute",
-    "a0_execute", "a1_execute", "a2_execute",
-    "a9_execute", "a4_execute", "a3_execute",
-    "f1_execute", "f2_execute", "f3_execute",
+    "a0_execute",
+    "a1_execute",
+    "a2_execute",
+    "a9_execute",
+    "a4_execute",
+    "a3_execute",
+    "f1_execute",
+    "f2_execute",
+    "f3_execute",
     "oneirology_execute",
     # 注册表（旧版兼容）
     "NODE_HANDLERS",

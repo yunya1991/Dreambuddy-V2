@@ -11,19 +11,30 @@
 本质是计算，易经只是符号推理。
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, Tuple, List
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 from ._constants import (
-    # 宏观美林时钟
-    MACRO_RECOVERY, MACRO_OVERHEAT, MACRO_STAGFLATION, MACRO_RECESSION,
-    MACRO_PHASES_CN, MACRO_SEASON,
-    # 微观生命周期
-    MICRO_SPROUT, MICRO_GROWTH, MICRO_MATURE, MICRO_DECLINE,
-    MICRO_PHASES_CN, MICRO_SEASON,
+    LIANGYI_CONFLICT_PENALTY,
+    LIANGYI_NEUTRAL,
+    LIANGYI_RESONANCE_BONUS,
     # 季节偏置
-    LIANGYI_SEASON_BIAS, LIANGYI_SEASON_MECH_BIAS,
-    LIANGYI_RESONANCE_BONUS, LIANGYI_CONFLICT_PENALTY, LIANGYI_NEUTRAL,
+    LIANGYI_SEASON_BIAS,
+    LIANGYI_SEASON_MECH_BIAS,
+    MACRO_OVERHEAT,
+    MACRO_PHASES_CN,
+    MACRO_RECESSION,
+    # 宏观美林时钟
+    MACRO_RECOVERY,
+    MACRO_SEASON,
+    MACRO_STAGFLATION,
+    MICRO_DECLINE,
+    MICRO_GROWTH,
+    MICRO_MATURE,
+    MICRO_PHASES_CN,
+    MICRO_SEASON,
+    # 微观生命周期
+    MICRO_SPROUT,
     SEASON_OPPOSITE,
 )
 from .scale_engine import ScaleParams
@@ -36,15 +47,16 @@ class LiangyiState:
 
     两仪不直接决定方向，而是通过调整四象参数影响力场。
     """
-    macro_phase: str = MACRO_RECOVERY      # 宏观美林时钟阶段
-    macro_season: str = "春"                # 宏观季节
-    micro_phase: str = MICRO_SPROUT        # 微观生命周期阶段
-    micro_season: str = "春"                # 微观季节
+
+    macro_phase: str = MACRO_RECOVERY  # 宏观美林时钟阶段
+    macro_season: str = "春"  # 宏观季节
+    micro_phase: str = MICRO_SPROUT  # 微观生命周期阶段
+    micro_season: str = "春"  # 微观季节
 
     # 共振状态
-    is_resonance: bool = False              # 同季共振
-    is_conflict: bool = False               # 反季对冲
-    resonance_factor: float = 1.0           # 共振系数（用于置信度调整）
+    is_resonance: bool = False  # 同季共振
+    is_conflict: bool = False  # 反季对冲
+    resonance_factor: float = 1.0  # 共振系数（用于置信度调整）
 
     # 宏观指标快照（用于追溯）
     gdp_growth: Optional[float] = None
@@ -87,17 +99,19 @@ class LiangyiEngine:
     4. 根据两仪季节对 ScaleParams 做偏置调整
     """
 
-    def __init__(self,
-                 gdp_growth_threshold: float = 0.0,
-                 cpi_threshold: float = 0.02,
-                 interest_rate_threshold: float = 0.02,
-                 resonance_bonus: float = None,
-                 conflict_penalty: float = None,
-                 resonance_conf_relax: float = None,
-                 conflict_conf_tighten: float = None,
-                 season_bias_scale: float = 2.0,
-                 season_mech_scale: float = 1.0,
-                 macro_weight: float = 0.4):
+    def __init__(
+        self,
+        gdp_growth_threshold: float = 0.0,
+        cpi_threshold: float = 0.02,
+        interest_rate_threshold: float = 0.02,
+        resonance_bonus: float = None,
+        conflict_penalty: float = None,
+        resonance_conf_relax: float = None,
+        conflict_conf_tighten: float = None,
+        season_bias_scale: float = 2.0,
+        season_mech_scale: float = 1.0,
+        macro_weight: float = 0.4,
+    ):
         """
         Args:
             gdp_growth_threshold: GDP 增长率中性阈值（正负分界，默认0）
@@ -114,14 +128,18 @@ class LiangyiEngine:
         self.gdp_thresh = gdp_growth_threshold
         self.cpi_thresh = cpi_threshold
         self.rate_thresh = interest_rate_threshold
-        self.resonance_bonus = (resonance_bonus if resonance_bonus is not None
-                                 else LIANGYI_RESONANCE_BONUS)
-        self.conflict_penalty = (conflict_penalty if conflict_penalty is not None
-                                  else LIANGYI_CONFLICT_PENALTY)
-        self.resonance_conf_relax = (resonance_conf_relax if resonance_conf_relax is not None
-                                       else 0.02)
-        self.conflict_conf_tighten = (conflict_conf_tighten if conflict_conf_tighten is not None
-                                       else 0.0)
+        self.resonance_bonus = (
+            resonance_bonus if resonance_bonus is not None else LIANGYI_RESONANCE_BONUS
+        )
+        self.conflict_penalty = (
+            conflict_penalty if conflict_penalty is not None else LIANGYI_CONFLICT_PENALTY
+        )
+        self.resonance_conf_relax = (
+            resonance_conf_relax if resonance_conf_relax is not None else 0.02
+        )
+        self.conflict_conf_tighten = (
+            conflict_conf_tighten if conflict_conf_tighten is not None else 0.0
+        )
         self.season_bias_scale = season_bias_scale
         self.season_mech_scale = season_mech_scale
         self.macro_weight = macro_weight
@@ -132,10 +150,7 @@ class LiangyiEngine:
     # ============================================================
     # 宏观美林时钟推断
     # ============================================================
-    def infer_macro_phase(self,
-                          gdp_growth: float,
-                          cpi: float,
-                          interest_rate: float) -> str:
+    def infer_macro_phase(self, gdp_growth: float, cpi: float, interest_rate: float) -> str:
         """
         从宏观指标推断美林时钟4阶段。
 
@@ -158,13 +173,13 @@ class LiangyiEngine:
         rate_up = interest_rate > self.rate_thresh
 
         if gdp_up and not cpi_up and not rate_up:
-            return MACRO_RECOVERY     # 复苏
+            return MACRO_RECOVERY  # 复苏
         elif gdp_up and cpi_up and rate_up:
-            return MACRO_OVERHEAT     # 过热
+            return MACRO_OVERHEAT  # 过热
         elif not gdp_up and cpi_up and rate_up:
             return MACRO_STAGFLATION  # 滞胀
         elif not gdp_up and not cpi_up and not rate_up:
-            return MACRO_RECESSION    # 衰退
+            return MACRO_RECESSION  # 衰退
         else:
             # 混合状态，用主导指标判定
             if gdp_up:
@@ -175,9 +190,7 @@ class LiangyiEngine:
     # ============================================================
     # 微观生命周期推断
     # ============================================================
-    def infer_micro_phase(self,
-                          price_position: float,
-                          trend_strength: float) -> str:
+    def infer_micro_phase(self, price_position: float, trend_strength: float) -> str:
         """
         从价格位置 + 趋势强度推断生命周期4阶段。
 
@@ -210,9 +223,9 @@ class LiangyiEngine:
     # ============================================================
     # 两仪状态计算
     # ============================================================
-    def infer(self,
-              market_snapshot: Dict[str, Any],
-              scale_params: ScaleParams = None) -> LiangyiState:
+    def infer(
+        self, market_snapshot: Dict[str, Any], scale_params: ScaleParams = None
+    ) -> LiangyiState:
         """
         从市场快照推断两仪状态。
 
@@ -225,7 +238,7 @@ class LiangyiEngine:
         """
         # --- 宏观指标 ---
         gdp_growth = market_snapshot.get("gdp_growth", 0.05)  # 默认温和增长
-        cpi = market_snapshot.get("cpi", 0.02)                # 默认2%
+        cpi = market_snapshot.get("cpi", 0.02)  # 默认2%
         interest_rate = market_snapshot.get("interest_rate", 0.025)  # 默认2.5%
 
         macro_phase = self.infer_macro_phase(gdp_growth, cpi, interest_rate)
@@ -244,8 +257,7 @@ class LiangyiEngine:
 
         # 维度4：如果有学习数据，用自适应共振系数
         if self._learned_season_stats:
-            resonance_factor = self.get_adaptive_resonance_factor(
-                macro_season, micro_season)
+            resonance_factor = self.get_adaptive_resonance_factor(macro_season, micro_season)
         elif is_resonance:
             resonance_factor = self.resonance_bonus
         elif is_conflict:
@@ -271,9 +283,7 @@ class LiangyiEngine:
     # ============================================================
     # 参数偏置调整（两仪→四象）
     # ============================================================
-    def adjust_params(self,
-                      base_params: ScaleParams,
-                      state: LiangyiState) -> ScaleParams:
+    def adjust_params(self, base_params: ScaleParams, state: LiangyiState) -> ScaleParams:
         """
         根据两仪状态对 ScaleParams 做偏置调整。
 
@@ -288,20 +298,20 @@ class LiangyiEngine:
             调整后的 ScaleParams（新对象）
         """
         # 宏观季节偏置
-        macro_bias = LIANGYI_SEASON_BIAS.get(state.macro_season,
-                                              {"time": 0, "space": 0,
-                                               "surface": 0, "core": 0})
-        macro_mech = LIANGYI_SEASON_MECH_BIAS.get(state.macro_season,
-                                                   {"mass": 0, "decay": 0,
-                                                    "conf": 0, "reversal": 0})
+        macro_bias = LIANGYI_SEASON_BIAS.get(
+            state.macro_season, {"time": 0, "space": 0, "surface": 0, "core": 0}
+        )
+        macro_mech = LIANGYI_SEASON_MECH_BIAS.get(
+            state.macro_season, {"mass": 0, "decay": 0, "conf": 0, "reversal": 0}
+        )
 
         # 微观季节偏置
-        micro_bias = LIANGYI_SEASON_BIAS.get(state.micro_season,
-                                              {"time": 0, "space": 0,
-                                               "surface": 0, "core": 0})
-        micro_mech = LIANGYI_SEASON_MECH_BIAS.get(state.micro_season,
-                                                   {"mass": 0, "decay": 0,
-                                                    "conf": 0, "reversal": 0})
+        micro_bias = LIANGYI_SEASON_BIAS.get(
+            state.micro_season, {"time": 0, "space": 0, "surface": 0, "core": 0}
+        )
+        micro_mech = LIANGYI_SEASON_MECH_BIAS.get(
+            state.micro_season, {"mass": 0, "decay": 0, "conf": 0, "reversal": 0}
+        )
 
         # 宏观×微观 偏置叠加（宏观权重可配置，默认0.6）
         # 宏观是天时，影响更广；微观是自身，影响更聚焦
@@ -340,10 +350,8 @@ class LiangyiEngine:
         new_mass = max(0.1, base_params.market_mass_base + mass_bias)
         new_decay = max(0.5, min(0.98, base_params.velocity_decay + decay_bias))
         # 共振降低阈值（更易通过），对冲提高阈值（更保守）
-        new_conf = max(0.2, min(0.6,
-            base_params.confidence_threshold + conf_bias))
-        new_reversal = max(0.05, min(0.4,
-            base_params.reversal_threshold + reversal_bias))
+        new_conf = max(0.2, min(0.6, base_params.confidence_threshold + conf_bias))
+        new_reversal = max(0.05, min(0.4, base_params.reversal_threshold + reversal_bias))
 
         # 共振系数影响置信度阈值（可配置放宽/收紧量）
         if state.is_resonance:
@@ -370,9 +378,9 @@ class LiangyiEngine:
     # ============================================================
     # 综合接口
     # ============================================================
-    def adapt(self,
-              market_snapshot: Dict[str, Any],
-              base_params: ScaleParams) -> Tuple[ScaleParams, LiangyiState]:
+    def adapt(
+        self, market_snapshot: Dict[str, Any], base_params: ScaleParams
+    ) -> Tuple[ScaleParams, LiangyiState]:
         """
         综合接口：从快照推断两仪状态，并调整参数。
 
@@ -465,19 +473,30 @@ class LiangyiEngine:
             combo_key = (macro, micro)
             if combo_key not in combo_stats:
                 combo_stats[combo_key] = {
-                    "total": 0, "correct": 0, "wrong": 0,
+                    "total": 0,
+                    "correct": 0,
+                    "wrong": 0,
                     # 所有案例的参数累加
-                    "w_time_sum": 0.0, "w_space_sum": 0.0,
-                    "w_surface_sum": 0.0, "w_core_sum": 0.0,
-                    "mass_sum": 0.0, "decay_sum": 0.0,
+                    "w_time_sum": 0.0,
+                    "w_space_sum": 0.0,
+                    "w_surface_sum": 0.0,
+                    "w_core_sum": 0.0,
+                    "mass_sum": 0.0,
+                    "decay_sum": 0.0,
                     # 正确案例的参数累加
-                    "w_time_correct_sum": 0.0, "w_space_correct_sum": 0.0,
-                    "w_surface_correct_sum": 0.0, "w_core_correct_sum": 0.0,
-                    "mass_correct_sum": 0.0, "decay_correct_sum": 0.0,
+                    "w_time_correct_sum": 0.0,
+                    "w_space_correct_sum": 0.0,
+                    "w_surface_correct_sum": 0.0,
+                    "w_core_correct_sum": 0.0,
+                    "mass_correct_sum": 0.0,
+                    "decay_correct_sum": 0.0,
                     # 错误案例的参数累加
-                    "w_time_wrong_sum": 0.0, "w_space_wrong_sum": 0.0,
-                    "w_surface_wrong_sum": 0.0, "w_core_wrong_sum": 0.0,
-                    "mass_wrong_sum": 0.0, "decay_wrong_sum": 0.0,
+                    "w_time_wrong_sum": 0.0,
+                    "w_space_wrong_sum": 0.0,
+                    "w_surface_wrong_sum": 0.0,
+                    "w_core_wrong_sum": 0.0,
+                    "mass_wrong_sum": 0.0,
+                    "decay_wrong_sum": 0.0,
                 }
 
             cs = combo_stats[combo_key]
@@ -524,7 +543,8 @@ class LiangyiEngine:
                 season_key = (macro_season, micro_season)
                 if season_key not in season_stats:
                     season_stats[season_key] = {
-                        "total": 0, "correct": 0,
+                        "total": 0,
+                        "correct": 0,
                         "is_resonance": ly.get("is_resonance", False),
                         "is_conflict": ly.get("is_conflict", False),
                     }
@@ -533,7 +553,7 @@ class LiangyiEngine:
                     season_stats[season_key]["correct"] += 1
 
         # 计算学习结果：用 正确案例均值 - 错误案例均值 作为学习方向
-        for key, s in combo_stats.items():
+        for key, s in combo_stats.items():  # noqa: B007
             n = s["total"]
             n_correct = s["correct"]
             n_wrong = s["wrong"]
@@ -549,32 +569,42 @@ class LiangyiEngine:
             s["decay_mean"] = s["decay_sum"] / n if n > 0 else 0.85
 
             # 正确案例均值
-            s["w_time_correct_mean"] = (s["w_time_correct_sum"] / n_correct
-                                          if n_correct > 0 else s["w_time_mean"])
-            s["w_space_correct_mean"] = (s["w_space_correct_sum"] / n_correct
-                                           if n_correct > 0 else s["w_space_mean"])
-            s["w_surface_correct_mean"] = (s["w_surface_correct_sum"] / n_correct
-                                             if n_correct > 0 else s["w_surface_mean"])
-            s["w_core_correct_mean"] = (s["w_core_correct_sum"] / n_correct
-                                          if n_correct > 0 else s["w_core_mean"])
-            s["mass_correct_mean"] = (s["mass_correct_sum"] / n_correct
-                                        if n_correct > 0 else s["mass_mean"])
-            s["decay_correct_mean"] = (s["decay_correct_sum"] / n_correct
-                                         if n_correct > 0 else s["decay_mean"])
+            s["w_time_correct_mean"] = (
+                s["w_time_correct_sum"] / n_correct if n_correct > 0 else s["w_time_mean"]
+            )
+            s["w_space_correct_mean"] = (
+                s["w_space_correct_sum"] / n_correct if n_correct > 0 else s["w_space_mean"]
+            )
+            s["w_surface_correct_mean"] = (
+                s["w_surface_correct_sum"] / n_correct if n_correct > 0 else s["w_surface_mean"]
+            )
+            s["w_core_correct_mean"] = (
+                s["w_core_correct_sum"] / n_correct if n_correct > 0 else s["w_core_mean"]
+            )
+            s["mass_correct_mean"] = (
+                s["mass_correct_sum"] / n_correct if n_correct > 0 else s["mass_mean"]
+            )
+            s["decay_correct_mean"] = (
+                s["decay_correct_sum"] / n_correct if n_correct > 0 else s["decay_mean"]
+            )
 
             # 错误案例均值
-            s["w_time_wrong_mean"] = (s["w_time_wrong_sum"] / n_wrong
-                                        if n_wrong > 0 else s["w_time_mean"])
-            s["w_space_wrong_mean"] = (s["w_space_wrong_sum"] / n_wrong
-                                         if n_wrong > 0 else s["w_space_mean"])
-            s["w_surface_wrong_mean"] = (s["w_surface_wrong_sum"] / n_wrong
-                                           if n_wrong > 0 else s["w_surface_mean"])
-            s["w_core_wrong_mean"] = (s["w_core_wrong_sum"] / n_wrong
-                                        if n_wrong > 0 else s["w_core_mean"])
-            s["mass_wrong_mean"] = (s["mass_wrong_sum"] / n_wrong
-                                      if n_wrong > 0 else s["mass_mean"])
-            s["decay_wrong_mean"] = (s["decay_wrong_sum"] / n_wrong
-                                       if n_wrong > 0 else s["decay_mean"])
+            s["w_time_wrong_mean"] = (
+                s["w_time_wrong_sum"] / n_wrong if n_wrong > 0 else s["w_time_mean"]
+            )
+            s["w_space_wrong_mean"] = (
+                s["w_space_wrong_sum"] / n_wrong if n_wrong > 0 else s["w_space_mean"]
+            )
+            s["w_surface_wrong_mean"] = (
+                s["w_surface_wrong_sum"] / n_wrong if n_wrong > 0 else s["w_surface_mean"]
+            )
+            s["w_core_wrong_mean"] = (
+                s["w_core_wrong_sum"] / n_wrong if n_wrong > 0 else s["w_core_mean"]
+            )
+            s["mass_wrong_mean"] = s["mass_wrong_sum"] / n_wrong if n_wrong > 0 else s["mass_mean"]
+            s["decay_wrong_mean"] = (
+                s["decay_wrong_sum"] / n_wrong if n_wrong > 0 else s["decay_mean"]
+            )
 
             # 学习方向：correct_mean - wrong_mean（正确案例比错误案例偏多的方向）
             # 这是更有效的学习信号，因为参数相同时该值为0
@@ -585,7 +615,7 @@ class LiangyiEngine:
             s["mass_direction"] = s["mass_correct_mean"] - s["mass_wrong_mean"]
             s["decay_direction"] = s["decay_correct_mean"] - s["decay_wrong_mean"]
 
-        for key, s in season_stats.items():
+        for key, s in season_stats.items():  # noqa: B007
             s["win_rate"] = s["correct"] / s["total"] if s["total"] > 0 else 0.5
 
         self._learned_stats = combo_stats
@@ -599,9 +629,7 @@ class LiangyiEngine:
             "total_cases": len(cases),
         }
 
-    def _apply_learned_adjustment(self,
-                                    params: ScaleParams,
-                                    state: LiangyiState) -> ScaleParams:
+    def _apply_learned_adjustment(self, params: ScaleParams, state: LiangyiState) -> ScaleParams:
         """
         应用多维度学习结果到 ScaleParams。
 
@@ -689,9 +717,7 @@ class LiangyiEngine:
         """获取季节级学习统计（维度4，共振系数反馈）。"""
         return dict(self._learned_season_stats)
 
-    def get_adaptive_resonance_factor(self,
-                                        macro_season: str,
-                                        micro_season: str) -> float:
+    def get_adaptive_resonance_factor(self, macro_season: str, micro_season: str) -> float:
         """
         维度4：自适应共振系数。
 
@@ -759,13 +785,9 @@ class LiangyiEngine:
 
             data = {
                 "version": "v0.1",
-                "learned_stats": {
-                    f"{k[0]}|{k[1]}": v
-                    for k, v in self._learned_stats.items()
-                },
+                "learned_stats": {f"{k[0]}|{k[1]}": v for k, v in self._learned_stats.items()},
                 "learned_season_stats": {
-                    f"{k[0]}|{k[1]}": v
-                    for k, v in self._learned_season_stats.items()
+                    f"{k[0]}|{k[1]}": v for k, v in self._learned_season_stats.items()
                 },
                 "hyperparams": {
                     "resonance_bonus": self.resonance_bonus,

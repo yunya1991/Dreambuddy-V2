@@ -4,11 +4,12 @@
 TDD: 验证 parse_skill_metadata 支持提取 ## Autonomy Boundary 段落
 覆盖 AC-5
 """
-import sys
+
+import sys  # noqa: I001
 import os
 import tempfile
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 SKILL_WITH_BOUNDARY = """---

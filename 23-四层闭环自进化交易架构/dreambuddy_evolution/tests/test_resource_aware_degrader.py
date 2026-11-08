@@ -21,13 +21,13 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 3
   - 降级决策可观测性（日志）
   - FAIL-OPEN 降级到中性兜底
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
+
 
 from dreambuddy_evolution.core.resource_aware_degrader import (
-    ResourceAwareDegrader,
     DegradationLevel,
+    ResourceAwareDegrader,
 )
 
 
@@ -119,8 +119,8 @@ class TestAssessLevel:
         """多个降级因子同时存在 → 取最严重的降级级别"""
         degrader = ResourceAwareDegrader()
         context = {
-            "sample_count": 50,          # → RULE_BASELINE
-            "model_trained": False,       # → SIMPLIFIED
+            "sample_count": 50,  # → RULE_BASELINE
+            "model_trained": False,  # → SIMPLIFIED
             "inference_time_ms": 50,
             "system_load": 0.3,
         }
@@ -191,13 +191,15 @@ class TestDegradationObservability:
     def test_decision_logged(self, caplog):
         """降级决策产生日志"""
         import logging
+
         degrader = ResourceAwareDegrader()
         with caplog.at_level(logging.INFO):
             context = {"sample_count": 50, "model_trained": True}
-            level = degrader.assess_level(context)
+            level = degrader.assess_level(context)  # noqa: F841
         # 应有降级相关日志
-        assert any("degrad" in r.message.lower() or "level" in r.message.lower()
-                   for r in caplog.records)
+        assert any(
+            "degrad" in r.message.lower() or "level" in r.message.lower() for r in caplog.records
+        )
 
     def test_decision_returns_reason(self):
         """assess_level 返回降级原因"""

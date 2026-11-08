@@ -16,12 +16,9 @@ T10 · 训练脚本 CLI 冒烟：--n-epochs=1 --quick-smoke 下，两个脚本�
 
 from __future__ import annotations
 
-import json
-import os
 import sys
 from pathlib import Path
 
-import numpy as np
 import pytest
 
 BASE_DIR = Path(__file__).parent.parent
@@ -34,9 +31,8 @@ sys.path.insert(0, str(BASE_DIR / "lib"))
 # ---------------------------------------------------------------- T8
 class TestBiLSTMAttention:
     def test_model_forward_shape_and_value_range(self):
-        from phase_d_models import BiLSTMAttentionBust
-
         import torch
+        from phase_d_models import BiLSTMAttentionBust
 
         m = BiLSTMAttentionBust(ohlcv_len=60, n_scalar=7, hidden=48, n_layers=2)
         ohlcv = torch.randn(3, 60, 5)
@@ -77,9 +73,8 @@ class TestBiLSTMAttention:
 # ---------------------------------------------------------------- T9
 class TestPatchTST:
     def test_patch_slicing_and_out_shape(self):
-        from phase_d_models import PatchTSTForDrawdown
-
         import torch
+        from phase_d_models import PatchTSTForDrawdown
 
         m = PatchTSTForDrawdown(c_in=5, seq_len=120, patch_len=12, stride=6, d_model=32)
         x = torch.randn(4, 120, 5)

@@ -11,6 +11,7 @@
   5. 持仓 7 天或 TP(+15%)/SL(-20%)
   6. 记录案例 (reversal_short_success / reversal_short_fail)
 """
+
 from __future__ import annotations
 
 import json
@@ -36,6 +37,7 @@ from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
     WashoutVerdict,
 )
 from scripts.memory_l4.bcrm2.washout_trigger_gate import WashoutTriggerGate  # noqa: E402
+
 from dreamos.evolution.pump_dump_ending_detector import (  # noqa: E402
     PumpDumpEndingSignal,
 )
@@ -75,36 +77,53 @@ def simulate_short_trade(df: pd.DataFrame, entry_idx: int) -> Dict:
         pnl_at_high = (entry_price - high) / entry_price
         pnl_at_low = (entry_price - low) / entry_price
         if pnl_at_high <= -SL_PCT:
-            return {"entry_price": entry_price,
-                    "exit_price": entry_price * (1 + SL_PCT),
-                    "exit_idx": idx, "pnl_pct": -SL_PCT,
-                    "exit_reason": "SL", "hold_days": i}
+            return {
+                "entry_price": entry_price,
+                "exit_price": entry_price * (1 + SL_PCT),
+                "exit_idx": idx,
+                "pnl_pct": -SL_PCT,
+                "exit_reason": "SL",
+                "hold_days": i,
+            }
         if pnl_at_low >= TP_PCT:
-            return {"entry_price": entry_price,
-                    "exit_price": entry_price * (1 - TP_PCT),
-                    "exit_idx": idx, "pnl_pct": TP_PCT,
-                    "exit_reason": "TP", "hold_days": i}
+            return {
+                "entry_price": entry_price,
+                "exit_price": entry_price * (1 - TP_PCT),
+                "exit_idx": idx,
+                "pnl_pct": TP_PCT,
+                "exit_reason": "TP",
+                "hold_days": i,
+            }
     exit_idx = entry_idx + max_hold
     exit_price = float(df.iloc[exit_idx]["close"])
     pnl_pct = (entry_price - exit_price) / entry_price
-    return {"entry_price": entry_price, "exit_price": exit_price,
-            "exit_idx": exit_idx, "pnl_pct": pnl_pct,
-            "exit_reason": "TIMEOUT", "hold_days": max_hold}
+    return {
+        "entry_price": entry_price,
+        "exit_price": exit_price,
+        "exit_idx": exit_idx,
+        "pnl_pct": pnl_pct,
+        "exit_reason": "TIMEOUT",
+        "hold_days": max_hold,
+    }
 
 
 def _build_weakness_verdict(gate, df) -> WashoutVerdict:
     close = df["close"].astype(float)
     high = df["high"].astype(float)
     lookback = gate.runup_lookback_days
-    start_price = float(close.iloc[-(lookback + 1)])
+    start_price = float(close.iloc[-(lookback + 1)])  # noqa: F841
     peak = float(high.iloc[-lookback:].max())
     end_price = float(close.iloc[-1])
     drawdown = 1.0 - end_price / peak if peak > 0 else 0.0
     confidence = 0.75 + min(0.20, max(0.0, (drawdown - 0.05) / 0.25 * 0.20))
     return WashoutVerdict(
-        label=WashoutLabel.WEAKNESS, confidence=confidence,
-        trigger_activated=True, feature_snapshot={"drawdown": drawdown},
-        reason=f"backtest_pump_dump_drawdown={drawdown:.3f}", timestamp="")
+        label=WashoutLabel.WEAKNESS,
+        confidence=confidence,
+        trigger_activated=True,
+        feature_snapshot={"drawdown": drawdown},
+        reason=f"backtest_pump_dump_drawdown={drawdown:.3f}",
+        timestamp="",
+    )
 
 
 def _relaxed_ending_check(df: pd.DataFrame) -> PumpDumpEndingSignal:
@@ -117,7 +136,7 @@ def _relaxed_ending_check(df: pd.DataFrame) -> PumpDumpEndingSignal:
         if n >= 15:
             deltas = close.diff().dropna()
             gains = deltas.clip(lower=0)
-            losses = (-deltas.clip(upper=0))
+            losses = -deltas.clip(upper=0)
             ag = gains.iloc[:14].mean()
             al = losses.iloc[:14].mean()
             for i in range(14, len(deltas)):
@@ -141,15 +160,19 @@ def _relaxed_ending_check(df: pd.DataFrame) -> PumpDumpEndingSignal:
             prev = df.iloc[-2]
             body = abs(float(last["close"]) - float(last["open"]))
             upper = float(last["high"]) - max(float(last["close"]), float(last["open"]))
-            conds.append((upper > body and body > 0) or
-                         (float(last["close"]) < float(prev["close"])))
+            conds.append(
+                (upper > body and body > 0) or (float(last["close"]) < float(prev["close"]))
+            )
         else:
             conds.append(False)
         met = sum(conds)
         if met >= 1:
             return PumpDumpEndingSignal(
-                activated=True, confidence=min(1.0, 0.4 + met * 0.2),
-                reason=f"backtest_pd_ending_met={met}/3", timestamp="")
+                activated=True,
+                confidence=min(1.0, 0.4 + met * 0.2),
+                reason=f"backtest_pd_ending_met={met}/3",
+                timestamp="",
+            )
         return PumpDumpEndingSignal.not_activated(f"met_only_{met}/3")
     except Exception:
         return PumpDumpEndingSignal.not_activated("exception")
@@ -158,19 +181,25 @@ def _relaxed_ending_check(df: pd.DataFrame) -> PumpDumpEndingSignal:
 def run_backtest() -> Tuple[List[WashoutCase], Dict]:
     gate = WashoutTriggerGate()
     df = load_local_klines()
-    print(f"[数据] BTC 1D: {len(df)} 根 ({df.index[0].date()} ~ {df.index[-1].date()})",
-          flush=True)
+    print(f"[数据] BTC 1D: {len(df)} 根 ({df.index[0].date()} ~ {df.index[-1].date()})", flush=True)
 
     all_cases: List[WashoutCase] = []
-    stats = {"total_windows": 0, "weakness_signals": 0,
-             "ending_signals": 0, "trades_simulated": 0,
-             "success_count": 0, "fail_count": 0,
-             "total_pnl_pct": 0.0, "tp_count": 0, "sl_count": 0,
-             "timeout_count": 0}
+    stats = {
+        "total_windows": 0,
+        "weakness_signals": 0,
+        "ending_signals": 0,
+        "trades_simulated": 0,
+        "success_count": 0,
+        "fail_count": 0,
+        "total_pnl_pct": 0.0,
+        "tp_count": 0,
+        "sl_count": 0,
+        "timeout_count": 0,
+    }
 
     for start in range(0, len(df) - WINDOW_SIZE - HOLD_DAYS, STEP):
         stats["total_windows"] += 1
-        window = df.iloc[start:start + WINDOW_SIZE]
+        window = df.iloc[start : start + WINDOW_SIZE]
         try:
             if not gate.should_activate(window):
                 continue
@@ -184,7 +213,7 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
                 continue
             stats["ending_signals"] += 1
 
-            confidence = (verdict.confidence * 0.6 + ending.confidence * 0.4)
+            confidence = verdict.confidence * 0.6 + ending.confidence * 0.4
             if confidence < PROBE_THRESHOLD:
                 continue
 
@@ -201,8 +230,7 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
                 stats["timeout_count"] += 1
 
             pnl_pct = trade["pnl_pct"]
-            label = "reversal_short_success" if pnl_pct > 0 \
-                else "reversal_short_fail"
+            label = "reversal_short_success" if pnl_pct > 0 else "reversal_short_fail"
             if pnl_pct > 0:
                 stats["success_count"] += 1
             else:
@@ -210,7 +238,8 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
             stats["total_pnl_pct"] += pnl_pct
 
             case = WashoutCase(
-                case_id=f"BTC_PD_{entry_idx:05d}", coin="BTC",
+                case_id=f"BTC_PD_{entry_idx:05d}",
+                coin="BTC",
                 entry_time=df.index[entry_idx].isoformat(),
                 exit_time=df.index[trade["exit_idx"]].isoformat(),
                 features_snapshot={
@@ -220,7 +249,8 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
                     "entry_price": float(trade["entry_price"]),
                     "hold_days": float(trade["hold_days"]),
                 },
-                actual_label=label, pnl_pct=float(pnl_pct),
+                actual_label=label,
+                pnl_pct=float(pnl_pct),
                 reward=WashoutCase.compute_reward(float(pnl_pct)),
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
@@ -228,24 +258,34 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
         except Exception:
             continue
 
-    stats["win_rate"] = (stats["success_count"] / stats["trades_simulated"]
-                         if stats["trades_simulated"] > 0 else 0.0)
-    stats["avg_pnl_pct"] = (stats["total_pnl_pct"] / stats["trades_simulated"]
-                            if stats["trades_simulated"] > 0 else 0.0)
+    stats["win_rate"] = (
+        stats["success_count"] / stats["trades_simulated"] if stats["trades_simulated"] > 0 else 0.0
+    )
+    stats["avg_pnl_pct"] = (
+        stats["total_pnl_pct"] / stats["trades_simulated"] if stats["trades_simulated"] > 0 else 0.0
+    )
     return all_cases, stats
 
 
 def save_cases(cases, stats):
     with open(OUTPUT_CASES, "w") as f:
         for case in cases:
-            f.write(json.dumps({
-                "case_id": case.case_id, "coin": case.coin,
-                "entry_time": case.entry_time, "exit_time": case.exit_time,
-                "features_snapshot": case.features_snapshot,
-                "actual_label": case.actual_label,
-                "pnl_pct": case.pnl_pct, "reward": case.reward,
-                "timestamp": case.timestamp,
-            }) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "case_id": case.case_id,
+                        "coin": case.coin,
+                        "entry_time": case.entry_time,
+                        "exit_time": case.exit_time,
+                        "features_snapshot": case.features_snapshot,
+                        "actual_label": case.actual_label,
+                        "pnl_pct": case.pnl_pct,
+                        "reward": case.reward,
+                        "timestamp": case.timestamp,
+                    }
+                )
+                + "\n"
+            )
     print(f"\n[保存] 案例写入 {OUTPUT_CASES} ({len(cases)} 条)", flush=True)
     stats["total_cases"] = len(cases)
     stats["output_file"] = OUTPUT_CASES

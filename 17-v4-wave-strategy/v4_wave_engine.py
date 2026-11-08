@@ -19,10 +19,8 @@
 
 import os
 import sys
-import json
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -34,13 +32,17 @@ sys.path.insert(0, MODULE_DIR)
 sys.path.insert(1, SANPING_DIR)
 
 try:
-    from .halving_top_exit_strategy import HalvingTopExitStrategy
-    from .data.market_data import fetch_candles, resample_candles, candles_to_dataframe
+    from .data.market_data import (
+        candles_to_dataframe,
+        fetch_candles,
+        resample_candles,  # noqa: F401
+    )  # noqa: F401, I001
     from .ewave_strategy_adapter import EWaveStrategyAdapter, WaveConfig
+    from .halving_top_exit_strategy import HalvingTopExitStrategy
 except ImportError:
-    from halving_top_exit_strategy import HalvingTopExitStrategy
-    from data.market_data import fetch_candles, resample_candles, candles_to_dataframe
+    from data.market_data import candles_to_dataframe, fetch_candles
     from ewave_strategy_adapter import EWaveStrategyAdapter, WaveConfig
+    from halving_top_exit_strategy import HalvingTopExitStrategy
 
 MAX_LEVERAGE = 3
 MAX_POSITION_PCT = 0.25
@@ -206,7 +208,7 @@ class V4WaveEngine:
         }
 
         base_position = abs(v4_position_pct)
-        base_action = v4_action
+        base_action = v4_action  # noqa: F841
         base_direction = v4_direction
 
         # ── Step 2: 价值风险评估 ──
@@ -236,8 +238,16 @@ class V4WaveEngine:
                 last_idx = n - 1
 
                 eta = float(feats["eta"][last_idx]) if not np.isnan(feats["eta"][last_idx]) else 0.0
-                phys_conf = float(feats["phys_conf"][last_idx]) if not np.isnan(feats["phys_conf"][last_idx]) else 0.5
-                kinetic_score = float(feats["kinetic_score"][last_idx]) if not np.isnan(feats["kinetic_score"][last_idx]) else 0.5
+                phys_conf = (
+                    float(feats["phys_conf"][last_idx])
+                    if not np.isnan(feats["phys_conf"][last_idx])
+                    else 0.5
+                )
+                kinetic_score = (
+                    float(feats["kinetic_score"][last_idx])
+                    if not np.isnan(feats["kinetic_score"][last_idx])
+                    else 0.5
+                )
 
                 physics_adjustment["enabled"] = True
                 physics_adjustment["eta"] = round(eta, 4)
@@ -245,7 +255,10 @@ class V4WaveEngine:
                 physics_adjustment["kinetic_score"] = round(kinetic_score, 4)
 
                 if eta < self.wave_config.eta_weak:
-                    phys_multiplier = self.wave_config.position_lower + self.wave_config.position_scale * phys_conf
+                    phys_multiplier = (
+                        self.wave_config.position_lower
+                        + self.wave_config.position_scale * phys_conf
+                    )
                     adjusted_position = base_position * phys_multiplier
                     physics_adjustment["adjusted_position"] = round(adjusted_position, 4)
                     physics_adjustment["reason"] = "weak_trend_physics_adjusted"
@@ -297,7 +310,7 @@ class V4WaveEngine:
         if wave_result.get("enabled"):
             wave_total_pos = wave_result["total_position_pct"]
             wave_action = wave_result["final_action"]
-            wave_direction = wave_result["final_direction"]
+            wave_direction = wave_result["final_direction"]  # noqa: F841
 
             if wave_action == "ENTER_LONG":
                 total_position = wave_total_pos

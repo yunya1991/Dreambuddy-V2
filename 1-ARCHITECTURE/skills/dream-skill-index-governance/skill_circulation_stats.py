@@ -5,6 +5,7 @@ FAIL-OPEN：文件不可写时不崩溃，返回默认值。
 
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 零回归
 """
+
 from __future__ import annotations
 
 import json
@@ -31,9 +32,7 @@ def _load(stats_path: Path) -> dict[str, Any]:
 def _save(stats: dict[str, Any], stats_path: Path) -> bool:
     try:
         stats_path.parent.mkdir(parents=True, exist_ok=True)
-        stats_path.write_text(
-            json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        stats_path.write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
         return True
     except Exception:
         return False
@@ -47,12 +46,15 @@ def record_invocation(
     """记录一次 SKILL 调用。"""
     path = stats_path or DEFAULT_STATS_PATH
     stats = _load(path)
-    entry = stats.get(skill_name, {
-        "invocation_count": 0,
-        "success_count": 0,
-        "failure_count": 0,
-        "last_invoked_at": None,
-    })
+    entry = stats.get(
+        skill_name,
+        {
+            "invocation_count": 0,
+            "success_count": 0,
+            "failure_count": 0,
+            "last_invoked_at": None,
+        },
+    )
     entry["invocation_count"] += 1
     if success:
         entry["success_count"] += 1

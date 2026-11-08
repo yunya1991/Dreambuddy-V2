@@ -17,13 +17,16 @@ Dreambuddy OS — Registry 注册表层
 """
 
 from .base import BaseNode
-from .node_registry import NodeRegistry, get_default_registry, set_default_registry
-from .decorators import register_node, node_metadata
+from .decorators import node_metadata, register_node
 from .loader import RegistryLoader, load_from_yaml
+from .node_registry import NodeRegistry, get_default_registry, set_default_registry
 from .version_manager import (
-    RegistryExtension, VersionedNodeMixin,
-    parse_version, compare_versions, satisfies_requirement,
     DependencyCheckResult,
+    RegistryExtension,
+    VersionedNodeMixin,
+    compare_versions,
+    parse_version,
+    satisfies_requirement,
 )
 
 __all__ = [

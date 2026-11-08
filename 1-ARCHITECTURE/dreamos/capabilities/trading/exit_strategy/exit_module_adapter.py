@@ -18,33 +18,35 @@
 
 from __future__ import annotations
 
+import importlib.util
+import logging
 import os
 import sys
 import time
-import logging
-import importlib.util
-from typing import Any, Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 # ── 统一输出 ────────────────────────────────────────────────────────────
 
+
 @dataclass
 class UnifiedExitDecision:
     """统一离场决策（跨模块）"""
-    action: str = "HOLD"           # HOLD / CLOSE / REDUCE / RAISE_TP
+
+    action: str = "HOLD"  # HOLD / CLOSE / REDUCE / RAISE_TP
     reason: str = ""
     stop_loss: float = 0.0
     take_profit: float = 0.0
     exit_price: float = 0.0
     confidence: float = 0.5
-    source: str = "unknown"        # classic / yijing / fundamental / simple
+    source: str = "unknown"  # classic / yijing / fundamental / simple
     reduce_frac: float = 0.0
     new_tp_price: float = 0.0
     new_trailing_armed: Optional[bool] = None
     new_trailing_stop: float = 0.0
-    raw: Optional[Any] = None      # 原始决策对象（调试用）
+    raw: Optional[Any] = None  # 原始决策对象（调试用）
 
     @property
     def should_exit(self) -> bool:
@@ -52,6 +54,7 @@ class UnifiedExitDecision:
 
 
 # ── ClassicExitSystem 适配器 ────────────────────────────────────────────
+
 
 class ClassicExitAdapter:
     """封装 ClassicExitSystem 为 DreamOS 统一接口
@@ -76,7 +79,10 @@ class ClassicExitAdapter:
 
         try:
             # 优先从 dreamos 包路径加载
-            from dreamos.capabilities.trading.exit_strategy.classic_exit_loader import get_classic_system
+            from dreamos.capabilities.trading.exit_strategy.classic_exit_loader import (
+                get_classic_system,
+            )
+
             self._system = get_classic_system()
             return self._system
         except Exception:
@@ -143,7 +149,7 @@ class ClassicExitAdapter:
 
         try:
             # 构造 PositionState
-            PositionState = type(system).mro()  # 获取模块引用
+            PositionState = type(system).mro()  # 获取模块引用  # noqa: F841
             # 直接从 sys.modules 获取 PositionState
             mod = sys.modules.get("classic_exit_system") or sys.modules.get(
                 "dreamos.capabilities.trading.exit_strategy.classic_exit_loader"
@@ -189,10 +195,16 @@ class ClassicExitAdapter:
                     if isinstance(c, dict):
                         candles.append(c)
                     elif isinstance(c, (list, tuple)) and len(c) >= 5:
-                        candles.append({
-                            "t": c[0], "o": c[1], "h": c[2], "l": c[3], "c": c[4],
-                            "v": c[5] if len(c) > 5 else 0,
-                        })
+                        candles.append(
+                            {
+                                "t": c[0],
+                                "o": c[1],
+                                "h": c[2],
+                                "l": c[3],
+                                "c": c[4],
+                                "v": c[5] if len(c) > 5 else 0,
+                            }
+                        )
 
             # 判断 regime
             regime = "trend"
@@ -249,6 +261,7 @@ class ClassicExitAdapter:
 
 # ── 简单离场适配器（当前 DreamOS 内置逻辑的封装）─────────────────────────
 
+
 class SimpleExitAdapter:
     """封装当前 DreamOS auto_trader.py check_exit 的简单逻辑
 
@@ -259,6 +272,7 @@ class SimpleExitAdapter:
         from dreamos.capabilities.trading.exit_strategy.stop_take_profit import (
             calculate_stop_take_profit,
         )
+
         self._calc_sttp = calculate_stop_take_profit
 
     def evaluate(
@@ -290,7 +304,11 @@ class SimpleExitAdapter:
             time_factor = 1.0
 
         # 简单 regime 判断
-        regime = "ranging" if "RANGE" in scenario_id or "CHOP" in scenario_id else "trend_bull" if "BULL" in scenario_id else "trend_bear"
+        regime = (
+            "ranging"
+            if "RANGE" in scenario_id or "CHOP" in scenario_id
+            else "trend_bull" if "BULL" in scenario_id else "trend_bear"
+        )
         confidence = max(0.3, 0.8 - bars_held * 0.01)
 
         try:
@@ -371,6 +389,7 @@ class SimpleExitAdapter:
 
 # ── YijingExitAdapter ────────────────────────────────────────────────────
 
+
 class YijingExitAdapter:
     """易经离场适配器
 
@@ -408,7 +427,10 @@ class YijingExitAdapter:
 
         # L1: 优先从 dreamos 包路径（若未来有镜像封装）
         try:
-            from dreamos.capabilities.trading.exit_strategy.yijing_exit_loader import get_yijing_system
+            from dreamos.capabilities.trading.exit_strategy.yijing_exit_loader import (
+                get_yijing_system,
+            )
+
             self._system = get_yijing_system()
             logger.info("YijingExitSystem 加载成功 (from package)")
             return self._system
@@ -481,55 +503,55 @@ class YijingExitAdapter:
 
         # ── 六爻阶段 (current_phase) + 发展阶段 (development_stage) ──
         if is_extreme and is_bear:
-            current_phase = "上九"      # 亢龙有悔
+            current_phase = "上九"  # 亢龙有悔
             development_stage = "衰退期"
             risk_level = "高"
             direction_hint = "DOWN"
             hex_name = "坤为地"
         elif is_extreme and is_bull:
-            current_phase = "九五"      # 飞龙在天
+            current_phase = "九五"  # 飞龙在天
             development_stage = "成熟期"
             risk_level = "中"
             direction_hint = "UP"
             hex_name = "乾为天"
         elif is_bull and high_vol:
-            current_phase = "九四"      # 或跃在渊
+            current_phase = "九四"  # 或跃在渊
             development_stage = "成长期"
             risk_level = "中"
             direction_hint = "UP" if dir_consistent else "TRANSITIONING"
             hex_name = "水天需"
         elif is_bull:
-            current_phase = "九五"      # 飞龙在天
+            current_phase = "九五"  # 飞龙在天
             development_stage = "成熟期"
             risk_level = "低"
             direction_hint = "UP"
             hex_name = "乾为天"
         elif is_bear and high_vol:
-            current_phase = "九三"      # 终日乾乾
+            current_phase = "九三"  # 终日乾乾
             development_stage = "衰退期"
             risk_level = "高"
             direction_hint = "DOWN" if dir_consistent else "TRANSITIONING"
             hex_name = "水雷屯"
         elif is_bear:
-            current_phase = "上九"      # 亢龙有悔
+            current_phase = "上九"  # 亢龙有悔
             development_stage = "衰退期"
             risk_level = "中"
             direction_hint = "DOWN"
             hex_name = "坤为地"
         elif rsi < 40:
-            current_phase = "初九"      # 潜龙勿用
+            current_phase = "初九"  # 潜龙勿用
             development_stage = "萌芽期"
             risk_level = "中"
             direction_hint = "TRANSITIONING"
             hex_name = "地雷复"
         elif rsi > 60:
-            current_phase = "九三"      # 终日乾乾
+            current_phase = "九三"  # 终日乾乾
             development_stage = "成熟期"
             risk_level = "中"
             direction_hint = "TRANSITIONING"
             hex_name = "天风姤"
         else:
-            current_phase = "九二"      # 见龙在田
+            current_phase = "九二"  # 见龙在田
             development_stage = "成长期"
             risk_level = "低"
             direction_hint = "FLAT"
@@ -602,7 +624,11 @@ class YijingExitAdapter:
                 or market_data.get("yijing_hexagram")
                 or self._synthesize_hexagram(scenario_id, market_data, direction)
             )
-            synthesized = bool(hexagram and hexagram.get("_synthesized")) if isinstance(hexagram, dict) else False
+            synthesized = (
+                bool(hexagram and hexagram.get("_synthesized"))
+                if isinstance(hexagram, dict)
+                else False
+            )
 
             # ── Step 2: 构造参数 ──
             pos_side = "long" if direction == "LONG" else "short"
@@ -650,7 +676,11 @@ class YijingExitAdapter:
             tp = max(1e-9, tp)
 
             # ── Step 5: 决策映射（9→4）──
-            action_str = str(yj_decision.action.value) if hasattr(yj_decision.action, "value") else str(yj_decision.action)
+            action_str = (
+                str(yj_decision.action.value)
+                if hasattr(yj_decision.action, "value")
+                else str(yj_decision.action)
+            )
 
             mapped_action = "HOLD"
             exit_price = 0.0
@@ -714,6 +744,7 @@ class YijingExitAdapter:
 
 # ── FundamentalExitAdapter (预留, 未实现) ────────────────────────────────
 
+
 class FundamentalExitAdapter:
     """基本面离场适配器（预留接口）
 
@@ -738,6 +769,7 @@ class FundamentalExitAdapter:
 
 
 # ── 适配器注册表 ────────────────────────────────────────────────────────
+
 
 def get_all_adapters() -> Dict[str, Any]:
     """获取所有已注册的离场适配器"""

@@ -1,4 +1,5 @@
 """B-03: Attention A_dim shadow tests."""
+
 from __future__ import annotations
 
 import importlib
@@ -32,18 +33,14 @@ class TestAttentionShadow:
 
     def test_aggregate_macro_dominant(self):
         # C4/C8 高权重 → macro
-        result = aggregate_attention(
-            _weights([0.01, 0.01, 0.01, 0.5, 0.01, 0.01, 0.4, 0.01])
-        )
+        result = aggregate_attention(_weights([0.01, 0.01, 0.01, 0.5, 0.01, 0.01, 0.4, 0.01]))
         assert result["available"] is True
         assert result["A_dim"] == "macro"
         assert result["A_strength"] > 0.5
 
     def test_aggregate_technical_dominant(self):
         # C2/C7/news 高权重 → technical
-        result = aggregate_attention(
-            _weights([0.01, 0.5, 0.01, 0.01, 0.01, 0.4, 0.01, 0.4])
-        )
+        result = aggregate_attention(_weights([0.01, 0.5, 0.01, 0.01, 0.01, 0.4, 0.01, 0.4]))
         assert result["available"] is True
         assert result["A_dim"] == "technical"
 

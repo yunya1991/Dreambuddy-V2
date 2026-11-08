@@ -10,6 +10,7 @@
   - 种群多样性维持（Jaccard≥0.3 防早熟）
   - ensemble 策略合成（≠ top-1）
 """
+
 from __future__ import annotations
 
 import logging
@@ -25,9 +26,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Individual:
     """种群个体."""
+
     id: str
     fitness: float = 0.0
-    arch: dict[str, Any] = field(default_factory=lambda: {"hidden_dims": [64, 32], "activation": "relu"})
+    arch: dict[str, Any] = field(
+        default_factory=lambda: {"hidden_dims": [64, 32], "activation": "relu"}
+    )
     weights: np.ndarray | None = None
     pnl_samples: list[dict[str, Any]] = field(default_factory=list)
 
@@ -43,10 +47,15 @@ class EvolutionEngine:
         # result["best_id"]: top-1 策略 ID
     """
 
-    def __init__(self, population_size: int = 20, elite_size: int = 4,
-                 tournament_k: int = 3, ensemble_k: int = 3,
-                 structure_mutation_rate: float = 0.3,
-                 min_diversity_threshold: float = 0.3) -> None:
+    def __init__(
+        self,
+        population_size: int = 20,
+        elite_size: int = 4,
+        tournament_k: int = 3,
+        ensemble_k: int = 3,
+        structure_mutation_rate: float = 0.3,
+        min_diversity_threshold: float = 0.3,
+    ) -> None:
         self.population_size = int(population_size)
         self.elite_size = int(elite_size)
         self.tournament_k = int(tournament_k)
@@ -77,7 +86,7 @@ class EvolutionEngine:
     def get_elites(self) -> list[Individual]:
         """获取精英（top-N，不参与变异）."""
         sorted_pop = sorted(self.population, key=lambda x: x.fitness, reverse=True)
-        return sorted_pop[:self.elite_size]
+        return sorted_pop[: self.elite_size]
 
     def compute_diversity(self) -> float:
         """计算种群多样性（Jaccard 相似度的补）."""
@@ -106,19 +115,23 @@ class EvolutionEngine:
     # ------------------------------------------------------------------
     # 交叉
     # ------------------------------------------------------------------
-    def arithmetic_crossover(self, w1: np.ndarray, w2: np.ndarray,
-                              alpha: float = 0.5) -> np.ndarray:
+    def arithmetic_crossover(
+        self, w1: np.ndarray, w2: np.ndarray, alpha: float = 0.5
+    ) -> np.ndarray:
         """算术交叉 w_child = α·p1 + (1-α)·p2."""
         return alpha * np.asarray(w1) + (1 - alpha) * np.asarray(w2)
 
     # ------------------------------------------------------------------
     # 结构变异（关键：证明非参数微调）
     # ------------------------------------------------------------------
-    def structure_mutate(self, arch: dict[str, Any],
-                          add_neuron_prob: float = 0.1,
-                          remove_neuron_prob: float = 0.1,
-                          change_activation_prob: float = 0.05,
-                          add_layer_prob: float = 0.02) -> dict[str, Any]:
+    def structure_mutate(
+        self,
+        arch: dict[str, Any],
+        add_neuron_prob: float = 0.1,
+        remove_neuron_prob: float = 0.1,
+        change_activation_prob: float = 0.05,
+        add_layer_prob: float = 0.02,
+    ) -> dict[str, Any]:
         """NEAT-lite 结构变异（改变拓扑）."""
         mutated = {
             "hidden_dims": list(arch.get("hidden_dims", [64, 32])),
@@ -154,8 +167,7 @@ class EvolutionEngine:
     # ------------------------------------------------------------------
     # Fitness 函数
     # ------------------------------------------------------------------
-    def compute_fitness(self, ess: float = 0.0, sharpe: float = 0.0,
-                        max_dd: float = 0.0) -> float:
+    def compute_fitness(self, ess: float = 0.0, sharpe: float = 0.0, max_dd: float = 0.0) -> float:
         """fitness = 0.5·ESS + 0.3·Sharpe + 0.2·(1-maxDD)."""
         return 0.5 * ess + 0.3 * sharpe + 0.2 * (1.0 - max_dd)
 
@@ -166,6 +178,7 @@ class EvolutionEngine:
         """入种群必须通过统计检验（p<0.05 + Cohen's d≥0.5）."""
         try:
             from dreambuddy_evolution.core.gene_promotion_stats import check_promotion_with_stats
+
             decision = check_promotion_with_stats(samples)
             return bool(decision.get("promote", False))
         except Exception as exc:  # noqa: BLE001
@@ -175,13 +188,14 @@ class EvolutionEngine:
     # ------------------------------------------------------------------
     # 主进化循环
     # ------------------------------------------------------------------
-    def evolve(self, generations: int = 5,
-               holdout_samples: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    def evolve(
+        self, generations: int = 5, holdout_samples: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """执行进化循环."""
         fitness_history: list[float] = []
         arch_history: list[list[str]] = []
 
-        for gen in range(generations):
+        for gen in range(generations):  # noqa: B007
             # 评估 fitness（简化：用随机 fitness + 结构多样性）
             for ind in self.population:
                 if ind.fitness == 0.0:
@@ -204,7 +218,7 @@ class EvolutionEngine:
         # 排序
         sorted_pop = sorted(self.population, key=lambda x: x.fitness, reverse=True)
         best_ind = sorted_pop[0]
-        ensemble_members = sorted_pop[:min(self.ensemble_k, len(sorted_pop))]
+        ensemble_members = sorted_pop[: min(self.ensemble_k, len(sorted_pop))]
 
         # ensemble 合成（≠ top-1）
         ensemble_id = f"ensemble_{'_'.join(m.id for m in ensemble_members)}"
@@ -222,8 +236,9 @@ class EvolutionEngine:
             "population_size": len(self.population),
         }
 
-    def _evaluate_fitness(self, ind: Individual,
-                          holdout_samples: list[dict[str, Any]] | None) -> float:
+    def _evaluate_fitness(
+        self, ind: Individual, holdout_samples: list[dict[str, Any]] | None
+    ) -> float:
         """评估个体 fitness（简化：用架构复杂度 + 随机信号）."""
         # 用架构复杂度作为代理（神经元越多 fitness 越高）
         complexity = sum(ind.arch.get("hidden_dims", [64, 32]))
@@ -244,7 +259,7 @@ class EvolutionEngine:
         while len(new_population) < self.population_size:
             # 选择父代
             parent1 = self.tournament_select(self.population, k=self.tournament_k)
-            parent2 = self.tournament_select(self.population, k=self.tournament_k)
+            parent2 = self.tournament_select(self.population, k=self.tournament_k)  # noqa: F841
 
             # 结构变异（关键：改变拓扑）
             child_arch = self.structure_mutate(
@@ -258,10 +273,9 @@ class EvolutionEngine:
             child = Individual(
                 id=f"ind_{random.randint(1000, 9999)}",
                 arch=child_arch,
-                fitness=self._evaluate_fitness(
-                    Individual(id="tmp", arch=child_arch), None
-                ) * 0.9,  # 子代初始 fitness 略低
+                fitness=self._evaluate_fitness(Individual(id="tmp", arch=child_arch), None)
+                * 0.9,  # 子代初始 fitness 略低
             )
             new_population.append(child)
 
-        self.population = new_population[:self.population_size]
+        self.population = new_population[: self.population_size]

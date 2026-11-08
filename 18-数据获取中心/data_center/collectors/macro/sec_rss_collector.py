@@ -10,12 +10,13 @@ SPEC-Phase2 §6.3:
   - 三层去重: dc:creator 精确 + 标题 Jaccard>0.7(24h) + 实体名交集(24h)
   - FAIL-OPEN: feed 解析失败返回空列表
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import re
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -44,14 +45,32 @@ class SecRssCollector(BaseCollector):
 
     # 方向关键词（SPEC §6.3）
     BEARISH_KEYWORDS = [
-        "charge", "sue", "fraud", "enforcement", "delist", "ban", "penalty",
+        "charge",
+        "sue",
+        "fraud",
+        "enforcement",
+        "delist",
+        "ban",
+        "penalty",
     ]
     BULLISH_KEYWORDS = [
-        "approve", "exempt", "innovation", "relief", "proposal", "modernize",
+        "approve",
+        "exempt",
+        "innovation",
+        "relief",
+        "proposal",
+        "modernize",
     ]
     CRYPTO_KEYWORDS = [
-        "crypto", "bitcoin", "ethereum", "token", "digital asset",
-        "blockchain", "exchange-traded", "coinbase", "binance",
+        "crypto",
+        "bitcoin",
+        "ethereum",
+        "token",
+        "digital asset",
+        "blockchain",
+        "exchange-traded",
+        "coinbase",
+        "binance",
     ]
 
     def is_available(self) -> bool:
@@ -114,12 +133,14 @@ class SecRssCollector(BaseCollector):
                     "pub_date": item.get("pub_date_iso", ""),
                     "title": title,
                 },
-                events=[{
-                    "title": title,
-                    "link": entry.get("link", ""),
-                    "creator": item.get("creator", ""),
-                    "pub_date": item.get("pub_date_iso", ""),
-                }],
+                events=[
+                    {
+                        "title": title,
+                        "link": entry.get("link", ""),
+                        "creator": item.get("creator", ""),
+                        "pub_date": item.get("pub_date_iso", ""),
+                    }
+                ],
                 timeseries=[],
                 raw=dict(entry),
             )
@@ -205,11 +226,13 @@ class SecRssCollector(BaseCollector):
                     continue
                 if pub >= cutoff:
                     # 恢复 pub_date datetime 供 is_duplicate 使用
-                    items.append({
-                        "creator": it.get("creator", ""),
-                        "title": it.get("title", ""),
-                        "pub_date": pub,
-                    })
+                    items.append(
+                        {
+                            "creator": it.get("creator", ""),
+                            "title": it.get("title", ""),
+                            "pub_date": pub,
+                        }
+                    )
             return items
         except Exception as e:
             logger.debug("[FO] SecRss _load_recent_items fail: %s", e)
@@ -247,11 +270,13 @@ class SecRssCollector(BaseCollector):
             # 追加新项（序列化 pub_date 为 ISO 字符串）
             for it in items:
                 pub = it.get("pub_date")
-                kept.append({
-                    "creator": it.get("creator", ""),
-                    "title": it.get("title", ""),
-                    "pub_date_iso": pub.isoformat() if pub else "",
-                })
+                kept.append(
+                    {
+                        "creator": it.get("creator", ""),
+                        "title": it.get("title", ""),
+                        "pub_date_iso": pub.isoformat() if pub else "",
+                    }
+                )
             state_file.write_text(json.dumps(kept, ensure_ascii=False), encoding="utf-8")
         except Exception as e:
             logger.debug("[FO] SecRss _persist_processed fail: %s", e)

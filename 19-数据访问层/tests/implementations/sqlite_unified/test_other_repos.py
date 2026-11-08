@@ -21,6 +21,7 @@ TDD 红-绿-重构：SqliteMarketMacroRepo + SqliteConfigRepo + SqliteKGRepo
  11. add_triple: subject-predicate-object 三元组双时态 + 子图查询 N 跳
  12. fts_search_entities: FTS5 全文索引命中（实体名/分类）
 """
+
 from __future__ import annotations
 
 import tempfile
@@ -52,6 +53,7 @@ def mm_repo(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.market_macro_impl import (
         SqliteMarketMacroRepository,
     )
+
     return SqliteMarketMacroRepository(db_path)
 
 
@@ -60,6 +62,7 @@ def cfg_repo(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.config_impl import (
         SqliteConfigRepository,
     )
+
     return SqliteConfigRepository(db_path)
 
 
@@ -68,6 +71,7 @@ def kg_repo(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.kg_impl import (
         SqliteKnowledgeGraphRepository,
     )
+
     return SqliteKnowledgeGraphRepository(db_path)
 
 
@@ -222,14 +226,18 @@ def test_cfg_create_version_monotonic_and_payload_roundtrip(cfg_repo):
     """[7] 创建版本：版本号单调递增 + JSON payload 无损序列化。"""
     data_v1 = {"cap": 1.0, "war_state": "ALLOW", "threshold": Decimal("0.015")}
     v1 = cfg_repo.create_version(
-        "global", data_v1, created_by="zhangjiangtao",
+        "global",
+        data_v1,
+        created_by="zhangjiangtao",
         description="v1 baseline 易经五计庙算参数",
     )
     assert isinstance(v1, int) and v1 >= 1
 
     data_v2 = {"cap": 0.8, "war_state": "DEFEND", "threshold": Decimal("0.012")}
     v2 = cfg_repo.create_version(
-        "global", data_v2, description="v2 防御姿态收紧阈值",
+        "global",
+        data_v2,
+        description="v2 防御姿态收紧阈值",
     )
     assert v2 == v1 + 1  # 单调递增
 
@@ -323,8 +331,11 @@ def test_kg_add_triple_and_subgraph_n_hops(kg_repo):
 
     # BTC -[belongs_to]-> CRYPTO_SECTOR
     t1 = kg_repo.add_triple(
-        "BTC", "belongs_to_sector", "CRYPTO_SECTOR",
-        confidence=0.99, source="manual_classification",
+        "BTC",
+        "belongs_to_sector",
+        "CRYPTO_SECTOR",
+        confidence=0.99,
+        source="manual_classification",
     )
     # BTC -[has_tier]-> BLUE_CHIP_TIER
     t2 = kg_repo.add_triple("BTC", "has_tier", "BLUE_CHIP_TIER", confidence=0.90)
@@ -332,7 +343,10 @@ def test_kg_add_triple_and_subgraph_n_hops(kg_repo):
 
     # 1 跳 out 子图：BTC → 直接邻居
     triples, entities = kg_repo.query_subgraph_by_entity(
-        "BTC", hops=1, direction="out", min_confidence=0.5,
+        "BTC",
+        hops=1,
+        direction="out",
+        min_confidence=0.5,
     )
     # 应找到 2 条三元组 + 3 个实体（BTC + CRYPTO_SECTOR + BLUE_CHIP_TIER）
     assert len(triples) == 2

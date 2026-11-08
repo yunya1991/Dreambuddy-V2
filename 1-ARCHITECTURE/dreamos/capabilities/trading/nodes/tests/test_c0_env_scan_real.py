@@ -21,17 +21,18 @@ C0 是 Classic Pipeline 的起点。基于 BTC 价格趋势和波动率判断市
 
 from __future__ import annotations
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 def test_c0_importable():
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     assert C0EnvScanNode is not None
 
 
 def test_c0_metadata():
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     node = C0EnvScanNode()
     assert node.node_id == "C0"
     assert node.chain == "C"
@@ -40,6 +41,7 @@ def test_c0_metadata():
 
 def test_c0_tags_has_classic_v2():
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     node = C0EnvScanNode()
     assert "classic" in node.tags
     assert "classic_v2" in node.tags
@@ -48,9 +50,10 @@ def test_c0_tags_has_classic_v2():
 def test_c0_bull_regime_when_btc_up_low_vol():
     """BTC 上涨 + 低波动 → regime=bull, risk_on=True"""
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     market = {
-        "btc_trend": 0.05,        # BTC 5% 上涨
-        "btc_volatility": 0.02,   # 低波动
+        "btc_trend": 0.05,  # BTC 5% 上涨
+        "btc_volatility": 0.02,  # 低波动
         "eth_trend": 0.04,
         "eth_volatility": 0.025,
     }
@@ -68,6 +71,7 @@ def test_c0_bull_regime_when_btc_up_low_vol():
 def test_c0_bear_regime_when_btc_down_low_vol():
     """BTC 下跌 + 低波动 → regime=bear, risk_off=True"""
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     market = {
         "btc_trend": -0.06,
         "btc_volatility": 0.02,
@@ -85,9 +89,10 @@ def test_c0_bear_regime_when_btc_down_low_vol():
 def test_c0_range_regime_when_high_volatility():
     """高波动 → regime=range, volatility_regime=high"""
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     market = {
         "btc_trend": 0.01,
-        "btc_volatility": 0.15,   # 高波动
+        "btc_volatility": 0.15,  # 高波动
         "eth_trend": 0.0,
         "eth_volatility": 0.18,
     }
@@ -101,9 +106,10 @@ def test_c0_range_regime_when_high_volatility():
 def test_c0_config_overrides_volatility_threshold():
     """state.config 可覆盖波动率阈值"""
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     market = {
         "btc_trend": 0.05,
-        "btc_volatility": 0.06,   # 默认阈值下是低波动
+        "btc_volatility": 0.06,  # 默认阈值下是低波动
         "eth_trend": 0.04,
         "eth_volatility": 0.07,
     }
@@ -124,6 +130,7 @@ def test_c0_config_overrides_volatility_threshold():
 def test_c0_no_market_returns_degraded():
     """无 market 数据时应降级返回（FAIL-OPEN）"""
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     state = State()
     result = C0EnvScanNode().execute_core(state)
 
@@ -138,6 +145,7 @@ def test_c0_no_market_returns_degraded():
 def test_c0_macro_flags_contains_all_keys():
     """macro_flags 应包含 risk_on/risk_off/volatility_regime 三个 key"""
     from dreamos.capabilities.trading.nodes.c0_env_scan import C0EnvScanNode
+
     market = {
         "btc_trend": 0.03,
         "btc_volatility": 0.04,

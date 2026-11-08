@@ -77,7 +77,9 @@ def _build_distill_docs(distill: Dict[str, Any]) -> List[Dict[str, Any]]:
     return docs
 
 
-def build_semantic_docs(cases: List[Dict[str, Any]], distills: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def build_semantic_docs(
+    cases: List[Dict[str, Any]], distills: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
     docs: List[Dict[str, Any]] = []
     for case in cases:
         docs.extend(_build_case_docs(case))
@@ -122,7 +124,9 @@ def write_vector_artifacts(
         },
     }
     manifest_path = vector_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     return {
         "vector_dir": str(vector_dir),
@@ -136,7 +140,28 @@ def _tokenize(text: str) -> List[str]:
     lowered = str(text or "").strip().lower()
     if not lowered:
         return []
-    for ch in [",", ".", ";", ":", "!", "?", "\n", "\t", "(", ")", "[", "]", "{", "}", "，", "。", "；", "：", "！", "？"]:
+    for ch in [
+        ",",
+        ".",
+        ";",
+        ":",
+        "!",
+        "?",
+        "\n",
+        "\t",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        "，",
+        "。",
+        "；",
+        "：",
+        "！",
+        "？",
+    ]:
         lowered = lowered.replace(ch, " ")
     return [t for t in lowered.split(" ") if t]
 

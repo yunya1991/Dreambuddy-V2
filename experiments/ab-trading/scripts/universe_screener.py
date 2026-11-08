@@ -11,8 +11,8 @@
   - agent_a_memory.json 的 universe 字段
   - agent_b_memory.json 的 universe 字段
 """
-import os
-import sys
+
+import sys  # noqa: I001
 import json
 import re
 import requests
@@ -33,17 +33,54 @@ MAX_EXTENDED = MAX_TOTAL - len(CORE_COINS)  # 16个扩展位
 
 # 排除列表（稳定币、已废弃等）
 EXCLUDE = {
-    "USDC", "USTC", "DAI", "USDT", "USDE", "DOLA", "CRAI", "SUSDE",
-    "WUSDC", "WUSDT", "IUSDC", "HLP", "DFI", "STABLE",
+    "USDC",
+    "USTC",
+    "DAI",
+    "USDT",
+    "USDE",
+    "DOLA",
+    "CRAI",
+    "SUSDE",
+    "WUSDC",
+    "WUSDT",
+    "IUSDC",
+    "HLP",
+    "DFI",
+    "STABLE",
 }
 
 # MEME 币排除列表（波动大、流动性不稳定）
 MEME_EXCLUDE = {
-    "PUMP", "XPL", "FARTCOIN", "kPEPE", "kBONK", "PENGU", "HMSTR",
-    "MON", "WLFI", "TRUMP", "VIRTUAL", "KAITO", "VVV", "GRAM",
-    "TURBO", "BANANA", "POPCAT", "WEN", "MOODENG", "FWOG",
-    "BRETT", "MOTHER", "COOKIE", "DOGE", "SHIB", "FLOKI", "PEPE",
-    "WIF", "BONK", "JUPITER",
+    "PUMP",
+    "XPL",
+    "FARTCOIN",
+    "kPEPE",
+    "kBONK",
+    "PENGU",
+    "HMSTR",
+    "MON",
+    "WLFI",
+    "TRUMP",
+    "VIRTUAL",
+    "KAITO",
+    "VVV",
+    "GRAM",
+    "TURBO",
+    "BANANA",
+    "POPCAT",
+    "WEN",
+    "MOODENG",
+    "FWOG",
+    "BRETT",
+    "MOTHER",
+    "COOKIE",
+    "DOGE",
+    "SHIB",
+    "FLOKI",
+    "PEPE",
+    "WIF",
+    "BONK",
+    "JUPITER",
     "SPX",  # SPX 是股票指数也排除
 }
 
@@ -61,8 +98,7 @@ def fetch_market_data():
     """获取Hyperliquid全市场数据"""
     s = requests.Session()
     s.trust_env = False
-    resp = s.post("https://api.hyperliquid.xyz/info",
-                  json={"type": "metaAndAssetCtxs"}, timeout=15)
+    resp = s.post("https://api.hyperliquid.xyz/info", json={"type": "metaAndAssetCtxs"}, timeout=15)
     data = resp.json()
     meta = data[0]
     ctxs = data[1]
@@ -99,16 +135,18 @@ def screen_coins(universe, ctxs):
         oi_score = min(oi / 1_000_000, 10)
         total_score = vol_score * 0.5 + fr_score * 0.3 + oi_score * 0.2
 
-        candidates.append({
-            "name": name,
-            "index": i,
-            "szDecimals": sz_dec,
-            "maxLeverage": max_lev,
-            "funding": funding,
-            "volume": volume,
-            "oi": oi,
-            "score": total_score,
-        })
+        candidates.append(
+            {
+                "name": name,
+                "index": i,
+                "szDecimals": sz_dec,
+                "maxLeverage": max_lev,
+                "funding": funding,
+                "volume": volume,
+                "oi": oi,
+                "score": total_score,
+            }
+        )
 
     candidates.sort(key=lambda x: x["score"], reverse=True)
     return candidates[:MAX_EXTENDED]
@@ -121,11 +159,11 @@ def update_aster_spot(selected_extended):
 
     all_coins = CORE_COINS + [c["name"] for c in selected_extended]
     # UNIVERSE
-    new_universe = f'UNIVERSE = {json.dumps(all_coins)}'
-    content = re.sub(r'UNIVERSE = \[.*?\]', new_universe, content, count=1)
+    new_universe = f"UNIVERSE = {json.dumps(all_coins)}"
+    content = re.sub(r"UNIVERSE = \[.*?\]", new_universe, content, count=1)
 
     # _ASSET_INDEX
-    index_entries = []
+    index_entries = []  # noqa: F841
     for c in all_coins:
         if c in CORE_COINS:
             # 保留核心币种现有index
@@ -144,14 +182,18 @@ def update_aster_spot(selected_extended):
     for coin, idx in all_with_index.items():
         index_lines.append(f'"{coin}": {idx}')
     new_index = "_ASSET_INDEX = {\n    " + ", ".join(index_lines) + ",\n}"
-    content = re.sub(r'_ASSET_INDEX = \{.*?\}', new_index, content, count=1, flags=re.DOTALL)
+    content = re.sub(r"_ASSET_INDEX = \{.*?\}", new_index, content, count=1, flags=re.DOTALL)
 
     # _price_decimals 和 _size_decimals
-    price_dec_map = {}
-    size_dec_map = {}
+    price_dec_map = {}  # noqa: F841
+    size_dec_map = {}  # noqa: F841
     for c in CORE_COINS:
-        pm = re.search(rf'"{c}":\s*(\d+)', content.split("_price_decimals")[1].split("\n")[0])
-        sm = re.search(rf'"{c}":\s*(\d+)', content.split("_size_decimals")[1].split("\n")[0])
+        pm = re.search(  # noqa: F841
+            rf'"{c}":\s*(\d+)', content.split("_price_decimals")[1].split("\n")[0]
+        )  # noqa: F841
+        sm = re.search(  # noqa: F841
+            rf'"{c}":\s*(\d+)', content.split("_size_decimals")[1].split("\n")[0]
+        )  # noqa: F841
 
     # 简化：直接用正则替换整个函数返回值
     pd_entries = []
@@ -163,16 +205,28 @@ def update_aster_spot(selected_extended):
         pd_entries.append(f'"{c}": {core_pd[c]}')
         sd_entries.append(f'"{c}": {core_sd[c]}')
     for c in selected_extended:
-        pd_entries.append(f'"{c["name"]}": {min(5 - c["szDecimals"], 5) if c["szDecimals"] < 5 else 0}')
+        pd_entries.append(
+            f'"{c["name"]}": {min(5 - c["szDecimals"], 5) if c["szDecimals"] < 5 else 0}'
+        )
         sd_entries.append(f'"{c["name"]}": {c["szDecimals"]}')
 
     new_pd = f'def _price_decimals(coin: str) -> int:\n    return {{{", ".join(pd_entries)}}}.get(coin, 4)'
     new_sd = f'def _size_decimals(coin: str) -> int:\n    return {{\n        {", ".join(sd_entries)},\n    }}.get(coin, 2)'
 
-    content = re.sub(r'def _price_decimals\(coin: str\) -> int:.*?\.get\(coin, 4\)',
-                     new_pd, content, count=1, flags=re.DOTALL)
-    content = re.sub(r'def _size_decimals\(coin: str\) -> int:.*?\.get\(coin, 2\)',
-                     new_sd, content, count=1, flags=re.DOTALL)
+    content = re.sub(
+        r"def _price_decimals\(coin: str\) -> int:.*?\.get\(coin, 4\)",
+        new_pd,
+        content,
+        count=1,
+        flags=re.DOTALL,
+    )
+    content = re.sub(
+        r"def _size_decimals\(coin: str\) -> int:.*?\.get\(coin, 2\)",
+        new_sd,
+        content,
+        count=1,
+        flags=re.DOTALL,
+    )
 
     fpath.write_text(content)
     return all_coins
@@ -183,10 +237,10 @@ def update_runner(filepath, var_name, all_coins):
     content = filepath.read_text()
     if filepath.name == "agent_a_runner.py":
         new_val = f'UNIVERSE_A = [\n    {", ".join(json.dumps(c) for c in all_coins[:4])},\n    {", ".join(json.dumps(c) for c in all_coins[4:])},\n]'
-        content = re.sub(r'UNIVERSE_A = \[.*?\]', new_val, content, count=1, flags=re.DOTALL)
+        content = re.sub(r"UNIVERSE_A = \[.*?\]", new_val, content, count=1, flags=re.DOTALL)
     else:
-        new_val = f'UNIVERSE_B = {json.dumps(all_coins)}'
-        content = re.sub(r'UNIVERSE_B = \[.*?\]', new_val, content, count=1, flags=re.DOTALL)
+        new_val = f"UNIVERSE_B = {json.dumps(all_coins)}"
+        content = re.sub(r"UNIVERSE_B = \[.*?\]", new_val, content, count=1, flags=re.DOTALL)
     filepath.write_text(content)
 
 
@@ -249,9 +303,9 @@ def run_screen(force=False):
         log("距上次筛选不足24h，跳过")
         return False
 
-    log("="*55)
+    log("=" * 55)
     log("开始币种池筛选")
-    log("="*55)
+    log("=" * 55)
 
     # 1. 获取市场数据
     log("[1] 获取Hyperliquid全市场数据...")
@@ -263,7 +317,9 @@ def run_screen(force=False):
     selected = screen_coins(universe, ctxs)
     log(f"    选出 {len(selected)} 个扩展币种:")
     for c in selected:
-        log(f'      {c["name"]:6s} Vol=${c["volume"]/1e6:.1f}M OI=${c["oi"]/1e6:.1f}M FR={c["funding"]*100:+.4f}% Score={c["score"]:.2f}')
+        log(
+            f'      {c["name"]:6s} Vol=${c["volume"]/1e6:.1f}M OI=${c["oi"]/1e6:.1f}M FR={c["funding"]*100:+.4f}% Score={c["score"]:.2f}'
+        )
 
     all_coins = CORE_COINS + [c["name"] for c in selected]
 
@@ -287,11 +343,13 @@ def run_screen(force=False):
     # 5. 保存状态
     state = load_state()
     state["last_screen"] = datetime.now(timezone.utc).isoformat()
-    state["history"].append({
-        "ts": state["last_screen"],
-        "coins": all_coins,
-        "extended": [c["name"] for c in selected],
-    })
+    state["history"].append(
+        {
+            "ts": state["last_screen"],
+            "coins": all_coins,
+            "extended": [c["name"] for c in selected],
+        }
+    )
     # 只保留最近30条历史
     state["history"] = state["history"][-30:]
     save_state(state)

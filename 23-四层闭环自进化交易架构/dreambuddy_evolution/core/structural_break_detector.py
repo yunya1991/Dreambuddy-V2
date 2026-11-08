@@ -10,10 +10,10 @@ StructuralBreakDetector — 质变检测
 质变 = 矛盾力量排序变化 AND (以上任一结构性断裂)
 仅排序变化（无结构性断裂）= 量变，不触发质变流程.
 """
+
 from __future__ import annotations
 
 import logging
-import math
 from typing import Any
 
 import numpy as np
@@ -26,12 +26,14 @@ try:
     # 而非方差变化。故采用 Welch's t-test 比较前/后子集均值。
     # breakvar_heteroskedasticity_test 仅测方差变化，对均值漂移不敏感，作为辅助。
     from scipy.stats import ttest_ind
+
     _HAS_CUSUM = True
 except ImportError:
     _HAS_CUSUM = False
 
 try:
     from statsmodels.tsa.regime_switching.markov_regression import MarkovRegression
+
     _HAS_HMM = True
 except ImportError:
     _HAS_HMM = False
@@ -49,8 +51,12 @@ class StructuralBreakDetector:
         self._min_samples = min_samples
         self._alpha = significance
 
-    def detect_all(self, price: np.ndarray, returns: np.ndarray | None = None,
-                   benchmark: np.ndarray | None = None) -> dict[str, Any]:
+    def detect_all(
+        self,
+        price: np.ndarray,
+        returns: np.ndarray | None = None,
+        benchmark: np.ndarray | None = None,
+    ) -> dict[str, Any]:
         """
         运行全部三类检测.
 
@@ -79,9 +85,11 @@ class StructuralBreakDetector:
         result["market_form_shift"] = self.detect_market_form(price)
         result["any_structural_break"] = any(
             v is not None and v.get("detected", False)
-            for v in [result["volatility_regime_shift"],
-                      result["correlation_break"],
-                      result["market_form_shift"]]
+            for v in [
+                result["volatility_regime_shift"],
+                result["correlation_break"],
+                result["market_form_shift"],
+            ]
         )
         return result
 
@@ -145,15 +153,18 @@ class StructuralBreakDetector:
 
             return {
                 "detected": bool(detected),
-                "current_regime": "high_vol" if ratio > 1.5 else ("low_vol" if ratio < 0.67 else "normal"),
+                "current_regime": (
+                    "high_vol" if ratio > 1.5 else ("low_vol" if ratio < 0.67 else "normal")
+                ),
                 "vol_ratio": float(ratio),
                 "method": "simple_threshold",
             }
         except Exception:
             return None
 
-    def detect_correlation_break(self, returns: np.ndarray,
-                                 benchmark: np.ndarray | None) -> dict[str, Any] | None:
+    def detect_correlation_break(
+        self, returns: np.ndarray, benchmark: np.ndarray | None
+    ) -> dict[str, Any] | None:
         """
         相关性结构断裂: CUSUM 检验.
         """
@@ -171,10 +182,12 @@ class StructuralBreakDetector:
         if window < 10:
             return None
 
-        rolling_corr = np.array([
-            np.corrcoef(returns[i:i+window], benchmark[i:i+window])[0, 1]
-            for i in range(returns.size - window + 1)
-        ])
+        rolling_corr = np.array(
+            [
+                np.corrcoef(returns[i : i + window], benchmark[i : i + window])[0, 1]
+                for i in range(returns.size - window + 1)
+            ]
+        )
         rolling_corr = rolling_corr[~np.isnan(rolling_corr)]
         if rolling_corr.size < 20:
             return None
@@ -187,16 +200,11 @@ class StructuralBreakDetector:
                 first_part = rolling_corr[:third]
                 last_part = rolling_corr[-third:]
                 if first_part.size >= 5 and last_part.size >= 5:
-                    t_stat, p_value = ttest_ind(
-                        first_part, last_part, equal_var=False
-                    )
+                    t_stat, p_value = ttest_ind(first_part, last_part, equal_var=False)
                     mean_diff = float(np.mean(first_part) - np.mean(last_part))
                     # 统计显著 + 效应量显著（大样本下微小差异也会 p<0.05，
                     # 需 abs(mean_diff) > 0.3 才认为是实质相关性断裂）
-                    detected = (
-                        float(p_value) < self._alpha
-                        and abs(mean_diff) > 0.3
-                    )
+                    detected = float(p_value) < self._alpha and abs(mean_diff) > 0.3
                     return {
                         "detected": bool(detected),
                         "p_value": float(p_value),
@@ -209,8 +217,8 @@ class StructuralBreakDetector:
 
         # Fallback: 滚动相关系数的 z-score 变化
         try:
-            first_half = rolling_corr[:rolling_corr.size // 2]
-            second_half = rolling_corr[rolling_corr.size // 2:]
+            first_half = rolling_corr[: rolling_corr.size // 2]
+            second_half = rolling_corr[rolling_corr.size // 2 :]
             mean_diff = abs(np.mean(second_half) - np.mean(first_half))
             std_all = np.std(rolling_corr)
             if std_all < 1e-9:
@@ -240,10 +248,10 @@ class StructuralBreakDetector:
             return None
 
         try:
-            h_current = self._hurst_exponent(valid[-self._min_samples:])
+            h_current = self._hurst_exponent(valid[-self._min_samples :])
 
             if valid.size >= self._min_samples * 2:
-                h_prev = self._hurst_exponent(valid[-self._min_samples * 2:-self._min_samples])
+                h_prev = self._hurst_exponent(valid[-self._min_samples * 2 : -self._min_samples])
             else:
                 h_prev = 0.5  # 无前段数据时假设中性
 
@@ -297,7 +305,7 @@ class StructuralBreakDetector:
                 continue
             rs_list = []
             for b in range(num_blocks):
-                block = returns[b * k: (b + 1) * k]
+                block = returns[b * k : (b + 1) * k]
                 if block.size < 2:
                     continue
                 mean_block = np.mean(block)

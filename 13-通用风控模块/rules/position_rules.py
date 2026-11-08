@@ -11,21 +11,20 @@
     5. min_position_floor           - 最小仓位下限
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional  # noqa: I001
 from dataclasses import dataclass
 
 try:
-    from ..core.context import (
+    from ..core.context import (  # noqa: I001
         Signal,
         RiskContext,
-        Direction,
+        Direction,  # noqa: F401
     )
     from ..core.registry import RuleRegistry, RuleCategory
 except ImportError:
-    from core.context import (
+    from core.context import (  # noqa: I001
         Signal,
         RiskContext,
-        Direction,
     )
     from core.registry import RuleRegistry, RuleCategory
 
@@ -33,18 +32,21 @@ except ImportError:
 @dataclass
 class PositionRuleResult:
     """仓位规则结果"""
+
     adjusted_risk: float
     details: Dict[str, Any]
 
 
-def register_default_position_rules(registry: RuleRegistry, config: Optional[Dict[str, Any]] = None):
+def register_default_position_rules(
+    registry: RuleRegistry, config: Optional[Dict[str, Any]] = None
+):
     """注册所有默认仓位规则
 
     Args:
         registry: 规则注册表
         config: 全局配置
     """
-    position_config = (config or {}).get("position", {})
+    position_config = (config or {}).get("position", {})  # noqa: F841
 
     registry.register(
         name="confidence_based_adjustment",
@@ -103,7 +105,7 @@ def confidence_based_adjustment(
         details={
             "confidence": confidence,
             "confidence_multiplier": multiplier,
-        }
+        },
     )
 
 
@@ -138,7 +140,7 @@ def volatility_based_adjustment(
             "atr_pct": atr_pct,
             "baseline_atr": baseline_atr,
             "volatility_multiplier": ratio,
-        }
+        },
     )
 
 
@@ -183,7 +185,7 @@ def max_position_cap(
             "max_position_usdt": max_position_usdt,
             "max_position_pct": max_pos_pct,
             "position_capped": capped,
-        }
+        },
     )
 
 
@@ -226,5 +228,5 @@ def min_position_floor(
         details={
             "min_position_usdt": min_position_usdt,
             "position_floored": floored,
-        }
+        },
     )

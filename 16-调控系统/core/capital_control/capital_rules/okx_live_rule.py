@@ -30,6 +30,7 @@ from capital_control.types import (  # noqa: E402
     CapitalMode,
     CapitalResult,
 )
+
 from ._shared import (  # noqa: E402
     _static_from_config,
     build_result_from_system,
@@ -64,8 +65,10 @@ def okx_live_capital_handler(
     """
     config = config or {}
     ctx = context if isinstance(context, dict) else {}
-    mode = ctx.get("mode", CapitalMode.DYNAMIC) if isinstance(ctx.get("mode"), CapitalMode) else (
-        CapitalMode.FIXED if ctx.get("mode") == "fixed" else CapitalMode.DYNAMIC
+    mode = (
+        ctx.get("mode", CapitalMode.DYNAMIC)
+        if isinstance(ctx.get("mode"), CapitalMode)
+        else (CapitalMode.FIXED if ctx.get("mode") == "fixed" else CapitalMode.DYNAMIC)
     )
     static_budget = _static_from_config(config, _SYSTEM_NAME, _DEFAULT_STATIC)
     return build_result_from_system(

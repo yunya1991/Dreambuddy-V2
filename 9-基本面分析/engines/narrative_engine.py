@@ -15,6 +15,7 @@
 
 FAIL-OPEN：任何异常 → 返回 {"narratives": [], "regulation_policy_traj": 0.0, "regulation_policy_heat": 0.0}。
 """
+
 from __future__ import annotations
 
 import sys
@@ -101,6 +102,7 @@ def _coerce(v: Any) -> Dict[str, Any]:
             # 允许列表是叙事对象 dataclass；尝试 asdict
             try:
                 from dataclasses import asdict
+
                 out["narratives"] = [asdict(x) for x in v if hasattr(x, "__dataclass_fields__")]
             except Exception:
                 pass
@@ -108,7 +110,7 @@ def _coerce(v: Any) -> Dict[str, Any]:
         narr = v.get("narratives")
         if isinstance(narr, list):
             out["narratives"] = [x for x in narr if isinstance(x, dict)]
-        for k_src, k_dst, default in (
+        for k_src, k_dst, default in (  # noqa: B007
             ("regulation_policy_traj", "regulation_policy_traj", 0.0),
             ("regulation_policy_heat", "regulation_policy_heat", 0.0),
             ("traj", "regulation_policy_traj", 0.0),

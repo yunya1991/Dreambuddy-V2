@@ -17,18 +17,18 @@
 4. 收益计算（前向测试）
 """
 
-import json
-import sqlite3
-from dataclasses import dataclass, field
+import json  # noqa: I001
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import statistics
 
 
 @dataclass
 class BacktestConfig:
     """回测配置"""
+
     start_date: str
     end_date: str
     initial_capital: float = 100000.0
@@ -40,6 +40,7 @@ class BacktestConfig:
 @dataclass
 class Trade:
     """交易记录"""
+
     entry_date: str
     entry_price: float
     exit_date: Optional[str] = None
@@ -54,6 +55,7 @@ class Trade:
 @dataclass
 class BacktestResult:
     """回测结果"""
+
     trades: List[Trade]
     total_return: float
     annualized_return: float
@@ -102,7 +104,7 @@ class NewsSignalBacktester:
             print(f"[WARN] 价格数据文件不存在：{price_file}")
             return self._generate_mock_price_data()
 
-        with open(price_file, 'r', encoding='utf-8') as f:
+        with open(price_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def load_news_data(self, data_dir: Path) -> List[Dict]:
@@ -118,7 +120,7 @@ class NewsSignalBacktester:
 
         all_news = []
         for news_file in news_dir.glob("*.json"):
-            with open(news_file, 'r', encoding='utf-8') as f:
+            with open(news_file, "r", encoding="utf-8") as f:
                 news_data = json.load(f)
                 if isinstance(news_data, list):
                     all_news.extend(news_data)
@@ -132,6 +134,7 @@ class NewsSignalBacktester:
     def _generate_mock_price_data(self) -> Dict[str, Dict]:
         """生成模拟价格数据用于测试"""
         import random
+
         random.seed(42)  # 可重复结果
 
         prices = {}
@@ -153,7 +156,7 @@ class NewsSignalBacktester:
                     "high": high,
                     "low": low,
                     "close": close,
-                    "volume": volume
+                    "volume": volume,
                 }
                 base_price = close
 
@@ -164,6 +167,7 @@ class NewsSignalBacktester:
     def _generate_mock_news_data(self) -> List[Dict]:
         """生成模拟新闻数据用于测试"""
         import random
+
         random.seed(42)
 
         news = []
@@ -193,19 +197,19 @@ class NewsSignalBacktester:
 
                     news_item = {
                         "title": template.format(
-                            amount=random.randint(1, 10),
-                            price=random.randint(8, 15)
+                            amount=random.randint(1, 10), price=random.randint(8, 15)
                         ),
                         "summary": f"模拟新闻内容 {i}",
                         "published_at": current_date.replace(
-                            hour=random.randint(0, 23),
-                            minute=random.randint(0, 59)
+                            hour=random.randint(0, 23), minute=random.randint(0, 59)
                         ).isoformat(),
                         "category": random.choice(["onchain_data", "fed", "market_analysis"]),
                         "source_confidence": random.choice(["high", "medium", "low"]),
                         "impact_horizon": random.choice(["T0", "T1", "T2"]),
-                        "sentiment_score": random.uniform(0.3, 1.0) if is_positive else random.uniform(-1.0, -0.3),
-                        "risk_flags": [] if random.random() > 0.3 else ["单源消息"]
+                        "sentiment_score": (
+                            random.uniform(0.3, 1.0) if is_positive else random.uniform(-1.0, -0.3)
+                        ),
+                        "risk_flags": [] if random.random() > 0.3 else ["单源消息"],
                     }
                     news.append(news_item)
 
@@ -267,6 +271,7 @@ class NewsSignalBacktester:
         # 综合信号：使用累积和而非平均，使信号更具区分度
         # 乘以新闻数量的平方根，反映信息密度
         import math
+
         composite = sum(signals) / len(signals) * math.sqrt(len(signals))
 
         # 归一化到 -1 到 1 之间
@@ -290,10 +295,9 @@ class NewsSignalBacktester:
             return self._empty_result()
 
         # 筛选回测期间
-        dates = sorted([
-            d for d in prices.keys()
-            if self.config.start_date <= d <= self.config.end_date
-        ])
+        dates = sorted(
+            [d for d in prices.keys() if self.config.start_date <= d <= self.config.end_date]
+        )
 
         if len(dates) < 2:
             return self._empty_result()
@@ -348,17 +352,21 @@ class NewsSignalBacktester:
                         if entry_date:
                             pnl_pct = (close_price - entry_price) / entry_price
                             pnl = equity * prev_position * pnl_pct
-                            trades.append(Trade(
-                                entry_date=entry_date,
-                                entry_price=entry_price,
-                                exit_date=date,
-                                exit_price=close_price,
-                                position=prev_position,
-                                signal=last_signal,
-                                pnl=pnl,
-                                pnl_pct=pnl_pct,
-                                news_count=len([n for n in news if date in n.get("published_at", "")])
-                            ))
+                            trades.append(
+                                Trade(
+                                    entry_date=entry_date,
+                                    entry_price=entry_price,
+                                    exit_date=date,
+                                    exit_price=close_price,
+                                    position=prev_position,
+                                    signal=last_signal,
+                                    pnl=pnl,
+                                    pnl_pct=pnl_pct,
+                                    news_count=len(
+                                        [n for n in news if date in n.get("published_at", "")]
+                                    ),
+                                )
+                            )
                             equity += pnl
                         entry_date = None
 
@@ -367,21 +375,25 @@ class NewsSignalBacktester:
             # 计算当日权益
             if position > 0 and close_price > 0 and entry_price > 0:
                 unrealized_pnl = (close_price - entry_price) / entry_price
-                daily_equity.append({
-                    "date": date,
-                    "equity": equity * (1 + position * unrealized_pnl),
-                    "price": close_price,
-                    "signal": signal,
-                    "position": position
-                })
+                daily_equity.append(
+                    {
+                        "date": date,
+                        "equity": equity * (1 + position * unrealized_pnl),
+                        "price": close_price,
+                        "signal": signal,
+                        "position": position,
+                    }
+                )
             else:
-                daily_equity.append({
-                    "date": date,
-                    "equity": equity,
-                    "price": close_price,
-                    "signal": signal,
-                    "position": position
-                })
+                daily_equity.append(
+                    {
+                        "date": date,
+                        "equity": equity,
+                        "price": close_price,
+                        "signal": signal,
+                        "position": position,
+                    }
+                )
 
             last_signal = signal
 
@@ -408,10 +420,12 @@ class NewsSignalBacktester:
         # 夏普比率
         daily_returns = []
         for i in range(1, len(equities)):
-            daily_returns.append((equities[i] - equities[i-1]) / equities[i-1])
+            daily_returns.append((equities[i] - equities[i - 1]) / equities[i - 1])
 
         if daily_returns and statistics.stdev(daily_returns) > 0:
-            sharpe_ratio = (statistics.mean(daily_returns) / statistics.stdev(daily_returns)) * (252 ** 0.5)
+            sharpe_ratio = (statistics.mean(daily_returns) / statistics.stdev(daily_returns)) * (
+                252**0.5
+            )
         else:
             sharpe_ratio = 0
 
@@ -431,7 +445,7 @@ class NewsSignalBacktester:
         # 盈亏比
         gross_profit = sum(t.pnl for t in trades if t.pnl > 0)
         gross_loss = abs(sum(t.pnl for t in trades if t.pnl < 0))
-        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
         # 平均盈亏
         avg_trade_pnl = statistics.mean([t.pnl for t in trades]) if trades else 0
@@ -446,7 +460,7 @@ class NewsSignalBacktester:
             profit_factor=profit_factor,
             avg_trade_pnl=avg_trade_pnl,
             total_trades=len(trades),
-            daily_equity=daily_equity
+            daily_equity=daily_equity,
         )
 
     def _empty_result(self) -> BacktestResult:
@@ -461,7 +475,7 @@ class NewsSignalBacktester:
             profit_factor=0,
             avg_trade_pnl=0,
             total_trades=0,
-            daily_equity=[]
+            daily_equity=[],
         )
 
     def generate_report(self, result: BacktestResult) -> str:
@@ -513,7 +527,9 @@ class NewsSignalBacktester:
         else:
             report += "⚠️ 回撤较大：需要考虑风险管理\n"
 
-        report += "\n================================================================================\n"
+        report += (
+            "\n================================================================================\n"
+        )
 
         return report
 
@@ -525,7 +541,7 @@ def run_backtest_example():
         end_date="2024-03-31",
         initial_capital=100000,
         transaction_cost=0.001,
-        lookback_days=7
+        lookback_days=7,
     )
 
     backtester = NewsSignalBacktester(config)

@@ -5,13 +5,12 @@
 完整闭环: 检测 → 诊断 → 修复 → 验证 → 报告
 """
 
-import os
 import json
 import re
 import sys
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # 配置
 ARTIFACTS_ROOT = Path.home() / ".workbuddy" / "artifacts"
@@ -44,7 +43,7 @@ class AlignmentManager:
             "phases": {},
             "issues": [],
             "fixes": [],
-            "statistics": {"total_files": 0, "aligned": 0, "fixed": 0}
+            "statistics": {"total_files": 0, "aligned": 0, "fixed": 0},
         }
 
     def run(self, mode: str = "check", category: Optional[str] = None):
@@ -101,18 +100,20 @@ class AlignmentManager:
             self.results["phases"]["directory"][cat_id] = {
                 "path": str(cat_path),
                 "exists": exists,
-                "status": "OK" if exists else "MISSING"
+                "status": "OK" if exists else "MISSING",
             }
 
             if not exists:
                 print(f"  ❌ {cat_id}: 目录不存在")
-                self.results["issues"].append({
-                    "phase": "directory",
-                    "severity": "HIGH",
-                    "category": cat_id,
-                    "issue": f"目录 {cat_id}/ 不存在",
-                    "fix_action": "create_directory"
-                })
+                self.results["issues"].append(
+                    {
+                        "phase": "directory",
+                        "severity": "HIGH",
+                        "category": cat_id,
+                        "issue": f"目录 {cat_id}/ 不存在",
+                        "fix_action": "create_directory",
+                    }
+                )
             else:
                 print(f"  ✅ {cat_id}: OK ({cat_info['label']})")
 
@@ -139,33 +140,37 @@ class AlignmentManager:
                     with open(index_path) as f:
                         data = json.load(f)
                     valid = "category" in data and "artifacts" in data
-                except:
+                except:  # noqa: E722
                     valid = False
 
             self.results["phases"]["index"][cat_id] = {
                 "exists": exists,
                 "valid": valid,
-                "status": "OK" if (exists and valid) else "INVALID"
+                "status": "OK" if (exists and valid) else "INVALID",
             }
 
             if not exists:
                 print(f"  ⚠️ {cat_id}/index.json: 不存在")
-                self.results["issues"].append({
-                    "phase": "index",
-                    "severity": "MEDIUM",
-                    "category": cat_id,
-                    "issue": f"{cat_id}/index.json 不存在",
-                    "fix_action": "rebuild_index"
-                })
+                self.results["issues"].append(
+                    {
+                        "phase": "index",
+                        "severity": "MEDIUM",
+                        "category": cat_id,
+                        "issue": f"{cat_id}/index.json 不存在",
+                        "fix_action": "rebuild_index",
+                    }
+                )
             elif not valid:
                 print(f"  ⚠️ {cat_id}/index.json: 格式无效")
-                self.results["issues"].append({
-                    "phase": "index",
-                    "severity": "MEDIUM",
-                    "category": cat_id,
-                    "issue": f"{cat_id}/index.json 格式无效",
-                    "fix_action": "rebuild_index"
-                })
+                self.results["issues"].append(
+                    {
+                        "phase": "index",
+                        "severity": "MEDIUM",
+                        "category": cat_id,
+                        "issue": f"{cat_id}/index.json 格式无效",
+                        "fix_action": "rebuild_index",
+                    }
+                )
             else:
                 print(f"  ✅ {cat_id}/index.json: OK")
 
@@ -201,49 +206,63 @@ class AlignmentManager:
 
                     # 检查标签
                     if not file_tags:
-                        issues.append({
-                            "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
-                            "issue": "缺少tags",
-                            "status": "missing_tags"
-                        })
+                        issues.append(
+                            {
+                                "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
+                                "issue": "缺少tags",
+                                "status": "missing_tags",
+                            }
+                        )
                     elif not any(t in valid_tags for t in file_tags):
-                        issues.append({
-                            "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
-                            "issue": f"标签错误: {file_tags}",
-                            "status": "wrong_tags",
-                            "expected": list(valid_tags)
-                        })
+                        issues.append(
+                            {
+                                "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
+                                "issue": f"标签错误: {file_tags}",
+                                "status": "wrong_tags",
+                                "expected": list(valid_tags),
+                            }
+                        )
                     else:
                         files_ok += 1
                         self.results["statistics"]["aligned"] += 1
 
                 except Exception as e:
-                    issues.append({
-                        "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
-                        "issue": f"读取失败: {e}",
-                        "status": "read_error"
-                    })
+                    issues.append(
+                        {
+                            "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
+                            "issue": f"读取失败: {e}",
+                            "status": "read_error",
+                        }
+                    )
 
             self.results["phases"]["tags"][cat_id] = {
                 "files_checked": files_checked,
                 "files_ok": files_ok,
                 "issues": issues,
-                "alignment_rate": files_ok / files_checked if files_checked > 0 else 100
+                "alignment_rate": files_ok / files_checked if files_checked > 0 else 100,
             }
 
             # 报告问题
             for issue in issues:
-                self.results["issues"].append({
-                    "phase": "tags",
-                    "severity": "LOW",
-                    "category": cat_id,
-                    "file": issue["file"],
-                    "issue": issue["issue"],
-                    "fix_action": "fix_tags" if issue["status"] in ["missing_tags", "wrong_tags"] else "manual"
-                })
+                self.results["issues"].append(
+                    {
+                        "phase": "tags",
+                        "severity": "LOW",
+                        "category": cat_id,
+                        "file": issue["file"],
+                        "issue": issue["issue"],
+                        "fix_action": (
+                            "fix_tags"
+                            if issue["status"] in ["missing_tags", "wrong_tags"]
+                            else "manual"
+                        ),
+                    }
+                )
 
             rate = self.results["phases"]["tags"][cat_id]["alignment_rate"] * 100
-            print(f"  {'✅' if rate == 100 else '⚠️'} {cat_id}: {files_ok}/{files_checked} ({rate:.0f}%)")
+            print(
+                f"  {'✅' if rate == 100 else '⚠️'} {cat_id}: {files_ok}/{files_checked} ({rate:.0f}%)"
+            )
 
     def phase4_frontmatter(self, category: Optional[str] = None):
         """Phase 4: frontmatter完整性检查"""
@@ -276,36 +295,38 @@ class AlignmentManager:
                     missing = [f for f in required_fields if f not in fm]
 
                     if missing:
-                        issues.append({
-                            "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
-                            "missing": missing
-                        })
+                        issues.append(
+                            {"file": str(md_file.relative_to(ARTIFACTS_ROOT)), "missing": missing}
+                        )
                     else:
                         files_ok += 1
 
                 except Exception as e:
-                    issues.append({
-                        "file": str(md_file.relative_to(ARTIFACTS_ROOT)),
-                        "error": str(e)
-                    })
+                    issues.append(
+                        {"file": str(md_file.relative_to(ARTIFACTS_ROOT)), "error": str(e)}
+                    )
 
             self.results["phases"]["frontmatter"][cat_id] = {
                 "files_checked": files_checked,
                 "files_ok": files_ok,
-                "issues": issues
+                "issues": issues,
             }
 
             for issue in issues:
-                self.results["issues"].append({
-                    "phase": "frontmatter",
-                    "severity": "MEDIUM",
-                    "category": cat_id,
-                    "file": issue["file"],
-                    "issue": f"缺少字段: {issue.get('missing', issue.get('error'))}",
-                    "fix_action": "add_frontmatter"
-                })
+                self.results["issues"].append(
+                    {
+                        "phase": "frontmatter",
+                        "severity": "MEDIUM",
+                        "category": cat_id,
+                        "file": issue["file"],
+                        "issue": f"缺少字段: {issue.get('missing', issue.get('error'))}",
+                        "fix_action": "add_frontmatter",
+                    }
+                )
 
-            print(f"  {'✅' if files_ok == files_checked else '⚠️'} {cat_id}: {files_ok}/{files_checked} 完整")
+            print(
+                f"  {'✅' if files_ok == files_checked else '⚠️'} {cat_id}: {files_ok}/{files_checked} 完整"
+            )
 
     def extract_frontmatter(self, content: str) -> Dict[str, Any]:
         """提取YAML frontmatter"""
@@ -314,8 +335,9 @@ class AlignmentManager:
             if len(parts) >= 3:
                 try:
                     import yaml
+
                     return yaml.safe_load(parts[1]) or {}
-                except:
+                except:  # noqa: E722
                     return {}
         return {}
 
@@ -324,9 +346,7 @@ class AlignmentManager:
         total = self.results["statistics"]["total_files"]
         aligned = self.results["statistics"]["aligned"]
 
-        self.results["statistics"]["alignment_rate"] = (
-            aligned / total * 100 if total > 0 else 100.0
-        )
+        self.results["statistics"]["alignment_rate"] = aligned / total * 100 if total > 0 else 100.0
         self.results["statistics"]["issues_count"] = len(self.results["issues"])
 
     def auto_fix(self):
@@ -385,7 +405,7 @@ class AlignmentManager:
         """修复文件标签"""
         valid_tags = CATEGORIES[category]["tags"]
         content = file_path.read_text(encoding="utf-8")
-        fm = self.extract_frontmatter(content)
+        fm = self.extract_frontmatter(content)  # noqa: F841
 
         # 确保有frontmatter
         if not content.startswith("---"):
@@ -435,27 +455,27 @@ status: active
 
             fm = self.extract_frontmatter(md_file.read_text(encoding="utf-8"))
 
-            artifacts.append({
-                "artifact_id": md_file.stem,
-                "title": fm.get("title", md_file.stem.replace("_", " ").title()),
-                "filename": str(md_file.relative_to(cat_path)),
-                "tags": fm.get("tags", CATEGORIES[category]["tags"]),
-                "frontmatter": {
-                    "department": fm.get("department", "knowledge"),
-                    "type": fm.get("type", "knowledge_article"),
-                    "status": fm.get("status", "active")
-                },
-                "status": fm.get("status", "active")
-            })
+            artifacts.append(
+                {
+                    "artifact_id": md_file.stem,
+                    "title": fm.get("title", md_file.stem.replace("_", " ").title()),
+                    "filename": str(md_file.relative_to(cat_path)),
+                    "tags": fm.get("tags", CATEGORIES[category]["tags"]),
+                    "frontmatter": {
+                        "department": fm.get("department", "knowledge"),
+                        "type": fm.get("type", "knowledge_article"),
+                        "status": fm.get("status", "active"),
+                    },
+                    "status": fm.get("status", "active"),
+                }
+            )
 
         index_data = {
             "category": category,
             "label": CATEGORIES[category]["label"],
             "last_updated": datetime.now().isoformat(),
             "artifacts": artifacts,
-            "statistics": {
-                "total_artifacts": len(artifacts)
-            }
+            "statistics": {"total_artifacts": len(artifacts)},
         }
 
         index_path = cat_path / "index.json"
@@ -527,7 +547,11 @@ status: active
             fm_data = self.results["phases"]["frontmatter"].get(cat_id, {})
 
             tags_rate = tags_data.get("alignment_rate", 1) * 100
-            fm_rate = (fm_data.get("files_ok", 0) / fm_data.get("files_checked", 1) * 100) if fm_data.get("files_checked", 0) > 0 else 100
+            fm_rate = (
+                (fm_data.get("files_ok", 0) / fm_data.get("files_checked", 1) * 100)
+                if fm_data.get("files_checked", 0) > 0
+                else 100
+            )
 
             report += f"| {cat_info['label']} | {'✅' if dir_status else '❌'} | {'✅' if idx_status else '❌'} | {tags_rate:.0f}% | {fm_rate:.0f}% |\n"
 
@@ -535,7 +559,9 @@ status: active
         if self.results["issues"]:
             report += f"\n## 三、发现问题 ({len(self.results['issues'])}项)\n\n"
             for i, issue in enumerate(self.results["issues"], 1):
-                severity_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(issue["severity"], "⚪")
+                severity_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}.get(
+                    issue["severity"], "⚪"
+                )
                 report += f"{i}. {severity_icon} [{issue['severity']}] {issue['issue']}\n"
                 if "file" in issue:
                     report += f"   - 文件: `{issue['file']}`\n"
@@ -547,7 +573,7 @@ status: active
             for fix in self.results["fixes"]:
                 report += f"- ✅ `{fix['action']}`: {fix['target']}\n"
 
-        report += f"\n---\n\n**报告生成器**: artifact-alignment-manager v2.0\n"
+        report += "\n---\n\n**报告生成器**: artifact-alignment-manager v2.0\n"
 
         return report
 
@@ -580,7 +606,7 @@ status: active
             print(f"已修复: {stats.get('fixed', 0)}")
 
         if self.results["issues"] and mode == "check":
-            print(f"\n💡 提示: 运行 --fix 模式自动修复问题")
+            print("\n💡 提示: 运行 --fix 模式自动修复问题")
 
 
 def main():

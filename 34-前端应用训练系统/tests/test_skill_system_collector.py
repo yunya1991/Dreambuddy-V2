@@ -8,9 +8,10 @@
   5. FAIL-OPEN：registry 不存在时返回空列表
   6. 非 active SKILL 被跳过
 """
+
+import json
 import os
 import sys
-import json
 import tempfile
 import unittest
 
@@ -113,6 +114,7 @@ class SkillSystemCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     def test_collect_active_skills(self):
@@ -150,17 +152,20 @@ class SkillSystemCollectorTest(unittest.TestCase):
 
     def test_source_name(self):
         from skill_system_collector import SkillSystemCollector
+
         collector = SkillSystemCollector(registry_path=self._registry_path)
         self.assertEqual(collector.get_source_name(), "skill")
 
     def test_quality_threshold(self):
         from skill_system_collector import SkillSystemCollector
+
         collector = SkillSystemCollector(registry_path=self._registry_path)
         self.assertEqual(collector.get_quality_threshold(), "B")
 
     def test_fail_open_registry_missing(self):
         """registry.json 不存在时返回空列表。"""
         from skill_system_collector import SkillSystemCollector
+
         collector = SkillSystemCollector(registry_path="/nonexistent/registry.json")
         cases = collector.fetch_cases(limit=10)
         self.assertEqual(cases, [])

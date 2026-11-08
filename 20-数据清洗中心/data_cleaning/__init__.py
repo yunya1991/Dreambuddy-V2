@@ -9,6 +9,7 @@ P1 打通：Silver → DAL 写入
     from data_cleaning import DalSink
     DalSink().write_silver(silver_record, source=..., category=..., sub_category=...)
 """
+
 from data_cleaning.contract import (
     CleanAction,
     CleanedDF,

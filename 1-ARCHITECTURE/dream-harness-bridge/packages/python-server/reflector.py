@@ -15,11 +15,12 @@
 HC7: 策略标签前置 — 无策略标签时跳过策略分析
 HC1: FAIL-OPEN — 无 LLM 或异常时返回降级结果
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Optional
 
@@ -30,20 +31,20 @@ logger = logging.getLogger("debate.reflector")
 # ── 策略标签清单 (§4.0) ───────────────────────────────────────
 
 ALL_STRATEGY_TAGS = [
-    "definition-lock",          # 定义锁定
-    "preemptive-refutation",     # 预防性反驳
-    "evidence-heavy",            # 证据密集
-    "counterplan",               # 替代方案
-    "disadvantage",              # 劣势论证
-    "value-flip",                # 价值翻转
-    "burden-delay",              # 拖延举证
-    "kritik",                     # 批判论证
+    "definition-lock",  # 定义锁定
+    "preemptive-refutation",  # 预防性反驳
+    "evidence-heavy",  # 证据密集
+    "counterplan",  # 替代方案
+    "disadvantage",  # 劣势论证
+    "value-flip",  # 价值翻转
+    "burden-delay",  # 拖延举证
+    "kritik",  # 批判论证
     # 正方专属
-    "stop-counterplan",          # 反方案应对
-    "burden-of-proof",           # 举证责任
+    "stop-counterplan",  # 反方案应对
+    "burden-of-proof",  # 举证责任
     # 反方专属
-    "definition-attack",        # 定义攻击
-    "counter-example",          # 反例构造
+    "definition-attack",  # 定义攻击
+    "counter-example",  # 反例构造
 ]
 
 # ── 策略提取 Prompt (§4.0 Layer B) ─────────────────────────────
@@ -90,6 +91,7 @@ REFLECTION_PROMPT = """你是赛后反思助手。请对以下辩论进行5步�
 
 # ── ReflectionReport ──────────────────────────────────────────
 
+
 @dataclass
 class ReflectionReport:
     """赛后反思报告 (SPEC §4.2)。
@@ -107,6 +109,7 @@ class ReflectionReport:
         memory_id: Step 5 认知系统 memory_id
         timestamp: 时间戳
     """
+
     topic: str
     review: dict
     strategy_analysis: dict
@@ -148,6 +151,7 @@ def _extract_argument_text(turn: dict) -> str:
 
 
 # ── Reflector ─────────────────────────────────────────────────
+
 
 class Reflector:
     """赛后反思器 (SPEC §4 Layer 2)。
@@ -244,10 +248,9 @@ class Reflector:
 
         # HC7: 策略标签前置 — 先提取策略
         strategies = self.extract_strategies(transcript)
-        strategy_tags = list(set(
-            strategies.get("bull_strategies", []) +
-            strategies.get("bear_strategies", [])
-        ))
+        strategy_tags = list(
+            set(strategies.get("bull_strategies", []) + strategies.get("bear_strategies", []))
+        )
 
         # 无 LLM → 降级
         if self._llm_fn is None:
@@ -310,12 +313,21 @@ class Reflector:
             # 从 AdjudicationResult 推导证据分析
             evidence_depth = getattr(adjudication_result, "evidence_depth", {})
             fact_auth = getattr(adjudication_result, "dimension_comparison", {}).get(
-                "fact_authenticity", {})
+                "fact_authenticity", {}
+            )
             evidence_analysis = {
-                "bull_fact_score": fact_auth.get("bull", 3.0) if isinstance(fact_auth, dict) else 3.0,
-                "bear_fact_score": fact_auth.get("bear", 3.0) if isinstance(fact_auth, dict) else 3.0,
-                "bull_evidence_depth": evidence_depth.get("bull", 3) if isinstance(evidence_depth, dict) else 3,
-                "bear_evidence_depth": evidence_depth.get("bear", 3) if isinstance(evidence_depth, dict) else 3,
+                "bull_fact_score": (
+                    fact_auth.get("bull", 3.0) if isinstance(fact_auth, dict) else 3.0
+                ),
+                "bear_fact_score": (
+                    fact_auth.get("bear", 3.0) if isinstance(fact_auth, dict) else 3.0
+                ),
+                "bull_evidence_depth": (
+                    evidence_depth.get("bull", 3) if isinstance(evidence_depth, dict) else 3
+                ),
+                "bear_evidence_depth": (
+                    evidence_depth.get("bear", 3) if isinstance(evidence_depth, dict) else 3
+                ),
             }
 
             # Step 3: 缺口
@@ -343,14 +355,17 @@ class Reflector:
             memory_id = None
             if self._cognitive is not None:
                 try:
-                    record_content = json.dumps({
-                        "type": "reflection",
-                        "topic": topic,
-                        "winner": winner,
-                        "strategy_tags": strategy_tags,
-                        "gaps": gaps,
-                        "recommendations": recommendations,
-                    }, ensure_ascii=False)
+                    record_content = json.dumps(
+                        {
+                            "type": "reflection",
+                            "topic": topic,
+                            "winner": winner,
+                            "strategy_tags": strategy_tags,
+                            "gaps": gaps,
+                            "recommendations": recommendations,
+                        },
+                        ensure_ascii=False,
+                    )
                     tags = f"debate,reflection,{topic[:20]}"
                     result = self._cognitive.record(
                         content=record_content,
@@ -390,9 +405,9 @@ class Reflector:
         strategy_tags: list[str],
     ) -> ReflectionReport:
         """降级报告：无 LLM 或异常时使用 AdjudicationResult 兜底。"""
-        winner = getattr(adjudication_result, "winner", "draw")
+        winner = getattr(adjudication_result, "winner", "draw")  # noqa: F841
         rfd = getattr(adjudication_result, "rfd", "")
-        clash = getattr(adjudication_result, "key_clash_points", [])
+        clash = getattr(adjudication_result, "key_clash_points", [])  # noqa: F841
 
         return ReflectionReport(
             topic=topic,

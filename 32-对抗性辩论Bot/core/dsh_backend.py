@@ -5,6 +5,7 @@
 - 输出统一为 DebateResult v1 dict，供 MCP 壳/其他 Agent 消费
 - 不传 cognitive_adapter（避免 record/verify 写入），保持只读
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -31,6 +32,7 @@ def _load_dsh():
 
 def _sync_llm_fn(llm: Any):
     """把异步 LLMClient 适配为 DSH 需要的同步 (prompt, max_tokens)->str。"""
+
     def call(prompt: str, max_tokens: int = 600) -> str:
         return asyncio.run(
             llm.chat(
@@ -142,7 +144,8 @@ def run_dsh_debate_sync(
         from core.research import collect_research, merge_background
 
         brief = collect_research(
-            topic, background,
+            topic,
+            background,
             sources=research_sources,
             max_items=research_max_items,
             timeout=research_timeout,
@@ -171,10 +174,15 @@ def run_dsh_debate_sync(
     else:
         raw = asyncio.run(engine.run_deep(topic, background))
         transcript = list(raw.get("transcript") or [])
-        verdict = dict(raw.get("verdict") or {
-            "summary": "裁判未返回裁决", "winner": None,
-            "key_insights": [], "topic_angle": "",
-        })
+        verdict = dict(
+            raw.get("verdict")
+            or {
+                "summary": "裁判未返回裁决",
+                "winner": None,
+                "key_insights": [],
+                "topic_angle": "",
+            }
+        )
         verdict["winner"] = _normalize_winner(verdict.get("winner"))
         adjudication = None
         try:
@@ -186,7 +194,9 @@ def run_dsh_debate_sync(
             degraded = True
             verdict = dict(verdict)
             verdict.setdefault("summary", "")
-            verdict["summary"] = (verdict.get("summary", "") + f" [adjudication_failed:{type(exc).__name__}]").strip()
+            verdict["summary"] = (
+                verdict.get("summary", "") + f" [adjudication_failed:{type(exc).__name__}]"
+            ).strip()
         rounds = 2
 
     meta = {

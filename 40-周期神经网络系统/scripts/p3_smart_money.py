@@ -5,12 +5,13 @@ CFTC：CME Bitcoin 期货非商业/商业头寸与未平仓量（周更，public
 稳定币：DefiLlama USDT/USDC 流通量及日/周/月环比（日更）
 入库 data_center.db（records 表既有格式）+ 扩展 fund_flow.json 的 smart_money 字段。
 """
+
 import json
+import os
 import sqlite3
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
-import os
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
@@ -38,22 +39,36 @@ def upsert_record(conn, source, category, sub, ts_iso, metrics, raw):
         "INSERT OR IGNORE INTO records "
         "(dedupe_key, source, category, sub_category, timestamp, metrics, events, timeseries, raw, schema_version) "
         "VALUES (?, ?, ?, ?, ?, ?, '[]', '[]', ?, 'v1')",
-        (dedupe_key, source, category, sub, ts_iso,
-         json.dumps(metrics, ensure_ascii=False), json.dumps(raw, ensure_ascii=False)),
+        (
+            dedupe_key,
+            source,
+            category,
+            sub,
+            ts_iso,
+            json.dumps(metrics, ensure_ascii=False),
+            json.dumps(raw, ensure_ascii=False),
+        ),
     )
     return cur.rowcount > 0
 
 
 def fetch_cftc_btc(conn):
     """CME Bitcoin 期货持仓（主合约，周更）。"""
-    rows = http_json(CFTC_URL, {
-        "$limit": 60,
-        "commodity_name": "BITCOIN",
-        "$order": "report_date_as_yyyy_mm_dd DESC",
-    })
+    rows = http_json(
+        CFTC_URL,
+        {
+            "$limit": 60,
+            "commodity_name": "BITCOIN",
+            "$order": "report_date_as_yyyy_mm_dd DESC",
+        },
+    )
     # 主合约：CHICAGO MERCANTILE EXCHANGE 的 BITCOIN（非 Nano/Micro）
-    cme = [r for r in rows if "CHICAGO MERCANTILE" in r.get("market_and_exchange_names", "")
-           and r.get("contract_market_name", "").strip() == "BITCOIN"]
+    cme = [
+        r
+        for r in rows
+        if "CHICAGO MERCANTILE" in r.get("market_and_exchange_names", "")
+        and r.get("contract_market_name", "").strip() == "BITCOIN"
+    ]
     inserted = 0
     latest = None
     for r in cme:
@@ -123,7 +138,9 @@ def main():
 
     print(f"CFTC BTC CME: rows={cftc_n} inserted={cftc_ins} latest={cftc_latest}")
     for sym, m in stable.items():
-        print(f"{sym}: circ={m['circulating_usd']:.0f} 1d={m['change_1d_pct']}% 7d={m['change_7d_pct']}% 30d={m['change_30d_pct']}%")
+        print(
+            f"{sym}: circ={m['circulating_usd']:.0f} 1d={m['change_1d_pct']}% 7d={m['change_7d_pct']}% 30d={m['change_30d_pct']}%"
+        )
 
     # 扩展 fund_flow.json 的 smart_money 字段
     with open(FF) as f:

@@ -16,6 +16,7 @@ FAIL-OPEN：任何异常返回空列表（决策链路退化为纯 BM25 召回�
     extra = vector_supplement(context="node:x dir:LONG", top_k=5)
     # → [{"score": 0.38, "path": "...", "snippet": "...", "heading": "..."}]
 """
+
 from __future__ import annotations
 
 import json
@@ -43,7 +44,10 @@ def vector_supplement(context: str, top_k: int = 5) -> List[Dict[str, Any]]:
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.settimeout(_TIMEOUT)
         s.connect(_DAEMON_SOCK)
-        s.sendall(json.dumps({"query": query, "top_k": max(1, min(int(top_k), 20))}).encode("utf-8") + b"\n")
+        s.sendall(
+            json.dumps({"query": query, "top_k": max(1, min(int(top_k), 20))}).encode("utf-8")
+            + b"\n"
+        )
         buf = b""
         while b"\n" not in buf:
             chunk = s.recv(65536)
@@ -63,13 +67,15 @@ def vector_supplement(context: str, top_k: int = 5) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
         for it in items:
             score = float(it.get("score") or 0.0)
-            out.append({
-                "score": round(min(score, 1.0), 4),
-                "path": str(it.get("source_file") or ""),
-                "snippet": str(it.get("snippet") or "")[:120],
-                "heading": str(it.get("heading") or ""),
-                "source_tag": "fis_vector_supplement",
-            })
+            out.append(
+                {
+                    "score": round(min(score, 1.0), 4),
+                    "path": str(it.get("source_file") or ""),
+                    "snippet": str(it.get("snippet") or "")[:120],
+                    "heading": str(it.get("heading") or ""),
+                    "source_tag": "fis_vector_supplement",
+                }
+            )
         return out
     except Exception:
         return []  # FAIL-OPEN

@@ -3,12 +3,13 @@
 测试：去掉bear_short_l1，只在斜率明确为负时才做空
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
+import pandas as pd  # noqa: I001
 import numpy as np
 
 from backtest.strategy import EnhancedMA200Strategy
@@ -51,8 +52,11 @@ def test_short_optimization():
     for name, kwargs in configs:
         strategy = EnhancedMA200Strategy(is_btc=True, **kwargs)
         result = engine.run_scenario_backtest(
-            prices, strategy, name.replace(" ", "_"),
-            symbol="BTC", experiment_name=f"short_opt_{name.replace(' ', '_')}",
+            prices,
+            strategy,
+            name.replace(" ", "_"),
+            symbol="BTC",
+            experiment_name=f"short_opt_{name.replace(' ', '_')}",
         )
         marker = " ⭐" if result.composite_score > 1.0 else ""
         print(
@@ -70,7 +74,7 @@ def test_short_optimization():
     best = max(results, key=lambda x: x[1].composite_score)
     print(f"🏆 最佳: {best[0]}, 评分 {best[1].composite_score:.3f}")
     if best[1].composite_score > 1.0:
-        print(f"   🎉 超越v2基线！")
+        print("   🎉 超越v2基线！")
 
     # 再试：如果我们把做空L1的位置换成抄底呢？
     print()
@@ -85,14 +89,14 @@ def test_short_optimization():
     print()
     print("📊 bear_short_l1阶段的价格表现分析:")
     v2 = EnhancedMA200Strategy(is_btc=True)
-    signals = v2.generate_signals(prices)
+    signals = v2.generate_signals(prices)  # noqa: F841
     closes = prices["close"].values
 
     ma = pd.Series(closes).rolling(200, min_periods=200).mean().values
     slope = np.zeros(len(closes))
     for i in range(250, len(closes)):
-        if not np.isnan(ma[i]) and not np.isnan(ma[i-5]):
-            slope[i] = (ma[i] / ma[i-5] - 1) * 100
+        if not np.isnan(ma[i]) and not np.isnan(ma[i - 5]):
+            slope[i] = (ma[i] / ma[i - 5] - 1) * 100
 
     weekly_ma200 = v2._compute_weekly_ma200(prices)
 
@@ -115,9 +119,9 @@ def test_short_optimization():
             if not has_dip:
                 # 这就是bear_short_l1的日子
                 l1_days += 1
-                ret_5d = (closes[i+5] - closes[i]) / closes[i]
-                ret_10d = (closes[i+10] - closes[i]) / closes[i]
-                ret_20d = (closes[i+20] - closes[i]) / closes[i]
+                ret_5d = (closes[i + 5] - closes[i]) / closes[i]
+                ret_10d = (closes[i + 10] - closes[i]) / closes[i]
+                ret_20d = (closes[i + 20] - closes[i]) / closes[i]
                 l1_future_5d.append(ret_5d)
                 l1_future_10d.append(ret_10d)
                 l1_future_20d.append(ret_20d)

@@ -4,11 +4,11 @@ P1 认知科学完善测试 — TDD 红阶段
 验证 L0 情景缓冲器、突显网络触发器、全局广播
 """
 
-import sys
+import sys  # noqa: I001
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -17,13 +17,16 @@ sys.path.insert(0, str(Path(__file__).parent))
 # P1-1: L0 情景缓冲器（episodic_block）
 # ============================================================
 
+
 def test_episodic_block_exists():
     """P1-1: WorkingMemoryManager 应有 episodic_block"""
     from working_memory_manager import WorkingMemoryManager
 
     wm = WorkingMemoryManager(task_id="test-episodic")
     assert hasattr(wm, "episodic_block"), "WorkingMemoryManager 应有 episodic_block 属性"
-    assert wm.episodic_block.name == "episodic", f"block 名称应为 episodic，实际 {wm.episodic_block.name}"
+    assert (
+        wm.episodic_block.name == "episodic"
+    ), f"block 名称应为 episodic，实际 {wm.episodic_block.name}"
 
     print("✅ test_episodic_block_exists 通过")
     return True
@@ -71,6 +74,7 @@ def test_episodic_block_in_checkpoint():
 # ============================================================
 # P1-2: 突显网络触发器（salience_score）
 # ============================================================
+
 
 def test_salience_score_function_exists():
     """P1-2: cognitive_daemon 应有 salience_score 函数"""
@@ -122,6 +126,7 @@ def test_salience_score_empty():
 # P1-3: 全局广播（trading_recall → shared_memory_bus）
 # ============================================================
 
+
 def test_cognitive_recall_broadcast():
     """P1-3: trading_recall 结果应发布到 shared_memory_bus"""
     from cognitive_loop_entry import trading_recall
@@ -143,7 +148,7 @@ def test_cognitive_recall_broadcast():
 
 def test_cognitive_recall_broadcast_payload():
     """P1-3: 广播 payload 应含 coin/direction"""
-    from cognitive_loop_entry import trading_recall, _publish_cognitive_recall_broadcast
+    from cognitive_loop_entry import trading_recall
 
     captured_payload = {}
 
@@ -160,10 +165,12 @@ def test_cognitive_recall_broadcast_payload():
             task_type="strategy-execution",
         )
 
-        assert captured_payload.get("coin") == "BTC-USDT-SWAP", \
-            f"payload 应含 coin=BTC-USDT-SWAP，实际 {captured_payload.get('coin')}"
-        assert captured_payload.get("direction") == "LONG", \
-            f"payload 应含 direction=LONG，实际 {captured_payload.get('direction')}"
+        assert (
+            captured_payload.get("coin") == "BTC-USDT-SWAP"
+        ), f"payload 应含 coin=BTC-USDT-SWAP，实际 {captured_payload.get('coin')}"
+        assert (
+            captured_payload.get("direction") == "LONG"
+        ), f"payload 应含 direction=LONG，实际 {captured_payload.get('direction')}"
 
     print("✅ test_cognitive_recall_broadcast_payload 通过")
     return True

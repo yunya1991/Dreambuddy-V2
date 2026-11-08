@@ -10,23 +10,26 @@
 用法:
   python3 evaluate_verifiers.py
 """
+
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict
 
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from verification_observer import GoldSetManager
-from verifiers import (
-    CycleConsistencyVerifier, FactualityVerifier, ApplicabilityVerifier,
+from verification_observer import GoldSetManager  # noqa: E402
+from verifiers import (  # noqa: E402
+    ApplicabilityVerifier,
+    CycleConsistencyVerifier,
+    FactualityVerifier,
 )
 
 GOLD_STORAGE = str(_SCRIPT_DIR.parent / "data" / "verification_observer")
+
 
 # Gold quality → expected verdict
 def expected_verdict(gold_quality: str) -> str:

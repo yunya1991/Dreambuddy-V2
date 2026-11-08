@@ -3,13 +3,18 @@
 
 使用实际回测引擎（backtest/engine.py）进行对比，确保结果准确。
 """
-import os, sys, json, time
+
+import json
+import os
+import sys
+import time
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -28,8 +33,11 @@ def load_coin_data(symbol: str) -> pd.DataFrame:
 def generate_v4_position(prices, symbol="BTC"):
     """生成V4减半周期策略仓位"""
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
-    is_btc = (symbol == "BTC")
-    strategy = HalvingTopExitStrategy(symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None)
+
+    is_btc = symbol == "BTC"
+    strategy = HalvingTopExitStrategy(
+        symbol=symbol, is_btc=is_btc, btc_prices=prices if is_btc else None
+    )
     v4_series = strategy.generate_signals(prices)
     return v4_series
 
@@ -37,6 +45,7 @@ def generate_v4_position(prices, symbol="BTC"):
 def generate_wave_signals(prices, zigzag_threshold=0.05):
     """生成波浪信号和置信度"""
     from ml.ewave_recognizer import ElliottWaveRecognizer
+
     recognizer = ElliottWaveRecognizer(zigzag_threshold=zigzag_threshold)
     n = len(prices)
     signals = []
@@ -61,12 +70,19 @@ def generate_wave_signals(prices, zigzag_threshold=0.05):
 def compute_physics_features(prices):
     """计算物理特征"""
     from ml.physics_enhancer import PhysicsEnhancer, PhysicsEnhancerConfig
+
     enhancer = PhysicsEnhancer(PhysicsEnhancerConfig())
     return enhancer.compute_features(prices)
 
 
-def compute_wave_position_optimal(prices, wave_signals, wave_confs, physics_feats,
-                                  wave_conf_threshold=0.0, phys_conf_threshold=0.0):
+def compute_wave_position_optimal(
+    prices,
+    wave_signals,
+    wave_confs,
+    physics_feats,
+    wave_conf_threshold=0.0,
+    phys_conf_threshold=0.0,
+):
     """计算波浪仓位（融合最优配置：4项物理增强 + 信号过滤可选）
 
     集成的物理增强：
@@ -95,9 +111,12 @@ def compute_wave_position_optimal(prices, wave_signals, wave_confs, physics_feat
     wave_short = ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
 
     stats = {
-        "total_enter": 0, "total_exit_by_trailing": 0,
-        "total_exit_by_tp": 0, "total_exit_by_signal": 0,
-        "filtered_by_wave_conf": 0, "filtered_by_phys_conf": 0,
+        "total_enter": 0,
+        "total_exit_by_trailing": 0,
+        "total_exit_by_tp": 0,
+        "total_exit_by_signal": 0,
+        "filtered_by_wave_conf": 0,
+        "filtered_by_phys_conf": 0,
         "avg_size_on_enter": [],
     }
 
@@ -138,9 +157,9 @@ def compute_wave_position_optimal(prices, wave_signals, wave_confs, physics_feat
             state.current_tp_pct = tp_pct
 
         def compute_size():
-            ks = float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5
-            pc = float(phys_conf[i]) if not np.isnan(phys_conf[i]) else 0.5
-            size = base_position * (0.5 + 1.5 * ks) * max(wave_conf, 0.5)
+            ks = float(kinetic_score[i]) if not np.isnan(kinetic_score[i]) else 0.5  # noqa: B023
+            pc = float(phys_conf[i]) if not np.isnan(phys_conf[i]) else 0.5  # noqa: B023
+            size = base_position * (0.5 + 1.5 * ks) * max(wave_conf, 0.5)  # noqa: B023
             multiplier = 0.6 + 1.0 * pc
             size = size * multiplier
             return float(np.clip(size, 0.0, 1.0))
@@ -215,7 +234,9 @@ def compute_wave_position_optimal(prices, wave_signals, wave_confs, physics_feat
             position[i] = state.base_size
             direction[i] = -1
 
-    stats["avg_position_size"] = np.mean(stats["avg_size_on_enter"]) if stats["avg_size_on_enter"] else 0
+    stats["avg_position_size"] = (
+        np.mean(stats["avg_size_on_enter"]) if stats["avg_size_on_enter"] else 0
+    )
     return np.abs(position), np.sign(direction), stats
 
 
@@ -320,7 +341,9 @@ def run_comparison(symbol="BTC"):
     n = len(prices)
     valid_start = 365
     print(f"数据: {n}天, {prices.index[0].date()} ~ {prices.index[-1].date()}")
-    print(f"有效回测期: {n-valid_start}天, {prices.index[valid_start].date()} ~ {prices.index[-1].date()}")
+    print(
+        f"有效回测期: {n-valid_start}天, {prices.index[valid_start].date()} ~ {prices.index[-1].date()}"
+    )
 
     print("\n[1/5] 生成V4仓位...")
     v4_series = generate_v4_position(prices, symbol)
@@ -339,23 +362,36 @@ def run_comparison(symbol="BTC"):
 
     print("[4/5] 计算波浪仓位（4项物理增强，信号过滤关闭）...")
     wave_pos, wave_dir, wave_stats = compute_wave_position_optimal(
-        prices, wave_signals, wave_confs, physics_feats,
-        wave_conf_threshold=0.0, phys_conf_threshold=0.0,
+        prices,
+        wave_signals,
+        wave_confs,
+        physics_feats,
+        wave_conf_threshold=0.0,
+        phys_conf_threshold=0.0,
     )
     print(f"  入场: {wave_stats['total_enter']}次, 平均仓位: {wave_stats['avg_position_size']:.3f}")
-    print(f"  出场: 信号={wave_stats['total_exit_by_signal']}, 追踪止损={wave_stats['total_exit_by_trailing']}, 止盈={wave_stats['total_exit_by_tp']}")
+    print(
+        f"  出场: 信号={wave_stats['total_exit_by_signal']}, 追踪止损={wave_stats['total_exit_by_trailing']}, 止盈={wave_stats['total_exit_by_tp']}"
+    )
 
     print("[5/6] 旧方案：智能融合E(50%/25%) 同向加仓...")
     fusion_e_pos, fusion_e_dir = compute_smart_fusion_e(v4_pos, v4_dir, wave_pos, wave_dir)
 
     print("[6/6] 新方案：严格互斥融合（V4仓位>=0.3时V4主导，<0.3时波浪接管）...")
-    mutex_pos, mutex_dir, mutex_stats = compute_mutex_fusion(v4_pos, v4_dir, wave_pos, wave_dir, v4_threshold=0.3)
-    print(f"  V4主导: {mutex_stats['v4_active_days']}天 ({mutex_stats['v4_active_ratio']*100:.1f}%)")
-    print(f"  波浪接管: {mutex_stats['wave_active_days']}天 ({mutex_stats['wave_active_ratio']*100:.1f}%)")
+    mutex_pos, mutex_dir, mutex_stats = compute_mutex_fusion(
+        v4_pos, v4_dir, wave_pos, wave_dir, v4_threshold=0.3
+    )
+    print(
+        f"  V4主导: {mutex_stats['v4_active_days']}天 ({mutex_stats['v4_active_ratio']*100:.1f}%)"
+    )
+    print(
+        f"  波浪接管: {mutex_stats['wave_active_days']}天 ({mutex_stats['wave_active_ratio']*100:.1f}%)"
+    )
     print(f"  空仓: {mutex_stats['idle_days']}天")
 
     # 使用实际回测引擎（无未来函数）
     from backtest.engine import BacktestEngine
+
     engine = BacktestEngine(initial_capital=10000, commission=0.0005, slippage=0.0005)
 
     close_prices = prices["close"]
@@ -366,7 +402,9 @@ def run_comparison(symbol="BTC"):
 
     r_v4 = engine.run(close_prices[valid_start:], v4_pos_series[valid_start:], symbol=symbol)
     r_wave = engine.run(close_prices[valid_start:], wave_pos_series[valid_start:], symbol=symbol)
-    r_fusion_e = engine.run(close_prices[valid_start:], fusion_e_pos_series[valid_start:], symbol=symbol)
+    r_fusion_e = engine.run(
+        close_prices[valid_start:], fusion_e_pos_series[valid_start:], symbol=symbol
+    )
     r_mutex = engine.run(close_prices[valid_start:], mutex_pos_series[valid_start:], symbol=symbol)
 
     def fmt(r, key, is_pct=True):
@@ -377,9 +415,11 @@ def run_comparison(symbol="BTC"):
 
     # 对比表格
     print(f"\n{'='*120}")
-    print(f"  基线对比结果（使用实际回测引擎）")
+    print("  基线对比结果（使用实际回测引擎）")
     print(f"{'='*120}")
-    print(f"{'策略':<40} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'交易':>6} {'均仓':>6}")
+    print(
+        f"{'策略':<40} {'年化':>8} {'总收益':>9} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'交易':>6} {'均仓':>6}"
+    )
     print(f"{'-'*95}")
 
     def get_metrics(r):
@@ -399,19 +439,27 @@ def run_comparison(symbol="BTC"):
     m_fusion_e = get_metrics(r_fusion_e)
     m_mutex = get_metrics(r_mutex)
 
-    print(f"{'【基线】纯V4减半周期':<40} {m_v4['ann']:>7.2f}% {m_v4['tot']:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['mdd']:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['trades']:>6} {m_v4['avg_pos']:>6.3f}")
-    print(f"{'纯波浪策略（4项物理增强）':<40} {m_wave['ann']:>7.2f}% {m_wave['tot']:>8.1f}% {m_wave['sharpe']:>8.4f} {m_wave['mdd']:>7.2f}% {m_wave['calmar']:>8.4f} {m_wave['trades']:>6} {m_wave['avg_pos']:>6.3f}")
-    print(f"{'【旧】智能融合E(50%/25%)同向加仓':<40} {m_fusion_e['ann']:>7.2f}% {m_fusion_e['tot']:>8.1f}% {m_fusion_e['sharpe']:>8.4f} {m_fusion_e['mdd']:>7.2f}% {m_fusion_e['calmar']:>8.4f} {m_fusion_e['trades']:>6} {m_fusion_e['avg_pos']:>6.3f}")
-    print(f"{'【新】严格互斥融合(V4定顶底+波浪区间)':<40} {m_mutex['ann']:>7.2f}% {m_mutex['tot']:>8.1f}% {m_mutex['sharpe']:>8.4f} {m_mutex['mdd']:>7.2f}% {m_mutex['calmar']:>8.4f} {m_mutex['trades']:>6} {m_mutex['avg_pos']:>6.3f}")
+    print(
+        f"{'【基线】纯V4减半周期':<40} {m_v4['ann']:>7.2f}% {m_v4['tot']:>8.1f}% {m_v4['sharpe']:>8.4f} {m_v4['mdd']:>7.2f}% {m_v4['calmar']:>8.4f} {m_v4['trades']:>6} {m_v4['avg_pos']:>6.3f}"
+    )
+    print(
+        f"{'纯波浪策略（4项物理增强）':<40} {m_wave['ann']:>7.2f}% {m_wave['tot']:>8.1f}% {m_wave['sharpe']:>8.4f} {m_wave['mdd']:>7.2f}% {m_wave['calmar']:>8.4f} {m_wave['trades']:>6} {m_wave['avg_pos']:>6.3f}"
+    )
+    print(
+        f"{'【旧】智能融合E(50%/25%)同向加仓':<40} {m_fusion_e['ann']:>7.2f}% {m_fusion_e['tot']:>8.1f}% {m_fusion_e['sharpe']:>8.4f} {m_fusion_e['mdd']:>7.2f}% {m_fusion_e['calmar']:>8.4f} {m_fusion_e['trades']:>6} {m_fusion_e['avg_pos']:>6.3f}"
+    )
+    print(
+        f"{'【新】严格互斥融合(V4定顶底+波浪区间)':<40} {m_mutex['ann']:>7.2f}% {m_mutex['tot']:>8.1f}% {m_mutex['sharpe']:>8.4f} {m_mutex['mdd']:>7.2f}% {m_mutex['calmar']:>8.4f} {m_mutex['trades']:>6} {m_mutex['avg_pos']:>6.3f}"
+    )
 
     # 增量分析（新方案 vs V4 基线）
     print(f"\n{'='*120}")
-    print(f"  增量分析（新互斥融合 vs 纯V4基线）")
+    print("  增量分析（新互斥融合 vs 纯V4基线）")
     print(f"{'='*120}")
-    ann_delta = m_mutex['ann'] - m_v4['ann']
-    sharpe_delta = m_mutex['sharpe'] - m_v4['sharpe']
-    mdd_delta = m_mutex['mdd'] - m_v4['mdd']
-    calmar_delta = m_mutex['calmar'] - m_v4['calmar']
+    ann_delta = m_mutex["ann"] - m_v4["ann"]
+    sharpe_delta = m_mutex["sharpe"] - m_v4["sharpe"]
+    mdd_delta = m_mutex["mdd"] - m_v4["mdd"]
+    calmar_delta = m_mutex["calmar"] - m_v4["calmar"]
     print(f"  年化收益增量:   {ann_delta:>+7.2f}pp")
     print(f"  夏普比增量:     {sharpe_delta:>+7.4f}")
     print(f"  回撤变化:       {mdd_delta:>+7.2f}pp")
@@ -419,26 +467,26 @@ def run_comparison(symbol="BTC"):
 
     # 新旧融合对比
     print(f"\n{'='*120}")
-    print(f"  新旧融合方案对比")
+    print("  新旧融合方案对比")
     print(f"{'='*120}")
-    ann_diff = m_mutex['ann'] - m_fusion_e['ann']
-    sharpe_diff = m_mutex['sharpe'] - m_fusion_e['sharpe']
-    mdd_diff = m_mutex['mdd'] - m_fusion_e['mdd']
+    ann_diff = m_mutex["ann"] - m_fusion_e["ann"]
+    sharpe_diff = m_mutex["sharpe"] - m_fusion_e["sharpe"]
+    mdd_diff = m_mutex["mdd"] - m_fusion_e["mdd"]
     print(f"  年化收益差:     {ann_diff:>+7.2f}pp  (新互斥 vs 旧融合E)")
     print(f"  夏普比差:       {sharpe_diff:>+7.4f}")
     print(f"  回撤差:         {mdd_diff:>+7.2f}pp")
 
     # 与历史最优对比
     print(f"\n{'='*120}")
-    print(f"  与历史最优（简化脚本58.42%，含未来函数偏差）对比")
+    print("  与历史最优（简化脚本58.42%，含未来函数偏差）对比")
     print(f"{'='*120}")
     best_ann = 58.42
-    curr_ann = m_mutex['ann']
+    curr_ann = m_mutex["ann"]
     diff = curr_ann - best_ann
     print(f"  新互斥融合年化: {curr_ann:.2f}%")
     print(f"  历史最优年化:   {best_ann:.2f}% (含未来函数偏差，不可信)")
     print(f"  差值:           {diff:+.2f}pp")
-    print(f"  注: 历史最优来自简化脚本(当期仓位×当期收益)，实际引擎已证伪")
+    print("  注: 历史最优来自简化脚本(当期仓位×当期收益)，实际引擎已证伪")
 
     # 保存结果
     os.makedirs("ml/backtest_results", exist_ok=True)
@@ -451,7 +499,10 @@ def run_comparison(symbol="BTC"):
         "fusion_e_old": m_fusion_e,
         "fusion_mutex_new": m_mutex,
         "mutex_stats": mutex_stats,
-        "wave_stats": {k: float(v) if isinstance(v, (int, float, np.floating)) else v for k, v in wave_stats.items()},
+        "wave_stats": {
+            k: float(v) if isinstance(v, (int, float, np.floating)) else v
+            for k, v in wave_stats.items()
+        },
         "delta_mutex_vs_v4": {
             "annualized_return_pct": ann_delta,
             "sharpe_ratio": sharpe_delta,
@@ -473,6 +524,7 @@ def run_comparison(symbol="BTC"):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="基线对比回测")
     parser.add_argument("--symbol", type=str, default="BTC")
     args = parser.parse_args()

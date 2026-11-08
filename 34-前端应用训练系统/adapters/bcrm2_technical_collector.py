@@ -7,6 +7,7 @@
 
 FAIL-OPEN: 汇总文件缺失/解析失败返回空列表。
 """
+
 import json
 import os
 from typing import List, Optional
@@ -15,7 +16,7 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 _SUMMARY_PATH = os.path.join(
     _PROJECT_ROOT, "11-易经推理系统", "data", "bcrm2", "bcrm2_hourly_summary.json"
@@ -67,23 +68,27 @@ class BCRM2TechnicalCollector(TrainingDataProvider):
             hexagram = info.get("hexagram", "")
             tpl = _TEMPLATES[idx % len(_TEMPLATES)]
             message = tpl.format(sym=sym)
-            cases.append(TrainingCase(
-                intent="technical_analysis",
-                actions=[f"technical:{sym}", f"direction:{direction}"],
-                outcome_text=message,
-                learned=[f"技术推理: {sym} 方向{_DIR_DESC.get(direction, direction)} 置信度{confidence:.2f} 卦象{hexagram}"],
-                layer_tags=["S"],
-                quality="B",
-                confidence=0.6,
-                source="technical_analysis",
-                metadata={
-                    "symbol": sym,
-                    "direction": direction,
-                    "confidence": confidence,
-                    "hexagram": hexagram,
-                    "engine_hint": "11-易经推理系统/BCRM2.0",
-                },
-            ))
+            cases.append(
+                TrainingCase(
+                    intent="technical_analysis",
+                    actions=[f"technical:{sym}", f"direction:{direction}"],
+                    outcome_text=message,
+                    learned=[
+                        f"技术推理: {sym} 方向{_DIR_DESC.get(direction, direction)} 置信度{confidence:.2f} 卦象{hexagram}"
+                    ],
+                    layer_tags=["S"],
+                    quality="B",
+                    confidence=0.6,
+                    source="technical_analysis",
+                    metadata={
+                        "symbol": sym,
+                        "direction": direction,
+                        "confidence": confidence,
+                        "hexagram": hexagram,
+                        "engine_hint": "11-易经推理系统/BCRM2.0",
+                    },
+                )
+            )
         # 样本不足时用第二套问法补充
         if len(cases) < limit:
             for idx, (sym, info) in enumerate(results.items()):
@@ -93,15 +98,17 @@ class BCRM2TechnicalCollector(TrainingDataProvider):
                     continue
                 tpl = _TEMPLATES[(idx + 3) % len(_TEMPLATES)]
                 message = tpl.format(sym=sym)
-                cases.append(TrainingCase(
-                    intent="technical_analysis",
-                    actions=[f"technical:{sym}"],
-                    outcome_text=message,
-                    learned=[f"技术推理: {sym} 技术指标运算结论"],
-                    layer_tags=["S"],
-                    quality="B",
-                    confidence=0.5,
-                    source="technical_analysis",
-                    metadata={"symbol": sym, "engine_hint": "11-易经推理系统/BCRM2.0"},
-                ))
+                cases.append(
+                    TrainingCase(
+                        intent="technical_analysis",
+                        actions=[f"technical:{sym}"],
+                        outcome_text=message,
+                        learned=[f"技术推理: {sym} 技术指标运算结论"],
+                        layer_tags=["S"],
+                        quality="B",
+                        confidence=0.5,
+                        source="technical_analysis",
+                        metadata={"symbol": sym, "engine_hint": "11-易经推理系统/BCRM2.0"},
+                    )
+                )
         return cases

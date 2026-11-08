@@ -19,12 +19,12 @@
 """
 
 import json
+import logging
 import os
 import time
-import logging
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,7 @@ QWEN_PROTOCOL: str = "openai-compatible"
 @dataclass
 class QwenResult:
     """千问调用结果"""
+
     success: bool
     content: str = ""
     model: str = ""
@@ -149,10 +150,15 @@ def chat_completion(
             ctx.verify_mode = ssl.CERT_REQUIRED
 
             conn = http.client.HTTPSConnection(
-                host, parsed.port or 443, timeout=timeout, context=ctx,
+                host,
+                parsed.port or 443,
+                timeout=timeout,
+                context=ctx,
             )
             conn.request(
-                "POST", path, body=data,
+                "POST",
+                path,
+                body=data,
                 headers={
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {QWEN_API_KEY}",
@@ -165,12 +171,7 @@ def chat_completion(
 
             body = json.loads(resp_body)
 
-            content = (
-                body.get("choices", [{}])[0]
-                .get("message", {})
-                .get("content", "")
-                .strip()
-            )
+            content = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             usage = body.get("usage", {})
             latency = (time.time() - start) * 1000
 
@@ -189,12 +190,16 @@ def chat_completion(
             # SSL 间歇性断连时，最后一次尝试用 curl fallback
             if attempt == retries and "SSL" in err:
                 curl_result = _curl_fallback(
-                    used_model, messages, temperature, max_tokens, timeout,
+                    used_model,
+                    messages,
+                    temperature,
+                    max_tokens,
+                    timeout,
                 )
                 if curl_result.success:
                     return curl_result
             if attempt < retries:
-                wait = 2 ** attempt
+                wait = 2**attempt
                 logger.warning(f"[Qwen] 调用失败(attempt {attempt+1}), {wait}s后重试: {err}")
                 time.sleep(wait)
             else:
@@ -223,38 +228,47 @@ def _curl_fallback(
     北京 token-plan 端点偶发 SSL UNEXPECTED_EOF，curl 不受影响。
     """
     import subprocess
+
     start = time.time()
 
-    payload = json.dumps({
-        "model": model,
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    })
+    payload = json.dumps(
+        {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+    )
 
     url = f"{QWEN_BASE_URL.rstrip('/')}/chat/completions"
     try:
         proc = subprocess.run(
             [
-                "curl", "-s", "--connect-timeout", "10",
-                "--max-time", str(timeout),
-                "-X", "POST", url,
-                "-H", "Content-Type: application/json",
-                "-H", f"Authorization: Bearer {QWEN_API_KEY}",
-                "-d", payload,
+                "curl",
+                "-s",
+                "--connect-timeout",
+                "10",
+                "--max-time",
+                str(timeout),
+                "-X",
+                "POST",
+                url,
+                "-H",
+                "Content-Type: application/json",
+                "-H",
+                f"Authorization: Bearer {QWEN_API_KEY}",
+                "-d",
+                payload,
             ],
-            capture_output=True, text=True, timeout=timeout + 10,
+            capture_output=True,
+            text=True,
+            timeout=timeout + 10,
         )
         if proc.returncode != 0:
             return QwenResult(success=False, error=f"curl failed: {proc.stderr[:200]}")
 
         body = json.loads(proc.stdout)
-        content = (
-            body.get("choices", [{}])[0]
-            .get("message", {})
-            .get("content", "")
-            .strip()
-        )
+        content = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
         usage = body.get("usage", {})
         latency = (time.time() - start) * 1000
 

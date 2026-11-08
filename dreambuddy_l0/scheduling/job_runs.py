@@ -80,7 +80,9 @@ class JobRunRecorder:
         }
         # 首次尝试用幂等键防重复；重试是同一 run 的状态推进，不重复占幂等位
         ok = self.store.write(
-            self.table, data=row, idempotency_key=rid if attempt <= 1 else "",
+            self.table,
+            data=row,
+            idempotency_key=rid if attempt <= 1 else "",
             _principal={"role": "agent_admin"},  # D1：调度侧可信内部调用
         )
         row["persisted"] = bool(ok)
@@ -115,7 +117,9 @@ class JobRunRecorder:
             "detail": detail or {},
         }
         ok = self.store.write(
-            self.table, data=row, idempotency_key=rid,
+            self.table,
+            data=row,
+            idempotency_key=rid,
             _principal={"role": "agent_admin"},  # D1：调度侧可信内部调用
         )
         row["persisted"] = bool(ok)
@@ -130,7 +134,8 @@ class JobRunRecorder:
         row = dict(row)
         row["heartbeat_at"] = float(now)
         self.store.write(
-            self.table, data=row,
+            self.table,
+            data=row,
             _principal={"role": "agent_admin"},  # D1：调度侧可信内部调用
         )
         return row
@@ -152,7 +157,8 @@ class JobRunRecorder:
         row["heartbeat_at"] = float(now)
         row["error"] = error
         self.store.write(
-            self.table, data=row,
+            self.table,
+            data=row,
             _principal={"role": "agent_admin"},  # D1：调度侧可信内部调用
         )
         # C8：落库后再回调（"已写状态、后写认知"），失败只告警不回滚
@@ -299,7 +305,9 @@ class JobRunRecorder:
             "detail": {},
         }
         self.store.write(
-            self.table, data=row, idempotency_key=rid,
+            self.table,
+            data=row,
+            idempotency_key=rid,
             _principal={"role": "agent_admin"},  # D1：调度侧可信内部调用
         )
 

@@ -13,18 +13,17 @@
 - 资金流分析 skill 的 regime_classifier.py
 """
 
+import hashlib
 import json
 import math
 import re
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from dataclasses import dataclass, asdict, field
-from collections import defaultdict
-import hashlib
-from urllib.request import Request, urlopen
 from urllib.parse import urlencode
-
+from urllib.request import Request, urlopen
 
 # =============================================================================
 # 配置
@@ -46,54 +45,64 @@ NARRATIVE_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 NARRATIVE_CATEGORIES = {
     "etf_institutional": {
         "name": "ETF/机构",
-        "keywords": ["ETF", "贝莱德", "富达", "机构", "IBIT", "FBTC", "资管", "资金流入", "资金流出"],
-        "weight": 1.0
+        "keywords": [
+            "ETF",
+            "贝莱德",
+            "富达",
+            "机构",
+            "IBIT",
+            "FBTC",
+            "资管",
+            "资金流入",
+            "资金流出",
+        ],
+        "weight": 1.0,
     },
     "layer2_scaling": {
         "name": "Layer2/扩容",
         "keywords": ["Layer2", "Arbitrum", "Optimism", "zkSync", "Rollup", "扩容", "Gas", "L2"],
-        "weight": 0.9
+        "weight": 0.9,
     },
     "defi": {
         "name": "DeFi",
         "keywords": ["DeFi", "借贷", "DEX", "Uniswap", "Aave", "TVL", "收益率", "流动性"],
-        "weight": 0.85
+        "weight": 0.85,
     },
     "nft_metaverse": {
         "name": "NFT/元宇宙",
         "keywords": ["NFT", "OpenSea", "元宇宙", "Metaverse", "数字藏品", "虚拟世界"],
-        "weight": 0.7
+        "weight": 0.7,
     },
     "gamefi": {
         "name": "GameFi",
         "keywords": ["GameFi", "Play-to-Earn", "链游", "游戏", "AXS", "SLP"],
-        "weight": 0.65
+        "weight": 0.65,
     },
     "stablecoin": {
         "name": "稳定币",
         "keywords": ["稳定币", "USDT", "USDC", "DAI", "Tether", "Circle"],
-        "weight": 0.8
+        "weight": 0.8,
     },
     "regulation_policy": {
         "name": "监管政策",
         "keywords": ["监管", "SEC", "政策", "合规", "法规", "审批", "禁令"],
-        "weight": 0.95
+        "weight": 0.95,
     },
     "tech_innovation": {
         "name": "技术创新",
         "keywords": ["升级", "硬分叉", "EIP", "技术", "协议", "主网", "测试网"],
-        "weight": 0.75
+        "weight": 0.75,
     },
     "security": {
         "name": "安全事件",
         "keywords": ["攻击", "黑客", "漏洞", "被盗", "清算", "风险", "安全"],
-        "weight": 1.0
+        "weight": 1.0,
     },
     "macro_finance": {
         "name": "宏观金融",
         "keywords": ["美联储", "利率", "CPI", "通胀", "宏观", "经济", "美元", "DXY"],
-        "weight": 0.9
-    }
+        "weight": 0.9,
+    },
 }
 
 # 叙事生命周期阈值
@@ -101,7 +110,7 @@ LIFECYCLE_THRESHOLDS = {
     "emerging": (0, 0.3),
     "growing": (0.3, 0.7),
     "mature": (0.7, 0.9),
-    "declining": (0.9, 1.0)  # 热度下降
+    "declining": (0.9, 1.0),  # 热度下降
 }
 
 
@@ -109,9 +118,11 @@ LIFECYCLE_THRESHOLDS = {
 # 数据类
 # =============================================================================
 
+
 @dataclass
 class NarrativeEvent:
     """叙事相关事件"""
+
     event_id: str
     title: str
     category: str
@@ -126,6 +137,7 @@ class NarrativeEvent:
 @dataclass
 class Narrative:
     """叙事主题"""
+
     narrative_id: str
     narrative_name: str
     category: str
@@ -144,6 +156,7 @@ class Narrative:
 @dataclass
 class NarrativeRegistry:
     """叙事登记簿"""
+
     timestamp: str
     generated_at: str
     analysis_window: str
@@ -162,6 +175,7 @@ class NarrativeRegistry:
 # 叙事分析器
 # =============================================================================
 
+
 class NarrativeAnalyzer:
     """叙事分析主引擎"""
 
@@ -176,9 +190,13 @@ class NarrativeAnalyzer:
     def load_event_ledger(self) -> List[Dict]:
         """加载新闻分析的事件账本"""
         events = []
-        
+
         # 兼容: 新版架构下 event_ledger 直接内嵌在 brief_v3_*.json
-        brief_files = sorted(OUTPUTS_DIR.glob("brief_v3_*_optimized.json"), key=lambda x: x.stat().st_mtime, reverse=True)
+        brief_files = sorted(
+            OUTPUTS_DIR.glob("brief_v3_*_optimized.json"),
+            key=lambda x: x.stat().st_mtime,
+            reverse=True,
+        )
         if brief_files:
             try:
                 obj = json.loads(brief_files[0].read_text(encoding="utf-8", errors="replace"))
@@ -186,7 +204,7 @@ class NarrativeAnalyzer:
                     events.extend(obj["event_ledger"])
             except Exception:
                 pass
-                
+
         # 优先从 raw 目录加载 (最新数据), 降级到 outputs 目录
         event_files = list(RAW_DIR.glob("event_ledger_*.jsonl"))
         if not event_files:
@@ -199,27 +217,27 @@ class NarrativeAnalyzer:
             if brief_files and file_path.stat().st_mtime < brief_files[0].stat().st_mtime - 300:
                 continue
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
-                    if content.startswith('['):
+                    if content.startswith("["):
                         events.extend(json.loads(content))
                     else:
-                        for line in content.split('\n'):
+                        for line in content.split("\n"):
                             if line.strip():
                                 events.append(json.loads(line))
-            except Exception as e:
+            except Exception as e:  # noqa: F841
                 continue
 
         # 过滤时间窗口
         filtered = []
         for event in events:
-            ts = event.get('timestamp') or event.get('published_at') or event.get('fetched_at', '')
+            ts = event.get("timestamp") or event.get("published_at") or event.get("fetched_at", "")
             if ts:
                 try:
                     # 处理时区：Z -> +00:00, 无时区后缀 -> 默认 UTC
-                    ts_clean = ts.replace('Z', '+00:00')
-                    if '+' not in ts_clean and '-' not in ts_clean[-6:]:
-                        ts_clean += '+00:00'
+                    ts_clean = ts.replace("Z", "+00:00")
+                    if "+" not in ts_clean and "-" not in ts_clean[-6:]:
+                        ts_clean += "+00:00"
                     event_dt = datetime.fromisoformat(ts_clean)
                     # 使用 published_at 时，事件发布时间在窗口内即可
                     if event_dt >= self.cutoff:
@@ -241,7 +259,7 @@ class NarrativeAnalyzer:
 
         for cat_id, cat_info in NARRATIVE_CATEGORIES.items():
             score = 0
-            for keyword in cat_info['keywords']:
+            for keyword in cat_info["keywords"]:
                 if keyword.lower() in text:
                     score += 1
 
@@ -264,9 +282,9 @@ class NarrativeAnalyzer:
         self.raw_events_by_category = defaultdict(list)
 
         for event in events:
-            title = event.get('title', '')
-            summary = event.get('summary', event.get('content', ''))
-            sentiment = event.get('sentiment_score', 0)
+            title = event.get("title", "")
+            summary = event.get("summary", event.get("content", ""))
+            sentiment = event.get("sentiment_score", 0)
 
             # 分类
             category = self.classify_narrative_category(title, summary)
@@ -274,23 +292,23 @@ class NarrativeAnalyzer:
                 continue
 
             # 计算影响力权重
-            source_confidence = event.get('source_confidence', 'medium')
-            influence_weight = {'high': 1.5, 'medium': 1.0, 'low': 0.7}.get(source_confidence, 1.0)
+            source_confidence = event.get("source_confidence", "medium")
+            influence_weight = {"high": 1.5, "medium": 1.0, "low": 0.7}.get(source_confidence, 1.0)
 
             # 估算互动量 (简化)
-            engagement = 100 if source_confidence == 'high' else 50
+            engagement = 100 if source_confidence == "high" else 50
 
             # 创建事件
             narrative_event = NarrativeEvent(
-                event_id=event.get('event_id', hashlib.md5(title.encode()).hexdigest()[:8]),
+                event_id=event.get("event_id", hashlib.md5(title.encode()).hexdigest()[:8]),
                 title=title,
                 category=category,
                 sentiment_score=sentiment,
-                timestamp=event.get('timestamp', datetime.now(timezone.utc).isoformat()),
-                source=event.get('source', 'unknown'),
-                source_url=event.get('source_url', ''),
+                timestamp=event.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                source=event.get("source", "unknown"),
+                source_url=event.get("source_url", ""),
                 engagement=engagement,
-                influence_weight=influence_weight
+                influence_weight=influence_weight,
             )
 
             narrative_events[category].append(narrative_event)
@@ -315,7 +333,7 @@ class NarrativeAnalyzer:
         time_weights = []
         for event in events:
             try:
-                event_dt = datetime.fromisoformat(event.timestamp.replace('Z', '+00:00'))
+                event_dt = datetime.fromisoformat(event.timestamp.replace("Z", "+00:00"))
                 hours_ago = (now - event_dt).total_seconds() / 3600
                 weight = max(0.1, 1.0 - hours_ago / 24)
                 time_weights.append(weight)
@@ -339,10 +357,10 @@ class NarrativeAnalyzer:
         if total_weight == 0:
             return 0.0, "stable"
 
-        weighted_sentiment = sum(
-            e.sentiment_score * e.engagement * e.influence_weight
-            for e in events
-        ) / total_weight
+        weighted_sentiment = (
+            sum(e.sentiment_score * e.engagement * e.influence_weight for e in events)
+            / total_weight
+        )
 
         # 计算趋势 (比较前一半和后一半事件)
         mid = len(events) // 2
@@ -383,7 +401,7 @@ class NarrativeAnalyzer:
                 continue
 
             cat_info = NARRATIVE_CATEGORIES.get(category, {})
-            cat_name = cat_info.get('name', category)
+            cat_name = cat_info.get("name", category)
 
             heat_score = self.calculate_heat_score(events)
             sentiment_score, sentiment_trend = self.calculate_sentiment(events)
@@ -397,11 +415,11 @@ class NarrativeAnalyzer:
 
             # 相关代币 (简化)
             related_tokens = []
-            if 'etf' in category or 'institutional' in category:
+            if "etf" in category or "institutional" in category:
                 related_tokens = ["BTC", "ETH"]
-            elif 'layer2' in category:
+            elif "layer2" in category:
                 related_tokens = ["ETH", "ARB", "OP"]
-            elif 'defi' in category:
+            elif "defi" in category:
                 related_tokens = ["ETH", "UNI", "AAVE"]
 
             # 生成叙事 ID
@@ -420,7 +438,7 @@ class NarrativeAnalyzer:
                 lifecycle_stage=lifecycle_stage,
                 confidence=min(0.95, 0.5 + len(events) * 0.05),
                 created_at=now,
-                updated_at=now
+                updated_at=now,
             )
 
             narratives.append(narrative)
@@ -440,13 +458,19 @@ class NarrativeAnalyzer:
         negative = [n for n in narratives if n.sentiment_score < -0.2]
 
         summary_parts = []
-        summary_parts.append(f"当前主导叙事为「{top.narrative_name}」，热度{top.heat_score:.2f}，情绪{top.sentiment_score:+.2f}。")
+        summary_parts.append(
+            f"当前主导叙事为「{top.narrative_name}」，热度{top.heat_score:.2f}，情绪{top.sentiment_score:+.2f}。"
+        )
 
         if positive:
-            summary_parts.append(f"正面叙事{len(positive)}个，主要包括{', '.join(n.narrative_name for n in positive[:3])}。")
+            summary_parts.append(
+                f"正面叙事{len(positive)}个，主要包括{', '.join(n.narrative_name for n in positive[:3])}。"
+            )
 
         if negative:
-            summary_parts.append(f"负面叙事{len(negative)}个，需关注{', '.join(n.narrative_name for n in negative[:3])}。")
+            summary_parts.append(
+                f"负面叙事{len(negative)}个，需关注{', '.join(n.narrative_name for n in negative[:3])}。"
+            )
 
         return " ".join(summary_parts)
 
@@ -459,7 +483,9 @@ class NarrativeAnalyzer:
             return float(default)
         return float(x)
 
-    def _http_get_json(self, url: str, *, params: Optional[Dict[str, Any]] = None, timeout: int = 8) -> Any:
+    def _http_get_json(
+        self, url: str, *, params: Optional[Dict[str, Any]] = None, timeout: int = 8
+    ) -> Any:
         q = str(url or "").strip()
         if not q:
             return None
@@ -513,7 +539,9 @@ class NarrativeAnalyzer:
             total += self._to_float(m.group(1), 0.0) * 1e8
         for m in re.finditer(r"(\d+(?:\.\d+)?)\s*万(?:美元|USD|usdt|USDT)?", t):
             total += self._to_float(m.group(1), 0.0) * 1e4
-        for m in re.finditer(r"\$?\s*(\d+(?:\.\d+)?)\s*(billion|bn|million|m)\b", t, flags=re.IGNORECASE):
+        for m in re.finditer(
+            r"\$?\s*(\d+(?:\.\d+)?)\s*(billion|bn|million|m)\b", t, flags=re.IGNORECASE
+        ):
             v = self._to_float(m.group(1), 0.0)
             u = str(m.group(2) or "").lower()
             if u in ("billion", "bn"):
@@ -537,8 +565,14 @@ class NarrativeAnalyzer:
                 bear += 1
             else:
                 neutral += 1
-        ratio = (float(bull) / max(float(bear), 1.0))
-        idx = self._clip(50.0 + 25.0 * math.tanh(self._mean(vals, 0.0) * 2.2) + 15.0 * math.tanh((ratio - 1.0) / 2.0), 0.0, 100.0)
+        ratio = float(bull) / max(float(bear), 1.0)
+        idx = self._clip(
+            50.0
+            + 25.0 * math.tanh(self._mean(vals, 0.0) * 2.2)
+            + 15.0 * math.tanh((ratio - 1.0) / 2.0),
+            0.0,
+            100.0,
+        )
         return {
             "bull_count": int(bull),
             "bear_count": int(bear),
@@ -551,7 +585,9 @@ class NarrativeAnalyzer:
         macro = []
         for e in events:
             k = f"{e.get('category','')} {e.get('topic','')} {e.get('event_type','')}".lower()
-            if any(x in k for x in ["macro", "fed", "us_data", "geopolitics", "policy", "regulation"]):
+            if any(
+                x in k for x in ["macro", "fed", "us_data", "geopolitics", "policy", "regulation"]
+            ):
                 macro.append(e)
         vals = [self._event_effective_sentiment(e) for e in macro]
         score = self._clip(50.0 + 45.0 * self._mean(vals, 0.0), 0.0, 100.0)
@@ -585,7 +621,9 @@ class NarrativeAnalyzer:
         data = {k: round(self._to_float(v, 0.0), 4) for k, v in items}
         p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    def _calc_btc_inflow_sentiment(self, events: List[Dict[str, Any]], now_dt: datetime) -> Dict[str, Any]:
+    def _calc_btc_inflow_sentiment(
+        self, events: List[Dict[str, Any]], now_dt: datetime
+    ) -> Dict[str, Any]:
         inflow_events = []
         inflow_usd = 0.0
         kw = ("净流入", "资金流入", "inflow", "etf inflow", "flow in")
@@ -600,7 +638,9 @@ class NarrativeAnalyzer:
         dkey = now_dt.strftime("%Y-%m-%d")
         history[dkey] = float(inflow_usd)
         self._save_inflow_history(history)
-        last90 = [self._to_float(v, 0.0) for _, v in sorted(history.items(), key=lambda kv: kv[0])[-90:]]
+        last90 = [
+            self._to_float(v, 0.0) for _, v in sorted(history.items(), key=lambda kv: kv[0])[-90:]
+        ]
         baseline = self._mean(last90, 0.0)
         ratio = (inflow_usd / baseline) if baseline > 0 else (1.0 if inflow_usd <= 0 else 1.5)
         idx = self._clip(50.0 + 28.0 * math.tanh(math.log(max(ratio, 1e-6))), 0.0, 100.0)
@@ -623,7 +663,12 @@ class NarrativeAnalyzer:
         pool = tw if tw else events
         scores: Dict[str, float] = defaultdict(float)
         for e in pool:
-            cat = self.classify_narrative_category(str(e.get("title") or ""), str(e.get("summary") or "")) or "other"
+            cat = (
+                self.classify_narrative_category(
+                    str(e.get("title") or ""), str(e.get("summary") or "")
+                )
+                or "other"
+            )
             mention = self._to_float(e.get("mention_count"), 1.0)
             att = self._to_float(e.get("attention_score"), 0.0)
             scores[cat] += max(0.0, mention) + max(0.0, att)
@@ -649,8 +694,16 @@ class NarrativeAnalyzer:
         for e in events:
             c = str(e.get("category") or "")
             et = str(e.get("event_type") or "")
-            if any(x in (c + " " + et).lower() for x in ["onchain", "protocol", "defi", "layer2", "security"]):
-                cat = self.classify_narrative_category(str(e.get("title") or ""), str(e.get("summary") or "")) or "other"
+            if any(
+                x in (c + " " + et).lower()
+                for x in ["onchain", "protocol", "defi", "layer2", "security"]
+            ):
+                cat = (
+                    self.classify_narrative_category(
+                        str(e.get("title") or ""), str(e.get("summary") or "")
+                    )
+                    or "other"
+                )
                 s = self._event_effective_sentiment(e)
                 w = 1.0 + max(0.0, self._to_float(e.get("mention_count"), 1.0) * 0.1)
                 sector_scores[cat] += (0.5 + s) * w
@@ -666,8 +719,15 @@ class NarrativeAnalyzer:
     def _calc_attention_board(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
         m: Dict[str, float] = defaultdict(float)
         for e in events:
-            cat = self.classify_narrative_category(str(e.get("title") or ""), str(e.get("summary") or "")) or "other"
-            m[cat] += max(0.0, self._to_float(e.get("attention_score"), 0.0)) + max(0.0, self._to_float(e.get("mention_count"), 1.0))
+            cat = (
+                self.classify_narrative_category(
+                    str(e.get("title") or ""), str(e.get("summary") or "")
+                )
+                or "other"
+            )
+            m[cat] += max(0.0, self._to_float(e.get("attention_score"), 0.0)) + max(
+                0.0, self._to_float(e.get("mention_count"), 1.0)
+            )
         rank = sorted(m.items(), key=lambda kv: kv[1], reverse=True)[:10]
         breadth = (len([1 for _, v in rank if v > 0.0]) / max(len(rank), 1)) if rank else 0.0
         return {
@@ -675,7 +735,9 @@ class NarrativeAnalyzer:
             "board": [{"sector": k, "attention_score": round(v, 4)} for k, v in rank],
         }
 
-    def _calc_polymarket_curve(self, events: List[Dict[str, Any]], fallback_anchor: float) -> Dict[str, Any]:
+    def _calc_polymarket_curve(
+        self, events: List[Dict[str, Any]], fallback_anchor: float
+    ) -> Dict[str, Any]:
         pm = []
         for e in events:
             t = f"{e.get('title','')} {e.get('summary','')}".lower()
@@ -700,7 +762,10 @@ class NarrativeAnalyzer:
         far = self._mean(horizons["far"], self._clip(0.5 + 0.05 * fallback_anchor, 0.05, 0.95))
         if not pm:
             online = self._fetch_polymarket_curve_online(fallback_anchor=fallback_anchor)
-            if isinstance(online, dict) and str(online.get("quality") or "") in {"ok", "backfilled"}:
+            if isinstance(online, dict) and str(online.get("quality") or "") in {
+                "ok",
+                "backfilled",
+            }:
                 return online
         return {
             "quality": ("ok" if pm else "missing"),
@@ -781,7 +846,9 @@ class NarrativeAnalyzer:
             return p_yes
         if any(k in q for k in bearish_yes_kw):
             return 1.0 - p_yes
-        if ("bitcoin" in q or "btc" in q) and any(k in q for k in ["all time high", "ath", "$1m", "1m"]):
+        if ("bitcoin" in q or "btc" in q) and any(
+            k in q for k in ["all time high", "ath", "$1m", "1m"]
+        ):
             return p_yes
         return None
 
@@ -813,19 +880,34 @@ class NarrativeAnalyzer:
                     if bp is None:
                         continue
                     sampled += 1
-                    end_dt = self._parse_iso_ts(m.get("endDateIso") or m.get("endDate") or ev.get("endDateIso") or ev.get("endDate"))
-                    days = ((end_dt - now_dt).total_seconds() / 86400.0) if isinstance(end_dt, datetime) else 14.0
+                    end_dt = self._parse_iso_ts(
+                        m.get("endDateIso")
+                        or m.get("endDate")
+                        or ev.get("endDateIso")
+                        or ev.get("endDate")
+                    )
+                    days = (
+                        ((end_dt - now_dt).total_seconds() / 86400.0)
+                        if isinstance(end_dt, datetime)
+                        else 14.0
+                    )
                     if days <= 10.0:
                         buckets["near"].append(bp)
                     elif days <= 45.0:
                         buckets["mid"].append(bp)
                     else:
                         buckets["far"].append(bp)
-                        
+
             if sampled > 0:
-                near = self._mean(buckets["near"], self._clip(0.5 + 0.2 * fallback_anchor, 0.05, 0.95))
-                mid = self._mean(buckets["mid"], self._clip(0.5 + 0.1 * fallback_anchor, 0.05, 0.95))
-                far = self._mean(buckets["far"], self._clip(0.5 + 0.05 * fallback_anchor, 0.05, 0.95))
+                near = self._mean(
+                    buckets["near"], self._clip(0.5 + 0.2 * fallback_anchor, 0.05, 0.95)
+                )
+                mid = self._mean(
+                    buckets["mid"], self._clip(0.5 + 0.1 * fallback_anchor, 0.05, 0.95)
+                )
+                far = self._mean(
+                    buckets["far"], self._clip(0.5 + 0.05 * fallback_anchor, 0.05, 0.95)
+                )
                 return {
                     "quality": "ok",
                     "sample_count": int(sampled),
@@ -840,45 +922,63 @@ class NarrativeAnalyzer:
                         "far": round(1.0 - far, 4),
                     },
                     "term_structure": {
-                                "near_minus_far": round(near - far, 4),
-                                "curvature": round(near - 2.0 * mid + far, 4),
-                            },
-                            "source": "polymarket_api",
-                        }
+                        "near_minus_far": round(near - far, 4),
+                        "curvature": round(near - 2.0 * mid + far, 4),
+                    },
+                    "source": "polymarket_api",
+                }
         except Exception as e:
             print(f"Polymarket API Exception: {e}")
 
         # Fallback to Tavily if API fails (403 Forbidden, etc)
         try:
-            import os
             import json
+            import os
             from pathlib import Path
+
             api_key = os.environ.get("TAVILY_API_KEY")
             if not api_key:
-                mcp_path = Path("/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/agent_repo/nanoclaw/.mcp.json")
+                mcp_path = Path(
+                    "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/agent_repo/nanoclaw/.mcp.json"
+                )
                 if mcp_path.exists():
                     with open(mcp_path) as f:
                         mcp = json.load(f)
-                    api_key = mcp.get("mcpServers", {}).get("tavily", {}).get("env", {}).get("TAVILY_API_KEY")
-            
+                    api_key = (
+                        mcp.get("mcpServers", {})
+                        .get("tavily", {})
+                        .get("env", {})
+                        .get("TAVILY_API_KEY")
+                    )
+
             if api_key:
-                import urllib.request
                 import re
+                import urllib.request
+
                 url = "https://api.tavily.com/search"
                 query = "What are the Polymarket probabilities for Bitcoin reaching $100k in the near term, mid term, and far term? Return exactly and ONLY a valid JSON object with keys 'near', 'mid', 'far' and float values between 0.0 and 1.0. Example: {\"near\": 0.45, \"mid\": 0.60, \"far\": 0.80}"
-                payload = {"api_key": api_key, "query": query, "search_depth": "basic", "include_answer": True}
-                req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={"Content-Type": "application/json"})
+                payload = {
+                    "api_key": api_key,
+                    "query": query,
+                    "search_depth": "basic",
+                    "include_answer": True,
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                )
                 with urllib.request.urlopen(req, timeout=10) as resp:
-                    ans = json.loads(resp.read().decode('utf-8')).get("answer", "")
+                    ans = json.loads(resp.read().decode("utf-8")).get("answer", "")
                     # Extract near, mid, far using regex to avoid json parse errors
                     near_m = re.search(r'near["\']?\s*:\s*([0-9]*\.?[0-9]+)', ans)
                     mid_m = re.search(r'mid["\']?\s*:\s*([0-9]*\.?[0-9]+)', ans)
                     far_m = re.search(r'far["\']?\s*:\s*([0-9]*\.?[0-9]+)', ans)
-                    
+
                     near = float(near_m.group(1)) if near_m else 0.45
                     mid = float(mid_m.group(1)) if mid_m else 0.60
                     far = float(far_m.group(1)) if far_m else 0.80
-                    
+
                     return {
                         "quality": "backfilled",
                         "sample_count": 3,
@@ -916,7 +1016,9 @@ class NarrativeAnalyzer:
             return {"quality": "missing"}
         ts = ""
         try:
-            ts = datetime.fromtimestamp(int(float(row.get("timestamp"))), tz=timezone.utc).isoformat()
+            ts = datetime.fromtimestamp(
+                int(float(row.get("timestamp"))), tz=timezone.utc
+            ).isoformat()
         except Exception:
             ts = ""
         return {
@@ -949,8 +1051,18 @@ class NarrativeAnalyzer:
         for topic, c in by_topic.items():
             total = max(1, c["up"] + c["down"] + c["flat"])
             score = (c["up"] - c["down"]) / total
-            topic_rows.append({"topic": topic, "up": c["up"], "down": c["down"], "flat": c["flat"], "sentiment": round(score, 4)})
-        topic_rows = sorted(topic_rows, key=lambda x: abs(float(x.get("sentiment", 0.0))), reverse=True)
+            topic_rows.append(
+                {
+                    "topic": topic,
+                    "up": c["up"],
+                    "down": c["down"],
+                    "flat": c["flat"],
+                    "sentiment": round(score, 4),
+                }
+            )
+        topic_rows = sorted(
+            topic_rows, key=lambda x: abs(float(x.get("sentiment", 0.0))), reverse=True
+        )
         agg = self._mean([self._to_float(x.get("sentiment"), 0.0) for x in topic_rows], 0.0)
         return {
             "aggregate_sentiment": round(agg, 4),
@@ -1020,24 +1132,36 @@ class NarrativeAnalyzer:
         okx_st = str(okx_q.get("status") or okx_obj.get("quality_status") or "").strip().lower()
         okx_topics = okx_obj.get("topics") if isinstance(okx_obj.get("topics"), list) else []
         okx_real = bool(okx_topics) and okx_st in {"ok", "stale"}
-        okx_proxy = ("social_heat_event_score__btc__okx__na" in ready) or ("social_heat_event_score__btc__all__na" in ready)
-        buckets["okx_market_intel"] = ("ok" if okx_real else ("backfilled" if okx_proxy else "missing"))
+        okx_proxy = ("social_heat_event_score__btc__okx__na" in ready) or (
+            "social_heat_event_score__btc__all__na" in ready
+        )
+        buckets["okx_market_intel"] = (
+            "ok" if okx_real else ("backfilled" if okx_proxy else "missing")
+        )
 
-        buckets["news"] = ("ok" if (events and len(events) > 0) else "missing")
+        buckets["news"] = "ok" if (events and len(events) > 0) else "missing"
 
         macro_n = int(macro_sent.get("event_count") or 0) if isinstance(macro_sent, dict) else 0
-        macro_proxy = ("macro_event_pressure_score__btc__macro__na" in ready) or ("macro_event_pressure_score__all__all__na" in ready)
-        buckets["macro"] = ("ok" if macro_n > 0 else ("backfilled" if macro_proxy else "missing"))
+        macro_proxy = ("macro_event_pressure_score__btc__macro__na" in ready) or (
+            "macro_event_pressure_score__all__all__na" in ready
+        )
+        buckets["macro"] = "ok" if macro_n > 0 else ("backfilled" if macro_proxy else "missing")
 
-        whale_proxy = ("whale_position_delta_usd__btc__hyperliquid__perp" in ready)
+        whale_proxy = "whale_position_delta_usd__btc__hyperliquid__perp" in ready
         reserve_proxy = (
             ("cex_exchange_reserve_usd__all__all__all" in ready)
             or ("stablecoin_usdt_exchange_balance_usd__all__all__all" in ready)
             or ("stablecoin_usdt_exchange_inflow_usd__all__all__all" in ready)
         )
-        bridge_proxy = ("smart_money_inflow_score__all__all__all" in ready)
-        onchain_proxy_count = int(bool(whale_proxy)) + int(bool(reserve_proxy)) + int(bool(bridge_proxy))
-        onchain_q = str(onchain_rank.get("quality") or "").strip().lower() if isinstance(onchain_rank, dict) else ""
+        bridge_proxy = "smart_money_inflow_score__all__all__all" in ready
+        onchain_proxy_count = (
+            int(bool(whale_proxy)) + int(bool(reserve_proxy)) + int(bool(bridge_proxy))
+        )
+        onchain_q = (
+            str(onchain_rank.get("quality") or "").strip().lower()
+            if isinstance(onchain_rank, dict)
+            else ""
+        )
         onchain_has = bool(onchain_rank.get("tokens")) if isinstance(onchain_rank, dict) else False
         buckets["onchain"] = (
             "ok"
@@ -1051,11 +1175,19 @@ class NarrativeAnalyzer:
             or ("funding_rate_bps__btc__binance__na" in ready)
             or ("oi_usd__btc__coinglass__na" in ready)
         )
-        pm_q = str(pm_curve.get("quality") or "").strip().lower() if isinstance(pm_curve, dict) else ""
-        buckets["derivatives"] = ("ok" if deriv_proxy else ("backfilled" if pm_q == "backfilled" else "missing"))
+        pm_q = (
+            str(pm_curve.get("quality") or "").strip().lower() if isinstance(pm_curve, dict) else ""
+        )
+        buckets["derivatives"] = (
+            "ok" if deriv_proxy else ("backfilled" if pm_q == "backfilled" else "missing")
+        )
 
         covered = [k for k, st in buckets.items() if st in {"ok", "stale", "backfilled"}]
-        missing = [k for k in ["okx_market_intel", "news", "macro", "onchain", "derivatives"] if buckets.get(k) not in {"ok", "stale", "backfilled"}]
+        missing = [
+            k
+            for k in ["okx_market_intel", "news", "macro", "onchain", "derivatives"]
+            if buckets.get(k) not in {"ok", "stale", "backfilled"}
+        ]
         cov = round(float(len(covered)) / 5.0, 4)
         return cov, buckets, missing
 
@@ -1064,7 +1196,9 @@ class NarrativeAnalyzer:
         try:
             d = CORE_DIR / "raw" / "okx" / "market-intel"
             if d.exists():
-                candidates.extend(sorted(d.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:5])
+                candidates.extend(
+                    sorted(d.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:5]
+                )
         except Exception:
             candidates = candidates
         for q in [
@@ -1089,11 +1223,15 @@ class NarrativeAnalyzer:
         proj_root = str(CORE_DIR.parents[2])
         if proj_root not in sys.path:
             sys.path.insert(0, proj_root)
-        from ops.nanoclaw.core_task1.flow.scripts.okx_skill_collector import collect_okx_market_intel_latest
+        from ops.nanoclaw.core_task1.flow.scripts.okx_skill_collector import (
+            collect_okx_market_intel_latest,
+        )
 
         out_dir = CORE_DIR / "outputs"
         raw_dir = CORE_DIR / "raw" / "okx" / "market-intel"
-        latest_path, _ = collect_okx_market_intel_latest(output_dir=out_dir, raw_dir=raw_dir, asset="BTC", cmd=None)
+        latest_path, _ = collect_okx_market_intel_latest(
+            output_dir=out_dir, raw_dir=raw_dir, asset="BTC", cmd=None
+        )
         return latest_path
 
     def _load_flow_skill_snapshot_latest(self) -> Dict[str, Any]:
@@ -1106,7 +1244,9 @@ class NarrativeAnalyzer:
             return {}
         return obj if isinstance(obj, dict) else {}
 
-    def _okx_market_intel_focus(self, *, okx_market_intel: Dict[str, Any], fallback_ts: str) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    def _okx_market_intel_focus(
+        self, *, okx_market_intel: Dict[str, Any], fallback_ts: str
+    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         obj = okx_market_intel if isinstance(okx_market_intel, dict) else {}
         topics = obj.get("topics") if isinstance(obj.get("topics"), list) else []
         rows: List[Dict[str, Any]] = []
@@ -1123,35 +1263,55 @@ class NarrativeAnalyzer:
             if sentiment is None:
                 sentiment = self._to_float(it.get("sentiment_score"), 0.0)
             url = str(it.get("url") or it.get("link") or "").strip()
-            ts = str(it.get("ts") or it.get("timestamp") or obj.get("generated_at") or fallback_ts).strip() or fallback_ts
-            rows.append({
-                "topic": title,
-                "heat": float(max(0.0, min(1.0, heat))),
-                "sentiment": float(max(-1.0, min(1.0, sentiment))),
-                "url": url,
-                "ts": ts,
-                "source": "okx:market-intel",
-            })
+            ts = (
+                str(
+                    it.get("ts") or it.get("timestamp") or obj.get("generated_at") or fallback_ts
+                ).strip()
+                or fallback_ts
+            )
+            rows.append(
+                {
+                    "topic": title,
+                    "heat": float(max(0.0, min(1.0, heat))),
+                    "sentiment": float(max(-1.0, min(1.0, sentiment))),
+                    "url": url,
+                    "ts": ts,
+                    "source": "okx:market-intel",
+                }
+            )
         rows = sorted(rows, key=lambda x: float(x.get("heat") or 0.0), reverse=True)[:8]
         ev: List[Dict[str, Any]] = []
         for r in rows:
-            ev.append({
-                "base": "okx_market_intel_topic__btc__okx__na",
-                "source": "okx:market-intel",
-                "timestamp": str(r.get("ts") or fallback_ts),
-                "url": str(r.get("url") or ""),
-                "topic": str(r.get("topic") or ""),
-            })
+            ev.append(
+                {
+                    "base": "okx_market_intel_topic__btc__okx__na",
+                    "source": "okx:market-intel",
+                    "timestamp": str(r.get("ts") or fallback_ts),
+                    "url": str(r.get("url") or ""),
+                    "topic": str(r.get("topic") or ""),
+                }
+            )
         return rows, ev
 
-    def _build_structured_payload(self, *, events: List[Dict[str, Any]], narratives: List[Narrative], overall_sentiment: float, overall_heat: float, generated_at: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def _build_structured_payload(
+        self,
+        *,
+        events: List[Dict[str, Any]],
+        narratives: List[Narrative],
+        overall_sentiment: float,
+        overall_heat: float,
+        generated_at: str,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         scores_base = [self._to_float(e.get("community_base_score"), 0.0) for e in events]
         scores_eff = [self._to_float(e.get("community_effective_score"), 0.0) for e in events]
-        decay_h = [int(max(1, round(self._to_float(e.get("decay_half_life_hours"), 24.0)))) for e in events if self._to_float(e.get("decay_half_life_hours"), 0.0) > 0]
+        decay_h = [
+            int(max(1, round(self._to_float(e.get("decay_half_life_hours"), 24.0))))
+            for e in events
+            if self._to_float(e.get("decay_half_life_hours"), 0.0) > 0
+        ]
         decay_f = [self._to_float(e.get("decay_factor"), 1.0) for e in events]
         sorted_eff = sorted(
-            [self._to_float(e.get("community_effective_score"), 0.0) for e in events],
-            reverse=False
+            [self._to_float(e.get("community_effective_score"), 0.0) for e in events], reverse=False
         )
         half = max(1, len(sorted_eff) // 2)
         impulse = self._mean(sorted_eff[-half:], 0.0) - self._mean(sorted_eff[:half], 0.0)
@@ -1184,7 +1344,10 @@ class NarrativeAnalyzer:
             fear_greed_quality = "ok"
             fear_greed_source = "model_fallback"
             fear_greed_sampled_at = generated_at
-        leverage_flag = any("清算" in str(e.get("title") or "") or "杠杆" in str(e.get("summary") or "") for e in events)
+        leverage_flag = any(
+            "清算" in str(e.get("title") or "") or "杠杆" in str(e.get("summary") or "")
+            for e in events
+        )
         stress_level = "low"
         trigger_reasons: List[str] = []
         if fear_greed >= 75.0:
@@ -1222,23 +1385,36 @@ class NarrativeAnalyzer:
                 srcs.append({"url": u, "ts": ts})
             if not srcs:
                 srcs = [{"url": "internal://event-ledger", "ts": generated_at}]
-            source_div = self._clip(len({str(e.get("source") or "").strip() for e in raw if str(e.get("source") or "").strip()}) / max(3.0, float(len(raw) or 1.0)), 0.0, 1.0)
+            source_div = self._clip(
+                len(
+                    {
+                        str(e.get("source") or "").strip()
+                        for e in raw
+                        if str(e.get("source") or "").strip()
+                    }
+                )
+                / max(3.0, float(len(raw) or 1.0)),
+                0.0,
+                1.0,
+            )
             flags = []
             if n.heat_score >= 0.8:
                 flags.append("拥挤交易")
             if n.sentiment_trend == "weakening":
                 flags.append("情绪降温")
-            top_narratives.append({
-                "topic_id": str(n.category),
-                "topic_label": str(n.narrative_name),
-                "attention_score": float(round(self._clip(n.heat_score, 0.0, 1.0), 4)),
-                "attention_type": self._map_attention_type(n.category),
-                "source_diversity": float(round(source_div, 4)),
-                "evidence_grade": self._grade_from_confidence(float(n.confidence)),
-                "narrative_status": str(n.status),
-                "risk_flags": flags,
-                "sources": srcs,
-            })
+            top_narratives.append(
+                {
+                    "topic_id": str(n.category),
+                    "topic_label": str(n.narrative_name),
+                    "attention_score": float(round(self._clip(n.heat_score, 0.0, 1.0), 4)),
+                    "attention_type": self._map_attention_type(n.category),
+                    "source_diversity": float(round(source_div, 4)),
+                    "evidence_grade": self._grade_from_confidence(float(n.confidence)),
+                    "narrative_status": str(n.status),
+                    "risk_flags": flags,
+                    "sources": srcs,
+                }
+            )
         flow_snapshot = self._load_flow_skill_snapshot_latest()
         okx_intel = self._load_okx_market_intel_latest()
         source_cov, source_buckets, source_missing = self._compute_source_bucket_coverage(
@@ -1252,9 +1428,13 @@ class NarrativeAnalyzer:
         coverage = self._clip(float(source_cov), 0.0, 1.0)
         pm_quality = str(pm_curve.get("quality") or "")
         inflow_quality = str(inflow.get("quality") or "")
-        has_missing = (pm_quality in {"missing", "suspect"}) or (inflow_quality in {"missing", "suspect"})
+        has_missing = (pm_quality in {"missing", "suspect"}) or (
+            inflow_quality in {"missing", "suspect"}
+        )
         overall_quality = self._quality_from_coverage(coverage, has_missing)
-        quality_flags = sorted(list({overall_quality, pm_quality, inflow_quality, fear_greed_quality}))
+        quality_flags = sorted(  # noqa: C414
+            list({overall_quality, pm_quality, inflow_quality, fear_greed_quality})
+        )
         missing_disclosure = []
         backfilled_disclosure = []
         if pm_quality in {"missing", "suspect"}:
@@ -1280,15 +1460,41 @@ class NarrativeAnalyzer:
             trigger_reasons.append("叙事覆盖率采用数据源 bucket 回补口径")
         trigger_reasons = list(dict.fromkeys([x for x in trigger_reasons if str(x or "").strip()]))
         evidence_refs = [
-            {"base": "community_effective_score__btc__all__all", "source": "event_ledger", "timestamp": generated_at},
-            {"base": "news_sentiment_index__btc__na__na", "source": "event_ledger", "timestamp": generated_at},
-            {"base": "btc_inflow_sentiment_index__btc__all__all", "source": "event_ledger+history", "timestamp": generated_at},
+            {
+                "base": "community_effective_score__btc__all__all",
+                "source": "event_ledger",
+                "timestamp": generated_at,
+            },
+            {
+                "base": "news_sentiment_index__btc__na__na",
+                "source": "event_ledger",
+                "timestamp": generated_at,
+            },
+            {
+                "base": "btc_inflow_sentiment_index__btc__all__all",
+                "source": "event_ledger+history",
+                "timestamp": generated_at,
+            },
         ]
         if pm_quality == "backfilled":
-            evidence_refs.append({"base": "polymarket_btc_term_structure_near_far__btc__all__na", "source": str(pm_curve.get("source") or "polymarket_api"), "timestamp": generated_at})
+            evidence_refs.append(
+                {
+                    "base": "polymarket_btc_term_structure_near_far__btc__all__na",
+                    "source": str(pm_curve.get("source") or "polymarket_api"),
+                    "timestamp": generated_at,
+                }
+            )
         if fear_greed_quality == "backfilled":
-            evidence_refs.append({"base": "fear_greed_index__btc__all__all", "source": fear_greed_source, "timestamp": fear_greed_sampled_at or generated_at})
-        okx_focus, okx_ev = self._okx_market_intel_focus(okx_market_intel=okx_intel, fallback_ts=generated_at)
+            evidence_refs.append(
+                {
+                    "base": "fear_greed_index__btc__all__all",
+                    "source": fear_greed_source,
+                    "timestamp": fear_greed_sampled_at or generated_at,
+                }
+            )
+        okx_focus, okx_ev = self._okx_market_intel_focus(
+            okx_market_intel=okx_intel, fallback_ts=generated_at
+        )
         if okx_focus:
             evidence_refs.extend(okx_ev)
         contract = {
@@ -1298,51 +1504,83 @@ class NarrativeAnalyzer:
             "generated_at": generated_at,
             "market_focus": okx_focus,
             "scores": {
-                "community_base_score": round(self._clip(self._mean(scores_base, 0.0), 0.0, 1.0), 4),
-                "decay_half_life_hours": int(round(self._mean([float(x) for x in decay_h], 24.0))) if decay_h else 24,
+                "community_base_score": round(
+                    self._clip(self._mean(scores_base, 0.0), 0.0, 1.0), 4
+                ),
+                "decay_half_life_hours": (
+                    int(round(self._mean([float(x) for x in decay_h], 24.0))) if decay_h else 24
+                ),
                 "decay_factor": round(self._clip(self._mean(decay_f, 1.0), 0.0, 1.0), 4),
-                "community_effective_score": round(self._clip(self._mean(scores_eff, 0.0), 0.0, 1.0), 4),
+                "community_effective_score": round(
+                    self._clip(self._mean(scores_eff, 0.0), 0.0, 1.0), 4
+                ),
                 "community_impulse": round(float(impulse), 4),
                 "narrative_stress": {
                     "stress_level": stress_level,
-                    "trigger_reasons": trigger_reasons if trigger_reasons else ["未触发拥挤与脆弱性双确认"],
+                    "trigger_reasons": (
+                        trigger_reasons if trigger_reasons else ["未触发拥挤与脆弱性双确认"]
+                    ),
                     "recommended_action": recommended_action,
                 },
             },
-            "top_narratives": top_narratives if top_narratives else [{
-                "topic_id": "none",
-                "topic_label": "暂无显著叙事",
-                "attention_score": 0.0,
-                "attention_type": "other",
-                "source_diversity": 0.0,
-                "evidence_grade": "unknown",
-                "narrative_status": "archive",
-                "risk_flags": ["样本不足"],
-                "sources": [{"url": "internal://event-ledger", "ts": generated_at}],
-            }],
+            "top_narratives": (
+                top_narratives
+                if top_narratives
+                else [
+                    {
+                        "topic_id": "none",
+                        "topic_label": "暂无显著叙事",
+                        "attention_score": 0.0,
+                        "attention_type": "other",
+                        "source_diversity": 0.0,
+                        "evidence_grade": "unknown",
+                        "narrative_status": "archive",
+                        "risk_flags": ["样本不足"],
+                        "sources": [{"url": "internal://event-ledger", "ts": generated_at}],
+                    }
+                ]
+            ),
             "quality": {
                 "overall_quality": overall_quality,
                 "coverage": round(coverage, 4),
-                "quality_flags": [x for x in quality_flags if x in {"ok", "stale", "missing", "backfilled", "suspect"}],
+                "quality_flags": [
+                    x
+                    for x in quality_flags
+                    if x in {"ok", "stale", "missing", "backfilled", "suspect"}
+                ],
                 "missing_disclosure": missing_disclosure,
                 "backfilled_disclosure": backfilled_disclosure,
                 "source_bucket_coverage": source_buckets,
             },
             "advisory": {
                 "bias": {
-                    "bias_dir": ("long_only" if overall_sentiment > 0.2 else "short_only" if overall_sentiment < -0.2 else "neutral"),
+                    "bias_dir": (
+                        "long_only"
+                        if overall_sentiment > 0.2
+                        else "short_only" if overall_sentiment < -0.2 else "neutral"
+                    ),
                     "reasons": [
                         f"narrative_regime={regime}",
                         f"fear_greed_index={round(fear_greed, 2)}",
                     ],
                 },
                 "filter": {
-                    "execution_filter": ("block" if stress_level == "high" else "slowdown" if stress_level == "med" else "allow"),
+                    "execution_filter": (
+                        "block"
+                        if stress_level == "high"
+                        else "slowdown" if stress_level == "med" else "allow"
+                    ),
                     "blocked_reasons": (trigger_reasons if stress_level == "high" else []),
                 },
                 "risk_off": {
-                    "risk_action_proposal": ("reduce" if stress_level == "high" else "hedge" if stress_level == "med" else "hold"),
-                    "position_scale": (0.5 if stress_level == "high" else 0.75 if stress_level == "med" else 1.0),
+                    "risk_action_proposal": (
+                        "reduce"
+                        if stress_level == "high"
+                        else "hedge" if stress_level == "med" else "hold"
+                    ),
+                    "position_scale": (
+                        0.5 if stress_level == "high" else 0.75 if stress_level == "med" else 1.0
+                    ),
                     "ttl": ("8h" if stress_level in {"high", "med"} else "4h"),
                 },
             },
@@ -1463,7 +1701,7 @@ class NarrativeAnalyzer:
         output_path = NARRATIVE_OUTPUTS_DIR / f"narrative_registry_{ts}.json"
 
         data = asdict(registry)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
         return output_path
@@ -1472,6 +1710,7 @@ class NarrativeAnalyzer:
 # =============================================================================
 # 简报生成器
 # =============================================================================
+
 
 class NarrativeBriefGenerator:
     """叙事简报生成器"""
@@ -1484,17 +1723,9 @@ class NarrativeBriefGenerator:
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S CST")
 
         # 图标映射
-        trend_icon = {
-            "strengthening": "📈",
-            "weakening": "📉",
-            "stable": "➡️"
-        }
-        status_icon = {
-            "active": "🔥",
-            "cooling": "❄️",
-            "archive": "📦"
-        }
-        sentiment_icon = lambda s: "🟢" if s > 0.2 else "🔴" if s < -0.2 else "🟡"
+        trend_icon = {"strengthening": "📈", "weakening": "📉", "stable": "➡️"}
+        status_icon = {"active": "🔥", "cooling": "❄️", "archive": "📦"}
+        sentiment_icon = lambda s: "🟢" if s > 0.2 else "🔴" if s < -0.2 else "🟡"  # noqa: E731
 
         md = f"""# 加密市场叙事分析简报
 
@@ -1514,8 +1745,8 @@ class NarrativeBriefGenerator:
 """
 
         for narrative in registry.narratives[:10]:
-            icon = status_icon.get(narrative.status, '❓')
-            trend = trend_icon.get(narrative.sentiment_trend, '➡️')
+            icon = status_icon.get(narrative.status, "❓")
+            trend = trend_icon.get(narrative.sentiment_trend, "➡️")
             senti_badge = sentiment_icon(narrative.sentiment_score)
             md += f"| {narrative.narrative_name} | {narrative.heat_score:.2f} | {senti_badge} {narrative.sentiment_score:+.2f} | {trend} | {icon} | {narrative.event_count} |\n"
 
@@ -1534,7 +1765,7 @@ class NarrativeBriefGenerator:
                 "emerging": "🌱 萌芽",
                 "growing": "🌿 成长",
                 "mature": "🌳 成熟",
-                "declining": "🍂 衰退"
+                "declining": "🍂 衰退",
             }.get(narrative.lifecycle_stage, "")
 
             md += f"""**{i}. {narrative.narrative_name}** - 热度 {narrative.heat_score:.2f} {lifecycle_badge}
@@ -1568,13 +1799,39 @@ class NarrativeBriefGenerator:
 """
 
         ext = registry.extended_sentiment if isinstance(registry.extended_sentiment, dict) else {}
-        fg = (ext.get("fear_greed_index") or {}) if isinstance(ext.get("fear_greed_index"), dict) else {}
-        msi = (ext.get("macro_sentiment_index") or {}) if isinstance(ext.get("macro_sentiment_index"), dict) else {}
-        bfi = (ext.get("btc_inflow_sentiment_index") or {}) if isinstance(ext.get("btc_inflow_sentiment_index"), dict) else {}
-        nsi = (ext.get("news_sentiment_index") or {}) if isinstance(ext.get("news_sentiment_index"), dict) else {}
-        pm = (ext.get("polymarket_btc_term_structure") or {}) if isinstance(ext.get("polymarket_btc_term_structure"), dict) else {}
-        pm_bull = (pm.get("bullish_probability") or {}) if isinstance(pm.get("bullish_probability"), dict) else {}
-        pm_ts = (pm.get("term_structure") or {}) if isinstance(pm.get("term_structure"), dict) else {}
+        fg = (
+            (ext.get("fear_greed_index") or {})
+            if isinstance(ext.get("fear_greed_index"), dict)
+            else {}
+        )
+        msi = (
+            (ext.get("macro_sentiment_index") or {})
+            if isinstance(ext.get("macro_sentiment_index"), dict)
+            else {}
+        )
+        bfi = (
+            (ext.get("btc_inflow_sentiment_index") or {})
+            if isinstance(ext.get("btc_inflow_sentiment_index"), dict)
+            else {}
+        )
+        nsi = (
+            (ext.get("news_sentiment_index") or {})
+            if isinstance(ext.get("news_sentiment_index"), dict)
+            else {}
+        )
+        pm = (
+            (ext.get("polymarket_btc_term_structure") or {})
+            if isinstance(ext.get("polymarket_btc_term_structure"), dict)
+            else {}
+        )
+        pm_bull = (
+            (pm.get("bullish_probability") or {})
+            if isinstance(pm.get("bullish_probability"), dict)
+            else {}
+        )
+        pm_ts = (
+            (pm.get("term_structure") or {}) if isinstance(pm.get("term_structure"), dict) else {}
+        )
         sm = (ext.get("state_machine") or {}) if isinstance(ext.get("state_machine"), dict) else {}
         md += f"""
 
@@ -1643,7 +1900,7 @@ class NarrativeBriefGenerator:
         else:
             md += "- 暂无明确方向，建议保持观望\n"
 
-        md += f"""
+        md += """
 ---
 
 ## 📊 叙事分布
@@ -1659,14 +1916,14 @@ class NarrativeBriefGenerator:
 
         for cat_id, items in by_category.items():
             cat_info = NARRATIVE_CATEGORIES.get(cat_id, {})
-            cat_name = cat_info.get('name', cat_id)
+            cat_name = cat_info.get("name", cat_id)
             avg_sentiment = sum(n.sentiment_score for n in items) / len(items)
             md += f"| {cat_name} | {len(items)} | {avg_sentiment:+.2f} |\n"
 
         if not by_category:
             md += "| 无显著叙事 | 0 | - |\n"
 
-        md += f"""
+        md += """
 ---
 
 ## ⚠️ 风险提示
@@ -1691,7 +1948,7 @@ class NarrativeBriefGenerator:
         ts = datetime.now().strftime("%Y%m%d_%H%M")
         output_path = NARRATIVE_OUTPUTS_DIR / f"narrative_brief_{ts}.md"
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(md_content)
 
         return output_path
@@ -1700,6 +1957,7 @@ class NarrativeBriefGenerator:
 # =============================================================================
 # 命令行入口
 # =============================================================================
+
 
 def generate_mock_events() -> List[Dict]:
     """生成模拟事件数据用于演示"""
@@ -1714,7 +1972,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "high",
             "sentiment_score": 0.8,
             "timestamp": (now - timedelta(hours=2)).isoformat(),
-            "category": "market_analysis"
+            "category": "market_analysis",
         },
         {
             "event_id": "mock_002",
@@ -1724,7 +1982,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "high",
             "sentiment_score": 0.7,
             "timestamp": (now - timedelta(hours=4)).isoformat(),
-            "category": "fed_policy"
+            "category": "fed_policy",
         },
         {
             "event_id": "mock_003",
@@ -1734,7 +1992,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "medium",
             "sentiment_score": 0.5,
             "timestamp": (now - timedelta(hours=6)).isoformat(),
-            "category": "project_update"
+            "category": "project_update",
         },
         {
             "event_id": "mock_004",
@@ -1744,7 +2002,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "high",
             "sentiment_score": 0.1,
             "timestamp": (now - timedelta(hours=8)).isoformat(),
-            "category": "fed_policy"
+            "category": "fed_policy",
         },
         {
             "event_id": "mock_005",
@@ -1754,7 +2012,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "medium",
             "sentiment_score": -0.7,
             "timestamp": (now - timedelta(hours=10)).isoformat(),
-            "category": "security"
+            "category": "security",
         },
         {
             "event_id": "mock_006",
@@ -1764,7 +2022,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "high",
             "sentiment_score": 0.3,
             "timestamp": (now - timedelta(hours=12)).isoformat(),
-            "category": "market_analysis"
+            "category": "market_analysis",
         },
         {
             "event_id": "mock_007",
@@ -1774,7 +2032,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "high",
             "sentiment_score": 0.6,
             "timestamp": (now - timedelta(hours=14)).isoformat(),
-            "category": "project_update"
+            "category": "project_update",
         },
         {
             "event_id": "mock_008",
@@ -1784,7 +2042,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "medium",
             "sentiment_score": 0.4,
             "timestamp": (now - timedelta(hours=16)).isoformat(),
-            "category": "fed_policy"
+            "category": "fed_policy",
         },
         {
             "event_id": "mock_009",
@@ -1794,7 +2052,7 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "high",
             "sentiment_score": 0.35,
             "timestamp": (now - timedelta(hours=18)).isoformat(),
-            "category": "market_analysis"
+            "category": "market_analysis",
         },
         {
             "event_id": "mock_010",
@@ -1804,8 +2062,8 @@ def generate_mock_events() -> List[Dict]:
             "source_confidence": "high",
             "sentiment_score": -0.2,
             "timestamp": (now - timedelta(hours=20)).isoformat(),
-            "category": "project_update"
-        }
+            "category": "project_update",
+        },
     ]
 
     return mock_events
@@ -1815,10 +2073,10 @@ def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='加密市场叙事分析生成器')
-    parser.add_argument('--hours', type=int, default=24, help='分析窗口（小时），默认 24 小时')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出文件路径')
-    parser.add_argument('--mock', action='store_true', help='使用模拟数据演示')
+    parser = argparse.ArgumentParser(description="加密市场叙事分析生成器")
+    parser.add_argument("--hours", type=int, default=24, help="分析窗口（小时），默认 24 小时")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件路径")
+    parser.add_argument("--mock", action="store_true", help="使用模拟数据演示")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -1865,7 +2123,7 @@ def main():
             top_narrative=top_narrative,
             summary=analyzer.generate_summary(narratives),
             contract=contract,
-            extended_sentiment=extended
+            extended_sentiment=extended,
         )
     else:
         registry = analyzer.analyze()
@@ -1883,7 +2141,7 @@ def main():
     output_path = Path(args.output) if args.output else None
     if output_path:
         brief_path = output_path
-        with open(brief_path, 'w', encoding='utf-8') as f:
+        with open(brief_path, "w", encoding="utf-8") as f:
             f.write(md_content)
     else:
         brief_path = brief_gen.save_brief(md_content)

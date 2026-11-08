@@ -14,7 +14,8 @@ P0-4：装配所有组件并启动 Telegram 监听器。
 9. 创建 TelegramListener（用 bull bot 接收消息）
 10. 启动长轮询
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import asyncio
 import logging
@@ -77,6 +78,7 @@ def create_llm_adapter(
 @dataclass
 class DebateApp:
     """装配完成的应用对象。"""
+
     listener: TelegramListener
     orchestrator: DebateOrchestrator
     command_handler: CommandHandler
@@ -105,31 +107,37 @@ def build_app(config: AppConfig) -> DebateApp:
     # ─── LLM 适配器（按角色分档模型；与 LangChain 解耦） ──────
     debater_llm = create_llm_adapter(config=config.llm, model_name=_model("debater", "qwen-turbo"))
     judge_llm = create_llm_adapter(config=config.llm, model_name=_model("judge", "qwen-plus"))
-    marketing_llm = create_llm_adapter(config=config.llm, model_name=_model("marketing", "qwen-plus"))
+    marketing_llm = create_llm_adapter(
+        config=config.llm, model_name=_model("marketing", "qwen-plus")
+    )
     quality_llm = create_llm_adapter(config=config.llm, model_name=_model("quality", "qwen-plus"))
 
     # ─── Agent ───────────────────────────────────────────────
     profile = config.debate.profile
     bull_agent = BullAgent(
-        debater_llm, max_tokens=_max_tokens("debater", 2000),
+        debater_llm,
+        max_tokens=_max_tokens("debater", 2000),
         profile=profile,
     )
     bear_agent = BearAgent(
-        debater_llm, max_tokens=_max_tokens("debater", 2000),
+        debater_llm,
+        max_tokens=_max_tokens("debater", 2000),
         profile=profile,
     )
     judge_agent = (
-        JudgeAgent(judge_llm, max_tokens=_max_tokens("judge", 1600),
-                   profile=profile)
-        if config.debate.judge_enabled else None
+        JudgeAgent(judge_llm, max_tokens=_max_tokens("judge", 1600), profile=profile)
+        if config.debate.judge_enabled
+        else None
     )
 
     # ─── 营销 + 质量 ──────────────────────────────────────────
     marketing_extractor = MarketingExtractor(
-        marketing_llm, max_tokens=_max_tokens("marketing", 1000),
+        marketing_llm,
+        max_tokens=_max_tokens("marketing", 1000),
     )
     quality_evaluator = QualityEvaluator(
-        quality_llm, max_tokens=_max_tokens("quality", 1000),
+        quality_llm,
+        max_tokens=_max_tokens("quality", 1000),
     )
 
     # ─── Telegram Bot ────────────────────────────────────────
@@ -137,11 +145,14 @@ def build_app(config: AppConfig) -> DebateApp:
     bear_tg = TelegramHTTPClient(token=config.telegram.bear_token)
     judge_tg = (
         TelegramHTTPClient(token=config.telegram.judge_token)
-        if config.telegram.judge_token else None
+        if config.telegram.judge_token
+        else None
     )
 
     telegram_dual_bot = TelegramDualBot(
-        bull_bot=bull_tg, bear_bot=bear_tg, judge_bot=judge_tg,
+        bull_bot=bull_tg,
+        bear_bot=bear_tg,
+        judge_bot=judge_tg,
         send_delay=config.telegram.message_interval_sec,
     )
 
@@ -187,8 +198,11 @@ def main(config_path: str | None = None):
         config_path = str(Path(__file__).resolve().parent / "config.yaml")
 
     config = load_config(config_path)
-    logger.info("配置加载完成: max_rounds=%d judge_enabled=%s",
-                config.debate.max_rounds, config.debate.judge_enabled)
+    logger.info(
+        "配置加载完成: max_rounds=%d judge_enabled=%s",
+        config.debate.max_rounds,
+        config.debate.judge_enabled,
+    )
 
     app = build_app(config)
     logger.info("应用装配完成，启动 Telegram 监听器...")

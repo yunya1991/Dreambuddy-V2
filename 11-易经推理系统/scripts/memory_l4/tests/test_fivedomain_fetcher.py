@@ -3,7 +3,10 @@
 失败→无 Key→空→fail-open：所有缺失字段应为 None，而不是抛异常。
 三类资产：crypto_usdt / us_stock / precious_metal。
 """
-import sys, os
+
+import os
+import sys
+
 import pytest
 
 # 允许 import scripts/memory_l4
@@ -15,57 +18,95 @@ if _SCRIPTS_L4 not in sys.path:
 
 # ---- 构造 mock DataCenter 产出的 DataRecord ----
 def _fred(series, value, date="2026-08-21"):
-    from data_center.core.contract import DataRecord
     from datetime import datetime, timezone
+
+    from data_center.core.contract import DataRecord
+
     return DataRecord(
-        source="fred", category="macro", sub_category=series,
+        source="fred",
+        category="macro",
+        sub_category=series,
         timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
-        metrics={"value": value, "date": date}, events=[],
-        timeseries=[{"date": date, "value": value}], raw={"series_id": series},
+        metrics={"value": value, "date": date},
+        events=[],
+        timeseries=[{"date": date, "value": value}],
+        raw={"series_id": series},
     )
+
 
 def _yf(symbol, price=100.0):
-    from data_center.core.contract import DataRecord
     from datetime import datetime, timezone
+
+    from data_center.core.contract import DataRecord
+
     return DataRecord(
-        source="yfinance", category="finance", sub_category=symbol,
+        source="yfinance",
+        category="finance",
+        sub_category=symbol,
         timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
-        metrics={"price": price, "symbol": symbol}, events=[], timeseries=[], raw={},
+        metrics={"price": price, "symbol": symbol},
+        events=[],
+        timeseries=[],
+        raw={},
     )
 
+
 def _dl_chains(tvl_map: dict):
-    from data_center.core.contract import DataRecord
     from datetime import datetime, timezone
+
+    from data_center.core.contract import DataRecord
+
     total = sum(tvl_map.values()) * 1e9  # 输入是 billion，还原成 dollar
-    chains = {name: {"tvl": tvl*1e9, "tvl_bln": tvl} for name, tvl in tvl_map.items()}
+    chains = {name: {"tvl": tvl * 1e9, "tvl_bln": tvl} for name, tvl in tvl_map.items()}
     return DataRecord(
-        source="defillama", category="chain", sub_category="chains_summary",
+        source="defillama",
+        category="chain",
+        sub_category="chains_summary",
         timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
-        metrics={"total_tvl": total, "total_tvl_bln": round(sum(tvl_map.values()), 4), "chain_count": len(tvl_map)},
-        events=[], timeseries=[{"chain": n, "tvl_bln": t} for n, t in tvl_map.items()],
+        metrics={
+            "total_tvl": total,
+            "total_tvl_bln": round(sum(tvl_map.values()), 4),
+            "chain_count": len(tvl_map),
+        },
+        events=[],
+        timeseries=[{"chain": n, "tvl_bln": t} for n, t in tvl_map.items()],
         raw={"chains": chains},
     )
 
+
 def _gas(safe=12, propose=18, fast=24):
-    from data_center.core.contract import DataRecord
     from datetime import datetime, timezone
+
+    from data_center.core.contract import DataRecord
+
     return DataRecord(
-        source="etherscan", category="chain", sub_category="gas",
+        source="etherscan",
+        category="chain",
+        sub_category="gas",
         timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
         metrics={"safe_gas": float(safe), "propose_gas": float(propose), "fast_gas": float(fast)},
-        events=[], timeseries=[], raw={},
+        events=[],
+        timeseries=[],
+        raw={},
     )
 
+
 def _tavily_results(n_good=2, n_bad=1):
-    from data_center.core.contract import DataRecord
     from datetime import datetime, timezone
+
+    from data_center.core.contract import DataRecord
+
     good = [{"title": "宽松利好 crypto", "content": "SEC 批准 ETF 流入加速"}] * n_good
     bad = [{"title": "监管加码", "content": "CFTC 起诉交易所"}] * n_bad
     return DataRecord(
-        source="tavily", category="news", sub_category="policy_query",
+        source="tavily",
+        category="news",
+        sub_category="policy_query",
         timestamp=datetime.now(timezone.utc).astimezone().isoformat(),
-        metrics={"count": len(good) + len(bad)}, events=[],
-        timeseries=[], raw={"results": good + bad},
+        metrics={"count": len(good) + len(bad)},
+        events=[],
+        timeseries=[],
+        raw={"results": good + bad},
     )
 
 
@@ -77,24 +118,37 @@ class TestFiveDomainFetcher:
 
         default_results = {
             ("macro", "fred", "FEDFUNDS"): [_fred("FEDFUNDS", 5.25)],
-            ("macro", "fred", "M2NS"):     [_fred("M2NS", 2.3)],
-            ("macro", "fred", "WALCL"):    [_fred("WALCL", 7_200_000_000_000.0)],  # 7.2T
+            ("macro", "fred", "M2NS"): [_fred("M2NS", 2.3)],
+            ("macro", "fred", "WALCL"): [_fred("WALCL", 7_200_000_000_000.0)],  # 7.2T
             # CPIAUCSL=240（<250 临界=非通胀） + INDPRO=102.5（>100=增长↑） → 美林: RECOVERY
             ("macro", "fred", "CPIAUCSL"): [_fred("CPIAUCSL", 240.0)],
-            ("macro", "fred", "INDPRO"):   [_fred("INDPRO", 102.5)],
-            ("finance", "yfinance", "^VIX"):        [_yf("^VIX", 14.2)],
-            ("chain", "defillama", "chains"):       [_dl_chains({"Ethereum": 38.1, "TRON": 6.2})],
-            ("chain", "etherscan", "gas"):          [_gas(12, 18, 24)],
-            ("news", "tavily", "policy"):           [_tavily_results(2, 1)],
+            ("macro", "fred", "INDPRO"): [_fred("INDPRO", 102.5)],
+            ("finance", "yfinance", "^VIX"): [_yf("^VIX", 14.2)],
+            ("chain", "defillama", "chains"): [_dl_chains({"Ethereum": 38.1, "TRON": 6.2})],
+            ("chain", "etherscan", "gas"): [_gas(12, 18, 24)],
+            ("news", "tavily", "policy"): [_tavily_results(2, 1)],
         }
         if overrides:
             default_results.update(overrides)
 
         class FakeDC:
-            def __init__(self): self.calls = []
+            def __init__(self):
+                self.calls = []
+
             def fetch(self, category, source=None, **kw):
                 self.calls.append((category, source, dict(kw)))
-                return default_results.get((category, source, kw.get("series") or kw.get("symbol") or kw.get("route") or kw.get("kind") or "policy"), [])
+                return default_results.get(
+                    (
+                        category,
+                        source,
+                        kw.get("series")
+                        or kw.get("symbol")
+                        or kw.get("route")
+                        or kw.get("kind")
+                        or "policy",
+                    ),
+                    [],
+                )
 
         dc = FakeDC()
         return FiveDomainFetcher(data_center=dc), dc
@@ -106,10 +160,19 @@ class TestFiveDomainFetcher:
         assert set(out.keys()) == {"crypto_usdt", "us_stock", "precious_metal"}
         crypto = out["crypto_usdt"]
         # D1-D9 键存在（None 也允许，但结构要齐）
-        for k in ("fedfunds_rate", "m2_yoy_pct", "fed_balance_sheet_trillion",
-                  "us_cpi_yoy_pct", "us_indpro_yoy_pct",
-                  "defi_tvl_bln", "gas_eth_gwei", "policy_sentiment_score",
-                  "merrill_phase", "vix_close", "liquidity_score"):
+        for k in (
+            "fedfunds_rate",
+            "m2_yoy_pct",
+            "fed_balance_sheet_trillion",
+            "us_cpi_yoy_pct",
+            "us_indpro_yoy_pct",
+            "defi_tvl_bln",
+            "gas_eth_gwei",
+            "policy_sentiment_score",
+            "merrill_phase",
+            "vix_close",
+            "liquidity_score",
+        ):
             assert k in crypto, f"缺键 {k}"
 
     def test_cpi_comparison_routes_and_indpro_for_merrill(self):
@@ -132,16 +195,23 @@ class TestFiveDomainFetcher:
         """无 Key：所有 FRED 系列返回空列表。"""
         overrides = {
             ("macro", "fred", "FEDFUNDS"): [],
-            ("macro", "fred", "M2NS"):     [],
-            ("macro", "fred", "WALCL"):    [],
+            ("macro", "fred", "M2NS"): [],
+            ("macro", "fred", "WALCL"): [],
             ("macro", "fred", "CPIAUCSL"): [],
-            ("macro", "fred", "INDPRO"):   [],
+            ("macro", "fred", "INDPRO"): [],
         }
         fetcher, _ = self._target(overrides)
         out = fetcher.fetch_coin_data()
         # 这些字段缺失时填 None（fail-open）
-        for k in ("fedfunds_rate", "m2_yoy_pct", "fed_balance_sheet_trillion",
-                  "us_cpi_yoy_pct", "us_indpro_yoy_pct", "merrill_phase", "liquidity_score"):
+        for k in (
+            "fedfunds_rate",
+            "m2_yoy_pct",
+            "fed_balance_sheet_trillion",
+            "us_cpi_yoy_pct",
+            "us_indpro_yoy_pct",
+            "merrill_phase",
+            "liquidity_score",
+        ):
             # 不抛异常；值是 None 或者一个中性回退默认值都 ok
             assert out["crypto_usdt"][k] is None or out["crypto_usdt"][k] != ""
 

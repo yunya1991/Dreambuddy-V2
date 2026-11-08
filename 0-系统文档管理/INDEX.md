@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.11 | **更新日期**: 2026-11-03
+> **版本**: v2.12 | **更新日期**: 2026-11-08
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -66,7 +66,7 @@
 
 ---
 
-## L2 — 子系统文档（7 个交易子系统）
+## L2 — 子系统文档（9 个交易子系统）
 
 > 每个子系统遵循 [DOC_STANDARD.md](./1-规范体系/DOC_STANDARD.md) 规范，5 文档齐全。
 
@@ -159,6 +159,22 @@
 | PoE 工程实践复现器 SPEC | [33-REA逆向解析工程/SPEC-工程实践复现器.md](../33-REA逆向解析工程/SPEC-工程实践复现器.md) | v0.3（设计决策还原+演化叙事+方法论抽象+AI审计） |
 | PoE 工程实践复现器 TASKS | [33-REA逆向解析工程/TASKS-工程实践复现器.md](../33-REA逆向解析工程/TASKS-工程实践复现器.md) | v1.0（8任务，依赖链已规划） |
 
+### 49-交易框架协议
+
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| SPEC（交易契约域 SSoT） | [49-交易框架协议/SPEC.md](../49-交易框架协议/SPEC.md) | v0.14.2 |
+| ADR-0001 契约冻结 | [49-交易框架协议/docs/adr/ADR-0001-freeze-trading-contracts-v1.md](../49-交易框架协议/docs/adr/ADR-0001-freeze-trading-contracts-v1.md) | accepted |
+| ADR-0002 双决策链 | [49-交易框架协议/docs/adr/ADR-0002-dual-decision-chain.md](../49-交易框架协议/docs/adr/ADR-0002-dual-decision-chain.md) | accepted |
+| 双决策链终审报告 | [49-交易框架协议/docs/reviews/REVIEW-2026-11-08-dual-chain-final.md](../49-交易框架协议/docs/reviews/REVIEW-2026-11-08-dual-chain-final.md) | 2026-11-08（通过，P1×3 已回填） |
+| 开关注册表 | [49-交易框架协议/docs/SWITCH_REGISTRY.md](../49-交易框架协议/docs/SWITCH_REGISTRY.md) | v1 |
+
+### 50-NN主矛盾评估器
+
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| SPEC | [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) | v0.2.0（R0 进行中；本地-only / paper-only） |
+
 ---
 
 ## L3 — 辅助系统与实验性模块
@@ -220,6 +236,7 @@
 | RAG检索 | [2-KNOWLEDGE/9-RAG-INFRA/INDEX.md](../2-KNOWLEDGE/9-RAG-INFRA/INDEX.md) v2.0 |
 | 交易知识 | [2-KNOWLEDGE/1-TRADING/经典模式/](../2-KNOWLEDGE/1-TRADING/经典模式/) · [2-KNOWLEDGE/1-TRADING/硬约束总表.md](../2-KNOWLEDGE/1-TRADING/硬约束总表.md) |
 | 自进化 | [23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md](../23-四层闭环自进化交易架构/docs/TECHNICAL_DESIGN.md) v1.13 · [23-四层闭环自进化交易架构/docs/CHANGELOG.md](../23-四层闭环自进化交易架构/docs/CHANGELOG.md) v1.13 |
+| 双决策链 | [49-交易框架协议/SPEC.md](../49-交易框架协议/SPEC.md) v0.14.2 · [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) v0.2.0 · [ADR-0002](../49-交易框架协议/docs/adr/ADR-0002-dual-decision-chain.md) |
 | 辩论系统 | `.trae/documents/debate-engine-v2-spec.md` v2.0 · `.trae/documents/debate-adjudication-training-spec.md` v1.2 · **jev集成SPEC v1.1**（以上均为本地草稿，`.trae/` 不入库） |
 | Jev 决策模型 | `.trae/documents/debate-jev-integration-spec.md`（本地草稿） v1.1 · `1-ARCHITECTURE/dream-harness-bridge/packages/python-server/{debate_quality_gate,adjudication_validator,jev_score_supplement,jev_preference_judge}.py` |
 | 架构设计 | [ARCHITECTURE_MAP.md](./2-文档地图/ARCHITECTURE_MAP.md) v2.4 · [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) v4.0 |
@@ -230,11 +247,11 @@
 
 | 层级 | 模块数 | 文档齐全 | 部分完整 | 缺失 | 覆盖率 |
 |------|--------|----------|----------|------|--------|
-| L2 子系统 | 26 | 16 | 5 | 5 | 65% |
+| L2 子系统 | 29 | 17 | 6 | 6 | 63% |
 | L3 辅助模块 | 6 | 6 | 0 | 0 | 100% |
-| **合计** | **32** | **22** | **5** | **5** | **72%** |
+| **合计** | **35** | **23** | **6** | **6** | **69%** |
 
-> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-03 实测：32 模块 / 22 齐全 / 5 部分 / 5 缺失 / 72%）；历史口径（38 模块 / 87%）为 2026-10 版本，已按工具输出修正。断链校验：`link_checker.py` 本地 579 链接、干净克隆 473 链接，**均为 0 断链**（绝对路径 `file:///Users/...` 已全部改为相对路径，`.trae/` 与 `_analysis/` 本地草稿改为纯文本标注）。
+> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-08 实测：35 模块 / 23 齐全 / 6 部分 / 6 缺失 / 69%；`50-NN主矛盾评估器` R0 阶段尚无 `docs/` 目录，未纳入工具统计）。断链校验：`link_checker.py` 2026-11-08 实测 588 链接 / 2 断链，均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`（存量归档文档，指向本地不存在的 3.1-FRONTEND 文件，FAIL-OPEN 不阻塞）。
 
 ---
 

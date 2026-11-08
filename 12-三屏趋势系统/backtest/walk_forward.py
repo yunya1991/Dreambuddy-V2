@@ -11,11 +11,12 @@
 - 参数稳定性：观察参数在不同市场环境下的表现
 """
 
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, List, Optional, Callable  # noqa: I001
 import pandas as pd
 import numpy as np
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 
 class WalkForwardAnalyzer:
@@ -75,6 +76,7 @@ class WalkForwardAnalyzer:
         """
         if engine is None:
             from .engine import BacktestEngine
+
             engine = BacktestEngine()
 
         df = self._ensure_index(prices)
@@ -109,8 +111,13 @@ class WalkForwardAnalyzer:
             history_df = df.iloc[:test_end].copy()
 
             fold_result = self._run_single_fold(
-                fold_idx, train_df, test_df, history_df,
-                strategy, param_optimizer, engine,
+                fold_idx,
+                train_df,
+                test_df,
+                history_df,
+                strategy,
+                param_optimizer,
+                engine,
             )
 
             folds.append(fold_result)
@@ -171,7 +178,7 @@ class WalkForwardAnalyzer:
         else:
             best_params = {}
 
-        if best_params and hasattr(strategy, '__dict__'):
+        if best_params and hasattr(strategy, "__dict__"):
             for k, v in best_params.items():
                 if hasattr(strategy, k):
                     setattr(strategy, k, v)
@@ -206,9 +213,7 @@ class WalkForwardAnalyzer:
             "best_params": best_params,
         }
 
-    def _aggregate_oos_results(
-        self, returns_list: List[pd.Series], engine
-    ) -> Dict:
+    def _aggregate_oos_results(self, returns_list: List[pd.Series], engine) -> Dict:
         """汇总所有样本外结果"""
         if not returns_list:
             return {}
@@ -246,9 +251,7 @@ class WalkForwardAnalyzer:
             return 0.0
         return (is_sharpe - oos_sharpe) / abs(is_sharpe)
 
-    def _calc_stability_score(
-        self, oos_sharpes: List[float], is_sharpes: List[float]
-    ) -> float:
+    def _calc_stability_score(self, oos_sharpes: List[float], is_sharpes: List[float]) -> float:
         """计算稳定性评分（0-100）
 
         评分依据：
@@ -319,18 +322,22 @@ class WalkForwardAnalyzer:
 
         agg = result.get("aggregated", {})
         if agg:
-            lines.extend([
-                "【样本外汇总绩效】",
-                f"  累计收益:     {agg.get('oos_total_return_pct', 0):>8.2f}%",
-                f"  年化收益:     {agg.get('oos_annualized_return_pct', 0):>8.2f}%",
-                f"  最大回撤:     {agg.get('oos_max_drawdown_pct', 0):>8.2f}%",
-                f"  年化波动率:   {agg.get('oos_volatility_pct', 0):>8.2f}%",
-                f"  索提诺比率:   {agg.get('oos_sortino', 0):>8.2f}",
-                "",
-            ])
+            lines.extend(
+                [
+                    "【样本外汇总绩效】",
+                    f"  累计收益:     {agg.get('oos_total_return_pct', 0):>8.2f}%",
+                    f"  年化收益:     {agg.get('oos_annualized_return_pct', 0):>8.2f}%",
+                    f"  最大回撤:     {agg.get('oos_max_drawdown_pct', 0):>8.2f}%",
+                    f"  年化波动率:   {agg.get('oos_volatility_pct', 0):>8.2f}%",
+                    f"  索提诺比率:   {agg.get('oos_sortino', 0):>8.2f}",
+                    "",
+                ]
+            )
 
         lines.append("【各折详情】")
-        lines.append(f"{'折':>3} {'训练期':>12} {'测试期':>12} {'IS夏普':>7} {'OOS夏普':>8} {'IS收益':>8} {'OOS收益':>9} {'OOS回撤':>8}")
+        lines.append(
+            f"{'折':>3} {'训练期':>12} {'测试期':>12} {'IS夏普':>7} {'OOS夏普':>8} {'IS收益':>8} {'OOS收益':>9} {'OOS回撤':>8}"
+        )
         lines.append("-" * 80)
 
         for fold in result["folds"]:
@@ -345,11 +352,13 @@ class WalkForwardAnalyzer:
                 f"{fold['oos_max_dd_pct']:>7.1f}%"
             )
 
-        lines.extend([
-            "-" * 80,
-            "",
-            "【过拟合评估】",
-        ])
+        lines.extend(
+            [
+                "-" * 80,
+                "",
+                "【过拟合评估】",
+            ]
+        )
 
         decay = result["decay_ratio"]
         if decay < 0:

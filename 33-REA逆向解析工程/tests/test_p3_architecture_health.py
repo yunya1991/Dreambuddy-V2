@@ -3,6 +3,7 @@
 ReflectionEngine 扩展架构反思能力：消费 ArchitectureDebtResult →
 架构健康度报告（JSON 持久化 + 控制台摘要）。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -11,16 +12,16 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "23-四层闭环自进化交易架构"))
 
-from dreambuddy_evolution.engines.reflection_engine import (  # noqa: E402
+from dreambuddy_evolution.engines.reflection_engine import (  # noqa: E402, I001
     ReflectionEngine,
     ArchitectureHealthReport,
 )
 from dreambuddy_evolution.engines.reverse_deriver import ArchitectureDebtResult  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # 1. 可导入 + 报告数据结构
 # ---------------------------------------------------------------------------
+
 
 class TestImportAndStructure:
     def test_architecture_health_report_importable(self):
@@ -38,6 +39,7 @@ class TestImportAndStructure:
 # ---------------------------------------------------------------------------
 # 2. reflect_architecture 健康度计算
 # ---------------------------------------------------------------------------
+
 
 class TestReflectArchitecture:
     def setup_method(self):
@@ -57,7 +59,7 @@ class TestReflectArchitecture:
             refactor_plan=[{"dimension": "file_size", "priority": "P0", "score": 1.0}],
         )
         report = self.engine.reflect_architecture(debt)
-        # 整体健康分 = 1 - 平均债务评分 = 1 - (1.0+1.0)/2 / 4维度? 
+        # 整体健康分 = 1 - 平均债务评分 = 1 - (1.0+1.0)/2 / 4维度?
         # 实际实现：overall = 1 - mean(dimension_scores)
         assert report.overall_score < 1.0
         assert report.health_level in ("critical", "warning")
@@ -76,16 +78,22 @@ class TestReflectArchitecture:
 # 3. JSON 持久化 + 控制台摘要
 # ---------------------------------------------------------------------------
 
+
 class TestReportPersistence:
     def setup_method(self):
         self.engine = ReflectionEngine()
         self.debt = ArchitectureDebtResult(
             debt_dimensions={"file_size": 1.0, "out_degree": 0.5},
             triggered_windows=["refactor:file_size:huge.py"],
-            refactor_plan=[{
-                "dimension": "file_size", "target": "huge.py",
-                "score": 1.0, "action": "拆分", "priority": "P0",
-            }],
+            refactor_plan=[
+                {
+                    "dimension": "file_size",
+                    "target": "huge.py",
+                    "score": 1.0,
+                    "action": "拆分",
+                    "priority": "P0",
+                }
+            ],
             confidence=0.5,
         )
 

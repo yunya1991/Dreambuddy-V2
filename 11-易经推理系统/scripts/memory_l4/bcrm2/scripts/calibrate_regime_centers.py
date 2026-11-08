@@ -6,6 +6,7 @@
 输出 JSON:
   {"TREND_UP_STRONG": [2.5, 3.5], "TREND_UP_MILD": [1.0, 2.0], ...}
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,10 +22,10 @@ _MEMORY_L4 = _THIS.parent.parent.parent
 if str(_MEMORY_L4) not in sys.path:
     sys.path.insert(0, str(_MEMORY_L4))
 
-from bcrm2.indicators import IndicatorBank
-from bcrm2.score_composer import ScoreComposer
-from bcrm2.regime_mapper import RegimeMapper, REGIME_CENTERS
-from bcrm2.labels.regime_labeler import generate_8state_label, REGIME_ORDER
+from bcrm2.indicators import IndicatorBank  # noqa: E402
+from bcrm2.labels.regime_labeler import REGIME_ORDER, generate_8state_label  # noqa: E402
+from bcrm2.regime_mapper import REGIME_CENTERS  # noqa: E402
+from bcrm2.score_composer import ScoreComposer  # noqa: E402
 
 
 def calibrate(csv_path: Path, min_samples: int = 50) -> dict:
@@ -47,7 +48,9 @@ def calibrate(csv_path: Path, min_samples: int = 50) -> dict:
     valid = labels.notna()
 
     centers = {}
-    print(f"{'Regime':<20s} {'N':>6s} {'L_mean':>8s} {'T_mean':>8s} {'L_med':>8s} {'T_med':>8s}  vs_init")
+    print(
+        f"{'Regime':<20s} {'N':>6s} {'L_mean':>8s} {'T_mean':>8s} {'L_med':>8s} {'T_med':>8s}  vs_init"
+    )
     for regime in REGIME_ORDER:
         mask = (labels == regime) & valid
         n = int(mask.sum())
@@ -68,8 +71,10 @@ def calibrate(csv_path: Path, min_samples: int = 50) -> dict:
         dL = L_mean - init_L
         dT = T_mean - init_T
         flag = " ***" if (abs(dL) > 0.5 or abs(dT) > 0.5) else ""
-        print(f"{regime:<20s} {n:>6d} {L_mean:>8.2f} {T_mean:>8.2f} {L_med:>8.2f} {T_med:>8.2f}  "
-              f"init=({init_L:+.1f},{init_T:+.1f}) d=({dL:+.2f},{dT:+.2f}){flag}")
+        print(
+            f"{regime:<20s} {n:>6d} {L_mean:>8.2f} {T_mean:>8.2f} {L_med:>8.2f} {T_med:>8.2f}  "
+            f"init=({init_L:+.1f},{init_T:+.1f}) d=({dL:+.2f},{dT:+.2f}){flag}"
+        )
 
     return centers
 

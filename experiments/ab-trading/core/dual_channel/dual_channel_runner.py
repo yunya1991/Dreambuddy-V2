@@ -12,26 +12,25 @@ P2-8 spec §4.2 执行层：在同一市场数据上并行运行左右脑通道�
   - experiments/ab-trading/core/nodes/oneirology.py（做梦部，已内置）
   - 11-易经推理系统/scripts/memory_l4/bcrm/yijing_engine.py（易经，通过 bridge 注入）
 """
+
 from __future__ import annotations
+
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Dict, Optional, List, Any
+from typing import Any, Dict, Optional
 
-from .corpus_callosum import CorpusCallosum, ChannelResult, IntegrationResult
-
+from .corpus_callosum import ChannelResult, CorpusCallosum, IntegrationResult
 
 # ── Yijing Bridge：注入 11-易经推理系统 路径 ──────────────────────
-_YIJING_PATH = (
-    Path(__file__).resolve().parents[4]
-    / "11-易经推理系统" / "scripts"
-)
+_YIJING_PATH = Path(__file__).resolve().parents[4] / "11-易经推理系统" / "scripts"
 if str(_YIJING_PATH) not in sys.path:
     sys.path.insert(0, str(_YIJING_PATH))
 
 _YIJING_AVAILABLE = False
 try:
     from memory_l4.bcrm.yijing_engine import YijingEngine as _YijingEngine
+
     _YIJING_AVAILABLE = True
 except Exception:
     _YijingEngine = None
@@ -40,6 +39,7 @@ except Exception:
 @dataclass
 class DualChannelDecision:
     """双通道决策完整结果"""
+
     integration: IntegrationResult
     left_brain: ChannelResult
     right_brain: Optional[ChannelResult]
@@ -67,12 +67,20 @@ class DualChannelDecision:
                 "confidence": round(self.left_brain.confidence, 4),
                 "source": self.left_brain.source,
             },
-            "right_brain": {
-                "direction": self.right_brain.direction if self.right_brain else None,
-                "confidence": round(self.right_brain.confidence, 4) if self.right_brain else None,
-                "source": self.right_brain.source if self.right_brain else None,
-            } if self.right_brain else None,
-            "yijing_hexagram": self.yijing_raw.get("hexagram_name_cn", "") if self.yijing_raw else "",
+            "right_brain": (
+                {
+                    "direction": self.right_brain.direction if self.right_brain else None,
+                    "confidence": (
+                        round(self.right_brain.confidence, 4) if self.right_brain else None
+                    ),
+                    "source": self.right_brain.source if self.right_brain else None,
+                }
+                if self.right_brain
+                else None
+            ),
+            "yijing_hexagram": (
+                self.yijing_raw.get("hexagram_name_cn", "") if self.yijing_raw else ""
+            ),
             "divergence_flag": self.integration.divergence_flag,
             "timestamp": self.timestamp,
         }
@@ -186,8 +194,13 @@ class DualChannelRunner:
             )
 
             # 映射 direction_hint → LONG/SHORT/HOLD
-            dir_map = {"UP": "LONG", "DOWN": "SHORT", "FLAT": "HOLD",
-                       "TRANSITIONING": "HOLD", "UNKNOWN": "HOLD"}
+            dir_map = {
+                "UP": "LONG",
+                "DOWN": "SHORT",
+                "FLAT": "HOLD",
+                "TRANSITIONING": "HOLD",
+                "UNKNOWN": "HOLD",
+            }
             direction = dir_map.get(result.direction_hint, "HOLD")
             confidence = result.confidence
 
@@ -205,7 +218,9 @@ class DualChannelRunner:
             )
         except Exception as e:
             return ChannelResult(
-                direction="HOLD", confidence=0.0, source="yijing_error",
+                direction="HOLD",
+                confidence=0.0,
+                source="yijing_error",
                 reasoning=[f"易经引擎异常: {e}"],
             )
 
@@ -226,7 +241,9 @@ class DualChannelRunner:
             # 做梦部只在检测到强迫性重复时才有信号价值
             if hold_streak < 3:
                 return ChannelResult(
-                    direction="HOLD", confidence=0.4, source="oneirology",
+                    direction="HOLD",
+                    confidence=0.4,
+                    source="oneirology",
                     reasoning=["做梦部: 无强迫性重复，无信号"],
                     metadata=result.get("pattern", {}),
                 )
@@ -240,7 +257,9 @@ class DualChannelRunner:
             )
         except Exception as e:
             return ChannelResult(
-                direction="HOLD", confidence=0.0, source="oneirology_error",
+                direction="HOLD",
+                confidence=0.0,
+                source="oneirology_error",
                 reasoning=[f"做梦部异常: {e}"],
             )
 

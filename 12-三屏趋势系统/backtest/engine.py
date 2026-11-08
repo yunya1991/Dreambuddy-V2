@@ -13,9 +13,10 @@
 - 输出：净值曲线、交易记录、绩效指标
 """
 
-from typing import Dict, Optional, Tuple, List, Union
-import pandas as pd
+from typing import Dict, Optional, Tuple, Union
+
 import numpy as np
+import pandas as pd
 
 
 class BacktestEngine:
@@ -107,13 +108,25 @@ class BacktestEngine:
             ws_arr = None
             wc_arr = None
             if wave_signals is not None:
-                ws_arr = np.array(wave_signals) if not isinstance(wave_signals, np.ndarray) else wave_signals
+                ws_arr = (
+                    np.array(wave_signals)
+                    if not isinstance(wave_signals, np.ndarray)
+                    else wave_signals
+                )
             if wave_confs is not None:
-                wc_arr = np.array(wave_confs, dtype=float) if not isinstance(wave_confs, np.ndarray) else wave_confs
+                wc_arr = (
+                    np.array(wave_confs, dtype=float)
+                    if not isinstance(wave_confs, np.ndarray)
+                    else wave_confs
+                )
 
             if base_positions is not None:
                 # 分离模式：主策略仓位 + 物理增强的波浪仓位
-                base_arr = np.array(base_positions, dtype=float) if not isinstance(base_positions, np.ndarray) else base_positions
+                base_arr = (
+                    np.array(base_positions, dtype=float)
+                    if not isinstance(base_positions, np.ndarray)
+                    else base_positions
+                )
                 # 波浪仓位 = 总仓位 - 主策略仓位
                 wave_pos_arr = pos_arr - base_arr
 
@@ -136,9 +149,7 @@ class BacktestEngine:
 
             position_sizes = pd.Series(enhanced_pos, index=prices.index)
 
-        actual_position, trade_costs = self._calculate_position_and_costs(
-            prices, position_sizes
-        )
+        actual_position, trade_costs = self._calculate_position_and_costs(prices, position_sizes)
 
         returns = self._calculate_returns(prices, actual_position)
 
@@ -147,6 +158,7 @@ class BacktestEngine:
         trades = self._extract_trades(prices, actual_position, trade_costs)
 
         from .metrics import calculate_performance_metrics
+
         metrics = calculate_performance_metrics(equity, returns, trades)
 
         result = {
@@ -188,9 +200,7 @@ class BacktestEngine:
 
         return actual_position, trade_costs
 
-    def _calculate_returns(
-        self, prices: pd.Series, position: pd.Series
-    ) -> pd.Series:
+    def _calculate_returns(self, prices: pd.Series, position: pd.Series) -> pd.Series:
         """
         计算策略收益率
 
@@ -204,9 +214,7 @@ class BacktestEngine:
 
         return strategy_returns
 
-    def _calculate_equity(
-        self, returns: pd.Series, trade_costs: pd.Series
-    ) -> pd.Series:
+    def _calculate_equity(self, returns: pd.Series, trade_costs: pd.Series) -> pd.Series:
         """
         计算净值曲线
 
@@ -252,16 +260,18 @@ class BacktestEngine:
                 exit_price = price * (1 - current_side * self.slippage)
                 pnl_pct = current_side * (exit_price / entry_price - 1) * self.leverage
 
-                trades.append({
-                    "entry_time": entry_time,
-                    "exit_time": time,
-                    "side": "long" if current_side > 0 else "short",
-                    "entry_price": round(entry_price, 2),
-                    "exit_price": round(exit_price, 2),
-                    "size": round(entry_size, 4),
-                    "pnl_pct": round(pnl_pct * 100, 2),
-                    "holding_bars": i - position.index.get_loc(entry_time),
-                })
+                trades.append(
+                    {
+                        "entry_time": entry_time,
+                        "exit_time": time,
+                        "side": "long" if current_side > 0 else "short",
+                        "entry_price": round(entry_price, 2),
+                        "exit_price": round(exit_price, 2),
+                        "size": round(entry_size, 4),
+                        "pnl_pct": round(pnl_pct * 100, 2),
+                        "holding_bars": i - position.index.get_loc(entry_time),
+                    }
+                )
                 current_side = 0
                 entry_price = 0
                 entry_time = None
@@ -269,16 +279,18 @@ class BacktestEngine:
                 exit_price = price * (1 - current_side * self.slippage)
                 pnl_pct = current_side * (exit_price / entry_price - 1) * self.leverage
 
-                trades.append({
-                    "entry_time": entry_time,
-                    "exit_time": time,
-                    "side": "long" if current_side > 0 else "short",
-                    "entry_price": round(entry_price, 2),
-                    "exit_price": round(exit_price, 2),
-                    "size": round(entry_size, 4),
-                    "pnl_pct": round(pnl_pct * 100, 2),
-                    "holding_bars": i - position.index.get_loc(entry_time),
-                })
+                trades.append(
+                    {
+                        "entry_time": entry_time,
+                        "exit_time": time,
+                        "side": "long" if current_side > 0 else "short",
+                        "entry_price": round(entry_price, 2),
+                        "exit_price": round(exit_price, 2),
+                        "size": round(entry_size, 4),
+                        "pnl_pct": round(pnl_pct * 100, 2),
+                        "holding_bars": i - position.index.get_loc(entry_time),
+                    }
+                )
 
                 current_side = 1 if pos > 0 else -1
                 entry_price = price * (1 + current_side * self.slippage)
@@ -288,21 +300,31 @@ class BacktestEngine:
         if current_side != 0:
             exit_price = prices.iloc[-1]
             pnl_pct = current_side * (exit_price / entry_price - 1) * self.leverage
-            trades.append({
-                "entry_time": entry_time,
-                "exit_time": position.index[-1],
-                "side": "long" if current_side > 0 else "short",
-                "entry_price": round(entry_price, 2),
-                "exit_price": round(exit_price, 2),
-                "size": round(entry_size, 4),
-                "pnl_pct": round(pnl_pct * 100, 2),
-                "holding_bars": len(position) - position.index.get_loc(entry_time),
-                "open": True,
-            })
+            trades.append(
+                {
+                    "entry_time": entry_time,
+                    "exit_time": position.index[-1],
+                    "side": "long" if current_side > 0 else "short",
+                    "entry_price": round(entry_price, 2),
+                    "exit_price": round(exit_price, 2),
+                    "size": round(entry_size, 4),
+                    "pnl_pct": round(pnl_pct * 100, 2),
+                    "holding_bars": len(position) - position.index.get_loc(entry_time),
+                    "open": True,
+                }
+            )
 
         if trades:
             return pd.DataFrame(trades)
-        return pd.DataFrame(columns=[
-            "entry_time", "exit_time", "side", "entry_price",
-            "exit_price", "size", "pnl_pct", "holding_bars"
-        ])
+        return pd.DataFrame(
+            columns=[
+                "entry_time",
+                "exit_time",
+                "side",
+                "entry_price",
+                "exit_price",
+                "size",
+                "pnl_pct",
+                "holding_bars",
+            ]
+        )

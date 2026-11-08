@@ -14,13 +14,12 @@ DreamOS G层 — 历史回放
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
 from collections import deque
-from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from dreamos.shared.state import State
 
-from .types import HistoryEntry, ReplayResult
+from .types import HistoryEntry
 
 
 class HistoryReplay:
@@ -73,12 +72,14 @@ class HistoryReplay:
         self._entries.append(entry)
         return entry
 
-    def query(self,
-              intent_type: Optional[str] = None,
-              final_action: Optional[str] = None,
-              chain: Optional[str] = None,
-              min_confidence: float = 0.0,
-              limit: int = 20) -> List[HistoryEntry]:
+    def query(
+        self,
+        intent_type: Optional[str] = None,
+        final_action: Optional[str] = None,
+        chain: Optional[str] = None,
+        min_confidence: float = 0.0,
+        limit: int = 20,
+    ) -> List[HistoryEntry]:
         """查询历史记录
 
         Args:
@@ -132,8 +133,9 @@ class HistoryReplay:
 
             if entry.intent_type not in action_by_intent:
                 action_by_intent[entry.intent_type] = {}
-            action_by_intent[entry.intent_type][entry.final_action] = \
+            action_by_intent[entry.intent_type][entry.final_action] = (
                 action_by_intent[entry.intent_type].get(entry.final_action, 0) + 1
+            )
 
             avg_confidence += entry.final_confidence
             avg_tokens += entry.total_tokens

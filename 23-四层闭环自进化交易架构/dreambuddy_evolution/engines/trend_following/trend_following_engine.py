@@ -9,10 +9,10 @@
 FAIL-OPEN 原则（HC-TF-07）：
   任何异常 → 返回中性兜底 {"action": "WAIT"}，不抛异常，不阻塞交易
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +20,19 @@ logger = logging.getLogger(__name__)
 # ====================================================================
 # 常量（硬约束对齐）
 # ====================================================================
-RISK_PER_TRADE = 0.01          # 1% 账户风险（海龟标准）
-MAX_UNITS = 4                   # 最多 4 个加仓 Unit（HC-TF-02）
-ADDON_INTERVAL_ATR = 0.5        # 每 0.5×ATR 加仓 1 Unit（HC-TF-02）
+RISK_PER_TRADE = 0.01  # 1% 账户风险（海龟标准）
+MAX_UNITS = 4  # 最多 4 个加仓 Unit（HC-TF-02）
+ADDON_INTERVAL_ATR = 0.5  # 每 0.5×ATR 加仓 1 Unit（HC-TF-02）
 
-ATR_STOP_MULTIPLIER = 2.0       # 2×ATR 止损（HC-TF-01）
-SL_FLOOR_PCT = 0.04             # SL 下限 4%（HC-TF-01，对齐 CLAUDE.md）
-SL_CAP_PCT = 0.15               # SL 上限 15%（HC-TF-01）
+ATR_STOP_MULTIPLIER = 2.0  # 2×ATR 止损（HC-TF-01）
+SL_FLOOR_PCT = 0.04  # SL 下限 4%（HC-TF-01，对齐 CLAUDE.md）
+SL_CAP_PCT = 0.15  # SL 上限 15%（HC-TF-01）
 
-EXIT_FAST_PERIOD = 10           # 快系统离场：跌破 10 日低点
-EXIT_SLOW_PERIOD = 20           # 慢系统离场：跌破 20 日低点
+EXIT_FAST_PERIOD = 10  # 快系统离场：跌破 10 日低点
+EXIT_SLOW_PERIOD = 20  # 慢系统离场：跌破 20 日低点
 
-DONCHIAN_FAST = 20              # 海龟快系统
-DONCHIAN_SLOW = 55              # 海龟慢系统
+DONCHIAN_FAST = 20  # 海龟快系统
+DONCHIAN_SLOW = 55  # 海龟慢系统
 
 
 class DonchianChannel:
@@ -57,7 +57,7 @@ class DonchianChannel:
                 return "NEUTRAL"
 
             upper = max(float(h) for h in highs[-period:])
-            lower = min(float(l) for l in lows[-period:])
+            lower = min(float(l) for l in lows[-period:])  # noqa: E741
             current_close = float(closes[-1])
 
             if current_close > upper:
@@ -202,7 +202,7 @@ class TrendExitRule:
             if len(lows) < period or not closes:
                 return False
 
-            low_bound = min(float(l) for l in lows[-period:])
+            low_bound = min(float(l) for l in lows[-period:])  # noqa: E741
             current_close = float(closes[-1])
 
             # 当前收盘价跌破 period 日最低价 → 离场

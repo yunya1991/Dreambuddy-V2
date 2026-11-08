@@ -30,17 +30,16 @@ _COGNITIVE_DIR = Path(__file__).resolve().parents[3] / "4-MEMORY" / "9-工具与
 if str(_COGNITIVE_DIR) not in sys.path:
     sys.path.insert(0, str(_COGNITIVE_DIR))
 
-from bridge import (
-    record_retrieval_as_memory,
-    verify_and_feedback,
+from bridge import (  # noqa: E402
+    DEFAULT_BOOST,
     apply_boost_to_results,
     get_boost,
-    DEFAULT_BOOST,
-    BOOST_SUCCESS_FACTOR,
+    record_retrieval_as_memory,
+    verify_and_feedback,
 )
 
-
 # === MCP stdio 客户端 ===
+
 
 def send_mcp(proc, request):
     """向 MCP server 发送一条 JSON-RPC 请求，返回响应字典。"""
@@ -52,11 +51,15 @@ def send_mcp(proc, request):
 
 def call_tool(proc, tool_name, arguments):
     """调用 MCP 工具，返回 result.content[0].text 解析后的字典。"""
-    resp = send_mcp(proc, {
-        "jsonrpc": "2.0", "id": 0,
-        "method": "tools/call",
-        "params": {"name": tool_name, "arguments": arguments},
-    })
+    resp = send_mcp(
+        proc,
+        {
+            "jsonrpc": "2.0",
+            "id": 0,
+            "method": "tools/call",
+            "params": {"name": tool_name, "arguments": arguments},
+        },
+    )
     text = resp["result"]["content"][0]["text"]
     payload = json.loads(text)
     # 统一信封：业务字段在 data 内
@@ -67,34 +70,50 @@ def test_mcp_stdio_record_verify(tmp_path):
     """测试1：通过 MCP stdio 调用 record → verify → stats → health。"""
     print("\n=== 测试1：MCP stdio 接口闭环 ===")
     env = dict(os.environ)
-    env.update({
-        "COGNITIVE_MCP_WRITE_ENABLED": "true",
-        "COGNITIVE_MCP_DEFAULT_PRINCIPAL": "admin",
-        "COGNITIVE_MCP_EVAL_GATE_MODE": "shadow",
-        "COGNITIVE_MCP_DB_PATH": str(tmp_path / "mcp_e2e.db"),
-    })
+    env.update(
+        {
+            "COGNITIVE_MCP_WRITE_ENABLED": "true",
+            "COGNITIVE_MCP_DEFAULT_PRINCIPAL": "admin",
+            "COGNITIVE_MCP_EVAL_GATE_MODE": "shadow",
+            "COGNITIVE_MCP_DB_PATH": str(tmp_path / "mcp_e2e.db"),
+        }
+    )
     proc = subprocess.Popen(
         ["python3", str(_COGNITIVE_DIR / "cognitive_mcp_server.py")],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        text=True, encoding="utf-8", errors="replace",
-        cwd=str(_COGNITIVE_DIR), env=env,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=str(_COGNITIVE_DIR),
+        env=env,
     )
     try:
         # initialize
-        init_resp = send_mcp(proc, {
-            "jsonrpc": "2.0", "id": 1,
-            "method": "initialize", "params": {},
-        })
+        init_resp = send_mcp(
+            proc,
+            {
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {},
+            },
+        )
         assert init_resp["result"]["serverInfo"]["name"] == "cognitive-memory-server"
         print(f"[OK] initialize: {init_resp['result']['serverInfo']['name']}")
 
         # record
-        rec = call_tool(proc, "record", {
-            "content": "[MCP闭环测试] RAG↔4-MEMORY桥接验证记忆",
-            "quality_level": "C",
-            "tags": "rag,bridge,mcp-test",
-            "source": "mcp-e2e-test",
-        })
+        rec = call_tool(
+            proc,
+            "record",
+            {
+                "content": "[MCP闭环测试] RAG↔4-MEMORY桥接验证记忆",
+                "quality_level": "C",
+                "tags": "rag,bridge,mcp-test",
+                "source": "mcp-e2e-test",
+            },
+        )
         mid = rec["memory_id"]
         assert mid, f"record 未返回 memory_id: {rec}"
         assert rec["status"] == "recorded"
@@ -135,6 +154,7 @@ def test_bridge_e2e_closed_loop(mid_from_mcp=None):
 
     # 使用真实 CLE（隔离到临时库，避免污染生产认知库）
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp / "bridge_e2e.db"))
     assert cle is not None, "CognitiveLoopEntry 初始化失败"
     print(f"[OK] CLE 初始化: storage={cle._storage_path}")
@@ -142,15 +162,22 @@ def test_bridge_e2e_closed_loop(mid_from_mcp=None):
     # 1. record 检索结果为 C 级记忆
     query = "BCRM推理引擎 344模型"
     results = [
-        {"source_file": "BCRM2推理引擎.md", "heading": "344+278模型",
-         "content": "BCRM2采用344+278双模型架构，识别市场344种状态",
-         "domain": "trading", "final_score": 0.85},
-        {"source_file": "五计庙算战略层.md", "heading": "五维评分",
-         "content": "道天地将法五维加权计算总分",
-         "domain": "strategy", "final_score": 0.72},
+        {
+            "source_file": "BCRM2推理引擎.md",
+            "heading": "344+278模型",
+            "content": "BCRM2采用344+278双模型架构，识别市场344种状态",
+            "domain": "trading",
+            "final_score": 0.85,
+        },
+        {
+            "source_file": "五计庙算战略层.md",
+            "heading": "五维评分",
+            "content": "道天地将法五维加权计算总分",
+            "domain": "strategy",
+            "final_score": 0.72,
+        },
     ]
-    mappings = record_retrieval_as_memory(
-        query, results, cle=cle, map_path=map_path)
+    mappings = record_retrieval_as_memory(query, results, cle=cle, map_path=map_path)
     assert len(mappings) == 2, f"应记录2条映射，实际{len(mappings)}"
     print(f"[OK] record_retrieval_as_memory: {len(mappings)}条映射")
     for m in mappings:
@@ -164,8 +191,8 @@ def test_bridge_e2e_closed_loop(mid_from_mcp=None):
 
     # 3. verify 第一条（成功）并反哺 boost
     r1 = verify_and_feedback(
-        mappings[0]["memory_id"], success=True, cle=cle,
-        map_path=map_path, weight_path=weight_path)
+        mappings[0]["memory_id"], success=True, cle=cle, map_path=map_path, weight_path=weight_path
+    )
     assert r1["status"] == "done", f"verify 反馈失败: {r1}"
     assert r1["boost_updated"] is True
     assert r1["source_file"] == "BCRM2推理引擎.md"
@@ -173,8 +200,8 @@ def test_bridge_e2e_closed_loop(mid_from_mcp=None):
 
     # 4. verify 第二条（失败）反哺降权
     r2 = verify_and_feedback(
-        mappings[1]["memory_id"], success=False, cle=cle,
-        map_path=map_path, weight_path=weight_path)
+        mappings[1]["memory_id"], success=False, cle=cle, map_path=map_path, weight_path=weight_path
+    )
     assert r2["status"] == "done"
     assert r2["new_boost"] < DEFAULT_BOOST
     print(f"[OK] verify_and_feedback(success=False): boost={r2['new_boost']}")
@@ -187,10 +214,18 @@ def test_bridge_e2e_closed_loop(mid_from_mcp=None):
 
     # 6. apply_boost_to_results 验证 boost 叠加与重排序
     new_results = [
-        {"source_file": "BCRM2推理引擎.md", "heading": "344+278模型",
-         "content": "BCRM2", "final_score": 0.80},
-        {"source_file": "五计庙算战略层.md", "heading": "五维评分",
-         "content": "五计", "final_score": 0.82},
+        {
+            "source_file": "BCRM2推理引擎.md",
+            "heading": "344+278模型",
+            "content": "BCRM2",
+            "final_score": 0.80,
+        },
+        {
+            "source_file": "五计庙算战略层.md",
+            "heading": "五维评分",
+            "content": "五计",
+            "final_score": 0.82,
+        },
     ]
     adjusted = apply_boost_to_results(new_results, weight_path=weight_path)
     # BCRM2 boost > 1.0，五计 boost < 1.0，应调整排序
@@ -212,10 +247,14 @@ def test_recall_retrieves_recorded_memory():
     """测试3：recall 能检索到刚 record 的桥接记忆。"""
     print("\n=== 测试3：recall 检索桥接记忆 ===")
     from cognitive_loop_entry import get_cle
+
     cle = get_cle()
     memories = cle.recall("RAG BCRM 桥接", top_k=5, min_quality="C")
-    rag_memories = [m for m in memories if "RAG检索" in m.get("content", "")
-                    or "rag-bridge" in str(m.get("tags", []))]
+    rag_memories = [
+        m
+        for m in memories
+        if "RAG检索" in m.get("content", "") or "rag-bridge" in str(m.get("tags", []))
+    ]
     print(f"[OK] recall 返回 {len(memories)} 条，其中 RAG 桥接记忆 {len(rag_memories)} 条")
     if rag_memories:
         m = rag_memories[0]
@@ -237,10 +276,10 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("闭环测试总结")
     print("=" * 60)
-    print(f"MCP stdio record/verify/stats/health: PASS")
-    print(f"桥接 record→映射→verify→boost反哺: PASS")
+    print("MCP stdio record/verify/stats/health: PASS")
+    print("桥接 record→映射→verify→boost反哺: PASS")
     print(f"recall 检索桥接记忆: {'PASS' if recalled else 'SKIP(异步索引未刷新)'}")
-    print(f"\nSQLite: cognitive_memory.db (真实写入)")
+    print("\nSQLite: cognitive_memory.db (真实写入)")
     print(f"JSONL: {result['map_path']}")
     print(f"JSON:  {result['weight_path']}")
     print("=" * 60)

@@ -12,12 +12,16 @@ def test_refresh_okx_market_intel_writes_output(tmp_path, monkeypatch) -> None:
     def fake_collect(*, output_dir: Path, raw_dir: Path, asset: str, cmd=None):
         latest = Path(output_dir) / "okx_market_intel_latest.json"
         raw = Path(raw_dir) / "okx_market_intel_20260408_0000.json"
-        obj = {"quality": {"status": "ok"}, "topics": [{"title": "ETF", "heat": 0.9, "sentiment": 0.1, "url": "x", "ts": "t"}]}
+        obj = {
+            "quality": {"status": "ok"},
+            "topics": [{"title": "ETF", "heat": 0.9, "sentiment": 0.1, "url": "x", "ts": "t"}],
+        }
         latest.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
         raw.write_text(json.dumps(obj, ensure_ascii=False), encoding="utf-8")
         return latest, raw
 
     from ops.nanoclaw.core_task1.flow.scripts import okx_skill_collector as c
+
     monkeypatch.setattr(c, "collect_okx_market_intel_latest", fake_collect)
 
     analyzer = na.NarrativeAnalyzer(hours=24)

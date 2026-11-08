@@ -5,15 +5,17 @@ TDD: 验证 RESULT_TEMPLATE 支持 Commentary + Final 双通道，
 _parse_output 能从双通道输出中正确解析 Final JSON
 覆盖 AC-6
 """
-import sys
+
+import sys  # noqa: I001
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def test_result_template_has_dual_channel():
     """TR-4.1: RESULT_TEMPLATE 包含 commentary 和 final 标识"""
     from dreamos.adapters.skill_adapter import RESULT_TEMPLATE
+
     assert "commentary" in RESULT_TEMPLATE.lower(), "模板应包含 commentary 通道"
     assert "final" in RESULT_TEMPLATE.lower(), "模板应包含 final 通道"
 
@@ -47,12 +49,12 @@ def test_parse_backward_compatible_single_json():
 
     node = SkillNode(skill_path="/tmp/test.md", node_id="test")
 
-    single_output = '''{
+    single_output = """{
   "direction": "SHORT",
   "confidence": 0.6,
   "rationale": ["看跌信号"],
   "outputs": {}
-}'''
+}"""
     parsed = node._parse_output(single_output)
     assert parsed["direction"] == "SHORT"
     assert parsed["confidence"] == 0.6

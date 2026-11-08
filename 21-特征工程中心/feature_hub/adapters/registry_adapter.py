@@ -1,4 +1,5 @@
 """RegistryAdapter — 适配已有 FeatureRegistry 模块"""
+
 from __future__ import annotations
 
 from typing import Optional

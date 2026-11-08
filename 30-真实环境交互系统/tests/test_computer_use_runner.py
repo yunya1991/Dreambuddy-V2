@@ -16,6 +16,7 @@
 - 验证模式 A 仅生成 plan 不执行
 - 验证模式 B 直接调 pyautogui/osascript
 """
+
 import os
 import sys
 import tempfile
@@ -35,6 +36,7 @@ class TestComputerUseRunnerConstruction(unittest.TestCase):
 
     def test_init_default_config(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         self.assertEqual(runner._subagent_type, "computer_use")
         self.assertEqual(runner._step_timeout, 60)
@@ -45,6 +47,7 @@ class TestComputerUseRunnerConstruction(unittest.TestCase):
 
     def test_init_from_config(self):
         from core.computer_use_runner import ComputerUseRunner
+
         config = {
             "computer_use": {
                 "subagent_type": "my_subagent",
@@ -70,9 +73,10 @@ class TestComputerUseRunnerConstruction(unittest.TestCase):
 
     def test_screenshot_dir_created(self):
         from core.computer_use_runner import ComputerUseRunner
+
         with tempfile.TemporaryDirectory() as tmp:
             sd = os.path.join(tmp, "cu_shots")
-            runner = ComputerUseRunner({"computer_use": {"screenshot_dir": sd}})
+            runner = ComputerUseRunner({"computer_use": {"screenshot_dir": sd}})  # noqa: F841
             self.assertTrue(Path(sd).exists())
 
 
@@ -84,6 +88,7 @@ class TestBuildPlan(unittest.TestCase):
 
     def test_build_plan_basic(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         yaml_dict = {
             "default_app": "Google Chrome",
@@ -114,12 +119,14 @@ class TestBuildPlan(unittest.TestCase):
 
     def test_build_plan_empty_steps(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         plan = runner.build_plan({})
         self.assertEqual(plan, [])
 
     def test_build_plan_unknown_step_fallback(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         plan = runner.build_plan({"steps": [{"unknown_action": {"x": 1}}]})
         self.assertEqual(len(plan), 1)
@@ -133,7 +140,8 @@ class TestParseStepResponse(unittest.TestCase):
     """解析 subagent 文本响应"""
 
     def test_parse_success_keyword(self):
-        from core.computer_use_runner import ComputerUseRunner, ComputerUseStep
+        from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         step = {"click": {"target": "刷新按钮"}}
         s = runner.parse_step_response("操作成功完成 success", step)
@@ -143,6 +151,7 @@ class TestParseStepResponse(unittest.TestCase):
 
     def test_parse_failure_keyword(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         step = {"click": {"target": "刷新按钮"}}
         s = runner.parse_step_response("操作失败 fail: 元素未找到", step)
@@ -151,6 +160,7 @@ class TestParseStepResponse(unittest.TestCase):
 
     def test_parse_screenshot_path_extraction(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         step = {"screenshot": {"path": "/tmp/x.png"}}
         s = runner.parse_step_response("截图已保存 /tmp/cu_step1.png 完成", step)
@@ -158,6 +168,7 @@ class TestParseStepResponse(unittest.TestCase):
 
     def test_parse_empty_response(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         s = runner.parse_step_response("", {"click": {"target": "x"}})
         self.assertFalse(s.success)
@@ -171,6 +182,7 @@ class TestRunTaskFromYamlComputerUseMode(unittest.TestCase):
 
     def test_a_mode_plan_only_true_returns_plan(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         scenario = {
             "name": "跨应用测试",
@@ -186,6 +198,7 @@ class TestRunTaskFromYamlComputerUseMode(unittest.TestCase):
 
     def test_a_mode_plan_only_false_errors(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         scenario = {
             "name": "跨应用测试",
@@ -200,6 +213,7 @@ class TestRunTaskFromYamlComputerUseMode(unittest.TestCase):
 
     def test_a_mode_empty_steps_returns_error(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         result = runner.run_task_from_yaml({"name": "x", "mode": "computer_use", "steps": []})
         self.assertFalse(result.passed)
@@ -214,6 +228,7 @@ class TestRunTaskFromYamlDesktopNativeMode(unittest.TestCase):
 
     def test_b_mode_open_app_calls_subprocess_open(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         scenario = {
             "name": "跨应用测试",
@@ -232,6 +247,7 @@ class TestRunTaskFromYamlDesktopNativeMode(unittest.TestCase):
 
     def test_b_mode_screenshot_uses_pyautogui(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({"computer_use": {"screenshot_dir": "/tmp/test_cu_shots"}})
         scenario = {
             "name": "截图测试",
@@ -240,6 +256,7 @@ class TestRunTaskFromYamlDesktopNativeMode(unittest.TestCase):
         }
         with patch.dict(sys.modules, {"pyautogui": MagicMock()}):
             import pyautogui
+
             img_mock = MagicMock()
             img_mock.save = MagicMock()
             pyautogui.screenshot = MagicMock(return_value=img_mock)
@@ -250,6 +267,7 @@ class TestRunTaskFromYamlDesktopNativeMode(unittest.TestCase):
 
     def test_b_mode_bail_on_step_failure(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         scenario = {
             "name": "失败测试",
@@ -263,6 +281,7 @@ class TestRunTaskFromYamlDesktopNativeMode(unittest.TestCase):
             mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="not found")
             with patch.dict(sys.modules, {"pyautogui": MagicMock()}):
                 import pyautogui
+
                 pyautogui.locateOnScreen = MagicMock(return_value=None)
                 result = runner.run_task_from_yaml(scenario)
                 # 第一步失败（returncode=1），bail-out，第二步不执行
@@ -272,6 +291,7 @@ class TestRunTaskFromYamlDesktopNativeMode(unittest.TestCase):
 
     def test_b_mode_with_file_assertion(self):
         from core.computer_use_runner import ComputerUseRunner
+
         runner = ComputerUseRunner({})
         # 创建临时文件作为断言目标
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
@@ -305,6 +325,7 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_file_exists_true(self):
         from utils.desktop_assertions import DesktopAssertions
+
         with tempfile.NamedTemporaryFile(delete=False) as f:
             tmp_path = f.name
         try:
@@ -316,12 +337,14 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_file_exists_false(self):
         from utils.desktop_assertions import DesktopAssertions
+
         r = DesktopAssertions.file_exists("/tmp/__nonexistent_file_xyz123__.txt")
         self.assertFalse(r.passed)
         self.assertIsNotNone(r.error)
 
     def test_file_contains_true(self):
         from utils.desktop_assertions import DesktopAssertions
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("hello world execution_complete done")
             tmp_path = f.name
@@ -333,6 +356,7 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_file_contains_false_text_not_found(self):
         from utils.desktop_assertions import DesktopAssertions
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("hello world")
             tmp_path = f.name
@@ -344,12 +368,14 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_file_contains_file_not_found(self):
         from utils.desktop_assertions import DesktopAssertions
+
         r = DesktopAssertions.file_contains("/tmp/__nope__.txt", "x")
         self.assertFalse(r.passed)
         self.assertIn("not found", r.error)
 
     def test_file_size_gt(self):
         from utils.desktop_assertions import DesktopAssertions
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("x" * 100)
             tmp_path = f.name
@@ -363,6 +389,7 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_terminal_contains_with_subagent_response(self):
         from utils.desktop_assertions import DesktopAssertions
+
         r = DesktopAssertions.terminal_contains(
             "execution_complete",
             subagent_response="some output execution_complete done",
@@ -373,6 +400,7 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_terminal_contains_subagent_text_not_found(self):
         from utils.desktop_assertions import DesktopAssertions
+
         r = DesktopAssertions.terminal_contains(
             "execution_complete",
             subagent_response="nothing relevant here",
@@ -381,6 +409,7 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_terminal_contains_osascript_mode(self):
         from utils.desktop_assertions import DesktopAssertions
+
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(
                 returncode=0, stdout="some output execution_complete done", stderr=""
@@ -393,6 +422,7 @@ class TestDesktopAssertions(unittest.TestCase):
     def test_ui_visual_match_identical_images(self):
         """两张相同截图 diff_score=0，passed=True"""
         from utils.desktop_assertions import DesktopAssertions
+
         # 用 PIL 生成两张相同的小图
         try:
             from PIL import Image
@@ -410,6 +440,7 @@ class TestDesktopAssertions(unittest.TestCase):
     def test_ui_visual_match_different_images(self):
         """两张完全不同截图 diff_score 高，passed=False"""
         from utils.desktop_assertions import DesktopAssertions
+
         try:
             from PIL import Image
         except ImportError:
@@ -425,6 +456,7 @@ class TestDesktopAssertions(unittest.TestCase):
 
     def test_ui_visual_match_missing_current(self):
         from utils.desktop_assertions import DesktopAssertions
+
         r = DesktopAssertions.ui_visual_match("/tmp/__nope1__.png", "/tmp/__nope2__.png")
         self.assertFalse(r.passed)
         self.assertIsNotNone(r.error)
@@ -438,6 +470,7 @@ class TestDataclassesToDict(unittest.TestCase):
 
     def test_step_to_dict(self):
         from core.computer_use_runner import ComputerUseStep
+
         step = ComputerUseStep(
             step={"click": {"target": "x"}},
             mode="computer_use",
@@ -455,6 +488,7 @@ class TestDataclassesToDict(unittest.TestCase):
     def test_result_to_dict(self):
         from core.computer_use_runner import ComputerUseResult, ComputerUseStep
         from core.result_verifier import VerificationResult
+
         r = ComputerUseResult(
             task="测试",
             passed=True,
@@ -475,6 +509,7 @@ class TestDataclassesToDict(unittest.TestCase):
 
     def test_result_to_dict_no_verification(self):
         from core.computer_use_runner import ComputerUseResult
+
         r = ComputerUseResult(task="x", passed=False, mode="desktop_native", error="boom")
         d = r.to_dict()
         self.assertIsNone(d["verification"])

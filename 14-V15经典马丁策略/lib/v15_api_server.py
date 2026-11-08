@@ -11,22 +11,30 @@ API接口:
 - GET /api/capital/allocation - 资金分配
 - GET /api/capital/signal-trigger - 信号触发状态
 """
-import json, sys, threading, time
+
+import json
+import sys
+import time
 from datetime import datetime, timezone
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from v15_signal import v15_decision
-from v15_backtest import run_backtest
-from capital_manager_engine import CapitalManagerEngine
-from capital_manager import calculate_single_position_cost, calculate_capital_allocation, get_account_balance, get_current_positions
-from strategy_params import get_coin_strategy_params
+from capital_manager import (  # noqa: E402
+    calculate_capital_allocation,
+    calculate_single_position_cost,
+    get_account_balance,
+    get_current_positions,
+)
+from capital_manager_engine import CapitalManagerEngine  # noqa: E402
+from strategy_params import get_coin_strategy_params  # noqa: E402
+from v15_backtest import run_backtest  # noqa: E402
+from v15_signal import v15_decision  # noqa: E402
 
 # 马丁策略固定初始资金（USDT）—— 小额观测实际表现
 V15_INITIAL_CAPITAL = 150.0
@@ -75,17 +83,19 @@ def _load_v15_local_positions():
         positions = state.get("positions", {}) or {}
         result = []
         for coin, p in positions.items():
-            result.append({
-                "coin": coin,
-                "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
-                "direction": p.get("direction", "LONG"),
-                "entry_price": float(p.get("entry_price", 0) or 0),
-                "sz": float(p.get("sz", 0) or 0),
-                "open_time": p.get("open_time", ""),
-                "per_coin_budget": float(p.get("per_coin_budget", 0) or 0),
-                "addons": int(p.get("addons", 0) or 0),
-                "source": "local",
-            })
+            result.append(
+                {
+                    "coin": coin,
+                    "inst_id": p.get("inst_id", f"{coin}-USDT-SWAP"),
+                    "direction": p.get("direction", "LONG"),
+                    "entry_price": float(p.get("entry_price", 0) or 0),
+                    "sz": float(p.get("sz", 0) or 0),
+                    "open_time": p.get("open_time", ""),
+                    "per_coin_budget": float(p.get("per_coin_budget", 0) or 0),
+                    "addons": int(p.get("addons", 0) or 0),
+                    "source": "local",
+                }
+            )
         return result
     except Exception:
         return []
@@ -204,21 +214,23 @@ class V15APIHandler(BaseHTTPRequestHandler):
                 self._send_json({"status": "ok", "service": "v15-api"})
 
             elif path == "/" or path == "":
-                self._send_json({
-                    "status": "ok",
-                    "service": "v15-api",
-                    "method": "POST",
-                    "supported_endpoints": [
-                        "/api/v15-ct/decision",
-                        "/api/v15-ct/status",
-                        "/api/v15-ct/backtest",
-                        "/api/v15-ct/decisions",
-                        "/api/v15-ct/account-overview",
-                        "/api/capital/allocation",
-                        "/api/capital/signal-trigger",
-                        "/health",
-                    ],
-                })
+                self._send_json(
+                    {
+                        "status": "ok",
+                        "service": "v15-api",
+                        "method": "POST",
+                        "supported_endpoints": [
+                            "/api/v15-ct/decision",
+                            "/api/v15-ct/status",
+                            "/api/v15-ct/backtest",
+                            "/api/v15-ct/decisions",
+                            "/api/v15-ct/account-overview",
+                            "/api/capital/allocation",
+                            "/api/capital/signal-trigger",
+                            "/health",
+                        ],
+                    }
+                )
 
             else:
                 self._send_json({"error": "unknown endpoint"}, 404)
@@ -320,19 +332,21 @@ class V15APIHandler(BaseHTTPRequestHandler):
                 if not is_local:
                     has_realtime_upl = True
                     unrealized_pnl_sum += upl
-                positions_detail.append({
-                    "coin": p.get("coin", p.get("symbol", "")),
-                    "inst_id": p.get("inst_id", ""),
-                    "direction": p.get("direction", ""),
-                    "upl": upl if not is_local else None,
-                    "upl_ratio": float(p.get("upl_ratio", 0) or 0) if not is_local else None,
-                    "mark_px": float(p.get("mark_price", 0) or 0) if not is_local else None,
-                    "entry_price": float(p.get("entry_price", 0) or 0),
-                    "sz": float(p.get("pos_sz", p.get("sz", 0)) or 0),
-                    "lever": p.get("lever", ""),
-                    "source": p.get("source", "okx_live"),
-                    "open_time": p.get("open_time", ""),
-                })
+                positions_detail.append(
+                    {
+                        "coin": p.get("coin", p.get("symbol", "")),
+                        "inst_id": p.get("inst_id", ""),
+                        "direction": p.get("direction", ""),
+                        "upl": upl if not is_local else None,
+                        "upl_ratio": float(p.get("upl_ratio", 0) or 0) if not is_local else None,
+                        "mark_px": float(p.get("mark_price", 0) or 0) if not is_local else None,
+                        "entry_price": float(p.get("entry_price", 0) or 0),
+                        "sz": float(p.get("pos_sz", p.get("sz", 0)) or 0),
+                        "lever": p.get("lever", ""),
+                        "source": p.get("source", "okx_live"),
+                        "open_time": p.get("open_time", ""),
+                    }
+                )
 
             # ── 本地统计（v15_state.json）──
             total_trades = 0
@@ -370,7 +384,9 @@ class V15APIHandler(BaseHTTPRequestHandler):
             if baseline_eq is None:
                 baseline_note = "今日基准尚未建立（等待 OKX 首次连接）"
             else:
-                baseline_note = f"基准日 {baseline.get('baseline_date')} 起 OKX 权益 {round(baseline_eq, 2)}"
+                baseline_note = (
+                    f"基准日 {baseline.get('baseline_date')} 起 OKX 权益 {round(baseline_eq, 2)}"
+                )
 
             response = {
                 "strategy": "v15_martin",
@@ -379,7 +395,9 @@ class V15APIHandler(BaseHTTPRequestHandler):
                 "baseline_date": baseline.get("baseline_date"),
                 "baseline_okx_eq": round(baseline_eq, 2) if baseline_eq is not None else None,
                 "baseline_note": baseline_note,
-                "current_balance": round(current_balance, 2) if current_balance is not None else None,
+                "current_balance": (
+                    round(current_balance, 2) if current_balance is not None else None
+                ),
                 "avail_balance": round(avail_balance, 2) if avail_balance is not None else None,
                 "total_pnl": round(total_pnl, 2) if total_pnl is not None else None,
                 "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
@@ -398,8 +416,9 @@ class V15APIHandler(BaseHTTPRequestHandler):
             }
             self._send_json(response)
         except Exception as e:
-            self._send_json({"error": str(e), "strategy": "v15_martin",
-                             "initial_capital": V15_INITIAL_CAPITAL})
+            self._send_json(
+                {"error": str(e), "strategy": "v15_martin", "initial_capital": V15_INITIAL_CAPITAL}
+            )
 
     def _handle_backtest(self, coin):
         try:
@@ -408,18 +427,20 @@ class V15APIHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": result["error"]})
             else:
                 metrics = result.get("metrics", {})
-                self._send_json({
-                    "metrics": {
-                        "total_return_pct": round(metrics.get("total_return_pct", 0), 2),
-                        "total_trades": metrics.get("total_trades", 0),
-                        "win_rate": metrics.get("win_rate", 0),
-                        "profit_factor": round(metrics.get("profit_factor", 0), 2),
-                        "max_drawdown_pct": round(metrics.get("max_drawdown_pct", 0), 2),
-                        "sharpe_ratio": round(metrics.get("sharpe_ratio", 0), 4),
-                        "avg_bars_held": metrics.get("avg_bars_held", 0),
-                    },
-                    "trades": result.get("trades", []),
-                })
+                self._send_json(
+                    {
+                        "metrics": {
+                            "total_return_pct": round(metrics.get("total_return_pct", 0), 2),
+                            "total_trades": metrics.get("total_trades", 0),
+                            "win_rate": metrics.get("win_rate", 0),
+                            "profit_factor": round(metrics.get("profit_factor", 0), 2),
+                            "max_drawdown_pct": round(metrics.get("max_drawdown_pct", 0), 2),
+                            "sharpe_ratio": round(metrics.get("sharpe_ratio", 0), 4),
+                            "avg_bars_held": metrics.get("avg_bars_held", 0),
+                        },
+                        "trades": result.get("trades", []),
+                    }
+                )
         except Exception as e:
             self._send_json({"error": str(e)})
 
@@ -435,29 +456,33 @@ class V15APIHandler(BaseHTTPRequestHandler):
                 stop_loss = coin_params.get("stop_loss", {})
                 vol_params = coin_params.get("vol_params", {})
 
-                decisions.append({
-                    "symbol": coin,
-                    "action": result.get("action", "WAIT"),
-                    "confidence": result.get("confidence", 0),
-                    "stop_loss_triggered": stop_loss.get("is_triggered", False),
-                    "stop_loss_type": stop_loss.get("stop_type", "--"),
-                    "stop_loss_price": stop_loss.get("stop_loss_price"),
-                    "take_profit_pct": vol_params.get("tp_pct", 4.0),
-                    "addon_pct": vol_params.get("addon_pct", 8.0),
-                    "vol_ratio": result.get("vol_mult", 1.0),
-                })
+                decisions.append(
+                    {
+                        "symbol": coin,
+                        "action": result.get("action", "WAIT"),
+                        "confidence": result.get("confidence", 0),
+                        "stop_loss_triggered": stop_loss.get("is_triggered", False),
+                        "stop_loss_type": stop_loss.get("stop_type", "--"),
+                        "stop_loss_price": stop_loss.get("stop_loss_price"),
+                        "take_profit_pct": vol_params.get("tp_pct", 4.0),
+                        "addon_pct": vol_params.get("addon_pct", 8.0),
+                        "vol_ratio": result.get("vol_mult", 1.0),
+                    }
+                )
             except Exception:
-                decisions.append({
-                    "symbol": coin,
-                    "action": "WAIT",
-                    "confidence": 0,
-                    "stop_loss_triggered": False,
-                    "stop_loss_type": "--",
-                    "stop_loss_price": None,
-                    "take_profit_pct": 4.0,
-                    "addon_pct": 8.0,
-                    "vol_ratio": 1.0,
-                })
+                decisions.append(
+                    {
+                        "symbol": coin,
+                        "action": "WAIT",
+                        "confidence": 0,
+                        "stop_loss_triggered": False,
+                        "stop_loss_type": "--",
+                        "stop_loss_price": None,
+                        "take_profit_pct": 4.0,
+                        "addon_pct": 8.0,
+                        "vol_ratio": 1.0,
+                    }
+                )
 
         self._send_json({"decisions": decisions})
 
@@ -532,20 +557,21 @@ class V15APIHandler(BaseHTTPRequestHandler):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="V15经典马丁策略 HTTP API服务")
     parser.add_argument("--port", type=int, default=8771, help="API端口")
     args = parser.parse_args()
 
     server = ThreadedHTTPServer(("0.0.0.0", args.port), V15APIHandler)
     print(f"V15经典马丁策略 API服务启动: http://localhost:{args.port} (多线程模式)")
-    print(f"  GET  /api/v15-ct/decision?coin=BTC - 单币种决策信号")
-    print(f"  GET  /api/v15-ct/status - 策略状态")
-    print(f"  GET  /api/v15-ct/backtest?coin=BTC - 回测结果")
-    print(f"  GET  /api/v15-ct/decisions - 多币种决策")
-    print(f"  GET  /api/v15-ct/account-overview - 账户总览（初始资金150）")
-    print(f"  GET  /api/capital/allocation - 资金分配")
-    print(f"  GET  /api/capital/signal-trigger - 信号触发状态")
-    print(f"  GET  /health - 健康检查")
+    print("  GET  /api/v15-ct/decision?coin=BTC - 单币种决策信号")
+    print("  GET  /api/v15-ct/status - 策略状态")
+    print("  GET  /api/v15-ct/backtest?coin=BTC - 回测结果")
+    print("  GET  /api/v15-ct/decisions - 多币种决策")
+    print("  GET  /api/v15-ct/account-overview - 账户总览（初始资金150）")
+    print("  GET  /api/capital/allocation - 资金分配")
+    print("  GET  /api/capital/signal-trigger - 信号触发状态")
+    print("  GET  /health - 健康检查")
     server.serve_forever()
 
 

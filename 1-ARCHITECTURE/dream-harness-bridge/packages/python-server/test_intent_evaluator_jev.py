@@ -20,7 +20,7 @@ import os
 import sys
 import unittest
 from typing import Any, Dict
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # 将 python-server 目录加入 sys.path
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,8 +34,8 @@ ARCH_DIR = os.path.abspath(os.path.join(SERVER_DIR, "..", "..", ".."))
 if ARCH_DIR not in sys.path:
     sys.path.insert(0, ARCH_DIR)
 
-from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
-from dreamos.core.sense.types import IntentResult
+from dreamos.core.sense.evaluators.intent_evaluator_agent import IntentEvaluatorAgent  # noqa: E402
+from dreamos.core.sense.types import IntentResult  # noqa: E402
 
 
 def make_intent(intent_type: str = "TREND_FOLLOWING", confidence: float = 0.5) -> IntentResult:
@@ -110,11 +110,13 @@ class TestJevChoiceMatch(unittest.TestCase):
     """jev choice 与原 intent 一致 → confidence 提升"""
 
     def test_choice_match_increases_confidence(self):
-        jev_fn = MagicMock(return_value=make_jev_response(
-            choice_intent="TREND_FOLLOWING",
-            choice_confidence=0.8,
-            noul=0.7,
-        ))
+        jev_fn = MagicMock(
+            return_value=make_jev_response(
+                choice_intent="TREND_FOLLOWING",
+                choice_confidence=0.8,
+                noul=0.7,
+            )
+        )
         agent = IntentEvaluatorAgent(jev_fn=jev_fn)
         intent = make_intent(intent_type="TREND_FOLLOWING", confidence=0.5)
         result = agent.evaluate(intent, {"user_message": "分析BTC趋势"})
@@ -129,11 +131,13 @@ class TestJevChoiceMismatchHighConf(unittest.TestCase):
     """jev choice != 原 intent 且高置信 → confidence 降低 + clarified_intent"""
 
     def test_choice_mismatch_high_conf(self):
-        jev_fn = MagicMock(return_value=make_jev_response(
-            choice_intent="DEEP_ANALYSIS",
-            choice_confidence=0.85,
-            noul=0.7,
-        ))
+        jev_fn = MagicMock(
+            return_value=make_jev_response(
+                choice_intent="DEEP_ANALYSIS",
+                choice_confidence=0.85,
+                noul=0.7,
+            )
+        )
         agent = IntentEvaluatorAgent(jev_fn=jev_fn)
         intent = make_intent(intent_type="TREND_FOLLOWING", confidence=0.5)
         result = agent.evaluate(intent, {"user_message": "深度分析BTC"})
@@ -147,11 +151,13 @@ class TestJevChoiceMismatchLowConf(unittest.TestCase):
     """jev choice != 原 intent 且低置信 → confidence 轻微降低"""
 
     def test_choice_mismatch_low_conf(self):
-        jev_fn = MagicMock(return_value=make_jev_response(
-            choice_intent="DEEP_ANALYSIS",
-            choice_confidence=0.4,
-            noul=0.7,
-        ))
+        jev_fn = MagicMock(
+            return_value=make_jev_response(
+                choice_intent="DEEP_ANALYSIS",
+                choice_confidence=0.4,
+                noul=0.7,
+            )
+        )
         agent = IntentEvaluatorAgent(jev_fn=jev_fn)
         intent = make_intent(intent_type="TREND_FOLLOWING", confidence=0.5)
         result = agent.evaluate(intent, {"user_message": "分析BTC"})
@@ -165,11 +171,13 @@ class TestJevNoulLow(unittest.TestCase):
     """jev noul < 0.5 → confidence 进一步降低"""
 
     def test_noul_low_reduces_confidence(self):
-        jev_fn = MagicMock(return_value=make_jev_response(
-            choice_intent="TREND_FOLLOWING",
-            choice_confidence=0.8,
-            noul=0.3,  # 低 noul
-        ))
+        jev_fn = MagicMock(
+            return_value=make_jev_response(
+                choice_intent="TREND_FOLLOWING",
+                choice_confidence=0.8,
+                noul=0.3,  # 低 noul
+            )
+        )
         agent = IntentEvaluatorAgent(jev_fn=jev_fn)
         intent = make_intent(intent_type="TREND_FOLLOWING", confidence=0.5)
         result = agent.evaluate(intent, {"user_message": "分析BTC趋势"})
@@ -218,11 +226,13 @@ class TestLayaFallback(unittest.TestCase):
 
     def test_jev_degraded_fallback_to_laya(self):
         jev_fn = MagicMock(return_value=make_jev_response(degraded=True))
-        laya_fn = MagicMock(return_value=make_jev_response(
-            choice_intent="TREND_FOLLOWING",
-            choice_confidence=0.75,
-            noul=0.6,
-        ))
+        laya_fn = MagicMock(
+            return_value=make_jev_response(
+                choice_intent="TREND_FOLLOWING",
+                choice_confidence=0.75,
+                noul=0.6,
+            )
+        )
         agent = IntentEvaluatorAgent(jev_fn=jev_fn, laya_fn=laya_fn)
         intent = make_intent(intent_type="TREND_FOLLOWING", confidence=0.5)
         result = agent.evaluate(intent, {"user_message": "分析BTC趋势"})
@@ -236,11 +246,13 @@ class TestConfidenceClamped(unittest.TestCase):
     """confidence 必须 clamp 到 [0, 1]"""
 
     def test_confidence_not_exceeds_one(self):
-        jev_fn = MagicMock(return_value=make_jev_response(
-            choice_intent="TREND_FOLLOWING",
-            choice_confidence=0.99,
-            noul=0.99,
-        ))
+        jev_fn = MagicMock(
+            return_value=make_jev_response(
+                choice_intent="TREND_FOLLOWING",
+                choice_confidence=0.99,
+                noul=0.99,
+            )
+        )
         agent = IntentEvaluatorAgent(jev_fn=jev_fn)
         intent = make_intent(intent_type="TREND_FOLLOWING", confidence=0.64)
         result = agent.evaluate(intent, {"user_message": "x"})

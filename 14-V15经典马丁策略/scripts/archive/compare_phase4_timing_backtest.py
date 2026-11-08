@@ -13,6 +13,7 @@ Phase 4 回测对比脚本 —— 波浪 + 斐波那契时机软调控 TimingGat
 
 输出: 逐币 + 平均。若 Phase4 平均总收益提升 > 5% → 建议默认启用开关。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -23,7 +24,7 @@ DIR = Path(__file__).parent
 sys.path.insert(0, str(DIR / "core"))
 sys.path.insert(0, str(DIR / "lib"))
 
-from v15_backtest import fetch_klines, run_backtest
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
 
 COINS = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
 KLIMIT = 1500

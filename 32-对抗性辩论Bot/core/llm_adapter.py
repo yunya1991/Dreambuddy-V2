@@ -10,10 +10,10 @@ LangChain ChatModel 接口：
     async def ainvoke(messages: list[BaseMessage], **kwargs) -> AIMessage
         messages 支持 SystemMessage / HumanMessage
 """
+
 from __future__ import annotations
 
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -34,6 +34,7 @@ from llm_factory import create_llm  # noqa: E402
 try:  # pragma: no cover - 依赖环境分支
     from langchain_core.messages import HumanMessage, SystemMessage
 except ImportError:  # pragma: no cover
+
     class _CompatMessage:
         type = "message"
 
@@ -57,8 +58,7 @@ class LLMAdapter:
         """
         self.model = chat_model
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
         """调用 LLM，返回文本响应。
 
         Args:
@@ -102,7 +102,9 @@ def create_llm_adapter(
         config = {"llm": {"provider": "qwen", "model": model_name}}
 
     chat_model = create_llm(config)
-    logger.info("LLMAdapter 创建完成: provider=%s model=%s",
-                config["llm"].get("provider"),
-                config["llm"].get("model"))
+    logger.info(
+        "LLMAdapter 创建完成: provider=%s model=%s",
+        config["llm"].get("provider"),
+        config["llm"].get("model"),
+    )
     return LLMAdapter(chat_model)

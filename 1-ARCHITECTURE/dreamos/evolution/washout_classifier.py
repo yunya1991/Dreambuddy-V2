@@ -20,6 +20,7 @@ W4 阶段落地 (纯新增, 零回归):
   - posterior < 0.35 → WEAKNESS (高置信度真弱势 → 加速离场)
   - 0.35 ≤ posterior ≤ 0.65 → UNKNOWN (中等置信度 → 维持现状)
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,9 +28,9 @@ import traceback
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-from .washout_case_library import WashoutCase, WashoutCaseLibrary
-from .washout_bayesian_updater import BayesianUpdater
 from .exploration_policy import ExplorationPolicy
+from .washout_bayesian_updater import BayesianUpdater
+from .washout_case_library import WashoutCase, WashoutCaseLibrary
 
 __all__ = ["WashoutClassifier"]
 
@@ -75,9 +76,13 @@ class WashoutClassifier:
         self.case_library = case_library
         self.k_neighbors = max(1, int(k_neighbors))
         self.min_cases = max(1, int(min_cases))
-        self.bayesian_updater = bayesian_updater if bayesian_updater is not None else BayesianUpdater()
+        self.bayesian_updater = (
+            bayesian_updater if bayesian_updater is not None else BayesianUpdater()
+        )
         self.sandbox_validate_fn = sandbox_validate_fn
-        self.exploration_policy = exploration_policy if exploration_policy is not None else ExplorationPolicy()
+        self.exploration_policy = (
+            exploration_policy if exploration_policy is not None else ExplorationPolicy()
+        )
 
     # ============================================================
     # 主入口: KNN 检索 + 贝叶斯后验
@@ -117,19 +122,13 @@ class WashoutClassifier:
                 return self._fallback_rule(features, WashoutVerdict, WashoutLabel)
 
             # Step 1: KNN 检索 top-k 相似案例
-            neighbors = self.case_library.knn_search(
-                features, k=self.k_neighbors
-            )
+            neighbors = self.case_library.knn_search(features, k=self.k_neighbors)
             if not neighbors:
                 return self._fallback_rule(features, WashoutVerdict, WashoutLabel)
 
             # Step 2: 统计 washout / weakness 邻居数 + reward 回流
-            washout_count = sum(
-                1 for _, case in neighbors if case.actual_label == "washout"
-            )
-            weakness_count = sum(
-                1 for _, case in neighbors if case.actual_label == "weakness"
-            )
+            washout_count = sum(1 for _, case in neighbors if case.actual_label == "washout")
+            weakness_count = sum(1 for _, case in neighbors if case.actual_label == "weakness")
 
             # 阶段2: reward 回流 — 计算邻居平均 reward
             avg_reward = 0.0
@@ -173,9 +172,7 @@ class WashoutClassifier:
             )
         except Exception as e:
             tb = traceback.format_exc()
-            logger.error(
-                "WashoutClassifier.predict FAIL-OPEN err=%s\n%s", e, tb
-            )
+            logger.error("WashoutClassifier.predict FAIL-OPEN err=%s\n%s", e, tb)
             return _safe_unknown()
 
     # ============================================================

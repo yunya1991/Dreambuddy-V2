@@ -17,37 +17,44 @@
 文件: ml/pitd_confidence_scorer.py
 """
 
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional, Tuple
-from dataclasses import dataclass
-
-from ml.pitd_kinematics_engineer import KinematicsEngineer
 from ml.pitd_dynamics_engineer import DynamicsEngineer
+from ml.pitd_kinematics_engineer import KinematicsEngineer
 from ml.pitd_potential_field import PotentialFieldEngineer
 
 
 @dataclass
 class ConfidenceWeights:
     """物理置信度权重参数"""
-    w_eta: float = 0.30           # 趋势强度权重
-    w_reversal: float = 0.25      # 反转风险权重
-    w_support: float = 0.25       # 阻力支撑权重
-    w_kinetic: float = 0.20       # 动能状态权重
+
+    w_eta: float = 0.30  # 趋势强度权重
+    w_reversal: float = 0.25  # 反转风险权重
+    w_support: float = 0.25  # 阻力支撑权重
+    w_kinetic: float = 0.20  # 动能状态权重
     # 仓位调节参数
-    position_lower: float = 0.5   # 仓位下限倍数
-    position_scale: float = 1.0   # 仓位调节幅度（最终范围 [lower, lower+scale]）
+    position_lower: float = 0.5  # 仓位下限倍数
+    position_scale: float = 1.0  # 仓位调节幅度（最终范围 [lower, lower+scale]）
     # 物理量阈值
-    eta_strong: float = 0.20      # 强趋势η阈值
-    eta_weak: float = 0.10        # 弱趋势η阈值
-    jerk_pct: float = 90          # jerk突变分位数
-    gradient_strong: float = 10.0 # 强梯度阈值
+    eta_strong: float = 0.20  # 强趋势η阈值
+    eta_weak: float = 0.10  # 弱趋势η阈值
+    jerk_pct: float = 90  # jerk突变分位数
+    gradient_strong: float = 10.0  # 强梯度阈值
 
     def to_array(self) -> np.ndarray:
-        return np.array([
-            self.w_eta, self.w_reversal, self.w_support, self.w_kinetic,
-            self.position_lower, self.position_scale,
-        ])
+        return np.array(
+            [
+                self.w_eta,
+                self.w_reversal,
+                self.w_support,
+                self.w_kinetic,
+                self.position_lower,
+                self.position_scale,
+            ]
+        )
 
     @staticmethod
     def from_array(arr: np.ndarray) -> "ConfidenceWeights":
@@ -104,8 +111,12 @@ class PhysicsConfidenceScorer:
         jerk_w_abs = np.abs(kin["kin_jerk_W"].values)
         j_d_nonzero = jerk_d_abs[jerk_d_abs > 1e-8]
         j_w_nonzero = jerk_w_abs[jerk_w_abs > 1e-8]
-        jerk_d_thresh = np.percentile(j_d_nonzero, self.weights.jerk_pct) if len(j_d_nonzero) > 10 else 0.05
-        jerk_w_thresh = np.percentile(j_w_nonzero, self.weights.jerk_pct) if len(j_w_nonzero) > 10 else 0.05
+        jerk_d_thresh = (
+            np.percentile(j_d_nonzero, self.weights.jerk_pct) if len(j_d_nonzero) > 10 else 0.05
+        )
+        jerk_w_thresh = (
+            np.percentile(j_w_nonzero, self.weights.jerk_pct) if len(j_w_nonzero) > 10 else 0.05
+        )
 
         return {
             "eta": dyn["dyn_coupling_eta"].values,
@@ -130,9 +141,15 @@ class PhysicsConfidenceScorer:
         score = np.clip((eta - w.eta_weak) / (w.eta_strong - w.eta_weak + 1e-10), 0, 1)
         return score
 
-    def _score_reversal_risk(self, jerk_D: np.ndarray, jerk_W: np.ndarray,
-                              jerk_d_thresh: float, jerk_w_thresh: float,
-                              velocity_D: np.ndarray, velocity_W: np.ndarray) -> np.ndarray:
+    def _score_reversal_risk(
+        self,
+        jerk_D: np.ndarray,
+        jerk_W: np.ndarray,
+        jerk_d_thresh: float,
+        jerk_w_thresh: float,
+        velocity_D: np.ndarray,
+        velocity_W: np.ndarray,
+    ) -> np.ndarray:
         """反转风险评分 [0, 1]
         jerk尖峰=反转预警，信号不可靠
         返回: (1 - 反转风险)，越高越可靠
@@ -142,9 +159,8 @@ class PhysicsConfidenceScorer:
 
         # 判断突变方向是否与速度相反（反转信号）
         reversal_signal = (
-            ((np.sign(jerk_D) != np.sign(velocity_D)) & (np.abs(velocity_D) > 1e-8)) |
-            ((np.sign(jerk_W) != np.sign(velocity_W)) & (np.abs(velocity_W) > 1e-8))
-        )
+            (np.sign(jerk_D) != np.sign(velocity_D)) & (np.abs(velocity_D) > 1e-8)
+        ) | ((np.sign(jerk_W) != np.sign(velocity_W)) & (np.abs(velocity_W) > 1e-8))
 
         # 反转预警：突变+方向相反 → 高风险
         high_risk = jerk_anomaly & reversal_signal
@@ -156,8 +172,9 @@ class PhysicsConfidenceScorer:
         score[high_risk] = 0.3
         return score
 
-    def _score_support_alignment(self, gradient: np.ndarray, velocity_D: np.ndarray,
-                                  ml_signal: np.ndarray) -> np.ndarray:
+    def _score_support_alignment(
+        self, gradient: np.ndarray, velocity_D: np.ndarray, ml_signal: np.ndarray
+    ) -> np.ndarray:
         """阻力支撑一致性评分 [0, 1]
         梯度方向与ML信号一致=顺势，阻力小，信号更可靠
         """
@@ -171,7 +188,7 @@ class PhysicsConfidenceScorer:
         # 方向相反 → 低分
         opposed = (resistance_dir == -ml_dir) & (np.abs(gradient) > 1e-6) & (ml_dir != 0)
         # 梯度弱 → 中性
-        neutral = ~(aligned | opposed)
+        neutral = ~(aligned | opposed)  # noqa: F841
 
         score = np.full(len(gradient), 0.5)
         score[aligned] = 0.8
@@ -184,8 +201,9 @@ class PhysicsConfidenceScorer:
 
         return np.clip(score, 0, 1)
 
-    def _score_kinetic_energy(self, kinetic_energy: np.ndarray, velocity_D: np.ndarray,
-                               velocity_W: np.ndarray) -> np.ndarray:
+    def _score_kinetic_energy(
+        self, kinetic_energy: np.ndarray, velocity_D: np.ndarray, velocity_W: np.ndarray
+    ) -> np.ndarray:
         """动能状态评分 [0, 1]
         动能充沛=趋势健康，信号更可靠
         但动能过高+速度背离=过热，信号不可靠
@@ -237,9 +255,12 @@ class PhysicsConfidenceScorer:
         # 计算四个分量评分
         trend_score = self._score_trend_strength(feats["eta"])
         reversal_score = self._score_reversal_risk(
-            feats["jerk_D"], feats["jerk_W"],
-            feats["jerk_d_thresh"], feats["jerk_w_thresh"],
-            feats["velocity_D"], feats["velocity_W"]
+            feats["jerk_D"],
+            feats["jerk_W"],
+            feats["jerk_d_thresh"],
+            feats["jerk_w_thresh"],
+            feats["velocity_D"],
+            feats["velocity_W"],
         )
         support_score = self._score_support_alignment(
             feats["gradient"], feats["velocity_D"], ml_signal
@@ -269,9 +290,7 @@ class PhysicsConfidenceScorer:
 
         return confidence, components
 
-    def adjust_position(
-        self, base_position: np.ndarray, confidence: np.ndarray
-    ) -> np.ndarray:
+    def adjust_position(self, base_position: np.ndarray, confidence: np.ndarray) -> np.ndarray:
         """根据物理置信度调整仓位
 
         最终仓位 = 基础仓位 × (lower + scale × confidence)

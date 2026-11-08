@@ -17,6 +17,7 @@ import 相同基础模块（numpy/logging/dataclasses）会虚高相似度。因
 
 退出码恒为 0（告警非阻塞，写入 CI 检查报告即可）。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,13 +36,43 @@ CALL_WEIGHT = 1.0
 BASE_THIRD_PARTY = {"numpy", "pandas", "scipy", "sklearn", "torch", "requests"}
 
 # 高频内建调用排除（与基础库排除同源：避免并集被通用调用稀释）
-COMMON_CALLS = frozenset({
-    "print", "len", "range", "isinstance", "str", "int", "float", "bool",
-    "list", "dict", "set", "tuple", "super", "getattr", "setattr", "hasattr",
-    "min", "max", "abs", "sum", "sorted", "enumerate", "zip", "any", "all",
-    "open", "round", "type", "isinstance", "Exception", "ValueError",
-    "TypeError", "KeyError", "RuntimeError",
-})
+COMMON_CALLS = frozenset(
+    {
+        "print",
+        "len",
+        "range",
+        "isinstance",
+        "str",
+        "int",
+        "float",
+        "bool",
+        "list",
+        "dict",
+        "set",
+        "tuple",
+        "super",
+        "getattr",
+        "setattr",
+        "hasattr",
+        "min",
+        "max",
+        "abs",
+        "sum",
+        "sorted",
+        "enumerate",
+        "zip",
+        "any",
+        "all",
+        "open",
+        "round",
+        "type",
+        "Exception",
+        "ValueError",
+        "TypeError",
+        "KeyError",
+        "RuntimeError",
+    }
+)
 
 DEFAULT_TARGET_DIR = Path(__file__).resolve().parents[2] / (
     "23-四层闭环自进化交易架构/dreambuddy_evolution/engines"
@@ -50,14 +81,52 @@ DEFAULT_TARGET_DIR = Path(__file__).resolve().parents[2] / (
 try:
     _STDLIB_TOP_LEVEL = frozenset(sys.stdlib_module_names)  # Python 3.10+
 except AttributeError:  # pragma: no cover
-    _STDLIB_TOP_LEVEL = frozenset({
-        "abc", "argparse", "ast", "asyncio", "collections", "contextlib",
-        "copy", "csv", "dataclasses", "datetime", "decimal", "enum", "functools",
-        "glob", "hashlib", "heapq", "io", "itertools", "json", "logging", "math",
-        "os", "pathlib", "pickle", "queue", "random", "re", "shutil", "signal",
-        "statistics", "string", "subprocess", "sys", "threading", "time",
-        "traceback", "typing", "unittest", "urllib", "uuid", "warnings", "weakref",
-    })
+    _STDLIB_TOP_LEVEL = frozenset(
+        {
+            "abc",
+            "argparse",
+            "ast",
+            "asyncio",
+            "collections",
+            "contextlib",
+            "copy",
+            "csv",
+            "dataclasses",
+            "datetime",
+            "decimal",
+            "enum",
+            "functools",
+            "glob",
+            "hashlib",
+            "heapq",
+            "io",
+            "itertools",
+            "json",
+            "logging",
+            "math",
+            "os",
+            "pathlib",
+            "pickle",
+            "queue",
+            "random",
+            "re",
+            "shutil",
+            "signal",
+            "statistics",
+            "string",
+            "subprocess",
+            "sys",
+            "threading",
+            "time",
+            "traceback",
+            "typing",
+            "unittest",
+            "urllib",
+            "uuid",
+            "warnings",
+            "weakref",
+        }
+    )
 
 
 def _domain_module(module: str) -> str | None:
@@ -69,7 +138,7 @@ def _domain_module(module: str) -> str | None:
     """
     top = module.split(".")[0]
     if top == "dreambuddy_evolution":
-        rest = module[len("dreambuddy_evolution."):].strip(".")
+        rest = module[len("dreambuddy_evolution.") :].strip(".")
         return rest or module
     if top in _STDLIB_TOP_LEVEL or top in BASE_THIRD_PARTY:
         return None
@@ -165,7 +234,7 @@ class EngineSimilarityChecker:
         pairs: list[dict] = []
         warnings: list[dict] = []
         for i, a in enumerate(names):
-            for b in names[i + 1:]:
+            for b in names[i + 1 :]:
                 sim = self.weighted_jaccard(engines[a]["features"], engines[b]["features"])
                 exceeds = sim > self.threshold
                 pair = {"a": a, "b": b, "similarity": round(sim, 4), "exceeds_threshold": exceeds}
@@ -192,7 +261,9 @@ class EngineSimilarityChecker:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="引擎相似度自动化准入检查（非阻塞告警）")
-    parser.add_argument("--target-dir", default=str(DEFAULT_TARGET_DIR), help="引擎目录（默认 engines/）")
+    parser.add_argument(
+        "--target-dir", default=str(DEFAULT_TARGET_DIR), help="引擎目录（默认 engines/）"
+    )
     parser.add_argument("--threshold", type=float, default=0.7, help="相似度告警阈值（默认 0.7）")
     parser.add_argument("--json", default=None, help="JSON 报告输出路径（可选）")
     args = parser.parse_args(argv)

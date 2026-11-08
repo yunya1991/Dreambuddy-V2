@@ -2,7 +2,6 @@
 
 覆盖：FedWatch 概率采集、FOMC 决议采集、FAIL-OPEN 降级、DataRecord 契约。
 """
-import pytest
 
 from data_center.collectors.macro.fed_event_collector import FedEventCollector
 from data_center.core.contract import DataRecord
@@ -72,13 +71,10 @@ def test_fedwatch_fallback_when_cme_not_installed(mocker):
     """RED: SPEC §3.1.2 — cme-fedwatch 包未安装时降级到 investing.com 爬虫，
     metrics 的 effr/current_target/trade_date 用 0.0/"" 兜底，不抛异常。
     """
-    from data_center.collectors.macro import fed_event_collector as mod
 
     # 模拟 cme-fedwatch 未安装：_fetch_fedwatch_from_cme 内部 ImportError → 降级 investing
     # investing 路径 mock 返回不含新字段
-    mock_investing = mocker.patch(
-        f"{FED_EVENT_MOD}._fetch_fedwatch_from_investing"
-    )
+    mock_investing = mocker.patch(f"{FED_EVENT_MOD}._fetch_fedwatch_from_investing")
     mock_investing.return_value = {
         "hike_prob": 0.50,
         "cut_prob": 0.30,

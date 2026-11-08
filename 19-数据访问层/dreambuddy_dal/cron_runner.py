@@ -17,6 +17,7 @@ launchd/cron 调用此脚本，通过子命令选择 backup / integrity / rotate
   BACKUP_PASSPHRASE — AES256 加密口令（未设则明文备份）
   BACKUP_KEEP    — 轮转保留份数（默认 7）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,6 +48,7 @@ def _get_passphrase():
 
 def cmd_backup(args):
     from dreambuddy_dal.implementations.sqlite_unified.backup import backup_database
+
     db_path = _get_db_path(args)
     backup_dir = _get_backup_dir(args)
     passphrase = _get_passphrase()
@@ -61,6 +63,7 @@ def cmd_backup(args):
 
 def cmd_integrity(args):
     from dreambuddy_dal.implementations.sqlite_unified.integrity import run_integrity_check
+
     db_path = _get_db_path(args)
     result = run_integrity_check(db_path)
     if result.ok:
@@ -72,6 +75,7 @@ def cmd_integrity(args):
 
 def cmd_rotate(args):
     from dreambuddy_dal.implementations.sqlite_unified.rotate import rotate_backups
+
     backup_dir = _get_backup_dir(args)
     keep = args.keep or int(os.environ.get("BACKUP_KEEP", "7"))
     deleted = rotate_backups(backup_dir, keep=keep)
@@ -80,6 +84,7 @@ def cmd_rotate(args):
 
 def cmd_checkpoint(args):
     from dreambuddy_dal.implementations.sqlite_unified.rotate import wal_checkpoint
+
     db_path = _get_db_path(args)
     pages = wal_checkpoint(db_path)
     print(f"CHECKPOINT_OK: {pages} pages")

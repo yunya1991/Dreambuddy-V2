@@ -39,12 +39,12 @@
   - C 层: 3.1-FRONTEND/src/lib/c-reflection-training-loop.ts
   - 转换层: ts_http_training_executor.py + run_continual_training.py
 """
+
 from typing import List, Tuple
 
-
 # outcome 派生阈值
-CONF_SUCCESS = 0.7   # confidence >= 0.7 → success
-CONF_PARTIAL = 0.4   # 0.4 <= conf < 0.7 → partial
+CONF_SUCCESS = 0.7  # confidence >= 0.7 → success
+CONF_PARTIAL = 0.4  # 0.4 <= conf < 0.7 → partial
 
 # prompt_pattern 截断长度
 PATTERN_MAX_LEN = 80

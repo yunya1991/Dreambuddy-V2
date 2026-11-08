@@ -1,13 +1,13 @@
 """profiles/marketing.py — 营销内容 profile（保持原 32 Bot 行为）。"""
+
 from __future__ import annotations
 
+from core.profiles.base import DebateProfile
 from core.prompts import (
     BEAR_SYSTEM_PROMPT,
     BULL_SYSTEM_PROMPT,
     JUDGE_SYSTEM_PROMPT,
 )
-from core.profiles.base import DebateProfile
-
 
 MARKETING_PROFILE = DebateProfile(
     name="marketing",

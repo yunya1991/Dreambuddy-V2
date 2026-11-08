@@ -5,18 +5,17 @@
 
 对应 Spec §3bis.4.2 动作B + §3bis.9 T_CB3。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
 
 
 def _make_predictor() -> MorphCyclePredictor:
@@ -27,6 +26,7 @@ def _make_predictor() -> MorphCyclePredictor:
 # ================================================================
 # T_CB3: 预测曲线回拉
 # ================================================================
+
 
 class TestPullbackOvershootUp:
     """验证越上界时被回拉。"""
@@ -50,8 +50,8 @@ class TestPullbackOvershootUp:
         pulled, info = p._pullback_forecast([4.5, 4.8, 5.0], bounds)
 
         assert abs(pulled[0] - 4.15) < 0.01
-        assert abs(pulled[1] - 4.24) < 0.01   # 4.0 + 0.8 × 0.30
-        assert abs(pulled[2] - 4.30) < 0.01   # 4.0 + 1.0 × 0.30
+        assert abs(pulled[1] - 4.24) < 0.01  # 4.0 + 0.8 × 0.30
+        assert abs(pulled[2] - 4.30) < 0.01  # 4.0 + 1.0 × 0.30
         assert info["overshoot_count"] == 3
 
 
@@ -76,9 +76,9 @@ class TestPullbackOvershootDown:
 
         pulled, info = p._pullback_forecast([3.0, 2.0, 1.0], bounds)
 
-        assert abs(pulled[0] - 3.35) < 0.01   # 3.5 - 0.5 × 0.30
-        assert abs(pulled[1] - 3.05) < 0.01   # 3.5 - 1.5 × 0.30
-        assert abs(pulled[2] - 2.75) < 0.01   # 3.5 - 2.5 × 0.30
+        assert abs(pulled[0] - 3.35) < 0.01  # 3.5 - 0.5 × 0.30
+        assert abs(pulled[1] - 3.05) < 0.01  # 3.5 - 1.5 × 0.30
+        assert abs(pulled[2] - 2.75) < 0.01  # 3.5 - 2.5 × 0.30
         assert info["overshoot_count"] == 3
 
 
@@ -119,10 +119,10 @@ class TestPullbackMixed:
 
         pulled, info = p._pullback_forecast([3.8, 4.5, 2.0, 3.9], bounds)
 
-        assert abs(pulled[0] - 3.8) < 0.001   # 未越界
-        assert abs(pulled[1] - 4.15) < 0.01   # 越上界
-        assert abs(pulled[2] - 3.05) < 0.01   # 越下界
-        assert abs(pulled[3] - 3.9) < 0.001    # 未越界
+        assert abs(pulled[0] - 3.8) < 0.001  # 未越界
+        assert abs(pulled[1] - 4.15) < 0.01  # 越上界
+        assert abs(pulled[2] - 3.05) < 0.01  # 越下界
+        assert abs(pulled[3] - 3.9) < 0.001  # 未越界
         assert info["applied"] is True
         assert info["overshoot_count"] == 2
 

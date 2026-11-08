@@ -7,21 +7,20 @@
   - 完整降级链: torchsde → EM → GARCH → GBM
   - save/load 往返一致性
 """
+
 from __future__ import annotations
 
 import tempfile
 from pathlib import Path
 
 import numpy as np
-import pytest
 
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback
 from dreambuddy_evolution.core.neural_sde_model import (
+    MIN_SAMPLES_FOR_ACTIVATION,
     NeuralSDEModel,
     NeuralSDETrainer,
-    MIN_SAMPLES_FOR_ACTIVATION,
 )
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-
 
 # ============================================================================
 # GARCH fallback 测试

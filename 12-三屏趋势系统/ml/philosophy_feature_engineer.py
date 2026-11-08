@@ -86,7 +86,8 @@
         fed_easing_btc_dip, fed_hawkish_top (AUC下降)
 """
 
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -425,7 +426,7 @@ FEATURE_METADATA: Dict[str, Dict[str, Any]] = {
         "contribution": "加息周期×V4见顶组合信号[0,1]",
     },
     # === V5.3 周期相似性精选（2维，消融实验验证通过） ===
-    "drawdown_vs_hist_avg": {
+    "drawdown_vs_hist_avg": {  # noqa: F601
         "source": "practice_backtest",
         "strategy": "V5.3周期相似性精选",
         "philosophy": "周期偏离度",
@@ -433,7 +434,7 @@ FEATURE_METADATA: Dict[str, Dict[str, Any]] = {
         "practice_validated": True,
         "contribution": "当前跌幅-历史同月数平均跌幅，正值=强势（独立信息76.4%）",
     },
-    "cycle_path_similarity": {
+    "cycle_path_similarity": {  # noqa: F601
         "source": "practice_backtest",
         "strategy": "V5.3周期相似性精选",
         "philosophy": "周期路径相似度",
@@ -442,7 +443,7 @@ FEATURE_METADATA: Dict[str, Dict[str, Any]] = {
         "contribution": "当前周期路径与历史平均的相似度[0,1]",
     },
     # === V5.4 美联储利率水平（1维，方向4验证通过） ===
-    "fed_rate_level": {
+    "fed_rate_level": {  # noqa: F601
         "source": "macro_policy",
         "strategy": "V5.4美联储利率精选",
         "philosophy": "宏观流动性水平",
@@ -550,8 +551,19 @@ class PhilosophyFeatureEngineer:
     # 月0:-23.5%, 月1:-41.6%, 月2:-44.3%, 月3:-51.7%, 月4:-43.2%, 月5:-52.8%,
     # 月6:-61.4%, 月7:-66.4%, 月8:-64.6%, 月9:-68.7%, 月10:-69.5%, 月11:-74.3%, 月12:-80.1%
     HISTORICAL_PEAK_TO_BOTTOM_DRAWDOWN = [
-        -23.5, -41.6, -44.3, -51.7, -43.2, -52.8,
-        -61.4, -66.4, -64.6, -68.7, -69.5, -74.3, -80.1,
+        -23.5,
+        -41.6,
+        -44.3,
+        -51.7,
+        -43.2,
+        -52.8,
+        -61.4,
+        -66.4,
+        -64.6,
+        -68.7,
+        -69.5,
+        -74.3,
+        -80.1,
     ]
     HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT = 82.3  # 历史平均顶到底总跌幅%
 
@@ -561,11 +573,11 @@ class PhilosophyFeatureEngineer:
     FED_RATE_CHANGES = [
         (pd.Timestamp("2008-12-16"), 0.25, -1),  # GFC零利率
         (pd.Timestamp("2015-12-16"), 0.50, +1),  # 加息周期1开始
-        (pd.Timestamp("2018-12-19"), 2.50, 0),   # 加息周期1顶点，进入高利率平台1
+        (pd.Timestamp("2018-12-19"), 2.50, 0),  # 加息周期1顶点，进入高利率平台1
         (pd.Timestamp("2019-07-31"), 2.25, -1),  # 降息周期1开始
-        (pd.Timestamp("2020-03-15"), 0.25, 0),   # 零利率平台开始
+        (pd.Timestamp("2020-03-15"), 0.25, 0),  # 零利率平台开始
         (pd.Timestamp("2022-03-16"), 0.50, +1),  # 加息周期2开始
-        (pd.Timestamp("2023-07-26"), 5.50, 0),   # 加息周期2顶点，进入高利率平台2
+        (pd.Timestamp("2023-07-26"), 5.50, 0),  # 加息周期2顶点，进入高利率平台2
         (pd.Timestamp("2024-09-18"), 5.00, -1),  # 降息周期2开始
     ]
 
@@ -596,9 +608,9 @@ class PhilosophyFeatureEngineer:
         rsi_period: int = 14,
         volume_ratio_period: int = 20,
         # V5 4年周期趋势预测参数（基于历史统计）
-        cycle_bull_run_end_months: int = 12,      # 减半后0-12月=bull_run
-        cycle_peak_warn_end_months: int = 18,     # 减半后12-18月=peak_warning
-        cycle_bear_end_months: int = 30,          # 减半后18-30月=bear_market
+        cycle_bull_run_end_months: int = 12,  # 减半后0-12月=bull_run
+        cycle_peak_warn_end_months: int = 18,  # 减半后12-18月=peak_warning
+        cycle_bear_end_months: int = 30,  # 减半后18-30月=bear_market
         cycle_avg_peak_to_bottom_months: float = 12.5,  # 历史平均顶到底月数
     ):
         """
@@ -701,7 +713,8 @@ class PhilosophyFeatureEngineer:
 
         # === 哲学1: BTC/小币分化 ===
         btc_alt_div = self._calc_btc_alt_divergence(
-            current_price, current_slope,
+            current_price,
+            current_slope,
             btc_prices["close"].values[-1] if btc_prices is not None else current_price,
             btc_ma_slope,
             is_btc,
@@ -713,7 +726,12 @@ class PhilosophyFeatureEngineer:
         dip_level = 0
         dip_pos = 0.0
         left_signal = 0.0
-        if is_btc and weekly_ma200 is not None and not np.isnan(weekly_ma200[-1]) and weekly_ma200[-1] > 0:
+        if (
+            is_btc
+            and weekly_ma200 is not None
+            and not np.isnan(weekly_ma200[-1])
+            and weekly_ma200[-1] > 0
+        ):
             weekly_dist = (weekly_ma200[-1] - current_price) / weekly_ma200[-1] * 100
             if weekly_dist > 0:
                 dip_level = min(int(weekly_dist / self.dip_buy_step_pct), self.dip_buy_levels)
@@ -737,12 +755,12 @@ class PhilosophyFeatureEngineer:
         if bear_layer > 0 and dip_pos > 0:
             fib_remaining = 1.0
             layered_target = dip_pos
-        pos_adjust = self._calc_position_adjustment(
-            bear_layer, dip_pos, current_slope, ma_slope
-        )
+        pos_adjust = self._calc_position_adjustment(bear_layer, dip_pos, current_slope, ma_slope)
 
         # === 哲学4: 双牛过滤 ===
-        self_bull = bool(current_price > current_ma and current_slope > 0) if current_ma > 0 else False
+        self_bull = (
+            bool(current_price > current_ma and current_slope > 0) if current_ma > 0 else False
+        )
         double_bull = self._calc_double_bull(is_btc, self_bull, btc_bull)
 
         # === 哲学5: 减半周期锚定 ===
@@ -750,8 +768,8 @@ class PhilosophyFeatureEngineer:
         halving_phase = 0.0
         halving_position_cap = 1.0
         if is_btc:
-            halving_months_after, halving_phase, halving_position_cap = (
-                self._calc_halving_features(current_date)
+            halving_months_after, halving_phase, halving_position_cap = self._calc_halving_features(
+                current_date
             )
 
         # === 哲学6: MA128破位逃顶 ===
@@ -785,10 +803,14 @@ class PhilosophyFeatureEngineer:
             )
             drawdown_vs_hist_avg, cycle_path_similarity, _, _ = (
                 self._calc_cycle_similarity_features_at(
-                    prices, close,
+                    prices,
+                    close,
                     prices["volume"].values if "volume" in prices.columns else None,
                     is_btc,
-                    cycle_phase_val, drawdown_peak_val, months_since_peak_val, bear_progress_val,
+                    cycle_phase_val,
+                    drawdown_peak_val,
+                    months_since_peak_val,
+                    bear_progress_val,
                 )
             )
 
@@ -1004,7 +1026,7 @@ class PhilosophyFeatureEngineer:
             if current_action == -1.0 and i >= 200:
                 # 周线MA200 ≈ 日线MA1400的近似，但数据可能不足
                 # 用近200日均价作为周线MA200的近似
-                ma200_approx = float(np.mean(close[max(0, i-200):i+1]))
+                ma200_approx = float(np.mean(close[max(0, i - 200) : i + 1]))
                 if ma200_approx > 0:
                     dist_to_ma200 = (close[i] - ma200_approx) / ma200_approx * 100
                     # BTC低位：dist_to_ma200 < 0（价格在MA200下方）
@@ -1013,7 +1035,9 @@ class PhilosophyFeatureEngineer:
                         # 归一化到[0,1]：-50%以下为1.0，0%为0
                         dip_strength = min(1.0, abs(dist_to_ma200) / 50.0)
                         # 降息周期内信号随时间增强（前6个月最强）
-                        cycle_boost = min(1.0, months_in_cycle / 6.0) if months_in_cycle < 12 else 1.0
+                        cycle_boost = (
+                            min(1.0, months_in_cycle / 6.0) if months_in_cycle < 12 else 1.0
+                        )
                         fed_easing_dip_arr[i] = dip_strength * cycle_boost
                     else:
                         fed_easing_dip_arr[i] = 0.0
@@ -1096,7 +1120,9 @@ class PhilosophyFeatureEngineer:
                     continue
 
                 # 检测是否进入新周期（减半点变化）
-                halving_idx_change = (recent_halving != last_halving_idx) if last_halving_idx != -1 else False
+                halving_idx_change = (
+                    (recent_halving != last_halving_idx) if last_halving_idx != -1 else False
+                )
                 if halving_idx_change or running_peak_price == 0.0:
                     # 新周期开始，重置滚动高点
                     running_peak_price = current_price
@@ -1130,7 +1156,9 @@ class PhilosophyFeatureEngineer:
 
                 # 2. drawdown_from_cycle_peak: 距周期内滚动高点回撤%
                 if running_peak_price > 0:
-                    drawdown_pct_val = (current_price - running_peak_price) / running_peak_price * 100
+                    drawdown_pct_val = (
+                        (current_price - running_peak_price) / running_peak_price * 100
+                    )
                 else:
                     drawdown_pct_val = 0.0
                 drawdown_peak_arr[i] = drawdown_pct_val
@@ -1148,7 +1176,9 @@ class PhilosophyFeatureEngineer:
                 if phase == 3.0:
                     bear_duration = self.cycle_bear_end_months - self.cycle_peak_warn_end_months
                     if bear_duration > 0:
-                        progress = (months_after_halving - self.cycle_peak_warn_end_months) / bear_duration
+                        progress = (
+                            months_after_halving - self.cycle_peak_warn_end_months
+                        ) / bear_duration
                         bear_progress = max(0.0, min(1.0, progress))
                     else:
                         bear_progress = 0.0
@@ -1160,7 +1190,9 @@ class PhilosophyFeatureEngineer:
                 # 5. drawdown_vs_hist_avg: 当前跌幅 - 历史同月数平均跌幅
                 # V5.3验证版本：仅在熊市阶段(phase==3.0)计算，与验证脚本一致
                 if phase == 3.0 and months_since_peak > 0 and running_peak_price > 0:
-                    idx = int(min(months_since_peak, len(self.HISTORICAL_PEAK_TO_BOTTOM_DRAWDOWN) - 1))
+                    idx = int(
+                        min(months_since_peak, len(self.HISTORICAL_PEAK_TO_BOTTOM_DRAWDOWN) - 1)
+                    )
                     if idx >= 0:
                         hist_avg_dd = self.HISTORICAL_PEAK_TO_BOTTOM_DRAWDOWN[idx]
                         drawdown_vs_hist_arr[i] = drawdown_pct_val - hist_avg_dd
@@ -1195,7 +1227,9 @@ class PhilosophyFeatureEngineer:
                 # 8. bear_severity_score: 熊市严重度[0,1]
                 # = 时间进度(bear_phase_progress) × 跌幅进度(当前跌幅/历史平均总跌幅)
                 if bear_progress > 0 and self.HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT > 0:
-                    drawdown_progress = min(1.0, abs(drawdown_pct_val) / self.HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT)
+                    drawdown_progress = min(
+                        1.0, abs(drawdown_pct_val) / self.HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT
+                    )
                     bear_severity_arr[i] = bear_progress * drawdown_progress
                 else:
                     bear_severity_arr[i] = 0.0
@@ -1270,7 +1304,9 @@ class PhilosophyFeatureEngineer:
                 if not np.isnan(wma) and wma > 0:
                     weekly_dist = (wma - current_price) / wma * 100
                     if weekly_dist > 0:
-                        dip_level = min(int(weekly_dist / self.dip_buy_step_pct), self.dip_buy_levels)
+                        dip_level = min(
+                            int(weekly_dist / self.dip_buy_step_pct), self.dip_buy_levels
+                        )
                         if dip_level > 0:
                             dip_pos = (dip_level / self.dip_buy_levels) * self.dip_buy_max_position
                             left_signal = min(dip_pos / self.dip_buy_max_position, 1.0)
@@ -1290,7 +1326,9 @@ class PhilosophyFeatureEngineer:
             fib_remaining = 1.0
             if dip_pos > 0:
                 layered_target = dip_pos
-            pos_adjust = self._calc_position_adjustment(bear_layer, dip_pos, current_slope, ma_slope)
+            pos_adjust = self._calc_position_adjustment(
+                bear_layer, dip_pos, current_slope, ma_slope
+            )
 
             # 哲学4
             self_bull = bool(current_price > current_ma and current_slope > 0)
@@ -1393,8 +1431,7 @@ class PhilosophyFeatureEngineer:
     def get_practice_validated_features() -> List[str]:
         """获取所有标注为实践回测验证的特征名列表"""
         return [
-            name for name, meta in FEATURE_METADATA.items()
-            if meta.get("practice_validated", False)
+            name for name, meta in FEATURE_METADATA.items() if meta.get("practice_validated", False)
         ]
 
     @staticmethod
@@ -1405,8 +1442,7 @@ class PhilosophyFeatureEngineer:
             philosophy: 哲学贡献名称，如 "左侧抄底"/"双牛过滤"/"分层仓位"/"BTC/小币分化"
         """
         return [
-            name for name, meta in FEATURE_METADATA.items()
-            if meta.get("philosophy") == philosophy
+            name for name, meta in FEATURE_METADATA.items() if meta.get("philosophy") == philosophy
         ]
 
     # ------------------------------------------------------------------
@@ -1415,9 +1451,12 @@ class PhilosophyFeatureEngineer:
 
     def _calc_ma(self, close: np.ndarray) -> np.ndarray:
         """计算MA序列"""
-        return pd.Series(close).rolling(
-            window=self.ma_period, min_periods=self.ma_period
-        ).mean().values
+        return (
+            pd.Series(close)
+            .rolling(window=self.ma_period, min_periods=self.ma_period)
+            .mean()
+            .values
+        )
 
     def _calc_slope(self, ma: np.ndarray) -> np.ndarray:
         """计算MA斜率序列"""
@@ -1432,15 +1471,22 @@ class PhilosophyFeatureEngineer:
         """计算周线MA200（前向填充到日线）"""
         df = prices.copy()
         df.index = pd.to_datetime(df.index)
-        weekly = df.resample("W").agg({
-            "open": "first", "high": "max", "low": "min",
-            "close": "last", "volume": "sum",
-        }).dropna()
+        weekly = (
+            df.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
         if len(weekly) < 200:
             return np.full(len(prices), np.nan)
-        wma = pd.Series(weekly["close"].values).rolling(
-            window=200, min_periods=200
-        ).mean().values
+        wma = pd.Series(weekly["close"].values).rolling(window=200, min_periods=200).mean().values
         daily_wma = np.full(len(prices), np.nan)
         widx = 0
         for i in range(len(prices)):
@@ -1451,9 +1497,7 @@ class PhilosophyFeatureEngineer:
                 daily_wma[i] = wma[widx - 1]
         return daily_wma
 
-    def _classify_btc_regime(
-        self, ma: np.ndarray, ma_slope: np.ndarray
-    ) -> Tuple[float, bool]:
+    def _classify_btc_regime(self, ma: np.ndarray, ma_slope: np.ndarray) -> Tuple[float, bool]:
         """分类当前BTC regime（取最后一个有效值）"""
         if len(ma) == 0 or np.isnan(ma[-1]):
             return 0.0, False
@@ -1495,9 +1539,7 @@ class PhilosophyFeatureEngineer:
         # tanh归一化到[-1, 1]
         return float(np.tanh(slope_diff / 5.0))
 
-    def _calc_alt_short_risk(
-        self, is_btc: bool, self_slope: float, btc_regime: float
-    ) -> float:
+    def _calc_alt_short_risk(self, is_btc: bool, self_slope: float, btc_regime: float) -> float:
         """计算小币做空风险评分
 
         Returns:
@@ -1558,9 +1600,12 @@ class PhilosophyFeatureEngineer:
 
     def _calc_ma128(self, close: np.ndarray) -> np.ndarray:
         """计算MA128序列（V4哲学贡献6）"""
-        return pd.Series(close).rolling(
-            window=self.ma128_period, min_periods=self.ma128_period
-        ).mean().values
+        return (
+            pd.Series(close)
+            .rolling(window=self.ma128_period, min_periods=self.ma128_period)
+            .mean()
+            .values
+        )
 
     def _calc_halving_features(self, current_date: pd.Timestamp) -> Tuple[float, float, float]:
         """计算减半周期三特征（V4哲学贡献5）
@@ -1584,7 +1629,9 @@ class PhilosophyFeatureEngineer:
         if last_halving is None:
             return 0.0, 0.0, 1.0
 
-        months_after = (current_date.year - last_halving.year) * 12 + (current_date.month - last_halving.month)
+        months_after = (current_date.year - last_halving.year) * 12 + (
+            current_date.month - last_halving.month
+        )
 
         if months_after < self.halving_warn_months:
             return float(months_after), 0.0, 1.0
@@ -1677,7 +1724,7 @@ class PhilosophyFeatureEngineer:
         if n < self.rsi_period + 1:
             return 50.0
 
-        deltas = np.diff(close[-(self.rsi_period + 1):])
+        deltas = np.diff(close[-(self.rsi_period + 1) :])
         gains = np.where(deltas > 0, deltas, 0.0)
         losses = np.where(deltas < 0, -deltas, 0.0)
 
@@ -1711,8 +1758,8 @@ class PhilosophyFeatureEngineer:
         losses = np.where(deltas < 0, -deltas, 0.0)
 
         # 初始平均值（简单平均）
-        avg_gain = np.mean(gains[:self.rsi_period])
-        avg_loss = np.mean(losses[:self.rsi_period])
+        avg_gain = np.mean(gains[: self.rsi_period])
+        avg_loss = np.mean(losses[: self.rsi_period])
 
         for i in range(self.rsi_period, n - 1):
             avg_gain = (avg_gain * (self.rsi_period - 1) + gains[i]) / self.rsi_period
@@ -1740,7 +1787,7 @@ class PhilosophyFeatureEngineer:
 
         vol = prices["volume"].values
         current_vol = vol[-1]
-        avg_vol = np.mean(vol[-(self.volume_ratio_period + 1):-1])
+        avg_vol = np.mean(vol[-(self.volume_ratio_period + 1) : -1])
 
         if avg_vol <= 0:
             return 1.0
@@ -1763,7 +1810,7 @@ class PhilosophyFeatureEngineer:
             return ratio
 
         for i in range(self.volume_ratio_period, n):
-            avg_vol = np.mean(volume[i - self.volume_ratio_period:i])
+            avg_vol = np.mean(volume[i - self.volume_ratio_period : i])
             if avg_vol > 0:
                 ratio[i] = volume[i] / avg_vol
 
@@ -1899,7 +1946,9 @@ class PhilosophyFeatureEngineer:
         # 1. drawdown_vs_hist_avg: 当前跌幅 - 历史同月数平均跌幅
         # V5.3验证版本：仅在熊市阶段(cycle_phase==3.0)计算
         if cycle_phase == 3.0 and months_since_cycle_peak > 0:
-            idx = int(min(months_since_cycle_peak, len(self.HISTORICAL_PEAK_TO_BOTTOM_DRAWDOWN) - 1))
+            idx = int(
+                min(months_since_cycle_peak, len(self.HISTORICAL_PEAK_TO_BOTTOM_DRAWDOWN) - 1)
+            )
             if idx >= 0:
                 hist_avg_dd = self.HISTORICAL_PEAK_TO_BOTTOM_DRAWDOWN[idx]
                 drawdown_vs_hist_avg = drawdown_from_cycle_peak - hist_avg_dd
@@ -1941,7 +1990,9 @@ class PhilosophyFeatureEngineer:
 
         # 4. bear_severity_score: 时间进度 × 跌幅进度
         if bear_phase_progress > 0 and self.HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT > 0:
-            drawdown_progress = min(1.0, abs(drawdown_from_cycle_peak) / self.HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT)
+            drawdown_progress = min(
+                1.0, abs(drawdown_from_cycle_peak) / self.HISTORICAL_AVG_TOTAL_DRAWDOWN_PCT
+            )
             bear_severity = bear_phase_progress * drawdown_progress
 
         return drawdown_vs_hist_avg, path_similarity, vol_regime_ratio, bear_severity

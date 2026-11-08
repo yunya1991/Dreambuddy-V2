@@ -5,30 +5,33 @@
 使用更新后的 BCRM TP/SL 参数 + ATR 回退 + L0 安全网
 对比原始 BCRM 离场，判断是否需要回退。
 """
-import sys
+
 import os
+import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR in sys.path:
     sys.path.remove(SCRIPT_DIR)
 
-import json
-import time
-import math
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-
-import pandas as pd
-import numpy as np
+import json  # noqa: E402, I001
+import time  # noqa: E402
+from typing import List, Tuple  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-from scripts.memory_l4.exit_backtest_optimize import (
-    TradeResult, BacktestMetrics, load_klines, load_trades,
-    compute_atr_pct, infer_regime, compute_account_equity,
-    compute_metrics, print_metrics,
-    LEVERAGE, FEE_PCT, SYMBOLS,
+from scripts.memory_l4.exit_backtest_optimize import (  # noqa: E402
+    FEE_PCT,
+    LEVERAGE,
+    SYMBOLS,
+    BacktestMetrics,
+    TradeResult,
+    compute_atr_pct,
+    compute_metrics,
+    infer_regime,
+    load_klines,
+    load_trades,
+    print_metrics,
 )
 
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "data", "backtest")
@@ -68,21 +71,29 @@ def run_new_bcrm_backtest(symbols: List[str] = None) -> Tuple[BacktestMetrics, L
 
             kline_slice = klines[klines.index >= entry_time]
             if len(kline_slice) < 5:
-                all_results.append(TradeResult(
-                    symbol=symbol, direction=direction,
-                    entry_price=entry_price, exit_price=entry_price,
-                    entry_time=entry_time, exit_time=entry_time,
-                    entry_time_str=str(entry_time), exit_time_str=str(entry_time),
-                    original_exit_reason=original_exit_reason,
-                    original_pnl_pct=original_pnl,
-                ))
+                all_results.append(
+                    TradeResult(
+                        symbol=symbol,
+                        direction=direction,
+                        entry_price=entry_price,
+                        exit_price=entry_price,
+                        entry_time=entry_time,
+                        exit_time=entry_time,
+                        entry_time_str=str(entry_time),
+                        exit_time_str=str(entry_time),
+                        original_exit_reason=original_exit_reason,
+                        original_pnl_pct=original_pnl,
+                    )
+                )
                 continue
 
             # 入场时 ATR
             atr_entry = 0.02
             if len(klines.loc[:entry_time]) >= 15:
                 pre = klines.loc[:entry_time].iloc[-15:]
-                atr_entry = compute_atr_pct(pre["high"].values, pre["low"].values, pre["close"].values)
+                atr_entry = compute_atr_pct(
+                    pre["high"].values, pre["low"].values, pre["close"].values
+                )
 
             # 市态
             regime_at_entry = "trend"
@@ -115,7 +126,7 @@ def run_new_bcrm_backtest(symbols: List[str] = None) -> Tuple[BacktestMetrics, L
 
             # L0 安全网参数
             max_hold_sec = 172800  # 48h
-            max_loss_pct = -0.10   # 订单亏损 10%
+            max_loss_pct = -0.10  # 订单亏损 10%
 
             # 遍历 K 线
             exit_price = entry_price
@@ -199,27 +210,29 @@ def run_new_bcrm_backtest(symbols: List[str] = None) -> Tuple[BacktestMetrics, L
             pnl_eff -= fee_cost
             pnl_raw -= fee_cost / LEVERAGE
 
-            all_results.append(TradeResult(
-                symbol=symbol,
-                direction=direction,
-                entry_price=entry_price,
-                exit_price=exit_price,
-                entry_time=entry_time,
-                exit_time=exit_time,
-                entry_time_str=str(entry_time),
-                exit_time_str=str(exit_time),
-                pnl_pct=pnl_eff,
-                pnl_raw_pct=pnl_raw,
-                hold_bars=bars_held,
-                max_dd_pct_raw=max_dd,
-                exit_reason=exit_reason,
-                original_exit_reason=original_exit_reason,
-                original_pnl_pct=original_pnl,
-                leverage=LEVERAGE,
-                reduce_count=0,
-                atr_pct_at_entry=atr_entry,
-                regime=regime_at_entry,
-            ))
+            all_results.append(
+                TradeResult(
+                    symbol=symbol,
+                    direction=direction,
+                    entry_price=entry_price,
+                    exit_price=exit_price,
+                    entry_time=entry_time,
+                    exit_time=exit_time,
+                    entry_time_str=str(entry_time),
+                    exit_time_str=str(exit_time),
+                    pnl_pct=pnl_eff,
+                    pnl_raw_pct=pnl_raw,
+                    hold_bars=bars_held,
+                    max_dd_pct_raw=max_dd,
+                    exit_reason=exit_reason,
+                    original_exit_reason=original_exit_reason,
+                    original_pnl_pct=original_pnl,
+                    leverage=LEVERAGE,
+                    reduce_count=0,
+                    atr_pct_at_entry=atr_entry,
+                    regime=regime_at_entry,
+                )
+            )
 
     metrics = compute_metrics(all_results)
     return metrics, all_results
@@ -247,7 +260,9 @@ def run_original_bcrm(symbols: List[str] = None) -> Tuple[BacktestMetrics, List[
             atr_entry = 0.02
             if klines is not None and len(klines.loc[:entry_time]) >= 15:
                 pre = klines.loc[:entry_time].iloc[-15:]
-                atr_entry = compute_atr_pct(pre["high"].values, pre["low"].values, pre["close"].values)
+                atr_entry = compute_atr_pct(
+                    pre["high"].values, pre["low"].values, pre["close"].values
+                )
 
             regime_at_entry = "trend"
             if klines is not None:
@@ -260,27 +275,29 @@ def run_original_bcrm(symbols: List[str] = None) -> Tuple[BacktestMetrics, List[
                 slice_df = klines[(klines.index >= entry_time) & (klines.index <= exit_time)]
                 hold_bars = len(slice_df)
 
-            all_results.append(TradeResult(
-                symbol=symbol,
-                direction=str(row.get("direction", "")),
-                entry_price=entry_price,
-                exit_price=entry_price,
-                entry_time=entry_time,
-                exit_time=exit_time,
-                entry_time_str=str(entry_time),
-                exit_time_str=str(exit_time),
-                pnl_pct=original_pnl,
-                pnl_raw_pct=original_pnl / LEVERAGE,
-                hold_bars=hold_bars,
-                max_dd_pct_raw=0.0,
-                exit_reason=original_exit_reason,
-                original_exit_reason=original_exit_reason,
-                original_pnl_pct=original_pnl,
-                leverage=LEVERAGE,
-                reduce_count=0,
-                atr_pct_at_entry=atr_entry,
-                regime=regime_at_entry,
-            ))
+            all_results.append(
+                TradeResult(
+                    symbol=symbol,
+                    direction=str(row.get("direction", "")),
+                    entry_price=entry_price,
+                    exit_price=entry_price,
+                    entry_time=entry_time,
+                    exit_time=exit_time,
+                    entry_time_str=str(entry_time),
+                    exit_time_str=str(exit_time),
+                    pnl_pct=original_pnl,
+                    pnl_raw_pct=original_pnl / LEVERAGE,
+                    hold_bars=hold_bars,
+                    max_dd_pct_raw=0.0,
+                    exit_reason=original_exit_reason,
+                    original_exit_reason=original_exit_reason,
+                    original_pnl_pct=original_pnl,
+                    leverage=LEVERAGE,
+                    reduce_count=0,
+                    atr_pct_at_entry=atr_entry,
+                    regime=regime_at_entry,
+                )
+            )
 
     metrics = compute_metrics(all_results)
     return metrics, all_results
@@ -292,18 +309,18 @@ def main():
     print("=" * 70)
     print(f"  币种: {SYMBOLS}")
     print(f"  杠杆: {LEVERAGE}x")
-    print(f"  新版规则: SL=min(vol*2.0, 8%), TP=min(vol*3.5, 15%), 低置信度更紧")
-    print(f"  L0 安全网: max_hold=48h, max_loss=-10% (已回退到原始参数)")
+    print("  新版规则: SL=min(vol*2.0, 8%), TP=min(vol*3.5, 15%), 低置信度更紧")
+    print("  L0 安全网: max_hold=48h, max_loss=-10% (已回退到原始参数)")
 
     # 1. 原始 BCRM
-    print(f"\n  [1] 原始 BCRM 离场...")
+    print("\n  [1] 原始 BCRM 离场...")
     t0 = time.time()
     metrics_orig, results_orig = run_original_bcrm()
     print(f"    耗时: {time.time()-t0:.1f}秒")
     print_metrics("原始 BCRM", metrics_orig, results_orig)
 
     # 2. 新版 BCRM
-    print(f"\n  [2] 新版 BCRM 离场...")
+    print("\n  [2] 新版 BCRM 离场...")
     t0 = time.time()
     metrics_new, results_new = run_new_bcrm_backtest()
     print(f"    耗时: {time.time()-t0:.1f}秒")
@@ -311,7 +328,7 @@ def main():
 
     # 对比汇总
     print(f"\n{'='*70}")
-    print(f"  对比汇总")
+    print("  对比汇总")
     print(f"{'='*70}")
     print(f"  {'指标':<20} {'原始 BCRM':>12} {'新版 BCRM':>12} {'变化':>12}")
     print(f"  {'─'*60}")
@@ -322,16 +339,29 @@ def main():
         unit = "%" if pct else ""
         return f"{sign}{delta:{fmt}}{unit}"
 
-    print(f"  {'总收益率%(账户)':<20} {metrics_orig.total_return_account_pct:>12.2f} {metrics_new.total_return_account_pct:>12.2f} {fmt_delta(metrics_orig.total_return_account_pct, metrics_new.total_return_account_pct):>12}")
-    print(f"  {'胜率%':<20} {metrics_orig.win_rate:>12.1f} {metrics_new.win_rate:>12.1f} {fmt_delta(metrics_orig.win_rate, metrics_new.win_rate, '.1f', True):>12}")
-    print(f"  {'夏普比率':<20} {metrics_orig.sharpe_ratio:>12.2f} {metrics_new.sharpe_ratio:>12.2f} {fmt_delta(metrics_orig.sharpe_ratio, metrics_new.sharpe_ratio):>12}")
-    print(f"  {'最大回撤%(账户)':<20} {metrics_orig.max_drawdown_pct_account:>12.2f} {metrics_new.max_drawdown_pct_account:>12.2f} {fmt_delta(metrics_orig.max_drawdown_pct_account, metrics_new.max_drawdown_pct_account):>12}")
-    print(f"  {'盈亏比':<20} {metrics_orig.profit_factor:>12.2f} {metrics_new.profit_factor:>12.2f} {fmt_delta(metrics_orig.profit_factor, metrics_new.profit_factor):>12}")
-    print(f"  {'平均持仓h':<20} {metrics_orig.avg_hold_bars:>12.1f} {metrics_new.avg_hold_bars:>12.1f} {fmt_delta(metrics_orig.avg_hold_bars, metrics_new.avg_hold_bars, '.1f'):>12}")
+    print(
+        f"  {'总收益率%(账户)':<20} {metrics_orig.total_return_account_pct:>12.2f} {metrics_new.total_return_account_pct:>12.2f} {fmt_delta(metrics_orig.total_return_account_pct, metrics_new.total_return_account_pct):>12}"
+    )
+    print(
+        f"  {'胜率%':<20} {metrics_orig.win_rate:>12.1f} {metrics_new.win_rate:>12.1f} {fmt_delta(metrics_orig.win_rate, metrics_new.win_rate, '.1f', True):>12}"
+    )
+    print(
+        f"  {'夏普比率':<20} {metrics_orig.sharpe_ratio:>12.2f} {metrics_new.sharpe_ratio:>12.2f} {fmt_delta(metrics_orig.sharpe_ratio, metrics_new.sharpe_ratio):>12}"
+    )
+    print(
+        f"  {'最大回撤%(账户)':<20} {metrics_orig.max_drawdown_pct_account:>12.2f} {metrics_new.max_drawdown_pct_account:>12.2f} {fmt_delta(metrics_orig.max_drawdown_pct_account, metrics_new.max_drawdown_pct_account):>12}"
+    )
+    print(
+        f"  {'盈亏比':<20} {metrics_orig.profit_factor:>12.2f} {metrics_new.profit_factor:>12.2f} {fmt_delta(metrics_orig.profit_factor, metrics_new.profit_factor):>12}"
+    )
+    print(
+        f"  {'平均持仓h':<20} {metrics_orig.avg_hold_bars:>12.1f} {metrics_new.avg_hold_bars:>12.1f} {fmt_delta(metrics_orig.avg_hold_bars, metrics_new.avg_hold_bars, '.1f'):>12}"
+    )
 
     # 离场原因分布
-    print(f"\n  离场原因分布对比:")
+    print("\n  离场原因分布对比:")
     from collections import Counter
+
     orig_reasons = Counter([r.exit_reason for r in results_orig])
     new_reasons = Counter([r.exit_reason for r in results_new])
     all_reasons = sorted(set(list(orig_reasons.keys()) + list(new_reasons.keys())))
@@ -341,15 +371,23 @@ def main():
 
     # 判定
     print(f"\n{'='*70}")
-    score_orig = metrics_orig.sharpe_ratio + metrics_orig.total_return_account_pct / 100.0 - metrics_orig.max_drawdown_pct_account / 10.0
-    score_new = metrics_new.sharpe_ratio + metrics_new.total_return_account_pct / 100.0 - metrics_new.max_drawdown_pct_account / 10.0
+    score_orig = (
+        metrics_orig.sharpe_ratio
+        + metrics_orig.total_return_account_pct / 100.0
+        - metrics_orig.max_drawdown_pct_account / 10.0
+    )
+    score_new = (
+        metrics_new.sharpe_ratio
+        + metrics_new.total_return_account_pct / 100.0
+        - metrics_new.max_drawdown_pct_account / 10.0
+    )
 
     if score_new > score_orig:
         print(f"  ✅ 新版 BCRM 综合评分更优: {score_new:.2f} > {score_orig:.2f}")
-        print(f"  建议: 保留新版参数")
+        print("  建议: 保留新版参数")
     else:
         print(f"  ⚠️  新版 BCRM 综合评分更差: {score_new:.2f} <= {score_orig:.2f}")
-        print(f"  建议: 回退到原始 BCRM 参数")
+        print("  建议: 回退到原始 BCRM 参数")
     print(f"{'='*70}")
 
     # 保存结果

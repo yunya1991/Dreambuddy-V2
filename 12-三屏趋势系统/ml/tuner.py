@@ -6,9 +6,11 @@
 参考: 微软 Qlib 的滚动验证, Optuna 贝叶斯优化
 """
 
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, Optional
+
 import numpy as np
 import pandas as pd
+
 from .models import MLModel, create_model
 
 
@@ -22,10 +24,10 @@ class ModelTuner:
 
     def __init__(
         self,
-        model_type: str = 'lightgbm',
+        model_type: str = "lightgbm",
         n_trials: int = 50,
-        direction: str = 'maximize',
-        metric: str = 'accuracy',
+        direction: str = "maximize",
+        metric: str = "accuracy",
         train_window: int = 180,
         test_window: int = 30,
         step_size: int = 30,
@@ -54,53 +56,53 @@ class ModelTuner:
 
     def _get_param_space(self, trial) -> Dict:
         """根据模型类型获取参数搜索空间"""
-        if self.model_type == 'lightgbm':
+        if self.model_type == "lightgbm":
             return {
-                'num_leaves': trial.suggest_int('num_leaves', 15, 100),
-                'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
-                'feature_fraction': trial.suggest_float('feature_fraction', 0.5, 1.0),
-                'bagging_fraction': trial.suggest_float('bagging_fraction', 0.5, 1.0),
-                'min_data_in_leaf': trial.suggest_int('min_data_in_leaf', 5, 100),
-                'max_depth': trial.suggest_int('max_depth', 3, 12),
-                'lambda_l1': trial.suggest_float('lambda_l1', 1e-8, 10.0, log=True),
-                'lambda_l2': trial.suggest_float('lambda_l2', 1e-8, 10.0, log=True),
-                'n_estimators': 200,
-                'early_stopping_rounds': 30,
-                'verbose': -1,
+                "num_leaves": trial.suggest_int("num_leaves", 15, 100),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+                "feature_fraction": trial.suggest_float("feature_fraction", 0.5, 1.0),
+                "bagging_fraction": trial.suggest_float("bagging_fraction", 0.5, 1.0),
+                "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 5, 100),
+                "max_depth": trial.suggest_int("max_depth", 3, 12),
+                "lambda_l1": trial.suggest_float("lambda_l1", 1e-8, 10.0, log=True),
+                "lambda_l2": trial.suggest_float("lambda_l2", 1e-8, 10.0, log=True),
+                "n_estimators": 200,
+                "early_stopping_rounds": 30,
+                "verbose": -1,
             }
-        elif self.model_type == 'xgboost':
+        elif self.model_type == "xgboost":
             return {
-                'max_depth': trial.suggest_int('max_depth', 3, 12),
-                'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
-                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
-                'min_child_weight': trial.suggest_int('min_child_weight', 1, 20),
-                'gamma': trial.suggest_float('gamma', 1e-8, 1.0, log=True),
-                'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 10.0, log=True),
-                'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 10.0, log=True),
-                'n_estimators': 200,
-                'early_stopping_rounds': 30,
+                "max_depth": trial.suggest_int("max_depth", 3, 12),
+                "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+                "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+                "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
+                "min_child_weight": trial.suggest_int("min_child_weight", 1, 20),
+                "gamma": trial.suggest_float("gamma", 1e-8, 1.0, log=True),
+                "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
+                "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
+                "n_estimators": 200,
+                "early_stopping_rounds": 30,
             }
-        elif self.model_type == 'logistic':
+        elif self.model_type == "logistic":
             return {
-                'C': trial.suggest_float('C', 1e-4, 1e4, log=True),
-                'max_iter': 1000,
+                "C": trial.suggest_float("C", 1e-4, 1e4, log=True),
+                "max_iter": 1000,
             }
         return {}
 
     def _compute_metric(self, y_true: np.ndarray, y_pred_proba: np.ndarray) -> float:
         """计算评估指标"""
-        from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
+        from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
-        if self.metric == 'accuracy':
+        if self.metric == "accuracy":
             y_pred = (y_pred_proba > 0.5).astype(int)
             return accuracy_score(y_true, y_pred)
-        elif self.metric == 'roc_auc':
+        elif self.metric == "roc_auc":
             try:
                 return roc_auc_score(y_true, y_pred_proba)
             except Exception:
                 return 0.5
-        elif self.metric == 'f1':
+        elif self.metric == "f1":
             y_pred = (y_pred_proba > 0.5).astype(int)
             return f1_score(y_true, y_pred, zero_division=0)
         else:
@@ -129,8 +131,8 @@ class ModelTuner:
             # 小样本时禁用early stopping，避免训练不足
             params_copy = dict(params)
             if len(X_train) < 200 or len(X_test) < 30:
-                params_copy.pop('early_stopping_rounds', None)
-                params_copy['verbose'] = -1
+                params_copy.pop("early_stopping_rounds", None)
+                params_copy["verbose"] = -1
 
             model = create_model(self.model_type, params_copy)
             try:
@@ -170,15 +172,19 @@ class ModelTuner:
         self.best_score = study.best_value
 
         return {
-            'best_params': study.best_params,
-            'best_score': study.best_value,
-            'n_trials': self.n_trials,
-            'study': study,
+            "best_params": study.best_params,
+            "best_score": study.best_value,
+            "n_trials": self.n_trials,
+            "study": study,
         }
 
-    def train_best(self, X_train: pd.DataFrame, y_train: pd.Series,
-                   X_val: Optional[pd.DataFrame] = None,
-                   y_val: Optional[pd.Series] = None) -> MLModel:
+    def train_best(
+        self,
+        X_train: pd.DataFrame,
+        y_train: pd.Series,
+        X_val: Optional[pd.DataFrame] = None,
+        y_val: Optional[pd.Series] = None,
+    ) -> MLModel:
         """用最优参数训练最终模型"""
         model = create_model(self.model_type, self.best_params)
         model.fit(X_train, y_train, X_val, y_val)

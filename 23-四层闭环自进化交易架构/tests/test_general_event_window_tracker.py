@@ -7,10 +7,10 @@ SPEC-Phase2 §3.2-3.3:
 
 RED 阶段：GeneralEventWindowTracker 类尚未实现，测试应因 ImportError 失败。
 """
+
 from datetime import datetime, timedelta, timezone
 
 import pytest
-
 
 # 锚定时间，避免 datetime.now() 漂移
 NOW = datetime(2026, 10, 9, 12, 0, 0, tzinfo=timezone.utc)
@@ -19,10 +19,12 @@ NOW = datetime(2026, 10, 9, 12, 0, 0, tzinfo=timezone.utc)
 @pytest.fixture
 def tracker():
     from dreambuddy_evolution.core.general_event_window_tracker import GeneralEventWindowTracker
+
     return GeneralEventWindowTracker()
 
 
 # ---------- 5 阶段判定（tech_upgrade τ=1.0） ----------
+
 
 def test_expectation_build_phase(tracker):
     """tech_upgrade 前 2-3 个半衰期 → expectation_build。"""
@@ -77,6 +79,7 @@ def test_neutral_outside_window(tracker):
 
 # ---------- half_life 动态伸缩（congressional_hearing τ=2.5） ----------
 
+
 def test_congressional_hearing_window_scales(tracker):
     """congressional_hearing τ=2.5，窗口边界按 τ 动态伸缩。"""
     # days_to = 3.0 在 (2τ=5.0, 3τ=7.5] 区间内 → expectation_build
@@ -91,6 +94,7 @@ def test_congressional_hearing_window_scales(tracker):
 
 
 # ---------- direction 透传 ----------
+
 
 def test_dominant_direction_from_event_direction(tracker):
     """event_direction 参数透传到 dominant_direction。"""
@@ -110,6 +114,7 @@ def test_dominant_direction_default_neutral(tracker):
 
 # ---------- days_to / days_since 计算 ----------
 
+
 def test_days_to_event_positive(tracker):
     """事件未发生 → days_to_event > 0, days_since_event = 0。"""
     event_date = NOW + timedelta(days=2)
@@ -127,6 +132,7 @@ def test_days_since_event_positive(tracker):
 
 
 # ---------- FAIL-OPEN ----------
+
 
 def test_fail_open_no_event_date(tracker):
     """无 event_date → 返回 neutral context。"""
@@ -147,13 +153,19 @@ def test_fail_open_unknown_event_type(tracker):
 
 # ---------- schema 一致性 ----------
 
+
 def test_output_schema_matches_fomc_tracker(tracker):
     """输出 dict schema 与 FOMCEventWindowTracker 一致。"""
     event_date = NOW + timedelta(days=1)
     ctx = tracker.get_context(event_date=event_date, event_type="tech_upgrade", now=NOW)
     required_keys = {
-        "cycle_phase", "event_window", "in_event_cycle",
-        "days_to_event", "days_since_event",
-        "dominant_direction", "half_life", "raw",
+        "cycle_phase",
+        "event_window",
+        "in_event_cycle",
+        "days_to_event",
+        "days_since_event",
+        "dominant_direction",
+        "half_life",
+        "raw",
     }
     assert required_keys.issubset(ctx.keys())

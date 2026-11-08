@@ -1,7 +1,7 @@
 {
-  "manifest_version": "contract-freeze-v1",
-  "spec_version": "v0.11",
-  "frozen_at": "2026-11-06T15:18:08.943530+00:00",
+  "manifest_version": "contract-freeze-v2",
+  "spec_version": "v0.14.2",
+  "frozen_at": "2026-11-07T17:07:19.703249+00:00",
   "change_policy": "v1 required fields are frozen; additive optional fields require a manifest update + ADR; breaking changes require v2 + ADR",
   "contracts": [
     {
@@ -17,6 +17,13 @@
       "file": "final_decision_signal.v1.json",
       "status": "frozen",
       "sha256": "6a208a4caef8c900554f443e3b47442fbd6207181649ce55eda5c5f0799d6527"
+    },
+    {
+      "name": "FinalDecisionSignal",
+      "version": "v1.1",
+      "file": "final_decision_signal.v1.1.json",
+      "status": "frozen",
+      "sha256": "e6c73a5605e9b9cf9e29096bc6fa015a0a17ff68a1ea4c36ab55a67dc4fbc6a5"
     },
     {
       "name": "MacroElasticConstraint",

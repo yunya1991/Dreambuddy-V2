@@ -8,6 +8,7 @@
 - 读取 stdout 一行作为响应；超时使用线程 + future，超时即杀进程；
 - FAIL-OPEN 由调用方决定（本模块抛异常，research 层捕获）。
 """
+
 from __future__ import annotations
 
 import json
@@ -15,7 +16,8 @@ import os
 import subprocess
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from pathlib import Path
 from typing import Any
 

@@ -12,6 +12,7 @@
 
 FAIL-OPEN: 单条异常跳过, 不中断整体回测.
 """
+
 from __future__ import annotations
 
 import json
@@ -34,16 +35,16 @@ for _p in (str(_YIJING_ROOT), str(_ARCH_ROOT)):
         sys.path.insert(0, _p)
 
 from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
-    WashoutDetector,
     WashoutLabel,
     WashoutVerdict,
 )
 from scripts.memory_l4.bcrm2.washout_trigger_gate import WashoutTriggerGate  # noqa: E402
+
+from dreamos.evolution.washout_case_library import WashoutCase  # noqa: E402
 from dreamos.evolution.washout_ending_detector import (  # noqa: E402
     EndingSignal,
     WashoutEndingDetector,
 )
-from dreamos.evolution.washout_case_library import WashoutCase  # noqa: E402
 
 KLINE_CSV = str(L4_DIR / "data" / "klines" / "BTC_1D_full.csv")
 OUTPUT_CASES = str(SCRIPT_DIR / "washout_reversal_backtest_cases.jsonl")
@@ -83,25 +84,39 @@ def simulate_trade(df: pd.DataFrame, entry_idx: int) -> Dict:
         pnl_at_high = (high - entry_price) / entry_price
         pnl_at_low = (low - entry_price) / entry_price
         if pnl_at_low <= -SL_PCT:
-            return {"entry_price": entry_price,
-                    "exit_price": entry_price * (1 - SL_PCT),
-                    "exit_idx": idx, "pnl_pct": -SL_PCT,
-                    "exit_reason": "SL", "hold_days": i}
+            return {
+                "entry_price": entry_price,
+                "exit_price": entry_price * (1 - SL_PCT),
+                "exit_idx": idx,
+                "pnl_pct": -SL_PCT,
+                "exit_reason": "SL",
+                "hold_days": i,
+            }
         if pnl_at_high >= TP_PCT:
-            return {"entry_price": entry_price,
-                    "exit_price": entry_price * (1 + TP_PCT),
-                    "exit_idx": idx, "pnl_pct": TP_PCT,
-                    "exit_reason": "TP", "hold_days": i}
+            return {
+                "entry_price": entry_price,
+                "exit_price": entry_price * (1 + TP_PCT),
+                "exit_idx": idx,
+                "pnl_pct": TP_PCT,
+                "exit_reason": "TP",
+                "hold_days": i,
+            }
     exit_idx = entry_idx + max_hold
     exit_price = float(df.iloc[exit_idx]["close"])
     pnl_pct = (exit_price - entry_price) / entry_price
-    return {"entry_price": entry_price, "exit_price": exit_price,
-            "exit_idx": exit_idx, "pnl_pct": pnl_pct,
-            "exit_reason": "TIMEOUT", "hold_days": max_hold}
+    return {
+        "entry_price": entry_price,
+        "exit_price": exit_price,
+        "exit_idx": exit_idx,
+        "pnl_pct": pnl_pct,
+        "exit_reason": "TIMEOUT",
+        "hold_days": max_hold,
+    }
 
 
 def _build_washout_verdict_from_trigger_gate(
-    gate: WashoutTriggerGate, df: pd.DataFrame,
+    gate: WashoutTriggerGate,
+    df: pd.DataFrame,
 ) -> WashoutVerdict:
     """通过触发门 + 回撤深度构造 WashoutVerdict (回测专用).
 
@@ -111,7 +126,7 @@ def _build_washout_verdict_from_trigger_gate(
     close = df["close"].astype(float)
     high = df["high"].astype(float)
     lookback = gate.runup_lookback_days
-    start_price = float(close.iloc[-(lookback + 1)])
+    start_price = float(close.iloc[-(lookback + 1)])  # noqa: F841
     peak = float(high.iloc[-lookback:].max())
     end_price = float(close.iloc[-1])
     drawdown = 1.0 - end_price / peak if peak > 0 else 0.0
@@ -155,7 +170,7 @@ def _relaxed_ending_check(df: pd.DataFrame) -> EndingSignal:
         if n >= 15:
             deltas = close.diff().dropna()
             gains = deltas.clip(lower=0)
-            losses = (-deltas.clip(upper=0))
+            losses = -deltas.clip(upper=0)
             ag = gains.iloc[:14].mean()
             al = losses.iloc[:14].mean()
             for i in range(14, len(deltas)):
@@ -172,8 +187,9 @@ def _relaxed_ending_check(df: pd.DataFrame) -> EndingSignal:
             prev = df.iloc[-2]
             body = abs(float(last["close"]) - float(last["open"]))
             lower_shadow = min(float(last["close"]), float(last["open"])) - float(last["low"])
-            stabilize = (lower_shadow > body and body > 0) or \
-                (float(last["close"]) > float(prev["close"]))
+            stabilize = (lower_shadow > body and body > 0) or (
+                float(last["close"]) > float(prev["close"])
+            )
             conds.append(stabilize)
         else:
             conds.append(False)
@@ -195,22 +211,28 @@ def _relaxed_ending_check(df: pd.DataFrame) -> EndingSignal:
 def run_backtest() -> Tuple[List[WashoutCase], Dict]:
     """运行洗盘反转基因组回测."""
     gate = WashoutTriggerGate()
-    ending_detector = WashoutEndingDetector()
+    ending_detector = WashoutEndingDetector()  # noqa: F841
     df = load_local_klines()
-    print(f"[数据] BTC 1D: {len(df)} 根 ({df.index[0].date()} ~ {df.index[-1].date()})",
-          flush=True)
+    print(f"[数据] BTC 1D: {len(df)} 根 ({df.index[0].date()} ~ {df.index[-1].date()})", flush=True)
 
     all_cases: List[WashoutCase] = []
-    stats = {"total_windows": 0, "washout_signals": 0,
-             "ending_signals": 0, "trades_simulated": 0,
-             "success_count": 0, "fail_count": 0,
-             "total_pnl_pct": 0.0, "tp_count": 0, "sl_count": 0,
-             "timeout_count": 0}
+    stats = {
+        "total_windows": 0,
+        "washout_signals": 0,
+        "ending_signals": 0,
+        "trades_simulated": 0,
+        "success_count": 0,
+        "fail_count": 0,
+        "total_pnl_pct": 0.0,
+        "tp_count": 0,
+        "sl_count": 0,
+        "timeout_count": 0,
+    }
 
     for start in range(0, len(df) - WINDOW_SIZE - HOLD_DAYS, STEP):
         stats["total_windows"] += 1
-        window = df.iloc[start:start + WINDOW_SIZE]
-        macro_data = {}
+        window = df.iloc[start : start + WINDOW_SIZE]
+        macro_data = {}  # noqa: F841
 
         try:
             # Step 1: 触发门 (WashoutDetector 无 classifier 时直接用触发门)
@@ -227,8 +249,7 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
                 continue
             stats["ending_signals"] += 1
 
-            confidence = (verdict.confidence * 0.6
-                          + ending_signal.confidence * 0.4)
+            confidence = verdict.confidence * 0.6 + ending_signal.confidence * 0.4
             if confidence < PROBE_THRESHOLD:
                 continue
 
@@ -245,8 +266,7 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
                 stats["timeout_count"] += 1
 
             pnl_pct = trade["pnl_pct"]
-            actual_label = ("reversal_long_success" if pnl_pct > 0
-                            else "reversal_long_fail")
+            actual_label = "reversal_long_success" if pnl_pct > 0 else "reversal_long_fail"
             if pnl_pct > 0:
                 stats["success_count"] += 1
             else:
@@ -271,27 +291,37 @@ def run_backtest() -> Tuple[List[WashoutCase], Dict]:
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
             all_cases.append(case)
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             continue
 
-    stats["win_rate"] = (stats["success_count"] / stats["trades_simulated"]
-                         if stats["trades_simulated"] > 0 else 0.0)
-    stats["avg_pnl_pct"] = (stats["total_pnl_pct"] / stats["trades_simulated"]
-                            if stats["trades_simulated"] > 0 else 0.0)
+    stats["win_rate"] = (
+        stats["success_count"] / stats["trades_simulated"] if stats["trades_simulated"] > 0 else 0.0
+    )
+    stats["avg_pnl_pct"] = (
+        stats["total_pnl_pct"] / stats["trades_simulated"] if stats["trades_simulated"] > 0 else 0.0
+    )
     return all_cases, stats
 
 
 def save_cases(cases: List[WashoutCase], stats: Dict):
     with open(OUTPUT_CASES, "w") as f:
         for case in cases:
-            f.write(json.dumps({
-                "case_id": case.case_id, "coin": case.coin,
-                "entry_time": case.entry_time, "exit_time": case.exit_time,
-                "features_snapshot": case.features_snapshot,
-                "actual_label": case.actual_label,
-                "pnl_pct": case.pnl_pct, "reward": case.reward,
-                "timestamp": case.timestamp,
-            }) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "case_id": case.case_id,
+                        "coin": case.coin,
+                        "entry_time": case.entry_time,
+                        "exit_time": case.exit_time,
+                        "features_snapshot": case.features_snapshot,
+                        "actual_label": case.actual_label,
+                        "pnl_pct": case.pnl_pct,
+                        "reward": case.reward,
+                        "timestamp": case.timestamp,
+                    }
+                )
+                + "\n"
+            )
     print(f"\n[保存] 案例写入 {OUTPUT_CASES} ({len(cases)} 条)", flush=True)
     stats["total_cases"] = len(cases)
     stats["output_file"] = OUTPUT_CASES

@@ -1,0 +1,114 @@
+{
+  "ts": "2026-11-06T23:25:00+08:00",
+  "spec": "SPEC-EMERGENCE-EVOLUTION v0.5 §4 E3 重估对比",
+  "data_source": "/home/luke/dreambuddy/.workbuddy/l1_training/domain_discovery_training_windowed.jsonl",
+  "n_pairs": 9023,
+  "diagnosis": {
+    "static_outliers": [
+      "search<->data",
+      "search<->eval",
+      "data<->eval"
+    ],
+    "static_outlier_values": [
+      0.985,
+      0.984,
+      0.985
+    ],
+    "actual_corr_range": "[-0.026, 0.061]",
+    "conclusion": "static 三对 0.98+ 与实际相关性(<=0.06)严重不符，疑似占位异常值；数据中跨域耦合信号本身极弱"
+  },
+  "variants": {
+    "static_original": {
+      "verdict": "falsified",
+      "n_pairs": 9023,
+      "n_oos": 2707,
+      "mae_coupled": 0.069994,
+      "mae_ablated": 0.045743,
+      "median_improvement": -0.016863,
+      "median_improvement_pct": -36.864,
+      "p_value": 0.0001,
+      "direction_positive": false,
+      "n_perm": 10000,
+      "train_frac": 0.7
+    },
+    "est_regression": {
+      "verdict": "falsified",
+      "n_pairs": 9023,
+      "n_oos": 2707,
+      "mae_coupled": 0.157013,
+      "mae_ablated": 0.045743,
+      "median_improvement": -0.092737,
+      "median_improvement_pct": -202.733,
+      "p_value": 0.0001,
+      "direction_positive": false,
+      "n_perm": 10000,
+      "train_frac": 0.7
+    },
+    "static_fixed3": {
+      "verdict": "e3_candidate",
+      "n_pairs": 9023,
+      "n_oos": 2707,
+      "mae_coupled": 0.045131,
+      "mae_ablated": 0.045743,
+      "median_improvement": 0.001134,
+      "median_improvement_pct": 2.48,
+      "p_value": 0.0001,
+      "direction_positive": true,
+      "n_perm": 10000,
+      "train_frac": 0.7
+    }
+  },
+  "coupling_vectors": {
+    "static_original": [
+      0.015,
+      0.017,
+      0.015,
+      0.006,
+      0.01,
+      0.012,
+      0.011,
+      0.016,
+      0.031,
+      0.021,
+      0.985,
+      0.984,
+      0.02,
+      0.019,
+      0.985
+    ],
+    "est_regression": [
+      0.6909,
+      0.9872,
+      1.4989,
+      0.6349,
+      0.6369,
+      0.6702,
+      0.8589,
+      0.4308,
+      0.5136,
+      1.2928,
+      0.5994,
+      0.6806,
+      0.6972,
+      1.1255,
+      0.4795
+    ],
+    "static_fixed3": [
+      0.015,
+      0.017,
+      0.015,
+      0.006,
+      0.01,
+      0.012,
+      0.011,
+      0.016,
+      0.031,
+      0.021,
+      0.0155,
+      0.0155,
+      0.02,
+      0.019,
+      0.0155
+    ]
+  }
+}

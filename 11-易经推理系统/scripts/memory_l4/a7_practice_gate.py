@@ -13,13 +13,13 @@ A7 实践论门禁 — 纯代码驱动，不依赖大模型。
   5. 执行纪律 — 止损止盈参数是否合理
   6. A0 矛盾预警 — A0 矛盾分析是否有极端预警
 """
-import os
+
 import json
-import time
+import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-import logging
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class GateCheckResult:
     """单项检查结果"""
+
     name: str
     passed: bool
-    score: float          # 0-1
+    score: float  # 0-1
     details: str = ""
     severity: str = "info"  # info / warn / error
 
@@ -37,6 +38,7 @@ class GateCheckResult:
 @dataclass
 class A7GateReport:
     """A7 门禁报告"""
+
     gate_type: str = ""
     timestamp: str = ""
     checks: List[GateCheckResult] = field(default_factory=list)
@@ -52,8 +54,13 @@ class A7GateReport:
             "passed": self.passed,
             "pass_rate": round(self.pass_rate, 4),
             "checks": [
-                {"name": c.name, "passed": c.passed, "score": round(c.score, 4),
-                 "details": c.details, "severity": c.severity}
+                {
+                    "name": c.name,
+                    "passed": c.passed,
+                    "score": round(c.score, 4),
+                    "details": c.details,
+                    "severity": c.severity,
+                }
                 for c in self.checks
             ],
             "blocking_reasons": self.blocking_reasons,
@@ -65,12 +72,12 @@ class A7PracticeGate:
     """A7 实践论门禁 — 纯代码驱动"""
 
     # 门禁阈值
-    MIN_CBR_SAMPLES = 3          # CBR 最少样本数
-    MIN_WIN_RATE = 0.40          # 最低历史胜率
-    MAX_DAILY_LOSS_PCT = 0.05    # 最大日亏损比例
-    MAX_CONSECUTIVE_LOSS = 3     # 最大连续亏损次数
-    MIN_SL_ATR_MULT = 1.0        # 最小止损 ATR 倍数
-    MAX_POSITION_RATIO = 0.8     # 最大仓位占用比例
+    MIN_CBR_SAMPLES = 3  # CBR 最少样本数
+    MIN_WIN_RATE = 0.40  # 最低历史胜率
+    MAX_DAILY_LOSS_PCT = 0.05  # 最大日亏损比例
+    MAX_CONSECUTIVE_LOSS = 3  # 最大连续亏损次数
+    MIN_SL_ATR_MULT = 1.0  # 最小止损 ATR 倍数
+    MAX_POSITION_RATIO = 0.8  # 最大仓位占用比例
 
     def __init__(self, workspace_root: str = ""):
         """初始化，不再硬编码旧路径"""
@@ -177,8 +184,9 @@ class A7PracticeGate:
             self._gate_stats["total_blocked"] += 1
             for reason in report.blocking_reasons:
                 key = reason.split(":")[0]
-                self._gate_stats["block_reasons"][key] = \
+                self._gate_stats["block_reasons"][key] = (
                     self._gate_stats["block_reasons"].get(key, 0) + 1
+                )
 
         # 保存报告
         self._save_report(report)
@@ -199,23 +207,17 @@ class A7PracticeGate:
         """检查 BCRM 信号是否有效"""
         if fail_closed:
             return GateCheckResult(
-                "信号有效性", False, 0.0,
-                "BCRM fail_closed=True，信号无效", "error"
+                "信号有效性", False, 0.0, "BCRM fail_closed=True，信号无效", "error"
             )
         if direction == "FLAT":
-            return GateCheckResult(
-                "信号有效性", False, 0.0,
-                "方向为FLAT，无可执行信号", "error"
-            )
+            return GateCheckResult("信号有效性", False, 0.0, "方向为FLAT，无可执行信号", "error")
         if confidence < 0.3:
             return GateCheckResult(
-                "信号有效性", False, 0.2,
-                f"置信度过低({confidence:.2f}<0.30)", "error"
+                "信号有效性", False, 0.2, f"置信度过低({confidence:.2f}<0.30)", "error"
             )
         score = min(confidence, 1.0)
         return GateCheckResult(
-            "信号有效性", True, score,
-            f"方向={direction} 置信度={confidence:.2f}", "info"
+            "信号有效性", True, score, f"方向={direction} 置信度={confidence:.2f}", "info"
         )
 
     # ================================================================
@@ -226,36 +228,30 @@ class A7PracticeGate:
         if cbr_engine is None:
             # CBR 引擎不可用时不阻断，但降分
             return GateCheckResult(
-                "实践验证充分性", True, 0.5,
-                "CBR引擎未接入，跳过样本检查（降分）", "warn"
+                "实践验证充分性", True, 0.5, "CBR引擎未接入，跳过样本检查（降分）", "warn"
             )
 
         try:
             case_base = getattr(cbr_engine, "case_base", None)
             if case_base is None:
-                return GateCheckResult(
-                    "实践验证充分性", True, 0.5,
-                    "案例库未加载，跳过", "warn"
-                )
+                return GateCheckResult("实践验证充分性", True, 0.5, "案例库未加载，跳过", "warn")
 
             total_cases = len(case_base.cases)
             if total_cases < self.MIN_CBR_SAMPLES:
                 return GateCheckResult(
-                    "实践验证充分性", False, 0.2,
+                    "实践验证充分性",
+                    False,
+                    0.2,
                     f"案例库样本不足({total_cases}<{self.MIN_CBR_SAMPLES})",
-                    "warn"
+                    "warn",
                 )
 
             score = min(total_cases / 50.0, 1.0)
             return GateCheckResult(
-                "实践验证充分性", True, score,
-                f"案例库样本{total_cases}个", "info"
+                "实践验证充分性", True, score, f"案例库样本{total_cases}个", "info"
             )
         except Exception as e:
-            return GateCheckResult(
-                "实践验证充分性", True, 0.3,
-                f"CBR检查异常: {e}", "warn"
-            )
+            return GateCheckResult("实践验证充分性", True, 0.3, f"CBR检查异常: {e}", "warn")
 
     # ================================================================
     # 检查3: 历史胜率
@@ -263,10 +259,7 @@ class A7PracticeGate:
     def _check_historical_win_rate(self, inference, cbr_engine) -> GateCheckResult:
         """检查同类信号的历史胜率"""
         if cbr_engine is None:
-            return GateCheckResult(
-                "真理标准验证", True, 0.5,
-                "CBR引擎未接入，跳过胜率检查", "warn"
-            )
+            return GateCheckResult("真理标准验证", True, 0.5, "CBR引擎未接入，跳过胜率检查", "warn")
 
         try:
             cbr_bridge = getattr(inference, "get", lambda *a: None)("cbr_result") or {}
@@ -274,26 +267,23 @@ class A7PracticeGate:
 
             if win_rate is None:
                 return GateCheckResult(
-                    "真理标准验证", True, 0.5,
-                    "无CBR增强数据，跳过胜率检查", "warn"
+                    "真理标准验证", True, 0.5, "无CBR增强数据，跳过胜率检查", "warn"
                 )
 
             if win_rate < self.MIN_WIN_RATE:
                 return GateCheckResult(
-                    "真理标准验证", False, win_rate,
+                    "真理标准验证",
+                    False,
+                    win_rate,
                     f"历史胜率过低({win_rate:.1%}<{self.MIN_WIN_RATE:.0%})",
-                    "warn"
+                    "warn",
                 )
 
             return GateCheckResult(
-                "真理标准验证", True, win_rate,
-                f"历史胜率{win_rate:.1%}", "info"
+                "真理标准验证", True, win_rate, f"历史胜率{win_rate:.1%}", "info"
             )
         except Exception:
-            return GateCheckResult(
-                "真理标准验证", True, 0.5,
-                "胜率检查异常，跳过", "warn"
-            )
+            return GateCheckResult("真理标准验证", True, 0.5, "胜率检查异常，跳过", "warn")
 
     # ================================================================
     # 检查4: 风险可控性
@@ -301,48 +291,46 @@ class A7PracticeGate:
     def _check_risk_status(self, risk_manager, current_equity) -> GateCheckResult:
         """检查风控状态"""
         if risk_manager is None:
-            return GateCheckResult(
-                "风险可控性", True, 0.5,
-                "风控管理器未接入，跳过", "warn"
-            )
+            return GateCheckResult("风险可控性", True, 0.5, "风控管理器未接入，跳过", "warn")
 
         try:
             risk_check = risk_manager.can_trade(current_equity)
             if not risk_check.get("allowed", True):
                 return GateCheckResult(
-                    "风险可控性", False, 0.0,
+                    "风险可控性",
+                    False,
+                    0.0,
                     f"风控拦截: {risk_check.get('reason', '未知')}",
-                    "error"
+                    "error",
                 )
 
             # 检查日亏损
             daily_loss = getattr(risk_manager, "daily_pnl_pct", 0)
             if daily_loss < -self.MAX_DAILY_LOSS_PCT:
                 return GateCheckResult(
-                    "风险可控性", False, 0.1,
+                    "风险可控性",
+                    False,
+                    0.1,
                     f"日亏损{daily_loss:.2%}超限({-self.MAX_DAILY_LOSS_PCT:.0%})",
-                    "error"
+                    "error",
                 )
 
             # 检查连续亏损
             consec_loss = getattr(risk_manager, "consecutive_losses", 0)
             if consec_loss >= self.MAX_CONSECUTIVE_LOSS:
                 return GateCheckResult(
-                    "风险可控性", False, 0.2,
-                    f"连续亏损{consec_loss}次，触发熔断",
-                    "error"
+                    "风险可控性", False, 0.2, f"连续亏损{consec_loss}次，触发熔断", "error"
                 )
 
             return GateCheckResult(
-                "风险可控性", True, 0.8,
+                "风险可控性",
+                True,
+                0.8,
                 f"风控通过 (日亏损={daily_loss:.2%} 连亏={consec_loss})",
-                "info"
+                "info",
             )
         except Exception as e:
-            return GateCheckResult(
-                "风险可控性", True, 0.3,
-                f"风控检查异常: {e}", "warn"
-            )
+            return GateCheckResult("风险可控性", True, 0.3, f"风控检查异常: {e}", "warn")
 
     # ================================================================
     # 检查5: 执行纪律
@@ -367,15 +355,14 @@ class A7PracticeGate:
             issues.append(f"止损倍数过低({sl_atr:.1f}<{self.MIN_SL_ATR_MULT})")
 
         if issues:
-            return GateCheckResult(
-                "执行纪律", False, 0.3,
-                "; ".join(issues), "warn"
-            )
+            return GateCheckResult("执行纪律", False, 0.3, "; ".join(issues), "warn")
 
         return GateCheckResult(
-            "执行纪律", True, 0.8,
+            "执行纪律",
+            True,
+            0.8,
             f"vol={volatility:.4f} pos={current_positions}/{max_positions} sl_atr={sl_atr}",
-            "info"
+            "info",
         )
 
     # ================================================================
@@ -383,38 +370,33 @@ class A7PracticeGate:
     # ================================================================
     def _check_a0_warnings(self, a0_analysis, a0_warnings) -> GateCheckResult:
         if not a0_analysis:
-            return GateCheckResult(
-                "A0矛盾预警", True, 0.5,
-                "A0分析未执行，跳过", "warn"
-            )
+            return GateCheckResult("A0矛盾预警", True, 0.5, "A0分析未执行，跳过", "warn")
 
         # 创伤信号 → 阻断
         if a0_analysis.get("trauma_signal", False):
             return GateCheckResult(
-                "A0矛盾预警", False, 0.0,
-                "A0创伤信号：连续3次同方向错误", "error"
+                "A0矛盾预警", False, 0.0, "A0创伤信号：连续3次同方向错误", "error"
             )
 
         # 极端张力 → 阻断
         overall_tension = a0_analysis.get("overall_tension", 0)
         if overall_tension > 0.7:
             return GateCheckResult(
-                "A0矛盾预警", False, 0.1,
-                f"A0综合张力极高({overall_tension:.2f})", "error"
+                "A0矛盾预警", False, 0.1, f"A0综合张力极高({overall_tension:.2f})", "error"
             )
 
         # 有预警但未到极端 → 降分但不阻断
         if a0_warnings:
-            return GateCheckResult(
-                "A0矛盾预警", True, 0.4,
-                f"A0有预警: {a0_warnings}", "warn"
-            )
+            return GateCheckResult("A0矛盾预警", True, 0.4, f"A0有预警: {a0_warnings}", "warn")
 
         direction_bias = a0_analysis.get("direction_bias", 0)
         score = 1.0 - abs(direction_bias) * 0.5
         return GateCheckResult(
-            "A0矛盾预警", True, score,
-            f"张力={overall_tension:.2f} 偏置={direction_bias:+.2f}", "info"
+            "A0矛盾预警",
+            True,
+            score,
+            f"张力={overall_tension:.2f} 偏置={direction_bias:+.2f}",
+            "info",
         )
 
     # ================================================================
@@ -423,10 +405,7 @@ class A7PracticeGate:
     def _check_triangle_verification(self, triangle: Optional[dict]) -> GateCheckResult:
         """检查三角校验结果"""
         if not triangle:
-            return GateCheckResult(
-                "三角校验", True, 0.5,
-                "三角校验未执行，跳过", "warn"
-            )
+            return GateCheckResult("三角校验", True, 0.5, "三角校验未执行，跳过", "warn")
 
         verdict = triangle.get("verdict", "")
         agreement = triangle.get("agreement_score", 0)
@@ -436,43 +415,33 @@ class A7PracticeGate:
         # 严重分歧 → 阻断
         if should_fail or verdict == "CONFLICT":
             return GateCheckResult(
-                "三角校验", False, 0.0,
-                f"三源严重分歧({verdict})，一致性={agreement:.0%}", "error"
+                "三角校验", False, 0.0, f"三源严重分歧({verdict})，一致性={agreement:.0%}", "error"
             )
 
         # 强反转预警 → 阻断
         if reversal_alert:
             strength = triangle.get("reversal_strength", 0)
             return GateCheckResult(
-                "三角校验", False, 0.1,
-                f"强反转预警(强度={strength:.2f})", "error"
+                "三角校验", False, 0.1, f"强反转预警(强度={strength:.2f})", "error"
             )
 
         # 分歧 → 降分但不阻断
         if verdict == "DIVERGENT":
             return GateCheckResult(
-                "三角校验", True, 0.3,
-                f"三源分歧({verdict})，一致性={agreement:.0%}", "warn"
+                "三角校验", True, 0.3, f"三源分歧({verdict})，一致性={agreement:.0%}", "warn"
             )
 
         # 多数一致
         if verdict == "MAJORITY_AGREE":
             return GateCheckResult(
-                "三角校验", True, 0.7,
-                f"多数一致({verdict})，一致性={agreement:.0%}", "info"
+                "三角校验", True, 0.7, f"多数一致({verdict})，一致性={agreement:.0%}", "info"
             )
 
         # 完全一致
         if verdict == "STRONG_AGREE":
-            return GateCheckResult(
-                "三角校验", True, 1.0,
-                f"三源完全一致({verdict})", "info"
-            )
+            return GateCheckResult("三角校验", True, 1.0, f"三源完全一致({verdict})", "info")
 
-        return GateCheckResult(
-            "三角校验", True, 0.5,
-            f"校验结果: {verdict}", "info"
-        )
+        return GateCheckResult("三角校验", True, 0.5, f"校验结果: {verdict}", "info")
 
     # ================================================================
     # 报告保存

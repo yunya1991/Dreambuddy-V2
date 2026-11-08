@@ -28,14 +28,14 @@
   2. 9 币种中 ≥6 个币种得分优于 K=0
   3. 无严重退化（任一币种得分降幅 < 30%）
 """
-import sys
-import os
-import json
-import time
-import logging
+
 import importlib
-from pathlib import Path
+import json
+import logging
+import sys
+import time
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 
@@ -45,8 +45,8 @@ PROJECT_ROOT = SCRIPT_DIR.parents[2]  # 11-易经推理系统/
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # 避免 inspect.py 冲突
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -97,6 +97,7 @@ def load_klines(symbol, max_bars=None):
     cache_key = f"{symbol}_{max_bars}"
     if cache_key not in _KLINE_CACHE:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         _KLINE_CACHE[cache_key] = get_klines(symbol, TIMEFRAME, max_bars=max_bars)
     return _KLINE_CACHE[cache_key]
 
@@ -105,6 +106,7 @@ def get_ref_df():
     global _REF_DF_CACHE
     if _REF_DF_CACHE is None:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         _REF_DF_CACHE = get_klines("BTC", TIMEFRAME, max_bars=VALIDATE_BARS + 200)
     return _REF_DF_CACHE
 
@@ -112,6 +114,7 @@ def get_ref_df():
 # ============================================================
 # 评分
 # ============================================================
+
 
 def compute_score(metrics):
     if metrics is None or metrics["total_trades"] == 0:
@@ -126,10 +129,13 @@ def compute_score(metrics):
 
 def get_git_commit():
     import subprocess
+
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=str(PROJECT_ROOT)
-        ).decode().strip()
+        return (
+            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(PROJECT_ROOT))
+            .decode()
+            .strip()
+        )
     except Exception:
         return "unknown"
 
@@ -138,8 +144,10 @@ def get_git_commit():
 # 回测
 # ============================================================
 
+
 def build_macro_config(enabled_features):
     from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
+
     cfg = {}
     if enabled_features is None or enabled_features == []:
         for feat in MacroFeatures.ALL_FEATURES:
@@ -155,6 +163,7 @@ def build_macro_config(enabled_features):
 
 def run_single_backtest(symbol, df, macro_config, n_folds):
     from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester
+
     ref_df = get_ref_df()
     bt = WalkForwardBacktester(
         symbol=symbol,
@@ -206,6 +215,7 @@ def evaluate_config(enabled_features, coins, n_folds, max_bars):
 # Stage 0: 预筛选 — 单特征评估
 # ============================================================
 
+
 def prefilter_features(baseline_score):
     """Stage 0: 逐个评估每个特征的单独贡献，选 Top-K 候选
 
@@ -216,6 +226,7 @@ def prefilter_features(baseline_score):
         ranked_features: 按边际贡献降序排列的特征列表
     """
     from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
+
     all_features = MacroFeatures.ALL_FEATURES
 
     print(f"\n  逐特征评估（K=1 for each，{len(all_features)} 个特征）")
@@ -227,36 +238,41 @@ def prefilter_features(baseline_score):
 
     for i, feat in enumerate(all_features, 1):
         t0 = time.time()
-        trial_score, per_coin = evaluate_config(
-            [feat], SELECT_COINS, SELECT_FOLDS, SELECT_BARS
-        )
+        trial_score, per_coin = evaluate_config([feat], SELECT_COINS, SELECT_FOLDS, SELECT_BARS)
         elapsed = time.time() - t0
         marginal = trial_score - baseline_score
 
-        results.append({
-            "feature": feat,
-            "score": round(trial_score, 4),
-            "marginal_gain": round(marginal, 4),
-            "dim": MacroFeatures.FEATURE_TO_DIM.get(feat, "?"),
-        })
+        results.append(
+            {
+                "feature": feat,
+                "score": round(trial_score, 4),
+                "marginal_gain": round(marginal, 4),
+                "dim": MacroFeatures.FEATURE_TO_DIM.get(feat, "?"),
+            }
+        )
 
         marker = "+" if marginal > 0 else " " if abs(marginal) < 0.01 else "-"
-        print(f"    [{i:>2}/{len(all_features)}] {feat:<30} [{MacroFeatures.FEATURE_TO_DIM.get(feat, '?'):<12}] "
-              f"得分={trial_score:.3f}  边际={marginal:+.3f} {marker} "
-              f"({elapsed:.0f}s)", flush=True)
+        print(
+            f"    [{i:>2}/{len(all_features)}] {feat:<30} [{MacroFeatures.FEATURE_TO_DIM.get(feat, '?'):<12}] "
+            f"得分={trial_score:.3f}  边际={marginal:+.3f} {marker} "
+            f"({elapsed:.0f}s)",
+            flush=True,
+        )
 
     # 按边际贡献降序
     results.sort(key=lambda r: r["marginal_gain"], reverse=True)
 
     total_elapsed = time.time() - t_start
     print(f"\n  预筛选完成 ({total_elapsed/60:.1f} 分钟)")
-    print(f"\n  单特征排名（按边际贡献）:")
+    print("\n  单特征排名（按边际贡献）:")
     print(f"  {'排名':>4}  {'特征':<30}  {'维度':<12}  {'得分':>8}  {'边际':>8}")
     print(f"  {'-'*70}")
     for rank, r in enumerate(results, 1):
         marker = "★" if rank <= PREFILTER_TOP_K else " "
-        print(f"  {rank:>3}{marker}  {r['feature']:<30}  {r['dim']:<12}  "
-              f"{r['score']:>8.3f}  {r['marginal_gain']:>+8.3f}")
+        print(
+            f"  {rank:>3}{marker}  {r['feature']:<30}  {r['dim']:<12}  "
+            f"{r['score']:>8.3f}  {r['marginal_gain']:>+8.3f}"
+        )
 
     top_features = [r["feature"] for r in results[:PREFILTER_TOP_K]]
     print(f"\n  Top-{PREFILTER_TOP_K} 候选: {top_features}")
@@ -266,6 +282,7 @@ def prefilter_features(baseline_score):
 # ============================================================
 # Stage 1: 前向贪心选择
 # ============================================================
+
 
 def forward_selection(candidate_features, baseline_score):
     """Stage 1: 在候选特征上做前向贪心选择
@@ -281,14 +298,16 @@ def forward_selection(candidate_features, baseline_score):
     print(f"  参数: {SELECT_COINS} × {SELECT_FOLDS} 折 × {SELECT_BARS} bars")
     print(f"  早停: 连续 {EARLY_STOP_PATIENCE} 步无提升\n")
 
-    selection_history = [{
-        "step": 0,
-        "k": 0,
-        "added_feature": None,
-        "selected_features": [],
-        "score": round(baseline_score, 4),
-        "marginal_gain": 0.0,
-    }]
+    selection_history = [
+        {
+            "step": 0,
+            "k": 0,
+            "added_feature": None,
+            "selected_features": [],
+            "score": round(baseline_score, 4),
+            "marginal_gain": 0.0,
+        }
+    ]
 
     selected = []
     remaining = list(candidate_features)
@@ -314,16 +333,21 @@ def forward_selection(candidate_features, baseline_score):
             elapsed = time.time() - t0
             marginal = trial_score - best_score
 
-            candidates.append({
-                "feature": feat,
-                "score": round(trial_score, 4),
-                "marginal_gain": round(marginal, 4),
-            })
+            candidates.append(
+                {
+                    "feature": feat,
+                    "score": round(trial_score, 4),
+                    "marginal_gain": round(marginal, 4),
+                }
+            )
 
             marker = "+" if marginal > 0 else " " if abs(marginal) < 0.01 else "-"
-            print(f"    [{i:>2}/{len(remaining)}] {feat:<30} "
-                  f"得分={trial_score:.3f}  边际={marginal:+.3f} {marker} "
-                  f"({elapsed:.0f}s)", flush=True)
+            print(
+                f"    [{i:>2}/{len(remaining)}] {feat:<30} "
+                f"得分={trial_score:.3f}  边际={marginal:+.3f} {marker} "
+                f"({elapsed:.0f}s)",
+                flush=True,
+            )
 
         candidates.sort(key=lambda c: c["marginal_gain"], reverse=True)
         best_candidate = candidates[0]
@@ -338,20 +362,26 @@ def forward_selection(candidate_features, baseline_score):
             print(f"    当前特征集 ({len(selected)}): {selected}", flush=True)
         else:
             no_improvement_count += 1
-            print(f"\n  ✗ 最佳候选 {best_candidate['feature']} 边际={best_candidate['marginal_gain']:+.4f} ≤ 0")
+            print(
+                f"\n  ✗ 最佳候选 {best_candidate['feature']} 边际={best_candidate['marginal_gain']:+.4f} ≤ 0"
+            )
             print(f"    连续无提升: {no_improvement_count}/{EARLY_STOP_PATIENCE}", flush=True)
 
         step_elapsed = time.time() - t_step_start
-        selection_history.append({
-            "step": step,
-            "k": len(selected),
-            "added_feature": best_candidate["feature"] if best_candidate["marginal_gain"] > 0.001 else None,
-            "selected_features": list(selected),
-            "score": round(best_score, 4),
-            "marginal_gain": round(best_candidate["marginal_gain"], 4),
-            "all_candidates": candidates,
-            "elapsed_s": round(step_elapsed, 1),
-        })
+        selection_history.append(
+            {
+                "step": step,
+                "k": len(selected),
+                "added_feature": (
+                    best_candidate["feature"] if best_candidate["marginal_gain"] > 0.001 else None
+                ),
+                "selected_features": list(selected),
+                "score": round(best_score, 4),
+                "marginal_gain": round(best_candidate["marginal_gain"], 4),
+                "all_candidates": candidates,
+                "elapsed_s": round(step_elapsed, 1),
+            }
+        )
 
         save_intermediate(selection_history, selected, best_score, baseline_score)
         print(f"    本步耗时: {step_elapsed:.0f}s", flush=True)
@@ -385,9 +415,10 @@ def save_intermediate(history, selected, best_score, baseline_score):
 # 分析
 # ============================================================
 
+
 def print_k_vs_score_curve(history):
     print(f"\n{'='*70}")
-    print(f"  K-vs-得分曲线（前向贪心选择）")
+    print("  K-vs-得分曲线（前向贪心选择）")
     print(f"{'='*70}")
     print(f"\n  {'K':>3}  {'得分':>8}  {'边际':>8}  {'加入特征':<30}")
     print(f"  {'-'*60}")
@@ -403,12 +434,13 @@ def print_k_vs_score_curve(history):
     if best_entry["k"] > 0:
         print(f"  最优特征集: {best_entry['selected_features']}")
     else:
-        print(f"  最优 K=0（无宏观特征）")
+        print("  最优 K=0（无宏观特征）")
 
 
 # ============================================================
 # Stage 2: 验证
 # ============================================================
+
 
 def validate_on_all_coins(selected_features, baseline_score):
     print(f"\n{'='*70}")
@@ -419,21 +451,20 @@ def validate_on_all_coins(selected_features, baseline_score):
     if selected_features:
         print(f"  特征集: {selected_features}")
     else:
-        print(f"  (无宏观特征)")
+        print("  (无宏观特征)")
 
     optimal_score, optimal_per_coin = evaluate_config(
-        selected_features if selected_features else None,
-        ALL_COINS, VALIDATE_FOLDS, VALIDATE_BARS
+        selected_features if selected_features else None, ALL_COINS, VALIDATE_FOLDS, VALIDATE_BARS
     )
     print(f"\n  最优配置平均得分: {optimal_score:.4f}")
 
-    print(f"\n  [2/2] 验证基线 K=0")
+    print("\n  [2/2] 验证基线 K=0")
     validate_baseline_score, baseline_per_coin = evaluate_config(
         None, ALL_COINS, VALIDATE_FOLDS, VALIDATE_BARS
     )
     print(f"  基线平均得分: {validate_baseline_score:.4f}")
 
-    print(f"\n  逐币种对比:")
+    print("\n  逐币种对比:")
     print(f"  {'币种':<8} {'K=0得分':>8} {'最优得分':>8} {'变化':>8} {'判定':>6}")
     print(f"  {'-'*45}")
 
@@ -458,25 +489,27 @@ def validate_on_all_coins(selected_features, baseline_score):
     print(f"\n  改善币种: {improved}/{len(ALL_COINS)}")
 
     print(f"\n{'='*70}")
-    print(f"  落地标准检查")
+    print("  落地标准检查")
     print(f"{'='*70}")
 
     crit1 = optimal_score > validate_baseline_score
-    print(f"\n  标准1: 平均得分 > K=0 基线")
-    print(f"    {optimal_score:.3f} > {validate_baseline_score:.3f} → {'✓ 通过' if crit1 else '✗ 未通过'}")
+    print("\n  标准1: 平均得分 > K=0 基线")
+    print(
+        f"    {optimal_score:.3f} > {validate_baseline_score:.3f} → {'✓ 通过' if crit1 else '✗ 未通过'}"
+    )
 
     crit2 = improved >= 6
-    print(f"\n  标准2: ≥6/9 币种得分优于 K=0")
+    print("\n  标准2: ≥6/9 币种得分优于 K=0")
     print(f"    {improved}/9 改善 → {'✓ 通过' if crit2 else '✗ 未通过'}")
 
     crit3 = len(severe_degrade) == 0
-    print(f"\n  标准3: 无严重退化（降幅 < 30%）")
+    print("\n  标准3: 无严重退化（降幅 < 30%）")
     if severe_degrade:
         for coin, deg in severe_degrade:
             print(f"    {coin}: 退化 {deg:.1%}")
-        print(f"    → ✗ 未通过")
+        print("    → ✗ 未通过")
     else:
-        print(f"    → ✓ 通过")
+        print("    → ✓ 通过")
 
     all_pass = crit1 and crit2 and crit3
     print(f"\n  总结: {'✓ 全部通过，可落地' if all_pass else '✗ 未全部通过，不可落地'}")
@@ -497,19 +530,22 @@ def validate_on_all_coins(selected_features, baseline_score):
 # 主函数
 # ============================================================
 
+
 def main():
     print("=" * 80)
     print("  宏观特征优化 v4 — 前向贪心选择（两阶段加速）")
     print("=" * 80)
     print(f"  Stage 0: 预筛选（单特征评估 → Top-{PREFILTER_TOP_K}）")
     print(f"    {SELECT_COINS} × {SELECT_FOLDS} 折 × {SELECT_BARS} bars")
-    print(f"  Stage 1: 前向贪心选择")
-    print(f"    {SELECT_COINS} × {SELECT_FOLDS} 折 × {SELECT_BARS} bars, 早停={EARLY_STOP_PATIENCE}")
-    print(f"  Stage 2: 验证")
+    print("  Stage 1: 前向贪心选择")
+    print(
+        f"    {SELECT_COINS} × {SELECT_FOLDS} 折 × {SELECT_BARS} bars, 早停={EARLY_STOP_PATIENCE}"
+    )
+    print("  Stage 2: 验证")
     print(f"    {ALL_COINS} × {VALIDATE_FOLDS} 折 × {VALIDATE_BARS} bars")
 
     # 预加载数据
-    print(f"\n  [准备] 预加载 K 线数据...")
+    print("\n  [准备] 预加载 K 线数据...")
     for coin in ALL_COINS:
         df = load_klines(coin, VALIDATE_BARS)
         if df is not None:
@@ -520,7 +556,7 @@ def main():
 
     # Step 0: 评估基线
     print(f"\n{'='*80}")
-    print(f"  Step 0: 评估基线 K=0")
+    print("  Step 0: 评估基线 K=0")
     print(f"{'='*80}")
     t0 = time.time()
     baseline_score, baseline_per_coin = evaluate_config(
@@ -530,18 +566,20 @@ def main():
     print(f"  基线得分: {baseline_score:.4f} ({baseline_elapsed:.0f}s)", flush=True)
     for coin, m in baseline_per_coin.items():
         if m:
-            print(f"    {coin}: 得分={m['score']:.3f}  胜率={m['win_rate']:.1%}  "
-                  f"收益={m['total_return_pct']:+.1f}%  夏普={m['sharpe_ratio']:.2f}")
+            print(
+                f"    {coin}: 得分={m['score']:.3f}  胜率={m['win_rate']:.1%}  "
+                f"收益={m['total_return_pct']:+.1f}%  夏普={m['sharpe_ratio']:.2f}"
+            )
 
     # Stage 0: 预筛选
     print(f"\n{'='*80}")
-    print(f"  Stage 0: 预筛选")
+    print("  Stage 0: 预筛选")
     print(f"{'='*80}")
     top_features, prefilter_results = prefilter_features(baseline_score)
 
     # Stage 1: 前向选择
     print(f"\n{'='*80}")
-    print(f"  Stage 1: 前向贪心选择")
+    print("  Stage 1: 前向贪心选择")
     print(f"{'='*80}")
     history = forward_selection(top_features, baseline_score)
 
@@ -553,7 +591,9 @@ def main():
 
     select_elapsed = time.time() - t_start
     print(f"\n  选择阶段总耗时: {select_elapsed/60:.1f} 分钟")
-    print(f"  基线得分: {baseline_score:.4f} → 最优得分: {best_select_score:.4f} (K={len(selected_features)})")
+    print(
+        f"  基线得分: {baseline_score:.4f} → 最优得分: {best_select_score:.4f} (K={len(selected_features)})"
+    )
 
     # Stage 2: 验证
     validation = validate_on_all_coins(selected_features, baseline_score)
@@ -596,21 +636,25 @@ def main():
 
     # 最终结论
     print(f"\n{'='*80}")
-    print(f"  最终结论")
+    print("  最终结论")
     print(f"{'='*80}")
     if selected_features:
         print(f"  最优 K = {len(selected_features)}")
         print(f"  最优特征集: {selected_features}")
-        print(f"  选择阶段: {baseline_score:.4f} → {best_select_score:.4f} "
-              f"(+{best_select_score - baseline_score:.4f})")
-        print(f"  验证阶段: {validation['baseline_score']:.4f} → {validation['optimal_score']:.4f} "
-              f"(+{validation['optimal_score'] - validation['baseline_score']:.4f})")
+        print(
+            f"  选择阶段: {baseline_score:.4f} → {best_select_score:.4f} "
+            f"(+{best_select_score - baseline_score:.4f})"
+        )
+        print(
+            f"  验证阶段: {validation['baseline_score']:.4f} → {validation['optimal_score']:.4f} "
+            f"(+{validation['optimal_score'] - validation['baseline_score']:.4f})"
+        )
         print(f"  改善币种: {validation['improved_coins']}/{validation['total_coins']}")
         print(f"  落地判定: {'✓ 可落地' if validation['can_land'] else '✗ 不可落地'}")
     else:
-        print(f"  最优 K = 0（无宏观特征）")
-        print(f"  结论: 宏观特征在当前数据质量下不带来稳定收益")
-        print(f"  建议: 维持 baseline-v1，待宏观数据源补齐后再优化")
+        print("  最优 K = 0（无宏观特征）")
+        print("  结论: 宏观特征在当前数据质量下不带来稳定收益")
+        print("  建议: 维持 baseline-v1，待宏观数据源补齐后再优化")
     print(f"\n{'='*80}")
 
 

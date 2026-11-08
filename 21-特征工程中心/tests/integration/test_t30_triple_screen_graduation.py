@@ -13,15 +13,14 @@
 特征列名交集 100%、数值相关性 1.0000，本测试进一步在 MLTrendStrategy
 实例层面验证开关切换的端到端等价性。
 """
+
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _21_ROOT = _PROJECT_ROOT / "21-特征工程中心"
@@ -36,18 +35,22 @@ def _make_ohlcv(n: int = 300, seed: int = 42) -> pd.DataFrame:
     """生成 OHLCV 样本"""
     rng = np.random.default_rng(seed)
     close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.004, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
 
 def _compute_features_off(prices: pd.DataFrame, label_lookahead: int = 7) -> pd.DataFrame:
     """开关关断：原始 FE"""
     from ml.feature_engineer import TrendFeatureEngineer
+
     fe = TrendFeatureEngineer()
     return fe.create_features(prices, label_lookahead=label_lookahead)
 
@@ -55,6 +58,7 @@ def _compute_features_off(prices: pd.DataFrame, label_lookahead: int = 7) -> pd.
 def _compute_features_on(prices: pd.DataFrame) -> pd.DataFrame:
     """开关开启：FeatureHub triple_screen_only + strip_prefix"""
     from feature_hub.h3_wrapper import wrap_featurehub
+
     return wrap_featurehub(
         strategy_name="triple_screen",
         ohlcv_df=prices,
@@ -136,10 +140,7 @@ def test_t30_2_feature_value_consistency(monkeypatch):
     print(f"[T30-2] 最低相关性: {min_corr:.6f}")
 
     # 硬门槛：平均相关 ≥ 0.97（T-G3 权益曲线相关）
-    assert avg_corr >= 0.97, (
-        f"特征数值平均相关性 {avg_corr:.6f} < 0.97，"
-        f"策略行为可能出现偏差"
-    )
+    assert avg_corr >= 0.97, f"特征数值平均相关性 {avg_corr:.6f} < 0.97，" f"策略行为可能出现偏差"
 
 
 # ============================================================
@@ -186,9 +187,7 @@ def test_t30_3_signal_direction_consistency(monkeypatch):
     print(f"\n[T30-3] 一致/总数: {consistent}/{total}")
     print(f"[T30-3] 方向一致率: {consistency_rate:.2%}")
 
-    assert consistency_rate >= 0.95, (
-        f"信号方向一致率 {consistency_rate:.2%} < 95%"
-    )
+    assert consistency_rate >= 0.95, f"信号方向一致率 {consistency_rate:.2%} < 95%"
 
 
 # ============================================================
@@ -207,10 +206,10 @@ def test_t30_4_h3_wrapper_fail_open(monkeypatch):
         call_count["original"] += 1
         return _compute_features_off(df)
 
-    from feature_hub.h3_wrapper import wrap_featurehub
-
     # patch _build_pipeline 抛异常
     import feature_hub.h3_wrapper as h3mod
+    from feature_hub.h3_wrapper import wrap_featurehub
+
     original_build = h3mod._build_pipeline
 
     def _broken_build():

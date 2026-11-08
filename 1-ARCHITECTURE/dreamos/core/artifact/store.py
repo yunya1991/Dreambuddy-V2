@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 
 class ArtifactType(str, Enum):
     """产物类型枚举 (F7.5 扩展)"""
+
     INSIGHT_CARD = "insight_card"
     MOOD_BOARD = "mood_board"
     BULL_BEAR_DEBATE = "bull_bear_debate"
@@ -118,7 +119,9 @@ class ArtifactStore:
             json.dump(record, f, ensure_ascii=False, indent=2, default=str)
         return artifact_id
 
-    def get(self, artifact_id: str, artifact_type: Optional[ArtifactType] = None) -> Optional[Dict[str, Any]]:
+    def get(
+        self, artifact_id: str, artifact_type: Optional[ArtifactType] = None
+    ) -> Optional[Dict[str, Any]]:
         """获取产物完整内容（meta + data）"""
         if artifact_type:
             path = self._artifact_path(artifact_type, artifact_id)
@@ -154,7 +157,7 @@ class ArtifactStore:
                 except (json.JSONDecodeError, OSError):
                     continue
         metas.sort(key=lambda m: m.get("created_at", 0), reverse=True)
-        return metas[offset:offset + limit]
+        return metas[offset : offset + limit]
 
     def delete(self, artifact_id: str, artifact_type: Optional[ArtifactType] = None) -> bool:
         """删除产物"""

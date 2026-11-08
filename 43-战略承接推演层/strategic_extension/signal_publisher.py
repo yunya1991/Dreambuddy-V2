@@ -19,28 +19,30 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
+from strategic_extension.domain_semantics import (
+    semantic_descriptions,
+    semantic_total,
+    to_semantic_scores,
+)
 from strategic_extension.five_domain_feature_computer import (
     ASSET_CLASSES,
     FiveDomainFeatureComputer,
 )
-from strategic_extension.strategic_elements_deriver import element_comparison
-from strategic_extension.domain_semantics import (
-    to_semantic_scores,
-    semantic_total,
-    semantic_descriptions,
-)
 from strategic_extension.sentiment_channel import compute_market_sentiment_score
+from strategic_extension.strategic_elements_deriver import element_comparison
 
 # 信号产出物路径（43 模块 runtime 目录）
 _SIGNAL_OUTPUT_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "runtime", "strategic_extension_signal.json",
+    "runtime",
+    "strategic_extension_signal.json",
 )
 
 # 四要素推演历史记录路径（JSONL，训练数据积累，SPEC §13.3 长期闭环）
 _ELEMENTS_HISTORY_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "runtime", "strategic_elements_history.jsonl",
+    "runtime",
+    "strategic_elements_history.jsonl",
 )
 
 # 五维权重（SPEC §二 预注册固定值）
@@ -109,11 +111,17 @@ def build_signal(
         # v1.2 语义五维（交易市场语义命名 + 新权重总分）+ 自建情绪通道（fail-open）
         semantic_view = None
         try:
-            main_scores = (scores.get("crypto_usdt") or {})
+            main_scores = scores.get("crypto_usdt") or {}
             semantic_view = {
                 "scores": to_semantic_scores(main_scores),
                 "total": semantic_total(main_scores),
-                "weights": {"macro_policy": 0.20, "technical": 0.25, "capital_flow": 0.20, "market_sentiment": 0.15, "fundamental": 0.20},
+                "weights": {
+                    "macro_policy": 0.20,
+                    "technical": 0.25,
+                    "capital_flow": 0.20,
+                    "market_sentiment": 0.15,
+                    "fundamental": 0.20,
+                },
                 "descriptions": semantic_descriptions(),
                 "sentiment_channel": compute_market_sentiment_score(),
             }
@@ -139,9 +147,7 @@ def build_signal(
         # 主信号取 crypto_usdt 类（当前白名单仅 BTC）
         main = per_class.get("crypto_usdt") or {}
         signal = {
-            "signal_id": "sig_{}_{}".format(
-                now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]
-            ),
+            "signal_id": "sig_{}_{}".format(now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
             "source": "strategic_extension",
             "ts": now.isoformat(),
             "symbol": "BTC/USDT",
@@ -162,9 +168,7 @@ def build_signal(
         return signal
     except Exception:  # noqa: BLE001  fail-open：保守默认信号
         return {
-            "signal_id": "sig_{}_{}".format(
-                now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]
-            ),
+            "signal_id": "sig_{}_{}".format(now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
             "source": "strategic_extension",
             "ts": now.isoformat(),
             "symbol": "BTC/USDT",

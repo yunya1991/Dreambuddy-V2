@@ -12,17 +12,20 @@
   8. LLM 正常路径: 输出 insight + recommendation 卡片
   9. 认知闭环: cognitive_adapter.recall 被调用
 """
+
 from __future__ import annotations
-import os, sys, unittest
-from unittest.mock import MagicMock, patch
-from typing import List
+
+import os
+import sys
+import unittest
+from unittest.mock import MagicMock
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
     sys.path.insert(0, SERVER_DIR)
 
-from subagent_types import SubagentOutput, Signal, ChartSpec
-from aggregator import aggregate_subagent_outputs
+from aggregator import aggregate_subagent_outputs  # noqa: E402
+from subagent_types import ChartSpec, Signal, SubagentOutput  # noqa: E402
 
 
 class TestSynthesizerExistence(unittest.TestCase):
@@ -34,6 +37,7 @@ class TestSynthesizerExistence(unittest.TestCase):
 
     def test_synthesized_card_dataclass_exists(self):
         from synthesizer_agent import SynthesizedCard
+
         card = SynthesizedCard(
             card_type="insight",
             title="测试",
@@ -48,6 +52,7 @@ class TestSynthesizerExistence(unittest.TestCase):
 
     def test_synthesized_card_to_dict(self):
         from synthesizer_agent import SynthesizedCard
+
         card = SynthesizedCard(
             card_type="recommendation",
             title="建议",
@@ -65,11 +70,13 @@ class TestSynthesizerExistence(unittest.TestCase):
 
     def test_synthesizer_agent_class_exists(self):
         from synthesizer_agent import SynthesizerAgent
+
         agent = SynthesizerAgent()
         self.assertIsNotNone(agent)
 
     def test_synthesize_method_exists(self):
         from synthesizer_agent import SynthesizerAgent
+
         agent = SynthesizerAgent()
         self.assertTrue(callable(getattr(agent, "synthesize", None)))
 
@@ -79,20 +86,28 @@ class TestSynthesizeEmpty(unittest.TestCase):
 
     def test_empty_aggregated_returns_empty(self):
         from synthesizer_agent import SynthesizerAgent
+
         agent = SynthesizerAgent()
         result = agent.synthesize({"summaries": [], "all_signals": []})
         self.assertEqual(result, [])
 
     def test_empty_outputs_dict_returns_empty(self):
         from synthesizer_agent import SynthesizerAgent
+
         agent = SynthesizerAgent()
         # 完整空聚合结构
         empty_aggregated = {
-            "summaries": [], "all_signals": [], "all_charts": [],
-            "modules": [], "total_signals": 0, "total_charts": 0,
+            "summaries": [],
+            "all_signals": [],
+            "all_charts": [],
+            "modules": [],
+            "total_signals": 0,
+            "total_charts": 0,
             "consensus_direction": "neutral",
-            "long_count": 0, "short_count": 0,
-            "avg_confidence": 0.0, "top_signals": [],
+            "long_count": 0,
+            "short_count": 0,
+            "avg_confidence": 0.0,
+            "top_signals": [],
         }
         result = agent.synthesize(empty_aggregated)
         self.assertEqual(result, [])
@@ -124,6 +139,7 @@ class TestSynthesizeFailOpen(unittest.TestCase):
     def test_no_llm_fn_returns_cards(self):
         """无 llm_fn → _rule_based_synthesis 降级,仍输出卡片"""
         from synthesizer_agent import SynthesizerAgent
+
         agent = SynthesizerAgent()  # 无 llm_fn
         result = agent.synthesize(self._make_aggregated())
         # 降级路径应仍然产出卡片 (规则模板)
@@ -131,8 +147,8 @@ class TestSynthesizeFailOpen(unittest.TestCase):
         self.assertGreaterEqual(len(result), 1)
 
     def test_no_llm_fn_card_has_required_fields(self):
-        from synthesizer_agent import SynthesizerAgent
-        from synthesizer_agent import SynthesizedCard
+        from synthesizer_agent import SynthesizedCard, SynthesizerAgent
+
         agent = SynthesizerAgent()
         result = agent.synthesize(self._make_aggregated())
         self.assertGreaterEqual(len(result), 1)
@@ -189,16 +205,21 @@ class TestSynthesizeLLMPath(unittest.TestCase):
         # 模拟 LLM 返回 JSON
         def _mock_llm(prompt: str) -> str:
             import json
-            return json.dumps({
-                "insights": [
-                    {"title": "宏观偏多", "content": "GDP 与资金流入共指向多头",
-                     "severity": "info"}
-                ],
-                "recommendations": [
-                    {"action": "关注做多机会", "reason": "多源共识偏多",
-                     "priority": "medium"}
-                ],
-            })
+
+            return json.dumps(
+                {
+                    "insights": [
+                        {
+                            "title": "宏观偏多",
+                            "content": "GDP 与资金流入共指向多头",
+                            "severity": "info",
+                        }
+                    ],
+                    "recommendations": [
+                        {"action": "关注做多机会", "reason": "多源共识偏多", "priority": "medium"}
+                    ],
+                }
+            )
 
         agent = SynthesizerAgent(llm_fn=_mock_llm)
         result = agent.synthesize(self._make_aggregated())
@@ -214,10 +235,13 @@ class TestSynthesizeLLMPath(unittest.TestCase):
 
         def _mock_llm(prompt: str) -> str:
             import json
-            return json.dumps({
-                "insights": [{"title": "测试", "content": "内容", "severity": "info"}],
-                "recommendations": [],
-            })
+
+            return json.dumps(
+                {
+                    "insights": [{"title": "测试", "content": "内容", "severity": "info"}],
+                    "recommendations": [],
+                }
+            )
 
         agent = SynthesizerAgent(llm_fn=_mock_llm)
         result = agent.synthesize(self._make_aggregated())
@@ -233,10 +257,13 @@ class TestSynthesizeLLMPath(unittest.TestCase):
 
         def _mock_llm(prompt: str) -> str:
             import json
-            return json.dumps({
-                "insights": [{"title": "t", "content": "c", "severity": "info"}],
-                "recommendations": [],
-            })
+
+            return json.dumps(
+                {
+                    "insights": [{"title": "t", "content": "c", "severity": "info"}],
+                    "recommendations": [],
+                }
+            )
 
         agent = SynthesizerAgent(llm_fn=_mock_llm)
         result = agent.synthesize(self._make_aggregated())
@@ -256,17 +283,22 @@ class TestSynthesizeCognitiveLoop(unittest.TestCase):
 
         def _mock_llm(prompt: str) -> str:
             import json
-            return json.dumps({
-                "insights": [{"title": "t", "content": "c", "severity": "info"}],
-                "recommendations": [],
-            })
 
-        agent = SynthesizerAgent(
-            llm_fn=_mock_llm, cognitive_adapter=mock_adapter)
-        outs = [SubagentOutput(
-            module="macro", summary="测试",
-            signals=[Signal("gdp", 2.5, "long", 0.7)],
-        )]
+            return json.dumps(
+                {
+                    "insights": [{"title": "t", "content": "c", "severity": "info"}],
+                    "recommendations": [],
+                }
+            )
+
+        agent = SynthesizerAgent(llm_fn=_mock_llm, cognitive_adapter=mock_adapter)
+        outs = [
+            SubagentOutput(
+                module="macro",
+                summary="测试",
+                signals=[Signal("gdp", 2.5, "long", 0.7)],
+            )
+        ]
         aggregated = aggregate_subagent_outputs(outs)
         agent.synthesize(aggregated)
         # recall 应至少被调用一次

@@ -4,13 +4,12 @@
 验证会话生命周期、行动链记录、解决路径生成、事后校验
 """
 
-import os
-import sys
+import sys  # noqa: I001
 import time
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -38,7 +37,7 @@ def test_session_lifecycle():
 
 def test_session_manager_new_session_on_inactivity():
     """10分钟无活动后开新会话"""
-    from cognitive_session import CognitiveSessionManager, INACTIVITY_THRESHOLD
+    from cognitive_session import CognitiveSessionManager, INACTIVITY_THRESHOLD  # noqa: I001
 
     tmpdir = tempfile.mkdtemp()
     try:
@@ -119,16 +118,28 @@ def test_infer_task_type():
     assert infer_task_type(["11-易经推理系统/README.md"]) == "trading-system"
 
     # P0: experiments/ab-trading/ 纳入交易目录
-    assert infer_task_type(["experiments/ab-trading/core/nodes/a0_contradiction.py"]) == "strategy-execution"
-    assert infer_task_type(["experiments/ab-trading/backtest/indicator_backtest.py"]) == "strategy-backtest"
+    assert (
+        infer_task_type(["experiments/ab-trading/core/nodes/a0_contradiction.py"])
+        == "strategy-execution"
+    )
+    assert (
+        infer_task_type(["experiments/ab-trading/backtest/indicator_backtest.py"])
+        == "strategy-backtest"
+    )
 
     # P0: 6-TRADING 细粒度 task_type
-    assert infer_task_type(["6-TRADING/skills/dream-strategy-research/SKILL.md"]) == "strategy-research"
+    assert (
+        infer_task_type(["6-TRADING/skills/dream-strategy-research/SKILL.md"])
+        == "strategy-research"
+    )
     assert infer_task_type(["6-TRADING/docs/TRIGGER_PROMPTS.md"]) == "strategy-governance"
     assert infer_task_type(["6-TRADING/A系列研报/A1研报/report.json"]) == "trading-data"
 
     # P0: 11-易经推理系统 调度配置
-    assert infer_task_type(["11-易经推理系统/.github/workflows/trading-a4-validation.yml"]) == "strategy-governance"
+    assert (
+        infer_task_type(["11-易经推理系统/.github/workflows/trading-a4-validation.yml"])
+        == "strategy-governance"
+    )
 
     # P0: 10-经典指标系统 改指标代码
     assert infer_task_type(["10-经典指标系统/indicators/rsi.py"]) == "strategy-execution"
@@ -159,7 +170,7 @@ def test_generate_solution_path():
     assert "approach" in path
     assert "outcome" in path
     assert "feat: add bayesian optimization" in path["problem"]
-    assert path["outcome"]["success"] == True
+    assert path["outcome"]["success"] == True  # noqa: E712
     assert path["outcome"]["commit_hash"] == "abc123"
     assert "bayesian.py" in path["approach"]["files_touched"]
     assert "[解决路径]" in path["content"]
@@ -205,7 +216,9 @@ def test_post_hoc_verify_not_followed_failure():
 
     session = CognitiveSession()
     session.recalled_memory_ids = ["VM-001"]
-    session.add_action("file_change", "modified completely_different.py", file="completely_different.py")
+    session.add_action(
+        "file_change", "modified completely_different.py", file="completely_different.py"
+    )
     session.files_touched = {"completely_different.py"}
 
     solution_path = {
@@ -278,7 +291,7 @@ def test_find_similar_solutions():
 
 def test_sp_deposit_threshold():
     """SP沉淀门槛：低活跃不沉淀，高活跃/有commit/多文件才沉淀"""
-    from cognitive_session import (
+    from cognitive_session import (  # noqa: I001
         CognitiveSession,
         CognitiveSessionManager,
         SP_DEPOSIT_MIN_ACTIONS,
@@ -338,6 +351,7 @@ def test_session_persistence():
 
         # 验证session.json内容
         import json
+
         meta = json.loads((session_dir / "session.json").read_text())
         assert meta["id"] == session.id
         assert meta["status"] == "active"
@@ -356,7 +370,10 @@ if __name__ == "__main__":
 
     tests = [
         ("test_session_lifecycle", test_session_lifecycle),
-        ("test_session_manager_new_session_on_inactivity", test_session_manager_new_session_on_inactivity),
+        (
+            "test_session_manager_new_session_on_inactivity",
+            test_session_manager_new_session_on_inactivity,
+        ),
         ("test_action_chain_recording", test_action_chain_recording),
         ("test_infer_task_type", test_infer_task_type),
         ("test_generate_solution_path", test_generate_solution_path),

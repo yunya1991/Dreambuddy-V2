@@ -13,6 +13,7 @@ Phase F3 TDD 测试：Donchian 突破动态方向选择
   T6. calc_indicators 包含 low_55d 指标
   T7. 方向映射 _GENE_DIRECTION 不再硬编码 Donchian 为 long
 """
+
 from __future__ import annotations
 
 import sys
@@ -29,6 +30,7 @@ SCRIPTS_DIR = REPO / "dreambuddy_evolution" / "scripts"
 
 def _import_shadow_backtest():
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
         "shadow_backtest", SCRIPTS_DIR / "shadow_backtest.py"
     )
@@ -42,14 +44,16 @@ def _make_trend_up_klines(n: int = 100):
     klines = []
     for i in range(n):
         close = 100.0 + i * 2.0
-        klines.append({
-            "timestamp": f"2026-01-{i+1:02d}",
-            "open": close - 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
-            "close": close,
-            "volume": 1000.0 + i * 10,
-        })
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0 + i * 10,
+            }
+        )
     return klines
 
 
@@ -58,14 +62,16 @@ def _make_trend_down_klines(n: int = 100):
     klines = []
     for i in range(n):
         close = 300.0 - i * 2.0
-        klines.append({
-            "timestamp": f"2026-01-{i+1:02d}",
-            "open": close + 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
-            "close": close,
-            "volume": 1000.0 + i * 10,
-        })
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close + 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0 + i * 10,
+            }
+        )
     return klines
 
 
@@ -74,14 +80,16 @@ def _make_range_klines(n: int = 100):
     klines = []
     for i in range(n):
         close = 100.0 + (i % 5)
-        klines.append({
-            "timestamp": f"2026-01-{i+1:02d}",
-            "open": close - 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
-            "close": close,
-            "volume": 1000.0,
-        })
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
     return klines
 
 
@@ -93,9 +101,7 @@ def test_donchian_20_up_breakout_long():
     sb = _import_shadow_backtest()
     klines = _make_trend_up_klines(100)
     bars = sb.calc_indicators(klines)
-    triggered, direction = sb.eval_gene_with_direction(
-        "CD-DONCHIAN-20-BREAK", bars[80], klines, 80
-    )
+    triggered, direction = sb.eval_gene_with_direction("CD-DONCHIAN-20-BREAK", bars[80], klines, 80)
     if triggered:
         assert direction == "long", f"上突破方向应为 long，实际 {direction}"
 
@@ -109,9 +115,7 @@ def test_donchian_20_down_breakout_short():
     klines = _make_trend_down_klines(100)
     bars = sb.calc_indicators(klines)
     # 下跌趋势中应触发下突破
-    triggered, direction = sb.eval_gene_with_direction(
-        "CD-DONCHIAN-20-BREAK", bars[80], klines, 80
-    )
+    triggered, direction = sb.eval_gene_with_direction("CD-DONCHIAN-20-BREAK", bars[80], klines, 80)
     if triggered:
         assert direction == "short", f"下突破方向应为 short，实际 {direction}"
 
@@ -124,9 +128,7 @@ def test_donchian_55_up_breakout_long():
     sb = _import_shadow_backtest()
     klines = _make_trend_up_klines(100)
     bars = sb.calc_indicators(klines)
-    triggered, direction = sb.eval_gene_with_direction(
-        "CD-DONCHIAN-55-BREAK", bars[80], klines, 80
-    )
+    triggered, direction = sb.eval_gene_with_direction("CD-DONCHIAN-55-BREAK", bars[80], klines, 80)
     if triggered:
         assert direction == "long", f"55日上突破方向应为 long，实际 {direction}"
 
@@ -139,9 +141,7 @@ def test_donchian_55_down_breakout_short():
     sb = _import_shadow_backtest()
     klines = _make_trend_down_klines(100)
     bars = sb.calc_indicators(klines)
-    triggered, direction = sb.eval_gene_with_direction(
-        "CD-DONCHIAN-55-BREAK", bars[80], klines, 80
-    )
+    triggered, direction = sb.eval_gene_with_direction("CD-DONCHIAN-55-BREAK", bars[80], klines, 80)
     if triggered:
         assert direction == "short", f"55日下突破方向应为 short，实际 {direction}"
 
@@ -154,9 +154,7 @@ def test_donchian_no_breakout_default_long():
     sb = _import_shadow_backtest()
     klines = _make_range_klines(100)
     bars = sb.calc_indicators(klines)
-    triggered, direction = sb.eval_gene_with_direction(
-        "CD-DONCHIAN-20-BREAK", bars[80], klines, 80
-    )
+    triggered, direction = sb.eval_gene_with_direction("CD-DONCHIAN-20-BREAK", bars[80], klines, 80)
     assert isinstance(triggered, bool)
     # 未触发时方向应为默认 long
     if not triggered:
@@ -182,10 +180,12 @@ def test_gene_direction_not_hardcoded_donchian():
     """T7: _GENE_DIRECTION 中 Donchian 不再固定为 long（改为动态）"""
     sb = _import_shadow_backtest()
     # Donchian 基因应不在 _GENE_DIRECTION 中（由 eval_gene_with_direction 动态返回）
-    assert "CD-DONCHIAN-20-BREAK" not in sb._GENE_DIRECTION, \
-        "CD-DONCHIAN-20-BREAK 不应硬编码方向（应动态判断）"
-    assert "CD-DONCHIAN-55-BREAK" not in sb._GENE_DIRECTION, \
-        "CD-DONCHIAN-55-BREAK 不应硬编码方向（应动态判断）"
+    assert (
+        "CD-DONCHIAN-20-BREAK" not in sb._GENE_DIRECTION
+    ), "CD-DONCHIAN-20-BREAK 不应硬编码方向（应动态判断）"
+    assert (
+        "CD-DONCHIAN-55-BREAK" not in sb._GENE_DIRECTION
+    ), "CD-DONCHIAN-55-BREAK 不应硬编码方向（应动态判断）"
 
 
 if __name__ == "__main__":

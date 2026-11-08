@@ -12,15 +12,15 @@ State (8维): [upl_ratio, position_age_min, atr_pct, RSI, ESS, CS, vol_ratio, ti
 Action (5个): {0:hold, 1:adjust_sl_tp, 2:trailing, 3:force_close, 4:partial_close}
 Reward: ExitRewardCalculator 三组件加权 R_total
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import math
 import random
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -130,7 +130,11 @@ class ExitSampleGenerator:
                         src = trade.get("source_system", "")
                         trade["meta_source"] = "backtest" if src == "backtest" else "real"
                         all_trades.append(trade)
-                logger.info("加载 %s: %d 笔", path, len([t for t in all_trades if t.get("meta_source") in ("real", "backtest")]))
+                logger.info(
+                    "加载 %s: %d 笔",
+                    path,
+                    len([t for t in all_trades if t.get("meta_source") in ("real", "backtest")]),
+                )
             except Exception as e:
                 logger.warning("[FO] load trades fail %s: %s", path, e)
                 continue
@@ -168,8 +172,12 @@ class ExitSampleGenerator:
         )
 
     def _compute_reward(
-        self, upl_ratio: float, cs: float, sl_in_range: bool,
-        tp_pct_target: float = 0.06, sl_pct_target: float = 0.03,
+        self,
+        upl_ratio: float,
+        cs: float,
+        sl_in_range: bool,
+        tp_pct_target: float = 0.06,
+        sl_pct_target: float = 0.03,
     ) -> float:
         """三组件奖励 R_total = 0.4*R_trend + 0.3*R_risk + 0.3*R_pnl"""
         # R_trend
@@ -191,8 +199,13 @@ class ExitSampleGenerator:
         return 0.4 * r_trend + 0.3 * r_risk + 0.3 * r_pnl
 
     def _determine_action(
-        self, step: int, total_steps: int, exit_reason: str, upl_ratio: float,
-        position_age_min: float, tier: str,
+        self,
+        step: int,
+        total_steps: int,
+        exit_reason: str,
+        upl_ratio: float,
+        position_age_min: float,
+        tier: str,
     ) -> str:
         """根据轨迹位置和交易信息确定动作标签"""
         is_last = step >= total_steps - 1
@@ -220,7 +233,9 @@ class ExitSampleGenerator:
         return "hold"
 
     def _generate_trajectory(
-        self, trade: Dict[str, Any], variant_idx: int,
+        self,
+        trade: Dict[str, Any],
+        variant_idx: int,
     ) -> List[Dict[str, Any]]:
         """从单笔交易生成一条轨迹的多个 MDP 样本"""
         samples: List[Dict[str, Any]] = []
@@ -231,7 +246,7 @@ class ExitSampleGenerator:
 
         exit_reason = str(trade.get("exit_reason", "manual_close"))
         pnl_pct = float(trade.get("pnl_pct", 0) or 0)
-        confidence = float(trade.get("confidence", 0.5) or 0.5)
+        confidence = float(trade.get("confidence", 0.5) or 0.5)  # noqa: F841
 
         # 反事实变体：修改 exit_price 和 exit_reason
         n_steps = self.STEPS_PER_TRADE
@@ -276,12 +291,13 @@ class ExitSampleGenerator:
         # 市场参数基线（从 trade 的 market_snapshot 读取或用默认值）
         snap = trade.get("market_snapshot", {}) or {}
         base_atr = float(snap.get("volatility", 0.02) or 0.02)
-        base_vol_ratio = 1.0
+        base_vol_ratio = 1.0  # noqa: F841
 
         # tier：优先使用 trade 自带的 tier 字段，否则随机选择（权重：standard 60%, probe 20%, trend 20%）
-        tier = trade.get("tier") or self._rng.choices(
-            ["probe", "standard", "trend"], weights=[2, 6, 2]
-        )[0]
+        tier = (
+            trade.get("tier")
+            or self._rng.choices(["probe", "standard", "trend"], weights=[2, 6, 2])[0]
+        )
 
         # 持仓时长（从交易时间计算）
         entry_time_str = trade.get("entry_time", "")
@@ -342,30 +358,30 @@ class ExitSampleGenerator:
             sl_in_range = abs(upl_ratio) <= 0.06
             tp_target = {"probe": 0.10, "standard": 0.06, "trend": 0.04}.get(tier, 0.06)
             sl_target = {"probe": 0.05, "standard": 0.03, "trend": 0.02}.get(tier, 0.03)
-            reward = self._compute_reward(
-                upl_ratio, cs, sl_in_range, tp_target, sl_target
-            )
+            reward = self._compute_reward(upl_ratio, cs, sl_in_range, tp_target, sl_target)
 
             # 终端样本 reward 包含实际 pnl
             is_done = step >= n_steps - 1
             if is_done:
                 reward += pnl_pct * 5.0  # 终端奖励加权
 
-            samples.append({
-                "state": state.tolist(),
-                "action": action_idx,
-                "reward": round(reward, 6),
-                "next_state": next_state.tolist(),
-                "done": is_done,
-                "meta": {
-                    "trade_id": trade.get("trade_id", ""),
-                    "variant": variant_idx,
-                    "step": step,
-                    "tier": tier,
-                    "upl_ratio": round(upl_ratio, 6),
-                    "action_name": action_name,
-                },
-            })
+            samples.append(
+                {
+                    "state": state.tolist(),
+                    "action": action_idx,
+                    "reward": round(reward, 6),
+                    "next_state": next_state.tolist(),
+                    "done": is_done,
+                    "meta": {
+                        "trade_id": trade.get("trade_id", ""),
+                        "variant": variant_idx,
+                        "step": step,
+                        "tier": tier,
+                        "upl_ratio": round(upl_ratio, 6),
+                        "action_name": action_name,
+                    },
+                }
+            )
 
         return samples
 
@@ -388,7 +404,7 @@ class ExitSampleGenerator:
         output.parent.mkdir(parents=True, exist_ok=True)
 
         written = 0
-        action_dist = {name: 0 for name in ACTION_NAMES}
+        action_dist = dict.fromkeys(ACTION_NAMES, 0)
 
         def _flush(samples_buf: List[Dict[str, Any]]) -> None:
             nonlocal written
@@ -473,22 +489,15 @@ def main():
     # 默认路径
     project_root = Path(__file__).resolve().parents[3]
     default_trades = str(
-        project_root
-        / "11-易经推理系统"
-        / ".workbuddy"
-        / "memory_l4"
-        / "stats"
-        / "all_trades.jsonl"
+        project_root / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "stats" / "all_trades.jsonl"
     )
-    default_output = str(
-        Path(__file__).resolve().parents[1]
-        / "data"
-        / "exit_rl_samples.jsonl"
-    )
+    default_output = str(Path(__file__).resolve().parents[1] / "data" / "exit_rl_samples.jsonl")
 
     parser = argparse.ArgumentParser(description="生成 RL 离场样本")
     parser.add_argument("target", nargs="?", type=int, default=2000, help="目标样本数")
-    parser.add_argument("trades_path", nargs="?", type=str, default=default_trades, help="交易文件路径")
+    parser.add_argument(
+        "trades_path", nargs="?", type=str, default=default_trades, help="交易文件路径"
+    )
     parser.add_argument("--output", type=str, default=default_output, help="输出路径")
     parser.add_argument("--trades-paths", type=str, default=None, help="多源路径（逗号分隔）")
     parser.add_argument("--seed", type=int, default=42, help="随机种子")

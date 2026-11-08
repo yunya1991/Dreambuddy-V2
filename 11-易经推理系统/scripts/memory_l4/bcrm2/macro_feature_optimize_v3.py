@@ -26,16 +26,14 @@
   2. 9 币种中 ≥6 个币种得分优于 K=0
   3. 无严重退化（任一币种得分降幅 < 30%）
 """
-import sys
-import os
-import json
-import time
-import logging
-import importlib
-from pathlib import Path
-from datetime import datetime
 
-import numpy as np
+import importlib  # noqa: I001
+import json
+import logging
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
 
 # 设置路径
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -43,8 +41,8 @@ PROJECT_ROOT = SCRIPT_DIR.parents[2]  # 11-易经推理系统/
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # 避免 inspect.py 冲突
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -53,7 +51,21 @@ logger = logging.getLogger(__name__)
 # 配置 — 与 baseline-v1 完全对齐
 # ============================================================
 # — BDSM 2026-09 扩展：权威池补 AAVE + CRCL + ZEC + ARB；ETH 已在此列表
-COINS = ["UNI", "PUMP", "HYPE", "AAVE", "CRCL", "ETH", "BTC", "SOL", "ZEC", "ARB", "XAUT", "OKB", "BNB"]
+COINS = [
+    "UNI",
+    "PUMP",
+    "HYPE",
+    "AAVE",
+    "CRCL",
+    "ETH",
+    "BTC",
+    "SOL",
+    "ZEC",
+    "ARB",
+    "XAUT",
+    "OKB",
+    "BNB",
+]
 TIMEFRAME = "1H"
 MAX_BARS = 6000
 N_FOLDS = 5
@@ -71,14 +83,14 @@ FEATURE_SELECTION = True
 
 # v2 importance 排名（跨 5 币种平均）
 IMPORTANCE_RANKING = [
-    "stablecoin_growth",    # liquidity, imp=74.0
-    "tvl_change_7d",        # liquidity, imp=72.6
-    "fgi_trend_7d",         # sentiment, imp=72.4
-    "fgi_divergence",       # sentiment, imp=71.6
-    "fgi_zscore",           # sentiment, imp=55.8
-    "market_cap_rank",      # valuation, imp=51.7 (3 coins)
-    "ath_drop_pct",         # valuation, imp=25.7 (3 coins)
-    "fgi_extreme_fear",     # sentiment, imp=2.6
+    "stablecoin_growth",  # liquidity, imp=74.0
+    "tvl_change_7d",  # liquidity, imp=72.6
+    "fgi_trend_7d",  # sentiment, imp=72.4
+    "fgi_divergence",  # sentiment, imp=71.6
+    "fgi_zscore",  # sentiment, imp=55.8
+    "market_cap_rank",  # valuation, imp=51.7 (3 coins)
+    "ath_drop_pct",  # valuation, imp=25.7 (3 coins)
+    "fgi_extreme_fear",  # sentiment, imp=2.6
 ]
 
 CONFIGS = {
@@ -132,6 +144,7 @@ def build_macro_config(config_def):
     - 全关（K=0）：设置所有 macro_feat_* 为 False
     """
     from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
+
     cfg = {}
 
     if config_def["features"] == "all":
@@ -181,23 +194,22 @@ def compute_score(metrics):
     max_dd = metrics["max_drawdown_pct"]
     pf = min(metrics["profit_factor"], 5.0)
 
-    score = (
-        1.0 * sharpe
-        + 2.0 * win_rate
-        + 0.01 * total_ret
-        - 0.05 * max_dd
-        + 0.3 * pf
-    )
+    score = 1.0 * sharpe + 2.0 * win_rate + 0.01 * total_ret - 0.05 * max_dd + 0.3 * pf
     return score
 
 
 def get_git_commit():
     import subprocess
+
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(PROJECT_ROOT),
-        ).decode().strip()
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(PROJECT_ROOT),
+            )
+            .decode()
+            .strip()
+        )
     except Exception:
         return "unknown"
 
@@ -212,6 +224,7 @@ _REF_DF_CACHE = None
 def load_klines(symbol):
     if symbol not in _KLINE_CACHE:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         _KLINE_CACHE[symbol] = get_klines(symbol, TIMEFRAME, max_bars=MAX_BARS)
     return _KLINE_CACHE[symbol]
 
@@ -220,6 +233,7 @@ def get_ref_df():
     global _REF_DF_CACHE
     if _REF_DF_CACHE is None:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         _REF_DF_CACHE = get_klines("BTC", TIMEFRAME, max_bars=MAX_BARS + 200)
     return _REF_DF_CACHE
 
@@ -227,6 +241,7 @@ def get_ref_df():
 # ============================================================
 # 回测
 # ============================================================
+
 
 def run_single_backtest(symbol, df, macro_config):
     """运行单币种回测，返回 metrics dict"""
@@ -262,7 +277,9 @@ def run_single_backtest(symbol, df, macro_config):
 
 def run_all_configs():
     """对 9 币种 × 6 配置运行回测"""
-    print(f"\n  开始回测：{len(COINS)} 币种 × {len(CONFIGS)} 配置 = {len(COINS)*len(CONFIGS)} 次回测")
+    print(
+        f"\n  开始回测：{len(COINS)} 币种 × {len(CONFIGS)} 配置 = {len(COINS)*len(CONFIGS)} 次回测"
+    )
     print(f"  参数：{N_FOLDS} 折, {MAX_BARS} bars, conf={CONF_THRESHOLD}")
     print(f"  预计耗时：~{len(COINS)*len(CONFIGS)*1.5:.0f} 分钟\n")
 
@@ -298,12 +315,14 @@ def run_all_configs():
                 all_results[config_name][coin] = metrics
 
                 elapsed = time.time() - t0
-                print(f"    {config_name:<10} 交易={metrics['total_trades']:>3} "
-                      f"胜率={metrics['win_rate']:.1%} "
-                      f"收益={metrics['total_return_pct']:+.1f}% "
-                      f"夏普={metrics['sharpe_ratio']:.2f} "
-                      f"回撤={metrics['max_drawdown_pct']:.1f}% "
-                      f"得分={score:.3f} ({elapsed:.0f}s)")
+                print(
+                    f"    {config_name:<10} 交易={metrics['total_trades']:>3} "
+                    f"胜率={metrics['win_rate']:.1%} "
+                    f"收益={metrics['total_return_pct']:+.1f}% "
+                    f"夏普={metrics['sharpe_ratio']:.2f} "
+                    f"回撤={metrics['max_drawdown_pct']:.1f}% "
+                    f"得分={score:.3f} ({elapsed:.0f}s)"
+                )
             except Exception as e:
                 print(f"    {config_name:<10} 回测失败: {e}")
                 all_results[config_name][coin] = None
@@ -317,6 +336,7 @@ def run_all_configs():
 # ============================================================
 # 分析与对比
 # ============================================================
+
 
 def aggregate_config(config_results):
     """聚合单配置的多币种结果"""
@@ -347,20 +367,28 @@ def compare_configs(all_results):
         summaries[config_name] = aggregate_config(all_results[config_name])
 
     # 表格输出
-    print(f"\n  {'配置':<12} {'特征数':>5} {'平均得分':>8} {'夏普':>7} {'胜率':>7} {'收益%':>8} {'回撤%':>7} {'盈亏比':>7} {'交易数':>6}")
+    print(
+        f"\n  {'配置':<12} {'特征数':>5} {'平均得分':>8} {'夏普':>7} {'胜率':>7} {'收益%':>8} {'回撤%':>7} {'盈亏比':>7} {'交易数':>6}"
+    )
     print(f"  {'-'*80}")
     for config_name in CONFIGS:
         s = summaries[config_name]
         if s is None:
             print(f"  {config_name:<12} {'N/A':>5}")
             continue
-        n_feats = len(CONFIGS[config_name]["features"]) if CONFIGS[config_name]["features"] != "all" else 24
+        n_feats = (
+            len(CONFIGS[config_name]["features"])
+            if CONFIGS[config_name]["features"] != "all"
+            else 24
+        )
         if CONFIGS[config_name]["dimensions"]:
             n_feats = "dim"
-        print(f"  {config_name:<12} {n_feats:>5} {s['avg_score']:>8.3f} "
-              f"{s['avg_sharpe_ratio']:>7.2f} {s['avg_win_rate']:>7.1%} "
-              f"{s['avg_return_pct']:>+8.1f} {s['avg_max_drawdown_pct']:>7.1f} "
-              f"{s['avg_profit_factor']:>7.2f} {s['total_trades']:>6}")
+        print(
+            f"  {config_name:<12} {n_feats:>5} {s['avg_score']:>8.3f} "
+            f"{s['avg_sharpe_ratio']:>7.2f} {s['avg_win_rate']:>7.1%} "
+            f"{s['avg_return_pct']:>+8.1f} {s['avg_max_drawdown_pct']:>7.1f} "
+            f"{s['avg_profit_factor']:>7.2f} {s['total_trades']:>6}"
+        )
 
     # 找最优配置
     baseline_score = summaries.get("K=0", {}).get("avg_score", 0)
@@ -400,13 +428,13 @@ def compare_configs(all_results):
 def check_landing_criteria(all_results, best_config, summaries):
     """检查落地标准"""
     print(f"\n{'='*70}")
-    print(f"  落地标准检查")
+    print("  落地标准检查")
     print(f"{'='*70}")
 
     if best_config == "K=0":
-        print(f"\n  ✗ 最优配置是 K=0（无宏观特征）")
-        print(f"    结论：宏观特征在当前数据质量下不带来稳定收益")
-        print(f"    建议：维持 baseline-v1（无宏观特征），待宏观数据源补齐后再优化")
+        print("\n  ✗ 最优配置是 K=0（无宏观特征）")
+        print("    结论：宏观特征在当前数据质量下不带来稳定收益")
+        print("    建议：维持 baseline-v1（无宏观特征），待宏观数据源补齐后再优化")
         return False
 
     baseline = summaries["K=0"]
@@ -414,8 +442,10 @@ def check_landing_criteria(all_results, best_config, summaries):
 
     # 标准1：平均得分 > K=0
     crit1 = best["avg_score"] > baseline["avg_score"]
-    print(f"\n  标准1: 平均得分 > K=0 基线")
-    print(f"    {best['avg_score']:.3f} > {baseline['avg_score']:.3f} → {'✓ 通过' if crit1 else '✗ 未通过'}")
+    print("\n  标准1: 平均得分 > K=0 基线")
+    print(
+        f"    {best['avg_score']:.3f} > {baseline['avg_score']:.3f} → {'✓ 通过' if crit1 else '✗ 未通过'}"
+    )
 
     # 标准2：≥6/9 币种得分优于 K=0
     improved = 0
@@ -425,7 +455,7 @@ def check_landing_criteria(all_results, best_config, summaries):
         if k0 and best_r and best_r["score"] > k0["score"]:
             improved += 1
     crit2 = improved >= 6
-    print(f"\n  标准2: ≥6/9 币种得分优于 K=0")
+    print("\n  标准2: ≥6/9 币种得分优于 K=0")
     print(f"    {improved}/9 改善 → {'✓ 通过' if crit2 else '✗ 未通过'}")
 
     # 标准3：无严重退化（任一币种得分降幅 < 30%）
@@ -438,27 +468,27 @@ def check_landing_criteria(all_results, best_config, summaries):
             if degrade > 0.30:
                 severe_degrade.append((coin, degrade))
     crit3 = len(severe_degrade) == 0
-    print(f"\n  标准3: 无严重退化（降幅 < 30%）")
+    print("\n  标准3: 无严重退化（降幅 < 30%）")
     if severe_degrade:
         for coin, deg in severe_degrade:
             print(f"    {coin}: 退化 {deg:.1%}")
-        print(f"    → ✗ 未通过")
+        print("    → ✗ 未通过")
     else:
-        print(f"    → ✓ 通过")
+        print("    → ✓ 通过")
 
     all_pass = crit1 and crit2 and crit3
     print(f"\n  总结: {'✓ 全部通过，可落地' if all_pass else '✗ 未全部通过，不可落地'}")
 
     if all_pass:
         config_def = CONFIGS[best_config]
-        print(f"\n  落地配置:")
+        print("\n  落地配置:")
         if config_def["features"]:
             print(f"    启用特征 ({len(config_def['features'])}个): {config_def['features']}")
         if config_def["dimensions"]:
             print(f"    启用维度: {[k for k, v in config_def['dimensions'].items() if v]}")
-        print(f"\n  下一步:")
-        print(f"    1. 将配置写入实盘 config")
-        print(f"    2. 更新 baseline_v1.json 为新基线")
+        print("\n  下一步:")
+        print("    1. 将配置写入实盘 config")
+        print("    2. 更新 baseline_v1.json 为新基线")
 
     return all_pass
 
@@ -466,6 +496,7 @@ def check_landing_criteria(all_results, best_config, summaries):
 # ============================================================
 # 主函数
 # ============================================================
+
 
 def main():
     print("=" * 90)
@@ -477,7 +508,7 @@ def main():
     print(f"  参数: {N_FOLDS} 折, {MAX_BARS} bars, conf={CONF_THRESHOLD}")
 
     # 预加载 K 线数据
-    print(f"\n  [准备] 预加载 K 线数据...")
+    print("\n  [准备] 预加载 K 线数据...")
     for coin in COINS:
         df = load_klines(coin)
         if df is not None:
@@ -485,14 +516,16 @@ def main():
     get_ref_df()
 
     # 打印配置详情
-    print(f"\n  [配置详情]")
+    print("\n  [配置详情]")
     for config_name, config_def in CONFIGS.items():
         if config_def["features"] == "all":
             print(f"    {config_name}: 全部 24 个特征")
         elif config_def["features"]:
             print(f"    {config_name}: {len(config_def['features'])} 个 → {config_def['features']}")
         elif config_def["dimensions"]:
-            enabled_dims = [k.replace("macro_enable_", "") for k, v in config_def["dimensions"].items() if v]
+            enabled_dims = [
+                k.replace("macro_enable_", "") for k, v in config_def["dimensions"].items() if v
+            ]
             print(f"    {config_name}: 维度级 → {enabled_dims}")
         else:
             print(f"    {config_name}: 无宏观特征")
@@ -536,9 +569,7 @@ def main():
         "best_config": best_config,
         "can_land": can_land,
         "per_config_per_coin": {
-            config_name: {
-                coin: result for coin, result in results.items()
-            }
+            config_name: {coin: result for coin, result in results.items()}  # noqa: C416
             for config_name, results in all_results.items()
         },
     }

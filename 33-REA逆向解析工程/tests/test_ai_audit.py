@@ -4,12 +4,11 @@ Task 5 of PoE 工程实践复现器 SPEC。
 依据：TASKS-工程实践复现器.md TR-5.1 / TR-5.2 / TR-5.3
 关联：DESIGN-PHILOSOPHY-PoE.md §5 门禁阈值
 """
-import os
+
+import os  # noqa: I001
 import sys
 import tempfile
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -19,7 +18,6 @@ from core.ai_audit import (
     audit_ai_output,
     compute_poe_score,
 )
-
 
 # ---------- 测试样本 ----------
 
@@ -177,8 +175,9 @@ def test_audit_ai_output_detects_magic_number():
         for debt in result["cognitive_debt"]:
             ev = debt.get("evidence", debt)
             debt_types.append(str(ev.provenance.get("type", "")) + str(ev.result))
-        assert any("magic" in t.lower() or "魔法" in t for t in debt_types), \
-            "应检测魔法数字 (TR-5.3 附加)"
+        assert any(
+            "magic" in t.lower() or "魔法" in t for t in debt_types
+        ), "应检测魔法数字 (TR-5.3 附加)"
 
 
 def test_ai_auditor_class_usable():

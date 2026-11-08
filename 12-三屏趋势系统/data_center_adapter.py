@@ -14,6 +14,7 @@
 - FAIL-OPEN：任一数据源不可用时返回 None，不阻塞整体分析
 - 统一接口：所有查询返回 dict，含 value/confidence/direction/source/timestamp
 """
+
 from __future__ import annotations
 
 import json
@@ -108,6 +109,7 @@ def _query_history(source: str, sub_category: Optional[str] = None, limit: int =
 # 各维度数据查询
 # ============================================================
 
+
 def fetch_fear_greed() -> Optional[Dict]:
     """恐惧贪婪指数（0-100，<25极度恐惧，>75极度贪婪）"""
     rec = _query_latest("fear_greed")
@@ -132,7 +134,15 @@ def fetch_fear_greed() -> Optional[Dict]:
         "direction": direction,
         "confidence": round(confidence, 1),
         "timestamp": rec["timestamp"],
-        "label": "极度贪婪" if value >= 75 else "贪婪" if value >= 55 else "中性" if value >= 45 else "恐惧" if value >= 25 else "极度恐惧",
+        "label": (
+            "极度贪婪"
+            if value >= 75
+            else (
+                "贪婪"
+                if value >= 55
+                else "中性" if value >= 45 else "恐惧" if value >= 25 else "极度恐惧"
+            )
+        ),
     }
 
 
@@ -313,6 +323,7 @@ def fetch_defillama_tvl() -> Optional[Dict]:
 # ============================================================
 # 综合数据获取
 # ============================================================
+
 
 def fetch_all_fundamental_data() -> Dict[str, Any]:
     """一次性获取所有基本面维度数据（FAIL-OPEN）"""

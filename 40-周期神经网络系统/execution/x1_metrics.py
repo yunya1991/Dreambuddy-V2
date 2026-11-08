@@ -5,6 +5,7 @@ SPEC 边界红线 6：代理信号(12_proxy)记录仅验证管道用途，不得
 X1 完整四项指标（方向准确率/方向IC/概率校准度/分周期段表现）待 X0 意图流
 积累 >= 2 周且样本 >= 100 笔后启用；本入口当前输出样本量门槛检查与方向分布。
 """
+
 import json
 import os
 from datetime import datetime, timezone
@@ -46,6 +47,7 @@ def main():
     span_days = 0
     if dates:
         from datetime import date as _d
+
         d0 = _d.fromisoformat(dates[0])
         d1 = _d.fromisoformat(dates[-1])
         span_days = (d1 - d0).days + 1

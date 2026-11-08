@@ -7,11 +7,11 @@
 - 网络请求日志
 - 验证结果详情
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -48,6 +48,7 @@ class ReportGenerator:
         json_path = report_dir / "ai_report.json"
         with open(json_path, "w", encoding="utf-8") as f:
             import json
+
             json.dump(agent_result.to_dict(), f, ensure_ascii=False, indent=2)
 
         # 简单 HTML 报告
@@ -77,8 +78,9 @@ pre {{ background: #f9f9f9; padding: 12px; overflow-x: auto; }}
 
         return str(report_dir)
 
-    def generate(self, scenario_results: List[ScenarioResult],
-                 report_name: Optional[str] = None) -> str:
+    def generate(
+        self, scenario_results: List[ScenarioResult], report_name: Optional[str] = None
+    ) -> str:
         """生成测试报告。
 
         Args:
@@ -191,11 +193,11 @@ pre {{ background: #f9f9f9; padding: 12px; overflow-x: auto; }}
                 if step.verification:
                     html += '            <div class="details"><strong>验证结果:</strong><pre>'
                     html += json.dumps(step.verification.to_dict(), ensure_ascii=False, indent=2)
-                    html += '</pre></div>\n'
+                    html += "</pre></div>\n"
 
-                html += '        </div>\n'
+                html += "        </div>\n"
 
-            html += '    </div>\n'
+            html += "    </div>\n"
 
         html += """</body>
 </html>"""

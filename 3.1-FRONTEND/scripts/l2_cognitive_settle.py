@@ -10,24 +10,26 @@
 质量映射: quality_score >= 0.8 → B（可信执行案例），否则 → C（假设级）。
 FAIL-OPEN: 认知不可用/参数非法均不抛出，degraded 返回；绝不阻塞 SSE 主链路。
 """
+
 import json
 import os
 import sys
 
 _TRAINING_SYS_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "..",
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
     "34-前端应用训练系统",
 )
 if _TRAINING_SYS_DIR not in sys.path:
     sys.path.insert(0, _TRAINING_SYS_DIR)
 
-from core.l0_foundation import get_l0
+from core.l0_foundation import get_l0  # noqa: E402
 
 QUALITY_B_MIN = 0.8  # quality_score ≥ 0.8 → B 级记忆，否则 C 级
 
 
-def settle_l2(task_id, intent, message, answer_preview,
-              quality_score=0.7, l1_intent_hint=""):
+def settle_l2(task_id, intent, message, answer_preview, quality_score=0.7, l1_intent_hint=""):
     """L2 执行结果沉淀为认知记忆，返回 {success, memory_id, ...}（FAIL-OPEN）。"""
     quality_score = float(quality_score or 0.0)
     quality = "B" if quality_score >= QUALITY_B_MIN else "C"
@@ -42,8 +44,7 @@ def settle_l2(task_id, intent, message, answer_preview,
         cle = get_l0()._load_cle()
         resp = cle.record(content=content, quality_level=quality, tags=tags)
     except Exception as e:
-        return {"success": False, "degraded": True,
-                "reason": f"cognitive_unavailable: {e}"}
+        return {"success": False, "degraded": True, "reason": f"cognitive_unavailable: {e}"}
     if isinstance(resp, dict):
         memory_id = resp.get("memory_id")
     elif isinstance(resp, str) and resp.strip():
@@ -51,15 +52,18 @@ def settle_l2(task_id, intent, message, answer_preview,
     else:
         memory_id = getattr(resp, "memory_id", None)
     if not memory_id:
-        return {"success": False, "degraded": True,
-                "reason": "record_no_memory_id", "raw": str(resp)[:200]}
+        return {
+            "success": False,
+            "degraded": True,
+            "reason": "record_no_memory_id",
+            "raw": str(resp)[:200],
+        }
     return {"success": True, "memory_id": memory_id, "quality_level": quality}
 
 
 def main():
     try:
-        req = json.loads(sys.argv[1]) if len(sys.argv) > 1 \
-            else json.loads(sys.stdin.read() or "{}")
+        req = json.loads(sys.argv[1]) if len(sys.argv) > 1 else json.loads(sys.stdin.read() or "{}")
     except Exception:
         req = {}
     try:

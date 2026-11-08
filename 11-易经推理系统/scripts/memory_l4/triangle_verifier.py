@@ -24,15 +24,16 @@
         - 开仓阻断（不阻止 BCRM2 信号）
         - 置信度调整（不修改 BCRM2 置信度）
 """
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Any, List, Tuple
+
 import logging
-import numpy as np
-import json
-from pathlib import Path
 from collections import deque
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
+
 
 # ================================================================
 # v4 风险评分风控版参数
@@ -46,15 +47,16 @@ class PentagonParams:
         - 风险注意力参数（追踪各源风险预警准确率）
         - v3 双预警止损收紧保留（底线）
     """
+
     # ── v3 保留：双预警止损收紧底线 ──
     sl_tighten_double: float = 0.85  # TDA+Ising 同时触发 → 收紧15%
     sl_tighten_single: float = 1.0
 
     # ── v4 新增：风险评分风控参数 ──
     # 风险评分分档阈值（risk_score 0=安全, 1=高危）
-    risk_threshold_low: float = 0.15    # < 0.15 → 低风险（加仓/提杠杆）
-    risk_threshold_mid: float = 0.50    # 0.15-0.50 → 正常
-    risk_threshold_high: float = 0.70   # 0.50-0.70 → 中风险（降仓）
+    risk_threshold_low: float = 0.15  # < 0.15 → 低风险（加仓/提杠杆）
+    risk_threshold_mid: float = 0.50  # 0.15-0.50 → 正常
+    risk_threshold_high: float = 0.70  # 0.50-0.70 → 中风险（降仓）
     # >= 0.70 → 高风险（大幅降仓/收紧止损）
 
     # 低风险档：温和加仓/提杠杆/提高止盈
@@ -81,8 +83,8 @@ class PentagonParams:
 
     # ── v4 新增：风险注意力参数 ──
     risk_attention_enabled: bool = True
-    risk_attention_window: int = 30      # 追踪窗口
-    risk_attention_decay: float = 0.97   # 指数衰减系数
+    risk_attention_window: int = 30  # 追踪窗口
+    risk_attention_decay: float = 0.97  # 指数衰减系数
     risk_attention_min_weight: float = 0.10
     risk_attention_max_weight: float = 0.40
 
@@ -122,7 +124,7 @@ class PentagonParams:
     fail_closed_threshold: float = 0.0
 
     def to_dict(self) -> dict:
-        return {k: v for k, v in self.__dict__.items()}
+        return {k: v for k, v in self.__dict__.items()}  # noqa: C416
 
     @classmethod
     def from_dict(cls, d: dict) -> "PentagonParams":
@@ -133,18 +135,19 @@ class PentagonParams:
 @dataclass
 class TriangleVerificationResult:
     """五角校验结果（保留类名向后兼容）"""
+
     # 五源方向 (-1=空, 0=中性, +1=多)
     bcrm2_direction: int = 0
     force_direction: int = 0
     a0_direction: int = 0
-    ising_direction: int = 0        # Ising相变方向（P1新增）
-    tda_direction: int = 0          # TDA拓扑方向（P2新增）
+    ising_direction: int = 0  # Ising相变方向（P1新增）
+    tda_direction: int = 0  # TDA拓扑方向（P2新增）
 
     # 校验结果
-    agreement_score: float = 0.0     # 一致性得分 0-1
+    agreement_score: float = 0.0  # 一致性得分 0-1
     confidence_adjustment: float = 0.0  # 置信度调整 -0.2~+0.2
-    reversal_alert: bool = False     # 强反转预警
-    reversal_strength: float = 0.0   # 反转强度
+    reversal_alert: bool = False  # 强反转预警
+    reversal_strength: float = 0.0  # 反转强度
     risk_warnings: List[str] = field(default_factory=list)
     should_fail_closed: bool = False  # 是否建议 fail_closed
 
@@ -157,15 +160,15 @@ class TriangleVerificationResult:
     verdict: str = ""  # STRONG_AGREE / MAJORITY_AGREE / DIVERGENT / CONFLICT
 
     # P3预警联动策略（v3保留）
-    position_factor: float = 1.0     # 仓位系数（1.0=正常, 0.5=降仓50%, 1.15=加仓15%）
-    sl_tighten_factor: float = 1.0   # 止损收紧系数（1.0=正常, 0.85=收紧15%）
+    position_factor: float = 1.0  # 仓位系数（1.0=正常, 0.5=降仓50%, 1.15=加仓15%）
+    sl_tighten_factor: float = 1.0  # 止损收紧系数（1.0=正常, 0.85=收紧15%）
     early_exit_signal: bool = False  # 提前退出信号（TDA+Ising双重预警）
 
     # v4 新增：风险评分风控
-    risk_score: float = 0.0          # 综合风险评分 0=安全, 1=高危
-    risk_level: str = "NORMAL"       # LOW / NORMAL / MID / HIGH
-    leverage_factor: float = 1.0     # 杠杆系数（1.0=正常, 1.15=提杠杆15%, 0.7=降杠杆30%）
-    tp_adjustment: float = 1.0       # 止盈调整系数（1.0=正常, 1.1=提高止盈10%）
+    risk_score: float = 0.0  # 综合风险评分 0=安全, 1=高危
+    risk_level: str = "NORMAL"  # LOW / NORMAL / MID / HIGH
+    leverage_factor: float = 1.0  # 杠杆系数（1.0=正常, 1.15=提杠杆15%, 0.7=降杠杆30%）
+    tp_adjustment: float = 1.0  # 止盈调整系数（1.0=正常, 1.1=提高止盈10%）
 
     def to_dict(self) -> dict:
         return {
@@ -217,8 +220,7 @@ class TriangleVerifier:
 
         # v4 风险注意力：追踪各源风险预警准确率（预警后市场是否恶化）
         self._risk_warning_history: Dict[str, deque] = {
-            name: deque(maxlen=self.params.risk_attention_window)
-            for name in self.SOURCE_NAMES
+            name: deque(maxlen=self.params.risk_attention_window) for name in self.SOURCE_NAMES
         }
         self._risk_dynamic_weights: Dict[str, float] = {
             "bcrm2": self.params.risk_weight_bcrm2,
@@ -272,7 +274,7 @@ class TriangleVerifier:
         bcrm2_confidence: float,
         a0_result_dict: Optional[dict],
         market_snapshot: Dict[str, Any],
-        df: Optional["pd.DataFrame"] = None,
+        df: Optional["pd.DataFrame"] = None,  # noqa: F821
     ) -> TriangleVerificationResult:
         """
         执行五角校验（v4 风险评分风控版）。
@@ -310,18 +312,20 @@ class TriangleVerifier:
         a0_trauma = a0_result_dict.get("trauma_signal", False) if a0_result_dict else False
 
         risk_signals = {
-            "bcrm2": max(0.0, 1.0 - bcrm2_confidence),           # 置信度低→风险高
-            "force": 0.8 if force_reversal else 0.2,               # 力学反转→高风险
+            "bcrm2": max(0.0, 1.0 - bcrm2_confidence),  # 置信度低→风险高
+            "force": 0.8 if force_reversal else 0.2,  # 力学反转→高风险
             "a0": min(1.0, a0_tension + (0.3 if a0_trauma else 0.0)),  # tension+trauma→风险
-            "ising": 0.9 if ising_alert else 0.1,                  # 相变→高风险
-            "tda": 0.9 if tda_warning else 0.1,                    # 拓扑突变→高风险
+            "ising": 0.9 if ising_alert else 0.1,  # 相变→高风险
+            "tda": 0.9 if tda_warning else 0.1,  # 拓扑突变→高风险
         }
         self._last_risk_signals = risk_signals.copy()
 
         # ── 3. 风险注意力动态加权 → 综合风险评分 ──
         weights = self._get_risk_weights()
         total_w = sum(weights.values())
-        risk_score = sum(weights[k] * risk_signals[k] for k in self.SOURCE_NAMES) / max(total_w, 1e-6)
+        risk_score = sum(weights[k] * risk_signals[k] for k in self.SOURCE_NAMES) / max(
+            total_w, 1e-6
+        )
         risk_score = max(0.0, min(1.0, risk_score))
         result.risk_score = risk_score
 
@@ -369,13 +373,9 @@ class TriangleVerifier:
 
         # ── 预警记录（诊断）──
         if ising_alert:
-            result.risk_warnings.append(
-                f"Ising相变预警：相态={ising_phase or 'UNKNOWN'}"
-            )
+            result.risk_warnings.append(f"Ising相变预警：相态={ising_phase or 'UNKNOWN'}")
         if tda_warning:
-            result.risk_warnings.append(
-                f"TDA拓扑突变预警：强度={tda_strength:.2f}"
-            )
+            result.risk_warnings.append(f"TDA拓扑突变预警：强度={tda_strength:.2f}")
         if force_reversal and a0_tension > 0.5:
             result.risk_warnings.append(
                 f"力学+A0反转预警（强度{(force_strength+a0_tension)/2:.2f}）"
@@ -405,8 +405,12 @@ class TriangleVerifier:
     # ================================================================
     # v4 风险注意力机制
     # ================================================================
-    def record_outcome(self, source_directions: Dict[str, int], actual_direction: int,
-                       actual_pnl_pct: Optional[float] = None):
+    def record_outcome(
+        self,
+        source_directions: Dict[str, int],
+        actual_direction: int,
+        actual_pnl_pct: Optional[float] = None,
+    ):
         """记录交易结果，更新风险注意力权重。
 
         v4 改为追踪风险预警准确率：
@@ -467,7 +471,7 @@ class TriangleVerifier:
             ewma_acc = 0.0
             weight_sum = 0.0
             for i, acc in enumerate(reversed(accs)):
-                w = decay ** i
+                w = decay**i
                 ewma_acc += acc * w
                 weight_sum += w
             ewma_acc /= max(weight_sum, 1e-6)
@@ -565,13 +569,18 @@ class TriangleVerifier:
 
             if df is not None and len(df) >= 20:
                 import numpy as np
+
                 closes = df["close"].values.astype(float)
                 if len(closes) >= 2:
                     returns = np.diff(np.log(closes[-100:]))  # 最近100根K线收益
                     returns = returns[~np.isnan(returns)]
                     # 更新波动率
                     if len(returns) > 1:
-                        volatility = float(np.std(returns[-20:])) if len(returns) >= 20 else float(np.std(returns))
+                        volatility = (
+                            float(np.std(returns[-20:]))
+                            if len(returns) >= 20
+                            else float(np.std(returns))
+                        )
 
             if returns is None or len(returns) < 5:
                 return 0, False, "UNKNOWN", None
@@ -649,7 +658,7 @@ class TriangleVerifier:
 
     def _enrich_snapshot(self, snapshot: Dict, df) -> Dict:
         """从 K线数据补充力学引擎需要的快照字段"""
-        import numpy as np
+
         closes = df["close"].values.astype(float)
         volumes = df["volume"].values.astype(float) if "volume" in df else np.ones(len(closes))
 
@@ -683,7 +692,9 @@ class TriangleVerifier:
         # 均线方向
         ma_direction = 0
         if len(closes) >= 5:
-            ma_direction = (np.mean(closes[-5:]) - np.mean(closes[-10:])) / max(abs(np.mean(closes[-10:])), 1)
+            ma_direction = (np.mean(closes[-5:]) - np.mean(closes[-10:])) / max(
+                abs(np.mean(closes[-10:])), 1
+            )
 
         # 量比
         vol_ratio = 1.0
@@ -706,9 +717,13 @@ class TriangleVerifier:
         enriched.setdefault("sentiment_score", 0.5 + (rsi - 50) / 100)
 
         # 周期位置（如果没有）
-        enriched.setdefault("long_cycle_position", 0.5 + (closes[-1] - ma_long) / max(abs(ma_long), 1) * 3)
+        enriched.setdefault(
+            "long_cycle_position", 0.5 + (closes[-1] - ma_long) / max(abs(ma_long), 1) * 3
+        )
         enriched.setdefault("mid_cycle_position", price_position)
-        enriched.setdefault("short_cycle_position", 0.5 + (ma_short - ma_mid) / max(abs(ma_mid), 1) * 3)
+        enriched.setdefault(
+            "short_cycle_position", 0.5 + (ma_short - ma_mid) / max(abs(ma_mid), 1) * 3
+        )
         enriched.setdefault("trend_strength", abs(ma_direction) * 10)
 
         return enriched

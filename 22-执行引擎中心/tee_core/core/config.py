@@ -4,6 +4,7 @@ All values are driven by the user-approved SPEC Q3/Q4/Q5 hard constraints.
 Do not alter defaults casually — each has a matching memory record in the
 cognitive memory system.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -35,22 +36,22 @@ KILL_SWITCH_BUFFER_MULT: float = 1.5
 #   0.5% – 3%                   → SmartTWAP 15 min
 #   3%  – 10%                   → SmartTWAP 60 min
 #   > 10%                       → SmartPassive (fallback to SmartTWAP)
-ROUTER_DIRECT_MAX_PCT: float = 0.005      # 0.5 %
-ROUTER_TWAP15_MAX_PCT: float = 0.03       # 3 %
-ROUTER_TWAP60_MAX_PCT: float = 0.10       # 10 %
+ROUTER_DIRECT_MAX_PCT: float = 0.005  # 0.5 %
+ROUTER_TWAP15_MAX_PCT: float = 0.03  # 3 %
+ROUTER_TWAP60_MAX_PCT: float = 0.10  # 10 %
 
 # TWAP parameter defaults
 TWAP_NUM_SLICES_TWAP15: int = 12
 TWAP_NUM_SLICES_TWAP60: int = 30
-TWAP_JITTER_PCT: float = 0.15            # ±15 % on child sizes
-TWAP_ESCALATE_SEC: int = 20              # first widen after 20 s
-TWAP_ESCALATE_STEP_BPS: int = 2          # +2 bps each escalation
-TWAP_ESCALATE_MAX_BPS: int = 10          # stop widening after 10 bps
-TWAP_TIMEOUT_TO_MARKET_SEC: int = 60     # after 60 s → market/last-price close
+TWAP_JITTER_PCT: float = 0.15  # ±15 % on child sizes
+TWAP_ESCALATE_SEC: int = 20  # first widen after 20 s
+TWAP_ESCALATE_STEP_BPS: int = 2  # +2 bps each escalation
+TWAP_ESCALATE_MAX_BPS: int = 10  # stop widening after 10 bps
+TWAP_TIMEOUT_TO_MARKET_SEC: int = 60  # after 60 s → market/last-price close
 
 # Passive parameter defaults
-PASSIVE_REHANG_SEC: int = 10             # refresh to top-of-book every 10s
-PASSIVE_TO_TWAP_SEC: int = 120           # 2 min progress gate
+PASSIVE_REHANG_SEC: int = 10  # refresh to top-of-book every 10s
+PASSIVE_TO_TWAP_SEC: int = 120  # 2 min progress gate
 PASSIVE_TO_TWAP_FILL_RATIO: float = 0.5  # need ≥50% filled by 2 min
 
 # ── Rollout cadence (Q5 = C fast): 1 shadow + 1 grayscale → full ────
@@ -59,15 +60,15 @@ ROLLOUT_GRAYSCALE_DAYS: int = 1
 FAILOPEN_SHADOW_THRESHOLD_PER_DAY: int = 3  # pause grayscale if exceeded
 
 # ── Fail-open alerting ──────────────────────────────────────────────
-FAILOPEN_ALERT_WINDOW_SEC: int = 300   # 5 min sliding window
-FAILOPEN_ALERT_COUNT: int = 3          # 3 occurrences → Lark alert
+FAILOPEN_ALERT_WINDOW_SEC: int = 300  # 5 min sliding window
+FAILOPEN_ALERT_COUNT: int = 3  # 3 occurrences → Lark alert
 
 # ── Idempotency ─────────────────────────────────────────────────────
-IDEMPOTENCY_TTL_SEC: int = 120          # 2 min (covers 1-min bucket + jitter)
+IDEMPOTENCY_TTL_SEC: int = 120  # 2 min (covers 1-min bucket + jitter)
 
 # ── Rolling metrics window ──────────────────────────────────────────
-METRICS_WINDOW_SEC: int = 1800          # 30 min
-METRICS_FLUSH_INTERVAL_SEC: int = 60    # flush to disk every 1 min
+METRICS_WINDOW_SEC: int = 1800  # 30 min
+METRICS_FLUSH_INTERVAL_SEC: int = 60  # flush to disk every 1 min
 
 # ── Paths for logs / audit ──────────────────────────────────────────
 AUDIT_LOG_DIR: Path = LOGS_ROOT / "tee_audit"

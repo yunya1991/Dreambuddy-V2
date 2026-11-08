@@ -1,9 +1,9 @@
 """DebateRequest/Result v1 JSON Schema 校验。"""
+
 import json
 from pathlib import Path
 
 import jsonschema
-
 from core.review_runner import run_review_sync
 
 CONTRACTS = Path(__file__).resolve().parents[1] / "contracts"
@@ -52,8 +52,7 @@ def test_degraded_review_result_matches_contract():
         async def chat(self, system_prompt, user_prompt, max_tokens=None):
             return "not json"
 
-    result = run_review_sync("测试", rounds=1,
-                             debater_llm=InvalidLLM(), judge_llm=InvalidLLM())
+    result = run_review_sync("测试", rounds=1, debater_llm=InvalidLLM(), judge_llm=InvalidLLM())
     payload = result.to_dict()
     assert payload["status"] == "completed"
     assert payload["meta"]["degraded"] is True

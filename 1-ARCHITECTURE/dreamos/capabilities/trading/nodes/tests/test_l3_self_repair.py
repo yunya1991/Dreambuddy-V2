@@ -3,32 +3,36 @@ L3 自修复: Trace Replay + CircuitBreaker + AutoBugfix 单测
 """
 
 import sys
-import time
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-from datetime import datetime, timedelta
+from unittest.mock import MagicMock
 
 import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
-from dreamos.core.compute.trace_replay import (
-    TraceReplayEngine, ReplayStatus, ReplayComparison, ReplayResult,
-)
-from dreamos.core.compute.circuit_breaker import (
-    CircuitBreaker, CircuitState, CircuitBreakerOpen,
-    CircuitBreakerRegistry, LLMDegradationChain,
-)
-from dreamos.core.compute.auto_bugfix import (
-    AutoBugfixLoop, BugfixAction, BugfixReport,
+from dreamos.core.compute.auto_bugfix import (  # noqa: E402
+    AutoBugfixLoop,
+    BugfixAction,
     create_default_auto_bugfix,
 )
-
+from dreamos.core.compute.circuit_breaker import (  # noqa: E402
+    CircuitBreaker,
+    CircuitBreakerOpen,
+    CircuitBreakerRegistry,
+    CircuitState,
+    LLMDegradationChain,
+)
+from dreamos.core.compute.trace_replay import (  # noqa: E402
+    ReplayComparison,
+    ReplayStatus,
+    TraceReplayEngine,
+)
 
 # ============================================================================
 # Trace Replay 测试
 # ============================================================================
+
 
 class TestTraceReplayEngine:
     """Trace Replay 引擎测试"""
@@ -36,10 +40,24 @@ class TestTraceReplayEngine:
     def test_replay_match(self):
         """原始和重放完全匹配 → MATCH"""
         events = [
-            {"trace_id": "t1", "system": "frontend", "layer": "api",
-             "node": "task", "event_type": "created", "status": "ok", "ts": "2026-09-29T10:00:00Z"},
-            {"trace_id": "t1", "system": "dreamos", "layer": "graph",
-             "node": "A1", "event_type": "execute", "status": "ok", "ts": "2026-09-29T10:00:01Z"},
+            {
+                "trace_id": "t1",
+                "system": "frontend",
+                "layer": "api",
+                "node": "task",
+                "event_type": "created",
+                "status": "ok",
+                "ts": "2026-09-29T10:00:00Z",
+            },
+            {
+                "trace_id": "t1",
+                "system": "dreamos",
+                "layer": "graph",
+                "node": "A1",
+                "event_type": "execute",
+                "status": "ok",
+                "ts": "2026-09-29T10:00:01Z",
+            },
         ]
         engine = TraceReplayEngine(
             events_reader=lambda tid: events if tid == "t1" else [],
@@ -54,10 +72,24 @@ class TestTraceReplayEngine:
     def test_replay_partial(self):
         """部分字段不同 → PARTIAL"""
         events = [
-            {"trace_id": "t1", "system": "frontend", "layer": "api",
-             "node": "task", "event_type": "created", "status": "ok", "ts": "2026-09-29T10:00:00Z"},
-            {"trace_id": "t1", "system": "dreamos", "layer": "graph",
-             "node": "A1", "event_type": "execute", "status": "ok", "ts": "2026-09-29T10:00:01Z"},
+            {
+                "trace_id": "t1",
+                "system": "frontend",
+                "layer": "api",
+                "node": "task",
+                "event_type": "created",
+                "status": "ok",
+                "ts": "2026-09-29T10:00:00Z",
+            },
+            {
+                "trace_id": "t1",
+                "system": "dreamos",
+                "layer": "graph",
+                "node": "A1",
+                "event_type": "execute",
+                "status": "ok",
+                "ts": "2026-09-29T10:00:01Z",
+            },
         ]
         engine = TraceReplayEngine(
             events_reader=lambda tid: events,
@@ -72,10 +104,24 @@ class TestTraceReplayEngine:
         """重放事件数与原始不同 → MISMATCH
         replayer 返回 dict，但 status 不同 → 节点数一致但内容不匹配"""
         events = [
-            {"trace_id": "t1", "system": "frontend", "layer": "api",
-             "node": "task", "event_type": "created", "status": "ok", "ts": "t"},
-            {"trace_id": "t1", "system": "dreamos", "layer": "node",
-             "node": "A1", "event_type": "exec", "status": "ok", "ts": "t2"},
+            {
+                "trace_id": "t1",
+                "system": "frontend",
+                "layer": "api",
+                "node": "task",
+                "event_type": "created",
+                "status": "ok",
+                "ts": "t",
+            },
+            {
+                "trace_id": "t1",
+                "system": "dreamos",
+                "layer": "node",
+                "node": "A1",
+                "event_type": "exec",
+                "status": "ok",
+                "ts": "t2",
+            },
         ]
         engine = TraceReplayEngine(
             events_reader=lambda tid: events,
@@ -97,8 +143,15 @@ class TestTraceReplayEngine:
     def test_replay_ok_degraded_compatible(self):
         """ok 和 degraded 视为匹配"""
         events = [
-            {"trace_id": "t1", "system": "dreamos", "layer": "node",
-             "node": "A1", "event_type": "exec", "status": "ok", "ts": "t1"},
+            {
+                "trace_id": "t1",
+                "system": "dreamos",
+                "layer": "node",
+                "node": "A1",
+                "event_type": "exec",
+                "status": "ok",
+                "ts": "t1",
+            },
         ]
         engine = TraceReplayEngine(
             events_reader=lambda tid: events,
@@ -110,8 +163,15 @@ class TestTraceReplayEngine:
     def test_replay_different_system_mismatch(self):
         """system 不同 → MISMATCH"""
         events = [
-            {"trace_id": "t1", "system": "frontend", "layer": "api",
-             "node": "task", "event_type": "created", "status": "ok", "ts": "t"},
+            {
+                "trace_id": "t1",
+                "system": "frontend",
+                "layer": "api",
+                "node": "task",
+                "event_type": "created",
+                "status": "ok",
+                "ts": "t",
+            },
         ]
         engine = TraceReplayEngine(
             events_reader=lambda tid: events,
@@ -146,6 +206,7 @@ class TestTraceReplayEngine:
 # ============================================================================
 # CircuitBreaker 测试
 # ============================================================================
+
 
 class TestCircuitBreaker:
     """断路器测试"""
@@ -216,7 +277,7 @@ class TestCircuitBreaker:
         """call 方法异常时使用 fallback"""
         b = CircuitBreaker("test", threshold=3, timeout_s=60)
         b.set_fallback(lambda: "safe")
-        result = b.call(lambda: 1/0)
+        result = b.call(lambda: 1 / 0)
         assert result == "safe"
 
     def test_call_success_no_fallback(self):
@@ -390,6 +451,7 @@ class TestLLMDegradationChain:
 # AutoBugfix 测试
 # ============================================================================
 
+
 class TestAutoBugfixLoop:
     """自动 bugfix 闭环测试"""
 
@@ -408,7 +470,9 @@ class TestAutoBugfixLoop:
         """异常 + recall 命中 → AUTO_FIX"""
         mock_fix = MagicMock(return_value="fixed")
         loop = AutoBugfixLoop(
-            health_check_fn=lambda: [{"name": "budget", "status": "unhealthy", "message": "预算耗尽"}],
+            health_check_fn=lambda: [
+                {"name": "budget", "status": "unhealthy", "message": "预算耗尽"}
+            ],
             recall_fn=lambda **kw: [{"id": "VM-001", "content": "budget fix经验"}],
             record_fn=lambda **kw: {"memory_id": "VM-new"},
             auto_fix_fn=mock_fix,

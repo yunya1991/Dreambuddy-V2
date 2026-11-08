@@ -9,12 +9,11 @@
   - 案例库 <30 降级规则化
   - FAIL-OPEN: knn_search 异常 → 空列表
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 _THIS_DIR = Path(__file__).resolve().parent
 _BCRM2_SCRIPTS_ROOT = _THIS_DIR.parent.parent
@@ -32,11 +31,14 @@ from dreamos.evolution.washout_case_library import WashoutCase  # noqa: E402
 
 def _make_case(case_id="c1", label="reversal_short_success", pnl=0.05):
     return WashoutCase(
-        case_id=case_id, coin="BTC",
+        case_id=case_id,
+        coin="BTC",
         entry_time="2026-01-01T00:00:00+00:00",
         exit_time="2026-01-02T00:00:00+00:00",
-        features_snapshot={"F1": 1.0}, actual_label=label,
-        pnl_pct=pnl, reward=WashoutCase.compute_reward(pnl),
+        features_snapshot={"F1": 1.0},
+        actual_label=label,
+        pnl_pct=pnl,
+        reward=WashoutCase.compute_reward(pnl),
         timestamp="2026-01-02T00:00:00+00:00",
     )
 

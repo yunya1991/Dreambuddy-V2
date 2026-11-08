@@ -1,4 +1,5 @@
 """统一检索后端归一化测试：IndexQueryService 与 hybrid_search 两种结果形状。"""
+
 from __future__ import annotations
 
 import sys
@@ -14,13 +15,15 @@ def test_backend_chroma_normalizes_index_query_shape():
 
     class FakeSvc:
         def query(self, query, top_k):
-            return [{
-                "title": "Kalman",
-                "path": "finance/kalman.md",
-                "category": "doc",
-                "description": "desc",
-                "score": 1.0,
-            }]
+            return [
+                {
+                    "title": "Kalman",
+                    "path": "finance/kalman.md",
+                    "category": "doc",
+                    "description": "desc",
+                    "score": 1.0,
+                }
+            ]
 
     backend = BackendChroma()
     backend._svc = FakeSvc()

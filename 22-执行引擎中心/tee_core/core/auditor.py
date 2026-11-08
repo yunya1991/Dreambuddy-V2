@@ -15,6 +15,7 @@ Each record_parent() does:
 Fail-safe: all I/O errors are swallowed. The caller should never raise
 because of auditor problems.
 """
+
 from __future__ import annotations
 
 import json
@@ -26,7 +27,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from . import config as _cfg
-
 
 # Status strings — tests assert on them.
 STATUS_OK_WRITTEN = "OK_WRITTEN"
@@ -74,7 +74,7 @@ class RollingMetrics:
             tee_bps = float(exec_block.get("slippage_bps_vs_decision"))
             dm_bps = float(exec_block.get("baseline_direct_market_slippage_bps"))
             if all(v is not None for v in (tee_bps, dm_bps)):
-                self._slip_improvement_bps_sum += (dm_bps - tee_bps)
+                self._slip_improvement_bps_sum += dm_bps - tee_bps
                 self._slip_improvement_samples += 1
         except (TypeError, ValueError):
             pass
@@ -82,9 +82,7 @@ class RollingMetrics:
         # Algo counts.
         try:
             algo = str((exec_result.get("algo") or {}).get("name") or "UNKNOWN")
-            self.algo_distribution_counts[algo] = (
-                self.algo_distribution_counts.get(algo, 0) + 1
-            )
+            self.algo_distribution_counts[algo] = self.algo_distribution_counts.get(algo, 0) + 1
         except Exception:  # noqa: BLE001
             pass
 
@@ -92,9 +90,7 @@ class RollingMetrics:
         try:
             if (exec_result.get("fail_open") or {}).get("triggered"):
                 inst = str((exec_result.get("parent") or {}).get("inst_id") or "UNKNOWN")
-                self.fail_open_count_per_coin[inst] = (
-                    self.fail_open_count_per_coin.get(inst, 0) + 1
-                )
+                self.fail_open_count_per_coin[inst] = self.fail_open_count_per_coin.get(inst, 0) + 1
         except Exception:  # noqa: BLE001
             pass
 
@@ -114,12 +110,12 @@ class RollingMetrics:
             "avg_slip_improvement_baseline_direct_market_bps": round(avg, 6),
             "slip_improvement_sample_count": samples,
             "fail_open_count_per_coin": dict(self.fail_open_count_per_coin),
-            "algo_distribution_counts":    dict(self.algo_distribution_counts),
-            "kill_switch_trigger_count":    self.kill_switch_trigger_count,
-            "flushed_at_epoch_ms":          int(now * 1000),
-            "flushed_at_iso":               datetime.fromtimestamp(
-                                                now, tz=timezone.utc
-                                            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "algo_distribution_counts": dict(self.algo_distribution_counts),
+            "kill_switch_trigger_count": self.kill_switch_trigger_count,
+            "flushed_at_epoch_ms": int(now * 1000),
+            "flushed_at_iso": datetime.fromtimestamp(now, tz=timezone.utc).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            ),
             "window": "process_lifetime_rolling",
         }
 
@@ -134,9 +130,7 @@ class Auditor:
         flush_interval_sec: int = _cfg.METRICS_FLUSH_INTERVAL_SEC,
         dedup_capacity: int = 20000,
     ) -> None:
-        self.audit_dir: Path = (
-            Path(audit_dir) if audit_dir else Path(_cfg.AUDIT_LOG_DIR)
-        )
+        self.audit_dir: Path = Path(audit_dir) if audit_dir else Path(_cfg.AUDIT_LOG_DIR)
         self.metrics_path: Path = (
             Path(metrics_path) if metrics_path else Path(_cfg.METRICS_JSON_PATH)
         )
@@ -180,9 +174,7 @@ class Auditor:
                 if len(self._seen_parent_ids) > self._dedup_capacity:
                     # Drop oldest ~25% — simple. order preservation is not
                     # required; set pop gives arbitrary element.
-                    overflow = len(self._seen_parent_ids) - int(
-                        self._dedup_capacity * 0.75
-                    )
+                    overflow = len(self._seen_parent_ids) - int(self._dedup_capacity * 0.75)
                     to_del = list(self._seen_parent_ids)[:overflow]
                     for x in to_del:
                         self._seen_parent_ids.discard(x)
@@ -247,6 +239,9 @@ class Auditor:
 
 
 __all__ = [
-    "Auditor", "RollingMetrics",
-    "STATUS_OK_WRITTEN", "STATUS_DUP_IGNORED", "STATUS_ERROR",
+    "Auditor",
+    "RollingMetrics",
+    "STATUS_OK_WRITTEN",
+    "STATUS_DUP_IGNORED",
+    "STATUS_ERROR",
 ]

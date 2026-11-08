@@ -28,6 +28,7 @@ Audit stages emitted:
     TWAP_SLICE_SUBMIT, TWAP_ORDER_FILLED, ESCALATION_TIER_UP,
     TWAP_TIMEOUT_TO_MARKET, TWAP_COMPLETE.
 """
+
 from __future__ import annotations
 
 import random
@@ -35,7 +36,6 @@ import time
 from typing import Any, Callable, Dict, List, Optional
 
 from .base import AlgoRunResult, ExecutionAlgorithm
-
 
 ESCALATION_AUDIT = "ESCALATION_TIER_UP"
 
@@ -56,7 +56,7 @@ class SmartTWAP(ExecutionAlgorithm):
         side = parent_req["side"]
         total_sz = float(parent_req["sz"])
         decision_px = float(parent_req.get("decision_px") or 0.0)
-        is_buy = (side == "buy")
+        is_buy = side == "buy"
 
         n = max(1, int(algo_params.get("num_slices", 5)))
         window = max(1.0, float(algo_params.get("window_sec", 900)))
@@ -69,11 +69,18 @@ class SmartTWAP(ExecutionAlgorithm):
         slices = self._slice_sizes(total_sz, n, jitter_pct)
         gap_sec = window / float(n)  # even spacing across window; TR-6.1 anchor
 
-        audit_cb("TWAP_START", {
-            "inst_id": inst_id, "side": side, "total_sz": total_sz,
-            "num_slices": n, "window_sec": window, "jitter_pct": jitter_pct,
-            "gap_sec": gap_sec,
-        })
+        audit_cb(
+            "TWAP_START",
+            {
+                "inst_id": inst_id,
+                "side": side,
+                "total_sz": total_sz,
+                "num_slices": n,
+                "window_sec": window,
+                "jitter_pct": jitter_pct,
+                "gap_sec": gap_sec,
+            },
+        )
 
         child_records: List[Dict[str, Any]] = []
         filled_sum = 0.0
@@ -82,8 +89,7 @@ class SmartTWAP(ExecutionAlgorithm):
 
         for idx, sz in enumerate(slices):
             if killswitch_fired:
-                audit_cb("TWAP_EARLY_STOP",
-                         {"slice": idx, "reason": "kill_switch"})
+                audit_cb("TWAP_EARLY_STOP", {"slice": idx, "reason": "kill_switch"})
                 break
 
             # --- spacing between slices --------------------------------
@@ -92,8 +98,13 @@ class SmartTWAP(ExecutionAlgorithm):
 
             # --- submit current slice (potentially escalates) -----------
             rec, sz_filled, avg = self._execute_slice(
-                idx=idx, sz=sz, inst_id=inst_id, side=side, is_buy=is_buy,
-                client=client, algo_params=algo_params,
+                idx=idx,
+                sz=sz,
+                inst_id=inst_id,
+                side=side,
+                is_buy=is_buy,
+                client=client,
+                algo_params=algo_params,
                 escalate_sec=escalate_sec,
                 escalate_step_bps=escalate_step_bps,
                 escalate_max_bps=escalate_max_bps,
@@ -110,12 +121,10 @@ class SmartTWAP(ExecutionAlgorithm):
                 if filled_sum > 0 and decision_px > 0:
                     vwap_now = weighted_sum / filled_sum
                     cur_slip = (vwap_now - decision_px) / decision_px * 10000.0
-                fired, reason = kill_switch_cb(cur_slip,
-                                               {"slice": idx, "algo": "twap"})
+                fired, reason = kill_switch_cb(cur_slip, {"slice": idx, "algo": "twap"})
                 if fired:
                     killswitch_fired = True
-                    audit_cb("TWAP_KILL_SWITCH",
-                             {"reason": reason, "slip": cur_slip})
+                    audit_cb("TWAP_KILL_SWITCH", {"reason": reason, "slip": cur_slip})
 
         total_submitted = sum(c["sz_submitted"] for c in child_records)
         remaining = max(0.0, total_sz - filled_sum)
@@ -124,11 +133,17 @@ class SmartTWAP(ExecutionAlgorithm):
         if vwap is not None and decision_px > 0:
             slip_bps = (vwap - decision_px) / decision_px * 10000.0
 
-        audit_cb("TWAP_COMPLETE", {
-            "submitted": total_submitted, "filled": filled_sum,
-            "remaining": remaining, "vwap": vwap,
-            "slip_bps": slip_bps, "kill_switch": killswitch_fired,
-        })
+        audit_cb(
+            "TWAP_COMPLETE",
+            {
+                "submitted": total_submitted,
+                "filled": filled_sum,
+                "remaining": remaining,
+                "vwap": vwap,
+                "slip_bps": slip_bps,
+                "kill_switch": killswitch_fired,
+            },
+        )
 
         return AlgoRunResult(
             child_orders=child_records,
@@ -150,7 +165,7 @@ class SmartTWAP(ExecutionAlgorithm):
         avg = total / float(n)
         out: List[float] = []
         assigned = 0.0
-        for i in range(n - 1):
+        for i in range(n - 1):  # noqa: B007
             # rand() ∈ [-1, +1] so size ∈ avg * [1 - jitter, 1 + jitter]
             r = (random.random() * 2.0 - 1.0) if jitter_pct > 0 else 0.0
             sz = avg * (1.0 + r * float(jitter_pct))
@@ -163,15 +178,23 @@ class SmartTWAP(ExecutionAlgorithm):
 
     # ── slice execution with 3-tier escalation ────────────────────────
     def _execute_slice(
-        self, idx: int, sz: float, inst_id: str, side: str, is_buy: bool,
-        client: Any, algo_params: Dict[str, Any],
-        escalate_sec: float, escalate_step_bps: float,
-        escalate_max_bps: float, timeout_to_market: float,
+        self,
+        idx: int,
+        sz: float,
+        inst_id: str,
+        side: str,
+        is_buy: bool,
+        client: Any,
+        algo_params: Dict[str, Any],
+        escalate_sec: float,
+        escalate_step_bps: float,
+        escalate_max_bps: float,
+        timeout_to_market: float,
         audit_cb: Callable[..., Any],
     ) -> tuple[Dict[str, Any], float, Optional[float]]:
         ts_submit_base = int(time.time() * 1000)
         submitted_ts = time.time()
-        offset_bps = 0.0  # starts at touch
+        offset_bps = 0.0  # starts at touch  # noqa: F841
         tier = 0
         max_tiers = 3  # 0=touch, 1=+step, 2=+step+3, 3=market
         current_ord_id: Optional[str] = None
@@ -183,17 +206,19 @@ class SmartTWAP(ExecutionAlgorithm):
             if touch is None or touch <= 0:
                 # No touch at all → market.
                 return self._submit_market_slice(
-                    idx, sz, inst_id, side, client, ts_submit_base,
-                    audit_cb, "no_touch")
+                    idx, sz, inst_id, side, client, ts_submit_base, audit_cb, "no_touch"
+                )
 
             # Decide submission type & px for this tier.
             if tier >= max_tiers:
                 # Convert to market (timeout-to-market).
-                audit_cb("TWAP_TIMEOUT_TO_MARKET",
-                         {"slice": idx, "elapsed_sec": time.time() - submitted_ts})
+                audit_cb(
+                    "TWAP_TIMEOUT_TO_MARKET",
+                    {"slice": idx, "elapsed_sec": time.time() - submitted_ts},
+                )
                 return self._submit_market_slice(
-                    idx, sz, inst_id, side, client, ts_submit_base,
-                    audit_cb, "timeout")
+                    idx, sz, inst_id, side, client, ts_submit_base, audit_cb, "timeout"
+                )
 
             # Tier 1: +step, Tier 2: step+3 (cumulative total per TR).
             if tier == 0:
@@ -215,24 +240,34 @@ class SmartTWAP(ExecutionAlgorithm):
                     client.cancel_order(inst_id=inst_id, ord_id=current_ord_id)
                 except Exception:  # noqa: BLE001
                     pass
-                audit_cb(ESCALATION_AUDIT, {
-                    "slice": idx, "tier": tier, "old_ord": current_ord_id,
-                    "offset_bps": eff_offset,
-                })
+                audit_cb(
+                    ESCALATION_AUDIT,
+                    {
+                        "slice": idx,
+                        "tier": tier,
+                        "old_ord": current_ord_id,
+                        "offset_bps": eff_offset,
+                    },
+                )
 
             ord_type = "limit"
             placed = client.place_order(
-                inst_id=inst_id, side=side, ord_type=ord_type,
-                sz=sz, px=limit_px,
+                inst_id=inst_id,
+                side=side,
+                ord_type=ord_type,
+                sz=sz,
+                px=limit_px,
                 td_mode=algo_params.get("td_mode") or "isolated",
                 pos_side=algo_params.get("pos_side") or "net",
-                tag="tee_twap", reason="tee_twap_slice",
+                tag="tee_twap",
+                reason="tee_twap_slice",
                 leverage=algo_params.get("leverage"),
             )
             if not placed.get("ok"):
                 audit_cb("TWAP_PLACE_FAIL", {"slice": idx, "raw": placed})
-                return self._slice_result(idx, sz, 0.0, None, ord_type, limit_px,
-                                          ts_submit_base, None, tier)
+                return self._slice_result(
+                    idx, sz, 0.0, None, ord_type, limit_px, ts_submit_base, None, tier
+                )
 
             current_ord_id = placed.get("ord_id")
             current_px_submitted = float(limit_px)
@@ -246,23 +281,35 @@ class SmartTWAP(ExecutionAlgorithm):
             wait_max = max(0.0, timeout_to_market - global_elapsed)
             sleep_for = min(wait_tier_sec, wait_max)
             filled, avg, state = self._quick_poll_fill(
-                client, inst_id, current_ord_id,
+                client,
+                inst_id,
+                current_ord_id,
                 poll_count=max(1, int(sleep_for / max(0.2, sleep_for) or 1)),
                 sleep_sec_each=sleep_for,
             )
             if filled >= sz - 1e-9 or state in ("filled", "canceled"):
                 return self._slice_result(
-                    idx, sz, filled, avg if filled > 0 else None,
-                    "limit", current_px_submitted, ts_submit_base,
-                    current_ord_id, tier,
+                    idx,
+                    sz,
+                    filled,
+                    avg if filled > 0 else None,
+                    "limit",
+                    current_px_submitted,
+                    ts_submit_base,
+                    current_ord_id,
+                    tier,
                 )
             tier += 1
 
     # ── tiny per-slice helpers ────────────────────────────────────────
     @staticmethod
-    def _quick_poll_fill(client: Any, inst_id: str, ord_id: str,
-                         poll_count: int, sleep_sec_each: float,
-                         ) -> tuple[float, Optional[float], str]:
+    def _quick_poll_fill(
+        client: Any,
+        inst_id: str,
+        ord_id: str,
+        poll_count: int,
+        sleep_sec_each: float,
+    ) -> tuple[float, Optional[float], str]:
         """Sleep ``sleep_sec_each`` ONCE (blocking test hook), then do one
         single ``get_order`` poll — that's enough for unit tests that drive
         the clock via ``time.time()`` fake. Returns (filled_sz, avg_px, state)."""
@@ -281,28 +328,46 @@ class SmartTWAP(ExecutionAlgorithm):
             return 0.0, None, "error"
 
     def _submit_market_slice(
-        self, idx: int, sz: float, inst_id: str, side: str, client: Any,
-        ts_submit_ms: int, audit_cb: Callable[..., Any], reason: str,
+        self,
+        idx: int,
+        sz: float,
+        inst_id: str,
+        side: str,
+        client: Any,
+        ts_submit_ms: int,
+        audit_cb: Callable[..., Any],
+        reason: str,
     ) -> tuple[Dict[str, Any], float, Optional[float]]:
         placed = client.place_order(
-            inst_id=inst_id, side=side, ord_type="market", sz=sz,
-            tag="tee_twap_mkt", reason=f"tee_twap_timeout_{reason}",
+            inst_id=inst_id,
+            side=side,
+            ord_type="market",
+            sz=sz,
+            tag="tee_twap_mkt",
+            reason=f"tee_twap_timeout_{reason}",
         )
         ord_id = placed.get("ord_id")
-        audit_cb("TWAP_SLICE_MARKET_FALLBACK",
-                 {"slice": idx, "reason": reason, "ord_id": ord_id})
+        audit_cb("TWAP_SLICE_MARKET_FALLBACK", {"slice": idx, "reason": reason, "ord_id": ord_id})
         # Wait briefly for fill — paper fills instantly.
-        f, a, _ = self._quick_poll_fill(client, inst_id, ord_id or "",
-                                        poll_count=1, sleep_sec_each=0.0)
-        return self._slice_result(idx, sz, f, a if f > 0 else None,
-                                  "market", None, ts_submit_ms, ord_id, 3)
+        f, a, _ = self._quick_poll_fill(
+            client, inst_id, ord_id or "", poll_count=1, sleep_sec_each=0.0
+        )
+        return self._slice_result(
+            idx, sz, f, a if f > 0 else None, "market", None, ts_submit_ms, ord_id, 3
+        )
 
     @staticmethod
-    def _slice_result(idx: int, sz_sub: float, sz_filled: float,
-                      avg_px: Optional[float], ord_type: str,
-                      px_submitted: Optional[float], ts_sub_ms: int,
-                      ord_id: Optional[str], tier: int,
-                      ) -> tuple[Dict[str, Any], float, Optional[float]]:
+    def _slice_result(
+        idx: int,
+        sz_sub: float,
+        sz_filled: float,
+        avg_px: Optional[float],
+        ord_type: str,
+        px_submitted: Optional[float],
+        ts_sub_ms: int,
+        ord_id: Optional[str],
+        tier: int,
+    ) -> tuple[Dict[str, Any], float, Optional[float]]:
         rec = {
             "ord_id": ord_id,
             "slice_idx": idx,

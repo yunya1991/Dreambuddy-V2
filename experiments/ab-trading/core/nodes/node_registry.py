@@ -21,19 +21,20 @@
 - composite_node: 组合节点（包含多个子节点）
 """
 
-import time
 import threading
-from typing import Dict, List, Optional, Any, Set, Callable
+import time
 from dataclasses import dataclass, field
-
+from typing import Any, Callable, Dict, List, Optional, Set
 
 # ============================================================
 # 节点元数据
 # ============================================================
 
+
 @dataclass
 class IOSchema:
     """输入输出Schema定义"""
+
     required_fields: List[str] = field(default_factory=list)
     optional_fields: List[str] = field(default_factory=list)
     field_types: Dict[str, str] = field(default_factory=dict)
@@ -65,6 +66,7 @@ class IOSchema:
 @dataclass
 class NodeRetryPolicy:
     """节点重试策略"""
+
     enabled: bool = False
     max_retries: int = 3
     retry_on: List[str] = field(default_factory=lambda: ["timeout", "network_error"])
@@ -99,6 +101,7 @@ class NodeRetryPolicy:
 @dataclass
 class NodeFallbackPolicy:
     """节点降级策略"""
+
     enabled: bool = False
     fallback_node_id: Optional[str] = None
     fallback_type: str = "local"
@@ -131,6 +134,7 @@ class NodeInfo:
     细粒度：实际可执行的最小单元
     对应中粒度的 module_id，一个模块可生成多个节点变体
     """
+
     node_id: str
     name: str
     description: str = ""
@@ -243,6 +247,7 @@ class NodeInfo:
 # 节点注册表
 # ============================================================
 
+
 class NodeRegistry:
     """
     节点注册表
@@ -300,7 +305,7 @@ class NodeRegistry:
 
             if handler:
                 node.handler = handler
-                node.handler_name = getattr(handler, '__name__', str(handler))
+                node.handler_name = getattr(handler, "__name__", str(handler))
 
             self._nodes[node.node_id] = node
             self._index_node(node)
@@ -363,14 +368,16 @@ class NodeRegistry:
                 return len(self._nodes)
             return sum(1 for n in self._nodes.values() if not n.deprecated)
 
-    def query(self,
-              chain: Optional[str] = None,
-              module_id: Optional[str] = None,
-              category: Optional[str] = None,
-              node_type: Optional[str] = None,
-              tag: Optional[str] = None,
-              stage: Optional[str] = None,
-              active_only: bool = True) -> List[NodeInfo]:
+    def query(
+        self,
+        chain: Optional[str] = None,
+        module_id: Optional[str] = None,
+        category: Optional[str] = None,
+        node_type: Optional[str] = None,
+        tag: Optional[str] = None,
+        stage: Optional[str] = None,
+        active_only: bool = True,
+    ) -> List[NodeInfo]:
         """
         多条件查询节点
 
@@ -445,13 +452,13 @@ class NodeRegistry:
 
     def _module_to_node(self, mod: Any) -> NodeInfo:
         """将模块信息转换为节点信息"""
-        adapter_type = mod.adapter.get('type', 'local')
+        adapter_type = mod.adapter.get("type", "local")
         node_type_map = {
-            'skill': 'skill_node',
-            'api': 'api_node',
-            'local': 'local_node',
+            "skill": "skill_node",
+            "api": "api_node",
+            "local": "local_node",
         }
-        node_type = node_type_map.get(adapter_type, 'local_node')
+        node_type = node_type_map.get(adapter_type, "local_node")
 
         node = NodeInfo(
             node_id=mod.id,
@@ -471,13 +478,13 @@ class NodeRegistry:
             market_conditions=mod.market_conditions,
             tags=mod.tags,
             retry_policy=NodeRetryPolicy(
-                enabled=mod.fallback.get('enabled', False),
+                enabled=mod.fallback.get("enabled", False),
                 max_retries=2,
             ),
             fallback_policy=NodeFallbackPolicy(
-                enabled=mod.fallback.get('enabled', False),
-                fallback_node_id=mod.fallback.get('fallback_module'),
-                fallback_reason=mod.fallback.get('fallback_reason', ''),
+                enabled=mod.fallback.get("enabled", False),
+                fallback_node_id=mod.fallback.get("fallback_module"),
+                fallback_reason=mod.fallback.get("fallback_reason", ""),
             ),
         )
 
@@ -560,19 +567,28 @@ class NodeRegistry:
         """
         try:
             from .node_definitions import get_all_node_definitions
+
             definitions = get_all_node_definitions()
             for d in definitions:
                 try:
                     d = dict(d)  # 避免修改原始数据
-                    retry_cfg    = d.pop("retry_policy", None)
+                    retry_cfg = d.pop("retry_policy", None)
                     fallback_cfg = d.pop("fallback_policy", None)
-                    input_cfg    = d.pop("input_schema", None)
-                    output_cfg   = d.pop("output_schema", None)
+                    input_cfg = d.pop("input_schema", None)
+                    output_cfg = d.pop("output_schema", None)
                     valid_fields = set(NodeInfo.__dataclass_fields__.keys())
                     node = NodeInfo(
                         **{k: v for k, v in d.items() if k in valid_fields},
-                        retry_policy=NodeRetryPolicy(**retry_cfg) if isinstance(retry_cfg, dict) else NodeRetryPolicy(),
-                        fallback_policy=NodeFallbackPolicy.from_dict(fallback_cfg) if fallback_cfg else NodeFallbackPolicy(),
+                        retry_policy=(
+                            NodeRetryPolicy(**retry_cfg)
+                            if isinstance(retry_cfg, dict)
+                            else NodeRetryPolicy()
+                        ),
+                        fallback_policy=(
+                            NodeFallbackPolicy.from_dict(fallback_cfg)
+                            if fallback_cfg
+                            else NodeFallbackPolicy()
+                        ),
                         input_schema=IOSchema.from_dict(input_cfg),
                         output_schema=IOSchema.from_dict(output_cfg),
                     )

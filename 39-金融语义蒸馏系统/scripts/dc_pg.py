@@ -7,6 +7,7 @@
 
 FAIL-OPEN: PostgreSQL 不可达时返回空结果，不抛异常（由 DAL 实现保证）。
 """
+
 import os
 import sys
 
@@ -15,7 +16,7 @@ _DAL = os.path.join(_REPO, "19-数据访问层")
 if _DAL not in sys.path:
     sys.path.insert(0, _DAL)
 
-from dreambuddy_dal.implementations.postgres.datacenter_impl import DataCenterQueries
+from dreambuddy_dal.implementations.postgres.datacenter_impl import DataCenterQueries  # noqa: E402
 
 _impl = DataCenterQueries()
 

@@ -19,39 +19,40 @@
   ...
 """
 
+from dataclasses import dataclass
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass, field
-import warnings
-
 
 # 八卦对应的8种市场模式
 GUA_REGIME_MAP = {
-    "qian": "TREND_UP_STRONG",     # 乾 - 强趋势上涨
-    "kun": "RANGE_BOUND",          # 坤 - 震荡区间
-    "zhen": "BREAKOUT",            # 震 - 突破爆发
-    "xun": "TREND_UP_MILD",        # 巽 - 温和上涨
-    "kan": "VOLATILE_DROP",        # 坎 - 波动下跌
-    "li": "FOMO_RALLY",            # 离 - 狂热上涨
-    "gen": "CONSOLIDATION",        # 艮 - 横盘整理
-    "dui": "REVERSAL",             # 兑 - 转折反转
+    "qian": "TREND_UP_STRONG",  # 乾 - 强趋势上涨
+    "kun": "RANGE_BOUND",  # 坤 - 震荡区间
+    "zhen": "BREAKOUT",  # 震 - 突破爆发
+    "xun": "TREND_UP_MILD",  # 巽 - 温和上涨
+    "kan": "VOLATILE_DROP",  # 坎 - 波动下跌
+    "li": "FOMO_RALLY",  # 离 - 狂热上涨
+    "gen": "CONSOLIDATION",  # 艮 - 横盘整理
+    "dui": "REVERSAL",  # 兑 - 转折反转
 }
 
 REGIME_GUA_MAP = {v: k for k, v in GUA_REGIME_MAP.items()}
+
 
 # 8种市态的策略参数预设
 @dataclass
 class RegimeParams:
     """单种市态的策略参数"""
+
     regime_name: str = "CONSOLIDATION"
-    gua_name: str = "gen"          # 对应的八卦
-    gua_trigram: str = "☶"         # 卦符
+    gua_name: str = "gen"  # 对应的八卦
+    gua_trigram: str = "☶"  # 卦符
     gua_meaning: str = "艮为山，止而不动"  # 卦义
 
     # 交易开关
-    allow_long: bool = True        # 是否允许做多
-    allow_short: bool = True       # 是否允许做空
+    allow_long: bool = True  # 是否允许做多
+    allow_short: bool = True  # 是否允许做空
 
     # 置信度阈值 (越高越谨慎)
     long_conf_threshold: float = 0.40
@@ -72,81 +73,113 @@ class RegimeParams:
 DEFAULT_REGIME_PARAMS = {
     "TREND_UP_STRONG": RegimeParams(
         regime_name="TREND_UP_STRONG",
-        gua_name="qian", gua_trigram="☰",
+        gua_name="qian",
+        gua_trigram="☰",
         gua_meaning="乾为天，天行健，君子以自强不息",
-        allow_long=True, allow_short=False,  # 强趋势只做多
-        long_conf_threshold=0.35, short_conf_threshold=0.60,
-        tp_atr=4.0, sl_atr=1.5,  # 宽止盈紧止损
+        allow_long=True,
+        allow_short=False,  # 强趋势只做多
+        long_conf_threshold=0.35,
+        short_conf_threshold=0.60,
+        tp_atr=4.0,
+        sl_atr=1.5,  # 宽止盈紧止损
         max_hold_bars=80,
         position_factor=1.2,
     ),
     "RANGE_BOUND": RegimeParams(
         regime_name="RANGE_BOUND",
-        gua_name="kun", gua_trigram="☷",
+        gua_name="kun",
+        gua_trigram="☷",
         gua_meaning="坤为地，厚德载物，柔顺利贞",
-        allow_long=True, allow_short=True,
-        long_conf_threshold=0.45, short_conf_threshold=0.45,
-        tp_atr=2.0, sl_atr=2.0,  # 窄止盈，快进快出
+        allow_long=True,
+        allow_short=True,
+        long_conf_threshold=0.45,
+        short_conf_threshold=0.45,
+        tp_atr=2.0,
+        sl_atr=2.0,  # 窄止盈，快进快出
         max_hold_bars=30,
         position_factor=0.8,
     ),
     "BREAKOUT": RegimeParams(
         regime_name="BREAKOUT",
-        gua_name="zhen", gua_trigram="☳",
+        gua_name="zhen",
+        gua_trigram="☳",
         gua_meaning="震为雷，洊雷震，恐惧修省",
-        allow_long=True, allow_short=True,
-        long_conf_threshold=0.35, short_conf_threshold=0.35,
-        tp_atr=3.5, sl_atr=2.5,  # 突破波动大
+        allow_long=True,
+        allow_short=True,
+        long_conf_threshold=0.35,
+        short_conf_threshold=0.35,
+        tp_atr=3.5,
+        sl_atr=2.5,  # 突破波动大
         max_hold_bars=50,
         position_factor=1.0,
     ),
     "TREND_UP_MILD": RegimeParams(
         regime_name="TREND_UP_MILD",
-        gua_name="xun", gua_trigram="☴",
+        gua_name="xun",
+        gua_trigram="☴",
         gua_meaning="巽为风，随风巽，申命行事",
-        allow_long=True, allow_short=False,
-        long_conf_threshold=0.38, short_conf_threshold=0.55,
-        tp_atr=3.0, sl_atr=1.8,
+        allow_long=True,
+        allow_short=False,
+        long_conf_threshold=0.38,
+        short_conf_threshold=0.55,
+        tp_atr=3.0,
+        sl_atr=1.8,
         max_hold_bars=70,
         position_factor=1.0,
     ),
     "VOLATILE_DROP": RegimeParams(
         regime_name="VOLATILE_DROP",
-        gua_name="kan", gua_trigram="☵",
+        gua_name="kan",
+        gua_trigram="☵",
         gua_meaning="坎为水，习坎有孚，维心亨",
-        allow_long=False, allow_short=True,  # 下跌市只做空
-        long_conf_threshold=0.60, short_conf_threshold=0.35,
-        tp_atr=2.5, sl_atr=3.0,
+        allow_long=False,
+        allow_short=True,  # 下跌市只做空
+        long_conf_threshold=0.60,
+        short_conf_threshold=0.35,
+        tp_atr=2.5,
+        sl_atr=3.0,
         max_hold_bars=40,
         position_factor=0.8,
     ),
     "FOMO_RALLY": RegimeParams(
         regime_name="FOMO_RALLY",
-        gua_name="li", gua_trigram="☲",
+        gua_name="li",
+        gua_trigram="☲",
         gua_meaning="离为火，明两作离，继明照四方",
-        allow_long=True, allow_short=False,
-        long_conf_threshold=0.30, short_conf_threshold=0.65,
-        tp_atr=5.0, sl_atr=1.2,  # FOMO涨势猛
+        allow_long=True,
+        allow_short=False,
+        long_conf_threshold=0.30,
+        short_conf_threshold=0.65,
+        tp_atr=5.0,
+        sl_atr=1.2,  # FOMO涨势猛
         max_hold_bars=40,
         position_factor=1.5,
     ),
     "CONSOLIDATION": RegimeParams(
         regime_name="CONSOLIDATION",
-        gua_name="gen", gua_trigram="☶",
+        gua_name="gen",
+        gua_trigram="☶",
         gua_meaning="艮为山，兼山艮，思不出其位",
-        allow_long=True, allow_short=True,
-        long_conf_threshold=0.50, short_conf_threshold=0.50,
-        tp_atr=2.0, sl_atr=2.0,
+        allow_long=True,
+        allow_short=True,
+        long_conf_threshold=0.50,
+        short_conf_threshold=0.50,
+        tp_atr=2.0,
+        sl_atr=2.0,
         max_hold_bars=25,
         position_factor=0.5,  # 横盘降低仓位
     ),
     "REVERSAL": RegimeParams(
         regime_name="REVERSAL",
-        gua_name="dui", gua_trigram="☱",
+        gua_name="dui",
+        gua_trigram="☱",
         gua_meaning="兑为泽，丽泽兑，朋友讲习",
-        allow_long=True, allow_short=True,
-        long_conf_threshold=0.45, short_conf_threshold=0.45,
-        tp_atr=2.5, sl_atr=2.5,
+        allow_long=True,
+        allow_short=True,
+        long_conf_threshold=0.45,
+        short_conf_threshold=0.45,
+        tp_atr=2.5,
+        sl_atr=2.5,
         max_hold_bars=35,
         position_factor=0.7,
     ),
@@ -178,7 +211,7 @@ class MarketRegimeClassifier:
         self.lookback_bars = lookback_bars
 
         self._feature_stats = None  # z-score归一化统计量
-        self._gua_dimensions = []   # 八卦维度列表 (只含八卦，不含其他模块)
+        self._gua_dimensions = []  # 八卦维度列表 (只含八卦，不含其他模块)
 
     def fit(self, X: np.ndarray, feature_names: List[str]):
         """
@@ -195,9 +228,9 @@ class MarketRegimeClassifier:
 
         # 提取八卦维度 (排除cross_asset, classic_exp等非八卦模块)
         from .dialectical_ml_engine import GUA_DIMENSION_MAP
+
         self._gua_dimensions = [
-            g for g in self.feature_names_by_gua.keys()
-            if g in GUA_DIMENSION_MAP
+            g for g in self.feature_names_by_gua.keys() if g in GUA_DIMENSION_MAP
         ]
 
         # 计算各卦得分在训练集上的分布 (用于自适应阈值)
@@ -217,18 +250,20 @@ class MarketRegimeClassifier:
             if gua_scores[g]:
                 arr = np.array(gua_scores[g])
                 self._gua_percentiles[g] = {
-                    'p10': np.percentile(arr, 10),
-                    'p25': np.percentile(arr, 25),
-                    'p50': np.percentile(arr, 50),
-                    'p75': np.percentile(arr, 75),
-                    'p90': np.percentile(arr, 90),
-                    'mean': np.mean(arr),
-                    'std': np.std(arr),
+                    "p10": np.percentile(arr, 10),
+                    "p25": np.percentile(arr, 25),
+                    "p50": np.percentile(arr, 50),
+                    "p75": np.percentile(arr, 75),
+                    "p90": np.percentile(arr, 90),
+                    "mean": np.mean(arr),
+                    "std": np.std(arr),
                 }
 
         return self
 
-    def _compute_gua_activity(self, X_row: np.ndarray, feature_names: List[str]) -> Dict[str, float]:
+    def _compute_gua_activity(
+        self, X_row: np.ndarray, feature_names: List[str]
+    ) -> Dict[str, float]:
         """计算单根K线的8卦活跃度"""
         # z-score归一化
         if self._feature_stats is not None:
@@ -287,7 +322,7 @@ class MarketRegimeClassifier:
         regimes = np.zeros(n, dtype=int)
 
         # 获取各卦的百分位阈值
-        pct = self._gua_percentiles if hasattr(self, '_gua_percentiles') else {}
+        pct = self._gua_percentiles if hasattr(self, "_gua_percentiles") else {}
 
         def _th(gua, pct_key, default=0.0):
             if gua in pct and pct_key in pct[gua]:
@@ -295,46 +330,50 @@ class MarketRegimeClassifier:
             return default
 
         # 阈值 (基于z-score百分位)
-        qian_p75 = _th('qian', 'p75', 0.5)   # 乾卦75分位 = 强趋势
-        qian_p50 = _th('qian', 'p50', 0.2)   # 乾卦50分位 = 趋势
-        qian_p25 = _th('qian', 'p25', -0.2)  # 乾卦25分位 = 弱趋势
-        zhen_p75 = _th('zhen', 'p75', 0.5)   # 震卦75分位 = 强动量
-        zhen_p50 = _th('zhen', 'p50', 0.2)   # 震卦50分位 = 动量
-        xun_p75 = _th('xun', 'p75', 0.5)     # 巽卦75分位 = 高波动
-        xun_p50 = _th('xun', 'p50', 0.2)     # 巽卦50分位 = 中波动
-        dui_p50 = _th('dui', 'p50', 0.3)     # 兑卦50分位 = 多周期信号
-        kun_p50 = _th('kun', 'p50', 0.3)     # 坤卦50分位 = 支撑阻力
+        qian_p75 = _th("qian", "p75", 0.5)  # 乾卦75分位 = 强趋势
+        qian_p50 = _th("qian", "p50", 0.2)  # 乾卦50分位 = 趋势
+        qian_p25 = _th("qian", "p25", -0.2)  # 乾卦25分位 = 弱趋势  # noqa: F841
+        zhen_p75 = _th("zhen", "p75", 0.5)  # 震卦75分位 = 强动量
+        zhen_p50 = _th("zhen", "p50", 0.2)  # 震卦50分位 = 动量
+        xun_p75 = _th("xun", "p75", 0.5)  # 巽卦75分位 = 高波动
+        xun_p50 = _th("xun", "p50", 0.2)  # 巽卦50分位 = 中波动
+        dui_p50 = _th("dui", "p50", 0.3)  # 兑卦50分位 = 多周期信号
+        kun_p50 = _th("kun", "p50", 0.3)  # 坤卦50分位 = 支撑阻力
 
         for i in range(n):
             scores = self._compute_gua_scores(X[i], feature_names)
 
-            qian_s = scores.get('qian', 0.0)
-            zhen_s = scores.get('zhen', 0.0)
-            xun_s = scores.get('xun', 0.0)
-            dui_s = scores.get('dui', 0.0)
-            kun_s = scores.get('kun', 0.0)
-            gen_s = scores.get('gen', 0.0)
-            li_s = scores.get('li', 0.0)
+            qian_s = scores.get("qian", 0.0)
+            zhen_s = scores.get("zhen", 0.0)
+            xun_s = scores.get("xun", 0.0)
+            dui_s = scores.get("dui", 0.0)
+            kun_s = scores.get("kun", 0.0)
+            gen_s = scores.get("gen", 0.0)
+            li_s = scores.get("li", 0.0)  # noqa: F841
 
             # 波动率代理
             vol_proxy = abs(xun_s) + abs(gen_s) * 0.5
 
             # 趋势强度
-            trend_strength = qian_s + zhen_s * 0.3
+            trend_strength = qian_s + zhen_s * 0.3  # noqa: F841
 
             regime_code = 6  # 默认CONSOLIDATION(艮)
 
             # FOMO (离): 极强趋势 + 极强动量 + 高波动 (top 10%)
-            if qian_s > _th('qian', 'p90', 1.0) and zhen_s > _th('zhen', 'p90', 1.0) and vol_proxy > xun_p75:
+            if (
+                qian_s > _th("qian", "p90", 1.0)
+                and zhen_s > _th("zhen", "p90", 1.0)
+                and vol_proxy > xun_p75
+            ):
                 regime_code = 5  # FOMO_RALLY
             # 暴跌 (坎): 极弱趋势 + 高波动
-            elif qian_s < _th('qian', 'p10', -1.0) and vol_proxy > xun_p75:
+            elif qian_s < _th("qian", "p10", -1.0) and vol_proxy > xun_p75:
                 regime_code = 4  # VOLATILE_DROP
             # 突破 (震): 动量极强 (top 25%) + 波动率放大
             elif abs(zhen_s) > zhen_p75 and vol_proxy > xun_p50:
                 regime_code = 2  # BREAKOUT
             # 强趋势上涨 (乾): 趋势强 + 动量正 + 波动不极端
-            elif qian_s > qian_p75 and zhen_s > zhen_p50 and vol_proxy < _th('xun', 'p90', 1.5):
+            elif qian_s > qian_p75 and zhen_s > zhen_p50 and vol_proxy < _th("xun", "p90", 1.5):
                 regime_code = 0  # TREND_UP_STRONG
             # 温和上涨 (巽): 趋势正 + 动量正
             elif qian_s > qian_p50 and zhen_s > 0:
@@ -357,7 +396,7 @@ class MarketRegimeClassifier:
             window = self.lookback_bars
             for i in range(n):
                 start = max(0, i - window + 1)
-                window_vals = regimes[start:i+1]
+                window_vals = regimes[start : i + 1]
                 counts = np.bincount(window_vals.astype(int), minlength=8)
                 smoothed[i] = np.argmax(counts)
             regimes = smoothed
@@ -369,14 +408,14 @@ class MarketRegimeClassifier:
         regimes = self.predict(X, feature_names)
         # 编码 -> 名称映射 (与predict()中的编码一致)
         code_to_name = {
-            0: "TREND_UP_STRONG",   # 乾
-            1: "RANGE_BOUND",       # 坤
-            2: "BREAKOUT",          # 震
-            3: "TREND_UP_MILD",     # 巽
-            4: "VOLATILE_DROP",     # 坎
-            5: "FOMO_RALLY",        # 离
-            6: "CONSOLIDATION",     # 艮
-            7: "REVERSAL",          # 兑
+            0: "TREND_UP_STRONG",  # 乾
+            1: "RANGE_BOUND",  # 坤
+            2: "BREAKOUT",  # 震
+            3: "TREND_UP_MILD",  # 巽
+            4: "VOLATILE_DROP",  # 坎
+            5: "FOMO_RALLY",  # 离
+            6: "CONSOLIDATION",  # 艮
+            7: "REVERSAL",  # 兑
         }
         regime_names = [code_to_name.get(int(r), "CONSOLIDATION") for r in regimes]
         return regime_names
@@ -436,7 +475,7 @@ def classify_regime_by_price_action(df: pd.DataFrame) -> str:
     atr = atr_pct[last] if not np.isnan(atr_pct[last]) else 1.0
 
     # 近10根涨跌幅
-    ret_10 = (close[last] - close[max(0, last-10)]) / close[max(0, last-10)] * 100
+    ret_10 = (close[last] - close[max(0, last - 10)]) / close[max(0, last - 10)] * 100
 
     # FOMO判断: 短期涨幅大 + 波动率高 + 趋势向上
     if ret_10 > 10 and price_vs_ma > 2 and slope > 0:
@@ -456,7 +495,7 @@ def classify_regime_by_price_action(df: pd.DataFrame) -> str:
 
     # 转折 (斜率方向变化)
     if n > 30:
-        slope_prev = ma20_slope[last-10] if last-10 >= 0 else 0
+        slope_prev = ma20_slope[last - 10] if last - 10 >= 0 else 0
         if slope_prev < 0 and slope > 0:
             return "REVERSAL"
         if slope_prev > 0 and slope < 0:
@@ -628,11 +667,16 @@ def synthesize_macro_proxy_from_ohlcv(
     n_total = len(df)
     if n_total == 0:
         return {
-            "liq_panic_score_0_to_1": 0.0, "liq_regime_hint": None,
-            "btc_atm_iv_pct": 0.0, "btc_option_iv_level": "LOW",
-            "btc_option_pc_skew_25d_pct": 0.0, "btc_option_skew_sentiment": None,
-            "btc_option_skew_interpret": None, "btc_options_regime_hint": None,
-            "top_ls_ratio_pct": None, "_provenance": "ohlcv_proxy_v1",
+            "liq_panic_score_0_to_1": 0.0,
+            "liq_regime_hint": None,
+            "btc_atm_iv_pct": 0.0,
+            "btc_option_iv_level": "LOW",
+            "btc_option_pc_skew_25d_pct": 0.0,
+            "btc_option_skew_sentiment": None,
+            "btc_option_skew_interpret": None,
+            "btc_options_regime_hint": None,
+            "top_ls_ratio_pct": None,
+            "_provenance": "ohlcv_proxy_v1",
         }
     if bar_idx < 0:
         bar_idx = n_total + bar_idx
@@ -642,16 +686,21 @@ def synthesize_macro_proxy_from_ohlcv(
 
     opens = sub["open"].to_numpy(dtype=float)
     highs = sub["high"].to_numpy(dtype=float)
-    lows  = sub["low"].to_numpy(dtype=float)
+    lows = sub["low"].to_numpy(dtype=float)
     closes = sub["close"].to_numpy(dtype=float)
-    vols  = sub["volume"].to_numpy(dtype=float)
+    vols = sub["volume"].to_numpy(dtype=float)
 
     EMPTY = {
-        "liq_panic_score_0_to_1": 0.0, "liq_regime_hint": None,
-        "btc_atm_iv_pct": 0.0, "btc_option_iv_level": "LOW",
-        "btc_option_pc_skew_25d_pct": 0.0, "btc_option_skew_sentiment": None,
-        "btc_option_skew_interpret": None, "btc_options_regime_hint": None,
-        "top_ls_ratio_pct": None, "_provenance": "ohlcv_proxy_v1",
+        "liq_panic_score_0_to_1": 0.0,
+        "liq_regime_hint": None,
+        "btc_atm_iv_pct": 0.0,
+        "btc_option_iv_level": "LOW",
+        "btc_option_pc_skew_25d_pct": 0.0,
+        "btc_option_skew_sentiment": None,
+        "btc_option_skew_interpret": None,
+        "btc_options_regime_hint": None,
+        "top_ls_ratio_pct": None,
+        "_provenance": "ohlcv_proxy_v1",
     }
 
     MIN_RELIABLE = 20
@@ -693,7 +742,7 @@ def synthesize_macro_proxy_from_ohlcv(
 
     # D1 hint：根据 panic + 连续实体方向组合推断
     liq_regime_hint: Optional[str] = None
-    tail_direction = np.sign(bodies[-min(6, n):])  # +1 阳, -1 阴
+    tail_direction = np.sign(bodies[-min(6, n) :])  # +1 阳, -1 阴
     if liq_panic >= 0.70 and cascade_count >= 3:
         if np.mean(tail_direction) <= -0.4:  # 连阴
             liq_regime_hint = "VOLATILE_DROP"
@@ -718,8 +767,10 @@ def synthesize_macro_proxy_from_ohlcv(
     # ===================================================================
     close_s = pd.Series(closes)
     ema20 = close_s.ewm(span=20, min_periods=8).mean().to_numpy()
-    ema60 = close_s.ewm(span=60, min_periods=20).mean().to_numpy() if n >= 30 else (
-        close_s.ewm(span=min(60, max(20, n // 2)), min_periods=10).mean().to_numpy()
+    ema60 = (
+        close_s.ewm(span=60, min_periods=20).mean().to_numpy()
+        if n >= 30
+        else (close_s.ewm(span=min(60, max(20, n // 2)), min_periods=10).mean().to_numpy())
     )
     spread_ema = (ema20 - ema60) / np.maximum(ema60, 1e-9)
     # zscore of spread_ema（within lookback window）
@@ -728,24 +779,36 @@ def synthesize_macro_proxy_from_ohlcv(
     if spread_std <= 1e-9:
         slope_z = 0.0
     else:
-        slope_z = float(np.clip((spread_ema[-1] - spread_mean) / spread_std, -2.5, 2.5)) / 2.5  # 归一到 -1..1
+        slope_z = (
+            float(np.clip((spread_ema[-1] - spread_mean) / spread_std, -2.5, 2.5)) / 2.5
+        )  # 归一到 -1..1
 
     # 最近 3bar 平均实体方向（红=跌=PUT 保护需求=正 skew）
-    tail3_bodies = bodies[-min(3, n):]
-    body_dir_avg = float(np.mean(
-        np.clip(tail3_bodies / np.maximum(np.abs(opens[-min(3, n):]), 1e-9) /
-                np.clip(atr_pct[-min(3, n):], 1e-4, None), -1.0, 1.0)
-    )) if min(3, n) >= 2 else 0.0
+    tail3_bodies = bodies[-min(3, n) :]
+    body_dir_avg = (
+        float(
+            np.mean(
+                np.clip(
+                    tail3_bodies
+                    / np.maximum(np.abs(opens[-min(3, n) :]), 1e-9)
+                    / np.clip(atr_pct[-min(3, n) :], 1e-4, None),
+                    -1.0,
+                    1.0,
+                )
+            )
+        )
+        if min(3, n) >= 2
+        else 0.0
+    )
 
     # skew_25d: +1 = 极恐慌 PUT 拥挤, -1 = 极贪婪 CALL 拥挤
     pc_skew_25d = float(np.clip(0.55 * (-slope_z) + 0.45 * (-body_dir_avg), -1.0, 1.0))
 
     # Interpretation（与 FMF._interpret_option_skew 口径一致）
     iv_tier = (
-        "LOW" if atm_iv_pct < 0.33
-        else "NORMAL" if atm_iv_pct < 0.66
-        else "HIGH" if atm_iv_pct < 0.85
-        else "EXTREME"
+        "LOW"
+        if atm_iv_pct < 0.33
+        else "NORMAL" if atm_iv_pct < 0.66 else "HIGH" if atm_iv_pct < 0.85 else "EXTREME"
     )
     skew_sentiment = None
     skew_interpret = None
@@ -770,15 +833,26 @@ def synthesize_macro_proxy_from_ohlcv(
     # D4 — TopTrader Long/Short ratio proxy（价格相对均线偏离 → 多空占比 proxy）
     # ===================================================================
     ma20 = close_s.rolling(20, min_periods=10).mean().to_numpy()
-    ma60 = close_s.rolling(60, min_periods=20).mean().to_numpy() if n >= 30 else (
-        close_s.rolling(min(60, max(15, n // 2)), min_periods=10).mean().to_numpy()
+    ma60 = (
+        close_s.rolling(60, min_periods=20).mean().to_numpy()
+        if n >= 30
+        else (close_s.rolling(min(60, max(15, n // 2)), min_periods=10).mean().to_numpy())
     )
     dev20 = (closes[-1] - ma20[-1]) / max(ma20[-1], 1e-9)
     dev60 = (closes[-1] - ma60[-1]) / max(ma60[-1], 1e-9) if not np.isnan(ma60[-1]) else dev20
     # sigmoid(-2..+2) → [0.1..0.9]：+正偏差=多头强→ls ratio 大
-    ls_proxy = float(np.clip(0.5 + 0.35 * (0.6 * dev20 / max(atr_pct[-1], 1e-4) / 4.0
-                                           + 0.4 * dev60 / max(float(np.nanmean(atr_pct) or atr_pct[-1]), 1e-4) / 4.0),
-                             0.0, 1.0))
+    ls_proxy = float(
+        np.clip(
+            0.5
+            + 0.35
+            * (
+                0.6 * dev20 / max(atr_pct[-1], 1e-4) / 4.0
+                + 0.4 * dev60 / max(float(np.nanmean(atr_pct) or atr_pct[-1]), 1e-4) / 4.0
+            ),
+            0.0,
+            1.0,
+        )
+    )
     top_ls_ratio_pct: Optional[float] = ls_proxy if n >= MIN_RELIABLE else None
 
     return {

@@ -12,6 +12,7 @@ Spec: .trae/documents/pons_river_evolution_fix_spec.md 缺陷C (P0)
 TDD 红: _p2_s4b_compute_sltp 方法不存在 → AttributeError → RED
 TDD 绿: 实现方法，SL≥8%，_enforce_sl_price_floor 被调用 → GREEN
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -29,6 +30,7 @@ class TestP2S4bSLFloorEnforced:
     def trader(self):
         """轻量 PollingTrader 实例（参考 test_verify_algo_sltp.py 模式）."""
         from polling_trader import PollingTrader
+
         t = PollingTrader.__new__(PollingTrader)
         t.okx_client = MagicMock()
         t._log = MagicMock()
@@ -42,8 +44,7 @@ class TestP2S4bSLFloorEnforced:
         """
         _last_kd = {"atr_pct": 0.005, "regime": "trend_up"}
         sl_px, tp_px, sl_pct, tp_pct = trader._p2_s4b_compute_sltp(
-            tier="probe", action="long", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="probe", action="long", entry_px=100.0, source_tag="evolution", _last_kd=_last_kd
         )
         # SL 下限 8%（不是 4%）
         assert sl_pct >= 0.08, f"probe SL 下限应 ≥8%, 实际 {sl_pct}"
@@ -52,8 +53,11 @@ class TestP2S4bSLFloorEnforced:
         """standard tier SL 下限 ≥ 8%."""
         _last_kd = {"atr_pct": 0.005, "regime": "trend_up"}
         sl_px, tp_px, sl_pct, tp_pct = trader._p2_s4b_compute_sltp(
-            tier="standard", action="long", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="standard",
+            action="long",
+            entry_px=100.0,
+            source_tag="evolution",
+            _last_kd=_last_kd,
         )
         assert sl_pct >= 0.08, f"standard SL 下限应 ≥8%, 实际 {sl_pct}"
 
@@ -61,8 +65,7 @@ class TestP2S4bSLFloorEnforced:
         """trend tier SL 下限 ≥ 8%."""
         _last_kd = {"atr_pct": 0.005, "regime": "trend_up"}
         sl_px, tp_px, sl_pct, tp_pct = trader._p2_s4b_compute_sltp(
-            tier="trend", action="long", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="trend", action="long", entry_px=100.0, source_tag="evolution", _last_kd=_last_kd
         )
         assert sl_pct >= 0.08, f"trend SL 下限应 ≥8%, 实际 {sl_pct}"
 
@@ -73,38 +76,55 @@ class TestP2S4bSLFloorEnforced:
         """
         _last_kd = {"atr_pct": 0.001, "regime": "trend_up"}
         sl_px, tp_px, sl_pct, tp_pct = trader._p2_s4b_compute_sltp(
-            tier="probe", action="long", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="probe", action="long", entry_px=100.0, source_tag="evolution", _last_kd=_last_kd
         )
         assert sl_pct >= 0.08, f"低 ATR 时 SL 应兜底到 8%, 实际 {sl_pct}"
 
     def test_enforce_sl_price_floor_called(self, trader):
         """_enforce_sl_price_floor 必须被调用（与 L4359/L4780/L9957 对齐）."""
         trader._enforce_sl_price_floor = MagicMock(
-            return_value=(92.0, True, 0.04, {"liq_conflict": False, "spacing_clamped": True, "warn_leverage": False})
+            return_value=(
+                92.0,
+                True,
+                0.04,
+                {"liq_conflict": False, "spacing_clamped": True, "warn_leverage": False},
+            )
         )
         trader._enforce_tp_price_floor = MagicMock(
-            return_value=(106.0, False, 0.06, {"liq_conflict": False, "spacing_clamped": False, "warn_leverage": False})
+            return_value=(
+                106.0,
+                False,
+                0.06,
+                {"liq_conflict": False, "spacing_clamped": False, "warn_leverage": False},
+            )
         )
         _last_kd = {"atr_pct": 0.02, "regime": "trend_up"}
         trader._p2_s4b_compute_sltp(
-            tier="probe", action="long", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="probe", action="long", entry_px=100.0, source_tag="evolution", _last_kd=_last_kd
         )
         assert trader._enforce_sl_price_floor.called, "_enforce_sl_price_floor 必须被调用"
 
     def test_enforce_tp_price_floor_called(self, trader):
         """_enforce_tp_price_floor 必须被调用."""
         trader._enforce_sl_price_floor = MagicMock(
-            return_value=(92.0, True, 0.04, {"liq_conflict": False, "spacing_clamped": True, "warn_leverage": False})
+            return_value=(
+                92.0,
+                True,
+                0.04,
+                {"liq_conflict": False, "spacing_clamped": True, "warn_leverage": False},
+            )
         )
         trader._enforce_tp_price_floor = MagicMock(
-            return_value=(106.0, False, 0.06, {"liq_conflict": False, "spacing_clamped": False, "warn_leverage": False})
+            return_value=(
+                106.0,
+                False,
+                0.06,
+                {"liq_conflict": False, "spacing_clamped": False, "warn_leverage": False},
+            )
         )
         _last_kd = {"atr_pct": 0.02, "regime": "trend_up"}
         trader._p2_s4b_compute_sltp(
-            tier="probe", action="long", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="probe", action="long", entry_px=100.0, source_tag="evolution", _last_kd=_last_kd
         )
         assert trader._enforce_tp_price_floor.called, "_enforce_tp_price_floor 必须被调用"
 
@@ -115,8 +135,11 @@ class TestP2S4bSLFloorEnforced:
         """
         _last_kd = {"atr_pct": 0.005, "regime": "trend_up"}
         sl_px, tp_px, sl_pct, tp_pct = trader._p2_s4b_compute_sltp(
-            tier="probe", action="long", entry_px=100.0,
-            source_tag="event_arbitrage", _last_kd=_last_kd
+            tier="probe",
+            action="long",
+            entry_px=100.0,
+            source_tag="event_arbitrage",
+            _last_kd=_last_kd,
         )
         assert sl_pct >= 0.05, f"event_arbitrage SL 应 ≥5%（ABS_HARD_SL_PCT）, 实际 {sl_pct}"
 
@@ -124,8 +147,7 @@ class TestP2S4bSLFloorEnforced:
         """SHORT 方向 SL 门禁也生效."""
         _last_kd = {"atr_pct": 0.005, "regime": "trend_up"}
         sl_px, tp_px, sl_pct, tp_pct = trader._p2_s4b_compute_sltp(
-            tier="probe", action="short", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="probe", action="short", entry_px=100.0, source_tag="evolution", _last_kd=_last_kd
         )
         assert sl_pct >= 0.08, f"SHORT SL 下限应 ≥8%, 实际 {sl_pct}"
         # SHORT: SL 价格 > entry（止损在上方）
@@ -135,8 +157,8 @@ class TestP2S4bSLFloorEnforced:
         """返回值必须是 (sl_px, tp_px, sl_pct, tp_pct) 四元组."""
         _last_kd = {"atr_pct": 0.02, "regime": "trend_up"}
         result = trader._p2_s4b_compute_sltp(
-            tier="probe", action="long", entry_px=100.0,
-            source_tag="evolution", _last_kd=_last_kd
+            tier="probe", action="long", entry_px=100.0, source_tag="evolution", _last_kd=_last_kd
         )
-        assert isinstance(result, tuple) and len(result) == 4, \
-            f"返回值应为 4-tuple, 实际 {type(result)}"
+        assert (
+            isinstance(result, tuple) and len(result) == 4
+        ), f"返回值应为 4-tuple, 实际 {type(result)}"

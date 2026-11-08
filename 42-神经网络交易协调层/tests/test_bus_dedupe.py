@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 """同源同标取最新（source+symbol 唯一）契约测试。"""
 
-import json
+import json  # noqa: I001
 import os
 import sys
 from datetime import datetime, timedelta, timezone
-
-import pytest
 
 _42_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _42_ROOT not in sys.path:

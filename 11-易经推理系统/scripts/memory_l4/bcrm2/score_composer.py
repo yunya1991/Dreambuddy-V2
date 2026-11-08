@@ -13,6 +13,7 @@
                     ③ close 突破前高 → +0.34 (累计 +1.0)
        - 熊市反转同理（-1.0）
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -20,7 +21,6 @@ from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
-
 from bcrm2.indicators import _detect_swings
 
 __all__ = ["ScoreComposer", "DEFAULT_LEVEL_WEIGHTS", "DEFAULT_TREND_WEIGHTS"]
@@ -29,6 +29,7 @@ __all__ = ["ScoreComposer", "DEFAULT_LEVEL_WEIGHTS", "DEFAULT_TREND_WEIGHTS"]
 # ================================================================
 # 模块级辅助函数
 # ================================================================
+
 
 def _trend_line_val(x1: float, y1: float, x2: float, y2: float, x: float) -> float:
     """线性外推：通过 (x1,y1) 和 (x2,y2) 的直线在 x 处的值。
@@ -48,26 +49,27 @@ def _trend_line_val(x1: float, y1: float, x2: float, y2: float, x: float) -> flo
 # Level 6 指标（L1..L6），对应 contribution 值为 indicators 中 key 的值本身，
 # 因为 indicators 已经做了 ± 映射，权重仅对大小归一化。
 DEFAULT_LEVEL_WEIGHTS: Dict[str, float] = {
-    "ma200_above_3d":      2.0,   # L1 → ±1
-    "ma50_above":          1.0,   # L2 → ±0.5  → 权重 1 对应总贡献 ±0.5
-    "ma20_vs_ma50_order":  1.0,   # L3 → ±0.5
-    "cycle_position_365d": 1.2,   # L4 → ±0.5
-    "ma_alignment_score":  1.5,   # L5 → ±1.0（限幅后）
-    "ma200_slope_signed":  1.0,   # L6 → ±0.5
+    "ma200_above_3d": 2.0,  # L1 → ±1
+    "ma50_above": 1.0,  # L2 → ±0.5  → 权重 1 对应总贡献 ±0.5
+    "ma20_vs_ma50_order": 1.0,  # L3 → ±0.5
+    "cycle_position_365d": 1.2,  # L4 → ±0.5
+    "ma_alignment_score": 1.5,  # L5 → ±1.0（限幅后）
+    "ma200_slope_signed": 1.0,  # L6 → ±0.5
 }
 
 DEFAULT_TREND_WEIGHTS: Dict[str, float] = {
-    "dow_hhhl_score":      2.0,   # T1 → ±2
-    "log_ret_90d":         1.5,   # T2 → ±1
-    "log_ret_30d":         1.0,   # T3 → ±0.5
-    "ma_slope_wavg":       1.2,   # T4 → ±1（tanh 后）
-    "volume_trend_conf":   1.0,   # T5 → ±0.5
+    "dow_hhhl_score": 2.0,  # T1 → ±2
+    "log_ret_90d": 1.5,  # T2 → ±1
+    "log_ret_30d": 1.0,  # T3 → ±0.5
+    "ma_slope_wavg": 1.2,  # T4 → ±1（tanh 后）
+    "volume_trend_conf": 1.0,  # T5 → ±0.5
 }
 
 
 # ================================================================
 # 主类
 # ================================================================
+
 
 @dataclass
 class ScoreComposer:
@@ -79,9 +81,9 @@ class ScoreComposer:
     # 钳制超参（Spec §2.4 规则 1）
     #   选取保守默认值以确保真实 BTC 全样本 |ΔL+ΔT| p99 ≤ 1.0：
     #     常规日 0.4+0.4=0.8 / 放量 0.48+0.48=0.96 / 极端日 0.7+0.7=1.4（仅 <1% 样本触发）
-    max_daily_delta: float = 0.4       # 常规日 |Δ| 上限
-    extreme_threshold: float = 0.08    # 日涨跌幅≥8% → 视为极端日
-    extreme_delta: float = 0.7         # 极端日 |Δ| 上限
+    max_daily_delta: float = 0.4  # 常规日 |Δ| 上限
+    extreme_threshold: float = 0.08  # 日涨跌幅≥8% → 视为极端日
+    extreme_delta: float = 0.7  # 极端日 |Δ| 上限
     volume_amplify_ratio: float = 1.5  # 量能放量 ≥ 1.5 再放宽 1.2 倍
 
     # 9 格扩展倍数：归一化合成 × grid_scale 得到 [-4, +4] 区间
@@ -96,12 +98,17 @@ class ScoreComposer:
     sperandeo_swing_window: int = 5
 
     # ===== 公共 API =====
-    def compose(self, indicators: Dict[str, pd.Series],
-                df: pd.DataFrame) -> Tuple[pd.Series, pd.Series]:
+    def compose(
+        self, indicators: Dict[str, pd.Series], df: pd.DataFrame
+    ) -> Tuple[pd.Series, pd.Series]:
         """返回 (level_series, trend_series)，长度与 df.index 对齐。"""
         close = df["close"] if "close" in df.columns else pd.Series(df.iloc[:, -1], index=df.index)
         close = close.astype(float)
-        volume = df["volume"].astype(float) if "volume" in df.columns else pd.Series(1.0, index=close.index)
+        volume = (
+            df["volume"].astype(float)
+            if "volume" in df.columns
+            else pd.Series(1.0, index=close.index)
+        )
         high = df["high"].astype(float) if "high" in df.columns else close * 1.001
         low = df["low"].astype(float) if "low" in df.columns else close * 0.999
 
@@ -113,10 +120,12 @@ class ScoreComposer:
         level_unbound = self._weighted_sum(indicators, self.level_weights) * self.grid_scale
         trend_unbound = self._weighted_sum(indicators, self.trend_weights) * self.grid_scale
         # 钳制到 [-4, +4] 作为 raw
-        level_raw = np.clip(np.asarray(level_unbound, dtype=float),
-                            -self.grid_scale, self.grid_scale)
-        trend_raw = np.clip(np.asarray(trend_unbound, dtype=float),
-                            -self.grid_scale, self.grid_scale)
+        level_raw = np.clip(
+            np.asarray(level_unbound, dtype=float), -self.grid_scale, self.grid_scale
+        )
+        trend_raw = np.clip(
+            np.asarray(trend_unbound, dtype=float), -self.grid_scale, self.grid_scale
+        )
 
         # step 3: 每日 clamp_delta（序列连续化）
         level_smooth = np.empty(n, dtype=float)
@@ -125,7 +134,9 @@ class ScoreComposer:
         # 前置：日收益 & 量能 ratio（20 日均量）
         pct_change_arr = close.pct_change().fillna(0.0).values.astype(float)
         vol_ma20 = volume.rolling(20, min_periods=10).mean().replace(0, np.nan).fillna(1.0)
-        vol_ratio_arr = (volume / vol_ma20).replace([np.inf, -np.inf], np.nan).fillna(1.0).values.astype(float)
+        vol_ratio_arr = (
+            (volume / vol_ma20).replace([np.inf, -np.inf], np.nan).fillna(1.0).values.astype(float)
+        )
 
         L_prev = float(np.nan_to_num(level_raw[0], nan=0.0))
         T_prev = float(np.nan_to_num(trend_raw[0], nan=0.0))
@@ -164,18 +175,22 @@ class ScoreComposer:
         #   在 clamp_delta 之后叠加，仅调整 trend_smooth，不影响 level_smooth
         if self.sperandeo_enabled:
             trend_smooth = self.apply_sperandeo_adjustment(
-                level_smooth, trend_smooth,
-                high.values, low.values, close.values,
+                level_smooth,
+                trend_smooth,
+                high.values,
+                low.values,
+                close.values,
                 swing_window=self.sperandeo_swing_window,
             )
 
-        return (pd.Series(level_smooth, index=close.index),
-                pd.Series(trend_smooth, index=close.index))
+        return (
+            pd.Series(level_smooth, index=close.index),
+            pd.Series(trend_smooth, index=close.index),
+        )
 
     # ===== 内部 =====
     @staticmethod
-    def _weighted_sum(indicators: Dict[str, pd.Series],
-                      weights: Dict[str, float]) -> np.ndarray:
+    def _weighted_sum(indicators: Dict[str, pd.Series], weights: Dict[str, float]) -> np.ndarray:
         """Σ w_i * x_i / Σ w_i。缺失指标用 0 填充。"""
         keys = list(weights.keys())
         if not keys:
@@ -245,13 +260,13 @@ class ScoreComposer:
         adj = np.zeros(n, dtype=float)
 
         # 状态机
-        SCANNING = 0        # 扫描：寻找两个下降 SH（牛市）或两个上升 SL（熊市）
-        WAIT_BREAKOUT = 1   # 等待 close 突破趋势线（条件①）
-        WAIT_PULLBACK = 2   # 等待回撤不破前低/前高（条件②）
+        SCANNING = 0  # 扫描：寻找两个下降 SH（牛市）或两个上升 SL（熊市）
+        WAIT_BREAKOUT = 1  # 等待 close 突破趋势线（条件①）
+        WAIT_PULLBACK = 2  # 等待回撤不破前低/前高（条件②）
         WAIT_NEW_EXTREME = 3  # 等待 close 突破前高/前低（条件③）
 
         state = SCANNING
-        direction = 0       # +1 = 牛市反转, -1 = 熊市反转
+        direction = 0  # +1 = 牛市反转, -1 = 熊市反转
 
         # 趋势线两点 (bar, price)：牛市用 SH_prev/SH_last，熊市用 SL_prev/SL_last
         tl_a_bar, tl_a_price = -1, 0.0
@@ -308,9 +323,7 @@ class ScoreComposer:
 
             elif state == WAIT_BREAKOUT:
                 # 计算趋势线在当前 bar 的值
-                tl_val = _trend_line_val(
-                    tl_a_bar, tl_a_price, tl_b_bar, tl_b_price, i
-                )
+                tl_val = _trend_line_val(tl_a_bar, tl_a_price, tl_b_bar, tl_b_price, i)
                 if direction == 1 and close_arr[i] > tl_val:
                     # 牛市条件①：close 突破下降趋势线
                     current_adj = 0.33

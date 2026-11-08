@@ -1,9 +1,9 @@
 """test_cognitive_bridge.py — CognitiveBridge 单元测试
 覆盖: recall_similar, record_trade, verify_prediction, record_ripple, enabled=False FO
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
+
 
 from dreambuddy_evolution.adapters.cognitive_bridge import CognitiveBridge
 
@@ -17,11 +17,23 @@ class MockCognitiveLoopEntry:
 
     def recall(self, context, top_k=5, min_quality="C"):
         return [
-            {"id": "VM-001", "content": "[trade] TP profit=0.05", "score": 0.85, "quality_level": "A"},
-            {"id": "VM-002", "content": "[trade] SL loss=-0.03", "score": 0.70, "quality_level": "B"},
+            {
+                "id": "VM-001",
+                "content": "[trade] TP profit=0.05",
+                "score": 0.85,
+                "quality_level": "A",
+            },
+            {
+                "id": "VM-002",
+                "content": "[trade] SL loss=-0.03",
+                "score": 0.70,
+                "quality_level": "B",
+            },
         ]
 
-    def record(self, content, quality_level="C", confidence=0.3, tags=None, source="trae", **kwargs):
+    def record(
+        self, content, quality_level="C", confidence=0.3, tags=None, source="trae", **kwargs
+    ):
         mid = f"VM-{len(self.records)}"
         self.records.append({"id": mid, "content": content})
         return mid
@@ -60,6 +72,7 @@ class TestCognitiveBridge:
 
     def test_recall_empty(self):
         """认知库无结果 → 中性降级"""
+
         class EmptyEntry:
             def recall(self, *a, **kw):
                 return []
@@ -95,11 +108,14 @@ class TestCognitiveBridge:
         """record_ripple 记录涟漪原型"""
         bridge = CognitiveBridge(enabled=True)
         bridge._entry = MockCognitiveLoopEntry()
-        mid = bridge.record_ripple({
-            "symbol": "BTC", "ri": 0.78,
-            "r_vector": {"R_up": 0.3, "R_down": 0.7},
-            "duration_hours": 25,
-        })
+        mid = bridge.record_ripple(
+            {
+                "symbol": "BTC",
+                "ri": 0.78,
+                "r_vector": {"R_up": 0.3, "R_down": 0.7},
+                "duration_hours": 25,
+            }
+        )
         assert mid is not None
         assert "ripple" in bridge._entry.records[0]["content"]
 

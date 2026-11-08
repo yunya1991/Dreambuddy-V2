@@ -20,6 +20,7 @@ test_uncertainty_meta_cognition — Phase 5.1 + 5.2 集成测试
   集成：
     - UncertaintyQuantifier → MetaCognitionGate 端到端
 """
+
 import sys
 from pathlib import Path
 
@@ -30,8 +31,8 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.uncertainty_quantifier import UncertaintyQuantifier
-from dreambuddy_evolution.engines.meta_cognition_gate import MetaCognitionGate
+from dreambuddy_evolution.core.uncertainty_quantifier import UncertaintyQuantifier  # noqa: E402
+from dreambuddy_evolution.engines.meta_cognition_gate import MetaCognitionGate  # noqa: E402
 
 
 # ==================================================================
@@ -282,7 +283,7 @@ class TestIntegration:
 
     def test_critical_uncertainty_rejects_trade(self):
         """高不确定性 → 拒开仓"""
-        uq = UncertaintyQuantifier()
+        uq = UncertaintyQuantifier()  # noqa: F841
         gate = MetaCognitionGate()
         # 模拟高不确定性
         decision = gate.gate_decision(

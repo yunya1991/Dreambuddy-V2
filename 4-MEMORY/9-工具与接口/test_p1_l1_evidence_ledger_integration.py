@@ -15,14 +15,13 @@ RED 契约：
   - prepare_record_params() 返回 evidence_entries 字段
   - 每个 evidence_entry 可被 evidence_ledger.append() 接受
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import sys
 from pathlib import Path
 from unittest.mock import patch
-
-import pytest
 
 # 添加同目录到路径
 _SCRIPT_DIR = Path(__file__).parent
@@ -37,6 +36,7 @@ if str(_REA_CORE_DIR) not in sys.path:
 
 # ─────────────────────────────── P1-L1-1: record 接入 Evidence Ledger ───────────────────────────────
 
+
 def test_record_appends_to_evidence_ledger(tmp_path):
     """RED: record() 后 Evidence Ledger 中有对应条目。
 
@@ -47,6 +47,7 @@ def test_record_appends_to_evidence_ledger(tmp_path):
       - receipt_hash 非空（Merkle 叶子哈希）
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         memory_id = cle.record(
@@ -70,17 +71,20 @@ def test_record_appends_to_evidence_ledger(tmp_path):
 
 def test_handle_record_returns_receipt_hash(tmp_path):
     """RED: _handle_record 返回结果含 receipt_hash 字段。"""
-    from cognitive_mcp_server import _handle_record, _reset_cle
     from cognitive_loop_entry import CognitiveLoopEntry
+    from cognitive_mcp_server import _handle_record, _reset_cle
+
     _reset_cle()
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     with patch("cognitive_mcp_server._get_cle", return_value=cle):
         try:
-            result = _handle_record({
-                "content": "测试 _handle_record receipt",
-                "quality_level": "C",
-                "tags": "test,evidence-ledger",
-            })
+            result = _handle_record(
+                {
+                    "content": "测试 _handle_record receipt",
+                    "quality_level": "C",
+                    "tags": "test,evidence-ledger",
+                }
+            )
             data = json.loads(result)
             payload = data.get("data", data)
             assert "receipt_hash" in payload
@@ -91,9 +95,11 @@ def test_handle_record_returns_receipt_hash(tmp_path):
 
 # ─────────────────────────────── P1-L1-2: PoE 信任机制 ───────────────────────────────
 
+
 def test_verify_poe_trust_true_with_receipt(tmp_path):
     """RED: verify() 对有 receipt 的 memory_id 返回 poe_trust=True。"""
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         memory_id = cle.record(
@@ -116,6 +122,7 @@ def test_verify_poe_trust_false_without_receipt(tmp_path):
     FAIL-OPEN：即使 poe_trust=False，verify 仍成功（success=True）。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         # 使用一个不存在于 Ledger 中的 memory_id
@@ -143,6 +150,7 @@ def test_poe_enforcement_mode_optional(tmp_path):
     PoE 是标记机制，不是硬阻塞——硬阻塞留给上层调用方判断。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         fake_id = "VM-9999999999-fake0002"
@@ -156,12 +164,14 @@ def test_poe_enforcement_mode_optional(tmp_path):
 
 # ─────────────────────────────── P1-L1-3: 33-REA → Ledger → record 闭环 ───────────────────────────────
 
+
 def test_prepare_record_params_includes_evidence_entries():
     """RED: prepare_record_params() 返回 evidence_entries 字段。
 
     33-REA 的每条分析结论应转换为 EvidenceEntry 供 Agent 一并写入 Ledger。
     """
     from cognitive_integration import prepare_record_params
+
     # 构造一个模拟的 investigation 结果
     investigation = {
         "target": "test_target",
@@ -185,10 +195,12 @@ def test_prepare_record_params_includes_evidence_entries():
             },
         },
         "evidence": [
-            _make_mock_evidence("func_a 调用了 func_b", "derivation", 0.85,
-                                 "33-REA:python_analyzer.py:42"),
-            _make_mock_evidence("func_b 是入口点", "observation", 0.90,
-                                 "33-REA:python_analyzer.py:15"),
+            _make_mock_evidence(
+                "func_a 调用了 func_b", "derivation", 0.85, "33-REA:python_analyzer.py:42"
+            ),
+            _make_mock_evidence(
+                "func_b 是入口点", "observation", 0.90, "33-REA:python_analyzer.py:15"
+            ),
         ],
         "known_gaps": ["无法确定 func_b 返回值类型"],
     }
@@ -198,6 +210,7 @@ def test_prepare_record_params_includes_evidence_entries():
     assert len(params["evidence_entries"]) == 2
     # 每个 entry 应可构造 EvidenceEntry
     from evidence_ledger import EvidenceEntry
+
     for entry_dict in params["evidence_entries"]:
         entry = EvidenceEntry(**entry_dict)
         assert entry.subject
@@ -208,7 +221,8 @@ def test_prepare_record_params_includes_evidence_entries():
 def test_evidence_entries_appendable_to_ledger(tmp_path):
     """RED: prepare_record_params() 返回的 evidence_entries 可被 append 到 Ledger。"""
     from cognitive_integration import prepare_record_params
-    from evidence_ledger import EvidenceLedger, EvidenceEntry
+    from evidence_ledger import EvidenceEntry, EvidenceLedger
+
     investigation = {
         "target": "test_target",
         "feature": "test_feature",
@@ -219,8 +233,7 @@ def test_evidence_entries_appendable_to_ledger(tmp_path):
             "reduce": {"functions": [], "patterns": []},
         },
         "evidence": [
-            _make_mock_evidence("结论1", "derivation", 0.85,
-                                 "33-REA:trace.py:10"),
+            _make_mock_evidence("结论1", "derivation", 0.85, "33-REA:trace.py:10"),
         ],
         "known_gaps": [],
     }
@@ -256,6 +269,7 @@ def test_33rea_record_ledger_closed_loop(tmp_path):
     from cognitive_integration import prepare_record_params
     from cognitive_loop_entry import CognitiveLoopEntry
     from evidence_ledger import EvidenceEntry
+
     investigation = {
         "target": "closed_loop_target",
         "feature": "closed_loop_feature",
@@ -266,8 +280,7 @@ def test_33rea_record_ledger_closed_loop(tmp_path):
             "reduce": {"functions": [], "patterns": []},
         },
         "evidence": [
-            _make_mock_evidence("闭环结论", "derivation", 0.88,
-                                 "33-REA:trace.py:1"),
+            _make_mock_evidence("闭环结论", "derivation", 0.88, "33-REA:trace.py:1"),
         ],
         "known_gaps": ["闭环测试 gap"],
     }
@@ -300,6 +313,7 @@ def test_33rea_record_ledger_closed_loop(tmp_path):
 
 
 # ─────────────────────────────── 辅助函数 ───────────────────────────────
+
 
 def _make_mock_evidence(content, level, confidence, source):
     """构造一个模拟的 33-REA Evidence 对象。"""

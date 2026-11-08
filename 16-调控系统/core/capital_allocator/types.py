@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict
@@ -43,12 +43,12 @@ class CoinPerformance:
     coin: str
     n_trades: int
     n_wins: int
-    win_rate: float              # 胜率 = n_wins / n_trades
-    avg_win_pct: float           # 平均盈利幅度
-    avg_loss_pct: float          # 平均亏损幅度（绝对值，正数）
-    w_l_ratio: float             # 盈亏比 = avg_win / avg_loss
-    total_pnl: float             # 总盈亏 USDT
-    last_trade_ts: float = 0.0   # 最近交易时间戳
+    win_rate: float  # 胜率 = n_wins / n_trades
+    avg_win_pct: float  # 平均盈利幅度
+    avg_loss_pct: float  # 平均亏损幅度（绝对值，正数）
+    w_l_ratio: float  # 盈亏比 = avg_win / avg_loss
+    total_pnl: float  # 总盈亏 USDT
+    last_trade_ts: float = 0.0  # 最近交易时间戳
     # Bayesian Shrinkage 后的值
     shrunk_win_rate: float = 0.0
     shrunk_w_l_ratio: float = 0.0
@@ -62,14 +62,14 @@ class AllocationResult:
     """单币种资金调配结果（Layer 2+3 产出）。"""
 
     coin: str
-    source_tag: str               # bcrm/bdsm/evolution/strategy
-    kelly_f: float                # 原始 Kelly 分数
-    half_kelly_f: float           # Half-Kelly 分数
-    position_pct: float           # 最终仓位比例 [0, MAX_PCT]
-    subpool_budget: float         # 子池预算 USDT
-    subpool_weight: float         # 子池权重
-    expansion_mult: float         # 全局扩张乘数
-    final_position_pct: float     # position_pct * expansion_mult
+    source_tag: str  # bcrm/bdsm/evolution/strategy
+    kelly_f: float  # 原始 Kelly 分数
+    half_kelly_f: float  # Half-Kelly 分数
+    position_pct: float  # 最终仓位比例 [0, MAX_PCT]
+    subpool_budget: float  # 子池预算 USDT
+    subpool_weight: float  # 子池权重
+    expansion_mult: float  # 全局扩张乘数
+    final_position_pct: float  # position_pct * expansion_mult
     fallback_used: bool = False
     fallback_reason: str = ""
     timestamp: str = ""
@@ -85,11 +85,11 @@ class AllocationSnapshot:
     timestamp: str
     mode: AllocatorMode
     health: HealthLevel
-    global_win_rate: float              # 全局胜率
-    global_w_l_ratio: float              # 全局盈亏比
-    expansion_mult: float                # 全局扩张乘数
-    by_coin: Dict[str, AllocationResult]     # 按币种分组
-    by_subpool: Dict[str, float]            # 按子池分组（权重）
+    global_win_rate: float  # 全局胜率
+    global_w_l_ratio: float  # 全局盈亏比
+    expansion_mult: float  # 全局扩张乘数
+    by_coin: Dict[str, AllocationResult]  # 按币种分组
+    by_subpool: Dict[str, float]  # 按子池分组（权重）
     total_trades_analyzed: int
     recommendations: Dict[str, str] = field(default_factory=dict)
     extra: Dict[str, Any] = field(default_factory=dict)

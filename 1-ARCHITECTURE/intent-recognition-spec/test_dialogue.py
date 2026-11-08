@@ -10,9 +10,8 @@
 5. 取消 — "算了" → 取消待确认操作
 """
 
-import sys
-import os
 import json
+import sys
 from pathlib import Path
 
 # 设置路径
@@ -20,8 +19,8 @@ SPEC_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SPEC_DIR))
 sys.path.insert(0, str(SPEC_DIR.parent.parent / "16-调控系统" / "core"))
 
-from intent_classifier import classify_intent
-from dialogue_state import DialogueStateManager
+from dialogue_state import DialogueStateManager  # noqa: E402
+from intent_classifier import classify_intent  # noqa: E402
 
 
 def test_scenario(name: str, inputs: list, expected_checks: list):
@@ -49,18 +48,18 @@ def test_scenario(name: str, inputs: list, expected_checks: list):
         if result.get("reference_resolved"):
             print(f"  指代消解: {json.dumps(result['reference_resolved'], ensure_ascii=False)}")
         if result.get("slots_inherited"):
-            print(f"  槽位继承: ✅")
+            print("  槽位继承: ✅")
         if result.get("confirmation_required"):
             print(f"  ⚠️ 需要确认: {result.get('confirm_message', '')}")
         if result.get("confirmed"):
-            print(f"  ✅ 已确认")
+            print("  ✅ 已确认")
         if result.get("confirmation_flow") == "cancelled":
-            print(f"  ❌ 已取消")
+            print("  ❌ 已取消")
 
         results.append(result)
 
     # 验证期望
-    print(f"\n📋 验证:")
+    print("\n📋 验证:")
     all_passed = True
     for check in expected_checks:
         turn_idx = check.get("turn", 0) - 1
@@ -165,9 +164,9 @@ def main():
     all_passed &= test_scenario(
         "多轮分析 → 交易 — 茅台分析后直接交易",
         inputs=[
-            "茅台现在多少钱？",       # query
-            "走势怎么样？",           # analysis（继承茅台）
-            "帮我买入100股",          # trade/buy（继承茅台）
+            "茅台现在多少钱？",  # query
+            "走势怎么样？",  # analysis（继承茅台）
+            "帮我买入100股",  # trade/buy（继承茅台）
         ],
         expected_checks=[
             {"turn": 1, "field": "intent_primary", "value": "query", "desc": "第1轮查询"},

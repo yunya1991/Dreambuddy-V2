@@ -9,9 +9,10 @@ SPEC-Phase2 §6.3:
 
 RED 阶段：SecRssCollector 类尚未实现，测试应因 ImportError 失败。
 """
-import pytest
-from datetime import datetime, timezone, timedelta
 
+from datetime import datetime, timedelta, timezone
+
+import pytest
 from data_center.core.contract import DataRecord
 
 SEC_MOD = "data_center.collectors.macro.sec_rss_collector"
@@ -20,11 +21,13 @@ SEC_MOD = "data_center.collectors.macro.sec_rss_collector"
 @pytest.fixture
 def collector(tmp_path):
     from data_center.collectors.macro.sec_rss_collector import SecRssCollector
+
     # 用临时状态文件避免跨测试污染
     return SecRssCollector(config={"state_file": str(tmp_path / "sec_state.json")})
 
 
 # ---------- 基础属性 ----------
+
 
 def test_source_category(collector):
     assert collector.source == "sec"
@@ -33,6 +36,7 @@ def test_source_category(collector):
 
 
 # ---------- RSS 解析 ----------
+
 
 def _make_entry(title, creator="SEC", pub_date=None, link="https://sec.gov/x"):
     if pub_date is None:
@@ -67,6 +71,7 @@ def test_fetch_parses_rss_entries(collector, mocker):
 
 
 # ---------- direction 关键词匹配 ----------
+
 
 def test_direction_bearish_keywords(collector, mocker):
     """BEARISH 关键词（charge/fraud/sue）→ direction=short。"""
@@ -110,6 +115,7 @@ def test_crypto_related_detection(collector, mocker):
 
 
 # ---------- 三层去重 ----------
+
 
 def test_dedup_layer1_creator_exact_match(collector):
     """第 1 层：dc:creator 完全相同 → 重复。"""
@@ -162,9 +168,7 @@ def test_dedup_outside_time_window_not_duplicate(collector):
     now = datetime.now(timezone.utc)
     title = "SEC Charges Crypto Exchange With Fraud"
     new_item = {"title": title, "dc_creator": "LR-111", "pub_date": now}
-    recent = [
-        {"title": title, "dc_creator": "LR-999", "pub_date": now - timedelta(hours=25)}
-    ]
+    recent = [{"title": title, "dc_creator": "LR-999", "pub_date": now - timedelta(hours=25)}]
     assert collector.is_duplicate(new_item, recent) is False
 
 
@@ -174,11 +178,20 @@ def test_dedup_filters_duplicates_in_fetch(collector, mocker):
     mock_fetch = mocker.patch(f"{SEC_MOD}.SecRssCollector._fetch_feeds")
     # 两个 feed 对同一行动各发一条（creator 不同，标题相似）
     mock_fetch.return_value = [
-        {"title": "SEC Charges Coinbase With Fraud", "dc_creator": "LR-26520",
-         "published": now.strftime("%a, %d %b %Y %H:%M:%S %z"), "link": "l1", "summary": "s"},
-        {"title": "SEC Charges Coinbase With Securities Fraud", "dc_creator": "34-105415",
-         "published": (now + timedelta(hours=1)).strftime("%a, %d %b %Y %H:%M:%S %z"),
-         "link": "l2", "summary": "s"},
+        {
+            "title": "SEC Charges Coinbase With Fraud",
+            "dc_creator": "LR-26520",
+            "published": now.strftime("%a, %d %b %Y %H:%M:%S %z"),
+            "link": "l1",
+            "summary": "s",
+        },
+        {
+            "title": "SEC Charges Coinbase With Securities Fraud",
+            "dc_creator": "34-105415",
+            "published": (now + timedelta(hours=1)).strftime("%a, %d %b %Y %H:%M:%S %z"),
+            "link": "l2",
+            "summary": "s",
+        },
     ]
     recs = collector.fetch({})
     # 实体 "Coinbase" 交集 → 去重后仅 1 条
@@ -186,6 +199,7 @@ def test_dedup_filters_duplicates_in_fetch(collector, mocker):
 
 
 # ---------- FAIL-OPEN ----------
+
 
 def test_fail_open_feed_parse_error(collector, mocker):
     """feed 解析异常 → 返回空列表，不抛异常。"""
@@ -204,6 +218,7 @@ def test_fail_open_empty_feeds(collector, mocker):
 
 
 # ---------- 跨重启去重（sec_rss_processed 状态文件）----------
+
 
 def test_cross_restart_dedup_via_state_file(collector, mocker):
     """首次 fetch 接受条目后持久化；第二次 fetch 同 creator 条目被去重。"""
@@ -235,13 +250,15 @@ def test_cross_restart_dedup_different_creator_passes(collector, mocker):
         "title": "SEC Charges Coinbase With Fraud",
         "dc_creator": "LR-26520",
         "published": now.strftime("%a, %d %b %Y %H:%M:%S %z"),
-        "link": "l1", "summary": "s",
+        "link": "l1",
+        "summary": "s",
     }
     entry2 = {
         "title": "SEC Approves New ETF Framework",
         "dc_creator": "34-105416",
         "published": (now + timedelta(hours=1)).strftime("%a, %d %b %Y %H:%M:%S %z"),
-        "link": "l2", "summary": "s",
+        "link": "l2",
+        "summary": "s",
     }
     mock_fetch = mocker.patch(f"{SEC_MOD}.SecRssCollector._fetch_feeds")
 

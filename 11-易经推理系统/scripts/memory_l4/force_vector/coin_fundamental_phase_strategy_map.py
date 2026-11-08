@@ -18,6 +18,7 @@ Shadow 模式不耦合 BCRM2.0，仅记录策略提示到 JSONL 审计日志。
   - FAIL-OPEN：未知 phase/rank → 返回 NEUTRAL_STRATEGY_HINT
   - 案例锚定用于 CBR 相似度检索（新标的与案例相似度越高，策略越向案例靠拢）
 """
+
 from __future__ import annotations
 
 import os
@@ -28,12 +29,11 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from force_vector.coin_fundamental_phase_classifier import (
+from force_vector.coin_fundamental_phase_classifier import (  # noqa: E402
     P1_EXPECTATION,
     P2_REVENUE_EXPANSION,
     P3_VALUATION_RECOVERY,
 )
-
 
 # ===========================================================================
 # 开关（Shadow 模式默认 False，仅记录审计日志）
@@ -242,6 +242,7 @@ _NEUTRAL_LANDED_HINT: Dict[str, Any] = {
 # 查表函数
 # ===========================================================================
 
+
 def get_strategy_hint(phase: Optional[str], rank: Optional[str]) -> Dict[str, Any]:
     """查表返回 phase × rank 的策略提示。
 
@@ -305,6 +306,7 @@ def get_event_landed_switch_hint(phase: Optional[str]) -> Dict[str, Any]:
 # ===========================================================================
 # Shadow 审计日志辅助（可选：记录策略提示到 JSONL）
 # ===========================================================================
+
 
 def build_shadow_audit_record(
     coin: str,

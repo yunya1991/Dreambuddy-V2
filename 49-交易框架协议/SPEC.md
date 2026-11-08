@@ -1,4 +1,4 @@
-# SPEC-49 神经网络交易系统框架协议 v0.14.2
+﻿# SPEC-49 神经网络交易系统框架协议 v0.14.2
 
 - 状态：🟡 v0.14.2 双决策链架构评审稿（v0.13 评审完成 + 双链隔离 / 50-NN主矛盾评估器 / 48 统一数据训练接口 / 基因治理；**v0.14.2 按同行评审 M1-M9 修订：50 evidence→path 合成、对照隔离、R3 依赖、50 执行权、11 子池写入条件、40→48 迁移、约束字段、契约 v1.1、DEC-02 修订**；**第二轮复审通过（M2/M5，2026-11-07）+ ADR-0002 accepted**；实施受 R0 MVB 5/5 门禁约束；本文只定义架构、协议契约、提案与路线，不含实现代码）
 - 日期：2026-11-07
@@ -468,7 +468,7 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 
 ### 3.3 FinalDecisionSignal v1（23 最终决策）
 
-在 SignalSchema v1 基础上，`source` 固定 `23-evolution`，`payload` 必须包含：
+在 SignalSchema v1 基础上，v1 的 `source` 固定 `23-evolution`；`source=50-nn` 使用 v1.1（见 §3.10），v1 文件保持 frozen。`payload` 必须包含：
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -1053,7 +1053,7 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 > **评审脚注**（评审人：Trae Agent，依据 §12.4 八条标准，代码核验基线为本分支工作区快照）：
 > ¹ R-23-05 与 R-DOC-01 同根（HJB 70% 文档口径），合并执行一次修复即可关闭两项。
 > ² R-11-02：DEC-13 豁免机制已决议，落地前需指定**人工审批人**并在 `execution_rights.json` 登记豁免标的/时限。
-> ³ R-23-12：`l1.trading.mcp` 已实现（2026-11-08）；`get_decision_diagnostics` 按 DEC-15 只暴露摘要 + 置信度，原始权重/张量（如 `dimension_force_mod`、`causal_ate`、`resistance_vector`）不下发。
+> ³ R-23-12：`l1.trading.mcp` 尚未实现（纯设计态），P3 先落文档边界，实现时按 DEC-15 脱敏，不阻塞。
 > ⁴ R-42-05（2026-11-07 修订后通过）：原始根因「无跨进程落地方式」部分过时——42 已有 6 个只读状态适配器消费状态文件（`bcrm_state_adapter.py` 等，消费 `five_domain_state.json`/`cycle_state.json`/`event_driven_state.json`），机制已存在；实际缺口=四子池覆盖不全（washout/event_arbitrage 无状态文件、适配器仅 bcrm/bdsm）+ 路径硬编码。已按「补齐 4/4 + 环境变量化」修订。
 >
 > **命名说明**：R-L0-01/02/03 中的 “L0” 为历史命名，实际归属**封装执行层**；R-EXEC-04 负责 paper MCP 命名迁移。
@@ -1535,7 +1535,7 @@ M6（训练/反馈/约束校准）
 5. **horizon 分层**：hours（washout/event-arb/29-event）与 days（bcrm/bdsm/43）分组；跨层只加权汇总，不做共振。
 6. **4 维裁决 + Dominance**：力量 0.40 / 时间 0.15 / 证据一致性 0.25 / 市场影响 0.20；证据一致性直接消费“内部 vs 42”的对账结果；成对支配输出可解释矩阵。
 7. **W6 与 provenance**：50 使用独立样本存储；样本带 `provenance=42-bus|internal|self-mirror`；NN→23 基因注入前不污染 23 的 W6。
-8. **自票上限**：50 自身候选（l2_gene/synthesized 等）设自票上限（B-08 设计参考），不得单独决定主导者。
+8. **自票上限（预留）**：50 当前不生成候选，该规则预留；若未来自产候选（l2_gene/synthesized 等），设自票上限（B-08 设计参考），不得单独决定主导者（与 50 SPEC §4.9 一致）。
 9. **约束包络**：约束只在最终决策后钳位（见 §4.9），不参与矛盾评分、不重复相乘。
 
 ### 4.8.3 40/43 弹性约束包络（v0.14）
@@ -1599,7 +1599,7 @@ M6（训练/反馈/约束校准）
 | G-03 | 执行层双出口 | **DEC-36**：`execution_rights` 分区；50 paper-only 起步；同标的同时刻单出口 |
 | G-04 | 48 从度量域扩为数据/训练网关 | **DEC-33/DEC-42**：48 为 40 唯一对接口；扩域需 48 SPEC v0.6 评审 |
 | G-05 | 40 训练门禁 | **DEC-41**：沿用 DEC-29 P5/P6 门禁；训练建议制、可审计 |
-| G-06 | 契约冻结 | **DEC-35**：FinalDecisionSignal v1 复用；仅 source 枚举加法 + ADR |
+| G-06 | 契约冻结 | **DEC-35**：复用 FinalDecisionSignal 字段结构；新增 `final_decision_signal.v1.1.json`（`source` enum 含 `23-evolution`/`50-nn`），v1 保持 frozen；manifest 升 contract-freeze-v2 + ADR（**非 additive**） |
 | G-07 | 子系统信号自环/双计 | **DEC-38**：角色分类 + 去重 + provenance；29-event/23-contradiction 不入投票 |
 
 ## §12.7 v0.14 新增决议（DEC-31～DEC-43）
@@ -1627,15 +1627,15 @@ M6（训练/反馈/约束校准）
 
 | ID | 任务 | 改动面 | 验收 | 开关 | 回滚 | 状态 |
 |---|---|---|---|---|---|---|
-| **R0-01** | 50 目录 + SPEC + 基因复制/一致性测试 | `50-NN主矛盾评估器/` | 50 不 import 23；基因 registry 初始版 | — | 删除目录 | ☐ |
-| **R0-02** | 契约变更落地：**新增 `final_decision_signal.v1.1.json`（enum），v1 保持 frozen** + manifest 登记 v1/v1.1（contract-freeze-v2）+ `validate/freeze` 扩展 CONTRACTS + `from_50_signal` 路由 + ADR 受影响代码清单逐项适配 | `49/contracts`、`49/scripts`、`mcp_shells/l0_trade_exec/server.py`、13/22/47 | `validate_contracts` 通过 v1.1 样例；`50-nn` 不再被拒绝；`freeze_contracts --check` 通过；v1 sha256 不变 | — | 删除 v1.1 + 恢复旧 manifest | ☐ |
-| **R0-03** | bus 底座在线：`ENABLE_11_STATE_ADAPTER=1` + `run_bus` 调度 + 源健康监控 + **11 子池 signal-only/authority 可拦截配置（M5）** + **新增 `11-bcrm-tactical` 每币技术源（M2/D3）**。authority 用白名单（默认 `evolution_only`），**不得用全局 `shadow_mode`**（其提前 return，不写子池状态） | 42/11 | **bus ≥6 源在线率、TTL 生效、连续 3 日每日信号量 >0**；washout/event-arb 状态文件持续更新；空 bus 告警；**authority=all 负向测试（状态文件停止更新并告警）** | `ENABLE_11_STATE_ADAPTER` / 11 authority | 置 0；恢复 11 live 权限 | ☐ |
-| **R0-04** | differential harness：固定 10-20 组历史快照，同输入跑 23 与 50，逐字段 diff（维度排序/主矛盾/dominance 矩阵/置信度） | `50/tests/differential/` | 分歧率基线落盘；R2 的 A/B 只解释相对基线增量 | — | 删除 harness 产物 | ☐ |
+| **R0-01** | 50 目录 + SPEC + 基因复制/一致性测试 | `50-NN主矛盾评估器/` | 50 不 import 23；基因 registry 初始版 | — | 删除目录 | ☑ |
+| **R0-02** | 契约变更落地：**新增 `final_decision_signal.v1.1.json`（enum），v1 保持 frozen** + manifest 登记 v1/v1.1（contract-freeze-v2）+ `validate/freeze` 扩展 CONTRACTS + `from_50_signal` 路由 + ADR 受影响代码清单核对（13/22 的 source 校验为新增能力，R3 前生效，不计入 R0-02 验收） | `49/contracts`、`49/scripts`、`mcp_shells/l0_trade_exec/server.py`、13/22/47 | `validate_contracts` 通过 v1.1 样例；`50-nn` 不再被拒绝；`freeze_contracts --check` 通过；v1 sha256 不变 | — | 删除 v1.1 + 恢复旧 manifest | ☑ |
+| **R0-03** | bus 底座在线：`ENABLE_11_STATE_ADAPTER=1` + `run_bus` 调度 + 源健康监控 + **11 子池 signal-only/authority 可拦截配置（M5）** + **新增 `11-bcrm-tactical` 每币技术源（M2/D3）**。authority 用白名单（默认 `evolution_only`），**不得用全局 `shadow_mode`**（其提前 return，不写子池状态） | 42/11 | **本地 fixture：≥6 源、TTL 生效、空 bus 告警、authority 负向；运行态：bus ≥6 源在线率、连续 3 日每日信号量 >0**；washout/event-arb 状态文件持续更新；空 bus 告警；**authority=all 负向测试（状态文件停止更新并告警）** | `ENABLE_11_STATE_ADAPTER` / 11 authority | 置 0；恢复 11 live 权限 | ◐（本地 fixture 已落；11 运行态在线待云端） |
+| **R0-04** | differential harness：固定 10-20 组历史快照，同输入跑 23 与 50，逐字段 diff（维度排序/主矛盾/dominance 矩阵/置信度） | `50/tools/differential_harness.py`、`50/tests/differential/` | 分歧率基线落盘；R2 的 A/B 只解释相对基线增量 | — | 删除 harness 产物 | ◐（diff 骨架已落；23 冻结快照待补） |
 | **R0-05** | 资源基线：云端 CPU/内存/磁盘余量 + 双链增量预算 | 运维报告 | 余量满足 50 + 训练负载（当前 load 3.97、连续 21 天，需复核） | — | — | ☐ |
-| **R0-06** | 50 只读证据适配器 + shadow 决策 + 审计 | `50/adapters/bus_reader.py`、`50/core/evidence*` | shadow 可复现 | `ENABLE_50_SHADOW=0` | 置 0 | ☐ |
-| **R0-07** | **evidence→path 合成层（M2）**：path_synthesis + 字段映射 + 去重/降级 + D3 技术源接入 + **50 自有 source 映射表（维度/权重/周期）** | `50/core/path_synthesis.py`、`50/tests/` | 23 的 identify/dominance 可在 50 的 path 集合上运行；D3 有源或显式 neutral；`11-*` 源维度/权重不退化 | — | 删除合成层 | ☐ |
-| **R0-08** | **50 执行权骨架（M4）**：execution_rights 50 分区 + Mandate + kill-switch + fail-closed + 审计字段 | `47/registry`、`50/adapters/execution_writer.py` | 无 Mandate 只能 paper；kill-switch 生效；审计完整 | `ENABLE_50_EXECUTION=0` | 置 0，execution_rights=disabled | ☐ |
-| **R0-09** | **架构 SSoT 收录 50**：更新 `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md` 与文档索引 | 1-ARCHITECTURE、0-系统文档管理 | 50 在 SSoT/索引可见；无断链 | — | 恢复旧索引 | ☐ |
+| **R0-06** | 50 只读证据适配器 + shadow 决策 + 审计 | `50/adapters/bus_reader.py`、`50/adapters/constraint_loader.py`、`50/adapters/audit_logger.py`、`50/core/shadow_decision.py` | shadow 可复现；43 缺失 fail-open | `ENABLE_50_SHADOW=0` | 置 0 | ☑ |
+| **R0-07** | **evidence→path 合成层（M2）**：path_synthesis + 字段映射 + 去重/降级 + D3 技术源接入 + **50 自有 source 映射表（维度/权重/周期）** | `50/core/path_synthesis.py`、`50/tests/` | 23 的 identify/dominance 可在 50 的 path 集合上运行；D3 有源或显式 neutral；`11-*` 源维度/权重不退化 | — | 删除合成层 | ◐（合成层/映射表已落；11 每币持久化待做） |
+| **R0-08** | **50 执行权骨架（M4）**：execution_rights 50 分区 + Mandate + kill-switch + fail-closed + 审计字段 | `47/registry/execution_rights.json`、`50/adapters/execution_writer.py` | 无 Mandate 只能 paper；kill-switch 生效；审计完整 | `ENABLE_50_EXECUTION=0` | 置 0，execution_rights=disabled | ☑ |
+| **R0-09** | **架构 SSoT 收录 50**：更新 `1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md` 与文档索引 | 1-ARCHITECTURE、0-系统文档管理 | 50 在 SSoT/索引可见；无断链 | — | 恢复旧索引 | ☑ |
 | **R1a-01** | 43 约束字段 + `strategic_extension_signal.json` 落盘 | 43 signal payload | runtime 文件存在；四项约束可查询 | — | 恢复旧 payload | ☐ |
 | **R1b-01** | 16 定容参数：`long_count_cap`/`short_count_cap`/`net_bias`/杠杆 | 16 capital_allocator | 约束可钳位；13 最终否决 | `ENABLE_16_CONSTRAINTS=0` | 置 0 | ☐ |
 | **R1c-01** | execution_rights 分区（50 paper / 23 live） | 47 registry | 单标的单出口 | — | 恢复旧 registry | ☐ |
@@ -1651,7 +1651,7 @@ M6（训练/反馈/约束校准）
 | # | MVB 条件 | 对应任务 | 验收标准 |
 |---|---|---|---|
 | **MVB-1** | 契约 v1.1 + `from_50_signal` 路由 | R0-02 | `50-nn` 信号通过 schema/`validate_contracts`/`freeze_contracts --check`；v1 sha256 不变；server.py 可路由 |
-| **MVB-2** | bus ≥6 源在线 | R0-03 | 连续 3 日每日信号量 >0；TTL 生效；11 signal-only/authority 配置可复现；空 bus 告警；authority=all 负向测试通过 |
+| **MVB-2** | bus ≥6 源在线（源清单：11-bcrm / 11-bdsm / 11-washout / 11-event-arbitrage / 29-event / 40-cycle / 43-strategic / 23-contradiction + 11-bcrm-tactical） | R0-03 | **本地代理验收**：fixture 总线 ≥6 源、3 轮调度、TTL 过期用例、空 bus 告警、authority=all 负向测试；**运行态门禁（云端/ops）**：连续 3 日每日信号量 >0；11 signal-only/authority 配置可复现 |
 | **MVB-3** | 50 evidence→path 合成 + D3 技术源 | R0-07 | path_synthesis 可运行；D3 有源或显式 neutral；23 的 identify/dominance 可在 50 path 集合上运行 |
 | **MVB-4** | 50 执行权骨架 | R0-08 | execution_rights 50 分区、Mandate、kill-switch、fail-closed、审计字段完整 |
 | **MVB-5** | differential harness 基线 | R0-04 | 固定 10-20 组历史快照；23 vs 50 逐字段 diff；分歧率基线落盘 |
@@ -1667,7 +1667,7 @@ M6（训练/反馈/约束校准）
 
 ## 附：v0.14 双决策链架构（变更摘要）
 
-1. **新增 50-NN主矛盾评估器**：独立实现、独立进化；仅参考/复制 23 的主矛盾架构设计，不 import 23 运行时；输出 `source=50-nn` 的 FinalDecisionSignal v1（additive）。
+1. **新增 50-NN主矛盾评估器**：独立实现、独立进化；仅参考/复制 23 的主矛盾架构设计，不 import 23 运行时；输出 `source=50-nn` 的 FinalDecisionSignal v1.1（新增文件，非 additive）。
 2. **23 保持独立**：不承接 NN 链生产决策；作为对照实验；NN 验证过的优质基因经原 42→23 shadow 端口注入 23（单向）。
 3. **48 升级为 40 的唯一对接口**：39（L0 MCP）/9（纳入 48）/全链路交易数据 → 48 → 40；训练建议制 + 40 P5/P6 门禁。
 4. **40/43 弹性约束四项**：资产偏置（数量）、相关资产多空数量偏置、仓位、杠杆；只作包络，不进矛盾评分。

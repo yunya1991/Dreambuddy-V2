@@ -5,19 +5,19 @@
 
 对应 Spec §3bis.4.2 动作A + §3bis.9 T_CB2。
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
 
 
 def _make_predictor() -> MorphCyclePredictor:
@@ -28,6 +28,7 @@ def _make_predictor() -> MorphCyclePredictor:
 # ================================================================
 # T_CB2: FFT 振幅缩放
 # ================================================================
+
 
 class TestFFTScaleTriggered:
     """验证 FFT 振幅超过 amplitude_cap 时被软缩放。"""
@@ -104,8 +105,9 @@ class TestFFTScaleSmoothness:
         scaled_diffs = np.abs(np.diff(scaled))
         max_orig = float(np.max(orig_diffs))
         max_scaled = float(np.max(scaled_diffs))
-        assert max_scaled <= max_orig * 2.0 + 0.01, \
-            f"缩放后最大差分 {max_scaled} 超过原始 {max_orig} 的 2 倍"
+        assert (
+            max_scaled <= max_orig * 2.0 + 0.01
+        ), f"缩放后最大差分 {max_scaled} 超过原始 {max_orig} 的 2 倍"
 
     def test_scaled_curve_preserves_shape(self):
         """缩放后保持正弦波形（峰谷位置不变）。"""

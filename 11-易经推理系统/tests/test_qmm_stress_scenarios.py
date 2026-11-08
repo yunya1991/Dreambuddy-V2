@@ -4,7 +4,6 @@ import re
 import sys
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
@@ -29,14 +28,14 @@ def _cases(n: int, *, seed: int, ts_base: str = "2026-05-13T00:00:00+08:00"):
         y = rnd.uniform(0.0, 1.0)
         mm = i % 60
         ts = base.replace("00:00:00", f"00:{mm:02d}:00")
-        out.append(_case(i, ts=ts, pnl=pnl, x=x, y=y, regime="RANGE_BOUND" if i % 2 == 0 else "TRENDING"))
+        out.append(
+            _case(i, ts=ts, pnl=pnl, x=x, y=y, regime="RANGE_BOUND" if i % 2 == 0 else "TRENDING")
+        )
     return out
 
 
 def test_stress_multi_round_run_qmm_with_gate(tmp_path, monkeypatch):
-    from scripts.memory_l4.qmm import paths
-    from scripts.memory_l4.qmm import engine
-    from scripts.memory_l4.qmm import gate
+    from scripts.memory_l4.qmm import engine, gate, paths
     from scripts.memory_l4.qmm.engine import run_qmm_with_gate
 
     monkeypatch.setattr(paths, "qmm_dir", lambda: tmp_path)
@@ -45,7 +44,12 @@ def test_stress_multi_round_run_qmm_with_gate(tmp_path, monkeypatch):
 
     for seed in range(10):
         cases = _cases(60, seed=seed)
-        out, gate = run_qmm_with_gate(cases, distills=[], config=None, gate_config={"n_folds": 3, "min_train": 10, "min_test": 5})
+        out, gate = run_qmm_with_gate(
+            cases,
+            distills=[],
+            config=None,
+            gate_config={"n_folds": 3, "min_train": 10, "min_test": 5},
+        )
 
         assert out.data_version
         assert re.match(r"^dv-\d{8}-\d{3}$", out.data_version)
@@ -64,8 +68,7 @@ def test_stress_multi_round_run_qmm_with_gate(tmp_path, monkeypatch):
 
 
 def test_stress_large_batch_run_qmm(tmp_path, monkeypatch):
-    from scripts.memory_l4.qmm import paths
-    from scripts.memory_l4.qmm import engine
+    from scripts.memory_l4.qmm import engine, paths
     from scripts.memory_l4.qmm.engine import run_qmm
 
     monkeypatch.setattr(paths, "qmm_dir", lambda: tmp_path)
@@ -82,8 +85,7 @@ def test_stress_large_batch_run_qmm(tmp_path, monkeypatch):
 
 
 def test_scenario_out_of_order_timestamps(tmp_path, monkeypatch):
-    from scripts.memory_l4.qmm import paths
-    from scripts.memory_l4.qmm import engine
+    from scripts.memory_l4.qmm import engine, paths
     from scripts.memory_l4.qmm.engine import run_qmm
 
     monkeypatch.setattr(paths, "qmm_dir", lambda: tmp_path)
@@ -95,8 +97,7 @@ def test_scenario_out_of_order_timestamps(tmp_path, monkeypatch):
 
 
 def test_scenario_bad_numeric_input_raises(tmp_path, monkeypatch):
-    from scripts.memory_l4.qmm import paths
-    from scripts.memory_l4.qmm import engine
+    from scripts.memory_l4.qmm import engine, paths
     from scripts.memory_l4.qmm.engine import run_qmm
 
     monkeypatch.setattr(paths, "qmm_dir", lambda: tmp_path)
@@ -106,6 +107,6 @@ def test_scenario_bad_numeric_input_raises(tmp_path, monkeypatch):
 
     try:
         run_qmm(cases, distills=[], config=None)
-        assert False
+        assert False  # noqa: B011
     except ValueError:
         assert True

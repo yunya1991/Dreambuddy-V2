@@ -12,7 +12,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import mcpctl  # noqa: E402
-from check_mcp_tool_drift import diff_tools, run as drift_run  # noqa: E402
+from check_mcp_tool_drift import diff_tools  # noqa: E402
+from check_mcp_tool_drift import run as drift_run
 
 
 def _doc():
@@ -108,9 +109,9 @@ def test_agent_card_role_tools_exact():
         repo_root=mcpctl.REPO_ROOT,
         python_exe=sys.executable,
     )
-    assert [t["name"] for t in card["capabilities"]["tools"]] == doc["worker_roles"][
-        "research"
-    ]["tools"]
+    assert [t["name"] for t in card["capabilities"]["tools"]] == doc["worker_roles"]["research"][
+        "tools"
+    ]
     assert card["server"]["args"][1:3] == ["--role", "research"]
     assert card["capabilities"]["read_only"] is True
 

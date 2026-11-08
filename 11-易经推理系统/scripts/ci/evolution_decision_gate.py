@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 REQUIRED_CANDIDATE_FIELDS = [
     "candidate_id",
     "trace_id",
@@ -52,7 +51,9 @@ def _load_stage_policy(path: str) -> Dict[str, Dict[str, Any]]:
     return out
 
 
-def _merged_stage_policy(required_stages: List[str], policy_by_stage: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+def _merged_stage_policy(
+    required_stages: List[str], policy_by_stage: Dict[str, Dict[str, Any]]
+) -> Dict[str, Dict[str, Any]]:
     merged: Dict[str, Dict[str, Any]] = {}
     for stage in required_stages:
         stage_policy = dict(DEFAULT_STAGE_POLICY)
@@ -60,7 +61,9 @@ def _merged_stage_policy(required_stages: List[str], policy_by_stage: Dict[str, 
         blocklist = stage_policy.get("severity_blocklist", [])
         if not isinstance(blocklist, list):
             blocklist = list(DEFAULT_STAGE_POLICY["severity_blocklist"])
-        stage_policy["severity_blocklist"] = [str(item).lower() for item in blocklist if str(item).strip()]
+        stage_policy["severity_blocklist"] = [
+            str(item).lower() for item in blocklist if str(item).strip()
+        ]
         stage_policy["require_pass"] = bool(stage_policy.get("require_pass", True))
         stage_policy["allow_warnings"] = bool(stage_policy.get("allow_warnings", False))
         stage_policy["max_violation_count"] = int(stage_policy.get("max_violation_count", 0))
@@ -138,7 +141,9 @@ def resolve_stage_policy(
 
     file_version = str(payload.get("policy_version") or "").strip()
     if requested_version and file_version and requested_version != file_version:
-        raise ValueError(f"policy_version mismatch: requested={requested_version}, file={file_version}")
+        raise ValueError(
+            f"policy_version mismatch: requested={requested_version}, file={file_version}"
+        )
 
     resolved_version = requested_version or file_version or "embedded.v0"
     return {
@@ -235,8 +240,7 @@ def build_rollback_pointer(
         "constraint_snapshot_ref": restore_ref,
         "restore_ref": restore_ref,
         "restore_command": (
-            "python scripts/ci/constraint_rollback.py "
-            f"--restore-ref {restore_ref}"
+            "python scripts/ci/constraint_rollback.py " f"--restore-ref {restore_ref}"
         ),
         "evidence_refs": evidence_refs,
         "created_at": timestamp,
@@ -344,7 +348,9 @@ def _run(args: argparse.Namespace) -> int:
 
     candidate_path = Path(args.candidate)
     report_paths = [Path(item.strip()) for item in str(args.reports).split(",") if item.strip()]
-    required_stages = [item.strip() for item in str(args.required_stages).split(",") if item.strip()]
+    required_stages = [
+        item.strip() for item in str(args.required_stages).split(",") if item.strip()
+    ]
     if not required_stages:
         required_stages = list(DEFAULT_REQUIRED_STAGES)
     policy_meta = resolve_stage_policy(
@@ -383,7 +389,9 @@ def _run(args: argparse.Namespace) -> int:
             now_ts=timestamp,
         )
         if bool(args.require_approval_ticket) and approval_result["decision"] == "reject":
-            gate_result["reason_codes"] = list(dict.fromkeys(gate_result["reason_codes"] + approval_result["reason_codes"]))
+            gate_result["reason_codes"] = list(
+                dict.fromkeys(gate_result["reason_codes"] + approval_result["reason_codes"])
+            )
             gate_result["decision"] = "reject"
 
     decision_record: Dict[str, Any] = {
@@ -407,7 +415,9 @@ def _run(args: argparse.Namespace) -> int:
 
     if gate_result["decision"] == "approve":
         from_version = str(candidate.get("constraint_version_base") or "")
-        evidence_refs = [str(item) for item in candidate.get("evidence_refs", []) if str(item).strip()]
+        evidence_refs = [
+            str(item) for item in candidate.get("evidence_refs", []) if str(item).strip()
+        ]
         rollback_pointer = build_rollback_pointer(
             candidate=candidate,
             from_version=from_version,

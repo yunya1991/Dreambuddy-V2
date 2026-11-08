@@ -2,6 +2,7 @@
 
 清洗链顺序：① Inf/NaN兜底 → ② RobustScaler(IQR) → ③ VIF去共线 → ④ IV筛选
 """
+
 from __future__ import annotations
 
 import sys
@@ -20,13 +21,15 @@ def clean_df():
     """1000 行 × 5 列正常数值 DF"""
     rng = np.random.default_rng(42)
     n = 1000
-    return pd.DataFrame({
-        "a": rng.normal(0, 1, n),
-        "b": rng.normal(5, 2, n),
-        "c": rng.normal(-3, 0.5, n),
-        "d": rng.uniform(10, 20, n),
-        "e": rng.normal(0, 1, n),
-    })
+    return pd.DataFrame(
+        {
+            "a": rng.normal(0, 1, n),
+            "b": rng.normal(5, 2, n),
+            "c": rng.normal(-3, 0.5, n),
+            "d": rng.uniform(10, 20, n),
+            "e": rng.normal(0, 1, n),
+        }
+    )
 
 
 # ============================================================
@@ -66,10 +69,12 @@ def test_t14_2_iqr_zero_identity():
 def test_t14_3_vif_skip_small_sample():
     from feature_hub.cleaning_chain.cleaning_steps import VIFDropper
 
-    df = pd.DataFrame({
-        "a": np.arange(500, dtype=float),
-        "b": np.arange(500, dtype=float) * 2,  # 完全共线
-    })
+    df = pd.DataFrame(
+        {
+            "a": np.arange(500, dtype=float),
+            "b": np.arange(500, dtype=float) * 2,  # 完全共线
+        }
+    )
     step = VIFDropper(threshold=10.0, skip_if=lambda X: len(X) < 1000)
     out = step.fit_transform(df)
     # 小样本跳过 → 不删列

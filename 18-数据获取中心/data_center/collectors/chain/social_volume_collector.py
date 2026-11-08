@@ -11,6 +11,7 @@
 
 FAIL-OPEN 铁律: DB 异常 → 返回空列表不阻塞。
 """
+
 from __future__ import annotations
 
 import logging
@@ -21,8 +22,16 @@ from data_center.core.contract import DataRecord, validate_record
 
 logger = logging.getLogger(__name__)
 
-_NEWS_SOURCES = ("cryptopanic", "gdelt", "rsshub", "tavily", "odaily_newsflash",
-                 "feedparser", "theblockbeats_dataview", "cointelegraph_cn")
+_NEWS_SOURCES = (
+    "cryptopanic",
+    "gdelt",
+    "rsshub",
+    "tavily",
+    "odaily_newsflash",
+    "feedparser",
+    "theblockbeats_dataview",
+    "cointelegraph_cn",
+)
 _VOLUME_MULTIPLIER = 100  # 新闻数 → social_volume 放大系数
 
 
@@ -76,6 +85,7 @@ class SocialVolumeCollector(BaseCollector):
         """通过统一存储接口统计新闻记录数（跟随 DATA_CENTER_BACKEND 配置）。"""
         try:
             from data_center.storage.sink_postgres import get_sink
+
             sink = get_sink()
             recs_24h = sink.query_records(window_sec=86400, limit=50000)
             news_count_24h = sum(1 for r in recs_24h if r.source in _NEWS_SOURCES)

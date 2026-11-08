@@ -12,15 +12,14 @@
 - 无 market 或无 C6 上游 → FAIL-OPEN 返回 SUCCESS + 空 outputs
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-import pytest
 
 from dreamos.capabilities.trading.nodes.c7_exec_monitor import C7ExecMonitorNode
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 
 # ── 测试夹具 ──────────────────────────────────────────────
@@ -85,7 +84,7 @@ def _make_state(
 # ── 1. 契约与导入 ──────────────────────────────────────────
 class TestC7Contract:
     def test_import(self):
-        from dreamos.capabilities.trading.nodes.c7_exec_monitor import C7ExecMonitorNode  # noqa: F401
+        pass  # noqa: F401
 
     def test_node_metadata(self):
         node = C7ExecMonitorNode()
@@ -105,8 +104,9 @@ class TestC7FailOpen:
         node = C7ExecMonitorNode()
         state = State()
         state.market = None
-        state.results["C6"] = NodeResult(node_id="C6", status=NodeStatus.SUCCESS,
-                                          outputs=_make_c6_outputs())
+        state.results["C6"] = NodeResult(
+            node_id="C6", status=NodeStatus.SUCCESS, outputs=_make_c6_outputs()
+        )
         r = node.execute_core(state)
         assert r.status == NodeStatus.SUCCESS
         assert r.outputs["exec_status"] == "pending"
@@ -222,8 +222,10 @@ class TestC7Alerts:
         alerts = r.outputs["alerts"]
         assert len(alerts) > 0
         # 至少有一个滑点相关告警
-        assert any("slippage" in str(a.get("type", "")).lower() or
-                   "滑点" in str(a.get("message", "")) for a in alerts)
+        assert any(
+            "slippage" in str(a.get("type", "")).lower() or "滑点" in str(a.get("message", ""))
+            for a in alerts
+        )
 
     def test_missing_market_data_alert(self):
         """市场数据缺少品种 → missing_data 告警"""
@@ -256,9 +258,17 @@ class TestC7ExecLog:
 class TestC7EdgeCases:
     def test_single_order(self):
         node = C7ExecMonitorNode()
-        plan = {"BTC": {"symbol": "BTC", "direction": "LONG", "size": 0.5,
-                        "entry_price": 60000.0, "stop_loss": 59000.0,
-                        "take_profit": 66000.0, "params": {}}}
+        plan = {
+            "BTC": {
+                "symbol": "BTC",
+                "direction": "LONG",
+                "size": 0.5,
+                "entry_price": 60000.0,
+                "stop_loss": 59000.0,
+                "take_profit": 66000.0,
+                "params": {},
+            }
+        }
         state = _make_state(c6_outputs=_make_c6_outputs(trade_plan=plan))
         r = node.execute_core(state)
         assert len(r.outputs["filled_orders"]) == 1
@@ -266,9 +276,17 @@ class TestC7EdgeCases:
 
     def test_short_direction_order(self):
         node = C7ExecMonitorNode()
-        plan = {"BTC": {"symbol": "BTC", "direction": "SHORT", "size": 0.5,
-                        "entry_price": 60000.0, "stop_loss": 61000.0,
-                        "take_profit": 54000.0, "params": {}}}
+        plan = {
+            "BTC": {
+                "symbol": "BTC",
+                "direction": "SHORT",
+                "size": 0.5,
+                "entry_price": 60000.0,
+                "stop_loss": 61000.0,
+                "take_profit": 54000.0,
+                "params": {},
+            }
+        }
         state = _make_state(c6_outputs=_make_c6_outputs(trade_plan=plan))
         r = node.execute_core(state)
         order = r.outputs["filled_orders"][0]

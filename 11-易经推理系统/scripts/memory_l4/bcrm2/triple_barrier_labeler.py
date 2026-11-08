@@ -21,22 +21,23 @@
    0 = 先触碰时间障 (矛盾未解决，无明确方向)
 """
 
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import Tuple, Dict, List, Optional
-
 
 # ============================================================
 # 三重障碍标注
 # ============================================================
 
+
 def triple_barrier_labels(
     df: pd.DataFrame,
-    tp_factor: float = 0.02,      # 止盈倍数 (相对于波动率)
-    sl_factor: float = 0.015,     # 止损倍数 (相对于波动率)
-    max_bars: int = 60,           # 最大持有bar数 (时间障)
-    use_atr: bool = True,         # 是否用ATR动态计算障碍
-    atr_period: int = 14,         # ATR周期
+    tp_factor: float = 0.02,  # 止盈倍数 (相对于波动率)
+    sl_factor: float = 0.015,  # 止损倍数 (相对于波动率)
+    max_bars: int = 60,  # 最大持有bar数 (时间障)
+    use_atr: bool = True,  # 是否用ATR动态计算障碍
+    atr_period: int = 14,  # ATR周期
     atr_multiplier_tp: float = 3.0,  # 止盈ATR倍数
     atr_multiplier_sl: float = 2.0,  # 止损ATR倍数
     multi_horizons: Optional[List[int]] = None,  # Phase C: 多 horizon 并行标注
@@ -79,11 +80,7 @@ def triple_barrier_labels(
     if use_atr:
         tr = np.zeros(n)
         for i in range(1, n):
-            tr[i] = max(
-                high[i] - low[i],
-                abs(high[i] - close[i-1]),
-                abs(low[i] - close[i-1])
-            )
+            tr[i] = max(high[i] - low[i], abs(high[i] - close[i - 1]), abs(low[i] - close[i - 1]))
         atr = pd.Series(tr).rolling(atr_period).mean().values
         tp_dist = atr * atr_multiplier_tp
         sl_dist = atr * atr_multiplier_sl
@@ -155,21 +152,28 @@ def triple_barrier_labels(
                 barrier_hit[i] = "time"
             hit_bars[i] = max_bars
 
-    result = pd.DataFrame({
-        "label": labels,
-        "barrier_hit": barrier_hit,
-        "hit_bar": hit_bars,
-        "tp_price": tp_prices,
-        "sl_price": sl_prices,
-        "return_pct": returns_pct,
-    }, index=df.index)
+    result = pd.DataFrame(
+        {
+            "label": labels,
+            "barrier_hit": barrier_hit,
+            "hit_bar": hit_bars,
+            "tp_price": tp_prices,
+            "sl_price": sl_prices,
+            "return_pct": returns_pct,
+        },
+        index=df.index,
+    )
 
     # Phase C (Spec §4.3.1): 多 horizon 并行标注
     if multi_horizons is not None:
         return {
             h: triple_barrier_labels(
-                df, tp_factor=tp_factor, sl_factor=sl_factor,
-                max_bars=h, use_atr=use_atr, atr_period=atr_period,
+                df,
+                tp_factor=tp_factor,
+                sl_factor=sl_factor,
+                max_bars=h,
+                use_atr=use_atr,
+                atr_period=atr_period,
                 atr_multiplier_tp=atr_multiplier_tp,
                 atr_multiplier_sl=atr_multiplier_sl,
                 multi_horizons=None,  # 防递归
@@ -183,6 +187,7 @@ def triple_barrier_labels(
 # ============================================================
 # 辩证标签系统 (Dialectical Labeling)
 # ============================================================
+
 
 class DialecticalLabeler:
     """
@@ -222,9 +227,7 @@ class DialecticalLabeler:
         result = pd.concat([tb, dialectics], axis=1)
         return result
 
-    def _dialectical_interpretation(
-        self, df: pd.DataFrame, tb: pd.DataFrame
-    ) -> pd.DataFrame:
+    def _dialectical_interpretation(self, df: pd.DataFrame, tb: pd.DataFrame) -> pd.DataFrame:
         """
         辩证解读：从三重障碍结果中提取辩证法三规律的量化指标
 
@@ -232,21 +235,19 @@ class DialecticalLabeler:
         量变质变 → quality_change_velocity (质变速度: 多快触碰障碍)
         否定之否定 → negation_cycle (否定周期: 时间障占比)
         """
-        n = len(df)
+        n = len(df)  # noqa: F841
         result = pd.DataFrame(index=df.index)
 
         # 1. 对立统一: 矛盾强度 (基于ATR的相对距离)
         result["contradiction_strength"] = np.where(
             tb["label"] != 0,
             1.0 - tb["hit_bar"] / self.max_bars,  # 越快触障，矛盾越尖锐
-            0.0  # 时间障 = 矛盾不尖锐
+            0.0,  # 时间障 = 矛盾不尖锐
         )
 
         # 2. 量变质变: 质变速度 (触碰障碍的速度)
         result["quality_change_velocity"] = np.where(
-            tb["hit_bar"] > 0,
-            1.0 / tb["hit_bar"].clip(lower=1) * 10,  # 越快速度越大
-            0.0
+            tb["hit_bar"] > 0, 1.0 / tb["hit_bar"].clip(lower=1) * 10, 0.0  # 越快速度越大
         ).clip(0, 1)
 
         # 3. 否定之否定: 周期演化阶段 (基于过去N个bar的标签变化)
@@ -258,9 +259,7 @@ class DialecticalLabeler:
         result["principal_aspect"] = tb["label"].rolling(10).mean().clip(-1, 1)
 
         # 5. 矛盾转化概率 (方向反转概率)
-        result["transformation_prob"] = (
-            label_change.rolling(20).sum() / 20.0
-        ).fillna(0)
+        result["transformation_prob"] = (label_change.rolling(20).sum() / 20.0).fillna(0)
 
         return result
 
@@ -278,9 +277,7 @@ class DialecticalLabeler:
 
         # 障碍分布
         barrier_dist = labels["barrier_hit"].value_counts()
-        stats["barrier_distribution"] = {
-            k: int(v) for k, v in barrier_dist.items()
-        }
+        stats["barrier_distribution"] = {k: int(v) for k, v in barrier_dist.items()}
 
         # 持有时间统计
         hit_bars = labels[labels["hit_bar"] < self.max_bars]["hit_bar"]
@@ -292,14 +289,8 @@ class DialecticalLabeler:
             stats["median_hold_bars"] = self.max_bars
 
         # 矛盾统计
-        stats["avg_contradiction_strength"] = float(
-            labels["contradiction_strength"].mean()
-        )
-        stats["avg_quality_change_velocity"] = float(
-            labels["quality_change_velocity"].mean()
-        )
-        stats["negation_cycle_frequency"] = float(
-            labels["negation_cycle"].mean()
-        )
+        stats["avg_contradiction_strength"] = float(labels["contradiction_strength"].mean())
+        stats["avg_quality_change_velocity"] = float(labels["quality_change_velocity"].mean())
+        stats["negation_cycle_frequency"] = float(labels["negation_cycle"].mean())
 
         return stats

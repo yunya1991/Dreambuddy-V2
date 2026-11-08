@@ -1,9 +1,10 @@
 """dream-harness-bridge Python SDK"""
+
 from .protocol_server import (
-    create_protocol_server,
-    ProtocolServer,
-    ProtocolHandshakeError,
     CURRENT_SCHEMA_VERSION,
+    ProtocolHandshakeError,
+    ProtocolServer,
+    create_protocol_server,
 )
 
 __all__ = [

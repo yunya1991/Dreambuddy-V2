@@ -14,18 +14,17 @@ HC-9 验证: 不出现交易判断逻辑
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # 将 python-server 目录加入 sys.path
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
     sys.path.insert(0, SERVER_DIR)
 
-import jev_judge
+import jev_judge  # noqa: E402
 
 
 class TestJevJudgeDisabled(unittest.TestCase):
@@ -43,8 +42,10 @@ class TestJevJudgeMissingKey(unittest.TestCase):
     """缺少 API Key 时的行为"""
 
     def test_missing_key_returns_degraded(self):
-        with patch.object(jev_judge, "ENABLE_JEV_JUDGE", True), \
-             patch.object(jev_judge, "TYPESAFE_API_KEY", ""):
+        with (
+            patch.object(jev_judge, "ENABLE_JEV_JUDGE", True),
+            patch.object(jev_judge, "TYPESAFE_API_KEY", ""),
+        ):
             result = jev_judge.judge("state", {"q": {"type": "noul", "instructions": "test"}})
             self.assertTrue(result["degraded"])
             self.assertEqual(result["reason"], "missing TYPESAFE_API_KEY")
@@ -135,19 +136,21 @@ class TestJevJudgeFieldFiltering(unittest.TestCase):
                 "q1": {
                     "type": "noul",
                     "noul": 0.92,
-                    "reward": 0.5,          # HC-5: 禁止
-                    "direction": "long",     # HC-9: 禁止
-                    "action": "buy",         # HC-9: 禁止
-                    "position": 1.0,         # HC-9: 禁止
-                    "size": 100,             # HC-9: 禁止
+                    "reward": 0.5,  # HC-5: 禁止
+                    "direction": "long",  # HC-9: 禁止
+                    "action": "buy",  # HC-9: 禁止
+                    "position": 1.0,  # HC-9: 禁止
+                    "size": 100,  # HC-9: 禁止
                 },
             },
             "usage": {"input_tokens": 100, "output_tokens": 10},
         }
 
-        with patch.object(jev_judge, "ENABLE_JEV_JUDGE", True), \
-             patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"), \
-             patch.object(jev_judge, "_call_jev_api", return_value=mock_response):
+        with (
+            patch.object(jev_judge, "ENABLE_JEV_JUDGE", True),
+            patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"),
+            patch.object(jev_judge, "_call_jev_api", return_value=mock_response),
+        ):
             result = jev_judge.judge("state", {"q1": {"type": "noul", "instructions": "test"}})
 
             self.assertFalse(result["degraded"])
@@ -170,9 +173,11 @@ class TestJevJudgeFailOpen(unittest.TestCase):
     """FAIL-OPEN：API 异常时降级"""
 
     def test_exception_returns_degraded(self):
-        with patch.object(jev_judge, "ENABLE_JEV_JUDGE", True), \
-             patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"), \
-             patch.object(jev_judge, "_call_jev_api", side_effect=Exception("boom")):
+        with (
+            patch.object(jev_judge, "ENABLE_JEV_JUDGE", True),
+            patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"),
+            patch.object(jev_judge, "_call_jev_api", side_effect=Exception("boom")),
+        ):
             result = jev_judge.judge("state", {"q": {"type": "noul", "instructions": "test"}})
             self.assertTrue(result["degraded"])
             self.assertIn("Exception", result["reason"])
@@ -191,9 +196,11 @@ class TestJevJudgeSuccess(unittest.TestCase):
             "usage": {"input_tokens": 420, "output_tokens": 71},
         }
 
-        with patch.object(jev_judge, "ENABLE_JEV_JUDGE", True), \
-             patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"), \
-             patch.object(jev_judge, "_call_jev_api", return_value=mock_response):
+        with (
+            patch.object(jev_judge, "ENABLE_JEV_JUDGE", True),
+            patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"),
+            patch.object(jev_judge, "_call_jev_api", return_value=mock_response),
+        ):
             result = jev_judge.judge(
                 "Help! My payouts have been failing for 3 days.",
                 {"is_urgent": {"type": "noul", "instructions": "Does this convey urgency?"}},
@@ -238,9 +245,11 @@ class TestJevJudgeSuccess(unittest.TestCase):
             },
         }
 
-        with patch.object(jev_judge, "ENABLE_JEV_JUDGE", True), \
-             patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"), \
-             patch.object(jev_judge, "_call_jev_api", return_value=mock_response):
+        with (
+            patch.object(jev_judge, "ENABLE_JEV_JUDGE", True),
+            patch.object(jev_judge, "TYPESAFE_API_KEY", "test-key"),
+            patch.object(jev_judge, "_call_jev_api", return_value=mock_response),
+        ):
             result = jev_judge.judge("state", questions)
 
             self.assertFalse(result["degraded"])
@@ -253,7 +262,9 @@ class TestHandleJevJudge(unittest.TestCase):
 
     def test_handle_passes_params(self):
         with patch.object(jev_judge, "judge", return_value={"degraded": True}) as mock_judge:
-            result = jev_judge.handle_jev_judge({"state": "s", "questions": {"q": {"type": "noul", "instructions": "t"}}})
+            result = jev_judge.handle_jev_judge(
+                {"state": "s", "questions": {"q": {"type": "noul", "instructions": "t"}}}
+            )
             mock_judge.assert_called_once_with("s", {"q": {"type": "noul", "instructions": "t"}})
             self.assertEqual(result, {"degraded": True})
 
@@ -286,10 +297,7 @@ class TestHC9Compliance(unittest.TestCase):
 
         for pattern in forbidden_patterns:
             matches = re.findall(pattern, src)
-            self.assertEqual(
-                len(matches), 0,
-                f"HC-9 违规: 发现交易判断模式 '{pattern}'"
-            )
+            self.assertEqual(len(matches), 0, f"HC-9 违规: 发现交易判断模式 '{pattern}'")
 
 
 if __name__ == "__main__":

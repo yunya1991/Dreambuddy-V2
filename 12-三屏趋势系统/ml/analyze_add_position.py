@@ -1,11 +1,12 @@
 """深入分析：为什么加仓反而亏？"""
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
+import pandas as pd  # noqa: I001
 import numpy as np
 
 from backtest.strategy import EnhancedMA200Strategy
@@ -59,11 +60,13 @@ def analyze():
         price = close[i]
 
         # 后5天收益
-        ret_5d = (close[min(i+5, len(close)-1)] - price) / price
+        ret_5d = (close[min(i + 5, len(close) - 1)] - price) / price
 
         if abs(r_diff) > 0.001:  # 只显示有影响的
-            print(f"  {date} | 价格 {price:>8.0f} | v37仓 {v37_pos:.0%} vs so仓 {so_pos:.0%} (差{pos_diff:+.0%}) "
-                  f"| 日收益差 {r_diff:+.2%} | 后5天 {ret_5d:+.1%}")
+            print(
+                f"  {date} | 价格 {price:>8.0f} | v37仓 {v37_pos:.0%} vs so仓 {so_pos:.0%} (差{pos_diff:+.0%}) "
+                f"| 日收益差 {r_diff:+.2%} | 后5天 {ret_5d:+.1%}"
+            )
 
     print()
     print(f"  总收益差异: {total_diff_ret:.2%}")
@@ -88,9 +91,9 @@ def analyze():
     for i in range(v37.warmup_periods, len(close)):
         if not np.isnan(bb_lower[i]) and close[i] <= bb_lower[i]:
             # 这天布林带加仓了
-            ret_5d = (close[min(i+5, len(close)-1)] - close[i]) / close[i]
-            ret_10d = (close[min(i+10, len(close)-1)] - close[i]) / close[i]
-            ret_20d = (close[min(i+20, len(close)-1)] - close[i]) / close[i]
+            ret_5d = (close[min(i + 5, len(close) - 1)] - close[i]) / close[i]
+            ret_10d = (close[min(i + 10, len(close) - 1)] - close[i]) / close[i]
+            ret_20d = (close[min(i + 20, len(close) - 1)] - close[i]) / close[i]
             bb_add_rets.append((i, ret_5d, ret_10d, ret_20d))
 
     if bb_add_rets:
@@ -128,15 +131,23 @@ def analyze():
         for i in db_confirmed_days:
             date = prices.index[i].strftime("%Y-%m-%d")
             price = close[i]
-            ret_5d = (close[min(i+5, len(close)-1)] - price) / price
-            ret_10d = (close[min(i+10, len(close)-1)] - price) / price
-            ret_20d = (close[min(i+20, len(close)-1)] - price) / price
-            print(f"    {date} | 价格 {price:.0f} | 后5天 {ret_5d:+.1%} | 后10天 {ret_10d:+.1%} | 后20天 {ret_20d:+.1%}")
+            ret_5d = (close[min(i + 5, len(close) - 1)] - price) / price
+            ret_10d = (close[min(i + 10, len(close) - 1)] - price) / price
+            ret_20d = (close[min(i + 20, len(close) - 1)] - price) / price
+            print(
+                f"    {date} | 价格 {price:.0f} | 后5天 {ret_5d:+.1%} | 后10天 {ret_10d:+.1%} | 后20天 {ret_20d:+.1%}"
+            )
 
-        r5 = [(close[min(i+5, len(close)-1)] - close[i]) / close[i] for i in db_confirmed_days]
-        r10 = [(close[min(i+10, len(close)-1)] - close[i]) / close[i] for i in db_confirmed_days]
-        r20 = [(close[min(i+20, len(close)-1)] - close[i]) / close[i] for i in db_confirmed_days]
-        print(f"  平均: 后5天 {np.mean(r5):+.2%}, 后10天 {np.mean(r10):+.2%}, 后20天 {np.mean(r20):+.2%}")
+        r5 = [(close[min(i + 5, len(close) - 1)] - close[i]) / close[i] for i in db_confirmed_days]
+        r10 = [
+            (close[min(i + 10, len(close) - 1)] - close[i]) / close[i] for i in db_confirmed_days
+        ]
+        r20 = [
+            (close[min(i + 20, len(close) - 1)] - close[i]) / close[i] for i in db_confirmed_days
+        ]
+        print(
+            f"  平均: 后5天 {np.mean(r5):+.2%}, 后10天 {np.mean(r10):+.2%}, 后20天 {np.mean(r20):+.2%}"
+        )
 
     # 核心结论
     print()

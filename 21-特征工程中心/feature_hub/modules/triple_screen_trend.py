@@ -7,6 +7,7 @@
   必须在导入 TrendFeatureEngineer 前把 10号目录**插到 sys.path[0]**，
   否则 `talib.abstract.EMA(...).pct_change()` 会抛 AttributeError。
 """
+
 from __future__ import annotations
 
 import importlib

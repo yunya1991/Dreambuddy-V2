@@ -3,13 +3,12 @@ import json
 import os
 import re
 import shutil
-import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
- 
- 
+
+
 def _safe_seg(s: str, *, fallback: str = "x", max_len: int = 80) -> str:
     raw = "" if s is None else str(s)
     raw = raw.strip()
@@ -19,7 +18,12 @@ def _safe_seg(s: str, *, fallback: str = "x", max_len: int = 80) -> str:
     out: List[str] = []
     last_us = False
     for ch in raw:
-        ok = ("a" <= ch <= "z") or ("A" <= ch <= "Z") or ("0" <= ch <= "9") or ch in {"-", "_", ".", "@"}
+        ok = (
+            ("a" <= ch <= "z")
+            or ("A" <= ch <= "Z")
+            or ("0" <= ch <= "9")
+            or ch in {"-", "_", ".", "@"}
+        )
         if ok:
             out.append(ch)
             last_us = False
@@ -33,8 +37,8 @@ def _safe_seg(s: str, *, fallback: str = "x", max_len: int = 80) -> str:
     if len(s2) > int(max_len):
         s2 = s2[: int(max_len)]
     return s2
- 
- 
+
+
 def _read_text(p: Path, *, max_bytes: int = 800_000) -> str:
     try:
         b = p.read_bytes()
@@ -49,16 +53,16 @@ def _read_text(p: Path, *, max_bytes: int = 800_000) -> str:
             return b.decode(errors="ignore")
         except Exception:
             return ""
- 
- 
+
+
 def _contains_class(text: str, cls: str) -> bool:
     if not cls:
         return False
     low = text.lower()
     c = cls.lower()
     return (f"class {c}" in low) or (f"class\t{c}" in low)
- 
- 
+
+
 def _infer_market(text: str) -> str:
     low = text.lower()
     if "can_short" in low and "true" in low:
@@ -66,8 +70,8 @@ def _infer_market(text: str) -> str:
     if "def leverage" in low or "leverage_mode" in low:
         return "futures"
     return "spot"
- 
- 
+
+
 def _infer_timeframe(text: str) -> str:
     m = re.search(r"timeframe\s*=\s*['\"]([^'\"]+)['\"]", text)
     if not m:
@@ -77,8 +81,8 @@ def _infer_timeframe(text: str) -> str:
         return "unknown"
     tf = tf.replace(" ", "")
     return tf[:20]
- 
- 
+
+
 def _infer_family(text: str, name: str) -> str:
     low = (text or "").lower()
     nm = (name or "").lower()
@@ -87,14 +91,22 @@ def _infer_family(text: str, name: str) -> str:
     if "breakout" in nm or "donchian" in low or "breakout" in low:
         return "breakout"
     mr_hits = 0
-    for kw in ("mean_reversion", "mean reversion", "reversion", "bollinger", "bbands", "zscore", "z-score"):
+    for kw in (
+        "mean_reversion",
+        "mean reversion",
+        "reversion",
+        "bollinger",
+        "bbands",
+        "zscore",
+        "z-score",
+    ):
         if kw in low:
             mr_hits += 1
     if mr_hits >= 2:
         return "mean_reversion"
     return "trend"
- 
- 
+
+
 def _infer_stage(path: Path) -> str:
     s = "/".join([str(x).lower() for x in path.parts])
     if "/deployment/" in s or s.endswith("/deployment"):
@@ -102,8 +114,8 @@ def _infer_stage(path: Path) -> str:
     if "/model/" in s or s.endswith("/model"):
         return "model"
     return "research"
- 
- 
+
+
 def _infer_indicator_tags(text: str) -> List[str]:
     low = text.lower()
     tags: List[str] = []
@@ -134,8 +146,8 @@ def _infer_indicator_tags(text: str) -> List[str]:
     if "stoploss" in low:
         tags.append("stoploss")
     return tags[:12]
- 
- 
+
+
 def _symlink_or_copy(src: Path, dst: Path) -> Tuple[bool, str]:
     sp = Path(src)
     dp = Path(dst)
@@ -168,8 +180,8 @@ def _symlink_or_copy(src: Path, dst: Path) -> Tuple[bool, str]:
             return True, "copy"
         except Exception as e:
             return False, str(e)
- 
- 
+
+
 @dataclass(frozen=True)
 class StrategyAsset:
     src_path: Path
@@ -183,8 +195,8 @@ class StrategyAsset:
     timeframe: str
     tags: List[str]
     text_has_class: bool
- 
- 
+
+
 def _collect_assets(root: Path) -> Tuple[List[StrategyAsset], List[Dict[str, str]]]:
     items: List[StrategyAsset] = []
     errs: List[Dict[str, str]] = []
@@ -202,7 +214,11 @@ def _collect_assets(root: Path) -> Tuple[List[StrategyAsset], List[Dict[str, str
             rel = p.relative_to(root)
         except Exception:
             rel = Path(p.name)
-        repo_slug = _safe_seg((rel.parts[0] if len(rel.parts) >= 2 else "unknown_repo"), fallback="unknown_repo", max_len=120)
+        repo_slug = _safe_seg(
+            (rel.parts[0] if len(rel.parts) >= 2 else "unknown_repo"),
+            fallback="unknown_repo",
+            max_len=120,
+        )
         rel_dir = str(rel.parent) if str(rel.parent) != "." else ""
         st_name = p.stem
         text = _read_text(p)
@@ -238,8 +254,8 @@ def _collect_assets(root: Path) -> Tuple[List[StrategyAsset], List[Dict[str, str
         )
     items.sort(key=lambda x: (x.repo_slug, x.strategy_name, str(x.src_path)))
     return items, errs
- 
- 
+
+
 def _pick_best_by_key(assets: List[StrategyAsset]) -> Dict[Tuple[str, str], StrategyAsset]:
     best: Dict[Tuple[str, str], StrategyAsset] = {}
     for a in assets:
@@ -264,8 +280,8 @@ def _pick_best_by_key(assets: List[StrategyAsset]) -> Dict[Tuple[str, str], Stra
         if sa > sb:
             best[k] = a
     return best
- 
- 
+
+
 def _ensure_dirs(root: Path) -> Dict[str, Path]:
     cats = {
         "_by_family": root / "_by_family",
@@ -283,8 +299,8 @@ def _ensure_dirs(root: Path) -> Dict[str, Path]:
         except Exception:
             pass
     return cats
- 
- 
+
+
 def _canonical_mirror(root: Path, repo_slug: str, rel_dir: str, strategy_name: str) -> Path:
     p = root / _safe_seg(repo_slug, fallback="unknown_repo", max_len=120)
     if rel_dir:
@@ -297,8 +313,8 @@ def _canonical_mirror(root: Path, repo_slug: str, rel_dir: str, strategy_name: s
     if not name.lower().endswith(".py"):
         name += ".py"
     return p / name
- 
- 
+
+
 def _reset_derived_dirs(root: Path) -> None:
     try:
         for p in root.iterdir():
@@ -314,11 +330,11 @@ def reconcile(*, root: Path, dry_run: bool, reset_derived: bool) -> Dict[str, ob
     cats = _ensure_dirs(root)
     assets, errs = _collect_assets(root)
     best = _pick_best_by_key(assets)
- 
+
     actions: List[Dict[str, object]] = []
     mirrored: List[Dict[str, object]] = []
     linked: List[Dict[str, object]] = []
- 
+
     for (repo_slug, st_name), a in best.items():
         mirror = _canonical_mirror(root, repo_slug, a.rel_dir, st_name)
         if mirror.resolve() != a.src_path.resolve():
@@ -334,25 +350,57 @@ def reconcile(*, root: Path, dry_run: bool, reset_derived: bool) -> Dict[str, ob
             mirrored.append({"strategy": st_name, "repo": repo_slug, "mirror": str(mirror)})
         else:
             mirrored.append({"strategy": st_name, "repo": repo_slug, "mirror": str(mirror)})
- 
+
         base = f"{_safe_seg(repo_slug, fallback='repo', max_len=80)}__{_safe_seg(st_name, fallback='strategy', max_len=140)}.py"
         targets: List[Tuple[str, Path]] = []
-        targets.append(("family", cats["_by_family"] / _safe_seg(a.family, fallback="trend", max_len=40) / base))
-        targets.append(("stage", cats["_by_stage"] / _safe_seg(a.stage, fallback="research", max_len=40) / base))
-        targets.append(("tier", cats["_by_tier"] / _safe_seg(a.tier, fallback="UNRATED", max_len=40) / base))
-        targets.append(("market", cats["_by_market"] / _safe_seg(a.market, fallback="unknown", max_len=40) / base))
-        targets.append(("timeframe", cats["_by_timeframe"] / _safe_seg(a.timeframe, fallback="unknown", max_len=40) / base))
-        targets.append(("repo", cats["_by_repo"] / _safe_seg(repo_slug, fallback="repo", max_len=80) / base))
+        targets.append(
+            (
+                "family",
+                cats["_by_family"] / _safe_seg(a.family, fallback="trend", max_len=40) / base,
+            )
+        )
+        targets.append(
+            (
+                "stage",
+                cats["_by_stage"] / _safe_seg(a.stage, fallback="research", max_len=40) / base,
+            )
+        )
+        targets.append(
+            ("tier", cats["_by_tier"] / _safe_seg(a.tier, fallback="UNRATED", max_len=40) / base)
+        )
+        targets.append(
+            (
+                "market",
+                cats["_by_market"] / _safe_seg(a.market, fallback="unknown", max_len=40) / base,
+            )
+        )
+        targets.append(
+            (
+                "timeframe",
+                cats["_by_timeframe"]
+                / _safe_seg(a.timeframe, fallback="unknown", max_len=40)
+                / base,
+            )
+        )
+        targets.append(
+            ("repo", cats["_by_repo"] / _safe_seg(repo_slug, fallback="repo", max_len=80) / base)
+        )
         for t in a.tags[:10]:
-            targets.append(("tag", cats["_by_tag"] / _safe_seg(t, fallback="tag", max_len=60) / base))
- 
+            targets.append(
+                ("tag", cats["_by_tag"] / _safe_seg(t, fallback="tag", max_len=60) / base)
+            )
+
         for kind, dst in targets:
             if dry_run:
-                linked.append({"ok": True, "dry_run": True, "kind": kind, "dst": str(dst), "src": str(mirror)})
+                linked.append(
+                    {"ok": True, "dry_run": True, "kind": kind, "dst": str(dst), "src": str(mirror)}
+                )
                 continue
             ok, mode = _symlink_or_copy(mirror, dst)
-            linked.append({"ok": bool(ok), "mode": mode, "kind": kind, "dst": str(dst), "src": str(mirror)})
- 
+            linked.append(
+                {"ok": bool(ok), "mode": mode, "kind": kind, "dst": str(dst), "src": str(mirror)}
+            )
+
     return {
         "ok": True,
         "ts": int(time.time() * 1000),
@@ -365,8 +413,8 @@ def reconcile(*, root: Path, dry_run: bool, reset_derived: bool) -> Dict[str, ob
         "links": linked,
         "errors": errs,
     }
- 
- 
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="user_data/strategies/github")
@@ -374,16 +422,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--write-report", action="store_true")
     ap.add_argument("--reset-derived", action="store_true")
     ns = ap.parse_args(argv)
- 
+
     cwd = Path(os.getcwd())
     root = Path(ns.root)
     if not root.is_absolute():
         root = cwd / root
     root = root.resolve()
- 
+
     out = reconcile(root=root, dry_run=bool(ns.dry_run), reset_derived=bool(ns.reset_derived))
     print(json.dumps(out, ensure_ascii=False, indent=2))
- 
+
     if bool(ns.write_report):
         rep_dir = root / "_reports"
         try:
@@ -399,9 +447,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                 p.write_text(json.dumps(out, ensure_ascii=False, indent=2))
             except Exception:
                 pass
- 
+
     return 0 if bool(out.get("ok")) else 1
- 
- 
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

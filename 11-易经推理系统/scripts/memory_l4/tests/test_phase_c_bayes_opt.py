@@ -12,13 +12,12 @@
   • 目标函数返回 float
   • mock Optuna 验证 optimize 返回 best_params 结构
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
@@ -29,12 +28,14 @@ sys.path.insert(0, str(THIS_DIR))
 # T_C4: 贝叶斯优化
 # ================================================================
 
+
 class TestPhaseCBayesianOptimizer:
     """验证 PhaseCBayesianOptimizer 类。"""
 
     def test_class_importable(self):
         """T_C4.1: PhaseCBayesianOptimizer 类可实例化。"""
         from bcrm2.scripts.phase_c_bayes_opt import PhaseCBayesianOptimizer
+
         opt = PhaseCBayesianOptimizer(n_trials=10, n_folds=2)
         assert opt is not None
         assert opt.n_trials == 10
@@ -43,6 +44,7 @@ class TestPhaseCBayesianOptimizer:
     def test_optimize_method_exists(self):
         """T_C4.2: optimize 方法存在。"""
         from bcrm2.scripts.phase_c_bayes_opt import PhaseCBayesianOptimizer
+
         opt = PhaseCBayesianOptimizer()
         assert hasattr(opt, "optimize")
         assert callable(opt.optimize)
@@ -50,6 +52,7 @@ class TestPhaseCBayesianOptimizer:
     def test_param_space_has_four_params(self):
         """T_C4.3: 参数空间包含 4 个参数。"""
         from bcrm2.scripts.phase_c_bayes_opt import PhaseCBayesianOptimizer
+
         opt = PhaseCBayesianOptimizer()
         # 参数空间定义在类属性或实例属性
         space = getattr(opt, "param_space", None) or getattr(opt, "PARAM_SPACE", None)
@@ -74,8 +77,10 @@ class TestPhaseCBayesianOptimizer:
         mock_trial.suggest_float.return_value = 0.2
 
         # mock run_alpha_blend_comparison + Path.exists
-        with patch("bcrm2.scripts.phase_c_bayes_opt.run_alpha_blend_comparison") as mock_run, \
-             patch("pathlib.Path.exists", return_value=True):
+        with (
+            patch("bcrm2.scripts.phase_c_bayes_opt.run_alpha_blend_comparison") as mock_run,
+            patch("pathlib.Path.exists", return_value=True),
+        ):
             mock_run.return_value = {
                 "alpha_results": {"0.2": {"sharpe": 1.5}},
             }
@@ -100,8 +105,10 @@ class TestPhaseCBayesianOptimizer:
         }
         mock_study.best_value = 1.8
 
-        with patch("bcrm2.scripts.phase_c_bayes_opt.optuna") as mock_optuna_mod, \
-             patch("bcrm2.scripts.phase_c_bayes_opt.run_alpha_blend_comparison"):
+        with (
+            patch("bcrm2.scripts.phase_c_bayes_opt.optuna") as mock_optuna_mod,
+            patch("bcrm2.scripts.phase_c_bayes_opt.run_alpha_blend_comparison"),
+        ):
             mock_optuna_mod.create_study.return_value = mock_study
             result = opt.optimize(symbol="BTCUSDT", csv_path=Path("fake.csv"))
 
@@ -114,8 +121,8 @@ class TestPhaseCBayesianOptimizer:
 
     def test_alpha_blend_max_constraint(self):
         """T_C4.6: alpha_blend 参数范围受 ALPHA_BLEND_MAX=0.5 约束。"""
-        from bcrm2.scripts.phase_c_bayes_opt import PhaseCBayesianOptimizer
         from bcrm2.parameter_mapper import ALPHA_BLEND_MAX
+        from bcrm2.scripts.phase_c_bayes_opt import PhaseCBayesianOptimizer
 
         opt = PhaseCBayesianOptimizer()
         space = getattr(opt, "param_space", None) or getattr(opt, "PARAM_SPACE", None)

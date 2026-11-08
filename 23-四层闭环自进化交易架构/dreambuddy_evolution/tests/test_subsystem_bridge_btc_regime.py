@@ -5,11 +5,10 @@
 
 硬约束: FAIL-OPEN — trader/状态缺失/异常 → 静默返回，不抛异常
 """
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 from types import SimpleNamespace
-
-import pytest
 
 # ---- path inject ----
 REPO = Path(__file__).resolve().parents[2]

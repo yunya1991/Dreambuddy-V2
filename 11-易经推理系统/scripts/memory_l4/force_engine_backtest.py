@@ -14,18 +14,18 @@
   3. 置信度校准（高置信度信号是否更准确）
   4. 预警提前量（TDA/Ising vs 力学减速的时间差）
 """
-import sys
-import os
+
 import json
-import time
 import logging
+import os
+import sys
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from datetime import datetime
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-from collections import defaultdict
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,12 +34,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-from scripts.memory_l4.bcrm.force_engine import ForceEngine, ForceResult
-from scripts.memory_l4.bcrm._constants import (
-    SIXIANG_TIME, SIXIANG_SPACE, SIXIANG_SURFACE, SIXIANG_CORE, SIXIANG_LIQUIDITY,
-    FORCE_WEIGHT_TIME, FORCE_WEIGHT_SPACE, FORCE_WEIGHT_SURFACE,
-    FORCE_WEIGHT_CORE, FORCE_WEIGHT_LIQUIDITY,
-)
+from scripts.memory_l4.bcrm.force_engine import ForceEngine  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -47,13 +42,15 @@ logger = logging.getLogger(__name__)
 # 数据结构
 # ============================================================
 
+
 @dataclass
 class SignalRecord:
     """单条信号记录"""
+
     timestamp: str = ""
     bar_index: int = 0
     mode: str = ""
-    direction: str = "FLAT"       # UP/DOWN/FLAT
+    direction: str = "FLAT"  # UP/DOWN/FLAT
     confidence: float = 0.0
     velocity: float = 0.0
     reversal_warning: bool = False
@@ -64,7 +61,7 @@ class SignalRecord:
     tda_strength: float = 0.0
     agreement_score: float = 0.0
     # 未来实际结果（后续填充）
-    future_return_5: float = 0.0   # 未来5根K线收益
+    future_return_5: float = 0.0  # 未来5根K线收益
     future_return_10: float = 0.0  # 未来10根K线收益
     future_max_drawdown: float = 0.0  # 未来10根最大回撤
     actual_direction: str = "FLAT"  # UP/DOWN/FLAT
@@ -73,18 +70,19 @@ class SignalRecord:
 @dataclass
 class ModeMetrics:
     """单模式回测指标"""
+
     mode: str = ""
     total_signals: int = 0
     # 方向准确率
     direction_accuracy: float = 0.0
-    up_precision: float = 0.0      # 做多信号中实际上涨的比例
-    down_precision: float = 0.0    # 做空信号中实际下跌的比例
+    up_precision: float = 0.0  # 做多信号中实际上涨的比例
+    down_precision: float = 0.0  # 做空信号中实际下跌的比例
     # 置信度校准
-    high_conf_accuracy: float = 0.0   # 高置信度(>0.6)信号准确率
-    low_conf_accuracy: float = 0.0    # 低置信度(<0.4)信号准确率
+    high_conf_accuracy: float = 0.0  # 高置信度(>0.6)信号准确率
+    low_conf_accuracy: float = 0.0  # 低置信度(<0.4)信号准确率
     # 转折预警
     total_reversal_warnings: int = 0
-    reversal_hit_rate: float = 0.0    # 预警后实际反转的比例
+    reversal_hit_rate: float = 0.0  # 预警后实际反转的比例
     # TDA/Ising预警
     tda_warnings: int = 0
     tda_hit_rate: float = 0.0
@@ -102,6 +100,7 @@ class ModeMetrics:
 # ============================================================
 # 回测引擎
 # ============================================================
+
 
 class ForceEngineBacktester:
     """力学引擎回测器"""
@@ -154,8 +153,12 @@ class ForceEngineBacktester:
         if idx < 50:
             return None
 
-        closes = df["close"].values[:idx + 1].astype(float)
-        volumes = df["volume"].values[:idx + 1].astype(float) if "volume" in df.columns else np.ones(idx + 1)
+        closes = df["close"].values[: idx + 1].astype(float)
+        volumes = (
+            df["volume"].values[: idx + 1].astype(float)
+            if "volume" in df.columns
+            else np.ones(idx + 1)
+        )
 
         # 技术指标计算
         # 均线
@@ -206,7 +209,9 @@ class ForceEngineBacktester:
         # 周期位置（简化）
         long_cycle = np.mean(closes[-60:]) / closes[-1] if closes[-1] > 0 else 0.5
         long_cycle_position = min(1.0, max(0.0, long_cycle))
-        mid_cycle_position = (closes[-1] - np.min(closes[-30:])) / (np.max(closes[-30:]) - np.min(closes[-30:]) + 1e-9)
+        mid_cycle_position = (closes[-1] - np.min(closes[-30:])) / (
+            np.max(closes[-30:]) - np.min(closes[-30:]) + 1e-9
+        )
 
         # 波动率
         returns = np.diff(np.log(closes[-21:])) if len(closes) >= 22 else [0.01]
@@ -304,11 +309,13 @@ class ForceEngineBacktester:
         tda_detector = None
         try:
             from scripts.memory_l4.bcrm.ising_phase_detector import IsingPhaseDetector
+
             ising_detector = IsingPhaseDetector()
         except Exception:
             pass
         try:
             from scripts.memory_l4.bcrm.tda_early_warning import TDAEarlyWarning
+
             tda_detector = TDAEarlyWarning()
         except Exception:
             pass
@@ -328,7 +335,7 @@ class ForceEngineBacktester:
             future_returns = {}
             for fw in self.FORWARD_WINDOWS:
                 if idx + fw < len(closes):
-                    future_returns[fw] = (closes[idx + fw] / closes[idx] - 1)
+                    future_returns[fw] = closes[idx + fw] / closes[idx] - 1
                 else:
                     future_returns[fw] = 0.0
 
@@ -342,7 +349,7 @@ class ForceEngineBacktester:
                 actual_dir = "FLAT"
 
             # 未来最大回撤（10根内）
-            future_closes = closes[idx + 1: idx + 11]
+            future_closes = closes[idx + 1 : idx + 11]
             if len(future_closes) > 0:
                 running_max = np.maximum.accumulate(future_closes)
                 drawdowns = (future_closes - running_max) / running_max
@@ -350,7 +357,7 @@ class ForceEngineBacktester:
             else:
                 future_max_dd = 0.0
 
-            ts = str(df.index[idx]) if hasattr(df.index, '__getitem__') else str(idx)
+            ts = str(df.index[idx]) if hasattr(df.index, "__getitem__") else str(idx)
 
             for mode in modes:
                 engine = engines[mode]
@@ -378,18 +385,20 @@ class ForceEngineBacktester:
                 # P2模式：额外运行Ising和TDA
                 if mode == "p2_full" and ising_detector is not None:
                     try:
-                        returns_data = np.diff(np.log(closes[max(0, idx - 100):idx + 1]))
+                        returns_data = np.diff(np.log(closes[max(0, idx - 100) : idx + 1]))
                         returns_data = returns_data[~np.isnan(returns_data)]
                         if len(returns_data) >= 10:
                             ising_r = ising_detector.detect(returns_data, snapshot["volatility"])
                             record.ising_phase = ising_r.phase
-                            record.ising_alert = ising_r.phase_transition_alert or ising_r.phase == "CRITICAL"
+                            record.ising_alert = (
+                                ising_r.phase_transition_alert or ising_r.phase == "CRITICAL"
+                            )
                     except Exception:
                         pass
 
                 if mode == "p2_full" and tda_detector is not None:
                     try:
-                        price_series = closes[max(0, idx - 100):idx + 1]
+                        price_series = closes[max(0, idx - 100) : idx + 1]
                         if len(price_series) >= 25:
                             tda_r = tda_detector.detect(price_series)
                             record.tda_warning = tda_r.early_warning
@@ -428,17 +437,25 @@ class ForceEngineBacktester:
             up_signals = [s for s in non_flat if s.direction == "UP"]
             down_signals = [s for s in non_flat if s.direction == "DOWN"]
             if up_signals:
-                metrics.up_precision = sum(1 for s in up_signals if s.actual_direction == "UP") / len(up_signals)
+                metrics.up_precision = sum(
+                    1 for s in up_signals if s.actual_direction == "UP"
+                ) / len(up_signals)
             if down_signals:
-                metrics.down_precision = sum(1 for s in down_signals if s.actual_direction == "DOWN") / len(down_signals)
+                metrics.down_precision = sum(
+                    1 for s in down_signals if s.actual_direction == "DOWN"
+                ) / len(down_signals)
 
         # 置信度校准
         high_conf = [s for s in non_flat if s.confidence >= self.HIGH_CONF_THRESHOLD]
         low_conf = [s for s in non_flat if s.confidence <= self.LOW_CONF_THRESHOLD]
         if high_conf:
-            metrics.high_conf_accuracy = sum(1 for s in high_conf if s.direction == s.actual_direction) / len(high_conf)
+            metrics.high_conf_accuracy = sum(
+                1 for s in high_conf if s.direction == s.actual_direction
+            ) / len(high_conf)
         if low_conf:
-            metrics.low_conf_accuracy = sum(1 for s in low_conf if s.direction == s.actual_direction) / len(low_conf)
+            metrics.low_conf_accuracy = sum(
+                1 for s in low_conf if s.direction == s.actual_direction
+            ) / len(low_conf)
 
         # 转折预警有效性
         warnings = [s for s in signals if s.reversal_warning]
@@ -448,9 +465,11 @@ class ForceEngineBacktester:
             hits = 0
             for s in warnings:
                 # 反转判定：未来10根收益与当前速度方向相反，或回撤超过阈值
-                if (s.velocity > 0 and s.future_return_10 < -self.REVERSAL_THRESHOLD) or \
-                   (s.velocity < 0 and s.future_return_10 > self.REVERSAL_THRESHOLD) or \
-                   (s.future_max_drawdown < -self.REVERSAL_THRESHOLD):
+                if (
+                    (s.velocity > 0 and s.future_return_10 < -self.REVERSAL_THRESHOLD)
+                    or (s.velocity < 0 and s.future_return_10 > self.REVERSAL_THRESHOLD)
+                    or (s.future_max_drawdown < -self.REVERSAL_THRESHOLD)
+                ):
                     hits += 1
             metrics.reversal_hit_rate = hits / len(warnings)
 
@@ -458,18 +477,24 @@ class ForceEngineBacktester:
         tda_warnings = [s for s in signals if s.tda_warning]
         metrics.tda_warnings = len(tda_warnings)
         if tda_warnings:
-            tda_hits = sum(1 for s in tda_warnings if
-                           abs(s.future_return_10) > self.REVERSAL_THRESHOLD or
-                           s.future_max_drawdown < -self.REVERSAL_THRESHOLD)
+            tda_hits = sum(
+                1
+                for s in tda_warnings
+                if abs(s.future_return_10) > self.REVERSAL_THRESHOLD
+                or s.future_max_drawdown < -self.REVERSAL_THRESHOLD
+            )
             metrics.tda_hit_rate = tda_hits / len(tda_warnings)
 
         # Ising预警
         ising_alerts = [s for s in signals if s.ising_alert]
         metrics.ising_alerts = len(ising_alerts)
         if ising_alerts:
-            ising_hits = sum(1 for s in ising_alerts if
-                             abs(s.future_return_10) > self.REVERSAL_THRESHOLD or
-                             s.future_max_drawdown < -self.REVERSAL_THRESHOLD)
+            ising_hits = sum(
+                1
+                for s in ising_alerts
+                if abs(s.future_return_10) > self.REVERSAL_THRESHOLD
+                or s.future_max_drawdown < -self.REVERSAL_THRESHOLD
+            )
             metrics.ising_hit_rate = ising_hits / len(ising_alerts)
 
         # 预警提前量（TDA/Ising比力学减速早多少bar）
@@ -525,8 +550,10 @@ class ForceEngineBacktester:
         """生成回测报告"""
         if output_path is None:
             output_path = os.path.join(
-                PROJECT_ROOT, "data", "backtest",
-                f"force_engine_backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                PROJECT_ROOT,
+                "data",
+                "backtest",
+                f"force_engine_backtest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
             )
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -574,15 +601,40 @@ class ForceEngineBacktester:
             if mode_data:
                 report["summary"][mode] = {
                     "avg_direction_accuracy": round(
-                        float(np.mean([m.direction_accuracy for m in mode_data if m.total_signals > 0])), 4),
+                        float(
+                            np.mean(
+                                [m.direction_accuracy for m in mode_data if m.total_signals > 0]
+                            )
+                        ),
+                        4,
+                    ),
                     "avg_high_conf_accuracy": round(
-                        float(np.mean([m.high_conf_accuracy for m in mode_data if m.total_signals > 0])), 4),
+                        float(
+                            np.mean(
+                                [m.high_conf_accuracy for m in mode_data if m.total_signals > 0]
+                            )
+                        ),
+                        4,
+                    ),
                     "avg_reversal_hit_rate": round(
-                        float(np.mean([m.reversal_hit_rate for m in mode_data if m.total_reversal_warnings > 0])), 4),
+                        float(
+                            np.mean(
+                                [
+                                    m.reversal_hit_rate
+                                    for m in mode_data
+                                    if m.total_reversal_warnings > 0
+                                ]
+                            )
+                        ),
+                        4,
+                    ),
                     "avg_tda_hit_rate": round(
-                        float(np.mean([m.tda_hit_rate for m in mode_data if m.tda_warnings > 0])), 4),
+                        float(np.mean([m.tda_hit_rate for m in mode_data if m.tda_warnings > 0])), 4
+                    ),
                     "avg_ising_hit_rate": round(
-                        float(np.mean([m.ising_hit_rate for m in mode_data if m.ising_alerts > 0])), 4),
+                        float(np.mean([m.ising_hit_rate for m in mode_data if m.ising_alerts > 0])),
+                        4,
+                    ),
                     "total_signals": sum(m.total_signals for m in mode_data),
                     "total_reversal_warnings": sum(m.total_reversal_warnings for m in mode_data),
                     "total_tda_warnings": sum(m.tda_warnings for m in mode_data),
@@ -606,7 +658,9 @@ class ForceEngineBacktester:
             print(f"\n{'─' * 90}")
             print(f"  {symbol}")
             print(f"{'─' * 90}")
-            print(f"  {'模式':<12} {'信号数':>6} {'准确率':>8} {'高置信准确率':>12} {'预警数':>6} {'预警命中率':>10} {'平均置信度':>10}")
+            print(
+                f"  {'模式':<12} {'信号数':>6} {'准确率':>8} {'高置信准确率':>12} {'预警数':>6} {'预警命中率':>10} {'平均置信度':>10}"
+            )
             print(f"  {'-'*12} {'-'*6} {'-'*8} {'-'*12} {'-'*6} {'-'*10} {'-'*10}")
 
             for mode in modes:
@@ -615,23 +669,29 @@ class ForceEngineBacktester:
                 m = mode_metrics[mode]
                 if m.total_signals == 0:
                     continue
-                print(f"  {mode:<12} {m.total_signals:>6} {m.direction_accuracy:>8.1%} "
-                      f"{m.high_conf_accuracy:>12.1%} {m.total_reversal_warnings:>6} "
-                      f"{m.reversal_hit_rate:>10.1%} {m.avg_confidence:>10.4f}")
+                print(
+                    f"  {mode:<12} {m.total_signals:>6} {m.direction_accuracy:>8.1%} "
+                    f"{m.high_conf_accuracy:>12.1%} {m.total_reversal_warnings:>6} "
+                    f"{m.reversal_hit_rate:>10.1%} {m.avg_confidence:>10.4f}"
+                )
 
             # P2专用：TDA/Ising预警
             if "p2_full" in mode_metrics:
                 m = mode_metrics["p2_full"]
                 if m.tda_warnings > 0 or m.ising_alerts > 0:
-                    print(f"\n  [P2五角校验预警]")
-                    print(f"  TDA预警: {m.tda_warnings}次, 命中率={m.tda_hit_rate:.1%}, 平均提前={m.avg_early_warning_bars:.1f}bars")
+                    print("\n  [P2五角校验预警]")
+                    print(
+                        f"  TDA预警: {m.tda_warnings}次, 命中率={m.tda_hit_rate:.1%}, 平均提前={m.avg_early_warning_bars:.1f}bars"
+                    )
                     print(f"  Ising预警: {m.ising_alerts}次, 命中率={m.ising_hit_rate:.1%}")
 
         # 汇总
         print(f"\n{'=' * 90}")
         print("跨币种汇总")
         print(f"{'=' * 90}")
-        print(f"  {'模式':<12} {'总信号':>8} {'平均准确率':>10} {'平均高置信准确率':>16} {'总预警':>8} {'平均预警命中率':>14}")
+        print(
+            f"  {'模式':<12} {'总信号':>8} {'平均准确率':>10} {'平均高置信准确率':>16} {'总预警':>8} {'平均预警命中率':>14}"
+        )
         print(f"  {'-'*12} {'-'*8} {'-'*10} {'-'*16} {'-'*8} {'-'*14}")
 
         for mode in modes:
@@ -639,12 +699,26 @@ class ForceEngineBacktester:
             if not mode_data:
                 continue
             total_sig = sum(m.total_signals for m in mode_data)
-            avg_acc = float(np.mean([m.direction_accuracy for m in mode_data if m.total_signals > 0]))
-            avg_high = float(np.mean([m.high_conf_accuracy for m in mode_data if m.total_signals > 0]))
+            avg_acc = float(
+                np.mean([m.direction_accuracy for m in mode_data if m.total_signals > 0])
+            )
+            avg_high = float(
+                np.mean([m.high_conf_accuracy for m in mode_data if m.total_signals > 0])
+            )
             total_warn = sum(m.total_reversal_warnings for m in mode_data)
-            avg_warn_hit = float(np.mean([m.reversal_hit_rate for m in mode_data if m.total_reversal_warnings > 0])) if any(m.total_reversal_warnings > 0 for m in mode_data) else 0
+            avg_warn_hit = (
+                float(
+                    np.mean(
+                        [m.reversal_hit_rate for m in mode_data if m.total_reversal_warnings > 0]
+                    )
+                )
+                if any(m.total_reversal_warnings > 0 for m in mode_data)
+                else 0
+            )
 
-            print(f"  {mode:<12} {total_sig:>8} {avg_acc:>10.1%} {avg_high:>16.1%} {total_warn:>8} {avg_warn_hit:>14.1%}")
+            print(
+                f"  {mode:<12} {total_sig:>8} {avg_acc:>10.1%} {avg_high:>16.1%} {total_warn:>8} {avg_warn_hit:>14.1%}"
+            )
 
         print(f"\n{'=' * 90}")
 
@@ -652,6 +726,7 @@ class ForceEngineBacktester:
 # ============================================================
 # 主入口
 # ============================================================
+
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -661,7 +736,7 @@ def main():
     timeframe = "1H"
     modes = ["baseline", "p0", "p1_kalman", "p2_full"]
 
-    print(f"\n力学引擎回测")
+    print("\n力学引擎回测")
     print(f"币种: {symbols}")
     print(f"周期: {timeframe}")
     print(f"模式: {modes}")

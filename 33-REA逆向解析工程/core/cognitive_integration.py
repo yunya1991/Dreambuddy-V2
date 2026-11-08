@@ -146,7 +146,7 @@ def _convert_evidence_to_entries(investigation: dict[str, Any]) -> list[dict[str
       level: evidence.level.value
     """
     evidence_list = investigation.get("evidence", [])
-    target = investigation.get("target", "unknown")
+    target = investigation.get("target", "unknown")  # noqa: F841
 
     entries: list[dict[str, Any]] = []
     for e in evidence_list:
@@ -159,14 +159,16 @@ def _convert_evidence_to_entries(investigation: dict[str, Any]) -> list[dict[str
         # content 作为 object（结论内容）
         obj = getattr(e, "content", "") or str(e)
 
-        entries.append({
-            "subject": "33-REA",
-            "relation": "分析了",
-            "object": obj,
-            "source": f"33-REA:{source}",
-            "confidence": float(getattr(e, "confidence", 0.5)),
-            "level": level,
-        })
+        entries.append(
+            {
+                "subject": "33-REA",
+                "relation": "分析了",
+                "object": obj,
+                "source": f"33-REA:{source}",
+                "confidence": float(getattr(e, "confidence", 0.5)),
+                "level": level,
+            }
+        )
 
     return entries
 
@@ -211,6 +213,7 @@ class CognitiveIntegration:
 # ==================================================================
 # PoE 扩展（Task 6）— 决策/方法论/审计的 record 参数生成
 # ==================================================================
+
 
 def prepare_decision_record_params(decision_result: dict[str, Any]) -> dict[str, Any]:
     """将设计决策还原结果格式化为 record() 调用参数。

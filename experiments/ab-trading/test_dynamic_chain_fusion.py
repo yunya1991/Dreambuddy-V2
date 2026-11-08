@@ -12,33 +12,30 @@ C层 - 动态链融合测试
 5. 融合编排器 - 端到端流程
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import unittest
-from typing import Dict, Any, List
+from typing import Dict, List
 
 # 添加路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.c_execution_layer import (
+from core.c_execution_layer import (  # noqa: I001
     NodeExecutionResult,
-    NodeStatus,
     LLMResultAnalyzer,
     ResultAnalysis,
     DynamicDecisionMaker,
     DynamicReplanner,
-    ReplanningResult,
     ExecutionReflector,
-    ExecutionReflection,
     FusionOrchestrator,
 )
 
 from core.intent_engine.types import ExecutionBlueprint
 
-
 # ============================================================
 # 测试工具
 # ============================================================
+
 
 def make_node_result(
     node_id: str,
@@ -72,6 +69,7 @@ def make_test_blueprint(node_ids: List[str]) -> ExecutionBlueprint:
 # ============================================================
 # LLM结果分析器测试
 # ============================================================
+
 
 class TestLLMResultAnalyzer(unittest.TestCase):
     """测试LLM结果分析器（规则模式）"""
@@ -139,6 +137,7 @@ class TestLLMResultAnalyzer(unittest.TestCase):
 # ============================================================
 # 动态决策器测试
 # ============================================================
+
 
 class TestDynamicDecisionMaker(unittest.TestCase):
     """测试动态决策器（规则模式）"""
@@ -221,6 +220,7 @@ class TestDynamicDecisionMaker(unittest.TestCase):
 # 动态重规划器测试
 # ============================================================
 
+
 class TestDynamicReplanner(unittest.TestCase):
     """测试动态重规划器"""
 
@@ -250,16 +250,12 @@ class TestDynamicReplanner(unittest.TestCase):
         history = []
 
         for i in range(3):
-            result = self.replanner.replan(
-                blueprint, f"node_{i}", "测试", history
-            )
+            result = self.replanner.replan(blueprint, f"node_{i}", "测试", history)
             if result.new_blueprint:
                 blueprint = result.new_blueprint
 
         # 第4次应该失败
-        result = self.replanner.replan(
-            blueprint, "node_x", "测试", history
-        )
+        result = self.replanner.replan(blueprint, "node_x", "测试", history)
 
         self.assertFalse(result.success)
         self.assertTrue(result.max_replans_reached)
@@ -289,6 +285,7 @@ class TestDynamicReplanner(unittest.TestCase):
 # ============================================================
 # 执行反思进化器测试
 # ============================================================
+
 
 class TestExecutionReflector(unittest.TestCase):
     """测试执行反思进化器"""
@@ -322,9 +319,7 @@ class TestExecutionReflector(unittest.TestCase):
         reflection = self.reflector.reflect(history)
 
         self.assertLess(reflection.quality_score, 1.0)
-        self.assertTrue(
-            any(ins.level == "error" for ins in reflection.insights)
-        )
+        self.assertTrue(any(ins.level == "error" for ins in reflection.insights))
 
     def test_reflect_empty_history(self):
         """测试空历史的反思"""
@@ -366,6 +361,7 @@ class TestExecutionReflector(unittest.TestCase):
 # ============================================================
 # 融合编排器测试（端到端）
 # ============================================================
+
 
 class TestFusionOrchestrator(unittest.TestCase):
     """测试融合编排器（端到端流程）"""
@@ -470,5 +466,5 @@ class TestFusionOrchestrator(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

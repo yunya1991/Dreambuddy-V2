@@ -1,6 +1,6 @@
 """25-用户策略生成系统 Flask API 测试"""
+
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -11,7 +11,7 @@ _MODULE_DIR = Path(__file__).resolve().parent.parent
 if str(_MODULE_DIR) not in sys.path:
     sys.path.insert(0, str(_MODULE_DIR))
 
-from app import app
+from app import app  # noqa: E402
 
 
 @pytest.fixture
@@ -24,6 +24,7 @@ def client():
 # ---------------------------------------------------------------------------
 # 健康检查
 # ---------------------------------------------------------------------------
+
 
 def test_health(client):
     r = client.get("/health")
@@ -38,10 +39,13 @@ def test_health(client):
 # 意图 → 策略设计
 # ---------------------------------------------------------------------------
 
+
 def test_gen_intent_ok(client):
-    r = client.post("/api/v1/gen/intent",
-                    data=json.dumps({"intent": "做多 BTC", "symbol": "BTC/USDT"}),
-                    content_type="application/json")
+    r = client.post(
+        "/api/v1/gen/intent",
+        data=json.dumps({"intent": "做多 BTC", "symbol": "BTC/USDT"}),
+        content_type="application/json",
+    )
     assert r.status_code == 200
     data = r.get_json()
     assert data["ok"] is True
@@ -49,9 +53,7 @@ def test_gen_intent_ok(client):
 
 
 def test_gen_intent_missing_intent(client):
-    r = client.post("/api/v1/gen/intent",
-                    data=json.dumps({}),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/intent", data=json.dumps({}), content_type="application/json")
     assert r.status_code == 400
     data = r.get_json()
     assert data["ok"] is False
@@ -62,10 +64,13 @@ def test_gen_intent_missing_intent(client):
 # 回测
 # ---------------------------------------------------------------------------
 
+
 def test_gen_backtest_ok(client):
-    r = client.post("/api/v1/gen/backtest",
-                    data=json.dumps({"strategy_id": "test_strat_001"}),
-                    content_type="application/json")
+    r = client.post(
+        "/api/v1/gen/backtest",
+        data=json.dumps({"strategy_id": "test_strat_001"}),
+        content_type="application/json",
+    )
     assert r.status_code == 200
     data = r.get_json()
     assert data["ok"] is True
@@ -73,9 +78,7 @@ def test_gen_backtest_ok(client):
 
 
 def test_gen_backtest_missing_id(client):
-    r = client.post("/api/v1/gen/backtest",
-                    data=json.dumps({}),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/backtest", data=json.dumps({}), content_type="application/json")
     assert r.status_code == 400
     assert r.get_json()["error"] == "missing_strategy_id"
 
@@ -84,20 +87,25 @@ def test_gen_backtest_missing_id(client):
 # 基线对比
 # ---------------------------------------------------------------------------
 
+
 def test_gen_compare_user_wins(client):
     body = {
         "user_metrics": {
-            "profit_factor": 1.5, "max_drawdown_pct": 8.0, "winrate": 55.0,
-            "sharpe_ratio": 1.2, "trades": 100
+            "profit_factor": 1.5,
+            "max_drawdown_pct": 8.0,
+            "winrate": 55.0,
+            "sharpe_ratio": 1.2,
+            "trades": 100,
         },
         "baseline_metrics": {
-            "profit_factor": 1.3, "max_drawdown_pct": 10.0, "winrate": 50.0,
-            "sharpe_ratio": 1.0, "trades": 100
+            "profit_factor": 1.3,
+            "max_drawdown_pct": 10.0,
+            "winrate": 50.0,
+            "sharpe_ratio": 1.0,
+            "trades": 100,
         },
     }
-    r = client.post("/api/v1/gen/compare",
-                    data=json.dumps(body),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/compare", data=json.dumps(body), content_type="application/json")
     assert r.status_code == 200
     data = r.get_json()
     assert data["ok"] is True
@@ -108,17 +116,21 @@ def test_gen_compare_user_wins(client):
 def test_gen_compare_baseline_wins(client):
     body = {
         "user_metrics": {
-            "profit_factor": 1.0, "max_drawdown_pct": 15.0, "winrate": 45.0,
-            "sharpe_ratio": 0.5, "trades": 100
+            "profit_factor": 1.0,
+            "max_drawdown_pct": 15.0,
+            "winrate": 45.0,
+            "sharpe_ratio": 0.5,
+            "trades": 100,
         },
         "baseline_metrics": {
-            "profit_factor": 1.5, "max_drawdown_pct": 8.0, "winrate": 55.0,
-            "sharpe_ratio": 1.2, "trades": 100
+            "profit_factor": 1.5,
+            "max_drawdown_pct": 8.0,
+            "winrate": 55.0,
+            "sharpe_ratio": 1.2,
+            "trades": 100,
         },
     }
-    r = client.post("/api/v1/gen/compare",
-                    data=json.dumps(body),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/compare", data=json.dumps(body), content_type="application/json")
     assert r.status_code == 200
     data = r.get_json()
     assert data["ok"] is True
@@ -126,9 +138,11 @@ def test_gen_compare_baseline_wins(client):
 
 
 def test_gen_compare_missing_metrics(client):
-    r = client.post("/api/v1/gen/compare",
-                    data=json.dumps({"user_metrics": {}}),
-                    content_type="application/json")
+    r = client.post(
+        "/api/v1/gen/compare",
+        data=json.dumps({"user_metrics": {}}),
+        content_type="application/json",
+    )
     assert r.status_code == 400
     assert r.get_json()["error"] == "missing_metrics"
 
@@ -138,9 +152,7 @@ def test_gen_compare_insufficient_trades(client):
         "user_metrics": {"profit_factor": 1.5, "trades": 10},
         "baseline_metrics": {"profit_factor": 1.3, "trades": 100},
     }
-    r = client.post("/api/v1/gen/compare",
-                    data=json.dumps(body),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/compare", data=json.dumps(body), content_type="application/json")
     assert r.status_code == 200
     data = r.get_json()
     assert data["result"]["winner"] == "baseline"
@@ -151,16 +163,18 @@ def test_gen_compare_insufficient_trades(client):
 # 综合评分
 # ---------------------------------------------------------------------------
 
+
 def test_gen_score_ok(client):
     body = {
         "metrics": {
-            "profit_factor": 1.5, "max_drawdown_pct": 8.0, "winrate": 55.0,
-            "sharpe_ratio": 1.2, "trades": 100
+            "profit_factor": 1.5,
+            "max_drawdown_pct": 8.0,
+            "winrate": 55.0,
+            "sharpe_ratio": 1.2,
+            "trades": 100,
         }
     }
-    r = client.post("/api/v1/gen/score",
-                    data=json.dumps(body),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/score", data=json.dumps(body), content_type="application/json")
     assert r.status_code == 200
     data = r.get_json()
     assert data["ok"] is True
@@ -169,9 +183,7 @@ def test_gen_score_ok(client):
 
 
 def test_gen_score_missing_metrics(client):
-    r = client.post("/api/v1/gen/score",
-                    data=json.dumps({}),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/score", data=json.dumps({}), content_type="application/json")
     assert r.status_code == 400
 
 
@@ -179,25 +191,27 @@ def test_gen_score_missing_metrics(client):
 # 完整流水线
 # ---------------------------------------------------------------------------
 
+
 def test_gen_pipeline_ok(client):
-    r = client.post("/api/v1/gen/pipeline",
-                    data=json.dumps({"intent": "做多 BTC"}),
-                    content_type="application/json")
+    r = client.post(
+        "/api/v1/gen/pipeline",
+        data=json.dumps({"intent": "做多 BTC"}),
+        content_type="application/json",
+    )
     assert r.status_code == 200
     data = r.get_json()
     assert data["ok"] is True
 
 
 def test_gen_pipeline_missing_intent(client):
-    r = client.post("/api/v1/gen/pipeline",
-                    data=json.dumps({}),
-                    content_type="application/json")
+    r = client.post("/api/v1/gen/pipeline", data=json.dumps({}), content_type="application/json")
     assert r.status_code == 400
 
 
 # ---------------------------------------------------------------------------
 # 基线策略库
 # ---------------------------------------------------------------------------
+
 
 def test_baseline_list(client):
     r = client.get("/api/v1/baseline/list")

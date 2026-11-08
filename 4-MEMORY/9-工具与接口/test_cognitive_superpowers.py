@@ -6,7 +6,7 @@ Superpowers流程模板测试 — TDD红阶段
 
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -96,9 +96,30 @@ def test_retrieve_relevant_processes():
     from cognitive_superpowers import ProcessTemplateRegistry, retrieve_relevant_processes
 
     registry = ProcessTemplateRegistry(auto_discover=False)
-    registry.register("TDD-001", "测试驱动开发", ["写测试", "写代码"], confidence=0.85, verify_count=10, layer="meta")
-    registry.register("DEBUG-001", "系统化调试", ["复现", "定位", "修复"], confidence=0.75, verify_count=8, layer="meta")
-    registry.register("REFACTOR-001", "代码重构", ["识别坏味道", "小步重构", "验证"], confidence=0.70, verify_count=5, layer="meta")
+    registry.register(
+        "TDD-001",
+        "测试驱动开发",
+        ["写测试", "写代码"],
+        confidence=0.85,
+        verify_count=10,
+        layer="meta",
+    )
+    registry.register(
+        "DEBUG-001",
+        "系统化调试",
+        ["复现", "定位", "修复"],
+        confidence=0.75,
+        verify_count=8,
+        layer="meta",
+    )
+    registry.register(
+        "REFACTOR-001",
+        "代码重构",
+        ["识别坏味道", "小步重构", "验证"],
+        confidence=0.70,
+        verify_count=5,
+        layer="meta",
+    )
 
     # 检索相关流程（关键词"测试"匹配TDD）
     results = retrieve_relevant_processes("测试 单测", registry, top_k=3)
@@ -118,8 +139,22 @@ def test_format_process_suggestions():
     """格式化流程建议：生成AI可读的建议文本"""
     from cognitive_superpowers import ProcessTemplate, format_process_suggestions
 
-    tdd = ProcessTemplate("TDD-001", "测试驱动开发", ["写测试", "写代码", "重构"], confidence=0.85, verify_count=10, layer="meta")
-    debug = ProcessTemplate("DEBUG-001", "系统化调试", ["复现", "定位", "修复"], confidence=0.75, verify_count=8, layer="meta")
+    tdd = ProcessTemplate(
+        "TDD-001",
+        "测试驱动开发",
+        ["写测试", "写代码", "重构"],
+        confidence=0.85,
+        verify_count=10,
+        layer="meta",
+    )
+    debug = ProcessTemplate(
+        "DEBUG-001",
+        "系统化调试",
+        ["复现", "定位", "修复"],
+        confidence=0.75,
+        verify_count=8,
+        layer="meta",
+    )
 
     text = format_process_suggestions([tdd, debug])
 
@@ -136,7 +171,14 @@ def test_verify_process_followed():
     """校验是否遵循流程：对比行动链与流程步骤"""
     from cognitive_superpowers import ProcessTemplate, verify_process_followed
 
-    tdd = ProcessTemplate("TDD-001", "测试驱动开发", ["写测试", "写代码", "重构"], confidence=0.85, verify_count=10, layer="meta")
+    tdd = ProcessTemplate(
+        "TDD-001",
+        "测试驱动开发",
+        ["写测试", "写代码", "重构"],
+        confidence=0.85,
+        verify_count=10,
+        layer="meta",
+    )
 
     # 遵循TDD的行动链
     followed_chain = [
@@ -146,7 +188,7 @@ def test_verify_process_followed():
         {"action_type": "file_change", "detail": "refactored implementation.py"},
     ]
     result1 = verify_process_followed(tdd, followed_chain)
-    assert result1["followed"] == True
+    assert result1["followed"] == True  # noqa: E712
     assert result1["matched_steps"] >= 2
 
     # 未遵循TDD的行动链（直接写代码）
@@ -155,7 +197,7 @@ def test_verify_process_followed():
         {"action_type": "file_change", "detail": "modified implementation.py"},
     ]
     result2 = verify_process_followed(tdd, not_followed_chain)
-    assert result2["followed"] == False
+    assert result2["followed"] == False  # noqa: E712
 
     print("✅ test_verify_process_followed 通过")
     return True
@@ -165,7 +207,9 @@ def test_process_template_bayesian_update():
     """流程模板贝叶斯更新：验证成功→置信度上升"""
     from cognitive_superpowers import ProcessTemplate, update_process_confidence
 
-    tdd = ProcessTemplate("TDD-001", "测试驱动开发", ["step"], confidence=0.50, verify_count=1, layer="meta")
+    tdd = ProcessTemplate(
+        "TDD-001", "测试驱动开发", ["step"], confidence=0.50, verify_count=1, layer="meta"
+    )
 
     # 验证成功
     updated = update_process_confidence(tdd, success=True)
@@ -173,7 +217,9 @@ def test_process_template_bayesian_update():
     assert updated.verify_count == 2
 
     # 验证失败
-    tdd2 = ProcessTemplate("DEBUG-001", "调试", ["step"], confidence=0.50, verify_count=1, layer="meta")
+    tdd2 = ProcessTemplate(
+        "DEBUG-001", "调试", ["step"], confidence=0.50, verify_count=1, layer="meta"
+    )
     updated2 = update_process_confidence(tdd2, success=False)
     assert updated2.confidence < 0.50, "失败应降低置信度"
 
@@ -183,7 +229,7 @@ def test_process_template_bayesian_update():
 
 def test_process_template_persistence():
     """流程模板持久化：保存到文件系统"""
-    from cognitive_superpowers import ProcessTemplateRegistry
+    from cognitive_superpowers import ProcessTemplateRegistry  # noqa: I001
     import tempfile
     import os
 
@@ -192,7 +238,9 @@ def test_process_template_persistence():
         registry = ProcessTemplateRegistry(meta_data_dir=tmpdir, auto_discover=False)
 
         # 注册并保存
-        registry.register("TDD-001", "测试驱动开发", ["step"], confidence=0.85, verify_count=10, layer="meta")
+        registry.register(
+            "TDD-001", "测试驱动开发", ["step"], confidence=0.85, verify_count=10, layer="meta"
+        )
         registry.save()
 
         # 检查文件存在
@@ -210,6 +258,7 @@ def test_process_template_persistence():
         return True
     finally:
         import shutil
+
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
@@ -221,12 +270,22 @@ def test_skill_loader_trading_skills():
     # 开发 Skill 仍为 14 个
     assert len(loader.skills) == 14, f"开发 Skill 应为 14 个，实际 {len(loader.skills)}"
     # 交易 Skill 应为 6 个
-    assert len(loader.trading_skills) == 6, f"交易 Skill 应为 6 个，实际 {len(loader.trading_skills)}"
+    assert (
+        len(loader.trading_skills) == 6
+    ), f"交易 Skill 应为 6 个，实际 {len(loader.trading_skills)}"
     # 验证 skill_id
-    expected_ids = {"t0-market-cognition", "t1-strategy-synthesis", "t2-trade-execution",
-                    "t3-risk-gatekeeper", "t4-intelligence-radar", "t5-meta-reflection"}
+    expected_ids = {
+        "t0-market-cognition",
+        "t1-strategy-synthesis",
+        "t2-trade-execution",
+        "t3-risk-gatekeeper",
+        "t4-intelligence-radar",
+        "t5-meta-reflection",
+    }
     actual_ids = set(loader.trading_skills.keys())
-    assert actual_ids == expected_ids, f"交易 Skill ID 不匹配: 缺失 {expected_ids - actual_ids}, 多余 {actual_ids - expected_ids}"
+    assert (
+        actual_ids == expected_ids
+    ), f"交易 Skill ID 不匹配: 缺失 {expected_ids - actual_ids}, 多余 {actual_ids - expected_ids}"
 
     print("✅ test_skill_loader_trading_skills 通过")
     return True
@@ -243,13 +302,17 @@ def test_retrieve_trading_by_task_type():
     assert len(result_trading["meta"]) > 0, "交易 task_type 应返回交易 Skill"
     trading_skill_ids = [sk.skill_id for sk, _, _ in result_trading["meta"]]
     trading_set = set(loader.trading_skills.keys())
-    assert any(tid in trading_set for tid in trading_skill_ids), f"应包含 T 系列 Skill: {trading_skill_ids}"
+    assert any(
+        tid in trading_set for tid in trading_skill_ids
+    ), f"应包含 T 系列 Skill: {trading_skill_ids}"
 
     # 开发 task_type → 召回开发 Skill
     result_dev = loader.retrieve("TDD 测试 单测", task_type="python-development")
     assert len(result_dev["meta"]) > 0, "开发 task_type 应返回开发 Skill"
     dev_skill_ids = [sk.skill_id for sk, _, _ in result_dev["meta"]]
-    assert all(tid not in trading_set for tid in dev_skill_ids), f"不应包含 T 系列 Skill: {dev_skill_ids}"
+    assert all(
+        tid not in trading_set for tid in dev_skill_ids
+    ), f"不应包含 T 系列 Skill: {dev_skill_ids}"
 
     # 无 task_type（向后兼容）→ 召回开发 Skill
     result_default = loader.retrieve("TDD 测试")
@@ -264,7 +327,12 @@ def test_resolve_unit_for_trading_task_types():
     from cognitive_superpowers import resolve_unit_for_task
 
     # 新增的 4 个交易 task_type 都应路由到 MU-TRD
-    for tt in ("strategy-research", "strategy-backtest", "strategy-execution", "strategy-governance"):
+    for tt in (
+        "strategy-research",
+        "strategy-backtest",
+        "strategy-execution",
+        "strategy-governance",
+    ):
         unit = resolve_unit_for_task(tt)
         assert unit is not None, f"{tt} 应返回非 None"
         assert unit["unit_id"] == "MU-TRD", f"{tt} 应路由到 MU-TRD，实际 {unit['unit_id']}"
@@ -283,8 +351,8 @@ def test_resolve_unit_for_trading_task_types():
 
 def test_trading_applied_template_id_prefix():
     """P2: 交易会话的 applied_id 前缀为 APP-TRD-（区分开发 APP-）"""
-    from cognitive_session import CognitiveSessionManager, CognitiveSession
-    import tempfile, os
+    from cognitive_session import CognitiveSessionManager  # noqa: I001
+    import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:
         mgr = CognitiveSessionManager(sessions_dir=tmpdir)
@@ -294,13 +362,21 @@ def test_trading_applied_template_id_prefix():
 
         # 模拟 _deposit_applied_template 中的 id 生成逻辑
         # 直接测试 id 前缀逻辑
-        is_trading = sess.task_type in ("trading-system", "trading-data",
-                                         "strategy-research", "strategy-backtest",
-                                         "strategy-execution", "strategy-governance",
-                                         "strategy-state", "risk-control")
+        is_trading = sess.task_type in (
+            "trading-system",
+            "trading-data",
+            "strategy-research",
+            "strategy-backtest",
+            "strategy-execution",
+            "strategy-governance",
+            "strategy-state",
+            "risk-control",
+        )
         prefix = "APP-TRD-" if is_trading else "APP-"
         applied_id = f"{prefix}{sess.id.split('-')[-1]}"
-        assert applied_id.startswith("APP-TRD-"), f"交易 applied_id 应前缀 APP-TRD-，实际 {applied_id}"
+        assert applied_id.startswith(
+            "APP-TRD-"
+        ), f"交易 applied_id 应前缀 APP-TRD-，实际 {applied_id}"
 
     print("✅ test_trading_applied_template_id_prefix 通过")
     return True
@@ -308,8 +384,8 @@ def test_trading_applied_template_id_prefix():
 
 def test_update_path_advantage_from_trading():
     """P2: path_advantage 用 P&L/夏普做客观指标贝叶斯升级"""
-    from cognitive_superpowers import ProcessTemplateRegistry, ProcessTemplate
-    import tempfile, json
+    from cognitive_superpowers import ProcessTemplateRegistry, ProcessTemplate  # noqa: I001
+    import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:
         registry = ProcessTemplateRegistry(
@@ -335,7 +411,9 @@ def test_update_path_advantage_from_trading():
             max_drawdown_pct=10.0,
             win_rate=0.6,
         )
-        assert t.path_advantage_history[-1] > 0.2, f"正 P&L 应给正向分: {t.path_advantage_history[-1]}"
+        assert (
+            t.path_advantage_history[-1] > 0.2
+        ), f"正 P&L 应给正向分: {t.path_advantage_history[-1]}"
         assert t.consecutive_positive == 1
 
         # 第二次正向 → 升 B
@@ -349,7 +427,7 @@ def test_update_path_advantage_from_trading():
         assert t.quality_level == "B", f"连续 2 次正向应升 B，实际 {t.quality_level}"
 
         # 场景2: 负 P&L + 负夏普 → 负向 → 连续 3 次降 quarantined
-        for i in range(3):
+        for i in range(3):  # noqa: B007
             registry.update_path_advantage_from_trading(
                 "APP-TRD-test1",
                 pnl_pct=-8.0,
@@ -357,7 +435,9 @@ def test_update_path_advantage_from_trading():
                 max_drawdown_pct=25.0,
                 win_rate=0.3,
             )
-        assert t.quality_level == "quarantined", f"连续 3 次负向应降 quarantined，实际 {t.quality_level}"
+        assert (
+            t.quality_level == "quarantined"
+        ), f"连续 3 次负向应降 quarantined，实际 {t.quality_level}"
 
         # 场景3: outcome_metrics 存入 metadata
         t2 = ProcessTemplate(
@@ -408,7 +488,9 @@ def test_trading_recall_returns_correct_structure():
     assert isinstance(result["processes"], dict), "processes 应为字典"
     assert "meta" in result["processes"], "processes 应包含 meta"
     assert "applied" in result["processes"], "processes 应包含 applied"
-    assert "process_block_markdown" in result["processes"], "processes 应包含 process_block_markdown"
+    assert (
+        "process_block_markdown" in result["processes"]
+    ), "processes 应包含 process_block_markdown"
 
     # ok=True 时 memories 应可序列化
     if result.get("ok"):
@@ -422,13 +504,12 @@ def test_trading_recall_returns_correct_structure():
 def test_trading_recall_fail_safe():
     """P3: trading_recall() 认知系统不可用时失败安全（返回 ok=False，不抛异常）"""
     from cognitive_loop_entry import trading_recall
-    from unittest.mock import patch, MagicMock
 
     # 模拟 get_cle() 抛异常
     with patch("cognitive_loop_entry.get_cle", side_effect=Exception("DB unavailable")):
         result = trading_recall(context="BTC 做多", task_type="strategy-execution")
 
-    assert result["ok"] == False, f"失败时应 ok=False，实际 {result.get('ok')}"
+    assert result["ok"] == False, f"失败时应 ok=False，实际 {result.get('ok')}"  # noqa: E712
     assert result["count"] == 0, "失败时 count 应为 0"
     assert result["memories"] == [], "失败时 memories 应为空"
     assert "error" in result, "失败时应包含 error 字段"
@@ -450,13 +531,19 @@ def test_trading_recall_routes_to_trading_skills():
     )
 
     if result.get("ok") and result["processes"]["meta"]:
-        trading_skill_ids = {"t0-market-cognition", "t1-strategy-synthesis",
-                             "t2-trade-execution", "t3-risk-gatekeeper",
-                             "t4-intelligence-radar", "t5-meta-reflection"}
+        trading_skill_ids = {
+            "t0-market-cognition",
+            "t1-strategy-synthesis",
+            "t2-trade-execution",
+            "t3-risk-gatekeeper",
+            "t4-intelligence-radar",
+            "t5-meta-reflection",
+        }
         meta_ids = [m.get("skill_id") for m in result["processes"]["meta"]]
         # 至少有一个 T 系列 Skill 被召回
-        assert any(mid in trading_skill_ids for mid in meta_ids), \
-            f"交易 task_type 应召回 T 系列 Skill，实际: {meta_ids}"
+        assert any(
+            mid in trading_skill_ids for mid in meta_ids
+        ), f"交易 task_type 应召回 T 系列 Skill，实际: {meta_ids}"
 
     print("✅ test_trading_recall_routes_to_trading_skills 通过")
     return True
@@ -465,7 +552,10 @@ def test_trading_recall_routes_to_trading_skills():
 def test_summarize_cognitive_recall():
     """P3: _summarize_cognitive_recall 从 inference 提取认知召回摘要"""
     import sys
-    _trader_path = str(Path(__file__).resolve().parents[2] / "11-易经推理系统" / "scripts" / "memory_l4")
+
+    _trader_path = str(
+        Path(__file__).resolve().parents[2] / "11-易经推理系统" / "scripts" / "memory_l4"
+    )
     if _trader_path not in sys.path:
         sys.path.insert(0, _trader_path)
 
@@ -487,7 +577,7 @@ def test_summarize_cognitive_recall():
         }
     }
     summary = PollingTrader._summarize_cognitive_recall(inference_ok)
-    assert summary["ok"] == True
+    assert summary["ok"] == True  # noqa: E712
     assert summary["mem_count"] == 3
     assert summary["meta_skills"] == ["t0-market-cognition", "t3-risk-gatekeeper"]
     assert summary["applied_count"] == 2
@@ -495,12 +585,12 @@ def test_summarize_cognitive_recall():
     # 场景2: 无认知召回（fail_closed 或未启用）
     inference_empty = {"cognitive_recall": {"ok": False}}
     summary2 = PollingTrader._summarize_cognitive_recall(inference_empty)
-    assert summary2["ok"] == False
+    assert summary2["ok"] == False  # noqa: E712
 
     # 场景3: 完全无 cognitive_recall 字段
     inference_none = {"direction": "LONG"}
     summary3 = PollingTrader._summarize_cognitive_recall(inference_none)
-    assert summary3["ok"] == False
+    assert summary3["ok"] == False  # noqa: E712
 
     print("✅ test_summarize_cognitive_recall 通过")
     return True
@@ -525,9 +615,15 @@ if __name__ == "__main__":
         ("test_resolve_unit_for_trading_task_types", test_resolve_unit_for_trading_task_types),
         ("test_trading_applied_template_id_prefix", test_trading_applied_template_id_prefix),
         ("test_update_path_advantage_from_trading", test_update_path_advantage_from_trading),
-        ("test_trading_recall_returns_correct_structure", test_trading_recall_returns_correct_structure),
+        (
+            "test_trading_recall_returns_correct_structure",
+            test_trading_recall_returns_correct_structure,
+        ),
         ("test_trading_recall_fail_safe", test_trading_recall_fail_safe),
-        ("test_trading_recall_routes_to_trading_skills", test_trading_recall_routes_to_trading_skills),
+        (
+            "test_trading_recall_routes_to_trading_skills",
+            test_trading_recall_routes_to_trading_skills,
+        ),
         ("test_summarize_cognitive_recall", test_summarize_cognitive_recall),
     ]
 

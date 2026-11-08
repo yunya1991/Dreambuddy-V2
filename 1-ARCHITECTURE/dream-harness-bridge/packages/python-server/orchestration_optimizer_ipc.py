@@ -3,19 +3,19 @@
 
 供 server.py 路由调用, 将 params 转发到 OrchestrationOptimizerAgent。
 """
-import traceback
-import sys
+
 import os
+import sys
+import traceback
 
 # 确保 dreamos 路径可达
-_dreamos_root = os.path.join(
-    os.path.dirname(__file__), "..", "..", "1-ARCHITECTURE"
-)
+_dreamos_root = os.path.join(os.path.dirname(__file__), "..", "..", "1-ARCHITECTURE")
 if _dreamos_root not in sys.path:
     sys.path.insert(0, _dreamos_root)
 
-from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (
-    OrchestrationOptimizerAgent, PlanOptimization,
+from dreamos.core.arrange.optimizers.orchestration_optimizer_agent import (  # noqa: E402
+    OrchestrationOptimizerAgent,
+    PlanOptimization,
 )
 
 

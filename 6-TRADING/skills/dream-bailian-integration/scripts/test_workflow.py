@@ -3,14 +3,14 @@
 百炼工作流执行测试
 测试Dream-MultiSkill核心工作流的端到端执行
 """
-import sys
+
+import sys  # noqa: I001
 import os
-import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.bailian_client import BailianClient
 
-API_KEY = "sk-c233489e73e94b9591e4776d89ec8cb8"
+API_KEY = "sk-c233489e73e94b9591e4776d89ec8cb8"  # secret-scan: allow
 
 
 def test_trading_workflow():
@@ -33,9 +33,9 @@ def test_trading_workflow():
 
 请用简洁的格式输出调研结果。"""
 
-    response = client.chat([
-        {"role": "user", "content": prompt_a1}
-    ], max_tokens=800, temperature=0.5)
+    response = client.chat(
+        [{"role": "user", "content": prompt_a1}], max_tokens=800, temperature=0.5
+    )
 
     a1_result = response["choices"][0]["message"]["content"]
     print(f"✅ A1调研完成 ({response['usage']['completion_tokens']} tokens)")
@@ -61,9 +61,11 @@ A1调研结果：
 
 请用简洁的结构化格式输出。"""
 
-    response = client.chat([
-        {"role": "user", "content": prompt_a2.format(a1_result=a1_result)}
-    ], max_tokens=600, temperature=0.5)
+    response = client.chat(
+        [{"role": "user", "content": prompt_a2.format(a1_result=a1_result)}],
+        max_tokens=600,
+        temperature=0.5,
+    )
 
     a2_result = response["choices"][0]["message"]["content"]
     print(f"✅ A2分析完成 ({response['usage']['completion_tokens']} tokens)")
@@ -86,9 +88,11 @@ A2分析：
 - 次要矛盾
 - 矛盾转化时机"""
 
-    response = client.chat([
-        {"role": "user", "content": prompt_a3.format(a2_result=a2_result)}
-    ], max_tokens=800, temperature=0.6)
+    response = client.chat(
+        [{"role": "user", "content": prompt_a3.format(a2_result=a2_result)}],
+        max_tokens=800,
+        temperature=0.6,
+    )
 
     a3_result = response["choices"][0]["message"]["content"]
     print(f"✅ A3推演完成 ({response['usage']['completion_tokens']} tokens)")
@@ -111,9 +115,11 @@ A3推演：
 - risk_level: LOW/MEDIUM/HIGH
 - 验证说明"""
 
-    response = client.chat([
-        {"role": "user", "content": prompt_a4.format(a3_result=a3_result)}
-    ], max_tokens=400, temperature=0.3)
+    response = client.chat(
+        [{"role": "user", "content": prompt_a4.format(a3_result=a3_result)}],
+        max_tokens=400,
+        temperature=0.3,
+    )
 
     a4_result = response["choices"][0]["message"]["content"]
     print(f"✅ A4验证完成 ({response['usage']['completion_tokens']} tokens)")
@@ -137,21 +143,17 @@ A4验证结果：
 5. 仓位建议
 6. 执行理由"""
 
-    response = client.chat([
-        {"role": "user", "content": prompt_a5.format(a4_result=a4_result)}
-    ], max_tokens=400, temperature=0.5)
+    response = client.chat(
+        [{"role": "user", "content": prompt_a5.format(a4_result=a4_result)}],
+        max_tokens=400,
+        temperature=0.5,
+    )
 
     a5_result = response["choices"][0]["message"]["content"]
     print(f"✅ A5决策完成 ({response['usage']['completion_tokens']} tokens)")
     print(f"\n📋 最终决策:\n{a5_result}")
 
-    return {
-        "a1": a1_result,
-        "a2": a2_result,
-        "a3": a3_result,
-        "a4": a4_result,
-        "a5": a5_result
-    }
+    return {"a1": a1_result, "a2": a2_result, "a3": a3_result, "a4": a4_result, "a5": a5_result}
 
 
 def test_knowledge_qa():
@@ -165,7 +167,7 @@ def test_knowledge_qa():
     questions = [
         "A4战术验证的核心职责是什么？",
         "Dream-MultiSkill的A系列决策链是什么？",
-        "frontmatter规范有哪些字段？"
+        "frontmatter规范有哪些字段？",
     ]
 
     for q in questions:
@@ -181,9 +183,7 @@ def test_knowledge_qa():
 
 问题: {q}"""
 
-        intent_response = client.chat([
-            {"role": "user", "content": intent_prompt}
-        ], max_tokens=50)
+        intent_response = client.chat([{"role": "user", "content": intent_prompt}], max_tokens=50)
         intent = intent_response["choices"][0]["message"]["content"]
         print(f"   意图: {intent.strip()}")
 
@@ -197,9 +197,9 @@ def test_knowledge_qa():
 - 如果不确定，说明情况并提供一般性建议
 - 回答要简洁专业"""
 
-        answer_response = client.chat([
-            {"role": "user", "content": answer_prompt}
-        ], max_tokens=500, temperature=0.5)
+        answer_response = client.chat(
+            [{"role": "user", "content": answer_prompt}], max_tokens=500, temperature=0.5
+        )
 
         answer = answer_response["choices"][0]["message"]["content"]
         print(f"   回答: {answer[:300]}...")
@@ -214,18 +214,9 @@ def test_compliance_review():
     client = BailianClient(api_key=API_KEY)
 
     changes = [
-        {
-            "description": "A4验证逻辑参数调整",
-            "type": "P2"
-        },
-        {
-            "description": "新增A5战术执行模块",
-            "type": "P1"
-        },
-        {
-            "description": "修改A0矛盾论核心算法",
-            "type": "P0"
-        }
+        {"description": "A4验证逻辑参数调整", "type": "P2"},
+        {"description": "新增A5战术执行模块", "type": "P1"},
+        {"description": "修改A0矛盾论核心算法", "type": "P0"},
     ]
 
     for change in changes:
@@ -246,9 +237,9 @@ def test_compliance_review():
 2. 风险等级：LOW/MEDIUM/HIGH/CRITICAL
 3. 建议操作：BLOCK/REVIEW/AUTO"""
 
-        response = client.chat([
-            {"role": "user", "content": prompt}
-        ], max_tokens=300, temperature=0.3)
+        response = client.chat(
+            [{"role": "user", "content": prompt}], max_tokens=300, temperature=0.3
+        )
 
         result = response["choices"][0]["message"]["content"]
         print(f"   审查结果: {result[:300]}...")

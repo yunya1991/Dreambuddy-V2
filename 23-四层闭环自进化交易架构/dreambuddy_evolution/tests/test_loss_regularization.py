@@ -17,6 +17,7 @@ TDD 覆盖:
   P3-T2.2 trainer weight_decay>0: 使用 AdamW
   P3-T2.3 trainer early_stopping: patience 触发提前停止
 """
+
 from __future__ import annotations
 
 import sys
@@ -97,7 +98,7 @@ def test_drift_net_dropout_training_mode():
         pytest.skip("torch not available")
 
     from dreambuddy_evolution.core.neural_sde_model import (
-        NeuralSDEModel, _PathSignatureDriftNet,
+        _PathSignatureDriftNet,
     )
 
     net = _PathSignatureDriftNet(hidden_dim=16, sig_dim=15, n_regimes=3, dropout=0.5)
@@ -145,7 +146,9 @@ def test_trainer_weight_decay_uses_adamw():
 
     model = NeuralSDEModel(device="cpu", n_regimes=3)
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, weight_decay=1e-4,
+        model=model,
+        lr=1e-4,
+        weight_decay=1e-4,
     )
     assert isinstance(trainer._optimizer, torch.optim.AdamW)
 
@@ -167,7 +170,7 @@ def test_trainer_weight_decay_zero_uses_adam():
 def test_early_stopping_triggers():
     """P3-T2.3: patience 触发提前停止."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -178,14 +181,20 @@ def test_early_stopping_triggers():
     model._sample_count = 5000
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, patience=2, val_split=0.1,
+        model=model,
+        lr=1e-4,
+        patience=2,
+        val_split=0.1,
     )
     np.random.seed(42)
     closes = np.cumsum(np.random.randn(10000)) + 50000.0
     regime_labels = np.random.randint(0, 3, 10000)
 
     report = trainer.train(
-        closes, epochs=50, regime_labels=regime_labels, regime_balance="natural",
+        closes,
+        epochs=50,
+        regime_labels=regime_labels,
+        regime_balance="natural",
     )
     # patience=2 应在 50 epochs 内提前停止
     assert report.get("status") == "ok"

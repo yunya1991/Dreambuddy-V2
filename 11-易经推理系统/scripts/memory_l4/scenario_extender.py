@@ -14,16 +14,14 @@
 - 两仪相位: 相邻相位偏移
 - 权重: 重新归一化随机分配
 """
-import json
-import random
-import uuid
+
+import random  # noqa: I001
 import time
-from typing import Any, Dict, List, Optional, Tuple
+import uuid
+from typing import Any, Dict, List, Optional
 
-import numpy as np
 
-from .qmm.xgb_predictor import QMMPredictor, extract_features_from_case, LABEL_MAP, LABEL_INVERSE
-
+from .qmm.xgb_predictor import QMMPredictor
 
 PHASE_TRANSITIONS = {
     "macro": {
@@ -80,10 +78,10 @@ def perturb_phase(liangyi_state: Dict[str, Any]) -> Dict[str, Any]:
     new_macro = new_state["macro_phase"]
     new_micro = new_state["micro_phase"]
     is_resonance = (new_macro == new_micro) or (
-        (new_macro == "recovery" and new_micro in ["sprout", "growth"]) or
-        (new_macro == "overheat" and new_micro in ["growth", "mature"]) or
-        (new_macro == "stagflation" and new_micro in ["mature", "decline"]) or
-        (new_macro == "recession" and new_micro in ["decline", "sprout"])
+        (new_macro == "recovery" and new_micro in ["sprout", "growth"])
+        or (new_macro == "overheat" and new_micro in ["growth", "mature"])
+        or (new_macro == "stagflation" and new_micro in ["mature", "decline"])
+        or (new_macro == "recession" and new_micro in ["decline", "sprout"])
     )
     new_state["is_resonance"] = is_resonance
     new_state["is_conflict"] = not is_resonance
@@ -115,7 +113,12 @@ def perturb_case(case: Dict[str, Any], perturbation_type: str = "full") -> Dict[
         ]
         if sum(weights) > 0:
             new_weights = perturb_weight_vector(weights, noise=0.3)
-            new_sp["weight_time"], new_sp["weight_space"], new_sp["weight_surface"], new_sp["weight_core"] = new_weights
+            (
+                new_sp["weight_time"],
+                new_sp["weight_space"],
+                new_sp["weight_surface"],
+                new_sp["weight_core"],
+            ) = new_weights
 
         # 扰动力学参数
         new_sp["market_mass_base"] = perturb_scalar(sp.get("market_mass_base", 1.0), 0.4)
@@ -131,7 +134,9 @@ def perturb_case(case: Dict[str, Any], perturbation_type: str = "full") -> Dict[
         new_env = dict(env)
         new_env["volatility"] = perturb_scalar(env.get("volatility", 0.5), 0.5)
         new_env["trend_strength"] = perturb_scalar(env.get("trend_strength", 0.5), 0.4)
-        new_env["price_position"] = max(0.0, min(1.0, env.get("price_position", 0.5) + random.uniform(-0.2, 0.2)))
+        new_env["price_position"] = max(
+            0.0, min(1.0, env.get("price_position", 0.5) + random.uniform(-0.2, 0.2))
+        )
         new_env["volume_ratio"] = perturb_scalar(env.get("volume_ratio", 1.0), 0.6)
         new_case["environment_snapshot"] = new_env
 
@@ -180,7 +185,9 @@ def generate_hypothetical_cases(
         if not train_stats.get("ok"):
             print(f"预测器训练失败: {train_stats.get('reason')}")
             return hypothetical_cases
-        print(f"预测器训练完成: cv_mean={train_stats['cv_mean']}, n_samples={train_stats['n_samples']}")
+        print(
+            f"预测器训练完成: cv_mean={train_stats['cv_mean']}, n_samples={train_stats['n_samples']}"
+        )
 
     for case in real_cases:
         for _ in range(multiplier):
@@ -191,10 +198,16 @@ def generate_hypothetical_cases(
 
             # 根据预测方向生成 outcome
             if direction == "UP":
-                pnl_pct = random.uniform(0.01, 0.05) * (1 - uncertainty) + random.uniform(-0.005, 0.01) * uncertainty
+                pnl_pct = (
+                    random.uniform(0.01, 0.05) * (1 - uncertainty)
+                    + random.uniform(-0.005, 0.01) * uncertainty
+                )
                 is_correct = True
             elif direction == "DOWN":
-                pnl_pct = random.uniform(-0.05, -0.01) * (1 - uncertainty) + random.uniform(-0.01, 0.005) * uncertainty
+                pnl_pct = (
+                    random.uniform(-0.05, -0.01) * (1 - uncertainty)
+                    + random.uniform(-0.01, 0.005) * uncertainty
+                )
                 is_correct = True
             else:
                 pnl_pct = random.uniform(-0.01, 0.01)
@@ -224,6 +237,7 @@ def generate_hypothetical_cases(
 def save_hypothetical_cases(cases: List[Dict[str, Any]]) -> int:
     """保存假设案例到 L4。"""
     from .yijing_trainer import _save_cases_to_l4
+
     return _save_cases_to_l4(cases, source="hypothetical")
 
 
@@ -243,7 +257,7 @@ def run_scenario_extension(
     Returns:
         统计结果
     """
-    print(f"\n=== 场景推演扩展 ===")
+    print("\n=== 场景推演扩展 ===")
     print(f"真实案例数: {len(real_cases)}")
     print(f"扩展倍数: {multiplier}")
 

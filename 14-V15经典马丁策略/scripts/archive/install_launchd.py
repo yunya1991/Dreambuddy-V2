@@ -5,10 +5,11 @@ V15 经典马丁策略 - Launchd 服务安装脚本
   - com.dreambuddy.v15_trader: 每小时完整轮询（信号+交易）
   - com.dreambuddy.v15_light_poll: 每5分钟轻量轮询（持仓同步）
 """
+
 import os
-import sys
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parent.resolve()
@@ -112,8 +113,7 @@ def status_service(name):
     label = svc["label"]
     print(f"\n--- {name}: {svc['desc']} ---")
     result = subprocess.run(
-        ["launchctl", "print", f"gui/{UID}/{label}"],
-        capture_output=True, text=True
+        ["launchctl", "print", f"gui/{UID}/{label}"], capture_output=True, text=True
     )
     if result.returncode == 0:
         for line in result.stdout.splitlines():

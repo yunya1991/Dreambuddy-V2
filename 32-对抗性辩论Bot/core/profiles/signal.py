@@ -5,10 +5,10 @@
 - 多方/空方基于信号与证据辩论；
 - 裁判输出 `signal`：方向、置信度、风险标记、证据与反证。
 """
+
 from __future__ import annotations
 
 from core.profiles.base import DebateProfile
-
 
 SIGNAL_CROSS_EXAM_QUESTION_SYSTEM = """你是{side_name}信号评审员。你的立场是：**必须{stance}该信号方向**。
 规则：

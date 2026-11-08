@@ -8,6 +8,7 @@
 3. 审计事件查询与过滤
 4. 阶段流转审计（lifecycle transition）
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -15,8 +16,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from governance.utils import _audit_emit_action, _audit_base_payload, _now_ms
-
+from governance.utils import _audit_base_payload, _audit_emit_action, _now_ms
 
 # 27 模块审计数据目录
 _AUDIT_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "audit"
@@ -28,27 +28,38 @@ _AUDIT_DATA_DIR.mkdir(parents=True, exist_ok=True)
 # ---------------------------------------------------------------------------
 
 AUDIT_STAGES: Set[str] = {
-    "draft",          # 变更包草稿
-    "gate",           # 评估门控
-    "approval",       # 审批
-    "apply",          # 变更应用
-    "pipeline",       # 流水线执行
-    "registry",       # 策略库操作
-    "execution",      # 执行信号
+    "draft",  # 变更包草稿
+    "gate",  # 评估门控
+    "approval",  # 审批
+    "apply",  # 变更应用
+    "pipeline",  # 流水线执行
+    "registry",  # 策略库操作
+    "execution",  # 执行信号
 }
 
 AUDIT_ACTIONS: Set[str] = {
-    "create", "update", "delete", "query",
-    "approve", "reject", "request",
-    "pass", "fail", "warn",
-    "deploy", "rollback", "sync",
-    "entry", "exit",
+    "create",
+    "update",
+    "delete",
+    "query",
+    "approve",
+    "reject",
+    "request",
+    "pass",
+    "fail",
+    "warn",
+    "deploy",
+    "rollback",
+    "sync",
+    "entry",
+    "exit",
 }
 
 
 # ---------------------------------------------------------------------------
 # 哈希链完整性
 # ---------------------------------------------------------------------------
+
 
 def _audit_hash_chain_path() -> Path:
     """27 模块审计哈希链路径（独立于 10-经典指标系统）"""
@@ -92,6 +103,7 @@ def _compute_audit_hash(event: Dict[str, Any], prev_hash: Optional[str]) -> str:
 # ---------------------------------------------------------------------------
 # 核心审计函数
 # ---------------------------------------------------------------------------
+
 
 def strategy_factory_audit(
     *,
@@ -153,7 +165,12 @@ def strategy_factory_audit(
     try:
         _audit_emit_action(
             f"strategy_factory.{event['stage']}",
-            _audit_base_payload(scope="strategy_factory", action=event["action"], trace_id=event["trace_id"], extra=extra),
+            _audit_base_payload(
+                scope="strategy_factory",
+                action=event["action"],
+                trace_id=event["trace_id"],
+                extra=extra,
+            ),
         )
     except Exception:
         pass
@@ -252,6 +269,7 @@ def audit_execution_signal(
 # 审计查询
 # ---------------------------------------------------------------------------
 
+
 def audit_query(
     *,
     trace_id: Optional[str] = None,
@@ -326,7 +344,7 @@ def audit_verify_chain() -> Dict[str, Any]:
                 total += 1
                 stored_prev = obj.get("prev_hash")
                 if total == 1:
-                    first_prev = stored_prev
+                    first_prev = stored_prev  # noqa: F841
                 if prev_hash is not None and stored_prev != prev_hash:
                     broken += 1
                     continue

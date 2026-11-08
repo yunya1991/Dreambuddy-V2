@@ -14,11 +14,10 @@ TDD：P3-3 rotate.py（WAL checkpoint + 旧备份轮转保留 N 份）
   3. 按 mtime 排序，保留最新 keep 份，其余删除（含 .sha256 sidecar）
   4. 返回被删除文件列表
 """
+
 from __future__ import annotations
 
-import os
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -41,6 +40,7 @@ def db_path():
 # ===========================================================================
 def test_wal_checkpoint_returns_non_negative(db_path):
     from dreambuddy_dal.implementations.sqlite_unified.rotate import wal_checkpoint
+
     pages = wal_checkpoint(db_path)
     assert isinstance(pages, int)
     assert pages >= 0
@@ -51,6 +51,7 @@ def test_wal_checkpoint_returns_non_negative(db_path):
 # ===========================================================================
 def test_rotate_keeps_n_newest(tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.rotate import rotate_backups
+
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()
     # 创建 10 个备份文件（含 .sha256 sidecar）
@@ -72,6 +73,7 @@ def test_rotate_keeps_n_newest(tmp_path):
 # ===========================================================================
 def test_rotate_keep_zero_deletes_all(tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.rotate import rotate_backups
+
     backup_dir = tmp_path / "backups"
     backup_dir.mkdir()
     for i in range(5):
@@ -87,6 +89,7 @@ def test_rotate_keep_zero_deletes_all(tmp_path):
 # ===========================================================================
 def test_rotate_empty_dir(tmp_path):
     from dreambuddy_dal.implementations.sqlite_unified.rotate import rotate_backups
+
     backup_dir = tmp_path / "empty"
     backup_dir.mkdir()
     deleted = rotate_backups(str(backup_dir), keep=7)

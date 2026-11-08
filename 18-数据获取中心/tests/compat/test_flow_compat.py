@@ -3,12 +3,12 @@
 fetch_yahoo_symbol 和 fetch_fred_series 用 YFinanceCollector/FredCollector 替换手写 HTTP；
 run_full_collection 是复杂编排器，compat 版转发老实现 + 发 DeprecationWarning。
 """
+
 import warnings
-import pytest
 
 from data_center.compat.flow_compat import (
-    fetch_yahoo_symbol,
     fetch_fred_series,
+    fetch_yahoo_symbol,
     run_full_collection,
 )
 
@@ -20,17 +20,19 @@ FLOW_MOD = "data_center.compat.flow_compat._run_full_collection_legacy"
 def test_fetch_yahoo_symbol(mocker):
     """YFinanceCollector → 兼容 dict 返回。"""
     from data_center.core.contract import DataRecord
-    import pandas as pd
 
     mock_cls = mocker.patch(YF_MOD)
     mock_collector = mock_cls.return_value
     mock_collector.is_available.return_value = True
     mock_collector.fetch.return_value = [
         DataRecord(
-            source="yfinance", category="finance", sub_category="DX-Y.NYB",
+            source="yfinance",
+            category="finance",
+            sub_category="DX-Y.NYB",
             timestamp="2026-08-24T12:00:00+08:00",
             metrics={"symbol": "DX-Y.NYB", "price": 104.5, "currency": "USD"},
-            events=[], timeseries=[],
+            events=[],
+            timeseries=[],
             raw={"close": [104.5]},
         )
     ]
@@ -59,10 +61,13 @@ def test_fetch_fred_series(mocker):
     mock_collector.is_available.return_value = True
     mock_collector.fetch.return_value = [
         DataRecord(
-            source="fred", category="macro", sub_category="FEDFUNDS",
+            source="fred",
+            category="macro",
+            sub_category="FEDFUNDS",
             timestamp="2026-08-24T12:00:00+08:00",
             metrics={"value": 5.5, "series": "FEDFUNDS"},
-            events=[], timeseries=[{"date": "2024-07", "value": 5.5}],
+            events=[],
+            timeseries=[{"date": "2024-07", "value": 5.5}],
             raw={"observations": [{"value": "5.5"}]},
         )
     ]

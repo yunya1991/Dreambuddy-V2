@@ -33,6 +33,7 @@ sys.path.insert(0, str(_SCRIPTS_DIR.parent))  # 11-易经推理系统/
 @pytest.fixture
 def _tmp_cbr(tmp_path):
     from scripts.memory_l4.cbr_engine import CBRJsonlStore
+
     runtime = tmp_path / "cbr_v3_runtime"
     runtime.mkdir(parents=True, exist_ok=True)
     return runtime, lambda: CBRJsonlStore(runtime_dir=runtime, enable=True)
@@ -49,12 +50,10 @@ class TestT622DynamicParamDefaults:
         runtime, mk = _tmp_cbr
         # 参数文件不存在
         store = mk()
-        assert hasattr(store, "theta_match_star"), (
-            "RED：CBRJsonlStore 尚未实现 theta_match_star 属性"
-        )
-        assert hasattr(store, "gamma_max_star"), (
-            "RED：CBRJsonlStore 尚未实现 gamma_max_star 属性"
-        )
+        assert hasattr(
+            store, "theta_match_star"
+        ), "RED：CBRJsonlStore 尚未实现 theta_match_star 属性"
+        assert hasattr(store, "gamma_max_star"), "RED：CBRJsonlStore 尚未实现 gamma_max_star 属性"
         assert store.theta_match_star == pytest.approx(0.80, abs=1e-9)
         assert store.gamma_max_star == pytest.approx(0.20, abs=1e-9)
 
@@ -88,9 +87,9 @@ class TestT619T621RankScore:
         rank = store._rank_score(case, 1.0)
         # rank = 1.0 × 1.0 × e^-1
         expected_age_decay = math.exp(-1.0)  # ≈ 0.3678794412
-        assert rank == pytest.approx(expected_age_decay, rel=1e-4), (
-            f"T6.21 FAIL：90d 半衰应为 e^-1≈{expected_age_decay:.10f}，实际={rank:.10f}"
-        )
+        assert rank == pytest.approx(
+            expected_age_decay, rel=1e-4
+        ), f"T6.21 FAIL：90d 半衰应为 e^-1≈{expected_age_decay:.10f}，实际={rank:.10f}"
 
     def test_t619_tag_only_affects_rank_not_real_match(self, _tmp_cbr):
         """T6.19：tag 加成只改 rank_score，真实 match_score 不被放大（θ*门槛防作弊）"""
@@ -107,9 +106,9 @@ class TestT619T621RankScore:
         # 1) rank 上 MANUAL_CLASSIC > NORMAL
         assert rank_mc > rank_n, f"MANUAL_CLASSIC({rank_mc:.6f}) 必须 > NORMAL({rank_n:.6f})"
         # 2) 但 **真实 raw_match 仍为 0.70，低于 0.80**（G3 防作弊：tag 只改排序，不改真实相似度）
-        assert raw_match < 0.80, (
-            "T6.19 语义保证：raw_match=0.70 仍低于 0.80，不允许通过 tag 放大跨 θ* 门槛"
-        )
+        assert (
+            raw_match < 0.80
+        ), "T6.19 语义保证：raw_match=0.70 仍低于 0.80，不允许通过 tag 放大跨 θ* 门槛"
         # 3) HIGH_WIN/HIGH_LOSS: tag_mult=1.02
         case_hw = self._make_case(datetime.now(), "HIGH_WIN")
         rank_hw = store._rank_score(case_hw, raw_match)
@@ -134,17 +133,37 @@ class TestT620T624MatchBoost:
         base = {"case_id": "x", "symbol": "BTC", "asset_class": "CRYPTO"}
         return [
             # HIGH_LOSS 基线家族（负基线）
-            {**base, "case_id": "HIGH_LOSS_1", "tag": "HIGH_LOSS",
-             "entry_ts": now - timedelta(days=5), "entry_snapshot": {}},
+            {
+                **base,
+                "case_id": "HIGH_LOSS_1",
+                "tag": "HIGH_LOSS",
+                "entry_ts": now - timedelta(days=5),
+                "entry_snapshot": {},
+            },
             # HIGH_WIN 基线家族（正基线）
-            {**base, "case_id": "HIGH_WIN_1", "tag": "HIGH_WIN",
-             "entry_ts": now - timedelta(days=5), "entry_snapshot": {}},
+            {
+                **base,
+                "case_id": "HIGH_WIN_1",
+                "tag": "HIGH_WIN",
+                "entry_ts": now - timedelta(days=5),
+                "entry_snapshot": {},
+            },
             # 今早 BTC MANUAL_CLASSIC（T6.24）
-            {**base, "case_id": "MANUAL_BTC_TODAY", "tag": "MANUAL_CLASSIC",
-             "entry_ts": now, "entry_snapshot": {}},
+            {
+                **base,
+                "case_id": "MANUAL_BTC_TODAY",
+                "tag": "MANUAL_CLASSIC",
+                "entry_ts": now,
+                "entry_snapshot": {},
+            },
             # NORMAL 普通交易（0 加成）
-            {**base, "case_id": "N_1", "tag": "NORMAL",
-             "entry_ts": now - timedelta(days=30), "entry_snapshot": {}},
+            {
+                **base,
+                "case_id": "N_1",
+                "tag": "NORMAL",
+                "entry_ts": now - timedelta(days=30),
+                "entry_snapshot": {},
+            },
         ]
 
     def test_t624_manual_classic_top1_full_boost(self, _tmp_cbr):
@@ -174,8 +193,7 @@ class TestT620T624MatchBoost:
         # HIGH_LOSS_1：raw=0.98, tag=1.02, age=5d→decay≈0.9459 → rank≈0.98*1.02*0.9459≈0.945
         # MANUAL_BTC_TODAY：raw=0.83, tag=1.05, age=0→decay=1.0 → rank=0.83*1.05*1.0=0.8715
         # HIGH_WIN_1：raw=0.90, tag=1.02, age=5d→decay≈0.9459 → rank≈0.90*1.02*0.9459≈0.867
-        scores = {"HIGH_LOSS_1": 0.98, "HIGH_WIN_1": 0.90,
-                  "MANUAL_BTC_TODAY": 0.83, "N_1": 0.40}
+        scores = {"HIGH_LOSS_1": 0.98, "HIGH_WIN_1": 0.90, "MANUAL_BTC_TODAY": 0.83, "N_1": 0.40}
         cases = self._fixture_cases(now)
         result = store.predict_topk(top_cases=cases, raw_scores=scores)
         assert result["top1_tag"] == "HIGH_LOSS", (
@@ -187,9 +205,9 @@ class TestT620T624MatchBoost:
         # boost = -0.20 * 0.90 * 0.9459 ≈ -0.1703
         assert result["match_boost"] < 0.0, "HIGH_LOSS 必须是负 match_boost（负基线压制 w_b）"
         expected_boost = -0.20 * min(1.0, 5.0 * (0.98 - 0.80)) * math.exp(-5.0 / 90.0)
-        assert result["match_boost"] == pytest.approx(expected_boost, abs=0.01), (
-            f"boost计算错误：预期≈{expected_boost:.4f}，实际={result['match_boost']:.4f}"
-        )
+        assert result["match_boost"] == pytest.approx(
+            expected_boost, abs=0.01
+        ), f"boost计算错误：预期≈{expected_boost:.4f}，实际={result['match_boost']:.4f}"
 
 
 # ============================================================
@@ -210,6 +228,7 @@ class TestT618ClassicCaseCountsAndT623CalibrationGrid:
         script_path = _SCRIPTS_DIR / "cbr_baseline_calibrate.py"
         if script_path.exists():
             import importlib.util as _ilu
+
             spec = _ilu.spec_from_file_location("_cal", script_path)
             mod = _ilu.module_from_spec(spec)
             try:
@@ -232,6 +251,7 @@ class TestT618ClassicCaseCountsAndT623CalibrationGrid:
         if not script_path.exists():
             pytest.skip("T6.18 RED：cbr_generate_classic_cases.py 脚本未实现")
         import importlib.util as _ilu
+
         spec = _ilu.spec_from_file_location("_gen", script_path)
         mod = _ilu.module_from_spec(spec)
         try:

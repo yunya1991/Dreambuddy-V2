@@ -3,8 +3,12 @@
 F5 节点: GDP/CPI/利率/流动性 → SubagentOutput
 图表: bar(柱状) + line(趋势线)
 """
+
 from __future__ import annotations
-import os, sys, unittest
+
+import os
+import sys
+import unittest
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
@@ -14,7 +18,7 @@ if SERVER_DIR not in sys.path:
 class TestImport(unittest.TestCase):
     def test_importable(self):
         from macro_agent import MacroAgent
-        from subagent_types import SubagentOutput
+
         self.assertIsNotNone(MacroAgent)
 
 
@@ -36,18 +40,21 @@ class TestExecute(unittest.TestCase):
     def test_returns_subagent_output(self):
         from macro_agent import MacroAgent
         from subagent_types import SubagentOutput
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         self.assertIsInstance(out, SubagentOutput)
 
     def test_module_name(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         self.assertEqual(out.module, "macro")
 
     def test_signals_extracted(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         self.assertGreater(len(out.signals), 0)
@@ -56,6 +63,7 @@ class TestExecute(unittest.TestCase):
 
     def test_gdp_long_signal(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         gdp_sigs = [s for s in out.signals if s.name == "GDP同比"]
@@ -64,6 +72,7 @@ class TestExecute(unittest.TestCase):
 
     def test_cpi_signal(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         cpi_sigs = [s for s in out.signals if s.name == "CPI同比"]
@@ -71,6 +80,7 @@ class TestExecute(unittest.TestCase):
 
     def test_signal_directions_valid(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         for s in out.signals:
@@ -78,12 +88,14 @@ class TestExecute(unittest.TestCase):
 
     def test_summary_not_empty(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         self.assertTrue(out.summary)
 
     def test_bar_chart(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         bars = [c for c in out.charts if c.type == "bar"]
@@ -91,6 +103,7 @@ class TestExecute(unittest.TestCase):
 
     def test_trend_line_chart(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         lines = [c for c in out.charts if c.type == "line"]
@@ -98,10 +111,13 @@ class TestExecute(unittest.TestCase):
 
     def test_llm_fn_injectable(self):
         from macro_agent import MacroAgent
+
         calls = []
+
         def mock_llm(prompt):
             calls.append(prompt)
             return "宏观LLM摘要"
+
         agent = MacroAgent(llm_fn=mock_llm)
         out = agent.execute(self._node_output())
         self.assertEqual(len(calls), 1)
@@ -109,25 +125,30 @@ class TestExecute(unittest.TestCase):
 
     def test_llm_exception_fails_open(self):
         from macro_agent import MacroAgent
+
         def bad_llm(prompt):
             raise RuntimeError("LLM不可用")
+
         agent = MacroAgent(llm_fn=bad_llm)
         out = agent.execute(self._node_output())
         self.assertTrue(out.summary)
 
     def test_empty_input(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute({})
         self.assertEqual(out.module, "macro")
 
     def test_ipc_handler(self):
         from macro_agent import handle_macro_agent
+
         result = handle_macro_agent({"node_output": self._node_output()})
         self.assertTrue(result["ok"])
 
     def test_to_dict(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._node_output())
         d = out.to_dict()

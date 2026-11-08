@@ -15,17 +15,17 @@ RED 契约：
 
 测试用 mock 函数（lambda 返回预设结果）模拟三库查询，不依赖真实数据库。
 """
+
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-import pytest
-
 
 # ============================================================
 # 辅助：mock 三库查询函数（带调用计数）
 # ============================================================
+
 
 def _make_mock_fn(calls_log, tag, payload):
     """构造带调用计数的 mock 查询函数。
@@ -38,17 +38,21 @@ def _make_mock_fn(calls_log, tag, payload):
     Returns:
         fn(context, top_k) -> list[dict]
     """
+
     def _fn(context, top_k):
         calls_log.append(tag)
         return list(payload)  # 返回副本，避免被切片修改
+
     return _fn
 
 
 def _make_failing_fn(calls_log, tag):
     """构造必定抛异常的 mock 函数（测试 FAIL-OPEN）。"""
+
     def _fn(context, top_k):
         calls_log.append(tag)
         raise RuntimeError(f"{tag} DB query failed (模拟故障)")
+
     return _fn
 
 
@@ -56,18 +60,19 @@ def _make_failing_fn(calls_log, tag):
 # Test 1: IntentRouter 继承 CognitiveRouter ABC
 # ============================================================
 
+
 def test_intent_router_is_cognitive_router():
     """RED: IntentRouter 是 CognitiveRouter 的子类。"""
     from cognitive_interfaces import CognitiveRouter
     from intent_router import IntentRouter
 
-    assert issubclass(IntentRouter, CognitiveRouter), \
-        "IntentRouter 必须继承 CognitiveRouter ABC"
+    assert issubclass(IntentRouter, CognitiveRouter), "IntentRouter 必须继承 CognitiveRouter ABC"
 
 
 # ============================================================
 # Test 2: route() 返回 RecallResult
 # ============================================================
+
 
 def test_route_returns_recall_result():
     """RED: route() 返回 RecallResult 实例。"""
@@ -83,13 +88,13 @@ def test_route_returns_recall_result():
     intent = {"type": "general", "confidence": 0.8, "keywords": ["test"]}
     result = router.route(intent, top_k=5, route_mode="full")
 
-    assert isinstance(result, RecallResult), \
-        "route() 必须返回 RecallResult 实例"
+    assert isinstance(result, RecallResult), "route() 必须返回 RecallResult 实例"
 
 
 # ============================================================
 # Test 3: code_question 类型 memory 权重最高 → fast-path 只查 memory
 # ============================================================
+
 
 def test_route_with_code_question_weights():
     """RED: code_question 类型 memory 权重最高，fast-path 只查 memory 库。"""
@@ -105,8 +110,7 @@ def test_route_with_code_question_weights():
     result = router.route(intent, top_k=5, route_mode="fast")
 
     # fast-path 只查 memory
-    assert calls == ["memory"], \
-        f"code_question fast-path 应只查 memory，实际调用: {calls}"
+    assert calls == ["memory"], f"code_question fast-path 应只查 memory，实际调用: {calls}"
     # memory 结果非空
     assert len(result.memories) == 1
     assert result.memories[0]["id"] == "m1"
@@ -115,6 +119,7 @@ def test_route_with_code_question_weights():
 # ============================================================
 # Test 4: knowledge_query 类型 knowledge 权重最高 → fast-path 只查 knowledge
 # ============================================================
+
 
 def test_route_with_knowledge_query_weights():
     """RED: knowledge_query 类型 knowledge 权重最高，fast-path 只查 knowledge 库。"""
@@ -130,8 +135,7 @@ def test_route_with_knowledge_query_weights():
     result = router.route(intent, top_k=5, route_mode="fast")
 
     # fast-path 只查 knowledge
-    assert calls == ["knowledge"], \
-        f"knowledge_query fast-path 应只查 knowledge，实际调用: {calls}"
+    assert calls == ["knowledge"], f"knowledge_query fast-path 应只查 knowledge，实际调用: {calls}"
     assert len(result.knowledge) == 1
     assert result.knowledge[0]["id"] == "k1"
 
@@ -139,6 +143,7 @@ def test_route_with_knowledge_query_weights():
 # ============================================================
 # Test 5: fast-path 只调用 1 个库的查询函数
 # ============================================================
+
 
 def test_route_fast_path_single_db():
     """RED: fast-path 模式只调用 1 个库的查询函数（权重最高的那个）。"""
@@ -155,17 +160,18 @@ def test_route_fast_path_single_db():
     result = router.route(intent, top_k=5, route_mode="fast")
 
     # fast-path 只调用 1 次
-    assert len(calls) == 1, \
-        f"fast-path 应只调用 1 个库的查询函数，实际调用 {len(calls)} 次: {calls}"
+    assert (
+        len(calls) == 1
+    ), f"fast-path 应只调用 1 个库的查询函数，实际调用 {len(calls)} 次: {calls}"
     # 且调用的是 skill（权重最高）
-    assert calls == ["skill"], \
-        f"skill_match 类型 fast-path 应查 skill 库，实际: {calls}"
+    assert calls == ["skill"], f"skill_match 类型 fast-path 应查 skill 库，实际: {calls}"
     assert len(result.skills) == 1
 
 
 # ============================================================
 # Test 6: full-path 调用 3 个库的查询函数
 # ============================================================
+
 
 def test_route_full_path_three_db():
     """RED: full-path 模式调用全部 3 个库的查询函数。"""
@@ -181,11 +187,9 @@ def test_route_full_path_three_db():
     result = router.route(intent, top_k=5, route_mode="full")
 
     # full-path 调用全部 3 个库
-    assert len(calls) == 3, \
-        f"full-path 应调用 3 个库的查询函数，实际调用 {len(calls)} 次: {calls}"
+    assert len(calls) == 3, f"full-path 应调用 3 个库的查询函数，实际调用 {len(calls)} 次: {calls}"
     # 三个库都被调用
-    assert set(calls) == {"memory", "skill", "knowledge"}, \
-        f"full-path 应调用三库，实际: {calls}"
+    assert set(calls) == {"memory", "skill", "knowledge"}, f"full-path 应调用三库，实际: {calls}"
     # 三库结果都非空
     assert len(result.memories) == 1
     assert len(result.skills) == 1
@@ -195,6 +199,7 @@ def test_route_full_path_three_db():
 # ============================================================
 # Test 7: top_k 限制每库返回数
 # ============================================================
+
 
 def test_route_respects_top_k():
     """RED: top_k 限制每个库的返回结果数。"""
@@ -212,17 +217,17 @@ def test_route_respects_top_k():
     result = router.route(intent, top_k=3, route_mode="full")
 
     # 每库返回不超过 top_k=3
-    assert len(result.memories) <= 3, \
-        f"memory 库返回应 <= top_k=3，实际 {len(result.memories)}"
-    assert len(result.skills) <= 3, \
-        f"skill 库返回应 <= top_k=3，实际 {len(result.skills)}"
-    assert len(result.knowledge) <= 3, \
-        f"knowledge 库返回应 <= top_k=3，实际 {len(result.knowledge)}"
+    assert len(result.memories) <= 3, f"memory 库返回应 <= top_k=3，实际 {len(result.memories)}"
+    assert len(result.skills) <= 3, f"skill 库返回应 <= top_k=3，实际 {len(result.skills)}"
+    assert (
+        len(result.knowledge) <= 3
+    ), f"knowledge 库返回应 <= top_k=3，实际 {len(result.knowledge)}"
 
 
 # ============================================================
 # Test 8: FAIL-OPEN — 某库查询函数抛异常时其他库结果不受影响
 # ============================================================
+
 
 def test_route_fail_open():
     """RED: 某库查询函数抛异常时，其他库结果不受影响（FAIL-OPEN）。"""
@@ -241,13 +246,9 @@ def test_route_fail_open():
     result = router.route(intent, top_k=5, route_mode="full")
 
     # 三库都被调用（skill 调了但抛异常）
-    assert len(calls) == 3, \
-        f"FAIL-OPEN 下三库都应被调用，实际调用 {len(calls)} 次: {calls}"
+    assert len(calls) == 3, f"FAIL-OPEN 下三库都应被调用，实际调用 {len(calls)} 次: {calls}"
     # memory 和 knowledge 结果不受影响
-    assert len(result.memories) == 1, \
-        "memory 库结果应正常返回，不受 skill 故障影响"
-    assert len(result.knowledge) == 1, \
-        "knowledge 库结果应正常返回，不受 skill 故障影响"
+    assert len(result.memories) == 1, "memory 库结果应正常返回，不受 skill 故障影响"
+    assert len(result.knowledge) == 1, "knowledge 库结果应正常返回，不受 skill 故障影响"
     # skill 结果为空（故障 FAIL-OPEN 返回空列表）
-    assert result.skills == [], \
-        f"skill 库故障应 FAIL-OPEN 返回空列表，实际: {result.skills}"
+    assert result.skills == [], f"skill 库故障应 FAIL-OPEN 返回空列表，实际: {result.skills}"

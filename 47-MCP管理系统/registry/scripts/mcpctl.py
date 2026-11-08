@@ -37,9 +37,9 @@ from pathlib import Path
 from string import Template
 from typing import Any, Dict, List, Optional, Tuple
 
-from check_mcp_tool_drift import load_registry, probe_shell, run as drift_run
+from check_mcp_tool_drift import load_registry, probe_shell
+from check_mcp_tool_drift import run as drift_run
 from validate_mcp_registry import validate as validate_registry
-
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 REGISTRY_DEFAULT = Path(
@@ -222,9 +222,7 @@ def build_profile(
         if missing:
             errors.append(f"角色工具未包含在已挂载壳中: {missing}")
         if write_in_role:
-            errors.append(
-                f"角色含写工具，网关将拒绝（Worker 只读）: {sorted(set(write_in_role))}"
-            )
+            errors.append(f"角色含写工具，网关将拒绝（Worker 只读）: {sorted(set(write_in_role))}")
         if errors:
             return {}, warnings, errors
 
@@ -232,18 +230,22 @@ def build_profile(
         args = [str(gateway_path), "--role", role]
         if ssh_host:
             args += ["--ssh-host", ssh_host]
-        return {
-            "mcpServers": {
-                f"l0-{role}": {
-                    "command": python_exe,
-                    "args": args,
-                    "env": {
-                        "PYTHONPATH": str(repo_root),
-                        "PYTHONIOENCODING": "utf-8",
-                    },
+        return (
+            {
+                "mcpServers": {
+                    f"l0-{role}": {
+                        "command": python_exe,
+                        "args": args,
+                        "env": {
+                            "PYTHONPATH": str(repo_root),
+                            "PYTHONIOENCODING": "utf-8",
+                        },
+                    }
                 }
-            }
-        }, warnings, errors
+            },
+            warnings,
+            errors,
+        )
 
     servers: Dict[str, Any] = {}
     covered_tools: set[str] = set()
@@ -267,9 +269,7 @@ def build_profile(
         else:
             entry = _local_entry(shell, repo_root, python_exe)
         servers[server_name(sid)] = entry
-        covered_tools.update(
-            t.get("name") for t in (shell.get("tools") or []) if t.get("name")
-        )
+        covered_tools.update(t.get("name") for t in (shell.get("tools") or []) if t.get("name"))
 
     missing_tools = sorted(set(role_tools) - covered_tools)
     if missing_tools:
@@ -470,7 +470,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     )
     add("project-mcp-json", project_mcp.exists(), mcp_json_detail, "WARN")
 
-    for host, cfg in HOST_CONFIGS.items():
+    for host, _cfg in HOST_CONFIGS.items():
         path = host_config_path(host, repo_root)
         if path is None:
             continue
@@ -651,8 +651,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
 _NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 _TOOL_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
-_SERVER_TEMPLATE = Template(
-    '''#!/usr/bin/env python3
+_SERVER_TEMPLATE = Template('''#!/usr/bin/env python3
 """mcp_shells/$name/server.py — $shell_id（mcpctl new-shell 生成）
 
 TODO: 补充域说明与硬约束。
@@ -687,11 +686,9 @@ $handler_map
 
 if __name__ == "__main__":
     run_stdio(SHELL_SOURCE, TOOL_DEFS, TOOL_HANDLERS)
-'''
-)
+''')
 
-_TEST_TEMPLATE = Template(
-    '''#!/usr/bin/env python3
+_TEST_TEMPLATE = Template('''#!/usr/bin/env python3
 """$shell_id 契约测试（mcpctl new-shell 生成）。"""
 
 import json
@@ -727,8 +724,7 @@ def _tools_list():
 def test_tools_list_matches_contract():
     names = [tool["name"] for tool in _tools_list()]
     assert names == EXPECTED
-'''
-)
+''')
 
 
 def _parse_tools(raw: str) -> List[Tuple[str, str]]:
@@ -795,13 +791,13 @@ def _render_server(shell_id: str, name: str, tools: List[Tuple[str, str]]) -> st
     handler_map = []
     for tool, _ in tools:
         handlers.append(
-            f'def _handle_{tool}(args: Dict[str, Any]) -> str:\n'
+            f"def _handle_{tool}(args: Dict[str, Any]) -> str:\n"
             f'    """TODO: implement {tool}."""\n'
             "    return json.dumps(\n"
             "        wrap(\n"
             "            None,\n"
             "            SHELL_SOURCE,\n"
-            '            degraded=True,\n'
+            "            degraded=True,\n"
             '            error_code="not_found",\n'
             f'            meta={{"reason": "{tool} not implemented"}},\n'
             "        ),\n"
@@ -972,9 +968,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="生成单条角色网关配置（工具级最小权限，P1）",
     )
-    p_profile.add_argument(
-        "--python", default=None, help="解释器路径（默认 sys.executable）"
-    )
+    p_profile.add_argument("--python", default=None, help="解释器路径（默认 sys.executable）")
     p_profile.add_argument("--repo-root", default=str(REPO_ROOT))
     p_profile.add_argument("--ssh-host", default=None, help="ssh-stdio 壳的 SSH 别名")
     p_profile.add_argument("--remote-repo", default="/home/luke/dreambuddy")

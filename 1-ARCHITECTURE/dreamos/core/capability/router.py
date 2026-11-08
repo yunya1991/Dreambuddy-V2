@@ -15,10 +15,11 @@ S层意图识别 → 能力域选择 → A层编排 的关键桥梁。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from dreamos.core.sense.types import IntentResult
-from .registry import CapabilityRegistry, CapabilityDomain
+
+from .registry import CapabilityDomain, CapabilityRegistry
 
 
 @dataclass
@@ -27,13 +28,14 @@ class RoutingResult:
 
     由 CapabilityRouter 生成，传递给 A 层 GraphPlanner 作为编排依据。
     """
+
     # 选中的能力域
     selected_capability: Optional[CapabilityDomain] = None
     capability_id: Optional[str] = None
 
     # 匹配信息
-    match_score: float = 0.0           # 匹配置信度 (0.0 ~ 1.0)
-    match_type: str = "none"           # 匹配类型: exact / fuzzy / fallback / none
+    match_score: float = 0.0  # 匹配置信度 (0.0 ~ 1.0)
+    match_type: str = "none"  # 匹配类型: exact / fuzzy / fallback / none
 
     # 候选列表（用于调试和追踪）
     candidates: List[Dict[str, Any]] = field(default_factory=list)
@@ -73,8 +75,7 @@ class CapabilityRouter:
             print(f"未匹配到能力域，候选: {routing.candidates}")
     """
 
-    def __init__(self, registry: CapabilityRegistry,
-                 default_capability_id: Optional[str] = None):
+    def __init__(self, registry: CapabilityRegistry, default_capability_id: Optional[str] = None):
         self.registry = registry
         self.default_capability_id = default_capability_id
 
@@ -116,8 +117,7 @@ class CapabilityRouter:
                 match_score=best_score,
                 match_type=match_type,
                 candidates=[
-                    {"id": c.capability_id, "name": c.name, "score": s}
-                    for c, s in candidates[:3]
+                    {"id": c.capability_id, "name": c.name, "score": s} for c, s in candidates[:3]
                 ],
                 rationale=f"意图 '{intent_type}' 匹配到能力域 '{best_cap.name}' (score={best_score:.2f})",
                 capability_config=getattr(best_cap, "get_config", lambda: {})(),
@@ -186,6 +186,8 @@ class CapabilityRouter:
         return keywords
 
     def __repr__(self) -> str:
-        return (f"<CapabilityRouter "
-                f"registry={len(self.registry)} "
-                f"default={self.default_capability_id}>")
+        return (
+            f"<CapabilityRouter "
+            f"registry={len(self.registry)} "
+            f"default={self.default_capability_id}>"
+        )

@@ -5,6 +5,7 @@
 
 来源: SPEC v0.3 §2.B — deep_reasoning_engine 多算法缝合体拆分
 """
+
 from __future__ import annotations
 
 import logging
@@ -65,15 +66,18 @@ class MonteCarloPathFinder:
         # 1. 优先 HJB/变分法（开关控制 + FAIL-OPEN）
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             if get_switch("enable_hjb_solver", True) or get_switch("enable_variational_opt", True):
                 from dreambuddy_evolution.core.hjb_solver import solve_optimal_path
 
                 start_price = float(paths[0][0]) if paths and len(paths[0]) > 0 else 100.0
                 horizon = max(len(p) for p in paths) - 1 if paths else 10
                 # 从 paths 估算 vol
-                all_returns = np.concatenate([
-                    np.diff(p) / np.maximum(p[:-1], 1e-9) for p in paths
-                ]) if paths else np.array([0.02])
+                all_returns = (
+                    np.concatenate([np.diff(p) / np.maximum(p[:-1], 1e-9) for p in paths])
+                    if paths
+                    else np.array([0.02])
+                )
                 vol = float(np.std(all_returns)) if len(all_returns) > 1 else 0.02
 
                 hjb_result = solve_optimal_path(

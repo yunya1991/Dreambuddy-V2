@@ -14,6 +14,7 @@ Phase F TDD 测试：Shadow 回测接入趋势跟踪 + 网格策略
 
 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase F
 """
+
 from __future__ import annotations
 
 import sys
@@ -36,14 +37,16 @@ def _make_synthetic_klines(n: int = 100, base_price: float = 100.0, trend: float
     klines = []
     for i in range(n):
         close = base_price + trend * i
-        klines.append({
-            "timestamp": f"2026-01-{i+1:02d}",
-            "open": close - 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
-            "close": close,
-            "volume": 1000.0 + i * 10,
-        })
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0 + i * 10,
+            }
+        )
     return klines
 
 
@@ -57,14 +60,16 @@ def _make_range_klines(n: int = 100):
     klines = []
     for i in range(n):
         close = 100.0 + (i % 5)
-        klines.append({
-            "timestamp": f"2026-01-{i+1:02d}",
-            "open": close - 0.5,
-            "high": close + 1.0,
-            "low": close - 1.0,
-            "close": close,
-            "volume": 1000.0,
-        })
+        klines.append(
+            {
+                "timestamp": f"2026-01-{i+1:02d}",
+                "open": close - 0.5,
+                "high": close + 1.0,
+                "low": close - 1.0,
+                "close": close,
+                "volume": 1000.0,
+            }
+        )
     return klines
 
 
@@ -74,6 +79,7 @@ def _make_range_klines(n: int = 100):
 def _import_shadow_backtest():
     """导入 shadow_backtest 模块"""
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
         "shadow_backtest", SCRIPTS_DIR / "shadow_backtest.py"
     )

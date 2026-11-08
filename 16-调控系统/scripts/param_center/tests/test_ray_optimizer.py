@@ -10,14 +10,13 @@
 运行:
   python -m pytest 16-调控系统/scripts/param_center/tests/test_ray_optimizer.py -v
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 # 路径设置
 _THIS = Path(__file__).resolve()
@@ -31,15 +30,15 @@ for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER]:
         sys.path.insert(0, sp)
 
 from param_center.ray_optimizer import (  # noqa: E402
+    _REPORT_LOG,
+    RR_FLOOR,
+    SL_CEIL,
+    SL_FLOOR,
+    TP_CEIL,
+    TP_FLOOR,
     RayTuneOptimizer,
     RayTuneResult,
-    SL_FLOOR,
-    SL_CEIL,
-    TP_FLOOR,
-    TP_CEIL,
-    RR_FLOOR,
     _safe_report,
-    _REPORT_LOG,
 )
 
 

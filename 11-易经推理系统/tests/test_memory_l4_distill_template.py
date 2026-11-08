@@ -5,4 +5,3 @@ def test_create_distill_template():
     assert d["distill_id"] == "D_TEST_1"
     assert d["supporting_case_ids"] == ["TC_1"]
     assert d["kind"] == "risk_signal"
-

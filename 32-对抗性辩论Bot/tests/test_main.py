@@ -13,9 +13,8 @@ build_app 应：
 7. 创建 CommandHandler
 8. 创建 TelegramListener 并返回
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations
 
 from core.config import AppConfig, DebateConfig, TelegramConfig
 from core.listener import TelegramListener
@@ -26,13 +25,20 @@ from core.telegram_bot import TelegramDualBot
 def make_config(**overrides) -> AppConfig:
     """构造测试用 AppConfig。"""
     debate = DebateConfig(
-        max_rounds=2, judge_enabled=True,
-        models={"debater": "qwen-turbo", "judge": "qwen-plus",
-                "marketing": "qwen-plus", "quality": "qwen-plus"},
+        max_rounds=2,
+        judge_enabled=True,
+        models={
+            "debater": "qwen-turbo",
+            "judge": "qwen-plus",
+            "marketing": "qwen-plus",
+            "quality": "qwen-plus",
+        },
     )
     telegram = TelegramConfig(
-        bull_token="bull_token", bear_token="bear_token",
-        judge_token="judge_token", allowed_chat_ids=[],
+        bull_token="bull_token",
+        bear_token="bear_token",
+        judge_token="judge_token",
+        allowed_chat_ids=[],
         message_interval_sec=1.0,
     )
     cfg = AppConfig(debate=debate, telegram=telegram)
@@ -43,6 +49,7 @@ def make_config(**overrides) -> AppConfig:
 
 # ─── build_app 基本装配测试 ──────────────────────────────────────
 
+
 class TestBuildApp:
 
     def test_build_app_returns_listener(self, monkeypatch):
@@ -51,7 +58,8 @@ class TestBuildApp:
 
         # mock LLM 适配器创建（避免真实 API）
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         cfg = make_config()
@@ -63,7 +71,8 @@ class TestBuildApp:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         cfg = make_config()
@@ -75,7 +84,8 @@ class TestBuildApp:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         cfg = make_config()
@@ -88,7 +98,8 @@ class TestBuildApp:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         cfg = make_config()
@@ -100,7 +111,8 @@ class TestBuildApp:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         cfg = make_config()
@@ -115,7 +127,8 @@ class TestBuildApp:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         cfg = make_config()
@@ -128,13 +141,16 @@ class TestBuildApp:
         import main
 
         monkeypatch.setattr(
-            main, "create_llm_adapter",
+            main,
+            "create_llm_adapter",
             lambda config=None, model_name=None: _FakeLLM(),
         )
         cfg = make_config()
         cfg.llm.max_tokens = {
-            "debater": 1234, "judge": 567,
-            "marketing": 890, "quality": 432,
+            "debater": 1234,
+            "judge": 567,
+            "marketing": 890,
+            "quality": 432,
         }
         app = main.build_app(cfg)
 
@@ -147,9 +163,9 @@ class TestBuildApp:
 
 # ─── 辅助 ────────────────────────────────────────────────────────
 
+
 class _FakeLLM:
     """模拟 LLMAdapter（不做真实调用）。"""
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
         return '{"thesis": "test", "arguments": [], "quote": "", "confidence": 0.5}'

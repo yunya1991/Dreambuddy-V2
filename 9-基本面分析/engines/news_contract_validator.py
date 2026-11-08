@@ -14,17 +14,16 @@ FAIL-OPEN：
     pass_rate=0.8（中性下限，FAIL-OPEN 不完全关闭 S3 分支）
   · 空 list → pass_rate=0.0 / total=0
 """
+
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
 _THIS_DIR = Path(__file__).resolve().parent
 _SCHEMA_PATH = (
-    _THIS_DIR.parent
-    / "ops" / "nanoclaw" / "core_task1" / "schema" / "news_contract.schema.json"
+    _THIS_DIR.parent / "ops" / "nanoclaw" / "core_task1" / "schema" / "news_contract.schema.json"
 )
 
 
@@ -41,7 +40,12 @@ def _fail_open_neutral(total: int) -> Dict[str, Any]:
 
 def validate_batch(news_list: List[Dict[str, Any]]) -> Dict[str, Any]:
     if not isinstance(news_list, list):
-        return {"pass_count": 0, "total_count": 0, "pass_rate": 0.0, "errors": ["news_list 非 list"]}
+        return {
+            "pass_count": 0,
+            "total_count": 0,
+            "pass_rate": 0.0,
+            "errors": ["news_list 非 list"],
+        }
     total = len(news_list)
     if total == 0:
         return {"pass_count": 0, "total_count": 0, "pass_rate": 0.0, "errors": []}
@@ -65,10 +69,10 @@ def validate_batch(news_list: List[Dict[str, Any]]) -> Dict[str, Any]:
     #    为加速直接校验单条，优先取 $defs.CryptoItem 子 schema（若存在）。
     item_schema: Dict[str, Any]
     item_schema = (
-        schema.get("$defs", {}) if isinstance(schema.get("$defs"), dict) else {}
-    ).get("CryptoItem") or schema.get("properties", {}).get(
-        "raw_crypto", {}
-    ).get("items") or schema
+        (schema.get("$defs", {}) if isinstance(schema.get("$defs"), dict) else {}).get("CryptoItem")
+        or schema.get("properties", {}).get("raw_crypto", {}).get("items")
+        or schema
+    )
     if not isinstance(item_schema, dict) or not item_schema:
         # 退化为通用 object 校验
         item_schema = {"type": "object"}

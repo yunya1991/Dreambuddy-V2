@@ -3,6 +3,7 @@
 P2 收敛目标：消除 DSH 三处 `_extract_json` 的 buggy 正则
 （`\\{[^{}]*\\}` 无法处理嵌套对象），统一到 `robust_json.extract_json_object`。
 """
+
 from __future__ import annotations
 
 import sys
@@ -26,7 +27,7 @@ def test_extracts_nested_json_object():
 
 
 def test_handles_code_fence():
-    raw = "```json\n{\"thesis\": \"x\", \"arguments\": [\"a\", \"b\"]}\n```"
+    raw = '```json\n{"thesis": "x", "arguments": ["a", "b"]}\n```'
     data = extract_json_object(raw)
     assert data is not None
     assert data["thesis"] == "x"

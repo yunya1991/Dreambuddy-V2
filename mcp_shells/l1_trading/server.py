@@ -10,6 +10,7 @@
 
 stdio JSON-RPC 2.0，按需拉起，不常驻。
 """
+
 from __future__ import annotations
 
 import json
@@ -28,43 +29,66 @@ from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
 SHELL_SOURCE = "l1.trading.mcp"
 _ROOT = Path(os.environ.get("DREAMBUDDY_ROOT", str(_REPO_ROOT)))
 
-SIGNAL_STATE_PATH = Path(os.environ.get(
-    "L1_SIGNAL_STATE_PATH",
-    str(_ROOT / "23-四层闭环自进化交易架构" / "runtime" / "signals" / "23_signal_state.json"),
-))
-SIGNAL_FALLBACK_PATH = Path(os.environ.get(
-    "L1_SIGNAL_FALLBACK_PATH",
-    str(_ROOT / "11-易经推理系统" / "data" / "event_driven_state.json"),
-))
-BUS_STATE_PATH = Path(os.environ.get(
-    "L1_BUS_STATE_PATH",
-    str(_ROOT / "42-神经网络交易协调层" / "runtime" / "bus_state.json"),
-))
-CONSTRAINT_STATE_PATH = Path(os.environ.get(
-    "L1_CONSTRAINT_STATE_PATH",
-    str(_ROOT / "42-神经网络交易协调层" / "runtime" / "macro_constraint.json"),
-))
-CYCLE_STATE_PATH = Path(os.environ.get(
-    "L1_CYCLE_STATE_PATH",
-    str(_ROOT / "40-周期神经网络系统" / "cycle_state.json"),
-))
-STRATEGY_MAPPING_PATH = Path(os.environ.get(
-    "L1_STRATEGY_MAPPING_PATH",
-    str(_ROOT / "40-周期神经网络系统" / "strategy_mapping.json"),
-))
-STRATEGIC_EXTENSION_PATH = Path(os.environ.get(
-    "L1_STRATEGIC_EXTENSION_PATH",
-    str(_ROOT / "43-战略承接推演层" / "runtime" / "strategic_extension_signal.json"),
-))
-TRAINING_REPORT_PATH = Path(os.environ.get(
-    "L1_TRAINING_REPORT_PATH",
-    str(_ROOT / "23-四层闭环自进化交易架构" / "dreambuddy_evolution"
-        / "data" / "neural_sde_v1.training_report.json"),
-))
-PAPER_SAMPLES_PATH = Path(os.environ.get(
-    "L1_PAPER_SAMPLES_PATH",
-    str(_ROOT / "mcp_shells" / "l0_trade_exec" / "ml_data" / "samples.jsonl"),
-))
+SIGNAL_STATE_PATH = Path(
+    os.environ.get(
+        "L1_SIGNAL_STATE_PATH",
+        str(_ROOT / "23-四层闭环自进化交易架构" / "runtime" / "signals" / "23_signal_state.json"),
+    )
+)
+SIGNAL_FALLBACK_PATH = Path(
+    os.environ.get(
+        "L1_SIGNAL_FALLBACK_PATH",
+        str(_ROOT / "11-易经推理系统" / "data" / "event_driven_state.json"),
+    )
+)
+BUS_STATE_PATH = Path(
+    os.environ.get(
+        "L1_BUS_STATE_PATH",
+        str(_ROOT / "42-神经网络交易协调层" / "runtime" / "bus_state.json"),
+    )
+)
+CONSTRAINT_STATE_PATH = Path(
+    os.environ.get(
+        "L1_CONSTRAINT_STATE_PATH",
+        str(_ROOT / "42-神经网络交易协调层" / "runtime" / "macro_constraint.json"),
+    )
+)
+CYCLE_STATE_PATH = Path(
+    os.environ.get(
+        "L1_CYCLE_STATE_PATH",
+        str(_ROOT / "40-周期神经网络系统" / "cycle_state.json"),
+    )
+)
+STRATEGY_MAPPING_PATH = Path(
+    os.environ.get(
+        "L1_STRATEGY_MAPPING_PATH",
+        str(_ROOT / "40-周期神经网络系统" / "strategy_mapping.json"),
+    )
+)
+STRATEGIC_EXTENSION_PATH = Path(
+    os.environ.get(
+        "L1_STRATEGIC_EXTENSION_PATH",
+        str(_ROOT / "43-战略承接推演层" / "runtime" / "strategic_extension_signal.json"),
+    )
+)
+TRAINING_REPORT_PATH = Path(
+    os.environ.get(
+        "L1_TRAINING_REPORT_PATH",
+        str(
+            _ROOT
+            / "23-四层闭环自进化交易架构"
+            / "dreambuddy_evolution"
+            / "data"
+            / "neural_sde_v1.training_report.json"
+        ),
+    )
+)
+PAPER_SAMPLES_PATH = Path(
+    os.environ.get(
+        "L1_PAPER_SAMPLES_PATH",
+        str(_ROOT / "mcp_shells" / "l0_trade_exec" / "ml_data" / "samples.jsonl"),
+    )
+)
 
 
 def _read_json(path: Path) -> tuple[Any | None, str]:
@@ -79,7 +103,11 @@ def _read_json(path: Path) -> tuple[Any | None, str]:
 
 
 def _wrap(
-    data: Any, *, degraded: bool = False, error_code: str = "", reason: str = "",
+    data: Any,
+    *,
+    degraded: bool = False,
+    error_code: str = "",
+    reason: str = "",
     meta: dict[str, Any] | None = None,
 ) -> str:
     merged_meta = {"tool": meta.pop("tool", "")} if meta else {}
@@ -89,7 +117,10 @@ def _wrap(
         merged_meta["reason"] = reason
     return json.dumps(
         wrap(
-            data, SHELL_SOURCE, degraded=degraded, error_code=error_code,
+            data,
+            SHELL_SOURCE,
+            degraded=degraded,
+            error_code=error_code,
             meta=merged_meta,
         ),
         ensure_ascii=False,
@@ -99,7 +130,8 @@ def _wrap(
 def _missing(path: Path, reason: str = "") -> str:
     return _wrap(
         {"available": False, "path": str(path)},
-        degraded=True, error_code="not_found",
+        degraded=True,
+        error_code="not_found",
         reason=reason or "state file not found (fail-open)",
     )
 
@@ -141,8 +173,7 @@ def _cycle_summary() -> dict[str, Any]:
 def _strategy_summary() -> dict[str, Any]:
     data, err = _read_json(STRATEGY_MAPPING_PATH)
     if data is None:
-        return {"available": False, "error_code": err,
-                "path": str(STRATEGY_MAPPING_PATH)}
+        return {"available": False, "error_code": err, "path": str(STRATEGY_MAPPING_PATH)}
     suggestion = data.get("strategy_suggestion") or {}
     return {
         "available": True,
@@ -156,11 +187,11 @@ def _strategy_summary() -> dict[str, Any]:
 
 # ── 10 工具 handlers ────────────────────────────────────────────
 
+
 def get_signal_state(arguments: dict[str, Any]) -> str:
     data, path, err, fallback = _load_signal()
     if data is None:
         return _missing(SIGNAL_STATE_PATH, "23/11 signal state unavailable")
-    payload = data.get("payload") if isinstance(data, dict) else None
     out = {
         "available": True,
         "path": str(path),
@@ -170,7 +201,9 @@ def get_signal_state(arguments: dict[str, Any]) -> str:
     if fallback:
         out["note"] = "23 目标文件缺失，返回 11 event_driven_state 迁移期镜像"
     return _wrap(
-        out, degraded=fallback, error_code="degraded" if fallback else "",
+        out,
+        degraded=fallback,
+        error_code="degraded" if fallback else "",
         reason="fallback to 11 event_driven_state" if fallback else "",
         meta={"tool": "get_signal_state"},
     )
@@ -203,8 +236,7 @@ def get_constraint_state(arguments: dict[str, Any]) -> str:
     data, err = _read_json(CONSTRAINT_STATE_PATH)
     if data is not None:
         return _wrap(
-            {"available": True, "path": str(CONSTRAINT_STATE_PATH),
-             "constraint": data},
+            {"available": True, "path": str(CONSTRAINT_STATE_PATH), "constraint": data},
             meta={"tool": "get_constraint_state"},
         )
     return _wrap(
@@ -220,7 +252,8 @@ def get_constraint_state(arguments: dict[str, Any]) -> str:
                 )[0],
             },
         },
-        degraded=True, error_code="not_found",
+        degraded=True,
+        error_code="not_found",
         reason="MacroElasticConstraint v1 state file not found (fail-open)",
         meta={"tool": "get_constraint_state"},
     )
@@ -244,30 +277,47 @@ def get_strategic_extension(arguments: dict[str, Any]) -> str:
             "43 strategic_extension signal unavailable（43 runtime 可能尚未产出）",
         )
     return _wrap(
-        {"available": True, "path": str(STRATEGIC_EXTENSION_PATH),
-         "strategic_extension": data},
+        {"available": True, "path": str(STRATEGIC_EXTENSION_PATH), "strategic_extension": data},
         meta={"tool": "get_strategic_extension"},
     )
 
 
 _DIAG_KEYS = {
     "primary_contradiction": (
-        "dimension", "direction", "strength", "confidence",
-        "cause_score", "effort_result", "continuation_score",
-        "gate_state", "meta_cognition", "position_multiplier",
+        "dimension",
+        "direction",
+        "strength",
+        "confidence",
+        "cause_score",
+        "effort_result",
+        "continuation_score",
+        "gate_state",
+        "meta_cognition",
+        "position_multiplier",
     ),
     "contradiction_shift": (
-        "shifted_from", "shifted_to", "new_direction",
-        "structural_break_type", "consecutive_count",
+        "shifted_from",
+        "shifted_to",
+        "new_direction",
+        "structural_break_type",
+        "consecutive_count",
     ),
     "cross_validation": (
-        "g_dim", "a_dim", "consistent", "confidence_mult",
-        "divergence_count", "quality_change",
+        "g_dim",
+        "a_dim",
+        "consistent",
+        "confidence_mult",
+        "divergence_count",
+        "quality_change",
     ),
     "path": ("optimal_path", "hjb_value", "path_score"),
     "elastic_result": (
-        "position_mult", "t_max", "deviation", "constraint_active",
-        "aligned", "rebound_risk",
+        "position_mult",
+        "t_max",
+        "deviation",
+        "constraint_active",
+        "aligned",
+        "rebound_risk",
     ),
 }
 
@@ -277,10 +327,7 @@ def get_decision_diagnostics(arguments: dict[str, Any]) -> str:
     if data is None:
         return _missing(SIGNAL_STATE_PATH, "23 signal state unavailable")
     payload = data.get("payload") or {}
-    diagnostics = {
-        key: _summarize(payload.get(key), keys)
-        for key, keys in _DIAG_KEYS.items()
-    }
+    diagnostics = {key: _summarize(payload.get(key), keys) for key, keys in _DIAG_KEYS.items()}
     return _wrap(
         {
             "available": True,
@@ -295,7 +342,8 @@ def get_decision_diagnostics(arguments: dict[str, Any]) -> str:
             "diagnostics": diagnostics,
             "note": "仅暴露摘要 + 置信度；原始权重/张量不下发（DEC-15）",
         },
-        degraded=fallback, error_code="degraded" if fallback else "",
+        degraded=fallback,
+        error_code="degraded" if fallback else "",
         reason="fallback to 11 event_driven_state" if fallback else "",
         meta={"tool": "get_decision_diagnostics"},
     )
@@ -312,10 +360,18 @@ def get_training_status(arguments: dict[str, Any]) -> str:
             sample_count = 0
     if report is None and sample_count == 0:
         return _missing(TRAINING_REPORT_PATH, "training report / paper samples unavailable")
-    training = _summarize(report or {}, (
-        "status", "epochs", "epochs_run", "early_stopped", "n_windows",
-        "final_loss", "best_val_loss",
-    ))
+    training = _summarize(
+        report or {},
+        (
+            "status",
+            "epochs",
+            "epochs_run",
+            "early_stopped",
+            "n_windows",
+            "final_loss",
+            "best_val_loss",
+        ),
+    )
     return _wrap(
         {
             "available": report is not None,
@@ -346,18 +402,22 @@ def _call_l0(tool: str, arguments: dict[str, Any]) -> tuple[Any, bool, str, str]
 def get_positions(arguments: dict[str, Any]) -> str:
     try:
         data, degraded, error_code, reason = _call_l0(
-            "get_positions", {"symbol": arguments.get("symbol")},
+            "get_positions",
+            {"symbol": arguments.get("symbol")},
         )
     except Exception as exc:  # noqa: BLE001 — 代理失败 fail-open
         return _wrap(
             {"available": False, "error": f"{type(exc).__name__}: {exc}"},
-            degraded=True, error_code="unavailable",
+            degraded=True,
+            error_code="unavailable",
             reason="l0.trade-exec.mcp unavailable",
             meta={"tool": "get_positions"},
         )
     return _wrap(
         {"available": True, "execution": data},
-        degraded=degraded, error_code=error_code, reason=reason,
+        degraded=degraded,
+        error_code=error_code,
+        reason=reason,
         meta={"tool": "get_positions", "proxied_from": "l0.trade-exec.mcp"},
     )
 
@@ -368,13 +428,16 @@ def get_balance(arguments: dict[str, Any]) -> str:
     except Exception as exc:  # noqa: BLE001
         return _wrap(
             {"available": False, "error": f"{type(exc).__name__}: {exc}"},
-            degraded=True, error_code="unavailable",
+            degraded=True,
+            error_code="unavailable",
             reason="l0.trade-exec.mcp unavailable",
             meta={"tool": "get_balance"},
         )
     return _wrap(
         {"available": True, "execution": data},
-        degraded=degraded, error_code=error_code, reason=reason,
+        degraded=degraded,
+        error_code=error_code,
+        reason=reason,
         meta={"tool": "get_balance", "proxied_from": "l0.trade-exec.mcp"},
     )
 
@@ -390,21 +453,24 @@ def forward_signal(arguments: dict[str, Any]) -> str:
     if signal.get("source") != "23-evolution":
         return _wrap(
             {"available": False, "source": signal.get("source")},
-            degraded=True, error_code="conflict",
+            degraded=True,
+            error_code="conflict",
             reason="forward_signal 只接受 source=23-evolution",
             meta={"tool": "forward_signal"},
         )
     if signal.get("shadow") is True:
         return _wrap(
             {"available": False, "signal_id": signal.get("signal_id")},
-            degraded=True, error_code="conflict",
+            degraded=True,
+            error_code="conflict",
             reason="shadow 信号不允许进入执行层",
             meta={"tool": "forward_signal"},
         )
     if signal.get("mode") != "live":
         return _wrap(
             {"available": False, "mode": signal.get("mode")},
-            degraded=True, error_code="conflict",
+            degraded=True,
+            error_code="conflict",
             reason="forward_signal 只允许 mode=live",
             meta={"tool": "forward_signal"},
         )
@@ -421,7 +487,8 @@ def forward_signal(arguments: dict[str, Any]) -> str:
     except Exception as exc:  # noqa: BLE001
         return _wrap(
             {"available": False, "error": f"{type(exc).__name__}: {exc}"},
-            degraded=True, error_code="unavailable",
+            degraded=True,
+            error_code="unavailable",
             reason="l0.trade-exec.mcp unavailable",
             meta={"tool": "forward_signal"},
         )
@@ -432,7 +499,9 @@ def forward_signal(arguments: dict[str, Any]) -> str:
             "source_path": str(path),
             "execution": data,
         },
-        degraded=degraded, error_code=error_code, reason=reason,
+        degraded=degraded,
+        error_code=error_code,
+        reason=reason,
         meta={"tool": "forward_signal", "proxied_from": "l0.trade-exec.mcp"},
     )
 
@@ -547,8 +616,7 @@ def _handle_request(req: dict[str, Any]) -> dict[str, Any] | None:
     if method == "ping":
         return {"jsonrpc": "2.0", "id": req.get("id"), "result": {}}
     if method == "tools/list":
-        return {"jsonrpc": "2.0", "id": req.get("id"),
-                "result": {"tools": _TOOLS}}
+        return {"jsonrpc": "2.0", "id": req.get("id"), "result": {"tools": _TOOLS}}
     if method == "tools/call":
         params = req.get("params", {})
         name = params.get("name", "")
@@ -569,7 +637,8 @@ def _handle_request(req: dict[str, Any]) -> dict[str, Any] | None:
                 "isError": False,
                 "_meta": {
                     "latency_ms": round(
-                        (time.perf_counter() - started) * 1000.0, 2,
+                        (time.perf_counter() - started) * 1000.0,
+                        2,
                     )
                 },
             },
@@ -594,10 +663,16 @@ def main() -> None:
         try:
             req = json.loads(line)
         except json.JSONDecodeError:
-            sys.stdout.write(json.dumps({
-                "jsonrpc": "2.0", "id": None,
-                "error": {"code": -32700, "message": "Parse error"},
-            }) + "\n")
+            sys.stdout.write(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": None,
+                        "error": {"code": -32700, "message": "Parse error"},
+                    }
+                )
+                + "\n"
+            )
             sys.stdout.flush()
             continue
         resp = _handle_request(req)

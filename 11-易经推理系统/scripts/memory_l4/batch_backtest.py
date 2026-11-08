@@ -6,19 +6,21 @@
 2. 参数扰动：随机调整滑点、仓位、阈值等参数，模拟不同交易者
 3. 多周期混合：4H + 1H + 日K 交替训练
 """
-import sys
-import os
+
+import sys  # noqa: I001
 import json
 import random
-import copy
 from pathlib import Path
 from typing import List, Dict, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from scripts.memory_l4.yijing_trainer import (
-    run_backtest, ScenarioResult, default_engine,
-    _save_cases_to_l4, LIANGYI_STATE_FILE, _load_kline_from_okx,
+from scripts.memory_l4.yijing_trainer import (  # noqa: I001
+    run_backtest,
+    default_engine,
+    _save_cases_to_l4,
+    LIANGYI_STATE_FILE,
+    _load_kline_from_okx,
     memory_l4_cases_dir,
 )
 
@@ -68,7 +70,9 @@ def run_batch_backtest(
 
     print(f"获取到 {len(kline_4h)} 根 4H, {len(kline_1h)} 根 1H, {len(kline_1d)} 根 日K")
 
-    current_cases = len(list(memory_l4_cases_dir().glob("*.json"))) if memory_l4_cases_dir().exists() else 0
+    current_cases = (
+        len(list(memory_l4_cases_dir().glob("*.json"))) if memory_l4_cases_dir().exists() else 0
+    )
     print(f"\n当前 L4 案例库: {current_cases} 个")
     print(f"目标案例数: {target_case_count}")
 
@@ -106,8 +110,12 @@ def run_batch_backtest(
             se.base_velocity_decay *= random.uniform(0.8, 1.1)
             se.base_confidence_threshold *= random.uniform(0.8, 1.2)
             se.base_reversal_threshold *= random.uniform(0.8, 1.2)
-            w = [random.uniform(0.1, 0.4), random.uniform(0.05, 0.3),
-                 random.uniform(0.2, 0.5), random.uniform(0.2, 0.5)]
+            w = [
+                random.uniform(0.1, 0.4),
+                random.uniform(0.05, 0.3),
+                random.uniform(0.2, 0.5),
+                random.uniform(0.2, 0.5),
+            ]
             sw = sum(w)
             se.time_weight, se.space_weight, se.surface_weight, se.core_weight = [x / sw for x in w]
         except Exception:
@@ -132,8 +140,11 @@ def run_batch_backtest(
 
         try:
             result = run_backtest(
-                scenario_name, kline, engine=round_engine,
-                start_idx=start_idx, end_idx=end_idx,
+                scenario_name,
+                kline,
+                engine=round_engine,
+                start_idx=start_idx,
+                end_idx=end_idx,
                 initial_capital=initial_capital,
                 position_pct=position_pct,
                 slippage=slippage,
@@ -157,12 +168,26 @@ def run_batch_backtest(
                         cs = engine.liangyi_engine._learned_stats[k]
                         for f in ["total", "correct", "wrong"]:
                             cs[f] += v[f]
-                        for f in ["w_time_sum", "w_space_sum", "w_surface_sum", "w_core_sum",
-                                  "mass_sum", "decay_sum",
-                                  "w_time_correct_sum", "w_space_correct_sum", "w_surface_correct_sum",
-                                  "w_core_correct_sum", "mass_correct_sum", "decay_correct_sum",
-                                  "w_time_wrong_sum", "w_space_wrong_sum", "w_surface_wrong_sum",
-                                  "w_core_wrong_sum", "mass_wrong_sum", "decay_wrong_sum"]:
+                        for f in [
+                            "w_time_sum",
+                            "w_space_sum",
+                            "w_surface_sum",
+                            "w_core_sum",
+                            "mass_sum",
+                            "decay_sum",
+                            "w_time_correct_sum",
+                            "w_space_correct_sum",
+                            "w_surface_correct_sum",
+                            "w_core_correct_sum",
+                            "mass_correct_sum",
+                            "decay_correct_sum",
+                            "w_time_wrong_sum",
+                            "w_space_wrong_sum",
+                            "w_surface_wrong_sum",
+                            "w_core_wrong_sum",
+                            "mass_wrong_sum",
+                            "decay_wrong_sum",
+                        ]:
                             cs[f] = cs.get(f, 0) + v.get(f, 0)
             except Exception:
                 pass
@@ -173,17 +198,19 @@ def run_batch_backtest(
         total_trades += result.total_trades
         total_pnl += result.total_pnl
 
-        configs.append({
-            "round": round_i,
-            "bar": bar,
-            "window": f"{start_idx}-{end_idx}",
-            "trades": result.total_trades,
-            "win_rate": round(result.win_rate, 4),
-            "pnl": round(result.total_pnl, 2),
-            "cases": case_count,
-            "slippage": round(slippage, 5),
-            "position_pct": round(position_pct, 3),
-        })
+        configs.append(
+            {
+                "round": round_i,
+                "bar": bar,
+                "window": f"{start_idx}-{end_idx}",
+                "trades": result.total_trades,
+                "win_rate": round(result.win_rate, 4),
+                "pnl": round(result.total_pnl, 2),
+                "cases": case_count,
+                "slippage": round(slippage, 5),
+                "position_pct": round(position_pct, 3),
+            }
+        )
 
         if round_i % 10 == 0 or case_count > 0:
             stats_now = engine.liangyi_engine._learned_stats
@@ -191,10 +218,12 @@ def run_batch_backtest(
                 f"{k[0]}|{k[1]}={v['total']}"
                 for k, v in sorted(stats_now.items(), key=lambda x: -x[1]["total"])[:3]
             )
-            print(f"  轮次 {round_i:3d}: {bar} {start_idx}-{end_idx} "
-                  f"trades={result.total_trades:2d} wr={result.win_rate*100:5.1f}% "
-                  f"pnl={result.total_pnl:+8.0f}$ cases={case_count} "
-                  f"累计={current_cases + total_cases_added} [{combo_str}]")
+            print(
+                f"  轮次 {round_i:3d}: {bar} {start_idx}-{end_idx} "
+                f"trades={result.total_trades:2d} wr={result.win_rate*100:5.1f}% "
+                f"pnl={result.total_pnl:+8.0f}$ cases={case_count} "
+                f"累计={current_cases + total_cases_added} [{combo_str}]"
+            )
 
     # 从 L4 读取所有真实案例（非 hypothetical）
     try:
@@ -214,16 +243,19 @@ def run_batch_backtest(
         # 场景推演扩展
         if len(real_cases) >= 20:
             from scripts.memory_l4.scenario_extender import run_scenario_extension
+
             ext_result = run_scenario_extension(real_cases, multiplier=3)
             if ext_result.get("ok"):
                 total_cases_added += ext_result.get("hypo_cases", 0)
                 print(f"场景推演扩展: +{ext_result['hypo_cases']} 假设案例")
                 if ext_result.get("combo_distribution"):
                     print("  组合分布:")
-                    for combo, cnt in sorted(ext_result["combo_distribution"].items(), key=lambda x: -x[1])[:5]:
+                    for combo, cnt in sorted(
+                        ext_result["combo_distribution"].items(), key=lambda x: -x[1]
+                    )[:5]:
                         print(f"    {combo}: {cnt}")
         else:
-            print(f"跳过场景推演: 真实案例不足(需要≥20)")
+            print("跳过场景推演: 真实案例不足(需要≥20)")
     except Exception as e:
         print(f"场景推演失败: {e}")
 
@@ -255,7 +287,11 @@ def run_batch_backtest(
         print(f"保存 liangyi 状态失败: {e}")
 
     stats = engine.liangyi_engine.get_learned_stats() if hasattr(engine, "liangyi_engine") else {}
-    season_stats = engine.liangyi_engine.get_learned_season_stats() if hasattr(engine, "liangyi_engine") else {}
+    season_stats = (
+        engine.liangyi_engine.get_learned_season_stats()
+        if hasattr(engine, "liangyi_engine")
+        else {}
+    )
 
     print("\n" + "=" * 70)
     print("  批量回测完成")
@@ -265,7 +301,7 @@ def run_batch_backtest(
     print(f"  总盈亏: ${total_pnl:+,.2f}")
     print(f"  新增案例: {total_cases_added}")
     print(f"  案例库总数: {current_cases + total_cases_added}")
-    print(f"\n  LiangyiEngine 学习统计:")
+    print("\n  LiangyiEngine 学习统计:")
     print(f"    组合数: {len(stats)}")
     print(f"    季节数: {len(season_stats)}")
     for k, v in sorted(stats.items(), key=lambda x: -x[1]["total"]):
@@ -287,6 +323,7 @@ def run_batch_backtest(
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--rounds", type=int, default=100, help="最大回测轮次")
     parser.add_argument("--target", type=int, default=200, help="目标案例数")

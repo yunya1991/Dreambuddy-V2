@@ -21,5 +21,14 @@
     "gate": "EXECUTION_AUTHORITY",
     "default": "evolution_only",
     "mapping_note": "标的声明 live:11-bypass 后，11 域仍需 EXECUTION_AUTHORITY 允许对应 source_tag 才会真实下单；两者同时满足才算接管。本表不自动改 11 域运行时配置。"
+  },
+  "fifty_nn_domain": {
+    "gate": "50_KILL_SWITCH",
+    "default_outcome": "paper",
+    "allowed_outcomes": ["paper", "live:50-bypass", "disabled"],
+    "mandate_required_for_live": true,
+    "kill_switch_env": "50_KILL_SWITCH",
+    "kill_switch_value": "1",
+    "mapping_note": "50-NN主矛盾评估器初期 paper-only；live 需 execution_rights 授权 + Mandate；同一标的同时刻单出口，不得与 23 live 并存。"
   }
 }

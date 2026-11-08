@@ -3,16 +3,18 @@
 定义训练系统评估案例学习价值的统一接口。
 CaseIngestGate通过适配器实现此协议。
 """
+
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
 from enum import Enum
+from typing import Any, Dict
 
 
 class IngestDecision(str, Enum):
     """案例入库决策。"""
-    INGEST = "ingest"        # 入库（主动训练或被动辅导）
-    DEFERRED = "deferred"    # 暂缓（加入待训练队列）
-    SKIP = "skip"            # 跳过（学习价值不足）
+
+    INGEST = "ingest"  # 入库（主动训练或被动辅导）
+    DEFERRED = "deferred"  # 暂缓（加入待训练队列）
+    SKIP = "skip"  # 跳过（学习价值不足）
 
 
 class CaseEvaluation:

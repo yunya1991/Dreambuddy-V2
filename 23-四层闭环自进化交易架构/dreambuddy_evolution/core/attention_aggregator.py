@@ -8,6 +8,7 @@
 
 输出：A_dim ∈ {technical, fundamental, macro}, A_strength ∈ [0,1]
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -85,7 +86,7 @@ class AttentionAggregator:
             strengths = head_strengths.mean(dim=0).detach().cpu().tolist()
 
         # 按 C_DIM_TO_3 聚合到 3 维度
-        dim_strengths: dict[str, float] = {d: 0.0 for d in THREE_DIMS}
+        dim_strengths: dict[str, float] = dict.fromkeys(THREE_DIMS, 0.0)
         for head_idx, c_dim in enumerate(self._dimensions):
             target = C_DIM_TO_3[c_dim]
             dim_strengths[target] += strengths[head_idx]

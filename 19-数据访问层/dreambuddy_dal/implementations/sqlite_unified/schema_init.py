@@ -10,6 +10,7 @@ SqliteUnified 实现：Schema 初始化入口
 
 入口：init_db_schema(conn)  → 每次启动 dreambuddy_dal / di.py = sqlite_unified 时调一次
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -470,9 +471,7 @@ def _add_index_if_missing(
     if name in existing:
         return False
     uniq = "UNIQUE " if unique else ""
-    conn.execute(
-        f"CREATE {uniq}INDEX IF NOT EXISTS {name} ON {table}({', '.join(cols)})"
-    )
+    conn.execute(f"CREATE {uniq}INDEX IF NOT EXISTS {name} ON {table}({', '.join(cols)})")
     return True
 
 

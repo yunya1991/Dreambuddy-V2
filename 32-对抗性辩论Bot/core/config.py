@@ -10,6 +10,7 @@ SPEC 第四节 config.yaml 三段配置：
 - env:VAR 格式的环境变量解析
 - 默认值填充
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,25 +28,31 @@ ENV_PREFIX = "env:"
 @dataclass
 class DebateConfig:
     """辩论参数配置。"""
+
     max_rounds: int = 2
     judge_enabled: bool = True
     cross_examination: bool = False
     profile: str = "marketing"  # marketing | technical | signal
     pause_timeout_minutes: float = 30.0
-    models: dict = field(default_factory=lambda: {
-        "debater": "qwen-turbo",
-        "judge": "qwen-plus",
-        "marketing": "qwen-plus",
-        "quality": "qwen-plus",
-    })
-    budget: dict = field(default_factory=lambda: {
-        "monthly_limit_yuan": 50.0,
-    })
+    models: dict = field(
+        default_factory=lambda: {
+            "debater": "qwen-turbo",
+            "judge": "qwen-plus",
+            "marketing": "qwen-plus",
+            "quality": "qwen-plus",
+        }
+    )
+    budget: dict = field(
+        default_factory=lambda: {
+            "monthly_limit_yuan": 50.0,
+        }
+    )
 
 
 @dataclass
 class TelegramConfig:
     """Telegram Bot 配置。"""
+
     bull_token: str = ""
     bear_token: str = ""
     judge_token: str | None = None
@@ -56,34 +63,41 @@ class TelegramConfig:
 @dataclass
 class TopicFilterConfig:
     """话题过滤配置。"""
+
     blacklist_keywords: list[str] = field(default_factory=list)
 
 
 @dataclass
 class LLMConfig:
     """LLM 适配配置（与 LangChain 解耦）。"""
-    provider: str = "auto"          # auto | anthropic | openai_compat | langchain
+
+    provider: str = "auto"  # auto | anthropic | openai_compat | langchain
     base_url: str | None = None
     api_key: str | None = None
-    models: dict = field(default_factory=lambda: {
-        "debater": None,
-        "judge": None,
-        "marketing": None,
-        "quality": None,
-    })
+    models: dict = field(
+        default_factory=lambda: {
+            "debater": None,
+            "judge": None,
+            "marketing": None,
+            "quality": None,
+        }
+    )
     timeout_sec: float = 90.0
     max_retries: int = 2
-    max_tokens: dict = field(default_factory=lambda: {
-        "debater": 2000,
-        "judge": 1600,
-        "marketing": 1200,
-        "quality": 1200,
-    })
+    max_tokens: dict = field(
+        default_factory=lambda: {
+            "debater": 2000,
+            "judge": 1600,
+            "marketing": 1200,
+            "quality": 1200,
+        }
+    )
 
 
 @dataclass
 class AppConfig:
     """应用顶层配置。"""
+
     debate: DebateConfig = field(default_factory=DebateConfig)
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
     topic_filter: TopicFilterConfig = field(default_factory=TopicFilterConfig)
@@ -103,7 +117,7 @@ def resolve_env_value(value: str | None) -> str | None:
     if value is None:
         return None
     if isinstance(value, str) and value.startswith(ENV_PREFIX):
-        var_name = value[len(ENV_PREFIX):]
+        var_name = value[len(ENV_PREFIX) :]
         if var_name not in os.environ:
             raise KeyError(f"环境变量未设置: {var_name}")
         return os.environ[var_name]
@@ -115,7 +129,7 @@ def resolve_optional_env(value: str | None) -> str | None:
     if value is None:
         return None
     if isinstance(value, str) and value.startswith(ENV_PREFIX):
-        return os.environ.get(value[len(ENV_PREFIX):])
+        return os.environ.get(value[len(ENV_PREFIX) :])
     return value
 
 
@@ -127,8 +141,7 @@ def _resolve_dict(data: dict) -> dict:
             resolved[key] = _resolve_dict(value)
         elif isinstance(value, list):
             resolved[key] = [
-                resolve_env_value(item) if isinstance(item, str) else item
-                for item in value
+                resolve_env_value(item) if isinstance(item, str) else item for item in value
             ]
         elif isinstance(value, str):
             resolved[key] = resolve_env_value(value)
@@ -145,8 +158,7 @@ def _resolve_optional_dict(data: dict) -> dict:
             resolved[key] = _resolve_optional_dict(value)
         elif isinstance(value, list):
             resolved[key] = [
-                resolve_optional_env(item) if isinstance(item, str) else item
-                for item in value
+                resolve_optional_env(item) if isinstance(item, str) else item for item in value
             ]
         elif isinstance(value, str):
             resolved[key] = resolve_optional_env(value)

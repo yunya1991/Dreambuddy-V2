@@ -10,6 +10,7 @@ SPEC-Phase2 §6.4:
 注：senate.gov 有反爬（Access Denied），URL 可通过 config["urls"] 覆盖，
     便于后续接入可用数据源或 RSS/API。
 """
+
 from __future__ import annotations
 
 import logging
@@ -35,14 +36,32 @@ class CongressionalHearingCollector(BaseCollector):
     ]
 
     CRYPTO_KEYWORDS = [
-        "crypto", "bitcoin", "ethereum", "stablecoin", "digital asset",
-        "digital currency", "token", "blockchain", "defi", "nft",
+        "crypto",
+        "bitcoin",
+        "ethereum",
+        "stablecoin",
+        "digital asset",
+        "digital currency",
+        "token",
+        "blockchain",
+        "defi",
+        "nft",
     ]
 
     # 月份缩写映射
     _MONTHS = {
-        "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-        "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+        "jan": 1,
+        "feb": 2,
+        "mar": 3,
+        "apr": 4,
+        "may": 5,
+        "jun": 6,
+        "jul": 7,
+        "aug": 8,
+        "sep": 9,
+        "oct": 10,
+        "nov": 11,
+        "dec": 12,
     }
 
     def is_available(self) -> bool:
@@ -93,11 +112,13 @@ class CongressionalHearingCollector(BaseCollector):
                         "title": h.get("title", ""),
                         "committee": h.get("committee", ""),
                     },
-                    events=[{
-                        "title": h.get("title", ""),
-                        "date": h.get("date", ""),
-                        "committee": h.get("committee", ""),
-                    }],
+                    events=[
+                        {
+                            "title": h.get("title", ""),
+                            "date": h.get("date", ""),
+                            "committee": h.get("committee", ""),
+                        }
+                    ],
                     timeseries=[],
                     raw={"html_excerpt": html[:500], "source": h.get("committee", "")},
                 )
@@ -128,8 +149,7 @@ class CongressionalHearingCollector(BaseCollector):
             try:
                 headers = {
                     "User-Agent": (
-                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                        "AppleWebKit/537.36"
+                        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " "AppleWebKit/537.36"
                     )
                 }
                 resp = requests.get(url, headers=headers, timeout=15)
@@ -160,12 +180,14 @@ class CongressionalHearingCollector(BaseCollector):
             normalized_date = self._normalize_date(date_str)
             if not normalized_date:
                 continue
-            hearings.append({
-                "date": normalized_date,
-                "title": title.strip(),
-                "crypto_related": self._is_crypto_related(title),
-                "committee": source,
-            })
+            hearings.append(
+                {
+                    "date": normalized_date,
+                    "title": title.strip(),
+                    "crypto_related": self._is_crypto_related(title),
+                    "committee": source,
+                }
+            )
         return hearings
 
     @staticmethod
@@ -176,6 +198,7 @@ class CongressionalHearingCollector(BaseCollector):
         """
         try:
             from bs4 import BeautifulSoup
+
             soup = BeautifulSoup(html, "html.parser")
             items = soup.select(".hearing-item")
             if items:
@@ -186,7 +209,8 @@ class CongressionalHearingCollector(BaseCollector):
         # 回退：按 hearing-item 类切分
         blocks = re.findall(
             r'<[^>]*class="[^"]*hearing-item[^"]*"[^>]*>.*?</[^>]*>',
-            html, re.DOTALL,
+            html,
+            re.DOTALL,
         )
         return blocks
 
@@ -202,35 +226,37 @@ class CongressionalHearingCollector(BaseCollector):
             return m.group(1).strip()
         # 回退：常见日期格式
         m = re.search(
-            r'(\d{4}-\d{2}-\d{2}|'
-            r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s*\d{4}|'
-            r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}\s+\d{4})',
-            item_html, re.IGNORECASE,
+            r"(\d{4}-\d{2}-\d{2}|"
+            r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s*\d{4}|"
+            r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}\s+\d{4})",
+            item_html,
+            re.IGNORECASE,
         )
         return m.group(1).strip() if m else ""
 
     @staticmethod
     def _extract_title(item_html: str) -> str:
         """从条目 HTML 提取标题（第一个 <a> 文本）。"""
-        m = re.search(r'<a[^>]*>([^<]+)</a>', item_html)
+        m = re.search(r"<a[^>]*>([^<]+)</a>", item_html)
         if m:
             return m.group(1).strip()
         # 回退：去标签后的文本
-        text = re.sub(r'<[^>]+>', ' ', item_html)
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"<[^>]+>", " ", item_html)
+        text = re.sub(r"\s+", " ", text).strip()
         return text[:200]
 
     def _normalize_date(self, date_str: str) -> str:
         """将多种日期格式归一化为 YYYY-MM-DD。"""
         date_str = date_str.strip()
         # ISO 格式
-        m = re.match(r'(\d{4})-(\d{2})-(\d{2})', date_str)
+        m = re.match(r"(\d{4})-(\d{2})-(\d{2})", date_str)
         if m:
             return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
         # "October 15, 2026" / "Oct 15, 2026" / "Oct 15 2026"
         m = re.match(
-            r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2}),?\s+(\d{4})',
-            date_str, re.IGNORECASE,
+            r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{1,2}),?\s+(\d{4})",
+            date_str,
+            re.IGNORECASE,
         )
         if m:
             month = self._MONTHS[m.group(1).lower()[:3]]

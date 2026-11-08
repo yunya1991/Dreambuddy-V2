@@ -15,12 +15,13 @@
   6. mapping 统计累积    cognitive-cli stats mapping        至少 1 个 Skill success ≥ 3
   7. 异常日志            grep error daemon.log             无 SkillLoader/process_block ERROR
 """
+
 import json
 import subprocess
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List
 
 _SCRIPT_DIR = Path(__file__).parent.parent
 _DAEMON_LOG = Path("/tmp/cognitive-daemon.log")
@@ -29,6 +30,7 @@ _DAEMON_LOG = Path("/tmp/cognitive-daemon.log")
 @dataclass
 class GrayCheckResult:
     """灰度检查单项结果。"""
+
     name: str
     passed: bool
     expected: str
@@ -40,7 +42,11 @@ def _run_cli(cmd: str) -> Any:
     """执行 cognitive-cli 命令并返回 JSON 结果。"""
     try:
         proc = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=30,
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         if proc.returncode != 0:
             return {}
@@ -50,6 +56,7 @@ def _run_cli(cmd: str) -> Any:
 
 
 # ---- 7 项检查 ----
+
 
 def _check_daemon_health() -> GrayCheckResult:
     """检查项 1：daemon 健康。"""
@@ -111,12 +118,13 @@ def _check_applied_association() -> GrayCheckResult:
     applied_list = result.get("applied", [])
     if not applied_list:
         return GrayCheckResult(
-            name="新 applied 关联率", passed=False,
-            expected="> 60%", actual="无 applied 数据",
+            name="新 applied 关联率",
+            passed=False,
+            expected="> 60%",
+            actual="无 applied 数据",
         )
     associated = sum(
-        1 for a in applied_list
-        if a.get("parent_skill_ids", ["custom-path"]) != ["custom-path"]
+        1 for a in applied_list if a.get("parent_skill_ids", ["custom-path"]) != ["custom-path"]
     )
     ratio = associated / len(applied_list)
     pct = f"{ratio * 100:.0f}%"
@@ -184,6 +192,7 @@ def run_gray_check() -> List[GrayCheckResult]:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="灰度观察期每日检查（设计节 6.5）")
     parser.add_argument("--day", type=int, help="灰度第几天（1-7）")
     parser.add_argument("--json", action="store_true", help="JSON 输出")

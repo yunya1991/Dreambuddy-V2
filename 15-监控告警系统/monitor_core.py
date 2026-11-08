@@ -10,13 +10,11 @@
 - 性能指标 (胜率/盈亏比/夏普比率)
 - 模型状态 (版本/加载状态/推理异常)
 """
-import json
-import os
-import time
-from datetime import datetime, timezone, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
 
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, Optional
 
 BASE_DIR = Path(__file__).parent
 LOG_DIR = BASE_DIR / "logs"
@@ -110,7 +108,7 @@ def _log(msg: str, system: str = "monitor"):
     ts = _fmt_ts(_now())
     line = f"[{ts}] [{system}] {msg}"
     print(line, flush=True)
-    log_file = LOG_DIR / f"monitor.log"
+    log_file = LOG_DIR / "monitor.log"
     with open(log_file, "a") as f:
         f.write(line + "\n")
 
@@ -181,8 +179,11 @@ class UnifiedMonitor:
 
     def _init_adapters(self):
         from adapters import (
-            YijingAdapter, V15Adapter, ScreenAdapter,
-            AgentAAdapter, AgentBAdapter,
+            AgentAAdapter,
+            AgentBAdapter,
+            ScreenAdapter,
+            V15Adapter,
+            YijingAdapter,
         )
 
         adapter_map = {
@@ -214,9 +215,7 @@ class UnifiedMonitor:
                 _log(f"{name}: {result.status} - {result.message}")
             except Exception as e:
                 _log(f"{name} 监控异常: {e}", "error")
-                results[name] = MonitorResult(
-                    name, MonitorStatus.UNKNOWN, f"监控异常: {e}"
-                )
+                results[name] = MonitorResult(name, MonitorStatus.UNKNOWN, f"监控异常: {e}")
         return results
 
     def get_all_metrics(self) -> Dict[str, Dict]:
@@ -239,9 +238,9 @@ class UnifiedMonitor:
         """根据监控结果发送告警"""
         from feishu_alert import (
             notify_heartbeat_timeout,
-            notify_trading_halted,
             notify_status_summary,
             notify_system_error,
+            notify_trading_halted,
         )
 
         alert_config = self.config.get("alert", {})
@@ -252,7 +251,9 @@ class UnifiedMonitor:
             if result.status == MonitorStatus.CRITICAL:
                 if "心跳" in result.message or "空闲" in result.message:
                     idle_minutes = result.detail.get("idle_minutes", 0)
-                    notify_heartbeat_timeout(name, idle_minutes, self.adapters[name].max_idle_minutes)
+                    notify_heartbeat_timeout(
+                        name, idle_minutes, self.adapters[name].max_idle_minutes
+                    )
                 elif "暂停" in result.message:
                     notify_trading_halted(
                         name,
@@ -268,12 +269,21 @@ class UnifiedMonitor:
 
         healthy_count = sum(1 for r in results.values() if r.is_healthy())
         overall_health = healthy_count == len(results)
-        overall_status = f"{healthy_count}/{len(results)} 系统正常" if overall_health else f"{len(results)-healthy_count}/{len(results)} 系统异常"
-        notify_status_summary("全局", overall_health, overall_status, {
-            "系统数": len(results),
-            "正常": healthy_count,
-            "异常": len(results) - healthy_count,
-        })
+        overall_status = (
+            f"{healthy_count}/{len(results)} 系统正常"
+            if overall_health
+            else f"{len(results)-healthy_count}/{len(results)} 系统异常"
+        )
+        notify_status_summary(
+            "全局",
+            overall_health,
+            overall_status,
+            {
+                "系统数": len(results),
+                "正常": healthy_count,
+                "异常": len(results) - healthy_count,
+            },
+        )
 
 
 def main():

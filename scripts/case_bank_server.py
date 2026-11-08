@@ -17,15 +17,14 @@ TDR (Training Data Repository) 后端服务 — SPEC-20261009 §3.1 + §10 P0-1
   - FAIL-OPEN: 异常返回 {ok: false, error}, 不崩溃
   - stdout 行过滤: 只输出单行 JSON
 """
+
 from __future__ import annotations
 
-import sqlite3
-import json
-import time
 import hashlib
+import json
 import os
-import sys
-from typing import Any
+import sqlite3
+import time
 
 # ============================================================
 # 配置
@@ -95,7 +94,7 @@ def _cosine_sim(a: list[float], b: list[float]) -> float:
     """余弦相似度（无 numpy 依赖）。"""
     if not a or not b or len(a) != len(b):
         return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b))  # noqa: B905
     norm_a = sum(x * x for x in a) ** 0.5
     norm_b = sum(y * y for y in b) ** 0.5
     if norm_a == 0 or norm_b == 0:
@@ -196,7 +195,9 @@ def _evict_lru(conn: sqlite3.Connection) -> None:
     scored = []
     for row in rows:
         qw = _quality_weight(row["quality"])
-        days_since = max(0.001, (now - (row["last_retrieved_at"] or row["created_at"] or now)) / 86400000.0)
+        days_since = max(
+            0.001, (now - (row["last_retrieved_at"] or row["created_at"] or now)) / 86400000.0
+        )
         recency_factor = 1.0 / (1.0 + days_since)
         # 淘汰分 = recency_factor / quality_weight（低质量+久未用 = 高淘汰分）
         evict_score = recency_factor / max(qw, 0.1)
@@ -238,19 +239,30 @@ def retrieve_cases(query: str, top_k: int = 5) -> dict:
             actions = json.loads(row["actions"] or "[]")
             learned = json.loads(row["learned"] or "[]")
 
-            all_text = intent_lower + " " + " ".join(a.lower() for a in actions) + " " + " ".join(l.lower() for l in learned)
+            all_text = (
+                intent_lower
+                + " "
+                + " ".join(a.lower() for a in actions)
+                + " "
+                + " ".join(l.lower() for l in learned)  # noqa: E741
+            )
             all_tokens = set(all_text.split())
             token_overlap = len(query_tokens & all_tokens) / max(len(query_tokens), 1)
 
             # embedding 余弦相似度（如有）
-            emb = json.loads(row["embedding"] or "[]")
+            emb = json.loads(row["embedding"] or "[]")  # noqa: F841
             cosine = 0.0  # 简化：无 query embedding 时跳过
 
             # 质量权重
             qw = _quality_weight(row["quality"])
 
             # 综合分
-            score = 0.4 * token_overlap + 0.0 * cosine + 0.4 * (qw / 4.0) + 0.2 * (1.0 / (1.0 + row["replay_count"]))
+            score = (
+                0.4 * token_overlap
+                + 0.0 * cosine
+                + 0.4 * (qw / 4.0)
+                + 0.2 * (1.0 / (1.0 + row["replay_count"]))
+            )
 
             scored.append((row, score))
 
@@ -285,11 +297,15 @@ def get_stats() -> dict:
         total = conn.execute("SELECT COUNT(*) FROM solution_cases").fetchone()[0]
 
         by_quality: dict[str, int] = {}
-        for row in conn.execute("SELECT quality, COUNT(*) as cnt FROM solution_cases GROUP BY quality"):
+        for row in conn.execute(
+            "SELECT quality, COUNT(*) as cnt FROM solution_cases GROUP BY quality"
+        ):
             by_quality[row["quality"] or "C"] = row["cnt"]
 
         by_outcome: dict[str, int] = {}
-        for row in conn.execute("SELECT outcome, COUNT(*) as cnt FROM solution_cases GROUP BY outcome"):
+        for row in conn.execute(
+            "SELECT outcome, COUNT(*) as cnt FROM solution_cases GROUP BY outcome"
+        ):
             by_outcome[row["outcome"] or "unknown"] = row["cnt"]
 
         # 按层统计
@@ -346,6 +362,7 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
 # 工具注册表
 # ============================================================
 
+
 def fetch_since(since_ts: int = 0, limit: int = 100) -> dict:
     """增量获取 created_at > since_ts 的案例（主动训练采集用）。
 
@@ -372,7 +389,11 @@ def fetch_since(since_ts: int = 0, limit: int = 100) -> dict:
 
 TOOL_HANDLERS = {
     "store": lambda args: json.dumps(store_case(args), ensure_ascii=False),
-    "retrieve": lambda args: json.dumps(retrieve_cases(args.get("query", ""), args.get("top_k", 5)), ensure_ascii=False),
+    "retrieve": lambda args: json.dumps(
+        retrieve_cases(args.get("query", ""), args.get("top_k", 5)), ensure_ascii=False
+    ),
     "stats": lambda _args: json.dumps(get_stats(), ensure_ascii=False),
-    "fetch_since": lambda args: json.dumps(fetch_since(args.get("since", 0), args.get("limit", 100)), ensure_ascii=False),
+    "fetch_since": lambda args: json.dumps(
+        fetch_since(args.get("since", 0), args.get("limit", 100)), ensure_ascii=False
+    ),
 }

@@ -86,9 +86,7 @@ def load_registry_doc(registry_path: Path = REGISTRY_DEFAULT) -> Dict[str, Any]:
         return yaml.safe_load(fh) or {}
 
 
-def load_shell_spec(
-    shell_id: str, registry_path: Path = REGISTRY_DEFAULT
-) -> Dict[str, Any]:
+def load_shell_spec(shell_id: str, registry_path: Path = REGISTRY_DEFAULT) -> Dict[str, Any]:
     doc = load_registry_doc(registry_path)
     for spec in doc.get("shells") or []:
         if isinstance(spec, dict) and spec.get("shell_id") == shell_id:
@@ -104,9 +102,7 @@ def build_tool_list(
     """registry 决定工具集合与注解；tool_defs 提供描述与入参 schema。"""
     spec = load_shell_spec(shell_id, registry_path)
     reg_tools = {
-        t["name"]: t
-        for t in (spec.get("tools") or [])
-        if isinstance(t, dict) and t.get("name")
+        t["name"]: t for t in (spec.get("tools") or []) if isinstance(t, dict) and t.get("name")
     }
 
     missing_defs = sorted(set(reg_tools) - set(tool_defs))

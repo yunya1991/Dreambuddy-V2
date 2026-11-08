@@ -8,10 +8,10 @@
   β_ratio < 0.5 持续3天 → decay_signal=True,        decay_days>=3
   β_ratio > 2.0 持续3天 → amplification_signal=True, amplification_days>=3
 """
+
 from __future__ import annotations
 
 import numpy as np
-
 from force_vector.models import ElasticityBeta
 
 
@@ -23,15 +23,20 @@ class ElasticityBetaCalculator:
     """
 
     # 信号阈值与持续天数
-    _DECAY_THRESHOLD = 0.5            # β_ratio < 0.5 → 衰减
-    _AMPLIFICATION_THRESHOLD = 2.0    # β_ratio > 2.0 → 放大
-    _PERSIST_DAYS = 3                 # 持续天数门槛
-    _NEUTRAL_BETA = 1.0               # 中性默认 β
-    _VAR_EPS = 1e-12                  # var(ΔForce) 小于此阈值视为无变化
+    _DECAY_THRESHOLD = 0.5  # β_ratio < 0.5 → 衰减
+    _AMPLIFICATION_THRESHOLD = 2.0  # β_ratio > 2.0 → 放大
+    _PERSIST_DAYS = 3  # 持续天数门槛
+    _NEUTRAL_BETA = 1.0  # 中性默认 β
+    _VAR_EPS = 1e-12  # var(ΔForce) 小于此阈值视为无变化
 
-    def compute(self, price_changes_7d: list, force_changes_7d: list,
-                price_changes_30d: list, force_changes_30d: list,
-                decay_history: list = None) -> ElasticityBeta:
+    def compute(
+        self,
+        price_changes_7d: list,
+        force_changes_7d: list,
+        price_changes_30d: list,
+        force_changes_30d: list,
+        decay_history: list = None,
+    ) -> ElasticityBeta:
         """弹性系数β计算（价格响应衰减/放大检测）。
 
         β_7d  = cov(ΔPrice_7d,  ΔForce_7d)  / var(ΔForce_7d)
@@ -61,10 +66,10 @@ class ElasticityBetaCalculator:
 
             # 信号检测：从 decay_history 末尾连续计数（按传入序列原样）
             history = list(decay_history) if decay_history else []
-            decay_days = self._count_trailing(
-                history, lambda v: v < self._DECAY_THRESHOLD)
+            decay_days = self._count_trailing(history, lambda v: v < self._DECAY_THRESHOLD)
             amplification_days = self._count_trailing(
-                history, lambda v: v > self._AMPLIFICATION_THRESHOLD)
+                history, lambda v: v > self._AMPLIFICATION_THRESHOLD
+            )
 
             decay_signal = decay_days >= self._PERSIST_DAYS
             amplification_signal = amplification_days >= self._PERSIST_DAYS
@@ -102,8 +107,8 @@ class ElasticityBetaCalculator:
             n = len(price_changes)
             if n < 2 or n != len(force_changes):
                 return self._NEUTRAL_BETA
-            x = np.asarray(force_changes, dtype=float)    # ΔForce（自变量）
-            y = np.asarray(price_changes, dtype=float)     # ΔPrice（因变量）
+            x = np.asarray(force_changes, dtype=float)  # ΔForce（自变量）
+            y = np.asarray(price_changes, dtype=float)  # ΔPrice（因变量）
             # var(ΔForce)：样本方差（ddof 与 cov 一致，比例中抵消）
             var_x = float(np.var(x, ddof=1))
             if var_x < self._VAR_EPS:

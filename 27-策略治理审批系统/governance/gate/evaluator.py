@@ -3,6 +3,7 @@
 加载最新回测报告，供 gate 校验（pf/dd/trades/winrate 阈值）使用。
 依赖大文件中的回测函数（_backtest_* / _bt_* / _eval_*）。
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,22 +16,37 @@ def _get_mts_func(name):
     """延迟从 10-经典指标系统导入回测相关函数。"""
     try:
         import ml_trade_service as _mts
+
         return getattr(_mts, name)
     except Exception:
         return None
 
 
 # 回测相关函数懒加载包装（依赖 10-经典指标系统 的回测引擎）
-def _backtest_zip_metrics(*a, **k): return _get_mts_func("_backtest_zip_metrics")(*a, **k)
-def _bt_aligned_metrics_from_zip(*a, **k): return _get_mts_func("_bt_aligned_metrics_from_zip")(*a, **k)
-def _bt_metrics_pick_strategy(*a, **k): return _get_mts_func("_bt_metrics_pick_strategy")(*a, **k)
-def _bt_metrics_slim(*a, **k): return _get_mts_func("_bt_metrics_slim")(*a, **k)
-def _eval_standard_pack(*a, **k): return _get_mts_func("_eval_standard_pack")(*a, **k)
+def _backtest_zip_metrics(*a, **k):
+    return _get_mts_func("_backtest_zip_metrics")(*a, **k)
+
+
+def _bt_aligned_metrics_from_zip(*a, **k):
+    return _get_mts_func("_bt_aligned_metrics_from_zip")(*a, **k)
+
+
+def _bt_metrics_pick_strategy(*a, **k):
+    return _get_mts_func("_bt_metrics_pick_strategy")(*a, **k)
+
+
+def _bt_metrics_slim(*a, **k):
+    return _get_mts_func("_bt_metrics_slim")(*a, **k)
+
+
+def _eval_standard_pack(*a, **k):
+    return _get_mts_func("_eval_standard_pack")(*a, **k)
 
 
 def _backtest_pick_latest_zip_path() -> Optional[Path]:
     try:
         from ml_trade_service import _backtest_last_result_zip_name, _backtests_dir
+
         name = _backtest_last_result_zip_name()
         if name:
             p = _backtests_dir() / name
@@ -58,9 +74,9 @@ def _backtest_report_from_zip(
     try:
         from ml_trade_service import (
             _backtest_zip_metrics,
+            _bt_aligned_metrics_from_zip,
             _bt_metrics_pick_strategy,
             _bt_metrics_slim,
-            _bt_aligned_metrics_from_zip,
             _eval_standard_pack,
         )
     except Exception:

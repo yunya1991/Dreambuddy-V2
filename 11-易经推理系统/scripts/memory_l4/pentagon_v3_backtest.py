@@ -10,30 +10,32 @@
   2. v3 回撤不恶化（极端行情下应改善）
   3. v3 双预警确实触发并收紧止损（风控层在工作）
 """
-import sys
-import os
-import time
-import json
+
 import importlib
+import json
+import os
+import sys
+import time
 
 # 修复 inspect 模块遮蔽（必须在 pandas/dataclasses 之前）
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-_remove_paths = [p for p in sys.path if 'memory_l4' in p or p == SCRIPT_DIR]
+_remove_paths = [p for p in sys.path if "memory_l4" in p or p == SCRIPT_DIR]
 for _p in _remove_paths:
     if _p in sys.path:
         sys.path.remove(_p)
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 for _p in reversed(_remove_paths):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import logging
-import numpy as np
-import pandas as pd
+import logging  # noqa: E402
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -121,7 +123,9 @@ def extract_pentagon_stats(result):
 def main():
     print("=" * 90)
     print("  五角校验 v3 纯风控版 — 回测验证")
-    print(f"  币种: {', '.join(SYMBOLS)} | 周期: {TIMEFRAME} | MaxBars: {MAX_BARS} | Folds: {N_FOLDS}")
+    print(
+        f"  币种: {', '.join(SYMBOLS)} | 周期: {TIMEFRAME} | MaxBars: {MAX_BARS} | Folds: {N_FOLDS}"
+    )
     print("=" * 90)
 
     # 预加载数据
@@ -157,9 +161,11 @@ def main():
         baseline_results[sym] = extract_metrics(result)
         baseline_times[sym] = elapsed
         m = baseline_results[sym]
-        print(f"    ✅ {sym}: 夏普={m['sharpe_ratio']}, 收益={m['total_return_pct']}%, "
-              f"回撤={m['max_drawdown_pct']}%, 胜率={m['win_rate']}%, 交易={m['total_trades']}笔 "
-              f"({elapsed:.1f}s)")
+        print(
+            f"    ✅ {sym}: 夏普={m['sharpe_ratio']}, 收益={m['total_return_pct']}%, "
+            f"回撤={m['max_drawdown_pct']}%, 胜率={m['win_rate']}%, 交易={m['total_trades']}笔 "
+            f"({elapsed:.1f}s)"
+        )
 
     # === v3 纯风控版回测 ===
     print("\n" + "=" * 90)
@@ -175,11 +181,15 @@ def main():
         v3_pentagon_stats[sym] = extract_pentagon_stats(result)
         m = v3_results[sym]
         ps = v3_pentagon_stats[sym]
-        print(f"    ✅ {sym}: 夏普={m['sharpe_ratio']}, 收益={m['total_return_pct']}%, "
-              f"回撤={m['max_drawdown_pct']}%, 胜率={m['win_rate']}%, 交易={m['total_trades']}笔 "
-              f"({elapsed:.1f}s)")
-        print(f"       风控: 双预警提前退出={ps['early_exit_trades']}笔({ps['early_exit_pct']}%), "
-              f"反转预警={ps['reversal_alert_trades']}笔")
+        print(
+            f"    ✅ {sym}: 夏普={m['sharpe_ratio']}, 收益={m['total_return_pct']}%, "
+            f"回撤={m['max_drawdown_pct']}%, 胜率={m['win_rate']}%, 交易={m['total_trades']}笔 "
+            f"({elapsed:.1f}s)"
+        )
+        print(
+            f"       风控: 双预警提前退出={ps['early_exit_trades']}笔({ps['early_exit_pct']}%), "
+            f"反转预警={ps['reversal_alert_trades']}笔"
+        )
 
     # === 对比汇总 ===
     print("\n" + "=" * 90)
@@ -187,8 +197,10 @@ def main():
     print("=" * 90)
 
     # 主指标对比表
-    print(f"\n  {'币种':<8} {'模式':<10} {'交易数':<8} {'胜率':<8} {'总收益%':<10} "
-          f"{'最大回撤%':<10} {'盈亏比':<8} {'夏普':<8}")
+    print(
+        f"\n  {'币种':<8} {'模式':<10} {'交易数':<8} {'胜率':<8} {'总收益%':<10} "
+        f"{'最大回撤%':<10} {'盈亏比':<8} {'夏普':<8}"
+    )
     print(f"  {'-'*8} {'-'*10} {'-'*8} {'-'*8} {'-'*10} {'-'*10} {'-'*8} {'-'*8}")
 
     avg_sharpe_base = []
@@ -201,52 +213,66 @@ def main():
     for sym in data:
         b = baseline_results[sym]
         v = v3_results[sym]
-        print(f"  {sym:<8} {'baseline':<10} {b['total_trades']:<8} {b['win_rate']:<7.1f}% "
-              f"{b['total_return_pct']:<9.2f} {b['max_drawdown_pct']:<9.2f} "
-              f"{b['profit_factor']:<7.2f} {b['sharpe_ratio']:<7.2f}")
-        print(f"  {sym:<8} {'v3风控':<10} {v['total_trades']:<8} {v['win_rate']:<7.1f}% "
-              f"{v['total_return_pct']:<9.2f} {v['max_drawdown_pct']:<9.2f} "
-              f"{v['profit_factor']:<7.2f} {v['sharpe_ratio']:<7.2f}")
+        print(
+            f"  {sym:<8} {'baseline':<10} {b['total_trades']:<8} {b['win_rate']:<7.1f}% "
+            f"{b['total_return_pct']:<9.2f} {b['max_drawdown_pct']:<9.2f} "
+            f"{b['profit_factor']:<7.2f} {b['sharpe_ratio']:<7.2f}"
+        )
+        print(
+            f"  {sym:<8} {'v3风控':<10} {v['total_trades']:<8} {v['win_rate']:<7.1f}% "
+            f"{v['total_return_pct']:<9.2f} {v['max_drawdown_pct']:<9.2f} "
+            f"{v['profit_factor']:<7.2f} {v['sharpe_ratio']:<7.2f}"
+        )
 
         # 差值
-        d_sharpe = v['sharpe_ratio'] - b['sharpe_ratio']
-        d_return = v['total_return_pct'] - b['total_return_pct']
-        d_dd = v['max_drawdown_pct'] - b['max_drawdown_pct']
-        d_wr = v['win_rate'] - b['win_rate']
+        d_sharpe = v["sharpe_ratio"] - b["sharpe_ratio"]
+        d_return = v["total_return_pct"] - b["total_return_pct"]
+        d_dd = v["max_drawdown_pct"] - b["max_drawdown_pct"]
+        d_wr = v["win_rate"] - b["win_rate"]
         sharpe_arrow = "↑" if d_sharpe > 0.1 else ("↓" if d_sharpe < -0.1 else "→")
         dd_arrow = "↑" if d_dd > 0.1 else ("↓" if d_dd < -0.1 else "→")
-        print(f"  {sym:<8} {'delta':<10} {'':8} {d_wr:+.1f}   {d_return:+.2f}    "
-              f"{d_dd:+.2f} {dd_arrow}      {'':8} {d_sharpe:+.2f} {sharpe_arrow}")
+        print(
+            f"  {sym:<8} {'delta':<10} {'':8} {d_wr:+.1f}   {d_return:+.2f}    "
+            f"{d_dd:+.2f} {dd_arrow}      {'':8} {d_sharpe:+.2f} {sharpe_arrow}"
+        )
         print()
 
-        avg_sharpe_base.append(b['sharpe_ratio'])
-        avg_sharpe_v3.append(v['sharpe_ratio'])
-        avg_dd_base.append(b['max_drawdown_pct'])
-        avg_dd_v3.append(v['max_drawdown_pct'])
-        avg_ret_base.append(b['total_return_pct'])
-        avg_ret_v3.append(v['total_return_pct'])
+        avg_sharpe_base.append(b["sharpe_ratio"])
+        avg_sharpe_v3.append(v["sharpe_ratio"])
+        avg_dd_base.append(b["max_drawdown_pct"])
+        avg_dd_v3.append(v["max_drawdown_pct"])
+        avg_ret_base.append(b["total_return_pct"])
+        avg_ret_v3.append(v["total_return_pct"])
 
     # 平均值对比
-    print(f"  {'平均':<8} {'baseline':<10} {'':8} {'':8} "
-          f"{np.mean(avg_ret_base):<9.2f} {np.mean(avg_dd_base):<9.2f} {'':8} "
-          f"{np.mean(avg_sharpe_base):<7.2f}")
-    print(f"  {'平均':<8} {'v3风控':<10} {'':8} {'':8} "
-          f"{np.mean(avg_ret_v3):<9.2f} {np.mean(avg_dd_v3):<9.2f} {'':8} "
-          f"{np.mean(avg_sharpe_v3):<7.2f}")
+    print(
+        f"  {'平均':<8} {'baseline':<10} {'':8} {'':8} "
+        f"{np.mean(avg_ret_base):<9.2f} {np.mean(avg_dd_base):<9.2f} {'':8} "
+        f"{np.mean(avg_sharpe_base):<7.2f}"
+    )
+    print(
+        f"  {'平均':<8} {'v3风控':<10} {'':8} {'':8} "
+        f"{np.mean(avg_ret_v3):<9.2f} {np.mean(avg_dd_v3):<9.2f} {'':8} "
+        f"{np.mean(avg_sharpe_v3):<7.2f}"
+    )
 
     d_sharpe_avg = np.mean(avg_sharpe_v3) - np.mean(avg_sharpe_base)
     d_dd_avg = np.mean(avg_dd_v3) - np.mean(avg_dd_base)
     d_ret_avg = np.mean(avg_ret_v3) - np.mean(avg_ret_base)
     sharpe_pct = d_sharpe_avg / max(abs(np.mean(avg_sharpe_base)), 0.01) * 100
 
-    print(f"  {'平均':<8} {'delta':<10} {'':8} {'':8} "
-          f"{d_ret_avg:+.2f}    {d_dd_avg:+.2f}      {'':8} {d_sharpe_avg:+.2f} ({sharpe_pct:+.1f}%)")
+    print(
+        f"  {'平均':<8} {'delta':<10} {'':8} {'':8} "
+        f"{d_ret_avg:+.2f}    {d_dd_avg:+.2f}      {'':8} {d_sharpe_avg:+.2f} ({sharpe_pct:+.1f}%)"
+    )
 
     # v4 风控触发统计
     print("\n" + "=" * 90)
     print("  🛡️  v4 风险评分风控层触发统计")
     print("=" * 90)
-    print(f"\n  {'币种':<8} {'双预警退出':<12} {'反转预警':<10} {'加仓':<10} {'降仓':<10} {'正常':<8} {'总交易':<8}")
+    print(
+        f"\n  {'币种':<8} {'双预警退出':<12} {'反转预警':<10} {'加仓':<10} {'降仓':<10} {'正常':<8} {'总交易':<8}"
+    )
     print(f"  {'-'*8} {'-'*12} {'-'*10} {'-'*10} {'-'*10} {'-'*8} {'-'*8}")
     total_early_exit = 0
     total_reversal = 0
@@ -255,20 +281,24 @@ def main():
     total_trades_all = 0
     for sym in data:
         ps = v3_pentagon_stats[sym]
-        tt = v3_results[sym]['total_trades']
-        print(f"  {sym:<8} {ps['early_exit_trades']}({ps['early_exit_pct']}%)  "
-              f"{ps['reversal_alert_trades']}笔      "
-              f"{ps['pos_up_trades']}({ps['pos_up_pct']}%)  "
-              f"{ps['pos_down_trades']}({ps['pos_down_pct']}%)  "
-              f"{ps['pos_normal_trades']}      {tt}")
-        total_early_exit += ps['early_exit_trades']
-        total_reversal += ps['reversal_alert_trades']
-        total_pos_up += ps['pos_up_trades']
-        total_pos_down += ps['pos_down_trades']
+        tt = v3_results[sym]["total_trades"]
+        print(
+            f"  {sym:<8} {ps['early_exit_trades']}({ps['early_exit_pct']}%)  "
+            f"{ps['reversal_alert_trades']}笔      "
+            f"{ps['pos_up_trades']}({ps['pos_up_pct']}%)  "
+            f"{ps['pos_down_trades']}({ps['pos_down_pct']}%)  "
+            f"{ps['pos_normal_trades']}      {tt}"
+        )
+        total_early_exit += ps["early_exit_trades"]
+        total_reversal += ps["reversal_alert_trades"]
+        total_pos_up += ps["pos_up_trades"]
+        total_pos_down += ps["pos_down_trades"]
         total_trades_all += tt
-    print(f"  {'合计':<8} {total_early_exit}笔        {total_reversal}笔      "
-          f"{total_pos_up}笔       {total_pos_down}笔       "
-          f"          {total_trades_all}")
+    print(
+        f"  {'合计':<8} {total_early_exit}笔        {total_reversal}笔      "
+        f"{total_pos_up}笔       {total_pos_down}笔       "
+        f"          {total_trades_all}"
+    )
 
     # 验证结论
     print("\n" + "=" * 90)
@@ -277,37 +307,45 @@ def main():
 
     # 标准1: 夏普不拖累（容许 5% 以内）
     sharpe_ok = sharpe_pct >= -5.0
-    print(f"\n  标准1: 夏普不拖累（容许 -5% 以内）")
-    print(f"    平均夏普: {np.mean(avg_sharpe_base):.2f} → {np.mean(avg_sharpe_v3):.2f} "
-          f"({sharpe_pct:+.1f}%)")
+    print("\n  标准1: 夏普不拖累（容许 -5% 以内）")
+    print(
+        f"    平均夏普: {np.mean(avg_sharpe_base):.2f} → {np.mean(avg_sharpe_v3):.2f} "
+        f"({sharpe_pct:+.1f}%)"
+    )
     print(f"    {'✅ 通过' if sharpe_ok else '❌ 未通过'}")
 
     # 标准2: 回撤不恶化
     dd_ok = d_dd_avg <= 0.5  # 容许 0.5% 波动
-    print(f"\n  标准2: 回撤不恶化（容许 +0.5% 以内）")
-    print(f"    平均回撤: {np.mean(avg_dd_base):.2f}% → {np.mean(avg_dd_v3):.2f}% "
-          f"({d_dd_avg:+.2f}%)")
+    print("\n  标准2: 回撤不恶化（容许 +0.5% 以内）")
+    print(
+        f"    平均回撤: {np.mean(avg_dd_base):.2f}% → {np.mean(avg_dd_v3):.2f}% "
+        f"({d_dd_avg:+.2f}%)"
+    )
     print(f"    {'✅ 通过' if dd_ok else '❌ 未通过'}")
 
     # 标准3: 风控层确实触发
     risk_ok = total_early_exit > 0 or total_reversal > 0 or total_pos_up > 0 or total_pos_down > 0
-    print(f"\n  标准3: 风控层确实触发（仓位调整/双预警 > 0）")
-    print(f"    加仓: {total_pos_up}笔, 降仓: {total_pos_down}笔, 双预警: {total_early_exit}笔, 反转: {total_reversal}笔")
+    print("\n  标准3: 风控层确实触发（仓位调整/双预警 > 0）")
+    print(
+        f"    加仓: {total_pos_up}笔, 降仓: {total_pos_down}笔, 双预警: {total_early_exit}笔, 反转: {total_reversal}笔"
+    )
     print(f"    {'✅ 通过' if risk_ok else '⚠️ 未触发'}")
 
     # 标准4: 收益提升（v4 新增目标）
     ret_ok = d_ret_avg > 0
-    print(f"\n  标准4: 收益提升（v4 目标）")
-    print(f"    平均收益: {np.mean(avg_ret_base):.2f}% → {np.mean(avg_ret_v3):.2f}% ({d_ret_avg:+.2f}%)")
+    print("\n  标准4: 收益提升（v4 目标）")
+    print(
+        f"    平均收益: {np.mean(avg_ret_base):.2f}% → {np.mean(avg_ret_v3):.2f}% ({d_ret_avg:+.2f}%)"
+    )
     print(f"    {'✅ 通过' if ret_ok else '❌ 未通过'}")
 
     all_pass = sharpe_ok and dd_ok
     print(f"\n  {'='*60}")
     if all_pass:
-        print(f"  ✅ 总体结论: v4 风险评分风控版通过回测验证")
-        print(f"     五角校验不拖累夏普，风险评分驱动的双向风控有效")
+        print("  ✅ 总体结论: v4 风险评分风控版通过回测验证")
+        print("     五角校验不拖累夏普，风险评分驱动的双向风控有效")
     else:
-        print(f"  ⚠️  总体结论: v4 风险评分风控版未完全通过，需进一步分析")
+        print("  ⚠️  总体结论: v4 风险评分风控版未完全通过，需进一步分析")
     print(f"  {'='*60}")
 
     # 保存结果

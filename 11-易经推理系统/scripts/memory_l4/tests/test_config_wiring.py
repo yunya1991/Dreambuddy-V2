@@ -8,6 +8,7 @@ test_config_wiring.py — PROP-20260810 验收测试（config.json 接线）
   3. 生产路径零裸构造残留（grep 级验证在 E2 报告中，此处做导入级冒烟）
   4. E2E: 进化采纳 → config 固化 → 新引擎实例生效
 """
+
 import json
 import sys
 import tempfile
@@ -29,8 +30,7 @@ class TestFromConfigInjection(unittest.TestCase):
         """confidence_threshold=0.30 → min_confidence_threshold==0.30"""
         with tempfile.TemporaryDirectory() as td:
             cfg_path = Path(td) / "config.json"
-            cfg_path.write_text(json.dumps(
-                {"confidence_threshold": 0.30}), encoding="utf-8")
+            cfg_path.write_text(json.dumps({"confidence_threshold": 0.30}), encoding="utf-8")
             engine = BCRMEngine.from_config(cfg_path)
             self.assertAlmostEqual(engine.min_confidence_threshold, 0.30)
 
@@ -38,8 +38,7 @@ class TestFromConfigInjection(unittest.TestCase):
         """config 值为字符串数字 '0.35' → 正确转换"""
         with tempfile.TemporaryDirectory() as td:
             cfg_path = Path(td) / "config.json"
-            cfg_path.write_text(json.dumps(
-                {"confidence_threshold": "0.35"}), encoding="utf-8")
+            cfg_path.write_text(json.dumps({"confidence_threshold": "0.35"}), encoding="utf-8")
             engine = BCRMEngine.from_config(cfg_path)
             self.assertAlmostEqual(engine.min_confidence_threshold, 0.35)
 
@@ -47,11 +46,16 @@ class TestFromConfigInjection(unittest.TestCase):
         """config 含其他键（api_key 等）不影响构造"""
         with tempfile.TemporaryDirectory() as td:
             cfg_path = Path(td) / "config.json"
-            cfg_path.write_text(json.dumps({
-                "confidence_threshold": 0.40,
-                "api_key": "secret_should_not_leak",
-                "daily_loss_limit": 50,
-            }), encoding="utf-8")
+            cfg_path.write_text(
+                json.dumps(
+                    {
+                        "confidence_threshold": 0.40,
+                        "api_key": "secret_should_not_leak",
+                        "daily_loss_limit": 50,
+                    }
+                ),
+                encoding="utf-8",
+            )
             engine = BCRMEngine.from_config(cfg_path)
             self.assertAlmostEqual(engine.min_confidence_threshold, 0.40)
 
@@ -82,26 +86,25 @@ class TestFromConfigFallback(unittest.TestCase):
         for bad_val in (1.5, -0.3, 0.999):
             with tempfile.TemporaryDirectory() as td:
                 cfg_path = Path(td) / "config.json"
-                cfg_path.write_text(json.dumps(
-                    {"confidence_threshold": bad_val}), encoding="utf-8")
+                cfg_path.write_text(json.dumps({"confidence_threshold": bad_val}), encoding="utf-8")
                 engine = BCRMEngine.from_config(cfg_path)
                 self.assertEqual(
-                    engine.min_confidence_threshold, DEFAULT_THRESHOLD,
-                    f"越界值 {bad_val} 不应被注入")
+                    engine.min_confidence_threshold,
+                    DEFAULT_THRESHOLD,
+                    f"越界值 {bad_val} 不应被注入",
+                )
 
     def test_non_numeric_fallback(self):
         with tempfile.TemporaryDirectory() as td:
             cfg_path = Path(td) / "config.json"
-            cfg_path.write_text(json.dumps(
-                {"confidence_threshold": "abc"}), encoding="utf-8")
+            cfg_path.write_text(json.dumps({"confidence_threshold": "abc"}), encoding="utf-8")
             engine = BCRMEngine.from_config(cfg_path)
             self.assertEqual(engine.min_confidence_threshold, DEFAULT_THRESHOLD)
 
     def test_key_absent_fallback(self):
         with tempfile.TemporaryDirectory() as td:
             cfg_path = Path(td) / "config.json"
-            cfg_path.write_text(json.dumps(
-                {"api_key": "only_other_keys"}), encoding="utf-8")
+            cfg_path.write_text(json.dumps({"api_key": "only_other_keys"}), encoding="utf-8")
             engine = BCRMEngine.from_config(cfg_path)
             self.assertEqual(engine.min_confidence_threshold, DEFAULT_THRESHOLD)
 
@@ -118,15 +121,14 @@ class TestProductionConstructionSites(unittest.TestCase):
     def test_production_files_have_no_bare_construction(self):
         """grep 级验证: 生产文件不存在裸 BCRMEngine() 构造"""
         import re
+
         mem_dir = ROOT / "scripts" / "memory_l4"
         prod_files = ["polling_trader.py", "yijing_monitor.py", "ab_bridge.py"]
         pattern = re.compile(r"=\s*BCRMEngine\(\)")
         for fname in prod_files:
             text = (mem_dir / fname).read_text(encoding="utf-8")
             matches = pattern.findall(text)
-            self.assertEqual(
-                len(matches), 0,
-                f"{fname} 仍有 {len(matches)} 处裸 BCRMEngine() 构造")
+            self.assertEqual(len(matches), 0, f"{fname} 仍有 {len(matches)} 处裸 BCRMEngine() 构造")
 
 
 class TestEndToEndEvolutionWiring(unittest.TestCase):
@@ -140,15 +142,18 @@ class TestEndToEndEvolutionWiring(unittest.TestCase):
             # 模拟 self_evolution_engine._apply_adopted_to_config 的写入
             # （映射: param_key min_confidence_threshold → config 键 confidence_threshold）
             adopted_value = 0.32
-            cfg_path.write_text(json.dumps(
-                {"confidence_threshold": adopted_value}), encoding="utf-8")
+            cfg_path.write_text(
+                json.dumps({"confidence_threshold": adopted_value}), encoding="utf-8"
+            )
 
             # 模拟生产引擎重启/新建实例
             engine = BCRMEngine.from_config(cfg_path)
             self.assertAlmostEqual(
-                engine.min_confidence_threshold, adopted_value,
+                engine.min_confidence_threshold,
+                adopted_value,
                 places=5,
-                msg="进化采纳值未到达生产引擎（闭环最后一跳断裂）")
+                msg="进化采纳值未到达生产引擎（闭环最后一跳断裂）",
+            )
 
 
 if __name__ == "__main__":

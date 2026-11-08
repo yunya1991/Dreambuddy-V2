@@ -12,9 +12,9 @@ A7 实践论门禁节点
 输出: direction / confidence / gate_result / confidence_threshold / rationale
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult
@@ -71,7 +71,9 @@ class A7PracticeGateNode(BaseNode):
         similar_trades = history.get("similar_trades", [])
         similar_win_rate = 0
         if similar_trades:
-            similar_win_rate = sum(1 for t in similar_trades if t.get("win", False)) / len(similar_trades) * 100
+            similar_win_rate = (
+                sum(1 for t in similar_trades if t.get("win", False)) / len(similar_trades) * 100
+            )
             if similar_win_rate > 65:
                 scores.append(("LONG", 0.20, f"相似场景胜率高({similar_win_rate:.1f}%)"))
             elif similar_win_rate < 45:
@@ -81,9 +83,21 @@ class A7PracticeGateNode(BaseNode):
         gate_passed = calibrated_confidence >= confidence_threshold
 
         if gate_passed:
-            scores.append(("LONG", 0.30, f"置信度达标({calibrated_confidence:.1%} >= {confidence_threshold:.1%})"))
+            scores.append(
+                (
+                    "LONG",
+                    0.30,
+                    f"置信度达标({calibrated_confidence:.1%} >= {confidence_threshold:.1%})",
+                )
+            )
         else:
-            scores.append(("HOLD", 0.35, f"置信度未达标({calibrated_confidence:.1%} < {confidence_threshold:.1%})"))
+            scores.append(
+                (
+                    "HOLD",
+                    0.35,
+                    f"置信度未达标({calibrated_confidence:.1%} < {confidence_threshold:.1%})",
+                )
+            )
 
         # ── 6. 连续亏损检查 ──────────────────────────────
         loss_streak = history.get("loss_streak", 0)
@@ -94,7 +108,9 @@ class A7PracticeGateNode(BaseNode):
         # ── 7. 与前期结论一致性检查 ────────────────────────
         recent_directions = []
         if prior_conclusions:
-            recent_directions = [c.get("direction") for c in prior_conclusions[-5:] if c.get("direction")]
+            recent_directions = [
+                c.get("direction") for c in prior_conclusions[-5:] if c.get("direction")
+            ]
             if recent_directions and all(d == proposed_direction for d in recent_directions):
                 scores.append(("LONG", 0.10, "与前期结论一致"))
             elif len(set(recent_directions)) > 1:
@@ -122,7 +138,7 @@ class A7PracticeGateNode(BaseNode):
         long_score = sum(w for d, w, _ in scores if d == "LONG")
         short_score = sum(w for d, w, _ in scores if d == "SHORT")
         hold_score = sum(w for d, w, _ in scores if d == "HOLD")
-        total = long_score + short_score + hold_score
+        total = long_score + short_score + hold_score  # noqa: F841
 
         if gate_passed:
             direction = proposed_direction
@@ -134,7 +150,9 @@ class A7PracticeGateNode(BaseNode):
         gate_result = "passed" if gate_passed else "blocked"
 
         rationale = [r for _, _, r in scores[:6]]
-        rationale.insert(0, f"[A7实践论门禁] 门禁={gate_result} | 校准置信度={calibrated_confidence:.1%}")
+        rationale.insert(
+            0, f"[A7实践论门禁] 门禁={gate_result} | 校准置信度={calibrated_confidence:.1%}"
+        )
         rationale.append(f"  方向: {direction} | 门槛: {confidence_threshold:.1%}")
 
         outputs = {
@@ -152,8 +170,14 @@ class A7PracticeGateNode(BaseNode):
                 "similar_trades_count": len(similar_trades),
                 "similar_win_rate": round(similar_win_rate, 2),
             },
-            "prior_conclusions_consistency": len(set(recent_directions)) == 1 if recent_directions else True,
-            "scores": {"long": round(long_score, 3), "short": round(short_score, 3), "hold": round(hold_score, 3)},
+            "prior_conclusions_consistency": (
+                len(set(recent_directions)) == 1 if recent_directions else True
+            ),
+            "scores": {
+                "long": round(long_score, 3),
+                "short": round(short_score, 3),
+                "hold": round(hold_score, 3),
+            },
             "rationale": rationale,
         }
 
@@ -185,11 +209,19 @@ class A7PracticeGateNode(BaseNode):
         FAIL-OPEN: 检索失败返回空列表，不影响 A7 主流程。
         """
         try:
-            import sys
+            import sys  # noqa: I001
             import os
+
             rag_path = os.path.join(
-                os.path.dirname(__file__), "..", "..", "..", "..", "..",
-                "2-KNOWLEDGE", "9-RAG-INFRA", "vector_store"
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "..",
+                "..",
+                "2-KNOWLEDGE",
+                "9-RAG-INFRA",
+                "vector_store",
             )
             if rag_path not in sys.path:
                 sys.path.insert(0, rag_path)
@@ -203,11 +235,13 @@ class A7PracticeGateNode(BaseNode):
             results = semantic_search(query, top_k=3)
             insights = []
             for r in results:
-                insights.append({
-                    "direction": direction,
-                    "weight": 0.15,
-                    "text": r.get("content", "")[:120],
-                })
+                insights.append(
+                    {
+                        "direction": direction,
+                        "weight": 0.15,
+                        "text": r.get("content", "")[:120],
+                    }
+                )
             return insights
         except Exception:
             return []  # FAIL-OPEN
@@ -222,7 +256,6 @@ class A7PracticeGateNode(BaseNode):
         FAIL-OPEN: 查询失败返回空列表，不影响 A7 主流程。
         """
         try:
-            import os
             import json
             from pathlib import Path
 
@@ -251,14 +284,18 @@ class A7PracticeGateNode(BaseNode):
                     total = sum(phase_counts.values())
                     top_cats = sorted(phase_counts.items(), key=lambda x: x[1], reverse=True)[:3]
                     cats_str = ", ".join(f"{c}={n}" for c, n in top_cats)
-                    insights.append({
-                        "direction": direction,
-                        "weight": 0.08,
-                        "text": f"产物索引: {total}个产物, Top: {cats_str}",
-                    })
+                    insights.append(
+                        {
+                            "direction": direction,
+                            "weight": 0.08,
+                            "text": f"产物索引: {total}个产物, Top: {cats_str}",
+                        }
+                    )
 
             # G8: 交易索引 — 查询历史交易统计
-            trade_index_path = project_root / ".workbuddy" / "trade_index" / "all_trades_index.jsonl"
+            trade_index_path = (
+                project_root / ".workbuddy" / "trade_index" / "all_trades_index.jsonl"
+            )
             if trade_index_path.exists():
                 trades: list[dict[str, Any]] = []
                 with open(trade_index_path, "r", encoding="utf-8") as f:
@@ -270,23 +307,27 @@ class A7PracticeGateNode(BaseNode):
 
                 if trades:
                     wins = sum(1 for t in trades if t.get("pnl", 0) > 0)
-                    win_rate = wins / len(trades) if trades else 0
+                    win_rate = wins / len(trades) if trades else 0  # noqa: F841
                     # 检查当前方向的历史胜率
                     dir_trades = [t for t in trades if t.get("direction", "").upper() == direction]
                     if dir_trades:
                         dir_wins = sum(1 for t in dir_trades if t.get("pnl", 0) > 0)
                         dir_rate = dir_wins / len(dir_trades)
-                        insights.append({
-                            "direction": direction if dir_rate >= 0.4 else "HOLD",
-                            "weight": 0.10,
-                            "text": f"交易索引: {direction}历史{len(dir_trades)}笔,胜率{dir_rate:.0%}",
-                        })
+                        insights.append(
+                            {
+                                "direction": direction if dir_rate >= 0.4 else "HOLD",
+                                "weight": 0.10,
+                                "text": f"交易索引: {direction}历史{len(dir_trades)}笔,胜率{dir_rate:.0%}",
+                            }
+                        )
                     else:
-                        insights.append({
-                            "direction": direction,
-                            "weight": 0.05,
-                            "text": f"交易索引: 无{direction}历史交易,总{len(trades)}笔",
-                        })
+                        insights.append(
+                            {
+                                "direction": direction,
+                                "weight": 0.05,
+                                "text": f"交易索引: 无{direction}历史交易,总{len(trades)}笔",
+                            }
+                        )
 
             return insights
         except Exception:

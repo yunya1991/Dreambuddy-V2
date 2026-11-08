@@ -5,6 +5,7 @@
 
 对应 Plan §T_B4: get_comparison_report() 评估报告。
 """
+
 from __future__ import annotations
 
 import json
@@ -18,8 +19,8 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.storage import EvolutionStorageSQLite
-from bcrm2.shadow_logger import ShadowLogger
+from bcrm2.shadow_logger import ShadowLogger  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite  # noqa: E402
 
 
 @pytest.fixture
@@ -49,11 +50,13 @@ def _save_record(storage, symbol, **fields):
         "reactive_threshold": 1.0,
         "forecast_L": 0.6,
         "forecast_T": 0.15,
-        "forecast_global_ranges": json.dumps({
-            "global_position_mult": [0.8, 1.2],
-            "long_threshold_mult": [0.9, 1.1],
-            "short_threshold_mult": [0.8, 1.0],
-        }),
+        "forecast_global_ranges": json.dumps(
+            {
+                "global_position_mult": [0.8, 1.2],
+                "long_threshold_mult": [0.9, 1.1],
+                "short_threshold_mult": [0.8, 1.0],
+            }
+        ),
         "forecast_sector_weights": json.dumps({"defi": 0.3}),
         "actual_direction": "LONG",
         "actual_confidence": 0.75,
@@ -69,6 +72,7 @@ def _save_record(storage, symbol, **fields):
 # ================================================================
 # T_B4: get_comparison_report() 评估报告
 # ================================================================
+
 
 class TestShadowLoggerReport:
     """验证 get_comparison_report() 评估报告。"""
@@ -124,44 +128,72 @@ class TestShadowLoggerReport:
         logger = _make_logger(tmp_storage)
 
         # 记录1: 方向变化（reactive_L 正, forecast_L 负）
-        _save_record(tmp_storage, "BTC",
-                     reactive_L=0.5, forecast_L=-0.3,
-                     reactive_threshold=1.0, reactive_pos_mult=1.0,
-                     forecast_global_ranges=json.dumps({
-                         "global_position_mult": [0.8, 1.2],
-                         "long_threshold_mult": [0.9, 1.1],
-                         "short_threshold_mult": [0.8, 1.0],
-                     }))
+        _save_record(
+            tmp_storage,
+            "BTC",
+            reactive_L=0.5,
+            forecast_L=-0.3,
+            reactive_threshold=1.0,
+            reactive_pos_mult=1.0,
+            forecast_global_ranges=json.dumps(
+                {
+                    "global_position_mult": [0.8, 1.2],
+                    "long_threshold_mult": [0.9, 1.1],
+                    "short_threshold_mult": [0.8, 1.0],
+                }
+            ),
+        )
 
         # 记录2: 阈值变化（forecast long_threshold 中位 0.6, reactive 1.0 → diff=0.4 > 0.1）
-        _save_record(tmp_storage, "BTC",
-                     reactive_L=0.5, forecast_L=0.6,
-                     reactive_threshold=1.0, reactive_pos_mult=1.0,
-                     forecast_global_ranges=json.dumps({
-                         "global_position_mult": [0.8, 1.2],
-                         "long_threshold_mult": [0.5, 0.7],
-                         "short_threshold_mult": [0.8, 1.0],
-                     }))
+        _save_record(
+            tmp_storage,
+            "BTC",
+            reactive_L=0.5,
+            forecast_L=0.6,
+            reactive_threshold=1.0,
+            reactive_pos_mult=1.0,
+            forecast_global_ranges=json.dumps(
+                {
+                    "global_position_mult": [0.8, 1.2],
+                    "long_threshold_mult": [0.5, 0.7],
+                    "short_threshold_mult": [0.8, 1.0],
+                }
+            ),
+        )
 
         # 记录3: 仓位变化（forecast position 中位 1.75, reactive 1.0 → diff=0.75 > 0.1）
-        _save_record(tmp_storage, "BTC",
-                     reactive_L=0.5, forecast_L=0.6,
-                     reactive_threshold=1.0, reactive_pos_mult=1.0,
-                     forecast_global_ranges=json.dumps({
-                         "global_position_mult": [1.5, 2.0],
-                         "long_threshold_mult": [0.9, 1.1],
-                         "short_threshold_mult": [0.8, 1.0],
-                     }))
+        _save_record(
+            tmp_storage,
+            "BTC",
+            reactive_L=0.5,
+            forecast_L=0.6,
+            reactive_threshold=1.0,
+            reactive_pos_mult=1.0,
+            forecast_global_ranges=json.dumps(
+                {
+                    "global_position_mult": [1.5, 2.0],
+                    "long_threshold_mult": [0.9, 1.1],
+                    "short_threshold_mult": [0.8, 1.0],
+                }
+            ),
+        )
 
         # 记录4: 无变化
-        _save_record(tmp_storage, "BTC",
-                     reactive_L=0.5, forecast_L=0.6,
-                     reactive_threshold=1.0, reactive_pos_mult=1.0,
-                     forecast_global_ranges=json.dumps({
-                         "global_position_mult": [0.8, 1.2],
-                         "long_threshold_mult": [0.9, 1.1],
-                         "short_threshold_mult": [0.8, 1.0],
-                     }))
+        _save_record(
+            tmp_storage,
+            "BTC",
+            reactive_L=0.5,
+            forecast_L=0.6,
+            reactive_threshold=1.0,
+            reactive_pos_mult=1.0,
+            forecast_global_ranges=json.dumps(
+                {
+                    "global_position_mult": [0.8, 1.2],
+                    "long_threshold_mult": [0.9, 1.1],
+                    "short_threshold_mult": [0.8, 1.0],
+                }
+            ),
+        )
 
         report = logger.get_comparison_report("BTC", days=7)
         wcd = report["would_change_decision"]
@@ -174,10 +206,10 @@ class TestShadowLoggerReport:
         """T_B4.5: direction_consistency 计算正确。"""
         logger = _make_logger(tmp_storage)
         # 3 条同方向, 1 条不同方向 → 3/4 = 0.75
-        _save_record(tmp_storage, "BTC", reactive_L=0.5, forecast_L=0.6)   # same
-        _save_record(tmp_storage, "BTC", reactive_L=0.4, forecast_L=0.7)   # same
-        _save_record(tmp_storage, "BTC", reactive_L=0.6, forecast_L=0.5)   # same
-        _save_record(tmp_storage, "BTC", reactive_L=0.5, forecast_L=-0.3)   # diff
+        _save_record(tmp_storage, "BTC", reactive_L=0.5, forecast_L=0.6)  # same
+        _save_record(tmp_storage, "BTC", reactive_L=0.4, forecast_L=0.7)  # same
+        _save_record(tmp_storage, "BTC", reactive_L=0.6, forecast_L=0.5)  # same
+        _save_record(tmp_storage, "BTC", reactive_L=0.5, forecast_L=-0.3)  # diff
 
         report = logger.get_comparison_report("BTC", days=7)
         assert report["direction_consistency"] == pytest.approx(0.75, abs=1e-4)

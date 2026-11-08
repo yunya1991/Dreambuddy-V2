@@ -17,8 +17,6 @@
 import json
 import os
 import sys
-import tempfile
-import time
 from pathlib import Path
 
 # === 路径与 TF-IDF 回退设置 ===
@@ -32,24 +30,25 @@ _COGNITIVE_DIR = _RAG_INFRA_DIR.parent.parent / "4-MEMORY" / "9-工具与接口"
 if str(_COGNITIVE_DIR) not in sys.path:
     sys.path.insert(0, str(_COGNITIVE_DIR))
 
-from vector_store.embedder import _embedder
+from vector_store.embedder import _embedder  # noqa: E402
+
 _embedder._use_tfidf_fallback = True
 _embedder._model = None
 
-import pytest
-from rag_engine import hybrid_search, search_with_feedback
-from bridge import (
-    record_retrieval_as_memory, verify_and_feedback,
-    apply_boost_to_results, get_boost, update_boost, reset,
-    BOOST_MIN, BOOST_MAX, BOOST_SUCCESS_FACTOR, BOOST_FAILURE_FACTOR,
+import pytest  # noqa: E402
+from bridge import (  # noqa: E402
+    BOOST_MAX,
+    BOOST_MIN,
     DEFAULT_BOOST,
+    record_retrieval_as_memory,
+    verify_and_feedback,
 )
-from bridge import weight_feedback as wf_mod
-from bridge import memory_bridge as mb_mod
-from integration import archive_from_conversation, detect_research
-
+from bridge import memory_bridge as mb_mod  # noqa: E402
+from integration import archive_from_conversation, detect_research  # noqa: E402
+from rag_engine import hybrid_search, search_with_feedback  # noqa: E402
 
 # === FakeCLE：模拟认知系统 ===
+
 
 class FakeCLE:
     """模拟 CognitiveLoopEntry，追踪 record/verify 调用。"""
@@ -60,16 +59,27 @@ class FakeCLE:
         self._counter = 0
         self._record_enabled = True
 
-    def record(self, content, quality_level="C", confidence=0.3,
-               tags=None, source="trae", memory_type="experience"):
+    def record(
+        self,
+        content,
+        quality_level="C",
+        confidence=0.3,
+        tags=None,
+        source="trae",
+        memory_type="experience",
+    ):
         if not self._record_enabled:
             return None
         self._counter += 1
         mid = f"VM-SIM-{self._counter:04d}"
-        self.records.append({
-            "memory_id": mid, "content": content,
-            "quality_level": quality_level, "tags": tags or [],
-        })
+        self.records.append(
+            {
+                "memory_id": mid,
+                "content": content,
+                "quality_level": quality_level,
+                "tags": tags or [],
+            }
+        )
         return mid
 
     def verify(self, memory_id, success=True):
@@ -79,11 +89,16 @@ class FakeCLE:
 
 class UnavailableCLE:
     """模拟认知系统不可用。"""
-    def record(self, *a, **kw): return None
-    def verify(self, *a, **kw): return None
+
+    def record(self, *a, **kw):
+        return None
+
+    def verify(self, *a, **kw):
+        return None
 
 
 # === 隔离 fixture ===
+
 
 @pytest.fixture
 def sim_env(tmp_path, monkeypatch):
@@ -98,18 +113,24 @@ def sim_env(tmp_path, monkeypatch):
 
     # 隔离 ingest 路径
     import evolution.ingest as ingest_mod
+
     monkeypatch.setattr(ingest_mod, "CHROMA_DB_PATH", str(tmp_path / "chroma"))
     monkeypatch.setattr(ingest_mod, "COLLECTION_NAME", "sim_test")
     from knowledge_graph import schema as kg
+
     monkeypatch.setattr(kg, "DEFAULT_GRAPH_PATH", str(tmp_path / "kg.pkl"))
 
     return {
-        "tmp": tmp_path, "weight": weight_path, "map": map_path,
-        "kb": kb, "cle": fake_cle,
+        "tmp": tmp_path,
+        "weight": weight_path,
+        "map": map_path,
+        "kb": kb,
+        "cle": fake_cle,
     }
 
 
 # ========== 场景1：完整闭环 ==========
+
 
 def test_scenario1_full_closed_loop(sim_env):
     """模拟完整闭环：对话→检测→归档→记忆→检索→verify→boost→影响检索。"""
@@ -123,22 +144,24 @@ def test_scenario1_full_closed_loop(sim_env):
 
     # Step2: 归档 + 记录记忆
     result = archive_from_conversation(
-        content, research_topic="Kalman量化滤波研究",
-        knowledge_dir=sim_env["kb"], map_path=sim_env["map"])
+        content,
+        research_topic="Kalman量化滤波研究",
+        knowledge_dir=sim_env["kb"],
+        map_path=sim_env["map"],
+    )
     assert result["status"] == "done"
     assert result["memory_recorded"] > 0
     print(f"Step2 归档: {len(result['archived'])} 条, 记忆: {result['memory_recorded']} 条")
 
     # Step3: 检索并记录记忆
     r1 = search_with_feedback(
-        "Kalman 量化", top_k=5,
-        weight_path=sim_env["weight"], map_path=sim_env["map"])
+        "Kalman 量化", top_k=5, weight_path=sim_env["weight"], map_path=sim_env["map"]
+    )
     if not r1["results"]:
         pytest.skip("无检索结果")
     assert r1["boost_applied"] is True
     assert r1["record_done"] is True
-    print(f"Step3 检索: {len(r1['results'])} 结果, "
-          f"{len(r1['memory_mappings'])} 记忆映射")
+    print(f"Step3 检索: {len(r1['results'])} 结果, " f"{len(r1['memory_mappings'])} 记忆映射")
 
     if not r1["memory_mappings"]:
         pytest.skip("无检索结果")
@@ -146,33 +169,36 @@ def test_scenario1_full_closed_loop(sim_env):
     # Step4: verify 第一条记忆 → boost 升权
     m = r1["memory_mappings"][0]
     vr = verify_and_feedback(
-        m["memory_id"], success=True,
-        map_path=sim_env["map"], weight_path=sim_env["weight"])
+        m["memory_id"], success=True, map_path=sim_env["map"], weight_path=sim_env["weight"]
+    )
     assert vr["status"] == "done"
     assert vr["new_boost"] > DEFAULT_BOOST
     print(f"Step4 verify: boost {DEFAULT_BOOST}→{vr['new_boost']}")
 
     # Step5: 再次检索，验证 boost 影响
     r2 = search_with_feedback(
-        "Kalman 量化", top_k=5,
-        weight_path=sim_env["weight"], map_path=sim_env["map"])
+        "Kalman 量化", top_k=5, weight_path=sim_env["weight"], map_path=sim_env["map"]
+    )
     assert r2["boost_applied"] is True
 
     # 被 verify 的知识单元 boost 应 > 1.0
-    boosted = [r for r in r2["results"]
-               if r.get("source_file") == m["source_file"]
-               and r.get("heading") == m["heading"]]
+    boosted = [
+        r
+        for r in r2["results"]
+        if r.get("source_file") == m["source_file"] and r.get("heading") == m["heading"]
+    ]
     if boosted:
         fb = boosted[0].get("rerank_signals", {}).get("feedback_boost", 1.0)
         assert fb > DEFAULT_BOOST
         print(f"Step5 验证: feedback_boost={fb} > {DEFAULT_BOOST} ✓")
     else:
-        print(f"Step5: 被verify的知识单元未出现在结果（TF-IDF 模式正常）")
+        print("Step5: 被verify的知识单元未出现在结果（TF-IDF 模式正常）")
 
     print("=== 场景1 通过 ✓ ===\n")
 
 
 # ========== 场景2：多轮 verify 累积 ==========
+
 
 def test_scenario2_cumulative_verify(sim_env):
     """多轮 verify 累积 boost 变化：升权→降权→上限保护→下限保护。"""
@@ -185,15 +211,26 @@ def test_scenario2_cumulative_verify(sim_env):
     boosts = []
     for i in range(3):
         # 需要先有映射才能 verify_and_feedback
-        pseudo = [{"source_file": source, "heading": heading,
-                   "domain": "test", "final_score": 1.0, "content": "test"}]
+        pseudo = [
+            {
+                "source_file": source,
+                "heading": heading,
+                "domain": "test",
+                "final_score": 1.0,
+                "content": "test",
+            }
+        ]
         mappings = record_retrieval_as_memory(
-            f"query_{i}", pseudo, cle=sim_env["cle"], map_path=sim_env["map"])
+            f"query_{i}", pseudo, cle=sim_env["cle"], map_path=sim_env["map"]
+        )
         assert len(mappings) == 1
 
         vr = verify_and_feedback(
-            mappings[0]["memory_id"], success=True,
-            map_path=sim_env["map"], weight_path=sim_env["weight"])
+            mappings[0]["memory_id"],
+            success=True,
+            map_path=sim_env["map"],
+            weight_path=sim_env["weight"],
+        )
         boosts.append(vr["new_boost"])
 
     print(f"Round1-3 升权: {boosts}")
@@ -203,13 +240,24 @@ def test_scenario2_cumulative_verify(sim_env):
 
     # Round4: 继续升权到接近上限
     for i in range(3, 20):
-        pseudo = [{"source_file": source, "heading": heading,
-                   "domain": "test", "final_score": 1.0, "content": "test"}]
+        pseudo = [
+            {
+                "source_file": source,
+                "heading": heading,
+                "domain": "test",
+                "final_score": 1.0,
+                "content": "test",
+            }
+        ]
         mappings = record_retrieval_as_memory(
-            f"query_{i}", pseudo, cle=sim_env["cle"], map_path=sim_env["map"])
+            f"query_{i}", pseudo, cle=sim_env["cle"], map_path=sim_env["map"]
+        )
         vr = verify_and_feedback(
-            mappings[0]["memory_id"], success=True,
-            map_path=sim_env["map"], weight_path=sim_env["weight"])
+            mappings[0]["memory_id"],
+            success=True,
+            map_path=sim_env["map"],
+            weight_path=sim_env["weight"],
+        )
         boosts.append(vr["new_boost"])
 
     print(f"Round4-20: final boost={boosts[-1]}, max={BOOST_MAX}")
@@ -218,13 +266,24 @@ def test_scenario2_cumulative_verify(sim_env):
     # Round5: 连续 verify(False) → boost 下降
     fail_boosts = []
     for i in range(20, 40):
-        pseudo = [{"source_file": source, "heading": heading,
-                   "domain": "test", "final_score": 1.0, "content": "test"}]
+        pseudo = [
+            {
+                "source_file": source,
+                "heading": heading,
+                "domain": "test",
+                "final_score": 1.0,
+                "content": "test",
+            }
+        ]
         mappings = record_retrieval_as_memory(
-            f"query_{i}", pseudo, cle=sim_env["cle"], map_path=sim_env["map"])
+            f"query_{i}", pseudo, cle=sim_env["cle"], map_path=sim_env["map"]
+        )
         vr = verify_and_feedback(
-            mappings[0]["memory_id"], success=False,
-            map_path=sim_env["map"], weight_path=sim_env["weight"])
+            mappings[0]["memory_id"],
+            success=False,
+            map_path=sim_env["map"],
+            weight_path=sim_env["weight"],
+        )
         fail_boosts.append(vr["new_boost"])
 
     print(f"Round20-40 降权: final={fail_boosts[-1]}, min={BOOST_MIN}")
@@ -236,6 +295,7 @@ def test_scenario2_cumulative_verify(sim_env):
 
 # ========== 场景3：FAIL-OPEN 鲁棒性 ==========
 
+
 def test_scenario3_failopen_robustness(tmp_path, monkeypatch):
     """FAIL-OPEN：认知系统不可用时检索/归档不阻塞。"""
     print("=== 场景3：FAIL-OPEN 鲁棒性 ===")
@@ -246,9 +306,7 @@ def test_scenario3_failopen_robustness(tmp_path, monkeypatch):
     # 3a: 认知系统返回 None（不可用）
     monkeypatch.setattr(mb_mod, "_get_cle", lambda: None)
 
-    r = search_with_feedback(
-        "Kalman", top_k=3,
-        weight_path=weight_path, map_path=map_path)
+    r = search_with_feedback("Kalman", top_k=3, weight_path=weight_path, map_path=map_path)
     assert isinstance(r["results"], list)
     assert r["record_done"] is False  # 记忆记录失败
     assert r["memory_mappings"] == []
@@ -258,15 +316,17 @@ def test_scenario3_failopen_robustness(tmp_path, monkeypatch):
     kb = tmp_path / "kb_failopen"
     kb.mkdir()
     import evolution.ingest as ingest_mod
+
     monkeypatch.setattr(ingest_mod, "CHROMA_DB_PATH", str(tmp_path / "chroma2"))
     monkeypatch.setattr(ingest_mod, "COLLECTION_NAME", "failopen_test")
     from knowledge_graph import schema as kg
+
     monkeypatch.setattr(kg, "DEFAULT_GRAPH_PATH", str(tmp_path / "kg2.pkl"))
 
     content = "研究了 Kalman Filter 量化方法"
     result = archive_from_conversation(
-        content, research_topic="FAIL-OPEN测试",
-        knowledge_dir=kb, map_path=map_path)
+        content, research_topic="FAIL-OPEN测试", knowledge_dir=kb, map_path=map_path
+    )
     assert result["status"] == "done"
     assert result["memory_recorded"] == 0
     print("3b 归档时认知不可用: 归档成功, memory_recorded=0 ✓")
@@ -275,6 +335,7 @@ def test_scenario3_failopen_robustness(tmp_path, monkeypatch):
 
 
 # ========== 场景4：批量检索与归档 ==========
+
 
 def test_scenario4_batch_operations(sim_env):
     """批量检索与归档的性能与正确性。"""
@@ -294,8 +355,8 @@ def test_scenario4_batch_operations(sim_env):
     detected_count = 0
     for i, c in enumerate(contents):
         result = archive_from_conversation(
-            c, research_topic=f"批量调研_{i}",
-            knowledge_dir=sim_env["kb"], map_path=sim_env["map"])
+            c, research_topic=f"批量调研_{i}", knowledge_dir=sim_env["kb"], map_path=sim_env["map"]
+        )
         # 部分内容可能未被检测到（TF-IDF 模式下关键词匹配差异），跳过
         if result["status"] == "no_research":
             print(f"  内容{i} 未检测到调研内容，跳过")
@@ -305,8 +366,10 @@ def test_scenario4_batch_operations(sim_env):
         archived_count += len(result["archived"])
         memory_count += result["memory_recorded"]
 
-    print(f"4a 批量归档: {detected_count}/{len(contents)} 被检测, "
-          f"归档 {archived_count}, 记忆 {memory_count}")
+    print(
+        f"4a 批量归档: {detected_count}/{len(contents)} 被检测, "
+        f"归档 {archived_count}, 记忆 {memory_count}"
+    )
     assert detected_count >= 1  # 至少 1 条被检测
     assert archived_count >= 1
     assert memory_count >= 1
@@ -316,14 +379,11 @@ def test_scenario4_batch_operations(sim_env):
     total_results = 0
     total_mappings = 0
     for q in queries:
-        r = search_with_feedback(
-            q, top_k=3,
-            weight_path=sim_env["weight"], map_path=sim_env["map"])
+        r = search_with_feedback(q, top_k=3, weight_path=sim_env["weight"], map_path=sim_env["map"])
         total_results += len(r["results"])
         total_mappings += len(r["memory_mappings"])
 
-    print(f"4b 批量检索: {len(queries)} 次, 结果 {total_results}, "
-          f"记忆 {total_mappings}")
+    print(f"4b 批量检索: {len(queries)} 次, 结果 {total_results}, " f"记忆 {total_mappings}")
     # 有检索结果时应产生记忆映射（认知系统可用时）
     if total_results > 0:
         assert total_mappings >= 1
@@ -347,6 +407,7 @@ def test_scenario4_batch_operations(sim_env):
 
 # ========== 场景5：hybrid_search 字节等价 ==========
 
+
 def test_scenario5_hybrid_search_equivalence():
     """hybrid_search 原行为不变（不应用 boost，不记录记忆）。"""
     print("=== 场景5：hybrid_search 字节等价 ===")
@@ -366,12 +427,14 @@ def test_scenario5_hybrid_search_equivalence():
 
 # ========== 场景6：认知系统状态检查 ==========
 
+
 def test_scenario6_cognitive_system_stats():
     """验证认知系统 MCP 工具可用（stats/health）。"""
     print("=== 场景6：认知系统状态 ===")
 
     try:
         from cognitive_loop_entry import get_cle
+
         cle = get_cle()
         assert cle is not None
 

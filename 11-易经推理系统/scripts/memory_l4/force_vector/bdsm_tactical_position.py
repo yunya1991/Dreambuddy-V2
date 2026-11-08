@@ -10,28 +10,22 @@
 
 开关：ENABLE_TACTICAL_MICRO_POSITION（默认 False）
 """
+
 from __future__ import annotations
 
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
 # ── 开关与参数（环境变量覆盖，FAIL-OPEN 用默认值）──────────────────────────
-ENABLE_TACTICAL_MICRO_POSITION = os.environ.get(
-    "ENABLE_TACTICAL_MICRO_POSITION", ""
-).lower() in ("1", "true")
+ENABLE_TACTICAL_MICRO_POSITION = os.environ.get("ENABLE_TACTICAL_MICRO_POSITION", "").lower() in (
+    "1",
+    "true",
+)
 
-TACTICAL_MICRO_BUDGET_USDT = float(
-    os.environ.get("TACTICAL_MICRO_BUDGET_USDT", "60")
-)
-TACTICAL_STOP_LOSS_PCT = float(
-    os.environ.get("TACTICAL_STOP_LOSS_PCT", "0.15")
-)
-TACTICAL_E8_EXIT_THRESHOLD = float(
-    os.environ.get("TACTICAL_E8_EXIT_THRESHOLD", "-0.3")
-)
-TACTICAL_MAX_POSITIONS = int(
-    os.environ.get("TACTICAL_MAX_POSITIONS", "2")
-)
+TACTICAL_MICRO_BUDGET_USDT = float(os.environ.get("TACTICAL_MICRO_BUDGET_USDT", "60"))
+TACTICAL_STOP_LOSS_PCT = float(os.environ.get("TACTICAL_STOP_LOSS_PCT", "0.15"))
+TACTICAL_E8_EXIT_THRESHOLD = float(os.environ.get("TACTICAL_E8_EXIT_THRESHOLD", "-0.3"))
+TACTICAL_MAX_POSITIONS = int(os.environ.get("TACTICAL_MAX_POSITIONS", "2"))
 
 # 入场门槛
 TACTICAL_BDS_THRESHOLD = 0.3
@@ -79,9 +73,7 @@ def tactical_entry_check(coin_entry: Dict[str, Any]) -> bool:
         ta = coin_entry.get("technical_assessment") or {}
         rsi_14 = float(ta.get("rsi_14", 50.0) or 50.0)
         is_standard_covered = (
-            cvs >= 0.3
-            and val_pct <= TACTICAL_VALUATION_HIGH
-            and rsi_14 <= TACTICAL_RSI_OVERBOUGHT
+            cvs >= 0.3 and val_pct <= TACTICAL_VALUATION_HIGH and rsi_14 <= TACTICAL_RSI_OVERBOUGHT
         )
         if is_standard_covered:
             return False  # 标准仓已覆盖，不走战术小仓

@@ -16,15 +16,15 @@
 - LightGBM 表格数据特征处理
 """
 
-from typing import List, Dict, Optional, Tuple, Any
+from typing import List, Dict, Optional, Any  # noqa: I001
 import pandas as pd
 import numpy as np
-import sys, os
+import sys
+import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from core.least_resistance import (
+from core.least_resistance import (  # noqa: I001
     compute_least_resistance,
-    compute_least_resistance_3d,
     calc_trend_strength,
 )
 from ml.fundamental_adapter import FundamentalFeatureAdapter
@@ -117,7 +117,7 @@ class LeastResistanceFeatureEngineer:
         warmup = 30
 
         for i in range(warmup, n_daily):
-            daily_slice = daily_df.iloc[:i + 1].copy()
+            daily_slice = daily_df.iloc[: i + 1].copy()
 
             # 对齐周线数据：到第 i 根日线对应的周线
             last_daily_date = daily_df.index[i]
@@ -146,13 +146,15 @@ class LeastResistanceFeatureEngineer:
 
             # 提取当前行的特征
             feat = self._extract_lr_features(
-                daily_lr, weekly_lr,
-                daily_lr_history, weekly_lr_history,
+                daily_lr,
+                weekly_lr,
+                daily_lr_history,
+                weekly_lr_history,
             )
             lr_features.append(feat)
 
         # 前 warmup 行填充 NaN
-        for i in range(warmup):
+        for i in range(warmup):  # noqa: B007
             lr_features.insert(0, {})
 
         # 转为 DataFrame
@@ -239,13 +241,12 @@ class LeastResistanceFeatureEngineer:
         # 方向一致性（使用 resistance_diff 数值）
         daily_dir = _safe_float(daily_lr.get("resistance_diff", 0))
         weekly_dir = _safe_float(weekly_lr.get("resistance_diff", 0))
-        feats["cross_dir_consistency"] = 1.0 if daily_dir * weekly_dir > 0 else (
-            -1.0 if daily_dir * weekly_dir < 0 else 0.0
+        feats["cross_dir_consistency"] = (
+            1.0 if daily_dir * weekly_dir > 0 else (-1.0 if daily_dir * weekly_dir < 0 else 0.0)
         )
         feats["cross_dir_diff"] = daily_dir - weekly_dir
-        feats["cross_conf_ratio"] = (
-            _safe_float(daily_lr.get("confidence", 0)) /
-            max(_safe_float(weekly_lr.get("confidence", 0.01)), 0.01)
+        feats["cross_conf_ratio"] = _safe_float(daily_lr.get("confidence", 0)) / max(
+            _safe_float(weekly_lr.get("confidence", 0.01)), 0.01
         )
 
         # 阻力维度差异（哪一维度在周/日之间分歧最大）
@@ -271,14 +272,20 @@ class LeastResistanceFeatureEngineer:
 
         if len(valid_history) >= 3:
             # 加速度
-            v1 = _safe_float(valid_history[-1].get("resistance_diff", 0)) - _safe_float(valid_history[-2].get("resistance_diff", 0))
-            v0 = _safe_float(valid_history[-2].get("resistance_diff", 0)) - _safe_float(valid_history[-3].get("resistance_diff", 0))
+            v1 = _safe_float(valid_history[-1].get("resistance_diff", 0)) - _safe_float(
+                valid_history[-2].get("resistance_diff", 0)
+            )
+            v0 = _safe_float(valid_history[-2].get("resistance_diff", 0)) - _safe_float(
+                valid_history[-3].get("resistance_diff", 0)
+            )
             feats["daily_acceleration"] = v1 - v0
 
         # 多窗口统计
         for window in self.lookback_windows:
             if len(valid_history) >= window:
-                window_data = [_safe_float(h.get("resistance_diff", 0)) for h in valid_history[-window:]]
+                window_data = [
+                    _safe_float(h.get("resistance_diff", 0)) for h in valid_history[-window:]
+                ]
                 feats[f"daily_dir_mean_{window}"] = float(np.mean(window_data))
                 feats[f"daily_dir_std_{window}"] = float(np.std(window_data))
 
@@ -300,8 +307,12 @@ class LeastResistanceFeatureEngineer:
             feats["weekly_velocity"] = w_current - w_prev
 
         if len(valid_weekly) >= 3:
-            v1 = _safe_float(valid_weekly[-1].get("resistance_diff", 0)) - _safe_float(valid_weekly[-2].get("resistance_diff", 0))
-            v0 = _safe_float(valid_weekly[-2].get("resistance_diff", 0)) - _safe_float(valid_weekly[-3].get("resistance_diff", 0))
+            v1 = _safe_float(valid_weekly[-1].get("resistance_diff", 0)) - _safe_float(
+                valid_weekly[-2].get("resistance_diff", 0)
+            )
+            v0 = _safe_float(valid_weekly[-2].get("resistance_diff", 0)) - _safe_float(
+                valid_weekly[-3].get("resistance_diff", 0)
+            )
             feats["weekly_acceleration"] = v1 - v0
 
         for window in [1, 3, 5, 10]:
@@ -312,16 +323,20 @@ class LeastResistanceFeatureEngineer:
         # === 5. 趋势强度估计 ===
         try:
             trend_strength = calc_trend_strength(
-                weekly_dir, 0, 0,
-                "LONG" if weekly_dir > 0 else ("SHORT" if weekly_dir < 0 else "NEUTRAL")
+                weekly_dir,
+                0,
+                0,
+                "LONG" if weekly_dir > 0 else ("SHORT" if weekly_dir < 0 else "NEUTRAL"),
             )
             feats["trend_strength_est"] = float(trend_strength)
         except Exception:
             feats["trend_strength_est"] = 0.0
 
         # 阻力维度贡献度（哪一维度主导当前方向）
-        res_vals = [_safe_float(daily_resistance.get(d, {}).get("resistance_diff", 0)) for d in
-                    ["price", "volume", "momentum", "trend", "fundamental"]]
+        res_vals = [
+            _safe_float(daily_resistance.get(d, {}).get("resistance_diff", 0))
+            for d in ["price", "volume", "momentum", "trend", "fundamental"]
+        ]
         if any(abs(v) > 0.001 for v in res_vals):
             max_dim_idx = int(np.argmax([abs(v) for v in res_vals]))
             feats["dominant_res_dim"] = float(max_dim_idx)
@@ -371,9 +386,7 @@ class LeastResistanceFeatureEngineer:
         # 处理 screen1 历史数据
         screen1_history = fundamental_data.get("screen1_history")
         if screen1_history and isinstance(screen1_history, list):
-            self._apply_history_features(
-                result, screen1_history, "screen1", daily_index
-            )
+            self._apply_history_features(result, screen1_history, "screen1", daily_index)
 
         # 处理 9-基本面 数据
         fund9_data = fundamental_data.get("fundamental_9")
@@ -385,16 +398,16 @@ class LeastResistanceFeatureEngineer:
         # 处理 9-基本面 历史数据
         fund9_history = fundamental_data.get("fundamental_9_history")
         if fund9_history and isinstance(fund9_history, list):
-            self._apply_history_features(
-                result, fund9_history, "fundamental_9", daily_index
-            )
+            self._apply_history_features(result, fund9_history, "fundamental_9", daily_index)
 
         # 兼容旧格式：直接传入的基本面数据
         if not screen1_data and not fund9_data and not screen1_history and not fund9_history:
             # 尝试直接适配
             feats = self._fund_adapter.adapt_all(
                 screen1_data=fundamental_data if "dimensions" in fundamental_data else None,
-                fundamental_9_data=fundamental_data if "resistance_3d" in fundamental_data else None,
+                fundamental_9_data=(
+                    fundamental_data if "resistance_3d" in fundamental_data else None
+                ),
             )
             if feats:
                 for k, v in feats.items():
@@ -417,17 +430,14 @@ class LeastResistanceFeatureEngineer:
             return
 
         # 按日期排序
-        sorted_history = sorted(
-            history_data,
-            key=lambda x: x.get("date", x.get("dt", ""))
-        )
+        sorted_history = sorted(history_data, key=lambda x: x.get("date", x.get("dt", "")))
 
         # 逐条应用（前向填充）
         last_feats = None
         hist_idx = 0
 
         for i, dt in enumerate(daily_index):
-            date_str = str(dt.date()) if hasattr(dt, 'date') else str(dt)[:10]
+            date_str = str(dt.date()) if hasattr(dt, "date") else str(dt)[:10]
 
             # 检查是否有新的历史数据点
             while hist_idx < len(sorted_history):

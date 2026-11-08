@@ -26,6 +26,7 @@
   - 软权重幅度 ±0.01 ess_delta（软信号，幅度减半，与离场侧 PARTIAL_REDUCE 对齐）
   - ESS 双轨隔离：entry-track vs exit-track 独立计数
 """
+
 from __future__ import annotations
 
 import sys
@@ -44,6 +45,7 @@ if str(REPO) not in sys.path:
 # Group 1: 入场权重因子计算
 # ============================================================================
 
+
 class TestEntryWeightFactor:
     """入场侧 BCRM2.0 反向信号分层治理：权重因子计算"""
 
@@ -52,11 +54,11 @@ class TestEntryWeightFactor:
         """基础参数：evolution LONG vs BCRM2.0 DOWN（反向）"""
         _now = time.time()
         return {
-            "bcrm_dir": "DOWN",       # BCRM2.0 看空
-            "bcrm_conf": 0.91,        # 置信度 0.91（0.85-0.95 档）
-            "bcrm_ts": _now,          # 新鲜
-            "evo_dir": "LONG",        # evolution 看多 → 反向
-            "bdsm_constraint": "",    # 无 BDSM 约束
+            "bcrm_dir": "DOWN",  # BCRM2.0 看空
+            "bcrm_conf": 0.91,  # 置信度 0.91（0.85-0.95 档）
+            "bcrm_ts": _now,  # 新鲜
+            "evo_dir": "LONG",  # evolution 看多 → 反向
+            "bdsm_constraint": "",  # 无 BDSM 约束
             "now": _now,
         }
 
@@ -65,6 +67,7 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params)
         params["bcrm_conf"] = 0.96
         params["bdsm_constraint"] = "SHORT_ONLY"  # 与 BCRM DOWN 一致
@@ -77,6 +80,7 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params)
         params["bcrm_conf"] = 0.96
         params["bdsm_constraint"] = ""  # 无 BDSM 一致
@@ -90,6 +94,7 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         result = compute_bcrm_entry_weight_factor(**base_params)
         assert result.veto is False
         assert result.weight_factor == pytest.approx(0.5)
@@ -100,6 +105,7 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params)
         params["bcrm_conf"] = 0.82
         result = compute_bcrm_entry_weight_factor(**params)
@@ -112,6 +118,7 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params)
         params["bcrm_ts"] = params["now"] - 2000  # 33min 前 → 过期
         result = compute_bcrm_entry_weight_factor(**params)
@@ -124,6 +131,7 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params)
         params["bcrm_dir"] = ""  # 缓存缺失
         params["bcrm_conf"] = 0.0
@@ -137,6 +145,7 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params)
         params["bcrm_dir"] = "UP"  # 同向（evolution LONG vs BCRM UP）
         params["bcrm_conf"] = 0.91
@@ -150,9 +159,10 @@ class TestEntryWeightFactor:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params)
         params["evo_dir"] = "SHORT"
-        params["bcrm_dir"] = "UP"   # 持仓 short，BCRM UP → 反向
+        params["bcrm_dir"] = "UP"  # 持仓 short，BCRM UP → 反向
         params["bcrm_conf"] = 0.91
         result = compute_bcrm_entry_weight_factor(**params)
         assert result.veto is False
@@ -163,6 +173,7 @@ class TestEntryWeightFactor:
 # Group 2: 平仓 outcome 提取 — REDUCE_WEIGHT
 # ============================================================================
 
+
 class TestOutcomeExtractionReduceWeight:
     """从 weight_reduce_factor 提取 REDUCE_WEIGHT_PREMATURE / CORRECT outcome 标签"""
 
@@ -171,6 +182,7 @@ class TestOutcomeExtractionReduceWeight:
         from dreambuddy_evolution.engines.trade_settlement_bridge import (
             TradeSettlementBridge,
         )
+
         outcome = TradeSettlementBridge._extract_outcome_from_reason(
             reason="evolution_exit:force_close:okx_algo_triggered",
             okx_algo_triggered=False,
@@ -185,6 +197,7 @@ class TestOutcomeExtractionReduceWeight:
         from dreambuddy_evolution.engines.trade_settlement_bridge import (
             TradeSettlementBridge,
         )
+
         outcome = TradeSettlementBridge._extract_outcome_from_reason(
             reason="evolution_exit:force_close:okx_algo_triggered",
             okx_algo_triggered=False,
@@ -199,6 +212,7 @@ class TestOutcomeExtractionReduceWeight:
         from dreambuddy_evolution.engines.trade_settlement_bridge import (
             TradeSettlementBridge,
         )
+
         outcome = TradeSettlementBridge._extract_outcome_from_reason(
             reason="",  # 空 reason → 退化为 pnl 推断
             okx_algo_triggered=False,
@@ -215,12 +229,14 @@ class TestOutcomeExtractionReduceWeight:
 # Group 3: ReflectionEngine — REDUCE_WEIGHT 奖励路径
 # ============================================================================
 
+
 class TestReflectionReduceWeightReward:
     """ReflectionEngine.apply_reward 对 REDUCE_WEIGHT 的处理"""
 
     def test_reflection_reduce_weight_cold_start_neutral(self):
         """测试 10: 冷启动期（样本 < 20）→ ess_delta=0（中性，只收集不调整）"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         # REDUCE_WEIGHT_PREMATURE 冷启动：ess_delta 应为 0
         result = engine.apply_reward(
@@ -236,6 +252,7 @@ class TestReflectionReduceWeightReward:
     def test_reflection_reduce_weight_warm_start_correct(self):
         """测试 11: 样本 ≥ 20 后 → REDUCE_WEIGHT_CORRECT → ess_delta +0.01"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         # 预设样本计数 ≥ 20（warm start）
         engine._reduce_weight_counter = {"entry_track_cluster|entry_track_1": 25}
@@ -252,6 +269,7 @@ class TestReflectionReduceWeightReward:
 # ============================================================================
 # Group 4: PatternDetector 形态因子接入 BCRM2.0 技术评估 (Phase 4.1)
 # ============================================================================
+
 
 class TestPatternFactorIntegration:
     """头肩顶 pattern_factor 接入入场权重治理测试
@@ -279,6 +297,7 @@ class TestPatternFactorIntegration:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params_same_dir)
         result = compute_bcrm_entry_weight_factor(pattern_factor=-0.8, **params)
         assert result.veto is False
@@ -289,6 +308,7 @@ class TestPatternFactorIntegration:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params_same_dir)
         result = compute_bcrm_entry_weight_factor(pattern_factor=0.0, **params)
         assert result.weight_factor == pytest.approx(1.0)
@@ -298,6 +318,7 @@ class TestPatternFactorIntegration:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params_same_dir)
         result = compute_bcrm_entry_weight_factor(pattern_factor=0.5, **params)
         assert result.weight_factor == pytest.approx(1.0)
@@ -307,6 +328,7 @@ class TestPatternFactorIntegration:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         result = compute_bcrm_entry_weight_factor(**base_params_same_dir)
         assert result.weight_factor == pytest.approx(1.0)
 
@@ -315,6 +337,7 @@ class TestPatternFactorIntegration:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params_same_dir)
         result = compute_bcrm_entry_weight_factor(pattern_factor=None, **params)
         assert result.weight_factor == pytest.approx(1.0)
@@ -324,6 +347,7 @@ class TestPatternFactorIntegration:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             compute_bcrm_entry_weight_factor,
         )
+
         params = dict(base_params_same_dir)
         params["evo_dir"] = "SHORT"
         params["bcrm_dir"] = "DOWN"  # 同向
@@ -336,12 +360,14 @@ class TestPatternFactorIntegration:
 # Group 3 (续): ReflectionEngine 奖励路径 — 补充测试
 # ============================================================================
 
+
 class TestReflectionReduceWeightExtra:
     """REDUCE_WEIGHT 额外场景"""
 
     def test_reflection_reduce_weight_warm_start_premature(self):
         """额外: 样本 ≥ 20 后 → REDUCE_WEIGHT_PREMATURE → ess_delta -0.01"""
         from dreambuddy_evolution.engines.reflection_engine import ReflectionEngine
+
         engine = ReflectionEngine()
         engine._reduce_weight_counter = {"entry_track_cluster|entry_track_1": 25}
         result = engine.apply_reward(

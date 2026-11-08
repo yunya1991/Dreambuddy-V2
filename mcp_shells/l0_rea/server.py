@@ -229,7 +229,3 @@ for _n in _NODE_MAP:
 
 if __name__ == "__main__":
     run_stdio(SHELL_SOURCE, TOOL_DEFS, TOOL_HANDLERS)
-
-
-if __name__ == "__main__":
-    main()

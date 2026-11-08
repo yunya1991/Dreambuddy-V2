@@ -11,7 +11,13 @@ Agent A 专用 LLM 客户端 — 四级回退机制
   3. DeepSeek V4 (api.deepseek.com) — 付费备用
   4. 基本规则引擎 — 硬编码兜底（0 Token）
 """
-import os, json, time, requests, ssl, warnings
+
+import os  # noqa: I001
+import json
+import time
+import requests
+import ssl
+import warnings
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional, Tuple
@@ -19,38 +25,44 @@ from urllib3.util.ssl_ import create_urllib3_context
 
 warnings.filterwarnings("ignore")
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
+
 load_dotenv(Path(__file__).parent.parent / "config" / ".env")
 
 # ── 配置 ─────────────────────────────────────────────────────────────────
 # 千问 3.8 MAX（最高优先级）
-QWEN_API_KEY  = os.environ.get("QWEN_API_KEY", "")
-QWEN_BASE_URL = os.environ.get("QWEN_BASE_URL", "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")
-QWEN_MODEL    = os.environ.get("QWEN_MODEL", "qwen3.8-max")
+QWEN_API_KEY = os.environ.get("QWEN_API_KEY", "")
+QWEN_BASE_URL = os.environ.get(
+    "QWEN_BASE_URL", "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+)
+QWEN_MODEL = os.environ.get("QWEN_MODEL", "qwen3.8-max")
 
-TRAE_API_KEY     = os.environ.get("TRAE_API_KEY", "")
-TRAE_BASE_URL    = os.environ.get("TRAE_BASE_URL", "https://api.trae.ai/v1")
-TRAE_MODEL       = os.environ.get("TRAE_MODEL", "claude-sonnet-4-5")
+TRAE_API_KEY = os.environ.get("TRAE_API_KEY", "")
+TRAE_BASE_URL = os.environ.get("TRAE_BASE_URL", "https://api.trae.ai/v1")
+TRAE_MODEL = os.environ.get("TRAE_MODEL", "claude-sonnet-4-5")
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_BASE    = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-DEEPSEEK_MODEL   = os.environ.get("DEEPSEEK_MODEL_V4", "deepseek-chat")
+DEEPSEEK_BASE = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL_V4", "deepseek-chat")
 
-DAILY_LIMIT_QWEN     = int(os.environ.get("AGENT_A_QWEN_DAILY_LIMIT",     "60"))
-DAILY_LIMIT_TRAE     = int(os.environ.get("AGENT_A_TRAE_DAILY_LIMIT",     "12"))
+DAILY_LIMIT_QWEN = int(os.environ.get("AGENT_A_QWEN_DAILY_LIMIT", "60"))
+DAILY_LIMIT_TRAE = int(os.environ.get("AGENT_A_TRAE_DAILY_LIMIT", "12"))
 DAILY_LIMIT_DEEPSEEK = int(os.environ.get("AGENT_A_DEEPSEEK_DAILY_LIMIT", "24"))
 
 QUOTA_FILE = Path(__file__).parent.parent / "data" / "agent_a_llm_quota.json"
 SKILL_PATH = Path(__file__).parent.parent / "skills" / "agent-a-trading" / "SKILL.md"
 
+
 # ── TLS 1.2 强制 Session（解决 macOS LibreSSL TLS 1.3 兼容性）─────────────
 class TLS12Adapter(requests.adapters.HTTPAdapter):
     """强制 TLS 1.2 的 HTTPAdapter，避免 macOS LibreSSL TLS 1.3 握手失败"""
+
     def init_poolmanager(self, *args, **kwargs):
         ctx = create_urllib3_context()
         ctx.maximum_version = ssl.TLSVersion.TLSv1_2
         kwargs["ssl_context"] = ctx
         super().init_poolmanager(*args, **kwargs)
+
 
 def _tls12_session() -> requests.Session:
     s = requests.Session()
@@ -58,7 +70,9 @@ def _tls12_session() -> requests.Session:
     s.mount("https://", TLS12Adapter())
     return s
 
+
 # ── 配额管理 ──────────────────────────────────────────────────────────────
+
 
 def _today() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -74,10 +88,10 @@ def _load_quota() -> dict:
         except Exception:
             pass
     return {
-        "date":          _today(),
-        "qwen":          0,
-        "trae":          0,
-        "deepseek":      0,
+        "date": _today(),
+        "qwen": 0,
+        "trae": 0,
+        "deepseek": 0,
         "rule_fallback": 0,
     }
 
@@ -121,10 +135,10 @@ def get_quota_status() -> dict:
     """查询当日用量"""
     q = _load_quota()
     return {
-        "date":          q["date"],
-        "qwen":          f"{q.get('qwen',0)}/{DAILY_LIMIT_QWEN}",
-        "trae":          f"{q.get('trae',0)}/{DAILY_LIMIT_TRAE}",
-        "deepseek":      f"{q.get('deepseek',0)}/{DAILY_LIMIT_DEEPSEEK}",
+        "date": q["date"],
+        "qwen": f"{q.get('qwen',0)}/{DAILY_LIMIT_QWEN}",
+        "trae": f"{q.get('trae',0)}/{DAILY_LIMIT_TRAE}",
+        "deepseek": f"{q.get('deepseek',0)}/{DAILY_LIMIT_DEEPSEEK}",
         "rule_fallback": q.get("rule_fallback", 0),
     }
 
@@ -139,7 +153,9 @@ def get_available_provider() -> str:
         return "deepseek"
     return "rule"
 
+
 # ── LLM 调用实现 ──────────────────────────────────────────────────────────
+
 
 def _call_qwen(prompt: str, system: str, max_tokens: int) -> str:
     """调用千问 3.8 MAX API（兼容 OpenAI 格式），内置 TLS 1.2 + SSL 重试"""
@@ -153,12 +169,12 @@ def _call_qwen(prompt: str, system: str, max_tokens: int) -> str:
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model":       QWEN_MODEL,
-                    "messages":    [
+                    "model": QWEN_MODEL,
+                    "messages": [
                         {"role": "system", "content": system},
-                        {"role": "user",   "content": prompt},
+                        {"role": "user", "content": prompt},
                     ],
-                    "max_tokens":  max_tokens,
+                    "max_tokens": max_tokens,
                     "temperature": 0.3,
                 },
                 timeout=60,
@@ -183,12 +199,12 @@ def _call_trae(prompt: str, system: str, max_tokens: int) -> str:
             "Content-Type": "application/json",
         },
         json={
-            "model":       TRAE_MODEL,
-            "messages":    [
+            "model": TRAE_MODEL,
+            "messages": [
                 {"role": "system", "content": system},
-                {"role": "user",   "content": prompt},
+                {"role": "user", "content": prompt},
             ],
-            "max_tokens":  max_tokens,
+            "max_tokens": max_tokens,
             "temperature": 0.3,
         },
         timeout=30,
@@ -208,12 +224,12 @@ def _call_deepseek(prompt: str, system: str, max_tokens: int) -> str:
             "Content-Type": "application/json",
         },
         json={
-            "model":       DEEPSEEK_MODEL,
-            "messages":    [
+            "model": DEEPSEEK_MODEL,
+            "messages": [
                 {"role": "system", "content": system},
-                {"role": "user",   "content": prompt},
+                {"role": "user", "content": prompt},
             ],
-            "max_tokens":  max_tokens,
+            "max_tokens": max_tokens,
             "temperature": 0.3,
         },
         timeout=20,
@@ -232,7 +248,9 @@ def _load_skill_content() -> str:
         pass
     return ""
 
+
 # ── 主入口：四级回退 ─────────────────────────────────────────────────────
+
 
 def agent_a_llm_decide(
     market_data: dict,
@@ -327,15 +345,12 @@ def _build_user_prompt(mkt: dict, memory: dict, acct: dict) -> str:
     try:
         import sys
         from pathlib import Path
+
         sys.path.insert(0, str(Path(__file__).parent.parent / "core" / "nodes"))
         from a1_research import _load_latest_a1_report, _load_latest_a6_report
 
         # 按24h涨跌幅绝对值排序，选Top3币种加载研报
-        sorted_coins = sorted(
-            coins.items(),
-            key=lambda x: abs(x[1].get("ch24", 0)),
-            reverse=True
-        )
+        sorted_coins = sorted(coins.items(), key=lambda x: abs(x[1].get("ch24", 0)), reverse=True)
         top3_for_report = [name for name, _ in sorted_coins[:3]]
         if "BTC" not in top3_for_report:
             top3_for_report.append("BTC")
@@ -387,9 +402,7 @@ def _build_user_prompt(mkt: dict, memory: dict, acct: dict) -> str:
     evolution_params = memory.get("evolution", {}).get("adopted_params", {})
     evolution_str = ""
     if evolution_params:
-        evolution_str = "\n".join(
-            f"  - {k}: {v}" for k, v in evolution_params.items()
-        )
+        evolution_str = "\n".join(f"  - {k}: {v}" for k, v in evolution_params.items())
 
     return f"""
 【账户状态】
@@ -500,7 +513,9 @@ def _parse_llm_output(reply: str) -> Optional[dict]:
 
     return None
 
+
 # ── 基本规则引擎（兜底）─────────────────────────────────────────────────
+
 
 def detect_market_regime(mkt: dict) -> str:
     """
@@ -539,7 +554,9 @@ def detect_market_regime(mkt: dict) -> str:
     median_spread = sorted(ema_spreads)[len(ema_spreads) // 2] if ema_spreads else 0.0
 
     rsi_vals = [coins[c].get("rsi14", 50) for c in sample]
-    neutral_rsi_ratio = (sum(1 for r in rsi_vals if 40 <= r <= 60) / len(rsi_vals)) if rsi_vals else 0.0
+    neutral_rsi_ratio = (
+        (sum(1 for r in rsi_vals if 40 <= r <= 60) / len(rsi_vals)) if rsi_vals else 0.0
+    )
 
     up_count = sum(1 for c in sample if coins[c].get("ch24", 0) > 0)
     up_ratio = up_count / len(sample) if sample else 0.5
@@ -565,7 +582,7 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     多因子：动量 + 量价 + 资金费率反向 + RSI + EMA
     支持进化系统动态调整参数
     """
-    coins   = mkt.get("coins", {})
+    coins = mkt.get("coins", {})
     opp_map = mkt.get("opp_map", {})
     reasoning = []
 
@@ -578,19 +595,19 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     take_profit_pct = float(evo_params.get("take_profit_pct", 0.08))
     stop_loss_pct = float(evo_params.get("stop_loss_pct", 0.04))
 
-    best_coin  = None
+    best_coin = None
     best_score = 0
-    best_side  = "LONG"
-    best_info  = {}
+    best_side = "LONG"
+    best_info = {}
 
     for coin, d in coins.items():
         score = 0
-        side  = "LONG"
+        side = "LONG"
 
         ch24 = d.get("ch24", 0)
-        ch4  = d.get("ch4h", 0)
-        vr   = d.get("vol_ratio", 1.0)
-        rsi  = d.get("rsi14", 50)
+        ch4 = d.get("ch4h", 0)
+        vr = d.get("vol_ratio", 1.0)
+        rsi = d.get("rsi14", 50)
         ema20 = d.get("ema20", 0)
         ema50 = d.get("ema50", 0)
         price = d.get("price", 0)
@@ -599,11 +616,14 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
         mom_ch4 = momentum_threshold * 25
 
         if ch24 > mom_ch24 and ch4 > mom_ch4:
-            score += 2; side = "LONG"
+            score += 2
+            side = "LONG"
         elif ch24 < -mom_ch24 and ch4 < -mom_ch4:
-            score += 2; side = "SHORT"
+            score += 2
+            side = "SHORT"
         elif abs(ch24) > mom_ch24 * 0.5:
-            score += 1; side = "LONG" if ch24 > 0 else "SHORT"
+            score += 1
+            side = "LONG" if ch24 > 0 else "SHORT"
 
         if vr > volume_threshold:
             score += 1
@@ -617,15 +637,19 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
             side = "SHORT" if fr > 0 else "LONG"
 
         if rsi < rsi_oversold:
-            score += 1; side = "LONG"
+            score += 1
+            side = "LONG"
         elif rsi > rsi_overbought:
-            score += 1; side = "SHORT"
+            score += 1
+            side = "SHORT"
 
         if use_ema_cross and price > 0 and ema20 > 0 and ema50 > 0:
             if ema20 > ema50:
-                score += 1; side = "LONG"
+                score += 1
+                side = "LONG"
             elif ema20 < ema50:
-                score += 1; side = "SHORT"
+                score += 1
+                side = "SHORT"
 
         loss_streak = memory.get("loss_streak", 0)
         if loss_streak >= 3:
@@ -633,9 +657,9 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
 
         if score > best_score:
             best_score = score
-            best_coin  = coin
-            best_side  = side
-            best_info  = d
+            best_coin = coin
+            best_side = side
+            best_info = d
 
     min_score = 2 if memory.get("loss_streak", 0) >= 3 else 1
 
@@ -675,27 +699,29 @@ def _rule_based_decision(mkt: dict, memory: dict, acct: dict) -> dict:
     reasoning.append(f"[规则引擎] 扫描 {len(coins)} 个标的")
     reasoning.append(f"市场状态: {regime}（基于主流币动量/EMA/RSI统计）")
     reasoning.append(f"最优标的: {best_coin} score={best_score}")
-    reasoning.append(f"方向: {best_side} | 24H={best_info.get('ch24',0):+.1f}% 4H={best_info.get('ch4h',0):+.1f}%")
+    reasoning.append(
+        f"方向: {best_side} | 24H={best_info.get('ch24',0):+.1f}% 4H={best_info.get('ch4h',0):+.1f}%"
+    )
     reasoning.append(f"量比: {best_info.get('vol_ratio',1):.2f}x")
     reasoning.append(f"仓位: {pos_usdt} USDC × {leverage}x = {pos_usdt*leverage:.0f} 名义")
     if evo_params:
         reasoning.append(f"进化参数: {evo_params}")
 
     return {
-        "action":             best_side,
-        "coin":               best_coin,
-        "confidence":         round(confidence, 3),
-        "leverage":           leverage,
+        "action": best_side,
+        "coin": best_coin,
+        "confidence": round(confidence, 3),
+        "leverage": leverage,
         "position_size_usdt": pos_usdt,
-        "entry_price":        px,
-        "stop_loss_price":    sl,
-        "take_profit_price":  tp,
-        "market_regime":      regime,
-        "current_master":     memory.get("current_master", "Jesse Livermore"),
+        "entry_price": px,
+        "stop_loss_price": sl,
+        "take_profit_price": tp,
+        "market_regime": regime,
+        "current_master": memory.get("current_master", "Jesse Livermore"),
         "master_switch_reason": "",
         "decision_rationale": f"[规则引擎] {best_coin} {best_side} score={best_score} conf={confidence:.0%}",
-        "reasoning_steps":    reasoning,
-        "new_lesson":         "",
+        "reasoning_steps": reasoning,
+        "new_lesson": "",
         "lesson_score_universal": 0,
         "lesson_score_importance": 0,
     }
@@ -712,7 +738,7 @@ if __name__ == "__main__":
     test_mkt = {
         "coins": {
             "BTC": {"price": 65000, "ch24": 3.5, "ch4h": 1.2, "vol_ratio": 1.8},
-            "ETH": {"price": 3500,  "ch24": 5.2, "ch4h": 2.1, "vol_ratio": 2.2},
+            "ETH": {"price": 3500, "ch24": 5.2, "ch4h": 2.1, "vol_ratio": 2.2},
         },
         "opp_map": {
             "BTC": {"funding": 0.0001},
@@ -731,7 +757,9 @@ if __name__ == "__main__":
 
     decision, provider = agent_a_llm_decide(test_mkt, test_mem, test_acct)
     print(f"使用 Provider: {provider}")
-    print(f"决策: {decision.get('action')} {decision.get('coin')} conf={decision.get('confidence'):.0%}")
+    print(
+        f"决策: {decision.get('action')} {decision.get('coin')} conf={decision.get('confidence'):.0%}"
+    )
     print(f"理由: {decision.get('decision_rationale')}")
     print()
     print(f"调用后配额: {get_quota_status()}")

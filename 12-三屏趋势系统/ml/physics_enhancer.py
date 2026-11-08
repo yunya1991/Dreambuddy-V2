@@ -9,9 +9,10 @@
 
 参考文档: docs/PITD_PHYSICS_APPLICATION_FRAMEWORK.md
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
 import numpy as np
@@ -27,12 +28,12 @@ class PhysicsEnhancerConfig:
 
     # Layer 2: 信号质量评估器
     enable_signal_filter: bool = True
-    wave_conf_threshold: float = 0.7        # 波浪置信度入场阈值
-    phys_conf_threshold: float = 0.5        # 物理置信度过滤阈值
+    wave_conf_threshold: float = 0.7  # 波浪置信度入场阈值
+    phys_conf_threshold: float = 0.5  # 物理置信度过滤阈值
 
     # Layer 4: 动态仓位管理
     enable_dynamic_sizing: bool = True
-    sizing_mode: str = "kinetic"            # "kinetic" | "kelly" | "fixed"
+    sizing_mode: str = "kinetic"  # "kinetic" | "kelly" | "fixed"
     base_position: float = 0.3
     position_min: float = 0.1
     position_max: float = 1.0
@@ -42,8 +43,8 @@ class PhysicsEnhancerConfig:
     enable_dynamic_takeprofit: bool = True
     base_trailing_pct: float = 0.08
     base_take_profit_pct: float = 0.25
-    trailing_mode: str = "combo"            # "combo" | "jerk" | "eta" | "fixed"
-    take_profit_mode: str = "kinetic"       # "kinetic" | "fixed"
+    trailing_mode: str = "combo"  # "combo" | "jerk" | "eta" | "fixed"
+    take_profit_mode: str = "kinetic"  # "kinetic" | "fixed"
     trail_min: float = 0.02
     trail_max: float = 0.15
     tp_min: float = 0.08
@@ -60,7 +61,7 @@ class PhysicsEnhancerConfig:
     eta_weak: float = 0.10
 
     # 凯利式仓位参数
-    kelly_fraction: float = 0.5             # 半凯利
+    kelly_fraction: float = 0.5  # 半凯利
     kelly_win_prob_base: float = 0.35
     kelly_win_prob_scale: float = 0.30
 
@@ -70,10 +71,10 @@ class PhysicsState:
     """持仓中的物理状态追踪"""
 
     entry_price: float = 0.0
-    direction: int = 0                      # 1=多, -1=空, 0=空仓
-    peak_price: float = 0.0                 # 持仓期间最高价（多头）
-    trough_price: float = 0.0               # 持仓期间最低价（空头）
-    trailing_stop_price: float = 0.0        # 当前追踪止损价
+    direction: int = 0  # 1=多, -1=空, 0=空仓
+    peak_price: float = 0.0  # 持仓期间最高价（多头）
+    trough_price: float = 0.0  # 持仓期间最低价（空头）
+    trailing_stop_price: float = 0.0  # 当前追踪止损价
     current_trail_pct: float = 0.08
     current_tp_pct: float = 0.25
     base_size: float = 0.3
@@ -126,13 +127,13 @@ class PhysicsEnhancer:
 
         # 延迟导入，避免循环依赖
         try:
-            from ..ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-            from ..ml.pitd_kinematics_engineer import KinematicsEngineer
+            from ..ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
             from ..ml.pitd_dynamics_engineer import DynamicsEngineer
+            from ..ml.pitd_kinematics_engineer import KinematicsEngineer
         except (ImportError, ValueError):
-            from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-            from ml.pitd_kinematics_engineer import KinematicsEngineer
+            from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
             from ml.pitd_dynamics_engineer import DynamicsEngineer
+            from ml.pitd_kinematics_engineer import KinematicsEngineer
 
         weights = ConfidenceWeights(
             w_eta=cfg.w_eta,
@@ -153,9 +154,7 @@ class PhysicsEnhancer:
 
         eta_series = dyn_feats["dyn_coupling_eta"].values
         ml_pred_neutral = np.full(n, 0.5)
-        phys_conf, components = scorer.score_signals(
-            prices=prices, ml_predictions=ml_pred_neutral
-        )
+        phys_conf, components = scorer.score_signals(prices=prices, ml_predictions=ml_pred_neutral)
 
         # 波动率（风险预算用）
         closes = prices["close"].values
@@ -307,7 +306,9 @@ class PhysicsEnhancer:
 
         return state.trailing_stop_price
 
-    def compute_take_profit(self, i: int, feats: Dict[str, np.ndarray], state: PhysicsState) -> float:
+    def compute_take_profit(
+        self, i: int, feats: Dict[str, np.ndarray], state: PhysicsState
+    ) -> float:
         """计算止盈目标比例"""
         cfg = self.config
 
@@ -408,7 +409,7 @@ class PhysicsEnhancer:
             (enhanced_positions, stats)
         """
         cfg = self.config
-        n = len(prices)
+        n = len(prices)  # noqa: F841
 
         if feats is None:
             feats = self.compute_features(prices)
@@ -423,7 +424,9 @@ class PhysicsEnhancer:
         # 如果有波浪信号，进行信号质量过滤
         if wave_signals is not None and wave_confs is not None and cfg.enable_signal_filter:
             wave_long = np.isin(wave_signals, ("ENTER_LONG_W3", "ENTER_LONG_W5", "HOLD_LONG_W3"))
-            wave_short = np.isin(wave_signals, ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3"))
+            wave_short = np.isin(
+                wave_signals, ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
+            )
             has_signal = wave_long | wave_short
 
             # 波浪置信度过滤
@@ -454,7 +457,12 @@ class PhysicsEnhancer:
                 # 对非零仓位进行调节（保持方向）
                 directions = np.sign(enhanced[nonzero_mask])
                 abs_pos = np.abs(enhanced[nonzero_mask])
-                adjusted = abs_pos * kinetic_factor[nonzero_mask] * conf_multiplier[nonzero_mask] / kinetic_factor[nonzero_mask]
+                adjusted = (
+                    abs_pos
+                    * kinetic_factor[nonzero_mask]
+                    * conf_multiplier[nonzero_mask]
+                    / kinetic_factor[nonzero_mask]
+                )
                 # 简化：只应用物理置信度调节
                 adjusted = abs_pos * conf_multiplier[nonzero_mask]
                 adjusted = np.clip(adjusted, cfg.position_min, cfg.position_max)

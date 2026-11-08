@@ -11,17 +11,19 @@
 - 入场过滤：物理置信度 < 阈值时，拒绝波浪入场信号
 - 仓位调节：物理置信度高时加仓，低时减仓
 """
+
+import itertools
+import json
 import os
 import sys
-import json
 import time
-import itertools
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -39,13 +41,17 @@ def load_coin_data(symbol: str) -> pd.DataFrame:
 
 def compute_v4_position(prices, symbol="BTC"):
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
-    is_btc = (symbol == "BTC")
+
+    is_btc = symbol == "BTC"
     strategy = HalvingTopExitStrategy(
-        symbol=symbol, is_btc=is_btc,
+        symbol=symbol,
+        is_btc=is_btc,
         btc_prices=prices if is_btc else None,
     )
     position_series = strategy.generate_signals(prices)
-    position_arr = position_series.values if hasattr(position_series, 'values') else np.array(position_series)
+    position_arr = (
+        position_series.values if hasattr(position_series, "values") else np.array(position_series)
+    )
     return np.abs(position_arr), np.sign(position_arr)
 
 
@@ -78,16 +84,19 @@ def generate_wave_signals_with_params(prices, zigzag_threshold=0.05):
 
 def compute_physics_features(prices):
     """预计算物理特征（只计算一次）"""
-    from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-    from ml.pitd_kinematics_engineer import KinematicsEngineer
+    from ml.pitd_confidence_scorer import ConfidenceWeights, PhysicsConfidenceScorer
     from ml.pitd_dynamics_engineer import DynamicsEngineer
+    from ml.pitd_kinematics_engineer import KinematicsEngineer
 
     n = len(prices)
 
     weights = ConfidenceWeights(
-        w_eta=0.211, w_reversal=0.368,
-        w_support=0.211, w_kinetic=0.211,
-        position_lower=0.6, position_scale=1.0,
+        w_eta=0.211,
+        w_reversal=0.368,
+        w_support=0.211,
+        w_kinetic=0.211,
+        position_lower=0.6,
+        position_scale=1.0,
     )
     scorer = PhysicsConfidenceScorer(weights)
     kin_fe = KinematicsEngineer()
@@ -109,7 +118,10 @@ def compute_physics_features(prices):
 
 
 def compute_wave_position_with_physics_filter(
-    prices, wave_signals, wave_confs, physics_feats,
+    prices,
+    wave_signals,
+    wave_confs,
+    physics_feats,
     base_position=0.3,
     wave_conf_threshold=0.5,
     phys_conf_threshold=0.0,
@@ -125,7 +137,7 @@ def compute_wave_position_with_physics_filter(
     n = len(prices)
     closes = prices["close"].values
 
-    eta_series = physics_feats["eta"]
+    eta_series = physics_feats["eta"]  # noqa: F841
     phys_conf = physics_feats["phys_conf"]
 
     position = np.zeros(n)
@@ -141,8 +153,10 @@ def compute_wave_position_with_physics_filter(
     wave_short_signals = ("ENTER_SHORT_W3", "ENTER_SHORT_W5", "HOLD_SHORT_W3")
 
     stats = {
-        "total_enter": 0, "filtered_by_wave_conf": 0,
-        "filtered_by_phys_conf": 0, "total_exit": 0,
+        "total_enter": 0,
+        "filtered_by_wave_conf": 0,
+        "filtered_by_phys_conf": 0,
+        "total_exit": 0,
     }
 
     for i in range(n):
@@ -229,8 +243,9 @@ def compute_wave_position_with_physics_filter(
     return abs_position, direction_arr, stats
 
 
-def compute_smart_fusion(v4_pos, v4_dir, wave_pos, wave_dir,
-                         add_ratio=0.3, bottom_ratio=0.2, max_position=1.0):
+def compute_smart_fusion(
+    v4_pos, v4_dir, wave_pos, wave_dir, add_ratio=0.3, bottom_ratio=0.2, max_position=1.0
+):
     """智能融合：V4定方向 + 波浪择时加仓"""
     n = len(v4_pos)
     fusion_pos = np.zeros(n)
@@ -338,8 +353,12 @@ def run_optimization(symbol="BTC"):
     t0 = time.time()
     physics_feats = compute_physics_features(prices)
     print(f"  物理特征计算完成, 耗时: {time.time()-t0:.1f}s")
-    print(f"  eta范围: [{np.nanmin(physics_feats['eta']):.4f}, {np.nanmax(physics_feats['eta']):.4f}], 均值: {np.nanmean(physics_feats['eta']):.4f}")
-    print(f"  phys_conf范围: [{np.nanmin(physics_feats['phys_conf']):.4f}, {np.nanmax(physics_feats['phys_conf']):.4f}], 均值: {np.nanmean(physics_feats['phys_conf']):.4f}")
+    print(
+        f"  eta范围: [{np.nanmin(physics_feats['eta']):.4f}, {np.nanmax(physics_feats['eta']):.4f}], 均值: {np.nanmean(physics_feats['eta']):.4f}"
+    )
+    print(
+        f"  phys_conf范围: [{np.nanmin(physics_feats['phys_conf']):.4f}, {np.nanmax(physics_feats['phys_conf']):.4f}], 均值: {np.nanmean(physics_feats['phys_conf']):.4f}"
+    )
 
     # 3. 寻优参数网格
     zigzag_thresholds = [0.03, 0.05, 0.07, 0.10]
@@ -351,7 +370,7 @@ def run_optimization(symbol="BTC"):
     fusion_bottom_ratio = 0.2
 
     # 4. 先对每个ZigZag阈值生成波浪信号
-    print(f"\n[3/4] 生成不同ZigZag阈值的波浪信号...")
+    print("\n[3/4] 生成不同ZigZag阈值的波浪信号...")
     wave_signal_cache = {}
     for zz in zigzag_thresholds:
         t0 = time.time()
@@ -363,8 +382,10 @@ def run_optimization(symbol="BTC"):
         print(f"耗时: {time.time()-t0:.1f}s, 多头信号: {long_count}天, 空头信号: {short_count}天")
 
     # 5. 网格寻优
-    print(f"\n[4/4] 参数网格寻优...")
-    print(f"  参数组合数: {len(zigzag_thresholds)} × {len(wave_conf_thresholds)} × {len(phys_conf_thresholds)} = {len(zigzag_thresholds)*len(wave_conf_thresholds)*len(phys_conf_thresholds)}")
+    print("\n[4/4] 参数网格寻优...")
+    print(
+        f"  参数组合数: {len(zigzag_thresholds)} × {len(wave_conf_thresholds)} × {len(phys_conf_thresholds)} = {len(zigzag_thresholds)*len(wave_conf_thresholds)*len(phys_conf_thresholds)}"
+    )
     print(f"  融合参数: add_ratio={fusion_add_ratio}, bottom_ratio={fusion_bottom_ratio}")
 
     results = []
@@ -372,14 +393,21 @@ def run_optimization(symbol="BTC"):
     best_params = None
 
     print(f"\n{'='*120}")
-    print(f"{'ZigZag':>7} {'波浪阈值':>8} {'物理阈值':>8} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>7} {'评分':>8}")
+    print(
+        f"{'ZigZag':>7} {'波浪阈值':>8} {'物理阈值':>8} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'均仓':>7} {'评分':>8}"
+    )
     print(f"{'-'*100}")
 
-    for zz, wc_thresh, pc_thresh in itertools.product(zigzag_thresholds, wave_conf_thresholds, phys_conf_thresholds):
+    for zz, wc_thresh, pc_thresh in itertools.product(
+        zigzag_thresholds, wave_conf_thresholds, phys_conf_thresholds
+    ):
         wave_signals, wave_confs = wave_signal_cache[zz]
 
         wave_pos, wave_dir, stats = compute_wave_position_with_physics_filter(
-            prices, wave_signals, wave_confs, physics_feats,
+            prices,
+            wave_signals,
+            wave_confs,
+            physics_feats,
             base_position=0.3,
             wave_conf_threshold=wc_thresh,
             phys_conf_threshold=pc_thresh,
@@ -387,23 +415,31 @@ def run_optimization(symbol="BTC"):
         )
 
         smart_pos, smart_dir = compute_smart_fusion(
-            v4_pos, v4_dir, wave_pos, wave_dir,
-            add_ratio=fusion_add_ratio, bottom_ratio=fusion_bottom_ratio,
+            v4_pos,
+            v4_dir,
+            wave_pos,
+            wave_dir,
+            add_ratio=fusion_add_ratio,
+            bottom_ratio=fusion_bottom_ratio,
         )
 
-        m = backtest_position(smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:])
+        m = backtest_position(
+            smart_pos[valid_start:], smart_dir[valid_start:], prices.iloc[valid_start:]
+        )
 
         # 综合评分：年化*0.3 + 夏普*0.4 + Calmar*0.3
-        score = m['ann_return'] * 0.3 + m['sharpe'] * 0.4 + m['calmar'] * 0.3
+        score = m["ann_return"] * 0.3 + m["sharpe"] * 0.4 + m["calmar"] * 0.3
 
-        results.append({
-            "zigzag": zz,
-            "wave_conf_threshold": wc_thresh,
-            "phys_conf_threshold": pc_thresh,
-            "metrics": m,
-            "stats": stats,
-            "score": score,
-        })
+        results.append(
+            {
+                "zigzag": zz,
+                "wave_conf_threshold": wc_thresh,
+                "phys_conf_threshold": pc_thresh,
+                "metrics": m,
+                "stats": stats,
+                "score": score,
+            }
+        )
 
         mark = ""
         if score > best_score:
@@ -411,33 +447,45 @@ def run_optimization(symbol="BTC"):
             best_params = (zz, wc_thresh, pc_thresh)
             mark = " ★"
 
-        print(f"{zz:>7.2f} {wc_thresh:>8.2f} {pc_thresh:>8.2f} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>7.3f} {score:>8.4f}{mark}")
+        print(
+            f"{zz:>7.2f} {wc_thresh:>8.2f} {pc_thresh:>8.2f} {m['ann_return']*100:>7.2f}% {m['total_return']*100:>9.1f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {m['avg_position']:>7.3f} {score:>8.4f}{mark}"
+        )
 
     # 排序输出Top10
     results.sort(key=lambda x: -x["score"])
     print(f"\n{'='*120}")
-    print(f"  Top 10 参数组合")
+    print("  Top 10 参数组合")
     print(f"{'='*120}")
-    print(f"{'排名':>4} {'ZigZag':>7} {'波浪阈值':>8} {'物理阈值':>8} {'年化':>8} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'评分':>8}")
+    print(
+        f"{'排名':>4} {'ZigZag':>7} {'波浪阈值':>8} {'物理阈值':>8} {'年化':>8} {'夏普':>8} {'回撤':>8} {'Calmar':>8} {'评分':>8}"
+    )
     print(f"{'-'*80}")
     for i, r in enumerate(results[:10], 1):
         m = r["metrics"]
-        print(f"{i:>4} {r['zigzag']:>7.2f} {r['wave_conf_threshold']:>8.2f} {r['phys_conf_threshold']:>8.2f} {m['ann_return']*100:>7.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {r['score']:>8.4f}")
+        print(
+            f"{i:>4} {r['zigzag']:>7.2f} {r['wave_conf_threshold']:>8.2f} {r['phys_conf_threshold']:>8.2f} {m['ann_return']*100:>7.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}% {m['calmar']:>8.4f} {r['score']:>8.4f}"
+        )
 
     # 分析物理过滤器的效果
     print(f"\n{'='*120}")
     print(f"  物理过滤器效果分析（固定 ZigZag={best_params[0]}, 波浪阈值={best_params[1]}）")
     print(f"{'='*120}")
-    print(f"{'物理阈值':>8} {'入场次数':>8} {'波浪过滤':>8} {'物理过滤':>8} {'年化':>8} {'夏普':>8} {'回撤':>8}")
+    print(
+        f"{'物理阈值':>8} {'入场次数':>8} {'波浪过滤':>8} {'物理过滤':>8} {'年化':>8} {'夏普':>8} {'回撤':>8}"
+    )
     print(f"{'-'*70}")
     for r in results:
         if r["zigzag"] == best_params[0] and r["wave_conf_threshold"] == best_params[1]:
             m = r["metrics"]
             s = r["stats"]
-            print(f"{r['phys_conf_threshold']:>8.2f} {s['total_enter']:>8} {s['filtered_by_wave_conf']:>8} {s['filtered_by_phys_conf']:>8} {m['ann_return']*100:>7.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}%")
+            print(
+                f"{r['phys_conf_threshold']:>8.2f} {s['total_enter']:>8} {s['filtered_by_wave_conf']:>8} {s['filtered_by_phys_conf']:>8} {m['ann_return']*100:>7.2f}% {m['sharpe']:>8.4f} {m['max_drawdown']*100:>7.2f}%"
+            )
 
     # 保存结果
-    print(f"\n最优参数: ZigZag={best_params[0]}, 波浪阈值={best_params[1]}, 物理阈值={best_params[2]}")
+    print(
+        f"\n最优参数: ZigZag={best_params[0]}, 波浪阈值={best_params[1]}, 物理阈值={best_params[2]}"
+    )
     print(f"最优评分: {best_score:.4f}")
 
     os.makedirs("ml/backtest_results", exist_ok=True)
@@ -453,13 +501,16 @@ def run_optimization(symbol="BTC"):
             "add_ratio": fusion_add_ratio,
             "bottom_ratio": fusion_bottom_ratio,
         },
-        "top10": [{
-            "zigzag": r["zigzag"],
-            "wave_conf_threshold": r["wave_conf_threshold"],
-            "phys_conf_threshold": r["phys_conf_threshold"],
-            "metrics": r["metrics"],
-            "score": r["score"],
-        } for r in results[:10]],
+        "top10": [
+            {
+                "zigzag": r["zigzag"],
+                "wave_conf_threshold": r["wave_conf_threshold"],
+                "phys_conf_threshold": r["phys_conf_threshold"],
+                "metrics": r["metrics"],
+                "score": r["score"],
+            }
+            for r in results[:10]
+        ],
     }
     with open(f"ml/backtest_results/wave_param_optimization_{symbol.lower()}.json", "w") as f:
         json.dump(save_data, f, indent=2, ensure_ascii=False, default=str)
@@ -470,6 +521,7 @@ def run_optimization(symbol="BTC"):
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="波浪参数寻优+物理评估器集成")
     parser.add_argument("--symbol", type=str, default="BTC")
     args = parser.parse_args()

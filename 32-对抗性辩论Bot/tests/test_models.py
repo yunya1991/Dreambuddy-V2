@@ -8,24 +8,24 @@
 - DebateQualityScore: 质量评分
 - DebateResult: 辩论完整结果
 """
+
 from __future__ import annotations
 
 from datetime import datetime
 
 import pytest
-
 from core.models import (
     Argument,
     CrossExamination,
-    Turn,
-    Verdict,
-    MarketingMaterial,
     DebateQualityScore,
     DebateResult,
+    MarketingMaterial,
+    Turn,
+    Verdict,
 )
 
-
 # ─── Argument ──────────────────────────────────────────────────────
+
 
 class TestArgument:
     """辩手结构化输出契约。"""
@@ -64,6 +64,7 @@ class TestArgument:
 
 # ─── Turn ──────────────────────────────────────────────────────────
 
+
 class TestTurn:
     """单轮发言记录。"""
 
@@ -98,6 +99,7 @@ class TestTurn:
 
 # ─── Verdict ──────────────────────────────────────────────────────
 
+
 class TestVerdict:
     """裁判裁决。"""
 
@@ -119,6 +121,7 @@ class TestVerdict:
 
 # ─── MarketingMaterial ────────────────────────────────────────────
 
+
 class TestMarketingMaterial:
     """营销素材。"""
 
@@ -137,14 +140,18 @@ class TestMarketingMaterial:
 
     def test_empty(self):
         m = MarketingMaterial(
-            quotes=[], hashtags=[], highlight_paragraph="",
-            short_copy=[], debate_title="",
+            quotes=[],
+            hashtags=[],
+            highlight_paragraph="",
+            short_copy=[],
+            debate_title="",
         )
         assert m.quotes == []
         assert m.debate_title == ""
 
 
 # ─── DebateQualityScore ──────────────────────────────────────────
+
 
 class TestDebateQualityScore:
     """质量评分。"""
@@ -183,16 +190,26 @@ class TestDebateQualityScore:
         assert s.grade == "C"
         assert len(s.suggestions) == 2
 
-    @pytest.mark.parametrize("overall,expected_grade", [
-        (8.0, "S"), (7.9, "A"), (6.0, "A"), (5.9, "B"),
-        (4.0, "B"), (3.9, "C"), (0.0, "C"), (10.0, "S"),
-    ])
+    @pytest.mark.parametrize(
+        "overall,expected_grade",
+        [
+            (8.0, "S"),
+            (7.9, "A"),
+            (6.0, "A"),
+            (5.9, "B"),
+            (4.0, "B"),
+            (3.9, "C"),
+            (0.0, "C"),
+            (10.0, "S"),
+        ],
+    )
     def test_grade_from_score(self, overall, expected_grade):
         """grade_from_score 静态方法正确分级。"""
         assert DebateQualityScore.grade_from_score(overall) == expected_grade
 
 
 # ─── DebateResult ────────────────────────────────────────────────
+
 
 class TestDebateResult:
     """辩论完整结果。"""
@@ -205,12 +222,20 @@ class TestDebateResult:
         ]
         verdict = Verdict(summary="s", winner="bull", key_insights=[], topic_angle="a")
         material = MarketingMaterial(
-            quotes=["q"], hashtags=["#t"], highlight_paragraph="h",
-            short_copy=["c"], debate_title="d",
+            quotes=["q"],
+            hashtags=["#t"],
+            highlight_paragraph="h",
+            short_copy=["c"],
+            debate_title="d",
         )
         quality = DebateQualityScore(
-            overall=7.0, grade="A", dimensions={},
-            rule_score=7.0, llm_score=7.0, highlights=[], suggestions=[],
+            overall=7.0,
+            grade="A",
+            dimensions={},
+            rule_score=7.0,
+            llm_score=7.0,
+            highlights=[],
+            suggestions=[],
         )
         result = DebateResult(
             topic="BTC 是数字黄金吗？",
@@ -232,12 +257,20 @@ class TestDebateResult:
             transcript=[],
             verdict=None,
             material=MarketingMaterial(
-                quotes=[], hashtags=[], highlight_paragraph="",
-                short_copy=[], debate_title="",
+                quotes=[],
+                hashtags=[],
+                highlight_paragraph="",
+                short_copy=[],
+                debate_title="",
             ),
             quality_score=DebateQualityScore(
-                overall=0.0, grade="C", dimensions={},
-                rule_score=0.0, llm_score=0.0, highlights=[], suggestions=[],
+                overall=0.0,
+                grade="C",
+                dimensions={},
+                rule_score=0.0,
+                llm_score=0.0,
+                highlights=[],
+                suggestions=[],
             ),
             status="stopped",
         )
@@ -251,12 +284,20 @@ class TestDebateResult:
             transcript=[Turn(speaker="bull", round=1, content="text")],
             verdict=None,
             material=MarketingMaterial(
-                quotes=[], hashtags=[], highlight_paragraph="",
-                short_copy=[], debate_title="",
+                quotes=[],
+                hashtags=[],
+                highlight_paragraph="",
+                short_copy=[],
+                debate_title="",
             ),
             quality_score=DebateQualityScore(
-                overall=5.0, grade="B", dimensions={},
-                rule_score=5.0, llm_score=5.0, highlights=[], suggestions=[],
+                overall=5.0,
+                grade="B",
+                dimensions={},
+                rule_score=5.0,
+                llm_score=5.0,
+                highlights=[],
+                suggestions=[],
             ),
             status="completed",
         )
@@ -268,6 +309,7 @@ class TestDebateResult:
 
 
 # ─── CrossExamination (v2 新增) ────────────────────────────────────
+
 
 class TestCrossExamination:
     """交叉质询记录（SPEC v2.0-rc3 第 4.2 节）。"""
@@ -290,7 +332,8 @@ class TestCrossExamination:
     def test_questions_answers_correspond(self):
         """questions 和 answers 应一一对应。"""
         ce = CrossExamination(
-            questioner="bull", respondent="bear",
+            questioner="bull",
+            respondent="bear",
             questions=["Q1", "Q2", "Q3"],
             answers=["A1", "A2", "A3"],
             raw="",
@@ -300,8 +343,11 @@ class TestCrossExamination:
     def test_turn_holds_cross_exam(self):
         """Turn.content 可以是 CrossExamination。"""
         ce = CrossExamination(
-            questioner="bear", respondent="bull",
-            questions=["Q1"], answers=["A1"], raw="",
+            questioner="bear",
+            respondent="bull",
+            questions=["Q1"],
+            answers=["A1"],
+            raw="",
         )
         turn = Turn(speaker="bear", round=2, content=ce)
         assert turn.speaker == "bear"
@@ -315,8 +361,11 @@ class TestCrossExamination:
         assert isinstance(t1.content, Argument)
         # CrossExamination
         ce = CrossExamination(
-            questioner="bull", respondent="bear",
-            questions=["Q"], answers=["A"], raw="",
+            questioner="bull",
+            respondent="bear",
+            questions=["Q"],
+            answers=["A"],
+            raw="",
         )
         t2 = Turn(speaker="bull", round=2, content=ce)
         assert isinstance(t2.content, CrossExamination)

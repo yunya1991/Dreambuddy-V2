@@ -48,24 +48,21 @@ v2.1 修复（2026-08-01）:
 
 from __future__ import annotations
 
-import os
-import sys
-import json
-import math
-import time
-import logging
 import argparse
-from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
+import json
+import logging
+import math
+import os
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 # 回测参数（WINDOW/STEP/HOLD/FEE 与 DreamOSBacktester 对齐；CONFIDENCE_THRESHOLD 不同，见下注释）
-WINDOW_SIZE = 48       # 场景分类窗口（48 根 1h K线）
-STEP = 4               # 滑动步长
-HOLD_PERIODS = 20      # 最大持仓 K 线数
-FEE_RATE = 0.0008      # 手续费率（单边）
+WINDOW_SIZE = 48  # 场景分类窗口（48 根 1h K线）
+STEP = 4  # 滑动步长
+HOLD_PERIODS = 20  # 最大持仓 K 线数
+FEE_RATE = 0.0008  # 手续费率（单边）
 CONFIDENCE_THRESHOLD = 0.55  # 开仓置信度阈值（上调 0.40 → 0.55）
 # 调参依据（BTC+ETH 1h 2160K 回测 v2.5）：
 #   0.40 → N=801, WR=40.9%, AvgPnL=-0.044%, PnL和=-35.2%
@@ -77,7 +74,7 @@ CONFIDENCE_THRESHOLD = 0.55  # 开仓置信度阈值（上调 0.40 → 0.55）
 #   - 本回测器用 0.55：confidence 来自简化 EMA 交叉公式，0.55 是回测调优值（0.40 收益为负）
 #   - EntryModuleBacktester 用 0.62：与实盘对称门槛对齐
 #   三者 confidence 计算方式不同，阈值本应不同，不可强行统一
-PERIODS_PER_YEAR = 8760      # 1h K线年化
+PERIODS_PER_YEAR = 8760  # 1h K线年化
 DEFAULT_BACKTEST_LEVERAGE = 5.0  # 回测默认杠杆（与实盘 auto_trader DEFAULT_LEVERAGE 接近）
 
 
@@ -95,7 +92,9 @@ class ExitModuleBacktester:
                 if (project_root / "10-经典指标系统").is_dir():
                     break
                 project_root = project_root.parent
-            data_dir = str(project_root / "10-经典指标系统" / "user_data" / "data" / "aggregated" / "futures")
+            data_dir = str(
+                project_root / "10-经典指标系统" / "user_data" / "data" / "aggregated" / "futures"
+            )
         self.data_dir = data_dir
 
         # 延迟加载
@@ -110,24 +109,30 @@ class ExitModuleBacktester:
     def _get_classifier(self):
         if self._classifier is None:
             from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
             self._classifier = ScenarioClassifier()
         return self._classifier
 
     def _get_adapters(self) -> Dict[str, Any]:
         if not self._adapters:
-            from dreamos.capabilities.trading.exit_strategy.exit_module_adapter import get_all_adapters
+            from dreamos.capabilities.trading.exit_strategy.exit_module_adapter import (
+                get_all_adapters,
+            )
+
             all_adapters = get_all_adapters()
             # 只保留可用模块
             self._adapters = {
-                name: adapter for name, adapter in all_adapters.items()
-                if adapter.is_available
+                name: adapter for name, adapter in all_adapters.items() if adapter.is_available
             }
             logger.info(f"可用离场模块: {list(self._adapters.keys())}")
         return self._adapters
 
     def _get_performance_memory(self):
         if self._performance_memory is None:
-            from dreamos.capabilities.trading.exit_strategy.exit_module_selector import ExitPerformanceMemory
+            from dreamos.capabilities.trading.exit_strategy.exit_module_selector import (
+                ExitPerformanceMemory,
+            )
+
             self._performance_memory = ExitPerformanceMemory()
         return self._performance_memory
 
@@ -167,14 +172,18 @@ class ExitModuleBacktester:
             ema = v * k + ema * (1 - k)
         return ema
 
-    def _atr_pct(self, highs: List[float], lows: List[float], closes: List[float], period: int) -> float:
+    def _atr_pct(
+        self, highs: List[float], lows: List[float], closes: List[float], period: int
+    ) -> float:
         if len(closes) < period + 1:
             period = len(closes) - 1
         if period <= 0:
             return 0.02
         trs = []
         for i in range(-period, 0):
-            tr = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
+            tr = max(
+                highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1])
+            )
             trs.append(tr)
         atr = sum(trs) / len(trs)
         price = closes[-1]
@@ -208,7 +217,9 @@ class ExitModuleBacktester:
         # ema20/ema50/ema200（非 ema_short/ema_long）、rsi14（非 rsi）、change_1h/4h/24h
         ema20 = self._ema(closes[-20:], 20)
         ema50 = self._ema(closes[-50:], 50) if len(closes) >= 50 else self._ema(closes, len(closes))
-        ema200 = self._ema(closes[-200:], 200) if len(closes) >= 200 else self._ema(closes, len(closes))
+        ema200 = (
+            self._ema(closes[-200:], 200) if len(closes) >= 200 else self._ema(closes, len(closes))
+        )
         change_1h = self._pct_change(closes, 1)
         change_4h = self._pct_change(closes, 4)
         change_24h = self._pct_change(closes, min(24, len(closes) - 1))
@@ -321,7 +332,7 @@ class ExitModuleBacktester:
         """
         # Bug2 修复: 回测默认杠杆 5x，与实盘一致，确保 pnl_eff 正确影响 P0/P1/P2 阈值
         leverage = DEFAULT_BACKTEST_LEVERAGE
-        entry_ts = window[-1][0]
+        entry_ts = window[-1][0]  # noqa: F841
         bars_held = 0
         exit_reason = "time_limit"
         exit_price = future_klines[-1][4]  # 默认持有到期末
@@ -330,10 +341,10 @@ class ExitModuleBacktester:
 
         # Bug1 修复: Yijing 系统的 1h 缓存门禁用墙钟 time.time()，回测时必须在每笔交易前清缓存
         # 否则所有 bar 在几秒内跑完 → 缓存命中 → 全部返回 HOLD → 0% 触发率
-        if hasattr(adapter, '_load_system'):
+        if hasattr(adapter, "_load_system"):
             try:
                 system = adapter._load_system()
-                if system is not None and hasattr(system, 'clear_cache'):
+                if system is not None and hasattr(system, "clear_cache"):
                     system.clear_cache()
             except Exception:
                 pass
@@ -356,10 +367,10 @@ class ExitModuleBacktester:
             change_24h = (closes_window[-1] - closes_window[0]) / closes_window[0]
         else:
             change_24h = 0.0
-        rsi14 = self._rsi(closes_window, 14)
+        rsi14 = self._rsi(closes_window, 14)  # noqa: F841
 
         yj_system = None
-        if hasattr(adapter, '_load_system'):
+        if hasattr(adapter, "_load_system"):
             try:
                 yj_system = adapter._load_system()
             except Exception:
@@ -371,7 +382,7 @@ class ExitModuleBacktester:
         for i, k in enumerate(future_klines):
             # Bug1 修复增强: 每个 bar 前清 coin 级缓存，避免墙钟 time.time() < eval_interval 导致 yijing 后续 bar 全部命中缓存
             # 只影响回测；实盘 auto_trader 用真实墙钟时间，缓存是有意义的
-            if yj_system is not None and hasattr(yj_system, 'clear_cache'):
+            if yj_system is not None and hasattr(yj_system, "clear_cache"):
                 try:
                     yj_system.clear_cache(coin=yj_coin, pos_side=yj_side)
                 except Exception:
@@ -408,7 +419,7 @@ class ExitModuleBacktester:
                     max_dd_pct = max(max_dd_pct, dd)
 
             # 动态更新 change_24h：用窗口+未来拼接的 closes
-            full_closes = closes_window + [fk[4] for fk in future_klines[:i+1]]
+            full_closes = closes_window + [fk[4] for fk in future_klines[: i + 1]]
             if len(full_closes) >= 25:
                 dyn_change_24h = (full_closes[-1] - full_closes[-25]) / full_closes[-25]
             elif len(full_closes) >= 2:
@@ -429,7 +440,7 @@ class ExitModuleBacktester:
                         "atr_pct": atr_pct,
                         "change_24h": dyn_change_24h,
                         "rsi14": dyn_rsi14,
-                        "candles_1h": future_klines[:i+1],
+                        "candles_1h": future_klines[: i + 1],
                     },
                     position_age_sec=position_age_sec,
                     unrealized_pnl_pct=unrealized_pnl_pct,
@@ -489,9 +500,14 @@ class ExitModuleBacktester:
         n = len(trades)
         if n == 0:
             return {
-                "sharpe": 0, "total_return": 0, "max_drawdown": 0,
-                "win_rate": 0, "total_trades": 0, "avg_pnl": 0,
-                "exit_reasons": exit_reasons, "score": 0,
+                "sharpe": 0,
+                "total_return": 0,
+                "max_drawdown": 0,
+                "win_rate": 0,
+                "total_trades": 0,
+                "avg_pnl": 0,
+                "exit_reasons": exit_reasons,
+                "score": 0,
             }
 
         total_return = sum(trades)
@@ -499,7 +515,11 @@ class ExitModuleBacktester:
         std_return = math.sqrt(sum((t - avg_return) ** 2 for t in trades) / n) if n > 1 else 0.001
 
         # 夏普年化
-        sharpe = (avg_return / std_return * math.sqrt(PERIODS_PER_YEAR / HOLD_PERIODS)) if std_return > 0 else 0
+        sharpe = (
+            (avg_return / std_return * math.sqrt(PERIODS_PER_YEAR / HOLD_PERIODS))
+            if std_return > 0
+            else 0
+        )
 
         # 最大回撤
         cumulative = 0.0
@@ -564,8 +584,10 @@ class ExitModuleBacktester:
             logger.error("没有可用的离场模块")
             return {}
 
-        logger.info(f"=== 离场模块回测开始 ===")
-        logger.info(f"币种: {symbols} | 周期: {interval} | 窗口: {window_size} | 步长: {step} | 持仓: {hold_periods}")
+        logger.info("=== 离场模块回测开始 ===")
+        logger.info(
+            f"币种: {symbols} | 周期: {interval} | 窗口: {window_size} | 步长: {step} | 持仓: {hold_periods}"
+        )
         logger.info(f"对比模块: {list(adapters.keys())}")
 
         # 结果收集: {scenario_id: {module_name: [trades, exit_reasons]}}
@@ -581,8 +603,8 @@ class ExitModuleBacktester:
 
             trade_count = 0
             for start in range(0, len(klines) - window_size - hold_periods, step):
-                window = klines[start:start + window_size]
-                future = klines[start + window_size:start + window_size + hold_periods]
+                window = klines[start : start + window_size]
+                future = klines[start + window_size : start + window_size + hold_periods]
 
                 if len(future) < hold_periods:
                     continue
@@ -627,9 +649,20 @@ class ExitModuleBacktester:
                         r_low = sim["reason"].lower()
                         if "reduce" in r_low or "减仓" in r_low:
                             reason_key = "reduce"
-                        elif "stop_loss" in r_low or "sl_" in r_low or "止损" in r_low or "force_close" in r_low:
+                        elif (
+                            "stop_loss" in r_low
+                            or "sl_" in r_low
+                            or "止损" in r_low
+                            or "force_close" in r_low
+                        ):
                             reason_key = "close_stoploss"
-                        elif "take_profit" in r_low or "tp_" in r_low or "止盈" in r_low or "raise_tp" in r_low or "lower_tp" in r_low:
+                        elif (
+                            "take_profit" in r_low
+                            or "tp_" in r_low
+                            or "止盈" in r_low
+                            or "raise_tp" in r_low
+                            or "lower_tp" in r_low
+                        ):
                             reason_key = "close_takeprofit"
                         elif "trailing" in r_low or "跟踪止损" in r_low:
                             reason_key = "close_trailing"
@@ -637,12 +670,15 @@ class ExitModuleBacktester:
                             reason_key = "close"
                     else:
                         reason_key = "time_limit"
-                    results[scenario_id][mod_name]["exit_reasons"][reason_key] = \
+                    results[scenario_id][mod_name]["exit_reasons"][reason_key] = (
                         results[scenario_id][mod_name]["exit_reasons"].get(reason_key, 0) + 1
+                    )
 
                 trade_count += 1
 
-            logger.info(f"  {symbol}: {trade_count} 笔交易 | {len(set(s for s in [self._classify_scenario(klines[i:i+window_size]) for i in range(0, len(klines)-window_size, step)]))} 个场景")
+            logger.info(
+                f"  {symbol}: {trade_count} 笔交易 | {len(set(s for s in [self._classify_scenario(klines[i:i+window_size]) for i in range(0, len(klines)-window_size, step)]))} 个场景"  # noqa: C401
+            )
 
         # 计算指标并写入 ExitPerformanceMemory
         memory = self._get_performance_memory()
@@ -660,7 +696,7 @@ class ExitModuleBacktester:
                     metrics=metrics,
                 )
 
-        logger.info(f"\n=== 回测完成 ===")
+        logger.info("\n=== 回测完成 ===")
         logger.info(f"覆盖场景: {len(summary)}")
         for sid, mods in sorted(summary.items()):
             best_mod = max(mods.keys(), key=lambda m: mods[m]["score"])
@@ -700,15 +736,19 @@ def main():
 
     # 输出摘要
     print(f"\n{'='*70}")
-    print(f"离场模块回测摘要")
+    print("离场模块回测摘要")
     print(f"{'='*70}")
-    print(f"{'场景':30s} | {'模块':8s} | {'Score':>6s} | {'Sharpe':>7s} | {'Return':>8s} | {'MaxDD':>7s} | {'WinRate':>7s} | {'Trades':>6s}")
+    print(
+        f"{'场景':30s} | {'模块':8s} | {'Score':>6s} | {'Sharpe':>7s} | {'Return':>8s} | {'MaxDD':>7s} | {'WinRate':>7s} | {'Trades':>6s}"
+    )
     print(f"{'-'*70}")
 
     for sid in sorted(results.keys()):
         for mod_name in sorted(results[sid].keys()):
             m = results[sid][mod_name]
-            print(f"{sid:30s} | {mod_name:8s} | {m['score']:6.4f} | {m['sharpe']:7.2f} | {m['total_return']:8.4f} | {m['max_drawdown']:7.4f} | {m['win_rate']:7.1%} | {m['total_trades']:6d}")
+            print(
+                f"{sid:30s} | {mod_name:8s} | {m['score']:6.4f} | {m['sharpe']:7.2f} | {m['total_return']:8.4f} | {m['max_drawdown']:7.4f} | {m['win_rate']:7.1%} | {m['total_trades']:6d}"
+            )
         print()
 
     # 验证 selector 选中正确
@@ -716,12 +756,15 @@ def main():
     print("Selector 选优验证")
     print(f"{'='*70}")
     from dreamos.capabilities.trading.exit_strategy.exit_module_selector import ExitModuleSelector
+
     selector = ExitModuleSelector()
     for sid in sorted(results.keys()):
         choice = selector.select(sid)
         best_mod = max(results[sid].keys(), key=lambda m: results[sid][m]["score"])
         match = "✓" if choice.module_name == best_mod else "✗"
-        print(f"  {sid:30s} → selector={choice.module_name:8s} (L{choice.fallback_level}) | expected={best_mod:8s} | {match}")
+        print(
+            f"  {sid:30s} → selector={choice.module_name:8s} (L{choice.fallback_level}) | expected={best_mod:8s} | {match}"
+        )
 
 
 if __name__ == "__main__":

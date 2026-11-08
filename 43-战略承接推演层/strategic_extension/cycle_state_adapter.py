@@ -57,7 +57,7 @@ _SECTOR_REGIME_MAP = {
 
 # 洗盘判定 → 地维后置层 5 态映射（unknown 不注入，保持原 fallback）
 _WASHOUT_REGIME_MAP = {
-    "washout": "ranging",      # 洗盘持有：震荡整固，中性
+    "washout": "ranging",  # 洗盘持有：震荡整固，中性
     "weakness": "trend_down",  # 真弱势：下降趋势
 }
 
@@ -102,6 +102,7 @@ def _is_fresh(payload: Dict[str, Any]) -> bool:
     """检查 generated_at 时效，超过 _MAX_AGE_SECONDS 视为过期。"""
     try:
         from datetime import datetime, timezone
+
         gen = payload.get("generated_at")
         if not gen:
             return False
@@ -190,8 +191,11 @@ def build_bridge_inputs(
             cftc = smart.get("cftc_btc") or {}
             noncomm_net = cftc.get("noncomm_net")
             open_interest = cftc.get("open_interest")
-            if (isinstance(noncomm_net, (int, float))
-                    and isinstance(open_interest, (int, float)) and open_interest > 0):
+            if (
+                isinstance(noncomm_net, (int, float))
+                and isinstance(open_interest, (int, float))
+                and open_interest > 0
+            ):
                 # 净多占比 → [0,1] 情绪分：0 占比=0.5 中性，±25% 占比打满
                 ratio = float(noncomm_net) / float(open_interest)
                 out["policy_sentiment_score"] = round(max(0.0, min(1.0, 0.5 + ratio * 2.0)), 4)

@@ -1,6 +1,6 @@
 """TDD-GENE-GOV: 基因创新版本控制+审核门禁测试."""
+
 import json
-import os
 import tempfile
 from pathlib import Path
 
@@ -8,6 +8,7 @@ from pathlib import Path
 def test_gene_version_snapshot():
     """GeneVersionManager 应能快照当前基因库."""
     from dreambuddy_evolution.adapters.gene_version_manager import GeneVersionManager
+
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         # 创建模拟基因库
@@ -28,6 +29,7 @@ def test_gene_version_snapshot():
 def test_gene_version_rollback():
     """GeneVersionManager 应能回滚到指定版本."""
     from dreambuddy_evolution.adapters.gene_version_manager import GeneVersionManager
+
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         cond_dir = root / "strategy_genes" / "conditions"
@@ -50,6 +52,7 @@ def test_gene_version_rollback():
 def test_gene_audit_schema_validation():
     """GeneAuditGate 应校验基因 schema."""
     from dreambuddy_evolution.adapters.gene_audit_gate import GeneAuditGate
+
     gate = GeneAuditGate()
 
     valid_gene = {
@@ -73,6 +76,7 @@ def test_gene_audit_schema_validation():
 def test_gene_audit_relative_improvement():
     """GeneAuditGate 应校验相对提升."""
     from dreambuddy_evolution.adapters.gene_audit_gate import GeneAuditGate
+
     gate = GeneAuditGate()
 
     # ESS > 均值×1.1 → 通过
@@ -84,10 +88,14 @@ def test_gene_audit_relative_improvement():
 
 def test_gene_innovation_with_audit():
     """GeneInnovationEngine 写入前应通过审核门禁+快照."""
-    from dreambuddy_evolution.adapters.ftc_gene_innovation import GeneInnovationEngine, GeneCandidate
+    from dreambuddy_evolution.adapters.ftc_gene_innovation import (
+        GeneCandidate,
+        GeneInnovationEngine,
+    )
+
     with tempfile.TemporaryDirectory() as tmp:
         engine = GeneInnovationEngine(gene_root=tmp)
-        cand = GeneCandidate(
+        cand = GeneCandidate(  # noqa: F841
             gene_id="CD-AUDIT-TEST",
             gene_type="condition",
             category="momentum",
@@ -109,4 +117,5 @@ def test_gene_innovation_with_audit():
 def test_agi_config_gene_innovation_switch():
     """agi_config 应有 enable_gene_innovation 开关."""
     from dreambuddy_evolution.agi_config import AGI_SWITCHES
+
     assert "enable_gene_innovation" in AGI_SWITCHES

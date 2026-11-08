@@ -10,6 +10,7 @@ W2-W5 阶段逐步补充：8 维特征融合器 → 4 加密独有维度 → Was
 
 FAIL-OPEN 铁律: 任何异常 → WashoutVerdict.unknown() + 6 层堆栈日志，绝不阻塞交易。
 """
+
 from __future__ import annotations
 
 import logging
@@ -50,9 +51,10 @@ WASHOUT_CONFIG: Dict = {
 # ============================================================
 class WashoutLabel(Enum):
     """洗盘判定结果标签。"""
-    WASHOUT = "washout"    # 洗盘 → 持有
+
+    WASHOUT = "washout"  # 洗盘 → 持有
     WEAKNESS = "weakness"  # 真弱势 → 加速离场
-    UNKNOWN = "unknown"   # 不确定 → 维持现状
+    UNKNOWN = "unknown"  # 不确定 → 维持现状
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,7 @@ class WashoutVerdict:
         reason: 触发原因摘要
         timestamp: ISO 8601 UTC 时间戳
     """
+
     label: WashoutLabel
     confidence: float
     trigger_activated: bool
@@ -207,9 +210,7 @@ class WashoutDetector:
                     try:
                         features = self.feature_extractor.extract_all(df, macro_data) or {}
                     except Exception as fe:
-                        self._logger.warning(
-                            "washout_detector feature_extractor FAIL-OPEN: %s", fe
-                        )
+                        self._logger.warning("washout_detector feature_extractor FAIL-OPEN: %s", fe)
                         features = {}
                 # 调用 classifier.predict()
                 verdict = self.classifier.predict(features)

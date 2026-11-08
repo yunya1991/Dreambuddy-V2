@@ -1,0 +1,22 @@
+{
+  "released_at": "2026-11-07T22:30:01.836701+00:00",
+  "n_events": 404,
+  "cascade": {
+    "n_events": 404,
+    "n_consumed": 808,
+    "total_actions": 0,
+    "sigma": 2.0,
+    "cascade_sizes": {
+      "mean": 2.0,
+      "max": 2,
+      "min": 2,
+      "n_zero": 0
+    },
+    "powerlaw_slope": null,
+    "near_sigma_1": false,
+    "sigma_critical_band": [
+      0.8,
+      1.25
+    ]
+  }
+}

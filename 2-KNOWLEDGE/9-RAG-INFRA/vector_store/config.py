@@ -9,9 +9,9 @@ from pathlib import Path
 
 # === 路径解析（基于 config.py 所在位置） ===
 # config.py 位于 2-KNOWLEDGE/9-RAG-INFRA/vector_store/config.py
-_THIS_DIR = Path(__file__).resolve().parent          # .../9-RAG-INFRA/vector_store
-_RAG_INFRA_DIR = _THIS_DIR.parent                    # .../9-RAG-INFRA
-_KNOWLEDGE_DIR = _RAG_INFRA_DIR.parent               # .../2-KNOWLEDGE
+_THIS_DIR = Path(__file__).resolve().parent  # .../9-RAG-INFRA/vector_store
+_RAG_INFRA_DIR = _THIS_DIR.parent  # .../9-RAG-INFRA
+_KNOWLEDGE_DIR = _RAG_INFRA_DIR.parent  # .../2-KNOWLEDGE
 
 # === 嵌入模型 ===
 EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"

@@ -7,9 +7,13 @@ SPEC v1.2-rc1 §2.2: Verdict 之后异步执行 Layer1→2→3
 - HC10 异步执行: 不阻塞主流程
 - HC11 延迟预算: Layer1-3 总延迟 <10s
 """
+
 from __future__ import annotations
-import json, os, sys, unittest
-from unittest.mock import MagicMock, patch
+
+import json
+import os
+import sys
+import unittest
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
@@ -18,48 +22,81 @@ if SERVER_DIR not in sys.path:
 
 def _make_transcript():
     return [
-        {"speaker": "bull", "round": 1, "content": {
-            "thesis": "BTC 稀缺性决定长期价值",
-            "arguments": ["2100万枚上限", "减半周期"],
-            "quote": "数字黄金",
-            "confidence": 0.85,
-        }, "persona": "乐观分析师"},
-        {"speaker": "bear", "round": 1, "content": {
-            "thesis": "BTC 波动性远超黄金",
-            "arguments": ["单日波动可达20%"],
-            "quote": "不是黄金",
-            "confidence": 0.72,
-        }, "persona": "谨慎风控师"},
+        {
+            "speaker": "bull",
+            "round": 1,
+            "content": {
+                "thesis": "BTC 稀缺性决定长期价值",
+                "arguments": ["2100万枚上限", "减半周期"],
+                "quote": "数字黄金",
+                "confidence": 0.85,
+            },
+            "persona": "乐观分析师",
+        },
+        {
+            "speaker": "bear",
+            "round": 1,
+            "content": {
+                "thesis": "BTC 波动性远超黄金",
+                "arguments": ["单日波动可达20%"],
+                "quote": "不是黄金",
+                "confidence": 0.72,
+            },
+            "persona": "谨慎风控师",
+        },
     ]
 
 
 def _make_verdict():
-    return {"summary": "正方领先", "winner": "bull",
-            "key_insights": [], "topic_angle": ""}
+    return {"summary": "正方领先", "winner": "bull", "key_insights": [], "topic_angle": ""}
 
 
 def _make_llm():
     """mock LLM for adjudication + reflection + strategy extraction."""
-    adj_json = json.dumps({
-        "bull": {d: 4 for d in ["clarity", "arrangement", "topic_relevance",
-                                 "emotional_appeal", "fact_authenticity", "logical_validity"]},
-        "bear": {d: 3 for d in ["clarity", "arrangement", "topic_relevance",
-                                 "emotional_appeal", "fact_authenticity", "logical_validity"]},
-        "rfd": "正方领先",
-        "key_clash_points": ["稀缺性vs波动性"],
-    })
-    strat_json = json.dumps({
-        "bull_strategies": ["evidence-heavy"],
-        "bear_strategies": ["counter-example"],
-        "confidence": 0.8,
-    })
-    refl_json = json.dumps({
-        "review": {"turn_points": [], "key_pivot": "第1轮", "rfd_summary": "正方领先"},
-        "strategy_analysis": {"evidence-heavy": {"used_by": "bull", "effect": 4}},
-        "gaps": {"evidence_gaps": [], "dropped_args": [], "unused_tactics": []},
-        "recommendations": ["增加数据"],
-        "persona_suggestions": {"bull": "加强", "bear": "强化"},
-    })
+    adj_json = json.dumps(
+        {
+            "bull": dict.fromkeys(
+                [
+                    "clarity",
+                    "arrangement",
+                    "topic_relevance",
+                    "emotional_appeal",
+                    "fact_authenticity",
+                    "logical_validity",
+                ],
+                4,
+            ),
+            "bear": dict.fromkeys(
+                [
+                    "clarity",
+                    "arrangement",
+                    "topic_relevance",
+                    "emotional_appeal",
+                    "fact_authenticity",
+                    "logical_validity",
+                ],
+                3,
+            ),
+            "rfd": "正方领先",
+            "key_clash_points": ["稀缺性vs波动性"],
+        }
+    )
+    strat_json = json.dumps(
+        {
+            "bull_strategies": ["evidence-heavy"],
+            "bear_strategies": ["counter-example"],
+            "confidence": 0.8,
+        }
+    )
+    refl_json = json.dumps(
+        {
+            "review": {"turn_points": [], "key_pivot": "第1轮", "rfd_summary": "正方领先"},
+            "strategy_analysis": {"evidence-heavy": {"used_by": "bull", "effect": 4}},
+            "gaps": {"evidence_gaps": [], "dropped_args": [], "unused_tactics": []},
+            "recommendations": ["增加数据"],
+            "persona_suggestions": {"bull": "加强", "bear": "强化"},
+        }
+    )
 
     def llm_fn(prompt, max_tokens=600):
         if "分析以下辩论论点" in prompt:
@@ -67,6 +104,7 @@ def _make_llm():
         if "独立裁判" in prompt:
             return adj_json
         return refl_json
+
     return llm_fn
 
 
@@ -81,6 +119,7 @@ class TestPipelineExecution(unittest.TestCase):
     def test_pipeline_returns_result(self):
         """管道返回包含三层结果的 dict。"""
         from c_drive_agent import run_post_debate_pipeline
+
         result = run_post_debate_pipeline(
             topic="BTC是数字黄金",
             transcript=_make_transcript(),
@@ -95,6 +134,7 @@ class TestPipelineExecution(unittest.TestCase):
     def test_pipeline_layer1_adjudication(self):
         """Layer 1 产出 AdjudicationResult。"""
         from c_drive_agent import run_post_debate_pipeline
+
         result = run_post_debate_pipeline(
             topic="BTC是数字黄金",
             transcript=_make_transcript(),
@@ -108,6 +148,7 @@ class TestPipelineExecution(unittest.TestCase):
     def test_pipeline_layer2_reflection(self):
         """Layer 2 产出 ReflectionReport。"""
         from c_drive_agent import run_post_debate_pipeline
+
         result = run_post_debate_pipeline(
             topic="BTC是数字黄金",
             transcript=_make_transcript(),
@@ -121,6 +162,7 @@ class TestPipelineExecution(unittest.TestCase):
     def test_pipeline_layer3_training(self):
         """Layer 3 更新训练参数。"""
         from c_drive_agent import run_post_debate_pipeline
+
         result = run_post_debate_pipeline(
             topic="BTC是数字黄金",
             transcript=_make_transcript(),
@@ -141,6 +183,7 @@ class TestFailOpen(unittest.TestCase):
     def test_no_llm_returns_degraded(self):
         """无 LLM 时返回降级结果。"""
         from c_drive_agent import run_post_debate_pipeline
+
         result = run_post_debate_pipeline(
             topic="BTC是数字黄金",
             transcript=_make_transcript(),
@@ -175,6 +218,7 @@ class TestPersonasPassed(unittest.TestCase):
     def test_personas_from_transcript(self):
         """无显式传入时从 transcript 提取 persona。"""
         from c_drive_agent import run_post_debate_pipeline
+
         result = run_post_debate_pipeline(
             topic="BTC是数字黄金",
             transcript=_make_transcript(),  # transcript 含 persona

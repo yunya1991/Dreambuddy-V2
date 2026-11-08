@@ -18,7 +18,7 @@ from technical import qtpylib
 
 class _4hTrendStrategy003(IStrategy):
     INTERFACE_VERSION = 3
-    #4h趋势+马丁格尔
+    # 4h趋势+马丁格尔
     timeframe = "1h"
     can_short: bool = False
     process_only_new_candles = True
@@ -29,12 +29,7 @@ class _4hTrendStrategy003(IStrategy):
     position_adjustment_enable = True
     max_entry_position_adjustment = 8
 
-    minimal_roi = {
-        "0": 0.209,
-        "153": 0.146,
-        "291": 0.076,
-        "1048": 0.00
-    }
+    minimal_roi = {"0": 0.209, "153": 0.146, "291": 0.076, "1048": 0.00}
 
     stoploss = -0.99
     trailing_stop = False
@@ -43,7 +38,7 @@ class _4hTrendStrategy003(IStrategy):
         "entry": "limit",
         "exit": "limit",
         "stoploss": "market",
-        "stoploss_on_exchange": False
+        "stoploss_on_exchange": False,
     }
     order_time_in_force = {"entry": "GTC", "exit": "GTC"}
 
@@ -188,8 +183,16 @@ class _4hTrendStrategy003(IStrategy):
         final_ub[0] = ub[0]
         final_lb[0] = lb[0]
         for i in range(1, len(df)):
-            final_ub[i] = ub[i] if (ub[i] < final_ub[i - 1] or close[i - 1] > final_ub[i - 1]) else final_ub[i - 1]
-            final_lb[i] = lb[i] if (lb[i] > final_lb[i - 1] or close[i - 1] < final_lb[i - 1]) else final_lb[i - 1]
+            final_ub[i] = (
+                ub[i]
+                if (ub[i] < final_ub[i - 1] or close[i - 1] > final_ub[i - 1])
+                else final_ub[i - 1]
+            )
+            final_lb[i] = (
+                lb[i]
+                if (lb[i] > final_lb[i - 1] or close[i - 1] < final_lb[i - 1])
+                else final_lb[i - 1]
+            )
             if trend[i - 1] == 1:
                 trend[i] = -1 if close[i] <= final_lb[i] else 1
             else:
@@ -202,7 +205,9 @@ class _4hTrendStrategy003(IStrategy):
 
         vwap_window = 50
         tp = (df["high"] + df["low"] + df["close"]) / 3
-        df["vwap"] = (tp * df["volume"]).rolling(window=vwap_window).sum() / df["volume"].rolling(window=vwap_window).sum()
+        df["vwap"] = (tp * df["volume"]).rolling(window=vwap_window).sum() / df["volume"].rolling(
+            window=vwap_window
+        ).sum()
 
         df["rsi"] = ta.RSI(df, timeperiod=14)
         macd = ta.MACD(df)
@@ -254,7 +259,9 @@ class _4hTrendStrategy003(IStrategy):
             return dataframe
 
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
-        dataframe["atr_pct"] = (dataframe["atr"] / dataframe["close"]).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        dataframe["atr_pct"] = (
+            (dataframe["atr"] / dataframe["close"]).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        )
 
         runmode = getattr(self.dp, "runmode", None) or self.config.get("runmode", RunMode.LIVE)
 
@@ -283,9 +290,15 @@ class _4hTrendStrategy003(IStrategy):
             except Exception:
                 btc_weekly = None
 
-            weekly_df = self._compute_1w_market_filter(btc_weekly) if btc_weekly is not None else DataFrame()
+            weekly_df = (
+                self._compute_1w_market_filter(btc_weekly)
+                if btc_weekly is not None
+                else DataFrame()
+            )
             if weekly_df is not None and not weekly_df.empty:
-                dataframe = merge_informative_pair(dataframe, weekly_df[["date", "weekly_ok"]], self.timeframe, "1w", ffill=True)
+                dataframe = merge_informative_pair(
+                    dataframe, weekly_df[["date", "weekly_ok"]], self.timeframe, "1w", ffill=True
+                )
                 if "weekly_ok_1w" in dataframe.columns:
                     dataframe.rename(columns={"weekly_ok_1w": "weekly_ok_1w_filter"}, inplace=True)
                 elif "weekly_ok" in dataframe.columns:
@@ -311,7 +324,11 @@ class _4hTrendStrategy003(IStrategy):
         if isinstance(signal, pd.Series):
             signal_int = signal.fillna(0).astype(int)
             if int(self.weekly_filter_enable.value) == 1:
-                weekly_ok_int = weekly_ok.fillna(1).astype(int) if isinstance(weekly_ok, pd.Series) else pd.Series(1, index=dataframe.index)
+                weekly_ok_int = (
+                    weekly_ok.fillna(1).astype(int)
+                    if isinstance(weekly_ok, pd.Series)
+                    else pd.Series(1, index=dataframe.index)
+                )
                 effective = (signal_int == 1) & (weekly_ok_int == 1)
             else:
                 effective = signal_int == 1
@@ -321,7 +338,9 @@ class _4hTrendStrategy003(IStrategy):
             allow = True
             if int(self.weekly_filter_enable.value) == 1:
                 allow = int(weekly_ok) == 1
-            dataframe.loc[dataframe.index[-1], "enter_long"] = 1 if (int(signal) == 1 and allow) else 0
+            dataframe.loc[dataframe.index[-1], "enter_long"] = (
+                1 if (int(signal) == 1 and allow) else 0
+            )
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

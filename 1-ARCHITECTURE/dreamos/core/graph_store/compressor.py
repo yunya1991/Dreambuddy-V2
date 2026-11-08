@@ -17,10 +17,9 @@ DreamOS G层 — 上下文压缩器
 
 from __future__ import annotations
 
-import json
 from typing import Any, Dict, List, Optional
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, State
 from dreamos.shared.utils import safe_json
 
 from .types import CompressedState
@@ -43,21 +42,26 @@ class ContextCompressor:
     DEFAULT_RESULT_COUNT_THRESHOLD = 20
     DEFAULT_TOKEN_ESTIMATE_RATIO = 4.0
 
-    def __init__(self,
-                 keep_recent_trace: int = DEFAULT_KEEP_RECENT_TRACE,
-                 keep_recent_results: int = DEFAULT_KEEP_RECENT_RESULTS,
-                 min_confidence: float = DEFAULT_MIN_CONFIDENCE,
-                 result_count_threshold: int = DEFAULT_RESULT_COUNT_THRESHOLD,
-                 token_estimate_ratio: float = DEFAULT_TOKEN_ESTIMATE_RATIO):
+    def __init__(
+        self,
+        keep_recent_trace: int = DEFAULT_KEEP_RECENT_TRACE,
+        keep_recent_results: int = DEFAULT_KEEP_RECENT_RESULTS,
+        min_confidence: float = DEFAULT_MIN_CONFIDENCE,
+        result_count_threshold: int = DEFAULT_RESULT_COUNT_THRESHOLD,
+        token_estimate_ratio: float = DEFAULT_TOKEN_ESTIMATE_RATIO,
+    ):
         self._keep_trace = keep_recent_trace
         self._keep_results = keep_recent_results
         self._min_confidence = min_confidence
         self._result_count_threshold = result_count_threshold
         self._token_estimate_ratio = token_estimate_ratio
 
-    def compress(self, state: State,
-                 keep_recent_trace: Optional[int] = None,
-                 keep_recent_results: Optional[int] = None) -> CompressedState:
+    def compress(
+        self,
+        state: State,
+        keep_recent_trace: Optional[int] = None,
+        keep_recent_results: Optional[int] = None,
+    ) -> CompressedState:
         """压缩 State
 
         Args:

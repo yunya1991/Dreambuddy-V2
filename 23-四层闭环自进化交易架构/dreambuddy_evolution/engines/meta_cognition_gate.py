@@ -16,6 +16,7 @@ MetaCognitionGate — 元认知门禁（Phase 5.2）
 
 FAIL-OPEN：任何异常 → 保守决策（降仓或拒开仓）
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,13 +34,13 @@ class MetaCognitionGate:
     """
 
     # HC-AGI-06 阈值
-    UNCERTAINTY_HIGH = 0.4      # 降仓阈值
+    UNCERTAINTY_HIGH = 0.4  # 降仓阈值
     UNCERTAINTY_CRITICAL = 0.7  # 拒开仓阈值
 
     # 仓位乘数
-    POS_MULT_LOW = 1.0       # 低不确定性：正常仓位
-    POS_MULT_MEDIUM = 0.7    # 中不确定性：7折
-    POS_MULT_HIGH = 0.5      # 高不确定性：5折（HC-AGI-06）
+    POS_MULT_LOW = 1.0  # 低不确定性：正常仓位
+    POS_MULT_MEDIUM = 0.7  # 中不确定性：7折
+    POS_MULT_HIGH = 0.5  # 高不确定性：5折（HC-AGI-06）
     POS_MULT_CRITICAL = 0.0  # 极高不确定性：拒开仓
 
     def __init__(
@@ -106,7 +107,9 @@ class MetaCognitionGate:
                 level = "high"
                 allow = True
                 mult = self.POS_MULT_HIGH  # HC-AGI-06: 降仓至 0.5×
-                reason = f"uncertainty={uncertainty:.3f} >= {self.uncertainty_high} (high) → 降仓 0.5×"
+                reason = (
+                    f"uncertainty={uncertainty:.3f} >= {self.uncertainty_high} (high) → 降仓 0.5×"
+                )
             elif uncertainty >= 0.2:
                 level = "medium"
                 allow = True
@@ -213,16 +216,22 @@ class MetaCognitionGate:
 
             for i in range(len(bins) - 1):
                 lo, hi = bins[i], bins[i + 1]
-                mask = (confs >= lo) & (confs < hi) if i < len(bins) - 2 else (confs >= lo) & (confs <= hi)
+                mask = (
+                    (confs >= lo) & (confs < hi)
+                    if i < len(bins) - 2
+                    else (confs >= lo) & (confs <= hi)
+                )
                 n = int(mask.sum())
                 if n > 0:
                     acc = float(correct[mask].mean())
                     mid_conf = float((lo + hi) / 2)
-                    curve.append({
-                        "confidence_bin": round(mid_conf, 2),
-                        "actual_accuracy": round(acc, 4),
-                        "n": n,
-                    })
+                    curve.append(
+                        {
+                            "confidence_bin": round(mid_conf, 2),
+                            "actual_accuracy": round(acc, 4),
+                            "n": n,
+                        }
+                    )
                     weighted_conf += mid_conf * n
                     weighted_acc += acc * n
 

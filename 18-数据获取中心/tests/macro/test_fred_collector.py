@@ -2,9 +2,9 @@
 
 无 Key 降级返回空、429 限流抛 RateLimitError、产出 DataRecord 契约。
 """
+
 import pandas as pd
 import pytest
-
 from data_center.collectors.macro.fred_collector import FredCollector
 from data_center.core.contract import DataRecord
 from data_center.core.errors import RateLimitError
@@ -20,8 +20,17 @@ def _make_series():
 def test_series_registered_matches_flow_collector_plus_five_domain():
     # 原有 4 序列 + 易经推理五维需求新增 6 个（M2NS/M2SL/WALCL/CPIAUCSL/PPIACO/INDPRO）+ PAYEMS（非农就业）
     assert set(FredCollector.SERIES) == {
-        "FEDFUNDS", "RRPONTSYD", "DFII10", "T10YIE",
-        "M2NS", "M2SL", "WALCL", "CPIAUCSL", "PPIACO", "INDPRO", "PAYEMS",
+        "FEDFUNDS",
+        "RRPONTSYD",
+        "DFII10",
+        "T10YIE",
+        "M2NS",
+        "M2SL",
+        "WALCL",
+        "CPIAUCSL",
+        "PPIACO",
+        "INDPRO",
+        "PAYEMS",
     }
 
 

@@ -30,10 +30,10 @@ outputs:
     - max_dd: float — 最大回撤（[0, +∞)，0 表示无回撤）
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
 from dreamos.shared.state import State, NodeResult, NodeStatus
@@ -99,9 +99,13 @@ class C3BacktestVerifyNode(BaseNode):
                 return float(default)
 
         return {
-            "confidence_threshold": _clip(_get_float("backtest_confidence_threshold", _DEFAULT_CONFIDENCE_THRESHOLD), 0.0, 1.0),
+            "confidence_threshold": _clip(
+                _get_float("backtest_confidence_threshold", _DEFAULT_CONFIDENCE_THRESHOLD), 0.0, 1.0
+            ),
             "trend_weight": max(0.0, _get_float("backtest_trend_weight", _DEFAULT_TREND_WEIGHT)),
-            "momentum_weight": max(0.0, _get_float("backtest_momentum_weight", _DEFAULT_MOMENTUM_WEIGHT)),
+            "momentum_weight": max(
+                0.0, _get_float("backtest_momentum_weight", _DEFAULT_MOMENTUM_WEIGHT)
+            ),
         }
 
     @staticmethod

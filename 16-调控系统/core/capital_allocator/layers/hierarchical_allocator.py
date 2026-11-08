@@ -12,7 +12,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from typing import Dict, Tuple
 
 from ..types import CoinPerformance
 
@@ -51,11 +51,17 @@ class HierarchicalAllocator:
         """
         # 1. 按币种 source_tag 分组到子池
         subpool_perf: Dict[str, Dict[str, float]] = {}
-        for coin, (perf, kelly_f, half_f, pos_pct) in coin_kelly.items():
+        for coin, (perf, kelly_f, half_f, pos_pct) in coin_kelly.items():  # noqa: B007
             tag = self._infer_source_tag(coin)
-            agg = subpool_perf.setdefault(tag, {
-                "n_trades": 0, "n_wins": 0, "wins": [], "losses": [],
-            })
+            agg = subpool_perf.setdefault(
+                tag,
+                {
+                    "n_trades": 0,
+                    "n_wins": 0,
+                    "wins": [],
+                    "losses": [],
+                },
+            )
             agg["n_trades"] += perf.n_trades
             agg["n_wins"] += perf.n_wins
             if perf.avg_win_pct > 0:
@@ -95,6 +101,7 @@ class HierarchicalAllocator:
                 # W/L > 1 → 权重提升，W/L < 1 → 权重降低
                 # 使用对数缩放避免极端值
                 import math
+
                 mult = 1.0 + 0.3 * math.log1p(max(0.0, wl - 1.0)) if wl > 0 else 0.5
                 mult = max(0.5, min(2.0, mult))
                 weights[tag] = base_w * mult

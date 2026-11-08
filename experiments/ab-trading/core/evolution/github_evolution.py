@@ -3,7 +3,11 @@
 GitHub 成熟经验搜索进化模块
 通过联网搜索GitHub上的成熟交易策略和最佳实践，验证和优化现有策略
 """
-import json, os, time, requests, warnings
+
+import json  # noqa: I001
+import time
+import requests
+import warnings
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime, timezone
@@ -74,7 +78,9 @@ class GithubBestPracticeEvolution:
 
         self._save_search(report)
 
-        print(f"[GitHub进化] 搜索完成: 找到{len(report['repositories_found'])}个仓库, 提取{len(report['strategies_extracted'])}个策略, 生成{len(report['evolution_proposals'])}个提议")
+        print(
+            f"[GitHub进化] 搜索完成: 找到{len(report['repositories_found'])}个仓库, 提取{len(report['strategies_extracted'])}个策略, 生成{len(report['evolution_proposals'])}个提议"
+        )
         return report
 
     def _determine_focus_areas(self, memory: Dict) -> List[str]:
@@ -125,16 +131,18 @@ class GithubBestPracticeEvolution:
             if r.status_code == 200:
                 data = r.json()
                 for item in data.get("items", []):
-                    repos.append({
-                        "name": item.get("full_name"),
-                        "description": item.get("description", "")[:200],
-                        "stars": item.get("stargazers_count", 0),
-                        "language": item.get("language", ""),
-                        "url": item.get("html_url"),
-                        "updated_at": item.get("updated_at"),
-                        "topics": item.get("topics", []),
-                        "search_query": query,
-                    })
+                    repos.append(
+                        {
+                            "name": item.get("full_name"),
+                            "description": item.get("description", "")[:200],
+                            "stars": item.get("stargazers_count", 0),
+                            "language": item.get("language", ""),
+                            "url": item.get("html_url"),
+                            "updated_at": item.get("updated_at"),
+                            "topics": item.get("topics", []),
+                            "search_query": query,
+                        }
+                    )
         except Exception as e:
             print(f"[GitHub进化] 搜索失败: {e}")
 
@@ -173,7 +181,11 @@ class GithubBestPracticeEvolution:
                     "stars": 4000,
                     "language": "Python",
                     "url": "builtin://mean-reversion",
-                    "params": {"rsi_oversold": 30, "rsi_overbought": 70, "momentum_threshold": 0.01},
+                    "params": {
+                        "rsi_oversold": 30,
+                        "rsi_overbought": 70,
+                        "momentum_threshold": 0.01,
+                    },
                 },
             ],
             "risk management": [
@@ -259,15 +271,17 @@ class GithubBestPracticeEvolution:
         strategies = []
 
         if "params" in repo:
-            strategies.append({
-                "name": repo.get("name", "unknown"),
-                "source_area": area,
-                "description": repo.get("description", ""),
-                "stars": repo.get("stars", 0),
-                "strategy_params": repo.get("params", {}),
-                "confidence": min(repo.get("stars", 0) / 10000, 0.9),
-                "source_url": repo.get("url", ""),
-            })
+            strategies.append(
+                {
+                    "name": repo.get("name", "unknown"),
+                    "source_area": area,
+                    "description": repo.get("description", ""),
+                    "stars": repo.get("stars", 0),
+                    "strategy_params": repo.get("params", {}),
+                    "confidence": min(repo.get("stars", 0) / 10000, 0.9),
+                    "source_url": repo.get("url", ""),
+                }
+            )
 
         return strategies
 
@@ -279,8 +293,7 @@ class GithubBestPracticeEvolution:
 
         current_params = self.engine.get_adopted_params()
         has_new_param = any(
-            k not in current_params or current_params.get(k) != v
-            for k, v in params.items()
+            k not in current_params or current_params.get(k) != v for k, v in params.items()
         )
 
         if not has_new_param:
@@ -323,11 +336,13 @@ class GithubBestPracticeEvolution:
         for proposal in pending:
             if proposal["status"] == "proposed":
                 result = self.engine.run_backtest(proposal["id"], coins)
-                results.append({
-                    "proposal_id": proposal["id"],
-                    "title": proposal["title"],
-                    "result": result,
-                })
+                results.append(
+                    {
+                        "proposal_id": proposal["id"],
+                        "title": proposal["title"],
+                        "result": result,
+                    }
+                )
 
         return results
 

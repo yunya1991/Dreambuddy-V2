@@ -1,13 +1,13 @@
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import artifacts_memory_l4_dir
+from scripts.memory_l4.paths import artifacts_memory_l4_dir  # noqa: E402
 
 
 def _default_tasks_dir() -> Path:
@@ -42,7 +42,10 @@ def enqueue_meta_learning_tasks(
                 "status": "pending",
                 "priority": "medium",
                 "snapshot_ts": snapshot_ts,
-                "inputs": {"mapping_id": mp_id, "migration_confidence": mp.get("migration_confidence")},
+                "inputs": {
+                    "mapping_id": mp_id,
+                    "migration_confidence": mp.get("migration_confidence"),
+                },
             }
         )
 
@@ -62,5 +65,7 @@ def enqueue_meta_learning_tasks(
         "risk_signal_tasks": len(risk_signals or []),
         "migration_tasks": len(migration_mappings or []),
     }
-    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return {"tasks_path": str(tasks_path), "summary_path": str(summary_path), "summary": summary}

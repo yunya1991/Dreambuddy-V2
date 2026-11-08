@@ -3,6 +3,7 @@
 默认 `marketing` 保持原 32 Bot 行为；`technical` / `signal` 用于 C-Drive 与
 技术红队。profile 只换角色设定/输出语义，不换通用辩论循环。
 """
+
 from __future__ import annotations
 
 from core.profiles.base import DebateProfile
@@ -11,8 +12,7 @@ from core.profiles.signal import SIGNAL_PROFILE
 from core.profiles.technical import TECHNICAL_PROFILE
 
 PROFILES: dict[str, DebateProfile] = {
-    profile.name: profile
-    for profile in (MARKETING_PROFILE, TECHNICAL_PROFILE, SIGNAL_PROFILE)
+    profile.name: profile for profile in (MARKETING_PROFILE, TECHNICAL_PROFILE, SIGNAL_PROFILE)
 }
 
 PROFILE_NAMES = tuple(PROFILES)
@@ -32,6 +32,11 @@ def get_profile(value: str | DebateProfile | None) -> DebateProfile:
 
 
 __all__ = [
-    "DebateProfile", "PROFILES", "PROFILE_NAMES", "get_profile",
-    "MARKETING_PROFILE", "TECHNICAL_PROFILE", "SIGNAL_PROFILE",
+    "DebateProfile",
+    "PROFILES",
+    "PROFILE_NAMES",
+    "get_profile",
+    "MARKETING_PROFILE",
+    "TECHNICAL_PROFILE",
+    "SIGNAL_PROFILE",
 ]

@@ -4,6 +4,7 @@
 用 fredapi 库薄封装替代手写 HTTP，产出统一 DataRecord。
 无 FRED_API_KEY 时降级走 fredgraph.csv 免 Key 端点（2026-11-06 修复：Key 丢失导致 13 个任务静默失败）。
 """
+
 from __future__ import annotations
 
 import os
@@ -25,16 +26,22 @@ class FredCollector(BaseCollector):
     # D1：FEDFUNDS 央行利率；D2：M2NS/M2SL M2；D3：WALCL 联储总资产
     # D4：CPIAUCSL CPI；D5：PPIACO PPI；D6：INDPRO 工业产出（美林增长 proxy）
     SERIES = (
-        "FEDFUNDS", "RRPONTSYD", "DFII10", "T10YIE",           # 原有
-        "M2NS", "M2SL", "WALCL", "CPIAUCSL", "PPIACO", "INDPRO", # 五维需求新增
-        "PAYEMS",                                                  # NFP 非农就业
+        "FEDFUNDS",
+        "RRPONTSYD",
+        "DFII10",
+        "T10YIE",  # 原有
+        "M2NS",
+        "M2SL",
+        "WALCL",
+        "CPIAUCSL",
+        "PPIACO",
+        "INDPRO",  # 五维需求新增
+        "PAYEMS",  # NFP 非农就业
     )
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
-        self._api_key = (config or {}).get("api_key") or os.environ.get(
-            "FRED_API_KEY", ""
-        ).strip()
+        self._api_key = (config or {}).get("api_key") or os.environ.get("FRED_API_KEY", "").strip()
 
     _CSV_BASE = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 
@@ -86,6 +93,7 @@ class FredCollector(BaseCollector):
                 if historical:
                     try:
                         from dateutil import parser as _parser
+
                         dt = _parser.parse(date_str).replace(tzinfo=timezone.utc)
                         ts_iso = dt.isoformat()
                     except Exception:
@@ -103,7 +111,12 @@ class FredCollector(BaseCollector):
                     metrics={"value": val, "date": date_str},
                     events=[],
                     timeseries=[],
-                    raw={"series_id": series_id, "date": date_str, "value": val, "via": "fredgraph_csv"},
+                    raw={
+                        "series_id": series_id,
+                        "date": date_str,
+                        "value": val,
+                        "via": "fredgraph_csv",
+                    },
                 )
                 validate_record(rec)
                 records.append(rec)
@@ -131,6 +144,7 @@ class FredCollector(BaseCollector):
                     dt = ts.to_pydatetime() if hasattr(ts, "to_pydatetime") else None
                     if dt is None:
                         from dateutil import parser as _parser
+
                         dt = _parser.parse(date_str)
                     ts_iso = dt.replace(tzinfo=timezone.utc).isoformat()
                 except Exception:

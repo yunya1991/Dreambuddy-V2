@@ -14,6 +14,7 @@ TDD 覆盖:
   P2.1-T1.5 各 expert 参数独立: 一个 expert 梯度不影响其他 expert
   P2.1-T1.6 output shape: (B, 1) drift, tanh 裁剪
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,6 +31,7 @@ if str(REPO) not in sys.path:
 def _torch_available():
     try:
         import torch  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -40,14 +42,15 @@ def test_moe_driftnet_instantiation():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
 
     moe = _MoEDriftNet(n_experts=3, hidden_dim=32, sig_dim=5)
     assert len(moe.experts) == 3
     assert moe.n_experts == 3
     # router 输出维度 = n_experts
-    t = torch.tensor(0.0)
-    y = torch.randn(4, 1)
+    t = torch.tensor(0.0)  # noqa: F841
+    y = torch.randn(4, 1)  # noqa: F841
     regime = torch.zeros(4, 3)
     regime[:, 0] = 1.0
     weights = moe._compute_weights(regime)
@@ -61,6 +64,7 @@ def test_moe_soft_routing_regime_specific():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
 
     torch.manual_seed(42)
@@ -71,11 +75,13 @@ def test_moe_soft_routing_regime_specific():
     y = torch.randn(2, 1)
 
     # regime 0 (bull)
-    r0 = torch.zeros(2, 3); r0[:, 0] = 1.0
+    r0 = torch.zeros(2, 3)
+    r0[:, 0] = 1.0
     d0 = moe(t, y, regime=r0)
 
     # regime 2 (bear)
-    r2 = torch.zeros(2, 3); r2[:, 2] = 1.0
+    r2 = torch.zeros(2, 3)
+    r2[:, 2] = 1.0
     d2 = moe(t, y, regime=r2)
 
     # 不同 regime 应该产生不同 drift (因为 expert 独立)
@@ -87,6 +93,7 @@ def test_moe_hard_routing():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
 
     torch.manual_seed(42)
@@ -108,6 +115,7 @@ def test_moe_failopen_uniform_weights():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
 
     moe = _MoEDriftNet(n_experts=3, hidden_dim=32, sig_dim=5)
@@ -122,6 +130,7 @@ def test_moe_expert_independence():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
 
     torch.manual_seed(42)
@@ -151,6 +160,7 @@ def test_moe_output_shape_and_clip():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import _MoEDriftNet
 
     moe = _MoEDriftNet(n_experts=3, hidden_dim=32, sig_dim=5, clip=5.0)
@@ -158,7 +168,8 @@ def test_moe_output_shape_and_clip():
 
     t = torch.tensor(0.0)
     y = torch.randn(8, 1)
-    regime = torch.zeros(8, 3); regime[:, 0] = 1.0
+    regime = torch.zeros(8, 3)
+    regime[:, 0] = 1.0
     drift = moe(t, y, regime=regime)
 
     assert drift.shape == (8, 1)
@@ -169,6 +180,7 @@ def test_moe_output_shape_and_clip():
 # ---------------------------------------------------------------------------
 # P2.1-T2: MoE training loop
 # ---------------------------------------------------------------------------
+
 
 def _make_synthetic_data(n=1500, n_regimes=3):
     """生成 regime-conditional 合成数据: 不同 regime 不同漂移."""
@@ -190,22 +202,25 @@ def test_moe_trainer_loss_decreases():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
 
     torch.manual_seed(42)
     closes, regimes = _make_synthetic_data()
 
-    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True,
-                           sig_dim=3, hidden_dim=16)
+    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True, sig_dim=3, hidden_dim=16)
     if not model.is_available:
         pytest.skip("torch not available")
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-3, seq_len=16, horizon=5,
-        batch_size=32, loss_type="mse",
+        model=model,
+        lr=1e-3,
+        seq_len=16,
+        horizon=5,
+        batch_size=32,
+        loss_type="mse",
     )
-    report = trainer.train(closes, epochs=20, regime_labels=regimes,
-                           regime_balance="natural")
+    report = trainer.train(closes, epochs=20, regime_labels=regimes, regime_balance="natural")
 
     assert report["status"] == "ok"
     # loss 应下降
@@ -219,28 +234,32 @@ def test_moe_router_weights_learned():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
 
     torch.manual_seed(42)
     closes, regimes = _make_synthetic_data()
 
-    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True,
-                           sig_dim=3, hidden_dim=16)
+    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True, sig_dim=3, hidden_dim=16)
     if not model.is_available:
         pytest.skip("torch not available")
 
     trainer = NeuralSDETrainer(
-        model=model, lr=5e-3, seq_len=16, horizon=5,
-        batch_size=64, loss_type="mse",
+        model=model,
+        lr=5e-3,
+        seq_len=16,
+        horizon=5,
+        batch_size=64,
+        loss_type="mse",
     )
-    trainer.train(closes, epochs=50, regime_labels=regimes,
-                  regime_balance="natural")
+    trainer.train(closes, epochs=50, regime_labels=regimes, regime_balance="natural")
 
     # 检查 router 权重非均匀 (从均匀分布 1/3 偏离 → 学到了东西)
     drift_net = model.drift_net
-    r0 = torch.zeros(1, 3); r0[0, 0] = 1.0
+    r0 = torch.zeros(1, 3)
+    r0[0, 0] = 1.0
     w0 = drift_net._compute_weights(r0)
-    uniform = torch.ones_like(w0) / 3.0
+    uniform = torch.ones_like(w0) / 3.0  # noqa: F841
     # 权重标准差应 > 0.01 (非均匀)
     assert float(w0.detach().std()) > 0.01
 
@@ -250,22 +269,27 @@ def test_moe_hard_routing_train():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
 
     torch.manual_seed(42)
     closes, regimes = _make_synthetic_data()
 
-    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True,
-                           moe_routing="hard", sig_dim=3, hidden_dim=16)
+    model = NeuralSDEModel(
+        device="cpu", n_regimes=3, use_moe=True, moe_routing="hard", sig_dim=3, hidden_dim=16
+    )
     if not model.is_available:
         pytest.skip("torch not available")
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-3, seq_len=16, horizon=5,
-        batch_size=32, loss_type="mse",
+        model=model,
+        lr=1e-3,
+        seq_len=16,
+        horizon=5,
+        batch_size=32,
+        loss_type="mse",
     )
-    report = trainer.train(closes, epochs=10, regime_labels=regimes,
-                           regime_balance="natural")
+    report = trainer.train(closes, epochs=10, regime_labels=regimes, regime_balance="natural")
     assert report["status"] == "ok"
 
 
@@ -274,22 +298,25 @@ def test_moe_forecast_regime_specific():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
 
     torch.manual_seed(42)
     closes, regimes = _make_synthetic_data()
 
-    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True,
-                           sig_dim=3, hidden_dim=16)
+    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True, sig_dim=3, hidden_dim=16)
     if not model.is_available:
         pytest.skip("torch not available")
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-3, seq_len=16, horizon=5,
-        batch_size=32, loss_type="mse",
+        model=model,
+        lr=1e-3,
+        seq_len=16,
+        horizon=5,
+        batch_size=32,
+        loss_type="mse",
     )
-    trainer.train(closes, epochs=20, regime_labels=regimes,
-                  regime_balance="natural")
+    trainer.train(closes, epochs=20, regime_labels=regimes, regime_balance="natural")
 
     history = closes[-50:]
     paths_bull = model.forecast(history, horizon=10, n_paths=50, regime=0)
@@ -307,16 +334,18 @@ def test_moe_forecast_regime_specific():
 # P2.1-T3: FAIL-OPEN 回退
 # ---------------------------------------------------------------------------
 
+
 def test_moe_failopen_n_regimes_zero():
     """P2.1-T3.1: use_moe=True 但 n_regimes=0 → 回退到共享 drift_net."""
     if not _torch_available():
         pytest.skip("torch not available")
     from dreambuddy_evolution.core.neural_sde_model import (
-        NeuralSDEModel, _PathSignatureDriftNet, _MoEDriftNet,
+        NeuralSDEModel,
+        _MoEDriftNet,
+        _PathSignatureDriftNet,
     )
 
-    model = NeuralSDEModel(device="cpu", n_regimes=0, use_moe=True,
-                           sig_dim=3, hidden_dim=16)
+    model = NeuralSDEModel(device="cpu", n_regimes=0, use_moe=True, sig_dim=3, hidden_dim=16)
     if not model.is_available:
         pytest.skip("torch not available")
     # n_regimes=0 时不使用 MoE, 回退到共享 drift_net
@@ -329,22 +358,25 @@ def test_moe_failopen_regime_none_forecast():
     if not _torch_available():
         pytest.skip("torch not available")
     import torch
+
     from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
 
     torch.manual_seed(42)
     closes, regimes = _make_synthetic_data()
 
-    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True,
-                           sig_dim=3, hidden_dim=16)
+    model = NeuralSDEModel(device="cpu", n_regimes=3, use_moe=True, sig_dim=3, hidden_dim=16)
     if not model.is_available:
         pytest.skip("torch not available")
 
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-3, seq_len=16, horizon=5,
-        batch_size=64, loss_type="mse",
+        model=model,
+        lr=1e-3,
+        seq_len=16,
+        horizon=5,
+        batch_size=64,
+        loss_type="mse",
     )
-    trainer.train(closes, epochs=10, regime_labels=regimes,
-                  regime_balance="natural")
+    trainer.train(closes, epochs=10, regime_labels=regimes, regime_balance="natural")
 
     # regime=None → FAIL-OPEN 均匀权重, forecast 仍应返回有效路径
     history = closes[-50:]

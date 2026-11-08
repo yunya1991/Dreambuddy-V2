@@ -16,10 +16,6 @@ V1-5: LLM 降级链配置驱动验证
   4. 多个模型可配置（降级链）
 """
 
-import json
-import os
-import sys
-import re
 from pathlib import Path
 
 BRIDGE_DIR = Path(__file__).resolve().parent.parent
@@ -32,7 +28,7 @@ def parse_yaml_simple(text):
     lines = text.split("\n")
     current_entry = None
     in_config = False
-    config_indent = 0
+    config_indent = 0  # noqa: F841
 
     for line in lines:
         stripped = line.strip()
@@ -84,7 +80,7 @@ def test_v1_5_llm_config():
             break
 
     assert model_entry is not None, "cordis.patch.yml 应包含 agent-default-model 配置"
-    print(f"  ✓ 找到 agent-default-model 配置")
+    print("  ✓ 找到 agent-default-model 配置")
 
     # 3. 验证 provider 和 model 字段
     config = model_entry.get("config", {})
@@ -95,15 +91,17 @@ def test_v1_5_llm_config():
     model = config["model"]
 
     assert provider == "deepseek-official", f"provider 应为 deepseek-official, got: {provider}"
-    assert model in ("deepseek-flash", "deepseek-chat"), \
-        f"model 应为 deepseek-flash 或 deepseek-chat, got: {model}"
+    assert model in (
+        "deepseek-flash",
+        "deepseek-chat",
+    ), f"model 应为 deepseek-flash 或 deepseek-chat, got: {model}"
 
     print(f"  ✓ provider={provider}, model={model}")
 
     # 4. 验证降级链可配置性 — 修改 model 不需要改代码
     # 模拟切换到 deepseek-chat
-    new_text = text.replace("model: \"deepseek-flash\"", "model: \"deepseek-chat\"")
-    if "model: \"deepseek-flash\"" not in text:
+    new_text = text.replace('model: "deepseek-flash"', 'model: "deepseek-chat"')
+    if 'model: "deepseek-flash"' not in text:
         # 可能没有引号
         new_text = text.replace("model: deepseek-flash", "model: deepseek-chat")
 
@@ -116,16 +114,14 @@ def test_v1_5_llm_config():
 
     assert new_model_entry is not None, "修改后应仍有包含 agent-default-model"
     new_model = new_model_entry["config"]["model"]
-    assert new_model == "deepseek-chat", \
-        f"修改后 model 应为 deepseek-chat, got: {new_model}"
+    assert new_model == "deepseek-chat", f"修改后 model 应为 deepseek-chat, got: {new_model}"
 
     print(f"  ✓ 切换 model: {model} → {new_model} (仅改配置，不改代码)")
 
     # 5. 验证降级链文档存在
     # 检查配置中是否有降级链注释
-    assert "降级链" in text or "degradation" in text.lower(), \
-        "cordis.patch.yml 应包含降级链注释"
-    print(f"  ✓ 降级链文档存在")
+    assert "降级链" in text or "degradation" in text.lower(), "cordis.patch.yml 应包含降级链注释"
+    print("  ✓ 降级链文档存在")
 
     # 6. 验证 API Key 已配置
     creds_path = BRIDGE_DIR / ".dsh-home" / ".credentials.yaml"
@@ -133,13 +129,13 @@ def test_v1_5_llm_config():
     creds_text = creds_path.read_text(encoding="utf-8")
     assert "DEEPSEEK_API_KEY" in creds_text, "应配置 DEEPSEEK_API_KEY"
     assert "sk-" in creds_text, "API key 应以 sk- 开头"
-    print(f"  ✓ DeepSeek API Key 已配置")
+    print("  ✓ DeepSeek API Key 已配置")
 
-    print(f"\n  V1-5 PASS: LLM 降级链配置驱动验证通过")
+    print("\n  V1-5 PASS: LLM 降级链配置驱动验证通过")
     print(f"  当前模型: {provider}/{model}")
     print(f"  可切换至: {provider}/deepseek-chat")
-    print(f"  降级链: deepseek-flash → deepseek-chat → fallback")
-    print(f"  切换方式: 修改 cordis.patch.yml，无需改代码")
+    print("  降级链: deepseek-flash → deepseek-chat → fallback")
+    print("  切换方式: 修改 cordis.patch.yml，无需改代码")
 
 
 def main():

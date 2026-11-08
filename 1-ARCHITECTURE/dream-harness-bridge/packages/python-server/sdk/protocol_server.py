@@ -18,7 +18,6 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-
 CURRENT_SCHEMA_VERSION = "1.0.0"
 
 
@@ -38,7 +37,9 @@ class IPCRequest:
     method: Optional[str] = None
     params: Optional[dict[str, Any]] = None
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: str = field(default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+    timestamp: str = field(
+        default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    )
 
 
 @dataclass
@@ -50,7 +51,9 @@ class IPCResponse:
     error: Optional[dict[str, str]] = None
     constraint_passed: Optional[bool] = None
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: str = field(default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+    timestamp: str = field(
+        default_factory=lambda: time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    )
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -112,7 +115,7 @@ class ProtocolServer:
         try:
             parsed = json.loads(raw_message)
         except json.JSONDecodeError:
-            raise ProtocolHandshakeError("INVALID_JSON", "IPC 请求不是合法 JSON")
+            raise ProtocolHandshakeError("INVALID_JSON", "IPC 请求不是合法 JSON")  # noqa: B904
 
         if not isinstance(parsed, dict):
             raise ProtocolHandshakeError("INVALID_FORMAT", "IPC 请求不是对象")

@@ -1,4 +1,5 @@
 """B-06: D2 OI / 清算叠加测试（临时 SQLite + 19-DAL schema）."""
+
 from __future__ import annotations
 
 import sqlite3

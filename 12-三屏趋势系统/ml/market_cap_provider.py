@@ -21,12 +21,12 @@
 速率限制：~30次/分钟，本模块每天刷新一次基准，足够使用
 """
 
-import os
 import json
-import time
 import threading
-import requests
+import time
 from pathlib import Path
+
+import requests
 
 # 缓存文件路径
 CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache"
@@ -49,11 +49,11 @@ COINGECKO_IDS = {
 }
 
 # 默认参数
-LARGE_CAP_RATIO = 0.80         # 市值达到BTC的80%即视为"超大盘"，采用0.4阈值
-LARGE_CAP_THRESHOLD = 0.4      # 超大盘币种的波浪确认阈值
-NORMAL_THRESHOLD = 0.6         # 普通币种的波浪确认阈值
-CACHE_TTL_SECONDS = 86400      # 缓存有效期：24小时
-BENCHMARK_SYMBOL = "BTC"       # 基准币种
+LARGE_CAP_RATIO = 0.80  # 市值达到BTC的80%即视为"超大盘"，采用0.4阈值
+LARGE_CAP_THRESHOLD = 0.4  # 超大盘币种的波浪确认阈值
+NORMAL_THRESHOLD = 0.6  # 普通币种的波浪确认阈值
+CACHE_TTL_SECONDS = 86400  # 缓存有效期：24小时
+BENCHMARK_SYMBOL = "BTC"  # 基准币种
 REQUEST_TIMEOUT = 15
 
 _cache_lock = threading.Lock()

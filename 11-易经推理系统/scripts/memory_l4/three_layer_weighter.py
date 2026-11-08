@@ -15,8 +15,8 @@ from __future__ import annotations
 import json
 import logging
 import math
-from dataclasses import dataclass, field
-from datetime import date, datetime
+from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -30,6 +30,7 @@ _DYNAMIC_PARAM_PATH = _RUNTIME_DIR / "phase_c_default_params.json"
 @dataclass
 class ThreeLayerWeights:
     """三层动态权重输出（Σ=1，归一化约束保证）"""
+
     w_p: float = 0.45
     w_e: float = 0.30
     w_b: float = 0.25
@@ -83,8 +84,7 @@ class ThreeLayerWeighter:
                 raw = _DYNAMIC_PARAM_PATH.read_text(encoding="utf-8")
                 data = json.loads(raw)
                 merged = dict(DYNAMIC_PARAM_DEFAULTS)
-                merged.update({k: float(v) for k, v in data.items()
-                               if k in DYNAMIC_PARAM_DEFAULTS})
+                merged.update({k: float(v) for k, v in data.items() if k in DYNAMIC_PARAM_DEFAULTS})
                 return merged
         except (OSError, json.JSONDecodeError, ValueError) as e:
             logger.warning("[ThreeLayerWeighter] 动态参数文件加载失败，回退默认值：%s", e)
@@ -96,6 +96,7 @@ class ThreeLayerWeighter:
     @staticmethod
     def _failopen_weights() -> ThreeLayerWeights:
         from . import phase_c_constants as C
+
         return ThreeLayerWeights(
             w_p=C.FAILOPEN_WP,
             w_e=C.FAILOPEN_WE,
@@ -118,8 +119,9 @@ class ThreeLayerWeighter:
     # ------------------------------
     # 公共接口：核心方法
     # ------------------------------
-    def daily_recalc(self, stats: Optional[Dict[str, Any]] = None,
-                     force: bool = False) -> ThreeLayerWeights:
+    def daily_recalc(
+        self, stats: Optional[Dict[str, Any]] = None, force: bool = False
+    ) -> ThreeLayerWeights:
         """
         日级重算三层权重。
 
@@ -208,25 +210,29 @@ class ThreeLayerWeighter:
                 tot_r = wp_r + we_r + wb_r
                 if tot_r <= 0 or not math.isfinite(tot_r):
                     break
-                wp_n, we_n, wb_n = wp_r/tot_r, we_r/tot_r, wb_r/tot_r
-                if (w_min - 1e-8 <= wp_n <= w_max + 1e-8
-                        and w_min - 1e-8 <= we_n <= w_max + 1e-8
-                        and w_min - 1e-8 <= wb_n <= w_max + 1e-8):
+                wp_n, we_n, wb_n = wp_r / tot_r, we_r / tot_r, wb_r / tot_r
+                if (
+                    w_min - 1e-8 <= wp_n <= w_max + 1e-8
+                    and w_min - 1e-8 <= we_n <= w_max + 1e-8
+                    and w_min - 1e-8 <= wb_n <= w_max + 1e-8
+                ):
                     break
 
             # 6.2) **最终边界兜底**：浮点残余误差导致的微越界 → 强制拉回边界 + 差额再分配
             # （保证严格 w_min ≤ w ≤ w_max 到 1e-12 精度，且 Σ=1）
-            def _final_enforce_bounds(wp: float, we: float, wb: float) -> tuple[float, float, float]:
+            def _final_enforce_bounds(
+                wp: float, we: float, wb: float
+            ) -> tuple[float, float, float]:
                 vals = [("wp", wp), ("we", we), ("wb", wb)]
                 excess = 0.0  # 从越界项挤出的超额
                 deficit = 0.0  # 越界项需要补足的缺口
                 clipped: list[tuple[str, float]] = []
                 for name, v in vals:
                     if v < w_min - 1e-12:
-                        deficit += (w_min - v)
+                        deficit += w_min - v
                         clipped.append((name, w_min))
                     elif v > w_max + 1e-12:
-                        excess += (v - w_max)
+                        excess += v - w_max
                         clipped.append((name, w_max))
                     else:
                         clipped.append((name, v))
@@ -237,7 +243,7 @@ class ThreeLayerWeighter:
                 need = excess - deficit  # >0 需要扣掉，<0 需要补上
                 non_boundary_keys: list[str] = []
                 for nm, v_orig in vals:
-                    cv = out_d[nm]
+                    cv = out_d[nm]  # noqa: F841
                     # 判定是否被 clip 卡了边界（即原始值不在可接受区间）
                     was_bounded = (v_orig < w_min - 1e-12) or (v_orig > w_max + 1e-12)
                     if not was_bounded:

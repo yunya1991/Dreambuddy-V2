@@ -4,14 +4,16 @@
 TDD: 验证交易类意图强制 escalation + justification，非交易类不触发
 覆盖 AC-3, AC-4, AC-8
 """
-import sys
+
+import sys  # noqa: I001
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 
 class FakeIntentResult:
     """模拟 IntentResult"""
+
     def __init__(self, intent_type="UNCERTAIN", confidence=0.0, rationale=""):
         self.intent_type = intent_type
         self.confidence = confidence
@@ -53,6 +55,7 @@ def test_query_intent_no_escalation():
 def test_eval_result_has_escalation_fields():
     """验证 EvalResult 数据类包含 escalation_required 和 justification 字段"""
     from dreamos.core.sense.evaluators.intent_evaluator_agent import EvalResult
+
     r = EvalResult(adjusted_confidence=0.5)
     assert hasattr(r, "escalation_required")
     assert hasattr(r, "justification")

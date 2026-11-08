@@ -3,9 +3,9 @@
 DataCenter.fetch(category, source=..., ...) 路由到注册的 collector；
 未注册源抛 SourceUnavailableError；category=web 走爬虫轨（M1 stub 返回空）。
 """
+
 import pandas as pd
 import pytest
-
 from data_center.core.dispatcher import DataCenter
 from data_center.core.errors import SourceUnavailableError
 
@@ -43,9 +43,7 @@ def test_web_routes_to_crawler(mocker, tmp_path):
     """web 走爬虫轨 CrawlerRunner（M3 接入）。"""
     config_path = str(tmp_path / "sites.yaml")
     tmp_path.joinpath("sites.yaml").write_text("sites:\n  s:\n    enabled: false\n")
-    mock_runner_cls = mocker.patch(
-        "data_center.crawler.runner.CrawlerRunner"
-    )
+    mock_runner_cls = mocker.patch("data_center.crawler.runner.CrawlerRunner")
     mock_runner_cls.return_value.run.return_value = []
     dc = DataCenter()
     assert dc.fetch("web", config=config_path) == []
@@ -53,6 +51,7 @@ def test_web_routes_to_crawler(mocker, tmp_path):
 
 
 # === M2 dispatcher 路由测试 ===
+
 
 def test_all_m2_collectors_registered():
     """M2 全部 collector 应注册到默认 registry。"""
@@ -99,7 +98,9 @@ def test_fetch_routes_to_etherscan_gas(mocker):
         "data_center.collectors.chain.etherscan_collector.Etherscan"
     ).return_value
     mock_es.get_gas_oracle.return_value = {
-        "ProposeGasPrice": "12", "SafeGasPrice": "10", "FastGasPrice": "15",
+        "ProposeGasPrice": "12",
+        "SafeGasPrice": "10",
+        "FastGasPrice": "15",
     }
     dc = DataCenter(config={"api_key": "fake"})
     recs = dc.fetch("chain", kind="gas", source="etherscan")
@@ -109,9 +110,7 @@ def test_fetch_routes_to_etherscan_gas(mocker):
 
 
 def test_fetch_routes_to_feedparser(mocker):
-    mock_fp = mocker.patch(
-        "data_center.collectors.news.feedparser_collector.feedparser"
-    )
+    mock_fp = mocker.patch("data_center.collectors.news.feedparser_collector.feedparser")
     mock_fp.parse.return_value = {
         "feed": {"title": "TestFeed"},
         "entries": [{"title": "news1", "link": "l1", "id": "i1"}],
@@ -124,9 +123,7 @@ def test_fetch_routes_to_feedparser(mocker):
 
 
 def test_fetch_routes_to_rsshub(mocker):
-    mock_fp = mocker.patch(
-        "data_center.collectors.news.feedparser_collector.feedparser"
-    )
+    mock_fp = mocker.patch("data_center.collectors.news.feedparser_collector.feedparser")
     mock_fp.parse.return_value = {
         "feed": {"title": "CoinDesk"},
         "entries": [{"title": "t", "link": "l", "id": "i"}],
@@ -151,13 +148,14 @@ def test_fetch_routes_to_tavily(mocker):
 
 
 def test_fetch_routes_to_gdelt(mocker):
-    mock_req = mocker.patch(
-        "data_center.collectors.news.gdelt_collector.requests"
-    )
+    mock_req = mocker.patch("data_center.collectors.news.gdelt_collector.requests")
+
     class _Resp:
         status_code = 200
+
         def json(self):
             return {"articles": [{"title": "t", "url": "u", "domain": "d"}]}
+
     mock_req.get.return_value = _Resp()
     dc = DataCenter()
     recs = dc.fetch("news", query="bitcoin", source="gdelt")

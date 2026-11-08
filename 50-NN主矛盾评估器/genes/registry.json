@@ -1,0 +1,28 @@
+{
+  "schema_version": "1",
+  "owner": "50-NN主矛盾评估器",
+  "updated": "2026-11-08",
+  "policy": {
+    "gene_flow": "23 -> NN: design reference/copy only; NN -> 23: gated injection",
+    "isolation": "50 must not import 23 runtime modules or write 23 state/samples/weights",
+    "promotion": "shadow evidence required before promotion; rollback mandatory"
+  },
+  "genes": [
+    {
+      "gene_id": "path-synthesis",
+      "version": "v1",
+      "path": "core/path_synthesis.py",
+      "origin": "50-native",
+      "status": "active",
+      "evidence": "tests/test_path_synthesis.py"
+    },
+    {
+      "gene_id": "source-maps",
+      "version": "v1",
+      "path": "core/mappings.py",
+      "origin": "50-native",
+      "status": "active",
+      "evidence": "tests/test_mappings.py"
+    }
+  ]
+}

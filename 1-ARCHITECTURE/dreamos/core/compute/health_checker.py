@@ -10,11 +10,10 @@ L2 自检测: DreamOS 运行时健康检查器
 """
 
 import logging
-import time
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,7 @@ class HealthStatus(str, Enum):
 @dataclass
 class HealthCheckResult:
     """单项检查结果"""
+
     name: str
     status: HealthStatus
     message: str
@@ -47,6 +47,7 @@ class HealthCheckResult:
 @dataclass
 class SystemHealthReport:
     """系统整体健康报告"""
+
     overall_status: HealthStatus
     checks: List[HealthCheckResult]
     checked_at: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
@@ -220,7 +221,7 @@ class DreamOSHealthChecker:
 
         try:
             history = self.reflector_history_getter() or []
-            window = history[-self.reflector_window_size:]
+            window = history[-self.reflector_window_size :]
             total = len(window)
 
             if total == 0:
@@ -231,10 +232,7 @@ class DreamOSHealthChecker:
                     details={"total": 0},
                 )
 
-            anomaly_count = sum(
-                1 for item in window
-                if self._is_reflector_anomaly(item)
-            )
+            anomaly_count = sum(1 for item in window if self._is_reflector_anomaly(item))
             anomaly_rate = anomaly_count / total
 
             if anomaly_rate <= self.reflector_anomaly_rate_threshold:

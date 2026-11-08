@@ -8,6 +8,7 @@ TDD: di.py 三后端激活 + Kill-Switch 物理文件测试
  4. test_dual_write_backend_smoke：dual_write 后端可用，repo 类型正确
  5. test_explicit_backend_param_overrides_env：显式传入 backend= 参数覆盖 DB_BACKEND env
 """
+
 from __future__ import annotations
 
 from dreambuddy_dal.protocols import (
@@ -33,6 +34,7 @@ def test_resolve_backend_kill_switch_forces_json_legacy(monkeypatch, tmp_path):
         BACKEND_JSON_LEGACY,
         _resolve_backend,
     )
+
     # Kill-Switch 优先级最高
     assert _resolve_backend("sqlite_unified") == BACKEND_JSON_LEGACY
     assert _resolve_backend(None) == BACKEND_JSON_LEGACY
@@ -48,6 +50,7 @@ def test_db_backend_env_sqlite_unified_allowed(monkeypatch, tmp_path):
         BACKEND_SQLITE_UNIFIED,
         _resolve_backend,
     )
+
     assert _resolve_backend(None) == BACKEND_SQLITE_UNIFIED
 
 
@@ -61,6 +64,7 @@ def test_factory_builds_all_sqlite_repos(monkeypatch, tmp_path):
 
     # 清全局单例缓存（否则其他测试遗留下的 instance 会影响）
     import dreambuddy_dal.di as _di
+
     _di._INSTANCES.clear()
 
     from dreambuddy_dal.di import (
@@ -71,6 +75,7 @@ def test_factory_builds_all_sqlite_repos(monkeypatch, tmp_path):
         get_risk_repo,
         get_trade_repo,
     )
+
     t = get_trade_repo()
     assert isinstance(t, TradeRepository)
 
@@ -96,9 +101,11 @@ def test_dual_write_backend_smoke(monkeypatch, tmp_path):
     monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(tmp_path / "core.db"))
 
     import dreambuddy_dal.di as _di
+
     _di._INSTANCES.clear()
 
     from dreambuddy_dal.di import BACKEND_DUAL_WRITE, get_trade_repo
+
     repo = get_trade_repo(backend=BACKEND_DUAL_WRITE)
     assert repo is not None
     assert isinstance(repo, TradeRepository)
@@ -111,10 +118,12 @@ def test_explicit_backend_param_overrides_env(monkeypatch, tmp_path):
     monkeypatch.setenv("DREAMBUDDY_CORE_DB", str(tmp_path / "core.db"))
 
     import dreambuddy_dal.di as _di
+
     _di._INSTANCES.clear()
 
     from dreambuddy_dal.di import (
         BACKEND_SQLITE_UNIFIED,
         _resolve_backend,
     )
+
     assert _resolve_backend(BACKEND_SQLITE_UNIFIED) == BACKEND_SQLITE_UNIFIED

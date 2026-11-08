@@ -12,6 +12,7 @@
 - 回滚（_rollback_points_get, _rollback_snapshot_append）
 - 运行时（_runtime_config_version）
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -80,6 +81,7 @@ _ensure_config_loaded()
 # 基础工具
 # ---------------------------------------------------------------------------
 
+
 def _now_ms() -> int:
     return int(time.time() * 1000)
 
@@ -106,7 +108,7 @@ def _json_sanitize(x: Any) -> Any:
     if isinstance(x, (str, bool, int)):
         return x
     if isinstance(x, float):
-        return (x if math.isfinite(x) else None)
+        return x if math.isfinite(x) else None
     if isinstance(x, dict):
         return {str(k): _json_sanitize(v) for k, v in x.items()}
     if isinstance(x, (list, tuple)):
@@ -124,7 +126,9 @@ def _stable_json_dumps(obj: Any) -> str:
         return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     except Exception:
         try:
-            return json.dumps(_json_sanitize(obj), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            return json.dumps(
+                _json_sanitize(obj), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            )
         except Exception:
             return "{}"
 
@@ -132,6 +136,7 @@ def _stable_json_dumps(obj: Any) -> str:
 # ---------------------------------------------------------------------------
 # 治理判断
 # ---------------------------------------------------------------------------
+
 
 def _governance_env_name() -> str:
     try:
@@ -172,19 +177,27 @@ def _governance_baseline_judge(delta_metrics: Any) -> Dict[str, Any]:
         return float(pair.get("candidate") / b)
 
     try:
-        dd_ratio_thr = float(CONFIG.get("governance_baseline_hard_reject_maxdd_ratio", 1.10) or 1.10)
+        dd_ratio_thr = float(
+            CONFIG.get("governance_baseline_hard_reject_maxdd_ratio", 1.10) or 1.10
+        )
     except Exception:
         dd_ratio_thr = 1.10
     try:
-        trades_ratio_thr = float(CONFIG.get("governance_baseline_hard_reject_trades_ratio", 0.80) or 0.80)
+        trades_ratio_thr = float(
+            CONFIG.get("governance_baseline_hard_reject_trades_ratio", 0.80) or 0.80
+        )
     except Exception:
         trades_ratio_thr = 0.80
     try:
-        exec_ratio_thr = float(CONFIG.get("governance_baseline_hard_reject_exec_ratio", 1.20) or 1.20)
+        exec_ratio_thr = float(
+            CONFIG.get("governance_baseline_hard_reject_exec_ratio", 1.20) or 1.20
+        )
     except Exception:
         exec_ratio_thr = 1.20
     try:
-        improve_rel_thr = float(CONFIG.get("governance_baseline_soft_pass_min_rel_improve", 0.05) or 0.05)
+        improve_rel_thr = float(
+            CONFIG.get("governance_baseline_soft_pass_min_rel_improve", 0.05) or 0.05
+        )
     except Exception:
         improve_rel_thr = 0.05
 
@@ -206,7 +219,13 @@ def _governance_baseline_judge(delta_metrics: Any) -> Dict[str, Any]:
         except Exception:
             pass
 
-    for k0 in ("reject_rate", "order_fail_rate", "stoploss_hit_rate", "fat_finger_rate", "exec_risk_trigger_rate"):
+    for k0 in (
+        "reject_rate",
+        "order_fail_rate",
+        "stoploss_hit_rate",
+        "fat_finger_rate",
+        "exec_risk_trigger_rate",
+    ):
         kp = _get_pair(k0)
         if kp is None:
             continue
@@ -249,7 +268,11 @@ def _governance_baseline_judge(delta_metrics: Any) -> Dict[str, Any]:
 
 
 def _governance_tighten_only(change_tags: Any) -> bool:
-    tags = [str(x).strip() for x in (change_tags if isinstance(change_tags, list) else []) if str(x or "").strip()]
+    tags = [
+        str(x).strip()
+        for x in (change_tags if isinstance(change_tags, list) else [])
+        if str(x or "").strip()
+    ]
     s = set(tags)
     if "loosen" in s:
         return False
@@ -267,7 +290,7 @@ def _governance_has_improvement(delta_metrics: Any) -> bool:
 # Lookahead 未来函数检测
 # ---------------------------------------------------------------------------
 
-import re as _re
+import re as _re  # noqa: E402
 
 # 未来函数模式：在策略代码中引用未来数据的反模式
 _LOOKAHEAD_PATTERNS = [
@@ -307,12 +330,14 @@ def _lookahead_check(strategy_code: str) -> Dict[str, Any]:
             continue
         for pattern, name, severity in _LOOKAHEAD_PATTERNS:
             if _re.search(pattern, line):
-                findings.append({
-                    "pattern": name,
-                    "line": line_no,
-                    "severity": severity,
-                    "snippet": stripped[:200],
-                })
+                findings.append(
+                    {
+                        "pattern": name,
+                        "line": line_no,
+                        "severity": severity,
+                        "snippet": stripped[:200],
+                    }
+                )
                 break  # 每行只报告一次
 
     has_lookahead = len(findings) > 0
@@ -337,15 +362,23 @@ def _lookahead_check_file(strategy_path: str) -> Dict[str, Any]:
     """从策略文件路径检测未来函数。"""
     try:
         from pathlib import Path as _Path
+
         code = _Path(strategy_path).read_text(encoding="utf-8", errors="replace")
     except Exception as e:
-        return {"ok": False, "has_lookahead": False, "error": str(e), "findings": [], "severity": "clean"}
+        return {
+            "ok": False,
+            "has_lookahead": False,
+            "error": str(e),
+            "findings": [],
+            "severity": "clean",
+        }
     return _lookahead_check(code)
 
 
 # ---------------------------------------------------------------------------
 # 文档/证据清洗
 # ---------------------------------------------------------------------------
+
 
 def _doc_refs_default() -> List[Dict[str, Any]]:
     return [
@@ -363,7 +396,9 @@ def _doc_refs_sanitize(doc_refs: Any) -> List[Dict[str, Any]]:
     return out
 
 
-def _evidence_sanitize(evidence: Any, *, gate_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def _evidence_sanitize(
+    evidence: Any, *, gate_results: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     ev = evidence if isinstance(evidence, dict) else {}
     if not ev and isinstance(gate_results, dict) and gate_results:
         ev = {"gate_results": gate_results}
@@ -400,6 +435,7 @@ def _agent_chat_enforce_doc_refs(doc_refs: List[Dict[str, Any]]) -> List[Dict[st
 # ---------------------------------------------------------------------------
 # Outbox / 审计
 # ---------------------------------------------------------------------------
+
 
 def _agent_outbox_dir() -> Path:
     """27 模块独立的 outbox 目录。"""
@@ -441,12 +477,19 @@ def _approvals_log_path() -> Path:
     return _agent_outbox_dir() / "approvals.jsonl"
 
 
-def _audit_base_payload(scope: str, action: str, *, trace_id: Optional[str] = None, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def _audit_base_payload(
+    scope: str,
+    action: str,
+    *,
+    trace_id: Optional[str] = None,
+    extra: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """构造审计基础 payload。在 Flask 上下文内可用 request 对象。"""
     now_ms = _now_ms()
     actor = source = ip = ua = path = method = None
     try:
         from flask import request as _req
+
         actor = str(_req.headers.get("X-Actor") or "").strip() or None
         source = str(_req.headers.get("X-Source") or "").strip() or None
         ip = str(_req.remote_addr or "").strip() or None
@@ -459,6 +502,7 @@ def _audit_base_payload(scope: str, action: str, *, trace_id: Optional[str] = No
     if tid is None:
         try:
             from flask import request as _req
+
             tid = str(_req.headers.get("X-Trace-Id") or "").strip() or None
         except Exception:
             tid = None
@@ -506,7 +550,11 @@ def _agent_emit_envelope_event(
     il = str(intent_level or "L1").strip().upper() or "L1"
     ts0 = int(ts_ms or _now_ms())
     try:
-        stable = json.dumps({"event": ev, "trace_id": tid, "ts": ts0, "inputs": inputs}, sort_keys=True, ensure_ascii=False)
+        stable = json.dumps(
+            {"event": ev, "trace_id": tid, "ts": ts0, "inputs": inputs},
+            sort_keys=True,
+            ensure_ascii=False,
+        )
     except Exception:
         stable = f"{ev}|{tid}|{ts0}"
     try:
@@ -527,7 +575,9 @@ def _agent_emit_envelope_event(
         "doc_refs": (doc_refs if isinstance(doc_refs, list) else []),
     }
     try:
-        _agent_outbox_append_jsonl("chat.jsonl", {"id": eid, "trace_id": tid, "ts": int(ts0), "type": ev, "envelope": env})
+        _agent_outbox_append_jsonl(
+            "chat.jsonl", {"id": eid, "trace_id": tid, "ts": int(ts0), "type": ev, "envelope": env}
+        )
     except Exception:
         pass
     return env
@@ -537,18 +587,30 @@ def _agent_emit_envelope_event(
 # 变更包工具
 # ---------------------------------------------------------------------------
 
-def _agent_change_bundle_change_id(*, strategy_key: str, action: str, policy_ref: str, config_patch: Dict[str, Any], baseline_ref: Optional[str]) -> str:
-    stable = _stable_json_dumps({
-        "strategy_key": str(strategy_key),
-        "action": str(action),
-        "policy_ref": str(policy_ref),
-        "baseline_ref": (baseline_ref or None),
-        "config_patch": (config_patch if isinstance(config_patch, dict) else {}),
-    })
+
+def _agent_change_bundle_change_id(
+    *,
+    strategy_key: str,
+    action: str,
+    policy_ref: str,
+    config_patch: Dict[str, Any],
+    baseline_ref: Optional[str],
+) -> str:
+    stable = _stable_json_dumps(
+        {
+            "strategy_key": str(strategy_key),
+            "action": str(action),
+            "policy_ref": str(policy_ref),
+            "baseline_ref": (baseline_ref or None),
+            "config_patch": (config_patch if isinstance(config_patch, dict) else {}),
+        }
+    )
     return hashlib.sha256(stable.encode("utf-8")).hexdigest()[:32]
 
 
-def _agent_config_diff_direction(*, key: str, from_v: Any, to_v: Any, rule: Optional[Dict[str, Any]]) -> str:
+def _agent_config_diff_direction(
+    *, key: str, from_v: Any, to_v: Any, rule: Optional[Dict[str, Any]]
+) -> str:
     tr = str((rule or {}).get("tighten_rule") or "").strip().lower()
     tp = str((rule or {}).get("type") or "").strip().lower()
     if from_v == to_v:
@@ -560,8 +622,16 @@ def _agent_config_diff_direction(*, key: str, from_v: Any, to_v: Any, rule: Opti
     if tr == "restrict_only":
         if tp != "list_str":
             return "neutral"
-        a = {str(x).strip().upper() for x in (from_v if isinstance(from_v, list) else []) if str(x or "").strip()}
-        b = {str(x).strip().upper() for x in (to_v if isinstance(to_v, list) else []) if str(x or "").strip()}
+        a = {
+            str(x).strip().upper()
+            for x in (from_v if isinstance(from_v, list) else [])
+            if str(x or "").strip()
+        }
+        b = {
+            str(x).strip().upper()
+            for x in (to_v if isinstance(to_v, list) else [])
+            if str(x or "").strip()
+        }
         if b.issubset(a) and a != b:
             return "tighten"
         if a.issubset(b) and a != b:
@@ -590,7 +660,12 @@ def _agent_config_diff_direction(*, key: str, from_v: Any, to_v: Any, rule: Opti
     return "neutral"
 
 
-def _agent_config_diff_build(*, config_patch: Dict[str, Any], base_cfg: Optional[Dict[str, Any]], rules: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+def _agent_config_diff_build(
+    *,
+    config_patch: Dict[str, Any],
+    base_cfg: Optional[Dict[str, Any]],
+    rules: Dict[str, Dict[str, Any]],
+) -> Dict[str, Any]:
     patch = config_patch if isinstance(config_patch, dict) else {}
     base = base_cfg if isinstance(base_cfg, dict) else {}
     changes: List[Dict[str, Any]] = []
@@ -601,8 +676,19 @@ def _agent_config_diff_build(*, config_patch: Dict[str, Any], base_cfg: Optional
         except Exception:
             frm = None
         to = patch.get(k)
-        direction = _agent_config_diff_direction(key=k, from_v=frm, to_v=to, rule=rule if isinstance(rule, dict) else None)
-        changes.append({"key": k, "from": frm, "to": to, "direction": direction, "reason": None, "allowlist_ref": f"agent_auto_config_rules_v1:{k}"})
+        direction = _agent_config_diff_direction(
+            key=k, from_v=frm, to_v=to, rule=rule if isinstance(rule, dict) else None
+        )
+        changes.append(
+            {
+                "key": k,
+                "from": frm,
+                "to": to,
+                "direction": direction,
+                "reason": None,
+                "allowlist_ref": f"agent_auto_config_rules_v1:{k}",
+            }
+        )
     return {"changes": changes}
 
 
@@ -615,8 +701,22 @@ def _agent_change_tags_from_config_diff(config_diff: Dict[str, Any]) -> List[str
         tags.append("tighten")
     if any(isinstance(c, dict) and str(c.get("direction") or "") == "loosen" for c in changes):
         tags.append("loosen")
-    risk_keys = {"max_open_trades", "max_orders_per_minute", "entry_max_notional_usdc", "entry_fixed_notional_usdc", "entry_min_notional_usdc", "hl_default_leverage", "aster_default_leverage"}
-    exposure_increase_keys = {"entry_max_notional_usdc", "entry_fixed_notional_usdc", "entry_min_notional_usdc", "hl_default_leverage", "aster_default_leverage"}
+    risk_keys = {
+        "max_open_trades",
+        "max_orders_per_minute",
+        "entry_max_notional_usdc",
+        "entry_fixed_notional_usdc",
+        "entry_min_notional_usdc",
+        "hl_default_leverage",
+        "aster_default_leverage",
+    }
+    exposure_increase_keys = {
+        "entry_max_notional_usdc",
+        "entry_fixed_notional_usdc",
+        "entry_min_notional_usdc",
+        "hl_default_leverage",
+        "aster_default_leverage",
+    }
     try:
         for c in changes:
             if not isinstance(c, dict):
@@ -674,7 +774,11 @@ def _agent_expected_effect_from_delta_metrics(delta_metrics: Any) -> Dict[str, A
         pass
     if not primary_metrics_up and dm:
         tradeoffs.append("metrics_delta_unclear")
-    return {"primary_metrics_up": primary_metrics_up, "possible_tradeoffs": tradeoffs, "regime_assumptions": []}
+    return {
+        "primary_metrics_up": primary_metrics_up,
+        "possible_tradeoffs": tradeoffs,
+        "regime_assumptions": [],
+    }
 
 
 def _agent_change_bundle_draft_validate(obj: Any) -> Dict[str, Any]:
@@ -688,7 +792,11 @@ def _agent_change_bundle_draft_validate(obj: Any) -> Dict[str, Any]:
     if not cid:
         errors.append({"path": "$.change_id", "error": "missing"})
     tags = obj.get("change_tags")
-    if not (isinstance(tags, list) and all(isinstance(x, str) and x.strip() for x in tags) and len(tags) <= 50):
+    if not (
+        isinstance(tags, list)
+        and all(isinstance(x, str) and x.strip() for x in tags)
+        and len(tags) <= 50
+    ):
         errors.append({"path": "$.change_tags", "error": "bad_type"})
     diff_ref = obj.get("diff_ref")
     if not isinstance(diff_ref, dict):
@@ -697,7 +805,9 @@ def _agent_change_bundle_draft_validate(obj: Any) -> Dict[str, Any]:
     if not isinstance(exp, dict):
         errors.append({"path": "$.expected_effect", "error": "bad_type"})
     rb = obj.get("rollback_plan")
-    if not isinstance(rb, dict) or (rb.get("rollback_to") is None and rb.get("rollback_point_id") is None):
+    if not isinstance(rb, dict) or (
+        rb.get("rollback_to") is None and rb.get("rollback_point_id") is None
+    ):
         errors.append({"path": "$.rollback_plan", "error": "bad_type"})
     req = obj.get("required_gates")
     if not isinstance(req, dict):
@@ -726,47 +836,115 @@ def _agent_auto_config_rules() -> Dict[str, Dict[str, Any]]:
                 out[str(k).strip()] = v
 
     # 默认规则集
-    out.update({
-        "dry_run": {"mode": "auto", "type": "bool"},
-        "arena_enabled": {"mode": "auto", "type": "bool"},
-        "three_screen_use_ml_vote": {"mode": "auto", "type": "bool"},
-        "elastic_vote_rule": {"mode": "auto", "type": "json", "json_writable": True},
-        "entry_inflight_cooldown_sec": {"mode": "auto-tighten-only", "type": "int", "min": 0, "max": 86400, "tighten_rule": "increase"},
-        "paramopt_fast_apply_enabled": {"mode": "auto", "type": "bool"},
-        "paramopt_fast_apply_allowed_keys": {"mode": "auto", "type": "json", "json_writable": True},
-        "paramopt_fast_apply_delta_caps": {"mode": "auto", "type": "json", "json_writable": True},
-        "paramopt_fast_apply_max_keys": {"mode": "auto", "type": "int", "min": 1, "max": 50},
-        "paramopt_fast_apply_daily_limit": {"mode": "auto", "type": "int", "min": 0, "max": 200},
-        "paramopt_fast_apply_min_interval_sec": {"mode": "auto", "type": "int", "min": 0, "max": 86400},
-        "paramopt_fast_apply_monitor_window_sec": {"mode": "auto", "type": "int", "min": 0, "max": 86400},
-        "paramopt_fast_apply_auto_rollback_enabled": {"mode": "auto", "type": "bool"},
-        "paramopt_fast_apply_rollback_on_p0": {"mode": "auto", "type": "bool"},
-        "paramopt_fast_apply_state": {"mode": "auto", "type": "json", "json_writable": True},
-        "paramopt_fast_apply_triggers": {"mode": "auto", "type": "json", "json_writable": True},
-        "execution_venue": {"mode": "suggest-only", "type": "str"},
-        "aster_trading_enabled": {"mode": "suggest-only", "type": "bool"},
-        "hl_trading_enabled": {"mode": "suggest-only", "type": "bool"},
-        "entry_fixed_notional_usdc": {"mode": "suggest-only", "type": "float", "min": 1.0, "max": 1_000_000.0},
-        "entry_min_notional_usdc": {"mode": "suggest-only", "type": "float", "min": 0.0, "max": 1_000_000.0},
-        "entry_max_notional_usdc": {"mode": "suggest-only", "type": "float", "min": 0.0, "max": 1_000_000.0},
-        "hl_min_notional_usdc": {"mode": "suggest-only", "type": "float", "min": 0.0, "max": 1_000_000.0},
-        "hl_max_notional_usdc": {"mode": "suggest-only", "type": "float", "min": 0.0, "max": 1_000_000.0},
-        "aster_min_notional_usdc": {"mode": "suggest-only", "type": "float", "min": 0.0, "max": 1_000_000.0},
-        "aster_max_notional_usdc": {"mode": "suggest-only", "type": "float", "min": 0.0, "max": 1_000_000.0},
-        "hl_default_leverage": {"mode": "suggest-only", "type": "int", "min": 1, "max": 50},
-        "aster_default_leverage": {"mode": "suggest-only", "type": "int", "min": 1, "max": 50},
-        "trade_whitelist": {"mode": "suggest-only", "type": "list_str", "max_len": 200},
-        "universe_core_enforcement": {"mode": "suggest-only", "type": "str"},
-        "config_allow_remote": {"mode": "suggest-only", "type": "bool"},
-        "live_execute_allow_remote": {"mode": "suggest-only", "type": "bool"},
-        "repo_fetch_enabled": {"mode": "suggest-only", "type": "bool"},
-        "repo_whitelist": {"mode": "suggest-only", "type": "list_str", "max_len": 200},
-    })
+    out.update(
+        {
+            "dry_run": {"mode": "auto", "type": "bool"},
+            "arena_enabled": {"mode": "auto", "type": "bool"},
+            "three_screen_use_ml_vote": {"mode": "auto", "type": "bool"},
+            "elastic_vote_rule": {"mode": "auto", "type": "json", "json_writable": True},
+            "entry_inflight_cooldown_sec": {
+                "mode": "auto-tighten-only",
+                "type": "int",
+                "min": 0,
+                "max": 86400,
+                "tighten_rule": "increase",
+            },
+            "paramopt_fast_apply_enabled": {"mode": "auto", "type": "bool"},
+            "paramopt_fast_apply_allowed_keys": {
+                "mode": "auto",
+                "type": "json",
+                "json_writable": True,
+            },
+            "paramopt_fast_apply_delta_caps": {
+                "mode": "auto",
+                "type": "json",
+                "json_writable": True,
+            },
+            "paramopt_fast_apply_max_keys": {"mode": "auto", "type": "int", "min": 1, "max": 50},
+            "paramopt_fast_apply_daily_limit": {
+                "mode": "auto",
+                "type": "int",
+                "min": 0,
+                "max": 200,
+            },
+            "paramopt_fast_apply_min_interval_sec": {
+                "mode": "auto",
+                "type": "int",
+                "min": 0,
+                "max": 86400,
+            },
+            "paramopt_fast_apply_monitor_window_sec": {
+                "mode": "auto",
+                "type": "int",
+                "min": 0,
+                "max": 86400,
+            },
+            "paramopt_fast_apply_auto_rollback_enabled": {"mode": "auto", "type": "bool"},
+            "paramopt_fast_apply_rollback_on_p0": {"mode": "auto", "type": "bool"},
+            "paramopt_fast_apply_state": {"mode": "auto", "type": "json", "json_writable": True},
+            "paramopt_fast_apply_triggers": {"mode": "auto", "type": "json", "json_writable": True},
+            "execution_venue": {"mode": "suggest-only", "type": "str"},
+            "aster_trading_enabled": {"mode": "suggest-only", "type": "bool"},
+            "hl_trading_enabled": {"mode": "suggest-only", "type": "bool"},
+            "entry_fixed_notional_usdc": {
+                "mode": "suggest-only",
+                "type": "float",
+                "min": 1.0,
+                "max": 1_000_000.0,
+            },
+            "entry_min_notional_usdc": {
+                "mode": "suggest-only",
+                "type": "float",
+                "min": 0.0,
+                "max": 1_000_000.0,
+            },
+            "entry_max_notional_usdc": {
+                "mode": "suggest-only",
+                "type": "float",
+                "min": 0.0,
+                "max": 1_000_000.0,
+            },
+            "hl_min_notional_usdc": {
+                "mode": "suggest-only",
+                "type": "float",
+                "min": 0.0,
+                "max": 1_000_000.0,
+            },
+            "hl_max_notional_usdc": {
+                "mode": "suggest-only",
+                "type": "float",
+                "min": 0.0,
+                "max": 1_000_000.0,
+            },
+            "aster_min_notional_usdc": {
+                "mode": "suggest-only",
+                "type": "float",
+                "min": 0.0,
+                "max": 1_000_000.0,
+            },
+            "aster_max_notional_usdc": {
+                "mode": "suggest-only",
+                "type": "float",
+                "min": 0.0,
+                "max": 1_000_000.0,
+            },
+            "hl_default_leverage": {"mode": "suggest-only", "type": "int", "min": 1, "max": 50},
+            "aster_default_leverage": {"mode": "suggest-only", "type": "int", "min": 1, "max": 50},
+            "trade_whitelist": {"mode": "suggest-only", "type": "list_str", "max_len": 200},
+            "universe_core_enforcement": {"mode": "suggest-only", "type": "str"},
+            "config_allow_remote": {"mode": "suggest-only", "type": "bool"},
+            "live_execute_allow_remote": {"mode": "suggest-only", "type": "bool"},
+            "repo_fetch_enabled": {"mode": "suggest-only", "type": "bool"},
+            "repo_whitelist": {"mode": "suggest-only", "type": "list_str", "max_len": 200},
+        }
+    )
     _AGENT_AUTO_CONFIG_RULES_CACHE = out
     return out
 
 
-def _config_patch_level_info(patch: Dict[str, Any], *, base_cfg: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def _config_patch_level_info(
+    patch: Dict[str, Any], *, base_cfg: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     if not isinstance(patch, dict) or not patch:
         return {"ok": True, "level": "B", "reasons": ["empty_patch"], "keys": []}
     rules = _agent_auto_config_rules()
@@ -780,14 +958,29 @@ def _config_patch_level_info(patch: Dict[str, Any], *, base_cfg: Optional[Dict[s
             continue
         modes[k] = str(r.get("mode") or "").strip().lower() or "auto"
     if unknown_keys:
-        return {"ok": True, "level": "B", "reasons": ["unknown_keys"], "keys": keys, "unknown_keys": unknown_keys, "modes": modes}
-    tighten_only_keys = [k for k in keys if str(modes.get(k) or "").strip().lower() == "auto-tighten-only"]
+        return {
+            "ok": True,
+            "level": "B",
+            "reasons": ["unknown_keys"],
+            "keys": keys,
+            "unknown_keys": unknown_keys,
+            "modes": modes,
+        }
+    tighten_only_keys = [
+        k for k in keys if str(modes.get(k) or "").strip().lower() == "auto-tighten-only"
+    ]
     all_tighten_only_mode = (len(tighten_only_keys) == len(keys)) and bool(keys)
     level = "A" if all_tighten_only_mode else "B"
     reasons: List[str] = []
     if not all_tighten_only_mode:
         reasons.append("contains_non_tighten_only_keys")
-    out: Dict[str, Any] = {"ok": True, "level": level, "keys": keys, "modes": modes, "all_tighten_only_mode": bool(all_tighten_only_mode)}
+    out: Dict[str, Any] = {
+        "ok": True,
+        "level": level,
+        "keys": keys,
+        "modes": modes,
+        "all_tighten_only_mode": bool(all_tighten_only_mode),
+    }
     if reasons:
         out["reasons"] = reasons
     return out
@@ -797,6 +990,7 @@ def _config_patch_level_info(patch: Dict[str, Any], *, base_cfg: Optional[Dict[s
 # 回滚
 # ---------------------------------------------------------------------------
 
+
 def _rollback_points_get() -> List[Dict[str, Any]]:
     raw = CONFIG.get("rollback_points")
     if not isinstance(raw, list):
@@ -804,12 +998,16 @@ def _rollback_points_get() -> List[Dict[str, Any]]:
     return [it for it in raw if isinstance(it, dict)]
 
 
-def _rollback_snapshot_append(*, label: str, reason: str, config_keys: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+def _rollback_snapshot_append(
+    *, label: str, reason: str, config_keys: Optional[List[str]] = None
+) -> Optional[Dict[str, Any]]:
     """创建回滚快照（简化版，27模块独立存储）。"""
     try:
         now_ms = _now_ms()
         pt = {
-            "id": hashlib.sha256(f"rb|{now_ms}|{uuid.uuid4().hex}".encode("utf-8")).hexdigest()[:16],
+            "id": hashlib.sha256(f"rb|{now_ms}|{uuid.uuid4().hex}".encode("utf-8")).hexdigest()[
+                :16
+            ],
             "ts": now_ms,
             "label": str(label or "rollback").strip() or "rollback",
             "reason": str(reason or "").strip() or None,
@@ -830,20 +1028,33 @@ def _rollback_snapshot_append(*, label: str, reason: str, config_keys: Optional[
 # 运行时
 # ---------------------------------------------------------------------------
 
+
 def _runtime_config_version(cfg: Dict[str, Any]) -> Optional[str]:
     try:
-        cfg_norm = json.dumps(cfg, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        cfg_norm = json.dumps(
+            cfg, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
         return hashlib.sha256(cfg_norm).hexdigest()
     except Exception:
         return None
 
 
-def _behavior_summary_autogen_style_mutation(*, candidate: Dict[str, Any], baseline: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def _behavior_summary_autogen_style_mutation(
+    *, candidate: Dict[str, Any], baseline: Optional[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
     """生成行为摘要（简化版）。"""
     if not isinstance(candidate, dict) or not candidate:
         return None
-    cm = candidate.get("metrics_summary") if isinstance(candidate.get("metrics_summary"), dict) else {}
-    ca = candidate.get("aligned_metrics") if isinstance(candidate.get("aligned_metrics"), dict) else {}
+    cm = (
+        candidate.get("metrics_summary")
+        if isinstance(candidate.get("metrics_summary"), dict)
+        else {}
+    )
+    ca = (
+        candidate.get("aligned_metrics")
+        if isinstance(candidate.get("aligned_metrics"), dict)
+        else {}
+    )
 
     def _trades_per_day(m: Dict[str, Any]) -> Optional[float]:
         try:
@@ -893,26 +1104,48 @@ def _behavior_summary_autogen_style_mutation(*, candidate: Dict[str, Any], basel
 
 __all__ = [
     # 基础
-    "CONFIG", "_now_ms", "_tail_lines", "_json_sanitize", "_stable_json_dumps",
+    "CONFIG",
+    "_now_ms",
+    "_tail_lines",
+    "_json_sanitize",
+    "_stable_json_dumps",
     # 治理
-    "_governance_env_name", "_governance_baseline_judge", "_governance_tighten_only", "_governance_has_improvement",
+    "_governance_env_name",
+    "_governance_baseline_judge",
+    "_governance_tighten_only",
+    "_governance_has_improvement",
     # Lookahead 检测
-    "_lookahead_check", "_lookahead_check_file",
+    "_lookahead_check",
+    "_lookahead_check_file",
     # 文档
-    "_doc_refs_default", "_doc_refs_sanitize", "_evidence_sanitize", "_agent_chat_enforce_doc_refs",
+    "_doc_refs_default",
+    "_doc_refs_sanitize",
+    "_evidence_sanitize",
+    "_agent_chat_enforce_doc_refs",
     # Outbox/审计
-    "_agent_outbox_dir", "_agent_outbox_append_jsonl", "_approvals_log_path",
-    "_audit_base_payload", "_audit_emit_action", "_agent_emit_envelope_event",
+    "_agent_outbox_dir",
+    "_agent_outbox_append_jsonl",
+    "_approvals_log_path",
+    "_audit_base_payload",
+    "_audit_emit_action",
+    "_agent_emit_envelope_event",
     # 变更包
-    "_agent_change_bundle_change_id", "_agent_config_diff_build", "_agent_config_diff_direction",
-    "_agent_change_tags_from_config_diff", "_agent_expected_effect_from_delta_metrics",
+    "_agent_change_bundle_change_id",
+    "_agent_config_diff_build",
+    "_agent_config_diff_direction",
+    "_agent_change_tags_from_config_diff",
+    "_agent_expected_effect_from_delta_metrics",
     "_agent_change_bundle_draft_validate",
     # 配置规则
-    "_agent_auto_config_rules", "_config_patch_level_info",
+    "_agent_auto_config_rules",
+    "_config_patch_level_info",
     # 回滚
-    "_rollback_points_get", "_rollback_snapshot_append",
+    "_rollback_points_get",
+    "_rollback_snapshot_append",
     # 运行时
-    "_runtime_config_version", "_behavior_summary_autogen_style_mutation",
+    "_runtime_config_version",
+    "_behavior_summary_autogen_style_mutation",
     # 配置管理
-    "_config_get", "_config_save",
+    "_config_get",
+    "_config_save",
 ]

@@ -6,16 +6,16 @@
   WV_1D:   BTC风向标1日确认（当日收盘跌破即平多允空）
   WV_3D:   BTC风向标3日确认（连续3日收盘跌破才平多允空）
 """
-import sys
+
 import json
+import sys
 from pathlib import Path
-from collections import Counter
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 sys.path.insert(0, str(BASE_DIR / "lib"))
 
-from v15_backtest import run_backtest, fetch_klines
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
 
 coins = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
 limit = 1500
@@ -36,22 +36,27 @@ for coin in coins:
         print(f"  {coin}: 数据不足")
         continue
 
-    common_kw = dict(
-        coin=coin, klines=klines,
-        use_atr=True, use_trailing_tp=True,
-        long_only=False, base_position_pct=0.22,
+    common_kw = dict(  # noqa: C408
+        coin=coin,
+        klines=klines,
+        use_atr=True,
+        use_trailing_tp=True,
+        long_only=False,
+        base_position_pct=0.22,
     )
 
     # 基线
     r_base = run_backtest(**common_kw, use_btc_windvane=False, use_direction_gate=True)
 
     # 1日确认风向标
-    r_wv1d = run_backtest(**common_kw, use_btc_windvane=True, use_direction_gate=False,
-                           btc_windvane_confirm_days=1)
+    r_wv1d = run_backtest(
+        **common_kw, use_btc_windvane=True, use_direction_gate=False, btc_windvane_confirm_days=1
+    )
 
     # 3日确认风向标
-    r_wv3d = run_backtest(**common_kw, use_btc_windvane=True, use_direction_gate=False,
-                           btc_windvane_confirm_days=3)
+    r_wv3d = run_backtest(
+        **common_kw, use_btc_windvane=True, use_direction_gate=False, btc_windvane_confirm_days=3
+    )
 
     all_results.append((coin, r_base, r_wv1d, r_wv3d))
 
@@ -60,14 +65,26 @@ for coin in coins:
     m_3d = r_wv3d["metrics"]
 
     print(f"\n  {coin} 详细对比:")
-    print(f"    指标            BASE(MA200+DG)    WV_1D(1日确认)     WV_3D(3日确认)")
+    print("    指标            BASE(MA200+DG)    WV_1D(1日确认)     WV_3D(3日确认)")
     print(f"    {'-'*75}")
-    print(f"    总收益:     {m_base['total_return_pct']:>+9.2f}%    {m_1d['total_return_pct']:>+9.2f}%    {m_3d['total_return_pct']:>+9.2f}%")
-    print(f"    交易数:     {m_base['total_trades']:>9}      {m_1d['total_trades']:>9}      {m_3d['total_trades']:>9}")
-    print(f"    胜率:       {m_base['win_rate']*100:>8.2f}%     {m_1d['win_rate']*100:>8.2f}%     {m_3d['win_rate']*100:>8.2f}%")
-    print(f"    盈亏比:     {m_base['profit_factor']:>9.2f}     {m_1d['profit_factor']:>9.2f}     {m_3d['profit_factor']:>9.2f}")
-    print(f"    最大回撤:   {m_base['max_drawdown_pct']:>8.2f}%     {m_1d['max_drawdown_pct']:>8.2f}%     {m_3d['max_drawdown_pct']:>8.2f}%")
-    print(f"    夏普比:     {m_base['sharpe_ratio']:>9.4f}     {m_1d['sharpe_ratio']:>9.4f}     {m_3d['sharpe_ratio']:>9.4f}")
+    print(
+        f"    总收益:     {m_base['total_return_pct']:>+9.2f}%    {m_1d['total_return_pct']:>+9.2f}%    {m_3d['total_return_pct']:>+9.2f}%"
+    )
+    print(
+        f"    交易数:     {m_base['total_trades']:>9}      {m_1d['total_trades']:>9}      {m_3d['total_trades']:>9}"
+    )
+    print(
+        f"    胜率:       {m_base['win_rate']*100:>8.2f}%     {m_1d['win_rate']*100:>8.2f}%     {m_3d['win_rate']*100:>8.2f}%"
+    )
+    print(
+        f"    盈亏比:     {m_base['profit_factor']:>9.2f}     {m_1d['profit_factor']:>9.2f}     {m_3d['profit_factor']:>9.2f}"
+    )
+    print(
+        f"    最大回撤:   {m_base['max_drawdown_pct']:>8.2f}%     {m_1d['max_drawdown_pct']:>8.2f}%     {m_3d['max_drawdown_pct']:>8.2f}%"
+    )
+    print(
+        f"    夏普比:     {m_base['sharpe_ratio']:>9.4f}     {m_1d['sharpe_ratio']:>9.4f}     {m_3d['sharpe_ratio']:>9.4f}"
+    )
     btc_base = 0
     btc_1d = m_1d.get("btc_windvane_exits", 0)
     btc_3d = m_3d.get("btc_windvane_exits", 0)
@@ -77,8 +94,10 @@ for coin in coins:
 print("\n" + "=" * 120)
 print("  📊 BTC风向标确认天数对比汇总")
 print("=" * 120)
-print(f"  {'币种':>6}  {'模式':>10}  {'总收益':>10}  {'交易数':>6}  {'胜率':>7}  "
-      f"{'盈亏比':>7}  {'最大回撤':>9}  {'夏普':>9}  {'BTC平仓':>7}")
+print(
+    f"  {'币种':>6}  {'模式':>10}  {'总收益':>10}  {'交易数':>6}  {'胜率':>7}  "
+    f"{'盈亏比':>7}  {'最大回撤':>9}  {'夏普':>9}  {'BTC平仓':>7}"
+)
 print("-" * 120)
 
 for coin, r_base, r_wv1d, r_wv3d in all_results:
@@ -88,10 +107,12 @@ for coin, r_base, r_wv1d, r_wv3d in all_results:
             continue
         m = r["metrics"]
         btc_exit = m.get("btc_windvane_exits", 0) if label != "BASE" else 0
-        print(f"  {coin:>6}  {label:>10}  {m['total_return_pct']:>+9.2f}%  {m['total_trades']:>6}  "
-              f"{m['win_rate']*100:>6.2f}%  {m['profit_factor']:>7.2f}  "
-              f"{m['max_drawdown_pct']:>8.2f}%  {m['sharpe_ratio']:>9.4f}  "
-              f"{btc_exit:>7}")
+        print(
+            f"  {coin:>6}  {label:>10}  {m['total_return_pct']:>+9.2f}%  {m['total_trades']:>6}  "
+            f"{m['win_rate']*100:>6.2f}%  {m['profit_factor']:>7.2f}  "
+            f"{m['max_drawdown_pct']:>8.2f}%  {m['sharpe_ratio']:>9.4f}  "
+            f"{btc_exit:>7}"
+        )
     print("-" * 120)
 
 # ── 效果总结与回退决策 ──
@@ -129,10 +150,12 @@ for coin, r_base, r_wv1d, r_wv3d in all_results:
     d3_sign = "✅" if d3_ret > 0 else "❌"
     d1v3_sign = "✅1日好" if d_1v3_ret > 0 else "➡️3日好"
 
-    print(f"  {coin:>6}: 1日确认{d1_sign}{d1_ret:>+7.2f}%  "
-          f"3日确认{d3_sign}{d3_ret:>+7.2f}%  "
-          f"1日vs3日{d1v3_sign}{d_1v3_ret:>+7.2f}%  "
-          f"→ 最优: {best_label}")
+    print(
+        f"  {coin:>6}: 1日确认{d1_sign}{d1_ret:>+7.2f}%  "
+        f"3日确认{d3_sign}{d3_ret:>+7.2f}%  "
+        f"1日vs3日{d1v3_sign}{d_1v3_ret:>+7.2f}%  "
+        f"→ 最优: {best_label}"
+    )
 
 print("  " + "-" * 105)
 
@@ -178,35 +201,37 @@ output = {
 for coin, r_base, r_wv1d, r_wv3d in all_results:
     if "error" in r_base or "error" in r_wv1d or "error" in r_wv3d:
         continue
-    output["results"].append({
-        "coin": coin,
-        "base": {
-            "total_return_pct": r_base["metrics"]["total_return_pct"],
-            "max_drawdown_pct": r_base["metrics"]["max_drawdown_pct"],
-            "sharpe_ratio": r_base["metrics"]["sharpe_ratio"],
-            "total_trades": r_base["metrics"]["total_trades"],
-            "win_rate": r_base["metrics"]["win_rate"],
-            "profit_factor": r_base["metrics"]["profit_factor"],
-        },
-        "wv_1d": {
-            "total_return_pct": r_wv1d["metrics"]["total_return_pct"],
-            "max_drawdown_pct": r_wv1d["metrics"]["max_drawdown_pct"],
-            "sharpe_ratio": r_wv1d["metrics"]["sharpe_ratio"],
-            "total_trades": r_wv1d["metrics"]["total_trades"],
-            "win_rate": r_wv1d["metrics"]["win_rate"],
-            "profit_factor": r_wv1d["metrics"]["profit_factor"],
-            "btc_windvane_exits": r_wv1d["metrics"].get("btc_windvane_exits", 0),
-        },
-        "wv_3d": {
-            "total_return_pct": r_wv3d["metrics"]["total_return_pct"],
-            "max_drawdown_pct": r_wv3d["metrics"]["max_drawdown_pct"],
-            "sharpe_ratio": r_wv3d["metrics"]["sharpe_ratio"],
-            "total_trades": r_wv3d["metrics"]["total_trades"],
-            "win_rate": r_wv3d["metrics"]["win_rate"],
-            "profit_factor": r_wv3d["metrics"]["profit_factor"],
-            "btc_windvane_exits": r_wv3d["metrics"].get("btc_windvane_exits", 0),
-        },
-    })
+    output["results"].append(
+        {
+            "coin": coin,
+            "base": {
+                "total_return_pct": r_base["metrics"]["total_return_pct"],
+                "max_drawdown_pct": r_base["metrics"]["max_drawdown_pct"],
+                "sharpe_ratio": r_base["metrics"]["sharpe_ratio"],
+                "total_trades": r_base["metrics"]["total_trades"],
+                "win_rate": r_base["metrics"]["win_rate"],
+                "profit_factor": r_base["metrics"]["profit_factor"],
+            },
+            "wv_1d": {
+                "total_return_pct": r_wv1d["metrics"]["total_return_pct"],
+                "max_drawdown_pct": r_wv1d["metrics"]["max_drawdown_pct"],
+                "sharpe_ratio": r_wv1d["metrics"]["sharpe_ratio"],
+                "total_trades": r_wv1d["metrics"]["total_trades"],
+                "win_rate": r_wv1d["metrics"]["win_rate"],
+                "profit_factor": r_wv1d["metrics"]["profit_factor"],
+                "btc_windvane_exits": r_wv1d["metrics"].get("btc_windvane_exits", 0),
+            },
+            "wv_3d": {
+                "total_return_pct": r_wv3d["metrics"]["total_return_pct"],
+                "max_drawdown_pct": r_wv3d["metrics"]["max_drawdown_pct"],
+                "sharpe_ratio": r_wv3d["metrics"]["sharpe_ratio"],
+                "total_trades": r_wv3d["metrics"]["total_trades"],
+                "win_rate": r_wv3d["metrics"]["win_rate"],
+                "profit_factor": r_wv3d["metrics"]["profit_factor"],
+                "btc_windvane_exits": r_wv3d["metrics"].get("btc_windvane_exits", 0),
+            },
+        }
+    )
 
 with open(output_file, "w") as f:
     json.dump(output, f, indent=2, ensure_ascii=False)

@@ -19,9 +19,10 @@
   - quality = "B"
   - source = "rea"
 """
+
 import os
 import sys
-from typing import List, Optional, Callable, Any
+from typing import Callable, List, Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
@@ -32,7 +33,7 @@ for _p in [_THIS_DIR, _34_DIR, _REA_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 
 class REABatchCollector(TrainingDataProvider):
@@ -56,6 +57,7 @@ class REABatchCollector(TrainingDataProvider):
         if self._reduce_fn is None:
             try:
                 from core.algorithm_reducer import reduce_algorithm
+
                 self._reduce_fn = reduce_algorithm
             except Exception:
                 self._reduce_fn = None
@@ -67,9 +69,7 @@ class REABatchCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return self._quality_threshold
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """扫描目录下 .py 文件，批量提取算法模式。
 
         Args:
@@ -117,9 +117,7 @@ class REABatchCollector(TrainingDataProvider):
             return []
 
     @staticmethod
-    def _analyze_file(
-        fpath: str, fname: str, reduce_fn: Callable
-    ) -> Optional[TrainingCase]:
+    def _analyze_file(fpath: str, fname: str, reduce_fn: Callable) -> Optional[TrainingCase]:
         """分析单个 Python 文件，提取算法模式。"""
         try:
             reduced = reduce_fn(fpath)

@@ -6,10 +6,10 @@
   3. get_bucket_threshold 各层阈值正确
   4. get_dependencies 依赖链正确
 """
+
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
 
 # sys.path 注入
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,9 +20,9 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from ts_http_training_executor import TSHTTPTrainingExecutor
-from interfaces.training_executor import TrainingLayer, TrainingResult
-from interfaces.training_data_provider import TrainingCase
+from interfaces.training_data_provider import TrainingCase  # noqa: E402
+from interfaces.training_executor import TrainingLayer  # noqa: E402
+from ts_http_training_executor import TSHTTPTrainingExecutor  # noqa: E402
 
 
 class TSHTTPTrainingExecutorTest(unittest.TestCase):

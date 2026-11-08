@@ -14,6 +14,7 @@
   - 成熟 (30 ≤ case_count < 100): threshold = 0.54 (原 0.50)
   - 稳定 (case_count ≥ 100):     threshold = 0.55 (硬约束值, 不变)
 """
+
 from __future__ import annotations
 
 import logging
@@ -254,6 +255,7 @@ class ExplorationPolicy:
 
         # rng_seed 注入: 保证测试可复现
         import random
+
         if rng_seed is not None:
             rng = random.Random(rng_seed)
             return rng.random() < epsilon

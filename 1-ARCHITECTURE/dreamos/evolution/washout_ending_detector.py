@@ -20,16 +20,15 @@ Spec: docs/superpowers/specs/2026-09-22-washout-reversal-genome-design.md §3.1
     if signal.activated:
         # 洗盘结束, 可做多
 """
+
 from __future__ import annotations
 
 import logging
-import math
 import traceback
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-import numpy as np
 import pandas as pd
 
 __all__ = ["EndingSignal", "WashoutEndingDetector"]
@@ -54,6 +53,7 @@ class EndingSignal:
         reason: 触发原因摘要
         timestamp: ISO 8601 UTC
     """
+
     activated: bool
     confidence: float
     reason: str
@@ -116,9 +116,7 @@ class WashoutEndingDetector:
             # 条件2: RSI 超卖
             rsi = self._compute_rsi(df["close"], _RSI_PERIOD)
             if rsi is None or rsi >= _RSI_OVERSOLD:
-                return EndingSignal.not_activated(
-                    f"rsi_not_oversold_rsi={rsi}"
-                )
+                return EndingSignal.not_activated(f"rsi_not_oversold_rsi={rsi}")
 
             # 条件3: 价格企稳
             price_ok = self._check_price_stabilization(df)
@@ -135,16 +133,12 @@ class WashoutEndingDetector:
             return EndingSignal(
                 activated=True,
                 confidence=confidence,
-                reason=(
-                    f"vol_shrink+rsi={rsi:.1f}+price_stabilize+oi_ok"
-                ),
+                reason=(f"vol_shrink+rsi={rsi:.1f}+price_stabilize+oi_ok"),
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
         except Exception as e:
             tb = traceback.format_exc()
-            self._logger.error(
-                "WashoutEndingDetector.check FAIL-OPEN err=%s\n%s", e, tb
-            )
+            self._logger.error("WashoutEndingDetector.check FAIL-OPEN err=%s\n%s", e, tb)
             return EndingSignal.not_activated(f"exception:{type(e).__name__}")
 
     # ============================================================
@@ -156,15 +150,14 @@ class WashoutEndingDetector:
             if len(df) < _VOL_LOOKBACK + 2:
                 return False
             vol = df["volume"]
-            avg_prev = float(vol.iloc[-(2 + _VOL_LOOKBACK):-2].mean())
+            avg_prev = float(vol.iloc[-(2 + _VOL_LOOKBACK) : -2].mean())
             if avg_prev <= 0:
                 return False
             vol_last1 = float(vol.iloc[-1])
             vol_last2 = float(vol.iloc[-2])
             shrink1 = (avg_prev - vol_last1) / avg_prev
             shrink2 = (avg_prev - vol_last2) / avg_prev
-            return shrink1 >= _VOL_SHRINKAGE_THRESHOLD and \
-                shrink2 >= _VOL_SHRINKAGE_THRESHOLD
+            return shrink1 >= _VOL_SHRINKAGE_THRESHOLD and shrink2 >= _VOL_SHRINKAGE_THRESHOLD
         except Exception:
             return False
 
@@ -182,7 +175,7 @@ class WashoutEndingDetector:
                 return None
             deltas = closes.diff().dropna()
             gains = deltas.clip(lower=0)
-            losses = (-deltas.clip(upper=0))
+            losses = -deltas.clip(upper=0)
 
             # Wilder's smoothing
             avg_gain = gains.iloc[:period].mean()
@@ -212,9 +205,7 @@ class WashoutEndingDetector:
             prev = df.iloc[-2]
 
             body = abs(float(last["close"]) - float(last["open"]))
-            lower_shadow = min(
-                float(last["close"]), float(last["open"])
-            ) - float(last["low"])
+            lower_shadow = min(float(last["close"]), float(last["open"])) - float(last["low"])
 
             # 条件3a: 下影线 > 实体
             if lower_shadow > body and body > 0:
@@ -255,9 +246,7 @@ class WashoutEndingDetector:
     # ============================================================
     # confidence 计算
     # ============================================================
-    def _compute_confidence(
-        self, rsi: float, df: pd.DataFrame, macro_data: Dict
-    ) -> float:
+    def _compute_confidence(self, rsi: float, df: pd.DataFrame, macro_data: Dict) -> float:
         """计算结束信号 confidence [0, 1].
 
         基于条件满足程度加权:
@@ -271,7 +260,7 @@ class WashoutEndingDetector:
 
             # 成交量萎缩分量
             vol = df["volume"]
-            avg_prev = float(vol.iloc[-(2 + _VOL_LOOKBACK):-2].mean())
+            avg_prev = float(vol.iloc[-(2 + _VOL_LOOKBACK) : -2].mean())
             vol_last = float(vol.iloc[-1])
             if avg_prev > 0:
                 shrink_ratio = max(0.0, (avg_prev - vol_last) / avg_prev)
