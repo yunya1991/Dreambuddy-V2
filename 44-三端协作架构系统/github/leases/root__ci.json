@@ -10,8 +10,8 @@
       "base_sha": null,
       "started_at": "2026-11-09T00:37:45+08:00",
       "ttl_hours": 24,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-11-09T01:23:52+08:00"
     }
   ]
 }

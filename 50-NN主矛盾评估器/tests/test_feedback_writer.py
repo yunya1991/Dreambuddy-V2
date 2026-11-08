@@ -9,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from adapters import feedback_writer as fw
 
-
 _DECISION = {
     "signal_id": "sig-001",
     "symbol": "BTC",
@@ -32,7 +31,9 @@ _EXEC = {
 
 class FeedbackWriterTests(unittest.TestCase):
     def test_build_sample_field_mapping(self):
-        s = fw.build_feedback_sample(_DECISION, risk_result=_RISK, paca_result=_PACA, exec_result=_EXEC)
+        s = fw.build_feedback_sample(
+            _DECISION, risk_result=_RISK, paca_result=_PACA, exec_result=_EXEC
+        )
         self.assertEqual(s["sample_id"], "sig-001")
         self.assertEqual(s["decision_id"], "sig-001")
         self.assertEqual(s["symbol"], "BTC")
@@ -75,9 +76,11 @@ class FeedbackWriterTests(unittest.TestCase):
 
     def test_sink_delivery(self):
         delivered = []
+
         def sink(sample):
             delivered.append(sample)
             return True
+
         w = fw.FeedbackWriter(sink=sink)
         s = fw.build_feedback_sample(_DECISION)
         r = w.write(s)

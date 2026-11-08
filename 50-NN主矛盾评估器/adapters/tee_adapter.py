@@ -4,6 +4,7 @@
 # paper 边界：默认 shadow_mode=True + no-op paper client，不触真实交易所、不下真实单。
 # neutral 决策跳过执行链；任何异常 fail-safe 返回 ok=False，不阻断 50 层主链路。
 from __future__ import annotations
+
 import sys
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ def _load_engine_cls() -> Any | None:
         sys.path.insert(0, str(_22_DIR))
     try:
         from tee_core.core.engine import TradeExecutionEngine  # noqa: E402
+
         return TradeExecutionEngine
     except Exception:
         return None
@@ -62,15 +64,30 @@ def execute_decision(
     # 返回 {ok, receipt, source}；neutral 跳过；异常/加载失败 fail-safe 返回 ok=False。
     direction = str(decision.get("direction") or "neutral")
     if direction == "neutral":
-        return {"ok": False, "receipt": None, "reason": "neutral_no_execution", "source": "22-tee-core"}
+        return {
+            "ok": False,
+            "receipt": None,
+            "reason": "neutral_no_execution",
+            "source": "22-tee-core",
+        }
     try:
         if engine is None:
             engine_cls = _load_engine_cls()
             if engine_cls is None:
-                return {"ok": False, "receipt": None, "reason": "tee_module_load_failed", "source": "22-tee-core"}
+                return {
+                    "ok": False,
+                    "receipt": None,
+                    "reason": "tee_module_load_failed",
+                    "source": "22-tee-core",
+                }
             engine = engine_cls(exchange_client=_PaperClient(), shadow_mode=True)
         parent_req = build_parent_req(decision, equity=equity)
         receipt = engine.execute(parent_req)
         return {"ok": True, "receipt": receipt, "source": "22-tee-core"}
     except Exception as exc:
-        return {"ok": False, "receipt": None, "reason": f"tee_adapter_exception:{exc}", "source": "22-tee-core"}
+        return {
+            "ok": False,
+            "receipt": None,
+            "reason": f"tee_adapter_exception:{exc}",
+            "source": "22-tee-core",
+        }

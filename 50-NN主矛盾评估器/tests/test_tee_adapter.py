@@ -79,7 +79,9 @@ class TeeAdapterTests(unittest.TestCase):
 
     def test_engine_exception_fail_safe(self):
         engine = _FakeEngine(exc=RuntimeError("boom"))
-        out = ta.execute_decision({"direction": "short", "symbol": "ETH", "confidence": 0.6}, engine=engine)
+        out = ta.execute_decision(
+            {"direction": "short", "symbol": "ETH", "confidence": 0.6}, engine=engine
+        )
         self.assertFalse(out["ok"])
         self.assertIsNone(out["receipt"])
         self.assertTrue(out["reason"].startswith("tee_adapter_exception:"))

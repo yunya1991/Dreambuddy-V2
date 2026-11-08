@@ -4,6 +4,7 @@
 # 建议制：返回值仅作为参考信息（advice 字段），不修改、不拦截 50 层决策。
 # 任何异常返回 ok=False 的 fallback 标记，决策链路不受影响。
 from __future__ import annotations
+
 import sys
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,7 @@ def _load_allocator() -> Any | None:
         del sys.modules[k]
     try:
         from core.capital_allocator.component import CapitalAllocatorComponent  # noqa: E402
+
         _ALLOCATOR = CapitalAllocatorComponent()
         return _ALLOCATOR
     except Exception:
@@ -50,8 +52,20 @@ def get_advice(
         if allocator is None:
             allocator = _load_allocator()
         if allocator is None:
-            return {"ok": False, "advice": None, "reason": "paca_module_load_failed", "source": "16-paca"}
-        advice = allocator.get_allocation_advice(coin=symbol, source_tag="50-nn", equity=float(equity))
+            return {
+                "ok": False,
+                "advice": None,
+                "reason": "paca_module_load_failed",
+                "source": "16-paca",
+            }
+        advice = allocator.get_allocation_advice(
+            coin=symbol, source_tag="50-nn", equity=float(equity)
+        )
         return {"ok": True, "advice": advice, "source": "16-paca"}
     except Exception as exc:
-        return {"ok": False, "advice": None, "reason": f"paca_adapter_exception:{exc}", "source": "16-paca"}
+        return {
+            "ok": False,
+            "advice": None,
+            "reason": f"paca_adapter_exception:{exc}",
+            "source": "16-paca",
+        }

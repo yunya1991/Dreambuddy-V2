@@ -38,11 +38,11 @@ for _p in (_16_CORE_DIR,):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
+from .constraint_envelope import ConstraintEnvelopeReader  # noqa: E402
 from .layers.expansion_gate import GlobalExpansionGate  # noqa: E402
 from .layers.hierarchical_allocator import HierarchicalAllocator  # noqa: E402
 from .layers.kelly_sizer import KellySizer  # noqa: E402
 from .layers.performance_tracker import PerformanceTracker  # noqa: E402
-from .constraint_envelope import ConstraintEnvelopeReader  # noqa: E402
 from .types import (  # noqa: E402
     AllocationResult,
     AllocationSnapshot,

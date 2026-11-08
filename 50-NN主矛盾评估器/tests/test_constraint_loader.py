@@ -62,7 +62,6 @@ def test_asset_override_from_43(tmp_path):
     assert clamp_position(c, 50, "L1_anchor") == 20.0
 
 
-
 def test_r1a_tier_constraint_fields(tmp_path):
     strat = tmp_path / "strategy_mapping.json"
     strat.write_text(

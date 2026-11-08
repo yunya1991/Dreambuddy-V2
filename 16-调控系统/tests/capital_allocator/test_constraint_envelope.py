@@ -14,7 +14,9 @@ from capital_allocator.component import CapitalAllocatorComponent  # noqa: E402
 from capital_allocator.constraint_envelope import ConstraintEnvelopeReader  # noqa: E402
 
 
-def _write_signal(path, tier, leverage_cap, asset_count_cap, long_count_cap, short_count_cap, net_bias):
+def _write_signal(
+    path, tier, leverage_cap, asset_count_cap, long_count_cap, short_count_cap, net_bias
+):
     data = {
         "payload": {
             "per_asset_class": {
@@ -36,10 +38,23 @@ def _write_trades(path):
     # BTC: 10 胜 5 负
     with open(path, "w", encoding="utf-8") as f:
         for i in range(10):
-            f.write(json.dumps({"coin": "BTC-USDT-SWAP", "pnl": 5.0, "pnl_pct": 3.0, "close_ts": float(i)}))
+            f.write(
+                json.dumps(
+                    {"coin": "BTC-USDT-SWAP", "pnl": 5.0, "pnl_pct": 3.0, "close_ts": float(i)}
+                )
+            )
             f.write(chr(10))
         for i in range(5):
-            f.write(json.dumps({"coin": "BTC-USDT-SWAP", "pnl": -3.0, "pnl_pct": -2.0, "close_ts": float(100 + i)}))
+            f.write(
+                json.dumps(
+                    {
+                        "coin": "BTC-USDT-SWAP",
+                        "pnl": -3.0,
+                        "pnl_pct": -2.0,
+                        "close_ts": float(100 + i),
+                    }
+                )
+            )
             f.write(chr(10))
 
 
@@ -88,7 +103,11 @@ def test_reader_missing_field_degrades(tmp_path):
 
 def test_reader_tier_pct_caps(tmp_path):
     # defend: 3 -> 0.15；light_defense: 2 -> 0.10；full_freeze: 1 -> 0.05（max_pct=0.25）
-    for tier, cap, expected in (("defend", 3, 0.15), ("light_defense", 2, 0.10), ("full_freeze", 1, 0.05)):
+    for tier, cap, expected in (
+        ("defend", 3, 0.15),
+        ("light_defense", 2, 0.10),
+        ("full_freeze", 1, 0.05),
+    ):
         sig = tmp_path / (tier + ".json")
         _write_signal(sig, tier, cap, 5, 4, 3, 0.0)
         r = ConstraintEnvelopeReader(signal_path=sig, cache_ttl=600)

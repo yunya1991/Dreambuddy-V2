@@ -49,7 +49,16 @@ def validate_sample(sample: dict[str, Any]) -> bool:
 
 def default_weights() -> dict[str, float]:
     # 冷启动等权默认值。
-    return {"D1": 1.0, "D2": 1.0, "D3": 1.0, "D4": 1.0, "C6": 1.0, "C7": 1.0, "C8": 1.0, "NEWS": 1.0}
+    return {
+        "D1": 1.0,
+        "D2": 1.0,
+        "D3": 1.0,
+        "D4": 1.0,
+        "C6": 1.0,
+        "C7": 1.0,
+        "C8": 1.0,
+        "NEWS": 1.0,
+    }
 
 
 class W6Store:
@@ -105,7 +114,9 @@ class W6Store:
             "n_samples": n_samples,
             "updated_ts": time.time(),
         }
-        self._weights_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        self._weights_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
 
     # ---- 状态（崩溃恢复）----
     def load_state(self) -> dict[str, Any]:
@@ -118,7 +129,9 @@ class W6Store:
             return {}
 
     def save_state(self, state: dict[str, Any]) -> None:
-        self._state_path.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+        self._state_path.write_text(
+            json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
 
 
 def learn_weights(samples: list[dict[str, Any]]) -> tuple[dict[str, float], str]:
@@ -130,8 +143,12 @@ def learn_weights(samples: list[dict[str, Any]]) -> tuple[dict[str, float], str]
     stats: dict[str, list[float]] = {}
     for s in labeled:
         dim = str(s.get("dimension"))
-        correct = (str(s.get("predicted_direction")) == "long" and float(s.get("realized_return") or 0.0) > 0) or (
-            str(s.get("predicted_direction")) == "short" and float(s.get("realized_return") or 0.0) < 0
+        correct = (
+            str(s.get("predicted_direction")) == "long"
+            and float(s.get("realized_return") or 0.0) > 0
+        ) or (
+            str(s.get("predicted_direction")) == "short"
+            and float(s.get("realized_return") or 0.0) < 0
         )
         stats.setdefault(dim, []).append(1.0 if correct else 0.0)
     weights = default_weights()

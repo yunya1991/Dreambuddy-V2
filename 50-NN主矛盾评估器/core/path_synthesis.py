@@ -156,8 +156,8 @@ def _aggregate_subpools(subpools: list, fallback_direction: str) -> tuple[float,
         weights = [1.0] * len(items)
         total_w = float(len(items))
     signed = [conf if d == "long" else -conf for d, conf, _ in items]
-    mean = sum(w * v for w, v in zip(weights, signed)) / total_w
-    dispersion = sum(w * abs(v - mean) for w, v in zip(weights, signed)) / total_w
+    mean = sum(w * v for w, v in zip(weights, signed, strict=False)) / total_w
+    dispersion = sum(w * abs(v - mean) for w, v in zip(weights, signed, strict=False)) / total_w
     confidence = _clamp(abs(mean) * (1.0 - _clamp(dispersion)))
     if mean > 0:
         direction = "long"

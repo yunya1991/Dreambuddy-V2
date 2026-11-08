@@ -32,9 +32,7 @@ def _build(monkeypatch, scores):
         signal_publisher, "FiveDomainFeatureComputer", lambda: _StubComputer(scores)
     )
     monkeypatch.setattr(signal_publisher, "element_comparison", lambda *a, **k: None)
-    monkeypatch.setattr(
-        signal_publisher, "compute_market_sentiment_score", lambda: 50.0
-    )
+    monkeypatch.setattr(signal_publisher, "compute_market_sentiment_score", lambda: 50.0)
     return signal_publisher.build_signal()
 
 

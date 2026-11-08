@@ -46,13 +46,17 @@ def test_learning_maps_accuracy():
     samples = []
     i = 0
     for _ in range(200):
-        samples.append(_sample(dim="D3", direction="long", ret=1.0, i=i)); i += 1
+        samples.append(_sample(dim="D3", direction="long", ret=1.0, i=i))
+        i += 1
     for _ in range(200):
-        samples.append(_sample(dim="D4", direction="long", ret=-1.0, i=i)); i += 1
+        samples.append(_sample(dim="D4", direction="long", ret=-1.0, i=i))
+        i += 1
     for _ in range(100):
-        samples.append(_sample(dim="C6", direction="long", ret=1.0, i=i)); i += 1
+        samples.append(_sample(dim="C6", direction="long", ret=1.0, i=i))
+        i += 1
     for _ in range(100):
-        samples.append(_sample(dim="C6", direction="long", ret=-1.0, i=i)); i += 1
+        samples.append(_sample(dim="C6", direction="long", ret=-1.0, i=i))
+        i += 1
     weights, state = learn_weights(samples)
     assert state == "learning"
     assert abs(weights["D3"] - WEIGHT_MAX) < 1e-9

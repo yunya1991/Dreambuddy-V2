@@ -6,6 +6,7 @@
 # 权重类建议值必须在截断区间 [0.3, 1.5]。
 # 审计落盘：采纳/拒绝记录 append-only（显式目录注入，测试隔离）。
 from __future__ import annotations
+
 import json
 import time
 from pathlib import Path
@@ -15,9 +16,9 @@ WEIGHT_MIN = 0.3
 WEIGHT_MAX = 1.5
 
 # 建议类型
-TYPE_WEIGHTS = "weights"        # 50 权重类建议（W6 维度权重）
-TYPE_STRATEGY = "strategy"      # 50 策略类建议
-TYPE_MACRO = "macro"            # 40 宏观类建议（经 40 P5/P6 门禁，50 侧只审计）
+TYPE_WEIGHTS = "weights"  # 50 权重类建议（W6 维度权重）
+TYPE_STRATEGY = "strategy"  # 50 策略类建议
+TYPE_MACRO = "macro"  # 40 宏观类建议（经 40 P5/P6 门禁，50 侧只审计）
 
 
 class TrainingGate:

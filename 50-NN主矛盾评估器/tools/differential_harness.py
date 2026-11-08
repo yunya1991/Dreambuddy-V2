@@ -2,6 +2,7 @@
 R2 的 A/B 只解释相对此基线的增量，不解释绝对值。
 R0-04 扩展：23 层冻结快照固化（fixtures/control_snapshots/，上限 20 组）与 path 集合转换。
 """
+
 from __future__ import annotations
 
 import json
@@ -17,7 +18,11 @@ MAX_CONTROL_SNAPSHOTS = 20
 
 # 23 层快照源路径（只读，不侵入 23 系统）
 _23_SNAPSHOT_PATH = (
-    REPO_ROOT.parent / "23-四层闭环自进化交易架构" / "dreambuddy_evolution" / "gene_data" / "evolution_snapshots.json"
+    REPO_ROOT.parent
+    / "23-四层闭环自进化交易架构"
+    / "dreambuddy_evolution"
+    / "gene_data"
+    / "evolution_snapshots.json"
 )
 
 

@@ -64,7 +64,9 @@ class PacaAdapterTests(unittest.TestCase):
 
     def test_allocator_exception_fallback(self):
         allocator = _FakeAllocator(exc=RuntimeError("boom"))
-        out = pa.get_advice({"direction": "long", "symbol": "BTC", "confidence": 0.8}, allocator=allocator)
+        out = pa.get_advice(
+            {"direction": "long", "symbol": "BTC", "confidence": 0.8}, allocator=allocator
+        )
         self.assertFalse(out["ok"])
         self.assertIsNone(out["advice"])
         self.assertTrue(out["reason"].startswith("paca_adapter_exception:"))
