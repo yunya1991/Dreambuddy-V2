@@ -39,12 +39,14 @@
     },
     "frontend_gateway": {
       "paths": [
-        "3-FRONTEND/dream-universal-gateway/**"
+        "3-FRONTEND/**",
+        "3.1-FRONTEND/**"
       ]
     },
     "knowledge": {
       "paths": [
-        "2-KNOWLEDGE/**"
+        "2-KNOWLEDGE/**",
+        "41-文件索引系统/**"
       ]
     },
     "chain_development": {
@@ -56,6 +58,8 @@
       "paths": [
         ".github/**",
         ".gitignore",
+        ".dockerignore",
+        ".pre-commit-config.yaml",
         "docs/**",
         ".workbuddy/**",
         "tests/**",
@@ -71,7 +75,28 @@
         "deploy/**",
         "experiments/**",
         ".claude/**",
-        "1-ARCHITECTURE/**"
+        "1-ARCHITECTURE/**",
+        "0-系统文档管理/**",
+        "ARCHIVE_INDEX.md",
+        "CHANGELOG.md",
+        "CLAUDE.md",
+        "CONTRIBUTING.md",
+        "DEBT_INDEX.md",
+        "DreamOS_Services.command",
+        "ENGINEERING_INDEX.md",
+        "LICENSE",
+        "Makefile",
+        "README.md",
+        "conftest.py",
+        "hermes-restore.sh",
+        "package-lock.json",
+        "package.json",
+        "pyproject.toml",
+        "remove_clash.sh",
+        "run_hourly_sacg_execution.py",
+        "start_all_services.sh",
+        "test_superpowers_readme.py",
+        "投资方项目介绍_DreamOS.pdf"
       ]
     },
     "intent_recognition": {
@@ -117,6 +142,59 @@
         "23-四层闭环自进化交易架构/**",
         "48-涌现架构/**"
       ]
+    },
+    "data_platform": {
+      "paths": [
+        "18-数据获取中心/**",
+        "19-数据访问层/**",
+        "20-数据清洗中心/**",
+        "21-特征工程中心/**",
+        "38-数据库管理系统/**"
+      ]
+    },
+    "strategy_engine": {
+      "paths": [
+        "12-三屏趋势系统/**",
+        "13-通用风控模块/**",
+        "14-V15经典马丁策略/**",
+        "16-调控系统/**",
+        "17-v4-wave-strategy/**",
+        "22-执行引擎中心/**",
+        "25-用户策略生成系统/**",
+        "26-策略管理模块/**",
+        "27-策略治理审批系统/**",
+        "28-策略信号触发模块/**",
+        "29-事件驱动策略系统/**",
+        "30-真实环境交互系统/**"
+      ]
+    },
+    "agent_platform": {
+      "paths": [
+        "11-易经推理系统/**",
+        "24-图结构上下文压缩/**",
+        "32-对抗性辩论Bot/**",
+        "33-REA逆向解析工程/**",
+        "34-前端应用训练系统/**",
+        "35-广义认知系统协作模块/**",
+        "36-通信系统层/**",
+        "39-金融语义蒸馏系统/**",
+        "45-评测系统/**",
+        "46-DSH架构/**",
+        "47-MCP管理系统/**",
+        "dreambuddy_l0/**",
+        "mcp_shells/**"
+      ]
+    },
+    "ops": {
+      "paths": [
+        "15-监控告警系统/**",
+        "31-分布式计算部署/**",
+        "37-一键启动脚本/**",
+        "acceptance_bundles/**",
+        "config/**",
+        "launchd/**",
+        "ml/**"
+      ]
     }
   },
   "change_classes": {
@@ -132,7 +210,10 @@
         "runtime_data",
         "fundamental_analysis",
         "collab",
-        "evolution"
+        "evolution",
+        "data_platform",
+        "agent_platform",
+        "ops"
       ]
     },
     "integration": {
@@ -143,11 +224,16 @@
         "ci",
         "knowledge",
         "chain_development",
+        "governance",
         "intent_recognition",
         "runtime_data",
         "fundamental_analysis",
         "collab",
-        "evolution"
+        "evolution",
+        "data_platform",
+        "strategy_engine",
+        "agent_platform",
+        "ops"
       ]
     },
     "infra": {
