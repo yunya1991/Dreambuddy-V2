@@ -16,12 +16,13 @@ Trae 驱动适配 (§9.3 Phase 3 备选路径):
 触发条件 (§5.5): 累积 100+ 场辩论后触发。
 FAIL-OPEN (HC1): 无数据/异常时不崩溃，返回 trained=False。
 """
+
 from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger("debate.dpo")
 
@@ -31,8 +32,10 @@ _MIN_MARGIN = 1e-6
 
 # ── 概率奖励 (§9.2.1 Self-Play DPO) ───────────────────────────
 
+
 def compute_reward_margin(
-    chosen_score: float, rejected_score: float,
+    chosen_score: float,
+    rejected_score: float,
 ) -> float:
     """计算概率奖励 margin = log(chosen / rejected)。
 
@@ -46,6 +49,7 @@ def compute_reward_margin(
 
 # ── 偏好树节点 (§9.2.2) ───────────────────────────────────────
 
+
 @dataclass
 class PreferenceNode:
     """偏好树节点 = 一轮辩论的 (response, feedback) 对。
@@ -58,6 +62,7 @@ class PreferenceNode:
         chosen: 是否属于胜出分支
         feedback: 反馈 (RFD/评分摘要)
     """
+
     turn: int
     side: str
     strategies: list[str]
@@ -78,6 +83,7 @@ class PreferencePair:
         chosen_score: 胜出方评分
         rejected_score: 失败方评分
     """
+
     prompt: str
     chosen: list[str]
     rejected: list[str]
@@ -87,6 +93,7 @@ class PreferencePair:
 
 
 # ── 偏好树构建 (§9.2.2) ───────────────────────────────────────
+
 
 class PreferenceTreeBuilder:
     """辩论日志 → 偏好树 → 偏好对。"""
@@ -107,10 +114,8 @@ class PreferenceTreeBuilder:
         if not transcript or adjudication_result is None:
             return []
 
-        bull_by_turn = self._index_turn_scores(
-            getattr(adjudication_result, "bull_turn_scores", []))
-        bear_by_turn = self._index_turn_scores(
-            getattr(adjudication_result, "bear_turn_scores", []))
+        bull_by_turn = self._index_turn_scores(getattr(adjudication_result, "bull_turn_scores", []))
+        bear_by_turn = self._index_turn_scores(getattr(adjudication_result, "bear_turn_scores", []))
 
         nodes: list[PreferenceNode] = []
         for t in transcript:
@@ -129,14 +134,16 @@ class PreferenceTreeBuilder:
                 score = bear_by_turn.get(turn_no, 0.0)
                 opp_score = bull_by_turn.get(turn_no, 0.0)
 
-            nodes.append(PreferenceNode(
-                turn=turn_no,
-                side=side,
-                strategies=strategies,
-                score=score,
-                chosen=score >= opp_score,
-                feedback="",
-            ))
+            nodes.append(
+                PreferenceNode(
+                    turn=turn_no,
+                    side=side,
+                    strategies=strategies,
+                    score=score,
+                    chosen=score >= opp_score,
+                    feedback="",
+                )
+            )
         return nodes
 
     def extract_preference_pairs(
@@ -153,7 +160,7 @@ class PreferenceTreeBuilder:
             by_turn.setdefault(node.turn, []).append(node)
 
         pairs: list[PreferencePair] = []
-        for turn, nodes in sorted(by_turn.items()):
+        for turn, nodes in sorted(by_turn.items()):  # noqa: B007
             if len(nodes) < 2:
                 continue
             chosen_nodes = [n for n in nodes if n.chosen]
@@ -172,14 +179,16 @@ class PreferenceTreeBuilder:
             if abs(margin) < _MIN_MARGIN:
                 continue
 
-            pairs.append(PreferencePair(
-                prompt="",
-                chosen=list(c.strategies),
-                rejected=list(r.strategies),
-                margin=margin,
-                chosen_score=c.score,
-                rejected_score=r.score,
-            ))
+            pairs.append(
+                PreferencePair(
+                    prompt="",
+                    chosen=list(c.strategies),
+                    rejected=list(r.strategies),
+                    margin=margin,
+                    chosen_score=c.score,
+                    rejected_score=r.score,
+                )
+            )
         return pairs
 
     # ── 内部工具 ──────────────────────────────────────────────
@@ -207,6 +216,7 @@ class PreferenceTreeBuilder:
 
 
 # ── DPO 训练器 (§9.3 Phase 3) ─────────────────────────────────
+
 
 class DebateDPOTrainer:
     """T-DPO 偏好学习器。
@@ -268,11 +278,9 @@ class DebateDPOTrainer:
                     continue
                 for strat in pair.chosen:
                     bayesian.update(strat, topic_type, won=True)
-                    self._soft_update(bayesian, strat, topic_type,
-                                      delta_alpha=weight)
+                    self._soft_update(bayesian, strat, topic_type, delta_alpha=weight)
                 for strat in pair.rejected:
-                    self._soft_update(bayesian, strat, topic_type,
-                                      delta_beta=weight)
+                    self._soft_update(bayesian, strat, topic_type, delta_beta=weight)
                 result["updates"] += 1
 
             result["pairs"] = len(pairs)

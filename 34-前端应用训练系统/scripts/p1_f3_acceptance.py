@@ -9,8 +9,8 @@ rea_to_training_cases() 生成的 TrainingCase 列表中是否包含：
 用法:
   python scripts/p1_f3_acceptance.py
 """
+
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -67,6 +67,7 @@ def run_f3_acceptance() -> dict:
     # 从 rea_result 重建 REAParseResult（因为 orchestrator 返回的是 __dict__）
     if rea_result_dict:
         from interfaces.rea_parser import REAParseResult
+
         rea_result = REAParseResult(
             algorithm_patterns=rea_result_dict.get("algorithm_patterns", []),
             call_chain=rea_result_dict.get("call_chain", []),

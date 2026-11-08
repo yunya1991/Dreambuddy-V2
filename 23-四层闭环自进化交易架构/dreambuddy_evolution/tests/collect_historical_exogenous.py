@@ -8,6 +8,7 @@
 
 写入 19-DAL mm_metrics (sub_category.metric_name), 供 ExogenousDataBridge.fetch() 读取.
 """
+
 from __future__ import annotations
 
 import json
@@ -41,13 +42,17 @@ END = datetime(2024, 12, 31, tzinfo=timezone.utc)
 def collect_fred(repo) -> int:
     """采集 FRED 宏观数据 (CPI, FEDFUNDS, M2) 月度."""
     from fredapi import Fred
+
     api_key = os.environ.get("FRED_API_KEY", "2288a615aff3cf44117c0ef3cfabd61c")
     fred = Fred(api_key=api_key)
     n = 0
 
     # CPI (月度)
-    cpi = fred.get_series("CPIAUCSL", observation_start=START.strftime("%Y-%m-%d"),
-                          observation_end=END.strftime("%Y-%m-%d")).dropna()
+    cpi = fred.get_series(
+        "CPIAUCSL",
+        observation_start=START.strftime("%Y-%m-%d"),
+        observation_end=END.strftime("%Y-%m-%d"),
+    ).dropna()
     for dt, val in cpi.items():
         ts = dt.replace(tzinfo=timezone.utc)
         repo.upsert_metric("fred", "cpi", "actual", float(val), ts)
@@ -55,8 +60,11 @@ def collect_fred(repo) -> int:
     logger.info("CPI: %d 月度点", len(cpi))
 
     # FEDFUNDS (月度) → 派生 hike_prob + rate_change + monetary_cycle
-    ff = fred.get_series("FEDFUNDS", observation_start=START.strftime("%Y-%m-%d"),
-                         observation_end=END.strftime("%Y-%m-%d")).dropna()
+    ff = fred.get_series(
+        "FEDFUNDS",
+        observation_start=START.strftime("%Y-%m-%d"),
+        observation_end=END.strftime("%Y-%m-%d"),
+    ).dropna()
     prev = None
     for dt, val in ff.items():
         ts = dt.replace(tzinfo=timezone.utc)
@@ -73,8 +81,11 @@ def collect_fred(repo) -> int:
     logger.info("FEDFUNDS: %d 月度点 (派生 hike_prob/cut_prob/rate_change)", len(ff))
 
     # M2 (月度)
-    m2 = fred.get_series("M2SL", observation_start=START.strftime("%Y-%m-%d"),
-                         observation_end=END.strftime("%Y-%m-%d")).dropna()
+    m2 = fred.get_series(
+        "M2SL",
+        observation_start=START.strftime("%Y-%m-%d"),
+        observation_end=END.strftime("%Y-%m-%d"),
+    ).dropna()
     for dt, val in m2.items():
         ts = dt.replace(tzinfo=timezone.utc)
         repo.upsert_metric("fred", "macro", "m2_sl", float(val), ts)
@@ -87,12 +98,21 @@ def collect_fred(repo) -> int:
 def collect_dxy(repo) -> int:
     """采集 DXY 日线 (yfinance)."""
     import yfinance as yf
-    dxy = yf.download("DX-Y.NYB", start=START.strftime("%Y-%m-%d"),
-                      end=(END + timedelta(days=1)).strftime("%Y-%m-%d"), progress=False)
+
+    dxy = yf.download(
+        "DX-Y.NYB",
+        start=START.strftime("%Y-%m-%d"),
+        end=(END + timedelta(days=1)).strftime("%Y-%m-%d"),
+        progress=False,
+    )
     n = 0
     for dt, row in dxy.iterrows():
         try:
-            close = float(row["Close"].iloc[0]) if hasattr(row["Close"], "iloc") else float(row["Close"])
+            close = (
+                float(row["Close"].iloc[0])
+                if hasattr(row["Close"], "iloc")
+                else float(row["Close"])
+            )
         except (TypeError, ValueError, IndexError):
             continue
         if not np.isfinite(close):
@@ -136,16 +156,17 @@ def collect_funding_rate(repo) -> int:
     n = 0
     try:
         from binance.client import Client
+
         client = Client("", "")  # 公开接口无需 key
         # BTCUSDT perpetual funding rate history
-        klines = client.futures_funding_rate(
-            symbol="BTCUSDT", limit=1000)
+        klines = client.futures_funding_rate(symbol="BTCUSDT", limit=1000)
         for k in klines:
             ts = datetime.fromtimestamp(k["fundingTime"] / 1000, tzinfo=timezone.utc)
             if ts < START or ts > END:
                 continue
-            repo.upsert_metric("binance", "funding_rate", "funding_rate",
-                               float(k["fundingRate"]), ts)
+            repo.upsert_metric(
+                "binance", "funding_rate", "funding_rate", float(k["fundingRate"]), ts
+            )
             n += 1
         logger.info("Binance funding rate: %d 点", n)
     except Exception as e:
@@ -174,10 +195,16 @@ def main():
 
     # 验证
     from dreambuddy_dal import get_market_macro_repo as _g
+
     r2 = _g(backend="sqlite_unified")
-    for sub, metric in [("cpi", "actual"), ("fomc_decision", "rate_change"),
-                        ("fedwatch", "hike_prob"), ("DX-Y.NYB", "close"),
-                        ("btc_onchain", "active_addresses"), ("btc_basics", "market_cap_usd")]:
+    for sub, metric in [
+        ("cpi", "actual"),
+        ("fomc_decision", "rate_change"),
+        ("fedwatch", "hike_prob"),
+        ("DX-Y.NYB", "close"),
+        ("btc_onchain", "active_addresses"),
+        ("btc_basics", "market_cap_usd"),
+    ]:
         rows = r2.query_metric_by_time(sub, metric, START, END)
         if rows:
             ts = [row[3] for row in rows]

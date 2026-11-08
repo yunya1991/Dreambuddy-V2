@@ -7,12 +7,12 @@
 
 数据来源：skill_circulation_stats.py 的 invocation 记录
 """
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Optional
-
 
 # 阈值
 DEFAULT_MIN_INVOCATIONS = 3
@@ -68,13 +68,15 @@ def analyze_affinity(
             action = "refine_triggers"
             reason = f"中等成功率 {rate:.0%}，建议优化 triggers 提升召回精度"
 
-        actions.append({
-            "skill": skill,
-            "action": action,
-            "reason": reason,
-            "success_rate": round(rate, 4),
-            "invocation_count": count,
-        })
+        actions.append(
+            {
+                "skill": skill,
+                "action": action,
+                "reason": reason,
+                "success_rate": round(rate, 4),
+                "invocation_count": count,
+            }
+        )
 
     actions.sort(key=lambda a: a["invocation_count"], reverse=True)
     return actions
@@ -97,10 +99,12 @@ def apply_affinity_action(
         return False
     if "suggestions" not in stats[skill_name]:
         stats[skill_name]["suggestions"] = []
-    stats[skill_name]["suggestions"].append({
-        "action": action,
-        "applied_at": __import__("datetime").datetime.now().isoformat(),
-    })
+    stats[skill_name]["suggestions"].append(
+        {
+            "action": action,
+            "applied_at": __import__("datetime").datetime.now().isoformat(),
+        }
+    )
     try:
         with open(stats_path, "w", encoding="utf-8") as f:
             json.dump(stats, f, ensure_ascii=False, indent=2)

@@ -2,17 +2,15 @@
 """
 进程守护：异常监控 + 自动重启 + 告警日志
 """
+
 import json
-import time
-import threading
-import traceback
-import subprocess
-import sys
 import os
+import threading
+import time
+import traceback
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Callable
-from pathlib import Path
-from dataclasses import dataclass, field, asdict
+from typing import Callable, Dict, List, Optional
 
 from scripts.memory_l4.paths import memory_l4_dir
 
@@ -20,11 +18,12 @@ from scripts.memory_l4.paths import memory_l4_dir
 @dataclass
 class ProcessHeartbeat:
     """进程心跳记录"""
+
     pid: int = 0
     ts: float = 0.0
     ts_str: str = ""
     cycle_count: int = 0
-    status: str = ""       # running / error / stopped
+    status: str = ""  # running / error / stopped
     last_error: str = ""
     last_error_ts: float = 0.0
     memory_usage_mb: float = 0.0
@@ -34,11 +33,12 @@ class ProcessHeartbeat:
 @dataclass
 class GuardianAlert:
     """告警记录"""
+
     alert_id: str = ""
     ts: float = 0.0
     ts_str: str = ""
-    level: str = ""        # info / warning / error / critical
-    category: str = ""     # crash / hang / performance / risk
+    level: str = ""  # info / warning / error / critical
+    category: str = ""  # crash / hang / performance / risk
     message: str = ""
     details: Dict = field(default_factory=dict)
 
@@ -55,12 +55,14 @@ class ProcessGuardian:
     - 资源使用监控
     """
 
-    def __init__(self,
-                 process_name: str = "polling_trader",
-                 heartbeat_timeout: int = 300,
-                 max_consecutive_errors: int = 5,
-                 auto_restart: bool = False,
-                 on_critical_error: Callable = None):
+    def __init__(
+        self,
+        process_name: str = "polling_trader",
+        heartbeat_timeout: int = 300,
+        max_consecutive_errors: int = 5,
+        auto_restart: bool = False,
+        on_critical_error: Callable = None,
+    ):
         self.process_name = process_name
         self.heartbeat_timeout = heartbeat_timeout
         self.max_consecutive_errors = max_consecutive_errors
@@ -92,18 +94,23 @@ class ProcessGuardian:
         self._monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self._monitor_thread.start()
         self.record_heartbeat(status="running")
-        self._add_alert("info", "process", "进程守护启动",
-                        {"pid": os.getpid(), "name": self.process_name})
+        self._add_alert(
+            "info", "process", "进程守护启动", {"pid": os.getpid(), "name": self.process_name}
+        )
 
     def stop(self):
         """停止守护监控"""
         self._running = False
         self.record_heartbeat(status="stopped")
-        self._add_alert("info", "process", "进程守护停止",
-                        {"pid": os.getpid()})
+        self._add_alert("info", "process", "进程守护停止", {"pid": os.getpid()})
 
-    def record_heartbeat(self, status: str = "running", cycle_count: int = 0,
-                         memory_mb: float = 0.0, cpu_pct: float = 0.0):
+    def record_heartbeat(
+        self,
+        status: str = "running",
+        cycle_count: int = 0,
+        memory_mb: float = 0.0,
+        cpu_pct: float = 0.0,
+    ):
         """记录心跳"""
         now = time.time()
         self._last_heartbeat_ts = now
@@ -122,8 +129,7 @@ class ProcessGuardian:
         except Exception:
             pass
 
-    def record_error(self, error: Exception, context: str = "",
-                     level: str = "error") -> bool:
+    def record_error(self, error: Exception, context: str = "", level: str = "error") -> bool:
         """记录错误
 
         Returns:
@@ -160,7 +166,8 @@ class ProcessGuardian:
             alert_category = "crash"
             level = "critical"
             self._add_alert(
-                level, alert_category,
+                level,
+                alert_category,
                 f"连续错误达到阈值 {self._consecutive_errors}/{self.max_consecutive_errors}",
                 error_info,
             )
@@ -170,8 +177,12 @@ class ProcessGuardian:
                 except Exception:
                     pass
         else:
-            self._add_alert(level, alert_category, f"错误: {str(error)[:100]}",
-                            {"context": context, "type": type(error).__name__})
+            self._add_alert(
+                level,
+                alert_category,
+                f"错误: {str(error)[:100]}",
+                {"context": context, "type": type(error).__name__},
+            )
 
         return is_critical
 
@@ -214,19 +225,22 @@ class ProcessGuardian:
 
                 if elapsed > self.heartbeat_timeout and self._heartbeat.status == "running":
                     self._add_alert(
-                        "warning", "hang",
+                        "warning",
+                        "hang",
                         f"心跳超时: {elapsed:.0f}s > {self.heartbeat_timeout}s",
                         {"last_heartbeat": self._heartbeat.ts_str},
                     )
 
                 try:
                     import psutil
+
                     proc = psutil.Process(os.getpid())
                     mem = proc.memory_info().rss / 1024 / 1024
-                    cpu = proc.cpu_percent(interval=0.1)
+                    cpu = proc.cpu_percent(interval=0.1)  # noqa: F841
                     if mem > 500:
                         self._add_alert(
-                            "warning", "performance",
+                            "warning",
+                            "performance",
                             f"内存使用过高: {mem:.1f}MB",
                             {"memory_mb": mem},
                         )
@@ -267,15 +281,13 @@ class ProcessGuardian:
                 data = json.load(f)
             elapsed = time.time() - data.get("ts", 0)
             data["seconds_since_heartbeat"] = round(elapsed, 1)
-            data["is_alive"] = (elapsed < self.heartbeat_timeout
-                               and data.get("status") == "running")
+            data["is_alive"] = elapsed < self.heartbeat_timeout and data.get("status") == "running"
             return data
         except Exception:
             return None
 
 
-def run_with_guardian(target_func, process_name: str = "polling_trader",
-                      **guardian_kwargs) -> int:
+def run_with_guardian(target_func, process_name: str = "polling_trader", **guardian_kwargs) -> int:
     """
     以守护模式运行目标函数
 

@@ -11,14 +11,13 @@
 
 验证方法：对 all_trades.jsonl 中的每笔交易，模拟假设生效后的 PnL 变化
 """
+
 import json
-import sys
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
-from collections import defaultdict
-from dataclasses import dataclass
 
 TRADES_FILE = Path(__file__).parent.parent.parent / ".workbuddy/memory_l4/stats/all_trades.jsonl"
+
 
 # ── 时间衰减 TP 调度 ──
 def current_tp_decay(hold_hours: float, base_tp_pct: float = 0.06) -> float:
@@ -36,6 +35,7 @@ def current_tp_decay(hold_hours: float, base_tp_pct: float = 0.06) -> float:
     else:
         return 0.015
 
+
 def proposed_tp_decay(hold_hours: float, base_tp_pct: float = 0.06) -> float:
     """假设 H3：减速后的 TP 衰减逻辑"""
     if hold_hours <= 24:
@@ -49,13 +49,15 @@ def proposed_tp_decay(hold_hours: float, base_tp_pct: float = 0.06) -> float:
     else:
         return 0.03  # 3% 最低
 
+
 def parse_time(t_str: str) -> datetime | None:
     if not t_str:
         return None
     try:
         return datetime.fromisoformat(t_str[:19])
-    except:
+    except:  # noqa: E722
         return None
+
 
 def hold_hours(entry_time: str, exit_time: str) -> float:
     t1 = parse_time(entry_time)
@@ -63,6 +65,7 @@ def hold_hours(entry_time: str, exit_time: str) -> float:
     if not t1 or not t2:
         return 0.0
     return (t2 - t1).total_seconds() / 3600.0
+
 
 def load_trades():
     trades = []
@@ -73,20 +76,37 @@ def load_trades():
                 continue
             try:
                 trades.append(json.loads(line))
-            except:
+            except:  # noqa: E722
                 pass
     return trades
+
 
 def calc_stats(trades_list):
     """计算 W/L 统计"""
     if not trades_list:
-        return {"n": 0, "wr": 0, "avg_win": 0, "avg_loss": 0, "wl_ratio": 0, "total_pnl": 0, "kelly": 0}
+        return {
+            "n": 0,
+            "wr": 0,
+            "avg_win": 0,
+            "avg_loss": 0,
+            "wl_ratio": 0,
+            "total_pnl": 0,
+            "kelly": 0,
+        }
     wins = [t for t in trades_list if float(t.get("_sim_pnl_pct", t.get("pnl_pct", 0))) >= 0]
     losses = [t for t in trades_list if float(t.get("_sim_pnl_pct", t.get("pnl_pct", 0))) < 0]
     n = len(trades_list)
     wr = len(wins) / n if n > 0 else 0
-    avg_win = sum(float(t.get("_sim_pnl_pct", t.get("pnl_pct", 0))) for t in wins) / len(wins) * 100 if wins else 0
-    avg_loss = sum(float(t.get("_sim_pnl_pct", t.get("pnl_pct", 0))) for t in losses) / len(losses) * 100 if losses else 0
+    avg_win = (
+        sum(float(t.get("_sim_pnl_pct", t.get("pnl_pct", 0))) for t in wins) / len(wins) * 100
+        if wins
+        else 0
+    )
+    avg_loss = (
+        sum(float(t.get("_sim_pnl_pct", t.get("pnl_pct", 0))) for t in losses) / len(losses) * 100
+        if losses
+        else 0
+    )
     wl_ratio = abs(avg_win / avg_loss) if avg_loss != 0 else 0
     total_pnl = sum(float(t.get("_sim_pnl", t.get("pnl", 0))) for t in trades_list)
     # Kelly
@@ -98,15 +118,24 @@ def calc_stats(trades_list):
     else:
         kelly = 0
     return {
-        "n": n, "wr": wr * 100, "avg_win": avg_win, "avg_loss": avg_loss,
-        "wl_ratio": wl_ratio, "total_pnl": total_pnl, "kelly": kelly * 100
+        "n": n,
+        "wr": wr * 100,
+        "avg_win": avg_win,
+        "avg_loss": avg_loss,
+        "wl_ratio": wl_ratio,
+        "total_pnl": total_pnl,
+        "kelly": kelly * 100,
     }
 
+
 def print_stats(label, stats):
-    print(f"  {label:40s} n={stats['n']:>3} WR={stats['wr']:>5.1f}% "
-          f"AvgWin={stats['avg_win']:>+7.2f}% AvgLoss={stats['avg_loss']:>+7.2f}% "
-          f"W/L={stats['wl_ratio']:.2f} Kelly={stats['kelly']:>5.1f}% "
-          f"PnL={stats['total_pnl']:>+10.2f}")
+    print(
+        f"  {label:40s} n={stats['n']:>3} WR={stats['wr']:>5.1f}% "
+        f"AvgWin={stats['avg_win']:>+7.2f}% AvgLoss={stats['avg_loss']:>+7.2f}% "
+        f"W/L={stats['wl_ratio']:.2f} Kelly={stats['kelly']:>5.1f}% "
+        f"PnL={stats['total_pnl']:>+10.2f}"
+    )
+
 
 def run_backtest():
     trades = load_trades()
@@ -156,7 +185,9 @@ def run_backtest():
     for t in capped:
         old = float(t.get("pnl_pct", 0)) * 100
         new = float(t.get("_sim_pnl_pct", 0)) * 100
-        print(f"    {t.get('coin',''):10s} 原={old:>+7.2f}% → 新={new:>+7.2f}% (lev={t.get('leverage',1)}x)")
+        print(
+            f"    {t.get('coin',''):10s} 原={old:>+7.2f}% → 新={new:>+7.2f}% (lev={t.get('leverage',1)}x)"
+        )
     h1_stats = calc_stats(h1_trades)
     print_stats("H1: SL≥8%", h1_stats)
 
@@ -193,7 +224,9 @@ def run_backtest():
     for t in modified:
         old = float(t.get("pnl_pct", 0)) * 100
         new = float(t.get("_sim_pnl_pct", 0)) * 100
-        print(f"    {t.get('coin',''):10s} 原={old:>+7.2f}% → 新={new:>+7.2f}% (lev={t.get('leverage',1)}x)")
+        print(
+            f"    {t.get('coin',''):10s} 原={old:>+7.2f}% → 新={new:>+7.2f}% (lev={t.get('leverage',1)}x)"
+        )
     h2_stats = calc_stats(h2_trades)
     print_stats("H2: SignalReverse PnL感知", h2_stats)
 
@@ -233,8 +266,10 @@ def run_backtest():
         old = float(t.get("pnl_pct", 0)) * 100
         new = float(t.get("_sim_pnl_pct", 0)) * 100
         hh = hold_hours(t.get("entry_time", ""), t.get("exit_time", ""))
-        print(f"    {t.get('coin',''):10s} hold={hh:>5.1f}h 原={old:>+7.2f}% → 新={new:>+7.2f}% "
-              f"(TP: {t.get('_h3_old_tp',0)*100:.1f}% → {t.get('_h3_new_tp',0)*100:.1f}%)")
+        print(
+            f"    {t.get('coin',''):10s} hold={hh:>5.1f}h 原={old:>+7.2f}% → 新={new:>+7.2f}% "
+            f"(TP: {t.get('_h3_old_tp',0)*100:.1f}% → {t.get('_h3_new_tp',0)*100:.1f}%)"
+        )
     h3_stats = calc_stats(h3_trades)
     print_stats("H3: TP衰减减速", h3_stats)
 
@@ -243,15 +278,21 @@ def run_backtest():
     # 这个假设难以直接量化，因为它影响的是离场决策而非 PnL
     # 间接验证：统计被 timeout_profit_switch 和 early exit 平仓的盈利单
     # 如果 veto_value 更高，这些交易会持有更久
-    early_exits = [t for t in real_trades if float(t.get("pnl_pct", 0)) > 0
-                   and hold_hours(t.get("entry_time", ""), t.get("exit_time", "")) < 3]
+    early_exits = [
+        t
+        for t in real_trades
+        if float(t.get("pnl_pct", 0)) > 0
+        and hold_hours(t.get("entry_time", ""), t.get("exit_time", "")) < 3
+    ]
     print(f"  持仓<3h 的盈利单（可能被过早平出）: {len(early_exits)} 笔")
     for t in early_exits:
         hh = hold_hours(t.get("entry_time", ""), t.get("exit_time", ""))
         pnl_pct = float(t.get("pnl_pct", 0)) * 100
-        print(f"    {t.get('coin',''):10s} hold={hh:>4.1f}h pnl={pnl_pct:>+6.2f}% reason={t.get('exit_reason','')[:40]}")
+        print(
+            f"    {t.get('coin',''):10s} hold={hh:>4.1f}h pnl={pnl_pct:>+6.2f}% reason={t.get('exit_reason','')[:40]}"
+        )
     print(f"  → 评估：如果 veto_value 提高到 0.65，约 {len(early_exits)} 笔可能持有更久")
-    print(f"  → 预期 avg_win 提升 ~0.5-1.0%（间接效果，不直接模拟）")
+    print("  → 预期 avg_win 提升 ~0.5-1.0%（间接效果，不直接模拟）")
 
     # ── H5: trial_trend_reverse 损失上限 ──
     print("\n=== H5: trial_trend_reverse 损失上限（信号反转时浮亏 > SL×80% → 等 SL）===")
@@ -293,7 +334,7 @@ def run_backtest():
                             t_copy["_h5_fixed"] = False
                     else:
                         t_copy["_h5_fixed"] = False
-                except:
+                except:  # noqa: E722
                     t_copy["_h5_fixed"] = False
         else:
             t_copy["_h5_fixed"] = False
@@ -304,7 +345,9 @@ def run_backtest():
     for t in fixed:
         old = float(t.get("pnl_pct", 0)) * 100
         new = float(t.get("_sim_pnl_pct", 0)) * 100
-        print(f"    {t.get('coin',''):10s} 原={old:>+7.2f}% → 新={new:>+7.2f}% (lev={t.get('leverage',1)}x)")
+        print(
+            f"    {t.get('coin',''):10s} 原={old:>+7.2f}% → 新={new:>+7.2f}% (lev={t.get('leverage',1)}x)"
+        )
     h5_stats = calc_stats(h5_trades)
     print_stats("H5: trial_trend_reverse 损失上限", h5_stats)
 
@@ -325,7 +368,9 @@ def run_backtest():
             if new_tp > old_tp and pnl_pct < new_tp:
                 estimated_new_pnl = min(pnl_pct * (new_tp / max(old_tp, 0.001)), new_tp)
                 t_copy["_sim_pnl_pct"] = estimated_new_pnl
-                t_copy["_sim_pnl"] = float(t.get("pnl", 0)) * (estimated_new_pnl / pnl_pct if pnl_pct != 0 else 1)
+                t_copy["_sim_pnl"] = float(t.get("pnl", 0)) * (
+                    estimated_new_pnl / pnl_pct if pnl_pct != 0 else 1
+                )
             else:
                 t_copy["_sim_pnl_pct"] = pnl_pct
                 t_copy["_sim_pnl"] = float(t.get("pnl", 0))
@@ -336,7 +381,9 @@ def run_backtest():
             if price_loss > 0.08:
                 new_pnl_pct = -0.08 * max(lev, 1) / 100
                 t_copy["_sim_pnl_pct"] = new_pnl_pct
-                t_copy["_sim_pnl"] = float(t.get("pnl", 0)) * (new_pnl_pct / (pnl_pct / 100) if pnl_pct != 0 else 1)
+                t_copy["_sim_pnl"] = float(t.get("pnl", 0)) * (
+                    new_pnl_pct / (pnl_pct / 100) if pnl_pct != 0 else 1
+                )
             else:
                 t_copy["_sim_pnl_pct"] = pnl_pct
                 t_copy["_sim_pnl"] = float(t.get("pnl", 0))
@@ -351,7 +398,9 @@ def run_backtest():
     # ── 汇总对比 ──
     print("\n" + "=" * 90)
     print("=== 汇总对比 ===")
-    print(f"{'方案':40s} {'W/L':>6} {'Kelly':>7} {'AvgWin':>7} {'AvgLoss':>8} {'WR':>6} {'PnL':>10}")
+    print(
+        f"{'方案':40s} {'W/L':>6} {'Kelly':>7} {'AvgWin':>7} {'AvgLoss':>8} {'WR':>6} {'PnL':>10}"
+    )
     print("-" * 90)
     for label, stats in [
         ("Baseline (排除BDSM 0%)", base_stats),
@@ -361,21 +410,28 @@ def run_backtest():
         ("H5: trial_trend_reverse 损失上限", h5_stats),
         ("组合 H1+H2+H3+H5", combo_stats),
     ]:
-        print(f"  {label:38s} {stats['wl_ratio']:>5.2f} {stats['kelly']:>6.1f}% "
-              f"{stats['avg_win']:>+6.2f}% {stats['avg_loss']:>+7.2f}% "
-              f"{stats['wr']:>5.1f}% {stats['total_pnl']:>+9.2f}")
+        print(
+            f"  {label:38s} {stats['wl_ratio']:>5.2f} {stats['kelly']:>6.1f}% "
+            f"{stats['avg_win']:>+6.2f}% {stats['avg_loss']:>+7.2f}% "
+            f"{stats['wr']:>5.1f}% {stats['total_pnl']:>+9.2f}"
+        )
 
     # ── 结论 ──
-    print(f"\n=== 结论 ===")
+    print("\n=== 结论 ===")
     print(f"  Baseline W/L = {base_stats['wl_ratio']:.2f}, Kelly = {base_stats['kelly']:.1f}%")
     print(f"  组合 W/L = {combo_stats['wl_ratio']:.2f}, Kelly = {combo_stats['kelly']:.1f}%")
-    improvement = combo_stats['wl_ratio'] / base_stats['wl_ratio'] if base_stats['wl_ratio'] > 0 else 0
-    print(f"  W/L 提升: {base_stats['wl_ratio']:.2f} → {combo_stats['wl_ratio']:.2f} ({improvement:.1f}x)")
-    if combo_stats['kelly'] > 0:
+    improvement = (
+        combo_stats["wl_ratio"] / base_stats["wl_ratio"] if base_stats["wl_ratio"] > 0 else 0
+    )
+    print(
+        f"  W/L 提升: {base_stats['wl_ratio']:.2f} → {combo_stats['wl_ratio']:.2f} ({improvement:.1f}x)"
+    )
+    if combo_stats["kelly"] > 0:
         print(f"  Kelly 从 0% → {combo_stats['kelly']:.1f}%（正Kelly = 数学上可加仓）")
         print(f"  ¼ Kelly = {combo_stats['kelly']/4:.1f}%（建议初始仓位）")
     else:
-        print(f"  Kelly 仍为 0% — 需要进一步优化")
+        print("  Kelly 仍为 0% — 需要进一步优化")
+
 
 if __name__ == "__main__":
     run_backtest()

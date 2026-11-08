@@ -19,10 +19,10 @@ FAIL-OPEN: BDSM 不可用时返回中性结果
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 logger = logging.getLogger(__name__)
 
@@ -106,19 +106,28 @@ class BDSMNode(BaseNode):
             },
         )
 
-    def _call_bdsm(self, symbol: str, klines: Optional[list], fundamentals: Dict) -> Optional[Dict[str, Any]]:
+    def _call_bdsm(
+        self, symbol: str, klines: Optional[list], fundamentals: Dict
+    ) -> Optional[Dict[str, Any]]:
         """调用 BDSM 价值框架
 
         动态导入避免在未安装依赖时阻塞。
         """
         try:
-            import sys
             import os
+            import sys
 
             bdsm_path = os.path.join(
                 os.path.dirname(__file__),
-                "..", "..", "..", "..", "..",
-                "11-易经推理系统", "scripts", "memory_l4", "force_vector"
+                "..",
+                "..",
+                "..",
+                "..",
+                "..",
+                "11-易经推理系统",
+                "scripts",
+                "memory_l4",
+                "force_vector",
             )
             bdsm_path = os.path.abspath(bdsm_path)
             if bdsm_path not in sys.path:
@@ -127,6 +136,7 @@ class BDSMNode(BaseNode):
             # 尝试导入 BDSM 核心模块
             try:
                 from force_vector_calculator import ForceVectorCalculator
+
                 # 简化调用：返回评分
                 calculator = ForceVectorCalculator()
                 score = calculator.calculate(symbol=symbol, klines=klines)
@@ -140,7 +150,8 @@ class BDSMNode(BaseNode):
 
             # 尝试导入 coin_fundamental
             try:
-                from coin_fundamental_crypto import CoinFundamentalCrypto
+                from coin_fundamental_crypto import CoinFundamentalCrypto  # noqa: F401
+
                 # 简化调用
                 return {
                     "bds_score": 0.5,

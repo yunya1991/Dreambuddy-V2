@@ -16,13 +16,14 @@ W4 阶段落地 (纯新增, 零回归):
   - actual_label 闭环后真实标签 ("washout" / "weakness")
   - features_snapshot 12+1 维特征 (F1-F13)
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import math
 import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -54,6 +55,7 @@ class WashoutCase:
         reward: tanh(pnl_pct / 0.02) 归一化 [-1, 1]
         timestamp: 案例入库时间 (ISO 8601 UTC)
     """
+
     case_id: str
     coin: str
     entry_time: str

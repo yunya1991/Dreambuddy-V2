@@ -16,10 +16,11 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §2.3.3 P1-4
 """
+
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -128,13 +129,23 @@ class TestACTRActivation:
         model = ACTRActivation()
         memories = [
             # 高 score 但低激活（旧+无 verify）
-            {"id": "VM-001", "content": "BTC策略", "score": 0.9,
-             "verify_count": 0, "updated_at": (datetime.now(timezone.utc) - timedelta(days=200)).isoformat(),
-             "confidence": 0.3},
+            {
+                "id": "VM-001",
+                "content": "BTC策略",
+                "score": 0.9,
+                "verify_count": 0,
+                "updated_at": (datetime.now(timezone.utc) - timedelta(days=200)).isoformat(),
+                "confidence": 0.3,
+            },
             # 低 score 但高激活（新+多次 verify）
-            {"id": "VM-002", "content": "BTC趋势", "score": 0.6,
-             "verify_count": 5, "updated_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
-             "confidence": 0.7},
+            {
+                "id": "VM-002",
+                "content": "BTC趋势",
+                "score": 0.6,
+                "verify_count": 5,
+                "updated_at": (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
+                "confidence": 0.7,
+            },
         ]
         ranked = model.rank_by_activation(memories, context="BTC趋势")
         # VM-002 应排在前面（高激活）
@@ -146,9 +157,14 @@ class TestACTRActivation:
 
         model = ACTRActivation()
         memories = [
-            {"id": "VM-001", "content": "test", "score": 0.5,
-             "verify_count": 1, "updated_at": datetime.now(timezone.utc).isoformat(),
-             "confidence": 0.5},
+            {
+                "id": "VM-001",
+                "content": "test",
+                "score": 0.5,
+                "verify_count": 1,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "confidence": 0.5,
+            },
         ]
         ranked = model.rank_by_activation(memories, context="test")
         assert "activation" in ranked[0]
@@ -159,8 +175,8 @@ class TestCognitiveLoopEntryACTR:
 
     def test_actr_attribute_exists(self):
         """RED: CognitiveLoopEntry 应有 actr 属性。"""
-        from cognitive_loop_entry import CognitiveLoopEntry
         import cognitive_loop_entry as cle_mod
+
         cle_mod.reset_cle()
         try:
             cle = cle_mod.CognitiveLoopEntry(enable_distill=False)

@@ -5,11 +5,12 @@
   2. TrainingCase 字段正确映射（algorithm_pattern→DSH, dependency_graph→G）
   3. FAIL-OPEN：目录不存在/reduce_algorithm不可用时返回空列表
 """
+
 import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _ADAPTERS_DIR = os.path.join(os.path.dirname(_THIS_DIR), "adapters")
@@ -39,6 +40,7 @@ class REABatchCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     def test_collect_python_files(self):
@@ -53,8 +55,9 @@ class REABatchCollectorTest(unittest.TestCase):
             }
 
         collector = REABatchCollector(scan_dir=self._tmpdir)
-        with patch("rea_batch_collector.REABatchCollector._get_reduce_algorithm",
-                    return_value=mock_reduce):
+        with patch(
+            "rea_batch_collector.REABatchCollector._get_reduce_algorithm", return_value=mock_reduce
+        ):
             cases = collector.fetch_cases(limit=100)
 
         self.assertEqual(len(cases), 2)
@@ -73,8 +76,9 @@ class REABatchCollectorTest(unittest.TestCase):
             }
 
         collector = REABatchCollector(scan_dir=self._tmpdir)
-        with patch("rea_batch_collector.REABatchCollector._get_reduce_algorithm",
-                    return_value=mock_reduce):
+        with patch(
+            "rea_batch_collector.REABatchCollector._get_reduce_algorithm", return_value=mock_reduce
+        ):
             cases = collector.fetch_cases(limit=10)
 
         self.assertTrue(len(cases) > 0)
@@ -86,17 +90,20 @@ class REABatchCollectorTest(unittest.TestCase):
 
     def test_source_name(self):
         from rea_batch_collector import REABatchCollector
+
         collector = REABatchCollector(scan_dir=self._tmpdir)
         self.assertEqual(collector.get_source_name(), "rea")
 
     def test_quality_threshold(self):
         from rea_batch_collector import REABatchCollector
+
         collector = REABatchCollector(scan_dir=self._tmpdir)
         self.assertEqual(collector.get_quality_threshold(), "B")
 
     def test_fail_open_dir_missing(self):
         """目录不存在时返回空列表。"""
         from rea_batch_collector import REABatchCollector
+
         collector = REABatchCollector(scan_dir="/nonexistent/dir")
         cases = collector.fetch_cases(limit=10)
         self.assertEqual(cases, [])
@@ -106,8 +113,9 @@ class REABatchCollectorTest(unittest.TestCase):
         from rea_batch_collector import REABatchCollector
 
         collector = REABatchCollector(scan_dir=self._tmpdir)
-        with patch("rea_batch_collector.REABatchCollector._get_reduce_algorithm",
-                    return_value=None):
+        with patch(
+            "rea_batch_collector.REABatchCollector._get_reduce_algorithm", return_value=None
+        ):
             cases = collector.fetch_cases(limit=10)
         self.assertEqual(cases, [])
 

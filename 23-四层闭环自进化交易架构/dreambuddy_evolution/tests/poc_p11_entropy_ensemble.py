@@ -15,6 +15,7 @@
 
 输出: dreambuddy_evolution/data/poc_p11_entropy_ensemble.json
 """
+
 from __future__ import annotations
 
 import json
@@ -29,12 +30,16 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
-from dreambuddy_evolution.core.ensemble import (
-    ensemble_forecast, compute_sde_weight_from_regime,
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.ensemble import (  # noqa: E402
+    compute_sde_weight_from_regime,
+    ensemble_forecast,
 )
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -65,13 +70,16 @@ def main():
 
     # 训练模型
     import torch
+
     torch.manual_seed(42)
     model = NeuralSDEModel(device="cpu")
-    trainer = NeuralSDETrainer(model=model, lr=1e-4, seq_len=64, horizon=20,
-                               batch_size=64, loss_type="mse")
+    trainer = NeuralSDETrainer(
+        model=model, lr=1e-4, seq_len=64, horizon=20, batch_size=64, loss_type="mse"
+    )
     t0 = time.time()
-    report = trainer.train(closes_train, epochs=100,
-                           regime_labels=regime_train, regime_balance="natural")
+    report = trainer.train(
+        closes_train, epochs=100, regime_labels=regime_train, regime_balance="natural"
+    )
     logger.info("训练完成: %.1fs, loss=%.6f", time.time() - t0, report.get("final_loss", 0))
 
     # 12 个测试窗口
@@ -88,8 +96,8 @@ def main():
     results = []
 
     for ts in test_starts:
-        history = closes_full[:ts + 1]
-        actual = closes_full[ts + 1:ts + 1 + horizon]
+        history = closes_full[: ts + 1]
+        actual = closes_full[ts + 1 : ts + 1 + horizon]
         init_price = float(history[-1])
         returns = np.diff(np.log(history))
         init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -116,17 +124,25 @@ def main():
         ensemble_pred = ensemble_forecast(sde_pred, garch_pred, sde_weight=sde_weight)
         ensemble_mae = float(np.mean(np.abs(ensemble_pred - actual)))
 
-        results.append({
-            "test_regime": test_regime,
-            "sde_weight": round(sde_weight, 4),
-            "sde_mae": round(sde_mae, 4),
-            "garch_mae": round(garch_mae, 4),
-            "ensemble_mae": round(ensemble_mae, 4),
-            "ensemble_vs_sde": round(sde_mae - ensemble_mae, 4),
-            "ensemble_vs_garch": round(garch_mae - ensemble_mae, 4),
-        })
-        logger.info("  regime=%d w=%.2f | SDE=%.0f GARCH=%.0f Ensemble=%.0f",
-                    test_regime, sde_weight, sde_mae, garch_mae, ensemble_mae)
+        results.append(
+            {
+                "test_regime": test_regime,
+                "sde_weight": round(sde_weight, 4),
+                "sde_mae": round(sde_mae, 4),
+                "garch_mae": round(garch_mae, 4),
+                "ensemble_mae": round(ensemble_mae, 4),
+                "ensemble_vs_sde": round(sde_mae - ensemble_mae, 4),
+                "ensemble_vs_garch": round(garch_mae - ensemble_mae, 4),
+            }
+        )
+        logger.info(
+            "  regime=%d w=%.2f | SDE=%.0f GARCH=%.0f Ensemble=%.0f",
+            test_regime,
+            sde_weight,
+            sde_mae,
+            garch_mae,
+            ensemble_mae,
+        )
 
     # 汇总
     sde_maes = [r["sde_mae"] for r in results]

@@ -18,22 +18,29 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, Optional
 
-from .base import BaseAdapter
-from ..registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, NodeStatus, State
 from dreamos.shared.utils import Timer
+
+from ..registry.base import BaseNode
+from .base import BaseAdapter
 
 
 class APINode(BaseNode):
     """API 节点 — 包装一个 HTTP API 调用"""
 
-    def __init__(self, node_id: str, url: str, method: str = "GET",
-                 headers: Optional[Dict[str, str]] = None,
-                 body: Optional[Dict[str, Any]] = None,
-                 name: str = "", chain: str = "",
-                 timeout_ms: int = 30000,
-                 response_path: str = "",
-                 **kwargs):
+    def __init__(
+        self,
+        node_id: str,
+        url: str,
+        method: str = "GET",
+        headers: Optional[Dict[str, str]] = None,
+        body: Optional[Dict[str, Any]] = None,
+        name: str = "",
+        chain: str = "",
+        timeout_ms: int = 30000,
+        response_path: str = "",
+        **kwargs,
+    ):
         super().__init__(config=kwargs)
         self.node_id = node_id
         self.name = name or node_id
@@ -50,7 +57,6 @@ class APINode(BaseNode):
         try:
             # 占位: 用 urllib 做最简实现
             from urllib.request import Request, urlopen
-            from urllib.error import URLError
 
             timer = Timer(self.node_id)
             data = None

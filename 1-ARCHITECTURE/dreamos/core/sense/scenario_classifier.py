@@ -16,21 +16,22 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, List, Optional
+from dataclasses import asdict, dataclass
+from typing import Any, Dict
 
 
 @dataclass
 class ScenarioResult:
     """场景分类结果"""
-    scenario_id: str        # "BULL_NORMAL_ACCELERATING"
-    trend: str              # "BULL" / "BEAR" / "NEUTRAL"
-    volatility: str         # "LOW" / "NORMAL" / "HIGH" / "EXTREME"
-    momentum: str           # "ACCELERATING" / "DECELERATING" / "EXHAUSTION"
-    trend_score: float      # 0-1
-    volatility_pct: float   # ATR%
-    momentum_speed: float   # 0-100
-    momentum_accel: float   # 有符号
+
+    scenario_id: str  # "BULL_NORMAL_ACCELERATING"
+    trend: str  # "BULL" / "BEAR" / "NEUTRAL"
+    volatility: str  # "LOW" / "NORMAL" / "HIGH" / "EXTREME"
+    momentum: str  # "ACCELERATING" / "DECELERATING" / "EXHAUSTION"
+    trend_score: float  # 0-1
+    volatility_pct: float  # ATR%
+    momentum_speed: float  # 0-100
+    momentum_accel: float  # 有符号
     exhaustion: bool
 
     def to_dict(self) -> Dict[str, Any]:

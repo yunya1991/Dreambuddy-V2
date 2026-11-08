@@ -2,9 +2,8 @@
 Phase 4 集成测试: 验证 Phase 0-3 组件在实盘热路径中的完整数据流
 确保不出现"写入链路断裂"反模式
 """
-import pytest
-import numpy as np
-from unittest.mock import patch, MagicMock
+
+from unittest.mock import MagicMock, patch  # noqa: I001
 
 
 class TestPhase4PipelineIntegration:
@@ -13,6 +12,7 @@ class TestPhase4PipelineIntegration:
     def test_lazy_init_all_components(self):
         """所有 6 个组件懒初始化方法存在且开关关时返回 None."""
         from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         pipeline = EvolutionPipeline.__new__(EvolutionPipeline)
         pipeline._exogenous_evaluator = None
         pipeline._structural_break_detector = None
@@ -35,6 +35,7 @@ class TestPhase4PipelineIntegration:
     def test_select_optimal_path_returns_phase_fields(self):
         """_select_optimal_path 返回值包含 Phase 1-3 字段."""
         from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         pipeline = EvolutionPipeline.__new__(EvolutionPipeline)
         pipeline._exogenous_evaluator = None
         pipeline._structural_break_detector = None
@@ -70,16 +71,26 @@ class TestPhase4PipelineIntegration:
         pipeline._contradiction_weight_factors = {}
         pipeline._last_primary_contradiction = None
 
-        paths = [{"path_id": "test", "source": "test", "direction": "long",
-                  "expected_return": 0.05, "confidence": 0.7, "resistance": 0.3}]
+        paths = [
+            {
+                "path_id": "test",
+                "source": "test",
+                "direction": "long",
+                "expected_return": 0.05,
+                "confidence": 0.7,
+                "resistance": 0.3,
+            }
+        ]
         r_out = {"_last_price": 100.0, "_last_vol": 0.02, "R_up": 0.5, "R_down": 0.5}
         market_data = {"funding_rate": 0.0005, "close": [100.0] * 50, "ma_200": 95.0}
 
         with patch("dreambuddy_evolution.agi_config.get_switch", return_value=True):
             mock_eval = MagicMock()
             mock_eval.get_primary_contradiction.return_value = {
-                "dimension": "fundamental", "timeframe": "short",
-                "direction": "bull", "strength": 0.7,
+                "dimension": "fundamental",
+                "timeframe": "short",
+                "direction": "bull",
+                "strength": 0.7,
                 "all_contradictions": {"technical": {"short": 0.6}, "fundamental": {"short": 0.8}},
             }
             pipeline._exogenous_evaluator = mock_eval
@@ -100,6 +111,7 @@ class TestPhase4KlineHandlerIntegration:
         """on_kline_close 返回值包含 Phase 1-3 字段."""
         # 验证兜底返回值
         from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
         handler = KlineEventHandler.__new__(KlineEventHandler)
 
         # 构造最小 kline_data 触发兜底
@@ -117,7 +129,7 @@ class TestPhase4ReflexivityIntegration:
         """离场时 ReflexivityMonitor.record 被调用."""
         # 这个测试验证代码路径存在
         # 完整集成测试需要 mock 整个 polling_trader 环境
-        import inspect
+
         from dreambuddy_evolution.core.reflexivity_monitor import ReflexivityMonitor
 
         # 验证 ReflexivityMonitor 有 record 方法
@@ -128,6 +140,7 @@ class TestPhase4ReflexivityIntegration:
     def test_pipeline_has_reflexivity_accessor(self):
         """EvolutionPipeline 有 _get_reflexivity_monitor 方法."""
         from dreambuddy_evolution.evolution_pipeline import EvolutionPipeline
+
         assert hasattr(EvolutionPipeline, "_get_reflexivity_monitor")
 
 
@@ -136,7 +149,9 @@ class TestPhase4DataFlowIntegrity:
 
     def test_data_flow_exogenous_to_rv(self):
         """ExogenousStrengthEvaluator → primary_contradiction → ResistanceVector."""
-        from dreambuddy_evolution.core.exogenous_strength_evaluator import ExogenousStrengthEvaluator
+        from dreambuddy_evolution.core.exogenous_strength_evaluator import (
+            ExogenousStrengthEvaluator,
+        )
 
         evaluator = ExogenousStrengthEvaluator()
         data = {"funding_rate": 0.0008, "close": [100.0] * 50, "ma_200": 95.0}
@@ -171,20 +186,46 @@ class TestPhase4DataFlowIntegrity:
 
     def test_data_flow_shift_to_structural_break(self):
         """ContradictionShiftAccumulator.detect_shift 接收 StructuralBreakDetector 结果."""
-        from dreambuddy_evolution.core.contradiction_shift_accumulator import ContradictionShiftAccumulator
+        from dreambuddy_evolution.core.contradiction_shift_accumulator import (
+            ContradictionShiftAccumulator,
+        )
 
         acc = ContradictionShiftAccumulator(persistence=3, dominance_gap=0.1)
         # 初始: technical 主 (1 次)
-        acc.record([
-            {"dimension": "technical", "timeframe": "short", "direction": "bull", "normalized_strength": 0.7},
-            {"dimension": "macro", "timeframe": "long", "direction": "bear", "normalized_strength": 0.3},
-        ])
+        acc.record(
+            [
+                {
+                    "dimension": "technical",
+                    "timeframe": "short",
+                    "direction": "bull",
+                    "normalized_strength": 0.7,
+                },
+                {
+                    "dimension": "macro",
+                    "timeframe": "long",
+                    "direction": "bear",
+                    "normalized_strength": 0.3,
+                },
+            ]
+        )
         # 切换: macro 主 (连续 persistence-1=2 次)
-        for i in range(2):
-            acc.record([
-                {"dimension": "technical", "timeframe": "short", "direction": "bull", "normalized_strength": 0.3},
-                {"dimension": "macro", "timeframe": "long", "direction": "bear", "normalized_strength": 0.7},
-            ])
+        for i in range(2):  # noqa: B007
+            acc.record(
+                [
+                    {
+                        "dimension": "technical",
+                        "timeframe": "short",
+                        "direction": "bull",
+                        "normalized_strength": 0.3,
+                    },
+                    {
+                        "dimension": "macro",
+                        "timeframe": "long",
+                        "direction": "bear",
+                        "normalized_strength": 0.7,
+                    },
+                ]
+            )
 
         # 有结构断裂 → 质变
         structural_break = {

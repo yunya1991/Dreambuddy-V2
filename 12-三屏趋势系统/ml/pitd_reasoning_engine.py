@@ -22,43 +22,44 @@
 文件: ml/pitd_reasoning_engine.py
 """
 
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Tuple, Optional
-from dataclasses import dataclass, field
-
-from ml.pitd_kinematics_engineer import KinematicsEngineer
 from ml.pitd_dynamics_engineer import DynamicsEngineer
+from ml.pitd_kinematics_engineer import KinematicsEngineer
 from ml.pitd_potential_field import PotentialFieldEngineer
 
 
 @dataclass
 class PhysicsSignal:
     """物理信号数据类"""
+
     # 综合信号
-    signal: float = 0.0           # [-1, +1] 综合信号
-    confidence: float = 0.0       # [0, 1] 置信度
-    regime: str = "unknown"       # 趋势状态
+    signal: float = 0.0  # [-1, +1] 综合信号
+    confidence: float = 0.0  # [0, 1] 置信度
+    regime: str = "unknown"  # 趋势状态
 
     # 分量信号
-    trend_signal: float = 0.0     # 趋势信号 (基于η+动量)
+    trend_signal: float = 0.0  # 趋势信号 (基于η+动量)
     reversal_signal: float = 0.0  # 反转信号 (基于jerk)
-    support_signal: float = 0.0   # 支撑阻力信号 (基于势能梯度)
+    support_signal: float = 0.0  # 支撑阻力信号 (基于势能梯度)
     momentum_signal: float = 0.0  # 动量确认信号
 
     # 原始物理量
-    eta: float = 0.0              # 耦合效率
-    velocity_D: float = 0.0       # 日线速度
-    velocity_W: float = 0.0       # 周线速度
-    jerk_D: float = 0.0           # 日线加加速度
-    jerk_W: float = 0.0           # 周线加加速度
-    gradient: float = 0.0         # 势能梯度
-    momentum: float = 0.0         # 动量
-    kinetic_energy: float = 0.0   # 动能
+    eta: float = 0.0  # 耦合效率
+    velocity_D: float = 0.0  # 日线速度
+    velocity_W: float = 0.0  # 周线速度
+    jerk_D: float = 0.0  # 日线加加速度
+    jerk_W: float = 0.0  # 周线加加速度
+    gradient: float = 0.0  # 势能梯度
+    momentum: float = 0.0  # 动量
+    kinetic_energy: float = 0.0  # 动能
 
     # 风险标记
     reversal_warning: bool = False  # 反转预警
-    strong_trend: bool = False      # 强趋势标记
+    strong_trend: bool = False  # 强趋势标记
 
 
 class PhysicsReasoningEngine:
@@ -74,12 +75,12 @@ class PhysicsReasoningEngine:
     def __init__(
         self,
         # η阈值（基于Phase 2验证的分档数据）
-        eta_strong: float = 0.20,      # η > 0.20 → 强趋势
-        eta_weak: float = 0.10,         # η < 0.10 → 弱趋势
+        eta_strong: float = 0.20,  # η > 0.20 → 强趋势
+        eta_weak: float = 0.10,  # η < 0.10 → 弱趋势
         # jerk阈值（基于Phase 1的3.14x放大）
         jerk_threshold_pct: float = 90,  # jerk绝对值>历史90分位 → 突变
         # 势能梯度阈值
-        gradient_strong: float = 10.0,   # |梯度| > 10 → 强阻力/支撑
+        gradient_strong: float = 10.0,  # |梯度| > 10 → 强阻力/支撑
         # 信号权重
         weight_trend: float = 0.35,
         weight_reversal: float = 0.25,
@@ -150,9 +151,13 @@ class PhysicsReasoningEngine:
         return float(signal), regime
 
     def _compute_reversal_signal(
-        self, jerk_D: float, jerk_W: float,
-        jerk_d_threshold: float, jerk_w_threshold: float,
-        v_D: float, v_W: float,
+        self,
+        jerk_D: float,
+        jerk_W: float,
+        jerk_d_threshold: float,
+        jerk_w_threshold: float,
+        v_D: float,
+        v_W: float,
     ) -> Tuple[float, bool]:
         """计算反转信号
 
@@ -214,7 +219,7 @@ class PhysicsReasoningEngine:
         direction = np.sign(momentum)
 
         # 动能强度归一化（动能越大，信号越强）
-        #动能分布范围较大，用对数压缩
+        # 动能分布范围较大，用对数压缩
         ke_normalized = min(1.0, np.log1p(kinetic_energy * 1000) / 5)
 
         # 大小周期动量一致性增强
@@ -258,8 +263,16 @@ class PhysicsReasoningEngine:
         # 过滤零值后计算分位数
         jerk_d_nonzero = jerk_d_abs[jerk_d_abs > 1e-8]
         jerk_w_nonzero = jerk_w_abs[jerk_w_abs > 1e-8]
-        jerk_d_thresh = np.percentile(jerk_d_nonzero, self.jerk_threshold_pct) if len(jerk_d_nonzero) > 10 else 0.05
-        jerk_w_thresh = np.percentile(jerk_w_nonzero, self.jerk_threshold_pct) if len(jerk_w_nonzero) > 10 else 0.05
+        jerk_d_thresh = (
+            np.percentile(jerk_d_nonzero, self.jerk_threshold_pct)
+            if len(jerk_d_nonzero) > 10
+            else 0.05
+        )
+        jerk_w_thresh = (
+            np.percentile(jerk_w_nonzero, self.jerk_threshold_pct)
+            if len(jerk_w_nonzero) > 10
+            else 0.05
+        )
 
         # 计算各分量信号
         trend_sig, regime = self._compute_trend_signal(eta, v_D, v_W, momentum)
@@ -343,8 +356,16 @@ class PhysicsReasoningEngine:
         jerk_w_abs = np.abs(features["kinematics"]["kin_jerk_W"].values)
         jerk_d_nonzero = jerk_d_abs[jerk_d_abs > 1e-8]
         jerk_w_nonzero = jerk_w_abs[jerk_w_abs > 1e-8]
-        jerk_d_thresh = np.percentile(jerk_d_nonzero, self.jerk_threshold_pct) if len(jerk_d_nonzero) > 10 else 0.05
-        jerk_w_thresh = np.percentile(jerk_w_nonzero, self.jerk_threshold_pct) if len(jerk_w_nonzero) > 10 else 0.05
+        jerk_d_thresh = (
+            np.percentile(jerk_d_nonzero, self.jerk_threshold_pct)
+            if len(jerk_d_nonzero) > 10
+            else 0.05
+        )
+        jerk_w_thresh = (
+            np.percentile(jerk_w_nonzero, self.jerk_threshold_pct)
+            if len(jerk_w_nonzero) > 10
+            else 0.05
+        )
 
         results = []
         for i in range(n):
@@ -399,25 +420,27 @@ class PhysicsReasoningEngine:
                 confidence = 0.3 + 0.3 * abs(signal)
             confidence = float(np.clip(confidence, 0.0, 1.0))
 
-            results.append({
-                "date": prices.index[i],
-                "physics_signal": signal,
-                "physics_confidence": confidence,
-                "physics_regime": regime,
-                "trend_signal": trend_sig,
-                "reversal_signal": reversal_sig,
-                "support_signal": support_sig,
-                "momentum_signal": momentum_sig,
-                "eta": eta,
-                "velocity_D": v_D,
-                "velocity_W": v_W,
-                "jerk_D": jerk_D,
-                "jerk_W": jerk_W,
-                "gradient": gradient,
-                "momentum": momentum,
-                "kinetic_energy": kinetic_energy,
-                "reversal_warning": reversal_warning,
-                "strong_trend": (regime == "strong_trend"),
-            })
+            results.append(
+                {
+                    "date": prices.index[i],
+                    "physics_signal": signal,
+                    "physics_confidence": confidence,
+                    "physics_regime": regime,
+                    "trend_signal": trend_sig,
+                    "reversal_signal": reversal_sig,
+                    "support_signal": support_sig,
+                    "momentum_signal": momentum_sig,
+                    "eta": eta,
+                    "velocity_D": v_D,
+                    "velocity_W": v_W,
+                    "jerk_D": jerk_D,
+                    "jerk_W": jerk_W,
+                    "gradient": gradient,
+                    "momentum": momentum,
+                    "kinetic_energy": kinetic_energy,
+                    "reversal_warning": reversal_warning,
+                    "strong_trend": (regime == "strong_trend"),
+                }
+            )
 
         return pd.DataFrame(results).set_index("date")

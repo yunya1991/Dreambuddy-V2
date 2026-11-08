@@ -15,6 +15,7 @@
   3. hashrate 改用 charts/hash-rate（/q/hashrate 已失效；单位 TH/s）
   4. /q/24hrtransactioncount 已失效（恒返回 0），交易数仅用 charts/n-transactions
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -129,7 +130,10 @@ class BlockchainInfoCollector(BaseCollector):
         try:
             resp = requests.get(
                 f"{_CHARTS}/{chart_name}",
-                params={"timespan": "30days", "format": "json"},  # 1days/5days/1weeks 返回空 values，30days 才有数据
+                params={
+                    "timespan": "30days",
+                    "format": "json",
+                },  # 1days/5days/1weeks 返回空 values，30days 才有数据
                 timeout=15,
             )
             resp.raise_for_status()

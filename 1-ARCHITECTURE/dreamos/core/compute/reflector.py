@@ -20,12 +20,12 @@ DreamOS C层 — 反射决策器
 
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
+from typing import Optional
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
-from dreamos.shared.interfaces import Node, Graph
+from dreamos.shared.interfaces import Graph
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
-from .types import ReflectAction, ReflectDecision, NodeExecutionRecord
+from .types import NodeExecutionRecord, ReflectAction, ReflectDecision
 
 
 class Reflector:
@@ -61,27 +61,31 @@ class Reflector:
         "F2": "F1",
     }
 
-    def __init__(self,
-                 max_retries_per_node: int = 2,
-                 enable_early_terminate: bool = True,
-                 enable_budget_check: bool = True,
-                 enable_conflict_check: bool = True):
+    def __init__(
+        self,
+        max_retries_per_node: int = 2,
+        enable_early_terminate: bool = True,
+        enable_budget_check: bool = True,
+        enable_conflict_check: bool = True,
+    ):
         self._max_retries = max_retries_per_node
         self._enable_early_terminate = enable_early_terminate
         self._enable_budget_check = enable_budget_check
         self._enable_conflict_check = enable_conflict_check
 
-    def decide(self,
-               current_node_id: str,
-               result: Optional[NodeResult],
-               state: State,
-               graph: Graph,
-               executed_count: int,
-               max_nodes: int,
-               record: Optional[NodeExecutionRecord] = None,
-               budget_remaining_ratio: Optional[float] = None,
-               total_budget: int = 0,
-               used_budget: int = 0) -> ReflectDecision:
+    def decide(
+        self,
+        current_node_id: str,
+        result: Optional[NodeResult],
+        state: State,
+        graph: Graph,
+        executed_count: int,
+        max_nodes: int,
+        record: Optional[NodeExecutionRecord] = None,
+        budget_remaining_ratio: Optional[float] = None,
+        total_budget: int = 0,
+        used_budget: int = 0,
+    ) -> ReflectDecision:
         """进行反射决策
 
         Args:
@@ -140,15 +144,15 @@ class Reflector:
 
         # 3. 矛盾检测 → INSERT_BEFORE
         if self._enable_conflict_check:
-            conflict_decision = self._check_conflict(
-                current_node_id, result, state, graph
-            )
+            conflict_decision = self._check_conflict(current_node_id, result, state, graph)
             if conflict_decision:
                 return conflict_decision
 
         # 4. 提前终止检查
         if self._enable_early_terminate:
-            early = self._check_early_terminate(current_node_id, result, state, executed_count, graph)
+            early = self._check_early_terminate(
+                current_node_id, result, state, executed_count, graph
+            )
             if early:
                 return early
 
@@ -161,8 +165,9 @@ class Reflector:
 
     # ── 内部方法 ──────────────────────────
 
-    def _decide_on_failure(self, node_id: str, result: NodeResult,
-                           record: Optional[NodeExecutionRecord]) -> ReflectDecision:
+    def _decide_on_failure(
+        self, node_id: str, result: NodeResult, record: Optional[NodeExecutionRecord]
+    ) -> ReflectDecision:
         """失败时的决策"""
         retries = record.retries if record else 0
 
@@ -180,8 +185,9 @@ class Reflector:
             suggestions=[f"检查 {node_id} 的依赖数据是否正常"],
         )
 
-    def _check_budget(self, node_id: str, result: NodeResult,
-                      remaining_ratio: float, graph: Graph) -> Optional[ReflectDecision]:
+    def _check_budget(
+        self, node_id: str, result: NodeResult, remaining_ratio: float, graph: Graph
+    ) -> Optional[ReflectDecision]:
         """预算检查：剩余预算不足时跳转到收尾节点
 
         文档 §3.4.3 启发式规则: budget_remaining < 0.2 → JUMP("A9")
@@ -206,8 +212,9 @@ class Reflector:
 
         return None
 
-    def _check_conflict(self, node_id: str, result: NodeResult,
-                        state: State, graph: Graph) -> Optional[ReflectDecision]:
+    def _check_conflict(
+        self, node_id: str, result: NodeResult, state: State, graph: Graph
+    ) -> Optional[ReflectDecision]:
         """矛盾检测：与前序节点方向冲突时插入补充节点
 
         文档 §3.4.3: 当前节点结果与前序节点矛盾 → INSERT（补充节点）
@@ -217,16 +224,18 @@ class Reflector:
             return None
 
         results = state.results if state.results else {}
-        prev_results = [r for r in results.values()
-                        if r.node_id != node_id and r.direction]
+        prev_results = [r for r in results.values() if r.node_id != node_id and r.direction]
 
         if not prev_results:
             return None
 
-        conflicts = [r for r in prev_results
-                     if r.direction != result.direction
-                     and r.direction not in ("NEUTRAL", "HOLD")
-                     and r.confidence > self.CONFIDENCE_HIGH]
+        conflicts = [
+            r
+            for r in prev_results
+            if r.direction != result.direction
+            and r.direction not in ("NEUTRAL", "HOLD")
+            and r.confidence > self.CONFIDENCE_HIGH
+        ]
 
         if not conflicts:
             return None
@@ -252,9 +261,14 @@ class Reflector:
     # A5=战术执行(生成trade_order), A9=离场策略(记录止损止盈)
     NON_TERMINATABLE_NODES = {"A5", "A9"}
 
-    def _check_early_terminate(self, current_node_id: str, result: NodeResult,
-                               state: State, executed_count: int,
-                               graph: Optional[Graph] = None) -> Optional[ReflectDecision]:
+    def _check_early_terminate(
+        self,
+        current_node_id: str,
+        result: NodeResult,
+        state: State,
+        executed_count: int,
+        graph: Optional[Graph] = None,
+    ) -> Optional[ReflectDecision]:
         """检查是否可以提前终止
 
         保护规则: A5(战术执行) 和 A9(离场策略) 是必须执行的节点,
@@ -295,9 +309,12 @@ class Reflector:
         direction = result.direction
         if direction and direction != "NEUTRAL" and direction != "HOLD":
             results = state.results if state.results else {}
-            recent = list(results.values())[-self.DIRECTION_CONSISTENCY_THRESHOLD:]
-            consistent = [r for r in recent
-                          if r.direction == direction and r.confidence > self.CONFIDENCE_HIGH]
+            recent = list(results.values())[-self.DIRECTION_CONSISTENCY_THRESHOLD :]
+            consistent = [
+                r
+                for r in recent
+                if r.direction == direction and r.confidence > self.CONFIDENCE_HIGH
+            ]
             if len(consistent) >= self.DIRECTION_CONSISTENCY_THRESHOLD:
                 avg_conf = sum(r.confidence for r in consistent) / len(consistent)
                 return ReflectDecision(

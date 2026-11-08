@@ -22,6 +22,7 @@ CausalEngine — 因果推断引擎（非 LLM·数据驱动）
 
 FAIL-OPEN：任何步骤异常 → 返回空/保守结果，不 crash。
 """
+
 from __future__ import annotations
 
 import logging
@@ -59,7 +60,8 @@ def _ensure_causalml():
     if _CAUSALML_AVAILABLE is not None:
         return _CAUSALML_AVAILABLE
     try:
-        from causalml.inference.meta import LRSRegressor, BaseTRegressor, XGBTRegressor
+        from causalml.inference.meta import BaseTRegressor, LRSRegressor, XGBTRegressor
+
         _CAUSALML_MODELS = {"LRS": LRSRegressor, "BaseT": BaseTRegressor, "XGBT": XGBTRegressor}
         _CAUSALML_AVAILABLE = True
     except Exception:  # noqa: BLE001
@@ -76,6 +78,7 @@ def _ensure_networkx():
         return _NX_AVAILABLE
     try:
         import networkx as nx  # noqa: F401
+
         _NX_AVAILABLE = True
     except Exception:  # noqa: BLE001
         _NX_AVAILABLE = False
@@ -122,11 +125,15 @@ class CausalEngine:
             data = np.asarray(data, dtype=np.float64)
             if data.ndim != 2 or data.shape[0] < self.min_samples:
                 _warn_insufficient_once(
-                    "learn_dag", "[HC-AGI-08] 因果引擎样本量不足(< %d)，返回空DAG",
-                    self.min_samples)
-                return {"adj_matrix": np.zeros((data.shape[1], data.shape[1])),
-                        "edges": [], "feature_names": feature_names or [],
-                        "n_edges": 0, "method": "insufficient_samples"}
+                    "learn_dag", "[HC-AGI-08] 因果引擎样本量不足(< %d)，返回空DAG", self.min_samples
+                )
+                return {
+                    "adj_matrix": np.zeros((data.shape[1], data.shape[1])),
+                    "edges": [],
+                    "feature_names": feature_names or [],
+                    "n_edges": 0,
+                    "method": "insufficient_samples",
+                }
 
             n_features = data.shape[1]
             if feature_names is None:
@@ -162,6 +169,7 @@ class CausalEngine:
             # 构建 networkx DAG
             if _ensure_networkx():
                 import networkx as nx
+
                 G = nx.DiGraph()
                 G.add_nodes_from(feature_names)
                 for f, t, w in edges:
@@ -177,8 +185,13 @@ class CausalEngine:
             }
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] learn_dag failed: %s", e)
-            return {"adj_matrix": np.zeros((0, 0)), "edges": [],
-                    "feature_names": [], "n_edges": 0, "method": "error"}
+            return {
+                "adj_matrix": np.zeros((0, 0)),
+                "edges": [],
+                "feature_names": [],
+                "n_edges": 0,
+                "method": "error",
+            }
 
     @staticmethod
     def _partial_correlation(data: np.ndarray) -> np.ndarray:
@@ -247,12 +260,22 @@ class CausalEngine:
 
             if len(y) < self.min_samples:
                 _warn_insufficient_once(
-                    "estimate_ate", "[HC-AGI-08] ATE样本量不足(< %d)，返回中性结果",
-                    self.min_samples)
-                return {"ate": 0.0, "lower_bound": 0.0, "upper_bound": 0.0,
-                        "method": "insufficient_samples", "significant": False,
-                        "ci_method": "asymptotic", "effect_size": 0.0,
-                        "positivity": None, "trial_count": 1, "fdr_adjusted": False}
+                    "estimate_ate",
+                    "[HC-AGI-08] ATE样本量不足(< %d)，返回中性结果",
+                    self.min_samples,
+                )
+                return {
+                    "ate": 0.0,
+                    "lower_bound": 0.0,
+                    "upper_bound": 0.0,
+                    "method": "insufficient_samples",
+                    "significant": False,
+                    "ci_method": "asymptotic",
+                    "effect_size": 0.0,
+                    "positivity": None,
+                    "trial_count": 1,
+                    "fdr_adjusted": False,
+                }
 
             # 1. 点估计：causalml 优先，否则线性降级
             if _ensure_causalml() and method in ("dml", "s", "t"):
@@ -283,24 +306,35 @@ class CausalEngine:
             }
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] estimate_ate failed: %s", e)
-            return {"ate": 0.0, "lower_bound": 0.0, "upper_bound": 0.0,
-                    "method": "error", "significant": False,
-                    "ci_method": "asymptotic", "effect_size": 0.0,
-                    "positivity": None, "trial_count": 1, "fdr_adjusted": False}
+            return {
+                "ate": 0.0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.0,
+                "method": "error",
+                "significant": False,
+                "ci_method": "asymptotic",
+                "effect_size": 0.0,
+                "positivity": None,
+                "trial_count": 1,
+                "fdr_adjusted": False,
+            }
 
     def _causalml_ate(self, X, treatment, y, method) -> dict:
         """使用 causalml 估计 ATE 点估计（CI 由 estimate_ate 统一 block bootstrap）."""
         try:
             if method == "dml":
                 from causalml.inference.meta import LRSRegressor
+
                 te = LRSRegressor().estimate_ate(X, treatment, y)[0]
             elif method == "s":
                 from causalml.inference.meta import BaseSRegressor
                 from sklearn.linear_model import LinearRegression
+
                 te = BaseSRegressor(learner=LinearRegression()).estimate_ate(X, treatment, y)[0]
             else:  # t
                 from causalml.inference.meta import BaseTRegressor
                 from sklearn.linear_model import LinearRegression
+
                 te = BaseTRegressor(learner=LinearRegression()).estimate_ate(X, treatment, y)[0]
 
             ate = float(np.mean(te)) if hasattr(te, "__len__") else float(te)
@@ -331,8 +365,12 @@ class CausalEngine:
         return idx[:n]
 
     def _block_bootstrap_se(
-        self, X: np.ndarray, treatment: np.ndarray, y: np.ndarray,
-        n_boot: int = 200, seed: int = 42,
+        self,
+        X: np.ndarray,
+        treatment: np.ndarray,
+        y: np.ndarray,
+        n_boot: int = 200,
+        seed: int = 42,
     ) -> float:
         """线性 ATE 代理的 stationary block bootstrap 标准误（SPEC §2.5）.
 
@@ -355,7 +393,11 @@ class CausalEngine:
         return float(np.std(stats, ddof=1))
 
     def _positivity_diagnostics(
-        self, X: np.ndarray, treatment: np.ndarray, y: np.ndarray, ate: float,
+        self,
+        X: np.ndarray,
+        treatment: np.ndarray,
+        y: np.ndarray,
+        ate: float,
     ) -> Optional[dict]:
         """重叠/positivity 诊断（仅诊断不阻断，SPEC §2.5）.
 
@@ -374,12 +416,15 @@ class CausalEngine:
                 ate_trimmed = float(coef[0])
             else:
                 ate_trimmed = float(ate)
-            return {"tail_ratio": tail, "n_tail": int(tail * n),
-                    "ate_trimmed": ate_trimmed, "trimmed_n": int(keep.sum())}
+            return {
+                "tail_ratio": tail,
+                "n_tail": int(tail * n),
+                "ate_trimmed": ate_trimmed,
+                "trimmed_n": int(keep.sum()),
+            }
         except Exception as e:  # noqa: BLE001
             logger.debug("[A2] positivity diagnostic FAIL-OPEN: %s", e)
-            return {"tail_ratio": None, "n_tail": None,
-                    "ate_trimmed": None, "trimmed_n": None}
+            return {"tail_ratio": None, "n_tail": None, "ate_trimmed": None, "trimmed_n": None}
 
     # ------------------------------------------------------------------
     # 3. 异质性处理效应（CATE）估计
@@ -412,28 +457,36 @@ class CausalEngine:
             y = np.asarray(y, dtype=np.float64)
 
             if len(y) < self.min_samples:
-                return {"cate": np.zeros(len(y)), "method": "insufficient_samples",
-                        "heterogeneity_score": 0.0}
+                return {
+                    "cate": np.zeros(len(y)),
+                    "method": "insufficient_samples",
+                    "heterogeneity_score": 0.0,
+                }
 
             if _ensure_causalml():
                 return self._causalml_cate(X, treatment, y)
             return self._linear_cate(X, treatment, y)
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] estimate_cate failed: %s", e)
-            return {"cate": np.zeros(len(y) if 'y' in dir() else 0),
-                    "method": "error", "heterogeneity_score": 0.0}
+            return {
+                "cate": np.zeros(len(y) if "y" in dir() else 0),
+                "method": "error",
+                "heterogeneity_score": 0.0,
+            }
 
     def _causalml_cate(self, X, treatment, y) -> dict:
         """causalml CATE 估计（T-learner + sklearn，避免 xgboost 在 numpy2 下崩溃）"""
         try:
             from causalml.inference.meta import BaseTRegressor
             from sklearn.ensemble import RandomForestRegressor
-            t_learner = BaseTRegressor(learner=RandomForestRegressor(n_estimators=50, random_state=42))
+
+            t_learner = BaseTRegressor(
+                learner=RandomForestRegressor(n_estimators=50, random_state=42)
+            )
             cate = t_learner.fit_predict(X, treatment, y)
             cate = np.asarray(cate).ravel()
             hetero = float(np.std(cate) / (np.mean(np.abs(cate)) + 1e-10))
-            return {"cate": cate, "method": "causalml_rf_t",
-                    "heterogeneity_score": hetero}
+            return {"cate": cate, "method": "causalml_rf_t", "heterogeneity_score": hetero}
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] causalml CATE failed: %s", e)
             return self._linear_cate(X, treatment, y)
@@ -454,16 +507,14 @@ class CausalEngine:
 
             # CATE = treatment系数 + sum(interaction_coef * X_i)
             base_effect = reg.coef_[0]
-            interaction_coefs = reg.coef_[1 + d:]  # 交互项系数
+            interaction_coefs = reg.coef_[1 + d :]  # 交互项系数
             cate = base_effect + X @ interaction_coefs
 
             hetero = float(np.std(cate) / (np.mean(np.abs(cate)) + 1e-10))
-            return {"cate": cate, "method": "linear_interaction",
-                    "heterogeneity_score": hetero}
+            return {"cate": cate, "method": "linear_interaction", "heterogeneity_score": hetero}
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-02] linear CATE failed: %s", e)
-            return {"cate": np.zeros(len(y)), "method": "error",
-                    "heterogeneity_score": 0.0}
+            return {"cate": np.zeros(len(y)), "method": "error", "heterogeneity_score": 0.0}
 
     # ------------------------------------------------------------------
     # 4. 虚假关联检测
@@ -507,19 +558,25 @@ class CausalEngine:
                     raw_corr = abs(corr[i, j])
                     partial_corr = abs(pcorr[i, j])
                     if raw_corr > 0.5:  # 高相关
-                        correlations.append({
-                            "pair": (feature_names[i], feature_names[j]),
-                            "raw_correlation": float(corr[i, j]),
-                            "partial_correlation": float(pcorr[i, j]),
-                        })
-                        # 虚假关联：相关高但偏相关低（控制其他变量后消失）
-                        if partial_corr < 0.2 and raw_corr > 0.5:
-                            spurious_pairs.append({
+                        correlations.append(
+                            {
                                 "pair": (feature_names[i], feature_names[j]),
                                 "raw_correlation": float(corr[i, j]),
                                 "partial_correlation": float(pcorr[i, j]),
-                                "confounders": self._find_confounders(data, i, j, feature_names),
-                            })
+                            }
+                        )
+                        # 虚假关联：相关高但偏相关低（控制其他变量后消失）
+                        if partial_corr < 0.2 and raw_corr > 0.5:
+                            spurious_pairs.append(
+                                {
+                                    "pair": (feature_names[i], feature_names[j]),
+                                    "raw_correlation": float(corr[i, j]),
+                                    "partial_correlation": float(pcorr[i, j]),
+                                    "confounders": self._find_confounders(
+                                        data, i, j, feature_names
+                                    ),
+                                }
+                            )
 
             return {
                 "spurious_pairs": spurious_pairs,

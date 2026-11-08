@@ -6,24 +6,28 @@
 搜索空间：8个关键参数（Ising/TDA/力学引擎/P3联动）
 评估方式：WalkForwardBacktester 3折回测（BTC+ETH平均）
 """
-import sys
-import os
+
 import json
-import time
 import logging
-import pandas as pd
+import os
+import sys
+import time
+
 import numpy as np
+import pandas as pd
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-import importlib
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+import importlib  # noqa: E402
 
-import optuna
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
+
+import optuna  # noqa: E402
+
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -63,18 +67,22 @@ def load_klines(symbol, timeframe="1H"):
 def apply_params(trial):
     """将Optuna trial的参数应用到所有消费模块（patch本地引用）"""
     from scripts.memory_l4.bcrm import _constants as const
-    from scripts.memory_l4.bcrm import ising_phase_detector as ising_mod
     from scripts.memory_l4.bcrm import force_engine as force_mod
+    from scripts.memory_l4.bcrm import ising_phase_detector as ising_mod
     from scripts.memory_l4.bcrm import tda_early_warning as tda_mod
 
     params = {
         "ISING_TEMP_SCALE": trial.suggest_float("ISING_TEMP_SCALE", 300.0, 800.0),
         "ISING_ORDERED_RATIO": trial.suggest_float("ISING_ORDERED_RATIO", 0.70, 0.95),
         "ISING_DISORDERED_RATIO": trial.suggest_float("ISING_DISORDERED_RATIO", 1.05, 1.30),
-        "ISING_MAGNETIZATION_THRESHOLD": trial.suggest_float("ISING_MAGNETIZATION_THRESHOLD", 0.10, 0.25),
+        "ISING_MAGNETIZATION_THRESHOLD": trial.suggest_float(
+            "ISING_MAGNETIZATION_THRESHOLD", 0.10, 0.25
+        ),
         "ISING_ENERGY_SPIKE_FACTOR": trial.suggest_float("ISING_ENERGY_SPIKE_FACTOR", 1.5, 3.5),
         "TDA_BETTI_SPIKE_FACTOR": trial.suggest_float("TDA_BETTI_SPIKE_FACTOR", 2.0, 4.0),
-        "TDA_BOTTLENECK_DISTANCE_THRESHOLD": trial.suggest_float("TDA_BOTTLENECK_DISTANCE_THRESHOLD", 0.3, 0.8),
+        "TDA_BOTTLENECK_DISTANCE_THRESHOLD": trial.suggest_float(
+            "TDA_BOTTLENECK_DISTANCE_THRESHOLD", 0.3, 0.8
+        ),
         "REVERSAL_WARNING_THRESHOLD": trial.suggest_float("REVERSAL_WARNING_THRESHOLD", 0.08, 0.30),
     }
 
@@ -83,14 +91,19 @@ def apply_params(trial):
         setattr(const, k, v)
 
     # Patch ising_phase_detector 本地引用
-    for k in ["ISING_TEMP_SCALE", "ISING_ORDERED_RATIO", "ISING_DISORDERED_RATIO",
-              "ISING_MAGNETIZATION_THRESHOLD", "ISING_ENERGY_SPIKE_FACTOR"]:
+    for k in [
+        "ISING_TEMP_SCALE",
+        "ISING_ORDERED_RATIO",
+        "ISING_DISORDERED_RATIO",
+        "ISING_MAGNETIZATION_THRESHOLD",
+        "ISING_ENERGY_SPIKE_FACTOR",
+    ]:
         if hasattr(ising_mod, k):
             setattr(ising_mod, k, params[k])
 
     # Patch force_engine 本地引用
     if hasattr(force_mod, "REVERSAL_WARNING_THRESHOLD"):
-        setattr(force_mod, "REVERSAL_WARNING_THRESHOLD", params["REVERSAL_WARNING_THRESHOLD"])
+        force_mod.REVERSAL_WARNING_THRESHOLD = params["REVERSAL_WARNING_THRESHOLD"]
 
     # Patch tda_early_warning 本地引用
     for k in ["TDA_BETTI_SPIKE_FACTOR", "TDA_BOTTLENECK_DISTANCE_THRESHOLD"]:
@@ -104,6 +117,7 @@ def run_backtest(symbol, df):
     """运行单币种回测，返回关键指标"""
     # 每次重建TriangleVerifier以应用新参数
     from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester
+
     bt = WalkForwardBacktester(
         symbol=symbol,
         n_folds=3,
@@ -115,6 +129,7 @@ def run_backtest(symbol, df):
     # 重建triangle_verifier以加载新参数
     if bt.enable_pentagon:
         from scripts.memory_l4.triangle_verifier import TriangleVerifier
+
         bt._triangle_verifier = TriangleVerifier()
 
     result = bt.run(df, verbose=False)
@@ -123,7 +138,7 @@ def run_backtest(symbol, df):
 
 def objective(trial):
     """Optuna目标函数：最大化平均夏普比率"""
-    params = apply_params(trial)
+    params = apply_params(trial)  # noqa: F841
 
     symbols = ["BTC", "ETH"]
     sharpes = []
@@ -163,8 +178,11 @@ def objective(trial):
     trial.set_user_attr("returns", returns)
 
     elapsed = time.time() - t0
-    print(f"    Trial #{trial.number}: 得分={score:.4f}, 夏普={avg_sharpe:.2f}, "
-          f"收益={avg_return:.1f}%, 回撤={avg_dd:.1f}% ({elapsed:.0f}秒)", flush=True)
+    print(
+        f"    Trial #{trial.number}: 得分={score:.4f}, 夏普={avg_sharpe:.2f}, "
+        f"收益={avg_return:.1f}%, 回撤={avg_dd:.1f}% ({elapsed:.0f}秒)",
+        flush=True,
+    )
 
     return score
 
@@ -173,20 +191,21 @@ def main():
     print("=" * 80)
     print("  贝叶斯参数优化 — 五角校验参数搜索")
     print("=" * 80)
-    print(f"\n  优化目标：夏普比率 + 收益 - 回撤惩罚")
-    print(f"  搜索空间：8个参数")
-    print(f"  评估方式：BTC+ETH 3折Walk-Forward回测")
-    print(f"  试验次数：30次")
-    print(f"\n  当前基线参数：")
+    print("\n  优化目标：夏普比率 + 收益 - 回撤惩罚")
+    print("  搜索空间：8个参数")
+    print("  评估方式：BTC+ETH 3折Walk-Forward回测")
+    print("  试验次数：30次")
+    print("\n  当前基线参数：")
     for k, v in BASELINE_PARAMS.items():
         print(f"    {k} = {v}")
 
     # 先运行基线
-    print(f"\n  [基线] 运行当前参数回测...")
+    print("\n  [基线] 运行当前参数回测...")
     from scripts.memory_l4.bcrm import _constants as const
-    from scripts.memory_l4.bcrm import ising_phase_detector as ising_mod
     from scripts.memory_l4.bcrm import force_engine as force_mod
+    from scripts.memory_l4.bcrm import ising_phase_detector as ising_mod
     from scripts.memory_l4.bcrm import tda_early_warning as tda_mod
+
     # 确保使用基线参数（patch所有模块）
     for k, v in BASELINE_PARAMS.items():
         setattr(const, k, v)
@@ -211,7 +230,9 @@ def main():
             "win_rate": result.overall_win_rate,
             "profit_factor": result.profit_factor,
         }
-        print(f"    {symbol}: 夏普={result.sharpe_ratio:.2f}, 收益={result.total_return:.2f}%, 回撤={result.max_drawdown:.2f}%")
+        print(
+            f"    {symbol}: 夏普={result.sharpe_ratio:.2f}, 收益={result.total_return:.2f}%, 回撤={result.max_drawdown:.2f}%"
+        )
 
     baseline_sharpe = np.mean([s["sharpe"] for s in baseline_scores.values()])
     baseline_return = np.mean([s["return"] for s in baseline_scores.values()])
@@ -220,7 +241,7 @@ def main():
     print(f"    基线综合得分: {baseline_score:.4f}")
 
     # 运行贝叶斯优化
-    print(f"\n  [优化] 开始贝叶斯搜索（30 trials）...")
+    print("\n  [优化] 开始贝叶斯搜索（30 trials）...")
     study = optuna.create_study(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=42),
@@ -235,9 +256,11 @@ def main():
     print(f"\n  最优试验 #{best.number}:")
     print(f"    综合得分: {best.value:.4f} (基线: {baseline_score:.4f})")
     print(f"    平均夏普: {best.user_attrs.get('avg_sharpe', 0):.4f} (基线: {baseline_sharpe:.4f})")
-    print(f"    平均收益: {best.user_attrs.get('avg_return', 0):.4f}% (基线: {baseline_return:.4f}%)")
+    print(
+        f"    平均收益: {best.user_attrs.get('avg_return', 0):.4f}% (基线: {baseline_return:.4f}%)"
+    )
     print(f"    平均回撤: {best.user_attrs.get('avg_drawdown', 0):.4f}% (基线: {baseline_dd:.4f}%)")
-    print(f"\n  最优参数：")
+    print("\n  最优参数：")
     for k, v in best.params.items():
         old = BASELINE_PARAMS.get(k, "?")
         print(f"    {k}: {v:.4f} (基线: {old})")
@@ -248,7 +271,7 @@ def main():
 
     if improvement > 0.1:
         # P1修正：hold-out 验证 — 用最后 20% 数据独立验证最优参数
-        print(f"\n  [Hold-out] 用最后 20% 数据独立验证最优参数...")
+        print("\n  [Hold-out] 用最后 20% 数据独立验证最优参数...")
         holdout_sharpes = []
         holdout_returns = []
         holdout_dds = []
@@ -266,7 +289,9 @@ def main():
                 holdout_sharpes.append(result.sharpe_ratio)
                 holdout_returns.append(result.total_return)
                 holdout_dds.append(result.max_drawdown)
-                print(f"    {symbol} hold-out: 夏普={result.sharpe_ratio:.2f}, 收益={result.total_return:.2f}%, 回撤={result.max_drawdown:.2f}%")
+                print(
+                    f"    {symbol} hold-out: 夏普={result.sharpe_ratio:.2f}, 收益={result.total_return:.2f}%, 回撤={result.max_drawdown:.2f}%"
+                )
             except Exception as e:
                 print(f"    {symbol} hold-out 失败: {e}")
 
@@ -277,10 +302,12 @@ def main():
 
         # hold-out 衰减率
         decay = (best.value - holdout_score) / abs(best.value) if best.value != 0 else 1.0
-        print(f"\n  Hold-out 综合得分: {holdout_score:.4f} (优化折内: {best.value:.4f}, 衰减: {decay:.1%})")
+        print(
+            f"\n  Hold-out 综合得分: {holdout_score:.4f} (优化折内: {best.value:.4f}, 衰减: {decay:.1%})"
+        )
 
         if decay > 0.5:
-            print(f"  结论: ❌ hold-out 衰减>50%，过拟合风险高，回退到基线参数")
+            print("  结论: ❌ hold-out 衰减>50%，过拟合风险高，回退到基线参数")
             for k, v in BASELINE_PARAMS.items():
                 setattr(const, k, v)
                 if hasattr(ising_mod, k):
@@ -289,26 +316,30 @@ def main():
                     setattr(force_mod, k, v)
                 if hasattr(tda_mod, k):
                     setattr(tda_mod, k, v)
-            print(f"  已回退到基线参数")
+            print("  已回退到基线参数")
         else:
-            print(f"  结论: ✅ hold-out 验证通过（衰减<50%），采纳新参数")
+            print("  结论: ✅ hold-out 验证通过（衰减<50%），采纳新参数")
             output_path = os.path.join(SCRIPT_DIR, "optimal_params.json")
             with open(output_path, "w") as f:
-                json.dump({
-                    "params": best.params,
-                    "score": best.value,
-                    "holdout_score": holdout_score,
-                    "holdout_decay": decay,
-                    "baseline_score": baseline_score,
-                    "improvement": improvement,
-                    "user_attrs": best.user_attrs,
-                    "holdout_sharpe": holdout_sharpe,
-                    "holdout_return": holdout_return,
-                    "holdout_drawdown": holdout_dd,
-                }, f, indent=2)
+                json.dump(
+                    {
+                        "params": best.params,
+                        "score": best.value,
+                        "holdout_score": holdout_score,
+                        "holdout_decay": decay,
+                        "baseline_score": baseline_score,
+                        "improvement": improvement,
+                        "user_attrs": best.user_attrs,
+                        "holdout_sharpe": holdout_sharpe,
+                        "holdout_return": holdout_return,
+                        "holdout_drawdown": holdout_dd,
+                    },
+                    f,
+                    indent=2,
+                )
             print(f"  参数已保存: {output_path}")
     else:
-        print(f"\n  结论: ❌ 优化未显著提升（提升<0.1），回退到基线参数")
+        print("\n  结论: ❌ 优化未显著提升（提升<0.1），回退到基线参数")
         # 恢复基线参数（patch所有模块）
         for k, v in BASELINE_PARAMS.items():
             setattr(const, k, v)
@@ -318,18 +349,18 @@ def main():
                 setattr(force_mod, k, v)
             if hasattr(tda_mod, k):
                 setattr(tda_mod, k, v)
-        print(f"  已回退到基线参数")
+        print("  已回退到基线参数")
 
     # 打印Top 5试验
-    print(f"\n  Top 5试验：")
+    print("\n  Top 5试验：")
     sorted_trials = sorted(
-        [t for t in study.trials if t.value is not None],
-        key=lambda t: t.value,
-        reverse=True
+        [t for t in study.trials if t.value is not None], key=lambda t: t.value, reverse=True
     )[:5]
     for t in sorted_trials:
-        print(f"    #{t.number}: 得分={t.value:.4f}, 夏普={t.user_attrs.get('avg_sharpe', 0):.2f}, "
-              f"收益={t.user_attrs.get('avg_return', 0):.2f}%, 回撤={t.user_attrs.get('avg_drawdown', 0):.2f}%")
+        print(
+            f"    #{t.number}: 得分={t.value:.4f}, 夏普={t.user_attrs.get('avg_sharpe', 0):.2f}, "
+            f"收益={t.user_attrs.get('avg_return', 0):.2f}%, 回撤={t.user_attrs.get('avg_drawdown', 0):.2f}%"
+        )
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@
   python3 run.py test                   运行事件驱动策略全部测试
   python3 run.py config                 查看当前策略配置（权重/阈值/半衰期）
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,8 +29,6 @@ from event_driven.event_driven_strategy import (  # noqa: E402
     EVENT_HALF_LIFE,
     EventDrivenStrategy,
     EventDrivenTrader,
-    EventSignal,
-    neutral_event_signal,
 )
 
 
@@ -87,8 +86,10 @@ def cmd_trader(args) -> None:
         while True:
             kline = _mock_kline()
             signal = trader.on_kline_close(kline)
-            print(f"[{time.strftime('%H:%M:%S')}] signal={signal.signal} "
-                  f"strength={signal.strength:.3f} confidence={signal.confidence:.3f}")
+            print(
+                f"[{time.strftime('%H:%M:%S')}] signal={signal.signal} "
+                f"strength={signal.strength:.3f} confidence={signal.confidence:.3f}"
+            )
             time.sleep(5)
     except KeyboardInterrupt:
         print("\n交易器已停止")
@@ -100,7 +101,7 @@ def cmd_config(args) -> None:
     print("=" * 70)
     print("事件驱动策略配置")
     print("=" * 70)
-    print(f"  5 维权重:")
+    print("  5 维权重:")
     print(f"    priced_in     = {s.W_PRICED_IN}")
     print(f"    real_rate     = {s.W_REAL_RATE}")
     print(f"    resilience    = {s.W_RESILIENCE}")
@@ -116,6 +117,7 @@ def cmd_config(args) -> None:
 def cmd_test(args) -> None:
     """运行事件驱动策略测试套件。"""
     import subprocess
+
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "tests/", "-v", "--tb=short"],
         cwd=str(BASE_DIR),
@@ -128,8 +130,9 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_signal = sub.add_parser("signal", help="评估一次事件驱动信号")
-    p_signal.add_argument("--event", default="fomc",
-                          help="事件类型: fomc/nfp/cpi/ppi/fed_speech/tech_upgrade/...")
+    p_signal.add_argument(
+        "--event", default="fomc", help="事件类型: fomc/nfp/cpi/ppi/fed_speech/tech_upgrade/..."
+    )
     p_signal.set_defaults(func=cmd_signal)
 
     p_trader = sub.add_parser("trader", help="启动事件驱动独立交易器")

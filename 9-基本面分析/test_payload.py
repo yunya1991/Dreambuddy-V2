@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path("ops/nanoclaw/core_task1/narrative/scripts").resolve()))
 import narrative_analyzer as na
 

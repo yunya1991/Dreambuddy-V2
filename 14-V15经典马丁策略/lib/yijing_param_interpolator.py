@@ -23,8 +23,8 @@
   mults = interpolate_params(risk_score=0.3, value_score=0.8)
   # → {"tp_mult": 1.05, "holding_mult": 1.10, "size_mult": 1.05}
 """
-from typing import Dict
 
+from typing import Dict
 
 # 幅度限制：subregime × yijing 总乘积不超过此范围
 _MIN_TOTAL_MULT = 0.75
@@ -78,18 +78,20 @@ def interpolate_params(
         yijing_tp = _lerp((net_value + 1) / 2, _YIJING_TP_RANGE[0], _YIJING_TP_RANGE[1])
     # risk 高时额外收紧 TP（不管 value 如何）
     if risk_score > 0.6:
-        yijing_tp *= (1.0 - (risk_score - 0.6) * 0.25)  # risk 0.6→1.0 时额外 ×0.9
+        yijing_tp *= 1.0 - (risk_score - 0.6) * 0.25  # risk 0.6→1.0 时额外 ×0.9
 
     # holding_mult: 中性区不调整，明显偏离才调整
     if abs(net_value) < _NEUTRAL_THRESHOLD:
         yijing_holding = 1.0
     else:
-        yijing_holding = _lerp((net_value + 1) / 2, _YIJING_HOLDING_RANGE[0], _YIJING_HOLDING_RANGE[1])
+        yijing_holding = _lerp(
+            (net_value + 1) / 2, _YIJING_HOLDING_RANGE[0], _YIJING_HOLDING_RANGE[1]
+        )
 
     # size_mult: value 高加仓，risk 高减仓
     yijing_size = _lerp(value_score, _YIJING_SIZE_RANGE[0], _YIJING_SIZE_RANGE[1])
     if risk_score > 0.6:
-        yijing_size *= (1.0 - (risk_score - 0.6) * 0.30)
+        yijing_size *= 1.0 - (risk_score - 0.6) * 0.30
 
     yijing_tp = round(yijing_tp, 4)
     yijing_holding = round(yijing_holding, 4)

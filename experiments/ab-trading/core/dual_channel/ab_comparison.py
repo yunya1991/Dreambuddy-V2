@@ -16,31 +16,28 @@ P2-8 落地前置条件：验证双通道决策的 path_advantage ≥ +0.2。
   python3 -m core.dual_channel.ab_comparison --coin BTC --bars 500
   python3 -m core.dual_channel.ab_comparison --help
 """
-from __future__ import annotations
-import sys
-import json
-import time
-import argparse
-from pathlib import Path
-from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Any
 
-from .corpus_callosum import CorpusCallosum, ChannelResult, IntegrationResult
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from .corpus_callosum import ChannelResult, CorpusCallosum
 from .dual_channel_runner import DualChannelRunner
 
-
 # ── 注入 4-MEMORY 路径（复用 evaluation_engine）──────────────────
-_MEM_TOOLS = (
-    Path(__file__).resolve().parents[4]
-    / "4-MEMORY" / "9-工具与接口"
-)
+_MEM_TOOLS = Path(__file__).resolve().parents[4] / "4-MEMORY" / "9-工具与接口"
 if str(_MEM_TOOLS) not in sys.path:
     sys.path.insert(0, str(_MEM_TOOLS))
 
 _EVAL_AVAILABLE = False
 try:
-    from evaluation_engine import compute_path_advantage, decide_learning_action
-    from evaluation_engine import EvaluationSample
+    from evaluation_engine import EvaluationSample, compute_path_advantage, decide_learning_action
+
     _EVAL_AVAILABLE = True
 except Exception:
     pass
@@ -49,8 +46,9 @@ except Exception:
 @dataclass
 class TradeRecord:
     """单笔交易记录（AB 对比用）"""
+
     bar: int
-    direction: str        # LONG / SHORT / HOLD
+    direction: str  # LONG / SHORT / HOLD
     confidence: float
     entry_price: float
     exit_price: float = 0.0
@@ -63,18 +61,19 @@ class TradeRecord:
 @dataclass
 class ChannelStats:
     """单组回测统计"""
-    total_signals: int = 0       # 总信号数（含被门禁拒绝）
-    traded: int = 0              # 实际交易数
+
+    total_signals: int = 0  # 总信号数（含被门禁拒绝）
+    traded: int = 0  # 实际交易数
     wins: int = 0
     losses: int = 0
-    hold_rejected: int = 0       # 被门禁拒绝数
+    hold_rejected: int = 0  # 被门禁拒绝数
     total_pnl_pct: float = 0.0
     avg_confidence: float = 0.0
     max_drawdown_pct: float = 0.0
     sharpe_ratio: float = 0.0
     win_rate: float = 0.0
-    divergences: int = 0         # B组专属：左右分歧次数
-    full_consensus: int = 0      # B组专属：三者一致次数
+    divergences: int = 0  # B组专属：左右分歧次数
+    full_consensus: int = 0  # B组专属：三者一致次数
 
     def to_metrics(self) -> Dict[str, float]:
         """转为 evaluation_engine 期望的 outcome_metrics 格式"""
@@ -94,12 +93,13 @@ class ChannelStats:
 @dataclass
 class ABComparisonReport:
     """AB 对比报告"""
+
     coin: str
     bars: int
     group_a: ChannelStats
     group_b: ChannelStats
     path_advantage: float
-    decision: str          # upgrade / alert / observe
+    decision: str  # upgrade / alert / observe
     reason: str
     yijing_available: bool
     timestamp: str = ""
@@ -111,20 +111,20 @@ class ABComparisonReport:
             f"时间: {self.timestamp}",
             f"Yijing引擎: {'✅ 可用' if self.yijing_available else '❌ 不可用（右脑仅做梦部）'}",
             "",
-            f"--- A组（单通道 baseline）---",
+            "--- A组（单通道 baseline）---",
             f"  信号数: {self.group_a.total_signals}  交易数: {self.group_a.traded}",
             f"  胜率: {self.group_a.win_rate:.1%}  总收益: {self.group_a.total_pnl_pct:+.2f}%",
             f"  平均置信度: {self.group_a.avg_confidence:.1%}  夏普: {self.group_a.sharpe_ratio:.2f}",
             f"  门禁拒绝: {self.group_a.hold_rejected}",
             "",
-            f"--- B组（双通道 treatment）---",
+            "--- B组（双通道 treatment）---",
             f"  信号数: {self.group_b.total_signals}  交易数: {self.group_b.traded}",
             f"  胜率: {self.group_b.win_rate:.1%}  总收益: {self.group_b.total_pnl_pct:+.2f}%",
             f"  平均置信度: {self.group_b.avg_confidence:.1%}  夏普: {self.group_b.sharpe_ratio:.2f}",
             f"  门禁拒绝: {self.group_b.hold_rejected}",
             f"  三者一致: {self.group_b.full_consensus}  左右分歧: {self.group_b.divergences}",
             "",
-            f"--- path_advantage ---",
+            "--- path_advantage ---",
             f"  值: {self.path_advantage:+.4f}",
             f"  决策: {self.decision}",
             f"  理由: {self.reason}",
@@ -230,7 +230,7 @@ class ABComparison:
         entry_bar = 0
 
         closes = [float(k.get("c", 0)) for k in klines]
-        volumes = [float(k.get("v", 0)) for k in klines]
+        volumes = [float(k.get("v", 0)) for k in klines]  # noqa: F841
 
         for i in range(50, len(closes)):
             price = closes[i]
@@ -244,10 +244,15 @@ class ABComparison:
 
             if not gate_passed:
                 if position is None:
-                    trades.append(TradeRecord(
-                        bar=i, direction="HOLD", confidence=left.confidence,
-                        entry_price=price, exit_reason="gate_reject",
-                    ))
+                    trades.append(
+                        TradeRecord(
+                            bar=i,
+                            direction="HOLD",
+                            confidence=left.confidence,
+                            entry_price=price,
+                            exit_reason="gate_reject",
+                        )
+                    )
                 continue
 
             # 开仓
@@ -263,12 +268,17 @@ class ABComparison:
                 )
                 if exit_price > 0:
                     pnl = self._calc_pnl(position, entry_price, exit_price)
-                    trades.append(TradeRecord(
-                        bar=entry_bar, direction=position,
-                        confidence=left.confidence,
-                        entry_price=entry_price, exit_price=exit_price,
-                        pnl_pct=pnl, exit_reason=exit_reason,
-                    ))
+                    trades.append(
+                        TradeRecord(
+                            bar=entry_bar,
+                            direction=position,
+                            confidence=left.confidence,
+                            entry_price=entry_price,
+                            exit_price=exit_price,
+                            pnl_pct=pnl,
+                            exit_reason=exit_reason,
+                        )
+                    )
                     position = None
                     entry_price = 0.0
 
@@ -276,12 +286,17 @@ class ABComparison:
         if position:
             exit_price = closes[-1]
             pnl = self._calc_pnl(position, entry_price, exit_price)
-            trades.append(TradeRecord(
-                bar=entry_bar, direction=position,
-                confidence=0.5,
-                entry_price=entry_price, exit_price=exit_price,
-                pnl_pct=pnl, exit_reason="time_exit",
-            ))
+            trades.append(
+                TradeRecord(
+                    bar=entry_bar,
+                    direction=position,
+                    confidence=0.5,
+                    entry_price=entry_price,
+                    exit_price=exit_price,
+                    pnl_pct=pnl,
+                    exit_reason="time_exit",
+                )
+            )
 
         stats = self._calc_stats(trades)
         return trades, stats
@@ -315,22 +330,28 @@ class ABComparison:
             integration = decision.integration
 
             # 更新记忆
-            memory["recent_decisions"].append({
-                "action": integration.direction,
-                "confidence": integration.confidence,
-            })
+            memory["recent_decisions"].append(
+                {
+                    "action": integration.direction,
+                    "confidence": integration.confidence,
+                }
+            )
             if len(memory["recent_decisions"]) > 20:
                 memory["recent_decisions"] = memory["recent_decisions"][-20:]
 
             if not integration.gate_passed:
                 if position is None:
-                    trades.append(TradeRecord(
-                        bar=i, direction="HOLD",
-                        confidence=integration.confidence,
-                        entry_price=price, exit_reason="gate_reject",
-                        agreement_level=integration.agreement_level.value,
-                        divergence_flag=integration.divergence_flag,
-                    ))
+                    trades.append(
+                        TradeRecord(
+                            bar=i,
+                            direction="HOLD",
+                            confidence=integration.confidence,
+                            entry_price=price,
+                            exit_reason="gate_reject",
+                            agreement_level=integration.agreement_level.value,
+                            divergence_flag=integration.divergence_flag,
+                        )
+                    )
                 continue
 
             # 开仓
@@ -346,14 +367,19 @@ class ABComparison:
                 )
                 if exit_price > 0:
                     pnl = self._calc_pnl(position, entry_price, exit_price)
-                    trades.append(TradeRecord(
-                        bar=entry_bar, direction=position,
-                        confidence=integration.confidence,
-                        entry_price=entry_price, exit_price=exit_price,
-                        pnl_pct=pnl, exit_reason=exit_reason,
-                        agreement_level=integration.agreement_level.value,
-                        divergence_flag=integration.divergence_flag,
-                    ))
+                    trades.append(
+                        TradeRecord(
+                            bar=entry_bar,
+                            direction=position,
+                            confidence=integration.confidence,
+                            entry_price=entry_price,
+                            exit_price=exit_price,
+                            pnl_pct=pnl,
+                            exit_reason=exit_reason,
+                            agreement_level=integration.agreement_level.value,
+                            divergence_flag=integration.divergence_flag,
+                        )
+                    )
                     position = None
                     entry_price = 0.0
 
@@ -361,12 +387,17 @@ class ABComparison:
         if position:
             exit_price = closes[-1]
             pnl = self._calc_pnl(position, entry_price, exit_price)
-            trades.append(TradeRecord(
-                bar=entry_bar, direction=position,
-                confidence=0.5,
-                entry_price=entry_price, exit_price=exit_price,
-                pnl_pct=pnl, exit_reason="time_exit",
-            ))
+            trades.append(
+                TradeRecord(
+                    bar=entry_bar,
+                    direction=position,
+                    confidence=0.5,
+                    entry_price=entry_price,
+                    exit_price=exit_price,
+                    pnl_pct=pnl,
+                    exit_reason="time_exit",
+                )
+            )
 
         stats = self._calc_stats(trades)
         return trades, stats
@@ -414,12 +445,13 @@ class ABComparison:
 
     def _build_mkt_data(self, klines: List[Dict], idx: int, coin: str) -> Dict:
         """从K线数据构建市场数据 dict"""
-        closes = [float(k.get("c", 0)) for k in klines[:idx+1]]
-        volumes = [float(k.get("v", 0)) for k in klines[:idx+1]]
-        highs = [float(k.get("h", 0)) for k in klines[:idx+1]]
-        lows = [float(k.get("l", 0)) for k in klines[:idx+1]]
+        closes = [float(k.get("c", 0)) for k in klines[: idx + 1]]
+        volumes = [float(k.get("v", 0)) for k in klines[: idx + 1]]
+        highs = [float(k.get("h", 0)) for k in klines[: idx + 1]]
+        lows = [float(k.get("l", 0)) for k in klines[: idx + 1]]
 
         price = closes[idx] if closes else 0
+
         # EMA
         def ema(data, n):
             if len(data) < n:
@@ -434,20 +466,24 @@ class ABComparison:
         def rsi_calc(data, n=14):
             if len(data) < n + 1:
                 return 50.0
-            deltas = [data[i] - data[i-1] for i in range(1, len(data))]
+            deltas = [data[i] - data[i - 1] for i in range(1, len(data))]
             gains = [max(d, 0) for d in deltas]
             losses = [max(-d, 0) for d in deltas]
             avg_g = sum(gains[:n]) / n
             avg_l = sum(losses[:n]) / n
             for i in range(n, len(gains)):
-                avg_g = (avg_g * (n-1) + gains[i]) / n
-                avg_l = (avg_l * (n-1) + losses[i]) / n
+                avg_g = (avg_g * (n - 1) + gains[i]) / n
+                avg_l = (avg_l * (n - 1) + losses[i]) / n
             if avg_l == 0:
                 return 100.0
             return 100 - 100 / (1 + avg_g / avg_l)
 
-        ch24 = (closes[idx] - closes[idx-24]) / closes[idx-24] if idx >= 24 and closes[idx-24] > 0 else 0
-        avg_vol = sum(volumes[max(0, idx-20):idx+1]) / min(20, idx+1) if idx > 0 else 1
+        ch24 = (
+            (closes[idx] - closes[idx - 24]) / closes[idx - 24]
+            if idx >= 24 and closes[idx - 24] > 0
+            else 0
+        )
+        avg_vol = sum(volumes[max(0, idx - 20) : idx + 1]) / min(20, idx + 1) if idx > 0 else 1
         vol_ratio = volumes[idx] / avg_vol if avg_vol > 0 else 1.0
 
         return {
@@ -465,8 +501,7 @@ class ABComparison:
         }
 
     def _check_exit(
-        self, position: str, entry_price: float,
-        klines: List[Dict], idx: int, entry_bar: int
+        self, position: str, entry_price: float, klines: List[Dict], idx: int, entry_bar: int
     ) -> tuple:
         """检查止损/止盈/超时"""
         sl_pct, tp_pct = 0.04, 0.08
@@ -503,8 +538,12 @@ class ABComparison:
 
     def _calc_stats(self, trades: List[TradeRecord]) -> ChannelStats:
         """计算回测统计"""
-        signal_trades = [t for t in trades if t.direction != "HOLD" or t.exit_reason == "gate_reject"]
-        actual_trades = [t for t in trades if t.direction != "HOLD" and t.exit_reason != "gate_reject"]
+        signal_trades = [
+            t for t in trades if t.direction != "HOLD" or t.exit_reason == "gate_reject"
+        ]
+        actual_trades = [
+            t for t in trades if t.direction != "HOLD" and t.exit_reason != "gate_reject"
+        ]
         rejected = len([t for t in trades if t.exit_reason == "gate_reject"])
 
         wins = [t for t in actual_trades if t.pnl_pct > 0]
@@ -524,8 +563,8 @@ class ABComparison:
         # 夏普比率
         returns = [t.pnl_pct for t in actual_trades]
         avg_ret = sum(returns) / len(returns) if returns else 0
-        std_ret = (sum((r - avg_ret)**2 for r in returns) / len(returns))**0.5 if returns else 0
-        sharpe = (avg_ret / std_ret) * (len(returns)**0.5) if std_ret > 0 else 0
+        std_ret = (sum((r - avg_ret) ** 2 for r in returns) / len(returns)) ** 0.5 if returns else 0
+        sharpe = (avg_ret / std_ret) * (len(returns) ** 0.5) if std_ret > 0 else 0
 
         # 置信度统计
         confs = [t.confidence for t in signal_trades if t.confidence > 0]
@@ -550,9 +589,7 @@ class ABComparison:
             full_consensus=full_consensus,
         )
 
-    def _compute_advantage(
-        self, stats_a: ChannelStats, stats_b: ChannelStats
-    ) -> tuple:
+    def _compute_advantage(self, stats_a: ChannelStats, stats_b: ChannelStats) -> tuple:
         """计算 path_advantage"""
         if not _EVAL_AVAILABLE:
             # 降级：简单对比
@@ -560,13 +597,26 @@ class ABComparison:
             sharpe_diff = stats_b.sharpe_ratio - stats_a.sharpe_ratio
             adv = max(-1.0, min(1.0, (pnl_diff / 100) * 0.5 + (sharpe_diff / 10) * 0.5))
             if adv >= 0.2:
-                return adv, "upgrade", f"双通道优于单通道 (pnl差={pnl_diff:+.2f}%, sharpe差={sharpe_diff:+.2f})"
+                return (
+                    adv,
+                    "upgrade",
+                    f"双通道优于单通道 (pnl差={pnl_diff:+.2f}%, sharpe差={sharpe_diff:+.2f})",
+                )
             elif adv <= -0.2:
-                return adv, "alert", f"双通道劣于单通道 (pnl差={pnl_diff:+.2f}%, sharpe差={sharpe_diff:+.2f})"
-            return adv, "observe", f"无明显差异 (pnl差={pnl_diff:+.2f}%, sharpe差={sharpe_diff:+.2f})"
+                return (
+                    adv,
+                    "alert",
+                    f"双通道劣于单通道 (pnl差={pnl_diff:+.2f}%, sharpe差={sharpe_diff:+.2f})",
+                )
+            return (
+                adv,
+                "observe",
+                f"无明显差异 (pnl差={pnl_diff:+.2f}%, sharpe差={sharpe_diff:+.2f})",
+            )
 
         # 使用 evaluation_engine
         import time as _time
+
         ts = int(_time.time())
         baseline = EvaluationSample(
             session_id="A_single",
@@ -601,13 +651,14 @@ class ABComparison:
         """从缓存或API获取K线"""
         # __file__ = experiments/ab-trading/core/dual_channel/ab_comparison.py
         # parents[2] = experiments/ab-trading/
-        cache_dir = (
-            Path(__file__).resolve().parents[2]
-            / "data" / "backtest_cache"
-        )
+        cache_dir = Path(__file__).resolve().parents[2] / "data" / "backtest_cache"
         # 尝试多个文件名模式
-        for fname in [f"{coin}_4h_{bars}.json", f"{coin}_4h_500.json",
-                      f"{coin}_4h_600.json", f"{coin}_4h_200.json"]:
+        for fname in [
+            f"{coin}_4h_{bars}.json",
+            f"{coin}_4h_500.json",
+            f"{coin}_4h_600.json",
+            f"{coin}_4h_200.json",
+        ]:
             cache_file = cache_dir / fname
             if cache_file.exists():
                 try:
@@ -627,6 +678,7 @@ class ABComparison:
             if str(ab_core) not in sys.path:
                 sys.path.insert(0, str(ab_core))
             from evolution.backtest_engine import SimpleBacktestEngine
+
             engine = SimpleBacktestEngine()
             return engine.fetch_historical_klines(coin, "1h", bars)
         except Exception:
@@ -634,11 +686,15 @@ class ABComparison:
 
     def _empty_report(self, coin: str, bars: int, reason: str) -> ABComparisonReport:
         from datetime import datetime, timezone
+
         empty = ChannelStats()
         return ABComparisonReport(
-            coin=coin, bars=bars,
-            group_a=empty, group_b=empty,
-            path_advantage=0.0, decision="observe",
+            coin=coin,
+            bars=bars,
+            group_a=empty,
+            group_b=empty,
+            path_advantage=0.0,
+            decision="observe",
             reason=f"回测失败: {reason}",
             yijing_available=self._dual_runner.status()["yijing_available"],
             timestamp=datetime.now(timezone.utc).isoformat(),
@@ -647,10 +703,9 @@ class ABComparison:
 
 # ── 启动入口 ────────────────────────────────────────────────────
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="AB-Trading 双通道回测对比（P2-8 落地前置验证）"
-    )
+    parser = argparse.ArgumentParser(description="AB-Trading 双通道回测对比（P2-8 落地前置验证）")
     parser.add_argument("--coin", default="BTC", help="交易标的（默认 BTC）")
     parser.add_argument("--bars", type=int, default=500, help="回测K线数量（默认 500）")
     parser.add_argument("--output", default="", help="报告输出 JSON 路径（默认仅终端）")

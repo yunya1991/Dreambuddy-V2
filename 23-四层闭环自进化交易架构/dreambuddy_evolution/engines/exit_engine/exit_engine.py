@@ -18,6 +18,7 @@
 
 FAIL-OPEN：任何异常 → 返回 hold ExitDecision，不阻塞主链路。
 """
+
 from __future__ import annotations
 
 import logging
@@ -165,7 +166,11 @@ class EvolutionExitEngine:
 
         FAIL-OPEN: 所有步骤异常不阻塞交易.
         """
-        result: dict[str, Any] = {"ess_updated": False, "weight_adjusted": False, "gene_innovated": False}
+        result: dict[str, Any] = {
+            "ess_updated": False,
+            "weight_adjusted": False,
+            "gene_innovated": False,
+        }
         try:
             _is_win = win if win is not None else (pnl_pct > 0)
             # Step 1: ESS 更新
@@ -185,11 +190,13 @@ class EvolutionExitEngine:
             # Step 2: 权重自动调整
             try:
                 from dreambuddy_evolution.agi_config import is_enabled
+
                 if is_enabled("enable_auto_weight_adjustment"):
                     adjuster = self._get_auto_weight_adjuster()
                     if adjuster is not None:
                         # 加载基因库
                         from dreambuddy_evolution.core.strategy_gene import load_gene_library
+
                         gene_root = self._get_gene_root()
                         gene_lib = load_gene_library(gene_root)
                         # 简单胜率记录: 用 pnl 符号作为 win/loss
@@ -227,6 +234,7 @@ class EvolutionExitEngine:
             return self._auto_weight_adjuster
         try:
             from dreambuddy_evolution.engines.auto_weight_adjuster import AutoWeightAdjuster
+
             self._auto_weight_adjuster = AutoWeightAdjuster()
             return self._auto_weight_adjuster
         except Exception:
@@ -236,6 +244,7 @@ class EvolutionExitEngine:
         """获取基因库根目录."""
         try:
             from pathlib import Path
+
             _root = Path(__file__).resolve().parent.parent.parent / "gene_data"
             return str(_root)
         except Exception:
@@ -315,7 +324,7 @@ class EvolutionExitEngine:
             )
             return ExitDecision(
                 action="force_close",
-                reason=f"evolution_exit:force_close:okx_algo_triggered",
+                reason="evolution_exit:force_close:okx_algo_triggered",
                 confidence=1.0,
             )
 
@@ -397,7 +406,9 @@ class EvolutionExitEngine:
 
         # ── 规则 4：优化2 分批止盈（R 倍数驱动）
         if r_multiple > 0 and entry_price > 0 and current_sl_px > 0:
-            partial_decision = self._check_partial_tp(symbol, r_multiple, current_price, pos_side, current_tp_px)
+            partial_decision = self._check_partial_tp(
+                symbol, r_multiple, current_price, pos_side, current_tp_px
+            )
             if partial_decision:
                 return partial_decision
 
@@ -523,12 +534,14 @@ class EvolutionExitEngine:
             # 信号新鲜度检查（30min 内有效）
             if bcrm_ts > 0:
                 import time as _time
+
                 if _time.time() - bcrm_ts > self.BCRM_REVERSE_STALE_SEC:
                     return None
 
             # ★ 冷却期检查：减仓后 4H 内不再触发
             #   避免震荡中 BCRM2.0 信号反复扫射（SKHYNIX 案例：47min 减仓 7 次，仓位 100%→8%）
             import time as _time_now
+
             _now = _time_now.time()
             _last_reduce = self._last_bcrm_reduce_ts.get(symbol, 0.0)
             if _last_reduce > 0 and (_now - _last_reduce) < self.BCRM_REDUCE_COOLDOWN_SEC:
@@ -551,10 +564,10 @@ class EvolutionExitEngine:
             # 持仓 long + BCRM short + BDSM SHORT_ONLY → 共振看空
             # 持仓 short + BCRM long + BDSM LONG_ONLY → 共振看多
             if bdsm_constraint:
-                bcrm_is_short = (bcrm_dir == "short")
-                bdsm_is_short_only = ("SHORT" in bdsm_constraint)
-                bcrm_is_long = (bcrm_dir == "long")
-                bdsm_is_long_only = ("LONG" in bdsm_constraint)
+                bcrm_is_short = bcrm_dir == "short"
+                bdsm_is_short_only = "SHORT" in bdsm_constraint
+                bcrm_is_long = bcrm_dir == "long"
+                bdsm_is_long_only = "LONG" in bdsm_constraint
                 if (bcrm_is_short and bdsm_is_short_only) or (bcrm_is_long and bdsm_is_long_only):
                     partial_pct = 0.70
 
@@ -626,6 +639,7 @@ class EvolutionExitEngine:
 
             # ★ 冷却期检查：减仓后 4H 内不再触发（独立于 BCRM 冷却期）
             import time as _time
+
             _now = _time.time()
             _last_reduce = self._last_evolution_reduce_ts.get(symbol, 0.0)
             if _last_reduce > 0 and (_now - _last_reduce) < self.EVOLUTION_REDUCE_COOLDOWN_SEC:
@@ -694,6 +708,7 @@ class EvolutionExitEngine:
 
             # 冷却期检查：4H 内不再触发软投票（按 symbol 独立）
             import time as _time
+
             _now = _time.time()
             _last_ts = self._last_soft_vote_ts.get(symbol, 0.0)
             if _last_ts > 0 and (_now - _last_ts) < self.SOFT_VOTE_COOLDOWN_SEC:
@@ -722,8 +737,12 @@ class EvolutionExitEngine:
             return None
 
     def _check_partial_tp(
-        self, symbol: str, r_multiple: float, current_price: float,
-        pos_side: str, current_tp_px: float,
+        self,
+        symbol: str,
+        r_multiple: float,
+        current_price: float,
+        pos_side: str,
+        current_tp_px: float,
     ) -> Optional[ExitDecision]:
         """优化2: 分批止盈检查
 
@@ -733,7 +752,9 @@ class EvolutionExitEngine:
         """
         executed = self._partial_tp_executed.get(symbol, 0)
 
-        for i, (r_thresh, pct) in enumerate(zip(self.PARTIAL_TP_R_THRESHOLDS, self.PARTIAL_TP_PCTAGES)):
+        for i, (r_thresh, pct) in enumerate(
+            zip(self.PARTIAL_TP_R_THRESHOLDS, self.PARTIAL_TP_PCTAGES)  # noqa: B905
+        ):
             if r_multiple >= r_thresh and executed <= i:
                 self._partial_tp_executed[symbol] = i + 1
                 if i < 2:  # +1R, +2R → partial_close
@@ -759,8 +780,12 @@ class EvolutionExitEngine:
         return None
 
     def _calc_atr_adaptive_sl(
-        self, entry_price: float, current_price: float,
-        atr_pct: float, tier: str, pos_side: str,
+        self,
+        entry_price: float,
+        current_price: float,
+        atr_pct: float,
+        tier: str,
+        pos_side: str,
         mode: str = "initial",
     ) -> float:
         """优化1: ATR 自适应止损计算
@@ -788,9 +813,7 @@ class EvolutionExitEngine:
         else:
             return entry_price * (1 + sl_pct)
 
-    def _is_signal_reverse(
-        self, r_vector: Dict[str, Any], pos_side: str, ess: float
-    ) -> bool:
+    def _is_signal_reverse(self, r_vector: Dict[str, Any], pos_side: str, ess: float) -> bool:
         """判断 R 向量是否与持仓方向相反 + ESS < 0.4"""
         if ess >= self.SIGNAL_REVERSE_ESS_THRESHOLD:
             return False  # ESS 足够高，不判定反转

@@ -21,15 +21,17 @@
 - ENTER_SHORT_C: 浪5结束后调整浪A或C启动（做空信号）
 """
 
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
 
 
 @dataclass
 class WavePoint:
     """波浪转折点"""
+
     idx: int
     price: float
     point_type: str
@@ -39,6 +41,7 @@ class WavePoint:
 @dataclass
 class WaveStructure:
     """识别出的波浪结构"""
+
     waves: List[WavePoint]
     wave_label: str
     current_wave: int
@@ -87,13 +90,17 @@ class ElliottWaveRecognizer:
             down_move = (last_extreme_price - lows[i]) / last_extreme_price
             if up_move >= self.zigzag_threshold:
                 trend = 1
-                points.append(WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type='LOW'))
+                points.append(
+                    WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type="LOW")
+                )
                 last_extreme_idx = i
                 last_extreme_price = highs[i]
                 break
             elif down_move >= self.zigzag_threshold:
                 trend = -1
-                points.append(WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type='HIGH'))
+                points.append(
+                    WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type="HIGH")
+                )
                 last_extreme_idx = i
                 last_extreme_price = lows[i]
                 break
@@ -108,7 +115,9 @@ class ElliottWaveRecognizer:
                     last_extreme_idx = i
                 retrace = (last_extreme_price - lows[i]) / last_extreme_price
                 if retrace >= self.zigzag_threshold:
-                    points.append(WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type='HIGH'))
+                    points.append(
+                        WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type="HIGH")
+                    )
                     trend = -1
                     last_extreme_price = lows[i]
                     last_extreme_idx = i
@@ -118,17 +127,23 @@ class ElliottWaveRecognizer:
                     last_extreme_idx = i
                 retrace = (highs[i] - last_extreme_price) / last_extreme_price
                 if retrace >= self.zigzag_threshold:
-                    points.append(WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type='LOW'))
+                    points.append(
+                        WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type="LOW")
+                    )
                     trend = 1
                     last_extreme_price = highs[i]
                     last_extreme_idx = i
 
         if len(points) > 0:
             last_type = points[-1].point_type
-            if last_type == 'HIGH' and trend == -1:
-                points.append(WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type='LOW'))
-            elif last_type == 'LOW' and trend == 1:
-                points.append(WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type='HIGH'))
+            if last_type == "HIGH" and trend == -1:
+                points.append(
+                    WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type="LOW")
+                )
+            elif last_type == "LOW" and trend == 1:
+                points.append(
+                    WavePoint(idx=last_extreme_idx, price=last_extreme_price, point_type="HIGH")
+                )
 
         return points
 
@@ -147,7 +162,7 @@ class ElliottWaveRecognizer:
                 confirmed.append(p)
                 continue
 
-            if p.point_type == 'HIGH':
+            if p.point_type == "HIGH":
                 is_fractal = True
                 for j in range(i - w, i + w + 1):
                     if j == i:
@@ -177,17 +192,17 @@ class ElliottWaveRecognizer:
     ) -> Tuple[str, int, float]:
         """判定五浪推动结构"""
         if len(points) < self.min_wave_points:
-            return ('INCOMPLETE', 0, 0.0)
+            return ("INCOMPLETE", 0, 0.0)
 
         recent = points[-6:]
         if is_bull:
-            expected_pattern = ['LOW', 'HIGH', 'LOW', 'HIGH', 'LOW', 'HIGH']
+            expected_pattern = ["LOW", "HIGH", "LOW", "HIGH", "LOW", "HIGH"]
         else:
-            expected_pattern = ['HIGH', 'LOW', 'HIGH', 'LOW', 'HIGH', 'LOW']
+            expected_pattern = ["HIGH", "LOW", "HIGH", "LOW", "HIGH", "LOW"]
 
         actual_pattern = [p.point_type for p in recent]
         if actual_pattern != expected_pattern:
-            return ('INCOMPLETE', 0, 0.0)
+            return ("INCOMPLETE", 0, 0.0)
 
         if is_bull:
             p0, p1, p2, p3, p4, p5 = recent
@@ -209,7 +224,7 @@ class ElliottWaveRecognizer:
             wave4_low = p4.price
 
         if wave1_height <= 0:
-            return ('INCOMPLETE', 0, 0.0)
+            return ("INCOMPLETE", 0, 0.0)
 
         rule1_ok = wave2_retrace < wave1_height * self.wave2_retrace_max
         wave3_min_ok = wave3_height >= wave1_height * self.wave3_min_ratio
@@ -218,7 +233,7 @@ class ElliottWaveRecognizer:
         else:
             rule3_ok = wave4_low < wave1_high * (1 + self.wave4_overlap_max)
 
-        rules_passed = sum([rule1_ok, rule3_ok])
+        rules_passed = sum([rule1_ok, rule3_ok])  # noqa: F841
         confidence = 0.0
 
         if wave5_height > 0:
@@ -228,15 +243,15 @@ class ElliottWaveRecognizer:
                     confidence = 0.9
                 else:
                     confidence = 0.7
-                return ('IMPULSE_5', 5, confidence)
+                return ("IMPULSE_5", 5, confidence)
             else:
-                return ('INCOMPLETE', 5, 0.3)
+                return ("INCOMPLETE", 5, 0.3)
 
         if wave3_height > 0 and wave4_retrace > 0:
             if rule1_ok and rule3_ok:
-                return ('IMPULSE_5', 4, 0.7)
+                return ("IMPULSE_5", 4, 0.7)
             else:
-                return ('INCOMPLETE', 4, 0.3)
+                return ("INCOMPLETE", 4, 0.3)
 
         if wave3_height > 0:
             if rule1_ok:
@@ -247,24 +262,24 @@ class ElliottWaveRecognizer:
                     confidence = 0.7
                 else:
                     confidence = 0.5
-                return ('IMPULSE_5', 3, confidence)
+                return ("IMPULSE_5", 3, confidence)
             else:
-                return ('INCOMPLETE', 3, 0.3)
+                return ("INCOMPLETE", 3, 0.3)
 
         if wave2_retrace > 0:
             retrace_ratio = wave2_retrace / wave1_height
             if 0.3 <= retrace_ratio <= 0.8:
-                return ('IMPULSE_5', 2, 0.6)
+                return ("IMPULSE_5", 2, 0.6)
             else:
-                return ('INCOMPLETE', 2, 0.3)
+                return ("INCOMPLETE", 2, 0.3)
 
-        return ('IMPULSE_5', 1, 0.4)
+        return ("IMPULSE_5", 1, 0.4)
 
     def identify_waves(self, prices: pd.DataFrame) -> WaveStructure:
         """识别波浪结构（含实时状态判断）"""
-        highs = prices['high'].values
-        lows = prices['low'].values
-        closes = prices['close'].values
+        highs = prices["high"].values
+        lows = prices["low"].values
+        closes = prices["close"].values
         current_price = float(closes[-1]) if len(closes) > 0 else 0.0
 
         points = self._compute_zigzag(highs, lows)
@@ -272,17 +287,16 @@ class ElliottWaveRecognizer:
 
         if len(points) < 3:
             return WaveStructure(
-                waves=points, wave_label='INCOMPLETE',
-                current_wave=0, signal='WAIT', confidence=0.0
+                waves=points, wave_label="INCOMPLETE", current_wave=0, signal="WAIT", confidence=0.0
             )
 
-        last_point = points[-1]
+        last_point = points[-1]  # noqa: F841
         recent = points[-6:] if len(points) >= 6 else points
 
         if len(recent) >= 2:
-            if recent[-2].point_type == 'LOW' and recent[-1].point_type == 'HIGH':
+            if recent[-2].point_type == "LOW" and recent[-1].point_type == "HIGH":
                 is_bull = True
-            elif recent[-2].point_type == 'HIGH' and recent[-1].point_type == 'LOW':
+            elif recent[-2].point_type == "HIGH" and recent[-1].point_type == "LOW":
                 is_bull = False
             else:
                 is_bull = True
@@ -313,33 +327,33 @@ class ElliottWaveRecognizer:
         last_low = None
         last_high = None
         for p in reversed(points):
-            if p.point_type == 'LOW' and last_low is None:
+            if p.point_type == "LOW" and last_low is None:
                 last_low = p
-            elif p.point_type == 'HIGH' and last_high is None:
+            elif p.point_type == "HIGH" and last_high is None:
                 last_high = p
             if last_low is not None and last_high is not None:
                 break
 
         if is_bull:
             if n_pts < 3:
-                return ('INCOMPLETE', 0, 0.0)
+                return ("INCOMPLETE", 0, 0.0)
 
             if last_low is None or last_high is None:
-                return ('INCOMPLETE', 0, 0.0)
+                return ("INCOMPLETE", 0, 0.0)
 
-            bull_pattern = ['LOW', 'HIGH', 'LOW', 'HIGH', 'LOW', 'HIGH']
+            bull_pattern = ["LOW", "HIGH", "LOW", "HIGH", "LOW", "HIGH"]
             actual_pattern = [p.point_type for p in recent]
 
             match_start = -1
             for offset in range(len(actual_pattern) - 5, -1, -1):
-                if actual_pattern[offset:offset + 6] == bull_pattern:
+                if actual_pattern[offset : offset + 6] == bull_pattern:
                     match_start = offset
                     break
 
             if match_start < 0:
                 return self._classify_partial_wave(points, current_price, is_bull)
 
-            p0, p1, p2, p3, p4, p5 = recent[match_start:match_start + 6]
+            p0, p1, p2, p3, p4, p5 = recent[match_start : match_start + 6]
             wave1_height = p1.price - p0.price
             wave2_retrace = p1.price - p2.price
             wave3_height = p3.price - p2.price
@@ -347,7 +361,7 @@ class ElliottWaveRecognizer:
             wave5_height = p5.price - p4.price
 
             if wave1_height <= 0:
-                return ('INCOMPLETE', 0, 0.0)
+                return ("INCOMPLETE", 0, 0.0)
 
             rule1_ok = wave2_retrace < wave1_height * self.wave2_retrace_max
             rule3_ok = p4.price > p1.price * (1 - self.wave4_overlap_max)
@@ -356,42 +370,42 @@ class ElliottWaveRecognizer:
                 if rule1_ok and rule3_ok:
                     wave3_longest = wave3_height >= max(wave1_height, wave5_height)
                     conf = 0.9 if wave3_longest else 0.7
-                    return ('IMPULSE_5', 5, conf)
+                    return ("IMPULSE_5", 5, conf)
                 else:
-                    return ('INCOMPLETE', 5, 0.3)
+                    return ("INCOMPLETE", 5, 0.3)
 
             if current_price > p4.price and last_high.idx < p5.idx + 5:
                 if rule1_ok:
-                    return ('IMPULSE_5', 5, 0.6)
-                return ('INCOMPLETE', 5, 0.3)
+                    return ("IMPULSE_5", 5, 0.6)
+                return ("INCOMPLETE", 5, 0.3)
 
-            return ('IMPULSE_5', 5, 0.5)
+            return ("IMPULSE_5", 5, 0.5)
 
         else:
             if last_low is None or last_high is None:
-                return ('INCOMPLETE', 0, 0.0)
+                return ("INCOMPLETE", 0, 0.0)
 
-            bear_pattern = ['HIGH', 'LOW', 'HIGH', 'LOW', 'HIGH', 'LOW']
+            bear_pattern = ["HIGH", "LOW", "HIGH", "LOW", "HIGH", "LOW"]
             actual_pattern = [p.point_type for p in recent]
 
             match_start = -1
             for offset in range(len(actual_pattern) - 5, -1, -1):
-                if actual_pattern[offset:offset + 6] == bear_pattern:
+                if actual_pattern[offset : offset + 6] == bear_pattern:
                     match_start = offset
                     break
 
             if match_start < 0:
                 return self._classify_partial_wave(points, current_price, is_bull)
 
-            p0, p1, p2, p3, p4, p5 = recent[match_start:match_start + 6]
+            p0, p1, p2, p3, p4, p5 = recent[match_start : match_start + 6]
             wave1_height = p0.price - p1.price
             wave2_retrace = p2.price - p1.price
             wave3_height = p2.price - p3.price
-            wave4_retrace = p4.price - p3.price
+            wave4_retrace = p4.price - p3.price  # noqa: F841
             wave5_height = p4.price - p5.price
 
             if wave1_height <= 0:
-                return ('INCOMPLETE', 0, 0.0)
+                return ("INCOMPLETE", 0, 0.0)
 
             rule1_ok = wave2_retrace < wave1_height * self.wave2_retrace_max
             rule3_ok = p4.price < p1.price * (1 + self.wave4_overlap_max)
@@ -400,16 +414,16 @@ class ElliottWaveRecognizer:
                 if rule1_ok and rule3_ok:
                     wave3_longest = wave3_height >= max(wave1_height, wave5_height)
                     conf = 0.9 if wave3_longest else 0.7
-                    return ('IMPULSE_5', 5, conf)
+                    return ("IMPULSE_5", 5, conf)
                 else:
-                    return ('INCOMPLETE', 5, 0.3)
+                    return ("INCOMPLETE", 5, 0.3)
 
             if current_price < p4.price and last_low.idx < p5.idx + 5:
                 if rule1_ok:
-                    return ('IMPULSE_5', 5, 0.6)
-                return ('INCOMPLETE', 5, 0.3)
+                    return ("IMPULSE_5", 5, 0.6)
+                return ("INCOMPLETE", 5, 0.3)
 
-            return ('IMPULSE_5', 5, 0.5)
+            return ("IMPULSE_5", 5, 0.5)
 
     def _classify_partial_wave(
         self, points: List[WavePoint], current_price: float, is_bull: bool
@@ -419,10 +433,12 @@ class ElliottWaveRecognizer:
 
         if is_bull:
             for i in range(len(recent) - 2):
-                if (recent[i].point_type == 'LOW' and
-                    recent[i+1].point_type == 'HIGH' and
-                    recent[i+2].point_type == 'LOW'):
-                    p0, p1, p2 = recent[i], recent[i+1], recent[i+2]
+                if (
+                    recent[i].point_type == "LOW"
+                    and recent[i + 1].point_type == "HIGH"
+                    and recent[i + 2].point_type == "LOW"
+                ):
+                    p0, p1, p2 = recent[i], recent[i + 1], recent[i + 2]
                     wave1_height = p1.price - p0.price
                     wave2_retrace = p1.price - p2.price
 
@@ -434,40 +450,50 @@ class ElliottWaveRecognizer:
 
                     if current_price > p2.price:
                         if rule1_ok and 0.3 <= retrace_ratio <= 0.8:
-                            return ('IMPULSE_5', 3, 0.7)
+                            return ("IMPULSE_5", 3, 0.7)
                         elif rule1_ok:
-                            return ('IMPULSE_5', 3, 0.5)
+                            return ("IMPULSE_5", 3, 0.5)
                         else:
-                            return ('INCOMPLETE', 3, 0.3)
+                            return ("INCOMPLETE", 3, 0.3)
                     else:
                         if 0.3 <= retrace_ratio <= 0.8:
-                            return ('IMPULSE_5', 2, 0.6)
-                        return ('INCOMPLETE', 2, 0.3)
+                            return ("IMPULSE_5", 2, 0.6)
+                        return ("INCOMPLETE", 2, 0.3)
 
             for i in range(len(recent) - 4):
-                if (recent[i].point_type == 'LOW' and
-                    recent[i+1].point_type == 'HIGH' and
-                    recent[i+2].point_type == 'LOW' and
-                    recent[i+3].point_type == 'HIGH' and
-                    recent[i+4].point_type == 'LOW'):
-                    p0, p1, p2, p3, p4 = recent[i], recent[i+1], recent[i+2], recent[i+3], recent[i+4]
+                if (
+                    recent[i].point_type == "LOW"
+                    and recent[i + 1].point_type == "HIGH"
+                    and recent[i + 2].point_type == "LOW"
+                    and recent[i + 3].point_type == "HIGH"
+                    and recent[i + 4].point_type == "LOW"
+                ):
+                    p0, p1, p2, p3, p4 = (
+                        recent[i],
+                        recent[i + 1],
+                        recent[i + 2],
+                        recent[i + 3],
+                        recent[i + 4],
+                    )
                     wave1_height = p1.price - p0.price
                     wave3_height = p3.price - p2.price
                     rule3_ok = p4.price > p1.price * (1 - self.wave4_overlap_max)
 
                     if current_price > p4.price and rule3_ok:
-                        return ('IMPULSE_5', 5, 0.6)
+                        return ("IMPULSE_5", 5, 0.6)
                     elif rule3_ok:
-                        return ('IMPULSE_5', 4, 0.5)
+                        return ("IMPULSE_5", 4, 0.5)
                     else:
-                        return ('INCOMPLETE', 4, 0.3)
+                        return ("INCOMPLETE", 4, 0.3)
 
         else:
             for i in range(len(recent) - 2):
-                if (recent[i].point_type == 'HIGH' and
-                    recent[i+1].point_type == 'LOW' and
-                    recent[i+2].point_type == 'HIGH'):
-                    p0, p1, p2 = recent[i], recent[i+1], recent[i+2]
+                if (
+                    recent[i].point_type == "HIGH"
+                    and recent[i + 1].point_type == "LOW"
+                    and recent[i + 2].point_type == "HIGH"
+                ):
+                    p0, p1, p2 = recent[i], recent[i + 1], recent[i + 2]
                     wave1_height = p0.price - p1.price
                     wave2_retrace = p2.price - p1.price
 
@@ -479,65 +505,73 @@ class ElliottWaveRecognizer:
 
                     if current_price < p2.price:
                         if rule1_ok and 0.3 <= retrace_ratio <= 0.8:
-                            return ('IMPULSE_5', 3, 0.7)
+                            return ("IMPULSE_5", 3, 0.7)
                         elif rule1_ok:
-                            return ('IMPULSE_5', 3, 0.5)
+                            return ("IMPULSE_5", 3, 0.5)
                         else:
-                            return ('INCOMPLETE', 3, 0.3)
+                            return ("INCOMPLETE", 3, 0.3)
                     else:
                         if 0.3 <= retrace_ratio <= 0.8:
-                            return ('IMPULSE_5', 2, 0.6)
-                        return ('INCOMPLETE', 2, 0.3)
+                            return ("IMPULSE_5", 2, 0.6)
+                        return ("INCOMPLETE", 2, 0.3)
 
             for i in range(len(recent) - 4):
-                if (recent[i].point_type == 'HIGH' and
-                    recent[i+1].point_type == 'LOW' and
-                    recent[i+2].point_type == 'HIGH' and
-                    recent[i+3].point_type == 'LOW' and
-                    recent[i+4].point_type == 'HIGH'):
-                    p0, p1, p2, p3, p4 = recent[i], recent[i+1], recent[i+2], recent[i+3], recent[i+4]
+                if (
+                    recent[i].point_type == "HIGH"
+                    and recent[i + 1].point_type == "LOW"
+                    and recent[i + 2].point_type == "HIGH"
+                    and recent[i + 3].point_type == "LOW"
+                    and recent[i + 4].point_type == "HIGH"
+                ):
+                    p0, p1, p2, p3, p4 = (
+                        recent[i],
+                        recent[i + 1],
+                        recent[i + 2],
+                        recent[i + 3],
+                        recent[i + 4],
+                    )
                     wave1_height = p0.price - p1.price
-                    wave3_height = p2.price - p3.price
+                    wave3_height = p2.price - p3.price  # noqa: F841
                     rule3_ok = p4.price < p1.price * (1 + self.wave4_overlap_max)
 
                     if current_price < p4.price and rule3_ok:
-                        return ('IMPULSE_5', 5, 0.6)
+                        return ("IMPULSE_5", 5, 0.6)
                     elif rule3_ok:
-                        return ('IMPULSE_5', 4, 0.5)
+                        return ("IMPULSE_5", 4, 0.5)
                     else:
-                        return ('INCOMPLETE', 4, 0.3)
+                        return ("INCOMPLETE", 4, 0.3)
 
-        return ('INCOMPLETE', 0, 0.0)
+        return ("INCOMPLETE", 0, 0.0)
 
     def _generate_signal(
         self, label: str, current_wave: int, confidence: float, is_bull: bool
     ) -> str:
         """根据当前浪位置生成信号"""
-        if label != 'IMPULSE_5':
-            return 'WAIT'
+        if label != "IMPULSE_5":
+            return "WAIT"
 
         if is_bull:
             if current_wave == 2:
-                return 'ENTER_LONG_W3' if confidence >= 0.5 else 'WAIT'
+                return "ENTER_LONG_W3" if confidence >= 0.5 else "WAIT"
             elif current_wave == 4:
-                return 'ENTER_LONG_W5' if confidence >= 0.5 else 'WAIT'
+                return "ENTER_LONG_W5" if confidence >= 0.5 else "WAIT"
             elif current_wave == 5:
-                return 'EXIT_LONG_W5' if confidence >= 0.6 else 'WAIT'
+                return "EXIT_LONG_W5" if confidence >= 0.6 else "WAIT"
             elif current_wave == 3:
-                return 'HOLD_LONG_W3'
+                return "HOLD_LONG_W3"
             else:
-                return 'WAIT'
+                return "WAIT"
         else:
             if current_wave == 2:
-                return 'ENTER_SHORT_W3' if confidence >= 0.5 else 'WAIT'
+                return "ENTER_SHORT_W3" if confidence >= 0.5 else "WAIT"
             elif current_wave == 4:
-                return 'ENTER_SHORT_W5' if confidence >= 0.5 else 'WAIT'
+                return "ENTER_SHORT_W5" if confidence >= 0.5 else "WAIT"
             elif current_wave == 5:
-                return 'EXIT_SHORT_W5' if confidence >= 0.6 else 'WAIT'
+                return "EXIT_SHORT_W5" if confidence >= 0.6 else "WAIT"
             elif current_wave == 3:
-                return 'HOLD_SHORT_W3'
+                return "HOLD_SHORT_W3"
             else:
-                return 'WAIT'
+                return "WAIT"
 
     def generate_signal_series(self, prices: pd.DataFrame) -> pd.DataFrame:
         """生成时间序列形式的波浪信号（用于回测）"""
@@ -550,13 +584,13 @@ class ElliottWaveRecognizer:
         min_window = 60
         for i in range(n):
             if i < min_window:
-                signals.append('WAIT')
-                labels.append('INCOMPLETE')
+                signals.append("WAIT")
+                labels.append("INCOMPLETE")
                 waves.append(0)
                 confs.append(0.0)
                 continue
 
-            slice_df = prices.iloc[:i + 1]
+            slice_df = prices.iloc[: i + 1]
             try:
                 wave_struct = self.identify_waves(slice_df)
                 signals.append(wave_struct.signal)
@@ -564,27 +598,30 @@ class ElliottWaveRecognizer:
                 waves.append(wave_struct.current_wave)
                 confs.append(wave_struct.confidence)
             except Exception:
-                signals.append('WAIT')
-                labels.append('INCOMPLETE')
+                signals.append("WAIT")
+                labels.append("INCOMPLETE")
                 waves.append(0)
                 confs.append(0.0)
 
-        return pd.DataFrame({
-            'wave_signal': signals,
-            'wave_label': labels,
-            'current_wave': waves,
-            'wave_confidence': confs,
-        }, index=prices.index)
+        return pd.DataFrame(
+            {
+                "wave_signal": signals,
+                "wave_label": labels,
+                "current_wave": waves,
+                "wave_confidence": confs,
+            },
+            index=prices.index,
+        )
 
 
 WAVE_SIGNALS = {
-    'WAIT': '观望',
-    'ENTER_LONG_W3': '浪2结束入场做多（最强）',
-    'ENTER_LONG_W5': '浪4结束入场做多（次强）',
-    'HOLD_LONG_W3': '持有做多（浪3进行中）',
-    'EXIT_LONG_W5': '浪5结束离场做多',
-    'ENTER_SHORT_W3': '浪2结束入场做空（最强）',
-    'ENTER_SHORT_W5': '浪4结束入场做空（次强）',
-    'HOLD_SHORT_W3': '持有做空（浪3进行中）',
-    'EXIT_SHORT_W5': '浪5结束离场做空',
+    "WAIT": "观望",
+    "ENTER_LONG_W3": "浪2结束入场做多（最强）",
+    "ENTER_LONG_W5": "浪4结束入场做多（次强）",
+    "HOLD_LONG_W3": "持有做多（浪3进行中）",
+    "EXIT_LONG_W5": "浪5结束离场做多",
+    "ENTER_SHORT_W3": "浪2结束入场做空（最强）",
+    "ENTER_SHORT_W5": "浪4结束入场做空（次强）",
+    "HOLD_SHORT_W3": "持有做空（浪3进行中）",
+    "EXIT_SHORT_W5": "浪5结束离场做空",
 }

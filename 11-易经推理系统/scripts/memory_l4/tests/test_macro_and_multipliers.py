@@ -13,7 +13,11 @@ P2-04 测试合同（Spec §5.1）：
   T8 S5=True + regime=TREND_UP_STRONG → position≥1.10
   T9 非法 regime → fallback 全 1.0（不报错）
 """
-import sys, os, time
+
+import sys  # noqa: I001
+import os
+import time
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 from scripts.memory_l4.polling_trader import PollingTrader
@@ -37,8 +41,10 @@ _all_pass = True
 
 class _BareTrader(PollingTrader):
     """跳过 __init__，只测新增方法（避免交易所连接）"""
+
     def __init__(self):
         pass
+
 
 pt = _BareTrader()
 
@@ -47,9 +53,11 @@ section("P2-03 T1 — _fetch_global_macro_features_once 存在 + 返回 dict 不
 try:
     d = pt._fetch_global_macro_features_once()
     _chk("返回 dict 类型", isinstance(d, dict))
-    _chk("含 liq_* 字段 OR 全空（网络 gating 允许）",
-         ("liq_panic_score_0_to_1" in d) or len(d) == 0,
-         f"keys={list(d.keys())[:6]}")
+    _chk(
+        "含 liq_* 字段 OR 全空（网络 gating 允许）",
+        ("liq_panic_score_0_to_1" in d) or len(d) == 0,
+        f"keys={list(d.keys())[:6]}",
+    )
 except Exception as e:
     _chk("方法存在且不抛异常", False, f"{type(e).__name__}: {e}")
 
@@ -58,23 +66,29 @@ section("P2-03 T2/T3 — 5 分钟缓存 TTL 逻辑（模拟时间，不真等 5m
 # 重置 cache，用一个轻量 mock（不依赖 FMF）直接验证 TTL 结构
 pt._macro_feature_cache = {"ts": time.time() - 10, "data": {"cached": True, "v": 1}}
 d2 = pt._fetch_global_macro_features_once(cache_ttl_sec=300, _test_skip_network=True)
-_chk("T2: 10s 前缓存（<300s TTL） → 命中缓存",
-     d2.get("v") == 1 and d2.get("cached") is True, f"实际={d2}")
+_chk(
+    "T2: 10s 前缓存（<300s TTL） → 命中缓存",
+    d2.get("v") == 1 and d2.get("cached") is True,
+    f"实际={d2}",
+)
 # 模拟 600 秒前的旧缓存 → 过期
 pt._macro_feature_cache = {"ts": time.time() - 600, "data": {"cached": True, "v": 1}}
 d3 = pt._fetch_global_macro_features_once(cache_ttl_sec=300, _test_skip_network=True)
 # 缓存过期 → fallback 调用真实网络或空 dict
-_chk("T3: 600s 前缓存（>300s TTL） → 过期，v != 1",
-     d3.get("v") != 1 or "v" not in d3, f"实际={d3}")
+_chk("T3: 600s 前缓存（>300s TTL） → 过期，v != 1", d3.get("v") != 1 or "v" not in d3, f"实际={d3}")
 
 # ========================================================================
 section("P2-03 T4 — FMF 抛异常 → graceful 返回 {}，不冒泡")
-import unittest.mock as mock
+import unittest.mock as mock  # noqa: E402
+
 _original_import = __builtins__ if isinstance(__builtins__, dict) else __builtins__.__dict__
+
+
 # 用 mock 让 collect_global 抛异常
 class _FakeFeedThrows:
     def collect_global(self):
         raise RuntimeError("boom: network unreachable")
+
 
 with mock.patch.object(pt, "_get_macro_feed_instance", return_value=_FakeFeedThrows()):
     # 清缓存，强制走 fetch
@@ -88,10 +102,14 @@ with mock.patch.object(pt, "_get_macro_feed_instance", return_value=_FakeFeedThr
 # ========================================================================
 section("P2-04 T5 — enable=False → 全 1.0（字节等价旧路径）")
 m = pt._get_regime_pred_multipliers("TREND_UP_STRONG", enable_regime_pred=False)
-_chk("S5=False 全 1.0",
-     m.get("position_mult") == 1.0 and m.get("tp_mult") == 1.0
-     and m.get("sl_mult") == 1.0 and m.get("threshold_mult") == 1.0,
-     f"实际={m}")
+_chk(
+    "S5=False 全 1.0",
+    m.get("position_mult") == 1.0
+    and m.get("tp_mult") == 1.0
+    and m.get("sl_mult") == 1.0
+    and m.get("threshold_mult") == 1.0,
+    f"实际={m}",
+)
 
 # ========================================================================
 section("P2-04 T6 — VOLATILE_DROP（暴跌） → 砍仓位 + 紧止损 + 松止盈 + 严入场")
@@ -114,14 +132,21 @@ m = pt._get_regime_pred_multipliers("TREND_UP_STRONG")
 _chk("TREND_UP_STRONG position_mult ≥ 1.10", m.get("position_mult", 0) >= 1.10, f"{m}")
 _chk("TREND_UP_STRONG tp_mult ≥ 1.20（让利润奔跑）", m.get("tp_mult", 0) >= 1.20, f"{m}")
 _chk("TREND_UP_STRONG sl_mult ≥ 1.10（松止损，留空间）", m.get("sl_mult", 0) >= 1.10, f"{m}")
-_chk("TREND_UP_STRONG threshold_mult ≤ 0.85（宽门槛，顺势多入场）", m.get("threshold_mult", 999) <= 0.85, f"{m}")
+_chk(
+    "TREND_UP_STRONG threshold_mult ≤ 0.85（宽门槛，顺势多入场）",
+    m.get("threshold_mult", 999) <= 0.85,
+    f"{m}",
+)
 
 # ========================================================================
 section("P2-04 T9 — 非法 regime 字符串 → 全 1.0 fallback 不报错")
 try:
     m = pt._get_regime_pred_multipliers("NOT_A_VALID_REGIME_XXX")
-    _chk("非法 regime → 全 1.0 fallback",
-         m.get("position_mult") == 1.0 and m.get("threshold_mult") == 1.0, f"{m}")
+    _chk(
+        "非法 regime → 全 1.0 fallback",
+        m.get("position_mult") == 1.0 and m.get("threshold_mult") == 1.0,
+        f"{m}",
+    )
 except Exception as e:
     _chk("非法 regime 不报错", False, f"{type(e).__name__}: {e}")
 

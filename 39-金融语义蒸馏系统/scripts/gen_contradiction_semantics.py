@@ -21,6 +21,7 @@
 用法: /home/luke/venv-trading/bin/python3 gen_contradiction_semantics.py
 边界: 描述性矛盾观察（P-矛盾），不做方向判断，不产生交易信号
 """
+
 import json
 import os
 import sys
@@ -30,16 +31,16 @@ from datetime import datetime, timedelta
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
 sys.path.insert(0, _THIS_DIR)
-import dc_pg
+import dc_pg  # noqa: E402
 
 ATOMIC_PATH = os.path.join(_SYS_DIR, "atomic_events.jsonl")
 OUT_EVENTS_PATH = os.path.join(_SYS_DIR, "contradiction_events.jsonl")
 OUT_STATS_PATH = os.path.join(_SYS_DIR, "contradiction_semantics.json")
 
 # ── 预注册参数（禁止事后调整）──
-ALIGN_WINDOW_H = 4      # 对齐窗口：4 小时
-EXTREME_LOW, EXTREME_HIGH = 25.0, 75.0   # 恐惧贪婪极值分区
-MIN_TICKER_NEWS = 2     # 个体矛盾：窗口内单币快讯最少条数
+ALIGN_WINDOW_H = 4  # 对齐窗口：4 小时
+EXTREME_LOW, EXTREME_HIGH = 25.0, 75.0  # 恐惧贪婪极值分区
+MIN_TICKER_NEWS = 2  # 个体矛盾：窗口内单币快讯最少条数
 
 
 def _parse_ts(ts):
@@ -63,8 +64,38 @@ def _parse_ts(ts):
 
 
 # 文本关键词情绪口径（复用 L2 事件线已验证的正负词表）
-_POS_WORDS = ("上涨", "突破", "新高", "利好", "批准", "融资", "增持", "上涨", "反弹", "回暖", "乐观", "看涨", "流入")
-_NEG_WORDS = ("下跌", "暴跌", "利空", "制裁", "禁止", "黑客", "清算", "减持", "下跌", "暴跌", "恐慌", "看跌", "流出", "暴雷", "崩盘")
+_POS_WORDS = (
+    "上涨",
+    "突破",
+    "新高",
+    "利好",
+    "批准",
+    "融资",
+    "增持",
+    "上涨",
+    "反弹",
+    "回暖",
+    "乐观",
+    "看涨",
+    "流入",
+)
+_NEG_WORDS = (
+    "下跌",
+    "暴跌",
+    "利空",
+    "制裁",
+    "禁止",
+    "黑客",
+    "清算",
+    "减持",
+    "下跌",
+    "暴跌",
+    "恐慌",
+    "看跌",
+    "流出",
+    "暴雷",
+    "崩盘",
+)
 
 
 def _text_sentiment(desc):
@@ -105,22 +136,24 @@ def load_newsflash(limit=2000):
                 th = json.loads(th)
             except Exception:
                 th = []
-        events.append({
-            "ts": ts,
-            "sentiment": sentiment,
-            "sentiment_source": sent_source,
-            "event_type": m.get("od_event_type", "unknown"),
-            "tickers": th if isinstance(th, list) else [],
-            "desc": desc[:80],
-        })
+        events.append(
+            {
+                "ts": ts,
+                "sentiment": sentiment,
+                "sentiment_source": sent_source,
+                "event_type": m.get("od_event_type", "unknown"),
+                "tickers": th if isinstance(th, list) else [],
+                "desc": desc[:80],
+            }
+        )
     events.sort(key=lambda e: e["ts"])
     return events
 
 
 def load_internal_states():
     """加载内部因子状态时间线：恐惧贪婪值与资金费率。"""
-    fg_timeline = []   # [(ts, value)]
-    fr_timeline = []   # [(ts, value)]
+    fg_timeline = []  # [(ts, value)]
+    fr_timeline = []  # [(ts, value)]
     try:
         with open(ATOMIC_PATH, "r", encoding="utf-8") as f:
             for line in f:
@@ -133,7 +166,9 @@ def load_internal_states():
                     continue
                 cat = e.get("category", "")
                 v = e.get("value")
-                if cat in ("crypto_fear_greed", "fear_greed_enhanced") and isinstance(v, (int, float)):
+                if cat in ("crypto_fear_greed", "fear_greed_enhanced") and isinstance(
+                    v, (int, float)
+                ):
                     fg_timeline.append((ts, float(v)))
                 elif cat == "funding_rate" and isinstance(v, (int, float)):
                     fr_timeline.append((ts, float(v)))
@@ -177,13 +212,27 @@ def detect_contradictions(news, fg_timeline, fr_timeline):
             # 1) 宏观与微观：快讯情绪 vs 恐惧贪婪极值方向相反
             if fg is not None:
                 if bullish and fg < EXTREME_LOW:
-                    events.append(_mk("macro_micro", cur, w_end, len(w_news),
-                                      f"窗口快讯情绪偏利好(均值{avg_sent:.2f}) vs 恐惧贪婪极度恐慌({fg:.0f})",
-                                      "宏观利好叙事 vs 微观极度恐慌，矛盾体观察"))
+                    events.append(
+                        _mk(
+                            "macro_micro",
+                            cur,
+                            w_end,
+                            len(w_news),
+                            f"窗口快讯情绪偏利好(均值{avg_sent:.2f}) vs 恐惧贪婪极度恐慌({fg:.0f})",
+                            "宏观利好叙事 vs 微观极度恐慌，矛盾体观察",
+                        )
+                    )
                 elif bearish and fg > EXTREME_HIGH:
-                    events.append(_mk("macro_micro", cur, w_end, len(w_news),
-                                      f"窗口快讯情绪偏利空(均值{avg_sent:.2f}) vs 恐惧贪婪极度贪婪({fg:.0f})",
-                                      "宏观利空叙事 vs 微观极度贪婪，矛盾体观察"))
+                    events.append(
+                        _mk(
+                            "macro_micro",
+                            cur,
+                            w_end,
+                            len(w_news),
+                            f"窗口快讯情绪偏利空(均值{avg_sent:.2f}) vs 恐惧贪婪极度贪婪({fg:.0f})",
+                            "宏观利空叙事 vs 微观极度贪婪，矛盾体观察",
+                        )
+                    )
             # 2) 个体与整体：单币快讯密集且方向与整体情绪相反
             if fg is not None:
                 ticker_sents = defaultdict(list)
@@ -194,23 +243,51 @@ def detect_contradictions(news, fg_timeline, fr_timeline):
                     if len(ss) >= MIN_TICKER_NEWS:
                         t_avg = sum(ss) / len(ss)
                         if t_avg > 0.5 and fg < EXTREME_LOW:
-                            events.append(_mk("individual_whole", cur, w_end, len(ss),
-                                              f"{t} 窗口内 {len(ss)} 条利好快讯 vs 整体极度恐慌({fg:.0f})",
-                                              f"个体({t})利好密集 vs 整体恐慌，矛盾体观察"))
+                            events.append(
+                                _mk(
+                                    "individual_whole",
+                                    cur,
+                                    w_end,
+                                    len(ss),
+                                    f"{t} 窗口内 {len(ss)} 条利好快讯 vs 整体极度恐慌({fg:.0f})",
+                                    f"个体({t})利好密集 vs 整体恐慌，矛盾体观察",
+                                )
+                            )
                         elif t_avg < 0.5 and fg > EXTREME_HIGH:
-                            events.append(_mk("individual_whole", cur, w_end, len(ss),
-                                              f"{t} 窗口内 {len(ss)} 条利空快讯 vs 整体极度贪婪({fg:.0f})",
-                                              f"个体({t})利空密集 vs 整体贪婪，矛盾体观察"))
+                            events.append(
+                                _mk(
+                                    "individual_whole",
+                                    cur,
+                                    w_end,
+                                    len(ss),
+                                    f"{t} 窗口内 {len(ss)} 条利空快讯 vs 整体极度贪婪({fg:.0f})",
+                                    f"个体({t})利空密集 vs 整体贪婪，矛盾体观察",
+                                )
+                            )
             # 3) 短期与长期：快讯短期情绪 vs 资金费率持仓结构方向相反
             if fr is not None and fr != 0:
                 if bullish and fr < 0:
-                    events.append(_mk("short_long", cur, w_end, len(w_news),
-                                      f"窗口快讯情绪偏利好(均值{avg_sent:.2f}) vs 资金费率为负({fr:.4f})",
-                                      "短期利好叙事 vs 持仓结构空头主导，矛盾体观察"))
+                    events.append(
+                        _mk(
+                            "short_long",
+                            cur,
+                            w_end,
+                            len(w_news),
+                            f"窗口快讯情绪偏利好(均值{avg_sent:.2f}) vs 资金费率为负({fr:.4f})",
+                            "短期利好叙事 vs 持仓结构空头主导，矛盾体观察",
+                        )
+                    )
                 elif bearish and fr > 0:
-                    events.append(_mk("short_long", cur, w_end, len(w_news),
-                                      f"窗口快讯情绪偏利空(均值{avg_sent:.2f}) vs 资金费率为正({fr:.4f})",
-                                      "短期利空叙事 vs 持仓结构多头主导，矛盾体观察"))
+                    events.append(
+                        _mk(
+                            "short_long",
+                            cur,
+                            w_end,
+                            len(w_news),
+                            f"窗口快讯情绪偏利空(均值{avg_sent:.2f}) vs 资金费率为正({fr:.4f})",
+                            "短期利空叙事 vs 持仓结构多头主导，矛盾体观察",
+                        )
+                    )
         cur = w_end
     return events
 
@@ -248,7 +325,11 @@ def main():
                     continue
 
     def _ev_key(e):
-        return (e.get("window_start", ""), e.get("contradiction_type", ""), e.get("observation", ""))
+        return (
+            e.get("window_start", ""),
+            e.get("contradiction_type", ""),
+            e.get("observation", ""),
+        )
 
     merged = {}
     for e in existing + events:
@@ -277,7 +358,9 @@ def main():
     with open(OUT_STATS_PATH, "w", encoding="utf-8") as f:
         json.dump(profile, f, ensure_ascii=False, indent=2)
 
-    print(f"[OK] P-矛盾完成: 本次检出 {len(events)} 条，累计保留 {len(all_events)} 条 -> {OUT_EVENTS_PATH}")
+    print(
+        f"[OK] P-矛盾完成: 本次检出 {len(events)} 条，累计保留 {len(all_events)} 条 -> {OUT_EVENTS_PATH}"
+    )
     for t, n in sorted(by_type.items(), key=lambda kv: -kv[1]):
         print(f"     {t}: {n} 条")
     print(f"     矛盾画像 -> {OUT_STATS_PATH}")

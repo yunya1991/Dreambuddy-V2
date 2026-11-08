@@ -13,7 +13,7 @@ Dream OS 动态评估调度器 - 常驻进程启动入口
     python -m dreamos.cli.run_dynamic_evaluator --interval 3600
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import os
 import sys
@@ -31,10 +31,12 @@ logger = logging.getLogger("dynamic_evaluator_runner")
 
 def main():
     parser = argparse.ArgumentParser(description="Dream OS 动态评估调度器")
-    parser.add_argument("--interval", type=int, default=21600,
-                        help="定期评估间隔(秒), 默认21600(6小时)")
-    parser.add_argument("--log-level", default="INFO",
-                        choices=["DEBUG", "INFO", "WARNING", "ERROR"])
+    parser.add_argument(
+        "--interval", type=int, default=21600, help="定期评估间隔(秒), 默认21600(6小时)"
+    )
+    parser.add_argument(
+        "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
+    )
     args = parser.parse_args()
 
     logging.basicConfig(

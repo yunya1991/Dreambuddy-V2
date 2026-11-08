@@ -10,15 +10,14 @@
 
 阈值硬约束: 只引用 route_confidence/jev_gate 既有常量，禁止第二套数值。
 """
-import os
+
+import os  # noqa: I001
 import sys
 from types import SimpleNamespace
 
-import pytest
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.sufficiency import (  # noqa: E402
+from core.sufficiency import (  # noqa: E402, I001
     EARLY_TERMINATE,
     NEED_CLARIFY,
     NEED_DEEPER,
@@ -51,6 +50,7 @@ class FakeRouter:
 # S-1b: jev 终裁接入 — 信号矛盾澄清 + jev 改写 + 抗振荡
 # ============================================================
 
+
 class TestJevFinalArbitration:
     def test_strong_signals_not_overridden(self):
         r = evaluate_entry_sufficiency(_mems([0.9, 0.85, 0.8]), depth="standard")
@@ -80,12 +80,14 @@ class TestJevFinalArbitration:
         osc = JevAntiOscillation()
         for _ in range(3):
             r = evaluate_entry_sufficiency(
-                _mems([0.9, 0.85, 0.8]), depth="standard", anti_oscillation=osc)
+                _mems([0.9, 0.85, 0.8]), depth="standard", anti_oscillation=osc
+            )
         assert r.state == NEED_PLAN
 
     def test_plan_sufficient_jev_continue(self):
         r = evaluate_plan_sufficiency(
-            {"plan_items": ["a"]}, _mems([0.9, 0.8, 0.85]), depth="standard")
+            {"plan_items": ["a"]}, _mems([0.9, 0.8, 0.85]), depth="standard"
+        )
         assert r.state == SUFFICIENT
         assert r.jev_decision == "CONTINUE"
 
@@ -98,6 +100,7 @@ class TestJevFinalArbitration:
 # ============================================================
 # S-1: 入口充分性（S0）— 四态
 # ============================================================
+
 
 class TestEntrySufficiency:
     def test_empty_memories_need_plan(self):
@@ -132,8 +135,7 @@ class TestEntrySufficiency:
         assert r.state == NEED_RESEARCH
 
     def test_cognitive_unavailable_need_plan(self):
-        r = evaluate_entry_sufficiency(_mems([0.9] * 5), depth="light",
-                                       cognitive_available=False)
+        r = evaluate_entry_sufficiency(_mems([0.9] * 5), depth="light", cognitive_available=False)
         assert r.state == NEED_PLAN
         assert "cognitive_unavailable" in r.reasons
 
@@ -147,6 +149,7 @@ class TestEntrySufficiency:
 # ============================================================
 # S-1: 规划充分性（S2）— 四态
 # ============================================================
+
 
 class TestPlanSufficiency:
     def test_nonempty_plan_sufficient(self):
@@ -177,6 +180,7 @@ class TestPlanSufficiency:
 # ============================================================
 # S-2: SLayerPlanner 状态机 + 编排器集成
 # ============================================================
+
 
 class TestSLayerPlannerContract:
     def test_default_planner_produces_new_contract(self):
@@ -246,8 +250,9 @@ class TestOrchestratorSufficiencyIntegration:
         """NEED_CLARIFY → 挂起问用户：stages 只到 S，不执行 C 节点"""
         router = FakeRouter()
         orch = SACGOrchestrator(router=router)
-        out = orch.handle("分析一下", l1_intent_hint="technical_analysis",
-                          memories=_mems([0.5, 0.5]))
+        out = orch.handle(
+            "分析一下", l1_intent_hint="technical_analysis", memories=_mems([0.5, 0.5])
+        )
         assert out["action"] == NEED_CLARIFY
         assert out["stages"] == ["S"]
         assert out["node_results"] == []
@@ -257,10 +262,8 @@ class TestOrchestratorSufficiencyIntegration:
     def test_handle_early_terminate_short_circuits(self):
         """EARLY_TERMINATE → 礼貌退出：stages 只到 S"""
         profiles = {"event_analysis": {"depth": "deep", "plan": []}}
-        orch = SACGOrchestrator(router=FakeRouter(),
-                                s_planner=SLayerPlanner(profiles=profiles))
-        out = orch.handle("任务", l1_intent_hint="event_analysis",
-                          memories=_mems([0.6, 0.6, 0.6]))
+        orch = SACGOrchestrator(router=FakeRouter(), s_planner=SLayerPlanner(profiles=profiles))
+        out = orch.handle("任务", l1_intent_hint="event_analysis", memories=_mems([0.6, 0.6, 0.6]))
         assert out["action"] == EARLY_TERMINATE
         assert out["stages"] == ["S"]
         assert out["node_results"] == []
@@ -268,8 +271,7 @@ class TestOrchestratorSufficiencyIntegration:
     def test_handle_proceed_includes_sufficiency(self):
         """正常推进 → 输出携带 sufficiency 与 action=PROCEED（不破坏既有字段）"""
         orch = SACGOrchestrator(router=FakeRouter())
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=[])
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=[])
         assert out["action"] == "PROCEED"
         assert out["sufficiency"]["state"] == NEED_PLAN
         assert out["stages"] == ["S", "A", "C", "G"]
@@ -278,8 +280,7 @@ class TestOrchestratorSufficiencyIntegration:
     def test_handle_research_stub_flow_continues(self):
         """NEED_RESEARCH 打桩不阻断：流程继续走完 S→A→C→G"""
         orch = SACGOrchestrator(router=FakeRouter())
-        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis",
-                          memories=_mems([0.2]))
+        out = orch.handle("这次FOMC怎么看", l1_intent_hint="event_analysis", memories=_mems([0.2]))
         assert out["action"] == "PROCEED"
         assert out["research_request"] is not None
         assert out["kickoff_trigger"]["skill"] == "dream-arch-research-orchestrator"
@@ -287,6 +288,7 @@ class TestOrchestratorSufficiencyIntegration:
 
     def test_legacy_s_planner_still_supported(self):
         """旧契约注入（返回裸 plan dict）行为不变"""
+
         def s_fn(message, hint, memories):
             return {"plan_items": ["a"]}
 

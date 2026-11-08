@@ -6,10 +6,8 @@ SPEC-AGI升级蓝图.md §4.4.1
   - 头肩顶检测准确率 ≥60%
   - 提取为独立模块，接入BCRM2.0技术评估
 """
-from __future__ import annotations
 
-import numpy as np
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 def _make_head_shoulders_top() -> list[dict]:
@@ -56,6 +54,7 @@ class TestPatternDetector:
     def test_detects_head_shoulders_top(self):
         """头肩顶形态应被检测到"""
         from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
         detector = PatternDetector()
         klines = _make_head_shoulders_top()
         result = detector.detect_head_shoulders(klines)
@@ -65,6 +64,7 @@ class TestPatternDetector:
     def test_no_head_shoulders_in_uptrend(self):
         """纯上涨趋势不应检测到头肩顶"""
         from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
         detector = PatternDetector()
         klines = _make_uptrend()
         result = detector.detect_head_shoulders(klines)
@@ -73,6 +73,7 @@ class TestPatternDetector:
     def test_returns_confidence_score(self):
         """检测结果包含置信度[0,1]"""
         from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
         detector = PatternDetector()
         klines = _make_head_shoulders_top()
         result = detector.detect_head_shoulders(klines)
@@ -82,6 +83,7 @@ class TestPatternDetector:
     def test_short_sequence_returns_not_detected(self):
         """过短序列（<30根K线）返回未检测"""
         from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
         detector = PatternDetector()
         klines = [{"close": 100.0 + i} for i in range(10)]
         result = detector.detect_head_shoulders(klines)
@@ -90,6 +92,7 @@ class TestPatternDetector:
     def test_neckline_level_provided(self):
         """检测到头肩顶时返回颈线价位"""
         from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
         detector = PatternDetector()
         klines = _make_head_shoulders_top()
         result = detector.detect_head_shoulders(klines)
@@ -104,6 +107,7 @@ class TestPatternDetectorBCRMIntegration:
     def test_bcrm_assessment_includes_pattern(self):
         """BCRM技术评估返回结果包含形态因子"""
         from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
         detector = PatternDetector()
         klines = _make_head_shoulders_top()
         # BCRM技术评估接口
@@ -114,6 +118,7 @@ class TestPatternDetectorBCRMIntegration:
     def test_head_shoulders_is_reversal_signal(self):
         """头肩顶作为反向信号（看跌反转）"""
         from dreambuddy_evolution.engines.pattern_detector import PatternDetector
+
         detector = PatternDetector()
         klines = _make_head_shoulders_top()
         assessment = detector.bcrm_technical_assessment(klines)

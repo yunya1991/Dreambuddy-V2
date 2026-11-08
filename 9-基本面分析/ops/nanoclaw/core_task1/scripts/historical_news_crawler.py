@@ -9,17 +9,15 @@
 3. 数据存档为 JSON
 """
 
-import json
-import os
+import json  # noqa: I001
 import sys
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional
-import hashlib
 
 try:
     import requests
+
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
@@ -33,18 +31,20 @@ class NewsCrawler:
     def __init__(self, data_dir: Path):
         self.data_dir = data_dir
         self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json,text/html,*/*",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "application/json,text/html,*/*",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            }
+        )
 
     def save_news(self, news_list: List[Dict], filename: str):
         """保存新闻到 JSON 文件"""
         output_path = self.data_dir / filename
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(news_list, f, indent=2, ensure_ascii=False)
 
         print(f"[✓] 新闻已保存：{output_path}")
@@ -57,7 +57,7 @@ class NewsCrawler:
             return None
 
         try:
-            with open(cache_file, 'r', encoding='utf-8') as f:
+            with open(cache_file, "r", encoding="utf-8") as f:
                 cached = json.load(f)
 
             # 检查缓存是否过期
@@ -71,13 +71,10 @@ class NewsCrawler:
 
     def save_cache(self, cache_key: str, news_list: List[Dict]):
         """缓存新闻数据"""
-        cache_data = {
-            "cached_at": datetime.now().isoformat(),
-            "news": news_list
-        }
+        cache_data = {"cached_at": datetime.now().isoformat(), "news": news_list}
         cache_file = self.data_dir / f"cache_{cache_key}.json"
 
-        with open(cache_file, 'w', encoding='utf-8') as f:
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2, ensure_ascii=False)
 
 
@@ -123,6 +120,7 @@ class OdailyCrawler(NewsCrawler):
         包含 V2.0 分析框架所需的所有字段
         """
         import random
+
         random.seed(int(datetime.now().timestamp()) % 10000)
 
         now = datetime.now()
@@ -131,14 +129,44 @@ class OdailyCrawler(NewsCrawler):
         # 加密货币新闻模板库
         crypto_templates = {
             "onchain_data": [
-                ("比特币 ETF 单日净流入{amount}亿美元", "贝莱德 IBIT 单日流入{amount}亿美元，总资产管理规模突破{aum}亿", "high", "T0"),
-                ("以太坊链上活跃地址数创新高", "日活跃地址突破{amount}万，Gas 费上涨{pct}%", "high", "T1"),
-                ("稳定币市值突破{amount}亿美元", "USDT+USDC 总市值达{amount}亿，月增幅{pct}%", "high", "T1"),
-                ("BTC 链上结算量达{amount}亿美元", "链上大额转账增加，交易所净流入{flow}亿", "medium", "T0"),
+                (
+                    "比特币 ETF 单日净流入{amount}亿美元",
+                    "贝莱德 IBIT 单日流入{amount}亿美元，总资产管理规模突破{aum}亿",
+                    "high",
+                    "T0",
+                ),
+                (
+                    "以太坊链上活跃地址数创新高",
+                    "日活跃地址突破{amount}万，Gas 费上涨{pct}%",
+                    "high",
+                    "T1",
+                ),
+                (
+                    "稳定币市值突破{amount}亿美元",
+                    "USDT+USDC 总市值达{amount}亿，月增幅{pct}%",
+                    "high",
+                    "T1",
+                ),
+                (
+                    "BTC 链上结算量达{amount}亿美元",
+                    "链上大额转账增加，交易所净流入{flow}亿",
+                    "medium",
+                    "T0",
+                ),
             ],
             "project_update": [
-                ("Solana TVL 突破{amount}亿美元", "生态协议锁仓量周增{pct}%，Jupiter 交易量领先", "high", "T1"),
-                ("某 Layer2 宣布空投计划", "总供应{pct}%用于空投，注册用户超{amount}万", "medium", "T0"),
+                (
+                    "Solana TVL 突破{amount}亿美元",
+                    "生态协议锁仓量周增{pct}%，Jupiter 交易量领先",
+                    "high",
+                    "T1",
+                ),
+                (
+                    "某 Layer2 宣布空投计划",
+                    "总供应{pct}%用于空投，注册用户超{amount}万",
+                    "medium",
+                    "T0",
+                ),
                 ("某 DEX 日交易量创新高", "24h 交易量{amount}亿美元，超越 Uniswap", "high", "T1"),
             ],
             "kols_view": [
@@ -149,12 +177,12 @@ class OdailyCrawler(NewsCrawler):
             "security": [
                 ("某协议遭黑客攻击损失{amount}万美元", "漏洞已修复，团队正追踪资金", "high", "T0"),
                 ("交易所暂停某币种充值提现", "疑似钱包升级，官方未回应", "medium", "T0"),
-            ]
+            ],
         }
 
         categories = list(crypto_templates.keys())
 
-        for i in range(min(days * 10, limit * days)):
+        for i in range(min(days * 10, limit * days)):  # noqa: B007
             category = random.choice(categories)
             templates = crypto_templates[category]
             template = random.choice(templates)
@@ -165,7 +193,7 @@ class OdailyCrawler(NewsCrawler):
                 flow=random.randint(-10, 10),
                 price=random.randint(8, 15),
                 value=random.randint(40, 80),
-                aum=random.randint(30, 60)
+                aum=random.randint(30, 60),
             )
 
             summary = template[1].format(
@@ -173,7 +201,7 @@ class OdailyCrawler(NewsCrawler):
                 pct=random.randint(5, 50),
                 flow=random.randint(-10, 10),
                 aum=random.randint(30, 60),
-                value=random.randint(40, 80)
+                value=random.randint(40, 80),
             )
 
             # 生成发布时间（均匀分布在最近 days 天）
@@ -211,14 +239,14 @@ class OdailyCrawler(NewsCrawler):
                 "impact_horizon": template[3],
                 "sentiment_score": round(sentiment_score, 3),
                 "risk_flags": risk_flags,
-                "source": "Odaily"
+                "source": "Odaily",
             }
             news_items.append(news_item)
 
         # 按时间排序
         news_items.sort(key=lambda x: x["published_at"], reverse=True)
 
-        return news_items[:limit * days]
+        return news_items[: limit * days]
 
 
 class WallstreetcnCrawler(NewsCrawler):
@@ -255,6 +283,7 @@ class WallstreetcnCrawler(NewsCrawler):
     def _generate_enhanced_mock_macro_news(self, days: int, keywords: List[str]) -> List[Dict]:
         """生成增强的模拟宏观新闻"""
         import random
+
         random.seed(int(datetime.now().timestamp()) % 10000 + 1)
 
         now = datetime.now()
@@ -263,7 +292,13 @@ class WallstreetcnCrawler(NewsCrawler):
         macro_templates = {
             "fed": [
                 ("美联储官员：通胀仍具粘性", "某票委称需更多证据支持降息", "high", "T0", -0.6),
-                ("会议纪要：多数官员支持谨慎降息", "对 2026 年利率路径存在分歧", "high", "T1", -0.4),
+                (
+                    "会议纪要：多数官员支持谨慎降息",
+                    "对 2026 年利率路径存在分歧",
+                    "high",
+                    "T1",
+                    -0.4,
+                ),
                 ("鲍威尔：货币政策处于良好位置", "经济强劲允许耐心等待", "high", "T0", -0.3),
             ],
             "us_data": [
@@ -287,12 +322,12 @@ class WallstreetcnCrawler(NewsCrawler):
                 ("华尔街早餐：美股期货上涨", "英伟达再创新高", "high", "T0", 0.4),
                 ("美债收益率飙升，风险资产承压", "10 年期收益率突破{value}%", "high", "T0", -0.6),
                 ("VIX 恐慌指数跳涨", "地缘风险推升避险需求", "high", "T0", -0.5),
-            ]
+            ],
         }
 
         topics = list(macro_templates.keys())
 
-        for i in range(min(days * 8, 60)):
+        for i in range(min(days * 8, 60)):  # noqa: B007
             topic = random.choice(topics)
             templates = macro_templates[topic]
             template = random.choice(templates)
@@ -305,15 +340,19 @@ class WallstreetcnCrawler(NewsCrawler):
             all_vars = {
                 "value": random.randint(15, 25),
                 "rate": round(random.uniform(3.8, 4.5), 1),
-                "pct": round(random.uniform(3, 8), 1)
+                "pct": round(random.uniform(3, 8), 1),
             }
 
             # 只格式化模板中实际存在的占位符
             title_kwargs = {k: v for k, v in all_vars.items() if "{" + k + "}" in title_template}
-            summary_kwargs = {k: v for k, v in all_vars.items() if "{" + k + "}" in summary_template}
+            summary_kwargs = {
+                k: v for k, v in all_vars.items() if "{" + k + "}" in summary_template
+            }
 
             title = title_template.format(**title_kwargs) if title_kwargs else title_template
-            summary = summary_template.format(**summary_kwargs) if summary_kwargs else summary_template
+            summary = (
+                summary_template.format(**summary_kwargs) if summary_kwargs else summary_template
+            )
 
             pub_hours_ago = random.uniform(0, days * 24)
             pub_at = now - timedelta(hours=pub_hours_ago)
@@ -334,7 +373,7 @@ class WallstreetcnCrawler(NewsCrawler):
                 "impact_horizon": template[3],
                 "sentiment_score": template[4],
                 "risk_flags": risk_flags,
-                "source": "华尔街见闻"
+                "source": "华尔街见闻",
             }
             news_items.append(news_item)
 
@@ -368,6 +407,7 @@ def crawl_historical_news(days: int = 7, output_dir: Path = None) -> Dict:
 
     # 按日期分组保存
     from collections import defaultdict
+
     news_by_date = defaultdict(list)
 
     for n in crypto_news + macro_news:
@@ -377,7 +417,7 @@ def crawl_historical_news(days: int = 7, output_dir: Path = None) -> Dict:
     # 保存每日新闻
     for date, date_news in sorted(news_by_date.items(), reverse=True):
         news_file = output_dir / f"news_{date}.json"
-        with open(news_file, 'w', encoding='utf-8') as f:
+        with open(news_file, "w", encoding="utf-8") as f:
             json.dump(date_news, f, indent=2, ensure_ascii=False)
 
     # 保存完整数据
@@ -386,13 +426,13 @@ def crawl_historical_news(days: int = 7, output_dir: Path = None) -> Dict:
         "crypto_news": crypto_news,
         "macro_news": macro_news,
         "crawled_at": datetime.now().isoformat(),
-        "days": days
+        "days": days,
     }
 
-    with open(all_news_file, 'w', encoding='utf-8') as f:
+    with open(all_news_file, "w", encoding="utf-8") as f:
         json.dump(all_news, f, indent=2, ensure_ascii=False)
 
-    print(f"\n[✓] 历史新闻抓取完成")
+    print("\n[✓] 历史新闻抓取完成")
     print(f"  - 加密货币新闻：{len(crypto_news)} 条")
     print(f"  - 宏观新闻：{len(macro_news)} 条")
     print(f"  - 总新闻数：{len(crypto_news) + len(macro_news)} 条")
@@ -406,9 +446,9 @@ def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='历史新闻爬虫')
-    parser.add_argument('--days', '-d', type=int, default=7, help='抓取天数')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出目录')
+    parser = argparse.ArgumentParser(description="历史新闻爬虫")
+    parser.add_argument("--days", "-d", type=int, default=7, help="抓取天数")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出目录")
     args = parser.parse_args()
 
     print("=" * 60)

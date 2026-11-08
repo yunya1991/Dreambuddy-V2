@@ -11,6 +11,7 @@ SPEC §2.3.2 + §4 硬约束总表：
   - sltp_bayesian_optimizer.py 的 optimize_params() / run_backtest()
   - ablation_test.py 的消融实验框架
 """
+
 from __future__ import annotations
 
 import logging
@@ -43,7 +44,7 @@ TP_CEIL = 0.30
 RR_FLOOR = 2.0
 DD_CEIL = 0.40  # 传统金融激进型上限35%，加密市场调整为40%
 WIN_RATE_FLOOR = 0.40
-CALMAR_IMPROVE_RATIO = 1.1   # Calmar 提升 ≥ ×1.1
+CALMAR_IMPROVE_RATIO = 1.1  # Calmar 提升 ≥ ×1.1
 ABLATION_P_THRESHOLD = 0.05  # 消融显著性阈值
 
 
@@ -53,6 +54,7 @@ ABLATION_P_THRESHOLD = 0.05  # 消融显著性阈值
 @dataclass
 class VerificationResult:
     """参数验证结果"""
+
     passed: bool
     new_calmar: float = 0.0
     old_calmar: float = 0.0
@@ -163,7 +165,11 @@ class BayesianVerifier:
         # ⑥ 全部门禁通过 → 升级版本
         logger.info(
             "参数升级通过: symbol=%s new_calmar=%.3f old_calmar=%.3f dd=%.3f p=%.3f",
-            symbol, new_calmar, old_calmar, new_dd, p_value,
+            symbol,
+            new_calmar,
+            old_calmar,
+            new_dd,
+            p_value,
         )
         return VerificationResult(
             passed=True,
@@ -192,16 +198,18 @@ class BayesianVerifier:
         try:
             from memory_l4.bcrm2.sltp_bayesian_optimizer import (
                 load_klines,
-                run_backtest,
                 optimize_params,
+                run_backtest,
             )
+
             df = load_klines(symbol)
             if df is None or len(df) < 200:
                 # 数据不足时返回 mock 中性结果
                 return _NeutralResult()
             if is_new:
                 return run_backtest(
-                    df, symbol,
+                    df,
+                    symbol,
                     sl_floor=params.get("sl_floor", 0.05),
                     tp_floor=params.get("tp_floor", 0.15),
                     atr_mult=params.get("atr_mult", 4.5),
@@ -227,6 +235,7 @@ class BayesianVerifier:
         """
         try:
             from memory_l4.bcrm2.ablation_test import run_ablation
+
             result = run_ablation(symbol=symbol)
             # ablation_test 返回 dict，含 significant + p_value
             significant = bool(result.get("significant", False))
@@ -264,6 +273,7 @@ class BayesianVerifier:
 # ============================================================================
 class _NeutralResult:
     """中性回测结果（数据不足时返回，避免阻塞验证流程）"""
+
     calmar = 0.0
     max_drawdown = 0.0
     win_rate = 0.0

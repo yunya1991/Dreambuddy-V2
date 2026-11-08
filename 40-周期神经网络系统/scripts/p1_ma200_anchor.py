@@ -3,26 +3,44 @@
 BTC/ETH/SOL + 赛道龙头 UNI/AAVE/NEAR/ARB/LINK 日线K线 + SPX 日线，计算 MA200 牛熊分界状态
 产出物：合并写入 cycle_state.json 的 technical_anchor 部分
 """
+
 from __future__ import annotations
+
 import json
+import os
 from datetime import datetime, timezone
 
-STATE_FILE = "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+STATE_FILE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
 MA_WINDOW = 200
 CRYPTO_SYMBOLS = [
-    "BTC/USDT", "ETH/USDT", "SOL/USDT",
-    "UNI/USDT", "AAVE/USDT", "NEAR/USDT", "ARB/USDT", "LINK/USDT",
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
+    "UNI/USDT",
+    "AAVE/USDT",
+    "NEAR/USDT",
+    "ARB/USDT",
+    "LINK/USDT",
 ]
 SPX_SYMBOL = "^GSPC"
 
+
 def fetch_crypto_daily(symbol, limit=400):
     import ccxt
+
     ex = ccxt.binance({"enableRateLimit": True})
     ohlcv = ex.fetch_ohlcv(symbol, "1d", limit=limit)
     return [(c[0], c[4]) for c in ohlcv if c[4]]
 
+
 def fetch_spx_daily():
     import yfinance as yf
+
     df = yf.download(SPX_SYMBOL, period="2y", interval="1d", progress=False)
     if df is None or df.empty:
         return []
@@ -31,9 +49,10 @@ def fetch_spx_daily():
     except Exception:
         closes = df.xs("Close", axis=1, level=-1).dropna()
     out = []
-    for ts, val in zip(closes.index, closes.values):
+    for ts, val in zip(closes.index, closes.values):  # noqa: B905
         out.append((int(ts.timestamp() * 1000), float(val)))
     return out
+
 
 def calc_ma200(closes):
     if len(closes) < MA_WINDOW:
@@ -49,6 +68,7 @@ def calc_ma200(closes):
         "distance_pct": round(dist, 2),
         "samples": len(closes),
     }
+
 
 def main():
     anchors = {}
@@ -78,6 +98,7 @@ def main():
         json.dump(state, f, ensure_ascii=False, indent=2)
     print(json.dumps(anchors, ensure_ascii=False, indent=2))
     print("saved:", STATE_FILE)
+
 
 if __name__ == "__main__":
     main()

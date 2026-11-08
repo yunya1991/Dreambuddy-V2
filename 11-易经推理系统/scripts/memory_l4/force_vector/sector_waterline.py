@@ -16,10 +16,9 @@
   - query_valuation_percentile（coin_fundamental_valuation_query）→ 纵向百分位
   - SECTOR_MAP / _SECTOR_COIN_META / _fetch_coin_info（coin_fundamental_crypto）→ 赛道成员 + 市值
 """
+
 from __future__ import annotations
 
-import json
-import math
 import os
 import sys
 from dataclasses import dataclass, field
@@ -38,7 +37,7 @@ if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
 # 复用现有 BDSM E8 的赛道定义与数据读取
-from force_vector.coin_fundamental_crypto import (  # noqa: E402
+from force_vector.coin_fundamental_crypto import (  # noqa: E402, I001
     SECTOR_MAP,
     _SECTOR_COIN_META,
     _fetch_coin_info,
@@ -50,7 +49,6 @@ from force_vector.coin_fundamental_valuation_query import (  # noqa: E402
     query_valuation_percentile,
     _NEUTRAL_PERCENTILE,
 )
-
 
 # ---------------------------------------------------------------------------
 # 常量（SPEC §3.2 指标 1）
@@ -70,6 +68,7 @@ _LEADER_MOMENTUM_SCALE = 0.20
 # 数据结构
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SectorWaterline:
     """赛道整体估值水位（SPEC §4.2）。
@@ -84,6 +83,7 @@ class SectorWaterline:
         leader_momentum_7d: 龙头 7d 收益率归一化 [-1, +1]
         timestamp: ISO 时间戳
     """
+
     sector: str
     median_percentile: float
     member_count: int
@@ -97,6 +97,7 @@ class SectorWaterline:
 # ---------------------------------------------------------------------------
 # 龙头 7d 动量（从 coingecko coin_chart timeseries 取 price 序列）
 # ---------------------------------------------------------------------------
+
 
 def _fetch_leader_7d_momentum(coin: str, db_path: str) -> float:
     """计算龙头 7d 价格收益率并归一化到 [-1, +1]。
@@ -174,6 +175,7 @@ def _fetch_leader_7d_momentum(coin: str, db_path: str) -> float:
 # 龙头识别（市值最大）
 # ---------------------------------------------------------------------------
 
+
 def _identify_sector_leader(
     sector_members: List[str], db_path: str
 ) -> tuple[Optional[str], Dict[str, float]]:
@@ -210,6 +212,7 @@ def _identify_sector_leader(
 # ---------------------------------------------------------------------------
 # 主函数：compute_sector_waterline
 # ---------------------------------------------------------------------------
+
 
 def compute_sector_waterline(
     sector: str, db_path: Optional[str] = None

@@ -7,12 +7,12 @@
   4. 增量采集：since 时间戳过滤
   5. FAIL-OPEN：DB 不可用时返回空列表
 """
+
 import os
-import sys
 import sqlite3
+import sys
 import tempfile
 import unittest
-from unittest.mock import patch
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _ADAPTERS_DIR = os.path.join(os.path.dirname(_THIS_DIR), "adapters")
@@ -59,16 +59,66 @@ class CognitiveMemoryCollectorTest(unittest.TestCase):
         # 插入各级别测试数据
         # (id, content, quality_level, confidence, tags, memory_type, source, created_at, verify_count, level)
         test_memories = [
-            ("VM-S001", "S级记忆内容", "S", 0.95, '["硬约束","架构"]', "experience",
-             "mcp", "2026-10-01T10:00:00Z", 10, "axiom"),
-            ("VM-A001", "A级记忆内容: bug修复经验", "A", 0.80, '["bugfix","dreamos"]',
-             "experience", "git-post-commit", "2026-10-02T10:00:00Z", 5, "observation"),
-            ("VM-B001", "B级记忆内容: TDD最佳实践", "B", 0.50, '["tdd","测试"]',
-             "experience", "mcp", "2026-10-03T10:00:00Z", 2, "observation"),
-            ("VM-C001", "C级记忆内容: 未验证假设", "C", 0.30, '["假设"]',
-             "experience", "mcp", "2026-10-04T10:00:00Z", 0, "hypothesis"),
-            ("VM-D001", "D级已证伪内容", "D", 0.10, '["已证伪"]',
-             "experience", "mcp", "2026-10-05T10:00:00Z", 0, "falsified"),
+            (
+                "VM-S001",
+                "S级记忆内容",
+                "S",
+                0.95,
+                '["硬约束","架构"]',
+                "experience",
+                "mcp",
+                "2026-10-01T10:00:00Z",
+                10,
+                "axiom",
+            ),
+            (
+                "VM-A001",
+                "A级记忆内容: bug修复经验",
+                "A",
+                0.80,
+                '["bugfix","dreamos"]',
+                "experience",
+                "git-post-commit",
+                "2026-10-02T10:00:00Z",
+                5,
+                "observation",
+            ),
+            (
+                "VM-B001",
+                "B级记忆内容: TDD最佳实践",
+                "B",
+                0.50,
+                '["tdd","测试"]',
+                "experience",
+                "mcp",
+                "2026-10-03T10:00:00Z",
+                2,
+                "observation",
+            ),
+            (
+                "VM-C001",
+                "C级记忆内容: 未验证假设",
+                "C",
+                0.30,
+                '["假设"]',
+                "experience",
+                "mcp",
+                "2026-10-04T10:00:00Z",
+                0,
+                "hypothesis",
+            ),
+            (
+                "VM-D001",
+                "D级已证伪内容",
+                "D",
+                0.10,
+                '["已证伪"]',
+                "experience",
+                "mcp",
+                "2026-10-05T10:00:00Z",
+                0,
+                "falsified",
+            ),
         ]
 
         for m in test_memories:
@@ -76,7 +126,7 @@ class CognitiveMemoryCollectorTest(unittest.TestCase):
                 "INSERT INTO memories (id, content, quality_level, confidence, tags, "
                 "memory_type, source, created_at, verify_count, level, known_gaps, observations) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]')",
-                m
+                m,
             )
         conn.commit()
         conn.close()
@@ -84,6 +134,7 @@ class CognitiveMemoryCollectorTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import shutil
+
         shutil.rmtree(cls._tmpdir, ignore_errors=True)
 
     def test_collect_b_level_and_above(self):
@@ -136,6 +187,7 @@ class CognitiveMemoryCollectorTest(unittest.TestCase):
         # 增量采集：只取 2026-10-03 之后的（应该只有 B001，因为 S/A 都在 10-03 之前）
         # created_at 是 TEXT 类型 ISO 格式，转 ms 时间戳
         import datetime
+
         dt = datetime.datetime(2026, 10, 3, 0, 0, 0, tzinfo=datetime.timezone.utc)
         since_ts = str(int(dt.timestamp() * 1000))
 
@@ -148,18 +200,21 @@ class CognitiveMemoryCollectorTest(unittest.TestCase):
     def test_source_name(self):
         """get_source_name 应返回 'cognitive'。"""
         from cognitive_memory_collector import CognitiveMemoryCollector
+
         collector = CognitiveMemoryCollector(db_path=self._db_path)
         self.assertEqual(collector.get_source_name(), "cognitive")
 
     def test_quality_threshold(self):
         """get_quality_threshold 应返回 'B'。"""
         from cognitive_memory_collector import CognitiveMemoryCollector
+
         collector = CognitiveMemoryCollector(db_path=self._db_path)
         self.assertEqual(collector.get_quality_threshold(), "B")
 
     def test_fail_open_db_unavailable(self):
         """DB 不可用时，fetch_cases 应返回空列表而非抛异常。"""
         from cognitive_memory_collector import CognitiveMemoryCollector
+
         collector = CognitiveMemoryCollector(db_path="/nonexistent/path.db")
         cases = collector.fetch_cases(limit=10)
         self.assertEqual(cases, [])

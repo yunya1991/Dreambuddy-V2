@@ -7,12 +7,11 @@
 
 Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §4
 """
+
 from __future__ import annotations
 
 import logging
-import traceback
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 from typing import Dict, List, Optional
 
 import numpy as np
@@ -79,9 +78,7 @@ class WashoutMacroProvider:
 
             return macro_data
         except Exception as e:
-            self._logger.warning(
-                "WashoutMacroProvider FAIL-OPEN coin=%s err=%s", coin, e
-            )
+            self._logger.warning("WashoutMacroProvider FAIL-OPEN coin=%s err=%s", coin, e)
             return {}
 
     def _normalize_symbol(self, coin: str) -> str:
@@ -94,9 +91,7 @@ class WashoutMacroProvider:
                 break
         return c
 
-    def _query_oi_series(
-        self, symbol: str, start: datetime, end: datetime
-    ) -> List[float]:
+    def _query_oi_series(self, symbol: str, start: datetime, end: datetime) -> List[float]:
         """查询持仓量序列。"""
         try:
             rows = self._repo.query_open_interest_by_time(symbol, start, end)
@@ -109,9 +104,7 @@ class WashoutMacroProvider:
             self._logger.debug("OI query fail-open: %s", e)
             return []
 
-    def _query_funding_series(
-        self, symbol: str, start: datetime, end: datetime
-    ) -> List[float]:
+    def _query_funding_series(self, symbol: str, start: datetime, end: datetime) -> List[float]:
         """查询资金费率序列。"""
         try:
             rows = self._repo.query_funding_by_time(symbol, start, end)
@@ -124,9 +117,7 @@ class WashoutMacroProvider:
             self._logger.debug("funding query fail-open: %s", e)
             return []
 
-    def _query_cvd_series(
-        self, symbol: str, start: datetime, end: datetime
-    ) -> List[float]:
+    def _query_cvd_series(self, symbol: str, start: datetime, end: datetime) -> List[float]:
         """查询 CVD 序列（从 taker_volume 表的 buy_sell_volume_diff 累加）。
 
         CVD = cumsum(buy_vol - sell_vol) = cumsum(buy_sell_volume_diff)

@@ -7,13 +7,14 @@ B层 12 个指标全部默认值 → 所有币种输出相同 HOLD 0.1312。
   2. 降级路径不阻塞 (价格0/K线不足/异常)
   3. 多空行情注入后 B层信号产生分化 (闭环证据)
 """
+
 import sys
 from pathlib import Path
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.capabilities.trading.market_enrichment import enrich_market_data
+from dreamos.capabilities.trading.market_enrichment import enrich_market_data  # noqa: E402
 
 
 def _make_candles(start: float, drift: float, n: int = 48, vol: float = 1000.0):
@@ -22,11 +23,16 @@ def _make_candles(start: float, drift: float, n: int = 48, vol: float = 1000.0):
     for i in range(n):
         o = price
         c = price + drift
-        candles.append({
-            "t": i, "o": o,
-            "h": max(o, c) * 1.002, "l": min(o, c) * 0.998,
-            "c": c, "v": vol,
-        })
+        candles.append(
+            {
+                "t": i,
+                "o": o,
+                "h": max(o, c) * 1.002,
+                "l": min(o, c) * 0.998,
+                "c": c,
+                "v": vol,
+            }
+        )
         price = c
     return candles
 
@@ -35,14 +41,19 @@ def _fake_fetch(candles, price, rsi):
     def fetch(sym):
         closes = [c["c"] for c in candles]
         return {
-            "symbol": sym, "price": price,
+            "symbol": sym,
+            "price": price,
             "change_24h": (closes[-1] - closes[-7]) / closes[-7] if len(closes) > 7 else 0,
             "change_4h": (closes[-1] - closes[-2]) / closes[-2] if len(closes) > 1 else 0,
             "change_1h": (closes[-1] - closes[-2]) / closes[-2] if len(closes) > 1 else 0,
-            "ema20": closes[-1], "ema50": closes[-1], "ema200": closes[-1],
-            "rsi14": rsi, "atr_pct": 0.02,
+            "ema20": closes[-1],
+            "ema50": closes[-1],
+            "ema200": closes[-1],
+            "rsi14": rsi,
+            "atr_pct": 0.02,
             "candles_1h": candles,
         }
+
     return fetch
 
 
@@ -50,7 +61,8 @@ def test_enrich_full_indicators_injected():
     """完整K线 → 全部指标注入且取值合法。"""
     candles = _make_candles(100.0, 1.0)  # drift 1.0 ≈ 0.7%/根,越过 FLAT 中性带
     md = enrich_market_data(
-        "BTC", {"symbol": "BTC", "entry_price": 0.0, "close_price": 0.0},
+        "BTC",
+        {"symbol": "BTC", "entry_price": 0.0, "close_price": 0.0},
         _fake_fetch(candles, candles[-1]["c"], rsi=68.0),
     )
     # 价格注入
@@ -83,8 +95,10 @@ def test_enrich_degrades_on_zero_price():
 
 def test_enrich_degrades_on_fetch_exception():
     """获取异常 → 原样返回,不抛出。"""
+
     def boom(sym):
         raise RuntimeError("network down")
+
     base = {"symbol": "ETH", "entry_price": 0.0, "close_price": 0.0}
     md = enrich_market_data("ETH", base, boom)
     assert md == base
@@ -94,7 +108,8 @@ def test_enrich_degrades_on_short_candles():
     """K线不足24根 → 只注价格,不注指标。"""
     candles = _make_candles(100.0, 0.5, n=10)
     md = enrich_market_data(
-        "SOL", {"symbol": "SOL", "entry_price": 0.0, "close_price": 0.0},
+        "SOL",
+        {"symbol": "SOL", "entry_price": 0.0, "close_price": 0.0},
         _fake_fetch(candles, candles[-1]["c"], rsi=50.0),
     )
     assert md["entry_price"] == candles[-1]["c"], "价格仍应注入"
@@ -108,11 +123,13 @@ def test_enrich_bull_vs_bear_drives_different_signals():
     bull_candles = _make_candles(100.0, 0.8)
     bear_candles = _make_candles(140.0, -0.8)
     md_bull = enrich_market_data(
-        "BTC", {"symbol": "BTC", "entry_price": 0.0, "close_price": 0.0},
+        "BTC",
+        {"symbol": "BTC", "entry_price": 0.0, "close_price": 0.0},
         _fake_fetch(bull_candles, bull_candles[-1]["c"], rsi=75.0),
     )
     md_bear = enrich_market_data(
-        "BTC", {"symbol": "BTC", "entry_price": 0.0, "close_price": 0.0},
+        "BTC",
+        {"symbol": "BTC", "entry_price": 0.0, "close_price": 0.0},
         _fake_fetch(bear_candles, bear_candles[-1]["c"], rsi=25.0),
     )
 
@@ -130,6 +147,5 @@ def test_enrich_bull_vs_bear_drives_different_signals():
         and sig_bull.get("hexagram") == sig_bear.get("hexagram")
     )
     assert not identical, (
-        f"注入真实指标后多空信号仍完全相同(F-1 未修复): "
-        f"bull={sig_bull} bear={sig_bear}"
+        f"注入真实指标后多空信号仍完全相同(F-1 未修复): " f"bull={sig_bull} bear={sig_bear}"
     )

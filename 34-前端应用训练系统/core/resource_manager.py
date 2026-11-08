@@ -6,20 +6,22 @@ SPEC §2.4 资源分配:
   - 主动训练: CPU≤30%, 内存≤2GB, 超时8h, 优先级低, 失败重试(次日)
   - 被动训练: CPU≤50%, 内存≤4GB, 超时30min, 优先级中, 不重试
 """
-import os
+
+from dataclasses import dataclass
+from typing import Dict
+
 import psutil
-from dataclasses import dataclass, field
-from typing import Dict, Optional
 
 
 @dataclass
 class ResourceQuota:
     """资源配额配置。"""
-    cpu_percent: int = 30           # CPU使用率上限(%)
-    memory_mb: int = 2048           # 内存使用上限(MB)
-    timeout_hours: float = 8.0      # 超时(小时)
-    timeout_minutes: float = 0.0   # 超时(分钟, 与timeout_hours二选一)
-    max_retries: int = 3            # 最大重试次数(0=不重试)
+
+    cpu_percent: int = 30  # CPU使用率上限(%)
+    memory_mb: int = 2048  # 内存使用上限(MB)
+    timeout_hours: float = 8.0  # 超时(小时)
+    timeout_minutes: float = 0.0  # 超时(分钟, 与timeout_hours二选一)
+    max_retries: int = 3  # 最大重试次数(0=不重试)
 
 
 # SPEC §2.4 预设配额

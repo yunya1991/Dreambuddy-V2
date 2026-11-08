@@ -15,17 +15,15 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 4
   - runtime_checkable 结构子类型检查
   - 现有 dict-based 对象兼容（不强制改造）
 """
-from __future__ import annotations
 
-from typing import Any
+from __future__ import annotations  # noqa: I001
 
-import pytest
 
 from dreambuddy_evolution.core.interfaces import (
-    StrategyGene,
-    TradeSession,
     MarketState,
     PathCandidate,
+    StrategyGene,
+    TradeSession,
 )
 
 

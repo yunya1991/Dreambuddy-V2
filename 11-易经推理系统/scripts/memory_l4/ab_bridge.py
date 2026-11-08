@@ -25,23 +25,24 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.shared_memory_bus import (
+from scripts.memory_l4.paths import artifacts_memory_l4_dir  # noqa: E402
+from scripts.memory_l4.shared_memory_bus import (  # noqa: E402
+    _default_bus_path,
     publish_shared_memory_event,
     read_shared_memory_events,
-    _default_bus_path,
 )
-from scripts.memory_l4.paths import artifacts_memory_l4_dir
-
 
 # ============================================================
 # 配置
 # ============================================================
 
 # AB 交易系统日志目录（可被环境变量覆盖）
-AB_LOG_DIR = Path(os.environ.get(
-    "AB_LOG_DIR",
-    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs",
-))
+AB_LOG_DIR = Path(
+    os.environ.get(
+        "AB_LOG_DIR",
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/logs",
+    )
+)
 
 # 状态文件：记录已发布的日志，避免重复
 _STATE_FILE = artifacts_memory_l4_dir() / "shared_bus" / "ab_bridge_state.json"
@@ -62,6 +63,7 @@ ACL_CONFIG = {
 # P0: A/B 决策写入 shared_memory_bus
 # ============================================================
 
+
 def _load_state() -> Dict[str, Any]:
     """加载已发布状态。"""
     if _STATE_FILE.exists():
@@ -75,18 +77,16 @@ def _load_state() -> Dict[str, Any]:
 def _save_state(state: Dict[str, Any]) -> None:
     """保存已发布状态。"""
     _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2),
-                           encoding="utf-8")
+    _STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _convert_log_to_event(log_data: Dict[str, Any],
-                          agent_id: str) -> Dict[str, Any]:
+def _convert_log_to_event(log_data: Dict[str, Any], agent_id: str) -> Dict[str, Any]:
     """
     将 A/B 日志转换为 shared_memory_bus 事件 payload。
 
     保留完整决策信息，附加标准化字段供 BCRM 消费。
     """
-    ts = log_data.get("ts_utc", datetime.now().isoformat())
+    ts = log_data.get("ts_utc", datetime.now().isoformat())  # noqa: F841
     action = log_data.get("action", "HOLD")
     confidence = log_data.get("confidence", 0.0)
 
@@ -101,27 +101,22 @@ def _convert_log_to_event(log_data: Dict[str, Any],
         "entry_price": log_data.get("entry_price", 0.0),
         "stop_loss": log_data.get("stop_loss_price"),
         "take_profit": log_data.get("take_profit_price"),
-
         # 市场状态
         "market_regime": log_data.get("market_regime", "UNKNOWN"),
         "key_contradictions": log_data.get("key_contradictions", []),
         "reasoning_steps": log_data.get("reasoning_steps", []),
         "decision_rationale": log_data.get("decision_rationale", ""),
-
         # 系统状态
         "system_features_used": log_data.get("system_features_used", []),
         "intent_type": log_data.get("intent_type"),
         "plan_budget_mode": log_data.get("plan_budget_mode"),
-
         # 交易结果（可能为 null，尚未平仓）
         "pnl_pct": log_data.get("pnl_pct"),
         "was_correct": log_data.get("was_correct"),
         "exit_reason": log_data.get("exit_reason"),
-
         # 持仓快照
         "active_positions": log_data.get("active_positions", {}),
         "account_equity": log_data.get("account_equity"),
-
         # 原始日志路径（供追溯）
         "source_agent": agent_id,
     }
@@ -129,8 +124,7 @@ def _convert_log_to_event(log_data: Dict[str, Any],
     return payload
 
 
-def publish_new_decisions(ab_log_dir: Path = None,
-                          dry_run: bool = False) -> Dict[str, Any]:
+def publish_new_decisions(ab_log_dir: Path = None, dry_run: bool = False) -> Dict[str, Any]:
     """
     扫描 A/B 日志目录，将新日志发布到 shared_memory_bus。
 
@@ -145,11 +139,9 @@ def publish_new_decisions(ab_log_dir: Path = None,
     state = _load_state()
     published_set = set(state["published_files"])
 
-    stats = {"published": 0, "skipped": 0, "errors": 0,
-             "total_a": 0, "total_b": 0}
+    stats = {"published": 0, "skipped": 0, "errors": 0, "total_a": 0, "total_b": 0}
 
-    for agent_subdir, agent_id in [("agent_a", "agent_a"),
-                                   ("agent_b", "agent_b")]:
+    for agent_subdir, agent_id in [("agent_a", "agent_a"), ("agent_b", "agent_b")]:
         log_dir = ab_log_dir / agent_subdir
         if not log_dir.exists():
             continue
@@ -168,12 +160,13 @@ def publish_new_decisions(ab_log_dir: Path = None,
                 continue
 
             payload = _convert_log_to_event(log_data, agent_id)
-            ts = payload.get("cycle_id") or payload.get("ts_utc") or \
-                datetime.now().isoformat()
+            ts = payload.get("cycle_id") or payload.get("ts_utc") or datetime.now().isoformat()
 
             if dry_run:
-                print(f"  [DRY] {agent_id} {log_file.name}: "
-                      f"{payload['action']} conf={payload['confidence']}")
+                print(
+                    f"  [DRY] {agent_id} {log_file.name}: "
+                    f"{payload['action']} conf={payload['confidence']}"
+                )
             else:
                 result = publish_shared_memory_event(
                     snapshot_ts=ts,
@@ -201,8 +194,7 @@ def publish_new_decisions(ab_log_dir: Path = None,
     return stats
 
 
-def read_ab_decisions(agent_id: str = "",
-                      limit: int = 100) -> List[Dict[str, Any]]:
+def read_ab_decisions(agent_id: str = "", limit: int = 100) -> List[Dict[str, Any]]:
     """
     从 shared_memory_bus 读取 A/B 交易决策事件。
 
@@ -228,8 +220,7 @@ def read_ab_decisions(agent_id: str = "",
 
 def get_bus_stats() -> Dict[str, Any]:
     """获取 shared_memory_bus 的统计信息。"""
-    events = read_shared_memory_events(
-        limit=10000, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
+    events = read_shared_memory_events(limit=10000, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
     a_events = [e for e in events if e.get("agent_id") == "agent_a"]
     b_events = [e for e in events if e.get("agent_id") == "agent_b"]
 
@@ -256,8 +247,8 @@ def get_bus_stats() -> Dict[str, Any]:
 # P1: A/B 案例接入两仪引擎对比学习
 # ============================================================
 
-def _infer_macro_phase_from_regime(regime: str,
-                                    confidence: float) -> Tuple[str, str]:
+
+def _infer_macro_phase_from_regime(regime: str, confidence: float) -> Tuple[str, str]:
     """
     从 AB 日志的 market_regime 估算宏观美林时钟阶段。
 
@@ -272,8 +263,11 @@ def _infer_macro_phase_from_regime(regime: str,
     r = (regime or "").upper()
     # 从 BCRM _constants 导入常量
     from scripts.memory_l4.bcrm._constants import (
-        MACRO_RECOVERY, MACRO_OVERHEAT, MACRO_STAGFLATION, MACRO_RECESSION,
+        MACRO_OVERHEAT,
+        MACRO_RECESSION,
+        MACRO_RECOVERY,
         MACRO_SEASON,
+        MACRO_STAGFLATION,
     )
 
     if r in ("BULL", "TRENDING_UP", "UPTREND"):
@@ -299,8 +293,11 @@ def _infer_micro_phase_from_log(log_payload: Dict[str, Any]) -> Tuple[str, str]:
       HOLD+有持仓 → 成熟（秋）
     """
     from scripts.memory_l4.bcrm._constants import (
-        MICRO_SPROUT, MICRO_GROWTH, MICRO_MATURE, MICRO_DECLINE,
+        MICRO_DECLINE,
+        MICRO_GROWTH,
+        MICRO_MATURE,
         MICRO_SEASON,
+        MICRO_SPROUT,
     )
 
     action = (log_payload.get("action") or "HOLD").upper()
@@ -348,6 +345,7 @@ def convert_event_to_learning_case(event: Dict[str, Any]) -> Optional[Dict]:
 
     is_resonance = macro_season == micro_season
     from scripts.memory_l4.bcrm._constants import SEASON_OPPOSITE
+
     is_conflict = SEASON_OPPOSITE.get(macro_season) == micro_season
 
     # 判断 is_correct
@@ -361,6 +359,7 @@ def convert_event_to_learning_case(event: Dict[str, Any]) -> Optional[Dict]:
 
     # 估算 scale_params（用默认值，后续 P2 会用真实推理结果覆盖）
     from scripts.memory_l4.bcrm.scale_engine import ScaleParams
+
     default_params = ScaleParams()
 
     return {
@@ -394,8 +393,7 @@ def convert_event_to_learning_case(event: Dict[str, Any]) -> Optional[Dict]:
     }
 
 
-def run_comparative_learning(events: List[Dict[str, Any]] = None,
-                              engine=None) -> Dict[str, Any]:
+def run_comparative_learning(events: List[Dict[str, Any]] = None, engine=None) -> Dict[str, Any]:
     """
     从 A/B 事件中提取学习案例，送入两仪引擎学习。
 
@@ -409,8 +407,9 @@ def run_comparative_learning(events: List[Dict[str, Any]] = None,
     from scripts.memory_l4.bcrm.liangyi_engine import LiangyiEngine
 
     if events is None:
-        events = read_shared_memory_events(limit=10000, agent_id="bcrm_engine",
-                                           acl_config=ACL_CONFIG)
+        events = read_shared_memory_events(
+            limit=10000, agent_id="bcrm_engine", acl_config=ACL_CONFIG
+        )
     if engine is None:
         engine = LiangyiEngine()
 
@@ -473,6 +472,7 @@ def run_comparative_learning(events: List[Dict[str, Any]] = None,
 # P2: BCRM 对 A/B 历史时点做模拟推理
 # ============================================================
 
+
 def _construct_market_snapshot_from_log(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     从 A/B 日志 payload 构造 BCRM 可用的市场快照。
@@ -488,12 +488,13 @@ def _construct_market_snapshot_from_log(payload: Dict[str, Any]) -> Dict[str, An
     # 从推理步骤中提取技术指标估算值
     # 尝试解析 RSI
     import re
+
     rsi_match = re.search(r"RSI[=\s]*(\d+\.?\d*)", reasoning + " " + rationale)
     rsi = float(rsi_match.group(1)) / 100.0 if rsi_match else 0.5
 
     # 尝试解析资金费率
     fr_match = re.search(r"资金费率[=\s]*(-?\d+\.?\d*)", reasoning + " " + rationale)
-    funding_rate = float(fr_match.group(1)) / 100.0 if fr_match else 0.0
+    funding_rate = float(fr_match.group(1)) / 100.0 if fr_match else 0.0  # noqa: F841
 
     # 从 regime 估算四维评分
     if regime in ("BULL", "TRENDING_UP"):
@@ -536,8 +537,7 @@ def _construct_market_snapshot_from_log(payload: Dict[str, Any]) -> Dict[str, An
     }
 
 
-def run_bcrm_on_event(event: Dict[str, Any],
-                      engine=None) -> Optional[Dict[str, Any]]:
+def run_bcrm_on_event(event: Dict[str, Any], engine=None) -> Optional[Dict[str, Any]]:
     """
     对 A/B 事件做 BCRM 模拟推理。
 
@@ -559,6 +559,7 @@ def run_bcrm_on_event(event: Dict[str, Any],
     # 从 OKX 加载最近 K 线，注入到快照（驱动八卦力学引擎）
     try:
         from scripts.memory_l4.okx_simulated import OKXSimulatedClient
+
         coin = (market_snapshot.get("ab_coin") or "BTC").upper()
         if not coin.endswith("-USDT-SWAP"):
             inst_id = f"{coin}-USDT-SWAP"
@@ -569,7 +570,9 @@ def run_bcrm_on_event(event: Dict[str, Any],
         kline_1h = kline_resp.get("candles", []) if isinstance(kline_resp, dict) else kline_resp
         if kline_1h and len(kline_1h) > 0:
             closes = [float(k.get("c", 0)) for k in kline_1h if k.get("c")]
-            volumes = [float(k.get("vol", k.get("v", 0))) for k in kline_1h if k.get("vol", k.get("v"))]
+            volumes = [
+                float(k.get("vol", k.get("v", 0))) for k in kline_1h if k.get("vol", k.get("v"))
+            ]
             market_snapshot["closes_window"] = closes
             market_snapshot["volumes_window"] = volumes
             market_snapshot["price"] = closes[-1] if closes else 0
@@ -590,21 +593,25 @@ def run_bcrm_on_event(event: Dict[str, Any],
     # 构造矛盾列表（从 AB 日志的 key_contradictions 提取）
     contradictions = []
     for c in payload.get("key_contradictions") or []:
-        contradictions.append({
-            "id": c[:50] if isinstance(c, str) else "",
-            "type": "ab_observed",
-            "tension": 0.5,
-            "dominant_side": "EQUAL",
-            "description": c,
-        })
+        contradictions.append(
+            {
+                "id": c[:50] if isinstance(c, str) else "",
+                "type": "ab_observed",
+                "tension": 0.5,
+                "dominant_side": "EQUAL",
+                "description": c,
+            }
+        )
     if not contradictions:
         # 默认矛盾
-        contradictions = [{
-            "id": "default",
-            "type": "supply_demand",
-            "tension": 0.5,
-            "dominant_side": "EQUAL",
-        }]
+        contradictions = [
+            {
+                "id": "default",
+                "type": "supply_demand",
+                "tension": 0.5,
+                "dominant_side": "EQUAL",
+            }
+        ]
 
     # 运行 BCRM 推理
     bcrm_output = engine.infer(
@@ -620,13 +627,15 @@ def run_bcrm_on_event(event: Dict[str, Any],
     bcrm_changed_hexagram = bcrm_output.hexagram.changed_hexagram_cn if bcrm_output.hexagram else ""
     bcrm_direction_hint = bcrm_output.hexagram.direction_hint if bcrm_output.hexagram else "FLAT"
     bcrm_hexagram_confidence = bcrm_output.hexagram.confidence if bcrm_output.hexagram else 0.0
-    is_fail_closed = (bcrm_output.next_state.derivation == "fail-closed"
-                      if bcrm_output.next_state else True)
+    is_fail_closed = (
+        bcrm_output.next_state.derivation == "fail-closed" if bcrm_output.next_state else True
+    )
 
     # --- 八卦力学引擎：第一性原理力场计算（驱动底层）---
     bagua_result = None
     try:
         from scripts.memory_l4.bcrm.bagua_engine import BaguaEngine
+
         bagua_engine = BaguaEngine()
         closes = market_snapshot.get("closes_window") or []
         volumes = market_snapshot.get("volumes_window") or []
@@ -672,8 +681,14 @@ def run_bcrm_on_event(event: Dict[str, Any],
     ab_confidence = payload.get("confidence", 0.0)
 
     # 方向映射：AB action → BCRM direction
-    direction_map = {"LONG": "UP", "SHORT": "DOWN", "HOLD": "FLAT",
-                     "BUY": "UP", "SELL": "DOWN", "BLOCK": "FLAT"}
+    direction_map = {
+        "LONG": "UP",
+        "SHORT": "DOWN",
+        "HOLD": "FLAT",
+        "BUY": "UP",
+        "SELL": "DOWN",
+        "BLOCK": "FLAT",
+    }
     ab_direction = direction_map.get(ab_action, "FLAT")
 
     # 一致性判断
@@ -711,8 +726,11 @@ def run_bcrm_on_event(event: Dict[str, Any],
             # === 八卦力学引擎输出（供前端展示）===
             "bagua_hexagram": bagua_result.hexagram_name_cn if bagua_result else "",
             "bagua_current_gua": bagua_result.current_gua_cn if bagua_result else "",
-            "bagua_liangyi": (bagua_result.liangyi_state + f"({bagua_result.liangyi_strength:.2f})"
-                              if bagua_result else ""),
+            "bagua_liangyi": (
+                bagua_result.liangyi_state + f"({bagua_result.liangyi_strength:.2f})"
+                if bagua_result
+                else ""
+            ),
             "bagua_primary_dir": bagua_result.primary_direction if bagua_result else "",
             "bagua_primary_conf": round(bagua_result.primary_confidence, 4) if bagua_result else 0,
             "bagua_sixiang": bagua_result.sixiang.to_dict() if bagua_result else {},
@@ -741,8 +759,7 @@ def run_bcrm_on_event(event: Dict[str, Any],
     }
 
 
-def run_bcrm_batch(events: List[Dict[str, Any]] = None,
-                   limit: int = 50) -> Dict[str, Any]:
+def run_bcrm_batch(events: List[Dict[str, Any]] = None, limit: int = 50) -> Dict[str, Any]:
     """
     批量对 A/B 事件做 BCRM 模拟推理。
 
@@ -750,10 +767,12 @@ def run_bcrm_batch(events: List[Dict[str, Any]] = None,
         批量统计 {total, success, fail_closed, agreement_stats, by_agent}
     """
     if events is None:
-        events = read_shared_memory_events(limit=limit, agent_id="bcrm_engine",
-                                           acl_config=ACL_CONFIG)
+        events = read_shared_memory_events(
+            limit=limit, agent_id="bcrm_engine", acl_config=ACL_CONFIG
+        )
 
     from scripts.memory_l4.bcrm.engine import BCRMEngine
+
     engine = BCRMEngine.from_config()  # PROP-20260810
 
     results = []
@@ -798,6 +817,7 @@ def run_bcrm_batch(events: List[Dict[str, Any]] = None,
 # P3: 元学习路由表
 # ============================================================
 
+
 class MetaLearningRouter:
     """
     元学习路由器 — 跟踪 A/B/BCRM 三方表现，推荐最优决策源。
@@ -810,8 +830,9 @@ class MetaLearningRouter:
         # 路由表: {(regime, macro_phase, micro_phase): {source: {wins, total}}}
         self._routing_table: Dict[Tuple[str, str, str], Dict[str, Dict]] = {}
 
-    def update(self, regime: str, macro_phase: str, micro_phase: str,
-               source: str, is_correct: bool) -> None:
+    def update(
+        self, regime: str, macro_phase: str, micro_phase: str, source: str, is_correct: bool
+    ) -> None:
         """更新路由表中某个源的胜率记录。"""
         key = (regime, macro_phase, micro_phase)
         if key not in self._routing_table:
@@ -822,8 +843,7 @@ class MetaLearningRouter:
         if is_correct:
             self._routing_table[key][source]["wins"] += 1
 
-    def recommend(self, regime: str, macro_phase: str,
-                  micro_phase: str) -> Dict[str, Any]:
+    def recommend(self, regime: str, macro_phase: str, micro_phase: str) -> Dict[str, Any]:
         """
         推荐当前场景下最优决策源。
 
@@ -847,8 +867,7 @@ class MetaLearningRouter:
         stats = {}
         for source, s in sources.items():
             wr = s["wins"] / s["total"] if s["total"] > 0 else 0
-            stats[source] = {"win_rate": round(wr, 4),
-                             "total": s["total"], "wins": s["wins"]}
+            stats[source] = {"win_rate": round(wr, 4), "total": s["total"], "wins": s["wins"]}
             if wr > best_win_rate and s["total"] >= 3:  # 最少3样本
                 best_win_rate = wr
                 best_source = source
@@ -876,21 +895,22 @@ class MetaLearningRouter:
             out[key] = {}
             for source, s in sources.items():
                 wr = s["wins"] / s["total"] if s["total"] > 0 else 0
-                out[key][source] = {"win_rate": round(wr, 4),
-                                    "total": s["total"], "wins": s["wins"]}
+                out[key][source] = {
+                    "win_rate": round(wr, 4),
+                    "total": s["total"],
+                    "wins": s["wins"],
+                }
         return out
 
     def save(self, path: Path = None) -> None:
         """保存路由表到文件。"""
-        path = path or (artifacts_memory_l4_dir() / "shared_bus" /
-                        "meta_routing_table.json")
+        path = path or (artifacts_memory_l4_dir() / "shared_bus" / "meta_routing_table.json")
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(self.get_routing_table(),
-                                   ensure_ascii=False, indent=2),
-                        encoding="utf-8")
+        path.write_text(
+            json.dumps(self.get_routing_table(), ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
-    def build_from_events(self, events: List[Dict],
-                          bcrm_results: List[Dict] = None) -> None:
+    def build_from_events(self, events: List[Dict], bcrm_results: List[Dict] = None) -> None:
         """
         从 A/B 事件和 BCRM 推理结果构建路由表。
 
@@ -923,8 +943,7 @@ class MetaLearningRouter:
             macro_phase, _ = _infer_macro_phase_from_regime(regime, confidence)
             micro_phase, _ = _infer_micro_phase_from_log(payload)
 
-            is_correct = bool(was_correct) if was_correct is not None else (
-                (pnl_pct or 0) > 0)
+            is_correct = bool(was_correct) if was_correct is not None else ((pnl_pct or 0) > 0)
 
             # 更新 A/B 路由
             self.update(regime, macro_phase, micro_phase, agent_id, is_correct)
@@ -934,14 +953,11 @@ class MetaLearningRouter:
             bcrm_key = f"{agent_id}_{cycle_id}"
             bcrm_r = bcrm_by_cycle.get(bcrm_key)
             if bcrm_r:
-                bcrm_correct = self._evaluate_bcrm_correctness(
-                    bcrm_r, payload)
-                self.update(regime, macro_phase, micro_phase,
-                            "bcrm_engine", bcrm_correct)
+                bcrm_correct = self._evaluate_bcrm_correctness(bcrm_r, payload)
+                self.update(regime, macro_phase, micro_phase, "bcrm_engine", bcrm_correct)
 
     @staticmethod
-    def _evaluate_bcrm_correctness(bcrm_result: Dict,
-                                    ab_payload: Dict) -> bool:
+    def _evaluate_bcrm_correctness(bcrm_result: Dict, ab_payload: Dict) -> bool:
         """
         评估 BCRM 推理是否正确。
 
@@ -961,8 +977,7 @@ class MetaLearningRouter:
         if was_correct is None and pnl_pct is None:
             return False
 
-        ab_correct = bool(was_correct) if was_correct is not None else (
-            (pnl_pct or 0) > 0)
+        ab_correct = bool(was_correct) if was_correct is not None else ((pnl_pct or 0) > 0)
 
         # 如果 BCRM 与 AB 方向一致，AB 对则 BCRM 对
         if bcrm_dir == ab_dir:
@@ -981,6 +996,7 @@ class MetaLearningRouter:
 # P4: 前端监控数据汇总
 # ============================================================
 
+
 def get_yijing_summary() -> Dict[str, Any]:
     """
     返回前端易经推理 Tab 所需的全部数据。
@@ -991,8 +1007,7 @@ def get_yijing_summary() -> Dict[str, Any]:
     bus_stats = get_bus_stats()
 
     # 2. 最近事件
-    events = read_shared_memory_events(
-        limit=50, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
+    events = read_shared_memory_events(limit=50, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
 
     # 3. 最近 BCRM 推理（取最近 10 条）
     recent_bcrm = []
@@ -1059,6 +1074,7 @@ def get_yijing_summary() -> Dict[str, Any]:
     screen_data = {}
     try:
         from scripts.memory_l4.screen_martin_bridge import get_screen_engine_summary
+
         sc = get_screen_engine_summary()
         if sc.get("ok"):
             screen_data = {
@@ -1073,6 +1089,7 @@ def get_yijing_summary() -> Dict[str, Any]:
     research_data = {}
     try:
         from scripts.memory_l4.a_research_bridge import get_research_summary
+
         rs = get_research_summary()
         research_data = rs
     except Exception:
@@ -1092,6 +1109,7 @@ def get_yijing_summary() -> Dict[str, Any]:
     l4_liangyi_learned = {}
     try:
         from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_dir
+
         cases_dir = memory_l4_cases_dir()
         if cases_dir.exists():
             l4_case_count = len(list(cases_dir.glob("*.json")))
@@ -1112,9 +1130,11 @@ def get_yijing_summary() -> Dict[str, Any]:
     # 13. BCRM 2.0 实时推理（用本地K线数据，不依赖OKX API）
     bcrm2_latest = {}
     try:
-        from scripts.memory_l4.bcrm2_adapter import BCRM2Adapter
         from pathlib import Path as _Path
+
         import pandas as _pd
+
+        from scripts.memory_l4.bcrm2_adapter import BCRM2Adapter
 
         kline_file = _Path(__file__).resolve().parents[1] / "data" / "klines" / "BTC_1H.csv"
         if kline_file.exists():
@@ -1134,18 +1154,32 @@ def get_yijing_summary() -> Dict[str, Any]:
                     "direction": ns.get("direction", "FLAT"),
                     "confidence": ns.get("confidence", 0),
                     "derivation": ns.get("derivation", ""),
-                    "fail_closed": result.get("is_fail_closed", lambda: False)() if callable(result.get("is_fail_closed")) else result.get("is_fail_closed", True),
+                    "fail_closed": (
+                        result.get("is_fail_closed", lambda: False)()
+                        if callable(result.get("is_fail_closed"))
+                        else result.get("is_fail_closed", True)
+                    ),
                     "hexagram": {
                         "name_cn": hex_info.get("hexagram_name_cn", ""),
                         "name": hex_info.get("hexagram_name", ""),
-                        "upper_gua": hex_info.get("upper_gua", {}).get("name", "") if isinstance(hex_info.get("upper_gua"), dict) else "",
-                        "lower_gua": hex_info.get("lower_gua", {}).get("name", "") if isinstance(hex_info.get("lower_gua"), dict) else "",
+                        "upper_gua": (
+                            hex_info.get("upper_gua", {}).get("name", "")
+                            if isinstance(hex_info.get("upper_gua"), dict)
+                            else ""
+                        ),
+                        "lower_gua": (
+                            hex_info.get("lower_gua", {}).get("name", "")
+                            if isinstance(hex_info.get("lower_gua"), dict)
+                            else ""
+                        ),
                         "meaning": hex_info.get("hexagram_meaning", ""),
                         "risk_level": hex_info.get("risk_level", ""),
                         "direction_hint": hex_info.get("direction_hint", ""),
                         "mutual_gua": hex_info.get("mutual_gua", ""),
                         "changed_gua": hex_info.get("changed_gua", ""),
-                        "narrative": hex_info.get("narrative", "")[:200] if hex_info.get("narrative") else "",
+                        "narrative": (
+                            hex_info.get("narrative", "")[:200] if hex_info.get("narrative") else ""
+                        ),
                     },
                     "position_factor": result.get("position_factor", 1.0),
                     "sl_tighten_factor": result.get("sl_tighten_factor", 1.0),
@@ -1158,9 +1192,14 @@ def get_yijing_summary() -> Dict[str, Any]:
     incremental_learning_state = {}
     try:
         from scripts.memory_l4.bcrm2.incremental_learner import IncrementalLearner
+
         learner = IncrementalLearner()
         perf = learner.db.get_recent_performance("BTC")
-        versions = learner.version_manager.list_versions("BTC") if hasattr(learner, 'version_manager') else []
+        versions = (
+            learner.version_manager.list_versions("BTC")
+            if hasattr(learner, "version_manager")
+            else []
+        )
         should_retrain, retrain_reason = learner.should_retrain("BTC")
         incremental_learning_state = {
             "available": True,
@@ -1186,16 +1225,20 @@ def get_yijing_summary() -> Dict[str, Any]:
             "partial": sum(1 for r in recent_bcrm if r.get("agreement") == "PARTIAL"),
             "disagree": sum(1 for r in recent_bcrm if r.get("agreement") == "DISAGREE"),
         },
-        "learn_stats": {
-            "valid_cases": learn_stats.get("valid_cases", 0),
-            "learned_combos": learn_stats.get("learned_combos", 0),
-            "combo_details": learn_stats.get("combo_details", {}),
-            "season_details": learn_stats.get("season_details", {}),
-        } if learn_stats.get("learned") else {
-            "valid_cases": 0,
-            "learned_combos": 0,
-            "note": "尚无足够已平仓案例用于学习",
-        },
+        "learn_stats": (
+            {
+                "valid_cases": learn_stats.get("valid_cases", 0),
+                "learned_combos": learn_stats.get("learned_combos", 0),
+                "combo_details": learn_stats.get("combo_details", {}),
+                "season_details": learn_stats.get("season_details", {}),
+            }
+            if learn_stats.get("learned")
+            else {
+                "valid_cases": 0,
+                "learned_combos": 0,
+                "note": "尚无足够已平仓案例用于学习",
+            }
+        ),
         "routing_table": routing_table,
         "routing_entries": len(routing_table),
         "sim_trade": sim_summary,
@@ -1218,6 +1261,7 @@ def _get_qmm_summary() -> Dict[str, Any]:
     """
     try:
         from scripts.memory_l4.qmm.paths import qmm_dir
+
         signals_path = qmm_dir() / "signals_index.json"
         if not signals_path.exists():
             return {
@@ -1243,6 +1287,7 @@ def _get_qmm_summary() -> Dict[str, Any]:
         if not snapshot_detail:
             try:
                 import glob
+
                 snap_files = sorted(
                     glob.glob(str(qmm_dir() / "qmm_snapshot_*.json")),
                     reverse=True,
@@ -1261,9 +1306,12 @@ def _get_qmm_summary() -> Dict[str, Any]:
             "available": True,
             "signals_index": data,
             "snapshot": snapshot_detail,
-            "gate_status": data.get("gate_status") or (
-                "FAILED" if data.get("gate_results", {}).get("passed") is False else
-                ("PASSED" if data.get("gate_results", {}).get("passed") else "UNKNOWN")),
+            "gate_status": data.get("gate_status")
+            or (
+                "FAILED"
+                if data.get("gate_results", {}).get("passed") is False
+                else ("PASSED" if data.get("gate_results", {}).get("passed") else "UNKNOWN")
+            ),
             "gate_results": data.get("gate_results", data.get("gate", {})),
             "snapshot_ts": data.get("generated_at", ""),
             "version_triple": {
@@ -1295,9 +1343,12 @@ def _get_qmm_summary() -> Dict[str, Any]:
 # P8: 模拟交易闭环 (BCRM → OKX模拟盘 → 写回总线)
 # ============================================================
 
-def _map_bcrm_to_action(bcrm_decision: Dict[str, Any],
-                        strategy_branches: List[Dict] = None,
-                        bcrm_result: Dict[str, Any] = None) -> Dict[str, Any]:
+
+def _map_bcrm_to_action(
+    bcrm_decision: Dict[str, Any],
+    strategy_branches: List[Dict] = None,
+    bcrm_result: Dict[str, Any] = None,
+) -> Dict[str, Any]:
     """
     将 BCRM 推理结果映射为交易操作（含风控参数）。
 
@@ -1354,9 +1405,9 @@ def _map_bcrm_to_action(bcrm_decision: Dict[str, Any],
     return result
 
 
-def run_simulated_trade(event: Dict[str, Any] = None,
-                        bcrm_result: Dict[str, Any] = None,
-                        engine=None) -> Dict[str, Any]:
+def run_simulated_trade(
+    event: Dict[str, Any] = None, bcrm_result: Dict[str, Any] = None, engine=None
+) -> Dict[str, Any]:
     """
     执行一次模拟交易闭环：BCRM推理 → OKX模拟下单 → 写回总线
 
@@ -1372,8 +1423,7 @@ def run_simulated_trade(event: Dict[str, Any] = None,
     from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
 
     if event is None:
-        events = read_shared_memory_events(limit=1, agent_id="bcrm_engine",
-                                           acl_config=ACL_CONFIG)
+        events = read_shared_memory_events(limit=1, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
         if not events:
             return {"ok": False, "error": "no events in bus"}
         event = events[0]
@@ -1389,7 +1439,9 @@ def run_simulated_trade(event: Dict[str, Any] = None,
     if not coin:
         payload_coin = event.get("payload", {}).get("coin", "")
         coin = payload_coin or "BTC"
-    inst_id = f"{coin.upper()}-USDT-SWAP" if not coin.upper().endswith("-USDT-SWAP") else coin.upper()
+    inst_id = (
+        f"{coin.upper()}-USDT-SWAP" if not coin.upper().endswith("-USDT-SWAP") else coin.upper()
+    )
 
     action_info = _map_bcrm_to_action(bcrm_dec, strategy_branches, bcrm_result)
     action = action_info["action"]
@@ -1410,19 +1462,21 @@ def run_simulated_trade(event: Dict[str, Any] = None,
     )
 
     payload = bcrm_result.get("market_snapshot", {}).copy()
-    payload.update({
-        "cycle_id": bcrm_result.get("cycle_id", ""),
-        "coin": bcrm_result.get("coin", "BTC"),
-        "bcrm_decision": bcrm_dec,
-        "liangyi_state": bcrm_result.get("liangyi_state", ""),
-        "scale_params": bcrm_result.get("scale_params", {}),
-        "strategy_branches": strategy_branches,
-        "sim_action": action,
-        "sim_stop_loss_px": action_info["stop_loss_px"],
-        "sim_take_profit_px": action_info["take_profit_px"],
-        "sim_reduce_ratio": action_info["reduce_ratio"],
-        "sim_trade_result": sim_result,
-    })
+    payload.update(
+        {
+            "cycle_id": bcrm_result.get("cycle_id", ""),
+            "coin": bcrm_result.get("coin", "BTC"),
+            "bcrm_decision": bcrm_dec,
+            "liangyi_state": bcrm_result.get("liangyi_state", ""),
+            "scale_params": bcrm_result.get("scale_params", {}),
+            "strategy_branches": strategy_branches,
+            "sim_action": action,
+            "sim_stop_loss_px": action_info["stop_loss_px"],
+            "sim_take_profit_px": action_info["take_profit_px"],
+            "sim_reduce_ratio": action_info["reduce_ratio"],
+            "sim_trade_result": sim_result,
+        }
+    )
 
     publish_result = publish_shared_memory_event(
         snapshot_ts=event.get("ts", ""),
@@ -1454,13 +1508,11 @@ def run_simulated_batch(limit: int = 10) -> Dict[str, Any]:
     """
     from scripts.memory_l4.bcrm.engine import BCRMEngine
 
-    events = read_shared_memory_events(limit=limit, agent_id="bcrm_engine",
-                                       acl_config=ACL_CONFIG)
+    events = read_shared_memory_events(limit=limit, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
     engine = BCRMEngine.from_config()  # PROP-20260810
 
     results = []
-    actions_count = {"open_long": 0, "open_short": 0, "hold": 0,
-                     "close_long": 0, "close_short": 0}
+    actions_count = {"open_long": 0, "open_short": 0, "hold": 0, "close_long": 0, "close_short": 0}
 
     for event in events:
         try:
@@ -1472,9 +1524,11 @@ def run_simulated_batch(limit: int = 10) -> Dict[str, Any]:
             results.append({"ok": False, "error": str(e)})
 
     success = sum(1 for r in results if r.get("ok"))
-    executed = sum(1 for r in results
-                   if r.get("action") and r["action"] != "hold"
-                   and r.get("sim_trade", {}).get("executed"))
+    executed = sum(
+        1
+        for r in results
+        if r.get("action") and r["action"] != "hold" and r.get("sim_trade", {}).get("executed")
+    )
 
     return {
         "total": len(events),
@@ -1488,18 +1542,15 @@ def run_simulated_batch(limit: int = 10) -> Dict[str, Any]:
 
 def get_sim_trade_summary() -> Dict[str, Any]:
     """获取模拟交易汇总数据（供前端）"""
-    from scripts.memory_l4.okx_simulated import OKXSimulatedClient, CONFIG_DIR
+    from scripts.memory_l4.okx_simulated import CONFIG_DIR, OKXSimulatedClient
 
-    events = read_shared_memory_events(limit=500, agent_id="bcrm_engine",
-                                       acl_config=ACL_CONFIG)
-    sim_events = [e for e in events
-                  if e.get("event_type") == "sim_trade_executed"]
+    events = read_shared_memory_events(limit=500, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
+    sim_events = [e for e in events if e.get("event_type") == "sim_trade_executed"]
 
     client = OKXSimulatedClient()
     perf = client.get_performance_summary()
 
-    action_count = {"open_long": 0, "open_short": 0, "hold": 0,
-                    "close_long": 0, "close_short": 0}
+    action_count = {"open_long": 0, "open_short": 0, "hold": 0, "close_long": 0, "close_short": 0}
     hexagram_count = {}
     liangyi_count = {}
 
@@ -1522,14 +1573,16 @@ def get_sim_trade_summary() -> Dict[str, Any]:
 
     latest_sim = sim_events[-1] if sim_events else None
     latest_action = latest_sim.get("payload", {}).get("sim_action", "") if latest_sim else ""
-    latest_hexagram = (latest_sim.get("payload", {}).get("bcrm_decision", {}).get("hexagram", "")
-                       if latest_sim else "")
+    latest_hexagram = (
+        latest_sim.get("payload", {}).get("bcrm_decision", {}).get("hexagram", "")
+        if latest_sim
+        else ""
+    )
 
     return {
         "sim_trade_count": len(sim_events),
         "action_distribution": action_count,
-        "top_hexagrams": dict(sorted(hexagram_count.items(),
-                                     key=lambda x: -x[1])[:8]),
+        "top_hexagrams": dict(sorted(hexagram_count.items(), key=lambda x: -x[1])[:8]),
         "liangyi_distribution": liangyi_count,
         "latest": {
             "action": latest_action,
@@ -1545,9 +1598,11 @@ def get_sim_trade_summary() -> Dict[str, Any]:
 # CLI 入口
 # ============================================================
 
+
 def cli():
     """命令行入口。"""
     import argparse
+
     parser = argparse.ArgumentParser(description="AB Bridge — AB 交易与易经大模型桥接")
     sub = parser.add_subparsers(dest="command")
 
@@ -1615,8 +1670,9 @@ def cli():
 
     elif args.command == "route":
         print("P3: 构建元学习路由表")
-        events = read_shared_memory_events(limit=10000, agent_id="bcrm_engine",
-                                           acl_config=ACL_CONFIG)
+        events = read_shared_memory_events(
+            limit=10000, agent_id="bcrm_engine", acl_config=ACL_CONFIG
+        )
         bcrm_results = run_bcrm_batch(events=events)
         router = MetaLearningRouter()
         router.build_from_events(events, bcrm_results["results"])
@@ -1642,19 +1698,20 @@ def cli():
         print(f"  学习组合: {p1_result.get('learned_combos', 0)}")
         if p1_result.get("combo_details"):
             for combo, stats in p1_result["combo_details"].items():
-                print(f"    {combo}: {stats['correct']}/{stats['total']} "
-                      f"(WR={stats['win_rate']:.1%})")
+                print(
+                    f"    {combo}: {stats['correct']}/{stats['total']} "
+                    f"(WR={stats['win_rate']:.1%})"
+                )
 
         # P2
         print("\n[P2] BCRM 模拟推理...")
-        events = read_shared_memory_events(limit=100, agent_id="bcrm_engine",
-                                           acl_config=ACL_CONFIG)
+        events = read_shared_memory_events(limit=100, agent_id="bcrm_engine", acl_config=ACL_CONFIG)
         p2_result = run_bcrm_batch(events=events)
         agree = p2_result["agreement_stats"]
-        print(f"  推理: {p2_result['total']}, "
-              f"Fail-closed: {p2_result['fail_closed']}")
-        print(f"  一致: {agree['agree']}, 部分: {agree['partial']}, "
-              f"不一致: {agree['disagree']}")
+        print(f"  推理: {p2_result['total']}, " f"Fail-closed: {p2_result['fail_closed']}")
+        print(
+            f"  一致: {agree['agree']}, 部分: {agree['partial']}, " f"不一致: {agree['disagree']}"
+        )
         print(f"  一致率: {agree['agree_rate']:.1%}")
 
         # P3
@@ -1680,24 +1737,30 @@ def cli():
         print("=" * 60)
         try:
             from scripts.memory_l4.self_evolution_engine import SelfEvolutionEngine
+
             # 收集系统表现统计
             bus_stats = get_bus_stats()
             sim_summary_raw = json.loads(
-                __import__("subprocess").run(
+                __import__("subprocess")
+                .run(
                     [sys.executable, "-m", "scripts.memory_l4.ab_bridge", "sim-trade-summary"],
-                    capture_output=True, text=True, cwd=str(_ROOT)
-                ).stdout or "{}"
+                    capture_output=True,
+                    text=True,
+                    cwd=str(_ROOT),
+                )
+                .stdout
+                or "{}"
             )
             dist = sim_summary_raw.get("action_distribution", {})
             total = sum(dist.values()) or 1
             hold_rate = dist.get("hold", 0) / total
 
             stats = {
-                "win_rate":       0.5,   # 真实数据待接入
-                "hold_rate":      hold_rate,
-                "hold_streak":    hold_rate * 10,
-                "top_hexagrams":  sim_summary_raw.get("top_hexagrams", {}),
-                "total_trades":   total,
+                "win_rate": 0.5,  # 真实数据待接入
+                "hold_rate": hold_rate,
+                "hold_streak": hold_rate * 10,
+                "top_hexagrams": sim_summary_raw.get("top_hexagrams", {}),
+                "total_trades": total,
             }
 
             engine = SelfEvolutionEngine()
@@ -1707,19 +1770,28 @@ def cli():
             if should or force:
                 print(f"触发原因: {reason}")
                 result = engine.run_full_cycle(stats, [], force=force)
-                print(json.dumps({
-                    "adopted_count": len(result["adopted"]),
-                    "proposals":     [p["title"] for p in result["proposals"]],
-                    "adopted":       [p["title"] for p in result["adopted"]],
-                }, ensure_ascii=False, indent=2))
+                print(
+                    json.dumps(
+                        {
+                            "adopted_count": len(result["adopted"]),
+                            "proposals": [p["title"] for p in result["proposals"]],
+                            "adopted": [p["title"] for p in result["adopted"]],
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                )
             else:
                 print(f"无需触发: {reason}")
-                print(json.dumps({"should_trigger": False, "reason": reason},
-                                  ensure_ascii=False))
+                print(json.dumps({"should_trigger": False, "reason": reason}, ensure_ascii=False))
         except Exception as e:
             import traceback
-            print(json.dumps({"error": str(e), "traceback": traceback.format_exc()},
-                              ensure_ascii=False))
+
+            print(
+                json.dumps(
+                    {"error": str(e), "traceback": traceback.format_exc()}, ensure_ascii=False
+                )
+            )
 
     elif args.command == "yijing-status":
         result = get_yijing_summary()
@@ -1735,7 +1807,9 @@ def cli():
             print("P8: 单次模拟交易")
             result = run_simulated_trade()
             print(f"  操作: {result.get('action')}")
-            print(f"  卦象: {result.get('bcrm_result', {}).get('bcrm_decision', {}).get('hexagram', '')}")
+            print(
+                f"  卦象: {result.get('bcrm_result', {}).get('bcrm_decision', {}).get('hexagram', '')}"
+            )
             print(f"  两仪: {result.get('bcrm_result', {}).get('liangyi_state', '')}")
             sim = result.get("sim_trade", {})
             print(f"  执行: {sim.get('executed', False)}")

@@ -9,13 +9,13 @@
 - 回测结果 JSON 存 user_data/backtest_results/，M27 gate 可直接读取
 - FAIL-OPEN：异常时返回 ok=False 不阻断上层
 """
+
 from __future__ import annotations
 
 import json
 import os
 import shutil
 import subprocess
-import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -59,6 +59,7 @@ _STRATEGY_LIB_ADMIN_TOKEN = os.environ.get("STRATEGY_LIB_ADMIN_TOKEN", "dev-admi
 # ---------------------------------------------------------------------------
 # 策略文件定位
 # ---------------------------------------------------------------------------
+
 
 def _resolve_strategy_path(strategy_id: str, source_zip: Optional[str] = None) -> Optional[Path]:
     """定位策略 Python 文件。
@@ -105,6 +106,7 @@ def _resolve_strategy_path(strategy_id: str, source_zip: Optional[str] = None) -
 # ---------------------------------------------------------------------------
 # 临时 config 构建
 # ---------------------------------------------------------------------------
+
 
 def _build_backtest_config(
     strategy_name: str,
@@ -175,6 +177,7 @@ def _build_backtest_config(
 # Freqtrade CLI 调用
 # ---------------------------------------------------------------------------
 
+
 def _run_freqtrade_backtest(
     config_path: Path,
     strategy_name: str,
@@ -185,14 +188,22 @@ def _run_freqtrade_backtest(
 ) -> Dict[str, Any]:
     """调用 freqtrade backtesting CLI，返回 subprocess 结果。"""
     cmd = [
-        _FREQTRADE_BIN, "backtesting",
-        "--config", str(config_path),
-        "--strategy", strategy_name,
-        "--userdir", str(_USER_DATA_DIR),
-        "--datadir", str(_DATA_DIR),
-        "--timerange", timerange,
-        "--data-format-ohlcv", "json",
-        "--export", export,
+        _FREQTRADE_BIN,
+        "backtesting",
+        "--config",
+        str(config_path),
+        "--strategy",
+        strategy_name,
+        "--userdir",
+        str(_USER_DATA_DIR),
+        "--datadir",
+        str(_DATA_DIR),
+        "--timerange",
+        timerange,
+        "--data-format-ohlcv",
+        "json",
+        "--export",
+        export,
     ]
     if pairs:
         cmd.extend(["--pairs", *pairs])
@@ -225,6 +236,7 @@ def _run_freqtrade_backtest(
 # 回测结果解析
 # ---------------------------------------------------------------------------
 
+
 def _find_latest_backtest_result() -> Optional[Path]:
     """找到最新的回测结果文件（.zip 或 .json）。"""
     if not _BACKTEST_RESULTS_DIR.exists():
@@ -245,10 +257,10 @@ def _read_backtest_result(result_file: Path) -> Dict[str, Any]:
     """读取回测结果文件，支持 .zip 和 .json 格式。"""
     if result_file.suffix == ".zip":
         import zipfile
+
         with zipfile.ZipFile(result_file) as zf:
             # 找到主结果 JSON（不含 _config 后缀）
-            json_names = [n for n in zf.namelist()
-                          if n.endswith(".json") and "_config" not in n]
+            json_names = [n for n in zf.namelist() if n.endswith(".json") and "_config" not in n]
             if not json_names:
                 json_names = [n for n in zf.namelist() if n.endswith(".json")]
             data = json.loads(zf.read(json_names[0]))
@@ -319,6 +331,7 @@ def _extract_metrics_summary(result_data: Dict[str, Any]) -> Dict[str, Any]:
 # 回测结果回写 M26 registry（P1: 回测结果与 registry entry 绑定）
 # ---------------------------------------------------------------------------
 
+
 def _publish_backtest_to_registry(
     strategy_id: str,
     source_zip: Optional[str],
@@ -338,8 +351,8 @@ def _publish_backtest_to_registry(
     Returns:
         True 表示成功写入 registry
     """
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     try:
         payload = {
@@ -365,13 +378,21 @@ def _publish_backtest_to_registry(
                 return False
             data = json.loads(resp.read().decode("utf-8"))
             return bool(data.get("ok"))
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError, ValueError, Exception):
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        json.JSONDecodeError,
+        OSError,
+        ValueError,
+        Exception,
+    ):
         return False
 
 
 # ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
+
 
 def run_backtest(
     strategy_id: str,
@@ -477,7 +498,9 @@ def run_backtest(
     backtest_ts = int(time.time() * 1000)
 
     # P1: 回测结果回写 M26 registry（FAIL-OPEN，不阻断返回）
-    registry_ok = _publish_backtest_to_registry(strategy_id, source_zip, metrics_summary, backtest_ts)
+    registry_ok = _publish_backtest_to_registry(
+        strategy_id, source_zip, metrics_summary, backtest_ts
+    )
 
     return {
         "ok": True,
@@ -494,6 +517,7 @@ def run_backtest(
 # 便捷方法：直接获取回测指标（供 M27 gate 调用）
 # ---------------------------------------------------------------------------
 
+
 def get_backtest_metrics(
     strategy_id: str,
     source_zip: Optional[str] = None,
@@ -507,6 +531,7 @@ def get_backtest_metrics(
 # ---------------------------------------------------------------------------
 # P3: show-trades / download-data / plot-profit
 # ---------------------------------------------------------------------------
+
 
 def show_trades(strategy_id: str, **kwargs: Any) -> Dict[str, Any]:
     """展示回测交易记录。
@@ -539,17 +564,19 @@ def show_trades(strategy_id: str, **kwargs: Any) -> Dict[str, Any]:
         raw_trades = strat_data.get("trades") or []
         for t in raw_trades:
             if isinstance(t, dict):
-                trades.append({
-                    "pair": t.get("pair"),
-                    "open_date": t.get("open_date"),
-                    "close_date": t.get("close_date"),
-                    "open_rate": t.get("open_rate"),
-                    "close_rate": t.get("close_rate"),
-                    "profit_abs": t.get("profit_abs"),
-                    "profit_pct": t.get("profit_ratio"),
-                    "exit_reason": t.get("exit_reason"),
-                    "duration": t.get("duration"),
-                })
+                trades.append(
+                    {
+                        "pair": t.get("pair"),
+                        "open_date": t.get("open_date"),
+                        "close_date": t.get("close_date"),
+                        "open_rate": t.get("open_rate"),
+                        "close_rate": t.get("close_rate"),
+                        "profit_abs": t.get("profit_abs"),
+                        "profit_pct": t.get("profit_ratio"),
+                        "exit_reason": t.get("exit_reason"),
+                        "duration": t.get("duration"),
+                    }
+                )
 
     return {
         "ok": True,
@@ -579,13 +606,20 @@ def download_data(
         {"ok": bool, "downloaded": [...], "error": str (失败时)}
     """
     cmd = [
-        _FREQTRADE_BIN, "download-data",
-        "--exchange", exchange,
-        "--timeframes", timeframe,
-        "--timerange", timerange,
-        "--pairs", *pairs,
-        "--userdir", str(_USER_DATA_DIR),
-        "--data-format-ohlcv", "json",
+        _FREQTRADE_BIN,
+        "download-data",
+        "--exchange",
+        exchange,
+        "--timeframes",
+        timeframe,
+        "--timerange",
+        timerange,
+        "--pairs",
+        *pairs,
+        "--userdir",
+        str(_USER_DATA_DIR),
+        "--data-format-ohlcv",
+        "json",
     ]
     if exchange == "okx":
         cmd.extend(["--trading-mode", "spot"])
@@ -595,8 +629,12 @@ def download_data(
 
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=600,
-            env=env, cwd=str(_CLASSIC_ROOT),
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600,
+            env=env,
+            cwd=str(_CLASSIC_ROOT),
         )
         if result.returncode != 0:
             return {"ok": False, "error": result.stderr[-1000:]}
@@ -631,16 +669,21 @@ def plot_profit(strategy_id: str, **kwargs: Any) -> Dict[str, Any]:
 
     # 2. 用 freqtrade plot-profit 生成图表
     result_file = bt_result["backtest_result_file"]
-    config_path = _build_backtest_config(strategy_id, **{
-        k: v for k, v in kwargs.items() if v is not None
-    })
+    config_path = _build_backtest_config(
+        strategy_id, **{k: v for k, v in kwargs.items() if v is not None}
+    )
 
     cmd = [
-        _FREQTRADE_BIN, "plot-profit",
-        "--config", str(config_path),
-        "--strategy", strategy_id,
-        "--userdir", str(_USER_DATA_DIR),
-        "--export-filename", str(result_file),
+        _FREQTRADE_BIN,
+        "plot-profit",
+        "--config",
+        str(config_path),
+        "--strategy",
+        strategy_id,
+        "--userdir",
+        str(_USER_DATA_DIR),
+        "--export-filename",
+        str(result_file),
     ]
 
     env = os.environ.copy()
@@ -648,8 +691,12 @@ def plot_profit(strategy_id: str, **kwargs: Any) -> Dict[str, Any]:
 
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120,
-            env=env, cwd=str(_CLASSIC_ROOT),
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+            cwd=str(_CLASSIC_ROOT),
         )
         # 清理 config
         config_path.unlink(missing_ok=True)

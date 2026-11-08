@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """PredictionEngine 单测（P2-9 事前预测）"""
+
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent))
 
-from prediction_engine import PredictionEngine, Prediction, PredictionError
+from prediction_engine import PredictionEngine, Prediction  # noqa: I001
 
 
 def test_generate_prediction_fields():
@@ -28,7 +30,7 @@ def test_generate_prediction_fields():
 def test_vol_to_horizon_high_vol():
     """高波动→短周期"""
     engine = PredictionEngine()
-    assert engine._vol_to_horizon(0.15) == 6   # >0.10 → 6
+    assert engine._vol_to_horizon(0.15) == 6  # >0.10 → 6
     assert engine._vol_to_horizon(0.08) == 12  # 0.05-0.10 → 12
     assert engine._vol_to_horizon(0.03) == 24  # 0.02-0.05 → 24
     assert engine._vol_to_horizon(0.01) == 48  # <0.02 → 48
@@ -38,9 +40,12 @@ def test_compute_error_direction_hit():
     """方向命中"""
     engine = PredictionEngine()
     pred = Prediction(
-        expected_direction="LONG", expected_horizon_bars=24,
-        stop_loss_prob=0.3, target_return_pct=3.5,
-        prediction_confidence=0.72, generated_at="2026-08-05T00:00:00Z",
+        expected_direction="LONG",
+        expected_horizon_bars=24,
+        stop_loss_prob=0.3,
+        target_return_pct=3.5,
+        prediction_confidence=0.72,
+        generated_at="2026-08-05T00:00:00Z",
     )
     actual = {"direction": "long", "return_pct": 4.0, "stop_triggered": False}
     err = engine.compute_error(pred, actual)
@@ -54,9 +59,12 @@ def test_compute_error_direction_miss():
     """方向未命中"""
     engine = PredictionEngine()
     pred = Prediction(
-        expected_direction="LONG", expected_horizon_bars=24,
-        stop_loss_prob=0.3, target_return_pct=3.5,
-        prediction_confidence=0.72, generated_at="2026-08-05T00:00:00Z",
+        expected_direction="LONG",
+        expected_horizon_bars=24,
+        stop_loss_prob=0.3,
+        target_return_pct=3.5,
+        prediction_confidence=0.72,
+        generated_at="2026-08-05T00:00:00Z",
     )
     actual = {"direction": "SHORT", "return_pct": -2.0, "stop_triggered": True}
     err = engine.compute_error(pred, actual)
@@ -76,7 +84,7 @@ def test_generate_prediction_missing_fields():
 def test_stop_loss_prob_capped():
     """止损概率上限 0.8"""
     engine = PredictionEngine()
-    inf = {"direction": "LONG", "confidence": 0.9, "volatility": 0.5, "a0_warnings": ["c"]*10}
+    inf = {"direction": "LONG", "confidence": 0.9, "volatility": 0.5, "a0_warnings": ["c"] * 10}
     pred = engine.generate_prediction(inf)
     assert pred.stop_loss_prob <= 0.8
 

@@ -20,12 +20,14 @@
   - volume_ma20_ratio: 当前成交量 / 20 日均量（成交量结构）
       >1 = 放量，<1 = 缩量，区分趋势确认 vs 假突破
 """
+
 from __future__ import annotations
 
 import logging
+from typing import Dict, List
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +117,9 @@ def compute_log_returns(close: pd.Series, periods: List[int]) -> pd.DataFrame:
     return pd.DataFrame(feats, index=close.index).fillna(0.0)
 
 
-def compute_vol_percentile(close: pd.Series, vol_window: int = 60, rank_window: int = 252) -> pd.Series:
+def compute_vol_percentile(
+    close: pd.Series, vol_window: int = 60, rank_window: int = 252
+) -> pd.Series:
     """计算短期波动率在长周期的分位。
 
     形态语义：
@@ -183,12 +187,15 @@ class MultiTimeframeFeatures:
         vol_pct = compute_vol_percentile(close)
         vol_ratio = compute_volume_ratio(df)
 
-        feats = pd.DataFrame({
-            "ma_alignment_score": alignment,
-            "ma_cross_50_200_signal": cross_signal,
-            "vol_60d_percentile_252d": vol_pct,
-            "volume_ma20_ratio": vol_ratio,
-        }, index=df.index)
+        feats = pd.DataFrame(
+            {
+                "ma_alignment_score": alignment,
+                "ma_cross_50_200_signal": cross_signal,
+                "vol_60d_percentile_252d": vol_pct,
+                "volume_ma20_ratio": vol_ratio,
+            },
+            index=df.index,
+        )
 
         feats = pd.concat([feats, log_rets], axis=1)
         feats = feats.replace([np.inf, -np.inf], 0.0).fillna(0)

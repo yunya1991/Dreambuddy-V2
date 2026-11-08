@@ -16,6 +16,7 @@ dreambuddy_dal.di — 依赖注入入口（三后端选 + Kill-Switch 物理双�
     dual_write    → DualWrite*Repository（旧写优先 + 新写防御性 catch，读走 legacy）
     sqlite_unified→ Sqlite*Repository（dreambuddy_core.db 单库）
 """
+
 from __future__ import annotations
 
 import logging
@@ -29,11 +30,12 @@ _env_path = Path(__file__).resolve().parent.parent / ".env"
 if _env_path.exists():
     try:
         from dotenv import load_dotenv
+
         load_dotenv(_env_path, override=False)
     except ImportError:
         pass
 
-from dreambuddy_dal.protocols import (
+from dreambuddy_dal.protocols import (  # noqa: E402
     ConfigRepository,
     KnowledgeGraphRepository,
     MarketMacroRepository,
@@ -47,7 +49,12 @@ BACKEND_JSON_LEGACY = "json_legacy"
 BACKEND_DUAL_WRITE = "dual_write"
 BACKEND_SQLITE_UNIFIED = "sqlite_unified"
 BACKEND_POSTGRES = "postgres"
-_VALID_BACKENDS = {BACKEND_JSON_LEGACY, BACKEND_DUAL_WRITE, BACKEND_SQLITE_UNIFIED, BACKEND_POSTGRES}
+_VALID_BACKENDS = {
+    BACKEND_JSON_LEGACY,
+    BACKEND_DUAL_WRITE,
+    BACKEND_SQLITE_UNIFIED,
+    BACKEND_POSTGRES,
+}
 
 # 单例锁（线程安全 lazy init）
 _lock = threading.RLock()
@@ -70,6 +77,7 @@ def _ensure_sqlite_schema_inited(db_path: str) -> None:
     # 此处仅确保父目录存在；schema 初始化由独立迁移模块显式执行：
     #   python -m dreambuddy_dal.migrations.init_schema
     import os as _os
+
     key = _os.path.abspath(db_path)
     if key in _sqlite_schema_inited_paths:
         return
@@ -104,9 +112,7 @@ def _resolve_backend(explicit: Optional[str]) -> str:
         backend = os.environ.get("DB_BACKEND", BACKEND_JSON_LEGACY).strip()
 
     if backend not in _VALID_BACKENDS:
-        raise ValueError(
-            f"无效的 DB_BACKEND={backend!r}；合法值：{sorted(_VALID_BACKENDS)}"
-        )
+        raise ValueError(f"无效的 DB_BACKEND={backend!r}；合法值：{sorted(_VALID_BACKENDS)}")
     # P1 已激活所有三后端，不再拦截
     return backend
 
@@ -124,8 +130,18 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
     - READ_SOURCE=next_gen → 读方法直接走 new 库（不再走 legacy）
     """
     WRITE_PREFIXES = (
-        "add_", "upsert_", "close_", "create_", "activate_", "update_",
-        "insert_", "delete_", "remove_", "set_", "save_", "refresh_",
+        "add_",
+        "upsert_",
+        "close_",
+        "create_",
+        "activate_",
+        "update_",
+        "insert_",
+        "delete_",
+        "remove_",
+        "set_",
+        "save_",
+        "refresh_",
     )
     READ_PREFIXES = ("get_", "query_", "list_", "has_", "check_", "fts_")
 
@@ -136,9 +152,9 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
         per-repo 值合法性与全局一致（shadow / next_gen / 空=legacy）。
         """
         if repo_name:
-            per_repo = os.environ.get(
-                "READ_SOURCE_" + repo_name.strip().upper(), ""
-            ).strip().lower()
+            per_repo = (
+                os.environ.get("READ_SOURCE_" + repo_name.strip().upper(), "").strip().lower()
+            )
             if per_repo:
                 return per_repo
         return os.environ.get("READ_SOURCE", "").strip().lower()
@@ -162,7 +178,11 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
         if st[1] >= 20 and rate > threshold:
             _log.error(
                 "DualWrite[%s] shadow diff 率 %.1f%% 超阈值 %.1f%%（%d/%d），禁止切读",
-                repo_name, rate * 100, threshold * 100, st[0], st[1],
+                repo_name,
+                rate * 100,
+                threshold * 100,
+                st[0],
+                st[1],
             )
         return rate
 
@@ -174,8 +194,10 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
 
     def _write_shadow_audit(entity_key: str, result: str, details: dict) -> None:
         try:
-            from dreambuddy_dal.connection import get_sqlite_connection
             import json as _json
+
+            from dreambuddy_dal.connection import get_sqlite_connection
+
             dbp = _get_sqlite_db_path()
             with get_sqlite_connection(dbp) as conn:
                 conn.execute(
@@ -184,9 +206,15 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
                         (category, event_name, entity_key, result, severity, details, latency_ms)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
-                    ("shadow_read", repo_name, entity_key, result,
-                     1 if result == "DIFF" else 0,
-                     _json.dumps(details, default=str, ensure_ascii=False), 0),
+                    (
+                        "shadow_read",
+                        repo_name,
+                        entity_key,
+                        result,
+                        1 if result == "DIFF" else 0,
+                        _json.dumps(details, default=str, ensure_ascii=False),
+                        0,
+                    ),
                 )
         except Exception:
             pass  # 审计写入失败不影响主流程
@@ -211,7 +239,7 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
         if isinstance(legacy_val, list) and isinstance(new_val, list):
             if len(legacy_val) != len(new_val):
                 return "DIFF"
-            for a, b in zip(legacy_val, new_val):
+            for a, b in zip(legacy_val, new_val):  # noqa: B905
                 if _compare_results(a, b) == "DIFF":
                     return "DIFF"
             return "MATCH"
@@ -241,7 +269,9 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
             leg_fn = getattr(object.__getattribute__(self, "_leg"), item, None)
             new_fn = getattr(object.__getattribute__(self, "_new"), item, None)
             if leg_fn is None:
-                raise AttributeError(f"DualWrite[{object.__getattribute__(self, '_name')}] 没有属性 {item}")
+                raise AttributeError(
+                    f"DualWrite[{object.__getattribute__(self, '_name')}] 没有属性 {item}"
+                )
 
             name = object.__getattribute__(self, "_name")
 
@@ -267,7 +297,9 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
                             except Exception as exc:
                                 _log.warning(
                                     "DualWrite[%s].%s 新库写失败：%r",
-                                    name, item, exc,
+                                    name,
+                                    item,
+                                    exc,
                                 )
                         return result
 
@@ -291,7 +323,9 @@ def _make_dual_write(legacy_repo: T, new_repo: T, repo_name: str) -> T:
                             except Exception as exc:
                                 _log.warning(
                                     "DualWrite[%s].%s shadow read 新库读失败：%r",
-                                    name, item, exc,
+                                    name,
+                                    item,
+                                    exc,
                                 )
                         return result
 
@@ -336,6 +370,7 @@ def _get_instance(backend: str, repo_type: str, factory: Callable[[], object]):
 
 def _build_legacy_trade() -> TradeRepository:
     from dreambuddy_dal.implementations.json_legacy.trade_impl import JsonLegacyTradeRepository
+
     return JsonLegacyTradeRepository()
 
 
@@ -343,6 +378,7 @@ def _build_legacy_position() -> PositionRepository:
     from dreambuddy_dal.implementations.json_legacy.position_impl import (
         JsonLegacyPositionRepository,
     )
+
     return JsonLegacyPositionRepository()
 
 
@@ -350,11 +386,13 @@ def _build_legacy_mm() -> MarketMacroRepository:
     from dreambuddy_dal.implementations.json_legacy.market_macro_impl import (
         JsonLegacyMarketMacroRepository,
     )
+
     return JsonLegacyMarketMacroRepository()
 
 
 def _build_legacy_risk() -> RiskRepository:
     from dreambuddy_dal.implementations.json_legacy.risk_impl import JsonLegacyRiskRepository
+
     return JsonLegacyRiskRepository()
 
 
@@ -362,6 +400,7 @@ def _build_legacy_config() -> ConfigRepository:
     from dreambuddy_dal.implementations.json_legacy.config_impl import (
         JsonLegacyConfigRepository,
     )
+
     return JsonLegacyConfigRepository()
 
 
@@ -369,11 +408,13 @@ def _build_legacy_kg() -> KnowledgeGraphRepository:
     from dreambuddy_dal.implementations.json_legacy.kg_impl import (
         JsonLegacyKnowledgeGraphRepository,
     )
+
     return JsonLegacyKnowledgeGraphRepository()
 
 
 def _build_sqlite_trade() -> TradeRepository:
     from dreambuddy_dal.implementations.sqlite_unified import SqliteTradeRepository
+
     dbp = _sqlite_db_path()
     _ensure_sqlite_schema_inited(dbp)
     return SqliteTradeRepository(dbp)
@@ -381,6 +422,7 @@ def _build_sqlite_trade() -> TradeRepository:
 
 def _build_sqlite_position() -> PositionRepository:
     from dreambuddy_dal.implementations.sqlite_unified import SqlitePositionRepository
+
     dbp = _sqlite_db_path()
     _ensure_sqlite_schema_inited(dbp)
     return SqlitePositionRepository(dbp)
@@ -388,6 +430,7 @@ def _build_sqlite_position() -> PositionRepository:
 
 def _build_sqlite_mm() -> MarketMacroRepository:
     from dreambuddy_dal.implementations.sqlite_unified import SqliteMarketMacroRepository
+
     dbp = _sqlite_db_path()
     _ensure_sqlite_schema_inited(dbp)
     return SqliteMarketMacroRepository(dbp)
@@ -395,6 +438,7 @@ def _build_sqlite_mm() -> MarketMacroRepository:
 
 def _build_sqlite_risk() -> RiskRepository:
     from dreambuddy_dal.implementations.sqlite_unified import SqliteRiskRepository
+
     dbp = _sqlite_db_path()
     _ensure_sqlite_schema_inited(dbp)
     return SqliteRiskRepository(dbp)
@@ -402,6 +446,7 @@ def _build_sqlite_risk() -> RiskRepository:
 
 def _build_sqlite_config() -> ConfigRepository:
     from dreambuddy_dal.implementations.sqlite_unified import SqliteConfigRepository
+
     dbp = _sqlite_db_path()
     _ensure_sqlite_schema_inited(dbp)
     return SqliteConfigRepository(dbp)
@@ -409,6 +454,7 @@ def _build_sqlite_config() -> ConfigRepository:
 
 def _build_sqlite_kg() -> KnowledgeGraphRepository:
     from dreambuddy_dal.implementations.sqlite_unified import SqliteKnowledgeGraphRepository
+
     dbp = _sqlite_db_path()
     _ensure_sqlite_schema_inited(dbp)
     return SqliteKnowledgeGraphRepository(dbp)
@@ -416,7 +462,10 @@ def _build_sqlite_kg() -> KnowledgeGraphRepository:
 
 def _build_postgres_trade() -> TradeRepository:
     from dreambuddy_dal.implementations.postgres import PostgresTradeRepository
+
     return PostgresTradeRepository()
+
+
 # ------------------------------------------------------------ repo_type → 工厂
 def _build_trade(backend: str) -> TradeRepository:
     if backend == BACKEND_JSON_LEGACY:
@@ -515,10 +564,17 @@ def get_kg_repo(backend: Optional[str] = None) -> KnowledgeGraphRepository:
 
 __all__ = [
     # 常量
-    "BACKEND_JSON_LEGACY", "BACKEND_DUAL_WRITE", "BACKEND_SQLITE_UNIFIED",
+    "BACKEND_JSON_LEGACY",
+    "BACKEND_DUAL_WRITE",
+    "BACKEND_SQLITE_UNIFIED",
     # 解析
-    "_resolve_backend", "_INSTANCES",
+    "_resolve_backend",
+    "_INSTANCES",
     # 对外工厂
-    "get_trade_repo", "get_position_repo", "get_market_macro_repo",
-    "get_risk_repo", "get_config_repo", "get_kg_repo",
+    "get_trade_repo",
+    "get_position_repo",
+    "get_market_macro_repo",
+    "get_risk_repo",
+    "get_config_repo",
+    "get_kg_repo",
 ]

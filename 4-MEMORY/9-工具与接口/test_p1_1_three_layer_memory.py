@@ -18,13 +18,11 @@ RED 契约（当前实现缺失，断言应失败）：
 
 参考：SPEC-CognitiveSystem-Evolution.md §2.3.1 P1-1
 """
+
 from __future__ import annotations
 
-import json
 import sys
-import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -191,6 +189,7 @@ def isolated_cle(tmp_path):
     # 重置单例
     try:
         import cognitive_loop_entry as cle_mod
+
         cle_mod.reset_cle()
     except Exception:
         pass
@@ -199,6 +198,7 @@ def isolated_cle(tmp_path):
     cache_path = tmp_path / "test_recall_cache.json"
 
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=storage_path,
         enable_distill=False,
@@ -207,6 +207,7 @@ def isolated_cle(tmp_path):
     # 注入测试用 RecallMemoryCache
     try:
         from recall_memory_cache import RecallMemoryCache
+
         cle.recall_cache = RecallMemoryCache(cache_path=cache_path)
     except ImportError:
         # RED 阶段 RecallMemoryCache 尚不存在

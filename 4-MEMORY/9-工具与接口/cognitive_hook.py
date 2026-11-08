@@ -22,29 +22,28 @@ IDE无关的自动接入层核心。通过git hooks自动触发认知闭环：
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 # 添加同目录到路径
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from cognitive_loop_entry import CognitiveLoopEntry
-
+from cognitive_loop_entry import CognitiveLoopEntry  # noqa: E402
 
 # ============================================================
 # Step 1: 从git commit提取信息
 # ============================================================
 
+
 def extract_commit_info() -> Dict[str, Any]:
     """
     从最近的git commit提取结构化信息。
-    
+
     Returns:
         {
             "commit_hash": str,      # 短hash
@@ -58,28 +57,36 @@ def extract_commit_info() -> Dict[str, Any]:
     # commit hash
     hash_result = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     commit_hash = hash_result.stdout.strip()
 
     # commit message (subject + body)
     msg_result = subprocess.run(
         ["git", "log", "-1", "--format=%B"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     message = msg_result.stdout.strip()
 
     # 变更文件列表 (--root 支持首次commit无parent的情况)
     files_result = subprocess.run(
         ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "HEAD"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     files = [f.strip() for f in files_result.stdout.strip().split("\n") if f.strip()]
 
     # 行数统计
     stat_result = subprocess.run(
         ["git", "diff-tree", "--no-commit-id", "--numstat", "-r", "--root", "HEAD"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     insertions = 0
     deletions = 0
@@ -97,7 +104,9 @@ def extract_commit_info() -> Dict[str, Any]:
     # 作者
     author_result = subprocess.run(
         ["git", "log", "-1", "--format=%an"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     author = author_result.stdout.strip()
 
@@ -114,6 +123,7 @@ def extract_commit_info() -> Dict[str, Any]:
 # ============================================================
 # Step 2: 分类变更类型
 # ============================================================
+
 
 def classify_change_type(message: str) -> str:
     """
@@ -159,6 +169,7 @@ def classify_change_type(message: str) -> str:
 # Step 3: 生成经验描述
 # ============================================================
 
+
 def _parse_commit_message(message: str) -> Dict[str, Any]:
     """
     深度解析commit message，提取结构化语义。
@@ -187,20 +198,37 @@ def _parse_commit_message(message: str) -> Dict[str, Any]:
     # 尝试提取scope: type(scope): description
     scope = ""
     subject = first_line
-    scope_match = re.match(r'^(?:feat|feature|fix|refactor|docs?|test|chore|perf|ci|build|新增|修复|重构|文档|测试|优化)[\(:]\s*([^\)\：]+)[\)\：][\s:：]*\s*(.+)', first_line)
+    scope_match = re.match(
+        r"^(?:feat|feature|fix|refactor|docs?|test|chore|perf|ci|build|新增|修复|重构|文档|测试|优化)[\(:]\s*([^\)\：]+)[\)\：][\s:：]*\s*(.+)",
+        first_line,
+    )
     if scope_match:
         scope = scope_match.group(1).strip()
         subject = scope_match.group(2).strip()
     else:
         # 去掉类型前缀，只保留描述
-        prefix_match = re.match(r'^(?:feat|feature|fix|refactor|docs?|test|chore|perf|ci|build|新增|修复|重构|文档|测试|优化)[\：:]\s*(.+)', first_line)
+        prefix_match = re.match(
+            r"^(?:feat|feature|fix|refactor|docs?|test|chore|perf|ci|build|新增|修复|重构|文档|测试|优化)[\：:]\s*(.+)",
+            first_line,
+        )
         if prefix_match:
             subject = prefix_match.group(1).strip()
 
     # body摘要
     body_summary = body[:100].replace("\n", " ").strip() if body else ""
     # 检查body是否包含原因说明
-    reason_keywords = ["因为", "由于", "导致", "原因", "问题", "bug", "为了", "所以", "修复了", "解决了"]
+    reason_keywords = [
+        "因为",
+        "由于",
+        "导致",
+        "原因",
+        "问题",
+        "bug",
+        "为了",
+        "所以",
+        "修复了",
+        "解决了",
+    ]
     has_reason = any(kw in body.lower() for kw in reason_keywords) if body else False
 
     return {
@@ -262,6 +290,7 @@ def generate_experience_description(commit_info: Dict[str, Any]) -> str:
 # ============================================================
 # Step 4: 触发认知闭环
 # ============================================================
+
 
 def find_daemon_memories_for_files(
     commit_files: List[str],
@@ -474,13 +503,16 @@ def trigger_cognitive_loop(
     relay_result = relay_verify_daemon_memories(daemon_memories, cle=cle)
 
     if verbose and relay_result["verified_count"] > 0:
-        print(f"[接力] 验证了 {relay_result['verified_count']} 条daemon记忆: {relay_result['memory_ids']}")
+        print(
+            f"[接力] 验证了 {relay_result['verified_count']} 条daemon记忆: {relay_result['memory_ids']}"
+        )
 
     # Step 4: 通知session manager — commit触发会话结束，生成解决路径
     # 独立创建session manager实例，不依赖daemon进程
     # __init__时自动从磁盘恢复未结束的会话（跨进程恢复）
     try:
         from cognitive_session import CognitiveSessionManager
+
         mgr = CognitiveSessionManager()
         mgr.on_commit(commit_info)
     except Exception:
@@ -505,6 +537,7 @@ def trigger_cognitive_loop(
 # 主入口
 # ============================================================
 
+
 def main():
     parser = argparse.ArgumentParser(description="认知触发层 — git hook自动接入")
     parser.add_argument("--post-commit", action="store_true", help="git post-commit hook入口")
@@ -521,8 +554,10 @@ def main():
         if args.verbose:
             print(f"[触发层] Commit: {commit_info['commit_hash']}")
             print(f"[触发层] Message: {commit_info['message'][:80]}")
-            print(f"[触发层] Files: {len(commit_info['files'])}个, "
-                  f"+{commit_info['insertions']} -{commit_info['deletions']}")
+            print(
+                f"[触发层] Files: {len(commit_info['files'])}个, "
+                f"+{commit_info['insertions']} -{commit_info['deletions']}"
+            )
 
         result = trigger_cognitive_loop(
             commit_info,

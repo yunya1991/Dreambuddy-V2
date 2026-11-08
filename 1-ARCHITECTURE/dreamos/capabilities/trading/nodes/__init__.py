@@ -31,7 +31,7 @@ DreamOS Trading Nodes — 交易业务节点包
             return NodeResult(node_id="X1", confidence=0.5)
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import importlib
 import inspect
@@ -41,9 +41,9 @@ from typing import List, Type, Optional
 from dreamos.registry.base import BaseNode
 from dreamos.registry.decorators import register_node  # 重新导出装饰器
 
-
 # 重新导出已实现的节点（供显式导入使用）
 # 这些导入是可选的——节点会通过动态扫描自动发现
+
 
 def _discover_nodes(package_dir: Optional[str] = None) -> List[Type[BaseNode]]:
     """动态发现包目录下的所有 BaseNode 子类
@@ -75,7 +75,7 @@ def _discover_nodes(package_dir: Optional[str] = None) -> List[Type[BaseNode]]:
 
         try:
             module = importlib.import_module(full_module)
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             # 导入失败则跳过（可能是依赖未安装）
             continue
 
@@ -113,9 +113,9 @@ def get_all_node_classes() -> List[Type[BaseNode]]:
     return _ALL_NODE_CLASSES
 
 
-def register_all(registry=None, *,
-                 auto_discover: bool = True,
-                 extra_nodes: Optional[List[Type[BaseNode]]] = None) -> int:
+def register_all(
+    registry=None, *, auto_discover: bool = True, extra_nodes: Optional[List[Type[BaseNode]]] = None
+) -> int:
     """注册业务节点到注册表
 
     Args:
@@ -127,6 +127,7 @@ def register_all(registry=None, *,
         注册的节点数量
     """
     from dreamos.registry import get_default_registry
+
     reg = registry if registry is not None else get_default_registry()
 
     count = 0
@@ -161,20 +162,22 @@ def register_all(registry=None, *,
     # 3. 注册子系统封装节点（阶段3：旗舰交易系统节点扩展）
     try:
         from .subsystem_adapter_nodes import register_subsystem_nodes
+
         subsystem_count = register_subsystem_nodes(reg)
         count += subsystem_count
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         pass  # 子系统模块不可用时跳过
 
     # 4. 应用动态编排（L4 粗筛 + 回测精调缓存）
     try:
         from dreamos.capabilities.trading.evaluators.dynamic_orchestrator import DynamicOrchestrator
+
         orchestrator = DynamicOrchestrator()
         orchestrator.optimize(run_backtest=False)  # 仅 L4 粗筛，回测精调定期跑
         # 尝试加载缓存的回测精调结果
         orchestrator.load_cached_report()
         orchestrator.update_chain_spec()
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         pass  # 动态编排失败不影响节点注册
 
     return count
@@ -223,7 +226,6 @@ except Exception:
     A2ComprehensiveNode = None  # type: ignore[misc,assignment]
 
 
-
 try:
     from .a3_strategy import A3StrategyNode
 except Exception:
@@ -263,7 +265,6 @@ try:
     from .f1_news import F1NewsSentimentNode
 except Exception:
     F1NewsSentimentNode = None  # type: ignore[misc,assignment]
-
 
 
 try:

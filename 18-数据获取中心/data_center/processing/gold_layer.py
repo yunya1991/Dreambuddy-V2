@@ -12,6 +12,7 @@ project_memory 硬约束:
   - 所有数据入库前必须经过 Silver 层清洗
   - quality.py 从监控报警升级为硬门禁拦截，异常数据仅保留 Bronze 层
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,13 +28,21 @@ logger = logging.getLogger(__name__)
 WASHOUT_SCHEMAS: dict[str, dict] = {
     "cvd_clean": {
         "required_fields": [
-            "timestamp", "symbol", "cvd_value", "buy_volume", "sell_volume",
+            "timestamp",
+            "symbol",
+            "cvd_value",
+            "buy_volume",
+            "sell_volume",
         ],
         "numeric_fields": ["cvd_value", "buy_volume", "sell_volume"],
     },
     "ofi_clean": {
         "required_fields": [
-            "timestamp", "symbol", "bid_volume", "ask_volume", "ofi_value",
+            "timestamp",
+            "symbol",
+            "bid_volume",
+            "ask_volume",
+            "ofi_value",
         ],
         "numeric_fields": ["bid_volume", "ask_volume", "ofi_value"],
     },

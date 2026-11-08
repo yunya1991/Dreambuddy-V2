@@ -9,10 +9,9 @@ SPEC: SPEC-事件驱动策略独立化-共享事件层与弹性约束.md §四
 4. EventDrivenStrategy 异常时 FAIL-OPEN（不 crash、不影响原有路径发现）
 5. 开关 enable_event_driven_path=False 时不调用 EventDrivenStrategy
 """
+
 from __future__ import annotations
 
-import sys
-import types
 from unittest.mock import MagicMock
 
 import pytest
@@ -21,7 +20,8 @@ import pytest
 @pytest.fixture
 def enable_event_driven_path(monkeypatch):
     """开启事件驱动路径发现开关"""
-    from dreambuddy_evolution.agi_config import set_switch, reset_switches
+    from dreambuddy_evolution.agi_config import reset_switches, set_switch
+
     reset_switches()
     set_switch("enable_agi_core", True)
     set_switch("enable_event_driven_path", True)
@@ -32,6 +32,7 @@ def enable_event_driven_path(monkeypatch):
 def _make_mock_handler():
     """构造 KlineEventHandler 并注入 mock pipeline。"""
     from dreambuddy_evolution.engines.kline_event_handler import KlineEventHandler
+
     handler = KlineEventHandler(mode="Phase2")
     mock_pipeline = MagicMock()
     # _discover_paths 返回空列表（无其他路径），事件路径是唯一候选
@@ -178,7 +179,9 @@ class TestEventDrivenPathInjection:
         r_vector = {"R_up": 0.6, "R_down": 0.4, "_close_series": [100.0] * 40}
 
         # 不抛异常
-        d_star, ri, path_info = handler._run_path_discovery("BTC", r_vector, "long", 0.5, kline_data)
+        d_star, ri, path_info = handler._run_path_discovery(
+            "BTC", r_vector, "long", 0.5, kline_data
+        )
 
         # 原有路径发现仍正常执行
         assert mock_pipeline._discover_paths.called
@@ -189,7 +192,8 @@ class TestEventDrivenPathInjection:
 
     def test_event_driven_switch_off(self, monkeypatch):
         """开关 enable_event_driven_path=False → 不调用 EventDrivenStrategy"""
-        from dreambuddy_evolution.agi_config import set_switch, reset_switches
+        from dreambuddy_evolution.agi_config import reset_switches, set_switch
+
         reset_switches()
         set_switch("enable_agi_core", True)
         set_switch("enable_event_driven_path", False)

@@ -6,8 +6,13 @@
 - 引擎：9-基本面分析的 SignalEngine + SentimentEngine
 - 零 Token 消耗，纯本地计算
 """
-import json, os, sys, subprocess, math
-from datetime import datetime, timezone, timedelta
+
+import json
+import math
+import os
+import subprocess
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 HOME_BIN = "/opt/homebrew/bin"
@@ -25,9 +30,10 @@ if str(FUNDAMENTAL_ROOT) not in sys.path:
     sys.path.insert(0, str(FUNDAMENTAL_ROOT))
 
 try:
-    from engines.signal_engine import SignalEngine
-    from engines.sentiment_engine import SentimentEngine
     from engines.least_resistance import compute_resistance_3d
+    from engines.sentiment_engine import SentimentEngine
+    from engines.signal_engine import SignalEngine
+
     ENGINES_AVAILABLE = True
 except Exception as e:
     ENGINES_AVAILABLE = False
@@ -35,9 +41,9 @@ except Exception as e:
 
 # 研报新鲜度阈值
 REPORT_MAX_AGE_H = {
-    "weekly": 168,   # 7天
+    "weekly": 168,  # 7天
     "a1_daily": 24,  # 1天
-    "a6_intel": 6,   # 6小时
+    "a6_intel": 6,  # 6小时
 }
 
 _cache: dict = {}
@@ -48,13 +54,21 @@ def _run_okx(args):
     try:
         r = subprocess.run(
             ["okx", "--profile", OKX_PROFILE] + args,
-            capture_output=True, text=True, timeout=15,
-            env={**os.environ, "NO_UPDATE_CHECK": "1"}
+            capture_output=True,
+            text=True,
+            timeout=15,
+            env={**os.environ, "NO_UPDATE_CHECK": "1"},
         )
-        stdout = "\n".join(l for l in r.stdout.split("\n")
-                           if "Update available" not in l and "Run: npm" not in l).strip()
-        stderr = "\n".join(l for l in r.stderr.split("\n")
-                           if "Update available" not in l and "Run: npm" not in l).strip()
+        stdout = "\n".join(
+            l
+            for l in r.stdout.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
+        stderr = "\n".join(
+            l
+            for l in r.stderr.split("\n")  # noqa: E741
+            if "Update available" not in l and "Run: npm" not in l  # noqa: E741
+        ).strip()
         if r.returncode != 0 and stderr:
             return {"ok": False, "err": stderr[:200]}
         if stdout.startswith("[") or stdout.startswith("{"):
@@ -78,8 +92,9 @@ def _fetch_funding_rate(inst_id: str = INST_SWAP) -> dict:
 
 def _fetch_news(coins: str = "BTC", limit: int = 15) -> list:
     """获取最新新闻文本列表"""
-    r = _run_okx(["news", "latest", "--coins", coins, "--lang", "zh-CN",
-                  "--limit", str(limit), "--json"])
+    r = _run_okx(
+        ["news", "latest", "--coins", coins, "--lang", "zh-CN", "--limit", str(limit), "--json"]
+    )
     if not r["ok"]:
         return []
     data = r["data"]
@@ -97,17 +112,22 @@ def _fetch_news(coins: str = "BTC", limit: int = 15) -> list:
 
 def _fetch_candles(inst_id: str, bar: str, limit: int) -> list:
     """获取K线"""
-    r = _run_okx(["market", "candles", inst_id, "--bar", bar,
-                  "--limit", str(limit), "--json"])
+    r = _run_okx(["market", "candles", inst_id, "--bar", bar, "--limit", str(limit), "--json"])
     if not r["ok"]:
         return []
     raw = r["data"]
     candles = []
     for c in raw:
-        candles.append({
-            "ts": int(c[0]), "o": float(c[1]), "h": float(c[2]),
-            "l": float(c[3]), "c": float(c[4]), "vol": float(c[5]),
-        })
+        candles.append(
+            {
+                "ts": int(c[0]),
+                "o": float(c[1]),
+                "h": float(c[2]),
+                "l": float(c[3]),
+                "c": float(c[4]),
+                "vol": float(c[5]),
+            }
+        )
     return list(reversed(candles))
 
 
@@ -154,6 +174,7 @@ def _check_reports_freshness() -> dict:
     try:
         sys.path.insert(0, str(Path(__file__).parent))
         from report_loader import get_all_reports
+
         reports = get_all_reports()
     except Exception:
         return {"weekly": False, "a1_daily": False, "a6_intel": False, "any_fresh": False}
@@ -236,11 +257,19 @@ def get_fundamental_signals(symbol: str = "BTC") -> dict:
 
     # 3. 情绪分析
     se = SentimentEngine()
-    sentiment_result = se.analyze_batch(news_texts) if news_texts else {
-        "score": 0, "sentiment": "neutral", "sentiment_index": 50,
-        "count": 0, "positive_count": 0, "negative_count": 0,
-        "category_distribution": {},
-    }
+    sentiment_result = (
+        se.analyze_batch(news_texts)
+        if news_texts
+        else {
+            "score": 0,
+            "sentiment": "neutral",
+            "sentiment_index": 50,
+            "count": 0,
+            "positive_count": 0,
+            "negative_count": 0,
+            "category_distribution": {},
+        }
+    )
     fear_greed = se.get_fear_greed_estimate(sentiment_result.get("sentiment_index", 50))
 
     # 4. 构造 metrics
@@ -256,7 +285,9 @@ def get_fundamental_signals(symbol: str = "BTC") -> dict:
     }
 
     # 5. 三维度计算
-    resistance_3d = _calc_resistance_3d(daily_closes) if daily_closes else compute_resistance_3d(0.0)
+    resistance_3d = (
+        _calc_resistance_3d(daily_closes) if daily_closes else compute_resistance_3d(0.0)
+    )
 
     # 6. 信号生成
     engine = SignalEngine()
@@ -267,22 +298,34 @@ def get_fundamental_signals(symbol: str = "BTC") -> dict:
     # 7. 综合信号（构造单模块 snapshot）
     module_snapshots = {
         "flow": {
-            "resistance_3d": {"direction_score": resistance_3d.get("direction_score", 0),
-                              "confidence": resistance_3d.get("confidence", 0.5),
-                              "velocity": resistance_3d.get("velocity", 0)},
+            "resistance_3d": {
+                "direction_score": resistance_3d.get("direction_score", 0),
+                "confidence": resistance_3d.get("confidence", 0.5),
+                "velocity": resistance_3d.get("velocity", 0),
+            },
             "metrics": {"funding_rate": metrics["funding_rate"]},
         },
         "sentiment": {
-            "resistance_3d": {"direction_score": (sentiment_result.get("score", 0)),
-                              "confidence": 0.6, "velocity": 0},
-            "metrics": {"sentiment_index": metrics["sentiment"],
-                        "fear_greed_index": metrics["fear_greed_index"]},
+            "resistance_3d": {
+                "direction_score": (sentiment_result.get("score", 0)),
+                "confidence": 0.6,
+                "velocity": 0,
+            },
+            "metrics": {
+                "sentiment_index": metrics["sentiment"],
+                "fear_greed_index": metrics["fear_greed_index"],
+            },
         },
         "news": {
-            "resistance_3d": {"direction_score": metrics.get("news_sentiment", 0),
-                              "confidence": 0.55, "velocity": 0},
-            "metrics": {"news_sentiment": metrics.get("news_sentiment", 0),
-                        "news_volume": metrics.get("news_volume", 0)},
+            "resistance_3d": {
+                "direction_score": metrics.get("news_sentiment", 0),
+                "confidence": 0.55,
+                "velocity": 0,
+            },
+            "metrics": {
+                "news_sentiment": metrics.get("news_sentiment", 0),
+                "news_volume": metrics.get("news_volume", 0),
+            },
         },
     }
     composite = engine.generate_composite_signals(module_snapshots)
@@ -322,6 +365,7 @@ def get_fundamental_signals(symbol: str = "BTC") -> dict:
 
 if __name__ == "__main__":
     import sys
+
     sym = sys.argv[1] if len(sys.argv) > 1 else "BTC"
     result = get_fundamental_signals(sym)
     print(json.dumps(result, ensure_ascii=False, indent=2, default=str))

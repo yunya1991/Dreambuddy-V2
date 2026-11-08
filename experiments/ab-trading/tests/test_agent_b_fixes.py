@@ -14,25 +14,27 @@ Fix-2: _compute_param_adjustments 无变化项过滤
   - 浮点 epsilon 边界场景 → 1e-10 差异不被误判
 """
 
-import json, os, sys, tempfile, unittest
+import json
+import sys
+import tempfile
+import unittest
 from pathlib import Path
-from copy import deepcopy
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
-from agents.agent_b_runner import (
-    _extract_closed_pnl_size,
+from agents.agent_b_runner import (  # noqa: E402
     _aggregate_cycle_pnl_from_decision,
-    save_memory,
     _compute_param_adjustments,
+    _extract_closed_pnl_size,
+    save_memory,
 )
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Fix-1 Tests
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestExtractClosedPnlSize(unittest.TestCase):
 
@@ -112,9 +114,15 @@ class TestAggregateCyclePnl(unittest.TestCase):
         self.assertIsNone(_aggregate_cycle_pnl_from_decision({}))
 
     def test_no_exits_returns_none(self):
-        self.assertIsNone(_aggregate_cycle_pnl_from_decision({
-            "l1_exits": [], "l3_exits": [], "a9_exits": [],
-        }))
+        self.assertIsNone(
+            _aggregate_cycle_pnl_from_decision(
+                {
+                    "l1_exits": [],
+                    "l3_exits": [],
+                    "a9_exits": [],
+                }
+            )
+        )
 
     def test_single_l1_win(self):
         """只有一笔 L1 盈利平仓 → 加权平均 = 单笔 pnl"""
@@ -130,9 +138,9 @@ class TestAggregateCyclePnl(unittest.TestCase):
         # SOL  50 USDT * +8%   = +4 收益
         # 总仓位 200 → 净收益 +12 / 200 = 6%
         decision = {
-            "l1_exits": [{"pnl_pct":  0.10, "position_size_usdt": 100}],
-            "l3_exits": [{"pnl_pct": -0.04, "position_size_usdt":  50}],
-            "a9_exits": [{"pnl_pct":  0.08, "position_size_usdt":  50}],
+            "l1_exits": [{"pnl_pct": 0.10, "position_size_usdt": 100}],
+            "l3_exits": [{"pnl_pct": -0.04, "position_size_usdt": 50}],
+            "a9_exits": [{"pnl_pct": 0.08, "position_size_usdt": 50}],
         }
         avg = _aggregate_cycle_pnl_from_decision(decision)
         expected = (0.10 * 100 + (-0.04) * 50 + 0.08 * 50) / 200
@@ -143,7 +151,7 @@ class TestAggregateCyclePnl(unittest.TestCase):
         """所有 size = 0 → 退化为简单算术平均"""
         decision = {
             "l1_exits": [
-                {"pnl_pct":  0.04, "position_size_usdt": 0},
+                {"pnl_pct": 0.04, "position_size_usdt": 0},
                 {"pnl_pct": -0.02, "position_size_usdt": 0},
             ]
         }
@@ -154,12 +162,14 @@ class TestAggregateCyclePnl(unittest.TestCase):
         """形态 A + 形态 B 混合时都能提取并加权"""
         decision = {
             # A: +10% @ 200 USDT
-            "l1_exits": [{"pnl_pct":  0.10, "position_size_usdt": 200}],
+            "l1_exits": [{"pnl_pct": 0.10, "position_size_usdt": 200}],
             # B: -5% @ 100 USDT
-            "l3_exits": [{
-                "reason": "X",
-                "result": {"ok": True, "closed": {"pnl_pct": -0.05, "position_size_usdt": 100}},
-            }],
+            "l3_exits": [
+                {
+                    "reason": "X",
+                    "result": {"ok": True, "closed": {"pnl_pct": -0.05, "position_size_usdt": 100}},
+                }
+            ],
         }
         avg = _aggregate_cycle_pnl_from_decision(decision)
         expected = (0.10 * 200 + (-0.05) * 100) / 300
@@ -172,8 +182,8 @@ class TestAggregateCyclePnl(unittest.TestCase):
 
     def test_exception_fail_open(self):
         """decision 非 dict → 返回 None，不抛异常"""
-        self.assertIsNone(_aggregate_cycle_pnl_from_decision(None))   # type: ignore[arg-type]
-        self.assertIsNone(_aggregate_cycle_pnl_from_decision(42))     # type: ignore[arg-type]
+        self.assertIsNone(_aggregate_cycle_pnl_from_decision(None))  # type: ignore[arg-type]
+        self.assertIsNone(_aggregate_cycle_pnl_from_decision(42))  # type: ignore[arg-type]
 
 
 class TestSaveMemoryPnlLoop(unittest.TestCase):
@@ -181,7 +191,7 @@ class TestSaveMemoryPnlLoop(unittest.TestCase):
     Fix-4 I/O 隔离：所有磁盘写入到 self._tmpdir 下的测试文件，永不污染生产 data/agent_b_memory.json。"""
 
     def setUp(self):
-        import tempfile
+
         self._tmp_td = tempfile.TemporaryDirectory()
         self._tmpdir = Path(self._tmp_td.name)
         self._mem_path = self._tmpdir / "agent_b_memory_TEST.json"
@@ -212,17 +222,23 @@ class TestSaveMemoryPnlLoop(unittest.TestCase):
         # 先手动设一下历史值
         mem["win_streaks"] = 2
         mem["loss_streaks"] = 0
-        decision = {"market_regime": "TREND_UP", "coin": "BTC",
-                    "l1_exits": [], "l3_exits": [], "a9_exits": []}
+        decision = {
+            "market_regime": "TREND_UP",
+            "coin": "BTC",
+            "l1_exits": [],
+            "l3_exits": [],
+            "a9_exits": [],
+        }
         self._save_memory(mem, decision)
-        self.assertEqual(mem["win_streaks"], 2)   # 未变
+        self.assertEqual(mem["win_streaks"], 2)  # 未变
         self.assertEqual(mem["loss_streaks"], 0)  # 未变
         self.assertEqual(mem["total_cycles"], 1)
         # Fix-4 额外断言：临时路径有文件，生产路径未被写入（通过比较名字）
         self.assertTrue(self._mem_path.exists(), "测试临时 JSON 必须存在")
         self.assertNotEqual(
-            str(self._mem_path).endswith("data/agent_b_memory.json"), True,
-            "测试绝不能写到生产 data/agent_b_memory.json"
+            str(self._mem_path).endswith("data/agent_b_memory.json"),
+            True,
+            "测试绝不能写到生产 data/agent_b_memory.json",
         )
 
     def test_win_pnl_streak_increments_via_decision(self):
@@ -261,7 +277,7 @@ class TestSaveMemoryPnlLoop(unittest.TestCase):
                 "market_regime": "RANGE",
                 "coin": ["BTC", "ETH", "SOL"][i],
                 "action": "LONG",
-                "l1_exits": [{"pnl_pct": -0.02 - 0.01*i, "position_size_usdt": 40}],
+                "l1_exits": [{"pnl_pct": -0.02 - 0.01 * i, "position_size_usdt": 40}],
             }
             self._save_memory(mem, decision)
         self.assertEqual(mem["loss_streaks"], 3)
@@ -277,11 +293,13 @@ class TestSaveMemoryPnlLoop(unittest.TestCase):
             "market_regime": "TREND_UP",
             "action": "LONG",
             "coin": "BTC",
-            "l3_exits": [{
-                "coin": "BTC",
-                "reason": "VOL_BREAKDOWN",
-                "result": {"ok": True, "closed": {"pnl_pct": 0.12, "position_size_usdt": 200}},
-            }],
+            "l3_exits": [
+                {
+                    "coin": "BTC",
+                    "reason": "VOL_BREAKDOWN",
+                    "result": {"ok": True, "closed": {"pnl_pct": 0.12, "position_size_usdt": 200}},
+                }
+            ],
         }
         self._save_memory(mem, decision)
         self.assertEqual(mem["win_streaks"], 1)
@@ -303,11 +321,11 @@ class TestSaveMemoryPnlLoop(unittest.TestCase):
 # Fix-2 Tests
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class TestComputeParamAdjustmentsFilter(unittest.TestCase):
     """验证 Fix-2：等值项被过滤，不再产生「X→X」的假更新"""
 
-    def _make_memory(self, loss_streaks=0, win_streaks=0, lessons=None,
-                     total_cycles=0) -> dict:
+    def _make_memory(self, loss_streaks=0, win_streaks=0, lessons=None, total_cycles=0) -> dict:
         return {
             "total_cycles": total_cycles,
             "loss_streaks": loss_streaks,
@@ -327,24 +345,25 @@ class TestComputeParamAdjustmentsFilter(unittest.TestCase):
          因此更新用例至新 TREND-fixpoint 边界端点，不改变 Fix-2 验证意图）
         """
         from agents.agent_b_runner import _load_strategy_params, _save_strategy_params
+
         orig = _load_strategy_params()
         try:
             tmp = dict(orig)
             # 新 TREND 不动点：对应 ×系数 的边界端点（夹制后 = 当前）
-            tmp["take_profit_pct"]   = 0.25   # min(0.25×1.15=0.2875, 0.25) = 0.25
-            tmp["stop_loss_pct"]     = 0.015  # max(0.015×0.92=0.0138, 0.015) = 0.015
-            tmp["atr_tp_multiplier"] = 7.0    # min(7.0×1.1=7.7,    7.0) = 7.0
+            tmp["take_profit_pct"] = 0.25  # min(0.25×1.15=0.2875, 0.25) = 0.25
+            tmp["stop_loss_pct"] = 0.015  # max(0.015×0.92=0.0138, 0.015) = 0.015
+            tmp["atr_tp_multiplier"] = 7.0  # min(7.0×1.1=7.7,    7.0) = 7.0
             _save_strategy_params(tmp)
 
-            decisions = (
-                [{"regime": "TREND_UP",   "pnl_pct": None}] * 12
-                + [{"regime": "TREND_DOWN", "pnl_pct": None}] * 8
-            )
+            decisions = [{"regime": "TREND_UP", "pnl_pct": None}] * 12 + [
+                {"regime": "TREND_DOWN", "pnl_pct": None}
+            ] * 8
             mem = self._make_memory(loss_streaks=0, win_streaks=0)
             adj = _compute_param_adjustments(mem, decisions)
 
-            self.assertEqual(adj, {},
-                             f"新 TREND 钉死场景应返回空 adjustments（Fix-2 等值过滤），实际: {adj}")
+            self.assertEqual(
+                adj, {}, f"新 TREND 钉死场景应返回空 adjustments（Fix-2 等值过滤），实际: {adj}"
+            )
         finally:
             _save_strategy_params(orig)
 
@@ -401,14 +420,15 @@ class TestComputeParamAdjustmentsFilter(unittest.TestCase):
         （旧 0.04/0.08/2.5/2.0 在 Fix-3 后已非不动点，见 test_range_old_fixpoints_now_move）
         """
         from agents.agent_b_runner import _load_strategy_params, _save_strategy_params
+
         orig = _load_strategy_params()
         try:
             tmp = dict(orig)
             # Fix-3 新边界: RANGE ×系数 的真正不动点 = 新边界端点（对应夹制）
-            tmp["take_profit_pct"]   = 0.03  # max(0.03*0.85=0.0255, 0.03) == 0.03 ✓
-            tmp["stop_loss_pct"]     = 0.10  # min(0.10*1.1=0.11,   0.10) == 0.10 ✓
-            tmp["atr_sl_multiplier"] = 3.0   # min(3.0*1.05=3.15,  3.0)  == 3.0  ✓
-            tmp["atr_tp_multiplier"] = 1.5   # max(1.5*0.9=1.35,   1.5)  == 1.5  ✓
+            tmp["take_profit_pct"] = 0.03  # max(0.03*0.85=0.0255, 0.03) == 0.03 ✓
+            tmp["stop_loss_pct"] = 0.10  # min(0.10*1.1=0.11,   0.10) == 0.10 ✓
+            tmp["atr_sl_multiplier"] = 3.0  # min(3.0*1.05=3.15,  3.0)  == 3.0  ✓
+            tmp["atr_tp_multiplier"] = 1.5  # max(1.5*0.9=1.35,   1.5)  == 1.5  ✓
             _save_strategy_params(tmp)
 
             # 20 条全 RANGE（>60% 阈值触发分支）；pnl_pct=None 胜率分支不触发
@@ -417,8 +437,7 @@ class TestComputeParamAdjustmentsFilter(unittest.TestCase):
             adj = _compute_param_adjustments(mem, decisions)
 
             # 四项都命中不动点 → adjustments 必须为空（Fix-2 过滤生效）
-            self.assertEqual(adj, {},
-                             f"RANGE 新不动点参数应被过滤为 empty，实际: {adj}")
+            self.assertEqual(adj, {}, f"RANGE 新不动点参数应被过滤为 empty，实际: {adj}")
         finally:
             _save_strategy_params(orig)  # 还原真实策略参数
 
@@ -427,7 +446,9 @@ class TestComputeParamAdjustmentsFilter(unittest.TestCase):
     def test_lesson_driven_confidence_gate_change_retained(self):
         """连败期间存在「提升置信度门槛至 0.70」的教训 → 应调到 0.70"""
         adj = _compute_param_adjustments(
-            self._make_memory(loss_streaks=2, lessons=["连败2次，regime=RANGE，提升置信度门槛至0.70"]),
+            self._make_memory(
+                loss_streaks=2, lessons=["连败2次，regime=RANGE，提升置信度门槛至0.70"]
+            ),
             recent_decisions=[],
         )
         self.assertIn("confidence_gate", adj)
@@ -436,17 +457,21 @@ class TestComputeParamAdjustmentsFilter(unittest.TestCase):
     def test_lesson_driven_gate_ignored_when_loss_streaks_zero(self):
         """连败已解除（loss_streaks=0）时，提门槛教训不应生效"""
         adj = _compute_param_adjustments(
-            self._make_memory(loss_streaks=0, win_streaks=1, lessons=["连败2次，regime=RANGE，提升置信度门槛至0.70"]),
+            self._make_memory(
+                loss_streaks=0,
+                win_streaks=1,
+                lessons=["连败2次，regime=RANGE，提升置信度门槛至0.70"],
+            ),
             recent_decisions=[],
         )
         # 教训不应抬高门槛；但可能有连胜回调门槛的调整
         if "confidence_gate" in adj:
-            self.assertLess(adj["confidence_gate"], 0.70,
-                            "连败已解除时不应应用提门槛教训")
+            self.assertLess(adj["confidence_gate"], 0.70, "连败已解除时不应应用提门槛教训")
 
     def test_lesson_driven_below_current_gate_filtered(self):
         """教训建议 0.60，但当前已经更高 0.70 → 不调整（max 保留更高值），应该被过滤"""
         from agents.agent_b_runner import _load_strategy_params, _save_strategy_params
+
         orig = _load_strategy_params()
         try:
             tmp = dict(orig)
@@ -465,10 +490,9 @@ class TestComputeParamAdjustmentsFilter(unittest.TestCase):
     def test_win_rate_low_30pct_decreases_per_trade_pct(self):
         """10 笔决策中 8 笔亏损（win_rate=20% < 30%阈值）→ per_trade_pct × 0.7"""
         # 当前 per_trade_pct = 0.05, 0.05 * 0.7 = 0.035 > 0.02 下限 → 调整值 0.035（变化 ✅）
-        decisions = (
-            [{"regime": "RANGE", "pnl_pct": -0.02}] * 8
-            + [{"regime": "RANGE", "pnl_pct":  0.05}] * 2
-        )
+        decisions = [{"regime": "RANGE", "pnl_pct": -0.02}] * 8 + [
+            {"regime": "RANGE", "pnl_pct": 0.05}
+        ] * 2
         adj = _compute_param_adjustments(self._make_memory(), decisions)
         self.assertIn("per_trade_pct", adj)
         self.assertAlmostEqual(adj["per_trade_pct"], 0.035)
@@ -484,14 +508,14 @@ class TestComputeParamAdjustmentsFilter(unittest.TestCase):
 #   atr_tp_multiplier: 1.5   ~ 7.0
 #   per_trade_pct:     0.02  ~ 0.15
 NEW_BOUNDS_FIX3 = {
-    "stop_loss_pct":    (0.015, 0.10),
-    "take_profit_pct":  (0.03,  0.25),
-    "atr_sl_multiplier": (0.8,   3.0),
-    "atr_tp_multiplier": (1.5,   7.0),
-    "per_trade_pct":    (0.02,  0.15),
-    "confidence_gate":  (0.40,  0.85),
-    "default_leverage": (1,     5),
-    "max_positions":    (1,     5),
+    "stop_loss_pct": (0.015, 0.10),
+    "take_profit_pct": (0.03, 0.25),
+    "atr_sl_multiplier": (0.8, 3.0),
+    "atr_tp_multiplier": (1.5, 7.0),
+    "per_trade_pct": (0.02, 0.15),
+    "confidence_gate": (0.40, 0.85),
+    "default_leverage": (1, 5),
+    "max_positions": (1, 5),
 }
 
 
@@ -500,8 +524,13 @@ class TestFix3RelaxedBounds(unittest.TestCase):
     新边界下必须产生真实、数值正确的调整变化。"""
 
     def _make_memory(self, **kw):
-        base = {"total_cycles": 0, "loss_streaks": 0, "win_streaks": 0,
-                "lessons": [], "active_positions": {}}
+        base = {
+            "total_cycles": 0,
+            "loss_streaks": 0,
+            "win_streaks": 0,
+            "lessons": [],
+            "active_positions": {},
+        }
         base.update(kw)
         return base
 
@@ -513,23 +542,22 @@ class TestFix3RelaxedBounds(unittest.TestCase):
         旧边界：×系数后全被夹回原值 → adjustments 空 → 本测试断言失败（RED）。
         新边界：TP=0.15×1.15=0.1725, SL=0.02×0.92=0.0184, ATR_TP=5.0×1.1=5.5 → 断言通过（GREEN）。"""
         from unittest.mock import patch
-        decisions = (
-            [{"regime": "TREND_UP",   "pnl_pct": None}] * 12
-            + [{"regime": "TREND_DOWN", "pnl_pct": None}] * 8
-        )
+
+        decisions = [{"regime": "TREND_UP", "pnl_pct": None}] * 12 + [
+            {"regime": "TREND_DOWN", "pnl_pct": None}
+        ] * 8
         mem = self._make_memory()
         # 需要 PARAM_BOUNDS 提取为模块级变量才能 mock（Fix-3 的一部分）
         with patch.dict("agents.agent_b_runner.PARAM_BOUNDS", NEW_BOUNDS_FIX3, clear=True):
             adj = _compute_param_adjustments(mem, decisions)
 
-        self.assertIn("take_profit_pct", adj,
-                      f"TREND 放大 TP 不应被边界夹死; adjustments={adj}")
+        self.assertIn("take_profit_pct", adj, f"TREND 放大 TP 不应被边界夹死; adjustments={adj}")
         self.assertAlmostEqual(adj["take_profit_pct"], 0.1725, places=6)
-        self.assertIn("stop_loss_pct", adj,
-                      f"TREND 收窄 SL 不应被边界夹死; adjustments={adj}")
+        self.assertIn("stop_loss_pct", adj, f"TREND 收窄 SL 不应被边界夹死; adjustments={adj}")
         self.assertAlmostEqual(adj["stop_loss_pct"], 0.0184, places=6)
-        self.assertIn("atr_tp_multiplier", adj,
-                      f"TREND 放大 ATR_TP 不应被边界夹死; adjustments={adj}")
+        self.assertIn(
+            "atr_tp_multiplier", adj, f"TREND 放大 ATR_TP 不应被边界夹死; adjustments={adj}"
+        )
         self.assertAlmostEqual(adj["atr_tp_multiplier"], 5.5, places=6)
         # TREND 分支不改 ATR_SL → 不应出现
         self.assertNotIn("atr_sl_multiplier", adj)
@@ -545,14 +573,16 @@ class TestFix3RelaxedBounds(unittest.TestCase):
                 ATR_SL=min(2.5×1.05=2.625, high=3.0)=2.625
                 ATR_TP=max(2.0×0.9=1.8,    low=1.5)=1.8
         → 4 项都应出现（GREEN 通过）。"""
-        from agents.agent_b_runner import _load_strategy_params, _save_strategy_params
         from unittest.mock import patch
+
+        from agents.agent_b_runner import _load_strategy_params, _save_strategy_params
+
         orig = _load_strategy_params()
         try:
             # 设成旧边界下的 RANGE 不动点值（现在应能动起来）
             tmp = dict(orig)
-            tmp["take_profit_pct"]   = 0.04
-            tmp["stop_loss_pct"]     = 0.08
+            tmp["take_profit_pct"] = 0.04
+            tmp["stop_loss_pct"] = 0.08
             tmp["atr_sl_multiplier"] = 2.5
             tmp["atr_tp_multiplier"] = 2.0
             _save_strategy_params(tmp)
@@ -562,12 +592,13 @@ class TestFix3RelaxedBounds(unittest.TestCase):
             with patch.dict("agents.agent_b_runner.PARAM_BOUNDS", NEW_BOUNDS_FIX3, clear=True):
                 adj = _compute_param_adjustments(mem, decisions)
 
-            self.assertEqual(len(adj), 4,
-                             f"RANGE 旧不动点应产生 4 项真变化，实际 {len(adj)} 项: {adj}")
-            self.assertAlmostEqual(adj["take_profit_pct"],   0.034,  places=6)
-            self.assertAlmostEqual(adj["stop_loss_pct"],     0.088,  places=6)
-            self.assertAlmostEqual(adj["atr_sl_multiplier"], 2.625,  places=6)
-            self.assertAlmostEqual(adj["atr_tp_multiplier"], 1.8,    places=6)
+            self.assertEqual(
+                len(adj), 4, f"RANGE 旧不动点应产生 4 项真变化，实际 {len(adj)} 项: {adj}"
+            )
+            self.assertAlmostEqual(adj["take_profit_pct"], 0.034, places=6)
+            self.assertAlmostEqual(adj["stop_loss_pct"], 0.088, places=6)
+            self.assertAlmostEqual(adj["atr_sl_multiplier"], 2.625, places=6)
+            self.assertAlmostEqual(adj["atr_tp_multiplier"], 1.8, places=6)
         finally:
             _save_strategy_params(orig)
 
@@ -575,6 +606,7 @@ class TestFix3RelaxedBounds(unittest.TestCase):
 # ──────────────────────────────────────────────────────────────────────────────
 # Fix-4 Tests: save_memory 调用必须路径可注入，不得污染生产 agent_b_memory.json
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 class TestFix4MemoryPathIsolation(unittest.TestCase):
     """Fix-4 RED → GREEN:
@@ -594,10 +626,14 @@ class TestFix4MemoryPathIsolation(unittest.TestCase):
 
     def test_save_memory_accepts_memory_path_kwarg_writes_there(self):
         """[Fix-4 RED] save_memory 必须接受 memory_path 形参，写入指定位置而非生产路径。"""
-        import tempfile, hashlib
+
         mem = {
-            "total_cycles": 0, "win_streaks": 0, "loss_streaks": 0,
-            "lessons": [], "recent_decisions": [], "active_positions": {},
+            "total_cycles": 0,
+            "win_streaks": 0,
+            "loss_streaks": 0,
+            "lessons": [],
+            "recent_decisions": [],
+            "active_positions": {},
         }
 
         with tempfile.TemporaryDirectory() as td:
@@ -609,8 +645,7 @@ class TestFix4MemoryPathIsolation(unittest.TestCase):
             self.assertTrue(tmp_path.exists(), "memory_path 指定位置必须有写入文件")
             with open(tmp_path) as f:
                 written = json.load(f)
-            self.assertEqual(written["win_streaks"], 1,
-                             "自定义路径的磁盘记忆中连胜必须已+1")
+            self.assertEqual(written["win_streaks"], 1, "自定义路径的磁盘记忆中连胜必须已+1")
             self.assertEqual(written["loss_streaks"], 0)
             self.assertEqual(written["total_cycles"], 1)
 
@@ -618,12 +653,13 @@ class TestFix4MemoryPathIsolation(unittest.TestCase):
         """不传 memory_path → 行为等价默认 MEMORY_PATH（向后兼容）。
         直接使用 save_memory 签名 introspection：memory_path 必须是 kwarg 且默认 MEMORY_PATH。"""
         import inspect
+
         sig = inspect.signature(save_memory)
-        self.assertIn("memory_path", sig.parameters,
-                      "save_memory 签名中必须有 memory_path 参数")
+        self.assertIn("memory_path", sig.parameters, "save_memory 签名中必须有 memory_path 参数")
         self.assertIsNot(
-            sig.parameters["memory_path"].default, inspect.Parameter.empty,
-            "memory_path 必须有默认值（向后兼容：未传时 = MEMORY_PATH）"
+            sig.parameters["memory_path"].default,
+            inspect.Parameter.empty,
+            "memory_path 必须有默认值（向后兼容：未传时 = MEMORY_PATH）",
         )
 
 

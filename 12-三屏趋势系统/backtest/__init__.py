@@ -13,45 +13,45 @@
 - calibration.py:   置信度校准分析（ECE/Platt Scaling/Isotonic）
 """
 
-from .engine import BacktestEngine
-from .metrics import calculate_performance_metrics
-from .strategy import (
-    BaseStrategy,
-    BuyAndHoldStrategy,
-    MovingAverageStrategy,
-    TrendScreenStrategy,
-    LeastResistanceStrategy,
-    MA200TrendFollowingStrategy,
-    EnhancedMA200Strategy,
+from .calibration import (
+    calculate_ece,
+    collect_calibration_data,
+    cross_validated_calibration,
+    format_calibration_report,
+    isotonic_calibration,
+    platt_scaling,
 )
 from .data_utils import (
-    prepare_ohlcv_dataframe,
     fetch_historical_data,
-    train_test_split,
     generate_sample_data,
+    prepare_ohlcv_dataframe,
+    train_test_split,
+)
+from .engine import BacktestEngine
+from .metrics import calculate_performance_metrics
+from .overfitting import (
+    cost_sensitivity_test,
+    format_cost_report,
+    format_permutation_report,
+    format_sensitivity_report,
+    parameter_sensitivity_analysis,
+    permutation_test,
 )
 from .results import (
     BacktestResult,
     compare_results,
     format_comparison_table,
 )
+from .strategy import (
+    BaseStrategy,
+    BuyAndHoldStrategy,
+    EnhancedMA200Strategy,
+    LeastResistanceStrategy,
+    MA200TrendFollowingStrategy,
+    MovingAverageStrategy,
+    TrendScreenStrategy,
+)
 from .walk_forward import WalkForwardAnalyzer
-from .overfitting import (
-    parameter_sensitivity_analysis,
-    format_sensitivity_report,
-    permutation_test,
-    format_permutation_report,
-    cost_sensitivity_test,
-    format_cost_report,
-)
-from .calibration import (
-    calculate_ece,
-    platt_scaling,
-    isotonic_calibration,
-    cross_validated_calibration,
-    collect_calibration_data,
-    format_calibration_report,
-)
 
 __all__ = [
     # 核心引擎

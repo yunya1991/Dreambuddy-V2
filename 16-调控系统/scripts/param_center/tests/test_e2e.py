@@ -9,6 +9,7 @@
 运行：
   python -m pytest 16-调控系统/scripts/param_center/tests/test_e2e.py -v
 """
+
 from __future__ import annotations
 
 import sys
@@ -27,9 +28,10 @@ for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER]:
     if sp not in sys.path:
         sys.path.insert(0, sp)
 
+from memory_l4.bcrm2.sl_tp_config import SLTPParams  # noqa: E402
+
 from param_center.api import get_sltp_params  # noqa: E402
 from param_center.shadow_integration import ParamCenterShadowLogger  # noqa: E402
-from memory_l4.bcrm2.sl_tp_config import SLTPParams  # noqa: E402
 
 
 def test_e2e_open_position_flow(tmp_path):
@@ -125,15 +127,11 @@ def test_e2e_hard_constraints_all_symbols(tmp_path):
     ]
     for symbol, regime in test_cases:
         params = get_sltp_params(symbol, market_regime=regime, use_cache=False)
-        assert params.sl_floor >= 0.03, (
-            f"{symbol}/{regime} SL={params.sl_floor} < 3%"
-        )
-        assert params.tp_floor >= 0.12, (
-            f"{symbol}/{regime} TP={params.tp_floor} < 12%"
-        )
-        assert params.tp_floor / params.sl_floor >= 2.0, (
-            f"{symbol}/{regime} RR={params.tp_floor/params.sl_floor} < 2"
-        )
+        assert params.sl_floor >= 0.03, f"{symbol}/{regime} SL={params.sl_floor} < 3%"
+        assert params.tp_floor >= 0.12, f"{symbol}/{regime} TP={params.tp_floor} < 12%"
+        assert (
+            params.tp_floor / params.sl_floor >= 2.0
+        ), f"{symbol}/{regime} RR={params.tp_floor/params.sl_floor} < 2"
 
 
 if __name__ == "__main__":

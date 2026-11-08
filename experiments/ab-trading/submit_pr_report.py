@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-import os
+import os  # noqa: I001
 import requests
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), 'config', '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), "config", ".env"))
 
-GH_TOKEN = os.environ.get('GH_TOKEN', '')
-PR_NUMBER = '52'
+GH_TOKEN = os.environ.get("GH_TOKEN", "")
+PR_NUMBER = "52"
 
-cycle = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+cycle = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
-pr_report = f'''## 🧠 Agent B 交易报告 | Dreambuddy OS | cycle: {cycle}
+pr_report = f"""## 🧠 Agent B 交易报告 | Dreambuddy OS | cycle: {cycle}
 
 ### 📊 本轮决策
 | 项目 | 值 |
@@ -54,23 +54,23 @@ pr_report = f'''## 🧠 Agent B 交易报告 | Dreambuddy OS | cycle: {cycle}
 ### 🧩 预算使用
 - 模式：full
 - 预估Token：1700 / 30000
-'''
+"""
 
-print('=== PR 评论报告 ===')
+print("=== PR 评论报告 ===")
 print(pr_report)
 print(f'\nGH_TOKEN available: {"Yes" if GH_TOKEN else "No"}')
 
 if GH_TOKEN:
-    url = f'https://api.github.com/repos/yunya1991/Dreambuddy-V2/issues/{PR_NUMBER}/comments'
-    headers = {'Authorization': f'token {GH_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
-    body = {'body': pr_report}
+    url = f"https://api.github.com/repos/yunya1991/Dreambuddy-V2/issues/{PR_NUMBER}/comments"
+    headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    body = {"body": pr_report}
     try:
         r = requests.post(url, headers=headers, json=body)
         if r.status_code in (200, 201):
-            print('✅ PR评论成功!')
+            print("✅ PR评论成功!")
         else:
-            print(f'❌ PR评论失败: {r.status_code} - {r.text[:200]}')
+            print(f"❌ PR评论失败: {r.status_code} - {r.text[:200]}")
     except Exception as e:
-        print(f'❌ PR评论异常: {e}')
+        print(f"❌ PR评论异常: {e}")
 else:
-    print('⚠️ GH_TOKEN未配置，跳过PR评论')
+    print("⚠️ GH_TOKEN未配置，跳过PR评论")

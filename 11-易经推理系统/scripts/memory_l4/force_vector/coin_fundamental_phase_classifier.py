@@ -16,6 +16,7 @@ Shadow 模式：只计算 + 记录，不参与交易决策。
 2. 信号阈值：E6 质变跌破 0.3（预期消退）/ E5 收缩跌破 0.3（盈收放缓）
 3. 估值分位：>80 → P3 倾向；30-80 → P2 倾向；<30 + E6>0.5 → P1 倾向
 """
+
 from __future__ import annotations
 
 import os
@@ -52,6 +53,7 @@ _EXPECTATION_EVENT_TYPES = ("mainnet_launch", "upgrade", "partnership")
 # 数据类
 # ===========================================================================
 
+
 @dataclass
 class PhaseClassification:
     """阶段识别结果 — Shadow 模式输出。
@@ -62,6 +64,7 @@ class PhaseClassification:
     evidence: E5/E6/估值分位等输入证据
     strategy_hint: 来自阶段匹配策略映射表的提示
     """
+
     coin: str
     current_phase: str
     phase_confidence: float
@@ -73,6 +76,7 @@ class PhaseClassification:
 # ===========================================================================
 # 阶段识别
 # ===========================================================================
+
 
 def classify_phase(
     coin: str,

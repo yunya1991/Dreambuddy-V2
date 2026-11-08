@@ -14,9 +14,9 @@
 
 from __future__ import annotations
 
-import time
 import logging
-from typing import Dict, Any, Optional
+import time
+from typing import Any, Dict, Optional
 
 import requests
 
@@ -39,12 +39,16 @@ class FreeFundamentalProvider:
     def __init__(self):
         self._cache: Dict[str, tuple] = {}  # symbol → (timestamp, data)
         self._session = requests.Session()
-        self._session.headers.update({
-            "User-Agent": "DreamOS-FreeFundamental/1.0",
-            "Accept": "application/json",
-        })
+        self._session.headers.update(
+            {
+                "User-Agent": "DreamOS-FreeFundamental/1.0",
+                "Accept": "application/json",
+            }
+        )
 
-    def _http_get(self, url: str, params: Optional[Dict] = None, timeout: int = 10) -> Optional[Dict]:
+    def _http_get(
+        self, url: str, params: Optional[Dict] = None, timeout: int = 10
+    ) -> Optional[Dict]:
         try:
             r = self._session.get(url, params=params, timeout=timeout)
             r.raise_for_status()
@@ -94,8 +98,8 @@ class FreeFundamentalProvider:
                     result["funding_rate_daily"] = funding_h * 24  # 折算日利率
                     result["funding_rate_annual"] = funding_h * 24 * 365  # 折算年利率
                     result["open_interest"] = float(ctx.get("openInterest", 0))
-                    result["open_interest_usd"] = (
-                        float(ctx.get("openInterest", 0)) * float(ctx.get("markPx", 0))
+                    result["open_interest_usd"] = float(ctx.get("openInterest", 0)) * float(
+                        ctx.get("markPx", 0)
                     )
                     result["mark_price"] = float(ctx.get("markPx", 0))
                     result["_source"] = "hyperliquid"
@@ -237,9 +241,7 @@ class FreeFundamentalProvider:
             if len(history) >= 7:
                 avg_7d = sum(int(h.get("value", 50)) for h in history[:7]) / 7
                 result["fear_greed_7d_avg"] = round(avg_7d, 1)
-                result["fear_greed_trend_7d"] = round(
-                    result["fear_greed_index"] - avg_7d, 1
-                )
+                result["fear_greed_trend_7d"] = round(result["fear_greed_index"] - avg_7d, 1)
 
             # 近 30 天极值
             if len(history) >= 30:
@@ -635,13 +637,9 @@ class FreeFundamentalProvider:
             total_7d_ago = _total_usd(data[idx_7d])
             total_30d_ago = _total_usd(data[idx_30d])
 
-            change_7d = (
-                (total_now - total_7d_ago) / total_7d_ago * 100
-                if total_7d_ago > 0 else 0
-            )
+            change_7d = (total_now - total_7d_ago) / total_7d_ago * 100 if total_7d_ago > 0 else 0
             change_30d = (
-                (total_now - total_30d_ago) / total_30d_ago * 100
-                if total_30d_ago > 0 else 0
+                (total_now - total_30d_ago) / total_30d_ago * 100 if total_30d_ago > 0 else 0
             )
 
             return {
@@ -674,10 +672,7 @@ class FreeFundamentalProvider:
             # 计算 7d 平均日交易量，对比 24h
             avg_7d = total_7d / 7 if total_7d > 0 else 0
             # 24h vs 7d 均值的变化率
-            change_vs_7d = (
-                (total_24h - avg_7d) / avg_7d * 100
-                if avg_7d > 0 else 0
-            )
+            change_vs_7d = (total_24h - avg_7d) / avg_7d * 100 if avg_7d > 0 else 0
 
             return {
                 "chain_volume": total_24h,
@@ -707,14 +702,8 @@ class FreeFundamentalProvider:
             tvl_7d_ago = float(data[idx_7d].get("tvl", 0))
             tvl_30d_ago = float(data[idx_30d].get("tvl", 0))
 
-            tvl_change_7d = (
-                (tvl_now - tvl_7d_ago) / tvl_7d_ago * 100
-                if tvl_7d_ago > 0 else 0
-            )
-            tvl_change_30d = (
-                (tvl_now - tvl_30d_ago) / tvl_30d_ago * 100
-                if tvl_30d_ago > 0 else 0
-            )
+            tvl_change_7d = (tvl_now - tvl_7d_ago) / tvl_7d_ago * 100 if tvl_7d_ago > 0 else 0
+            tvl_change_30d = (tvl_now - tvl_30d_ago) / tvl_30d_ago * 100 if tvl_30d_ago > 0 else 0
 
             # TVL 增长 = 链上资金沉淀增加 ≈ 交易所余额减少（场外积累）
             # 取反向近似：tvl_change 越高 → exchange_balance_change 越低
@@ -795,13 +784,11 @@ class FreeFundamentalProvider:
 
                 # 社交热度分位数（对比排行榜中其他币种）
                 all_hypes = [
-                    float(it.get("socialHypeInfo", {}).get("socialHype", 0) or 0)
-                    for it in items
+                    float(it.get("socialHypeInfo", {}).get("socialHype", 0) or 0) for it in items
                 ]
                 hype_rank = sum(1 for h in all_hypes if h > social_hype) + 1
                 hype_percentile = (
-                    (len(all_hypes) - hype_rank) / len(all_hypes) * 100
-                    if all_hypes else 0
+                    (len(all_hypes) - hype_rank) / len(all_hypes) * 100 if all_hypes else 0
                 )
 
                 result["binance_social_hype"] = social_hype
@@ -984,18 +971,19 @@ class FreeFundamentalProvider:
 
         # 元信息
         result["_free_fundamental_sources"] = sources
-        result["_free_fundamental_field_count"] = len(
-            [k for k in result if not k.startswith("_")]
-        )
+        result["_free_fundamental_field_count"] = len([k for k in result if not k.startswith("_")])
         result["_free_fundamental_collected_at"] = time.time()
 
         # 缓存
         self._cache[symbol] = (time.time(), result)
 
         real_count = sum(
-            1 for s in sources.values()
-            if s not in ("unknown",) and not s.endswith("_failed")
-            and not s.startswith("skipped_") and not s.endswith("_not_found")
+            1
+            for s in sources.values()
+            if s not in ("unknown",)
+            and not s.endswith("_failed")
+            and not s.startswith("skipped_")
+            and not s.endswith("_not_found")
         )
         logger.info(
             f"免费基本面采集: {symbol} | {result['_free_fundamental_field_count']} 字段 | "

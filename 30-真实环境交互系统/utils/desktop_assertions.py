@@ -8,6 +8,7 @@
 - 终端断言：terminal_contains（模式 A 搜 subagent 文本响应；模式 B 搜 osascript 读终端）
 - UI 视觉断言：ui_visual_match（文件 vs 文件，复用 utils.screenshot_diff）
 """
+
 from __future__ import annotations
 
 import os
@@ -16,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from core.result_verifier import VerificationResult
+
 from utils.screenshot_diff import compare_screenshot_paths
 
 
@@ -56,7 +58,13 @@ class DesktopAssertions:
                 details={
                     "path": expanded,
                     "needle": text,
-                    "snippet": content[max(0, content.find(text) - 20):content.find(text) + len(text) + 20] if found else None,
+                    "snippet": (
+                        content[
+                            max(0, content.find(text) - 20) : content.find(text) + len(text) + 20
+                        ]
+                        if found
+                        else None
+                    ),
                 },
                 error=None if found else f"text not found in {expanded}",
             )
@@ -90,8 +98,11 @@ class DesktopAssertions:
     # 终端断言
     # ------------------------------------------------------------------
     @staticmethod
-    def terminal_contains(text: str, subagent_response: Optional[str] = None,
-                           osascript_path: str = "/usr/bin/osascript") -> VerificationResult:
+    def terminal_contains(
+        text: str,
+        subagent_response: Optional[str] = None,
+        osascript_path: str = "/usr/bin/osascript",
+    ) -> VerificationResult:
         """检查终端是否包含某段文本。
 
         模式 A（subagent_response 非 None）：直接搜 subagent 文本响应
@@ -108,18 +119,18 @@ class DesktopAssertions:
                     "needle": text,
                     "response_len": len(subagent_response),
                 },
-                error=None if found else f"text not found in subagent response",
+                error=None if found else "text not found in subagent response",
             )
 
         # 模式 B：osascript 读 Terminal
         # 通过 AppleScript 获取 Terminal 当前 tab 的内容
         script = (
             'tell application "Terminal"\n'
-            '  if (count of windows) > 0 then\n'
-            '    if (count of tabs of front window) > 0 then\n'
-            '      return contents of selected tab of front window\n'
-            '    end if\n'
-            '  end if\n'
+            "  if (count of windows) > 0 then\n"
+            "    if (count of tabs of front window) > 0 then\n"
+            "      return contents of selected tab of front window\n"
+            "    end if\n"
+            "  end if\n"
             '  return ""\n'
             "end tell"
         )
@@ -147,7 +158,7 @@ class DesktopAssertions:
                     "needle": text,
                     "content_len": len(content),
                 },
-                error=None if found else f"text not found in Terminal output",
+                error=None if found else "text not found in Terminal output",
             )
         except Exception as e:
             return VerificationResult(
@@ -161,8 +172,9 @@ class DesktopAssertions:
     # UI 视觉断言
     # ------------------------------------------------------------------
     @staticmethod
-    def ui_visual_match(current_path: str, baseline_path: str,
-                        threshold: float = 0.05) -> VerificationResult:
+    def ui_visual_match(
+        current_path: str, baseline_path: str, threshold: float = 0.05
+    ) -> VerificationResult:
         """对比两个截图文件，返回差异是否在阈值内。"""
         cur = os.path.expanduser(current_path)
         base = os.path.expanduser(baseline_path)

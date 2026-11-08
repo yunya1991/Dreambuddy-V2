@@ -18,6 +18,7 @@
 关键物理限制：trae 电脑控制插件无 CLI 可执行文件（plugin.json 仅声明 interface），
 只能由 trae 主对话通过 Agent 工具调用，Python 无法直接 spawn subagent。
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,8 +28,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .result_verifier import VerificationResult
 from utils.desktop_assertions import DesktopAssertions
+
+from .result_verifier import VerificationResult
 
 logger = logging.getLogger("real_env.computer_use_runner")
 
@@ -39,6 +41,7 @@ logger = logging.getLogger("real_env.computer_use_runner")
 @dataclass
 class ComputerUseStep:
     """单步执行结果（双模式共用）"""
+
     step: dict
     mode: str  # "computer_use" | "desktop_native"
     success: bool
@@ -62,6 +65,7 @@ class ComputerUseStep:
 @dataclass
 class ComputerUseResult:
     """computer_use 任务执行结果"""
+
     task: str
     passed: bool
     mode: str
@@ -121,9 +125,7 @@ class ComputerUseRunner:
         self._dn_cfg = config.get("desktop_native", {})
         self._session_name = session_name
         self._auto_verify = self._cu_cfg.get("auto_verify", True)
-        self._screenshot_dir = self._cu_cfg.get(
-            "screenshot_dir", "/tmp/cu_screenshots"
-        )
+        self._screenshot_dir = self._cu_cfg.get("screenshot_dir", "/tmp/cu_screenshots")
         self._visual_threshold = self._cu_cfg.get("visual_threshold", 0.05)
         self._subagent_type = self._cu_cfg.get("subagent_type", "computer_use")
         self._step_timeout = self._cu_cfg.get("step_timeout", 60)
@@ -149,13 +151,15 @@ class ComputerUseRunner:
 
         for idx, step in enumerate(steps, 1):
             prompt = self._step_to_prompt(step, default_app)
-            plan.append({
-                "step_index": idx,
-                "action": list(step.keys())[0] if step else "unknown",
-                "prompt": prompt,
-                "expect": self._extract_expect(step),
-                "raw_step": step,
-            })
+            plan.append(
+                {
+                    "step_index": idx,
+                    "action": list(step.keys())[0] if step else "unknown",
+                    "prompt": prompt,
+                    "expect": self._extract_expect(step),
+                    "raw_step": step,
+                }
+            )
         return plan
 
     def _step_to_prompt(self, step: dict, default_app: Optional[str]) -> str:
@@ -219,11 +223,9 @@ class ComputerUseRunner:
         lowered = text.lower()
         # 简单启发式判断
         success = (
-            "success" in lowered and "fail" not in lowered
-        ) or (
-            "completed" in lowered and "error" not in lowered
-        ) or (
-            "done" in lowered and not lowered.startswith("error")
+            ("success" in lowered and "fail" not in lowered)
+            or ("completed" in lowered and "error" not in lowered)
+            or ("done" in lowered and not lowered.startswith("error"))
         )
         # 截图路径：找 /tmp 或绝对路径
         screenshot_path = None
@@ -264,8 +266,11 @@ class ComputerUseRunner:
         start = time.time()
         if not step:
             return ComputerUseStep(
-                step=step, mode="desktop_native", success=False,
-                error="empty step", duration_ms=0,
+                step=step,
+                mode="desktop_native",
+                success=False,
+                error="empty step",
+                duration_ms=0,
             )
         key = list(step.keys())[0]
         val = step[key]
@@ -274,9 +279,11 @@ class ComputerUseRunner:
             name = val.get("name") if isinstance(val, dict) else str(val)
             # macOS: open -a <AppName>
             import subprocess
+
             r = subprocess.run(["open", "-a", name], capture_output=True, text=True, timeout=15)
             return ComputerUseStep(
-                step=step, mode="desktop_native",
+                step=step,
+                mode="desktop_native",
                 success=(r.returncode == 0),
                 output=r.stdout,
                 error=r.stderr if r.returncode != 0 else None,
@@ -289,7 +296,9 @@ class ComputerUseRunner:
                 import pyautogui
             except ImportError as e:
                 return ComputerUseStep(
-                    step=step, mode="desktop_native", success=False,
+                    step=step,
+                    mode="desktop_native",
+                    success=False,
                     error=f"pyautogui not installed: {e}",
                     duration_ms=(time.time() - start) * 1000,
                 )
@@ -299,17 +308,26 @@ class ComputerUseRunner:
             )
             img.save(save_path)
             return ComputerUseStep(
-                step=step, mode="desktop_native", success=True,
-                output=save_path, screenshot_path=save_path,
+                step=step,
+                mode="desktop_native",
+                success=True,
+                output=save_path,
+                screenshot_path=save_path,
                 duration_ms=(time.time() - start) * 1000,
             )
 
         if key == "click_image":
             image = val.get("image") if isinstance(val, dict) else None
-            confidence = val.get("confidence", self._pyautogui_confidence) if isinstance(val, dict) else self._pyautogui_confidence
+            confidence = (
+                val.get("confidence", self._pyautogui_confidence)
+                if isinstance(val, dict)
+                else self._pyautogui_confidence
+            )
             if not image:
                 return ComputerUseStep(
-                    step=step, mode="desktop_native", success=False,
+                    step=step,
+                    mode="desktop_native",
+                    success=False,
                     error="click_image requires 'image' param",
                     duration_ms=(time.time() - start) * 1000,
                 )
@@ -317,7 +335,9 @@ class ComputerUseRunner:
                 import pyautogui
             except ImportError as e:
                 return ComputerUseStep(
-                    step=step, mode="desktop_native", success=False,
+                    step=step,
+                    mode="desktop_native",
+                    success=False,
                     error=f"pyautogui not installed: {e}",
                     duration_ms=(time.time() - start) * 1000,
                 )
@@ -331,20 +351,26 @@ class ComputerUseRunner:
                     location = pyautogui.locateOnScreen(image)
                 if location is None:
                     return ComputerUseStep(
-                        step=step, mode="desktop_native", success=False,
+                        step=step,
+                        mode="desktop_native",
+                        success=False,
                         error=f"image not found on screen: {image}",
                         duration_ms=(time.time() - start) * 1000,
                     )
                 center = pyautogui.center(location)
                 pyautogui.click(center)
                 return ComputerUseStep(
-                    step=step, mode="desktop_native", success=True,
+                    step=step,
+                    mode="desktop_native",
+                    success=True,
                     output=f"clicked at {center}",
                     duration_ms=(time.time() - start) * 1000,
                 )
             except Exception as e:
                 return ComputerUseStep(
-                    step=step, mode="desktop_native", success=False,
+                    step=step,
+                    mode="desktop_native",
+                    success=False,
                     error=f"click_image error: {e}",
                     duration_ms=(time.time() - start) * 1000,
                 )
@@ -355,13 +381,21 @@ class ComputerUseRunner:
                 import pyautogui
             except ImportError as e:
                 return ComputerUseStep(
-                    step=step, mode="desktop_native", success=False,
+                    step=step,
+                    mode="desktop_native",
+                    success=False,
                     error=f"pyautogui not installed: {e}",
                     duration_ms=(time.time() - start) * 1000,
                 )
-            pyautogui.typewrite(text, interval=0.02) if all(ord(c) < 128 for c in text) else pyautogui.write(text)
+            (
+                pyautogui.typewrite(text, interval=0.02)
+                if all(ord(c) < 128 for c in text)
+                else pyautogui.write(text)
+            )
             return ComputerUseStep(
-                step=step, mode="desktop_native", success=True,
+                step=step,
+                mode="desktop_native",
+                success=True,
                 output=f"typed {len(text)} chars",
                 duration_ms=(time.time() - start) * 1000,
             )
@@ -372,13 +406,17 @@ class ComputerUseRunner:
                 import pyautogui
             except ImportError as e:
                 return ComputerUseStep(
-                    step=step, mode="desktop_native", success=False,
+                    step=step,
+                    mode="desktop_native",
+                    success=False,
                     error=f"pyautogui not installed: {e}",
                     duration_ms=(time.time() - start) * 1000,
                 )
             pyautogui.press(key_name)
             return ComputerUseStep(
-                step=step, mode="desktop_native", success=True,
+                step=step,
+                mode="desktop_native",
+                success=True,
                 output=f"pressed {key_name}",
                 duration_ms=(time.time() - start) * 1000,
             )
@@ -387,13 +425,17 @@ class ComputerUseRunner:
             ms = val.get("ms", 1000) if isinstance(val, dict) else 1000
             time.sleep(ms / 1000.0)
             return ComputerUseStep(
-                step=step, mode="desktop_native", success=True,
+                step=step,
+                mode="desktop_native",
+                success=True,
                 output=f"waited {ms}ms",
                 duration_ms=float(ms),
             )
 
         return ComputerUseStep(
-            step=step, mode="desktop_native", success=False,
+            step=step,
+            mode="desktop_native",
+            success=False,
             error=f"unknown native step: {key}",
             duration_ms=(time.time() - start) * 1000,
         )
@@ -401,8 +443,9 @@ class ComputerUseRunner:
     # ------------------------------------------------------------------
     # 主入口
     # ------------------------------------------------------------------
-    def run_task_from_yaml(self, scenario: dict,
-                           plan_only: Optional[bool] = None) -> ComputerUseResult:
+    def run_task_from_yaml(
+        self, scenario: dict, plan_only: Optional[bool] = None
+    ) -> ComputerUseResult:
         """从 YAML 场景运行任务。
 
         Args:
@@ -418,7 +461,9 @@ class ComputerUseRunner:
 
         if not steps:
             return ComputerUseResult(
-                task=name, passed=False, mode=mode,
+                task=name,
+                passed=False,
+                mode=mode,
                 error="Scenario must contain 'steps'",
                 duration_ms=0,
             )
@@ -427,15 +472,22 @@ class ComputerUseRunner:
         if mode == "computer_use":
             plan = self.build_plan(scenario)
             # 决定是否仅生成 plan
-            force_plan = plan_only if plan_only is not None else self._cu_cfg.get("plan_only", False)
+            force_plan = (
+                plan_only if plan_only is not None else self._cu_cfg.get("plan_only", False)
+            )
             if force_plan:
                 return ComputerUseResult(
-                    task=name, passed=True, mode=mode,
-                    plan=plan, duration_ms=(time.time() - start) * 1000,
+                    task=name,
+                    passed=True,
+                    mode=mode,
+                    plan=plan,
+                    duration_ms=(time.time() - start) * 1000,
                 )
             # 模式 A 不支持纯 Python 执行（无 trae CLI）
             return ComputerUseResult(
-                task=name, passed=False, mode=mode,
+                task=name,
+                passed=False,
+                mode=mode,
                 plan=plan,
                 error=(
                     "模式 A (computer_use) 必须由 trae 主对话介入执行："
@@ -461,7 +513,9 @@ class ComputerUseRunner:
                     break
 
             result = ComputerUseResult(
-                task=name, passed=all_passed, mode=mode,
+                task=name,
+                passed=all_passed,
+                mode=mode,
                 steps=executed_steps,
                 duration_ms=(time.time() - start) * 1000,
             )
@@ -469,14 +523,17 @@ class ComputerUseRunner:
             # 验证
             if self._auto_verify and scenario.get("assertions"):
                 result.verification = self._run_verification(
-                    scenario["assertions"], executed_steps,
+                    scenario["assertions"],
+                    executed_steps,
                 )
                 result.passed = result.passed and result.verification.passed
 
             return result
 
         return ComputerUseResult(
-            task=name, passed=False, mode=mode,
+            task=name,
+            passed=False,
+            mode=mode,
             error=f"unknown mode: {mode} (expected: computer_use | desktop_native)",
             duration_ms=(time.time() - start) * 1000,
         )
@@ -484,8 +541,9 @@ class ComputerUseRunner:
     # ------------------------------------------------------------------
     # 验证集成
     # ------------------------------------------------------------------
-    def _run_verification(self, assertions: List[dict],
-                          steps: List[ComputerUseStep]) -> VerificationResult:
+    def _run_verification(
+        self, assertions: List[dict], steps: List[ComputerUseStep]
+    ) -> VerificationResult:
         """调度 DesktopAssertions 静态方法。
 
         assertions 是 dict 列表，每个 dict 单键，键=断言类型，值=参数。
@@ -508,21 +566,25 @@ class ComputerUseRunner:
                 r = DesktopAssertions.file_exists(params.get("path", ""))
             elif atype == "file_contains":
                 r = DesktopAssertions.file_contains(
-                    params.get("path", ""), params.get("text", ""),
+                    params.get("path", ""),
+                    params.get("text", ""),
                 )
             elif atype == "file_size_gt":
                 r = DesktopAssertions.file_size_gt(
-                    params.get("path", ""), params.get("size", 0),
+                    params.get("path", ""),
+                    params.get("size", 0),
                 )
             elif atype == "terminal_contains":
                 # 模式 A 搜 subagent 文本；模式 B 走 osascript
                 if subagent_text:
                     r = DesktopAssertions.terminal_contains(
-                        params.get("text", ""), subagent_response=subagent_text,
+                        params.get("text", ""),
+                        subagent_response=subagent_text,
                     )
                 else:
                     r = DesktopAssertions.terminal_contains(
-                        params.get("text", ""), osascript_path=self._osascript_path,
+                        params.get("text", ""),
+                        osascript_path=self._osascript_path,
                     )
             elif atype == "ui_visual_match":
                 r = DesktopAssertions.ui_visual_match(
@@ -532,7 +594,8 @@ class ComputerUseRunner:
                 )
             else:
                 r = VerificationResult(
-                    name=atype, passed=False,
+                    name=atype,
+                    passed=False,
                     details={"assertion": assertion},
                     error=f"unknown assertion type: {atype}",
                 )
@@ -542,5 +605,7 @@ class ComputerUseRunner:
                 passed = False
 
         return VerificationResult(
-            name="verification", passed=passed, details=details,
+            name="verification",
+            passed=passed,
+            details=details,
         )

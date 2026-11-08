@@ -7,47 +7,104 @@ v0.2 新增模块 — Phase 2 (P1)
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import (
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
     memory_l4_reviews_dir,
-    memory_l4_dir,
-    workspace_root,
 )
-from scripts.memory_l4.tradingagents_reflector import (
-    create_reflector,
+from scripts.memory_l4.tradingagents_reflector import (  # noqa: E402
     MultiDimensionalAnalyzer,
-    L4MemoryLog,
+    create_reflector,
 )
-
 
 # ── 64卦三分类（模块级常量，供仓位/卦象过滤统一使用） ─────────
 # 保持与 _hexagram_expected_outcome 内部完全一致，单一事实源
-BULLISH_HEXAGRAMS = frozenset([
-    "乾", "需", "比", "小畜", "履", "泰", "同人", "大有",
-    "谦", "豫", "随", "临", "复", "大畜", "颐",
-    "咸", "恒", "大壮", "晋", "家人", "解", "益", "夬",
-    "萃", "升", "鼎", "丰", "渐", "节", "中孚",
-])
+BULLISH_HEXAGRAMS = frozenset(
+    [
+        "乾",
+        "需",
+        "比",
+        "小畜",
+        "履",
+        "泰",
+        "同人",
+        "大有",
+        "谦",
+        "豫",
+        "随",
+        "临",
+        "复",
+        "大畜",
+        "颐",
+        "咸",
+        "恒",
+        "大壮",
+        "晋",
+        "家人",
+        "解",
+        "益",
+        "夬",
+        "萃",
+        "升",
+        "鼎",
+        "丰",
+        "渐",
+        "节",
+        "中孚",
+    ]
+)
 
-BEARISH_HEXAGRAMS = frozenset([
-    "蒙", "讼", "师", "否", "观", "噬嗑", "剥", "无妄",
-    "大过", "坎", "蛊", "遁", "明夷", "睽", "蹇", "损",
-    "姤", "困", "井", "归妹", "旅", "涣", "小过",
-])
+BEARISH_HEXAGRAMS = frozenset(
+    [
+        "蒙",
+        "讼",
+        "师",
+        "否",
+        "观",
+        "噬嗑",
+        "剥",
+        "无妄",
+        "大过",
+        "坎",
+        "蛊",
+        "遁",
+        "明夷",
+        "睽",
+        "蹇",
+        "损",
+        "姤",
+        "困",
+        "井",
+        "归妹",
+        "旅",
+        "涣",
+        "小过",
+    ]
+)
 
-NEUTRAL_HEXAGRAMS = frozenset([
-    "坤", "屯", "贲", "离", "革", "震", "艮", "巽", "兑",
-    "既济", "未济",
-])
+NEUTRAL_HEXAGRAMS = frozenset(
+    [
+        "坤",
+        "屯",
+        "贲",
+        "离",
+        "革",
+        "震",
+        "艮",
+        "巽",
+        "兑",
+        "既济",
+        "未济",
+    ]
+)
 
 
 def now_iso_local() -> str:
@@ -86,7 +143,7 @@ def _extract_pnl(episode: Dict[str, Any]) -> Tuple[Optional[float], Optional[flo
 
 
 def _extract_episode_path(case: Dict[str, Any]) -> str:
-    refs = ((case.get("execution") or {}).get("episode_refs") or [])
+    refs = (case.get("execution") or {}).get("episode_refs") or []
     if not refs:
         return ""
     return str((refs[0] or {}).get("path") or "")
@@ -153,59 +210,71 @@ def _verify_theory_practice(case: Dict[str, Any], pnl_pct: float) -> Dict[str, A
     for hexagram in signals.get("hexagrams", []):
         expected_outcome = _hexagram_expected_outcome(hexagram, direction)
         if expected_outcome == outcome:
-            confirmed.append({
-                "type": "hexagram",
-                "ref": hexagram,
-                "expected": expected_outcome,
-                "actual": outcome,
-                "confidence": 0.7,
-            })
+            confirmed.append(
+                {
+                    "type": "hexagram",
+                    "ref": hexagram,
+                    "expected": expected_outcome,
+                    "actual": outcome,
+                    "confidence": 0.7,
+                }
+            )
         elif expected_outcome != "unknown":
-            contradicted.append({
-                "type": "hexagram",
-                "ref": hexagram,
-                "expected": expected_outcome,
-                "actual": outcome,
-                "confidence": 0.7,
-            })
+            contradicted.append(
+                {
+                    "type": "hexagram",
+                    "ref": hexagram,
+                    "expected": expected_outcome,
+                    "actual": outcome,
+                    "confidence": 0.7,
+                }
+            )
 
     for strategy in signals.get("strategies", []):
         expected_outcome = _strategy_expected_outcome(strategy, case)
         if expected_outcome == outcome:
-            confirmed.append({
-                "type": "strategy",
-                "ref": strategy,
-                "expected": expected_outcome,
-                "actual": outcome,
-                "confidence": 0.6,
-            })
+            confirmed.append(
+                {
+                    "type": "strategy",
+                    "ref": strategy,
+                    "expected": expected_outcome,
+                    "actual": outcome,
+                    "confidence": 0.6,
+                }
+            )
         elif expected_outcome != "unknown":
-            contradicted.append({
-                "type": "strategy",
-                "ref": strategy,
-                "expected": expected_outcome,
-                "actual": outcome,
-                "confidence": 0.6,
-            })
+            contradicted.append(
+                {
+                    "type": "strategy",
+                    "ref": strategy,
+                    "expected": expected_outcome,
+                    "actual": outcome,
+                    "confidence": 0.6,
+                }
+            )
 
     for regime in signals.get("regimes", []):
         expected_outcome = _regime_expected_outcome(regime, direction)
         if expected_outcome == outcome:
-            confirmed.append({
-                "type": "regime",
-                "ref": regime,
-                "expected": expected_outcome,
-                "actual": outcome,
-                "confidence": 0.5,
-            })
+            confirmed.append(
+                {
+                    "type": "regime",
+                    "ref": regime,
+                    "expected": expected_outcome,
+                    "actual": outcome,
+                    "confidence": 0.5,
+                }
+            )
         elif expected_outcome != "unknown":
-            contradicted.append({
-                "type": "regime",
-                "ref": regime,
-                "expected": expected_outcome,
-                "actual": outcome,
-                "confidence": 0.5,
-            })
+            contradicted.append(
+                {
+                    "type": "regime",
+                    "ref": regime,
+                    "expected": expected_outcome,
+                    "actual": outcome,
+                    "confidence": 0.5,
+                }
+            )
 
     if confirmed and not contradicted:
         consistency = "consistent"
@@ -306,11 +375,13 @@ def analyze_success(
     key_decisions = []
     for stage in thinking_chain:
         if stage.get("decision"):
-            key_decisions.append({
-                "stage": stage["stage"],
-                "decision": stage["decision"],
-                "rationale": stage.get("rationale"),
-            })
+            key_decisions.append(
+                {
+                    "stage": stage["stage"],
+                    "decision": stage["decision"],
+                    "rationale": stage.get("rationale"),
+                }
+            )
 
     regime = (case.get("environment_snapshot") or {}).get("regime", "unknown")
 
@@ -370,53 +441,67 @@ def analyze_failure(
     }
 
 
-def _detect_failure_patterns(case: Dict[str, Any], episode: Dict[str, Any], exit_reason: str) -> List[Dict[str, Any]]:
+def _detect_failure_patterns(
+    case: Dict[str, Any], episode: Dict[str, Any], exit_reason: str
+) -> List[Dict[str, Any]]:
     """检测失败模式"""
     patterns = []
 
     if exit_reason in ["stop_loss", "止损"]:
-        patterns.append({
-            "type": "stop_loss_hit",
-            "description": "触发止损",
-            "severity": "high",
-        })
+        patterns.append(
+            {
+                "type": "stop_loss_hit",
+                "description": "触发止损",
+                "severity": "high",
+            }
+        )
 
     if exit_reason in ["liquidation", "强制平仓"]:
-        patterns.append({
-            "type": "liquidation",
-            "description": "强制平仓",
-            "severity": "critical",
-        })
+        patterns.append(
+            {
+                "type": "liquidation",
+                "description": "强制平仓",
+                "severity": "critical",
+            }
+        )
 
     es = case.get("environment_snapshot", {})
     if isinstance(es, dict):
         if es.get("regime") == "sideways" and case.get("direction") in ["long", "short"]:
-            patterns.append({
-                "type": "wrong_regime",
-                "description": "在震荡市中开趋势单",
-                "severity": "medium",
-            })
+            patterns.append(
+                {
+                    "type": "wrong_regime",
+                    "description": "在震荡市中开趋势单",
+                    "severity": "medium",
+                }
+            )
 
     ec = case.get("evidence_chain", {})
     if not ec or not ec.get("signal_refs"):
-        patterns.append({
-            "type": "insufficient_evidence",
-            "description": "缺少交易信号证据",
-            "severity": "medium",
-        })
+        patterns.append(
+            {
+                "type": "insufficient_evidence",
+                "description": "缺少交易信号证据",
+                "severity": "medium",
+            }
+        )
 
     tc = case.get("thinking_chain") or []
     if len(tc) < 2:
-        patterns.append({
-            "type": "incomplete_thinking",
-            "description": "思考链不完整",
-            "severity": "low",
-        })
+        patterns.append(
+            {
+                "type": "incomplete_thinking",
+                "description": "思考链不完整",
+                "severity": "low",
+            }
+        )
 
     return patterns
 
 
-def _generate_distill_proposals(case: Dict[str, Any], analysis: Dict[str, Any], theory_verification: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _generate_distill_proposals(
+    case: Dict[str, Any], analysis: Dict[str, Any], theory_verification: Dict[str, Any]
+) -> List[Dict[str, Any]]:
     """生成蒸馏建议（A7 实践理论报告雏形）
 
     根据理论验证结果，生成可用于蒸馏的命题建议。
@@ -435,57 +520,67 @@ def _generate_distill_proposals(case: Dict[str, Any], analysis: Dict[str, Any], 
     if confirmed:
         for ct in confirmed:
             if ct.get("type") == "strategy":
-                proposals.append({
-                    "type": "strategy_rule",
-                    "statement": f"{system_source} 在 {regime} 市场下的 {ct['ref']} 策略有效",
-                    "evidence_count": 1,
-                    "confidence": ct.get("confidence", 0.6),
-                    "direction": direction,
-                    "regime": regime,
-                })
+                proposals.append(
+                    {
+                        "type": "strategy_rule",
+                        "statement": f"{system_source} 在 {regime} 市场下的 {ct['ref']} 策略有效",
+                        "evidence_count": 1,
+                        "confidence": ct.get("confidence", 0.6),
+                        "direction": direction,
+                        "regime": regime,
+                    }
+                )
             elif ct.get("type") == "hexagram":
-                proposals.append({
-                    "type": "signal_rule",
-                    "statement": f"卦象 {ct['ref']} 在 {direction} 方向下预测准确",
-                    "evidence_count": 1,
-                    "confidence": ct.get("confidence", 0.7),
-                    "direction": direction,
-                })
+                proposals.append(
+                    {
+                        "type": "signal_rule",
+                        "statement": f"卦象 {ct['ref']} 在 {direction} 方向下预测准确",
+                        "evidence_count": 1,
+                        "confidence": ct.get("confidence", 0.7),
+                        "direction": direction,
+                    }
+                )
 
     if contradicted:
         for ct in contradicted:
-            proposals.append({
-                "type": "refutation",
-                "statement": f"{ct['type']} {ct['ref']} 在 {regime} 市场下预测失败",
-                "evidence_count": 1,
-                "confidence": ct.get("confidence", 0.5),
-                "direction": direction,
-                "regime": regime,
-                "actual_outcome": ct.get("actual"),
-            })
+            proposals.append(
+                {
+                    "type": "refutation",
+                    "statement": f"{ct['type']} {ct['ref']} 在 {regime} 市场下预测失败",
+                    "evidence_count": 1,
+                    "confidence": ct.get("confidence", 0.5),
+                    "direction": direction,
+                    "regime": regime,
+                    "actual_outcome": ct.get("actual"),
+                }
+            )
 
     if consistency == "consistent" and abs(pnl_pct) > 2:
-        proposals.append({
-            "type": "success_pattern",
-            "statement": f"{system_source} 在 {regime} 市场下 {direction} 方向交易成功率高",
-            "evidence_count": 1,
-            "confidence": min(0.9, 0.5 + abs(pnl_pct) / 20),
-            "direction": direction,
-            "regime": regime,
-            "pnl_pct": pnl_pct,
-        })
+        proposals.append(
+            {
+                "type": "success_pattern",
+                "statement": f"{system_source} 在 {regime} 市场下 {direction} 方向交易成功率高",
+                "evidence_count": 1,
+                "confidence": min(0.9, 0.5 + abs(pnl_pct) / 20),
+                "direction": direction,
+                "regime": regime,
+                "pnl_pct": pnl_pct,
+            }
+        )
 
     if consistency == "contradicted" and abs(pnl_pct) > 2:
-        proposals.append({
-            "type": "failure_pattern",
-            "statement": f"{system_source} 在 {regime} 市场下 {direction} 方向交易需要调整",
-            "evidence_count": 1,
-            "confidence": min(0.9, 0.5 + abs(pnl_pct) / 20),
-            "direction": direction,
-            "regime": regime,
-            "pnl_pct": pnl_pct,
-            "gap_analysis": theory_verification.get("gap_analysis", []),
-        })
+        proposals.append(
+            {
+                "type": "failure_pattern",
+                "statement": f"{system_source} 在 {regime} 市场下 {direction} 方向交易需要调整",
+                "evidence_count": 1,
+                "confidence": min(0.9, 0.5 + abs(pnl_pct) / 20),
+                "direction": direction,
+                "regime": regime,
+                "pnl_pct": pnl_pct,
+                "gap_analysis": theory_verification.get("gap_analysis", []),
+            }
+        )
 
     return proposals
 
@@ -553,38 +648,44 @@ def build_review_record(
         elif gap_analysis:
             theory_gap = "; ".join(gap_analysis)
 
-        mistakes.append({
-            "what": f"交易亏损 {pnl_pct}%",
-            "why": exit_reason,
-            "severity": min(1.0, abs(pnl_pct or 0) / 5.0) if pnl_pct is not None else None,
-            "stage_ref": None,
-            "theory_gap": theory_gap,
-            "patterns": failure_patterns,
-        })
+        mistakes.append(
+            {
+                "what": f"交易亏损 {pnl_pct}%",
+                "why": exit_reason,
+                "severity": min(1.0, abs(pnl_pct or 0) / 5.0) if pnl_pct is not None else None,
+                "stage_ref": None,
+                "theory_gap": theory_gap,
+                "patterns": failure_patterns,
+            }
+        )
 
         for ct in contradicted_theories:
-            mistakes.append({
-                "what": f"{ct['type']} {ct['ref']} 预测错误",
-                "why": f"预期 {ct['expected']}，实际 {ct['actual']}",
-                "severity": ct.get("confidence", 0.5),
-                "stage_ref": ct["type"],
-                "theory_gap": "理论与实践不一致",
-            })
+            mistakes.append(
+                {
+                    "what": f"{ct['type']} {ct['ref']} 预测错误",
+                    "why": f"预期 {ct['expected']}，实际 {ct['actual']}",
+                    "severity": ct.get("confidence", 0.5),
+                    "stage_ref": ct["type"],
+                    "theory_gap": "理论与实践不一致",
+                }
+            )
 
     elif direction == "success":
         why = "待理论与实践验证"
         if confirmed_theories:
             why = f"{len(confirmed_theories)} 个理论信号验证成功"
 
-        successes.append({
-            "what": f"交易盈利 {pnl_pct}%",
-            "why": why,
-            "severity": None,
-            "stage_ref": None,
-            "theory_gap": None,
-            "reproducible": consistency_score > 0.7,
-            "confirmed_theories": confirmed_theories,
-        })
+        successes.append(
+            {
+                "what": f"交易盈利 {pnl_pct}%",
+                "why": why,
+                "severity": None,
+                "stage_ref": None,
+                "theory_gap": None,
+                "reproducible": consistency_score > 0.7,
+                "confirmed_theories": confirmed_theories,
+            }
+        )
 
     record: Dict[str, Any] = {
         "review_id": review_id,
@@ -685,8 +786,11 @@ def run_review(
             failure_count += 1
 
         record = build_review_record(
-            case, analysis, snapshot_ts=ts,
-            reflector=reflector, episode=episode,
+            case,
+            analysis,
+            snapshot_ts=ts,
+            reflector=reflector,
+            episode=episode,
         )
         reviews.append(record)
 

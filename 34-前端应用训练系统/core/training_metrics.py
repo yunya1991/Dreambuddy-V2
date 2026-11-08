@@ -10,8 +10,9 @@ P4 功能:
   - PatternMiner: 跨案例模式挖掘
   - FeedbackLoop: 质量反馈到CaseIngestGate阈值调整
 """
+
 from collections import Counter
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 
 class TrainingMetrics:
@@ -57,10 +58,12 @@ class TrainingMetrics:
 
     def record_correction(self, correction_type: str, description: str) -> None:
         """记录一次纠正。"""
-        self._corrections.append({
-            "type": correction_type,
-            "description": description,
-        })
+        self._corrections.append(
+            {
+                "type": correction_type,
+                "description": description,
+            }
+        )
 
     def get_correction_count(self) -> int:
         """获取纠正次数。"""
@@ -99,9 +102,7 @@ class PatternMiner:
                 counter[p] += 1
         return dict(counter)
 
-    def mine_top_patterns(
-        self, cases: List[dict], top_n: int = 5
-    ) -> List[Tuple[str, int]]:
+    def mine_top_patterns(self, cases: List[dict], top_n: int = 5) -> List[Tuple[str, int]]:
         """获取 Top-N 频繁模式。"""
         common = self.mine_common_patterns(cases)
         sorted_patterns = sorted(common.items(), key=lambda x: x[1], reverse=True)

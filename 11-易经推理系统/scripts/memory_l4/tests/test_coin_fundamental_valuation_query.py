@@ -9,11 +9,11 @@
 数据源：CoinGecko coin_chart（source=coingecko, category=coin, sub_category=chart_{coin_id}）
 timeseries 格式：[{"date": ISO, "price": float, "market_cap": float, "volume": float}, ...]
 """
-import pytest
+
+import os  # noqa: I001
 import sqlite3
 import sys
 import tempfile
-import os
 from pathlib import Path
 
 # 将 force_vector 加入 sys.path
@@ -21,15 +21,15 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.coin_fundamental_valuation_query import (
-    query_valuation_percentile,
+from force_vector.coin_fundamental_valuation_query import (  # noqa: E402
     _compute_percentile,
+    query_valuation_percentile,
 )
-
 
 # ---------------------------------------------------------------------------
 # 辅助：构造临时 data_center.db
 # ---------------------------------------------------------------------------
+
 
 def _make_test_db(records: list) -> str:
     """构造临时 sqlite db，插入 records 表数据。
@@ -49,14 +49,21 @@ def _make_test_db(records: list) -> str:
         )
     """)
     import json
+
     for r in records:
         conn.execute(
             "INSERT INTO records (dedupe_key, source, category, sub_category, timestamp, "
             "metrics, events, timeseries, raw, schema_version) "
             "VALUES (?,?,?,?,?,?,?,?,?,?)",
             (
-                r.get("dedupe_key", f"{r['source']}_{r['category']}_{r['sub_category']}_{r['timestamp']}"),
-                r["source"], r["category"], r["sub_category"], r["timestamp"],
+                r.get(
+                    "dedupe_key",
+                    f"{r['source']}_{r['category']}_{r['sub_category']}_{r['timestamp']}",
+                ),
+                r["source"],
+                r["category"],
+                r["sub_category"],
+                r["timestamp"],
                 json.dumps(r.get("metrics", {})),
                 json.dumps(r.get("events", [])),
                 json.dumps(r.get("timeseries", [])),
@@ -69,7 +76,9 @@ def _make_test_db(records: list) -> str:
     return db_path
 
 
-def _make_chart_record(coin_id: str, market_caps: list, ts: str = "2026-09-01T00:00:00+08:00") -> dict:
+def _make_chart_record(
+    coin_id: str, market_caps: list, ts: str = "2026-09-01T00:00:00+08:00"
+) -> dict:
     """构造 coingecko coin_chart 记录。
 
     market_caps: list of float，每个对应一天的 market_cap
@@ -83,7 +92,11 @@ def _make_chart_record(coin_id: str, market_caps: list, ts: str = "2026-09-01T00
         "category": "coin",
         "sub_category": f"chart_{coin_id}",
         "timestamp": ts,
-        "metrics": {"coin_id": coin_id, "days": len(market_caps), "latest_market_cap": market_caps[-1]},
+        "metrics": {
+            "coin_id": coin_id,
+            "days": len(market_caps),
+            "latest_market_cap": market_caps[-1],
+        },
         "timeseries": timeseries,
     }
 
@@ -91,6 +104,7 @@ def _make_chart_record(coin_id: str, market_caps: list, ts: str = "2026-09-01T00
 # ---------------------------------------------------------------------------
 # 1. _compute_percentile 纯函数
 # ---------------------------------------------------------------------------
+
 
 class TestComputePercentile:
     """验证百分位计算纯函数。"""
@@ -133,6 +147,7 @@ class TestComputePercentile:
 # 2. query_valuation_percentile 集成
 # ---------------------------------------------------------------------------
 
+
 class TestQueryValuationPercentile:
     """验证从 data_center.db 查询估值分位。"""
 
@@ -141,18 +156,29 @@ class TestQueryValuationPercentile:
         fd, db_path = tempfile.mkstemp(suffix=".db")
         os.close(fd)
         conn = sqlite3.connect(db_path)
-        conn.execute("CREATE TABLE records (id INTEGER PRIMARY KEY, source TEXT, category TEXT, "
-                     "sub_category TEXT, timestamp TEXT, metrics TEXT, events TEXT, "
-                     "timeseries TEXT, raw TEXT, schema_version TEXT, dedupe_key TEXT)")
-        conn.commit(); conn.close()
+        conn.execute(
+            "CREATE TABLE records (id INTEGER PRIMARY KEY, source TEXT, category TEXT, "
+            "sub_category TEXT, timestamp TEXT, metrics TEXT, events TEXT, "
+            "timeseries TEXT, raw TEXT, schema_version TEXT, dedupe_key TEXT)"
+        )
+        conn.commit()
+        conn.close()
         assert query_valuation_percentile("UNI", db_path) == 50.0
 
     def test_query_returns_50_on_no_chart_data(self):
         """db 有数据但无 coingecko chart 记录 → 返回 50。"""
-        db = _make_test_db([{
-            "source": "defillama", "category": "protocol", "sub_category": "uniswap",
-            "timestamp": "2026-09-01", "metrics": {}, "timeseries": [],
-        }])
+        db = _make_test_db(
+            [
+                {
+                    "source": "defillama",
+                    "category": "protocol",
+                    "sub_category": "uniswap",
+                    "timestamp": "2026-09-01",
+                    "metrics": {},
+                    "timeseries": [],
+                }
+            ]
+        )
         assert query_valuation_percentile("UNI", db) == 50.0
 
     def test_query_returns_high_on_recent_peak(self):
@@ -188,10 +214,12 @@ class TestQueryValuationPercentile:
         old_mcaps = [7e9, 6e9, 5e9, 4e9, 3e9, 2e9, 1e9]
         # 新记录：当前值高
         new_mcaps = [1e9, 2e9, 3e9, 4e9, 5e9, 6e9, 7e9]
-        db = _make_test_db([
-            _make_chart_record("uniswap", old_mcaps, ts=old_ts),
-            _make_chart_record("uniswap", new_mcaps, ts=new_ts),
-        ])
+        db = _make_test_db(
+            [
+                _make_chart_record("uniswap", old_mcaps, ts=old_ts),
+                _make_chart_record("uniswap", new_mcaps, ts=new_ts),
+            ]
+        )
         pct = query_valuation_percentile("UNI", db)
         # 取最新记录（new_ts），当前=7e9 是最高 → 高分位
         assert pct >= 80.0
@@ -202,11 +230,18 @@ class TestQueryValuationPercentile:
 
     def test_query_failopen_on_malformed_timeseries(self):
         """timeseries 字段是畸形 JSON → 返回 50。"""
-        db = _make_test_db([{
-            "source": "coingecko", "category": "coin",
-            "sub_category": "chart_uniswap", "timestamp": "2026-09-01",
-            "timeseries": "not-a-json{", "metrics": {},
-        }])
+        db = _make_test_db(
+            [
+                {
+                    "source": "coingecko",
+                    "category": "coin",
+                    "sub_category": "chart_uniswap",
+                    "timestamp": "2026-09-01",
+                    "timeseries": "not-a-json{",
+                    "metrics": {},
+                }
+            ]
+        )
         assert query_valuation_percentile("UNI", db) == 50.0
 
     def test_query_for_hype_uses_hyperliquid_id(self):

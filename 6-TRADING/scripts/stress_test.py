@@ -7,13 +7,11 @@
 日期: 2026-05-15
 """
 
+import json
 import os
 import sys
 import time
-import json
-import traceback
 from datetime import datetime
-from typing import Dict, List, Any
 
 # 加载环境变量
 ENV_FILE = os.path.expanduser("~/.workbuddy/6-trading-env.sh")
@@ -36,12 +34,7 @@ print()
 TEST_RESULTS = {
     "start_time": datetime.now().isoformat(),
     "scenarios": [],
-    "summary": {
-        "total": 0,
-        "passed": 0,
-        "failed": 0,
-        "skipped": 0
-    }
+    "summary": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
 }
 
 
@@ -53,7 +46,7 @@ def log_result(scenario: str, module: str, status: str, message: str, duration_m
         "status": status,
         "message": message,
         "duration_ms": duration_ms,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
     TEST_RESULTS["scenarios"].append(result)
     TEST_RESULTS["summary"]["total"] += 1
@@ -78,6 +71,7 @@ def test_api_keys():
     start = time.time()
     try:
         from tavily import TavilyClient
+
         api_key = os.getenv("TAVILY_API_KEY")
         if api_key:
             client = TavilyClient(api_key=api_key)
@@ -109,8 +103,8 @@ def test_bridge_api():
     print("\n📋 场景2: Bridge API测试")
     print("-" * 40)
 
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     base_url = "http://127.0.0.1:3847"
 
@@ -126,7 +120,7 @@ def test_bridge_api():
             url = base_url + endpoint
             req = urllib.request.Request(url, method=method)
             with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read())
+                data = json.loads(resp.read())  # noqa: F841
                 duration = (time.time() - start) * 1000
                 log_result("Bridge API", desc, "PASS", f"HTTP {resp.status}", duration)
         except urllib.error.URLError:
@@ -149,12 +143,13 @@ def test_a1_research():
         "Ethereum ETH price prediction whale activity",
         "Crypto market sentiment fear greed index",
         "DeFi protocol TVL trends",
-        "NFT market volume trading"
+        "NFT market volume trading",
     ]
 
-    start = time.time()
+    start = time.time()  # noqa: F841
     try:
         from tavily import TavilyClient
+
         api_key = os.getenv("TAVILY_API_KEY")
         client = TavilyClient(api_key=api_key)
 
@@ -169,7 +164,7 @@ def test_a1_research():
                     "Tavily",
                     "PASS" if results_count > 0 else "FAIL",
                     f"查询成功，获得{results_count}条结果",
-                    duration
+                    duration,
                 )
             except Exception as e:
                 duration = (time.time() - query_start) * 1000
@@ -192,8 +187,13 @@ def test_a1_research():
 
         duration_parallel = (time.time() - start_parallel) * 1000
         success_count = sum(1 for r in results if "error" not in r)
-        log_result("A1调研", "并发测试", "PASS" if success_count == 3 else "FAIL",
-                   f"3个并发请求，{success_count}成功", duration_parallel)
+        log_result(
+            "A1调研",
+            "并发测试",
+            "PASS" if success_count == 3 else "FAIL",
+            f"3个并发请求，{success_count}成功",
+            duration_parallel,
+        )
 
     except ImportError:
         log_result("A1调研", "Tavily", "FAIL", "tavily-python未安装", 0)
@@ -211,7 +211,7 @@ def test_strategy_library():
 
     config_paths = [
         "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/6-TRADING/config/strategy_library.yaml",
-        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/6-TRADING/config_44304/config.yaml"
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/6-TRADING/config_44304/config.yaml",
     ]
 
     for path in config_paths:
@@ -227,7 +227,7 @@ def test_strategy_library():
                 os.path.basename(os.path.dirname(path)),
                 "PASS",
                 f"加载成功，{regimes}个Regime，{strategies}个策略",
-                duration
+                duration,
             )
         except FileNotFoundError:
             duration = (time.time() - start) * 1000
@@ -262,7 +262,13 @@ def test_okx_cli():
             if result.get("success"):
                 log_result("OKX CLI", "行情查询", "PASS", "获取BTC行情成功", duration)
             else:
-                log_result("OKX CLI", "行情查询", "FAIL", f"查询失败: {result.get('error', 'unknown')}", duration)
+                log_result(
+                    "OKX CLI",
+                    "行情查询",
+                    "FAIL",
+                    f"查询失败: {result.get('error', 'unknown')}",
+                    duration,
+                )
         except Exception as e:
             duration = (time.time() - start) * 1000
             log_result("OKX CLI", "行情查询", "FAIL", str(e)[:50], duration)
@@ -350,7 +356,7 @@ def test_scoring_system():
     total_score = 0
     max_score = 0
 
-    for dim_name, weight, score_ratio in dimensions:
+    for dim_name, weight, score_ratio in dimensions:  # noqa: B007
         dim_score = int(weight * score_ratio)
         total_score += dim_score
         max_score += weight
@@ -365,12 +371,15 @@ def test_scoring_system():
     else:
         signal = "SKIP"
 
-    log_result("评分系统", "综合评分", "PASS", f"总分{total_score}/{max_score} → {signal}", duration)
+    log_result(
+        "评分系统", "综合评分", "PASS", f"总分{total_score}/{max_score} → {signal}", duration
+    )
 
     # 模拟多轮评分波动
     print("  📊 模拟评分波动测试...")
     for round_i in range(5):
         import random
+
         noise = random.uniform(-10, 10)
         volatile_score = total_score + noise
         start = time.time()
@@ -383,8 +392,13 @@ def test_scoring_system():
         else:
             signal = "SKIP"
 
-        log_result(f"评分波动 Round-{round_i+1}", "评分", "PASS",
-                   f"波动后{total_score:.0f}±{abs(noise):.0f}={volatile_score:.0f} → {signal}", duration)
+        log_result(
+            f"评分波动 Round-{round_i+1}",
+            "评分",
+            "PASS",
+            f"波动后{total_score:.0f}±{abs(noise):.0f}={volatile_score:.0f} → {signal}",
+            duration,
+        )
 
 
 # ==================== 场景9: 记忆系统测试 ====================
@@ -395,7 +409,7 @@ def test_memory_system():
 
     memory_paths = [
         "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/6-TRADING/.workbuddy/memory",
-        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/6-TRADING/.workbuddy/skills"
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/6-TRADING/.workbuddy/skills",
     ]
 
     for path in memory_paths:
@@ -411,7 +425,7 @@ def test_memory_system():
                     os.path.basename(path),
                     "PASS",
                     f"存在，{len(files)}个条目",
-                    duration
+                    duration,
                 )
             else:
                 duration = (time.time() - start) * 1000
@@ -458,16 +472,16 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # 执行所有测试场景
-    test_api_keys()           # 场景1
-    test_bridge_api()         # 场景2
-    test_a1_research()        # 场景3
-    test_strategy_library()   # 场景4
-    test_okx_cli()            # 场景5
-    test_skills()             # 场景6
+    test_api_keys()  # 场景1
+    test_bridge_api()  # 场景2
+    test_a1_research()  # 场景3
+    test_strategy_library()  # 场景4
+    test_okx_cli()  # 场景5
+    test_skills()  # 场景6
     test_extreme_scenarios()  # 场景7
-    test_scoring_system()     # 场景8
-    test_memory_system()      # 场景9
-    test_documentation()       # 场景10
+    test_scoring_system()  # 场景8
+    test_memory_system()  # 场景9
+    test_documentation()  # 场景10
 
     # 输出汇总
     print("\n" + "=" * 60)
@@ -479,9 +493,15 @@ if __name__ == "__main__":
     print(f"  ⏭️  跳过: {TEST_RESULTS['summary']['skipped']}")
     print()
 
-    pass_rate = (TEST_RESULTS['summary']['passed'] /
-                  (TEST_RESULTS['summary']['total'] - TEST_RESULTS['summary']['skipped']) * 100) \
-                 if TEST_RESULTS['summary']['total'] - TEST_RESULTS['summary']['skipped'] > 0 else 0
+    pass_rate = (
+        (
+            TEST_RESULTS["summary"]["passed"]
+            / (TEST_RESULTS["summary"]["total"] - TEST_RESULTS["summary"]["skipped"])
+            * 100
+        )
+        if TEST_RESULTS["summary"]["total"] - TEST_RESULTS["summary"]["skipped"] > 0
+        else 0
+    )
 
     print(f"  通过率: {pass_rate:.1f}%")
     print(f"  结束时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

@@ -5,32 +5,34 @@
 
 对应 Spec §3bis.5.4 轨道三→轨道二冷却联动 + §3bis.9 T_CB6。
 """
+
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2 import morph_cycle_predictor as mcp
-from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2 import morph_cycle_predictor as mcp  # noqa: E402
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame  # noqa: E402
 
 
 def _make_synthetic_frames(days: int, seed: int = 42, level_shift: float = 0.0) -> list:
     """构造合成数据。level_shift 用于制造形态切换。"""
     rng = np.random.default_rng(seed)
     t = np.arange(days, dtype=float)
-    level_raw = (2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
-                 + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
-                 + rng.normal(0, 0.15, days)
-                 + level_shift)
+    level_raw = (
+        2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
+        + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
+        + rng.normal(0, 0.15, days)
+        + level_shift
+    )
     smooth = np.zeros(days)
     smooth[0] = level_raw[0]
     for i in range(1, days):
@@ -40,28 +42,32 @@ def _make_synthetic_frames(days: int, seed: int = 42, level_shift: float = 0.0) 
 
     frames = []
     for i in range(days):
-        from datetime import date, timedelta
+        from datetime import date
+
         d = date(2026, 1, 1) + timedelta(days=i)
-        frames.append(RegimeStateFrame(
-            t=d.strftime("%Y-%m-%d"),
-            price=float(price_base[i]),
-            level_raw=float(level_raw[i]),
-            trend_raw=float(trend_smooth[i]),
-            level_smooth=float(smooth[i]),
-            trend_smooth=float(trend_smooth[i] * 5.0),
-            regime_probs={},
-            top3=[["TREND_BULL", 0.4]],
-            consensus=0.7,
-            hmm_state=0,
-            bocpd_cp_prob=0.01,
-            indicators={},
-        ))
+        frames.append(
+            RegimeStateFrame(
+                t=d.strftime("%Y-%m-%d"),
+                price=float(price_base[i]),
+                level_raw=float(level_raw[i]),
+                trend_raw=float(trend_smooth[i]),
+                level_smooth=float(smooth[i]),
+                trend_smooth=float(trend_smooth[i] * 5.0),
+                regime_probs={},
+                top3=[["TREND_BULL", 0.4]],
+                consensus=0.7,
+                hmm_state=0,
+                bocpd_cp_prob=0.01,
+                indicators={},
+            )
+        )
     return frames
 
 
 # ================================================================
 # T_CB6: 冷却联动
 # ================================================================
+
 
 class TestCooldownReduction:
     """验证 overshoot_hint 存在时，_maybe_anchor_correct 冷却降低。"""
@@ -76,7 +82,7 @@ class TestCooldownReduction:
         storage.upsert_daily_batch("BTCUSDT", frames)
 
         # 先保存一个 30h 前的大调整记录（正常冷却 72h 下应被跳过）
-        from datetime import datetime, timezone, timedelta
+
         now = datetime.now(timezone.utc)
         old_time = now - timedelta(hours=30)
 
@@ -91,16 +97,19 @@ class TestCooldownReduction:
         cur = storage._conn.cursor()
         cur.execute(
             "UPDATE morph_anchor_state SET last_corrected_at = ? WHERE symbol = ?",
-            (old_time.isoformat(timespec="seconds"), "BTCUSDT")
+            (old_time.isoformat(timespec="seconds"), "BTCUSDT"),
         )
         storage._conn.commit()
 
         # 保存 overshoot_hint
-        storage.save_overshoot_hint("BTCUSDT", {
-            "reason": "overshoot_streak",
-            "streak": 5,
-            "need_anchor_correct": True,
-        })
+        storage.save_overshoot_hint(
+            "BTCUSDT",
+            {
+                "reason": "overshoot_streak",
+                "streak": 5,
+                "need_anchor_correct": True,
+            },
+        )
 
         predictor = MorphCyclePredictor(storage)
         # 调用 _maybe_anchor_correct，检查冷却是否被降低
@@ -112,12 +121,12 @@ class TestCooldownReduction:
         old_time_25 = now - timedelta(hours=25)
         cur.execute(
             "UPDATE morph_anchor_state SET last_corrected_at = ? WHERE symbol = ?",
-            (old_time_25.isoformat(timespec="seconds"), "BTCUSDT")
+            (old_time_25.isoformat(timespec="seconds"), "BTCUSDT"),
         )
         storage._conn.commit()
 
         # 25h > 24h（降低后冷却）→ 应跳过
-        result = predictor._maybe_anchor_correct("BTCUSDT")
+        result = predictor._maybe_anchor_correct("BTCUSDT")  # noqa: F841
         # 可能返回 None（无形态切换）或结果（有形态切换）
         # 关键是冷却没有被进一步降低到 < 24h
 
@@ -125,7 +134,7 @@ class TestCooldownReduction:
         old_time_23 = now - timedelta(hours=23)
         cur.execute(
             "UPDATE morph_anchor_state SET last_corrected_at = ? WHERE symbol = ?",
-            (old_time_23.isoformat(timespec="seconds"), "BTCUSDT")
+            (old_time_23.isoformat(timespec="seconds"), "BTCUSDT"),
         )
         storage._conn.commit()
 
@@ -156,8 +165,9 @@ class TestCooldownReduction:
 
         predictor = MorphCyclePredictor(storage)
         cooldown = predictor._get_effective_cooldown_hours("BTCUSDT")
-        assert cooldown == mcp.ANCHOR_SWITCH_COOLDOWN_HOURS, \
-            f"无 overshoot_hint 时冷却应为 {mcp.ANCHOR_SWITCH_COOLDOWN_HOURS}h，实际 {cooldown}"
+        assert (
+            cooldown == mcp.ANCHOR_SWITCH_COOLDOWN_HOURS
+        ), f"无 overshoot_hint 时冷却应为 {mcp.ANCHOR_SWITCH_COOLDOWN_HOURS}h，实际 {cooldown}"
 
         storage.close()
 
@@ -176,11 +186,14 @@ class TestCooldownReduction:
             switch_to="均衡蓄力",
             switch_date="2026-08-15",
         )
-        storage.save_overshoot_hint("BTCUSDT", {
-            "reason": "overshoot_streak",
-            "streak": 5,
-            "need_anchor_correct": True,
-        })
+        storage.save_overshoot_hint(
+            "BTCUSDT",
+            {
+                "reason": "overshoot_streak",
+                "streak": 5,
+                "need_anchor_correct": True,
+            },
+        )
 
         predictor = MorphCyclePredictor(storage)
         # 有 hint → 24h
@@ -189,6 +202,8 @@ class TestCooldownReduction:
         # 清除 hint
         storage.clear_overshoot_hint("BTCUSDT")
         # 恢复 72h
-        assert predictor._get_effective_cooldown_hours("BTCUSDT") == mcp.ANCHOR_SWITCH_COOLDOWN_HOURS
+        assert (
+            predictor._get_effective_cooldown_hours("BTCUSDT") == mcp.ANCHOR_SWITCH_COOLDOWN_HOURS
+        )
 
         storage.close()

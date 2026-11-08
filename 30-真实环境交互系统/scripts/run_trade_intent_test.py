@@ -12,11 +12,11 @@
     - 前端运行在 :3001，/dashboard/trade 可访问
     - DreamOS /api/v1/intent/route 可用（或 FAIL-OPEN 降级）
 """
+
 import argparse
 import json
 import logging
 import sys
-import time
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -24,7 +24,7 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import yaml
+import yaml  # noqa: I001
 
 from core.browser_connector import BrowserConnector, BrowserMode
 from core.user_simulator import UserSimulator
@@ -75,7 +75,9 @@ def select_scenarios(count: int, scope: str = "accuracy"):
             return all_scenarios
         # 均匀分布：按意图分组后轮流取，确保各意图样本平衡
         by_intent: Dict[str, List[Path]] = {
-            "trend_following": [], "mean_reversion": [], "breakout": [],
+            "trend_following": [],
+            "mean_reversion": [],
+            "breakout": [],
         }
         for p in all_scenarios:
             for intent in by_intent:
@@ -89,7 +91,7 @@ def select_scenarios(count: int, scope: str = "accuracy"):
         # 补齐余数
         if len(selected) < count:
             remaining = [p for p in all_scenarios if p not in selected]
-            selected.extend(remaining[:count - len(selected)])
+            selected.extend(remaining[: count - len(selected)])
         return selected[:count]
 
     per_intent = max(1, count // 3)
@@ -104,8 +106,12 @@ def select_scenarios(count: int, scope: str = "accuracy"):
 def main():
     parser = argparse.ArgumentParser(description="Trade 页意图识别能力验证")
     parser.add_argument("--count", type=int, default=6, help="抽样场景数（0=全部）")
-    parser.add_argument("--scope", default="accuracy", choices=["accuracy", "all"],
-                        help="抽样模式: accuracy(默认) | all")
+    parser.add_argument(
+        "--scope",
+        default="accuracy",
+        choices=["accuracy", "all"],
+        help="抽样模式: accuracy(默认) | all",
+    )
     parser.add_argument("--headless", action="store_true", help="无头模式")
     parser.add_argument("--report-dir", default=None, help="报告输出目录")
     args = parser.parse_args()
@@ -136,16 +142,25 @@ def main():
             gold = scenario["intent_training"]["gold_intent"]
             logger.info("[%d/%d] %s (gold=%s)", i, len(scenarios), sc_path.name, gold)
             result = runner.run(page, scenario)
-            results.append({
-                "file": sc_path.name,
-                "gold": gold,
-                "scenario_passed": result.passed,
-                "trade_ui": result.trade_ui,
-            })
+            results.append(
+                {
+                    "file": sc_path.name,
+                    "gold": gold,
+                    "scenario_passed": result.passed,
+                    "trade_ui": result.trade_ui,
+                }
+            )
         except Exception as e:
             logger.warning("[%d/%d] %s 执行异常: %s", i, len(scenarios), sc_path.name, e)
-            results.append({"file": sc_path.name, "gold": None, "scenario_passed": False,
-                            "error": str(e), "trade_ui": None})
+            results.append(
+                {
+                    "file": sc_path.name,
+                    "gold": None,
+                    "scenario_passed": False,
+                    "error": str(e),
+                    "trade_ui": None,
+                }
+            )
         finally:
             try:
                 page.close()
@@ -170,7 +185,8 @@ def main():
     report_data = {
         "timestamp": datetime.now().isoformat(),
         "total_scenarios": len(results),
-        "scenario_pass_rate": sum(1 for r in results if r["scenario_passed"]) / max(len(results), 1),
+        "scenario_pass_rate": sum(1 for r in results if r["scenario_passed"])
+        / max(len(results), 1),
         "intent_accuracy": 0.0,
         "s_layer_pass_rate": s_layer_visible / max(len(ui_results), 1),
         "chain_active_rate": chain_active / max(len(ui_results), 1),
@@ -179,9 +195,13 @@ def main():
     }
 
     if all_samples:
-        confirmed = sum(1 for s in all_samples
-                       if is_intent_correct(s.gold["gold_intent"],
-                                           s.recognizer_output.get("predicted_intent") or ""))
+        confirmed = sum(
+            1
+            for s in all_samples
+            if is_intent_correct(
+                s.gold["gold_intent"], s.recognizer_output.get("predicted_intent") or ""
+            )
+        )
         accuracy = confirmed / len(all_samples)
         report_data["intent_accuracy"] = accuracy
 
@@ -192,13 +212,15 @@ def main():
             by_intent[intent]["total"] += 1
             if correct:
                 by_intent[intent]["correct"] += 1
-            report_data["samples"].append({
-                "gold": intent,
-                "predicted": pred,
-                "confirmed": correct,
-                "confidence": s.recognizer_output.get("confidence", 0),
-                "query": s.input["user_query"][:50],
-            })
+            report_data["samples"].append(
+                {
+                    "gold": intent,
+                    "predicted": pred,
+                    "confirmed": correct,
+                    "confidence": s.recognizer_output.get("confidence", 0),
+                    "query": s.input["user_query"][:50],
+                }
+            )
 
     for intent, stats in by_intent.items():
         report_data["by_intent"][intent] = {
@@ -213,7 +235,9 @@ def main():
     print("=" * 70)
     print(f"场景执行: {sum(1 for r in results if r['scenario_passed'])}/{len(results)} 通过")
     print(f"意图识别准确率: {report_data['intent_accuracy']:.2%}")
-    print(f"S 层徽章展示率: {report_data['s_layer_pass_rate']:.2%} ({s_layer_visible}/{len(ui_results)})")
+    print(
+        f"S 层徽章展示率: {report_data['s_layer_pass_rate']:.2%} ({s_layer_visible}/{len(ui_results)})"
+    )
     print(f"链路活跃率: {report_data['chain_active_rate']:.2%} ({chain_active}/{len(ui_results)})")
 
     if report_data["by_intent"]:
@@ -225,14 +249,21 @@ def main():
         print("\n样本明细:")
         for s in report_data["samples"]:
             ok = "✓" if s["confirmed"] else "✗"
-            print(f"  {ok} gold={s['gold']:<16} predicted={str(s['predicted']):<16} "
-                  f"conf={s['confidence']:.2f} query={s['query']}")
+            print(
+                f"  {ok} gold={s['gold']:<16} predicted={str(s['predicted']):<16} "
+                f"conf={s['confidence']:.2f} query={s['query']}"
+            )
 
     print("=" * 70)
 
     # === 保存 JSON 报告 ===
-    report_dir = Path(args.report_dir) if args.report_dir else \
-        Path(__file__).parent.parent / "reports" / f"trade_intent_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    report_dir = (
+        Path(args.report_dir)
+        if args.report_dir
+        else Path(__file__).parent.parent
+        / "reports"
+        / f"trade_intent_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    )
     report_dir.mkdir(parents=True, exist_ok=True)
     report_file = report_dir / "report.json"
     with open(report_file, "w", encoding="utf-8") as f:

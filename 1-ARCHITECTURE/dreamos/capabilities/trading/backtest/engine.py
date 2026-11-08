@@ -11,36 +11,38 @@ Dream OS 端到端回测系统
 
 from __future__ import annotations
 
+import argparse
 import json
-import os
+import logging
 import math
 import time
-import logging
-import argparse
-from pathlib import Path
-from datetime import datetime
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Tuple
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 # 数据目录
 _dreamos_root = Path(__file__).parent.parent.parent.parent.parent
-DATA_DIR = _dreamos_root.parent / "10-经典指标系统" / "user_data" / "data" / "aggregated" / "futures"
+DATA_DIR = (
+    _dreamos_root.parent / "10-经典指标系统" / "user_data" / "data" / "aggregated" / "futures"
+)
 
 
 @dataclass
 class TradeRecord:
     """单笔交易记录"""
+
     timestamp: int
     symbol: str
     scenario_id: str
     pattern: str
-    direction: str          # LONG / SHORT / HOLD
+    direction: str  # LONG / SHORT / HOLD
     confidence: float
     entry_price: float
     exit_price: float
-    return_pct: float       # 扣费后收益率
+    return_pct: float  # 扣费后收益率
     hold_periods: int
     leverage: int
     a0_aligned: bool = False
@@ -50,6 +52,7 @@ class TradeRecord:
 @dataclass
 class BacktestResult:
     """回测结果"""
+
     symbol: str
     total_bars: int
     total_trades: int
@@ -76,18 +79,18 @@ class DreamOSBacktester:
     """Dream OS 端到端回测引擎"""
 
     # 回测参数
-    WINDOW_SIZE = 48         # 用前 48 根 K 线计算指标
-    STEP = 4                 # 每隔 4 根 K 线采样一次
-    HOLD_PERIODS = 20        # 持仓 20 根 K 线后平仓（诊断优化：12→20，收益+74%，夏普+127%）
+    WINDOW_SIZE = 48  # 用前 48 根 K 线计算指标
+    STEP = 4  # 每隔 4 根 K 线采样一次
+    HOLD_PERIODS = 20  # 持仓 20 根 K 线后平仓（诊断优化：12→20，收益+74%，夏普+127%）
     CONFIDENCE_THRESHOLD = 0.4
-    FEE_RATE = 0.0008        # 单边 0.04% × 2
+    FEE_RATE = 0.0008  # 单边 0.04% × 2
     MAX_LEVERAGE = 5
 
     # 4h 回测参数（更多样本，更长时间跨度）
     # 4h × 50 根 ≈ 8.3 天历史，足以计算 EMA50；EMA200 仍会退化但 EMA20/50 可产生方向
-    WINDOW_SIZE_4H = 50      # 4h 用 50 根 ≈ 8.3 天历史
-    STEP_4H = 1              # 每隔 1 根 4h K 线采样（最大化样本）
-    HOLD_PERIODS_4H = 12     # 持仓 12 根 4h = 48 小时，捕捉更大趋势
+    WINDOW_SIZE_4H = 50  # 4h 用 50 根 ≈ 8.3 天历史
+    STEP_4H = 1  # 每隔 1 根 4h K 线采样（最大化样本）
+    HOLD_PERIODS_4H = 12  # 持仓 12 根 4h = 48 小时，捕捉更大趋势
 
     def __init__(self, budget_mode: str = "lean"):
         self.budget_mode = budget_mode
@@ -99,6 +102,7 @@ class DreamOSBacktester:
         """延迟初始化 TradingAgent"""
         if self._agent is None:
             from dreamos.apps.trading_agent.agent import TradingAgent
+
             self._agent = TradingAgent(budget_mode=self.budget_mode)
         return self._agent
 
@@ -106,6 +110,7 @@ class DreamOSBacktester:
         """延迟初始化场景分类器"""
         if self._classifier is None:
             from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
             self._classifier = ScenarioClassifier()
         return self._classifier
 
@@ -113,6 +118,7 @@ class DreamOSBacktester:
         """延迟初始化编排记忆表"""
         if self._memory is None:
             from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
             self._memory = OrchestrationMemory()
             self._memory.load()
         return self._memory
@@ -152,14 +158,16 @@ class DreamOSBacktester:
         klines = []
         for k in data:
             if isinstance(k, list) and len(k) >= 6:
-                klines.append([
-                    int(k[0]),     # timestamp
-                    float(k[1]),   # open
-                    float(k[2]),   # high
-                    float(k[3]),   # low
-                    float(k[4]),   # close
-                    float(k[5]),   # volume
-                ])
+                klines.append(
+                    [
+                        int(k[0]),  # timestamp
+                        float(k[1]),  # open
+                        float(k[2]),  # high
+                        float(k[3]),  # low
+                        float(k[4]),  # close
+                        float(k[5]),  # volume
+                    ]
+                )
 
         # 按时间排序
         klines.sort(key=lambda x: x[0])
@@ -181,13 +189,13 @@ class DreamOSBacktester:
 
         result = []
         for i in range(0, len(klines), factor):
-            chunk = klines[i:i + factor]
+            chunk = klines[i : i + factor]
             if not chunk:
                 break
             ts = chunk[0][0]
             o = chunk[0][1]
             h = max(k[2] for k in chunk)
-            l = min(k[3] for k in chunk)
+            l = min(k[3] for k in chunk)  # noqa: E741
             c = chunk[-1][4]
             v = sum(k[5] for k in chunk)
             result.append([ts, o, h, l, c, v])
@@ -224,8 +232,8 @@ class DreamOSBacktester:
         atr_pct = self._atr_pct(highs, lows, closes, 14)
         rsi14 = self._rsi(closes, 14)
 
-        high_24h = max(highs[-min(24, len(highs)):])
-        low_24h = min(lows[-min(24, len(lows)):])
+        high_24h = max(highs[-min(24, len(highs)) :])
+        low_24h = min(lows[-min(24, len(lows)) :])
 
         vol_ratio = 1.0
         if len(volumes) >= 20:
@@ -247,7 +255,7 @@ class DreamOSBacktester:
             "high_24h": high_24h,
             "low_24h": low_24h,
             "vol_ratio": vol_ratio,
-            "fgi": 50,           # 回测中无 FGI 数据，用中性值
+            "fgi": 50,  # 回测中无 FGI 数据，用中性值
             "funding_rate": 0.0,  # 回测中无资金费率
         }
 
@@ -270,14 +278,16 @@ class DreamOSBacktester:
             return 0
         return (new - old) / old * 100
 
-    def _atr_pct(self, highs: List[float], lows: List[float], closes: List[float], period: int) -> float:
+    def _atr_pct(
+        self, highs: List[float], lows: List[float], closes: List[float], period: int
+    ) -> float:
         if len(closes) < period + 1:
             period = len(closes) - 1
         if period <= 0:
             return 0.02
         trs = []
         for i in range(-period, 0):
-            h, l = highs[i], lows[i]
+            h, l = highs[i], lows[i]  # noqa: E741
             pc = closes[i - 1]
             tr = max(h - l, abs(h - pc), abs(l - pc))
             trs.append(tr)
@@ -325,12 +335,26 @@ class DreamOSBacktester:
         klines = self.load_klines(symbol, interval)
         if len(klines) < window_size + hold_periods:
             logger.warning(f"{symbol} 数据不足: {len(klines)} < {window_size + hold_periods}")
-            return BacktestResult(symbol=symbol, total_bars=len(klines), total_trades=0,
-                                  long_trades=0, short_trades=0, hold_signals=0,
-                                  win_trades=0, loss_trades=0, win_rate=0,
-                                  total_return=0, avg_return=0, max_return=0, min_return=0,
-                                  sharpe_ratio=0, max_drawdown=0, avg_confidence=0,
-                                  a0_alignment_rate=0, a7_pass_rate=0)
+            return BacktestResult(
+                symbol=symbol,
+                total_bars=len(klines),
+                total_trades=0,
+                long_trades=0,
+                short_trades=0,
+                hold_signals=0,
+                win_trades=0,
+                loss_trades=0,
+                win_rate=0,
+                total_return=0,
+                avg_return=0,
+                max_return=0,
+                min_return=0,
+                sharpe_ratio=0,
+                max_drawdown=0,
+                avg_confidence=0,
+                a0_alignment_rate=0,
+                a7_pass_rate=0,
+            )
 
         agent = self.get_agent()
         classifier = self.get_classifier()
@@ -347,8 +371,8 @@ class DreamOSBacktester:
 
         for i in range(0, len(klines) - window_size - hold_periods, step):
             total_windows += 1
-            window = klines[i:i + window_size]
-            future = klines[i + window_size:i + window_size + hold_periods]
+            window = klines[i : i + window_size]
+            future = klines[i + window_size : i + window_size + hold_periods]
 
             # 1. 构造 market_data
             market_data = self.build_market_data(window, symbol)
@@ -370,8 +394,16 @@ class DreamOSBacktester:
                     market_data=market_data,
                     context={
                         "symbol": symbol,
-                        "scenario": scenario.to_dict() if hasattr(scenario, "to_dict") else {"scenario_id": sid},
-                        "recommended_orchestration": choice.to_dict() if hasattr(choice, "to_dict") else {"pattern": choice.pattern},
+                        "scenario": (
+                            scenario.to_dict()
+                            if hasattr(scenario, "to_dict")
+                            else {"scenario_id": sid}
+                        ),
+                        "recommended_orchestration": (
+                            choice.to_dict()
+                            if hasattr(choice, "to_dict")
+                            else {"pattern": choice.pattern}
+                        ),
                     },
                 )
             except Exception as e:
@@ -395,13 +427,19 @@ class DreamOSBacktester:
 
             a7_gate = a5_out.get("a7_gate", {}) or trade_order.get("_a7_gate", {})
             a7_passed = a7_gate.get("gate_passed", False)
-            a7_evaluated = a5_out.get("a7_gate") is not None or trade_order.get("_a7_gate") is not None
+            a7_evaluated = (
+                a5_out.get("a7_gate") is not None or trade_order.get("_a7_gate") is not None
+            )
             if a7_passed:
                 a7_passed_count += 1
             if a7_evaluated:
                 a7_evaluated_count += 1
 
-            if not trade_order or trade_order.get("action") == "HOLD" or not trade_order.get("entry_price"):
+            if (
+                not trade_order
+                or trade_order.get("action") == "HOLD"
+                or not trade_order.get("entry_price")
+            ):
                 hold_signals += 1
                 continue
 
@@ -466,27 +504,58 @@ class DreamOSBacktester:
             trades.append(trade)
 
         # 6. 计算统计指标
-        return self._calc_result(symbol, klines, trades, hold_signals,
-                                 total_windows, scenario_dist,
-                                 a0_aligned_count, a7_passed_count, a7_evaluated_count,
-                                 confidence_sum, interval)
+        return self._calc_result(
+            symbol,
+            klines,
+            trades,
+            hold_signals,
+            total_windows,
+            scenario_dist,
+            a0_aligned_count,
+            a7_passed_count,
+            a7_evaluated_count,
+            confidence_sum,
+            interval,
+        )
 
-    def _calc_result(self, symbol: str, klines: list, trades: List[TradeRecord],
-                     hold_signals: int, total_windows: int,
-                     scenario_dist: Dict[str, int],
-                     a0_aligned_count: int, a7_passed_count: int, a7_evaluated_count: int,
-                     confidence_sum: float, interval: str = "1h") -> BacktestResult:
+    def _calc_result(
+        self,
+        symbol: str,
+        klines: list,
+        trades: List[TradeRecord],
+        hold_signals: int,
+        total_windows: int,
+        scenario_dist: Dict[str, int],
+        a0_aligned_count: int,
+        a7_passed_count: int,
+        a7_evaluated_count: int,
+        confidence_sum: float,
+        interval: str = "1h",
+    ) -> BacktestResult:
         """计算回测统计指标"""
 
         if not trades:
             return BacktestResult(
-                symbol=symbol, total_bars=len(klines), total_trades=0,
-                long_trades=0, short_trades=0, hold_signals=hold_signals,
-                win_trades=0, loss_trades=0, win_rate=0,
-                total_return=0, avg_return=0, max_return=0, min_return=0,
-                sharpe_ratio=0, max_drawdown=0, avg_confidence=0,
-                a0_alignment_rate=0, a7_pass_rate=0,
-                scenario_distribution=scenario_dist, trades=trades,
+                symbol=symbol,
+                total_bars=len(klines),
+                total_trades=0,
+                long_trades=0,
+                short_trades=0,
+                hold_signals=hold_signals,
+                win_trades=0,
+                loss_trades=0,
+                win_rate=0,
+                total_return=0,
+                avg_return=0,
+                max_return=0,
+                min_return=0,
+                sharpe_ratio=0,
+                max_drawdown=0,
+                avg_confidence=0,
+                a0_alignment_rate=0,
+                a7_pass_rate=0,
+                scenario_distribution=scenario_dist,
+                trades=trades,
             )
 
         returns = [t.return_pct for t in trades]
@@ -561,9 +630,11 @@ class DreamOSBacktester:
         lines.append("# Dream OS 回测报告")
         lines.append(f"\n**生成时间**: {datetime.now().isoformat()}")
         lines.append(f"**回测周期**: {interval}")
-        lines.append(f"**回测参数**: window={window_size}, step={step}, hold={hold_periods}, "
-                     f"conf_threshold={self.CONFIDENCE_THRESHOLD}, fee={self.FEE_RATE}")
-        lines.append(f"**P0-P2 修复状态**: A0→A1集成✓, A7→A5集成✓, A5合成✓, 离场回填✓, 杠杆阻断✓")
+        lines.append(
+            f"**回测参数**: window={window_size}, step={step}, hold={hold_periods}, "
+            f"conf_threshold={self.CONFIDENCE_THRESHOLD}, fee={self.FEE_RATE}"
+        )
+        lines.append("**P0-P2 修复状态**: A0→A1集成✓, A7→A5集成✓, A5合成✓, 离场回填✓, 杠杆阻断✓")
         lines.append("")
 
         # 汇总表
@@ -571,20 +642,30 @@ class DreamOSBacktester:
         lines.append("")
         lines.append("| 指标 | " + " | ".join(r.symbol for r in results) + " |")
         lines.append("|------|" + "|".join(["------"] * len(results)) + "|")
-        lines.append(f"| 总K线数 | " + " | ".join(str(r.total_bars) for r in results) + " |")
-        lines.append(f"| 总交易数 | " + " | ".join(str(r.total_trades) for r in results) + " |")
-        lines.append(f"| 做多/做空 | " + " | ".join(f"{r.long_trades}/{r.short_trades}" for r in results) + " |")
-        lines.append(f"| HOLD信号 | " + " | ".join(str(r.hold_signals) for r in results) + " |")
-        lines.append(f"| 胜率 | " + " | ".join(f"{r.win_rate:.1%}" for r in results) + " |")
-        lines.append(f"| 总收益 | " + " | ".join(f"{r.total_return:.2%}" for r in results) + " |")
-        lines.append(f"| 平均收益 | " + " | ".join(f"{r.avg_return:.2%}" for r in results) + " |")
-        lines.append(f"| 最大盈利 | " + " | ".join(f"{r.max_return:.2%}" for r in results) + " |")
-        lines.append(f"| 最大亏损 | " + " | ".join(f"{r.min_return:.2%}" for r in results) + " |")
-        lines.append(f"| 夏普比率 | " + " | ".join(f"{r.sharpe_ratio:.2f}" for r in results) + " |")
-        lines.append(f"| 最大回撤 | " + " | ".join(f"{r.max_drawdown:.2%}" for r in results) + " |")
-        lines.append(f"| 平均置信度 | " + " | ".join(f"{r.avg_confidence:.1%}" for r in results) + " |")
-        lines.append(f"| A0方向一致率 | " + " | ".join(f"{r.a0_alignment_rate:.1%}" for r in results) + " |")
-        lines.append(f"| A7门禁通过率 | " + " | ".join(f"{r.a7_pass_rate:.1%}" for r in results) + " |")
+        lines.append("| 总K线数 | " + " | ".join(str(r.total_bars) for r in results) + " |")
+        lines.append("| 总交易数 | " + " | ".join(str(r.total_trades) for r in results) + " |")
+        lines.append(
+            "| 做多/做空 | "
+            + " | ".join(f"{r.long_trades}/{r.short_trades}" for r in results)
+            + " |"
+        )
+        lines.append("| HOLD信号 | " + " | ".join(str(r.hold_signals) for r in results) + " |")
+        lines.append("| 胜率 | " + " | ".join(f"{r.win_rate:.1%}" for r in results) + " |")
+        lines.append("| 总收益 | " + " | ".join(f"{r.total_return:.2%}" for r in results) + " |")
+        lines.append("| 平均收益 | " + " | ".join(f"{r.avg_return:.2%}" for r in results) + " |")
+        lines.append("| 最大盈利 | " + " | ".join(f"{r.max_return:.2%}" for r in results) + " |")
+        lines.append("| 最大亏损 | " + " | ".join(f"{r.min_return:.2%}" for r in results) + " |")
+        lines.append("| 夏普比率 | " + " | ".join(f"{r.sharpe_ratio:.2f}" for r in results) + " |")
+        lines.append("| 最大回撤 | " + " | ".join(f"{r.max_drawdown:.2%}" for r in results) + " |")
+        lines.append(
+            "| 平均置信度 | " + " | ".join(f"{r.avg_confidence:.1%}" for r in results) + " |"
+        )
+        lines.append(
+            "| A0方向一致率 | " + " | ".join(f"{r.a0_alignment_rate:.1%}" for r in results) + " |"
+        )
+        lines.append(
+            "| A7门禁通过率 | " + " | ".join(f"{r.a7_pass_rate:.1%}" for r in results) + " |"
+        )
         lines.append("")
 
         # 各 symbol 详情
@@ -624,9 +705,11 @@ class DreamOSBacktester:
                 lines.append("|------|------|--------|------|------|------|----|----|")
                 for t in r.trades[-10:]:
                     ts = datetime.fromtimestamp(t.timestamp / 1000).strftime("%m-%d %H:%M")
-                    lines.append(f"| {ts} | {t.direction} | {t.confidence:.0%} | "
-                                 f"{t.entry_price} | {t.exit_price} | {t.return_pct:.2%} | "
-                                 f"{'✓' if t.a0_aligned else '✗'} | {'✓' if t.a7_passed else '✗'} |")
+                    lines.append(
+                        f"| {ts} | {t.direction} | {t.confidence:.0%} | "
+                        f"{t.entry_price} | {t.exit_price} | {t.return_pct:.2%} | "
+                        f"{'✓' if t.a0_aligned else '✗'} | {'✓' if t.a7_passed else '✗'} |"
+                    )
                 lines.append("")
 
         # 组合统计
@@ -664,8 +747,12 @@ class DreamOSBacktester:
 def main():
     parser = argparse.ArgumentParser(description="Dream OS 回测系统")
     parser.add_argument("--symbols", default="BTC,ETH,SOL", help="回测币种，逗号分隔")
-    parser.add_argument("--interval", default="1h", choices=["1h", "30m", "4h"],
-                        help="K线周期：1h/30m/4h（4h 从 1h 聚合，样本更多）")
+    parser.add_argument(
+        "--interval",
+        default="1h",
+        choices=["1h", "30m", "4h"],
+        help="K线周期：1h/30m/4h（4h 从 1h 聚合，样本更多）",
+    )
     parser.add_argument("--budget", default="lean", choices=["lean", "standard", "full"])
     parser.add_argument("--output", default=None, help="报告输出路径")
     args = parser.parse_args()
@@ -681,9 +768,11 @@ def main():
         t0 = time.time()
         result = bt.backtest_symbol(symbol, args.interval)
         elapsed = time.time() - t0
-        logger.info(f"{symbol} 回测完成: {result.total_trades} 笔交易, "
-                     f"收益={result.total_return:.2%}, 胜率={result.win_rate:.1%}, "
-                     f"夏普={result.sharpe_ratio:.2f}, 耗时={elapsed:.1f}s")
+        logger.info(
+            f"{symbol} 回测完成: {result.total_trades} 笔交易, "
+            f"收益={result.total_return:.2%}, 胜率={result.win_rate:.1%}, "
+            f"夏普={result.sharpe_ratio:.2f}, 耗时={elapsed:.1f}s"
+        )
         results.append(result)
 
     # 生成报告
@@ -693,7 +782,11 @@ def main():
     if args.output:
         output_path = Path(args.output)
     else:
-        output_path = Path(__file__).parent / "backtest_reports" / f"backtest_{args.interval}_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
+        output_path = (
+            Path(__file__).parent
+            / "backtest_reports"
+            / f"backtest_{args.interval}_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
+        )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:

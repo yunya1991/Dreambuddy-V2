@@ -6,13 +6,11 @@
 """
 
 import json
+import shutil
 import sys
 import time
-import traceback
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -20,24 +18,33 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import (
+from scripts.memory_l4 import (  # noqa: E402
+    a0a9_bridge,
+    case_registry,
+    distill_engine,
+    index_builder,
+    pipeline,
+    query_similar,
+    review_engine,
+    stats_engine,
+)
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
-    memory_l4_reviews_dir,
     memory_l4_distills_dir,
+    memory_l4_reviews_dir,
     memory_l4_stats_dir,
     workbuddy_dir,
     workspace_root,
 )
-from scripts.memory_l4 import case_registry, a0a9_bridge, review_engine
-from scripts.memory_l4 import distill_engine, stats_engine, pipeline
-from scripts.memory_l4 import index_builder, query_similar
+
 
 def _ts() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _make_episode(case_id: str, pnl: float, regime: str = "bull",
-                  decision: str = "long", inst_id: str = None) -> dict:
+def _make_episode(
+    case_id: str, pnl: float, regime: str = "bull", decision: str = "long", inst_id: str = None
+) -> dict:
     inst = inst_id or f"{case_id}_INST"
     return {
         "trace_id": case_id,
@@ -88,31 +95,58 @@ def _make_a0a9_artifacts_for(cid: str, stages: list = None):
     trading_dir.mkdir(parents=True, exist_ok=True)
 
     templates = {
-        "A0": {"timestamp": _ts(), "core_contradiction": "price indicator divergence",
-               "analysis": "RSI divergence at resistance"},
-        "A1": {"timestamp": _ts(), "research_conclusion": "momentum confirmed",
-               "methodology": "technical analysis"},
-        "A2": {"timestamp": _ts(), "first_principles": "trend follows momentum",
-               "reasoning": "market inefficiency"},
-        "A3": {"timestamp": _ts(), "simulation_result": "backtest positive",
-               "hypothesis": "momentum breakout", "backtest_result": "wr=0.65"},
-        "A4": {"timestamp": _ts(), "validation_result": "validated",
-               "assumption": "trend continuation", "test_outcome": "pass"},
-        "A5": {"timestamp": _ts(), "execution_decision": "enter long",
-               "execution_logic": "breakout"},
-        "A6": {"timestamp": _ts(), "signal_decision": "hold",
-               "signal_rationale": "no reversal"},
-        "A7": {"timestamp": _ts(), "practice_audit_result": "matches theory",
-               "practice_theory_gap": "minor slippage"},
-        "A8": {"timestamp": _ts(), "verification_result": "confirmed",
-               "theory_critique": "valid under regime", "verification_outcome": "pass"},
-        "A9": {"timestamp": _ts(), "exit_decision": "take profit",
-               "exit_reasoning": "target hit"},
+        "A0": {
+            "timestamp": _ts(),
+            "core_contradiction": "price indicator divergence",
+            "analysis": "RSI divergence at resistance",
+        },
+        "A1": {
+            "timestamp": _ts(),
+            "research_conclusion": "momentum confirmed",
+            "methodology": "technical analysis",
+        },
+        "A2": {
+            "timestamp": _ts(),
+            "first_principles": "trend follows momentum",
+            "reasoning": "market inefficiency",
+        },
+        "A3": {
+            "timestamp": _ts(),
+            "simulation_result": "backtest positive",
+            "hypothesis": "momentum breakout",
+            "backtest_result": "wr=0.65",
+        },
+        "A4": {
+            "timestamp": _ts(),
+            "validation_result": "validated",
+            "assumption": "trend continuation",
+            "test_outcome": "pass",
+        },
+        "A5": {
+            "timestamp": _ts(),
+            "execution_decision": "enter long",
+            "execution_logic": "breakout",
+        },
+        "A6": {"timestamp": _ts(), "signal_decision": "hold", "signal_rationale": "no reversal"},
+        "A7": {
+            "timestamp": _ts(),
+            "practice_audit_result": "matches theory",
+            "practice_theory_gap": "minor slippage",
+        },
+        "A8": {
+            "timestamp": _ts(),
+            "verification_result": "confirmed",
+            "theory_critique": "valid under regime",
+            "verification_outcome": "pass",
+        },
+        "A9": {"timestamp": _ts(), "exit_decision": "take profit", "exit_reasoning": "target hit"},
     }
     for stage in stages:
         if stage in templates:
             f = trading_dir / f"{cid}_{stage}_output.json"
-            f.write_text(json.dumps(templates[stage], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            f.write_text(
+                json.dumps(templates[stage], ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            )
 
 
 def _purge_dir(d: Path, patterns: tuple[str, ...]) -> None:
@@ -142,6 +176,7 @@ def _clean_workspace():
 def test_register_100_cases():
     """压力: 注册 100 个 case，覆盖 6 个 regime。"""
     import random
+
     regimes = ["bull", "bear", "oscillation", "crash", "recovery", "consolidation"]
     for i in range(100):
         pnl = random.gauss(1.0, 3.0)  # normal dist, some wins some losses
@@ -202,8 +237,7 @@ def test_regime_profit_loss_split():
         assert profit["total"] + loss["total"] > 0
         # All profit results should have positive pnl
         for r in profit["cases"]:
-            assert r["pnl_pct"] is not None and r["pnl_pct"] > 0, \
-                f"Non-profit in profit query: {r}"
+            assert r["pnl_pct"] is not None and r["pnl_pct"] > 0, f"Non-profit in profit query: {r}"
 
 
 # ===================================================================
@@ -212,10 +246,10 @@ def test_regime_profit_loss_split():
 def test_extreme_pnl():
     """压力: 极端 PnL 值 (+50%, -30%)。"""
     extreme_cases = [
-        ("STRESS_EXT_POS", 50.0, "crash", "long"),   # huge profit
-        ("STRESS_EXT_NEG", -30.0, "bull", "long"),    # huge loss
+        ("STRESS_EXT_POS", 50.0, "crash", "long"),  # huge profit
+        ("STRESS_EXT_NEG", -30.0, "bull", "long"),  # huge loss
         ("STRESS_EXT_ZERO", 0.001, "oscillation", "short"),  # near zero
-        ("STRESS_EXT_TINY", -0.001, "recovery", "long"),     # tiny loss
+        ("STRESS_EXT_TINY", -0.001, "recovery", "long"),  # tiny loss
     ]
     for cid, pnl, regime, dec in extreme_cases:
         ep = _make_episode(cid, pnl=pnl, regime=regime, decision=dec)
@@ -281,10 +315,13 @@ def test_partial_thinking_chain():
     case = case_registry.create_case_from_episode_data(
         _make_episode("STRESS_PARTIAL", pnl=1.0), "STRESS_PARTIAL"
     )
-    case_registry.populate_thinking_chain(case, [
-        {"stage": "A0", "decision": "contradiction", "contradiction": "test"},
-        {"stage": "A9", "decision": "exit"},
-    ])
+    case_registry.populate_thinking_chain(
+        case,
+        [
+            {"stage": "A0", "decision": "contradiction", "contradiction": "test"},
+            {"stage": "A9", "decision": "exit"},
+        ],
+    )
     tc_feat = index_builder._extract_thinking_chain_features(case)
     assert tc_feat["stages_count"] == 2
     assert tc_feat["stage_coverage_pct"] == 20.0
@@ -314,7 +351,7 @@ def test_l4_status_invalid():
     )
     try:
         case_registry.advance_l4_status(case, "INVALID_STATUS")
-        assert False, "Should have raised ValueError"
+        assert False, "Should have raised ValueError"  # noqa: B011
     except ValueError:
         pass  # Expected
 
@@ -350,9 +387,7 @@ def test_batch_review_50():
     for i in range(50):
         cid = f"STRESS_REV_{i:03d}"
         pnl = float((i - 25) * 0.5)  # -12.5 to +12.0
-        c = case_registry.create_case_from_episode_data(
-            _make_episode(cid, pnl=pnl), cid
-        )
+        c = case_registry.create_case_from_episode_data(_make_episode(cid, pnl=pnl), cid)
         cases.append(c)
         episodes[cid] = _make_episode(cid, pnl=pnl)
 
@@ -375,21 +410,27 @@ def test_distill_all_kinds():
     """压力: 蒸馏所有 kind 类型。"""
     cid = "STRESS_DISTILL_01"
     # Create and SAVE a real case on disk
-    case = case_registry.create_case_from_episode_data(
-        _make_episode(cid, pnl=1.0), cid
-    )
+    case = case_registry.create_case_from_episode_data(_make_episode(cid, pnl=1.0), cid)
     case_registry.save_json(memory_l4_cases_dir() / f"{cid}.json", case)
 
     kinds = [
-        "benefit_experience", "risk_signal", "decision_heuristic",
-        "contradiction_pattern", "exit_logic", "theory_update",
+        "benefit_experience",
+        "risk_signal",
+        "decision_heuristic",
+        "contradiction_pattern",
+        "exit_logic",
+        "theory_update",
     ]
     for kind in kinds:
         review = {
             "review_id": f"REV_DISTILL_{kind}",
             "case_id": cid,
             "direction": "failure" if "risk" in kind or "contradiction" in kind else "success",
-            "mistakes": [{"what": "test error", "why": "no confirmation"}] if "risk" in kind or "contradiction" in kind else [],
+            "mistakes": (
+                [{"what": "test error", "why": "no confirmation"}]
+                if "risk" in kind or "contradiction" in kind
+                else []
+            ),
             "successes": [{"what": "good entry"}] if "benefit" in kind else [],
         }
         distill = distill_engine.run_full_distill_pipeline(review, kind=kind)
@@ -415,7 +456,7 @@ def test_query_stage_invalid():
     """压力: 非法阶段应抛异常。"""
     try:
         query_similar.query_by_stage("A10", topk=5)
-        assert False, "Should have raised ValueError"
+        assert False, "Should have raised ValueError"  # noqa: B011
     except ValueError:
         pass  # Expected
 
@@ -492,13 +533,11 @@ def test_cross_instance():
         cid = f"STRESS_INST_{inst}"
         ep = _make_episode(cid, pnl=2.0, inst_id=inst)
         _save_episode(ep)
-        case_registry.create_case_from_episode_file(
-            workbuddy_dir() / "episodes" / f"{cid}.json"
-        )
+        case_registry.create_case_from_episode_file(workbuddy_dir() / "episodes" / f"{cid}.json")
 
     # Query by regime should include all instances
     result = query_similar.query_by_regime_and_outcome("bull", topk=200)
-    inst_ids = {c["case_id"] for c in result["cases"]}
+    inst_ids = {c["case_id"] for c in result["cases"]}  # noqa: F841
     # Should find cases across multiple instances
     assert len(result["cases"]) > 0
 
@@ -509,10 +548,22 @@ def test_cross_instance():
 def test_all_cases_v02():
     """压力: 所有 case 必须是 v0.2 格式。"""
     required_keys = {
-        "case_id", "version", "ts_start", "inst_id", "intent",
-        "investigation", "theory_refs", "environment_snapshot",
-        "thinking_chain", "evidence_chain", "decision_outcome",
-        "l4_status", "plan", "execution", "review", "quadrant",
+        "case_id",
+        "version",
+        "ts_start",
+        "inst_id",
+        "intent",
+        "investigation",
+        "theory_refs",
+        "environment_snapshot",
+        "thinking_chain",
+        "evidence_chain",
+        "decision_outcome",
+        "l4_status",
+        "plan",
+        "execution",
+        "review",
+        "quadrant",
     }
     for p in sorted(memory_l4_cases_dir().glob("*.json")):
         case = json.loads(p.read_text(encoding="utf-8"))
@@ -528,8 +579,9 @@ def test_stats_after_mutations():
     """压力: 多次操作后统计一致性。"""
     stats = stats_engine.compute_full_stats()
     total_cases = len(list(memory_l4_cases_dir().glob("*.json")))
-    assert stats["pnl_stats"]["count"] == total_cases, \
-        f"Stats count {stats['pnl_stats']['count']} != files {total_cases}"
+    assert (
+        stats["pnl_stats"]["count"] == total_cases
+    ), f"Stats count {stats['pnl_stats']['count']} != files {total_cases}"
     assert stats["l4_status_distribution"]["total"] == total_cases
 
 
@@ -559,9 +611,13 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # Clean test data
-    for d in [memory_l4_cases_dir(), memory_l4_reviews_dir(),
-              memory_l4_distills_dir(), memory_l4_stats_dir(),
-              workbuddy_dir() / "episodes"]:
+    for d in [
+        memory_l4_cases_dir(),
+        memory_l4_reviews_dir(),
+        memory_l4_distills_dir(),
+        memory_l4_stats_dir(),
+        workbuddy_dir() / "episodes",
+    ]:
         if d.exists():
             shutil.rmtree(d)
         d.mkdir(parents=True, exist_ok=True)
@@ -571,67 +627,67 @@ if __name__ == "__main__":
         shutil.rmtree(trading)
 
     print("\n--- Scenario 1: Large Volume (100 cases) ---")
-    test("S1: Register 100 cases across 6 regimes", test_register_100_cases)
-    test("S1: Index performance with 100 cases", test_index_performance_100)
-    test("S1: Stats performance with 100 cases", test_stats_performance_100)
+    test("S1: Register 100 cases across 6 regimes", test_register_100_cases)  # noqa: F821
+    test("S1: Index performance with 100 cases", test_index_performance_100)  # noqa: F821
+    test("S1: Stats performance with 100 cases", test_stats_performance_100)  # noqa: F821
 
     print("\n--- Scenario 2: Multi-Regime ---")
-    test("S2: Regime query correctness", test_regime_query_correctness)
-    test("S2: Regime profit/loss split", test_regime_profit_loss_split)
+    test("S2: Regime query correctness", test_regime_query_correctness)  # noqa: F821
+    test("S2: Regime profit/loss split", test_regime_profit_loss_split)  # noqa: F821
 
     print("\n--- Scenario 3: Extreme Values ---")
-    test("S3: Extreme PnL (+50%, -30%)", test_extreme_pnl)
-    test("S3: Extreme quadrant coordinates", test_extreme_quadrant)
+    test("S3: Extreme PnL (+50%, -30%)", test_extreme_pnl)  # noqa: F821
+    test("S3: Extreme quadrant coordinates", test_extreme_quadrant)  # noqa: F821
 
     print("\n--- Scenario 4: Missing/Incomplete Data ---")
-    test("S4: Empty thinking_chain", test_empty_thinking_chain)
-    test("S4: Partial thinking_chain (A0+A9)", test_partial_thinking_chain)
-    test("S4: Missing episode ref", test_missing_episode_ref)
+    test("S4: Empty thinking_chain", test_empty_thinking_chain)  # noqa: F821
+    test("S4: Partial thinking_chain (A0+A9)", test_partial_thinking_chain)  # noqa: F821
+    test("S4: Missing episode ref", test_missing_episode_ref)  # noqa: F821
 
     print("\n--- Scenario 5: State Machine Edge Cases ---")
-    test("S5: Invalid L4 status", test_l4_status_invalid)
-    test("S5: L4 status backward transition", test_l4_status_backward)
-    test("S5: M_FAIL status", test_l4_status_fail)
+    test("S5: Invalid L4 status", test_l4_status_invalid)  # noqa: F821
+    test("S5: L4 status backward transition", test_l4_status_backward)  # noqa: F821
+    test("S5: M_FAIL status", test_l4_status_fail)  # noqa: F821
 
     print("\n--- Scenario 6: Review Engine — Batch ---")
-    test("S6: Batch review 50 cases", test_batch_review_50)
+    test("S6: Batch review 50 cases", test_batch_review_50)  # noqa: F821
 
     print("\n--- Scenario 7: Distill — All Kinds ---")
-    test("S7: Distill all 6 kinds", test_distill_all_kinds)
+    test("S7: Distill all 6 kinds", test_distill_all_kinds)  # noqa: F821
 
     print("\n--- Scenario 8: Query — Stage Coverage ---")
-    test("S8: Query all A0-A9 stages", test_query_all_stages)
-    test("S8: Query invalid stage", test_query_stage_invalid)
+    test("S8: Query all A0-A9 stages", test_query_all_stages)  # noqa: F821
+    test("S8: Query invalid stage", test_query_stage_invalid)  # noqa: F821
 
     print("\n--- Scenario 9: A0-A9 Bridge — Partial ---")
-    test("S9: A0-A9 partial stages", test_a0a9_partial_stages)
+    test("S9: A0-A9 partial stages", test_a0a9_partial_stages)  # noqa: F821
 
     print("\n--- Scenario 10: Full Pipeline E2E ---")
-    test("S10: Full pipeline M0→M4", test_full_pipeline_stress)
+    test("S10: Full pipeline M0→M4", test_full_pipeline_stress)  # noqa: F821
 
     print("\n--- Scenario 11: Index Consistency ---")
-    test("S11: Index consistency after mutations", test_index_consistency)
+    test("S11: Index consistency after mutations", test_index_consistency)  # noqa: F821
 
     print("\n--- Scenario 12: Cross-Instance ---")
-    test("S12: Cross-instance data isolation", test_cross_instance)
+    test("S12: Cross-instance data isolation", test_cross_instance)  # noqa: F821
 
     print("\n--- Scenario 13: Schema Validation ---")
-    test("S13: All cases v0.2 schema", test_all_cases_v02)
+    test("S13: All cases v0.2 schema", test_all_cases_v02)  # noqa: F821
 
     print("\n--- Scenario 14: Memory Growth ---")
-    test("S14: Stats consistency after mutations", test_stats_after_mutations)
+    test("S14: Stats consistency after mutations", test_stats_after_mutations)  # noqa: F821
 
     print("\n--- Scenario 15: Error Recovery ---")
-    test("S15: Pipeline without artifacts", test_pipeline_missing_artifacts)
+    test("S15: Pipeline without artifacts", test_pipeline_missing_artifacts)  # noqa: F821
 
     print("\n" + "=" * 60)
-    print(f"Results: {PASSED} passed, {FAILED} failed, {PASSED + FAILED} total")
+    print(f"Results: {PASSED} passed, {FAILED} failed, {PASSED + FAILED} total")  # noqa: F821
     print("=" * 60)
 
-    if TESTS:
+    if TESTS:  # noqa: F821
         print("\nTest Details:")
-        for name, status, err in TESTS:
+        for name, status, err in TESTS:  # noqa: F821
             mark = "OK" if status == "PASS" else "FAIL"
             print(f"  [{mark}] {name}" + (f" — {err}" if err else ""))
 
-    sys.exit(1 if FAILED > 0 else 0)
+    sys.exit(1 if FAILED > 0 else 0)  # noqa: F821

@@ -5,6 +5,7 @@ T20-2: fh inspect --set alt_trend_ensemble — 输出含列数/模块/血缘OK
 T20-3: fh run-sample --set btc_morph_v6 — 输出含 Rows/Columns/Modules
 T20-4: fh export-schema --set equity_classic_trend — JSON 含 columns/column_count
 """
+
 from __future__ import annotations
 
 import io
@@ -31,8 +32,13 @@ def test_t20_1_list():
     out = buf.getvalue()
     assert rc == 0
     # 5 个模块
-    for mod in ("crypto_morphology", "elder_ray", "triple_screen_trend",
-                "classic_indicators", "five_domain_fc"):
+    for mod in (
+        "crypto_morphology",
+        "elder_ray",
+        "triple_screen_trend",
+        "classic_indicators",
+        "five_domain_fc",
+    ):
         assert mod in out, f"模块 {mod} 未列出"
     # 3 个集合
     for s in ("btc_morph_v6", "alt_trend_ensemble", "equity_classic_trend"):

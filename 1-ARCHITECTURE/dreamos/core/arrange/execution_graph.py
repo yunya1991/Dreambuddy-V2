@@ -8,16 +8,16 @@ DreamOS A层 — 执行图实现
 
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Optional
 from collections import OrderedDict
+from typing import Callable, Dict, List, Optional
 
-from dreamos.shared.interfaces import Node, Graph, Edge
+from dreamos.shared.interfaces import Edge, Graph, Node
 from dreamos.shared.state import State
-
 
 # ============================================================
 # 顺序执行图
 # ============================================================
+
 
 class SequentialGraph(Graph):
     """顺序执行图 — 按添加顺序执行节点
@@ -45,11 +45,14 @@ class SequentialGraph(Graph):
             self._entry_id = node.node_id
         return self
 
-    def add_edge(self, source: str, target: str,
-                 condition: Optional[Callable[[State], bool]] = None,
-                 label: str = "") -> "SequentialGraph":
-        self._edges.append(Edge(source=source, target=target,
-                                condition=condition, label=label))
+    def add_edge(
+        self,
+        source: str,
+        target: str,
+        condition: Optional[Callable[[State], bool]] = None,
+        label: str = "",
+    ) -> "SequentialGraph":
+        self._edges.append(Edge(source=source, target=target, condition=condition, label=label))
         return self
 
     def get_entry(self) -> Optional[Node]:
@@ -137,6 +140,7 @@ class SequentialGraph(Graph):
 # 条件执行图
 # ============================================================
 
+
 class ConditionalGraph(Graph):
     """条件执行图 — 支持复杂的条件跳转
 
@@ -168,13 +172,16 @@ class ConditionalGraph(Graph):
             self._entry_id = node.node_id
         return self
 
-    def add_edge(self, source: str, target: str,
-                 condition: Optional[Callable[[State], bool]] = None,
-                 label: str = "") -> "ConditionalGraph":
+    def add_edge(
+        self,
+        source: str,
+        target: str,
+        condition: Optional[Callable[[State], bool]] = None,
+        label: str = "",
+    ) -> "ConditionalGraph":
         if condition is None:
             self._default_next[source] = target
-        self._edges.append(Edge(source=source, target=target,
-                                condition=condition, label=label))
+        self._edges.append(Edge(source=source, target=target, condition=condition, label=label))
         return self
 
     def get_entry(self) -> Optional[Node]:
@@ -257,12 +264,14 @@ class ConditionalGraph(Graph):
         new_edges = []
         for edge in self._edges:
             if edge.target == before_node_id:
-                new_edges.append(Edge(
-                    source=edge.source,
-                    target=new_node.node_id,
-                    condition=edge.condition,
-                    label=edge.label,
-                ))
+                new_edges.append(
+                    Edge(
+                        source=edge.source,
+                        target=new_node.node_id,
+                        condition=edge.condition,
+                        label=edge.label,
+                    )
+                )
             else:
                 new_edges.append(edge)
 
@@ -272,12 +281,14 @@ class ConditionalGraph(Graph):
                 self._default_next[src] = new_node.node_id
 
         # 添加新节点 → before_node_id 的默认边
-        new_edges.append(Edge(
-            source=new_node.node_id,
-            target=before_node_id,
-            condition=None,
-            label="insert_before_default",
-        ))
+        new_edges.append(
+            Edge(
+                source=new_node.node_id,
+                target=before_node_id,
+                condition=None,
+                label="insert_before_default",
+            )
+        )
         self._default_next[new_node.node_id] = before_node_id
 
         self._edges = new_edges

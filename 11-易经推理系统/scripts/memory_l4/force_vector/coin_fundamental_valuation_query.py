@@ -13,6 +13,7 @@ metric_name=market_cap），计算当前 market_cap 在历史序列中的百分�
 
 FAIL-OPEN：任何异常或数据不足 → 返回 50.0（中性），不阻塞阶段识别。
 """
+
 from __future__ import annotations
 
 import json
@@ -49,6 +50,7 @@ _NEUTRAL_PERCENTILE = 50.0
 # 纯函数：百分位计算
 # ===========================================================================
 
+
 def _compute_percentile(series: List[float], current: float) -> float:
     """计算 current 在 series 中的百分位 [0, 100]。
 
@@ -78,6 +80,7 @@ def _compute_percentile(series: List[float], current: float) -> float:
 # DB 查询
 # ===========================================================================
 
+
 def _query_via_18db(coin: str, db_path: Optional[str] = None) -> float:
     """Fallback 路径：直读 18-数据获取中心 data_center.db records 表的 timeseries JSON。
 
@@ -93,6 +96,7 @@ def _query_via_18db(coin: str, db_path: Optional[str] = None) -> float:
     try:
         # 延迟导入避免循环依赖
         from force_vector.coin_fundamental_ranker import get_coingecko_id
+
         coin_id = get_coingecko_id(coin)
         if not coin_id:
             return _NEUTRAL_PERCENTILE
@@ -146,6 +150,7 @@ def _query_via_dal(coin: str, dal_db_path: Optional[str] = None) -> float:
     """
     try:
         from force_vector.coin_fundamental_ranker import get_coingecko_id
+
         coin_id = get_coingecko_id(coin)
         if not coin_id:
             return _NEUTRAL_PERCENTILE

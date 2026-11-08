@@ -13,10 +13,10 @@ Phase 2 RED/GREEN: ImpactMultiplier 因子影响力时间衰减测试
   - apply_impact_multiplier 应用 + FAIL-OPEN
   - 衰减系数符合 §8.2 文档关键值
 """
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 
 class TestImpactMultiplierImport:
@@ -24,15 +24,9 @@ class TestImpactMultiplierImport:
 
     def test_impact_multiplier_class_importable(self):
         """ImpactMultiplier 类可导入。"""
-        from dreambuddy_evolution.core.exogenous_data_bridge import (
-            ImpactMultiplier,
-        )  # noqa: F401
 
     def test_apply_function_importable(self):
         """apply_impact_multiplier 函数可导入。"""
-        from dreambuddy_evolution.core.exogenous_data_bridge import (
-            apply_impact_multiplier,
-        )  # noqa: F401
 
 
 class TestGetMultiplier:
@@ -46,9 +40,7 @@ class TestGetMultiplier:
 
         im = ImpactMultiplier()
         for dim in ImpactMultiplier.DIMENSIONS:
-            assert im.get_multiplier("neutral", dim) == 1.0, (
-                f"neutral 阶段 {dim} 应为 1.0"
-            )
+            assert im.get_multiplier("neutral", dim) == 1.0, f"neutral 阶段 {dim} 应为 1.0"
 
     def test_none_phase_returns_1(self):
         """cycle_phase=None → 1.0 (FAIL-OPEN)。"""
@@ -221,9 +213,9 @@ class TestGetMultipliers:
         # C1 因子 (前 7 个) 应为 1.5
         for i, entry in enumerate(CROSS_ATTENTION_FACTOR_METRICS):
             if entry[3] == "C1":
-                assert multipliers[i] == 1.5, (
-                    f"C1 因子 {entry[2]} 在 event 阶段应为 1.5, 实际 {multipliers[i]}"
-                )
+                assert (
+                    multipliers[i] == 1.5
+                ), f"C1 因子 {entry[2]} 在 event 阶段应为 1.5, 实际 {multipliers[i]}"
 
     def test_unknown_factor_name_returns_1(self):
         """不在 CROSS_ATTENTION_FACTOR_METRICS 中的因子名 → 1.0 (FAIL-OPEN)。"""
@@ -233,9 +225,7 @@ class TestGetMultipliers:
 
         im = ImpactMultiplier()
         # 传入不在元数据中的因子名
-        multipliers = im.get_multipliers(
-            "event", ["unknown_factor_1", "unknown_factor_2"]
-        )
+        multipliers = im.get_multipliers("event", ["unknown_factor_1", "unknown_factor_2"])
         assert np.all(multipliers == 1.0)
 
 
@@ -350,18 +340,14 @@ class TestEndToEndDecay:
 
         im = ImpactMultiplier()
         factor_names = [m[2] for m in CROSS_ATTENTION_FACTOR_METRICS]
-        multipliers = im.get_multipliers(
-            "repricing", factor_names, "trend"
-        )
+        multipliers = im.get_multipliers("repricing", factor_names, "trend")
 
         factors = np.ones((1, len(factor_names)), dtype=np.float64)
         result = apply_impact_multiplier(factors, multipliers)
 
         for i, entry in enumerate(CROSS_ATTENTION_FACTOR_METRICS):
             if entry[3] == "C4":
-                assert result[0, i] == 0.1, (
-                    f"repricing/trend C4 因子 {entry[2]} 应为 0.1"
-                )
+                assert result[0, i] == 0.1, f"repricing/trend C4 因子 {entry[2]} 应为 0.1"
 
 
 class TestBuildExogenousFactorsWithDecay:

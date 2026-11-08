@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -27,7 +26,9 @@ def temp_trades(tmp_path):
     for i in range(10):
         trades.append({"coin": "BTC-USDT-SWAP", "pnl": 5.0, "pnl_pct": 3.0, "close_ts": float(i)})
     for i in range(5):
-        trades.append({"coin": "BTC-USDT-SWAP", "pnl": -3.0, "pnl_pct": -2.0, "close_ts": float(100 + i)})
+        trades.append(
+            {"coin": "BTC-USDT-SWAP", "pnl": -3.0, "pnl_pct": -2.0, "close_ts": float(100 + i)}
+        )
     with open(trades_file, "w") as f:
         for t in trades:
             f.write(json.dumps(t) + "\n")

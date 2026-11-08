@@ -8,30 +8,31 @@
 - gold set 可管理
 - 观测异常 FAIL-OPEN 静默
 """
-import json
-import os
-import tempfile
-import time
-from pathlib import Path
 
-import pytest
-
+import tempfile  # noqa: I001
 
 # ---------------------------------------------------------------------------
 # RED 起手：模块尚未创建，应抛 ModuleNotFoundError
 # ---------------------------------------------------------------------------
 
+
 def test_module_importable():
-    from verification_observer import VerificationObserver  # noqa: F401
-    from verification_observer import RecallEvent, VerifyEvent, GoldSetManager  # noqa: F401
+    from verification_observer import (  # noqa: F401
+        GoldSetManager,
+        RecallEvent,
+        VerificationObserver,  # noqa: F401
+        VerifyEvent,
+    )
 
 
 # ---------------------------------------------------------------------------
 # 事件数据类
 # ---------------------------------------------------------------------------
 
+
 def test_recall_event_fields():
     from verification_observer import RecallEvent
+
     ev = RecallEvent(
         session_id="s1",
         context="测试问题",
@@ -50,6 +51,7 @@ def test_recall_event_fields():
 
 def test_verify_event_fields():
     from verification_observer import VerifyEvent
+
     ev = VerifyEvent(
         session_id="s1",
         memory_id="VM-1",
@@ -72,14 +74,17 @@ def test_verify_event_fields():
 # VerificationObserver 核心
 # ---------------------------------------------------------------------------
 
+
 def test_observer_default_off():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     assert obs.is_enabled() is False
 
 
 def test_observer_enable_disable():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
     assert obs.is_enabled() is True
@@ -89,20 +94,25 @@ def test_observer_enable_disable():
 
 def test_record_recall_when_disabled_is_noop():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     # disabled → 不写入，不抛异常
-    obs.record_recall(session_id="s1", context="q", top_k=5,
-                      returned_ids=[], returned_scores=[])
+    obs.record_recall(session_id="s1", context="q", top_k=5, returned_ids=[], returned_scores=[])
     assert obs.get_recall_count() == 0
 
 
 def test_record_recall_when_enabled():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
-    obs.record_recall(session_id="s1", context="q", top_k=5,
-                      returned_ids=["VM-1", "VM-2"],
-                      returned_scores=[0.8, 0.6])
+    obs.record_recall(
+        session_id="s1",
+        context="q",
+        top_k=5,
+        returned_ids=["VM-1", "VM-2"],
+        returned_scores=[0.8, 0.6],
+    )
     assert obs.get_recall_count() == 1
     events = obs.get_recall_events()
     assert len(events) == 1
@@ -111,25 +121,36 @@ def test_record_recall_when_enabled():
 
 def test_record_verify_when_enabled():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
-    obs.record_verify(session_id="s1", memory_id="VM-1", success=True,
-                      old_confidence=0.3, new_confidence=0.4,
-                      old_quality="C", new_quality="B")
+    obs.record_verify(
+        session_id="s1",
+        memory_id="VM-1",
+        success=True,
+        old_confidence=0.3,
+        new_confidence=0.4,
+        old_quality="C",
+        new_quality="B",
+    )
     assert obs.get_verify_count() == 1
 
 
 def test_record_recall_fail_open_on_exception(monkeypatch):
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
+
     # 注入异常：存储写入失败
     def boom(*a, **kw):
         raise RuntimeError("disk full")
+
     monkeypatch.setattr(obs, "_persist_recall", boom)
     # FAIL-OPEN：不抛异常；事件已在内存观测到，持久化失败静默
-    obs.record_recall(session_id="s1", context="q", top_k=5,
-                      returned_ids=["VM-1"], returned_scores=[0.5])
+    obs.record_recall(
+        session_id="s1", context="q", top_k=5, returned_ids=["VM-1"], returned_scores=[0.5]
+    )
     assert obs.get_recall_count() == 1  # 内存中仍计数，持久化失败静默
 
 
@@ -137,44 +158,64 @@ def test_record_recall_fail_open_on_exception(monkeypatch):
 # 转化率与 oracle gap
 # ---------------------------------------------------------------------------
 
+
 def test_conversion_rate_no_verify():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
-    obs.record_recall(session_id="s1", context="q", top_k=5,
-                      returned_ids=["VM-1"], returned_scores=[0.5])
+    obs.record_recall(
+        session_id="s1", context="q", top_k=5, returned_ids=["VM-1"], returned_scores=[0.5]
+    )
     # 没有 verify 事件 → 转化率 0.0
     assert obs.conversion_rate() == 0.0
 
 
 def test_conversion_rate_with_verify():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
     # 2 次 recall 返回 3 条记忆
-    obs.record_recall(session_id="s1", context="q1", top_k=5,
-                      returned_ids=["VM-1", "VM-2"],
-                      returned_scores=[0.8, 0.6])
-    obs.record_recall(session_id="s2", context="q2", top_k=5,
-                      returned_ids=["VM-3"], returned_scores=[0.7])
+    obs.record_recall(
+        session_id="s1",
+        context="q1",
+        top_k=5,
+        returned_ids=["VM-1", "VM-2"],
+        returned_scores=[0.8, 0.6],
+    )
+    obs.record_recall(
+        session_id="s2", context="q2", top_k=5, returned_ids=["VM-3"], returned_scores=[0.7]
+    )
     # 1 次成功 verify
-    obs.record_verify(session_id="s1", memory_id="VM-1", success=True,
-                      old_confidence=0.3, new_confidence=0.4,
-                      old_quality="C", new_quality="B")
+    obs.record_verify(
+        session_id="s1",
+        memory_id="VM-1",
+        success=True,
+        old_confidence=0.3,
+        new_confidence=0.4,
+        old_quality="C",
+        new_quality="B",
+    )
     # 转化率 = 成功 verify 数 / recall 返回总数 = 1/3
     assert abs(obs.conversion_rate() - 1.0 / 3.0) < 1e-9
 
 
 def test_oracle_gap_estimation():
     """oracle gap = 理想最优质量 - 实际 top-k 平均质量。"""
-    from verification_observer import VerificationObserver, quality_to_numeric
+    from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
     # top-3: A(0.8), B(0.5), C(0.3) → 平均 0.533
-    obs.record_recall(session_id="s1", context="q", top_k=3,
-                      returned_ids=["VM-1", "VM-2", "VM-3"],
-                      returned_scores=[0.9, 0.7, 0.5],
-                      returned_qualities=["A", "B", "C"])
+    obs.record_recall(
+        session_id="s1",
+        context="q",
+        top_k=3,
+        returned_ids=["VM-1", "VM-2", "VM-3"],
+        returned_scores=[0.9, 0.7, 0.5],
+        returned_qualities=["A", "B", "C"],
+    )
     gap = obs.oracle_gap()
     # 理想最优 = 1.0（S 级），实际平均 = (0.8+0.5+0.3)/3 = 0.533
     expected = 1.0 - (0.8 + 0.5 + 0.3) / 3.0
@@ -183,6 +224,7 @@ def test_oracle_gap_estimation():
 
 def test_quality_to_numeric():
     from verification_observer import quality_to_numeric
+
     assert quality_to_numeric("S") == 1.0
     assert quality_to_numeric("A") == 0.8
     assert quality_to_numeric("B") == 0.5
@@ -195,11 +237,14 @@ def test_quality_to_numeric():
 # GoldSetManager
 # ---------------------------------------------------------------------------
 
+
 def test_gold_set_add_and_get():
     from verification_observer import GoldSetManager
+
     gs = GoldSetManager(storage_path=tempfile.mkdtemp())
-    gs.add(memory_id="VM-1", content="测试经验",
-           gold_quality="B", gold_confidence=0.5, tags=["test"])
+    gs.add(
+        memory_id="VM-1", content="测试经验", gold_quality="B", gold_confidence=0.5, tags=["test"]
+    )
     entry = gs.get("VM-1")
     assert entry is not None
     assert entry.memory_id == "VM-1"
@@ -209,11 +254,10 @@ def test_gold_set_add_and_get():
 
 def test_gold_set_count_and_list():
     from verification_observer import GoldSetManager
+
     gs = GoldSetManager(storage_path=tempfile.mkdtemp())
-    gs.add(memory_id="VM-1", content="a", gold_quality="B",
-           gold_confidence=0.5, tags=["t1"])
-    gs.add(memory_id="VM-2", content="b", gold_quality="A",
-           gold_confidence=0.8, tags=["t2"])
+    gs.add(memory_id="VM-1", content="a", gold_quality="B", gold_confidence=0.5, tags=["t1"])
+    gs.add(memory_id="VM-2", content="b", gold_quality="A", gold_confidence=0.8, tags=["t2"])
     assert gs.count() == 2
     ids = gs.list_ids()
     assert set(ids) == {"VM-1", "VM-2"}
@@ -222,23 +266,49 @@ def test_gold_set_count_and_list():
 def test_gold_set_cohen_kappa():
     """双人标注一致性 Cohen's kappa。"""
     from verification_observer import GoldSetManager
+
     gs = GoldSetManager(storage_path=tempfile.mkdtemp())
     # 两条标注一致
-    gs.add(memory_id="VM-1", content="a", gold_quality="B",
-           gold_confidence=0.5, tags=[], annotator_quality="B")
-    gs.add(memory_id="VM-2", content="b", gold_quality="A",
-           gold_confidence=0.8, tags=[], annotator_quality="A")
+    gs.add(
+        memory_id="VM-1",
+        content="a",
+        gold_quality="B",
+        gold_confidence=0.5,
+        tags=[],
+        annotator_quality="B",
+    )
+    gs.add(
+        memory_id="VM-2",
+        content="b",
+        gold_quality="A",
+        gold_confidence=0.8,
+        tags=[],
+        annotator_quality="A",
+    )
     kappa = gs.cohen_kappa()
     assert kappa == 1.0  # 完全一致
 
 
 def test_gold_set_cohen_kappa_disagreement():
     from verification_observer import GoldSetManager
+
     gs = GoldSetManager(storage_path=tempfile.mkdtemp())
-    gs.add(memory_id="VM-1", content="a", gold_quality="B",
-           gold_confidence=0.5, tags=[], annotator_quality="A")  # 不一致
-    gs.add(memory_id="VM-2", content="b", gold_quality="A",
-           gold_confidence=0.8, tags=[], annotator_quality="A")  # 一致
+    gs.add(
+        memory_id="VM-1",
+        content="a",
+        gold_quality="B",
+        gold_confidence=0.5,
+        tags=[],
+        annotator_quality="A",
+    )  # 不一致
+    gs.add(
+        memory_id="VM-2",
+        content="b",
+        gold_quality="A",
+        gold_confidence=0.8,
+        tags=[],
+        annotator_quality="A",
+    )  # 一致
     kappa = gs.cohen_kappa()
     assert kappa < 1.0
     assert kappa >= 0.0
@@ -248,13 +318,16 @@ def test_gold_set_cohen_kappa_disagreement():
 # 持久化
 # ---------------------------------------------------------------------------
 
+
 def test_observer_persistence_across_instances():
     from verification_observer import VerificationObserver
+
     tmpdir = tempfile.mkdtemp()
     obs1 = VerificationObserver(storage_path=tmpdir)
     obs1.enable()
-    obs1.record_recall(session_id="s1", context="q", top_k=5,
-                       returned_ids=["VM-1"], returned_scores=[0.5])
+    obs1.record_recall(
+        session_id="s1", context="q", top_k=5, returned_ids=["VM-1"], returned_scores=[0.5]
+    )
     # 新实例读取同一存储
     obs2 = VerificationObserver(storage_path=tmpdir)
     obs2.enable()
@@ -263,10 +336,10 @@ def test_observer_persistence_across_instances():
 
 def test_gold_set_persistence():
     from verification_observer import GoldSetManager
+
     tmpdir = tempfile.mkdtemp()
     gs1 = GoldSetManager(storage_path=tmpdir)
-    gs1.add(memory_id="VM-1", content="a", gold_quality="B",
-            gold_confidence=0.5, tags=["t"])
+    gs1.add(memory_id="VM-1", content="a", gold_quality="B", gold_confidence=0.5, tags=["t"])
     gs2 = GoldSetManager(storage_path=tmpdir)
     assert gs2.count() == 1
     assert gs2.get("VM-1").gold_quality == "B"
@@ -276,17 +349,29 @@ def test_gold_set_persistence():
 # 指标报告
 # ---------------------------------------------------------------------------
 
+
 def test_metrics_report():
     from verification_observer import VerificationObserver
+
     obs = VerificationObserver(storage_path=tempfile.mkdtemp())
     obs.enable()
-    obs.record_recall(session_id="s1", context="q", top_k=3,
-                      returned_ids=["VM-1", "VM-2"],
-                      returned_scores=[0.9, 0.7],
-                      returned_qualities=["A", "B"])
-    obs.record_verify(session_id="s1", memory_id="VM-1", success=True,
-                      old_confidence=0.3, new_confidence=0.4,
-                      old_quality="C", new_quality="B")
+    obs.record_recall(
+        session_id="s1",
+        context="q",
+        top_k=3,
+        returned_ids=["VM-1", "VM-2"],
+        returned_scores=[0.9, 0.7],
+        returned_qualities=["A", "B"],
+    )
+    obs.record_verify(
+        session_id="s1",
+        memory_id="VM-1",
+        success=True,
+        old_confidence=0.3,
+        new_confidence=0.4,
+        old_quality="C",
+        new_quality="B",
+    )
     report = obs.metrics_report()
     assert report["recall_count"] == 1
     assert report["verify_count"] == 1

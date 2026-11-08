@@ -13,6 +13,7 @@
   - cycle_comparator: 7d+30d 双窗口
   - strategic_mapper: 映射 war_state/cap/mask
 """
+
 import dataclasses as _dc
 import logging as _logging
 from typing import Any
@@ -30,7 +31,26 @@ _log = _logging.getLogger("force_vector.init")
 # =========================================================================
 _exported_cls = []  # type: ignore[var-annotated]
 try:
+    from force_vector.contradiction_transform_detector import ContradictionTransformDetector
+    from force_vector.cycle_comparator import CycleComparator
+    from force_vector.elasticity_beta_calculator import ElasticityBetaCalculator
+    from force_vector.feature_correlation_calculator import FeatureCorrelationCalculator
+    from force_vector.force_vector_calculator import ForceVectorCalculator
     from force_vector.models import (
+        ContradictionTransform,
+        CycleComparison,
+        ElasticityBeta,
+        FeatureCorrelation,
+        ForceVector,
+        PCAResonance,
+        PrimaryContradiction,
+        StrategicLayerOutput,
+    )
+    from force_vector.pca_resonance_analyzer import PCAResonanceAnalyzer
+    from force_vector.regime_conditional_calibrator import RegimeConditionalCalibrator
+    from force_vector.strategic_mapper import StrategicMapper
+
+    _exported_cls = [
         ForceVector,
         FeatureCorrelation,
         PrimaryContradiction,
@@ -39,25 +59,14 @@ try:
         ElasticityBeta,
         ContradictionTransform,
         StrategicLayerOutput,
-    )
-    from force_vector.force_vector_calculator import ForceVectorCalculator
-    from force_vector.feature_correlation_calculator import FeatureCorrelationCalculator
-    from force_vector.pca_resonance_analyzer import PCAResonanceAnalyzer
-    from force_vector.cycle_comparator import CycleComparator
-    from force_vector.elasticity_beta_calculator import ElasticityBetaCalculator
-    from force_vector.contradiction_transform_detector import ContradictionTransformDetector
-    from force_vector.regime_conditional_calibrator import RegimeConditionalCalibrator
-    from force_vector.strategic_mapper import StrategicMapper
-
-    _exported_cls = [
-        ForceVector, FeatureCorrelation, PrimaryContradiction, PCAResonance,
-        CycleComparison, ElasticityBeta, ContradictionTransform, StrategicLayerOutput,
     ]
 except Exception as _e:  # pragma: no cover - 兄弟子包环境 顶层 force_vector 不存在
     _log.warning(
         "[force_vector.__init__ FAIL-OPEN] 顶层包导入失败（兄弟子包环境或缺失）"
         " — 将跳过 9 个 calculator/models 导出，BDSM_COINS/快照 功能不受影响。"
-        " err=%s: %s", type(_e).__name__, _e,
+        " err=%s: %s",
+        type(_e).__name__,
+        _e,
     )
     ForceVector = FeatureCorrelation = PrimaryContradiction = None  # type: ignore
     PCAResonance = CycleComparison = ElasticityBeta = None  # type: ignore

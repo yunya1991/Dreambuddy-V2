@@ -10,10 +10,11 @@ V1-C1-INTENT: C1 技术扫描 + IntentGateway 真实 DreamOS 接入测试
 
 验收标准对应 CHAIN_INTEGRATION_SPEC.md P0-1。
 """
+
 import json
+import os
 import subprocess
 import sys
-import os
 
 SERVER = os.path.join(os.path.dirname(__file__), "..", "packages", "python-server", "server.py")
 PYTHON = sys.executable
@@ -147,13 +148,16 @@ print("\n" + "=" * 50)
 print("Test 3: intent_gateway 调用真实 IntentEngine")
 print("=" * 50)
 
-result = call("intent_gateway", {
-    "user_input": "BTC价格多少",
-    "symbol": "BTC-USDT",
-    "market": {"price": 68000},
-    "step": 1,
-    "agent_id": "test-agent",
-})
+result = call(
+    "intent_gateway",
+    {
+        "user_input": "BTC价格多少",
+        "symbol": "BTC-USDT",
+        "market": {"price": 68000},
+        "step": 1,
+        "agent_id": "test-agent",
+    },
+)
 data = result.get("result", {})
 phase = data.get("phase")
 assert_in("phase", phase, ["real_dreamos_intent_engine", "fail_open"])
@@ -161,10 +165,19 @@ assert_in("phase", phase, ["real_dreamos_intent_engine", "fail_open"])
 if phase == "real_dreamos_intent_engine":
     # 验证正典意图字段存在
     canon = data.get("canon_intent")
-    assert_in("canon_intent", canon, [
-        "market_query", "simple_qa", "deep_analysis", "trend_analysis",
-        "technical_signal", "concept_explain", "execute_trade",
-    ])
+    assert_in(
+        "canon_intent",
+        canon,
+        [
+            "market_query",
+            "simple_qa",
+            "deep_analysis",
+            "trend_analysis",
+            "technical_signal",
+            "concept_explain",
+            "execute_trade",
+        ],
+    )
     assert_has("strategy_intent", data.get("strategy_intent"))
     assert_has("confidence", data.get("confidence"))
     assert_has("risk_level", data.get("risk_level"))
@@ -185,12 +198,15 @@ print("\n" + "=" * 50)
 print("Test 4: intent_gateway FAIL-OPEN 降级（空输入）")
 print("=" * 50)
 
-result = call("intent_gateway", {
-    "user_input": "",
-    "symbol": "BTC-USDT",
-    "step": 0,
-    "agent_id": "test-empty",
-})
+result = call(
+    "intent_gateway",
+    {
+        "user_input": "",
+        "symbol": "BTC-USDT",
+        "step": 0,
+        "agent_id": "test-empty",
+    },
+)
 data = result.get("result", {})
 phase = data.get("phase")
 # 空输入可能触发 IntentEngine 兜底或 FAIL-OPEN，两者都可接受

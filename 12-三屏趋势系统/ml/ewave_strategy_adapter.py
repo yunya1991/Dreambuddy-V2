@@ -30,18 +30,16 @@
 
 import os
 import sys
+from dataclasses import dataclass
+from typing import Dict
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional
-from dataclasses import dataclass
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.ewave_recognizer import ElliottWaveRecognizer, WAVE_SIGNALS
-from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-from ml.pitd_kinematics_engineer import KinematicsEngineer
-from ml.pitd_dynamics_engineer import DynamicsEngineer
+from ml.ewave_recognizer import ElliottWaveRecognizer  # noqa: E402
 
 
 @dataclass
@@ -72,49 +70,49 @@ class WaveConfig:
     """
 
     # 基础仓位
-    base_position: float = 0.3           # 波浪基础仓位（3成）
-    max_position: float = 0.5            # 波浪最大仓位上限（5成）
+    base_position: float = 0.3  # 波浪基础仓位（3成）
+    max_position: float = 0.5  # 波浪最大仓位上限（5成）
 
     # 波浪识别参数（融合最优：0.05信号更活跃）
-    zigzag_threshold: float = 0.05       # ZigZag转折阈值
+    zigzag_threshold: float = 0.05  # ZigZag转折阈值
 
     # 信号质量过滤（互斥融合中关闭，纯波浪独立运行时开启）
-    wave_conf_threshold: float = 0.0     # 0.0=关闭，0.7=纯波浪最优
-    phys_conf_threshold: float = 0.0     # 0.0=关闭，0.5=纯波浪最优
+    wave_conf_threshold: float = 0.0  # 0.0=关闭，0.7=纯波浪最优
+    phys_conf_threshold: float = 0.0  # 0.0=关闭，0.5=纯波浪最优
 
     # 动态风险控制（宽追踪+动能止盈+jerk反转保护）
     enable_dynamic_stoploss: bool = True
     enable_dynamic_takeprofit: bool = True
-    base_trailing_pct: float = 0.08      # 基础追踪止损距离8%
-    base_take_profit_pct: float = 0.25   # 基础止盈目标25%
-    trailing_mode: str = "combo"         # 综合追踪（trend+reversal+kinetic）
-    take_profit_mode: str = "kinetic"    # 动能止盈
-    trail_min: float = 0.06              # 追踪止损下限6%
-    trail_max: float = 0.15              # 追踪止损上限15%
-    tp_min: float = 0.13                 # 止盈下限13%
-    tp_max: float = 0.50                 # 止盈上限50%
+    base_trailing_pct: float = 0.08  # 基础追踪止损距离8%
+    base_take_profit_pct: float = 0.25  # 基础止盈目标25%
+    trailing_mode: str = "combo"  # 综合追踪（trend+reversal+kinetic）
+    take_profit_mode: str = "kinetic"  # 动能止盈
+    trail_min: float = 0.06  # 追踪止损下限6%
+    trail_max: float = 0.15  # 追踪止损上限15%
+    tp_min: float = 0.13  # 止盈下限13%
+    tp_max: float = 0.50  # 止盈上限50%
 
     # 动态仓位管理（动能力度仓位）
     enable_dynamic_sizing: bool = True
-    sizing_mode: str = "kinetic"         # 动能力度仓位
+    sizing_mode: str = "kinetic"  # 动能力度仓位
 
     # 互斥融合参数（V4+波浪互斥融合：V4定方向，波浪择时加仓）
     # 贝叶斯优化 Optuna TPE 50 trials 最优参数（2026-07-19，样本外已验证）
-    mutex_fusion: bool = True            # 启用互斥融合模式
-    wave_weight: float = 0.6             # 波浪加仓权重（优化值，原0.3）
-    confirm_threshold: float = 0.6       # 波浪置信度确认阈值
-    bottom_position_cap: float = 0.5     # V4空仓时波浪抄底仓位上限（优化值，原0.3）
-    total_position_cap: float = 1.0      # 总仓位上限
-    keep_v4_dip_buy: bool = True         # V4空仓但有dip_buy仓位时保留（8年+4年回测验证通过）
+    mutex_fusion: bool = True  # 启用互斥融合模式
+    wave_weight: float = 0.6  # 波浪加仓权重（优化值，原0.3）
+    confirm_threshold: float = 0.6  # 波浪置信度确认阈值
+    bottom_position_cap: float = 0.5  # V4空仓时波浪抄底仓位上限（优化值，原0.3）
+    total_position_cap: float = 1.0  # 总仓位上限
+    keep_v4_dip_buy: bool = True  # V4空仓但有dip_buy仓位时保留（8年+4年回测验证通过）
 
     # 物理评估器权重（9年回测最优）
     enable_physics: bool = True
     w_eta: float = 0.211
-    w_reversal: float = 0.368            # 反转风险权重最高
+    w_reversal: float = 0.368  # 反转风险权重最高
     w_support: float = 0.211
     w_kinetic: float = 0.211
-    position_lower: float = 0.6          # 仓位调节下限（0.6+1.0×phys_conf）
-    position_scale: float = 1.0          # 仓位调节幅度
+    position_lower: float = 0.6  # 仓位调节下限（0.6+1.0×phys_conf）
+    position_scale: float = 1.0  # 仓位调节幅度
     eta_strong: float = 0.20
     eta_weak: float = 0.10
 
@@ -135,12 +133,11 @@ class EWaveStrategyAdapter:
 
     def __init__(self, config: WaveConfig = None):
         self.config = config or WaveConfig()
-        self.recognizer = ElliottWaveRecognizer(
-            zigzag_threshold=self.config.zigzag_threshold
-        )
+        self.recognizer = ElliottWaveRecognizer(zigzag_threshold=self.config.zigzag_threshold)
         # 复用物理增强器（集成信号评估器 + jerk止损 + 动能仓位 + 动能止盈）
         if self.config.enable_physics:
             from ml.physics_enhancer import PhysicsEnhancer, PhysicsEnhancerConfig
+
             phys_cfg = PhysicsEnhancerConfig(
                 enabled=True,
                 enable_signal_filter=True,
@@ -249,9 +246,7 @@ class EWaveStrategyAdapter:
             result["wave_direction"] = wave_dir
 
             # 3. 计算波浪仓位
-            wave_pos = self._compute_wave_position(
-                daily_df, wave_struct, v4_action, v4_direction
-            )
+            wave_pos = self._compute_wave_position(daily_df, wave_struct, v4_action, v4_direction)
             result["wave_position_pct"] = round(wave_pos, 4)
 
             # 4. 计算物理置信度及动态止损止盈（如启用）
@@ -261,17 +256,30 @@ class EWaveStrategyAdapter:
                     n = len(daily_df)
                     last_idx = n - 1
 
-                    current_eta = float(feats["eta"][last_idx]) if not np.isnan(feats["eta"][last_idx]) else 0.0
+                    current_eta = (
+                        float(feats["eta"][last_idx])
+                        if not np.isnan(feats["eta"][last_idx])
+                        else 0.0
+                    )
                     result["wave_eta"] = round(current_eta, 4)
 
-                    current_conf = float(feats["phys_conf"][last_idx]) if not np.isnan(feats["phys_conf"][last_idx]) else 0.5
+                    current_conf = (
+                        float(feats["phys_conf"][last_idx])
+                        if not np.isnan(feats["phys_conf"][last_idx])
+                        else 0.5
+                    )
                     result["wave_physics_confidence"] = round(current_conf, 4)
 
-                    current_ks = float(feats["kinetic_score"][last_idx]) if not np.isnan(feats["kinetic_score"][last_idx]) else 0.5
+                    current_ks = (
+                        float(feats["kinetic_score"][last_idx])
+                        if not np.isnan(feats["kinetic_score"][last_idx])
+                        else 0.5
+                    )
                     result["wave_kinetic_score"] = round(current_ks, 4)
 
                     # 动态追踪止损距离（jerk反转保护 + 综合模式）
                     from ml.physics_enhancer import PhysicsState
+
                     tmp_state = PhysicsState(direction=1 if wave_dir == "LONG" else -1)
                     trail_pct = self.physics_enhancer._compute_trail_pct(last_idx, feats)
                     result["wave_trailing_stop_pct"] = round(trail_pct, 4)
@@ -290,6 +298,7 @@ class EWaveStrategyAdapter:
             if symbol:
                 try:
                     from ml.market_cap_provider import get_confirm_threshold_by_symbol
+
                     dynamic_threshold = get_confirm_threshold_by_symbol(symbol)
                     if dynamic_threshold != original_threshold:
                         self.config.confirm_threshold = dynamic_threshold
@@ -298,8 +307,7 @@ class EWaveStrategyAdapter:
                     pass
 
             total_pos, final_action, final_dir, fusion_rule = self._fuse_positions(
-                v4_action, v4_direction, v4_position_pct,
-                wave_struct.signal, wave_dir, wave_pos
+                v4_action, v4_direction, v4_position_pct, wave_struct.signal, wave_dir, wave_pos
             )
 
             # 恢复原始阈值，避免影响其他调用
@@ -391,7 +399,9 @@ class EWaveStrategyAdapter:
                 # 记录物理信息到结果
                 self._last_phys_conf = pc
                 self._last_kinetic_score = ks
-                self._last_eta = float(feats["eta"][last_idx]) if not np.isnan(feats["eta"][last_idx]) else 0.0
+                self._last_eta = (
+                    float(feats["eta"][last_idx]) if not np.isnan(feats["eta"][last_idx]) else 0.0
+                )
             except Exception:
                 pass  # 物理增强失败，保持基础仓位
 
@@ -429,15 +439,19 @@ class EWaveStrategyAdapter:
         v4_wait = v4_action == "WAIT"
 
         wave_long = wave_direction == "LONG"
-        wave_short = wave_direction == "SHORT"
-        wave_exit_long = wave_direction == "EXIT_LONG"
-        wave_exit_short = wave_direction == "EXIT_SHORT"
+        wave_short = wave_direction == "SHORT"  # noqa: F841
+        wave_exit_long = wave_direction == "EXIT_LONG"  # noqa: F841
+        wave_exit_short = wave_direction == "EXIT_SHORT"  # noqa: F841
 
         # 解析波浪置信度（从 wave_position_pct 推断：wave_pos = base × wave_conf × ...）
         # 简化：wave_position_pct > 0 表示波浪有信号
         wave_has_signal = wave_position_pct > 0
         # 通过 wave_position_pct / base_position 估算置信度
-        estimated_wave_conf = min(wave_position_pct / max(self.config.base_position, 1e-6), 1.0) if wave_has_signal else 0.0
+        estimated_wave_conf = (
+            min(wave_position_pct / max(self.config.base_position, 1e-6), 1.0)
+            if wave_has_signal
+            else 0.0
+        )
         wave_confirmed = estimated_wave_conf >= confirm_threshold
 
         # 规则1: V4 多头

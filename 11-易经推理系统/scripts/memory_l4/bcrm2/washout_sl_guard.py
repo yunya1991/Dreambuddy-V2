@@ -17,6 +17,7 @@ Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §7.3
 
 FAIL-OPEN 铁律: 任何异常 → no_change + 6层堆栈日志, 不抛错不阻塞.
 """
+
 from __future__ import annotations
 
 import logging
@@ -46,6 +47,7 @@ class SLAdjustment:
         reason: 触发原因摘要
         timestamp: ISO 8601 UTC
     """
+
     action: str
     new_sl_px: float
     reason: str
@@ -170,18 +172,23 @@ class WashoutSLGuard:
                 tb = traceback.format_exc()
                 logger.error(
                     "washout_sl_guard detector FAIL-OPEN coin=%s err=%s\n%s",
-                    coin, e, tb,
+                    coin,
+                    e,
+                    tb,
                 )
                 self._append_log(coin, "no_change", current_sl, "fail_open_exception")
                 return SLAdjustment.no_change(current_sl, "fail_open_exception")
 
             # 获取/初始化币种状态
-            state = self._state.setdefault(coin, {
-                "original_sl": float(original_sl),
-                "last_verdict_label": None,
-                "last_adjust_ts": float(last_adjust_ts),
-                "widened": False,
-            })
+            state = self._state.setdefault(
+                coin,
+                {
+                    "original_sl": float(original_sl),
+                    "last_verdict_label": None,
+                    "last_adjust_ts": float(last_adjust_ts),
+                    "widened": False,
+                },
+            )
             # 更新 original_sl (调用方可能传入新的 original)
             state["original_sl"] = float(original_sl)
 
@@ -195,8 +202,7 @@ class WashoutSLGuard:
                 if elapsed_h > self.widen_timeout_h:
                     restored = float(original_sl)
                     self._reset_state(coin, curr_label, original_sl)
-                    self._append_log(coin, "restore_sl", restored,
-                                     f"timeout_{elapsed_h:.1f}h")
+                    self._append_log(coin, "restore_sl", restored, f"timeout_{elapsed_h:.1f}h")
                     return SLAdjustment(
                         action="restore_sl",
                         new_sl_px=restored,
@@ -204,13 +210,17 @@ class WashoutSLGuard:
                     )
 
             # HC-19: verdict 从 washout→非 washout 且之前放宽过 → restore_sl
-            if (state["widened"]
-                    and prev_label == WashoutLabel.WASHOUT
-                    and curr_label != WashoutLabel.WASHOUT):
+            if (
+                state["widened"]
+                and prev_label == WashoutLabel.WASHOUT
+                and curr_label != WashoutLabel.WASHOUT
+            ):
                 restored = float(original_sl)
                 self._reset_state(coin, curr_label, original_sl)
                 self._append_log(
-                    coin, "restore_sl", restored,
+                    coin,
+                    "restore_sl",
+                    restored,
                     f"verdict_change_{(prev_label.value if prev_label else 'none')}"
                     f"_to_{curr_label.value}",
                 )
@@ -221,8 +231,10 @@ class WashoutSLGuard:
                 )
 
             # 放宽 / 收紧 / no_change
-            if (curr_label == WashoutLabel.WASHOUT
-                    and verdict.confidence >= self.washout_conf_threshold):
+            if (
+                curr_label == WashoutLabel.WASHOUT
+                and verdict.confidence >= self.washout_conf_threshold
+            ):
                 # widen_sl
                 new_sl = self._compute_widen_sl(
                     current_sl=float(current_sl),
@@ -235,16 +247,17 @@ class WashoutSLGuard:
                 state["last_verdict_label"] = curr_label
                 state["last_adjust_ts"] = now_ts
                 state["widened"] = True
-                self._append_log(coin, "widen_sl", new_sl,
-                                 f"washout_conf{verdict.confidence:.2f}")
+                self._append_log(coin, "widen_sl", new_sl, f"washout_conf{verdict.confidence:.2f}")
                 return SLAdjustment(
                     action="widen_sl",
                     new_sl_px=new_sl,
                     reason=f"washout_widen_conf{verdict.confidence:.2f}",
                 )
 
-            if (curr_label == WashoutLabel.WEAKNESS
-                    and verdict.confidence >= self.weakness_conf_threshold):
+            if (
+                curr_label == WashoutLabel.WEAKNESS
+                and verdict.confidence >= self.weakness_conf_threshold
+            ):
                 # tighten_sl
                 new_sl = self._compute_tighten_sl(
                     current_sl=float(current_sl),
@@ -256,8 +269,9 @@ class WashoutSLGuard:
                 state["last_verdict_label"] = curr_label
                 state["last_adjust_ts"] = now_ts
                 state["widened"] = False
-                self._append_log(coin, "tighten_sl", new_sl,
-                                 f"weakness_conf{verdict.confidence:.2f}")
+                self._append_log(
+                    coin, "tighten_sl", new_sl, f"weakness_conf{verdict.confidence:.2f}"
+                )
                 return SLAdjustment(
                     action="tighten_sl",
                     new_sl_px=new_sl,
@@ -266,8 +280,12 @@ class WashoutSLGuard:
 
             # no_change: unknown 或低置信度
             state["last_verdict_label"] = curr_label
-            self._append_log(coin, "no_change", float(current_sl),
-                             f"label_{curr_label.value}_conf{verdict.confidence:.2f}")
+            self._append_log(
+                coin,
+                "no_change",
+                float(current_sl),
+                f"label_{curr_label.value}_conf{verdict.confidence:.2f}",
+            )
             return SLAdjustment.no_change(
                 float(current_sl),
                 f"label_{curr_label.value}_conf{verdict.confidence:.2f}",
@@ -277,10 +295,11 @@ class WashoutSLGuard:
             tb = traceback.format_exc()
             logger.error(
                 "washout_sl_guard FAIL-OPEN coin=%s err=%s\n%s",
-                coin, e, tb,
+                coin,
+                e,
+                tb,
             )
-            self._append_log(coin, "no_change", float(current_sl),
-                             "fail_open_exception")
+            self._append_log(coin, "no_change", float(current_sl), "fail_open_exception")
             return SLAdjustment.no_change(float(current_sl), "fail_open_exception")
 
     # ============================================================
@@ -384,8 +403,9 @@ class WashoutSLGuard:
     # ============================================================
     # 状态 + 日志
     # ============================================================
-    def _reset_state(self, coin: str, curr_label: Optional[WashoutLabel],
-                     original_sl: float) -> None:
+    def _reset_state(
+        self, coin: str, curr_label: Optional[WashoutLabel], original_sl: float
+    ) -> None:
         """重置币种状态 (restore 后调用)."""
         self._state[coin] = {
             "original_sl": float(original_sl),
@@ -394,17 +414,18 @@ class WashoutSLGuard:
             "widened": False,
         }
 
-    def _append_log(self, coin: str, action: str, new_sl: float,
-                    reason: str) -> None:
+    def _append_log(self, coin: str, action: str, new_sl: float, reason: str) -> None:
         """追加审计日志."""
         if coin not in self._log:
             self._log[coin] = []
-        self._log[coin].append({
-            "action": action,
-            "new_sl_px": float(new_sl),
-            "reason": reason,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        self._log[coin].append(
+            {
+                "action": action,
+                "new_sl_px": float(new_sl),
+                "reason": reason,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
     def get_adjustment_log(self, coin: str) -> List[Dict[str, Any]]:
         """获取 SL 调整审计日志.

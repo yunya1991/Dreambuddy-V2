@@ -1,18 +1,20 @@
 """
 批量执行L4 Pipeline处理所有episode文件
 """
-import sys
-from pathlib import Path
+
 import json
+import sys
 from datetime import datetime
+from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.pipeline import run_pipeline
-from scripts.memory_l4.kg_store import KGStore
-from scripts.memory_l4.paths import episodes_dir as _default_episodes_dir, workspace_root
+from scripts.memory_l4.kg_store import KGStore  # noqa: E402
+from scripts.memory_l4.paths import episodes_dir as _default_episodes_dir  # noqa: E402
+from scripts.memory_l4.paths import workspace_root  # noqa: E402
+from scripts.memory_l4.pipeline import run_pipeline  # noqa: E402
 
 
 def evaluate_candidates():
@@ -60,10 +62,13 @@ def evaluate_candidates():
             y = cand.get("quadrant", {}).get("y", 0)
             if claim and rules and y >= 0:
                 cand["evolution_status"] = "C1_AUDIT_PASS"
-                cand.setdefault("audit_result", {
-                    "pass": True,
-                    "checked_at": datetime.now().isoformat(),
-                })
+                cand.setdefault(
+                    "audit_result",
+                    {
+                        "pass": True,
+                        "checked_at": datetime.now().isoformat(),
+                    },
+                )
                 changed = True
                 promoted["C1_AUDIT_PASS"] += 1
                 current_status = "C1_AUDIT_PASS"
@@ -75,10 +80,13 @@ def evaluate_candidates():
             # sim case 自动通过 sandbox（已有回测数据）
             if x >= 0 or "sim_" in case_id:
                 cand["evolution_status"] = "C2_SANDBOX_PASS"
-                cand.setdefault("sandbox_result", {
-                    "pass": True,
-                    "checked_at": datetime.now().isoformat(),
-                })
+                cand.setdefault(
+                    "sandbox_result",
+                    {
+                        "pass": True,
+                        "checked_at": datetime.now().isoformat(),
+                    },
+                )
                 changed = True
                 promoted["C2_SANDBOX_PASS"] += 1
                 current_status = "C2_SANDBOX_PASS"
@@ -88,18 +96,20 @@ def evaluate_candidates():
             y = cand.get("quadrant", {}).get("y", 0)
             if y >= 0.3:
                 cand["evolution_status"] = "C3_APPROVED"
-                cand.setdefault("approval_result", {
-                    "pass": True,
-                    "checked_at": datetime.now().isoformat(),
-                })
+                cand.setdefault(
+                    "approval_result",
+                    {
+                        "pass": True,
+                        "checked_at": datetime.now().isoformat(),
+                    },
+                )
                 changed = True
                 promoted["C3_APPROVED"] += 1
                 for r in cand.get("actionable_rules", []):
                     approved_rules.append(r)
 
         if changed:
-            cf.write_text(json.dumps(cand, ensure_ascii=False, indent=2) + "\n",
-                          encoding="utf-8")
+            cf.write_text(json.dumps(cand, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             evaluated += 1
 
     # 将 approved rules 保存为 SelfEvolutionEngine 可消费的文件
@@ -108,8 +118,7 @@ def evaluate_candidates():
         rules_dir.mkdir(parents=True, exist_ok=True)
         rules_file = rules_dir / "approved_rules.json"
         rules_file.write_text(
-            json.dumps(approved_rules, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8"
+            json.dumps(approved_rules, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
 
     print(f"\n[B-5] 候选评估完成: {evaluated} promoted, {promoted}")
@@ -134,37 +143,41 @@ def batch_process_episodes(episodes_dir: str = None, limit: int = None) -> dict:
         return {"error": f"Episodes directory not found: {episodes_dir}"}
 
     episode_files = sorted(episodes_dir.glob("*.json"))
-    
+
     if limit:
         episode_files = episode_files[:limit]
-    
+
     print(f"Found {len(episode_files)} episode files to process\n")
-    
+
     results = []
     success_count = 0
     fail_count = 0
-    
+
     for i, ep_path in enumerate(episode_files, 1):
         print(f"[{i}/{len(episode_files)}] Processing: {ep_path.name}")
         try:
             result = run_pipeline(ep_path)
-            results.append({
-                "episode": str(ep_path),
-                "status": "success",
-                "case_id": result.get("case", {}).get("case_id"),
-                "l4_status": result.get("case", {}).get("l4_status"),
-            })
+            results.append(
+                {
+                    "episode": str(ep_path),
+                    "status": "success",
+                    "case_id": result.get("case", {}).get("case_id"),
+                    "l4_status": result.get("case", {}).get("l4_status"),
+                }
+            )
             success_count += 1
             print(f"  ✅ Success: {result.get('case', {}).get('l4_status')}")
         except Exception as e:
-            results.append({
-                "episode": str(ep_path),
-                "status": "failed",
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "episode": str(ep_path),
+                    "status": "failed",
+                    "error": str(e),
+                }
+            )
             fail_count += 1
             print(f"  ❌ Failed: {e}")
-    
+
     # KG stats
     kg_stats = {}
     try:
@@ -172,7 +185,7 @@ def batch_process_episodes(episodes_dir: str = None, limit: int = None) -> dict:
         kg_stats = store.get_stats()
     except Exception as e:
         kg_stats = {"error": str(e)}
-    
+
     summary = {
         "total": len(episode_files),
         "success": success_count,
@@ -181,14 +194,14 @@ def batch_process_episodes(episodes_dir: str = None, limit: int = None) -> dict:
         "kg_stats": kg_stats,
         "processed_at": datetime.now().isoformat(),
     }
-    
+
     print(f"\n{'='*60}")
-    print(f"Batch Pipeline Summary")
+    print("Batch Pipeline Summary")
     print(f"{'='*60}")
     print(f"Total: {len(episode_files)}")
     print(f"Success: {success_count}")
     print(f"Failed: {fail_count}")
-    print(f"\nKG Stats:")
+    print("\nKG Stats:")
     if "error" not in kg_stats:
         print(f"  Triples: {kg_stats.get('triple_count', 'N/A')}")
         print(f"  Entities: {kg_stats.get('entity_count', 'N/A')}")
@@ -203,15 +216,17 @@ def batch_process_episodes(episodes_dir: str = None, limit: int = None) -> dict:
 
 def main():
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Batch L4 Pipeline")
     parser.add_argument("--episodes-dir", type=str, default=None, help="Episodes directory")
-    parser.add_argument("--limit", type=int, default=None, help="Limit number of episodes to process")
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Limit number of episodes to process"
+    )
     parser.add_argument("--out", type=str, default=None, help="Output result file")
     args = parser.parse_args()
-    
+
     result = batch_process_episodes(args.episodes_dir, args.limit)
-    
+
     if args.out:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)

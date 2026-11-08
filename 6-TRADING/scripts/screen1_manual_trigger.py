@@ -3,7 +3,8 @@
 第一屏(Screen1)周线决策 - 手动触发版本
 按照 dream-screen1-first SKILL v1.0 协议执行
 """
-import pandas as pd
+
+import pandas as pd  # noqa: I001
 import numpy as np
 from datetime import datetime, timedelta
 import json
@@ -18,43 +19,42 @@ print("第一屏(Screen1)周线决策 - 手动触发")
 print("=" * 60)
 
 # 1. 读取周线数据
-df = pd.read_csv('data/backtest/BTC_USDT_SWAP_1W_20260216_20260516.csv')
-df['ts'] = pd.to_datetime(df['ts'], unit='ms')
-df = df.sort_values('ts').reset_index(drop=True)
+df = pd.read_csv("data/backtest/BTC_USDT_SWAP_1W_20260216_20260516.csv")
+df["ts"] = pd.to_datetime(df["ts"], unit="ms")
+df = df.sort_values("ts").reset_index(drop=True)
 
-print(f"\n✅ Phase 1: 数据采集")
-print(f"  数据范围: {df['ts'].iloc[0].strftime('%Y-%m-%d')} ~ {df['ts'].iloc[-1].strftime('%Y-%m-%d')}")
+print("\n✅ Phase 1: 数据采集")
+print(
+    f"  数据范围: {df['ts'].iloc[0].strftime('%Y-%m-%d')} ~ {df['ts'].iloc[-1].strftime('%Y-%m-%d')}"
+)
 print(f"  数据条数: {len(df)} 周")
 
 # 2. 计算技术指标
-print(f"\n📊 计算技术指标...")
+print("\n📊 计算技术指标...")
 
 # EMA
-df['ema12'] = df['close'].ewm(span=12, adjust=False).mean()
-df['ema26'] = df['close'].ewm(span=26, adjust=False).mean()
+df["ema12"] = df["close"].ewm(span=12, adjust=False).mean()
+df["ema26"] = df["close"].ewm(span=26, adjust=False).mean()
 
 # MACD
-df['macd'] = df['ema12'] - df['ema26']
-df['signal'] = df['macd'].ewm(span=9, adjust=False).mean()
-df['histogram'] = df['macd'] - df['signal']
+df["macd"] = df["ema12"] - df["ema26"]
+df["signal"] = df["macd"].ewm(span=9, adjust=False).mean()
+df["histogram"] = df["macd"] - df["signal"]
 
 # RSI(14)
-delta = df['close'].diff()
+delta = df["close"].diff()
 gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
 loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
 rs = gain / loss
-df['rsi'] = 100 - (100 / (1 + rs))
+df["rsi"] = 100 - (100 / (1 + rs))
 
 # 波动率 (ATR近似 = 平均真范围)
-df['tr'] = np.maximum(
-    df['high'] - df['low'],
-    np.maximum(
-        abs(df['high'] - df['close'].shift(1)),
-        abs(df['low'] - df['close'].shift(1))
-    )
+df["tr"] = np.maximum(
+    df["high"] - df["low"],
+    np.maximum(abs(df["high"] - df["close"].shift(1)), abs(df["low"] - df["close"].shift(1))),
 )
-df['atr'] = df['tr'].rolling(window=14).mean()
-df['volatility'] = df['atr'] / df['close'] * 100
+df["atr"] = df["tr"].rolling(window=14).mean()
+df["volatility"] = df["atr"] / df["close"] * 100
 
 # 3. 当前市场状态
 current = df.iloc[-1]
@@ -71,11 +71,11 @@ print(f"  RSI(14): {current['rsi']:.2f}")
 print(f"  波动率: {current['volatility']:.2f}%")
 
 # 趋势判断
-ema_bullish = current['ema12'] > current['ema26']
-macd_bullish = current['macd'] > current['signal']
-rsi_strong = current['rsi'] > 50
+ema_bullish = current["ema12"] > current["ema26"]
+macd_bullish = current["macd"] > current["signal"]
+rsi_strong = current["rsi"] > 50
 
-print(f"\n🔍 趋势判断:")
+print("\n🔍 趋势判断:")
 print(f"  EMA12 > EMA26: {ema_bullish} {'✅' if ema_bullish else '❌'}")
 print(f"  MACD > Signal: {macd_bullish} {'✅' if macd_bullish else '❌'}")
 print(f"  RSI > 50: {rsi_strong} {'✅' if rsi_strong else '❌'}")
@@ -84,7 +84,7 @@ print(f"  RSI > 50: {rsi_strong} {'✅' if rsi_strong else '❌'}")
 # Phase 2: A1-A3 分析流水线 (简化版)
 # ============================================================
 
-print(f"\n" + "=" * 60)
+print("\n" + "=" * 60)
 print("Phase 2: A1-A3 分析流水线")
 print("=" * 60)
 
@@ -112,26 +112,26 @@ prob_bull = 50 + bull_score * 15
 prob_bear = 100 - prob_bull - 20
 
 print(f"  情景A (多头延续): {prob_bull}%")
-print(f"    触发条件: EMA多头排列 + MACD金叉维持")
-print(f"    目标位: $85,000 - $90,000")
+print("    触发条件: EMA多头排列 + MACD金叉维持")
+print("    目标位: $85,000 - $90,000")
 print(f"  情景B (空头反转): {prob_bear}%")
-print(f"    触发条件: MACD死叉 + RSI跌破50")
-print(f"    支撑位: $70,000 - $72,000")
-print(f"  情景C (震荡整理): 20%")
-print(f"    区间: $75,000 - $82,000")
+print("    触发条件: MACD死叉 + RSI跌破50")
+print("    支撑位: $70,000 - $72,000")
+print("  情景C (震荡整理): 20%")
+print("    区间: $75,000 - $82,000")
 
 # ============================================================
 # Phase 3: 决策与输出
 # ============================================================
 
-print(f"\n" + "=" * 60)
+print("\n" + "=" * 60)
 print("Phase 3: 决策与输出")
 print("=" * 60)
 
 # 决策逻辑
 if prob_bull >= 60:
     direction = "做多"
-    strategy = "合约马丁" if current['volatility'] > 3 else "现货马丁"
+    strategy = "合约马丁" if current["volatility"] > 3 else "现货马丁"
 elif prob_bear >= 60:
     direction = "做空"
     strategy = "合约马丁"
@@ -142,7 +142,7 @@ else:
 confidence = prob_bull if prob_bull >= prob_bear else prob_bear
 confidence = max(confidence, 50)  # 默认多头偏向
 
-print(f"\n✅ 周线决策结果:")
+print("\n✅ 周线决策结果:")
 print(f"  方向: {direction}")
 print(f"  策略类型: {strategy}")
 print(f"  置信度: {confidence}%")
@@ -154,14 +154,16 @@ print(f"  最大杠杆: {'3x' if '合约' in strategy else '1x'}")
 # ============================================================
 
 # 创建输出目录
-output_dir = os.path.expanduser('~/.workbuddy/skills/boss-secretary/reports/trading/6-trading/screen1')
+output_dir = os.path.expanduser(
+    "~/.workbuddy/skills/boss-secretary/reports/trading/6-trading/screen1"
+)
 os.makedirs(output_dir, exist_ok=True)
 
 # 生成时间戳
 now = datetime.now()
-date_str = now.strftime('%Y%m%d')
-time_str = now.strftime('%Y-%m-%dT%H:%M:%S+08:00')
-valid_until = (now + timedelta(days=7)).strftime('%Y-%m-%dT%H:%M:%S+08:00')
+date_str = now.strftime("%Y%m%d")
+time_str = now.strftime("%Y-%m-%dT%H:%M:%S+08:00")
+valid_until = (now + timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S+08:00")
 
 # 输出内容
 output_content = f"""---
@@ -271,18 +273,18 @@ valid_until: {valid_until}
 
 **输出文件**: `screen1_{date_str}.md`  
 **下次更新**: {(now + timedelta(days=7)).strftime('%Y-%m-%d')} (下周一)
-"""
+"""  # noqa: W291
 
 # 写入文件
 output_file = f"{output_dir}/screen1_{date_str}.md"
-with open(output_file, 'w', encoding='utf-8') as f:
+with open(output_file, "w", encoding="utf-8") as f:
     f.write(output_content)
 
-print(f"\n✅ 输出文件已生成:")
+print("\n✅ 输出文件已生成:")
 print(f"  路径: {output_file}")
 
 # 同时生成JSON格式的AAM投递文件
-artifact_dir = os.path.expanduser('~/.workbuddy/artifacts/trading/screen1')
+artifact_dir = os.path.expanduser("~/.workbuddy/artifacts/trading/screen1")
 os.makedirs(artifact_dir, exist_ok=True)
 
 artifact_data = {
@@ -292,25 +294,25 @@ artifact_data = {
     "direction": direction,
     "strategy": strategy,
     "confidence": confidence,
-    "volatility": float(current['volatility']),
-    "rsi": float(current['rsi']),
-    "macd": float(current['macd']),
+    "volatility": float(current["volatility"]),
+    "rsi": float(current["rsi"]),
+    "macd": float(current["macd"]),
     "trend": resistance_direction,
-    "trend_strength": trend_strength
+    "trend_strength": trend_strength,
 }
 
 artifact_file = f"{artifact_dir}/screen1_{date_str}.json"
-with open(artifact_file, 'w', encoding='utf-8') as f:
+with open(artifact_file, "w", encoding="utf-8") as f:
     json.dump(artifact_data, f, indent=2, ensure_ascii=False)
 
 print(f"  产物中台: {artifact_file}")
 
-print(f"\n" + "=" * 60)
+print("\n" + "=" * 60)
 print("✅ 第一屏分析完成!")
 print("=" * 60)
-print(f"\n📊 决策摘要:")
+print("\n📊 决策摘要:")
 print(f"  方向: {direction}")
 print(f"  策略: {strategy}")
 print(f"  置信度: {confidence}%")
 print(f"  输出: {output_file}")
-print(f"  投递: 已写入秘书邮箱 + 产物中台")
+print("  投递: 已写入秘书邮箱 + 产物中台")

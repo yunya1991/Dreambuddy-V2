@@ -12,6 +12,7 @@ P3 TDD 测试：ADX 阈值 25→30 减少误触发
   T4. ADX=30 时不触发（边界）
   T5. ADX=30.01 时触发（刚超过阈值）
 """
+
 from __future__ import annotations
 
 import sys
@@ -28,6 +29,7 @@ SCRIPTS_DIR = REPO / "dreambuddy_evolution" / "scripts"
 
 def _import_shadow_backtest():
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
         "shadow_backtest", SCRIPTS_DIR / "shadow_backtest.py"
     )

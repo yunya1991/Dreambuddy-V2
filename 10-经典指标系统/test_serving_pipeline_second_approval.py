@@ -23,25 +23,44 @@ def test_serving_pipeline_requires_second_approval_for_full(monkeypatch):
     monkeypatch.setattr(
         svc,
         "_serving_pipeline_guard_status",
-        lambda *, sp, now_ms: {"pass": True, "rollback_recommended": False, "checks": {}, "thresholds": {}, "metrics": {}, "ts": int(now_ms)},
+        lambda *, sp, now_ms: {
+            "pass": True,
+            "rollback_recommended": False,
+            "checks": {},
+            "thresholds": {},
+            "metrics": {},
+            "ts": int(now_ms),
+        },
     )
-    monkeypatch.setattr(svc, "_apply_serving_phase", lambda phase, canary_frac=None, pairs=None: None)
+    monkeypatch.setattr(
+        svc, "_apply_serving_phase", lambda phase, canary_frac=None, pairs=None: None
+    )
     monkeypatch.setattr(svc, "_save_config", lambda: None)
 
-    r1 = svc._serving_pipeline_advance_impl(trace_id="t_unit_shadow_to_canary", approval_id="appr_1")
+    r1 = svc._serving_pipeline_advance_impl(
+        trace_id="t_unit_shadow_to_canary", approval_id="appr_1"
+    )
     assert bool(r1.get("ok"))
     assert str(r1.get("to")) == "canary"
 
-    sp = svc.AUTOMATION.get("serving_pipeline") if isinstance(svc.AUTOMATION.get("serving_pipeline"), dict) else {}
+    sp = (
+        svc.AUTOMATION.get("serving_pipeline")
+        if isinstance(svc.AUTOMATION.get("serving_pipeline"), dict)
+        else {}
+    )
     sp["phase"] = "canary"
     sp["guard_pass_consecutive"] = 0
     sp["canary_frac_current"] = 0.05
     svc.AUTOMATION["serving_pipeline"] = sp
 
-    r2 = svc._serving_pipeline_advance_impl(trace_id="t_unit_canary_to_full_block", approval_id="appr_1")
+    r2 = svc._serving_pipeline_advance_impl(
+        trace_id="t_unit_canary_to_full_block", approval_id="appr_1"
+    )
     assert (not bool(r2.get("ok"))) and str(r2.get("error")) == "second_approval_required"
     assert int(r2.get("_http") or 0) == 412
 
-    r3 = svc._serving_pipeline_advance_impl(trace_id="t_unit_canary_to_full_ok", approval_id="appr_2")
+    r3 = svc._serving_pipeline_advance_impl(
+        trace_id="t_unit_canary_to_full_ok", approval_id="appr_2"
+    )
     assert bool(r3.get("ok"))
     assert str(r3.get("to")) == "full"

@@ -11,6 +11,7 @@ D7: 借鉴 ds4-eval 嵌入式能力回归测试套件
 
 硬约束: HC-DS4-08（能力回归测试不得修改实盘交易行为，纯只读验证）
 """
+
 from __future__ import annotations
 
 import sys
@@ -37,6 +38,7 @@ def real_gene_library():
     HC-DS4-08: 纯只读验证，不修改任何实盘数据.
     """
     from dreambuddy_evolution.core.strategy_gene import load_gene_library
+
     gene_root = EVO_ROOT / "gene_data"
     return load_gene_library(str(gene_root))
 
@@ -53,14 +55,16 @@ def trending_market():
     bars = []
     price = 100.0
     for i in range(100):
-        bars.append({
-            "timestamp": i,
-            "open": price,
-            "high": price * 1.01,
-            "low": price * 0.99,
-            "close": price * 1.005,
-            "volume": 10000.0,
-        })
+        bars.append(
+            {
+                "timestamp": i,
+                "open": price,
+                "high": price * 1.01,
+                "low": price * 0.99,
+                "close": price * 1.005,
+                "volume": 10000.0,
+            }
+        )
         price *= 1.005
     return bars
 
@@ -72,17 +76,20 @@ def ranging_market():
     用于验证止损/止盈逻辑.
     """
     import math
+
     bars = []
     for i in range(100):
         center = 100.0 + math.sin(i * 0.3) * 2.0
-        bars.append({
-            "timestamp": i,
-            "open": center,
-            "high": center + 1.5,
-            "low": center - 1.5,
-            "close": center + math.sin(i * 0.3 + 0.5) * 0.8,
-            "volume": 5000.0,
-        })
+        bars.append(
+            {
+                "timestamp": i,
+                "open": center,
+                "high": center + 1.5,
+                "low": center - 1.5,
+                "close": center + math.sin(i * 0.3 + 0.5) * 0.8,
+                "volume": 5000.0,
+            }
+        )
     return bars
 
 
@@ -95,14 +102,16 @@ def declining_market():
     bars = []
     price = 100.0
     for i in range(100):
-        bars.append({
-            "timestamp": i,
-            "open": price,
-            "high": price * 1.005,
-            "low": price * 0.99,
-            "close": price * 0.995,
-            "volume": 8000.0,
-        })
+        bars.append(
+            {
+                "timestamp": i,
+                "open": price,
+                "high": price * 1.005,
+                "low": price * 0.99,
+                "close": price * 0.995,
+                "volume": 8000.0,
+            }
+        )
         price *= 0.995
     return bars
 
@@ -145,6 +154,7 @@ def calc_sharpe(returns, risk_free_rate=0.0, periods_per_year=365):
         float: 年化 Sharpe 比率. 若无收益数据返回 0.0.
     """
     import statistics
+
     if not returns or len(returns) < 2:
         return 0.0
     try:
@@ -153,7 +163,7 @@ def calc_sharpe(returns, risk_free_rate=0.0, periods_per_year=365):
         if std_r == 0:
             return 0.0
         rf_per_period = risk_free_rate / periods_per_year
-        sharpe = (mean_r - rf_per_period) / std_r * (periods_per_year ** 0.5)
+        sharpe = (mean_r - rf_per_period) / std_r * (periods_per_year**0.5)
         return sharpe
     except Exception:
         return 0.0

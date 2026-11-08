@@ -19,16 +19,15 @@ C层 - 动态决策器
 """
 
 import json
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
-from .types import NodeExecutionResult, ChainFusionDecision
 from .llm_result_analyzer import ResultAnalysis
-
+from .types import ChainFusionDecision, NodeExecutionResult
 
 # ============================================================
 # 动态决策器
 # ============================================================
+
 
 class DynamicDecisionMaker:
     """动态决策器
@@ -109,18 +108,12 @@ class DynamicDecisionMaker:
         """
         if self.use_llm:
             try:
-                decision = self._decide_with_llm(
-                    node_result, analysis, available_nodes, context
-                )
+                decision = self._decide_with_llm(node_result, analysis, available_nodes, context)
             except Exception as e:
-                decision = self._decide_with_rules(
-                    node_result, analysis, available_nodes
-                )
+                decision = self._decide_with_rules(node_result, analysis, available_nodes)
                 decision.reasoning = f"LLM决策失败，使用规则决策: {e}"
         else:
-            decision = self._decide_with_rules(
-                node_result, analysis, available_nodes
-            )
+            decision = self._decide_with_rules(node_result, analysis, available_nodes)
 
         return decision
 
@@ -214,7 +207,7 @@ class DynamicDecisionMaker:
             start = llm_output.find("{")
             end = llm_output.rfind("}")
             if start >= 0 and end >= 0:
-                json_str = llm_output[start:end + 1]
+                json_str = llm_output[start : end + 1]
 
             data = json.loads(json_str)
 

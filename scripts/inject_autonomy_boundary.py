@@ -13,12 +13,18 @@
 注入位置：frontmatter 之后作为第一个 ## 段落。
 已有 Autonomy Boundary 的跳过。
 """
+
 import re
 import sys
 from pathlib import Path
 
 # 复用治理系统索引
-_GOVERNANCE_DIR = Path(__file__).resolve().parents[1] / "1-ARCHITECTURE" / "skills" / "dream-skill-index-governance"
+_GOVERNANCE_DIR = (
+    Path(__file__).resolve().parents[1]
+    / "1-ARCHITECTURE"
+    / "skills"
+    / "dream-skill-index-governance"
+)
 if _GOVERNANCE_DIR.exists():
     sys.path.insert(0, str(_GOVERNANCE_DIR))
     from skill_indexer import ALL_SKILL_ROOTS, scan_skills
@@ -246,7 +252,7 @@ def main():
         except Exception as e:
             print(f"[FAIL] {entry.name}: {e}")
 
-    print(f"\n=== Summary ===")
+    print("\n=== Summary ===")
     print(f"Modified: {modified}")
     print(f"Skipped (already has boundary): {skipped}")
     print(f"By category: {by_category}")

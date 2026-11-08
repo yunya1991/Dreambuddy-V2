@@ -8,6 +8,7 @@
   - 空查询结果 → 返回空 DataFrame
   - OHLCV 可外部传入或从 18-DataCenter 自动拉取
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,7 +24,9 @@ logger = logging.getLogger(__name__)
 # 自动注入 19-数据访问层路径，使 dreambuddy_dal 可被 import
 # gold_reader.py 位于 21-特征工程中心/feature_hub/，向上 3 层到 dreambuddy-v2/，再加 19-数据访问层/
 _DAL_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "19-数据访问层")
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "19-数据访问层"
+    )
 )
 if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
     sys.path.insert(0, _DAL_ROOT)
@@ -45,6 +48,7 @@ class GoldReader:
         if mm_repo is None:
             try:
                 from dreambuddy_dal import get_market_macro_repo
+
                 mm_repo = get_market_macro_repo()
             except Exception:
                 logger.warning("[GoldReader] 无法从 dreambuddy_dal 获取默认 repo")
@@ -57,7 +61,9 @@ class GoldReader:
     # ------------------------------------------------------------------
 
     def read_fear_greed(
-        self, start_ts: datetime, end_ts: datetime,
+        self,
+        start_ts: datetime,
+        end_ts: datetime,
     ) -> pd.DataFrame:
         """读取恐惧贪婪指数。"""
         if self.mm_repo is None:
@@ -72,7 +78,10 @@ class GoldReader:
         return pd.DataFrame(rows, columns=["value", "value_classification", "timestamp"])
 
     def read_funding_rate(
-        self, symbol: str, start_ts: datetime, end_ts: datetime,
+        self,
+        symbol: str,
+        start_ts: datetime,
+        end_ts: datetime,
     ) -> pd.DataFrame:
         """读取资金费率。"""
         if self.mm_repo is None:
@@ -89,7 +98,10 @@ class GoldReader:
         return df
 
     def read_open_interest(
-        self, symbol: str, start_ts: datetime, end_ts: datetime,
+        self,
+        symbol: str,
+        start_ts: datetime,
+        end_ts: datetime,
     ) -> pd.DataFrame:
         """读取持仓量。"""
         if self.mm_repo is None:
@@ -101,10 +113,15 @@ class GoldReader:
             return pd.DataFrame()
         if not rows:
             return pd.DataFrame()
-        return pd.DataFrame(rows, columns=["symbol", "open_interest", "sum_open_interest_value", "timestamp"])
+        return pd.DataFrame(
+            rows, columns=["symbol", "open_interest", "sum_open_interest_value", "timestamp"]
+        )
 
     def read_long_short_ratio(
-        self, symbol: str, start_ts: datetime, end_ts: datetime,
+        self,
+        symbol: str,
+        start_ts: datetime,
+        end_ts: datetime,
     ) -> pd.DataFrame:
         """读取多空比。"""
         if self.mm_repo is None:
@@ -116,10 +133,16 @@ class GoldReader:
             return pd.DataFrame()
         if not rows:
             return pd.DataFrame()
-        return pd.DataFrame(rows, columns=["symbol", "long_account", "short_account", "long_short_ratio", "timestamp"])
+        return pd.DataFrame(
+            rows,
+            columns=["symbol", "long_account", "short_account", "long_short_ratio", "timestamp"],
+        )
 
     def read_taker_volume(
-        self, symbol: str, start_ts: datetime, end_ts: datetime,
+        self,
+        symbol: str,
+        start_ts: datetime,
+        end_ts: datetime,
     ) -> pd.DataFrame:
         """读取主动买卖量。"""
         if self.mm_repo is None:
@@ -131,14 +154,27 @@ class GoldReader:
             return pd.DataFrame()
         if not rows:
             return pd.DataFrame()
-        return pd.DataFrame(rows, columns=["symbol", "buy_vol", "sell_vol", "buy_sell_volume_diff", "buy_sell_volume_ratio", "timestamp"])
+        return pd.DataFrame(
+            rows,
+            columns=[
+                "symbol",
+                "buy_vol",
+                "sell_vol",
+                "buy_sell_volume_diff",
+                "buy_sell_volume_ratio",
+                "timestamp",
+            ],
+        )
 
     # ------------------------------------------------------------------
     # 合并读取
     # ------------------------------------------------------------------
 
     def read_all_macro(
-        self, symbol: str, start_ts: datetime, end_ts: datetime,
+        self,
+        symbol: str,
+        start_ts: datetime,
+        end_ts: datetime,
     ) -> pd.DataFrame:
         """合并读取所有宏观指标，按时间对齐。"""
         frames: list[pd.DataFrame] = []
@@ -220,16 +256,23 @@ class GoldReader:
         return df, macro_df
 
     def _fetch_ohlcv_from_dc(
-        self, symbol: str, start_ts: datetime, end_ts: datetime,
+        self,
+        symbol: str,
+        start_ts: datetime,
+        end_ts: datetime,
     ) -> pd.DataFrame:
         """从 18-DataCenter 拉取 OHLCV。"""
         try:
             if self._data_center is None:
                 from data_center.core.dispatcher import DataCenter
+
                 self._data_center = DataCenter()
             records = self._data_center.fetch(
-                category="finance", source="yfinance",
-                symbol=symbol, start=start_ts, end=end_ts,
+                category="finance",
+                source="yfinance",
+                symbol=symbol,
+                start=start_ts,
+                end=end_ts,
             )
             if not records:
                 return pd.DataFrame()

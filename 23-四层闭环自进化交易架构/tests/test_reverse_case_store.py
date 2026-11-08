@@ -3,10 +3,9 @@
 P2 §5.2: 错误案例入库，标注 {wrong_dim, root_cause}，
 下次类似场景（相同 wrong_dim 模式）降权或避开。
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution" / "engines"))
@@ -16,9 +15,10 @@ from reverse_case_store import ReverseCaseStore
 
 def _make_derive_result(wrong_dims, root_cause="因子计算错误", root_cause_type="factor_error"):
     from reverse_deriver import ReverseDeriveResult
+
     return ReverseDeriveResult(
-        per_dimension_correctness={d: False for d in wrong_dims},
-        per_dimension_cs={d: -1.0 for d in wrong_dims},
+        per_dimension_correctness=dict.fromkeys(wrong_dims, False),
+        per_dimension_cs=dict.fromkeys(wrong_dims, -1.0),
         wrong_dimensions=list(wrong_dims),
         root_cause=root_cause,
         root_cause_type=root_cause_type,
@@ -49,6 +49,7 @@ def test_store_only_error_cases_not_all_correct(tmp_path):
     """RED: 无错误维度时不入库（正确案例不污染错误案例库）。"""
     store = ReverseCaseStore(storage_path=str(tmp_path / "reverse_cases.json"))
     from reverse_deriver import ReverseDeriveResult
+
     derive_result = ReverseDeriveResult(
         per_dimension_correctness={"C1": True},
         per_dimension_cs={"C1": 1.0},

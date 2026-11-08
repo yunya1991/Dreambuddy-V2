@@ -18,7 +18,7 @@ try:
     )
     from .indicators import calc_indicator_dynamics
 except ImportError:
-    from config import (
+    from config import (  # noqa: I001
         DAILY_WEIGHT,
         SCREEN1_INDICATORS,
         SCREEN2_INDICATORS,

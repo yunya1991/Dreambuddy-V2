@@ -11,13 +11,14 @@ Shadow 模式：只计算 + 记录 + 审计，不参与任何交易决策。
 
 Phase B1：数据类 + 映射表 + 分类函数。
 """
+
 from __future__ import annotations
 
 import json
 import os
 import sys
 import traceback
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -136,6 +137,7 @@ METAL_MAP: Dict[str, Dict[str, str]] = {
 # 数据类
 # ===========================================================================
 
+
 @dataclass
 class CoinFundamentalSignal:
     """单币基本面信号 — Shadow 模式输出。
@@ -153,28 +155,30 @@ class CoinFundamentalSignal:
     phase_switch_triggers: 触发评估的事件/阈值清单
     phase_strategy_hint: 来自 3.8 阶段策略映射表的提示
     """
-    coin: str                              # 币种标识 (BTC/UNI/NVDA/XAUUSD等)
-    asset_class: str                       # crypto_usdt / us_stock / precious_metal
-    fundamental_score: float              # 综合基本面分数 [-1.0, +1.0]
-    rank: str                              # S/A/B/C 等级
-    sub_signals: Dict[str, float]          # 四个子信号名称→值
-    data_quality: str                      # sufficient / partial / insufficient
-    confidence: float                      # 置信度 [0.0, 1.0]
-    timestamp: str                         # ISO8601 计算时间
-    error: Optional[str] = None            # 异常时的错误信息（FAIL-OPEN）
+
+    coin: str  # 币种标识 (BTC/UNI/NVDA/XAUUSD等)
+    asset_class: str  # crypto_usdt / us_stock / precious_metal
+    fundamental_score: float  # 综合基本面分数 [-1.0, +1.0]
+    rank: str  # S/A/B/C 等级
+    sub_signals: Dict[str, float]  # 四个子信号名称→值
+    data_quality: str  # sufficient / partial / insufficient
+    confidence: float  # 置信度 [0.0, 1.0]
+    timestamp: str  # ISO8601 计算时间
+    error: Optional[str] = None  # 异常时的错误信息（FAIL-OPEN）
     # --- Phase E 闭环字段（E4 新增，默认中性 P2）---
     current_phase: str = "P2_REVENUE_EXPANSION"
     phase_confidence: float = 0.0
     phase_switch_triggers: List[str] = field(default_factory=list)
     phase_strategy_hint: Dict[str, Any] = field(default_factory=dict)
     # --- 真实行情字段（用于榜单决策卡入场价/止损/止盈）---
-    current_price: float = 0.0   # 实时市场价（USD），0 表示不可用
-    atr: float = 0.0             # 14 日 ATR（USD），0 表示不可用
+    current_price: float = 0.0  # 实时市场价（USD），0 表示不可用
+    atr: float = 0.0  # 14 日 ATR（USD），0 表示不可用
 
 
 # ===========================================================================
 # 分类 + 映射函数
 # ===========================================================================
+
 
 def classify_asset_class(coin: str) -> Optional[str]:
     """分类资产类别。
@@ -242,6 +246,7 @@ def _get_crypto_compute_all():
     global crypto_compute_all
     if crypto_compute_all is None:
         from force_vector.coin_fundamental_crypto import compute_all
+
         crypto_compute_all = compute_all
     return crypto_compute_all
 
@@ -250,6 +255,7 @@ def _get_stock_compute_all():
     global stock_compute_all
     if stock_compute_all is None:
         from force_vector.coin_fundamental_stock import compute_all
+
         stock_compute_all = compute_all
     return stock_compute_all
 
@@ -258,19 +264,28 @@ def _get_metal_compute_all():
     global metal_compute_all
     if metal_compute_all is None:
         from force_vector.coin_fundamental_metal import compute_all
+
         metal_compute_all = compute_all
     return metal_compute_all
 
 
 # 原四信号（Artemis Fundamentals 架构）
-_ORIGINAL_SIGNALS = frozenset({
-    "revenue_stability", "mc_fees_mean_reversion",
-    "tvl_growth_momentum", "revenue_quality",
-})
+_ORIGINAL_SIGNALS = frozenset(
+    {
+        "revenue_stability",
+        "mc_fees_mean_reversion",
+        "tvl_growth_momentum",
+        "revenue_quality",
+    }
+)
 # 阶段识别信号（E5/E6/E7 BDSM 三维度）
-_PHASE_SIGNALS = frozenset({
-    "supply_shrinkage_intensity", "value_capture_delta", "revenue_sustainability",
-})
+_PHASE_SIGNALS = frozenset(
+    {
+        "supply_shrinkage_intensity",
+        "value_capture_delta",
+        "revenue_sustainability",
+    }
+)
 
 
 def _synthesize_score(sub_signals: Dict[str, float]) -> float:
@@ -366,10 +381,14 @@ def compute_signal(coin: str, db_path: str = None) -> CoinFundamentalSignal:
 
     now = datetime.now(timezone.utc).astimezone().isoformat()
     neutral = CoinFundamentalSignal(
-        coin=coin, asset_class="",
-        fundamental_score=0.0, rank="B",
-        sub_signals={}, data_quality="insufficient",
-        confidence=0.0, timestamp=now,
+        coin=coin,
+        asset_class="",
+        fundamental_score=0.0,
+        rank="B",
+        sub_signals={},
+        data_quality="insufficient",
+        confidence=0.0,
+        timestamp=now,
         error="neutral default",
     )
 
@@ -406,9 +425,10 @@ def compute_signal(coin: str, db_path: str = None) -> CoinFundamentalSignal:
         # 延迟导入避免循环依赖（phase_classifier/phase_strategy_map 不 import ranker）
         phase_classification = None
         try:
+            from force_vector.coin_fundamental_event_timeline import query_event_timeline
             from force_vector.coin_fundamental_phase_classifier import classify_phase
             from force_vector.coin_fundamental_valuation_query import query_valuation_percentile
-            from force_vector.coin_fundamental_event_timeline import query_event_timeline
+
             # F1: valuation_percentile 真实查询（CoinGecko market_chart 历史分位）
             # FAIL-OPEN：查询异常或数据不足返回 50.0（中性）
             valuation_percentile = query_valuation_percentile(coin, db_path)
@@ -421,24 +441,30 @@ def compute_signal(coin: str, db_path: str = None) -> CoinFundamentalSignal:
                 valuation_percentile=valuation_percentile,
                 event_timeline=event_timeline,
             )
-        except Exception as phase_exc:  # FAIL-OPEN：阶段识别异常不阻塞主信号
+        except Exception as phase_exc:  # FAIL-OPEN：阶段识别异常不阻塞主信号  # noqa: F841
             phase_classification = None
 
         phase_strategy_hint: Dict[str, Any] = {}
         if phase_classification is not None:
             try:
                 from force_vector.coin_fundamental_phase_strategy_map import get_strategy_hint
+
                 phase_strategy_hint = get_strategy_hint(
-                    phase_classification.current_phase, rank,
+                    phase_classification.current_phase,
+                    rank,
                 )
             except Exception:  # FAIL-OPEN：策略映射异常返回中性空 dict
                 phase_strategy_hint = {}
 
         return CoinFundamentalSignal(
-            coin=coin, asset_class=asset_class,
-            fundamental_score=round(score, 4), rank=rank,
-            sub_signals=sub_signals, data_quality=quality,
-            confidence=round(confidence, 4), timestamp=now,
+            coin=coin,
+            asset_class=asset_class,
+            fundamental_score=round(score, 4),
+            rank=rank,
+            sub_signals=sub_signals,
+            data_quality=quality,
+            confidence=round(confidence, 4),
+            timestamp=now,
             error=None,
             current_phase=(
                 phase_classification.current_phase
@@ -459,13 +485,15 @@ def compute_signal(coin: str, db_path: str = None) -> CoinFundamentalSignal:
         )
     except Exception as exc:
         # FAIL-OPEN：6 层堆栈日志 + 中性默认
-        tb_lines = traceback.format_exc().splitlines()
+        tb_lines = traceback.format_exc().splitlines()  # noqa: F841
         neutral.error = f"{type(exc).__name__}: {exc}"
         neutral.sub_signals = neutral.sub_signals or {}
         return neutral
 
 
-def _compute_atr(closes: List[float], highs: List[float], lows: List[float], period: int = 14) -> float:
+def _compute_atr(
+    closes: List[float], highs: List[float], lows: List[float], period: int = 14
+) -> float:
     """ATR(period) 绝对值。数据不足返回 0.0。"""
     if len(closes) < period + 1:
         return 0.0
@@ -554,10 +582,7 @@ def compute_for_coins(coin_list: List[str], db_path: str = None) -> List[CoinFun
 
     # 并发获取所有币种的 OKX 行情（加密货币/美股/贵金属统一走 OKX）
     kline_map: Dict[str, Optional[Dict[str, Any]]] = {}
-    fetch_targets = [
-        sig for sig in signals
-        if sig.asset_class and sig.asset_class != "unknown"
-    ]
+    fetch_targets = [sig for sig in signals if sig.asset_class and sig.asset_class != "unknown"]
 
     def _fetch(sig: CoinFundamentalSignal) -> tuple:
         return sig.coin, _fetch_kline_data(sig.coin, sig.asset_class, db_path)
@@ -618,9 +643,7 @@ def write_shadow(signal: CoinFundamentalSignal, jsonl_path: str = SHADOW_JSONL_P
 
 # 榜单覆盖币种：加密货币 + 美股 + 贵金属
 _RANKING_COINS: List[str] = (
-    list(CRYPTO_MAP.keys())
-    + list(STOCK_MAP.keys())
-    + list(METAL_MAP.keys())
+    list(CRYPTO_MAP.keys()) + list(STOCK_MAP.keys()) + list(METAL_MAP.keys())
 )
 
 
@@ -630,7 +653,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="基本面评分 + 实时行情")
     parser.add_argument("--force", action="store_true", help="强制重新计算")
     parser.add_argument(
-        "--coins", nargs="*", default=None,
+        "--coins",
+        nargs="*",
+        default=None,
         help="指定币种列表（默认全量）",
     )
     args = parser.parse_args()

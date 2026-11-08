@@ -28,11 +28,12 @@ FAIL-OPEN：所有异常吞掉，不阻断 recall 主流程。
   - SPEC-CognitiveSystem-Evolution.md §2.3.2 P1-3
   - Zep/Graphiti 29K★: 双时序知识图 + 事实有效性窗口
 """
+
 from __future__ import annotations
 
 import json
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -45,7 +46,7 @@ class TemporalEntry:
     memory_id: str
     content: str = ""
     valid_start: str = ""  # ISO 日期
-    valid_end: str = ""    # ISO 日期（空=无限期）
+    valid_end: str = ""  # ISO 日期（空=无限期）
     transaction_time: str = ""  # 写入时间
     invalidated_by: Optional[str] = None  # 被哪条记忆否定
 
@@ -337,12 +338,8 @@ if __name__ == "__main__":
         graph = TemporalMemoryGraph(graph_path=Path(td) / "graph.json")
 
         # 添加带有效期的记忆
-        graph.add_temporal_memory(
-            "VM-001", "马丁策略盈利", "2024-01-01", "2024-06-01"
-        )
-        graph.add_temporal_memory(
-            "VM-002", "新策略", "2024-06-01", "2025-12-31"
-        )
+        graph.add_temporal_memory("VM-001", "马丁策略盈利", "2024-01-01", "2024-06-01")
+        graph.add_temporal_memory("VM-002", "新策略", "2024-06-01", "2025-12-31")
 
         # 时序判定
         print(f"\nVM-001 at 2024-03-01: {graph.is_valid_at('VM-001', '2024-03-01')}")

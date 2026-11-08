@@ -9,6 +9,7 @@
 注意：不依赖真实 browser-use 安装，所有 Browser Use 相关调用用 mock。
 端到端真实测试在 browser-use 安装后通过 cli.py ai-run 进行。
 """
+
 import os
 import sys
 import unittest
@@ -24,6 +25,7 @@ class TestAgentResult(unittest.TestCase):
 
     def test_default_values(self):
         from core.ai_agent import AgentResult
+
         result = AgentResult(task="test task", passed=True)
         self.assertEqual(result.task, "test task")
         self.assertTrue(result.passed)
@@ -35,6 +37,7 @@ class TestAgentResult(unittest.TestCase):
 
     def test_to_dict(self):
         from core.ai_agent import AgentResult
+
         result = AgentResult(
             task="打开 example.com",
             passed=True,
@@ -55,6 +58,7 @@ class TestLLMFactory(unittest.TestCase):
     def test_validate_qwen_with_api_key(self):
         """Qwen provider 配置正确（有 API key）"""
         from core.llm_factory import validate_llm_config
+
         config = {"llm": {"provider": "qwen", "model": "qwen-vl-max"}}
         with patch.dict(os.environ, {"ALIBABA_CLOUD": "sk-test-key"}):
             is_valid, msg = validate_llm_config(config)
@@ -64,10 +68,12 @@ class TestLLMFactory(unittest.TestCase):
     def test_validate_qwen_without_api_key(self):
         """Qwen provider 缺少 API key"""
         from core.llm_factory import validate_llm_config
+
         config = {"llm": {"provider": "qwen"}}
         # 清除环境变量
-        env_backup = {k: v for k, v in os.environ.items()
-                      if k in ("ALIBABA_CLOUD", "DASHSCOPE_API_KEY")}
+        env_backup = {
+            k: v for k, v in os.environ.items() if k in ("ALIBABA_CLOUD", "DASHSCOPE_API_KEY")
+        }
         for k in env_backup:
             del os.environ[k]
         try:
@@ -80,6 +86,7 @@ class TestLLMFactory(unittest.TestCase):
     def test_validate_unsupported_provider(self):
         """不支持的 provider"""
         from core.llm_factory import validate_llm_config
+
         config = {"llm": {"provider": "unknown_provider"}}
         is_valid, msg = validate_llm_config(config)
         self.assertFalse(is_valid)
@@ -88,6 +95,7 @@ class TestLLMFactory(unittest.TestCase):
     def test_validate_openai(self):
         """OpenAI provider"""
         from core.llm_factory import validate_llm_config
+
         config = {"llm": {"provider": "openai"}}
         with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test"}):
             is_valid, _ = validate_llm_config(config)
@@ -96,24 +104,28 @@ class TestLLMFactory(unittest.TestCase):
     def test_default_qwen_model(self):
         """默认 Qwen 模型是 qwen-vl-max（Browser Use 官方推荐）"""
         from core.llm_factory import _PROVIDER_DEFAULTS
+
         self.assertEqual(_PROVIDER_DEFAULTS["qwen"]["model"], "qwen-vl-max")
         self.assertTrue(_PROVIDER_DEFAULTS["qwen"]["use_vision"])
 
     def test_get_use_vision_qwen(self):
         """Qwen 默认启用视觉"""
         from core.llm_factory import get_use_vision
+
         config = {"llm": {"provider": "qwen"}}
         self.assertTrue(get_use_vision(config))
 
     def test_get_use_vision_ollama(self):
         """Ollama 默认不启用视觉"""
         from core.llm_factory import get_use_vision
+
         config = {"llm": {"provider": "ollama"}}
         self.assertFalse(get_use_vision(config))
 
     def test_get_use_vision_explicit_override(self):
         """显式配置覆盖默认"""
         from core.llm_factory import get_use_vision
+
         config = {"llm": {"provider": "qwen", "use_vision": False}}
         self.assertFalse(get_use_vision(config))
 
@@ -124,6 +136,7 @@ class TestAIAgentRunnerInit(unittest.TestCase):
     def test_init_default(self):
         """默认初始化"""
         from core.ai_agent import AIAgentRunner
+
         config = {
             "ai_agent": {"max_steps": 30},
             "llm": {"provider": "qwen"},
@@ -136,20 +149,24 @@ class TestAIAgentRunnerInit(unittest.TestCase):
     def test_init_default_max_steps(self):
         """默认 max_steps=50"""
         from core.ai_agent import AIAgentRunner
+
         runner = AIAgentRunner({}, browser_use_browser=None)
         self.assertEqual(runner._max_steps, 50)
 
     def test_get_current_page_no_browser(self):
         """无 Browser 时返回 None"""
         from core.ai_agent import AIAgentRunner
+
         runner = AIAgentRunner({}, browser_use_browser=None)
         # _get_current_page 现在是 async 方法
         import asyncio
+
         self.assertIsNone(asyncio.run(runner._get_current_page()))
 
     def test_get_current_page_with_mock_browser(self):
         """用 mock Browser 测试 Page 获取"""
         from core.ai_agent import AIAgentRunner
+
         mock_page = MagicMock()
         mock_context = MagicMock()
         mock_context.pages = [mock_page]
@@ -158,12 +175,14 @@ class TestAIAgentRunnerInit(unittest.TestCase):
 
         runner = AIAgentRunner({}, browser_use_browser=mock_browser)
         import asyncio
+
         page = asyncio.run(runner._get_current_page())
         self.assertEqual(page, mock_page)
 
     def test_get_current_page_fallback_to_context(self):
         """fallback 到 context 属性"""
         from core.ai_agent import AIAgentRunner
+
         mock_page = MagicMock()
         mock_context = MagicMock()
         mock_context.pages = [mock_page]
@@ -174,6 +193,7 @@ class TestAIAgentRunnerInit(unittest.TestCase):
 
         runner = AIAgentRunner({}, browser_use_browser=mock_browser)
         import asyncio
+
         page = asyncio.run(runner._get_current_page())
         self.assertEqual(page, mock_page)
 
@@ -185,6 +205,7 @@ class TestAIAgentRunWithMockLLM(unittest.TestCase):
     def test_run_task_llm_init_failure(self, mock_create_llm):
         """LLM 初始化失败时返回失败结果"""
         from core.ai_agent import AIAgentRunner
+
         mock_create_llm.side_effect = ValueError("API key missing")
 
         runner = AIAgentRunner(
@@ -192,6 +213,7 @@ class TestAIAgentRunWithMockLLM(unittest.TestCase):
             browser_use_browser=None,
         )
         import asyncio
+
         result = asyncio.run(runner.run_task("test task"))
 
         self.assertFalse(result.passed)
@@ -206,6 +228,7 @@ class TestAIAgentRunWithMockLLM(unittest.TestCase):
 
         # 模拟 import browser_use 失败
         import builtins
+
         original_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):
@@ -216,11 +239,13 @@ class TestAIAgentRunWithMockLLM(unittest.TestCase):
         builtins.__import__ = mock_import
         try:
             from core.ai_agent import AIAgentRunner
+
             runner = AIAgentRunner(
                 {"llm": {"provider": "qwen"}, "ai_agent": {"max_steps": 10}},
                 browser_use_browser=None,
             )
             import asyncio
+
             result = asyncio.run(runner.run_task("test task"))
 
             self.assertFalse(result.passed)
@@ -235,8 +260,8 @@ class TestVerificationIntegration(unittest.TestCase):
     @patch("core.ai_agent.create_llm")
     def test_verification_no_browser_returns_failure(self, mock_create_llm):
         """无 Browser 时验证层返回失败（降级为未执行）"""
-        from core.ai_agent import AIAgentRunner, AgentResult
-        from core.result_verifier import VerificationResult
+        from core.ai_agent import AIAgentRunner
+
         mock_create_llm.return_value = MagicMock()
 
         runner = AIAgentRunner(
@@ -244,6 +269,7 @@ class TestVerificationIntegration(unittest.TestCase):
             browser_use_browser=None,
         )
         import asyncio
+
         result = asyncio.run(runner._run_verification({"dom": []}))
 
         self.assertIsNotNone(result)

@@ -7,6 +7,7 @@
          • FTX Low (2022-11-21 前后) → ls_ratio_cap 中心 ≤ 0.5（熊市收紧，禁止乱开）
          • 减半 (2024-04-20 前后) → global_position_mult 中心 ≥ 1.15（减半后加仓）
 """
+
 from __future__ import annotations
 
 import sys
@@ -33,11 +34,11 @@ pytestmark = pytest.mark.skipif(not _BTC_CSV.exists(), reason="真实 BTC CSV �
 # ================================================================
 def _run_evolution_and_get_dates(dates_of_interest: list[str]) -> dict[str, dict]:
     from bcrm2.indicators import IndicatorBank
-    from bcrm2.score_composer import ScoreComposer
-    from bcrm2.temporal_smoother import TemporalSmoother
+    from bcrm2.parameter_mapper import ParameterMapper
     from bcrm2.regime_mapper import RegimeMapper
     from bcrm2.rolling_regime_stats import RollingRegimeStats
-    from bcrm2.parameter_mapper import ParameterMapper
+    from bcrm2.score_composer import ScoreComposer
+    from bcrm2.temporal_smoother import TemporalSmoother
 
     df = pd.read_csv(_BTC_CSV, parse_dates=["timestamp"], index_col="timestamp")
     # 统一去时区：避免 tz-aware vs naive Timestamp 比较 TypeError
@@ -51,9 +52,8 @@ def _run_evolution_and_get_dates(dates_of_interest: list[str]) -> dict[str, dict
     rm = RegimeMapper()
     # 逐帧求 consensus（用 RegimeMapper 逐帧 map_frame）
     consensus = pd.Series(np.nan, index=df.index, dtype=float)
-    for i, idx in enumerate(df.index):
-        frame = rm.map_frame(float(smooth.level_smooth.iloc[i]),
-                             float(smooth.trend_smooth.iloc[i]))
+    for i, idx in enumerate(df.index):  # noqa: B007
+        frame = rm.map_frame(float(smooth.level_smooth.iloc[i]), float(smooth.trend_smooth.iloc[i]))
         consensus.iloc[i] = float(frame["consensus"])
 
     # rolling_regime_stats
@@ -72,12 +72,14 @@ def _run_evolution_and_get_dates(dates_of_interest: list[str]) -> dict[str, dict
         sr = stats.loc[last_idx].to_dict()
         # stats 可能是 NaN（前 252 根滚不动），用合成默认值兜底
         if not np.isfinite(sr.get("L_p90_252d", np.nan)):
-            sr = dict(L_p10_252d=-3.0, L_p90_252d=+3.0, T_p10_252d=-2.8, T_p90_252d=+2.8)
+            sr = dict(  # noqa: C408
+                L_p10_252d=-3.0, L_p90_252d=+3.0, T_p10_252d=-2.8, T_p90_252d=+2.8
+            )  # noqa: C408
         Lv = float(smooth.level_smooth.loc[last_idx])
         Tv = float(smooth.trend_smooth.loc[last_idx])
         Cv = float(consensus.loc[last_idx])
         ranges = pm.map_global_parameters(L=Lv, T=Tv, C=Cv, stats_row=sr)
-        out[d] = dict(L=Lv, T=Tv, C=Cv, ranges=ranges)
+        out[d] = dict(L=Lv, T=Tv, C=Cv, ranges=ranges)  # noqa: C408
     return out
 
 
@@ -89,9 +91,11 @@ def _cent(rng):
 # T15a) 关键日期参数方向正确
 # ================================================================
 def test_btc_three_dates_parameter_direction():
-    dates = ["2024-12-16",   # 牛市 ATH $106k（L=+3.11/T=+1.48 最牛）
-             "2022-11-21",   # FTX Lows 熊市底（L=-2.37）
-             "2024-04-20"]   # BTC 减半（L=+2.52 牛市启动）
+    dates = [
+        "2024-12-16",  # 牛市 ATH $106k（L=+3.11/T=+1.48 最牛）
+        "2022-11-21",  # FTX Lows 熊市底（L=-2.37）
+        "2024-04-20",
+    ]  # BTC 减半（L=+2.52 牛市启动）
     res = _run_evolution_and_get_dates(dates)
     assert len(res) >= 3, f"关键日期命中不足：{list(res)}"
     # (1) 牛市 ATH → ls_ratio_cap 中心 ≥ 0.7（牛市允许多空不平衡偏多头）
@@ -102,4 +106,6 @@ def test_btc_three_dates_parameter_direction():
     assert ftx_cent <= 0.5, f"FTX Low ls_ratio_cap 中心 = {ftx_cent:.3f} > 0.5（熊市收紧）"
     # (3) 减半 → global_position_mult 中心 ≥ 1.15（减半后加仓）
     half_cent = _cent(res["2024-04-20"]["ranges"]["global_position_mult"])
-    assert half_cent >= 1.15, f"2024 减半 global_position_mult 中心 = {half_cent:.3f} < 1.15（减半后加仓）"
+    assert (
+        half_cent >= 1.15
+    ), f"2024 减半 global_position_mult 中心 = {half_cent:.3f} < 1.15（减半后加仓）"

@@ -11,8 +11,8 @@
   - 预期落地后短期炒作风险上升，需从 UNI/HYPE 重新评估（on_event_landed_hint）
   - 持续跟踪优质标的（monitor_mode=continuous）
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 
 # 将 force_vector 加入 sys.path
@@ -20,24 +20,24 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.coin_fundamental_phase_classifier import (
+from force_vector.coin_fundamental_phase_classifier import (  # noqa: E402
     P1_EXPECTATION,
     P2_REVENUE_EXPANSION,
     P3_VALUATION_RECOVERY,
 )
-from force_vector.coin_fundamental_phase_strategy_map import (
+from force_vector.coin_fundamental_phase_strategy_map import (  # noqa: E402
+    NEUTRAL_STRATEGY_HINT,
     PHASE_STRATEGY_MAP,
-    get_strategy_hint,
-    get_priority_weight,
     get_case_anchor,
     get_event_landed_switch_hint,
-    NEUTRAL_STRATEGY_HINT,
+    get_priority_weight,
+    get_strategy_hint,
 )
-
 
 # ---------------------------------------------------------------------------
 # 1. 表结构完整性
 # ---------------------------------------------------------------------------
+
 
 class TestPhaseStrategyMapStructure:
     """策略映射表结构校验。"""
@@ -75,6 +75,7 @@ class TestPhaseStrategyMapStructure:
 # 2. P1 预期阶段策略（CRCL 锚定）
 # ---------------------------------------------------------------------------
 
+
 class TestP1ExpectationStrategy:
     """P1 预期驱动阶段策略 — CRCL 案例。"""
 
@@ -102,6 +103,7 @@ class TestP1ExpectationStrategy:
 # 3. P2 盈收扩张阶段策略（UNI 锚定）
 # ---------------------------------------------------------------------------
 
+
 class TestP2RevenueExpansionStrategy:
     """P2 盈收扩张阶段策略 — UNI 案例。"""
 
@@ -128,6 +130,7 @@ class TestP2RevenueExpansionStrategy:
 # 4. P3 估值修复阶段策略（HYPE 锚定）
 # ---------------------------------------------------------------------------
 
+
 class TestP3ValuationRecoveryStrategy:
     """P3 估值修复阶段策略 — HYPE 案例。"""
 
@@ -147,6 +150,7 @@ class TestP3ValuationRecoveryStrategy:
 # ---------------------------------------------------------------------------
 # 5. 抄新不抄旧：优先级 P1 > P2 > P3（用户最新补充）
 # ---------------------------------------------------------------------------
+
 
 class TestPriorityWeightOrdering:
     """抄新不抄旧：阶段优先级 P1 > P2 > P3。
@@ -174,14 +178,14 @@ class TestPriorityWeightOrdering:
                 # B 级可能为 0（不开仓），但 S/A 必须等于阶段优先级
                 if rank in ("S", "A"):
                     assert w == expected, (
-                        f"phase={phase} rank={rank} priority_weight={w} "
-                        f"!=阶段权重{expected}"
+                        f"phase={phase} rank={rank} priority_weight={w} " f"!=阶段权重{expected}"
                     )
 
 
 # ---------------------------------------------------------------------------
 # 6. 案例锚定
 # ---------------------------------------------------------------------------
+
 
 class TestCaseAnchor:
     """每个阶段的案例锚定 — 用于 CBR 相似度检索。"""
@@ -199,6 +203,7 @@ class TestCaseAnchor:
 # ---------------------------------------------------------------------------
 # 7. 预期落地后切换提示（用户最新补充）
 # ---------------------------------------------------------------------------
+
 
 class TestEventLandedSwitchHint:
     """预期落地后短期炒作风险上升，需从 UNI/HYPE 重新评估。
@@ -227,12 +232,17 @@ class TestEventLandedSwitchHint:
         hint = get_event_landed_switch_hint(P3_VALUATION_RECOVERY)
         # P3 终态：要么无下一阶段，要么循环回 P1
         assert hint["next_phase"] in (None, P1_EXPECTATION)
-        assert "terminal" in hint.get("note", "").lower() or hint["next_phase"] is None or hint["next_phase"] == P1_EXPECTATION
+        assert (
+            "terminal" in hint.get("note", "").lower()
+            or hint["next_phase"] is None
+            or hint["next_phase"] == P1_EXPECTATION
+        )
 
 
 # ---------------------------------------------------------------------------
 # 8. 容错与边界
 # ---------------------------------------------------------------------------
+
 
 class TestRobustnessAndFailOpen:
     """异常输入的 FAIL-OPEN 行为。"""
@@ -275,6 +285,7 @@ class TestRobustnessAndFailOpen:
 # ---------------------------------------------------------------------------
 # 9. Shadow 模式不耦合 BCRM2.0
 # ---------------------------------------------------------------------------
+
 
 class TestShadowModeNoBCRMCoupling:
     """策略提示仅用于审计，不耦合 BCRM2.0 实盘决策。"""

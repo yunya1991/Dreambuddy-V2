@@ -12,6 +12,7 @@ SPEC-AGI升级蓝图.md §4.2.5
 HC-AGI-12: 蒙特卡洛采样≥1000条路径
 HC-AGI-14: 最小阻力路径需同时满足成本/风险/不确定性三阈值
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,13 +37,11 @@ class PathIntegralEngine:
         self,
         n_paths: int = 1000,
         alpha: float = 0.4,  # 成本权重
-        beta: float = 0.3,   # 风险权重
+        beta: float = 0.3,  # 风险权重
         gamma: float = 0.3,  # 不确定性权重
     ) -> None:
         if n_paths < self.MIN_PATHS:
-            logger.warning(
-                "[HC-AGI-12] n_paths=%d < %d，建议增加采样数", n_paths, self.MIN_PATHS
-            )
+            logger.warning("[HC-AGI-12] n_paths=%d < %d，建议增加采样数", n_paths, self.MIN_PATHS)
         self.n_paths = int(n_paths)
         self.alpha = float(alpha)
         self.beta = float(beta)
@@ -144,7 +143,7 @@ class PathIntegralEngine:
         # 对齐到最长路径
         aligned = np.zeros((len(paths), max_len))
         for i, p in enumerate(paths):
-            aligned[i, :len(p)] = p
+            aligned[i, : len(p)] = p
             if len(p) < max_len:
-                aligned[i, len(p):] = p[-1]  # 用末值填充
+                aligned[i, len(p) :] = p[-1]  # 用末值填充
         return np.sum(aligned * weights[:, np.newaxis], axis=0)

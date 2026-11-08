@@ -17,6 +17,7 @@ SPEC-Phase2 §5.2 (M4): 4 个半衰期为经验假设 v0，待 Phase 3 回测校
   - confidence: 置信度（high/medium/low）
   - v0_prior: 原始经验假设值
 """
+
 from __future__ import annotations
 
 import logging
@@ -86,9 +87,7 @@ def calibrate_half_life(
         from optuna.samplers import TPESampler
     except ImportError:
         logger.warning("Optuna 未安装，回退到网格搜索")
-        return _grid_search(
-            event_type, events, prices, tau_range, hold_days_mult, v0_prior
-        )
+        return _grid_search(event_type, events, prices, tau_range, hold_days_mult, v0_prior)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 

@@ -16,14 +16,13 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any, Dict, List, Optional
-
 
 # ── backtrader 可选导入 ─────────────────────────────────────
 _AVAILABLE = False
 try:
     import backtrader as _bt  # type: ignore
+
     _AVAILABLE = True
 except ImportError:
     _bt = None  # type: ignore
@@ -145,6 +144,7 @@ def _build_data_feed(klines: List[Dict[str, Any]]):
     # 尝试用 pandas 构建数据源（backtrader 推荐）
     try:
         import pandas as pd  # type: ignore
+
         df = pd.DataFrame(klines)
         # 确保有 datetime index
         if "date" in df.columns:
@@ -167,21 +167,25 @@ def _build_data_feed(klines: List[Dict[str, Any]]):
         # 生成临时 CSV
         import csv
         import io
+
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(["Date", "Open", "High", "Low", "Close", "Volume"])
         for k in klines:
-            writer.writerow([
-                k.get("date", ""),
-                k.get("open", k.get("close", 0)),
-                k.get("high", k.get("close", 0)),
-                k.get("low", k.get("close", 0)),
-                k.get("close", 0),
-                k.get("volume", 0),
-            ])
+            writer.writerow(
+                [
+                    k.get("date", ""),
+                    k.get("open", k.get("close", 0)),
+                    k.get("high", k.get("close", 0)),
+                    k.get("low", k.get("close", 0)),
+                    k.get("close", 0),
+                    k.get("volume", 0),
+                ]
+            )
         buf.seek(0)
         # 写入临时文件（GenericCSVData 需要 path）
         import tempfile
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
             f.write(buf.getvalue())
             tmp_path = f.name

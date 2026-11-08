@@ -17,19 +17,21 @@ A8→A0 反向反馈链路桥接 (#3-b 三层脑理论)。
   - A8→A0 写回 = 边缘系统反馈到理性分析回路
     （原始缺失：A8 单向路由到 A1/A2/A3 修正，但不更新 A0 的矛盾维度）
 """
-from dataclasses import dataclass, field
+
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 
 @dataclass
 class FeedbackResult:
     """A8→A0 反馈结果。"""
-    injected: bool                       # 是否成功注入
-    dim_id: str = ""                     # 注入的维度 id（a8_gap）
-    tension: float = 0.0                 # 注入的张力值
-    gap_source: str = ""                 # trading_a8 / code_a8
-    evidence: str = ""                   # evidence 文本（调试用）
-    message: str = ""                    # 跳过原因/错误信息
+
+    injected: bool  # 是否成功注入
+    dim_id: str = ""  # 注入的维度 id（a8_gap）
+    tension: float = 0.0  # 注入的张力值
+    gap_source: str = ""  # trading_a8 / code_a8
+    evidence: str = ""  # evidence 文本（调试用）
+    message: str = ""  # 跳过原因/错误信息
 
 
 def _is_trading_a8(a8_output: Dict[str, Any]) -> bool:
@@ -38,11 +40,7 @@ def _is_trading_a8(a8_output: Dict[str, Any]) -> bool:
         return False
     # 从 envelope.payload 取 payload
     a = a8_output.get("payload", a8_output)
-    return (
-        "gap_score" in a
-        or "hypothesis_score" in a
-        or "practice_score" in a
-    )
+    return "gap_score" in a or "hypothesis_score" in a or "practice_score" in a
 
 
 def _is_code_a8(a8_output: Dict[str, Any]) -> bool:
@@ -52,8 +50,7 @@ def _is_code_a8(a8_output: Dict[str, Any]) -> bool:
     return (
         "summary" in a8_output
         and isinstance(a8_output["summary"], dict)
-        and ("consistency_score" in a8_output["summary"]
-             or "doc_only" in a8_output["summary"])
+        and ("consistency_score" in a8_output["summary"] or "doc_only" in a8_output["summary"])
     ) or bool(a8_output.get("doc_only_functions") or a8_output.get("code_only_functions"))
 
 
@@ -144,8 +141,12 @@ def a8_to_a0_feedback(
         else:
             # 无一致性分数，从 doc/code 推算：matched/(matched + doc_only + code_only)
             matched = int(summary.get("matched") or 0)
-            doc_only_n = int(summary.get("doc_only") or len(a8_output.get("doc_only_functions", [])))
-            code_only_n = int(summary.get("code_only") or len(a8_output.get("code_only_functions", [])))
+            doc_only_n = int(
+                summary.get("doc_only") or len(a8_output.get("doc_only_functions", []))
+            )
+            code_only_n = int(
+                summary.get("code_only") or len(a8_output.get("code_only_functions", []))
+            )
             total = matched + doc_only_n + code_only_n
             cons = round(matched / total * 100.0, 2) if total > 0 else 100.0
         gap = round(1.0 - min(100.0, max(0.0, cons)) / 100.0, 4)
@@ -192,7 +193,7 @@ def a8_to_a0_feedback(
 # CLI 入口
 # ======================================================================
 if __name__ == "__main__":
-    import json
+    import json  # noqa: I001
     import sys
     import argparse
 
@@ -211,30 +212,42 @@ if __name__ == "__main__":
         a8 = json.loads(__import__("pathlib").Path(args.a8_json).read_text())
         res = a8_to_a0_feedback(engine, a8)
     elif args.gap is not None:
-        res = a8_to_a0_feedback(engine, {
-            "stage_id": "A8",
-            "hypothesis_score": 0.9,
-            "practice_score": round(max(0.0, 0.9 - args.gap), 4),
-            "gap_score": args.gap,
-            "trace_id": "CLI-TEST",
-        })
+        res = a8_to_a0_feedback(
+            engine,
+            {
+                "stage_id": "A8",
+                "hypothesis_score": 0.9,
+                "practice_score": round(max(0.0, 0.9 - args.gap), 4),
+                "gap_score": args.gap,
+                "trace_id": "CLI-TEST",
+            },
+        )
     elif args.consistency is not None:
-        res = a8_to_a0_feedback(engine, {
-            "subsystem": "cli-test",
-            "summary": {"consistency_score": args.consistency, "doc_only": 1, "code_only": 2},
-            "doc_only_functions": ["f1"],
-            "code_only_functions": ["f2", "f3"],
-        })
+        res = a8_to_a0_feedback(
+            engine,
+            {
+                "subsystem": "cli-test",
+                "summary": {"consistency_score": args.consistency, "doc_only": 1, "code_only": 2},
+                "doc_only_functions": ["f1"],
+                "code_only_functions": ["f2", "f3"],
+            },
+        )
     else:
         parser.print_help()
         sys.exit(0)
 
-    print(json.dumps({
-        "injected": res.injected,
-        "dim_id": res.dim_id,
-        "tension": res.tension,
-        "gap_source": res.gap_source,
-        "evidence": res.evidence,
-        "message": res.message,
-        "external_pool_size": len(engine._external_contradictions),
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "injected": res.injected,
+                "dim_id": res.dim_id,
+                "tension": res.tension,
+                "gap_source": res.gap_source,
+                "evidence": res.evidence,
+                "message": res.message,
+                "external_pool_size": len(engine._external_contradictions),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )

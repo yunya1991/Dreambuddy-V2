@@ -15,7 +15,7 @@ Stage 1 验证目标：
     V4 的 7 个特征平均排名在 top 30%（即 74*30% ≈ top 22）
 """
 
-import json
+import json  # noqa: I001
 import sys
 import os
 import warnings
@@ -30,10 +30,9 @@ warnings.filterwarnings("ignore")
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer, FEATURE_METADATA
-from ml.four_objective_feature_mapper import FourObjectiveFeatureMapper
-
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402, I001
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.four_objective_feature_mapper import FourObjectiveFeatureMapper  # noqa: E402
 
 # ── V4 新特征列表 ──────────────────────────────────────────────────
 V4_FEATURES = [
@@ -47,10 +46,21 @@ V4_FEATURES = [
 ]
 
 V2_PHILOSOPHY_FEATURES = [
-    "btc_regime_label", "btc_alt_divergence", "is_btc_asset", "alt_short_risk_score",
-    "weekly_ma200_distance", "dip_buy_level", "dip_buy_position_ratio", "left_side_buy_signal",
-    "bear_short_layer", "fib_tp_remaining_ratio", "layered_position_target", "position_adjustment",
-    "btc_bull_confirmed", "self_bull_confirmed", "double_bull_score",
+    "btc_regime_label",
+    "btc_alt_divergence",
+    "is_btc_asset",
+    "alt_short_risk_score",
+    "weekly_ma200_distance",
+    "dip_buy_level",
+    "dip_buy_position_ratio",
+    "left_side_buy_signal",
+    "bear_short_layer",
+    "fib_tp_remaining_ratio",
+    "layered_position_target",
+    "position_adjustment",
+    "btc_bull_confirmed",
+    "self_bull_confirmed",
+    "double_bull_score",
 ]
 
 
@@ -162,7 +172,9 @@ def walk_forward_validation(
         }
 
         train_data = lgb.Dataset(X_train, label=y_train, feature_name=feature_names)
-        valid_data = lgb.Dataset(X_test, label=y_test, feature_name=feature_names, reference=train_data)
+        valid_data = lgb.Dataset(
+            X_test, label=y_test, feature_name=feature_names, reference=train_data
+        )
 
         model = lgb.train(
             params,
@@ -188,7 +200,7 @@ def walk_forward_validation(
 
         # 特征重要性（gain-based）
         importance = model.feature_importance(importance_type="gain")
-        importance_dict = dict(zip(feature_names, importance))
+        importance_dict = dict(zip(feature_names, importance))  # noqa: B905
         all_importances.append(importance_dict)
 
         # 训练日期范围
@@ -212,8 +224,10 @@ def walk_forward_validation(
         }
         folds.append(fold_result)
 
-        print(f"  Fold {fold_idx}: train_auc={train_auc:.4f} test_auc={test_auc:.4f} "
-              f"pos={int(y_test.sum())}/{len(y_test)} iter={model.best_iteration}")
+        print(
+            f"  Fold {fold_idx}: train_auc={train_auc:.4f} test_auc={test_auc:.4f} "
+            f"pos={int(y_test.sum())}/{len(y_test)} iter={model.best_iteration}"
+        )
 
         start += step_size
 
@@ -245,7 +259,11 @@ def walk_forward_validation(
         "std_test_auc": np.std(oos_aucs) if oos_aucs else 0,
         "min_test_auc": np.min(oos_aucs) if oos_aucs else 0,
         "max_test_auc": np.max(oos_aucs) if oos_aucs else 0,
-        "decay_ratio": (np.mean(is_aucs) - np.mean(oos_aucs)) / np.mean(is_aucs) * 100 if is_aucs and np.mean(is_aucs) > 0 else 0,
+        "decay_ratio": (
+            (np.mean(is_aucs) - np.mean(oos_aucs)) / np.mean(is_aucs) * 100
+            if is_aucs and np.mean(is_aucs) > 0
+            else 0
+        ),
     }
 
     return summary
@@ -309,7 +327,7 @@ def print_report(summary: dict, analysis: dict):
     print("=" * 80)
 
     # 1. Walk-Forward 概况
-    print(f"\n【1. Walk-Forward 验证概况】")
+    print("\n【1. Walk-Forward 验证概况】")
     print(f"  总特征数: {summary['n_features']}")
     print(f"  验证折数: {summary['n_folds']}")
     print(f"  训练窗口: {summary['train_window']}天 | 测试窗口: {summary['test_window']}天")
@@ -320,15 +338,19 @@ def print_report(summary: dict, analysis: dict):
     print(f"  AUC衰减率: {summary['decay_ratio']:.1f}%")
 
     # 2. 各折详情
-    print(f"\n【2. 各折详情】")
-    print(f"  {'Fold':>4} | {'训练期':>25} | {'测试期':>25} | {'TrainAUC':>8} | {'TestAUC':>8} | {'正样本':>6}")
+    print("\n【2. 各折详情】")
+    print(
+        f"  {'Fold':>4} | {'训练期':>25} | {'测试期':>25} | {'TrainAUC':>8} | {'TestAUC':>8} | {'正样本':>6}"
+    )
     print(f"  {'-'*4} | {'-'*25} | {'-'*25} | {'-'*8} | {'-'*8} | {'-'*6}")
     for f in summary["folds"]:
-        print(f"  {f['fold']:>4} | {f['train_period']:>25} | {f['test_period']:>25} | "
-              f"{f['train_auc']:>8.4f} | {f['test_auc']:>8.4f} | {f['test_positives']:>3}/{f['test_samples']}")
+        print(
+            f"  {f['fold']:>4} | {f['train_period']:>25} | {f['test_period']:>25} | "
+            f"{f['train_auc']:>8.4f} | {f['test_auc']:>8.4f} | {f['test_positives']:>3}/{f['test_samples']}"
+        )
 
     # 3. 特征重要性排名
-    print(f"\n【3. 特征重要性排名（Top 30）】")
+    print("\n【3. 特征重要性排名（Top 30）】")
     print(f"  {'排名':>4} | {'特征名':>30} | {'重要性':>10} | {'类别':>8}")
     print(f"  {'-'*4} | {'-'*30} | {'-'*10} | {'-'*8}")
     for rank, (feat, imp) in enumerate(summary["sorted_features"][:30], 1):
@@ -341,9 +363,9 @@ def print_report(summary: dict, analysis: dict):
         print(f"  {rank:>4} | {feat:>30} | {imp:>10.1f} | {category:>8}")
 
     # 4. V4 特征分析
-    print(f"\n【4. V4 特征排名分析】")
+    print("\n【4. V4 特征排名分析】")
     print(f"  Top 30% 阈值: 排名 ≤ {analysis['top_30_threshold']}")
-    print(f"\n  V4 新特征（7个）:")
+    print("\n  V4 新特征（7个）:")
     print(f"  {'特征名':>30} | {'排名':>6} | {'重要性':>10} | {'Top30%':>6}")
     print(f"  {'-'*30} | {'-'*6} | {'-'*10} | {'-'*6}")
     for feat in V4_FEATURES:
@@ -352,28 +374,38 @@ def print_report(summary: dict, analysis: dict):
         in_top = "✅" if rank <= analysis["top_30_threshold"] else "❌"
         print(f"  {feat:>30} | {rank:>6} | {imp:>10.1f} | {in_top:>6}")
     print(f"\n  V4平均排名: {analysis['v4_avg_rank']:.1f} / {analysis['n_features']}")
-    print(f"  V4进入Top30%: {analysis['v4_in_top30_count']}/{len(V4_FEATURES)} ({analysis['v4_in_top30_pct']:.1f}%)")
+    print(
+        f"  V4进入Top30%: {analysis['v4_in_top30_count']}/{len(V4_FEATURES)} ({analysis['v4_in_top30_pct']:.1f}%)"
+    )
 
     # 5. V4 vs V2 对比
-    print(f"\n【5. V4 vs V2 哲学特征对比】")
+    print("\n【5. V4 vs V2 哲学特征对比】")
     print(f"  {'类别':>8} | {'平均排名':>8} | {'进入Top30%':>10} | {'占比':>6}")
     print(f"  {'-'*8} | {'-'*8} | {'-'*10} | {'-'*6}")
-    print(f"  {'V4新特征':>8} | {analysis['v4_avg_rank']:>8.1f} | {analysis['v4_in_top30_count']:>4}/{len(V4_FEATURES):>2} | {analysis['v4_in_top30_pct']:>5.1f}%")
-    print(f"  {'V2哲学':>8} | {analysis['v2_avg_rank']:>8.1f} | {analysis['v2_in_top30_count']:>4}/{len(V2_PHILOSOPHY_FEATURES):>2} | {analysis['v2_in_top30_pct']:>5.1f}%")
+    print(
+        f"  {'V4新特征':>8} | {analysis['v4_avg_rank']:>8.1f} | {analysis['v4_in_top30_count']:>4}/{len(V4_FEATURES):>2} | {analysis['v4_in_top30_pct']:>5.1f}%"
+    )
+    print(
+        f"  {'V2哲学':>8} | {analysis['v2_avg_rank']:>8.1f} | {analysis['v2_in_top30_count']:>4}/{len(V2_PHILOSOPHY_FEATURES):>2} | {analysis['v2_in_top30_pct']:>5.1f}%"
+    )
     print(f"  {'趋势特征':>8} | {analysis['trend_avg_rank']:>8.1f} | {'—':>10} | {'—':>6}")
     print(f"\n  V4 vs V2 排名优势: {analysis['v4_vs_v2_advantage']:.1f} (正值=V4更靠前)")
 
     # 6. 结论
-    print(f"\n【6. 验证结论】")
+    print("\n【6. 验证结论】")
     if analysis["success"]:
-        print(f"  ✅ 验证通过！V4特征平均排名 {analysis['v4_avg_rank']:.1f} ≤ Top30%阈值 {analysis['top_30_threshold']}")
+        print(
+            f"  ✅ 验证通过！V4特征平均排名 {analysis['v4_avg_rank']:.1f} ≤ Top30%阈值 {analysis['top_30_threshold']}"
+        )
         print(f"     {analysis['v4_in_top30_count']}/{len(V4_FEATURES)} 个V4特征进入Top30%")
     else:
-        print(f"  ⚠️ V4特征平均排名 {analysis['v4_avg_rank']:.1f} > Top30%阈值 {analysis['top_30_threshold']}")
+        print(
+            f"  ⚠️ V4特征平均排名 {analysis['v4_avg_rank']:.1f} > Top30%阈值 {analysis['top_30_threshold']}"
+        )
         print(f"     仅 {analysis['v4_in_top30_count']}/{len(V4_FEATURES)} 个V4特征进入Top30%")
-        print(f"     需分析原因：可能是特征冗余、标签定义、或训练窗口影响")
+        print("     需分析原因：可能是特征冗余、标签定义、或训练窗口影响")
 
-    print(f"\n  过拟合检测:")
+    print("\n  过拟合检测:")
     if summary["decay_ratio"] < 30:
         print(f"    ✅ AUC衰减率 {summary['decay_ratio']:.1f}% < 30%，过拟合风险低")
     elif summary["decay_ratio"] < 50:
@@ -381,7 +413,7 @@ def print_report(summary: dict, analysis: dict):
     else:
         print(f"    ❌ AUC衰减率 {summary['decay_ratio']:.1f}% > 50%，高过拟合风险")
 
-    print(f"\n  样本外AUC:")
+    print("\n  样本外AUC:")
     if summary["mean_test_auc"] > 0.65:
         print(f"    ✅ 平均测试AUC {summary['mean_test_auc']:.4f} > 0.65，模型预测能力良好")
     elif summary["mean_test_auc"] > 0.55:
@@ -408,21 +440,22 @@ def main():
     labels = generate_top_exit_labels(prices)
     pos_rate = labels.sum() / len(labels) * 100
     print(f"  正样本: {labels.sum()}/{len(labels)} ({pos_rate:.1f}%)")
-    print(f"  标签规则: 未来20日跌幅>15% 或 最大回撤>20%")
+    print("  标签规则: 未来20日跌幅>15% 或 最大回撤>20%")
 
     # 3. 提取特征
     print("\n[3/5] 提取特征...")
     features = extract_all_features(prices)
     print(f"  总特征数: {features.shape[1]}")
-    print(f"  - 趋势特征: ~52维 (TrendFeatureEngineer)")
-    print(f"  - 哲学特征: 22维 (含V4新增7维)")
+    print("  - 趋势特征: ~52维 (TrendFeatureEngineer)")
+    print("  - 哲学特征: 22维 (含V4新增7维)")
     print(f"  V4新特征: {V4_FEATURES}")
 
     # 4. Walk-Forward验证
     print("\n[4/5] Walk-Forward滚动验证...")
-    print(f"  训练窗口: 730天(2年) | 测试窗口: 180天(6月) | 步长: 180天")
+    print("  训练窗口: 730天(2年) | 测试窗口: 180天(6月) | 步长: 180天")
     summary = walk_forward_validation(
-        features, labels,
+        features,
+        labels,
         train_window=730,
         test_window=180,
         step_size=180,

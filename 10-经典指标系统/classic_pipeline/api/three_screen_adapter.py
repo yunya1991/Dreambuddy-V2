@@ -3,13 +3,14 @@
 承接单体 three_screen 路由的核心计算签名，委托给 classic_pipeline.signals.three_screen。
 路由的 I/O（请求解析、事件系统、缓存、响应格式化）保留在单体中。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from classic_pipeline.signals.three_screen import confirm_gate, daily_direction, compute
+from classic_pipeline.signals.three_screen import compute, confirm_gate, daily_direction
 
 
 def compute_three_screen_signal(

@@ -1,6 +1,5 @@
 import unittest
 
-
 import ml_trade_service as svc
 
 
@@ -49,4 +48,3 @@ class TestTwitterRR(unittest.TestCase):
         }
         text = svc._twitter_build_fixed_text(obj, lang="en")
         self.assertIn("R:R ~n/a", text)
-

@@ -349,6 +349,7 @@ def _mk_rl_sample(
     action: str,
     reward: float,
     symbol: str = "BTC",
+    quality: float = 0.9,
 ) -> dict:
     return {
         "symbol": symbol,
@@ -358,7 +359,7 @@ def _mk_rl_sample(
             "R_smooth": r_smooth,
             "R_flow": r_flow,
             "R_reflexivity": r_reflex,
-            "quality_score": 0.9,
+            "quality_score": quality,
         },
         "action": action,
         "reward": reward,
@@ -506,6 +507,121 @@ def test_run_shadow_rl_source_reports_metadata(tmp_path):
         # both 模式必须同时产出非线性主判据与线性对照
         assert "acc_composition_linear" in result
         assert result["composition_model"] == "mlp_tanh_h16+logistic_linear"
+
+
+# ============================================================
+# 路径 A/B 对照实验（2026-11-06）：更强原语 vs 分位带标签口径
+#   目的：上一轮结论「瓶颈在原语集预测力弱（kNN 仅 53.6%）」需要两条
+#   改进路径分别验证——A 换更强原语、B 换风险调整标签口径。
+# ============================================================
+
+
+def test_load_shadow_rl_extended_primitives(tmp_path):
+    """路径 A：剔除共线 R_down（恒 = 1-R_up），加 quality_score + 3 交互原语。"""
+    path = tmp_path / "shadow_rl.jsonl"
+    rows = [
+        _mk_rl_sample(0.8, 0.2, 0.1, 0.4, 0.5, "long", 0.5, quality=0.7),
+        _mk_rl_sample(0.3, 0.7, 0.2, 0.1, 0.4, "short", -0.5, quality=0.3),
+    ]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    cases = ch.load_shadow_rl_cases(path, primitives="extended")
+    assert len(cases) == 2
+    f = cases[0]["features"]
+    assert len(f) == 9
+    # [R_up, R_smooth, R_flow, R_reflexivity, quality, up*flow, reflex*flow, smooth*reflex, is_short]
+    assert f[0] == pytest.approx(0.8)  # R_up（R_down 被剔除——与 R_up 完全共线）
+    assert f[1] == pytest.approx(0.1)  # R_smooth
+    assert f[2] == pytest.approx(0.4)  # R_flow
+    assert f[3] == pytest.approx(0.5)  # R_reflexivity
+    assert f[4] == pytest.approx(0.7)  # quality_score（新信息维）
+    assert f[5] == pytest.approx(0.8 * 0.4)  # up_x_flow 交互
+    assert f[6] == pytest.approx(0.5 * 0.4)  # reflex_x_flow 交互
+    assert f[7] == pytest.approx(0.1 * 0.5)  # smooth_x_reflex 交互
+    assert f[8] == 0.0  # long
+    assert cases[1]["features"][8] == 1.0  # short
+
+    # base 口径不变（回归保护）
+    base = ch.load_shadow_rl_cases(path, primitives="base")
+    assert len(base[0]["features"]) == 6
+
+
+def test_load_shadow_rl_band_labels_drops_middle(tmp_path):
+    """路径 B：分位带标签——reward≥q75 记显著盈利、≤q25 记显著亏损、中间噪声带丢弃。"""
+    path = tmp_path / "shadow_rl.jsonl"
+    rewards = [0.01 * i - 0.5 for i in range(100)]  # 均匀 -0.50 ~ +0.49
+    rows = [_mk_rl_sample(0.5, 0.5, 0.1, 0.5, 0.5, "long", r) for r in rewards]
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    cases = ch.load_shadow_rl_cases(path, label_mode="band")
+    kept = [
+        r for r in rewards if r >= np.percentile(rewards, 75) or r <= np.percentile(rewards, 25)
+    ]
+    assert len(cases) == len(kept)  # 中间噪声带被丢弃
+    labels = [c["label"] for c in cases]
+    assert set(labels) == {0, 1}
+    # 分位带天然平衡（上下带各 25%）
+    assert abs(sum(labels) / len(labels) - 0.5) <= 0.05
+
+
+def test_assign_cells_explicit_binary_dims():
+    """extended 9 维特征：分箱只取前 5 连续维，交互维不进 cell 键，is_short 原值。"""
+    cases = [
+        {
+            "features": np.array([0.9, 0.5, 0.8, 0.3, 0.7, 0.72, 0.24, 0.15, 1.0]),
+            "label": 1,
+        },
+        {
+            "features": np.array([0.1, 0.9, 0.2, 0.8, 0.2, 0.02, 0.16, 0.18, 0.0]),
+            "label": 0,
+        },
+    ]
+    ch.assign_cells(cases, n_continuous=5, binary_dims=(8,))
+    assert all(len(c["cell"]) == 6 for c in cases)  # 5 分箱 + is_short
+    assert cases[0]["cell"][5] == 1  # is_short 原值
+    assert cases[1]["cell"][5] == 0
+
+
+def test_run_shadow_rl_extended_and_band_report_metadata(tmp_path):
+    path = tmp_path / "shadow_rl.jsonl"
+    rows = []
+    for i in range(400):
+        a = 0.01 * (i % 100)
+        rows.append(
+            _mk_rl_sample(
+                a,
+                1.0 - a,
+                0.01 * ((i * 7) % 100),
+                0.01 * ((i * 13) % 100),
+                0.5,
+                "long" if i % 3 else "short",
+                0.01 * ((i * 17) % 200) - 1.0,
+                quality=0.01 * ((i * 23) % 100),
+            )
+        )
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+
+    common = {
+        "source": "shadow_rl",
+        "shadow_rl_path": path,
+        "gaps_path": tmp_path / "gaps.jsonl",
+        "max_cases": 200,
+        "min_cell": 8,
+        "min_train": 60,
+        "min_eval": 20,
+        "n_perm": 200,
+        "seed": 0,
+    }
+    res_a = ch.run(primitives="extended", label_mode="positive", **common)
+    assert res_a["primitives"] == "extended"
+    assert res_a["label_mode"] == "positive"
+    assert res_a["status"] in ("ok", "insufficient_data")
+
+    res_b = ch.run(primitives="base", label_mode="band", **common)
+    assert res_b["primitives"] == "base"
+    assert res_b["label_mode"] == "band"
+    # band 口径丢中间带 → 样本量约为 positive 的一半
+    assert res_b["n_cases_loaded"] < res_a["n_cases_loaded"]
 
 
 # ============================================================

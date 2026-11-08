@@ -5,7 +5,6 @@
   r=0.15 时: (0.85)^18 ≈ 0.0536, (0.85)^20 ≈ 0.0388
   → 从 m=2.0 出发，20 期后 |m - 1.0| < 0.05
 """
-import pytest
 
 
 def test_mean_reversion_from_ceiling():
@@ -66,8 +65,10 @@ def test_head_adjustment_respects_floor_ceiling():
         head_ceiling=2.0,
     )
     r = gate.compare(
-        G_dim="fundamental", G_conf=0.9,
-        A_dim="macro", A_strength=0.7,
+        G_dim="fundamental",
+        G_conf=0.9,
+        A_dim="macro",
+        A_strength=0.7,
         structural_break={},
     )
     for h, v in r["head_adjustment"].items():

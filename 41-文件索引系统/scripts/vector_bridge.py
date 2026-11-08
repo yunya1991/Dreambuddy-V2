@@ -6,6 +6,7 @@
       [{"source_file", "score", "snippet", "heading"}]
 FAIL-OPEN：任何异常输出 []（调用方降级为纯 BM25）。
 """
+
 import json
 import sys
 
@@ -22,15 +23,18 @@ def main() -> None:
             return
         sys.path.insert(0, RAG_INFRA)
         from vector_store.search import search
+
         results = search(query, top_k=top_k) or []
         out = []
         for r in results:
-            out.append({
-                "source_file": str(r.get("source_file") or "").strip("/"),
-                "score": float(r.get("score") or 0.0),
-                "snippet": str(r.get("content") or "")[:200],
-                "heading": str(r.get("heading") or ""),
-            })
+            out.append(
+                {
+                    "source_file": str(r.get("source_file") or "").strip("/"),
+                    "score": float(r.get("score") or 0.0),
+                    "snippet": str(r.get("content") or "")[:200],
+                    "heading": str(r.get("heading") or ""),
+                }
+            )
         print(json.dumps(out, ensure_ascii=False))
     except Exception:
         print("[]")

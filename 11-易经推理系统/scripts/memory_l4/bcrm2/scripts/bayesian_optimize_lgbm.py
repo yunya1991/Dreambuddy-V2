@@ -17,6 +17,7 @@
 用法:
   python bayesian_optimize_lgbm.py --csv ../../data/klines/BTC_1D_full.csv --n-trials 50 --out ../../artifacts/evolution_btc/best_params.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,16 +35,17 @@ _MEMORY_L4 = _THIS.parent.parent.parent
 if str(_MEMORY_L4) not in sys.path:
     sys.path.insert(0, str(_MEMORY_L4))
 
-import optuna
+import optuna  # noqa: E402
+
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-from bcrm2.indicators import IndicatorBank
-from bcrm2.score_composer import ScoreComposer
-from bcrm2.temporal_smoother import TemporalSmoother
-from bcrm2.regime_mapper import RegimeMapper, REGIME_ORDER
-from bcrm2.labels.regime_labeler import generate_8state_label, REGIME_CODE
-from bcrm2.walk_forward_splitter import walk_forward_time_series_split
-from bcrm2.lgbm_calibrator import LGBMCalibrator
+from bcrm2.indicators import IndicatorBank  # noqa: E402
+from bcrm2.labels.regime_labeler import REGIME_CODE, generate_8state_label  # noqa: E402
+from bcrm2.lgbm_calibrator import LGBMCalibrator  # noqa: E402
+from bcrm2.regime_mapper import REGIME_ORDER, RegimeMapper  # noqa: E402
+from bcrm2.score_composer import ScoreComposer  # noqa: E402
+from bcrm2.temporal_smoother import TemporalSmoother  # noqa: E402
+from bcrm2.walk_forward_splitter import walk_forward_time_series_split  # noqa: E402
 
 
 def _read_csv(csv_path: Path) -> pd.DataFrame:
@@ -72,14 +74,20 @@ def _compute_level_trend(df: pd.DataFrame) -> Tuple[pd.Series, pd.Series]:
 
 def _compute_features(df: pd.DataFrame, feature_set: str = "btc_morphology_v6") -> pd.DataFrame:
     import importlib as _il
-    for _m in ("classic_experience_features", "ma200_cycle_features",
-               "multi_timeframe_features", "rolling_regime_stats",
-               "sector_beta_pool"):
+
+    for _m in (
+        "classic_experience_features",
+        "ma200_cycle_features",
+        "multi_timeframe_features",
+        "rolling_regime_stats",
+        "sector_beta_pool",
+    ):
         try:
             _il.import_module(f"bcrm2.{_m}")
         except Exception:
             pass
     from bcrm2.feature_registry import FeatureRegistry
+
     feats_df, _ = FeatureRegistry.compute_all(df, enabled_set=feature_set, verbose=False)
     return feats_df
 
@@ -109,6 +117,7 @@ def _evaluate_fold_with_params(
             centers[regime] = (float(train_L[mask].mean()), float(train_T[mask].mean()))
         else:
             from bcrm2.regime_mapper import REGIME_CENTERS
+
             centers[regime] = REGIME_CENTERS[regime]
 
     mapper = RegimeMapper(centers=centers, softmax_temperature=0.6)
@@ -127,7 +136,9 @@ def _evaluate_fold_with_params(
         cal = LGBMCalibrator(random_state=42)
         try:
             cal.fit(
-                X_tr, y_tr, schema_path="/tmp/_optuna_lgbm_schema.json",
+                X_tr,
+                y_tr,
+                schema_path="/tmp/_optuna_lgbm_schema.json",
                 n_estimators=params["n_estimators"],
                 learning_rate=params["learning_rate"],
                 num_leaves=params["num_leaves"],
@@ -183,6 +194,7 @@ def _evaluate_fold_with_params(
         try:
             # 临时覆盖全局融合权重
             import bcrm2.lgbm_calibrator as _lc_mod
+
             _orig_wg = _lc_mod.W_GAUSS
             _orig_wl = _lc_mod.W_LGBM
             _orig_t = _lc_mod.TEMPERATURE
@@ -219,7 +231,9 @@ def _evaluate_fold_with_params(
                 top3_hits_fused += 1
             y_pred_fused.append(int(np.argmax(p_g)))
 
-    macro_f1 = f1_score(y_true, y_pred_fused, average="macro", labels=list(range(8)), zero_division=0)
+    macro_f1 = f1_score(
+        y_true, y_pred_fused, average="macro", labels=list(range(8)), zero_division=0
+    )
     top3_rate = top3_hits_fused / max(1, n_valid)
     return float(macro_f1), top3_rate
 
@@ -262,9 +276,14 @@ def run_optimization(
         for k, (train_idx, test_idx) in enumerate(folds):
             try:
                 f1, _ = _evaluate_fold_with_params(
-                    train_idx, test_idx, df,
-                    level_smooth, trend_smooth, labels,
-                    feats_df, params,
+                    train_idx,
+                    test_idx,
+                    df,
+                    level_smooth,
+                    trend_smooth,
+                    labels,
+                    feats_df,
+                    params,
                 )
                 f1s.append(f1)
             except Exception as e:
@@ -291,16 +310,18 @@ def run_optimization(
             {
                 "trial": t.number,
                 "macro_f1": round(t.value, 4) if t.value is not None else None,
-                "params": {k: round(v, 4) if isinstance(v, float) else v for k, v in t.params.items()},
+                "params": {
+                    k: round(v, 4) if isinstance(v, float) else v for k, v in t.params.items()
+                },
             }
             for t in study.trials
             if t.value is not None
         ],
     }
 
-    print(f"\n=== Optuna 搜索结果 ===")
+    print("\n=== Optuna 搜索结果 ===")
     print(f"  最佳 Macro F1: {best.value:.4f}")
-    print(f"  最佳参数:")
+    print("  最佳参数:")
     for k, v in best.params.items():
         print(f"    {k}: {v:.4f}" if isinstance(v, float) else f"    {k}: {v}")
 

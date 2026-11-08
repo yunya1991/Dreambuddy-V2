@@ -22,6 +22,7 @@ HC-AGI-15: 价格网格≥32, 时间网格≥16
 HC-AGI-16: 收敛阈值 1e-6 持续≥3轮
 HC-AGI-17: 异常强制降级到 argmin（不可跳过）
 """
+
 from __future__ import annotations
 
 import logging
@@ -42,18 +43,18 @@ class HJBPathSolver:
     终端条件: V(p, T) = 0
     """
 
-    MIN_PRICE_GRID = 32   # HC-AGI-15
-    MIN_TIME_GRID = 16    # HC-AGI-15
-    CONVERGENCE_TOL = 1e-6   # HC-AGI-16
+    MIN_PRICE_GRID = 32  # HC-AGI-15
+    MIN_TIME_GRID = 16  # HC-AGI-15
+    CONVERGENCE_TOL = 1e-6  # HC-AGI-16
     CONVERGENCE_ROUNDS = 3  # HC-AGI-16
 
     def __init__(
         self,
         n_price_bins: int = 64,
         n_time_bins: int = 32,
-        alpha: float = 0.4,   # 成本权重（对齐 PathIntegralEngine）
-        beta: float = 0.3,    # 风险权重
-        gamma: float = 0.3,   # 不确定性权重
+        alpha: float = 0.4,  # 成本权重（对齐 PathIntegralEngine）
+        beta: float = 0.3,  # 风险权重
+        gamma: float = 0.3,  # 不确定性权重
         n_sigma: float = 3.0,  # 价格网格 ±nσ
     ) -> None:
         self.n_price_bins = max(n_price_bins, self.MIN_PRICE_GRID)
@@ -206,7 +207,7 @@ class HJBPathSolver:
         """
         n = self.n_price_bins
         price_grid = grid["price_grid"]
-        dp = grid["dp"]
+        dp = grid["dp"]  # noqa: F841
 
         if price_idx < 0 or price_idx >= n:
             probs = np.zeros(n)
@@ -243,7 +244,7 @@ class HJBPathSolver:
             except Exception as e:
                 logger.debug("[FO] HJB 燃料偏移 fail: %s", e)  # FAIL-OPEN: 异常回退标准GBM
 
-        mu_log = (eff_drift - 0.5 * eff_vol ** 2) * dt
+        mu_log = (eff_drift - 0.5 * eff_vol**2) * dt
         sigma_log = eff_vol * math.sqrt(dt)
 
         # 对数收益率到各格点
@@ -310,7 +311,7 @@ class HJBPathSolver:
         convergence_history: list[float] = []
         converged = False
 
-        for iteration in range(max_iterations):
+        for iteration in range(max_iterations):  # noqa: B007
             V_old = V.copy()
 
             # 逆向时间迭代（单遍逆向 DP）
@@ -326,7 +327,9 @@ class HJBPathSolver:
                                 current_primary = sp_primary
                                 break
                     except (TypeError, ValueError) as e:
-                        logger.debug("[FO] HJB shift_points 解析 fail: %s", e)  # FAIL-OPEN: 格式错误→不切换
+                        logger.debug(
+                            "[FO] HJB shift_points 解析 fail: %s", e
+                        )  # FAIL-OPEN: 格式错误→不切换
 
                 for p_idx in range(n_p):
                     best_cost = math.inf
@@ -350,7 +353,11 @@ class HJBPathSolver:
                             eff_drift = 0.0
 
                         probs = self._transition_probabilities(
-                            p_idx, grid, eff_drift, volatility, dt,
+                            p_idx,
+                            grid,
+                            eff_drift,
+                            volatility,
+                            dt,
                             reflexivity_fuel=reflexivity_fuel,
                         )
 
@@ -370,7 +377,7 @@ class HJBPathSolver:
 
             # 连续 CONVERGENCE_ROUNDS 轮 max|ΔV| < CONVERGENCE_TOL
             if len(convergence_history) >= self.CONVERGENCE_ROUNDS:
-                recent = convergence_history[-self.CONVERGENCE_ROUNDS:]
+                recent = convergence_history[-self.CONVERGENCE_ROUNDS :]
                 if all(d < self.CONVERGENCE_TOL for d in recent):
                     converged = True
                     break
@@ -454,14 +461,15 @@ class HJBPathSolver:
         """
         grid = self.build_grid(start_price, volatility, horizon)
         V, policy, converged = self._value_iteration(
-            grid, r_vector, drift, volatility,
+            grid,
+            r_vector,
+            drift,
+            volatility,
             primary_contradiction=primary_contradiction,
             reflexivity_fuel=reflexivity_fuel,
             shift_points=shift_points,
         )
-        optimal_path, optimal_actions = self._trace_optimal_path(
-            V, policy, grid, start_price
-        )
+        optimal_path, optimal_actions = self._trace_optimal_path(V, policy, grid, start_price)
 
         # V(start_price, 0)
         start_idx = int(np.argmin(np.abs(grid["price_grid"] - start_price)))
@@ -496,8 +504,8 @@ class VariationalPathOptimizer:
 
     DEFAULT_LEARNING_RATE = 0.01
     MAX_ITER = 200
-    CONVERGENCE_TOL = 1e-6   # HC-AGI-16
-    CONVERGENCE_ROUNDS = 3    # HC-AGI-16
+    CONVERGENCE_TOL = 1e-6  # HC-AGI-16
+    CONVERGENCE_ROUNDS = 3  # HC-AGI-16
 
     def __init__(
         self,
@@ -603,7 +611,11 @@ class VariationalPathOptimizer:
             }
         """
         # 处理多路径输入
-        if isinstance(initial_path, (list, tuple)) and len(initial_path) > 0 and isinstance(initial_path[0], np.ndarray):
+        if (
+            isinstance(initial_path, (list, tuple))
+            and len(initial_path) > 0
+            and isinstance(initial_path[0], np.ndarray)
+        ):
             paths_list = list(initial_path)
         else:
             paths_list = [np.asarray(initial_path, dtype=np.float64).ravel()]
@@ -642,7 +654,7 @@ class VariationalPathOptimizer:
 
             # HC-AGI-16 收敛检查
             if len(action_history) >= self.CONVERGENCE_ROUNDS + 1:
-                recent = action_history[-self.CONVERGENCE_ROUNDS:]
+                recent = action_history[-self.CONVERGENCE_ROUNDS :]
                 deltas = [
                     abs(recent[i] - recent[i - 1]) / max(abs(recent[i - 1]), 1e-12)
                     for i in range(1, len(recent))
@@ -659,7 +671,7 @@ class VariationalPathOptimizer:
 
         converged = False
         if len(action_history) >= self.CONVERGENCE_ROUNDS + 1:
-            recent = action_history[-self.CONVERGENCE_ROUNDS:]
+            recent = action_history[-self.CONVERGENCE_ROUNDS :]
             deltas = [
                 abs(recent[i] - recent[i - 1]) / max(abs(recent[i - 1]), 1e-12)
                 for i in range(1, len(recent))
@@ -725,6 +737,7 @@ def solve_optimal_path(
     # ------------------------------------------------------------------
     try:
         from dreambuddy_evolution.agi_config import get_switch
+
         if get_switch("enable_hjb_solver", True):
             if math.isnan(volatility) or math.isinf(volatility) or volatility <= 0:
                 raise ValueError(f"[HJB] volatility 无效: {volatility}")
@@ -759,6 +772,7 @@ def solve_optimal_path(
     # ------------------------------------------------------------------
     try:
         from dreambuddy_evolution.agi_config import get_switch
+
         if get_switch("enable_variational_opt", True) and monte_carlo_paths:
             opt = VariationalPathOptimizer(alpha=alpha, beta=beta, gamma=gamma)
             var_result = opt.optimize(monte_carlo_paths)
@@ -781,6 +795,7 @@ def solve_optimal_path(
     # ------------------------------------------------------------------
     try:
         from dreambuddy_evolution.core.path_integral import PathIntegralEngine
+
         pe = PathIntegralEngine(alpha=alpha, beta=beta, gamma=gamma)
 
         if monte_carlo_paths and len(monte_carlo_paths) > 0:

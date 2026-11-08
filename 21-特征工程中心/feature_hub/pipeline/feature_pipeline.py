@@ -7,6 +7,7 @@
 L1 fail-open：某模块异常 → 跳过 + log.warning + 其他模块照常
 L3 Fail-Fast：启用集合名不存在 → FeatureSetNotFound
 """
+
 from __future__ import annotations
 
 import logging
@@ -64,6 +65,7 @@ class FeaturePipeline:
             # 也检查 FR 的 ENABLED_SETS
             try:
                 from feature_hub.hub.feature_registry import ENABLED_SETS
+
                 if set_name in ENABLED_SETS:
                     modules = ENABLED_SETS[set_name]
                     if modules is None:
@@ -89,14 +91,21 @@ class FeaturePipeline:
                 if mod_name in self._modules:
                     # 本地模块 — compute 支持 (df, **kw) 或返回 (df, ctx_dict) 元组
                     raw = self._modules[mod_name](
-                        df, ref_df=ref_df, macro_df=macro_df, symbol=symbol,
+                        df,
+                        ref_df=ref_df,
+                        macro_df=macro_df,
+                        symbol=symbol,
                     )
                 else:
                     # FR 注册模块：compute_all 返回 (df, gua_map) 元组
                     from feature_hub.hub.feature_registry import FeatureRegistry
+
                     raw = FeatureRegistry.compute_all(
-                        df=df, ref_df=ref_df, macro_df=macro_df,
-                        symbol=symbol, enabled=[mod_name],
+                        df=df,
+                        ref_df=ref_df,
+                        macro_df=macro_df,
+                        symbol=symbol,
+                        enabled=[mod_name],
                     )
 
                 # 兼容：模块可返回 DataFrame 或 (DataFrame, extra_ctx_dict) 元组
@@ -121,7 +130,8 @@ class FeaturePipeline:
             except Exception as exc:
                 logger.warning(
                     "[FeatureHub] module '%s' failed: %s — skipping (fail-open)",
-                    mod_name, exc,
+                    mod_name,
+                    exc,
                 )
                 meta.setdefault("modules_failed", []).append(mod_name)
 

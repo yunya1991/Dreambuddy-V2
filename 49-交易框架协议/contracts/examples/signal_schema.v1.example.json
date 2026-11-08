@@ -1,0 +1,18 @@
+{
+  "signal_id": "23-evolution|BTC-USDT-SWAP|2026-11-06T00:00:00Z|long",
+  "source": "23-evolution",
+  "ts": "2026-11-06T00:00:00Z",
+  "symbol": "BTC-USDT-SWAP",
+  "direction": "long",
+  "confidence": 0.72,
+  "horizon": "hours",
+  "risk_exposure_hint": 0.35,
+  "expires_at": "2026-11-06T04:00:00Z",
+  "mode": "paper",
+  "shadow": false,
+  "constraint_id": "constraint-demo-001",
+  "constraint_applied_at": "2026-11-06T00:00:01Z",
+  "payload": {
+    "tier": "standard"
+  }
+}

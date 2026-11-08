@@ -9,5 +9,7 @@ def test_ops_restart_dry_run_is_local_only(monkeypatch):
     assert body["ok"] is True
     assert body["dry_run"] is True
 
-    r2 = client.post("/ops/restart", json={"dry_run": True}, environ_base={"REMOTE_ADDR": "8.8.8.8"})
+    r2 = client.post(
+        "/ops/restart", json={"dry_run": True}, environ_base={"REMOTE_ADDR": "8.8.8.8"}
+    )
     assert r2.status_code == 403

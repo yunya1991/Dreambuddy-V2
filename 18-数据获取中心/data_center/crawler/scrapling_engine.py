@@ -11,10 +11,10 @@ FAIL-OPEN 回退链：stealthy → dynamic → http → static → ""
 
 lazy import scrapling：未安装时非 static mode 自动降级到 static。
 """
+
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any
 
 import requests
@@ -65,21 +65,27 @@ class ScraplingEngine:
                     if attempt_mode != mode:
                         logger.info(
                             "[ScraplingEngine] mode=%s 回退到 %s 成功 url=%s",
-                            mode, attempt_mode, url,
+                            mode,
+                            attempt_mode,
+                            url,
                         )
                     return html
             except Exception as exc:  # noqa: BLE003 — FAIL-OPEN：捕获所有异常
                 last_error = exc
                 logger.warning(
                     "[ScraplingEngine] mode=%s 失败 url=%s: %s: %s",
-                    attempt_mode, url, type(exc).__name__, str(exc)[:120],
+                    attempt_mode,
+                    url,
+                    type(exc).__name__,
+                    str(exc)[:120],
                 )
                 continue
 
         # 所有 mode 均失败
         logger.error(
             "[ScraplingEngine] 所有 mode 均失败 url=%s last_error=%s: %s",
-            url, type(last_error).__name__ if last_error else "None",
+            url,
+            type(last_error).__name__ if last_error else "None",
             str(last_error)[:120] if last_error else "",
         )
         return ""
@@ -151,7 +157,10 @@ class ScraplingEngine:
         # 秒 → 毫秒（scrapling 内部 timeout 单位为 ms）
         timeout_ms = int(timeout) * 1000
         page = DynamicFetcher.fetch(
-            url, headless=headless, network_idle=network_idle, timeout=timeout_ms,
+            url,
+            headless=headless,
+            network_idle=network_idle,
+            timeout=timeout_ms,
         )
         body = getattr(page, "body", None)
         if body is None:
@@ -175,7 +184,10 @@ class ScraplingEngine:
         # 秒 → 毫秒（scrapling 内部 timeout 单位为 ms）
         timeout_ms = int(timeout) * 1000
         page = StealthyFetcher.fetch(
-            url, headless=headless, network_idle=network_idle, timeout=timeout_ms,
+            url,
+            headless=headless,
+            network_idle=network_idle,
+            timeout=timeout_ms,
         )
         body = getattr(page, "body", None)
         if body is None:
@@ -226,7 +238,8 @@ class ScraplingEngine:
         except Exception as exc:  # noqa: BLE003 — 自适应失败回退到 static
             logger.warning(
                 "[ScraplingEngine] adaptive parse 失败，回退 static: %s: %s",
-                type(exc).__name__, str(exc)[:120],
+                type(exc).__name__,
+                str(exc)[:120],
             )
             return self._parse_static(html, site)
 
@@ -257,6 +270,7 @@ class ScraplingEngine:
         """lazy init GenericSpider。"""
         if self._spider is None:
             from data_center.crawler.generic_spider import GenericSpider
+
             self._spider = GenericSpider()
         return self._spider
 

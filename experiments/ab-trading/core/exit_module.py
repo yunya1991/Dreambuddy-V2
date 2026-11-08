@@ -35,31 +35,34 @@ L3 — Agent B 离场系统：
         }
     }
 """
-import os, sys, json, math
+
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from execution.aster_spot import HyperliquidClient, get_candles
-from execution.onchain_tpsl import ensure_tpsl, update_tpsl, remove_tpsl, sync_all_tpsl, get_position_tpsl_status
-
+from execution.aster_spot import HyperliquidClient, get_candles  # noqa: I001
+from execution.onchain_tpsl import (
+    ensure_tpsl,
+    update_tpsl,
+    remove_tpsl,
+)
 
 # ── 离场原因枚举 ──────────────────────────────────────────────────────────
-EXIT_REASON_SL_BASE     = "SL_BASE"        # L1 基础止损
-EXIT_REASON_TP_BASE     = "TP_BASE"        # L1 基础止盈
-EXIT_REASON_SL_SMART    = "SL_SMART"       # L2/L3 智能止损
-EXIT_REASON_TP_SMART    = "TP_SMART"       # L2/L3 智能止盈
-EXIT_REASON_SIGNAL      = "SIGNAL"         # 信号反转离场
-EXIT_REASON_TRAILING    = "TRAILING_STOP"  # 移动止损
-EXIT_REASON_RISK        = "RISK_PROTECT"   # 风控保护离场
+EXIT_REASON_SL_BASE = "SL_BASE"  # L1 基础止损
+EXIT_REASON_TP_BASE = "TP_BASE"  # L1 基础止盈
+EXIT_REASON_SL_SMART = "SL_SMART"  # L2/L3 智能止损
+EXIT_REASON_TP_SMART = "TP_SMART"  # L2/L3 智能止盈
+EXIT_REASON_SIGNAL = "SIGNAL"  # 信号反转离场
+EXIT_REASON_TRAILING = "TRAILING_STOP"  # 移动止损
+EXIT_REASON_RISK = "RISK_PROTECT"  # 风控保护离场
 
 
 # ── L1: 基于 ATR 波动率的基础止损止盈 ──────────────────────────────────
 
-def calculate_atr(coin: str, proxies=None, period: int = 14,
-                  interval: str = "1h") -> float:
+
+def calculate_atr(coin: str, proxies=None, period: int = 14, interval: str = "1h") -> float:
     """
     计算 ATR（平均真实波幅）
     返回 ATR 绝对值（如 BTC 的 ATR 可能是 800 美元）
@@ -71,8 +74,8 @@ def calculate_atr(coin: str, proxies=None, period: int = 14,
         trs = []
         for i in range(1, min(len(candles), period + 1)):
             h = float(candles[i].get("h", 0))
-            l = float(candles[i].get("l", 0))
-            c_prev = float(candles[i-1].get("c", 0))
+            l = float(candles[i].get("l", 0))  # noqa: E741
+            c_prev = float(candles[i - 1].get("c", 0))
             tr = max(h - l, abs(h - c_prev), abs(l - c_prev))
             trs.append(tr)
         return sum(trs) / len(trs) if trs else 0.0
@@ -87,10 +90,10 @@ def calculate_basic_exit_levels(
     atr_value: Optional[float] = None,
     sl_atr_mult: float = 1.5,
     tp_atr_mult: float = 3.0,
-    min_sl_pct: float = 0.02,     # 最小止损 2%
-    min_tp_pct: float = 0.04,     # 最小止盈 4%
-    max_sl_pct: float = 0.10,     # 最大止损 10%
-    max_tp_pct: float = 0.20,     # 最大止盈 20%
+    min_sl_pct: float = 0.02,  # 最小止损 2%
+    min_tp_pct: float = 0.04,  # 最小止盈 4%
+    max_sl_pct: float = 0.10,  # 最大止损 10%
+    max_tp_pct: float = 0.20,  # 最大止盈 20%
     proxies=None,
 ) -> Tuple[float, float]:
     """
@@ -138,6 +141,7 @@ def _price_decimals(coin: str) -> int:
 
 # ── 活跃持仓管理 ──────────────────────────────────────────────────────────
 
+
 def init_position(
     active_positions: Dict,
     coin: str,
@@ -159,9 +163,7 @@ def init_position(
     action = action.upper()
 
     # 计算 L1 基础止损止盈
-    basic_sl, basic_tp = calculate_basic_exit_levels(
-        coin, entry_price, action, proxies=proxies
-    )
+    basic_sl, basic_tp = calculate_basic_exit_levels(coin, entry_price, action, proxies=proxies)
 
     # 优先使用传入的自定义值，否则用基础值
     sl_price = stop_loss_price if stop_loss_price and stop_loss_price > 0 else basic_sl
@@ -195,13 +197,13 @@ def init_position(
                 sl_price=sl_price,
                 tp_price=tp_price,
             )
-            if result.get('ok'):
+            if result.get("ok"):
                 active_positions[coin]["onchain_tpsl"] = True
-                active_positions[coin]["tpsl_oids"] = result.get('oids', [])
-                active_positions[coin]["tpsl_action"] = result.get('action')
+                active_positions[coin]["tpsl_oids"] = result.get("oids", [])
+                active_positions[coin]["tpsl_action"] = result.get("action")
             else:
                 active_positions[coin]["onchain_tpsl"] = False
-                active_positions[coin]["tpsl_error"] = result.get('error', 'unknown')
+                active_positions[coin]["tpsl_error"] = result.get("error", "unknown")
         except Exception as e:
             active_positions[coin]["onchain_tpsl"] = False
             active_positions[coin]["tpsl_error"] = str(e)
@@ -257,13 +259,13 @@ def update_position_exit_levels(
                 new_sl=pos["stop_loss_price"],
                 new_tp=pos["take_profit_price"],
             )
-            if result.get('ok'):
+            if result.get("ok"):
                 pos["onchain_tpsl"] = True
-                pos["tpsl_oids"] = result.get('oids', [])
-                pos["tpsl_action"] = result.get('action')
+                pos["tpsl_oids"] = result.get("oids", [])
+                pos["tpsl_action"] = result.get("action")
             else:
                 pos["onchain_tpsl"] = False
-                pos["tpsl_error"] = result.get('error', 'unknown')
+                pos["tpsl_error"] = result.get("error", "unknown")
         except Exception as e:
             pos["onchain_tpsl"] = False
             pos["tpsl_error"] = str(e)
@@ -316,6 +318,7 @@ def close_position_record(
 
 # ── L1 离场检测 ──────────────────────────────────────────────────────────
 
+
 def check_l1_exits(
     client: HyperliquidClient,
     active_positions: Dict,
@@ -349,31 +352,36 @@ def check_l1_exits(
         # 止损检测
         if sl and sl > 0:
             if (is_long and current_price <= sl) or (not is_long and current_price >= sl):
-                exits.append({
-                    "coin": coin,
-                    "reason": EXIT_REASON_SL_BASE,
-                    "current_price": current_price,
-                    "trigger_level": sl,
-                    "position": pos,
-                })
+                exits.append(
+                    {
+                        "coin": coin,
+                        "reason": EXIT_REASON_SL_BASE,
+                        "current_price": current_price,
+                        "trigger_level": sl,
+                        "position": pos,
+                    }
+                )
                 continue
 
         # 止盈检测
         if tp and tp > 0:
             if (is_long and current_price >= tp) or (not is_long and current_price <= tp):
-                exits.append({
-                    "coin": coin,
-                    "reason": EXIT_REASON_TP_BASE,
-                    "current_price": current_price,
-                    "trigger_level": tp,
-                    "position": pos,
-                })
+                exits.append(
+                    {
+                        "coin": coin,
+                        "reason": EXIT_REASON_TP_BASE,
+                        "current_price": current_price,
+                        "trigger_level": tp,
+                        "position": pos,
+                    }
+                )
                 continue
 
     return exits
 
 
 # ── L3 Agent B: 经典指标离场系统（无 LLM 回退）─────────────────────────
+
 
 def check_classical_indicator_exits(
     coin: str,
@@ -409,7 +417,7 @@ def check_classical_indicator_exits(
             return prices[-1]
         k = 2 / (n + 1)
         e = prices[-n]
-        for p in prices[-n+1:]:
+        for p in prices[-n + 1 :]:
             e = p * k + e * (1 - k)
         return e
 
@@ -422,7 +430,7 @@ def check_classical_indicator_exits(
     def rsi(prices, n=14):
         if len(prices) < n + 1:
             return 50.0
-        deltas = [prices[i] - prices[i-1] for i in range(1, n+1)]
+        deltas = [prices[i] - prices[i - 1] for i in range(1, n + 1)]
         gains = [max(d, 0) for d in deltas]
         losses = [max(-d, 0) for d in deltas]
         avg_g = sum(gains) / n
@@ -479,7 +487,7 @@ try:
     if _sys_path not in sys.path:
         sys.path.insert(0, _sys_path)
 
-    from classic_exit_system import ClassicExitSystem, evaluate_exit, ExitResult
+    from classic_exit_system import ClassicExitSystem, evaluate_exit, ExitResult  # noqa: F401, I001
 
     _L3_SYSTEM = ClassicExitSystem()
     _L3_AVAILABLE = True
@@ -589,6 +597,7 @@ def update_trailing_stop(
 
 # ── 执行离场 ──────────────────────────────────────────────────────────────
 
+
 def execute_exit(
     client: HyperliquidClient,
     active_positions: Dict,
@@ -625,6 +634,7 @@ def execute_exit(
 
 
 # ── 同步持仓状态（从交易所实际持仓同步）─────────────────────────────────
+
 
 def sync_positions_from_exchange(
     client: HyperliquidClient,
@@ -726,6 +736,7 @@ def sync_positions_from_exchange(
 
 # ── 主入口：离场检查与执行 ────────────────────────────────────────────────
 
+
 def run_exit_check(
     client: HyperliquidClient,
     active_positions: Dict,
@@ -763,9 +774,7 @@ def run_exit_check(
         for coin in list(active_positions.keys()):
             price = mids.get(coin, 0)
             if price > 0:
-                active_positions = update_trailing_stop(
-                    active_positions, coin, price
-                )
+                active_positions = update_trailing_stop(active_positions, coin, price)
 
     # 3. 检查 L1 离场
     exits = check_l1_exits(client, active_positions)
@@ -812,15 +821,18 @@ if __name__ == "__main__":
     # 测试持仓管理
     print("\n[持仓管理] 初始化持仓:")
     positions = {}
-    positions = init_position(positions, "BTC", 65000.0, "LONG", 100.0, 3,
-                             cycle_id="test_cycle")
-    print(f"  BTC 持仓: SL={positions['BTC']['stop_loss_price']}, "
-          f"TP={positions['BTC']['take_profit_price']}, "
-          f"source=SL:{positions['BTC']['sl_source']}/TP:{positions['BTC']['tp_source']}")
+    positions = init_position(positions, "BTC", 65000.0, "LONG", 100.0, 3, cycle_id="test_cycle")
+    print(
+        f"  BTC 持仓: SL={positions['BTC']['stop_loss_price']}, "
+        f"TP={positions['BTC']['take_profit_price']}, "
+        f"source=SL:{positions['BTC']['sl_source']}/TP:{positions['BTC']['tp_source']}"
+    )
 
     print("\n[持仓管理] 更新止损（移动止损模拟）:")
     positions = update_position_exit_levels(positions, "BTC", new_stop_loss=64500.0)
-    print(f"  BTC 持仓: SL={positions['BTC']['stop_loss_price']} (source: {positions['BTC']['sl_source']})")
+    print(
+        f"  BTC 持仓: SL={positions['BTC']['stop_loss_price']} (source: {positions['BTC']['sl_source']})"
+    )
 
     print("\n[持仓管理] 平仓记录:")
     positions, closed = close_position_record(positions, "BTC", 67000.0, EXIT_REASON_TP_BASE)

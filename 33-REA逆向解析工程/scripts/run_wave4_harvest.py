@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """wave4（P3）外部真实源拉取，10 源。源清单从 SPEC 附录 A 动态解析。幂等：池中已有同 label 树则跳过。"""
+
 import os
 import re
 import subprocess
@@ -14,7 +15,8 @@ SPEC = "SPEC-33-外部真实源接入.md"
 text = open(SPEC, encoding="utf-8").read()
 WAVE4 = re.findall(
     r"^\|[^|]*\|\s*(\S+)\s*\| P3 \|\s*(https://github\.com/[^|]+?)\s*\|[^|]*\|[^|]*\|\s*([^|]+?)\s*\|",
-    text, re.M,
+    text,
+    re.M,
 )
 assert len(WAVE4) == 10, f"expected 10 P3 sources, got {len(WAVE4)}"
 print(f"WAVE4_PARSED sources={len(WAVE4)}", flush=True)
@@ -23,22 +25,27 @@ pool = ReplayPool("reflection_data/replay_pool")
 harvester = ExternalHarvester(pool, work_dir="/tmp/rea_harvest")
 
 existing_labels = {t.source_label for t in pool.list_trees("external")}
-todo = [(l, u, lic) for l, u, lic in WAVE4 if l not in existing_labels]
+todo = [(l, u, lic) for l, u, lic in WAVE4 if l not in existing_labels]  # noqa: E741
 skipped = len(WAVE4) - len(todo)
 print(f"WAVE4_START total={len(WAVE4)} skipped_existing={skipped} todo={len(todo)}", flush=True)
 
-sources = [HarvestSource(source_type="github_repo", location=url, label=label) for label, url, _ in todo]
+sources = [
+    HarvestSource(source_type="github_repo", location=url, label=label) for label, url, _ in todo
+]
 t0 = time.time()
 outcome = harvester.harvest(sources)
 print(f"harvest done in {time.time() - t0:.1f}s", flush=True)
-print(f"injected={len(outcome.injected_trees)} rejected={len(outcome.rejected)} errors={len(outcome.errors)}", flush=True)
+print(
+    f"injected={len(outcome.injected_trees)} rejected={len(outcome.rejected)} errors={len(outcome.errors)}",
+    flush=True,
+)
 for r in outcome.rejected:
     print(f"REJECTED {r}", flush=True)
 for e in outcome.errors:
     print(f"ERROR {e}", flush=True)
 
-lic_map = {l: lic for l, _u, lic in WAVE4}
-url_map = {l: u for l, u, _ in WAVE4}
+lic_map = {l: lic for l, _u, lic in WAVE4}  # noqa: E741
+url_map = {l: u for l, u, _ in WAVE4}  # noqa: E741
 new_labels = {t.source_label for t in pool.list_trees("external")} - existing_labels
 filled = 0
 for label in sorted(new_labels):
@@ -56,7 +63,9 @@ for label in sorted(new_labels):
     try:
         c = subprocess.run(
             ["git", "-C", f"/tmp/rea_harvest/{label}", "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         t.commit = c.stdout.strip()
     except Exception as exc:

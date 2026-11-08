@@ -21,15 +21,13 @@
   | hold | 随机入场 | 持有到结束 | 买入持有基准 |
 """
 
-import math
-import random
 import json
-from pathlib import Path
-from typing import Dict, List, Any, Tuple, Optional
-from datetime import datetime, timezone, timedelta
+import random
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
-
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
 BASE_DIR = Path(__file__).parent.parent.parent
 BACKTEST_DIR = BASE_DIR / "16-调控系统" / "artifacts" / "backtests"
@@ -45,6 +43,7 @@ class ExitAction(str, Enum):
 @dataclass
 class Bar:
     """K 线数据"""
+
     timestamp: float
     open: float
     high: float
@@ -56,6 +55,7 @@ class Bar:
 @dataclass
 class Position:
     """持仓状态"""
+
     symbol: str
     direction: str  # LONG / SHORT
     entry_price: float
@@ -71,6 +71,7 @@ class Position:
 @dataclass
 class TradeRecord:
     """交易记录"""
+
     symbol: str
     direction: str
     entry_price: float
@@ -85,6 +86,7 @@ class TradeRecord:
 @dataclass
 class BacktestResult:
     """回测结果"""
+
     strategy_name: str
     total_trades: int = 0
     winning_trades: int = 0
@@ -232,7 +234,7 @@ def _tech_exit_signal(position: Position, bars: List[Bar], bar_idx: int) -> Tupl
     if bar_idx < 20:
         return "HOLD", "预热期"
 
-    recent_bars = bars[:bar_idx + 1]
+    recent_bars = bars[: bar_idx + 1]
     closes = [b.close for b in recent_bars]
     current_price = bars[bar_idx].close
     rsi = calc_rsi(closes, 14)
@@ -290,7 +292,7 @@ def _macro_regime_estimate(bars: List[Bar], bar_idx: int) -> Dict[str, Any]:
             "regime": "RANGE_BOUND",
         }
 
-    recent = bars[max(0, bar_idx - 50):bar_idx + 1]
+    recent = bars[max(0, bar_idx - 50) : bar_idx + 1]
     closes = [b.close for b in recent]
 
     ma20 = sum(closes[-20:]) / 20
@@ -366,8 +368,8 @@ def _macro_tech_fused_exit(position: Position, bars: List[Bar], bar_idx: int) ->
     macro_is_short = macro_direction in ("SHORT", "REDUCE")
     macro_is_long = macro_direction in ("LONG", "RAISE_TP")
 
-    recent_bars = bars[:bar_idx + 1]
-    closes = [b.close for b in recent_bars]
+    recent_bars = bars[: bar_idx + 1]
+    closes = [b.close for b in recent_bars]  # noqa: F841
     current_price = bars[bar_idx].close
     entry_price = position.entry_price
 
@@ -381,16 +383,25 @@ def _macro_tech_fused_exit(position: Position, bars: List[Bar], bar_idx: int) ->
     macro_bullish_for_pos = (pos_is_long and macro_is_long) or (not pos_is_long and macro_is_short)
 
     if tech_close and macro_bearish_for_pos and macro_conf > 0.6:
-        return "CLOSE", f"[宏观+技术共振] 技术{tech_action}+宏观看空({macro_direction}, 置信{macro_conf:.0%})"
+        return (
+            "CLOSE",
+            f"[宏观+技术共振] 技术{tech_action}+宏观看空({macro_direction}, 置信{macro_conf:.0%})",
+        )
 
     if tech_action == "HOLD" and macro_bearish_for_pos and macro_conf > 0.7 and pnl_pct < 0:
-        return "REDUCE", f"[宏观预警] 宏观看空({macro_direction}, 置信{macro_conf:.0%})，亏损仓位建议减仓"
+        return (
+            "REDUCE",
+            f"[宏观预警] 宏观看空({macro_direction}, 置信{macro_conf:.0%})，亏损仓位建议减仓",
+        )
 
     if tech_close and macro_bullish_for_pos and macro_conf > 0.6:
         return "HOLD", f"[宏观对冲] 技术{tech_action}但宏观看多({macro_direction})，降级持有观察"
 
     if macro_bullish_for_pos and macro_conf > 0.7 and tech_action == "HOLD" and pnl_pct > 0:
-        return "RAISE_TP", f"[宏观增强] 宏观确认趋势({macro_direction}, 置信{macro_conf:.0%})，建议提高止盈"
+        return (
+            "RAISE_TP",
+            f"[宏观增强] 宏观确认趋势({macro_direction}, 置信{macro_conf:.0%})，建议提高止盈",
+        )
 
     return tech_action, f"[技术主导] {tech_reason}"
 
@@ -443,7 +454,7 @@ def run_backtest(
     elif strategy == "macro_enhanced" or use_macro:
         exit_fn = _macro_tech_fused_exit
     elif strategy == "hold":
-        exit_fn = lambda pos, bars, idx: ("HOLD", "持有策略")
+        exit_fn = lambda pos, bars, idx: ("HOLD", "持有策略")  # noqa: E731
 
     for i in range(len(bars)):
         bar = bars[i]
@@ -552,25 +563,33 @@ def run_backtest(
         result.losing_trades = len(losses)
         result.win_rate = round(result.winning_trades / result.total_trades, 4)
         result.avg_win_pct = round(sum(t.pnl_pct for t in wins) / len(wins), 2) if wins else 0
-        result.avg_loss_pct = round(sum(t.pnl_pct for t in losses) / len(losses), 2) if losses else 0
-        result.profit_factor = round(
-            abs(sum(t.pnl_pct for t in wins) / sum(t.pnl_pct for t in losses)), 2
-        ) if losses and sum(t.pnl_pct for t in losses) != 0 else float('inf')
+        result.avg_loss_pct = (
+            round(sum(t.pnl_pct for t in losses) / len(losses), 2) if losses else 0
+        )
+        result.profit_factor = (
+            round(abs(sum(t.pnl_pct for t in wins) / sum(t.pnl_pct for t in losses)), 2)
+            if losses and sum(t.pnl_pct for t in losses) != 0
+            else float("inf")
+        )
         result.total_return_pct = round((result.equity_curve[-1] - 10000) / 10000 * 100, 2)
         result.max_drawdown_pct = round(max_drawdown, 2)
-        result.avg_bars_held = round(sum(t.bars_held for t in result.trades) / result.total_trades, 1)
+        result.avg_bars_held = round(
+            sum(t.bars_held for t in result.trades) / result.total_trades, 1
+        )
 
         if len(result.equity_curve) > 1:
             returns = []
             for j in range(1, len(result.equity_curve)):
                 if result.equity_curve[j - 1] > 0:
-                    ret = (result.equity_curve[j] - result.equity_curve[j - 1]) / result.equity_curve[j - 1]
+                    ret = (
+                        result.equity_curve[j] - result.equity_curve[j - 1]
+                    ) / result.equity_curve[j - 1]
                     returns.append(ret)
             if returns and len(returns) > 1:
                 avg_ret = sum(returns) / len(returns)
                 std_ret = (sum((r - avg_ret) ** 2 for r in returns) / len(returns)) ** 0.5
                 if std_ret > 0:
-                    result.sharpe_ratio = round((avg_ret / std_ret) * (24 ** 0.5), 2)
+                    result.sharpe_ratio = round((avg_ret / std_ret) * (24**0.5), 2)
 
     return result
 
@@ -639,10 +658,12 @@ def generate_backtest_report(results: Dict[str, BacktestResult], bars: List[Bar]
             b_str = f"{b_val:.1%}"
             m_str = f"{m_val:.1%}"
             h_str = f"{h_val:.1%}"
-        elif key == "profit_factor" and (b_val == float('inf') or m_val == float('inf') or h_val == float('inf')):
-            b_str = "∞" if b_val == float('inf') else f"{b_val:.2f}"
-            m_str = "∞" if m_val == float('inf') else f"{m_val:.2f}"
-            h_str = "∞" if h_val == float('inf') else f"{h_val:.2f}"
+        elif key == "profit_factor" and (
+            b_val == float("inf") or m_val == float("inf") or h_val == float("inf")
+        ):
+            b_str = "∞" if b_val == float("inf") else f"{b_val:.2f}"
+            m_str = "∞" if m_val == float("inf") else f"{m_val:.2f}"
+            h_str = "∞" if h_val == float("inf") else f"{h_val:.2f}"
         else:
             b_str = f"{b_val}{unit}"
             m_str = f"{m_val}{unit}"
@@ -708,7 +729,7 @@ def save_backtest_results(results: Dict[str, BacktestResult], bars: List[Bar]) -
             "win_rate": result.win_rate,
             "avg_win_pct": result.avg_win_pct,
             "avg_loss_pct": result.avg_loss_pct,
-            "profit_factor": result.profit_factor if result.profit_factor != float('inf') else 999,
+            "profit_factor": result.profit_factor if result.profit_factor != float("inf") else 999,
             "total_return_pct": result.total_return_pct,
             "max_drawdown_pct": result.max_drawdown_pct,
             "sharpe_ratio": result.sharpe_ratio,
@@ -766,6 +787,7 @@ if __name__ == "__main__":
 # 决策验证 & 进化反馈
 # ==========================================
 
+
 def validate_evolution_adjustment(
     strategy_id: str,
     before_params: Dict[str, float],
@@ -774,9 +796,9 @@ def validate_evolution_adjustment(
     leverage: float = 1.0,
 ) -> Dict[str, Any]:
     """验证进化参数调优效果
-    
+
     对比调优前后的回测表现，决定是否采纳
-    
+
     Returns:
         {
             "should_adopt": bool,
@@ -788,36 +810,35 @@ def validate_evolution_adjustment(
     """
     if bars is None:
         bars = generate_simulated_bars(
-            start_price=60000, num_bars=300, volatility_pct=2.0, seed=42,
+            start_price=60000,
+            num_bars=300,
+            volatility_pct=2.0,
+            seed=42,
         )
-    
+
     # 用调优前参数回测
     before_results = _run_backtest_with_params(bars, leverage, before_params)
     # 用调优后参数回测
     after_results = _run_backtest_with_params(bars, leverage, after_params)
-    
+
     before_return = before_results.total_return_pct
     after_return = after_results.total_return_pct
     improvement = after_return - before_return
-    
+
     before_dd = before_results.max_drawdown_pct
     after_dd = after_results.max_drawdown_pct
     dd_change = after_dd - before_dd
-    
+
     before_wr = before_results.win_rate
     after_wr = after_results.win_rate
     wr_change = after_wr - before_wr
-    
+
     # 采纳标准：
     # 1. 收益改善 > 0.5%
     # 2. 最大回撤不恶化（增加 < 2%）
     # 3. 胜率不大幅下降（下降 < 5%）
-    should_adopt = (
-        improvement > 0.5 and
-        dd_change < 2.0 and
-        wr_change > -0.05
-    )
-    
+    should_adopt = improvement > 0.5 and dd_change < 2.0 and wr_change > -0.05
+
     reason_parts = []
     if improvement > 0.5:
         reason_parts.append(f"收益改善 {improvement:+.2f}%")
@@ -825,17 +846,17 @@ def validate_evolution_adjustment(
         reason_parts.append(f"收益微增 {improvement:+.2f}%（不满足0.5%门槛）")
     else:
         reason_parts.append(f"收益下降 {improvement:+.2f}%")
-    
+
     if dd_change < 0:
         reason_parts.append(f"回撤改善 {dd_change:+.2f}%")
     elif dd_change > 2:
         reason_parts.append(f"回撤恶化 {dd_change:+.2f}%")
-    
+
     if wr_change > 0:
         reason_parts.append(f"胜率提升 {wr_change:+.1%}")
     elif wr_change < -0.05:
         reason_parts.append(f"胜率下降 {wr_change:+.1%}")
-    
+
     return {
         "should_adopt": should_adopt,
         "improvement": round(improvement, 2),
@@ -865,17 +886,17 @@ def _run_backtest_with_params(
     params: Dict[str, float],
 ) -> BacktestResult:
     """用指定参数运行回测（用于验证参数调优效果）
-    
+
     参数影响：
     - confidence_threshold_*: 影响离场决策的置信度门槛
     - technical/macro_signal_weight: 影响融合权重
     """
     close_threshold = params.get("confidence_threshold_close", 0.70)
     reduce_threshold = params.get("confidence_threshold_reduce", 0.60)
-    observe_threshold = params.get("confidence_threshold_observe", 0.40)
+    observe_threshold = params.get("confidence_threshold_observe", 0.40)  # noqa: F841
     tech_weight = params.get("technical_signal_weight", 0.5)
     macro_weight = params.get("macro_signal_weight", 0.5)
-    
+
     # 使用调优后的参数运行宏观+技术融合回测
     result = run_backtest(
         bars=bars,
@@ -887,7 +908,7 @@ def _run_backtest_with_params(
         close_threshold=close_threshold,
         reduce_threshold=reduce_threshold,
     )
-    
+
     return result
 
 
@@ -896,14 +917,14 @@ def run_evolution_cycle(
     min_samples: int = 5,
 ) -> Dict[str, Any]:
     """执行一次完整的进化周期
-    
+
     流程：
     1. 分析各策略准确性
     2. 提出参数调优建议
     3. 回测验证调优效果
     4. 采纳通过验证的调优
     5. 返回进化报告
-    
+
     Returns:
         进化周期报告
     """
@@ -911,20 +932,27 @@ def run_evolution_cycle(
         from evolution_loop import get_evolution_loop
     except ImportError:
         from .evolution_loop import get_evolution_loop
-    
+
     loop = get_evolution_loop()
-    
+
     if strategy_ids is None:
         strategy_ids = list(loop.params.keys()) or [
-            "v15_martin", "screen_trend", "yijing_bcrm",
-            "agent_a", "agent_b", "agent_c",
+            "v15_martin",
+            "screen_trend",
+            "yijing_bcrm",
+            "agent_a",
+            "agent_b",
+            "agent_c",
         ]
-    
+
     # 生成固定的回测数据用于验证
     bars = generate_simulated_bars(
-        start_price=60000, num_bars=300, volatility_pct=2.0, seed=42,
+        start_price=60000,
+        num_bars=300,
+        volatility_pct=2.0,
+        seed=42,
     )
-    
+
     report = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "strategies_checked": len(strategy_ids),
@@ -933,53 +961,62 @@ def run_evolution_cycle(
         "adjustments_adopted": 0,
         "details": [],
     }
-    
+
     for sid in strategy_ids:
         # 1. 提出调优建议
         adjustment = loop.propose_adjustment(sid, min_samples)
         if adjustment is None:
-            report["details"].append({
-                "strategy_id": sid,
-                "status": "SKIP",
-                "reason": "样本不足或无需调整",
-            })
+            report["details"].append(
+                {
+                    "strategy_id": sid,
+                    "status": "SKIP",
+                    "reason": "样本不足或无需调整",
+                }
+            )
             continue
-        
+
         report["adjustments_proposed"] += 1
-        
+
         # 2. 回测验证
         validation = validate_evolution_adjustment(
-            sid, adjustment.before, adjustment.after, bars,
+            sid,
+            adjustment.before,
+            adjustment.after,
+            bars,
         )
-        
+
         if validation["should_adopt"]:
             report["adjustments_validated"] += 1
             # 3. 采纳
             loop.adopt_adjustment(adjustment, backtest_validated=True)
             report["adjustments_adopted"] += 1
-            report["details"].append({
-                "strategy_id": sid,
-                "status": "ADOPTED",
-                "trigger": adjustment.trigger,
-                "before": adjustment.before,
-                "after": adjustment.after,
-                "validation": validation,
-            })
+            report["details"].append(
+                {
+                    "strategy_id": sid,
+                    "status": "ADOPTED",
+                    "trigger": adjustment.trigger,
+                    "before": adjustment.before,
+                    "after": adjustment.after,
+                    "validation": validation,
+                }
+            )
         else:
-            report["details"].append({
-                "strategy_id": sid,
-                "status": "REJECTED",
-                "trigger": adjustment.trigger,
-                "reason": validation["reason"],
-                "before": adjustment.before,
-                "after": adjustment.after,
-                "validation": validation,
-            })
-    
+            report["details"].append(
+                {
+                    "strategy_id": sid,
+                    "status": "REJECTED",
+                    "trigger": adjustment.trigger,
+                    "reason": validation["reason"],
+                    "before": adjustment.before,
+                    "after": adjustment.after,
+                    "validation": validation,
+                }
+            )
+
     # 生成进化报告
     summary = loop.get_evolution_summary()
     report["evolution_summary"] = summary
-    
+
     return report
 
 
@@ -994,17 +1031,17 @@ def generate_evolution_report(cycle_report: Dict[str, Any]) -> str:
     lines.append(f"**验证通过**: {cycle_report.get('adjustments_validated', 0)}")
     lines.append(f"**采纳调优**: {cycle_report.get('adjustments_adopted', 0)}")
     lines.append("")
-    
+
     lines.append("## 各策略调优详情")
     lines.append("")
     lines.append("| 策略 | 状态 | 触发原因 | 验证结果 |")
     lines.append("|------|------|---------|---------|")
-    
+
     for detail in cycle_report.get("details", []):
         sid = detail.get("strategy_id", "")
         status = detail.get("status", "")
         trigger = detail.get("trigger", detail.get("reason", ""))[:50]
-        
+
         if status == "ADOPTED":
             val = detail.get("validation", {})
             result_str = f"收益{val.get('improvement', 0):+.2f}%, 回测通过"
@@ -1012,11 +1049,11 @@ def generate_evolution_report(cycle_report: Dict[str, Any]) -> str:
             result_str = detail.get("reason", "回测未通过")[:40]
         else:
             result_str = "—"
-        
+
         lines.append(f"| {sid} | {status} | {trigger} | {result_str} |")
-    
+
     lines.append("")
-    
+
     summary = cycle_report.get("evolution_summary", {})
     if summary:
         lines.append("## 进化系统概览")
@@ -1026,12 +1063,12 @@ def generate_evolution_report(cycle_report: Dict[str, Any]) -> str:
         lines.append(f"- **整体准确率**: {summary.get('overall_accuracy', 0):.1%}")
         lines.append(f"- **近期趋势**: {summary.get('recent_trend', 'N/A')}")
         lines.append("")
-        
+
         lines.append("### 各策略状态")
         lines.append("")
         lines.append("| 策略 | 总决策 | 正确 | 错误 | 待评估 | 准确率 | 调优次数 | 当前平仓门槛 |")
         lines.append("|------|--------|------|------|--------|--------|---------|------------|")
-        
+
         by_strategy = summary.get("by_strategy", {})
         for sid, stats in sorted(by_strategy.items()):
             thresholds = stats.get("current_thresholds", {})
@@ -1041,9 +1078,9 @@ def generate_evolution_report(cycle_report: Dict[str, Any]) -> str:
                 f"{stats.get('accuracy', 0):.1%} | {stats.get('adjustments', 0)} | "
                 f"{thresholds.get('close', 0):.0%} |"
             )
-        
+
         lines.append("")
-        
+
         recommendations = summary.get("recommendations", [])
         if recommendations:
             lines.append("### 系统建议")
@@ -1051,7 +1088,7 @@ def generate_evolution_report(cycle_report: Dict[str, Any]) -> str:
             for rec in recommendations:
                 lines.append(f"- {rec}")
             lines.append("")
-    
+
     lines.append("## 闭环说明")
     lines.append("")
     lines.append("```")
@@ -1059,5 +1096,5 @@ def generate_evolution_report(cycle_report: Dict[str, Any]) -> str:
     lines.append("    ↑                                                          |")
     lines.append("    └────────────────── 反馈到下次决策 ←────────────────────────┘")
     lines.append("```")
-    
+
     return "\n".join(lines)

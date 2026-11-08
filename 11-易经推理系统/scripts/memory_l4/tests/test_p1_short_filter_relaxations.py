@@ -27,6 +27,7 @@ test_p1_short_filter_relaxations.py — 三类做空过滤优化的 TDD 测试�
     cd 11-易经推理系统
     python -m pytest scripts/memory_l4/tests/test_p1_short_filter_relaxations.py -v -s
 """
+
 import sys
 import unittest
 from pathlib import Path
@@ -74,7 +75,7 @@ def _build_sma_closes(sma20_target, sma50_target, sma200_target, n=200):
             closes[i] += d20
         # 修正 closes[20:50] 使 sum(0:50)/50 = sma50_target
         cur50 = sum(closes[:50]) / 50
-        d50 = sma50_target - cur50
+        d50 = sma50_target - cur50  # noqa: F841
         # 只调整 20:50 避免破坏 0:20
         s20_50 = sum(closes[20:50])
         target_s20_50 = sma50_target * 50 - sum(closes[:20])
@@ -83,7 +84,7 @@ def _build_sma_closes(sma20_target, sma50_target, sma200_target, n=200):
             closes[i] *= factor
         # 修正 closes[50:200] 使 sum(0:200)/200 = sma200_target
         cur200 = sum(closes[:200]) / 200
-        d200 = sma200_target - cur200
+        d200 = sma200_target - cur200  # noqa: F841
         s50_200 = sum(closes[50:200])
         target_s50_200 = sma200_target * 200 - sum(closes[:50])
         factor = target_s50_200 / s50_200 if s50_200 else 1.0
@@ -95,6 +96,7 @@ def _build_sma_closes(sma20_target, sma50_target, sma200_target, n=200):
 # =============================================================
 # 测试项 A：BTC Step2 弱共振分级
 # =============================================================
+
 
 class TestWeakResonanceGrading(unittest.TestCase):
     """RED → GREEN: Step2 短周期共振支持"弱共振"（多头排列反转前夜）"""
@@ -132,7 +134,7 @@ class TestWeakResonanceGrading(unittest.TestCase):
         closes = _build_sma_closes(97.0, 98.0, 100.0, 200)
         step1_ok = (True, "[SHORT_ALLOWED] BTC做空允许 ... score=WEAK valid_breakdown ...")
         _, res = self._run_short_filter("BTC", closes, step1_ok, confidence=0.80)
-        allow, reason, mult = res[0], res[1], res[2] if len(res) >= 3 else 0.0
+        allow, reason, mult = res[0], res[1], res[2] if len(res) >= 3 else 0.0  # noqa: F841
         self.assertTrue(allow, f"严格空头排列应放行，但被拦截: {reason}")
         self.assertIn("共振", reason, "reason应提及共振成功")
         # Step1=WEAK + 共振 → 升级为 NORMAL，所以 conf_multiplier 应该是 SHORT_CONF_MULTI_MA_NORMAL=1.0
@@ -146,8 +148,10 @@ class TestWeakResonanceGrading(unittest.TestCase):
         closes = _build_sma_closes(77500.0, 76000.0, 66000.0, 200)
         step1_ok = (True, "[SHORT_ALLOWED] BTC做空允许 ... score=WEAK valid_breakdown ...")
         _, res = self._run_short_filter("BTC", closes, step1_ok, confidence=0.88)
-        allow, reason, mult = res[0], res[1], res[2] if len(res) >= 3 else 0.0
-        self.assertTrue(allow, f"多头反转前夜(差值1.97%<5%)+高置信0.88应弱共振放行，但被拦截: {reason}")
+        allow, reason, mult = res[0], res[1], res[2] if len(res) >= 3 else 0.0  # noqa: F841
+        self.assertTrue(
+            allow, f"多头反转前夜(差值1.97%<5%)+高置信0.88应弱共振放行，但被拦截: {reason}"
+        )
         self.assertIn("弱共振", reason, "reason应提及弱共振放行")
         self.assertIn("score=WEAK", reason, "弱共振不应升级评分，保持WEAK级")
 
@@ -191,8 +195,10 @@ class TestWeakResonanceGrading(unittest.TestCase):
         closes = _build_sma_closes(sma20, sma50, 66000.0, 200)
         step1_ok = (True, "[SHORT_ALLOWED] BTC做空允许 ... score=STRONG regime=TREND_BEAR")
         _, res = self._run_short_filter("BTC", closes, step1_ok, confidence=0.90)
-        allow, reason, mult = res[0], res[1], res[2] if len(res) >= 3 else 0.0
-        self.assertTrue(allow, f"BTC真实差值4.5%<5%+高置信0.90应通过弱共振放行(WEAK级小仓)，但拦截: {reason}")
+        allow, reason, mult = res[0], res[1], res[2] if len(res) >= 3 else 0.0  # noqa: F841
+        self.assertTrue(
+            allow, f"BTC真实差值4.5%<5%+高置信0.90应通过弱共振放行(WEAK级小仓)，但拦截: {reason}"
+        )
         self.assertIn("弱共振", reason)
         self.assertIn("score=WEAK", reason, "弱共振放行不升级评分，保持WEAK")
         self.assertIn("差值4.50%<5%", reason, "reason应标注新阈值5%")
@@ -201,6 +207,7 @@ class TestWeakResonanceGrading(unittest.TestCase):
 # =============================================================
 # 测试项 B：美股代币条件B放宽
 # =============================================================
+
 
 class TestUSIndexRelaxedConditionB(unittest.TestCase):
     """RED → GREEN: 美股大盘条件B增加 F_avg<-0.02 + 两指数WEAK评分 放行路径"""
@@ -212,6 +219,7 @@ class TestUSIndexRelaxedConditionB(unittest.TestCase):
 
         # yf 在函数内局部 import：需要 patch yfinance.download 模块级
         import pandas as pd
+
         fake_df = pd.DataFrame({"Close": [100.0 + i * 0.1 for i in range(300)]})
 
         def fake_calc(self_or_closes, *args, **kwargs):
@@ -225,10 +233,18 @@ class TestUSIndexRelaxedConditionB(unittest.TestCase):
 
     def test_B1_Favg_below_minus02_both_WEAK_allows(self):
         """条件B放宽：F_avg=-0.064 < -0.02，两指数score==WEAK(无3日确认)→ allow=True WEAK级"""
-        ixic_r = {"bearish_score": "WEAK", "F_net": -0.059, "valid_breakdown": False,
-                  "in_long_term_window": False}
-        gspc_r = {"bearish_score": "WEAK", "F_net": -0.069, "valid_breakdown": False,
-                  "in_long_term_window": False}
+        ixic_r = {
+            "bearish_score": "WEAK",
+            "F_net": -0.059,
+            "valid_breakdown": False,
+            "in_long_term_window": False,
+        }
+        gspc_r = {
+            "bearish_score": "WEAK",
+            "F_net": -0.069,
+            "valid_breakdown": False,
+            "in_long_term_window": False,
+        }
         allow, reason = self._run_us_index(ixic_r, gspc_r)
         self.assertTrue(allow, f"F_avg<-0.02 + 两指数WEAK评分应放行，但拦截: {reason}")
         self.assertIn("SHORT_ALLOWED", reason)
@@ -236,10 +252,18 @@ class TestUSIndexRelaxedConditionB(unittest.TestCase):
 
     def test_B2_Favg_below_minus02_one_WEAK_one_NONE_blocks(self):
         """条件B放宽必要条件：两指数都需至少WEAK，一个NONE一个WEAK仍拦截"""
-        ixic_r = {"bearish_score": "NONE", "F_net": -0.059, "valid_breakdown": False,
-                  "in_long_term_window": False}
-        gspc_r = {"bearish_score": "WEAK", "F_net": -0.069, "valid_breakdown": False,
-                  "in_long_term_window": False}
+        ixic_r = {
+            "bearish_score": "NONE",
+            "F_net": -0.059,
+            "valid_breakdown": False,
+            "in_long_term_window": False,
+        }
+        gspc_r = {
+            "bearish_score": "WEAK",
+            "F_net": -0.069,
+            "valid_breakdown": False,
+            "in_long_term_window": False,
+        }
         allow, reason = self._run_us_index(ixic_r, gspc_r)
         self.assertFalse(allow, f"F_avg<-0.02 但IXIC=NONE不满足双WEAK，应拦截: {reason}")
         self.assertIn("无看空确认", reason)
@@ -247,19 +271,35 @@ class TestUSIndexRelaxedConditionB(unittest.TestCase):
     def test_B3_Favg_ge_minus02_both_WEAK_still_blocks(self):
         """F_avg≥-0.02（力度不足）即便两WEAK也不放行"""
         # F_avg = (-0.010 + -0.015)/2 = -0.0125 ≥ -0.02
-        ixic_r = {"bearish_score": "WEAK", "F_net": -0.010, "valid_breakdown": False,
-                  "in_long_term_window": False}
-        gspc_r = {"bearish_score": "WEAK", "F_net": -0.015, "valid_breakdown": False,
-                  "in_long_term_window": False}
+        ixic_r = {
+            "bearish_score": "WEAK",
+            "F_net": -0.010,
+            "valid_breakdown": False,
+            "in_long_term_window": False,
+        }
+        gspc_r = {
+            "bearish_score": "WEAK",
+            "F_net": -0.015,
+            "valid_breakdown": False,
+            "in_long_term_window": False,
+        }
         allow, reason = self._run_us_index(ixic_r, gspc_r)
         self.assertFalse(allow, f"F_avg=-0.0125≥-0.02力度不足，即便双WEAK也应拦截: {reason}")
 
     def test_B4_original_STRONG_path_unaffected(self):
         """原有 any_strict 逻辑（STRONG+valid_bd）必须仍然工作（非回归）"""
-        ixic_r = {"bearish_score": "STRONG", "F_net": -0.030, "valid_breakdown": True,
-                  "in_long_term_window": False}
-        gspc_r = {"bearish_score": "NONE", "F_net": +0.010, "valid_breakdown": False,
-                  "in_long_term_window": False}
+        ixic_r = {
+            "bearish_score": "STRONG",
+            "F_net": -0.030,
+            "valid_breakdown": True,
+            "in_long_term_window": False,
+        }
+        gspc_r = {
+            "bearish_score": "NONE",
+            "F_net": +0.010,
+            "valid_breakdown": False,
+            "in_long_term_window": False,
+        }
         allow, reason = self._run_us_index(ixic_r, gspc_r)
         self.assertTrue(allow, f"原路径(IXIC STRONG+valid_bd)必须仍然放行: {reason}")
         self.assertIn("SHORT_ALLOWED", reason)
@@ -268,6 +308,7 @@ class TestUSIndexRelaxedConditionB(unittest.TestCase):
 # =============================================================
 # 测试项 C：加密美股分类路由
 # =============================================================
+
 
 class TestCryptoUSStockRouting(unittest.TestCase):
     """RED → GREEN: COIN/MSTR/CRCL 路由到 BTC 趋势确认而非美股大盘"""
@@ -287,16 +328,19 @@ class TestCryptoUSStockRouting(unittest.TestCase):
 
         markers = {
             "btc": "[SHORT_ALLOWED] BTC_MARKER score=WEAK",
-            "us":  "[SHORT_ALLOWED] USIDX_MARKER score=WEAK",
+            "us": "[SHORT_ALLOWED] USIDX_MARKER score=WEAK",
             "slf": "[SHORT_ALLOWED] SELF_MARKER score=WEAK",
         }
 
-        with patch.object(PollingTrader, "_check_btc_trend",
-                          return_value=(True, markers["btc"])) as mock_btc, \
-             patch.object(PollingTrader, "_check_us_index_trend",
-                          return_value=(True, markers["us"])) as mock_us, \
-             patch.object(PollingTrader, "_check_self_trend",
-                          return_value=(True, markers["slf"])):
+        with (
+            patch.object(
+                PollingTrader, "_check_btc_trend", return_value=(True, markers["btc"])
+            ) as mock_btc,
+            patch.object(
+                PollingTrader, "_check_us_index_trend", return_value=(True, markers["us"])
+            ) as mock_us,
+            patch.object(PollingTrader, "_check_self_trend", return_value=(True, markers["slf"])),
+        ):
             if direction_filter == "short":
                 allow, reason, *_ = t._check_short_trend_filter(coin, inference)
             else:
@@ -306,7 +350,7 @@ class TestCryptoUSStockRouting(unittest.TestCase):
             return "btc_route"
         elif markers["us"] in reason or mock_us.called:
             return "us_index_route"
-        elif markers["slf"] in reason or mock_slf.called:
+        elif markers["slf"] in reason or mock_slf.called:  # noqa: F821
             return "self_route"
         return "unknown"
 
@@ -314,40 +358,57 @@ class TestCryptoUSStockRouting(unittest.TestCase):
         """C1: COIN/MSTR/CRCL → 加密美股，跟随BTC趋势"""
         for coin in ("COIN", "MSTR", "CRCL"):
             route = self._detect_route(coin)
-            self.assertEqual(route, "btc_route",
-                             f"{coin} 应路由到 BTC 趋势确认(跟随加密)，实际: {route}")
+            self.assertEqual(
+                route, "btc_route", f"{coin} 应路由到 BTC 趋势确认(跟随加密)，实际: {route}"
+            )
 
     def test_C2_AAPL_AMZN_NVDA_follow_US_index(self):
         """C2: 纯美股科技股 → 跟随美股大盘"""
-        for coin in ("AAPL", "AMZN", "NVDA", "TSLA", "META", "NFLX", "GOOGL", "MSFT",
-                     "MU", "SKHYNIX", "SNDK", "SPCX", "BABA", "PLTR", "BMNR"):
+        for coin in (
+            "AAPL",
+            "AMZN",
+            "NVDA",
+            "TSLA",
+            "META",
+            "NFLX",
+            "GOOGL",
+            "MSFT",
+            "MU",
+            "SKHYNIX",
+            "SNDK",
+            "SPCX",
+            "BABA",
+            "PLTR",
+            "BMNR",
+        ):
             route = self._detect_route(coin)
-            self.assertEqual(route, "us_index_route",
-                             f"{coin} 应路由到美股大盘趋势，实际: {route}")
+            self.assertEqual(route, "us_index_route", f"{coin} 应路由到美股大盘趋势，实际: {route}")
 
     def test_C3_BTC_SOL_crypto_btc_route(self):
         """C3: 纯加密币种 → BTC路由"""
         for coin in ("BTC", "SOL", "UNI", "OKB", "HYPE", "PUMP"):
             route = self._detect_route(coin)
-            self.assertEqual(route, "btc_route",
-                             f"{coin} 加密组应路由BTC趋势，实际: {route}")
+            self.assertEqual(route, "btc_route", f"{coin} 加密组应路由BTC趋势，实际: {route}")
 
     def test_C4_XAU_gold_self_route(self):
         """C4: 黄金/XAU 非加密非美股 → 自身趋势（self_route）"""
         route = self._detect_route("XAU")
-        self.assertEqual(route, "self_route",
-                         f"XAU 非加密非美股，应路由 self 趋势检查，实际: {route}")
+        self.assertEqual(
+            route, "self_route", f"XAU 非加密非美股，应路由 self 趋势检查，实际: {route}"
+        )
 
     def test_C5_long_filter_routing_symmetry(self):
         """C5: 做多方向（长过滤）路由对称：加密美股跟随BTC，纯美股跟随大盘"""
         # COIN → BTC route（对称）
         route_coin = self._detect_route("COIN", direction_filter="long")
-        self.assertEqual(route_coin, "btc_route",
-                         f"做多方向COIN也应跟随BTC路由，实际: {route_coin}")
+        self.assertEqual(
+            route_coin, "btc_route", f"做多方向COIN也应跟随BTC路由，实际: {route_coin}"
+        )
         # AAPL → US index（对称）
         route_aapl = self._detect_route("AAPL", direction_filter="long")
-        self.assertEqual(route_aapl, "us_index_route",
-                         f"做多方向AAPL也应跟随美股大盘路由，实际: {route_aapl}")
+        self.assertEqual(
+            route_aapl, "us_index_route", f"做多方向AAPL也应跟随美股大盘路由，实际: {route_aapl}"
+        )
 
 
 if __name__ == "__main__":

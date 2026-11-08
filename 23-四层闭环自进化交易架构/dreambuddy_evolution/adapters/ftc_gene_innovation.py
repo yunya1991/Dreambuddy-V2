@@ -14,14 +14,14 @@ ftc_gene_innovation — L2 基因创新引擎（基因突变机制）
 
 FAIL-OPEN: 异常检测失败时返回空列表，不抛异常。
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ L2_MIN_ESS = 0.5
 @dataclass
 class GeneCandidate:
     """新基因候选"""
+
     gene_id: str
     gene_type: str  # "condition" or "action"
     category: str
@@ -108,8 +109,9 @@ class GeneInnovationEngine:
         self._candidates: dict[str, GeneCandidate] = {}
         self._validated_genes: set[str] = set()
         # 版本控制 + 审核门禁
-        from .gene_version_manager import GeneVersionManager
         from .gene_audit_gate import GeneAuditGate
+        from .gene_version_manager import GeneVersionManager
+
         self._version_mgr = GeneVersionManager(self._gene_root / "strategy_genes")
         self._audit_gate = GeneAuditGate(self._gene_root)
 
@@ -190,8 +192,8 @@ class GeneInnovationEngine:
         if not alignments:
             return []
         try:
-            from dreambuddy_evolution.adapters.knowledge_anchors import get_all_anchors
             from dreambuddy_evolution.adapters.ftc_similarity import get_track_by_similarity
+            from dreambuddy_evolution.adapters.knowledge_anchors import get_all_anchors
         except ImportError:
             return []
 
@@ -249,6 +251,7 @@ class GeneInnovationEngine:
             conditions_dir = self._gene_root / "strategy_genes" / "conditions"
             if conditions_dir.exists():
                 import json
+
                 for f in conditions_dir.glob("*.json"):
                     try:
                         data = json.loads(f.read_text(encoding="utf-8"))
@@ -347,9 +350,13 @@ class GeneInnovationEngine:
         """
         return n_samples >= L2_MIN_SAMPLES and ess >= L2_MIN_ESS
 
-    def write_gene_to_library(self, candidate: GeneCandidate,
-                              n_samples: int = 0, ess: float = 0.0,
-                              baseline_ess: float = 0.0) -> bool:
+    def write_gene_to_library(
+        self,
+        candidate: GeneCandidate,
+        n_samples: int = 0,
+        ess: float = 0.0,
+        baseline_ess: float = 0.0,
+    ) -> bool:
         """
         将验证通过的基因写入 gene_data/strategy_genes/conditions/
 
@@ -394,6 +401,7 @@ class GeneInnovationEngine:
         # 受 enable_gene_audit_gate 开关控制
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             _audit_enabled = get_switch("enable_gene_audit_gate", True)
         except Exception:
             _audit_enabled = True
@@ -406,6 +414,7 @@ class GeneInnovationEngine:
         # 写入前自动快照（版本控制）— 受 enable_gene_version_snapshot 开关控制
         try:
             from dreambuddy_evolution.agi_config import get_switch
+
             _snapshot_enabled = get_switch("enable_gene_version_snapshot", True)
         except Exception:
             _snapshot_enabled = True
@@ -413,7 +422,9 @@ class GeneInnovationEngine:
             self._version_mgr.snapshot(trigger_source=f"gene_innovation:{candidate.gene_id}")
 
         try:
-            out_path.write_text(json.dumps(gene_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            out_path.write_text(
+                json.dumps(gene_data, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
             self._validated_genes.add(candidate.gene_id)
             logger.info(f"[L2-Gene] 新基因写入: {candidate.gene_id}")
             return True

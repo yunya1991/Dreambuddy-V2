@@ -819,6 +819,33 @@ class SignalAdapter:
         }
 
     @staticmethod
+    def from_50_signal(signal: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """FinalDecisionSignal v1.1（source=50-nn）→ 统一结构（字段缺失返回 None）。"""
+        if not isinstance(signal, dict):
+            return None
+        if str(signal.get("source") or "") != "50-nn":
+            return None
+        required = ("signal_id", "source", "ts", "symbol", "direction", "confidence")
+        if any(k not in signal for k in required):
+            return None
+        direction = str(signal.get("direction") or "neutral").lower()
+        if direction not in ("long", "short", "neutral"):
+            return None
+        return {
+            "signal_id": str(signal.get("signal_id")),
+            "source": "50-nn",
+            "symbol": _to_inst_id(str(signal.get("symbol") or "")),
+            "direction": direction,
+            "confidence": float(signal.get("confidence") or 0.0),
+            "risk_exposure_hint": float(signal.get("risk_exposure_hint") or 0.0),
+            "ts": str(signal.get("ts") or ""),
+            "expires_at": str(signal.get("expires_at") or ""),
+            "shadow": bool(signal.get("shadow", False))
+            or str(signal.get("mode") or "") == "shadow",
+            "raw": signal,
+        }
+
+    @staticmethod
     def read_source(name: str) -> Dict[str, Any]:
         """读取单个信号源。FAIL-OPEN：任何异常返回空列表 + error。"""
         path = _SIGNAL_SOURCES.get(name)
@@ -1356,7 +1383,7 @@ def _handle_ingest_signal(args: Dict[str, Any]) -> str:
 
     参数：
       signal: dict（42 域 SignalSchema 或任意含 symbol/direction/confidence 的 dict）
-      source: "inline"（默认）| "23" | "42"（从对应源取最新一条）
+      source: "inline"（默认）| "23" | "42" | "50"（50-nn 最终决策信号）
       size: 显式覆盖定容
       paper_execute: false 时只做风控+定容，不下单
     """
@@ -1380,7 +1407,9 @@ def _handle_ingest_signal(args: Dict[str, Any]) -> str:
         norm = raw_sig  # read_source 已返回归一化结构
     else:
         raw_sig = args.get("signal") or {}
-        if source == "42" or ("signal_id" in raw_sig and "source" in raw_sig):
+        if source == "50" or source == "50-nn" or str(raw_sig.get("source") or "") == "50-nn":
+            norm = _signal_adapter.from_50_signal(raw_sig)
+        elif source == "42" or ("signal_id" in raw_sig and "source" in raw_sig):
             norm = _signal_adapter.from_42_signal(raw_sig)
         else:
             # inline 宽松模式：用 42 schema 校验，失败则按简化 dict 兜底
@@ -1787,9 +1816,9 @@ def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
                     "properties": {
                         "source": {
                             "type": "string",
-                            "enum": ["inline", "23", "42"],
+                            "enum": ["inline", "23", "42", "50"],
                             "default": "inline",
-                            "description": "inline=use signal arg; 23/42=read latest from that source",
+                            "description": "inline=use signal arg; 23/42=read latest from that source; 50=50-nn FinalDecisionSignal v1.1",
                         },
                         "signal": {
                             "type": "object",

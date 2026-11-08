@@ -11,6 +11,7 @@
 - get_sink() 按 DATA_CENTER_BACKEND 环境变量切换后端（postgres|sqlite），
   默认 postgres（迁移完成后），回滚设 DATA_CENTER_BACKEND=sqlite。
 """
+
 from __future__ import annotations
 
 import json
@@ -44,12 +45,13 @@ def _discover_password() -> str:
             continue
     return ""
 
-from data_center.core.contract import DataRecord
-from data_center.monitoring.alerting import Alert
-from data_center.monitoring.metrics import InvocationMetric
-from data_center.monitoring.quality import QualityIssue
-from data_center.storage.cache import dedupe_key
-from data_center.storage.sink_sqlite import _json_default
+
+from data_center.core.contract import DataRecord  # noqa: E402
+from data_center.monitoring.alerting import Alert  # noqa: E402
+from data_center.monitoring.metrics import InvocationMetric  # noqa: E402
+from data_center.monitoring.quality import QualityIssue  # noqa: E402
+from data_center.storage.cache import dedupe_key  # noqa: E402
+from data_center.storage.sink_sqlite import _json_default  # noqa: E402
 
 _SCHEMA_RECORDS = """
 CREATE TABLE IF NOT EXISTS records (
@@ -123,7 +125,10 @@ _SELECT_RECORDS = (
 
 def _row_to_record(r) -> DataRecord:
     return DataRecord(
-        source=r[0], category=r[1], sub_category=r[2], timestamp=r[3],
+        source=r[0],
+        category=r[1],
+        sub_category=r[2],
+        timestamp=r[3],
         metrics=json.loads(r[4]) if r[4] else {},
         events=json.loads(r[5]) if r[5] else [],
         timeseries=json.loads(r[6]) if r[6] else [],
@@ -170,14 +175,16 @@ class PostgresSink:
             with conn.cursor() as cur:
                 for r in records:
                     key = dedupe_key(r)
-                    cur.execute(
-                        "SELECT 1 FROM records WHERE dedupe_key = %s LIMIT 1", (key,)
-                    )
+                    cur.execute("SELECT 1 FROM records WHERE dedupe_key = %s LIMIT 1", (key,))
                     exists = cur.fetchone()
                     cur.execute(
                         _INSERT_SQL,
                         (
-                            key, r.source, r.category, r.sub_category, r.timestamp,
+                            key,
+                            r.source,
+                            r.category,
+                            r.sub_category,
+                            r.timestamp,
                             json.dumps(r.metrics, ensure_ascii=False, default=_json_default),
                             json.dumps(r.events, ensure_ascii=False, default=_json_default),
                             json.dumps(r.timeseries, ensure_ascii=False, default=_json_default),
@@ -249,7 +256,8 @@ class PostgresSink:
                     (
                         metric.invocation_id,
                         metric.ts.isoformat(),
-                        metric.source, metric.category,
+                        metric.source,
+                        metric.category,
                         metric.status,
                         metric.duration_ms,
                         metric.records_count,
@@ -348,7 +356,11 @@ class PostgresSink:
                             q.code.value if hasattr(q.code, "value") else str(q.code),
                             q.message,
                             metric.invocation_id,
-                            json.dumps(q.extra, ensure_ascii=False, default=_json_default) if q.extra else None,
+                            (
+                                json.dumps(q.extra, ensure_ascii=False, default=_json_default)
+                                if q.extra
+                                else None
+                            ),
                         ),
                     )
 
@@ -364,8 +376,11 @@ class PostgresSink:
                 rows = cur.fetchall()
         return [
             {
-                "ts": r[0], "source": r[1], "category": r[2],
-                "code": r[3], "message": r[4],
+                "ts": r[0],
+                "source": r[1],
+                "category": r[2],
+                "code": r[3],
+                "message": r[4],
                 "invocation_id": r[5],
                 "extra": json.loads(r[6]) if r[6] else {},
             }
@@ -401,7 +416,9 @@ class PostgresSink:
                 rows = cur.fetchall()
         return [
             {
-                "ts": r[0], "level": r[1], "title": r[2],
+                "ts": r[0],
+                "level": r[1],
+                "title": r[2],
                 "message": r[3],
                 "tags": json.loads(r[4]) if r[4] else [],
             }
@@ -415,4 +432,5 @@ def get_sink(db_path: Optional[str] = None):
     if backend == "postgres":
         return PostgresSink()
     from data_center.storage.sink_sqlite import SqliteSink
+
     return SqliteSink(db_path or os.environ.get("DATA_CENTER_DB_PATH", "data_center.db"))

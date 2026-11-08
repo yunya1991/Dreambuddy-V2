@@ -9,6 +9,7 @@ FAIL-OPEN 铁律：Silver/FeatureHub 任一步异常 → 中性兜底 + warning�
   T26-4  VIFDropper 全共线奇异矩阵    → lstsq 异常被捕获，列保留返回
   T26-5  IVDropper y 长度不匹配        → 跳过 IV 筛选，不阻塞链路
 """
+
 from __future__ import annotations
 
 import logging
@@ -28,13 +29,16 @@ def ohlcv():
     rng = np.random.default_rng(7)
     n = 300
     close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, n)))
-    return pd.DataFrame({
-        "open": close * (1 + rng.normal(0, 0.004, n)),
-        "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
-        "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
-    }, index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    return pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n)),
+        },
+        index=pd.date_range("2024-01-01", periods=n, freq="D"),
+    )
 
 
 # ============================================================
@@ -65,8 +69,9 @@ def test_t26_1_module_keyerror_skip(ohlcv, caplog):
     failed = fv.meta.get("modules_failed", [])
     assert "bad" in failed, f"modules_failed 未记录 bad: {failed}"
     # ③ warning 日志含 fail-open 标识
-    assert any("fail-open" in rec.message for rec in caplog.records), \
-        "未产出 fail-open warning 日志"
+    assert any(
+        "fail-open" in rec.message for rec in caplog.records
+    ), "未产出 fail-open warning 日志"
 
 
 # ============================================================
@@ -76,11 +81,13 @@ def test_t26_2_infnan_impute_full_dirty():
     from feature_hub.cleaning_chain.cleaning_steps import InfNaNImpute
 
     # 全 NaN/Inf 的极端输入
-    df = pd.DataFrame({
-        "all_nan": [np.nan, np.nan, np.nan, np.nan, np.nan],
-        "all_inf": [np.inf, -np.inf, np.inf, -np.inf, np.inf],
-        "mixed":   [np.nan, np.inf, -np.inf, np.nan, 1.0],
-    })
+    df = pd.DataFrame(
+        {
+            "all_nan": [np.nan, np.nan, np.nan, np.nan, np.nan],
+            "all_inf": [np.inf, -np.inf, np.inf, -np.inf, np.inf],
+            "mixed": [np.nan, np.inf, -np.inf, np.nan, 1.0],
+        }
+    )
     step = InfNaNImpute()
     out = step.fit_transform(df)
 
@@ -101,10 +108,12 @@ def test_t26_3_robust_scaler_exception_failopen():
 
     # 构造一个会让 RobustScalerIQR 抛异常的输入：
     # 含字符串列 → median/quantile 在混合 dtype 上抛 TypeError
-    df = pd.DataFrame({
-        "num":   [1.0, 2.0, 3.0, 4.0, 5.0] * 200,
-        "str":   ["a"] * 1000,
-    })
+    df = pd.DataFrame(
+        {
+            "num": [1.0, 2.0, 3.0, 4.0, 5.0] * 200,
+            "str": ["a"] * 1000,
+        }
+    )
 
     chain = StandardCleaningChain()
     # fail-open → 返回原 DF（或上一步输出），不抛异常
@@ -123,11 +132,13 @@ def test_t26_4_vif_singular_matrix():
     # 构造会让 lstsq 异常的奇异矩阵：
     # 全零列 + 完全相同列 → ss_tot=0 / 矩阵退化
     n = 1200
-    df = pd.DataFrame({
-        "zero":   [0.0] * n,
-        "dup_a":  [3.14] * n,  # 常量列
-        "dup_b":  [3.14] * n,  # 与 dup_a 完全相同
-    })
+    df = pd.DataFrame(
+        {
+            "zero": [0.0] * n,
+            "dup_a": [3.14] * n,  # 常量列
+            "dup_b": [3.14] * n,  # 与 dup_a 完全相同
+        }
+    )
 
     step = VIFDropper(threshold=10.0, skip_if=lambda X: len(X) < 1000)
     # 不应抛异常
@@ -145,10 +156,12 @@ def test_t26_5_iv_mismatched_y_skip():
 
     rng = np.random.default_rng(0)
     n = 1000
-    df = pd.DataFrame({
-        "feat_a": rng.normal(0, 1, n),
-        "feat_b": rng.normal(0, 1, n),
-    })
+    df = pd.DataFrame(
+        {
+            "feat_a": rng.normal(0, 1, n),
+            "feat_b": rng.normal(0, 1, n),
+        }
+    )
     # y 长度与 df 不匹配（仅 500 个）
     y_short = rng.integers(0, 2, 500)
 
@@ -161,6 +174,7 @@ def test_t26_5_iv_mismatched_y_skip():
     except (ValueError, IndexError):
         # 如果 y 长度不匹配直接抛异常，则 StandardCleaningChain 应 fail-open
         from feature_hub.cleaning_chain.standard_chain import StandardCleaningChain
+
         chain = StandardCleaningChain()
         out = chain.fit_transform(df, y=y_short)
         assert isinstance(out, pd.DataFrame)

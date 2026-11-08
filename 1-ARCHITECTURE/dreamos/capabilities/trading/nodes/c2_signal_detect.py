@@ -39,11 +39,10 @@ outputs:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
-
+from dreamos.shared.state import NodeResult, NodeStatus, State
 
 # ── 默认阈值 ──────────────────────────────────────────────
 _DEFAULT_TREND_THRESHOLD = 0.01
@@ -100,9 +99,15 @@ class C2SignalDetectNode(BaseNode):
                 return float(default)
 
         return {
-            "trend_threshold": max(0.0, _get_float("signal_detect_trend_threshold", _DEFAULT_TREND_THRESHOLD)),
-            "base_confidence": _clip(_get_float("signal_detect_base_confidence", _DEFAULT_BASE_CONFIDENCE), 0.0, 1.0),
-            "max_confidence": _clip(_get_float("signal_detect_max_confidence", _DEFAULT_MAX_CONFIDENCE), 0.01, 1.0),
+            "trend_threshold": max(
+                0.0, _get_float("signal_detect_trend_threshold", _DEFAULT_TREND_THRESHOLD)
+            ),
+            "base_confidence": _clip(
+                _get_float("signal_detect_base_confidence", _DEFAULT_BASE_CONFIDENCE), 0.0, 1.0
+            ),
+            "max_confidence": _clip(
+                _get_float("signal_detect_max_confidence", _DEFAULT_MAX_CONFIDENCE), 0.01, 1.0
+            ),
         }
 
     @staticmethod
@@ -181,10 +186,13 @@ class C2SignalDetectNode(BaseNode):
             df = pd.DataFrame(ohlcv, columns=["ts", "open", "high", "low", "close", "volume"])
 
             # 调用 quant_signal.compute
-            result = quant_compute(df, config={
-                "ema_fast": 12,
-                "ema_slow": 26,
-            })
+            result = quant_compute(
+                df,
+                config={
+                    "ema_fast": 12,
+                    "ema_slow": 26,
+                },
+            )
 
             direction = str(result.get("dominant_direction") or "neutral").strip().lower()
             if direction not in ("long", "short"):
@@ -317,16 +325,18 @@ class C2SignalDetectNode(BaseNode):
             )
             layer = self._pick_layer(trend, rsi, momentum)
 
-            signals.append({
-                "symbol": name,
-                "direction": direction,
-                "confidence": float(confidence),
-                "strategy": "trend_momentum",
-                "layer": layer,
-                "trend": float(trend),
-                "rsi": float(rsi),
-                "momentum": float(momentum),
-            })
+            signals.append(
+                {
+                    "symbol": name,
+                    "direction": direction,
+                    "confidence": float(confidence),
+                    "strategy": "trend_momentum",
+                    "layer": layer,
+                    "trend": float(trend),
+                    "rsi": float(rsi),
+                    "momentum": float(momentum),
+                }
+            )
 
         # 3. 决定 dominant_direction
         if long_count > short_count:

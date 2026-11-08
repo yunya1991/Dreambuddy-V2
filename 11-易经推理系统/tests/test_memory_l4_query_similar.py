@@ -15,7 +15,7 @@ def test_query_returns_topk_with_references():
                 "matched_strategy": "sunzi_003",
                 "category": "兵力部署",
                 "directive_bias": "WAIT",
-                "references": {"case_lessons": ["L1", "L2", "L3", "L4"]}
+                "references": {"case_lessons": ["L1", "L2", "L3", "L4"]},
             },
             "TC_B": {
                 "regime": "RANGE_BOUND",
@@ -28,12 +28,17 @@ def test_query_returns_topk_with_references():
                 "matched_strategy": "sunzi_003",
                 "category": "兵力部署",
                 "directive_bias": "WAIT",
-                "references": {"case_lessons": ["B1"]}
-            }
+                "references": {"case_lessons": ["B1"]},
+            },
         },
         "distill_features": {
-            "D_1": {"kind": "risk_signal", "claim": "c", "actionable_rules": ["R1", "R2"], "supporting_case_ids": ["TC_B"]}
-        }
+            "D_1": {
+                "kind": "risk_signal",
+                "claim": "c",
+                "actionable_rules": ["R1", "R2"],
+                "supporting_case_ids": ["TC_B"],
+            }
+        },
     }
 
     res = query_similar_cases(index_data, case_id="TC_A", topk=1)
@@ -41,4 +46,3 @@ def test_query_returns_topk_with_references():
     assert res["results"][0]["case_id"] == "TC_B"
     assert len(res["results"][0]["references"]["case_lessons"]) <= 3
     assert "distill_refs" in res["results"][0]["references"]
-

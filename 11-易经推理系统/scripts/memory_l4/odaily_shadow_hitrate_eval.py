@@ -17,6 +17,7 @@
   终端 Tab 打印 4门槛值 + PASS/FAIL 列表；同时返回退出码 0=全PASS / 1=门槛未过 / 2=样本<1500
   JSON 报告写入 ../runtime/odaily_shadow_eval_report.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,7 +28,7 @@ import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -36,11 +37,11 @@ DEFAULT_JSONL = RUNTIME / "odaily_engine_boost_records.jsonl"
 REPORT_OUT = RUNTIME / "odaily_shadow_eval_report.json"
 
 # ── Spec 硬门槛 ────────────────────────────────────────────────
-HIT_RATE_MIN      = 0.60
-THAW_ACC_MIN      = 0.70
-SHARPE_MIN        = 1.05
-IMPORT_FAIL_MAX   = 0
-MIN_RECORDS       = 1500   # 7 日历天（每 4h 采一次×3 类≈126 次/日，不足算样本不够）
+HIT_RATE_MIN = 0.60
+THAW_ACC_MIN = 0.70
+SHARPE_MIN = 1.05
+IMPORT_FAIL_MAX = 0
+MIN_RECORDS = 1500  # 7 日历天（每 4h 采一次×3 类≈126 次/日，不足算样本不够）
 
 
 def read_jsonl(path: str) -> List[Dict[str, Any]]:
@@ -78,7 +79,9 @@ def eval_four_gates(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     daily_bucket: Dict[str, List[float]] = {}
     for r in ok_rows:
         ts_ms = int(r.get("ts_ms")) if isinstance(r.get("ts_ms"), (int, float)) else 0
-        day_key = datetime.utcfromtimestamp(ts_ms / 1000.0).strftime("%Y-%m-%d") if ts_ms else "unknown"
+        day_key = (
+            datetime.utcfromtimestamp(ts_ms / 1000.0).strftime("%Y-%m-%d") if ts_ms else "unknown"
+        )
         boost_sum = float(r.get("dao_boost_mean", 0.0)) + float(r.get("tian_boost_mean", 0.0))
         daily_bucket.setdefault(day_key, []).append(boost_sum)
 
@@ -93,10 +96,14 @@ def eval_four_gates(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     cont3_count = 0
     days_sorted = sorted(daily_mean.keys())
     for i in range(len(days_sorted) - 2):
-        if all(d in positive_days for d in days_sorted[i:i+3]):
+        if all(d in positive_days for d in days_sorted[i : i + 3]):
             cont3_count += 1
     total_windows = max(1, len(days_sorted) - 2)
-    thaw_accuracy = (cont3_count / total_windows) if total_windows >= 1 else (1.0 if import_fail_sum == 0 and hit_rate_eff >= HIT_RATE_MIN else 0.0)
+    thaw_accuracy = (
+        (cont3_count / total_windows)
+        if total_windows >= 1
+        else (1.0 if import_fail_sum == 0 and hit_rate_eff >= HIT_RATE_MIN else 0.0)
+    )
 
     # ── G3 Sharpe（日级均值 boost / 标准差，年化因子√252=15.874）──
     if len(daily_mean) >= 2:
@@ -113,7 +120,7 @@ def eval_four_gates(records: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     pass_g1 = hit_rate_eff >= HIT_RATE_MIN
     pass_g2 = thaw_accuracy >= THAW_ACC_MIN
-    pass_g3 = sharpe    >= SHARPE_MIN
+    pass_g3 = sharpe >= SHARPE_MIN
     pass_g4 = import_fail_sum == IMPORT_FAIL_MAX
 
     all_pass = pass_g1 and pass_g2 and pass_g3 and pass_g4
@@ -126,10 +133,24 @@ def eval_four_gates(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "positive_days": positive_days,
         "reason_distribution": dict(reason_counter),
         "gates": {
-            "G1_hit_rate":          {"value": round(hit_rate, 4),      "effective": round(hit_rate_eff, 4), "min": HIT_RATE_MIN, "pass": pass_g1},
-            "G2_thaw_accuracy":     {"value": round(thaw_accuracy, 4), "min": THAW_ACC_MIN, "pass": pass_g2, "note": "连续3日正贡献窗口率（缺 five_domain_state.json 解冻标签时）"},
-            "G3_sharpe_annual":     {"value": round(sharpe, 4),        "min": SHARPE_MIN, "pass": pass_g3},
-            "G4_IMPORT_FAIL_total": {"value": import_fail_sum,         "max": IMPORT_FAIL_MAX, "pass": pass_g4},
+            "G1_hit_rate": {
+                "value": round(hit_rate, 4),
+                "effective": round(hit_rate_eff, 4),
+                "min": HIT_RATE_MIN,
+                "pass": pass_g1,
+            },
+            "G2_thaw_accuracy": {
+                "value": round(thaw_accuracy, 4),
+                "min": THAW_ACC_MIN,
+                "pass": pass_g2,
+                "note": "连续3日正贡献窗口率（缺 five_domain_state.json 解冻标签时）",
+            },
+            "G3_sharpe_annual": {"value": round(sharpe, 4), "min": SHARPE_MIN, "pass": pass_g3},
+            "G4_IMPORT_FAIL_total": {
+                "value": import_fail_sum,
+                "max": IMPORT_FAIL_MAX,
+                "pass": pass_g4,
+            },
         },
         "ALL_PASS": all_pass,
         "SAMPLE_READY": total >= MIN_RECORDS,
@@ -161,9 +182,13 @@ def print_report(report: Dict[str, Any]) -> None:
     print("-" * 72)
     print(f"  4 门槛 ALL_PASS = {report['ALL_PASS']}")
     if report["ALL_PASS"] and report["SAMPLE_READY"]:
-        print("  ✦ 允许发起 PR+CR：将 FiveDomainFeatureComputer.enable_odaily_engine_boost 默认改为 True")
+        print(
+            "  ✦ 允许发起 PR+CR：将 FiveDomainFeatureComputer.enable_odaily_engine_boost 默认改为 True"
+        )
     elif not report["SAMPLE_READY"]:
-        print(f"  ⏳ 样本未达 {MIN_RECORDS}，请继续观察（7 日历天）。当前 {report['total_records']}")
+        print(
+            f"  ⏳ 样本未达 {MIN_RECORDS}，请继续观察（7 日历天）。当前 {report['total_records']}"
+        )
     else:
         print("  ✗ 门槛未过：保持红线 False，不允许打开开关。")
     print("=" * 72)

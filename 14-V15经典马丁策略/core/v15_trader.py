@@ -17,6 +17,8 @@ V15 经典马丁策略自动交易器
        trade_repo = get_trade_repo()  # 三后端自动切 + Kill-Switch 物理双保险
    SSoT 文档：19-数据访问层/docs/TECHNICAL_DESIGN.md §2.2 / §3.2
 """
+
+import dataclasses
 import json
 import math
 import os
@@ -25,10 +27,9 @@ import subprocess
 import sys
 import threading
 import time
-import dataclasses
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
@@ -39,7 +40,7 @@ _DAL_ROOT = str(BASE_DIR.parent / "19-数据访问层")
 if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
     sys.path.insert(0, _DAL_ROOT)
 
-from token_pool_loader import load_coins_with_override, get_pool_symbols
+from token_pool_loader import load_coins_with_override  # noqa: E402
 
 # L4 TradeEvent 注册（跨系统统一交易记录）
 try:
@@ -59,7 +60,6 @@ try:
         get_config_bool,
         get_config_float,
         get_config_int,
-        get_config_list,
         load_config,
     )
 
@@ -186,6 +186,7 @@ def _ensure_v15_engine(client: Any):
             import importlib.util as _ilu
             import sys as _sys
             from pathlib import Path as _P
+
             _TEE_ROOT = _P(__file__).resolve().parents[2] / "22-执行引擎中心"
             _p = _TEE_ROOT / "tee_core/integrations/v15_integration.py"
             if not _p.is_file():
@@ -239,15 +240,16 @@ def _v15_place_order(
     外加 ord_type=limit / px / leverage / tag / reason 当显式传入时（但
     这种情况在 case ② 只有限价才会出现，纯市价永远不带它们）。
     """
-    is_limit = bool(
-        (ord_type and ord_type != "market") or px is not None
-    )
+    is_limit = bool((ord_type and ord_type != "market") or px is not None)
 
     # ── 情况1：限价 / 网格类 → 始终直传 raw client 不经过 engine ──
     if is_limit:
         kwargs: Dict[str, Any] = {
-            "inst_id": inst_id, "side": side, "sz": sz,
-            "td_mode": td_mode, "pos_side": pos_side,
+            "inst_id": inst_id,
+            "side": side,
+            "sz": sz,
+            "td_mode": td_mode,
+            "pos_side": pos_side,
         }
         if ord_type is not None:
             kwargs["ord_type"] = ord_type
@@ -263,8 +265,11 @@ def _v15_place_order(
     # ── 情况2：基线关闭（ENABLE_TEE=False + SHADOW=False）→ 字节等价直传 ──
     if not ENABLE_TEE and not SHADOW_MODE:
         return client.place_order(
-            inst_id=inst_id, side=side, sz=sz,
-            td_mode=td_mode, pos_side=pos_side,
+            inst_id=inst_id,
+            side=side,
+            sz=sz,
+            td_mode=td_mode,
+            pos_side=pos_side,
         )
 
     # ── 情况3：TEE 或 SHADOW 打开 → engine compat + FAIL-OPEN 兜底 ──
@@ -272,8 +277,11 @@ def _v15_place_order(
         engine = _ensure_v15_engine(client)
         if engine is None:
             return client.place_order(
-                inst_id=inst_id, side=side, sz=sz,
-                td_mode=td_mode, pos_side=pos_side,
+                inst_id=inst_id,
+                side=side,
+                sz=sz,
+                td_mode=td_mode,
+                pos_side=pos_side,
             )
         compat_kwargs = {
             "inst_id": inst_id,
@@ -299,34 +307,46 @@ def _v15_place_order(
             "ok": ok,
             "shadow_mode_hit": shadow_hit,
             "ord_id": (
-                result.get("parent_id") or result.get("ord_id")
+                result.get("parent_id")
+                or result.get("ord_id")
                 or f"tee_{order_reason}_{int(time.time()*1000)}"
             ),
-            "data": [{
-                "ordId": result.get("parent_id") or "",
-                "fillSz": str(result.get("total_filled_sz", sz)),
-                "avgPx": str(
-                    result.get("estimated_vwap")
-                    or result.get("final_vwap")
-                    or result.get("exec", {}).get("avg_fill_px")
-                    or 0
-                ),
-                "engine": "TEE",
-                "reason": order_reason,
-                "tag": f"V15|{source_coin}",
-            }],
+            "data": [
+                {
+                    "ordId": result.get("parent_id") or "",
+                    "fillSz": str(result.get("total_filled_sz", sz)),
+                    "avgPx": str(
+                        result.get("estimated_vwap")
+                        or result.get("final_vwap")
+                        or result.get("exec", {}).get("avg_fill_px")
+                        or 0
+                    ),
+                    "engine": "TEE",
+                    "reason": order_reason,
+                    "tag": f"V15|{source_coin}",
+                }
+            ],
             "engine_result": result,
         }
         if not ok:
-            err = result.get("fail_open") or result.get("kill_switch") or result.get("error") or "tee_unknown"
+            err = (
+                result.get("fail_open")
+                or result.get("kill_switch")
+                or result.get("error")
+                or "tee_unknown"
+            )
             out["error"] = err
         return out
     except BaseException:
         # FAIL-OPEN (Business AC-6 + AC-7)：engine 异常直接降级，保留字节等价 5 键
         return client.place_order(
-            inst_id=inst_id, side=side, sz=sz,
-            td_mode=td_mode, pos_side=pos_side,
+            inst_id=inst_id,
+            side=side,
+            sz=sz,
+            td_mode=td_mode,
+            pos_side=pos_side,
         )
+
 
 # 币种池：公共代币池(token_registry.json) > V15_COINS env(override) > 硬编码默认
 _V15_DEFAULT_COINS = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI", "HYPE", "OKB"]
@@ -362,7 +382,8 @@ def refresh_coin_pool(held_coins=None):
     _RAW_COINS = load_coins_with_override("V15_COINS", _V15_DEFAULT_COINS)
     _OKX_SUPPORTED = [c for c in _RAW_COINS if _coin_supported(c, "okx")] or _RAW_COINS
     new_coins = [
-        c for c in _OKX_SUPPORTED
+        c
+        for c in _OKX_SUPPORTED
         if _coin_martin_safe(c, _MARTIN_MIN_TIER, _MARTIN_MIN_HISTORY_DAYS)
     ]
     if held_coins:
@@ -378,6 +399,8 @@ def refresh_coin_pool(held_coins=None):
         )
     except Exception:
         pass
+
+
 V15_MAX_ADDONS = get_config_int("MAX_ADDONS_PER_POSITION", 4)  # 4档加仓=总5单（实盘测试版本）
 MAX_ADDONS = V15_MAX_ADDONS
 BASE_TP_PCT = get_config_float("BASE_TP_PCT", 0.04)
@@ -426,9 +449,12 @@ def _get_phase_d_gateway():
         _pd_bilstm_path = str(get_config("V15_AI_PHASE_D_BILSTM_MODEL_PATH", "") or "")
         _pd_patchtst_path = str(get_config("V15_AI_PHASE_D_PATCHTST_MODEL_PATH", "") or "")
         import os as _os
+
         _bilstm_ok = bool(_pd_bilstm_path) and _os.path.exists(_pd_bilstm_path)
         _patchtst_ok = bool(_pd_patchtst_path) and _os.path.exists(_pd_patchtst_path)
-        _log(f"[Phase-D] Gateway 初始化: BiLSTM={'加载' if _bilstm_ok else '缺失/启发式'} ({_pd_bilstm_path or 'None'}) PatchTST={'加载' if _patchtst_ok else '缺失/启发式'} ({_pd_patchtst_path or 'None'})")
+        _log(
+            f"[Phase-D] Gateway 初始化: BiLSTM={'加载' if _bilstm_ok else '缺失/启发式'} ({_pd_bilstm_path or 'None'}) PatchTST={'加载' if _patchtst_ok else '缺失/启发式'} ({_pd_patchtst_path or 'None'})"
+        )
         _PHASE_D_GW_SINGLETON = PhaseDGateway(
             enabled=True,
             bilstm_model_path=_pd_bilstm_path or None,
@@ -508,9 +534,13 @@ def _phase_d_heuristic_p_bust(klines_4h, params: dict, direction: str) -> float:
     lows = []
     for k in klines_4h or []:
         if isinstance(k, dict) and "c" in k:
-            closes.append(float(k["c"])); highs.append(float(k.get("h", k["c"]))); lows.append(float(k.get("l", k["c"])))
+            closes.append(float(k["c"]))
+            highs.append(float(k.get("h", k["c"])))
+            lows.append(float(k.get("l", k["c"])))
         elif isinstance(k, (list, tuple)) and len(k) >= 5:
-            closes.append(float(k[4])); highs.append(float(k[2])); lows.append(float(k[3]))
+            closes.append(float(k[4]))
+            highs.append(float(k[2]))
+            lows.append(float(k[3]))
     if len(closes) < 12:
         return 0.10  # 数据不足 → 保守偏中性
     recent_c = closes[-12:]
@@ -549,6 +579,7 @@ def _phase_d_heuristic_dd24h(klines_1h) -> float:
     win = closes[-n:]
     rets = [(win[i] / win[i - 1] - 1.0) for i in range(1, len(win))]
     import math
+
     var = sum(r * r for r in rets) / max(1, len(rets))
     sigma = math.sqrt(var)
     # 未来 24 根 ≈ sigma * sqrt(24) * 系数1.2（保守）
@@ -809,10 +840,12 @@ def _dal_write_martin_trade_if_enabled(
     try:
         from dreambuddy_dal import di as _dal_di
         from dreambuddy_dal.unified_models import (
-            TradeRecord as UnifiedTradeRecord,
-            TradeDirection,
-            ExitReason,
             CloseInfo,
+            ExitReason,
+            TradeDirection,
+        )
+        from dreambuddy_dal.unified_models import (
+            TradeRecord as UnifiedTradeRecord,
         )
     except Exception as exc:  # pragma: no cover - 部署路径无 DAL
         _log(f"[DAL-p1] import failed: {exc}")
@@ -824,9 +857,7 @@ def _dal_write_martin_trade_if_enabled(
         return
     try:
         direction_enum = (
-            TradeDirection.SHORT
-            if str(direction).lower() == "short"
-            else TradeDirection.LONG
+            TradeDirection.SHORT if str(direction).lower() == "short" else TradeDirection.LONG
         )
         # 马丁策略平仓时调用本函数，因此 is_closed=True
         try:
@@ -992,6 +1023,7 @@ def _get_okx_client():
     if exec_mode == "paper":
         try:
             from v15_paper_client import V15PaperClient
+
             return V15PaperClient()
         except Exception as e:
             _log(f"Paper客户端初始化失败: {e}")
@@ -1000,11 +1032,17 @@ def _get_okx_client():
     if exec_mode == "hyperliquid":
         try:
             import sys as _sys
-            _aster_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
-                os.path.abspath(__file__)))), "experiments", "ab-trading", "execution")
+
+            _aster_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                "experiments",
+                "ab-trading",
+                "execution",
+            )
             if _aster_dir not in _sys.path:
                 _sys.path.insert(0, _aster_dir)
             from aster_spot import HyperliquidClient
+
             client = HyperliquidClient(agent_id="v15")
             _log(f"Hyperliquid实盘客户端已连接 | wallet={client.user_addr[:12]}...")
             return client
@@ -1016,7 +1054,8 @@ def _get_okx_client():
     if get_config("V15_DATA_SOURCE", "").strip().lower() == "hyperliquid":
         raise RuntimeError(
             "硬安全闸: V15_DATA_SOURCE=hyperliquid 必须配合 V15_EXECUTION=paper|hyperliquid, "
-            "禁止在网络封锁环境构造 OKX 实盘客户端")
+            "禁止在网络封锁环境构造 OKX 实盘客户端"
+        )
     try:
         from okx_client import OKXSimulatedClient
 
@@ -1086,16 +1125,15 @@ def _get_ab_comparator():
     if _AB_COMPARATOR_SINGLETON is not None:
         return _AB_COMPARATOR_SINGLETON
     try:
+
         from ab_shadow_comparator import ABShadowComparator as _Cls
-        from pathlib import Path as _Path
+
         state_file = BASE_DIR / "data" / "ab_comparator_state.json"
         _AB_COMPARATOR_SINGLETON = _Cls(state_file=str(state_file))
         return _AB_COMPARATOR_SINGLETON
     except Exception:
         _AB_COMPARATOR_SINGLETON = False
         return None
-
-
 
 
 def _prep_ctx_position_ref(ctx, coin: str, pos=None):
@@ -1113,7 +1151,9 @@ def _prep_ctx_position_ref(ctx, coin: str, pos=None):
         entry_ts = pos.get("open_time")
     if not entry_ts:
         # 新决策：当前 UTC 分钟级时间戳作为近似锚；回填时 fallback 也能匹配。
-        from datetime import datetime, timezone as _tz
+        from datetime import datetime
+        from datetime import timezone as _tz
+
         entry_ts = datetime.now(_tz.utc).replace(second=0, microsecond=0).isoformat()
     try:
         comp = _get_ab_comparator()
@@ -1122,6 +1162,7 @@ def _prep_ctx_position_ref(ctx, coin: str, pos=None):
         else:
             # 没有 comparator 也尽量生成一致格式
             from datetime import datetime
+
             if isinstance(entry_ts, datetime):
                 dt = entry_ts
             elif isinstance(entry_ts, (int, float)):
@@ -1136,6 +1177,7 @@ def _prep_ctx_position_ref(ctx, coin: str, pos=None):
                     dt = datetime.utcnow()
                 if dt.tzinfo is not None:
                     from datetime import timezone as _tz2
+
                     dt = dt.astimezone(_tz2.utc).replace(tzinfo=None)
                 dt = dt.replace(second=0, microsecond=0)
             ref = f"{coin}|{dt.isoformat()}"
@@ -1211,13 +1253,18 @@ def _save_trade_to_history(coin: str, pos: dict, exit_price: float, reason: str,
 
         # 原子写入
         import tempfile
+
         with tempfile.NamedTemporaryFile(
-            mode="w", dir=str(TRADE_HISTORY_FILE.parent),
-            suffix=".tmp", delete=False, encoding="utf-8",
+            mode="w",
+            dir=str(TRADE_HISTORY_FILE.parent),
+            suffix=".tmp",
+            delete=False,
+            encoding="utf-8",
         ) as tmp:
             json.dump(history, tmp, indent=2, ensure_ascii=False)
             tmp_path = tmp.name
         import os as _os
+
         _os.replace(tmp_path, str(TRADE_HISTORY_FILE))
 
         _log(f"[{coin}] 交易记录已保存到 trade_history.json (第{len(history)}条)")
@@ -1227,7 +1274,7 @@ def _save_trade_to_history(coin: str, pos: dict, exit_price: float, reason: str,
             comp = _get_ab_comparator()
             if comp is not None:
                 entry_time = pos.get("open_time", "")
-                p_ref = comp.build_position_ref(coin, entry_time)
+                p_ref = comp.build_position_ref(coin, entry_time)  # noqa: F841
                 backfilled = comp.backfill_trade_result(
                     symbol=coin,
                     entry_timestamp=entry_time,
@@ -1241,7 +1288,9 @@ def _save_trade_to_history(coin: str, pos: dict, exit_price: float, reason: str,
                         ev = comp.evaluate()
                         trans = ev.get("transition")
                         if trans:
-                            _log(f"[AB-Comparator] 状态变化: {trans} (新状态={ev.get('state')}, n={ev.get('n_samples')})")
+                            _log(
+                                f"[AB-Comparator] 状态变化: {trans} (新状态={ev.get('state')}, n={ev.get('n_samples')})"
+                            )
                     except Exception:
                         pass
         except Exception:
@@ -1398,7 +1447,9 @@ def _get_direction_ctx(coin):
             ctx["btc_confirmed_regime"] = result.regime.value
             ctx["regime_in_cooldown"] = False
             ctx["use_btc_windvane"] = False
-            _log(f"[{coin}] 非加密资产模式: regime={result.regime.value}, 做多={result.long_enabled}, 做空={result.short_enabled}")
+            _log(
+                f"[{coin}] 非加密资产模式: regime={result.regime.value}, 做多={result.long_enabled}, 做空={result.short_enabled}"
+            )
             ctx["short_enabled"] = False  # 选项3硬闸（用户确认 2026-08-16）：保持做空关闭
             return ctx
         except Exception as e:
@@ -1559,9 +1610,7 @@ def _get_direction_ctx(coin):
                 coin_recent_daily = [float(k["c"]) for k in klines_1d[-60:] if "c" in k]
                 # 小时级（4H）收盘价序列，用于 swing_fusion_mode="or" 的日线/小时级融合
                 coin_recent_4h = [
-                    float(k["c"])
-                    for k in params.get("klines_4h", [])[-60:]
-                    if "c" in k
+                    float(k["c"]) for k in params.get("klines_4h", [])[-60:] if "c" in k
                 ]
                 if len(coin_recent_daily) >= 20:
                     tg = TimingGate(
@@ -1580,9 +1629,7 @@ def _get_direction_ctx(coin):
                         intraday_swing_window=V15_TIMING_INTRADAY_SWING_WINDOW,
                     )
                     # 日线序列 + 小时级序列（用于 OR/AND 融合），与回测 L1747-L1755 参数同构
-                    intraday_arg = (
-                        coin_recent_4h if len(coin_recent_4h) >= 15 else None
-                    )
+                    intraday_arg = coin_recent_4h if len(coin_recent_4h) >= 15 else None
                     tres = tg.evaluate(
                         result,
                         coin_recent_daily,
@@ -1613,7 +1660,15 @@ def _get_direction_ctx(coin):
                         try:
                             # 用 PatchTST 启发式 dd24h 估计作为"未来高波动 → 放宽入场评分"的信号
                             _pd_klines_1h = [
-                                float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
+                                (
+                                    float(k["c"])
+                                    if isinstance(k, dict) and "c" in k
+                                    else (
+                                        float(k[4])
+                                        if isinstance(k, (list, tuple)) and len(k) >= 5
+                                        else None
+                                    )
+                                )
                                 for k in params.get("klines_1h", [])
                             ]
                             _pd_klines_1h = [v for v in _pd_klines_1h if v is not None]
@@ -1623,7 +1678,8 @@ def _get_direction_ctx(coin):
                             # 注意：此阶段 _phase_d_p_bust 尚未计算（在开仓阶段 L1494 才赋值），
                             # 用 None 让 "or 0.0" 回退为 0.0，避免 NameError
                             _pd_ctx3 = {
-                                "p_bust": locals().get("_phase_d_p_bust") or 0.0, "p_dd": _pd_dd24h,
+                                "p_bust": locals().get("_phase_d_p_bust") or 0.0,
+                                "p_dd": _pd_dd24h,
                                 "klines_4h": params.get("klines_4h"),
                                 "klines_1h": params.get("klines_1h"),
                                 "timing_score": _pd_old_score,
@@ -1711,7 +1767,9 @@ def _get_direction_ctx(coin):
                 ctx["long_enabled"] = True
                 ctx["regime"] = "LONG_PREFERRED"
                 ctx["use_btc_windvane"] = True
-            _log(f"[{coin}] BTC风向标模式: regime={btc_confirmed_regime}, 做多={ctx['long_enabled']}, 做空={ctx['short_enabled']}")
+            _log(
+                f"[{coin}] BTC风向标模式: regime={btc_confirmed_regime}, 做多={ctx['long_enabled']}, 做空={ctx['short_enabled']}"
+            )
         else:
             ctx["use_btc_windvane"] = False
 
@@ -1844,16 +1902,25 @@ def execute_open_position(client, coin, decision, state):
             _phase_d_p_bust = _phase_d_heuristic_p_bust(
                 _pd_params.get("klines_4h"), _pd_params, direction
             )
-            _pd_dd24h = _phase_d_heuristic_dd24h([
-                float(k["c"]) if isinstance(k, dict) and "c" in k else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
-                for k in _pd_params.get("klines_1h", [])
-            ])
+            _pd_dd24h = _phase_d_heuristic_dd24h(
+                [
+                    (
+                        float(k["c"])
+                        if isinstance(k, dict) and "c" in k
+                        else (float(k[4]) if isinstance(k, (list, tuple)) and len(k) >= 5 else None)
+                    )
+                    for k in _pd_params.get("klines_1h", [])
+                ]
+            )
             # ctx dict 携带 heuristic 预估 + 原始特征（真实模型推理用；无权重时 gateway 走 heuristic）
             _pd_ctx = {
-                "p_bust": _phase_d_p_bust, "p_dd": _pd_dd24h, "coin": coin,
+                "p_bust": _phase_d_p_bust,
+                "p_dd": _pd_dd24h,
+                "coin": coin,
                 "klines_4h": _pd_params.get("klines_4h"),
                 "klines_1h": _pd_params.get("klines_1h"),
-                "level": 0, "pnl_pct": 0.0,  # 开仓时刻无持仓
+                "level": 0,
+                "pnl_pct": 0.0,  # 开仓时刻无持仓
                 # AB 影子对比：基线已判定能开（conf>=60 通过），注入 baseline_can_open 让
                 # should_skip_open_with_baseline 记录 paired decision（baseline=OPEN vs AI=OPEN/SKIP）
                 "baseline_can_open": True,
@@ -1869,10 +1936,14 @@ def execute_open_position(client, coin, decision, state):
             else:
                 _skip_real, _skip_reason = _phase_d_gw.should_skip_open_with_baseline(_pd_ctx)
                 if _skip_real:
-                    _log(f"[Phase-D][{coin}] G-D1 跳过开仓: {_skip_reason} (BiLSTM 爆仓概率={_phase_d_p_bust:.3f})")
+                    _log(
+                        f"[Phase-D][{coin}] G-D1 跳过开仓: {_skip_reason} (BiLSTM 爆仓概率={_phase_d_p_bust:.3f})"
+                    )
                     return False
             # G-D2：effective_max_addons 保存起来，稍后在加仓预算/网格处使用
-            _addon_budgets = {f"addon{k}_usd": 0 for k in [1, 2, 3, 4]}  # 占位，实际预算在 alloc 后填入
+            _addon_budgets = {
+                f"addon{k}_usd": 0 for k in [1, 2, 3, 4]
+            }  # 占位，实际预算在 alloc 后填入
             _eff, _ = _phase_d_gw.compute_effective_max_addons(
                 coin, _pd_ctx, MAX_ADDONS, _addon_budgets
             )
@@ -1999,21 +2070,28 @@ def execute_open_position(client, coin, decision, state):
         _v15_active_pos = len(state.get("positions", {}))
         # V15动态预算池(§2独立扣减): 从V15 state.positions的per_coin_budget累加已占用
         _v15_positions = state.get("positions", {})
-        _v15_used_usd = sum(float(p.get("per_coin_budget", 0) or 0)
-                           for p in _v15_positions.values()
-                           if isinstance(p, dict))
+        _v15_used_usd = sum(
+            float(p.get("per_coin_budget", 0) or 0)
+            for p in _v15_positions.values()
+            if isinstance(p, dict)
+        )
         alloc = calculate_per_coin_allocation(
-            coin, effective_conf, elder_ray,
+            coin,
+            effective_conf,
+            elder_ray,
             pos_count_override=_v15_active_pos,
             v15_used_usd=_v15_used_usd,
-            v15_state_positions=_v15_positions)
+            v15_state_positions=_v15_positions,
+        )
 
         # 日志：预算池来源gross/net/有效MIN（§1/§2/§3）
-        _log(f"[{coin}] 预算池 gross=${alloc.get('budget_pool_gross'):.1f} "
-             f"net=${alloc.get('budget_pool_net'):.1f} "
-             f"eff_MIN=${alloc.get('effective_min_margin'):.1f} "
-             f"(deducted=${alloc.get('v15_used_deducted'):.1f} "
-             f"pool_size=${alloc.get('pool_size_usdt')})")
+        _log(
+            f"[{coin}] 预算池 gross=${alloc.get('budget_pool_gross'):.1f} "
+            f"net=${alloc.get('budget_pool_net'):.1f} "
+            f"eff_MIN=${alloc.get('effective_min_margin'):.1f} "
+            f"(deducted=${alloc.get('v15_used_deducted'):.1f} "
+            f"pool_size=${alloc.get('pool_size_usdt')})"
+        )
 
         if not alloc.get("allowed"):
             _log(f"[{coin}] 资金分配不允许: {alloc.get('reason', '资金不足')}")
@@ -2035,10 +2113,26 @@ def execute_open_position(client, coin, decision, state):
         if _phase_e_gw is not None:
             try:
                 _pe_s_state = _phase_e_build_s_state(coin, params)
-                _pe_alloc_before = {k: alloc.get(k, 0) for k in ["base_usd", "addon1_usd", "addon2_usd", "addon3_usd", "addon4_usd", "total_usd", "per_coin_budget"]}
+                _pe_alloc_before = {
+                    k: alloc.get(k, 0)
+                    for k in [
+                        "base_usd",
+                        "addon1_usd",
+                        "addon2_usd",
+                        "addon3_usd",
+                        "addon4_usd",
+                        "total_usd",
+                        "per_coin_budget",
+                    ]
+                }
                 alloc = _phase_e_gw.apply_size_multipliers(alloc, _pe_s_state)
-                _pe_alloc_after = {k: alloc.get(k, 0) for k in ["base_usd", "addon1_usd", "addon2_usd", "addon3_usd", "addon4_usd"]}
-                _log(f"[Phase-E][{coin}] PPO 动作: {_pe_alloc_before.get('total_usd', 0):.1f} → {alloc.get('total_usd', 0):.1f}  action={alloc.get('ai_action', {})}")
+                _pe_alloc_after = {
+                    k: alloc.get(k, 0)
+                    for k in ["base_usd", "addon1_usd", "addon2_usd", "addon3_usd", "addon4_usd"]
+                }
+                _log(
+                    f"[Phase-E][{coin}] PPO 动作: {_pe_alloc_before.get('total_usd', 0):.1f} → {alloc.get('total_usd', 0):.1f}  action={alloc.get('ai_action', {})}"
+                )
             except Exception as _pe_e:
                 _log(f"[Phase-E][{coin}] apply_size_multipliers 异常(降级基线): {_pe_e}")
 
@@ -2091,11 +2185,15 @@ def execute_open_position(client, coin, decision, state):
             timing_mult = float(_ctx_mult)
         else:
             # 降级：自算幂次，保持语义一致
-            _pow = float(dir_ctx.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER)
-            timing_mult = (timing_score ** _pow) if _pow > 0 and timing_score > 0 else 0.0
+            _pow = float(
+                dir_ctx.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER
+            )
+            timing_mult = (timing_score**_pow) if _pow > 0 and timing_score > 0 else 0.0
         timing_mult = max(0.0, min(1.0, timing_mult))
         soft_mode = bool(dir_ctx.get("timing_soft_mode", V15_TIMING_SOFT_MODE))
-        skip_mult = float(dir_ctx.get("timing_skip_mult", V15_TIMING_SKIP_MULT) or V15_TIMING_SKIP_MULT)
+        skip_mult = float(
+            dir_ctx.get("timing_skip_mult", V15_TIMING_SKIP_MULT) or V15_TIMING_SKIP_MULT
+        )
 
         # 软调控模式下，非线性惩罚到极小仓位时直接跳过
         # （回测 v15_backtest.py L1883: if timing_mult < 0.02 → continue）
@@ -2202,14 +2300,23 @@ def execute_open_position(client, coin, decision, state):
                     # Phase D: AI 决策记录（便于分析与跨轮询生效；None=未启用）
                     # 影子模式下 ai_effective_max_addons=None → execute_addon / grid 回退 MAX_ADDONS（基线）
                     "ai_p_bust": _phase_d_p_bust,
-                    "ai_effective_max_addons": None if V15_AI_SHADOW else _phase_d_effective_max_addons,
+                    "ai_effective_max_addons": (
+                        None if V15_AI_SHADOW else _phase_d_effective_max_addons
+                    ),
                     # BTC风向标智能模式：记录开仓时的BTC风向标状态（供止损检查对比）
                     "btc_regime_at_open": dir_ctx.get("btc_confirmed_regime", "LONG_PREFERRED"),
                     "use_btc_windvane": dir_ctx.get("use_btc_windvane", False),
                 }
                 state["total_trades"] += 1
-                _sync_tp_sl_orders(client, coin, state["positions"][coin], price, tp_pct, sl_price,
-                                   current_price=price)
+                _sync_tp_sl_orders(
+                    client,
+                    coin,
+                    state["positions"][coin],
+                    price,
+                    tp_pct,
+                    sl_price,
+                    current_price=price,
+                )
                 _place_addon_grid_orders(client, coin, state["positions"][coin])
                 return True
             else:
@@ -2264,8 +2371,10 @@ def execute_addon(client, coin, pos, state):
             timing_mult = float(_saved_mult)
         else:
             _raw_score = float(pos.get("timing_score", 1.0) or 1.0)
-            _pow = float(pos.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER)
-            timing_mult = ((max(0.0, min(1.0, _raw_score)) ** _pow) if _pow > 0 else 0.0)
+            _pow = float(
+                pos.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER
+            )
+            timing_mult = (max(0.0, min(1.0, _raw_score)) ** _pow) if _pow > 0 else 0.0
         timing_mult = max(0.0, min(1.0, timing_mult))
         addon_budgets = [
             pos.get("addon1_usd", 0),
@@ -2367,7 +2476,7 @@ def _get_dynamic_params(client, coin, direction="LONG", *, _apply_phase_e: bool 
     v2 Point4b: 若 PhaseEGateway 已启用 → 将 addon_pct / tp_pct 用 apply_param_multipliers 调整
                 返回键向后兼容（take_profit_pct, addon_pct），新键 phase_e_action 存动作供归档。
     """
-    from strategy_params import get_coin_strategy_params, apply_param_multipliers
+    from strategy_params import apply_param_multipliers, get_coin_strategy_params
 
     params = get_coin_strategy_params(coin, direction)
     if "error" in params:
@@ -2495,7 +2604,7 @@ def _place_addon_grid_orders(client, coin, pos):
     else:
         _raw_score = float(pos.get("timing_score", 1.0) or 1.0)
         _pow = float(pos.get("timing_size_power", V15_TIMING_SIZE_POWER) or V15_TIMING_SIZE_POWER)
-        timing_mult = ((max(0.0, min(1.0, _raw_score)) ** _pow) if _pow > 0 else 0.0)
+        timing_mult = (max(0.0, min(1.0, _raw_score)) ** _pow) if _pow > 0 else 0.0
     timing_mult = max(0.0, min(1.0, timing_mult))
 
     lot_sz, ct_val = get_contract_info(client, inst_id)
@@ -2527,7 +2636,9 @@ def _place_addon_grid_orders(client, coin, pos):
             continue
         sz = calc_lot_sz(addon_notional, grid_px, lot_sz, ct_val)
         if sz < lot_sz:
-            _log(f"[{coin}] 加仓网格#{i+1} 数量({sz}张)<最小单位({lot_sz}张), 跳过挂单 (timing_mult={timing_mult:.3f})")
+            _log(
+                f"[{coin}] 加仓网格#{i+1} 数量({sz}张)<最小单位({lot_sz}张), 跳过挂单 (timing_mult={timing_mult:.3f})"
+            )
             continue
         r = client.place_order(
             inst_id=inst_id,
@@ -2643,8 +2754,15 @@ def _check_addon_grid_status(client, coin, pos):
                     # 同步 TP/SL（均价变化后需更新）
                     tp_pct = pos.get("take_profit_pct", addon_pct)
                     sl_price = pos.get("stop_loss_price", 0)
-                    _sync_tp_sl_orders(client, coin, pos, pos["entry_price"], tp_pct, sl_price,
-                                       current_price=pos.get("entry_price"))
+                    _sync_tp_sl_orders(
+                        client,
+                        coin,
+                        pos,
+                        pos["entry_price"],
+                        tp_pct,
+                        sl_price,
+                        current_price=pos.get("entry_price"),
+                    )
                     continue
                 elif state_code in ("canceled", "cancelled"):
                     entry["status"] = "cancelled"
@@ -2845,7 +2963,9 @@ def _update_tp_sl_dynamic(client, coin, pos):
             _pos_sl = pos.get("stop_loss_price")
             _pos_sl_type = pos.get("stop_loss_type")
             if (
-                _pos_sl is not None and isinstance(_pos_sl, (int, float)) and _pos_sl > 0
+                _pos_sl is not None
+                and isinstance(_pos_sl, (int, float))
+                and _pos_sl > 0
                 and _pos_sl_type
                 and _pos_sl_type not in ("BTC_WINDVANE",)
             ):
@@ -2898,8 +3018,9 @@ def _update_tp_sl_dynamic(client, coin, pos):
                     need_update = True
 
         if need_update:
-            _sync_tp_sl_orders(client, coin, pos, entry_price, tp_pct, sl_price,
-                               current_price=current_price)
+            _sync_tp_sl_orders(
+                client, coin, pos, entry_price, tp_pct, sl_price, current_price=current_price
+            )
             pos["last_sl_price"] = sl_price
             pos["last_tp_price"] = current_tp
     except Exception as e:
@@ -2941,7 +3062,9 @@ def check_take_profit(client, coin, pos, state):
             _pos_sl = pos.get("stop_loss_price")
             _pos_sl_type = pos.get("stop_loss_type")
             if (
-                _pos_sl is not None and isinstance(_pos_sl, (int, float)) and _pos_sl > 0
+                _pos_sl is not None
+                and isinstance(_pos_sl, (int, float))
+                and _pos_sl > 0
                 and _pos_sl_type
                 and _pos_sl_type not in ("BTC_WINDVANE",)
             ):
@@ -2950,10 +3073,14 @@ def check_take_profit(client, coin, pos, state):
                 # 手动SL的触发：价格有效跌破SL绝对价（不用MA200的收盘确认）
                 if not is_short and current_price <= sl_price:
                     sl_triggered = True
-                    _log(f"[{coin}] 手动SL({sl_type})触发: 当前价={current_price:.4g} <= SL={sl_price}")
+                    _log(
+                        f"[{coin}] 手动SL({sl_type})触发: 当前价={current_price:.4g} <= SL={sl_price}"
+                    )
                 elif is_short and current_price >= sl_price:
                     sl_triggered = True
-                    _log(f"[{coin}] 手动SL({sl_type})触发: 当前价={current_price:.4g} >= SL={sl_price}")
+                    _log(
+                        f"[{coin}] 手动SL({sl_type})触发: 当前价={current_price:.4g} >= SL={sl_price}"
+                    )
 
         # ── BTC风向标智能模式：加密资产非BTC币种由BTC风向标状态控制止损 ──
         # 非加密资产（如美股）使用旧版MA200止损，不进入此分支
@@ -3078,7 +3205,9 @@ def check_take_profit(client, coin, pos, state):
                                 state["total_wins"] += 1
                                 state["consecutive_losses"] = 0
                                 try:
-                                    _save_trade_to_history(coin, pos, current_price, "trailing_tp", profit_pct)
+                                    _save_trade_to_history(
+                                        coin, pos, current_price, "trailing_tp", profit_pct
+                                    )
                                 except Exception:
                                     pass
                                 del state["positions"][coin]
@@ -3168,7 +3297,9 @@ def check_take_profit(client, coin, pos, state):
                     _log(f"[{coin}] 止损平仓 ({sl_type})")
                     _on_loss_trade(state, coin, reason=f"止损平仓({sl_type})")
                     try:
-                        _save_trade_to_history(coin, pos, current_price, f"sl_{sl_type}", profit_pct)
+                        _save_trade_to_history(
+                            coin, pos, current_price, f"sl_{sl_type}", profit_pct
+                        )
                     except Exception:
                         pass
                     if coin in state["positions"]:
@@ -3182,7 +3313,9 @@ def check_take_profit(client, coin, pos, state):
                         _log(f"[{coin}] 检测到交易所无持仓，按外部止损平仓处理")
                         _on_loss_trade(state, coin, reason=f"外部止损平仓({sl_type})")
                         try:
-                            _save_trade_to_history(coin, pos, current_price, f"external_sl_{sl_type}", profit_pct)
+                            _save_trade_to_history(
+                                coin, pos, current_price, f"external_sl_{sl_type}", profit_pct
+                            )
                         except Exception:
                             pass
                         if coin in state["positions"]:
@@ -3238,7 +3371,7 @@ def _evaluate_signal_strength(elder_ray, direction="LONG"):
         if bull_out_of_control:
             weak_reasons.append("多头失控:Bull转负")
     else:
-        strong_directions = ("STRONG_BEAR", "BEAR_TREND")
+        strong_directions = ("STRONG_BEAR", "BEAR_TREND")  # noqa: F841
         weak_directions = ("BEAR_REVERSAL", "STRONG_BULL", "BULL_TREND", "BULL_REVERSAL")
         if er_direction in weak_directions:
             weak_reasons.append(f"方向逆转:{er_direction}")
@@ -3337,9 +3470,9 @@ def check_time_exit(client, coin, pos, state):
         # ═══════════════════════════════════════════════════════════════
         # FIX-B: 两层超时硬闸——防止"僵尸仓"（SKHYNIX式11天+0.95%复现）
         # ═══════════════════════════════════════════════════════════════
-        hard_gate_mult   = get_config_float("V15_TIMEOUT_HARD_GATE_MULT",   3.0)  # 硬闸: max×3
-        micro_profit_mult= get_config_float("V15_TIMEOUT_MICRO_GATE_MULT", 2.0)  # 微盈闸: max×2
-        micro_profit_cap = get_config_float("V15_TIMEOUT_MICRO_PROFIT_CAP", 0.02) # 微盈阈值 <2%
+        hard_gate_mult = get_config_float("V15_TIMEOUT_HARD_GATE_MULT", 3.0)  # 硬闸: max×3
+        micro_profit_mult = get_config_float("V15_TIMEOUT_MICRO_GATE_MULT", 2.0)  # 微盈闸: max×2
+        micro_profit_cap = get_config_float("V15_TIMEOUT_MICRO_PROFIT_CAP", 0.02)  # 微盈阈值 <2%
 
         # FIX-B 闸1：硬闸——持超max_hours×3（如36×3=108h=4.5天）不问盈亏强制止盈/止损
         if hold_hours >= max_hours * hard_gate_mult:
@@ -3349,7 +3482,10 @@ def check_time_exit(client, coin, pos, state):
                     f"盈利{profit_pct:+.2%}, 不问信号强制止盈离场(释放名额)"
                 )
                 _execute_close_position(
-                    client, coin, pos, state,
+                    client,
+                    coin,
+                    pos,
+                    state,
                     reason=f"FIX-B_timeout_hard_gate_profit:{hold_hours:.0f}h",
                     exit_price=current_price,
                 )
@@ -3362,7 +3498,10 @@ def check_time_exit(client, coin, pos, state):
                         f"亏损{profit_pct:+.2%}, V15_HARD_GATE_LOSS_CLOSE=true → 强制平仓"
                     )
                     _execute_close_position(
-                        client, coin, pos, state,
+                        client,
+                        coin,
+                        pos,
+                        state,
                         reason=f"FIX-B_timeout_hard_gate_loss_force:{hold_hours:.0f}h",
                         exit_price=current_price,
                     )
@@ -3383,7 +3522,10 @@ def check_time_exit(client, coin, pos, state):
                 f"微盈{profit_pct:+.2%}<{micro_profit_cap*100:.1f}%, 信号强度={signal['score']:.0f} → 止盈离场换强势币"
             )
             _execute_close_position(
-                client, coin, pos, state,
+                client,
+                coin,
+                pos,
+                state,
                 reason=f"FIX-B_timeout_microprofit_gate:hold={hold_hours:.0f}h,pf={profit_pct*100:.2f}%",
                 exit_price=current_price,
             )
@@ -3401,7 +3543,10 @@ def check_time_exit(client, coin, pos, state):
                     f"原因={signal['reason']}), 止盈平仓"
                 )
                 _execute_close_position(
-                    client, coin, pos, state,
+                    client,
+                    coin,
+                    pos,
+                    state,
                     reason=f"timeout_profit_signal_weak:{signal['reason']}",
                     exit_price=current_price,
                 )
@@ -3415,8 +3560,15 @@ def check_time_exit(client, coin, pos, state):
                 if capped_tp > current_tp:
                     pos["take_profit_pct"] = capped_tp
                     sl_price = params.get("stop_loss_price")
-                    _sync_tp_sl_orders(client, coin, pos, entry_price, capped_tp, sl_price,
-                                       current_price=current_price)
+                    _sync_tp_sl_orders(
+                        client,
+                        coin,
+                        pos,
+                        entry_price,
+                        capped_tp,
+                        sl_price,
+                        current_price=current_price,
+                    )
                     _log(
                         f"[{coin}] 超时盈利, 信号仍强(强度={signal['score']:.0f}), "
                         f"提高止盈 {current_tp:.2%} → {capped_tp:.2%}"
@@ -3846,8 +3998,13 @@ def manage_all_positions(client):
     if not client:
         _log("[manage_all_positions] 客户端不可用, 跳过本轮")
         save_state(state)
-        return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
-                "cooldown_active": False, "details": []}
+        return {
+            "managed_count": 0,
+            "closed_count": 0,
+            "addon_count": 0,
+            "cooldown_active": False,
+            "details": [],
+        }
 
     # ── 冷却状态检查（每轮必检）──
     exit_cooldown_if_expired(state)
@@ -4099,6 +4256,7 @@ def run_poll_cycle():
 # ── 增量在线学习：后台线程单例，防止重复触发 ──
 _INCREMENTAL_THREAD = None
 
+
 def _check_incremental_retrain():
     """主循环末尾检查是否满足增量训练触发条件。
 
@@ -4113,8 +4271,8 @@ def _check_incremental_retrain():
         return
 
     try:
-        from incremental_trainer import IncrementalTrainer, TRIGGER_THRESHOLD
-        from ab_shadow_comparator import ABShadowComparator
+        from ab_shadow_comparator import ABShadowComparator  # noqa: F401
+        from incremental_trainer import TRIGGER_THRESHOLD, IncrementalTrainer
 
         _ab_comp = _get_ab_comparator()
         _trainer = IncrementalTrainer(
@@ -4127,7 +4285,9 @@ def _check_incremental_retrain():
         # 检查累积新交易数
         check = _trainer.check_new_trades()
         if not check.get("should_retrain", False):
-            _log(f"[增量学习] 新交易 {check.get('new_trades', 0)}/{V15_INCREMENTAL_MIN_TRADES}，未达阈值，跳过")
+            _log(
+                f"[增量学习] 新交易 {check.get('new_trades', 0)}/{V15_INCREMENTAL_MIN_TRADES}，未达阈值，跳过"
+            )
             return
 
         _log(f"[增量学习] 达到阈值（{check.get('new_trades', 0)} 笔新交易），启动后台重训")
@@ -4142,26 +4302,31 @@ def _check_incremental_retrain():
                 if status == "skipped":
                     _log(f"[增量学习] 重训跳过: {result.get('reason', '')}")
                 else:
-                    _log(f"[增量学习] 重训完成，开始双基线评估...")
+                    _log("[增量学习] 重训完成，开始双基线评估...")
                     promote_result = _trainer.evaluate_and_promote()
                     action = promote_result.get("action", "unknown")
                     transition = promote_result.get("transition", "")
                     new_status = promote_result.get("new_status", "")
-                    _log(f"[增量学习] 评估完成: action={action} transition={transition} new_status={new_status}")
+                    _log(
+                        f"[增量学习] 评估完成: action={action} transition={transition} new_status={new_status}"
+                    )
                     if action == "promoted":
-                        _log(f"[增量学习] ✅ 新版本晋升 LIVE，已热切换模型")
+                        _log("[增量学习] ✅ 新版本晋升 LIVE，已热切换模型")
                     elif action == "rejected":
-                        _log(f"[增量学习] ❌ 新版本劣于基线，拒绝晋升，旧版本继续服务")
+                        _log("[增量学习] ❌ 新版本劣于基线，拒绝晋升，旧版本继续服务")
                     else:
                         _log(f"[增量学习] ⏸ 新版本待评估: {promote_result}")
             except Exception as e:
                 _log(f"[增量学习] 重训异常: {e}")
                 import traceback
+
                 _log(traceback.format_exc())
             finally:
                 _INCREMENTAL_THREAD = None
 
-        _INCREMENTAL_THREAD = threading.Thread(target=_retrain_worker, name="incremental-retrain", daemon=True)
+        _INCREMENTAL_THREAD = threading.Thread(
+            target=_retrain_worker, name="incremental-retrain", daemon=True
+        )
         _INCREMENTAL_THREAD.start()
     except ImportError as e:
         _log(f"[增量学习] 模块导入失败: {e}")

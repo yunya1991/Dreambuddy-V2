@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import os
-import sys
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).parent.resolve()
@@ -12,6 +12,7 @@ LAUNCH_AGENTS_DIR = Path.home() / "Library" / "LaunchAgents"
 PLIST_DST = LAUNCH_AGENTS_DIR / f"{LABEL}.plist"
 LOG_DIR = PROJECT_DIR / "logs"
 UID = os.getuid()
+
 
 def run(cmd, check=True):
     print(f"  $ {' '.join(cmd)}")
@@ -23,6 +24,7 @@ def run(cmd, check=True):
     if check and result.returncode != 0:
         raise RuntimeError(f"命令失败: {result.returncode}")
     return result
+
 
 def install():
     print("=" * 50)
@@ -68,8 +70,8 @@ def install():
     print("=" * 50)
     print()
     print(f"服务标签: {LABEL}")
-    print(f"执行时间: 每日凌晨 02:00")
-    print(f"开机自启: 是")
+    print("执行时间: 每日凌晨 02:00")
+    print("开机自启: 是")
     print(f"主日志文件: {LOG_DIR}/evolution.log")
     print(f"launchd 日志: {LOG_DIR}/evolution_launchd.log")
     print()
@@ -82,6 +84,7 @@ def install():
     print(f"  卸载服务: launchctl unload {PLIST_DST}")
     print()
 
+
 def uninstall():
     print("卸载服务...")
     run(["launchctl", "bootout", f"gui/{UID}/{LABEL}"], check=False)
@@ -91,11 +94,9 @@ def uninstall():
         print(f"  已删除: {PLIST_DST}")
     print("✅ 已卸载")
 
+
 def status():
-    result = subprocess.run(
-        ["launchctl", "list"],
-        capture_output=True, text=True
-    )
+    result = subprocess.run(["launchctl", "list"], capture_output=True, text=True)
     found = False
     for line in result.stdout.splitlines():
         if LABEL in line:
@@ -113,6 +114,7 @@ def status():
                 print(line.rstrip())
     else:
         print("(暂无日志)")
+
 
 if __name__ == "__main__":
     action = sys.argv[1] if len(sys.argv) > 1 else "install"

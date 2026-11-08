@@ -11,6 +11,7 @@ SPEC §2.3.1 核心算法：
   - 权重 = softmax(diff_i / temperature)，temperature 控制差异敏感度
   - 硬约束兜底：聚合后若违规，逐项拉到下限
 """
+
 from __future__ import annotations
 
 import logging
@@ -24,9 +25,9 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # 硬约束常量
 # ============================================================================
-SL_FLOOR = 0.03       # SL 下限 3%（容纳美股/贵金属低波动资产）
-TP_FLOOR = 0.12       # TP 下限 12%
-RR_FLOOR = 2.0        # RR 比下限 2:1
+SL_FLOOR = 0.03  # SL 下限 3%（容纳美股/贵金属低波动资产）
+TP_FLOOR = 0.12  # TP 下限 12%
+RR_FLOOR = 2.0  # RR 比下限 2:1
 ATR_MULT_DEFAULT = 4.5  # ATR 倍数默认值
 
 # 默认参数（空输入或异常时回退）
@@ -48,17 +49,19 @@ _DEFAULT_TEMPERATURE = 0.5
 @dataclass
 class AlgoObservation:
     """单个算法的观察输出"""
+
     algo_name: str
-    params: Dict[str, float]      # sl_floor, tp_floor, atr_mult
-    confidence: float             # [0, 1]
+    params: Dict[str, float]  # sl_floor, tp_floor, atr_mult
+    confidence: float  # [0, 1]
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
 
 @dataclass
 class ParamProposal:
     """聚合后的参数建议"""
-    params: Dict[str, float]              # sl_floor, tp_floor, atr_mult
-    confidence: float                     # [0, 1]
+
+    params: Dict[str, float]  # sl_floor, tp_floor, atr_mult
+    confidence: float  # [0, 1]
     weights: Dict[str, float] = field(default_factory=dict)  # 各算法权重
 
 
@@ -127,21 +130,17 @@ class StatAggregator:
         for key in _DEFAULT_PARAMS:
             theta_post[key] = sum(
                 w * obs.params.get(key, _DEFAULT_PARAMS[key])
-                for w, obs in zip(weights, observations)
+                for w, obs in zip(weights, observations)  # noqa: B905
             )
 
         # 置信度按权重传播
-        confidence = sum(
-            w * obs.confidence for w, obs in zip(weights, observations)
-        )
+        confidence = sum(w * obs.confidence for w, obs in zip(weights, observations))  # noqa: B905
 
         # 4. 硬约束兜底
         theta_post = self._enforce_hard_constraints(theta_post)
 
         # 组装权重 dict
-        weights_dict = {
-            obs.algo_name: w for obs, w in zip(observations, weights)
-        }
+        weights_dict = {obs.algo_name: w for obs, w in zip(observations, weights)}  # noqa: B905
 
         return ParamProposal(
             params=theta_post,
@@ -175,9 +174,9 @@ class StatAggregator:
         """
         # 各参数的典型范围，用于归一化
         _RANGES = {
-            "sl_floor": 0.05,   # [0.03, 0.08]
-            "tp_floor": 0.08,   # [0.12, 0.20]
-            "atr_mult": 3.5,    # [2.0, 5.5]
+            "sl_floor": 0.05,  # [0.03, 0.08]
+            "tp_floor": 0.08,  # [0.12, 0.20]
+            "atr_mult": 3.5,  # [2.0, 5.5]
         }
         sq_sum = 0.0
         for key in _DEFAULT_PARAMS:
@@ -251,13 +250,16 @@ def trigger_recompute(
     if adapters is None:
         # 延迟导入避免循环依赖
         from .adapters import get_all_adapters
+
         adapters = get_all_adapters()
     if aggregator is None:
         aggregator = StatAggregator()
 
     logger.info(
         "trigger_recompute: type=%s symbols=%d adapters=%d",
-        trigger_type, len(symbols), len(adapters),
+        trigger_type,
+        len(symbols),
+        len(adapters),
     )
 
     results: Dict[str, ParamProposal] = {}
@@ -275,9 +277,9 @@ def trigger_recompute(
         results[symbol] = proposal
 
         logger.info(
-            "trigger_recompute[%s]: %d adapters observed, "
-            "SL=%.4f TP=%.4f conf=%.3f",
-            symbol, len(observations),
+            "trigger_recompute[%s]: %d adapters observed, " "SL=%.4f TP=%.4f conf=%.3f",
+            symbol,
+            len(observations),
             proposal.params["sl_floor"],
             proposal.params["tp_floor"],
             proposal.confidence,

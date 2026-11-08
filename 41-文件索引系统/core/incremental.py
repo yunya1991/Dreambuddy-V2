@@ -16,7 +16,9 @@ SPEC-41-文件索引系统 v0.6 §2.3/§3（P1 阶段）
   4. 多文件合并事务（每波文件一次提交，降低 fsync 开销）
 位置: 41-文件索引系统/core/incremental.py
 """
+
 from __future__ import annotations
+
 import multiprocessing
 import os
 import time
@@ -24,19 +26,16 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from .chunker import Chunk, Chunker
+from .chunker import Chunker
 from .db import Database
 from .indexer import L1Indexer
-from .scanner import FileMeta
 from .tokenizer import tokenize
 
 # 惰性校验预算（SPEC §2.3）
-LAZY_CHECK_BUDGET_MS = 50      # 超过则降级跳过
+LAZY_CHECK_BUDGET_MS = 50  # 超过则降级跳过
 
 # tokens 批量插入 SQL（executemany 走 psycopg3 pipeline 模式）
-_TOKEN_INSERT_SQL = (
-    "INSERT INTO tokens (token, chunk_id, positions, tf) VALUES (%s, %s, %s, %s)"
-)
+_TOKEN_INSERT_SQL = "INSERT INTO tokens (token, chunk_id, positions, tf) VALUES (%s, %s, %s, %s)"
 
 
 def _tokenize_file(abs_path: Path) -> List[tuple]:
@@ -73,7 +72,6 @@ def _tokenize_file_worker(args: Tuple[str, str]) -> Tuple[str, object]:
         return (rel_path, _tokenize_file(abs_path))
     except Exception:
         return (rel_path, "ERROR")
-
 
 
 class L2Indexer:
@@ -152,7 +150,6 @@ class L2Indexer:
                     self._flush_tokens(conn, pending, stats)
             self._flush_tokens(conn, pending, stats)
 
-
     # ---------- 批量写入辅助 ----------
 
     def _write_chunks_and_tokens(self, conn, fid: int, payload: list, pending_tokens: list) -> None:
@@ -171,7 +168,9 @@ class L2Indexer:
                     params,
                 ).fetchall()
             ]
-            for cid, (_heading, _position, _boundary_kind, _content, tf) in zip(cids, part):
+            for cid, (_heading, _position, _boundary_kind, _content, tf) in zip(  # noqa: B905
+                cids, part
+            ):  # noqa: B905
                 for tok, positions in tf.items():
                     pending_tokens.append((tok, cid, positions, len(positions)))
 
@@ -241,9 +240,7 @@ class L2Indexer:
         token_count = 0
         with self.db.connection() as conn:
             with conn.transaction():
-                fid_row = conn.execute(
-                    "SELECT id FROM files WHERE path=%s", (rel_path,)
-                ).fetchone()
+                fid_row = conn.execute("SELECT id FROM files WHERE path=%s", (rel_path,)).fetchone()
                 if fid_row is None:
                     return (0, 0)
                 fid = fid_row[0]
@@ -261,7 +258,6 @@ class L2Indexer:
         """清理已删除文件的内容索引（级联删除 chunks/tokens）。"""
         with self.db.connection() as conn:
             conn.execute("DELETE FROM files WHERE path=%s", (rel_path,))
-
 
 
 class LazyValidator:
@@ -294,4 +290,3 @@ class LazyValidator:
                 changed += 1
         took_ms = int((time.monotonic() - t0) * 1000)
         return {"changed": changed, "took_ms": took_ms, "degraded": degraded}
-

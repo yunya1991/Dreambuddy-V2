@@ -2,6 +2,7 @@
 
 覆盖：6 阶段判定、事件窗口分类、FAIL-OPEN。
 """
+
 from datetime import datetime, timedelta
 
 from dreambuddy_evolution.core.event_window_tracker import EventWindowTracker

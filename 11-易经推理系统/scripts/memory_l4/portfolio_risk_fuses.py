@@ -21,9 +21,9 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +31,14 @@ logger = logging.getLogger(__name__)
 @dataclass
 class FuseAction:
     """熔断动作输出"""
-    block_new_open: bool = False          # True → 下一次 _open_position 直接 return
-    sl_mult_adj: float = 1.0              # 止损系数调整（<1 更近）
-    tp_mult_adj: float = 1.0              # 止盈系数调整（>1 更远）
-    emergency_shutdown: bool = False      # True → G-04 终极熔断（SW 全关 24h）
+
+    block_new_open: bool = False  # True → 下一次 _open_position 直接 return
+    sl_mult_adj: float = 1.0  # 止损系数调整（<1 更近）
+    tp_mult_adj: float = 1.0  # 止盈系数调整（>1 更远）
+    emergency_shutdown: bool = False  # True → G-04 终极熔断（SW 全关 24h）
     reason: str = "no_trigger"
-    trigger_at_ts: float = 0.0            # 触发时间戳（冷却判定使用）
-    block_until_ts: float = 0.0           # block_new_open 到期时间戳
+    trigger_at_ts: float = 0.0  # 触发时间戳（冷却判定使用）
+    block_until_ts: float = 0.0  # block_new_open 到期时间戳
 
     def as_shadow_dict(self) -> Dict[str, Any]:
         return {
@@ -46,8 +47,14 @@ class FuseAction:
             "tp_mult_adj": self.tp_mult_adj,
             "emergency_shutdown": self.emergency_shutdown,
             "reason": self.reason,
-            "trigger_at": datetime.fromtimestamp(self.trigger_at_ts).isoformat() if self.trigger_at_ts else "",
-            "block_until": datetime.fromtimestamp(self.block_until_ts).isoformat() if self.block_until_ts else "",
+            "trigger_at": (
+                datetime.fromtimestamp(self.trigger_at_ts).isoformat() if self.trigger_at_ts else ""
+            ),
+            "block_until": (
+                datetime.fromtimestamp(self.block_until_ts).isoformat()
+                if self.block_until_ts
+                else ""
+            ),
         }
 
 
@@ -193,6 +200,7 @@ class PortfolioRiskFuses:
 
         except Exception as e:  # noqa: BLE001 - fail-open 兜底
             import datetime as _dt
+
             hour_tag = _dt.datetime.now().strftime("%Y-%m-%dT%H")
             if self._last_failopen_logged_hour != hour_tag:
                 logger.warning(

@@ -11,14 +11,11 @@ SPEC-工程实践复现器 §NFR-0：无证明链的 AI 产出，禁止合入。
 3. recall 降权 — 无 receipt 的记忆在 recall 时 score *= poe_penalty
 4. enforcement 模式可配置 — strict/soft/off（默认 soft=FAIL-OPEN）
 """
-from __future__ import annotations
 
-import json
+from __future__ import annotations  # noqa: I001
+
 import sys
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -27,6 +24,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 # ─────────────────────────────── 1. receipt 完整性验证 ───────────────────────────────
 
+
 def test_check_poe_trust_receipt_path_trusts_existing(tmp_path):
     """P0 简化后：_check_poe_trust 日常路径只验 receipt 存在性，不跑全量。
 
@@ -34,6 +32,7 @@ def test_check_poe_trust_receipt_path_trusts_existing(tmp_path):
     篡改检测迁移至 test_p0_poe_optimization.py 的 test_startup_health_check_detects_tamper。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         memory_id = cle.record(
@@ -51,17 +50,19 @@ def test_check_poe_trust_receipt_path_trusts_existing(tmp_path):
 
 # ─────────────────────────────── 2. verify enforcement ───────────────────────────────
 
+
 def test_verify_no_receipt_caps_quality_at_b(tmp_path):
     """RED: 无 receipt 的记忆 verify 时质量升级上限为 B（不能到 A/S）。
 
     PoE soft 模式：无 receipt 不阻塞 verify，但限制质量等级上限。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         # 使用一个不在 Ledger 中的 fake memory_id
         # 先手动写一条记忆到 SQLite（绕过 record，无 receipt）
-        from vector_memory_interface import VectorMemoryInterface
+
         # 直接用 fake_id verify
         fake_id = "VM-9999999999-poe-test01"
         result = cle.verify(fake_id, success=True)
@@ -81,6 +82,7 @@ def test_verify_no_receipt_caps_quality_at_b(tmp_path):
 def test_verify_with_receipt_no_cap(tmp_path):
     """RED: 有 receipt 的记忆 verify 时无质量上限限制（poe_quality_cap=None）。"""
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         memory_id = cle.record(
@@ -97,6 +99,7 @@ def test_verify_with_receipt_no_cap(tmp_path):
 
 # ─────────────────────────────── 3. recall 降权 ───────────────────────────────
 
+
 def test_recall_penalizes_no_receipt_memories(tmp_path):
     """RED: recall 时无 receipt 的记忆 score 被降权。
 
@@ -104,6 +107,7 @@ def test_recall_penalizes_no_receipt_memories(tmp_path):
     有 receipt 的记忆不受影响。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         # record 一条（有 receipt）
@@ -140,12 +144,14 @@ def test_recall_penalizes_no_receipt_memories(tmp_path):
 
 # ─────────────────────────────── 4. enforcement 模式可配置 ───────────────────────────────
 
+
 def test_poe_enforcement_mode_off(tmp_path):
     """RED: poe_enforcement='off' 时不做任何 PoE 检查。
 
     record 不写 receipt，verify 不检查 poe_trust，recall 不降权。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test.db"),
         poe_enforcement="off",
@@ -171,6 +177,7 @@ def test_poe_enforcement_mode_strict(tmp_path):
     strict 模式：无 receipt → success=False（硬阻塞）。
     """
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(
         storage_path=str(tmp_path / "test.db"),
         poe_enforcement="strict",
@@ -190,6 +197,7 @@ def test_poe_enforcement_mode_strict(tmp_path):
 def test_poe_enforcement_default_soft(tmp_path):
     """RED: 默认 poe_enforcement='soft'（FAIL-OPEN + 限制上限）。"""
     from cognitive_loop_entry import CognitiveLoopEntry
+
     cle = CognitiveLoopEntry(storage_path=str(tmp_path / "test.db"))
     try:
         # 默认应为 soft

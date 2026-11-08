@@ -20,36 +20,41 @@ Ising相变检测器 — 统计力学市场集体状态识别。
     三层独立信号交叉验证，提高信号可靠性
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
 from collections import deque
+from dataclasses import dataclass
+from typing import Any, Dict, Tuple
+
 import numpy as np
 
 from ._constants import (
+    DIR_DOWN,
+    DIR_FLAT,
+    DIR_UNKNOWN,
+    DIR_UP,
+    ISING_DISORDERED_RATIO,
+    ISING_ENERGY_SPIKE_FACTOR,
     ISING_GRID_SIZE,
     ISING_INTERACTION_BASE,
-    ISING_TEMP_SCALE,
-    ISING_TEMP_CRITICAL,
-    ISING_ORDERED_RATIO,
-    ISING_DISORDERED_RATIO,
     ISING_MAGNETIZATION_THRESHOLD,
-    ISING_ENERGY_SPIKE_FACTOR,
+    ISING_ORDERED_RATIO,
+    ISING_TEMP_CRITICAL,
+    ISING_TEMP_SCALE,
     ISING_WINDOW_SIZE,
-    DIR_UP, DIR_DOWN, DIR_FLAT, DIR_UNKNOWN,
 )
 
 
 @dataclass
 class IsingPhaseResult:
     """Ising相变检测结果"""
-    magnetization: float = 0.0       # 磁化强度 M ∈ [-1, 1]，|M|高=共识强
-    energy: float = 0.0              # 能量 E（负值，越负越有序）
-    temperature: float = 0.0         # 温度 T ∝ 波动率²
-    phase: str = "UNKNOWN"           # 相态：ORDERED(有序/趋势) / DISORDERED(无序/震荡) / CRITICAL(临界)
-    direction: str = DIR_UNKNOWN     # 市场方向：M>0=UP, M<0=DOWN, M≈0=FLAT
+
+    magnetization: float = 0.0  # 磁化强度 M ∈ [-1, 1]，|M|高=共识强
+    energy: float = 0.0  # 能量 E（负值，越负越有序）
+    temperature: float = 0.0  # 温度 T ∝ 波动率²
+    phase: str = "UNKNOWN"  # 相态：ORDERED(有序/趋势) / DISORDERED(无序/震荡) / CRITICAL(临界)
+    direction: str = DIR_UNKNOWN  # 市场方向：M>0=UP, M<0=DOWN, M≈0=FLAT
     consensus_strength: float = 0.0  # 共识强度 = |M| ∈ [0, 1]
     phase_transition_alert: bool = False  # 相变预警（能量突变）
-    transition_probability: float = 0.0   # 相变概率 ∈ [0, 1]
+    transition_probability: float = 0.0  # 相变概率 ∈ [0, 1]
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -116,8 +121,8 @@ class IsingPhaseDetector:
                 neighbors = [
                     ((i + 1) % gs) * gs + j,  # 下
                     ((i - 1) % gs) * gs + j,  # 上
-                    i * gs + (j + 1) % gs,    # 右
-                    i * gs + (j - 1) % gs,    # 左
+                    i * gs + (j + 1) % gs,  # 右
+                    i * gs + (j - 1) % gs,  # 左
                 ]
                 for nb in neighbors:
                     interaction[idx, nb] = self.J
@@ -154,9 +159,7 @@ class IsingPhaseDetector:
         temperature = ISING_TEMP_SCALE * volatility
 
         # Step 5: 判定相态
-        phase, transition_prob = self._determine_phase(
-            magnetization, energy, temperature
-        )
+        phase, transition_prob = self._determine_phase(magnetization, energy, temperature)
 
         # Step 6: 方向判定
         if abs(magnetization) < ISING_MAGNETIZATION_THRESHOLD * 0.5:
@@ -208,7 +211,7 @@ class IsingPhaseDetector:
             returns = np.concatenate([padding, returns])
 
         # 取最近 n_spins 个
-        recent = returns[-self.n_spins:]
+        recent = returns[-self.n_spins :]
         # 转为自旋 ±1
         spins = np.where(recent >= 0, 1.0, -1.0)
         return spins
@@ -246,7 +249,7 @@ class IsingPhaseDetector:
         # 温度比 r = T / Tc
         temp_ratio = temperature / Tc if Tc > 0 else 0
 
-        ordered_thresh = ISING_ORDERED_RATIO      # 0.85
+        ordered_thresh = ISING_ORDERED_RATIO  # 0.85
         disordered_thresh = ISING_DISORDERED_RATIO  # 1.15
 
         if temp_ratio < ordered_thresh:
@@ -262,7 +265,7 @@ class IsingPhaseDetector:
             phase = "CRITICAL"
             # 距离Tc越近概率越高
             center = (ordered_thresh + disordered_thresh) / 2  # 1.0
-            width = (disordered_thresh - ordered_thresh) / 2   # 0.15
+            width = (disordered_thresh - ordered_thresh) / 2  # 0.15
             distance = abs(temp_ratio - center) / width
             transition_prob = max(0.0, 1.0 - distance)
 
@@ -340,7 +343,7 @@ class IsingPhaseDetector:
         history = list(self._magnetization_history)
         # 近5个 vs 前5个的磁化强度变化
         recent = history[-5:] if len(history) >= 5 else history[-3:]
-        earlier = history[:-len(recent)] if len(history) > len(recent) else history[:1]
+        earlier = history[: -len(recent)] if len(history) > len(recent) else history[:1]
         delta_m = float(np.mean(np.abs(recent)) - np.mean(np.abs(earlier)))
 
         if delta_m > 0.05:

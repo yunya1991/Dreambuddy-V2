@@ -6,11 +6,13 @@
 2. 做梦部外部反思进化 - 潜意识层外部视角
 3. GitHub成熟经验搜索进化 - 外部成熟经验验证
 """
-import json, os, time
-from pathlib import Path
-from typing import Dict, List, Optional
+
+import json
+import time
 from datetime import datetime, timezone
 from enum import Enum
+from pathlib import Path
+from typing import Dict, List, Optional
 
 from .backtest_engine import SimpleBacktestEngine
 
@@ -122,10 +124,14 @@ class EvolutionEngine:
         pool["proposals"].append(proposal)
         self._save_pool(pool)
 
-        self._record_history(proposal["id"], "proposed", {
-            "source": source.value,
-            "title": title,
-        })
+        self._record_history(
+            proposal["id"],
+            "proposed",
+            {
+                "source": source.value,
+                "title": title,
+            },
+        )
 
         print(f"[进化] 新提议: {title} (来源: {source.value}, ID: {proposal['id']})")
         return proposal
@@ -155,9 +161,7 @@ class EvolutionEngine:
 
         all_results = []
         for coin in coins:
-            result = self.backtest_engine.compare_strategies(
-                coin, baseline_params, improved_params
-            )
+            result = self.backtest_engine.compare_strategies(coin, baseline_params, improved_params)
             all_results.append(result)
 
         avg_improvement = self._calc_avg_improvement(all_results)
@@ -177,7 +181,9 @@ class EvolutionEngine:
         else:
             proposal["status"] = EvolutionStatus.REJECTED.value
             proposal["rejected_at"] = self._now_iso()
-            proposal["rejection_reason"] = f"回测未达标: PnL变化{avg_improvement['total_pnl_change_pct']:.2f}%, Sharpe变化{avg_improvement['sharpe_change']:.4f}"
+            proposal["rejection_reason"] = (
+                f"回测未达标: PnL变化{avg_improvement['total_pnl_change_pct']:.2f}%, Sharpe变化{avg_improvement['sharpe_change']:.4f}"
+            )
             print(f"[进化] 回测未通过: {proposal['title']} - {proposal['rejection_reason']}")
 
         self._save_pool(pool)
@@ -226,9 +232,7 @@ class EvolutionEngine:
         coins = proposal.get("backtest_result", {}).get("coins_tested", ["BTC", "ETH"])
         all_results = []
         for coin in coins:
-            result = self.backtest_engine.compare_strategies(
-                coin, baseline_params, improved_params
-            )
+            result = self.backtest_engine.compare_strategies(coin, baseline_params, improved_params)
             all_results.append(result)
 
         avg_improvement = self._calc_avg_improvement(all_results)
@@ -242,24 +246,30 @@ class EvolutionEngine:
         if avg_improvement["total_pnl_change_pct"] > 1 and avg_improvement["sharpe_change"] >= 0:
             proposal["status"] = EvolutionStatus.ADOPTED.value
             proposal["adopted_at"] = self._now_iso()
-            pool["adopted"].append({
-                "id": proposal["id"],
-                "title": proposal["title"],
-                "source": proposal["source"],
-                "strategy_params": proposal["strategy_params"],
-                "adopted_at": proposal["adopted_at"],
-                "backtest_result": proposal.get("backtest_result"),
-                "observation_result": proposal.get("observation_result"),
-            })
+            pool["adopted"].append(
+                {
+                    "id": proposal["id"],
+                    "title": proposal["title"],
+                    "source": proposal["source"],
+                    "strategy_params": proposal["strategy_params"],
+                    "adopted_at": proposal["adopted_at"],
+                    "backtest_result": proposal.get("backtest_result"),
+                    "observation_result": proposal.get("observation_result"),
+                }
+            )
             print(f"[进化] ✅ 提议已采纳: {proposal['title']}")
         else:
             proposal["status"] = EvolutionStatus.REJECTED.value
             proposal["rejected_at"] = self._now_iso()
-            proposal["rejection_reason"] = f"观察期未通过: PnL变化{avg_improvement['total_pnl_change_pct']:.2f}%"
+            proposal["rejection_reason"] = (
+                f"观察期未通过: PnL变化{avg_improvement['total_pnl_change_pct']:.2f}%"
+            )
             print(f"[进化] ❌ 观察期未通过: {proposal['title']}")
 
         self._save_pool(pool)
-        self._record_history(proposal["id"], "observation_finalized", proposal["observation_result"])
+        self._record_history(
+            proposal["id"], "observation_finalized", proposal["observation_result"]
+        )
 
         return proposal["observation_result"]
 
@@ -275,7 +285,8 @@ class EvolutionEngine:
         """获取待处理的提议"""
         pool = self._load_pool()
         return [
-            p for p in pool.get("proposals", [])
+            p
+            for p in pool.get("proposals", [])
             if p["status"] in (EvolutionStatus.PROPOSED.value, EvolutionStatus.BACKTESTING.value)
         ]
 
@@ -283,8 +294,7 @@ class EvolutionEngine:
         """获取观察期中的提议"""
         pool = self._load_pool()
         return [
-            p for p in pool.get("proposals", [])
-            if p["status"] == EvolutionStatus.OBSERVATION.value
+            p for p in pool.get("proposals", []) if p["status"] == EvolutionStatus.OBSERVATION.value
         ]
 
     def evaluate_observation_period(self) -> int:
@@ -327,8 +337,12 @@ class EvolutionEngine:
         return {
             "total_proposals": len(proposals),
             "adopted_count": len(adopted),
-            "rejected_count": sum(1 for p in proposals if p["status"] == EvolutionStatus.REJECTED.value),
-            "in_observation": sum(1 for p in proposals if p["status"] == EvolutionStatus.OBSERVATION.value),
+            "rejected_count": sum(
+                1 for p in proposals if p["status"] == EvolutionStatus.REJECTED.value
+            ),
+            "in_observation": sum(
+                1 for p in proposals if p["status"] == EvolutionStatus.OBSERVATION.value
+            ),
             "adoption_rate": round(len(adopted) / len(proposals), 2) if proposals else 0,
             "by_source": by_source,
             "history_count": len(history.get("history", [])),
@@ -384,12 +398,14 @@ class EvolutionEngine:
     def _record_history(self, proposal_id: str, action: str, details: Dict):
         """记录进化历史"""
         history = self._load_history()
-        history["history"].append({
-            "proposal_id": proposal_id,
-            "action": action,
-            "timestamp": self._now_iso(),
-            "details": details,
-        })
+        history["history"].append(
+            {
+                "proposal_id": proposal_id,
+                "action": action,
+                "timestamp": self._now_iso(),
+                "details": details,
+            }
+        )
         if len(history["history"]) > 500:
             history["history"] = history["history"][-500:]
         self._save_history(history)

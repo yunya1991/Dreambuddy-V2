@@ -1,14 +1,13 @@
 """消融实验：拆解抄底增强的各个组件，找出正负贡献"""
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
-import numpy as np
+import pandas as pd  # noqa: I001
 
-from backtest.strategy import EnhancedMA200Strategy
 from ml.v36_combo_strategy import V36ComboStrategy
 from ml.scenario_backtest_engine import ScenarioBacktestEngine
 
@@ -47,11 +46,19 @@ def ablation_test():
         ("+ 底部确认(10%)", {**base_short_opt, "bb_accel_pct": 0, "bottom_confirm_pct": 0.10}),
         ("+ 底部确认(15%)", {**base_short_opt, "bb_accel_pct": 0, "bottom_confirm_pct": 0.15}),
         ("+ 底部确认(20%)", {**base_short_opt, "bb_accel_pct": 0, "bottom_confirm_pct": 0.20}),
-        ("+ 两者都加(10%+10%)", {**base_short_opt, "bb_accel_pct": 0.10, "bottom_confirm_pct": 0.10}),
-        ("+ 两者都加(15%+15%)", {**base_short_opt, "bb_accel_pct": 0.15, "bottom_confirm_pct": 0.15}),
+        (
+            "+ 两者都加(10%+10%)",
+            {**base_short_opt, "bb_accel_pct": 0.10, "bottom_confirm_pct": 0.10},
+        ),
+        (
+            "+ 两者都加(15%+15%)",
+            {**base_short_opt, "bb_accel_pct": 0.15, "bottom_confirm_pct": 0.15},
+        ),
     ]
 
-    print(f"{'配置':<25} {'总收益':>10} {'夏普':>8} {'卡玛':>8} {'回撤':>10} {'评分':>8} {'相对基准':>10}")
+    print(
+        f"{'配置':<25} {'总收益':>10} {'夏普':>8} {'卡玛':>8} {'回撤':>10} {'评分':>8} {'相对基准':>10}"
+    )
     print("-" * 85)
 
     results = []
@@ -61,13 +68,16 @@ def ablation_test():
     for name, kwargs in configs:
         strategy = V36ComboStrategy(is_btc=True, **kwargs)
         result = engine.run_scenario_backtest(
-            prices, strategy, name.replace(" ", "_"),
-            symbol="BTC", experiment_name=f"ablation_{name.replace(' ', '_')}",
+            prices,
+            strategy,
+            name.replace(" ", "_"),
+            symbol="BTC",
+            experiment_name=f"ablation_{name.replace(' ', '_')}",
         )
 
         if baseline_score is None:
             baseline_score = result.composite_score
-            baseline_ret = result.overall_total_return
+            baseline_ret = result.overall_total_return  # noqa: F841
             rel_score = "-"
         else:
             rel_score = f"{result.composite_score / baseline_score - 1:+.1%}"
@@ -125,8 +135,11 @@ def ablation_test():
     for name, kwargs in reverse_configs:
         strategy = V36ComboStrategy(is_btc=True, **kwargs)
         result = engine.run_scenario_backtest(
-            prices, strategy, name.replace(" ", "_"),
-            symbol="BTC", experiment_name=f"reverse_{name.replace(' ', '_')}",
+            prices,
+            strategy,
+            name.replace(" ", "_"),
+            symbol="BTC",
+            experiment_name=f"reverse_{name.replace(' ', '_')}",
         )
         print(
             f"{name:<25} "

@@ -15,6 +15,7 @@
 - 环境变量优先，避免硬编码 API key
 - FAIL-OPEN：未配置 provider 时返回 None，调用方决定降级策略
 """
+
 from __future__ import annotations
 
 import logging
@@ -110,7 +111,10 @@ def create_llm(config: dict) -> Any:
 
     logger.info(
         "Creating LLM: provider=%s model=%s base_url=%s use_vision=%s",
-        provider, model, base_url, use_vision,
+        provider,
+        model,
+        base_url,
+        use_vision,
     )
 
     try:
@@ -128,9 +132,9 @@ def create_llm(config: dict) -> Any:
         try:
             from browser_use import ChatBrowserUse
         except ImportError:
-            raise ImportError(
+            raise ImportError(  # noqa: B904
                 "ChatBrowserUse not available. Install browser-use latest version."
-            )
+            )  # noqa: B904
         if not api_key:
             raise ValueError(
                 "BROWSER_USE_API_KEY is required for browser_use provider. "
@@ -144,7 +148,7 @@ def create_llm(config: dict) -> Any:
         try:
             from browser_use import ChatOllama
         except ImportError:
-            raise ImportError("ChatOllama not available in this browser-use version.")
+            raise ImportError("ChatOllama not available in this browser-use version.")  # noqa: B904
         llm = ChatOllama(model=model)
         logger.info("LLM created: Ollama model=%s", model)
         return llm
@@ -159,18 +163,17 @@ def create_llm(config: dict) -> Any:
                 "Install anthropic SDK for native support."
             )
             if not api_key:
-                raise ValueError(
+                raise ValueError(  # noqa: B904
                     "ANTHROPIC_API_KEY is required for anthropic provider."
-                )
+                )  # noqa: B904
             llm = ChatOpenAI(
-                model=model, api_key=api_key,
+                model=model,
+                api_key=api_key,
                 base_url=base_url or "https://api.anthropic.com/v1/",
             )
         else:
             if not api_key:
-                raise ValueError(
-                    "ANTHROPIC_API_KEY is required for anthropic provider."
-                )
+                raise ValueError("ANTHROPIC_API_KEY is required for anthropic provider.")
             llm = ChatAnthropic(model=model, api_key=api_key)
         logger.info("LLM created: Anthropic model=%s", model)
         return llm
@@ -193,7 +196,8 @@ def create_llm(config: dict) -> Any:
         )
         logger.info(
             "LLM created: Qwen model=%s base_url=%s (use_vision should be True for VL)",
-            model, base_url,
+            model,
+            base_url,
         )
         return llm
 

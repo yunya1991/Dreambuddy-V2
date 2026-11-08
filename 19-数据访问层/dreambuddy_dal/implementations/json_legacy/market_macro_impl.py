@@ -1,4 +1,5 @@
 """JsonLegacyMarketMacroRepository（P0 内存 6 宏观列表）"""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -33,8 +34,7 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
         return True
 
     def query_funding_by_time(self, symbol, start_ts, end_ts):
-        return [(s, r, t) for s, r, t in self._funding
-                if s == symbol and start_ts <= t <= end_ts]
+        return [(s, r, t) for s, r, t in self._funding if s == symbol and start_ts <= t <= end_ts]
 
     # ---------- 5.3 持仓量 ----------
     def upsert_open_interest(self, symbol, oi, sum_v, ts) -> bool:
@@ -42,8 +42,7 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
         return True
 
     def query_open_interest_by_time(self, symbol, start_ts, end_ts):
-        return [row for row in self._oi
-                if row[0] == symbol and start_ts <= row[3] <= end_ts]
+        return [row for row in self._oi if row[0] == symbol and start_ts <= row[3] <= end_ts]
 
     # ---------- 5.4 爆仓 ----------
     def upsert_liquidation(self, symbol, qty, side, price, total, ts) -> bool:
@@ -51,8 +50,7 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
         return True
 
     def query_liquidation_by_time(self, symbol, start_ts, end_ts):
-        return [r for r in self._liq
-                if r[0] == symbol and start_ts <= r[5] <= end_ts]
+        return [r for r in self._liq if r[0] == symbol and start_ts <= r[5] <= end_ts]
 
     # ---------- 5.5 多空比 ----------
     def upsert_long_short_ratio(self, symbol, long_a, short_a, ratio, ts) -> bool:
@@ -60,8 +58,7 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
         return True
 
     def query_long_short_ratio_by_time(self, symbol, start_ts, end_ts):
-        return [r for r in self._lsr
-                if r[0] == symbol and start_ts <= r[4] <= end_ts]
+        return [r for r in self._lsr if r[0] == symbol and start_ts <= r[4] <= end_ts]
 
     # ---------- 5.6 Taker 主动买卖量 ----------
     def upsert_taker_volume(self, symbol, buy, sell, diff, ratio, ts) -> bool:
@@ -69,8 +66,7 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
         return True
 
     def query_taker_volume_by_time(self, symbol, start_ts, end_ts):
-        return [r for r in self._tv
-                if r[0] == symbol and start_ts <= r[5] <= end_ts]
+        return [r for r in self._tv if r[0] == symbol and start_ts <= r[5] <= end_ts]
 
     # ---------- 5.7 通用指标 ----------
     def upsert_metric(self, source, sub_category, metric_name, metric_value, ts) -> bool:
@@ -78,13 +74,14 @@ class JsonLegacyMarketMacroRepository(MarketMacroRepository):
         return True
 
     def query_metric_by_time(self, sub_category, metric_name, start_ts, end_ts):
-        return [(r[0], r[2], r[3], r[4]) for r in self._metrics
-                if r[1] == sub_category and r[2] == metric_name
-                and start_ts <= r[4] <= end_ts]
+        return [
+            (r[0], r[2], r[3], r[4])
+            for r in self._metrics
+            if r[1] == sub_category and r[2] == metric_name and start_ts <= r[4] <= end_ts
+        ]
 
     def query_latest_metric(self, sub_category, metric_name):
-        candidates = [r for r in self._metrics
-                      if r[1] == sub_category and r[2] == metric_name]
+        candidates = [r for r in self._metrics if r[1] == sub_category and r[2] == metric_name]
         if not candidates:
             return None
         latest = max(candidates, key=lambda r: r[4])

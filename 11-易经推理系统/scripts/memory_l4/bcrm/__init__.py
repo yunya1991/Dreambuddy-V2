@@ -7,114 +7,143 @@ BCRM - Binary Contradiction Reasoning Model
 """
 
 from ._constants import (
-    DIR_UP, DIR_DOWN, DIR_FLAT,
-    GUA_QIAN, GUA_KUN, GUA_ZHEN, GUA_XUN,
-    GUA_KAN, GUA_LI, GUA_GEN, GUA_DUI,
-    GUA_NAMES_CN, GUA_NATURE, GUA_WUXING,
-    GUA_BINARY, BINARY_TO_GUA, EIGHT_GUAS,
-    OPPOSITE_GUAS,
-    SPIRAL_FIRST_AFFIRMATION, SPIRAL_FIRST_NEGATION, SPIRAL_SECOND_NEGATION,
-    PHIL_YIJING, PHIL_MATERIALIST_DIALECTIC,
-    DEFAULT_QUALITATIVE_THRESHOLD,
+    BINARY_TO_GUA,
     DEFAULT_MIN_CONFIDENCE_THRESHOLD,
-    SIXIANG_TAIYANG, SIXIANG_SHAOYANG, SIXIANG_SHAOYIN, SIXIANG_TAIYIN,
-    SIXIANG_TIME, SIXIANG_SPACE, SIXIANG_SURFACE, SIXIANG_CORE,
+    DEFAULT_QUALITATIVE_THRESHOLD,
+    DIR_DOWN,
+    DIR_FLAT,
+    DIR_UP,
+    EIGHT_GUAS,
+    GUA_BINARY,
+    GUA_DUI,
+    GUA_GEN,
+    GUA_KAN,
+    GUA_KUN,
+    GUA_LI,
+    GUA_NAMES_CN,
+    GUA_NATURE,
+    GUA_QIAN,
+    GUA_WUXING,
+    GUA_XUN,
+    GUA_ZHEN,
+    OPPOSITE_GUAS,
+    PHIL_MATERIALIST_DIALECTIC,
+    PHIL_YIJING,
+    SIXIANG_CORE,  # noqa: F401
+    SIXIANG_SHAOYANG,
+    SIXIANG_SHAOYIN,
+    SIXIANG_SPACE,  # noqa: F401
+    SIXIANG_SURFACE,  # noqa: F401
+    SIXIANG_TAIYANG,
+    SIXIANG_TAIYIN,
+    SIXIANG_TIME,  # noqa: F401
+    SPIRAL_FIRST_AFFIRMATION,
+    SPIRAL_FIRST_NEGATION,
+    SPIRAL_SECOND_NEGATION,
 )
-
+from .a_series_bridge import AShareBridge, AShareSnapshot, default_ashare_bridge
+from .backtest_gate import (
+    BacktestGateEngine,
+    BacktestMetrics,
+    GateResult,
+    default_backtest_gate,
+)
+from .case_writer import CaseWriter, default_case_writer
+from .engine import BCRMEngine
+from .force_engine import (
+    Force3D,
+    ForceEngine,
+    ForceResult,
+    MarketForces,
+)
+from .guardrail import BCRMGuardrail, GuardResult, default_guardrail
+from .knowledge_base import (
+    BCRMKnowledgeBase,
+    GuaKnowledge,
+    KnowledgeEntry,
+    default_knowledge_base,
+)
+from .liangyi_engine import (
+    LiangyiEngine,
+    LiangyiState,
+)
+from .memory_adapter import (
+    BCRMMemoryCase,
+    L4MemoryAdapter,
+    MockMemoryAdapter,
+    default_memory_adapter,
+)
 from .output_contract import (
     BCRMOutput,
     ContradictionState,
     DialecticalStep,
-    NextState,
-    TransformationTrigger,
-    StrategyBranch,
     HexagramResult,
-    SpiralPosition,
+    NextState,
     PracticeDirective,
+    SpiralPosition,
+    StrategyBranch,
+    TransformationTrigger,
 )
-
+from .scale_engine import (
+    ScaleEngine,
+    ScaleParams,
+    compute_hexagram_params,
+    compute_scale,
+    gua_to_scale_params,
+    scale_to_gua,
+    scale_to_params,
+    smooth_scale_to_params,
+)
 from .sixty_four_guas import (
+    SIXTY_FOUR_GUAS,
     HexagramKnowledge,
     YaoResult,
-    SIXTY_FOUR_GUAS,
-    get_hexagram_knowledge,
     build_hexagram_by_guas,
     get_all_hexagram_names,
+    get_hexagram_knowledge,
 )
-
+from .walk_forward import (
+    WalkForwardEngine,
+    WalkForwardResult,
+    build_bcrm_predict_fn,
+    generate_synthetic_data,
+    run_bcrm_backtest,
+)
 from .yijing_engine import (
     YijingEngine,
     YijingResult,
 )
 
-from .force_engine import (
-    ForceEngine,
-    Force3D,
-    MarketForces,
-    ForceResult,
-)
-
-from .scale_engine import (
-    ScaleEngine,
-    ScaleParams,
-    compute_scale,
-    scale_to_params,
-    scale_to_gua,
-    gua_to_scale_params,
-    smooth_scale_to_params,
-    compute_hexagram_params,
-)
-
-from .liangyi_engine import (
-    LiangyiEngine,
-    LiangyiState,
-)
-
-from .engine import BCRMEngine
-
-from .guardrail import BCRMGuardrail, GuardResult, default_guardrail
-from .knowledge_base import (
-    BCRMKnowledgeBase,
-    KnowledgeEntry,
-    GuaKnowledge,
-    default_knowledge_base,
-)
-from .memory_adapter import (
-    MockMemoryAdapter,
-    L4MemoryAdapter,
-    BCRMMemoryCase,
-    default_memory_adapter,
-)
-from .walk_forward import (
-    WalkForwardEngine,
-    WalkForwardResult,
-    generate_synthetic_data,
-    run_bcrm_backtest,
-    build_bcrm_predict_fn,
-)
-from .backtest_gate import (
-    BacktestGateEngine,
-    GateResult,
-    BacktestMetrics,
-    default_backtest_gate,
-)
-from .case_writer import CaseWriter, default_case_writer
-from .a_series_bridge import AShareBridge, AShareSnapshot, default_ashare_bridge
-
 __all__ = [
-    "DIR_UP", "DIR_DOWN", "DIR_FLAT",
-    "GUA_QIAN", "GUA_KUN", "GUA_ZHEN", "GUA_XUN",
-    "GUA_KAN", "GUA_LI", "GUA_GEN", "GUA_DUI",
-    "GUA_NAMES_CN", "GUA_NATURE", "GUA_WUXING",
-    "GUA_BINARY", "BINARY_TO_GUA", "EIGHT_GUAS", "OPPOSITE_GUAS",
-    "SPIRAL_FIRST_AFFIRMATION", "SPIRAL_FIRST_NEGATION",
+    "DIR_UP",
+    "DIR_DOWN",
+    "DIR_FLAT",
+    "GUA_QIAN",
+    "GUA_KUN",
+    "GUA_ZHEN",
+    "GUA_XUN",
+    "GUA_KAN",
+    "GUA_LI",
+    "GUA_GEN",
+    "GUA_DUI",
+    "GUA_NAMES_CN",
+    "GUA_NATURE",
+    "GUA_WUXING",
+    "GUA_BINARY",
+    "BINARY_TO_GUA",
+    "EIGHT_GUAS",
+    "OPPOSITE_GUAS",
+    "SPIRAL_FIRST_AFFIRMATION",
+    "SPIRAL_FIRST_NEGATION",
     "SPIRAL_SECOND_NEGATION",
-    "PHIL_YIJING", "PHIL_MATERIALIST_DIALECTIC",
+    "PHIL_YIJING",
+    "PHIL_MATERIALIST_DIALECTIC",
     "DEFAULT_QUALITATIVE_THRESHOLD",
     "DEFAULT_MIN_CONFIDENCE_THRESHOLD",
-    "SIXIANG_TAIYANG", "SIXIANG_SHAOYANG",
-    "SIXIANG_SHAOYIN", "SIXIANG_TAIYIN",
-
+    "SIXIANG_TAIYANG",
+    "SIXIANG_SHAOYANG",
+    "SIXIANG_SHAOYIN",
+    "SIXIANG_TAIYIN",
     "BCRMOutput",
     "ContradictionState",
     "DialecticalStep",
@@ -124,40 +153,54 @@ __all__ = [
     "HexagramResult",
     "SpiralPosition",
     "PracticeDirective",
-
     "HexagramKnowledge",
     "YaoResult",
     "SIXTY_FOUR_GUAS",
     "get_hexagram_knowledge",
     "build_hexagram_by_guas",
     "get_all_hexagram_names",
-
     "YijingEngine",
     "YijingResult",
-
-    "ForceEngine", "Force3D", "MarketForces", "ForceResult",
-
-    "ScaleEngine", "ScaleParams",
-    "compute_scale", "scale_to_params", "scale_to_gua",
-    "gua_to_scale_params", "smooth_scale_to_params",
+    "ForceEngine",
+    "Force3D",
+    "MarketForces",
+    "ForceResult",
+    "ScaleEngine",
+    "ScaleParams",
+    "compute_scale",
+    "scale_to_params",
+    "scale_to_gua",
+    "gua_to_scale_params",
+    "smooth_scale_to_params",
     "compute_hexagram_params",
-
-    "LiangyiEngine", "LiangyiState",
-
+    "LiangyiEngine",
+    "LiangyiState",
     "BCRMEngine",
-
-    "BCRMGuardrail", "GuardResult", "default_guardrail",
-    "BCRMKnowledgeBase", "KnowledgeEntry", "GuaKnowledge",
+    "BCRMGuardrail",
+    "GuardResult",
+    "default_guardrail",
+    "BCRMKnowledgeBase",
+    "KnowledgeEntry",
+    "GuaKnowledge",
     "default_knowledge_base",
-    "MockMemoryAdapter", "L4MemoryAdapter", "BCRMMemoryCase",
+    "MockMemoryAdapter",
+    "L4MemoryAdapter",
+    "BCRMMemoryCase",
     "default_memory_adapter",
-    "WalkForwardEngine", "WalkForwardResult",
-    "generate_synthetic_data", "run_bcrm_backtest",
+    "WalkForwardEngine",
+    "WalkForwardResult",
+    "generate_synthetic_data",
+    "run_bcrm_backtest",
     "build_bcrm_predict_fn",
-    "BacktestGateEngine", "GateResult", "BacktestMetrics",
+    "BacktestGateEngine",
+    "GateResult",
+    "BacktestMetrics",
     "default_backtest_gate",
-    "CaseWriter", "default_case_writer",
-    "AShareBridge", "AShareSnapshot", "default_ashare_bridge",
+    "CaseWriter",
+    "default_case_writer",
+    "AShareBridge",
+    "AShareSnapshot",
+    "default_ashare_bridge",
 ]
 
 __version__ = "0.1.0"

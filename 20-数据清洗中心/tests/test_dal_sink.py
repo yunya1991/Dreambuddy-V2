@@ -3,6 +3,7 @@
 路由规则：SilverRecord.df 按 sub_category 路由到 MarketMacroRepo.upsert_*。
 gate_passed=False → 不写 DAL。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -10,8 +11,6 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pandas as pd
-import pytest
-
 from data_cleaning.contract import CleaningTrace, SilverRecord
 from data_cleaning.dal_sink import DalSink
 
@@ -45,11 +44,18 @@ def _mock_repo():
 def test_gate_failed_no_write():
     repo = _mock_repo()
     sink = DalSink(mm_repo=repo)
-    df = pd.DataFrame({"value": [25], "value_classification": ["Extreme Fear"],
-                       "timestamp": [datetime(2024, 1, 1, tzinfo=timezone.utc)]})
+    df = pd.DataFrame(
+        {
+            "value": [25],
+            "value_classification": ["Extreme Fear"],
+            "timestamp": [datetime(2024, 1, 1, tzinfo=timezone.utc)],
+        }
+    )
     silver = _make_silver(df, gate_passed=False)
 
-    written = sink.write_silver(silver, source="alternative", category="chain", sub_category="fear_greed")
+    written = sink.write_silver(
+        silver, source="alternative", category="chain", sub_category="fear_greed"
+    )
 
     assert written == 0
     repo.upsert_fear_greed.assert_not_called()
@@ -72,14 +78,18 @@ def test_route_fear_greed():
     repo = _mock_repo()
     sink = DalSink(mm_repo=repo)
     ts = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
-    df = pd.DataFrame({
-        "value": [25, 72],
-        "value_classification": ["Extreme Fear", "Greed"],
-        "timestamp": [ts, ts + pd.Timedelta(hours=1)],
-    })
+    df = pd.DataFrame(
+        {
+            "value": [25, 72],
+            "value_classification": ["Extreme Fear", "Greed"],
+            "timestamp": [ts, ts + pd.Timedelta(hours=1)],
+        }
+    )
     silver = _make_silver(df, sub_cat="fear_greed")
 
-    written = sink.write_silver(silver, source="alternative", category="chain", sub_category="fear_greed")
+    written = sink.write_silver(
+        silver, source="alternative", category="chain", sub_category="fear_greed"
+    )
 
     assert written == 2
     assert repo.upsert_fear_greed.call_count == 2
@@ -93,11 +103,13 @@ def test_route_funding_rate():
     repo = _mock_repo()
     sink = DalSink(mm_repo=repo)
     ts = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
-    df = pd.DataFrame({
-        "asset": ["BTC", "ETH"],
-        "funding_rate": [Decimal("0.0001"), Decimal("-0.0002")],
-        "timestamp": [ts, ts],
-    })
+    df = pd.DataFrame(
+        {
+            "asset": ["BTC", "ETH"],
+            "funding_rate": [Decimal("0.0001"), Decimal("-0.0002")],
+            "timestamp": [ts, ts],
+        }
+    )
     silver = _make_silver(df, sub_cat="funding")
 
     written = sink.write_silver(silver, source="ccxt", category="chain", sub_category="funding")
@@ -111,15 +123,19 @@ def test_route_open_interest():
     repo = _mock_repo()
     sink = DalSink(mm_repo=repo)
     ts = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
-    df = pd.DataFrame({
-        "asset": ["BTC"],
-        "open_interest": [Decimal("50000")],
-        "sum_open_interest_value": [Decimal("2000000000")],
-        "timestamp": [ts],
-    })
+    df = pd.DataFrame(
+        {
+            "asset": ["BTC"],
+            "open_interest": [Decimal("50000")],
+            "sum_open_interest_value": [Decimal("2000000000")],
+            "timestamp": [ts],
+        }
+    )
     silver = _make_silver(df, sub_cat="open_interest")
 
-    written = sink.write_silver(silver, source="ccxt", category="chain", sub_category="open_interest")
+    written = sink.write_silver(
+        silver, source="ccxt", category="chain", sub_category="open_interest"
+    )
 
     assert written == 1
     repo.upsert_open_interest.assert_called_once()
@@ -130,16 +146,20 @@ def test_route_long_short_ratio():
     repo = _mock_repo()
     sink = DalSink(mm_repo=repo)
     ts = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
-    df = pd.DataFrame({
-        "asset": ["BTC"],
-        "long_account": [Decimal("0.62")],
-        "short_account": [Decimal("0.38")],
-        "long_short_ratio": [Decimal("1.63")],
-        "timestamp": [ts],
-    })
+    df = pd.DataFrame(
+        {
+            "asset": ["BTC"],
+            "long_account": [Decimal("0.62")],
+            "short_account": [Decimal("0.38")],
+            "long_short_ratio": [Decimal("1.63")],
+            "timestamp": [ts],
+        }
+    )
     silver = _make_silver(df, sub_cat="long_short_ratio")
 
-    written = sink.write_silver(silver, source="ccxt", category="chain", sub_category="long_short_ratio")
+    written = sink.write_silver(
+        silver, source="ccxt", category="chain", sub_category="long_short_ratio"
+    )
 
     assert written == 1
     repo.upsert_long_short_ratio.assert_called_once()
@@ -150,17 +170,21 @@ def test_route_taker_volume():
     repo = _mock_repo()
     sink = DalSink(mm_repo=repo)
     ts = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
-    df = pd.DataFrame({
-        "asset": ["BTC"],
-        "buy_vol": [Decimal("1000")],
-        "sell_vol": [Decimal("800")],
-        "buy_sell_volume_diff": [Decimal("200")],
-        "buy_sell_volume_ratio": [Decimal("1.25")],
-        "timestamp": [ts],
-    })
+    df = pd.DataFrame(
+        {
+            "asset": ["BTC"],
+            "buy_vol": [Decimal("1000")],
+            "sell_vol": [Decimal("800")],
+            "buy_sell_volume_diff": [Decimal("200")],
+            "buy_sell_volume_ratio": [Decimal("1.25")],
+            "timestamp": [ts],
+        }
+    )
     silver = _make_silver(df, sub_cat="taker_volume")
 
-    written = sink.write_silver(silver, source="ccxt", category="chain", sub_category="taker_volume")
+    written = sink.write_silver(
+        silver, source="ccxt", category="chain", sub_category="taker_volume"
+    )
 
     assert written == 1
     repo.upsert_taker_volume.assert_called_once()
@@ -174,7 +198,9 @@ def test_unknown_sub_category_routes_to_generic_metric():
     df = pd.DataFrame({"some_col": [1], "timestamp": [datetime(2024, 1, 1, tzinfo=timezone.utc)]})
     silver = _make_silver(df, sub_cat="unknown_metric")
 
-    written = sink.write_silver(silver, source="fred", category="macro", sub_category="unknown_metric")
+    written = sink.write_silver(
+        silver, source="fred", category="macro", sub_category="unknown_metric"
+    )
 
     assert written >= 1
     repo.upsert_metric.assert_called_once()
@@ -186,14 +212,18 @@ def test_upsert_exception_fail_open():
     repo.upsert_fear_greed.side_effect = [RuntimeError("DB lock"), True]
     sink = DalSink(mm_repo=repo)
     ts = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
-    df = pd.DataFrame({
-        "value": [25, 72],
-        "value_classification": ["Extreme Fear", "Greed"],
-        "timestamp": [ts, ts + pd.Timedelta(hours=1)],
-    })
+    df = pd.DataFrame(
+        {
+            "value": [25, 72],
+            "value_classification": ["Extreme Fear", "Greed"],
+            "timestamp": [ts, ts + pd.Timedelta(hours=1)],
+        }
+    )
     silver = _make_silver(df, sub_cat="fear_greed")
 
-    written = sink.write_silver(silver, source="alternative", category="chain", sub_category="fear_greed")
+    written = sink.write_silver(
+        silver, source="alternative", category="chain", sub_category="fear_greed"
+    )
 
     # 第1行异常跳过，第2行成功
     assert written == 1

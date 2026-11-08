@@ -12,7 +12,8 @@ Freqtrade 2025.11.2 的 webserver.py 仍在使用：
     import fastapi_compat_shim; fastapi_compat_shim.apply()
     # 然后 import freqtrade 相关模块
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 from contextlib import asynccontextmanager
 from typing import Callable, Awaitable
 

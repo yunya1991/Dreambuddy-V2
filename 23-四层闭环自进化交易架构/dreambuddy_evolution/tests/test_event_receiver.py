@@ -6,10 +6,8 @@ P1-2 RED: EventReceiver 组件契约测试
 - receive_kline(kline_data, rv, router=None)->dict (含 symbol / r_vector / agi_signature)
 - write_event_driven_state(kline_data, result)->None
 """
-from __future__ import annotations
 
-import numpy as np
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 class TestEventReceiverContract:
@@ -20,6 +18,7 @@ class TestEventReceiverContract:
 
     def test_class_instantiates_with_mode(self):
         from dreambuddy_evolution.engines.event_receiver import EventReceiver
+
         receiver = EventReceiver(mode="Phase2")
         assert receiver is not None
 
@@ -28,8 +27,9 @@ class TestReceiveKline:
     """receive_kline 返回 L1 R 向量 + AGI 签名"""
 
     def test_returns_dict_with_symbol(self):
-        from dreambuddy_evolution.engines.event_receiver import EventReceiver
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+        from dreambuddy_evolution.engines.event_receiver import EventReceiver
+
         receiver = EventReceiver(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",
@@ -47,8 +47,9 @@ class TestReceiveKline:
         assert result["symbol"] == "BTC-USDT-SWAP"
 
     def test_returns_dict_with_r_vector(self):
-        from dreambuddy_evolution.engines.event_receiver import EventReceiver
         from dreambuddy_evolution.core.resistance_vector import ResistanceVector
+        from dreambuddy_evolution.engines.event_receiver import EventReceiver
+
         receiver = EventReceiver(mode="Phase2")
         kline_data = {
             "symbol": "BTC-USDT-SWAP",

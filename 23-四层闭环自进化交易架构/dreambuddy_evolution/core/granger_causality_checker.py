@@ -13,6 +13,7 @@ Granger 因果检验: 如果 X 的过去值能改善对 Y 的预测（在 Y 自�
 依赖: statsmodels (grangercausalitytests), numpy
 FAIL-OPEN: statsmodels 缺失或数据不足时返回 None
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,7 +24,8 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 try:
-    from statsmodels.tsa.stattools import grangercausalitytests, adfuller
+    from statsmodels.tsa.stattools import adfuller, grangercausalitytests
+
     _HAS_STATSMODELS = True
 except ImportError:
     _HAS_STATSMODELS = False
@@ -42,8 +44,9 @@ class GrangerCausalityChecker:
         self._max_lag = max_lag
         self._alpha = significance
 
-    def check(self, cause: list[float] | np.ndarray,
-              effect: list[float] | np.ndarray) -> dict[str, Any] | None:
+    def check(
+        self, cause: list[float] | np.ndarray, effect: list[float] | np.ndarray
+    ) -> dict[str, Any] | None:
         """
         双变量 Granger 因果检验.
 
@@ -80,8 +83,9 @@ class GrangerCausalityChecker:
             return self._check_statsmodels(cause_arr, effect_arr)
         return self._check_numpy(cause_arr, effect_arr)
 
-    def _check_statsmodels(self, cause_arr: np.ndarray,
-                           effect_arr: np.ndarray) -> dict[str, Any] | None:
+    def _check_statsmodels(
+        self, cause_arr: np.ndarray, effect_arr: np.ndarray
+    ) -> dict[str, Any] | None:
         """statsmodels 实现的 Granger 检验."""
         # ADF 平稳性检验（避免伪回归）
         try:
@@ -139,8 +143,7 @@ class GrangerCausalityChecker:
             "stationarized": not is_stationary,
         }
 
-    def _check_numpy(self, cause_arr: np.ndarray,
-                     effect_arr: np.ndarray) -> dict[str, Any] | None:
+    def _check_numpy(self, cause_arr: np.ndarray, effect_arr: np.ndarray) -> dict[str, Any] | None:
         """纯 numpy 实现的 Granger 因果检验（statsmodels 不可用时降级）.
 
         F 检验: 比较受限模型 (仅 effect 滞后) 与非受限模型 (effect+cause 滞后).
@@ -176,8 +179,7 @@ class GrangerCausalityChecker:
         }
 
     @staticmethod
-    def _granger_f_test(cause: np.ndarray, effect: np.ndarray,
-                        lag: int) -> tuple[float, float]:
+    def _granger_f_test(cause: np.ndarray, effect: np.ndarray, lag: int) -> tuple[float, float]:
         """单 lag 的 Granger F 检验.
 
         受限: Y_t = c + sum_{i=1..lag} a_i Y_{t-i}
@@ -191,20 +193,20 @@ class GrangerCausalityChecker:
         # 受限模型设计矩阵: [1, Y_{t-1}, ..., Y_{t-lag}]
         X_r = np.ones((k, lag + 1))
         for i in range(lag):
-            X_r[:, i + 1] = effect[lag - 1 - i: n - 1 - i]
+            X_r[:, i + 1] = effect[lag - 1 - i : n - 1 - i]
         # 非受限模型设计矩阵: 受限 + [X_{t-1}, ..., X_{t-lag}]
         X_u = np.ones((k, 2 * lag + 1))
-        X_u[:, :lag + 1] = X_r
+        X_u[:, : lag + 1] = X_r
         for i in range(lag):
-            X_u[:, lag + 1 + i] = cause[lag - 1 - i: n - 1 - i]
+            X_u[:, lag + 1 + i] = cause[lag - 1 - i : n - 1 - i]
 
         # OLS: beta = (X^T X)^-1 X^T Y
         beta_r = np.linalg.lstsq(X_r, Y, rcond=None)[0]
         beta_u = np.linalg.lstsq(X_u, Y, rcond=None)[0]
         resid_r = Y - X_r @ beta_r
         resid_u = Y - X_u @ beta_u
-        rss_r = float(np.sum(resid_r ** 2))
-        rss_u = float(np.sum(resid_u ** 2))
+        rss_r = float(np.sum(resid_r**2))
+        rss_u = float(np.sum(resid_u**2))
 
         df_num = lag
         df_den = k - (2 * lag + 1)
@@ -215,15 +217,19 @@ class GrangerCausalityChecker:
         # p 值: 优先用 scipy F 分布; 不可用时用 F 统计量阈值近似
         try:
             from scipy import stats as _sp_stats
+
             p_val = float(1.0 - _sp_stats.f.cdf(f_stat, df_num, df_den))
         except Exception:
             # 降级: F > 3.0 视为显著 (α≈0.05 时 F 临界值约 3.0)
             p_val = 0.01 if f_stat > 3.0 else 0.5
         return f_stat, p_val
 
-    def check_per_regime(self, cause: list[float] | np.ndarray,
-                         effect: list[float] | np.ndarray,
-                         regimes: list[str] | np.ndarray) -> dict[str, dict[str, Any] | None]:
+    def check_per_regime(
+        self,
+        cause: list[float] | np.ndarray,
+        effect: list[float] | np.ndarray,
+        regimes: list[str] | np.ndarray,
+    ) -> dict[str, dict[str, Any] | None]:
         """
         Per-Regime Granger 因果检验.
 
@@ -245,7 +251,9 @@ class GrangerCausalityChecker:
             return {}
 
         result = {}
-        unique_regimes = np.unique(regimes_arr[~pd_isna(regimes_arr)]) if _HAS_PANDAS else set(regimes_arr)
+        unique_regimes = (
+            np.unique(regimes_arr[~pd_isna(regimes_arr)]) if _HAS_PANDAS else set(regimes_arr)
+        )
 
         for regime in unique_regimes:
             mask = regimes_arr == regime
@@ -297,10 +305,14 @@ class GrangerCausalityChecker:
 # pandas optional import
 try:
     import pandas as _pd
+
     _HAS_PANDAS = True
+
     def pd_isna(arr):
         return _pd.isna(arr)
+
 except ImportError:
     _HAS_PANDAS = False
+
     def pd_isna(arr):
         return np.array([x is None or (isinstance(x, float) and np.isnan(x)) for x in arr])

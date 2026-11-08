@@ -6,6 +6,7 @@ SPEC-主要矛盾识别与最小阻力路径设计.md §4.2
 HC-AGI-18: 异常必须 FAIL-OPEN，返回 neutral 兜底
 HC-AGI-23: 至少 2 路径才做矛盾分析，单路径返回 neutral
 """
+
 from __future__ import annotations
 
 import pytest
@@ -19,6 +20,7 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         assert PrimaryContradictionIdentifier is not None
 
     def test_identify_resonance_all_long(self):
@@ -26,14 +28,33 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bcrm", "direction": "long",
-             "expected_return": 0.1, "confidence": 0.8, "resistance": 0.2},
-            {"path_id": "p2", "source": "bdsm", "direction": "long",
-             "expected_return": 0.15, "confidence": 0.7, "resistance": 0.3},
-            {"path_id": "p3", "source": "strategic", "direction": "long",
-             "expected_return": 0.2, "confidence": 0.6, "resistance": 0.4},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.1,
+                "confidence": 0.8,
+                "resistance": 0.2,
+            },
+            {
+                "path_id": "p2",
+                "source": "bdsm",
+                "direction": "long",
+                "expected_return": 0.15,
+                "confidence": 0.7,
+                "resistance": 0.3,
+            },
+            {
+                "path_id": "p3",
+                "source": "strategic",
+                "direction": "long",
+                "expected_return": 0.2,
+                "confidence": 0.6,
+                "resistance": 0.4,
+            },
         ]
         result = identifier.identify(paths, {}, {})
         assert result["direction"] == "long"
@@ -47,12 +68,25 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bcrm", "direction": "short",
-             "expected_return": 0.1, "confidence": 0.8, "resistance": 0.2},
-            {"path_id": "p2", "source": "bdsm", "direction": "short",
-             "expected_return": 0.15, "confidence": 0.7, "resistance": 0.3},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": "short",
+                "expected_return": 0.1,
+                "confidence": 0.8,
+                "resistance": 0.2,
+            },
+            {
+                "path_id": "p2",
+                "source": "bdsm",
+                "direction": "short",
+                "expected_return": 0.15,
+                "confidence": 0.7,
+                "resistance": 0.3,
+            },
         ]
         result = identifier.identify(paths, {}, {})
         assert result["direction"] == "short"
@@ -64,12 +98,25 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bcrm", "direction": "long",
-             "expected_return": 0.1, "confidence": 0.9, "resistance": 0.1},
-            {"path_id": "p2", "source": "strategic", "direction": "short",
-             "expected_return": 0.05, "confidence": 0.3, "resistance": 0.7},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.1,
+                "confidence": 0.9,
+                "resistance": 0.1,
+            },
+            {
+                "path_id": "p2",
+                "source": "strategic",
+                "direction": "short",
+                "expected_return": 0.05,
+                "confidence": 0.3,
+                "resistance": 0.7,
+            },
         ]
         result = identifier.identify(paths, {}, {})
         # long 方力量更大 (0.9 > 0.3)
@@ -81,10 +128,17 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bcrm", "direction": "long",
-             "expected_return": 0.1, "confidence": 0.8, "resistance": 0.2},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.1,
+                "confidence": 0.8,
+                "resistance": 0.2,
+            },
         ]
         result = identifier.identify(paths, {}, {})
         assert result["direction"] == "neutral"
@@ -95,6 +149,7 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         result = identifier.identify([], {}, {})
         assert result["direction"] == "neutral"
@@ -105,6 +160,7 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         # 传入畸形数据触发异常
         bad_paths = "not_a_list"  # type: ignore
@@ -117,12 +173,25 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bcrm", "direction": "long",
-             "expected_return": 0.2, "confidence": 0.95, "resistance": 0.05},
-            {"path_id": "p2", "source": "strategic", "direction": "short",
-             "expected_return": 0.01, "confidence": 0.1, "resistance": 0.9},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.2,
+                "confidence": 0.95,
+                "resistance": 0.05,
+            },
+            {
+                "path_id": "p2",
+                "source": "strategic",
+                "direction": "short",
+                "expected_return": 0.01,
+                "confidence": 0.1,
+                "resistance": 0.9,
+            },
         ]
         result = identifier.identify(paths, {}, {})
         # long 力量远大于 short
@@ -134,12 +203,25 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bdsm", "direction": "long",
-             "expected_return": 0.15, "confidence": 0.9, "resistance": 0.1},
-            {"path_id": "p2", "source": "bcrm", "direction": "long",
-             "expected_return": 0.1, "confidence": 0.7, "resistance": 0.3},
+            {
+                "path_id": "p1",
+                "source": "bdsm",
+                "direction": "long",
+                "expected_return": 0.15,
+                "confidence": 0.9,
+                "resistance": 0.1,
+            },
+            {
+                "path_id": "p2",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.1,
+                "confidence": 0.7,
+                "resistance": 0.3,
+            },
         ]
         result = identifier.identify(paths, {}, {})
         assert result["dimension"] in ("C1", "C2", "C3", "C4", "C6", "C7", "C8")
@@ -149,16 +231,36 @@ class TestPrimaryContradictionIdentifier:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         identifier = PrimaryContradictionIdentifier()
         paths = [
-            {"path_id": "p1", "source": "bcrm", "direction": "long",
-             "expected_return": 0.1, "confidence": 0.8, "resistance": 0.2},
-            {"path_id": "p2", "source": "bdsm", "direction": "long",
-             "expected_return": 0.15, "confidence": 0.7, "resistance": 0.3},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.1,
+                "confidence": 0.8,
+                "resistance": 0.2,
+            },
+            {
+                "path_id": "p2",
+                "source": "bdsm",
+                "direction": "long",
+                "expected_return": 0.15,
+                "confidence": 0.7,
+                "resistance": 0.3,
+            },
         ]
         result = identifier.identify(paths, {}, {})
-        required = {"dimension", "direction", "strength", "confidence",
-                    "cause_score", "effort_result", "continuation_score"}
+        required = {
+            "dimension",
+            "direction",
+            "strength",
+            "confidence",
+            "cause_score",
+            "effort_result",
+            "continuation_score",
+        }
         assert required.issubset(result.keys())
 
 
@@ -184,26 +286,43 @@ class TestCausalATEEnhancement:
         from dreambuddy_evolution.core.contradiction_identifier import (
             PrimaryContradictionIdentifier,
         )
+
         return PrimaryContradictionIdentifier()
 
     def _paths(self, direction="long"):
         return [
-            {"path_id": "p1", "source": "bcrm", "direction": direction,
-             "expected_return": 0.1, "confidence": 0.8, "resistance": 0.2},
-            {"path_id": "p2", "source": "bdsm", "direction": direction,
-             "expected_return": 0.15, "confidence": 0.7, "resistance": 0.3},
+            {
+                "path_id": "p1",
+                "source": "bcrm",
+                "direction": direction,
+                "expected_return": 0.1,
+                "confidence": 0.8,
+                "resistance": 0.2,
+            },
+            {
+                "path_id": "p2",
+                "source": "bdsm",
+                "direction": direction,
+                "expected_return": 0.15,
+                "confidence": 0.7,
+                "resistance": 0.3,
+            },
         ]
 
     def test_insufficient_samples_is_noop(self):
         """HC-AGI-08: 样本不足(method=insufficient_samples) → strength 不变"""
         identifier = self._make_identifier()
-        engine = _FakeCausalEngine({
-            "ate": 0.0, "lower_bound": 0.0, "upper_bound": 0.0,
-            "method": "insufficient_samples", "significant": False,
-        })
+        engine = _FakeCausalEngine(
+            {
+                "ate": 0.0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.0,
+                "method": "insufficient_samples",
+                "significant": False,
+            }
+        )
         primary = {"direction": "long", "strength": 0.8}
-        out = identifier._enhance_with_causal_ate(
-            primary, self._paths(), {}, engine)
+        out = identifier._enhance_with_causal_ate(primary, self._paths(), {}, engine)
         assert out["strength"] == 0.8
 
     def test_small_sample_integration_is_noop(self):
@@ -212,21 +331,26 @@ class TestCausalATEEnhancement:
         A2: 显式关闭 enable_causal_historical_samples，确认退回 paths 分支
         （样本恒 <500），避免开关泄漏导致行为变化。
         """
-        from dreambuddy_evolution.core.causal_engine import CausalEngine
         from dreambuddy_evolution.agi_config import AGI_SWITCHES
+        from dreambuddy_evolution.core.causal_engine import CausalEngine
+
         identifier = self._make_identifier()
         paths = [
-            {"path_id": f"p{i}", "source": "bcrm", "direction": "long",
-             "expected_return": 0.1 * i, "confidence": 0.5 + 0.05 * i,
-             "resistance": 0.2}
+            {
+                "path_id": f"p{i}",
+                "source": "bcrm",
+                "direction": "long",
+                "expected_return": 0.1 * i,
+                "confidence": 0.5 + 0.05 * i,
+                "resistance": 0.2,
+            }
             for i in range(1, 7)
         ]
         prev = AGI_SWITCHES.get("enable_causal_historical_samples", False)
         AGI_SWITCHES["enable_causal_historical_samples"] = False
         try:
             primary = {"direction": "long", "strength": 0.8}
-            out = identifier._enhance_with_causal_ate(
-                primary, paths, {}, CausalEngine())
+            out = identifier._enhance_with_causal_ate(primary, paths, {}, CausalEngine())
             assert out["strength"] == 0.8
             assert out["causal_ate"]["method"] == "insufficient_samples"
         finally:
@@ -238,39 +362,51 @@ class TestCausalATEEnhancement:
         替代旧 A1 恒定 ×0.95 契约（用户 2026-10-14 裁决采用三态门禁）。
         """
         identifier = self._make_identifier()
-        engine = _FakeCausalEngine({
-            "ate": 0.0016, "lower_bound": -0.00045, "upper_bound": 0.00371,
-            "method": "causalml_dml", "significant": False,
-            "ci_method": "block_bootstrap",
-        })
+        engine = _FakeCausalEngine(
+            {
+                "ate": 0.0016,
+                "lower_bound": -0.00045,
+                "upper_bound": 0.00371,
+                "method": "causalml_dml",
+                "significant": False,
+                "ci_method": "block_bootstrap",
+            }
+        )
         primary = {"direction": "long", "strength": 0.8}
-        out = identifier._enhance_with_causal_ate(
-            primary, self._paths(), {}, engine)
+        out = identifier._enhance_with_causal_ate(primary, self._paths(), {}, engine)
         assert out["strength"] == 0.8
 
     def test_real_estimate_significant_aligned_boosts(self):
         """态A（CI 不含 0 且 |ate|≥τ）且同向 → 增强 ×1.15"""
         identifier = self._make_identifier()
-        engine = _FakeCausalEngine({
-            "ate": 0.3, "lower_bound": 0.1, "upper_bound": 0.5,
-            "method": "causalml_dml", "significant": True,
-            "ci_method": "block_bootstrap",
-        })
+        engine = _FakeCausalEngine(
+            {
+                "ate": 0.3,
+                "lower_bound": 0.1,
+                "upper_bound": 0.5,
+                "method": "causalml_dml",
+                "significant": True,
+                "ci_method": "block_bootstrap",
+            }
+        )
         primary = {"direction": "long", "strength": 0.8}
-        out = identifier._enhance_with_causal_ate(
-            primary, self._paths(), {}, engine)
+        out = identifier._enhance_with_causal_ate(primary, self._paths(), {}, engine)
         assert out["strength"] == pytest.approx(0.8 * 1.15)
 
     def test_engine_error_is_noop(self):
         """引擎异常 method=error → 中性 no-op，不调整 strength"""
         identifier = self._make_identifier()
-        engine = _FakeCausalEngine({
-            "ate": 0.0, "lower_bound": 0.0, "upper_bound": 0.0,
-            "method": "error", "significant": False,
-        })
+        engine = _FakeCausalEngine(
+            {
+                "ate": 0.0,
+                "lower_bound": 0.0,
+                "upper_bound": 0.0,
+                "method": "error",
+                "significant": False,
+            }
+        )
         primary = {"direction": "long", "strength": 0.8}
-        out = identifier._enhance_with_causal_ate(
-            primary, self._paths(), {}, engine)
+        out = identifier._enhance_with_causal_ate(primary, self._paths(), {}, engine)
         assert out["strength"] == 0.8
 
     # ------------------------------------------------------------------
@@ -280,10 +416,12 @@ class TestCausalATEEnhancement:
     def test_real_ate_from_historical_samples_adjusts_strength(self, tmp_path):
         """#10: 开关开 + 充足历史样本 → 真 CausalEngine 估计出 ATE（非降级）."""
         import json
+
         import numpy as np
+
+        from dreambuddy_evolution.agi_config import AGI_SWITCHES
         from dreambuddy_evolution.core.causal_engine import CausalEngine
         from dreambuddy_evolution.core.causal_sample_store import CausalSampleStore
-        from dreambuddy_evolution.agi_config import AGI_SWITCHES
 
         boot = tmp_path / "boot.jsonl"
         rng = np.random.default_rng(2026)
@@ -312,19 +450,21 @@ class TestCausalATEEnhancement:
         AGI_SWITCHES["enable_causal_historical_samples"] = True
         try:
             primary = {"direction": "long", "strength": 0.8}
-            out = identifier._enhance_with_causal_ate(
-                primary, self._paths(), {}, CausalEngine())
+            out = identifier._enhance_with_causal_ate(primary, self._paths(), {}, CausalEngine())
             assert out["causal_ate"]["method"] in (
-                "causalml_dml", "causalml_s", "causalml_t", "linear_regression"
+                "causalml_dml",
+                "causalml_s",
+                "causalml_t",
+                "linear_regression",
             )
         finally:
             AGI_SWITCHES["enable_causal_historical_samples"] = prev
 
     def test_insufficient_still_noop(self, tmp_path):
         """#11: 开关开但历史样本 <500 → strength 不变（A1 契约不回归）."""
+        from dreambuddy_evolution.agi_config import AGI_SWITCHES
         from dreambuddy_evolution.core.causal_engine import CausalEngine
         from dreambuddy_evolution.core.causal_sample_store import CausalSampleStore
-        from dreambuddy_evolution.agi_config import AGI_SWITCHES
 
         identifier = self._make_identifier()
         identifier._causal_sample_store = CausalSampleStore(
@@ -335,8 +475,7 @@ class TestCausalATEEnhancement:
         AGI_SWITCHES["enable_causal_historical_samples"] = True
         try:
             primary = {"direction": "long", "strength": 0.8}
-            out = identifier._enhance_with_causal_ate(
-                primary, self._paths(), {}, CausalEngine())
+            out = identifier._enhance_with_causal_ate(primary, self._paths(), {}, CausalEngine())
             assert out["strength"] == 0.8
             assert out["causal_ate"]["method"] == "insufficient_samples"
         finally:
@@ -347,17 +486,21 @@ class TestCausalATEEnhancement:
         from dreambuddy_evolution.agi_config import AGI_SWITCHES
 
         identifier = self._make_identifier()
-        engine = _FakeCausalEngine({
-            "ate": 0.3, "lower_bound": 0.1, "upper_bound": 0.5,
-            "method": "causalml_dml", "significant": True,
-            "ci_method": "block_bootstrap",
-        })
+        engine = _FakeCausalEngine(
+            {
+                "ate": 0.3,
+                "lower_bound": 0.1,
+                "upper_bound": 0.5,
+                "method": "causalml_dml",
+                "significant": True,
+                "ci_method": "block_bootstrap",
+            }
+        )
         prev = AGI_SWITCHES.get("enable_causal_historical_samples", False)
         AGI_SWITCHES["enable_causal_historical_samples"] = False
         try:
             primary = {"direction": "long", "strength": 0.8}
-            out = identifier._enhance_with_causal_ate(
-                primary, self._paths(), {}, engine)
+            out = identifier._enhance_with_causal_ate(primary, self._paths(), {}, engine)
             assert out["strength"] == pytest.approx(0.8 * 1.15)
         finally:
             AGI_SWITCHES["enable_causal_historical_samples"] = prev
@@ -416,11 +559,27 @@ def _real_observational_ate():
     try:
         out = ident._enhance_with_causal_ate(
             {"direction": "long", "strength": 0.8},
-            [{"path_id": "p1", "source": "bcrm", "direction": "long",
-              "expected_return": 0.1, "confidence": 0.8, "resistance": 0.2},
-             {"path_id": "p2", "source": "bdsm", "direction": "long",
-              "expected_return": 0.15, "confidence": 0.7, "resistance": 0.3}],
-            {}, CausalEngine())
+            [
+                {
+                    "path_id": "p1",
+                    "source": "bcrm",
+                    "direction": "long",
+                    "expected_return": 0.1,
+                    "confidence": 0.8,
+                    "resistance": 0.2,
+                },
+                {
+                    "path_id": "p2",
+                    "source": "bdsm",
+                    "direction": "long",
+                    "expected_return": 0.15,
+                    "confidence": 0.7,
+                    "resistance": 0.3,
+                },
+            ],
+            {},
+            CausalEngine(),
+        )
     finally:
         AGI_SWITCHES["enable_causal_historical_samples"] = prev
     _REAL_ATE_CACHE["r"] = out["causal_ate"]
@@ -441,10 +600,21 @@ class TestAteGateContractV5:
         from dreambuddy_evolution.core.contradiction_identifier import (
             classify_ate_state,
         )
-        b = {"ate": 0.0016, "lower_bound": -0.00045, "upper_bound": 0.00371,
-             "method": "causalml_dml", "ci_method": "block_bootstrap"}
-        a = {"ate": 0.30, "lower_bound": 0.10, "upper_bound": 0.50,
-             "method": "causalml_dml", "ci_method": "block_bootstrap"}
+
+        b = {
+            "ate": 0.0016,
+            "lower_bound": -0.00045,
+            "upper_bound": 0.00371,
+            "method": "causalml_dml",
+            "ci_method": "block_bootstrap",
+        }
+        a = {
+            "ate": 0.30,
+            "lower_bound": 0.10,
+            "upper_bound": 0.50,
+            "method": "causalml_dml",
+            "ci_method": "block_bootstrap",
+        }
         assert classify_ate_state(b, 0.05) == "B"
         assert classify_ate_state(a, 0.05) == "A"
 
@@ -460,6 +630,7 @@ class TestAteGateContractV5:
         from dreambuddy_evolution.core.contradiction_identifier import (
             classify_ate_state,
         )
+
         r = _real_observational_ate()
         assert r["ci_method"] == "block_bootstrap"
         rej = dict(r)
@@ -472,8 +643,14 @@ class TestAteGateContractV5:
             SESOI_TAU_ROBUSTNESS,
             classify_ate_state,
         )
-        obs = {"ate": 0.00163, "lower_bound": -0.00045, "upper_bound": 0.00371,
-               "method": "causalml_dml", "ci_method": "block_bootstrap"}
+
+        obs = {
+            "ate": 0.00163,
+            "lower_bound": -0.00045,
+            "upper_bound": 0.00371,
+            "method": "causalml_dml",
+            "ci_method": "block_bootstrap",
+        }
         states = {classify_ate_state(obs, t) for t in SESOI_TAU_ROBUSTNESS}
         assert states == {"B"}
 

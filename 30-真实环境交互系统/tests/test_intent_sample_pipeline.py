@@ -1,24 +1,34 @@
 """IntentSamplePipeline 测试（落盘 + 分桶 + 触发）"""
-import json
+
+import json  # noqa: I001
 import sys
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.intent_sample_pipeline import IntentSample, IntentSamplePipeline
 
 
-def _make_sample(sample_id="s1", gold_intent="trend_following",
-                scenario_id="TREND_UP", split="train", confirmed=True):
+def _make_sample(
+    sample_id="s1",
+    gold_intent="trend_following",
+    scenario_id="TREND_UP",
+    split="train",
+    confirmed=True,
+):
     return IntentSample(
         sample_id=sample_id,
         input={"user_query": "test", "scenario_id": scenario_id, "market_features": {}},
         gold={"gold_chain": "C", "gold_intent": gold_intent},
-        recognizer_output={"predicted_intent": gold_intent if confirmed else "other",
-                           "confidence": 0.8, "level": "rule"},
-        human_label={"confirmed": confirmed, "corrected_intent": None if confirmed else gold_intent},
+        recognizer_output={
+            "predicted_intent": gold_intent if confirmed else "other",
+            "confidence": 0.8,
+            "level": "rule",
+        },
+        human_label={
+            "confirmed": confirmed,
+            "corrected_intent": None if confirmed else gold_intent,
+        },
         dataset_split=split,
         created_at="2026-10-04T10:00:00Z",
     )
@@ -47,11 +57,13 @@ class TestIntentSamplePipeline:
     def test_trigger_training_at_threshold(self, tmp_path):
         """≥阈值 触发训练（threshold=2 + mock trigger_fn）"""
         call_count = [0]
+
         def mock_trigger(bucket_key, samples):
             call_count[0] += 1
 
         pipeline = IntentSamplePipeline(
-            storage_path=tmp_path, bucket_threshold=2,
+            storage_path=tmp_path,
+            bucket_threshold=2,
             trigger_fn=mock_trigger,
         )
         pipeline.ingest(_make_sample("s1"))
@@ -64,11 +76,13 @@ class TestIntentSamplePipeline:
     def test_no_trigger_below_threshold(self, tmp_path):
         """<阈值 不触发"""
         call_count = [0]
+
         def mock_trigger(bucket_key, samples):
             call_count[0] += 1
 
         pipeline = IntentSamplePipeline(
-            storage_path=tmp_path, bucket_threshold=30,
+            storage_path=tmp_path,
+            bucket_threshold=30,
             trigger_fn=mock_trigger,
         )
         for i in range(10):

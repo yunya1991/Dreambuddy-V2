@@ -6806,10 +6806,63 @@ class PollingTrader:
             _path.parent.mkdir(parents=True, exist_ok=True)
             with _path.open("a", encoding="utf-8") as _f:
                 _f.write(json.dumps(_rec, ensure_ascii=False) + "\n")
+            # P1-04/DEC-08：同步刷新子池状态文件（42 只读适配器消费，FAIL-OPEN）
+            self._write_subpool_state(source_tag, inference)
         except Exception as _swe:
             try:
                 self._log(
                     f"[SHADOW-SIGNAL] 影子信号写盘失败（fail-open）: {type(_swe).__name__}",
+                    "DEBUG",
+                )
+            except Exception:
+                pass
+
+    def _write_subpool_state(self, source_tag: str, inference: dict) -> None:
+        """P1-04/DEC-08：子池候选信号状态文件落盘（FAIL-OPEN）。
+
+        42 协调层只读适配器消费本文件（无跨进程内存耦合）。
+        路径: scripts/memory_l4/runtime/subpool_state/<source_tag>_state.json
+        结构: {source_tag, updated_at, signals: {coin: {direction, confidence,
+              price, ts, reason}}}，按 coin upsert，原子写。
+        """
+        try:
+            tag = str(source_tag or "").strip()
+            coin = str(inference.get("coin") or "").upper()
+            if not tag or not coin:
+                return
+            _dir = Path(__file__).resolve().parent / "runtime" / "subpool_state"
+            _dir.mkdir(parents=True, exist_ok=True)
+            _spath = _dir / f"{tag}_state.json"
+            state = {"source_tag": tag, "signals": {}}
+            if _spath.exists():
+                try:
+                    with _spath.open(encoding="utf-8") as _f:
+                        _old = json.load(_f)
+                    if isinstance(_old, dict) and isinstance(_old.get("signals"), dict):
+                        state["signals"] = _old["signals"]
+                except Exception:
+                    pass
+            now_iso = datetime.now(timezone.utc).isoformat()
+            try:
+                _conf = float(inference.get("confidence", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                _conf = 0.0
+            state["signals"][coin] = {
+                "direction": inference.get("direction"),
+                "confidence": _conf,
+                "price": inference.get("price"),
+                "ts": now_iso,
+                "reason": str(inference.get("reason", ""))[:200],
+            }
+            state["updated_at"] = now_iso
+            _tmp = _spath.with_suffix(".json.tmp")
+            with _tmp.open("w", encoding="utf-8") as _f:
+                json.dump(state, _f, ensure_ascii=False, indent=2)
+            _tmp.replace(_spath)
+        except Exception as _sse:
+            try:
+                self._log(
+                    f"[SUBPOOL-STATE] 状态文件写盘失败（fail-open）: {type(_sse).__name__}",
                     "DEBUG",
                 )
             except Exception:

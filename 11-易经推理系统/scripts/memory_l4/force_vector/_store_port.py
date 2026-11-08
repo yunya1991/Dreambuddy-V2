@@ -12,6 +12,7 @@
 RecordsStorePort 结构化实现 dreambuddy_l0.ports.store.StorePort 协议
 （read/write/query/health），面向 data_center.db records 表；本批只读使用（write 未开放）。
 """
+
 from __future__ import annotations
 
 import os
@@ -44,28 +45,32 @@ class RecordsStorePort:
         conn.row_factory = sqlite3.Row
         return conn
 
-    def read(self, table: str, *, key: str, cursor: Optional[str] = None,
-             limit: int = 100) -> Dict[str, Any]:
+    def read(
+        self, table: str, *, key: str, cursor: Optional[str] = None, limit: int = 100
+    ) -> Dict[str, Any]:
         if table != "records":
             return {"row": None, "error_code": "unknown_table"}
         conn = self._connect()
         try:
-            row = conn.execute(
-                "SELECT * FROM records WHERE id = ?", (key,)
-            ).fetchone()
+            row = conn.execute("SELECT * FROM records WHERE id = ?", (key,)).fetchone()
         finally:
             conn.close()
         if row is None:
             return {"row": None, "error_code": "not_found"}
         return {"row": dict(row), "error_code": ""}
 
-    def write(self, table: str, *, data: Dict[str, Any],
-              idempotency_key: str = "") -> bool:
+    def write(self, table: str, *, data: Dict[str, Any], idempotency_key: str = "") -> bool:
         raise NotImplementedError("C5 第一批只读收编：write 未开放")
 
-    def query(self, table: str, *, filters: Optional[Dict[str, Any]] = None,
-              cursor: Optional[str] = None, limit: int = 100,
-              order_by: str = "id ASC") -> Dict[str, Any]:
+    def query(
+        self,
+        table: str,
+        *,
+        filters: Optional[Dict[str, Any]] = None,
+        cursor: Optional[str] = None,
+        limit: int = 100,
+        order_by: str = "id ASC",
+    ) -> Dict[str, Any]:
         if table != "records":
             return {"rows": [], "count": 0, "error_code": "unknown_table"}
         where, params = [], []
@@ -100,8 +105,8 @@ class RecordsStorePort:
 # 读取助手（文件粒度开关路由；默认 legacy 直连，行为零变化）
 # ---------------------------------------------------------------------------
 
-def fetch_chart_timeseries_json(coin_id: str, db_path: str,
-                                switch: str = "CHART") -> Optional[str]:
+
+def fetch_chart_timeseries_json(coin_id: str, db_path: str, switch: str = "CHART") -> Optional[str]:
     """取 chart_{coin_id} 最新一条 timeseries JSON 字符串；无数据返回 None。
 
     供 coin_fundamental_valuation_query / follow_up_catalyst / sector_waterline 使用
@@ -113,8 +118,11 @@ def fetch_chart_timeseries_json(coin_id: str, db_path: str,
             port = RecordsStorePort(db_path)
             r = port.query(
                 "records",
-                filters={"source": "coingecko", "category": "coin",
-                         "sub_category": "chart_" + coin_id},
+                filters={
+                    "source": "coingecko",
+                    "category": "coin",
+                    "sub_category": "chart_" + coin_id,
+                },
                 limit=1,
                 order_by="timestamp DESC",
             )
@@ -138,8 +146,7 @@ def fetch_chart_timeseries_json(coin_id: str, db_path: str,
         conn.close()
 
 
-def fetch_newsflash_rows(db_path: str,
-                         switch: str = "NEWSFLASH") -> List[Tuple[str, str, str]]:
+def fetch_newsflash_rows(db_path: str, switch: str = "NEWSFLASH") -> List[Tuple[str, str, str]]:
     """取 odaily_newsflash 全量 (metrics, events, raw) 元组列表。
 
     供 coin_fundamental_event_timeline 使用。
@@ -154,8 +161,7 @@ def fetch_newsflash_rows(db_path: str,
                 limit=1000000,
             )
             return [
-                (row.get("metrics") or "", row.get("events") or "",
-                 row.get("raw") or "")
+                (row.get("metrics") or "", row.get("events") or "", row.get("raw") or "")
                 for row in (r.get("rows") or [])
             ]
         except Exception:
@@ -170,10 +176,15 @@ def fetch_newsflash_rows(db_path: str,
         conn.close()
 
 
-def fetch_latest_record(db_path: str, source: str, category: Optional[str],
-                        sub_category: Optional[str], switch: str,
-                        columns: str = "metrics, timeseries, raw",
-                        order_by: str = "id DESC") -> Optional[Dict[str, Any]]:
+def fetch_latest_record(
+    db_path: str,
+    source: str,
+    category: Optional[str],
+    sub_category: Optional[str],
+    switch: str,
+    columns: str = "metrics, timeseries, raw",
+    order_by: str = "id DESC",
+) -> Optional[Dict[str, Any]]:
     """按 source/category/sub_category 取最新一条记录（C5 第二批通用助手）。
     返回 {列名: 值} dict；无数据返回 None。
     开关打开 → 走 RecordsStorePort；默认 legacy 直连（原 SQL 原样保留）。
@@ -212,8 +223,13 @@ def fetch_latest_record(db_path: str, source: str, category: Optional[str],
     try:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
-            "SELECT " + columns + " FROM records WHERE "
-            + " AND ".join(where) + " ORDER BY " + order_by + " LIMIT 1",
+            "SELECT "
+            + columns
+            + " FROM records WHERE "
+            + " AND ".join(where)
+            + " ORDER BY "
+            + order_by
+            + " LIMIT 1",
             params,
         ).fetchone()
         return dict(row) if row is not None else None
@@ -221,9 +237,14 @@ def fetch_latest_record(db_path: str, source: str, category: Optional[str],
         conn.close()
 
 
-def fetch_all_records(db_path: str, source: str, category: str,
-                     sub_category: str, switch: str,
-                     columns: str = "metrics, timeseries") -> List[Dict[str, Any]]:
+def fetch_all_records(
+    db_path: str,
+    source: str,
+    category: str,
+    sub_category: str,
+    switch: str,
+    columns: str = "metrics, timeseries",
+) -> List[Dict[str, Any]]:
     """按 source/category/sub_category 取全量记录序列（id ASC，C5 第二批通用助手）。
     供 FRED 历史序列 / historical_data_loader 拼接历史使用。
     开关打开 → 走 RecordsStorePort；默认 legacy 直连（原 SQL 原样保留）。
@@ -233,8 +254,7 @@ def fetch_all_records(db_path: str, source: str, category: str,
             port = RecordsStorePort(db_path)
             r = port.query(
                 "records",
-                filters={"source": source, "category": category,
-                         "sub_category": sub_category},
+                filters={"source": source, "category": category, "sub_category": sub_category},
                 limit=1000000,
                 order_by="id ASC",
             )
@@ -258,5 +278,10 @@ def fetch_all_records(db_path: str, source: str, category: str,
         conn.close()
 
 
-__all__ = ["RecordsStorePort", "fetch_chart_timeseries_json", "fetch_newsflash_rows",
-           "fetch_latest_record", "fetch_all_records"]
+__all__ = [
+    "RecordsStorePort",
+    "fetch_chart_timeseries_json",
+    "fetch_newsflash_rows",
+    "fetch_latest_record",
+    "fetch_all_records",
+]

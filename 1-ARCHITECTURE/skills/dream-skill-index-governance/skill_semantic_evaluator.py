@@ -10,12 +10,12 @@
 执行：通过 bsk 调用千问（复用 dream-qwen-eval-collab 的 bsk 调用模板）
 FAIL-OPEN：bsk 不可用 → 返回 None，不阻塞流程。
 """
+
 from __future__ import annotations
 
 import json
 import re
-from typing import Any, Callable, Optional
-
+from typing import Callable, Optional
 
 # ───────────────────────────── 5 维评分定义 ─────────────────────────────
 
@@ -76,7 +76,7 @@ def parse_qwen_response(response: str) -> Optional[dict]:
         start = json_str.find("{")
         end = json_str.rfind("}")
         if start >= 0 and end > start:
-            json_str = json_str[start:end + 1]
+            json_str = json_str[start : end + 1]
         else:
             return None
     try:
@@ -84,8 +84,14 @@ def parse_qwen_response(response: str) -> Optional[dict]:
     except (json.JSONDecodeError, ValueError):
         return None
     # 校验必需字段
-    required = {"completeness", "actionability", "engineering_fit",
-                "risk_awareness", "clarity", "overall"}
+    required = {
+        "completeness",
+        "actionability",
+        "engineering_fit",
+        "risk_awareness",
+        "clarity",
+        "overall",
+    }
     if not required.issubset(data.keys()):
         return None
     # 确保 suggestions 是列表

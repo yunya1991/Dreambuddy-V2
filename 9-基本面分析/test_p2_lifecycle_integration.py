@@ -1,1 +1,1 @@
-from tests.test_p2_lifecycle_integration import *
+from tests.test_p2_lifecycle_integration import *  # noqa: F403

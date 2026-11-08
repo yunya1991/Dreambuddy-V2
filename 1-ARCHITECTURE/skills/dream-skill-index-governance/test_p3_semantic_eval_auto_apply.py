@@ -4,17 +4,15 @@
 1. skill_semantic_evaluator — 复用 dream-qwen-eval-collab 千问评估环节（5维评分）
 2. skill_auto_applicator — 减少人工干预，行为+语义双适应度自动 apply status
 """
-from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
-
+from __future__ import annotations  # noqa: I001
 
 # ───────────────────────────── 1. skill_semantic_evaluator ─────────────────────────────
 
+
 def test_semantic_evaluator_importable():
     import skill_semantic_evaluator
+
     assert hasattr(skill_semantic_evaluator, "build_eval_prompt")
     assert hasattr(skill_semantic_evaluator, "parse_qwen_response")
     assert hasattr(skill_semantic_evaluator, "evaluate_skill")
@@ -35,6 +33,7 @@ def test_build_eval_prompt_contains_5_dimensions():
 def test_build_eval_prompt_contains_skill_content():
     """prompt 应包含待评审的 SKILL 内容。"""
     import skill_semantic_evaluator as sse
+
     content = "# My Skill\nname: dream-test"
     prompt = sse.build_eval_prompt(content)
     assert "dream-test" in prompt
@@ -43,6 +42,7 @@ def test_build_eval_prompt_contains_skill_content():
 def test_build_eval_prompt_asks_for_json():
     """prompt 应要求千问返回 JSON 格式评分。"""
     import skill_semantic_evaluator as sse
+
     prompt = sse.build_eval_prompt("content")
     assert "JSON" in prompt or "json" in prompt
 
@@ -76,6 +76,7 @@ def test_parse_qwen_response_extracts_scores():
 def test_parse_qwen_response_invalid_returns_none():
     """无法解析的回复 → None。"""
     import skill_semantic_evaluator as sse
+
     assert sse.parse_qwen_response("garbage text no json") is None
 
 
@@ -95,13 +96,16 @@ def test_evaluate_skill_with_mock_bsk():
 def test_evaluate_skill_fail_open_without_bsk():
     """无 bsk_caller → 返回 None（FAIL-OPEN）。"""
     import skill_semantic_evaluator as sse
+
     assert sse.evaluate_skill("# content", bsk_caller=None) is None
 
 
 # ───────────────────────────── 2. skill_auto_applicator ─────────────────────────────
 
+
 def test_auto_applicator_importable():
     import skill_auto_applicator
+
     assert hasattr(skill_auto_applicator, "decide_action")
     assert hasattr(skill_auto_applicator, "apply_decision")
 
@@ -198,7 +202,10 @@ def test_apply_decision_writes_status(tmp_path):
 def test_apply_decision_unknown_action_returns_false(tmp_path):
     """未知 action → False。"""
     import skill_auto_applicator as saa
+
     skill_md = tmp_path / "SKILL.md"
     skill_md.write_text("---\nname: x\nstatus: shadow\n---\n", encoding="utf-8")
-    result = saa.apply_decision(skill_md, "bogus_action", "reason", write_status_fn=lambda *a, **k: {"ok": True})
+    result = saa.apply_decision(
+        skill_md, "bogus_action", "reason", write_status_fn=lambda *a, **k: {"ok": True}
+    )
     assert result is False

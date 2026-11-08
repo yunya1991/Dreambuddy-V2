@@ -4,12 +4,9 @@
 验证git hook搜索daemon记忆并verify的接力闭环
 """
 
-import os
 import sys
-import tempfile
-import shutil
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -109,7 +106,9 @@ def test_relay_verify_daemon_memories():
         result = relay_verify_daemon_memories(daemon_memories)
 
         # verify应该被调用2次（每条daemon记忆一次）
-        assert mock_instance.verify.call_count == 2, f"verify应调用2次: {mock_instance.verify.call_count}"
+        assert (
+            mock_instance.verify.call_count == 2
+        ), f"verify应调用2次: {mock_instance.verify.call_count}"
         # 返回结果应包含verified数量
         assert result["verified_count"] == 2
         assert result["memory_ids"] == ["VM-DAEMON-001", "VM-DAEMON-002"]
@@ -158,7 +157,9 @@ def test_relay_verify_skips_already_verified():
         result = relay_verify_daemon_memories(daemon_memories)
 
         # 只应verify 1次（跳过verify_count=3的）
-        assert mock_instance.verify.call_count == 1, f"应只verify 1次: {mock_instance.verify.call_count}"
+        assert (
+            mock_instance.verify.call_count == 1
+        ), f"应只verify 1次: {mock_instance.verify.call_count}"
         assert result["verified_count"] == 1
         assert result["skipped_count"] == 1
 

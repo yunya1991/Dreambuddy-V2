@@ -25,61 +25,78 @@ Dreambuddy OS 500轮多场景压力测试
 - dreambuddy-os/SKILL.md (v1.1.0)
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import time
 import threading
 import random
 import json
 import unittest
-from typing import Dict, Any, List, Callable, Optional
-from dataclasses import dataclass, field, asdict
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass, field
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # 核心组件导入
 try:
-    from core.nodes.node_registry import get_node_registry, NodeInfo
+    from core.nodes.node_registry import get_node_registry, NodeInfo  # noqa: I001
     from core.c_execution_layer.unified_executor import UnifiedNodeExecutor
-    from core.modules.unified_types import ModuleResult, create_failure_result, create_success_result
+    from core.modules.unified_types import (
+        ModuleResult,
+        create_failure_result,
+        create_success_result,
+    )
     from core.shared.errors import ErrorCode, ErrorInfo
 except ImportError as e:
     print(f"导入警告: {e}")
+
     # 使用模拟实现
     def get_node_registry():
         return MockNodeRegistry()
+
     class NodeInfo:
         pass
+
     class UnifiedNodeExecutor:
         def execute(self, node_id, inputs, context):
             return MockModuleResult(success=True, capability_id=node_id)
+
     class ModuleResult:
         pass
+
     def create_failure_result(capability_id, error):
         return MockModuleResult(success=False, capability_id=capability_id, error=error)
+
     def create_success_result(capability_id, outputs=None, confidence=75.0):
         return MockModuleResult(success=True, capability_id=capability_id)
+
     class ErrorCode:
         NODE_HANDLER_MISSING = "NODE_001"
+
     class ErrorInfo:
         @staticmethod
         def create(error_code, message, node_id):
             return {"error_code": error_code, "message": message, "node_id": node_id}
 
+
 class MockNodeRegistry:
     """模拟节点注册表"""
+
     def get_all(self):
         return []
+
     def get(self, node_id):
         return None
+
     def get_stats(self):
         return {"total_nodes": 0, "nodes": []}
 
+
 class MockModuleResult:
     """模拟模块结果"""
+
     def __init__(self, success=True, capability_id="", error=None):
         self.success = success
         self.capability_id = capability_id
@@ -96,9 +113,11 @@ class MockModuleResult:
 # 测试结果数据结构
 # ============================================================
 
+
 @dataclass
 class ScenarioResult:
     """场景测试结果"""
+
     scenario_id: str
     scenario_name: str
     total_rounds: int = 0
@@ -159,6 +178,7 @@ class ScenarioResult:
 @dataclass
 class OverallReport:
     """总体测试报告"""
+
     test_id: str
     test_name: str
     start_time: str
@@ -187,6 +207,7 @@ class OverallReport:
 # ============================================================
 # 测试工具函数
 # ============================================================
+
 
 def create_test_market_data(symbol: str = "BTC/USDT") -> Dict[str, Any]:
     """创建测试市场数据"""
@@ -248,6 +269,7 @@ def create_test_context(session_id: str) -> Dict[str, Any]:
 # 10大测试场景实现
 # ============================================================
 
+
 class StressTestScenarios:
     """500轮压力测试场景集合"""
 
@@ -286,20 +308,22 @@ class StressTestScenarios:
 
         for i in range(rounds):
             query = random.choice(test_queries)
-            session_id = f"s_layer_{i}"
+            session_id = f"s_layer_{i}"  # noqa: F841
             start = time.time()
 
             try:
                 # 模拟S层三层递进
                 # 第一层：Objective 提取
-                objective = {
+                objective = {  # noqa: F841
                     "title": query,
                     "description": f"用户请求: {query}",
-                    "type": random.choice(["market_query", "deep_analysis", "strategy_verify", "execute_trade"]),
+                    "type": random.choice(
+                        ["market_query", "deep_analysis", "strategy_verify", "execute_trade"]
+                    ),
                 }
 
                 # 第二层：OKR 构建（四维规划模拟）
-                okr = {
+                okr = {  # noqa: F841
                     "key_results": [
                         {"kr_id": "kr1", "description": "完成意图识别", "target": 0.8},
                         {"kr_id": "kr2", "description": "构建执行链", "target": 0.7},
@@ -311,13 +335,17 @@ class StressTestScenarios:
                 }
 
                 # 第三层：Blueprint 构建
-                blueprint = {
+                blueprint = {  # noqa: F841
                     "root_component": "trading_decision",
                     "modules": ["intent_engine", "analysis_chain", "strategy_engine"],
                     "data_flow": ["market_data → intent → analysis → strategy"],
                     "node_sequence": random.sample(
-                        ["classic-indicator-scan", "fundamental-fund-flow", "dream-contradiction-theory"],
-                        2
+                        [
+                            "classic-indicator-scan",
+                            "fundamental-fund-flow",
+                            "dream-contradiction-theory",
+                        ],
+                        2,
                     ),
                 }
 
@@ -338,7 +366,9 @@ class StressTestScenarios:
 
         result.details = {
             "test_queries_count": len(test_queries),
-            "average_objective_extraction_ms": sum(result.latencies) / len(result.latencies) if result.latencies else 0,
+            "average_objective_extraction_ms": (
+                sum(result.latencies) / len(result.latencies) if result.latencies else 0
+            ),
         }
         return result
 
@@ -369,20 +399,24 @@ class StressTestScenarios:
             "risk_alert": ["风险检查", "告警触发", "风控评估"],
         }
 
-        for i in range(rounds):
+        for i in range(rounds):  # noqa: B007
             intent_type = random.choice(list(intent_types.keys()))
-            query = random.choice(intent_types[intent_type])
+            query = random.choice(intent_types[intent_type])  # noqa: F841
             start = time.time()
 
             try:
                 # 模拟意图识别
-                detected_intent = {
+                detected_intent = {  # noqa: F841
                     "intent_type": intent_type,
                     "confidence": random.uniform(0.6, 0.95),
                     "primary_chain": random.choice(["S", "C", "F"]),
                     "extend_nodes": random.sample(
-                        ["classic-indicator-scan", "fundamental-sentiment", "dream-first-principles"],
-                        random.randint(1, 2)
+                        [
+                            "classic-indicator-scan",
+                            "fundamental-sentiment",
+                            "dream-first-principles",
+                        ],
+                        random.randint(1, 2),
                     ),
                     "context": {
                         "symbol": random.choice(["BTC", "ETH", "SOL"]),
@@ -449,7 +483,11 @@ class StressTestScenarios:
                 architecture = {
                     "id": f"arch_{i}",
                     "token_budget": token_budget,
-                    "budget_mode": "lean" if token_budget <= 3000 else "standard" if token_budget <= 6000 else "full",
+                    "budget_mode": (
+                        "lean"
+                        if token_budget <= 3000
+                        else "standard" if token_budget <= 6000 else "full"
+                    ),
                     "planned_chain": [],
                     "pruned_nodes": [],
                     "added_nodes": [],
@@ -513,7 +551,7 @@ class StressTestScenarios:
             scenario_name="三链结合策略测试",
         )
 
-        for i in range(rounds):
+        for i in range(rounds):  # noqa: B007
             start = time.time()
 
             try:
@@ -522,9 +560,18 @@ class StressTestScenarios:
 
                 # 阶段一：收集三链信号并投票
                 chain_signals = {
-                    "S链": {"direction": random.choice(["LONG", "SHORT", "HOLD"]), "confidence": random.uniform(0.5, 0.9)},
-                    "C链": {"direction": random.choice(["LONG", "SHORT", "HOLD"]), "confidence": random.uniform(0.4, 0.85)},
-                    "F链": {"direction": random.choice(["LONG", "SHORT", "HOLD"]), "confidence": random.uniform(0.3, 0.8)},
+                    "S链": {
+                        "direction": random.choice(["LONG", "SHORT", "HOLD"]),
+                        "confidence": random.uniform(0.5, 0.9),
+                    },
+                    "C链": {
+                        "direction": random.choice(["LONG", "SHORT", "HOLD"]),
+                        "confidence": random.uniform(0.4, 0.85),
+                    },
+                    "F链": {
+                        "direction": random.choice(["LONG", "SHORT", "HOLD"]),
+                        "confidence": random.uniform(0.3, 0.8),
+                    },
                 }
 
                 # 投票权重
@@ -556,10 +603,12 @@ class StressTestScenarios:
                     # 低置信度，触发阶段二
                     dynamic_insertion = {
                         "trigger": "low_confidence",
-                        "inserted_nodes": random.choice([
-                            ["master-seminar"],
-                            ["dream-first-principles", "dream-contradiction-theory"],
-                        ]),
+                        "inserted_nodes": random.choice(
+                            [
+                                ["master-seminar"],
+                                ["dream-first-principles", "dream-contradiction-theory"],
+                            ]
+                        ),
                         "reason": "三链分歧，需要深度分析",
                     }
 
@@ -603,10 +652,16 @@ class StressTestScenarios:
             scenario_name="反思决策引擎测试(5种决策)",
         )
 
-        decision_types = ["CONTINUE", "REDO", "INSERT_BEFORE", "JUMP_TO", "EARLY_TERMINATE"]
+        decision_types = [  # noqa: F841
+            "CONTINUE",
+            "REDO",
+            "INSERT_BEFORE",
+            "JUMP_TO",
+            "EARLY_TERMINATE",
+        ]  # noqa: F841
         decision_distribution = defaultdict(int)
 
-        for i in range(rounds):
+        for i in range(rounds):  # noqa: B007
             start = time.time()
 
             try:
@@ -747,7 +802,12 @@ class StressTestScenarios:
             scenario_name="G层BAC三层压缩测试",
         )
 
-        compression_strategies = ["VALUE_PRIORITY", "PATH_PRESERVE", "CRITICAL_ONLY", "SEMANTIC_AWARE"]
+        compression_strategies = [
+            "VALUE_PRIORITY",
+            "PATH_PRESERVE",
+            "CRITICAL_ONLY",
+            "SEMANTIC_AWARE",
+        ]
         compression_results = defaultdict(list)
 
         for i in range(rounds):
@@ -759,13 +819,13 @@ class StressTestScenarios:
                 token_count = random.randint(500, 5000)
 
                 # B层：蓝图
-                blueprint = {
+                blueprint = {  # noqa: F841
                     "id": f"bp_{i}",
                     "modules": random.sample(["intent", "analysis", "strategy", "execution"], 3),
                 }
 
                 # A层：DAG
-                architecture = {
+                architecture = {  # noqa: F841
                     "id": f"arch_{i}",
                     "nodes": [f"node_{j}" for j in range(node_count)],
                     "edges": [(f"node_{j}", f"node_{j+1}") for j in range(node_count - 1)],
@@ -795,13 +855,15 @@ class StressTestScenarios:
 
                 # 压缩结果模拟
                 compressed_node_count = int(node_count * target_ratio)
-                compressed_tokens = int(token_count * target_ratio)
+                compressed_tokens = int(token_count * target_ratio)  # noqa: F841
 
-                compression_results[strategy].append({
-                    "original_nodes": node_count,
-                    "compressed_nodes": compressed_node_count,
-                    "ratio": target_ratio,
-                })
+                compression_results[strategy].append(
+                    {
+                        "original_nodes": node_count,
+                        "compressed_nodes": compressed_node_count,
+                        "ratio": target_ratio,
+                    }
+                )
 
                 latency = (time.time() - start) * 1000
                 result.total_rounds += 1
@@ -851,7 +913,7 @@ class StressTestScenarios:
 
             try:
                 # 模拟 Episode 记录
-                episode = {
+                episode = {  # noqa: F841
                     "episode_id": f"ep_{i}",
                     "decision": random.choice(["LONG", "SHORT", "HOLD"]),
                     "confidence": random.uniform(0.5, 0.9),
@@ -878,7 +940,7 @@ class StressTestScenarios:
                 if frequency >= 3 and severity >= 2 and unique_traces >= 2:
                     lesson_generated = True
                     lesson_type = random.choice(["F_失败规律", "S_成功规律"])
-                    lesson = {
+                    lesson = {  # noqa: F841
                         "lesson_id": f"lesson_{i}",
                         "type": lesson_type,
                         "pattern": f"pattern_{random.randint(1, 10)}",
@@ -1018,7 +1080,7 @@ class StressTestScenarios:
             "temporary_failure",
         ]
 
-        for i in range(rounds):
+        for i in range(rounds):  # noqa: B007
             start = time.time()
 
             try:
@@ -1033,7 +1095,11 @@ class StressTestScenarios:
 
                 if inject_error:
                     # 模拟重试机制
-                    is_retryable = error_type in ["EXEC_001", "network_timeout", "temporary_failure"]
+                    is_retryable = error_type in [
+                        "EXEC_001",
+                        "network_timeout",
+                        "temporary_failure",
+                    ]
 
                     if is_retryable:
                         # 可重试错误
@@ -1094,6 +1160,7 @@ class StressTestScenarios:
 # 主测试执行器
 # ============================================================
 
+
 class StressTestRunner:
     """500轮压力测试执行器"""
 
@@ -1108,23 +1175,23 @@ class StressTestRunner:
         start_time = datetime.now().isoformat()
 
         print(f"\n{'='*80}")
-        print(f"  Dreambuddy OS 500轮多场景压力测试")
+        print("  Dreambuddy OS 500轮多场景压力测试")
         print(f"  测试ID: {test_id}")
         print(f"  开始时间: {start_time}")
         print(f"{'='*80}\n")
 
         # 场景轮数分配（共500轮）
         scenario_rounds = {
-            "scenario_01_s_layer_three_levels": 50,   # S层三层递进
-            "scenario_02_intent_recognition": 50,   # 意图识别引擎
-            "scenario_03_graph_orchestrator": 50,   # 图编排引擎
-            "scenario_04_three_chain_combination": 50,   # 三链结合策略
-            "scenario_05_reflection_decision": 50,   # 反思决策引擎
-            "scenario_06_node_execution": 70,   # C层节点执行 (调整)
-            "scenario_07_graph_compression": 40,   # G层图压缩
-            "scenario_08_self_evolution": 40,   # 自我进化闭环
-            "scenario_09_concurrent_execution": 50,   # 并发执行压测 (调整)
-            "scenario_10_error_injection": 40,   # 错误注入与降级
+            "scenario_01_s_layer_three_levels": 50,  # S层三层递进
+            "scenario_02_intent_recognition": 50,  # 意图识别引擎
+            "scenario_03_graph_orchestrator": 50,  # 图编排引擎
+            "scenario_04_three_chain_combination": 50,  # 三链结合策略
+            "scenario_05_reflection_decision": 50,  # 反思决策引擎
+            "scenario_06_node_execution": 70,  # C层节点执行 (调整)
+            "scenario_07_graph_compression": 40,  # G层图压缩
+            "scenario_08_self_evolution": 40,  # 自我进化闭环
+            "scenario_09_concurrent_execution": 50,  # 并发执行压测 (调整)
+            "scenario_10_error_injection": 40,  # 错误注入与降级
         }
 
         results: List[ScenarioResult] = []
@@ -1166,7 +1233,7 @@ class StressTestRunner:
             return
 
         print(f"\n{'='*80}")
-        print(f"  最终测试报告")
+        print("  最终测试报告")
         print(f"{'='*80}")
 
         for scenario in self.report.scenarios:
@@ -1180,13 +1247,17 @@ class StressTestRunner:
                     print(f"    {k}: {v}")
 
         print(f"\n{'='*80}")
-        print(f"  总体统计")
+        print("  总体统计")
         print(f"{'='*80}")
         print(f"    测试ID: {self.report.test_id}")
         print(f"    总轮数: {self.report.total_rounds}")
-        print(f"    总耗时: {self.report.total_time_ms:.2f}ms ({self.report.total_time_ms/1000:.2f}s)")
+        print(
+            f"    总耗时: {self.report.total_time_ms:.2f}ms ({self.report.total_time_ms/1000:.2f}s)"
+        )
         print(f"    总体TPS: {self.report.total_rounds / (self.report.total_time_ms / 1000):.2f}")
-        print(f"    总体成功率: {sum(s.success_rounds for s in self.report.scenarios) / self.report.total_rounds * 100:.2f}%")
+        print(
+            f"    总体成功率: {sum(s.success_rounds for s in self.report.scenarios) / self.report.total_rounds * 100:.2f}%"
+        )
         print(f"\n{'='*80}")
 
     def save_report_to_json(self, filepath: str):
@@ -1194,7 +1265,7 @@ class StressTestRunner:
         if not self.report:
             return
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(self.report.to_dict(), f, ensure_ascii=False, indent=2)
         print(f"  报告已保存: {filepath}")
 
@@ -1202,6 +1273,7 @@ class StressTestRunner:
 # ============================================================
 # unittest 测试类
 # ============================================================
+
 
 class Test500RoundsStress(unittest.TestCase):
     """500轮压力测试"""
@@ -1214,8 +1286,7 @@ class Test500RoundsStress(unittest.TestCase):
 
         # 保存报告
         report_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "stress_test_report_500.json"
+            os.path.dirname(os.path.abspath(__file__)), "stress_test_report_500.json"
         )
         runner.save_report_to_json(report_path)
 
@@ -1238,5 +1309,5 @@ class Test500RoundsStress(unittest.TestCase):
 # 运行
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

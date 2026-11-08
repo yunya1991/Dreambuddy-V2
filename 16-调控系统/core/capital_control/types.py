@@ -11,11 +11,10 @@
 并提供健康等级判定 assess_health() 辅助函数。
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
-
+from typing import Any, Dict, Optional
 
 # ---------------------------------------------------------------------------
 # 枚举

@@ -16,7 +16,7 @@
 | 断裂 | 描述 | 严重程度 | 代码位置 |
 |:---:|------|:---:|---|
 | **断裂 1** | 阻力向量 R_up/R_down 缺少微观结构数据（资金费率、订单簿、OI），只用 3 组件（筹码 50%+清算 30%+趋势 20%） | P0 | [resistance_vector.py L219-L228](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/resistance_vector.py#L219-L228) |
-| **断裂 2** | HJB 路径规划器已完整实现（二维网格+逆向动态规划+三级降级链），但结果仅 30% 权重调制路径评分，不是最终路径决策者 | P1 | [evolution_pipeline.py _select_optimal_path](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L652-L813) |
+| **断裂 2** | HJB 路径规划器已完整实现（二维网格+逆向动态规划+三级降级链），结果以 30%（默认）/70%（`enable_hjb_dominant=True`，生产已启用）权重调制路径评分，最终选择仍为 argmax | P1 | [evolution_pipeline.py _select_optimal_path](../23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py#L652-L813) |
 | **断裂 3** | 矛盾调制只在 HJB Lagrangian 内部生效（L160-L176），ResistanceVector.calculate() 不接收 primary_contradiction | P1 | [resistance_vector.py calculate()](../23-四层闭环自进化交易架构/dreambuddy_evolution/core/resistance_vector.py#L343-L408) |
 
 ### 1.2 额外改造点
@@ -98,7 +98,7 @@ if primary_contradiction is not None:
 
 **文件**：`dreambuddy_evolution/evolution_pipeline.py` `_select_optimal_path`
 
-**当前**：HJB 结果 30% 权重调制评分
+**当前**：HJB 结果按 30%（默认）/70%（`enable_hjb_dominant=True`，生产已启用）权重调制评分
 
 **改造后**：
 

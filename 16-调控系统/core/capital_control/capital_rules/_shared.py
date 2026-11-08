@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 # 让 capital_rules 下的子模块能 import types
 _PKG_ROOT = Path(__file__).resolve().parents[2]  # .../16-调控系统/core
 if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
-from capital_control.types import (
+from capital_control.types import (  # noqa: E402
     AccountType,
     CapitalMode,
     CapitalResult,
@@ -100,7 +100,9 @@ def build_result_from_system(
     # DYNAMIC 模式：尝试 unified_position_query 缓存
     pos_result = _ensure_positions_result(context)
     fetch_error = pos_result.get("_fetch_error") if isinstance(pos_result, dict) else None
-    sys_data = (pos_result or {}).get("systems", {}).get(system) if isinstance(pos_result, dict) else None
+    sys_data = (
+        (pos_result or {}).get("systems", {}).get(system) if isinstance(pos_result, dict) else None
+    )
 
     fallback_reason = ""
     if fetch_error:
@@ -126,9 +128,13 @@ def build_result_from_system(
     # _make_system_result 将 extra 字段合并到顶层（无 "extra" 键），
     # 因此直接从 sys_data 读取 avail_balance/used_margin/account_type 等字段
     _CAPITAL_FIELDS = (
-        "avail_balance", "used_margin", "account_type",
-        "fallback_used", "fallback_reason",
-        "data_source", "total_files",
+        "avail_balance",
+        "used_margin",
+        "account_type",
+        "fallback_used",
+        "fallback_reason",
+        "data_source",
+        "total_files",
     )
     extra_data = {k: v for k, v in sys_data.items() if k in _CAPITAL_FIELDS}
     account_type = _account_type_from_str(sys_data.get("account_type"))
@@ -172,7 +178,10 @@ def build_result_from_system(
     if equity > 0:
         used_pct = round(used * 100.0 / equity, 2)
 
-    merged_extra = {**extra_extract, **{k: v for k, v in extra_data.items() if k not in extra_extract}}
+    merged_extra = {
+        **extra_extract,
+        **{k: v for k, v in extra_data.items() if k not in extra_extract},
+    }
     return CapitalResult(
         system=system,
         account_type=account_type,

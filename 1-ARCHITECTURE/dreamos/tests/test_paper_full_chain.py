@@ -25,6 +25,7 @@
         卦名展示/lessons 归档错位。已按通行本周文王序全量重建。
         回归测试: test_hexagram_table_lock。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -34,10 +35,13 @@ import pytest
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2, record_real_exit
-from dreamos.capabilities.trading import orchestrator_v2 as orch_mod
-from dreamos.capabilities.trading import v15_executor as v15x
-from dreamos.capabilities.trading.v15_executor import V15Executor
+from dreamos.capabilities.trading import orchestrator_v2 as orch_mod  # noqa: E402, I001
+from dreamos.capabilities.trading import v15_executor as v15x  # noqa: E402
+from dreamos.capabilities.trading.orchestrator_v2 import (  # noqa: E402
+    OrchestratorV2,
+    record_real_exit,
+)  # noqa: E402
+from dreamos.capabilities.trading.v15_executor import V15Executor  # noqa: E402
 
 # ── 测试夹具 ──────────────────────────────────────────────────────────────
 # 修复后 (2026-08-16): 该强多行情 + seed=5 → LONG conf=0.765 (B-1+F-1 修复后:
@@ -87,6 +91,7 @@ def _read_json(path: Path):
 
 # ── Test 1: 强信号全链路 OPEN + 记账 ─────────────────────────────────────
 
+
 def test_full_chain_strong_signal_opens_position(tmp_path):
     """选币→易经→路由→执行→记账: 强信号应真实开仓(paper)并落盘."""
     orch = OrchestratorV2(use_hermes=False, seed=STRONG_SEED)
@@ -106,9 +111,9 @@ def test_full_chain_strong_signal_opens_position(tmp_path):
     sig = result["signal"]
     assert sig["status"] == "OK"
     assert sig["direction"] == "LONG"
-    assert sig["confidence"] >= 0.70, (
-        f"conf={sig['confidence']} F-1修复后强信号应显著过阈(新天花板0.85)"
-    )
+    assert (
+        sig["confidence"] >= 0.70
+    ), f"conf={sig['confidence']} F-1修复后强信号应显著过阈(新天花板0.85)"
     assert sig["hexagram"].get("original_gua")
     assert "cognitive_adjustment" in sig
 
@@ -148,6 +153,7 @@ def test_full_chain_strong_signal_opens_position(tmp_path):
 
 # ── Test 2: 弱信号门禁回归 ────────────────────────────────────────────────
 
+
 def test_full_chain_weak_signal_stays_rejected():
     """弱信号 (conf<0.50) 在全链中必须被拒, 不落账本."""
     orch = OrchestratorV2(use_hermes=False, seed=42)
@@ -169,25 +175,35 @@ def test_full_chain_weak_signal_stays_rejected():
 
 # ── Test 3: 并发门禁 (V9: 最多3仓) ───────────────────────────────────────
 
+
 def test_full_chain_max_concurrent_positions_gate():
     """C层: 3 仓全开后第 4 笔必须被拒."""
     ex = V15Executor(dry_run=True)
     for i, sym in enumerate(["AAA", "BBB", "CCC"]):
-        r = ex.execute_signal({
-            "symbol": sym, "direction": "LONG",
-            "confidence": 0.6, "entry_price": 100.0 + i,
-        })
+        r = ex.execute_signal(
+            {
+                "symbol": sym,
+                "direction": "LONG",
+                "confidence": 0.6,
+                "entry_price": 100.0 + i,
+            }
+        )
         assert r["status"] == "OPEN", f"{sym} 应开仓: {r}"
 
-    r4 = ex.execute_signal({
-        "symbol": "DDD", "direction": "LONG",
-        "confidence": 0.6, "entry_price": 100.0,
-    })
+    r4 = ex.execute_signal(
+        {
+            "symbol": "DDD",
+            "direction": "LONG",
+            "confidence": 0.6,
+            "entry_price": 100.0,
+        }
+    )
     assert r4["status"] == "REJECTED"
     assert "max concurrent" in r4["reason"]
 
 
 # ── Test 4a: 平仓回填 → F层记账 (真实链路 conf) ──────────────────────────
+
 
 def test_full_chain_exit_backfill_updates_state():
     """记账闭环前半: OPEN → 平仓回填(修复后 conf≈0.765) → W/L+PnL+lesson 落盘.
@@ -202,14 +218,18 @@ def test_full_chain_exit_backfill_updates_state():
     assert entry_conf >= 0.50, "F-1 修复后强信号必须过执行门禁"
 
     exit_result = {
-        "symbol": "TEST", "direction": "LONG",
-        "entry_price": 112.0, "exit_price": 116.48,
+        "symbol": "TEST",
+        "direction": "LONG",
+        "entry_price": 112.0,
+        "exit_price": 116.48,
         "position_size": result["execution"]["position"]["position_size"],
         "confidence": entry_conf,
         "hexagram": result["signal"]["hexagram"],
-        "addon_count": 0, "hold_hours": 6.0,
+        "addon_count": 0,
+        "hold_hours": 6.0,
         "exit_reason": "TP hit|paper-test",
-        "pnl_usdt": 4.2, "pnl_pct": 0.04,
+        "pnl_usdt": 4.2,
+        "pnl_pct": 0.04,
     }
     review = record_real_exit(exit_result)
     assert review["status"] == "OK"
@@ -225,10 +245,11 @@ def test_full_chain_exit_backfill_updates_state():
 
     # F-2 修复后行为: 过门禁盈利单 → goodentry lesson 产生
     assert len(review.get("lessons", [])) >= 1, "F-2 修复: 盈利单应沉淀正向经验"
-    assert any("goodentry" in l.get("lesson_id", "") for l in review["lessons"])
+    assert any("goodentry" in l.get("lesson_id", "") for l in review["lessons"])  # noqa: E741
 
 
 # ── Test 4b: 认知闭环管线 (契约级 conf=0.75) ──────────────────────────────
+
 
 def test_cognitive_loop_positive_lesson_injection():
     """记账闭环后半: 盈利 lesson → 落盘 → 新实例加载 → 下轮正向注入.
@@ -238,12 +259,18 @@ def test_cognitive_loop_positive_lesson_injection():
     不是管线故障。
     """
     exit_result = {
-        "symbol": "TEST", "direction": "LONG",
-        "entry_price": 112.0, "exit_price": 116.48,
-        "position_size": 3.8, "confidence": 0.75,
-        "hexagram": {}, "addon_count": 0, "hold_hours": 6.0,
+        "symbol": "TEST",
+        "direction": "LONG",
+        "entry_price": 112.0,
+        "exit_price": 116.48,
+        "position_size": 3.8,
+        "confidence": 0.75,
+        "hexagram": {},
+        "addon_count": 0,
+        "hold_hours": 6.0,
         "exit_reason": "TP hit|paper-test",
-        "pnl_usdt": 4.2, "pnl_pct": 0.04,
+        "pnl_usdt": 4.2,
+        "pnl_pct": 0.04,
     }
     review = record_real_exit(exit_result)
     assert review["status"] == "OK"
@@ -276,6 +303,7 @@ def test_cognitive_loop_positive_lesson_injection():
 
 # ── Test 4c: F-2 修复回归 — 正向学习通道打通 ──────────────────────────────
 
+
 def test_f2_gap_closed(tmp_path):
     """F-2 修复回归: goodentry 阈值 0.70→0.50 与执行门禁对齐。
 
@@ -287,38 +315,57 @@ def test_f2_gap_closed(tmp_path):
     reviewer = CognitiveReviewer(lessons_filepath=str(tmp_path / "lessons.json"))
 
     # 过门禁的盈利单 → 必须产生 goodentry lesson
-    review = reviewer.review({
-        "symbol": "GAP", "direction": "LONG",
-        "entry_price": 100.0, "exit_price": 104.0,
-        "confidence": 0.54,  # 修复前 F-2 盲区典型值
-        "addon_count": 0, "hold_hours": 5.0,
-        "exit_reason": "TP hit", "pnl_usdt": 3.0, "pnl_pct": 0.04,
-    })
-    assert review["assessment"] in ("GOOD", "NEUTRAL", "BAD")
-    assert any("goodentry" in l.get("lesson_id", "") for l in review["lessons"]), (
-        "F-2 修复后: 过门禁盈利单必须沉淀正向经验"
+    review = reviewer.review(
+        {
+            "symbol": "GAP",
+            "direction": "LONG",
+            "entry_price": 100.0,
+            "exit_price": 104.0,
+            "confidence": 0.54,  # 修复前 F-2 盲区典型值
+            "addon_count": 0,
+            "hold_hours": 5.0,
+            "exit_reason": "TP hit",
+            "pnl_usdt": 3.0,
+            "pnl_pct": 0.04,
+        }
     )
+    assert review["assessment"] in ("GOOD", "NEUTRAL", "BAD")
+    assert any(
+        "goodentry" in l.get("lesson_id", "") for l in review["lessons"]  # noqa: E741
+    ), "F-2 修复后: 过门禁盈利单必须沉淀正向经验"
 
     # 未过门禁的盈利单 (<0.50) → 不产生 lesson (边界仍有效)
-    review2 = reviewer.review({
-        "symbol": "EDGE", "direction": "LONG",
-        "entry_price": 100.0, "exit_price": 104.0,
-        "confidence": 0.49,
-        "addon_count": 0, "hold_hours": 5.0,
-        "exit_reason": "TP hit", "pnl_usdt": 3.0, "pnl_pct": 0.04,
-    })
-    assert not any("goodentry" in l.get("lesson_id", "") for l in review2["lessons"])
+    review2 = reviewer.review(
+        {
+            "symbol": "EDGE",
+            "direction": "LONG",
+            "entry_price": 100.0,
+            "exit_price": 104.0,
+            "confidence": 0.49,
+            "addon_count": 0,
+            "hold_hours": 5.0,
+            "exit_reason": "TP hit",
+            "pnl_usdt": 3.0,
+            "pnl_pct": 0.04,
+        }
+    )
+    assert not any("goodentry" in l.get("lesson_id", "") for l in review2["lessons"])  # noqa: E741
 
 
 # ── Test 5: dry_run 安全门 ────────────────────────────────────────────────
 
+
 def test_dry_run_gate_never_touches_real_orders():
     """P0-3: paper 链 OPEN 时真实下单路径必须被 dry_run 门拦截."""
     ex = V15Executor(dry_run=True)  # 显式 paper
-    r = ex.execute_signal({
-        "symbol": "SAFE", "direction": "LONG",
-        "confidence": 0.9, "entry_price": 100.0,
-    })
+    r = ex.execute_signal(
+        {
+            "symbol": "SAFE",
+            "direction": "LONG",
+            "confidence": 0.9,
+            "entry_price": 100.0,
+        }
+    )
     assert r["status"] == "OPEN"
     real = r.get("real_order", {})
     assert real.get("dry_run") is True
@@ -326,12 +373,14 @@ def test_dry_run_gate_never_touches_real_orders():
 
     # 默认行为 (无显式参数 + 无环境变量) 也必须是 dry_run
     import os
+
     assert os.environ.get("DREAMOS_TRADING_DRY_RUN", "true").lower() != "false"
     ex_default = V15Executor()
     assert ex_default.dry_run is True
 
 
 # ── Test 6: B-1 卦序极性回归测试 (修复后必须常绿) ─────────────────────────
+
 
 def test_trigram_polarity_correct():
     """B-1 修复回归: 全阳爻(111) → 乾(Heaven/UP), 全阴爻(000) → 坤(Earth/DOWN)。
@@ -346,8 +395,10 @@ def test_trigram_polarity_correct():
     bits = g._score_to_trigram(0.85, 0.85)
     assert bits == 7
     from dreamos.capabilities.trading.yijing_signal_generator import (
-        TRIGRAM_NAMES, TRIGRAM_DIRECTIONS,
+        TRIGRAM_DIRECTIONS,
+        TRIGRAM_NAMES,
     )
+
     assert TRIGRAM_NAMES[7] == "Qian", "111=乾(Heaven)"
     assert TRIGRAM_NAMES[0] == "Kun", "000=坤(Earth)"
     # 极性语义: 乾=UP, 坤=DOWN
@@ -357,15 +408,16 @@ def test_trigram_polarity_correct():
 
 # ── Test 7: 真实行情冒烟 (只读, 不落账本) ─────────────────────────────────
 
+
 def test_live_enrichment_smoke():
     """生产同路: enrich_market_data 注入12项指标 + B层可消费。
 
     只读测试: 仅 generate() 不 execute(), 不触碰账本。
     网络不可达时优雅跳过。
     """
-    from dreamos.cli.auto_trader import AutoTrader
     from dreamos.capabilities.trading.market_enrichment import enrich_market_data
     from dreamos.capabilities.trading.yijing_signal_generator import YijingSignalGenerator
+    from dreamos.cli.auto_trader import AutoTrader
 
     try:
         trader = AutoTrader(dry_run=True, exchange="hyperliquid")
@@ -381,10 +433,18 @@ def test_live_enrichment_smoke():
         pytest.skip("live K线不足, enrichment 降级")
 
     required = [
-        "ma5", "ma10", "ma20", "momentum_direction", "volatility",
-        "volume_ratio", "price_position", "trend_strength",
-        "technical_score", "supply_demand_score",
-        "capital_flow_score", "sentiment_score",
+        "ma5",
+        "ma10",
+        "ma20",
+        "momentum_direction",
+        "volatility",
+        "volume_ratio",
+        "price_position",
+        "trend_strength",
+        "technical_score",
+        "supply_demand_score",
+        "capital_flow_score",
+        "sentiment_score",
     ]
     missing = [k for k in required if k not in md]
     assert not missing, f"指标注入缺失: {missing}"
@@ -408,11 +468,12 @@ def test_hexagram_table_lock():
     任何手动改动 HEXAGRAM_NAMES 必须先过此测试。
     """
     from dreamos.capabilities.trading.yijing_signal_generator import (
-        HEXAGRAM_NAMES, TRIGRAM_NAMES,
+        HEXAGRAM_NAMES,
+        TRIGRAM_NAMES,
     )
 
     # 1) 全覆盖: 8×8=64 组合一个不缺
-    combos = [(l, u) for l in TRIGRAM_NAMES for u in TRIGRAM_NAMES]
+    combos = [(l, u) for l in TRIGRAM_NAMES for u in TRIGRAM_NAMES]  # noqa: E741
     missing = [c for c in combos if c not in HEXAGRAM_NAMES]
     assert not missing, f"卦表缺失组合: {missing}"
     assert len(HEXAGRAM_NAMES) == 64
@@ -423,27 +484,69 @@ def test_hexagram_table_lock():
 
     # 3) 全量对照 (lower, upper) -> 周文王序号
     REF = {
-        ("Qian", "Qian"): 1, ("Kun", "Kun"): 2, ("Zhen", "Kan"): 3,
-        ("Kan", "Gen"): 4, ("Qian", "Kan"): 5, ("Kan", "Qian"): 6,
-        ("Kan", "Kun"): 7, ("Kun", "Kan"): 8, ("Qian", "Xun"): 9,
-        ("Dui", "Qian"): 10, ("Qian", "Kun"): 11, ("Kun", "Qian"): 12,
-        ("Li", "Qian"): 13, ("Qian", "Li"): 14, ("Gen", "Kun"): 15,
-        ("Kun", "Zhen"): 16, ("Zhen", "Dui"): 17, ("Xun", "Gen"): 18,
-        ("Dui", "Kun"): 19, ("Kun", "Xun"): 20, ("Zhen", "Li"): 21,
-        ("Li", "Gen"): 22, ("Kun", "Gen"): 23, ("Zhen", "Kun"): 24,
-        ("Zhen", "Qian"): 25, ("Qian", "Gen"): 26, ("Zhen", "Gen"): 27,
-        ("Xun", "Dui"): 28, ("Kan", "Kan"): 29, ("Li", "Li"): 30,
-        ("Gen", "Dui"): 31, ("Xun", "Zhen"): 32, ("Gen", "Qian"): 33,
-        ("Qian", "Zhen"): 34, ("Kun", "Li"): 35, ("Li", "Kun"): 36,
-        ("Li", "Xun"): 37, ("Dui", "Li"): 38, ("Gen", "Kan"): 39,
-        ("Kan", "Zhen"): 40, ("Dui", "Gen"): 41, ("Zhen", "Xun"): 42,
-        ("Qian", "Dui"): 43, ("Xun", "Qian"): 44, ("Kun", "Dui"): 45,
-        ("Xun", "Kun"): 46, ("Kan", "Dui"): 47, ("Xun", "Kan"): 48,
-        ("Li", "Dui"): 49, ("Xun", "Li"): 50, ("Zhen", "Zhen"): 51,
-        ("Gen", "Gen"): 52, ("Gen", "Xun"): 53, ("Dui", "Zhen"): 54,
-        ("Li", "Zhen"): 55, ("Gen", "Li"): 56, ("Xun", "Xun"): 57,
-        ("Dui", "Dui"): 58, ("Kan", "Xun"): 59, ("Dui", "Kan"): 60,
-        ("Dui", "Xun"): 61, ("Gen", "Zhen"): 62, ("Li", "Kan"): 63,
+        ("Qian", "Qian"): 1,
+        ("Kun", "Kun"): 2,
+        ("Zhen", "Kan"): 3,
+        ("Kan", "Gen"): 4,
+        ("Qian", "Kan"): 5,
+        ("Kan", "Qian"): 6,
+        ("Kan", "Kun"): 7,
+        ("Kun", "Kan"): 8,
+        ("Qian", "Xun"): 9,
+        ("Dui", "Qian"): 10,
+        ("Qian", "Kun"): 11,
+        ("Kun", "Qian"): 12,
+        ("Li", "Qian"): 13,
+        ("Qian", "Li"): 14,
+        ("Gen", "Kun"): 15,
+        ("Kun", "Zhen"): 16,
+        ("Zhen", "Dui"): 17,
+        ("Xun", "Gen"): 18,
+        ("Dui", "Kun"): 19,
+        ("Kun", "Xun"): 20,
+        ("Zhen", "Li"): 21,
+        ("Li", "Gen"): 22,
+        ("Kun", "Gen"): 23,
+        ("Zhen", "Kun"): 24,
+        ("Zhen", "Qian"): 25,
+        ("Qian", "Gen"): 26,
+        ("Zhen", "Gen"): 27,
+        ("Xun", "Dui"): 28,
+        ("Kan", "Kan"): 29,
+        ("Li", "Li"): 30,
+        ("Gen", "Dui"): 31,
+        ("Xun", "Zhen"): 32,
+        ("Gen", "Qian"): 33,
+        ("Qian", "Zhen"): 34,
+        ("Kun", "Li"): 35,
+        ("Li", "Kun"): 36,
+        ("Li", "Xun"): 37,
+        ("Dui", "Li"): 38,
+        ("Gen", "Kan"): 39,
+        ("Kan", "Zhen"): 40,
+        ("Dui", "Gen"): 41,
+        ("Zhen", "Xun"): 42,
+        ("Qian", "Dui"): 43,
+        ("Xun", "Qian"): 44,
+        ("Kun", "Dui"): 45,
+        ("Xun", "Kun"): 46,
+        ("Kan", "Dui"): 47,
+        ("Xun", "Kan"): 48,
+        ("Li", "Dui"): 49,
+        ("Xun", "Li"): 50,
+        ("Zhen", "Zhen"): 51,
+        ("Gen", "Gen"): 52,
+        ("Gen", "Xun"): 53,
+        ("Dui", "Zhen"): 54,
+        ("Li", "Zhen"): 55,
+        ("Gen", "Li"): 56,
+        ("Xun", "Xun"): 57,
+        ("Dui", "Dui"): 58,
+        ("Kan", "Xun"): 59,
+        ("Dui", "Kan"): 60,
+        ("Dui", "Xun"): 61,
+        ("Gen", "Zhen"): 62,
+        ("Li", "Kan"): 63,
         ("Kan", "Li"): 64,
     }
     mismatches = [
@@ -454,9 +557,7 @@ def test_hexagram_table_lock():
     assert not mismatches, "卦表错位:\n" + "\n".join(mismatches)
 
     # 4) 结构不变量: 八纯卦 + 颐/大过-小过/中孚 互换对
-    pure_nums = {
-        int(HEXAGRAM_NAMES[(t, t)].rsplit("_", 1)[1]) for t in TRIGRAM_NAMES
-    }
+    pure_nums = {int(HEXAGRAM_NAMES[(t, t)].rsplit("_", 1)[1]) for t in TRIGRAM_NAMES}
     assert pure_nums == {1, 2, 29, 30, 51, 52, 57, 58}, f"八纯卦错位: {pure_nums}"
     for (l1, u1), (l2, u2), expect in [
         (("Zhen", "Gen"), ("Gen", "Zhen"), {27, 62}),

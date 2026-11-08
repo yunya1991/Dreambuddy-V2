@@ -27,10 +27,11 @@
 
 import os
 import sys
+from dataclasses import dataclass
+from typing import Dict
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional
-from dataclasses import dataclass
 
 MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(MODULE_DIR)
@@ -39,12 +40,9 @@ sys.path.insert(0, MODULE_DIR)
 sys.path.insert(1, SANPING_DIR)
 
 try:
-    from .ewave_recognizer import ElliottWaveRecognizer, WAVE_SIGNALS
+    from .ewave_recognizer import WAVE_SIGNALS, ElliottWaveRecognizer  # noqa: F401
 except ImportError:
-    from ewave_recognizer import ElliottWaveRecognizer, WAVE_SIGNALS
-from ml.pitd_confidence_scorer import PhysicsConfidenceScorer, ConfidenceWeights
-from ml.pitd_kinematics_engineer import KinematicsEngineer
-from ml.pitd_dynamics_engineer import DynamicsEngineer
+    from ewave_recognizer import ElliottWaveRecognizer
 
 
 @dataclass
@@ -130,11 +128,10 @@ class EWaveStrategyAdapter:
 
     def __init__(self, config: WaveConfig = None):
         self.config = config or WaveConfig()
-        self.recognizer = ElliottWaveRecognizer(
-            zigzag_threshold=self.config.zigzag_threshold
-        )
+        self.recognizer = ElliottWaveRecognizer(zigzag_threshold=self.config.zigzag_threshold)
         if self.config.enable_physics:
             from ml.physics_enhancer import PhysicsEnhancer, PhysicsEnhancerConfig
+
             phys_cfg = PhysicsEnhancerConfig(
                 enabled=True,
                 enable_signal_filter=True,
@@ -218,9 +215,7 @@ class EWaveStrategyAdapter:
             wave_dir = self._parse_wave_direction(wave_struct.signal)
             result["wave_direction"] = wave_dir
 
-            wave_pos = self._compute_wave_position(
-                daily_df, wave_struct, v4_action, v4_direction
-            )
+            wave_pos = self._compute_wave_position(daily_df, wave_struct, v4_action, v4_direction)
             result["wave_position_pct"] = round(wave_pos, 4)
 
             if self.config.enable_physics and self.physics_enhancer is not None:
@@ -229,16 +224,29 @@ class EWaveStrategyAdapter:
                     n = len(daily_df)
                     last_idx = n - 1
 
-                    current_eta = float(feats["eta"][last_idx]) if not np.isnan(feats["eta"][last_idx]) else 0.0
+                    current_eta = (
+                        float(feats["eta"][last_idx])
+                        if not np.isnan(feats["eta"][last_idx])
+                        else 0.0
+                    )
                     result["wave_eta"] = round(current_eta, 4)
 
-                    current_conf = float(feats["phys_conf"][last_idx]) if not np.isnan(feats["phys_conf"][last_idx]) else 0.5
+                    current_conf = (
+                        float(feats["phys_conf"][last_idx])
+                        if not np.isnan(feats["phys_conf"][last_idx])
+                        else 0.5
+                    )
                     result["wave_physics_confidence"] = round(current_conf, 4)
 
-                    current_ks = float(feats["kinetic_score"][last_idx]) if not np.isnan(feats["kinetic_score"][last_idx]) else 0.5
+                    current_ks = (
+                        float(feats["kinetic_score"][last_idx])
+                        if not np.isnan(feats["kinetic_score"][last_idx])
+                        else 0.5
+                    )
                     result["wave_kinetic_score"] = round(current_ks, 4)
 
                     from ml.physics_enhancer import PhysicsState
+
                     tmp_state = PhysicsState(direction=1 if wave_dir == "LONG" else -1)
                     trail_pct = self.physics_enhancer._compute_trail_pct(last_idx, feats)
                     result["wave_trailing_stop_pct"] = round(trail_pct, 4)
@@ -254,6 +262,7 @@ class EWaveStrategyAdapter:
             if symbol:
                 try:
                     from ml.market_cap_provider import get_confirm_threshold_by_symbol
+
                     dynamic_threshold = get_confirm_threshold_by_symbol(symbol)
                     if dynamic_threshold != original_threshold:
                         self.config.confirm_threshold = dynamic_threshold
@@ -262,8 +271,7 @@ class EWaveStrategyAdapter:
                     pass
 
             total_pos, final_action, final_dir, fusion_rule = self._fuse_positions(
-                v4_action, v4_direction, v4_position_pct,
-                wave_struct.signal, wave_dir, wave_pos
+                v4_action, v4_direction, v4_position_pct, wave_struct.signal, wave_dir, wave_pos
             )
 
             self.config.confirm_threshold = original_threshold
@@ -336,7 +344,9 @@ class EWaveStrategyAdapter:
 
                 self._last_phys_conf = pc
                 self._last_kinetic_score = ks
-                self._last_eta = float(feats["eta"][last_idx]) if not np.isnan(feats["eta"][last_idx]) else 0.0
+                self._last_eta = (
+                    float(feats["eta"][last_idx]) if not np.isnan(feats["eta"][last_idx]) else 0.0
+                )
             except Exception:
                 pass
 
@@ -361,12 +371,16 @@ class EWaveStrategyAdapter:
         v4_wait = v4_action == "WAIT"
 
         wave_long = wave_direction == "LONG"
-        wave_short = wave_direction == "SHORT"
-        wave_exit_long = wave_direction == "EXIT_LONG"
-        wave_exit_short = wave_direction == "EXIT_SHORT"
+        wave_short = wave_direction == "SHORT"  # noqa: F841
+        wave_exit_long = wave_direction == "EXIT_LONG"  # noqa: F841
+        wave_exit_short = wave_direction == "EXIT_SHORT"  # noqa: F841
 
         wave_has_signal = wave_position_pct > 0
-        estimated_wave_conf = min(wave_position_pct / max(self.config.base_position, 1e-6), 1.0) if wave_has_signal else 0.0
+        estimated_wave_conf = (
+            min(wave_position_pct / max(self.config.base_position, 1e-6), 1.0)
+            if wave_has_signal
+            else 0.0
+        )
         wave_confirmed = estimated_wave_conf >= confirm_threshold
 
         if v4_long:

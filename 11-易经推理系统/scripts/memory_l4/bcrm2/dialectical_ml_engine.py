@@ -11,11 +11,12 @@
   不做决策引擎，做可解释层 (Interpretation Layer)
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Tuple, Optional, Any
 import json
 import os
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 
 _lgb = None
 
@@ -24,6 +25,7 @@ def _get_lgb():
     global _lgb
     if _lgb is None:
         import lightgbm as lgb
+
         _lgb = lgb
     return _lgb
 
@@ -34,22 +36,62 @@ def _get_lgb():
 
 # 八卦-特征维度映射（用于从特征重要性推导主卦）
 GUA_DIMENSION_MAP = {
-    "qian": {"name": "乾", "trigram": "☰", "element": "天", "nature": "健",
-             "description": "趋势强劲，如天之健行不息"},
-    "kun": {"name": "坤", "trigram": "☷", "element": "地", "nature": "顺",
-            "description": "支撑稳固，如地之厚德载物"},
-    "zhen": {"name": "震", "trigram": "☳", "element": "雷", "nature": "动",
-             "description": "动量突破，如雷之震动奋发"},
-    "xun": {"name": "巽", "trigram": "☴", "element": "风", "nature": "入",
-            "description": "波动变化，如风之无孔不入"},
-    "kan": {"name": "坎", "trigram": "☵", "element": "水", "nature": "陷",
-            "description": "资金流动，如水之润下流通"},
-    "li": {"name": "离", "trigram": "☲", "element": "火", "nature": "丽",
-           "description": "形态明朗，如火之光明照耀"},
-    "gen": {"name": "艮", "trigram": "☶", "element": "山", "nature": "止",
-            "description": "结构稳定，如山之静止不动"},
-    "dui": {"name": "兑", "trigram": "☱", "element": "泽", "nature": "悦",
-            "description": "多周期共振，如两泽相通相悦"},
+    "qian": {
+        "name": "乾",
+        "trigram": "☰",
+        "element": "天",
+        "nature": "健",
+        "description": "趋势强劲，如天之健行不息",
+    },
+    "kun": {
+        "name": "坤",
+        "trigram": "☷",
+        "element": "地",
+        "nature": "顺",
+        "description": "支撑稳固，如地之厚德载物",
+    },
+    "zhen": {
+        "name": "震",
+        "trigram": "☳",
+        "element": "雷",
+        "nature": "动",
+        "description": "动量突破，如雷之震动奋发",
+    },
+    "xun": {
+        "name": "巽",
+        "trigram": "☴",
+        "element": "风",
+        "nature": "入",
+        "description": "波动变化，如风之无孔不入",
+    },
+    "kan": {
+        "name": "坎",
+        "trigram": "☵",
+        "element": "水",
+        "nature": "陷",
+        "description": "资金流动，如水之润下流通",
+    },
+    "li": {
+        "name": "离",
+        "trigram": "☲",
+        "element": "火",
+        "nature": "丽",
+        "description": "形态明朗，如火之光明照耀",
+    },
+    "gen": {
+        "name": "艮",
+        "trigram": "☶",
+        "element": "山",
+        "nature": "止",
+        "description": "结构稳定，如山之静止不动",
+    },
+    "dui": {
+        "name": "兑",
+        "trigram": "☱",
+        "element": "泽",
+        "nature": "悦",
+        "description": "多周期共振，如两泽相通相悦",
+    },
 }
 
 # 64卦简表 (上卦 + 下卦 → 卦名)
@@ -251,15 +293,14 @@ class HexagramMapper:
         # 查64卦
         gua_key = (upper_gua, lower_gua)
         gua_info = SIXTY_FOUR_GUAS.get(
-            gua_key,
-            {"name": "未命名卦", "meaning": "力量格局待解", "direction": "neutral"}
+            gua_key, {"name": "未命名卦", "meaning": "力量格局待解", "direction": "neutral"}
         )
 
         # 方向校准: 如果ML方向与卦义方向不一致，用ML方向为准，卦义提供背景
         direction_consistent = (
-            (model_direction == 1 and gua_info["direction"] == "long") or
-            (model_direction == -1 and gua_info["direction"] == "short") or
-            (model_direction == 0 and gua_info["direction"] == "neutral")
+            (model_direction == 1 and gua_info["direction"] == "long")
+            or (model_direction == -1 and gua_info["direction"] == "short")
+            or (model_direction == 0 and gua_info["direction"] == "neutral")
         )
 
         # 计算六爻 (上下卦各三爻)
@@ -267,8 +308,13 @@ class HexagramMapper:
         # 阳爻=看多/力量强, 阴爻=看空/力量弱
         # 每个卦的三爻对应: 初爻=该维度的短期动量, 二爻=中期趋势, 三爻=长期结构
         hexagram_lines = self._compute_hexagram_lines(
-            upper_gua, lower_gua, gua_activity, norm_vals, feature_names,
-            model_direction, model_confidence
+            upper_gua,
+            lower_gua,
+            gua_activity,
+            norm_vals,
+            feature_names,
+            model_direction,
+            model_confidence,
         )
 
         # 计算互卦 (2-5爻, 矛盾内部的深层结构)
@@ -334,8 +380,8 @@ class HexagramMapper:
         }.get(gua_info["direction"], "UNKNOWN")
 
         # 生成解释
-        direction_text = "看涨" if model_direction == 1 else (
-            "看跌" if model_direction == -1 else "观望"
+        direction_text = (
+            "看涨" if model_direction == 1 else ("看跌" if model_direction == -1 else "观望")
         )
         confidence_pct = f"{model_confidence * 100:.0f}%"
 
@@ -355,9 +401,11 @@ class HexagramMapper:
             "direction_consistent": direction_consistent,
             "gua_strengths": {g: round(s, 4) for g, s in gua_strengths.items()},
             "dominant_dimensions": [
-                {"gua": GUA_DIMENSION_MAP[sorted_guas[i][0]]["name"],
-                 "trigram": GUA_DIMENSION_MAP[sorted_guas[i][0]]["trigram"],
-                 "strength": round(sorted_guas[i][1], 4)}
+                {
+                    "gua": GUA_DIMENSION_MAP[sorted_guas[i][0]]["name"],
+                    "trigram": GUA_DIMENSION_MAP[sorted_guas[i][0]]["trigram"],
+                    "strength": round(sorted_guas[i][1], 4),
+                }
                 for i in range(min(4, len(sorted_guas)))
             ],
             # 增强: 六爻
@@ -369,9 +417,15 @@ class HexagramMapper:
             # 增强: 卦象强度 (矛盾激化程度)
             "gua_intensity": round(gua_intensity, 4),
             "narrative": self._generate_narrative(
-                gua_info, direction_text, confidence_pct,
-                direction_consistent, sorted_guas, hexagram_lines,
-                mutual_gua, changed_gua, gua_intensity
+                gua_info,
+                direction_text,
+                confidence_pct,
+                direction_consistent,
+                sorted_guas,
+                hexagram_lines,
+                mutual_gua,
+                changed_gua,
+                gua_intensity,
             ),
         }
 
@@ -414,7 +468,9 @@ class HexagramMapper:
             # 三爻: 长期结构 (低权重)
             weight = [1.2, 1.0, 0.8][pos]
             strength = lower_activity * weight
-            is_yang = (model_direction > 0 and strength > 0.3) or (model_direction < 0 and strength < 0.5)
+            is_yang = (model_direction > 0 and strength > 0.3) or (
+                model_direction < 0 and strength < 0.5
+            )
             # 简化: 以活跃度为基础, 结合ML方向判定阴阳
             # 活跃度越高, 力量越强; ML方向为正, 阳爻概率越大
             yang_prob = 0.5 + (model_direction * 0.3) + (strength - 0.5) * 0.4
@@ -423,15 +479,17 @@ class HexagramMapper:
             line_name = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"]
             line_type = "阳" if is_yang else "阴"
             line_symbol = "━" if is_yang else "╶╴"
-            lines.append({
-                "position": pos + 1,
-                "name": line_name[pos],
-                "type": line_type,
-                "symbol": line_symbol,
-                "strength": round(strength, 4),
-                "yang_prob": round(min(1.0, max(0.0, yang_prob)), 4),
-                "gua_part": "lower",
-            })
+            lines.append(
+                {
+                    "position": pos + 1,
+                    "name": line_name[pos],
+                    "type": line_type,
+                    "symbol": line_symbol,
+                    "strength": round(strength, 4),
+                    "yang_prob": round(min(1.0, max(0.0, yang_prob)), 4),
+                    "gua_part": "lower",
+                }
+            )
 
         # 上卦三爻 (外卦)
         upper_activity = gua_activity.get(upper_gua, 0.5)
@@ -444,15 +502,17 @@ class HexagramMapper:
             line_name = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"]
             line_type = "阳" if is_yang else "阴"
             line_symbol = "━" if is_yang else "╶╴"
-            lines.append({
-                "position": pos + 4,
-                "name": line_name[pos + 3],
-                "type": line_type,
-                "symbol": line_symbol,
-                "strength": round(strength, 4),
-                "yang_prob": round(min(1.0, max(0.0, yang_prob)), 4),
-                "gua_part": "upper",
-            })
+            lines.append(
+                {
+                    "position": pos + 4,
+                    "name": line_name[pos + 3],
+                    "type": line_type,
+                    "symbol": line_symbol,
+                    "strength": round(strength, 4),
+                    "yang_prob": round(min(1.0, max(0.0, yang_prob)), 4),
+                    "gua_part": "upper",
+                }
+            )
 
         return lines
 
@@ -476,8 +536,7 @@ class HexagramMapper:
 
         gua_key = (upper_mutual_gua, lower_mutual_gua)
         gua_info = SIXTY_FOUR_GUAS.get(
-            gua_key,
-            {"name": "未命名互卦", "meaning": "内部结构待解", "direction": "neutral"}
+            gua_key, {"name": "未命名互卦", "meaning": "内部结构待解", "direction": "neutral"}
         )
 
         return {
@@ -486,10 +545,15 @@ class HexagramMapper:
             "name": gua_info["name"],
             "meaning": gua_info["meaning"],
             "direction": gua_info["direction"],
-            "lines_symbol": self._lines_to_symbol([l for l in lower_mutual_lines] + [l for l in upper_mutual_lines]),
+            "lines_symbol": self._lines_to_symbol(
+                [l for l in lower_mutual_lines]  # noqa: C416, E741
+                + [l for l in upper_mutual_lines]  # noqa: C416, E741
+            ),
         }
 
-    def _compute_changed_gua(self, hexagram_lines: List[Dict], gua_activity: Dict[str, float]) -> Dict:
+    def _compute_changed_gua(
+        self, hexagram_lines: List[Dict], gua_activity: Dict[str, float]
+    ) -> Dict:
         """
         计算变卦 (矛盾的对立面)
 
@@ -510,7 +574,7 @@ class HexagramMapper:
         changed_line["new_symbol"] = new_symbol
 
         # 构建变卦的六爻
-        changed_lines = [l.copy() for l in hexagram_lines]
+        changed_lines = [l.copy() for l in hexagram_lines]  # noqa: E741
         changed_lines[max_strength_idx]["type"] = new_type
         changed_lines[max_strength_idx]["symbol"] = new_symbol
 
@@ -520,8 +584,7 @@ class HexagramMapper:
 
         gua_key = (upper_changed, lower_changed)
         gua_info = SIXTY_FOUR_GUAS.get(
-            gua_key,
-            {"name": "未命名变卦", "meaning": "变化方向待解", "direction": "neutral"}
+            gua_key, {"name": "未命名变卦", "meaning": "变化方向待解", "direction": "neutral"}
         )
 
         return {
@@ -543,24 +606,24 @@ class HexagramMapper:
         # 八卦对应表 (从下到上: 初、二、三)
         # 0=阴, 1=阳
         trigram_map = {
-            (1, 1, 1): "qian",   # 乾 ☰
-            (0, 0, 0): "kun",    # 坤 ☷
-            (1, 0, 0): "zhen",   # 震 ☳
-            (0, 1, 1): "xun",    # 巽 ☴
-            (0, 1, 0): "kan",    # 坎 ☵
-            (1, 0, 1): "li",     # 离 ☲
-            (0, 0, 1): "gen",    # 艮 ☶
-            (1, 1, 0): "dui",    # 兑 ☱
+            (1, 1, 1): "qian",  # 乾 ☰
+            (0, 0, 0): "kun",  # 坤 ☷
+            (1, 0, 0): "zhen",  # 震 ☳
+            (0, 1, 1): "xun",  # 巽 ☴
+            (0, 1, 0): "kan",  # 坎 ☵
+            (1, 0, 1): "li",  # 离 ☲
+            (0, 0, 1): "gen",  # 艮 ☶
+            (1, 1, 0): "dui",  # 兑 ☱
         }
 
-        line_types = tuple(1 if l["type"] == "阳" else 0 for l in lines)
+        line_types = tuple(1 if l["type"] == "阳" else 0 for l in lines)  # noqa: E741
         return trigram_map.get(line_types, "qian")
 
     def _lines_to_symbol(self, lines: List[Dict]) -> str:
         """将六爻转换为符号字符串 (从上到下显示)"""
         # 从上到下显示: 上爻→初爻 (与数组顺序相反)
         reversed_lines = list(reversed(lines))
-        return "\n".join([f"  {l['symbol']}" for l in reversed_lines])
+        return "\n".join([f"  {l['symbol']}" for l in reversed_lines])  # noqa: E741
 
     def _generate_narrative(
         self,
@@ -575,8 +638,12 @@ class HexagramMapper:
         gua_intensity: float = 0.0,
     ) -> str:
         """生成人类可读的卦象叙事 (增强版)"""
-        top2_names = [GUA_DIMENSION_MAP[sorted_guas[i][0]]["name"] for i in range(min(2, len(sorted_guas)))]
-        top2_elements = [GUA_DIMENSION_MAP[sorted_guas[i][0]]["element"] for i in range(min(2, len(sorted_guas)))]
+        top2_names = [
+            GUA_DIMENSION_MAP[sorted_guas[i][0]]["name"] for i in range(min(2, len(sorted_guas)))
+        ]
+        top2_elements = [
+            GUA_DIMENSION_MAP[sorted_guas[i][0]]["element"] for i in range(min(2, len(sorted_guas)))
+        ]
 
         # 基础叙事
         if consistent:
@@ -595,7 +662,9 @@ class HexagramMapper:
 
         # 增强: 卦象强度 (矛盾激化程度)
         if gua_intensity > 0:
-            intensity_level = "低" if gua_intensity < 0.3 else ("中" if gua_intensity < 0.6 else "高")
+            intensity_level = (
+                "低" if gua_intensity < 0.3 else ("中" if gua_intensity < 0.6 else "高")
+            )
             narrative += f" 当前矛盾激化程度为{intensity_level}强度(强度指数{gua_intensity:.2f})。"
 
         # 增强: 变卦提示 (物极必反)
@@ -613,7 +682,9 @@ class HexagramMapper:
         if mutual_gua and mutual_gua.get("name"):
             mutual_name = mutual_gua["name"]
             mutual_meaning = mutual_gua.get("meaning", "")
-            narrative += f" 深层结构：互卦为{mutual_name}（{mutual_meaning}），揭示内在矛盾演化趋势。"
+            narrative += (
+                f" 深层结构：互卦为{mutual_name}（{mutual_meaning}），揭示内在矛盾演化趋势。"
+            )
 
         return narrative
 
@@ -621,6 +692,7 @@ class HexagramMapper:
 # ============================================================
 # 辩证ML引擎 (Dialectical ML Engine)
 # ============================================================
+
 
 class DialecticalMLEngine:
     """
@@ -650,7 +722,7 @@ class DialecticalMLEngine:
         # L1: 主方向模型
         self.l1_model = None
         # L2: Meta-Labeling模型 (做多/做空各一个)
-        self.l2_model_long = None   # 做多盈利预测
+        self.l2_model_long = None  # 做多盈利预测
         self.l2_model_short = None  # 做空盈利预测
         # 兼容旧属性名
         self.l2_model = None
@@ -732,7 +804,14 @@ class DialecticalMLEngine:
             "top_features": top_features,
         }
 
-    def train_l2(self, X: np.ndarray, y: np.ndarray, df: Optional[pd.DataFrame] = None, ref_df: Optional[pd.DataFrame] = None, cycle_phase: Optional[pd.DataFrame] = None) -> Dict:
+    def train_l2(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        df: Optional[pd.DataFrame] = None,
+        ref_df: Optional[pd.DataFrame] = None,
+        cycle_phase: Optional[pd.DataFrame] = None,
+    ) -> Dict:
         """
         训练L2 Meta-Labeling模型 (反题)
 
@@ -772,18 +851,18 @@ class DialecticalMLEngine:
         X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
 
         # 计算每根K线的未来收益 (用于定义L2标签)
-        close = df['close'].values
+        close = df["close"].values
         future_return = np.zeros(len(close))
         for i in range(len(close) - 20):
             future_return[i] = (close[i + 20] - close[i]) / close[i]
 
         # 做多L2: 当L1预测UP时, 判断这个UP信号的收益是否高于中位数
         # 二分类: l1_pred == 1 → UP, l1_pred == 0 → DOWN
-        long_mask = (l1_pred == 1)
-        
+        long_mask = l1_pred == 1
+
         # 如果L1预测的UP信号不足，使用原始标签作为fallback
         if long_mask.sum() < 20:
-            long_mask = (y == 1)
+            long_mask = y == 1
             if long_mask.sum() < 20:
                 return {"ok": False, "reason": f"insufficient long signals: {long_mask.sum()}"}
 
@@ -800,11 +879,11 @@ class DialecticalMLEngine:
 
         # 做空L2: 当L1预测DOWN时, 判断这个DOWN信号的收益是否高于中位数
         # 二分类: l1_pred == 0 → DOWN
-        short_mask = (l1_pred == 0)
-        
+        short_mask = l1_pred == 0
+
         # 如果L1预测的DOWN信号不足，使用原始标签作为fallback
         if short_mask.sum() < 20:
-            short_mask = (y == 0)
+            short_mask = y == 0
 
         if short_mask.sum() < 20:
             self.l2_model_short = None
@@ -819,7 +898,7 @@ class DialecticalMLEngine:
                 "short_train_accuracy": None,
                 "short_positive_ratio": None,
                 "short_n_samples": int(short_mask.sum()),
-                "note": "short samples insufficient, only long L2 trained"
+                "note": "short samples insufficient, only long L2 trained",
             }
 
         short_returns = -future_return[short_mask]
@@ -855,7 +934,14 @@ class DialecticalMLEngine:
     # 预测
     # --------------------------------------------------------
 
-    def predict(self, X: np.ndarray, with_gua: bool = False, df: Optional[pd.DataFrame] = None, ref_df: Optional[pd.DataFrame] = None, cycle_phase: Optional[pd.DataFrame] = None) -> List[Dict]:
+    def predict(
+        self,
+        X: np.ndarray,
+        with_gua: bool = False,
+        df: Optional[pd.DataFrame] = None,
+        ref_df: Optional[pd.DataFrame] = None,
+        cycle_phase: Optional[pd.DataFrame] = None,
+    ) -> List[Dict]:
         """
         辩证预测 — 三层裁决
 
@@ -886,6 +972,7 @@ class DialecticalMLEngine:
         l2_short_proba = None
         if (self.l2_model_long is not None or self.l2_model_short is not None) and df is not None:
             from .meta_labeling_features_v2 import MetaLabelingFeaturesV2
+
             ml_features = MetaLabelingFeaturesV2()
             try:
                 X_l2 = ml_features.compute_base_features(df, l1_pred, l1_proba, ref_df, cycle_phase)
@@ -894,7 +981,7 @@ class DialecticalMLEngine:
                     l2_long_proba = self._predict_binary_proba(self.l2_model_long, X_l2)
                 if self.l2_model_short is not None:
                     l2_short_proba = self._predict_binary_proba(self.l2_model_short, X_l2)
-            except Exception as e:
+            except Exception as e:  # noqa: F841
                 l2_long_proba = None
                 l2_short_proba = None
 
@@ -957,7 +1044,7 @@ class DialecticalMLEngine:
 
     def _predict_proba(self, model, X) -> np.ndarray:
         """兼容 LGBMClassifier 和 Booster 的 predict_proba (多分类)"""
-        if hasattr(model, 'predict_proba'):
+        if hasattr(model, "predict_proba"):
             return model.predict_proba(X)
         else:
             # Booster.predict 对多分类直接返回概率矩阵 (n, n_classes)
@@ -965,13 +1052,15 @@ class DialecticalMLEngine:
 
     def _predict_binary_proba(self, model, X) -> np.ndarray:
         """兼容 LGBMClassifier 和 Booster 的 predict_proba (二分类, 返回 class 1 的概率)"""
-        if hasattr(model, 'predict_proba'):
+        if hasattr(model, "predict_proba"):
             return model.predict_proba(X)[:, 1]
         else:
             # Booster 二分类 predict 直接返回 class 1 的概率 (1D array)
             return model.predict(X)
 
-    def predict_single(self, X_row: np.ndarray, with_gua: bool = False, df: Optional[pd.DataFrame] = None) -> Dict:
+    def predict_single(
+        self, X_row: np.ndarray, with_gua: bool = False, df: Optional[pd.DataFrame] = None
+    ) -> Dict:
         """单样本预测"""
         return self.predict(X_row.reshape(1, -1), with_gua=with_gua, df=df)[0]
 
@@ -1014,8 +1103,11 @@ class DialecticalMLEngine:
             y_binary = (y_h[mask] > 0).astype(int)  # +1→1(UP), -1→0(DOWN)
 
             if len(X_h) < 30 or len(np.unique(y_binary)) < 2:
-                report[h] = {"train_accuracy": 0.0, "n_samples": int(len(X_h)),
-                             "note": "insufficient samples, skipped"}
+                report[h] = {
+                    "train_accuracy": 0.0,
+                    "n_samples": int(len(X_h)),
+                    "note": "insufficient samples, skipped",
+                }
                 continue
 
             model_h = lgb.LGBMClassifier(**self.l1_params)

@@ -10,6 +10,7 @@ FAIL-OPEN 三级（对齐硬约束 VM-1788443193342）:
 
 缓存模式：6h 更新一次，避免每轮调用 FinBERT
 """
+
 from __future__ import annotations
 
 import json
@@ -89,6 +90,7 @@ class SentimentBridge:
 
         try:
             import sys as _sys
+
             # 尝试导入 SentimentEngine
             _engine_path = None
             for p in _sys.path:
@@ -99,12 +101,14 @@ class SentimentBridge:
             if _engine_path is None:
                 # 尝试从项目根目录导入
                 from pathlib import Path
+
                 _root = Path(__file__).resolve().parent.parent.parent.parent
                 _bp = str(_root / "9-基本面分析" / "engines")
                 if _bp not in _sys.path:
                     _sys.path.insert(0, _bp)
 
             from sentiment_engine import SentimentEngine  # type: ignore
+
             self._engine = SentimentEngine()
             return self._engine
 
@@ -126,7 +130,8 @@ class SentimentBridge:
                 cursor.execute(
                     "SELECT metrics FROM records "
                     "WHERE source = 'odaily' AND sub_category = 'newsflash' "
-                    "ORDER BY timestamp DESC LIMIT ?", (count,)
+                    "ORDER BY timestamp DESC LIMIT ?",
+                    (count,),
                 )
                 rows = cursor.fetchall()
             except sqlite3.OperationalError:

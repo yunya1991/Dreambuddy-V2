@@ -3,15 +3,13 @@ L2 自检测: DSH Subagent 共享类型单测
 覆盖: Signal / ChartSpec / SubagentOutput 的 to_dict 和字段契约
 """
 
-import sys
+import sys  # noqa: I001
 from pathlib import Path
-
-import pytest
 
 PYTHON_SERVER = Path(__file__).resolve().parent
 sys.path.insert(0, str(PYTHON_SERVER))
 
-from subagent_types import Signal, ChartSpec, SubagentOutput
+from subagent_types import ChartSpec, Signal, SubagentOutput  # noqa: E402
 
 
 class TestSignal:

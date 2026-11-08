@@ -3,7 +3,7 @@
   "module": "P6 E1 基线固化（12 系统 LightGBM 基线落表）",
   "baseline_source": {
     "system": "12-三屏趋势系统",
-    "model_path": "/home/luke/dreambuddy/12-三屏趋势系统/ml/models/baseline/model.pkl",
+    "model_path": "12-三屏趋势系统/ml/models/baseline/model.pkl（相对 DREAMBUDDY_ROOT，R-42-04/P1-03 脱敏）",
     "version": "v1",
     "model_type": "LightGBMModel",
     "num_features": 25,

@@ -15,6 +15,7 @@
   - rea_batch_collector case → quality=B → outcome="partial"
   - 同 intent 多 case → 共享 prompt_pattern (可聚类 → 权重可积累)
 """
+
 import os
 import sys
 import unittest
@@ -28,16 +29,16 @@ for _p in [_THIS_DIR, _ADAPTERS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingCase
-from interfaces.rea_parser import REAParseResult
-from interfaces.training_executor import TrainingLayer
-from rea_to_tdr_adapter import rea_to_training_cases
-from ts_http_training_executor import TSHTTPTrainingExecutor
-from core.outcome_pattern_deriver import (
+from core.outcome_pattern_deriver import (  # noqa: E402
     derive_outcome,
-    normalize_prompt_pattern,
     derive_outcome_and_pattern,
+    normalize_prompt_pattern,
 )
+from interfaces.rea_parser import REAParseResult  # noqa: E402
+from interfaces.training_data_provider import TrainingCase  # noqa: E402
+from interfaces.training_executor import TrainingLayer  # noqa: E402
+from rea_to_tdr_adapter import rea_to_training_cases  # noqa: E402
+from ts_http_training_executor import TSHTTPTrainingExecutor  # noqa: E402
 
 
 def _make_wrapup_case(intent="部署BTC策略", quality="B", confidence=0.5):
@@ -67,7 +68,8 @@ def _make_rea_result(
         call_chain=call_chain or ["main", "train", "evaluate"],
         dependency_graph=dependency_graph or {"main": ["train", "evaluate"]},
         known_gaps=known_gaps or [],
-        observations=observations or [
+        observations=observations
+        or [
             {"result": "训练收敛", "level": "L1"},
             {"result": "验证通过", "level": "L1"},
         ],
@@ -80,6 +82,7 @@ def _make_rea_result(
 # 1. REA 产出端: rea_to_training_cases 正确生成 quality/confidence
 # ============================================================
 
+
 class TestREAProducedCaseQuality(unittest.TestCase):
     """验证 REA → TrainingCase 转换正确生成 quality/confidence 字段。"""
 
@@ -91,10 +94,10 @@ class TestREAProducedCaseQuality(unittest.TestCase):
         llm_cases = [c for c in cases if "LLM" in (c.layer_tags or [])]
         self.assertTrue(llm_cases, "应生成至少 1 个 LLM 层 case")
         llm_case = llm_cases[0]
-        self.assertEqual(llm_case.quality, "A",
-                         "L1 evidence → quality=A → outcome 派生 success")
-        self.assertGreaterEqual(llm_case.confidence, 0.7,
-                                "confidence >= 0.7 → outcome 派生 success")
+        self.assertEqual(llm_case.quality, "A", "L1 evidence → quality=A → outcome 派生 success")
+        self.assertGreaterEqual(
+            llm_case.confidence, 0.7, "confidence >= 0.7 → outcome 派生 success"
+        )
 
     def test_l2_evidence_yields_b_quality(self):
         """L2 evidence_level → quality=B (outcome 派生 partial)"""
@@ -116,8 +119,7 @@ class TestREAProducedCaseQuality(unittest.TestCase):
         # 应有 known_gaps 对应的 C 层 case
         kg_cases = [c for c in c_cases if c.source == "rea_known_gaps"]
         self.assertTrue(kg_cases, "应有 known_gaps → C 层 case")
-        self.assertEqual(kg_cases[0].quality, "C",
-                         "known_gaps 固定 quality=C → outcome=failure")
+        self.assertEqual(kg_cases[0].quality, "C", "known_gaps 固定 quality=C → outcome=failure")
 
     def test_all_five_field_cases_generated(self):
         """完整 REA 结果应生成 5 类 case (algorithm/call_chain/graph/gaps/observations)"""
@@ -133,8 +135,13 @@ class TestREAProducedCaseQuality(unittest.TestCase):
         sources = {c.source for c in cases}
         self.assertEqual(
             sources,
-            {"rea_algorithm", "rea_call_chain", "rea_dependency_graph",
-             "rea_known_gaps", "rea_observations"},
+            {
+                "rea_algorithm",
+                "rea_call_chain",
+                "rea_dependency_graph",
+                "rea_known_gaps",
+                "rea_observations",
+            },
             f"应生成全部 5 类 case，实际: {sources}",
         )
 
@@ -142,6 +149,7 @@ class TestREAProducedCaseQuality(unittest.TestCase):
 # ============================================================
 # 2. outcome 派生端: P1 修复后的 derive_outcome 对 REA case 正确工作
 # ============================================================
+
 
 class TestOutcomeDerivationForREACases(unittest.TestCase):
     """验证 P1 修复后的 outcome_pattern_deriver 对 REA 产出的 case 正确派生。"""
@@ -152,8 +160,7 @@ class TestOutcomeDerivationForREACases(unittest.TestCase):
         cases = rea_to_training_cases(_make_wrapup_case(), rea)
         llm_case = next(c for c in cases if c.source == "rea_observations")
         outcome = derive_outcome(llm_case)
-        self.assertEqual(outcome, "success",
-                         "L1+observations → quality=A → success (P1 核心修复)")
+        self.assertEqual(outcome, "success", "L1+observations → quality=A → success (P1 核心修复)")
 
     def test_known_gaps_case_failure(self):
         """known_gaps case → outcome=failure"""
@@ -165,8 +172,7 @@ class TestOutcomeDerivationForREACases(unittest.TestCase):
         cases = rea_to_training_cases(_make_wrapup_case(), rea)
         kg_case = next(c for c in cases if c.source == "rea_known_gaps")
         outcome = derive_outcome(kg_case)
-        self.assertEqual(outcome, "failure",
-                         "known_gaps quality=C → failure")
+        self.assertEqual(outcome, "failure", "known_gaps quality=C → failure")
 
     def test_l2_algorithm_case_partial(self):
         """L2 evidence + algorithm_patterns → outcome=partial"""
@@ -174,8 +180,7 @@ class TestOutcomeDerivationForREACases(unittest.TestCase):
         cases = rea_to_training_cases(_make_wrapup_case(), rea)
         algo_case = next(c for c in cases if c.source == "rea_algorithm")
         outcome = derive_outcome(algo_case)
-        self.assertEqual(outcome, "partial",
-                         "L2 → quality=B → partial")
+        self.assertEqual(outcome, "partial", "L2 → quality=B → partial")
 
     def test_rea_batch_collector_case_partial(self):
         """rea_batch_collector.py 固定 quality=B → outcome=partial"""
@@ -199,6 +204,7 @@ class TestOutcomeDerivationForREACases(unittest.TestCase):
 # 3. prompt_pattern 归一化: 同 intent 共享 pattern (可聚类)
 # ============================================================
 
+
 class TestPromptPatternClustering(unittest.TestCase):
     """验证 P1 修复: 同 intent 的 REA case 共享 prompt_pattern → 可聚类"""
 
@@ -206,18 +212,15 @@ class TestPromptPatternClustering(unittest.TestCase):
         """同 intent 不同 observations → 共享 prompt_pattern"""
         intent = "部署BTC趋势策略"
         wrapup = _make_wrapup_case(intent=intent)
-        rea1 = _make_rea_result(
-            observations=[{"result": "训练收敛v1"}])
-        rea2 = _make_rea_result(
-            observations=[{"result": "训练收敛v2 不同结果"}])
+        rea1 = _make_rea_result(observations=[{"result": "训练收敛v1"}])
+        rea2 = _make_rea_result(observations=[{"result": "训练收敛v2 不同结果"}])
         cases1 = rea_to_training_cases(wrapup, rea1)
         cases2 = rea_to_training_cases(wrapup, rea2)
         llm1 = next(c for c in cases1 if c.source == "rea_observations")
         llm2 = next(c for c in cases2 if c.source == "rea_observations")
         p1 = normalize_prompt_pattern(llm1)
         p2 = normalize_prompt_pattern(llm2)
-        self.assertEqual(p1, p2,
-                         "同 intent → 共享 pattern → 模板可聚类 → 权重可积累")
+        self.assertEqual(p1, p2, "同 intent → 共享 pattern → 模板可聚类 → 权重可积累")
         self.assertEqual(p1, intent)
 
     def test_pattern_not_full_outcome_text(self):
@@ -236,6 +239,7 @@ class TestPromptPatternClustering(unittest.TestCase):
 # 4. 转换层: TSHTTPTrainingExecutor LLM 层转换
 # ============================================================
 
+
 class TestLLMLayerConversion(unittest.TestCase):
     """验证 TSHTTPTrainingExecutor 对 LLM 层 REA case 的转换正确。"""
 
@@ -246,10 +250,8 @@ class TestLLMLayerConversion(unittest.TestCase):
         llm_case = next(c for c in cases if c.source == "rea_observations")
         executor = TSHTTPTrainingExecutor(TrainingLayer.LLM)
         data = executor._convert_case_to_training_data(llm_case)
-        self.assertEqual(data["outcome"], "success",
-                         "LLM 层 outcome=success (P1 核心修复)")
-        self.assertEqual(data["prompt_pattern"], llm_case.intent,
-                         "prompt_pattern=intent (可聚类)")
+        self.assertEqual(data["outcome"], "success", "LLM 层 outcome=success (P1 核心修复)")
+        self.assertEqual(data["prompt_pattern"], llm_case.intent, "prompt_pattern=intent (可聚类)")
         self.assertEqual(data["intent"], llm_case.intent)
         self.assertEqual(data["learned"], llm_case.learned)
 
@@ -264,8 +266,7 @@ class TestLLMLayerConversion(unittest.TestCase):
         kg_case = next(c for c in cases if c.source == "rea_known_gaps")
         executor = TSHTTPTrainingExecutor(TrainingLayer.C)
         data = executor._convert_case_to_training_data(kg_case)
-        self.assertEqual(data["outcome"], "failure",
-                         "known_gaps → C 层 outcome=failure")
+        self.assertEqual(data["outcome"], "failure", "known_gaps → C 层 outcome=failure")
 
     def test_algorithm_case_converts_to_partial(self):
         """L2 algorithm → DSH 层 outcome=partial"""
@@ -274,13 +275,13 @@ class TestLLMLayerConversion(unittest.TestCase):
         algo_case = next(c for c in cases if c.source == "rea_algorithm")
         executor = TSHTTPTrainingExecutor(TrainingLayer.DSH)
         data = executor._convert_case_to_training_data(algo_case)
-        self.assertEqual(data["outcome"], "partial",
-                         "L2 algorithm → DSH 层 outcome=partial")
+        self.assertEqual(data["outcome"], "partial", "L2 algorithm → DSH 层 outcome=partial")
 
 
 # ============================================================
 # 5. 端到端: 模拟多个 REA 工程的 LLM 训练数据流
 # ============================================================
+
 
 class TestE2EMultiProjectLLMFlow(unittest.TestCase):
     """模拟多个 REA 工程产出 → LLM 训练数据列表 → 验证 success 信号比例。"""
@@ -309,18 +310,15 @@ class TestE2EMultiProjectLLMFlow(unittest.TestCase):
             llm_cases = [c for c in cases if "LLM" in (c.layer_tags or [])]
             executor = TSHTTPTrainingExecutor(TrainingLayer.LLM)
             for c in llm_cases:
-                all_llm_data.append(
-                    executor._convert_case_to_training_data(c))
+                all_llm_data.append(executor._convert_case_to_training_data(c))
 
         # 至少有 1 条 LLM 训练数据
         self.assertGreater(len(all_llm_data), 0)
         outcomes = [d["outcome"] for d in all_llm_data]
         # 关键断言: P1 修复前 success_count=0, 修复后应有 success
-        self.assertIn("success", outcomes,
-                      "P1 修复后 REA→LLM 链路应有 success 信号")
+        self.assertIn("success", outcomes, "P1 修复后 REA→LLM 链路应有 success 信号")
         # 应有多种 outcome
-        self.assertGreaterEqual(len(set(outcomes)), 2,
-                                "应有多样化 outcome")
+        self.assertGreaterEqual(len(set(outcomes)), 2, "应有多样化 outcome")
 
     def test_success_signal_reaches_llm_training_input(self):
         """验证 success 信号能进入 LLM 训练循环的输入数据形态
@@ -339,8 +337,9 @@ class TestE2EMultiProjectLLMFlow(unittest.TestCase):
 
         # 完整字段集 (匹配 TS 层 addTrainingData 输入)
         required_keys = {"intent", "learned", "outcome", "prompt_pattern"}
-        self.assertTrue(required_keys.issubset(set(data.keys())),
-                        f"LLM 训练数据应包含 {required_keys}")
+        self.assertTrue(
+            required_keys.issubset(set(data.keys())), f"LLM 训练数据应包含 {required_keys}"
+        )
         # outcome 必须是 success (P1 修复前为 partial)
         self.assertEqual(data["outcome"], "success")
         # prompt_pattern 必须是 intent (可聚类)
@@ -373,14 +372,14 @@ class TestE2EMultiProjectLLMFlow(unittest.TestCase):
             patterns.append(pattern)
 
         # 3 个 case 应共享同一 pattern
-        self.assertEqual(len(set(patterns)), 1,
-                         "3 个 REA 工程同 intent → 共享 1 个 pattern")
+        self.assertEqual(len(set(patterns)), 1, "3 个 REA 工程同 intent → 共享 1 个 pattern")
         self.assertEqual(patterns[0], shared_intent)
 
 
 # ============================================================
 # 6. 降级路径: REA 不可用时
 # ============================================================
+
 
 class TestDegradedPath(unittest.TestCase):
     """REA 不可用时降级为纯文本四元组。"""
@@ -390,21 +389,18 @@ class TestDegradedPath(unittest.TestCase):
         cases = rea_to_training_cases(_make_wrapup_case(), None)
         self.assertEqual(len(cases), 1)
         case = cases[0]
-        self.assertEqual(set(case.layer_tags),
-                         {"S", "DSH", "C", "G", "LLM"})
+        self.assertEqual(set(case.layer_tags), {"S", "DSH", "C", "G", "LLM"})
         # 降级 case 用 wrapup 的 quality (默认 B)
         self.assertEqual(case.quality, "B")
         outcome = derive_outcome(case)
-        self.assertEqual(outcome, "partial",
-                         "降级 case quality=B → partial")
+        self.assertEqual(outcome, "partial", "降级 case quality=B → partial")
 
     def test_empty_rea_yields_text_case(self):
         """所有字段都空的 REAParseResult → 降级"""
         rea = REAParseResult()  # 全部默认空
         cases = rea_to_training_cases(_make_wrapup_case(), rea)
         self.assertEqual(len(cases), 1)
-        self.assertEqual(set(cases[0].layer_tags),
-                         {"S", "DSH", "C", "G", "LLM"})
+        self.assertEqual(set(cases[0].layer_tags), {"S", "DSH", "C", "G", "LLM"})
 
 
 if __name__ == "__main__":

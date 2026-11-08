@@ -12,11 +12,10 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 2
   - 持久化频率控制（每 N 次更新）
   - 数据损坏时降级
 """
+
 from __future__ import annotations
 
 import json
-import os
-from pathlib import Path
 
 import pytest
 
@@ -51,8 +50,9 @@ class TestBellmanPersistenceBasic:
     def test_save_then_load_restores_2d_v(self, tmp_path):
         """二维 (symbol, regime) V(s) 保存后重新加载，值完全恢复"""
         tracker = BellmanVTracker(alpha=0.1, gamma=0.95)
-        tracker.td_update("BTC", reward=0.05, next_symbol="ETH",
-                          regime="trend", next_regime="range")
+        tracker.td_update(
+            "BTC", reward=0.05, next_symbol="ETH", regime="trend", next_regime="range"
+        )
         v_btc_trend_before = tracker.get_v("BTC", regime="trend")
 
         persist = tmp_path / "bellman_v.json"
@@ -154,11 +154,10 @@ class TestBellmanPersistenceFrequency:
     def test_save_every_n_updates(self, tmp_path, monkeypatch):
         """设置 save_every=10 时，每 10 次更新自动 save"""
         persist = tmp_path / "bellman_v.json"
-        tracker = BellmanVTracker(alpha=0.1, gamma=0.95,
-                                  persist_path=persist, save_every=10)
+        tracker = BellmanVTracker(alpha=0.1, gamma=0.95, persist_path=persist, save_every=10)
 
         # 前 9 次更新不应触发 save
-        for i in range(9):
+        for i in range(9):  # noqa: B007
             tracker.td_update("BTC", reward=0.01, next_symbol="BTC")
         assert not persist.exists()
 
@@ -182,8 +181,9 @@ class TestBellmanPersistenceFormat:
     def test_persist_format_contains_v_and_v_regime(self, tmp_path):
         """持久化文件包含 v 和 v_regime 两个 key"""
         tracker = BellmanVTracker(alpha=0.1, gamma=0.95)
-        tracker.td_update("BTC", reward=0.05, next_symbol="ETH",
-                          regime="trend", next_regime="range")
+        tracker.td_update(
+            "BTC", reward=0.05, next_symbol="ETH", regime="trend", next_regime="range"
+        )
         persist = tmp_path / "bellman_v.json"
         tracker.save(persist)
 
@@ -196,8 +196,9 @@ class TestBellmanPersistenceFormat:
     def test_v_regime_keys_are_symbol_regime_pairs(self, tmp_path):
         """v_regime 的 key 是 symbol|regime 格式"""
         tracker = BellmanVTracker(alpha=0.1, gamma=0.95)
-        tracker.td_update("BTC", reward=0.05, next_symbol="ETH",
-                          regime="trend", next_regime="range")
+        tracker.td_update(
+            "BTC", reward=0.05, next_symbol="ETH", regime="trend", next_regime="range"
+        )
         persist = tmp_path / "bellman_v.json"
         tracker.save(persist)
 

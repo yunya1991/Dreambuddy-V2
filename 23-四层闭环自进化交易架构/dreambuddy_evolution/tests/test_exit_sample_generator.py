@@ -1,9 +1,7 @@
-"""样本生成器测试 — 验证 backtest 样本扩充管线
-"""
+"""样本生成器测试 — 验证 backtest 样本扩充管线"""
+
 import json
 import os
-import tempfile
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -15,6 +13,7 @@ class TestNormalizeState:
     def test_normalize_state_range(self):
         """归一化后所有维度应在 [0, 1] 范围内"""
         from dreambuddy_evolution.core.exit_rl_policy import normalize_state
+
         # 原始状态：各种尺度
         state = np.array([0.05, 1200.0, 0.02, 50.0, 0.6, 0.3, 1.0, 1], dtype=np.float32)
         norm = normalize_state(state)
@@ -24,6 +23,7 @@ class TestNormalizeState:
     def test_normalize_state_clip(self):
         """超出范围的值被 clip"""
         from dreambuddy_evolution.core.exit_rl_policy import normalize_state
+
         # upl_ratio=1.0（超过 0.40 上限）→ 应被 clip
         state = np.array([1.0, 5000.0, 0.1, 120.0, 1.5, 2.0, 5.0, 3.0], dtype=np.float32)
         norm = normalize_state(state)
@@ -33,6 +33,7 @@ class TestNormalizeState:
     def test_normalize_state_zero(self):
         """零向量归一化"""
         from dreambuddy_evolution.core.exit_rl_policy import normalize_state
+
         state = np.zeros(8, dtype=np.float32)
         norm = normalize_state(state)
         assert np.all(norm >= 0.0)
@@ -93,6 +94,7 @@ class TestExitSampleGenerator:
     def test_generator_creates_samples(self, trades_file, tmp_path):
         """生成器应创建样本文件"""
         from dreambuddy_evolution.core.exit_sample_generator import ExitSampleGenerator
+
         output = str(tmp_path / "samples.jsonl")
         gen = ExitSampleGenerator(
             trades_path=trades_file,
@@ -106,6 +108,7 @@ class TestExitSampleGenerator:
     def test_sample_format(self, trades_file, tmp_path):
         """每条样本应包含 state/action/reward/next_state/done"""
         from dreambuddy_evolution.core.exit_sample_generator import ExitSampleGenerator
+
         output = str(tmp_path / "samples.jsonl")
         gen = ExitSampleGenerator(
             trades_path=trades_file,
@@ -125,6 +128,7 @@ class TestExitSampleGenerator:
     def test_target_sample_count(self, trades_file, tmp_path):
         """生成的样本数应接近目标值"""
         from dreambuddy_evolution.core.exit_sample_generator import ExitSampleGenerator
+
         output = str(tmp_path / "samples.jsonl")
         target = 200
         gen = ExitSampleGenerator(
@@ -138,6 +142,7 @@ class TestExitSampleGenerator:
     def test_action_distribution(self, trades_file, tmp_path):
         """应包含多种动作（不全是 hold）"""
         from dreambuddy_evolution.core.exit_sample_generator import ExitSampleGenerator
+
         output = str(tmp_path / "samples.jsonl")
         gen = ExitSampleGenerator(
             trades_path=trades_file,

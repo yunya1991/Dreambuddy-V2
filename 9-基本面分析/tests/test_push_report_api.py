@@ -7,7 +7,14 @@ from pathlib import Path
 
 
 def _load_module():
-    module_path = Path(__file__).resolve().parent.parent / "ops" / "nanoclaw" / "core_task1" / "scripts" / "push_report_api.py"
+    module_path = (
+        Path(__file__).resolve().parent.parent
+        / "ops"
+        / "nanoclaw"
+        / "core_task1"
+        / "scripts"
+        / "push_report_api.py"
+    )
     spec = importlib.util.spec_from_file_location("core_task1_push_report_api", module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # type: ignore[union-attr]
@@ -15,7 +22,14 @@ def _load_module():
 
 
 def _load_daily_transform_module():
-    module_path = Path(__file__).resolve().parent.parent / "ops" / "nanoclaw" / "core_task1" / "scripts" / "daily_publish_transform.py"
+    module_path = (
+        Path(__file__).resolve().parent.parent
+        / "ops"
+        / "nanoclaw"
+        / "core_task1"
+        / "scripts"
+        / "daily_publish_transform.py"
+    )
     spec = importlib.util.spec_from_file_location("core_task1_daily_publish_transform", module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # type: ignore[union-attr]
@@ -107,7 +121,9 @@ class TestPushReportApi(unittest.TestCase):
                 "- 波动率仍高，需控制仓位。",
             ]
         )
-        title, summary, content, meta = mod._traditional_public_transform(raw, "测试简报", "trace_x")
+        title, summary, content, meta = mod._traditional_public_transform(
+            raw, "测试简报", "trace_x"
+        )
         self.assertIn("对外发布版", title)
         self.assertIn("执行摘要", content)
         self.assertIn("市场背景与驱动", content)
@@ -124,12 +140,28 @@ class TestPushReportApi(unittest.TestCase):
         def fake_search(query: str, n: int):
             if "breaking" in query:
                 return [
-                    {"title": "ETF 资金净流入回升", "url": "https://example.com/n1", "content": "inflow up"},
-                    {"title": "交易所上新带动成交放大", "url": "https://example.com/n2", "content": "volume up"},
+                    {
+                        "title": "ETF 资金净流入回升",
+                        "url": "https://example.com/n1",
+                        "content": "inflow up",
+                    },
+                    {
+                        "title": "交易所上新带动成交放大",
+                        "url": "https://example.com/n2",
+                        "content": "volume up",
+                    },
                 ]
             return [
-                {"title": "本周将发布美国通胀数据", "url": "https://example.com/e1", "content": "macro event"},
-                {"title": "头部项目治理投票窗口开启", "url": "https://example.com/e2", "content": "governance"},
+                {
+                    "title": "本周将发布美国通胀数据",
+                    "url": "https://example.com/e1",
+                    "content": "macro event",
+                },
+                {
+                    "title": "头部项目治理投票窗口开启",
+                    "url": "https://example.com/e2",
+                    "content": "governance",
+                },
             ]
 
         raw = "\n".join(
@@ -166,11 +198,23 @@ class TestPushReportApi(unittest.TestCase):
         def fake_search(query: str, n: int):
             if "breaking" in query:
                 return [
-                    {"title": "ETF inflow jumps", "url": "https://example.com/n1", "content": "flow up"},
-                    {"title": "SEC expands review", "url": "https://example.com/n2", "content": "policy"},
+                    {
+                        "title": "ETF inflow jumps",
+                        "url": "https://example.com/n1",
+                        "content": "flow up",
+                    },
+                    {
+                        "title": "SEC expands review",
+                        "url": "https://example.com/n2",
+                        "content": "policy",
+                    },
                 ]
             return [
-                {"title": "FOMC meeting this week", "url": "https://example.com/e1", "content": "macro"},
+                {
+                    "title": "FOMC meeting this week",
+                    "url": "https://example.com/e1",
+                    "content": "macro",
+                },
             ]
 
         def fake_llm(text: str) -> str:
@@ -241,27 +285,59 @@ class TestPushReportApi(unittest.TestCase):
                 "- 关注宏观数据发布",
             ]
         )
-        out = mod.transform_daily_report_v3(raw_content=raw, title="AI 市场研究日报", tavily_api_key="", search_fn=fake_search, llm_fn=lambda x: x)
+        out = mod.transform_daily_report_v3(
+            raw_content=raw,
+            title="AI 市场研究日报",
+            tavily_api_key="",
+            search_fn=fake_search,
+            llm_fn=lambda x: x,
+        )
         meta = out.get("meta") or {}
         self.assertIn("qa_gate", meta)
         self.assertIn("qa_score", meta)
         self.assertIn("qa_fail_reasons", meta)
         self.assertIn("diff_audit", meta)
 
-    def test_daily_report_v3_converts_signal_table_and_fills_missing_signals_with_tavily(self) -> None:
+    def test_daily_report_v3_converts_signal_table_and_fills_missing_signals_with_tavily(
+        self,
+    ) -> None:
         mod = _load_daily_transform_module()
 
         def fake_search(query: str, n: int):
             q = query.lower()
             if "breaking" in q:
-                return [{"title": "ETF inflow jumps", "url": "https://example.com/n1", "content": "flow up"}]
+                return [
+                    {
+                        "title": "ETF inflow jumps",
+                        "url": "https://example.com/n1",
+                        "content": "flow up",
+                    }
+                ]
             if "upcoming" in q:
-                return [{"title": "FOMC meeting this week", "url": "https://example.com/e1", "content": "macro"}]
+                return [
+                    {
+                        "title": "FOMC meeting this week",
+                        "url": "https://example.com/e1",
+                        "content": "macro",
+                    }
+                ]
             if "funding rate" in q or "open interest" in q or "fear and greed" in q:
                 return [
-                    {"title": "BTC funding rate turns positive", "url": "https://example.com/s1", "content": ""},
-                    {"title": "Bitcoin open interest rises 24h", "url": "https://example.com/s2", "content": ""},
-                    {"title": "Crypto fear and greed index improves", "url": "https://example.com/s3", "content": ""},
+                    {
+                        "title": "BTC funding rate turns positive",
+                        "url": "https://example.com/s1",
+                        "content": "",
+                    },
+                    {
+                        "title": "Bitcoin open interest rises 24h",
+                        "url": "https://example.com/s2",
+                        "content": "",
+                    },
+                    {
+                        "title": "Crypto fear and greed index improves",
+                        "url": "https://example.com/s3",
+                        "content": "",
+                    },
                 ][:n]
             return []
 
@@ -309,8 +385,16 @@ class TestPushReportApi(unittest.TestCase):
                 return []
             if "upcoming" in q:
                 return [
-                    {"title": "Dogecoin price prediction breaks 0.095", "url": "https://example.com/e1", "content": ""},
-                    {"title": "Stage presale ends early for meme token", "url": "https://example.com/e2", "content": ""},
+                    {
+                        "title": "Dogecoin price prediction breaks 0.095",
+                        "url": "https://example.com/e1",
+                        "content": "",
+                    },
+                    {
+                        "title": "Stage presale ends early for meme token",
+                        "url": "https://example.com/e2",
+                        "content": "",
+                    },
                 ]
             return []
 
@@ -375,7 +459,9 @@ class TestPushReportApi(unittest.TestCase):
         self.assertNotIn("以太坊- ,", content)
         self.assertNotIn("## 五、观察清单", content)
 
-    def test_daily_report_v3_uses_source_events_for_drivers_and_labels_sources_and_filters_irrelevant_news(self) -> None:
+    def test_daily_report_v3_uses_source_events_for_drivers_and_labels_sources_and_filters_irrelevant_news(
+        self,
+    ) -> None:
         mod = _load_daily_transform_module()
 
         def fake_search(query: str, n: int):
@@ -589,6 +675,7 @@ class TestPushReportApi(unittest.TestCase):
 
             old_env = dict(os.environ)
             import sys
+
             argv_backup = list(sys.argv)
             try:
                 os.environ["REPORT_PUSH_TRANSFORM_PROFILE"] = "daily_report_v3_llm"
@@ -630,6 +717,7 @@ class TestPushReportApi(unittest.TestCase):
             orig_get = mod.requests.get
             mod.requests.get = lambda *args, **kwargs: Resp()  # type: ignore[assignment]
             import sys
+
             argv_backup = list(sys.argv)
             try:
                 sys.argv = [
@@ -662,6 +750,7 @@ class TestPushReportApi(unittest.TestCase):
             mod.requests.get = lambda *args, **kwargs: Resp()  # type: ignore[assignment]
             old_env = dict(os.environ)
             import sys
+
             argv_backup = list(sys.argv)
             try:
                 os.environ.pop("INTERNAL_API_KEY", None)

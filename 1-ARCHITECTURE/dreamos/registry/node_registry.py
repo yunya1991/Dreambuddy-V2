@@ -16,11 +16,11 @@ NodeRegistry 是节点的唯一真相源:
 from __future__ import annotations
 
 import threading
-from typing import Dict, List, Optional, Iterable
+from typing import Dict, Iterable, List, Optional
 
-from dreamos.shared.interfaces import Node, Registry
-from dreamos.shared.errors import ErrorCode, OSError
 from dreamos.shared.capability import CapabilitySpec, CapabilityStatus, ProviderType
+from dreamos.shared.errors import ErrorCode, OSError
+from dreamos.shared.interfaces import Node, Registry
 
 
 class NodeRegistry(Registry):
@@ -50,9 +50,11 @@ class NodeRegistry(Registry):
 
         with self._lock:
             if node.node_id in self._nodes:
-                raise OSError(ErrorCode.NODE_002,
-                               f"节点已存在: {node.node_id}（请先 unregister）",
-                               node_id=node.node_id)
+                raise OSError(
+                    ErrorCode.NODE_002,
+                    f"节点已存在: {node.node_id}（请先 unregister）",
+                    node_id=node.node_id,
+                )
             self._nodes[node.node_id] = node
 
     def get(self, node_id: str) -> Optional[Node]:
@@ -60,8 +62,7 @@ class NodeRegistry(Registry):
         with self._lock:
             return self._nodes.get(node_id)
 
-    def list_nodes(self, chain: Optional[str] = None,
-                   tag: Optional[str] = None) -> List[Node]:
+    def list_nodes(self, chain: Optional[str] = None, tag: Optional[str] = None) -> List[Node]:
         """列出节点（可按 chain / tag 过滤）"""
         with self._lock:
             nodes = list(self._nodes.values())
@@ -119,10 +120,12 @@ class NodeRegistry(Registry):
 
     # ── 能力查询 API（第3层细粒度能力）──────────────────
 
-    def list_node_capabilities(self,
-                               category: Optional[str] = None,
-                               provider_type: Optional[str] = None,
-                               status: Optional[str] = None) -> List[CapabilitySpec]:
+    def list_node_capabilities(
+        self,
+        category: Optional[str] = None,
+        provider_type: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[CapabilitySpec]:
         """列出所有节点声明的细粒度能力（第3层 CapabilitySpec）
 
         注意: 区别于第1层 CapabilityRegistry.list_capabilities()（返回 CapabilityDomain）。
@@ -142,11 +145,19 @@ class NodeRegistry(Registry):
                 if category and cap.category != category:
                     continue
                 if provider_type:
-                    pt = cap.provider_type.value if isinstance(cap.provider_type, ProviderType) else str(cap.provider_type)
+                    pt = (
+                        cap.provider_type.value
+                        if isinstance(cap.provider_type, ProviderType)
+                        else str(cap.provider_type)
+                    )
                     if pt != provider_type:
                         continue
                 if status:
-                    st = cap.status.value if isinstance(cap.status, CapabilityStatus) else str(cap.status)
+                    st = (
+                        cap.status.value
+                        if isinstance(cap.status, CapabilityStatus)
+                        else str(cap.status)
+                    )
                     if st != status:
                         continue
                 caps.append(cap)
@@ -185,12 +196,20 @@ class NodeRegistry(Registry):
         total = 0
 
         for node in nodes:
-            for cap in (getattr(node, "capabilities", None) or []):
+            for cap in getattr(node, "capabilities", None) or []:
                 total += 1
                 by_category[cap.category] = by_category.get(cap.category, 0) + 1
-                pt = cap.provider_type.value if isinstance(cap.provider_type, ProviderType) else str(cap.provider_type)
+                pt = (
+                    cap.provider_type.value
+                    if isinstance(cap.provider_type, ProviderType)
+                    else str(cap.provider_type)
+                )
                 by_provider_type[pt] = by_provider_type.get(pt, 0) + 1
-                st = cap.status.value if isinstance(cap.status, CapabilityStatus) else str(cap.status)
+                st = (
+                    cap.status.value
+                    if isinstance(cap.status, CapabilityStatus)
+                    else str(cap.status)
+                )
                 by_status[st] = by_status.get(st, 0) + 1
 
         return {
@@ -200,10 +219,9 @@ class NodeRegistry(Registry):
             "by_status": by_status,
         }
 
-    def update_node_capability_status(self,
-                                      provider_id: str,
-                                      status: str,
-                                      reason: str = "") -> bool:
+    def update_node_capability_status(
+        self, provider_id: str, status: str, reason: str = ""
+    ) -> bool:
         """更新某提供者所有能力的 status
 
         Args:
@@ -220,7 +238,7 @@ class NodeRegistry(Registry):
             return False
 
         target_status = CapabilityStatus(status) if isinstance(status, str) else status
-        for cap in (getattr(node, "capabilities", None) or []):
+        for cap in getattr(node, "capabilities", None) or []:
             cap.status = target_status
             if target_status == CapabilityStatus.DEGRADED:
                 cap.degraded_reason = reason or cap.degraded_reason

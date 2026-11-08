@@ -18,6 +18,7 @@ FAIL-OPEN:
   - 1 小时置信度漂移 >0.15 立即降档
   - 降档单调（只能向下，不自动恢复；reset_downgrade() 人工重置）
 """
+
 from __future__ import annotations
 
 import logging
@@ -76,9 +77,9 @@ class EventDominanceController:
         """
         try:
             from dreambuddy_evolution.agi_config import is_enabled as _is_enabled
-            return (
-                _is_enabled("enable_contradiction_driven_layer")
-                and _is_enabled("enable_event_dominance")
+
+            return _is_enabled("enable_contradiction_driven_layer") and _is_enabled(
+                "enable_event_dominance"
             )
         except Exception:
             return False  # FAIL-OPEN 安全默认
@@ -266,7 +267,11 @@ class EventDominanceController:
                 override_subsystems=False,
                 active=False,
                 reason="不在 FOMC 周期或方向中性",
-                raw={"conviction": conviction, "data_quality": data_quality, "downgrade": self._downgrade_level},
+                raw={
+                    "conviction": conviction,
+                    "data_quality": data_quality,
+                    "downgrade": self._downgrade_level,
+                },
             )
 
         # FAIL-OPEN: 数据质量过低 → 降级
@@ -278,7 +283,11 @@ class EventDominanceController:
                 override_subsystems=False,
                 active=False,
                 reason=f"数据质量过低 ({data_quality:.2f} < 0.4)，FAIL-OPEN",
-                raw={"conviction": conviction, "data_quality": data_quality, "downgrade": self._downgrade_level},
+                raw={
+                    "conviction": conviction,
+                    "data_quality": data_quality,
+                    "downgrade": self._downgrade_level,
+                },
             )
 
         # 计算静态 base_level
@@ -357,7 +366,11 @@ class EventDominanceController:
         if not decision.active:
             # 不激活也记录（供回测审计 pass_through 场景），FAIL-OPEN
             self._maybe_record_filter_decision(
-                case_library, subsystem_signal, subsystem_signal, decision, event_ctx,
+                case_library,
+                subsystem_signal,
+                subsystem_signal,
+                decision,
+                event_ctx,
             )
             return subsystem_signal  # 不修改
 
@@ -383,7 +396,11 @@ class EventDominanceController:
 
         # P1-1: 持久化过滤决策（FAIL-OPEN，异常不阻塞交易热路径）
         self._maybe_record_filter_decision(
-            case_library, subsystem_signal, result, decision, event_ctx,
+            case_library,
+            subsystem_signal,
+            result,
+            decision,
+            event_ctx,
         )
 
         return result
@@ -401,6 +418,7 @@ class EventDominanceController:
             return
         try:
             from datetime import datetime
+
             record = {
                 "timestamp": datetime.now().isoformat(),
                 "filter_level": decision.filter_level,

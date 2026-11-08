@@ -11,18 +11,16 @@
 
 from __future__ import annotations
 
+import argparse
 import json
-import os
 import sys
 import time
-import argparse
 from pathlib import Path
-from typing import Optional
 
 # 路径设置
 _SCRIPT_DIR = Path(__file__).resolve().parent  # tests/eval/
-_BRIDGE_ROOT = _SCRIPT_DIR.parent.parent       # dream-harness-bridge/
-_ARCH_DIR = _BRIDGE_ROOT.parent                # 1-ARCHITECTURE/（含 dreamos/）
+_BRIDGE_ROOT = _SCRIPT_DIR.parent.parent  # dream-harness-bridge/
+_ARCH_DIR = _BRIDGE_ROOT.parent  # 1-ARCHITECTURE/（含 dreamos/）
 for p in [str(_BRIDGE_ROOT), str(_ARCH_DIR)]:
     if p not in sys.path:
         sys.path.insert(0, p)
@@ -34,7 +32,6 @@ except ImportError:
     sys.exit(1)
 
 from dreamos.shared.llm_client import QwenLLMClient, make_messages  # noqa: E402
-
 
 GOLDEN_SET_PATH = _SCRIPT_DIR / "golden_set.json"
 REPORT_DIR = _SCRIPT_DIR / "reports"
@@ -117,7 +114,9 @@ class QwenBenchmark:
             # 清理 markdown 代码块
             if content.startswith("```"):
                 lines = content.split("\n")
-                content = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
+                content = (
+                    "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
+                )
             return json.loads(content)
         except json.JSONDecodeError as e:
             return {"error": f"JSON解析失败: {e}", "raw": resp.content[:500]}
@@ -151,17 +150,19 @@ class QwenBenchmark:
             # 5维评分
             scores = self.score_5dim(case, db_out, qw_out)
 
-            results.append({
-                "id": case["id"],
-                "input": case["input"],
-                "expected_intent": case["expected_intent"],
-                "db_intent": db_intent,
-                "db_correct": is_correct,
-                "db_mode": db_out.get("mode", "unknown"),
-                "db_output_summary": self._summarize(db_out),
-                "qw_output_summary": self._summarize(qw_out),
-                "scores": scores,
-            })
+            results.append(
+                {
+                    "id": case["id"],
+                    "input": case["input"],
+                    "expected_intent": case["expected_intent"],
+                    "db_intent": db_intent,
+                    "db_correct": is_correct,
+                    "db_mode": db_out.get("mode", "unknown"),
+                    "db_output_summary": self._summarize(db_out),
+                    "qw_output_summary": self._summarize(qw_out),
+                    "scores": scores,
+                }
+            )
 
             # 简要输出
             status = "✓" if is_correct else "✗"

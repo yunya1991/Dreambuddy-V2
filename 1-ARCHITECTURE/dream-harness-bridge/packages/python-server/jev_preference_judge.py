@@ -5,12 +5,13 @@
 
 HC-J1: FAIL-OPEN — jev 不可用时返回空列表
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, asdict
-from typing import Any, Callable, Optional
+from dataclasses import asdict, dataclass
+from typing import Callable, Optional
 
 logger = logging.getLogger("debate.jev_preference_judge")
 
@@ -18,6 +19,7 @@ logger = logging.getLogger("debate.jev_preference_judge")
 @dataclass
 class PreferenceSample:
     """DPO 偏好样本。"""
+
     topic: str
     round: int
     strategies: list[str]
@@ -80,8 +82,9 @@ class JevPreferenceJudge:
                 continue
             choice = str(ans.get("choice", ""))
             if choice in strategies:
-                samples.append(PreferenceSample(
-                    topic=topic, round=r, strategies=strategies, choice=choice))
+                samples.append(
+                    PreferenceSample(topic=topic, round=r, strategies=strategies, choice=choice)
+                )
 
         return samples
 

@@ -16,13 +16,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from .dialogue_intent.taxonomy import (
     get_default_capability_route,
     get_risk_level,
 )
-
 
 # ============================================================
 # 能力路由描述
@@ -97,14 +96,16 @@ HARNESS_TOOL_DESCRIPTIONS: Dict[str, str] = {
 # 能力路由器
 # ============================================================
 
+
 class CapabilityRouter:
     """能力路由器
 
     根据对话意图和槽位，决定路由到哪个系统能力。
     """
 
-    def route(self, intent_primary: str, intent_secondary: str,
-              slots: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def route(
+        self, intent_primary: str, intent_secondary: str, slots: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """路由决策
 
         Args:
@@ -142,8 +143,9 @@ class CapabilityRouter:
             "description": CAPABILITY_DESCRIPTIONS.get(route, {}).get("description", ""),
         }
 
-    def _refine_route(self, primary: str, secondary: str,
-                      slots: Dict[str, Any], default_route: str) -> str:
+    def _refine_route(
+        self, primary: str, secondary: str, slots: Dict[str, Any], default_route: str
+    ) -> str:
         """根据具体意图和槽位细化路由"""
         # 对话类直接响应
         if primary == "dialog":
@@ -178,8 +180,7 @@ class CapabilityRouter:
 
         return default_route
 
-    def _check_scope(self, primary: str, secondary: str,
-                     slots: Dict[str, Any]) -> bool:
+    def _check_scope(self, primary: str, secondary: str, slots: Dict[str, Any]) -> bool:
         """判断是否在 DreamOS 能力范围内"""
         # 当前所有意图都在范围内
         # 未来可根据具体意图和槽位判断
@@ -194,7 +195,8 @@ class CapabilityRouter:
 router = CapabilityRouter()
 
 
-def route_capability(intent_primary: str, intent_secondary: str,
-                     slots: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def route_capability(
+    intent_primary: str, intent_secondary: str, slots: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """便捷函数：能力路由决策"""
     return router.route(intent_primary, intent_secondary, slots)

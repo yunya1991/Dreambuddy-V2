@@ -1,4 +1,5 @@
 """RED 测试：AlgorithmReducer — 关键算法还原（AST模式匹配）。"""
+
 import os
 import sys
 import tempfile
@@ -8,8 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.algorithm_reducer import reduce_algorithm
 
-
-RECURSION_SAMPLE = '''
+RECURSION_SAMPLE = """
 def factorial(n):
     if n <= 1:
         return 1
@@ -19,9 +19,9 @@ def fibonacci(n):
     if n <= 1:
         return n
     return fibonacci(n - 1) + fibonacci(n - 2)
-'''
+"""
 
-ITERATION_SAMPLE = '''
+ITERATION_SAMPLE = """
 def sum_list(items):
     total = 0
     for item in items:
@@ -34,7 +34,7 @@ def find_max(items):
         if item > result:
             result = item
     return result
-'''
+"""
 
 
 def test_reduce_algorithm_recursion_detected():
@@ -44,8 +44,10 @@ def test_reduce_algorithm_recursion_detected():
         Path(f).write_text(RECURSION_SAMPLE)
         result = reduce_algorithm(f, "factorial")
         assert "patterns" in result
-        assert any("递归" in p.get("type", "") or "recursion" in p.get("type", "").lower()
-                    for p in result["patterns"])
+        assert any(
+            "递归" in p.get("type", "") or "recursion" in p.get("type", "").lower()
+            for p in result["patterns"]
+        )
 
 
 def test_reduce_algorithm_iteration_detected():
@@ -55,8 +57,10 @@ def test_reduce_algorithm_iteration_detected():
         Path(f).write_text(ITERATION_SAMPLE)
         result = reduce_algorithm(f, "sum_list")
         assert "patterns" in result
-        assert any("迭代" in p.get("type", "") or "iteration" in p.get("type", "").lower()
-                    for p in result["patterns"])
+        assert any(
+            "迭代" in p.get("type", "") or "iteration" in p.get("type", "").lower()
+            for p in result["patterns"]
+        )
 
 
 def test_reduce_algorithm_returns_pseudo_code():

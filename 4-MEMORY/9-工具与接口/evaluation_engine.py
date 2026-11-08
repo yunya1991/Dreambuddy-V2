@@ -11,15 +11,16 @@
   - decide_learning_action(...) -> {decision: upgrade/alert/quarantine/observe}
   - record_evaluation(sample, ...) -> 追加到 evaluation_history.jsonl
 """
+
 import json
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # 设计节 7.5 阈值
-LEARNING_THRESHOLD_UP = 0.2       # path_advantage >= +0.2 → 升级候选
-LEARNING_THRESHOLD_DOWN = -0.2    # path_advantage <= -0.2 → 告警候选
+LEARNING_THRESHOLD_UP = 0.2  # path_advantage >= +0.2 → 升级候选
+LEARNING_THRESHOLD_DOWN = -0.2  # path_advantage <= -0.2 → 告警候选
 GATE_VIOLATION_ALERT_THRESHOLD = 2  # HARD-GATE 违反 >= 2 → 告警
 QUARANTINE_CONSECUTIVE_NEGATIVE = 3  # 连续 3 次负向 → 隔离
 
@@ -27,11 +28,12 @@ QUARANTINE_CONSECUTIVE_NEGATIVE = 3  # 连续 3 次负向 → 隔离
 @dataclass
 class EvaluationSample:
     """思维路径评测样本（设计节 7.3 + 附录 A.5）。"""
+
     session_id: str
     task_summary: str
     skill_ids_injected: List[str]
-    thought_chain_compressed: List[str]   # 5-15 个关键决策点（Task 22 生成）
-    action_chain_compressed: List[str]    # reproducible_steps（Task 18 生成）
+    thought_chain_compressed: List[str]  # 5-15 个关键决策点（Task 22 生成）
+    action_chain_compressed: List[str]  # reproducible_steps（Task 18 生成）
     hard_gate_violations: List[str]
     outcome_metrics: Dict[str, float]
     timestamp: int
@@ -85,21 +87,32 @@ def decide_learning_action(
     """
     # 1. 隔离优先（precedence 最高，借鉴 quorum 的 precedence-based compose）
     if consecutive_negative >= QUARANTINE_CONSECUTIVE_NEGATIVE:
-        return {"decision": "quarantine",
-                "reason": f"连续 {consecutive_negative} 次 path_advantage <= {LEARNING_THRESHOLD_DOWN}"}
+        return {
+            "decision": "quarantine",
+            "reason": f"连续 {consecutive_negative} 次 path_advantage <= {LEARNING_THRESHOLD_DOWN}",
+        }
     # 2. 告警
-    if path_advantage <= LEARNING_THRESHOLD_DOWN or hard_gate_violation_count >= GATE_VIOLATION_ALERT_THRESHOLD:
-        return {"decision": "alert",
-                "reason": f"path_advantage={path_advantage:.2f} <= {LEARNING_THRESHOLD_DOWN} "
-                          f"或 gate 违反 {hard_gate_violation_count} >= {GATE_VIOLATION_ALERT_THRESHOLD}"}
+    if (
+        path_advantage <= LEARNING_THRESHOLD_DOWN
+        or hard_gate_violation_count >= GATE_VIOLATION_ALERT_THRESHOLD
+    ):
+        return {
+            "decision": "alert",
+            "reason": f"path_advantage={path_advantage:.2f} <= {LEARNING_THRESHOLD_DOWN} "
+            f"或 gate 违反 {hard_gate_violation_count} >= {GATE_VIOLATION_ALERT_THRESHOLD}",
+        }
     # 3. 升级
     if path_advantage >= LEARNING_THRESHOLD_UP:
-        return {"decision": "upgrade",
-                "reason": f"path_advantage={path_advantage:.2f} >= +{LEARNING_THRESHOLD_UP} "
-                          f"(consecutive_positive={consecutive_positive})"}
+        return {
+            "decision": "upgrade",
+            "reason": f"path_advantage={path_advantage:.2f} >= +{LEARNING_THRESHOLD_UP} "
+            f"(consecutive_positive={consecutive_positive})",
+        }
     # 4. 平庸
-    return {"decision": "observe",
-            "reason": f"path_advantage={path_advantage:.2f} 在阈值区间内，标记 observational"}
+    return {
+        "decision": "observe",
+        "reason": f"path_advantage={path_advantage:.2f} 在阈值区间内，标记 observational",
+    }
 
 
 def record_evaluation(
@@ -130,7 +143,9 @@ def record_evaluation(
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def load_history_baseline(task_type: str, history_path: Optional[Path] = None) -> Optional[EvaluationSample]:
+def load_history_baseline(
+    task_type: str, history_path: Optional[Path] = None
+) -> Optional[EvaluationSample]:
     """设计节 7.4 策略 1 历史对照：从 evaluation_history.jsonl 读同类任务历史均值作为 baseline。"""
     if history_path is None:
         history_path = Path(__file__).parent.parent / "0-元记忆" / "evaluation_history.jsonl"
@@ -151,12 +166,26 @@ def load_history_baseline(task_type: str, history_path: Optional[Path] = None) -
     # 取最近 10 条同类任务（按 task_summary 简单匹配；生产可按 task_type 索引）
     recent = samples[-10:]
     avg_metrics = {
-        "task_completion_success": sum(s.get("outcome_metrics", {}).get("task_completion_success", 0) for s in recent) / len(recent),
-        "hard_gate_violation_count": sum(s.get("outcome_metrics", {}).get("hard_gate_violation_count", 0) for s in recent) / len(recent),
-        "rework_count": sum(s.get("outcome_metrics", {}).get("rework_count", 0) for s in recent) / len(recent),
-        "duration_minutes": sum(s.get("outcome_metrics", {}).get("duration_minutes", 0) for s in recent) / len(recent),
-        "follow_score": sum(s.get("outcome_metrics", {}).get("follow_score", 0) for s in recent) / len(recent),
-        "tool_call_efficiency": sum(s.get("outcome_metrics", {}).get("tool_call_efficiency", 0) for s in recent) / len(recent),
+        "task_completion_success": sum(
+            s.get("outcome_metrics", {}).get("task_completion_success", 0) for s in recent
+        )
+        / len(recent),
+        "hard_gate_violation_count": sum(
+            s.get("outcome_metrics", {}).get("hard_gate_violation_count", 0) for s in recent
+        )
+        / len(recent),
+        "rework_count": sum(s.get("outcome_metrics", {}).get("rework_count", 0) for s in recent)
+        / len(recent),
+        "duration_minutes": sum(
+            s.get("outcome_metrics", {}).get("duration_minutes", 0) for s in recent
+        )
+        / len(recent),
+        "follow_score": sum(s.get("outcome_metrics", {}).get("follow_score", 0) for s in recent)
+        / len(recent),
+        "tool_call_efficiency": sum(
+            s.get("outcome_metrics", {}).get("tool_call_efficiency", 0) for s in recent
+        )
+        / len(recent),
     }
     return EvaluationSample(
         session_id="baseline-avg",

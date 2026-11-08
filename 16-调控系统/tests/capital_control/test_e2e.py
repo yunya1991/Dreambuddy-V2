@@ -7,11 +7,10 @@
     python -m pytest 16-调控系统/tests/capital_control/test_e2e.py -v
 """
 
-import sys
-import os
 import json
+import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 _PROJECT = Path(__file__).resolve().parents[3]
 _CORE = _PROJECT / "16-调控系统" / "core"
@@ -21,8 +20,6 @@ _RISK_CORE = _RISK / "core"
 for _p in (_CORE, _SCRIPTS, _RISK, _RISK_CORE):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
-
-import pytest
 
 
 def _mock_positions_data(positions=None, equity_map=None):
@@ -40,7 +37,11 @@ def _mock_positions_data(positions=None, equity_map=None):
         }
         systems[sys_name] = {
             "equity": eq,
-            "extra": {"avail_balance": eq, "used_margin": 0.0, "account_type": acct_map.get(sys_name, "unknown")},
+            "extra": {
+                "avail_balance": eq,
+                "used_margin": 0.0,
+                "account_type": acct_map.get(sys_name, "unknown"),
+            },
         }
     return {
         "version": "1.1",
@@ -62,7 +63,11 @@ class TestWriteCapitalReport:
         """测试资金调控报告 JSON 产物结构"""
         from capital_control.types import (
             AccountType,
-            CapitalMode, CapitalResult, CapitalSnapshot, HealthLevel, now_iso,
+            CapitalMode,
+            CapitalResult,
+            CapitalSnapshot,
+            HealthLevel,
+            now_iso,
         )
 
         # 构造 mock snapshot
@@ -88,6 +93,7 @@ class TestWriteCapitalReport:
 
         # 调用 _write_capital_report
         import auto_exit_system
+
         # mock BASE_DIR 为 tmp_path
         original_base = auto_exit_system.BASE_DIR
         auto_exit_system.BASE_DIR = tmp_path
@@ -174,7 +180,9 @@ class TestAutoExitSystemStep15:
 
         with patch("unified_position_query.fetch_all_positions", return_value=mock_data):
             # mock CapitalControlComponent 构造抛异常
-            with patch.object(capital_control, "CapitalControlComponent", side_effect=Exception("mock failure")):
+            with patch.object(
+                capital_control, "CapitalControlComponent", side_effect=Exception("mock failure")
+            ):
                 result = auto_exit_system.run_exit_evaluation_cycle()
 
         # 即使 capital_control 失败，主流程仍应正常（WARN 日志）

@@ -98,11 +98,33 @@ def _fundamental_non_news_retired_guard() -> Optional[Response]:
         return None
     if p.startswith("/fundamental/news/"):
         return None
-    return jsonify({"ok": False, "error": "module_retired", "module": "fundamental_non_news", "path": p, "ts": int(_now_ms())}), 410
+    return (
+        jsonify(
+            {
+                "ok": False,
+                "error": "module_retired",
+                "module": "fundamental_non_news",
+                "path": p,
+                "ts": int(_now_ms()),
+            }
+        ),
+        410,
+    )
 
 
 def _fundamental_non_news_retired_response(path: str) -> Tuple[Response, int]:
-    return jsonify({"ok": False, "error": "module_retired", "module": "fundamental_non_news", "path": str(path or ""), "ts": int(_now_ms())}), 410
+    return (
+        jsonify(
+            {
+                "ok": False,
+                "error": "module_retired",
+                "module": "fundamental_non_news",
+                "path": str(path or ""),
+                "ts": int(_now_ms()),
+            }
+        ),
+        410,
+    )
 
 
 def register_hooks(app) -> None:

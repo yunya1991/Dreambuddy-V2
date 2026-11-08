@@ -15,6 +15,7 @@
         schema.json         # feature_names_in_order / regime_order / n_features / n_classes / hyperparams
         train_report.json   # 训练概况：样本数、类别分布、Top-1 acc、Macro F1 估计
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,6 +39,7 @@ if str(_MEMORY_L4_DIR) not in sys.path:
 # ================================================================
 def _load_csv(csv_path: Path) -> pd.DataFrame:
     from bcrm2.run_evolution_pipeline import _read_csv  # 复用
+
     return _read_csv(csv_path)
 
 
@@ -48,22 +50,31 @@ def _build_features(df: pd.DataFrame, feature_set: str) -> pd.DataFrame:
     """
     # 显式 import 所有 v4/v5/v6 涉及的特征模块，触发 FeatureRegistry.register
     import importlib as _il
-    for _mod_name in ("classic_experience_features", "ma200_cycle_features",
-                       "multi_timeframe_features", "rolling_regime_stats",
-                       "sector_beta_pool"):
+
+    for _mod_name in (
+        "classic_experience_features",
+        "ma200_cycle_features",
+        "multi_timeframe_features",
+        "rolling_regime_stats",
+        "sector_beta_pool",
+    ):
         try:
             _il.import_module(f"bcrm2.{_mod_name}")
         except Exception:
             pass
     from bcrm2.feature_registry import FeatureRegistry
+
     feats_df, _gua_map = FeatureRegistry.compute_all(df, enabled_set=feature_set, verbose=False)
     if not isinstance(feats_df, pd.DataFrame):
-        raise TypeError(f"FeatureRegistry.compute_all(enabled_set={feature_set!r}) 返回不是 DataFrame：{type(feats_df)}")
+        raise TypeError(
+            f"FeatureRegistry.compute_all(enabled_set={feature_set!r}) 返回不是 DataFrame：{type(feats_df)}"
+        )
     return feats_df
 
 
 def _build_labels(df: pd.DataFrame, forward_days: int, lookback: int) -> pd.Series:
     from bcrm2.labels.regime_labeler import generate_8state_label
+
     y = generate_8state_label(df, forward_days=forward_days, lookback=lookback)
     return y
 
@@ -91,7 +102,10 @@ def train(
     # 2) 特征
     print(f"[train] 计算特征集 {feature_set}", flush=True)
     X = _build_features(df, feature_set)
-    print(f"[train] 特征形状 {X.shape}，列 {list(X.columns)[:5]}... 共 {len(X.columns)} 列", flush=True)
+    print(
+        f"[train] 特征形状 {X.shape}，列 {list(X.columns)[:5]}... 共 {len(X.columns)} 列",
+        flush=True,
+    )
     if X.shape[1] < 3:  # pragma: no cover
         raise RuntimeError(f"特征仅 {X.shape[1]} 列，数量异常（需 ≥ 3）")
 
@@ -115,17 +129,26 @@ def train(
         print(f"        {k:22s} {int(v):5d}  {100*v/len(y_train):5.1f}%", flush=True)
 
     # 5) 训练
-    from bcrm2.lgbm_calibrator import LGBMCalibrator
     from bcrm2.labels.regime_labeler import REGIME_ORDER
+    from bcrm2.lgbm_calibrator import LGBMCalibrator
+
     schema_path = out_dir / "schema.json"
     cal = LGBMCalibrator(random_state=random_state)
-    print(f"[train] fit 开始：n_estimators={n_estimators} lr={learning_rate} "
-          f"num_leaves={num_leaves} max_depth={max_depth} L1={reg_alpha} L2={reg_lambda}", flush=True)
+    print(
+        f"[train] fit 开始：n_estimators={n_estimators} lr={learning_rate} "
+        f"num_leaves={num_leaves} max_depth={max_depth} L1={reg_alpha} L2={reg_lambda}",
+        flush=True,
+    )
     cal.fit(
-        X_train, y_train, schema_path=str(schema_path),
-        num_leaves=num_leaves, max_depth=max_depth,
-        reg_alpha=reg_alpha, reg_lambda=reg_lambda,
-        n_estimators=n_estimators, learning_rate=learning_rate,
+        X_train,
+        y_train,
+        schema_path=str(schema_path),
+        num_leaves=num_leaves,
+        max_depth=max_depth,
+        reg_alpha=reg_alpha,
+        reg_lambda=reg_lambda,
+        n_estimators=n_estimators,
+        learning_rate=learning_rate,
         regime_order=list(REGIME_ORDER),
     )
 
@@ -146,7 +169,10 @@ def train(
         # Macro F1（sklearn，避免无依赖硬算）
         try:
             from sklearn.metrics import f1_score
-            macro_f1 = float(f1_score(y_train.values.astype(str), top1_cls, average="macro", zero_division=0))
+
+            macro_f1 = float(
+                f1_score(y_train.values.astype(str), top1_cls, average="macro", zero_division=0)
+            )
         except Exception:  # pragma: no cover
             macro_f1 = float("nan")
     else:  # pragma: no cover
@@ -163,9 +189,12 @@ def train(
         "train_top1_acc": round(float(acc), 4) if top1_cls is not None else None,
         "train_macro_f1": round(float(macro_f1), 4) if top1_cls is not None else None,
         "hyperparams": {
-            "num_leaves": num_leaves, "max_depth": max_depth,
-            "reg_alpha": reg_alpha, "reg_lambda": reg_lambda,
-            "n_estimators": n_estimators, "learning_rate": learning_rate,
+            "num_leaves": num_leaves,
+            "max_depth": max_depth,
+            "reg_alpha": reg_alpha,
+            "reg_lambda": reg_lambda,
+            "n_estimators": n_estimators,
+            "learning_rate": learning_rate,
             "random_state": random_state,
         },
         "output_dir": str(saved),
@@ -180,11 +209,20 @@ def train(
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Train LGBMCalibrator v4 (FeatureRegistry × LGBM log-odds mix)")
+    ap = argparse.ArgumentParser(
+        description="Train LGBMCalibrator v4 (FeatureRegistry × LGBM log-odds mix)"
+    )
     ap.add_argument("--csv", required=True, help="BTC 日线 OHLCV CSV")
-    ap.add_argument("--out-dir", required=True, help="输出目录（存放 calibrator.joblib / schema.json / train_report.json）")
-    ap.add_argument("--feature-set", default="btc_morphology_v5",
-                    help="FeatureRegistry 启用集（默认 btc_morphology_v5 = morphology_core + ma200_cycle + multi_timeframe，LGBM 特征池仅含前 3 模块，不含 rolling_regime_stats/sector_beta_pool 以防标签泄露）")
+    ap.add_argument(
+        "--out-dir",
+        required=True,
+        help="输出目录（存放 calibrator.joblib / schema.json / train_report.json）",
+    )
+    ap.add_argument(
+        "--feature-set",
+        default="btc_morphology_v5",
+        help="FeatureRegistry 启用集（默认 btc_morphology_v5 = morphology_core + ma200_cycle + multi_timeframe，LGBM 特征池仅含前 3 模块，不含 rolling_regime_stats/sector_beta_pool 以防标签泄露）",
+    )
     ap.add_argument("--forward-days", type=int, default=20, help="三重障碍前瞻天数（y 标签生成）")
     ap.add_argument("--lookback", type=int, default=252, help="三重障碍回看窗口")
     ap.add_argument("--num-leaves", type=int, default=31)

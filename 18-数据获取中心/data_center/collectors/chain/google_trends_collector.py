@@ -10,6 +10,7 @@
   2. 解析返回的 JSONP（去掉 )]}' 前缀）
   3. 提取 interest_over_time 数据
 """
+
 from __future__ import annotations
 
 import json
@@ -58,8 +59,7 @@ class GoogleTrendsCollector(BaseCollector):
             "geo": geo,
             "tz": "0",
         }
-        resp = requests.get(_BASE, params=params, timeout=20,
-                            headers={"User-Agent": "Mozilla/5.0"})
+        resp = requests.get(_BASE, params=params, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
         text = resp.text
         # 去掉 JSONP 前缀 )]}'  和括号

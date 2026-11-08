@@ -26,6 +26,7 @@ TDD 覆盖:
   - structural_break_detector.py detect_volatility_regime (k=2 HMM 复用模式)
   - CLAUDE.md 硬约束: recall → 编码 → record → verify
 """
+
 from __future__ import annotations
 
 import sys
@@ -47,6 +48,7 @@ if str(REPO) not in sys.path:
 def test_btc_regime_detector_importable():
     """T1.1: BTCRegimeDetector 类可从 dreambuddy_evolution.core.btc_regime_detector 导入."""
     from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
+
     assert BTCRegimeDetector is not None
 
 
@@ -64,9 +66,9 @@ def test_detect_returns_ndarray_with_correct_length():
     detector = BTCRegimeDetector()
     regimes = detector.detect(closes)
     assert isinstance(regimes, np.ndarray), "detect 应返回 np.ndarray"
-    assert regimes.shape[0] == len(closes), (
-        f"regimes 长度 {regimes.shape[0]} 应等于 closes 长度 {len(closes)}"
-    )
+    assert regimes.shape[0] == len(
+        closes
+    ), f"regimes 长度 {regimes.shape[0]} 应等于 closes 长度 {len(closes)}"
 
 
 # ============================================================================
@@ -86,12 +88,8 @@ def test_regimes_value_set_is_three():
     detector = BTCRegimeDetector()
     regimes = detector.detect(closes)
     unique = set(regimes.tolist())
-    assert unique.issubset({0, 1, 2}), (
-        f"regime 取值 {unique} 应 ⊆ {{0, 1, 2}}"
-    )
-    assert len(unique) >= 2, (
-        f"至少应出现 2 种 regime, 实际 {len(unique)}"
-    )
+    assert unique.issubset({0, 1, 2}), f"regime 取值 {unique} 应 ⊆ {{0, 1, 2}}"
+    assert len(unique) >= 2, f"至少应出现 2 种 regime, 实际 {len(unique)}"
 
 
 # ============================================================================
@@ -109,9 +107,9 @@ def test_observation_is_drawdown_not_log_return():
 
     detector = BTCRegimeDetector()
     # 类应有 _compute_drawdown 方法或 _observation_kind 属性标识
-    assert hasattr(detector, "_compute_drawdown") or hasattr(detector, "observation_kind"), (
-        "BTCRegimeDetector 应暴露 _compute_drawdown 或 observation_kind 以证明用 drawdown"
-    )
+    assert hasattr(detector, "_compute_drawdown") or hasattr(
+        detector, "observation_kind"
+    ), "BTCRegimeDetector 应暴露 _compute_drawdown 或 observation_kind 以证明用 drawdown"
 
     # 验证 _compute_drawdown 输出特征: 单调非正,牛市接近 0,回撤期大幅负
     if hasattr(detector, "_compute_drawdown"):
@@ -174,15 +172,15 @@ def test_regime_label_ordering_bull_bear():
 
     # 三 regime 各段平均收益
     seg_len = 400
-    r_bull = np.mean(returns[:seg_len - 1])
-    r_chop = np.mean(returns[seg_len:seg_len * 2 - 1])
-    r_bear = np.mean(returns[seg_len * 2:])
+    r_bull = np.mean(returns[: seg_len - 1])
+    r_chop = np.mean(returns[seg_len : seg_len * 2 - 1])
+    r_bear = np.mean(returns[seg_len * 2 :])
     r_by_regime = {0: r_bull, 1: r_chop, 2: r_bear}
 
     # 取每 regime 标签在对应段的众数
     label_bull = int(np.bincount(regimes[:seg_len]).argmax())
-    label_chop = int(np.bincount(regimes[seg_len:seg_len * 2]).argmax())
-    label_bear = int(np.bincount(regimes[seg_len * 2:]).argmax())
+    label_chop = int(np.bincount(regimes[seg_len : seg_len * 2]).argmax())
+    label_bear = int(np.bincount(regimes[seg_len * 2 :]).argmax())
 
     # bull 段标签应对应最大均值收益, bear 段对应最小
     assert r_by_regime[label_bull] >= r_by_regime[label_chop], (
@@ -221,6 +219,7 @@ def test_btc_10y_regime_alignment_known_cycles():
         pytest.skip(f"BTC 10y 数据不存在: {data_path}")
     with open(data_path) as f:
         import json
+
         closes = np.array(json.load(f))
 
     # 1h 数据, 79941 点, 起点 ~2017-09
@@ -238,12 +237,8 @@ def test_btc_10y_regime_alignment_known_cycles():
     bear_seg = regimes[2200:6500]
     bear_ratio = np.mean(bear_seg == 2)
 
-    assert bull_ratio >= 0.25, (
-        f"2017-09~12 牛市段 bull 占比 {bull_ratio:.2%} 应 >= 25%"
-    )
-    assert bear_ratio >= 0.25, (
-        f"2018 熊市段 bear 占比 {bear_ratio:.2%} 应 >= 25%"
-    )
+    assert bull_ratio >= 0.25, f"2017-09~12 牛市段 bull 占比 {bull_ratio:.2%} 应 >= 25%"
+    assert bear_ratio >= 0.25, f"2018 熊市段 bear 占比 {bear_ratio:.2%} 应 >= 25%"
 
 
 # ============================================================================

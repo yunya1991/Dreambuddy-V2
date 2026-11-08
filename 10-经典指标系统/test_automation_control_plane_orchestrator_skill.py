@@ -37,16 +37,22 @@ class TestAutomationControlPlaneOrchestratorSkill(unittest.TestCase):
             self.assertIn(t, allowed)
 
     def test_template_strategy_explore_has_baseline_first(self):
-        out = svc._skill_automation_control_plane_orchestrator({"template": "strategy_explore_8h_with_baseline"})
+        out = svc._skill_automation_control_plane_orchestrator(
+            {"template": "strategy_explore_8h_with_baseline"}
+        )
         self.assertTrue(bool(out.get("ok")))
         steps = out.get("tool_plan")
         tools = [str(s.get("tool") or "") for s in steps if isinstance(s, dict)]
         self.assertIn("sandbox.backtest", tools)
         self.assertIn("qwen.control.paramopt_explore_trigger", tools)
-        self.assertLess(tools.index("sandbox.backtest"), tools.index("qwen.control.paramopt_explore_trigger"))
+        self.assertLess(
+            tools.index("sandbox.backtest"), tools.index("qwen.control.paramopt_explore_trigger")
+        )
 
     def test_template_system_kpi_conservative_paramopt(self):
-        out = svc._skill_automation_control_plane_orchestrator({"template": "system_kpi_conservative_paramopt"})
+        out = svc._skill_automation_control_plane_orchestrator(
+            {"template": "system_kpi_conservative_paramopt"}
+        )
         self.assertTrue(bool(out.get("ok")))
         steps = out.get("tool_plan")
         tools = [str(s.get("tool") or "") for s in steps if isinstance(s, dict)]
@@ -62,7 +68,9 @@ class TestAutomationControlPlaneOrchestratorSkill(unittest.TestCase):
         orig = svc._agent_pnl_trigger_eval
         try:
             svc._agent_pnl_trigger_eval = lambda now_ms: [{"trigger": "loss.streak.trigger"}]
-            out = svc._skill_automation_control_plane_orchestrator({"template": "auto_system_kpi_decision"})
+            out = svc._skill_automation_control_plane_orchestrator(
+                {"template": "auto_system_kpi_decision"}
+            )
             self.assertTrue(bool(out.get("ok")))
             tools = [str(s.get("tool") or "") for s in out.get("tool_plan") if isinstance(s, dict)]
             self.assertIn("qwen.control.paramopt_trigger", tools)
@@ -77,7 +85,9 @@ class TestAutomationControlPlaneOrchestratorSkill(unittest.TestCase):
         orig = svc._agent_pnl_trigger_eval
         try:
             svc._agent_pnl_trigger_eval = lambda now_ms: []
-            out = svc._skill_automation_control_plane_orchestrator({"template": "auto_system_kpi_decision"})
+            out = svc._skill_automation_control_plane_orchestrator(
+                {"template": "auto_system_kpi_decision"}
+            )
             self.assertTrue(bool(out.get("ok")))
             tools = [str(s.get("tool") or "") for s in out.get("tool_plan") if isinstance(s, dict)]
             self.assertIn("qwen.control.paramopt_explore_trigger", tools)
@@ -94,8 +104,20 @@ class TestAutomationControlPlaneOrchestratorSkill(unittest.TestCase):
             svc._agent_pnl_trigger_eval = lambda now_ms: []
             now_ms = int(svc._now_ms())
             svc._ab_settlements_get = lambda: [
-                {"ts": now_ms - 10_000, "event_id": "e1", "order_id": "o1", "pnl_usdc": -10.0, "notional_usdc": 100.0},
-                {"ts": now_ms - 5_000, "event_id": "e2", "order_id": "o2", "pnl_usdc": -5.0, "notional_usdc": 100.0},
+                {
+                    "ts": now_ms - 10_000,
+                    "event_id": "e1",
+                    "order_id": "o1",
+                    "pnl_usdc": -10.0,
+                    "notional_usdc": 100.0,
+                },
+                {
+                    "ts": now_ms - 5_000,
+                    "event_id": "e2",
+                    "order_id": "o2",
+                    "pnl_usdc": -5.0,
+                    "notional_usdc": 100.0,
+                },
             ]
             out = svc._skill_automation_control_plane_orchestrator(
                 {

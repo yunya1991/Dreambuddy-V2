@@ -7,31 +7,31 @@
   - run() 主函数：整合 waterline + scanner + overheat → G1/G2/G3
   - FAIL-OPEN：异常返回中性结果
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
 from unittest.mock import patch
-from dataclasses import fields as dataclass_fields
 
 # 将 force_vector 加入 sys.path
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.sector_valuation_orchestrator import (
+from force_vector.sector_undervalued_scanner import SectorUndervaluedScan  # noqa: E402
+from force_vector.sector_valuation_orchestrator import (  # noqa: E402
+    SectorOverheatSignal,
     SectorValuationOrchestrator,
     SectorValuationResult,
-    SectorOverheatSignal,
     compute_overvalued_ratio,
     should_trigger_overheat,
 )
-from force_vector.sector_waterline import SectorWaterline
-from force_vector.sector_undervalued_scanner import SectorUndervaluedScan
-
+from force_vector.sector_waterline import SectorWaterline  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # 1. Import & Dataclass
 # ---------------------------------------------------------------------------
+
 
 class TestImport:
     """模块可导入且关键符号存在。"""
@@ -59,8 +59,11 @@ class TestDataclassFields:
         """SectorOverheatSignal 应有 5 字段：sector/waterline/leader_momentum/overvalued_ratio/confidence。"""
         names = {f.name for f in dataclass_fields(SectorOverheatSignal)}
         assert names == {
-            "sector", "waterline", "leader_momentum",
-            "overvalued_ratio", "confidence",
+            "sector",
+            "waterline",
+            "leader_momentum",
+            "overvalued_ratio",
+            "confidence",
         }
 
     def test_sector_valuation_result_has_four_fields(self):
@@ -72,6 +75,7 @@ class TestDataclassFields:
 # ---------------------------------------------------------------------------
 # 2. compute_overvalued_ratio 纯函数
 # ---------------------------------------------------------------------------
+
 
 class TestComputeOvervaluedRatio:
     """计算赛道内 undervalued_score < -0.3 的币占比。"""
@@ -107,44 +111,51 @@ class TestComputeOvervaluedRatio:
 # 3. should_trigger_overheat 纯函数（三重条件 AND）
 # ---------------------------------------------------------------------------
 
+
 class TestShouldTriggerOverheat:
     """验证 G3 做空信号三重确认（SPEC §5.3 AND）。"""
 
     def test_trigger_all_conditions_met(self):
         """waterline=90, leader_momentum=-0.2, ratio=0.7 → True"""
-        assert should_trigger_overheat(
-            waterline=90.0, leader_momentum=-0.2, overvalued_ratio=0.7
-        ) is True
+        assert (
+            should_trigger_overheat(waterline=90.0, leader_momentum=-0.2, overvalued_ratio=0.7)
+            is True
+        )
 
     def test_no_trigger_low_waterline(self):
         """waterline=70 → False（条件1不满足）"""
-        assert should_trigger_overheat(
-            waterline=70.0, leader_momentum=-0.2, overvalued_ratio=0.7
-        ) is False
+        assert (
+            should_trigger_overheat(waterline=70.0, leader_momentum=-0.2, overvalued_ratio=0.7)
+            is False
+        )
 
     def test_no_trigger_strong_leader(self):
         """leader_momentum=0.1 → False（条件2不满足，需 < -0.1）"""
-        assert should_trigger_overheat(
-            waterline=90.0, leader_momentum=0.1, overvalued_ratio=0.7
-        ) is False
+        assert (
+            should_trigger_overheat(waterline=90.0, leader_momentum=0.1, overvalued_ratio=0.7)
+            is False
+        )
 
     def test_no_trigger_low_ratio(self):
         """overvalued_ratio=0.5 → False（条件3不满足，需 >= 0.6）"""
-        assert should_trigger_overheat(
-            waterline=90.0, leader_momentum=-0.2, overvalued_ratio=0.5
-        ) is False
+        assert (
+            should_trigger_overheat(waterline=90.0, leader_momentum=-0.2, overvalued_ratio=0.5)
+            is False
+        )
 
     def test_trigger_at_threshold_boundary(self):
         """边界：waterline=85, lm=-0.11, ratio=0.6 → True（SPEC §5.3 严格 < -0.1）"""
-        assert should_trigger_overheat(
-            waterline=85.0, leader_momentum=-0.11, overvalued_ratio=0.6
-        ) is True
+        assert (
+            should_trigger_overheat(waterline=85.0, leader_momentum=-0.11, overvalued_ratio=0.6)
+            is True
+        )
 
     def test_no_trigger_leader_at_zero(self):
         """leader_momentum=0 → False"""
-        assert should_trigger_overheat(
-            waterline=90.0, leader_momentum=0.0, overvalued_ratio=0.7
-        ) is False
+        assert (
+            should_trigger_overheat(waterline=90.0, leader_momentum=0.0, overvalued_ratio=0.7)
+            is False
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -161,15 +172,23 @@ def _mock_waterline_overheated(sector, db_path=None):
     """返回过热水位（DEX=90 触发，L1=60 不触发）。"""
     table = {
         "DEX": SectorWaterline(
-            sector="DEX", median_percentile=90.0, member_count=3,
-            overheated=True, undervalued=False,
-            leader="UNI", leader_momentum_7d=-0.2,
+            sector="DEX",
+            median_percentile=90.0,
+            member_count=3,
+            overheated=True,
+            undervalued=False,
+            leader="UNI",
+            leader_momentum_7d=-0.2,
             timestamp="2026-10-07T00:00:00+00:00",
         ),
         "L1": SectorWaterline(
-            sector="L1", median_percentile=60.0, member_count=2,
-            overheated=False, undervalued=False,
-            leader="ETH", leader_momentum_7d=0.3,
+            sector="L1",
+            median_percentile=60.0,
+            member_count=2,
+            overheated=False,
+            undervalued=False,
+            leader="ETH",
+            leader_momentum_7d=0.3,
             timestamp="2026-10-07T00:00:00+00:00",
         ),
     }
@@ -179,9 +198,13 @@ def _mock_waterline_overheated(sector, db_path=None):
 def _mock_waterline_neutral(sector, db_path=None):
     """返回中性水位（无过热）。"""
     return SectorWaterline(
-        sector=sector, median_percentile=50.0, member_count=3,
-        overheated=False, undervalued=False,
-        leader="UNI", leader_momentum_7d=0.1,
+        sector=sector,
+        median_percentile=50.0,
+        member_count=3,
+        overheated=False,
+        undervalued=False,
+        leader="UNI",
+        leader_momentum_7d=0.1,
         timestamp="2026-10-07T00:00:00+00:00",
     )
 
@@ -189,13 +212,58 @@ def _mock_waterline_neutral(sector, db_path=None):
 def _mock_multi_dim_for_overheat(coin, db_path=None):
     """让 DEX 大部分币高估，L1 不高估。"""
     table = {
-        "UNI": {"multi_dim_score": -0.4, "mc_fees_pct": 80.0, "mc_tvl_pct": 85.0, "peg_pct": 75.0, "confirmed_low": False, "dimensions_available": 3},
-        "1INCH": {"multi_dim_score": -0.5, "mc_fees_pct": 85.0, "mc_tvl_pct": 90.0, "peg_pct": 80.0, "confirmed_low": False, "dimensions_available": 3},
-        "SUSHI": {"multi_dim_score": 0.2, "mc_fees_pct": 50.0, "mc_tvl_pct": 55.0, "peg_pct": 45.0, "confirmed_low": False, "dimensions_available": 3},
-        "ETH": {"multi_dim_score": 0.3, "mc_fees_pct": 40.0, "mc_tvl_pct": 0.0, "peg_pct": 0.0, "confirmed_low": False, "dimensions_available": 1},
-        "SOL": {"multi_dim_score": 0.1, "mc_fees_pct": 50.0, "mc_tvl_pct": 0.0, "peg_pct": 0.0, "confirmed_low": False, "dimensions_available": 1},
+        "UNI": {
+            "multi_dim_score": -0.4,
+            "mc_fees_pct": 80.0,
+            "mc_tvl_pct": 85.0,
+            "peg_pct": 75.0,
+            "confirmed_low": False,
+            "dimensions_available": 3,
+        },
+        "1INCH": {
+            "multi_dim_score": -0.5,
+            "mc_fees_pct": 85.0,
+            "mc_tvl_pct": 90.0,
+            "peg_pct": 80.0,
+            "confirmed_low": False,
+            "dimensions_available": 3,
+        },
+        "SUSHI": {
+            "multi_dim_score": 0.2,
+            "mc_fees_pct": 50.0,
+            "mc_tvl_pct": 55.0,
+            "peg_pct": 45.0,
+            "confirmed_low": False,
+            "dimensions_available": 3,
+        },
+        "ETH": {
+            "multi_dim_score": 0.3,
+            "mc_fees_pct": 40.0,
+            "mc_tvl_pct": 0.0,
+            "peg_pct": 0.0,
+            "confirmed_low": False,
+            "dimensions_available": 1,
+        },
+        "SOL": {
+            "multi_dim_score": 0.1,
+            "mc_fees_pct": 50.0,
+            "mc_tvl_pct": 0.0,
+            "peg_pct": 0.0,
+            "confirmed_low": False,
+            "dimensions_available": 1,
+        },
     }
-    return table.get(coin, {"multi_dim_score": 0.0, "mc_fees_pct": 0.0, "mc_tvl_pct": 0.0, "peg_pct": 0.0, "confirmed_low": False, "dimensions_available": 0})
+    return table.get(
+        coin,
+        {
+            "multi_dim_score": 0.0,
+            "mc_fees_pct": 0.0,
+            "mc_tvl_pct": 0.0,
+            "peg_pct": 0.0,
+            "confirmed_low": False,
+            "dimensions_available": 0,
+        },
+    )
 
 
 def _mock_empty_scan(db_path=None, top_n=20):
@@ -212,20 +280,42 @@ class TestOrchestratorRun:
 
     def test_run_returns_dataclass(self):
         """run() 应返回 SectorValuationResult。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_neutral), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_neutral,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         assert isinstance(result, SectorValuationResult)
 
     def test_run_aggregates_waterlines(self):
         """waterlines 应包含所有赛道的水位（G2）。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_neutral), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_neutral,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         assert len(result.waterlines) == 2  # DEX + L1
@@ -234,20 +324,42 @@ class TestOrchestratorRun:
 
     def test_run_includes_undervalued_scan(self):
         """undervalued_scan 应为 SectorUndervaluedScan 实例（G1）。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_neutral), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_neutral,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         assert isinstance(result.undervalued_scan, SectorUndervaluedScan)
 
     def test_run_detects_overheat_signal(self):
         """DEX 赛道满足三重条件 → 应在 overheat_signals 中。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_overheated), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_overheated,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         # DEX 应触发过热信号（waterline=90, lm=-0.2, 2/3 高估 → ratio=0.67 >= 0.6）
@@ -256,10 +368,21 @@ class TestOrchestratorRun:
 
     def test_run_no_overheat_when_waterline_low(self):
         """L1 水位=60 不应触发过热信号。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_neutral), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_neutral,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         # 中性水位（50），无过热
@@ -267,10 +390,21 @@ class TestOrchestratorRun:
 
     def test_run_overheat_signal_has_confidence(self):
         """过热信号应有 confidence 字段且 > 0。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_overheated), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_overheated,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         dex_signal = next((s for s in result.overheat_signals if s.sector == "DEX"), None)
@@ -279,10 +413,21 @@ class TestOrchestratorRun:
 
     def test_run_overheat_signal_has_fields(self):
         """过热信号应包含完整字段：waterline/leader_momentum/overvalued_ratio。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_overheated), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_overheated,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         dex_signal = next((s for s in result.overheat_signals if s.sector == "DEX"), None)
@@ -293,10 +438,21 @@ class TestOrchestratorRun:
 
     def test_run_timestamp_present(self):
         """结果应包含 ISO timestamp。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_waterline_neutral), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_waterline_neutral,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         assert result.timestamp
@@ -304,8 +460,13 @@ class TestOrchestratorRun:
 
     def test_run_failopen_on_exception(self):
         """异常时返回中性 SectorValuationResult（FAIL-OPEN）。"""
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=RuntimeError("boom")):
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=RuntimeError("boom"),
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         assert isinstance(result, SectorValuationResult)
@@ -314,14 +475,27 @@ class TestOrchestratorRun:
 
     def test_run_skips_none_waterline(self):
         """compute_sector_waterline 返回 None 时跳过该赛道。"""
+
         def _mock_none_for_l1(sector, db_path=None):
             if sector == "L1":
                 return None
             return _mock_waterline_neutral(sector, db_path)
-        with patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP), \
-             patch("force_vector.sector_valuation_orchestrator.compute_sector_waterline", side_effect=_mock_none_for_l1), \
-             patch("force_vector.sector_valuation_orchestrator.scan_sector_undervalued", side_effect=_mock_empty_scan), \
-             patch("force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation", side_effect=_mock_multi_dim_for_overheat):
+
+        with (
+            patch("force_vector.sector_valuation_orchestrator.SECTOR_MAP", _TEST_SECTOR_MAP),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_sector_waterline",
+                side_effect=_mock_none_for_l1,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.scan_sector_undervalued",
+                side_effect=_mock_empty_scan,
+            ),
+            patch(
+                "force_vector.sector_valuation_orchestrator.compute_multi_dim_valuation",
+                side_effect=_mock_multi_dim_for_overheat,
+            ),
+        ):
             orch = SectorValuationOrchestrator()
             result = orch.run(db_path="/fake/db.db")
         # 只有 DEX 有水位，L1 返回 None 被跳过

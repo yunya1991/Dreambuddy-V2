@@ -11,9 +11,8 @@ RED 测试集 — evolution_engine (种群 + 选择 + 交叉 + 结构变异 + en
   - test_fitness_monotonic_improvement: 5代fitness严格递增
   - test_ensemble_synthesis_combines_diverse: 合成策略≠top-1
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations  # noqa: I001
 
 
 # --------------------------------------------------------------------------------
@@ -33,12 +32,14 @@ class TestPopulationManagement:
     def test_init_creates_population_of_given_size(self):
         """初始化创建指定大小的种群."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         assert len(ee.population) == 20
 
     def test_elite_preservation_top4(self):
         """精英保留 top-4 不参与变异."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20, elite_size=4)
         elites = ee.get_elites()
         assert len(elites) == 4
@@ -46,6 +47,7 @@ class TestPopulationManagement:
     def test_diversity_threshold_jaccard(self):
         """种群多样性阈值 Jaccard≥0.3 防早熟."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         diversity = ee.compute_diversity()
         assert 0.0 <= diversity <= 1.0
@@ -59,6 +61,7 @@ class TestSelectionStrategy:
     def test_tournament_selection_picks_best_of_k(self):
         """tournament(k=3) 应从 k 个个体中选最优."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine, Individual
+
         ee = EvolutionEngine(population_size=20)
         # 构造 3 个已知 fitness 的个体
         candidates = [
@@ -77,8 +80,10 @@ class TestCrossover:
     def test_arithmetic_crossover_blends_parents(self):
         """算术交叉 w_child = α·p1 + (1-α)·p2."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         import numpy as np
+
         w1 = np.array([0.5, 0.3, 0.8])
         w2 = np.array([0.1, 0.7, 0.2])
         child = ee.arithmetic_crossover(w1, w2, alpha=0.5)
@@ -94,6 +99,7 @@ class TestStructureMutation:
     def test_structure_mutation_can_add_neuron(self):
         """结构变异可增加隐藏神经元."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         original_arch = {"hidden_dims": [64, 32]}
         mutated = ee.structure_mutate(original_arch, add_neuron_prob=1.0)
@@ -103,6 +109,7 @@ class TestStructureMutation:
     def test_structure_mutation_can_remove_neuron(self):
         """结构变异可删除隐藏神经元."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         original_arch = {"hidden_dims": [64, 32]}
         mutated = ee.structure_mutate(original_arch, add_neuron_prob=0.0, remove_neuron_prob=1.0)
@@ -111,6 +118,7 @@ class TestStructureMutation:
     def test_structure_mutation_can_change_activation(self):
         """结构变异可改激活函数(ReLU↔Tanh)."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         original_arch = {"hidden_dims": [64], "activation": "relu"}
         mutated = ee.structure_mutate(original_arch, change_activation_prob=1.0)
@@ -119,13 +127,14 @@ class TestStructureMutation:
     def test_structure_mutation_changes_topology(self):
         """5 代后种群中至少 2 种不同网络结构（关键证据：非参数微调）."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20, structure_mutation_rate=0.3)
         result = ee.evolve(generations=5)
         arch_hashes = result["arch_hashes"]
         unique_archs = len(set(arch_hashes))
-        assert unique_archs >= 2, (
-            f"5 代后应有 ≥2 种不同拓扑，实际 {unique_archs}（说明只是参数微调非结构变异）"
-        )
+        assert (
+            unique_archs >= 2
+        ), f"5 代后应有 ≥2 种不同拓扑，实际 {unique_archs}（说明只是参数微调非结构变异）"
 
 
 # --------------------------------------------------------------------------------
@@ -135,6 +144,7 @@ class TestPopulationDiversity:
     def test_population_diversity_maintained(self):
         """5 代后 Jaccard 相似度 < 0.7（不退化为单一个体）."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         result = ee.evolve(generations=5)
         diversity = result["final_diversity"]
@@ -148,6 +158,7 @@ class TestFitnessImprovement:
     def test_fitness_monotonic_improvement(self):
         """5 代 holdout fitness 应严格递增."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         result = ee.evolve(generations=5)
         fitness_history = result["fitness_history"]
@@ -164,15 +175,17 @@ class TestEnsembleSynthesis:
     def test_ensemble_synthesis_combines_diverse(self):
         """合成策略 ≠ top-1 策略."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         result = ee.evolve(generations=5)
-        assert result["ensemble_id"] != result["best_id"], (
-            f"合成 ID={result['ensemble_id']} 应 ≠ top-1 ID={result['best_id']}"
-        )
+        assert (
+            result["ensemble_id"] != result["best_id"]
+        ), f"合成 ID={result['ensemble_id']} 应 ≠ top-1 ID={result['best_id']}"
 
     def test_ensemble_uses_top_k(self):
         """ensemble 应使用 top-K（K=3）策略."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20, ensemble_k=3)
         result = ee.evolve(generations=3)
         assert "ensemble_members" in result
@@ -186,6 +199,7 @@ class TestFitnessFunction:
     def test_fitness_combines_ess_sharpe_maxdd(self):
         """fitness = 0.5·ESS + 0.3·Sharpe + 0.2·(1-maxDD)."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         fitness = ee.compute_fitness(ess=1.5, sharpe=2.0, max_dd=0.1)
         expected = 0.5 * 1.5 + 0.3 * 2.0 + 0.2 * (1 - 0.1)
@@ -199,6 +213,7 @@ class TestStatisticalGate:
     def test_individual_must_pass_statistical_gate(self):
         """入种群必须通过统计检验（p<0.05 + Cohen's d≥0.5）."""
         from dreambuddy_evolution.core.evolution_engine import EvolutionEngine
+
         ee = EvolutionEngine(population_size=20)
         # 弱信号（50% 胜率）应被拒
         weak_samples = [{"pnl_pct": 0.01 if i % 2 == 0 else -0.01} for i in range(30)]

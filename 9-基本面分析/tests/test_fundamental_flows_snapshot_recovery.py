@@ -16,9 +16,21 @@ def test_flows_compact_recover_coverage_from_skill_snapshot(tmp_path, monkeypatc
     svc = _load_embedded_service()
     snapshot = {
         "items": [
-            {"bindBase": "spot_etf_netflow_usd__btc__all__na", "value": 12000000, "quality": {"status": "ok"}},
-            {"bindBase": "funding_rate_bps__btc__okx__perp", "value": 9.5, "quality": {"status": "ok"}},
-            {"bindBase": "whale_position_delta_usd__btc__hyperliquid__perp", "value": 2300000, "quality": {"status": "ok"}},
+            {
+                "bindBase": "spot_etf_netflow_usd__btc__all__na",
+                "value": 12000000,
+                "quality": {"status": "ok"},
+            },
+            {
+                "bindBase": "funding_rate_bps__btc__okx__perp",
+                "value": 9.5,
+                "quality": {"status": "ok"},
+            },
+            {
+                "bindBase": "whale_position_delta_usd__btc__hyperliquid__perp",
+                "value": 2300000,
+                "quality": {"status": "ok"},
+            },
         ]
     }
     snapshot_file = tmp_path / "web3_skill_snapshot_latest.json"

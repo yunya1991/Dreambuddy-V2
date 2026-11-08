@@ -6,13 +6,14 @@
     "real": {
       "type": "40_main",
       "paths": {
-        "cycle_state": "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json",
-        "asset_rotation": "/home/luke/dreambuddy/40-周期神经网络系统/asset_rotation.json"
-      }
+        "cycle_state": "40-周期神经网络系统/cycle_state.json",
+        "asset_rotation": "40-周期神经网络系统/asset_rotation.json"
+      },
+      "path_note": "信号源路径为相对 DREAMBUDDY_ROOT 环境变量，x0_pipeline.load_config 就地展开（R-42-04/P1-03）"
     },
     "proxy": {
       "type": "12_proxy",
-      "path": "/home/luke/dreambuddy/12-三屏趋势系统/signal_pool/pool.json",
+      "path": "12-三屏趋势系统/signal_pool/pool.json",
       "note": "仅验证管道，不得据代理信号出具任何验证指标或报告（SPEC 边界红线 6）"
     }
   },

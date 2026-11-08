@@ -12,6 +12,7 @@
   python -m scripts.memory_l4.yijing_monitor --check-only    # 仅检查状态
   python -m scripts.memory_l4.yijing_monitor --evolve-only   # 仅执行自进化和PR评论
 """
+
 import argparse
 import json
 import os
@@ -44,7 +45,10 @@ def _load_polling_coins_default():
                 return ",".join(syms)
     except Exception:
         pass
-    return "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB,CRCL,COIN,BMNR,MSTR"
+    return (
+        "UNI,PUMP,MU,SKHYNIX,HYPE,ETH,BTC,SOL,XAU,XAG,GOOGL,NVDA,AMZN,OKB,BNB,CRCL,COIN,BMNR,MSTR"
+    )
+
 
 warnings.filterwarnings("ignore")
 
@@ -61,7 +65,7 @@ try:
 except Exception:
     pass
 
-from scripts.memory_l4.paths import (
+from scripts.memory_l4.paths import (  # noqa: E402
     memory_l4_cases_dir,
     workbuddy_dir,
     workspace_root,
@@ -276,9 +280,13 @@ def run_polling_trader():
     try:
         existing = subprocess.run(
             ["pgrep", "-f", "scripts.memory_l4.polling_trader"],
-            capture_output=True, text=True, timeout=5
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
-        existing_pids = [p for p in existing.stdout.strip().split("\n") if p and int(p) != os.getpid()]
+        existing_pids = [
+            p for p in existing.stdout.strip().split("\n") if p and int(p) != os.getpid()
+        ]
         if existing_pids:
             _log(f"跳过启动：检测到已有 polling_trader 实例运行 (PID={','.join(existing_pids)})")
             return True
@@ -294,9 +302,7 @@ def run_polling_trader():
         # 使用 nohup 后台启动（参数与 .env 保持一致：INITIAL_EQUITY 200USDT，15币种，interval=300s）
         import os
 
-        coins = os.environ.get(
-            "POLLING_COINS", _load_polling_coins_default()
-        )
+        coins = os.environ.get("POLLING_COINS", _load_polling_coins_default())
         interval = os.environ.get("POLLING_INTERVAL", "300")
         confidence = os.environ.get("CONFIDENCE_THRESHOLD", "0.7955")
         max_positions = os.environ.get("MAX_POSITIONS", "5")
@@ -773,7 +779,7 @@ def post_pr_comment(detail: dict, evolution: dict, perf: dict, evolved: dict):
 - 监控时间: {_fmt_ts(_now())}
 - 自进化次数: {evolution.get('evolution_count', 0)}
 - 本报告由 yijing_monitor.py 自动生成
-"""
+"""  # noqa: E741
 
     url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
     headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}

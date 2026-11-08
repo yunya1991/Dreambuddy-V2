@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 from typing import Iterable, List, Set, Tuple
 
-
 ALLOWED_TOP_LEVEL_DIRS = {
     ".github",
     ".workbuddy",
@@ -63,7 +62,8 @@ def evaluate_rules(changed_files: List[str]) -> Tuple[List[str], List[str]]:
         path=",".join(changed_files),
         prefixes=("workflows/memory/", "workflows/trading-decision/"),
     ) or any(
-        starts_with_any(path, ("workflows/memory/", "workflows/trading-decision/")) for path in changed_files
+        starts_with_any(path, ("workflows/memory/", "workflows/trading-decision/"))
+        for path in changed_files
     )
     if workflow_changed and COMMUNICATION_CONTRACT not in changed_set:
         violations.append(
@@ -82,7 +82,8 @@ def evaluate_rules(changed_files: List[str]) -> Tuple[List[str], List[str]]:
 
     constraints_changed = any(path.startswith("constraints/") for path in changed_files)
     sync_docs_changed = any(
-        path.startswith("constraints/system-index/") or path.startswith("constraints/workflows-spec/")
+        path.startswith("constraints/system-index/")
+        or path.startswith("constraints/workflows-spec/")
         for path in changed_files
     )
     if constraints_changed and not sync_docs_changed:

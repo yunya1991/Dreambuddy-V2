@@ -1,4 +1,4 @@
-import unittest
+import unittest  # noqa: I001
 from pathlib import Path
 import subprocess
 import json

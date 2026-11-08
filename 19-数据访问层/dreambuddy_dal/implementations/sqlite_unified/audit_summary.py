@@ -13,10 +13,10 @@ G-3 通过标准：read_consistency_rate >= 0.9999（≥ 99.99%）
   - category='dual_write'   → 写审计（result=APPLIED/SKIPPED/FAILED）
   - category='shadow_read'  → 读审计（result=MATCH/DIFF）
 """
+
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
@@ -26,6 +26,7 @@ from dreambuddy_dal.connection import get_sqlite_connection
 @dataclass
 class AuditSummary:
     """G-1/G-3 门禁测量结果。"""
+
     # G-1：双写差异率
     write_total: int = 0
     write_fail: int = 0

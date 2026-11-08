@@ -13,6 +13,7 @@
 FAIL-OPEN：单条 API 异常 → 保持 null 不阻塞整体。
 幂等性：  已回填字段（非 null）在 rerun 时不再覆盖。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -20,28 +21,24 @@ import json
 import os
 import sys
 import tempfile
-from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Dict, List, Optional
-
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _L4_DIR = os.path.normpath(os.path.join(_THIS_DIR, ".."))
 if _L4_DIR not in sys.path:
     sys.path.insert(0, _L4_DIR)
 
-from force_vector.coin_fundamental_ranker import (
-    CRYPTO_MAP,
-    STOCK_MAP,
+from force_vector.coin_fundamental_ranker import (  # noqa: E402
     METAL_MAP,
-    classify_asset_class,
     SHADOW_JSONL_PATH,
+    classify_asset_class,
 )
-
 
 # ===========================================================================
 # Helpers：符号映射 + 年龄门槛 + 收益率
 # ===========================================================================
+
 
 def _map_coin_to_yf_symbol(coin: str) -> Optional[str]:
     """三类资产 → yfinance 历史价格 symbol。
@@ -79,8 +76,9 @@ def _parse_ts(ts: str) -> Optional[datetime]:
         return None
 
 
-def _should_backfill_window(timestamp_iso: str, window_days: int,
-                            now: Optional[datetime] = None) -> bool:
+def _should_backfill_window(
+    timestamp_iso: str, window_days: int, now: Optional[datetime] = None
+) -> bool:
     """当前时间与信号的间隔 ≥ window_days → 允许回填该窗口。"""
     dt = _parse_ts(timestamp_iso)
     if dt is None:
@@ -109,6 +107,7 @@ def _return_pct(price_at: float, price_after: float) -> Optional[float]:
 # yfinance 历史价格读取（封装为可 mock 的独立函数）
 # ===========================================================================
 
+
 def _fetch_price_at_date(symbol: str, target_date: date) -> Optional[float]:
     """取 yfinance 目标日期附近的收盘价格。
 
@@ -123,8 +122,9 @@ def _fetch_price_at_date(symbol: str, target_date: date) -> Optional[float]:
     try:
         start = target_date - timedelta(days=6)
         end = target_date + timedelta(days=2)  # yf history end is exclusive, give 1 padding day
-        df = yf.Ticker(symbol).history(start=start.isoformat(), end=end.isoformat(),
-                                       auto_adjust=False)
+        df = yf.Ticker(symbol).history(
+            start=start.isoformat(), end=end.isoformat(), auto_adjust=False
+        )
         if df is None or df.empty:
             return None
         # 取 ≤ target_date 的最后一行
@@ -145,17 +145,20 @@ def _fetch_price_at_date(symbol: str, target_date: date) -> Optional[float]:
 # 核心流程：读 jsonl → 回填 → 写 sidecar backfilled jsonl
 # ===========================================================================
 
+
 def _backfilled_path(src_path: str) -> str:
     """x.jsonl → x.backfilled.jsonl（无论目录中是否有点）。"""
     base, ext = os.path.splitext(src_path)
     return f"{base}.backfilled{ext or '.jsonl'}"
 
 
-def process_jsonl(jsonl_path: str,
-                  out_path: Optional[str] = None,
-                  dry_run: bool = False,
-                  max_recs: Optional[int] = None,
-                  verbose: bool = False) -> Optional[str]:
+def process_jsonl(
+    jsonl_path: str,
+    out_path: Optional[str] = None,
+    dry_run: bool = False,
+    max_recs: Optional[int] = None,
+    verbose: bool = False,
+) -> Optional[str]:
     """处理 shadow JSONL，返回 backfilled 写出路径（dry_run 时返回 None）。
 
     Args:
@@ -201,9 +204,7 @@ def process_jsonl(jsonl_path: str,
             signal_dt = _parse_ts(ts_iso)
             if signal_dt:
                 try:
-                    rec["price_at_signal"] = _fetch_price_at_date(
-                        symbol, signal_dt.date()
-                    )
+                    rec["price_at_signal"] = _fetch_price_at_date(symbol, signal_dt.date())
                 except Exception:
                     rec["price_at_signal"] = None
 
@@ -263,20 +264,27 @@ def _print_summary(records: List[Dict]) -> None:
     p_at = sum(1 for r in records if r.get("price_at_signal") is not None and "_raw_line" not in r)
     p7 = sum(1 for r in records if r.get("price_7d_after") is not None)
     r30 = sum(1 for r in records if r.get("return_30d") is not None)
-    print(f"[coin_fundamental_backfill] records={n}  price_at_filled={p_at}/{n}  "
-          f"price_7d_filled={p7}/{n}  return_30d_filled={r30}/{n}")
+    print(
+        f"[coin_fundamental_backfill] records={n}  price_at_filled={p_at}/{n}  "
+        f"price_7d_filled={p7}/{n}  return_30d_filled={r30}/{n}"
+    )
 
 
 # ===========================================================================
 # CLI
 # ===========================================================================
 
+
 def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="D1: 回填 CoinFundamental Shadow 历史价格与收益率")
-    p.add_argument("--jsonl-path", default=SHADOW_JSONL_PATH,
-                   help=f"Shadow JSONL 源路径 (default: {SHADOW_JSONL_PATH})")
-    p.add_argument("--out-path", default=None,
-                   help="输出 backfilled 路径（默认源路径 .backfilled.jsonl）")
+    p.add_argument(
+        "--jsonl-path",
+        default=SHADOW_JSONL_PATH,
+        help=f"Shadow JSONL 源路径 (default: {SHADOW_JSONL_PATH})",
+    )
+    p.add_argument(
+        "--out-path", default=None, help="输出 backfilled 路径（默认源路径 .backfilled.jsonl）"
+    )
     p.add_argument("--dry-run", action="store_true", help="只模拟不写文件")
     p.add_argument("--max-recs", type=int, default=None, help="限制处理条数")
     p.add_argument("-v", "--verbose", action="store_true")

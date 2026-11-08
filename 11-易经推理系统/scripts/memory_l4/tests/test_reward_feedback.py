@@ -19,6 +19,7 @@ reward 加权公式:
   effective_m = m * (1 - avg_reward) / 2  — 负 reward 放大 weakness 证据
   posterior = (alpha + effective_k) / (alpha + beta + effective_k + effective_m)
 """
+
 from __future__ import annotations
 
 import sys
@@ -38,10 +39,10 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from dreamos.evolution.washout_bayesian_updater import BayesianUpdater
-from dreamos.evolution.washout_case_library import WashoutCase, WashoutCaseLibrary
-from dreamos.evolution.washout_classifier import WashoutClassifier
-from dreamos.evolution.exploration_policy import ExplorationPolicy
+from dreamos.evolution.exploration_policy import ExplorationPolicy  # noqa: E402
+from dreamos.evolution.washout_bayesian_updater import BayesianUpdater  # noqa: E402
+from dreamos.evolution.washout_case_library import WashoutCase, WashoutCaseLibrary  # noqa: E402
+from dreamos.evolution.washout_classifier import WashoutClassifier  # noqa: E402
 
 
 # ============================================================
@@ -73,9 +74,7 @@ class TestBayesianUpdateWithReward:
         # effective_k = 3 * (1+0.8)/2 = 2.7
         # effective_m = 2 * (1-0.8)/2 = 0.2
         # posterior = (1+2.7)/(2+2.7+0.2) = 3.7/4.9 ≈ 0.7551
-        posterior = updater.update_with_reward(
-            washout_count=3, weakness_count=2, avg_reward=0.8
-        )
+        posterior = updater.update_with_reward(washout_count=3, weakness_count=2, avg_reward=0.8)
         no_reward = updater.update(washout_count=3, weakness_count=2)  # 0.6667
         assert posterior > no_reward
         assert abs(posterior - 3.7 / 4.9) < 0.001
@@ -87,9 +86,7 @@ class TestBayesianUpdateWithReward:
         # effective_k = 3 * (1-0.8)/2 = 0.3
         # effective_m = 2 * (1+0.8)/2 = 1.8
         # posterior = (1+0.3)/(2+0.3+1.8) = 1.3/4.1 ≈ 0.3171
-        posterior = updater.update_with_reward(
-            washout_count=3, weakness_count=2, avg_reward=-0.8
-        )
+        posterior = updater.update_with_reward(washout_count=3, weakness_count=2, avg_reward=-0.8)
         no_reward = updater.update(washout_count=3, weakness_count=2)  # 0.6667
         assert posterior < no_reward
         assert abs(posterior - 1.3 / 4.1) < 0.001
@@ -101,10 +98,8 @@ class TestBayesianUpdateWithReward:
         # effective_k = 3 * 0.5 = 1.5
         # effective_m = 2 * 0.5 = 1.0
         # posterior = (1+1.5)/(2+1.5+1.0) = 2.5/4.5 ≈ 0.5556
-        posterior = updater.update_with_reward(
-            washout_count=3, weakness_count=2, avg_reward=0.0
-        )
-        prior = updater.prior_mean()       # 0.5
+        posterior = updater.update_with_reward(washout_count=3, weakness_count=2, avg_reward=0.0)
+        prior = updater.prior_mean()  # 0.5
         no_reward = updater.update(3, 2)  # 0.6667
         assert prior < posterior < no_reward
         assert abs(posterior - 2.5 / 4.5) < 0.001
@@ -115,9 +110,7 @@ class TestBayesianUpdateWithReward:
         # k=3, m=2, reward=1.0
         # effective_k = 3, effective_m = 0
         # posterior = (1+3)/(1+1+3+0) = 4/5 = 0.8
-        posterior = updater.update_with_reward(
-            washout_count=3, weakness_count=2, avg_reward=1.0
-        )
+        posterior = updater.update_with_reward(washout_count=3, weakness_count=2, avg_reward=1.0)
         assert abs(posterior - 4.0 / 5.0) < 0.001
 
     def test_full_negative_reward_ignores_washout(self):
@@ -126,9 +119,7 @@ class TestBayesianUpdateWithReward:
         # k=3, m=2, reward=-1.0
         # effective_k = 0, effective_m = 2
         # posterior = (1+0)/(1+1+0+2) = 1/4 = 0.25
-        posterior = updater.update_with_reward(
-            washout_count=3, weakness_count=2, avg_reward=-1.0
-        )
+        posterior = updater.update_with_reward(washout_count=3, weakness_count=2, avg_reward=-1.0)
         assert abs(posterior - 1.0 / 4.0) < 0.001
 
     def test_fail_open_on_invalid_reward(self):
@@ -166,29 +157,33 @@ class TestKnnRewardWeighting:
         lib = WashoutCaseLibrary()
         features = {"F1": 1.0, "F2": 2.0, "F3": 3.0}
         for i in range(n_washout):
-            lib.add(WashoutCase(
-                case_id=f"w_{i}",
-                coin="BTC",
-                entry_time="2026-01-01T00:00:00Z",
-                exit_time="2026-01-01T01:00:00Z",
-                features_snapshot=features,
-                actual_label="washout",
-                pnl_pct=0.05 * (1 if reward > 0 else -1),
-                reward=reward,
-                timestamp="2026-01-01T00:00:00Z",
-            ))
+            lib.add(
+                WashoutCase(
+                    case_id=f"w_{i}",
+                    coin="BTC",
+                    entry_time="2026-01-01T00:00:00Z",
+                    exit_time="2026-01-01T01:00:00Z",
+                    features_snapshot=features,
+                    actual_label="washout",
+                    pnl_pct=0.05 * (1 if reward > 0 else -1),
+                    reward=reward,
+                    timestamp="2026-01-01T00:00:00Z",
+                )
+            )
         for i in range(n_weakness):
-            lib.add(WashoutCase(
-                case_id=f"s_{i}",
-                coin="BTC",
-                entry_time="2026-01-01T00:00:00Z",
-                exit_time="2026-01-01T01:00:00Z",
-                features_snapshot=features,
-                actual_label="weakness",
-                pnl_pct=0.05 * (1 if reward > 0 else -1),
-                reward=reward,
-                timestamp="2026-01-01T00:00:00Z",
-            ))
+            lib.add(
+                WashoutCase(
+                    case_id=f"s_{i}",
+                    coin="BTC",
+                    entry_time="2026-01-01T00:00:00Z",
+                    exit_time="2026-01-01T01:00:00Z",
+                    features_snapshot=features,
+                    actual_label="weakness",
+                    pnl_pct=0.05 * (1 if reward > 0 else -1),
+                    reward=reward,
+                    timestamp="2026-01-01T00:00:00Z",
+                )
+            )
         return lib
 
     def test_reward_weighting_activated_when_enabled(self, monkeypatch):
@@ -333,9 +328,7 @@ class TestSwitchOffByteEquivalence:
         monkeypatch.delenv("ENABLE_EVOLUTION_EXPLORATION", raising=False)
         # 35 案例: 3 washout + 32 weakness, reward=1.0
         # 开关关断 → posterior=4/7≈0.571 → UNKNOWN
-        lib = TestKnnRewardWeighting._build_library(
-            n_washout=3, n_weakness=32, reward=1.0
-        )
+        lib = TestKnnRewardWeighting._build_library(n_washout=3, n_weakness=32, reward=1.0)
         clf = WashoutClassifier(
             case_library=lib,
             k_neighbors=5,

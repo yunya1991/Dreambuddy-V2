@@ -1,4 +1,5 @@
 """三后端 adapter（SPEC-C C7）：每后端独立 FAIL-OPEN，异常只标记 degraded。"""
+
 import os
 import sys
 from typing import Any, Dict, List, Optional
@@ -6,7 +7,9 @@ from typing import Any, Dict, List, Optional
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
-def _norm_hit(text: str, source: str, score: float, ref: str, meta: Optional[Dict] = None) -> Dict[str, Any]:
+def _norm_hit(
+    text: str, source: str, score: float, ref: str, meta: Optional[Dict] = None
+) -> Dict[str, Any]:
     """归一化命中结构：ref 为去重键（规范化路径/记忆 ID）。"""
     return {"text": text, "source": source, "score": float(score), "ref": ref, "meta": meta or {}}
 
@@ -36,13 +39,21 @@ class Backend41:
         if self._api is None:
             sys.path.insert(0, os.path.join(self._root, "api"))
             from search_api import SearchAPI  # noqa: E402
+
             self._api = SearchAPI(self._root)
         result = self._api.search(query, limit=top_k)
         hits = []
         for h in result.get("hits", []):
             path = str(h.get("path", ""))
-            hits.append(_norm_hit(str(h.get("title", path)), self.name,
-                                  float(h.get("score", 0.0)), path, {"path": path}))
+            hits.append(
+                _norm_hit(
+                    str(h.get("title", path)),
+                    self.name,
+                    float(h.get("score", 0.0)),
+                    path,
+                    {"path": path},
+                )
+            )
         return hits
 
 
@@ -58,15 +69,24 @@ class BackendChroma:
         if self._svc is None:
             sys.path.insert(0, os.path.join(_REPO_ROOT, "2-KNOWLEDGE", "9-RAG-INFRA"))
             from index_query_service import IndexQueryService  # noqa: E402
+
             self._svc = IndexQueryService()
         result = self._svc.query(query, top_k=top_k)
         hits = []
-        items = result.get("results", result.get("hits", [])) if isinstance(result, dict) else result
+        items = (
+            result.get("results", result.get("hits", [])) if isinstance(result, dict) else result
+        )
         for h in items or []:
             if isinstance(h, dict):
                 ref = str(h.get("id", h.get("source", "")))
-                hits.append(_norm_hit(str(h.get("text", h.get("content", ""))), self.name,
-                                      float(h.get("score", h.get("distance", 0.0))), ref))
+                hits.append(
+                    _norm_hit(
+                        str(h.get("text", h.get("content", ""))),
+                        self.name,
+                        float(h.get("score", h.get("distance", 0.0))),
+                        ref,
+                    )
+                )
         return hits
 
 
@@ -80,13 +100,20 @@ class BackendRecall:
         if cog_path not in sys.path:
             sys.path.insert(0, cog_path)
         from cognitive_loop_entry import get_cle  # noqa: E402
+
         cle = get_cle()
         memories = cle.recall(query, top_k=top_k)
         hits = []
         for m in memories or []:
             if isinstance(m, dict):
                 mid = str(m.get("id", ""))
-                hits.append(_norm_hit(str(m.get("content", "")), self.name,
-                                      float(m.get("score", m.get("confidence", 0.0))), mid,
-                                      {"memory_id": mid}))
+                hits.append(
+                    _norm_hit(
+                        str(m.get("content", "")),
+                        self.name,
+                        float(m.get("score", m.get("confidence", 0.0))),
+                        mid,
+                        {"memory_id": mid},
+                    )
+                )
         return hits

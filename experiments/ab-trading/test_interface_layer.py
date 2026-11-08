@@ -12,14 +12,13 @@
 5. 端到端：S层 → A层 → C层(统一执行器) → G层
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import unittest
-from typing import Dict, Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.shared.errors import (
+from core.shared.errors import (  # noqa: I001
     ErrorCode,
     OSBaseError,
     ModuleError,
@@ -36,10 +35,10 @@ from core.shared.errors import (
 from core.c_execution_layer.unified_executor import UnifiedNodeExecutor
 from core.shared.interfaces import NodeExecutionStatus
 
-
 # ============================================================
 # 错误码体系测试
 # ============================================================
+
 
 class TestErrorCode(unittest.TestCase):
     """测试错误码体系"""
@@ -214,6 +213,7 @@ class TestErrorInfo(unittest.TestCase):
 # 统一节点执行器测试
 # ============================================================
 
+
 class TestUnifiedNodeExecutor(unittest.TestCase):
     """测试统一节点执行器"""
 
@@ -224,13 +224,14 @@ class TestUnifiedNodeExecutor(unittest.TestCase):
     def test_executor_exists(self):
         """测试执行器存在"""
         self.assertIsNotNone(self.executor)
-        self.assertTrue(hasattr(self.executor, 'execute_node'))
-        self.assertTrue(hasattr(self.executor, 'execute'))
-        self.assertTrue(hasattr(self.executor, 'get_node_schema'))
+        self.assertTrue(hasattr(self.executor, "execute_node"))
+        self.assertTrue(hasattr(self.executor, "execute"))
+        self.assertTrue(hasattr(self.executor, "get_node_schema"))
 
     def test_executor_implements_interface(self):
         """测试实现了 NodeExecutorInterface"""
         from core.shared.interfaces import NodeExecutorInterface
+
         self.assertTrue(isinstance(self.executor, NodeExecutorInterface))
 
     def test_execute_with_local_handler(self):
@@ -246,10 +247,10 @@ class TestUnifiedNodeExecutor(unittest.TestCase):
         result = self.executor.execute("classic-indicator-scan", inputs, context)
 
         self.assertIsNotNone(result)
-        self.assertTrue(hasattr(result, 'success'))
-        self.assertTrue(hasattr(result, 'outputs'))
-        self.assertTrue(hasattr(result, 'confidence'))
-        self.assertTrue(hasattr(result, 'capability_id'))
+        self.assertTrue(hasattr(result, "success"))
+        self.assertTrue(hasattr(result, "outputs"))
+        self.assertTrue(hasattr(result, "confidence"))
+        self.assertTrue(hasattr(result, "capability_id"))
 
     def test_execute_node_returns_status(self):
         """测试 execute_node 返回 NodeExecutionStatus"""
@@ -325,6 +326,7 @@ class TestUnifiedNodeExecutor(unittest.TestCase):
 # A层 GraphOrchestrator 与 统一执行器 联调测试
 # ============================================================
 
+
 class TestOrchestratorIntegration(unittest.TestCase):
     """测试A层图编排器与统一执行器集成"""
 
@@ -353,8 +355,8 @@ class TestOrchestratorIntegration(unittest.TestCase):
         result = orchestrator.execute(blueprint, context={"session_id": "integration-test"})
 
         self.assertIsNotNone(result)
-        self.assertTrue(hasattr(result, 'status'))
-        self.assertTrue(hasattr(result, 'node_statuses'))
+        self.assertTrue(hasattr(result, "status"))
+        self.assertTrue(hasattr(result, "node_statuses"))
         self.assertGreater(len(result.node_statuses), 0)
 
     def test_multi_node_orchestration(self):
@@ -390,12 +392,13 @@ class TestOrchestratorIntegration(unittest.TestCase):
 # 端到端测试（简化版）
 # ============================================================
 
+
 class TestEndToEndMinimal(unittest.TestCase):
     """简化版端到端测试：S层意图识别 → A层编排 → C层执行"""
 
     def test_simple_trade_analysis(self):
         """简单交易分析全流程"""
-        from core.intent_engine.engine import IntentRecognitionEngine
+        from core.intent_engine.engine import IntentRecognitionEngine  # noqa: I001
         from core.a_graph_orchestrator.graph_orchestrator import GraphOrchestrator
         from core.c_execution_layer.unified_executor import UnifiedNodeExecutor
 
@@ -416,7 +419,7 @@ class TestEndToEndMinimal(unittest.TestCase):
                 "session_id": "e2e-test",
                 "objective_id": intent_result.objective.id if intent_result.objective else "",
                 "blueprint_id": intent_result.blueprint.blueprint_id,
-            }
+            },
         )
 
         self.assertIsNotNone(graph_result)
@@ -428,5 +431,5 @@ class TestEndToEndMinimal(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

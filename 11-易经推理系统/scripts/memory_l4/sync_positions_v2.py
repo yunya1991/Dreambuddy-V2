@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 """精确持仓同步：确保 XAU/OKB 等持仓也正确同步到本地"""
-import os
+
 import sys
 from pathlib import Path
 
-_stdlib_paths = [p for p in sys.path if "site-packages" in p or "Frameworks/Python3" in p or p == ""]
+_stdlib_paths = [
+    p for p in sys.path if "site-packages" in p or "Frameworks/Python3" in p or p == ""
+]
 _project_root = str(Path(__file__).resolve().parent.parent.parent)
 sys.path = _stdlib_paths + [_project_root]
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
+
 env_path = Path(_project_root) / ".env"
 load_dotenv(env_path)
 
-from scripts.memory_l4.okx_simulated import OKXSimulatedClient
-from scripts.memory_l4.trading_utils import PositionTracker, RiskManager
+from scripts.memory_l4.okx_simulated import OKXSimulatedClient  # noqa: E402
+from scripts.memory_l4.trading_utils import PositionTracker, RiskManager  # noqa: E402
+
 
 def main():
     okx = OKXSimulatedClient()
@@ -30,7 +34,20 @@ def main():
     if not all_pos.get("ok"):
         print(f"  失败: {all_pos.get('error')}")
         # 降级：逐个尝试关键币种
-        target_coins = ["HYPE", "XAU", "OKB", "UNI", "PUMP", "MU", "SKHYNIX", "ETH", "BTC", "SOL", "AMZN", "BNB"]
+        target_coins = [
+            "HYPE",
+            "XAU",
+            "OKB",
+            "UNI",
+            "PUMP",
+            "MU",
+            "SKHYNIX",
+            "ETH",
+            "BTC",
+            "SOL",
+            "AMZN",
+            "BNB",
+        ]
         all_positions = []
         for coin in target_coins:
             inst_id = f"{coin}-USDT-SWAP"
@@ -43,10 +60,12 @@ def main():
     positions = all_pos.get("positions", [])
     print(f"  OKX端实际持仓数: {len(positions)} 个")
     for p in positions:
-        print(f"    - {p['inst_id']} {p['pos_side']} sz={p['pos']} avg={p['avg_px']} mark={p['mark_px']}")
+        print(
+            f"    - {p['inst_id']} {p['pos_side']} sz={p['pos']} avg={p['avg_px']} mark={p['mark_px']}"
+        )
 
     print("\n[步骤2] 同步到本地 PositionTracker...")
-    import time
+
     synced, skipped, cleaned = 0, 0, 0
 
     # 正向同步
@@ -102,11 +121,15 @@ def main():
     print(f"[当前本地持仓总数] {len(final_positions)} 个")
     for p in final_positions:
         sz = p.scale_params.get("okx_actual_sz", "?")
-        print(f"  - {p.coin:<8} {p.direction:<5} entry={p.entry_price:<10} sz={sz:<8} src={p.strategy_source}")
+        print(
+            f"  - {p.coin:<8} {p.direction:<5} entry={p.entry_price:<10} sz={sz:<8} src={p.strategy_source}"
+        )
     print()
     print(f"[风控] daily_pnl={rm.state.daily_pnl:.2f} halted={rm.state.trading_halted}")
     print("=" * 70)
 
+
 if __name__ == "__main__":
     import time
+
     main()

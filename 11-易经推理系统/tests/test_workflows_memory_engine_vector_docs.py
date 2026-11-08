@@ -16,9 +16,7 @@ def test_build_vector_artifacts_writes_docs_and_manifest(tmp_path: Path):
             "review": {"summary": "回顾总结", "lessons": ["lesson_a", "lesson_b"]},
         }
     ]
-    distills = [
-        {"distill_id": "D_1", "claim": "claim_x", "actionable_rules": ["rule_1", "rule_2"]}
-    ]
+    distills = [{"distill_id": "D_1", "claim": "claim_x", "actionable_rules": ["rule_1", "rule_2"]}]
     memory = MemoryEngine(
         cases=cases,
         distills=distills,

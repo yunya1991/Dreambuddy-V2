@@ -24,6 +24,7 @@ P1 集成 (PLAN-exogenous-integration.md §三):
     bridge 不可用 → 仅从 closes 衍生技术面 (ma_200, monthly_trend_slope),
                     其余维度保持中性值 0.5 (FAIL-OPEN)
 """
+
 from __future__ import annotations
 
 import json
@@ -40,13 +41,15 @@ logger = logging.getLogger(__name__)
 # exogenous_data_bridge.py 位于 23-四层闭环自进化交易架构/dreambuddy_evolution/core/，
 # 向上 3 层到 dreambuddy-v2/，再加 19-数据访问层/
 _DAL_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "19-数据访问层")
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, "19-数据访问层"
+    )
 )
 if os.path.isdir(_DAL_ROOT) and _DAL_ROOT not in sys.path:
     sys.path.insert(0, _DAL_ROOT)
 
-import numpy as np
-import torch
+import numpy as np  # noqa: E402
+import torch  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +94,8 @@ def build_exogenous_series(
             snapshot = bridge.fetch()
         except Exception as exc:
             logger.warning(
-                "[build_exogenous_series] bridge.fetch 失败, 仅技术面: %s", exc,
+                "[build_exogenous_series] bridge.fetch 失败, 仅技术面: %s",
+                exc,
             )
             snapshot = {}
 
@@ -105,10 +109,12 @@ def build_exogenous_series(
             from dreambuddy_evolution.core.exogenous_strength_evaluator import (
                 ExogenousStrengthEvaluator,
             )
+
             ev = ExogenousStrengthEvaluator()
         except Exception as exc:
             logger.warning(
-                "[build_exogenous_series] 评估器不可用, 返回全 0.5: %s", exc,
+                "[build_exogenous_series] 评估器不可用, 返回全 0.5: %s",
+                exc,
             )
             return np.full((n, 9), 0.5, dtype=np.float64)
 
@@ -121,7 +127,7 @@ def build_exogenous_series(
 
         # ma_200: 当前点往前 200 周期均值
         if i >= 199:
-            data["ma_200"] = float(np.mean(closes[i - 199: i + 1]))
+            data["ma_200"] = float(np.mean(closes[i - 199 : i + 1]))
         elif i >= 0:
             # 数据不足 200 时用现有长度均值 (避免 None)
             data["ma_200"] = float(np.mean(closes[: i + 1])) if i > 0 else float(closes[0])
@@ -129,7 +135,7 @@ def build_exogenous_series(
         # monthly_trend_slope: 线性回归斜率 (最近 ~30 点近似月线)
         if i >= 30:
             x = np.arange(31, dtype=float)
-            y_arr = closes[i - 30: i + 1]
+            y_arr = closes[i - 30 : i + 1]
             try:
                 slope = float(np.polyfit(x, y_arr, 1)[0])
                 data["monthly_trend_slope"] = slope
@@ -158,7 +164,9 @@ def build_exogenous_series(
             series[i] = row
         except Exception as exc:
             logger.debug(
-                "[build_exogenous_series] i=%d 评估失败, 用 0.5: %s", i, exc,
+                "[build_exogenous_series] i=%d 评估失败, 用 0.5: %s",
+                i,
+                exc,
             )
             # 保留默认 0.5
 
@@ -175,6 +183,7 @@ class ExogenousDataBridge:
         if self._repo is None:
             try:
                 import os
+
                 # 确保 DAL_DB_PATH 指向 19-数据访问层 的统一数据库
                 if "DAL_DB_PATH" not in os.environ:
                     # exogenous_data_bridge.py 位于 <repo>/23-四层闭环自进化交易架构/dreambuddy_evolution/core/
@@ -182,17 +191,20 @@ class ExogenousDataBridge:
                     _repo_root = os.path.abspath(
                         os.path.join(os.path.dirname(__file__), "..", "..", "..")
                     )
-                    _db_path = os.path.join(_repo_root, "19-数据访问层", "data", "dreambuddy_core.db")
+                    _db_path = os.path.join(
+                        _repo_root, "19-数据访问层", "data", "dreambuddy_core.db"
+                    )
                     if os.path.exists(_db_path):
                         os.environ["DAL_DB_PATH"] = _db_path
                 from dreambuddy_dal import get_market_macro_repo
+
                 self._repo = get_market_macro_repo(backend="sqlite_unified")
             except Exception as exc:
                 logger.warning("[ExogenousBridge] 无法获取 DAL repo: %s", exc)
                 self._repo = None
         return self._repo
 
-    def get_fomc_calendar(self) -> list[datetime]:
+    def get_fomc_calendar(self) -> list[datetime]:  # noqa: F821
         """从 19-DAL 查询 FOMC 会议日历（所有决议日）.
 
         数据来源: 18-数据获取中心 FedEventCollector(type=fomc_calendar)
@@ -204,7 +216,8 @@ class ExogenousDataBridge:
             FOMC 决议日列表 (datetime, UTC)，按时间排序.
             DAL 不可用或无数据时返回空列表 (FAIL-OPEN).
         """
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timezone
+
         repo = self.get_repo()
         if repo is None:
             return []
@@ -231,22 +244,26 @@ class ExogenousDataBridge:
             logger.debug("[ExogenousBridge] FOMC 日历查询失败: %s", e)
             return []
 
-    def get_next_fomc(self, now: Optional[datetime] = None) -> Optional[datetime]:
+    def get_next_fomc(self, now: Optional[datetime] = None) -> Optional[datetime]:  # noqa: F821
         """获取下一次 FOMC 决议时间 (从 19-DAL)."""
         from datetime import timezone
+
         if now is None:
             from datetime import datetime as _dt
+
             now = _dt.now(timezone.utc)
         elif now.tzinfo is None:
             now = now.replace(tzinfo=timezone.utc)
         future = [d for d in self.get_fomc_calendar() if d > now]
         return min(future) if future else None
 
-    def get_last_fomc(self, now: Optional[datetime] = None) -> Optional[datetime]:
+    def get_last_fomc(self, now: Optional[datetime] = None) -> Optional[datetime]:  # noqa: F821
         """获取最近一次已发生的 FOMC 决议时间 (从 19-DAL)."""
         from datetime import timezone
+
         if now is None:
             from datetime import datetime as _dt
+
             now = _dt.now(timezone.utc)
         elif now.tzinfo is None:
             now = now.replace(tzinfo=timezone.utc)
@@ -270,6 +287,7 @@ class ExogenousDataBridge:
             return None
         try:
             from datetime import datetime, timedelta, timezone
+
             end = datetime.now(timezone.utc)
             start = end - timedelta(days=days)
             mcap_rows = repo.query_metric_by_time("btc_basics", "market_cap_usd", start, end)
@@ -400,7 +418,8 @@ class ExogenousDataBridge:
         if repo is None or not timestamps:
             return [{} for _ in timestamps]
 
-        from datetime import datetime as _dt, timedelta as _td
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
 
         t_min = min(timestamps) - _td(days=90)  # 缓冲 90 天, 确保首个点能前向填充
         t_max = max(timestamps)
@@ -715,7 +734,8 @@ def build_exogenous_factors_for_cross_attention(
         names = [name for _, _, name in metric_list]
         return np.zeros((n, len(names)), dtype=np.float64), names
 
-    from datetime import timedelta as _td, datetime as _dt, timezone as _tz
+    from datetime import datetime as _dt
+    from datetime import timezone as _tz
 
     # 使用较早起始时间，确保能捕获所有历史数据用于 forward-fill
     # 部分因子（如 DX-Y.NYB）数据可能停更于较早时间，需要从更早起点查询
@@ -791,6 +811,7 @@ def build_cross_attention_factors_from_closes(
 
     if timestamps is None:
         from datetime import datetime, timedelta, timezone
+
         end = datetime.now(timezone.utc)
         timestamps = [end - timedelta(days=n - 1 - i) for i in range(n)]
 
@@ -805,6 +826,7 @@ def build_cross_attention_factors_from_closes(
 # ----------------------------------------------------------------------
 # Phase 2: 因子影响力时间衰减 impact_multiplier(t) — SPEC §8
 # ----------------------------------------------------------------------
+
 
 class ImpactMultiplier:
     """因子影响力时间衰减器 (Phase 2, SPEC §8).
@@ -835,48 +857,102 @@ class ImpactMultiplier:
     # C6 估值 / C7 广度 / C8 跨市场 / news 信息面
     MULTIPLIER_TABLE: dict[str, dict[str, float]] = {
         "neutral": {
-            "C1": 1.0, "C2": 1.0, "C3": 1.0, "C4": 1.0,
-            "C6": 1.0, "C7": 1.0, "C8": 1.0, "news": 1.0,
+            "C1": 1.0,
+            "C2": 1.0,
+            "C3": 1.0,
+            "C4": 1.0,
+            "C6": 1.0,
+            "C7": 1.0,
+            "C8": 1.0,
+            "news": 1.0,
         },
         # 预期构建初期: 宏观面敏感度低 (远期事件 priced-in 慢)
         "expectation_build": {
-            "C1": 0.6, "C2": 0.5, "C3": 0.8, "C4": 0.3,
-            "C6": 0.7, "C7": 0.6, "C8": 0.4, "news": 0.3,
+            "C1": 0.6,
+            "C2": 0.5,
+            "C3": 0.8,
+            "C4": 0.3,
+            "C6": 0.7,
+            "C7": 0.6,
+            "C8": 0.4,
+            "news": 0.3,
         },
         # 预期上升期: 各维度敏感度增强
         "expectation_rise": {
-            "C1": 0.9, "C2": 0.8, "C3": 0.9, "C4": 0.8,
-            "C6": 0.8, "C7": 0.7, "C8": 0.7, "news": 0.6,
+            "C1": 0.9,
+            "C2": 0.8,
+            "C3": 0.9,
+            "C4": 0.8,
+            "C6": 0.8,
+            "C7": 0.7,
+            "C8": 0.7,
+            "news": 0.6,
         },
         # 预期跳跃期: 宏观面主导 (概率 >70%), 新闻敏感度激增
         "expectation_jump": {
-            "C1": 1.3, "C2": 1.2, "C3": 1.1, "C4": 1.5,
-            "C6": 1.0, "C7": 1.1, "C8": 1.2, "news": 1.3,
+            "C1": 1.3,
+            "C2": 1.2,
+            "C3": 1.1,
+            "C4": 1.5,
+            "C6": 1.0,
+            "C7": 1.1,
+            "C8": 1.2,
+            "news": 1.3,
         },
         # 消化期: 概率稳定, 资金面/新闻仍敏感, 宏观面衰减
         "expectation_digest": {
-            "C1": 1.1, "C2": 1.0, "C3": 1.0, "C4": 0.6,
-            "C6": 0.9, "C7": 1.0, "C8": 1.0, "news": 1.2,
+            "C1": 1.1,
+            "C2": 1.0,
+            "C3": 1.0,
+            "C4": 0.6,
+            "C6": 0.9,
+            "C7": 1.0,
+            "C8": 1.0,
+            "news": 1.2,
         },
         # 事件当天: 资金面/情绪面/新闻主导, 宏观面次之
         "event": {
-            "C1": 1.5, "C2": 1.4, "C3": 1.0, "C4": 1.2,
-            "C6": 0.9, "C7": 1.0, "C8": 1.1, "news": 1.5,
+            "C1": 1.5,
+            "C2": 1.4,
+            "C3": 1.0,
+            "C4": 1.2,
+            "C6": 0.9,
+            "C7": 1.0,
+            "C8": 1.1,
+            "news": 1.5,
         },
         # repricing Phase A (relief, 0-5 天): 不确定性消除, 降息预期主导
         "repricing_relief": {
-            "C1": 1.2, "C2": 1.3, "C3": 1.0, "C4": 0.3,
-            "C6": 1.0, "C7": 1.1, "C8": 0.9, "news": 1.4,
+            "C1": 1.2,
+            "C2": 1.3,
+            "C3": 1.0,
+            "C4": 0.3,
+            "C6": 1.0,
+            "C7": 1.1,
+            "C8": 0.9,
+            "news": 1.4,
         },
         # repricing Phase B (verification, 5-15 天): 基本面验证
         "repricing_verification": {
-            "C1": 1.0, "C2": 1.1, "C3": 1.0, "C4": 0.2,
-            "C6": 1.1, "C7": 1.0, "C8": 0.8, "news": 1.2,
+            "C1": 1.0,
+            "C2": 1.1,
+            "C3": 1.0,
+            "C4": 0.2,
+            "C6": 1.1,
+            "C7": 1.0,
+            "C8": 0.8,
+            "news": 1.2,
         },
         # repricing Phase C (trend, 15+ 天): 债务周期位置主导
         "repricing_trend": {
-            "C1": 0.9, "C2": 1.0, "C3": 1.0, "C4": 0.1,
-            "C6": 1.0, "C7": 0.9, "C8": 0.7, "news": 1.0,
+            "C1": 0.9,
+            "C2": 1.0,
+            "C3": 1.0,
+            "C4": 0.1,
+            "C6": 1.0,
+            "C7": 0.9,
+            "C8": 0.7,
+            "news": 1.0,
         },
     }
 
@@ -949,10 +1025,12 @@ class ImpactMultiplier:
 
         self._calibration_version += 1
         from datetime import datetime, timezone
+
         self._last_calibration = datetime.now(timezone.utc).isoformat()
         logger.info(
             "[Phase6] ImpactMultiplier ATE 校准完成: updated=%d, version=%d",
-            updated, self._calibration_version,
+            updated,
+            self._calibration_version,
         )
         return {"updated": updated, "version": self._calibration_version}
 
@@ -1033,9 +1111,7 @@ class ImpactMultiplier:
             if dim is None:
                 # 因子不在元数据中 → 不衰减 (FAIL-OPEN)
                 continue
-            multipliers[i] = self.get_multiplier(
-                cycle_phase, dim, repricing_sub_phase
-            )
+            multipliers[i] = self.get_multiplier(cycle_phase, dim, repricing_sub_phase)
         return multipliers
 
 
@@ -1064,7 +1140,8 @@ def apply_impact_multiplier(
     if multipliers.shape[0] != factors.shape[1]:
         logger.warning(
             "[apply_impact_multiplier] 维度不匹配: factors=%s multipliers=%s, 跳过衰减",
-            factors.shape, multipliers.shape,
+            factors.shape,
+            multipliers.shape,
         )
         return factors
     return factors * multipliers[None, :]

@@ -7,10 +7,17 @@ Stovall 映射：美林象限 → 周期阶段 → 板块偏好（预注册规�
   - L3/L4 层资产从 OKX 分页拉取日线现算 MA200
 产出：stovall_breadth.json + sector_transmission.json 补充 breadth 字段
 """
+
 import json
+import os
 from datetime import datetime, timezone
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 ROT = f"{BASE}/asset_rotation.json"
 STATE = f"{BASE}/cycle_state.json"
 TRANS = f"{BASE}/sector_transmission.json"
@@ -65,6 +72,7 @@ CHAIN = {
 def fetch_okx_ma200(symbol, total=400):
     """分页拉取 OKX 日线，现算 MA200 位置。"""
     import ccxt
+
     ex = ccxt.okx({"enableRateLimit": True})
     day_ms = 86400000
     candles = {}
@@ -200,7 +208,9 @@ def main():
 
     print(f"quadrant={quadrant} (conf={quadrant_confidence}) -> Stovall phase: {stovall['phase']}")
     print(f"板块偏好: {stovall['equity_sectors']}")
-    print(f"市场广度（14 资产）: {above_all}/{len(valid_all)} above MA200 = {breadth_pct}% ({breadth_state})")
+    print(
+        f"市场广度（14 资产）: {above_all}/{len(valid_all)} above MA200 = {breadth_pct}% ({breadth_state})"
+    )
     for layer, lb in layer_breadth.items():
         print(f"  {layer}: {lb['above']}/{lb['valid']} ({lb['breadth_pct']}%)")
     print(f"saved: {OUT}")

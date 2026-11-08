@@ -9,6 +9,7 @@ RED → GREEN → REFACTOR 循环首战。
 
 数据基准：前 500 根 BTC 1D（保证 MA200 可计算，避免全量 CSV 使测试太慢）。
 """
+
 from __future__ import annotations
 
 import sys
@@ -42,15 +43,18 @@ def synth_ohlcv_500() -> pd.DataFrame:
     t_up = np.linspace(100, 180, n_up)
     t_down = np.linspace(180, 140, n_down)
     close = np.concatenate([t_up, t_down])
-    close *= (1 + rng.normal(0, 0.01, n_up + n_down))
+    close *= 1 + rng.normal(0, 0.01, n_up + n_down)
     idx = pd.date_range("2020-01-01", periods=n_up + n_down, freq="D")
-    df = pd.DataFrame({
-        "open":  close * (1 + rng.normal(0, 0.004, n_up + n_down)),
-        "high":  close * (1 + np.abs(rng.normal(0, 0.01, n_up + n_down))),
-        "low":   close * (1 - np.abs(rng.normal(0, 0.01, n_up + n_down))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n_up + n_down)),
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": close * (1 + rng.normal(0, 0.004, n_up + n_down)),
+            "high": close * (1 + np.abs(rng.normal(0, 0.01, n_up + n_down))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.01, n_up + n_down))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, n_up + n_down)),
+        },
+        index=idx,
+    )
     return df
 
 
@@ -58,10 +62,18 @@ def synth_ohlcv_500() -> pd.DataFrame:
 # T1. IndicatorBank Shape
 # ====================================================================
 _MAIN_12 = [
-    "ma200_above_3d", "ma50_above", "ma20_vs_ma50_order",
-    "cycle_position_365d", "ma_alignment_score", "ma200_slope_signed",
-    "dow_hhhl_score", "log_ret_90d", "log_ret_30d",
-    "ma_slope_wavg", "volume_trend_conf", "vol_60d_pct",
+    "ma200_above_3d",
+    "ma50_above",
+    "ma20_vs_ma50_order",
+    "cycle_position_365d",
+    "ma_alignment_score",
+    "ma200_slope_signed",
+    "dow_hhhl_score",
+    "log_ret_90d",
+    "log_ret_30d",
+    "ma_slope_wavg",
+    "volume_trend_conf",
+    "vol_60d_pct",
 ]
 
 
@@ -102,11 +114,16 @@ def test_indicator_bank_ma200_3day_confirm():
     close_arr = np.full(n, 100.0)
     close_arr[200:] = 120.0  # 201 日（0-based index 200）跳至 120
     idx = pd.date_range("2020-01-01", periods=n, freq="D")
-    df = pd.DataFrame({
-        "open": close_arr, "high": close_arr * 1.01,
-        "low": close_arr * 0.99, "close": close_arr,
-        "volume": np.ones(n) * 1e6,
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": close_arr,
+            "high": close_arr * 1.01,
+            "low": close_arr * 0.99,
+            "close": close_arr,
+            "volume": np.ones(n) * 1e6,
+        },
+        index=idx,
+    )
 
     bank = IndicatorBank()
     out = bank.compute_all(df)
@@ -145,9 +162,9 @@ def test_score_composer_produces_9grid_range(synth_ohlcv_500):
 
     # 钳制到 [-4, +4]
     assert level_arr.min() >= -4.0001, f"Level min={level_arr.min()} < -4"
-    assert level_arr.max() <=  4.0001, f"Level max={level_arr.max()} > +4"
+    assert level_arr.max() <= 4.0001, f"Level max={level_arr.max()} > +4"
     assert trend_arr.min() >= -4.0001, f"Trend min={trend_arr.min()} < -4"
-    assert trend_arr.max() <=  4.0001, f"Trend max={trend_arr.max()} > +4"
+    assert trend_arr.max() <= 4.0001, f"Trend max={trend_arr.max()} > +4"
 
     # 合成波动不应为 0（否则无信息量）
     assert level_arr.std() > 0.05, f"Level std={level_arr.std():.4f}，几乎没有波动"
@@ -170,13 +187,16 @@ def test_score_composer_clamp_continuity(synth_ohlcv_500):
     close = np.concatenate([close_stable, close_spike])
     idx = pd.date_range("2020-01-01", periods=n_total, freq="D")
 
-    df = pd.DataFrame({
-        "open": close * 0.999,
-        "high": close * (1 + np.abs(rng.normal(0, 0.005, n_total))),
-        "low":  close * (1 - np.abs(rng.normal(0, 0.005, n_total))),
-        "close": close,
-        "volume": 1e6 * (1 + rng.uniform(-0.3, 0.5, n_total)),
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": close * 0.999,
+            "high": close * (1 + np.abs(rng.normal(0, 0.005, n_total))),
+            "low": close * (1 - np.abs(rng.normal(0, 0.005, n_total))),
+            "close": close,
+            "volume": 1e6 * (1 + rng.uniform(-0.3, 0.5, n_total)),
+        },
+        index=idx,
+    )
 
     bank = IndicatorBank()
     indicators = bank.compute_all(df)

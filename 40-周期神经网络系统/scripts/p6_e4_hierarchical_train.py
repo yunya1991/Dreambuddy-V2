@@ -15,16 +15,19 @@
 红线：输出为趋势判别语义输入与建议，不产生交易信号；
   交易决策归 23 系统三步门禁。
 """
-import argparse
+
+import argparse  # noqa: I001
 import json
 import os
 import sys
 from datetime import datetime, timezone
 
-import numpy as np
-import pandas as pd
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 SHADOW_STATUS_PATH = os.path.join(BASE, "shadow_status.json")
@@ -78,8 +81,11 @@ def build_hierarchical_model(n_features: int):
             self.self_attn = nn.MultiheadAttention(d, PREREG["n_heads"], batch_first=True)
             if cross_attn:
                 self.cross_attn = nn.MultiheadAttention(d, PREREG["n_heads"], batch_first=True)
-            self.ffn = nn.Sequential(nn.Linear(d, d * PREREG["ffn_mult"]), nn.GELU(),
-                                    nn.Linear(d * PREREG["ffn_mult"], d))
+            self.ffn = nn.Sequential(
+                nn.Linear(d, d * PREREG["ffn_mult"]),
+                nn.GELU(),
+                nn.Linear(d * PREREG["ffn_mult"], d),
+            )
             self.ln1 = nn.LayerNorm(d)
             self.ln2 = nn.LayerNorm(d)
             self.ln3 = nn.LayerNorm(d) if cross_attn else None
@@ -102,7 +108,8 @@ def build_hierarchical_model(n_features: int):
             self.weekly_blocks = nn.ModuleList([Block() for _ in range(PREREG["n_layers"])])
             # 日线/1H 编码器（含交叉注意力注入周线上下文）
             self.lower_blocks = nn.ModuleList(
-                [Block(cross_attn=(i == 0)) for i in range(PREREG["n_layers"])])
+                [Block(cross_attn=(i == 0)) for i in range(PREREG["n_layers"])]
+            )
             self.head = nn.Sequential(nn.Linear(d, d), nn.GELU(), nn.Linear(d, PREREG["n_classes"]))
 
         def forward(self, x, tf_idx, weekly_ctx=None):
@@ -117,7 +124,9 @@ def build_hierarchical_model(n_features: int):
         def encode_weekly(self, x):
             """周线 token 独立编码，输出作为全局上下文。"""
             b = x.shape[0]
-            h = self.embed(x) + self.tf_embed(torch.zeros(b, dtype=torch.long, device=x.device)).unsqueeze(1)
+            h = self.embed(x) + self.tf_embed(
+                torch.zeros(b, dtype=torch.long, device=x.device)
+            ).unsqueeze(1)
             for blk in self.weekly_blocks:
                 h = blk(h)
             return h  # (b, L, d) 周线上下文
@@ -139,7 +148,7 @@ def main() -> int:
             return 1
 
     # 2) 数据与标签（复用 E2 管道）
-    from p6_e2_train_encoder import load_tokens, build_labels, make_windows, count_params
+    from p6_e2_train_encoder import build_labels, count_params, load_tokens, make_windows
 
     tokens = load_tokens()
     labeled = build_labels(tokens)

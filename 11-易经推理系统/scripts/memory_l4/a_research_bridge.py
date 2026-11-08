@@ -7,21 +7,19 @@ A1: 每日研报（regime 研判）
 A6: 每4小时情报监控
 周报: 每周总结
 """
+
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
-
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-REPORTS_DIR = Path(
-    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/A系列研报"
-)
+REPORTS_DIR = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/experiments/ab-trading/A系列研报")
 
 A1_DIR = REPORTS_DIR / "A1研报"
 A6_DIR = REPORTS_DIR / "A6研报"
@@ -44,7 +42,7 @@ def _read_md_safe(path: Path) -> str:
 
 
 def _extract_date_from_filename(name: str) -> str:
-    m = re.search(r'(\d{8})', name)
+    m = re.search(r"(\d{8})", name)
     if m:
         d = m.group(1)
         return f"{d[:4]}-{d[4:6]}-{d[6:8]}"
@@ -161,11 +159,11 @@ def parse_a6_report(file_path: Path) -> Dict:
 
     for line in lines:
         if "BTC价格" in line and "$" in line:
-            m = re.search(r'\$([\d,]+)', line)
+            m = re.search(r"\$([\d,]+)", line)
             if m:
                 price = m.group(1).replace(",", "")
         if "Regime:" in line:
-            m = re.search(r'Regime:\s*(\S+)', line)
+            m = re.search(r"Regime:\s*(\S+)", line)
             if m:
                 regime = m.group(1)
         if "方向判定" in line:
@@ -176,7 +174,7 @@ def parse_a6_report(file_path: Path) -> Dict:
             else:
                 direction = "NEUTRAL"
         if "SI_Index" in line and "=" in line:
-            m = re.search(r'SI_Index\s*=\s*([+-]?\d+)', line)
+            m = re.search(r"SI_Index\s*=\s*([+-]?\d+)", line)
             if m:
                 total_score = int(m.group(1))
         if "FGI" in line and "Extreme Fear" in line:
@@ -233,8 +231,8 @@ def get_latest_reports() -> Dict:
 
 def publish_a1_report(file_path: str = None) -> Dict:
     """发布 A1 研报到 shared_memory_bus"""
-    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
     from scripts.memory_l4.ab_bridge import ACL_CONFIG
+    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
 
     if file_path:
         a1 = parse_a1_report(Path(file_path))
@@ -285,8 +283,8 @@ def publish_a1_report(file_path: str = None) -> Dict:
 
 def publish_a6_report(file_path: str = None) -> Dict:
     """发布 A6 研报到 shared_memory_bus"""
-    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
     from scripts.memory_l4.ab_bridge import ACL_CONFIG
+    from scripts.memory_l4.shared_memory_bus import publish_shared_memory_event
 
     if file_path:
         a6 = parse_a6_report(Path(file_path))

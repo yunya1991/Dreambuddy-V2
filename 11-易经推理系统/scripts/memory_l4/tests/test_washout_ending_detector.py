@@ -30,6 +30,7 @@ TDD 测试清单:
   T13 / test_confidence_range                                 — confidence ∈ [0,1]
   T14 / test_no_llm_dependency                                — grep 确认无 LLM 调用
 """
+
 from __future__ import annotations
 
 import sys
@@ -38,7 +39,6 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-import pytest
 
 # ============================================================
 # sys.path 设置
@@ -96,8 +96,8 @@ def _make_df(
         closes = [base_close + rng.randn() * 0.5 for _ in range(n)]
 
     opens = [c + rng.randn() * 0.3 for c in closes]
-    highs = [max(o, c) + abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]
-    lows = [min(o, c) - abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]
+    highs = [max(o, c) + abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]  # noqa: B905
+    lows = [min(o, c) - abs(rng.randn()) * 0.5 for o, c in zip(opens, closes)]  # noqa: B905
 
     volumes = [volume_base + rng.randn() * 50 for _ in range(n)]
 
@@ -118,13 +118,16 @@ def _make_df(
         closes[-1] = closes[-2] + 1.0
         opens[-1] = closes[-1] - 0.5
 
-    df = pd.DataFrame({
-        "open": opens,
-        "high": highs,
-        "low": lows,
-        "close": closes,
-        "volume": volumes,
-    }, index=idx)
+    df = pd.DataFrame(
+        {
+            "open": opens,
+            "high": highs,
+            "low": lows,
+            "close": closes,
+            "volume": volumes,
+        },
+        index=idx,
+    )
     return df
 
 
@@ -288,11 +291,15 @@ class TestEndingDetectorFailOpen:
 class TestNoLLMDependency:
     def test_no_llm_dependency(self):
         """T14: 源码中无 LLM/openai/anthropic 调用."""
-        source_path = (
-            _ARCH_ROOT / "dreamos" / "evolution" / "washout_ending_detector.py"
-        )
+        source_path = _ARCH_ROOT / "dreamos" / "evolution" / "washout_ending_detector.py"
         if source_path.exists():
             source = source_path.read_text()
-            for kw in ("import openai", "from openai", "import anthropic", "from anthropic",
-                        "chat.completions.create", "messages.create"):
+            for kw in (
+                "import openai",
+                "from openai",
+                "import anthropic",
+                "from anthropic",
+                "chat.completions.create",
+                "messages.create",
+            ):
                 assert kw not in source.lower(), f"发现 LLM 依赖: {kw}"

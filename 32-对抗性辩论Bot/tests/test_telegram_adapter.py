@@ -10,14 +10,14 @@ Telegram Bot API 端点：
 - getUpdates:  GET  https://api.telegram.org/bot{token}/getUpdates
 - getChatMember: GET https://api.telegram.org/bot{token}/getChatMember
 """
+
 from __future__ import annotations
 
 import pytest
-
 from core.telegram_adapter import TelegramHTTPClient
 
-
 # ─── Mock httpx.AsyncClient ─────────────────────────────────────
+
 
 class FakeResponse:
     def __init__(self, json_data: dict, status_code: int = 200):
@@ -68,6 +68,7 @@ def make_client(token="123:abc", responses=None):
 
 # ─── send_message 测试 ───────────────────────────────────────────
 
+
 class TestSendMessage:
 
     @pytest.mark.asyncio
@@ -104,6 +105,7 @@ class TestSendMessage:
 
 
 # ─── get_updates 测试 ────────────────────────────────────────────
+
 
 class TestGetUpdates:
 
@@ -143,6 +145,7 @@ class TestGetUpdates:
 
 # ─── get_chat_member 测试 ────────────────────────────────────────
 
+
 class TestGetChatMember:
 
     @pytest.mark.asyncio
@@ -170,6 +173,7 @@ class TestGetChatMember:
 
 
 # ─── is_admin 测试 ───────────────────────────────────────────────
+
 
 class TestIsAdmin:
 

@@ -27,17 +27,22 @@ A 层主入口，职责:
 
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Any
+from typing import Any, List, Optional
 
-from dreamos.shared.state import State
-from dreamos.shared.interfaces import Graph, Node
 from dreamos.registry.node_registry import NodeRegistry, get_default_registry
-from dreamos.shared.utils import Timer, safe_get
+from dreamos.shared.interfaces import Graph
+from dreamos.shared.state import State
+from dreamos.shared.utils import Timer
 
-from .types import ExecutionPlan, NodeMeta, ChainSpec, BudgetAllocation, STANDARD_CHAINS, INTENT_CHAIN_MAP
-from .node_selector import NodeSelector
 from .budget_allocator import BudgetAllocator
-from .execution_graph import SequentialGraph, ConditionalGraph
+from .execution_graph import ConditionalGraph, SequentialGraph
+from .node_selector import NodeSelector
+from .types import (
+    INTENT_CHAIN_MAP,
+    STANDARD_CHAINS,
+    ExecutionPlan,
+    NodeMeta,
+)
 
 
 class GraphPlanner:
@@ -59,11 +64,13 @@ class GraphPlanner:
         )
     """
 
-    def __init__(self,
-                 registry: Optional[NodeRegistry] = None,
-                 budget_total: int = 6000,
-                 budget_mode: str = "standard",
-                 orchestration_memory: Optional[Any] = None):
+    def __init__(
+        self,
+        registry: Optional[NodeRegistry] = None,
+        budget_total: int = 6000,
+        budget_mode: str = "standard",
+        orchestration_memory: Optional[Any] = None,
+    ):
         self._registry = registry or get_default_registry()
         self._selector = NodeSelector(self._registry)
         self._budget_total = budget_total
@@ -134,16 +141,18 @@ class GraphPlanner:
 
         return plan
 
-    def plan_from_intent(self,
-                         intent_type: str = "UNCERTAIN",
-                         recommended_chain: str = "A",
-                         base_chain: Optional[List[str]] = None,
-                         extend_nodes: Optional[List[str]] = None,
-                         confidence: float = 0.5,
-                         budget_total: Optional[int] = None,
-                         budget_mode: Optional[str] = None,
-                         scenario_id: Optional[str] = None,
-                         phase: Optional[int] = None) -> ExecutionPlan:
+    def plan_from_intent(
+        self,
+        intent_type: str = "UNCERTAIN",
+        recommended_chain: str = "A",
+        base_chain: Optional[List[str]] = None,
+        extend_nodes: Optional[List[str]] = None,
+        confidence: float = 0.5,
+        budget_total: Optional[int] = None,
+        budget_mode: Optional[str] = None,
+        scenario_id: Optional[str] = None,
+        phase: Optional[int] = None,
+    ) -> ExecutionPlan:
         """直接从意图参数构建执行计划（不依赖 State）
 
         Args:
@@ -166,8 +175,7 @@ class GraphPlanner:
             phase=phase,
         )
 
-    def build_graph(self, plan: ExecutionPlan,
-                    use_conditional: bool = False) -> Graph:
+    def build_graph(self, plan: ExecutionPlan, use_conditional: bool = False) -> Graph:
         """根据执行计划构建执行图
 
         Args:
@@ -191,16 +199,18 @@ class GraphPlanner:
 
     # ── 内部方法 ───────────────────────────────────────
 
-    def _build_plan(self,
-                    chain: str,
-                    base_chain: Optional[List[str]],
-                    extend_nodes: Optional[List[str]],
-                    confidence: float,
-                    budget_total: Optional[int] = None,
-                    budget_mode: Optional[str] = None,
-                    scenario_id: Optional[str] = None,
-                    capability_id: str = "",
-                    phase: Optional[int] = None) -> ExecutionPlan:
+    def _build_plan(
+        self,
+        chain: str,
+        base_chain: Optional[List[str]],
+        extend_nodes: Optional[List[str]],
+        confidence: float,
+        budget_total: Optional[int] = None,
+        budget_mode: Optional[str] = None,
+        scenario_id: Optional[str] = None,
+        capability_id: str = "",
+        phase: Optional[int] = None,
+    ) -> ExecutionPlan:
         """构建执行计划
 
         Args:
@@ -254,8 +264,7 @@ class GraphPlanner:
             selected_nodes=metas,
             budget=allocation,
             chain_spec=chain_spec,
-            rationale=self._build_rationale(chain, metas, confidence,
-                                            scenario_id, phase),
+            rationale=self._build_rationale(chain, metas, confidence, scenario_id, phase),
             estimated_total_tokens=est_tokens,
             estimated_total_latency_ms=est_latency,
             capability_id=capability_id,
@@ -277,7 +286,8 @@ class GraphPlanner:
             BREAKOUT / KNOWLEDGE_MATCH → C 链 (短线/突破)
         """
         import os
-        if os.environ.get('USE_SKILL_ORCHESTRATION', '').lower() == 'true':
+
+        if os.environ.get("USE_SKILL_ORCHESTRATION", "").lower() == "true":
             # SKILL 编排模式：链路由 SkillSelector 决定，此处返回默认 A 链
             # 实际路由由上层 skill-orchestration-executor.ts 的 SkillSelector 接管
             return "A"
@@ -302,6 +312,7 @@ class GraphPlanner:
         if self._orchestration_memory is None:
             try:
                 from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
                 self._orchestration_memory = OrchestrationMemory()
             except Exception:
                 return []
@@ -322,15 +333,22 @@ class GraphPlanner:
         except Exception:
             return []
 
-    def _build_rationale(self, chain: str, metas: List[NodeMeta],
-                         confidence: float, scenario_id: Optional[str] = None,
-                         phase: Optional[int] = None) -> str:
+    def _build_rationale(
+        self,
+        chain: str,
+        metas: List[NodeMeta],
+        confidence: float,
+        scenario_id: Optional[str] = None,
+        phase: Optional[int] = None,
+    ) -> str:
         chain_name = STANDARD_CHAINS.get(chain, STANDARD_CHAINS["A"]).name
         node_count = len(metas)
         required = sum(1 for m in metas if m.is_required)
         optional = node_count - required
         scenario_str = f", 场景={scenario_id}" if scenario_id else ""
         phase_str = f", phase={phase}" if phase is not None else ""
-        return (f"链路={chain}({chain_name})，"
-                f"节点={node_count}(必须{required}+可选{optional})，"
-                f"置信度={confidence:.0%}{scenario_str}{phase_str}")
+        return (
+            f"链路={chain}({chain_name})，"
+            f"节点={node_count}(必须{required}+可选{optional})，"
+            f"置信度={confidence:.0%}{scenario_str}{phase_str}"
+        )

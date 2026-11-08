@@ -2,6 +2,7 @@
 dreambuddy_dal.protocols.kg_repo — KnowledgeGraphRepository Protocol（KG 域）
 对齐 SCHEMA_DESIGN.md §8 kg_entities / kg_entity_aliases / kg_triples + FTS5 全文索引
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -31,7 +32,11 @@ class KnowledgeGraphRepository(ABC):
 
     @abstractmethod
     def add_alias(
-        self, entity_id: str, alias: str, *, confidence: float = 1.0,
+        self,
+        entity_id: str,
+        alias: str,
+        *,
+        confidence: float = 1.0,
     ) -> bool:
         """给实体加别名（同一实体可多个别名；FTS5 建索引时实体名+别名合并）"""
         ...
@@ -52,7 +57,10 @@ class KnowledgeGraphRepository(ABC):
 
     @abstractmethod
     def fts_search_entities(
-        self, query: str, *, limit: int = 20,
+        self,
+        query: str,
+        *,
+        limit: int = 20,
     ) -> List[Tuple[str, str, str, float]]:
         """
         FTS5 全文搜索实体（名称 / 别名 / 描述）。

@@ -13,14 +13,14 @@
 
 决策规则: 若相比上周目标函数下降 ≥ 2% → REJECTED，保留上周
 """
+
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -31,13 +31,16 @@ _MEMORY_L4 = _THIS.parent.parent.parent
 if str(_MEMORY_L4) not in sys.path:
     sys.path.insert(0, str(_MEMORY_L4))
 
-from bcrm2.indicators import IndicatorBank
-from bcrm2.score_composer import ScoreComposer, DEFAULT_LEVEL_WEIGHTS, DEFAULT_TREND_WEIGHTS
-from bcrm2.temporal_smoother import TemporalSmoother
-from bcrm2.regime_mapper import RegimeMapper, REGIME_ORDER, REGIME_CENTERS
-from bcrm2.labels.regime_labeler import generate_8state_label, REGIME_CODE
-from bcrm2.storage import EvolutionStorageSQLite
-from bcrm2.walk_forward_splitter import walk_forward_time_series_split
+from bcrm2.indicators import IndicatorBank  # noqa: E402, I001
+from bcrm2.labels.regime_labeler import REGIME_CODE, generate_8state_label  # noqa: E402
+from bcrm2.regime_mapper import REGIME_CENTERS, REGIME_ORDER, RegimeMapper  # noqa: E402
+from bcrm2.score_composer import (  # noqa: E402
+    DEFAULT_LEVEL_WEIGHTS,
+    DEFAULT_TREND_WEIGHTS,
+    ScoreComposer,
+)  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite  # noqa: E402
+from bcrm2.temporal_smoother import TemporalSmoother  # noqa: E402
 
 
 def _read_csv(csv_path: Path) -> pd.DataFrame:
@@ -69,7 +72,8 @@ def _evaluate_params(
     tw = {k: v * trend_mult for k, v in DEFAULT_TREND_WEIGHTS.items()}
 
     composer = ScoreComposer(
-        level_weights=lw, trend_weights=tw,
+        level_weights=lw,
+        trend_weights=tw,
         max_daily_delta=max_daily_delta,
     )
     level_raw, trend_raw = composer.compose(indicators, df)
@@ -95,7 +99,13 @@ def _evaluate_params(
     labels_v = labels_eval[valid]
 
     if len(labels_v) < 20:
-        return {"objective": -1.0, "top3": 0.0, "macro_f1": 0.0, "continuity": 0.0, "consensus_r2": 0.0}
+        return {
+            "objective": -1.0,
+            "top3": 0.0,
+            "macro_f1": 0.0,
+            "continuity": 0.0,
+            "consensus_r2": 0.0,
+        }
 
     y_true = []
     y_pred = []
@@ -136,7 +146,11 @@ def _evaluate_params(
     for i in valid_indices:
         pos = eval_start + np.where(valid.values)[0][i]
         if pos + 20 < n:
-            fr = np.log(close_eval[pos + 20 - eval_start] / close_eval[pos - eval_start]) if (pos - eval_start + 20) < len(close_eval) else 0.0
+            fr = (
+                np.log(close_eval[pos + 20 - eval_start] / close_eval[pos - eval_start])
+                if (pos - eval_start + 20) < len(close_eval)
+                else 0.0
+            )
             fwd_ret.append(float(fr))
             consensus_aligned.append(consensus_arr[i])
 
@@ -149,10 +163,7 @@ def _evaluate_params(
 
     # 目标函数
     objective = (
-        top3 * 0.40
-        - min(continuity_loss, 1.0) * 0.25
-        + macro_f1 * 0.20
-        + consensus_r2 * 0.15
+        top3 * 0.40 - min(continuity_loss, 1.0) * 0.25 + macro_f1 * 0.20 + consensus_r2 * 0.15
     )
 
     return {
@@ -198,15 +209,19 @@ def run_weekly_learning(csv_path: Path, storage: Optional[EvolutionStorageSQLite
                 if result["objective"] > best_base_obj:
                     best_base_obj = result["objective"]
                     best_base = {
-                        "level_mult": lm, "trend_mult": tm,
-                        "max_daily_delta": md, **result,
+                        "level_mult": lm,
+                        "trend_mult": tm,
+                        "max_daily_delta": md,
+                        **result,
                     }
 
-    print(f"[P3.4] Phase 1 最优: obj={best_base_obj:.6f}  "
-          f"(L×{best_base['level_mult']}, T×{best_base['trend_mult']}, delta={best_base['max_daily_delta']})")
+    print(
+        f"[P3.4] Phase 1 最优: obj={best_base_obj:.6f}  "
+        f"(L×{best_base['level_mult']}, T×{best_base['trend_mult']}, delta={best_base['max_daily_delta']})"
+    )
 
     # ===== Phase 2: 随机中心采样 (128 次) =====
-    print(f"[P3.4] Phase 2: 随机中心采样 (128 次) ...")
+    print("[P3.4] Phase 2: 随机中心采样 (128 次) ...")
     rng = np.random.RandomState(42)
     best_overall = best_base
     best_overall_obj = best_base_obj
@@ -224,8 +239,11 @@ def run_weekly_learning(csv_path: Path, storage: Optional[EvolutionStorageSQLite
             perturbed[regime] = (orig_l + dl, orig_t + dt)
 
         result = _evaluate_params(
-            df, indicators, labels,
-            best_base["level_mult"], best_base["trend_mult"],
+            df,
+            indicators,
+            labels,
+            best_base["level_mult"],
+            best_base["trend_mult"],
             best_base["max_daily_delta"],
             centers=perturbed,
         )
@@ -246,7 +264,9 @@ def run_weekly_learning(csv_path: Path, storage: Optional[EvolutionStorageSQLite
         change_pct = (best_overall_obj - prev_obj) / max(abs(prev_obj), 1e-8) * 100
         if change_pct <= -2.0:
             decision = "rejected"
-            print(f"[P3.4] REJECTED: obj {prev_obj:.6f} → {best_overall_obj:.6f} ({change_pct:+.2f}%)")
+            print(
+                f"[P3.4] REJECTED: obj {prev_obj:.6f} → {best_overall_obj:.6f} ({change_pct:+.2f}%)"
+            )
             # 保留上周
             best_overall = {
                 **best_overall,
@@ -254,7 +274,9 @@ def run_weekly_learning(csv_path: Path, storage: Optional[EvolutionStorageSQLite
                 "comment": "rejected",
             }
         else:
-            print(f"[P3.4] ACCEPTED: obj {prev_obj:.6f} → {best_overall_obj:.6f} ({change_pct:+.2f}%)")
+            print(
+                f"[P3.4] ACCEPTED: obj {prev_obj:.6f} → {best_overall_obj:.6f} ({change_pct:+.2f}%)"
+            )
             best_overall["comment"] = "accepted"
     else:
         print(f"[P3.4] 首次运行，直接接受: obj={best_overall_obj:.6f}")
@@ -262,19 +284,22 @@ def run_weekly_learning(csv_path: Path, storage: Optional[EvolutionStorageSQLite
 
     # ===== 保存到 SQLite =====
     weights_obj = {
-        "level_weights": {k: round(v * best_overall["level_mult"], 4)
-                          for k, v in DEFAULT_LEVEL_WEIGHTS.items()},
-        "trend_weights": {k: round(v * best_overall["trend_mult"], 4)
-                          for k, v in DEFAULT_TREND_WEIGHTS.items()},
-        "regime_centers": best_overall.get("centers") or
-                          {r: list(c) for r, c in REGIME_CENTERS.items()},
+        "level_weights": {
+            k: round(v * best_overall["level_mult"], 4) for k, v in DEFAULT_LEVEL_WEIGHTS.items()
+        },
+        "trend_weights": {
+            k: round(v * best_overall["trend_mult"], 4) for k, v in DEFAULT_TREND_WEIGHTS.items()
+        },
+        "regime_centers": best_overall.get("centers")
+        or {r: list(c) for r, c in REGIME_CENTERS.items()},
         "max_daily_delta": best_overall["max_daily_delta"],
     }
 
     if storage is not None and decision != "rejected":
         week_start = (date.today() - timedelta(days=date.today().weekday())).isoformat()
         storage.save_weekly_weights(
-            week_start, weights_obj,
+            week_start,
+            weights_obj,
             objective=best_overall_obj,
             comment=decision,
         )
@@ -319,13 +344,17 @@ def main(argv=None) -> int:
     print(f"  prev_obj: {summary['prev_obj']}")
     print(f"  new_obj:  {summary['new_obj']:.6f}")
     print(f"  decision: {summary['decision']}")
-    print(f"  best: L×{summary['best_params']['level_mult']}, "
-          f"T×{summary['best_params']['trend_mult']}, "
-          f"delta={summary['best_params']['max_daily_delta']}")
-    print(f"  top3={summary['metrics']['top3']}, "
-          f"f1={summary['metrics']['macro_f1']}, "
-          f"continuity={summary['metrics']['continuity']}, "
-          f"r2={summary['metrics']['consensus_r2']}")
+    print(
+        f"  best: L×{summary['best_params']['level_mult']}, "
+        f"T×{summary['best_params']['trend_mult']}, "
+        f"delta={summary['best_params']['max_daily_delta']}"
+    )
+    print(
+        f"  top3={summary['metrics']['top3']}, "
+        f"f1={summary['metrics']['macro_f1']}, "
+        f"continuity={summary['metrics']['continuity']}, "
+        f"r2={summary['metrics']['consensus_r2']}"
+    )
 
     if storage is not None:
         storage.close()

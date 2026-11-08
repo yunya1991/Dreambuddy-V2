@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """case_registry P2-9 集成测试：PREDICTION stage + EXIT prediction_error"""
+
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from scripts.memory_l4.trade_event import TradeEvent
+from scripts.memory_l4.trade_event import TradeEvent  # noqa: I001
 from scripts.memory_l4.case_registry import UnifiedCaseRegistry
 
 
@@ -64,7 +66,7 @@ def test_no_prediction_stage_when_absent():
 
 def test_exit_prediction_error_computed():
     """case 含 PREDICTION stage 时，update_case_on_exit 计算 prediction_error"""
-    registry = _make_registry()
+    registry = _make_registry()  # noqa: F841
     # 构造一个含 PREDICTION stage 的 case
     case = {
         "case_id": "tc_test_3",
@@ -101,6 +103,7 @@ def test_exit_prediction_error_computed():
     assert prediction_snapshot is not None
 
     from scripts.memory_l4.prediction_bridge import compute_prediction_error_dict
+
     actual = {
         "direction": direction,
         "return_pct": pnl_pct,
@@ -108,8 +111,8 @@ def test_exit_prediction_error_computed():
     }
     err = compute_prediction_error_dict(prediction_snapshot, actual)
     assert err is not None
-    assert err["direction_hit"] is True   # LONG == LONG
-    assert err["target_hit"] is True      # 4.0 >= 3.5
+    assert err["direction_hit"] is True  # LONG == LONG
+    assert err["target_hit"] is True  # 4.0 >= 3.5
     assert err["stop_triggered"] is False
 
 

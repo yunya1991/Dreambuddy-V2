@@ -9,6 +9,7 @@
   - upsert 异常 → fail-open（跳过该行，继续写入其余行）
   - 返回成功写入行数
 """
+
 from __future__ import annotations
 
 import logging
@@ -91,12 +92,21 @@ _NEEDS_SYMBOL = {"funding", "open_interest", "long_short_ratio", "taker_volume",
 
 # 🆕 通用指标 sub_category 集合（走 upsert_metric）
 _GENERIC_METRIC_ROUTES = {
-    "btc_onchain", "btc_metrics", "btc_basics", "btc_block",
-    "eth_onchain", "eth_gas",
-    "etf_flow", "etf_dashboard",
-    "options", "cot", "stablecoins",
-    "fear_greed_enhanced", "cmc_fear_greed",
-    "search_trends", "crypto_sentiment",
+    "btc_onchain",
+    "btc_metrics",
+    "btc_basics",
+    "btc_block",
+    "eth_onchain",
+    "eth_gas",
+    "etf_flow",
+    "etf_dashboard",
+    "options",
+    "cot",
+    "stablecoins",
+    "fear_greed_enhanced",
+    "cmc_fear_greed",
+    "search_trends",
+    "crypto_sentiment",
 }
 
 
@@ -111,6 +121,7 @@ class DalSink:
         if mm_repo is None:
             try:
                 from dreambuddy_dal import get_market_macro_repo
+
                 mm_repo = get_market_macro_repo()
             except Exception:
                 logger.warning("[DalSink] 无法从 dreambuddy_dal 获取默认 repo，DAL 写入将不可用")
@@ -163,7 +174,8 @@ class DalSink:
             except Exception as exc:
                 logger.warning(
                     "[DalSink] %s 写入失败（行跳过）: %s",
-                    method_name, exc,
+                    method_name,
+                    exc,
                 )
 
         return written
@@ -198,7 +210,7 @@ class DalSink:
         ts = _parse_ts(row["timestamp"])
 
         if route_key in ("fear_greed", "crypto_fear_greed"):
-            return dict(
+            return dict(  # noqa: C408
                 value=int(row["value"]),
                 value_classification=str(row["value_classification"]),
                 ts=ts,
@@ -208,14 +220,14 @@ class DalSink:
         symbol = str(row.get("asset", row.get("symbol", "")))
 
         if route_key == "funding":
-            return dict(
+            return dict(  # noqa: C408
                 symbol=symbol,
                 funding_rate=Decimal(str(row["funding_rate"])),
                 funding_ts=ts,
             )
 
         if route_key == "open_interest":
-            return dict(
+            return dict(  # noqa: C408
                 symbol=symbol,
                 open_interest=Decimal(str(row["open_interest"])),
                 sum_open_interest_value=Decimal(str(row["sum_open_interest_value"])),
@@ -223,7 +235,7 @@ class DalSink:
             )
 
         if route_key == "long_short_ratio":
-            return dict(
+            return dict(  # noqa: C408
                 symbol=symbol,
                 long_account=Decimal(str(row["long_account"])),
                 short_account=Decimal(str(row["short_account"])),
@@ -232,7 +244,7 @@ class DalSink:
             )
 
         if route_key == "taker_volume":
-            return dict(
+            return dict(  # noqa: C408
                 symbol=symbol,
                 buy_vol=Decimal(str(row["buy_vol"])),
                 sell_vol=Decimal(str(row["sell_vol"])),
@@ -242,7 +254,7 @@ class DalSink:
             )
 
         if route_key == "liquidation":
-            return dict(
+            return dict(  # noqa: C408
                 symbol=symbol,
                 order_quantity=Decimal(str(row["order_quantity"])),
                 side=str(row["side"]),

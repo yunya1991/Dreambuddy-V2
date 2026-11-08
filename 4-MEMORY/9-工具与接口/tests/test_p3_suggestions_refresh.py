@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """TDD RED: P3 suggestions 定时刷新机制"""
+
 import json
 import os
 import shutil
@@ -11,8 +12,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-def _seed_session_with_suggestions(tmpdir: str, hours_ago: float = 2,
-                                    action_count: int = 0) -> tuple:
+def _seed_session_with_suggestions(
+    tmpdir: str, hours_ago: float = 2, action_count: int = 0
+) -> tuple:
     """构造：tmpdir 下有老的 suggestions.md（hours_ago 前生成的）的会话"""
     sessions_dir = os.path.join(tmpdir, "sessions")
     session_id = "test-session-refresh"
@@ -55,18 +57,19 @@ def _seed_session_with_suggestions(tmpdir: str, hours_ago: float = 2,
 
 def test_should_refresh_true_when_ttl_expired():
     """P3: TTL过期（>15min）→ should_refresh=True，哪怕动作数=0"""
-    from cognitive_session import CognitiveSessionManager
+    from cognitive_session import CognitiveSessionManager  # noqa: I001
     from auto_update_trigger import SuggestionsRefresher
 
     tmpdir = tempfile.mkdtemp()
     try:
-        sessions_dir, sid, _ = _seed_session_with_suggestions(tmpdir, hours_ago=1.0)  # 1小时前（TTL 15min已超）
+        sessions_dir, sid, _ = _seed_session_with_suggestions(
+            tmpdir, hours_ago=1.0
+        )  # 1小时前（TTL 15min已超）
         mgr = CognitiveSessionManager(sessions_dir=sessions_dir)
         refresher = SuggestionsRefresher(ttl_seconds=15 * 60, action_threshold=5)
 
         # 传 mgr（能访问 sessions_dir → 能读 mtime），TTL过期仍然刷新
-        assert refresher.should_refresh(mgr, actions_since_last=0) is True, \
-            "TTL过期 → 应刷新"
+        assert refresher.should_refresh(mgr, actions_since_last=0) is True, "TTL过期 → 应刷新"
         print("✅ test_should_refresh_true_when_ttl_expired 通过")
         return True
     finally:
@@ -75,18 +78,21 @@ def test_should_refresh_true_when_ttl_expired():
 
 def test_should_refresh_true_when_action_threshold_hit():
     """P3: 动作数>=阈值（>=5）→ should_refresh=True，哪怕TTL还剩很多"""
-    from cognitive_session import CognitiveSessionManager
+    from cognitive_session import CognitiveSessionManager  # noqa: I001
     from auto_update_trigger import SuggestionsRefresher
 
     tmpdir = tempfile.mkdtemp()
     try:
-        sessions_dir, sid, _ = _seed_session_with_suggestions(tmpdir, hours_ago=0.01)  # 0.6分钟前（TTL未过期）
+        sessions_dir, sid, _ = _seed_session_with_suggestions(
+            tmpdir, hours_ago=0.01
+        )  # 0.6分钟前（TTL未过期）
         mgr = CognitiveSessionManager(sessions_dir=sessions_dir)
         refresher = SuggestionsRefresher(ttl_seconds=15 * 60, action_threshold=5)
 
         # 5个新动作 → 触发（直接传 session 也能判断动作数阈值）
-        assert refresher.should_refresh(mgr.current_session, actions_since_last=5) is True, \
-            "动作数>=阈值 → 应刷新"
+        assert (
+            refresher.should_refresh(mgr.current_session, actions_since_last=5) is True
+        ), "动作数>=阈值 → 应刷新"
         print("✅ test_should_refresh_true_when_action_threshold_hit 通过")
         return True
     finally:
@@ -95,7 +101,7 @@ def test_should_refresh_true_when_action_threshold_hit():
 
 def test_should_refresh_false_when_fresh_and_few_actions():
     """P3: 刚生成不久且动作数少 → should_refresh=False（不浪费算力重算）"""
-    from cognitive_session import CognitiveSessionManager
+    from cognitive_session import CognitiveSessionManager  # noqa: I001
     from auto_update_trigger import SuggestionsRefresher
 
     tmpdir = tempfile.mkdtemp()
@@ -105,8 +111,9 @@ def test_should_refresh_false_when_fresh_and_few_actions():
         refresher = SuggestionsRefresher(ttl_seconds=15 * 60, action_threshold=5)
 
         # 传 mgr（双检查）：仅 1 个动作 + TTL 未过期 → 不触发
-        assert refresher.should_refresh(mgr, actions_since_last=1) is False, \
-            "新 + 动作少 → 不应刷新"
+        assert (
+            refresher.should_refresh(mgr, actions_since_last=1) is False
+        ), "新 + 动作少 → 不应刷新"
         print("✅ test_should_refresh_false_when_fresh_and_few_actions 通过")
         return True
     finally:
@@ -115,13 +122,14 @@ def test_should_refresh_false_when_fresh_and_few_actions():
 
 def test_refresh_updates_suggestions_file_keeps_history():
     """P3: 实际 refresh 会重写 suggestions.md，带 🔄 刷新次数标记 + 新时间戳"""
-    from cognitive_session import CognitiveSessionManager
+    from cognitive_session import CognitiveSessionManager  # noqa: I001
     from auto_update_trigger import SuggestionsRefresher
 
     tmpdir = tempfile.mkdtemp()
     try:
-        sessions_dir, sid, sug_file = _seed_session_with_suggestions(tmpdir, hours_ago=2.0,
-                                                                     action_count=10)
+        sessions_dir, sid, sug_file = _seed_session_with_suggestions(
+            tmpdir, hours_ago=2.0, action_count=10
+        )
         mgr = CognitiveSessionManager(sessions_dir=sessions_dir)
         refresher = SuggestionsRefresher(ttl_seconds=600, action_threshold=5)
 
@@ -147,22 +155,23 @@ def test_refresh_updates_suggestions_file_keeps_history():
 
 def test_refresh_skipped_when_not_needed():
     """P3: refresh_if_needed 在无刷新必要时是 NOOP，不会重写文件"""
-    from cognitive_session import CognitiveSessionManager
+    from cognitive_session import CognitiveSessionManager  # noqa: I001
     from auto_update_trigger import SuggestionsRefresher
 
     tmpdir = tempfile.mkdtemp()
     try:
-        sessions_dir, sid, sug_file = _seed_session_with_suggestions(tmpdir, hours_ago=0.01,
-                                                                     action_count=2)
+        sessions_dir, sid, sug_file = _seed_session_with_suggestions(
+            tmpdir, hours_ago=0.01, action_count=2
+        )
         mgr = CognitiveSessionManager(sessions_dir=sessions_dir)
         refresher = SuggestionsRefresher(ttl_seconds=15 * 60, action_threshold=5)
 
-        mtime_before = os.path.getmtime(sug_file)
+        mtime_before = os.path.getmtime(sug_file)  # noqa: F841
         content_before = Path(sug_file).read_text()
         # 仅 1 个新动作，且 TTL 未过期 → 不刷新
         did_refresh = refresher.refresh_if_needed(mgr, actions_since_last=1)
         assert did_refresh is False, "无刷新必要时应返回 False"
-        mtime_after = os.path.getmtime(sug_file)
+        mtime_after = os.path.getmtime(sug_file)  # noqa: F841
         content_after = Path(sug_file).read_text()
         assert content_before == content_after, "NOOP 不应修改文件内容"
         print("✅ test_refresh_skipped_when_not_needed 通过")

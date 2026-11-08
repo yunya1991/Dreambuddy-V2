@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from .replay_simulator import ReplayPool
 from .dreaming import DreamingLoop
+from .replay_simulator import ReplayPool
 
 # token 预算上限（第二段组装）
 TOKEN_BUDGET = 8000
@@ -43,6 +43,7 @@ def _now_ms() -> int:
 # Q1/Q2：Spec 增强管线（两段式）
 # ----------------------------------------------------------------------
 
+
 @dataclass
 class EvidencePack:
     """第一段产物：规则抽取的证据包（零 LLM）。"""
@@ -55,9 +56,9 @@ class EvidencePack:
     llm_calls: int = 0  # 第一段必须为 0
 
     def total_items(self) -> int:
-        return (len(self.design_decisions)
-                + len(self.architecture_patterns)
-                + len(self.evolution_notes))
+        return (
+            len(self.design_decisions) + len(self.architecture_patterns) + len(self.evolution_notes)
+        )
 
 
 class SpecEnhancer:
@@ -80,25 +81,29 @@ class SpecEnhancer:
                 pack.matched_trees.append(tree.tree_id)
                 for node in tree.nodes:
                     if node.action.get("analyzer") == "architecture_pattern_detector":
-                        pack.architecture_patterns.append({
-                            "pattern": node.action.get("params", {}).get("path", ""),
-                            "evidence_ref": {
-                                "source": f"replay_pool:{tree.tree_id}",
-                                "node": node.node_id,
-                                "confidence": node.poe_score,
-                            },
-                            "applicable_condition": tree.source_label,
-                        })
+                        pack.architecture_patterns.append(
+                            {
+                                "pattern": node.action.get("params", {}).get("path", ""),
+                                "evidence_ref": {
+                                    "source": f"replay_pool:{tree.tree_id}",
+                                    "node": node.node_id,
+                                    "confidence": node.poe_score,
+                                },
+                                "applicable_condition": tree.source_label,
+                            }
+                        )
                     if node.evidence_refs:
-                        pack.design_decisions.append({
-                            "decision": node.action.get("analyzer", ""),
-                            "evidence_ref": {
-                                "source": f"replay_pool:{tree.tree_id}",
-                                "node": node.node_id,
-                                "confidence": node.poe_score,
-                            },
-                            "applicable_condition": tree.source_label,
-                        })
+                        pack.design_decisions.append(
+                            {
+                                "decision": node.action.get("analyzer", ""),
+                                "evidence_ref": {
+                                    "source": f"replay_pool:{tree.tree_id}",
+                                    "node": node.node_id,
+                                    "confidence": node.poe_score,
+                                },
+                                "applicable_condition": tree.source_label,
+                            }
+                        )
         return pack
 
     def _parse_task_features(self, spec_draft: str) -> Dict[str, Any]:
@@ -106,7 +111,7 @@ class SpecEnhancer:
         text = spec_draft.lower()
         features: Dict[str, Any] = {"raw_length": len(spec_draft)}
         langs = ["python", "typescript", "javascript", "rust", "go"]
-        features["language"] = next((l for l in langs if l in text), "unknown")
+        features["language"] = next((l for l in langs if l in text), "unknown")  # noqa: E741
         domains = ["web", "cli", "data", "training", "trading"]
         features["domain"] = next((d for d in domains if d in text), "unknown")
         archs = ["mvc", "pipeline", "event-driven", "layered"]
@@ -128,17 +133,21 @@ class SpecEnhancer:
         kept = self._budget_trim(pack)
         constraints = []
         for dd in kept["design_decisions"]:
-            constraints.append({
-                "constraint": f"参考设计决策: {dd['decision']}",
-                "evidence_ref": dd["evidence_ref"],
-                "applicable_condition": dd["applicable_condition"],
-            })
+            constraints.append(
+                {
+                    "constraint": f"参考设计决策: {dd['decision']}",
+                    "evidence_ref": dd["evidence_ref"],
+                    "applicable_condition": dd["applicable_condition"],
+                }
+            )
         for ap in kept["architecture_patterns"]:
-            constraints.append({
-                "constraint": f"架构模式参考: {ap['pattern']}",
-                "evidence_ref": ap["evidence_ref"],
-                "applicable_condition": ap["applicable_condition"],
-            })
+            constraints.append(
+                {
+                    "constraint": f"架构模式参考: {ap['pattern']}",
+                    "evidence_ref": ap["evidence_ref"],
+                    "applicable_condition": ap["applicable_condition"],
+                }
+            )
         okr_nodes = [
             {
                 "node_id": f"okr_{i + 1}",
@@ -162,14 +171,17 @@ class SpecEnhancer:
             ],
             "token_usage": {
                 "budget": TOKEN_BUDGET,
-                "trimmed": pack.total_items() - (len(kept["design_decisions"]) + len(kept["architecture_patterns"])),
+                "trimmed": pack.total_items()
+                - (len(kept["design_decisions"]) + len(kept["architecture_patterns"])),
             },
         }
 
     def _budget_trim(self, pack: EvidencePack) -> Dict[str, List[Dict[str, Any]]]:
         """token 预算超限时按置信度排序保留高置信项。"""
+
         def conf(item: Dict[str, Any]) -> float:
             return float(item.get("evidence_ref", {}).get("confidence", 0.0))
+
         dds = sorted(pack.design_decisions, key=conf, reverse=True)
         aps = sorted(pack.architecture_patterns, key=conf, reverse=True)
         # 粗略 token 估算：每项约 200 token
@@ -186,7 +198,8 @@ class SpecEnhancer:
         """Spec 质量门禁：约束证据真实存在（纸上谈兵检测）+ PoE 评分。"""
         constraints = enhanced_spec.get("engineering_constraints", [])
         missing = [
-            c for c in constraints
+            c
+            for c in constraints
             if not c.get("evidence_ref") or not c["evidence_ref"].get("source")
         ]
         all_evidenced = len(constraints) > 0 and not missing
@@ -224,6 +237,7 @@ class SpecEnhancer:
 # ----------------------------------------------------------------------
 # Q3/Q4：最优路径驱动（双层延迟）
 # ----------------------------------------------------------------------
+
 
 @dataclass
 class CandidateStrategy:
@@ -307,18 +321,20 @@ class OptimalPathEvaluator:
         for tree in self.pool.list_trees():
             for node in tree.nodes:
                 if node.action.get("analyzer") == analyzer and node.evidence_refs:
-                    candidates.append(CandidateStrategy(
-                        strategy={
-                            "next_analyzer": analyzer,
-                            "action": "reuse_recorded_path",
-                        },
-                        evidence_ref={
-                            "source": f"replay_pool:{tree.tree_id}",
-                            "node": node.node_id,
-                        },
-                        source=tree.provenance,
-                        confidence=node.poe_score,
-                    ))
+                    candidates.append(
+                        CandidateStrategy(
+                            strategy={
+                                "next_analyzer": analyzer,
+                                "action": "reuse_recorded_path",
+                            },
+                            evidence_ref={
+                                "source": f"replay_pool:{tree.tree_id}",
+                                "node": node.node_id,
+                            },
+                            source=tree.provenance,
+                            confidence=node.poe_score,
+                        )
+                    )
                     if len(candidates) >= 5:  # 轻量层限量
                         return candidates
         return candidates

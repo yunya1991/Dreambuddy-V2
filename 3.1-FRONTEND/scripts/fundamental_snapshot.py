@@ -270,9 +270,18 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
                 "etf_issuer_flows": {
                     k[4:]: flow_raw.get(k)
                     for k in (
-                        "etf_ibit", "etf_fbtc", "etf_arkb", "etf_gbtc", "etf_btco",
-                        "etf_bitb", "etf_ezbc", "etf_btcw", "etf_brrr", "etf_hodl",
-                        "etf_msbt", "etf_btc",
+                        "etf_ibit",
+                        "etf_fbtc",
+                        "etf_arkb",
+                        "etf_gbtc",
+                        "etf_btco",
+                        "etf_bitb",
+                        "etf_ezbc",
+                        "etf_btcw",
+                        "etf_brrr",
+                        "etf_hodl",
+                        "etf_msbt",
+                        "etf_btc",
                     )
                     if isinstance(flow_raw.get(k), (int, float))
                 },

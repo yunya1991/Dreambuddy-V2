@@ -10,10 +10,11 @@ SPEC-Phase2 §5.2 (M4): 4 个半衰期（tech_upgrade/fed_speech/sec_deadline/co
 
 RED 阶段：模块尚未实现，测试因 ImportError 失败。
 """
-import pytest
-import numpy as np
+
+from datetime import datetime, timedelta, timezone
+
 import pandas as pd
-from datetime import datetime, timezone, timedelta
+import pytest
 
 CAL_MOD = "half_life_calibration"
 
@@ -21,6 +22,7 @@ CAL_MOD = "half_life_calibration"
 # ================================================================
 # event_study.py — 事件研究法 CAR
 # ================================================================
+
 
 class TestEventStudy:
     def test_compute_car_long_event(self):
@@ -69,12 +71,27 @@ class TestEventStudy:
         from half_life_calibration.event_study import compute_car
 
         dates = pd.date_range("2026-01-01", periods=30, freq="D")
-        close = [100.0] * 15 + [100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-                               110, 111, 112, 113, 114]
+        close = [100.0] * 15 + [
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            114,
+        ]
         prices = pd.DataFrame({"close": close}, index=dates)
         events = [
-            {"date": dates[10], "direction": "long"},   # 持6天到close[16]=101 → +1%
-            {"date": dates[20], "direction": "long"},   # 持6天到close[26]=111 → +6/105
+            {"date": dates[10], "direction": "long"},  # 持6天到close[16]=101 → +1%
+            {"date": dates[20], "direction": "long"},  # 持6天到close[26]=111 → +6/105
         ]
         result = compute_car(events, prices, half_life=3.0, hold_days_mult=2.0)
         assert result["n_events"] == 2
@@ -110,6 +127,7 @@ class TestEventStudy:
 # ================================================================
 # synthetic_data.py — 合成数据生成
 # ================================================================
+
 
 class TestSyntheticData:
     def test_generate_events_returns_list(self):
@@ -158,8 +176,8 @@ class TestSyntheticData:
         这是端到端验证框架正确性的基础：如果合成数据设计正确，
         用 true_half_life 附近的 τ 计算的 CAR 应显著高于远离 true_half_life 的 τ。
         """
-        from half_life_calibration.synthetic_data import generate_events, generate_prices
         from half_life_calibration.event_study import compute_car
+        from half_life_calibration.synthetic_data import generate_events, generate_prices
 
         events = generate_events(n_events=30, true_half_life=2.0, seed=42)
         prices = generate_prices(events, true_half_life=2.0, seed=42)
@@ -176,11 +194,12 @@ class TestSyntheticData:
 # calibrator.py — 贝叶斯优化
 # ================================================================
 
+
 class TestCalibrator:
     def test_calibrate_returns_result_with_half_life(self):
         """calibrate_half_life 返回含 half_life 字段的结果。"""
-        from half_life_calibration.synthetic_data import generate_events, generate_prices
         from half_life_calibration.calibrator import calibrate_half_life
+        from half_life_calibration.synthetic_data import generate_events, generate_prices
 
         events = generate_events(n_events=20, true_half_life=2.0, seed=42)
         prices = generate_prices(events, true_half_life=2.0, seed=42)
@@ -200,8 +219,8 @@ class TestCalibrator:
 
     def test_calibrate_recovers_true_half_life(self):
         """端到端：校准框架能恢复合成数据的 true_half_life（±50% 容差）。"""
-        from half_life_calibration.synthetic_data import generate_events, generate_prices
         from half_life_calibration.calibrator import calibrate_half_life
+        from half_life_calibration.synthetic_data import generate_events, generate_prices
 
         true_tau = 2.0
         events = generate_events(n_events=40, true_half_life=true_tau, seed=123)
@@ -235,8 +254,8 @@ class TestCalibrator:
 
     def test_calibrate_independent_per_event_type(self):
         """不同事件类型独立校准，结果各自独立。"""
-        from half_life_calibration.synthetic_data import generate_events, generate_prices
         from half_life_calibration.calibrator import calibrate_half_life
+        from half_life_calibration.synthetic_data import generate_events, generate_prices
 
         # 两种事件类型不同 true_half_life
         events_a = generate_events(n_events=20, true_half_life=1.0, seed=1)

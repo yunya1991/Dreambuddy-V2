@@ -7,14 +7,14 @@
 用法：
     python five_domain_oos_validation.py
 """
+
 from __future__ import annotations
 
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict
 
 import numpy as np
 
@@ -28,22 +28,20 @@ if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
 from five_domain_ic_analysis import _get_daily_snapshots  # noqa: E402
-from five_domain_weight_optuna import (  # noqa: E402
-    get_price_returns,
-    compute_walkforward_sharpe,
-    compute_max_drawdown,
-    score_to_position,
-    _fill_proxy_fields,
-    _fetch_yf_returns,
-    ASSET_RETURN_MAP,
-)
 from five_domain_subindicator_ic import (  # noqa: E402
-    compute_subindicator_ic_weights,
     apply_ic_weights_to_snapshot,
     cap_subindicator_weights,
-    compute_walkforward_sharpe_capped,
     compute_max_drawdown_capped,
-    sobol_sensitivity_test_capped,
+    compute_subindicator_ic_weights,
+    compute_walkforward_sharpe_capped,
+)
+from five_domain_weight_optuna import (  # noqa: E402
+    ASSET_RETURN_MAP,
+    _fetch_yf_returns,
+    _fill_proxy_fields,
+    compute_max_drawdown,
+    get_price_returns,
+    score_to_position,
 )
 
 OOS_SPLIT_DATE = "2026-01-01"
@@ -90,8 +88,9 @@ def main() -> None:
         for date_str, coin_data in snaps:
             f = {}
             for cls, cd in coin_data.items():
-                f[cls] = _fill_proxy_fields(cd, cls_prices.get(cls, {}),
-                                            cls_price_history.get(cls, []), date_str)
+                f[cls] = _fill_proxy_fields(
+                    cd, cls_prices.get(cls, {}), cls_price_history.get(cls, []), date_str
+                )
             filled.append((date_str, f))
         return filled
 
@@ -128,13 +127,18 @@ def main() -> None:
             train_scores_ic[date_str] = {cls: {**dims, "jiang": 50.0, "fa": 50.0}}
 
         import optuna
+
         optuna.logging.set_verbosity(optuna.logging.WARNING)
 
         def objective(trial):
-            w = {k: trial.suggest_float(k, 0.05, 0.50) for k in ("dao", "tian", "di", "jiang", "fa")}
+            w = {
+                k: trial.suggest_float(k, 0.05, 0.50) for k in ("dao", "tian", "di", "jiang", "fa")
+            }
             total = sum(w.values())
             w = {k: v / total for k, v in w.items()}
-            return compute_walkforward_sharpe_capped(train_scores_ic, train_ret, w, cls, max_position=max_pos)
+            return compute_walkforward_sharpe_capped(
+                train_scores_ic, train_ret, w, cls, max_position=max_pos  # noqa: B023
+            )
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=150)
@@ -159,7 +163,10 @@ def main() -> None:
             daily_rets = []
             for d in all_dates:
                 dims = scores[d].get(asset_class, {})
-                total = sum(w[i] * dims.get(dim, 50.0) for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa")))
+                total = sum(
+                    w[i] * dims.get(dim, 50.0)
+                    for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa"))
+                )
                 pos = score_to_position(total) * max_pos_
                 ret = returns.get(d, 0.0)
                 daily_rets.append(pos * ret)
@@ -179,17 +186,26 @@ def main() -> None:
                 continue
             # 等权：直接用 precompute 的结果（需要重新计算）
             # 简化：用 5 子指标等权
-            from five_domain_subindicator_ic import compute_dao_subindicators, compute_tian_subindicators, compute_di_subindicators
+            from five_domain_subindicator_ic import (
+                compute_dao_subindicators,
+                compute_di_subindicators,
+                compute_tian_subindicators,
+            )
+
             dao = np.mean(list(compute_dao_subindicators(cd).values()))
             tian = np.mean(list(compute_tian_subindicators(cd).values()))
             di = np.mean(list(compute_di_subindicators(cd).values()))
-            test_scores_equal[date_str] = {cls: {"dao": dao, "tian": tian, "di": di, "jiang": 50.0, "fa": 50.0}}
+            test_scores_equal[date_str] = {
+                cls: {"dao": dao, "tian": tian, "di": di, "jiang": 50.0, "fa": 50.0}
+            }
 
         baseline_test_sharpe = full_sharpe(test_scores_equal, test_ret, baseline_w, cls, 1.0)
         ic_test_sharpe = full_sharpe(test_scores_ic, test_ret, best_w, cls, max_pos)
 
         baseline_mdd = compute_max_drawdown(test_scores_equal, test_ret, baseline_w, cls)
-        ic_mdd = compute_max_drawdown_capped(test_scores_ic, test_ret, best_w, cls, max_position=max_pos)
+        ic_mdd = compute_max_drawdown_capped(
+            test_scores_ic, test_ret, best_w, cls, max_position=max_pos
+        )
 
         results[cls] = {
             "train_samples": len(train_ret),
@@ -202,13 +218,19 @@ def main() -> None:
             "test_ic_mdd": round(ic_mdd, 4),
             "test_mdd_ratio": round(ic_mdd / baseline_mdd if baseline_mdd > 0 else 1.0, 4),
             "best_weights": {k: round(v, 4) for k, v in best_w.items()},
-            "ic_weights": {d: {k: round(v, 4) for k, v in w.items()} for d, w in ic_weights.items()},
+            "ic_weights": {
+                d: {k: round(v, 4) for k, v in w.items()} for d, w in ic_weights.items()
+            },
             "oos_pass": ic_test_sharpe > baseline_test_sharpe,
         }
         print(f"[OOS] {cls}:")
         print(f"    训练 WF Sharpe: {study.best_value:.4f}")
-        print(f"    测试集: 基线={baseline_test_sharpe:.4f} IC={ic_test_sharpe:.4f} 提升={ic_test_sharpe - baseline_test_sharpe:+.4f} {'✅' if ic_test_sharpe > baseline_test_sharpe else '❌'}")
-        print(f"    回撤: 基线={baseline_mdd:.2%} IC={ic_mdd:.2%} 比率={ic_mdd / baseline_mdd if baseline_mdd > 0 else 1.0:.3f}")
+        print(
+            f"    测试集: 基线={baseline_test_sharpe:.4f} IC={ic_test_sharpe:.4f} 提升={ic_test_sharpe - baseline_test_sharpe:+.4f} {'✅' if ic_test_sharpe > baseline_test_sharpe else '❌'}"
+        )
+        print(
+            f"    回撤: 基线={baseline_mdd:.2%} IC={ic_mdd:.2%} 比率={ic_mdd / baseline_mdd if baseline_mdd > 0 else 1.0:.3f}"
+        )
 
     output = {
         "timestamp": datetime.now().isoformat(),

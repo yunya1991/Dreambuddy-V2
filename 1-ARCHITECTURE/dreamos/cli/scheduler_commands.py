@@ -5,12 +5,11 @@
 from __future__ import annotations
 
 import argparse
-import json
-from typing import Optional, List
+from typing import Optional
 
-from .base import Command, CommandContext, register_command
-from .scheduler import DreamOSScheduler, PRESET_CRON, DEFAULT_SYMBOLS
 from .auto_trader import AutoTrader
+from .base import Command, CommandContext, register_command
+from .scheduler import DEFAULT_SYMBOLS, PRESET_CRON, DreamOSScheduler
 
 
 @register_command
@@ -45,14 +44,15 @@ class ScheduleCommand(Command):
 
         scan_parser = subparsers.add_parser("scan", help="添加多币种扫描任务")
         scan_parser.add_argument("name", help="任务名称")
-        scan_parser.add_argument("cron", help=f"cron 表达式")
+        scan_parser.add_argument("cron", help="cron 表达式")
         scan_parser.add_argument("--symbol", "-s", action="append", help="扫描币种，可多次")
         scan_parser.add_argument("--all", action="store_true", help="使用默认币种列表")
 
-        stats_parser = subparsers.add_parser("stats", help="查看调度器统计")
+        stats_parser = subparsers.add_parser("stats", help="查看调度器统计")  # noqa: F841
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None,
-                **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         scheduler = self._get_scheduler(ctx)
         action = getattr(args, "action", "list")
 
@@ -80,8 +80,9 @@ class ScheduleCommand(Command):
             ctx.scheduler = DreamOSScheduler()
         return ctx.scheduler
 
-    def _list_jobs(self, ctx: CommandContext, scheduler: DreamOSScheduler,
-                   args: argparse.Namespace) -> int:
+    def _list_jobs(
+        self, ctx: CommandContext, scheduler: DreamOSScheduler, args: argparse.Namespace
+    ) -> int:
         jobs = scheduler.list_jobs()
         verbose = getattr(args, "verbose", False)
 
@@ -113,8 +114,9 @@ class ScheduleCommand(Command):
         print()
         return 0
 
-    def _add_job(self, ctx: CommandContext, scheduler: DreamOSScheduler,
-                 args: argparse.Namespace) -> int:
+    def _add_job(
+        self, ctx: CommandContext, scheduler: DreamOSScheduler, args: argparse.Namespace
+    ) -> int:
         name = args.name
         cron = args.cron
         run_now = getattr(args, "now", False)
@@ -127,12 +129,13 @@ class ScheduleCommand(Command):
         scheduler.add_job(name, cron, _dummy_task, run_now=run_now)
         print(f"\n  ✅ 任务 '{name}' 已添加 (cron: {cron})")
         if run_now:
-            print(f"     已立即执行一次")
+            print("     已立即执行一次")
         print()
         return 0
 
-    def _remove_job(self, ctx: CommandContext, scheduler: DreamOSScheduler,
-                    args: argparse.Namespace) -> int:
+    def _remove_job(
+        self, ctx: CommandContext, scheduler: DreamOSScheduler, args: argparse.Namespace
+    ) -> int:
         name = args.name
         if scheduler.get_job(name):
             scheduler.remove_job(name)
@@ -142,8 +145,9 @@ class ScheduleCommand(Command):
         print()
         return 0
 
-    def _start_job(self, ctx: CommandContext, scheduler: DreamOSScheduler,
-                   args: argparse.Namespace) -> int:
+    def _start_job(
+        self, ctx: CommandContext, scheduler: DreamOSScheduler, args: argparse.Namespace
+    ) -> int:
         name = args.name
         job = scheduler.get_job(name)
         if job:
@@ -154,8 +158,9 @@ class ScheduleCommand(Command):
         print()
         return 0
 
-    def _stop_job(self, ctx: CommandContext, scheduler: DreamOSScheduler,
-                  args: argparse.Namespace) -> int:
+    def _stop_job(
+        self, ctx: CommandContext, scheduler: DreamOSScheduler, args: argparse.Namespace
+    ) -> int:
         name = args.name
         job = scheduler.get_job(name)
         if job:
@@ -166,8 +171,9 @@ class ScheduleCommand(Command):
         print()
         return 0
 
-    def _run_job(self, ctx: CommandContext, scheduler: DreamOSScheduler,
-                 args: argparse.Namespace) -> int:
+    def _run_job(
+        self, ctx: CommandContext, scheduler: DreamOSScheduler, args: argparse.Namespace
+    ) -> int:
         name = args.name
         job = scheduler.get_job(name)
         if job:
@@ -178,8 +184,9 @@ class ScheduleCommand(Command):
         print()
         return 0
 
-    def _add_scan_job(self, ctx: CommandContext, scheduler: DreamOSScheduler,
-                      args: argparse.Namespace) -> int:
+    def _add_scan_job(
+        self, ctx: CommandContext, scheduler: DreamOSScheduler, args: argparse.Namespace
+    ) -> int:
         name = args.name
         cron = args.cron
         symbols = getattr(args, "symbol", [])
@@ -217,7 +224,7 @@ class ScheduleCommand(Command):
         print(f"\n  ✅ 扫描任务 '{name}' 已添加")
         print(f"     Cron: {cron}")
         print(f"     Symbols: {', '.join(symbols)}")
-        print(f"     模式: dry_run (模拟交易)")
+        print("     模式: dry_run (模拟交易)")
         print()
         return 0
 

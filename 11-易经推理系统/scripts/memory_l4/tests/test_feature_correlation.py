@@ -3,6 +3,7 @@
 验证 IC / MI / 综合排名 / 最优权重 / Beta融合 + FAIL-OPEN。
 对应 Spec §三 Step 4 特征关联度。
 """
+
 import sys
 from pathlib import Path
 
@@ -20,9 +21,9 @@ _9_FUND = _ROOT / "9-基本面分析"
 if _9_FUND.is_dir() and str(_9_FUND) not in sys.path:
     sys.path.insert(0, str(_9_FUND))
 
-from force_vector.feature_correlation_calculator import FeatureCorrelationCalculator
-from force_vector.models import FeatureCorrelation
-from engines.signal_engine import SignalEngine
+from engines.signal_engine import SignalEngine  # noqa: E402
+from force_vector.feature_correlation_calculator import FeatureCorrelationCalculator  # noqa: E402
+from force_vector.models import FeatureCorrelation  # noqa: E402
 
 
 class TestComputeIC:
@@ -109,7 +110,8 @@ class TestComputeCombinedScore:
         """负 IC 也取绝对值参与综合分。"""
         calc = FeatureCorrelationCalculator()
         assert calc.compute_combined_score(-0.8, 0.5) == pytest.approx(
-            calc.compute_combined_score(0.8, 0.5))
+            calc.compute_combined_score(0.8, 0.5)
+        )
 
 
 class TestRankFeatures:
@@ -118,9 +120,15 @@ class TestRankFeatures:
     @staticmethod
     def _make_feature(name, ic, mi):
         return FeatureCorrelation(
-            feature_name=name, dimension="fa", ic_30d=ic, mi_30d=mi,
+            feature_name=name,
+            dimension="fa",
+            ic_30d=ic,
+            mi_30d=mi,
             combined_score=abs(ic) * 0.6 + mi * 0.4,
-            rank=0, ic_weight=0.0, beta_weight=1.0, final_weight=0.0,
+            rank=0,
+            ic_weight=0.0,
+            beta_weight=1.0,
+            final_weight=0.0,
         )
 
     def test_rank_descending_top1_rank1(self):
@@ -152,15 +160,21 @@ class TestComputeOptimalWeights:
     @staticmethod
     def _make_corr(name, ic):
         return FeatureCorrelation(
-            feature_name=name, dimension="fa", ic_30d=ic, mi_30d=0.0,
-            combined_score=abs(ic), rank=0, ic_weight=0.0, beta_weight=1.0, final_weight=0.0,
+            feature_name=name,
+            dimension="fa",
+            ic_30d=ic,
+            mi_30d=0.0,
+            combined_score=abs(ic),
+            rank=0,
+            ic_weight=0.0,
+            beta_weight=1.0,
+            final_weight=0.0,
         )
 
     def test_weights_sum_to_one_and_in_bounds(self):
         """5 个特征 IC 权重和≈1.0，每个 ∈ [0.02, 0.40]。"""
         calc = FeatureCorrelationCalculator()
-        corr = [self._make_corr(f"f{i+1}", ic)
-                for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
+        corr = [self._make_corr(f"f{i+1}", ic) for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
         weights = calc.compute_optimal_weights(corr, alpha=1.0)
         assert len(weights) == 5
         assert sum(weights.values()) == pytest.approx(1.0, abs=1e-6)
@@ -170,16 +184,14 @@ class TestComputeOptimalWeights:
     def test_weights_higher_ic_gets_higher_weight(self):
         """IC 高的特征权重更大。"""
         calc = FeatureCorrelationCalculator()
-        corr = [self._make_corr(f"f{i+1}", ic)
-                for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
+        corr = [self._make_corr(f"f{i+1}", ic) for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
         weights = calc.compute_optimal_weights(corr, alpha=1.0)
         assert weights["f1"] > weights["f5"]
 
     def test_weights_alpha_squashing(self):
         """alpha=2.0 → 头部权重占比上升。"""
         calc = FeatureCorrelationCalculator()
-        corr = [self._make_corr(f"f{i+1}", ic)
-                for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
+        corr = [self._make_corr(f"f{i+1}", ic) for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
         w1 = calc.compute_optimal_weights(corr, alpha=1.0)
         w2 = calc.compute_optimal_weights(corr, alpha=2.0)
         assert w2["f1"] > w1["f1"]
@@ -196,15 +208,21 @@ class TestFuseWithBeta:
     @staticmethod
     def _make_corr(name, ic):
         return FeatureCorrelation(
-            feature_name=name, dimension="fa", ic_30d=ic, mi_30d=0.0,
-            combined_score=abs(ic), rank=0, ic_weight=0.0, beta_weight=1.0, final_weight=0.0,
+            feature_name=name,
+            dimension="fa",
+            ic_30d=ic,
+            mi_30d=0.0,
+            combined_score=abs(ic),
+            rank=0,
+            ic_weight=0.0,
+            beta_weight=1.0,
+            final_weight=0.0,
         )
 
     def test_fuse_none_signal_engine_returns_ic_weights(self):
         """signal_engine=None → 直接返回 ic_weights（不报错）。"""
         calc = FeatureCorrelationCalculator()
-        corr = [self._make_corr(f"f{i+1}", ic)
-                for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
+        corr = [self._make_corr(f"f{i+1}", ic) for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
         ic_weights = calc.compute_optimal_weights(corr, alpha=1.0)
         module_names = {f"f{i+1}": "news" for i in range(5)}
         final = calc.fuse_with_beta(ic_weights, None, module_names)
@@ -213,15 +231,19 @@ class TestFuseWithBeta:
     def test_fuse_with_signal_engine_preserves_constraints(self):
         """Beta 融合后仍满足：和≈1.0，每个 ∈ [0.02, 0.40]。"""
         calc = FeatureCorrelationCalculator()
-        corr = [self._make_corr(f"f{i+1}", ic)
-                for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
+        corr = [self._make_corr(f"f{i+1}", ic) for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
         ic_weights = calc.compute_optimal_weights(corr, alpha=1.0)
 
         se = SignalEngine()
         for _ in range(6):  # news 达到 predictions>=5，自适应生效
             se.update_module_performance("news", True)
-        module_names = {"f1": "news", "f2": "sentiment", "f3": "sentiment",
-                        "f4": "sentiment", "f5": "sentiment"}
+        module_names = {
+            "f1": "news",
+            "f2": "sentiment",
+            "f3": "sentiment",
+            "f4": "sentiment",
+            "f5": "sentiment",
+        }
         final = calc.fuse_with_beta(ic_weights, se, module_names)
         assert sum(final.values()) == pytest.approx(1.0, abs=1e-6)
         for w in final.values():
@@ -230,15 +252,19 @@ class TestFuseWithBeta:
     def test_fuse_with_engine_modifies_weights(self):
         """自适应权重上调的模块 → 对应特征 final 权重占比上升。"""
         calc = FeatureCorrelationCalculator()
-        corr = [self._make_corr(f"f{i+1}", ic)
-                for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
+        corr = [self._make_corr(f"f{i+1}", ic) for i, ic in enumerate([0.5, 0.45, 0.4, 0.35, 0.3])]
         ic_weights = calc.compute_optimal_weights(corr, alpha=1.0)
 
         se = SignalEngine()
         for _ in range(6):
             se.update_module_performance("news", True)
-        module_names = {"f1": "news", "f2": "sentiment", "f3": "sentiment",
-                        "f4": "sentiment", "f5": "sentiment"}
+        module_names = {
+            "f1": "news",
+            "f2": "sentiment",
+            "f3": "sentiment",
+            "f4": "sentiment",
+            "f5": "sentiment",
+        }
         final = calc.fuse_with_beta(ic_weights, se, module_names)
         assert final["f1"] > ic_weights["f1"]
 

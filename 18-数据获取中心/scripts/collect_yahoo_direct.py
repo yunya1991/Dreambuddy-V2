@@ -7,6 +7,7 @@
 用法：
     python collect_yahoo_direct.py
 """
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "18-数据获取中心"))
 
 SYMBOLS = [
-    "^VIX", "DX-Y.NYB", "GC=F", "^GSPC", "^IXIC", "^TNX", "CL=F", "BTC-USD",
+    "^VIX",
+    "DX-Y.NYB",
+    "GC=F",
+    "^GSPC",
+    "^IXIC",
+    "^TNX",
+    "CL=F",
+    "BTC-USD",
 ]
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -44,6 +52,7 @@ def fetch_yahoo(symbol: str) -> dict | None:
                 close = float(closes[i])
                 if i < len(timestamps):
                     from datetime import datetime as _dt
+
                     date_str = _dt.utcfromtimestamp(timestamps[i]).strftime("%Y-%m-%d")
                 break
         if close is None:
@@ -63,16 +72,28 @@ def fetch_yahoo(symbol: str) -> dict | None:
 def insert_record(sink, symbol: str, data: dict) -> None:
     """通过统一存储接口写入 records（跟随 DATA_CENTER_BACKEND 配置）。"""
     from data_center.core.contract import DataRecord
+
     now_iso = datetime.now(timezone.utc).astimezone().isoformat()
-    sink.write([DataRecord(
-        source="yfinance", category="finance", sub_category=symbol,
-        timestamp=now_iso, metrics=data, events=[],
-        timeseries=[{"date": data["date"], "close": data["price"]}],
-        raw={"symbol": symbol, "period": "5d", "source": "yahoo_query2"},
-    )])
+    sink.write(
+        [
+            DataRecord(
+                source="yfinance",
+                category="finance",
+                sub_category=symbol,
+                timestamp=now_iso,
+                metrics=data,
+                events=[],
+                timeseries=[{"date": data["date"], "close": data["price"]}],
+                raw={"symbol": symbol, "period": "5d", "source": "yahoo_query2"},
+            )
+        ]
+    )
+
+
 def main() -> None:
     print("[collect_yahoo_direct] 存储后端: 统一存储接口（跟随 DATA_CENTER_BACKEND 配置）")
     from data_center.storage.sink_postgres import get_sink
+
     conn = get_sink()
 
     success = 0

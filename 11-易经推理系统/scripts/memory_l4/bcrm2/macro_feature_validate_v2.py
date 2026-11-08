@@ -7,16 +7,14 @@
 
 在 9 币种 5 折完整回测中验证，与 baseline-v1 对比。
 """
-import sys
-import os
-import json
-import subprocess
-import traceback
-import importlib
-from datetime import datetime
-from pathlib import Path
 
-import numpy as np
+import importlib  # noqa: I001
+import json
+import os
+import subprocess
+import sys
+import traceback
+from datetime import datetime
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,12 +22,12 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # 避免 inspect.py 冲突
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 
-from scripts.memory_l4.bcrm2.data_fetcher import get_klines
-from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester
-from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
+from scripts.memory_l4.bcrm2.data_fetcher import get_klines  # noqa: E402
+from scripts.memory_l4.bcrm2.macro_features import MacroFeatures  # noqa: E402
+from scripts.memory_l4.bcrm2.walk_forward_backtester import WalkForwardBacktester  # noqa: E402
 
 # ============================================================
 # 配置（与 run_baseline_comparison.py 对齐）
@@ -48,11 +46,11 @@ FEATURE_SELECTION = True
 
 # Phase 2 选出的最优 5 个宏观特征
 BEST_FEATURES = [
-    "stablecoin_growth",   # 流动性维度
-    "tvl_change_7d",       # 流动性维度
-    "fgi_trend_7d",        # 情绪维度
-    "fgi_divergence",      # 情绪维度
-    "fgi_zscore",          # 情绪维度
+    "stablecoin_growth",  # 流动性维度
+    "tvl_change_7d",  # 流动性维度
+    "fgi_trend_7d",  # 情绪维度
+    "fgi_divergence",  # 情绪维度
+    "fgi_zscore",  # 情绪维度
 ]
 
 
@@ -66,10 +64,14 @@ def build_macro_feat_config(enabled_features):
 
 def get_git_commit() -> str:
     try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(PROJECT_ROOT),
-        ).decode().strip()
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(PROJECT_ROOT),
+            )
+            .decode()
+            .strip()
+        )
     except Exception:
         return "unknown"
 
@@ -125,11 +127,13 @@ def run_single_coin(symbol, ref_df, macro_config, verbose=True):
             "long_count": result.long_stats.get("count", 0),
             "short_count": result.short_stats.get("count", 0),
         }
-        print(f"  交易数={metrics['total_trades']} "
-              f"胜率={metrics['win_rate']:.1%} "
-              f"收益={metrics['total_return_pct']:+.2f}% "
-              f"夏普={metrics['sharpe_ratio']:.2f} "
-              f"回撤={metrics['max_drawdown_pct']:.2f}%")
+        print(
+            f"  交易数={metrics['total_trades']} "
+            f"胜率={metrics['win_rate']:.1%} "
+            f"收益={metrics['total_return_pct']:+.2f}% "
+            f"夏普={metrics['sharpe_ratio']:.2f} "
+            f"回撤={metrics['max_drawdown_pct']:.2f}%"
+        )
         return metrics
     except Exception as e:
         print(f"  [ERROR] {symbol} 回测失败: {e}")
@@ -164,7 +168,7 @@ def main():
     print()
 
     macro_config = build_macro_feat_config(BEST_FEATURES)
-    print(f"  特征开关配置:")
+    print("  特征开关配置:")
     for feat in MacroFeatures.ALL_FEATURES:
         key = f"macro_feat_{feat}"
         status = "✓" if macro_config[key] else "✗"
@@ -220,7 +224,7 @@ def main():
         v1_summary = v1_data.get("summary", {})
 
         print(f"\n{'='*70}")
-        print(f"  与 baseline-v1 对比")
+        print("  与 baseline-v1 对比")
         print(f"{'='*70}")
 
         metrics_to_compare = [
@@ -254,10 +258,10 @@ def main():
         improved = v2_sharpe > v1_sharpe and v2_wr >= v1_wr and v2_dd <= v1_dd
 
         if improved:
-            print(f"\n  ✓ v2-macro-k5 通过验证：夏普↑ 胜率↑ 回撤↓")
-            print(f"    宏观特征 K=5 子集可落地")
+            print("\n  ✓ v2-macro-k5 通过验证：夏普↑ 胜率↑ 回撤↓")
+            print("    宏观特征 K=5 子集可落地")
         else:
-            print(f"\n  △ 部分指标未全面优于 baseline-v1")
+            print("\n  △ 部分指标未全面优于 baseline-v1")
             if v2_sharpe > v1_sharpe:
                 print(f"    夏普: {v1_sharpe:.4f} → {v2_sharpe:.4f} ✓")
             else:

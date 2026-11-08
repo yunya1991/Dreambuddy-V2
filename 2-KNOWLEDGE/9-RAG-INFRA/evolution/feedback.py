@@ -17,7 +17,6 @@ _RAG_INFRA_DIR = _THIS_DIR.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from knowledge_graph.schema import DEFAULT_GRAPH_PATH
 
 # 默认反馈权重文件（存储在 9-RAG-INFRA/ 目录）
 DEFAULT_WEIGHTS_FILE = _RAG_INFRA_DIR / "feedback_weights.json"
@@ -60,8 +59,9 @@ def _save_weights(weights_file: Path, weights: Dict[str, float]) -> None:
     )
 
 
-def record_feedback(source_file: str, heading: str, is_positive: bool,
-                    graph_path: Path = None) -> Dict:
+def record_feedback(
+    source_file: str, heading: str, is_positive: bool, graph_path: Path = None
+) -> Dict:
     """记录用户对检索结果的反馈，更新反馈权重。
 
     Args:

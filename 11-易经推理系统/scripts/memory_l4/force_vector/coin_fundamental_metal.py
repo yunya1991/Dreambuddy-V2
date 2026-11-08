@@ -14,12 +14,12 @@
 
 FAIL-OPEN：任何异常 → 对应信号返回 0.0，不阻塞整体。
 """
+
 from __future__ import annotations
 
 import json
 import math
 import os
-import sqlite3
 import sys
 from typing import Dict, Optional
 
@@ -27,8 +27,8 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 if _THIS_DIR not in sys.path:
     sys.path.insert(0, _THIS_DIR)
 
-from force_vector.coin_fundamental_ranker import classify_asset_class
-from force_vector._store_port import fetch_latest_record, fetch_all_records
+from force_vector._store_port import fetch_all_records, fetch_latest_record  # noqa: E402
+from force_vector.coin_fundamental_ranker import classify_asset_class  # noqa: E402
 
 # data_center.db 默认路径：dreambuddy-v2/18-数据获取中心/data_center.db
 # force_vector → memory_l4 → scripts → 11-易经推理系统 → dreambuddy-v2（4级）
@@ -40,6 +40,7 @@ DEFAULT_DB_PATH = os.path.join(_DATA_CENTER_ROOT, "data_center.db")
 # ===========================================================================
 # 数据读取（SQLite）
 # ===========================================================================
+
 
 def _safe_json(text) -> any:
     if isinstance(text, dict):
@@ -65,8 +66,12 @@ def _fetch_fred_series(db_path: str, series_id: str) -> dict:
         return {}
     try:
         rows = fetch_all_records(
-            db_path, "fred", "macro", series_id,
-            switch="METAL", columns="metrics",
+            db_path,
+            "fred",
+            "macro",
+            series_id,
+            switch="METAL",
+            columns="metrics",
         )
         if not rows:
             return {}
@@ -99,8 +104,12 @@ def _fetch_vix(db_path: str) -> float:
         return 0.0
     try:
         row = fetch_latest_record(
-            db_path, "yfinance", "finance", "^VIX",
-            switch="METAL", columns="metrics",
+            db_path,
+            "yfinance",
+            "finance",
+            "^VIX",
+            switch="METAL",
+            columns="metrics",
         )
         if not row:
             return 0.0
@@ -113,6 +122,7 @@ def _fetch_vix(db_path: str) -> float:
 # ===========================================================================
 # 纯计算函数
 # ===========================================================================
+
 
 def compute_rate_reversion(fed_funds_rate: float) -> float:
     """联邦基金利率 → 低利率→正信号。
@@ -179,6 +189,7 @@ def compute_risk_hedging_premium(vix: float) -> float:
 # 辅助计算
 # ===========================================================================
 
+
 def _compute_yoy(timeseries: list) -> Optional[float]:
     """从 timeseries 计算同比变化率(%)。
 
@@ -200,6 +211,7 @@ def _compute_yoy(timeseries: list) -> Optional[float]:
 # ===========================================================================
 # 组合函数
 # ===========================================================================
+
 
 def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
     """计算指定贵金属的四个基本面信号。
@@ -228,11 +240,15 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
 
         # 2. Liquidity Expansion（M2 同比）— None 表示数据不足，信号为 0
         m2_yoy = _compute_yoy(m2_data.get("timeseries", []))
-        result["liquidity_expansion"] = compute_liquidity_expansion(m2_yoy) if m2_yoy is not None else 0.0
+        result["liquidity_expansion"] = (
+            compute_liquidity_expansion(m2_yoy) if m2_yoy is not None else 0.0
+        )
 
         # 3. Inflation Pressure（CPI 同比）— None 表示数据不足，信号为 0
         cpi_yoy = _compute_yoy(cpi_data.get("timeseries", []))
-        result["inflation_pressure"] = compute_inflation_pressure(cpi_yoy) if cpi_yoy is not None else 0.0
+        result["inflation_pressure"] = (
+            compute_inflation_pressure(cpi_yoy) if cpi_yoy is not None else 0.0
+        )
 
         # 4. Risk Hedging Premium
         result["risk_hedging_premium"] = compute_risk_hedging_premium(vix_val)

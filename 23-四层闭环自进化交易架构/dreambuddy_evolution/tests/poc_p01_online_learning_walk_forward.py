@@ -10,6 +10,7 @@
 
 输出: dreambuddy_evolution/data/poc_p01_online_learning_walk_forward.json
 """
+
 from __future__ import annotations
 
 import json
@@ -24,10 +25,13 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
-from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
-from dreambuddy_evolution.core.online_trainer import NeuralSDEOnlineTrainer
+from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402, I001
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
+from dreambuddy_evolution.core.online_trainer import NeuralSDEOnlineTrainer  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,8 +44,8 @@ def evaluate_window(model, closes, ts, horizon, n_paths, regime_labels):
     """评估单个窗口."""
     if ts + horizon >= len(closes):
         return None
-    history = closes[:ts + 1]
-    actual = closes[ts + 1:ts + 1 + horizon]
+    history = closes[: ts + 1]
+    actual = closes[ts + 1 : ts + 1 + horizon]
     init_price = float(history[-1])
     returns = np.diff(np.log(history))
     init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -98,29 +102,37 @@ def main():
     logger.info("=" * 60)
     logger.info("Model A: 静态模型 (2017-2023 训练, 不更新)")
     import torch
+
     torch.manual_seed(42)
     model_a = NeuralSDEModel(device="cpu")
-    trainer_a = NeuralSDETrainer(model=model_a, lr=1e-4, seq_len=64, horizon=20,
-                                 batch_size=64, loss_type="mse")
+    trainer_a = NeuralSDETrainer(
+        model=model_a, lr=1e-4, seq_len=64, horizon=20, batch_size=64, loss_type="mse"
+    )
     t0 = time.time()
-    report_a = trainer_a.train(closes_train, epochs=epochs,
-                               regime_labels=regime_train, regime_balance="natural")
-    logger.info("静态模型训练完成: %.1fs, loss=%.6f", time.time() - t0,
-                report_a.get("final_loss", 0))
+    report_a = trainer_a.train(
+        closes_train, epochs=epochs, regime_labels=regime_train, regime_balance="natural"
+    )
+    logger.info(
+        "静态模型训练完成: %.1fs, loss=%.6f", time.time() - t0, report_a.get("final_loss", 0)
+    )
 
     # === Model B: 在线学习模型 (先相同训练) ===
     logger.info("=" * 60)
     logger.info("Model B: 在线学习模型 (相同初始训练)")
     torch.manual_seed(42)
     model_b = NeuralSDEModel(device="cpu")
-    trainer_b = NeuralSDETrainer(model=model_b, lr=1e-4, seq_len=64, horizon=20,
-                                 batch_size=64, loss_type="mse")
-    trainer_b.train(closes_train, epochs=epochs,
-                    regime_labels=regime_train, regime_balance="natural")
+    trainer_b = NeuralSDETrainer(
+        model=model_b, lr=1e-4, seq_len=64, horizon=20, batch_size=64, loss_type="mse"
+    )
+    trainer_b.train(
+        closes_train, epochs=epochs, regime_labels=regime_train, regime_balance="natural"
+    )
 
     online_trainer = NeuralSDEOnlineTrainer(
-        base_model=model_b, fine_tune_lr=1e-5,
-        rolling_window=24 * 365 * 2, ewc_lambda=1000.0,
+        base_model=model_b,
+        fine_tune_lr=1e-5,
+        rolling_window=24 * 365 * 2,
+        ewc_lambda=1000.0,
     )
     # 初始化 EWC 状态 (用训练集计算 Fisher)
     online_trainer._fisher = online_trainer._compute_fisher(closes_train, regime_train)
@@ -140,8 +152,9 @@ def main():
         if eval_ts + horizon >= len(closes_full):
             continue
 
-        logger.info("--- 月份 %d/%d: fine-tune 到 idx=%d, 评估 idx=%d ---",
-                    m + 1, n_months, ft_end, eval_ts)
+        logger.info(
+            "--- 月份 %d/%d: fine-tune 到 idx=%d, 评估 idx=%d ---", m + 1, n_months, ft_end, eval_ts
+        )
 
         # Model B: 用最近 2y 数据 fine-tune
         ft_start = max(0, ft_end - 24 * 365 * 2)
@@ -149,8 +162,12 @@ def main():
         ft_regimes = regime_full[ft_start:ft_end]
         t0 = time.time()
         ft_report = online_trainer.fine_tune(ft_closes, regime_labels=ft_regimes, epochs=10)
-        logger.info("  fine-tune: %.1fs, status=%s, loss=%.6f",
-                    time.time() - t0, ft_report.get("status"), ft_report.get("final_loss", 0))
+        logger.info(
+            "  fine-tune: %.1fs, status=%s, loss=%.6f",
+            time.time() - t0,
+            ft_report.get("status"),
+            ft_report.get("final_loss", 0),
+        )
 
         # 评估两个模型
         r_a = evaluate_window(model_a, closes_full, eval_ts, horizon, n_paths, regime_full)
@@ -160,8 +177,13 @@ def main():
             r_b["month"] = m + 1
             results_a.append(r_a)
             results_b.append(r_b)
-            logger.info("  静态: MAE=%.1f ratio=%.2f | 在线: MAE=%.1f ratio=%.2f",
-                        r_a["sde_mae"], r_a["ratio"], r_b["sde_mae"], r_b["ratio"])
+            logger.info(
+                "  静态: MAE=%.1f ratio=%.2f | 在线: MAE=%.1f ratio=%.2f",
+                r_a["sde_mae"],
+                r_a["ratio"],
+                r_b["sde_mae"],
+                r_b["ratio"],
+            )
 
     # 汇总
     def summarize(results):

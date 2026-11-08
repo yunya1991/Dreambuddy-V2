@@ -3,11 +3,13 @@
 通过 ml_trade_service 内部函数批量测试策略信号质量
 模拟回测：统计策略信号的方向正确性和一致性
 """
-import sys
-sys.path.insert(0, '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统')
 
-import ml_trade_service
-from datetime import datetime, timedelta
+import sys
+
+sys.path.insert(0, "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统")
+
+import ml_trade_service  # noqa: I001
+from datetime import datetime
 import json
 
 # 核心策略列表
@@ -142,12 +144,18 @@ def main():
         result["score"] = calculate_score(result)
         all_results.append(result)
 
-        print(f"  信号率: {result['signal_rate']}% ({result['signal_count']}/{result['total_tests']})")
-        print(f"  做多: {result['long_signals']}, 做空: {result['short_signals']}, 无信号: {result['no_signal']}")
+        print(
+            f"  信号率: {result['signal_rate']}% ({result['signal_count']}/{result['total_tests']})"
+        )
+        print(
+            f"  做多: {result['long_signals']}, 做空: {result['short_signals']}, 无信号: {result['no_signal']}"
+        )
         print(f"  错误: {result['errors']}, 分类: {result['category']}, 评分: {result['score']}")
 
     # 保存结果
-    output_file = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/strategy_test_results.json"
+    output_file = (
+        "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/strategy_test_results.json"
+    )
     with open(output_file, "w") as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)
 
@@ -161,7 +169,9 @@ def main():
     print("\n--- 按评分排序 ---")
     for i, r in enumerate(all_results, 1):
         status = "✅" if r["score"] > 30 else ("⚠️" if r["score"] > 0 else "❌")
-        print(f"  {i}. {status} {r['strategy']}: 评分={r['score']}, 信号率={r['signal_rate']}%, 分类={r['category']}")
+        print(
+            f"  {i}. {status} {r['strategy']}: 评分={r['score']}, 信号率={r['signal_rate']}%, 分类={r['category']}"
+        )
 
     # 按周期分类推荐
     print("\n--- 1h/4h 波段策略推荐 ---")

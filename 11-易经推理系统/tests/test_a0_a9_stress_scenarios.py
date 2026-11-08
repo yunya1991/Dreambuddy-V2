@@ -10,8 +10,8 @@ A0-A9 全链路场景压力测试 (v2.1 协议)
 - 状态机: 全状态转换 + 非法转换拦截
 - 协议: 全入口契约字段校验
 """
+
 import importlib.util
-import json
 import random
 import string
 from pathlib import Path
@@ -19,13 +19,13 @@ from typing import Any, Dict
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _load_module(rel_path: str):
     path = REPO_ROOT / rel_path
@@ -83,12 +83,14 @@ proto_mod = _load_module("workflows/trading-decision/protocol/message.py")
 # 1. 执行环压力测试
 # ===================================================================
 
+
 class TestExecutionLoopHappyPath:
     """执行环正常路径: 定时任务触发 → A1→A2→A3→A4→A5→A9"""
 
     def test_full_chain_all_stages_visited(self, tmp_path: Path):
         out = exec_mod.run_execution_loop(
-            _base_payload(), output_dir=tmp_path,
+            _base_payload(),
+            output_dir=tmp_path,
         )
         assert out["visited_stages"] == ["A1", "A2", "A3", "A4", "A5", "A6", "A9"]
         for stage in ["A1", "A2", "A3", "A4", "A5", "A6", "A9"]:
@@ -113,7 +115,11 @@ class TestExecutionLoopHappyPath:
 
     def test_a5_notifies_a6_intelligence(self):
         out = exec_mod.run_execution_loop(_base_payload())
-        a5_to_a6 = [m for m in out["messages"] if m["header"]["source"] == "A5" and m["header"]["target"] == "A6"]
+        a5_to_a6 = [
+            m
+            for m in out["messages"]
+            if m["header"]["source"] == "A5" and m["header"]["target"] == "A6"
+        ]
         assert len(a5_to_a6) >= 1
         assert a5_to_a6[0]["header"]["loop_type"] == "execution"
 
@@ -151,12 +157,22 @@ class TestExecutionLoopA5FailRetry:
 
     def test_a5_fail_retry_with_fake_runner(self, tmp_path: Path):
         """Inject a fake A5 that always returns FAIL to verify retry logic."""
+
         def fake_a5(p, output_dir=None):
             return proto_mod.build_envelope(
-                source="A5", target="A9", message_type="REQUEST", priority="HIGH",
-                loop_type="execution", trace_id=p.get("trace_id", "t"),
-                payload={"stage_id": "A5", "trace_id": p.get("trace_id", "t"),
-                         "direction": "LONG", "order_plan": {"side": "BUY"}, "execution_status": "FAIL"},
+                source="A5",
+                target="A9",
+                message_type="REQUEST",
+                priority="HIGH",
+                loop_type="execution",
+                trace_id=p.get("trace_id", "t"),
+                payload={
+                    "stage_id": "A5",
+                    "trace_id": p.get("trace_id", "t"),
+                    "direction": "LONG",
+                    "order_plan": {"side": "BUY"},
+                    "execution_status": "FAIL",
+                },
             )
 
         def default_stage(stage_name, p, output_dir=None):
@@ -179,7 +195,10 @@ class TestExecutionLoopA5FailRetry:
         runners["A5"] = fake_a5
 
         out = exec_mod.run_execution_loop(
-            _base_payload(), output_dir=tmp_path, stage_runners=runners, max_retries=1,
+            _base_payload(),
+            output_dir=tmp_path,
+            stage_runners=runners,
+            max_retries=1,
         )
         # After A5 FAIL, orchestrator should re-run A4 then A5
         assert "A4_recheck" in out["stage_outputs"]
@@ -197,7 +216,8 @@ class TestExecutionLoopPressure:
     def test_different_directions_all_pass(self, tmp_path: Path):
         for direction in ["LONG", "SHORT"]:
             out = exec_mod.run_execution_loop(
-                _base_payload({"direction": direction}), output_dir=tmp_path,
+                _base_payload({"direction": direction}),
+                output_dir=tmp_path,
             )
             assert "A5" in out["stage_outputs"]
             assert "A9" in out["stage_outputs"]
@@ -221,6 +241,7 @@ class TestExecutionLoopPressure:
 # ===================================================================
 # 2. 情报环压力测试 (A6 5级放射驱动)
 # ===================================================================
+
 
 class TestA6IntelligenceAllLevels:
     """A6 中枢 L0/L1/L1.5/L2/L3 全级别测试"""
@@ -267,7 +288,11 @@ class TestA6IntelligenceAllLevels:
 
     def test_l15_regime_change(self, tmp_path: Path):
         out = a6_mod.run_a6_intelligence(
-            {"trace_id": _trace_id(), "alerts": [{"risk_score": 0.3, "regime_change": True}], "signal_shift": 0.0},
+            {
+                "trace_id": _trace_id(),
+                "alerts": [{"risk_score": 0.3, "regime_change": True}],
+                "signal_shift": 0.0,
+            },
             output_dir=tmp_path,
         )
         assert _payload(out)["route_summary"]["L1.5"] == 1
@@ -290,25 +315,40 @@ class TestA6IntelligenceAllLevels:
 
     def test_l3_theory_practice_divergence(self, tmp_path: Path):
         out = a6_mod.run_a6_intelligence(
-            {"trace_id": _trace_id(), "alerts": [{"theory_practice_score": 0.5}], "signal_shift": 0.0},
+            {
+                "trace_id": _trace_id(),
+                "alerts": [{"theory_practice_score": 0.5}],
+                "signal_shift": 0.0,
+            },
             output_dir=tmp_path,
         )
         assert _payload(out)["route_summary"]["L3"] == 1
-        l3_targets = {e["header"]["target"] for e in _payload(out)["routed_events"]
-                      if e["payload"].get("alert_level") == "L3"}
+        l3_targets = {
+            e["header"]["target"]
+            for e in _payload(out)["routed_events"]
+            if e["payload"].get("alert_level") == "L3"
+        }
         assert "A1" in l3_targets
         assert "A3" in l3_targets
 
     def test_l3_boundary_069(self, tmp_path: Path):
         out = a6_mod.run_a6_intelligence(
-            {"trace_id": _trace_id(), "alerts": [{"theory_practice_score": 0.699}], "signal_shift": 0.0},
+            {
+                "trace_id": _trace_id(),
+                "alerts": [{"theory_practice_score": 0.699}],
+                "signal_shift": 0.0,
+            },
             output_dir=tmp_path,
         )
         assert _payload(out)["route_summary"]["L3"] == 1
 
     def test_l3_not_triggered_at_07(self, tmp_path: Path):
         out = a6_mod.run_a6_intelligence(
-            {"trace_id": _trace_id(), "alerts": [{"theory_practice_score": 0.7}], "signal_shift": 0.0},
+            {
+                "trace_id": _trace_id(),
+                "alerts": [{"theory_practice_score": 0.7}],
+                "signal_shift": 0.0,
+            },
             output_dir=tmp_path,
         )
         assert _payload(out)["route_summary"]["L3"] == 0
@@ -330,9 +370,9 @@ class TestA6MultiAlertPressure:
         """Single A6 call with alerts covering all 5 levels."""
         alerts = [
             {"risk_score": 0.95},  # L0
-            {"risk_score": 0.8},   # L1
+            {"risk_score": 0.8},  # L1
             {"risk_score": 0.3, "regime_change": True},  # L1.5
-            {"risk_score": 0.6},   # L2
+            {"risk_score": 0.6},  # L2
             {"theory_practice_score": 0.5},  # L3
         ]
         out = a6_mod.run_a6_intelligence(
@@ -391,6 +431,7 @@ class TestA6ProtocolCompliance:
 # ===================================================================
 # 3. 治理环压力测试 (A7→A8→A1/A2/A3)
 # ===================================================================
+
 
 class TestGovernanceLoopAllRoutes:
     """治理环 A7→A8→A1/A2/A3 全路由测试"""
@@ -520,8 +561,12 @@ class TestGovernancePressure:
     def test_20_consecutive_runs_all_succeed(self, tmp_path: Path):
         for _ in range(20):
             out = gov_mod.run_governance_loop(
-                _base_payload({"hypothesis_score": random.uniform(0.5, 1.0),
-                                "practice_score": random.uniform(0.3, 1.0)}),
+                _base_payload(
+                    {
+                        "hypothesis_score": random.uniform(0.5, 1.0),
+                        "practice_score": random.uniform(0.3, 1.0),
+                    }
+                ),
                 output_dir=tmp_path,
             )
             assert "A7" in out["visited_stages"]
@@ -539,6 +584,7 @@ class TestGovernancePressure:
 # ===================================================================
 # 4. 状态机压力测试
 # ===================================================================
+
 
 class TestStateMachineTransitions:
     """状态机全路径转换测试"""
@@ -573,7 +619,15 @@ class TestStateMachineTransitions:
 
     def test_practice_to_verification(self):
         sm = state_mod.TradingStateMachine()
-        for s in ["RESEARCH", "ANALYZING", "STRATEGIZING", "VALIDATING", "EXECUTING", "EXIT", "PRACTICE"]:
+        for s in [
+            "RESEARCH",
+            "ANALYZING",
+            "STRATEGIZING",
+            "VALIDATING",
+            "EXECUTING",
+            "EXIT",
+            "PRACTICE",
+        ]:
             sm.transition(s)
         sm.transition("VERIFICATION")
         assert sm.current == "VERIFICATION"
@@ -581,7 +635,15 @@ class TestStateMachineTransitions:
     def test_verification_back_to_research(self):
         """A8 gap < 0.5: VERIFICATION → RESEARCH (A1 restart)"""
         sm = state_mod.TradingStateMachine()
-        for s in ["RESEARCH", "ANALYZING", "STRATEGIZING", "VALIDATING", "EXECUTING", "EXIT", "PRACTICE"]:
+        for s in [
+            "RESEARCH",
+            "ANALYZING",
+            "STRATEGIZING",
+            "VALIDATING",
+            "EXECUTING",
+            "EXIT",
+            "PRACTICE",
+        ]:
             sm.transition(s)
         sm.transition("VERIFICATION")
         sm.transition("RESEARCH")
@@ -590,7 +652,15 @@ class TestStateMachineTransitions:
     def test_verification_back_to_analyzing(self):
         """A8 gap 0.5-0.7: VERIFICATION → ANALYZING (A2 re-analysis)"""
         sm = state_mod.TradingStateMachine()
-        for s in ["RESEARCH", "ANALYZING", "STRATEGIZING", "VALIDATING", "EXECUTING", "EXIT", "PRACTICE"]:
+        for s in [
+            "RESEARCH",
+            "ANALYZING",
+            "STRATEGIZING",
+            "VALIDATING",
+            "EXECUTING",
+            "EXIT",
+            "PRACTICE",
+        ]:
             sm.transition(s)
         sm.transition("VERIFICATION")
         sm.transition("ANALYZING")
@@ -599,7 +669,15 @@ class TestStateMachineTransitions:
     def test_verification_back_to_strategizing(self):
         """A8 gap > 0.7: VERIFICATION → STRATEGIZING (A3 strategy tweak)"""
         sm = state_mod.TradingStateMachine()
-        for s in ["RESEARCH", "ANALYZING", "STRATEGIZING", "VALIDATING", "EXECUTING", "EXIT", "PRACTICE"]:
+        for s in [
+            "RESEARCH",
+            "ANALYZING",
+            "STRATEGIZING",
+            "VALIDATING",
+            "EXECUTING",
+            "EXIT",
+            "PRACTICE",
+        ]:
             sm.transition(s)
         sm.transition("VERIFICATION")
         sm.transition("STRATEGIZING")
@@ -608,14 +686,22 @@ class TestStateMachineTransitions:
     def test_verification_to_idle(self):
         """gap >= 0.9: VERIFICATION → IDLE (continue, no correction needed)"""
         sm = state_mod.TradingStateMachine()
-        for s in ["RESEARCH", "ANALYZING", "STRATEGIZING", "VALIDATING", "EXECUTING", "EXIT", "PRACTICE"]:
+        for s in [
+            "RESEARCH",
+            "ANALYZING",
+            "STRATEGIZING",
+            "VALIDATING",
+            "EXECUTING",
+            "EXIT",
+            "PRACTICE",
+        ]:
             sm.transition(s)
         sm.transition("VERIFICATION")
         sm.transition("IDLE")
         assert sm.current == "IDLE"
 
     def test_invalid_transition_from_idle(self):
-        sm = state_mod.TradingStateMachine()
+        sm = state_mod.TradingStateMachine()  # noqa: F841
         for invalid in ["ANALYZING", "STRATEGIZING", "VALIDATING", "EXECUTING", "EXIT"]:
             sm2 = state_mod.TradingStateMachine()
             with pytest.raises(ValueError):
@@ -632,6 +718,7 @@ class TestStateMachineTransitions:
 # ===================================================================
 # 5. 端到端链路测试
 # ===================================================================
+
 
 class TestEndToEndChains:
     """端到端完整链路: 执行环→情报环→治理环"""
@@ -666,7 +753,11 @@ class TestEndToEndChains:
     def test_a6_l3_drives_restart_chain(self, tmp_path: Path):
         """A6 L3 → A1+A3 restart → full execution chain"""
         a6_out = a6_mod.run_a6_intelligence(
-            {"trace_id": _trace_id(), "alerts": [{"theory_practice_score": 0.5}], "signal_shift": 0.0},
+            {
+                "trace_id": _trace_id(),
+                "alerts": [{"theory_practice_score": 0.5}],
+                "signal_shift": 0.0,
+            },
             output_dir=tmp_path,
         )
         assert _payload(a6_out)["route_summary"]["L3"] == 1
@@ -682,10 +773,12 @@ class TestEndToEndChains:
             assert "A9" in exec_out["stage_outputs"]
 
             gov_out = gov_mod.run_governance_loop(
-                _base_payload({
-                    "hypothesis_score": 0.90 - i * 0.05,
-                    "practice_score": 0.85 - i * 0.10,
-                }),
+                _base_payload(
+                    {
+                        "hypothesis_score": 0.90 - i * 0.05,
+                        "practice_score": 0.85 - i * 0.10,
+                    }
+                ),
                 output_dir=tmp_path,
             )
             assert len(gov_out["visited_stages"]) == 3
@@ -695,20 +788,44 @@ class TestEndToEndChains:
 # 6. 协议字段契约测试
 # ===================================================================
 
+
 class TestProtocolContractAllEntrypoints:
     """所有 A0-A9 入口都必须产生标准协议字段"""
 
     def test_all_entrypoints_have_required_fields(self, tmp_path: Path):
-        required = {"stage_id", "trace_id", "constraint_version", "memory_refs", "evidence_refs", "producer", "schema_version"}
+        required = {
+            "stage_id",
+            "trace_id",
+            "constraint_version",
+            "memory_refs",
+            "evidence_refs",
+            "producer",
+            "schema_version",
+        }
         entrypoints = [
             ("A1_research/entrypoint.py", "run_a1_research", {"trace_id": "t"}),
             ("A2_first-principles/entrypoint.py", "run_a2_first_principles", {"trace_id": "t"}),
             ("A3_simulation/entrypoint.py", "run_a3_simulation", {"trace_id": "t"}),
-            ("A4_validation/entrypoint.py", "run_a4_validation",
-             {"trace_id": "t", "max_drawdown_pct": 1.0, "position_ratio": 0.3, "stop_loss_pct": 1.5}),
-            ("A5_execution/entrypoint.py", "run_a5_execution", {"trace_id": "t", "direction": "LONG"}),
-            ("A6_intelligence/entrypoint.py", "run_a6_intelligence",
-             {"trace_id": "t", "alerts": [], "signal_shift": 0.0}),
+            (
+                "A4_validation/entrypoint.py",
+                "run_a4_validation",
+                {
+                    "trace_id": "t",
+                    "max_drawdown_pct": 1.0,
+                    "position_ratio": 0.3,
+                    "stop_loss_pct": 1.5,
+                },
+            ),
+            (
+                "A5_execution/entrypoint.py",
+                "run_a5_execution",
+                {"trace_id": "t", "direction": "LONG"},
+            ),
+            (
+                "A6_intelligence/entrypoint.py",
+                "run_a6_intelligence",
+                {"trace_id": "t", "alerts": [], "signal_shift": 0.0},
+            ),
             ("A7_audit/entrypoint.py", "run_a7_audit", {"trace_id": "t", "violations": []}),
             ("A8_theory-practice/entrypoint.py", "run_a8_theory_practice", {"trace_id": "t"}),
             ("A9_exit/entrypoint.py", "run_a9_exit", {"trace_id": "t"}),
@@ -723,8 +840,13 @@ class TestProtocolContractAllEntrypoints:
 
     def test_message_header_fields(self):
         env = proto_mod.build_envelope(
-            source="A1", target="A2", message_type="REQUEST", priority="HIGH",
-            loop_type="execution", trace_id="t", payload={"stage_id": "A1"},
+            source="A1",
+            target="A2",
+            message_type="REQUEST",
+            priority="HIGH",
+            loop_type="execution",
+            trace_id="t",
+            payload={"stage_id": "A1"},
         )
         h = env["header"]
         assert h["message_id"]
@@ -741,6 +863,7 @@ class TestProtocolContractAllEntrypoints:
 # ===================================================================
 # 7. execute_with_retry pressure test
 # ===================================================================
+
 
 class TestExecuteWithRetry:
     """重试与处罚机制压力测试"""
@@ -765,7 +888,9 @@ class TestExecuteWithRetry:
         def always_fail():
             raise RuntimeError("CONSTRAINT_VALIDATION_FAILED")
 
-        out = state_mod.execute_with_retry(always_fail, max_retries=3, ledger=ledger, module_name="A2")
+        out = state_mod.execute_with_retry(
+            always_fail, max_retries=3, ledger=ledger, module_name="A2"
+        )
         assert out["status"] == "DEGRADED"
         assert out["error_code"] == "CONSTRAINT_VALIDATION_FAILED"
         assert out["attempts"] == 4  # 1 initial + 3 retries

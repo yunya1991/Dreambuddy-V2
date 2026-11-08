@@ -16,12 +16,11 @@ DreamOS C层 — 结果聚合器
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
-from collections import Counter
+from typing import Dict, List, Optional
 
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.shared.state import NodeResult, State
 
-from .types import ExecutionReport, NodeExecutionRecord
+from .types import ExecutionReport
 
 
 class Aggregator:
@@ -36,28 +35,31 @@ class Aggregator:
 
     # 方向权重：不同节点对最终方向的贡献权重
     DEFAULT_NODE_WEIGHTS: Dict[str, float] = {
-        "A0": 1.0,   # 矛盾论
-        "A1": 1.0,   # 趋势分析
-        "A2": 1.2,   # 量价分析
-        "A3": 1.5,   # 综合决策
-        "A4": 2.0,   # 风控
-        "C1": 0.8,   # 短线信号
-        "C2": 0.8,   # 突破检测
-        "F1": 0.9,   # 新闻分析
-        "F2": 0.9,   # 资金流
-        "F3": 0.7,   # 链上数据
+        "A0": 1.0,  # 矛盾论
+        "A1": 1.0,  # 趋势分析
+        "A2": 1.2,  # 量价分析
+        "A3": 1.5,  # 综合决策
+        "A4": 2.0,  # 风控
+        "C1": 0.8,  # 短线信号
+        "C2": 0.8,  # 突破检测
+        "F1": 0.9,  # 新闻分析
+        "F2": 0.9,  # 资金流
+        "F3": 0.7,  # 链上数据
     }
 
     # 置信度阈值
-    CONFIDENCE_HOLD_THRESHOLD = 0.4      # 低于此值 → HOLD
+    CONFIDENCE_HOLD_THRESHOLD = 0.4  # 低于此值 → HOLD
     DIRECTION_DISAGREEMENT_THRESHOLD = 0.3  # 方向分歧 > 30% → HOLD
 
     def __init__(self, node_weights: Optional[Dict[str, float]] = None):
         self._weights = node_weights or dict(self.DEFAULT_NODE_WEIGHTS)
 
-    def aggregate(self, state: State,
-                  node_ids: Optional[List[str]] = None,
-                  report: Optional[ExecutionReport] = None) -> ExecutionReport:
+    def aggregate(
+        self,
+        state: State,
+        node_ids: Optional[List[str]] = None,
+        report: Optional[ExecutionReport] = None,
+    ) -> ExecutionReport:
         """聚合结果
 
         Args:
@@ -80,7 +82,12 @@ class Aggregator:
             return report
 
         # ── 方向投票（加权） ─────────────────────────
-        direction_scores: Dict[str, float] = {"LONG": 0.0, "SHORT": 0.0, "HOLD": 0.0, "NEUTRAL": 0.0}
+        direction_scores: Dict[str, float] = {
+            "LONG": 0.0,
+            "SHORT": 0.0,
+            "HOLD": 0.0,
+            "NEUTRAL": 0.0,
+        }
         total_weight = 0.0
 
         for r in results:
@@ -133,8 +140,7 @@ class Aggregator:
 
         return report
 
-    def _aggregate_rationale(self, results: List[NodeResult],
-                             final_direction: str) -> List[str]:
+    def _aggregate_rationale(self, results: List[NodeResult], final_direction: str) -> List[str]:
         """理由聚合：提取关键节点的核心论据
 
         按节点权重排序，取权重最高的前 5 个节点的理由。

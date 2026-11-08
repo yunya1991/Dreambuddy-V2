@@ -12,10 +12,10 @@ Spec §5.3 TDD 测试矩阵：
 - test_s5_injection_into_inference       S5 注入 inference 字段
 """
 
-import pytest
-import sys
 import os
-import copy
+import sys
+
+import pytest
 
 # ── 路径设置 ──
 _MEM_L4 = os.path.join(os.path.dirname(__file__), "..", "scripts", "memory_l4")
@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.join(_MEM_L4, "bcrm2"))
 # 轻量测试替身：只复制 PollingTrader 的 S5 相关逻辑，无需实例化完整交易器
 # ══════════════════════════════════════════════════════════════════
 
+
 class RegimePredTraderStub:
     """PollingTrader S5 逻辑的最小测试替身
 
@@ -36,14 +37,54 @@ class RegimePredTraderStub:
 
     # ── 与 PollingTrader.REGIME_MULTIPLIERS 保持同步 ──
     REGIME_MULTIPLIERS = {
-        "TREND_UP_STRONG":   {"position_mult": 1.20, "tp_mult": 1.30, "sl_mult": 1.15, "threshold_mult": 0.80},
-        "TREND_UP_MILD":     {"position_mult": 1.05, "tp_mult": 1.10, "sl_mult": 1.05, "threshold_mult": 0.92},
-        "BREAKOUT":          {"position_mult": 1.10, "tp_mult": 1.20, "sl_mult": 1.00, "threshold_mult": 0.85},
-        "RANGE_BOUND":       {"position_mult": 0.80, "tp_mult": 0.85, "sl_mult": 1.20, "threshold_mult": 1.15},
-        "CONSOLIDATION":     {"position_mult": 0.70, "tp_mult": 0.80, "sl_mult": 1.25, "threshold_mult": 1.20},
-        "VOLATILE_DROP":     {"position_mult": 0.35, "tp_mult": 0.75, "sl_mult": 0.65, "threshold_mult": 1.30},
-        "FOMO_RALLY":        {"position_mult": 0.85, "tp_mult": 0.60, "sl_mult": 0.70, "threshold_mult": 1.15},
-        "REVERSAL":          {"position_mult": 0.50, "tp_mult": 0.75, "sl_mult": 0.80, "threshold_mult": 1.25},
+        "TREND_UP_STRONG": {
+            "position_mult": 1.20,
+            "tp_mult": 1.30,
+            "sl_mult": 1.15,
+            "threshold_mult": 0.80,
+        },
+        "TREND_UP_MILD": {
+            "position_mult": 1.05,
+            "tp_mult": 1.10,
+            "sl_mult": 1.05,
+            "threshold_mult": 0.92,
+        },
+        "BREAKOUT": {
+            "position_mult": 1.10,
+            "tp_mult": 1.20,
+            "sl_mult": 1.00,
+            "threshold_mult": 0.85,
+        },
+        "RANGE_BOUND": {
+            "position_mult": 0.80,
+            "tp_mult": 0.85,
+            "sl_mult": 1.20,
+            "threshold_mult": 1.15,
+        },
+        "CONSOLIDATION": {
+            "position_mult": 0.70,
+            "tp_mult": 0.80,
+            "sl_mult": 1.25,
+            "threshold_mult": 1.20,
+        },
+        "VOLATILE_DROP": {
+            "position_mult": 0.35,
+            "tp_mult": 0.75,
+            "sl_mult": 0.65,
+            "threshold_mult": 1.30,
+        },
+        "FOMO_RALLY": {
+            "position_mult": 0.85,
+            "tp_mult": 0.60,
+            "sl_mult": 0.70,
+            "threshold_mult": 1.15,
+        },
+        "REVERSAL": {
+            "position_mult": 0.50,
+            "tp_mult": 0.75,
+            "sl_mult": 0.80,
+            "threshold_mult": 1.25,
+        },
     }
 
     def __init__(self, enable_s5: bool = False):
@@ -52,12 +93,10 @@ class RegimePredTraderStub:
     def _get_regime_pred_multipliers(self, regime: str, enable_regime_pred: bool = True) -> dict:
         """与 PollingTrader._get_regime_pred_multipliers 完全一致"""
         if not enable_regime_pred:
-            return {"position_mult": 1.0, "tp_mult": 1.0,
-                    "sl_mult": 1.0, "threshold_mult": 1.0}
+            return {"position_mult": 1.0, "tp_mult": 1.0, "sl_mult": 1.0, "threshold_mult": 1.0}
         m = self.REGIME_MULTIPLIERS.get(regime)
         if not m:
-            return {"position_mult": 1.0, "tp_mult": 1.0,
-                    "sl_mult": 1.0, "threshold_mult": 1.0}
+            return {"position_mult": 1.0, "tp_mult": 1.0, "sl_mult": 1.0, "threshold_mult": 1.0}
         return dict(m)
 
     def inject_s5(self, inference: dict) -> dict:
@@ -72,14 +111,18 @@ class RegimePredTraderStub:
             except Exception:
                 inference["_regime_pred"] = None
                 inference["_regime_multipliers"] = {
-                    "position_mult": 1.0, "tp_mult": 1.0,
-                    "sl_mult": 1.0, "threshold_mult": 1.0,
+                    "position_mult": 1.0,
+                    "tp_mult": 1.0,
+                    "sl_mult": 1.0,
+                    "threshold_mult": 1.0,
                 }
         else:
             inference["_regime_pred"] = None
             inference["_regime_multipliers"] = {
-                "position_mult": 1.0, "tp_mult": 1.0,
-                "sl_mult": 1.0, "threshold_mult": 1.0,
+                "position_mult": 1.0,
+                "tp_mult": 1.0,
+                "sl_mult": 1.0,
+                "threshold_mult": 1.0,
             }
         return inference
 
@@ -116,6 +159,7 @@ class RegimePredTraderStub:
 # ══════════════════════════════════════════════════════════════════
 # 测试组
 # ══════════════════════════════════════════════════════════════════
+
 
 class TestS5SwitchOff:
     """S5 开关关闭时：全 1.0，字节等价旧路径"""
@@ -189,10 +233,14 @@ class TestS5SwitchOn:
         """验证 8 态 × 4 维乘数全部正确查表"""
         for regime, expected in self.trader.REGIME_MULTIPLIERS.items():
             m = self.trader._get_regime_pred_multipliers(regime, enable_regime_pred=True)
-            assert m["position_mult"] == expected["position_mult"], f"{regime} position_mult mismatch"
+            assert (
+                m["position_mult"] == expected["position_mult"]
+            ), f"{regime} position_mult mismatch"
             assert m["tp_mult"] == expected["tp_mult"], f"{regime} tp_mult mismatch"
             assert m["sl_mult"] == expected["sl_mult"], f"{regime} sl_mult mismatch"
-            assert m["threshold_mult"] == expected["threshold_mult"], f"{regime} threshold_mult mismatch"
+            assert (
+                m["threshold_mult"] == expected["threshold_mult"]
+            ), f"{regime} threshold_mult mismatch"
 
 
 class TestSpecificRegimeEffects:
@@ -363,6 +411,7 @@ class TestTradeRecordRegimeSnapshot:
     def test_trade_record_has_regime_fields(self):
         """TradeRecord 有 regime_pred 和 regime_multipliers 字段，默认 None"""
         from trading_utils import TradeRecord
+
         rec = TradeRecord()
         assert rec.regime_pred is None
         assert rec.regime_multipliers is None
@@ -370,6 +419,7 @@ class TestTradeRecordRegimeSnapshot:
     def test_trade_record_stores_regime_snapshot(self):
         """开仓时写入 regime 快照"""
         from trading_utils import TradeRecord
+
         rec = TradeRecord(
             coin="BTC",
             direction="long",
@@ -382,6 +432,7 @@ class TestTradeRecordRegimeSnapshot:
     def test_trade_record_backward_compatible(self):
         """旧数据反序列化不报错（无 regime 字段时不崩溃）"""
         from trading_utils import TradeRecord
+
         # 模拟旧数据（只有基础字段）
         old_data = {
             "trade_id": "123",

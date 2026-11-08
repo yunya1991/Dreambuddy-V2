@@ -3,6 +3,7 @@
 SPEC §5.4: 用逆向推导的标注数据（哪个维度该赢）微调 factor_head_mask，
 降低错误维度的 head 权重。
 """
+
 import sys
 from pathlib import Path
 

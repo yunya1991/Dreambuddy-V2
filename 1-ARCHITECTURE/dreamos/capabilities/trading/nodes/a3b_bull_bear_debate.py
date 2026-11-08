@@ -17,10 +17,10 @@ TradingAgents 架构:
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, List, Tuple
+from typing import Dict, List, Tuple
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,9 @@ class A3BBullBearDebateNode(BaseNode):
         bear_score = sum(a["weight"] for a in bear_args)
         total = bull_score + bear_score
 
-        rationale: List[str] = [f"[A3B 多空辩论] 多头得分: {bull_score:.2f} | 空头得分: {bear_score:.2f}"]
+        rationale: List[str] = [
+            f"[A3B 多空辩论] 多头得分: {bull_score:.2f} | 空头得分: {bear_score:.2f}"
+        ]
 
         if total == 0:
             direction = "HOLD"
@@ -111,9 +113,13 @@ class A3BBullBearDebateNode(BaseNode):
             c1_dir = c1.get("direction", "")
             c1_conf = float(c1.get("confidence", 0))
             if c1_dir == "LONG":
-                bull_args.append({"text": f"C1技术面看多 (置信度{c1_conf:.0%})", "weight": 0.2 + c1_conf * 0.1})
+                bull_args.append(
+                    {"text": f"C1技术面看多 (置信度{c1_conf:.0%})", "weight": 0.2 + c1_conf * 0.1}
+                )
             elif c1_dir == "SHORT":
-                bear_args.append({"text": f"C1技术面看空 (置信度{c1_conf:.0%})", "weight": 0.2 + c1_conf * 0.1})
+                bear_args.append(
+                    {"text": f"C1技术面看空 (置信度{c1_conf:.0%})", "weight": 0.2 + c1_conf * 0.1}
+                )
 
         # C2 动量
         c2 = results.get("C2") or {}
@@ -121,9 +127,13 @@ class A3BBullBearDebateNode(BaseNode):
             c2_dir = c2.get("direction", "")
             c2_conf = float(c2.get("confidence", 0))
             if c2_dir == "LONG":
-                bull_args.append({"text": f"C2动量向上 (置信度{c2_conf:.0%})", "weight": 0.15 + c2_conf * 0.1})
+                bull_args.append(
+                    {"text": f"C2动量向上 (置信度{c2_conf:.0%})", "weight": 0.15 + c2_conf * 0.1}
+                )
             elif c2_dir == "SHORT":
-                bear_args.append({"text": f"C2动量向下 (置信度{c2_conf:.0%})", "weight": 0.15 + c2_conf * 0.1})
+                bear_args.append(
+                    {"text": f"C2动量向下 (置信度{c2_conf:.0%})", "weight": 0.15 + c2_conf * 0.1}
+                )
 
         # C3 波动率
         c3 = results.get("C3") or {}
@@ -146,9 +156,13 @@ class A3BBullBearDebateNode(BaseNode):
             a2_dir = a2.get("direction", "")
             a2_conf = float(a2.get("confidence", 0))
             if a2_dir == "LONG":
-                bull_args.append({"text": f"A2综合分析看多 (置信度{a2_conf:.0%})", "weight": 0.2 + a2_conf * 0.1})
+                bull_args.append(
+                    {"text": f"A2综合分析看多 (置信度{a2_conf:.0%})", "weight": 0.2 + a2_conf * 0.1}
+                )
             elif a2_dir == "SHORT":
-                bear_args.append({"text": f"A2综合分析看空 (置信度{a2_conf:.0%})", "weight": 0.2 + a2_conf * 0.1})
+                bear_args.append(
+                    {"text": f"A2综合分析看空 (置信度{a2_conf:.0%})", "weight": 0.2 + a2_conf * 0.1}
+                )
 
         # BCRM2 辩证ML
         bcrm2 = results.get("BCRM2") or {}
@@ -156,16 +170,28 @@ class A3BBullBearDebateNode(BaseNode):
             bcrm2_dir = bcrm2.get("direction", "")
             bcrm2_conf = float(bcrm2.get("confidence", 0))
             if bcrm2_dir == "LONG":
-                bull_args.append({"text": f"BCRM2辩证ML看多 (置信度{bcrm2_conf:.0%})", "weight": 0.2 + bcrm2_conf * 0.1})
+                bull_args.append(
+                    {
+                        "text": f"BCRM2辩证ML看多 (置信度{bcrm2_conf:.0%})",
+                        "weight": 0.2 + bcrm2_conf * 0.1,
+                    }
+                )
             elif bcrm2_dir == "SHORT":
-                bear_args.append({"text": f"BCRM2辩证ML看空 (置信度{bcrm2_conf:.0%})", "weight": 0.2 + bcrm2_conf * 0.1})
+                bear_args.append(
+                    {
+                        "text": f"BCRM2辩证ML看空 (置信度{bcrm2_conf:.0%})",
+                        "weight": 0.2 + bcrm2_conf * 0.1,
+                    }
+                )
 
         # BDSM 基本面
         bdsm = results.get("BDSM") or {}
         if isinstance(bdsm, dict):
             bds_score = float(bdsm.get("bds_score", 0))
             if bds_score >= 0.6:
-                bull_args.append({"text": f"BDSM基本面评分高 ({bds_score:.2f})", "weight": 0.2 + bds_score * 0.1})
+                bull_args.append(
+                    {"text": f"BDSM基本面评分高 ({bds_score:.2f})", "weight": 0.2 + bds_score * 0.1}
+                )
             elif bds_score <= 0.3:
                 bear_args.append({"text": f"BDSM基本面评分低 ({bds_score:.2f})", "weight": 0.15})
 

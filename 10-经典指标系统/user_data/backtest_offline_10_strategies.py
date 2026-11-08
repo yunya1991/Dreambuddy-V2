@@ -4,17 +4,22 @@ from pathlib import Path
 
 import pandas as pd
 
-from user_data.strategies.TurtleTradingStrategy import TurtleTradingStrategy
-from user_data.strategies.BollingerBandMeanReversionStrategy import BollingerBandMeanReversionStrategy
-from user_data.strategies.RsiMeanReversionStrategy import RsiMeanReversionStrategy
-from user_data.strategies.MacdTrendFollowingStrategy import MacdTrendFollowingStrategy
-from user_data.strategies.IchimokuCloudTrendStrategy import IchimokuCloudTrendStrategy
-from user_data.strategies.ParabolicSarTrendStrategy import ParabolicSarTrendStrategy
-from user_data.strategies.KeltnerChannelBreakoutStrategy import KeltnerChannelBreakoutStrategy
 from user_data.strategies.AroonTrendSystemStrategy import AroonTrendSystemStrategy
-from user_data.strategies.Nr7VolatilityContractionBreakoutStrategy import Nr7VolatilityContractionBreakoutStrategy
-from user_data.strategies.StochasticOscillatorReversalStrategy import StochasticOscillatorReversalStrategy
-
+from user_data.strategies.BollingerBandMeanReversionStrategy import (
+    BollingerBandMeanReversionStrategy,
+)
+from user_data.strategies.IchimokuCloudTrendStrategy import IchimokuCloudTrendStrategy
+from user_data.strategies.KeltnerChannelBreakoutStrategy import KeltnerChannelBreakoutStrategy
+from user_data.strategies.MacdTrendFollowingStrategy import MacdTrendFollowingStrategy
+from user_data.strategies.Nr7VolatilityContractionBreakoutStrategy import (
+    Nr7VolatilityContractionBreakoutStrategy,
+)
+from user_data.strategies.ParabolicSarTrendStrategy import ParabolicSarTrendStrategy
+from user_data.strategies.RsiMeanReversionStrategy import RsiMeanReversionStrategy
+from user_data.strategies.StochasticOscillatorReversalStrategy import (
+    StochasticOscillatorReversalStrategy,
+)
+from user_data.strategies.TurtleTradingStrategy import TurtleTradingStrategy
 
 STRATEGIES = [
     TurtleTradingStrategy,
@@ -147,4 +152,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

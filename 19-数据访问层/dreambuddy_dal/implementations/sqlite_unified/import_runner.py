@@ -22,6 +22,7 @@ P1-4：JSON/散 SQLite → 统一 SQLite 三批幂等导入脚本
       2) 否则 JsonLegacy*Repository 内存实例（读 P0 阶段薄存数据）
       3) 两者都空 → 本批次 applied=0 skipped=0（正常不算失败）
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -94,6 +95,7 @@ def _read_trade_rows_from_legacy() -> List[Dict[str, Any]]:
         from dreambuddy_dal.implementations.json_legacy.trade_impl import (
             JsonLegacyTradeRepository,
         )
+
         repo = JsonLegacyTradeRepository()
         trades = repo.query_trades(limit=10_000)
         rows: List[Dict[str, Any]] = []
@@ -110,6 +112,7 @@ def _read_position_rows_from_legacy() -> List[Dict[str, Any]]:
         from dreambuddy_dal.implementations.json_legacy.position_impl import (
             JsonLegacyPositionRepository,
         )
+
         repo = JsonLegacyPositionRepository()
         positions = repo.list_positions()
         return [{"kind": "position", "obj": p} for p in positions]
@@ -122,6 +125,7 @@ def _read_risk_rows_from_legacy() -> List[Dict[str, Any]]:
         from dreambuddy_dal.implementations.json_legacy.risk_impl import (
             JsonLegacyRiskRepository,
         )
+
         repo = JsonLegacyRiskRepository()
         state = repo.load_state()
         cases = repo.list_cases() or []
@@ -135,7 +139,9 @@ def _read_risk_rows_from_legacy() -> List[Dict[str, Any]]:
 # ===========================================================================
 # 批次 1：核心交易（tr_trades / po_positions / tr_daily_stats）
 # ===========================================================================
-def _apply_batch_core_trade(conn, legacy_trade_rows, legacy_pos_rows, *, dry_run: bool) -> ImportReport:
+def _apply_batch_core_trade(
+    conn, legacy_trade_rows, legacy_pos_rows, *, dry_run: bool
+) -> ImportReport:
     rep = ImportReport(batch_id="BATCH-1-core-trade")
     # trade_rows → insert or ignore tr_trades（用 SqliteTradeRepository Protocol 方法最稳）
     from dreambuddy_dal.implementations.sqlite_unified.position_impl import SqlitePositionRepository
@@ -148,7 +154,7 @@ def _apply_batch_core_trade(conn, legacy_trade_rows, legacy_pos_rows, *, dry_run
     db_path_row = conn.execute("PRAGMA database_list").fetchall()
     # database_list 返回 (seq, name, file)；main 的 file 可能为空（:memory:）
     db_path = None
-    for (_s, name, f) in db_path_row:
+    for _s, name, f in db_path_row:
         if name == "main" and f:
             db_path = f
             break
@@ -186,11 +192,13 @@ def _apply_batch_core_trade(conn, legacy_trade_rows, legacy_pos_rows, *, dry_run
         p = item["obj"]
         try:
             before = conn.execute(
-                "SELECT COUNT(*) FROM po_positions WHERE inst_id=?", (getattr(p, "inst_id", None) or p.symbol,)
+                "SELECT COUNT(*) FROM po_positions WHERE inst_id=?",
+                (getattr(p, "inst_id", None) or p.symbol,),
             ).fetchone()[0]
             pos_repo.upsert_position(p)
             after = conn.execute(
-                "SELECT COUNT(*) FROM po_positions WHERE inst_id=?", (getattr(p, "inst_id", None) or p.symbol,)
+                "SELECT COUNT(*) FROM po_positions WHERE inst_id=?",
+                (getattr(p, "inst_id", None) or p.symbol,),
             ).fetchone()[0]
             if before == after:
                 rep.skipped += 1
@@ -212,7 +220,7 @@ def _apply_batch_performance_risk(conn, legacy_risk_rows, *, dry_run: bool) -> I
     rep = ImportReport(batch_id="BATCH-2-performance-risk")
     db_path_row = conn.execute("PRAGMA database_list").fetchall()
     db_path = None
-    for (_s, name, f) in db_path_row:
+    for _s, name, f in db_path_row:
         if name == "main" and f:
             db_path = f
             break
@@ -220,6 +228,7 @@ def _apply_batch_performance_risk(conn, legacy_risk_rows, *, dry_run: bool) -> I
         return rep
 
     from dreambuddy_dal.implementations.sqlite_unified.risk_impl import SqliteRiskRepository
+
     risk_repo = SqliteRiskRepository(db_path)
 
     for item in legacy_risk_rows:
@@ -309,8 +318,10 @@ def import_all_batches(data_dir: str, db_path: str, *, dry_run: bool = False) ->
         dt = int((time.perf_counter() - t0) * 1000)
         batch_report.duration_ms = dt
         # 写审计（dry_run 也要有记录）
-        result = "APPLIED" if batch_report.applied > 0 else (
-            "FAILED" if batch_report.failed > 0 else "SKIPPED"
+        result = (
+            "APPLIED"
+            if batch_report.applied > 0
+            else ("FAILED" if batch_report.failed > 0 else "SKIPPED")
         )
         severity = 2 if batch_report.failed > 0 else (1 if batch_report.applied == 0 else 0)
         details = {

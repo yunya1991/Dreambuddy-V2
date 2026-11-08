@@ -11,6 +11,7 @@ Phase E TDD 测试：趋势跟踪 + 网格交易 strategy_gene 入库 + ESS 冷�
 参考：SPEC-趋势跟踪正金字塔与网格策略落地.md Phase E
 硬约束：HC-TF-08/09（代码归属）
 """
+
 from __future__ import annotations
 
 import json
@@ -31,26 +32,26 @@ SCHEMA_DIR = GENE_ROOT / "schemas"
 
 # Phase E 新增 condition 基因 ID 列表
 NEW_CONDITION_IDS = [
-    "CD-DONCHIAN-20-BREAK",   # 已存在（Phase A 前入库）
-    "CD-DONCHIAN-55-BREAK",   # 新增
-    "CD-ATR-EXPANDING",       # 新增
-    "CD-ADX-GT25-TREND",       # 新增
-    "CD-BOLL-WIDTH-NARROW",    # 新增
-    "CD-ADX-LT25-RANGE",       # 新增
+    "CD-DONCHIAN-20-BREAK",  # 已存在（Phase A 前入库）
+    "CD-DONCHIAN-55-BREAK",  # 新增
+    "CD-ATR-EXPANDING",  # 新增
+    "CD-ADX-GT25-TREND",  # 新增
+    "CD-BOLL-WIDTH-NARROW",  # 新增
+    "CD-ADX-LT25-RANGE",  # 新增
 ]
 
 # Phase E 新增 action 基因 ID 列表
 NEW_ACTION_IDS = [
     "AC-PYRAMID-UNIT-HALF-N",  # 正金字塔 0.5N 加仓
-    "AC-ATR-STOP-2N",          # 2×ATR 止损
-    "AC-GRID-PLACE-ATR",       # 网格 ATR 间距布置
+    "AC-ATR-STOP-2N",  # 2×ATR 止损
+    "AC-GRID-PLACE-ATR",  # 网格 ATR 间距布置
 ]
 
 # Phase E 新增 combination ID 列表
 NEW_COMBO_IDS = [
-    "CB-TREND-001",   # 趋势跟踪快系统
-    "CB-TREND-002",   # 趋势跟踪慢系统
-    "CB-GRID-030",    # 网格交易
+    "CB-TREND-001",  # 趋势跟踪快系统
+    "CB-TREND-002",  # 趋势跟踪慢系统
+    "CB-GRID-030",  # 网格交易
 ]
 
 
@@ -61,6 +62,7 @@ def _load_json(path: Path) -> dict:
 def _validate_schema(obj: dict, schema_name: str) -> bool:
     """用 gene_data/schemas 下的 schema 校验"""
     import jsonschema
+
     schema = _load_json(SCHEMA_DIR / f"{schema_name}.json")
     try:
         jsonschema.validate(obj, schema)
@@ -176,7 +178,9 @@ class TestESSColdStart:
         """新入库 combination n_samples=0（冷启动）"""
         c = next((c for c in combos if c["combo_id"] == combo_id), None)
         assert c is not None
-        assert c.get("n_samples", -1) == 0, f"{combo_id} n_samples={c.get('n_samples')} 应为 0（冷启动）"
+        assert (
+            c.get("n_samples", -1) == 0
+        ), f"{combo_id} n_samples={c.get('n_samples')} 应为 0（冷启动）"
 
     @pytest.mark.parametrize("combo_id", NEW_COMBO_IDS)
     def test_ess_cold_start_ess_zero(self, combos, combo_id):
@@ -192,22 +196,26 @@ class TestESSColdStart:
 class TestCodeRef:
     """T5: code_ref 指向真实实现文件（HC-TF-08/09 代码归属）"""
 
-    @pytest.mark.parametrize("gene_id", ["CD-DONCHIAN-55-BREAK", "CD-ATR-EXPANDING", "CD-ADX-GT25-TREND"])
+    @pytest.mark.parametrize(
+        "gene_id", ["CD-DONCHIAN-55-BREAK", "CD-ATR-EXPANDING", "CD-ADX-GT25-TREND"]
+    )
     def test_condition_code_ref_trend_following(self, gene_id):
         """趋势类 condition code_ref 指向 trend_following 或 regime_gate"""
         obj = _load_json(COND_DIR / f"{gene_id}.json")
         f = obj["code_ref"]["file"]
         # 允许 trend_following / regime_gate / v15_signal
-        assert any(k in f for k in ["trend_following", "regime_gate", "v15_signal"]), \
-            f"{gene_id} code_ref.file={f} 应指向 trend_following/regime_gate/v15_signal"
+        assert any(
+            k in f for k in ["trend_following", "regime_gate", "v15_signal"]
+        ), f"{gene_id} code_ref.file={f} 应指向 trend_following/regime_gate/v15_signal"
 
     @pytest.mark.parametrize("gene_id", ["CD-BOLL-WIDTH-NARROW", "CD-ADX-LT25-RANGE"])
     def test_condition_code_ref_grid(self, gene_id):
         """网格类 condition code_ref 指向 grid_trading 或 regime_gate"""
         obj = _load_json(COND_DIR / f"{gene_id}.json")
         f = obj["code_ref"]["file"]
-        assert any(k in f for k in ["grid_trading", "regime_gate", "v15_signal"]), \
-            f"{gene_id} code_ref.file={f} 应指向 grid_trading/regime_gate/v15_signal"
+        assert any(
+            k in f for k in ["grid_trading", "regime_gate", "v15_signal"]
+        ), f"{gene_id} code_ref.file={f} 应指向 grid_trading/regime_gate/v15_signal"
 
     @pytest.mark.parametrize("gene_id", ["AC-PYRAMID-UNIT-HALF-N", "AC-ATR-STOP-2N"])
     def test_action_code_ref_trend(self, gene_id):

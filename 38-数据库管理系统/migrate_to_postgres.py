@@ -3,6 +3,7 @@
 迁移 data_center.db 四张表到 PostgreSQL data_center 库，逐表校验行数一致。
 用法：DATA_CENTER_PG_PASSWORD=... python migrate_to_postgres.py
 """
+
 from __future__ import annotations
 
 import os
@@ -24,13 +25,34 @@ PG_PARAMS = {
 # 表名 -> (列名列表, 是否保留原 id)
 TABLES = {
     "records": (
-        ["id", "dedupe_key", "source", "category", "sub_category", "timestamp",
-         "metrics", "events", "timeseries", "raw", "schema_version"],
+        [
+            "id",
+            "dedupe_key",
+            "source",
+            "category",
+            "sub_category",
+            "timestamp",
+            "metrics",
+            "events",
+            "timeseries",
+            "raw",
+            "schema_version",
+        ],
         True,
     ),
     "metrics": (
-        ["id", "invocation_id", "ts", "source", "category", "status",
-         "duration_ms", "records_count", "error_type", "error_msg"],
+        [
+            "id",
+            "invocation_id",
+            "ts",
+            "source",
+            "category",
+            "status",
+            "duration_ms",
+            "records_count",
+            "error_type",
+            "error_msg",
+        ],
         True,
     ),
     "quality_issues": (

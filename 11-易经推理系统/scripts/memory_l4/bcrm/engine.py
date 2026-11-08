@@ -17,37 +17,53 @@ BCRM 核心引擎 — 二元矛盾推理模型。
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from ._constants import (
-    BCRM_VERSION, FEATURE_DEF_VERSION,
-    DIR_UP, DIR_DOWN, DIR_FLAT, DIR_TRANSITIONING, DIR_UNKNOWN,
-    SPIRAL_FIRST_AFFIRMATION, SPIRAL_FIRST_NEGATION,
-    SPIRAL_SECOND_NEGATION, SPIRAL_UNKNOWN,
-    REASON_HIGH_UNCERTAINTY, REASON_NO_CONTRADICTION_DATA,
-    REASON_CONTRADICTION_UNRESOLVED, REASON_INSUFFICIENT_MEMORY,
-    REASON_AMBIGUOUS_SCENARIO, REASON_COLD_START_THRESHOLD,
-    REASON_LOW_CONFIDENCE,
-    PHIL_MAO_CONTRADICTION, PHIL_MATERIALIST_DIALECTIC,
-    PHIL_HEGELIAN, PHIL_YIJING,
-    DEFAULT_QUALITATIVE_THRESHOLD, DEFAULT_MIN_CONFIDENCE_THRESHOLD,
-    DEFAULT_HIGH_UNCERTAINTY, DEFAULT_MIN_MEMORY_CASES,
-    TENSION_HIGH_THRESHOLD, TENSION_MEDIUM_THRESHOLD,
+    BCRM_VERSION,
+    DEFAULT_MIN_MEMORY_CASES,
+    DEFAULT_QUALITATIVE_THRESHOLD,
+    DIR_DOWN,
+    DIR_FLAT,
+    DIR_TRANSITIONING,
+    DIR_UNKNOWN,
+    DIR_UP,
+    FEATURE_DEF_VERSION,
     GUA_NAMES_CN,
+    PHIL_HEGELIAN,
+    PHIL_MAO_CONTRADICTION,
+    PHIL_MATERIALIST_DIALECTIC,
+    PHIL_YIJING,
+    REASON_LOW_CONFIDENCE,
+    SPIRAL_FIRST_AFFIRMATION,
+    SPIRAL_FIRST_NEGATION,
+    SPIRAL_NEGATION_THRESHOLD,
+    SPIRAL_PRICE_REVERSAL_FULL,
+    SPIRAL_SECOND_NEGATION,
+    SPIRAL_UNKNOWN,
+    SPIRAL_WEIGHT_CONTRADICTION,
+    SPIRAL_WEIGHT_GUA,
+    SPIRAL_WEIGHT_PRICE,
+    TENSION_HIGH_THRESHOLD,
+    TENSION_MEDIUM_THRESHOLD,
     get_gua_yin_yang,
-    SPIRAL_WEIGHT_PRICE, SPIRAL_WEIGHT_CONTRADICTION, SPIRAL_WEIGHT_GUA,
-    SPIRAL_NEGATION_THRESHOLD, SPIRAL_PRICE_REVERSAL_FULL,
 )
-from .output_contract import (
-    BCRMOutput, ContradictionState, DialecticalStep,
-    NextState, StrategyBranch, PracticeDirective,
-    SpiralPosition, TransformationTrigger, HexagramResult,
-)
-from .yijing_engine import YijingEngine
 from .force_engine import ForceEngine
-from .scale_engine import ScaleEngine, ScaleParams
 from .liangyi_engine import LiangyiEngine
+from .output_contract import (
+    BCRMOutput,
+    ContradictionState,
+    DialecticalStep,
+    HexagramResult,
+    NextState,
+    PracticeDirective,
+    SpiralPosition,
+    StrategyBranch,
+    TransformationTrigger,
+)
+from .scale_engine import ScaleEngine
+from .yijing_engine import YijingEngine
 
 
 @dataclass
@@ -62,7 +78,7 @@ class BCRMEngine:
     易经引擎负责把物理结果翻译成卦象符号。
     """
 
-    min_confidence_threshold: float = 0.25   # P1修复: 原0.36过高，tanh修正后有效范围降至0.2-0.8
+    min_confidence_threshold: float = 0.25  # P1修复: 原0.36过高，tanh修正后有效范围降至0.2-0.8
     qualitative_threshold: float = DEFAULT_QUALITATIVE_THRESHOLD
     sixiang_weights: Dict[str, float] = field(default_factory=dict)
 
@@ -106,6 +122,7 @@ class BCRMEngine:
 
             if config_path is None:
                 from scripts.memory_l4.paths import workspace_root
+
                 config_path = workspace_root() / "data" / "okx_sim" / "config.json"
             config_path = Path(config_path)
             if not config_path.exists():
@@ -128,12 +145,14 @@ class BCRMEngine:
         except Exception:
             return cls()
 
-    def infer(self,
-              market_snapshot: Dict[str, Any],
-              contradiction_list: List[Dict] = None,
-              memory_cases: List[Dict] = None,
-              qmm_output: Dict = None,
-              knowledge_base: Any = None) -> BCRMOutput:
+    def infer(
+        self,
+        market_snapshot: Dict[str, Any],
+        contradiction_list: List[Dict] = None,
+        memory_cases: List[Dict] = None,
+        qmm_output: Dict = None,
+        knowledge_base: Any = None,
+    ) -> BCRMOutput:
         """
         运行 BCRM 推理。
 
@@ -150,16 +169,17 @@ class BCRMEngine:
         output = BCRMOutput(
             bcrm_version=BCRM_VERSION,
             feature_def_version=FEATURE_DEF_VERSION,
-            snapshot_ts=market_snapshot.get("snapshot_ts",
-                                            datetime.now().isoformat()),
+            snapshot_ts=market_snapshot.get("snapshot_ts", datetime.now().isoformat()),
         )
 
         # P0 修复: 自动预处理行情数据，解决 ForceEngine 信号断层
         from .market_preprocessor import normalize_snapshot
+
         market_snapshot = normalize_snapshot(market_snapshot)
 
         # P1 修复: 集成 Guardrail 输入验证
         from .guardrail import default_guardrail
+
         guard = default_guardrail()
         guard_result = guard.validate(
             market_snapshot=market_snapshot,
@@ -185,18 +205,19 @@ class BCRMEngine:
         price_position = market_snapshot.get("price_position", 0.5)
 
         # Step 1: 矛盾识别
-        contrad_state = self._step1_identify_contradiction(
-            contradiction_list, market_snapshot)
+        contrad_state = self._step1_identify_contradiction(contradiction_list, market_snapshot)
         output.contradiction_state = contrad_state
 
         # Step 2: 张力量化
         tension, accumulation = self._step2_quantify_tension(
-            contrad_state, market_snapshot, memory_cases)
+            contrad_state, market_snapshot, memory_cases
+        )
         output.contradiction_state.tension = tension
 
         # Step 3: 质变判定
         is_qualitative_change, trigger = self._step3_qualitative_change(
-            tension, accumulation, memory_cases)
+            tension, accumulation, memory_cases
+        )
         output.transformation_trigger = trigger
 
         # Step 4: 力学引擎推理（第一性原理）+ 易经符号解释
@@ -204,17 +225,14 @@ class BCRMEngine:
         scale = self.scale_engine.compute_scale(market_snapshot)
         scale_params = self.scale_engine.get_params(scale)
         # 调整市场快照（波动率等）
-        market_snapshot, scale_params = self.scale_engine.adapt_snapshot(
-            market_snapshot, scale)
+        market_snapshot, scale_params = self.scale_engine.adapt_snapshot(market_snapshot, scale)
 
         # 4.2 两仪（宏观×微观）→ 参数偏置
         # 两仪生四象：美林时钟+生命周期 影响时空表里参数
-        scale_params, liangyi_state = self.liangyi_engine.adapt(
-            market_snapshot, scale_params)
+        scale_params, liangyi_state = self.liangyi_engine.adapt(market_snapshot, scale_params)
 
         # 4.3 力学引擎决定方向和强度（核心）— 传入两仪调整后的参数
-        force_result = self.force_engine.infer(
-            market_snapshot, scale_params=scale_params)
+        force_result = self.force_engine.infer(market_snapshot, scale_params=scale_params)
 
         # 易经引擎翻译卦象（符号解释层）
         yijing_result = self.yijing.interpret_force(
@@ -240,25 +258,26 @@ class BCRMEngine:
 
         # 八卦兼容（取外卦）
         output.bagua = yijing_result.outer_gua
-        output.bagua_meaning = GUA_NAMES_CN.get(
-            yijing_result.outer_gua, "")
+        output.bagua_meaning = GUA_NAMES_CN.get(yijing_result.outer_gua, "")
 
         # 正反合
         dialectical = self._step4_synthesis(
-            contrad_state, is_qualitative_change, yijing_result, memory_cases)
+            contrad_state, is_qualitative_change, yijing_result, memory_cases
+        )
         output.dialectical_step = dialectical
 
         # 下一状态：以力学结果为准
         next_state = self._determine_next_state_from_force(
-            force_result, is_qualitative_change, tension)
+            force_result, is_qualitative_change, tension
+        )
         output.next_state = next_state
 
         # 置信度分层处理（借鉴 LEAN 的信号强度分级）
         # 硬门槛（绝对不处理）: min_confidence_threshold * 0.7
         # 软门槛（轻仓试探）:    min_confidence_threshold
         # 正常门槛（标准仓位）:  scale_params.confidence_threshold * 0.8
-        hard_threshold = self.min_confidence_threshold * 0.7   # ~0.175
-        soft_threshold = self.min_confidence_threshold          # 0.25
+        hard_threshold = self.min_confidence_threshold * 0.7  # ~0.175
+        soft_threshold = self.min_confidence_threshold  # 0.25
         if next_state.direction == DIR_FLAT:
             hard_threshold *= 0.3
             soft_threshold *= 0.3
@@ -275,35 +294,45 @@ class BCRMEngine:
 
         # Step 5: 螺旋定位
         spiral = self._step5_spiral_position(
-            memory_cases, yijing_result, price_position,
+            memory_cases,
+            yijing_result,
+            price_position,
             market_snapshot=market_snapshot,
-            contradiction_state=contrad_state)
+            contradiction_state=contrad_state,
+        )
         output.spiral_position = spiral
 
         # Step 5.5: 情景推演两路径（量变延续 vs 质变反转）
-        output.scenario_path_a, output.scenario_path_b = (
-            self._step55_scenario_paths(
-                next_state, trigger, spiral, yijing_result))
+        output.scenario_path_a, output.scenario_path_b = self._step55_scenario_paths(
+            next_state, trigger, spiral, yijing_result
+        )
 
         # Step 6: 策略分支
-        is_weak_signal = bool(output.reason_codes and
-                              "WEAK_SIGNAL_LIGHT_POSITION" in output.reason_codes)
+        is_weak_signal = bool(
+            output.reason_codes and "WEAK_SIGNAL_LIGHT_POSITION" in output.reason_codes
+        )
         branches = self._step6_strategy_branches(
-            next_state, trigger, spiral, yijing_result,
+            next_state,
+            trigger,
+            spiral,
+            yijing_result,
             price=market_snapshot.get("price", 0),
             volatility=volatility,
             confidence=next_state.confidence,
-            is_weak_signal=is_weak_signal)
+            is_weak_signal=is_weak_signal,
+        )
 
         # Step 6.5: 多样性扩展（借鉴 LEAN 多策略组合）
         # 当 B1 占比 > 80% 时自动补充互补策略
         try:
             from .strategy_diversity import StrategyDiversityManager
+
             sdm = StrategyDiversityManager()
             diversity_report = sdm.check_and_expand(market_snapshot, branches)
             if diversity_report.triggered and diversity_report.new_branches:
                 for nb in diversity_report.new_branches:
                     from .output_contract import StrategyBranch
+
                     extra = StrategyBranch(
                         branch_id=nb["branch_id"],
                         condition=nb["condition"],
@@ -346,36 +375,56 @@ class BCRMEngine:
         当调用方未提供 A0 矛盾列表时，从价格/RSI/资金费率等自动生成。
         """
         contras = []
-        pct     = float(market_snapshot.get("price_change_pct", market_snapshot.get("ch24", 0)) or 0)
-        rsi     = float(market_snapshot.get("rsi", market_snapshot.get("rsi14", 50)) or 50)
+        pct = float(market_snapshot.get("price_change_pct", market_snapshot.get("ch24", 0)) or 0)
+        rsi = float(market_snapshot.get("rsi", market_snapshot.get("rsi14", 50)) or 50)
         funding = float(market_snapshot.get("funding_rate", 0) or 0)
-        vol     = float(market_snapshot.get("volume_ratio", 1.0) or 1.0)
+        vol = float(market_snapshot.get("volume_ratio", 1.0) or 1.0)
 
         if abs(pct) > 2:
-            contras.append({"id": "AUTO_C1", "type": "trend_countertrend",
-                            "dominant_side": "BULL" if pct > 0 else "BEAR",
-                            "tension": min(abs(pct) / 20.0, 1.0)})
+            contras.append(
+                {
+                    "id": "AUTO_C1",
+                    "type": "trend_countertrend",
+                    "dominant_side": "BULL" if pct > 0 else "BEAR",
+                    "tension": min(abs(pct) / 20.0, 1.0),
+                }
+            )
         if rsi > 70 or rsi < 30:
-            contras.append({"id": "AUTO_C2", "type": "sentiment_fear_greed",
-                            "dominant_side": "BEAR" if rsi > 70 else "BULL",
-                            "tension": abs(rsi - 50) / 50.0})
+            contras.append(
+                {
+                    "id": "AUTO_C2",
+                    "type": "sentiment_fear_greed",
+                    "dominant_side": "BEAR" if rsi > 70 else "BULL",
+                    "tension": abs(rsi - 50) / 50.0,
+                }
+            )
         if abs(funding) > 0.0001:
-            contras.append({"id": "AUTO_C3", "type": "supply_demand",
-                            "dominant_side": "BEAR" if funding > 0 else "BULL",
-                            "tension": min(abs(funding) * 5000, 1.0)})
+            contras.append(
+                {
+                    "id": "AUTO_C3",
+                    "type": "supply_demand",
+                    "dominant_side": "BEAR" if funding > 0 else "BULL",
+                    "tension": min(abs(funding) * 5000, 1.0),
+                }
+            )
         if vol > 1.5 and abs(pct) > 1:
-            contras.append({"id": "AUTO_C4", "type": "volume_price",
-                            "dominant_side": "BULL" if pct > 0 else "BEAR",
-                            "tension": min(vol / 3.0, 1.0)})
+            contras.append(
+                {
+                    "id": "AUTO_C4",
+                    "type": "volume_price",
+                    "dominant_side": "BULL" if pct > 0 else "BEAR",
+                    "tension": min(vol / 3.0, 1.0),
+                }
+            )
         if not contras:
-            contras.append({"id": "AUTO_C0", "type": "supply_demand",
-                            "dominant_side": "EQUAL", "tension": 0.3})
+            contras.append(
+                {"id": "AUTO_C0", "type": "supply_demand", "dominant_side": "EQUAL", "tension": 0.3}
+            )
         return contras
 
-    def infer_with_adapter(self,
-                           market_snapshot: Dict[str, Any],
-                           contradiction_list: List[Dict] = None,
-                           top_k: int = 5) -> BCRMOutput:
+    def infer_with_adapter(
+        self, market_snapshot: Dict[str, Any], contradiction_list: List[Dict] = None, top_k: int = 5
+    ) -> BCRMOutput:
         """带记忆适配器的推理（简化版）。"""
         memory_cases = []
         # 这里可以接入 memory_adapter
@@ -384,9 +433,9 @@ class BCRMEngine:
     # ============================================================
     # Step 1: 矛盾识别
     # ============================================================
-    def _step1_identify_contradiction(self,
-                                      contradiction_list: List[Dict],
-                                      market_snapshot: Dict) -> ContradictionState:
+    def _step1_identify_contradiction(
+        self, contradiction_list: List[Dict], market_snapshot: Dict
+    ) -> ContradictionState:
         """识别主要矛盾。"""
         primary = contradiction_list[0] if contradiction_list else {}
 
@@ -395,8 +444,7 @@ class BCRMEngine:
         dominant_side = primary.get("dominant_side", "EQUAL")
 
         # 正题和反题
-        thesis, antithesis = self._get_thesis_antithesis(
-            primary_type, market_snapshot)
+        thesis, antithesis = self._get_thesis_antithesis(primary_type, market_snapshot)
 
         return ContradictionState(
             thesis=thesis,
@@ -407,9 +455,7 @@ class BCRMEngine:
             philosophy_basis=[PHIL_MAO_CONTRADICTION],
         )
 
-    def _get_thesis_antithesis(self,
-                               contradiction_type: str,
-                               market_snapshot: Dict) -> tuple:
+    def _get_thesis_antithesis(self, contradiction_type: str, market_snapshot: Dict) -> tuple:
         """获取正题和反题描述。"""
         thesis_map = {
             "supply_demand": ("需求旺盛，买方主导", "供应过剩，卖方主导"),
@@ -417,16 +463,14 @@ class BCRMEngine:
             "sentiment_fear_greed": ("贪婪情绪主导，追涨", "恐惧情绪主导，杀跌"),
             "volume_price": ("量价配合，趋势健康", "量价背离，趋势存疑"),
         }
-        return thesis_map.get(contradiction_type,
-                              ("多方力量占优", "空方力量占优"))
+        return thesis_map.get(contradiction_type, ("多方力量占优", "空方力量占优"))
 
     # ============================================================
     # Step 2: 张力量化
     # ============================================================
-    def _step2_quantify_tension(self,
-                                 contrad_state: ContradictionState,
-                                 market_snapshot: Dict,
-                                 memory_cases: List[Dict]) -> tuple:
+    def _step2_quantify_tension(
+        self, contrad_state: ContradictionState, market_snapshot: Dict, memory_cases: List[Dict]
+    ) -> tuple:
         """量化矛盾张力和积累度。"""
         # 基础张力
         base_tension = contrad_state.tension
@@ -459,8 +503,7 @@ class BCRMEngine:
                 target_directions = {"DOWN", "BEAR", "BEARISH"}
             # 历史同向案例比例作为积累度
             same_dir_count = sum(
-                1 for c in memory_cases
-                if c.get("direction", "").upper() in target_directions
+                1 for c in memory_cases if c.get("direction", "").upper() in target_directions
             )
             accumulation = same_dir_count / len(memory_cases)
 
@@ -469,15 +512,14 @@ class BCRMEngine:
     # ============================================================
     # Step 3: 质变判定
     # ============================================================
-    def _step3_qualitative_change(self,
-                                    tension: float,
-                                    accumulation: float,
-                                    memory_cases: List[Dict]) -> tuple:
+    def _step3_qualitative_change(
+        self, tension: float, accumulation: float, memory_cases: List[Dict]
+    ) -> tuple:
         """判定是否发生质变。"""
         threshold = self.qualitative_threshold
 
         # 质变条件：高张力 + 高积累
-        is_qualitative = (tension > TENSION_HIGH_THRESHOLD and accumulation > threshold)
+        is_qualitative = tension > TENSION_HIGH_THRESHOLD and accumulation > threshold
 
         # 概率评估
         if is_qualitative:
@@ -500,11 +542,13 @@ class BCRMEngine:
     # ============================================================
     # Step 4: 正反合裁决
     # ============================================================
-    def _step4_synthesis(self,
-                          contrad_state: ContradictionState,
-                          is_qualitative_change: bool,
-                          yijing_result,
-                          memory_cases: List[Dict]) -> DialecticalStep:
+    def _step4_synthesis(
+        self,
+        contrad_state: ContradictionState,
+        is_qualitative_change: bool,
+        yijing_result,
+        memory_cases: List[Dict],
+    ) -> DialecticalStep:
         """正反合推理。"""
         thesis = {
             "side": "THESIS",
@@ -569,10 +613,9 @@ class BCRMEngine:
     # ============================================================
     # 下一状态判定
     # ============================================================
-    def _determine_next_state_from_force(self,
-                                          force_result,
-                                          is_qualitative_change: bool,
-                                          tension: float) -> NextState:
+    def _determine_next_state_from_force(
+        self, force_result, is_qualitative_change: bool, tension: float
+    ) -> NextState:
         """
         从力学结果确定下一状态。
 
@@ -590,9 +633,13 @@ class BCRMEngine:
             confidence *= 0.85
 
         # 推导说明（力学 + 卦象）
-        direction_cn = {"UP": "上行", "DOWN": "下行",
-                        "FLAT": "震荡", "TRANSITIONING": "转折中",
-                        "UNKNOWN": "未知"}.get(direction, "未知")
+        direction_cn = {
+            "UP": "上行",
+            "DOWN": "下行",
+            "FLAT": "震荡",
+            "TRANSITIONING": "转折中",
+            "UNKNOWN": "未知",
+        }.get(direction, "未知")
         derivation = (
             f"力学推理：合力 {force_result.net_force.direction:+.2f}，"
             f"速度 {force_result.velocity:+.4f}，"
@@ -625,8 +672,7 @@ class BCRMEngine:
     # ============================================================
     # Step 5.5: 情景推演两路径（量变延续 vs 质变反转）
     # ============================================================
-    def _step55_scenario_paths(self, next_state, trigger,
-                                 spiral, yijing_result) -> tuple:
+    def _step55_scenario_paths(self, next_state, trigger, spiral, yijing_result) -> tuple:
         """
         情景推演两路径（辩证阶段分叉）。
 
@@ -688,12 +734,14 @@ class BCRMEngine:
     # ============================================================
     # Step 5: 螺旋定位（三维度综合判据）
     # ============================================================
-    def _step5_spiral_position(self,
-                                memory_cases: List[Dict],
-                                yijing_result,
-                                price_position: float,
-                                market_snapshot: Dict = None,
-                                contradiction_state: ContradictionState = None) -> SpiralPosition:
+    def _step5_spiral_position(
+        self,
+        memory_cases: List[Dict],
+        yijing_result,
+        price_position: float,
+        market_snapshot: Dict = None,
+        contradiction_state: ContradictionState = None,
+    ) -> SpiralPosition:
         """
         否定之否定螺旋定位 — 三维度综合判据。
 
@@ -724,8 +772,7 @@ class BCRMEngine:
             current_snapshot=market_snapshot or {},
             current_gua=yijing_result.outer_gua,
             current_dominant_side=(
-                contradiction_state.dominant_side
-                if contradiction_state else "EQUAL"
+                contradiction_state.dominant_side if contradiction_state else "EQUAL"
             ),
             last_turning_point=last_turning_point,
         )
@@ -750,21 +797,21 @@ class BCRMEngine:
             historical_analogy_ref=historical_ref,
         )
 
-    def _detect_negation(self,
-                         current_snapshot: Dict,
-                         current_gua: str,
-                         current_dominant_side: str,
-                         last_turning_point: Dict) -> tuple:
+    def _detect_negation(
+        self,
+        current_snapshot: Dict,
+        current_gua: str,
+        current_dominant_side: str,
+        last_turning_point: Dict,
+    ) -> tuple:
         """
         否定判定：综合三个维度判定是否发生"否定"。
 
         返回: (是否否定, 综合得分)
         """
         # 维度 1：价格反转（40%）
-        cur_price = current_snapshot.get("price",
-                                          current_snapshot.get("close", 0))
-        prev_price = last_turning_point.get("price",
-                                             last_turning_point.get("close", 0))
+        cur_price = current_snapshot.get("price", current_snapshot.get("close", 0))
+        prev_price = last_turning_point.get("price", last_turning_point.get("close", 0))
         if prev_price > 0:
             price_reversal = abs(cur_price - prev_price) / prev_price
             price_score = min(1.0, price_reversal / SPIRAL_PRICE_REVERSAL_FULL)
@@ -774,19 +821,20 @@ class BCRMEngine:
 
         # 维度 2：矛盾主导方反转（35%）
         prev_dominant = last_turning_point.get("dominant_side", "EQUAL")
-        contradiction_reversed = (current_dominant_side != prev_dominant
-                                   and current_dominant_side != "EQUAL"
-                                   and prev_dominant != "EQUAL")
-        contradiction_score = (1.0 if contradiction_reversed else 0.0)
+        contradiction_reversed = (
+            current_dominant_side != prev_dominant
+            and current_dominant_side != "EQUAL"
+            and prev_dominant != "EQUAL"
+        )
+        contradiction_score = 1.0 if contradiction_reversed else 0.0
         contradiction_score *= SPIRAL_WEIGHT_CONTRADICTION
 
         # 维度 3：卦象翻转（25%）
         prev_gua = last_turning_point.get("bagua", "")
         cur_yin_yang = get_gua_yin_yang(current_gua) if current_gua else ""
         prev_yin_yang = get_gua_yin_yang(prev_gua) if prev_gua else ""
-        gua_flipped = (cur_yin_yang != prev_yin_yang
-                        and cur_yin_yang and prev_yin_yang)
-        gua_score = (1.0 if gua_flipped else 0.0)
+        gua_flipped = cur_yin_yang != prev_yin_yang and cur_yin_yang and prev_yin_yang
+        gua_score = 1.0 if gua_flipped else 0.0
         gua_score *= SPIRAL_WEIGHT_GUA
 
         # 综合得分
@@ -822,8 +870,7 @@ class BCRMEngine:
                 return case
         return None
 
-    def _spiral_fallback(self, price_position: float,
-                          memory_cases: List[Dict]) -> SpiralPosition:
+    def _spiral_fallback(self, price_position: float, memory_cases: List[Dict]) -> SpiralPosition:
         """无历史转折点时的降级判定。"""
         if price_position < 0.3:
             phase = SPIRAL_FIRST_AFFIRMATION
@@ -848,15 +895,17 @@ class BCRMEngine:
     # ============================================================
     # Step 6: 策略分支
     # ============================================================
-    def _step6_strategy_branches(self,
-                                  next_state: NextState,
-                                  trigger: TransformationTrigger,
-                                  spiral: SpiralPosition,
-                                  yijing_result,
-                                  price: float = 0,
-                                  volatility: float = 0.5,
-                                  confidence: float = 0.0,
-                                  is_weak_signal: bool = False) -> List[StrategyBranch]:
+    def _step6_strategy_branches(
+        self,
+        next_state: NextState,
+        trigger: TransformationTrigger,
+        spiral: SpiralPosition,
+        yijing_result,
+        price: float = 0,
+        volatility: float = 0.5,
+        confidence: float = 0.0,
+        is_weak_signal: bool = False,
+    ) -> List[StrategyBranch]:
         """生成策略分支（含结构化止损/止盈/减仓）。"""
         branches = []
         direction = next_state.direction
@@ -866,8 +915,8 @@ class BCRMEngine:
         # 止损幅度：波动率 × 系数（低波动更紧凑，高波动更宽松）
         # P0修复: 止损乘数 2.0→2.8，止盈 3.5→5.6（盈亏比 2:1）
         # 原因: 10x 杠杆下 1.6% 止损距离极易被噪音触发，加密货币日内波动常 2-5%
-        sl_pct = min(vol * 2.8, 0.10)   # 止损最多 10%（价格波动）
-        tp_pct = min(vol * 5.6, 0.20)   # 止盈最多 20%（价格波动）
+        sl_pct = min(vol * 2.8, 0.10)  # 止损最多 10%（价格波动）
+        tp_pct = min(vol * 5.6, 0.20)  # 止盈最多 20%（价格波动）
 
         # P0修复: 去掉低置信度收紧止损（反逻辑：收紧更容易被扫损）
         # 改为通过仓位控制风险：低置信度时降低仓位而非收紧止损
@@ -886,17 +935,19 @@ class BCRMEngine:
 
         # 主路径
         main_action = self._direction_to_action(direction)
-        branches.append(StrategyBranch(
-            branch_id="B1",
-            condition="主趋势延续，质变未触发",
-            action=main_action,
-            position_modifier=main_position_modifier,
-            stop_condition=f"质变触发（积累度>{trigger.threshold:.0%}）",
-            rationale="顺势而为，沿主趋势操作",
-            stop_loss_px=sl_px,
-            take_profit_px=tp_px,
-            reduce_ratio=0.0,
-        ))
+        branches.append(
+            StrategyBranch(
+                branch_id="B1",
+                condition="主趋势延续，质变未触发",
+                action=main_action,
+                position_modifier=main_position_modifier,
+                stop_condition=f"质变触发（积累度>{trigger.threshold:.0%}）",
+                rationale="顺势而为，沿主趋势操作",
+                stop_loss_px=sl_px,
+                take_profit_px=tp_px,
+                reduce_ratio=0.0,
+            )
+        )
 
         # 对冲路径（质变触发）
         hedge_direction = DIR_DOWN if direction == DIR_UP else DIR_UP
@@ -909,17 +960,19 @@ class BCRMEngine:
             b2_sl_px = price * (1 + b2_sl_pct) if price else 0
         else:
             b2_sl_px = 0
-        branches.append(StrategyBranch(
-            branch_id="B2",
-            condition=f"质变触发（积累度>{trigger.threshold:.0%}）",
-            action=f"减仓50%，启动{hedge_action}对冲",
-            position_modifier=0.5,
-            stop_condition="趋势确认反转",
-            rationale="质变发生 → 否定之否定启动，需对冲风险",
-            stop_loss_px=b2_sl_px,
-            take_profit_px=tp_px,  # 止盈不变
-            reduce_ratio=0.5,
-        ))
+        branches.append(
+            StrategyBranch(
+                branch_id="B2",
+                condition=f"质变触发（积累度>{trigger.threshold:.0%}）",
+                action=f"减仓50%，启动{hedge_action}对冲",
+                position_modifier=0.5,
+                stop_condition="趋势确认反转",
+                rationale="质变发生 → 否定之否定启动，需对冲风险",
+                stop_loss_px=b2_sl_px,
+                take_profit_px=tp_px,  # 止盈不变
+                reduce_ratio=0.5,
+            )
+        )
 
         # 螺旋路径（第二否定阶段）
         if spiral.phase == SPIRAL_SECOND_NEGATION:
@@ -931,17 +984,19 @@ class BCRMEngine:
                 b3_sl_px = price * (1 + b3_sl_pct) if price else 0
             else:
                 b3_sl_px = 0
-            branches.append(StrategyBranch(
-                branch_id="B3",
-                condition="螺旋第二否定阶段",
-                action="警惕趋势加速反转，止损上移，减仓70%",
-                position_modifier=0.3,
-                stop_condition="破位止损",
-                rationale="否定之否定第二环 → 螺旋将完成，变盘在即",
-                stop_loss_px=b3_sl_px,
-                take_profit_px=tp_px,
-                reduce_ratio=0.7,
-            ))
+            branches.append(
+                StrategyBranch(
+                    branch_id="B3",
+                    condition="螺旋第二否定阶段",
+                    action="警惕趋势加速反转，止损上移，减仓70%",
+                    position_modifier=0.3,
+                    stop_condition="破位止损",
+                    rationale="否定之否定第二环 → 螺旋将完成，变盘在即",
+                    stop_loss_px=b3_sl_px,
+                    take_profit_px=tp_px,
+                    reduce_ratio=0.7,
+                )
+            )
 
         return branches
 
@@ -959,8 +1014,7 @@ class BCRMEngine:
     # ============================================================
     # Step 7: 实践指令
     # ============================================================
-    def _step7_practice_directive(self,
-                                   branches: List[StrategyBranch]) -> PracticeDirective:
+    def _step7_practice_directive(self, branches: List[StrategyBranch]) -> PracticeDirective:
         """实践指令。"""
         main_branch = branches[0] if branches else StrategyBranch()
 

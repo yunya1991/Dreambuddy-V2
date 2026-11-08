@@ -12,6 +12,7 @@ P3-3 WAL checkpoint + 旧备份轮转保留 N 份
   2. 扫描 backup_dir 下 dreambuddy_core_*.db[.enc] 文件
   3. 按 mtime 排序，保留最新 keep 份，其余删除（含 .sha256 sidecar）
 """
+
 from __future__ import annotations
 
 from pathlib import Path

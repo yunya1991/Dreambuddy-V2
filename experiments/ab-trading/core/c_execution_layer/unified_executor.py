@@ -16,31 +16,29 @@
   输出: NodeExecutionStatus (A层兼容) + ModuleResult (标准化)
 """
 
-import time
 import threading
-from typing import Dict, List, Optional, Any, Callable
+import time
+from typing import Any, Dict, Optional
 
-from ..shared.interfaces import NodeExecutorInterface, NodeExecutionStatus
-from ..shared.errors import (
-    ErrorCode,
-    OSBaseError,
-    NodeError,
-    wrap_exception,
-    ErrorInfo,
+from ..modules.unified_types import (
+    ExecutionContext as UnifiedExecutionContext,
 )
 from ..modules.unified_types import (
     ModuleResult,
-    ExecutionContext as UnifiedExecutionContext,
-    ModuleOutputs,
-    create_success_result,
     create_failure_result,
-    create_fallback_result,
+    create_success_result,
 )
-
+from ..shared.errors import (
+    ErrorCode,
+    ErrorInfo,
+    wrap_exception,
+)
+from ..shared.interfaces import NodeExecutionStatus, NodeExecutorInterface
 
 # ============================================================
 # 统一节点执行器
 # ============================================================
+
 
 class UnifiedNodeExecutor(NodeExecutorInterface):
     """
@@ -100,6 +98,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
         if self._node_registry is None:
             try:
                 from ..nodes.node_registry import get_node_registry
+
                 self._node_registry = get_node_registry()
             except Exception:
                 self._node_registry = None
@@ -110,6 +109,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
         if self._module_registry is None:
             try:
                 from ..modules.module_registry import get_module_registry
+
                 self._module_registry = get_module_registry()
             except Exception:
                 self._module_registry = None
@@ -357,6 +357,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
         """创建模块适配器（ModuleExecutor）"""
         try:
             from ..modules.adapter_framework import ModuleExecutor
+
             return ModuleExecutor(module_id)
         except Exception:
             return None
@@ -365,6 +366,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
         """创建Skill适配器"""
         try:
             from ..modules.adapter_framework import SkillAdapter
+
             return SkillAdapter(module_id)
         except Exception:
             return None
@@ -373,6 +375,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
         """创建API适配器"""
         try:
             from ..modules.adapter_framework import APIAdapter
+
             return APIAdapter(module_id)
         except Exception:
             return None
@@ -405,9 +408,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
             raw_result = handler(mkt, memory, data)
 
             # 转换为 ModuleResult
-            result = self._raw_result_to_module_result(
-                node_id, raw_result, start, exec_ctx
-            )
+            result = self._raw_result_to_module_result(node_id, raw_result, start, exec_ctx)
             return result
 
         except Exception as e:
@@ -499,7 +500,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
         last_result = None
         retry_count = 0
 
-        for attempt in range(max_retries + 1):
+        for attempt in range(max_retries + 1):  # noqa: B007
             start = time.time()
             try:
                 if hasattr(adapter, "execute"):
@@ -517,9 +518,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
                         break
 
                 else:
-                    last_result = create_failure_result(
-                        node_id, "适配器没有execute方法"
-                    )
+                    last_result = create_failure_result(node_id, "适配器没有execute方法")
                     break
 
             except Exception as e:
@@ -536,6 +535,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
             if retry_count <= max_retries:
                 # 简单的指数退避
                 import time as _time
+
                 _time.sleep(0.1 * (2 ** (retry_count - 1)))
 
         if last_result:
@@ -556,6 +556,7 @@ class UnifiedNodeExecutor(NodeExecutorInterface):
         error_code = error_info.get("error_code")
         if error_code:
             from ..shared.errors import ErrorCode
+
             return ErrorCode.is_retryable(error_code)
 
         return False

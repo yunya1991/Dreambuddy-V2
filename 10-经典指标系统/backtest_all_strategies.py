@@ -3,10 +3,9 @@
 批量回测所有核心策略
 按 1h 和 4h 两个周期分别回测，选择表现最好的策略
 """
-import subprocess
+
 import json
-import os
-import sys
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -56,13 +55,22 @@ def run_backtest(strategy_module: str, class_name: str, timeframe: str) -> dict:
     cmd = [
         FREQTRADE_BIN,
         "backtesting",
-        "--config", str(tmp_config),
-        "--strategy", class_name,
-        "--strategy-path", str(BASE_DIR / "user_data" / "strategies"),
-        "--timerange", f"{START_DATE}-{END_DATE}",
-        "--timeframe", timeframe,
-        "--pairs", "BTC/USDT", "ETH/USDT", "SOL/USDT",
-        "--export", "none",
+        "--config",
+        str(tmp_config),
+        "--strategy",
+        class_name,
+        "--strategy-path",
+        str(BASE_DIR / "user_data" / "strategies"),
+        "--timerange",
+        f"{START_DATE}-{END_DATE}",
+        "--timeframe",
+        timeframe,
+        "--pairs",
+        "BTC/USDT",
+        "ETH/USDT",
+        "SOL/USDT",
+        "--export",
+        "none",
     ]
 
     print(f"\n[回测] {class_name} @ {timeframe} ...")
@@ -83,7 +91,7 @@ def run_backtest(strategy_module: str, class_name: str, timeframe: str) -> dict:
 
         return parse_backtest_output(result.stdout + result.stderr, class_name, timeframe)
     except subprocess.TimeoutExpired:
-        print(f"  ❌ 超时")
+        print("  ❌ 超时")
         if tmp_config.exists():
             tmp_config.unlink()
         return {"strategy": class_name, "timeframe": timeframe, "error": "timeout"}
@@ -119,7 +127,7 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             try:
                 val = line.split(":")[-1].strip().replace("%", "").replace("+", "")
                 result["total_profit_pct"] = float(val)
-            except:
+            except:  # noqa: E722
                 pass
 
         # 夏普比率
@@ -127,7 +135,7 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             try:
                 val = line.split(":")[-1].strip()
                 result["sharpe"] = float(val)
-            except:
+            except:  # noqa: E722
                 pass
 
         # Sortino
@@ -135,7 +143,7 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             try:
                 val = line.split(":")[-1].strip()
                 result["sortino"] = float(val)
-            except:
+            except:  # noqa: E722
                 pass
 
         # 最大回撤
@@ -143,7 +151,7 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             try:
                 val = line.split(":")[-1].strip().replace("%", "")
                 result["max_drawdown_pct"] = float(val)
-            except:
+            except:  # noqa: E722
                 pass
 
         # 总交易次数
@@ -151,7 +159,7 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             try:
                 val = line.split(":")[-1].strip()
                 result["total_trades"] = int(val)
-            except:
+            except:  # noqa: E722
                 pass
 
         # 胜率
@@ -159,7 +167,7 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             try:
                 val = line.split(":")[-1].strip().replace("%", "")
                 result["win_rate"] = float(val)
-            except:
+            except:  # noqa: E722
                 pass
 
         # 平均利润
@@ -167,7 +175,7 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             try:
                 val = line.split(":")[-1].strip().replace("%", "")
                 result["avg_profit"] = float(val)
-            except:
+            except:  # noqa: E722
                 pass
 
     if result["total_profit_pct"] is None:
@@ -178,7 +186,9 @@ def parse_backtest_output(output: str, strategy: str, timeframe: str) -> dict:
             result["error"] = "no_results"
 
     status = "✅" if result["total_profit_pct"] is not None else "❌"
-    print(f"  {status} Profit: {result['total_profit_pct']}%, Trades: {result['total_trades']}, Sharpe: {result['sharpe']}")
+    print(
+        f"  {status} Profit: {result['total_profit_pct']}%, Trades: {result['total_trades']}, Sharpe: {result['sharpe']}"
+    )
 
     return result
 
@@ -200,10 +210,10 @@ def calculate_score(r: dict) -> float:
 
 def main():
     print("=" * 70)
-    print(f"Freqtrade 策略批量回测")
+    print("Freqtrade 策略批量回测")
     print(f"时间范围: {START_DATE} ~ {END_DATE}")
-    print(f"交易对: BTC/USDT, ETH/USDT, SOL/USDT")
-    print(f"周期: 1h, 4h")
+    print("交易对: BTC/USDT, ETH/USDT, SOL/USDT")
+    print("周期: 1h, 4h")
     print("=" * 70)
 
     all_results = []
@@ -231,7 +241,9 @@ def main():
         for i, r in enumerate(tf_results[:5], 1):
             profit = r.get("total_profit_pct")
             if profit is not None:
-                print(f"  {i}. {r['strategy']}: 收益={profit:.2f}%, 夏普={r.get('sharpe')}, 回撤={r.get('max_drawdown_pct')}%, 评分={r['score']}")
+                print(
+                    f"  {i}. {r['strategy']}: 收益={profit:.2f}%, 夏普={r.get('sharpe')}, 回撤={r.get('max_drawdown_pct')}%, 评分={r['score']}"
+                )
             else:
                 print(f"  {i}. {r['strategy']}: 回测失败 ({r.get('error')})")
 
@@ -241,7 +253,9 @@ def main():
     print("=" * 70)
 
     for tf in TIMEFRAMES:
-        tf_results = [r for r in all_results if r["timeframe"] == tf and r.get("total_profit_pct") is not None]
+        tf_results = [
+            r for r in all_results if r["timeframe"] == tf and r.get("total_profit_pct") is not None
+        ]
         if tf_results:
             best = max(tf_results, key=lambda x: x["score"])
             print(f"\n{tf} 最优策略: {best['strategy']}")

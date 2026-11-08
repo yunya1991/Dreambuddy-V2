@@ -14,6 +14,7 @@ FOMC阶段基线置信度 (SPEC §4.6.3):
 HC: 开关关断时返回 position_scale=1.0 中性默认
 HC: FAIL-OPEN 异常返回中性默认
 """
+
 from __future__ import annotations
 
 import logging

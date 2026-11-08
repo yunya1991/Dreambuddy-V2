@@ -5,19 +5,17 @@
 
 对应 Spec §3bis.4.2 动作C + §3bis.9 T_CB4。
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import sys
 from pathlib import Path
-
-import pytest
 
 # Add bcrm2 to sys.path
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2 import morph_cycle_predictor as mcp
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
 
 
 def _make_predictor() -> MorphCyclePredictor:
@@ -28,6 +26,7 @@ def _make_predictor() -> MorphCyclePredictor:
 # ================================================================
 # T_CB4: 越界信号检测
 # ================================================================
+
 
 class TestOvershootSingleEvent:
     """验证单次越界事件检测。"""
@@ -121,8 +120,7 @@ class TestOvershootStreak:
         # 5 个越界事件（第 5 天未越界不算）
         assert len(events) == 5
         for e in events:
-            assert e["need_anchor_correct"] is False, \
-                "连续越界被打断后应重置计数，不触发大调整"
+            assert e["need_anchor_correct"] is False, "连续越界被打断后应重置计数，不触发大调整"
 
 
 class TestOvershootNoEvents:

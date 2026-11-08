@@ -1,12 +1,11 @@
-import pandas as pd
 from datetime import datetime
-from pandas import DataFrame
 from typing import Optional
 
-from freqtrade.strategy import IStrategy, DecimalParameter, stoploss_from_open
-from freqtrade.persistence import Trade
-
+import pandas as pd
 import talib.abstract as ta
+from freqtrade.persistence import Trade
+from freqtrade.strategy import DecimalParameter, IStrategy, stoploss_from_open
+from pandas import DataFrame
 
 
 class ParabolicSarTrendStrategy(IStrategy):
@@ -51,7 +50,9 @@ class ParabolicSarTrendStrategy(IStrategy):
     }
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe["sar"] = ta.SAR(dataframe, acceleration=float(self.sar_acc.value), maximum=float(self.sar_max.value))
+        dataframe["sar"] = ta.SAR(
+            dataframe, acceleration=float(self.sar_acc.value), maximum=float(self.sar_max.value)
+        )
         dataframe["atr"] = ta.ATR(dataframe, timeperiod=14)
         dataframe["volume_mean"] = dataframe["volume"].rolling(window=20).mean()
         return dataframe
@@ -90,7 +91,15 @@ class ParabolicSarTrendStrategy(IStrategy):
         dataframe.loc[cross_up & vol_ok, "exit_short"] = 1
         return dataframe
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs) -> float:
+    def custom_stoploss(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> float:
         try:
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             if dataframe is None or len(dataframe) < 20:
@@ -138,12 +147,17 @@ class ParabolicSarTrendStrategy(IStrategy):
                     stop_price = float(current_rate) + float(trail_distance)
                     if stop_price > float(trade.open_rate):
                         stop_price = float(trade.open_rate)
-                    open_relative_stop = max(open_relative_stop, (float(trade.open_rate) - stop_price) / float(trade.open_rate))
+                    open_relative_stop = max(
+                        open_relative_stop,
+                        (float(trade.open_rate) - stop_price) / float(trade.open_rate),
+                    )
                 else:
                     stop_price = float(current_rate) - float(trail_distance)
                     if stop_price < float(trade.open_rate):
                         stop_price = float(trade.open_rate)
-                    open_relative_stop = max(open_relative_stop, (stop_price / float(trade.open_rate)) - 1.0)
+                    open_relative_stop = max(
+                        open_relative_stop, (stop_price / float(trade.open_rate)) - 1.0
+                    )
 
             sl = float(stoploss_from_open(open_relative_stop, current_profit))
             if sl <= 0.0:
@@ -154,7 +168,15 @@ class ParabolicSarTrendStrategy(IStrategy):
                 self.log.error(f"Custom stoploss error for {pair}: {str(e)}")
             return 1.0
 
-    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs) -> Optional[str]:
+    def custom_exit(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> Optional[str]:
         if current_profit <= 0:
             return None
 
@@ -184,7 +206,9 @@ class ParabolicSarTrendStrategy(IStrategy):
             "main_plot": {"close": {"color": "black"}, "sar": {"color": "white"}},
             "subplots": {
                 "ATR": {"atr": {"color": "white"}},
-                "Volume": {"volume": {"color": "gray", "type": "bar"}, "volume_mean": {"color": "blue"}},
+                "Volume": {
+                    "volume": {"color": "gray", "type": "bar"},
+                    "volume_mean": {"color": "blue"},
+                },
             },
         }
-

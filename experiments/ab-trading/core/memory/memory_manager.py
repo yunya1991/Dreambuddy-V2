@@ -33,10 +33,9 @@ MemoryManager — 记忆模块清理管理器
 
 import json
 import logging
-import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_PATH = PROJECT_ROOT / "logs" / "memory_cleanup.log"
@@ -61,8 +60,7 @@ class MemoryManager:
         console_handler.setLevel(logging.INFO)
 
         formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
+            "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
         )
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
@@ -104,7 +102,7 @@ class MemoryManager:
         lessons = memory.get("lessons", [])
         initial_count = len(lessons)
 
-        lessons = [l for l in lessons if l.get("score", 0) >= 10]
+        lessons = [l for l in lessons if l.get("score", 0) >= 10]  # noqa: E741
 
         lessons.sort(key=lambda x: x["score"], reverse=True)
         lessons = lessons[:20]
@@ -112,7 +110,9 @@ class MemoryManager:
         memory["lessons"] = lessons
         removed = initial_count - len(lessons)
         if removed > 0:
-            self.logger.info(f"  - 清理低价值 Lessons: {initial_count} -> {len(lessons)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理低价值 Lessons: {initial_count} -> {len(lessons)} (移除 {removed} 条)"
+            )
         return removed
 
     def _clean_agent_a_trades(self, memory: Dict) -> int:
@@ -124,22 +124,23 @@ class MemoryManager:
         memory["recent_trades"] = trades
         removed = initial_count - len(trades)
         if removed > 0:
-            self.logger.info(f"  - 清理旧交易记录: {initial_count} -> {len(trades)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理旧交易记录: {initial_count} -> {len(trades)} (移除 {removed} 条)"
+            )
         return removed
 
     def _clean_agent_a_pending_strategies(self, memory: Dict) -> int:
         pending = memory.get("pending_strategies", [])
         initial_count = len(pending)
 
-        pending = [
-            p for p in pending
-            if not self._is_expired(p.get("added_at", ""), days=7)
-        ]
+        pending = [p for p in pending if not self._is_expired(p.get("added_at", ""), days=7)]
 
         memory["pending_strategies"] = pending
         removed = initial_count - len(pending)
         if removed > 0:
-            self.logger.info(f"  - 清理过期待验证策略: {initial_count} -> {len(pending)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理过期待验证策略: {initial_count} -> {len(pending)} (移除 {removed} 条)"
+            )
         return removed
 
     def _clean_agent_a_master_history(self, memory: Dict) -> int:
@@ -151,7 +152,9 @@ class MemoryManager:
         memory["master_switch_history"] = history
         removed = initial_count - len(history)
         if removed > 0:
-            self.logger.info(f"  - 清理旧大师切换记录: {initial_count} -> {len(history)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理旧大师切换记录: {initial_count} -> {len(history)} (移除 {removed} 条)"
+            )
         return removed
 
     def clean_agent_a_memory(self) -> Dict:
@@ -199,7 +202,9 @@ class MemoryManager:
         memory["lessons"] = lessons
         removed = initial_count - len(lessons)
         if removed > 0:
-            self.logger.info(f"  - 清理 Agent B Lessons: {initial_count} -> {len(lessons)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理 Agent B Lessons: {initial_count} -> {len(lessons)} (移除 {removed} 条)"
+            )
         return removed
 
     def _clean_agent_b_recent_decisions(self, memory: Dict) -> int:
@@ -222,7 +227,9 @@ class MemoryManager:
         memory["recent_decisions"] = filtered
         removed = initial_count - len(filtered)
         if removed > 0:
-            self.logger.info(f"  - 清理 Agent B 决策记录: {initial_count} -> {len(filtered)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理 Agent B 决策记录: {initial_count} -> {len(filtered)} (移除 {removed} 条)"
+            )
         return removed
 
     def _clean_agent_b_strategy_param_history(self, memory: Dict) -> int:
@@ -235,7 +242,9 @@ class MemoryManager:
         memory["strategy_param_history"] = history
         removed = initial_count - len(history)
         if removed > 0:
-            self.logger.info(f"  - 清理 Agent B 参数调整历史: {initial_count} -> {len(history)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理 Agent B 参数调整历史: {initial_count} -> {len(history)} (移除 {removed} 条)"
+            )
         return removed
 
     def _clean_agent_b_suggestions(self, memory: Dict) -> int:
@@ -250,7 +259,9 @@ class MemoryManager:
                     # cycle_id 形如 20260810_020005，解析其中的日期
                     try:
                         date_part = cycle_id.split("_")[0]
-                        sug_date = datetime.strptime(date_part, "%Y%m%d").replace(tzinfo=timezone.utc)
+                        sug_date = datetime.strptime(date_part, "%Y%m%d").replace(
+                            tzinfo=timezone.utc
+                        )
                         if (datetime.now(timezone.utc) - sug_date) > timedelta(days=14):
                             sl[key] = {}
                             removed += 1
@@ -287,7 +298,9 @@ class MemoryManager:
         memory["regime_history"] = regimes
         removed = initial_count - len(regimes)
         if removed > 0:
-            self.logger.info(f"  - 清理 Agent B Regime 历史: {initial_count} -> {len(regimes)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理 Agent B Regime 历史: {initial_count} -> {len(regimes)} (移除 {removed} 条)"
+            )
         return removed
 
     def clean_agent_b_memory(self) -> Dict:
@@ -330,7 +343,7 @@ class MemoryManager:
         lessons = sl.get("verified_lessons", [])
         initial_count = len(lessons)
 
-        lessons = [l for l in lessons if l.get("confidence", 0) >= 0.5]
+        lessons = [l for l in lessons if l.get("confidence", 0) >= 0.5]  # noqa: E741
 
         lessons.sort(key=lambda x: (x.get("confidence", 0), x.get("verify_count", 0)), reverse=True)
         lessons = lessons[:30]
@@ -339,7 +352,9 @@ class MemoryManager:
         memory["suggestion_loop"] = sl
         removed = initial_count - len(lessons)
         if removed > 0:
-            self.logger.info(f"  - 清理低置信度教训: {initial_count} -> {len(lessons)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理低置信度教训: {initial_count} -> {len(lessons)} (移除 {removed} 条)"
+            )
         return removed
 
     def _clean_trading_memory_verification_history(self, memory: Dict) -> int:
@@ -353,7 +368,9 @@ class MemoryManager:
         memory["suggestion_loop"] = sl
         removed = initial_count - len(history)
         if removed > 0:
-            self.logger.info(f"  - 清理旧验证历史: {initial_count} -> {len(history)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理旧验证历史: {initial_count} -> {len(history)} (移除 {removed} 条)"
+            )
         return removed
 
     def clean_trading_memory(self) -> Dict:
@@ -425,14 +442,16 @@ class MemoryManager:
         data["chronicles"] = cleaned_chronicles
 
         if removed > 0:
-            self.logger.info(f"  - 清理过期 Chronicle: {initial_count} -> {len(cleaned_chronicles)} (移除 {removed} 条)")
+            self.logger.info(
+                f"  - 清理过期 Chronicle: {initial_count} -> {len(cleaned_chronicles)} (移除 {removed} 条)"
+            )
         else:
-            self.logger.info(f"  - 无过期 Chronicle 需要清理")
+            self.logger.info("  - 无过期 Chronicle 需要清理")
 
         try:
             with open(storage_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            self.logger.info(f"  - 图存储已保存")
+            self.logger.info("  - 图存储已保存")
         except Exception as e:
             self.logger.error(f"  - 保存图存储失败: {e}")
 

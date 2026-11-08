@@ -11,10 +11,10 @@ SPEC-AGI升级蓝图.md §4.4.3
 生产接线: polling_trader.py 检测 → _fds.three_factor_short_signal → 做空 inference；
 本引擎 detect_expanded_factors 委托路径D（factor_pool_expansion）扩展因子评估。
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ class ThreeFactorShortDetector:
         try:
             # 开关检查
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_three_factor_short"):
                 return False
         except Exception:
@@ -111,6 +112,7 @@ class ThreeFactorShortDetector:
                 ExpandedFactorResult,
                 FactorPoolExpansion,
             )
+
             _fpe = FactorPoolExpansion()
             return _fpe.evaluate(funding_rate, oi_change_pct, price_change_pct)
         except Exception as e:
@@ -118,6 +120,7 @@ class ThreeFactorShortDetector:
             from dreambuddy_evolution.engines.factor_pool_expansion import (
                 ExpandedFactorResult,
             )
+
             return ExpandedFactorResult(
                 funding_rate_satisfied=False,
                 oi_price_divergence_satisfied=False,

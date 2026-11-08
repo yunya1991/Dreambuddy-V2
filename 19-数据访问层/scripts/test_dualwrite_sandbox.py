@@ -13,10 +13,11 @@
   3. 设置 READ_SOURCE=shadow 读一条 metric（触发审计写入）
   4. 查询 ma_migration_audit 表
 """
+
 import os
+import sqlite3
 import sys
 import tempfile
-import sqlite3
 from datetime import datetime
 
 # 设置环境变量（沙箱模式）
@@ -44,16 +45,19 @@ print("=" * 60)
 print("Step 1: 获取 DualWrite MarketMacro repo")
 print("=" * 60)
 try:
-    from dreambuddy_dal.di import get_market_macro_repo, _resolve_backend
+    from dreambuddy_dal.di import _resolve_backend, get_market_macro_repo
+
     backend = _resolve_backend(None)
     print(f"  解析 backend: {backend}")
     assert backend == "dual_write", f"backend 应为 dual_write, 实际 {backend}"
     repo = get_market_macro_repo()
     print(f"  repo 类型: {type(repo).__name__}")
-    print(f"  ✓ DualWrite repo 获取成功")
+    print("  ✓ DualWrite repo 获取成功")
 except Exception as e:
     print(f"  ✗ 失败: {e}")
-    import traceback; traceback.print_exc()
+    import traceback
+
+    traceback.print_exc()
     sys.exit(1)
 
 # ============================================================
@@ -73,10 +77,12 @@ try:
         ts=ts,
     )
     print(f"  upsert_metric 返回: {result}")
-    print(f"  ✓ 写入成功（legacy + new 双写）")
+    print("  ✓ 写入成功（legacy + new 双写）")
 except Exception as e:
     print(f"  ✗ 写入失败: {e}")
-    import traceback; traceback.print_exc()
+    import traceback
+
+    traceback.print_exc()
 
 # ============================================================
 # Step 3: 设置 READ_SOURCE=shadow 读一条 metric（触发审计写入）
@@ -89,15 +95,18 @@ os.environ["READ_SOURCE"] = "shadow"
 try:
     # 获取新 repo 实例（确保 READ_SOURCE 生效）
     from dreambuddy_dal.di import _INSTANCES, _lock
+
     with _lock:
         _INSTANCES.clear()  # 清除缓存，强制重新创建
     repo2 = get_market_macro_repo()
     result = repo2.query_latest_metric("test_sub", "test_metric")
     print(f"  query_latest_metric 返回: {result}")
-    print(f"  ✓ shadow read 完成（应写入 ma_migration_audit）")
+    print("  ✓ shadow read 完成（应写入 ma_migration_audit）")
 except Exception as e:
     print(f"  ✗ shadow read 失败: {e}")
-    import traceback; traceback.print_exc()
+    import traceback
+
+    traceback.print_exc()
 
 # ============================================================
 # Step 4: 查询 ma_migration_audit 表
@@ -131,7 +140,9 @@ try:
         print("\n  ⚠ 审计表为空（可能 shadow read 未触发，或 legacy 无数据可比对）")
 except Exception as e:
     print(f"  ✗ 查询失败: {e}")
-    import traceback; traceback.print_exc()
+    import traceback
+
+    traceback.print_exc()
 
 # ============================================================
 # Step 5: 验证调用方无错误（读 legacy 数据）
@@ -147,7 +158,7 @@ try:
     repo3 = get_market_macro_repo()
     result = repo3.query_latest_metric("test_sub", "test_metric")
     print(f"  query_latest_metric (legacy) 返回: {result}")
-    print(f"  ✓ 调用方正常返回 legacy 数据，无错误")
+    print("  ✓ 调用方正常返回 legacy 数据，无错误")
 except Exception as e:
     print(f"  ✗ 调用方异常: {e}")
 

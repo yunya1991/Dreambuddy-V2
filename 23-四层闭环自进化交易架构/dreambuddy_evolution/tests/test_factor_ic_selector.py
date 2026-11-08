@@ -10,6 +10,7 @@ C1 RED: 因子 IC 筛选器测试
 
 RED 阶段：factor_ic_selector 模块尚不存在 → 所有测试 ModuleNotFoundError
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -124,9 +125,7 @@ class TestFactorICSelector:
         factor_a = forward_ret_1d + np.random.randn(n) * 0.001
         factor_x = 2.0 * factor_a + np.random.randn(n) * 0.0001  # 几乎完全共线
 
-        factors_df = pd.DataFrame(
-            {"factor_a": factor_a, "factor_x": factor_x}, index=dates
-        )
+        factors_df = pd.DataFrame({"factor_a": factor_a, "factor_x": factor_x}, index=dates)
 
         selector = FactorICSelector(dal_path=":memory:", price_path="")
         selector._price_df = pd.DataFrame({"close": prices}, index=dates)
@@ -145,7 +144,7 @@ class TestFactorICSelector:
         # 两个因子中只能保留一个（共线性）
         assert len(result.selected_factors) <= 1
         # 被剔除的应在 excluded 列表中
-        excluded_names = [e["name"] for e in result.excluded]
+        excluded_names = [e["name"] for e in result.excluded]  # noqa: F841
         assert any("vif" in str(e.get("reason", "")).lower() for e in result.excluded)
 
     def test_ranking_sorted_by_abs_ic_ir(self):

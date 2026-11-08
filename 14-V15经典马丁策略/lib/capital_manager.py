@@ -24,6 +24,7 @@
 可用资金 >= 单仓位总需求 * 2 时，允许开新单
 可用资金 < 单仓位总需求 时，禁止开新单
 """
+
 import json
 import sys
 from datetime import datetime, timezone
@@ -32,14 +33,13 @@ from typing import Optional
 
 BASE_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR / "lib"))
-from token_pool_loader import load_coins_with_override
+from token_pool_loader import load_coins_with_override  # noqa: E402
 
 try:
     from config_loader import (
         get_config,
         get_config_float,
         get_config_int,
-        get_config_list,
         load_config,
     )
 
@@ -102,12 +102,14 @@ def _get_effective_base_pct() -> float:
         if not isinstance(history, list) or len(history) < 20:
             return BASE_POSITION_PCT
         from kelly_optimizer import calculate_kelly_from_trades
+
         kp = calculate_kelly_from_trades(history, base_pct=BASE_POSITION_PCT)
         if kp.used_kelly:
             return kp.final_pct
         return BASE_POSITION_PCT
     except Exception:
         return BASE_POSITION_PCT
+
 
 # 加仓资金分配（金字塔结构：越跌加仓越大，经典马丁）
 ADDON1_PCT = get_config_float("ADDON1_PCT", 0.05)  # 加仓1：5%（黑天鹅第一档）
@@ -117,6 +119,7 @@ ADDON4_PCT = get_config_float("ADDON4_PCT", 0.35)  # 加仓4：35%（最深档�
 
 MAX_POSITION_PCT = get_config_float("MAX_POSITION_PCT", 0.60)
 MIN_MARGIN_USD = get_config_float("MIN_MARGIN_USD", 30)
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §1/§2/§3 动态V15预算池配置（spec 2026-09-01）
@@ -131,6 +134,7 @@ def _safe_cfg_float(key: str, default: float) -> float:
     except Exception:
         return float(default)
 
+
 def _safe_cfg_bool(key: str, default: bool) -> bool:
     try:
         v = get_config(key, None)
@@ -140,14 +144,15 @@ def _safe_cfg_bool(key: str, default: bool) -> bool:
     except Exception:
         return bool(default)
 
+
 # §1 预算分子：默认POOL=$200, UTIL=1.0, CAP=50%权益
-V15_POOL_SIZE_USDT      = _safe_cfg_float("V15_POOL_SIZE_USDT",       200.0)
-V15_BUDGET_UTIL_PCT     = _safe_cfg_float("V15_BUDGET_UTIL_PCT",      1.0)
-V15_MAX_RATIO_CAP       = _safe_cfg_float("V15_MAX_RATIO_CAP",        0.5)
+V15_POOL_SIZE_USDT = _safe_cfg_float("V15_POOL_SIZE_USDT", 200.0)
+V15_BUDGET_UTIL_PCT = _safe_cfg_float("V15_BUDGET_UTIL_PCT", 1.0)
+V15_MAX_RATIO_CAP = _safe_cfg_float("V15_MAX_RATIO_CAP", 0.5)
 # §2 已用扣减 & §3 MIN自适应
-V15_DEDUCT_V15_USED     = _safe_cfg_bool("V15_DEDUCT_V15_USED",       True)
-V15_DYNAMIC_MIN_MARGIN  = _safe_cfg_bool("V15_DYNAMIC_MIN_MARGIN",    True)
-V15_MIN_MARGIN_FLOOR    = _safe_cfg_float("V15_MIN_MARGIN_FLOOR",     5.0)
+V15_DEDUCT_V15_USED = _safe_cfg_bool("V15_DEDUCT_V15_USED", True)
+V15_DYNAMIC_MIN_MARGIN = _safe_cfg_bool("V15_DYNAMIC_MIN_MARGIN", True)
+V15_MIN_MARGIN_FLOOR = _safe_cfg_float("V15_MIN_MARGIN_FLOOR", 5.0)
 
 
 # 币种池：公共代币池(token_registry.json) > V15_COINS env(override) > 硬编码默认
@@ -342,9 +347,15 @@ def calculate_single_position_cost(budget=None):
     }
 
 
-def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, available_budget=None,
-                                  pos_count_override=None,
-                                  v15_used_usd=None, v15_state_positions=None):
+def calculate_per_coin_allocation(
+    symbol,
+    confidence=60,
+    elder_ray=None,
+    available_budget=None,
+    pos_count_override=None,
+    v15_used_usd=None,
+    v15_state_positions=None,
+):
     """基于趋势强度+置信度+波动率的智能资金分配
 
     资金管理器三大职责：
@@ -388,9 +399,9 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     # ── V15动态预算池（spec 2026-09-01 §1/§2/§3）优先于cap.avail_balance ──
     #   只有当调用方显式传入available_budget（fixed/回归兼容）时才用旧口径；
     #   否则（默认路径）计算budget_pool_net，替换available_budget。
-    pool_info = _resolve_v15_budget_pool(cap,
-                                         v15_used_usd=v15_used_usd,
-                                         v15_state_positions=v15_state_positions)
+    pool_info = _resolve_v15_budget_pool(
+        cap, v15_used_usd=v15_used_usd, v15_state_positions=v15_state_positions
+    )
     if V15_CAPITAL_MODE == "fixed" and available_budget is None:
         # fixed模式按配置TOTAL_BUDGET（不改原有行为，但仍返回预算池字段）
         available_budget = cap["avail_balance"]
@@ -407,7 +418,11 @@ def calculate_per_coin_allocation(symbol, confidence=60, elder_ray=None, availab
     # 获取当前持仓数
     # FIX-C: 调用方（V15主循环）传入state中持仓数，避免计入L4/polling_trader等外部仓位
     # 若未传入则回退到OKX账户全量持仓（向后兼容）
-    if pos_count_override is not None and isinstance(pos_count_override, int) and pos_count_override >= 0:
+    if (
+        pos_count_override is not None
+        and isinstance(pos_count_override, int)
+        and pos_count_override >= 0
+    ):
         current_count = pos_count_override
     else:
         positions = get_current_positions()
@@ -612,7 +627,13 @@ def _resolve_capital_budget() -> dict:
         }
 
     # ── Dynamic 模式（默认）：优先 OKX 实盘，失败兜底 TOTAL_BUDGET 但不改 mode ──
-    bal = {"ok": False, "error": "unknown", "total_eq": TOTAL_BUDGET, "avail_balance": TOTAL_BUDGET, "used_margin": 0.0}
+    bal = {
+        "ok": False,
+        "error": "unknown",
+        "total_eq": TOTAL_BUDGET,
+        "avail_balance": TOTAL_BUDGET,
+        "used_margin": 0.0,
+    }
     try:
         bal = get_account_balance()
     except Exception as _e:
@@ -672,9 +693,9 @@ def _calc_v15_used_from_state(v15_state_positions) -> float:
         return 0.0
 
 
-def _resolve_v15_budget_pool(cap: dict,
-                             v15_used_usd: Optional[float] = None,
-                             v15_state_positions=None) -> dict:
+def _resolve_v15_budget_pool(
+    cap: dict, v15_used_usd: Optional[float] = None, v15_state_positions=None
+) -> dict:
     """§1预算分子 + §2已用扣减 计算。
     纯函数（只依赖cap入参），不直接读OKX或配置——便于单元测试mock。
 

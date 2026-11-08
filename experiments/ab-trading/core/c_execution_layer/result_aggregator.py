@@ -10,18 +10,17 @@ C层 - 结果聚合器
 3. 生成最终决策和建议
 """
 
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
+from typing import Dict, List
 
 from .types import (
-    NodeExecutionResult,
     AggregatedResult,
+    NodeExecutionResult,
 )
-
 
 # ============================================================
 # C层：结果聚合器 - 核心实现
 # ============================================================
+
 
 class ResultAggregator:
     """结果聚合器
@@ -110,18 +109,17 @@ class ResultAggregator:
         aggregated.aggregated_output = aggregated_outputs
 
         # 计算综合置信度
-        overall_confidence = sum(
-            r.confidence * r.confidence
-            for r in successful_results
-        ) / sum(r.confidence for r in successful_results) if successful_results else 0
+        overall_confidence = (
+            sum(r.confidence * r.confidence for r in successful_results)
+            / sum(r.confidence for r in successful_results)
+            if successful_results
+            else 0
+        )
 
         aggregated.overall_confidence = overall_confidence
 
         # 置信度分解
-        aggregated.confidence_breakdown = {
-            r.node_id: r.confidence
-            for r in successful_results
-        }
+        aggregated.confidence_breakdown = {r.node_id: r.confidence for r in successful_results}
 
         # 生成决策
         self._generate_decision(aggregated, successful_results)
@@ -200,10 +198,7 @@ class ResultAggregator:
             aggregated.final_decision = "neutral"
             aggregated.aggregated_output = {}
 
-        aggregated.confidence_breakdown = {
-            r.node_id: r.confidence
-            for r in successful_results
-        }
+        aggregated.confidence_breakdown = {r.node_id: r.confidence for r in successful_results}
 
         aggregated.rationale = f"投票结果: {aggregated.final_decision}"
 
@@ -229,10 +224,7 @@ class ResultAggregator:
 
         aggregated.aggregated_output = aggregated_outputs
         aggregated.overall_confidence = total_confidence / len(successful_results)
-        aggregated.confidence_breakdown = {
-            r.node_id: r.confidence
-            for r in successful_results
-        }
+        aggregated.confidence_breakdown = {r.node_id: r.confidence for r in successful_results}
         self._generate_decision(aggregated, successful_results)
 
         aggregated.rationale = f"顺序覆盖 {len(successful_results)} 个结果"
@@ -268,6 +260,7 @@ class ResultAggregator:
 # ============================================================
 # C层：结果聚合器 - 便捷函数
 # ============================================================
+
 
 def aggregate_results(
     node_results: List[NodeExecutionResult],

@@ -21,23 +21,23 @@
 5. 应用硬性风控上限：单笔亏损 ≤ max_risk_pct（默认2%）
 6. 与基线底仓比例(22%)对比，取较保守者
 """
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
 
+from typing import Dict, List  # noqa: I001
+from dataclasses import dataclass
 
 # ── 默认参数 ──────────────────────────────────────────────────────────────
 
 BASE_POSITION_PCT = 0.22  # 基线底仓比例（22%）
-KELLY_FRACTION = 0.5      # 分数凯利系数（0.5=半凯利，0.25=四分之一凯利）
-MAX_RISK_PCT = 0.02       # 单笔最大亏损占总资金比例（2%）
-MIN_POSITION_PCT = 0.02   # 最小底仓比例（2%，低于此则不交易）
-MAX_POSITION_PCT = 0.30   # 最大底仓比例上限（30%，硬性天花板）
+KELLY_FRACTION = 0.5  # 分数凯利系数（0.5=半凯利，0.25=四分之一凯利）
+MAX_RISK_PCT = 0.02  # 单笔最大亏损占总资金比例（2%）
+MIN_POSITION_PCT = 0.02  # 最小底仓比例（2%，低于此则不交易）
+MAX_POSITION_PCT = 0.30  # 最大底仓比例上限（30%，硬性天花板）
 
 # 保守估计收缩系数（向中性值收缩）
 # shrinkage=0 表示不收缩，shrinkage=1 表示完全用中性值
 # p 向 0.5 收缩，b 向 1.0 收缩
-P_SHRINKAGE = 0.15        # 胜率收缩系数（15%权重给中性值0.5）
-B_SHRINKAGE = 0.15        # 盈亏比收缩系数（15%权重给中性值1.0）
+P_SHRINKAGE = 0.15  # 胜率收缩系数（15%权重给中性值0.5）
+B_SHRINKAGE = 0.15  # 盈亏比收缩系数（15%权重给中性值1.0）
 
 # 最小样本量要求
 MIN_TRADES_FOR_KELLY = 20  # 少于此数则不启用凯利，回退到基线
@@ -46,21 +46,22 @@ MIN_TRADES_FOR_KELLY = 20  # 少于此数则不启用凯利，回退到基线
 @dataclass
 class KellyParams:
     """凯利公式计算参数"""
-    p: float              # 胜率（保守调整后）
-    b: float              # 盈亏比（保守调整后）
-    f_star: float         # 理论凯利比例
-    f_fractional: float   # 分数凯利比例
-    f_capped: float       # 风控上限后比例
-    final_pct: float      # 最终底仓比例（与基线对比取保守者）
-    avg_win_pct: float    # 平均盈利百分比
-    avg_loss_pct: float   # 平均亏损百分比
-    raw_p: float          # 原始胜率
-    raw_b: float          # 原始盈亏比
-    total_trades: int     # 交易总数
-    win_count: int        # 盈利交易数
-    loss_count: int       # 亏损交易数
-    used_kelly: bool      # 是否实际启用了凯利优化
-    reason: str           # 决策原因说明
+
+    p: float  # 胜率（保守调整后）
+    b: float  # 盈亏比（保守调整后）
+    f_star: float  # 理论凯利比例
+    f_fractional: float  # 分数凯利比例
+    f_capped: float  # 风控上限后比例
+    final_pct: float  # 最终底仓比例（与基线对比取保守者）
+    avg_win_pct: float  # 平均盈利百分比
+    avg_loss_pct: float  # 平均亏损百分比
+    raw_p: float  # 原始胜率
+    raw_b: float  # 原始盈亏比
+    total_trades: int  # 交易总数
+    win_count: int  # 盈利交易数
+    loss_count: int  # 亏损交易数
+    used_kelly: bool  # 是否实际启用了凯利优化
+    reason: str  # 决策原因说明
 
 
 def calculate_kelly_from_trades(
@@ -88,11 +89,19 @@ def calculate_kelly_from_trades(
     """
     if not trades or len(trades) < min_trades:
         return KellyParams(
-            p=0.5, b=1.0, f_star=0.0, f_fractional=0.0, f_capped=0.0,
-            final_pct=base_pct, avg_win_pct=0.0, avg_loss_pct=0.0,
-            raw_p=0.0, raw_b=0.0,
+            p=0.5,
+            b=1.0,
+            f_star=0.0,
+            f_fractional=0.0,
+            f_capped=0.0,
+            final_pct=base_pct,
+            avg_win_pct=0.0,
+            avg_loss_pct=0.0,
+            raw_p=0.0,
+            raw_b=0.0,
             total_trades=len(trades) if trades else 0,
-            win_count=0, loss_count=0,
+            win_count=0,
+            loss_count=0,
             used_kelly=False,
             reason=f"交易数不足({len(trades) if trades else 0}<{min_trades})，使用基线{base_pct*100:.0f}%",
         )
@@ -156,19 +165,28 @@ def calculate_kelly_from_trades(
         reason += f" → 触底最小{MIN_POSITION_PCT*100:.0f}%"
 
     return KellyParams(
-        p=p, b=b, f_star=f_star, f_fractional=f_fractional, f_capped=f_capped,
+        p=p,
+        b=b,
+        f_star=f_star,
+        f_fractional=f_fractional,
+        f_capped=f_capped,
         final_pct=final_pct,
-        avg_win_pct=avg_win_pct, avg_loss_pct=avg_loss_pct,
-        raw_p=raw_p, raw_b=raw_b,
-        total_trades=total, win_count=win_count, loss_count=loss_count,
-        used_kelly=used_kelly, reason=reason,
+        avg_win_pct=avg_win_pct,
+        avg_loss_pct=avg_loss_pct,
+        raw_p=raw_p,
+        raw_b=raw_b,
+        total_trades=total,
+        win_count=win_count,
+        loss_count=loss_count,
+        used_kelly=used_kelly,
+        reason=reason,
     )
 
 
 def format_kelly_report(kp: KellyParams, coin: str = "") -> str:
     """格式化凯利参数报告"""
     lines = []
-    header = f"  凯利公式分析报告"
+    header = "  凯利公式分析报告"
     if coin:
         header += f" — {coin}"
     lines.append(header)
@@ -198,12 +216,30 @@ def format_kelly_report(kp: KellyParams, coin: str = "") -> str:
 if __name__ == "__main__":
     # 自测：模拟交易数据
     test_trades = [
-        {"pnl_pct": 4.0}, {"pnl_pct": -2.0}, {"pnl_pct": 3.5}, {"pnl_pct": -1.5},
-        {"pnl_pct": 4.2}, {"pnl_pct": -2.5}, {"pnl_pct": 3.8}, {"pnl_pct": -1.8},
-        {"pnl_pct": 4.1}, {"pnl_pct": -2.2}, {"pnl_pct": 3.9}, {"pnl_pct": -1.6},
-        {"pnl_pct": 4.3}, {"pnl_pct": -2.8}, {"pnl_pct": 3.7}, {"pnl_pct": -1.9},
-        {"pnl_pct": 4.0}, {"pnl_pct": -2.1}, {"pnl_pct": 3.6}, {"pnl_pct": -2.3},
-        {"pnl_pct": 4.4}, {"pnl_pct": -1.7}, {"pnl_pct": 3.5}, {"pnl_pct": -2.4},
+        {"pnl_pct": 4.0},
+        {"pnl_pct": -2.0},
+        {"pnl_pct": 3.5},
+        {"pnl_pct": -1.5},
+        {"pnl_pct": 4.2},
+        {"pnl_pct": -2.5},
+        {"pnl_pct": 3.8},
+        {"pnl_pct": -1.8},
+        {"pnl_pct": 4.1},
+        {"pnl_pct": -2.2},
+        {"pnl_pct": 3.9},
+        {"pnl_pct": -1.6},
+        {"pnl_pct": 4.3},
+        {"pnl_pct": -2.8},
+        {"pnl_pct": 3.7},
+        {"pnl_pct": -1.9},
+        {"pnl_pct": 4.0},
+        {"pnl_pct": -2.1},
+        {"pnl_pct": 3.6},
+        {"pnl_pct": -2.3},
+        {"pnl_pct": 4.4},
+        {"pnl_pct": -1.7},
+        {"pnl_pct": 3.5},
+        {"pnl_pct": -2.4},
     ]
 
     kp = calculate_kelly_from_trades(test_trades)

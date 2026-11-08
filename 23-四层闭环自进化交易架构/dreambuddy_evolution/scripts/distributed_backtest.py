@@ -16,6 +16,7 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 6
   HC-DS4-07: 分布式回测失败 → 自动降级为单机执行，不阻塞
   HC-DS4-01: 开关关闭时与单机行为 100% 等价
 """
+
 from __future__ import annotations
 
 import itertools
@@ -71,16 +72,20 @@ class DistributedBacktest:
             # 最后一个 worker 到 end
             if i == n - 1:
                 task_end = d_end
-            tasks.append({
-                "start": cur.strftime(fmt),
-                "end": task_end.strftime(fmt),
-                "worker_id": i,
-            })
+            tasks.append(
+                {
+                    "start": cur.strftime(fmt),
+                    "end": task_end.strftime(fmt),
+                    "worker_id": i,
+                }
+            )
             cur = task_end
         return tasks
 
     # ---------- 参数空间分割 ----------
-    def split_by_params(self, param_space: dict[str, list], n_workers: int | None = None) -> list[dict]:
+    def split_by_params(
+        self, param_space: dict[str, list], n_workers: int | None = None
+    ) -> list[dict]:
         """按参数空间网格分割.
 
         Args:
@@ -96,7 +101,7 @@ class DistributedBacktest:
         # 生成参数网格（笛卡尔积）
         keys = list(param_space.keys())
         values = [param_space[k] for k in keys]
-        grid = [dict(zip(keys, combo)) for combo in itertools.product(*values)]
+        grid = [dict(zip(keys, combo)) for combo in itertools.product(*values)]  # noqa: B905
 
         if not grid:
             return []
@@ -110,10 +115,12 @@ class DistributedBacktest:
         idx = 0
         for i in range(n):
             chunk = base + (1 if i < remainder else 0)
-            tasks.append({
-                "worker_id": i,
-                "params": grid[idx:idx + chunk],
-            })
+            tasks.append(
+                {
+                    "worker_id": i,
+                    "params": grid[idx : idx + chunk],
+                }
+            )
             idx += chunk
         return tasks
 
@@ -144,9 +151,9 @@ class DistributedBacktest:
 
         total_trades = sum(r.get("n_trades", 0) for r in results)
         if total_trades > 0:
-            weighted_sharpe = sum(
-                r.get("sharpe", 0.0) * r.get("n_trades", 0) for r in results
-            ) / total_trades
+            weighted_sharpe = (
+                sum(r.get("sharpe", 0.0) * r.get("n_trades", 0) for r in results) / total_trades
+            )
         else:
             weighted_sharpe = 0.0
 
@@ -219,11 +226,13 @@ class DistributedBacktest:
                 results.append(result)
             except Exception as e:
                 logger.debug("[DS4-D6] single worker fail: %s", e)
-                results.append({
-                    "sharpe": 0.0,
-                    "n_trades": 0,
-                    "max_drawdown": 0.0,
-                    "total_return": 0.0,
-                    "degraded": True,
-                })
+                results.append(
+                    {
+                        "sharpe": 0.0,
+                        "n_trades": 0,
+                        "max_drawdown": 0.0,
+                        "total_return": 0.0,
+                        "degraded": True,
+                    }
+                )
         return results

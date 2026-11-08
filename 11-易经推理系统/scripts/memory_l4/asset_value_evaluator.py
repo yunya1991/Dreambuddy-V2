@@ -22,113 +22,142 @@
   - 综合评分输出推荐交易标的池
 """
 
-import json
+import json  # noqa: I001
 import time
 import math
 import requests
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
-from dataclasses import dataclass, field
+from typing import Dict, List
+from dataclasses import dataclass
 from datetime import datetime, timezone
-
 
 # ── 资产类别定义 ──────────────────────────────────────────
 
-ASSET_CLASS_CRYPTO_L1 = "crypto_l1"      # Layer1 公链: BTC, ETH, SOL, AVAX, NEAR...
-ASSET_CLASS_CRYPTO_DEFI = "crypto_defi"   # DeFi: UNI, AAVE, COMP...
-ASSET_CLASS_CRYPTO_MEME = "crypto_meme"    # Meme: DOGE, PEPE, SHIB...
-ASSET_CLASS_CRYPTO_L2 = "crypto_l2"        # Layer2: ARB, OP, MATIC...
-ASSET_CLASS_CRYPTO_ORACLE = "crypto_oracle" # 预言机: LINK...
+ASSET_CLASS_CRYPTO_L1 = "crypto_l1"  # Layer1 公链: BTC, ETH, SOL, AVAX, NEAR...
+ASSET_CLASS_CRYPTO_DEFI = "crypto_defi"  # DeFi: UNI, AAVE, COMP...
+ASSET_CLASS_CRYPTO_MEME = "crypto_meme"  # Meme: DOGE, PEPE, SHIB...
+ASSET_CLASS_CRYPTO_L2 = "crypto_l2"  # Layer2: ARB, OP, MATIC...
+ASSET_CLASS_CRYPTO_ORACLE = "crypto_oracle"  # 预言机: LINK...
 ASSET_CLASS_CRYPTO_OTHER = "crypto_other"  # 其他加密资产
-ASSET_CLASS_USSTOCK = "us_stock"            # 美股个股: NVDA, TSLA, AAPL...
-ASSET_CLASS_TRADFI = "tradfi"               # TradFi: XAU(黄金), XAG(白银)
+ASSET_CLASS_USSTOCK = "us_stock"  # 美股个股: NVDA, TSLA, AAPL...
+ASSET_CLASS_TRADFI = "tradfi"  # TradFi: XAU(黄金), XAG(白银)
 
 # 已知资产分类（先验知识）
 KNOWN_ASSET_CLASS = {
     # Layer1
-    "BTC": ASSET_CLASS_CRYPTO_L1, "ETH": ASSET_CLASS_CRYPTO_L1,
-    "SOL": ASSET_CLASS_CRYPTO_L1, "BNB": ASSET_CLASS_CRYPTO_L1,
-    "XRP": ASSET_CLASS_CRYPTO_L1, "ADA": ASSET_CLASS_CRYPTO_L1,
-    "AVAX": ASSET_CLASS_CRYPTO_L1, "NEAR": ASSET_CLASS_CRYPTO_L1,
-    "SUI": ASSET_CLASS_CRYPTO_L1, "APT": ASSET_CLASS_CRYPTO_L1,
-    "ATOM": ASSET_CLASS_CRYPTO_L1, "DOT": ASSET_CLASS_CRYPTO_L1,
-    "LTC": ASSET_CLASS_CRYPTO_L1, "BCH": ASSET_CLASS_CRYPTO_L1,
-    "ETC": ASSET_CLASS_CRYPTO_L1, "TRX": ASSET_CLASS_CRYPTO_L1,
-    "TON": ASSET_CLASS_CRYPTO_L1, "TONCOIN": ASSET_CLASS_CRYPTO_L1,
-    "FIL": ASSET_CLASS_CRYPTO_L1, "AR": ASSET_CLASS_CRYPTO_L1,
-    "INJ": ASSET_CLASS_CRYPTO_L1, "SEI": ASSET_CLASS_CRYPTO_L1,
-    "TIA": ASSET_CLASS_CRYPTO_L1, "IMX": ASSET_CLASS_CRYPTO_L1,
+    "BTC": ASSET_CLASS_CRYPTO_L1,
+    "ETH": ASSET_CLASS_CRYPTO_L1,
+    "SOL": ASSET_CLASS_CRYPTO_L1,
+    "BNB": ASSET_CLASS_CRYPTO_L1,
+    "XRP": ASSET_CLASS_CRYPTO_L1,
+    "ADA": ASSET_CLASS_CRYPTO_L1,
+    "AVAX": ASSET_CLASS_CRYPTO_L1,
+    "NEAR": ASSET_CLASS_CRYPTO_L1,
+    "SUI": ASSET_CLASS_CRYPTO_L1,
+    "APT": ASSET_CLASS_CRYPTO_L1,
+    "ATOM": ASSET_CLASS_CRYPTO_L1,
+    "DOT": ASSET_CLASS_CRYPTO_L1,
+    "LTC": ASSET_CLASS_CRYPTO_L1,
+    "BCH": ASSET_CLASS_CRYPTO_L1,
+    "ETC": ASSET_CLASS_CRYPTO_L1,
+    "TRX": ASSET_CLASS_CRYPTO_L1,
+    "TON": ASSET_CLASS_CRYPTO_L1,
+    "TONCOIN": ASSET_CLASS_CRYPTO_L1,
+    "FIL": ASSET_CLASS_CRYPTO_L1,
+    "AR": ASSET_CLASS_CRYPTO_L1,
+    "INJ": ASSET_CLASS_CRYPTO_L1,
+    "SEI": ASSET_CLASS_CRYPTO_L1,
+    "TIA": ASSET_CLASS_CRYPTO_L1,
+    "IMX": ASSET_CLASS_CRYPTO_L1,
     # DeFi
-    "UNI": ASSET_CLASS_CRYPTO_DEFI, "AAVE": ASSET_CLASS_CRYPTO_DEFI,
-    "COMP": ASSET_CLASS_CRYPTO_DEFI, "MKR": ASSET_CLASS_CRYPTO_DEFI,
-    "CRV": ASSET_CLASS_CRYPTO_DEFI, "SNX": ASSET_CLASS_CRYPTO_DEFI,
-    "PENDLE": ASSET_CLASS_CRYPTO_DEFI, "ENA": ASSET_CLASS_CRYPTO_DEFI,
+    "UNI": ASSET_CLASS_CRYPTO_DEFI,
+    "AAVE": ASSET_CLASS_CRYPTO_DEFI,
+    "COMP": ASSET_CLASS_CRYPTO_DEFI,
+    "MKR": ASSET_CLASS_CRYPTO_DEFI,
+    "CRV": ASSET_CLASS_CRYPTO_DEFI,
+    "SNX": ASSET_CLASS_CRYPTO_DEFI,
+    "PENDLE": ASSET_CLASS_CRYPTO_DEFI,
+    "ENA": ASSET_CLASS_CRYPTO_DEFI,
     # Layer2
-    "ARB": ASSET_CLASS_CRYPTO_L2, "OP": ASSET_CLASS_CRYPTO_L2,
-    "MATIC": ASSET_CLASS_CRYPTO_L2, "POL": ASSET_CLASS_CRYPTO_L2,
-    "STRK": ASSET_CLASS_CRYPTO_L2, "MANTA": ASSET_CLASS_CRYPTO_L2,
-    "ZK": ASSET_CLASS_CRYPTO_L2, "ZKSYNC": ASSET_CLASS_CRYPTO_L2,
+    "ARB": ASSET_CLASS_CRYPTO_L2,
+    "OP": ASSET_CLASS_CRYPTO_L2,
+    "MATIC": ASSET_CLASS_CRYPTO_L2,
+    "POL": ASSET_CLASS_CRYPTO_L2,
+    "STRK": ASSET_CLASS_CRYPTO_L2,
+    "MANTA": ASSET_CLASS_CRYPTO_L2,
+    "ZK": ASSET_CLASS_CRYPTO_L2,
+    "ZKSYNC": ASSET_CLASS_CRYPTO_L2,
     # Oracle
     "LINK": ASSET_CLASS_CRYPTO_ORACLE,
     # Meme
-    "DOGE": ASSET_CLASS_CRYPTO_MEME, "SHIB": ASSET_CLASS_CRYPTO_MEME,
-    "PEPE": ASSET_CLASS_CRYPTO_MEME, "WIF": ASSET_CLASS_CRYPTO_MEME,
-    "BONK": ASSET_CLASS_CRYPTO_MEME, "FLOKI": ASSET_CLASS_CRYPTO_MEME,
-    "MEME": ASSET_CLASS_CRYPTO_MEME, "PNUT": ASSET_CLASS_CRYPTO_MEME,
+    "DOGE": ASSET_CLASS_CRYPTO_MEME,
+    "SHIB": ASSET_CLASS_CRYPTO_MEME,
+    "PEPE": ASSET_CLASS_CRYPTO_MEME,
+    "WIF": ASSET_CLASS_CRYPTO_MEME,
+    "BONK": ASSET_CLASS_CRYPTO_MEME,
+    "FLOKI": ASSET_CLASS_CRYPTO_MEME,
+    "MEME": ASSET_CLASS_CRYPTO_MEME,
+    "PNUT": ASSET_CLASS_CRYPTO_MEME,
     # 美股个股（OKX USDT-SWAP）
-    "NVDA": ASSET_CLASS_USSTOCK, "TSLA": ASSET_CLASS_USSTOCK,
-    "MSFT": ASSET_CLASS_USSTOCK, "META": ASSET_CLASS_USSTOCK,
-    "GOOGL": ASSET_CLASS_USSTOCK, "AAPL": ASSET_CLASS_USSTOCK,
-    "AMZN": ASSET_CLASS_USSTOCK, "COIN": ASSET_CLASS_USSTOCK,
+    "NVDA": ASSET_CLASS_USSTOCK,
+    "TSLA": ASSET_CLASS_USSTOCK,
+    "MSFT": ASSET_CLASS_USSTOCK,
+    "META": ASSET_CLASS_USSTOCK,
+    "GOOGL": ASSET_CLASS_USSTOCK,
+    "AAPL": ASSET_CLASS_USSTOCK,
+    "AMZN": ASSET_CLASS_USSTOCK,
+    "COIN": ASSET_CLASS_USSTOCK,
     # TradFi（贵金属）
-    "XAU": ASSET_CLASS_TRADFI, "XAG": ASSET_CLASS_TRADFI,
+    "XAU": ASSET_CLASS_TRADFI,
+    "XAG": ASSET_CLASS_TRADFI,
 }
 
 # 交易价值权重（不同类别的基础权重）
 CLASS_BASE_WEIGHT = {
-    ASSET_CLASS_CRYPTO_L1: 1.0,       # Layer1 最优先
-    ASSET_CLASS_USSTOCK: 0.95,         # 美股高价值（低相关性分散）
-    ASSET_CLASS_TRADFI: 0.95,          # TradFi 高价值
-    ASSET_CLASS_CRYPTO_L2: 0.75,       # Layer2 次之
-    ASSET_CLASS_CRYPTO_ORACLE: 0.75,   # 预言机
-    ASSET_CLASS_CRYPTO_DEFI: 0.65,     # DeFi
-    ASSET_CLASS_CRYPTO_OTHER: 0.4,     # 其他
-    ASSET_CLASS_CRYPTO_MEME: 0.25,     # Meme 最低（高波动低价值）
+    ASSET_CLASS_CRYPTO_L1: 1.0,  # Layer1 最优先
+    ASSET_CLASS_USSTOCK: 0.95,  # 美股高价值（低相关性分散）
+    ASSET_CLASS_TRADFI: 0.95,  # TradFi 高价值
+    ASSET_CLASS_CRYPTO_L2: 0.75,  # Layer2 次之
+    ASSET_CLASS_CRYPTO_ORACLE: 0.75,  # 预言机
+    ASSET_CLASS_CRYPTO_DEFI: 0.65,  # DeFi
+    ASSET_CLASS_CRYPTO_OTHER: 0.4,  # 其他
+    ASSET_CLASS_CRYPTO_MEME: 0.25,  # Meme 最低（高波动低价值）
 }
 
 
 @dataclass
 class AssetEvaluation:
     """单资产评估结果"""
-    inst_id: str              # OKX 合约 ID, 如 BTC-USDT-SWAP
-    symbol: str               # 基础符号, 如 BTC
-    asset_class: str           # 资产类别
+
+    inst_id: str  # OKX 合约 ID, 如 BTC-USDT-SWAP
+    symbol: str  # 基础符号, 如 BTC
+    asset_class: str  # 资产类别
 
     # 原始指标
-    last_price: float = 0     # 最新价
-    vol24h_usdt: float = 0    # 24h 成交额(USDT)
-    high24h: float = 0        # 24h 最高
-    low24h: float = 0         # 24h 最低
-    volatility: float = 0     # 24h 波动率 (high-low)/low
+    last_price: float = 0  # 最新价
+    vol24h_usdt: float = 0  # 24h 成交额(USDT)
+    high24h: float = 0  # 24h 最高
+    low24h: float = 0  # 24h 最低
+    volatility: float = 0  # 24h 波动率 (high-low)/low
 
     # 评分
-    liquidity_score: float = 0   # 流动性评分 0-1
+    liquidity_score: float = 0  # 流动性评分 0-1
     volatility_score: float = 0  # 波动率评分 0-1（适中最高）
-    trend_score: float = 0       # 趋势性评分 0-1（需K线计算）
-    class_score: float = 0       # 资产类别评分 0-1
+    trend_score: float = 0  # 趋势性评分 0-1（需K线计算）
+    class_score: float = 0  # 资产类别评分 0-1
 
-    total_score: float = 0    # 综合评分 0-1
-    rank: int = 0             # 排名
+    total_score: float = 0  # 综合评分 0-1
+    rank: int = 0  # 排名
 
     # 合约规格
-    ct_val: float = 1        # 合约面值
-    lot_sz: float = 1        # 最小下单量
-    tick_sz: float = 0.01    # 价格精度
-    max_lever: float = 10    # 最大杠杆
+    ct_val: float = 1  # 合约面值
+    lot_sz: float = 1  # 最小下单量
+    tick_sz: float = 0.01  # 价格精度
+    max_lever: float = 10  # 最大杠杆
 
     # 标记
     is_tradfi: bool = False  # 是否TradFi
-    recommended: bool = False # 是否推荐
+    recommended: bool = False  # 是否推荐
 
 
 class AssetValueEvaluator:
@@ -139,19 +168,19 @@ class AssetValueEvaluator:
     """
 
     # 评估参数
-    MIN_VOL24H_USDT = 500_000       # 最低24h成交额：50万USDT
-    MIN_VOL24H_USDT_TRADFI = 10_000 # TradFi 门槛更低
-    OPTIMAL_VOL_LOW = 0.02          # 最优波动率下限 2%
-    OPTIMAL_VOL_HIGH = 0.08          # 最优波动率上限 8%
-    MAX_VOL = 0.15                   # 超过15%波动率视为过高
-    TOP_N = 15                       # 推荐数量
+    MIN_VOL24H_USDT = 500_000  # 最低24h成交额：50万USDT
+    MIN_VOL24H_USDT_TRADFI = 10_000  # TradFi 门槛更低
+    OPTIMAL_VOL_LOW = 0.02  # 最优波动率下限 2%
+    OPTIMAL_VOL_HIGH = 0.08  # 最优波动率上限 8%
+    MAX_VOL = 0.15  # 超过15%波动率视为过高
+    TOP_N = 15  # 推荐数量
 
     # 评分权重
     W_LIQUIDITY = 0.30
     W_VOLATILITY = 0.25
     W_TREND = 0.15
     W_CLASS = 0.20
-    W_DIVERSITY = 0.10              # 多样性加分
+    W_DIVERSITY = 0.10  # 多样性加分
 
     def __init__(self, okx_client=None):
         self.okx = okx_client
@@ -343,9 +372,10 @@ class AssetValueEvaluator:
             self.evaluate_all()
 
         n = top_n or self.TOP_N
-        return [ev.symbol for ev in sorted(
-            self._cache.values(), key=lambda e: e.total_score, reverse=True
-        )[:n]]
+        return [
+            ev.symbol
+            for ev in sorted(self._cache.values(), key=lambda e: e.total_score, reverse=True)[:n]
+        ]
 
     def get_recommended_inst_ids(self, top_n: int = None) -> List[str]:
         """获取推荐合约 ID 列表"""
@@ -353,9 +383,10 @@ class AssetValueEvaluator:
             self.evaluate_all()
 
         n = top_n or self.TOP_N
-        return [ev.inst_id for ev in sorted(
-            self._cache.values(), key=lambda e: e.total_score, reverse=True
-        )[:n]]
+        return [
+            ev.inst_id
+            for ev in sorted(self._cache.values(), key=lambda e: e.total_score, reverse=True)[:n]
+        ]
 
     def format_report(self, top_n: int = 20) -> str:
         """生成评估报告"""
@@ -366,8 +397,10 @@ class AssetValueEvaluator:
 
         lines = []
         lines.append(f"=== 交易价值评估报告 ({datetime.now().strftime('%Y-%m-%d %H:%M')}) ===\n")
-        lines.append(f"{'排名':<4} {'符号':<8} {'类别':<12} {'成交额(万U)':>12} {'波动率':>8} "
-                     f"{'流动性':>6} {'波动分':>6} {'类别分':>6} {'总分':>6} {'推荐':>4}")
+        lines.append(
+            f"{'排名':<4} {'符号':<8} {'类别':<12} {'成交额(万U)':>12} {'波动率':>8} "
+            f"{'流动性':>6} {'波动分':>6} {'类别分':>6} {'总分':>6} {'推荐':>4}"
+        )
         lines.append("-" * 95)
 
         for ev in evs[:top_n]:
@@ -386,9 +419,9 @@ class AssetValueEvaluator:
 
 # ── CLI 入口 ──────────────────────────────────────────────
 
+
 def main():
     """CLI: 评估所有资产并输出推荐列表"""
-    import sys
 
     evaluator = AssetValueEvaluator()
 
@@ -430,7 +463,9 @@ def main():
     }
 
     output_file = output_dir / "asset_evaluation.json"
-    output_file.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    output_file.write_text(
+        json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
     print(f"\n评估结果已保存至: {output_file}")
 
 

@@ -4,16 +4,14 @@
   cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统
   python3 -m pytest scripts/memory_l4/tests/test_t5_shadow_schema_compat.py -v --tb=short
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import sqlite3
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any, Dict
-
-import pytest
 
 THIS_DIR = Path(__file__).resolve().parent
 MEMORY_L4_DIR = THIS_DIR.parent
@@ -74,11 +72,18 @@ CREATE TABLE shadow_param_log (
 
 # T5 新 12 列名称
 T5_NEW_COLS = [
-    "fd_crypto_war_state", "fd_crypto_total_score",
-    "fd_crypto_cap_mode", "fd_crypto_mult_mode",
-    "fd_us_stock_war_state", "fd_us_stock_total_score",
-    "sal_type", "sal_regime", "sal_calib_median",
-    "sal_calib_min", "sal_calib_max", "sal_gate",
+    "fd_crypto_war_state",
+    "fd_crypto_total_score",
+    "fd_crypto_cap_mode",
+    "fd_crypto_mult_mode",
+    "fd_us_stock_war_state",
+    "fd_us_stock_total_score",
+    "sal_type",
+    "sal_regime",
+    "sal_calib_median",
+    "sal_calib_min",
+    "sal_calib_max",
+    "sal_gate",
 ]
 
 
@@ -98,9 +103,11 @@ def _make_record_with_12_new_fields(**overrides) -> Dict[str, Any]:
         "forecast_L": 0.82,
         "forecast_T": 0.24,
         "forecast_global_ranges": json.dumps(
-            {"global_position_mult": [0.85, 1.25], "ls_ratio_cap": [0.3, 0.7]}),
+            {"global_position_mult": [0.85, 1.25], "ls_ratio_cap": [0.3, 0.7]}
+        ),
         "forecast_sector_weights": json.dumps(
-            {"weights": {"defi": 0.22, "ai": 0.28, "rwa": 0.18, "meme": 0.14, "l2": 0.18}}),
+            {"weights": {"defi": 0.22, "ai": 0.28, "rwa": 0.18, "meme": 0.14, "l2": 0.18}}
+        ),
         # baseline 6
         "baseline_pos_mult": 1.1,
         "baseline_tp_mult": 1.0,
@@ -166,13 +173,13 @@ class TestT5ShadowSchemaCompat:
 
     def test_old_db_42_cols_zero_exception(self, tmp_path, monkeypatch):
         """1) 原生 sqlite3 创建 42 列老库（不含 T5 新列）
-           2) EvolutionStorageSQLite 打开（通过 monkeypatch 禁用 T5 列 ALTER TABLE，
-              模拟「迁移逻辑 try/except pass 无副作用」的场景）
-           3) save_shadow_log 插入 2 次含 12 新字段值的 record：
-              - rid > 0（零异常，降级 INSERT）
-              - reactive_L / actual_direction / enable_inject 正确
-              - 新字段值返回 None（自动补 None）
-           4) fresh 54 列新库镜像：查回 T5 新字段值正确
+        2) EvolutionStorageSQLite 打开（通过 monkeypatch 禁用 T5 列 ALTER TABLE，
+           模拟「迁移逻辑 try/except pass 无副作用」的场景）
+        3) save_shadow_log 插入 2 次含 12 新字段值的 record：
+           - rid > 0（零异常，降级 INSERT）
+           - reactive_L / actual_direction / enable_inject 正确
+           - 新字段值返回 None（自动补 None）
+        4) fresh 54 列新库镜像：查回 T5 新字段值正确
         """
         from scripts.memory_l4.bcrm2.storage import EvolutionStorageSQLite
 
@@ -188,8 +195,7 @@ class TestT5ShadowSchemaCompat:
         conn_old.commit()
 
         # 验证老库确为 42 列（不含 T5 新 12 列）
-        cols_old = [r[1] for r in cur_old.execute(
-            "PRAGMA table_info(shadow_param_log)").fetchall()]
+        cols_old = [r[1] for r in cur_old.execute("PRAGMA table_info(shadow_param_log)").fetchall()]
         for nc in T5_NEW_COLS:
             assert nc not in cols_old, f"老库不应包含新列 {nc}！"
         conn_old.close()
@@ -223,8 +229,10 @@ class TestT5ShadowSchemaCompat:
                     PRIMARY KEY (timestamp, symbol)
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_regime_state_daily_ts "
-                        "ON regime_state_daily (timestamp)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_regime_state_daily_ts "
+                "ON regime_state_daily (timestamp)"
+            )
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS regime_trajectory_90d (
                     symbol          TEXT PRIMARY KEY,
@@ -274,8 +282,12 @@ class TestT5ShadowSchemaCompat:
                     UNIQUE(symbol, prediction_date, target_date)
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_mpl_symbol_target ON morph_prediction_log(symbol, target_date)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_mpl_unfilled ON morph_prediction_log(symbol, actual_l IS NULL) WHERE actual_l IS NULL")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_mpl_symbol_target ON morph_prediction_log(symbol, target_date)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_mpl_unfilled ON morph_prediction_log(symbol, actual_l IS NULL) WHERE actual_l IS NULL"
+            )
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS morph_correction_state (
                     symbol            TEXT PRIMARY KEY,
@@ -374,10 +386,14 @@ class TestT5ShadowSchemaCompat:
                     win             INTEGER
                 )
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_exit_strat_symbol_ts "
-                        "ON exit_strategy_log (symbol, timestamp)")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_exit_strat_name_ts "
-                        "ON exit_strategy_log (strategy_name, timestamp)")
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_exit_strat_symbol_ts "
+                "ON exit_strategy_log (symbol, timestamp)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_exit_strat_name_ts "
+                "ON exit_strategy_log (strategy_name, timestamp)"
+            )
 
             # --- 3. Schema 迁移：故意不执行 T5 12 列迁移（模拟 try/except pass） ---
             # FMA 列迁移：可以执行（老库也有）
@@ -428,20 +444,18 @@ class TestT5ShadowSchemaCompat:
             )
             conn.commit()
 
-        monkeypatch.setattr(
-            storage_module, "_init_sqlite_schema", _patched_init_skip_t5_migration
-        )
+        monkeypatch.setattr(storage_module, "_init_sqlite_schema", _patched_init_skip_t5_migration)
 
         # 打开老库：此时 T5 新列不存在（ALTER TABLE 被跳过）
         storage_old = EvolutionStorageSQLite(old_db_path)
 
         # 确认：老库确无 T5 12 列
-        cols_after = [r[1] for r in storage_old._conn.execute(
-            "PRAGMA table_info(shadow_param_log)").fetchall()]
+        cols_after = [
+            r[1]
+            for r in storage_old._conn.execute("PRAGMA table_info(shadow_param_log)").fetchall()
+        ]
         for nc in T5_NEW_COLS:
-            assert nc not in cols_after, (
-                f"monkeypatch 后老库仍有新列 {nc}！迁移跳过逻辑失效。"
-            )
+            assert nc not in cols_after, f"monkeypatch 后老库仍有新列 {nc}！迁移跳过逻辑失效。"
 
         # A3: 构造 2 条含全部 12 新字段值的 record 并插入
         rec1 = _make_record_with_12_new_fields(
@@ -468,35 +482,33 @@ class TestT5ShadowSchemaCompat:
 
         # 第 1 条
         r1 = rows_old[0]
-        assert abs(float(r1.get("reactive_L") or 0) - 0.55) < 1e-9, (
-            f"老库查回 reactive_L 错: {r1.get('reactive_L')} ≠ 0.55"
-        )
-        assert r1.get("actual_direction") == "LONG", (
-            f"老库查回 actual_direction 错: {r1.get('actual_direction')} ≠ LONG"
-        )
-        assert r1.get("enable_inject") is True, (
-            f"老库查回 enable_inject 错: {r1.get('enable_inject')} ≠ True"
-        )
+        assert (
+            abs(float(r1.get("reactive_L") or 0) - 0.55) < 1e-9
+        ), f"老库查回 reactive_L 错: {r1.get('reactive_L')} ≠ 0.55"
+        assert (
+            r1.get("actual_direction") == "LONG"
+        ), f"老库查回 actual_direction 错: {r1.get('actual_direction')} ≠ LONG"
+        assert (
+            r1.get("enable_inject") is True
+        ), f"老库查回 enable_inject 错: {r1.get('enable_inject')} ≠ True"
 
         # 第 2 条
         r2 = rows_old[1]
-        assert abs(float(r2.get("reactive_L") or 0) - 0.72) < 1e-9, (
-            f"老库查回 reactive_L 错: {r2.get('reactive_L')} ≠ 0.72"
-        )
-        assert r2.get("actual_direction") == "SHORT", (
-            f"老库查回 actual_direction 错: {r2.get('actual_direction')} ≠ SHORT"
-        )
-        assert r2.get("enable_inject") is False, (
-            f"老库查回 enable_inject 错: {r2.get('enable_inject')} ≠ False"
-        )
+        assert (
+            abs(float(r2.get("reactive_L") or 0) - 0.72) < 1e-9
+        ), f"老库查回 reactive_L 错: {r2.get('reactive_L')} ≠ 0.72"
+        assert (
+            r2.get("actual_direction") == "SHORT"
+        ), f"老库查回 actual_direction 错: {r2.get('actual_direction')} ≠ SHORT"
+        assert (
+            r2.get("enable_inject") is False
+        ), f"老库查回 enable_inject 错: {r2.get('enable_inject')} ≠ False"
 
         # A5: 断言 T5 新字段值返回 None（老库降级查询返回 42 列，新列 key 不存在 → None）
         for row in (r1, r2):
             for nc in T5_NEW_COLS:
                 val = row.get(nc)
-                assert val is None, (
-                    f"老库查回新字段 {nc} 应为 None，实际 {val!r}"
-                )
+                assert val is None, f"老库查回新字段 {nc} 应为 None，实际 {val!r}"
 
         storage_old._conn.close()
 
@@ -514,8 +526,7 @@ class TestT5ShadowSchemaCompat:
 
         # 验证新库确包含 12 新列
         cur_new = storage_new._conn.cursor()
-        cols_new = [r[1] for r in cur_new.execute(
-            "PRAGMA table_info(shadow_param_log)").fetchall()]
+        cols_new = [r[1] for r in cur_new.execute("PRAGMA table_info(shadow_param_log)").fetchall()]
         for nc in T5_NEW_COLS:
             assert nc in cols_new, f"新库应包含新列 {nc}！"
 
@@ -541,9 +552,9 @@ class TestT5ShadowSchemaCompat:
 
         # B4: 断言 T5 新 12 字段值正确（完整写入）
         # 第 1 条新字段断言
-        assert n1.get("fd_crypto_war_state") == "攻守兼备-中", (
-            f"新库 fd_crypto_war_state 错: {n1.get('fd_crypto_war_state')}"
-        )
+        assert (
+            n1.get("fd_crypto_war_state") == "攻守兼备-中"
+        ), f"新库 fd_crypto_war_state 错: {n1.get('fd_crypto_war_state')}"
         assert abs(float(n1.get("fd_crypto_total_score") or 0) - 76.5) < 1e-6
         assert abs(float(n1.get("fd_crypto_cap_mode") or 0) - 0.64) < 1e-6
         assert abs(float(n1.get("fd_crypto_mult_mode") or 0) - 1.32) < 1e-6

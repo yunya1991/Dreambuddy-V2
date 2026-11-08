@@ -12,6 +12,7 @@ HC-AGI-22: weight_factor ∈ [0.3, 1.5], 下限 0.3 防止矛盾权重归零
   验证成功 (pnl > 0) → 矛盾置信度升级 (Bayesian 更新)
   验证失败 (pnl < 0) → 矛盾转化, 权重降级
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,10 +31,10 @@ class ContradictionFeedback:
     HC-AGI-22: weight_factor ∈ [0.3, 1.5]
     """
 
-    WEIGHT_FLOOR = 0.3   # HC-AGI-22: 下限 0.3
+    WEIGHT_FLOOR = 0.3  # HC-AGI-22: 下限 0.3
     WEIGHT_CEILING = 1.5  # HC-AGI-22: 上限 1.5
-    SUCCESS_STEP = 0.1    # 成功步长
-    FAILURE_STEP = 0.2   # 失败步长
+    SUCCESS_STEP = 0.1  # 成功步长
+    FAILURE_STEP = 0.2  # 失败步长
     SUCCESS_TRIALS_NORMALIZE = 10  # 成功验证次数归一化
 
     def adjust_weight(

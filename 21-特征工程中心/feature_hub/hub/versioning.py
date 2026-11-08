@@ -3,6 +3,7 @@
 注册时校验：1) semver 格式合法 2) name+version 唯一
 L3 Fail-Fast：不合法或重复 → 抛异常
 """
+
 from __future__ import annotations
 
 import re
@@ -25,15 +26,11 @@ class VersionRegistry:
         """
         if not _SEMVER_RE.match(version):
             raise ValueError(
-                f"invalid version '{version}' for module '{name}': "
-                f"expected semver format x.y.z"
+                f"invalid version '{version}' for module '{name}': " f"expected semver format x.y.z"
             )
         key = f"{name}@{version}"
         if key in self._versions:
-            raise ValueError(
-                f"module '{name}' version '{version}' "
-                f"already registered"
-            )
+            raise ValueError(f"module '{name}' version '{version}' " f"already registered")
         self._versions[key] = version
 
     def get_version(self, name: str) -> Optional[str]:

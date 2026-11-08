@@ -9,6 +9,7 @@
   data-center monitor health                   # M5：所有 collector 健康采样
   data-center monitor alerts --last 20         # M5：最近告警
 """
+
 from __future__ import annotations
 
 import json
@@ -47,17 +48,24 @@ def fetch(
     dc = _get_dc()
     params: dict = {}
     for k, v in (
-        ("series", series), ("source", source),
-        ("symbol", symbol), ("topic", topic), ("config", config),
+        ("series", series),
+        ("source", source),
+        ("symbol", symbol),
+        ("topic", topic),
+        ("config", config),
     ):
         if v is not None:
             params[k] = v
     recs = dc.fetch(category, **params)
     out = [
         {
-            "source": r.source, "category": r.category, "sub_category": r.sub_category,
-            "timestamp": r.timestamp, "metrics": r.metrics,
-            "events": r.events, "timeseries": r.timeseries,
+            "source": r.source,
+            "category": r.category,
+            "sub_category": r.sub_category,
+            "timestamp": r.timestamp,
+            "metrics": r.metrics,
+            "events": r.events,
+            "timeseries": r.timeseries,
         }
         for r in recs
     ]
@@ -78,7 +86,9 @@ def list_(what: str = typer.Argument("collectors", help="列出对象，默认 c
 @app.command()
 def crawl(
     config: str = typer.Option(..., "--config", help="sites.yaml 路径"),
-    site: Optional[str] = typer.Option(None, "--site", help="指定站点名，不指定则爬取全部 enabled 站点"),
+    site: Optional[str] = typer.Option(
+        None, "--site", help="指定站点名，不指定则爬取全部 enabled 站点"
+    ),
     list_sites: bool = typer.Option(False, "--list-sites", help="仅列出配置中的站点名"),
 ) -> None:
     """爬虫轨：按 sites.yaml 配置爬取，输出 DataRecord JSON。"""
@@ -94,9 +104,13 @@ def crawl(
     recs = dc.fetch("web", config=config, site=site)
     out = [
         {
-            "source": r.source, "category": r.category, "sub_category": r.sub_category,
-            "timestamp": r.timestamp, "metrics": r.metrics,
-            "events": r.events, "timeseries": r.timeseries,
+            "source": r.source,
+            "category": r.category,
+            "sub_category": r.sub_category,
+            "timestamp": r.timestamp,
+            "metrics": r.metrics,
+            "events": r.events,
+            "timeseries": r.timeseries,
         }
         for r in recs
     ]
@@ -116,9 +130,10 @@ def schedule(
 # monitor 子命令（M5）
 # ---------------------------------------------------------------------------
 @monitor_app.command("status")
-def monitor_status(window_sec: Optional[int] = typer.Option(None, "--window", help="时间窗口秒数，默认全部")) -> None:
+def monitor_status(
+    window_sec: Optional[int] = typer.Option(None, "--window", help="时间窗口秒数，默认全部")
+) -> None:
     """打印 DataCenter 调用统计汇总表格（进程内共享）。"""
-    from data_center.monitoring.alerting import AlertLevel
 
     dc = _get_dc()
     summary = dc.monitoring.metrics.summary(window_sec=window_sec)
@@ -184,10 +199,7 @@ def monitor_health() -> None:
             count = 0
             msg = f"{type(exc).__name__}: {exc}"[:50]
 
-        typer.echo(
-            f"{category + '/' + source:<26} {available:>9} "
-            f"{status:<8} {count:>5} {msg}"
-        )
+        typer.echo(f"{category + '/' + source:<26} {available:>9} " f"{status:<8} {count:>5} {msg}")
 
 
 @monitor_app.command("alerts")
@@ -203,7 +215,9 @@ def monitor_alerts(
     path = alerts_file or os.environ.get("DATA_CENTER_ALERTS_FILE")
     if not path:
         typer.echo("未指定 --file 且未设置 DATA_CENTER_ALERTS_FILE 环境变量。")
-        typer.echo("提示：以 `DATA_CENTER_ALERTS_FILE=/tmp/alerts.ndjson data-center fetch ...` 启动将自动落文件。")
+        typer.echo(
+            "提示：以 `DATA_CENTER_ALERTS_FILE=/tmp/alerts.ndjson data-center fetch ...` 启动将自动落文件。"
+        )
         raise typer.Exit(code=1)
     ch = FileAlertChannel(path)
     rows = ch.tail(last)
@@ -225,12 +239,15 @@ def monitor_alerts(
 @app.command(name="fivedomain")
 def fivedomain(
     classes: str = typer.Option(
-        "all", "--class", help="资产类：all | crypto_usdt | us_stock | precious_metal（多类用逗号分隔）"
+        "all",
+        "--class",
+        help="资产类：all | crypto_usdt | us_stock | precious_metal（多类用逗号分隔）",
     ),
     raw_json: bool = typer.Option(False, "--raw-json", help="直接打印 JSON（否则人类可读摘要）"),
 ) -> None:
     """一次性采集五维所需全部外部数据，按类输出 coin_data。喂给 FiveDomainFeatureComputer。"""
-    import sys, os
+    import os
+    import sys
 
     # 定位 11-易经推理系统/scripts/memory_l4，动态导入 FiveDomainFetcher
     _REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
@@ -239,10 +256,10 @@ def fivedomain(
         sys.path.insert(0, _L4)
 
     try:
-        from fivedomain_fetcher import FiveDomainFetcher, ASSET_CLASSES
+        from fivedomain_fetcher import ASSET_CLASSES, FiveDomainFetcher
     except Exception as e:  # pragma: no cover - 依赖缺失
         typer.echo(f"导入 FiveDomainFetcher 失败: {type(e).__name__}: {e}", err=True)
-        raise typer.Exit(code=2)
+        raise typer.Exit(code=2)  # noqa: B904
 
     dc = _get_dc()
     fetcher = FiveDomainFetcher(data_center=dc)
@@ -254,7 +271,9 @@ def fivedomain(
     else:
         chosen = [c.strip() for c in classes.split(",") if c.strip() in ASSET_CLASSES]
         if not chosen:
-            typer.echo(f"未知 --class 值：{classes}。可用：all / {', '.join(ASSET_CLASSES)}", err=True)
+            typer.echo(
+                f"未知 --class 值：{classes}。可用：all / {', '.join(ASSET_CLASSES)}", err=True
+            )
             raise typer.Exit(code=1)
     filtered = {c: all_data[c] for c in chosen}
 
@@ -271,9 +290,16 @@ def fivedomain(
         # D 类道
         typer.echo("  ·道(D1~D10) 采集：")
         dao_keys = (
-            "fedfunds_rate", "m2_yoy_pct", "fed_balance_sheet_trillion",
-            "us_cpi_yoy_pct", "us_ppi_yoy_pct", "us_indpro_yoy_pct",
-            "stablecoin_mcap_bln", "defi_tvl_bln", "gas_eth_gwei", "policy_sentiment_score",
+            "fedfunds_rate",
+            "m2_yoy_pct",
+            "fed_balance_sheet_trillion",
+            "us_cpi_yoy_pct",
+            "us_ppi_yoy_pct",
+            "us_indpro_yoy_pct",
+            "stablecoin_mcap_bln",
+            "defi_tvl_bln",
+            "gas_eth_gwei",
+            "policy_sentiment_score",
         )
         for k in dao_keys:
             if k in coin:

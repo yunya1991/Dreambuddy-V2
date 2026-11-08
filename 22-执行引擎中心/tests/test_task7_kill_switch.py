@@ -16,6 +16,7 @@ Notes:
   - REJECT_SLIPPAGE_TOO_HIGH / KILL_SWITCH_TRIGGERED 在 tests 中作为精确 reason 字符串断言，
     生产中可直接在 audit log 中匹配检索。
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,7 +31,6 @@ sys.path.insert(0, str(REPO / "22-执行引擎中心"))
 
 from tee_core.core.contract import EstimateResult  # noqa: E402
 
-
 REJECT_SLIP_TOO_HIGH = "REJECT_SLIPPAGE_TOO_HIGH"
 KILL_TRIGGER = "KILL_SWITCH_TRIGGERED"
 
@@ -39,10 +39,10 @@ KILL_TRIGGER = "KILL_SWITCH_TRIGGERED"
 # TR-7.1 = AC-3: pre-trade gate blocks orders with excessive expected slip
 # =====================================================================
 class TestTR71PreGate:
-    def _pre(self, est_slip_bps: float, max_bps: float,
-             parent_req: Dict[str, Any] | None = None):
+    def _pre(self, est_slip_bps: float, max_bps: float, parent_req: Dict[str, Any] | None = None):
         """RED helper: import KillSwitch before it exists."""
         from tee_core.core.kill_switch import KillSwitch
+
         ks = KillSwitch()
         est = EstimateResult(
             avg_fill_px=100.0 + est_slip_bps * 100.0 / 10000.0,
@@ -51,37 +51,36 @@ class TestTR71PreGate:
             walk_depth_level=1,
             thin_book_warning=False,
         )
-        pr = parent_req or dict(inst_id="BTC-USDT-SWAP", side="buy",
-                                sz=1.0, pos_side="long",
-                                td_mode="isolated", leverage=5.0,
-                                decision_px=100.0, source="ut_7")
-        return ks.check_pre(parent_req=pr, estimate_result=est,
-                            max_bps=max_bps)
+        pr = parent_req or dict(  # noqa: C408
+            inst_id="BTC-USDT-SWAP",
+            side="buy",
+            sz=1.0,
+            pos_side="long",
+            td_mode="isolated",
+            leverage=5.0,
+            decision_px=100.0,
+            source="ut_7",
+        )
+        return ks.check_pre(parent_req=pr, estimate_result=est, max_bps=max_bps)
 
     def test_gate_rejects_120bps_over_30bps(self):
         """AC-3 baseline: 120 bps estimate > 30bps max → allow=False,
         reason == REJECT_SLIPPAGE_TOO_HIGH."""
         allow, reason = self._pre(est_slip_bps=120.0, max_bps=30.0)
-        assert allow is False, (
-            f"expected allow=False for slip=120/max=30, got allow={allow}"
-        )
-        assert REJECT_SLIP_TOO_HIGH in str(reason), (
-            f"reason missing {REJECT_SLIP_TOO_HIGH}. Got '{reason}'"
-        )
+        assert allow is False, f"expected allow=False for slip=120/max=30, got allow={allow}"
+        assert REJECT_SLIP_TOO_HIGH in str(
+            reason
+        ), f"reason missing {REJECT_SLIP_TOO_HIGH}. Got '{reason}'"
 
     def test_gate_passes_25bps_below_30bps(self):
         allow, reason = self._pre(est_slip_bps=25.0, max_bps=30.0)
-        assert allow is True, (
-            f"slip=25 < max=30 → allow=True, got allow={allow}"
-        )
+        assert allow is True, f"slip=25 < max=30 → allow=True, got allow={allow}"
         assert reason is None or reason == ""
 
     def test_gate_boundary_30bps_equals_max_is_passed(self):
         """Inclusive boundary (est ≤ max) → allow. Strict rejection on > only."""
         allow, reason = self._pre(est_slip_bps=30.0, max_bps=30.0)
-        assert allow is True, (
-            "slip == max should NOT reject (engine may still pick tighter algo)."
-        )
+        assert allow is True, "slip == max should NOT reject (engine may still pick tighter algo)."
 
     def test_failopen_when_estimate_has_failopen_and_slip_uses_median(self):
         """If estimator used the median fallback, pre-gate uses the same
@@ -89,17 +88,29 @@ class TestTR71PreGate:
         documents that fail-open tag on estimate is tolerated, not auto-
         rejected (engine decides)."""
         from tee_core.core.kill_switch import KillSwitch
+
         est = EstimateResult(
-            avg_fill_px=100.5, slippage_bps=50.0,
-            market_impact_cost_usd=0.5, walk_depth_level=0,
-            thin_book_warning=False, fail_open=True,
+            avg_fill_px=100.5,
+            slippage_bps=50.0,
+            market_impact_cost_usd=0.5,
+            walk_depth_level=0,
+            thin_book_warning=False,
+            fail_open=True,
             fallback_reason="book_unreachable",
         )
         allow, reason = KillSwitch().check_pre(
-            parent_req=dict(sz=0.1, decision_px=100.0,
-                            inst_id="ETC", side="sell", pos_side="short",
-                            td_mode="isolated", leverage=5, source="ut"),
-            estimate_result=est, max_bps=30.0,
+            parent_req=dict(  # noqa: C408
+                sz=0.1,
+                decision_px=100.0,
+                inst_id="ETC",
+                side="sell",
+                pos_side="short",
+                td_mode="isolated",
+                leverage=5,
+                source="ut",
+            ),
+            estimate_result=est,
+            max_bps=30.0,
         )
         assert allow is False
         assert REJECT_SLIP_TOO_HIGH in str(reason)
@@ -121,6 +132,7 @@ class TestTR72RuntimeKill:
         """Run a minimal mocked engine loop that exercises: kill callback →
         cancels + closeout market."""
         from tee_core.core.kill_switch import KillSwitch
+
         ks = KillSwitch()
         client = MagicMock()
         max_bps = 30.0
@@ -132,8 +144,8 @@ class TestTR72RuntimeKill:
         # cancel all orders whose state is NOT filled. So we pass the algo
         # 2 outstanding IDs to cancel.
         outstanding_ord_ids = ["CH-4-live", "CH-5-pending"]
-        total_sz = 1.0          # e.g. 5 × 0.20 contracts
-        sz_filled = 3 * (total_sz / 5.0)   # 0.6
+        total_sz = 1.0  # e.g. 5 × 0.20 contracts
+        sz_filled = 3 * (total_sz / 5.0)  # 0.6
         remaining_sz = total_sz - sz_filled
 
         running_slip_bps = 60.0
@@ -152,8 +164,11 @@ class TestTR72RuntimeKill:
             client.cancel_order(inst_id="BTC-USDT-SWAP", ord_id=oid)
 
         client.place_order(
-            inst_id="BTC-USDT-SWAP", side="sell", ord_type="market",
-            sz=remaining_sz, tag="tee_kill_closeout",
+            inst_id="BTC-USDT-SWAP",
+            side="sell",
+            ord_type="market",
+            sz=remaining_sz,
+            tag="tee_kill_closeout",
             reason=KILL_TRIGGER,
             # Close-out relaxes the slippage cap 2× to guarantee fill.
             max_slippage_bps=max_bps * 2.0,
@@ -164,32 +179,35 @@ class TestTR72RuntimeKill:
         """Baseline assertion: trigger fired for slip > max * 1.5."""
         *_, trigger, trigger_reason = self._scenario_5slices_3filled_60bps()
         assert trigger is True
-        assert "45" in str(trigger_reason) or "threshold" in str(trigger_reason).lower() \
+        assert (
+            "45" in str(trigger_reason)
+            or "threshold" in str(trigger_reason).lower()
             or KILL_TRIGGER in str(trigger_reason)
+        )
 
     def test_runtime_kill_cancels_N_minus_3_orders(self):
         """Outstanding unfilled orders (N-3 = 2) must each be cancelled."""
         client, *_ = self._scenario_5slices_3filled_60bps()
         cancels = client.cancel_order.call_args_list
-        assert len(cancels) == 2, (
-            f"Expected 2 cancels of unfilled orders, got {len(cancels)}: {cancels}"
-        )
+        assert (
+            len(cancels) == 2
+        ), f"Expected 2 cancels of unfilled orders, got {len(cancels)}: {cancels}"
         cancel_ids = {c.kwargs.get("ord_id") or c.args[1] for c in cancels}
         assert cancel_ids == {"CH-4-live", "CH-5-pending"}
 
     def test_runtime_kill_places_one_market_closeout_with_double_cap(self):
         """Close-out: market order at sz=remaining, max_slippage_bps=2×max."""
         client, remaining_sz, max_bps, *_ = self._scenario_5slices_3filled_60bps()
-        places = [c for c in client.place_order.call_args_list]
-        assert len(places) == 1, (
-            f"Expected exactly 1 closeout market order, got {len(places)}: {places}"
-        )
+        places = [c for c in client.place_order.call_args_list]  # noqa: C416
+        assert (
+            len(places) == 1
+        ), f"Expected exactly 1 closeout market order, got {len(places)}: {places}"
         kw = places[0].kwargs
         assert kw["ord_type"] == "market"
         assert float(kw["sz"]) == pytest.approx(remaining_sz)
-        assert float(kw["max_slippage_bps"]) == pytest.approx(max_bps * 2.0), (
-            "Close-out uses 2× relaxed bps cap so it won't bounce."
-        )
+        assert float(kw["max_slippage_bps"]) == pytest.approx(
+            max_bps * 2.0
+        ), "Close-out uses 2× relaxed bps cap so it won't bounce."
 
 
 # =====================================================================
@@ -200,9 +218,12 @@ class TestTR73UnderThreshold:
         """running=20 bps, max=30 → threshold=45. trigger=False, cancel 0,
         place 0."""
         from tee_core.core.kill_switch import KillSwitch
+
         ks = KillSwitch()
         trigger, reason = ks.check_runtime(
-            running_slippage_bps=20.0, max_bps=30.0, buffer_mult=1.5,
+            running_slippage_bps=20.0,
+            max_bps=30.0,
+            buffer_mult=1.5,
         )
         assert trigger is False
         # Reason field may be None (or '') when no trigger fired. Either OK.
@@ -219,19 +240,23 @@ class TestTR73UnderThreshold:
         (Engine treats triggering only on strict exceed to avoid flapping
         at exactly the limit.)"""
         from tee_core.core.kill_switch import KillSwitch
+
         ks = KillSwitch()
         trigger, reason = ks.check_runtime(
-            running_slippage_bps=45.0, max_bps=30.0, buffer_mult=1.5,
+            running_slippage_bps=45.0,
+            max_bps=30.0,
+            buffer_mult=1.5,
         )
-        assert trigger is False, (
-            "Exactly on threshold should NOT trigger (avoids flapping)."
-        )
+        assert trigger is False, "Exactly on threshold should NOT trigger (avoids flapping)."
 
     def test_over_threshold_46bps_triggers(self):
         from tee_core.core.kill_switch import KillSwitch
+
         ks = KillSwitch()
         trigger, reason = ks.check_runtime(
-            running_slippage_bps=46.0, max_bps=30.0, buffer_mult=1.5,
+            running_slippage_bps=46.0,
+            max_bps=30.0,
+            buffer_mult=1.5,
         )
         assert trigger is True
         assert KILL_TRIGGER in str(reason) or "45" in str(reason) or "30*1.5" in str(reason)

@@ -21,8 +21,8 @@ Dreambuddy OS — 应用层
     python -m dreamos.apps.cli analyze --price 65000 --rsi 55
 """
 
-from .trading_agent import TradingAgent
 from .api_server import create_app
+from .trading_agent import TradingAgent
 
 __all__ = [
     "TradingAgent",

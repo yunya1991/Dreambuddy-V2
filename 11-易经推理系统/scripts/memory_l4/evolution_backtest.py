@@ -22,17 +22,18 @@ evolution_backtest.py — PROP-20260809-001: 提案级 Walk-Forward 真实回测
   - scripts/memory_l4/bcrm/engine.py (BCRMEngine, @dataclass 可参数注入)
   - scripts/data/klines/*.csv (本地缓存，8 币种×多周期)
 """
+
 import csv
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
 # ── 路径与常量 ────────────────────────────────────────────────────────────────
 
-_THIS_DIR = Path(__file__).resolve().parent          # scripts/memory_l4
-KLINE_DIR = _THIS_DIR.parent / "data" / "klines"     # scripts/data/klines
+_THIS_DIR = Path(__file__).resolve().parent  # scripts/memory_l4
+KLINE_DIR = _THIS_DIR.parent / "data" / "klines"  # scripts/data/klines
 
 # 提案 param_key → BCRMEngine 实例字段 的映射
 # Z1 扫描结论: 仅 min_confidence_threshold 有真实引擎消费点（dataclass 字段）；
@@ -48,8 +49,8 @@ _ENGINE_FIELD_BOUNDS = {
 
 # Walk-Forward 窗口参数（Z3 规划: 控成本，~250 infer/引擎）
 DEFAULT_TRAIN_WINDOW = 50
-DEFAULT_TEST_WINDOW  = 10
-DEFAULT_STEP         = 20
+DEFAULT_TEST_WINDOW = 10
+DEFAULT_STEP = 20
 
 # 验证容忍带: proposed 准确率不低于 baseline - ACCURACY_TOLERANCE 即采纳
 ACCURACY_TOLERANCE = 0.02
@@ -60,9 +61,10 @@ MIN_BARS_FOR_BACKTEST = 60
 
 # ── K线加载与 snapshot 构造 ──────────────────────────────────────────────────
 
-def load_local_bars(symbol: str = "BTC",
-                    timeframe: str = "1H",
-                    max_bars: int = 300) -> List[Dict[str, Any]]:
+
+def load_local_bars(
+    symbol: str = "BTC", timeframe: str = "1H", max_bars: int = 300
+) -> List[Dict[str, Any]]:
     """
     从本地 CSV 加载 K 线 bars。
 
@@ -80,15 +82,17 @@ def load_local_bars(symbol: str = "BTC",
         with open(csv_path, newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 try:
-                    bars.append({
-                        "timestamp": row["timestamp"],
-                        "ts": row["timestamp"],  # 别名（下游兼容）
-                        "open":   float(row["open"]),
-                        "high":   float(row["high"]),
-                        "low":    float(row["low"]),
-                        "close":  float(row["close"]),
-                        "volume": float(row["volume"]),
-                    })
+                    bars.append(
+                        {
+                            "timestamp": row["timestamp"],
+                            "ts": row["timestamp"],  # 别名（下游兼容）
+                            "open": float(row["open"]),
+                            "high": float(row["high"]),
+                            "low": float(row["low"]),
+                            "close": float(row["close"]),
+                            "volume": float(row["volume"]),
+                        }
+                    )
                 except (KeyError, ValueError, TypeError):
                     continue  # 跳过坏行
     except OSError as e:
@@ -127,11 +131,11 @@ def build_snapshot(bars: List[Dict[str, Any]], idx: int) -> Dict[str, Any]:
 
     Requires: idx >= 51（需要 50 根历史算 EMA50/24h 动量）。
     """
-    closes = [b["close"] for b in bars[max(0, idx - 50): idx + 1]]
-    vols   = [b["volume"] for b in bars[max(0, idx - 19): idx + 1]]
+    closes = [b["close"] for b in bars[max(0, idx - 50) : idx + 1]]
+    vols = [b["volume"] for b in bars[max(0, idx - 19) : idx + 1]]
 
     ch24 = (closes[-1] / closes[-25] - 1.0) * 100.0 if len(closes) >= 25 else 0.0
-    ch4h = (closes[-1] / closes[-5]  - 1.0) * 100.0 if len(closes) >= 5  else 0.0
+    ch4h = (closes[-1] / closes[-5] - 1.0) * 100.0 if len(closes) >= 5 else 0.0
     ema20 = sum(closes[-20:]) / min(len(closes), 20)
     ema50 = sum(closes[-50:]) / min(len(closes), 50)
 
@@ -147,11 +151,11 @@ def build_snapshot(bars: List[Dict[str, Any]], idx: int) -> Dict[str, Any]:
     rsi = max(5.0, min(95.0, rsi))
 
     return {
-        "price":  closes[-1],
-        "close":  closes[-1],
-        "open":   bars[idx]["open"],
-        "high":   bars[idx]["high"],
-        "low":    bars[idx]["low"],
+        "price": closes[-1],
+        "close": closes[-1],
+        "open": bars[idx]["open"],
+        "high": bars[idx]["high"],
+        "low": bars[idx]["low"],
         "volume": bars[idx]["volume"],
         "price_change_pct": ch24,
         "ch4h": ch4h,
@@ -162,8 +166,7 @@ def build_snapshot(bars: List[Dict[str, Any]], idx: int) -> Dict[str, Any]:
     }
 
 
-def bars_to_walk_forward_data(bars: List[Dict[str, Any]],
-                              warmup: int = 51) -> List[Dict[str, Any]]:
+def bars_to_walk_forward_data(bars: List[Dict[str, Any]], warmup: int = 51) -> List[Dict[str, Any]]:
     """
     把原始 bars 转为 WalkForwardEngine.run 所需的 snapshot 序列。
 
@@ -182,6 +185,7 @@ def bars_to_walk_forward_data(bars: List[Dict[str, Any]],
 
 # ── Walk-Forward 双引擎对比 ──────────────────────────────────────────────────
 
+
 def _make_predict_fn(engine):
     """构造 WalkForwardEngine 所需的 predict_fn。"""
     from scripts.memory_l4.bcrm.market_preprocessor import normalize_snapshot
@@ -193,21 +197,21 @@ def _make_predict_fn(engine):
             contras = engine._auto_generate_contradictions(norm)
         except Exception:
             contras = None
-        return engine.infer(market_snapshot=dict(bar),
-                            contradiction_list=contras)
+        return engine.infer(market_snapshot=dict(bar), contradiction_list=contras)
+
     return predict_fn
 
 
-def _run_walk_forward(engine, data: List[Dict[str, Any]],
-                      train_window: int, test_window: int,
-                      step: int) -> Dict[str, Any]:
+def _run_walk_forward(
+    engine, data: List[Dict[str, Any]], train_window: int, test_window: int, step: int
+) -> Dict[str, Any]:
     """单引擎 walk-forward，返回摘要指标。"""
     from scripts.memory_l4.bcrm.walk_forward import WalkForwardEngine
+
     wfe = WalkForwardEngine(_make_predict_fn(engine))
-    result = wfe.run(data,
-                     train_window_size=train_window,
-                     test_window_size=test_window,
-                     step_size=step)
+    result = wfe.run(
+        data, train_window_size=train_window, test_window_size=test_window, step_size=step
+    )
     return {
         "total_bars": result.total_bars,
         "correct_predictions": result.correct_predictions,
@@ -219,14 +223,15 @@ def _run_walk_forward(engine, data: List[Dict[str, Any]],
     }
 
 
-def walk_forward_validate(param_key: str,
-                          proposed_value: Any,
-                          symbol: str = "BTC",
-                          timeframe: str = "1H",
-                          max_bars: int = 300,
-                          min_bars: int = MIN_BARS_FOR_BACKTEST,
-                          accuracy_tolerance: float = ACCURACY_TOLERANCE
-                          ) -> Dict[str, Any]:
+def walk_forward_validate(
+    param_key: str,
+    proposed_value: Any,
+    symbol: str = "BTC",
+    timeframe: str = "1H",
+    max_bars: int = 300,
+    min_bars: int = MIN_BARS_FOR_BACKTEST,
+    accuracy_tolerance: float = ACCURACY_TOLERANCE,
+) -> Dict[str, Any]:
     """
     提案级 Walk-Forward 真实回测验证（PROP-20260809-001 核心）。
 
@@ -255,8 +260,9 @@ def walk_forward_validate(param_key: str,
     # ── 1. 数据加载 ────────────────────────────────────────────────────────
     bars = load_local_bars(symbol, timeframe, max_bars)
     if len(bars) < min_bars:
-        logger.warning("回测降级: bars=%d < min_bars=%d (%s_%s)",
-                       len(bars), min_bars, symbol, timeframe)
+        logger.warning(
+            "回测降级: bars=%d < min_bars=%d (%s_%s)", len(bars), min_bars, symbol, timeframe
+        )
         return {
             "validated": True,
             "method": "rule_check",
@@ -279,8 +285,8 @@ def walk_forward_validate(param_key: str,
 
     # 窗口自适应（小样本时收缩）
     train_w = min(DEFAULT_TRAIN_WINDOW, max(20, len(data) // 3))
-    test_w  = min(DEFAULT_TEST_WINDOW, max(5, len(data) // 6))
-    step    = DEFAULT_STEP
+    test_w = min(DEFAULT_TEST_WINDOW, max(5, len(data) // 6))
+    step = DEFAULT_STEP
 
     # ── 2. 影子参数: 单引擎记录，行为不变 ─────────────────────────────────
     engine_field = _PARAM_TO_ENGINE_FIELD.get(param_key)
@@ -308,8 +314,7 @@ def walk_forward_validate(param_key: str,
             }
 
     if engine_field is None:
-        baseline_summary = _run_walk_forward(
-            BCRMEngine(), data, train_w, test_w, step)
+        baseline_summary = _run_walk_forward(BCRMEngine(), data, train_w, test_w, step)
         return {
             "validated": True,
             "method": "walk_forward",
@@ -347,7 +352,7 @@ def walk_forward_validate(param_key: str,
     # 奖励"把没把握的预测全部丢弃"的提案。
     base_fail = baseline_summary["fail_closed_count"]
     prop_fail = proposed_summary["fail_closed_count"]
-    fail_limit = base_fail * 1.2 + 5          # 容忍带: 相对+20% 绝对+5
+    fail_limit = base_fail * 1.2 + 5  # 容忍带: 相对+20% 绝对+5
     coverage_ok = prop_fail <= fail_limit
     accuracy_ok = prop_acc >= base_acc - accuracy_tolerance
     validated = accuracy_ok and coverage_ok
@@ -363,8 +368,8 @@ def walk_forward_validate(param_key: str,
         "delta": {
             "direction_accuracy": delta_acc,
             "avg_confidence": round(
-                proposed_summary["avg_confidence"]
-                - baseline_summary["avg_confidence"], 4),
+                proposed_summary["avg_confidence"] - baseline_summary["avg_confidence"], 4
+            ),
             "fail_closed": prop_fail - base_fail,
         },
         "tolerance": accuracy_tolerance,

@@ -13,22 +13,22 @@ WebSocket 实时行情推送模块，支持 Hyperliquid 实时数据。
   - 优雅降级（WS不可用时回退到REST轮询）
 """
 
-import json
+import json  # noqa: I001
 import time
 import threading
 from typing import Dict, Any, Callable, List, Optional
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from collections import defaultdict
+from dataclasses import dataclass
 
 try:
     import urllib.request
+
     HAS_URLLIB = True
 except ImportError:
     HAS_URLLIB = False
 
 try:
     import websocket
+
     HAS_WEBSOCKET = True
 except ImportError:
     HAS_WEBSOCKET = False
@@ -37,6 +37,7 @@ except ImportError:
 @dataclass
 class MarketTicker:
     """市场 ticker 数据"""
+
     symbol: str
     price: float = 0.0
     price_24h_ago: float = 0.0
@@ -231,12 +232,7 @@ class RealtimeMarketStream:
 
         def on_open(ws):
             try:
-                sub_msg = {
-                    "method": "subscribe",
-                    "subscription": {
-                        "type": "allMids"
-                    }
-                }
+                sub_msg = {"method": "subscribe", "subscription": {"type": "allMids"}}
                 ws.send(json.dumps(sub_msg))
             except Exception:
                 pass
@@ -279,7 +275,9 @@ class RealtimeMarketStream:
                             if old_price > 0:
                                 change = (price - old_price) / old_price * 100
                                 if abs(change) < 5:
-                                    ticker.change_24h_pct = ticker.change_24h_pct * 0.99 + change * 0.01
+                                    ticker.change_24h_pct = (
+                                        ticker.change_24h_pct * 0.99 + change * 0.01
+                                    )
 
                             if symbol in self._tickers:
                                 self._tickers[symbol].price = price

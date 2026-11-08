@@ -3,15 +3,17 @@
 验证五维统计计算 + Kalman 平滑 + FAIL-OPEN。
 对应 Spec §三 五维统计 / §四 Kalman 平滑。
 """
-import pytest
+
 import sys
 from pathlib import Path
+
+import pytest
 
 _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.force_vector_calculator import ForceVectorCalculator
+from force_vector.force_vector_calculator import ForceVectorCalculator  # noqa: E402
 
 
 class TestDaoDimension:
@@ -84,8 +86,11 @@ class TestComputeAllFailOpen:
         calc = ForceVectorCalculator()
         short = [1.0, 2.0, 3.0]  # 仅3天
         result = calc.compute_all(
-            dao_data=short, tian_data=short, di_data=short,
-            jiang_data=short, fa_data=short,
+            dao_data=short,
+            tian_data=short,
+            di_data=short,
+            jiang_data=short,
+            fa_data=short,
         )
         assert result is None
 
@@ -94,8 +99,11 @@ class TestComputeAllFailOpen:
         calc = ForceVectorCalculator()
         data = [float(i) for i in range(1, 11)]  # 10天
         result = calc.compute_all(
-            dao_data=data, tian_data=data, di_data=data,
-            jiang_data=data, fa_data=data,
+            dao_data=data,
+            tian_data=data,
+            di_data=data,
+            jiang_data=data,
+            fa_data=data,
         )
         assert result is not None
         assert isinstance(result, dict)

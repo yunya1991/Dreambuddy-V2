@@ -5,11 +5,11 @@ Dream OS 调度器守护进程启动脚本
 启动 DreamOS 每小时自动调度任务，分析 BTC、ETH、SOL、AVAX、LINK、DOT、MATIC、BNB、OP、ARB 共10个币种
 """
 
+import fcntl
+import logging
 import os
 import sys
 import time
-import fcntl
-import logging
 from pathlib import Path
 
 dreamos_dir = Path(__file__).parent.parent
@@ -20,6 +20,7 @@ _env_path = dreamos_dir / ".env"
 if _env_path.exists():
     try:
         from dotenv import load_dotenv
+
         load_dotenv(_env_path)
     except ImportError:
         # dotenv 不可用时降级:手动解析 KEY=VALUE
@@ -32,11 +33,8 @@ if _env_path.exists():
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler(dreamos_dir / 'logs' / 'scheduler.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.FileHandler(dreamos_dir / "logs" / "scheduler.log"), logging.StreamHandler()],
 )
 
 logger = logging.getLogger(__name__)
@@ -75,7 +73,7 @@ def main():
         # 使用绝对路径加载 scheduler_data,避免 cwd 差异导致加载失败
         scheduler_data_dir = str(dreamos_dir / "cli" / "scheduler_data")
         scheduler = DreamOSScheduler(data_dir=scheduler_data_dir)
-        
+
         jobs = scheduler.list_jobs()
         logger.info(f"已加载 {len(jobs)} 个定时任务")
         for j in jobs:
@@ -98,10 +96,7 @@ def main():
                 #  心跳断档即告警信号,next_run=None 的任务会被直接点名)
                 if _beat % 30 == 0:
                     jobs_snap = scheduler.list_jobs()
-                    parts = [
-                        f"{j['name']}:next={j['next_run'] or 'None!'}"
-                        for j in jobs_snap
-                    ]
+                    parts = [f"{j['name']}:next={j['next_run'] or 'None!'}" for j in jobs_snap]
                     logger.info(
                         f"[HEARTBEAT] 调度器运行中 | 任务数: {stats['total_jobs']} "
                         f"| 运行中: {stats['running_jobs']} | 累计错误: {stats['total_errors']} "

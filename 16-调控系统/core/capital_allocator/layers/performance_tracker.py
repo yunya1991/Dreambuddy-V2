@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import json
 import time
-import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -90,9 +89,7 @@ class PerformanceTracker:
         try:
             with open(self._cache_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            self._perf_cache = {
-                k: CoinPerformance(**v) for k, v in data.get("by_coin", {}).items()
-            }
+            self._perf_cache = {k: CoinPerformance(**v) for k, v in data.get("by_coin", {}).items()}
             self._global_cache = data.get("global", {})
             self._last_load_ts = time.time()
         except Exception:
@@ -131,11 +128,17 @@ class PerformanceTracker:
                 continue
             # 归一化币种名（去 USDT-SWAP 后缀等）
             coin = self._normalize_coin(coin)
-            agg = coin_agg.setdefault(coin, {
-                "n_trades": 0, "n_wins": 0,
-                "wins": [], "losses": [],
-                "total_pnl": 0.0, "last_ts": 0.0,
-            })
+            agg = coin_agg.setdefault(
+                coin,
+                {
+                    "n_trades": 0,
+                    "n_wins": 0,
+                    "wins": [],
+                    "losses": [],
+                    "total_pnl": 0.0,
+                    "last_ts": 0.0,
+                },
+            )
             agg["n_trades"] += 1
             pnl = float(t.get("pnl") or t.get("pnl_usdt") or 0.0)
             pnl_pct = float(t.get("pnl_pct") or t.get("return_pct") or 0.0)
@@ -229,8 +232,12 @@ class PerformanceTracker:
     def _set_empty(self) -> None:
         self._perf_cache = {}
         self._global_cache = {
-            "win_rate": 0.0, "avg_win_pct": 0.0, "avg_loss_pct": 0.0,
-            "w_l_ratio": 0.0, "n_trades": 0, "n_wins": 0,
+            "win_rate": 0.0,
+            "avg_win_pct": 0.0,
+            "avg_loss_pct": 0.0,
+            "w_l_ratio": 0.0,
+            "n_trades": 0,
+            "n_wins": 0,
         }
         self._last_load_ts = time.time()
 

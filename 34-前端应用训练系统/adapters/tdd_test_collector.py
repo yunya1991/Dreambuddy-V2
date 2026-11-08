@@ -14,10 +14,11 @@
 
 预期: 388+ 测试文件 → 800-1200 条 DSH 训练数据
 """
+
 import ast
 import os
 import sys
-from typing import List, Optional, Tuple, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
@@ -27,8 +28,7 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # ============================================================
 # 默认扫描目录配置 (SPEC v0.4 §2.2)
@@ -107,9 +107,7 @@ FRAMEWORK_PREFIXES = (
 )
 
 # 测试框架断言方法前缀 (unittest.TestCase 方法)
-ASSERT_METHOD_PREFIXES = (
-    "assert",
-)
+ASSERT_METHOD_PREFIXES = ("assert",)
 
 
 def _get_call_name(node) -> str:
@@ -139,12 +137,30 @@ def _get_assert_description(node: ast.Assert) -> str:
         if isinstance(node.test, ast.Call):
             name = _get_call_name(node.test.func)
             # assertEqual(x, y) → "equal"
-            for keyword in ("Equal", "NotEqual", "True", "False",
-                            "Is", "IsNot", "IsNone", "IsNotNone",
-                            "In", "NotIn", "IsInstance", "NotIsInstance",
-                            "Greater", "Less", "GreaterEqual", "LessEqual",
-                            "AlmostEqual", "NotAlmostEqual", "CountEqual",
-                            "Raises", "Warns", "Logs"):
+            for keyword in (
+                "Equal",
+                "NotEqual",
+                "True",
+                "False",
+                "Is",
+                "IsNot",
+                "IsNone",
+                "IsNotNone",
+                "In",
+                "NotIn",
+                "IsInstance",
+                "NotIsInstance",
+                "Greater",
+                "Less",
+                "GreaterEqual",
+                "LessEqual",
+                "AlmostEqual",
+                "NotAlmostEqual",
+                "CountEqual",
+                "Raises",
+                "Warns",
+                "Logs",
+            ):
                 if keyword.lower() in name.lower():
                     return keyword.lower()
             return name.lower() if name else "true"
@@ -277,7 +293,10 @@ def _extract_literal_value(node) -> Any:
     if isinstance(node, ast.Tuple):
         return tuple(_extract_literal_value(e) for e in node.elts)
     if isinstance(node, ast.Dict):
-        return {str(_extract_literal_value(k)): _extract_literal_value(v) for k, v in zip(node.keys, node.values)}
+        return {
+            str(_extract_literal_value(k)): _extract_literal_value(v)
+            for k, v in zip(node.keys, node.values)  # noqa: B905
+        }
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Attribute):
@@ -417,9 +436,7 @@ class TddTestCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "B"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从测试文件采集训练案例。
 
         先扫描所有目录,再按 QUOTA 比例公平采样,确保各域都有代表。
@@ -454,8 +471,9 @@ class TddTestCollector(TrainingDataProvider):
 
         cases: List[TrainingCase] = []
         remaining = limit
-        domains_sorted = sorted(domain_cases_map.keys(),
-                               key=lambda d: QUOTA.get(d, 0.1), reverse=True)
+        domains_sorted = sorted(
+            domain_cases_map.keys(), key=lambda d: QUOTA.get(d, 0.1), reverse=True
+        )
 
         for domain in domains_sorted:
             weight = QUOTA.get(domain, 0.1) / total_weight
@@ -471,7 +489,7 @@ class TddTestCollector(TrainingDataProvider):
             for domain in domains_sorted:
                 domain_data = domain_cases_map[domain]
                 existing = len([c for c in cases if c.metadata.get("domain") == domain])
-                extra = domain_data[existing:existing + remaining]
+                extra = domain_data[existing : existing + remaining]
                 if extra:
                     cases.extend(extra)
                     remaining -= len(extra)
@@ -480,9 +498,7 @@ class TddTestCollector(TrainingDataProvider):
 
         return cases[:limit]
 
-    def _collect_from_dir(
-        self, dir_path: str, domain: str, quota: int
-    ) -> List[TrainingCase]:
+    def _collect_from_dir(self, dir_path: str, domain: str, quota: int) -> List[TrainingCase]:
         """扫描目录下 test_*.py 文件并采集 TrainingCase。
 
         扫描所有文件（不提前截断），quota 仅作为软目标。
@@ -494,11 +510,13 @@ class TddTestCollector(TrainingDataProvider):
             return cases
 
         try:
-            test_files = sorted([
-                os.path.join(dir_path, f)
-                for f in os.listdir(dir_path)
-                if f.startswith("test_") and f.endswith(".py")
-            ])
+            test_files = sorted(
+                [
+                    os.path.join(dir_path, f)
+                    for f in os.listdir(dir_path)
+                    if f.startswith("test_") and f.endswith(".py")
+                ]
+            )
         except Exception:
             return cases
 
@@ -512,9 +530,7 @@ class TddTestCollector(TrainingDataProvider):
 
         return cases
 
-    def _parse_test_file(
-        self, file_path: str, domain: str
-    ) -> List[TrainingCase]:
+    def _parse_test_file(self, file_path: str, domain: str) -> List[TrainingCase]:
         """AST 解析单个测试文件,提取 TrainingCase。
 
         Returns:
@@ -613,7 +629,7 @@ class TddTestCollector(TrainingDataProvider):
             for idx, case_values in enumerate(param_cases):
                 # 构造参数描述
                 param_desc = ", ".join(
-                    f"{name}={val}" for name, val in zip(param_names, case_values)
+                    f"{name}={val}" for name, val in zip(param_names, case_values)  # noqa: B905
                 )
 
                 # 参数附加到 node_sequence 节点
@@ -627,14 +643,47 @@ class TddTestCollector(TrainingDataProvider):
                 for desc in assert_descs:
                     node_seq.append(f"assert_{desc}")
 
-                cases.append(TrainingCase(
+                cases.append(
+                    TrainingCase(
+                        intent=intent,
+                        actions=node_seq,
+                        outcome_text="pass",
+                        learned=[
+                            f"param_case_{idx}",
+                            f"param_count={len(param_cases)}",
+                            f"domain={domain}",
+                        ],
+                        layer_tags=["DSH"],
+                        quality="B",
+                        confidence=0.5,
+                        source=f"tdd:{os.path.basename(file_path)}",
+                        metadata={
+                            "outcome": "success",  # 测试通过 = 决策序列有效 (ground truth)
+                            "domain": domain,
+                            "file": file_path,
+                            "func": func_node.name,
+                            "parametrize": True,
+                            "param_index": idx,
+                            "param_names": param_names,
+                            "param_values": list(case_values),
+                            "node_count": len(node_seq),
+                        },
+                    )
+                )
+        else:
+            # 非参数化: 1条 case
+            node_seq = list(call_chain)
+            for desc in assert_descs:
+                node_seq.append(f"assert_{desc}")
+
+            cases.append(
+                TrainingCase(
                     intent=intent,
                     actions=node_seq,
                     outcome_text="pass",
                     learned=[
-                        f"param_case_{idx}",
-                        f"param_count={len(param_cases)}",
                         f"domain={domain}",
+                        f"node_count={len(node_seq)}",
                     ],
                     layer_tags=["DSH"],
                     quality="B",
@@ -645,40 +694,11 @@ class TddTestCollector(TrainingDataProvider):
                         "domain": domain,
                         "file": file_path,
                         "func": func_node.name,
-                        "parametrize": True,
-                        "param_index": idx,
-                        "param_names": param_names,
-                        "param_values": list(case_values),
+                        "parametrize": False,
                         "node_count": len(node_seq),
                     },
-                ))
-        else:
-            # 非参数化: 1条 case
-            node_seq = list(call_chain)
-            for desc in assert_descs:
-                node_seq.append(f"assert_{desc}")
-
-            cases.append(TrainingCase(
-                intent=intent,
-                actions=node_seq,
-                outcome_text="pass",
-                learned=[
-                    f"domain={domain}",
-                    f"node_count={len(node_seq)}",
-                ],
-                layer_tags=["DSH"],
-                quality="B",
-                confidence=0.5,
-                source=f"tdd:{os.path.basename(file_path)}",
-                metadata={
-                    "outcome": "success",  # 测试通过 = 决策序列有效 (ground truth)
-                    "domain": domain,
-                    "file": file_path,
-                    "func": func_node.name,
-                    "parametrize": False,
-                    "node_count": len(node_seq),
-                },
-            ))
+                )
+            )
 
         return cases
 
@@ -694,8 +714,9 @@ class TddTestCollector(TrainingDataProvider):
         result = []
         for i, c in enumerate(name):
             if c.isupper():
-                if i > 0 and (name[i - 1].islower() or
-                             (i + 1 < len(name) and name[i + 1].islower())):
+                if i > 0 and (
+                    name[i - 1].islower() or (i + 1 < len(name) and name[i + 1].islower())
+                ):
                     result.append("_")
                 result.append(c.lower())
             else:

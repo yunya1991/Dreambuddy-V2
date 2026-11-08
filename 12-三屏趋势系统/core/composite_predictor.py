@@ -9,7 +9,7 @@
 架构：
     输入层: 技术面 + 基本面原始数据
         ↓
-    处理层: 
+    处理层:
         - 技术面: 三屏趋势一致性检测 + 动态权重
         - 基本面: 三维度(方向/速度/加速度) + SignalEngine + SentimentEngine
         ↓
@@ -449,7 +449,7 @@ def predict_from_dataframes(
         )
 
     except ImportError:
-        from config import FUNDAMENTAL_SCREEN1_ENABLED
+        from config import FUNDAMENTAL_SCREEN1_ENABLED  # noqa: I001
         from trend_consistency import calc_trend_consistency
 
         trend_consistency = calc_trend_consistency(

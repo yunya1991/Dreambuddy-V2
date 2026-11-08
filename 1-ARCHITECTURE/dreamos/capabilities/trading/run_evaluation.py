@@ -10,12 +10,14 @@ Dream OS 交易评估回测脚本
     5. 输出完整评估报告
 """
 
-import json
+import json  # noqa: I001
 import sys
 import os
 from typing import Dict, List, Any
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
 
 from dreamos.capabilities.trading.evaluator import TradingAnalysisEvaluator
 
@@ -32,8 +34,9 @@ def load_orchestration_memory(file_path: str) -> Dict[str, Any]:
         return json.load(f)
 
 
-def transform_trade_data(feedback: Dict[str, List[Dict[str, Any]]],
-                         memory: Dict[str, Any]) -> List[Dict[str, Any]]:
+def transform_trade_data(
+    feedback: Dict[str, List[Dict[str, Any]]], memory: Dict[str, Any]
+) -> List[Dict[str, Any]]:
     """将反馈数据转换为评估器所需格式"""
     trades = []
     trade_id = 0
@@ -45,7 +48,7 @@ def transform_trade_data(feedback: Dict[str, List[Dict[str, Any]]],
 
         for trade in scenario_trades:
             trade_id += 1
-            
+
             entry_price = trade.get("entry_price", 0)
             exit_price = trade.get("exit_price", 0)
             if exit_price > 0 and entry_price > 0:
@@ -56,31 +59,33 @@ def transform_trade_data(feedback: Dict[str, List[Dict[str, Any]]],
             else:
                 pnl_percent = trade.get("result", 0) * 100
 
-            trades.append({
-                "trade_id": f"trade_{trade_id:06d}",
-                "symbol": trade.get("symbol", ""),
-                "direction": trade.get("direction", ""),
-                "entry_price": entry_price,
-                "exit_price": exit_price,
-                "pnl": pnl_percent / 100,
-                "pnl_percent": pnl_percent,
-                "holding_period": 1,
-                "scenario": scenario,
-                "chain_used": trade.get("pattern", best_pattern),
-                "nodes_used": nodes,
-                "entry_confidence": 0.65 if trade.get("direction") else 0,
-                "exit_reason": "normal" if exit_price > 0 else "open",
-                "stop_loss_hit": pnl_percent < -3,
-                "take_profit_hit": 0 < pnl_percent < 2,
-                "signal_strength": 0.6,
-                "scenario_mismatch": False,
-                "actual_volatility": 0.02,
-                "estimated_volatility": 0.02,
-                "momentum_confidence": 0.5,
-                "correlation_conflict": False,
-                "expected_direction": trade.get("expected_direction", ""),
-                "timestamp": trade.get("timestamp", ""),
-            })
+            trades.append(
+                {
+                    "trade_id": f"trade_{trade_id:06d}",
+                    "symbol": trade.get("symbol", ""),
+                    "direction": trade.get("direction", ""),
+                    "entry_price": entry_price,
+                    "exit_price": exit_price,
+                    "pnl": pnl_percent / 100,
+                    "pnl_percent": pnl_percent,
+                    "holding_period": 1,
+                    "scenario": scenario,
+                    "chain_used": trade.get("pattern", best_pattern),
+                    "nodes_used": nodes,
+                    "entry_confidence": 0.65 if trade.get("direction") else 0,
+                    "exit_reason": "normal" if exit_price > 0 else "open",
+                    "stop_loss_hit": pnl_percent < -3,
+                    "take_profit_hit": 0 < pnl_percent < 2,
+                    "signal_strength": 0.6,
+                    "scenario_mismatch": False,
+                    "actual_volatility": 0.02,
+                    "estimated_volatility": 0.02,
+                    "momentum_confidence": 0.5,
+                    "correlation_conflict": False,
+                    "expected_direction": trade.get("expected_direction", ""),
+                    "timestamp": trade.get("timestamp", ""),
+                }
+            )
 
     return trades
 
@@ -104,11 +109,11 @@ def run_evaluation(feedback_path: str, memory_path: str) -> None:
     print("\n[3/4] 运行评估器...")
     evaluator = TradingAnalysisEvaluator()
     evaluator.set_orchestration_memory(memory)
-    
+
     print("\n  分析亏损原因...")
     analyses = evaluator.analyze_loss_reasons(trades)
     print(f"    - 分析交易数: {len(analyses)}")
-    
+
     print("\n  评估模块能力...")
     capabilities = evaluator.evaluate_module_capabilities(trades)
     print(f"    - 评估模块数: {len(capabilities)}")
@@ -128,13 +133,13 @@ def run_evaluation(feedback_path: str, memory_path: str) -> None:
 
     json_path = os.path.join(report_dir, f"evaluation_report_{report.report_id}.json")
     md_path = os.path.join(report_dir, f"evaluation_report_{report.report_id}.md")
-    
+
     evaluator.save_report(report, json_path)
     evaluator.save_report_markdown(report, md_path)
 
     print_report_summary(report)
 
-    print(f"\n报告已保存:")
+    print("\n报告已保存:")
     print(f"  - JSON: {json_path}")
     print(f"  - Markdown: {md_path}")
 
@@ -145,43 +150,54 @@ def print_report_summary(report) -> None:
     print("评估报告摘要")
     print("=" * 80)
 
-    print(f"\n【概览】")
+    print("\n【概览】")
     print(f"  分析交易数: {report.analyzed_trades}")
     print(f"  盈利交易数: {report.profitable_trades}")
     print(f"  胜率: {report.profitable_trades/report.analyzed_trades*100:.1f}%")
     print(f"  平均盈亏: {report.avg_pnl:.2f}%")
 
-    print(f"\n【亏损原因 Top5】")
+    print("\n【亏损原因 Top5】")
     for reason, count in report.top_loss_reasons:
         rate = count / report.analyzed_trades * 100
         print(f"  {reason}: {count} 次 ({rate:.1f}%)")
 
-    print(f"\n【模块能力排名】")
-    sorted_modules = sorted(report.module_capabilities.values(),
-                            key=lambda x: -x.success_rate)
+    print("\n【模块能力排名】")
+    sorted_modules = sorted(report.module_capabilities.values(), key=lambda x: -x.success_rate)
     for i, cap in enumerate(sorted_modules[:10], 1):
-        print(f"  {i:2d}. {cap.module_id:4s} [{cap.module_name}] 胜率:{cap.success_rate*100:.1f}% 准确率:{cap.accuracy*100:.1f}% 盈亏比:{cap.profit_factor:.2f}")
+        print(
+            f"  {i:2d}. {cap.module_id:4s} [{cap.module_name}] 胜率:{cap.success_rate*100:.1f}% 准确率:{cap.accuracy*100:.1f}% 盈亏比:{cap.profit_factor:.2f}"
+        )
 
-    print(f"\n【场景编排推荐】")
+    print("\n【场景编排推荐】")
     for scenario, rec in report.orchestration_recommendations.items():
         print(f"  {scenario}:")
         print(f"    - 推荐链路: {rec.recommended_chain}")
         print(f"    - 推荐节点: {', '.join(rec.recommended_nodes)}")
         print(f"    - 置信度: {rec.confidence*100:.1f}%")
 
-    print(f"\n【改进建议】")
+    print("\n【改进建议】")
     for i, suggestion in enumerate(report.improvement_suggestions, 1):
         print(f"  {i}. {suggestion}")
 
 
 if __name__ == "__main__":
     feedback_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-        "dreamos", "core", "memory", "execution_feedback.json"
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+        "dreamos",
+        "core",
+        "memory",
+        "execution_feedback.json",
     )
     memory_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-        "dreamos", "core", "memory", "orchestration_memory.json"
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+        "dreamos",
+        "core",
+        "memory",
+        "orchestration_memory.json",
     )
 
     if not os.path.exists(feedback_path):

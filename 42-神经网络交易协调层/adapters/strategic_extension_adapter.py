@@ -15,14 +15,20 @@ import json
 import os
 import sys
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 43 层信号产出物路径
 _43_SIGNAL_PATH = os.path.join(
-    "/home/luke/dreambuddy/43-战略承接推演层",
-    "runtime", "strategic_extension_signal.json",
+    os.path.join(_DREAMBUDDY_ROOT, "43-战略承接推演层"),
+    "runtime",
+    "strategic_extension_signal.json",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 
 def load_43_signal(path: str = _43_SIGNAL_PATH) -> dict:
@@ -54,21 +60,29 @@ def main() -> int:
 
     signal = load_43_signal()
     if not signal.get("source"):
-        print(json.dumps({"status": "unavailable", "reason": signal.get("note")}, ensure_ascii=False))
+        print(
+            json.dumps({"status": "unavailable", "reason": signal.get("note")}, ensure_ascii=False)
+        )
         return 1
 
     bus = SignalBus()
     result = publish_to_bus(bus, signal)
     state = bus.flush()
-    print(json.dumps({
-        "publish_result": result.get("status"),
-        "reason": result.get("reason"),
-        "bus_signal_count": state["signal_count"],
-        "bus_sources": state["sources"],
-        "signal_id": signal.get("signal_id"),
-        "source": signal.get("source"),
-        "shadow": signal.get("shadow"),
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+                "bus_signal_count": state["signal_count"],
+                "bus_sources": state["sources"],
+                "signal_id": signal.get("signal_id"),
+                "source": signal.get("source"),
+                "shadow": signal.get("shadow"),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if result.get("status") == "accepted" else 1
 
 

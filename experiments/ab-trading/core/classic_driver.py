@@ -31,7 +31,7 @@
   └─────────────────────────────────────┘
 """
 
-import os
+import os  # noqa: I001
 import time
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
@@ -45,10 +45,7 @@ except ImportError:
 
 # ── 配置 ───────────────────────────────────────────────────────────────────
 
-DEFAULT_API_BASE = os.environ.get(
-    "ML_TRADE_SERVICE_URL",
-    "http://127.0.0.1:8092"
-)
+DEFAULT_API_BASE = os.environ.get("ML_TRADE_SERVICE_URL", "http://127.0.0.1:8092")
 
 DEFAULT_TIMEOUT = float(os.environ.get("CLASSIC_DRIVER_TIMEOUT", "8.0"))
 
@@ -62,11 +59,32 @@ DEFAULT_STRATEGIES = [
 # 默认扫描币种
 DEFAULT_COINS = [
     # 主流币
-    "BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "LINK",
+    "BTC",
+    "ETH",
+    "SOL",
+    "BNB",
+    "XRP",
+    "ADA",
+    "AVAX",
+    "LINK",
     # DeFi/热门币
-    "UNI", "SUI", "INJ", "ARB", "OP", "MATIC", "ATOM", "DOT",
+    "UNI",
+    "SUI",
+    "INJ",
+    "ARB",
+    "OP",
+    "MATIC",
+    "ATOM",
+    "DOT",
     # 新兴币（高波动）
-    "HYPE", "PEPE", "WIF", "BONK", "DOGE", "SHIB", "GRASS", "AERO",
+    "HYPE",
+    "PEPE",
+    "WIF",
+    "BONK",
+    "DOGE",
+    "SHIB",
+    "GRASS",
+    "AERO",
 ]
 
 # ab_owner 标识：用于与其他策略体系隔离
@@ -77,11 +95,13 @@ SYSTEM_ID = "classic_fallback"
 
 # ── 数据类 ─────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class ClassicEntrySignal:
     """经典指标入场信号"""
+
     coin: str
-    side: str           # "long" / "short"
+    side: str  # "long" / "short"
     strategy_id: str
     confidence: float
     reason: str
@@ -92,22 +112,24 @@ class ClassicEntrySignal:
 @dataclass
 class ClassicExitDecision:
     """经典指标离场决策"""
+
     coin: str
     should_exit: bool
-    action: str         # "close" / "reduce" / "hold" / "raise_tp"
+    action: str  # "close" / "reduce" / "hold" / "raise_tp"
     reason: str
     confidence: float
     priority: str = ""
     suggested_price: float = 0.0
-    new_tp_price: float = 0.0    # RAISE_TP 新止盈价
-    new_tp_pct: float = 0.0      # RAISE_TP 新止盈比例
-    reduce_frac: float = 0.0     # 减仓比例
+    new_tp_price: float = 0.0  # RAISE_TP 新止盈价
+    new_tp_pct: float = 0.0  # RAISE_TP 新止盈比例
+    reduce_frac: float = 0.0  # 减仓比例
     features: Dict = field(default_factory=dict)
 
 
 @dataclass
 class DriverStatus:
     """驱动状态"""
+
     api_available: bool
     latency_ms: float = 0.0
     last_error: str = ""
@@ -116,10 +138,11 @@ class DriverStatus:
 
 # ── 主驱动类 ────────────────────────────────────────────────────────────────
 
+
 class ClassicDriver:
     """
     经典指标系统驱动
-    
+
     作为 agent_b 在无 LLM 时的完整回退方案，
     通过 HTTP API 驱动 ml_trade_service 完成全链路交易。
     """
@@ -141,18 +164,18 @@ class ClassicDriver:
         self.per_trade_usdc = per_trade_usdc
         self.max_positions = max_positions
         self.leverage = leverage
-        
+
         self._session = None
         self._status = DriverStatus(
             api_available=False,
             strategies_supported=[],
         )
-        
+
         # 冷却机制：防止重复触发
         self._entry_cooldowns: Dict[str, float] = {}  # coin -> expiry_ts
-        self._exit_cooldowns: Dict[str, float] = {}   # coin -> expiry_ts
+        self._exit_cooldowns: Dict[str, float] = {}  # coin -> expiry_ts
         self._entry_cooldown_sec = 300  # 5分钟
-        self._exit_cooldown_sec = 90    # 90秒
+        self._exit_cooldown_sec = 90  # 90秒
 
     # ── 基础工具 ────────────────────────────────────────────────────────
 
@@ -224,9 +247,7 @@ class ClassicDriver:
         data = self._get("/strategy/feeder/capabilities")
         if data and data.get("ok"):
             strategies = data.get("strategies", [])
-            self._status.strategies_supported = [
-                s.get("strategy_id", "") for s in strategies
-            ]
+            self._status.strategies_supported = [s.get("strategy_id", "") for s in strategies]
             return strategies
         return []
 
@@ -239,35 +260,35 @@ class ClassicDriver:
     ) -> List[ClassicEntrySignal]:
         """
         扫描入场信号（调用 /decision/entry 接口）
-        
+
         对每个币种 + 策略组合调用决策接口，
         返回满足置信度门槛的信号列表。
-        
+
         注：直接用 decision/entry 而不是 signals/v1，因为：
         - signals/v1 是信号注入接口（外部系统推送信号用）
         - decision/entry 内部会自动计算策略信号 + 风控门控
         """
         if not self.is_available():
             return []
-        
+
         coins_to_scan = coins or self.coins
         signals: List[ClassicEntrySignal] = []
         now = time.time()
-        
+
         for strategy_id in self.strategies:
             for coin in coins_to_scan:
                 # 检查冷却
                 ck = f"{coin}_{strategy_id}"
                 if ck in self._entry_cooldowns and now < self._entry_cooldowns[ck]:
                     continue
-                
+
                 signal = self._query_single_signal(coin, strategy_id)
                 if signal and signal.confidence >= min_confidence:
                     signals.append(signal)
-                
+
                 # 短暂间隔，避免请求过快
                 time.sleep(0.02)
-        
+
         # 按置信度排序
         signals.sort(key=lambda x: x.confidence, reverse=True)
         return signals
@@ -275,28 +296,34 @@ class ClassicDriver:
     def _query_single_signal(self, coin: str, strategy_id: str) -> Optional[ClassicEntrySignal]:
         """查询单个币种+策略的信号（通过 decision/entry，同时查询多空两个方向）"""
         # 先查询做多方向
-        data = self._post("/decision/entry", {
-            "pair": coin,
-            "side": "long",
-            "strategy_id": strategy_id,
-            "ab_owner": AB_OWNER,
-            "book_id": BOOK_ID,
-            "system_id": SYSTEM_ID,
-            "size": self.per_trade_usdc,
-            "leverage": self.leverage,
-        })
+        data = self._post(
+            "/decision/entry",
+            {
+                "pair": coin,
+                "side": "long",
+                "strategy_id": strategy_id,
+                "ab_owner": AB_OWNER,
+                "book_id": BOOK_ID,
+                "system_id": SYSTEM_ID,
+                "size": self.per_trade_usdc,
+                "leverage": self.leverage,
+            },
+        )
 
         # 再查询做空方向
-        data_short = self._post("/decision/entry", {
-            "pair": coin,
-            "side": "short",
-            "strategy_id": strategy_id,
-            "ab_owner": AB_OWNER,
-            "book_id": BOOK_ID,
-            "system_id": SYSTEM_ID,
-            "size": self.per_trade_usdc,
-            "leverage": self.leverage,
-        })
+        data_short = self._post(
+            "/decision/entry",
+            {
+                "pair": coin,
+                "side": "short",
+                "strategy_id": strategy_id,
+                "ab_owner": AB_OWNER,
+                "book_id": BOOK_ID,
+                "system_id": SYSTEM_ID,
+                "size": self.per_trade_usdc,
+                "leverage": self.leverage,
+            },
+        )
 
         # 选择置信度更高的方向
         best_data = None
@@ -310,15 +337,15 @@ class ClassicDriver:
             return None
 
         data = best_data
-        
+
         confidence = float(data.get("pc", 0) or 0)
         side = str(data.get("side", "long") or "long").lower()
         decision = str(data.get("decision", "hold") or "hold")
-        
+
         # 保存完整决策数据到 features 供后续复用
         features = data.get("market_features", {}) or {}
         features["_decision_data"] = data
-        
+
         return ClassicEntrySignal(
             coin=coin,
             side=side,
@@ -336,41 +363,44 @@ class ClassicDriver:
     ) -> Tuple[bool, str, Dict]:
         """
         入场决策（直接使用 signal 中已缓存的决策结果）
-        
+
         设计说明：
         scan_entry_signals 已经通过 /decision/entry 获取了完整的决策结果，
         这里直接复用，避免重复 API 调用。
         signal.decision_data 中保存了原始决策响应。
-        
+
         返回: (approved, reason, decision_data)
         """
         dec_data = signal.features.get("_decision_data")
         if not dec_data:
             # 如果没有缓存的数据，重新调用一次
-            data = self._post("/decision/entry", {
-                "pair": signal.coin,
-                "side": signal.side,
-                "strategy_id": signal.strategy_id,
-                "event_id": signal.signal_id,
-                "ab_owner": AB_OWNER,
-                "book_id": BOOK_ID,
-                "system_id": SYSTEM_ID,
-                "size": position_size_usdc or self.per_trade_usdc,
-                "leverage": self.leverage,
-            })
+            data = self._post(
+                "/decision/entry",
+                {
+                    "pair": signal.coin,
+                    "side": signal.side,
+                    "strategy_id": signal.strategy_id,
+                    "event_id": signal.signal_id,
+                    "ab_owner": AB_OWNER,
+                    "book_id": BOOK_ID,
+                    "system_id": SYSTEM_ID,
+                    "size": position_size_usdc or self.per_trade_usdc,
+                    "leverage": self.leverage,
+                },
+            )
             if not data:
                 return False, "decision_api_error", {}
             dec_data = data
-        
+
         api_ok = dec_data.get("ok", False)
         approved = api_ok and dec_data.get("decision") == "open"
         reason = dec_data.get("reason", "") if not approved else "approved"
-        
+
         # 设置冷却
         if approved:
             ck = f"{signal.coin}_{signal.strategy_id}"
             self._entry_cooldowns[ck] = time.time() + self._entry_cooldown_sec
-        
+
         return approved, reason, dec_data
 
     # ── 离场：评估 + 执行 ────────────────────────────────────────────────
@@ -387,7 +417,7 @@ class ClassicDriver:
     ) -> ClassicExitDecision:
         """
         离场评估（调用 /exit/features/latest + 本地决策）
-        
+
         注：完整的离场逻辑复用 classic_exit_system.py（L0~P3 全优先级），
         此处作为 API 模式的封装入口。
         """
@@ -400,13 +430,13 @@ class ClassicDriver:
                 reason="exit_cooldown",
                 confidence=0.0,
             )
-        
+
         # 获取离场特征
         features_data = self._get("/exit/features/latest", {"pair": coin})
         features = {}
         if features_data and features_data.get("ok"):
             features = features_data.get("features", {}) or {}
-        
+
         # 优先使用 ClassicExitSystem（统一离场模块）
         exit_decision = self._evaluate_with_classic_system(
             coin=coin,
@@ -418,11 +448,11 @@ class ClassicDriver:
             hold_sec=hold_sec,
             features=features,
         )
-        
+
         # 设置冷却
         if exit_decision.should_exit:
             self._exit_cooldowns[coin] = time.time() + self._exit_cooldown_sec
-        
+
         return exit_decision
 
     def _evaluate_with_classic_system(
@@ -441,21 +471,25 @@ class ClassicDriver:
             # 尝试导入统一离场模块
             classic_path = Path(__file__).parent.parent.parent.parent / "10-经典指标系统"
             import sys
+
             if str(classic_path) not in sys.path:
                 sys.path.insert(0, str(classic_path))
-            
-            from classic_exit_system import (
-                ClassicExitSystem, PositionState, ExitAction, ExitConfig,
+
+            from classic_exit_system import (  # noqa: I001
+                ClassicExitSystem,
+                PositionState,
+                ExitAction,
             )
-            
+
             exit_sys = ClassicExitSystem(api_base=self.api_base)
-            
+
             is_long = position_side.upper() in ("LONG", "BUY")
             unrealized_pnl_pct = (
-                (current_price - entry_price) / entry_price if is_long
+                (current_price - entry_price) / entry_price
+                if is_long
                 else (entry_price - current_price) / entry_price
             )
-            
+
             pos = PositionState(
                 coin=coin,
                 side="long" if is_long else "short",
@@ -465,9 +499,9 @@ class ClassicDriver:
                 unrealized_pnl_pct=unrealized_pnl_pct,
                 leverage=float(leverage),
             )
-            
+
             decision = exit_sys.evaluate_full(pos, regime="trend")
-            
+
             return ClassicExitDecision(
                 coin=coin,
                 should_exit=decision.action in (ExitAction.CLOSE, ExitAction.REDUCE),
@@ -476,16 +510,19 @@ class ClassicDriver:
                 confidence=decision.confidence,
                 priority=decision.priority.value if decision.priority else "",
                 suggested_price=decision.suggested_price,
-                new_tp_price=getattr(decision, 'new_tp_price', 0.0),
-                new_tp_pct=getattr(decision, 'new_tp_pct', 0.0),
+                new_tp_price=getattr(decision, "new_tp_price", 0.0),
+                new_tp_pct=getattr(decision, "new_tp_pct", 0.0),
                 reduce_frac=decision.reduce_frac,
                 features=features,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             # 降级：简单止损止盈判断
             return self._evaluate_exit_simple(
-                coin, current_price, position_side,
-                entry_price, leverage,
+                coin,
+                current_price,
+                position_side,
+                entry_price,
+                leverage,
             )
 
     def _evaluate_exit_simple(
@@ -498,34 +535,45 @@ class ClassicDriver:
     ) -> ClassicExitDecision:
         """简单回退：基础止损止盈"""
         is_long = position_side.upper() in ("LONG", "BUY")
-        
+
         if is_long:
             pnl_pct = (current_price - entry_price) / entry_price
         else:
             pnl_pct = (entry_price - current_price) / entry_price
-        
+
         # 含杠杆的有效盈亏
         pnl_eff = pnl_pct * leverage
-        
+
         # -6% 止损（含杠杆）
         if pnl_eff <= -0.06:
             return ClassicExitDecision(
-                coin=coin, should_exit=True, action="close",
-                reason="stop_loss_simple", confidence=0.9,
-                priority="p0", suggested_price=current_price,
+                coin=coin,
+                should_exit=True,
+                action="close",
+                reason="stop_loss_simple",
+                confidence=0.9,
+                priority="p0",
+                suggested_price=current_price,
             )
-        
+
         # +12% 止盈（含杠杆）
         if pnl_eff >= 0.12:
             return ClassicExitDecision(
-                coin=coin, should_exit=True, action="close",
-                reason="take_profit_simple", confidence=0.8,
-                priority="p2", suggested_price=current_price,
+                coin=coin,
+                should_exit=True,
+                action="close",
+                reason="take_profit_simple",
+                confidence=0.8,
+                priority="p2",
+                suggested_price=current_price,
             )
-        
+
         return ClassicExitDecision(
-            coin=coin, should_exit=False, action="hold",
-            reason="no_signal", confidence=0.0,
+            coin=coin,
+            should_exit=False,
+            action="hold",
+            reason="no_signal",
+            confidence=0.0,
         )
 
     # ── 持仓查询 ────────────────────────────────────────────────────────
@@ -546,13 +594,13 @@ class ClassicDriver:
     ) -> Dict[str, Any]:
         """
         执行一个完整的经典指标交易周期
-        
+
         Args:
             active_positions: 当前持仓 {coin: position_dict}
             get_price_fn: 获取价格的函数 fn(coin) -> float
             execute_entry_fn: 执行开仓的函数 fn(coin, side, size, leverage, tag) -> result
             execute_exit_fn: 执行平仓的函数 fn(coin, reason, tag) -> result
-        
+
         Returns:
             {
                 "entries": [...],  # 开仓结果
@@ -568,19 +616,19 @@ class ClassicDriver:
             "signals": [],
             "api_available": self.is_available(),
         }
-        
+
         if not result["api_available"]:
             return result
-        
+
         now = time.time()
-        
+
         # Step 1: 检查现有持仓的离场
         for coin, pos in list(active_positions.items()):
             try:
                 price = get_price_fn(coin)
                 if price <= 0:
                     continue
-                
+
                 hold_sec = now - pos.get("entry_ts", now)
                 exit_dec = self.evaluate_exit(
                     coin=coin,
@@ -591,31 +639,37 @@ class ClassicDriver:
                     leverage=pos.get("leverage", self.leverage),
                     hold_sec=hold_sec,
                 )
-                
+
                 if exit_dec.should_exit:
                     exit_result = execute_exit_fn(
-                        coin, exit_dec.reason, "classic_driver",
+                        coin,
+                        exit_dec.reason,
+                        "classic_driver",
                     )
-                    result["exits"].append({
-                        "coin": coin,
-                        "reason": exit_dec.reason,
-                        "result": exit_result,
-                    })
+                    result["exits"].append(
+                        {
+                            "coin": coin,
+                            "reason": exit_dec.reason,
+                            "result": exit_result,
+                        }
+                    )
                 elif exit_dec.action == "raise_tp" and exit_dec.new_tp_price > 0:
                     # RAISE_TP：更新持仓的止盈价
                     old_tp = pos.get("take_profit_price", 0)
                     if exit_dec.new_tp_price > old_tp:
                         pos["take_profit_price"] = exit_dec.new_tp_price
                         pos["tp_source"] = "classic_raise_tp"
-                        result["tp_updates"].append({
-                            "coin": coin,
-                            "old_tp": old_tp,
-                            "new_tp": exit_dec.new_tp_price,
-                            "reason": exit_dec.reason,
-                        })
+                        result["tp_updates"].append(
+                            {
+                                "coin": coin,
+                                "old_tp": old_tp,
+                                "new_tp": exit_dec.new_tp_price,
+                                "reason": exit_dec.reason,
+                            }
+                        )
             except Exception as e:
                 result["exits"].append({"coin": coin, "error": str(e)})
-        
+
         # Step 2: 扫描入场信号（如果还有额度）
         current_pos_count = len(active_positions) - len(result["exits"])
         if current_pos_count < self.max_positions:
@@ -624,42 +678,48 @@ class ClassicDriver:
                 {"coin": s.coin, "side": s.side, "strategy": s.strategy_id, "conf": s.confidence}
                 for s in signals
             ]
-            
+
             # 取前 N 个信号尝试开仓
             slots = self.max_positions - current_pos_count
-            for sig in signals[:slots * 2]:  # 多取一些，跳过已有持仓的币种
+            for sig in signals[: slots * 2]:  # 多取一些，跳过已有持仓的币种
                 if sig.coin in active_positions:
                     continue
                 if any(e["coin"] == sig.coin for e in result["entries"]):
                     continue
-                
+
                 approved, reason, dec_data = self.decide_entry(sig)
                 if approved:
                     entry_result = execute_entry_fn(
-                        sig.coin, sig.side.upper(),
-                        self.per_trade_usdc, self.leverage,
+                        sig.coin,
+                        sig.side.upper(),
+                        self.per_trade_usdc,
+                        self.leverage,
                         f"classic_{sig.strategy_id}",
                     )
-                    result["entries"].append({
-                        "coin": sig.coin,
-                        "side": sig.side,
-                        "strategy": sig.strategy_id,
-                        "confidence": sig.confidence,
-                        "result": entry_result,
-                    })
+                    result["entries"].append(
+                        {
+                            "coin": sig.coin,
+                            "side": sig.side,
+                            "strategy": sig.strategy_id,
+                            "confidence": sig.confidence,
+                            "result": entry_result,
+                        }
+                    )
                     slots -= 1
                     if slots <= 0:
                         break
-        
+
         return result
 
 
 # ── 便捷函数 ───────────────────────────────────────────────────────────────
 
+
 def check_llm_available() -> bool:
     """检查 LLM 是否可用（与 experiments 侧保持一致）"""
     try:
         from core.llm_client import llm_available, llm_quota_ok
+
         return llm_available() != "none" and llm_quota_ok("a9_exit")
     except Exception:
         return False

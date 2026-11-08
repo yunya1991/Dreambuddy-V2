@@ -10,11 +10,12 @@
 验证置信度是否准确反映实际概率。
 """
 
-from typing import Dict, List, Optional, Tuple, Callable
+from typing import Dict, Optional, Tuple, Callable  # noqa: I001
 import pandas as pd
 import numpy as np
 import warnings
-warnings.filterwarnings('ignore')
+
+warnings.filterwarnings("ignore")
 
 
 def calculate_ece(
@@ -72,25 +73,29 @@ def calculate_ece(
             ece += weight * gap
             mce = max(mce, gap)
 
-            bin_data.append({
-                "bin_idx": i,
-                "bin_lower_pct": round(bin_lower * 100, 1),
-                "bin_upper_pct": round(bin_upper * 100, 1),
-                "n_samples": int(n_in_bin),
-                "avg_confidence_pct": round(avg_conf * 100, 1),
-                "avg_accuracy_pct": round(avg_acc * 100, 1),
-                "gap_pct": round(gap * 100, 1),
-            })
+            bin_data.append(
+                {
+                    "bin_idx": i,
+                    "bin_lower_pct": round(bin_lower * 100, 1),
+                    "bin_upper_pct": round(bin_upper * 100, 1),
+                    "n_samples": int(n_in_bin),
+                    "avg_confidence_pct": round(avg_conf * 100, 1),
+                    "avg_accuracy_pct": round(avg_acc * 100, 1),
+                    "gap_pct": round(gap * 100, 1),
+                }
+            )
         else:
-            bin_data.append({
-                "bin_idx": i,
-                "bin_lower_pct": round(bin_lower * 100, 1),
-                "bin_upper_pct": round(bin_upper * 100, 1),
-                "n_samples": 0,
-                "avg_confidence_pct": 0,
-                "avg_accuracy_pct": 0,
-                "gap_pct": 0,
-            })
+            bin_data.append(
+                {
+                    "bin_idx": i,
+                    "bin_lower_pct": round(bin_lower * 100, 1),
+                    "bin_upper_pct": round(bin_upper * 100, 1),
+                    "n_samples": 0,
+                    "avg_confidence_pct": 0,
+                    "avg_accuracy_pct": 0,
+                    "gap_pct": 0,
+                }
+            )
 
     return {
         "ece": round(ece * 100, 2),
@@ -131,7 +136,7 @@ def platt_scaling(
         probs = np.clip(probs, 1e-10, 1 - 1e-10)
         return -np.mean(outcomes * np.log(probs) + (1 - outcomes) * np.log(1 - probs))
 
-    result = minimize(neg_log_likelihood, x0=[1.0, 0.0], method='Nelder-Mead')
+    result = minimize(neg_log_likelihood, x0=[1.0, 0.0], method="Nelder-Mead")
 
     A, B = result.x
 
@@ -170,7 +175,7 @@ def isotonic_calibration(
     confidences = np.array(confidences, dtype=float)
     outcomes = np.array(outcomes, dtype=float)
 
-    iso = IsotonicRegression(out_of_bounds='clip', y_min=0, y_max=1)
+    iso = IsotonicRegression(out_of_bounds="clip", y_min=0, y_max=1)
     iso.fit(confidences, outcomes)
 
     def calibrate(confidence):
@@ -221,14 +226,14 @@ def cross_validated_calibration(
     indices = np.arange(n)
     np.random.shuffle(indices)
     fold_sizes = np.full(cv, n // cv, dtype=int)
-    fold_sizes[:n % cv] += 1
+    fold_sizes[: n % cv] += 1
 
     calibrated = np.zeros(n)
 
     current = 0
     for fold_size in fold_sizes:
-        test_idx = indices[current:current + fold_size]
-        train_idx = np.concatenate([indices[:current], indices[current + fold_size:]])
+        test_idx = indices[current : current + fold_size]
+        train_idx = np.concatenate([indices[:current], indices[current + fold_size :]])
         current += fold_size
 
         train_conf = confidences[train_idx]
@@ -302,7 +307,9 @@ def collect_calibration_data(
     outcomes = []
     directions = []
 
-    warmup = getattr(strategy, 'warmup_periods', 200) if hasattr(strategy, 'warmup_periods') else 200
+    warmup = (
+        getattr(strategy, "warmup_periods", 200) if hasattr(strategy, "warmup_periods") else 200
+    )
 
     for i in range(warmup, n - lookahead):
         pos = signals.iloc[i]
@@ -356,7 +363,14 @@ def format_calibration_report(ece_result: Dict, cv_result: Optional[Dict] = None
     else:
         lines.append("  ❌ 校准较差（ECE≥10%）：过度自信偏差严重，必须校准")
 
-    lines.extend(["", "【可靠性图数据】", f"{'区间(%)':>12} {'样本数':>6} {'平均置信':>8} {'实际准确':>8} {'偏差':>6}", "-" * 50])
+    lines.extend(
+        [
+            "",
+            "【可靠性图数据】",
+            f"{'区间(%)':>12} {'样本数':>6} {'平均置信':>8} {'实际准确':>8} {'偏差':>6}",
+            "-" * 50,
+        ]
+    )
 
     for b in ece_result["bin_data"]:
         if b["n_samples"] > 0:
@@ -369,16 +383,18 @@ def format_calibration_report(ece_result: Dict, cv_result: Optional[Dict] = None
             )
 
     if cv_result:
-        lines.extend([
-            "-" * 50,
-            "",
-            f"【{cv_result['method']} 交叉验证校准结果】",
-            f"  校准前 ECE:  {cv_result['original_ece']:>6.2f}%",
-            f"  校准后 ECE:  {cv_result['calibrated_ece']:>6.2f}%",
-            f"  改善幅度:    {cv_result['improvement']:>6.2f}% ({cv_result['improvement_pct']:.1f}%)",
-            f"  交叉验证折数: {cv_result['cv']}",
-            "",
-        ])
+        lines.extend(
+            [
+                "-" * 50,
+                "",
+                f"【{cv_result['method']} 交叉验证校准结果】",
+                f"  校准前 ECE:  {cv_result['original_ece']:>6.2f}%",
+                f"  校准后 ECE:  {cv_result['calibrated_ece']:>6.2f}%",
+                f"  改善幅度:    {cv_result['improvement']:>6.2f}% ({cv_result['improvement_pct']:.1f}%)",
+                f"  交叉验证折数: {cv_result['cv']}",
+                "",
+            ]
+        )
 
         if cv_result["calibrated_ece"] < 3:
             lines.append("  ✅ 校准后达到优秀水平")

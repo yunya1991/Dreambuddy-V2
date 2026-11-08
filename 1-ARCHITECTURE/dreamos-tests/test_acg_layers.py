@@ -8,26 +8,15 @@ DreamOS ACG 三层测试
     集成: S→A→C→G 全链路
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def test_imports():
     """测试三层 import"""
-    from dreamos.core.arrange import (
-        GraphPlanner, NodeSelector, BudgetAllocator,
-        SequentialGraph, ConditionalGraph,
-        ExecutionPlan, NodeMeta, BudgetAllocation, ChainSpec,
-    )
-    from dreamos.core.compute import (
-        GraphExecutor, NodeRunner, Reflector, Aggregator,
-        ReflectAction, ReflectDecision, ExecutionReport,
-    )
-    from dreamos.core.graph_store import (
-        GraphStore, Checkpointer, ContextCompressor, HistoryReplay,
-        Checkpoint, CompressedState, HistoryEntry,
-    )
+
     print("✅ import 测试通过")
 
 
@@ -35,16 +24,18 @@ def test_imports():
 # A 层测试
 # ============================================================
 
+
 def test_sequential_graph():
     """测试顺序执行图"""
-    from dreamos.core.arrange import SequentialGraph
-    from dreamos.shared.state import State, NodeResult, NodeStatus
+    from dreamos.core.arrange import SequentialGraph  # noqa: I001
+    from dreamos.shared.state import State, NodeResult
     from dreamos.registry.base import BaseNode
 
     class TestNode(BaseNode):
         node_id = "test"
         name = "test"
         chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="test", confidence=0.5)
 
@@ -62,22 +53,31 @@ def test_sequential_graph():
 
 def test_conditional_graph():
     """测试条件执行图"""
-    from dreamos.core.arrange import ConditionalGraph
-    from dreamos.shared.state import State, NodeResult, NodeStatus
+    from dreamos.core.arrange import ConditionalGraph  # noqa: I001
+    from dreamos.shared.state import State, NodeResult
     from dreamos.registry.base import BaseNode
 
     class NodeA(BaseNode):
-        node_id = "A"; name = "A"; chain = "A"
+        node_id = "A"
+        name = "A"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="A", confidence=0.8)
 
     class NodeB(BaseNode):
-        node_id = "B"; name = "B"; chain = "A"
+        node_id = "B"
+        name = "B"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="B", confidence=0.5)
 
     class NodeC(BaseNode):
-        node_id = "C"; name = "C"; chain = "A"
+        node_id = "C"
+        name = "C"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="C", confidence=0.6)
 
@@ -106,7 +106,7 @@ def test_conditional_graph():
 
 def test_node_selector():
     """测试节点选择器"""
-    from dreamos.core.arrange import NodeSelector
+    from dreamos.core.arrange import NodeSelector  # noqa: I001
     from dreamos.registry.node_registry import NodeRegistry
     from dreamos.registry.base import BaseNode
     from dreamos.shared.state import NodeResult
@@ -114,12 +114,20 @@ def test_node_selector():
     registry = NodeRegistry()
 
     class A1Node(BaseNode):
-        node_id = "A1"; name = "深度调研"; chain = "A"; estimated_tokens = 500
+        node_id = "A1"
+        name = "深度调研"
+        chain = "A"
+        estimated_tokens = 500
+
         def execute_core(self, state):
             return NodeResult(node_id="A1", confidence=0.6)
 
     class A2Node(BaseNode):
-        node_id = "A2"; name = "第一性原理"; chain = "A"; estimated_tokens = 400
+        node_id = "A2"
+        name = "第一性原理"
+        chain = "A"
+        estimated_tokens = 400
+
         def execute_core(self, state):
             return NodeResult(node_id="A2", confidence=0.65)
 
@@ -161,12 +169,14 @@ def test_budget_allocator():
     # 总分配不超过预算
     assert allocation.total_allocated + allocation.reserved <= 6000
 
-    print(f"✅ BudgetAllocator 测试通过 (allocated={allocation.total_allocated}, reserved={allocation.reserved})")
+    print(
+        f"✅ BudgetAllocator 测试通过 (allocated={allocation.total_allocated}, reserved={allocation.reserved})"
+    )
 
 
 def test_graph_planner():
     """测试图规划器"""
-    from dreamos.core.arrange import GraphPlanner
+    from dreamos.core.arrange import GraphPlanner  # noqa: I001
     from dreamos.registry.node_registry import NodeRegistry
     from dreamos.registry.base import BaseNode
     from dreamos.shared.state import NodeResult
@@ -174,12 +184,20 @@ def test_graph_planner():
     registry = NodeRegistry()
 
     class A0(BaseNode):
-        node_id = "A0"; name = "矛盾论"; chain = "A"; estimated_tokens = 300
+        node_id = "A0"
+        name = "矛盾论"
+        chain = "A"
+        estimated_tokens = 300
+
         def execute_core(self, state):
             return NodeResult(node_id="A0", confidence=0.7, direction="LONG")
 
     class A1(BaseNode):
-        node_id = "A1"; name = "趋势"; chain = "A"; estimated_tokens = 500
+        node_id = "A1"
+        name = "趋势"
+        chain = "A"
+        estimated_tokens = 500
+
         def execute_core(self, state):
             return NodeResult(node_id="A1", confidence=0.65, direction="LONG")
 
@@ -210,14 +228,18 @@ def test_graph_planner():
 # C 层测试
 # ============================================================
 
+
 def test_node_runner():
     """测试节点执行器"""
-    from dreamos.core.compute import NodeRunner
+    from dreamos.core.compute import NodeRunner  # noqa: I001
     from dreamos.registry.base import BaseNode
     from dreamos.shared.state import State, NodeResult
 
     class SuccessNode(BaseNode):
-        node_id = "test_success"; name = "success"; chain = "A"
+        node_id = "test_success"
+        name = "success"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="test_success", confidence=0.7, direction="LONG")
 
@@ -237,7 +259,7 @@ def test_node_runner():
 
 def test_node_runner_retry():
     """测试节点重试"""
-    from dreamos.core.compute import NodeRunner
+    from dreamos.core.compute import NodeRunner  # noqa: I001
     from dreamos.registry.base import BaseNode
     from dreamos.shared.state import State, NodeResult, NodeStatus
     from dreamos.shared.errors import ErrorCode
@@ -245,13 +267,18 @@ def test_node_runner_retry():
     attempt_count = [0]
 
     class FlakyNode(BaseNode):
-        node_id = "flaky"; name = "flaky"; chain = "A"
+        node_id = "flaky"
+        name = "flaky"
+        chain = "A"
+
         def execute_core(self, state):
             attempt_count[0] += 1
             if attempt_count[0] < 2:
                 return NodeResult(
-                    node_id="flaky", status=NodeStatus.FAILED,
-                    error="临时失败", error_code=ErrorCode.EXEC_002,
+                    node_id="flaky",
+                    status=NodeStatus.FAILED,
+                    error="临时失败",
+                    error_code=ErrorCode.EXEC_002,
                 )
             return NodeResult(node_id="flaky", confidence=0.6, direction="LONG")
 
@@ -267,13 +294,16 @@ def test_node_runner_retry():
 
 def test_reflector():
     """测试反射决策器"""
-    from dreamos.core.compute import Reflector, ReflectAction
+    from dreamos.core.compute import Reflector, ReflectAction  # noqa: I001
     from dreamos.core.arrange import SequentialGraph
-    from dreamos.shared.state import State, NodeResult, NodeStatus
+    from dreamos.shared.state import State, NodeResult
     from dreamos.registry.base import BaseNode
 
     class DummyNode(BaseNode):
-        node_id = "dummy"; name = "dummy"; chain = "A"
+        node_id = "dummy"
+        name = "dummy"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="dummy", confidence=0.5)
 
@@ -300,7 +330,7 @@ def test_reflector():
 
 def test_aggregator():
     """测试结果聚合器"""
-    from dreamos.core.compute import Aggregator
+    from dreamos.core.compute import Aggregator  # noqa: I001
     from dreamos.shared.state import State, NodeResult
 
     state = State()
@@ -315,12 +345,14 @@ def test_aggregator():
     assert report.final_confidence > 0.6
     assert "LONG" in report.final_direction_scores
 
-    print(f"✅ Aggregator 测试通过 (action={report.final_action}, conf={report.final_confidence:.2f})")
+    print(
+        f"✅ Aggregator 测试通过 (action={report.final_action}, conf={report.final_confidence:.2f})"
+    )
 
 
 def test_aggregator_disagreement():
     """测试聚合器方向分歧 → HOLD"""
-    from dreamos.core.compute import Aggregator
+    from dreamos.core.compute import Aggregator  # noqa: I001
     from dreamos.shared.state import State, NodeResult
 
     state = State()
@@ -341,23 +373,32 @@ def test_aggregator_disagreement():
 
 def test_graph_executor():
     """测试图执行器"""
-    from dreamos.core.compute import GraphExecutor
+    from dreamos.core.compute import GraphExecutor  # noqa: I001
     from dreamos.core.arrange import SequentialGraph
     from dreamos.registry.base import BaseNode
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     class A0Node(BaseNode):
-        node_id = "A0"; name = "矛盾论"; chain = "A"
+        node_id = "A0"
+        name = "矛盾论"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="A0", confidence=0.7, direction="LONG")
 
     class A1Node(BaseNode):
-        node_id = "A1"; name = "趋势"; chain = "A"
+        node_id = "A1"
+        name = "趋势"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="A1", confidence=0.75, direction="LONG")
 
     class A2Node(BaseNode):
-        node_id = "A2"; name = "量价"; chain = "A"
+        node_id = "A2"
+        name = "量价"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="A2", confidence=0.8, direction="LONG")
 
@@ -374,30 +415,41 @@ def test_graph_executor():
     assert report.final_confidence > 0.6
     assert len(report.records) == 3
 
-    print(f"✅ GraphExecutor 测试通过 (nodes={report.executed_nodes}, action={report.final_action})")
+    print(
+        f"✅ GraphExecutor 测试通过 (nodes={report.executed_nodes}, action={report.final_action})"
+    )
 
 
 def test_graph_executor_early_terminate():
     """测试提前终止"""
-    from dreamos.core.compute import GraphExecutor
+    from dreamos.core.compute import GraphExecutor  # noqa: I001
     from dreamos.core.arrange import SequentialGraph
     from dreamos.registry.base import BaseNode
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     class HighConfNode(BaseNode):
-        node_id = "hc"; name = "high"; chain = "A"
+        node_id = "hc"
+        name = "high"
+        chain = "A"
+
         def execute_core(self, state):
             return NodeResult(node_id="hc", confidence=0.9, direction="LONG")
 
     graph = SequentialGraph()
     # 添加 5 个高置信度节点
     for i in range(5):
-        node = type(f"Node{i}", (HighConfNode,), {
-            "node_id": f"HC{i}", "name": f"HC{i}", "chain": "A",
-            "execute_core": lambda self, s: NodeResult(
-                node_id=self.node_id, confidence=0.9, direction="LONG"
-            )
-        })()
+        node = type(
+            f"Node{i}",
+            (HighConfNode,),
+            {
+                "node_id": f"HC{i}",
+                "name": f"HC{i}",
+                "chain": "A",
+                "execute_core": lambda self, s: NodeResult(
+                    node_id=self.node_id, confidence=0.9, direction="LONG"
+                ),
+            },
+        )()
         graph.add_node(node)
 
     state = new_state(cycle_id="test_early")
@@ -415,10 +467,11 @@ def test_graph_executor_early_terminate():
 # G 层测试
 # ============================================================
 
+
 def test_checkpointer():
     """测试检查点管理器"""
     from dreamos.core.graph_store import Checkpointer
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     cp = Checkpointer(max_checkpoints=5)
     state = new_state(cycle_id="test_cp")
@@ -449,17 +502,20 @@ def test_checkpointer():
 def test_compressor():
     """测试上下文压缩器"""
     from dreamos.core.graph_store import ContextCompressor
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     state = new_state(cycle_id="test_compress")
 
     # 填充大量 trace
     for i in range(30):
-        state.update(f"Node{i}", NodeResult(
-            node_id=f"Node{i}",
-            confidence=0.5 + i * 0.01,
-            direction="LONG" if i % 2 == 0 else "SHORT",
-        ))
+        state.update(
+            f"Node{i}",
+            NodeResult(
+                node_id=f"Node{i}",
+                confidence=0.5 + i * 0.01,
+                direction="LONG" if i % 2 == 0 else "SHORT",
+            ),
+        )
 
     assert len(state.trace) == 30
 
@@ -479,7 +535,7 @@ def test_compressor():
 def test_history_replay():
     """测试历史回放"""
     from dreamos.core.graph_store import HistoryReplay
-    from dreamos.shared.state import State, new_state
+    from dreamos.shared.state import new_state
 
     history = HistoryReplay(max_entries=100)
 
@@ -490,13 +546,16 @@ def test_history_replay():
         state.plan = {"planned_chain": "A"}
         state.final_action = "LONG"
         state.final_confidence = 0.7 + i * 0.05
-        history.record(state, {
-            "total_tokens": 500,
-            "total_latency_ms": 1200,
-            "success_rate": 0.8,
-            "executed_nodes": 5,
-            "early_terminated": False,
-        })
+        history.record(
+            state,
+            {
+                "total_tokens": 500,
+                "total_latency_ms": 1200,
+                "success_rate": 0.8,
+                "executed_nodes": 5,
+                "early_terminated": False,
+            },
+        )
 
     assert history.total == 3
 
@@ -516,7 +575,7 @@ def test_history_replay():
 def test_graph_store():
     """测试 G 层主入口"""
     from dreamos.core.graph_store import GraphStore
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     store = GraphStore(max_checkpoints=10, max_history=50, auto_compress=False)
 
@@ -553,31 +612,44 @@ def test_graph_store():
 # 全链路集成测试
 # ============================================================
 
+
 def test_full_pipeline_sacg():
     """S→A→C→G 全链路集成测试"""
-    from dreamos.core.sense import IntentEngine
+    from dreamos.core.sense import IntentEngine  # noqa: I001
     from dreamos.core.arrange import GraphPlanner
     from dreamos.core.compute import GraphExecutor
     from dreamos.core.graph_store import GraphStore
     from dreamos.registry.node_registry import NodeRegistry
     from dreamos.registry.base import BaseNode
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     # 准备注册表
     registry = NodeRegistry()
 
     class A0Node(BaseNode):
-        node_id = "A0"; name = "矛盾论"; chain = "A"; estimated_tokens = 300
+        node_id = "A0"
+        name = "矛盾论"
+        chain = "A"
+        estimated_tokens = 300
+
         def execute_core(self, state):
             return NodeResult(node_id="A0", confidence=0.72, direction="LONG")
 
     class A1Node(BaseNode):
-        node_id = "A1"; name = "趋势"; chain = "A"; estimated_tokens = 500
+        node_id = "A1"
+        name = "趋势"
+        chain = "A"
+        estimated_tokens = 500
+
         def execute_core(self, state):
             return NodeResult(node_id="A1", confidence=0.75, direction="LONG")
 
     class A2Node(BaseNode):
-        node_id = "A2"; name = "量价"; chain = "A"; estimated_tokens = 400
+        node_id = "A2"
+        name = "量价"
+        chain = "A"
+        estimated_tokens = 400
+
         def execute_core(self, state):
             return NodeResult(node_id="A2", confidence=0.78, direction="LONG")
 
@@ -588,9 +660,16 @@ def test_full_pipeline_sacg():
     # ── S 层: 意图识别 ─────────────────────────────
     engine = IntentEngine(budget_mode="standard", use_llm_based=False)
     intent_result = engine.recognize(
-        market={"price": 50000, "change_24h": 5.0, "rsi14": 55,
-                "ema20": 49000, "ema50": 47000, "ema200": 44000,
-                "adx": 28, "vol_ratio": 1.3}
+        market={
+            "price": 50000,
+            "change_24h": 5.0,
+            "rsi14": 55,
+            "ema20": 49000,
+            "ema50": 47000,
+            "ema200": 44000,
+            "adx": 28,
+            "vol_ratio": 1.3,
+        }
     )
     assert intent_result.confidence > 0
     assert intent_result.recommended_chain in ("A", "C", "F")
@@ -617,17 +696,21 @@ def test_full_pipeline_sacg():
 
     # ── G 层: 存储与历史 ───────────────────────────
     store = GraphStore(auto_compress=False)
-    cp_id = store.checkpoint(state, node_id="A2")
+    cp_id = store.checkpoint(state, node_id="A2")  # noqa: F841
     store.record(state, report.to_dict())
 
     patterns = store.find_patterns()
     assert patterns["total"] == 1
 
-    print(f"✅ SACG 全链路集成测试通过")
+    print("✅ SACG 全链路集成测试通过")
     print(f"   S: {intent_result.intent_type} (conf={intent_result.confidence:.2f})")
     print(f"   A: chain={plan.planned_chain}, nodes={plan.node_ids}")
-    print(f"   C: action={report.final_action}, conf={report.final_confidence:.2f}, success={report.success_nodes}/{report.executed_nodes}")
-    print(f"   G: checkpoints={store.summary()['checkpoints']}, history={store.summary()['history_entries']}")
+    print(
+        f"   C: action={report.final_action}, conf={report.final_confidence:.2f}, success={report.success_nodes}/{report.executed_nodes}"
+    )
+    print(
+        f"   G: checkpoints={store.summary()['checkpoints']}, history={store.summary()['history_entries']}"
+    )
 
 
 # ============================================================

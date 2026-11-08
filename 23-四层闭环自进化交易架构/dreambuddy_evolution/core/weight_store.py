@@ -4,10 +4,10 @@
 按维度独立的矛盾权重字典 + JSON 持久化。
 FAIL-OPEN: 文件不存在或解析失败 → 空 dict；写入失败不阻断。
 """
+
 import json
 import logging
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +41,13 @@ class WeightStore:
             if self._persist_path.exists():
                 data = json.loads(self._persist_path.read_text(encoding="utf-8"))
                 self._weight_factors = {
-                    str(k): max(0.3, min(1.5, float(v)))
-                    for k, v in data.items()
+                    str(k): max(0.3, min(1.5, float(v))) for k, v in data.items()
                 }
-                logger.debug("[WF] 加载 %d 个维度权重: %s",
-                             len(self._weight_factors),
-                             list(self._weight_factors.keys()))
+                logger.debug(
+                    "[WF] 加载 %d 个维度权重: %s",
+                    len(self._weight_factors),
+                    list(self._weight_factors.keys()),
+                )
             else:
                 self._weight_factors = {}
         except Exception as e:

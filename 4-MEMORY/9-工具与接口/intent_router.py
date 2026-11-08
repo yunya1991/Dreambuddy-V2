@@ -28,24 +28,24 @@ SPEC: SPEC-CognitiveSystem-Evolution.md §2.4.1 + §4.3 P2-1
                                     confidence
                                   }
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from cognitive_interfaces import CognitiveRouter, RecallResult
 
-
 # ============================================================
 # 权重映射表：intent_type → (memory_w, skill_w, knowledge_w)
 # ============================================================
 
 INTENT_WEIGHTS: Dict[str, Tuple[float, float, float]] = {
-    "code_question":     (0.6, 0.3, 0.1),
-    "knowledge_query":   (0.1, 0.2, 0.7),
-    "skill_match":       (0.2, 0.6, 0.2),
-    "trading_decision":  (0.5, 0.3, 0.2),
+    "code_question": (0.6, 0.3, 0.1),
+    "knowledge_query": (0.1, 0.2, 0.7),
+    "skill_match": (0.2, 0.6, 0.2),
+    "trading_decision": (0.5, 0.3, 0.2),
     "bug_investigation": (0.5, 0.2, 0.3),
-    "general":           (0.4, 0.3, 0.3),
+    "general": (0.4, 0.3, 0.3),
 }
 
 # 三库名称 → 权重在 tuple 中的索引
@@ -56,8 +56,8 @@ _DB_INDEX: Dict[str, int] = {"memory": 0, "skill": 1, "knowledge": 2}
 # SPEC §2.4.2: 80% fast-path, 20% full-path
 # ============================================================
 
-AUTO_FAST_THRESHOLD: float = 0.7   # confidence >= 0.7 → fast
-AUTO_FULL_THRESHOLD: float = 0.4   # confidence < 0.4 → full
+AUTO_FAST_THRESHOLD: float = 0.7  # confidence >= 0.7 → fast
+AUTO_FULL_THRESHOLD: float = 0.4  # confidence < 0.4 → full
 # 中间区间 [0.4, 0.7): 按 intent 类型分流
 FAST_DEFAULT_TYPES: frozenset = frozenset({"code_question", "general", "knowledge_query"})
 FULL_DEFAULT_TYPES: frozenset = frozenset({"trading_decision", "bug_investigation", "skill_match"})
@@ -67,9 +67,9 @@ FULL_DEFAULT_TYPES: frozenset = frozenset({"trading_decision", "bug_investigatio
 # SPEC §2.4.3: 是否检索 + 检索什么 + 何时停止
 # ============================================================
 
-AGENTIC_STOP_THRESHOLD: float = 0.6      # 置信度达标即停
-AGENTIC_MIN_DB_WEIGHT: float = 0.15      # 权重低于此值的 DB 跳过
-AGENTIC_CACHE_CONFIDENCE: float = 0.85    # 置信度高于此值 + 缓存命中 → 跳过检索
+AGENTIC_STOP_THRESHOLD: float = 0.6  # 置信度达标即停
+AGENTIC_MIN_DB_WEIGHT: float = 0.15  # 权重低于此值的 DB 跳过
+AGENTIC_CACHE_CONFIDENCE: float = 0.85  # 置信度高于此值 + 缓存命中 → 跳过检索
 
 
 class IntentRouter(CognitiveRouter):
@@ -137,9 +137,7 @@ class IntentRouter(CognitiveRouter):
         intent_confidence = float(intent_result.get("confidence", 0.5))
 
         # 权重查表（未知类型回退 general）
-        mem_w, skill_w, know_w = INTENT_WEIGHTS.get(
-            intent_type, INTENT_WEIGHTS["general"]
-        )
+        mem_w, skill_w, know_w = INTENT_WEIGHTS.get(intent_type, INTENT_WEIGHTS["general"])
 
         # 从 intent_result 派生查询 context 字符串
         keywords = intent_result.get("keywords", [])
@@ -370,9 +368,9 @@ class IntentRouter(CognitiveRouter):
                 if current_conf >= AGENTIC_STOP_THRESHOLD:
                     break
 
-        confidence = round(
-            intent_confidence * (hit_weight / total_weight), 4
-        ) if total_weight > 0 else 0.0
+        confidence = (
+            round(intent_confidence * (hit_weight / total_weight), 4) if total_weight > 0 else 0.0
+        )
 
         result = RecallResult(
             memories=accumulated["memories"],

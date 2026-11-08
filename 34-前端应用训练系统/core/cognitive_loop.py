@@ -18,6 +18,7 @@ hermes 反思频率限制（防反思风暴）:
   - 认知 MCP: mcp_cognitive (record/verify)
   - L4 自进化: dream-self-iteration-workflow
 """
+
 import time
 from datetime import datetime
 from typing import Any, Callable, Dict, Optional
@@ -26,14 +27,15 @@ from typing import Any, Callable, Dict, Optional
 # 频率限制参数（对齐 SPEC §2.5.2）
 # ============================================================
 
-MAX_DAILY_HERMES = 10           # 每日最大 hermes 触发次数
-MIN_INTERVAL_SECONDS = 300      # 两次 hermes 间最小间隔（5 分钟）
-CASE_VALUE_THRESHOLD = 0.6      # 案例价值评分阈值
+MAX_DAILY_HERMES = 10  # 每日最大 hermes 触发次数
+MIN_INTERVAL_SECONDS = 300  # 两次 hermes 间最小间隔（5 分钟）
+CASE_VALUE_THRESHOLD = 0.6  # 案例价值评分阈值
 
 
 # ============================================================
 # HermesFrequencyLimiter — hermes 反思频率限制器
 # ============================================================
+
 
 class HermesFrequencyLimiter:
     """hermes 反思频率限制器（防止反思风暴）。
@@ -103,6 +105,7 @@ def _get_limiter() -> HermesFrequencyLimiter:
 # 默认 record/verify 实现（调用 MCP 认知工具）
 # ============================================================
 
+
 def _default_record(content: str, tags: str, quality_level: str = "B") -> Dict[str, Any]:
     """默认 record 实现 — 调用 mcp_cognitive.record。
 
@@ -111,6 +114,7 @@ def _default_record(content: str, tags: str, quality_level: str = "B") -> Dict[s
     try:
         # 延迟导入避免循环依赖
         from run_mcp import run_mcp  # type: ignore
+
         result = run_mcp(
             server_name="mcp_cognitive",
             tool_name="record",
@@ -128,6 +132,7 @@ def _default_verify(memory_id: str, success: bool) -> Dict[str, Any]:
     """
     try:
         from run_mcp import run_mcp  # type: ignore
+
         result = run_mcp(
             server_name="mcp_cognitive",
             tool_name="verify",
@@ -141,6 +146,7 @@ def _default_verify(memory_id: str, success: bool) -> Dict[str, Any]:
 # ============================================================
 # close_loop — 认知闭环主函数
 # ============================================================
+
 
 def close_loop(
     decision: str,
@@ -211,7 +217,7 @@ def close_loop(
 
     # 3. verify — 贝叶斯置信度更新
     if memory_id:
-        success = (outcome == "success")
+        success = outcome == "success"
         try:
             _verify(memory_id=memory_id, success=success)
         except Exception:

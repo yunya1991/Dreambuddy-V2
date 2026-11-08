@@ -5,7 +5,8 @@ F1 新闻情绪节点
 SKILL.md 调用路径: experiments/ab-trading/core/nodes/f1_news
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 import requests
 
 
@@ -27,22 +28,18 @@ def execute(mkt: Dict, memory: Dict, data: Dict) -> Dict[str, Any]:
         }
     """
     coin = mkt.get("coin", "BTC")
-    price = mkt.get("price", 0)
+    price = mkt.get("price", 0)  # noqa: F841
 
     reasoning = []
     sentiment = {}
 
     # ── 尝试调用基本面 API ──────────────────────────────────────────────
     try:
-        resp = requests.get(
-            "http://49.233.123.96:3456/sentiment",
-            params={"coin": coin},
-            timeout=3
-        )
+        resp = requests.get("http://49.233.123.96:3456/sentiment", params={"coin": coin}, timeout=3)
         if resp.status_code == 200:
             sentiment_data = resp.json()
             sentiment = sentiment_data if isinstance(sentiment_data, dict) else {}
-            reasoning.append(f"[F1 API] 获取到情绪数据")
+            reasoning.append("[F1 API] 获取到情绪数据")
         else:
             sentiment = _fallback_sentiment(mkt)
             reasoning.append(f"[F1 API] 返回 {resp.status_code}，使用备用逻辑")

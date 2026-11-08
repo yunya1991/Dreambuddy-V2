@@ -10,7 +10,6 @@
 """
 
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,22 +30,27 @@ for d in [RAW_DIR, OUTPUT_DIR, HISTORICAL_DIR]:
 # 工具函数
 # =============================================================================
 
+
 def timestamp() -> str:
     """获取当前 UTC 时间戳字符串"""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+
 def datestamp(fmt: str = "%Y%m%d") -> str:
     """获取当前日期字符串"""
     return datetime.now(timezone.utc).strftime(fmt)
+
 
 def timestamp_filename(prefix: str, ext: str = "json") -> str:
     """生成带时间戳的文件名"""
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
     return f"{prefix}_{ts}.{ext}"
 
+
 # =============================================================================
 # 原始数据落盘
 # =============================================================================
+
 
 def save_raw_data(filename: str, data: dict, subdir: str = None) -> str:
     """
@@ -74,6 +78,7 @@ def save_raw_data(filename: str, data: dict, subdir: str = None) -> str:
     print(f"[STORAGE] Saved raw data: {filepath}")
     return str(filepath)
 
+
 def save_layer_raw(layer_name: str, data: dict) -> str:
     """
     保存某一层原始数据
@@ -88,9 +93,11 @@ def save_layer_raw(layer_name: str, data: dict) -> str:
     filename = timestamp_filename(f"{layer_name}_flow")
     return save_raw_data(filename, data, subdir=layer_name)
 
+
 # =============================================================================
 # JSONL 历史记录（事件账本风格）
 # =============================================================================
+
 
 class HistoryRecorder:
     """
@@ -188,9 +195,11 @@ class HistoryRecorder:
         all_records = self.read_all()
         return all_records[-n:] if all_records else []
 
+
 # =============================================================================
 # 输出文件管理
 # =============================================================================
+
 
 def save_output(filename: str, data: dict | str, fmt: str = "json") -> str:
     """
@@ -226,9 +235,16 @@ def save_output(filename: str, data: dict | str, fmt: str = "json") -> str:
     print(f"[STORAGE] Saved output: {filepath}")
     return str(filepath)
 
-def save_analysis_report(composite: float, bias: str, filter_status: str,
-                         risk_off: bool, confidence: float, layer_signals: dict,
-                         extra_notes: str = None) -> str:
+
+def save_analysis_report(
+    composite: float,
+    bias: str,
+    filter_status: str,
+    risk_off: bool,
+    confidence: float,
+    layer_signals: dict,
+    extra_notes: str = None,
+) -> str:
     """
     生成并保存 Markdown 分析报告
 
@@ -251,13 +267,12 @@ def save_analysis_report(composite: float, bias: str, filter_status: str,
     bias_interpretation = {
         "bullish": "资金流一致看多，建议积极配置",
         "bearish": "资金流一致看空，建议防守为主",
-        "neutral": "信号分歧或中性，建议观望"
+        "neutral": "信号分歧或中性，建议观望",
     }.get(bias, "未知状态")
 
-    filter_interpretation = {
-        "enable": "信号有效，可参考操作",
-        "disable": "信号无效，建议忽略"
-    }.get(filter_status, "未知状态")
+    filter_interpretation = {"enable": "信号有效，可参考操作", "disable": "信号无效，建议忽略"}.get(
+        filter_status, "未知状态"
+    )
 
     risk_off_text = "是" if risk_off else "否"
     risk_off_advice = "⚠️ 检测到风险事件，建议降低风险敞口" if risk_off else "✅ 无重大风险信号"
@@ -306,6 +321,7 @@ def save_analysis_report(composite: float, bias: str, filter_status: str,
 
     return save_output(filename, report, fmt="md")
 
+
 def get_position_recommendation(bias: str, filter_status: str, confidence: float) -> str:
     """
     根据信号生成仓位建议
@@ -333,9 +349,11 @@ def get_position_recommendation(bias: str, filter_status: str, confidence: float
     else:
         return "50% (中性观望)"
 
+
 # =============================================================================
 # 步骤审计日志
 # =============================================================================
+
 
 def save_step_audit(steps: list, collection_timestamp: str) -> str:
     """
@@ -353,15 +371,17 @@ def save_step_audit(steps: list, collection_timestamp: str) -> str:
         "steps": steps,
         "total_steps": len(steps),
         "success_count": sum(1 for s in steps if s.get("status") == "ok"),
-        "failed_count": sum(1 for s in steps if s.get("status") == "failed")
+        "failed_count": sum(1 for s in steps if s.get("status") == "failed"),
     }
 
     filename = timestamp_filename("step_audit")
     return save_raw_data(filename, audit_data)
 
+
 # =============================================================================
 # 数据查询工具
 # =============================================================================
+
 
 def get_latest_collection() -> dict | None:
     """
@@ -379,6 +399,7 @@ def get_latest_collection() -> dict | None:
     with open(files[0], "r", encoding="utf-8") as f:
         return json.load(f)
 
+
 def get_historical_regime_records(days: int = 30) -> list:
     """
     获取指定天数内的 Regime 记录
@@ -390,8 +411,11 @@ def get_historical_regime_records(days: int = 30) -> list:
         记录列表
     """
     recorder = HistoryRecorder("regime_history")
-    since_date = (datetime.now(timezone.utc).date() - __import__('datetime').timedelta(days=days)).isoformat()
+    since_date = (
+        datetime.now(timezone.utc).date() - __import__("datetime").timedelta(days=days)
+    ).isoformat()
     return recorder.read_since(since_date)
+
 
 # =============================================================================
 # 主函数示例
@@ -402,21 +426,12 @@ if __name__ == "__main__":
     print("[STORAGE] Testing storage module...")
 
     # 1. 保存原始数据
-    test_data = {
-        "timestamp": timestamp(),
-        "test_value": 123.45,
-        "layer": "test"
-    }
+    test_data = {"timestamp": timestamp(), "test_value": 123.45, "layer": "test"}
     save_layer_raw("test", test_data)
 
     # 2. 追加历史记录
     recorder = HistoryRecorder("regime_history")
-    recorder.append({
-        "composite": 0.35,
-        "bias": "bullish",
-        "filter": "enable",
-        "risk_off": False
-    })
+    recorder.append({"composite": 0.35, "bias": "bullish", "filter": "enable", "risk_off": False})
     print(f"[STORAGE] History records: {recorder.count()}")
 
     # 3. 保存输出报告
@@ -426,7 +441,7 @@ if __name__ == "__main__":
         filter_status="enable",
         risk_off=False,
         confidence=0.75,
-        layer_signals={"exogenous": 0.4, "leverage": 0.3, "onchain": 0.35}
+        layer_signals={"exogenous": 0.4, "leverage": 0.3, "onchain": 0.35},
     )
 
     print("[STORAGE] Storage module test completed.")

@@ -28,6 +28,7 @@
   - HOT: Higher-Order Thought 高阶思维理论
   - ACC: Anterior Cingulate Cortex 前扣带回错误监测
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -149,12 +150,14 @@ class SelfModel:
                     if a.get("subject") != b.get("subject"):
                         continue
                     if self._is_contradictory(a.get("conclusion", ""), b.get("conclusion", "")):
-                        contradictions.append({
-                            "subject": a["subject"],
-                            "item_a": a,
-                            "item_b": b,
-                            "type": "opposite_conclusion",
-                        })
+                        contradictions.append(
+                            {
+                                "subject": a["subject"],
+                                "item_a": a,
+                                "item_b": b,
+                                "type": "opposite_conclusion",
+                            }
+                        )
 
             return contradictions
         except Exception:
@@ -205,11 +208,13 @@ class SelfModel:
 
             # 错误1: 置信度超出 [0, 1]
             if confidence < 0.0 or confidence > 1.0:
-                errors.append({
-                    "type": "confidence_out_of_range",
-                    "detail": f"confidence={confidence} 超出 [0,1] 范围",
-                    "severity": "high",
-                })
+                errors.append(
+                    {
+                        "type": "confidence_out_of_range",
+                        "detail": f"confidence={confidence} 超出 [0,1] 范围",
+                        "severity": "high",
+                    }
+                )
 
             # 错误2: 高置信但所有召回源为空
             if confidence >= self._high_confidence_threshold:
@@ -218,11 +223,13 @@ class SelfModel:
                     for src in ("memory_recall", "skill_match", "knowledge_retrieval")
                 )
                 if recall_empty:
-                    errors.append({
-                        "type": "high_confidence_empty_recall",
-                        "detail": f"confidence={confidence} 但所有召回源为空",
-                        "severity": "medium",
-                    })
+                    errors.append(
+                        {
+                            "type": "high_confidence_empty_recall",
+                            "detail": f"confidence={confidence} 但所有召回源为空",
+                            "severity": "medium",
+                        }
+                    )
 
             return errors
         except Exception:
@@ -261,11 +268,7 @@ class SelfModel:
 
             targets = contradictions + errors
 
-            if (
-                calibration < self._calibration_threshold
-                or contradictions
-                or errors
-            ):
+            if calibration < self._calibration_threshold or contradictions or errors:
                 action = "verify"
             else:
                 action = "proceed"

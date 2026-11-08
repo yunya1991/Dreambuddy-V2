@@ -3,6 +3,7 @@
 所有采集器（SDK 轨 + 爬虫轨）产出统一 DataRecord，便于跨子系统消费与去重缓存。
 约束：metrics 仅存 number/string，不嵌套对象；raw 保留上游原始响应以便溯源。
 """
+
 from __future__ import annotations
 
 import numbers
@@ -19,14 +20,14 @@ CATEGORIES = ("macro", "finance", "chain", "news", "web", "protocol", "coin", "b
 
 @dataclass
 class DataRecord:
-    source: str             # "fred"|"akshare"|"ccxt"|"etherscan"|"rsshub"|"scrapy"...
-    category: str           # CATEGORIES 之一
-    sub_category: str        # "cpi"|"ohlcv"|"whale"|"rss"...
-    timestamp: str          # ISO8601 采集时间
-    metrics: dict           # 扁平 number/string（core/breakdown）
-    events: list[dict]      # 事件流（新闻/巨鲸/政策）
+    source: str  # "fred"|"akshare"|"ccxt"|"etherscan"|"rsshub"|"scrapy"...
+    category: str  # CATEGORIES 之一
+    sub_category: str  # "cpi"|"ohlcv"|"whale"|"rss"...
+    timestamp: str  # ISO8601 采集时间
+    metrics: dict  # 扁平 number/string（core/breakdown）
+    events: list[dict]  # 事件流（新闻/巨鲸/政策）
     timeseries: list[dict]  # 时序列（行情/指标）
-    raw: dict                # 原始 payload（溯源）
+    raw: dict  # 原始 payload（溯源）
     schema_version: str = "1.0"
 
 
@@ -52,9 +53,7 @@ def _validate_metrics(metrics: dict) -> None:
     # bool 是 int 子类自动被允许；str 单独放行
     for k, v in metrics.items():
         if isinstance(v, (dict, list)):
-            raise ContractError(
-                f"metrics[{k!r}] 禁止嵌套 {type(v).__name__}，仅允许 number/string"
-            )
+            raise ContractError(f"metrics[{k!r}] 禁止嵌套 {type(v).__name__}，仅允许 number/string")
         if not isinstance(v, (numbers.Number, str)):
             raise ContractError(
                 f"metrics[{k!r}] 类型 {type(v).__name__} 非法，仅允许 number/string"

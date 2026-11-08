@@ -27,26 +27,33 @@ FAIL-OPEN：所有异常吞掉，不阻断 recall 主流程。
     results = cache.query("经验", top_k=5)
     report = cache.consolidate(min_access_threshold=2)
 """
+
 from __future__ import annotations
 
 import json
 import threading
-import time
 from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 # ============================================================
 # 数据模型
 # ============================================================
 
+
 class CacheEntry:
     """缓存条目（单条记忆的缓存表示）。"""
 
-    __slots__ = ("id", "content", "score", "metadata", "access_count",
-                 "last_accessed_at", "promoted_at")
+    __slots__ = (
+        "id",
+        "content",
+        "score",
+        "metadata",
+        "access_count",
+        "last_accessed_at",
+        "promoted_at",
+    )
 
     def __init__(
         self,
@@ -98,6 +105,7 @@ class CacheEntry:
 # ============================================================
 # RecallMemoryCache 核心类
 # ============================================================
+
 
 class RecallMemoryCache:
     """

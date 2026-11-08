@@ -5,13 +5,12 @@
 - 如果没有 → 接管执行（兜底）
 """
 
-import os
-import sys
 import json
-import time
+import os
 import subprocess
-from pathlib import Path
+import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 REPO_DIR = Path(__file__).parent.parent
 LOG_DIRS = {
@@ -79,7 +78,10 @@ def run_agent(agent_id: str) -> bool:
             capture_output=True,
             text=True,
         )
-        log_file = LOG_DIRS[agent_id] / f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_cron_fallback.log"
+        log_file = (
+            LOG_DIRS[agent_id]
+            / f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_cron_fallback.log"
+        )
         log_file.parent.mkdir(parents=True, exist_ok=True)
         log_file.write_text(result.stdout + result.stderr)
         print(f"[Poll/{agent_id}] 执行完成，退出码: {result.returncode}，日志: {log_file}")

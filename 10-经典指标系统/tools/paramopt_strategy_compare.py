@@ -21,7 +21,9 @@ def _get_json(base_url: str, path: str, *, timeout_sec: float) -> Tuple[int, Dic
     return int(getattr(r, "status", 200)), out
 
 
-def _post_json(base_url: str, path: str, payload: Dict[str, Any], timeout_sec: float) -> Tuple[int, Dict[str, Any]]:
+def _post_json(
+    base_url: str, path: str, payload: Dict[str, Any], timeout_sec: float
+) -> Tuple[int, Dict[str, Any]]:
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = Request(
         str(base_url).rstrip("/") + str(path),
@@ -123,7 +125,9 @@ def run_compare(
     family: str,
     eval_mode: str,
 ) -> CompareResult:
-    trace_id = f"cmp_{strategy_id.lower()}_{eval_mode}_{timerange}_n{int(n_iter)}_{int(time.time())}"
+    trace_id = (
+        f"cmp_{strategy_id.lower()}_{eval_mode}_{timerange}_n{int(n_iter)}_{int(time.time())}"
+    )
     payload_run: Dict[str, Any] = {
         "trace_id": trace_id,
         "mode": "suggest",
@@ -143,11 +147,17 @@ def run_compare(
         "backtest_timerange": timerange,
         "backtest_timeout_sec": int(timeout_sec_backtest),
     }
-    _, d = _post_json(base_url, "/agent/paramopt/run", payload_run, timeout_sec=timeout_sec_paramopt)
+    _, d = _post_json(
+        base_url, "/agent/paramopt/run", payload_run, timeout_sec=timeout_sec_paramopt
+    )
     if not isinstance(d, dict) or not bool(d.get("ok")):
         raise RuntimeError(f"paramopt_failed: {json.dumps(d, ensure_ascii=False)[:2000]}")
     sel = d.get("selected") if isinstance(d.get("selected"), dict) else {}
-    patch = sel.get("config_patch") if isinstance(sel.get("config_patch"), dict) else (sel.get("patch") if isinstance(sel.get("patch"), dict) else {})
+    patch = (
+        sel.get("config_patch")
+        if isinstance(sel.get("config_patch"), dict)
+        else (sel.get("patch") if isinstance(sel.get("patch"), dict) else {})
+    )
 
     payload_bt0 = {
         "trace_id": f"{trace_id}__bt_baseline",
@@ -156,9 +166,15 @@ def run_compare(
         "strategy": strategy_id,
         "timeout_sec": float(timeout_sec_backtest),
     }
-    _, bt0 = _post_json(base_url, "/automation/backtest/run", payload_bt0, timeout_sec=timeout_sec_backtest + 120.0)
+    _, bt0 = _post_json(
+        base_url, "/automation/backtest/run", payload_bt0, timeout_sec=timeout_sec_backtest + 120.0
+    )
 
-    env = {"FT_STRATEGY_PARAMS_JSON": json.dumps({strategy_id: patch}, ensure_ascii=False, sort_keys=True)}
+    env = {
+        "FT_STRATEGY_PARAMS_JSON": json.dumps(
+            {strategy_id: patch}, ensure_ascii=False, sort_keys=True
+        )
+    }
     payload_bt1 = {
         "trace_id": f"{trace_id}__bt_candidate",
         "config": config_path,
@@ -167,14 +183,22 @@ def run_compare(
         "timeout_sec": float(timeout_sec_backtest),
         "env": env,
     }
-    _, bt1 = _post_json(base_url, "/automation/backtest/run", payload_bt1, timeout_sec=timeout_sec_backtest + 120.0)
+    _, bt1 = _post_json(
+        base_url, "/automation/backtest/run", payload_bt1, timeout_sec=timeout_sec_backtest + 120.0
+    )
 
     return CompareResult(
         trace_id=str(trace_id),
         strategy_id=str(strategy_id),
-        optimizer_engine=(None if d.get("optimizer_engine") is None else str(d.get("optimizer_engine"))),
-        optimizer_fallback=(None if d.get("optimizer_fallback") is None else bool(d.get("optimizer_fallback"))),
-        optimizer_error=(None if d.get("optimizer_error") is None else str(d.get("optimizer_error"))),
+        optimizer_engine=(
+            None if d.get("optimizer_engine") is None else str(d.get("optimizer_engine"))
+        ),
+        optimizer_fallback=(
+            None if d.get("optimizer_fallback") is None else bool(d.get("optimizer_fallback"))
+        ),
+        optimizer_error=(
+            None if d.get("optimizer_error") is None else str(d.get("optimizer_error"))
+        ),
         selected_patch=(patch if isinstance(patch, dict) else {}),
         baseline_backtest=(bt0 if isinstance(bt0, dict) else {"ok": False}),
         candidate_backtest=(bt1 if isinstance(bt1, dict) else {"ok": False}),
@@ -188,7 +212,9 @@ def _to_markdown(res: CompareResult) -> str:
     lines = []
     lines.append(f"trace_id: {res.trace_id}")
     lines.append(f"strategy_id: {res.strategy_id}")
-    lines.append(f"optimizer_engine: {res.optimizer_engine} fallback={res.optimizer_fallback} error={res.optimizer_error}")
+    lines.append(
+        f"optimizer_engine: {res.optimizer_engine} fallback={res.optimizer_fallback} error={res.optimizer_error}"
+    )
     lines.append("")
     lines.append("METRICS (baseline -> candidate):")
     for k, label in [
@@ -239,7 +265,9 @@ def main() -> None:
     p.add_argument("--timeout-paramopt-sec", type=float, default=7200.0)
     p.add_argument("--timeout-backtest-sec", type=float, default=1800.0)
     p.add_argument("--skip-robustness", action="store_true")
-    p.add_argument("--out-json", default="user_data/agent_outbox/paramopt_strategy_compare_last.json")
+    p.add_argument(
+        "--out-json", default="user_data/agent_outbox/paramopt_strategy_compare_last.json"
+    )
     p.add_argument("--out-md", default="user_data/agent_outbox/paramopt_strategy_compare_last.md")
     args = p.parse_args()
 
@@ -288,7 +316,18 @@ def main() -> None:
         )
     with open(out_md, "w", encoding="utf-8") as f:
         f.write(_to_markdown(res))
-    print(json.dumps({"ok": True, "trace_id": res.trace_id, "strategy_id": res.strategy_id, "out_json": out_json, "out_md": out_md}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "trace_id": res.trace_id,
+                "strategy_id": res.strategy_id,
+                "out_json": out_json,
+                "out_md": out_md,
+            },
+            ensure_ascii=False,
+        )
+    )
 
 
 if __name__ == "__main__":

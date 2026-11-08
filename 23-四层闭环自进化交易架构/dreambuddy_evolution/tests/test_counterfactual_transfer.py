@@ -14,6 +14,7 @@ test_counterfactual_transfer — Phase 2.2 + 3.2 集成测试
     - 端到端迁移（含反事实验证）
     - 相似度不足拒绝
 """
+
 import sys
 from pathlib import Path
 
@@ -24,8 +25,8 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.counterfactual_evaluator import CounterfactualEvaluator
-from dreambuddy_evolution.core.transfer_learner import TransferLearner
+from dreambuddy_evolution.core.counterfactual_evaluator import CounterfactualEvaluator  # noqa: E402
+from dreambuddy_evolution.core.transfer_learner import TransferLearner  # noqa: E402
 
 
 # ==================================================================
@@ -37,11 +38,13 @@ class TestSyntheticControl:
         np.random.seed(42)
         T = 100
         target = np.cumsum(np.random.randn(T) * 0.02)
-        controls = np.column_stack([
-            target + np.random.randn(T) * 0.01,
-            target * 0.8 + np.random.randn(T) * 0.02,
-            np.cumsum(np.random.randn(T) * 0.01),
-        ])
+        controls = np.column_stack(
+            [
+                target + np.random.randn(T) * 0.01,
+                target * 0.8 + np.random.randn(T) * 0.02,
+                np.cumsum(np.random.randn(T) * 0.01),
+            ]
+        )
         synthetic, weights = ce.synthetic_control(target, controls)
         assert len(synthetic) == T
         assert abs(weights.sum() - 1.0) < 1e-6
@@ -61,12 +64,16 @@ class TestWhatIfNoTrade:
         np.random.seed(42)
         T = 100
         target = np.cumsum(np.random.randn(T) * 0.02)
-        controls = np.column_stack([
-            target + np.random.randn(T) * 0.01,
-            target * 0.8 + np.random.randn(T) * 0.02,
-            np.cumsum(np.random.randn(T) * 0.01),
-        ])
-        result = ce.what_if_no_trade(actual_pnl=10.0, target_returns=target, control_returns=controls)
+        controls = np.column_stack(
+            [
+                target + np.random.randn(T) * 0.01,
+                target * 0.8 + np.random.randn(T) * 0.02,
+                np.cumsum(np.random.randn(T) * 0.01),
+            ]
+        )
+        result = ce.what_if_no_trade(
+            actual_pnl=10.0, target_returns=target, control_returns=controls
+        )
         assert "counterfactual_pnl" in result
         assert "alpha" in result
         assert "pnl_attribution" in result
@@ -76,7 +83,9 @@ class TestWhatIfNoTrade:
         T = 50
         target = np.ones(T) * 0.01
         controls = np.zeros((T, 3))
-        result = ce.what_if_no_trade(actual_pnl=10.0, target_returns=target, control_returns=controls)
+        result = ce.what_if_no_trade(
+            actual_pnl=10.0, target_returns=target, control_returns=controls
+        )
         # counterfactual = 0 (controls 全零), alpha = 10 - 0 = 10
         assert abs(result["alpha"] - 10.0) < 1e-6
 
@@ -87,11 +96,13 @@ class TestCounterfactualEval:
         np.random.seed(42)
         T = 100
         target = np.cumsum(np.random.randn(T) * 0.02)
-        controls = np.column_stack([
-            target + np.random.randn(T) * 0.01,
-            target * 0.8,
-            np.random.randn(T) * 0.01,
-        ])
+        controls = np.column_stack(
+            [
+                target + np.random.randn(T) * 0.01,
+                target * 0.8,
+                np.random.randn(T) * 0.01,
+            ]
+        )
         result = ce.counterfactual_eval(5.0, target, controls)
         assert "actual_pnl" in result
         assert "counterfactual_pnl" in result
@@ -145,7 +156,7 @@ class TestPrototypicalNetwork:
     def test_prototype_with_labels(self):
         tl = TransferLearner()
         X = np.random.randn(20, 5)
-        labels = np.array([0]*10 + [1]*10)
+        labels = np.array([0] * 10 + [1] * 10)
         result = tl.compute_prototype(X, labels)
         assert result["n_classes"] == 2
 
@@ -203,7 +214,7 @@ class TestEndToEndTransfer:
         T = 100
         src = np.cumsum(np.random.randn(T) * 0.02)
         tgt = src * 0.95 + np.random.randn(T) * 0.005  # 高度相关
-        controls = np.column_stack([src*0.3, np.random.randn(T)*0.01, src*0.2])
+        controls = np.column_stack([src * 0.3, np.random.randn(T) * 0.01, src * 0.2])
         result = tl.transfer_pattern("BTC", "ETH", src, tgt, controls)
         # 验证结构完整
         assert "valid" in result
@@ -219,7 +230,7 @@ class TestEndToEndTransfer:
         src = np.cumsum(np.random.randn(T) * 0.02)
         # tgt 与 src 高度相关但收益极差
         tgt = src * 0.5 - 10.0
-        controls = np.column_stack([src*0.3, np.random.randn(T)*0.01, src*0.2])
+        controls = np.column_stack([src * 0.3, np.random.randn(T) * 0.01, src * 0.2])
         result = tl.transfer_pattern("BTC", "SOL", src, tgt, controls)
         # 可能被 counterfactual 拒绝（alpha<0）
         if result["valid"] is False:

@@ -4,7 +4,7 @@
 不依赖外部数据源。
 """
 
-import sys
+import sys  # noqa: I001
 import os
 from pathlib import Path
 import numpy as np
@@ -12,24 +12,15 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core import (
-    calc_indicator_dynamics,
-    calc_trend_direction_static,
-    calc_trend_direction_dynamic,
+from core import (  # noqa: I001
     calc_trend_consistency,
-    calc_dynamic_weights,
     calc_bayesian_confidence,
     fuse_technical_fundamental,
     SCREEN1_INDICATORS,
     SCREEN2_INDICATORS,
-    CompositePredictor,
     create_composite_predictor,
     predict_from_dataframes,
     compute_least_resistance,
-    calc_price_resistance,
-    calc_volume_resistance,
-    calc_momentum_resistance,
-    calc_trend_resistance,
 )
 from engine import (
     confidence_to_position,
@@ -55,13 +46,15 @@ def _generate_synthetic_data(n_days: int = 250, trend: str = "bull") -> pd.DataF
     opens = np.concatenate([[base_price], prices[:-1]])
     volumes = np.random.uniform(1000, 5000, n_days)
 
-    return pd.DataFrame({
-        "open": opens,
-        "high": highs,
-        "low": lows,
-        "close": prices,
-        "volume": volumes,
-    })
+    return pd.DataFrame(
+        {
+            "open": opens,
+            "high": highs,
+            "low": lows,
+            "close": prices,
+            "volume": volumes,
+        }
+    )
 
 
 def test_confidence_to_position():
@@ -78,7 +71,9 @@ def test_confidence_to_position():
     for conf, expected_tier in test_cases:
         result = confidence_to_position(conf)
         status = "✓" if result["tier"] == expected_tier else "✗"
-        print(f"  {status} 置信度{conf}% → 档位: {result['tier']} (期望: {expected_tier}), 仓位: {result['position_pct']:.0%}")
+        print(
+            f"  {status} 置信度{conf}% → 档位: {result['tier']} (期望: {expected_tier}), 仓位: {result['position_pct']:.0%}"
+        )
 
 
 def test_five_algo_decision():
@@ -110,13 +105,19 @@ def test_trend_consistency():
     weekly_df = _generate_synthetic_data(210, "bull")
 
     result = calc_trend_consistency(weekly_df, daily_df)
-    print(f"  周线方向: {result['weekly']['core_direction']} (置信度: {result['weekly']['confidence']}%)")
-    print(f"  日线方向: {result['daily']['core_direction']} (置信度: {result['daily']['confidence']}%)")
+    print(
+        f"  周线方向: {result['weekly']['core_direction']} (置信度: {result['weekly']['confidence']}%)"
+    )
+    print(
+        f"  日线方向: {result['daily']['core_direction']} (置信度: {result['daily']['confidence']}%)"
+    )
     print(f"  趋势一致: {result['consistent']}")
     print(f"  综合方向: {result['overall_direction']}")
     print(f"  一致性置信度: {result['consistency_confidence']}%")
     print(f"  周线逆转分数: {result['weekly']['reversal_score']}%")
-    print(f"  周线平均速度: {result['weekly']['avg_speed']}, 加速度: {result['weekly']['avg_acceleration']}")
+    print(
+        f"  周线平均速度: {result['weekly']['avg_speed']}, 加速度: {result['weekly']['avg_acceleration']}"
+    )
 
 
 def test_bayesian_confidence():
@@ -139,9 +140,21 @@ def test_fusion():
     print("\n=== 测试: fuse_technical_fundamental ===")
 
     cases = [
-        ({"direction": "BULL", "confidence": 70}, {"direction": "BULL", "confidence": 60}, "一致看多"),
-        ({"direction": "BULL", "confidence": 70}, {"direction": "NEUTRAL", "confidence": 0}, "基本面中性"),
-        ({"direction": "BULL", "confidence": 70}, {"direction": "BEAR", "confidence": 65}, "多空矛盾"),
+        (
+            {"direction": "BULL", "confidence": 70},
+            {"direction": "BULL", "confidence": 60},
+            "一致看多",
+        ),
+        (
+            {"direction": "BULL", "confidence": 70},
+            {"direction": "NEUTRAL", "confidence": 0},
+            "基本面中性",
+        ),
+        (
+            {"direction": "BULL", "confidence": 70},
+            {"direction": "BEAR", "confidence": 65},
+            "多空矛盾",
+        ),
     ]
 
     for tech, fund, desc in cases:
@@ -174,7 +187,9 @@ def test_full_signal():
     print(f"  最终方向: {result['final_signal']['direction']}")
     print(f"  最终置信度: {result['final_signal']['confidence']}%")
     print(f"  交易动作: {result['final_signal']['action']}")
-    print(f"  仓位档位: {result['final_signal']['position']['tier']} ({result['final_signal']['position']['position_pct']:.0%})")
+    print(
+        f"  仓位档位: {result['final_signal']['position']['tier']} ({result['final_signal']['position']['position_pct']:.0%})"
+    )
     print(f"  决策原因: {result['final_signal']['decision_reason']}")
 
     print("\n  --- 加入 Freqtrade 同向信号（来自经典系统） ---")
@@ -191,7 +206,9 @@ def test_full_signal():
     print(f"  Freqtrade一致: {result_with_ft['final_signal']['freqtrade_consistent']}")
     print(f"  调整后置信度: {result_with_ft['final_signal']['confidence']}%")
     print(f"  原置信度: {result['final_signal']['confidence']}%")
-    print(f"  置信度变化: +{result_with_ft['final_signal']['confidence'] - result['final_signal']['confidence']:.1f}%")
+    print(
+        f"  置信度变化: +{result_with_ft['final_signal']['confidence'] - result['final_signal']['confidence']:.1f}%"
+    )
 
     print("\n  --- 加入 Freqtrade 反向信号 ---")
     freqtrade_signals_bear = {
@@ -206,7 +223,9 @@ def test_full_signal():
     print(f"  Freqtrade一致: {result_with_bear_ft['final_signal']['freqtrade_consistent']}")
     print(f"  调整后置信度: {result_with_bear_ft['final_signal']['confidence']}%")
     print(f"  原置信度: {result['final_signal']['confidence']}%")
-    print(f"  置信度变化: {result_with_bear_ft['final_signal']['confidence'] - result['final_signal']['confidence']:.1f}%")
+    print(
+        f"  置信度变化: {result_with_bear_ft['final_signal']['confidence'] - result['final_signal']['confidence']:.1f}%"
+    )
 
 
 def test_fundamental_data():
@@ -214,8 +233,12 @@ def test_fundamental_data():
     print("\n=== 测试: fetch_fundamental_data (A系列研报) ===")
 
     import sys
+
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from data.fundamental_data import fetch_fundamental_data, fetch_fundamental_by_timeframe
+    from data.fundamental_data import (  # noqa: I001
+        fetch_fundamental_data,
+        fetch_fundamental_by_timeframe,
+    )  # noqa: I001
 
     result = fetch_fundamental_data("BTC")
     print(f"  基本面方向: {result['direction']}")
@@ -225,7 +248,7 @@ def test_fundamental_data():
 
     if result.get("weekly"):
         w = result["weekly"]
-        print(f"\n  --- 周报 (周线基本面) ---")
+        print("\n  --- 周报 (周线基本面) ---")
         print(f"  日期: {w['date']}")
         print(f"  方向: {w['direction']}")
         print(f"  置信度: {w['confidence']}%")
@@ -235,7 +258,7 @@ def test_fundamental_data():
 
     if result.get("daily"):
         d = result["daily"]
-        print(f"\n  --- A1日报 (日线基本面) ---")
+        print("\n  --- A1日报 (日线基本面) ---")
         print(f"  日期: {d['date']}")
         print(f"  方向: {d['direction']}")
         print(f"  置信度: {d['confidence']}%")
@@ -244,12 +267,12 @@ def test_fundamental_data():
 
     # 测试分层获取
     tf_result = fetch_fundamental_by_timeframe("BTC")
-    print(f"\n  --- 分层基本面 ---")
+    print("\n  --- 分层基本面 ---")
     print(f"  周线: {tf_result['weekly']['direction'] if tf_result['weekly'] else 'N/A'}")
     print(f"  日线: {tf_result['daily']['direction'] if tf_result['daily'] else 'N/A'}")
 
     # 测试基本面+技术面撮合
-    print(f"\n  --- 基本面+技术面撮合 ---")
+    print("\n  --- 基本面+技术面撮合 ---")
     tech = {"direction": "BULL", "confidence": 70}
     fund = {"direction": result["direction"], "confidence": result["confidence"]}
     fusion = fuse_technical_fundamental(tech, fund)
@@ -283,7 +306,7 @@ def test_composite_predictor():
     }
 
     result_bull = predictor.predict(tech_result, fundamental_data_bull)
-    print(f"\n  --- 技术面BULL + 基本面BULL（一致） ---")
+    print("\n  --- 技术面BULL + 基本面BULL（一致） ---")
     print(f"  技术方向: {result_bull['technical']['direction']}")
     print(f"  技术置信度: {result_bull['technical']['confidence']}%")
     print(f"  基本面三维度可用: {result_bull['fundamental']['3d']['available']}")
@@ -309,7 +332,7 @@ def test_composite_predictor():
     }
 
     result_bear = predictor.predict(tech_result, fundamental_data_bear)
-    print(f"\n  --- 技术面BULL + 基本面BEAR（矛盾） ---")
+    print("\n  --- 技术面BULL + 基本面BEAR（矛盾） ---")
     print(f"  技术方向: {result_bear['technical']['direction']}")
     print(f"  技术置信度: {result_bear['technical']['confidence']}%")
     print(f"  基本面方向: {result_bear['fundamental']['3d']['direction']}")
@@ -326,7 +349,7 @@ def test_composite_predictor():
     }
 
     result_neutral = predictor.predict(tech_result, fundamental_data_neutral)
-    print(f"\n  --- 技术面BULL + 基本面NEUTRAL（中性） ---")
+    print("\n  --- 技术面BULL + 基本面NEUTRAL（中性） ---")
     print(f"  调节类型: {result_neutral['fundamental']['adjustment']['adjustment_type']}")
     print(f"  调节因子: {result_neutral['fundamental']['adjustment']['adjustment']:.4f}")
     print(f"  最终置信度: {result_neutral['confidence']}%")
@@ -360,14 +383,22 @@ def test_least_resistance():
     print(f"  空方阻力: {bull_lr['bear_resistance']:.4f}")
     print(f"  阻力差: {bull_lr['resistance_diff']:.4f}")
     print(f"  速度: {bull_lr['velocity']:.4f}, 加速度: {bull_lr['acceleration']:.4f}")
-    print(f"  价格维度 - 多方阻力: {bull_lr['dimensions']['price']['bull_resistance']:.4f}, "
-          f"空方阻力: {bull_lr['dimensions']['price']['bear_resistance']:.4f}")
-    print(f"  量能维度 - 多方阻力: {bull_lr['dimensions']['volume']['bull_resistance']:.4f}, "
-          f"空方阻力: {bull_lr['dimensions']['volume']['bear_resistance']:.4f}")
-    print(f"  动量维度 - 多方阻力: {bull_lr['dimensions']['momentum']['bull_resistance']:.4f}, "
-          f"空方阻力: {bull_lr['dimensions']['momentum']['bear_resistance']:.4f}")
-    print(f"  趋势维度 - 多方阻力: {bull_lr['dimensions']['trend']['bull_resistance']:.4f}, "
-          f"空方阻力: {bull_lr['dimensions']['trend']['bear_resistance']:.4f}")
+    print(
+        f"  价格维度 - 多方阻力: {bull_lr['dimensions']['price']['bull_resistance']:.4f}, "
+        f"空方阻力: {bull_lr['dimensions']['price']['bear_resistance']:.4f}"
+    )
+    print(
+        f"  量能维度 - 多方阻力: {bull_lr['dimensions']['volume']['bull_resistance']:.4f}, "
+        f"空方阻力: {bull_lr['dimensions']['volume']['bear_resistance']:.4f}"
+    )
+    print(
+        f"  动量维度 - 多方阻力: {bull_lr['dimensions']['momentum']['bull_resistance']:.4f}, "
+        f"空方阻力: {bull_lr['dimensions']['momentum']['bear_resistance']:.4f}"
+    )
+    print(
+        f"  趋势维度 - 多方阻力: {bull_lr['dimensions']['trend']['bull_resistance']:.4f}, "
+        f"空方阻力: {bull_lr['dimensions']['trend']['bear_resistance']:.4f}"
+    )
     print(f"  总结: {bull_lr['summary']}")
 
     print("\n  --- 熊市行情 ---")
@@ -414,8 +445,8 @@ def test_least_resistance():
     print(f"  综合方向: {tc['overall_direction']}")
     print(f"  一致性置信度: {tc['consistency_confidence']}%")
     print(f"  最小阻力引擎启用: {tc.get('least_resistance') is not None}")
-    if tc.get('least_resistance'):
-        lr = tc['least_resistance']
+    if tc.get("least_resistance"):
+        lr = tc["least_resistance"]
         print(f"  最小阻力方向: {lr['overall_direction']}")
         print(f"  最小阻力置信度: {lr['consistency_confidence']}%")
         print(f"  周线最小阻力: {lr['weekly']['direction']} ({lr['weekly']['confidence']}%)")

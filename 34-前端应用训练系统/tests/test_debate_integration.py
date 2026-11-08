@@ -8,6 +8,7 @@
   3. FAIL-OPEN：辩论引擎不可用时降级
   4. enrich_case_with_debate 注入元数据
 """
+
 import os
 import sys
 
@@ -17,16 +18,15 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import unittest
-from unittest.mock import MagicMock, patch
-from core.debate_integration import (
-    should_run_debate,
+import unittest  # noqa: E402
+from unittest.mock import MagicMock, patch  # noqa: E402
+
+from core.debate_integration import (  # noqa: E402
+    HIGH_VALUE_KEYWORDS,
+    enrich_case_with_debate,
     is_high_value,
     run_debate_for_case,
-    enrich_case_with_debate,
-    DEBATE_CONFIDENCE_THRESHOLD,
-    DEBATE_OUTCOMES,
-    HIGH_VALUE_KEYWORDS,
+    should_run_debate,
 )
 
 
@@ -46,14 +46,14 @@ class TestShouldRunDebate(unittest.TestCase):
         self.assertTrue(should_run_debate(confidence=0.9, outcome="partial"))
 
     def test_high_value_keyword_triggers_debate(self):
-        self.assertTrue(
-            should_run_debate(confidence=0.9, outcome="success", intent="架构重构")
-        )
+        self.assertTrue(should_run_debate(confidence=0.9, outcome="success", intent="架构重构"))
 
     def test_english_high_value_keyword_triggers(self):
         self.assertTrue(
             should_run_debate(
-                confidence=0.9, outcome="success", intent="migration plan",
+                confidence=0.9,
+                outcome="success",
+                intent="migration plan",
             )
         )
 
@@ -128,20 +128,25 @@ class TestEnrichCaseWithDebate(unittest.TestCase):
         case.metadata = {"outcome": "failure"}
 
         mock_engine = MagicMock()
-        mock_engine.run_fast = MagicMock(return_value={
-            "bull_thesis": "bull says go",
-            "bull_confidence": 0.7,
-            "bear_thesis": "bear says stop",
-            "bear_confidence": 0.3,
-        })
-        with patch("core.debate_integration._load_debate_engine", return_value=mock_engine):
-            with patch("core.debate_integration.asyncio.run", return_value={
+        mock_engine.run_fast = MagicMock(
+            return_value={
                 "bull_thesis": "bull says go",
                 "bull_confidence": 0.7,
                 "bear_thesis": "bear says stop",
                 "bear_confidence": 0.3,
-            }):
-                enriched = enrich_case_with_debate(case)
+            }
+        )
+        with patch("core.debate_integration._load_debate_engine", return_value=mock_engine):
+            with patch(
+                "core.debate_integration.asyncio.run",
+                return_value={
+                    "bull_thesis": "bull says go",
+                    "bull_confidence": 0.7,
+                    "bear_thesis": "bear says stop",
+                    "bear_confidence": 0.3,
+                },
+            ):
+                enriched = enrich_case_with_debate(case)  # noqa: F841
 
         self.assertIn("debate", case.metadata)
         self.assertEqual(case.metadata["debate"]["bull_confidence"], 0.7)
@@ -168,7 +173,7 @@ class TestEnrichCaseWithDebate(unittest.TestCase):
         case.confidence = 0.9
         case.metadata = {"outcome": "success"}
 
-        result = enrich_case_with_debate(case)
+        result = enrich_case_with_debate(case)  # noqa: F841
         self.assertNotIn("debate", case.metadata)
 
 
@@ -191,12 +196,15 @@ class TestFullIntegrationChain(unittest.TestCase):
         # P3: 注入辩论元数据
         mock_engine = MagicMock()
         with patch("core.debate_integration._load_debate_engine", return_value=mock_engine):
-            with patch("core.debate_integration.asyncio.run", return_value={
-                "bull_confidence": 0.2,
-                "bear_confidence": 0.15,
-                "bull_thesis": "bull",
-                "bear_thesis": "bear",
-            }):
+            with patch(
+                "core.debate_integration.asyncio.run",
+                return_value={
+                    "bull_confidence": 0.2,
+                    "bear_confidence": 0.15,
+                    "bull_thesis": "bull",
+                    "bear_thesis": "bear",
+                },
+            ):
                 enrich_case_with_debate(case)
 
         # 此时 case 应有 debate 元数据

@@ -10,6 +10,7 @@
   - HYPE: 99%手续费(单一但稳定来源)、长期运行 → 高
   - SKY: 协议盈余(稳定来源)、多链分散 → 高
 """
+
 import sys
 from pathlib import Path
 
@@ -17,15 +18,13 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-import math
-import pytest
 
-from force_vector.coin_fundamental_crypto import compute_revenue_sustainability
-
+from force_vector.coin_fundamental_crypto import compute_revenue_sustainability  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # 1. 纯函数：基础行为
 # ---------------------------------------------------------------------------
+
 
 class TestComputeRevenueSustainabilityBasic:
     """基础行为：空输入/零值/边界。"""
@@ -54,6 +53,7 @@ class TestComputeRevenueSustainabilityBasic:
 # 2. 集中度维度
 # ---------------------------------------------------------------------------
 
+
 class TestConcentrationDimension:
     """集中度：单一来源占比>60%→风险信号。"""
 
@@ -75,8 +75,8 @@ class TestConcentrationDimension:
         """UNI 文章案例：60%来自 RH Chain → 中等风险。"""
         fees = {
             "robinhood_chain": 925000,  # 60%
-            "ethereum": 400000,        # 26%
-            "others": 225000,          # 14%
+            "ethereum": 400000,  # 26%
+            "others": 225000,  # 14%
         }
         val = compute_revenue_sustainability(fees, "trading_fee", 45)  # 新链<2月
         # 60%集中 + 新链 → 偏负
@@ -86,6 +86,7 @@ class TestConcentrationDimension:
 # ---------------------------------------------------------------------------
 # 3. 来源类型维度
 # ---------------------------------------------------------------------------
+
 
 class TestSourceTypeDimension:
     """来源类型：协议盈余(稳定)>交易手续费(高波动)>资产收益(中等)。"""
@@ -115,6 +116,7 @@ class TestSourceTypeDimension:
 # ---------------------------------------------------------------------------
 # 4. 持续性维度
 # ---------------------------------------------------------------------------
+
 
 class TestSustainabilityDimension:
     """持续性：来源<60天→低持续性。"""
@@ -146,6 +148,7 @@ class TestSustainabilityDimension:
 # 5. 案例验证：UNI/HYPE/SKY
 # ---------------------------------------------------------------------------
 
+
 class TestCaseValidation:
     """文章案例验证。"""
 
@@ -153,8 +156,8 @@ class TestCaseValidation:
         """UNI: 60%集中+新链<2月+交易费 → 偏负。"""
         fees = {
             "robinhood_chain": 925000,  # 60%
-            "ethereum": 400000,        # 26%
-            "others": 225000,          # 14%
+            "ethereum": 400000,  # 26%
+            "others": 225000,  # 14%
         }
         val = compute_revenue_sustainability(fees, "trading_fee", 45)
         assert val < 0.3  # 偏负/中性

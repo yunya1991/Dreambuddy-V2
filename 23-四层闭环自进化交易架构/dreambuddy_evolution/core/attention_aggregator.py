@@ -8,28 +8,21 @@
 
 输出：A_dim ∈ {technical, fundamental, macro}, A_strength ∈ [0,1]
 """
+
 from __future__ import annotations
 
 from typing import Optional
 
-import torch
+try:  # torch 可选：CV gate / shadow 不应因本地无 torch 而无法导入
+    import torch
+except ImportError:  # pragma: no cover - 本地测试环境
+    torch = None
 
-from dreambuddy_evolution.core.exogenous_data_bridge import get_factor_dimensions
-
-# C1-C8/news → 3 维度映射（融合方案 §6.2）
-# 按 CROSS_ATTENTION_FACTOR_METRICS 中首次出现顺序：C1, C2, C3, C4, C6, C7, C8, news
-C_DIM_TO_3: dict[str, str] = {
-    "C1": "fundamental",
-    "C2": "technical",
-    "C3": "fundamental",
-    "C4": "macro",
-    "C6": "fundamental",
-    "C7": "technical",
-    "C8": "macro",
-    "news": "technical",
-}
-
-THREE_DIMS = ("technical", "fundamental", "macro")
+from dreambuddy_evolution.core.dimension_mapping import (
+    C_DIM_TO_3,
+    DEFAULT_C_DIMENSIONS,
+    THREE_DIMS,
+)
 
 
 class AttentionAggregator:
@@ -42,7 +35,14 @@ class AttentionAggregator:
                         None 则从 get_factor_dimensions() 获取。
         """
         if dimensions is None:
-            dimensions = get_factor_dimensions()
+            try:
+                from dreambuddy_evolution.core.exogenous_data_bridge import (
+                    get_factor_dimensions,
+                )
+
+                dimensions = get_factor_dimensions()
+            except Exception:  # FAIL-OPEN: torch 不可用时使用静态顺序
+                dimensions = list(DEFAULT_C_DIMENSIONS)
         self._dimensions = dimensions
         # 校验所有维度都有映射
         missing = [d for d in dimensions if d not in C_DIM_TO_3]
@@ -63,6 +63,8 @@ class AttentionAggregator:
                 "dim_strengths": dict,  # {technical: ..., fundamental: ..., macro: ...} 归一化后
             }
         """
+        if torch is None:
+            raise RuntimeError("torch 不可用：AttentionAggregator.collapse 需要 torch")
         if attn_weights.dim() != 4:
             raise ValueError(
                 f"attn_weights 应为 4D (B, n_heads, 1, n_factors)，实际 {attn_weights.dim()}D"
@@ -84,7 +86,7 @@ class AttentionAggregator:
             strengths = head_strengths.mean(dim=0).detach().cpu().tolist()
 
         # 按 C_DIM_TO_3 聚合到 3 维度
-        dim_strengths: dict[str, float] = {d: 0.0 for d in THREE_DIMS}
+        dim_strengths: dict[str, float] = dict.fromkeys(THREE_DIMS, 0.0)
         for head_idx, c_dim in enumerate(self._dimensions):
             target = C_DIM_TO_3[c_dim]
             dim_strengths[target] += strengths[head_idx]

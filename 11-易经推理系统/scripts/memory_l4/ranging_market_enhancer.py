@@ -39,18 +39,19 @@
 - 输出: 增强后的决策参数
 - 与现有BCRM/易经引擎解耦，作为后置增强层
 """
-import os
+
+import os  # noqa: I001
 import json
-import math
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 
-
 # ── 枚举定义 ────────────────────────────────────────────────────────────────
+
 
 class MarketRegime(str, Enum):
     """5种市场状态"""
+
     TREND_UP = "trend_up"
     TREND_DOWN = "trend_down"
     RANGING_UP = "ranging_up"
@@ -60,26 +61,29 @@ class MarketRegime(str, Enum):
 
 class BollingerSignal(str, Enum):
     """布林带信号类型"""
+
     NONE = "none"
-    LOWER_BOUNCE = "lower_bounce"      # 下轨支撑反弹 → 做多
-    UPPER_REJECT = "upper_reject"      # 上轨压力回落 → 做空
-    MID_BREAKOUT_UP = "mid_break_up"   # 中轨向上突破 → 做多
-    MID_BREAKOUT_DOWN = "mid_break_dn" # 中轨向下突破 → 做空
-    SQUEEZE = "squeeze"                # 布林带收窄 → 等待突破
+    LOWER_BOUNCE = "lower_bounce"  # 下轨支撑反弹 → 做多
+    UPPER_REJECT = "upper_reject"  # 上轨压力回落 → 做空
+    MID_BREAKOUT_UP = "mid_break_up"  # 中轨向上突破 → 做多
+    MID_BREAKOUT_DOWN = "mid_break_dn"  # 中轨向下突破 → 做空
+    SQUEEZE = "squeeze"  # 布林带收窄 → 等待突破
 
 
 # ── 数据类 ──────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class BollingerInfo:
     """布林带信息"""
+
     ma20: float = 0.0
     upper: float = 0.0
     lower: float = 0.0
     middle: float = 0.0
-    width: float = 0.0         # 带宽占比 = (upper-lower)/middle
+    width: float = 0.0  # 带宽占比 = (upper-lower)/middle
     bandwidth_percent: float = 0.0
-    price_pos: float = 0.0     # 价格在布林带中的位置 (0-1, 0=下轨, 1=上轨)
+    price_pos: float = 0.0  # 价格在布林带中的位置 (0-1, 0=下轨, 1=上轨)
     signal: BollingerSignal = BollingerSignal.NONE
     is_squeeze: bool = False
 
@@ -87,19 +91,21 @@ class BollingerInfo:
 @dataclass
 class MAInfo:
     """均线信息"""
+
     ma20: float = 0.0
     ma50: float = 0.0
     ma200: float = 0.0
     price_above_ma200: bool = False
-    ma200_slope: float = 0.0   # MA200斜率（20期变化率）
+    ma200_slope: float = 0.0  # MA200斜率（20期变化率）
 
 
 @dataclass
 class SupportResistanceInfo:
     """支撑阻力信息"""
+
     nearest_support: float = 0.0
     nearest_resistance: float = 0.0
-    dist_to_support_pct: float = 0.0   # 到支撑的距离百分比
+    dist_to_support_pct: float = 0.0  # 到支撑的距离百分比
     dist_to_resistance_pct: float = 0.0  # 到阻力的距离百分比
     at_support_zone: bool = False
     at_resistance_zone: bool = False
@@ -108,6 +114,7 @@ class SupportResistanceInfo:
 @dataclass
 class RangingEnhanceResult:
     """震荡市增强结果"""
+
     # 市场状态识别
     regime: MarketRegime = MarketRegime.SIDEWAYS
     regime_confidence: float = 0.0
@@ -147,6 +154,7 @@ class RangingEnhanceResult:
 @dataclass
 class CalibrationEntry:
     """校准条目"""
+
     bucket: str = ""
     predicted_min: float = 0.0
     predicted_max: float = 1.0
@@ -156,6 +164,7 @@ class CalibrationEntry:
 
 
 # ── 核心增强器 ──────────────────────────────────────────────────────────────
+
 
 class RangingMarketEnhancer:
     """
@@ -176,19 +185,20 @@ class RangingMarketEnhancer:
 
     # ── 公共接口 ────────────────────────────────────────────────────────
 
-    def enhance(self,
-                price: float,
-                direction: str,
-                confidence: float,
-                closes: List[float],
-                highs: Optional[List[float]] = None,
-                lows: Optional[List[float]] = None,
-                atr: float = 0.0,
-                is_ranging: bool = False,
-                ranging_confidence: float = 0.0,
-                trend_strength: float = 0.5,
-                coin: str = "BTC",
-                ) -> RangingEnhanceResult:
+    def enhance(
+        self,
+        price: float,
+        direction: str,
+        confidence: float,
+        closes: List[float],
+        highs: Optional[List[float]] = None,
+        lows: Optional[List[float]] = None,
+        atr: float = 0.0,
+        is_ranging: bool = False,
+        ranging_confidence: float = 0.0,
+        trend_strength: float = 0.5,
+        coin: str = "BTC",
+    ) -> RangingEnhanceResult:
         """
         执行震荡市增强分析
 
@@ -223,8 +233,7 @@ class RangingMarketEnhancer:
 
         # 2. 识别5种市场状态
         regime, regime_conf = self._identify_regime(
-            is_ranging, ranging_confidence, trend_strength,
-            mas, boll, price
+            is_ranging, ranging_confidence, trend_strength, mas, boll, price
         )
         result.regime = regime
         result.regime_confidence = regime_conf
@@ -234,16 +243,12 @@ class RangingMarketEnhancer:
         result.directional_bias = bias
 
         # 4. 布林带信号确认
-        boll_confirms, boll_dir = self._check_bollinger_confirmation(
-            direction, boll, price, regime
-        )
+        boll_confirms, boll_dir = self._check_bollinger_confirmation(direction, boll, price, regime)
         result.bollinger_confirms = boll_confirms
         result.bollinger_signal_direction = boll_dir
 
         # 5. 建议阈值（考虑方向偏向）
-        long_thresh, short_thresh = self._recommend_thresholds(
-            regime, bias, confidence
-        )
+        long_thresh, short_thresh = self._recommend_thresholds(regime, bias, confidence)
         result.recommended_long_threshold = long_thresh
         result.recommended_short_threshold = short_thresh
 
@@ -254,8 +259,7 @@ class RangingMarketEnhancer:
 
         # 7. 综合判断：是否应该开仓
         should_trade, reason = self._should_trade(
-            direction, confidence, regime, boll_confirms,
-            long_thresh, short_thresh, bias, sr
+            direction, confidence, regime, boll_confirms, long_thresh, short_thresh, bias, sr
         )
         result.should_trade = should_trade
         result.reject_reason = reason
@@ -304,8 +308,9 @@ class RangingMarketEnhancer:
 
         return info
 
-    def _detect_bollinger(self, closes: List[float], price: float,
-                          boll: BollingerInfo) -> BollingerSignal:
+    def _detect_bollinger(
+        self, closes: List[float], price: float, boll: BollingerInfo
+    ) -> BollingerSignal:
         """检测布林带信号"""
         if len(closes) < 3:
             return BollingerSignal.NONE
@@ -318,27 +323,19 @@ class RangingMarketEnhancer:
             return BollingerSignal.SQUEEZE
 
         # 下轨支撑反弹：价格触及下轨后回升
-        if (prev_prev <= boll.lower * 1.005 and
-                prev_close > boll.lower and
-                price > prev_close):
+        if prev_prev <= boll.lower * 1.005 and prev_close > boll.lower and price > prev_close:
             return BollingerSignal.LOWER_BOUNCE
 
         # 上轨压力回落：价格触及上轨后下跌
-        if (prev_prev >= boll.upper * 0.995 and
-                prev_close < boll.upper and
-                price < prev_close):
+        if prev_prev >= boll.upper * 0.995 and prev_close < boll.upper and price < prev_close:
             return BollingerSignal.UPPER_REJECT
 
         # 中轨向上突破
-        if (prev_prev < boll.middle and
-                prev_close > boll.middle and
-                price > boll.middle):
+        if prev_prev < boll.middle and prev_close > boll.middle and price > boll.middle:
             return BollingerSignal.MID_BREAKOUT_UP
 
         # 中轨向下突破
-        if (prev_prev > boll.middle and
-                prev_close < boll.middle and
-                price < boll.middle):
+        if prev_prev > boll.middle and prev_close < boll.middle and price < boll.middle:
             return BollingerSignal.MID_BREAKOUT_DOWN
 
         return BollingerSignal.NONE
@@ -369,9 +366,9 @@ class RangingMarketEnhancer:
 
     # ── 3. 支撑阻力计算 ─────────────────────────────────────────────────
 
-    def _calc_support_resistance(self, closes: List[float],
-                                 highs: List[float], lows: List[float],
-                                 price: float) -> SupportResistanceInfo:
+    def _calc_support_resistance(
+        self, closes: List[float], highs: List[float], lows: List[float], price: float
+    ) -> SupportResistanceInfo:
         """
         简易支撑阻力计算
         基于近期高低点和整数关口
@@ -397,7 +394,7 @@ class RangingMarketEnhancer:
             info.nearest_resistance = recent_high
 
         # 找最近的支撑（低于当前价的最近摆动低点）
-        supports = [l for l in swing_lows if l < price]
+        supports = [l for l in swing_lows if l < price]  # noqa: E741
         if supports:
             info.nearest_support = max(supports)
         else:
@@ -405,7 +402,9 @@ class RangingMarketEnhancer:
 
         # 距离百分比
         info.dist_to_support_pct = (price - info.nearest_support) / price * 100 if price > 0 else 0
-        info.dist_to_resistance_pct = (info.nearest_resistance - price) / price * 100 if price > 0 else 0
+        info.dist_to_resistance_pct = (
+            (info.nearest_resistance - price) / price * 100 if price > 0 else 0
+        )
 
         # 是否在支撑/阻力区（3%以内，放宽判定）
         info.at_support_zone = info.dist_to_support_pct < 3.0
@@ -413,8 +412,9 @@ class RangingMarketEnhancer:
 
         return info
 
-    def _find_swing_points(self, prices: List[float], look_for: str = "high",
-                           window: int = 5) -> List[float]:
+    def _find_swing_points(
+        self, prices: List[float], look_for: str = "high", window: int = 5
+    ) -> List[float]:
         """寻找摆动高低点"""
         points = []
         if len(prices) < window * 2 + 1:
@@ -422,24 +422,25 @@ class RangingMarketEnhancer:
 
         for i in range(window, len(prices) - window):
             if look_for == "high":
-                if prices[i] == max(prices[i-window:i+window+1]):
+                if prices[i] == max(prices[i - window : i + window + 1]):
                     points.append(prices[i])
             else:
-                if prices[i] == min(prices[i-window:i+window+1]):
+                if prices[i] == min(prices[i - window : i + window + 1]):
                     points.append(prices[i])
 
         return points if points else []
 
     # ── 4. 5种市场状态识别 ──────────────────────────────────────────────
 
-    def _identify_regime(self,
-                         is_ranging: bool,
-                         ranging_confidence: float,
-                         trend_strength: float,
-                         mas: MAInfo,
-                         boll: BollingerInfo,
-                         price: float
-                         ) -> Tuple[MarketRegime, float]:
+    def _identify_regime(
+        self,
+        is_ranging: bool,
+        ranging_confidence: float,
+        trend_strength: float,
+        mas: MAInfo,
+        boll: BollingerInfo,
+        price: float,
+    ) -> Tuple[MarketRegime, float]:
         """
         识别5种市场状态
 
@@ -478,9 +479,7 @@ class RangingMarketEnhancer:
 
     # ── 5. 方向性偏向 ───────────────────────────────────────────────────
 
-    def _calc_directional_bias(self, mas: MAInfo,
-                               regime: MarketRegime,
-                               coin: str) -> float:
+    def _calc_directional_bias(self, mas: MAInfo, regime: MarketRegime, coin: str) -> float:
         """
         计算方向性偏向（-1.0 到 1.0）
 
@@ -524,12 +523,9 @@ class RangingMarketEnhancer:
 
     # ── 6. 布林带信号确认 ───────────────────────────────────────────────
 
-    def _check_bollinger_confirmation(self,
-                                      direction: str,
-                                      boll: BollingerInfo,
-                                      price: float,
-                                      regime: MarketRegime
-                                      ) -> Tuple[bool, str]:
+    def _check_bollinger_confirmation(
+        self, direction: str, boll: BollingerInfo, price: float, regime: MarketRegime
+    ) -> Tuple[bool, str]:
         """
         检查布林带是否确认方向信号
 
@@ -576,17 +572,15 @@ class RangingMarketEnhancer:
 
     # ── 7. 建议阈值 ─────────────────────────────────────────────────────
 
-    def _recommend_thresholds(self,
-                              regime: MarketRegime,
-                              bias: float,
-                              confidence: float
-                              ) -> Tuple[float, float]:
+    def _recommend_thresholds(
+        self, regime: MarketRegime, bias: float, confidence: float
+    ) -> Tuple[float, float]:
         """
         根据市场状态和方向偏向推荐置信度阈值
 
         返回: (多头阈值, 空头阈值)
         """
-        base_thresh = 0.55
+        base_thresh = 0.55  # noqa: F841
 
         if regime == MarketRegime.TREND_UP:
             # 上涨趋势：做多阈值放宽，做空阈值提高
@@ -621,11 +615,9 @@ class RangingMarketEnhancer:
 
     # ── 8. 动态止损倍数 ─────────────────────────────────────────────────
 
-    def _dynamic_atr_multipliers(self,
-                                 regime: MarketRegime,
-                                 boll: BollingerInfo,
-                                 confidence: float = 0.0
-                                 ) -> Tuple[float, float]:
+    def _dynamic_atr_multipliers(
+        self, regime: MarketRegime, boll: BollingerInfo, confidence: float = 0.0
+    ) -> Tuple[float, float]:
         """
         动态ATR止损止盈倍数
 
@@ -660,16 +652,17 @@ class RangingMarketEnhancer:
 
     # ── 9. 综合交易决策 ─────────────────────────────────────────────────
 
-    def _should_trade(self,
-                      direction: str,
-                      confidence: float,
-                      regime: MarketRegime,
-                      boll_confirms: bool,
-                      long_thresh: float,
-                      short_thresh: float,
-                      bias: float,
-                      sr: SupportResistanceInfo
-                      ) -> Tuple[bool, str]:
+    def _should_trade(
+        self,
+        direction: str,
+        confidence: float,
+        regime: MarketRegime,
+        boll_confirms: bool,
+        long_thresh: float,
+        short_thresh: float,
+        bias: float,
+        sr: SupportResistanceInfo,
+    ) -> Tuple[bool, str]:
         """
         综合判断是否应该开仓
 
@@ -691,8 +684,9 @@ class RangingMarketEnhancer:
 
         # 3. 布林带确认（震荡市必须，但高置信度可豁免）
         is_ranging_regime = regime in (
-            MarketRegime.RANGING_UP, MarketRegime.RANGING_DOWN,
-            MarketRegime.SIDEWAYS
+            MarketRegime.RANGING_UP,
+            MarketRegime.RANGING_DOWN,
+            MarketRegime.SIDEWAYS,
         )
         high_confidence_bypass = confidence >= 0.72
         if is_ranging_regime and not boll_confirms and not high_confidence_bypass:
@@ -707,8 +701,7 @@ class RangingMarketEnhancer:
                 return False, "near_support_zone"
 
         # 5. 方向与偏向一致性（已经在阈值中体现，这里做额外日志标记即可）
-        consistent = (direction == "UP" and bias > 0) or \
-                     (direction == "DOWN" and bias < 0)
+        consistent = (direction == "UP" and bias > 0) or (direction == "DOWN" and bias < 0)
         if not consistent and is_ranging_regime:
             # 震荡市反向交易，需要额外的阻力/支撑确认
             if direction == "DOWN" and not sr.at_resistance_zone:
@@ -722,10 +715,9 @@ class RangingMarketEnhancer:
 
     # ── 置信度校准（框架） ──────────────────────────────────────────────
 
-    def calibrate_confidence(self, confidence: float,
-                             regime: MarketRegime,
-                             hexagram: str = "",
-                             direction: str = "") -> float:
+    def calibrate_confidence(
+        self, confidence: float, regime: MarketRegime, hexagram: str = "", direction: str = ""
+    ) -> float:
         """
         校准置信度（将预测置信度映射到实际胜率）
 
@@ -814,8 +806,7 @@ class RangingMarketEnhancer:
 
         self._save_calibration()
 
-    def _add_trade_to_bucket(self, buckets: Dict, key: str,
-                             confidence: float, pnl: float):
+    def _add_trade_to_bucket(self, buckets: Dict, key: str, confidence: float, pnl: float):
         """添加交易到桶"""
         if key not in buckets:
             buckets[key] = {
@@ -843,7 +834,7 @@ class RangingMarketEnhancer:
         path = self._calibration_path()
         if os.path.exists(path):
             try:
-                with open(path, 'r') as f:
+                with open(path, "r") as f:
                     data = json.load(f)
                 for key, entry_data in data.items():
                     self._calibration_data[key] = CalibrationEntry(**entry_data)
@@ -857,13 +848,14 @@ class RangingMarketEnhancer:
         for key, entry in self._calibration_data.items():
             data[key] = asdict(entry)
         try:
-            with open(path, 'w') as f:
+            with open(path, "w") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
 
 # ── 卦象数据驱动校准框架 ──────────────────────────────────────────────────────
+
 
 class HexagramDataDrivenCalibrator:
     """
@@ -881,8 +873,7 @@ class HexagramDataDrivenCalibrator:
         self.hex_stats: Dict[str, Dict] = {}
         self._load_stats()
 
-    def record_trade(self, hexagram: str, direction: str,
-                     pnl_pct: float, confidence: float):
+    def record_trade(self, hexagram: str, direction: str, pnl_pct: float, confidence: float):
         """记录一笔卦象交易结果"""
         if hexagram not in self.hex_stats:
             self.hex_stats[hexagram] = {
@@ -971,7 +962,7 @@ class HexagramDataDrivenCalibrator:
         path = self._stats_path()
         if os.path.exists(path):
             try:
-                with open(path, 'r') as f:
+                with open(path, "r") as f:
                     self.hex_stats = json.load(f)
             except Exception:
                 pass
@@ -980,13 +971,14 @@ class HexagramDataDrivenCalibrator:
         path = self._stats_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
         try:
-            with open(path, 'w') as f:
+            with open(path, "w") as f:
                 json.dump(self.hex_stats, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
 
 # ── 便捷函数 ──────────────────────────────────────────────────────────────────
+
 
 def create_enhancer(config: Optional[Dict] = None) -> RangingMarketEnhancer:
     """创建增强器实例"""
@@ -995,7 +987,7 @@ def create_enhancer(config: Optional[Dict] = None) -> RangingMarketEnhancer:
 
 # ── 自测 ────────────────────────────────────────────────────────────────────
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import numpy as np
 
     # 生成模拟数据

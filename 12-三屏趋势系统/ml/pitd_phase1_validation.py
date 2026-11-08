@@ -8,21 +8,22 @@
 基线: V5.5 (28维哲学特征, TOP_EXIT 0.7433, DIP_BUY 0.6935)
 """
 
+import json
 import os
 import sys
-import json
 import time
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.pitd_kinematics_engineer import KinematicsEngineer
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.pitd_kinematics_engineer import KinematicsEngineer  # noqa: E402
 
 
 def load_btc_data() -> pd.DataFrame:
@@ -51,8 +52,13 @@ def generate_labels(closes, lookahead, threshold, mode="drop"):
 
 
 def walk_forward_validation(
-    features, labels, feature_names,
-    n_splits=12, train_days=730, test_days=180, step_days=180,
+    features,
+    labels,
+    feature_names,
+    n_splits=12,
+    train_days=730,
+    test_days=180,
+    step_days=180,
 ):
     n = len(features)
     feature_importances = []
@@ -77,10 +83,15 @@ def walk_forward_validation(
         if y_train.sum() < 5 or y_test.sum() < 2:
             continue
         model = lgb.LGBMClassifier(
-            n_estimators=200, max_depth=6, learning_rate=0.05,
-            num_leaves=31, min_child_samples=20,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=42, verbose=-1,
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.05,
+            num_leaves=31,
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            verbose=-1,
         )
         model.fit(X_train, y_train)
         train_pred = model.predict_proba(X_train)[:, 1]
@@ -94,7 +105,11 @@ def walk_forward_validation(
     avg_test = float(np.mean(test_aucs)) if test_aucs else 0.0
     avg_train = float(np.mean(train_aucs)) if train_aucs else 0.0
     decay = 1.0 - (avg_test / avg_train) if avg_train > 0 else 0.0
-    avg_imp = np.mean(feature_importances, axis=0) if feature_importances else np.zeros(len(feature_names))
+    avg_imp = (
+        np.mean(feature_importances, axis=0)
+        if feature_importances
+        else np.zeros(len(feature_names))
+    )
     return avg_test, avg_train, float(decay), avg_imp
 
 
@@ -106,8 +121,11 @@ def main():
     # 1. 加载数据
     prices = load_btc_data()
     closes = prices["close"].values
-    print("\n  BTC日线: {}天, {} ~ {}".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "\n  BTC日线: {}天, {} ~ {}".format(
+            len(prices), prices.index[0].date(), prices.index[-1].date()
+        )
+    )
 
     # 2. 计算运动学特征
     print("\n【1. 运动学特征计算】")
@@ -122,7 +140,11 @@ def main():
     print("\n【2. 物理意义检验】")
     check = kin_fe.physics_sanity_check(prices)
     print("  v符号正确率:      {:.1%} (期望>70%)".format(check["v_sign_correct_rate"]))
-    print("  a符号正确率:      {:.1%} (趋势加强时sign(a)==sign(v))".format(check["a_sign_correct_rate"]))
+    print(
+        "  a符号正确率:      {:.1%} (趋势加强时sign(a)==sign(v))".format(
+            check["a_sign_correct_rate"]
+        )
+    )
     print("  周线日线方向一致:  {:.1%} (期望>50%)".format(check["direction_consistency_WD"]))
     print("  反转点jerk放大倍数: {:.2f}x (期望>1.0)".format(check["jerk_reversal_ratio"]))
     print("  v_D范围: [{:.5f}, {:.5f}]".format(*check["v_D_range"]))
@@ -138,8 +160,11 @@ def main():
     for col in kin_features.columns:
         v = kin_features[col]
         non_zero = (v != 0).sum()
-        print("  {:<32s}  min={:>10.5f}  max={:>10.5f}  mean={:>10.5f}  非零={}/{:.0%}".format(
-            col, v.min(), v.max(), v.mean(), non_zero, non_zero / len(v)))
+        print(
+            "  {:<32s}  min={:>10.5f}  max={:>10.5f}  mean={:>10.5f}  非零={}/{:.0%}".format(
+                col, v.min(), v.max(), v.mean(), non_zero, non_zero / len(v)
+            )
+        )
 
     # 5. 构建V5.5基线
     print("\n【4. 构建V5.5基线】")
@@ -151,13 +176,22 @@ def main():
     phil_fe = PhilosophyFeatureEngineer()
     phil_features = phil_fe.extract_series(prices, symbol="BTC")
 
-    v55_base = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v55_base = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v55_names = list(v55_base.columns)
-    print("  V5.5基线: {}维 (趋势{}+哲学{})".format(
-        len(v55_names), len(trend_cols), len(phil_features.columns)))
+    print(
+        "  V5.5基线: {}维 (趋势{}+哲学{})".format(
+            len(v55_names), len(trend_cols), len(phil_features.columns)
+        )
+    )
 
     # V5.5 + 运动学
-    v55_kin = pd.concat([v55_base, kin_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v55_kin = (
+        pd.concat([v55_base, kin_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    )
     v55_kin_names = list(v55_kin.columns)
     print("  V5.5+运动学: {}维 (+{})".format(len(v55_kin_names), len(kin_features.columns)))
 
@@ -170,28 +204,50 @@ def main():
 
     print("\n  5.1 V5.5基线")
     t0 = time.time()
-    v55_top, v55_top_tr, v55_top_dec, _ = walk_forward_validation(v55_base, top_exit_labels, v55_names)
-    v55_dip, v55_dip_tr, v55_dip_dec, _ = walk_forward_validation(v55_base, dip_buy_labels, v55_names)
-    print("    TOP_EXIT: {:.4f} (train={:.4f}, decay={:.1%})  {:.1f}s".format(
-        v55_top, v55_top_tr, v55_top_dec, time.time() - t0))
-    print("    DIP_BUY:  {:.4f} (train={:.4f}, decay={:.1%})".format(
-        v55_dip, v55_dip_tr, v55_dip_dec))
+    v55_top, v55_top_tr, v55_top_dec, _ = walk_forward_validation(
+        v55_base, top_exit_labels, v55_names
+    )
+    v55_dip, v55_dip_tr, v55_dip_dec, _ = walk_forward_validation(
+        v55_base, dip_buy_labels, v55_names
+    )
+    print(
+        "    TOP_EXIT: {:.4f} (train={:.4f}, decay={:.1%})  {:.1f}s".format(
+            v55_top, v55_top_tr, v55_top_dec, time.time() - t0
+        )
+    )
+    print(
+        "    DIP_BUY:  {:.4f} (train={:.4f}, decay={:.1%})".format(v55_dip, v55_dip_tr, v55_dip_dec)
+    )
 
     print("\n  5.2 V5.5 + 运动学(12维)")
     t0 = time.time()
-    kin_top, kin_top_tr, kin_top_dec, kin_top_imp = walk_forward_validation(v55_kin, top_exit_labels, v55_kin_names)
-    kin_dip, kin_dip_tr, kin_dip_dec, kin_dip_imp = walk_forward_validation(v55_kin, dip_buy_labels, v55_kin_names)
-    print("    TOP_EXIT: {:.4f} (train={:.4f}, decay={:.1%})  {:.1f}s".format(
-        kin_top, kin_top_tr, kin_top_dec, time.time() - t0))
-    print("    DIP_BUY:  {:.4f} (train={:.4f}, decay={:.1%})".format(
-        kin_dip, kin_dip_tr, kin_dip_dec))
+    kin_top, kin_top_tr, kin_top_dec, kin_top_imp = walk_forward_validation(
+        v55_kin, top_exit_labels, v55_kin_names
+    )
+    kin_dip, kin_dip_tr, kin_dip_dec, kin_dip_imp = walk_forward_validation(
+        v55_kin, dip_buy_labels, v55_kin_names
+    )
+    print(
+        "    TOP_EXIT: {:.4f} (train={:.4f}, decay={:.1%})  {:.1f}s".format(
+            kin_top, kin_top_tr, kin_top_dec, time.time() - t0
+        )
+    )
+    print(
+        "    DIP_BUY:  {:.4f} (train={:.4f}, decay={:.1%})".format(kin_dip, kin_dip_tr, kin_dip_dec)
+    )
 
     delta_top = kin_top - v55_top
     delta_dip = kin_dip - v55_dip
-    print("\n  >>> TOP_EXIT AUC变化: {:+.4f} ({})".format(
-        delta_top, "✅提升" if delta_top > 0 else "❌下降" if delta_top < 0 else "➡️持平"))
-    print("  >>> DIP_BUY  AUC变化: {:+.4f} ({})".format(
-        delta_dip, "✅提升" if delta_dip > 0 else "❌下降" if delta_dip < 0 else "➡️持平"))
+    print(
+        "\n  >>> TOP_EXIT AUC变化: {:+.4f} ({})".format(
+            delta_top, "✅提升" if delta_top > 0 else "❌下降" if delta_top < 0 else "➡️持平"
+        )
+    )
+    print(
+        "  >>> DIP_BUY  AUC变化: {:+.4f} ({})".format(
+            delta_dip, "✅提升" if delta_dip > 0 else "❌下降" if delta_dip < 0 else "➡️持平"
+        )
+    )
 
     # 8. 运动学特征重要性排名
     print("\n【6. 运动学特征重要性排名】")
@@ -200,32 +256,49 @@ def main():
         ("DIP_BUY", kin_dip_imp, v55_kin_names),
     ]:
         print("\n  {} 场景:".format(scenario))
-        fi = sorted(zip(names, imp), key=lambda x: x[1], reverse=True)
+        fi = sorted(zip(names, imp), key=lambda x: x[1], reverse=True)  # noqa: B905
         total = len(names)
         top30_threshold = int(total * 0.3)
         for rank, (feat, importance) in enumerate(fi, 1):
             if feat in kin_features.columns:
-                in_top30 = "✅Top30%" if rank <= top30_threshold else "  Top{}%".format(int(rank/total*100))
-                print("    #{:>3d} {:<32s}  重要性={:>8.1f}  {}".format(
-                    rank, feat, importance, in_top30))
+                in_top30 = (
+                    "✅Top30%"
+                    if rank <= top30_threshold
+                    else "  Top{}%".format(int(rank / total * 100))
+                )
+                print(
+                    "    #{:>3d} {:<32s}  重要性={:>8.1f}  {}".format(
+                        rank, feat, importance, in_top30
+                    )
+                )
 
     # 9. 消融实验：逐个添加运动学特征
     print("\n【7. 消融实验：逐个添加运动学特征】")
-    print("  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "添加特征", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "添加特征", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 80)
 
     single_results = []
     for feat in kin_features.columns:
-        exp_feats = pd.concat([v55_base, kin_features[[feat]]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, kin_features[[feat]]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
         top_auc, _, _, _ = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
         dip_auc, _, _, _ = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            feat, top_auc, d_top, dip_auc, d_dip, verdict))
+        print(
+            "  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                feat, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
         single_results.append({"feat": feat, "d_top": d_top, "d_dip": d_dip})
 
     # 10. 组合测试
@@ -234,15 +307,21 @@ def main():
     combos = [
         ("日线3维", ["kin_velocity_D", "kin_acceleration_D", "kin_jerk_D"]),
         ("周线3维", ["kin_velocity_W", "kin_acceleration_W", "kin_jerk_W"]),
-        ("速度+加速度(日+周)", ["kin_velocity_D", "kin_acceleration_D", "kin_velocity_W", "kin_acceleration_W"]),
+        (
+            "速度+加速度(日+周)",
+            ["kin_velocity_D", "kin_acceleration_D", "kin_velocity_W", "kin_acceleration_W"],
+        ),
         ("全部12维", list(kin_features.columns)),
         ("方向一致性2维", ["kin_velocity_sign_consistency", "kin_accel_sign_consistency"]),
         ("突变强度2维", ["kin_jerk_abs_D", "kin_jerk_abs_W"]),
         ("比率2维", ["kin_speed_ratio_WD", "kin_accel_ratio_WD"]),
     ]
 
-    print("  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
-        "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"))
+    print(
+        "  {:<35s}  {:>9s}  {:>9s}  {:>9s}  {:>9s}".format(
+            "组合", "TOP_AUC", "ΔTOP", "DIP_AUC", "ΔDIP"
+        )
+    )
     print("  " + "-" * 80)
 
     combo_results = []
@@ -250,21 +329,34 @@ def main():
         available = [f for f in feats if f in kin_features.columns]
         if not available:
             continue
-        exp_feats = pd.concat([v55_base, kin_features[available]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_feats = (
+            pd.concat([v55_base, kin_features[available]], axis=1)
+            .fillna(0.0)
+            .replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_feats.columns)
         top_auc, _, top_dec, _ = walk_forward_validation(exp_feats, top_exit_labels, exp_names)
         dip_auc, _, dip_dec, _ = walk_forward_validation(exp_feats, dip_buy_labels, exp_names)
         d_top = top_auc - v55_top
         d_dip = dip_auc - v55_dip
         verdict = "✅✅" if d_top > 0 and d_dip > 0 else "🟡" if d_top > 0 or d_dip > 0 else "❌"
-        print("  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
-            name, top_auc, d_top, dip_auc, d_dip, verdict))
-        combo_results.append({
-            "name": name, "feats": available,
-            "top_auc": top_auc, "dip_auc": dip_auc,
-            "d_top": d_top, "d_dip": d_dip,
-            "top_decay": top_dec, "dip_decay": dip_dec,
-        })
+        print(
+            "  {:<35s}  {:>9.4f}  {:>+9.4f}  {:>9.4f}  {:>+9.4f}  {}".format(
+                name, top_auc, d_top, dip_auc, d_dip, verdict
+            )
+        )
+        combo_results.append(
+            {
+                "name": name,
+                "feats": available,
+                "top_auc": top_auc,
+                "dip_auc": dip_auc,
+                "d_top": d_top,
+                "d_dip": d_dip,
+                "top_decay": top_dec,
+                "dip_decay": dip_dec,
+            }
+        )
 
     # 11. 总结
     print("\n" + "=" * 80)
@@ -277,8 +369,11 @@ def main():
     print("\n  双场景提升的组合 ({}个):".format(len(both_positive)))
     for r in both_positive[:5]:
         comp = (r["d_top"] + r["d_dip"]) / 2
-        print("  综合={:+.4f} {:<35s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
-            comp, r["name"], r["d_top"], r["d_dip"], r["top_decay"], r["dip_decay"]))
+        print(
+            "  综合={:+.4f} {:<35s} TOP {:+.4f} DIP {:+.4f} decay:{:.1%}/{:.1%}".format(
+                comp, r["name"], r["d_top"], r["d_dip"], r["top_decay"], r["dip_decay"]
+            )
+        )
 
     # 决策
     if both_positive:
@@ -325,7 +420,7 @@ def main():
     }
 
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/pitd_phase1_result.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False, default=str)
     print("\n  结果已保存: {}".format(output_path))
 

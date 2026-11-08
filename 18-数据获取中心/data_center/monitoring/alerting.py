@@ -4,6 +4,7 @@ AlertLevel: INFO / WARNING / ERROR / CRITICAL
 AlertChannel 抽象: emit(alert)
 AlertRouter: 多通道分发，按级别默认路由到 LogChannel
 """
+
 from __future__ import annotations
 
 import json
@@ -13,8 +14,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Iterable, Optional
 from pathlib import Path
+from typing import Iterable
 
 
 class AlertLevel(str, Enum):
@@ -50,7 +51,7 @@ class AlertChannel(ABC):
     @abstractmethod
     def emit(self, alert: Alert) -> None: ...
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: B027
         """释放资源（可选）。默认空实现。"""
 
 
@@ -152,7 +153,7 @@ class AlertRouter(AlertChannel):
         *,
         min_level: AlertLevel = AlertLevel.INFO,
     ):
-        self._channels = [c for c in channels]
+        self._channels = [c for c in channels]  # noqa: C416
         self._min_level = min_level
         self._lock = threading.Lock()
 

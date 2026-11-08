@@ -8,10 +8,10 @@
 - make_bailian_llm_fn 无 dreamos/QWEN_API_KEY 时返回 None (HC-10)
 - register_subagents_with_bailian 无 API key 时仍注册 (FAIL-OPEN)
 """
+
 from __future__ import annotations
 
 import pytest
-
 import subagent_registry as reg
 
 
@@ -30,7 +30,9 @@ def test_create_nodes_default_no_llm():
     assert len(nodes) == 8
     # 所有 node 都有 SubagentOutput 输出能力 (FAIL-OPEN 不依赖 LLM)
     for n in nodes:
-        out = n.execute({"indicators": {}, "rationale": [], "direction": "NEUTRAL", "confidence": 0.5})
+        out = n.execute(
+            {"indicators": {}, "rationale": [], "direction": "NEUTRAL", "confidence": 0.5}
+        )
         assert out.module == n.module
         assert isinstance(out.summary, str)
         assert out.summary  # 非空
@@ -53,7 +55,9 @@ def test_create_nodes_with_llm_skips_risk():
     # 验证: risk_agent 当前实现中 _generate_summary 会在有 llm_fn 时调用
     # 但 risk_agent __init__ 不接收 llm_fn — 我们直接传 llm_fn 给构造函数会失败
     # 所以 create_subagent_nodes 内部对 risk 跳过 llm_fn
-    out = risk_node.execute({"indicators": {"var_95": 0.05}, "rationale": [], "direction": "NEUTRAL", "confidence": 0.5})
+    out = risk_node.execute(
+        {"indicators": {"var_95": 0.05}, "rationale": [], "direction": "NEUTRAL", "confidence": 0.5}
+    )
     assert out.module == "risk"
 
     # 验证非 risk agent 调用了 LLM (sentiment/flow/valuation/macro/onchain/portfolio)
@@ -66,6 +70,7 @@ def test_create_nodes_with_llm_skips_risk():
 
 def test_resolve_llm_fn_priority():
     """显式参数优先 > 全局 provider"""
+
     def explicit_fn(p: str) -> str:
         return "explicit"
 
@@ -86,6 +91,7 @@ def test_resolve_llm_fn_priority():
 
 def test_resolve_llm_fn_provider_exception_fail_open():
     """provider 抛异常时 FAIL-OPEN 返回 None"""
+
     def bad_provider() -> reg.LLMFn:
         raise RuntimeError("provider crashed")
 
@@ -116,6 +122,7 @@ def test_register_subagents_with_bailian_fail_open():
 
     用 mock registry, 验证返回 > 0
     """
+
     class MockRegistry:
         def __init__(self):
             self.nodes = []
@@ -137,6 +144,7 @@ def test_create_nodes_provider_returns_none_when_not_set():
 
 def test_set_get_llm_fn_provider_roundtrip():
     """set/get provider 往返"""
+
     def provider() -> reg.LLMFn:
         return lambda p: "ok"
 
@@ -156,12 +164,14 @@ def test_subagent_node_execute_with_llm_synthesis():
 
     nodes = reg.create_subagent_nodes(llm_fn=mock_llm)
     sentiment_node = next(n for n in nodes if n.module == "sentiment")
-    out = sentiment_node.execute({
-        "indicators": {"fear_greed": 35, "news_sentiment": -0.3},
-        "rationale": ["FGI 偏恐惧"],
-        "direction": "long",
-        "confidence": 0.6,
-    })
+    out = sentiment_node.execute(
+        {
+            "indicators": {"fear_greed": 35, "news_sentiment": -0.3},
+            "rationale": ["FGI 偏恐惧"],
+            "direction": "long",
+            "confidence": 0.6,
+        }
+    )
     assert out.module == "sentiment"
     # llm_fn 被调用 (sentiment_agent _generate_summary 走 LLM 路径)
     assert len(calls) > 0
@@ -170,6 +180,7 @@ def test_subagent_node_execute_with_llm_synthesis():
 
 
 # ── IPC handler 层 LLM 注入 (M3 最后一公里) ──────────
+
 
 def test_handler_llm_fn_cache_resolves_once():
     """get_handler_llm_fn 首次解析后缓存"""
@@ -207,6 +218,7 @@ def test_ipc_handler_technical_agent_injects_llm_fn():
     def mock_get_handler_llm_fn():
         def mock_fn(prompt: str) -> str:
             return "mock-bailian-response"
+
         captured_llm_fn.append(mock_fn)
         return mock_fn
 
@@ -214,14 +226,16 @@ def test_ipc_handler_technical_agent_injects_llm_fn():
     original = reg.get_handler_llm_fn
     reg.get_handler_llm_fn = mock_get_handler_llm_fn  # type: ignore
     try:
-        result = technical_agent.handle_technical_agent({
-            "node_output": {
-                "indicators": {"ema_fast": 100, "ema_slow": 95, "rsi14": 55},
-                "rationale": ["EMA 多头排列"],
-                "direction": "long",
-                "confidence": 0.7,
+        result = technical_agent.handle_technical_agent(
+            {
+                "node_output": {
+                    "indicators": {"ema_fast": 100, "ema_slow": 95, "rsi14": 55},
+                    "rationale": ["EMA 多头排列"],
+                    "direction": "long",
+                    "confidence": 0.7,
+                }
             }
-        })
+        )
     finally:
         reg.get_handler_llm_fn = original  # type: ignore
 
@@ -245,14 +259,16 @@ def test_ipc_handler_risk_agent_does_not_inject_llm():
     original = reg.get_handler_llm_fn
     reg.get_handler_llm_fn = mock_get_handler_llm_fn  # type: ignore
     try:
-        result = risk_agent.handle_risk_agent({
-            "node_output": {
-                "indicators": {"var_95": 0.05, "var_99": 0.08},
-                "rationale": [],
-                "direction": "NEUTRAL",
-                "confidence": 0.5,
+        result = risk_agent.handle_risk_agent(
+            {
+                "node_output": {
+                    "indicators": {"var_95": 0.05, "var_99": 0.08},
+                    "rationale": [],
+                    "direction": "NEUTRAL",
+                    "confidence": 0.5,
+                }
             }
-        })
+        )
     finally:
         reg.get_handler_llm_fn = original  # type: ignore
 

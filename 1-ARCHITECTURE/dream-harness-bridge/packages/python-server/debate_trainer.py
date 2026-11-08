@@ -19,19 +19,20 @@
 
 FAIL-OPEN (HC1): 无数据或异常时不崩溃
 """
+
 from __future__ import annotations
 
 import hashlib
 import logging
-import math
 import time
-from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from dataclasses import dataclass
+from typing import Any, Callable
 
 logger = logging.getLogger("debate.trainer")
 
 
 # ── 默认编码器 (生产环境用 sentence-transformers, 测试用 hash) ──
+
 
 def _default_encode(text: str, dim: int = 384) -> list[float]:
     """默认 hash 编码器 (生产环境替换为 all-MiniLM-L6-v2)。"""
@@ -49,7 +50,7 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
     """计算两个向量的 cosine 相似度。"""
     if len(a) != len(b) or len(a) == 0:
         return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b))  # noqa: B905
     norm_a = sum(x * x for x in a) ** 0.5
     norm_b = sum(y * y for y in b) ** 0.5
     if norm_a == 0 or norm_b == 0:
@@ -70,6 +71,7 @@ def _classify_topic_type(topic: str) -> str:
 
 
 # ── BayesianStrategyWeights (§5.2) ───────────────────────────
+
 
 class BayesianStrategyWeights:
     """贝叶斯策略权重: P(S wins|T) ~ Beta(α,β)。
@@ -109,7 +111,9 @@ class BayesianStrategyWeights:
         return alpha / (alpha + beta)
 
     def get_top_strategies(
-        self, topic_type: str, top_k: int = 3,
+        self,
+        topic_type: str,
+        top_k: int = 3,
     ) -> list[tuple[str, float]]:
         """获取胜率最高的策略排序。"""
         strategies = self._weights.get(topic_type, {})
@@ -124,6 +128,7 @@ class BayesianStrategyWeights:
 
 
 # ── PersonaElo (§5.3 + m2) ────────────────────────────────────
+
 
 class PersonaElo:
     """Persona Elo 评分系统。
@@ -182,8 +187,7 @@ class PersonaElo:
             bull_score, bear_score = 0.5, 0.5
 
         # K 因子取双方中较小的 (更保守)
-        k = min(self.get_k_factor(bull_persona),
-                self.get_k_factor(bear_persona))
+        k = min(self.get_k_factor(bull_persona), self.get_k_factor(bear_persona))
 
         # 更新 Elo
         bull["elo"] = bull_elo + k * (bull_score - expected_bull)
@@ -194,9 +198,11 @@ class PersonaElo:
 
 # ── CBRCaseLibrary (§5.4 + m3) ────────────────────────────────
 
+
 @dataclass
 class CBRCse:
     """CBR 案例结构。"""
+
     case_id: str
     topic: str
     topic_type: str
@@ -264,7 +270,9 @@ class CBRCaseLibrary:
         return case_id
 
     def retrieve(
-        self, topic: str, top_k: int = 5,
+        self,
+        topic: str,
+        top_k: int = 5,
     ) -> list[dict]:
         """检索相似案例 (cosine similarity Top-K)。
 
@@ -287,19 +295,21 @@ class CBRCaseLibrary:
         # 取 Top-K
         results = []
         for sim, case in scored[:top_k]:
-            results.append({
-                "case_id": case.case_id,
-                "topic": case.topic,
-                "topic_type": case.topic_type,
-                "strategies_used": case.strategies_used,
-                "winner": case.winner,
-                "bull_score": case.bull_score,
-                "bear_score": case.bear_score,
-                "effective_dimensions": case.effective_dimensions,
-                "effective_strategies": case.effective_strategies,
-                "adaptation_hints": case.adaptation_hints,
-                "similarity": sim,
-            })
+            results.append(
+                {
+                    "case_id": case.case_id,
+                    "topic": case.topic,
+                    "topic_type": case.topic_type,
+                    "strategies_used": case.strategies_used,
+                    "winner": case.winner,
+                    "bull_score": case.bull_score,
+                    "bear_score": case.bear_score,
+                    "effective_dimensions": case.effective_dimensions,
+                    "effective_strategies": case.effective_strategies,
+                    "adaptation_hints": case.adaptation_hints,
+                    "similarity": sim,
+                }
+            )
         return results
 
     def case_count(self) -> int:
@@ -308,6 +318,7 @@ class CBRCaseLibrary:
 
 
 # ── DebateTrainer ─────────────────────────────────────────────
+
 
 class DebateTrainer:
     """算法训练器 (SPEC §5 Layer 3)。
@@ -380,7 +391,7 @@ class DebateTrainer:
 
             topic_type = _classify_topic_type(topic)
             bull_won = winner == "bull"
-            bear_won = winner == "bear"
+            bear_won = winner == "bear"  # noqa: F841
 
             # 1. 贝叶斯策略权重更新
             for tag in strategy_tags:

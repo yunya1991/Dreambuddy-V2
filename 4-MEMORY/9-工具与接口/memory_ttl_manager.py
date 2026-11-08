@@ -32,12 +32,11 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import sys
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -48,21 +47,22 @@ _ARCHIVE_DIR = _MEMORY_DIR / "data" / "archive"
 _AUDIT_LOG = _MEMORY_DIR / "9-工具与接口" / "data" / "ttl_audit_log.jsonl"
 
 # TTL 配置
-C_MEMORY_TTL_DAYS = 30       # C 级记忆 30 天未引用 → 降级 D
-D_MEMORY_ARCHIVE_DAYS = 7    # D 级记忆 7 天后 → 归档
-RAG_BRIDGE_TTL_DAYS = 7      # RAG-bridge 日志 7 天过期
-TAG_MIN_FREQUENCY = 2        # 出现 <2 次的标签视为低频
+C_MEMORY_TTL_DAYS = 30  # C 级记忆 30 天未引用 → 降级 D
+D_MEMORY_ARCHIVE_DAYS = 7  # D 级记忆 7 天后 → 归档
+RAG_BRIDGE_TTL_DAYS = 7  # RAG-bridge 日志 7 天过期
+TAG_MIN_FREQUENCY = 2  # 出现 <2 次的标签视为低频
 
 
 @dataclass
 class TTLReport:
     """TTL 管理报告。"""
+
     run_at: str
     dry_run: bool
-    c_degraded: int = 0       # C→D 降级数
-    d_archived: int = 0       # D→归档数
-    rag_expired: int = 0      # RAG 日志清理数
-    tags_merged: int = 0      # 标签归并数
+    c_degraded: int = 0  # C→D 降级数
+    d_archived: int = 0  # D→归档数
+    rag_expired: int = 0  # RAG 日志清理数
+    tags_merged: int = 0  # 标签归并数
     errors: list[str] = None  # type: ignore[assignment]
 
     def __post_init__(self):
@@ -151,7 +151,10 @@ def _parse_age(created_at: str) -> int:
 
 # ── P1: C 级记忆 TTL 淘汰 ──────────────────────────────────────
 
-def expire_stale_c_memories(memories: list[dict], dry_run: bool = False) -> tuple[list[dict], int, int]:
+
+def expire_stale_c_memories(
+    memories: list[dict], dry_run: bool = False
+) -> tuple[list[dict], int, int]:
     """C 级记忆 TTL 淘汰：30 天未引用 → D 级，D 级 7 天后 → 归档。
 
     Args:
@@ -174,11 +177,14 @@ def expire_stale_c_memories(memories: list[dict], dry_run: bool = False) -> tupl
             if not dry_run:
                 m["quality_level"] = "D"
                 m["last_updated"] = datetime.now(timezone.utc).isoformat()
-                _log_audit("c_to_d_degrade", {
-                    "memory_id": m.get("memory_id"),
-                    "age_days": age,
-                    "reason": f"C级{age}天未验证，降级D",
-                })
+                _log_audit(
+                    "c_to_d_degrade",
+                    {
+                        "memory_id": m.get("memory_id"),
+                        "age_days": age,
+                        "reason": f"C级{age}天未验证，降级D",
+                    },
+                )
             c_degraded += 1
 
         # D 级 + 超过归档 TTL → 归档（从列表移除）
@@ -202,15 +208,19 @@ def _archive_memory(memory: dict) -> None:
         archive_file = _ARCHIVE_DIR / "archived_memories.jsonl"
         with open(archive_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(memory, ensure_ascii=False) + "\n")
-        _log_audit("d_to_archive", {
-            "memory_id": memory.get("memory_id"),
-            "content_preview": memory.get("content", "")[:100],
-        })
+        _log_audit(
+            "d_to_archive",
+            {
+                "memory_id": memory.get("memory_id"),
+                "content_preview": memory.get("content", "")[:100],
+            },
+        )
     except Exception as e:
         _log_audit("archive_error", {"memory_id": memory.get("memory_id"), "error": str(e)})
 
 
 # ── P1: RAG-bridge 日志过期 ─────────────────────────────────────
+
 
 def expire_rag_bridge_logs(memories: list[dict], dry_run: bool = False) -> tuple[list[dict], int]:
     """RAG-bridge 检索日志 7 天过期清理。
@@ -236,11 +246,14 @@ def expire_rag_bridge_logs(memories: list[dict], dry_run: bool = False) -> tuple
                 expired += 1
                 if not dry_run:
                     _archive_memory(m)
-                    _log_audit("rag_bridge_expire", {
-                        "memory_id": m.get("memory_id"),
-                        "age_days": age,
-                        "content_preview": m.get("content", "")[:100],
-                    })
+                    _log_audit(
+                        "rag_bridge_expire",
+                        {
+                            "memory_id": m.get("memory_id"),
+                            "age_days": age,
+                            "content_preview": m.get("content", "")[:100],
+                        },
+                    )
 
     if to_remove and not dry_run:
         memories = [m for m in memories if m.get("memory_id") not in to_remove]
@@ -249,6 +262,7 @@ def expire_rag_bridge_logs(memories: list[dict], dry_run: bool = False) -> tuple
 
 
 # ── P2: 标签归并 ───────────────────────────────────────────────
+
 
 def merge_similar_tags(memories: list[dict], dry_run: bool = False) -> tuple[list[dict], int]:
     """低频标签同义归并。
@@ -319,11 +333,14 @@ def merge_similar_tags(memories: list[dict], dry_run: bool = False) -> tuple[lis
             merged_count += 1
 
     if merge_map and not dry_run:
-        _log_audit("tag_merge", {
-            "merged_count": merged_count,
-            "merge_map_size": len(merge_map),
-            "samples": dict(list(merge_map.items())[:10]),
-        })
+        _log_audit(
+            "tag_merge",
+            {
+                "merged_count": merged_count,
+                "merge_map_size": len(merge_map),
+                "samples": dict(list(merge_map.items())[:10]),
+            },
+        )
 
     return memories, merged_count
 
@@ -345,6 +362,7 @@ def _levenshtein(a: str, b: str) -> int:
 
 
 # ── P0: 定期维护周期 ───────────────────────────────────────────
+
 
 def run_maintenance_cycle(dry_run: bool = False, audit_only: bool = False) -> dict[str, Any]:
     """一站式记忆维护周期。
@@ -388,35 +406,49 @@ def run_maintenance_cycle(dry_run: bool = False, audit_only: bool = False) -> di
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from dreaming_engine import run_dreaming_cycle
+
         dream_result = run_dreaming_cycle()
-        candidates = dream_result.get("candidates") or dream_result.get("summary", {}).get("candidates", [])
+        candidates = dream_result.get("candidates") or dream_result.get("summary", {}).get(
+            "candidates", []
+        )
         dup_count = sum(1 for c in candidates if c.get("pattern_type") == "duplicate_error")
-        conv_count = sum(1 for c in candidates if c.get("pattern_type") in ("convergent_workflow", "converging_workflow"))
-        conflict_count = sum(1 for c in candidates if c.get("pattern_type") in ("contradiction", "conflict"))
-        report["steps"].append({
-            "step": "dreaming_engine",
-            "status": "ok",
-            "total_scanned": dream_result.get("total_memories_scanned", 0),
-            "candidates": len(candidates),
-            "duplicates": dup_count,
-            "convergent": conv_count,
-            "conflicts": conflict_count,
-        })
+        conv_count = sum(
+            1
+            for c in candidates
+            if c.get("pattern_type") in ("convergent_workflow", "converging_workflow")
+        )
+        conflict_count = sum(
+            1 for c in candidates if c.get("pattern_type") in ("contradiction", "conflict")
+        )
+        report["steps"].append(
+            {
+                "step": "dreaming_engine",
+                "status": "ok",
+                "total_scanned": dream_result.get("total_memories_scanned", 0),
+                "candidates": len(candidates),
+                "duplicates": dup_count,
+                "convergent": conv_count,
+                "conflicts": conflict_count,
+            }
+        )
     except Exception as e:
         report["steps"].append({"step": "dreaming_engine", "status": "error", "error": str(e)})
 
     # Step 3.5: 规则化自动合并（dreaming 检测后执行）
     try:
         from dreaming_engine import auto_merge_duplicates
+
         merge_result = auto_merge_duplicates(dry_run=dry_run)
-        report["steps"].append({
-            "step": "auto_merge",
-            "status": merge_result.get("status", "error"),
-            "merged": merge_result.get("merged", 0),
-            "downgraded": merge_result.get("downgraded", 0),
-            "created": merge_result.get("created", 0),
-            "final_memories": merge_result.get("final_memories", 0),
-        })
+        report["steps"].append(
+            {
+                "step": "auto_merge",
+                "status": merge_result.get("status", "error"),
+                "merged": merge_result.get("merged", 0),
+                "downgraded": merge_result.get("downgraded", 0),
+                "created": merge_result.get("created", 0),
+                "final_memories": merge_result.get("final_memories", 0),
+            }
+        )
         # 自动合并后重新加载记忆列表（因为记忆库已变更）
         if not dry_run and merge_result.get("merged", 0) > 0:
             memories, schema = _load_memories()
@@ -426,17 +458,20 @@ def run_maintenance_cycle(dry_run: bool = False, audit_only: bool = False) -> di
     # Step 4: P0 — Memory Health Audit
     try:
         from memory_health_audit import run_health_audit
+
         audit_result = run_health_audit()
         summary = audit_result.get("summary", {})
-        report["steps"].append({
-            "step": "health_audit",
-            "status": "ok",
-            "health_score": audit_result.get("health_score", 0),
-            "duplicates": summary.get("duplicate_groups", 0),
-            "stale": summary.get("stale_memories", 0),
-            "contradictions": summary.get("contradiction_groups", 0),
-            "improvements": summary.get("improvement_opportunities", 0),
-        })
+        report["steps"].append(
+            {
+                "step": "health_audit",
+                "status": "ok",
+                "health_score": audit_result.get("health_score", 0),
+                "duplicates": summary.get("duplicate_groups", 0),
+                "stale": summary.get("stale_memories", 0),
+                "contradictions": summary.get("contradiction_groups", 0),
+                "improvements": summary.get("improvement_opportunities", 0),
+            }
+        )
     except Exception as e:
         report["steps"].append({"step": "health_audit", "status": "error", "error": str(e)})
 
@@ -447,34 +482,40 @@ def run_maintenance_cycle(dry_run: bool = False, audit_only: bool = False) -> di
     # Step 5: P1 — C 级记忆 TTL 淘汰
     try:
         memories, c_deg, d_arch = expire_stale_c_memories(memories, dry_run=dry_run)
-        report["steps"].append({
-            "step": "c_memory_ttl",
-            "status": "ok",
-            "c_degraded": c_deg,
-            "d_archived": d_arch,
-        })
+        report["steps"].append(
+            {
+                "step": "c_memory_ttl",
+                "status": "ok",
+                "c_degraded": c_deg,
+                "d_archived": d_arch,
+            }
+        )
     except Exception as e:
         report["steps"].append({"step": "c_memory_ttl", "status": "error", "error": str(e)})
 
     # Step 6: P1 — RAG-bridge 日志过期
     try:
         memories, rag_exp = expire_rag_bridge_logs(memories, dry_run=dry_run)
-        report["steps"].append({
-            "step": "rag_bridge_expire",
-            "status": "ok",
-            "expired": rag_exp,
-        })
+        report["steps"].append(
+            {
+                "step": "rag_bridge_expire",
+                "status": "ok",
+                "expired": rag_exp,
+            }
+        )
     except Exception as e:
         report["steps"].append({"step": "rag_bridge_expire", "status": "error", "error": str(e)})
 
     # Step 7: P2 — 标签归并
     try:
         memories, tags_merged = merge_similar_tags(memories, dry_run=dry_run)
-        report["steps"].append({
-            "step": "tag_merge",
-            "status": "ok",
-            "tags_merged": tags_merged,
-        })
+        report["steps"].append(
+            {
+                "step": "tag_merge",
+                "status": "ok",
+                "tags_merged": tags_merged,
+            }
+        )
     except Exception as e:
         report["steps"].append({"step": "tag_merge", "status": "error", "error": str(e)})
 
@@ -493,6 +534,7 @@ def run_maintenance_cycle(dry_run: bool = False, audit_only: bool = False) -> di
 
 
 # ── CLI 入口 ───────────────────────────────────────────────────
+
 
 def main(argv: list[str] | None = None) -> int:
     import argparse
@@ -522,8 +564,10 @@ def main(argv: list[str] | None = None) -> int:
         memories, tags_merged = merge_similar_tags(memories)
         _save_memories(memories, schema)
         report = {
-            "c_degraded": c_deg, "d_archived": d_arch,
-            "rag_expired": rag_exp, "tags_merged": tags_merged,
+            "c_degraded": c_deg,
+            "d_archived": d_arch,
+            "rag_expired": rag_exp,
+            "tags_merged": tags_merged,
             "final_memories": len(memories),
         }
     else:

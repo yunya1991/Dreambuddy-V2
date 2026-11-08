@@ -14,6 +14,7 @@
   Q4: 双 None 三级降级模式（默认启用）
   Q5: structural_break 类型加权共识（默认启用）
 """
+
 from __future__ import annotations
 
 import time
@@ -21,14 +22,28 @@ from typing import Optional
 
 import numpy as np
 
-from dreambuddy_evolution.core.attention_aggregator import C_DIM_TO_3, get_factor_dimensions
+from dreambuddy_evolution.core.dimension_mapping import (
+    C_DIM_TO_3,
+    DEFAULT_C_DIMENSIONS,
+)
 from dreambuddy_evolution.core.sprt_monitor import SPRTMonitor
+
+
+def _get_factor_dimensions() -> list[str]:
+    """优先读取因子元数据；torch 不可用时回退静态顺序（FAIL-OPEN）."""
+    try:
+        from dreambuddy_evolution.core.exogenous_data_bridge import get_factor_dimensions
+
+        return get_factor_dimensions()
+    except Exception:  # noqa: BLE001
+        return list(DEFAULT_C_DIMENSIONS)
+
 
 # Q5 结构断裂类型权重（融合方案 §10.11.5）
 STRUCTURAL_BREAK_WEIGHTS: dict[str, float] = {
-    "market_form_shift": 1.0,       # Hurst 指数，最具结构性
-    "correlation_break": 0.6,       # Welch's t-test，中等
-    "volatility_regime_shift": 0.4, # Markov-Regression/HMM，较低（易受事件冲击）
+    "market_form_shift": 1.0,  # Hurst 指数，最具结构性
+    "correlation_break": 0.6,  # Welch's t-test，中等
+    "volatility_regime_shift": 0.4,  # Markov-Regression/HMM，较低（易受事件冲击）
 }
 
 
@@ -57,12 +72,13 @@ class CrossValidationGate:
             # enable_attention_aggregator 开关控制：关闭时降级为固定3维度映射
             try:
                 from dreambuddy_evolution.agi_config import get_switch as _gs_aa
+
                 if _gs_aa("enable_attention_aggregator", True):
-                    dimensions = get_factor_dimensions()
+                    dimensions = _get_factor_dimensions()
                 else:
                     dimensions = ["C1", "C2", "C4"]  # 降级：固定3维度
             except Exception:
-                dimensions = get_factor_dimensions()  # FAIL-OPEN
+                dimensions = _get_factor_dimensions()  # FAIL-OPEN
         self._dimensions = dimensions
 
         # 五步算法参数

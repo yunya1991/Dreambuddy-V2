@@ -11,6 +11,6 @@
 存储路径: scheduler_data/artifacts/{artifact_type}/{artifact_id}.json
 """
 
-from .store import ArtifactStore, ArtifactType, ArtifactMeta
+from .store import ArtifactMeta, ArtifactStore, ArtifactType
 
 __all__ = ["ArtifactStore", "ArtifactType", "ArtifactMeta"]

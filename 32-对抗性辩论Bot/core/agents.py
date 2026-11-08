@@ -5,6 +5,7 @@
 - LLM 调用 → JSON 解析 → 失败重试 1 次 → FAIL-OPEN 兜底
 - 上下文注入：transcript 对方上轮 + background + injected_views
 """
+
 from __future__ import annotations
 
 import json
@@ -14,7 +15,9 @@ from typing import Protocol
 
 from core.models import Argument, Turn, Verdict
 from core.prompts import (
-    BULL_SYSTEM_PROMPT, BEAR_SYSTEM_PROMPT, JUDGE_SYSTEM_PROMPT,
+    BEAR_SYSTEM_PROMPT,
+    BULL_SYSTEM_PROMPT,
+    JUDGE_SYSTEM_PROMPT,
     build_user_prompt,
 )
 
@@ -24,8 +27,7 @@ logger = logging.getLogger("debate.agents")
 class LLMClient(Protocol):
     """LLM 客户端接口（duck-typed）。"""
 
-    async def chat(self, system_prompt: str, user_prompt: str,
-                   max_tokens: int = 600) -> str:
+    async def chat(self, system_prompt: str, user_prompt: str, max_tokens: int = 600) -> str:
         """调用 LLM，返回文本响应。"""
         ...
 
@@ -46,7 +48,7 @@ def _extract_json(raw: str) -> dict | None:
         pass
 
     # 尝试提取 { ... } 片段
-    match = re.search(r'\{[^{}]*\}', raw, re.DOTALL)
+    match = re.search(r"\{[^{}]*\}", raw, re.DOTALL)
     if match:
         try:
             return json.loads(match.group())
@@ -92,26 +94,34 @@ def _get_opponent_thesis(transcript: list[Turn], my_side: str) -> str | None:
 class BaseAgent:
     """辩手基类：立场 prompt + LLM 调用 + JSON 解析 + 重试 + FAIL-OPEN。"""
 
-    def __init__(self, llm_client: LLMClient, system_prompt: str,
-                 side: str, max_tokens: int = 600):
+    def __init__(self, llm_client: LLMClient, system_prompt: str, side: str, max_tokens: int = 600):
         self.llm = llm_client
         self.system_prompt = system_prompt
         self.side = side  # 'bull' or 'bear'
         self.max_tokens = max_tokens
 
-    async def _speak(self, topic: str, transcript: list[Turn],
-                     background: str = "",
-                     injected_views: list[str] | None = None) -> Argument:
+    async def _speak(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
         """核心逻辑：构建 prompt → LLM 调用 → JSON 解析 → 重试 → 兜底。"""
         opponent_last = _get_opponent_thesis(transcript, self.side)
         user_prompt = build_user_prompt(
-            topic, opponent_last, background, injected_views,
+            topic,
+            opponent_last,
+            background,
+            injected_views,
         )
 
         # 第一次调用
         try:
             raw = await self.llm.chat(
-                self.system_prompt, user_prompt, self.max_tokens,
+                self.system_prompt,
+                user_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("%s 第一次 LLM 调用异常: %s", self.side, e)
@@ -126,7 +136,9 @@ class BaseAgent:
         retry_prompt = user_prompt + "\n\n请严格只输出 JSON，不要输出其他内容。"
         try:
             raw2 = await self.llm.chat(
-                self.system_prompt, retry_prompt, self.max_tokens,
+                self.system_prompt,
+                retry_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("%s 重试 LLM 调用异常: %s", self.side, e)
@@ -147,9 +159,13 @@ class BullAgent(BaseAgent):
     def __init__(self, llm_client: LLMClient, max_tokens: int = 600):
         super().__init__(llm_client, BULL_SYSTEM_PROMPT, "bull", max_tokens)
 
-    async def argue(self, topic: str, transcript: list[Turn],
-                    background: str = "",
-                    injected_views: list[str] | None = None) -> Argument:
+    async def argue(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
         """正方发言。"""
         return await self._speak(topic, transcript, background, injected_views)
 
@@ -160,14 +176,19 @@ class BearAgent(BaseAgent):
     def __init__(self, llm_client: LLMClient, max_tokens: int = 600):
         super().__init__(llm_client, BEAR_SYSTEM_PROMPT, "bear", max_tokens)
 
-    async def rebut(self, topic: str, transcript: list[Turn],
-                    background: str = "",
-                    injected_views: list[str] | None = None) -> Argument:
+    async def rebut(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> Argument:
         """反方反驳。"""
         return await self._speak(topic, transcript, background, injected_views)
 
 
 # ─── JudgeAgent ───────────────────────────────────────────────────
+
 
 def _parse_verdict(raw: str) -> Verdict | None:
     """解析 LLM 输出为 Verdict，失败返回 None。"""
@@ -227,13 +248,17 @@ class JudgeAgent:
         # 第一次调用
         try:
             raw = await self.llm.chat(
-                JUDGE_SYSTEM_PROMPT, user_prompt, self.max_tokens,
+                JUDGE_SYSTEM_PROMPT,
+                user_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("Judge 第一次 LLM 调用异常: %s", e)
             return Verdict(
                 summary="（裁判因技术原因无法输出裁决）",
-                winner=None, key_insights=[], topic_angle="",
+                winner=None,
+                key_insights=[],
+                topic_angle="",
             )
 
         verdict = _parse_verdict(raw)
@@ -245,13 +270,17 @@ class JudgeAgent:
         retry_prompt = user_prompt + "\n\n请严格只输出 JSON，不要输出其他内容。"
         try:
             raw2 = await self.llm.chat(
-                JUDGE_SYSTEM_PROMPT, retry_prompt, self.max_tokens,
+                JUDGE_SYSTEM_PROMPT,
+                retry_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("Judge 重试 LLM 调用异常: %s", e)
             return Verdict(
                 summary="（裁判因技术原因无法输出裁决）",
-                winner=None, key_insights=[], topic_angle="",
+                winner=None,
+                key_insights=[],
+                topic_angle="",
             )
 
         verdict2 = _parse_verdict(raw2)
@@ -262,5 +291,7 @@ class JudgeAgent:
         logger.warning("Judge 两次 JSON 解析均失败，返回兜底 Verdict")
         return Verdict(
             summary="（裁判因技术原因无法输出裁决）",
-            winner=None, key_insights=[], topic_angle="",
+            winner=None,
+            key_insights=[],
+            topic_angle="",
         )

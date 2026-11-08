@@ -15,12 +15,12 @@
   - yfinance: source=yfinance, category=stock/crypto, sub_category=symbol
     timeseries: [{"date": ISO, "close": float}, ...]
 """
-import pytest
+
+import json  # noqa: I001
+import os
 import sqlite3
 import sys
 import tempfile
-import os
-import json
 from pathlib import Path
 
 # 将 force_vector 和 scripts 加入 sys.path
@@ -31,18 +31,18 @@ _SCRIPTS_DIR = _L4_DIR / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from force_vector.coin_fundamental_historical_data_loader import (
+from coin_fundamental_phase_replay import PhaseSnapshot  # noqa: E402
+from force_vector.coin_fundamental_historical_data_loader import (  # noqa: E402
+    build_real_snapshots,
     query_historical_fees,
     query_historical_mcap,
     query_historical_price,
-    build_real_snapshots,
 )
-from coin_fundamental_phase_replay import PhaseSnapshot
-
 
 # ---------------------------------------------------------------------------
 # 辅助：构造临时 data_center.db
 # ---------------------------------------------------------------------------
+
 
 def _make_test_db(records: list) -> str:
     """构造临时 sqlite db，插入 records 表数据。"""
@@ -64,7 +64,10 @@ def _make_test_db(records: list) -> str:
             "VALUES (?,?,?,?,?,?,?,?,?,?)",
             (
                 r.get("dedupe_key", f"{r['source']}_{r['category']}_{r['sub_category']}"),
-                r["source"], r["category"], r["sub_category"], r.get("timestamp", "2026-09-01"),
+                r["source"],
+                r["category"],
+                r["sub_category"],
+                r.get("timestamp", "2026-09-01"),
                 json.dumps(r.get("metrics", {})),
                 json.dumps(r.get("events", [])),
                 json.dumps(r.get("timeseries", [])),
@@ -114,6 +117,7 @@ def _make_yfinance_record(symbol: str, price_ts: list) -> dict:
 # 1. query_historical_fees
 # ---------------------------------------------------------------------------
 
+
 class TestQueryHistoricalFees:
     """验证从 DeFiLlama 查询历史 fees 时间序列。"""
 
@@ -146,17 +150,23 @@ class TestQueryHistoricalFees:
 
     def test_failopen_on_malformed_timeseries(self):
         """timeseries 畸形 JSON → 返回空 list。"""
-        db = _make_test_db([{
-            "source": "defillama", "category": "chain",
-            "sub_category": "fees_uniswap",
-            "timeseries": "not-a-json{",
-        }])
+        db = _make_test_db(
+            [
+                {
+                    "source": "defillama",
+                    "category": "chain",
+                    "sub_category": "fees_uniswap",
+                    "timeseries": "not-a-json{",
+                }
+            ]
+        )
         assert query_historical_fees("UNI", db) == []
 
 
 # ---------------------------------------------------------------------------
 # 2. query_historical_mcap
 # ---------------------------------------------------------------------------
+
 
 class TestQueryHistoricalMcap:
     """验证从 CoinGecko 查询历史 market_cap 时间序列。"""
@@ -199,6 +209,7 @@ class TestQueryHistoricalMcap:
 # 3. query_historical_price
 # ---------------------------------------------------------------------------
 
+
 class TestQueryHistoricalPrice:
     """验证从 yfinance 查询历史价格时间序列。"""
 
@@ -228,6 +239,7 @@ class TestQueryHistoricalPrice:
 # 4. build_real_snapshots
 # ---------------------------------------------------------------------------
 
+
 class TestBuildRealSnapshots:
     """验证从真实历史数据构造 PhaseSnapshot 序列。"""
 
@@ -241,10 +253,12 @@ class TestBuildRealSnapshots:
             {"date": f"2026-08-{d:02d}", "price": 8.0 + i, "market_cap": (8 + i) * 1e9, "volume": 0}
             for i, d in enumerate(range(25, 32))  # 7天
         ]
-        db = _make_test_db([
-            _make_defillama_fees_record("uniswap", fees_ts),
-            _make_coingecko_chart_record("uniswap", chart_ts),
-        ])
+        db = _make_test_db(
+            [
+                _make_defillama_fees_record("uniswap", fees_ts),
+                _make_coingecko_chart_record("uniswap", chart_ts),
+            ]
+        )
         snaps = build_real_snapshots("UNI", db)
         assert len(snaps) == 7
         assert isinstance(snaps[0], PhaseSnapshot)
@@ -260,10 +274,12 @@ class TestBuildRealSnapshots:
         """mcap 数据不足（<7点）→ 返回空 list。"""
         fees_ts = [{"date": "2026-08-25", "fees_usd": 1e6}]
         chart_ts = [{"date": "2026-08-25", "price": 8.0, "market_cap": 8e9, "volume": 0}]
-        db = _make_test_db([
-            _make_defillama_fees_record("uniswap", fees_ts),
-            _make_coingecko_chart_record("uniswap", chart_ts),
-        ])
+        db = _make_test_db(
+            [
+                _make_defillama_fees_record("uniswap", fees_ts),
+                _make_coingecko_chart_record("uniswap", chart_ts),
+            ]
+        )
         # mcap 仅 1 点 < 最小窗口 7 → 数据不足 → 空 list
         assert build_real_snapshots("UNI", db) == []
 
@@ -281,10 +297,12 @@ class TestBuildRealSnapshots:
             {"date": f"2026-08-{d:02d}", "price": 8.0 + i, "market_cap": (8 + i) * 1e9, "volume": 0}
             for i, d in enumerate(range(25, 32))  # 7天
         ]
-        db = _make_test_db([
-            _make_defillama_fees_record("uniswap", fees_ts),
-            _make_coingecko_chart_record("uniswap", chart_ts),
-        ])
+        db = _make_test_db(
+            [
+                _make_defillama_fees_record("uniswap", fees_ts),
+                _make_coingecko_chart_record("uniswap", chart_ts),
+            ]
+        )
         snaps = build_real_snapshots("UNI", db)
         assert len(snaps) >= 1
         s = snaps[0]

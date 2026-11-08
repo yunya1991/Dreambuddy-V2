@@ -15,12 +15,13 @@
     runtime/five_domain_correlation_report.json
     runtime/five_domain_correlation_report.csv
 """
+
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -33,8 +34,8 @@ _REPORT_CSV = _RUNTIME / "five_domain_correlation_report.csv"
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from five_domain_ic_analysis import _get_daily_snapshots  # noqa: E402
 from five_domain_feature_computer import FiveDomainFeatureComputer  # noqa: E402
+from five_domain_ic_analysis import _get_daily_snapshots  # noqa: E402
 
 # 共线性嫌疑阈值（|Pearson corr| > 此值 → 标记）
 COLLINEARITY_THRESHOLD = 0.8
@@ -57,7 +58,7 @@ def _compute_daily_scores() -> Dict[str, List[Dict[str, int]]]:
     computer = FiveDomainFeatureComputer(enable=True)
     result: Dict[str, List[Dict[str, int]]] = {}
 
-    for date_str, coin_data_by_cls in snapshots:
+    for date_str, coin_data_by_cls in snapshots:  # noqa: B007
         try:
             scores_by_cls = computer.compute(coin_data=coin_data_by_cls)
         except Exception:  # noqa: BLE001 — FAIL-OPEN：单天异常跳过
@@ -122,11 +123,14 @@ def analyze_correlation() -> Dict[str, Any]:
                     c = _pearson_corr(dim_arrays[d1], dim_arrays[d2])
                     corr_matrix[d1][d2] = round(c, 4)
                     if abs(c) > COLLINEARITY_THRESHOLD and i < DIMENSIONS.index(d2):
-                        collinear_pairs.append({
-                            "dim1": d1, "dim2": d2,
-                            "correlation": round(c, 4),
-                            "abs_correlation": round(abs(c), 4),
-                        })
+                        collinear_pairs.append(
+                            {
+                                "dim1": d1,
+                                "dim2": d2,
+                                "correlation": round(c, 4),
+                                "abs_correlation": round(abs(c), 4),
+                            }
+                        )
 
         report["per_class"][cls] = {
             "n_samples": len(scores_list),
@@ -139,8 +143,7 @@ def analyze_correlation() -> Dict[str, Any]:
         )
 
     report["summary"]["total_pairs_checked"] = sum(
-        len(cls_data.get("collinear_pairs", []))
-        for cls_data in report["per_class"].values()
+        len(cls_data.get("collinear_pairs", [])) for cls_data in report["per_class"].values()
     )
     return report
 
@@ -153,6 +156,7 @@ def save_report(report: Dict[str, Any]) -> tuple:
 
     # CSV 扁平化
     import csv
+
     rows = []
     for cls, cls_data in report["per_class"].items():
         matrix = cls_data.get("correlation_matrix") or {}
@@ -187,9 +191,7 @@ def print_summary(report: Dict[str, Any]) -> None:
             header = f"{'':>8}" + "".join(f"{d:>8}" for d in DIMENSIONS)
             print(header)
             for d1 in DIMENSIONS:
-                row = f"{d1:>8}" + "".join(
-                    f"{matrix[d1][d2]:>8.2f}" for d2 in DIMENSIONS
-                )
+                row = f"{d1:>8}" + "".join(f"{matrix[d1][d2]:>8.2f}" for d2 in DIMENSIONS)
                 print(row)
             # 打印共线性嫌疑对
             for p in cls_data["collinear_pairs"]:

@@ -36,7 +36,9 @@ class BacktestResult:
 OKX_API_URL = "https://www.okx.com/api/v5/market/candles"
 
 
-def fetch_okx_klines(inst_id: str = "BTC-USDT-SWAP", bar: str = "1D", limit: int = 300) -> pd.DataFrame:
+def fetch_okx_klines(
+    inst_id: str = "BTC-USDT-SWAP", bar: str = "1D", limit: int = 300
+) -> pd.DataFrame:
     """从 OKX 获取真实历史 K 线数据"""
     params = {"instId": inst_id, "bar": bar, "limit": limit}
     resp = requests.get(OKX_API_URL, params=params, timeout=30)
@@ -45,16 +47,22 @@ def fetch_okx_klines(inst_id: str = "BTC-USDT-SWAP", bar: str = "1D", limit: int
     if data.get("code") != "0":
         raise RuntimeError(f"OKX API error: {data.get('msg')}")
     raw = data["data"]
-    df = pd.DataFrame(raw, columns=["ts", "o", "h", "l", "c", "vol", "volCcy", "volCcyQuote", "confirm"])
+    df = pd.DataFrame(
+        raw, columns=["ts", "o", "h", "l", "c", "vol", "volCcy", "volCcyQuote", "confirm"]
+    )
     df = df.iloc[::-1].reset_index(drop=True)  # 按时间正序排列
     df["ts"] = pd.to_numeric(df["ts"])
     for col in ["o", "h", "l", "c", "vol"]:
         df[col] = pd.to_numeric(df[col])
-    df.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}, inplace=True)
+    df.rename(
+        columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}, inplace=True
+    )
     return df
 
 
-def fetch_okx_history(inst_id: str = "BTC-USDT-SWAP", bar: str = "1D", total_bars: int = 500) -> pd.DataFrame:
+def fetch_okx_history(
+    inst_id: str = "BTC-USDT-SWAP", bar: str = "1D", total_bars: int = 500
+) -> pd.DataFrame:
     """分页获取 OKX 历史 K 线数据"""
     all_dfs = []
     before_ts = None
@@ -70,11 +78,16 @@ def fetch_okx_history(inst_id: str = "BTC-USDT-SWAP", bar: str = "1D", total_bar
         if data.get("code") != "0" or not data.get("data"):
             break
         raw = data["data"]
-        df = pd.DataFrame(raw, columns=["ts", "o", "h", "l", "c", "vol", "volCcy", "volCcyQuote", "confirm"])
+        df = pd.DataFrame(
+            raw, columns=["ts", "o", "h", "l", "c", "vol", "volCcy", "volCcyQuote", "confirm"]
+        )
         df = df.iloc[::-1].reset_index(drop=True)
         for col in ["o", "h", "l", "c", "vol"]:
             df[col] = pd.to_numeric(df[col])
-        df.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}, inplace=True)
+        df.rename(
+            columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"},
+            inplace=True,
+        )
         all_dfs.append(df)
         before_ts = str(int(raw[-1][0]))  # 最早一根K线的时间戳
         remaining -= len(raw)
@@ -98,13 +111,13 @@ def _generate_synthetic_data(n: int = 500, seed: int = 42, freq: str = "daily") 
     # 分段趋势：牛 → 熊 → 震荡 → 牛
     stage_n = actual_n // 4
     trends = []
-    for i in range(stage_n):
+    for i in range(stage_n):  # noqa: B007
         trends.append(0.15 + np.random.randn() * 0.8)
-    for i in range(stage_n):
+    for i in range(stage_n):  # noqa: B007
         trends.append(-0.15 + np.random.randn() * 0.8)
-    for i in range(stage_n):
+    for i in range(stage_n):  # noqa: B007
         trends.append(np.random.randn() * 0.5)
-    for i in range(stage_n):
+    for i in range(stage_n):  # noqa: B007
         trends.append(0.12 + np.random.randn() * 0.7)
     # 补齐
     while len(trends) < actual_n:
@@ -116,13 +129,15 @@ def _generate_synthetic_data(n: int = 500, seed: int = 42, freq: str = "daily") 
     open_p = close + np.random.randn(actual_n) * 0.2
     volume = np.ones(actual_n) * 1000 + np.random.randn(actual_n) * 200
 
-    df = pd.DataFrame({
-        "open": open_p,
-        "high": high,
-        "low": low,
-        "close": close,
-        "volume": volume,
-    })
+    df = pd.DataFrame(
+        {
+            "open": open_p,
+            "high": high,
+            "low": low,
+            "close": close,
+            "volume": volume,
+        }
+    )
     return df
 
 
@@ -168,7 +183,9 @@ def _calc_returns(df: pd.DataFrame, signals: pd.Series) -> Tuple[float, float, f
         trade_ret = (df["close"].iloc[-1] / entry_price - 1) * in_pos
         trade_returns.append(trade_ret)
 
-    win_rate = (sum(1 for r in trade_returns if r > 0) / len(trade_returns) * 100) if trade_returns else 0
+    win_rate = (
+        (sum(1 for r in trade_returns if r > 0) / len(trade_returns) * 100) if trade_returns else 0
+    )
     avg_return = (sum(trade_returns) / len(trade_returns) * 100) if trade_returns else 0
 
     return total_return, sharpe, max_dd, win_rate, num_trades, avg_return
@@ -364,7 +381,9 @@ def run_backtest(df: pd.DataFrame | None = None, freq: str = "daily") -> Dict[st
     return results
 
 
-def run_daily_vs_weekly_backtest(seed: int = 42) -> Tuple[Dict[str, BacktestResult], Dict[str, BacktestResult]]:
+def run_daily_vs_weekly_backtest(
+    seed: int = 42,
+) -> Tuple[Dict[str, BacktestResult], Dict[str, BacktestResult]]:
     """同时运行日线和周线回测，返回对比结果"""
     df_daily = _generate_synthetic_data(n=500, seed=seed, freq="daily")
     df_weekly = _generate_synthetic_data(n=500, seed=seed, freq="weekly")
@@ -373,7 +392,9 @@ def run_daily_vs_weekly_backtest(seed: int = 42) -> Tuple[Dict[str, BacktestResu
     return daily_results, weekly_results
 
 
-def evaluate_survivors(results: Dict[str, BacktestResult], baseline_name: str = "MA200_EMA", strict_count: int = 2) -> Tuple[List[str], List[str]]:
+def evaluate_survivors(
+    results: Dict[str, BacktestResult], baseline_name: str = "MA200_EMA", strict_count: int = 2
+) -> Tuple[List[str], List[str]]:
     """
     筛选存活指标：夏普比率、最大回撤(绝对值)、胜率中至少 strict_count 项优于基线
     strict_count: 严格度，2=至少2项优于，1=至少1项优于
@@ -407,25 +428,36 @@ def evaluate_survivors(results: Dict[str, BacktestResult], baseline_name: str = 
 
 def print_report(results: Dict[str, BacktestResult], baseline_name: str = "MA200_EMA") -> None:
     """打印回测报告"""
-    baseline = results.get(baseline_name)
+    baseline = results.get(baseline_name)  # noqa: F841
     survivors, eliminated = evaluate_survivors(results, baseline_name)
 
     print("=" * 100)
-    print(f"{'指标名称':<25} {'总收益%':>10} {'夏普':>8} {'最大回撤%':>12} {'胜率%':>8} {'交易次数':>10} {'均收益%':>10} {'状态':>6}")
+    print(
+        f"{'指标名称':<25} {'总收益%':>10} {'夏普':>8} {'最大回撤%':>12} {'胜率%':>8} {'交易次数':>10} {'均收益%':>10} {'状态':>6}"
+    )
     print("=" * 100)
 
     for name, res in sorted(results.items(), key=lambda x: x[1].sharpe_ratio, reverse=True):
-        status = "✅基线" if name == baseline_name else ("✅存活" if name in survivors else "❌淘汰")
-        print(f"{res.name:<25} {res.total_return_pct:>10.2f} {res.sharpe_ratio:>8.3f} {res.max_drawdown_pct:>12.2f} {res.win_rate:>8.1f} {res.num_trades:>10} {res.avg_trade_return:>10.3f} {status:>6}")
+        status = (
+            "✅基线" if name == baseline_name else ("✅存活" if name in survivors else "❌淘汰")
+        )
+        print(
+            f"{res.name:<25} {res.total_return_pct:>10.2f} {res.sharpe_ratio:>8.3f} {res.max_drawdown_pct:>12.2f} {res.win_rate:>8.1f} {res.num_trades:>10} {res.avg_trade_return:>10.3f} {status:>6}"
+        )
 
     print("=" * 100)
     print(f"\n基线: {baseline_name}")
     print(f"存活指标 ({len(survivors)}个): {', '.join(survivors)}")
     print(f"淘汰指标 ({len(eliminated)}个): {', '.join(eliminated)}")
-    print(f"\n筛选标准: 夏普比率、最大回撤(绝对值)、胜率 中至少两项优于基线")
+    print("\n筛选标准: 夏普比率、最大回撤(绝对值)、胜率 中至少两项优于基线")
 
 
-def print_daily_vs_weekly_report(daily_results: Dict[str, BacktestResult], weekly_results: Dict[str, BacktestResult], baseline_name: str = "MA200_EMA", top_n: int = 5) -> Tuple[List[str], List[str]]:
+def print_daily_vs_weekly_report(
+    daily_results: Dict[str, BacktestResult],
+    weekly_results: Dict[str, BacktestResult],
+    baseline_name: str = "MA200_EMA",
+    top_n: int = 5,
+) -> Tuple[List[str], List[str]]:
     """
     打印日线 vs 周线对比报告，筛选周线组(Screen1)和日线组(Screen2)
     每组按夏普比率取前 top_n 个
@@ -440,7 +472,9 @@ def print_daily_vs_weekly_report(daily_results: Dict[str, BacktestResult], weekl
     all_survivors = sorted(set(daily_survivors + weekly_survivors))
 
     print("=" * 120)
-    print(f"{'指标名称':<25} {'日线夏普':>10} {'周线夏普':>10} {'日线回撤%':>12} {'周线回撤%':>12} {'日线胜率':>10} {'周线胜率':>10} {'推荐':>12}")
+    print(
+        f"{'指标名称':<25} {'日线夏普':>10} {'周线夏普':>10} {'日线回撤%':>12} {'周线回撤%':>12} {'日线胜率':>10} {'周线胜率':>10} {'推荐':>12}"
+    )
     print("=" * 120)
 
     # 分离日线/周线更优的指标
@@ -451,12 +485,16 @@ def print_daily_vs_weekly_report(daily_results: Dict[str, BacktestResult], weekl
         w = weekly_results.get(name)
         if not d or not w:
             continue
-        weekly_better = (w.sharpe_ratio > d.sharpe_ratio) or (abs(w.max_drawdown_pct) < abs(d.max_drawdown_pct))
+        weekly_better = (w.sharpe_ratio > d.sharpe_ratio) or (
+            abs(w.max_drawdown_pct) < abs(d.max_drawdown_pct)
+        )
         if weekly_better:
             weekly_better_list.append((name, w, d))
         else:
             daily_better_list.append((name, w, d))
-        print(f"{name:<25} {d.sharpe_ratio:>10.3f} {w.sharpe_ratio:>10.3f} {d.max_drawdown_pct:>12.2f} {w.max_drawdown_pct:>12.2f} {d.win_rate:>10.1f} {w.win_rate:>10.1f} {'Screen1(周线)' if weekly_better else 'Screen2(日线)':>12}")
+        print(
+            f"{name:<25} {d.sharpe_ratio:>10.3f} {w.sharpe_ratio:>10.3f} {d.max_drawdown_pct:>12.2f} {w.max_drawdown_pct:>12.2f} {d.win_rate:>10.1f} {w.win_rate:>10.1f} {'Screen1(周线)' if weekly_better else 'Screen2(日线)':>12}"
+        )
 
     # 按夏普排序取前5
     weekly_better_list.sort(key=lambda x: x[1].sharpe_ratio, reverse=True)
@@ -467,16 +505,16 @@ def print_daily_vs_weekly_report(daily_results: Dict[str, BacktestResult], weekl
     print("=" * 120)
     print(f"\n【Screen1 周线组 TOP{top_n}】: {screen1_indicators}")
     print(f"【Screen2 日线组 TOP{top_n}】: {screen2_indicators}")
-    print(f"\n筛选标准:")
-    print(f"  - Screen1 周线组: 2项优于SMA200（夏普/回撤/胜率）")
-    print(f"  - Screen2 日线组: 1项优于SMA200（夏普/回撤/胜率）")
-    print(f"\n权重分配: 周线 60% / 日线 40%")
-    print(f"\n置信度计算公式:")
-    print(f"  - 单一指标命中可信度: 50%")
-    print(f"  - 多个指标共振: 50% + N×10% (N=同向指标数)")
-    print(f"  - Screen1(周线)置信度 = 50 + bull_count_weekly * 10")
-    print(f"  - Screen2(日线)置信度 = 50 + bull_count_daily * 10")
-    print(f"  - 综合置信度 = Screen1×0.6 + Screen2×0.4")
+    print("\n筛选标准:")
+    print("  - Screen1 周线组: 2项优于SMA200（夏普/回撤/胜率）")
+    print("  - Screen2 日线组: 1项优于SMA200（夏普/回撤/胜率）")
+    print("\n权重分配: 周线 60% / 日线 40%")
+    print("\n置信度计算公式:")
+    print("  - 单一指标命中可信度: 50%")
+    print("  - 多个指标共振: 50% + N×10% (N=同向指标数)")
+    print("  - Screen1(周线)置信度 = 50 + bull_count_weekly * 10")
+    print("  - Screen2(日线)置信度 = 50 + bull_count_daily * 10")
+    print("  - 综合置信度 = Screen1×0.6 + Screen2×0.4")
 
     return screen1_indicators, screen2_indicators
 
@@ -485,10 +523,14 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="经典牛熊指标回测验证")
-    parser.add_argument("--mode", choices=["daily", "weekly", "compare"], default="compare", help="回测模式")
+    parser.add_argument(
+        "--mode", choices=["daily", "weekly", "compare"], default="compare", help="回测模式"
+    )
     parser.add_argument("--seed", type=int, default=42, help="随机种子")
     parser.add_argument("--real", action="store_true", help="使用 OKX 真实历史数据")
-    parser.add_argument("--inst", type=str, default="BTC-USDT-SWAP", help="交易对（仅--real时有效）")
+    parser.add_argument(
+        "--inst", type=str, default="BTC-USDT-SWAP", help="交易对（仅--real时有效）"
+    )
     parser.add_argument("--bars", type=int, default=500, help="获取的K线数量（仅--real时有效）")
     args = parser.parse_args()
 

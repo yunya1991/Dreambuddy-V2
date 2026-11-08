@@ -27,6 +27,7 @@ TDD 覆盖:
   - T1 BTCRegimeDetector 输出 (本会话)
   - 调研 spec VM-1791190210830 §方案 A 步骤 3
 """
+
 from __future__ import annotations
 
 import sys
@@ -82,20 +83,22 @@ def test_prepare_data_returns_4tuple_with_regime_label():
     trainer = NeuralSDETrainer(model=model, seq_len=64, horizon=20)
     closes = 100.0 + np.cumsum(np.random.randn(500) * 0.5)
     # 模拟 regime labels: 前 200 = 0 (bull), 中 200 = 1 (chop), 末 100 = 2 (bear)
-    regime_labels = np.concatenate([
-        np.zeros(200, dtype=int),
-        np.ones(200, dtype=int),
-        np.full(100, 2, dtype=int),
-    ])
+    regime_labels = np.concatenate(
+        [
+            np.zeros(200, dtype=int),
+            np.ones(200, dtype=int),
+            np.full(100, 2, dtype=int),
+        ]
+    )
 
     windows = trainer.prepare_data(closes, max_windows=50, regime_labels=regime_labels)
     assert len(windows) > 0
     for w in windows:
         assert len(w) == 4, f"每个 window 应为 4-tuple, 实际 len={len(w)}"
         inp, tgt, log_sig, reg = w
-        assert isinstance(reg, (int, np.integer)) or (isinstance(reg, np.ndarray) and reg.ndim == 0), (
-            f"regime_label 应为 int, 实际 type={type(reg)}"
-        )
+        assert isinstance(reg, (int, np.integer)) or (
+            isinstance(reg, np.ndarray) and reg.ndim == 0
+        ), f"regime_label 应为 int, 实际 type={type(reg)}"
 
 
 # ============================================================================
@@ -157,9 +160,9 @@ def test_subsample_balanced_across_regimes():
     counts = np.bincount(regs, minlength=3)
     # 每个 regime 应 ≈ 100 ± 30
     for k in range(3):
-        assert abs(counts[k] - max_windows / 3) <= 30, (
-            f"regime {k} 样本数 {counts[k]} 偏离均衡值 {max_windows // 3} 超过 30"
-        )
+        assert (
+            abs(counts[k] - max_windows / 3) <= 30
+        ), f"regime {k} 样本数 {counts[k]} 偏离均衡值 {max_windows // 3} 超过 30"
 
 
 # ============================================================================
@@ -170,7 +173,7 @@ def test_subsample_balanced_across_regimes():
 def test_train_epoch_handles_4tuple():
     """T3.5: train_epoch 应能处理 4-tuple windows, 不抛异常, 返回有限 loss."""
     try:
-        import torch
+        import torch  # noqa: F401
     except ImportError:
         pytest.skip("torch not available")
 
@@ -219,16 +222,20 @@ def test_prepare_data_regime_balance_natural():
     trainer = NeuralSDETrainer(model=model, seq_len=64, horizon=20)
     closes = 100.0 + np.cumsum(np.random.randn(2000) * 0.5)
     # 自然分布: 70% bull, 20% chop, 10% bear (类似 2y BTC)
-    regime_labels = np.concatenate([
-        np.zeros(1400, dtype=int),  # 70% bull
-        np.ones(400, dtype=int),    # 20% chop
-        np.full(200, 2, dtype=int),  # 10% bear
-    ])
+    regime_labels = np.concatenate(
+        [
+            np.zeros(1400, dtype=int),  # 70% bull
+            np.ones(400, dtype=int),  # 20% chop
+            np.full(200, 2, dtype=int),  # 10% bear
+        ]
+    )
 
     max_windows = 300
     windows = trainer.prepare_data(
-        closes, max_windows=max_windows,
-        regime_labels=regime_labels, regime_balance="natural",
+        closes,
+        max_windows=max_windows,
+        regime_labels=regime_labels,
+        regime_balance="natural",
     )
     regs = np.array([int(w[3]) for w in windows])
     counts = np.bincount(regs, minlength=3)
@@ -254,22 +261,24 @@ def test_prepare_data_regime_balance_default_is_balanced():
     trainer = NeuralSDETrainer(model=model, seq_len=64, horizon=20)
     closes = 100.0 + np.cumsum(np.random.randn(2000) * 0.5)
     # 不传 regime_balance → 默认 "balanced"
-    regime_labels = np.concatenate([
-        np.zeros(1400, dtype=int),
-        np.ones(400, dtype=int),
-        np.full(200, 2, dtype=int),
-    ])
+    regime_labels = np.concatenate(
+        [
+            np.zeros(1400, dtype=int),
+            np.ones(400, dtype=int),
+            np.full(200, 2, dtype=int),
+        ]
+    )
 
     windows = trainer.prepare_data(
-        closes, max_windows=300, regime_labels=regime_labels,
+        closes,
+        max_windows=300,
+        regime_labels=regime_labels,
     )
     regs = np.array([int(w[3]) for w in windows])
     counts = np.bincount(regs, minlength=3)
     # balanced: 三个 regime 应接近 100 ± 30
     for k in range(3):
-        assert abs(counts[k] - 100) <= 30, (
-            f"balanced 默认 regime {k}={counts[k]} 应 ≈100±30"
-        )
+        assert abs(counts[k] - 100) <= 30, f"balanced 默认 regime {k}={counts[k]} 应 ≈100±30"
 
 
 # ============================================================================

@@ -4,20 +4,24 @@
 整合A8理论实践验证、做梦部外部反思、GitHub成熟经验搜索
 通过回测验证后应用进化参数
 """
-import json, os, sys, logging
+
+import sys  # noqa: I001
+import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime, timezone, timedelta
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.evolution.evolution_engine import EvolutionEngine, EvolutionSource
+from core.evolution.evolution_engine import EvolutionEngine  # noqa: I001
 from core.evolution.a8_evolution import A8TheoryPracticeEvolution
 from core.evolution.dream_evolution import DreamOneirologyEvolution
 from core.evolution.github_evolution import GithubBestPracticeEvolution
 from core.agent_a_memory import (
-    load_memory, save_memory, get_evolution_params,
-    update_evolution_params, record_evolution_result,
+    load_memory,
+    save_memory,
+    update_evolution_params,
+    record_evolution_result,
     set_evolution_timestamp,
 )
 
@@ -96,7 +100,7 @@ class EvolutionScheduler:
         logger.info("=" * 60)
 
         status = self.get_evolution_status()
-        logger.info(f"进化状态:")
+        logger.info("进化状态:")
         logger.info(f"  已采纳参数: {status['adopted_params']}")
         logger.info(f"  进化次数: {status['evolution_count']}")
         logger.info(f"  成功/失败: {status['successful_evolutions']}/{status['failed_evolutions']}")
@@ -182,10 +186,7 @@ class EvolutionScheduler:
             logger.info(f"[进化调度器] 运行{len(pending)}个提议的回测验证...")
             try:
                 bt_results = self.github.run_backtest_on_pending()
-                adopted = sum(
-                    1 for r in bt_results
-                    if r.get("overall_improvement", False) is True
-                )
+                adopted = sum(1 for r in bt_results if r.get("overall_improvement", False) is True)
                 results["backtest"] = {
                     "ran": True,
                     "total": len(bt_results),
@@ -252,24 +253,28 @@ class EvolutionScheduler:
         recent_trades = memory.get("recent_trades", [])
 
         for trade in recent_trades[-limit:]:
-            decisions.append({
-                "cycle_id": trade.get("timestamp", ""),
-                "action": trade.get("action", "HOLD"),
-                "decision_rationale": trade.get("lesson", ""),
-                "confidence": trade.get("confidence", 0),
-                "per_coin_scores": {},
-            })
+            decisions.append(
+                {
+                    "cycle_id": trade.get("timestamp", ""),
+                    "action": trade.get("action", "HOLD"),
+                    "decision_rationale": trade.get("lesson", ""),
+                    "confidence": trade.get("confidence", 0),
+                    "per_coin_scores": {},
+                }
+            )
 
         if len(decisions) < limit:
             hold_streak = memory.get("hold_streak", 0)
             for i in range(min(hold_streak, limit - len(decisions))):
-                decisions.append({
-                    "cycle_id": f"hold_{i}",
-                    "action": "HOLD",
-                    "decision_rationale": "观望等待机会",
-                    "confidence": 0.3,
-                    "per_coin_scores": {},
-                })
+                decisions.append(
+                    {
+                        "cycle_id": f"hold_{i}",
+                        "action": "HOLD",
+                        "decision_rationale": "观望等待机会",
+                        "confidence": 0.3,
+                        "per_coin_scores": {},
+                    }
+                )
 
         return decisions
 
@@ -280,18 +285,20 @@ def _export_to_shared_knowledge(scheduler: EvolutionScheduler):
     """
     try:
         import sys
+
         sys.path.insert(0, str(Path(__file__).parent.parent.parent))
         import importlib.util
+
         yijing_dir = Path(__file__).parent.parent.parent / "11-易经推理系统"
         bridge_path = yijing_dir / "scripts" / "memory_l4" / "knowledge_bridge.py"
         spec = importlib.util.spec_from_file_location("knowledge_bridge", str(bridge_path))
         knowledge_bridge = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(knowledge_bridge)
         bridge = knowledge_bridge.KnowledgeBridge()
-        
+
         status = scheduler.get_evolution_status()
         adopted_params = status.get("adopted_params", {})
-        
+
         if adopted_params:
             result = bridge.export_ab_evolved_params(
                 adopted_params=adopted_params,
@@ -302,7 +309,7 @@ def _export_to_shared_knowledge(scheduler: EvolutionScheduler):
                 print(f"[进化调度器] ✅ 已导出 {result['params_count']} 个进化参数到共享目录")
             else:
                 print(f"[进化调度器] ❌ 参数导出失败: {result.get('error')}")
-        
+
         memory = load_memory()
         contradictions = memory.get("contradictions", [])
         if contradictions:
@@ -312,7 +319,7 @@ def _export_to_shared_knowledge(scheduler: EvolutionScheduler):
             )
             if result["ok"]:
                 print(f"[进化调度器] ✅ 已导出 {result['patterns_count']} 个矛盾模式")
-        
+
         regime = {
             "state": memory.get("market_state", "neutral"),
             "trend_strength": memory.get("trend_strength", 0.5),
@@ -341,7 +348,7 @@ def run_evolution_cycle():
     print("=" * 60)
 
     status = scheduler.get_evolution_status()
-    print(f"\n进化状态:")
+    print("\n进化状态:")
     print(f"  已采纳参数: {status['adopted_params']}")
     print(f"  进化次数: {status['evolution_count']}")
     print(f"  成功/失败: {status['successful_evolutions']}/{status['failed_evolutions']}")

@@ -19,6 +19,7 @@
 
 说明：predict_with_fallback() 是设计中新方法，当前不存在 → 预期 FAIL。
 """
+
 from __future__ import annotations
 
 import sys
@@ -39,12 +40,15 @@ from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame  # noqa: E402
 
 def _make_synthetic_frames(days: int, seed: int = 42) -> List[RegimeStateFrame]:
     from datetime import date, timedelta
+
     rng = np.random.default_rng(seed)
     t = np.arange(days, dtype=float)
-    level_raw = (2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
-                 + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
-                 + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
-                 + rng.normal(0, 0.15, days))
+    level_raw = (
+        2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
+        + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
+        + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
+        + rng.normal(0, 0.15, days)
+    )
     smooth = np.zeros(days)
     smooth[0] = level_raw[0]
     for i in range(1, days):
@@ -53,27 +57,35 @@ def _make_synthetic_frames(days: int, seed: int = 42) -> List[RegimeStateFrame]:
     price_base = 40000.0 * np.exp(smooth / 10.0)
     frames = []
     for i in range(days):
-        from datetime import date, timedelta
+
         d = date(2026, 1, 1) + timedelta(days=i)
-        frames.append(RegimeStateFrame(
-            t=d.strftime("%Y-%m-%d"),
-            price=float(price_base[i]),
-            level_raw=float(level_raw[i]),
-            trend_raw=float(trend_smooth[i]),
-            level_smooth=float(smooth[i]),
-            trend_smooth=float(trend_smooth[i] * 5.0),
-            regime_probs={
-                "TREND_UP_STRONG": 0.4, "TREND_BULL": 0.2,
-                "RANGE_BOUND": 0.15, "RANGING": 0.1,
-                "MEAN_REVERTING": 0.05, "TREND_BEAR": 0.05,
-                "STRONG_TREND_BEAR": 0.03, "VOLATILE_DROP": 0.02,
-            },
-            top3=[["TREND_UP_STRONG", 0.4], ["TREND_BULL", 0.2], ["RANGE_BOUND", 0.15]],
-            consensus=float(np.clip(1.0 - float(np.std(level_raw[max(0,i-10):i+1])) / 2.0, 0.1, 0.95)),
-            hmm_state=2 if smooth[i] > 0 else 0,
-            bocpd_cp_prob=0.01,
-            indicators={},
-        ))
+        frames.append(
+            RegimeStateFrame(
+                t=d.strftime("%Y-%m-%d"),
+                price=float(price_base[i]),
+                level_raw=float(level_raw[i]),
+                trend_raw=float(trend_smooth[i]),
+                level_smooth=float(smooth[i]),
+                trend_smooth=float(trend_smooth[i] * 5.0),
+                regime_probs={
+                    "TREND_UP_STRONG": 0.4,
+                    "TREND_BULL": 0.2,
+                    "RANGE_BOUND": 0.15,
+                    "RANGING": 0.1,
+                    "MEAN_REVERTING": 0.05,
+                    "TREND_BEAR": 0.05,
+                    "STRONG_TREND_BEAR": 0.03,
+                    "VOLATILE_DROP": 0.02,
+                },
+                top3=[["TREND_UP_STRONG", 0.4], ["TREND_BULL", 0.2], ["RANGE_BOUND", 0.15]],
+                consensus=float(
+                    np.clip(1.0 - float(np.std(level_raw[max(0, i - 10) : i + 1])) / 2.0, 0.1, 0.95)
+                ),
+                hmm_state=2 if smooth[i] > 0 else 0,
+                bocpd_cp_prob=0.01,
+                indicators={},
+            )
+        )
     return frames
 
 
@@ -116,6 +128,7 @@ def storage_empty(tmp_path) -> EvolutionStorageSQLite:
 def test_btc_direct_ok(storage_with_btc_only):
     """F1: BTC 数据充足 → 直接预测，fallback_used=False。"""
     from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+
     p = MorphCyclePredictor(storage_with_btc_only)
 
     r = p.predict_with_fallback("BTCUSDT", hist_days=60, forecast_days=5)
@@ -131,10 +144,10 @@ def test_btc_direct_ok(storage_with_btc_only):
 def test_non_btc_insufficient_falls_back_to_btc_with_beta(storage_with_btc_only):
     """F2: XAG 数据不足 → fallback BTC，按 β=1.5 缩放 forecast_L。"""
     from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+
     p = MorphCyclePredictor(storage_with_btc_only)
 
-    r = p.predict_with_fallback("XAGUSDT", hist_days=60, forecast_days=5,
-                                symbol_beta=1.5)
+    r = p.predict_with_fallback("XAGUSDT", hist_days=60, forecast_days=5, symbol_beta=1.5)
 
     assert r.get("ok") is True, f"fallback 后应 ok=True，实际 err={r.get('error')}"
     assert r.get("fallback_used") is True, "XAG 不足应触发 fallback"
@@ -153,6 +166,7 @@ def test_non_btc_insufficient_falls_back_to_btc_with_beta(storage_with_btc_only)
 def test_non_btc_sufficient_direct_predict(storage_multi_symbol):
     """F3: ETH 数据充足 → 直接 predict()，不走 fallback。"""
     from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+
     p = MorphCyclePredictor(storage_multi_symbol)
 
     r = p.predict_with_fallback("ETHUSDT", hist_days=60, forecast_days=5)
@@ -168,6 +182,7 @@ def test_non_btc_sufficient_direct_predict(storage_multi_symbol):
 def test_btc_also_insufficient_returns_error(storage_empty):
     """F4: BTC 也缺数据 → 返回 ok=False, fallback_used=False，不崩溃。"""
     from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+
     p = MorphCyclePredictor(storage_empty)
 
     r = p.predict_with_fallback("XAGUSDT", hist_days=60, forecast_days=5)

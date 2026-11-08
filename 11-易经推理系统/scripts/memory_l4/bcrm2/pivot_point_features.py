@@ -15,20 +15,29 @@
   包含5种计算法: Standard / Fibonacci / Camarilla / Woodie / Demark
 """
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
-from typing import List, Optional, Dict
-
+from typing import List
 
 # ============================================================
 # 工具: 日线重采样
 # ============================================================
 
+
 def _resample_daily(df: pd.DataFrame) -> pd.DataFrame:
-    daily = df.resample("1D").agg({
-        "open": "first", "high": "max", "low": "min",
-        "close": "last", "volume": "sum",
-    }).dropna()
+    daily = (
+        df.resample("1D")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
     return daily
 
 
@@ -39,6 +48,7 @@ def _align_to_hourly(daily_series: pd.Series, hourly_index: pd.Index) -> pd.Seri
 # ============================================================
 # 1. Standard 枢纽点
 # ============================================================
+
 
 def standard_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -56,7 +66,7 @@ def standard_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
         return feats
 
     h = daily["high"]
-    l = daily["low"]
+    l = daily["low"]  # noqa: E741
     c = daily["close"]
 
     pivot = (h + l + c) / 3
@@ -72,9 +82,18 @@ def standard_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
     # 用日波动幅度做归一化
     daily_range = (h - l).replace(0, np.nan).ffill()
 
-    for name, level in [("pivot", pivot), ("r1", r1), ("r2", r2), ("r3", r3),
-                         ("s1", s1), ("s2", s2), ("s3", s3)]:
-        dist = (close_hourly - _align_to_hourly(level, df.index)) / _align_to_hourly(daily_range, df.index)
+    for name, level in [
+        ("pivot", pivot),
+        ("r1", r1),
+        ("r2", r2),
+        ("r3", r3),
+        ("s1", s1),
+        ("s2", s2),
+        ("s3", s3),
+    ]:
+        dist = (close_hourly - _align_to_hourly(level, df.index)) / _align_to_hourly(
+            daily_range, df.index
+        )
         feats[f"pp_std_{name}_dist"] = dist.replace([np.inf, -np.inf], 0).fillna(0)
         # 是否在该位附近 (±0.3个日波动幅度)
         feats[f"pp_std_{name}_touch"] = (np.abs(dist) < 0.3).astype(float)
@@ -90,12 +109,12 @@ def standard_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # 从支撑/阻力反弹的标记
     feats["pp_std_bounce_s1"] = (
-        (close_hourly > _align_to_hourly(s1, df.index)) &
-        (df["low"] < _align_to_hourly(s1, df.index))
+        (close_hourly > _align_to_hourly(s1, df.index))
+        & (df["low"] < _align_to_hourly(s1, df.index))
     ).astype(float)
     feats["pp_std_reject_r1"] = (
-        (close_hourly < _align_to_hourly(r1, df.index)) &
-        (df["high"] > _align_to_hourly(r1, df.index))
+        (close_hourly < _align_to_hourly(r1, df.index))
+        & (df["high"] > _align_to_hourly(r1, df.index))
     ).astype(float)
 
     return feats
@@ -112,6 +131,7 @@ def _pp_standard_names() -> List[str]:
 # ============================================================
 # 2. Fibonacci 枢纽点
 # ============================================================
+
 
 def fibonacci_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -133,15 +153,21 @@ def fibonacci_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
         return feats
 
     h = daily["high"]
-    l = daily["low"]
+    l = daily["low"]  # noqa: E741
     c = daily["close"]
     pivot = (h + l + c) / 3
     rng = h - l
     daily_range = rng.replace(0, np.nan).ffill()
 
     levels = {}
-    for name, ratio in [("r1", 0.382), ("r2", 0.618), ("r3", 1.0),
-                         ("s1", 0.382), ("s2", 0.618), ("s3", 1.0)]:
+    for name, ratio in [
+        ("r1", 0.382),
+        ("r2", 0.618),
+        ("r3", 1.0),
+        ("s1", 0.382),
+        ("s2", 0.618),
+        ("s3", 1.0),
+    ]:
         if name.startswith("r"):
             levels[name] = pivot + ratio * rng
         else:
@@ -149,14 +175,25 @@ def fibonacci_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
 
     close_hourly = df["close"]
     for name, level in levels.items():
-        dist = (close_hourly - _align_to_hourly(level, df.index)) / _align_to_hourly(daily_range, df.index)
+        dist = (close_hourly - _align_to_hourly(level, df.index)) / _align_to_hourly(
+            daily_range, df.index
+        )
         feats[f"pp_fib_{name}_dist"] = dist.replace([np.inf, -np.inf], 0).fillna(0)
         feats[f"pp_fib_{name}_touch"] = (np.abs(dist) < 0.3).astype(float)
 
     feats["pp_fib_position"] = (
-        (close_hourly - _align_to_hourly(levels["s3"], df.index)) /
-        (_align_to_hourly(levels["r3"], df.index) - _align_to_hourly(levels["s3"], df.index) + 1e-10)
-    ).replace([np.inf, -np.inf], 0.5).fillna(0.5).clip(-0.5, 1.5)
+        (
+            (close_hourly - _align_to_hourly(levels["s3"], df.index))
+            / (
+                _align_to_hourly(levels["r3"], df.index)
+                - _align_to_hourly(levels["s3"], df.index)
+                + 1e-10
+            )
+        )
+        .replace([np.inf, -np.inf], 0.5)
+        .fillna(0.5)
+        .clip(-0.5, 1.5)
+    )
 
     return feats
 
@@ -172,6 +209,7 @@ def _pp_fib_names() -> List[str]:
 # ============================================================
 # 3. Camarilla 枢纽点
 # ============================================================
+
 
 def camarilla_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -197,14 +235,22 @@ def camarilla_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
         return feats
 
     h = daily["high"]
-    l = daily["low"]
+    l = daily["low"]  # noqa: E741
     c = daily["close"]
     rng = h - l
     daily_range = rng.replace(0, np.nan).ffill()
 
     levels = {}
-    for name, mult in [("h4", 1.1/2), ("h3", 1.1/4), ("h2", 1.1/6), ("h1", 1.1/12),
-                       ("l1", 1.1/12), ("l2", 1.1/6), ("l3", 1.1/4), ("l4", 1.1/2)]:
+    for name, mult in [
+        ("h4", 1.1 / 2),
+        ("h3", 1.1 / 4),
+        ("h2", 1.1 / 6),
+        ("h1", 1.1 / 12),
+        ("l1", 1.1 / 12),
+        ("l2", 1.1 / 6),
+        ("l3", 1.1 / 4),
+        ("l4", 1.1 / 2),
+    ]:
         if name.startswith("h"):
             levels[name] = c + mult * rng
         else:
@@ -212,23 +258,29 @@ def camarilla_pivot_features(df: pd.DataFrame) -> pd.DataFrame:
 
     close_hourly = df["close"]
     for name, level in levels.items():
-        dist = (close_hourly - _align_to_hourly(level, df.index)) / _align_to_hourly(daily_range, df.index)
+        dist = (close_hourly - _align_to_hourly(level, df.index)) / _align_to_hourly(
+            daily_range, df.index
+        )
         feats[f"pp_cam_{name}_dist"] = dist.replace([np.inf, -np.inf], 0).fillna(0)
         feats[f"pp_cam_{name}_touch"] = (np.abs(dist) < 0.2).astype(float)
 
     # H3/L3 反转信号
     feats["pp_cam_reject_h3"] = (
-        (close_hourly < _align_to_hourly(levels["h3"], df.index)) &
-        (df["high"] > _align_to_hourly(levels["h3"], df.index))
+        (close_hourly < _align_to_hourly(levels["h3"], df.index))
+        & (df["high"] > _align_to_hourly(levels["h3"], df.index))
     ).astype(float)
     feats["pp_cam_bounce_l3"] = (
-        (close_hourly > _align_to_hourly(levels["l3"], df.index)) &
-        (df["low"] < _align_to_hourly(levels["l3"], df.index))
+        (close_hourly > _align_to_hourly(levels["l3"], df.index))
+        & (df["low"] < _align_to_hourly(levels["l3"], df.index))
     ).astype(float)
 
     # H4/L4 突破信号
-    feats["pp_cam_break_h4"] = (close_hourly > _align_to_hourly(levels["h4"], df.index)).astype(float)
-    feats["pp_cam_break_l4"] = (close_hourly < _align_to_hourly(levels["l4"], df.index)).astype(float)
+    feats["pp_cam_break_h4"] = (close_hourly > _align_to_hourly(levels["h4"], df.index)).astype(
+        float
+    )
+    feats["pp_cam_break_l4"] = (close_hourly < _align_to_hourly(levels["l4"], df.index)).astype(
+        float
+    )
 
     return feats
 
@@ -244,6 +296,7 @@ def _pp_camarilla_names() -> List[str]:
 # ============================================================
 # 4. 枢纽点综合引擎
 # ============================================================
+
 
 class PivotPointFeatures:
     """
@@ -270,6 +323,6 @@ class PivotPointFeatures:
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(name="pivot_point", factory=PivotPointFeatures)

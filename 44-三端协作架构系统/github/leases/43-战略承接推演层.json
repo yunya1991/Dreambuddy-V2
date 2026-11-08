@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "module": "43-战略承接推演层",
+  "leases": [
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-P1-03",
+      "session": null,
+      "base_sha": null,
+      "started_at": "2026-11-07T02:49:10+08:00",
+      "ttl_hours": 72,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}

@@ -9,6 +9,7 @@
 
 作为 BaseCollector 子类，既可被 Dispatcher 统一调度，也可独立运行。
 """
+
 from __future__ import annotations
 
 import logging
@@ -47,8 +48,9 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
     # ──────────────────────────────────────────────────────────────────────
     def is_available(self) -> bool:
         try:
+
             from playwright.sync_api import sync_playwright  # noqa: F401
-            import dataclasses as _  # dataview_html_parser 依赖
+
             return True
         except Exception:
             return False
@@ -75,6 +77,7 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
         # dataview_html_parser 与 data_center 目录同级（项目根）
         import sys as _sys
         from pathlib import Path as _Path
+
         _parent = str(_Path(__file__).resolve().parents[3])  # 18-数据获取中心/
         if _parent not in _sys.path:
             _sys.path.insert(0, _parent)
@@ -107,8 +110,9 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
             # stealthy 模式已带内部回退链（stealthy→dynamic→http→static）
             return engine.fetch_html(url, mode="stealthy")
         except Exception as exc:
-            logger.warning("[theblockbeats] Scrapling 渲染异常: %s: %s",
-                           type(exc).__name__, str(exc)[:120])
+            logger.warning(
+                "[theblockbeats] Scrapling 渲染异常: %s: %s", type(exc).__name__, str(exc)[:120]
+            )
             return ""
 
     # ──────────────────────────────────────────────────────────────────────
@@ -130,8 +134,9 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
                     )
                     page = ctx.new_page()
                     try:
-                        page.goto(url, wait_until="domcontentloaded",
-                                  timeout=self._render_timeout_ms)
+                        page.goto(
+                            url, wait_until="domcontentloaded", timeout=self._render_timeout_ms
+                        )
                     except Exception:
                         # domcontentloaded 超时不致命（律动服务器慢），继续等 AJAX
                         pass
@@ -159,7 +164,8 @@ class TheBlockBeatsDataviewCollector(BaseCollector):
 #  独立运行入口：python -m data_center.collectors.news.theblockbeats_dataview
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":  # pragma: no cover
-    import json, sys
+    import json
+    import sys
 
     col = TheBlockBeatsDataviewCollector()
     if not col.is_available():
@@ -169,10 +175,13 @@ if __name__ == "__main__":  # pragma: no cover
     recs = col.fetch()
     print(f"[✓] 采集完成，返回 {len(recs)} 条 DataRecord")
     for r in recs:
-        line = json.dumps({
-            "source": r.source,
-            "category": r.category,
-            "sub_category": r.sub_category,
-            "metrics": r.metrics,
-        }, ensure_ascii=False)
+        line = json.dumps(
+            {
+                "source": r.source,
+                "category": r.category,
+                "sub_category": r.sub_category,
+                "metrics": r.metrics,
+            },
+            ensure_ascii=False,
+        )
         print("  -", line[:240])

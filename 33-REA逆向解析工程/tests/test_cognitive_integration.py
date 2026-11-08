@@ -2,6 +2,7 @@
 
 测试策略：验证分析结果到认知记忆的格式转换和 record 参数准备。
 """
+
 import os
 import sys
 import tempfile
@@ -9,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.cognitive_integration import (
+from core.cognitive_integration import (  # noqa: I001
     prepare_memory_content,
     prepare_record_params,
     CognitiveIntegration,
@@ -20,9 +21,7 @@ from core.investigation_workflow import investigate
 def _get_sample_investigation():
     """获取一个样本调查结果用于测试。"""
     with tempfile.TemporaryDirectory() as d:
-        Path(os.path.join(d, "main.py")).write_text(
-            "def main():\n    return 42\n"
-        )
+        Path(os.path.join(d, "main.py")).write_text("def main():\n    return 42\n")
         result = investigate(d)
     return result
 
@@ -82,9 +81,7 @@ def test_prepare_record_params_tags_includes_rea():
 def test_cognitive_integration_class():
     """RED: CognitiveIntegration 类应可用。"""
     with tempfile.TemporaryDirectory() as d:
-        Path(os.path.join(d, "main.py")).write_text(
-            "def main():\n    return 42\n"
-        )
+        Path(os.path.join(d, "main.py")).write_text("def main():\n    return 42\n")
         investigation = investigate(d)
         ci = CognitiveIntegration()
         params = ci.to_record_params(investigation)
@@ -115,6 +112,5 @@ def test_cognitive_integration_includes_phases():
     # 应提及至少一个阶段
     assert any(
         phase in content.lower()
-        for phase in ("locate", "trace", "reduce", "annotate",
-                       "定位", "追踪", "还原", "标注")
+        for phase in ("locate", "trace", "reduce", "annotate", "定位", "追踪", "还原", "标注")
     )

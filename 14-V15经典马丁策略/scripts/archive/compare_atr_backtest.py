@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """ATR动态止盈对比回测脚本 — 对比 ATR开启 vs ATR关闭"""
+
 import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent
 sys.path.insert(0, str(BASE_DIR / "core"))
 
-from v15_backtest import run_backtest, fetch_klines
+from v15_backtest import fetch_klines, run_backtest  # noqa: E402
 
 coins = ["BTC", "ETH", "SOL", "ARB", "OP", "UNI"]
 limit = 1500
@@ -35,8 +36,10 @@ for coin in coins:
 print("\n" + "=" * 90)
 print("  📊 ATR动态止盈对比汇总")
 print("=" * 90)
-print(f"  {'币种':>6}  {'ATR':>4}  {'总收益':>10}  {'交易数':>6}  {'胜率':>8}  {'盈亏比':>8}  "
-      f"{'最大回撤':>10}  {'夏普':>8}  {'连亏':>5}")
+print(
+    f"  {'币种':>6}  {'ATR':>4}  {'总收益':>10}  {'交易数':>6}  {'胜率':>8}  {'盈亏比':>8}  "
+    f"{'最大回撤':>10}  {'夏普':>8}  {'连亏':>5}"
+)
 print("-" * 90)
 
 for coin, r_off, r_on in all_results:
@@ -45,9 +48,11 @@ for coin, r_off, r_on in all_results:
             print(f"  {coin:>6}  {label:>4}  ERROR: {r['error']}")
             continue
         m = r["metrics"]
-        print(f"  {coin:>6}  {label:>4}  {m['total_return_pct']:>+8.2f}%  {m['total_trades']:>6}  "
-              f"{m['win_rate']*100:>7.2f}%  {m['profit_factor']:>8.2f}  "
-              f"{m['max_drawdown_pct']:>9.2f}%  {m['sharpe_ratio']:>8.4f}  {m['max_consecutive_losses']:>5}")
+        print(
+            f"  {coin:>6}  {label:>4}  {m['total_return_pct']:>+8.2f}%  {m['total_trades']:>6}  "
+            f"{m['win_rate']*100:>7.2f}%  {m['profit_factor']:>8.2f}  "
+            f"{m['max_drawdown_pct']:>9.2f}%  {m['sharpe_ratio']:>8.4f}  {m['max_consecutive_losses']:>5}"
+        )
     print("-" * 90)
 
 # 总结
@@ -62,5 +67,7 @@ for coin, r_off, r_on in all_results:
     wr_diff = (m_on["win_rate"] - m_off["win_rate"]) * 100
     dd_diff = m_on["max_drawdown_pct"] - m_off["max_drawdown_pct"]
     status = "✅ 改善" if ret_diff > 0 else "❌ 变差" if ret_diff < -0.5 else "➡️ 持平"
-    print(f"  {coin:>6}: 收益{ret_diff:>+7.2f}%  胜率{wr_diff:>+6.2f}%  回撤{dd_diff:>+6.2f}%  {status}")
+    print(
+        f"  {coin:>6}: 收益{ret_diff:>+7.2f}%  胜率{wr_diff:>+6.2f}%  回撤{dd_diff:>+6.2f}%  {status}"
+    )
 print("  " + "-" * 60)

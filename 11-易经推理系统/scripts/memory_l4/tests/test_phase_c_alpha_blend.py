@@ -13,6 +13,7 @@
   • map_sector_weights 同样支持
   • alpha_blend 超出 [0,1] 被 clip
 """
+
 from __future__ import annotations
 
 import sys
@@ -24,12 +25,12 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2.parameter_mapper import ParameterMapper
-
+from bcrm2.parameter_mapper import ParameterMapper  # noqa: E402
 
 # ================================================================
 # 测试 fixtures
 # ================================================================
+
 
 @pytest.fixture
 def mapper() -> ParameterMapper:
@@ -48,6 +49,7 @@ _SECTOR_BETAS = {
 # ================================================================
 # T_C1: ParameterMapper α blend 增强
 # ================================================================
+
 
 class TestAlphaBlend:
     """验证 ParameterMapper 的 α blend 功能。"""
@@ -101,9 +103,9 @@ class TestAlphaBlend:
         # alpha=0 → 与原版一致
         r_original = mapper.map_sector_weights(L, T, C, _SECTOR_BETAS)
         r_blend = mapper.map_sector_weights(
-            L, T, C, _SECTOR_BETAS,
-            forecast_L=3.0, forecast_T=-1.0, alpha_blend=0.0
+            L, T, C, _SECTOR_BETAS, forecast_L=3.0, forecast_T=-1.0, alpha_blend=0.0
         )
+
         # 兼容新结构 {weights, sector_tp_mult, sector_sl_mult}
         def _w(d):
             return d["weights"] if (isinstance(d, dict) and "weights" in d) else d
@@ -118,9 +120,7 @@ class TestAlphaBlend:
         """T_C1.6: alpha_blend 超出 [0,1] 被 clip。"""
         L, T, C = 2.0, 1.0, 0.8
         # alpha=-0.5 → clip 到 0.0 → 与原版一致
-        result_neg = mapper.map_global_parameters(
-            L, T, C, forecast_L=3.0, alpha_blend=-0.5
-        )
+        result_neg = mapper.map_global_parameters(L, T, C, forecast_L=3.0, alpha_blend=-0.5)
         result_zero = mapper.map_global_parameters(L, T, C)
         assert result_neg == result_zero
 

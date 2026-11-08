@@ -27,14 +27,12 @@ Dream OS 评估记忆系统 (EvaluationMemory)
 from __future__ import annotations
 
 import json
-import os
 import logging
-import math
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta
-from collections import defaultdict, deque
+import os
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -43,16 +41,18 @@ logger = logging.getLogger(__name__)
 # 数据类型定义
 # ============================================================
 
+
 @dataclass
 class ShortTermMemory:
     """L0 短期记忆 - 最近交易的即时反馈"""
+
     recent_trades: List[Dict[str, Any]] = field(default_factory=list)
     max_size: int = 100
 
     def add_trade(self, trade: Dict[str, Any]) -> None:
         self.recent_trades.append(trade)
         if len(self.recent_trades) > self.max_size:
-            self.recent_trades = self.recent_trades[-self.max_size:]
+            self.recent_trades = self.recent_trades[-self.max_size :]
 
     def get_recent(self, n: int = 10) -> List[Dict[str, Any]]:
         return self.recent_trades[-n:]
@@ -67,6 +67,7 @@ class ShortTermMemory:
 @dataclass
 class ModuleCapabilityMemory:
     """模块能力记忆 - L1中期记忆的一部分"""
+
     module_id: str
     module_name: str
     total_trades: int = 0
@@ -85,6 +86,7 @@ class ModuleCapabilityMemory:
 @dataclass
 class ScenarioOrchestrationMemory:
     """场景编排记忆 - L1中期记忆的一部分"""
+
     scenario_id: str
     best_pattern: str
     best_nodes: List[str]
@@ -104,6 +106,7 @@ class ScenarioOrchestrationMemory:
 @dataclass
 class LessonMemory:
     """L2 长期记忆 - 经验教训"""
+
     lesson_id: str
     title: str
     description: str
@@ -127,6 +130,7 @@ class LessonMemory:
 @dataclass
 class MetaMemory:
     """L3 元记忆 - 关于学习的记忆"""
+
     evaluation_strategies: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     trigger_effectiveness: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     learning_curve: List[Dict[str, Any]] = field(default_factory=list)
@@ -270,19 +274,14 @@ class EvaluationMemory:
             "short_term": self.short_term.to_dict(),
             "mid_term": {
                 "module_capabilities": {
-                    mid: mem.to_dict()
-                    for mid, mem in self.module_capabilities.items()
+                    mid: mem.to_dict() for mid, mem in self.module_capabilities.items()
                 },
                 "scenario_orchestrations": {
-                    sid: mem.to_dict()
-                    for sid, mem in self.scenario_orchestrations.items()
+                    sid: mem.to_dict() for sid, mem in self.scenario_orchestrations.items()
                 },
             },
             "long_term": {
-                "lessons": {
-                    lid: lesson.to_dict()
-                    for lid, lesson in self.lessons.items()
-                },
+                "lessons": {lid: lesson.to_dict() for lid, lesson in self.lessons.items()},
             },
             "meta": self.meta.to_dict(),
         }
@@ -321,7 +320,7 @@ class EvaluationMemory:
             学习摘要
         """
         self._data["total_evaluations"] += 1
-        now = datetime.now().isoformat()
+        now = datetime.now().isoformat()  # noqa: F841
 
         # 1. 更新模块能力记忆
         module_updates = self._update_module_capabilities(
@@ -337,11 +336,14 @@ class EvaluationMemory:
         new_lessons = self._extract_lessons(evaluation_report)
 
         # 4. 更新元记忆（L3）
-        self._update_meta_memory(evaluation_report, {
-            "module_updates": len(module_updates),
-            "scenario_updates": len(scenario_updates),
-            "new_lessons": len(new_lessons),
-        })
+        self._update_meta_memory(
+            evaluation_report,
+            {
+                "module_updates": len(module_updates),
+                "scenario_updates": len(scenario_updates),
+                "new_lessons": len(new_lessons),
+            },
+        )
 
         # 5. 记录学习曲线
         self._record_learning_curve(evaluation_report)
@@ -399,7 +401,9 @@ class EvaluationMemory:
 
                 old_win_rate = existing.weighted_win_rate
                 new_win_rate = cap_data.get("success_rate", 0.5)
-                updated_win_rate = (old_win_rate * old_weight + new_win_rate * new_weight) / total_weight
+                updated_win_rate = (
+                    old_win_rate * old_weight + new_win_rate * new_weight
+                ) / total_weight
 
                 # 判断趋势
                 if updated_win_rate > old_win_rate + 0.02:
@@ -424,9 +428,12 @@ class EvaluationMemory:
                     else:
                         old_p = existing.scenario_performance[scenario]
                         old_p["win_rate"] = round(
-                            (old_p.get("win_rate", 0.5) * old_weight +
-                             perf.get("win_rate", 0.5) * new_weight) / total_weight,
-                            4
+                            (
+                                old_p.get("win_rate", 0.5) * old_weight
+                                + perf.get("win_rate", 0.5) * new_weight
+                            )
+                            / total_weight,
+                            4,
                         )
 
             updated.append(mid)
@@ -451,14 +458,18 @@ class EvaluationMemory:
                     best_nodes=new_nodes,
                     score=new_score,
                     sample_count=10,
-                    confidence="high" if new_score > 0.7 else "medium" if new_score > 0.5 else "low",
+                    confidence=(
+                        "high" if new_score > 0.7 else "medium" if new_score > 0.5 else "low"
+                    ),
                     metrics=rec.get("evidence", {}).get("metrics", {}),
-                    pattern_history=[{
-                        "pattern": new_pattern,
-                        "nodes": new_nodes,
-                        "score": new_score,
-                        "timestamp": now,
-                    }],
+                    pattern_history=[
+                        {
+                            "pattern": new_pattern,
+                            "nodes": new_nodes,
+                            "score": new_score,
+                            "timestamp": now,
+                        }
+                    ],
                     last_updated=now,
                     inferred=rec.get("evidence", {}).get("memory_best_pattern", "") == "",
                     inferred_from=rec.get("evidence", {}).get("memory_best_pattern", None),
@@ -469,19 +480,23 @@ class EvaluationMemory:
                 # 如果新评分显著更好（>5%提升），更新
                 if new_score > existing.score * 1.05:
                     # 记录历史
-                    existing.pattern_history.append({
-                        "pattern": existing.best_pattern,
-                        "nodes": existing.best_nodes,
-                        "score": existing.score,
-                        "timestamp": existing.last_updated,
-                    })
+                    existing.pattern_history.append(
+                        {
+                            "pattern": existing.best_pattern,
+                            "nodes": existing.best_nodes,
+                            "score": existing.score,
+                            "timestamp": existing.last_updated,
+                        }
+                    )
                     if len(existing.pattern_history) > 10:
                         existing.pattern_history = existing.pattern_history[-10:]
 
                     existing.best_pattern = new_pattern
                     existing.best_nodes = new_nodes
                     existing.score = round(new_score, 4)
-                    existing.confidence = "high" if new_score > 0.7 else "medium" if new_score > 0.5 else "low"
+                    existing.confidence = (
+                        "high" if new_score > 0.7 else "medium" if new_score > 0.5 else "low"
+                    )
                     existing.last_updated = now
                     existing.sample_count = min(100, existing.sample_count + 10)
                     existing.metrics = rec.get("evidence", {}).get("metrics", existing.metrics)
@@ -549,8 +564,10 @@ class EvaluationMemory:
                     lesson.confidence = round(min(0.95, lesson.confidence + ratio * 0.1), 3)
 
                     # 验证次数足够 → 晋升为 verified
-                    if (lesson.status == "candidate" and
-                            lesson.evidence_count >= self.LESSON_VERIFICATION_THRESHOLD):
+                    if (
+                        lesson.status == "candidate"
+                        and lesson.evidence_count >= self.LESSON_VERIFICATION_THRESHOLD
+                    ):
                         lesson.status = "verified"
                         lesson.last_verified_at = now
                         logger.info(f"教训晋升为 verified: {lesson_id}")
@@ -585,55 +602,57 @@ class EvaluationMemory:
             "ENTRY_SIGNAL": (
                 "入场信号质量不足",
                 "入场信号置信度偏低，导致大量亏损交易",
-                "建议提高 A4 门禁阈值，或优化 C1/C2 入场信号生成逻辑"
+                "建议提高 A4 门禁阈值，或优化 C1/C2 入场信号生成逻辑",
             ),
             "EXIT_SIGNAL": (
                 "离场信号质量问题",
                 "离场时机把握不好，导致盈利回吐或亏损扩大",
-                "建议优化 A9/C5 离场系统，增加动态止损止盈机制"
+                "建议优化 A9/C5 离场系统，增加动态止损止盈机制",
             ),
             "TREND_FILTER": (
                 "趋势过滤失效",
                 "在震荡市场中趋势判断错误",
-                "建议优化 A0 矛盾分析，增加趋势确认机制，震荡市减少交易频率"
+                "建议优化 A0 矛盾分析，增加趋势确认机制，震荡市减少交易频率",
             ),
             "SIGNAL_QUALITY": (
                 "信号质量评估不足",
                 "信号强度判断不准确，弱信号也入场",
-                "建议优化 A2/A7 信号质量评估，提高信号过滤标准"
+                "建议优化 A2/A7 信号质量评估，提高信号过滤标准",
             ),
             "MARKET_RECOGNITION": (
                 "市场状态识别错误",
                 "对当前市场环境判断错误",
-                "建议优化 A6 市态监控，增加多维度市场识别指标"
+                "建议优化 A6 市态监控，增加多维度市场识别指标",
             ),
             "STOP_LOSS": (
                 "止损设置不合理",
                 "止损触发过于频繁或止损幅度过大",
-                "建议优化 A3 止损策略，使用 ATR 动态止损，根据波动率调整"
+                "建议优化 A3 止损策略，使用 ATR 动态止损，根据波动率调整",
             ),
             "TAKE_PROFIT": (
                 "止盈设置不合理",
                 "止盈过早导致盈利不足，或过晚导致回吐",
-                "建议优化 A3 止盈策略，使用移动止盈或分批止盈"
+                "建议优化 A3 止盈策略，使用移动止盈或分批止盈",
             ),
             "VOLATILITY": (
                 "波动率估计偏差",
                 "对市场波动率估计不准确",
-                "建议优化 C3 波动率分析，使用多周期波动率综合判断"
+                "建议优化 C3 波动率分析，使用多周期波动率综合判断",
             ),
             "MOMENTUM": (
                 "动量判断错误",
                 "动量指标判断与实际走势相反",
-                "建议优化 C2 动量分析，增加多时间帧动量确认"
+                "建议优化 C2 动量分析，增加多时间帧动量确认",
             ),
             "CORRELATION": (
                 "多资产相关性未考虑",
                 "未考虑资产间相关性，导致风险集中",
-                "建议增加 F2 资金流分析中的相关性分析"
+                "建议增加 F2 资金流分析中的相关性分析",
             ),
         }
-        return lessons_map.get(reason, (f"{reason} 问题", f"{reason} 导致亏损", f"优化 {reason} 相关逻辑"))
+        return lessons_map.get(
+            reason, (f"{reason} 问题", f"{reason} 导致亏损", f"优化 {reason} 相关逻辑")
+        )
 
     def _get_related_modules(self, reason: str) -> List[str]:
         """获取与亏损原因相关的模块"""
@@ -651,10 +670,13 @@ class EvaluationMemory:
         }
         return relation_map.get(reason, [])
 
-    def get_lessons(self, category: Optional[str] = None,
-                    min_confidence: float = 0.0,
-                    status: Optional[str] = None,
-                    limit: int = 20) -> List[LessonMemory]:
+    def get_lessons(
+        self,
+        category: Optional[str] = None,
+        min_confidence: float = 0.0,
+        status: Optional[str] = None,
+        limit: int = 20,
+    ) -> List[LessonMemory]:
         """获取经验教训
 
         Args:
@@ -669,13 +691,13 @@ class EvaluationMemory:
         lessons = list(self.lessons.values())
 
         if category:
-            lessons = [l for l in lessons if l.category == category]
+            lessons = [l for l in lessons if l.category == category]  # noqa: E741
         if status:
-            lessons = [l for l in lessons if l.status == status]
+            lessons = [l for l in lessons if l.status == status]  # noqa: E741
         if min_confidence > 0:
-            lessons = [l for l in lessons if l.confidence >= min_confidence]
+            lessons = [l for l in lessons if l.confidence >= min_confidence]  # noqa: E741
 
-        lessons.sort(key=lambda l: (-l.confidence, -l.evidence_count))
+        lessons.sort(key=lambda l: (-l.confidence, -l.evidence_count))  # noqa: E741
         return lessons[:limit]
 
     # ── L3: 元记忆 ─────────────────────────────────────────
@@ -703,16 +725,19 @@ class EvaluationMemory:
 
     def _record_learning_curve(self, report: Dict[str, Any]) -> None:
         """记录学习曲线数据点"""
-        self.meta.learning_curve.append({
-            "timestamp": datetime.now().isoformat(),
-            "evaluations": self._data["total_evaluations"],
-            "trades": self._data["total_trades_recorded"],
-            "verified_lessons": sum(1 for l in self.lessons.values() if l.status == "verified"),
-            "high_conf_scenarios": sum(
-                1 for s in self.scenario_orchestrations.values()
-                if s.confidence == "high"
-            ),
-        })
+        self.meta.learning_curve.append(
+            {
+                "timestamp": datetime.now().isoformat(),
+                "evaluations": self._data["total_evaluations"],
+                "trades": self._data["total_trades_recorded"],
+                "verified_lessons": sum(
+                    1 for l in self.lessons.values() if l.status == "verified"  # noqa: E741
+                ),  # noqa: E741
+                "high_conf_scenarios": sum(
+                    1 for s in self.scenario_orchestrations.values() if s.confidence == "high"
+                ),
+            }
+        )
 
         if len(self.meta.learning_curve) > 100:
             self.meta.learning_curve = self.meta.learning_curve[-100:]
@@ -733,11 +758,11 @@ class EvaluationMemory:
 
         # 推荐策略
         strategy = {
-            "recommended_triggers": [t for t, _ in trigger_stats[:3]] if trigger_stats else ["scheduled", "loss"],
+            "recommended_triggers": (
+                [t for t, _ in trigger_stats[:3]] if trigger_stats else ["scheduled", "loss"]
+            ),
             "optimal_interval_hours": 24,  # 默认24小时
-            "priority_order": [
-                "loss", "drawdown", "manual", "market", "threshold", "scheduled"
-            ],
+            "priority_order": ["loss", "drawdown", "manual", "market", "threshold", "scheduled"],
         }
 
         return strategy
@@ -831,19 +856,20 @@ class EvaluationMemory:
             "module_count": len(self.module_capabilities),
             "scenario_count": len(self.scenario_orchestrations),
             "lesson_count": len(self.lessons),
-            "verified_lessons": sum(1 for l in self.lessons.values() if l.status == "verified"),
-            "candidate_lessons": sum(1 for l in self.lessons.values() if l.status == "candidate"),
+            "verified_lessons": sum(
+                1 for l in self.lessons.values() if l.status == "verified"  # noqa: E741
+            ),  # noqa: E741
+            "candidate_lessons": sum(
+                1 for l in self.lessons.values() if l.status == "candidate"  # noqa: E741
+            ),  # noqa: E741
             "high_conf_scenarios": sum(
-                1 for s in self.scenario_orchestrations.values()
-                if s.confidence == "high"
+                1 for s in self.scenario_orchestrations.values() if s.confidence == "high"
             ),
             "improving_modules": sum(
-                1 for m in self.module_capabilities.values()
-                if m.trend == "improving"
+                1 for m in self.module_capabilities.values() if m.trend == "improving"
             ),
             "declining_modules": sum(
-                1 for m in self.module_capabilities.values()
-                if m.trend == "declining"
+                1 for m in self.module_capabilities.values() if m.trend == "declining"
             ),
         }
 

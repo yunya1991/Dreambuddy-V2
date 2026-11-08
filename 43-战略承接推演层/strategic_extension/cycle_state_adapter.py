@@ -25,10 +25,15 @@ import json
 import os
 from typing import Any, Dict, Optional
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 40 系统产出物路径（与 23 系统 macro_constraint_adapter 保持一致）
-_CYCLE_STATE_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json"
-_FUND_FLOW_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/fund_flow.json"
-_WASHOUT_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/washout_verdicts.json"
+_CYCLE_STATE_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
+_FUND_FLOW_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "fund_flow.json")
+_WASHOUT_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "washout_verdicts.json")
 
 # 产出物最大容忍时效（秒）：超过则视为过期 fail-open
 _MAX_AGE_SECONDS = 7 * 24 * 3600
@@ -52,7 +57,7 @@ _SECTOR_REGIME_MAP = {
 
 # 洗盘判定 → 地维后置层 5 态映射（unknown 不注入，保持原 fallback）
 _WASHOUT_REGIME_MAP = {
-    "washout": "ranging",      # 洗盘持有：震荡整固，中性
+    "washout": "ranging",  # 洗盘持有：震荡整固，中性
     "weakness": "trend_down",  # 真弱势：下降趋势
 }
 
@@ -97,6 +102,7 @@ def _is_fresh(payload: Dict[str, Any]) -> bool:
     """检查 generated_at 时效，超过 _MAX_AGE_SECONDS 视为过期。"""
     try:
         from datetime import datetime, timezone
+
         gen = payload.get("generated_at")
         if not gen:
             return False
@@ -185,8 +191,11 @@ def build_bridge_inputs(
             cftc = smart.get("cftc_btc") or {}
             noncomm_net = cftc.get("noncomm_net")
             open_interest = cftc.get("open_interest")
-            if (isinstance(noncomm_net, (int, float))
-                    and isinstance(open_interest, (int, float)) and open_interest > 0):
+            if (
+                isinstance(noncomm_net, (int, float))
+                and isinstance(open_interest, (int, float))
+                and open_interest > 0
+            ):
                 # 净多占比 → [0,1] 情绪分：0 占比=0.5 中性，±25% 占比打满
                 ratio = float(noncomm_net) / float(open_interest)
                 out["policy_sentiment_score"] = round(max(0.0, min(1.0, 0.5 + ratio * 2.0)), 4)

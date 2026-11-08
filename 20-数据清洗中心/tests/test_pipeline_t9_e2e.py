@@ -10,6 +10,7 @@ T9-4 注入脏 batch（全空 records）→ Gate FAIL → enforce=True 时抛 Qu
 T9-5 注入中间 cleaner 抛 Exception → fail_open=True 返回 gate_passed=False + 原始DF作为兜底；fail_open=False 抛
 T9-6 trace.actions 覆盖 4 个 Cleaner + QualityGate（共5段痕迹），顺序正确
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -29,15 +30,19 @@ def _ohlcv_btc(ts_shift_min: int = 5, with_hours: int = 6) -> DataRecord:
     values_close = [100.0 + i for i in range(with_hours)]
     volume = [10 * (i + 1) for i in range(with_hours)]
     return DataRecord(
-        source="yfinance", category="finance", sub_category="ohlcv",
+        source="yfinance",
+        category="finance",
+        sub_category="ohlcv",
         timestamp=_iso(ts),
         metrics={"asset": "BTC", "pair": "BTC-USD"},
         events=[],
-        timeseries=pd.DataFrame({
-            "timestamp": [_iso(t) for t in rows],
-            "close": values_close,
-            "volume": volume,
-        }).to_dict(orient="records"),
+        timeseries=pd.DataFrame(
+            {
+                "timestamp": [_iso(t) for t in rows],
+                "close": values_close,
+                "volume": volume,
+            }
+        ).to_dict(orient="records"),
         raw={},
     )
 
@@ -82,8 +87,12 @@ class TestPipeline:
         total_imputed = silver.trace.total_imputed
         assert total_imputed >= 2, f"总插补计数应≥2: {total_imputed}"
         # 至少有一个 Cleaner 贡献了 imputed（DedupAlign 或 MissingImputer）
-        imputed_steps = [(a.step, a.imputed_count) for a in silver.trace.actions if a.imputed_count > 0]
-        assert len(imputed_steps) >= 1, f"NaN未被任何步骤处理: trace={[a.note for a in silver.trace.actions]}"
+        imputed_steps = [
+            (a.step, a.imputed_count) for a in silver.trace.actions if a.imputed_count > 0
+        ]
+        assert (
+            len(imputed_steps) >= 1
+        ), f"NaN未被任何步骤处理: trace={[a.note for a in silver.trace.actions]}"
 
     # T9-3 IQR 尾部异常值 → Outlier3L clip
     def test_t9_3_inject_outlier_clipped_then_pass(self) -> None:
@@ -135,6 +144,7 @@ class TestPipeline:
         # 通过 monkey-patch DedupAlignCleaner.clean 强制抛
         from data_cleaning.cleaners.dedup_align import DedupAlignCleaner
         from data_cleaning.pipeline import DataCleaningPipeline
+
         orig = DedupAlignCleaner.clean
 
         def boom(self, df, trace, **kw):  # noqa: D401
@@ -175,8 +185,13 @@ class TestPipeline:
         silver = pipe.clean([_ohlcv_btc()], source="yfinance", category="finance")
         steps = [a.step for a in silver.trace.actions]
         # 含 4 Cleaner + QualityGate
-        for must in ["DedupAlignCleaner", "Outlier3LFilter", "MissingImputer",
-                      "UnitNormalizer", "QualityGate"]:
+        for must in [
+            "DedupAlignCleaner",
+            "Outlier3LFilter",
+            "MissingImputer",
+            "UnitNormalizer",
+            "QualityGate",
+        ]:
             assert must in steps, f"缺失 {must} 步骤: {steps}"
         # 顺序：Cleaner 在 Gate 前
         assert steps.index("QualityGate") > steps.index("UnitNormalizer")

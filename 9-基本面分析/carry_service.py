@@ -1,6 +1,5 @@
-from pathlib import Path
 import runpy
-
+from pathlib import Path
 
 _CURRENT_FILE = Path(__file__).resolve()
 _SOURCE_FILE = _CURRENT_FILE.parent / "backend" / "src" / "carry_service.py"

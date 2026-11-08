@@ -13,6 +13,7 @@
 - 仲裁规则：≥2 票同向 force_close + 加权胜率>0.5
 - 贝叶斯升级阈值 ≥30 样本/voter
 """
+
 from __future__ import annotations
 
 import sys
@@ -31,6 +32,7 @@ if str(REPO) not in sys.path:
 # 模块结构测试（RED 阶段，断言 ModuleNotFoundError）
 # ============================================================================
 
+
 class TestSoftVoteModuleStructure:
     """模块可导入性测试"""
 
@@ -40,6 +42,7 @@ class TestSoftVoteModuleStructure:
             TimeoutVoter,
             VoteTicket,
         )
+
         assert TimeoutVoter is not None
         assert VoteTicket is not None
 
@@ -48,6 +51,7 @@ class TestSoftVoteModuleStructure:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         assert TimeoutVoteArbitrator is not None
 
     def test_four_voters_importable(self):
@@ -58,6 +62,7 @@ class TestSoftVoteModuleStructure:
             VCPVoter_A,
             WyckoffSupportVoter_C,
         )
+
         assert VCPVoter_A is not None
         assert ATRStandardVoter_B is not None
         assert WyckoffSupportVoter_C is not None
@@ -89,6 +94,7 @@ class TestSoftVoteModuleStructure:
 # 四方案独立测试
 # ============================================================================
 
+
 class TestVCPVoterA:
     """方案A: 结构化止损（Minervini VCP）"""
 
@@ -97,6 +103,7 @@ class TestVCPVoterA:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.voters_a_d import (
             VCPVoter_A,
         )
+
         return VCPVoter_A()
 
     def test_voter_a_vcp_break_below_swing_low_force_close(self, voter_a):
@@ -150,6 +157,7 @@ class TestATRStandardVoterB:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.voters_a_d import (
             ATRStandardVoter_B,
         )
+
         return ATRStandardVoter_B()
 
     def test_voter_b_atr_no_progress_force_close(self, voter_b):
@@ -183,6 +191,7 @@ class TestWyckoffSupportVoterC:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.voters_a_d import (
             WyckoffSupportVoter_C,
         )
+
         return WyckoffSupportVoter_C()
 
     def test_voter_c_above_support_hold_and_lower_sl(self, voter_c):
@@ -222,6 +231,7 @@ class TestMurphyDecayVoterD:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.voters_a_d import (
             MurphyDecayVoter_D,
         )
+
         return MurphyDecayVoter_D()
 
     def test_voter_d_decay_0_12h_1_5pct_hold(self, voter_d):
@@ -250,6 +260,7 @@ class TestMurphyDecayVoterD:
 # FAIL-OPEN 测试
 # ============================================================================
 
+
 class TestVoterFailOpen:
     """Voter 层 FAIL-OPEN"""
 
@@ -258,6 +269,7 @@ class TestVoterFailOpen:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.voters_a_d import (
             VCPVoter_A,
         )
+
         voter = VCPVoter_A()
         ctx = {"current_price": 1280.0}  # 缺 recent_swing_low
         ticket = voter.evaluate(ctx)
@@ -268,6 +280,7 @@ class TestVoterFailOpen:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.voters_a_d import (
             ATRStandardVoter_B,
         )
+
         voter = ATRStandardVoter_B()
         # 传非数值触发异常
         ctx = {"upl_ratio": "not_a_number", "atr_daily": 0.025}
@@ -279,6 +292,7 @@ class TestVoterFailOpen:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator()
         # 空 context → 所有 voter FAIL-OPEN
         decision = arb.arbitrate({})
@@ -289,6 +303,7 @@ class TestVoterFailOpen:
 # 仲裁层测试
 # ============================================================================
 
+
 class TestArbitrator:
     """软投票仲裁层"""
 
@@ -297,6 +312,7 @@ class TestArbitrator:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         return TimeoutVoteArbitrator()
 
     def test_two_votes_force_close_executes(self, arbitrator):
@@ -386,6 +402,7 @@ class TestArbitrator:
 # 冷启动期测试
 # ============================================================================
 
+
 class TestColdStart:
     """冷启动期 4H 均等权重"""
 
@@ -394,6 +411,7 @@ class TestColdStart:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         return TimeoutVoteArbitrator()
 
     def test_cold_start_equal_weights(self, arbitrator):
@@ -420,18 +438,20 @@ class TestColdStart:
         decision = arbitrator.arbitrate(ctx)
         # 2 票 force_close，加权胜率=0.5 不>0.5 → 不 force_close
         if decision is not None:
-            assert decision.action != "force_close", (
-                "冷启动期 2 票 force_close 不应执行（需 ≥3 票）"
-            )
+            assert (
+                decision.action != "force_close"
+            ), "冷启动期 2 票 force_close 不应执行（需 ≥3 票）"
 
     def test_after_cold_start_uses_real_weights(self):
         """4H后 + ≥30样本 → 用真实胜率权重"""
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator()
         # 手动设置冷启动时间戳为 5 小时前（已过冷启动期）
         import time as _t
+
         arb._cold_start_ts = _t.time() - 5 * 3600
         # 注入 30 样本
         for _ in range(30):
@@ -450,6 +470,7 @@ class TestColdStart:
 # 贝叶斯升级测试
 # ============================================================================
 
+
 class TestBayesianUpgrade:
     """贝叶斯权重升级"""
 
@@ -458,6 +479,7 @@ class TestBayesianUpgrade:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         persist = tmp_path / "soft_vote.jsonl"
         arb = TimeoutVoteArbitrator(persist_path=persist)
         arb.record_outcome("A", True, "BTC", "force_close")
@@ -470,9 +492,11 @@ class TestBayesianUpgrade:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator(persist_path=tmp_path / "sv.jsonl")
         # 先设置已过冷启动期
         import time as _t
+
         arb._cold_start_ts = _t.time() - 5 * 3600
         # 记录 30 个样本
         for _ in range(30):
@@ -488,6 +512,7 @@ class TestBayesianUpgrade:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         persist = tmp_path / "soft_vote.jsonl"
         arb = TimeoutVoteArbitrator(persist_path=persist)
         arb.record_outcome("A", True, "BTC", "force_close")
@@ -501,6 +526,7 @@ class TestBayesianUpgrade:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         persist = tmp_path / "soft_vote.jsonl"
         # 第一次实例：记录样本
         arb1 = TimeoutVoteArbitrator(persist_path=persist)
@@ -518,6 +544,7 @@ class TestBayesianUpgrade:
 # 冷却期测试
 # ============================================================================
 
+
 class TestSoftVoteCooldown:
     """软投票冷却期 4H（复用 BCRM 模式）"""
 
@@ -528,6 +555,7 @@ class TestSoftVoteCooldown:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator()
         return EvolutionExitEngine(
             okx_client=None,
@@ -610,6 +638,7 @@ class TestSoftVoteCooldown:
 # 集成测试
 # ============================================================================
 
+
 class TestSoftVoteIntegration:
     """集成测试"""
 
@@ -618,6 +647,7 @@ class TestSoftVoteIntegration:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator()
         # 海力士场景
         ctx = {
@@ -635,15 +665,16 @@ class TestSoftVoteIntegration:
         }
         decision = arb.arbitrate(ctx)
         # 不应 force_close
-        assert decision is None or decision.action != "force_close", (
-            "海力士场景不应被 force_close（支撑位上方 + ATR 标准化未达无进展）"
-        )
+        assert (
+            decision is None or decision.action != "force_close"
+        ), "海力士场景不应被 force_close（支撑位上方 + ATR 标准化未达无进展）"
 
     def test_exit_decision_action_valid(self):
         """仲裁返回的 ExitDecision.action ∈ 合法集合"""
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator()
         ctx = {
             "current_price": 1200.0,
@@ -671,6 +702,7 @@ class TestSoftVoteIntegration:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator()
         ctx = {
             "current_price": 1200.0,
@@ -692,6 +724,7 @@ class TestSoftVoteIntegration:
 # 缺口1: 软投票限定亏损场景（盈利仓跳过3a，走3b换仓）
 # ============================================================================
 
+
 class TestSoftVoteLossOnlyGuard:
     """规则3a 仅对亏损仓生效，盈利仓跳过软投票走3b换仓逻辑"""
 
@@ -701,6 +734,7 @@ class TestSoftVoteLossOnlyGuard:
         from dreambuddy_evolution.engines.exit_engine.timeout_voters.arbitrator import (
             TimeoutVoteArbitrator,
         )
+
         arb = TimeoutVoteArbitrator()
         return EvolutionExitEngine(
             okx_client=None,
@@ -753,7 +787,11 @@ class TestSoftVoteLossOnlyGuard:
         # 亏损仓应进入软投票（可能 hold/adjust_sl_tp/force_close 或 None）
         # 关键是不被 upl_ratio 守卫拦截
         assert decision is None or decision.action in (
-            "hold", "adjust_sl_tp", "force_close", "trailing", "partial_close"
+            "hold",
+            "adjust_sl_tp",
+            "force_close",
+            "trailing",
+            "partial_close",
         )
 
     def test_zero_upl_enters_soft_vote(self, engine_with_arbitrator):
@@ -775,7 +813,11 @@ class TestSoftVoteLossOnlyGuard:
         decision = engine._check_timeout_soft_vote(ctx)
         # upl=0 应进入软投票（不被盈利守卫拦截）
         assert decision is None or decision.action in (
-            "hold", "adjust_sl_tp", "force_close", "trailing", "partial_close"
+            "hold",
+            "adjust_sl_tp",
+            "force_close",
+            "trailing",
+            "partial_close",
         )
 
     def test_profit_with_stronger_signal_routes_to_3b(self, engine_with_arbitrator):
@@ -797,7 +839,9 @@ class TestSoftVoteLossOnlyGuard:
             "r_multiple": 0.0,
             "has_stronger_signal": True,
             "stronger_signal_info": {
-                "coin": "ETH", "direction": "long", "confidence": 0.85,
+                "coin": "ETH",
+                "direction": "long",
+                "confidence": 0.85,
                 "is_opposite": False,
             },
         }
@@ -811,12 +855,14 @@ class TestSoftVoteLossOnlyGuard:
 # 缺口2: TP 时间衰减桥接（exit_engine 感知 tp_decayed_pct）
 # ============================================================================
 
+
 class TestTPDecayBridge:
     """exit_engine 通过 tp_decayed_pct 感知 polling_trader 侧的 TP 衰减"""
 
     @pytest.fixture
     def engine(self):
         from dreambuddy_evolution.engines.exit_engine import EvolutionExitEngine
+
         return EvolutionExitEngine(
             okx_client=None,
             ess_provider=None,
@@ -899,12 +945,14 @@ class TestTPDecayBridge:
 # 缺口3: 信号止盈扩展（盈利+更强信号提前换仓，不限于超时29H）
 # ============================================================================
 
+
 class TestSignalTakeProfitExtension:
     """规则2 扩展：盈利 + 更强信号 → 提前换仓（不限于超时29H）"""
 
     @pytest.fixture
     def engine(self):
         from dreambuddy_evolution.engines.exit_engine import EvolutionExitEngine
+
         return EvolutionExitEngine(
             okx_client=None,
             ess_provider=None,
@@ -931,7 +979,9 @@ class TestSignalTakeProfitExtension:
             "r_multiple": 0.0,
             "has_stronger_signal": True,
             "stronger_signal_info": {
-                "coin": "ETH", "direction": "long", "confidence": 0.85,
+                "coin": "ETH",
+                "direction": "long",
+                "confidence": 0.85,
                 "is_opposite": False,
             },
         }
@@ -980,7 +1030,9 @@ class TestSignalTakeProfitExtension:
             "r_multiple": 0.0,
             "has_stronger_signal": True,
             "stronger_signal_info": {
-                "coin": "ETH", "direction": "long", "confidence": 0.85,
+                "coin": "ETH",
+                "direction": "long",
+                "confidence": 0.85,
                 "is_opposite": False,
             },
         }
@@ -1006,7 +1058,9 @@ class TestSignalTakeProfitExtension:
             "r_multiple": 0.0,
             "has_stronger_signal": True,
             "stronger_signal_info": {
-                "coin": "GOOGL", "direction": "long", "confidence": 0.98,
+                "coin": "GOOGL",
+                "direction": "long",
+                "confidence": 0.98,
                 "is_opposite": False,
             },
         }
@@ -1032,7 +1086,9 @@ class TestSignalTakeProfitExtension:
             "r_multiple": 0.0,
             "has_stronger_signal": True,
             "stronger_signal_info": {
-                "coin": "ETH", "direction": "long", "confidence": 0.95,
+                "coin": "ETH",
+                "direction": "long",
+                "confidence": 0.95,
                 "is_opposite": False,
             },
         }

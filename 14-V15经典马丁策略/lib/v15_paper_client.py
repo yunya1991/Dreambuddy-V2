@@ -17,18 +17,19 @@ OKX 接口兼容的 Paper 执行层。行情读 Hyperliquid 真实数据（hl_da
 硬安全：本客户端无任何真实下单通道——构造真实 OKX/HL 签名请求的能力为零，
 paper 模式下物理不可能误发实盘单。
 """
+
 import fcntl
 import json
 import os
 import time
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 # ── 常量 ────────────────────────────────────────────────────
-SLIPPAGE = 0.0005          # 5 bps 单边滑点
-TAKER_FEE = 0.00045        # HL taker ~0.045%
-FILL_EPS = 1e-12           # 浮点容差
-MAX_FILL_HISTORY = 500     # fills 审计上限
+SLIPPAGE = 0.0005  # 5 bps 单边滑点
+TAKER_FEE = 0.00045  # HL taker ~0.045%
+FILL_EPS = 1e-12  # 浮点容差
+MAX_FILL_HISTORY = 500  # fills 审计上限
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _V15_ROOT = os.path.dirname(_HERE)
@@ -39,14 +40,14 @@ DEFAULT_LEDGER = {
     "created_at": "",
     "updated_at": "",
     "initial_capital_usdt": 260.0,
-    "balance_usdt": 260.0,      # 现金 = 初始资金 + 已实现盈亏 - 累计手续费
+    "balance_usdt": 260.0,  # 现金 = 初始资金 + 已实现盈亏 - 累计手续费
     "fee_paid_usdt": 0.0,
     "realized_pnl_usdt": 0.0,
-    "positions": {},            # coin -> {inst_id,pos_side,pos,avg_px,leverage,opened_at}
-    "pending_orders": {},       # ord_id -> {...}
-    "algo_orders": {},          # algo_id -> {...}
-    "fills": [],                # 成交流水（审计）
-    "closed_trades": [],        # 平仓记录
+    "positions": {},  # coin -> {inst_id,pos_side,pos,avg_px,leverage,opened_at}
+    "pending_orders": {},  # ord_id -> {...}
+    "algo_orders": {},  # algo_id -> {...}
+    "fills": [],  # 成交流水（审计）
+    "closed_trades": [],  # 平仓记录
 }
 
 
@@ -73,6 +74,7 @@ class V15PaperClient:
         }
         # 行情复用 HL 适配器
         from hl_data_adapter import HLDataAdapter
+
         self._data = HLDataAdapter()
         self._sz_decimals: Optional[Dict[str, int]] = None
 
@@ -111,8 +113,7 @@ class V15PaperClient:
 
     # ── 行情 ──────────────────────────────────────────────
 
-    def get_kline(self, inst_id: str = None, bar: str = "1H",
-                  limit: int = 100) -> Dict:
+    def get_kline(self, inst_id: str = None, bar: str = "1H", limit: int = 100) -> Dict:
         return self._data.get_kline(inst_id, bar=bar, limit=limit)
 
     def get_ticker(self, inst_id: str = None) -> Dict:
@@ -136,8 +137,12 @@ class V15PaperClient:
         ts_ms = str(int(time.time() * 1000))
         if not mid:
             return {
-                "ok": False, "error": f"paper: no mid for {coin}",
-                "inst_id": inst_id, "bids": [], "asks": [], "ts": ts_ms,
+                "ok": False,
+                "error": f"paper: no mid for {coin}",
+                "inst_id": inst_id,
+                "bids": [],
+                "asks": [],
+                "ts": ts_ms,
             }
 
         # Fixed 1 bps half-spread — neutral, neutral choice for a book
@@ -162,15 +167,16 @@ class V15PaperClient:
         lot, ct = self._lot_and_ct(inst_id)
         return {"ok": True, "inst_id": inst_id, "lot_sz": lot, "ct_val": ct}
 
-    def _get(self, path: str, params: Optional[Dict] = None,
-             auth: bool = True) -> Dict:
+    def _get(self, path: str, params: Optional[Dict] = None, auth: bool = True) -> Dict:
         """兼容 v15_trader.get_contract_info 的裸 GET 调用（仅 instruments 端点）"""
         if "instruments" in path:
             inst_id = (params or {}).get("instId", "")
             lot, ct = self._lot_and_ct(inst_id)
-            return {"code": "0", "msg": "",
-                    "data": [{"instId": inst_id, "lotSz": str(lot),
-                              "ctVal": str(ct), "lever": "3"}]}
+            return {
+                "code": "0",
+                "msg": "",
+                "data": [{"instId": inst_id, "lotSz": str(lot), "ctVal": str(ct), "lever": "3"}],
+            }
         return {"code": "1", "msg": f"paper client 不支持该端点: {path}", "data": []}
 
     def _lot_and_ct(self, inst_id: str):
@@ -211,9 +217,17 @@ class V15PaperClient:
 
     # ── 持仓账本核心 ──────────────────────────────────────
 
-    def _apply_fill_to_position(self, led: Dict, coin: str, inst_id: str,
-                                side: str, pos_side: str, sz: float,
-                                px: float, reason: str):
+    def _apply_fill_to_position(
+        self,
+        led: Dict,
+        coin: str,
+        inst_id: str,
+        side: str,
+        pos_side: str,
+        sz: float,
+        px: float,
+        reason: str,
+    ):
         """把一笔成交应用到账本持仓（开仓/加仓/减仓/平仓），返回 realized pnl"""
         pos = led["positions"].get(coin)
         notional = sz * px
@@ -222,8 +236,7 @@ class V15PaperClient:
         led["balance_usdt"] = led.get("balance_usdt", 0.0) - fee
 
         realized = 0.0
-        opening = (side == "buy" and pos_side == "long") or \
-                  (side == "sell" and pos_side == "short")
+        opening = (side == "buy" and pos_side == "long") or (side == "sell" and pos_side == "short")
 
         if opening:
             if pos and pos.get("pos_side") == pos_side and pos.get("pos", 0) > 0:
@@ -235,11 +248,15 @@ class V15PaperClient:
             else:
                 if pos and pos.get("pos", 0) > FILL_EPS:
                     # 存在反向持仓：先平反向（V15 hedge 模式下理论不发生，防御性处理）
-                    realized += self._close_position(led, coin, pos["pos"], px,
-                                                     f"reverse_fill:{reason}")
+                    realized += self._close_position(
+                        led, coin, pos["pos"], px, f"reverse_fill:{reason}"
+                    )
                 led["positions"][coin] = {
-                    "inst_id": inst_id, "pos_side": pos_side,
-                    "pos": sz, "avg_px": px, "leverage": 3,
+                    "inst_id": inst_id,
+                    "pos_side": pos_side,
+                    "pos": sz,
+                    "avg_px": px,
+                    "leverage": 3,
                     "opened_at": _now_iso(),
                 }
         else:
@@ -248,26 +265,44 @@ class V15PaperClient:
                 realized += self._close_position(led, coin, min(sz, pos["pos"]), px, reason)
             else:
                 # 无持仓可减：记为异常开仓的反向裸单（不应发生）
-                self._record_fill(led, {
-                    "ts": _now_iso(), "coin": coin, "side": side,
-                    "pos_side": pos_side, "sz": sz, "px": px,
-                    "reason": f"orphan_fill:{reason}", "warning": True,
-                })
+                self._record_fill(
+                    led,
+                    {
+                        "ts": _now_iso(),
+                        "coin": coin,
+                        "side": side,
+                        "pos_side": pos_side,
+                        "sz": sz,
+                        "px": px,
+                        "reason": f"orphan_fill:{reason}",
+                        "warning": True,
+                    },
+                )
                 return realized
 
-        self._record_fill(led, {
-            "ts": _now_iso(), "coin": coin, "inst_id": inst_id,
-            "side": side, "pos_side": pos_side, "sz": sz, "px": round(px, 8),
-            "fee": round(fee, 6), "realized_pnl": round(realized, 6),
-            "reason": reason,
-        })
+        self._record_fill(
+            led,
+            {
+                "ts": _now_iso(),
+                "coin": coin,
+                "inst_id": inst_id,
+                "side": side,
+                "pos_side": pos_side,
+                "sz": sz,
+                "px": round(px, 8),
+                "fee": round(fee, 6),
+                "realized_pnl": round(realized, 6),
+                "reason": reason,
+            },
+        )
         if abs(realized) > FILL_EPS:
             led["realized_pnl_usdt"] = led.get("realized_pnl_usdt", 0.0) + realized
             led["balance_usdt"] = led.get("balance_usdt", 0.0) + realized
         return realized
 
-    def _close_position(self, led: Dict, coin: str, sz_close: float,
-                        px: float, reason: str) -> float:
+    def _close_position(
+        self, led: Dict, coin: str, sz_close: float, px: float, reason: str
+    ) -> float:
         """内部平仓（不减手续费，手续费由调用方统一计）"""
         pos = led["positions"].get(coin)
         if not pos:
@@ -275,11 +310,18 @@ class V15PaperClient:
         direction = 1.0 if pos.get("pos_side") == "long" else -1.0
         pnl = (px - pos["avg_px"]) * sz_close * direction
         pos["pos"] = pos.get("pos", 0) - sz_close
-        led.setdefault("closed_trades", []).append({
-            "ts": _now_iso(), "coin": coin, "pos_side": pos.get("pos_side"),
-            "sz": sz_close, "entry_px": pos["avg_px"], "exit_px": round(px, 8),
-            "pnl": round(pnl, 6), "reason": reason,
-        })
+        led.setdefault("closed_trades", []).append(
+            {
+                "ts": _now_iso(),
+                "coin": coin,
+                "pos_side": pos.get("pos_side"),
+                "sz": sz_close,
+                "entry_px": pos["avg_px"],
+                "exit_px": round(px, 8),
+                "pnl": round(pnl, 6),
+                "reason": reason,
+            }
+        )
         if pos["pos"] <= FILL_EPS:
             del led["positions"][coin]
         return pnl
@@ -289,13 +331,16 @@ class V15PaperClient:
         changed = False
         if not led.get("pending_orders"):
             return False
-        coins = {_coin(o.get("inst_id", "")) for o in led["pending_orders"].values()
-                 if o.get("state") == "live"}
+        coins = {
+            _coin(o.get("inst_id", ""))
+            for o in led["pending_orders"].values()
+            if o.get("state") == "live"
+        }
         mids = {}
         for c in coins:
             if c:
                 mids[c] = self._mid(c)
-        for oid, o in list(led["pending_orders"].items()):
+        for oid, o in list(led["pending_orders"].items()):  # noqa: B007
             if o.get("state") != "live":
                 continue
             coin = _coin(o.get("inst_id", ""))
@@ -309,9 +354,15 @@ class V15PaperClient:
                 continue
             # 限价单按限价成交（不叠加滑点：挂单是 maker）
             self._apply_fill_to_position(
-                led, coin, o.get("inst_id", ""), side,
-                o.get("pos_side", "net"), float(o.get("sz", 0)), px,
-                f"limit_fill:{o.get('tag', '')}:{o.get('reason', '')}")
+                led,
+                coin,
+                o.get("inst_id", ""),
+                side,
+                o.get("pos_side", "net"),
+                float(o.get("sz", 0)),
+                px,
+                f"limit_fill:{o.get('tag', '')}:{o.get('reason', '')}",
+            )
             o["state"] = "filled"
             o["avg_px"] = px
             o["filled_sz"] = float(o.get("sz", 0))
@@ -323,10 +374,13 @@ class V15PaperClient:
 
     def get_balance(self) -> Dict:
         led = self._load_ledger()
-        return {"ok": True, "balance": led.get("balance_usdt", 0.0),
-                "initial_capital": led.get("initial_capital_usdt", 0.0),
-                "realized_pnl": led.get("realized_pnl_usdt", 0.0),
-                "fee_paid": led.get("fee_paid_usdt", 0.0)}
+        return {
+            "ok": True,
+            "balance": led.get("balance_usdt", 0.0),
+            "initial_capital": led.get("initial_capital_usdt", 0.0),
+            "realized_pnl": led.get("realized_pnl_usdt", 0.0),
+            "fee_paid": led.get("fee_paid_usdt", 0.0),
+        }
 
     def get_all_positions(self) -> Dict:
         led = self._load_ledger()
@@ -350,8 +404,7 @@ class V15PaperClient:
                 "liq_px": 0.0,
                 "mark_px": mid,
             }
-        return {"ok": True, "positions": positions_by_coin,
-                "count": len(positions_by_coin)}
+        return {"ok": True, "positions": positions_by_coin, "count": len(positions_by_coin)}
 
     def get_positions(self, inst_id: str = None) -> Dict:
         all_r = self.get_all_positions()
@@ -362,21 +415,35 @@ class V15PaperClient:
         for c, p in all_r.get("positions", {}).items():
             if coin and c != coin:
                 continue
-            plist.append({
-                "inst_id": p["inst_id"], "pos_side": p["pos_side"],
-                "side": p["side"], "pos": p["pos"], "avg_px": p["avg_px"],
-                "upl": p["upl"], "mark_px": p["mark_px"],
-            })
+            plist.append(
+                {
+                    "inst_id": p["inst_id"],
+                    "pos_side": p["pos_side"],
+                    "side": p["side"],
+                    "pos": p["pos"],
+                    "avg_px": p["avg_px"],
+                    "upl": p["upl"],
+                    "mark_px": p["mark_px"],
+                }
+            )
         return {"ok": True, "positions": plist, "count": len(plist)}
 
     # ── OKX 兼容接口：下单 ────────────────────────────────
 
-    def place_order(self, inst_id: str, side: str, ord_type: str = "market",
-                    sz: float = None, px: float = None,
-                    td_mode: str = "isolated", pos_side: str = "net",
-                    tag: str = "v15paper", reason: str = "",
-                    leverage: float = None,
-                    max_slippage_bps: float = None) -> Dict:
+    def place_order(
+        self,
+        inst_id: str,
+        side: str,
+        ord_type: str = "market",
+        sz: float = None,
+        px: float = None,
+        td_mode: str = "isolated",
+        pos_side: str = "net",
+        tag: str = "v15paper",
+        reason: str = "",
+        leverage: float = None,
+        max_slippage_bps: float = None,
+    ) -> Dict:
         """Place order — OKX signature parity.
 
         New optional kwargs (added for TEE Protocol parity with real client):
@@ -400,42 +467,70 @@ class V15PaperClient:
                 self._save_ledger(led)
                 return {"ok": False, "error": f"无法获取 {coin} HL 中间价"}
             fill = self._fill_px(mid, side)
-            self._apply_fill_to_position(led, coin, inst_id, side, pos_side,
-                                         float(sz), fill, reason or "market_order")
+            self._apply_fill_to_position(
+                led, coin, inst_id, side, pos_side, float(sz), fill, reason or "market_order"
+            )
             self._save_ledger(led)
             return {
-                "ok": True, "dry_run": False, "simulated": True, "paper": True,
+                "ok": True,
+                "dry_run": False,
+                "simulated": True,
+                "paper": True,
                 "ord_id": f"paper_mkt_{int(time.time()*1000)}",
-                "inst_id": inst_id, "side": side, "pos_side": pos_side,
-                "sz": float(sz), "avg_px": round(fill, 8),
-                "estimated_price": round(fill, 8), "reason": reason,
+                "inst_id": inst_id,
+                "side": side,
+                "pos_side": pos_side,
+                "sz": float(sz),
+                "avg_px": round(fill, 8),
+                "estimated_price": round(fill, 8),
+                "reason": reason,
                 "data": {"paper": True, "fill_px": round(fill, 8)},
             }
 
         # 限价单：入账本等待穿越
         oid = f"paper_lmt_{int(time.time()*1000)}"
         led["pending_orders"][oid] = {
-            "ord_id": oid, "inst_id": inst_id, "coin": coin,
-            "side": side, "pos_side": pos_side, "ord_type": "limit",
-            "sz": float(sz), "px": float(px or 0), "tag": tag,
-            "reason": reason, "state": "live", "created_at": _now_iso(),
+            "ord_id": oid,
+            "inst_id": inst_id,
+            "coin": coin,
+            "side": side,
+            "pos_side": pos_side,
+            "ord_type": "limit",
+            "sz": float(sz),
+            "px": float(px or 0),
+            "tag": tag,
+            "reason": reason,
+            "state": "live",
+            "created_at": _now_iso(),
         }
         # 挂单瞬间若已穿越（如挂单价优于现价），立即成交
         self._check_limit_fills(led)
         self._save_ledger(led)
         st = led["pending_orders"].get(oid, {}).get("state", "live")
         return {
-            "ok": True, "dry_run": False, "simulated": True, "paper": True,
-            "ord_id": oid, "inst_id": inst_id, "side": side,
-            "pos_side": pos_side, "sz": float(sz), "px": float(px or 0),
-            "state": st, "reason": reason,
+            "ok": True,
+            "dry_run": False,
+            "simulated": True,
+            "paper": True,
+            "ord_id": oid,
+            "inst_id": inst_id,
+            "side": side,
+            "pos_side": pos_side,
+            "sz": float(sz),
+            "px": float(px or 0),
+            "state": st,
+            "reason": reason,
         }
 
-    def place_stop_loss_take_profit(self, inst_id: str = None,
-                                    pos_side: str = "long",
-                                    stop_loss_px: float = 0,
-                                    take_profit_px: float = 0,
-                                    sz: float = None, reason: str = "") -> Dict:
+    def place_stop_loss_take_profit(
+        self,
+        inst_id: str = None,
+        pos_side: str = "long",
+        stop_loss_px: float = 0,
+        take_profit_px: float = 0,
+        sz: float = None,
+        reason: str = "",
+    ) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         if not stop_loss_px and not take_profit_px:
             return {"ok": False, "error": "需指定止损价或止盈价"}
@@ -449,22 +544,37 @@ class V15PaperClient:
         aid = f"paper_algo_{int(time.time()*1000)}"
         ord_type = "oco" if (stop_loss_px and take_profit_px) else "conditional"
         led["algo_orders"][aid] = {
-            "algo_id": aid, "inst_id": inst_id, "coin": coin,
-            "pos_side": pos_side, "ord_type": ord_type,
+            "algo_id": aid,
+            "inst_id": inst_id,
+            "coin": coin,
+            "pos_side": pos_side,
+            "ord_type": ord_type,
             "sl_trigger_px": float(stop_loss_px or 0),
             "tp_trigger_px": float(take_profit_px or 0),
-            "sz": float(sz), "state": "live",
-            "created_at": _now_iso(), "reason": reason,
+            "sz": float(sz),
+            "state": "live",
+            "created_at": _now_iso(),
+            "reason": reason,
         }
         self._save_ledger(led)
-        result = {"ok": True, "dry_run": False, "paper": True, "type": ord_type,
-                  "stop_loss_px": float(stop_loss_px or 0),
-                  "take_profit_px": float(take_profit_px or 0),
-                  "sz": float(sz),
-                  "side": "sell" if pos_side == "long" else "buy",
-                  "algo_id": aid}
-        return {"orders": [result], "stop_loss": result, "take_profit": result,
-                "ok": True, "reason": reason or "v15_paper_sltp"}
+        result = {
+            "ok": True,
+            "dry_run": False,
+            "paper": True,
+            "type": ord_type,
+            "stop_loss_px": float(stop_loss_px or 0),
+            "take_profit_px": float(take_profit_px or 0),
+            "sz": float(sz),
+            "side": "sell" if pos_side == "long" else "buy",
+            "algo_id": aid,
+        }
+        return {
+            "orders": [result],
+            "stop_loss": result,
+            "take_profit": result,
+            "ok": True,
+            "reason": reason or "v15_paper_sltp",
+        }
 
     # ── OKX 兼容接口：查询/撤单 ──────────────────────────
 
@@ -477,22 +587,29 @@ class V15PaperClient:
                 continue
             if coin and a.get("coin") != coin:
                 continue
-            orders.append({
-                "algo_id": a.get("algo_id"), "ord_type": a.get("ord_type"),
-                "side": "sell" if a.get("pos_side") == "long" else "buy",
-                "pos_side": a.get("pos_side"), "sz": a.get("sz", 0),
-                "trigger_px": 0, "sl_trigger_px": a.get("sl_trigger_px", 0),
-                "tp_trigger_px": a.get("tp_trigger_px", 0),
-                "order_px": None, "state": "live", "actual_px": 0,
-                "tag": "v15paper",
-            })
+            orders.append(
+                {
+                    "algo_id": a.get("algo_id"),
+                    "ord_type": a.get("ord_type"),
+                    "side": "sell" if a.get("pos_side") == "long" else "buy",
+                    "pos_side": a.get("pos_side"),
+                    "sz": a.get("sz", 0),
+                    "trigger_px": 0,
+                    "sl_trigger_px": a.get("sl_trigger_px", 0),
+                    "tp_trigger_px": a.get("tp_trigger_px", 0),
+                    "order_px": None,
+                    "state": "live",
+                    "actual_px": 0,
+                    "tag": "v15paper",
+                }
+            )
         return {"ok": True, "orders": orders, "count": len(orders)}
 
     def cancel_algo_orders(self, inst_id: str = None) -> Dict:
         led = self._load_ledger()
         coin = _coin(inst_id) if inst_id else None
         cancelled = 0
-        for aid, a in led.get("algo_orders", {}).items():
+        for aid, a in led.get("algo_orders", {}).items():  # noqa: B007
             if a.get("state") != "live":
                 continue
             if coin and a.get("coin") != coin:
@@ -501,8 +618,7 @@ class V15PaperClient:
             a["cancel_ts"] = _now_iso()
             cancelled += 1
         self._save_ledger(led)
-        return {"ok": True, "cancelled": cancelled,
-                "msg": "paper algo orders cancelled"}
+        return {"ok": True, "cancelled": cancelled, "msg": "paper algo orders cancelled"}
 
     def get_pending_orders(self, inst_id: str = None) -> Dict:
         led = self._load_ledger()
@@ -515,12 +631,18 @@ class V15PaperClient:
                 continue
             if coin and o.get("coin") != coin:
                 continue
-            orders.append({
-                "ord_id": o.get("ord_id"), "side": o.get("side"),
-                "pos_side": o.get("pos_side"), "ord_type": o.get("ord_type"),
-                "sz": float(o.get("sz", 0)), "px": float(o.get("px", 0)),
-                "state": "live", "tag": o.get("tag", ""),
-            })
+            orders.append(
+                {
+                    "ord_id": o.get("ord_id"),
+                    "side": o.get("side"),
+                    "pos_side": o.get("pos_side"),
+                    "ord_type": o.get("ord_type"),
+                    "sz": float(o.get("sz", 0)),
+                    "px": float(o.get("px", 0)),
+                    "state": "live",
+                    "tag": o.get("tag", ""),
+                }
+            )
         return {"ok": True, "orders": orders, "count": len(orders)}
 
     def get_order(self, inst_id: str, ord_id: str) -> Dict:
@@ -530,15 +652,22 @@ class V15PaperClient:
         o = led.get("pending_orders", {}).get(ord_id)
         if not o:
             return {"ok": False, "error": f"paper 订单不存在: {ord_id}"}
-        state_map = {"live": "live", "filled": "filled",
-                     "cancelled": "canceled", "canceled": "canceled"}
+        state_map = {
+            "live": "live",
+            "filled": "filled",
+            "cancelled": "canceled",
+            "canceled": "canceled",
+        }
         return {
-            "ok": True, "ord_id": ord_id,
+            "ok": True,
+            "ord_id": ord_id,
             "state": state_map.get(o.get("state"), o.get("state")),
-            "side": o.get("side"), "pos_side": o.get("pos_side"),
+            "side": o.get("side"),
+            "pos_side": o.get("pos_side"),
             "filled_sz": float(o.get("filled_sz", 0)),
             "avg_px": float(o.get("avg_px", 0)),
-            "fee": 0.0, "pnl": 0.0,
+            "fee": 0.0,
+            "pnl": 0.0,
         }
 
     def cancel_order(self, inst_id: str, ord_id: str) -> Dict:

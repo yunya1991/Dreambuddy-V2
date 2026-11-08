@@ -17,13 +17,13 @@ RED 契约：
   - CausalInferenceEngine 类不存在 → ImportError
   - verify 返回无 causal 子键 → KeyError
 """
+
 from __future__ import annotations
 
-import json
 import sys
 import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -33,6 +33,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 
 # ─────────────────────────────── 辅助 fixture ───────────────────────────────
+
 
 @pytest.fixture
 def sample_memories():
@@ -82,14 +83,17 @@ def sample_verify_history():
 def engine(tmp_path):
     """构造 CausalInferenceEngine 实例。"""
     from causal_inference_engine import CausalInferenceEngine
+
     return CausalInferenceEngine(graph_path=tmp_path / "causal_graph.json")
 
 
 # ─────────────────────────────── RED: 引擎初始化 ───────────────────────────────
 
+
 def test_causal_engine_init_no_pgmpy(tmp_path):
     """RED: 无 pgmpy 时引擎仍可初始化（可选依赖）。"""
     from causal_inference_engine import CausalInferenceEngine
+
     eng = CausalInferenceEngine(graph_path=tmp_path / "cg.json")
     assert eng is not None
     # pgmpy_available 属性存在（无论 True/False）
@@ -99,12 +103,14 @@ def test_causal_engine_init_no_pgmpy(tmp_path):
 def test_causal_engine_persists_graph_path(tmp_path):
     """RED: 引擎接受 graph_path 参数用于持久化因果图。"""
     from causal_inference_engine import CausalInferenceEngine
+
     graph_path = tmp_path / "causal_graph.json"
     eng = CausalInferenceEngine(graph_path=graph_path)
     assert eng.graph_path == graph_path
 
 
 # ─────────────────────────────── RED: 因果图构建 ───────────────────────────────
+
 
 def test_build_causal_graph_empty(engine):
     """RED: 空记忆列表返回空因果图。"""
@@ -134,6 +140,7 @@ def test_build_causal_graph_with_tag_overlap(engine, sample_memories):
 
 # ─────────────────────────────── RED: do-calculus ───────────────────────────────
 
+
 def test_do_calculus_intervene_success(engine, sample_memories):
     """RED: do(memory_id=success) 推理 — 干预后依赖记忆的预期置信度变化。"""
     engine.build_causal_graph(sample_memories)
@@ -159,12 +166,11 @@ def test_do_calculus_intervene_failure(engine, sample_memories):
     assert result is not None
     # 失败干预 → 受影响记忆的 delta_confidence 应为负
     for node in result.get("affected_nodes", []):
-        assert node.get("delta_confidence", 0) <= 0, (
-            "失败干预应降低依赖记忆的置信度"
-        )
+        assert node.get("delta_confidence", 0) <= 0, "失败干预应降低依赖记忆的置信度"
 
 
 # ─────────────────────────────── RED: 因果发现 ───────────────────────────────
+
 
 def test_discover_causes_temporal(engine, sample_verify_history):
     """RED: 从 verify 历史时序发现因果关系（A 先成功 → B 后成功 → A→B 因果链）。"""
@@ -173,9 +179,7 @@ def test_discover_causes_temporal(engine, sample_verify_history):
     assert isinstance(causal_chains, list)
     # VM-001 先 verify 成功，VM-002 后 verify 成功 → 可能存在 VM-001→VM-002 因果链
     # 至少发现 1 条因果链
-    assert len(causal_chains) >= 1, (
-        "应从 verify 时序中发现至少 1 条因果链"
-    )
+    assert len(causal_chains) >= 1, "应从 verify 时序中发现至少 1 条因果链"
     for chain in causal_chains:
         assert "cause" in chain
         assert "effect" in chain
@@ -183,6 +187,7 @@ def test_discover_causes_temporal(engine, sample_verify_history):
 
 
 # ─────────────────────────────── RED: verify 影响评估 ───────────────────────────────
+
 
 def test_assess_verify_impact(engine, sample_memories, sample_verify_history):
     """RED: verify 影响评估返回结构化结果。"""
@@ -202,6 +207,7 @@ def test_assess_verify_impact(engine, sample_memories, sample_verify_history):
 
 # ─────────────────────────────── RED: verify 集成 ───────────────────────────────
 
+
 def test_verify_returns_causal_field(tmp_path):
     """RED: verify() 返回结果应包含 causal 子键。"""
     from cognitive_loop_entry import CognitiveLoopEntry
@@ -218,9 +224,7 @@ def test_verify_returns_causal_field(tmp_path):
     )
     # verify 应返回 causal 子键
     result = cle.verify(memory_id=mid, success=True)
-    assert "causal" in result, (
-        "P1-7 RED: verify() 返回应包含 causal 子键"
-    )
+    assert "causal" in result, "P1-7 RED: verify() 返回应包含 causal 子键"
     causal = result["causal"]
     assert "impact_radius" in causal
     assert "affected_memories" in causal
@@ -246,5 +250,4 @@ def test_verify_causal_fail_open(tmp_path):
     assert result["success"] is True
     # causal 子键应为 FAIL-OPEN 兜底
     assert "causal" in result
-    assert result["causal"].get("fail_open") is True or \
-           result["causal"].get("error") is not None
+    assert result["causal"].get("fail_open") is True or result["causal"].get("error") is not None

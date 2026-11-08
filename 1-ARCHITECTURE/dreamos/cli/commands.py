@@ -16,8 +16,9 @@ class StatusCommand(Command):
     description = "查看 Agent 状态"
     aliases = ["st"]
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None,
-                **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         agent = self._get_agent(ctx)
         if not agent:
             return 1
@@ -37,8 +38,10 @@ class StatusCommand(Command):
         print(f"    健康状态:   {budget.get('level', '-')}")
         per_cycle = budget.get("per_cycle", {})
         if per_cycle:
-            print(f"    周期预算:   {per_cycle.get('used', 0)}/{per_cycle.get('budget', 0)} "
-                  f"({per_cycle.get('usage_ratio', 0):.1%})")
+            print(
+                f"    周期预算:   {per_cycle.get('used', 0)}/{per_cycle.get('budget', 0)} "
+                f"({per_cycle.get('usage_ratio', 0):.1%})"
+            )
         print()
         return 0
 
@@ -47,6 +50,7 @@ class StatusCommand(Command):
             return ctx.agent
         try:
             from dreamos.apps.trading_agent import TradingAgent
+
             ctx.agent = TradingAgent(budget_mode=ctx.budget_mode)
             return ctx.agent
         except Exception as e:
@@ -64,8 +68,9 @@ class NodesCommand(Command):
         parser.add_argument("--chain", "-c", help="按链过滤 (A/C/F)")
         parser.add_argument("--tag", "-t", help="按标签过滤")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None,
-                **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         agent = self._get_agent(ctx)
         if not agent:
             return 1
@@ -88,9 +93,11 @@ class NodesCommand(Command):
             print(f"\n    [{chain_name} 链]  {len(chain_nodes)} 个节点:")
             for n in chain_nodes:
                 tags = ", ".join(n.tags or [])
-                print(f"      {n.node_id:4s} {n.name:12s} "
-                      f"({n.estimated_latency_ms}ms, {n.estimated_tokens}tok) "
-                      f"[{tags}]")
+                print(
+                    f"      {n.node_id:4s} {n.name:12s} "
+                    f"({n.estimated_latency_ms}ms, {n.estimated_tokens}tok) "
+                    f"[{tags}]"
+                )
                 if n.description and ctx.verbose:
                     print(f"           {n.description}")
 
@@ -102,6 +109,7 @@ class NodesCommand(Command):
             return ctx.agent
         try:
             from dreamos.apps.trading_agent import TradingAgent
+
             ctx.agent = TradingAgent(budget_mode=ctx.budget_mode)
             return ctx.agent
         except Exception as e:
@@ -116,11 +124,11 @@ class HistoryCommand(Command):
     aliases = ["hist"]
 
     def add_arguments(self, parser: argparse.ArgumentParser) -> None:
-        parser.add_argument("-n", "--limit", type=int, default=10,
-                            help="显示数量 (默认 10)")
+        parser.add_argument("-n", "--limit", type=int, default=10, help="显示数量 (默认 10)")
 
-    def execute(self, ctx: CommandContext, args: Optional[argparse.Namespace] = None,
-                **kwargs) -> int:
+    def execute(
+        self, ctx: CommandContext, args: Optional[argparse.Namespace] = None, **kwargs
+    ) -> int:
         agent = self._get_agent(ctx)
         if not agent:
             return 1
@@ -147,6 +155,7 @@ class HistoryCommand(Command):
             return ctx.agent
         try:
             from dreamos.apps.trading_agent import TradingAgent
+
             ctx.agent = TradingAgent(budget_mode=ctx.budget_mode)
             return ctx.agent
         except Exception as e:

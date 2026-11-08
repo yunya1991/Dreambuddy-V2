@@ -12,6 +12,7 @@ Spec: 2026-08-19-morph-cycle-dynamic-correction-design.md §四 Phase B
   • 只记录，不改变任何交易参数
   • 异常被调用方 catch，不影响主流程
 """
+
 from __future__ import annotations
 
 import json
@@ -20,12 +21,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .storage import EvolutionStorageSQLite
 
-
 # ── Phase B ShadowLogger 超参 ────────────────────────────────────
-SHADOW_LOGGER_ENABLED = True           # 总开关（已开启，验证前置层参数差异）
-SHADOW_FORECAST_DAYS = 5               # forecast 天数（用预测的第 5 天值）
-SHADOW_FORECAST_CACHE_TTL = 3600       # forecast 缓存 TTL（秒），同 symbol 1h 内复用
-SHADOW_SECTOR_BETAS_DEFAULT = {        # 默认 identity betas（Phase B 不依赖真实 betas）
+SHADOW_LOGGER_ENABLED = True  # 总开关（已开启，验证前置层参数差异）
+SHADOW_FORECAST_DAYS = 5  # forecast 天数（用预测的第 5 天值）
+SHADOW_FORECAST_CACHE_TTL = 3600  # forecast 缓存 TTL（秒），同 symbol 1h 内复用
+SHADOW_SECTOR_BETAS_DEFAULT = {  # 默认 identity betas（Phase B 不依赖真实 betas）
     "defi": (1.0, 0.0, 0.5),
     "ai": (1.0, 0.0, 0.5),
     "rwa": (1.0, 0.0, 0.5),
@@ -43,55 +43,56 @@ class ShadowLogger:
         report = logger.get_comparison_report("BTC", days=7)
     """
 
-    def __init__(self, storage: EvolutionStorageSQLite,
-                 morph_predictor: Any,
-                 param_mapper: Any):
+    def __init__(self, storage: EvolutionStorageSQLite, morph_predictor: Any, param_mapper: Any):
         self.storage = storage
         self.predictor = morph_predictor
         self.mapper = param_mapper
         # forecast 缓存：symbol → (timestamp_sec, forecast_params)
         self._forecast_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
 
-    def record_polling(self, symbol: str, inference: Dict[str, Any],
-                       actual_params: Dict[str, Any],
-                       enable_inject: bool = False,
-                       alpha_blend: float = 0.0,
-                       fma_on_allowed: bool = None,
-                       fma_on_eff_threshold: float = None,
-                       fd_crypto_war_state: str = None,
-                       fd_crypto_total_score: float = None,
-                       fd_crypto_cap_mode: float = None,
-                       fd_crypto_mult_mode: float = None,
-                       fd_us_stock_war_state: str = None,
-                       fd_us_stock_total_score: float = None,
-                       fd_precious_metal_war_state: str = None,
-                       fd_precious_metal_total_score: float = None,
-                       fd_crypto_dao_score: float = None,
-                       fd_crypto_tian_score: float = None,
-                       fd_crypto_di_score: float = None,
-                       fd_crypto_jiang_score: float = None,
-                       fd_crypto_fa_score: float = None,
-                       fd_us_stock_dao_score: float = None,
-                       fd_us_stock_tian_score: float = None,
-                       fd_us_stock_di_score: float = None,
-                       fd_us_stock_jiang_score: float = None,
-                       fd_us_stock_fa_score: float = None,
-                       fd_precious_metal_dao_score: float = None,
-                       fd_precious_metal_tian_score: float = None,
-                       fd_precious_metal_di_score: float = None,
-                       fd_precious_metal_jiang_score: float = None,
-                       fd_precious_metal_fa_score: float = None,
-                       direction_state: str = None,
-                       direction_bias: float = None,
-                       three_factor_short_signal: bool = None,
-                       btc_regime: str = None,
-                       sal_type: str = None,
-                       sal_regime: str = None,
-                       sal_calib_median: float = None,
-                       sal_calib_min: float = None,
-                       sal_calib_max: float = None,
-                       sal_gate: int = None,
-                       ) -> Optional[int]:
+    def record_polling(
+        self,
+        symbol: str,
+        inference: Dict[str, Any],
+        actual_params: Dict[str, Any],
+        enable_inject: bool = False,
+        alpha_blend: float = 0.0,
+        fma_on_allowed: bool = None,
+        fma_on_eff_threshold: float = None,
+        fd_crypto_war_state: str = None,
+        fd_crypto_total_score: float = None,
+        fd_crypto_cap_mode: float = None,
+        fd_crypto_mult_mode: float = None,
+        fd_us_stock_war_state: str = None,
+        fd_us_stock_total_score: float = None,
+        fd_precious_metal_war_state: str = None,
+        fd_precious_metal_total_score: float = None,
+        fd_crypto_dao_score: float = None,
+        fd_crypto_tian_score: float = None,
+        fd_crypto_di_score: float = None,
+        fd_crypto_jiang_score: float = None,
+        fd_crypto_fa_score: float = None,
+        fd_us_stock_dao_score: float = None,
+        fd_us_stock_tian_score: float = None,
+        fd_us_stock_di_score: float = None,
+        fd_us_stock_jiang_score: float = None,
+        fd_us_stock_fa_score: float = None,
+        fd_precious_metal_dao_score: float = None,
+        fd_precious_metal_tian_score: float = None,
+        fd_precious_metal_di_score: float = None,
+        fd_precious_metal_jiang_score: float = None,
+        fd_precious_metal_fa_score: float = None,
+        direction_state: str = None,
+        direction_bias: float = None,
+        three_factor_short_signal: bool = None,
+        btc_regime: str = None,
+        sal_type: str = None,
+        sal_regime: str = None,
+        sal_calib_median: float = None,
+        sal_calib_min: float = None,
+        sal_calib_max: float = None,
+        sal_gate: int = None,
+    ) -> Optional[int]:
         """记录一次轮询的参数对比快照（三值：baseline / ai_injected / effective）。
 
         baseline = 静态基线（v15 regime 查表，完全不注入）
@@ -147,18 +148,29 @@ class ShadowLogger:
                     sect_w_parsed = {}
             sect_w_parsed = sect_w_parsed or {}
 
-            if (self.mapper is not None
-                    and hasattr(self.mapper, "_resolve_effective_params")
-                    and stats_row and regime_baselines):
+            if (
+                self.mapper is not None
+                and hasattr(self.mapper, "_resolve_effective_params")
+                and stats_row
+                and regime_baselines
+            ):
                 # 先自己算一份中性 sector_weights 兜底（forecast 的）
                 def _neutral_sector_weights():
-                    return {"weights": {s: 0.2 for s in ["defi", "ai", "rwa", "meme", "l2"]},
-                            "sector_tp_mult": {s: 1.0 for s in ["defi", "ai", "rwa", "meme", "l2"]},
-                            "sector_sl_mult": {s: 1.0 for s in ["defi", "ai", "rwa", "meme", "l2"]}}
+                    return {
+                        "weights": dict.fromkeys(["defi", "ai", "rwa", "meme", "l2"], 0.2),
+                        "sector_tp_mult": dict.fromkeys(["defi", "ai", "rwa", "meme", "l2"], 1.0),
+                        "sector_sl_mult": dict.fromkeys(["defi", "ai", "rwa", "meme", "l2"], 1.0),
+                    }
 
-                sw_use = sect_w_parsed if (isinstance(sect_w_parsed, dict)
-                                           and "weights" in sect_w_parsed
-                                           and "sector_tp_mult" in sect_w_parsed) else _neutral_sector_weights()
+                sw_use = (
+                    sect_w_parsed
+                    if (
+                        isinstance(sect_w_parsed, dict)
+                        and "weights" in sect_w_parsed
+                        and "sector_tp_mult" in sect_w_parsed
+                    )
+                    else _neutral_sector_weights()
+                )
                 base_long = inference.get("base_long_threshold") or 0.7955
                 base_short = inference.get("base_short_threshold") or 0.7955
                 ai_params = self.mapper._resolve_effective_params(
@@ -352,7 +364,7 @@ class ShadowLogger:
                 return {"mean_diff": 0.0, "std_diff": 0.0, "max_diff": 0.0}
             mean = sum(diffs) / n
             var = sum((d - mean) ** 2 for d in diffs) / n
-            std = var ** 0.5
+            std = var**0.5
             return {
                 "mean_diff": round(mean, 4),
                 "std_diff": round(std, 4),
@@ -440,10 +452,12 @@ class ShadowLogger:
         # 优先用 predict_with_fallback（非 BTC 币种自动回退到 BTC 预测）
         if hasattr(self.predictor, "predict_with_fallback"):
             result = self.predictor.predict_with_fallback(
-                full_symbol, hist_days=60, forecast_days=SHADOW_FORECAST_DAYS)
+                full_symbol, hist_days=60, forecast_days=SHADOW_FORECAST_DAYS
+            )
         else:
-            result = self.predictor.predict(full_symbol, hist_days=60,
-                                             forecast_days=SHADOW_FORECAST_DAYS)
+            result = self.predictor.predict(
+                full_symbol, hist_days=60, forecast_days=SHADOW_FORECAST_DAYS
+            )
         if not result.get("ok"):
             # 预测失败 → 用 0.0 兜底
             return {"L": 0.0, "T": 0.0, "global_ranges": "{}", "sector_weights": "{}"}

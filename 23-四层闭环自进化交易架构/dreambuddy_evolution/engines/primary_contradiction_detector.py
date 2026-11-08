@@ -16,6 +16,7 @@ intensity 公式 (SPEC §4.5.1):
 HC: 模块化开关 enable_primary_contradiction_detector 关断时返回中性默认
 HC: 异常必须 FAIL-OPEN，返回 unknown + intensity=0.0
 """
+
 from __future__ import annotations
 
 import logging
@@ -48,7 +49,9 @@ _AFFECTED_ASSETS = {
 class ContradictionInfo:
     """主要矛盾识别结果。"""
 
-    primary: str = "unknown"  # fomc_rate_decision / inflation_shock / credit_event / ai_capex_cycle / unknown
+    primary: str = (
+        "unknown"  # fomc_rate_decision / inflation_shock / credit_event / ai_capex_cycle / unknown
+    )
     intensity: float = 0.0  # 0.0-0.95
     cycle_phase: str = "neutral"  # expectation_build/rise/jump/digest/event/repricing/neutral
     probability: float | None = None  # FedWatch 加息概率
@@ -91,22 +94,29 @@ class PrimaryContradictionDetector:
     CESI_AMPLIFIER_DIVISOR = 3.0  # cesi_amplifier = min(|cesi|/3.0, 0.3)
     CESI_AMPLIFIER_CAP = 0.3  # CESI 放大上限
 
-    def detect(self, kline_data: dict[str, Any] | None) -> ContradictionInfo:
+    def detect(
+        self,
+        kline_data: dict[str, Any] | None,
+        *,
+        force: bool = False,
+    ) -> ContradictionInfo:
         """
         识别当前主要矛盾。
 
         Args:
             kline_data: data_pipeline.assemble() 输出的完整 dict
+            force: True 时跳过生产开关检查（仅供 shadow 诊断使用；仍 FAIL-OPEN）
 
         Returns:
             ContradictionInfo
         """
         # HC: 开关关断时返回中性默认（字节等价"模块不存在"）
         # 需要同时启用总开关 + 层开关 + 模块开关
-        if not is_enabled("enable_contradiction_driven_layer"):
-            return ContradictionInfo()
-        if not is_enabled("enable_primary_contradiction_detector"):
-            return ContradictionInfo()
+        if not force:
+            if not is_enabled("enable_contradiction_driven_layer"):
+                return ContradictionInfo()
+            if not is_enabled("enable_primary_contradiction_detector"):
+                return ContradictionInfo()
 
         # HC: FAIL-OPEN — 数据异常时返回中性默认
         try:
@@ -114,9 +124,7 @@ class PrimaryContradictionDetector:
                 return ContradictionInfo()
             return self._detect_safe(kline_data)
         except Exception as e:
-            logger.warning(
-                "PrimaryContradictionDetector FAIL-OPEN: %s", e, exc_info=False
-            )
+            logger.warning("PrimaryContradictionDetector FAIL-OPEN: %s", e, exc_info=False)
             return ContradictionInfo()
 
     def _detect_safe(self, kline_data: dict) -> ContradictionInfo:
@@ -127,9 +135,7 @@ class PrimaryContradictionDetector:
         prob_trend = event_ctx.get("probability_trend", "stable")
 
         # 优先级 1: FOMC 周期内 + 有加息概率 → fomc_rate_decision
-        primary, intensity = self._classify_primary(
-            kline_data, event_ctx, hike_prob, prob_trend
-        )
+        primary, intensity = self._classify_primary(kline_data, event_ctx, hike_prob, prob_trend)
 
         # 计算次要矛盾
         secondary = self._classify_secondary(kline_data, primary)
@@ -161,13 +167,10 @@ class PrimaryContradictionDetector:
         event_type = event_ctx.get("event_type", "")
 
         # 优先级 1: FOMC 周期 OR CESI 触发的加息预期变化
-        macro_rate_triggered = (
-            in_fomc
-            or (
-                cesi is not None
-                and abs(cesi) >= self.CESI_TRIGGER_THRESHOLD
-                and event_type in self.MACRO_EVENT_TYPES
-            )
+        macro_rate_triggered = in_fomc or (
+            cesi is not None
+            and abs(cesi) >= self.CESI_TRIGGER_THRESHOLD
+            and event_type in self.MACRO_EVENT_TYPES
         )
 
         if macro_rate_triggered and hike_prob is not None:
@@ -182,9 +185,7 @@ class PrimaryContradictionDetector:
             else:
                 cesi_amplifier = 0.0
             # intensity = min(p*0.6 + abs(trend_val)*0.4 + cesi_amplifier, 0.95)
-            intensity = min(
-                p * 0.6 + abs(trend_val) * 0.4 + cesi_amplifier, 0.95
-            )
+            intensity = min(p * 0.6 + abs(trend_val) * 0.4 + cesi_amplifier, 0.95)
             return "fomc_rate_decision", round(intensity, 3)
 
         # 优先级 2: 通胀冲击
@@ -202,7 +203,7 @@ class PrimaryContradictionDetector:
 
         # 优先级 3: 信贷事件
         credit_growth = kline_data.get("credit_growth")
-        gdp_growth = kline_data.get("gdp_growth")
+        gdp_growth = kline_data.get("gdp_growth")  # noqa: F841
         if credit_growth is not None:
             try:
                 cg = float(credit_growth)

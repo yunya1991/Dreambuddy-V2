@@ -13,9 +13,8 @@
 """
 
 import json
-import os
 import random
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List
 
@@ -42,6 +41,7 @@ BACKTEST_CONFIG = {
 # =============================================================================
 # 模拟数据生成
 # =============================================================================
+
 
 def generate_simulated_data(days: int = 90, seed: int = 42) -> Dict[str, List[dict]]:
     """
@@ -81,12 +81,14 @@ def generate_simulated_data(days: int = 90, seed: int = 42) -> Dict[str, List[di
             "open": round(base_price * (1 - daily_return * 0.5), 2),
             "high": round(base_price * 1.02, 2),
             "low": round(base_price * 0.98, 2),
-            "return": round(daily_return, 4)
+            "return": round(daily_return, 4),
         }
 
         # 模拟 Regime 信号（基于前一日价格动量）
         if i > 0:
-            prev_return = price_data.get((current_date - timedelta(days=1)).strftime("%Y-%m-%d"), {}).get("return", 0)
+            prev_return = price_data.get(
+                (current_date - timedelta(days=1)).strftime("%Y-%m-%d"), {}
+            ).get("return", 0)
 
             # 信号生成逻辑：动量效应 + 噪声
             signal_strength = prev_return * 5 + random.gauss(0, 0.3)
@@ -113,22 +115,25 @@ def generate_simulated_data(days: int = 90, seed: int = 42) -> Dict[str, List[di
                 "layer_signals": {
                     "exogenous": round(random.gauss(0, 0.3), 4),
                     "leverage": round(random.gauss(0, 0.3), 4),
-                    "onchain": round(random.gauss(0, 0.3), 4)
+                    "onchain": round(random.gauss(0, 0.3), 4),
                 },
                 "diagnostics": {
                     "data_freshness": {
-                        "exogenous": (current_date - timedelta(minutes=random.randint(1, 30))).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "leverage": (current_date - timedelta(minutes=random.randint(1, 30))).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "onchain": (current_date - timedelta(minutes=random.randint(1, 30))).strftime("%Y-%m-%dT%H:%M:%SZ")
+                        "exogenous": (
+                            current_date - timedelta(minutes=random.randint(1, 30))
+                        ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "leverage": (
+                            current_date - timedelta(minutes=random.randint(1, 30))
+                        ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "onchain": (
+                            current_date - timedelta(minutes=random.randint(1, 30))
+                        ).strftime("%Y-%m-%dT%H:%M:%SZ"),
                     }
-                }
+                },
             }
             regime_records.append(record)
 
-    return {
-        "regime_records": regime_records,
-        "price_data": price_data
-    }
+    return {"regime_records": regime_records, "price_data": price_data}
 
 
 def save_simulated_data(simulated_data: dict) -> None:
@@ -152,6 +157,7 @@ def save_simulated_data(simulated_data: dict) -> None:
 # 回测分析
 # =============================================================================
 
+
 def run_backtest_with_simulation() -> dict:
     """
     使用模拟数据执行回测
@@ -168,7 +174,7 @@ def run_backtest_with_simulation() -> dict:
         "simulation_days": BACKTEST_CONFIG["simulation_days"],
         "accuracy_stats": None,
         "cumulative_returns": None,
-        "report_path": None
+        "report_path": None,
     }
 
     # ==========================================================================
@@ -176,8 +182,7 @@ def run_backtest_with_simulation() -> dict:
     # ==========================================================================
     print("\n[STEP 1] 生成模拟历史数据...")
     simulated_data = generate_simulated_data(
-        BACKTEST_CONFIG["simulation_days"],
-        BACKTEST_CONFIG["seed"]
+        BACKTEST_CONFIG["simulation_days"], BACKTEST_CONFIG["seed"]
     )
     save_simulated_data(simulated_data)
 
@@ -205,7 +210,7 @@ def run_backtest_with_simulation() -> dict:
         "bullish": {"total": 0, "correct": 0},
         "bearish": {"total": 0, "correct": 0},
         "neutral": {"total": 0, "correct": 0},
-        "predictions": []
+        "predictions": [],
     }
 
     for record in regime_records:
@@ -223,7 +228,7 @@ def run_backtest_with_simulation() -> dict:
             regime_date = regime_dt.strftime("%Y-%m-%d")
             next_day = (regime_dt + timedelta(days=1)).strftime("%Y-%m-%d")
 
-            today_return = price_data.get(regime_date, {}).get("return", 0)
+            today_return = price_data.get(regime_date, {}).get("return", 0)  # noqa: F841
             next_return = price_data.get(next_day, {}).get("return", 0)
 
             if next_return is None:
@@ -250,22 +255,36 @@ def run_backtest_with_simulation() -> dict:
             if correct:
                 stats["correct"] += 1
 
-            stats["predictions"].append({
-                "timestamp": timestamp,
-                "bias": bias,
-                "confidence": confidence,
-                "next_return": round(next_return, 4),
-                "correct": correct
-            })
-        except:
+            stats["predictions"].append(
+                {
+                    "timestamp": timestamp,
+                    "bias": bias,
+                    "confidence": confidence,
+                    "next_return": round(next_return, 4),
+                    "correct": correct,
+                }
+            )
+        except:  # noqa: E722
             continue
 
     # 计算准确率
     accuracy = {}
     accuracy["overall"] = round(stats["correct"] / stats["total"], 4) if stats["total"] > 0 else 0
-    accuracy["bullish"] = round(stats["bullish"]["correct"] / stats["bullish"]["total"], 4) if stats["bullish"]["total"] > 0 else 0
-    accuracy["bearish"] = round(stats["bearish"]["correct"] / stats["bearish"]["total"], 4) if stats["bearish"]["total"] > 0 else 0
-    accuracy["neutral"] = round(stats["neutral"]["correct"] / stats["neutral"]["total"], 4) if stats["neutral"]["total"] > 0 else 0
+    accuracy["bullish"] = (
+        round(stats["bullish"]["correct"] / stats["bullish"]["total"], 4)
+        if stats["bullish"]["total"] > 0
+        else 0
+    )
+    accuracy["bearish"] = (
+        round(stats["bearish"]["correct"] / stats["bearish"]["total"], 4)
+        if stats["bearish"]["total"] > 0
+        else 0
+    )
+    accuracy["neutral"] = (
+        round(stats["neutral"]["correct"] / stats["neutral"]["total"], 4)
+        if stats["neutral"]["total"] > 0
+        else 0
+    )
 
     stats["accuracy"] = accuracy
     result["accuracy_stats"] = stats
@@ -299,23 +318,25 @@ def run_backtest_with_simulation() -> dict:
         else:
             strategy_return = 0  # 中性空仓
 
-        strategy_value *= (1 + strategy_return)
+        strategy_value *= 1 + strategy_return
 
         # 基准收益（Buy & Hold）
-        benchmark_value *= (1 + next_return)
+        benchmark_value *= 1 + next_return
 
-        cumulative_returns.append({
-            "timestamp": pred["timestamp"],
-            "strategy_value": round(strategy_value, 4),
-            "benchmark_value": round(benchmark_value, 4)
-        })
+        cumulative_returns.append(
+            {
+                "timestamp": pred["timestamp"],
+                "strategy_value": round(strategy_value, 4),
+                "benchmark_value": round(benchmark_value, 4),
+            }
+        )
 
     result["cumulative_returns"] = {
         "final_strategy_value": round(strategy_value, 4),
         "final_benchmark_value": round(benchmark_value, 4),
         "strategy_return": round(strategy_value - 1, 4),
         "benchmark_return": round(benchmark_value - 1, 4),
-        "excess_return": round((strategy_value - 1) - (benchmark_value - 1), 4)
+        "excess_return": round((strategy_value - 1) - (benchmark_value - 1), 4),
     }
 
     print(f"""
@@ -465,11 +486,15 @@ def generate_comprehensive_backtest_report(result: dict) -> str:
 """
         for pred in reversed(predictions[-20:]):
             result_icon = "✅" if pred.get("correct") else "❌"
-            direction = "📈" if pred.get("next_return", 0) > 0 else "📉" if pred.get("next_return", 0) < 0 else "➡️"
+            direction = (
+                "📈"
+                if pred.get("next_return", 0) > 0
+                else "📉" if pred.get("next_return", 0) < 0 else "➡️"
+            )
             report += f"| {pred.get('timestamp', '')[:16]} | {pred.get('bias', '')} | {pred.get('confidence', 0):.2f} | {direction} {pred.get('next_return', 0):+.2%} | {result_icon} |\n"
 
     # 置信度校准分析
-    report += f"""
+    report += """
 ---
 
 ## 🔍 置信度校准分析

@@ -8,7 +8,7 @@ def test_create_case_from_episode_minimal_fields():
         "trace_id": "trace_test_001",
         "ts": "2026-04-20T12:51:49+08:00",
         "inst_id": "BTC-USDT-SWAP",
-        "decision": "SHORT"
+        "decision": "SHORT",
     }
 
     case = create_case_from_episode_data(episode, case_id="TC_TEST_001")
@@ -21,4 +21,3 @@ def test_create_case_from_episode_minimal_fields():
     assert case["execution"]["episode_refs"][0]["trace_id"] == episode["trace_id"]
 
     json.dumps(case)
-

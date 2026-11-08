@@ -9,12 +9,10 @@
 参考: https://github.com/TauricResearch/TradingAgents
 """
 
-import json
 import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
 
 # ── 配置 ──
 
@@ -27,6 +25,7 @@ _REFLECTION_RE = re.compile(r"REFLECTION:\n(.*?)$", re.DOTALL)
 
 
 # ── 工具函数 ──
+
 
 def _now_iso() -> str:
     return datetime.now().astimezone().isoformat(timespec="seconds")
@@ -50,6 +49,7 @@ def _format_pct(value: Optional[float]) -> str:
 
 
 # ── 核心类 ──
+
 
 class L4MemoryLog:
     """追加式复盘日志（TradingAgents TradingMemoryLog 的 L4 适配版）"""
@@ -322,8 +322,7 @@ class MultiDimensionalAnalyzer:
             "margin_usdt": pi.get("margin_usdt"),
             "decision_factors": list(dc.keys()) if isinstance(dc, dict) else [],
             "key_signals": [
-                ref.get("ref", "")
-                for ref in case.get("evidence_chain", {}).get("signal_refs", [])
+                ref.get("ref", "") for ref in case.get("evidence_chain", {}).get("signal_refs", [])
             ],
         }
 
@@ -338,10 +337,7 @@ class MultiDimensionalAnalyzer:
             "trend_strength": es.get("trend_strength"),
             "price_position": es.get("price_position"),
             "is_ranging": es.get("is_ranging"),
-            "market_data_refs": [
-                ref.get("ref", "")
-                for ref in ec.get("market_data_refs", [])
-            ],
+            "market_data_refs": [ref.get("ref", "") for ref in ec.get("market_data_refs", [])],
         }
 
     def _analyze_sentiment(self, case: Dict[str, Any]) -> Dict[str, Any]:
@@ -442,7 +438,9 @@ class Reflector:
         symbol = case.get("symbol", "Unknown")
 
         # 方向判断是否正确
-        direction_correct = (pnl_pct > 0 and direction == "long") or (pnl_pct < 0 and direction == "short")
+        direction_correct = (pnl_pct > 0 and direction == "long") or (
+            pnl_pct < 0 and direction == "short"
+        )
 
         # 理论验证
         theory_verification = analysis.get("theory_verification", {})
@@ -496,17 +494,27 @@ class Reflector:
 
         # 1. 方向判断
         if direction_correct:
-            parts.append(f"The {direction} call on {symbol} was correct, delivering {_format_pct(pnl_pct)}.")
+            parts.append(
+                f"The {direction} call on {symbol} was correct, delivering {_format_pct(pnl_pct)}."
+            )
         else:
-            parts.append(f"The {direction} call on {symbol} was wrong, resulting in {_format_pct(pnl_pct)}.")
+            parts.append(
+                f"The {direction} call on {symbol} was wrong, resulting in {_format_pct(pnl_pct)}."
+            )
 
         # 2. 投资论点
         if confirmed and not contradicted:
-            parts.append(f"All {len(confirmed)} theoretical signals held up, confirming the investment thesis.")
+            parts.append(
+                f"All {len(confirmed)} theoretical signals held up, confirming the investment thesis."
+            )
         elif contradicted and not confirmed:
-            parts.append(f"All {len(contradicted)} theoretical signals failed, invalidating the thesis.")
+            parts.append(
+                f"All {len(contradicted)} theoretical signals failed, invalidating the thesis."
+            )
         elif confirmed and contradicted:
-            parts.append(f"Mixed results: {len(confirmed)} signals confirmed, {len(contradicted)} contradicted.")
+            parts.append(
+                f"Mixed results: {len(confirmed)} signals confirmed, {len(contradicted)} contradicted."
+            )
         else:
             parts.append("Insufficient theoretical signals to validate the thesis.")
 
@@ -516,48 +524,59 @@ class Reflector:
             pattern_desc = failure_patterns[0].get("description", "")
             parts.append(f"Key lesson: {pattern_desc} — adjust sizing or entry timing next time.")
         elif confirmed:
-            parts.append("This pattern is reproducible; consider increasing conviction sizing in similar setups.")
+            parts.append(
+                "This pattern is reproducible; consider increasing conviction sizing in similar setups."
+            )
         else:
             parts.append("Need stronger evidence chain before entering similar trades.")
 
         return " ".join(parts)
 
-    def _extract_lessons(self, analysis: Dict[str, Any], multi_dim: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_lessons(
+        self, analysis: Dict[str, Any], multi_dim: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """提取结构化经验教训"""
         lessons = []
 
         # 从失败模式提取
         for pattern in analysis.get("failure_patterns", []):
-            lessons.append({
-                "type": "failure_pattern",
-                "description": pattern.get("description", ""),
-                "severity": pattern.get("severity", "medium"),
-                "actionable": f"Avoid {pattern.get('type', 'this')} in future",
-            })
+            lessons.append(
+                {
+                    "type": "failure_pattern",
+                    "description": pattern.get("description", ""),
+                    "severity": pattern.get("severity", "medium"),
+                    "actionable": f"Avoid {pattern.get('type', 'this')} in future",
+                }
+            )
 
         # 从理论验证提取
         for ct in analysis.get("theory_verification", {}).get("contradicted_theories", []):
-            lessons.append({
-                "type": "theory_refutation",
-                "description": f"{ct['type']} {ct['ref']} predicted {ct['expected']} but got {ct['actual']}",
-                "severity": "high",
-                "actionable": f"Re-evaluate {ct['type']} {ct['ref']} weight in decision model",
-            })
+            lessons.append(
+                {
+                    "type": "theory_refutation",
+                    "description": f"{ct['type']} {ct['ref']} predicted {ct['expected']} but got {ct['actual']}",
+                    "severity": "high",
+                    "actionable": f"Re-evaluate {ct['type']} {ct['ref']} weight in decision model",
+                }
+            )
 
         # 从多维度分析提取
         risk_report = multi_dim.get("risk_report", {})
         if risk_report.get("stop_loss_triggered"):
-            lessons.append({
-                "type": "risk_management",
-                "description": "Stop-loss was triggered",
-                "severity": "high",
-                "actionable": "Review stop-loss placement relative to volatility",
-            })
+            lessons.append(
+                {
+                    "type": "risk_management",
+                    "description": "Stop-loss was triggered",
+                    "severity": "high",
+                    "actionable": "Review stop-loss placement relative to volatility",
+                }
+            )
 
         return lessons
 
 
 # ── 辅助函数（与 review_engine 共享） ──
+
 
 def _extract_pnl(episode: Dict[str, Any]) -> Tuple[Optional[float], Optional[float]]:
     out = episode.get("outcome") or {}
@@ -582,10 +601,12 @@ def _extract_pnl(episode: Dict[str, Any]) -> Tuple[Optional[float], Optional[flo
 
 # ── 便捷函数 ──
 
+
 def create_reflector(log_path: Optional[Path] = None) -> Reflector:
     """创建默认 Reflector 实例"""
     if log_path is None:
         from scripts.memory_l4.paths import memory_l4_dir
+
         log_path = memory_l4_dir() / "l4_memory_log.md"
 
     memory_log = L4MemoryLog(log_path=log_path, max_entries=200)

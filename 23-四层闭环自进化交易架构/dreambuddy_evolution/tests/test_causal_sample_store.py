@@ -14,6 +14,7 @@ SPEC-A2-因果ATE历史样本接入.md §2 / §5
   #9 treatment=R_up>median 预注册 → significant=True 且 CI 不含 0
   #13 HC-AGI-08: CausalEngine.MIN_SAMPLES == 500 守门
 """
+
 from __future__ import annotations
 
 import json
@@ -156,18 +157,16 @@ class TestCausalSampleStore:
 
     def test_bootstrap_treatment_R_up_is_significant(self):
         """#9（评审 M2）: 预注册 treatment=R_up>median，固定种子切片 → 显著."""
+        import os
+        import tempfile
+
         from dreambuddy_evolution.core.causal_engine import CausalEngine
         from dreambuddy_evolution.core.causal_sample_store import CausalSampleStore
-
-        import tempfile
-        import os
 
         with tempfile.TemporaryDirectory() as td:
             boot = os.path.join(td, "boot.jsonl")
             _write_bootstrap_jsonl(boot, 800, seed=123, effect=1.0, noise=0.3)
-            store = CausalSampleStore(
-                shadow_path=boot, live_path=os.path.join(td, "live.json")
-            )
+            store = CausalSampleStore(shadow_path=boot, live_path=os.path.join(td, "live.json"))
             triplet = store.build_ate_samples()
             assert triplet is not None
             result = CausalEngine().estimate_ate(

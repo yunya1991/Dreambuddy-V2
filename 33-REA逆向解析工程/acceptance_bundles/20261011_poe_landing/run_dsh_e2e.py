@@ -5,19 +5,17 @@
 2. S33_rea_recover_decisions 对 33-REA 自身 core/ 做设计决策还原
 3. S33_rea_narrative 对 dreambuddy-v2 仓库自身做演化叙事生成
 """
-import json
-import os
+
 import sys
 import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent.parent.parent  # dreambuddy-v2
-REA_ROOT = Path(__file__).parent.parent.parent          # 33-REA逆向解析工程
+REA_ROOT = Path(__file__).parent.parent.parent  # 33-REA逆向解析工程
 sys.path.insert(0, str(REA_ROOT))
 
-from dsh_nodes import (
+from dsh_nodes import (  # noqa: E402
     DSH_NODE_REGISTRY,
-    S33_rea_audit,
     S33_rea_narrative,
     S33_rea_recover_decisions,
     dispatch,
@@ -72,17 +70,20 @@ class Handler:
 with tempfile.TemporaryDirectory() as d:
     Path(d, "ai_output.py").write_text(ai_produced_code)
     # 通过 dispatch 路由调用（模拟真实 IPC 调用路径）
-    result = dispatch("s33_rea_audit", {
-        "target": d,
-        "ai_context": {
-            "agent_id": "test-agent",
-            "model": "gpt-4",
-            "prompt_hash": "abc123",
-            "timestamp": "2026-10-11T00:00:00Z",
+    result = dispatch(
+        "s33_rea_audit",
+        {
+            "target": d,
+            "ai_context": {
+                "agent_id": "test-agent",
+                "model": "gpt-4",
+                "prompt_hash": "abc123",
+                "timestamp": "2026-10-11T00:00:00Z",
+            },
         },
-    })
+    )
 
-    print(f"\n  调用: dispatch('s33_rea_audit', {{target, ai_context}})")
+    print("\n  调用: dispatch('s33_rea_audit', {target, ai_context})")
     print(f"  ok: {result['ok']}")
     r = result["result"]
     print(f"  poe_score: {r['poe_score']:.3f}")
@@ -114,7 +115,7 @@ print("-" * 70)
 core_dir = str(REPO_ROOT / "33-REA逆向解析工程" / "core")
 result = S33_rea_recover_decisions({"target": core_dir})
 
-print(f"\n  调用: S33_rea_recover_decisions({{target: '33-REA/core'}})")
+print("\n  调用: S33_rea_recover_decisions({target: '33-REA/core'})")
 print(f"  ok: {result['ok']}")
 r = result["result"]
 print(f"  decisions 数量: {len(r['decisions'])}")
@@ -140,7 +141,7 @@ print("-" * 70)
 
 result = S33_rea_narrative({"target": str(REPO_ROOT)})
 
-print(f"\n  调用: S33_rea_narrative({{target: 'dreambuddy-v2'}})")
+print("\n  调用: S33_rea_narrative({target: 'dreambuddy-v2'})")
 print(f"  ok: {result['ok']}")
 r = result["result"]
 print(f"  turning_points 数量: {len(r['turning_points'])}")
@@ -153,7 +154,9 @@ for i, tp in enumerate(r["turning_points"][:3], 1):
     msg = tp.get("message", "")[:80] if isinstance(tp, dict) else str(tp)[:80]
     commit = tp.get("commit", "")[:8] if isinstance(tp, dict) else ""
     stats = tp.get("change_stats", {}) if isinstance(tp, dict) else {}
-    print(f"  转折点{i}: {commit} | {msg} | files={stats.get('files_changed', 0)} +/-={stats.get('insertions', 0)}/{stats.get('deletions', 0)}")
+    print(
+        f"  转折点{i}: {commit} | {msg} | files={stats.get('files_changed', 0)} +/-={stats.get('insertions', 0)}/{stats.get('deletions', 0)}"
+    )
 
 # 打印前 3 条技术债
 for i, debt in enumerate(r["tech_debt_timeline"][:3], 1):
@@ -167,7 +170,7 @@ assert result["ok"] is True, "DSH 调用应成功"
 if len(r["turning_points"]) > 0:
     print(f"\n  ✓ 断言通过: ok=True, turning_points>0 (检测到 {len(r['turning_points'])} 个转折点)")
 else:
-    print(f"\n  ⚠️ 转折点为 0（可能 commit message 无 refactor 关键字），但节点调用成功")
+    print("\n  ⚠️ 转折点为 0（可能 commit message 无 refactor 关键字），但节点调用成功")
 
 print("\n" + "=" * 70)
 print("DSH 端到端测试完成 — 3 个新节点全部可调用")

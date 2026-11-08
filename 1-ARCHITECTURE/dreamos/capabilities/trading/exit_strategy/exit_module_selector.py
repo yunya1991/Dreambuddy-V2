@@ -25,12 +25,11 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import time
-import logging
-from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
-from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +37,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ExitModuleScore:
     """单个离场模块在某个场景下的回测得分"""
+
     module_name: str = ""
     score: float = 0.0
     sharpe: float = 0.0
@@ -53,10 +53,11 @@ class ExitModuleScore:
 @dataclass
 class ExitModuleChoice:
     """选择结果"""
+
     module_name: str = "simple"
     score: float = 0.0
     confidence: float = 0.0
-    fallback_level: int = 0    # 0=精确, 1=趋势×波动率, 2=趋势, 3=默认
+    fallback_level: int = 0  # 0=精确, 1=趋势×波动率, 2=趋势, 3=默认
     source_scenario: str = ""
 
 
@@ -64,8 +65,12 @@ class ExitPerformanceMemory:
     """离场模块性能记忆表（持久化）"""
 
     DEFAULT_PATH = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
-        "core", "memory", "exit_performance_memory.json"
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+        "core",
+        "memory",
+        "exit_performance_memory.json",
     )
 
     def __init__(self, path: Optional[str] = None):
@@ -180,10 +185,16 @@ class ExitModuleSelector:
 
     # 场景 → 趋势/波动率 降维映射
     TREND_MAP = {
-        "BULL": "BULL", "BEAR": "BEAR", "RANGE": "RANGE", "EXTREME": "EXTREME",
+        "BULL": "BULL",
+        "BEAR": "BEAR",
+        "RANGE": "RANGE",
+        "EXTREME": "EXTREME",
     }
     VOL_MAP = {
-        "LOW": "LOW", "MEDIUM": "MEDIUM", "HIGH": "HIGH", "EXTREME": "EXTREME",
+        "LOW": "LOW",
+        "MEDIUM": "MEDIUM",
+        "HIGH": "HIGH",
+        "EXTREME": "EXTREME",
     }
 
     # 默认模块优先级（无回测数据时）
@@ -199,6 +210,7 @@ class ExitModuleSelector:
         from dreamos.capabilities.trading.exit_strategy.exit_module_adapter import (
             get_all_adapters,
         )
+
         self._adapters = get_all_adapters()
 
     # v2.5 场景级强制路由（避免震荡市选到回测差的模块）

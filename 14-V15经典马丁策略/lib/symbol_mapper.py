@@ -19,6 +19,7 @@
 2. 所有方法对未知币种优雅降级（返回 None 或回退到 crypto 默认）。
 3. 预留多交易所扩展接口，但当前仅实现 OKX（实盘）。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -29,43 +30,47 @@ from typing import Dict, List, Optional
 
 class AssetCategory(str, Enum):
     """资产大类"""
-    CRYPTO = "crypto"               # 加密货币
+
+    CRYPTO = "crypto"  # 加密货币
     PRECIOUS_METAL = "precious_metal"  # 贵金属 (XAUT/PAXG 等代币化黄金)
-    STOCK = "stock"                 # 股票代币
-    INDEX = "index"                 # 指数代币
-    COMMODITY = "commodity"         # 大宗商品
+    STOCK = "stock"  # 股票代币
+    INDEX = "index"  # 指数代币
+    COMMODITY = "commodity"  # 大宗商品
 
 
 class Exchange(str, Enum):
     """支持交易所（预留扩展）"""
+
     OKX = "okx"
     BINANCE = "binance"
 
 
 class MarketCapTier(str, Enum):
     """市值等级（用于马丁策略风控过滤）"""
-    LARGE = "large"   # 大市值：Top 20，流动性深，黑天鹅风险低
-    MID = "mid"       # 中等市值：Top 20-60，流动性尚可
-    SMALL = "small"   # 小市值：排名靠后或高波动meme币，黑天鹅风险高
+
+    LARGE = "large"  # 大市值：Top 20，流动性深，黑天鹅风险低
+    MID = "mid"  # 中等市值：Top 20-60，流动性尚可
+    SMALL = "small"  # 小市值：排名靠后或高波动meme币，黑天鹅风险高
 
 
 @dataclass
 class AssetInfo:
     """单个资产元数据"""
-    symbol: str                              # 内部 coin 名，如 "BTC"
-    name: str                                # 展示名，如 "Bitcoin"
+
+    symbol: str  # 内部 coin 名，如 "BTC"
+    name: str  # 展示名，如 "Bitcoin"
     category: AssetCategory = AssetCategory.CRYPTO
     # 各交易所支持情况，True=该交易所有此币种的USDT永续合约
     exchanges: Dict[str, bool] = field(default_factory=lambda: {"okx": True})
     # 合约参数覆盖（None=由交易所API动态获取）
     lot_sz_override: Optional[float] = None  # 最小下单张数
     tick_sz_override: Optional[float] = None  # 价格精度
-    ct_val_override: Optional[float] = None   # 合约面值
+    ct_val_override: Optional[float] = None  # 合约面值
     # 马丁策略适配提示
-    martin_enabled: bool = True              # 是否纳入马丁策略币种池
+    martin_enabled: bool = True  # 是否纳入马丁策略币种池
     # ── 马丁风控字段 ──
     market_cap_tier: MarketCapTier = MarketCapTier.MID  # 市值等级
-    listing_date: Optional[str] = None       # 上线日期 ISO 格式 "YYYY-MM-DD"，None=未知(按不通过处理)
+    listing_date: Optional[str] = None  # 上线日期 ISO 格式 "YYYY-MM-DD"，None=未知(按不通过处理)
 
 
 class SymbolMapper:
@@ -106,143 +111,175 @@ class SymbolMapper:
 
         # ── 大市值主流币（LARGE）──
         large_caps = [
-            ("BTC",   "Bitcoin",        "2013-04-28"),
-            ("ETH",   "Ethereum",       "2015-08-07"),
-            ("SOL",   "Solana",         "2020-04-10"),
-            ("BNB",   "BNB",            "2017-07-25"),
-            ("XRP",   "Ripple",         "2013-08-04"),
-            ("ADA",   "Cardano",        "2017-10-01"),
-            ("DOGE",  "Dogecoin",       "2013-12-15"),
-            ("LTC",   "Litecoin",       "2013-04-28"),
-            ("LINK",  "Chainlink",      "2019-05-30"),
-            ("AVAX",  "Avalanche",      "2020-09-22"),
-            ("DOT",   "Polkadot",       "2020-08-18"),
-            ("TRX",   "TRON",           "2018-05-31"),
-            ("MATIC", "Polygon",        "2019-04-28"),
-            ("ATOM",  "Cosmos",         "2019-03-14"),
-            ("UNI",   "Uniswap",        "2020-09-17"),
-            ("NEAR",  "NEAR Protocol",  "2020-10-13"),
-            ("APT",   "Aptos",          "2022-10-17"),
-            ("FIL",   "Filecoin",       "2020-10-15"),
-            ("ARB",   "Arbitrum",       "2023-03-23"),
-            ("OP",    "Optimism",       "2022-06-23"),
+            ("BTC", "Bitcoin", "2013-04-28"),
+            ("ETH", "Ethereum", "2015-08-07"),
+            ("SOL", "Solana", "2020-04-10"),
+            ("BNB", "BNB", "2017-07-25"),
+            ("XRP", "Ripple", "2013-08-04"),
+            ("ADA", "Cardano", "2017-10-01"),
+            ("DOGE", "Dogecoin", "2013-12-15"),
+            ("LTC", "Litecoin", "2013-04-28"),
+            ("LINK", "Chainlink", "2019-05-30"),
+            ("AVAX", "Avalanche", "2020-09-22"),
+            ("DOT", "Polkadot", "2020-08-18"),
+            ("TRX", "TRON", "2018-05-31"),
+            ("MATIC", "Polygon", "2019-04-28"),
+            ("ATOM", "Cosmos", "2019-03-14"),
+            ("UNI", "Uniswap", "2020-09-17"),
+            ("NEAR", "NEAR Protocol", "2020-10-13"),
+            ("APT", "Aptos", "2022-10-17"),
+            ("FIL", "Filecoin", "2020-10-15"),
+            ("ARB", "Arbitrum", "2023-03-23"),
+            ("OP", "Optimism", "2022-06-23"),
         ]
         for sym, name, ld in large_caps:
-            self.register(AssetInfo(
-                symbol=sym, name=name,
+            self.register(
+                AssetInfo(
+                    symbol=sym,
+                    name=name,
+                    category=AssetCategory.CRYPTO,
+                    exchanges={"okx": True},
+                    market_cap_tier=MarketCapTier.LARGE,
+                    listing_date=ld,
+                )
+            )
+
+        # ── 交易所平台币（LARGE）──
+        self.register(
+            AssetInfo(
+                symbol="OKB",
+                name="OKB",
                 category=AssetCategory.CRYPTO,
                 exchanges={"okx": True},
                 market_cap_tier=MarketCapTier.LARGE,
-                listing_date=ld,
-            ))
-
-        # ── 交易所平台币（LARGE）──
-        self.register(AssetInfo(
-            symbol="OKB", name="OKB",
-            category=AssetCategory.CRYPTO,
-            exchanges={"okx": True},
-            market_cap_tier=MarketCapTier.LARGE,
-            listing_date="2019-05-09",
-        ))
+                listing_date="2019-05-09",
+            )
+        )
 
         # ── 中等市值币（MID）──
         mid_caps = [
-            ("INJ",  "Injective",    "2020-11-03"),
-            ("SUI",  "Sui",          "2023-05-03"),
-            ("SEI",  "Sei",          "2023-08-15"),
-            ("TIA",  "Celestia",     "2023-10-31"),
-            ("RUNE", "THORChain",    "2019-07-22"),
-            ("AAVE", "Aave",         "2020-10-02"),
-            ("ALGO", "Algorand",     "2019-06-19"),
-            ("AXS",  "Axie Infinity","2020-11-04"),
-            ("CHZ",  "Chiliz",       "2019-07-09"),
-            ("COMP", "Compound",     "2020-06-18"),
-            ("CRV",  "Curve DAO",    "2020-08-13"),
-            ("DYDX", "dYdX",         "2021-09-09"),
-            ("GALA", "Gala",         "2020-09-18"),
-            ("GRT",  "The Graph",    "2020-12-17"),
-            ("IMX",  "Immutable X",  "2021-11-19"),
-            ("LDO",  "Lido DAO",     "2022-05-16"),
-            ("MKR",  "Maker",        "2017-08-15"),
-            ("RNDR", "Render",       "2021-04-07"),
-            ("SAND", "The Sandbox",  "2020-08-15"),
-            ("STX",  "Stacks",       "2020-05-28"),
-            ("ZEC",  "Zcash",        "2016-10-28"),
-            ("HYPE", "Hyperliquid",  "2024-11-29"),  # 平台币，上线>1年，潜力大
-            ("PUMP", "Pump.fun",     "2024-08-15"),  # Solana meme/pump 代币，上线>300天
+            ("INJ", "Injective", "2020-11-03"),
+            ("SUI", "Sui", "2023-05-03"),
+            ("SEI", "Sei", "2023-08-15"),
+            ("TIA", "Celestia", "2023-10-31"),
+            ("RUNE", "THORChain", "2019-07-22"),
+            ("AAVE", "Aave", "2020-10-02"),
+            ("ALGO", "Algorand", "2019-06-19"),
+            ("AXS", "Axie Infinity", "2020-11-04"),
+            ("CHZ", "Chiliz", "2019-07-09"),
+            ("COMP", "Compound", "2020-06-18"),
+            ("CRV", "Curve DAO", "2020-08-13"),
+            ("DYDX", "dYdX", "2021-09-09"),
+            ("GALA", "Gala", "2020-09-18"),
+            ("GRT", "The Graph", "2020-12-17"),
+            ("IMX", "Immutable X", "2021-11-19"),
+            ("LDO", "Lido DAO", "2022-05-16"),
+            ("MKR", "Maker", "2017-08-15"),
+            ("RNDR", "Render", "2021-04-07"),
+            ("SAND", "The Sandbox", "2020-08-15"),
+            ("STX", "Stacks", "2020-05-28"),
+            ("ZEC", "Zcash", "2016-10-28"),
+            ("HYPE", "Hyperliquid", "2024-11-29"),  # 平台币，上线>1年，潜力大
+            ("PUMP", "Pump.fun", "2024-08-15"),  # Solana meme/pump 代币，上线>300天
         ]
         for sym, name, ld in mid_caps:
-            self.register(AssetInfo(
-                symbol=sym, name=name,
-                category=AssetCategory.CRYPTO,
-                exchanges={"okx": True},
-                market_cap_tier=MarketCapTier.MID,
-                listing_date=ld,
-            ))
+            self.register(
+                AssetInfo(
+                    symbol=sym,
+                    name=name,
+                    category=AssetCategory.CRYPTO,
+                    exchanges={"okx": True},
+                    market_cap_tier=MarketCapTier.MID,
+                    listing_date=ld,
+                )
+            )
 
         # ── 小市值/高波动meme币（SMALL）—— 马丁策略剔除，避免黑天鹅 ──
         small_caps = [
-            ("APE",   "ApeCoin",      "2022-03-17"),   # meme币，暴涨暴跌
-            ("PEPE",  "Pepe",         "2023-04-18"),   # meme币，极端波动
-            ("SHIB",  "Shiba Inu",    "2020-08-01"),   # meme币，极端波动
-            ("SUSHI", "SushiSwap",    "2020-09-01"),   # 低市值，流动性差
-            ("WLD",   "Worldcoin",    "2023-07-24"),   # 新币+高波动
+            ("APE", "ApeCoin", "2022-03-17"),  # meme币，暴涨暴跌
+            ("PEPE", "Pepe", "2023-04-18"),  # meme币，极端波动
+            ("SHIB", "Shiba Inu", "2020-08-01"),  # meme币，极端波动
+            ("SUSHI", "SushiSwap", "2020-09-01"),  # 低市值，流动性差
+            ("WLD", "Worldcoin", "2023-07-24"),  # 新币+高波动
         ]
         for sym, name, ld in small_caps:
-            self.register(AssetInfo(
-                symbol=sym, name=name,
-                category=AssetCategory.CRYPTO,
-                exchanges={"okx": True},
-                market_cap_tier=MarketCapTier.SMALL,
-                listing_date=ld,
-                martin_enabled=False,  # 默认不纳入马丁策略
-            ))
+            self.register(
+                AssetInfo(
+                    symbol=sym,
+                    name=name,
+                    category=AssetCategory.CRYPTO,
+                    exchanges={"okx": True},
+                    market_cap_tier=MarketCapTier.SMALL,
+                    listing_date=ld,
+                    martin_enabled=False,  # 默认不纳入马丁策略
+                )
+            )
 
         # ── 贵金属代币（OKX SWAP 支持）──
         precious_metals = [
-            ("XAUT", "Tether Gold", 0.01, 0.01, 1.0, "2020-01-09"),   # XAUT 现货代币（非SWAP）
-            ("PAXG", "Paxos Gold",  0.001, 0.01, 1.0, "2020-09-11"),  # PAXG-USDT-SWAP
-            ("XAG",  "Silver",      0.01, 0.01, 1.0, "2020-01-01"),   # XAG-USDT-SWAP, 白银
-            ("XAU",  "Gold Index",  1,    0.1,  0.001, "2020-01-01"), # XAU-USDT-SWAP, 黄金指数永续
+            ("XAUT", "Tether Gold", 0.01, 0.01, 1.0, "2020-01-09"),  # XAUT 现货代币（非SWAP）
+            ("PAXG", "Paxos Gold", 0.001, 0.01, 1.0, "2020-09-11"),  # PAXG-USDT-SWAP
+            ("XAG", "Silver", 0.01, 0.01, 1.0, "2020-01-01"),  # XAG-USDT-SWAP, 白银
+            ("XAU", "Gold Index", 1, 0.1, 0.001, "2020-01-01"),  # XAU-USDT-SWAP, 黄金指数永续
         ]
         for sym, name, lot, tick, ctval, ld in precious_metals:
-            self.register(AssetInfo(
-                symbol=sym, name=name,
-                category=AssetCategory.PRECIOUS_METAL,
-                exchanges={"okx": True},
-                lot_sz_override=lot,
-                tick_sz_override=tick,
-                ct_val_override=ctval,
-                market_cap_tier=MarketCapTier.LARGE,  # 黄金=大类资产
-                listing_date=ld,
-            ))
+            self.register(
+                AssetInfo(
+                    symbol=sym,
+                    name=name,
+                    category=AssetCategory.PRECIOUS_METAL,
+                    exchanges={"okx": True},
+                    lot_sz_override=lot,
+                    tick_sz_override=tick,
+                    ct_val_override=ctval,
+                    market_cap_tier=MarketCapTier.LARGE,  # 黄金=大类资产
+                    listing_date=ld,
+                )
+            )
 
         # ── 美股个股永续（OKX SWAP 支持）──
         # 上市日期用股票本体上市日期（远超1年风控门槛），OKX 永续 lot_sz=0.01
         us_stocks = [
-            ("MU",       "Micron Technology",  0.01, 0.01, 1.0, "1994-06-01"),   # 美光
-            ("SKHYNIX",  "SK hynix",           0.01, 0.01, 1.0, "2014-01-01"),   # 海力士
-            ("GOOGL",    "Alphabet (Google)",  0.01, 0.01, 1.0, "2004-08-19"),   # 谷歌
-            ("NVDA",     "NVIDIA",             0.01, 0.01, 1.0, "1999-01-22"),   # 英伟达
-            ("AMZN",     "Amazon",             0.01, 0.01, 1.0, "1997-05-15"),   # 亚马逊
-            ("SNDK",     "SanDisk",            0.01, 0.01, 1.0, "1995-03-08"),   # 闪迪
-            ("SPCX",     "SpaceX",             0.01, 0.01, 1.0, "2024-01-01"),   # SpaceX (OKX永续)
-            ("MSTR",     "MicroStrategy",      0.01, 0.01, 1.0, "1999-06-11"),   # 微策略
-            ("COIN",     "Coinbase",           0.01, 0.01, 1.0, "2021-04-14"),   # Coinbase
-            ("CRCL",     "Circle",             0.01, 0.01, 1.0, "2025-06-05"),   # Circle (USDC发行商, IPO 2025-06-05)
-            ("BMNR",     "Bitmine Immersion",  0.01, 0.01, 1.0, "2025-06-05"),   # Bitmine (BTC矿企, 微型股市值~$15M)
+            ("MU", "Micron Technology", 0.01, 0.01, 1.0, "1994-06-01"),  # 美光
+            ("SKHYNIX", "SK hynix", 0.01, 0.01, 1.0, "2014-01-01"),  # 海力士
+            ("GOOGL", "Alphabet (Google)", 0.01, 0.01, 1.0, "2004-08-19"),  # 谷歌
+            ("NVDA", "NVIDIA", 0.01, 0.01, 1.0, "1999-01-22"),  # 英伟达
+            ("AMZN", "Amazon", 0.01, 0.01, 1.0, "1997-05-15"),  # 亚马逊
+            ("SNDK", "SanDisk", 0.01, 0.01, 1.0, "1995-03-08"),  # 闪迪
+            ("SPCX", "SpaceX", 0.01, 0.01, 1.0, "2024-01-01"),  # SpaceX (OKX永续)
+            ("MSTR", "MicroStrategy", 0.01, 0.01, 1.0, "1999-06-11"),  # 微策略
+            ("COIN", "Coinbase", 0.01, 0.01, 1.0, "2021-04-14"),  # Coinbase
+            (
+                "CRCL",
+                "Circle",
+                0.01,
+                0.01,
+                1.0,
+                "2025-06-05",
+            ),  # Circle (USDC发行商, IPO 2025-06-05)
+            (
+                "BMNR",
+                "Bitmine Immersion",
+                0.01,
+                0.01,
+                1.0,
+                "2025-06-05",
+            ),  # Bitmine (BTC矿企, 微型股市值~$15M)
         ]
         for sym, name, lot, tick, ctval, ld in us_stocks:
-            self.register(AssetInfo(
-                symbol=sym, name=name,
-                category=AssetCategory.STOCK,
-                exchanges={"okx": True},
-                lot_sz_override=lot,
-                tick_sz_override=tick,
-                ct_val_override=ctval,
-                market_cap_tier=MarketCapTier.LARGE,  # 美股大盘股
-                listing_date=ld,
-            ))
+            self.register(
+                AssetInfo(
+                    symbol=sym,
+                    name=name,
+                    category=AssetCategory.STOCK,
+                    exchanges={"okx": True},
+                    lot_sz_override=lot,
+                    tick_sz_override=tick,
+                    ct_val_override=ctval,
+                    market_cap_tier=MarketCapTier.LARGE,  # 美股大盘股
+                    listing_date=ld,
+                )
+            )
 
     # ── 注册 / 查询 ──────────────────────────────────────────────
 
@@ -329,10 +366,7 @@ class SymbolMapper:
         min_history_days: int = 365,
     ) -> List[str]:
         """批量过滤出通过马丁风控检查的币种"""
-        return [
-            c.upper() for c in coins
-            if self.is_martin_safe(c, min_tier, min_history_days)
-        ]
+        return [c.upper() for c in coins if self.is_martin_safe(c, min_tier, min_history_days)]
 
     def list_coins(
         self,
@@ -379,15 +413,15 @@ class SymbolMapper:
         if exchange == Exchange.OKX or exchange == "okx":
             # BTC-USDT
             if inst_id.endswith("-USDT"):
-                return inst_id[:-len("-USDT")]
+                return inst_id[: -len("-USDT")]
         if exchange == Exchange.BINANCE or exchange == "binance":
             # BTCUSDT
             if inst_id.endswith("USDT"):
-                return inst_id[:-len("USDT")]
+                return inst_id[: -len("USDT")]
         # 通用回退：剥离已知后缀
         for suffix in ("-USDT-SWAP", "-USDT", "USDT-PERP", "USDT"):
             if inst_id.endswith(suffix):
-                return inst_id[:-len(suffix)]
+                return inst_id[: -len(suffix)]
         return None
 
     def from_swap(self, inst_id: str, exchange: str = "okx") -> Optional[str]:
@@ -395,16 +429,16 @@ class SymbolMapper:
         inst_id = inst_id.upper()
         if exchange == Exchange.OKX or exchange == "okx":
             if inst_id.endswith("-USDT-SWAP"):
-                return inst_id[:-len("-USDT-SWAP")]
+                return inst_id[: -len("-USDT-SWAP")]
         if exchange == Exchange.BINANCE or exchange == "binance":
             if inst_id.endswith("-PERP"):
-                return inst_id[:-len("-PERP")]
+                return inst_id[: -len("-PERP")]
             if inst_id.endswith("USDT-PERP"):
-                return inst_id[:-len("USDT-PERP")]
+                return inst_id[: -len("USDT-PERP")]
         # 通用回退
         for suffix in ("-USDT-SWAP", "-USDT-PERP", "-PERP"):
             if inst_id.endswith(suffix):
-                return inst_id[:-len(suffix)]
+                return inst_id[: -len(suffix)]
         return None
 
     def from_any(self, inst_id: str) -> Optional[str]:
@@ -444,6 +478,7 @@ class SymbolMapper:
     def summary(self) -> Dict:
         """返回注册表汇总统计"""
         from collections import Counter
+
         cat_count = Counter()
         for info in self._registry.values():
             cat_count[info.category.value] += 1
@@ -474,6 +509,7 @@ def reset_mapper():
 
 
 # ── 便捷函数（替代散落的硬编码拼接）────────────────────────────
+
 
 def to_spot(coin: str, exchange: str = "okx") -> str:
     """便捷函数：coin → 现货对"""

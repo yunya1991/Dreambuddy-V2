@@ -5,6 +5,7 @@
 
 对应 Spec §3bis.5.5 边界参数缓存策略 + §3bis.9 T_CB7。
 """
+
 from __future__ import annotations
 
 import sys
@@ -16,8 +17,7 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2 import morph_cycle_predictor as mcp
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor, _CYCLE_BOUNDS_CACHE
+from bcrm2.morph_cycle_predictor import _CYCLE_BOUNDS_CACHE, MorphCyclePredictor  # noqa: E402
 
 
 def _make_predictor() -> MorphCyclePredictor:
@@ -36,6 +36,7 @@ def _clear_cache():
 # ================================================================
 # T_CB7: 边界缓存命中
 # ================================================================
+
 
 class TestCycleBoundsCacheHit:
     """验证同日同 symbol 多次 predict 时，_interp_cycle_bounds 只计算 1 次。"""
@@ -73,8 +74,15 @@ class TestCycleBoundsCacheHit:
         cycle_4y = {"t_rel_current": 200.0}
         b = p._get_cycle_bounds("BTCUSDT", cycle_4y)
 
-        required = {"t_rel_current", "phase_hint", "level_lo", "level_hi",
-                    "level_mean", "amplitude_cap", "decay_strength"}
+        required = {
+            "t_rel_current",
+            "phase_hint",
+            "level_lo",
+            "level_hi",
+            "level_mean",
+            "amplitude_cap",
+            "decay_strength",
+        }
         assert set(b.keys()) == required
 
     def test_cache_per_symbol_isolated(self):

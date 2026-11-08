@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import List, Optional
+from typing import Optional
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(_THIS_DIR))
@@ -20,12 +20,10 @@ for _p in (_PROJECT_ROOT,):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from core.reflection.training_cases import TrainingCaseRecord, TrainingCaseStore
+from core.reflection.training_cases import TrainingCaseRecord, TrainingCaseStore  # noqa: E402
 
 # 默认训练案例库路径（工程内）
-DEFAULT_CASE_STORE = os.path.join(
-    _PROJECT_ROOT, "reflection_data", "training_cases.jsonl"
-)
+DEFAULT_CASE_STORE = os.path.join(_PROJECT_ROOT, "reflection_data", "training_cases.jsonl")
 
 
 class REATrainingCaseProvider:
@@ -72,10 +70,7 @@ class REATrainingCaseProvider:
             f"{record.case_type}",
             f"label={record.label}",
         ]
-        outcome = (
-            f"poe_score={record.poe_score:.2f}, "
-            f"evidence_refs={len(record.evidence_refs)}"
-        )
+        outcome = f"poe_score={record.poe_score:.2f}, " f"evidence_refs={len(record.evidence_refs)}"
         learned = [
             f"case_type={record.case_type}",
             f"label={record.label}",

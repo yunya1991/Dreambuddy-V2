@@ -24,11 +24,12 @@
 参考:
   - SPEC-CognitiveSystem-Evolution.md §1.1（JPMorgan Ask David）+ §4.3 P3-6
 """
+
 from __future__ import annotations
 
 import threading
 from collections import deque
-from typing import Any, Deque, Dict, List, Optional
+from typing import Any, Deque, Dict, List
 
 try:
     from workspace_bus import WorkspaceContent
@@ -123,9 +124,7 @@ class ReflectionNode:
                 try:
                     if duration is not None and float(duration) > self._slow_threshold:
                         verdict = VERDICT_NEEDS_IMPROVEMENT
-                        lessons.append(
-                            f"执行过慢: {duration}s 超过阈值 {self._slow_threshold}s"
-                        )
+                        lessons.append(f"执行过慢: {duration}s 超过阈值 {self._slow_threshold}s")
                 except (TypeError, ValueError):
                     pass  # FAIL-OPEN：无效 duration 忽略
 
@@ -165,15 +164,18 @@ class ReflectionNode:
         Returns:
             订阅 ID
         """
+
         def _on_broadcast(content: Any) -> None:
             try:
                 execution_result = getattr(content, "execution_result", None)
                 if execution_result is not None:
                     with self._lock:
-                        self._pending.append({
-                            "execution_result": execution_result,
-                            "confidence": getattr(content, "confidence", None),
-                        })
+                        self._pending.append(
+                            {
+                                "execution_result": execution_result,
+                                "confidence": getattr(content, "confidence", None),
+                            }
+                        )
             except Exception:
                 pass  # FAIL-OPEN：订阅回调异常静默
 

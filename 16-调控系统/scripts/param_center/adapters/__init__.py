@@ -11,6 +11,7 @@
 每个适配器继承 BaseAdapter，实现 _observe_impl()。
 FAIL-OPEN: 异常时返回 None，聚合器自动跳过。
 """
+
 from __future__ import annotations
 
 import sys as _sys
@@ -18,21 +19,21 @@ from pathlib import Path as _Path
 
 # 路径设置
 _THIS = _Path(__file__).resolve()
-_SCRIPTS_16 = _THIS.parent.parent.parent          # .../16-调控系统/scripts
-_PROJECT_ROOT = _SCRIPTS_16.parent.parent          # dreambuddy-v2
+_SCRIPTS_16 = _THIS.parent.parent.parent  # .../16-调控系统/scripts
+_PROJECT_ROOT = _SCRIPTS_16.parent.parent  # dreambuddy-v2
 _YIJING_SCRIPTS = _PROJECT_ROOT / "11-易经推理系统" / "scripts"
 for _p in [_YIJING_SCRIPTS, _SCRIPTS_16]:
     _sp = str(_p)
     if _sp not in _sys.path:
         _sys.path.insert(0, _sp)
 
-from .base import BaseAdapter
-from .hmm_adapter import HmmAdapter
-from .bagua_adapter import BaguaAdapter
-from .hurst_adapter import HurstAdapter
-from .pmapper_adapter import PmapperAdapter
-from .shadow_adapter import ShadowAdapter
-from .cusum_adapter import CusumAdapter
+from .bagua_adapter import BaguaAdapter  # noqa: E402
+from .base import BaseAdapter  # noqa: E402
+from .cusum_adapter import CusumAdapter  # noqa: E402
+from .hmm_adapter import HmmAdapter  # noqa: E402
+from .hurst_adapter import HurstAdapter  # noqa: E402
+from .pmapper_adapter import PmapperAdapter  # noqa: E402
+from .shadow_adapter import ShadowAdapter  # noqa: E402
 
 
 def get_all_adapters():

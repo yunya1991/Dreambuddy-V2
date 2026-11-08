@@ -1,4 +1,5 @@
 """FeatureHub 异常体系"""
+
 from __future__ import annotations
 
 

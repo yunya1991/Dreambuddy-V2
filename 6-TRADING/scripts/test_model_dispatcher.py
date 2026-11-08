@@ -19,7 +19,7 @@ model_dispatcher 压力测试
 运行: python test_model_dispatcher.py
 """
 
-import json
+import json  # noqa: I001
 import os
 import sys
 import io
@@ -31,12 +31,10 @@ if sys.platform == "win32":
 sys.path.insert(0, r"C:\tmp")
 from model_dispatcher import (
     dispatch,
-    get_task_info,
     dispatch_screen1_plan,
     format_dispatch_plan,
     update_model_availability,
     update_process_d_score,
-    TASK_THRESHOLDS,
 )
 
 PASS_COUNT = 0
@@ -77,6 +75,7 @@ def scenario(name):
 
 # ── 构建 mock 注册表 ──────────────────────────────────────────────────────────
 
+
 def _reg_only_deepseek():
     return {
         "registry_version": "test",
@@ -84,16 +83,26 @@ def _reg_only_deepseek():
         "base_fallback": "deepseek-v4",
         "models": {
             "deepseek-v4": {
-                "available": True, "cost_tier": 1,
-                "scores": {"reasoning_depth": 3, "chinese_finance": 4,
-                           "structured_output": 5, "instruction_follow": 4,
-                           "context_window_k": 64},
+                "available": True,
+                "cost_tier": 1,
+                "scores": {
+                    "reasoning_depth": 3,
+                    "chinese_finance": 4,
+                    "structured_output": 5,
+                    "instruction_follow": 4,
+                    "context_window_k": 64,
+                },
             },
             "claude-opus-4": {
-                "available": False, "cost_tier": 5,
-                "scores": {"reasoning_depth": 5, "chinese_finance": 4,
-                           "structured_output": 5, "instruction_follow": 5,
-                           "context_window_k": 200},
+                "available": False,
+                "cost_tier": 5,
+                "scores": {
+                    "reasoning_depth": 5,
+                    "chinese_finance": 4,
+                    "structured_output": 5,
+                    "instruction_follow": 5,
+                    "context_window_k": 200,
+                },
             },
         },
     }
@@ -118,10 +127,15 @@ def _reg_weak_only():
         "base_fallback": "deepseek-v4",
         "models": {
             "weak-model": {
-                "available": True, "cost_tier": 1,
-                "scores": {"reasoning_depth": 1, "chinese_finance": 1,
-                           "structured_output": 3, "instruction_follow": 2,
-                           "context_window_k": 8},
+                "available": True,
+                "cost_tier": 1,
+                "scores": {
+                    "reasoning_depth": 1,
+                    "chinese_finance": 1,
+                    "structured_output": 3,
+                    "instruction_follow": 2,
+                    "context_window_k": 8,
+                },
             },
         },
     }
@@ -132,8 +146,13 @@ def _reg_weak_only():
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("T01 — 仅 deepseek-v4 可用 → 所有非代码任务路由至 deepseek-v4")
 reg = _reg_only_deepseek()
-for tt in ["data_collection", "dim_annotation_cycle", "dim_annotation_macro",
-           "dim_annotation_cross_market", "json_write"]:
+for tt in [
+    "data_collection",
+    "dim_annotation_cycle",
+    "dim_annotation_macro",
+    "dim_annotation_cross_market",
+    "json_write",
+]:
     assert_eq(tt, dispatch(tt, reg), "deepseek-v4")
 
 # synthesis 任务 prefer_highest=True，但唯一可用模型仍是 deepseek-v4
@@ -157,7 +176,11 @@ for tt in ["synthesis_a1", "synthesis_a2", "synthesis_a3"]:
     assert_eq(f"{tt} → opus", dispatch(tt, reg_strong), "claude-opus-4")
 
 # 非合成任务仍选便宜模型
-assert_eq("dim_annotation_macro 仍用 deepseek", dispatch("dim_annotation_macro", reg_strong), "deepseek-v4")
+assert_eq(
+    "dim_annotation_macro 仍用 deepseek",
+    dispatch("dim_annotation_macro", reg_strong),
+    "deepseek-v4",
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -181,9 +204,14 @@ assert_eq("synthesis_a1 → opus", dispatch("synthesis_a1", reg_two), "claude-op
 # 同 reasoning_depth 的情况：添加第三个模型验证 cost_tier tiebreak
 reg_tie = copy.deepcopy(reg_two)
 reg_tie["models"]["model-cheap"] = {
-    "available": True, "cost_tier": 2,
-    "scores": {"reasoning_depth": 5, "chinese_finance": 4,
-               "structured_output": 5, "instruction_follow": 5},
+    "available": True,
+    "cost_tier": 2,
+    "scores": {
+        "reasoning_depth": 5,
+        "chinese_finance": 4,
+        "structured_output": 5,
+        "instruction_follow": 5,
+    },
 }
 # opus cost_tier=5, model-cheap cost_tier=2, 同 reasoning=5 → 选 model-cheap
 result = dispatch("synthesis_a3", reg_tie)
@@ -205,7 +233,8 @@ assert_eq("data_collection → weak-model", dispatch("data_collection", reg_weak
 # T07: update_model_availability 读写注册表
 # ─────────────────────────────────────────────────────────────────────────────
 scenario("T07 — update_model_availability 写回文件并生效")
-import tempfile, shutil
+import tempfile  # noqa: E402, I001
+import shutil  # noqa: E402
 
 orig = r"C:\tmp\model_registry.json"
 with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w", encoding="utf-8") as tmp:
@@ -221,9 +250,11 @@ try:
     update_model_availability("claude-opus-4", False)
     with open(orig, "r", encoding="utf-8") as f:
         updated2 = json.load(f)
-    assert_eq("claude-opus-4 available=False", updated2["models"]["claude-opus-4"]["available"], False)
+    assert_eq(
+        "claude-opus-4 available=False", updated2["models"]["claude-opus-4"]["available"], False
+    )
 finally:
-    shutil.copy(backup, orig)   # 还原
+    shutil.copy(backup, orig)  # 还原
     os.unlink(backup)
 
 
@@ -265,8 +296,7 @@ assert_eq("gate_check model __code__", plan[0]["model"], "__code__")
 
 # cross_market 依赖 macro
 cm = next(p for p in plan if p["task_type"] == "dim_annotation_cross_market")
-assert_true("cross_market depends_on macro",
-            "dim_annotation_macro" in cm["depends_on"])
+assert_true("cross_market depends_on macro", "dim_annotation_macro" in cm["depends_on"])
 
 # synthesis 步骤全有 skill
 for p in plan:
@@ -289,7 +319,7 @@ except Exception as e:
 
 # ── 汇总 ──────────────────────────────────────────────────────────────────────
 print(f"\n{'═'*60}")
-print(f"  调度器压力测试汇总")
+print("  调度器压力测试汇总")
 print(f"{'═'*60}")
 print(f"  通过: {PASS_COUNT}  失败: {FAIL_COUNT}  总计: {PASS_COUNT + FAIL_COUNT}")
 print(f"{'═'*60}")

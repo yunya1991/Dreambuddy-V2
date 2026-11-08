@@ -23,13 +23,11 @@
 """
 
 import json
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from dataclasses import dataclass, field
 from enum import Enum
-
+from pathlib import Path
+from typing import Any, Dict
 
 BASE_DIR = Path(__file__).parent.parent.parent
 FEEDBACK_DIR = BASE_DIR / "16-调控系统" / "artifacts" / "feedback"
@@ -38,6 +36,7 @@ PERMISSION_CONFIG_PATH = BASE_DIR / "16-调控系统" / "config" / "permission_c
 
 class PermissionLevel(str, Enum):
     """权限等级"""
+
     NOTIFY = "NOTIFY"
     ADVISE = "ADVISE"
     AUTO_REDUCE = "AUTO_REDUCE"
@@ -219,6 +218,7 @@ def can_auto_execute(system_name: str, action: str, urgency: str) -> Dict[str, A
 @dataclass
 class FeedbackRecord:
     """建议反馈记录"""
+
     evaluation_id: str
     system_name: str
     symbol: str
@@ -398,10 +398,13 @@ def get_feedback_stats(max_evaluations: int = 20) -> Dict[str, Any]:
     }
 
 
-def set_system_permission(system_name: str, permission_level: str,
-                          auto_execute_urgency: str = "CRITICAL",
-                          max_auto_reduce_pct: float = 0.3,
-                          notes: str = "") -> Dict[str, Any]:
+def set_system_permission(
+    system_name: str,
+    permission_level: str,
+    auto_execute_urgency: str = "CRITICAL",
+    max_auto_reduce_pct: float = 0.3,
+    notes: str = "",
+) -> Dict[str, Any]:
     """
     设置系统权限等级
 
@@ -449,13 +452,17 @@ if __name__ == "__main__":
     ]
     for sys_name, action, urgency in test_cases:
         result = can_auto_execute(sys_name, action, urgency)
-        print(f"  {sys_name} {action} ({urgency}): "
-              f"{'✓ 可执行' if result['can_execute'] else '✗ 不可执行'} - {result['reason']}")
+        print(
+            f"  {sys_name} {action} ({urgency}): "
+            f"{'✓ 可执行' if result['can_execute'] else '✗ 不可执行'} - {result['reason']}"
+        )
 
     print("\n=== 反馈统计 ===")
     stats = get_feedback_stats()
     print(f"  总评估数: {stats['total_evaluations']}")
     print(f"  总记录数: {stats['total_records']}")
-    if stats['total_records'] > 0:
+    if stats["total_records"] > 0:
         print(f"  采纳率: {stats['acceptance_rate']:.0%}")
-        print(f"  采纳: {stats['accepted_count']}, 拒绝: {stats['rejected_count']}, 部分: {stats['partial_count']}")
+        print(
+            f"  采纳: {stats['accepted_count']}, 拒绝: {stats['rejected_count']}, 部分: {stats['partial_count']}"
+        )

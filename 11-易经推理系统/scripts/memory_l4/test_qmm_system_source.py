@@ -1,6 +1,5 @@
 """测试 QMM 消费包含 system_source 的 TradeCase v0.3。"""
 
-import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -8,15 +7,15 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE_DIR))
 
-from scripts.memory_l4.case_registry import UnifiedCaseRegistry
-from scripts.memory_l4.trade_event import TradeEvent
-from scripts.memory_l4.qmm.engine import run_qmm
+from scripts.memory_l4.case_registry import UnifiedCaseRegistry  # noqa: E402
+from scripts.memory_l4.qmm.engine import run_qmm  # noqa: E402
+from scripts.memory_l4.trade_event import TradeEvent  # noqa: E402
 
 
 def create_test_cases_with_system_source(registry):
     """创建包含 system_source 的测试案例。"""
     cases = []
-    
+
     systems = [
         ("yijing_inference", "乾卦多头信号", 3.5),
         ("martin_v15", "马丁加仓", 2.8),
@@ -31,7 +30,7 @@ def create_test_cases_with_system_source(registry):
         ("agent_b", "Agent B 回撤", 2.1),
         ("dream_os", "Dream OS 加仓", 1.5),
     ]
-    
+
     for i, (system, desc, pnl_pct) in enumerate(systems):
         trade_id = f"qmm_test_{system}_{i}"
         event = TradeEvent(
@@ -52,32 +51,32 @@ def create_test_cases_with_system_source(registry):
             market_snapshot={"regime": "trend_up" if i % 2 == 0 else "ranging"},
             leverage=5.0,
         )
-        
+
         case_id, success = registry.register_trade_event(event)
         if success:
             case = registry.get_case(case_id)
             cases.append(case)
-    
+
     return cases
 
 
 def test_qmm_with_system_source():
     """测试 QMM 消费包含 system_source 的案例。"""
     registry = UnifiedCaseRegistry()
-    
+
     print("=== 创建测试案例 ===")
     cases = create_test_cases_with_system_source(registry)
     print(f"创建了 {len(cases)} 个测试案例")
-    
+
     print("\n=== 运行 QMM 引擎 ===")
     output = run_qmm(cases, distills=[])
-    
+
     print("\n=== QMM 输出结果 ===")
     print(f"趋势状态: {output.trend_state}")
     print(f"变化点: {output.trend_change_point}")
     print(f"MRD 方向: {output.mrd_vector.get('direction')}")
     print(f"不确定性: {output.uncertainty:.4f}")
-    
+
     print("\n=== 系统来源统计 ===")
     stats = output.system_source_stats
     if stats:
@@ -91,14 +90,14 @@ def test_qmm_with_system_source():
             print(f"  平均质量: {data['quality_avg']:.4f}")
     else:
         print("未生成系统来源统计")
-    
+
     print("\n=== 验证 system_source 字段 ===")
     assert "system_source_stats" in output.__dict__, "system_source_stats 字段缺失"
     assert isinstance(output.system_source_stats, dict), "system_source_stats 不是字典类型"
     assert len(output.system_source_stats) > 0, "system_source_stats 为空"
-    
+
     print("\n✅ QMM 成功消费包含 system_source 的 TradeCase v0.3！")
-    
+
     return output
 
 

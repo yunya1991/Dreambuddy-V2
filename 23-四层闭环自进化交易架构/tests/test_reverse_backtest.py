@@ -3,16 +3,15 @@
 P3: 模拟交易场景，对比启用/不启用逆向推导（因子权重调整）的胜率。
 当某维度持续判断错时，逆向推导降权该维度因子 → 后续交易胜率提升。
 """
+
 import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "dreambuddy_evolution" / "engines"))
 
-from reverse_deriver import ReverseDeriver
 from reverse_backtest import ReverseDerivationBacktest
 
 

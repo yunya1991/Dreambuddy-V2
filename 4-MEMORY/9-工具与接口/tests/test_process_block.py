@@ -3,17 +3,16 @@
 
 Task 15: process_block 只读分区 + load_process_block + get_prompt_context 追加流程段。
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).parent
 _PARENT = _SCRIPT_DIR.parent
 if str(_PARENT) not in sys.path:
     sys.path.insert(0, str(_PARENT))
 
-from working_memory_manager import WorkingMemoryManager
+from working_memory_manager import WorkingMemoryManager  # noqa: E402
 
 
 def test_process_block_in_default_budgets():

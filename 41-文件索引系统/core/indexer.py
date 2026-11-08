@@ -11,26 +11,29 @@ SPEC-41-文件索引系统 v0.6 §3/§4.1（P0 阶段）
   2. 事务原子性：写事务内先删后插，提交原子生效（SPEC v0.6 §4.1）
 位置: 41-文件索引系统/core/indexer.py
 """
+
 from __future__ import annotations
+
 import hashlib
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import List, Optional
 
-from .scanner import FileMeta, FileScanner
 from .db import Database
+from .scanner import FileMeta, FileScanner
 
 
 @dataclass
 class IndexStats:
     """索引操作统计（rebuild/update 返回值）。"""
-    scanned: int = 0        # 扫描文件数
-    indexed: int = 0        # 新写入数
-    updated: int = 0        # 更新数
-    skipped: int = 0        # 跳过数（未变更）
-    removed: int = 0        # 清理数（库中存在但文件系统已删除）
-    took_ms: int = 0        # 耗时（毫秒）
+
+    scanned: int = 0  # 扫描文件数
+    indexed: int = 0  # 新写入数
+    updated: int = 0  # 更新数
+    skipped: int = 0  # 跳过数（未变更）
+    removed: int = 0  # 清理数（库中存在但文件系统已删除）
+    took_ms: int = 0  # 耗时（毫秒）
     errors: List[str] = field(default_factory=list)
 
 

@@ -15,12 +15,12 @@
   - outcome: success (session 已完成)
   - FAIL-OPEN: 目录不存在/解析异常返回空或跳过
 """
+
 import os
 import re
 from typing import List, Optional
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider
 
 # ============================================================
 # A 阶段关键词映射
@@ -45,9 +45,14 @@ def _detect_phase(filename: str) -> Optional[str]:
     name_lower = filename.lower()
     # 优先匹配明确的 a0-a9 前缀 (支持 - 和 _ 分隔)
     for phase in ["a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9"]:
-        if (name_lower.startswith(phase + "-") or name_lower.startswith(phase + "_")
-                or f"-{phase}-" in name_lower or f"_{phase}_" in name_lower
-                or f"_{phase}-" in name_lower or f"-{phase}_" in name_lower):
+        if (
+            name_lower.startswith(phase + "-")
+            or name_lower.startswith(phase + "_")
+            or f"-{phase}-" in name_lower
+            or f"_{phase}_" in name_lower
+            or f"_{phase}-" in name_lower
+            or f"-{phase}_" in name_lower
+        ):
             return phase
     # 关键词匹配
     for phase, keywords in A_PHASE_KEYWORDS.items():
@@ -58,14 +63,14 @@ def _detect_phase(filename: str) -> Optional[str]:
                 return phase
     # 文件名语义映射（无A前缀的文件）
     semantic_map = {
-        "weekly-direction": "a1",      # 周线方向 = 战略调研
-        "order-plan": "a5",             # 下单计划 = 执行
-        "execution-log": "a5",          # 执行日志
-        "validation_report": "a8",      # 验证报告 = 知行合一
+        "weekly-direction": "a1",  # 周线方向 = 战略调研
+        "order-plan": "a5",  # 下单计划 = 执行
+        "execution-log": "a5",  # 执行日志
+        "validation_report": "a8",  # 验证报告 = 知行合一
         "validation-report": "a8",
-        "raw": "a3",                    # raw/ 目录 = 沙盘推演原始
-        "review": "a8",                # review = 反思
-        "algorithm_research": "a1",    # 算法研究
+        "raw": "a3",  # raw/ 目录 = 沙盘推演原始
+        "review": "a8",  # review = 反思
+        "algorithm_research": "a1",  # 算法研究
     }
     for key, phase in semantic_map.items():
         if key in name_lower:
@@ -110,68 +115,68 @@ def _parse_a1_contradiction(md_text: str) -> List[str]:
     nodes = []
 
     # 模式1: C1/C2 格式 (with score)
-    for m in re.finditer(r'###\s+C(\d+):\s*(.+?)\((\d+)/10\)', md_text):
+    for m in re.finditer(r"###\s+C(\d+):\s*(.+?)\((\d+)/10\)", md_text):
         idx, title, score = m.group(1), m.group(2).strip(), m.group(3)
         nodes.append(f"identify_contradiction_{idx}({title},{score}/10)")
         # 提取该矛盾块的空方/多方论据
         block_start = m.end()
-        next_block = md_text.find('### C', block_start)
+        next_block = md_text.find("### C", block_start)
         if next_block < 0:
-            next_block = md_text.find('## ', block_start)
-        block_text = md_text[block_start:next_block if next_block > 0 else len(md_text)]
+            next_block = md_text.find("## ", block_start)
+        block_text = md_text[block_start : next_block if next_block > 0 else len(md_text)]
         # 空方/多方论据
         if "**空方论据**" in block_text:
             nodes.append("collect_bear_argument()")
         if "**多方论据**" in block_text:
             nodes.append("collect_bull_argument()")
         # 矛盾性质
-        for pm in re.finditer(r'\*\*矛盾性质\*\*\s*[:：]\s*(.+)', block_text):
+        for pm in re.finditer(r"\*\*矛盾性质\*\*\s*[:：]\s*(.+)", block_text):
             nodes.append(f"contradiction_property({pm.group(1).strip()[:40]})")
 
     # 模式2: 矛盾一/矛盾二 格式
     if not nodes:
         cn_nums = {"一": "1", "二": "2", "三": "3", "四": "4", "五": "5", "六": "6", "七": "7"}
-        for m in re.finditer(r'###\s+矛盾([一二三四五六七八九十])\D*?[:：]\s*(.+)', md_text):
+        for m in re.finditer(r"###\s+矛盾([一二三四五六七八九十])\D*?[:：]\s*(.+)", md_text):
             cn_num, title = m.group(1), m.group(2).strip()
             num = cn_nums.get(cn_num, "0")
             nodes.append(f"identify_contradiction_{num}({title})")
             # 提取空方/多方
             block_start = m.end()
-            next_block = md_text.find('### 矛盾', block_start)
-            block_text = md_text[block_start:next_block if next_block > 0 else len(md_text)]
+            next_block = md_text.find("### 矛盾", block_start)
+            block_text = md_text[block_start : next_block if next_block > 0 else len(md_text)]
             if "**空方论据**" in block_text:
                 nodes.append("collect_bear_argument()")
             if "**多方论据**" in block_text:
                 nodes.append("collect_bull_argument()")
-            for pm in re.finditer(r'\*\*矛盾性质\*\*\s*[:：]\s*(.+)', block_text):
+            for pm in re.finditer(r"\*\*矛盾性质\*\*\s*[:：]\s*(.+)", block_text):
                 nodes.append(f"contradiction_property({pm.group(1).strip()[:40]})")
 
     # 列表项作为分析节点 (短项)
-    for m in re.finditer(r'^-\s+(.+)$', md_text, re.MULTILINE):
+    for m in re.finditer(r"^-\s+(.+)$", md_text, re.MULTILINE):
         line = m.group(1).strip()
         if 5 < len(line) < 100 and not line.startswith("**"):
             nodes.append(f"analyze_point({line[:50]})")
 
     # 提取 **分辨率**: 或 **结论**:
-    for m in re.finditer(r'\*\*(?:分辨率|结论)\*\*\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"\*\*(?:分辨率|结论)\*\*\s*[:：]\s*(.+)", md_text):
         resolution = m.group(1).strip()
         resolution = resolution[:80] if len(resolution) > 80 else resolution
         nodes.append(f"resolution({resolution})")
 
     # 提取主要矛盾结论
-    for m in re.finditer(r'\*\*主要矛盾\*\*\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"\*\*主要矛盾\*\*\s*[:：]\s*(.+)", md_text):
         nodes.append(f"identify_primary_contradiction({m.group(1).strip()[:60]})")
 
     # 矛盾评分
-    for m in re.finditer(r'(\d+)[：:]\s*(\d+)\s*[/：]\s*10', md_text):
+    for m in re.finditer(r"(\d+)[：:]\s*(\d+)\s*[/：]\s*10", md_text):
         nodes.append(f"score_contradiction({m.group(1)}:{m.group(2)}/10)")
-    for m in re.finditer(r'矛盾评分\*\*\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"矛盾评分\*\*\s*[:：]\s*(.+)", md_text):
         nodes.append(f"final_contradiction_score({m.group(1).strip()[:30]})")
 
     # 提取偏差标志 (两种格式)
-    for m in re.finditer(r'^-\s+`([a-z_]+)`', md_text, re.MULTILINE):
+    for m in re.finditer(r"^-\s+`([a-z_]+)`", md_text, re.MULTILINE):
         nodes.append(f"emit_bias_flag({m.group(1)})")
-    for m in re.finditer(r'\[BIAS_FLAG:\s*([^\]]+)\]', md_text):
+    for m in re.finditer(r"\[BIAS_FLAG:\s*([^\]]+)\]", md_text):
         nodes.append(f"emit_bias_flag({m.group(1).strip()[:50]})")
 
     return nodes
@@ -182,27 +187,27 @@ def _parse_a2_first_principles(md_text: str) -> List[str]:
     nodes = ["a2_entry()"]
 
     # 阻力来源表格行 (两种格式: 数值 bps / 文字描述)
-    for m in re.finditer(r'\|\s*(.+?)\s*\|\s*([\d.]+)\s*bps\s*\|', md_text):
+    for m in re.finditer(r"\|\s*(.+?)\s*\|\s*([\d.]+)\s*bps\s*\|", md_text):
         nodes.append(f"analyze_resistance_{m.group(1).strip().lower()}({m.group(2)}bps)")
-    for m in re.finditer(r'\|\s*(.+?)\s*\|\s*(高|低|中|无)\s*\|', md_text):
+    for m in re.finditer(r"\|\s*(.+?)\s*\|\s*(高|低|中|无)\s*\|", md_text):
         nodes.append(f"analyze_resistance_{m.group(1).strip().lower()}({m.group(2)})")
 
     # 章节标题作为分析步骤
-    for m in re.finditer(r'^##\s+(阻力来源|趋势阶段|趋势判断).+', md_text, re.MULTILINE):
+    for m in re.finditer(r"^##\s+(阻力来源|趋势阶段|趋势判断).+", md_text, re.MULTILINE):
         section = m.group(1).strip()
         nodes.append(f"analyze_{section}()")
 
     # 趋势阶段
-    stage_match = re.search(r'当前阶段\s*[:：]\s*(.+)', md_text)
+    stage_match = re.search(r"当前阶段\s*[:：]\s*(.+)", md_text)
     if stage_match:
         nodes.append(f"determine_trend_stage({stage_match.group(1).strip()[:40]})")
 
-    reverse_match = re.search(r'反向阻力\s*[:：]\s*(.+)', md_text)
+    reverse_match = re.search(r"反向阻力\s*[:：]\s*(.+)", md_text)
     if reverse_match:
         nodes.append(f"assess_reverse_resistance({reverse_match.group(1).strip()[:40]})")
 
     # 结论
-    for m in re.finditer(r'\*\*结论\*\*\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"\*\*结论\*\*\s*[:：]\s*(.+)", md_text):
         nodes.append(f"resolution({m.group(1).strip()[:60]})")
 
     nodes.append("a2_exit()")
@@ -213,13 +218,13 @@ def _parse_a3_scenarios(md_text: str) -> List[str]:
     """解析 A3 沙盘推演 session."""
     nodes = []
     # 情景标记
-    for m in re.finditer(r'##\s+情景[一二三四12345]\D*?[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"##\s+情景[一二三四12345]\D*?[:：]\s*(.+)", md_text):
         nodes.append(f"simulate_scenario({m.group(1).strip()[:50]})")
     # S1/S2/S3 场景
-    for m in re.finditer(r'###\s+S(\d+)\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"###\s+S(\d+)\s*[:：]\s*(.+)", md_text):
         nodes.append(f"simulate_s{m.group(1)}_scenario({m.group(2).strip()[:50]})")
     # 推演结论
-    for m in re.finditer(r'\*\*(?:推演结论|结论)\*\*\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"\*\*(?:推演结论|结论)\*\*\s*[:：]\s*(.+)", md_text):
         nodes.append(f"resolution({m.group(1).strip()[:60]})")
     return nodes
 
@@ -228,7 +233,7 @@ def _parse_oneirology(md_text: str) -> List[str]:
     """解析做梦部梦境 session (规则降级版,无LLM)."""
     nodes = []
     # 梦境标题
-    for m in re.finditer(r'##\s+梦境[一二三四五六七八九十]+\D*?[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"##\s+梦境[一二三四五六七八九十]+\D*?[:：]\s*(.+)", md_text):
         nodes.append(f"dream_theme({m.group(1).strip()[:50]})")
     # 弗洛伊德五机制关键词
     mechanisms = ["凝缩", "移置", "象征", "二次修正", "投射", "强迫性重复"]
@@ -248,15 +253,15 @@ def _parse_generic_a_phase(phase: str, md_text: str) -> List[str]:
     """通用 A 阶段解析: 提取章节+列表项作为决策节点."""
     nodes = [f"{phase}_entry()"]
     # 章节标题作为步骤
-    for m in re.finditer(r'^##\s+(.+)$', md_text, re.MULTILINE):
+    for m in re.finditer(r"^##\s+(.+)$", md_text, re.MULTILINE):
         title = m.group(1).strip()
         if title and not title.startswith("#"):
             nodes.append(f"section({title[:50]})")
     # 决议/结论
-    for m in re.finditer(r'\*\*(?:结论|决议|结果|执行)\*\*\s*[:：]\s*(.+)', md_text):
+    for m in re.finditer(r"\*\*(?:结论|决议|结果|执行)\*\*\s*[:：]\s*(.+)", md_text):
         nodes.append(f"resolution({m.group(1).strip()[:60]})")
     # 列表项 (短项)
-    for m in re.finditer(r'^-\s+(.+)$', md_text, re.MULTILINE):
+    for m in re.finditer(r"^-\s+(.+)$", md_text, re.MULTILINE):
         line = m.group(1).strip()
         if len(line) < 80 and not line.startswith("*"):
             nodes.append(f"item({line[:50]})")
@@ -295,10 +300,10 @@ def _split_into_sub_cases(phase: str, md_text: str) -> List[tuple]:
     if phase == "a1":
         # 按矛盾块拆分
         # 模式1: ### C{N}: ... (score/10)
-        c_blocks = re.split(r'(?=###\s+C\d+[:：])', md_text)
+        c_blocks = re.split(r"(?=###\s+C\d+[:：])", md_text)
         if len(c_blocks) > 1:
             for block in c_blocks[1:]:  # 跳过前置部分
-                m = re.match(r'###\s+C(\d+)', block)
+                m = re.match(r"###\s+C(\d+)", block)
                 if not m:
                     continue
                 c_idx = m.group(1)
@@ -317,11 +322,11 @@ def _split_into_sub_cases(phase: str, md_text: str) -> List[tuple]:
             return sub_cases if sub_cases else [(None, _parse_session_md(phase, md_text))]
 
         # 模式2: 矛盾一/矛盾二
-        cn_blocks = re.split(r'(?=###\s+矛盾[一二三四五六七八九十])', md_text)
+        cn_blocks = re.split(r"(?=###\s+矛盾[一二三四五六七八九十])", md_text)
         if len(cn_blocks) > 1:
             cn_nums = {"一": "1", "二": "2", "三": "3", "四": "4", "五": "5"}
             for block in cn_blocks[1:]:
-                m = re.match(r'###\s+矛盾([一二三四五六七八九十])', block)
+                m = re.match(r"###\s+矛盾([一二三四五六七八九十])", block)
                 if not m:
                     continue
                 num = cn_nums.get(m.group(1), "0")
@@ -337,10 +342,10 @@ def _split_into_sub_cases(phase: str, md_text: str) -> List[tuple]:
 
     elif phase == "a3":
         # 按情景拆分
-        scn_blocks = re.split(r'(?=##\s+情景[一二三四五六七八九十12345])', md_text)
+        scn_blocks = re.split(r"(?=##\s+情景[一二三四五六七八九十12345])", md_text)
         if len(scn_blocks) > 1:
             for block in scn_blocks[1:]:
-                m = re.match(r'##\s+情景([一二三四五六七八九十12345])', block)
+                m = re.match(r"##\s+情景([一二三四五六七八九十12345])", block)
                 if not m:
                     continue
                 scn_label = m.group(1)
@@ -350,10 +355,10 @@ def _split_into_sub_cases(phase: str, md_text: str) -> List[tuple]:
             if sub_cases:
                 return sub_cases
         # S1/S2/S3 模式
-        s_blocks = re.split(r'(?=###\s+S\d+)', md_text)
+        s_blocks = re.split(r"(?=###\s+S\d+)", md_text)
         if len(s_blocks) > 1:
             for block in s_blocks[1:]:
-                m = re.match(r'###\s+S(\d+)', block)
+                m = re.match(r"###\s+S(\d+)", block)
                 if not m:
                     continue
                 s_num = m.group(1)
@@ -365,10 +370,10 @@ def _split_into_sub_cases(phase: str, md_text: str) -> List[tuple]:
 
     elif phase == "oneirology":
         # 按梦境拆分
-        dream_blocks = re.split(r'(?=##\s+梦境[一二三四五六七八九十])', md_text)
+        dream_blocks = re.split(r"(?=##\s+梦境[一二三四五六七八九十])", md_text)
         if len(dream_blocks) > 1:
             for block in dream_blocks[1:]:
-                m = re.match(r'##\s+梦境([一二三四五六七八九十])', block)
+                m = re.match(r"##\s+梦境([一二三四五六七八九十])", block)
                 if not m:
                     continue
                 d_num = m.group(1)
@@ -402,9 +407,7 @@ class ASeriesSessionCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "B"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从 6-TRADING/sessions/ 采集 TrainingCase.
 
         Args:
@@ -457,46 +460,52 @@ class ASeriesSessionCollector(TrainingDataProvider):
                 topic = _extract_topic_from_session_id(session_id)
 
                 # 从 frontmatter 或文本提取标题
-                title_match = re.search(r'^#\s+(.+)$', md_text, re.MULTILINE)
+                title_match = re.search(r"^#\s+(.+)$", md_text, re.MULTILINE)
                 title = title_match.group(1).strip()[:60] if title_match else f"{phase}.{topic}"
 
                 # 参数化生成: A1 session 含多个矛盾块 → 每个矛盾块独立 case
                 sub_cases_raw = _split_into_sub_cases(phase, md_text)
 
-                for sub_idx, (sub_label, sub_nodes) in enumerate(sub_cases_raw):
+                for sub_idx, (sub_label, sub_nodes) in enumerate(sub_cases_raw):  # noqa: B007
                     if len(sub_nodes) < 3:
                         continue
                     if len(cases) >= limit:
                         break
 
-                    intent = f"{phase}.{topic}.{date}.{sub_label}" if sub_label else f"{phase}.{topic}.{date}"
+                    intent = (
+                        f"{phase}.{topic}.{date}.{sub_label}"
+                        if sub_label
+                        else f"{phase}.{topic}.{date}"
+                    )
 
-                    cases.append(TrainingCase(
-                        intent=intent,
-                        actions=sub_nodes,
-                        outcome_text="success",
-                        learned=[
-                            f"phase={phase}",
-                            f"session_id={session_id}",
-                            f"sub_case={sub_label or 'main'}",
-                            f"node_count={len(sub_nodes)}",
-                        ],
-                        layer_tags=["DSH"],
-                        quality="B",
-                        confidence=0.6,
-                        source="a_series_session",
-                        metadata={
-                            "outcome": "success",  # session 已完成 = ground truth
-                            "session_id": session_id,
-                            "phase": phase,
-                            "date": date,
-                            "topic": topic,
-                            "file": md_path,
-                            "title": title,
-                            "sub_case": sub_label or "main",
-                            "node_count": len(sub_nodes),
-                        },
-                    ))
+                    cases.append(
+                        TrainingCase(
+                            intent=intent,
+                            actions=sub_nodes,
+                            outcome_text="success",
+                            learned=[
+                                f"phase={phase}",
+                                f"session_id={session_id}",
+                                f"sub_case={sub_label or 'main'}",
+                                f"node_count={len(sub_nodes)}",
+                            ],
+                            layer_tags=["DSH"],
+                            quality="B",
+                            confidence=0.6,
+                            source="a_series_session",
+                            metadata={
+                                "outcome": "success",  # session 已完成 = ground truth
+                                "session_id": session_id,
+                                "phase": phase,
+                                "date": date,
+                                "topic": topic,
+                                "file": md_path,
+                                "title": title,
+                                "sub_case": sub_label or "main",
+                                "node_count": len(sub_nodes),
+                            },
+                        )
+                    )
             except Exception:
                 # FAIL-OPEN: 单个文件异常跳过
                 continue

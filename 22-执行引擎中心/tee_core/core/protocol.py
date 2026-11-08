@@ -5,6 +5,7 @@ this runtime-checkable Protocol.
 
 Adapters live in `tee_core/adapters/` (okx_adapter, paper_adapter, …).
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Protocol, Tuple, runtime_checkable

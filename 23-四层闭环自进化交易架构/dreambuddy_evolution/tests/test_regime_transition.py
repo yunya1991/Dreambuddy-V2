@@ -22,13 +22,13 @@ TDD 覆盖:
   P0.2-T2.4 regime_uncertainty 高 = 切换频繁 (熵大)
   P0.2-T2.5 regime_uncertainty 低 = 稳定 (熵小)
 """
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
@@ -81,11 +81,13 @@ def test_transition_matrix_correctness():
     labels = np.array([0, 0, 1, 2, 0, 1])
     Q = detector.estimate_transition_matrix(labels)
 
-    expected = np.array([
-        [1/3, 2/3, 0.0],
-        [0.0, 0.0, 1.0],
-        [1.0, 0.0, 0.0],
-    ])
+    expected = np.array(
+        [
+            [1 / 3, 2 / 3, 0.0],
+            [0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0],
+        ]
+    )
     np.testing.assert_allclose(Q, expected, atol=1e-10)
 
 
@@ -123,11 +125,13 @@ def test_stationary_distribution_shape():
     from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
 
     detector = BTCRegimeDetector()
-    Q = np.array([
-        [0.7, 0.2, 0.1],
-        [0.3, 0.5, 0.2],
-        [0.1, 0.3, 0.6],
-    ])
+    Q = np.array(
+        [
+            [0.7, 0.2, 0.1],
+            [0.3, 0.5, 0.2],
+            [0.1, 0.3, 0.6],
+        ]
+    )
     pi = detector.stationary_distribution(Q)
     assert pi.shape == (3,), f"pi shape 应为 (3,), 实际 {pi.shape}"
 
@@ -137,11 +141,13 @@ def test_stationary_distribution_satisfies_piQ_eq_pi():
     from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
 
     detector = BTCRegimeDetector()
-    Q = np.array([
-        [0.7, 0.2, 0.1],
-        [0.3, 0.5, 0.2],
-        [0.1, 0.3, 0.6],
-    ])
+    Q = np.array(
+        [
+            [0.7, 0.2, 0.1],
+            [0.3, 0.5, 0.2],
+            [0.1, 0.3, 0.6],
+        ]
+    )
     pi = detector.stationary_distribution(Q)
     # πQ = π
     np.testing.assert_allclose(pi @ Q, pi, atol=1e-8)
@@ -152,11 +158,13 @@ def test_stationary_distribution_valid_probability():
     from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
 
     detector = BTCRegimeDetector()
-    Q = np.array([
-        [0.5, 0.3, 0.2],
-        [0.2, 0.6, 0.2],
-        [0.1, 0.2, 0.7],
-    ])
+    Q = np.array(
+        [
+            [0.5, 0.3, 0.2],
+            [0.2, 0.6, 0.2],
+            [0.1, 0.2, 0.7],
+        ]
+    )
     pi = detector.stationary_distribution(Q)
     assert np.all(pi >= -1e-10), "pi 元素应非负"
     np.testing.assert_allclose(pi.sum(), 1.0, atol=1e-8)
@@ -170,11 +178,13 @@ def test_regime_uncertainty_high_for_unstable():
     from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
 
     detector = BTCRegimeDetector()
-    Q_uniform = np.array([
-        [1/3, 1/3, 1/3],
-        [1/3, 1/3, 1/3],
-        [1/3, 1/3, 1/3],
-    ])
+    Q_uniform = np.array(
+        [
+            [1 / 3, 1 / 3, 1 / 3],
+            [1 / 3, 1 / 3, 1 / 3],
+            [1 / 3, 1 / 3, 1 / 3],
+        ]
+    )
     entropy = detector.regime_uncertainty(Q_uniform, current_regime=0)
     expected_max = np.log(3)
     np.testing.assert_allclose(entropy, expected_max, atol=1e-8)
@@ -188,11 +198,13 @@ def test_regime_uncertainty_low_for_stable():
     from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector
 
     detector = BTCRegimeDetector()
-    Q_stable = np.array([
-        [0.95, 0.03, 0.02],
-        [0.1, 0.85, 0.05],
-        [0.05, 0.1, 0.85],
-    ])
+    Q_stable = np.array(
+        [
+            [0.95, 0.03, 0.02],
+            [0.1, 0.85, 0.05],
+            [0.05, 0.1, 0.85],
+        ]
+    )
     entropy = detector.regime_uncertainty(Q_stable, current_regime=0)
     # 熵应远小于最大熵 log(3) ≈ 1.0986
     assert entropy < 0.3, f"稳定 regime 熵应 < 0.3, 实际 {entropy}"

@@ -4,11 +4,12 @@
 市场状态划分：牛市/熊市/震荡
 """
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
 import json
 from itertools import product
@@ -32,17 +33,26 @@ def fetch_real_data(inst_id, days=730):
 def resample_to_weekly(daily_df):
     df = daily_df.copy()
     df.index = pd.to_datetime(df.index)
-    weekly = df.resample("W").agg({
-        "open": "first", "high": "max", "low": "min",
-        "close": "last", "volume": "sum",
-    }).dropna()
+    weekly = (
+        df.resample("W")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
     return weekly
 
 
 def classify_market_regime(prices, ma_long=200, ma_short=50):
     """划分市场状态（放宽标准）"""
     close = prices["close"]
-    n = len(close)
+    n = len(close)  # noqa: F841
 
     ma200 = close.rolling(window=ma_long, min_periods=ma_long).mean()
     ma50 = close.rolling(window=ma_short, min_periods=ma_short).mean()
@@ -51,7 +61,7 @@ def classify_market_regime(prices, ma_long=200, ma_short=50):
     # 趋势强度：20天价格变化占ATR的比例
     atr = (prices["high"] - prices["low"]).rolling(window=14).mean()
     directional = close.diff(periods=20).abs()
-    trend_strength = directional / (atr * 20 + 1e-8)
+    trend_strength = directional / (atr * 20 + 1e-8)  # noqa: F841
 
     regime = pd.Series("sideways", index=prices.index)
 
@@ -79,13 +89,14 @@ def precompute_lr_signals(prices, warmup=80, step=1):
     signals = []
     for i in range(warmup, n):
         if (i - warmup) % step == 0 or i == warmup:
-            daily_slice = prices.iloc[:i + 1].copy()
+            daily_slice = prices.iloc[: i + 1].copy()
             weekly_df = resample_to_weekly(daily_slice)
 
             if len(weekly_df) >= 10:
                 try:
                     result = compute_least_resistance_3d(
-                        weekly_df, daily_slice,
+                        weekly_df,
+                        daily_slice,
                         daily_history_diffs=daily_history_diffs if daily_history_diffs else None,
                         history_3d=history_3d if history_3d else None,
                     )
@@ -94,34 +105,40 @@ def precompute_lr_signals(prices, warmup=80, step=1):
                     if len(daily_history_diffs) > 30:
                         daily_history_diffs = daily_history_diffs[-30:]
 
-                    history_3d.append({
-                        "direction": result["direction"],
-                        "velocity": result["velocity"],
-                        "acceleration": result["acceleration"],
-                    })
+                    history_3d.append(
+                        {
+                            "direction": result["direction"],
+                            "velocity": result["velocity"],
+                            "acceleration": result["acceleration"],
+                        }
+                    )
                     if len(history_3d) > 20:
                         history_3d = history_3d[-20:]
 
-                    signals.append({
-                        "idx": i,
-                        "direction": result["direction"],
-                        "confidence": result["confidence"],
-                        "entry_signal": result["entry_signal"],
-                    })
+                    signals.append(
+                        {
+                            "idx": i,
+                            "direction": result["direction"],
+                            "confidence": result["confidence"],
+                            "entry_signal": result["entry_signal"],
+                        }
+                    )
                 except Exception:
-                    signals.append({
-                        "idx": i,
-                        "direction": "NEUTRAL",
-                        "confidence": 0.0,
-                        "entry_signal": "WAIT",
-                    })
+                    signals.append(
+                        {
+                            "idx": i,
+                            "direction": "NEUTRAL",
+                            "confidence": 0.0,
+                            "entry_signal": "WAIT",
+                        }
+                    )
 
     return signals
 
 
 def fast_generate_positions(signals, n, params, ma200, ma50):
     """根据预计算信号和参数快速生成仓位序列"""
-    update_step = params["update_step"]
+    update_step = params["update_step"]  # noqa: F841
     min_holding = params["min_holding_bars"]
     confirm_bars = params["signal_confirm_bars"]
     max_position = params["max_position"]
@@ -178,8 +195,14 @@ def fast_generate_positions(signals, n, params, ma200, ma50):
 
                 # 趋势过滤
                 if enable_trend_filter and abs(raw_pos) > 0.01:
-                    has_ma = (i < len(ma200) and not np.isnan(ma200[i]) and ma200[i] > 0 and
-                              i < len(ma50) and not np.isnan(ma50[i]) and ma50[i] > 0)
+                    has_ma = (
+                        i < len(ma200)
+                        and not np.isnan(ma200[i])
+                        and ma200[i] > 0
+                        and i < len(ma50)
+                        and not np.isnan(ma50[i])
+                        and ma50[i] > 0
+                    )
                     if has_ma:
                         in_bull = ma50[i] > ma200[i]
                         in_bear = ma50[i] < ma200[i]
@@ -274,6 +297,7 @@ def main():
     # 预计算信号（只算一次！）
     print("\n[3] 预计算最小阻力信号...")
     import time
+
     t0 = time.time()
     signals = precompute_lr_signals(prices, warmup=80, step=1)
     t1 = time.time()
@@ -301,7 +325,7 @@ def main():
     t0 = time.time()
 
     for idx, combo in enumerate(product(*param_grid.values())):
-        params = dict(zip(param_grid.keys(), combo))
+        params = dict(zip(param_grid.keys(), combo))  # noqa: B905
 
         positions = fast_generate_positions(signals, n, params, ma200, ma50)
         r = fast_backtest(prices, positions, regime)
@@ -312,14 +336,16 @@ def main():
             elapsed = time.time() - t0
             rate = (idx + 1) / elapsed
             eta = (total_combos - idx - 1) / rate
-            print(f"  进度: {idx+1}/{total_combos} ({(idx+1)/total_combos*100:.0f}%) "
-                  f"速率: {rate:.1f}/s ETA: {eta:.0f}s")
+            print(
+                f"  进度: {idx+1}/{total_combos} ({(idx+1)/total_combos*100:.0f}%) "
+                f"速率: {rate:.1f}/s ETA: {eta:.0f}s"
+            )
 
     t1 = time.time()
     print(f"  扫描完成: {total_combos} 组合, 耗时 {t1-t0:.1f}s")
 
     # 找出各状态最优参数
-    print(f"\n[5] 各市场状态最优参数:")
+    print("\n[5] 各市场状态最优参数:")
     best = {}
 
     for r_name in ["bull", "bear", "sideways", "overall"]:
@@ -334,8 +360,10 @@ def main():
         if sorted_r:
             best[r_name] = sorted_r[0]
 
-    print(f"\n{'状态':>8} {'收益%':>10} {'夏普':>8} {'回撤%':>8} {'交易':>6} {'持仓天':>8} | "
-          f"{'step':>5} {'hold':>5} {'confirm':>8} {'pos':>5} {'filter':>6}")
+    print(
+        f"\n{'状态':>8} {'收益%':>10} {'夏普':>8} {'回撤%':>8} {'交易':>6} {'持仓天':>8} | "
+        f"{'step':>5} {'hold':>5} {'confirm':>8} {'pos':>5} {'filter':>6}"
+    )
     print("-" * 100)
 
     for r_name in ["bull", "bear", "sideways", "overall"]:
@@ -343,17 +371,23 @@ def main():
             continue
         b = best[r_name]
         p = b["params"]
-        r_label = {"bull": "牛市", "bear": "熊市", "sideways": "震荡", "overall": "综合"}.get(r_name, r_name)
+        r_label = {"bull": "牛市", "bear": "熊市", "sideways": "震荡", "overall": "综合"}.get(
+            r_name, r_name
+        )
         tf = "是" if p.get("enable_trend_filter") else "否"
-        print(f"{r_label:>8} {b['return']:>+9.2f}% {b['sharpe']:>8.3f} {b['drawdown']:>7.2f}% "
-              f"{b['trades']:>6d} {b['avg_holding']:>7.1f}天 | "
-              f"{p['update_step']:>5} {p['min_holding_bars']:>5} {p['signal_confirm_bars']:>8} "
-              f"{p['max_position']:>5.1f} {tf:>6}")
+        print(
+            f"{r_label:>8} {b['return']:>+9.2f}% {b['sharpe']:>8.3f} {b['drawdown']:>7.2f}% "
+            f"{b['trades']:>6d} {b['avg_holding']:>7.1f}天 | "
+            f"{p['update_step']:>5} {p['min_holding_bars']:>5} {p['signal_confirm_bars']:>8} "
+            f"{p['max_position']:>5.1f} {tf:>6}"
+        )
 
     # 各状态Top5
-    print(f"\n[6] 各状态Top5参数详情:")
+    print("\n[6] 各状态Top5参数详情:")
     for r_name in ["bull", "bear", "sideways", "overall"]:
-        r_label = {"bull": "牛市", "bear": "熊市", "sideways": "震荡", "overall": "综合"}.get(r_name, r_name)
+        r_label = {"bull": "牛市", "bear": "熊市", "sideways": "震荡", "overall": "综合"}.get(
+            r_name, r_name
+        )
         if r_name == "overall":
             sorted_r = sorted(results, key=lambda x: x["return"], reverse=True)
         else:
@@ -373,11 +407,13 @@ def main():
                 rs = r["regime_stats"].get(r_name, {})
                 reg_ret = rs.get("return_pct", 0)
                 reg_label = f"{r_name}收益"
-            print(f"    #{i+1} {reg_label}={reg_ret:+.2f}% | "
-                  f"总收益={r['return']:+.2f}% 夏普={r['sharpe']:.3f} 回撤={r['drawdown']:.1f}% "
-                  f"交易={r['trades']} 持仓={r['avg_holding']:.0f}天 | "
-                  f"step={p['update_step']} hold={p['min_holding_bars']} "
-                  f"confirm={p['signal_confirm_bars']} pos={p['max_position']}")
+            print(
+                f"    #{i+1} {reg_label}={reg_ret:+.2f}% | "
+                f"总收益={r['return']:+.2f}% 夏普={r['sharpe']:.3f} 回撤={r['drawdown']:.1f}% "
+                f"交易={r['trades']} 持仓={r['avg_holding']:.0f}天 | "
+                f"step={p['update_step']} hold={p['min_holding_bars']} "
+                f"confirm={p['signal_confirm_bars']} pos={p['max_position']}"
+            )
 
     # 保存结果
     os.makedirs("ml/optimization_results", exist_ok=True)
@@ -405,7 +441,9 @@ def main():
             "regime_stats": b["regime_stats"],
         }
 
-    result_file = f"ml/optimization_results/regime_param_opt_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    result_file = (
+        f"ml/optimization_results/regime_param_opt_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
     with open(result_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False, default=str)
     print(f"\n结果已保存: {result_file}")

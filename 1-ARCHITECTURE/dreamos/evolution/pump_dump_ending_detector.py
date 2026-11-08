@@ -14,6 +14,7 @@
 
 镜像 WashoutEndingDetector (做多因子), 方向相反.
 """
+
 from __future__ import annotations
 
 import logging
@@ -22,7 +23,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-import numpy as np
 import pandas as pd
 
 __all__ = ["PumpDumpEndingSignal", "PumpDumpEndingDetector"]
@@ -38,6 +38,7 @@ _VOL_LOOKBACK = 10
 @dataclass(frozen=True)
 class PumpDumpEndingSignal:
     """拉高出货结束信号输出契约."""
+
     activated: bool
     confidence: float
     reason: str
@@ -50,7 +51,9 @@ class PumpDumpEndingSignal:
     @staticmethod
     def not_activated(reason: str) -> "PumpDumpEndingSignal":
         return PumpDumpEndingSignal(
-            activated=False, confidence=0.0, reason=reason,
+            activated=False,
+            confidence=0.0,
+            reason=reason,
             timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
@@ -68,8 +71,7 @@ class PumpDumpEndingDetector:
 
             rsi = self._compute_rsi(df["close"], _RSI_PERIOD)
             if rsi is None or rsi <= _RSI_OVERBOUGHT:
-                return PumpDumpEndingSignal.not_activated(
-                    f"rsi_not_overbought_rsi={rsi}")
+                return PumpDumpEndingSignal.not_activated(f"rsi_not_overbought_rsi={rsi}")
 
             if not self._check_volume_decline(df):
                 return PumpDumpEndingSignal.not_activated("volume_not_declining")
@@ -82,7 +84,8 @@ class PumpDumpEndingDetector:
 
             confidence = self._compute_confidence(rsi, df, macro_data)
             return PumpDumpEndingSignal(
-                activated=True, confidence=confidence,
+                activated=True,
+                confidence=confidence,
                 reason=f"rsi={rsi:.1f}+vol_decline+price_topping+oi_down",
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
@@ -97,7 +100,7 @@ class PumpDumpEndingDetector:
                 return None
             deltas = closes.diff().dropna()
             gains = deltas.clip(lower=0)
-            losses = (-deltas.clip(upper=0))
+            losses = -deltas.clip(upper=0)
             ag = gains.iloc[:period].mean()
             al = losses.iloc[:period].mean()
             for i in range(period, len(deltas)):
@@ -115,7 +118,7 @@ class PumpDumpEndingDetector:
             if len(df) < _VOL_LOOKBACK + 2:
                 return False
             vol = df["volume"].astype(float)
-            avg = float(vol.iloc[-(2 + _VOL_LOOKBACK):-2].mean())
+            avg = float(vol.iloc[-(2 + _VOL_LOOKBACK) : -2].mean())
             if avg <= 0:
                 return False
             v1 = float(vol.iloc[-1])
@@ -132,8 +135,7 @@ class PumpDumpEndingDetector:
             last = df.iloc[-1]
             prev = df.iloc[-2]
             body = abs(float(last["close"]) - float(last["open"]))
-            upper_shadow = float(last["high"]) - max(
-                float(last["close"]), float(last["open"]))
+            upper_shadow = float(last["high"]) - max(float(last["close"]), float(last["open"]))
             if upper_shadow > body and body > 0:
                 return True
             if float(last["close"]) < float(prev["close"]):
@@ -160,7 +162,7 @@ class PumpDumpEndingDetector:
         try:
             rsi_score = min(1.0, max(0.0, (rsi - 50) / 50))
             vol = df["volume"].astype(float)
-            avg = float(vol.iloc[-(2 + _VOL_LOOKBACK):-2].mean())
+            avg = float(vol.iloc[-(2 + _VOL_LOOKBACK) : -2].mean())
             if avg > 0:
                 decline = max(0.0, (avg - float(vol.iloc[-1])) / avg)
                 vol_score = min(1.0, decline / 0.4)

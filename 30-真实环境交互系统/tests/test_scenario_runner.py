@@ -1,15 +1,15 @@
 """场景运行引擎单元测试"""
+
 import sys
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.scenario_runner import ScenarioRunner, ScenarioResult, StepResult
+from core.scenario_runner import ScenarioRunner, ScenarioResult, StepResult  # noqa: I001
 
 
 @pytest.fixture
@@ -118,7 +118,12 @@ class TestScenarioRunner:
         scenario = {
             "name": "failfast",
             "steps": [
-                {"name": "step1", "action": "navigate", "url": "http://test.com", "fail_fast": True},
+                {
+                    "name": "step1",
+                    "action": "navigate",
+                    "url": "http://test.com",
+                    "fail_fast": True,
+                },
                 {"name": "step2", "action": "wait", "seconds": 0.01},
             ],
         }
@@ -133,7 +138,12 @@ class TestScenarioRunner:
         scenario = {
             "name": "nofailfast",
             "steps": [
-                {"name": "step1", "action": "navigate", "url": "http://test.com", "fail_fast": False},
+                {
+                    "name": "step1",
+                    "action": "navigate",
+                    "url": "http://test.com",
+                    "fail_fast": False,
+                },
                 {"name": "step2", "action": "wait", "seconds": 0.01},
             ],
         }
@@ -190,7 +200,13 @@ class TestScenarioRunner:
         mock_locator = MagicMock()
         mock_page.locator.return_value = mock_locator
 
-        step = {"name": "type", "action": "type", "selector": "input", "text": "hello", "human": True}
+        step = {
+            "name": "type",
+            "action": "type",
+            "selector": "input",
+            "text": "hello",
+            "human": True,
+        }
         runner._step_type(mock_page, step)
 
         runner._simulator.human_type.assert_called_once_with(mock_locator, "hello")

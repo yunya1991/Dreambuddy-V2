@@ -12,16 +12,14 @@
   3. 预警有效性（TDA/Ising/力学减速）
   4. 三角校验修正后的置信度与实际收益的关系
 """
-import sys
-import os
-import json
-import time
+
 import logging
-import numpy as np
-import pandas as pd
-from datetime import datetime
+import os
+import sys
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
+
+import pandas as pd
 
 # 设置路径
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +34,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RealInferenceRecord:
     """真实推理记录"""
+
     timestamp: str = ""
     bar_index: int = 0
     # BCRM2 ML结果
@@ -56,6 +55,7 @@ class RealInferenceRecord:
 @dataclass
 class RealVerificationMetrics:
     """实盘验证指标"""
+
     total_signals: int = 0
     # 方向准确率
     direction_accuracy: float = 0.0
@@ -128,6 +128,7 @@ class BCRM2RealVerifier:
 
         # 延迟导入BCRM2Adapter（避免启动时加载慢）
         from scripts.memory_l4.bcrm2_adapter import BCRM2Adapter
+
         adapter = BCRM2Adapter(
             symbol=symbol,
             timeframe="1H",
@@ -149,7 +150,7 @@ class BCRM2RealVerifier:
         processed = 0
 
         for idx in range(start_idx, end_idx, step):
-            slice_df = df.iloc[:idx + 1].copy()
+            slice_df = df.iloc[: idx + 1].copy()
 
             # 预测未来收益
             future_5 = (closes[idx + 5] / closes[idx] - 1) if idx + 5 < len(closes) else 0.0
@@ -210,9 +211,13 @@ class BCRM2RealVerifier:
             high_conf = [r for r in valid if r.final_confidence >= 0.6]
             low_conf = [r for r in valid if r.final_confidence <= 0.4]
             if high_conf:
-                metrics.high_conf_accuracy = sum(1 for r in high_conf if r.final_direction == r.actual_direction) / len(high_conf)
+                metrics.high_conf_accuracy = sum(
+                    1 for r in high_conf if r.final_direction == r.actual_direction
+                ) / len(high_conf)
             if low_conf:
-                metrics.low_conf_accuracy = sum(1 for r in low_conf if r.final_direction == r.actual_direction) / len(low_conf)
+                metrics.low_conf_accuracy = sum(
+                    1 for r in low_conf if r.final_direction == r.actual_direction
+                ) / len(low_conf)
 
         # 五角校验一致性统计
         for r in records:
@@ -231,7 +236,11 @@ class BCRM2RealVerifier:
         warnings = [r for r in records if r.triangle_result.get("reversal_alert", False)]
         metrics.total_reversal_warnings = len(warnings)
         if warnings:
-            hits = sum(1 for r in warnings if abs(r.future_return_10) > 0.01 or r.future_return_10 * r.future_return_5 < 0)
+            hits = sum(
+                1
+                for r in warnings
+                if abs(r.future_return_10) > 0.01 or r.future_return_10 * r.future_return_5 < 0
+            )
             metrics.reversal_hit_rate = hits / len(warnings)
 
         # TDA预警
@@ -265,22 +274,37 @@ class BCRM2RealVerifier:
         print(f"\n{'='*80}")
         print(f"  {symbol} 实盘路径验证报告（BCRM2完整推理）")
         print(f"{'='*80}")
-        print(f"\n  [方向准确率]")
+        print("\n  [方向准确率]")
         print(f"    总信号数: {metrics.total_signals}")
         print(f"    方向准确率: {metrics.direction_accuracy:.1%}")
         print(f"    高置信(>=0.6)准确率: {metrics.high_conf_accuracy:.1%}")
         print(f"    低置信(<=0.4)准确率: {metrics.low_conf_accuracy:.1%}")
 
-        print(f"\n  [五角校验一致性]")
-        total_consensus = metrics.strong_agree_count + metrics.majority_agree_count + metrics.divergent_count + metrics.conflict_count
+        print("\n  [五角校验一致性]")
+        total_consensus = (
+            metrics.strong_agree_count
+            + metrics.majority_agree_count
+            + metrics.divergent_count
+            + metrics.conflict_count
+        )
         if total_consensus > 0:
-            print(f"    STRONG_AGREE: {metrics.strong_agree_count} ({metrics.strong_agree_count/total_consensus:.1%})")
-            print(f"    MAJORITY_AGREE: {metrics.majority_agree_count} ({metrics.majority_agree_count/total_consensus:.1%})")
-            print(f"    DIVERGENT: {metrics.divergent_count} ({metrics.divergent_count/total_consensus:.1%})")
-            print(f"    CONFLICT: {metrics.conflict_count} ({metrics.conflict_count/total_consensus:.1%})")
+            print(
+                f"    STRONG_AGREE: {metrics.strong_agree_count} ({metrics.strong_agree_count/total_consensus:.1%})"
+            )
+            print(
+                f"    MAJORITY_AGREE: {metrics.majority_agree_count} ({metrics.majority_agree_count/total_consensus:.1%})"
+            )
+            print(
+                f"    DIVERGENT: {metrics.divergent_count} ({metrics.divergent_count/total_consensus:.1%})"
+            )
+            print(
+                f"    CONFLICT: {metrics.conflict_count} ({metrics.conflict_count/total_consensus:.1%})"
+            )
 
-        print(f"\n  [预警有效性]")
-        print(f"    力学减速预警: {metrics.total_reversal_warnings}次, 命中率={metrics.reversal_hit_rate:.1%}")
+        print("\n  [预警有效性]")
+        print(
+            f"    力学减速预警: {metrics.total_reversal_warnings}次, 命中率={metrics.reversal_hit_rate:.1%}"
+        )
         print(f"    TDA拓扑预警: {metrics.tda_warnings}次, 命中率={metrics.tda_hit_rate:.1%}")
         print(f"    Ising相变预警: {metrics.ising_alerts}次, 命中率={metrics.ising_hit_rate:.1%}")
 

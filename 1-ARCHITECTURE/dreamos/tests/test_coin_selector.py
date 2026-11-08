@@ -1,13 +1,13 @@
 """CoinSelector test suite."""
-import pytest
+
+import sys  # noqa: I001
 from pathlib import Path
-import sys
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.capabilities.trading.coin_selector import CoinSelector
-from dreamos.shared.state import State, NodeResult, NodeStatus, new_state
+from dreamos.capabilities.trading.coin_selector import CoinSelector  # noqa: E402
+from dreamos.shared.state import NodeResult, new_state  # noqa: E402
 
 
 def test_coin_selector_initialization():
@@ -40,6 +40,7 @@ def test_coin_selector_pool_format():
 
 
 # ---- Task 2: SKILL call and fusion ----
+
 
 def test_call_asset_research():
     """Test _call_asset_research returns asset research structure."""
@@ -105,6 +106,7 @@ def test_fuse_results():
 
 # ---- Task 3: crypto_priority fusion logic ----
 
+
 def test_coin_selector_fuse_results():
     """Test crypto_priority weight: non-crypto assets score * 0.5."""
     selector = CoinSelector(use_hermes=False)
@@ -151,6 +153,7 @@ def test_coin_selector_select_uses_fusion():
 
 # ---- Task 4: CoinSelectorNode ----
 
+
 def test_coin_selector_node():
     """Test CoinSelectorNode node wrapper."""
     from dreamos.capabilities.trading.coin_selector import CoinSelectorNode
@@ -176,6 +179,7 @@ def test_coin_selector_node():
 
 # ---- Task 5: persist_pools ----
 
+
 def test_coin_selector_persist_pools(tmp_path):
     """Test persist_pools saves pools to JSON with persisted_at timestamp."""
     import json
@@ -198,9 +202,11 @@ def test_coin_selector_persist_pools(tmp_path):
 
 # ---- Task 6: Phase 1 integration test ----
 
+
 def test_phase1_integration(tmp_path):
     """Phase 1 end-to-end integration: init -> select -> validate -> persist -> node."""
     import json
+
     from dreamos.capabilities.trading.coin_selector import CoinSelector, CoinSelectorNode
 
     # Step 1: Initialize selector

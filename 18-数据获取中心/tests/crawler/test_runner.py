@@ -2,10 +2,10 @@
 
 读 sites.yaml → 按 js_render 分发 static/JS → adapt → DataRecord(category=web)。
 """
-import pytest
 
-from data_center.crawler.runner import CrawlerRunner
+import pytest
 from data_center.core.contract import DataRecord
+from data_center.crawler.runner import CrawlerRunner
 
 SPIDER_MOD = "data_center.crawler.runner.GenericSpider"
 PW_MOD = "data_center.crawler.runner.PlaywrightFallback"

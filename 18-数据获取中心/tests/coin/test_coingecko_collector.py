@@ -8,8 +8,8 @@
 
 CoinGecko 公共 API **无需 Key**（10-30 req/min），网络不通/限流时降级。
 """
-import pytest
 
+import pytest
 from data_center.core.contract import DataRecord
 from data_center.core.errors import RateLimitError
 
@@ -67,14 +67,17 @@ class _Resp:
 # 基础属性
 # ---------------------------------------------------------------------------
 
+
 def test_collector_importable():
     from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
+
     assert CoinGeckoCollector.source == "coingecko"
     assert CoinGeckoCollector.category == "coin"
 
 
 def test_default_is_available_true_no_api_key_needed():
     from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
+
     # CoinGecko 公共 API 不需要 Key，默认可用
     assert CoinGeckoCollector().is_available() is True
 
@@ -82,6 +85,7 @@ def test_default_is_available_true_no_api_key_needed():
 # ---------------------------------------------------------------------------
 # coin_info 路由
 # ---------------------------------------------------------------------------
+
 
 def test_coin_info_returns_market_data(mocker):
     """coin_info 路由返回 market_cap / total_supply / circulating_supply / max_supply。"""
@@ -115,15 +119,17 @@ def test_coin_info_missing_fields_default_zero(mocker):
     from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
 
     m = mocker.patch(COINGECKO_MOD)
-    m.get.return_value = _Resp({
-        "id": "bitcoin",
-        "symbol": "btc",
-        "name": "Bitcoin",
-        "market_data": {
-            "current_price": {"usd": 50000},
-            # market_cap / total_supply 缺失
-        },
-    })
+    m.get.return_value = _Resp(
+        {
+            "id": "bitcoin",
+            "symbol": "btc",
+            "name": "Bitcoin",
+            "market_data": {
+                "current_price": {"usd": 50000},
+                # market_cap / total_supply 缺失
+            },
+        }
+    )
 
     c = CoinGeckoCollector()
     recs = c.fetch({"route": "coin_info", "coin_id": "bitcoin"})
@@ -151,6 +157,7 @@ def test_coin_info_no_market_data_returns_empty(mocker):
 # ---------------------------------------------------------------------------
 # coin_chart 路由
 # ---------------------------------------------------------------------------
+
 
 def test_coin_chart_returns_price_history(mocker):
     """coin_chart 路由返回历史 prices / market_caps 时序列。"""
@@ -195,6 +202,7 @@ def test_coin_chart_empty_response_returns_empty(mocker):
 # ---------------------------------------------------------------------------
 # 容错
 # ---------------------------------------------------------------------------
+
 
 def test_rate_limit_429_raises_rate_limit_error(mocker):
     """HTTP 429 → 抛 RateLimitError（由上层调度器退避）。"""

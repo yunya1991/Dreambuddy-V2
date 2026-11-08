@@ -1,4 +1,5 @@
 """RED 测试：TSAnalyzer — TypeScript/JavaScript AST 分析器。"""
+
 import os
 import sys
 import tempfile
@@ -8,8 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.ts_analyzer import TSAnalyzer
 
-
-SAMPLE_TS = '''
+SAMPLE_TS = """
 import { Component, OnInit } from '@angular/core';
 import * as _ from 'lodash';
 import axios from 'axios';
@@ -44,10 +44,10 @@ const log = (msg: string): void => {
 export default class AppComponent {
   title = 'app';
 }
-'''
+"""
 
 
-SAMPLE_JS = '''
+SAMPLE_JS = """
 const express = require('express');
 const router = express.Router();
 
@@ -69,7 +69,7 @@ function helper(x) {
 const arrow = (a, b) => a + b;
 
 module.exports = { ApiClient, helper };
-'''
+"""
 
 
 def test_ts_analyzer_extracts_imports():

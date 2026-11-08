@@ -8,10 +8,11 @@ V1-E2E: C 层端到端联调 — C2/C3 节点 → Reflector 决策
   3. 高置信度 C 节点结果触发 CONTINUE
   4. 方向矛盾触发 INSERT_BEFORE
 """
+
 import json
+import os
 import subprocess
 import sys
-import os
 
 SERVER = os.path.join(os.path.dirname(__file__), "..", "packages", "python-server", "server.py")
 PYTHON = sys.executable
@@ -65,9 +66,17 @@ print("=" * 60)
 # ── 场景 1: C2 高置信度 LONG → Reflector CONTINUE ────────
 print("\n场景 1: C2 高置信度 LONG → Reflector CONTINUE")
 bull_mkt = {
-    "price": 70000, "change_1h": 0.5, "change_4h": 1.2, "change_24h": 5.0,
-    "rsi14": 62, "macd": 150.0, "macd_signal": 100.0, "macd_hist": 50.0,
-    "ema20": 68000, "ema50": 65000, "ema200": 60000,
+    "price": 70000,
+    "change_1h": 0.5,
+    "change_4h": 1.2,
+    "change_24h": 5.0,
+    "rsi14": 62,
+    "macd": 150.0,
+    "macd_signal": 100.0,
+    "macd_hist": 50.0,
+    "ema20": 68000,
+    "ema50": 65000,
+    "ema200": 60000,
 }
 c2_resp = call("c2_momentum", {"symbol": "BTC", "market_data": bull_mkt})
 c2_result = c2_resp["result"]
@@ -75,68 +84,80 @@ check("C2 返回 LONG", c2_result["direction"] == "LONG", f"direction={c2_result
 check("C2 置信度 > 0.7", c2_result["confidence"] > 0.7, f"conf={c2_result['confidence']}")
 
 # 用 C2 结果作为当前节点，调用 Reflector
-reflect_resp = call("reflection", {
-    "mode": "decide",
-    "current_node_id": "C2",
-    "confidence": c2_result["confidence"],
-    "direction": c2_result["direction"],
-    "status": "SUCCESS",
-    "executed_count": 1,
-    "max_nodes": 5,
-    "budget_remaining_ratio": 0.8,
-    "prev_results": [],
-})
+reflect_resp = call(
+    "reflection",
+    {
+        "mode": "decide",
+        "current_node_id": "C2",
+        "confidence": c2_result["confidence"],
+        "direction": c2_result["direction"],
+        "status": "SUCCESS",
+        "executed_count": 1,
+        "max_nodes": 5,
+        "budget_remaining_ratio": 0.8,
+        "prev_results": [],
+    },
+)
 decision = reflect_resp["result"]["echo"]["params"]["decision"]
 check("高置信度 → CONTINUE", decision == "CONTINUE", f"decision={decision}")
 
 # ── 场景 2: C3 低置信度 HOLD → Reflector REDO ────────────
 print("\n场景 2: C3 低置信度 → Reflector REDO")
 # 构造一个 C3 结果，然后手动调低置信度模拟低置信场景
-reflect_resp = call("reflection", {
-    "mode": "decide",
-    "current_node_id": "C3",
-    "confidence": 0.2,
-    "direction": "HOLD",
-    "status": "SUCCESS",
-    "executed_count": 2,
-    "max_nodes": 5,
-    "budget_remaining_ratio": 0.7,
-    "prev_results": [],
-})
+reflect_resp = call(
+    "reflection",
+    {
+        "mode": "decide",
+        "current_node_id": "C3",
+        "confidence": 0.2,
+        "direction": "HOLD",
+        "status": "SUCCESS",
+        "executed_count": 2,
+        "max_nodes": 5,
+        "budget_remaining_ratio": 0.7,
+        "prev_results": [],
+    },
+)
 decision = reflect_resp["result"]["echo"]["params"]["decision"]
 check("低置信度(0.2) → REDO", decision == "REDO", f"decision={decision}")
 
 # ── 场景 3: C2 LONG 与前序 C3 SHORT 矛盾 → INSERT_BEFORE ─
 print("\n场景 3: C2 LONG vs 前序 C3 SHORT 矛盾 → INSERT_BEFORE")
-reflect_resp = call("reflection", {
-    "mode": "decide",
-    "current_node_id": "A2",
-    "confidence": 0.8,
-    "direction": "SHORT",
-    "status": "SUCCESS",
-    "executed_count": 3,
-    "max_nodes": 5,
-    "budget_remaining_ratio": 0.6,
-    "prev_results": [
-        {"node_id": "C1", "direction": "LONG", "confidence": 0.9},
-    ],
-})
+reflect_resp = call(
+    "reflection",
+    {
+        "mode": "decide",
+        "current_node_id": "A2",
+        "confidence": 0.8,
+        "direction": "SHORT",
+        "status": "SUCCESS",
+        "executed_count": 3,
+        "max_nodes": 5,
+        "budget_remaining_ratio": 0.6,
+        "prev_results": [
+            {"node_id": "C1", "direction": "LONG", "confidence": 0.9},
+        ],
+    },
+)
 decision = reflect_resp["result"]["echo"]["params"]["decision"]
 check("方向矛盾 → INSERT_BEFORE", decision == "INSERT_BEFORE", f"decision={decision}")
 
 # ── 场景 4: 预算不足 → JUMP_TO ───────────────────────────
 print("\n场景 4: 预算不足 → JUMP_TO")
-reflect_resp = call("reflection", {
-    "mode": "decide",
-    "current_node_id": "C3",
-    "confidence": 0.5,
-    "direction": "LONG",
-    "status": "SUCCESS",
-    "executed_count": 4,
-    "max_nodes": 5,
-    "budget_remaining_ratio": 0.1,
-    "prev_results": [],
-})
+reflect_resp = call(
+    "reflection",
+    {
+        "mode": "decide",
+        "current_node_id": "C3",
+        "confidence": 0.5,
+        "direction": "LONG",
+        "status": "SUCCESS",
+        "executed_count": 4,
+        "max_nodes": 5,
+        "budget_remaining_ratio": 0.1,
+        "prev_results": [],
+    },
+)
 decision = reflect_resp["result"]["echo"]["params"]["decision"]
 check("预算不足(0.1) → JUMP_TO", decision == "JUMP_TO", f"decision={decision}")
 

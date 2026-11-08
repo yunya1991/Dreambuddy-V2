@@ -23,9 +23,9 @@ _RAG_INFRA_DIR = _THIS_DIR.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from vector_store.chunker import chunk_markdown
-from vector_store.config import CHROMA_DB_PATH, COLLECTION_NAME
-from knowledge_graph.entity_extractor import extract_entities
+from knowledge_graph.entity_extractor import extract_entities  # noqa: E402
+from vector_store.chunker import chunk_markdown  # noqa: E402
+from vector_store.config import CHROMA_DB_PATH, COLLECTION_NAME  # noqa: E402
 
 # 标题行正则
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
@@ -153,14 +153,15 @@ def ingest_document(file_path: Path, knowledge_dir: Path) -> Dict:
 
     try:
         from vector_store.build_index import build_index
-        build_index(knowledge_dir, db_path=CHROMA_DB_PATH,
-                    collection_name=COLLECTION_NAME)
+
+        build_index(knowledge_dir, db_path=CHROMA_DB_PATH, collection_name=COLLECTION_NAME)
     except Exception:
         index_status = "failed"
 
     try:
         from knowledge_graph.build_graph import build_graph
         from knowledge_graph.schema import DEFAULT_GRAPH_PATH
+
         build_graph(knowledge_dir, graph_path=DEFAULT_GRAPH_PATH)
     except Exception:
         graph_status = "failed"

@@ -11,19 +11,21 @@
 - 默认值填充
 - 必填校验
 """
-from __future__ import annotations
 
-import os
+from __future__ import annotations  # noqa: I001
+
 
 import pytest
-
 from core.config import (
-    AppConfig, DebateConfig, TelegramConfig, TopicFilterConfig,
-    load_config, resolve_env_value,
+    DebateConfig,
+    TelegramConfig,
+    TopicFilterConfig,
+    load_config,
+    resolve_env_value,
 )
 
-
 # ─── resolve_env_value 测试 ──────────────────────────────────────
+
 
 class TestResolveEnv:
     """测试 env:VAR 格式解析。"""
@@ -49,6 +51,7 @@ class TestResolveEnv:
 
 
 # ─── 默认值测试 ──────────────────────────────────────────────────
+
 
 class TestDefaults:
     """测试各配置段的默认值。"""
@@ -76,6 +79,7 @@ class TestDefaults:
 
 
 # ─── YAML 加载测试 ───────────────────────────────────────────────
+
 
 class TestLoadConfig:
     """测试从 YAML 文件加载配置。"""

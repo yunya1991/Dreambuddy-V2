@@ -2,27 +2,29 @@
 
 扫描 SKILL.md frontmatter → 生成 registry.json + dep-graph.json + drift-report.json + conflict-report.json
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 from pathlib import Path
 
-import pytest
-
-
 # ─────────────────────────────── 1. 模块可导入（RED 起手） ───────────────────────────────
+
 
 def test_module_importable():
     """模块可导入（RED 起手已过，现断言导入成功）。"""
     import skill_indexer  # noqa: F401
+
     assert hasattr(skill_indexer, "scan_skills")
     assert hasattr(skill_indexer, "build")
 
 
 # ─────────────────────────────── 2. scan_skills：扫描 + 解析 ───────────────────────────────
 
+
 def test_scan_empty_dir_returns_empty(tmp_path):
     from skill_indexer import scan_skills
+
     assert scan_skills([tmp_path]) == []
 
 
@@ -42,6 +44,7 @@ def test_scan_single_skill_extracts_frontmatter(tmp_path):
         "# Demo\n"
     )
     from skill_indexer import scan_skills
+
     entries = scan_skills([tmp_path])
     assert len(entries) == 1
     e = entries[0]
@@ -59,6 +62,7 @@ def test_scan_missing_frontmatter_fail_open(tmp_path):
     skill_dir.mkdir()
     (skill_dir / "SKILL.md").write_text("# No frontmatter here\n")
     from skill_indexer import scan_skills
+
     entries = scan_skills([tmp_path])
     assert len(entries) == 1
     assert entries[0].parse_error is not None
@@ -77,6 +81,7 @@ def test_scan_invalid_yaml_fail_open(tmp_path):
         "# Bad\n"
     )
     from skill_indexer import scan_skills
+
     entries = scan_skills([tmp_path])
     assert len(entries) == 1
     assert entries[0].parse_error is not None
@@ -95,6 +100,7 @@ def test_scan_default_fields(tmp_path):
         "# Minimal\n"
     )
     from skill_indexer import scan_skills
+
     entries = scan_skills([tmp_path])
     e = entries[0]
     assert e.status == "active"
@@ -107,6 +113,7 @@ def test_scan_default_fields(tmp_path):
 
 # ─────────────────────────────── 3. build_registry ───────────────────────────────
 
+
 def test_build_registry_structure(tmp_path):
     skill_dir = tmp_path / "dream-reg"
     skill_dir.mkdir()
@@ -114,7 +121,8 @@ def test_build_registry_structure(tmp_path):
         "---\nname: dream-reg\ndescription: reg test\nversion: 2.0.0\n"
         "triggers: [reg]\ndepends_on: [bsk]\n---\n# Reg\n"
     )
-    from skill_indexer import scan_skills, build_registry
+    from skill_indexer import build_registry, scan_skills
+
     entries = scan_skills([tmp_path])
     registry = build_registry(entries)
     assert registry["schema_version"] == "1.0"
@@ -125,14 +133,20 @@ def test_build_registry_structure(tmp_path):
 
 # ─────────────────────────────── 4. build_dep_graph ───────────────────────────────
 
+
 def test_build_dep_graph_structure(tmp_path):
     a = tmp_path / "skill-a"
     a.mkdir()
-    (a / "SKILL.md").write_text("---\nname: skill-a\ndescription: a\nversion: 1.0.0\ndepends_on: [skill-b]\n---\n")
+    (a / "SKILL.md").write_text(
+        "---\nname: skill-a\ndescription: a\nversion: 1.0.0\ndepends_on: [skill-b]\n---\n"
+    )
     b = tmp_path / "skill-b"
     b.mkdir()
-    (b / "SKILL.md").write_text("---\nname: skill-b\ndescription: b\nversion: 1.0.0\ndepends_on: []\n---\n")
-    from skill_indexer import scan_skills, build_dep_graph
+    (b / "SKILL.md").write_text(
+        "---\nname: skill-b\ndescription: b\nversion: 1.0.0\ndepends_on: []\n---\n"
+    )
+    from skill_indexer import build_dep_graph, scan_skills
+
     entries = scan_skills([tmp_path])
     graph = build_dep_graph(entries)
     assert graph["schema_version"] == "1.0"
@@ -143,12 +157,16 @@ def test_build_dep_graph_structure(tmp_path):
 
 # ─────────────────────────────── 5. detect_drift ───────────────────────────────
 
+
 def test_detect_drift_missing_location(tmp_path):
     """只在 .trae/skills 存在，1-ARCHITECTURE/skills 缺失 → drifted。"""
     trae = tmp_path / ".trae" / "skills" / "dream-only-trae"
     trae.mkdir(parents=True)
-    (trae / "SKILL.md").write_text("---\nname: dream-only-trae\ndescription: x\nversion: 1.0.0\n---\n")
-    from skill_indexer import scan_skills, detect_drift
+    (trae / "SKILL.md").write_text(
+        "---\nname: dream-only-trae\ndescription: x\nversion: 1.0.0\n---\n"
+    )
+    from skill_indexer import detect_drift, scan_skills
+
     entries = scan_skills([tmp_path])
     report = detect_drift(entries)
     assert report["schema_version"] == "1.0"
@@ -159,14 +177,20 @@ def test_detect_drift_missing_location(tmp_path):
 
 # ─────────────────────────────── 6. detect_conflicts ───────────────────────────────
 
+
 def test_detect_conflicts_shared_trigger(tmp_path):
     a = tmp_path / "skill-a"
     a.mkdir()
-    (a / "SKILL.md").write_text("---\nname: skill-a\ndescription: a\nversion: 1.0.0\ntriggers: [深度调研]\n---\n")
+    (a / "SKILL.md").write_text(
+        "---\nname: skill-a\ndescription: a\nversion: 1.0.0\ntriggers: [深度调研]\n---\n"
+    )
     b = tmp_path / "skill-b"
     b.mkdir()
-    (b / "SKILL.md").write_text("---\nname: skill-b\ndescription: b\nversion: 1.0.0\ntriggers: [深度调研, 市场调研]\n---\n")
-    from skill_indexer import scan_skills, detect_conflicts
+    (b / "SKILL.md").write_text(
+        "---\nname: skill-b\ndescription: b\nversion: 1.0.0\ntriggers: [深度调研, 市场调研]\n---\n"
+    )
+    from skill_indexer import detect_conflicts, scan_skills
+
     entries = scan_skills([tmp_path])
     report = detect_conflicts(entries)
     assert report["schema_version"] == "1.0"
@@ -179,11 +203,16 @@ def test_detect_conflicts_shared_trigger(tmp_path):
 def test_detect_conflicts_no_conflict(tmp_path):
     a = tmp_path / "skill-a"
     a.mkdir()
-    (a / "SKILL.md").write_text("---\nname: skill-a\ndescription: a\nversion: 1.0.0\ntriggers: [a-trigger]\n---\n")
+    (a / "SKILL.md").write_text(
+        "---\nname: skill-a\ndescription: a\nversion: 1.0.0\ntriggers: [a-trigger]\n---\n"
+    )
     b = tmp_path / "skill-b"
     b.mkdir()
-    (b / "SKILL.md").write_text("---\nname: skill-b\ndescription: b\nversion: 1.0.0\ntriggers: [b-trigger]\n---\n")
-    from skill_indexer import scan_skills, detect_conflicts
+    (b / "SKILL.md").write_text(
+        "---\nname: skill-b\ndescription: b\nversion: 1.0.0\ntriggers: [b-trigger]\n---\n"
+    )
+    from skill_indexer import detect_conflicts, scan_skills
+
     entries = scan_skills([tmp_path])
     report = detect_conflicts(entries)
     assert report["total_conflicts"] == 0
@@ -192,15 +221,19 @@ def test_detect_conflicts_no_conflict(tmp_path):
 
 # ─────────────────────────────── 7. build 一键生成 ───────────────────────────────
 
+
 def test_build_writes_4_files(tmp_path):
     src = tmp_path / "src"
     src.mkdir()
     sd = src / "dream-build"
     sd.mkdir()
-    (sd / "SKILL.md").write_text("---\nname: dream-build\ndescription: build test\nversion: 1.0.0\ntriggers: [build]\n---\n")
+    (sd / "SKILL.md").write_text(
+        "---\nname: dream-build\ndescription: build test\nversion: 1.0.0\ntriggers: [build]\n---\n"
+    )
     out = tmp_path / "out"
     out.mkdir()
     from skill_indexer import build
+
     result = build([src], out)
     assert (out / "registry.json").exists()
     assert (out / "dep-graph.json").exists()
@@ -211,9 +244,8 @@ def test_build_writes_4_files(tmp_path):
 
 # ─────────────────────────────── 8. P2-2 CLI 入口 ───────────────────────────────
 
-import os
-import subprocess
-import sys
+import subprocess  # noqa: E402
+import sys  # noqa: E402
 
 _SKILL_INDEXER = str(Path(__file__).parent / "skill_indexer.py")
 
@@ -230,7 +262,8 @@ def test_cli_build_writes_files(tmp_path):
     out = tmp_path / "out"
     subprocess.run(
         [sys.executable, _SKILL_INDEXER, "build", "--roots", str(src), "--output", str(out)],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     assert (out / "registry.json").exists()
     assert (out / "dep-graph.json").exists()
@@ -249,7 +282,9 @@ def test_cli_query_by_trigger(tmp_path):
     )
     proc = subprocess.run(
         [sys.executable, _SKILL_INDEXER, "query", "--trigger", "magic", "--roots", str(src)],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     data = json.loads(proc.stdout)
     names = {s["name"] for s in data.get("skills", data) if isinstance(s, dict)}
@@ -261,6 +296,7 @@ def test_cli_query_by_trigger(tmp_path):
 
 # ─────────────────────────────── 9. P2-3 validate 子命令 ───────────────────────────────
 
+
 def test_validate_valid_skill(tmp_path):
     skill_dir = tmp_path / "dream-valid"
     skill_dir.mkdir()
@@ -268,6 +304,7 @@ def test_validate_valid_skill(tmp_path):
         "---\nname: dream-valid\ndescription: valid\nversion: 1.0.0\nstatus: active\ntriggers: [v]\n---\n"
     )
     from skill_indexer import validate
+
     result = validate(skill_dir)
     assert result["valid"] is True
     assert result["errors"] == []
@@ -276,10 +313,9 @@ def test_validate_valid_skill(tmp_path):
 def test_validate_missing_name(tmp_path):
     skill_dir = tmp_path / "dream-no-name"
     skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text(
-        "---\ndescription: no name\nversion: 1.0.0\n---\n"
-    )
+    (skill_dir / "SKILL.md").write_text("---\ndescription: no name\nversion: 1.0.0\n---\n")
     from skill_indexer import validate
+
     result = validate(skill_dir)
     assert result["valid"] is False
     assert any("name" in e for e in result["errors"])
@@ -292,6 +328,7 @@ def test_validate_invalid_status(tmp_path):
         "---\nname: dream-bad-status\ndescription: x\nversion: 1.0.0\nstatus: weird\ntriggers: [s]\n---\n"
     )
     from skill_indexer import validate
+
     result = validate(skill_dir)
     assert result["valid"] is False
     assert any("status" in e for e in result["errors"])
@@ -304,6 +341,7 @@ def test_validate_invalid_version_warning(tmp_path):
         "---\nname: dream-bad-ver\ndescription: x\nversion: not-semver\nstatus: active\ntriggers: [v]\n---\n"
     )
     from skill_indexer import validate
+
     result = validate(skill_dir)
     assert result["valid"] is True  # 版本不合法只 warning
     assert any("version" in w for w in result["warnings"])
@@ -317,12 +355,14 @@ def test_validate_drift_warning(tmp_path):
         "---\nname: dream-drift\ndescription: drift\nversion: 1.0.0\nstatus: active\ntriggers: [d]\n---\n"
     )
     from skill_indexer import validate
+
     result = validate(trae)
     assert result["valid"] is True  # drift 只 warning
     assert any("drift" in w.lower() for w in result["warnings"])
 
 
 # ─────────────────────────────── 10. P3-1 override.yaml ───────────────────────────────
+
 
 def test_override_yaml_merges_fields(tmp_path):
     """同目录存在 skill.override.yaml → override_fields 被合并到 SkillEntry。"""
@@ -347,6 +387,7 @@ def test_override_yaml_merges_fields(tmp_path):
         "integrity_hash: null\n"
     )
     from skill_indexer import scan_skills
+
     entries = scan_skills([tmp_path])
     assert len(entries) == 1
     e = entries[0]
@@ -365,14 +406,17 @@ def test_no_override_yaml_defaults(tmp_path):
         "---\nname: dream-no-override\ndescription: no override\nversion: 1.0.0\n---\n"
     )
     from skill_indexer import scan_skills
+
     entries = scan_skills([tmp_path])
     assert entries[0].override_fields is None
 
 
 # ─────────────────────────────── 11. P3-1 生命周期状态机 ───────────────────────────────
 
+
 def test_lifecycle_valid_transition():
     from skill_indexer import lifecycle_transition
+
     r = lifecycle_transition("proposed", "shadow", ["review-passed"])
     assert r["ok"] is True
     assert r["from"] == "proposed"
@@ -386,6 +430,7 @@ def test_lifecycle_valid_transition():
 
 def test_lifecycle_invalid_transition():
     from skill_indexer import lifecycle_transition
+
     r = lifecycle_transition("active", "proposed", [])
     assert r["ok"] is False
     assert "error" in r
@@ -396,13 +441,20 @@ def test_lifecycle_invalid_transition():
 
 # ─────────────────────────────── 12. P3-2 认知 hooks ───────────────────────────────
 
+
 def test_recall_hook_matches_triggers():
-    from skill_indexer import recall_hook, SkillEntry
+    from skill_indexer import SkillEntry, recall_hook
+
     entries = [
-        SkillEntry(name="dream-research", description="深度调研 skill", category="research",
-                   triggers=["调研", "市场调研"]),
-        SkillEntry(name="dream-code", description="代码 skill", category="coding",
-                   triggers=["写代码"]),
+        SkillEntry(
+            name="dream-research",
+            description="深度调研 skill",
+            category="research",
+            triggers=["调研", "市场调研"],
+        ),
+        SkillEntry(
+            name="dream-code", description="代码 skill", category="coding", triggers=["写代码"]
+        ),
     ]
     result = recall_hook("我要做市场调研", entries)
     assert isinstance(result, list)
@@ -413,6 +465,7 @@ def test_recall_hook_matches_triggers():
 
 def test_record_hook_returns_link():
     from skill_indexer import record_hook
+
     r = record_hook("skill-001", "VM-123")
     assert r["skill_id"] == "skill-001"
     # P0 升级：认知系统可用时返回真实 VM-id（以 VM- 开头），不可用时回显输入
@@ -421,7 +474,8 @@ def test_record_hook_returns_link():
 
 
 def test_verify_hook_suggests_shadow_to_active():
-    from skill_indexer import verify_hook, SkillEntry
+    from skill_indexer import SkillEntry, verify_hook
+
     # 满足升级条件：confidence>=0.6 且 apply_count>=1
     entries = [
         SkillEntry(name="skill-001", status="shadow", confidence=0.65, apply_count=2),

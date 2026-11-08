@@ -22,6 +22,7 @@ SPEC §4.5.2: FOMC 主要矛盾驱动的 6 阶段×7 参数调整矩阵
 HC: 开关关断时返回 base_params 不修改，字节等价"模块不存在"
 HC: FAIL-OPEN 异常返回 base_params
 """
+
 from __future__ import annotations
 
 import logging
@@ -95,8 +96,13 @@ FOMC_PARAM_OVERRIDES: dict[str, dict[str, float]] = {
 
 # 参数调整覆盖的字段集合
 _ADJUSTED_PARAMS = {
-    "conf_threshold", "position_scale", "sl_distance_mult",
-    "tp_distance_mult", "macro_weight", "tech_weight", "max_hold_hours",
+    "conf_threshold",
+    "position_scale",
+    "sl_distance_mult",
+    "tp_distance_mult",
+    "macro_weight",
+    "tech_weight",
+    "max_hold_hours",
 }
 
 

@@ -11,6 +11,7 @@ API 端点（全部 HTTPS GET 无需 Key）：
 
 fail-open：网络不通 / HTTP 非 200 → 返回空列表，不抛异常（除 429 抛 RateLimitError）。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -20,7 +21,6 @@ import requests
 from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 from data_center.core.errors import RateLimitError
-
 
 _BASE = "https://api.llama.fi"
 
@@ -209,16 +209,18 @@ class DeFiLlamaCollector(BaseCollector):
             except (TypeError, ValueError):
                 continue
             slug = str(p.get("id") or name.lower().replace(" ", "-"))
-            protocols.append({
-                "name": name,
-                "slug": slug,
-                "tvl": tvl,
-                "tvl_bln": round(tvl / 1e9, 4),
-                "symbol": p.get("symbol"),
-                "mcap": float(p.get("mcap") or 0.0),
-                "gecko_id": p.get("gecko_id"),
-                "category": p.get("category"),
-            })
+            protocols.append(
+                {
+                    "name": name,
+                    "slug": slug,
+                    "tvl": tvl,
+                    "tvl_bln": round(tvl / 1e9, 4),
+                    "symbol": p.get("symbol"),
+                    "mcap": float(p.get("mcap") or 0.0),
+                    "gecko_id": p.get("gecko_id"),
+                    "category": p.get("category"),
+                }
+            )
             total_tvl += tvl
         now = datetime.now(timezone.utc).astimezone().isoformat()
         rec = DataRecord(
@@ -335,8 +337,7 @@ class DeFiLlamaCollector(BaseCollector):
             },
             events=[],
             timeseries=[
-                {"symbol": c["symbol"], "name": c["name"], "supply": c["supply"]}
-                for c in top10
+                {"symbol": c["symbol"], "name": c["name"], "supply": c["supply"]} for c in top10
             ],
             raw={"url": "/stablecoins", "coin_count": len(data or [])},
         )

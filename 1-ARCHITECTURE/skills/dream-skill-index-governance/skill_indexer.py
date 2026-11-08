@@ -4,6 +4,7 @@
 
 工程约束：HC-1a（独立模块不改核心）/ HC-9（只产索引信号）/ FAIL-OPEN / 零回归
 """
+
 from __future__ import annotations
 
 import argparse
@@ -27,6 +28,7 @@ if _COGNITIVE_DIR.exists() and str(_COGNITIVE_DIR) not in sys.path:
     sys.path.insert(0, str(_COGNITIVE_DIR))
 try:
     from cognitive_loop_entry import get_cle  # type: ignore[import-not-found]
+
     _HAS_COGNITIVE = True
 except Exception:
     _HAS_COGNITIVE = False
@@ -63,6 +65,7 @@ ALL_SKILL_ROOTS: list[Path] = [
 @dataclass(frozen=True)
 class SkillEntry:
     """单个 SKILL 的解析结果。"""
+
     name: str
     description: str = ""
     version: str = "0.0.0"
@@ -89,6 +92,7 @@ class SkillEntry:
 
 
 # ─────────────────────────────── scan_skills ───────────────────────────────
+
 
 def _infer_location_role(path: Path) -> str:
     s = str(path)
@@ -150,11 +154,13 @@ def _parse_execution_history(raw: Any) -> list[dict]:
     result: list[dict] = []
     for item in raw[-20:]:  # 最多保留 20 条
         if isinstance(item, dict):
-            result.append({
-                "success": bool(item.get("success", False)),
-                "duration": _safe_float(item.get("duration"), 0.0),
-                "timestamp": str(item.get("timestamp", "")),
-            })
+            result.append(
+                {
+                    "success": bool(item.get("success", False)),
+                    "duration": _safe_float(item.get("duration"), 0.0),
+                    "timestamp": str(item.get("timestamp", "")),
+                }
+            )
     return result
 
 
@@ -165,12 +171,18 @@ def _parse_evolution_log(raw: Any) -> list[dict]:
     result: list[dict] = []
     for item in raw:
         if isinstance(item, dict):
-            result.append({
-                "change_summary": str(item.get("change_summary", "")),
-                "source_memory_ids": item.get("source_memory_ids", []) if isinstance(item.get("source_memory_ids"), list) else [],
-                "changed_by": str(item.get("changed_by", "human")),
-                "changed_at": str(item.get("changed_at", "")),
-            })
+            result.append(
+                {
+                    "change_summary": str(item.get("change_summary", "")),
+                    "source_memory_ids": (
+                        item.get("source_memory_ids", [])
+                        if isinstance(item.get("source_memory_ids"), list)
+                        else []
+                    ),
+                    "changed_by": str(item.get("changed_by", "human")),
+                    "changed_at": str(item.get("changed_at", "")),
+                }
+            )
     return result
 
 
@@ -208,8 +220,9 @@ def _parse_one(skill_md: Path) -> SkillEntry:
     try:
         raw = skill_md.read_text(encoding="utf-8")
     except Exception as exc:  # FAIL-OPEN
-        return SkillEntry(name=name, path=skill_md, parse_error=f"read_error: {exc}",
-                          override_fields=override)
+        return SkillEntry(
+            name=name, path=skill_md, parse_error=f"read_error: {exc}", override_fields=override
+        )
 
     content_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     fm = _parse_frontmatter(raw)
@@ -239,6 +252,7 @@ def _parse_one(skill_md: Path) -> SkillEntry:
     else:
         try:
             from skill_facets import infer_facets
+
             facets = infer_facets(category=category, triggers=triggers, path=skill_md)
         except Exception:
             facets = {}
@@ -268,6 +282,7 @@ def _parse_one(skill_md: Path) -> SkillEntry:
 
 
 # ─────────────────────────────── build_registry ───────────────────────────────
+
 
 def _entry_to_dict(e: SkillEntry) -> dict[str, Any]:
     return {
@@ -304,6 +319,7 @@ def build_registry(entries: list[SkillEntry]) -> dict[str, Any]:
 
 # ─────────────────────────────── build_dep_graph ───────────────────────────────
 
+
 def build_dep_graph(entries: list[SkillEntry]) -> dict[str, Any]:
     nodes = [{"id": e.name, "category": e.category, "status": e.status} for e in entries]
     edges: list[dict[str, Any]] = []
@@ -319,6 +335,7 @@ def build_dep_graph(entries: list[SkillEntry]) -> dict[str, Any]:
 
 
 # ─────────────────────────────── detect_drift ───────────────────────────────
+
 
 def _is_known_skill_root(path: Path) -> bool:
     """判断 SKILL 路径是否在已知 SKILL 根目录下（非双位置也不算漂移）。
@@ -376,12 +393,14 @@ def detect_drift(entries: list[SkillEntry]) -> dict[str, Any]:
                 continue
 
         # 其余情况 → 漂移
-        drifted.append({
-            "name": name,
-            "present_roles": list(roles.keys()),
-            "missing_roles": (["trae-entry"] if not has_trae else [])
-                            + (["project-index"] if not has_project else []),
-        })
+        drifted.append(
+            {
+                "name": name,
+                "present_roles": list(roles.keys()),
+                "missing_roles": (["trae-entry"] if not has_trae else [])
+                + (["project-index"] if not has_project else []),
+            }
+        )
     return {
         "schema_version": SCHEMA_VERSION,
         "total_drifted": len(drifted),
@@ -390,6 +409,7 @@ def detect_drift(entries: list[SkillEntry]) -> dict[str, Any]:
 
 
 # ─────────────────────────────── detect_conflicts ───────────────────────────────
+
 
 def detect_conflicts(entries: list[SkillEntry]) -> dict[str, Any]:
     """触发词冲突检测：同一 trigger 被多个 SKILL 声明。
@@ -400,7 +420,12 @@ def detect_conflicts(entries: list[SkillEntry]) -> dict[str, Any]:
     # 加载权威词表（FAIL-OPEN：不可用时 None）
     thesaurus = None
     try:
-        from skill_thesaurus import load_thesaurus, normalize_trigger, is_generic_trigger
+        from skill_thesaurus import (  # noqa: I001
+            load_thesaurus,
+            normalize_trigger,
+            is_generic_trigger,
+        )  # noqa: I001
+
         thesaurus = load_thesaurus()
     except Exception:
         thesaurus = None
@@ -428,6 +453,7 @@ def detect_conflicts(entries: list[SkillEntry]) -> dict[str, Any]:
 
 
 # ─────────────────────────────── build（一键生成） ───────────────────────────────
+
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -549,7 +575,9 @@ def validate(skill_dir: Path | str) -> dict[str, Any]:
         if peer is None:
             s = str(skill_dir)
             if (".trae" in s and "skills" in s) or ("1-ARCHITECTURE" in s and "skills" in s):
-                warnings.append(f"drift: no peer skill found in the other location for '{skill_dir.name}'")
+                warnings.append(
+                    f"drift: no peer skill found in the other location for '{skill_dir.name}'"
+                )
 
         return {"valid": not errors, "errors": errors, "warnings": warnings}
     except Exception:
@@ -584,6 +612,7 @@ def lifecycle_transition(current: str, target: str, evidence: list[str]) -> dict
 
 
 # ─────────────────────────────── P3-2 认知 hooks ───────────────────────────────
+
 
 def _match_score(context: str, e: SkillEntry) -> int:
     """匹配度 = triggers 命中数 + name 子串命中 + category 命中。"""
@@ -652,6 +681,7 @@ def record_hook(
     if skill_dir is not None:
         try:
             from skill_lifecycle_writer import _add_link_only, increment_apply_count
+
             r = _add_link_only(skill_dir, memory_id)
             written = r.get("ok", False)
             inc = increment_apply_count(skill_dir)
@@ -697,6 +727,7 @@ def verify_hook(
     if skill_dir is not None:
         try:
             from skill_lifecycle_writer import update_confidence
+
             r = update_confidence(skill_dir, success)
             confidence_updated = r.get("ok", False)
         except Exception:
@@ -711,6 +742,7 @@ def verify_hook(
             if skill_dir is not None:
                 try:
                     from skill_lifecycle_writer import write_lifecycle
+
                     r = write_lifecycle(skill_dir, "active", evidence=["verify-success"])
                     lifecycle_written = r.get("written", False)
                 except Exception:
@@ -783,54 +815,69 @@ def detect_regression(entries: list[SkillEntry]) -> list[dict[str, Any]]:
             if baseline and current:
                 alerts: list[str] = []
                 # 成功率下降 > 15%
-                if baseline["success_rate"] > 0 and current["success_rate"] < baseline["success_rate"] - 0.15:
+                if (
+                    baseline["success_rate"] > 0
+                    and current["success_rate"] < baseline["success_rate"] - 0.15
+                ):
                     alerts.append(
                         f"成功率下降 {round((baseline['success_rate'] - current['success_rate']) * 100, 1)}% "
                         f"({round(baseline['success_rate'] * 100, 1)}% → {round(current['success_rate'] * 100, 1)}%)"
                     )
                 # 耗时上升 > 50%
-                if baseline["avg_duration"] > 0 and current["avg_duration"] > baseline["avg_duration"] * 1.5:
+                if (
+                    baseline["avg_duration"] > 0
+                    and current["avg_duration"] > baseline["avg_duration"] * 1.5
+                ):
                     alerts.append(
                         f"耗时上升 {round((current['avg_duration'] / baseline['avg_duration'] - 1) * 100, 1)}% "
                         f"({round(baseline['avg_duration'], 2)}s → {round(current['avg_duration'], 2)}s)"
                     )
 
                 if alerts:
-                    regressions.append({
-                        "skill_id": e.name,
-                        "status": e.status,
-                        "baseline": baseline,
-                        "current": current,
-                        "reason": "; ".join(alerts),
-                        "suggested_action": "降级为 shadow 并审查 skill 内容",
-                    })
+                    regressions.append(
+                        {
+                            "skill_id": e.name,
+                            "status": e.status,
+                            "baseline": baseline,
+                            "current": current,
+                            "reason": "; ".join(alerts),
+                            "suggested_action": "降级为 shadow 并审查 skill 内容",
+                        }
+                    )
         else:
             # 历史不足：回退到 confidence+apply_count 检测
             if e.apply_count >= 3 and e.confidence < 0.3:
-                regressions.append({
-                    "skill_id": e.name,
-                    "confidence": e.confidence,
-                    "apply_count": e.apply_count,
-                    "status": e.status,
-                    "reason": f"apply_count={e.apply_count} 但 confidence={e.confidence}<0.3，可能回归",
-                    "suggested_action": "审查 skill 内容或降级为 shadow/deprecated",
-                })
+                regressions.append(
+                    {
+                        "skill_id": e.name,
+                        "confidence": e.confidence,
+                        "apply_count": e.apply_count,
+                        "status": e.status,
+                        "reason": f"apply_count={e.apply_count} 但 confidence={e.confidence}<0.3，可能回归",
+                        "suggested_action": "审查 skill 内容或降级为 shadow/deprecated",
+                    }
+                )
             elif e.apply_count >= 5 and e.confidence < 0.5:
-                regressions.append({
-                    "skill_id": e.name,
-                    "confidence": e.confidence,
-                    "apply_count": e.apply_count,
-                    "status": e.status,
-                    "reason": f"apply_count={e.apply_count} 但 confidence={e.confidence}<0.5，需关注",
-                    "suggested_action": "增加验证次数或审查 skill 内容",
-                })
+                regressions.append(
+                    {
+                        "skill_id": e.name,
+                        "confidence": e.confidence,
+                        "apply_count": e.apply_count,
+                        "status": e.status,
+                        "reason": f"apply_count={e.apply_count} 但 confidence={e.confidence}<0.5，需关注",
+                        "suggested_action": "增加验证次数或审查 skill 内容",
+                    }
+                )
 
     return regressions
 
 
 # ─────────────────────────────── CLI 入口（P2-2） ───────────────────────────────
 
-def _cli_query(roots: list[Path], trigger: str | None, category: str | None, status: str | None) -> None:
+
+def _cli_query(
+    roots: list[Path], trigger: str | None, category: str | None, status: str | None
+) -> None:
     entries = scan_skills(roots)
     matched = []
     for e in entries:
@@ -841,7 +888,12 @@ def _cli_query(roots: list[Path], trigger: str | None, category: str | None, sta
         if status is not None and e.status != status:
             continue
         matched.append(_entry_to_dict(e))
-    print(json.dumps({"schema_version": SCHEMA_VERSION, "count": len(matched), "skills": matched}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {"schema_version": SCHEMA_VERSION, "count": len(matched), "skills": matched},
+            ensure_ascii=False,
+        )
+    )
 
 
 def _cli_detect_drift(roots: list[Path]) -> None:
@@ -880,12 +932,21 @@ def _cli_lifecycle(skill_dir: Path, transition: str) -> None:
     if not current:
         current = status
     res = lifecycle_transition(current, target, [f"cli_transition:{transition}"])
-    print(json.dumps({"skill_dir": str(skill_dir), "current_status": status, **res}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {"skill_dir": str(skill_dir), "current_status": status, **res}, ensure_ascii=False
+        )
+    )
 
 
 def _cli_recall_hook(context: str, roots: list[Path]) -> None:
     entries = scan_skills(roots)
-    print(json.dumps({"schema_version": SCHEMA_VERSION, "candidates": recall_hook(context, entries)}, ensure_ascii=False))
+    print(
+        json.dumps(
+            {"schema_version": SCHEMA_VERSION, "candidates": recall_hook(context, entries)},
+            ensure_ascii=False,
+        )
+    )
 
 
 def _cli_record_hook(skill_id: str, memory_id: str) -> None:
@@ -899,10 +960,15 @@ def _cli_verify_hook(skill_id: str, success: bool, roots: list[Path]) -> None:
 
 def _add_roots_args(p: argparse.ArgumentParser) -> None:
     """为需要扫描 SKILL 的子命令统一添加 --roots / --all 参数。"""
-    p.add_argument("--roots", nargs="+", type=Path, default=None,
-                   help="SKILL 根目录列表（与 --all 二选一）")
-    p.add_argument("--all", action="store_true", dest="scan_all",
-                   help="扫描所有项目自有 SKILL 目录（ALL_SKILL_ROOTS）")
+    p.add_argument(
+        "--roots", nargs="+", type=Path, default=None, help="SKILL 根目录列表（与 --all 二选一）"
+    )
+    p.add_argument(
+        "--all",
+        action="store_true",
+        dest="scan_all",
+        help="扫描所有项目自有 SKILL 目录（ALL_SKILL_ROOTS）",
+    )
 
 
 def _resolve_roots(args: argparse.Namespace) -> list[Path]:
@@ -971,10 +1037,19 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     try:
-        roots = _resolve_roots(args) if args.command in {
-            "build", "query", "detect-drift", "detect-conflicts",
-            "recall-hook", "verify-hook",
-        } else None
+        roots = (
+            _resolve_roots(args)
+            if args.command
+            in {
+                "build",
+                "query",
+                "detect-drift",
+                "detect-conflicts",
+                "recall-hook",
+                "verify-hook",
+            }
+            else None
+        )
         if args.command == "build":
             build(roots, args.output)
         elif args.command == "query":

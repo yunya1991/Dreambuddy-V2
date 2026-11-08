@@ -3,7 +3,8 @@
 写入后可读回、字段一致；同 dedupe_key 二次写入被忽略。
 扩展：metrics/quality/alerts 三表 + 按源/时间窗口查询 + source_health。
 """
-from datetime import datetime, timezone, timedelta
+
+from datetime import datetime, timedelta, timezone
 
 from data_center.core.contract import DataRecord
 from data_center.monitoring.alerting import Alert, AlertLevel
@@ -14,10 +15,13 @@ from data_center.storage.sink_sqlite import SqliteSink
 
 def _rec(sub, date, val):
     return DataRecord(
-        source="fred", category="macro", sub_category=sub,
+        source="fred",
+        category="macro",
+        sub_category=sub,
         timestamp="2026-08-24T08:00:00+08:00",
         metrics={"value": val, "date": date},
-        events=[], timeseries=[{"date": date, "value": val}],
+        events=[],
+        timeseries=[{"date": date, "value": val}],
         raw={"series_id": sub},
     )
 
@@ -49,12 +53,16 @@ def test_dedupe_at_sink(tmp_path):
 def _mk_metric(source="fred", category="macro", status="ok", duration_ms=120.0, records_count=1):
     if status == "ok":
         return InvocationMetric.new_ok(
-            source=source, category=category,
-            duration_ms=duration_ms, records_count=records_count,
+            source=source,
+            category=category,
+            duration_ms=duration_ms,
+            records_count=records_count,
         )
     return InvocationMetric.new_error(
-        source=source, category=category,
-        duration_ms=duration_ms, exc=RuntimeError("boom"),
+        source=source,
+        category=category,
+        duration_ms=duration_ms,
+        exc=RuntimeError("boom"),
     )
 
 
@@ -77,12 +85,28 @@ def test_write_metric_and_summary(tmp_path):
 
 def test_write_quality_and_recent_issues(tmp_path):
     sink = SqliteSink(str(tmp_path / "t.db"))
-    sink.write_quality(_mk_metric("fred", "macro"), [
-        QualityIssue(code=QualityIssueCode.EMPTY_RESULT, message="空列表", source="fred", category="macro"),
-    ])
-    sink.write_quality(_mk_metric("ccxt", "chain"), [
-        QualityIssue(code=QualityIssueCode.DUPLICATE_DETECTED, message="dup key=x", source="ccxt", category="chain"),
-    ])
+    sink.write_quality(
+        _mk_metric("fred", "macro"),
+        [
+            QualityIssue(
+                code=QualityIssueCode.EMPTY_RESULT,
+                message="空列表",
+                source="fred",
+                category="macro",
+            ),
+        ],
+    )
+    sink.write_quality(
+        _mk_metric("ccxt", "chain"),
+        [
+            QualityIssue(
+                code=QualityIssueCode.DUPLICATE_DETECTED,
+                message="dup key=x",
+                source="ccxt",
+                category="chain",
+            ),
+        ],
+    )
     issues = sink.recent_issues(limit=10)
     assert len(issues) == 2
     assert issues[0]["code"] in ("EMPTY_RESULT", "DUPLICATE_DETECTED")
@@ -90,8 +114,12 @@ def test_write_quality_and_recent_issues(tmp_path):
 
 def test_write_alert_and_recent_alerts(tmp_path):
     sink = SqliteSink(str(tmp_path / "t.db"))
-    sink.write_alert(Alert(level=AlertLevel.ERROR, title="FRED 不可达", message="timeout", tags=["fred"]))
-    sink.write_alert(Alert(level=AlertLevel.WARNING, title="CCXT 限频", message="429", tags=["ccxt"]))
+    sink.write_alert(
+        Alert(level=AlertLevel.ERROR, title="FRED 不可达", message="timeout", tags=["fred"])
+    )
+    sink.write_alert(
+        Alert(level=AlertLevel.WARNING, title="CCXT 限频", message="429", tags=["ccxt"])
+    )
     alerts = sink.recent_alerts(limit=10)
     assert len(alerts) == 2
     assert alerts[0]["level"] in ("ERROR", "WARNING")
@@ -115,14 +143,34 @@ def test_query_records_window_sec(tmp_path):
     # 一条新数据（now）+ 一条旧数据（2 小时前）
     now_iso = datetime.now(timezone.utc).isoformat()
     old_iso = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
-    sink.write([DataRecord(
-        source="fred", category="macro", sub_category="LIVE",
-        timestamp=now_iso, metrics={"value": 1}, events=[], timeseries=[], raw={},
-    )])
-    sink.write([DataRecord(
-        source="fred", category="macro", sub_category="OLD",
-        timestamp=old_iso, metrics={"value": 2}, events=[], timeseries=[], raw={},
-    )])
+    sink.write(
+        [
+            DataRecord(
+                source="fred",
+                category="macro",
+                sub_category="LIVE",
+                timestamp=now_iso,
+                metrics={"value": 1},
+                events=[],
+                timeseries=[],
+                raw={},
+            )
+        ]
+    )
+    sink.write(
+        [
+            DataRecord(
+                source="fred",
+                category="macro",
+                sub_category="OLD",
+                timestamp=old_iso,
+                metrics={"value": 2},
+                events=[],
+                timeseries=[],
+                raw={},
+            )
+        ]
+    )
     # 1 小时窗口只能看到 LIVE
     recent = sink.query_records(source="fred", window_sec=3600)
     assert len(recent) == 1
@@ -157,10 +205,18 @@ def test_quality_check_integration(tmp_path):
     checker = QualityChecker(freshness_threshold=timedelta(hours=1))
     # 一条过时记录（2 小时前）→ 触发 FRESHNESS issue
     old_iso = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
-    records = [DataRecord(
-        source="fred", category="macro", sub_category="OLD",
-        timestamp=old_iso, metrics={"value": 1}, events=[], timeseries=[], raw={},
-    )]
+    records = [
+        DataRecord(
+            source="fred",
+            category="macro",
+            sub_category="OLD",
+            timestamp=old_iso,
+            metrics={"value": 1},
+            events=[],
+            timeseries=[],
+            raw={},
+        )
+    ]
     metric = _mk_metric("fred", "macro", "ok", 100.0, 1)
     sink.write(records)
     sink.write_metric(metric)

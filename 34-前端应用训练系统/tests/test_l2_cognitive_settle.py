@@ -4,13 +4,17 @@
 被测脚本位于 3.1-FRONTEND/scripts/l2_cognitive_settle.py:
   L2 SSE 任务完成 → cle.record → 返回 memory_id（FAIL-OPEN）。
 """
+
 import json
 import os
 import sys
 
 _SCRIPTS_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "..", "..", "3.1-FRONTEND", "scripts",
+    "..",
+    "..",
+    "3.1-FRONTEND",
+    "scripts",
 )
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
@@ -27,8 +31,7 @@ class FakeCLE:
         self.records = []
 
     def record(self, content="", quality_level="C", tags="", **kw):
-        self.records.append({"content": content, "quality_level": quality_level,
-                             "tags": tags})
+        self.records.append({"content": content, "quality_level": quality_level, "tags": tags})
         if self._boom:
             raise RuntimeError("cognitive down")
         return self._resp
@@ -50,8 +53,9 @@ class TestSettleL2:
     def test_record_returns_string_memory_id(self, monkeypatch):
         cle = FakeCLE(resp="VM-1792151811358-e198fc1e")
         _patch_l0(monkeypatch, cle)
-        out = lcs.settle_l2("task_1", "simple_qa", "BTC趋势", "趋势偏强", 0.85,
-                            "technical_analysis")
+        out = lcs.settle_l2(
+            "task_1", "simple_qa", "BTC趋势", "趋势偏强", 0.85, "technical_analysis"
+        )
         assert out["success"] is True
         assert out["memory_id"] == "VM-1792151811358-e198fc1e"
         # 质量映射: 0.85 >= 0.8 → B
@@ -107,12 +111,23 @@ class TestMain:
     def test_main_outputs_json_last_line(self, monkeypatch, capsys):
         cle = FakeCLE(resp="VM-main-1")
         _patch_l0(monkeypatch, cle)
-        monkeypatch.setattr(sys, "argv", [
-            "l2_cognitive_settle.py",
-            json.dumps({"task_id": "t1", "intent": "simple_qa",
-                        "message": "m", "answer_preview": "a",
-                        "quality_score": 0.85, "l1_intent_hint": "price_query"}),
-        ])
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "l2_cognitive_settle.py",
+                json.dumps(
+                    {
+                        "task_id": "t1",
+                        "intent": "simple_qa",
+                        "message": "m",
+                        "answer_preview": "a",
+                        "quality_score": 0.85,
+                        "l1_intent_hint": "price_query",
+                    }
+                ),
+            ],
+        )
         lcs.main()
         last = capsys.readouterr().out.strip().splitlines()[-1]
         parsed = json.loads(last)

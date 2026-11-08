@@ -4,12 +4,12 @@ A5 交易执行节点 — 综合前序结果，生成最终交易指令
 
 from __future__ import annotations
 
-import os
 import logging
-from typing import Dict, Any, List, Optional
+import os
+from typing import Any, Dict, List, Optional
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 logger = logging.getLogger("a5_execution")
 
@@ -101,10 +101,27 @@ def calc_dynamic_position_and_leverage(
 
     # 5) 单币种硬上限 & 下限
     # BTC 大币可多配，MEME/小币上限保守
-    cap_small_coins = {"OP", "ARB", "DOGE", "SHIB", "PEPE", "ADA", "DOT", "LINK", "AVAX", "MATIC"}
-    max_single_pct = 0.25 if symbol.upper() in ("BTC", "ETH") else (0.18 if symbol.upper() in ("SOL", "BNB", "XRP") else 0.15)
+    cap_small_coins = {  # noqa: F841
+        "OP",
+        "ARB",
+        "DOGE",
+        "SHIB",
+        "PEPE",
+        "ADA",
+        "DOT",
+        "LINK",
+        "AVAX",
+        "MATIC",
+    }  # noqa: F841
+    max_single_pct = (
+        0.25
+        if symbol.upper() in ("BTC", "ETH")
+        else (0.18 if symbol.upper() in ("SOL", "BNB", "XRP") else 0.15)
+    )
     # 每笔名义本金最小值（保证 OP/ARB 等低价币能下单 3-5 USDT 起步）
-    min_position_usdt = 5.0 if symbol.upper() in ("OP", "ARB", "DOGE", "SHIB", "PEPE", "DOT") else 3.0
+    min_position_usdt = (
+        5.0 if symbol.upper() in ("OP", "ARB", "DOGE", "SHIB", "PEPE", "DOT") else 3.0
+    )
 
     # 6) 综合名义本金 = equity × kelly × conf × vol
     position = eq * kelly_half * conf_score * vol_score
@@ -152,7 +169,7 @@ class A5ExecutionNode(BaseNode):
         price = mkt.get("price", 0)
         coin = mkt.get("coin", "BTC")
         atr_pct = mkt.get("atr_pct", 0.02)
-        atr = price * atr_pct
+        atr = price * atr_pct  # noqa: F841
 
         rationale: List[str] = []
 
@@ -187,7 +204,9 @@ class A5ExecutionNode(BaseNode):
         a7_direction = a7_result.get("direction", direction)
 
         if not a7_passed:
-            rationale.append(f"[A5] A7实践门禁未通过 (校准置信{a7_calibrated_conf:.1%} < 65%), 不生成交易指令")
+            rationale.append(
+                f"[A5] A7实践门禁未通过 (校准置信{a7_calibrated_conf:.1%} < 65%), 不生成交易指令"
+            )
             return NodeResult(
                 node_id="A5",
                 confidence=round(a7_calibrated_conf, 3),
@@ -274,7 +293,9 @@ class A5ExecutionNode(BaseNode):
             f"  Kelly 仓位模型: eq={dyn['account_equity']}USDT kelly={dyn['kelly_pct']:.2%} "
             f"conf={dyn['confidence_score']:.2f} vol={dyn['vol_score']:.2f} max={dyn['max_single_pct']:.0%}"
         )
-        rationale.append(f"  杠杆: {trade_order['leverage']}x (置信度={confidence:.2f} ATR%={atr_pct:.1%})")
+        rationale.append(
+            f"  杠杆: {trade_order['leverage']}x (置信度={confidence:.2f} ATR%={atr_pct:.1%})"
+        )
         for r in st_rationale:
             rationale.append(f"  {r}")
         rationale.append(f"  止损: ${trade_order['stop_loss']:.4f}")
@@ -304,7 +325,9 @@ class A5ExecutionNode(BaseNode):
             return state.intent["mkt"]
         return {}
 
-    def _invoke_a7(self, state: State, proposed_direction: str, proposed_confidence: float) -> Dict[str, Any]:
+    def _invoke_a7(
+        self, state: State, proposed_direction: str, proposed_confidence: float
+    ) -> Dict[str, Any]:
         """P2-2: 调用 A7 实践论门禁进行决策验证
 
         A7 基于《实践论》的实践→认识→实践闭环：
@@ -314,6 +337,7 @@ class A5ExecutionNode(BaseNode):
         """
         try:
             from dreamos.capabilities.trading.nodes.a7_practice_gate import A7PracticeGateNode
+
             a7_node = A7PracticeGateNode()
 
             # 构造 A7 需要的 intent
@@ -326,7 +350,9 @@ class A5ExecutionNode(BaseNode):
             return {
                 "gate_passed": a7_result.outputs.get("gate_passed", False),
                 "gate_result": a7_result.outputs.get("gate_result", "unknown"),
-                "calibrated_confidence": a7_result.outputs.get("calibrated_confidence", proposed_confidence),
+                "calibrated_confidence": a7_result.outputs.get(
+                    "calibrated_confidence", proposed_confidence
+                ),
                 "confidence_threshold": a7_result.outputs.get("confidence_threshold", 0.65),
                 "direction": a7_result.direction,
                 "history": a7_result.outputs.get("history", {}),
@@ -341,8 +367,9 @@ class A5ExecutionNode(BaseNode):
                 "error": str(e),
             }
 
-    def _detect_market_regime(self, atr_pct: float, confidence: float,
-                              market_data: Optional[Dict[str, Any]] = None) -> str:
+    def _detect_market_regime(
+        self, atr_pct: float, confidence: float, market_data: Optional[Dict[str, Any]] = None
+    ) -> str:
         """基于实时行情数据检测市场状态
 
         优先使用 ScenarioClassifier 三维分类结果，回退到 ATR 阈值判断。
@@ -354,6 +381,7 @@ class A5ExecutionNode(BaseNode):
         if market_data:
             try:
                 from dreamos.core.sense.scenario_classifier import ScenarioClassifier
+
                 classifier = ScenarioClassifier()
                 scenario = classifier.classify(market_data)
                 trend = scenario.trend
@@ -374,8 +402,7 @@ class A5ExecutionNode(BaseNode):
         else:
             return "ranging"
 
-    def _detect_symbol_volatility(self, coin: str,
-                                  atr_pct: Optional[float] = None) -> str:
+    def _detect_symbol_volatility(self, coin: str, atr_pct: Optional[float] = None) -> str:
         """检测币种波动率等级
 
         优先使用实时 ATR% 计算，回退到币种分类。
@@ -401,10 +428,15 @@ class A5ExecutionNode(BaseNode):
         else:
             return "medium"
 
-    def _calculate_stop_take_profit(self, direction: str, entry_price: float,
-                                     atr_pct: float, confidence: float,
-                                     coin: str = "BTC",
-                                     market_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _calculate_stop_take_profit(
+        self,
+        direction: str,
+        entry_price: float,
+        atr_pct: float,
+        confidence: float,
+        coin: str = "BTC",
+        market_data: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """使用专业止盈止损引擎计算止损止盈
 
         Args:
@@ -412,7 +444,9 @@ class A5ExecutionNode(BaseNode):
                          如果提供，将替代简单 ATR 阈值判断
         """
         try:
-            from dreamos.capabilities.trading.exit_strategy.stop_take_profit import calculate_stop_take_profit
+            from dreamos.capabilities.trading.exit_strategy.stop_take_profit import (
+                calculate_stop_take_profit,
+            )
 
             market_regime = self._detect_market_regime(atr_pct, confidence, market_data)
             symbol_volatility = self._detect_symbol_volatility(coin, atr_pct)

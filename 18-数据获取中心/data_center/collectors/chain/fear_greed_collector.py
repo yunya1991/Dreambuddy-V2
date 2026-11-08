@@ -7,6 +7,7 @@
 
 用于战略层天维度情绪评分补充。
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -54,11 +55,15 @@ class FearGreedCollector(BaseCollector):
         ts = []
         for item in reversed(items):
             try:
-                ts.append({
-                    "date": datetime.fromtimestamp(int(item["timestamp"]), tz=timezone.utc).strftime("%Y-%m-%d"),
-                    "value": int(item["value"]),
-                    "classification": item.get("value_classification", ""),
-                })
+                ts.append(
+                    {
+                        "date": datetime.fromtimestamp(
+                            int(item["timestamp"]), tz=timezone.utc
+                        ).strftime("%Y-%m-%d"),
+                        "value": int(item["value"]),
+                        "classification": item.get("value_classification", ""),
+                    }
+                )
             except (KeyError, ValueError, TypeError):
                 continue
 
@@ -77,7 +82,11 @@ class FearGreedCollector(BaseCollector):
             timeseries=ts,
             raw={
                 "source": "alternative.me",
-                "latest": {"date": latest_date, "value": latest_value, "classification": latest_class},
+                "latest": {
+                    "date": latest_date,
+                    "value": latest_value,
+                    "classification": latest_class,
+                },
                 "count": len(ts),
             },
         )

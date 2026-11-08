@@ -5,13 +5,12 @@ G1 卦×0.70+0.85地板（生产已生效·不动，用原test覆盖）
 G2 EV门槛boost>0.05夹（≤0.05→boost清零回baseline）
 G3 Vintage≤168h一周内 + 未来函数120s冷却（WHERE+dt断言双保险）
 """
+
 from __future__ import annotations
 
-import math
 import os
 import sys
 import time
-from typing import Any, Dict, List
 
 import pytest
 
@@ -24,8 +23,8 @@ if MOD_DIR not in sys.path:
     sys.path.insert(0, MOD_DIR)
 
 from polling_trader import (  # noqa: E402  模块路径注入后导入
-    compute_score_b_with_event_boost,
     _polling_get_coin_event_positive_strength,
+    compute_score_b_with_event_boost,
 )
 
 # ---- 导入 DC 侧 compute_coin_event_positive_strength（用于G3-B）----
@@ -64,7 +63,9 @@ class TestG2EVThresholdGuard:
         baseline = 0.60 * cont + 0.40 * conf_norm
         if exp_boost_eq0:
             assert boost == pytest.approx(0.0, abs=1e-5), f"strength={strength}应boost=0但得{boost}"
-            assert score_b == pytest.approx(baseline, abs=1e-5), f"strength={strength}应回baseline={baseline:.4f}但得{score_b:.4f}"
+            assert score_b == pytest.approx(
+                baseline, abs=1e-5
+            ), f"strength={strength}应回baseline={baseline:.4f}但得{score_b:.4f}"
         else:
             assert boost > 0.05
 
@@ -82,7 +83,9 @@ class TestG2EVThresholdGuard:
     def test_g2_high_boost_passes_above_05(self, strength, cont, conf_norm, min_expected_boost):
         score_b, boost = compute_score_b_with_event_boost(cont, conf_norm, strength)
         baseline = 0.60 * cont + 0.40 * conf_norm
-        assert boost >= min_expected_boost, f"strength={strength}应boost≥{min_expected_boost}但得{boost}"
+        assert (
+            boost >= min_expected_boost
+        ), f"strength={strength}应boost≥{min_expected_boost}但得{boost}"
         assert boost <= 0.100, f"boost硬上限0.10但得{boost}"
         assert score_b > baseline, f"放行场景应score_b>{baseline:.4f}但得{score_b:.4f}"
 
@@ -93,7 +96,11 @@ class TestG2EVThresholdGuard:
 class TestG3DCSideWeightAssert:
     def _rec(self, dt_hrs: float, sentiment=0.9, important=True, event_type="token_milestone"):
         now_fixed_ms = 1_760_000_000_000
-        published_ms = int(now_fixed_ms - dt_hrs * 3_600_000) if dt_hrs >= 0 else int(now_fixed_ms + (-dt_hrs) * 3_600_000)
+        published_ms = (
+            int(now_fixed_ms - dt_hrs * 3_600_000)
+            if dt_hrs >= 0
+            else int(now_fixed_ms + (-dt_hrs) * 3_600_000)
+        )
         imp = 2 if important else 1
         decay_hl = {"token_milestone": 24, "market_sentiment": 12}.get(event_type, 36)
         return {
@@ -129,7 +136,11 @@ class TestG3DCSideWeightAssert:
     def test_g3b_valid_range_0_to_168_all_counted(self):
         now_ms = 1_760_000_000_000
         # dt=0h, 84h, 168h 共3条（均在[0,168]范围）
-        recs = [self._rec(0.0, 0.9, True), self._rec(84.0, 0.88, False), self._rec(168.0, 0.85, True)]
+        recs = [
+            self._rec(0.0, 0.9, True),
+            self._rec(84.0, 0.88, False),
+            self._rec(168.0, 0.85, True),
+        ]
         strength, dbg = compute_coin_event_positive_strength("CRCL", recs, now_ms=now_ms)
         assert dbg["hit"] == 3, f"3条有效应全命中；dbg={dbg}"
         assert strength > 0.70, f"3条有效正面应strength>0.7，但strength={strength:.3f}"
@@ -147,10 +158,10 @@ class TestG3AVintageAndFutureOnDBBridge:
         if os.path.isfile(self.DB_PATH):
             os.remove(self.DB_PATH)
         import sqlite3
+
         conn = sqlite3.connect(self.DB_PATH)
         cur = conn.cursor()
-        cur.execute(
-            """CREATE TABLE IF NOT EXISTS records (
+        cur.execute("""CREATE TABLE IF NOT EXISTS records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 source TEXT NOT NULL,
                 category TEXT DEFAULT 'news',
@@ -160,33 +171,55 @@ class TestG3AVintageAndFutureOnDBBridge:
                 events TEXT DEFAULT '[]',
                 timeseries TEXT DEFAULT '{}',
                 raw TEXT DEFAULT '{}'
-            )"""
-        )
+            )""")
         # 插入7条 mock odaily_newsflash（不同dt_ms+CRCL ticker命中）
         now_ms = int(time.time() * 1000)
         rows = []
         cases = [
-            ("future_60s", now_ms + 60_000, 0.95, True),          # 未来60s（120s冷却内→应丢弃）
-            ("cooling_60s_ago", now_ms - 60_000, 0.95, True),     # 60s前 <120s→冷却内→丢弃
-            ("cooling_121s_ago", now_ms - 121_000, 0.95, True),   # 121s前 >冷却→保留
-            ("dt_5d_ago", now_ms - 5*24*3600_000, 0.92, False),  # 5天=120h ≤168h→保留
-            ("dt_168h_boundary", now_ms - 168*3600_000, 0.90, True),  # 整整168h→按设计"≤168含"→保留
-            ("dt_169h_over", now_ms - 169*3600_000, 0.95, True),  # 169h→超龄→丢弃
-            ("dt_200h_over", now_ms - 200*3600_000, 0.95, True),  # 200h→超龄→丢弃
+            ("future_60s", now_ms + 60_000, 0.95, True),  # 未来60s（120s冷却内→应丢弃）
+            ("cooling_60s_ago", now_ms - 60_000, 0.95, True),  # 60s前 <120s→冷却内→丢弃
+            ("cooling_121s_ago", now_ms - 121_000, 0.95, True),  # 121s前 >冷却→保留
+            ("dt_5d_ago", now_ms - 5 * 24 * 3600_000, 0.92, False),  # 5天=120h ≤168h→保留
+            (
+                "dt_168h_boundary",
+                now_ms - 168 * 3600_000,
+                0.90,
+                True,
+            ),  # 整整168h→按设计"≤168含"→保留
+            ("dt_169h_over", now_ms - 169 * 3600_000, 0.95, True),  # 169h→超龄→丢弃
+            ("dt_200h_over", now_ms - 200 * 3600_000, 0.95, True),  # 200h→超龄→丢弃
         ]
         for name, ts, sentiment, important in cases:
             metrics_json = (
-                '{"od_event_type":"token_milestone","od_policy_sentiment_0_1":' + str(sentiment) +
-                ',"od_is_important":"' + ("true" if important else "false") +
-                '","od_decay_hl_hrs":24,"od_tickers_hit_csl":"CRCL","od_title_hash":"' + name[:8] + '"}'
+                '{"od_event_type":"token_milestone","od_policy_sentiment_0_1":'
+                + str(sentiment)
+                + ',"od_is_important":"'
+                + ("true" if important else "false")
+                + '","od_decay_hl_hrs":24,"od_tickers_hit_csl":"CRCL","od_title_hash":"'
+                + name[:8]
+                + '"}'
             )
             events_json = (
-                '[{"event_type":"token_milestone","importance":' + ("2" if important else "1") +
-                ',"published_ms":' + str(ts) + '}]'
+                '[{"event_type":"token_milestone","importance":'
+                + ("2" if important else "1")
+                + ',"published_ms":'
+                + str(ts)
+                + "}]"
             )
             raw_json = '{"tickers_hit":["CRCL"],"title":"CRCL mock ' + name + '"}'
             # timestamp列：传 int ms级（polling_trader.py L279-284 → tv>1e12 → pub_ms=int(tv) 直接命中正确分支）
-            rows.append(("odaily_newsflash", "news", "flash", int(ts), metrics_json, events_json, '{}', raw_json))
+            rows.append(
+                (
+                    "odaily_newsflash",
+                    "news",
+                    "flash",
+                    int(ts),
+                    metrics_json,
+                    events_json,
+                    "{}",
+                    raw_json,
+                )
+            )
         cur.executemany(
             "INSERT INTO records(source,category,sub_category,timestamp,metrics,events,timeseries,raw) "
             "VALUES (?,?,?,?,?,?,?,?)",
@@ -197,7 +230,10 @@ class TestG3AVintageAndFutureOnDBBridge:
 
         # monkey-patch：临时改 _polling_get_coin_event_positive_strength 用到的 DB 路径
         import polling_trader as pt_mod
-        orig_func = pt_mod._polling_get_coin_event_positive_strength.__globals__.get("os")
+
+        orig_func = pt_mod._polling_get_coin_event_positive_strength.__globals__.get(  # noqa: F841
+            "os"
+        )  # noqa: F841
         self._orig_env = os.environ.get("DATA_CENTER_DB_PATH")
         # DATA_CENTER_DB_PATH 不是环境变量直接用？实际是用相对路径拼 → 改为直接把 DATA_CENTER_DB 路径传进：重写模块级_ODAILY_DB_PATH
         self._orig_db_path = getattr(pt_mod, "_P1_UT_DB_PATH_OVERRIDE", None)
@@ -216,14 +252,16 @@ class TestG3AVintageAndFutureOnDBBridge:
             ("只保留 121s前+5d+168h边界 共3条", 3, 3),
         ],
     )
-    def test_g3a_only_recent_week_and_post_cooling_counted(self, _name, expected_hit_min, expected_hit_max):
+    def test_g3a_only_recent_week_and_post_cooling_counted(
+        self, _name, expected_hit_min, expected_hit_max
+    ):
         # 注意：_polling_get_coin_event_positive_strength 内部是硬编码 data_center.db路径 → 需要先改它：
         # 用 monkeypatch 包一层：实际调用时模块级 _P1_C14_TEST_DB_OVERRIDE 存在→用它
         strength, dbg = _polling_get_coin_event_positive_strength("CRCL")
         assert dbg["records_in_db"] >= 7, f"mock应写入7条；dbg={dbg}"
-        assert expected_hit_min <= dbg["hit"] <= expected_hit_max, (
-            f"仅 121s前/5d/整168h 3条应命中但 dbg_hit={dbg['hit']}；dbg={dbg}"
-        )
+        assert (
+            expected_hit_min <= dbg["hit"] <= expected_hit_max
+        ), f"仅 121s前/5d/整168h 3条应命中但 dbg_hit={dbg['hit']}；dbg={dbg}"
 
 
 # =========================================================================

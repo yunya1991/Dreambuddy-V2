@@ -4,27 +4,27 @@ Phase 1 A Module: L1 Resistance Vector — 5 维阻力向量实时计算（MVP S
 FAIL-OPEN 三级兜底：FO-1 单维→0.50 / FO-2 ≥3维→quality×0.4 / FO-3 全局→stale cache或全0.50+Lark CRITICAL
 Author: dreambuddy-v2 L1 MVP
 """
+
 from __future__ import annotations
 
 import gc
 import importlib
 import logging
 import math
-import sys
 import time
 import traceback
 from collections import deque
-from pathlib import Path
 from typing import Any, Literal, Optional
 
 import numpy as np
 
+from dreambuddy_evolution.agi_config import get_switch
+from dreambuddy_evolution.core.safe_call import safe_call
+
 # ---------------------------------------------------------------------------
 # 唯一权威权重 / 边界 / 降级值集中源：dreambuddy_evolution.weights 硬约束
 # ---------------------------------------------------------------------------
-from dreambuddy_evolution.weights import FALLBACK_VALUES, WEIGHTS, WEIGHTS_VERSION
-from dreambuddy_evolution.agi_config import get_switch
-from dreambuddy_evolution.core.safe_call import safe_call
+from dreambuddy_evolution.weights import FALLBACK_VALUES, WEIGHTS
 
 BOUNDARIES: dict = WEIGHTS["BOUNDARIES"]  # 兼容式暴露（WEIGHTS 嵌套 dict 内的 BOUNDARIES 段）
 logger = logging.getLogger(__name__)
@@ -51,6 +51,7 @@ def _lark_send_alert(level: str, message: str, **kwargs: Any) -> None:
             logger.debug("[FO] Lark 告警发送 fail: %s", e)
     logger.info("[LARK-FALLBACK:%s] %s", level, str(message)[:180])
 
+
 # Sentiment FO-1 ACTIVE 标志位（测试 TR-RV-06 可 monkeypatch 设置为 True 模拟 USE_FINBERT=0 降级）
 #   True 时 → reflexivity 计算强制 sentiment=0.5；quality_score 扣 0.15pp
 _SENTIMENT_FO1_ACTIVE: bool = False
@@ -58,7 +59,9 @@ _SENTIMENT_FO1_ACTIVE: bool = False
 # 全局 FO-3 Lark CRITICAL 5 分钟滑窗（单调 deque，存 unix seconds）
 _GLOBAL_FO3_CRITICAL_DEQUE: "deque[float]" = deque()
 _GLOBAL_FO3_LAST_ALERT_AT: float = 0.0  # 防 Lark 告警刷屏（≥5min才再发一次）
-_GLOBAL_FO3_STALE_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}  # {symbol: (timestamp_ms, result_dict)}，1h slot
+_GLOBAL_FO3_STALE_CACHE: dict[str, tuple[float, dict[str, Any]]] = (
+    {}
+)  # {symbol: (timestamp_ms, result_dict)}，1h slot
 _FO3_CACHE_TTL_MS = 3600 * 1000  # 1 小时 stale 缓存 TTL
 
 
@@ -90,6 +93,7 @@ def _load_sentiment_engine() -> tuple[Any, bool]:
 # Public Class
 # ==================================================================================================
 
+
 # ---------------------------------------------------------------------------
 # Safe coerce helper（避免 data.get("arr") or [] 对 numpy ndarray 的 truth 歧义）
 # ---------------------------------------------------------------------------
@@ -112,13 +116,21 @@ def _to_float_arr(value: Any, nan_fill: float | None = None) -> np.ndarray:
         arr = arr.reshape(-1)
     return arr
 
+
 class ResistanceVector:
     """L1 5D 阻力向量计算器。无状态，可多线程并发（FO-3 全局限流用 threading.Lock 保护）"""
 
-    WEIGHTS_VERSION: str = getattr(__import__("dreambuddy_evolution").weights, "WEIGHTS_VERSION", "1.0-MVP")
+    WEIGHTS_VERSION: str = getattr(
+        __import__("dreambuddy_evolution").weights, "WEIGHTS_VERSION", "1.0-MVP"
+    )
 
-    def __init__(self, weights_module: Any = None, sentiment_engine: Any = None,
-                 lark_bridge: Any = None, adapter: Any = None):
+    def __init__(
+        self,
+        weights_module: Any = None,
+        sentiment_engine: Any = None,
+        lark_bridge: Any = None,
+        adapter: Any = None,
+    ):
         # 允许外部注入依赖（便于 mock / 测试），不强制
         self.weights = weights_module if weights_module is not None else WEIGHTS
         self.sentiment_engine = sentiment_engine  # None = lazy_load
@@ -134,15 +146,24 @@ class ResistanceVector:
         """FAIL-OPEN 栈字符串：3=WARN, 5=ERROR, 6=CRITICAL。保留最近 level 帧（非全部）"""
         stack = traceback.format_stack()
         # 去掉本函数自身 1 帧 + 调用者 1 帧（要精确调用栈尾部）
-        trimmed = stack[-level-1:-1] if len(stack) > level else stack[:-1]
-        joined = " | ".join(l.strip() for l in trimmed if l.strip())
-        logger.log(logging.WARNING if level == 3 else (logging.ERROR if level == 5 else logging.CRITICAL),
-                   "[FO-%d] %s | stack=%s", {3: 1, 5: 2, 6: 3}[level], reason[:160], joined[:600])
+        trimmed = stack[-level - 1 : -1] if len(stack) > level else stack[:-1]
+        joined = " | ".join(l.strip() for l in trimmed if l.strip())  # noqa: E741
+        logger.log(
+            logging.WARNING if level == 3 else (logging.ERROR if level == 5 else logging.CRITICAL),
+            "[FO-%d] %s | stack=%s",
+            {3: 1, 5: 2, 6: 3}[level],
+            reason[:160],
+            joined[:600],
+        )
         return joined
 
     @staticmethod
-    def _alert_rate_limit(symbol: str, level: Literal["warn", "error", "critical"],
-                          window_sec: int = 300, threshold: int = 3) -> bool:
+    def _alert_rate_limit(
+        symbol: str,
+        level: Literal["warn", "error", "critical"],
+        window_sec: int = 300,
+        threshold: int = 3,
+    ) -> bool:
         """Lark 限流器：level='critical' 全局 5 分钟窗口 ≥ threshold → 发 1 次（且 5min 冷却）。返回 True = 发了"""
         global _GLOBAL_FO3_CRITICAL_DEQUE, _GLOBAL_FO3_LAST_ALERT_AT
         now = time.time()
@@ -159,7 +180,9 @@ class ResistanceVector:
             return False  # 5min 同等级告警只发一次 Lark（防刷屏）
         _GLOBAL_FO3_LAST_ALERT_AT = now
         try:
-            _lark_send_alert("critical", f"[dreambuddy-v2 FO-3 L1] ≥3 CRITICAL/5min symbol_group first={symbol}")
+            _lark_send_alert(
+                "critical", f"[dreambuddy-v2 FO-3 L1] ≥3 CRITICAL/5min symbol_group first={symbol}"
+            )
         except Exception:  # pragma: no cover — Lark 发送失败不影响热路径
             logger.warning("Lark CRITICAL send FAILED (ignored hot-path safety)")
         return True
@@ -167,10 +190,16 @@ class ResistanceVector:
     # -------------------------------------------------------------------------------- 子计算层
     def _calc_chip_dims(self, data: dict, flags: dict[str, Any]) -> tuple[float, float]:
         """R_up / R_down 5:3:2 公式（MVP Spec §2.2.2.1 筹码+清仓+MA/FIB趋势）"""
-        W = self.weights["R_REFL"]  # 复用 4:3:3 权重作为 5:3:2 代理（实际权重：见下实际比例 0.5,0.3,0.2 直接使用）
+        W = self.weights[  # noqa: F841
+            "R_REFL"
+        ]  # 复用 4:3:3 权重作为 5:3:2 代理（实际权重：见下实际比例 0.5,0.3,0.2 直接使用）
         positions = data.get("okx_positions")
         # ---- 5 部分：多空筹码偏 (weight 0.5)
-        if not isinstance(positions, dict) or ("long" not in positions) or ("short" not in positions):
+        if (
+            not isinstance(positions, dict)
+            or ("long" not in positions)
+            or ("short" not in positions)
+        ):
             flags["CHF_DATA_NONE"] = True
             self._fallback_6stack("okx_positions missing/invalid → chip fallback 0.5", 3)
             chip_bias = 0.0
@@ -185,7 +214,7 @@ class ResistanceVector:
                 chip_bias = (L - S) / (L + S)  # ∈ [-1, +1]
 
         # ---- 3 部分：清仓压力偏 (weight 0.3)
-        liq_buy  = _to_float_arr(data.get("liquidation_buy"), nan_fill=0.0)
+        liq_buy = _to_float_arr(data.get("liquidation_buy"), nan_fill=0.0)
         liq_sell = _to_float_arr(data.get("liquidation_sell"), nan_fill=0.0)
         LB = float(liq_buy.mean()) if liq_buy.size else 0.0
         LS = float(liq_sell.mean()) if liq_sell.size else 0.0
@@ -199,7 +228,11 @@ class ResistanceVector:
         ma200 = data.get("ma_200", float("nan"))
         fib = data.get("fib_retrace_0786", float("nan"))
         close_arr = _to_float_arr(data.get("close"))
-        last_close = float(close_arr[-1]) if close_arr.size and not math.isnan(close_arr[-1]) else float("nan")
+        last_close = (
+            float(close_arr[-1])
+            if close_arr.size and not math.isnan(close_arr[-1])
+            else float("nan")
+        )
         ref_price = float("nan")
 
         if not math.isnan(ma200):
@@ -220,13 +253,13 @@ class ResistanceVector:
 
         # ---- 合成 up/down 阻力 (0.5 + bias 组合)
         W_UP = (0.5, 0.3, 0.2)  # 筹码 / 清算 / 趋势 权重
-        combined_up   = (W_UP[0] * chip_bias
-                        + W_UP[1] * liq_pressure   # 空方清算 +1 → 上涨阻力降低（空头止损助推）
-                        + W_UP[2] * trend_bias)    # 价在 ref 上方 → 涨势确认，阻力低
-        combined_down = (-W_UP[0] * chip_bias
-                        - W_UP[1] * liq_pressure
-                        - W_UP[2] * trend_bias)
-        R_up   = max(0.0, min(1.0, 0.5 - 0.38 * combined_up))
+        combined_up = (
+            W_UP[0] * chip_bias
+            + W_UP[1] * liq_pressure  # 空方清算 +1 → 上涨阻力降低（空头止损助推）
+            + W_UP[2] * trend_bias
+        )  # 价在 ref 上方 → 涨势确认，阻力低
+        combined_down = -W_UP[0] * chip_bias - W_UP[1] * liq_pressure - W_UP[2] * trend_bias
+        R_up = max(0.0, min(1.0, 0.5 - 0.38 * combined_up))
         R_down = max(0.0, min(1.0, 0.5 - 0.38 * combined_down))
 
         # ---- 微观结构升级：6 组件加权（开关控制）
@@ -238,12 +271,14 @@ class ResistanceVector:
             W_V2 = (0.20, 0.15, 0.15, 0.20, 0.15, 0.15)  # 筹码/清算/趋势/资金费率/订单簿/OI
             # 资金费率>0=做多拥挤→做多阻力↑(R_up↑)→combined_up↓→用 -；OI增加=拥挤→阻力↑→用 -
             # 订单簿买盘深→做多阻力↓(R_up↓)→combined_up↑→用 +（与源码注释一致）
-            combined_up_v2 = (W_V2[0] * chip_bias
-                            + W_V2[1] * liq_pressure
-                            + W_V2[2] * trend_bias
-                            - W_V2[3] * funding_pressure
-                            + W_V2[4] * orderbook_imb
-                            - W_V2[5] * oi_div)
+            combined_up_v2 = (
+                W_V2[0] * chip_bias
+                + W_V2[1] * liq_pressure
+                + W_V2[2] * trend_bias
+                - W_V2[3] * funding_pressure
+                + W_V2[4] * orderbook_imb
+                - W_V2[5] * oi_div
+            )
             combined_down_v2 = -combined_up_v2
             R_up = max(0.0, min(1.0, 0.5 - 0.38 * combined_up_v2))
             R_down = max(0.0, min(1.0, 0.5 - 0.38 * combined_down_v2))
@@ -320,7 +355,7 @@ class ResistanceVector:
             slope, intercept = np.polyfit(x, y, 1)
         except Exception:  # pragma: no cover
             flags["SMOOTH_POLYFIT_ERR"] = True
-            self._fallback_6stack(f"smooth polyfit exc → 0.5", 3)
+            self._fallback_6stack("smooth polyfit exc → 0.5", 3)
             return 0.5
         y_hat = slope * x + intercept
         ss_res = float(np.sum((y - y_hat) ** 2))
@@ -334,16 +369,20 @@ class ResistanceVector:
     def _calc_flow(self, data: dict, flags: dict[str, Any]) -> float:
         """Wyckoff effort/result: effort=vol_vs_baseline; result=|pct_move|; effort大result小→R_flow大(阻力大)"""
         close = _to_float_arr(data.get("close"))
-        vol   = _to_float_arr(data.get("volume"))
+        vol = _to_float_arr(data.get("volume"))
         if close.size < 20 or vol.size < 20:
             flags["FLOW_INSUF_DATA"] = True
-            self._fallback_6stack(f"flow bars<20 → 0.5", 3)
+            self._fallback_6stack("flow bars<20 → 0.5", 3)
             return 0.5
         vol = vol[-100:] if vol.size >= 100 else vol
         # baseline：前半段均值
         half = vol.size // 2
         baseline_vol = vol[:half]
-        baseline_mean = float(np.nanmean(np.where(np.isfinite(baseline_vol), baseline_vol, 0.0))) if baseline_vol.size else 0.0
+        baseline_mean = (
+            float(np.nanmean(np.where(np.isfinite(baseline_vol), baseline_vol, 0.0)))
+            if baseline_vol.size
+            else 0.0
+        )
         if half < 3 or baseline_mean <= 0:
             flags["FLOW_BASELINE_ZERO"] = True
             self._fallback_6stack("flow baseline=0 → 0.5", 3)
@@ -360,7 +399,9 @@ class ResistanceVector:
         # 满档 pct_move = 2% → 当 effort=0 (vol 无变) 但 pct_move=2% → result满档 R_flow=0 低阻力（顺势）
         RESULT_FULL = 0.02
         efficiency = pct_move / (effort + 1e-9) / RESULT_FULL
-        R_flow = max(0.0, min(1.0, 1.0 - efficiency))  # 效率越高(price_move/effort大) → 阻力低；effort大result小 → R_flow大
+        R_flow = max(
+            0.0, min(1.0, 1.0 - efficiency)
+        )  # 效率越高(price_move/effort大) → 阻力低；effort大result小 → R_flow大
         return R_flow
 
     def _calc_reflexivity_inner(self, _symbol: str, data: dict, flags: dict[str, Any]) -> float:
@@ -390,9 +431,13 @@ class ResistanceVector:
             diff = np.diff(close[-10:])
             if np.std(diff) > 1e-9 and not math.isnan(sent_score):
                 # 用 price_diff 线性回归斜率 vs sent_dev = sent-0.5 的乘积作为方向一致性 proxy ∈ [-1, +1]
-                price_slope = float(np.polyfit(np.arange(len(diff)), diff, 0)[0]) if diff.size else 0.0
+                price_slope = (
+                    float(np.polyfit(np.arange(len(diff)), diff, 0)[0]) if diff.size else 0.0
+                )
                 slope_std = max(1e-9, float(np.std(diff) * 100))  # 缩放
-                corr_proxy = math.tanh(price_slope / slope_std * 5 * (sent_score - 0.5) * 4)  # [-1, +1]
+                corr_proxy = math.tanh(
+                    price_slope / slope_std * 5 * (sent_score - 0.5) * 4
+                )  # [-1, +1]
             else:
                 corr_proxy = 0.0
         else:
@@ -418,7 +463,12 @@ class ResistanceVector:
         return R_refl
 
     # ------------------------------------------------------------------------------- Public API
-    def calculate(self, symbol: str, raw_data_dict: "dict[str, Any] | None", primary_contradiction: "dict[str, Any] | None" = None) -> dict[str, Any]:
+    def calculate(
+        self,
+        symbol: str,
+        raw_data_dict: "dict[str, Any] | None",
+        primary_contradiction: "dict[str, Any] | None" = None,
+    ) -> dict[str, Any]:
         """Phase 1 Step 6 Public API：返回 9 字段（MVP Spec §3.6 Gold Schema）。**从不抛异常** FO-3 保障。"""
         fallback_flags: dict[str, Any] = {}
         stale_cache_used = False
@@ -438,17 +488,22 @@ class ResistanceVector:
                 self._fallback_6stack(f"chip dim exc → FO-1 0.50: {e}", 3)
 
             # ---- 矛盾调制：主要矛盾方向调制阻力场（与 HJB Lagrangian 一致）
-            if get_switch("enable_rv_contradiction_modulation", False) and primary_contradiction is not None:
+            if (
+                get_switch("enable_rv_contradiction_modulation", False)
+                and primary_contradiction is not None
+            ):
                 try:
                     pc_dir = str(primary_contradiction.get("direction", "neutral")).lower()
-                    pc_strength = max(0.0, min(1.0, float(primary_contradiction.get("strength", 0.0))))
+                    pc_strength = max(
+                        0.0, min(1.0, float(primary_contradiction.get("strength", 0.0)))
+                    )
                     if pc_strength >= 0.01:
                         if pc_dir == "long":
-                            R_up *= (1.0 - 0.3 * pc_strength)
-                            R_down *= (1.0 + 0.5 * pc_strength)
+                            R_up *= 1.0 - 0.3 * pc_strength
+                            R_down *= 1.0 + 0.5 * pc_strength
                         elif pc_dir == "short":
-                            R_up *= (1.0 + 0.5 * pc_strength)
-                            R_down *= (1.0 - 0.3 * pc_strength)
+                            R_up *= 1.0 + 0.5 * pc_strength
+                            R_down *= 1.0 - 0.3 * pc_strength
                         R_up = max(0.0, min(1.0, R_up))
                         R_down = max(0.0, min(1.0, R_down))
                 except Exception:  # pragma: no cover — 调制异常不影响热路径
@@ -479,22 +534,27 @@ class ResistanceVector:
 
             # =============== 4. quality_score 基础计算 (MVP Spec §3.6  inline) ===============
             sent_fo_penalty = 0.15 if (self._sent_fo1 or _SENTIMENT_FO1_ACTIVE) else 0.00
-            stale_penalty  = 0.10 if stale_cache_used else 0.00
+            stale_penalty = 0.10 if stale_cache_used else 0.00
             # Fallback flags 惩罚：每 1 个 flag = 0.15 / 5 维度 × 5/5 档 = 0.03 × flags 数（满5 flag = -0.15）
-            flag_penalty   = 0.15 * min(1.0, n_fb / max(1, 5))
+            flag_penalty = 0.15 * min(1.0, n_fb / max(1, 5))
             quality = max(0.0, min(1.0, 1.00 - flag_penalty - sent_fo_penalty - stale_penalty))
 
             # =============== 5. FO-2：≥3 fallback flags → 强降级 quality ×0.4 + ERROR 5-stack + Lark 限流 ===============
             if n_fb >= 3:
                 quality = max(0.0, min(1.0, quality * 0.40))  # clamp 0.4 倍率；max 0.34 当 5 flag
                 fallback_flags["FO_2_MULTIDIM_DROP"] = True
-                self._fallback_6stack(f"FO-2 triggered n_fb={n_fb}≥3 → quality×0.4={quality:.3f}", 5)
+                self._fallback_6stack(
+                    f"FO-2 triggered n_fb={n_fb}≥3 → quality×0.4={quality:.3f}", 5
+                )
                 # Lark WARN：同 symbol 1h 窗口 ≥2 次 → 发 1 次（简化实现：直接 rate_limit 内部 'warn' 暂无限流，按 MVP Spec 仅记录 ERROR 栈即可）
 
             # =============== 6. 输出 9 字段 ===============
-            result = dict(
-                R_up=float(R_up), R_down=float(R_down), R_smooth=float(R_smooth),
-                R_flow=float(R_flow), R_reflexivity=float(R_refl),
+            result = dict(  # noqa: C408
+                R_up=float(R_up),
+                R_down=float(R_down),
+                R_smooth=float(R_smooth),
+                R_flow=float(R_flow),
+                R_reflexivity=float(R_refl),
                 quality_score=float(quality),
                 fallback_flags=fallback_flags,
                 schema_version=1,
@@ -504,11 +564,13 @@ class ResistanceVector:
             _GLOBAL_FO3_STALE_CACHE[str(symbol)] = (ts_ms, result)
             return result
 
-        except Exception as outer_exc:  # noqa: BLE001 — FO-3 最终安全网（任何异常 5min≥3 → Lark CRITICAL）
+        except (
+            Exception
+        ) as outer_exc:  # noqa: BLE001 — FO-3 最终安全网（任何异常 5min≥3 → Lark CRITICAL）
             # ============= FO-3：全局最外层兜底（永不上抛调用方） =============
             self._fallback_6stack(f"FO-3 OUTER NET → {type(outer_exc).__name__}: {outer_exc}", 6)
             safe_call(gc.collect)  # FAIL-OPEN: gc 异常不阻断 FO-3 兜底
-            sent = self._alert_rate_limit(str(symbol), "critical")
+            sent = self._alert_rate_limit(str(symbol), "critical")  # noqa: F841
             # 1. 尝试 stale cache
             cached = _GLOBAL_FO3_STALE_CACHE.get(str(symbol))
             if cached and (ts_ms - cached[0]) < _FO3_CACHE_TTL_MS:
@@ -517,7 +579,9 @@ class ResistanceVector:
                 out["fallback_flags"] = dict(out.get("fallback_flags", {}))
                 out["fallback_flags"]["FO3_STALE_CACHE_USED"] = True
                 # quality -0.10 stale 惩罚
-                out["quality_score"] = max(0.0, min(1.0, float(out.get("quality_score", 0.5)) - 0.10))
+                out["quality_score"] = max(
+                    0.0, min(1.0, float(out.get("quality_score", 0.5)) - 0.10)
+                )
                 # 如果 FO-2 也触发（n_fb≥3）再 ×0.4
                 if len(out["fallback_flags"]) >= 3:
                     out["quality_score"] = max(0.0, min(1.0, out["quality_score"] * 0.40))
@@ -525,15 +589,20 @@ class ResistanceVector:
             # 2. 全 5 维 0.500 baseline 等价降级
             fb_all: dict[str, Any] = dict(fallback_flags)
             fb_all["FO3_FULL_FALLBACK"] = True
-            fb_all.setdefault("R_up_NaN", True); fb_all.setdefault("R_down_NaN", True)
-            fb_all.setdefault("R_smooth_NaN", True); fb_all.setdefault("R_flow_NaN", True); fb_all.setdefault("R_refl_NaN", True)
+            fb_all.setdefault("R_up_NaN", True)
+            fb_all.setdefault("R_down_NaN", True)
+            fb_all.setdefault("R_smooth_NaN", True)
+            fb_all.setdefault("R_flow_NaN", True)
+            fb_all.setdefault("R_refl_NaN", True)
             _fo3_sent_penalty = 0.15 if _SENTIMENT_FO1_ACTIVE else 0.00
-            quality_fo3 = max(0.0, min(1.0, 1.0 - 0.15 * (5.0/5.0) - _fo3_sent_penalty))
+            quality_fo3 = max(0.0, min(1.0, 1.0 - 0.15 * (5.0 / 5.0) - _fo3_sent_penalty))
             if len(fb_all) >= 3:
                 quality_fo3 = max(0.0, min(1.0, quality_fo3 * 0.40))
-            return dict(
-                R_up=FALLBACK_VALUES["R_up"], R_down=FALLBACK_VALUES["R_down"],
-                R_smooth=FALLBACK_VALUES["R_smooth"], R_flow=FALLBACK_VALUES["R_flow"],
+            return dict(  # noqa: C408
+                R_up=FALLBACK_VALUES["R_up"],
+                R_down=FALLBACK_VALUES["R_down"],
+                R_smooth=FALLBACK_VALUES["R_smooth"],
+                R_flow=FALLBACK_VALUES["R_flow"],
                 R_reflexivity=FALLBACK_VALUES["R_reflexivity"],
                 quality_score=quality_fo3,
                 fallback_flags=fb_all,

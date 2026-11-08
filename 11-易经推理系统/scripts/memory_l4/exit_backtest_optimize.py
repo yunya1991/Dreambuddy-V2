@@ -12,8 +12,9 @@ ClassicExitSystem 回测 + 贝叶斯参数寻优
    - 贝叶斯寻优后：Optuna 搜索 ExitConfig 最优参数
 4. 择优选用
 """
-import sys
+
 import os
+import sys
 
 # 解决 inspect.py 冲突：scripts/memory_l4/inspect.py 会覆盖标准库 inspect
 # 必须在任何其他导入之前，从 sys.path 移除脚本目录
@@ -21,22 +22,24 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR in sys.path:
     sys.path.remove(SCRIPT_DIR)
 
-import json
-import time
-import math
-import logging
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
-from copy import deepcopy
+import json  # noqa: E402
+import logging  # noqa: E402
+import math  # noqa: E402
+import time  # noqa: E402
+from dataclasses import dataclass, field  # noqa: E402
+from typing import Dict, List, Optional, Tuple  # noqa: E402
 
-import pandas as pd
-import numpy as np
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-from scripts.memory_l4.classic_exit_system import (
-    ClassicExitSystem, PositionState, ExitAction, ExitConfig, ExitPriority,
+from scripts.memory_l4.classic_exit_system import (  # noqa: E402
+    ClassicExitSystem,
+    ExitAction,
+    ExitConfig,
+    PositionState,
 )
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -118,9 +121,11 @@ def load_trades(symbol: str) -> Optional[pd.DataFrame]:
 
 # ── 回测引擎 ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class TradeResult:
     """单笔交易回测结果"""
+
     symbol: str = ""
     direction: str = ""
     entry_price: float = 0.0
@@ -129,15 +134,15 @@ class TradeResult:
     exit_time: pd.Timestamp = None
     entry_time_str: str = ""
     exit_time_str: str = ""
-    pnl_pct: float = 0.0          # 含杠杆的有效收益率
-    pnl_raw_pct: float = 0.0      # 不含杠杆的原始收益率
+    pnl_pct: float = 0.0  # 含杠杆的有效收益率
+    pnl_raw_pct: float = 0.0  # 不含杠杆的原始收益率
     hold_bars: int = 0
     max_dd_pct_raw: float = 0.0
     exit_reason: str = ""
     original_exit_reason: str = ""
     original_pnl_pct: float = 0.0
     leverage: float = 1.0
-    reduce_count: int = 0         # 减仓次数
+    reduce_count: int = 0  # 减仓次数
     atr_pct_at_entry: float = 0.0
     regime: str = "trend"
 
@@ -145,16 +150,17 @@ class TradeResult:
 @dataclass
 class BacktestMetrics:
     """回测汇总指标"""
+
     total_trades: int = 0
     win_trades: int = 0
     loss_trades: int = 0
     win_rate: float = 0.0
-    total_return_pct: float = 0.0     # 累计收益率（含杠杆，简单加总）
+    total_return_pct: float = 0.0  # 累计收益率（含杠杆，简单加总）
     total_return_account_pct: float = 0.0  # 账户权益曲线总收益
-    avg_return_pct: float = 0.0       # 平均单笔收益率
+    avg_return_pct: float = 0.0  # 平均单笔收益率
     sharpe_ratio: float = 0.0
-    max_drawdown_pct_wrong: float = 0.0   # 错误算法：累加pnl
-    max_drawdown_pct_account: float = 0.0 # 正确算法：账户权益曲线
+    max_drawdown_pct_wrong: float = 0.0  # 错误算法：累加pnl
+    max_drawdown_pct_account: float = 0.0  # 正确算法：账户权益曲线
     profit_factor: float = 0.0
     avg_hold_bars: float = 0.0
     total_fee_pct: float = 0.0
@@ -169,7 +175,7 @@ def compute_atr_pct(highs, lows, closes) -> float:
         return 0.02
     trs = []
     for i in range(1, len(highs)):
-        tr = max(highs[i] - lows[i], abs(highs[i] - closes[i-1]), abs(lows[i] - closes[i-1]))
+        tr = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
         trs.append(tr)
     atr = np.mean(trs[-14:]) if len(trs) >= 14 else np.mean(trs)
     return atr / closes[-1] if closes[-1] > 0 else 0.02
@@ -215,10 +221,14 @@ def run_single_trade(
     kline_slice = klines[klines.index >= entry_time]
     if len(kline_slice) < 5:
         return TradeResult(
-            symbol=symbol, direction=direction,
-            entry_price=entry_price, exit_price=entry_price,
-            entry_time=entry_time, exit_time=entry_time,
-            entry_time_str=str(entry_time), exit_time_str=str(entry_time),
+            symbol=symbol,
+            direction=direction,
+            entry_price=entry_price,
+            exit_price=entry_price,
+            entry_time=entry_time,
+            exit_time=entry_time,
+            entry_time_str=str(entry_time),
+            exit_time_str=str(entry_time),
             original_exit_reason=original_exit_reason,
             original_pnl_pct=original_pnl,
         )
@@ -236,8 +246,11 @@ def run_single_trade(
         entry_price=entry_price,
         current_price=current_price,
         position_age_sec=0.0,
-        unrealized_pnl_pct=(current_price - entry_price) / entry_price if side == "long"
-                           else (entry_price - current_price) / entry_price,
+        unrealized_pnl_pct=(
+            (current_price - entry_price) / entry_price
+            if side == "long"
+            else (entry_price - current_price) / entry_price
+        ),
         leverage=leverage,
         atr_pct=atr_entry,
         mfe_pnl_pct=0.0,
@@ -287,27 +300,35 @@ def run_single_trade(
             max_dd = cur_dd
         pos.max_dd_pct = max_dd
 
-        recent = kline_slice.iloc[max(0, i - 14):i + 1]
-        atr_pct = compute_atr_pct(recent["high"].values, recent["low"].values, recent["close"].values)
+        recent = kline_slice.iloc[max(0, i - 14) : i + 1]
+        atr_pct = compute_atr_pct(
+            recent["high"].values, recent["low"].values, recent["close"].values
+        )
         pos.atr_pct = atr_pct
 
         candles_window = []
         start_idx = max(0, i - 60)
         for j in range(start_idx, i + 1):
             b = kline_slice.iloc[j]
-            candles_window.append({
-                "t": int(kline_slice.index[j].timestamp()),
-                "o": float(b["open"]), "h": float(b["high"]),
-                "l": float(b["low"]), "c": float(b["close"]),
-                "v": float(b["volume"]),
-            })
+            candles_window.append(
+                {
+                    "t": int(kline_slice.index[j].timestamp()),
+                    "o": float(b["open"]),
+                    "h": float(b["high"]),
+                    "l": float(b["low"]),
+                    "c": float(b["close"]),
+                    "v": float(b["volume"]),
+                }
+            )
 
         # 市态推断：窗口不足 21 根时使用入场前市态
-        closes_21 = kline_slice["close"].iloc[max(0, i - 20):i + 1].values
+        closes_21 = kline_slice["close"].iloc[max(0, i - 20) : i + 1].values
         regime = infer_regime(closes_21) if len(closes_21) >= 21 else regime_at_entry
 
         # 必须传入 now_ts，否则 inflight cooldown 会锁死后续决策
-        decision = system.evaluate_full(pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp()))
+        decision = system.evaluate_full(
+            pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp())
+        )
 
         bars_held = i
 
@@ -366,7 +387,9 @@ def run_single_trade(
     )
 
 
-def run_backtest(config: ExitConfig, symbols: List[str] = None) -> Tuple[BacktestMetrics, List[TradeResult]]:
+def run_backtest(
+    config: ExitConfig, symbols: List[str] = None
+) -> Tuple[BacktestMetrics, List[TradeResult]]:
     """运行完整回测"""
     if symbols is None:
         symbols = SYMBOLS
@@ -389,8 +412,9 @@ def run_backtest(config: ExitConfig, symbols: List[str] = None) -> Tuple[Backtes
     return metrics, all_results
 
 
-def compute_account_equity(results: List[TradeResult], initial_capital: float = 100.0,
-                           position_size_pct: float = 0.05) -> Tuple[float, float, pd.Series]:
+def compute_account_equity(
+    results: List[TradeResult], initial_capital: float = 100.0, position_size_pct: float = 0.05
+) -> Tuple[float, float, pd.Series]:
     """
     按账户权益曲线计算真实总收益和最大回撤。
     假设每笔交易分配初始资金的固定比例作为名义本金，多币种并行持仓。
@@ -408,7 +432,7 @@ def compute_account_equity(results: List[TradeResult], initial_capital: float = 
     equity_curve = [capital]
     times = [events[0][0]]
 
-    for ts, evt_type, pnl, sym in events:
+    for ts, evt_type, pnl, sym in events:  # noqa: B007
         if evt_type == "exit":
             capital += initial_capital * position_size_pct * pnl / 100.0
             equity_curve.append(capital)
@@ -464,7 +488,7 @@ def compute_metrics(results: List[TradeResult]) -> BacktestMetrics:
     # 盈亏比
     gross_profit = sum(r.pnl_pct for r in wins)
     gross_loss = abs(sum(r.pnl_pct for r in losses))
-    pf = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+    pf = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
     # exit_reason 分布
     reason_dist = {}
@@ -484,7 +508,9 @@ def compute_metrics(results: List[TradeResult]) -> BacktestMetrics:
                 "total_return": sum(sym_pnls),
                 "avg_atr_pct": np.mean([r.atr_pct_at_entry for r in rs]) * 100,
                 "avg_hold_bars": np.mean([r.hold_bars for r in rs]),
-                "max_dd_raw": max(r.max_dd_pct_raw for r in rs) * 100 if hasattr(r, 'max_dd_pct_raw') else 0.0,
+                "max_dd_raw": (
+                    max(r.max_dd_pct_raw for r in rs) * 100 if hasattr(r, "max_dd_pct_raw") else 0.0
+                ),
             }
             # P0修正：夏普按日收益序列年化
             sym_daily = {}
@@ -492,7 +518,11 @@ def compute_metrics(results: List[TradeResult]) -> BacktestMetrics:
                 d = (r.exit_time_str or "")[:10] or "unknown"
                 sym_daily[d] = sym_daily.get(d, 0.0) + r.pnl_pct
             sym_dp = list(sym_daily.values())
-            symbol_metrics[sym]["sharpe"] = np.mean(sym_dp) / np.std(sym_dp) * math.sqrt(252) if len(sym_dp) > 1 and np.std(sym_dp) > 0 else 0.0
+            symbol_metrics[sym]["sharpe"] = (
+                np.mean(sym_dp) / np.std(sym_dp) * math.sqrt(252)
+                if len(sym_dp) > 1 and np.std(sym_dp) > 0
+                else 0.0
+            )
 
     # 按市态
     regime_metrics = {}
@@ -557,7 +587,9 @@ def print_metrics(name: str, metrics: BacktestMetrics, results: List[TradeResult
     print(f"  {name}")
     print(f"  {'─'*60}")
     print(f"    总交易数:     {metrics.total_trades}")
-    print(f"    胜率:         {metrics.win_rate:.1f}%  ({metrics.win_trades}胜 / {metrics.loss_trades}负)")
+    print(
+        f"    胜率:         {metrics.win_rate:.1f}%  ({metrics.win_trades}胜 / {metrics.loss_trades}负)"
+    )
     print(f"    总收益率(加总): {metrics.total_return_pct:+.2f}% (含杠杆{LEVERAGE}x)")
     print(f"    总收益率(账户): {metrics.total_return_account_pct:+.2f}%")
     print(f"    平均单笔:     {metrics.avg_return_pct:+.2f}%")
@@ -567,38 +599,50 @@ def print_metrics(name: str, metrics: BacktestMetrics, results: List[TradeResult
     print(f"    盈亏比:       {metrics.profit_factor:.2f}")
     print(f"    平均持仓:     {metrics.avg_hold_bars:.1f} 根K线 ({metrics.avg_hold_bars:.1f}h)")
     print(f"    总手续费:     {metrics.total_fee_pct:.2f}%")
-    print(f"    离场原因分布:")
+    print("    离场原因分布:")
     for reason, count in sorted(metrics.exit_reason_dist.items(), key=lambda x: -x[1]):
         pct = count / metrics.total_trades * 100
         print(f"      {reason:30s}: {count:3d} ({pct:.1f}%)")
 
     # 按币种
     if metrics.symbol_metrics:
-        print(f"\n    [按币种分析]")
-        print(f"    {'币种':<6} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'夏普':>8} {'入场ATR%':>10} {'平均持仓h':>10}")
+        print("\n    [按币种分析]")
+        print(
+            f"    {'币种':<6} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'夏普':>8} {'入场ATR%':>10} {'平均持仓h':>10}"
+        )
         for sym, m in metrics.symbol_metrics.items():
-            print(f"    {sym:<6} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['sharpe']:>8.2f} {m['avg_atr_pct']:>10.2f} {m['avg_hold_bars']:>10.1f}")
+            print(
+                f"    {sym:<6} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['sharpe']:>8.2f} {m['avg_atr_pct']:>10.2f} {m['avg_hold_bars']:>10.1f}"
+            )
 
     # 按市态
     if metrics.regime_metrics:
-        print(f"\n    [按市态分析]")
-        print(f"    {'市态':<12} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'平均收益%':>10} {'平均持仓h':>10}")
+        print("\n    [按市态分析]")
+        print(
+            f"    {'市态':<12} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'平均收益%':>10} {'平均持仓h':>10}"
+        )
         for reg, m in metrics.regime_metrics.items():
-            print(f"    {reg:<12} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['avg_return']:>+10.2f} {m['avg_hold_bars']:>10.1f}")
+            print(
+                f"    {reg:<12} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['avg_return']:>+10.2f} {m['avg_hold_bars']:>10.1f}"
+            )
 
     # 按 ATR 分组
     if metrics.atr_bucket_metrics:
-        print(f"\n    [按ATR波动率分组]")
-        print(f"    {'ATR分组':<12} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'平均收益%':>10} {'平均ATR%':>10} {'平均持仓h':>10}")
+        print("\n    [按ATR波动率分组]")
+        print(
+            f"    {'ATR分组':<12} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'平均收益%':>10} {'平均ATR%':>10} {'平均持仓h':>10}"
+        )
         for label, m in metrics.atr_bucket_metrics.items():
-            print(f"    {label:<12} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['avg_return']:>+10.2f} {m['avg_atr_pct']:>10.2f} {m['avg_hold_bars']:>10.1f}")
+            print(
+                f"    {label:<12} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['avg_return']:>+10.2f} {m['avg_atr_pct']:>10.2f} {m['avg_hold_bars']:>10.1f}"
+            )
 
     # 与原始交易对比
     orig_pnls = [r.original_pnl_pct for r in results]
     orig_total = sum(orig_pnls)
     orig_wins = sum(1 for p in orig_pnls if p > 0)
     print(f"\n  {'─'*60}")
-    print(f"    [原始BCRM系统对比]")
+    print("    [原始BCRM系统对比]")
     print(f"    原始总收益:   {orig_total:+.2f}%")
     print(f"    原始胜率:     {orig_wins/len(orig_pnls)*100:.1f}%")
     print(f"    优化后收益:   {metrics.total_return_pct:+.2f}%")
@@ -606,6 +650,7 @@ def print_metrics(name: str, metrics: BacktestMetrics, results: List[TradeResult
 
 
 # ── 贝叶斯优化 ──────────────────────────────────────────────────────────────
+
 
 def create_config_from_trial(trial) -> ExitConfig:
     """从 Optuna trial 构造 ExitConfig"""
@@ -634,7 +679,11 @@ def objective(trial):
     metrics, _ = run_backtest(config)
 
     # 综合得分：夏普 + 收益 - 回撤惩罚（使用账户权益曲线口径）
-    score = metrics.sharpe_ratio + 0.01 * metrics.total_return_pct - 0.05 * metrics.max_drawdown_pct_account
+    score = (
+        metrics.sharpe_ratio
+        + 0.01 * metrics.total_return_pct
+        - 0.05 * metrics.max_drawdown_pct_account
+    )
 
     trial.set_user_attr("win_rate", metrics.win_rate)
     trial.set_user_attr("total_return", metrics.total_return_pct)
@@ -644,11 +693,14 @@ def objective(trial):
     trial.set_user_attr("total_trades", metrics.total_trades)
 
     if trial.number % 5 == 0:
-        print(f"    Trial #{trial.number}: score={score:.4f}, "
-              f"return={metrics.total_return_pct:+.1f}%, "
-              f"sharpe={metrics.sharpe_ratio:.2f}, "
-              f"win={metrics.win_rate:.1f}%, "
-              f"dd={metrics.max_drawdown_pct_account:.1f}%", flush=True)
+        print(
+            f"    Trial #{trial.number}: score={score:.4f}, "
+            f"return={metrics.total_return_pct:+.1f}%, "
+            f"sharpe={metrics.sharpe_ratio:.2f}, "
+            f"win={metrics.win_rate:.1f}%, "
+            f"dd={metrics.max_drawdown_pct_account:.1f}%",
+            flush=True,
+        )
 
     return score
 
@@ -656,11 +708,12 @@ def objective(trial):
 def run_bayesian_optimize(n_trials: int = 40) -> Tuple[ExitConfig, dict]:
     """运行贝叶斯优化"""
     import optuna
+
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     print(f"\n  [贝叶斯优化] 开始搜索（{n_trials} trials）...")
-    print(f"  搜索空间：10 个 ExitConfig 关键参数")
-    print(f"  目标函数：sharpe + 0.01*return - 0.05*drawdown")
+    print("  搜索空间：10 个 ExitConfig 关键参数")
+    print("  目标函数：sharpe + 0.01*return - 0.05*drawdown")
 
     study = optuna.create_study(
         direction="maximize",
@@ -681,28 +734,30 @@ def run_bayesian_optimize(n_trials: int = 40) -> Tuple[ExitConfig, dict]:
     print(f"    回撤:     {best.user_attrs.get('max_drawdown', 0):.2f}%")
     print(f"    盈亏比:   {best.user_attrs.get('profit_factor', 0):.2f}")
 
-    print(f"\n  最优参数：")
+    print("\n  最优参数：")
     best_config = ExitConfig()
     for k, v in best.params.items():
         setattr(best_config, k, v)
         print(f"    {k}: {v:.4f}")
 
     # Top 5
-    print(f"\n  Top 5 试验：")
+    print("\n  Top 5 试验：")
     sorted_trials = sorted(
-        [t for t in study.trials if t.value is not None],
-        key=lambda t: t.value, reverse=True
+        [t for t in study.trials if t.value is not None], key=lambda t: t.value, reverse=True
     )[:5]
     for t in sorted_trials:
-        print(f"    #{t.number}: score={t.value:.4f}, "
-              f"return={t.user_attrs.get('total_return', 0):+.1f}%, "
-              f"sharpe={t.user_attrs.get('sharpe', 0):.2f}, "
-              f"win={t.user_attrs.get('win_rate', 0):.1f}%")
+        print(
+            f"    #{t.number}: score={t.value:.4f}, "
+            f"return={t.user_attrs.get('total_return', 0):+.1f}%, "
+            f"sharpe={t.user_attrs.get('sharpe', 0):.2f}, "
+            f"win={t.user_attrs.get('win_rate', 0):.1f}%"
+        )
 
     return best_config, dict(best.params)
 
 
 # ── 主流程 ──────────────────────────────────────────────────────────────────
+
 
 def main():
     print("=" * 70)
@@ -713,25 +768,27 @@ def main():
     print(f"  手续费: {FEE_PCT*100}%/边")
 
     # 加载数据
-    print(f"\n  [数据加载]")
+    print("\n  [数据加载]")
     for symbol in SYMBOLS:
         klines = load_klines(symbol)
         trades = load_trades(symbol)
         if klines is not None and trades is not None:
-            print(f"    {symbol}: {len(trades)} 笔交易, {len(klines)} 根K线, "
-                  f"范围 {klines.index[0]} ~ {klines.index[-1]}")
+            print(
+                f"    {symbol}: {len(trades)} 笔交易, {len(klines)} 根K线, "
+                f"范围 {klines.index[0]} ~ {klines.index[-1]}"
+            )
 
     # ── 1. 基线A（修复前）回测 ──
-    print(f"\n  [基线A] 修复前参数回测...")
-    print(f"    l0_max_loss=-0.05, l2_close=0.75, cooldown=30min")
+    print("\n  [基线A] 修复前参数回测...")
+    print("    l0_max_loss=-0.05, l2_close=0.75, cooldown=30min")
     t0 = time.time()
     metrics_a, results_a = run_backtest(CONFIG_BEFORE)
     print(f"    耗时: {time.time()-t0:.0f}秒")
     print_metrics("基线A（修复前参数）", metrics_a, results_a)
 
     # ── 2. 基线B（修复后）回测 ──
-    print(f"\n  [基线B] 修复后参数回测...")
-    print(f"    l0_max_loss=-0.15, l2_close=0.65, cooldown=10min")
+    print("\n  [基线B] 修复后参数回测...")
+    print("    l0_max_loss=-0.15, l2_close=0.65, cooldown=10min")
     t0 = time.time()
     metrics_b, results_b = run_backtest(CONFIG_AFTER)
     print(f"    耗时: {time.time()-t0:.0f}秒")
@@ -741,7 +798,7 @@ def main():
     best_config, best_params = run_bayesian_optimize(n_trials=25)
 
     # ── 4. 寻优后参数回测 ──
-    print(f"\n  [寻优后] 贝叶斯最优参数回测...")
+    print("\n  [寻优后] 贝叶斯最优参数回测...")
     t0 = time.time()
     metrics_opt, results_opt = run_backtest(best_config)
     print(f"    耗时: {time.time()-t0:.0f}秒")
@@ -749,16 +806,28 @@ def main():
 
     # ── 5. 三组对比 ──
     print(f"\n\n{'='*70}")
-    print(f"  三组参数对比汇总")
+    print("  三组参数对比汇总")
     print(f"{'='*70}")
     print(f"  {'指标':<16} {'基线A(修复前)':>16} {'基线B(修复后)':>16} {'贝叶斯寻优':>16}")
     print(f"  {'─'*70}")
-    print(f"  {'总收益率%':<16} {metrics_a.total_return_pct:>16.2f} {metrics_b.total_return_pct:>16.2f} {metrics_opt.total_return_pct:>16.2f}")
-    print(f"  {'胜率%':<16} {metrics_a.win_rate:>16.1f} {metrics_b.win_rate:>16.1f} {metrics_opt.win_rate:>16.1f}")
-    print(f"  {'夏普比率':<16} {metrics_a.sharpe_ratio:>16.2f} {metrics_b.sharpe_ratio:>16.2f} {metrics_opt.sharpe_ratio:>16.2f}")
-    print(f"  {'最大回撤%(账户)':<16} {metrics_a.max_drawdown_pct_account:>16.2f} {metrics_b.max_drawdown_pct_account:>16.2f} {metrics_opt.max_drawdown_pct_account:>16.2f}")
-    print(f"  {'盈亏比':<16} {metrics_a.profit_factor:>16.2f} {metrics_b.profit_factor:>16.2f} {metrics_opt.profit_factor:>16.2f}")
-    print(f"  {'平均持仓h':<16} {metrics_a.avg_hold_bars:>16.1f} {metrics_b.avg_hold_bars:>16.1f} {metrics_opt.avg_hold_bars:>16.1f}")
+    print(
+        f"  {'总收益率%':<16} {metrics_a.total_return_pct:>16.2f} {metrics_b.total_return_pct:>16.2f} {metrics_opt.total_return_pct:>16.2f}"
+    )
+    print(
+        f"  {'胜率%':<16} {metrics_a.win_rate:>16.1f} {metrics_b.win_rate:>16.1f} {metrics_opt.win_rate:>16.1f}"
+    )
+    print(
+        f"  {'夏普比率':<16} {metrics_a.sharpe_ratio:>16.2f} {metrics_b.sharpe_ratio:>16.2f} {metrics_opt.sharpe_ratio:>16.2f}"
+    )
+    print(
+        f"  {'最大回撤%(账户)':<16} {metrics_a.max_drawdown_pct_account:>16.2f} {metrics_b.max_drawdown_pct_account:>16.2f} {metrics_opt.max_drawdown_pct_account:>16.2f}"
+    )
+    print(
+        f"  {'盈亏比':<16} {metrics_a.profit_factor:>16.2f} {metrics_b.profit_factor:>16.2f} {metrics_opt.profit_factor:>16.2f}"
+    )
+    print(
+        f"  {'平均持仓h':<16} {metrics_a.avg_hold_bars:>16.1f} {metrics_b.avg_hold_bars:>16.1f} {metrics_opt.avg_hold_bars:>16.1f}"
+    )
 
     # 原始BCRM对比
     orig_pnls = [r.original_pnl_pct for r in results_a]
@@ -769,7 +838,7 @@ def main():
     print(f"  {'原始BCRM胜率%':<16} {orig_wins:>16.1f}")
 
     # ── 6. 择优选用 ──
-    print(f"\n  [择优决策]")
+    print("\n  [择优决策]")
 
     candidates = [
         ("基线A(修复前)", metrics_a, CONFIG_BEFORE),
@@ -782,7 +851,7 @@ def main():
         return m.sharpe_ratio + 0.01 * m.total_return_pct - 0.05 * m.max_drawdown_pct_account
 
     best_name, best_m, best_cfg = max(candidates, key=lambda x: score(x[1]))
-    print(f"    综合评分公式: sharpe + 0.01*return - 0.05*drawdown")
+    print("    综合评分公式: sharpe + 0.01*return - 0.05*drawdown")
     for name, m, _ in candidates:
         s = score(m)
         marker = " ◀ 最优" if name == best_name else ""
@@ -797,7 +866,11 @@ def main():
         "symbols": SYMBOLS,
         "baseline_a": {
             "name": "修复前参数",
-            "config": {"l0_max_loss_pct": -0.05, "l2_close_threshold": 0.75, "l0_risk_gate_cooldown_min": 30.0},
+            "config": {
+                "l0_max_loss_pct": -0.05,
+                "l2_close_threshold": 0.75,
+                "l0_risk_gate_cooldown_min": 30.0,
+            },
             "metrics": {
                 "total_return_pct": metrics_a.total_return_pct,
                 "win_rate": metrics_a.win_rate,
@@ -808,7 +881,11 @@ def main():
         },
         "baseline_b": {
             "name": "修复后参数",
-            "config": {"l0_max_loss_pct": -0.15, "l2_close_threshold": 0.65, "l0_risk_gate_cooldown_min": 10.0},
+            "config": {
+                "l0_max_loss_pct": -0.15,
+                "l2_close_threshold": 0.65,
+                "l0_risk_gate_cooldown_min": 10.0,
+            },
             "metrics": {
                 "total_return_pct": metrics_b.total_return_pct,
                 "win_rate": metrics_b.win_rate,

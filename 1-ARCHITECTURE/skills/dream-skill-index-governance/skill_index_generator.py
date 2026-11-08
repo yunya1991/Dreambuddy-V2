@@ -5,6 +5,7 @@ FAIL-OPEN：异常时不崩溃。
 
 工程约束：HC-1a（独立模块）/ FAIL-OPEN / 零回归
 """
+
 from __future__ import annotations
 
 import json

@@ -19,9 +19,8 @@ S 层预算分配:
 
 from __future__ import annotations
 
-from typing import Dict, Optional
 from enum import Enum
-
+from typing import Dict, Optional
 
 # 预算档位
 BUDGET_MODES = {
@@ -33,20 +32,21 @@ BUDGET_MODES = {
 
 # 各层默认预算分配比例
 LAYER_BUDGET_RATIO = {
-    "sense": 0.10,    # S 层: 10%
-    "arrange": 0.05,   # A 层: 5%
-    "compute": 0.75,   # C 层: 75%
+    "sense": 0.10,  # S 层: 10%
+    "arrange": 0.05,  # A 层: 5%
+    "compute": 0.75,  # C 层: 75%
     "graph_store": 0.10,  # G 层: 10%
 }
 
 
 class BudgetLevel(str, Enum):
     """预算健康度等级"""
-    HEALTHY = "healthy"        # 健康: >60% 剩余
-    WARNING = "warning"        # 警告: 60%-40%
-    LOW = "low"                # 低: 40%-20%
-    CRITICAL = "critical"      # 严重: 20%-5%
-    EXHAUSTED = "exhausted"    # 耗尽: <5%
+
+    HEALTHY = "healthy"  # 健康: >60% 剩余
+    WARNING = "warning"  # 警告: 60%-40%
+    LOW = "low"  # 低: 40%-20%
+    CRITICAL = "critical"  # 严重: 20%-5%
+    EXHAUSTED = "exhausted"  # 耗尽: <5%
 
 
 class TokenBudgetManager:
@@ -75,10 +75,13 @@ class TokenBudgetManager:
     # 预算关闭时的虚拟剩余量（足够大，不会触发任何限制）
     _UNLIMITED = 10**9
 
-    def __init__(self, mode: str = "standard",
-                 total: Optional[int] = None,
-                 layer_ratios: Optional[Dict[str, float]] = None,
-                 enabled: bool = False):
+    def __init__(
+        self,
+        mode: str = "standard",
+        total: Optional[int] = None,
+        layer_ratios: Optional[Dict[str, float]] = None,
+        enabled: bool = False,
+    ):
         if total is not None:
             self.total = total
         else:
@@ -219,5 +222,7 @@ class TokenBudgetManager:
         }
 
     def __repr__(self) -> str:
-        return (f"<TokenBudget mode={self.mode} used={self.used}/{self.total} "
-                f"level={self.level().value}>")
+        return (
+            f"<TokenBudget mode={self.mode} used={self.used}/{self.total} "
+            f"level={self.level().value}>"
+        )

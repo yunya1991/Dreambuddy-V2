@@ -8,6 +8,7 @@
   - 训练队列+重试机制工作正常
   - 状态监控可查询
 """
+
 import os
 import sys
 
@@ -30,10 +31,14 @@ def main():
     print("\n[1] 资源配额配置:")
     from resource_manager import ACTIVE_QUOTA, PASSIVE_QUOTA, ResourceManager
 
-    print(f"  主动训练: CPU≤{ACTIVE_QUOTA.cpu_percent}%, 内存≤{ACTIVE_QUOTA.memory_mb}MB, "
-          f"超时{ACTIVE_QUOTA.timeout_hours}h, 重试{ACTIVE_QUOTA.max_retries}")
-    print(f"  被动训练: CPU≤{PASSIVE_QUOTA.cpu_percent}%, 内存≤{PASSIVE_QUOTA.memory_mb}MB, "
-          f"超时{PASSIVE_QUOTA.timeout_minutes}min, 重试{PASSIVE_QUOTA.max_retries}")
+    print(
+        f"  主动训练: CPU≤{ACTIVE_QUOTA.cpu_percent}%, 内存≤{ACTIVE_QUOTA.memory_mb}MB, "
+        f"超时{ACTIVE_QUOTA.timeout_hours}h, 重试{ACTIVE_QUOTA.max_retries}"
+    )
+    print(
+        f"  被动训练: CPU≤{PASSIVE_QUOTA.cpu_percent}%, 内存≤{PASSIVE_QUOTA.memory_mb}MB, "
+        f"超时{PASSIVE_QUOTA.timeout_minutes}min, 重试{PASSIVE_QUOTA.max_retries}"
+    )
 
     assert ACTIVE_QUOTA.cpu_percent == 30
     assert ACTIVE_QUOTA.memory_mb == 2048
@@ -52,7 +57,7 @@ def main():
 
     # ── 验收 3: 训练队列+重试机制 ────────────────────────
     print("\n[3] 训练队列+重试机制:")
-    from training_queue import TrainingQueue, QueuedTask
+    from training_queue import QueuedTask, TrainingQueue
 
     queue = TrainingQueue(max_retries=3)
 
@@ -77,8 +82,9 @@ def main():
 
     # ── 验收 4: 双模式调度 ────────────────────────────────
     print("\n[4] 双模式调度:")
-    from dual_mode_orchestrator import DualModeTrainingOrchestrator
     from unittest.mock import MagicMock
+
+    from dual_mode_orchestrator import DualModeTrainingOrchestrator
 
     mock_provider = MagicMock()
     mock_provider.get_source_name.return_value = "test"

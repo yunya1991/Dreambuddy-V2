@@ -8,54 +8,55 @@
 - 真实交易成本：fee=0.0005 (0.05%) / slippage=0.001 (0.1%)
 - 真实 OKX K 线数据，无模拟兜底（数据不足直接报错）
 """
-import sys
+
 import json
+import sys
 import traceback
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # 确保 11-易经推理系统/ 目录在 path 中（scripts/ 在此目录下）
 YIJING_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(YIJING_ROOT))
 
-from scripts.memory_l4.bcrm2.data_fetcher import get_klines
-from scripts.memory_l4.bcrm2.walk_forward_backtester import (
+from scripts.memory_l4.bcrm2.data_fetcher import get_klines  # noqa: E402
+from scripts.memory_l4.bcrm2.walk_forward_backtester import (  # noqa: E402
     WalkForwardBacktester,
-    generate_report,
 )
 
 # ============================================================
 # 统一回测参数（1H 和 4H 完全一致，只改 timeframe）
 # ============================================================
 SYMBOL = "BTC"
-N_FOLDS_TARGET = 5          # 目标折数，数据不足时自动向下适配
+N_FOLDS_TARGET = 5  # 目标折数，数据不足时自动向下适配
 CONF_THRESHOLD = 0.40
 TP_ATR = 3.0
 SL_ATR = 2.0
-MAX_HOLD_BARS = 60       # 1H=60小时=2.5天 / 4H=240小时=10天，对比同 bar 数
-FEE_RATE = 0.0005       # 0.05% taker 手续费
-SLIPPAGE_RATE = 0.001   # 0.1% 滑点
+MAX_HOLD_BARS = 60  # 1H=60小时=2.5天 / 4H=240小时=10天，对比同 bar 数
+FEE_RATE = 0.0005  # 0.05% taker 手续费
+SLIPPAGE_RATE = 0.001  # 0.1% 滑点
 FEATURE_SELECTION = True
-MAX_BARS_1H = 6000      # 1H 历史数据上限
-MAX_BARS_4H = 6000      # 4H 历史数据上限（OKX 实际可能 3000 左右）
+MAX_BARS_1H = 6000  # 1H 历史数据上限
+MAX_BARS_4H = 6000  # 4H 历史数据上限（OKX 实际可能 3000 左右）
 
 # Walk-Forward 自适应配置
 # 当数据量足够时采用 HIGH（与 save_baseline 一致），不足时降级到 LOW 保底仍能回测
 CFG_HIGH = {"min_train": 500, "min_test": 100}  # 每折 600 根
-CFG_LOW = {"min_train": 300, "min_test": 60}    # 每折 360 根（保底）
+CFG_LOW = {"min_train": 300, "min_test": 60}  # 每折 360 根（保底）
+
 
 # 触发 FeatureRegistry 所有特征模块注册（与 save_baseline.py 对齐）
 def _register_all_features():
     import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401
     import scripts.memory_l4.bcrm2.classic_experience_features  # noqa: F401
+    import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
+    import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
     import scripts.memory_l4.bcrm2.fibonacci_features  # noqa: F401
+    import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
+    import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
     import scripts.memory_l4.bcrm2.pivot_point_features  # noqa: F401
     import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa: F401
     import scripts.memory_l4.bcrm2.wdh_features  # noqa: F401
-    import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
-    import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
-    import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
-    import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
 
 
 def fetch_ref_df(timeframe: str, max_bars: int):
@@ -127,8 +128,10 @@ def data_probe(timeframe: str, max_bars: int) -> dict:
     status = "✅ 满足" if enough else "❌ 不足"
     print(f"{header}: {n} 根 K线 → {status}")
     print(f"  时间范围: {start} ~ {end}（共 {span_days:.1f} 天）")
-    print(f"  Walk-Forward: N-Folds={n_folds} | 配置={cfg_level} "
-          f"(train≥{min_train} test≥{min_test} 每折{per_fold}根)")
+    print(
+        f"  Walk-Forward: N-Folds={n_folds} | 配置={cfg_level} "
+        f"(train≥{min_train} test≥{min_test} 每折{per_fold}根)"
+    )
     return probe
 
 
@@ -167,7 +170,9 @@ def run_backtest(timeframe: str, max_bars: int, ref_df, probe_cfg: dict, verbose
         "profit_factor": round(float(result.profit_factor), 4),
         "sharpe_ratio": round(float(result.sharpe_ratio), 4),
         "avg_hold_bars": round(float(result.avg_hold_bars), 2),
-        "avg_hold_days": round(float(result.avg_hold_bars) * (1 if timeframe == "1H" else 4) / 24, 2),
+        "avg_hold_days": round(
+            float(result.avg_hold_bars) * (1 if timeframe == "1H" else 4) / 24, 2
+        ),
         "n_folds": result.n_folds,
         "cfg_level": probe_cfg["cfg_level"],
         "long_count": int(result.long_stats.get("count", 0)),
@@ -180,20 +185,24 @@ def run_backtest(timeframe: str, max_bars: int, ref_df, probe_cfg: dict, verbose
     }
 
     for fold in getattr(result, "fold_results", []) or []:
-        metrics["fold_results"].append({
-            "fold_idx": getattr(fold, "fold_idx", None),
-            "total_trades": getattr(fold, "total_trades", 0),
-            "win_rate": round(float(getattr(fold, "overall_win_rate", 0) or 0), 4),
-            "total_return_pct": round(float(getattr(fold, "total_return", 0) or 0), 4),
-            "max_drawdown_pct": round(float(getattr(fold, "max_drawdown", 0) or 0), 4),
-        })
+        metrics["fold_results"].append(
+            {
+                "fold_idx": getattr(fold, "fold_idx", None),
+                "total_trades": getattr(fold, "total_trades", 0),
+                "win_rate": round(float(getattr(fold, "overall_win_rate", 0) or 0), 4),
+                "total_return_pct": round(float(getattr(fold, "total_return", 0) or 0), 4),
+                "max_drawdown_pct": round(float(getattr(fold, "max_drawdown", 0) or 0), 4),
+            }
+        )
 
-    print(f"\n✅ BTC {timeframe} 回测完成: 交易数={metrics['total_trades']} "
-          f"胜率={metrics['win_rate']:.1%} "
-          f"收益={metrics['total_return_pct']:+.2f}% "
-          f"夏普={metrics['sharpe_ratio']:.2f} "
-          f"回撤={metrics['max_drawdown_pct']:.2f}% "
-          f"平均持仓={metrics['avg_hold_days']:.1f}天")
+    print(
+        f"\n✅ BTC {timeframe} 回测完成: 交易数={metrics['total_trades']} "
+        f"胜率={metrics['win_rate']:.1%} "
+        f"收益={metrics['total_return_pct']:+.2f}% "
+        f"夏普={metrics['sharpe_ratio']:.2f} "
+        f"回撤={metrics['max_drawdown_pct']:.2f}% "
+        f"平均持仓={metrics['avg_hold_days']:.1f}天"
+    )
 
     return metrics
 
@@ -206,14 +215,23 @@ def print_comparison(m_1h: dict, m_4h: dict):
     sig_4h = m_4h["total_trades"] >= MIN_SIGNIFICANT_TRADES
 
     def row(name, key, h_val, v_val, better=None, is_pct=False):
-        diff = v_val - h_val if isinstance(h_val, (int, float)) and isinstance(v_val, (int, float)) else "N/A"
+        diff = (
+            v_val - h_val
+            if isinstance(h_val, (int, float)) and isinstance(v_val, (int, float))
+            else "N/A"
+        )
         if isinstance(diff, float):
             diff_str = f"{diff:+.4f}" + ("%" if is_pct else "")
         else:
             diff_str = diff
         # 优胜标记（只有双方均达统计门槛时才标）
         mark = ""
-        if sig_1h and sig_4h and isinstance(h_val, (int, float)) and isinstance(v_val, (int, float)):
+        if (
+            sig_1h
+            and sig_4h
+            and isinstance(h_val, (int, float))
+            and isinstance(v_val, (int, float))
+        ):
             if better == "high" and v_val > h_val:
                 mark = " ⭐"
             elif better == "low" and v_val < h_val:
@@ -228,36 +246,101 @@ def print_comparison(m_1h: dict, m_4h: dict):
 
     print("\n" + "=" * 78)
     print("  📊 方案1：BTC 单币 周期对比（1H vs 4H）")
-    print(f"  1H: N-Folds={m_1h.get('n_folds','?')} 配置={m_1h.get('cfg_level','?')} "
-          f"| 4H: N-Folds={m_4h.get('n_folds','?')} 配置={m_4h.get('cfg_level','?')}")
-    print(f"  其他参数统一：TP=3.0ATR / SL=2.0ATR / max_hold=60bars / "
-          f"fee={FEE_RATE:.4f} / slippage={SLIPPAGE_RATE:.4f}")
+    print(
+        f"  1H: N-Folds={m_1h.get('n_folds','?')} 配置={m_1h.get('cfg_level','?')} "
+        f"| 4H: N-Folds={m_4h.get('n_folds','?')} 配置={m_4h.get('cfg_level','?')}"
+    )
+    print(
+        f"  其他参数统一：TP=3.0ATR / SL=2.0ATR / max_hold=60bars / "
+        f"fee={FEE_RATE:.4f} / slippage={SLIPPAGE_RATE:.4f}"
+    )
     print("=" * 78)
     print(f"│ {'指标':<28} │ {'1H (现用)':>14} │ {'4H (候选)':>14} │ {'差值(4H-1H)':>12} │")
     print("─" * 78)
     row("总交易数", "total_trades", m_1h["total_trades"], m_4h["total_trades"], better="high")
     row("整体胜率", "win_rate", m_1h["win_rate"], m_4h["win_rate"], better="high", is_pct=True)
-    row("总收益率", "total_return_pct", m_1h["total_return_pct"], m_4h["total_return_pct"], better="high", is_pct=True)
-    row("单笔平均收益", "avg_return_per_trade_pct", m_1h["avg_return_per_trade_pct"], m_4h["avg_return_per_trade_pct"], better="high", is_pct=True)
-    row("最大回撤", "max_drawdown_pct", m_1h["max_drawdown_pct"], m_4h["max_drawdown_pct"], better="low", is_pct=True)
-    row("盈亏比(ProfitFactor)", "profit_factor", m_1h["profit_factor"], m_4h["profit_factor"], better="high")
+    row(
+        "总收益率",
+        "total_return_pct",
+        m_1h["total_return_pct"],
+        m_4h["total_return_pct"],
+        better="high",
+        is_pct=True,
+    )
+    row(
+        "单笔平均收益",
+        "avg_return_per_trade_pct",
+        m_1h["avg_return_per_trade_pct"],
+        m_4h["avg_return_per_trade_pct"],
+        better="high",
+        is_pct=True,
+    )
+    row(
+        "最大回撤",
+        "max_drawdown_pct",
+        m_1h["max_drawdown_pct"],
+        m_4h["max_drawdown_pct"],
+        better="low",
+        is_pct=True,
+    )
+    row(
+        "盈亏比(ProfitFactor)",
+        "profit_factor",
+        m_1h["profit_factor"],
+        m_4h["profit_factor"],
+        better="high",
+    )
     row("夏普比率", "sharpe_ratio", m_1h["sharpe_ratio"], m_4h["sharpe_ratio"], better="high")
-    row("平均持仓天数", "avg_hold_days", m_1h["avg_hold_days"], m_4h["avg_hold_days"], better="high")
+    row(
+        "平均持仓天数", "avg_hold_days", m_1h["avg_hold_days"], m_4h["avg_hold_days"], better="high"
+    )
     print("─" * 78)
     row("【做多】交易数", "long_count", m_1h["long_count"], m_4h["long_count"], better="high")
-    row("【做多】胜率", "long_win_rate", m_1h["long_win_rate"], m_4h["long_win_rate"], better="high", is_pct=True)
-    row("【做多】单均收益", "long_avg_return_pct", m_1h["long_avg_return_pct"], m_4h["long_avg_return_pct"], better="high", is_pct=True)
+    row(
+        "【做多】胜率",
+        "long_win_rate",
+        m_1h["long_win_rate"],
+        m_4h["long_win_rate"],
+        better="high",
+        is_pct=True,
+    )
+    row(
+        "【做多】单均收益",
+        "long_avg_return_pct",
+        m_1h["long_avg_return_pct"],
+        m_4h["long_avg_return_pct"],
+        better="high",
+        is_pct=True,
+    )
     row("【做空】交易数", "short_count", m_1h["short_count"], m_4h["short_count"], better="high")
-    row("【做空】胜率", "short_win_rate", m_1h["short_win_rate"], m_4h["short_win_rate"], better="high", is_pct=True)
-    row("【做空】单均收益", "short_avg_return_pct", m_1h["short_avg_return_pct"], m_4h["short_avg_return_pct"], better="high", is_pct=True)
+    row(
+        "【做空】胜率",
+        "short_win_rate",
+        m_1h["short_win_rate"],
+        m_4h["short_win_rate"],
+        better="high",
+        is_pct=True,
+    )
+    row(
+        "【做空】单均收益",
+        "short_avg_return_pct",
+        m_1h["short_avg_return_pct"],
+        m_4h["short_avg_return_pct"],
+        better="high",
+        is_pct=True,
+    )
     print("=" * 78)
 
     # 结论：先评估样本量，再比优劣
     print()
     if not sig_1h:
-        print(f"⚠️  1H 交易数仅 {m_1h['total_trades']} 笔（< {MIN_SIGNIFICANT_TRADES} 笔门槛），统计显著性不足")
+        print(
+            f"⚠️  1H 交易数仅 {m_1h['total_trades']} 笔（< {MIN_SIGNIFICANT_TRADES} 笔门槛），统计显著性不足"
+        )
     if not sig_4h:
-        print(f"⚠️  4H 交易数仅 {m_4h['total_trades']} 笔（< {MIN_SIGNIFICANT_TRADES} 笔门槛），统计显著性不足")
+        print(
+            f"⚠️  4H 交易数仅 {m_4h['total_trades']} 笔（< {MIN_SIGNIFICANT_TRADES} 笔门槛），统计显著性不足"
+        )
 
     if not (sig_1h and sig_4h):
         print("\n🎯 结论：至少一周期样本量不足（<20 笔交易），无法得出谁更优的统计结论。")
@@ -267,13 +350,17 @@ def print_comparison(m_1h: dict, m_4h: dict):
         # 样本不足时仍给出"当前观察结果"（非结论）
         print("\n📝 当前观察（非结论，仅供参考）：")
         if sig_1h:
-            print(f"  1H: {m_1h['total_trades']}笔 胜率{m_1h['win_rate']*100:.1f}% "
-                  f"收益{m_1h['total_return_pct']:+.2f}% 夏普{m_1h['sharpe_ratio']:.2f} "
-                  f"回撤{m_1h['max_drawdown_pct']:.2f}%")
+            print(
+                f"  1H: {m_1h['total_trades']}笔 胜率{m_1h['win_rate']*100:.1f}% "
+                f"收益{m_1h['total_return_pct']:+.2f}% 夏普{m_1h['sharpe_ratio']:.2f} "
+                f"回撤{m_1h['max_drawdown_pct']:.2f}%"
+            )
         if sig_4h:
-            print(f"  4H: {m_4h['total_trades']}笔 胜率{m_4h['win_rate']*100:.1f}% "
-                  f"收益{m_4h['total_return_pct']:+.2f}% 夏普{m_4h['sharpe_ratio']:.2f} "
-                  f"回撤{m_4h['max_drawdown_pct']:.2f}%")
+            print(
+                f"  4H: {m_4h['total_trades']}笔 胜率{m_4h['win_rate']*100:.1f}% "
+                f"收益{m_4h['total_return_pct']:+.2f}% 夏普{m_4h['sharpe_ratio']:.2f} "
+                f"回撤{m_4h['max_drawdown_pct']:.2f}%"
+            )
         return
 
     win = []
@@ -328,7 +415,9 @@ def main():
     print(f"   4H ref_df: {len(ref_4h)} 根")
 
     # =================== 第三步：1H 回测 ===================
-    print(f"\n【阶段3/4】BTC 1H Walk-Forward 回测（{probe_1h['n_folds']}折，{probe_1h['cfg_level']}配置）")
+    print(
+        f"\n【阶段3/4】BTC 1H Walk-Forward 回测（{probe_1h['n_folds']}折，{probe_1h['cfg_level']}配置）"
+    )
     try:
         metrics_1h = run_backtest("1H", MAX_BARS_1H, ref_1h, probe_cfg=probe_1h, verbose=True)
     except Exception as e:
@@ -337,7 +426,9 @@ def main():
         sys.exit(2)
 
     # =================== 第四步：4H 回测 ===================
-    print(f"\n【阶段4/4】BTC 4H Walk-Forward 回测（{probe_4h['n_folds']}折，{probe_4h['cfg_level']}配置）")
+    print(
+        f"\n【阶段4/4】BTC 4H Walk-Forward 回测（{probe_4h['n_folds']}折，{probe_4h['cfg_level']}配置）"
+    )
     try:
         metrics_4h = run_backtest("4H", MAX_BARS_4H, ref_4h, probe_cfg=probe_4h, verbose=True)
     except Exception as e:
@@ -353,22 +444,27 @@ def main():
     out_dir.mkdir(exist_ok=True)
     out_file = out_dir / f"btc_timeframe_compare_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(out_file, "w", encoding="utf-8") as f:
-        json.dump({
-            "symbol": SYMBOL,
-            "params": {
-                "n_folds_target": N_FOLDS_TARGET,
-                "conf_threshold": CONF_THRESHOLD,
-                "tp_atr": TP_ATR,
-                "sl_atr": SL_ATR,
-                "max_hold_bars": MAX_HOLD_BARS,
-                "fee_rate": FEE_RATE,
-                "slippage_rate": SLIPPAGE_RATE,
+        json.dump(
+            {
+                "symbol": SYMBOL,
+                "params": {
+                    "n_folds_target": N_FOLDS_TARGET,
+                    "conf_threshold": CONF_THRESHOLD,
+                    "tp_atr": TP_ATR,
+                    "sl_atr": SL_ATR,
+                    "max_hold_bars": MAX_HOLD_BARS,
+                    "fee_rate": FEE_RATE,
+                    "slippage_rate": SLIPPAGE_RATE,
+                },
+                "probe": {"1H": probe_1h, "4H": probe_4h},
+                "metrics_1h": metrics_1h,
+                "metrics_4h": metrics_4h,
+                "generated_at": datetime.now().isoformat(),
             },
-            "probe": {"1H": probe_1h, "4H": probe_4h},
-            "metrics_1h": metrics_1h,
-            "metrics_4h": metrics_4h,
-            "generated_at": datetime.now().isoformat(),
-        }, f, ensure_ascii=False, indent=2)
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
     print(f"\n💾 详细 JSON 结果已保存: {out_file}")
 
 

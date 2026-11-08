@@ -9,6 +9,7 @@
 通过 → 可推进 TDD-008 (200 ep 完整训练)
 失败 → 回滚到马尔可夫 MLP 架构
 """
+
 from __future__ import annotations
 
 import json
@@ -22,8 +23,11 @@ REPO = Path(__file__).resolve().parents[2]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402, I001
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 
 def load_closes(path: Path) -> np.ndarray:
@@ -96,7 +100,9 @@ def main():
         print("[FAIL] torch 不可用")
         return 1
     trainer = NeuralSDETrainer(model, lr=1e-4, seq_len=64, horizon=20, batch_size=64)
-    print(f"[2] 模型初始化: sig_dim={model.sig_dim}, n_step={model.n_step}, sig_depth={model.sig_depth}")
+    print(
+        f"[2] 模型初始化: sig_dim={model.sig_dim}, n_step={model.n_step}, sig_depth={model.sig_depth}"
+    )
 
     # 3. 训练 30 epochs
     t0 = time.time()
@@ -105,12 +111,14 @@ def main():
     if report["status"] != "ok":
         print(f"[FAIL] 训练失败: {report}")
         return 1
-    print(f"[3] 训练完成: 30 ep, final_loss={report['final_loss']:.6f}, n_windows={report['n_windows']}, 耗时={elapsed:.1f}s")
+    print(
+        f"[3] 训练完成: 30 ep, final_loss={report['final_loss']:.6f}, n_windows={report['n_windows']}, 耗时={elapsed:.1f}s"
+    )
 
     # 4. 评估 MAE (路径依赖 forecast)
     garch = GARCHFallback()
     mae = evaluate_mae_path_dependent(model, garch, closes, horizon=20, n_paths=200)
-    print(f"[4] MAE 对比:")
+    print("[4] MAE 对比:")
     print(f"    NeuralSDE (路径依赖): {mae['neural_sde_mae']:.4f}")
     print(f"    GARCH baseline:      {mae['garch_mae']:.4f}")
     print(f"    improvement:         {mae['improvement']:.4f} (正=优于GARCH)")
@@ -118,7 +126,7 @@ def main():
     # 5. PoC 闸门: neural_sde_mae <= 1.2 * garch_mae
     threshold = 1.2 * mae["garch_mae"]
     passed = mae["neural_sde_mae"] <= threshold
-    print(f"[5] PoC 闸门: neural_sde_mae <= 1.2 × garch_mae")
+    print("[5] PoC 闸门: neural_sde_mae <= 1.2 × garch_mae")
     print(f"    {mae['neural_sde_mae']:.4f} <= {threshold:.4f} ? {'PASS' if passed else 'FAIL'}")
 
     print("=" * 70)

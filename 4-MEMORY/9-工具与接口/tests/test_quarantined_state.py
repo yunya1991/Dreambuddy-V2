@@ -1,4 +1,5 @@
 """Solution Path quarantined 状态 + path_advantage_history 单测（设计节 7.5 + 7.7）。"""
+
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -20,8 +21,11 @@ def test_quarantined_not_recalled():
     """设计节 7.7：quarantined 的 Solution Path recall 时不召回。"""
     registry = ProcessTemplateRegistry()
     registry.register_applied_from_session(
-        template_id="APP-bad", name="bad path", steps=["s1"],
-        parent_template_id="test-driven-development", solution_path={},
+        template_id="APP-bad",
+        name="bad path",
+        steps=["s1"],
+        parent_template_id="test-driven-development",
+        solution_path={},
         parent_skill_ids=["test-driven-development"],
         quality_level="quarantined",
     )
@@ -35,8 +39,11 @@ def test_path_advantage_history_tracking():
     registry = ProcessTemplateRegistry()
     applied_id = "APP-track"
     registry.register_applied_from_session(
-        template_id=applied_id, name="t", steps=["s"],
-        parent_template_id="tdd", solution_path={},
+        template_id=applied_id,
+        name="t",
+        steps=["s"],
+        parent_template_id="tdd",
+        solution_path={},
         parent_skill_ids=["tdd"],
     )
     registry.update_path_advantage(applied_id, path_advantage=0.3, decision="upgrade")
@@ -53,8 +60,11 @@ def test_quarantine_after_consecutive_negatives():
     registry = ProcessTemplateRegistry()
     applied_id = "APP-neg"
     registry.register_applied_from_session(
-        template_id=applied_id, name="t", steps=["s"],
-        parent_template_id="tdd", solution_path={},
+        template_id=applied_id,
+        name="t",
+        steps=["s"],
+        parent_template_id="tdd",
+        solution_path={},
         parent_skill_ids=["tdd"],
     )
     for _ in range(3):
@@ -71,9 +81,13 @@ def test_c_level_penalty_in_retrieve_applied():
         # 注册 S/A/B/C 各一个，verify_count 相同
         for ql, tid in [("C", "APP-c1"), ("B", "APP-b1"), ("A", "APP-a1"), ("S", "APP-s1")]:
             registry.register_applied_from_session(
-                template_id=tid, name=tid, steps=["s"],
-                parent_template_id="tdd", solution_path={},
-                parent_skill_ids=["tdd"], quality_level=ql,
+                template_id=tid,
+                name=tid,
+                steps=["s"],
+                parent_template_id="tdd",
+                solution_path={},
+                parent_skill_ids=["tdd"],
+                quality_level=ql,
             )
             registry.get_applied(tid).verify_count = 5
 
@@ -97,9 +111,13 @@ def test_c_level_penalty_in_retrieve_applied():
     with patch.object(registry2, "_persist_applied_template"):
         for ql, tid in [("C", "APP-c2"), ("A", "APP-a2")]:
             registry2.register_applied_from_session(
-                template_id=tid, name=tid, steps=["s"],
-                parent_template_id="tdd", solution_path={},
-                parent_skill_ids=["tdd"], quality_level=ql,
+                template_id=tid,
+                name=tid,
+                steps=["s"],
+                parent_template_id="tdd",
+                solution_path={},
+                parent_skill_ids=["tdd"],
+                quality_level=ql,
             )
             registry2.get_applied(tid).verify_count = 3
         results4 = registry2.retrieve_applied("dev", top_k=2)

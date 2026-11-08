@@ -32,19 +32,17 @@ TDD 测试清单 (§9.5 共 35 项):
   Layer 3: WashoutHoldStrategy (7 项)
   三层协同 + 集成 (12 项)
 """
+
 from __future__ import annotations
 
-import math
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
-from unittest.mock import MagicMock
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
-import pytest
 
 # ============================================================
 # sys.path 设置
@@ -62,26 +60,24 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
 # ============================================================
 # 导入
 # ============================================================
+from scripts.memory_l4.bcrm2 import exit_strategies as es  # noqa: E402
+from scripts.memory_l4.bcrm2.exit_manager import (  # noqa: E402
+    ExitContext,
+    ExitManager,
+)
 from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
-    WashoutDetector,
     WashoutLabel,
     WashoutVerdict,
 )
-from scripts.memory_l4.bcrm2.exit_manager import (  # noqa: E402
-    ExitContext,
-    ExitDecision,
-    ExitManager,
-    ExitStrategy,
-)
-from scripts.memory_l4.bcrm2 import exit_strategies as es  # noqa: E402
 from scripts.memory_l4.trading_utils import TradeRecord  # noqa: E402
 
 
 # ============================================================
 # 辅助: 构造 WashoutVerdict
 # ============================================================
-def _make_verdict(label: WashoutLabel, confidence: float,
-                  trigger_activated: bool = True) -> WashoutVerdict:
+def _make_verdict(
+    label: WashoutLabel, confidence: float, trigger_activated: bool = True
+) -> WashoutVerdict:
     return WashoutVerdict(
         label=label,
         confidence=confidence,
@@ -92,16 +88,16 @@ def _make_verdict(label: WashoutLabel, confidence: float,
     )
 
 
-WASHOUT_HI = lambda: _make_verdict(WashoutLabel.WASHOUT, 0.85)
-WASHOUT_LO = lambda: _make_verdict(WashoutLabel.WASHOUT, 0.60)
-WEAKNESS_HI = lambda: _make_verdict(WashoutLabel.WEAKNESS, 0.80)
-WEAKNESS_LO = lambda: _make_verdict(WashoutLabel.WEAKNESS, 0.50)
-UNKNOWN_VERDICT = lambda: _make_verdict(WashoutLabel.UNKNOWN, 0.30)
+WASHOUT_HI = lambda: _make_verdict(WashoutLabel.WASHOUT, 0.85)  # noqa: E731
+WASHOUT_LO = lambda: _make_verdict(WashoutLabel.WASHOUT, 0.60)  # noqa: E731
+WEAKNESS_HI = lambda: _make_verdict(WashoutLabel.WEAKNESS, 0.80)  # noqa: E731
+WEAKNESS_LO = lambda: _make_verdict(WashoutLabel.WEAKNESS, 0.50)  # noqa: E731
+UNKNOWN_VERDICT = lambda: _make_verdict(WashoutLabel.UNKNOWN, 0.30)  # noqa: E731
 
 
-def _make_df_with_runup_drawdown(runup_pct: float = 0.20,
-                                 drawdown_pct: float = 0.08,
-                                 above_ma200: bool = True) -> pd.DataFrame:
+def _make_df_with_runup_drawdown(
+    runup_pct: float = 0.20, drawdown_pct: float = 0.08, above_ma200: bool = True
+) -> pd.DataFrame:
     """构造触发门通过的 OHLCV DataFrame."""
     n = 60
     base = 100.0
@@ -111,13 +107,15 @@ def _make_df_with_runup_drawdown(runup_pct: float = 0.20,
     prices = list(np.linspace(base, peak, 30)) + list(np.linspace(peak, end_price, 30))
     if not above_ma200:
         prices = [p * 0.5 for p in prices]
-    df = pd.DataFrame({
-        "open": prices,
-        "high": [p * 1.01 for p in prices],
-        "low": [p * 0.99 for p in prices],
-        "close": prices,
-        "volume": [1000.0] * n,
-    })
+    df = pd.DataFrame(
+        {
+            "open": prices,
+            "high": [p * 1.01 for p in prices],
+            "low": [p * 0.99 for p in prices],
+            "close": prices,
+            "volume": [1000.0] * n,
+        }
+    )
     return df
 
 
@@ -127,9 +125,12 @@ def _make_df_with_runup_drawdown(runup_pct: float = 0.20,
 class _MockDetector:
     """简化 WashoutDetector mock, 直接返回预设 verdict."""
 
-    def __init__(self, verdict: Optional[WashoutVerdict] = None,
-                 enable: bool = True,
-                 raise_on_run: bool = False):
+    def __init__(
+        self,
+        verdict: Optional[WashoutVerdict] = None,
+        enable: bool = True,
+        raise_on_run: bool = False,
+    ):
         self.verdict = verdict
         self.enable = enable
         self.raise_on_run = raise_on_run
@@ -150,16 +151,24 @@ class TestWashoutSLGuard:
 
     def _make_guard(self, detector=None, **kw):
         from scripts.memory_l4.bcrm2.washout_sl_guard import WashoutSLGuard
+
         return WashoutSLGuard(washout_detector=detector or _MockDetector(), **kw)
 
     def test_washout_sl_guard_disabled_returns_no_change(self):
         """T1 detector.enable=False → no_change."""
         guard = self._make_guard(detector=_MockDetector(enable=False))
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=90.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=90.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert result.action == "no_change"
 
@@ -167,28 +176,42 @@ class TestWashoutSLGuard:
         """T2 washout+conf≥0.80 → widen_sl."""
         guard = self._make_guard(detector=_MockDetector(WASHOUT_HI()))
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=90.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=90.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert result.action == "widen_sl"
-        #做多: SL 下移 (远离 mark), 放宽 SL 避免被扫损
+        # 做多: SL 下移 (远离 mark), 放宽 SL 避免被扫损
         assert result.new_sl_px < 90.0
 
     def test_washout_sl_guard_weakness_tighten_sl(self):
         """T3 weakness+conf≥0.70 → tighten_sl."""
         guard = self._make_guard(detector=_MockDetector(WEAKNESS_HI()))
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=90.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=90.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert result.action == "tighten_sl"
-        #做多: SL价格上移 (从90 → 更接近100), 收紧 SL
+        # 做多: SL价格上移 (从90 → 更接近100), 收紧 SL
         assert result.new_sl_px > 90.0
-        #收紧后 SL 不得高于 mark price (HC-17)
+        # 收紧后 SL 不得高于 mark price (HC-17)
         assert result.new_sl_px <= 100.0
 
     def test_washout_sl_guard_widen_respects_max_25pct(self):
@@ -196,49 +219,73 @@ class TestWashoutSLGuard:
         guard = self._make_guard(detector=_MockDetector(WASHOUT_HI()))
         original_sl = 90.0  # entry=100, sl=90 → 距 entry 10%
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=original_sl, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=original_sl,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=original_sl,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=original_sl,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert result.action == "widen_sl"
-        #原 SL 距 entry 10%; 放宽不得超 25% → 新 SL 距 entry ≤ 12.5%
+        # 原 SL 距 entry 10%; 放宽不得超 25% → 新 SL 距 entry ≤ 12.5%
         original_sl_pct = abs(original_sl - 100.0) / 100.0  # 0.10
         max_widen_pct = original_sl_pct * 1.25  # 0.125
         new_sl_pct = abs(result.new_sl_px - 100.0) / 100.0
-        assert new_sl_pct <= max_widen_pct + 1e-9, (
-            f"HC-15 violated: new_sl_pct={new_sl_pct} > max={max_widen_pct}")
+        assert (
+            new_sl_pct <= max_widen_pct + 1e-9
+        ), f"HC-15 violated: new_sl_pct={new_sl_pct} > max={max_widen_pct}"
 
     def test_washout_sl_guard_widen_respects_liq_safety(self):
         """T5 放宽后 SL 仍位于爆仓价 + 0.3% 安全侧 (HC-16)."""
         guard = self._make_guard(detector=_MockDetector(WASHOUT_HI()))
         # liq=80, entry=100, sl=85 (距 entry 15%); 放宽极限 15%*1.25=18.75% → sl=81.25
         # 但 liq_price=80, 安全侧 = 80 * 1.003 = 80.24
-        #放宽不能越过爆仓安全边际
+        # 放宽不能越过爆仓安全边际
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=85.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=80.0, original_sl=85.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=85.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=80.0,
+            original_sl=85.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         if result.action == "widen_sl":
-            #做多: SL < entry, 安全侧要求 SL > liq_price * (1 + 0.3%)
+            # 做多: SL < entry, 安全侧要求 SL > liq_price * (1 + 0.3%)
             safe_floor = 80.0 * (1 + 0.003)  # 80.24
-            assert result.new_sl_px >= safe_floor, (
-                f"HC-16 violated: new_sl={result.new_sl_px} < safe_floor={safe_floor}")
+            assert (
+                result.new_sl_px >= safe_floor
+            ), f"HC-16 violated: new_sl={result.new_sl_px} < safe_floor={safe_floor}"
 
     def test_washout_sl_guard_tighten_not_above_mark(self):
         """T6 收紧 SL 不得高于 mark price (HC-17)."""
         guard = self._make_guard(detector=_MockDetector(WEAKNESS_HI()))
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=92.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=92.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=92.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=92.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         if result.action == "tighten_sl":
-            assert result.new_sl_px <= 100.0, (
-                f"HC-17 violated: new_sl={result.new_sl_px} > mark=100.0")
+            assert (
+                result.new_sl_px <= 100.0
+            ), f"HC-17 violated: new_sl={result.new_sl_px} > mark=100.0"
 
     def test_washout_sl_guard_widen_timeout_48h_restore(self):
         """T7 放宽超 48h → restore_sl (HC-18)."""
@@ -254,23 +301,37 @@ class TestWashoutSLGuard:
         now_ts = time.time()
         last_ts = now_ts - 49 * 3600
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=95.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=50.0, last_adjust_ts=last_ts,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=95.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=50.0,
+            last_adjust_ts=last_ts,
         )
         assert result.action == "restore_sl"
         assert abs(result.new_sl_px - 90.0) < 1e-9
 
     def test_washout_sl_guard_verdict_change_restore(self):
         """T8 verdict 从 washout→weakness → restore_sl (HC-19)."""
-        #先用 washout 放宽一次
+        # 先用 washout 放宽一次
         guard = self._make_guard(detector=_MockDetector(WASHOUT_HI()))
         r1 = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=90.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=90.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert r1.action == "widen_sl"
         # 切换 detector 到 weakness (verdict 变化)
@@ -278,22 +339,36 @@ class TestWashoutSLGuard:
         # 把 guard2 的状态设为已放宽过 (复用 guard 的 _state 字典)
         guard2._state["BTC"] = guard._state.get("BTC", {}).copy()
         r2 = guard2.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=r1.new_sl_px, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=2.0, last_adjust_ts=time.time(),
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=r1.new_sl_px,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=2.0,
+            last_adjust_ts=time.time(),
         )
-        #weakness+conf≥0.70 触发 tighten, 而非 restore; 也可接受 restore
+        # weakness+conf≥0.70 触发 tighten, 而非 restore; 也可接受 restore
         assert r2.action in ("tighten_sl", "restore_sl"), f"got {r2.action}"
 
     def test_washout_sl_guard_fail_open_on_exception(self):
         """T9 异常 → no_change + 6 层堆栈 (HC-21 FAIL-OPEN)."""
         guard = self._make_guard(detector=_MockDetector(raise_on_run=True))
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=90.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=90.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert result.action == "no_change"
         assert "fail_open" in result.reason or "exception" in result.reason.lower()
@@ -302,10 +377,17 @@ class TestWashoutSLGuard:
         """T10 审计日志正确."""
         guard = self._make_guard(detector=_MockDetector(WASHOUT_HI()))
         guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=90.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=90.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         log = guard.get_adjustment_log(coin="BTC")
         assert isinstance(log, list)
@@ -321,9 +403,9 @@ class TestWashoutSLGuard:
 class TestP3EarlyExitWashout:
     """Layer 2: P3EarlyExit 增加洗盘感知 (仅在 washout+conf≥0.80 时抑制)."""
 
-    def _make_ctx(self, early_exit_signal: bool = True,
-                  upl_ratio: float = -0.10,
-                  in_protection: bool = True) -> ExitContext:
+    def _make_ctx(
+        self, early_exit_signal: bool = True, upl_ratio: float = -0.10, in_protection: bool = True
+    ) -> ExitContext:
         return ExitContext(
             coin="BTC",
             inference={"early_exit_signal": early_exit_signal},
@@ -337,12 +419,12 @@ class TestP3EarlyExitWashout:
         """T11 washout+conf≥0.80 → P3 返回 hold 抑制退出 (HC-20)."""
         det = _MockDetector(WASHOUT_HI())
         strat = es.P3EarlyExitStrategy(washout_detector=det)
-        #正常 P3 会触发 force_close (early_exit + 浮亏>=-8% + 确认 2 次)
-        #先触发一次累计确认
+        # 正常 P3 会触发 force_close (early_exit + 浮亏>=-8% + 确认 2 次)
+        # 先触发一次累计确认
         ctx = self._make_ctx()
         strat.evaluate(ctx)  # cnt=1
         decision = strat.evaluate(ctx)  # cnt=2 → 原 P3 force_close
-        #洗盘抑制 → 应返回 hold
+        # 洗盘抑制 → 应返回 hold
         assert decision.action == "hold"
         assert "washout" in decision.reason.lower() or "suppress" in decision.reason.lower()
 
@@ -497,30 +579,36 @@ class TestIntegration:
             confidence=0.9,
         )
         decision = manager.evaluate(
-            coin=ctx.coin, inference=ctx.inference, pos_info=ctx.pos_info,
-            tracker_pos=ctx.tracker_pos, in_protection=ctx.in_protection,
-            age_hours=ctx.age_hours, confidence=ctx.confidence,
+            coin=ctx.coin,
+            inference=ctx.inference,
+            pos_info=ctx.pos_info,
+            tracker_pos=ctx.tracker_pos,
+            in_protection=ctx.in_protection,
+            age_hours=ctx.age_hours,
+            confidence=ctx.confidence,
         )
-        #weakness force_close 短路, signal_reverse 不评估
+        # weakness force_close 短路, signal_reverse 不评估
         assert decision.action == "force_close"
         assert decision.strategy_name == "washout_hold"
 
     def test_polling_trader_washout_trial_position_max_2(self):
         """T26 is_trial 子池最多 2 单 (MAX_TRIAL_POSITIONS=2)."""
         from scripts.memory_l4.polling_trader import PollingTrader
-        #用 mock 检查类常量 (不实例化, polling_trader 实例化需要 OKX client)
+
+        # 用 mock 检查类常量 (不实例化, polling_trader 实例化需要 OKX client)
         assert getattr(PollingTrader, "MAX_TRIAL_POSITIONS", 2) == 2
 
     def test_polling_trader_washout_source_tag(self):
         """T27 source_tag='washout_trial' 正确."""
         from scripts.memory_l4.polling_trader import PollingTrader
-        #检查常量存在 (WashoutDetector 子池 source_tag)
+
+        # 检查常量存在 (WashoutDetector 子池 source_tag)
         tag = getattr(PollingTrader, "WASHOUT_SOURCE_TAG", "washout_trial")
         assert tag == "washout_trial"
 
     def test_open_position_washout_verdict_field(self):
         """T28 TradeRecord.washout_verdict 字段存在."""
-        #dataclass 字段检查
+        # dataclass 字段检查
         assert "washout_verdict" in TradeRecord.__dataclass_fields__
         rec = TradeRecord(coin="BTC")
         assert rec.washout_verdict is None
@@ -528,15 +616,23 @@ class TestIntegration:
     def test_integration_layer1_sl_guard_widens_sl_during_washout(self):
         """T29 端到端: washout → SLGuard 放宽 SL → 不被扫损."""
         from scripts.memory_l4.bcrm2.washout_sl_guard import WashoutSLGuard
+
         det = _MockDetector(WASHOUT_HI())
         guard = WashoutSLGuard(washout_detector=det)
         original_sl = 90.0
         # mark=91 接近 SL=90, 洗盘判定放宽 SL 避免被扫损
         result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=original_sl, mark_price=91.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=original_sl,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=original_sl,
+            mark_price=91.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=original_sl,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert result.action == "widen_sl"
         # 放宽: SL 下移 (< original_sl), 仍在 mark 之下 (91.0), 不被扫损
@@ -575,24 +671,32 @@ class TestIntegration:
             age_hours=2.0,
             confidence=0.9,
         )
-        #washout → hold 短路 (非 force_close)
+        # washout → hold 短路 (非 force_close)
         assert decision.action == "hold"
         assert decision.strategy_name == "washout_hold"
 
     def test_integration_weakness_accelerates_exit_all_layers(self):
         """T32 端到端: weakness → SLGuard 收紧 + P3 不抑制 + WashoutHoldStrategy force_close."""
         det = _MockDetector(WEAKNESS_HI())
-        #Layer 1: SLGuard 收紧
+        # Layer 1: SLGuard 收紧
         from scripts.memory_l4.bcrm2.washout_sl_guard import WashoutSLGuard
+
         guard = WashoutSLGuard(washout_detector=det)
         sl_result = guard.adjust_sl(
-            coin="BTC", df=_make_df_with_runup_drawdown(), macro_data={},
-            current_sl=90.0, mark_price=100.0, entry_price=100.0,
-            pos_side="long", liq_price=50.0, original_sl=90.0,
-            age_hours=1.0, last_adjust_ts=0.0,
+            coin="BTC",
+            df=_make_df_with_runup_drawdown(),
+            macro_data={},
+            current_sl=90.0,
+            mark_price=100.0,
+            entry_price=100.0,
+            pos_side="long",
+            liq_price=50.0,
+            original_sl=90.0,
+            age_hours=1.0,
+            last_adjust_ts=0.0,
         )
         assert sl_result.action == "tighten_sl"
-        #Layer 2: P3 不抑制 (weakness 不抑制)
+        # Layer 2: P3 不抑制 (weakness 不抑制)
         p3 = es.P3EarlyExitStrategy(washout_detector=det)
         ctx = ExitContext(
             coin="BTC",
@@ -605,24 +709,30 @@ class TestIntegration:
         p3.evaluate(ctx)
         p3_decision = p3.evaluate(ctx)
         assert p3_decision.action == "force_close"
-        #Layer 3: WashoutHoldStrategy force_close
+        # Layer 3: WashoutHoldStrategy force_close
         hold_strat = es.WashoutHoldStrategy(washout_detector=det)
-        hold_decision = hold_strat.evaluate(ExitContext(
-            coin="BTC", inference={}, pos_info={"pos_side": "long"},
-            tracker_pos=None, in_protection=False, age_hours=2.0,
-        ))
+        hold_decision = hold_strat.evaluate(
+            ExitContext(
+                coin="BTC",
+                inference={},
+                pos_info={"pos_side": "long"},
+                tracker_pos=None,
+                in_protection=False,
+                age_hours=2.0,
+            )
+        )
         assert hold_decision.action == "force_close"
 
     def test_full_regression_all_existing_strategies_unchanged(self):
         """T33 全回归: 6 个原策略行为不变."""
-        #验证 priority 不变
+        # 验证 priority 不变
         assert es.P3EarlyExitStrategy.priority == 10
         assert es.SignalReverseStrategy.priority == 20
         assert es.EvForceCloseStrategy.priority == 30
         assert es.TimeoutProfitSwitchStrategy.priority == 40
         assert es.RankedTpStrategy.priority == 50
         assert es.EvAdjustStrategy.priority == 60
-        #验证 P3EarlyExitStrategy 默认构造 (washout_detector=None) 行为不变
+        # 验证 P3EarlyExitStrategy 默认构造 (washout_detector=None) 行为不变
         p3 = es.P3EarlyExitStrategy()
         assert p3.washout_detector is None
         ctx = ExitContext(
@@ -640,7 +750,7 @@ class TestIntegration:
 
     def test_full_regression_275_existing_tests_still_pass(self):
         """T34 全回归: 275 个原有测试仍通过 (运行 w1-w4 测试套件)."""
-        #此测试在 CI 时运行 pytest 全套, 这里仅检查 w1-w4 测试文件存在
+        # 此测试在 CI 时运行 pytest 全套, 这里仅检查 w1-w4 测试文件存在
         w1 = _THIS_DIR / "test_washout_w1.py"
         w2 = _THIS_DIR / "test_washout_w2.py"
         w3 = _THIS_DIR / "test_washout_w3.py"
@@ -653,15 +763,19 @@ class TestIntegration:
     def test_integration_washout_detector_to_exit_strategy(self):
         """T35 端到端: detector → verdict → 三层防御 → 交易动作."""
         det = _MockDetector(WASHOUT_HI())
-        #Layer 3: WashoutHoldStrategy
+        # Layer 3: WashoutHoldStrategy
         hold_strat = es.WashoutHoldStrategy(washout_detector=det)
         ctx = ExitContext(
-            coin="BTC", inference={}, pos_info={"pos_side": "long"},
-            tracker_pos=None, in_protection=False, age_hours=2.0,
+            coin="BTC",
+            inference={},
+            pos_info={"pos_side": "long"},
+            tracker_pos=None,
+            in_protection=False,
+            age_hours=2.0,
         )
         decision = hold_strat.evaluate(ctx)
         assert decision.action == "hold"
-        #切换到 weakness
+        # 切换到 weakness
         det2 = _MockDetector(WEAKNESS_HI())
         hold_strat2 = es.WashoutHoldStrategy(washout_detector=det2)
         decision2 = hold_strat2.evaluate(ctx)

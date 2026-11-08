@@ -10,10 +10,11 @@ HyperliquidClient provides:
     client.open_long(coin, usdt_amount, leverage, tag) -> {"ok": bool, ...}
     client.open_short(coin, usdt_amount, leverage, tag) -> {"ok": bool, ...}
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
 import logging
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class HyperliquidV15Adapter:
         sz: float,
         td_mode: str = "isolated",
         pos_side: str = "long",
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """Adapt 14-V15's place_order to HyperliquidClient.
 
@@ -72,7 +73,10 @@ class HyperliquidV15Adapter:
             if ord_type == "limit" and limit_px and limit_px > 0:
                 # Limit order (GTC) — for addon grid orders
                 result = self._client.limit_order(
-                    coin, is_buy, sz, limit_px,
+                    coin,
+                    is_buy,
+                    sz,
+                    limit_px,
                     leverage=self._default_leverage,
                     reduce_only=reduce_only,
                     tag=tag,
@@ -80,7 +84,9 @@ class HyperliquidV15Adapter:
             elif reduce_only:
                 # Reduce-only market order — for position close
                 result = self._client.market_order(
-                    coin, is_buy, sz,
+                    coin,
+                    is_buy,
+                    sz,
                     leverage=1,
                     reduce_only=True,
                     tag=tag,
@@ -90,9 +96,13 @@ class HyperliquidV15Adapter:
                 px = self._client.get_mid_price(coin)
                 usdt_amount = sz * px / self._default_leverage
                 if is_long:
-                    result = self._client.open_long(coin, usdt_amount, self._default_leverage, tag=tag)
+                    result = self._client.open_long(
+                        coin, usdt_amount, self._default_leverage, tag=tag
+                    )
                 else:
-                    result = self._client.open_short(coin, usdt_amount, self._default_leverage, tag=tag)
+                    result = self._client.open_short(
+                        coin, usdt_amount, self._default_leverage, tag=tag
+                    )
 
             # Adapt return format to 14-V15's expected format
             # 14-V15 extracts ord_id via: r.get('ord_id') or r.get('raw',{}).get('data',[{}])[0].get('ordId')
@@ -150,17 +160,19 @@ class HyperliquidV15Adapter:
                 # limitPx for limit orders, triggerPx for trigger orders
                 px_str = o.get("limitPx") or o.get("triggerPx") or "0"
                 sz_str = o.get("sz") or o.get("origSz") or "0"
-                formatted.append({
-                    "ord_id": o.get("oid", ""),
-                    "inst_id": inst_id,
-                    "side": side,
-                    "sz": float(sz_str),
-                    "px": float(px_str),
-                    "ord_type": "limit" if o.get("limitPx") else "trigger",
-                    "reduce_only": o.get("reduceOnly", False),
-                    "state": "live",
-                    "raw": o,
-                })
+                formatted.append(
+                    {
+                        "ord_id": o.get("oid", ""),
+                        "inst_id": inst_id,
+                        "side": side,
+                        "sz": float(sz_str),
+                        "px": float(px_str),
+                        "ord_type": "limit" if o.get("limitPx") else "trigger",
+                        "reduce_only": o.get("reduceOnly", False),
+                        "state": "live",
+                        "raw": o,
+                    }
+                )
             return {"ok": True, "data": formatted}
         except Exception as e:
             logger.error(f"Failed to get pending orders: {e}")
@@ -183,9 +195,13 @@ class HyperliquidV15Adapter:
                             "inst_id": inst_id,
                             "state": o.get("orderStatus", "live"),
                             "sz": float(o.get("sz", "0")),
-                            "px": float(o.get("limitPx", 0)) if o.get("limitPx") else float(o.get("triggerPx", 0)),
+                            "px": (
+                                float(o.get("limitPx", 0))
+                                if o.get("limitPx")
+                                else float(o.get("triggerPx", 0))
+                            ),
                             "raw": o,
-                        }
+                        },
                     }
             # Order not found in open orders — likely already filled or cancelled
             return {"ok": True, "data": {"ord_id": ord_id, "state": "not_found"}}
@@ -212,7 +228,7 @@ class HyperliquidV15Adapter:
         inst_id: str = None,
         sl_price: Optional[float] = None,
         tp_price: Optional[float] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """Adapt place_stop_loss_take_profit to HyperliquidClient's set_tpsl_orders.
 
@@ -226,11 +242,13 @@ class HyperliquidV15Adapter:
         #   stop_loss_price / take_profit_price (alternative)
         #   sl / tp (shorthand)
         if not sl_price:
-            sl_price = (kwargs.get("stop_loss_px") or kwargs.get("stop_loss_price")
-                        or kwargs.get("sl"))
+            sl_price = (
+                kwargs.get("stop_loss_px") or kwargs.get("stop_loss_price") or kwargs.get("sl")
+            )
         if not tp_price:
-            tp_price = (kwargs.get("take_profit_px") or kwargs.get("take_profit_price")
-                        or kwargs.get("tp"))
+            tp_price = (
+                kwargs.get("take_profit_px") or kwargs.get("take_profit_price") or kwargs.get("tp")
+            )
 
         if not sl_price and not tp_price:
             return {"ok": False, "error": "no_sl_or_tp_provided"}
@@ -240,7 +258,7 @@ class HyperliquidV15Adapter:
                 coin,
                 stop_loss_price=sl_price if (sl_price and sl_price > 0) else None,
                 take_profit_price=tp_price if (tp_price and tp_price > 0) else None,
-                is_market=True
+                is_market=True,
             )
             return {"ok": result.get("ok", False), "data": result}
         except Exception as e:
@@ -271,7 +289,9 @@ class HyperliquidV15Adapter:
                 else:
                     # Addon grid order → preserve
                     preserved += 1
-            logger.info(f"cancel_algo_orders({coin}): cancelled={cancelled} TP/SL, preserved={preserved} addon grid")
+            logger.info(
+                f"cancel_algo_orders({coin}): cancelled={cancelled} TP/SL, preserved={preserved} addon grid"
+            )
             return {"ok": True, "data": {"cancelled": cancelled, "preserved": preserved}}
         except Exception as e:
             logger.error(f"Failed to cancel algo orders: {e}")
@@ -310,13 +330,15 @@ class HyperliquidV15Adapter:
             # Convert to 14-V15's expected format
             formatted_positions = []
             for coin, pos in positions.items():
-                formatted_positions.append({
-                    "inst_id": f"{coin}-USDT-SWAP",
-                    "coin": coin,
-                    "size": pos.get("size", 0),
-                    "entry_price": pos.get("entry_price", 0),
-                    "unrealized_pnl": pos.get("unrealized_pnl", 0),
-                })
+                formatted_positions.append(
+                    {
+                        "inst_id": f"{coin}-USDT-SWAP",
+                        "coin": coin,
+                        "size": pos.get("size", 0),
+                        "entry_price": pos.get("entry_price", 0),
+                        "unrealized_pnl": pos.get("unrealized_pnl", 0),
+                    }
+                )
 
             return {"ok": True, "data": formatted_positions}
         except Exception as e:

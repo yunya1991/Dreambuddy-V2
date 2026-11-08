@@ -10,10 +10,8 @@
 来源: SPEC v0.3 七补.1 F-02
 """
 
-import json
-import sys
+import sys  # noqa: I001
 import os
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "packages", "python-server"))
 
@@ -53,37 +51,52 @@ class TestF02BDSMDirectionConstraint:
     """F-02: BDSM direction_constraint 硬约束"""
 
     def test_long_only_blocks_short(self):
-        result = check_hard_constraints("execute_node", {
-            "direction_constraint": "LONG_ONLY",
-            "direction": "SHORT",
-        })
+        result = check_hard_constraints(
+            "execute_node",
+            {
+                "direction_constraint": "LONG_ONLY",
+                "direction": "SHORT",
+            },
+        )
         assert result["passed"] is False
         assert any("LONG_ONLY" in v for v in result["violations"])
 
     def test_short_only_blocks_long(self):
-        result = check_hard_constraints("execute_node", {
-            "direction_constraint": "SHORT_ONLY",
-            "direction": "LONG",
-        })
+        result = check_hard_constraints(
+            "execute_node",
+            {
+                "direction_constraint": "SHORT_ONLY",
+                "direction": "LONG",
+            },
+        )
         assert result["passed"] is False
         assert any("SHORT_ONLY" in v for v in result["violations"])
 
     def test_long_only_allows_long(self):
-        result = check_hard_constraints("execute_node", {
-            "direction_constraint": "LONG_ONLY",
-            "direction": "LONG",
-        })
+        result = check_hard_constraints(
+            "execute_node",
+            {
+                "direction_constraint": "LONG_ONLY",
+                "direction": "LONG",
+            },
+        )
         assert result["passed"] is True
 
     def test_neutral_allows_both(self):
-        result_long = check_hard_constraints("execute_node", {
-            "direction_constraint": "NEUTRAL",
-            "direction": "LONG",
-        })
-        result_short = check_hard_constraints("execute_node", {
-            "direction_constraint": "NEUTRAL",
-            "direction": "SHORT",
-        })
+        result_long = check_hard_constraints(
+            "execute_node",
+            {
+                "direction_constraint": "NEUTRAL",
+                "direction": "LONG",
+            },
+        )
+        result_short = check_hard_constraints(
+            "execute_node",
+            {
+                "direction_constraint": "NEUTRAL",
+                "direction": "SHORT",
+            },
+        )
         assert result_long["passed"] is True
         assert result_short["passed"] is True
 
@@ -92,18 +105,24 @@ class TestF02MaxTrialPositions:
     """F-02: BCRM2.0 MAX_TRIAL_POSITIONS = 2 硬约束"""
 
     def test_third_trial_position_blocked(self):
-        result = check_hard_constraints("execute_node", {
-            "check": "MAX_TRIAL_POSITIONS",
-            "trial_count": 2,
-        })
+        result = check_hard_constraints(
+            "execute_node",
+            {
+                "check": "MAX_TRIAL_POSITIONS",
+                "trial_count": 2,
+            },
+        )
         assert result["passed"] is False
         assert any("MAX_TRIAL_POSITIONS" in v for v in result["violations"])
 
     def test_second_trial_position_allowed(self):
-        result = check_hard_constraints("execute_node", {
-            "check": "MAX_TRIAL_POSITIONS",
-            "trial_count": 1,
-        })
+        result = check_hard_constraints(
+            "execute_node",
+            {
+                "check": "MAX_TRIAL_POSITIONS",
+                "trial_count": 1,
+            },
+        )
         assert result["passed"] is True
 
 

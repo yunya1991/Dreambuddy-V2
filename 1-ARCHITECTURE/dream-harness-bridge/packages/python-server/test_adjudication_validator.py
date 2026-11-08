@@ -8,8 +8,12 @@ SPEC debate-jev-integration-spec.md §4:
 - 评分不合理 → 警告不覆盖
 - 胜方不一致 → 取 jev 建议胜方
 """
+
 from __future__ import annotations
-import os, sys, unittest
+
+import os
+import sys
+import unittest
 from unittest.mock import MagicMock
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,16 +23,19 @@ if SERVER_DIR not in sys.path:
 
 def _make_adj(winner="bull", bull_total=24.0, bear_total=18.0):
     from adjudicator import AdjudicationResult
+
     return AdjudicationResult(
         topic="BTC是数字黄金",
         bull_turn_scores=[{"turn": 1, "clarity": 4}],
         bear_turn_scores=[{"turn": 1, "clarity": 3}],
-        bull_total=bull_total, bear_total=bear_total,
+        bull_total=bull_total,
+        bear_total=bear_total,
         dimension_comparison={"clarity": {"bull": 4.0, "bear": 3.0}},
         winner=winner,
         rfd="正方在论证清晰度领先",
         key_clash_points=["稀缺性vs波动性"],
-        rebuttal_strength={}, evidence_depth={},
+        rebuttal_strength={},
+        evidence_depth={},
         timestamp="2026-10-11T00:00:00",
     )
 
@@ -49,6 +56,7 @@ class TestFailOpen(unittest.TestCase):
     def test_no_jev_fn_degraded(self):
         """无 jev_fn → degraded=True，评分不变。"""
         from adjudication_validator import AdjudicationValidator
+
         v = AdjudicationValidator(jev_fn=None)
         adj = _make_adj()
         result = v.validate("BTC", _make_transcript(), adj)
@@ -59,6 +67,7 @@ class TestFailOpen(unittest.TestCase):
     def test_jev_degraded(self):
         """jev 返回 degraded → 不影响评分。"""
         from adjudication_validator import AdjudicationValidator
+
         jev = MagicMock(return_value={"answers": {}, "degraded": True})
         v = AdjudicationValidator(jev_fn=jev)
         adj = _make_adj()
@@ -68,6 +77,7 @@ class TestFailOpen(unittest.TestCase):
     def test_jev_exception(self):
         """jev 异常 → degraded=True。"""
         from adjudication_validator import AdjudicationValidator
+
         jev = MagicMock(side_effect=RuntimeError("down"))
         v = AdjudicationValidator(jev_fn=jev)
         result = v.validate("BTC", _make_transcript(), _make_adj())
@@ -78,9 +88,13 @@ class TestScoreValidation(unittest.TestCase):
     def test_score_reasonable(self):
         """noul>=0.5 → score_reasonable=True。"""
         from adjudication_validator import AdjudicationValidator
-        jev = MagicMock(return_value={
-            "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bull"}},
-            "degraded": False})
+
+        jev = MagicMock(
+            return_value={
+                "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bull"}},
+                "degraded": False,
+            }
+        )
         v = AdjudicationValidator(jev_fn=jev)
         adj = _make_adj()
         result = v.validate("BTC", _make_transcript(), adj)
@@ -89,9 +103,13 @@ class TestScoreValidation(unittest.TestCase):
     def test_score_unreasonable(self):
         """noul<0.5 → score_reasonable=False。"""
         from adjudication_validator import AdjudicationValidator
-        jev = MagicMock(return_value={
-            "answers": {"score_q": {"noul": 0.2}, "winner_q": {"choice": "bull"}},
-            "degraded": False})
+
+        jev = MagicMock(
+            return_value={
+                "answers": {"score_q": {"noul": 0.2}, "winner_q": {"choice": "bull"}},
+                "degraded": False,
+            }
+        )
         v = AdjudicationValidator(jev_fn=jev)
         adj = _make_adj()
         result = v.validate("BTC", _make_transcript(), adj)
@@ -100,9 +118,13 @@ class TestScoreValidation(unittest.TestCase):
     def test_unreasonable_does_not_override_scores(self):
         """评分不合理时不覆盖 LLM 评分。"""
         from adjudication_validator import AdjudicationValidator
-        jev = MagicMock(return_value={
-            "answers": {"score_q": {"noul": 0.1}, "winner_q": {"choice": "bull"}},
-            "degraded": False})
+
+        jev = MagicMock(
+            return_value={
+                "answers": {"score_q": {"noul": 0.1}, "winner_q": {"choice": "bull"}},
+                "degraded": False,
+            }
+        )
         v = AdjudicationValidator(jev_fn=jev)
         adj = _make_adj(bull_total=24.0)
         v.validate("BTC", _make_transcript(), adj)
@@ -114,9 +136,13 @@ class TestWinnerConsistency(unittest.TestCase):
     def test_winner_consistent(self):
         """jev choice 与 LLM winner 一致。"""
         from adjudication_validator import AdjudicationValidator
-        jev = MagicMock(return_value={
-            "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bull"}},
-            "degraded": False})
+
+        jev = MagicMock(
+            return_value={
+                "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bull"}},
+                "degraded": False,
+            }
+        )
         v = AdjudicationValidator(jev_fn=jev)
         adj = _make_adj(winner="bull")
         result = v.validate("BTC", _make_transcript(), adj)
@@ -126,9 +152,13 @@ class TestWinnerConsistency(unittest.TestCase):
     def test_winner_inconsistent_overrides(self):
         """胜方不一致 → 取 jev 建议胜方。"""
         from adjudication_validator import AdjudicationValidator
-        jev = MagicMock(return_value={
-            "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bear"}},
-            "degraded": False})
+
+        jev = MagicMock(
+            return_value={
+                "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bear"}},
+                "degraded": False,
+            }
+        )
         v = AdjudicationValidator(jev_fn=jev)
         adj = _make_adj(winner="bull")
         result = v.validate("BTC", _make_transcript(), adj)
@@ -141,9 +171,13 @@ class TestJevCall(unittest.TestCase):
     def test_two_questions(self):
         """jev 接收两个问题：noul(评分) + choice(胜方)。"""
         from adjudication_validator import AdjudicationValidator
-        jev = MagicMock(return_value={
-            "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bull"}},
-            "degraded": False})
+
+        jev = MagicMock(
+            return_value={
+                "answers": {"score_q": {"noul": 0.8}, "winner_q": {"choice": "bull"}},
+                "degraded": False,
+            }
+        )
         v = AdjudicationValidator(jev_fn=jev)
         v.validate("BTC", _make_transcript(), _make_adj())
         questions = jev.call_args[0][1]

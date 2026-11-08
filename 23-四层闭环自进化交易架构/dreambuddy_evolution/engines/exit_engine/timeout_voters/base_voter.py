@@ -4,10 +4,11 @@
   - evaluate(ctx) → Optional[VoteTicket]  评估并投票，异常返回 None（FAIL-OPEN）
   - required_fields() → list[str]          声明依赖的 context 字段
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 

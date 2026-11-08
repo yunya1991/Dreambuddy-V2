@@ -3,7 +3,6 @@ import re
 import sys
 from pathlib import Path
 
-
 HEADER_TO_STATUS = {
     "[协作开工声明 / STARTED]": "STARTED",
     "[协作状态更新 / UPDATED]": "UPDATED",
@@ -131,9 +130,7 @@ def build_payload(raw):
         ).lower()
         shared_files_declared = shared_declared in {"yes", "true"}
 
-    task_card_present = bool(
-        parse_pr_template_field(raw.get("pr_body", ""), "Task Card")
-    )
+    task_card_present = bool(parse_pr_template_field(raw.get("pr_body", ""), "Task Card"))
     execution_mode = (
         (started_comment or {}).get("execution_mode")
         or first_non_empty(
@@ -142,9 +139,7 @@ def build_payload(raw):
         ).upper()
         or "STANDARD"
     )
-    direct_takeover = any(
-        comment.get("direct_takeover") for comment in structured_comments
-    )
+    direct_takeover = any(comment.get("direct_takeover") for comment in structured_comments)
     scope_change_declared = "UPDATED" in comments
     block_declared = "BLOCKED" in comments
 
@@ -168,9 +163,7 @@ def build_payload(raw):
 
 def main():
     if len(sys.argv) != 3:
-        raise SystemExit(
-            "usage: build_agent_lifecycle_payload.py <raw.json> <payload.json>"
-        )
+        raise SystemExit("usage: build_agent_lifecycle_payload.py <raw.json> <payload.json>")
 
     raw_path = Path(sys.argv[1])
     payload_path = Path(sys.argv[2])

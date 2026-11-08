@@ -6,6 +6,7 @@ P2 §5.3: 止损/止盈/超时参数的逆向优化
 
 类比反向传播：参数调整幅度 = 错误模式频次 × 步长，有边界约束。
 """
+
 from __future__ import annotations
 
 import logging

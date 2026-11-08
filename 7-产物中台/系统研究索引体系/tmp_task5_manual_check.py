@@ -5,7 +5,6 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-
 OUTPUT_PATH = Path("/tmp/task5_manual_check.json")
 SCREENSHOT_PATH = Path("/tmp/task5_manual_check.png")
 

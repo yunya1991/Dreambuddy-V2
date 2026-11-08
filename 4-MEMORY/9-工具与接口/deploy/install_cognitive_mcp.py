@@ -30,7 +30,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 # === 常量 ===
 SCRIPT_DIR = Path(__file__).resolve().parent.parent  # 9-工具与接口/
@@ -74,14 +74,20 @@ TOOL_CONFIGS = {
 
 def log(msg: str, level: str = "INFO") -> None:
     """带颜色的日志输出。"""
-    colors = {"INFO": "\033[36m", "OK": "\033[32m", "WARN": "\033[33m",
-              "FAIL": "\033[31m", "STEP": "\033[35m"}
+    colors = {
+        "INFO": "\033[36m",
+        "OK": "\033[32m",
+        "WARN": "\033[33m",
+        "FAIL": "\033[31m",
+        "STEP": "\033[35m",
+    }
     reset = "\033[0m"
     color = colors.get(level, "")
     print(f"{color}[{level}]{reset} {msg}")
 
 
 # === 步骤1：环境检查 ===
+
 
 def check_python() -> Tuple[str, str]:
     """检查 Python 版本，返回 (python_path, version_str)。"""
@@ -134,6 +140,7 @@ def check_server_script() -> bool:
 
 # === 步骤2：生成配置 ===
 
+
 def build_mcp_config(python_path: str) -> Dict:
     """生成单个 MCP server 配置块。"""
     return {
@@ -161,7 +168,8 @@ def build_remote_ssh_config(
     return {
         "command": "ssh",
         "args": [
-            "-o", "BatchMode=yes",
+            "-o",
+            "BatchMode=yes",
             ssh_alias,
             f"sudo -n -u luke -H env PYTHONPATH={server_dir} "
             f"{remote_venv} {server_dir}/cognitive_mcp_server.py",
@@ -221,8 +229,8 @@ def write_config(target: str, config_path: Path, new_server: Dict) -> bool:
 
     try:
         config_path.write_text(
-            json.dumps(merged, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8")
+            json.dumps(merged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         log(f"配置已写入: {config_path}", "OK")
         return True
     except Exception as e:
@@ -232,21 +240,31 @@ def write_config(target: str, config_path: Path, new_server: Dict) -> bool:
 
 # === 步骤3：验证 server ===
 
+
 def verify_server(python_path: str) -> bool:
     """启动 stdio 子进程验证 server 响应 initialize/tools/list。"""
     log("启动 server 验证...", "STEP")
     try:
         proc = subprocess.Popen(
             [python_path, str(COGNITIVE_SERVER)],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, text=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
             env={**os.environ, "PYTHONPATH": COGNITIVE_DIR},
         )
         # initialize
-        proc.stdin.write(json.dumps({
-            "jsonrpc": "2.0", "id": 1,
-            "method": "initialize", "params": {},
-        }) + "\n")
+        proc.stdin.write(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {},
+                }
+            )
+            + "\n"
+        )
         proc.stdin.flush()
         resp1 = json.loads(proc.stdout.readline())
         server_name = resp1.get("result", {}).get("serverInfo", {}).get("name", "")
@@ -258,10 +276,17 @@ def verify_server(python_path: str) -> bool:
         log(f"initialize OK: {server_name}", "OK")
 
         # tools/list
-        proc.stdin.write(json.dumps({
-            "jsonrpc": "2.0", "id": 2,
-            "method": "tools/list", "params": {},
-        }) + "\n")
+        proc.stdin.write(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/list",
+                    "params": {},
+                }
+            )
+            + "\n"
+        )
         proc.stdin.flush()
         resp2 = json.loads(proc.stdout.readline())
         tools = resp2.get("result", {}).get("tools", [])
@@ -290,9 +315,10 @@ def verify_server(python_path: str) -> bool:
 
 # === 主流程 ===
 
-def deploy_target(target: str, python_path: str,
-                  project: Optional[str],
-                  remote_alias: Optional[str] = None) -> bool:
+
+def deploy_target(
+    target: str, python_path: str, project: Optional[str], remote_alias: Optional[str] = None
+) -> bool:
     """部署到单个目标工具。"""
     cfg = TOOL_CONFIGS[target]
     log(f"\n{'='*50}", "STEP")
@@ -334,18 +360,21 @@ def main():
   python3 install_cognitive_mcp.py --list
         """,
     )
-    parser.add_argument("--target", "-t",
-                        choices=["trae", "claude", "cursor", "windsurf",
-                                 "continue", "all"],
-                        default="trae", help="目标 AI 工具")
-    parser.add_argument("--project", "-p",
-                        help="项目根目录（TRAE 需要）")
-    parser.add_argument("--list", "-l", action="store_true",
-                        help="列出支持的工具")
-    parser.add_argument("--verify-only", action="store_true",
-                        help="仅验证 server 不写配置")
-    parser.add_argument("--remote-ssh", metavar="ALIAS",
-                        help="经 SSH 别名在远端运行 cognitive_mcp_server（远端权威库模式；跳过本地验证）")
+    parser.add_argument(
+        "--target",
+        "-t",
+        choices=["trae", "claude", "cursor", "windsurf", "continue", "all"],
+        default="trae",
+        help="目标 AI 工具",
+    )
+    parser.add_argument("--project", "-p", help="项目根目录（TRAE 需要）")
+    parser.add_argument("--list", "-l", action="store_true", help="列出支持的工具")
+    parser.add_argument("--verify-only", action="store_true", help="仅验证 server 不写配置")
+    parser.add_argument(
+        "--remote-ssh",
+        metavar="ALIAS",
+        help="经 SSH 别名在远端运行 cognitive_mcp_server（远端权威库模式；跳过本地验证）",
+    )
     args = parser.parse_args()
 
     if args.list:
@@ -397,8 +426,11 @@ def main():
     if failed:
         log(f"失败 ({len(failed)}): {', '.join(failed)}", "FAIL")
     if success and not failed:
-        log("\n认知 MCP Server 部署完成！重启对应 AI 工具后即可调用 "
-            "recall/record/verify/stats/health 五个工具。", "OK")
+        log(
+            "\n认知 MCP Server 部署完成！重启对应 AI 工具后即可调用 "
+            "recall/record/verify/stats/health 五个工具。",
+            "OK",
+        )
 
 
 if __name__ == "__main__":

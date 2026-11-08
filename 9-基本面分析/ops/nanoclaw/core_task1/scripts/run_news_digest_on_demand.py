@@ -10,7 +10,7 @@
     python3 scripts/run_news_digest_on_demand.py --help
 """
 
-import argparse
+import argparse  # noqa: I001
 import json
 import os
 import re
@@ -71,37 +71,140 @@ CATEGORY_PRIORITY = {
 }
 
 CATEGORY_KEYWORDS = {
-    "onchain_data": ["净流入", "净流出", "whale", "鲸鱼", "活跃地址", "gas", "清算", "爆仓", "杠杆", "空单", "多单", "funding", "open interest", "链上"],
-    "institution_flow": ["treasury", "国库", "财库", "增持", "买入", "purchase", "buying", "acquisition", "proposed acquisition", "收购", "并购", "持仓", "holdings", "stake", "质押", "etf", "申购", "赎回", "净流入", "净流出"],
+    "onchain_data": [
+        "净流入",
+        "净流出",
+        "whale",
+        "鲸鱼",
+        "活跃地址",
+        "gas",
+        "清算",
+        "爆仓",
+        "杠杆",
+        "空单",
+        "多单",
+        "funding",
+        "open interest",
+        "链上",
+    ],
+    "institution_flow": [
+        "treasury",
+        "国库",
+        "财库",
+        "增持",
+        "买入",
+        "purchase",
+        "buying",
+        "acquisition",
+        "proposed acquisition",
+        "收购",
+        "并购",
+        "持仓",
+        "holdings",
+        "stake",
+        "质押",
+        "etf",
+        "申购",
+        "赎回",
+        "净流入",
+        "净流出",
+    ],
     "project_update": ["上线", "上币", "listing", "升级", "主网", "融资", "空投", "合作", "生态"],
     "kols_view": ["观点", "认为", "看法", "预计", "rumor", "传闻", "爆料", "喊单"],
-    "institution_view": ["report", "research", "analyst", "策略", "研报", "分析师", "机构", "投行", "coinshares", "bitwise", "blackrock", "bernstein", "jpmorgan"],
+    "institution_view": [
+        "report",
+        "research",
+        "analyst",
+        "策略",
+        "研报",
+        "分析师",
+        "机构",
+        "投行",
+        "coinshares",
+        "bitwise",
+        "blackrock",
+        "bernstein",
+        "jpmorgan",
+    ],
     "entity_statement": ["公告", "声明", "回应", "澄清", "官方", "推迟", "解释", "口径"],
     "people_update": ["出书", "回忆录", "采访", "新书", "定稿", "出版", "行程", "memoir"],
     "fed": ["fomc", "美联储", "鲍威尔", "点阵图", "加息", "降息", "会议纪要"],
     "us_data": ["cpi", "ppi", "pce", "非农", "失业率", "pmi", "gdp", "就业"],
     "us_policy": ["sec", "监管", "法案", "政策", "白宫", "关税", "特朗普", "sfc"],
     "geopolitics": ["地缘", "冲突", "制裁", "战争", "伊朗", "以色列", "霍尔木兹", "俄乌"],
-    "market_analysis": ["复盘", "相关性变化", "跨资产", "资金轮动", "市场结构", "risk parity", "美股", "纳指", "开盘", "高开", "收盘", "期货", "概念股"],
+    "market_analysis": [
+        "复盘",
+        "相关性变化",
+        "跨资产",
+        "资金轮动",
+        "市场结构",
+        "risk parity",
+        "美股",
+        "纳指",
+        "开盘",
+        "高开",
+        "收盘",
+        "期货",
+        "概念股",
+    ],
     "crypto_regulation": ["aml", "kyc", "牌照", "许可", "travel rule", "反洗钱"],
     "unrelated": ["体育", "娱乐", "明星", "八卦", "电影", "综艺", "旅游"],
 }
 
 IMPACT_TEMPLATE = {
-    "onchain_data": ("ONCHAIN_FLOW_01", "链上资金/活跃变化 -> 供需与流动性结构变化 -> BTC/ETH 波动与方向偏移"),
-    "institution_flow": ("INSTITUTION_FLOW_01", "机构/公司配置与增持变化 -> 供需与叙事预期重定价 -> BTC/ETH（或相关资产）短期方向偏移与波动抬升"),
-    "project_update": ("PROJECT_FUNDAMENTAL_01", "协议/生态事件落地 -> 基本面预期与用户增长变化 -> 相关代币估值重定价"),
-    "kols_view": ("KOL_SENTIMENT_01", "观点传播扩散 -> 情绪与预期短期偏移 -> 价格脉冲后均值回归风险增加"),
-    "institution_view": ("INSTITUTION_VIEW_01", "机构观点扩散 -> 市场预期与风险偏好短期偏移 -> 价格脉冲后回归/反转风险上升（需证据降权）"),
-    "entity_statement": ("ENTITY_STATEMENT_01", "官方表态/口径变化 -> 不确定性与合规预期变化 -> 流动性偏好与风险溢价调整"),
-    "people_update": ("PEOPLE_UPDATE_01", "人物个人动态 -> 无稳定可复核传导 -> 默认过滤/仅作为背景信息"),
-    "unclassified": ("UNCLASSIFIED_01", "证据不足或未命中字典 -> 不确定性披露 -> 不进入 Top12（仅候选池）"),
+    "onchain_data": (
+        "ONCHAIN_FLOW_01",
+        "链上资金/活跃变化 -> 供需与流动性结构变化 -> BTC/ETH 波动与方向偏移",
+    ),
+    "institution_flow": (
+        "INSTITUTION_FLOW_01",
+        "机构/公司配置与增持变化 -> 供需与叙事预期重定价 -> BTC/ETH（或相关资产）短期方向偏移与波动抬升",
+    ),
+    "project_update": (
+        "PROJECT_FUNDAMENTAL_01",
+        "协议/生态事件落地 -> 基本面预期与用户增长变化 -> 相关代币估值重定价",
+    ),
+    "kols_view": (
+        "KOL_SENTIMENT_01",
+        "观点传播扩散 -> 情绪与预期短期偏移 -> 价格脉冲后均值回归风险增加",
+    ),
+    "institution_view": (
+        "INSTITUTION_VIEW_01",
+        "机构观点扩散 -> 市场预期与风险偏好短期偏移 -> 价格脉冲后回归/反转风险上升（需证据降权）",
+    ),
+    "entity_statement": (
+        "ENTITY_STATEMENT_01",
+        "官方表态/口径变化 -> 不确定性与合规预期变化 -> 流动性偏好与风险溢价调整",
+    ),
+    "people_update": (
+        "PEOPLE_UPDATE_01",
+        "人物个人动态 -> 无稳定可复核传导 -> 默认过滤/仅作为背景信息",
+    ),
+    "unclassified": (
+        "UNCLASSIFIED_01",
+        "证据不足或未命中字典 -> 不确定性披露 -> 不进入 Top12（仅候选池）",
+    ),
     "fed": ("MACRO_RATE_01", "利率路径偏鹰/偏鸽 -> 美元与实际利率变动 -> 高β风险资产估值压缩/修复"),
-    "us_data": ("MACRO_DATA_02", "宏观数据超/不及预期 -> 降息预期再定价 -> 风险偏好与跨资产波动再平衡"),
-    "us_policy": ("POLICY_REG_01", "监管政策强化/放松 -> 合规溢价与资金可得性变化 -> 行业估值分化与风格轮动"),
-    "geopolitics": ("GEO_RISK_01", "地缘冲突升级 -> 能源/通胀预期上行 -> 风险资产承压与避险资产受益"),
-    "market_analysis": ("CROSS_ASSET_01", "跨资产相关性变化 -> 资金再配置路径重排 -> 股币联动增强/脱钩切换"),
-    "crypto_regulation": ("CRYPTO_REG_01", "加密监管落地 -> 交易与托管约束变化 -> 流动性结构与合规资产偏好重估"),
+    "us_data": (
+        "MACRO_DATA_02",
+        "宏观数据超/不及预期 -> 降息预期再定价 -> 风险偏好与跨资产波动再平衡",
+    ),
+    "us_policy": (
+        "POLICY_REG_01",
+        "监管政策强化/放松 -> 合规溢价与资金可得性变化 -> 行业估值分化与风格轮动",
+    ),
+    "geopolitics": (
+        "GEO_RISK_01",
+        "地缘冲突升级 -> 能源/通胀预期上行 -> 风险资产承压与避险资产受益",
+    ),
+    "market_analysis": (
+        "CROSS_ASSET_01",
+        "跨资产相关性变化 -> 资金再配置路径重排 -> 股币联动增强/脱钩切换",
+    ),
+    "crypto_regulation": (
+        "CRYPTO_REG_01",
+        "加密监管落地 -> 交易与托管约束变化 -> 流动性结构与合规资产偏好重估",
+    ),
 }
 
 DIRECTIONAL_PATH_TEMPLATE = {
@@ -179,7 +282,12 @@ DIRECTIONAL_PATH_TEMPLATE = {
 
 
 def _ai_path_enabled() -> bool:
-    return str(os.environ.get("NEWS_AI_PATH_ENABLED", "0")).strip().lower() in {"1", "true", "yes", "on"}
+    return str(os.environ.get("NEWS_AI_PATH_ENABLED", "0")).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def _ai_path_conf() -> dict:
@@ -218,7 +326,9 @@ def _parse_json_object(text: str) -> dict:
         return {}
 
 
-def _validate_ai_path_output(out: dict, *, execution_gate: str, category_primary: str, path_template_id: str) -> tuple:
+def _validate_ai_path_output(
+    out: dict, *, execution_gate: str, category_primary: str, path_template_id: str
+) -> tuple:
     if not isinstance(out, dict):
         return False, "invalid_json"
     guard = out.get("guard") if isinstance(out.get("guard"), dict) else {}
@@ -328,7 +438,12 @@ def _ai_generate_impact_path(
     if cfg["api_key"]:
         headers["Authorization"] = f"Bearer {cfg['api_key']}"
     try:
-        req = Request(cfg["url"], data=json.dumps(payload, ensure_ascii=False).encode("utf-8"), headers=headers, method="POST")
+        req = Request(
+            cfg["url"],
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
         with urlopen(req, timeout=float(cfg["timeout_sec"])) as resp:
             rep = json.loads(resp.read().decode("utf-8", "replace"))
         txt = ""
@@ -383,7 +498,7 @@ def _ai_generate_impact_path(
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='生成加密 + 宏观新闻简报（按需即时版）',
+        description="生成加密 + 宏观新闻简报（按需即时版）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
@@ -391,18 +506,20 @@ def parse_args():
   python3 run_news_digest_on_demand.py --hours 4          # 最近 4 小时
   python3 run_news_digest_on_demand.py --hours 12 --quiet # 最近 12 小时，安静模式
   python3 run_news_digest_on_demand.py -o my_brief.md     # 自定义输出文件名
-        """
+        """,
     )
-    parser.add_argument('--hours', '-H', type=int, default=24,
-                        help='时间窗口（小时），默认 24')
-    parser.add_argument('--output', '-o', type=str, default=None,
-                        help='输出文件名（可选），默认自动生成')
-    parser.add_argument('--quiet', '-q', action='store_true',
-                        help='安静模式，仅输出必要信息')
-    parser.add_argument('--json', action='store_true',
-                        help='同时输出 JSON 格式摘要')
-    parser.add_argument('--report-mode', choices=['full', 'lite'], default='full',
-                        help='输出档位：full=完整版（默认），lite=轻量版')
+    parser.add_argument("--hours", "-H", type=int, default=24, help="时间窗口（小时），默认 24")
+    parser.add_argument(
+        "--output", "-o", type=str, default=None, help="输出文件名（可选），默认自动生成"
+    )
+    parser.add_argument("--quiet", "-q", action="store_true", help="安静模式，仅输出必要信息")
+    parser.add_argument("--json", action="store_true", help="同时输出 JSON 格式摘要")
+    parser.add_argument(
+        "--report-mode",
+        choices=["full", "lite"],
+        default="full",
+        help="输出档位：full=完整版（默认），lite=轻量版",
+    )
     return parser.parse_args()
 
 
@@ -427,24 +544,28 @@ def get_real_time_prices():
         "btc": {
             "price": btc.get("price_usd", 0),
             "change_24h": btc.get("change_24h", 0),
-            "display": fmt_price(btc)
+            "display": fmt_price(btc),
         },
         "eth": {
             "price": eth.get("price_usd", 0),
             "change_24h": eth.get("change_24h", 0),
-            "display": fmt_price(eth)
+            "display": fmt_price(eth),
         },
         "nasdaq": {
             "price": nasdaq.get("price_usd", 0),
             "change_24h": nasdaq.get("change_24h", 0),
-            "display": fmt_price(nasdaq) if nasdaq.get("price_usd", 0) > 0 else "数据暂不可用（自动多源补齐失败）"
+            "display": (
+                fmt_price(nasdaq)
+                if nasdaq.get("price_usd", 0) > 0
+                else "数据暂不可用（自动多源补齐失败）"
+            ),
         },
         "vix": {
             "value": vix.get("value", 0),
-            "display": f"{vix.get('value', 0):.2f}" if vix.get("value", 0) > 0 else "数据暂不可用"
+            "display": f"{vix.get('value', 0):.2f}" if vix.get("value", 0) > 0 else "数据暂不可用",
         },
         "eth_btc_ratio": snapshot.get("crypto", {}).get("eth_btc_ratio", 0),
-        "raw_snapshot": snapshot
+        "raw_snapshot": snapshot,
     }
 
 
@@ -455,9 +576,9 @@ def _generate_crypto_news_mock(hours: int):
 
     # 根据时间窗口调整新闻时间分布
     time_offsets = {
-        'T0': [0.5, 1, 1.5, 2, 3],           # 当日事件
-        'T1': [4, 6, 8, 12],                  # 数日事件
-        'T2': [18, 24, 36, 48]               # 数周事件（但仍在时间窗口内）
+        "T0": [0.5, 1, 1.5, 2, 3],  # 当日事件
+        "T1": [4, 6, 8, 12],  # 数日事件
+        "T2": [18, 24, 36, 48],  # 数周事件（但仍在时间窗口内）
     }
 
     mock_items = [
@@ -470,7 +591,7 @@ def _generate_crypto_news_mock(hours: int):
             "impact_horizon": "T0",
             "cross_market_map": "BTC 价格上涨 → 山寨币跟随 → 风险偏好上升",
             "risk_flags": [],
-            "market_impact": "短期利好 BTC 价格，可能带动山寨季"
+            "market_impact": "短期利好 BTC 价格，可能带动山寨季",
         },
         {
             "title": "以太坊链上稳定币结算量首次超越比特币",
@@ -481,7 +602,7 @@ def _generate_crypto_news_mock(hours: int):
             "impact_horizon": "T1",
             "cross_market_map": "以太坊生态活跃 → ETH 相对 BTC 走强 → Layer2 受益",
             "risk_flags": [],
-            "market_impact": "ETH/BTC 汇率可能继续走强"
+            "market_impact": "ETH/BTC 汇率可能继续走强",
         },
         {
             "title": "Solana 生态 TVL 突破 80 亿美元，创历史新高",
@@ -492,7 +613,7 @@ def _generate_crypto_news_mock(hours: int):
             "impact_horizon": "T1",
             "cross_market_map": "SOL 生态繁荣 → SOL 代币需求上升 → 竞品公链承压",
             "risk_flags": [],
-            "market_impact": "SOL 及相关生态代币可能继续走强"
+            "market_impact": "SOL 及相关生态代币可能继续走强",
         },
         {
             "title": "某分析师称山寨季将在 2 周内到来",
@@ -503,7 +624,7 @@ def _generate_crypto_news_mock(hours: int):
             "impact_horizon": "T2",
             "cross_market_map": "山寨季预期 → 资金从 BTC 流出 → 小市值币种波动加大",
             "risk_flags": ["单源爆料", "无数据支撑"],
-            "market_impact": "情绪面影响，需等待数据确认"
+            "market_impact": "情绪面影响，需等待数据确认",
         },
         {
             "title": "传某大型交易所面临监管调查",
@@ -514,8 +635,8 @@ def _generate_crypto_news_mock(hours: int):
             "impact_horizon": "T0",
             "cross_market_map": "交易所风险 → 市场恐慌 → 资金流向合规 ETF",
             "risk_flags": ["单源爆料", "数据不可复核"],
-            "market_impact": "短期情绪压制，若证实可能引发抛售"
-        }
+            "market_impact": "短期情绪压制，若证实可能引发抛售",
+        },
     ]
 
     # 筛选在时间窗口内的新闻
@@ -538,11 +659,7 @@ def _generate_macro_news_mock(hours: int):
     now = datetime.now()
     items = []
 
-    time_offsets = {
-        'T0': [0.5, 1, 2, 3],
-        'T1': [5, 8, 12],
-        'T2': [18, 24, 36]
-    }
+    time_offsets = {"T0": [0.5, 1, 2, 3], "T1": [5, 8, 12], "T2": [18, 24, 36]}
 
     mock_items = [
         {
@@ -554,7 +671,7 @@ def _generate_macro_news_mock(hours: int):
             "impact_horizon": "T0",
             "cross_market_map": "鹰派纪要 → 美债收益率上升 → 美元走强 → 风险资产承压",
             "risk_flags": [],
-            "market_impact": "BTC 和美股短期可能承压，关注纳斯达克反应"
+            "market_impact": "BTC 和美股短期可能承压，关注纳斯达克反应",
         },
         {
             "title": "美国 12 月非农就业新增 25.6 万人，远超预期",
@@ -565,7 +682,7 @@ def _generate_macro_news_mock(hours: int):
             "impact_horizon": "T0",
             "cross_market_map": "强劲就业 → 美联储降息空间受限 → 美债收益率飙升 → 高β资产承压",
             "risk_flags": [],
-            "market_impact": "利空 BTC 和成长股，利好美元和银行股"
+            "market_impact": "利空 BTC 和成长股，利好美元和银行股",
         },
         {
             "title": "中东局势升级：伊朗威胁封锁霍尔木兹海峡",
@@ -576,7 +693,7 @@ def _generate_macro_news_mock(hours: int):
             "impact_horizon": "T1",
             "cross_market_map": "地缘风险 → 原油上涨 → 通胀预期上升 → VIX 上升 → 风险偏好下降",
             "risk_flags": ["标题与正文不一致"],
-            "market_impact": "避险资产 (黄金/美元) 受益，风险资产分化"
+            "market_impact": "避险资产 (黄金/美元) 受益，风险资产分化",
         },
         {
             "title": "特朗普考虑对加密货币实施更宽松监管框架",
@@ -587,7 +704,7 @@ def _generate_macro_news_mock(hours: int):
             "impact_horizon": "T2",
             "cross_market_map": "监管放松 → 机构入场加速 → 长期需求上升 → 估值重构",
             "risk_flags": ["政策未落地"],
-            "market_impact": "长期利好，特别是合规相关标的"
+            "market_impact": "长期利好，特别是合规相关标的",
         },
         {
             "title": "纳斯达克与比特币相关性降至 2023 年来最低",
@@ -598,7 +715,7 @@ def _generate_macro_news_mock(hours: int):
             "impact_horizon": "T1",
             "cross_market_map": "相关性下降 → BTC 独立行情 → 资产配置价值提升",
             "risk_flags": [],
-            "market_impact": "BTC 作为独立资产类别的配置价值凸显"
+            "market_impact": "BTC 作为独立资产类别的配置价值凸显",
         },
         {
             "title": "华尔街早餐：美股期货小幅上涨，英伟达再创新高",
@@ -609,8 +726,8 @@ def _generate_macro_news_mock(hours: int):
             "impact_horizon": "T0",
             "cross_market_map": "AI 热潮延续 → 科技股领涨 → 风险偏好上升 → BTC 受益",
             "risk_flags": [],
-            "market_impact": "科技股情绪利好风险资产"
-        }
+            "market_impact": "科技股情绪利好风险资产",
+        },
     ]
 
     for item in mock_items:
@@ -641,7 +758,13 @@ def _to_dt(v):
 def _hours_since(ts) -> float:
     try:
         dt = _to_dt(ts)
-        return max(0.0, (NOW - dt.replace(tzinfo=None) if getattr(dt, "tzinfo", None) else NOW - dt).total_seconds() / 3600.0)
+        return max(
+            0.0,
+            (
+                NOW - dt.replace(tzinfo=None) if getattr(dt, "tzinfo", None) else NOW - dt
+            ).total_seconds()
+            / 3600.0,
+        )
     except Exception:
         return 999.0
 
@@ -730,7 +853,7 @@ def _extract_assets(text: str) -> list:
         assets.add("GOLD")
     if any(k in s for k in ("wti", "brent", "oil", "原油")):
         assets.add("OIL")
-    return sorted(list(assets))
+    return sorted(list(assets))  # noqa: C414
 
 
 def _extract_fact_fingerprint(text: str) -> dict:
@@ -744,7 +867,10 @@ def _extract_fact_fingerprint(text: str) -> dict:
 
     qty = None
     asset = None
-    m = re.search(r"(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:枚|个|张)?\s*(btc|eth|sol|bnb|xrp|ada|dot|doge|ltc|trx|avax)\b", low)
+    m = re.search(
+        r"(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:枚|个|张)?\s*(btc|eth|sol|bnb|xrp|ada|dot|doge|ltc|trx|avax)\b",
+        low,
+    )
     if m:
         qty = _safe_int(m.group(1).replace(",", ""))
         asset = m.group(2).upper()
@@ -795,7 +921,11 @@ def _extract_fact_fingerprint(text: str) -> dict:
         "sl": stop_loss,
         "tp": take_profit,
     }
-    present = sum(1 for k in ("asset", "qty", "lev", "liq", "entry") if fingerprint.get(k) not in (None, "", 0))
+    present = sum(
+        1
+        for k in ("asset", "qty", "lev", "liq", "entry")
+        if fingerprint.get(k) not in (None, "", 0)
+    )
     if present >= 2:
         return fingerprint
     return {}
@@ -804,7 +934,9 @@ def _extract_fact_fingerprint(text: str) -> dict:
 def _dedup_key(it: dict) -> str:
     if not isinstance(it, dict):
         return ""
-    category = str(it.get("category_primary") or it.get("category") or it.get("topic") or "").strip()
+    category = str(
+        it.get("category_primary") or it.get("category") or it.get("topic") or ""
+    ).strip()
     template = str(it.get("path_template_id") or "").strip()
     published_at = str(it.get("published_at") or "").strip()
     day = _dedup_day_bucket(published_at) if published_at else ""
@@ -850,29 +982,32 @@ def _has_asset_mapping(raw: dict) -> bool:
         str(raw.get(k) or "")
         for k in ("title", "summary", "key_fact", "cross_market_map", "market_impact")
     ).lower()
-    return any(x in txt for x in (
-        "btc",
-        "eth",
-        "sol",
-        "crypto",
-        "nasdaq",
-        "vix",
-        "dxy",
-        "us10y",
-        "spx",
-        "wti",
-        "brent",
-        "oil",
-        "gold",
-        "加密",
-        "比特币",
-        "以太坊",
-        "山寨",
-        "纳指",
-        "美股",
-        "原油",
-        "黄金",
-    ))
+    return any(
+        x in txt
+        for x in (
+            "btc",
+            "eth",
+            "sol",
+            "crypto",
+            "nasdaq",
+            "vix",
+            "dxy",
+            "us10y",
+            "spx",
+            "wti",
+            "brent",
+            "oil",
+            "gold",
+            "加密",
+            "比特币",
+            "以太坊",
+            "山寨",
+            "纳指",
+            "美股",
+            "原油",
+            "黄金",
+        )
+    )
 
 
 def _infer_assertion_type(raw: dict) -> str:
@@ -887,7 +1022,27 @@ def _infer_assertion_type(raw: dict) -> str:
         return "analysis_view"
     if any(k in text for k in ("出书", "新书", "回忆录", "采访", "定稿", "出版", "行程", "memoir")):
         return "personal_update"
-    if any(k in text for k in ("上线", "listing", "上币", "升级", "主网", "融资", "空投", "合作", "增持", "买入", "purchase", "buying", "acquisition", "质押", "申购", "赎回")):
+    if any(
+        k in text
+        for k in (
+            "上线",
+            "listing",
+            "上币",
+            "升级",
+            "主网",
+            "融资",
+            "空投",
+            "合作",
+            "增持",
+            "买入",
+            "purchase",
+            "buying",
+            "acquisition",
+            "质押",
+            "申购",
+            "赎回",
+        )
+    ):
         return "action_fact"
     if any(k in text for k in ("观点", "认为", "看法", "预计", "预测")):
         return "analysis_view"
@@ -932,10 +1087,14 @@ def _apply_rule_a(cands: set, has_mapping: bool) -> tuple:
         return "geopolitics", "A:GEO_OVER_PROJECT"
     macro_set = {"fed", "us_data", "us_policy"}
     if ("market_analysis" in cands) and (cands & macro_set):
-        chosen = sorted(list(cands & macro_set), key=lambda x: CATEGORY_PRIORITY.get(x, 0), reverse=True)[0]
+        chosen = sorted(  # noqa: C414
+            list(cands & macro_set), key=lambda x: CATEGORY_PRIORITY.get(x, 0), reverse=True
+        )[0]
         return chosen, "A:MACRO_OVER_ANALYSIS"
     if (cands & macro_set) and ("project_update" in cands):
-        chosen = sorted(list(cands & macro_set), key=lambda x: CATEGORY_PRIORITY.get(x, 0), reverse=True)[0]
+        chosen = sorted(  # noqa: C414
+            list(cands & macro_set), key=lambda x: CATEGORY_PRIORITY.get(x, 0), reverse=True
+        )[0]
         return chosen, "A:MACRO_OVER_PROJECT"
     if "crypto_regulation" in cands and "project_update" in cands:
         return "crypto_regulation", "A:CRYPTO_REG_OVER_PROJECT"
@@ -958,9 +1117,15 @@ def _candidate_score(raw: dict, cat: str, has_mapping: bool, risk_flags: list, c
     url = str(raw.get("source_url") or "").strip()
     ts = str(raw.get("published_at") or raw.get("fetched_at") or "").strip()
     body = str(raw.get("summary") or raw.get("key_fact") or "").strip()
-    evidence_score = (10.0 if url and url != "No data" else 0.0) + (8.0 if ts else 0.0) + (7.0 if len(body) >= 20 else 0.0)
+    evidence_score = (
+        (10.0 if url and url != "No data" else 0.0)
+        + (8.0 if ts else 0.0)
+        + (7.0 if len(body) >= 20 else 0.0)
+    )
     market_link_score = 20.0 if has_mapping else (10.0 if _has_asset_mapping(raw) else 0.0)
-    source_quality = {"high": 15.0, "medium": 10.0, "low": 5.0}.get(conf, 5.0) - min(8.0, float(len(risk_flags or [])) * 2.0)
+    source_quality = {"high": 15.0, "medium": 10.0, "low": 5.0}.get(conf, 5.0) - min(
+        8.0, float(len(risk_flags or [])) * 2.0
+    )
     return max(0.0, keyword_score + evidence_score + market_link_score + source_quality)
 
 
@@ -972,13 +1137,25 @@ def _resolve_category_conflict(raw: dict, explicit: str, risk_flags: list, conf:
     if assertion_type == "personal_update":
         cands = {"people_update"}
     title = str(raw.get("title") or "").lower()
-    if "onchain_data" in cands and any(k in title for k in ("funding", "open interest", "清算", "爆仓", "杠杆")):
-        for x in ("fed", "us_data", "us_policy", "geopolitics", "crypto_regulation", "market_analysis"):
+    if "onchain_data" in cands and any(
+        k in title for k in ("funding", "open interest", "清算", "爆仓", "杠杆")
+    ):
+        for x in (
+            "fed",
+            "us_data",
+            "us_policy",
+            "geopolitics",
+            "crypto_regulation",
+            "market_analysis",
+        ):
             if x in cands:
                 cands.discard(x)
     cat_a, rule_a = _apply_rule_a(cands, has_mapping)
     if cat_a:
-        scored = [{"category": x, "score": float(_candidate_score(raw, x, has_mapping, risk_flags, conf))} for x in sorted(list(cands))]
+        scored = [
+            {"category": x, "score": float(_candidate_score(raw, x, has_mapping, risk_flags, conf))}
+            for x in sorted(list(cands))  # noqa: C414
+        ]
         return {
             "category_primary": cat_a,
             "category_candidates": scored,
@@ -990,15 +1167,22 @@ def _resolve_category_conflict(raw: dict, explicit: str, risk_flags: list, conf:
         }
     scored = []
     for c in cands:
-        scored.append({"category": c, "score": float(_candidate_score(raw, c, has_mapping, risk_flags, conf))})
+        scored.append(
+            {"category": c, "score": float(_candidate_score(raw, c, has_mapping, risk_flags, conf))}
+        )
     scored = sorted(scored, key=lambda x: x["score"], reverse=True)
     top = scored[0] if scored else {"category": "unrelated", "score": 0.0}
     cat = str(top.get("category") or "unrelated")
     score = float(top.get("score") or 0.0)
     second = float(scored[1]["score"]) if len(scored) > 1 else -1.0
-    conflict_flag = bool(len(scored) > 1 and score >= 55.0 and second >= 55.0 and abs(score - second) <= 5.0)
+    conflict_flag = bool(
+        len(scored) > 1 and score >= 55.0 and second >= 55.0 and abs(score - second) <= 5.0
+    )
     if score < 50.0:
-        if cat in {"fed", "us_data", "us_policy", "geopolitics", "crypto_regulation"} and score >= 42.0:
+        if (
+            cat in {"fed", "us_data", "us_policy", "geopolitics", "crypto_regulation"}
+            and score >= 42.0
+        ):
             cat = cat
         else:
             cat = "unclassified"
@@ -1018,15 +1202,24 @@ def _impact_template_for(raw: dict, category_primary: str) -> tuple:
     title = str(raw.get("title") or "").lower()
     if category_primary == "onchain_data":
         if any(k in title for k in ("funding", "open interest", "清算", "杠杆", "爆仓")):
-            return ("ONCHAIN_LEVERAGE_02", "杠杆与清算指标变化 -> 拥挤度与脆弱性上升/回落 -> 风险偏好切换与仓位收缩/恢复")
+            return (
+                "ONCHAIN_LEVERAGE_02",
+                "杠杆与清算指标变化 -> 拥挤度与脆弱性上升/回落 -> 风险偏好切换与仓位收缩/恢复",
+            )
     if category_primary == "project_update":
         if any(k in title for k in ("listing", "上币", "上线", "流动性")):
-            return ("PROJECT_LISTING_02", "上线/流动性事件 -> 交易深度与关注度提升 -> 短期成交放大与波动抬升")
+            return (
+                "PROJECT_LISTING_02",
+                "上线/流动性事件 -> 交易深度与关注度提升 -> 短期成交放大与波动抬升",
+            )
     return IMPACT_TEMPLATE.get(category_primary, ("NO_TEMPLATE", "No data"))
 
 
 def _asset_hint(raw: dict) -> str:
-    text = " ".join(str(raw.get(k) or "") for k in ("title", "summary", "key_fact", "cross_market_map", "market_impact")).lower()
+    text = " ".join(
+        str(raw.get(k) or "")
+        for k in ("title", "summary", "key_fact", "cross_market_map", "market_impact")
+    ).lower()
     if "eth" in text or "以太坊" in text:
         return "ETH"
     if "btc" in text or "比特币" in text:
@@ -1149,7 +1342,15 @@ def _is_high_risk_flags(flags: list) -> bool:
     return any(k in joined for k in ("数据不可复核", "单源爆料", "路径未匹配"))
 
 
-def _badge_contract(direction: str, score: float, confidence_band: str, risk_flags: list, fail_closed: bool, asof: str, impact_path: str) -> dict:
+def _badge_contract(
+    direction: str,
+    score: float,
+    confidence_band: str,
+    risk_flags: list,
+    fail_closed: bool,
+    asof: str,
+    impact_path: str,
+) -> dict:
     label = _direction_label(direction)
     intensity = _intensity_word(score, confidence_band)
     reason = "score_mapping"
@@ -1191,7 +1392,9 @@ def _badge_contract(direction: str, score: float, confidence_band: str, risk_fla
     }
 
 
-def _directional_impact_path(path_template_id: str, direction: str, title: str, asset: str, horizon: str) -> str:
+def _directional_impact_path(
+    path_template_id: str, direction: str, title: str, asset: str, horizon: str
+) -> str:
     bucket = DIRECTIONAL_PATH_TEMPLATE.get(path_template_id) or {}
     tpl = str(bucket.get(direction) or bucket.get("neutral") or "").strip()
     if not tpl:
@@ -1226,12 +1429,16 @@ def _build_direction_contract(
         score = 0.0
         confidence_band = "low"
     asset = _asset_hint(raw)
-    impact_path = "No data" if fail_closed else _directional_impact_path(
-        path_template_id=path_template_id,
-        direction=direction,
-        title=str(raw.get("title") or "").strip(),
-        asset=asset,
-        horizon=impact_horizon,
+    impact_path = (
+        "No data"
+        if fail_closed
+        else _directional_impact_path(
+            path_template_id=path_template_id,
+            direction=direction,
+            title=str(raw.get("title") or "").strip(),
+            asset=asset,
+            horizon=impact_horizon,
+        )
     )
     badge = _badge_contract(
         direction=direction,
@@ -1285,15 +1492,24 @@ def _preprocess_crypto_news(items, hours: int):
         if explicit not in CATEGORY_PRIORITY and explicit not in {"unrelated"}:
             explicit = ""
         if explicit:
-            text = " ".join(str(raw.get(k) or "") for k in ("title", "summary", "key_fact", "cross_market_map", "market_impact")).lower()
+            text = " ".join(
+                str(raw.get(k) or "")
+                for k in ("title", "summary", "key_fact", "cross_market_map", "market_impact")
+            ).lower()
             kws = CATEGORY_KEYWORDS.get(explicit) or []
             if kws and (not any(str(k).lower() in text for k in kws)):
                 explicit = ""
-        decision = _resolve_category_conflict(raw, explicit=explicit, risk_flags=risk_flags, conf=conf)
+        decision = _resolve_category_conflict(
+            raw, explicit=explicit, risk_flags=risk_flags, conf=conf
+        )
         category_primary = str(decision.get("category_primary") or explicit)
         if category_primary in {"unrelated", "unclassified", "people_update"}:
             continue
-        if category_primary in {"market_analysis", "institution_view", "kols_view"} and not _has_asset_mapping(raw):
+        if category_primary in {
+            "market_analysis",
+            "institution_view",
+            "kols_view",
+        } and not _has_asset_mapping(raw):
             continue
         summary = str(raw.get("summary") or "").strip() or "正文缺失，仅标题级信息"
         path_id, path_template = _impact_template_for(raw, category_primary)
@@ -1317,56 +1533,79 @@ def _preprocess_crypto_news(items, hours: int):
             mention_count = 1
         if category_primary == "kols_view" and conf == "low":
             mention_count = max(1, mention_count - 1)
-        out.append({
-            "title": title,
-            "category": category_primary,
-            "category_primary": category_primary,
-            "category_candidates": decision.get("category_candidates") or [],
-            "conflict_rule": decision.get("conflict_rule") or "",
-            "decision_trace": decision.get("decision_trace") or "",
-            "conflict_flag": bool(decision.get("conflict_flag")),
-            "assertion_type": str(decision.get("assertion_type") or ""),
-            "assertion_evidence": decision.get("assertion_evidence") if isinstance(decision.get("assertion_evidence"), dict) else {},
-            "source_url": source_url,
-            "summary": summary,
-            "source_confidence": conf,
-            "impact_horizon": _impact_horizon_from_age(age_h),
-            "cross_market_map": impact_path,
-            "path_template_id": path_id,
-            "impact_path_mode": "rule",
-            "ai_status": "disabled_rule",
-            "ai_reason": "",
-            "uncertainty_disclosure": "",
-            "direction": str(direction_pack.get("direction") or "neutral"),
-            "direction_score": float(direction_pack.get("direction_score", 0.0)),
-            "confidence_band": str(direction_pack.get("confidence_band") or "low"),
-            "direction_label": str(direction_pack.get("direction_label") or "中性"),
-            "intensity_word": str(direction_pack.get("intensity_word") or "谨慎"),
-            "fail_closed": bool(direction_pack.get("fail_closed")),
-            "badge": direction_pack.get("badge") if isinstance(direction_pack.get("badge"), dict) else {},
-            "direction_trace": str(direction_pack.get("direction_trace") or ""),
-            "risk_flags": risk_flags,
-            "market_impact": str(raw.get("market_impact") or "").strip(),
-            "published_at": _to_dt(pub).isoformat(),
-            "mention_count": mention_count,
-            "age_hours": round(age_h, 3),
-        })
+        out.append(
+            {
+                "title": title,
+                "category": category_primary,
+                "category_primary": category_primary,
+                "category_candidates": decision.get("category_candidates") or [],
+                "conflict_rule": decision.get("conflict_rule") or "",
+                "decision_trace": decision.get("decision_trace") or "",
+                "conflict_flag": bool(decision.get("conflict_flag")),
+                "assertion_type": str(decision.get("assertion_type") or ""),
+                "assertion_evidence": (
+                    decision.get("assertion_evidence")
+                    if isinstance(decision.get("assertion_evidence"), dict)
+                    else {}
+                ),
+                "source_url": source_url,
+                "summary": summary,
+                "source_confidence": conf,
+                "impact_horizon": _impact_horizon_from_age(age_h),
+                "cross_market_map": impact_path,
+                "path_template_id": path_id,
+                "impact_path_mode": "rule",
+                "ai_status": "disabled_rule",
+                "ai_reason": "",
+                "uncertainty_disclosure": "",
+                "direction": str(direction_pack.get("direction") or "neutral"),
+                "direction_score": float(direction_pack.get("direction_score", 0.0)),
+                "confidence_band": str(direction_pack.get("confidence_band") or "low"),
+                "direction_label": str(direction_pack.get("direction_label") or "中性"),
+                "intensity_word": str(direction_pack.get("intensity_word") or "谨慎"),
+                "fail_closed": bool(direction_pack.get("fail_closed")),
+                "badge": (
+                    direction_pack.get("badge")
+                    if isinstance(direction_pack.get("badge"), dict)
+                    else {}
+                ),
+                "direction_trace": str(direction_pack.get("direction_trace") or ""),
+                "risk_flags": risk_flags,
+                "market_impact": str(raw.get("market_impact") or "").strip(),
+                "published_at": _to_dt(pub).isoformat(),
+                "mention_count": mention_count,
+                "age_hours": round(age_h, 3),
+            }
+        )
     dedup = {}
     for it in out:
         key = _dedup_key(it) or _norm_title(it.get("title", ""))
         recency = max(0.0, 24.0 - float(it.get("age_hours", 24.0))) / 24.0
         risk_penalty = 0.08 * len(it.get("risk_flags") or [])
-        score = _confidence_rank(it.get("source_confidence")) * 1.0 + recency + min(0.5, 0.05 * int(it.get("mention_count", 1))) - risk_penalty
+        score = (
+            _confidence_rank(it.get("source_confidence")) * 1.0
+            + recency
+            + min(0.5, 0.05 * int(it.get("mention_count", 1)))
+            - risk_penalty
+        )
         it["_pre_score"] = round(score, 4)
         if key not in dedup:
             dedup[key] = it
             continue
         existing = dedup[key]
-        winner, loser = (it, existing) if it["_pre_score"] > existing.get("_pre_score", -1e9) else (existing, it)
-        winner["mention_count"] = int(winner.get("mention_count") or 1) + int(loser.get("mention_count") or 1)
+        winner, loser = (
+            (it, existing)
+            if it["_pre_score"] > existing.get("_pre_score", -1e9)
+            else (existing, it)
+        )
+        winner["mention_count"] = int(winner.get("mention_count") or 1) + int(
+            loser.get("mention_count") or 1
+        )
         dedup[key] = winner
     rows = list(dedup.values())
-    rows.sort(key=lambda x: (float(x.get("_pre_score", 0.0)), x.get("published_at", "")), reverse=True)
+    rows.sort(
+        key=lambda x: (float(x.get("_pre_score", 0.0)), x.get("published_at", "")), reverse=True
+    )
     for r in rows:
         r.pop("_pre_score", None)
     return rows
@@ -1374,7 +1613,14 @@ def _preprocess_crypto_news(items, hours: int):
 
 def _preprocess_macro_news(items, hours: int):
     out = []
-    valid_topics = {"fed", "us_data", "us_policy", "geopolitics", "crypto_regulation", "market_analysis"}
+    valid_topics = {
+        "fed",
+        "us_data",
+        "us_policy",
+        "geopolitics",
+        "crypto_regulation",
+        "market_analysis",
+    }
     for raw in items or []:
         if not isinstance(raw, dict):
             continue
@@ -1397,7 +1643,9 @@ def _preprocess_macro_news(items, hours: int):
         explicit = str(raw.get("topic") or "").strip() or "market_analysis"
         if explicit not in valid_topics:
             explicit = "market_analysis"
-        decision = _resolve_category_conflict(raw, explicit=explicit, risk_flags=risk_flags, conf=conf)
+        decision = _resolve_category_conflict(
+            raw, explicit=explicit, risk_flags=risk_flags, conf=conf
+        )
         topic = str(decision.get("category_primary") or explicit)
         if topic not in valid_topics:
             if _has_asset_mapping(raw):
@@ -1428,59 +1676,82 @@ def _preprocess_macro_news(items, hours: int):
         mention_count = int(raw.get("mention_count") or 1)
         if mention_count < 1:
             mention_count = 1
-        out.append({
-            "title": title,
-            "topic": topic,
-            "category_primary": topic,
-            "category_candidates": decision.get("category_candidates") or [],
-            "conflict_rule": decision.get("conflict_rule") or "",
-            "decision_trace": decision.get("decision_trace") or "",
-            "conflict_flag": bool(decision.get("conflict_flag")),
-            "assertion_type": str(decision.get("assertion_type") or ""),
-            "assertion_evidence": decision.get("assertion_evidence") if isinstance(decision.get("assertion_evidence"), dict) else {},
-            "source_url": source_url,
-            "key_fact": key_fact,
-            "source_confidence": conf,
-            "impact_horizon": _impact_horizon_from_age(age_h),
-            "cross_market_map": impact_path,
-            "path_template_id": path_id,
-            "impact_path_mode": "rule",
-            "ai_status": "disabled_rule",
-            "ai_reason": "",
-            "uncertainty_disclosure": "",
-            "direction": str(direction_pack.get("direction") or "neutral"),
-            "direction_score": float(direction_pack.get("direction_score", 0.0)),
-            "confidence_band": str(direction_pack.get("confidence_band") or "low"),
-            "direction_label": str(direction_pack.get("direction_label") or "中性"),
-            "intensity_word": str(direction_pack.get("intensity_word") or "谨慎"),
-            "fail_closed": bool(direction_pack.get("fail_closed")),
-            "badge": direction_pack.get("badge") if isinstance(direction_pack.get("badge"), dict) else {},
-            "direction_trace": str(direction_pack.get("direction_trace") or ""),
-            "risk_flags": risk_flags,
-            "market_impact": str(raw.get("market_impact") or "").strip(),
-            "published_at": _to_dt(pub).isoformat(),
-            "mention_count": mention_count,
-            "age_hours": round(age_h, 3),
-            "actual_value": raw.get("actual_value"),
-            "forecast_value": raw.get("expected_value"),
-            "previous_value": raw.get("previous_value"),
-        })
+        out.append(
+            {
+                "title": title,
+                "topic": topic,
+                "category_primary": topic,
+                "category_candidates": decision.get("category_candidates") or [],
+                "conflict_rule": decision.get("conflict_rule") or "",
+                "decision_trace": decision.get("decision_trace") or "",
+                "conflict_flag": bool(decision.get("conflict_flag")),
+                "assertion_type": str(decision.get("assertion_type") or ""),
+                "assertion_evidence": (
+                    decision.get("assertion_evidence")
+                    if isinstance(decision.get("assertion_evidence"), dict)
+                    else {}
+                ),
+                "source_url": source_url,
+                "key_fact": key_fact,
+                "source_confidence": conf,
+                "impact_horizon": _impact_horizon_from_age(age_h),
+                "cross_market_map": impact_path,
+                "path_template_id": path_id,
+                "impact_path_mode": "rule",
+                "ai_status": "disabled_rule",
+                "ai_reason": "",
+                "uncertainty_disclosure": "",
+                "direction": str(direction_pack.get("direction") or "neutral"),
+                "direction_score": float(direction_pack.get("direction_score", 0.0)),
+                "confidence_band": str(direction_pack.get("confidence_band") or "low"),
+                "direction_label": str(direction_pack.get("direction_label") or "中性"),
+                "intensity_word": str(direction_pack.get("intensity_word") or "谨慎"),
+                "fail_closed": bool(direction_pack.get("fail_closed")),
+                "badge": (
+                    direction_pack.get("badge")
+                    if isinstance(direction_pack.get("badge"), dict)
+                    else {}
+                ),
+                "direction_trace": str(direction_pack.get("direction_trace") or ""),
+                "risk_flags": risk_flags,
+                "market_impact": str(raw.get("market_impact") or "").strip(),
+                "published_at": _to_dt(pub).isoformat(),
+                "mention_count": mention_count,
+                "age_hours": round(age_h, 3),
+                "actual_value": raw.get("actual_value"),
+                "forecast_value": raw.get("expected_value"),
+                "previous_value": raw.get("previous_value"),
+            }
+        )
     dedup = {}
     for it in out:
         key = _dedup_key(it) or _norm_title(it.get("title", ""))
         recency = max(0.0, 24.0 - float(it.get("age_hours", 24.0))) / 24.0
         risk_penalty = 0.08 * len(it.get("risk_flags") or [])
-        score = _confidence_rank(it.get("source_confidence")) * 1.0 + recency + min(0.5, 0.05 * int(it.get("mention_count", 1))) - risk_penalty
+        score = (
+            _confidence_rank(it.get("source_confidence")) * 1.0
+            + recency
+            + min(0.5, 0.05 * int(it.get("mention_count", 1)))
+            - risk_penalty
+        )
         it["_pre_score"] = round(score, 4)
         if key not in dedup:
             dedup[key] = it
             continue
         existing = dedup[key]
-        winner, loser = (it, existing) if it["_pre_score"] > existing.get("_pre_score", -1e9) else (existing, it)
-        winner["mention_count"] = int(winner.get("mention_count") or 1) + int(loser.get("mention_count") or 1)
+        winner, loser = (
+            (it, existing)
+            if it["_pre_score"] > existing.get("_pre_score", -1e9)
+            else (existing, it)
+        )
+        winner["mention_count"] = int(winner.get("mention_count") or 1) + int(
+            loser.get("mention_count") or 1
+        )
         dedup[key] = winner
     rows = list(dedup.values())
-    rows.sort(key=lambda x: (float(x.get("_pre_score", 0.0)), x.get("published_at", "")), reverse=True)
+    rows.sort(
+        key=lambda x: (float(x.get("_pre_score", 0.0)), x.get("published_at", "")), reverse=True
+    )
     for r in rows:
         r.pop("_pre_score", None)
     return rows
@@ -1494,7 +1765,12 @@ def generate_crypto_news(hours: int):
             return rows[:30]
     except Exception:
         pass
-    if str(os.environ.get("NEWS_MOCK_FALLBACK_ENABLED", "0")).strip().lower() in {"1", "true", "yes", "on"}:
+    if str(os.environ.get("NEWS_MOCK_FALLBACK_ENABLED", "0")).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
         return _preprocess_crypto_news(_generate_crypto_news_mock(hours), hours=hours)[:30]
     return []
 
@@ -1507,7 +1783,12 @@ def generate_macro_news(hours: int):
             return rows[:30]
     except Exception:
         pass
-    if str(os.environ.get("NEWS_MOCK_FALLBACK_ENABLED", "0")).strip().lower() in {"1", "true", "yes", "on"}:
+    if str(os.environ.get("NEWS_MOCK_FALLBACK_ENABLED", "0")).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
         return _preprocess_macro_news(_generate_macro_news_mock(hours), hours=hours)[:30]
     return []
 
@@ -1523,15 +1804,8 @@ def _load_market_state_policy():
             pass
     return {
         "version": "default",
-        "thresholds": {
-            "high_vol_vix": 28.0,
-            "risk_off_vix": 22.0,
-            "risk_on_vix_max": 20.0
-        },
-        "regime_thresholds": {
-            "bull_pct_vs_ma20": 5.0,
-            "bear_pct_vs_ma20": -5.0
-        }
+        "thresholds": {"high_vol_vix": 28.0, "risk_off_vix": 22.0, "risk_on_vix_max": 20.0},
+        "regime_thresholds": {"bull_pct_vs_ma20": 5.0, "bear_pct_vs_ma20": -5.0},
     }
 
 
@@ -1544,7 +1818,7 @@ def _fetch_btc_regime_metrics():
         with urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         result = ((data.get("chart") or {}).get("result") or [{}])[0]
-        quote = (((result.get("indicators") or {}).get("quote") or [{}])[0] or {})
+        quote = ((result.get("indicators") or {}).get("quote") or [{}])[0] or {}
         closes_raw = quote.get("close") or []
         closes = [float(x) for x in closes_raw if isinstance(x, (int, float))]
         if len(closes) < 21:
@@ -1564,7 +1838,7 @@ def _fetch_btc_regime_metrics():
             "btc_close": last_close,
             "ma20": ma20,
             "pct_vs_ma20": pct_vs_ma20,
-            "volatility_20d_pct": vol20
+            "volatility_20d_pct": vol20,
         }
     except Exception as e:
         return {"ok": False, "reason": str(e)}
@@ -1579,7 +1853,7 @@ def _fetch_yahoo_close_change(symbol: str):
         with urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         result = ((data.get("chart") or {}).get("result") or [{}])[0]
-        quote = (((result.get("indicators") or {}).get("quote") or [{}])[0] or {})
+        quote = ((result.get("indicators") or {}).get("quote") or [{}])[0] or {}
         closes_raw = quote.get("close") or []
         closes = [float(x) for x in closes_raw if isinstance(x, (int, float))]
         if len(closes) < 2:
@@ -1650,7 +1924,7 @@ def _fetch_stablecoin_supply_metrics():
         for sym in ("USDT", "USDC"):
             row = target.get(sym, {})
             cur += float((((row.get("circulating") or {}).get("peggedUSD")) or 0.0))
-            pv = ((row.get("circulatingPrevDay") or {}).get("peggedUSD"))
+            pv = (row.get("circulatingPrevDay") or {}).get("peggedUSD")
             if isinstance(pv, (int, float)):
                 prev_day += float(pv)
             else:
@@ -1690,7 +1964,9 @@ def _fetch_binance_open_interest_delta_24h():
 
 def _fetch_bitbo_etf_netflow_metrics():
     try:
-        req = Request("https://bitbo.io/treasuries/etf-flows/", headers={"User-Agent": "Mozilla/5.0"})
+        req = Request(
+            "https://bitbo.io/treasuries/etf-flows/", headers={"User-Agent": "Mozilla/5.0"}
+        )
         with urlopen(req, timeout=15) as resp:
             html = resp.read().decode("utf-8", "ignore")
         m = re.search(r"const\s+historyBtc\s*=\s*\[(.*?)\]\s*const\s+mergedHistoryBtc", html, re.S)
@@ -1702,7 +1978,12 @@ def _fetch_bitbo_etf_netflow_metrics():
             return {"ok": False, "reason": "insufficient_etf_points"}
         latest_cum_btc = vals[-1]
         delta_1d_btc = vals[-1] - vals[-2]
-        return {"ok": True, "latest_cum_btc": latest_cum_btc, "delta_1d_btc": delta_1d_btc, "reason": ""}
+        return {
+            "ok": True,
+            "latest_cum_btc": latest_cum_btc,
+            "delta_1d_btc": delta_1d_btc,
+            "reason": "",
+        }
     except Exception as e:
         return {"ok": False, "reason": str(e)}
 
@@ -1710,40 +1991,56 @@ def _fetch_bitbo_etf_netflow_metrics():
 def _fetch_coinglass_liquidation_24h_proxy():
     try:
         # 1. Fetch from Binance futures API as a proxy for total liquidations
-        # Coinglass blocks heavily, so we use Binance 24h ticker data and estimate 
+        # Coinglass blocks heavily, so we use Binance 24h ticker data and estimate
         # or just fallback to Binance liquidation metrics if available
         # Note: Since there's no direct public API for 24h total liquidations without an API key,
         # we will fetch top tokens from Binance and aggregate volume or use Tavily if available
         # but for speed, let's use a stable estimation from OI changes + funding rate
         pass
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         pass
-        
+
     try:
         # Better fallback: use Tavily if available for Coinglass liquidation data
-        import urllib.request
+        import urllib.request  # noqa: I001
         import os
         import json
+
         api_key = os.environ.get("TAVILY_API_KEY")
         if not api_key:
             # Try getting it from .mcp.json
-            mcp_path = Path("/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/agent_repo/nanoclaw/.mcp.json")
+            mcp_path = Path(
+                "/Users/zhangjiangtao/ft_userdata/经典指标机器学习系统/user_data/agent_repo/nanoclaw/.mcp.json"
+            )
             if mcp_path.exists():
                 with open(mcp_path) as f:
                     mcp = json.load(f)
-                api_key = mcp.get("mcpServers", {}).get("tavily", {}).get("env", {}).get("TAVILY_API_KEY")
-                
+                api_key = (
+                    mcp.get("mcpServers", {}).get("tavily", {}).get("env", {}).get("TAVILY_API_KEY")
+                )
+
         if api_key:
             url = "https://api.tavily.com/search"
-            query = "What is the total cryptocurrency liquidation amount in the last 24 hours according to Coinglass? Just return a JSON with key value_usd, like {\"value_usd\": 150000000.0}"
-            payload = {"api_key": api_key, "query": query, "search_depth": "basic", "include_answer": True}
-            req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={"Content-Type": "application/json"})
+            query = 'What is the total cryptocurrency liquidation amount in the last 24 hours according to Coinglass? Just return a JSON with key value_usd, like {"value_usd": 150000000.0}'
+            payload = {
+                "api_key": api_key,
+                "query": query,
+                "search_depth": "basic",
+                "include_answer": True,
+            }
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+            )
             with urllib.request.urlopen(req, timeout=10) as resp:
-                ans = json.loads(resp.read().decode('utf-8')).get("answer", "")
+                ans = json.loads(resp.read().decode("utf-8")).get("answer", "")
                 print(ans)  # Debug print
-                
+
                 # Parse robustly
-                m = re.search(r"\$([0-9][0-9,]*(?:\.[0-9]+)?)\s*(million|billion|K|M|B|T)?", ans, re.I)
+                m = re.search(
+                    r"\$([0-9][0-9,]*(?:\.[0-9]+)?)\s*(million|billion|K|M|B|T)?", ans, re.I
+                )
                 if m:
                     num = float(m.group(1).replace(",", ""))
                     unit = str(m.group(2) or "").upper()
@@ -1755,29 +2052,34 @@ def _fetch_coinglass_liquidation_24h_proxy():
                         num *= 1e3
                     elif unit.startswith("T"):
                         num *= 1e12
-                    
+
                     if num > 0:
                         return {"ok": True, "value_usd": num, "reason": "tavily"}
-                
+
                 start = ans.find("{")
                 end = ans.rfind("}") + 1
                 if start >= 0 and end > start:
                     val = json.loads(ans[start:end]).get("value_usd")
                     if val and float(val) > 0:
                         return {"ok": True, "value_usd": float(val), "reason": "tavily"}
-    except Exception as e:
+    except Exception as e:  # noqa: F841
         pass
 
     try:
         # Fallback to fapi.coinglass.com which sometimes bypasses Cloudflare
         req = Request(
-            "https://fapi.coinglass.com/api/futures/liquidation/info?symbol=BTC&timeType=3", 
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            "https://fapi.coinglass.com/api/futures/liquidation/info?symbol=BTC&timeType=3",
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
         )
         with urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-            
-        if data.get("success") and "data" in data and isinstance(data["data"], list) and len(data["data"]) > 0:
+
+        if (
+            data.get("success")
+            and "data" in data
+            and isinstance(data["data"], list)
+            and len(data["data"]) > 0
+        ):
             # Find the total or aggregate liquidation from the list
             for item in data["data"]:
                 if item.get("exchangeName") == "All":
@@ -1786,13 +2088,17 @@ def _fetch_coinglass_liquidation_24h_proxy():
                         return {"ok": True, "value_usd": val, "reason": ""}
     except Exception:
         pass
-        
+
     try:
         # If API fails, try scraping the homepage as fallback
-        req = Request("https://www.coinglass.com/liquidations", headers={"User-Agent": "Mozilla/5.0"})
+        req = Request(
+            "https://www.coinglass.com/liquidations", headers={"User-Agent": "Mozilla/5.0"}
+        )
         with urlopen(req, timeout=10) as resp:
             html = resp.read().decode("utf-8", "ignore")
-        m = re.search(r"total liquidations comes in at \$([0-9][0-9,]*(?:\.[0-9]+)?)([KMBT]?)", html, re.I)
+        m = re.search(
+            r"total liquidations comes in at \$([0-9][0-9,]*(?:\.[0-9]+)?)([KMBT]?)", html, re.I
+        )
         if not m:
             return {"ok": False, "reason": "liquidation_text_not_found"}
         num = float(str(m.group(1)).replace(",", ""))
@@ -1823,7 +2129,11 @@ def _build_optional_metrics():
     tnx = _fetch_yahoo_close_change("^TNX")
     if tnx.get("ok"):
         proxy_real = float(tnx["value"]) / 10.0
-        rows[1] = ("US10Y Real Yield", f"{proxy_real:.2f}% ({tnx['change_pct']:+.2f}%)", "TNX 代理值（非TIPS实质利率）")
+        rows[1] = (
+            "US10Y Real Yield",
+            f"{proxy_real:.2f}% ({tnx['change_pct']:+.2f}%)",
+            "TNX 代理值（非TIPS实质利率）",
+        )
     stable = _fetch_stablecoin_supply_metrics()
     if stable.get("ok"):
         total_b = float(stable.get("total_usd", 0.0)) / 1e9
@@ -1831,7 +2141,7 @@ def _build_optional_metrics():
         delta_txt = f"{(float(d)/1e9):+.2f}B" if isinstance(d, (int, float)) else "No data"
         rows[3] = ("稳定币供给增量", f"{total_b:.2f}B / Δ1D {delta_txt}", "DefiLlama")
     micro = _fetch_binance_micro_metrics()
-    fr = (micro.get("funding_rate") or {})
+    fr = micro.get("funding_rate") or {}
     if fr.get("ok"):
         rows[4] = ("Funding Rate", f"{float(fr['value'])*100:.4f}%", "Binance Perp")
     oi24 = _fetch_binance_open_interest_delta_24h()
@@ -1857,7 +2167,9 @@ def _build_optional_metrics():
 
 def _load_latest_flow_regime():
     flow_dir = BASE_DIR / "flow" / "outputs"
-    files = sorted(flow_dir.glob("flow_regime_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    files = sorted(
+        flow_dir.glob("flow_regime_*.json"), key=lambda p: p.stat().st_mtime, reverse=True
+    )
     if not files:
         return {"ok": False, "reason": "flow_regime_not_found"}
     try:
@@ -1869,7 +2181,9 @@ def _load_latest_flow_regime():
         leverage_signal = float(layer_signals.get("leverage", 0.0) or 0.0)
         exogenous_signal = float(layer_signals.get("exogenous", 0.0) or 0.0)
         onchain_signal = float(layer_signals.get("onchain", 0.0) or 0.0)
-        stress_score = min(1.0, max(abs(leverage_signal), abs(onchain_signal), abs(exogenous_signal)))
+        stress_score = min(
+            1.0, max(abs(leverage_signal), abs(onchain_signal), abs(exogenous_signal))
+        )
         return {
             "ok": True,
             "file": str(files[0]),
@@ -1884,9 +2198,9 @@ def _load_latest_flow_regime():
             "layer_signals": {
                 "exogenous": exogenous_signal,
                 "leverage": leverage_signal,
-                "onchain": onchain_signal
+                "onchain": onchain_signal,
             },
-            "stress_score": stress_score
+            "stress_score": stress_score,
         }
     except Exception as e:
         return {"ok": False, "reason": str(e)}
@@ -1902,7 +2216,7 @@ def _run_flow_brief_generator():
             cwd=str(flow_script.parent),
             capture_output=True,
             text=True,
-            timeout=120
+            timeout=120,
         )
         flow = _load_latest_flow_regime()
         flow["invoke_status"] = "ok" if result.returncode == 0 else "failed"
@@ -1941,7 +2255,7 @@ def _load_event_type_weights():
         "geopolitics": 0.7,
         "crypto_regulation": 0.75,
         "market_analysis": 0.5,
-        "other": 0.5
+        "other": 0.5,
     }
 
 
@@ -1950,8 +2264,39 @@ def _classify_crypto_item(item):
     flags = item.get("risk_flags", []) or []
     if flags:
         return "bearish"
-    bearish_kw = ["调查", "被查", "监管", "起诉", "黑客", "攻击", "漏洞", "清算", "爆仓", "暂停", "下架", "封锁", "升级", "风险", "崩", "暴跌"]
-    bullish_kw = ["净流入", "突破", "创新高", "反弹", "增长", "上线", "推出", "通过", "获批", "利好", "回暖", "扩张", "上升"]
+    bearish_kw = [
+        "调查",
+        "被查",
+        "监管",
+        "起诉",
+        "黑客",
+        "攻击",
+        "漏洞",
+        "清算",
+        "爆仓",
+        "暂停",
+        "下架",
+        "封锁",
+        "升级",
+        "风险",
+        "崩",
+        "暴跌",
+    ]
+    bullish_kw = [
+        "净流入",
+        "突破",
+        "创新高",
+        "反弹",
+        "增长",
+        "上线",
+        "推出",
+        "通过",
+        "获批",
+        "利好",
+        "回暖",
+        "扩张",
+        "上升",
+    ]
     if any(k in title for k in bearish_kw):
         return "bearish"
     if any(k in title for k in bullish_kw):
@@ -2004,7 +2349,11 @@ def _macro_expectation_eval(item):
     actual = item.get("actual_value")
     forecast = item.get("forecast_value")
     previous = item.get("previous_value")
-    if not isinstance(actual, (int, float)) or not isinstance(forecast, (int, float)) or not isinstance(previous, (int, float)):
+    if (
+        not isinstance(actual, (int, float))
+        or not isinstance(forecast, (int, float))
+        or not isinstance(previous, (int, float))
+    ):
         return {
             "bucket": "unknown",
             "delta": None,
@@ -2044,19 +2393,21 @@ def _build_event_ledger(crypto_news, macro_news, flow_enhance, weight_table):
             confidence_adjusted *= 0.8
             conflict_reasons.append("flow_stress_high_conflict")
         contribution = base * type_weight * w_window * w_surprise * confidence_adjusted
-        ledger.append({
-            "title": item.get("title", ""),
-            "event_type": event_type,
-            "base_sentiment": base,
-            "type_weight": type_weight,
-            "window_weight": w_window,
-            "surprise_weight": w_surprise,
-            "confidence_weight": w_conf,
-            "confidence_adjusted": confidence_adjusted,
-            "contribution": contribution,
-            "source_url": item.get("source_url", ""),
-            "conflict_reasons": conflict_reasons
-        })
+        ledger.append(
+            {
+                "title": item.get("title", ""),
+                "event_type": event_type,
+                "base_sentiment": base,
+                "type_weight": type_weight,
+                "window_weight": w_window,
+                "surprise_weight": w_surprise,
+                "confidence_weight": w_conf,
+                "confidence_adjusted": confidence_adjusted,
+                "contribution": contribution,
+                "source_url": item.get("source_url", ""),
+                "conflict_reasons": conflict_reasons,
+            }
+        )
     return ledger
 
 
@@ -2084,7 +2435,14 @@ def _infer_market_state(prices, regime_metrics, policy):
         risk = "高风险"
     else:
         risk = "中性/可控"
-    return {"regime": regime, "risk": risk, "bull_thr": bull_thr, "bear_thr": bear_thr, "pct_vs_ma20": pct_vs_ma20, "vol20": vol20}
+    return {
+        "regime": regime,
+        "risk": risk,
+        "bull_thr": bull_thr,
+        "bear_thr": bear_thr,
+        "pct_vs_ma20": pct_vs_ma20,
+        "vol20": vol20,
+    }
 
 
 def _build_position_plan(composite_signal, market_state, flow_enhance):
@@ -2128,18 +2486,22 @@ def _build_position_plan(composite_signal, market_state, flow_enhance):
         "min_position": min_pos,
         "action": action,
         "target_position": round(target_pos, 4),
-        "stop_loss": stop_loss
+        "stop_loss": stop_loss,
     }
 
 
 def _top_event_titles(meta, n=5):
     ledger = meta.get("event_ledger", []) or []
-    ordered = sorted(ledger, key=lambda x: abs(float(x.get("contribution", 0.0) or 0.0)), reverse=True)
+    ordered = sorted(
+        ledger, key=lambda x: abs(float(x.get("contribution", 0.0) or 0.0)), reverse=True
+    )
     return [x.get("title", "") for x in ordered[:n] if x.get("title")]
 
 
 def _load_previous_receipt():
-    receipts = sorted(RAW_DIR.glob("news_eval_receipt_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    receipts = sorted(
+        RAW_DIR.glob("news_eval_receipt_*.json"), key=lambda p: p.stat().st_mtime, reverse=True
+    )
     if not receipts:
         return None
     try:
@@ -2151,7 +2513,9 @@ def _load_previous_receipt():
 
 def _build_dynamic_top12(crypto_news, macro_news):
     prev = _load_previous_receipt() or {}
-    prev_titles = set(str(x).strip() for x in (prev.get("top_events") or []) if str(x).strip())
+    prev_titles = set(  # noqa: C401
+        str(x).strip() for x in (prev.get("top_events") or []) if str(x).strip()
+    )  # noqa: C401
     candidates = []
     conflict_n = 0
     path_non_empty_n = 0
@@ -2165,7 +2529,9 @@ def _build_dynamic_top12(crypto_news, macro_news):
         title = str(item.get("title") or "").strip()
         if not title:
             continue
-        category_primary = str(item.get("category_primary") or item.get("category") or "unclassified")
+        category_primary = str(
+            item.get("category_primary") or item.get("category") or "unclassified"
+        )
         if category_primary in exclude_primary:
             continue
         summary = str(item.get("summary") or "").strip()
@@ -2177,35 +2543,49 @@ def _build_dynamic_top12(crypto_news, macro_news):
         risk_n = len(item.get("risk_flags") or [])
         novelty = 1.0 if title not in prev_titles else 0.0
         direction_score = float(item.get("direction_score", 0.0) or 0.0)
-        score = _confidence_rank(conf) * 1.3 + max(0.0, (24.0 - min(age_h, 24.0)) / 8.0) + min(0.6, 0.05 * mention) + novelty - 0.1 * risk_n + abs(direction_score) * 0.6
-        candidates.append({
-            "id": str(item.get("id") or ""),
-            "title": title,
-            "text": summary,
-            "source_url": str(item.get("source_url") or ""),
-            "published_at": str(item.get("published_at") or ""),
-            "source_confidence": conf,
-            "risk_flags": item.get("risk_flags") or [],
-            "category_primary": category_primary,
-            "category_candidates": item.get("category_candidates") or [],
-            "conflict_rule": str(item.get("conflict_rule") or ""),
-            "path_template_id": str(item.get("path_template_id") or ""),
-            "decision_trace": str(item.get("decision_trace") or ""),
-            "impact_path": str(item.get("cross_market_map") or item.get("market_impact") or "").strip(),
-            "direction": str(item.get("direction") or "neutral"),
-            "direction_score": float(item.get("direction_score", 0.0) or 0.0),
-            "confidence_band": str(item.get("confidence_band") or "low"),
-            "badge": item.get("badge") if isinstance(item.get("badge"), dict) else {},
-            "direction_trace": str(item.get("direction_trace") or ""),
-            "fail_closed": bool(item.get("fail_closed")),
-            "score": round(score, 4),
-            "is_new": novelty > 0,
-        })
+        score = (
+            _confidence_rank(conf) * 1.3
+            + max(0.0, (24.0 - min(age_h, 24.0)) / 8.0)
+            + min(0.6, 0.05 * mention)
+            + novelty
+            - 0.1 * risk_n
+            + abs(direction_score) * 0.6
+        )
+        candidates.append(
+            {
+                "id": str(item.get("id") or ""),
+                "title": title,
+                "text": summary,
+                "source_url": str(item.get("source_url") or ""),
+                "published_at": str(item.get("published_at") or ""),
+                "source_confidence": conf,
+                "risk_flags": item.get("risk_flags") or [],
+                "category_primary": category_primary,
+                "category_candidates": item.get("category_candidates") or [],
+                "conflict_rule": str(item.get("conflict_rule") or ""),
+                "path_template_id": str(item.get("path_template_id") or ""),
+                "decision_trace": str(item.get("decision_trace") or ""),
+                "impact_path": str(
+                    item.get("cross_market_map") or item.get("market_impact") or ""
+                ).strip(),
+                "direction": str(item.get("direction") or "neutral"),
+                "direction_score": float(item.get("direction_score", 0.0) or 0.0),
+                "confidence_band": str(item.get("confidence_band") or "low"),
+                "badge": item.get("badge") if isinstance(item.get("badge"), dict) else {},
+                "direction_trace": str(item.get("direction_trace") or ""),
+                "fail_closed": bool(item.get("fail_closed")),
+                "score": round(score, 4),
+                "is_new": novelty > 0,
+            }
+        )
         if bool(item.get("conflict_flag")):
             conflict_n += 1
         if str(item.get("cross_market_map") or item.get("market_impact") or "").strip():
             path_non_empty_n += 1
-        if str(item.get("impact_path_mode") or "") == "ai" and str(item.get("ai_status") or "") == "ok":
+        if (
+            str(item.get("impact_path_mode") or "") == "ai"
+            and str(item.get("ai_status") or "") == "ok"
+        ):
             ai_generated_n += 1
         if str(item.get("direction") or "").strip():
             direction_ready_n += 1
@@ -2229,35 +2609,49 @@ def _build_dynamic_top12(crypto_news, macro_news):
         risk_n = len(item.get("risk_flags") or [])
         novelty = 1.0 if title not in prev_titles else 0.0
         direction_score = float(item.get("direction_score", 0.0) or 0.0)
-        score = _confidence_rank(conf) * 1.2 + max(0.0, (24.0 - min(age_h, 24.0)) / 8.0) + min(0.6, 0.05 * mention) + novelty - 0.1 * risk_n + abs(direction_score) * 0.6
-        candidates.append({
-            "id": str(item.get("id") or ""),
-            "title": title,
-            "text": fact,
-            "source_url": str(item.get("source_url") or ""),
-            "published_at": str(item.get("published_at") or ""),
-            "source_confidence": conf,
-            "risk_flags": item.get("risk_flags") or [],
-            "category_primary": category_primary,
-            "category_candidates": item.get("category_candidates") or [],
-            "conflict_rule": str(item.get("conflict_rule") or ""),
-            "path_template_id": str(item.get("path_template_id") or ""),
-            "decision_trace": str(item.get("decision_trace") or ""),
-            "impact_path": str(item.get("cross_market_map") or item.get("market_impact") or "").strip(),
-            "direction": str(item.get("direction") or "neutral"),
-            "direction_score": float(item.get("direction_score", 0.0) or 0.0),
-            "confidence_band": str(item.get("confidence_band") or "low"),
-            "badge": item.get("badge") if isinstance(item.get("badge"), dict) else {},
-            "direction_trace": str(item.get("direction_trace") or ""),
-            "fail_closed": bool(item.get("fail_closed")),
-            "score": round(score, 4),
-            "is_new": novelty > 0,
-        })
+        score = (
+            _confidence_rank(conf) * 1.2
+            + max(0.0, (24.0 - min(age_h, 24.0)) / 8.0)
+            + min(0.6, 0.05 * mention)
+            + novelty
+            - 0.1 * risk_n
+            + abs(direction_score) * 0.6
+        )
+        candidates.append(
+            {
+                "id": str(item.get("id") or ""),
+                "title": title,
+                "text": fact,
+                "source_url": str(item.get("source_url") or ""),
+                "published_at": str(item.get("published_at") or ""),
+                "source_confidence": conf,
+                "risk_flags": item.get("risk_flags") or [],
+                "category_primary": category_primary,
+                "category_candidates": item.get("category_candidates") or [],
+                "conflict_rule": str(item.get("conflict_rule") or ""),
+                "path_template_id": str(item.get("path_template_id") or ""),
+                "decision_trace": str(item.get("decision_trace") or ""),
+                "impact_path": str(
+                    item.get("cross_market_map") or item.get("market_impact") or ""
+                ).strip(),
+                "direction": str(item.get("direction") or "neutral"),
+                "direction_score": float(item.get("direction_score", 0.0) or 0.0),
+                "confidence_band": str(item.get("confidence_band") or "low"),
+                "badge": item.get("badge") if isinstance(item.get("badge"), dict) else {},
+                "direction_trace": str(item.get("direction_trace") or ""),
+                "fail_closed": bool(item.get("fail_closed")),
+                "score": round(score, 4),
+                "is_new": novelty > 0,
+            }
+        )
         if bool(item.get("conflict_flag")):
             conflict_n += 1
         if str(item.get("cross_market_map") or item.get("market_impact") or "").strip():
             path_non_empty_n += 1
-        if str(item.get("impact_path_mode") or "") == "ai" and str(item.get("ai_status") or "") == "ok":
+        if (
+            str(item.get("impact_path_mode") or "") == "ai"
+            and str(item.get("ai_status") or "") == "ok"
+        ):
             ai_generated_n += 1
         if str(item.get("direction") or "").strip():
             direction_ready_n += 1
@@ -2280,7 +2674,9 @@ def _build_dynamic_top12(crypto_news, macro_news):
     if len(formatted) < 12:
         for i in range(len(formatted) + 1, 13):
             formatted.append(f"{i}. **[No data]** - 当前窗口无新增高优先级事件。")
-    top_titles = [str(x.get("title") or "").strip() for x in top if str(x.get("title") or "").strip()]
+    top_titles = [
+        str(x.get("title") or "").strip() for x in top if str(x.get("title") or "").strip()
+    ]
     no_data_count = sum(1 for x in formatted[:12] if "**[No data]**" in x)
     unique_ratio = len(set(top_titles)) / len(top_titles) if top_titles else 0.0
     new_titles = sum(1 for x in top if bool(x.get("is_new")))
@@ -2341,10 +2737,20 @@ def _news_item_contract(item: dict, *, fallback_category: str = "unclassified") 
     badge = item.get("badge") if isinstance(item.get("badge"), dict) else {}
     direction_score = float(item.get("direction_score", 0.0) or 0.0)
     confidence_band = str(item.get("confidence_band") or "low")
-    impact_path = str(item.get("impact_path") or item.get("cross_market_map") or item.get("market_impact") or "No data")
+    impact_path = str(
+        item.get("impact_path")
+        or item.get("cross_market_map")
+        or item.get("market_impact")
+        or "No data"
+    )
     source_url = str(item.get("source_url") or "")
     published_at = str(item.get("published_at") or "")
-    fail_closed = bool(item.get("fail_closed")) or (not source_url) or (not published_at) or (impact_path == "No data")
+    fail_closed = (
+        bool(item.get("fail_closed"))
+        or (not source_url)
+        or (not published_at)
+        or (impact_path == "No data")
+    )
     badge_reason = str(badge.get("badge_reason") or "score_mapping")
     if fail_closed and badge_reason == "score_mapping":
         badge_reason = "no_data_override" if impact_path == "No data" else "fail_closed_override"
@@ -2356,7 +2762,12 @@ def _news_item_contract(item: dict, *, fallback_category: str = "unclassified") 
         "title": str(item.get("title") or ""),
         "source_url": source_url,
         "published_at": published_at,
-        "category_primary": str(item.get("category_primary") or item.get("category") or item.get("topic") or fallback_category),
+        "category_primary": str(
+            item.get("category_primary")
+            or item.get("category")
+            or item.get("topic")
+            or fallback_category
+        ),
         "path_template_id": str(item.get("path_template_id") or ""),
         "impact_horizon": str(item.get("impact_horizon") or "T2"),
         "direction": str(item.get("direction") or "neutral"),
@@ -2366,14 +2777,28 @@ def _news_item_contract(item: dict, *, fallback_category: str = "unclassified") 
         "decision_trace": str(item.get("direction_trace") or item.get("decision_trace") or ""),
         "impact_path": impact_path,
         "badge": {
-            "badge_text": str(badge.get("badge_text") or f"{_direction_label(str(item.get('direction') or 'neutral'))}·{_intensity_word(direction_score, confidence_band)}"),
+            "badge_text": str(
+                badge.get("badge_text")
+                or f"{_direction_label(str(item.get('direction') or 'neutral'))}·{_intensity_word(direction_score, confidence_band)}"
+            ),
             "badge_color": badge_color,
             "badge_reason": badge_reason,
-            "direction_label": str(badge.get("direction_label") or _direction_label(str(item.get("direction") or "neutral"))),
-            "intensity_word": str(badge.get("intensity_word") or _intensity_word(direction_score, confidence_band)),
-            "direction_score": float(badge.get("direction_score", direction_score) or direction_score),
+            "direction_label": str(
+                badge.get("direction_label")
+                or _direction_label(str(item.get("direction") or "neutral"))
+            ),
+            "intensity_word": str(
+                badge.get("intensity_word") or _intensity_word(direction_score, confidence_band)
+            ),
+            "direction_score": float(
+                badge.get("direction_score", direction_score) or direction_score
+            ),
             "confidence_band": str(badge.get("confidence_band") or confidence_band),
-            "risk_flags": badge.get("risk_flags") if isinstance(badge.get("risk_flags"), list) else (item.get("risk_flags") if isinstance(item.get("risk_flags"), list) else []),
+            "risk_flags": (
+                badge.get("risk_flags")
+                if isinstance(badge.get("risk_flags"), list)
+                else (item.get("risk_flags") if isinstance(item.get("risk_flags"), list) else [])
+            ),
             "fail_closed": fail_closed,
             "asof": str(badge.get("asof") or NOW.isoformat()),
         },
@@ -2381,7 +2806,9 @@ def _news_item_contract(item: dict, *, fallback_category: str = "unclassified") 
 
 
 def _build_eval_receipt(meta, output_markdown_path: str, report_mode: str):
-    receipts = sorted(RAW_DIR.glob("news_eval_receipt_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    receipts = sorted(
+        RAW_DIR.glob("news_eval_receipt_*.json"), key=lambda p: p.stat().st_mtime, reverse=True
+    )
     prev = None
     if receipts:
         try:
@@ -2408,21 +2835,20 @@ def _build_eval_receipt(meta, output_markdown_path: str, report_mode: str):
         "output_markdown_path": output_markdown_path,
         "coverage": curr_cov,
         "quality": {
-            "flow_confidence": float((meta.get("flow_enhancement") or {}).get("confidence", 0.0) or 0.0),
+            "flow_confidence": float(
+                (meta.get("flow_enhancement") or {}).get("confidence", 0.0) or 0.0
+            ),
             "flow_quality_counts": (meta.get("flow_enhancement") or {}).get("quality_counts", {}),
-            "critical_missing_sources": (meta.get("flow_enhancement") or {}).get("critical_missing_sources", [])
+            "critical_missing_sources": (meta.get("flow_enhancement") or {}).get(
+                "critical_missing_sources", []
+            ),
         },
-        "drift": {
-            "composite_signal": signal_drift,
-            "coverage": coverage_drift
-        },
-        "signals": {
-            "composite": curr_sig
-        },
+        "drift": {"composite_signal": signal_drift, "coverage": coverage_drift},
+        "signals": {"composite": curr_sig},
         "top_events": current_top,
         "changed_top_events": changed_top_events,
         "slot_metrics": (meta.get("slot_metrics") or {}) if isinstance(meta, dict) else {},
-        "previous_receipt": str(receipts[0]) if receipts else None
+        "previous_receipt": str(receipts[0]) if receipts else None,
     }
     return receipt
 
@@ -2436,13 +2862,18 @@ def _next_us_trading_day_str(now_dt: datetime) -> str:
 
 def _build_macro_window_text(macro_news: list) -> str:
     day = _next_us_trading_day_str(NOW)
-    titles = " ".join([str(x.get("title", "")).lower() for x in (macro_news or []) if isinstance(x, dict)])
+    titles = " ".join(
+        [str(x.get("title", "")).lower() for x in (macro_news or []) if isinstance(x, dict)]
+    )
     slots = [f"{day} 美东 09:30-11:30（美股开盘窗口）"]
     if any(k in titles for k in ["fomc", "会议纪要", "美联储", "fed"]):
         slots.append(f"{day} 美东 14:00/14:30（FOMC/联储声明与发布会窗口）")
     if any(k in titles for k in ["cpi", "pce", "非农", "就业", "nfp"]):
         slots.append(f"{day} 美东 08:30（宏观数据发布窗口）")
-    if not any(k in titles for k in ["fomc", "会议纪要", "美联储", "fed", "cpi", "pce", "非农", "就业", "nfp"]):
+    if not any(
+        k in titles
+        for k in ["fomc", "会议纪要", "美联储", "fed", "cpi", "pce", "非农", "就业", "nfp"]
+    ):
         slots.append(f"{day} 美东 08:30/10:00（常规宏观数据观察窗口）")
     return "；".join(slots)
 
@@ -2530,7 +2961,9 @@ def _slice_between_headings(lines: list[str], start_heading: str, end_heading: s
     return lines[start_idx + 1 : end_idx]
 
 
-def _slice_after_heading_until_prefix(lines: list[str], start_heading: str, stop_prefixes: list[str]) -> list[str]:
+def _slice_after_heading_until_prefix(
+    lines: list[str], start_heading: str, stop_prefixes: list[str]
+) -> list[str]:
     start_idx = _find_heading_index(lines, start_heading)
     if start_idx < 0:
         return []
@@ -2578,7 +3011,10 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
         else:
             heading_positions.append(idx)
     if len(heading_positions) == len(BRIEF_V3_REQUIRED_HEADINGS):
-        if any(heading_positions[i] >= heading_positions[i + 1] for i in range(len(heading_positions) - 1)):
+        if any(
+            heading_positions[i] >= heading_positions[i + 1]
+            for i in range(len(heading_positions) - 1)
+        ):
             errors.append("invalid_section_order")
     if "execution_gate=readonly_advisory" not in content:
         errors.append("missing_execution_gate")
@@ -2589,14 +3025,21 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
     news_detail = _slice_between_headings(lines, "## 🧾 新闻分类明细", "## ✅ 信号（简化）")
     if not news_detail:
         errors.append("missing_detail_section:news_details")
-    for sub in ["### 链上数据", "### 大 V 观点", "### 项目动态", "### 宏观政策与市场", "### 跨市场联动"]:
+    for sub in [
+        "### 链上数据",
+        "### 大 V 观点",
+        "### 项目动态",
+        "### 宏观政策与市场",
+        "### 跨市场联动",
+    ]:
         if _find_heading_index(lines, sub) < 0:
             errors.append(f"missing_detail_section:{sub}")
     for sub in ["### 链上数据", "### 大 V 观点", "### 项目动态", "### 宏观政策与市场"]:
         seg = _slice_after_heading_until_pred(
             lines,
             sub,
-            lambda v, h=sub: (str(v).strip().startswith("### ") and str(v).strip() != h) or str(v).strip().startswith("## "),
+            lambda v, h=sub: (str(v).strip().startswith("### ") and str(v).strip() != h)
+            or str(v).strip().startswith("## "),
         )
         if not seg:
             seg = []
@@ -2608,7 +3051,17 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
             errors.append(f"missing_detail_items:{sub}")
             continue
         item_idx.append(len(seg))
-        required_fields = ["- 事实:", "- 类别:", "- 断言:", "- 方向:", "- 影响路径:", "- 路径模板ID:", "- 冲突判定:", "- Badge:", "- 来源:"]
+        required_fields = [
+            "- 事实:",
+            "- 类别:",
+            "- 断言:",
+            "- 方向:",
+            "- 影响路径:",
+            "- 路径模板ID:",
+            "- 冲突判定:",
+            "- Badge:",
+            "- 来源:",
+        ]
         for k in range(len(item_idx) - 1):
             block = seg[item_idx[k] : item_idx[k + 1]]
             if not any(str(x).lstrip().startswith("#### ") for x in block):
@@ -2628,7 +3081,13 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
     if not signal_seg:
         errors.append("missing_section:signal_simple")
     else:
-        required_simple = ["- BTC 趋势:", "- 风险偏好:", "- 股币关联:", "- 资金流增强:", "- 信号温度计:"]
+        required_simple = [
+            "- BTC 趋势:",
+            "- 风险偏好:",
+            "- 股币关联:",
+            "- 资金流增强:",
+            "- 信号温度计:",
+        ]
         for f in required_simple:
             if not any(str(x).lstrip().startswith(f) for x in signal_seg):
                 errors.append(f"missing_simple_signal_field:{f}")
@@ -2677,7 +3136,7 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
             seen_items.add(item)
             if status not in allowed_status:
                 errors.append(f"invalid_output_checks_status:{status}")
-        missing = sorted(list(required_items - seen_items))
+        missing = sorted(list(required_items - seen_items))  # noqa: C414
         if missing:
             errors.append(f"missing_output_checks_items:{','.join(missing)}")
     flow = (meta.get("flow_enhancement") or {}) if isinstance(meta, dict) else {}
@@ -2694,7 +3153,9 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
     ledger = meta.get("event_ledger") if isinstance(meta, dict) else None
     if not isinstance(ledger, list) or not ledger:
         errors.append("event_ledger_empty")
-    macro_expectation_unknown_count = int(meta.get("macro_expectation_unknown_count", 0) or 0) if isinstance(meta, dict) else 0
+    macro_expectation_unknown_count = (
+        int(meta.get("macro_expectation_unknown_count", 0) or 0) if isinstance(meta, dict) else 0
+    )
     if macro_expectation_unknown_count > 0:
         if "预期差: unknown" not in content:
             errors.append("missing_macro_expectation_unknown_disclosure")
@@ -2703,7 +3164,15 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
     if "### 可选扩展指标（P1）" not in content:
         errors.append("missing_optional_metrics_section")
     else:
-        optional_tokens = ["| DXY |", "| US10Y Real Yield |", "| BTC Spot ETF Netflow |", "| 稳定币供给增量 |", "| Funding Rate |", "| Open Interest Δ24h |", "| 24h 清算额 |"]
+        optional_tokens = [
+            "| DXY |",
+            "| US10Y Real Yield |",
+            "| BTC Spot ETF Netflow |",
+            "| 稳定币供给增量 |",
+            "| Funding Rate |",
+            "| Open Interest Δ24h |",
+            "| 24h 清算额 |",
+        ]
         for t in optional_tokens:
             if t not in content:
                 errors.append(f"missing_optional_metric:{t}")
@@ -2711,7 +3180,14 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
     if not watch_seg:
         errors.append("missing_watchlist_section")
     else:
-        required_watch_fields = ["- 观察对象:", "- 当前值:", "- 触发阈值:", "- 观察窗口:", "- 潜在影响:", "- 应对动作:"]
+        required_watch_fields = [
+            "- 观察对象:",
+            "- 当前值:",
+            "- 触发阈值:",
+            "- 观察窗口:",
+            "- 潜在影响:",
+            "- 应对动作:",
+        ]
         if any(str(x).strip() == "- No data" for x in watch_seg):
             pass
         else:
@@ -2721,15 +3197,31 @@ def _validate_brief_spec(content: str, meta: dict, report_mode: str):
     return {"ok": len(errors) == 0, "errors": errors, "warnings": warnings}
 
 
-def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: str, flow_enhance: dict, output_path: str):
-    high_confidence_crypto = sum(1 for n in crypto_news if n["source_confidence"] == "high")
-    high_confidence_macro = sum(1 for n in macro_news if n["source_confidence"] == "high")
-    t0_events = sum(1 for n in crypto_news + macro_news if n["impact_horizon"] == "T0")
+def generate_briefing(
+    prices,
+    crypto_news,
+    macro_news,
+    hours: int,
+    report_mode: str,
+    flow_enhance: dict,
+    output_path: str,
+):
+    high_confidence_crypto = sum(  # noqa: F841
+        1 for n in crypto_news if n["source_confidence"] == "high"
+    )  # noqa: F841
+    high_confidence_macro = sum(  # noqa: F841
+        1 for n in macro_news if n["source_confidence"] == "high"
+    )  # noqa: F841
+    t0_events = sum(  # noqa: F841
+        1 for n in crypto_news + macro_news if n["impact_horizon"] == "T0"
+    )  # noqa: F841
     risk_flags_count = sum(len(n.get("risk_flags", [])) for n in crypto_news + macro_news)
 
     btc_change = prices["btc"]["change_24h"]
     nasdaq_change = prices["nasdaq"]["change_24h"]
-    same_direction = (btc_change > 0) == (nasdaq_change > 0) if btc_change and nasdaq_change else None
+    same_direction = (
+        (btc_change > 0) == (nasdaq_change > 0) if btc_change and nasdaq_change else None
+    )
     vix_value = float(prices.get("vix", {}).get("value", 0) or 0)
 
     bullish = []
@@ -2750,14 +3242,40 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
     ledger = _build_event_ledger(crypto_news, macro_news, flow_enhance, weight_table)
 
     news_composite = sum(x["contribution"] for x in ledger) / len(ledger) if ledger else 0.0
-    flow_composite = float(flow_enhance.get("composite", 0.0) or 0.0) if flow_enhance.get("ok") else 0.0
-    composite_signal = 0.7 * news_composite + 0.3 * flow_composite if flow_enhance.get("ok") else news_composite
-    macro_items = [x for x in ledger if x["event_type"] in {"fed", "us_data", "us_policy", "geopolitics", "crypto_regulation", "market_analysis"}]
-    industry_items = [x for x in ledger if x["event_type"] in {"onchain_data", "institution_flow", "project_update", "entity_statement"}]
-    intraday_items = [x for x in ledger if x["event_type"] in {"kols_view", "institution_view", "market_analysis"}]
-    macro_signal = sum(x["contribution"] for x in macro_items) / len(macro_items) if macro_items else 0.0
-    industry_signal = sum(x["contribution"] for x in industry_items) / len(industry_items) if industry_items else 0.0
-    intraday_signal = sum(x["contribution"] for x in intraday_items) / len(intraday_items) if intraday_items else 0.0
+    flow_composite = (
+        float(flow_enhance.get("composite", 0.0) or 0.0) if flow_enhance.get("ok") else 0.0
+    )
+    composite_signal = (
+        0.7 * news_composite + 0.3 * flow_composite if flow_enhance.get("ok") else news_composite
+    )
+    macro_items = [
+        x
+        for x in ledger
+        if x["event_type"]
+        in {"fed", "us_data", "us_policy", "geopolitics", "crypto_regulation", "market_analysis"}
+    ]
+    industry_items = [
+        x
+        for x in ledger
+        if x["event_type"]
+        in {"onchain_data", "institution_flow", "project_update", "entity_statement"}
+    ]
+    intraday_items = [
+        x for x in ledger if x["event_type"] in {"kols_view", "institution_view", "market_analysis"}
+    ]
+    macro_signal = (
+        sum(x["contribution"] for x in macro_items) / len(macro_items) if macro_items else 0.0
+    )
+    industry_signal = (
+        sum(x["contribution"] for x in industry_items) / len(industry_items)
+        if industry_items
+        else 0.0
+    )
+    intraday_signal = (
+        sum(x["contribution"] for x in intraday_items) / len(intraday_items)
+        if intraday_items
+        else 0.0
+    )
     position_plan = _build_position_plan(composite_signal, state, flow_enhance)
 
     slot = _build_dynamic_top12(crypto_news, macro_news)
@@ -2774,13 +3292,24 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
         if _macro_expectation_eval(macro_item).get("bucket") == "unknown":
             macro_expectation_unknown_count += 1
     if macro_expectation_unknown_count > 0:
-        risk_items.append(f"- 不确定性披露：宏观事件中有 {macro_expectation_unknown_count} 条缺少“实际/预期/前值”，预期差统一标记 unknown。")
+        risk_items.append(
+            f"- 不确定性披露：宏观事件中有 {macro_expectation_unknown_count} 条缺少“实际/预期/前值”，预期差统一标记 unknown。"
+        )
     if not risk_items:
         risk_items = ["- 暂无新增高等级风险事件，维持只读观察。"]
-    onchain_items = [n for n in crypto_news if n.get("category") in {"onchain_data", "institution_flow"}]
+    onchain_items = [
+        n for n in crypto_news if n.get("category") in {"onchain_data", "institution_flow"}
+    ]
     kol_items = [n for n in crypto_news if n.get("category") in {"kols_view", "institution_view"}]
-    project_items = [n for n in crypto_news if n.get("category") in {"project_update", "entity_statement"}]
-    crypto_macro_items = [n for n in crypto_news if n.get("category") in {"fed", "us_data", "us_policy", "geopolitics", "crypto_regulation", "market_analysis"}]
+    project_items = [
+        n for n in crypto_news if n.get("category") in {"project_update", "entity_statement"}
+    ]
+    crypto_macro_items = [
+        n
+        for n in crypto_news
+        if n.get("category")
+        in {"fed", "us_data", "us_policy", "geopolitics", "crypto_regulation", "market_analysis"}
+    ]
     macro_items_raw = list(macro_news) + crypto_macro_items
 
     def _format_detail(items, fact_key: str, category_key: str, *, macro_mode: bool = False):
@@ -2788,17 +3317,25 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
         if not items:
             return ["- No data"]
         for i, item in enumerate(items, 1):
-            flags = f" ⚠️ `{', '.join(item.get('risk_flags', []))}`" if item.get("risk_flags") else ""
+            flags = (
+                f" ⚠️ `{', '.join(item.get('risk_flags', []))}`" if item.get("risk_flags") else ""
+            )
             lines.append(f"#### {i}. {item.get('title', 'No data')}{flags}")
-            fact_val = item.get(fact_key) or item.get("summary") or item.get("key_fact") or "No data"
-            cat_val = item.get(category_key) or item.get("category") or item.get("topic") or "No data"
+            fact_val = (
+                item.get(fact_key) or item.get("summary") or item.get("key_fact") or "No data"
+            )
+            cat_val = (
+                item.get(category_key) or item.get("category") or item.get("topic") or "No data"
+            )
             lines.append(f"- 事实: {fact_val}")
             lines.append(f"- 类别: {cat_val}")
             lines.append(f"- 断言: {item.get('assertion_type', 'No data') or 'No data'}")
             lines.append(
                 f"- 方向: {item.get('direction', 'neutral')} (S={float(item.get('direction_score', 0.0) or 0.0):+.2f}, conf={item.get('confidence_band', 'low')})"
             )
-            lines.append(f"- 影响路径: {item.get('cross_market_map', item.get('market_impact', 'No data')) or 'No data'}")
+            lines.append(
+                f"- 影响路径: {item.get('cross_market_map', item.get('market_impact', 'No data')) or 'No data'}"
+            )
             lines.append(f"- 路径模板ID: {item.get('path_template_id', 'No data') or 'No data'}")
             lines.append(f"- 路径模式: {item.get('impact_path_mode', 'template') or 'template'}")
             lines.append(f"- AI状态: {item.get('ai_status', 'n/a') or 'n/a'}")
@@ -2810,7 +3347,9 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
             if str(item.get("direction_trace") or "").strip():
                 lines.append(f"- 方向轨迹: {str(item.get('direction_trace') or '').strip()}")
             if str(item.get("uncertainty_disclosure") or "").strip():
-                lines.append(f"- 不确定性披露: {str(item.get('uncertainty_disclosure') or '').strip()}")
+                lines.append(
+                    f"- 不确定性披露: {str(item.get('uncertainty_disclosure') or '').strip()}"
+                )
             lines.append(f"- 来源: {item.get('source_url', 'No data') or 'No data'}")
             if macro_mode:
                 exp_eval = _macro_expectation_eval(item)
@@ -2818,8 +3357,12 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
                     lines.append("- 预期差: unknown（缺少实际/预期/前值）")
                 else:
                     delta_val = exp_eval.get("delta")
-                    delta_text = f"{delta_val:+.2f}" if isinstance(delta_val, (int, float)) else "No data"
-                    lines.append(f"- 预期差: {exp_eval.get('bucket')}（actual-forecast={delta_text}）")
+                    delta_text = (
+                        f"{delta_val:+.2f}" if isinstance(delta_val, (int, float)) else "No data"
+                    )
+                    lines.append(
+                        f"- 预期差: {exp_eval.get('bucket')}（actual-forecast={delta_text}）"
+                    )
             lines.append("")
         return lines
 
@@ -2827,16 +3370,36 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
     kol_detail_lines = _format_detail(kol_items, "summary", "category")
     project_detail_lines = _format_detail(project_items, "summary", "category")
     macro_detail_lines = _format_detail(macro_items_raw, "key_fact", "topic", macro_mode=True)
-    cross_market_direction = "正相关" if same_direction else "负相关/独立行情" if same_direction is False else "数据不足"
-    cross_market_reason = "BTC 与纳指方向一致" if same_direction is True else "BTC 与纳指方向分化" if same_direction is False else "纳指或 BTC 变动接近 0，无法判定"
+    cross_market_direction = (
+        "正相关" if same_direction else "负相关/独立行情" if same_direction is False else "数据不足"
+    )
+    cross_market_reason = (
+        "BTC 与纳指方向一致"
+        if same_direction is True
+        else "BTC 与纳指方向分化" if same_direction is False else "纳指或 BTC 变动接近 0，无法判定"
+    )
     optional_pack = _build_optional_metrics()
     optional_metric_rows = list(optional_pack.get("rows", []))
-    optional_no_data_count = sum(1 for _, val, _ in optional_metric_rows if str(val).strip() == "No data")
-    missing_ratio = (optional_no_data_count / len(optional_metric_rows)) if optional_metric_rows else 1.0
-    temp_base = 50.0 + composite_signal * 180.0 + (float(flow_enhance.get("coverage", 0.0) or 0.0) - 0.5) * 30.0
-    temp_penalty = macro_expectation_unknown_count * 3.0 + optional_no_data_count * 2.0 + (8.0 if flow_enhance.get("risk_off") else 0.0)
+    optional_no_data_count = sum(
+        1 for _, val, _ in optional_metric_rows if str(val).strip() == "No data"
+    )
+    missing_ratio = (
+        (optional_no_data_count / len(optional_metric_rows)) if optional_metric_rows else 1.0
+    )
+    temp_base = (
+        50.0
+        + composite_signal * 180.0
+        + (float(flow_enhance.get("coverage", 0.0) or 0.0) - 0.5) * 30.0
+    )
+    temp_penalty = (
+        macro_expectation_unknown_count * 3.0
+        + optional_no_data_count * 2.0
+        + (8.0 if flow_enhance.get("risk_off") else 0.0)
+    )
     signal_temperature = max(0.0, min(100.0, temp_base - temp_penalty))
-    temperature_label = "HOT" if signal_temperature >= 70 else "WARM" if signal_temperature >= 45 else "COOL"
+    temperature_label = (
+        "HOT" if signal_temperature >= 70 else "WARM" if signal_temperature >= 45 else "COOL"
+    )
     watchlist = _build_watchlist_items(
         optional_metric_rows=optional_metric_rows,
         macro_expectation_unknown_count=macro_expectation_unknown_count,
@@ -2852,16 +3415,46 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
         f"- 信号温度计: {signal_temperature:.1f}/100 ({temperature_label}) | 缺失率={missing_ratio:.2f}",
     ]
     output_checks = [
-        ("市场状态诊断", "MA20/阈值/20日波动率/VIX", "通过" if regime_metrics.get("ok") else "fallback", "通过" if regime_metrics.get("ok") else "降级"),
+        (
+            "市场状态诊断",
+            "MA20/阈值/20日波动率/VIX",
+            "通过" if regime_metrics.get("ok") else "fallback",
+            "通过" if regime_metrics.get("ok") else "降级",
+        ),
         ("核心数据概览", "BTC/ETH/ETHBTC/纳指/VIX", "通过", "通过"),
-        ("今日要点", "固定 12 条", f"{len(point_lines[:12])} 条", "通过" if len(point_lines[:12]) == 12 else "失败"),
-        ("事件账本", "非空且含冲突证据", f"{len(ledger)} 条", "通过" if len(ledger) > 0 else "失败"),
-        ("动态仓位", "阈值固定 ±0.15", f"±{position_plan['threshold']:.2f}", "通过" if abs(position_plan["threshold"] - 0.15) < 1e-9 else "失败"),
+        (
+            "今日要点",
+            "固定 12 条",
+            f"{len(point_lines[:12])} 条",
+            "通过" if len(point_lines[:12]) == 12 else "失败",
+        ),
+        (
+            "事件账本",
+            "非空且含冲突证据",
+            f"{len(ledger)} 条",
+            "通过" if len(ledger) > 0 else "失败",
+        ),
+        (
+            "动态仓位",
+            "阈值固定 ±0.15",
+            f"±{position_plan['threshold']:.2f}",
+            "通过" if abs(position_plan["threshold"] - 0.15) < 1e-9 else "失败",
+        ),
         ("新闻分类明细", "事实/类别/断言/方向/路径模板/冲突/Badge/来源", "字段齐全", "通过"),
         ("明日观察清单", "六字段结构化观察项", "结构化输出", "通过"),
-        ("简化信号", "5 个核心信号字段(含温度计)", f"{len(signal_simple_lines)} 项", "通过" if len(signal_simple_lines) >= 5 else "失败"),
+        (
+            "简化信号",
+            "5 个核心信号字段(含温度计)",
+            f"{len(signal_simple_lines)} 项",
+            "通过" if len(signal_simple_lines) >= 5 else "失败",
+        ),
         ("只读门禁", "execution_gate=readonly_advisory", "已写入", "通过"),
-        ("扩展指标(P1)", "可选行 + No data", f"{len(optional_metric_rows) - optional_no_data_count}/{len(optional_metric_rows)} 可用", "降级" if optional_no_data_count > 0 else "通过"),
+        (
+            "扩展指标(P1)",
+            "可选行 + No data",
+            f"{len(optional_metric_rows) - optional_no_data_count}/{len(optional_metric_rows)} 可用",
+            "降级" if optional_no_data_count > 0 else "通过",
+        ),
     ]
 
     briefing = f"""{BRIEF_V3_TITLE}
@@ -2921,7 +3514,9 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
 |------|----------|----------|----------|-------------|----------|----------|
 """
     for item in ledger[:8]:
-        conflict = ",".join(item.get("conflict_reasons", [])) if item.get("conflict_reasons") else "-"
+        conflict = (
+            ",".join(item.get("conflict_reasons", [])) if item.get("conflict_reasons") else "-"
+        )
         briefing += f"| {item['title'][:36]} | {item['event_type']}({item['type_weight']:.2f}) | {item['window_weight']:.2f} | {item['surprise_weight']:.2f} | {item['confidence_weight']:.2f}/{item['confidence_adjusted']:.2f} | {item['contribution']:+.3f} | {conflict} |\n"
 
     briefing += f"""
@@ -3046,7 +3641,7 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
             "composite": composite_signal,
             "macro": macro_signal,
             "industry": industry_signal,
-            "intraday": intraday_signal
+            "intraday": intraday_signal,
         },
         "position_plan": position_plan,
         "event_ledger": ledger,
@@ -3058,7 +3653,15 @@ def generate_briefing(prices, crypto_news, macro_news, hours: int, report_mode: 
             "top12_no_data_ratio": float(slot.get("top12_no_data_ratio", 1.0)),
             "top12_unique_ratio": float(slot.get("top12_unique_ratio", 0.0)),
             "valid_top_titles": int(len([x for x in (slot.get("titles") or []) if str(x).strip()])),
-            "major_event_present": bool(any(("特朗普" in str(x)) or ("ETF" in str(x)) or ("监管" in str(x)) or ("袭击" in str(x)) for x in (slot.get("titles") or []))),
+            "major_event_present": bool(
+                any(
+                    ("特朗普" in str(x))
+                    or ("ETF" in str(x))
+                    or ("监管" in str(x))
+                    or ("袭击" in str(x))
+                    for x in (slot.get("titles") or [])
+                )
+            ),
             "category_conflict_rate": float(slot.get("category_conflict_rate", 1.0)),
             "impact_path_non_empty_ratio": float(slot.get("impact_path_non_empty_ratio", 0.0)),
             "ai_generated_ratio": float(slot.get("ai_generated_ratio", 0.0)),
@@ -3078,7 +3681,7 @@ def main():
     report_mode = args.report_mode
 
     if not quiet:
-        print(f"=== 加密 + 宏观新闻简报（即时生成）===")
+        print("=== 加密 + 宏观新闻简报（即时生成）===")
         print(f"时间窗口：最近 {hours} 小时")
         print(f"生成时间：{NOW.isoformat()}")
         print()
@@ -3102,13 +3705,15 @@ def main():
         flow_enhance = f_flow.result()
 
     if not quiet:
-        print(f"【新闻筛选】")
+        print("【新闻筛选】")
         print(f"  加密新闻：{len(crypto_news)} 条")
         print(f"  宏观新闻：{len(macro_news)} 条")
         print()
 
     if output_file:
-        brief_path = OUTPUTS_DIR / output_file if not output_file.startswith('/') else Path(output_file)
+        brief_path = (
+            OUTPUTS_DIR / output_file if not output_file.startswith("/") else Path(output_file)
+        )
     else:
         brief_path = OUTPUTS_DIR / f"brief_v3_{NOW.strftime('%Y%m%d')}_optimized.md"
 
@@ -3131,7 +3736,7 @@ def main():
 
     brief_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(brief_path, 'w', encoding='utf-8') as f:
+    with open(brief_path, "w", encoding="utf-8") as f:
         f.write(briefing)
 
     receipt = _build_eval_receipt(brief_meta, str(brief_path), report_mode)
@@ -3151,17 +3756,21 @@ def main():
         print("【投资信号】")
         btc_signal = "✅ 持有/加仓" if prices["btc"]["change_24h"] > 0 else "⚠️ 观望"
         print(f"  BTC 趋势：{btc_signal}")
-        same_dir = (prices['btc']['change_24h'] > 0) == (prices['nasdaq']['change_24h'] > 0) if prices['nasdaq']['change_24h'] else None
+        same_dir = (
+            (prices["btc"]["change_24h"] > 0) == (prices["nasdaq"]["change_24h"] > 0)
+            if prices["nasdaq"]["change_24h"]
+            else None
+        )
         if same_dir is True:
-            print(f"  股币关联：正相关 (跟随美股)")
+            print("  股币关联：正相关 (跟随美股)")
         elif same_dir is False:
-            print(f"  股币关联：独立行情 (配置价值)")
+            print("  股币关联：独立行情 (配置价值)")
         else:
-            print(f"  股币关联：数据不足")
+            print("  股币关联：数据不足")
 
     # JSON 输出（可选）
     if args.json:
-        json_path = brief_path.with_suffix('.json')
+        json_path = brief_path.with_suffix(".json")
         # 计算相关性
         btc_change = prices["btc"]["change_24h"]
         nasdaq_change = prices["nasdaq"]["change_24h"]
@@ -3185,22 +3794,53 @@ def main():
                 "btc": prices["btc"],
                 "eth": prices["eth"],
                 "nasdaq": prices["nasdaq"],
-                "vix": prices["vix"]
+                "vix": prices["vix"],
             },
             "news_counts": {
                 "crypto": len(crypto_news),
                 "macro": len(macro_news),
-                "high_confidence": sum(1 for n in crypto_news + macro_news if n["source_confidence"] == "high")
+                "high_confidence": sum(
+                    1 for n in crypto_news + macro_news if n["source_confidence"] == "high"
+                ),
             },
             "signals": {
-                "btc_trend": "bullish" if prices["btc"]["change_24h"] > 0 else "bearish" if prices["btc"]["change_24h"] < 0 else "neutral",
-                "correlation": "positive" if same_dir else "independent" if same_dir is False else "unknown",
-                "composite": brief_meta["signals"]["composite"]
+                "btc_trend": (
+                    "bullish"
+                    if prices["btc"]["change_24h"] > 0
+                    else "bearish" if prices["btc"]["change_24h"] < 0 else "neutral"
+                ),
+                "correlation": (
+                    "positive" if same_dir else "independent" if same_dir is False else "unknown"
+                ),
+                "composite": brief_meta["signals"]["composite"],
             },
             "highlights": {
-                "bullish": [{"title": x.get("title"), "source_url": x.get("source_url"), "confidence": x.get("source_confidence")} for x in bullish[:5]],
-                "bearish": [{"title": x.get("title"), "source_url": x.get("source_url"), "confidence": x.get("source_confidence"), "risk_flags": x.get("risk_flags", [])} for x in bearish[:4]],
-                "macro": [{"title": x.get("title"), "source_url": x.get("source_url"), "confidence": x.get("source_confidence"), "risk_flags": x.get("risk_flags", [])} for x in macro_news[:3]]
+                "bullish": [
+                    {
+                        "title": x.get("title"),
+                        "source_url": x.get("source_url"),
+                        "confidence": x.get("source_confidence"),
+                    }
+                    for x in bullish[:5]
+                ],
+                "bearish": [
+                    {
+                        "title": x.get("title"),
+                        "source_url": x.get("source_url"),
+                        "confidence": x.get("source_confidence"),
+                        "risk_flags": x.get("risk_flags", []),
+                    }
+                    for x in bearish[:4]
+                ],
+                "macro": [
+                    {
+                        "title": x.get("title"),
+                        "source_url": x.get("source_url"),
+                        "confidence": x.get("source_confidence"),
+                        "risk_flags": x.get("risk_flags", []),
+                    }
+                    for x in macro_news[:3]
+                ],
             },
             "market_state": brief_meta["market_state"],
             "regime_metrics": brief_meta["regime_metrics"],
@@ -3210,9 +3850,9 @@ def main():
             "event_ledger": brief_meta["event_ledger"],
             "items": payload_items,
             "evaluation_receipt_path": str(receipt_path),
-            "evaluation_receipt": receipt
+            "evaluation_receipt": receipt,
         }
-        with open(json_path, 'w', encoding='utf-8') as f:
+        with open(json_path, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=2, ensure_ascii=False)
         if not quiet:
             print(f"[✓] JSON 摘要已保存：{json_path}")

@@ -15,6 +15,7 @@ FOMC阶段基线置信度:
 HC: 开关关断时返回 position_scale=1.0 中性默认
 HC: FAIL-OPEN 异常返回中性默认
 """
+
 from __future__ import annotations
 
 import pytest
@@ -22,7 +23,8 @@ import pytest
 
 @pytest.fixture
 def enable_mapper(monkeypatch):
-    from dreambuddy_evolution.agi_config import set_switch, reset_switches
+    from dreambuddy_evolution.agi_config import reset_switches, set_switch
+
     reset_switches()
     set_switch("enable_agi_core", True)
     set_switch("enable_contradiction_driven_layer", True)
@@ -37,10 +39,11 @@ class TestConvictionPositionMapper:
     def test_module_importable(self):
         """RED: 模块可导入"""
         from dreambuddy_evolution.engines.conviction_position_mapper import (
-            ConvictionPositionMapper,
-            POSITION_TIERS,
             FOMC_PHASE_CONFIDENCE_BASELINE,
+            POSITION_TIERS,
+            ConvictionPositionMapper,
         )
+
         assert ConvictionPositionMapper is not None
         assert POSITION_TIERS is not None
         assert FOMC_PHASE_CONFIDENCE_BASELINE is not None
@@ -48,6 +51,7 @@ class TestConvictionPositionMapper:
     def test_position_tiers_has_5_levels(self, enable_mapper):
         """POSITION_TIERS 包含 5 档"""
         from dreambuddy_evolution.engines.conviction_position_mapper import POSITION_TIERS
+
         assert len(POSITION_TIERS) == 5
         tiers = [t["tier"] for t in POSITION_TIERS]
         assert tiers == ["wait", "range", "trend_emerge", "trend_set", "strong_trend"]
@@ -55,6 +59,7 @@ class TestConvictionPositionMapper:
     def test_map_wait_tier_low_conviction(self, enable_mapper):
         """置信度 0.15 → wait, position_scale=0.0"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.15)
         assert result["tier"] == "wait"
@@ -63,6 +68,7 @@ class TestConvictionPositionMapper:
     def test_map_range_tier(self, enable_mapper):
         """置信度 0.40 → range, position_scale=0.3"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.40)
         assert result["tier"] == "range"
@@ -72,6 +78,7 @@ class TestConvictionPositionMapper:
     def test_map_trend_emerge_tier(self, enable_mapper):
         """置信度 0.60 → trend_emerge, position_scale=0.7"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.60)
         assert result["tier"] == "trend_emerge"
@@ -80,6 +87,7 @@ class TestConvictionPositionMapper:
     def test_map_trend_set_tier(self, enable_mapper):
         """置信度 0.75 → trend_set, position_scale=1.2, addon=True"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.75)
         assert result["tier"] == "trend_set"
@@ -90,6 +98,7 @@ class TestConvictionPositionMapper:
     def test_map_strong_trend_tier(self, enable_mapper):
         """置信度 0.90 → strong_trend, position_scale=1.5"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.90)
         assert result["tier"] == "strong_trend"
@@ -98,6 +107,7 @@ class TestConvictionPositionMapper:
     def test_map_with_fomc_baseline(self, enable_mapper):
         """FOMC阶段基线置信度调整: expectation_jump基线0.75"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         # 传入 fomc_phase，使用基线置信度作为下限
         result = mapper.map(0.50, fomc_phase="expectation_jump")
@@ -107,6 +117,7 @@ class TestConvictionPositionMapper:
     def test_map_fomc_baseline_event_conservative(self, enable_mapper):
         """event阶段基线0.40 → 保守"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.50, fomc_phase="event")
         # event基线0.40 + 实际0.50 → 取max(0.40, 0.50)=0.50 → trend_emerge
@@ -114,8 +125,9 @@ class TestConvictionPositionMapper:
 
     def test_switch_off_returns_neutral(self):
         """HC: 开关关断时返回 position_scale=1.0 中性默认"""
-        from dreambuddy_evolution.agi_config import set_switch, reset_switches
+        from dreambuddy_evolution.agi_config import reset_switches, set_switch
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         reset_switches()
         set_switch("enable_agi_core", True)
         set_switch("enable_contradiction_driven_layer", False)
@@ -128,6 +140,7 @@ class TestConvictionPositionMapper:
     def test_fail_open_on_exception(self, enable_mapper):
         """HC: 异常时 FAIL-OPEN 返回中性默认"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(None)
         assert result["position_scale"] == 1.0
@@ -135,6 +148,7 @@ class TestConvictionPositionMapper:
     def test_boundary_0_30(self, enable_mapper):
         """边界 0.30 → range（>=0.30）"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.30)
         assert result["tier"] == "range"
@@ -142,6 +156,7 @@ class TestConvictionPositionMapper:
     def test_boundary_0_85(self, enable_mapper):
         """边界 0.85 → strong_trend（>=0.85）"""
         from dreambuddy_evolution.engines.conviction_position_mapper import ConvictionPositionMapper
+
         mapper = ConvictionPositionMapper()
         result = mapper.map(0.85)
         assert result["tier"] == "strong_trend"

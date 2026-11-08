@@ -21,35 +21,31 @@ A层 + C层 图编排引擎测试
    - 投票聚合
 """
 
-import sys
+import sys  # noqa: I001
 import unittest
 import os
-from typing import Dict, Any, List
+from typing import Dict, List
 
 # 添加 ab-trading 目录到路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from core.intent_engine.types import ExecutionBlueprint
+from core.intent_engine.types import ExecutionBlueprint  # noqa: I001
 
 from core.a_graph_orchestrator import (
     GraphOrchestrator,
     ExecutionStrategy,
-    GraphExecutionResult,
 )
-from core.shared.interfaces import NodeExecutionStatus
 
 from core.c_execution_layer import (
     SimpleNodeExecutor,
-    ResultAggregator,
     NodeExecutionResult as CNodeResult,
-    NodeStatus,
     aggregate_results,
 )
-
 
 # ============================================================
 # 测试工具
 # ============================================================
+
 
 def create_simple_blueprint(
     node_ids: List[str],
@@ -75,6 +71,7 @@ def create_simple_blueprint(
 # ============================================================
 # A层测试
 # ============================================================
+
 
 class TestGraphOrchestratorSequential(unittest.TestCase):
     """测试顺序执行"""
@@ -116,7 +113,8 @@ class TestGraphOrchestratorSequential(unittest.TestCase):
 
         # 验证节点顺序执行
         completed_order = [
-            status.node_id for status in result.node_statuses.values()
+            status.node_id
+            for status in result.node_statuses.values()
             if status.status == "completed"
         ]
         self.assertEqual(completed_order, ["node_a", "node_b", "node_c"])
@@ -248,6 +246,7 @@ class TestGraphOrchestratorHybrid(unittest.TestCase):
 # C层测试
 # ============================================================
 
+
 class TestResultAggregator(unittest.TestCase):
     """测试结果聚合器"""
 
@@ -294,6 +293,7 @@ class TestResultAggregator(unittest.TestCase):
 # ============================================================
 # 集成测试
 # ============================================================
+
 
 class TestIntegration(unittest.TestCase):
     """集成测试：S层 + A层 + C层"""
@@ -344,5 +344,5 @@ class TestIntegration(unittest.TestCase):
 # 运行测试
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)

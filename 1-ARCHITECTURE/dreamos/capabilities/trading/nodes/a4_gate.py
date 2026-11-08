@@ -4,10 +4,10 @@ A4 门禁节点 — A7 实践论闸门
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class A4GateNode(BaseNode):
@@ -61,7 +61,9 @@ class A4GateNode(BaseNode):
         intent_confidence = intent.get("confidence", 0.0) if isinstance(intent, dict) else 0.0
         if intent_confidence > 0:
             gap = abs(confidence - intent_confidence)
-            rationale.append(f"[A8 知行合一] 意图={intent_confidence:.0%} vs 执行={confidence:.0%} | Gap={gap:+.0%}")
+            rationale.append(
+                f"[A8 知行合一] 意图={intent_confidence:.0%} vs 执行={confidence:.0%} | Gap={gap:+.0%}"
+            )
             if gap > 0.25:
                 rationale.append("⚠️ 知行偏差大，建议反思")
             elif gap <= 0.10:
@@ -96,13 +98,24 @@ class A4GateNode(BaseNode):
         # 收集所有非 HOLD 方向的节点
         votes = []  # [(node_id, direction, confidence, weight)]
         NODE_WEIGHTS = {
-            "A0": 1.5, "A1": 1.3, "A2": 1.5, "A3": 1.5,
-            "C1": 1.0, "C2": 0.8, "C3": 0.8,
-            "F1": 0.7, "F2": 0.7, "F3": 0.6,
+            "A0": 1.5,
+            "A1": 1.3,
+            "A2": 1.5,
+            "A3": 1.5,
+            "C1": 1.0,
+            "C2": 0.8,
+            "C3": 0.8,
+            "F1": 0.7,
+            "F2": 0.7,
+            "F3": 0.6,
         }
 
         for node_id, result in results.items():
-            if not hasattr(result, "direction") or not result.direction or result.direction == "HOLD":
+            if (
+                not hasattr(result, "direction")
+                or not result.direction
+                or result.direction == "HOLD"
+            ):
                 continue
             if not hasattr(result, "confidence") or result.confidence <= 0:
                 continue
@@ -147,16 +160,16 @@ class A4GateNode(BaseNode):
         # 大趋势确认（EMA200）
         if price > 0 and ema200 > 0:
             if direction == "LONG" and price < ema200:
-                confidence *= 0.9   # 大趋势向下，做多轻微降权（原为0.8）
+                confidence *= 0.9  # 大趋势向下，做多轻微降权（原为0.8）
             elif direction == "SHORT" and price > ema200:
-                confidence *= 0.9   # 大趋势向上，做空轻微降权（原为0.8）
+                confidence *= 0.9  # 大趋势向上，做空轻微降权（原为0.8）
 
         # 投票一致性加成：如果 2+ 节点同方向，置信度提升
         same_dir_count = sum(1 for _, d, _, _ in votes if d == direction)
         if same_dir_count >= 3:
             confidence *= 1.1
         elif same_dir_count == 1:
-            confidence *= 0.9   # 仅 1 个节点支持，轻微降权（原为0.85）
+            confidence *= 0.9  # 仅 1 个节点支持，轻微降权（原为0.85）
 
         confidence = min(confidence, 0.95)
 

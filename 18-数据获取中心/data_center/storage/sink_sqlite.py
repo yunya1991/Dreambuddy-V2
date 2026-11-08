@@ -9,6 +9,7 @@
   - query_records / latest_records：按源/时间窗口查询 DataRecord
   - source_health：各数据源最近一次采集状态 + 累计统计
 """
+
 from __future__ import annotations
 
 import json
@@ -29,6 +30,7 @@ def _json_default(obj: Any) -> Any:
     """
     try:
         import numpy as np
+
         if isinstance(obj, np.integer):
             return int(obj)
         if isinstance(obj, np.floating):
@@ -39,15 +41,18 @@ def _json_default(obj: Any) -> Any:
         pass
     try:
         import pandas as pd
+
         if isinstance(obj, (pd.Timestamp,)):
             return obj.isoformat()
     except ImportError:
         pass
     raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
-from data_center.monitoring.alerting import Alert
-from data_center.monitoring.metrics import InvocationMetric
-from data_center.monitoring.quality import QualityIssue
-from data_center.storage.cache import dedupe_key
+
+
+from data_center.monitoring.alerting import Alert  # noqa: E402
+from data_center.monitoring.metrics import InvocationMetric  # noqa: E402
+from data_center.monitoring.quality import QualityIssue  # noqa: E402
+from data_center.storage.cache import dedupe_key  # noqa: E402
 
 # ── records 表（DataRecord 原始采集结果）─────────────────────────────────────
 _SCHEMA_RECORDS = """
@@ -60,8 +65,16 @@ CREATE TABLE IF NOT EXISTS records (
 """
 
 _COLUMNS = [
-    "dedupe_key", "source", "category", "sub_category", "timestamp",
-    "metrics", "events", "timeseries", "raw", "schema_version",
+    "dedupe_key",
+    "source",
+    "category",
+    "sub_category",
+    "timestamp",
+    "metrics",
+    "events",
+    "timeseries",
+    "raw",
+    "schema_version",
 ]
 _INSERT_SQL = (
     f"INSERT OR REPLACE INTO records ({', '.join(_COLUMNS)}) "
@@ -115,9 +128,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     tags TEXT
 )
 """
-_INSERT_ALERT_SQL = (
-    "INSERT INTO alerts (ts, level, title, message, tags) VALUES (?,?,?,?,?)"
-)
+_INSERT_ALERT_SQL = "INSERT INTO alerts (ts, level, title, message, tags) VALUES (?,?,?,?,?)"
 
 
 class SqliteSink:
@@ -150,7 +161,11 @@ class SqliteSink:
             conn.execute(
                 _INSERT_SQL,
                 (
-                    key, r.source, r.category, r.sub_category, r.timestamp,
+                    key,
+                    r.source,
+                    r.category,
+                    r.sub_category,
+                    r.timestamp,
                     json.dumps(r.metrics, ensure_ascii=False, default=_json_default),
                     json.dumps(r.events, ensure_ascii=False, default=_json_default),
                     json.dumps(r.timeseries, ensure_ascii=False, default=_json_default),
@@ -173,9 +188,14 @@ class SqliteSink:
         conn.close()
         return [
             DataRecord(
-                source=r[0], category=r[1], sub_category=r[2], timestamp=r[3],
-                metrics=json.loads(r[4]), events=json.loads(r[5]),
-                timeseries=json.loads(r[6]), raw=json.loads(r[7]),
+                source=r[0],
+                category=r[1],
+                sub_category=r[2],
+                timestamp=r[3],
+                metrics=json.loads(r[4]),
+                events=json.loads(r[5]),
+                timeseries=json.loads(r[6]),
+                raw=json.loads(r[7]),
                 schema_version=r[8],
             )
             for r in rows
@@ -213,9 +233,14 @@ class SqliteSink:
         conn.close()
         result = [
             DataRecord(
-                source=r[0], category=r[1], sub_category=r[2], timestamp=r[3],
-                metrics=json.loads(r[4]), events=json.loads(r[5]),
-                timeseries=json.loads(r[6]), raw=json.loads(r[7]),
+                source=r[0],
+                category=r[1],
+                sub_category=r[2],
+                timestamp=r[3],
+                metrics=json.loads(r[4]),
+                events=json.loads(r[5]),
+                timeseries=json.loads(r[6]),
+                raw=json.loads(r[7]),
                 schema_version=r[8],
             )
             for r in rows
@@ -248,7 +273,8 @@ class SqliteSink:
             (
                 metric.invocation_id,
                 metric.ts.isoformat(),
-                metric.source, metric.category,
+                metric.source,
+                metric.category,
                 metric.status,
                 metric.duration_ms,
                 metric.records_count,
@@ -353,7 +379,11 @@ class SqliteSink:
                     q.code.value if hasattr(q.code, "value") else str(q.code),
                     q.message,
                     metric.invocation_id,
-                    json.dumps(q.extra, ensure_ascii=False, default=_json_default) if q.extra else None,
+                    (
+                        json.dumps(q.extra, ensure_ascii=False, default=_json_default)
+                        if q.extra
+                        else None
+                    ),
                 ),
             )
         conn.commit()
@@ -370,8 +400,11 @@ class SqliteSink:
         conn.close()
         return [
             {
-                "ts": r[0], "source": r[1], "category": r[2],
-                "code": r[3], "message": r[4],
+                "ts": r[0],
+                "source": r[1],
+                "category": r[2],
+                "code": r[3],
+                "message": r[4],
                 "invocation_id": r[5],
                 "extra": json.loads(r[6]) if r[6] else {},
             }
@@ -407,7 +440,9 @@ class SqliteSink:
         conn.close()
         return [
             {
-                "ts": r[0], "level": r[1], "title": r[2],
+                "ts": r[0],
+                "level": r[1],
+                "title": r[2],
                 "message": r[3],
                 "tags": json.loads(r[4]) if r[4] else [],
             }

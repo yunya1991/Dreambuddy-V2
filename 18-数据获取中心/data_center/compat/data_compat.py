@@ -4,6 +4,7 @@ fetch_tavily_news 用 TavilyCollector 替换手写 HTTP，
 返回格式兼容老 data_collector.fetch_tavily_news 的 List[Dict]。
 DataCollector / generate_timeseries 暂转发老实现 + DeprecationWarning。
 """
+
 from __future__ import annotations
 
 import os
@@ -13,9 +14,7 @@ import warnings
 from data_center.collectors.news.tavily_collector import TavilyCollector
 
 # data_collector 所在路径
-_DATA_COLLECTOR_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "9-基本面分析"
-)
+_DATA_COLLECTOR_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "9-基本面分析")
 
 
 def fetch_tavily_news(query: str, max_results: int = 10) -> list[dict]:
@@ -33,14 +32,16 @@ def fetch_tavily_news(query: str, max_results: int = 10) -> list[dict]:
     results = []
     for r in recs:
         content = r.events[0].get("content", "") if r.events else ""
-        results.append({
-            "title": r.metrics.get("title", ""),
-            "url": r.metrics.get("url", ""),
-            "source": r.metrics.get("source", ""),
-            "content": content,
-            "published_at": r.raw.get("published_date", ""),
-            "raw_content": dict(r.raw),
-        })
+        results.append(
+            {
+                "title": r.metrics.get("title", ""),
+                "url": r.metrics.get("url", ""),
+                "source": r.metrics.get("source", ""),
+                "content": content,
+                "published_at": r.raw.get("published_date", ""),
+                "raw_content": dict(r.raw),
+            }
+        )
     return results
 
 
@@ -50,6 +51,7 @@ def _import_legacy_data_collector():
     if dc_dir not in sys.path:
         sys.path.insert(0, dc_dir)
     import data_collector
+
     return data_collector
 
 
@@ -61,8 +63,7 @@ class DataCollector:
 
     def __init__(self, *args, **kwargs):
         warnings.warn(
-            "data_collector.DataCollector 已废弃，请迁移到 "
-            "from data_center import DataCenter",
+            "data_collector.DataCollector 已废弃，请迁移到 " "from data_center import DataCenter",
             DeprecationWarning,
             stacklevel=2,
         )

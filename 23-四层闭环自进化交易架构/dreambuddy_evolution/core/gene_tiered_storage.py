@@ -14,6 +14,7 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 1
   HC-DS4-02: 分级失败 → 降级为全量加载（返回原 library）
   HC-DS4-10: L0 核心基因保持完整精度，不得有损压缩
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,9 +27,9 @@ class GeneTieredStorage:
     """策略基因分级存储管理器."""
 
     # 分级常量
-    TIER_CORE = "core"           # L0: 实盘验证 Sharpe 正向 → 完整数据
-    TIER_CANDIDATE = "candidate" # L1: 影子验证中 → 仅元数据
-    TIER_RETIRED = "retired"     # L2: 已淘汰 → 仅 ID + 评分
+    TIER_CORE = "core"  # L0: 实盘验证 Sharpe 正向 → 完整数据
+    TIER_CANDIDATE = "candidate"  # L1: 影子验证中 → 仅元数据
+    TIER_RETIRED = "retired"  # L2: 已淘汰 → 仅 ID + 评分
 
     # 分级阈值
     CORE_ESS_THRESHOLD = 0.7
@@ -57,6 +58,7 @@ class GeneTieredStorage:
             if not isinstance(ess, (int, float)):
                 # 从 meta 计算 ESS
                 from dreambuddy_evolution.core.strategy_gene import calculate_ess
+
                 ess = calculate_ess(combo)
             ess = float(ess)
 
@@ -66,9 +68,15 @@ class GeneTieredStorage:
                 n_samples = int(combo.get("meta", {}).get("N", 0) or 0)
 
             # 分级判定
-            if ess >= GeneTieredStorage.CORE_ESS_THRESHOLD and n_samples >= GeneTieredStorage.CORE_SAMPLE_THRESHOLD:
+            if (
+                ess >= GeneTieredStorage.CORE_ESS_THRESHOLD
+                and n_samples >= GeneTieredStorage.CORE_SAMPLE_THRESHOLD
+            ):
                 return GeneTieredStorage.TIER_CORE
-            elif ess >= GeneTieredStorage.CANDIDATE_ESS_THRESHOLD or n_samples >= GeneTieredStorage.CANDIDATE_SAMPLE_THRESHOLD:
+            elif (
+                ess >= GeneTieredStorage.CANDIDATE_ESS_THRESHOLD
+                or n_samples >= GeneTieredStorage.CANDIDATE_SAMPLE_THRESHOLD
+            ):
                 return GeneTieredStorage.TIER_CANDIDATE
             else:
                 return GeneTieredStorage.TIER_RETIRED
@@ -159,6 +167,10 @@ class GeneTieredStorage:
         tier_info = library.get("tier_info") or {}
         return {
             GeneTieredStorage.TIER_CORE: len(tier_info.get(GeneTieredStorage.TIER_CORE, {}) or {}),
-            GeneTieredStorage.TIER_CANDIDATE: len(tier_info.get(GeneTieredStorage.TIER_CANDIDATE, {}) or {}),
-            GeneTieredStorage.TIER_RETIRED: len(tier_info.get(GeneTieredStorage.TIER_RETIRED, {}) or {}),
+            GeneTieredStorage.TIER_CANDIDATE: len(
+                tier_info.get(GeneTieredStorage.TIER_CANDIDATE, {}) or {}
+            ),
+            GeneTieredStorage.TIER_RETIRED: len(
+                tier_info.get(GeneTieredStorage.TIER_RETIRED, {}) or {}
+            ),
         }

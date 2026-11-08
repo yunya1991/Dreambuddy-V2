@@ -10,11 +10,12 @@
 - result_verifier: 结果验证层（DOM+截图+网络请求三重验证）
 - report_generator: 报告生成层
 """
+
 from .browser_connector import BrowserConnector, BrowserMode
-from .user_simulator import UserSimulator
-from .scenario_runner import ScenarioRunner
-from .result_verifier import ResultVerifier, VerificationResult
 from .report_generator import ReportGenerator
+from .result_verifier import ResultVerifier, VerificationResult
+from .scenario_runner import ScenarioRunner
+from .user_simulator import UserSimulator
 
 __all__ = [
     "BrowserConnector",

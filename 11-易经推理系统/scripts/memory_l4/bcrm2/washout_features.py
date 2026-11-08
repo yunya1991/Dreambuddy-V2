@@ -30,6 +30,7 @@ Wyckoff climax (F13, W3a 落地):
     缺失时返回中性默认值 (FAIL-OPEN, 与 W2 F4 OI 处理一致)
   - W3b 后续: 18-数据获取中心 3 采集器 + 奖章架构 Bronze→Silver→Gold 清洗链路
 """
+
 from __future__ import annotations
 
 import logging
@@ -51,21 +52,21 @@ logger = logging.getLogger(__name__)
 # ============================================================
 NEUTRAL_DEFAULTS: Dict[str, float] = {
     # W2: 8 维传统金融特征
-    "volume_ratio_20d": 1.0,        # 中性 = 与均量持平
-    "support_holds_count": 0.0,    # 中性 = 无守住记录
-    "atr_compress_ratio": 1.0,     # 中性 = 振幅无变化
-    "oi_change_rate_7d": 0.0,      # 中性 = OI 无变化
-    "cycle_position_365d": 0.5,    # 中性 = 区间中位
-    "rebound_ratio_5d": 0.5,       # 中性 = 反弹至区间中位
-    "news_negative_score": 0.0,    # 中性 = 无负面
-    "btc_correlation_30d": 0.5,    # 中性 = 中等联动
+    "volume_ratio_20d": 1.0,  # 中性 = 与均量持平
+    "support_holds_count": 0.0,  # 中性 = 无守住记录
+    "atr_compress_ratio": 1.0,  # 中性 = 振幅无变化
+    "oi_change_rate_7d": 0.0,  # 中性 = OI 无变化
+    "cycle_position_365d": 0.5,  # 中性 = 区间中位
+    "rebound_ratio_5d": 0.5,  # 中性 = 反弹至区间中位
+    "news_negative_score": 0.0,  # 中性 = 无负面
+    "btc_correlation_30d": 0.5,  # 中性 = 中等联动
     # W3a: 4 维加密独有特征
-    "oi_price_quadrant": -1.0,    # 中性 = 无信号 (象限编码 0-3, -1 表示数据不足)
-    "funding_rate_zscore": 0.0,    # 中性 = 无偏离
-    "cvd_price_divergence": 0.0,    # 中性 = 无相关性
-    "ofi_std_20d": 0.0,            # 中性 = 无 OFI 数据
+    "oi_price_quadrant": -1.0,  # 中性 = 无信号 (象限编码 0-3, -1 表示数据不足)
+    "funding_rate_zscore": 0.0,  # 中性 = 无偏离
+    "cvd_price_divergence": 0.0,  # 中性 = 无相关性
+    "ofi_std_20d": 0.0,  # 中性 = 无 OFI 数据
     # W3a: Wyckoff climax
-    "wyckoff_climax_stage": 0.0,   # 中性 = 未触发 climax
+    "wyckoff_climax_stage": 0.0,  # 中性 = 未触发 climax
 }
 
 
@@ -468,8 +469,7 @@ class WashoutFeatureExtractor:
             corr = max(-1.0, min(1.0, corr))
             return corr
         except Exception as e:
-            logger.debug("washout F8 btc_correlation FAIL-OPEN: %s\n%s",
-                         e, traceback.format_exc())
+            logger.debug("washout F8 btc_correlation FAIL-OPEN: %s\n%s", e, traceback.format_exc())
             return NEUTRAL_DEFAULTS["btc_correlation_30d"]
 
     # ============================================================
@@ -559,10 +559,7 @@ class WashoutFeatureExtractor:
                 # 裁剪到合理范围 [-10, 10]
                 return max(-10.0, min(10.0, z))
             # 2. 用 series 算 30d zscore
-            fr_series = (
-                macro_data.get("funding_rate_series")
-                or macro_data.get("funding_rate")
-            )
+            fr_series = macro_data.get("funding_rate_series") or macro_data.get("funding_rate")
             if fr_series is None:
                 return NEUTRAL_DEFAULTS["funding_rate_zscore"]
             if isinstance(fr_series, pd.Series):
@@ -679,9 +676,7 @@ class WashoutFeatureExtractor:
     # ============================================================
     # F13: wyckoff_climax_stage — Wyckoff Selling Climax 3 阶段
     # ============================================================
-    def extract_wyckoff_climax_stage(
-        self, df: pd.DataFrame, macro_data: Dict
-    ) -> float:
+    def extract_wyckoff_climax_stage(self, df: pd.DataFrame, macro_data: Dict) -> float:
         """F13: Wyckoff Selling Climax 3 阶段判定 (W3a).
 
         spec §2.3 + §9.3 测试 17-20:
@@ -712,7 +707,7 @@ class WashoutFeatureExtractor:
             low = df["low"].astype(float).values
 
             vol_ma20 = float(np.mean(vol[-21:-1]))  # 前 20d 均量 (不含当前)
-            current_vol = float(vol[-1])
+            current_vol = float(vol[-1])  # noqa: F841
             low_20d = float(np.min(low[-21:-1]))  # 前 20d 低点 (不含当前 bar)
             current_close = float(close[-1])
 
@@ -734,7 +729,7 @@ class WashoutFeatureExtractor:
             decline_pct = float((recent_close[0] - recent_close[-1]) / recent_close[0])
 
             # close<open 占比 (最近 3 bar)
-            bearish_bars = sum(1 for o, c in zip(recent_open, recent_close) if c < o)
+            bearish_bars = sum(1 for o, c in zip(recent_open, recent_close) if c < o)  # noqa: B905
             bearish_pct = bearish_bars / float(n_recent)
 
             # Stage 1 Panic: 跌幅 ∈ [0.01, 0.03], close<open 占比 > 0.66
@@ -750,14 +745,14 @@ class WashoutFeatureExtractor:
             # 量能衰减: 最近 3 bar vol 递减
             recent_vol = vol[-n_recent:]
             vol_decline = (
-                (recent_vol[0] - recent_vol[-1]) / recent_vol[0]
-                if recent_vol[0] > 0 else 0.0
+                (recent_vol[0] - recent_vol[-1]) / recent_vol[0] if recent_vol[0] > 0 else 0.0
             )
             # 下跌速度放缓: |close-open| 递减
-            recent_speed = [abs(c - o) for o, c in zip(recent_open, recent_close)]
+            recent_speed = [abs(c - o) for o, c in zip(recent_open, recent_close)]  # noqa: B905
             speed_decline = (
                 (recent_speed[0] - recent_speed[-1]) / recent_speed[0]
-                if recent_speed[0] > 0 else 0.0
+                if recent_speed[0] > 0
+                else 0.0
             )
             if vol_decline > 0.3 and speed_decline > 0.3:
                 return 3.0

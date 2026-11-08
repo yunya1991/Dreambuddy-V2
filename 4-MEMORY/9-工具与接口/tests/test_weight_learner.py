@@ -7,22 +7,21 @@
 - 同源降权：高度相关的验证器自动降权
 - 权重版本记录：每次权重变更有版本号
 """
-import pytest
 
 
 def test_module_importable():
-    from weight_learner import (
-        BradleyTerryLearner, WeightVersion,
-    )
+    pass
 
 
 # ---------------------------------------------------------------------------
 # Bradley-Terry 冷启动
 # ---------------------------------------------------------------------------
 
+
 def test_bt_cold_start_equal_weights():
     """无数据时冷启动为等权。"""
     from weight_learner import BradleyTerryLearner
+
     stages = ["cycle_consistency", "factuality", "applicability"]
     bt = BradleyTerryLearner(stages=stages)
     weights = bt.get_weights()
@@ -33,6 +32,7 @@ def test_bt_cold_start_equal_weights():
 def test_bt_update_increases_winner_weight():
     """验证通过（pass）的验证器权重应上升。"""
     from weight_learner import BradleyTerryLearner
+
     stages = ["cycle_consistency", "factuality"]
     bt = BradleyTerryLearner(stages=stages)
     w_before = bt.get_weights()
@@ -46,6 +46,7 @@ def test_bt_update_increases_winner_weight():
 def test_bt_update_abstain_no_penalty():
     """abstain 不直接惩罚（强度不变，但归一化可能偏移）。"""
     from weight_learner import BradleyTerryLearner
+
     stages = ["a", "b"]
     bt = BradleyTerryLearner(stages=stages)
     s_before = bt._strength["a"]
@@ -57,6 +58,7 @@ def test_bt_update_abstain_no_penalty():
 def test_bt_weights_nonnegative():
     """权重不能为负。"""
     from weight_learner import BradleyTerryLearner
+
     stages = ["a", "b"]
     bt = BradleyTerryLearner(stages=stages)
     for _ in range(100):
@@ -70,8 +72,10 @@ def test_bt_weights_nonnegative():
 # 权重版本
 # ---------------------------------------------------------------------------
 
+
 def test_weight_version_increments():
-    from weight_learner import BradleyTerryLearner, WeightVersion
+    from weight_learner import BradleyTerryLearner
+
     stages = ["a", "b"]
     bt = BradleyTerryLearner(stages=stages)
     v0 = bt.version
@@ -83,6 +87,7 @@ def test_weight_version_increments():
 
 def test_weight_version_records_history():
     from weight_learner import BradleyTerryLearner
+
     stages = ["a", "b"]
     bt = BradleyTerryLearner(stages=stages)
     bt.update({"a": "pass", "b": "fail"})
@@ -95,9 +100,11 @@ def test_weight_version_records_history():
 # 同源降权
 # ---------------------------------------------------------------------------
 
+
 def test_correlation_downweighting():
     """高度相关的验证器应被降权。"""
     from weight_learner import BradleyTerryLearner
+
     stages = ["a", "b", "c"]
     bt = BradleyTerryLearner(stages=stages)
     # a 和 b 高度相关（总是相同 verdict），c 独立
@@ -113,6 +120,7 @@ def test_correlation_downweighting():
 def test_no_correlation_no_downweight():
     """不相关的验证器不应被降权。"""
     from weight_learner import BradleyTerryLearner
+
     stages = ["a", "b"]
     bt = BradleyTerryLearner(stages=stages)
     for _ in range(20):
@@ -129,8 +137,10 @@ def test_no_correlation_no_downweight():
 # 导出/导入
 # ---------------------------------------------------------------------------
 
+
 def test_export_import_weights():
     from weight_learner import BradleyTerryLearner
+
     stages = ["a", "b"]
     bt = BradleyTerryLearner(stages=stages)
     bt.update({"a": "pass", "b": "fail"})

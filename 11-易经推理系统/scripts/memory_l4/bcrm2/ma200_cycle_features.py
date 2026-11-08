@@ -27,12 +27,14 @@ Spec 补充 — 两大经典经验法则的算法落地（v2：纯价格驱动�
     - cycle_vol_regime_90d: 90 日已实现波动率（长期波动率环境，区分牛/熊市波动特征）
     - cycle_trend_365d: 365 日对数收益（年度趋势方向，捕捉长周期方向）
 """
+
 from __future__ import annotations
 
 import logging
+from typing import Dict, List
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,7 @@ __all__ = ["MA200CycleFeatures"]
 # ============================================================
 # MA200 牛熊分界线特征（保持不变）
 # ============================================================
+
 
 def compute_ma200_features(close: pd.Series) -> pd.DataFrame:
     """计算 MA200 牛熊分界线特征。
@@ -69,11 +72,14 @@ def compute_ma200_features(close: pd.Series) -> pd.DataFrame:
     # MA200 斜率：20日变化率
     slope_20d = ma200.pct_change(20).replace([np.inf, -np.inf], 0.0)
 
-    feats = pd.DataFrame({
-        "ma200_distance_pct": distance_pct,
-        "ma200_above": above,
-        "ma200_slope_20d": slope_20d,
-    }, index=close.index)
+    feats = pd.DataFrame(
+        {
+            "ma200_distance_pct": distance_pct,
+            "ma200_above": above,
+            "ma200_slope_20d": slope_20d,
+        },
+        index=close.index,
+    )
 
     feats = feats.ffill().fillna(0)
     return feats
@@ -82,6 +88,7 @@ def compute_ma200_features(close: pd.Series) -> pd.DataFrame:
 # ============================================================
 # 价格驱动周期特征（v2：移除 halving 日期，纯价格计算）
 # ============================================================
+
 
 def compute_btc_cycle_features(
     close: pd.Series,
@@ -108,18 +115,22 @@ def compute_btc_cycle_features(
     Returns:
         DataFrame with 7 columns
     """
-    n = len(close)
-    close_arr = close.values.astype(float)
+    n = len(close)  # noqa: F841
+    close_arr = close.values.astype(float)  # noqa: F841
 
     # 365 日滚动高/低点
     rolling_high = close.rolling(window, min_periods=window // 2).max()
     rolling_low = close.rolling(window, min_periods=window // 2).min()
 
     # 距 365 日高点的回撤百分比（0=新高，负值=回撤深度）
-    distance_from_high = ((close - rolling_high) / rolling_high * 100.0).replace([np.inf, -np.inf], 0.0)
+    distance_from_high = ((close - rolling_high) / rolling_high * 100.0).replace(
+        [np.inf, -np.inf], 0.0
+    )
 
     # 距 365 日低点的反弹百分比（0=新低，正值=反弹高度）
-    distance_from_low = ((close - rolling_low) / rolling_low * 100.0).replace([np.inf, -np.inf], 0.0)
+    distance_from_low = ((close - rolling_low) / rolling_low * 100.0).replace(
+        [np.inf, -np.inf], 0.0
+    )
 
     # 当前价格在 [365d_low, 365d_high] 中的位置（0=低点，1=高点）
     range_width = (rolling_high - rolling_low).replace(0, np.nan)
@@ -142,15 +153,18 @@ def compute_btc_cycle_features(
     # 365 日对数收益（年度趋势方向）
     trend_365d = np.log(close / close.shift(365)).replace([np.inf, -np.inf], 0.0)
 
-    feats = pd.DataFrame({
-        "cycle_distance_from_365d_high": distance_from_high,
-        "cycle_distance_from_365d_low": distance_from_low,
-        "cycle_position_in_range": position_in_range,
-        "cycle_time_since_peak": time_since_peak,
-        "cycle_momentum_180d": momentum_180d,
-        "cycle_vol_regime_90d": vol_90d,
-        "cycle_trend_365d": trend_365d,
-    }, index=close.index)
+    feats = pd.DataFrame(
+        {
+            "cycle_distance_from_365d_high": distance_from_high,
+            "cycle_distance_from_365d_low": distance_from_low,
+            "cycle_position_in_range": position_in_range,
+            "cycle_time_since_peak": time_since_peak,
+            "cycle_momentum_180d": momentum_180d,
+            "cycle_vol_regime_90d": vol_90d,
+            "cycle_trend_365d": trend_365d,
+        },
+        index=close.index,
+    )
 
     feats = feats.replace([np.inf, -np.inf], 0.0).fillna(0)
     return feats
@@ -177,7 +191,7 @@ def _days_since_rolling_extreme(close: pd.Series, window: int, find_max: bool = 
         if start >= i:
             result[i] = 0.0
             continue
-        sub = arr[start:i + 1]
+        sub = arr[start : i + 1]
         if find_max:
             ext_idx = np.argmax(sub)
         else:
@@ -191,6 +205,7 @@ def _days_since_rolling_extreme(close: pd.Series, window: int, find_max: bool = 
 # ============================================================
 # 组合模块：MA200 + 价格驱动周期
 # ============================================================
+
 
 class MA200CycleFeatures:
     """MA200 牛熊分界 + 比特币价格驱动周期特征组合模块

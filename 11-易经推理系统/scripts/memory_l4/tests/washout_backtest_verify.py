@@ -9,6 +9,7 @@
 FAIL-OPEN：任何单条交易拉数据失败，跳过该交易继续下一条，不中断。
 方向感知：long 止损看"价格是否回升过入场价"；short 止损看"价格是否回落破入场价"。
 """
+
 from __future__ import annotations
 
 import json
@@ -30,8 +31,7 @@ sys.path.insert(0, str(L4_DIR))
 from bcrm2.washout_trigger_gate import WashoutTriggerGate  # noqa: E402
 
 TRADE_INDEX = (
-    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.workbuddy/trade_index/"
-    "all_trades_index.jsonl"
+    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/.workbuddy/trade_index/" "all_trades_index.jsonl"
 )
 RESULT_CSV = str(SCRIPT_DIR / "washout_backtest_result.csv")
 SUMMARY_JSON = str(SCRIPT_DIR / "washout_backtest_summary.json")
@@ -87,8 +87,15 @@ def _parse_candles(rows: list) -> pd.DataFrame:
     df = pd.DataFrame(
         rows,
         columns=[
-            "ts", "open", "high", "low", "close",
-            "volume", "vol_ccy", "vol_ccy_quote", "confirm",
+            "ts",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "vol_ccy",
+            "vol_ccy_quote",
+            "confirm",
         ],
     )
     for c in ("open", "high", "low", "close", "volume"):
@@ -99,8 +106,16 @@ def _parse_candles(rows: list) -> pd.DataFrame:
     return df[["open", "high", "low", "close", "volume"]]
 
 
-_BAR_MS = {"1m": 60_000, "5m": 300_000, "15m": 900_000, "30m": 1_800_000,
-           "1H": 3_600_000, "4H": 14_400_000, "1D": 86_400_000, "1W": 604_800_000}
+_BAR_MS = {
+    "1m": 60_000,
+    "5m": 300_000,
+    "15m": 900_000,
+    "30m": 1_800_000,
+    "1H": 3_600_000,
+    "4H": 14_400_000,
+    "1D": 86_400_000,
+    "1W": 604_800_000,
+}
 
 
 def fetch_candles(
@@ -129,9 +144,7 @@ def fetch_candles(
         (DataFrame[open,high,low,close,volume], 实际命中的 instId 或 None)
     """
     s = _get_session()
-    base = (
-        coin.upper().replace("-USDT", "").replace("USDT", "").replace("-SWAP", "")
-    )
+    base = coin.upper().replace("-USDT", "").replace("USDT", "").replace("-SWAP", "")
     candidates = [f"{base}-USDT", f"{base}-USDT-SWAP"]
     bar_ms = _BAR_MS.get(bar, 3_600_000)
     anchor_ts = pd.Timestamp(anchor_ts_ms, unit="ms", tz="UTC")
@@ -150,8 +163,7 @@ def fetch_candles(
     for _ in range(pages):
         got = False
         for inst_id in candidates:
-            params: dict = {"instId": inst_id, "bar": bar, "limit": "100",
-                            "after": query_cursor}
+            params: dict = {"instId": inst_id, "bar": bar, "limit": "100", "after": query_cursor}
             try:
                 r = s.get(OKX_URL, params=params, timeout=10)
                 j = r.json()
@@ -320,14 +332,17 @@ def process_one_trade(t: dict, gate: WashoutTriggerGate) -> dict:
 def main() -> int:
     sl_trades = load_stoploss_trades()
     total = len(sl_trades)
-    print(f"=== W5 事后归因回测 ===")
+    print("=== W5 事后归因回测 ===")
     print(f"止损出场样本: {total} 条\n")
 
     gate = WashoutTriggerGate()
     results: list = []
     for i, t in enumerate(sl_trades, 1):
-        print(f"[{i}/{total}] {t.get('coin','?')} {t.get('direction','')} "
-              f"entry={t.get('entry_price')} ...", flush=True)
+        print(
+            f"[{i}/{total}] {t.get('coin','?')} {t.get('direction','')} "
+            f"entry={t.get('entry_price')} ...",
+            flush=True,
+        )
         try:
             rec = process_one_trade(t, gate)
         except Exception as e:
@@ -366,12 +381,8 @@ def main() -> int:
     n_strong48 = sum(1 for r in results if r["rebound_48h_strong"])
 
     # 价值估算（pct 累加；pnl_pct 为负数代表亏损，取绝对值）
-    potential_value = sum(
-        abs(r["pnl_pct"]) for r in results if r["rebound_24h"]
-    )
-    misjudge_risk = sum(
-        r["adverse_move_pct"] for r in results if not r["rebound_48h_strong"]
-    )
+    potential_value = sum(abs(r["pnl_pct"]) for r in results if r["rebound_24h"])
+    misjudge_risk = sum(r["adverse_move_pct"] for r in results if not r["rebound_48h_strong"])
     net_value = potential_value - misjudge_risk
 
     summary = {
@@ -389,9 +400,7 @@ def main() -> int:
         "w5_potential_value_pct": round(potential_value, 4),
         "w5_misjudge_risk_pct": round(misjudge_risk, 4),
         "w5_net_value_pct": round(net_value, 4),
-        "direction_note": (
-            "long 止损看 max_high>=entry；short 止损看 min_low<=entry（方向感知）"
-        ),
+        "direction_note": ("long 止损看 max_high>=entry；short 止损看 min_low<=entry（方向感知）"),
         "data_issues": [r for r in results if r.get("note")],
     }
     with open(SUMMARY_JSON, "w") as f:
@@ -401,13 +410,19 @@ def main() -> int:
     print("\n=== W5 事后归因回测报告 ===")
     print(f"样本数: {total} 条止损出场交易")
     print(f"有效数据样本: {len(valid)} 条（拉到 K 线的）")
-    print(f"触发门激活率: {n_trigger}/{n_valid_trigger} "
-          f"({round(n_trigger/n_valid_trigger*100,1) if n_valid_trigger else 0}%) "
-          f"[基于 {n_valid_trigger} 条有 1D 数据]")
-    print(f"止损后 24h 反弹率: {n_rebound24}/{total} "
-          f"({round(n_rebound24/total*100,1) if total else 0}%)  ← 说明是洗盘扫损")
-    print(f"止损后 48h 强反弹率: {n_strong48}/{total} "
-          f"({round(n_strong48/total*100,1) if total else 0}%)")
+    print(
+        f"触发门激活率: {n_trigger}/{n_valid_trigger} "
+        f"({round(n_trigger/n_valid_trigger*100,1) if n_valid_trigger else 0}%) "
+        f"[基于 {n_valid_trigger} 条有 1D 数据]"
+    )
+    print(
+        f"止损后 24h 反弹率: {n_rebound24}/{total} "
+        f"({round(n_rebound24/total*100,1) if total else 0}%)  ← 说明是洗盘扫损"
+    )
+    print(
+        f"止损后 48h 强反弹率: {n_strong48}/{total} "
+        f"({round(n_strong48/total*100,1) if total else 0}%)"
+    )
     print(f"W5 潜在价值（避免被扫损的损失）: +{potential_value*100:.2f}%")
     print(f"W5 误判风险（继续逆向的额外损失）: +{misjudge_risk*100:.2f}%")
     print(f"净价值: {'+' if net_value>=0 else ''}{net_value*100:.2f}%")

@@ -15,12 +15,9 @@ SKILL 执行引擎 — 16-调控系统 Phase 2
 """
 
 import re
-import json
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
-
+from typing import Any, Callable, Dict, List, Optional
 
 MODULE_DIR = Path(__file__).parent.parent
 BASE_DIR = MODULE_DIR.parent
@@ -72,7 +69,9 @@ class SkillEngine:
     SKILL_REGISTRY: Dict[str, Dict] = {}
 
     @classmethod
-    def register(cls, skill_name: str, handler: Callable, skill_path: str = "", version: str = "1.0.0"):
+    def register(
+        cls, skill_name: str, handler: Callable, skill_path: str = "", version: str = "1.0.0"
+    ):
         """注册 SKILL 处理器"""
         cls.SKILL_REGISTRY[skill_name] = {
             "handler": handler,
@@ -128,7 +127,7 @@ class SkillEngine:
         """从 SKILL.md 中解析执行阶段"""
         phases = []
         phase_pattern = re.compile(
-            r'###?\s*(Phase\s*[\d.]+|阶段\s*[\d.]+)[：:]\s*(.+?)\n',
+            r"###?\s*(Phase\s*[\d.]+|阶段\s*[\d.]+)[：:]\s*(.+?)\n",
             re.IGNORECASE,
         )
 
@@ -139,14 +138,20 @@ class SkillEngine:
             start = match.end()
             end = matches[i + 1].start() if i + 1 < len(matches) else len(skill_md)
             section = skill_md[start:end]
-            lines = [l.strip() for l in section.split("\n") if l.strip() and not l.startswith("#")]
+            lines = [
+                l.strip()
+                for l in section.split("\n")  # noqa: E741
+                if l.strip() and not l.startswith("#")  # noqa: E741
+            ]  # noqa: E741
             description = lines[0] if lines else phase_name
 
-            phases.append(SkillPhase(
-                phase_id=phase_id,
-                name=phase_name,
-                description=description,
-            ))
+            phases.append(
+                SkillPhase(
+                    phase_id=phase_id,
+                    name=phase_name,
+                    description=description,
+                )
+            )
 
         return phases
 
@@ -203,7 +208,9 @@ def register_skill(skill_name: str, skill_path: str = "", version: str = "1.0.0"
         def my_skill_handler(inputs, engine):
             return {"result": ...}
     """
+
     def decorator(func):
         SkillEngine.register(skill_name, func, skill_path, version)
         return func
+
     return decorator

@@ -18,10 +18,10 @@ Fail-open（§九 L1180）：
   - 子指标异常 → 中性 50
   - 整个 compute() 异常 → DEFAULT_NEUTRAL_SCORES
 """
+
 from __future__ import annotations
 
 import json
-import math
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -38,10 +38,11 @@ import numpy as np
 try:  # noqa: E402
     import os as _os
     import sys as _sys
-    _FD_BASE = _os.path.dirname(_os.path.abspath(__file__))          # memory_l4
-    _FD_BASE = _os.path.dirname(_FD_BASE)                            # scripts
-    _FD_BASE = _os.path.dirname(_FD_BASE)                            # 11-易经推理系统
-    _FD_ROOT = _os.path.dirname(_FD_BASE)                            # dreambuddy-v2
+
+    _FD_BASE = _os.path.dirname(_os.path.abspath(__file__))  # memory_l4
+    _FD_BASE = _os.path.dirname(_FD_BASE)  # scripts
+    _FD_BASE = _os.path.dirname(_FD_BASE)  # 11-易经推理系统
+    _FD_ROOT = _os.path.dirname(_FD_BASE)  # dreambuddy-v2
     _9_FUND_PATH = _os.path.join(_FD_ROOT, "9-基本面分析")
     if _os.path.isdir(_9_FUND_PATH) and _9_FUND_PATH not in _sys.path:
         _sys.path.insert(0, _9_FUND_PATH)
@@ -64,19 +65,27 @@ except ImportError:
 
 # 美林时钟四阶段→天维度评分映射（§三 L128：复苏对风险资产利好→加分）
 _MERRILL_PHASE_SCORES: Dict[str, int] = {
-    "RECOVERY": 70,      # 复苏期：资金流入altcoin → 利好
-    "OVERHEAT": 60,      # 过热期：altcoin疯狂但风险高
-    "STAGFLATION": 40,   # 滞胀期：资金回流BTC
-    "REFLATION": 30,     # 衰退期：资金流出加密市场
+    "RECOVERY": 70,  # 复苏期：资金流入altcoin → 利好
+    "OVERHEAT": 60,  # 过热期：altcoin疯狂但风险高
+    "STAGFLATION": 40,  # 滞胀期：资金回流BTC
+    "REFLATION": 30,  # 衰退期：资金流出加密市场
 }
 
 # 日历季节性基础分（§三 L127：Q1效应/Q4效应/周末效应/减半周期季节性）
 # 基于BTC历史季度收益统计
 _MONTH_BASE_SCORES: Dict[int, int] = {
-    1: 68, 2: 65, 3: 62,   # Q1：历史正收益效应
-    4: 55, 5: 52, 6: 48,   # Q2：混合表现
-    7: 42, 8: 40, 9: 38,   # Q3：历史弱势（夏季低迷）
-    10: 58, 11: 62, 12: 65 # Q4：历史强势（年底效应）
+    1: 68,
+    2: 65,
+    3: 62,  # Q1：历史正收益效应
+    4: 55,
+    5: 52,
+    6: 48,  # Q2：混合表现
+    7: 42,
+    8: 40,
+    9: 38,  # Q3：历史弱势（夏季低迷）
+    10: 58,
+    11: 62,
+    12: 65,  # Q4：历史强势（年底效应）
 }
 
 
@@ -92,6 +101,7 @@ class FiveDomainFeatureComputer:
     Args:
         enable: 总开关。False 时返回中性默认值（字节等价战略层不存在）。
     """
+
     # ──────────────── Shadow 红线（Spec §5.3 H8）────────────────
     # 默认 = False。必须显式 enable = True 才 JSONL 记录；
     # 就算 True，shadow 也只读不写 result（字节等价）。
@@ -125,18 +135,23 @@ class FiveDomainFeatureComputer:
         self.enable = enable
         # 实例属性：运行时 JSONL 路径（可被测试 override）
         import os as _os
+
         self._od_shadow_jsonl_path = _os.environ.get(
             "ODAILY_SHADOW_JSONL",
             _os.path.join(
                 _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))),
-                "scripts", "runtime", self._OD_SHADOW_JSONL_DEFAULT,
+                "scripts",
+                "runtime",
+                self._OD_SHADOW_JSONL_DEFAULT,
             ),
         )
         # Spec §5.3 H8 红线：默认 False；7 日观察期通过 ODAILY_ENGINE_BOOST=1 打开
         # 4 门槛全 PASS 后改类属性默认 True（PR+CR）
-        self.enable_odaily_engine_boost = _os.environ.get(
-            "ODAILY_ENGINE_BOOST", ""
-        ).lower() in ("1", "true", "yes")
+        self.enable_odaily_engine_boost = _os.environ.get("ODAILY_ENGINE_BOOST", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
 
         # 7引擎红线开关：FUND_7ENGINES_BOOST=1 打开（默认 False）
         self.enable_fundamental_7engines_boost = _os.environ.get(
@@ -147,38 +162,55 @@ class FiveDomainFeatureComputer:
             "FD7_SHADOW_JSONL",
             _os.path.join(
                 _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))),
-                "scripts", "runtime", self._FD7_SHADOW_JSONL_DEFAULT,
+                "scripts",
+                "runtime",
+                self._FD7_SHADOW_JSONL_DEFAULT,
             ),
         )
 
         # ── Force Vector Shadow 开关 + JSONL 路径 ──
-        self.enable_force_vector = _os.environ.get(
-            "FORCE_VECTOR_SHADOW", ""
-        ).lower() in ("1", "true", "yes")
+        self.enable_force_vector = _os.environ.get("FORCE_VECTOR_SHADOW", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
         self._force_vector_shadow_jsonl_path = _os.environ.get(
             "FORCE_VECTOR_SHADOW_JSONL",
             _os.path.join(
                 _os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))),
-                "scripts", "runtime", self._FORCE_VECTOR_SHADOW_JSONL_DEFAULT,
+                "scripts",
+                "runtime",
+                self._FORCE_VECTOR_SHADOW_JSONL_DEFAULT,
             ),
         )
 
         # ── P2 五维承接开关：CYCLE_STATE_BRIDGE=1 打开（默认 False）──
         # 40 系统产出物 cycle_state.json → 天/地/将三维输入源（fail-open）
-        self.enable_cycle_state_bridge = _os.environ.get(
-            "CYCLE_STATE_BRIDGE", ""
-        ).lower() in ("1", "true", "yes")
+        self.enable_cycle_state_bridge = _os.environ.get("CYCLE_STATE_BRIDGE", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
 
     # ==================================================================
     # 公共入口
     # ==================================================================
 
     # 分层coin_data的判定键集合：若dict顶层存在这些键之一，则视为扁平结构
-    _FLAT_COIN_DATA_KEYS = frozenset({
-        "cycle4y_t_rel", "merrill_phase", "atr_percentile", "liquidity_score",
-        "regime", "spring_force_score", "price_amplitude", "atr", "ftd_signal",
-        "ma200_distance_percentile",
-    })
+    _FLAT_COIN_DATA_KEYS = frozenset(
+        {
+            "cycle4y_t_rel",
+            "merrill_phase",
+            "atr_percentile",
+            "liquidity_score",
+            "regime",
+            "spring_force_score",
+            "price_amplitude",
+            "atr",
+            "ftd_signal",
+            "ma200_distance_percentile",
+        }
+    )
 
     @classmethod
     def _resolve_class_coin_data(
@@ -245,6 +277,7 @@ class FiveDomainFeatureComputer:
                             bridge_coin_data,
                             bridge_system_state,
                         )
+
                         cls_coin = bridge_coin_data(cls_coin, cls)
                         cls_state = bridge_system_state(system_state, cls)
                     except Exception:  # noqa: BLE001  承接永远 fail-open
@@ -351,14 +384,22 @@ class FiveDomainFeatureComputer:
             # Spec §5.2.4：与 Odaily (1±10%) 独立乘法叠加，乘积顶 1.2×1.1=1.32，再 clamp [0,100]
             # Spec §5.3 H8 红线：enable_odaily_engine_boost=False 时 od boost 不注入
             if self.enable_odaily_engine_boost:
-                dao_raw = dao_raw * (1.0 + self._pn_dao_boost(coin_data)) * (1.0 + self._od_dao_boost(coin_data))
+                dao_raw = (
+                    dao_raw
+                    * (1.0 + self._pn_dao_boost(coin_data))
+                    * (1.0 + self._od_dao_boost(coin_data))
+                )
             else:
                 dao_raw = dao_raw * (1.0 + self._pn_dao_boost(coin_data))
             # Spec §3.1 方案B：7引擎 S/A 两个独立乘法因子叠加于 pn×od 之后。
             # 使用独立生产注入红线 enable_fundamental_7engines_production_injection（Shadow 期间=永远 False），
             # 保证 shadow audit 开开关时，字节等价不注入任何 S/A 级boost（只读铁律）。
             if self.enable_fundamental_7engines_production_injection:
-                dao_raw = dao_raw * (1.0 + self._fd_S_dao_boost(coin_data)) * (1.0 + self._fd_A_dao_boost(coin_data, system_state))
+                dao_raw = (
+                    dao_raw
+                    * (1.0 + self._fd_S_dao_boost(coin_data))
+                    * (1.0 + self._fd_A_dao_boost(coin_data, system_state))
+                )
             return _normalize_0_100(dao_raw / 100.0)
         except Exception:
             return DEFAULT_NEUTRAL_SCORES["dao"]
@@ -538,13 +579,21 @@ class FiveDomainFeatureComputer:
             # Spec §5.2.4：与 Odaily (1±10%) 独立乘法叠加，乘积顶 1.2×1.1=1.32，再 clamp [0,100]
             # Spec §5.3 H8 红线：enable_odaily_engine_boost=False 时 od boost 不注入
             if self.enable_odaily_engine_boost:
-                tian_raw = tian_raw * (1.0 + self._pn_tian_boost(coin_data)) * (1.0 + self._od_tian_boost(coin_data))
+                tian_raw = (
+                    tian_raw
+                    * (1.0 + self._pn_tian_boost(coin_data))
+                    * (1.0 + self._od_tian_boost(coin_data))
+                )
             else:
                 tian_raw = tian_raw * (1.0 + self._pn_tian_boost(coin_data))
             # Spec §3.1 方案B：7引擎 S/A 两个独立乘法因子，开关关字节等价不注入。
             # 与 dao 对齐：使用独立生产注入红线，shadow 期间不注入
             if self.enable_fundamental_7engines_production_injection:
-                tian_raw = tian_raw * (1.0 + self._fd_S_tian_boost(coin_data)) * (1.0 + self._fd_A_tian_boost(coin_data, system_state))
+                tian_raw = (
+                    tian_raw
+                    * (1.0 + self._fd_S_tian_boost(coin_data))
+                    * (1.0 + self._fd_A_tian_boost(coin_data, system_state))
+                )
             return _normalize_0_100(tian_raw / 100.0)
         except Exception:
             return DEFAULT_NEUTRAL_SCORES["tian"]
@@ -558,7 +607,7 @@ class FiveDomainFeatureComputer:
             return 0.0
         deltas: List[float] = []
         # P1：VIX 级别映射（越恐慌天越减分，越平静加分）
-        vix = (coin_data.get("pn_us_vix") if isinstance(coin_data, dict) else None)
+        vix = coin_data.get("pn_us_vix") if isinstance(coin_data, dict) else None
         if vix is None and isinstance(coin_data, dict):
             vix = coin_data.get("vix_close")
         if isinstance(vix, (int, float)):
@@ -582,14 +631,20 @@ class FiveDomainFeatureComputer:
             # 100 → 0；105 → -0.03；95 → +0.03
             deltas.append(max(-0.05, min(0.05, (100.0 - float(dxy)) * 0.006)))
         # P5：抄底 hit_ratio 作为季节替代项（低hit=底部形成→天偏暖/加分）
-        hit_ratio_pct = coin_data.get("pn_cycle_bottom_hit_ratio_pct") if isinstance(coin_data, dict) else None
+        hit_ratio_pct = (
+            coin_data.get("pn_cycle_bottom_hit_ratio_pct") if isinstance(coin_data, dict) else None
+        )
         if isinstance(hit_ratio_pct, (int, float)):
             # 高 hit(>50) → 周期已进入中段→加小分；低 hit(<30)→底部→加多分
             r = float(hit_ratio_pct) / 100.0
-            if r >= 0.7:   deltas.append(0.05)
-            elif r >= 0.5: deltas.append(0.03)
-            elif r >= 0.3: deltas.append(0.0)
-            else:          deltas.append(0.04)
+            if r >= 0.7:
+                deltas.append(0.05)
+            elif r >= 0.5:
+                deltas.append(0.03)
+            elif r >= 0.3:
+                deltas.append(0.0)
+            else:
+                deltas.append(0.04)
         if not deltas:
             return 0.0
         avg = sum(deltas) / float(len(deltas))
@@ -703,7 +758,11 @@ class FiveDomainFeatureComputer:
                     D2 = +0.01
 
             # ── D3 安全事件 ──
-            if isinstance(sec_hits, (int, float)) and isinstance(batch, (int, float)) and float(batch) > 0:
+            if (
+                isinstance(sec_hits, (int, float))
+                and isinstance(batch, (int, float))
+                and float(batch) > 0
+            ):
                 sec_ratio = float(sec_hits) / float(batch)
                 if sec_ratio > 0.2:
                     D3 = -0.05
@@ -730,12 +789,14 @@ class FiveDomainFeatureComputer:
             if db_path is not None:
                 resolved_path = str(db_path)
                 import os as _os
+
                 if not _os.path.exists(resolved_path):
                     return []
             else:
                 try:
-                    from five_domain_sqlite_reader import DEFAULT_DB_PATH  # type: ignore
+                    from five_domain_sqlite_reader import DEFAULT_DB_PATH  # type: ignore  # noqa: I001
                     import os as _os
+
                     resolved_path = str(DEFAULT_DB_PATH)
                     if not _os.path.exists(resolved_path):
                         resolved_path = None
@@ -753,6 +814,7 @@ class FiveDomainFeatureComputer:
             if db_path is not None:
                 # 显式指定 db_path：直接读该 SQLite 库（测试/调试语义不变）
                 import sqlite3 as _sqlite3
+
                 try:
                     conn = _sqlite3.connect(resolved_path)
                     try:
@@ -767,12 +829,14 @@ class FiveDomainFeatureComputer:
                 # ── v1.2.2：PostgreSQL 优先（18 层 2026-10-17 SQLite→PG 迁移后主库）──
                 try:
                     from .sentiment_channel import query_pg
+
                     rows = list(query_pg(_NEWS_SQL))
                 except Exception:
                     rows = []
                 # ── 回退：SQLite 旧库（迁移前历史数据；72h 过滤后通常为空 → fail-open []）──
                 if not rows and resolved_path is not None:
                     import sqlite3 as _sqlite3
+
                     try:
                         conn = _sqlite3.connect(resolved_path)
                         try:
@@ -813,6 +877,7 @@ class FiveDomainFeatureComputer:
                 if isinstance(records_timestamp, str) and records_timestamp:
                     try:
                         import datetime as _dt
+
                         iso = records_timestamp
                         if iso.endswith("Z"):
                             iso = iso[:-1] + "+00:00"
@@ -824,9 +889,13 @@ class FiveDomainFeatureComputer:
                 return 0
 
             news_list: List[Dict[str, Any]] = []
-            for (src, cat, sub, ts_col, metrics_txt, raw_txt) in rows:
+            for src, cat, sub, ts_col, metrics_txt, raw_txt in rows:
                 # ── Spec §5 TC-8 细粒度：metrics/raw 是字符串非空且无法解析为 JSON → 整条 skip ──
-                if isinstance(metrics_txt, str) and metrics_txt.strip() and metrics_txt.strip() != "{}":
+                if (
+                    isinstance(metrics_txt, str)
+                    and metrics_txt.strip()
+                    and metrics_txt.strip() != "{}"
+                ):
                     try:
                         json.loads(metrics_txt)
                     except Exception:
@@ -934,13 +1003,20 @@ class FiveDomainFeatureComputer:
             #    优先调 engines.sentiment_engine；若 import 失败 fallback 到 news["sentiment_label"]
             s1_invoke_ok = False
             try:
-                from engines.sentiment_engine import SentimentEngine, time_decay_weight  # type: ignore
+                from engines.sentiment_engine import SentimentEngine, time_decay_weight  # type: ignore  # noqa: I001
+
                 # [P1-5c] NOW 锚点策略：优先 news_list 非零 max ts（fixture 老数据 age 正常化）；缺省 fallback time.time()
                 #   · 生产：SQLite 72h 内 max ts 距真实 time.time() 通常 <30min，可视为一致
                 #   · 测试：fixture 构造 14.5mo 前数据 → 以最后一条新闻时间作为锚点，age=梯度几小时
-                _fd_s1_ts_list = [int(n.get('timestamp_ms') or n.get('ts_ms') or 0) for n in news_list if isinstance(n, dict)]
+                _fd_s1_ts_list = [
+                    int(n.get("timestamp_ms") or n.get("ts_ms") or 0)
+                    for n in news_list
+                    if isinstance(n, dict)
+                ]
                 _fd_s1_ts_nonzero = [t for t in _fd_s1_ts_list if t > 0]
-                _fd_s1_now_ms: int = (max(_fd_s1_ts_nonzero) if _fd_s1_ts_nonzero else int(time.time() * 1000))
+                _fd_s1_now_ms: int = (
+                    max(_fd_s1_ts_nonzero) if _fd_s1_ts_nonzero else int(time.time() * 1000)
+                )
                 se = SentimentEngine()
                 _weighted_scores_s1: List[tuple] = []
                 for n in news_list:
@@ -963,7 +1039,7 @@ class FiveDomainFeatureComputer:
                                 else:
                                     # 时间衰减：ts_ms=0（解析失败 fail-open）→ age=0 → w=1.0（等权等价）
                                     # 兼容双 key 命名：优先 timestamp_ms（生产 SQLite 解析）；回退 ts_ms（历史 fixture）
-                                    _ts_v = int(n.get('timestamp_ms') or n.get('ts_ms') or 0)
+                                    _ts_v = int(n.get("timestamp_ms") or n.get("ts_ms") or 0)
                                     if _ts_v == 0:
                                         _age_h = 0.0
                                     else:
@@ -983,7 +1059,7 @@ class FiveDomainFeatureComputer:
                     elif lab == "neutral":
                         lab_score = 0.0
                     if lab_score is not None:
-                        _ts_v = int(n.get('timestamp_ms') or n.get('ts_ms') or 0)
+                        _ts_v = int(n.get("timestamp_ms") or n.get("ts_ms") or 0)
                         if _ts_v == 0:
                             _age_h = 0.0
                         else:
@@ -992,19 +1068,30 @@ class FiveDomainFeatureComputer:
                         _weighted_scores_s1.append((float(lab_score), float(w)))
                 s1_invoke_ok = bool(_weighted_scores_s1)
             except Exception:
-                s1_invoke_ok = False
+                s1_invoke_ok = False  # noqa: F841
                 _weighted_scores_s1 = []  # noqa: F841
             if not _weighted_scores_s1:
                 # 纯启发式兜底（从 sentiment_label）：仍然加衰减权重；NOW 同 S1 锚点策略
-                _fd_s1_ts_list_b = [int(n.get('timestamp_ms') or n.get('ts_ms') or 0) for n in news_list if isinstance(n, dict)]
+                _fd_s1_ts_list_b = [
+                    int(n.get("timestamp_ms") or n.get("ts_ms") or 0)
+                    for n in news_list
+                    if isinstance(n, dict)
+                ]
                 _fd_s1_ts_nonzero_b = [t for t in _fd_s1_ts_list_b if t > 0]
-                _fd_s1_now_ms_b: int = (max(_fd_s1_ts_nonzero_b) if _fd_s1_ts_nonzero_b else int(time.time() * 1000))
+                _fd_s1_now_ms_b: int = (
+                    max(_fd_s1_ts_nonzero_b) if _fd_s1_ts_nonzero_b else int(time.time() * 1000)
+                )
                 try:
                     from engines.sentiment_engine import time_decay_weight as _tdw2  # type: ignore
                 except Exception:
+
                     def _tdw2(a, tau=24.0):  # type: ignore
                         import math as _m
-                        return 1.0 if a <= 0 else _m.exp(-max(0.0, float(a)) / max(1e-6, float(tau)))
+
+                        return (
+                            1.0 if a <= 0 else _m.exp(-max(0.0, float(a)) / max(1e-6, float(tau)))
+                        )
+
                 _ws_backup: List[tuple] = []
                 for n in news_list:
                     if not isinstance(n, dict):
@@ -1020,7 +1107,7 @@ class FiveDomainFeatureComputer:
                         score_h = 0.0
                     if score_h is None:
                         continue
-                    _ts_v = int(n.get('timestamp_ms') or n.get('ts_ms') or 0)
+                    _ts_v = int(n.get("timestamp_ms") or n.get("ts_ms") or 0)
                     if _ts_v == 0:
                         _age_h = 0.0
                     else:
@@ -1051,6 +1138,7 @@ class FiveDomainFeatureComputer:
             swm: float = 2.0  # 默认中性=2
             try:
                 from engines.event_ledger_engine import generate_ledger  # type: ignore
+
                 entries = generate_ledger(news_list)
                 if isinstance(entries, list) and entries:
                     dirs: List[float] = []
@@ -1080,17 +1168,31 @@ class FiveDomainFeatureComputer:
                 r_dir = None
             # 启发式兜底
             if r_dir is None:
-                pos = sum(1 for n in news_list if isinstance(n, dict) and str(n.get("sentiment_label","")).lower() in ("bullish","positive","long"))
-                neg = sum(1 for n in news_list if isinstance(n, dict) and str(n.get("sentiment_label","")).lower() in ("bearish","negative","short"))
+                pos = sum(
+                    1
+                    for n in news_list
+                    if isinstance(n, dict)
+                    and str(n.get("sentiment_label", "")).lower() in ("bullish", "positive", "long")
+                )
+                neg = sum(
+                    1
+                    for n in news_list
+                    if isinstance(n, dict)
+                    and str(n.get("sentiment_label", "")).lower()
+                    in ("bearish", "negative", "short")
+                )
                 total = max(1, pos + neg)
                 r_dir = float(pos - neg) / float(total)
                 # swm 启发式: 含紧急/被黑/冲突 → 3；含"符合预期/获批/顺利"→1；其他2
-                hi = 0; lo = 0
+                hi = 0
+                lo = 0
                 for n in news_list:
                     if not isinstance(n, dict):
                         continue
                     txt = f"{n.get('title','')} {n.get('content','')}"
-                    if any(k in txt for k in ("被黑", "漏洞", "冲突升级", "抛售", "加息超预期", "起诉")):
+                    if any(
+                        k in txt for k in ("被黑", "漏洞", "冲突升级", "抛售", "加息超预期", "起诉")
+                    ):
                         hi += 1
                     if any(k in txt for k in ("顺利", "通过", "符合预期", "正式发布", "获批")):
                         lo += 1
@@ -1109,6 +1211,7 @@ class FiveDomainFeatureComputer:
             pass_rate: float = 0.8  # FAIL-OPEN 中性下限
             try:
                 from engines.news_contract_validator import validate_batch  # type: ignore
+
                 vr = validate_batch(news_list)
                 if isinstance(vr, dict) and isinstance(vr.get("pass_rate"), (int, float)):
                     pass_rate = float(vr["pass_rate"])
@@ -1133,6 +1236,7 @@ class FiveDomainFeatureComputer:
             mono = 0
             try:
                 from engines.event_mapping_engine import map_event_type as _map_fn  # type: ignore
+
                 etypes: List[str] = []
                 for n in news_list:
                     if not isinstance(n, dict):
@@ -1149,6 +1253,7 @@ class FiveDomainFeatureComputer:
                 # 统计出现最多的类别占比 → mono
                 if etypes:
                     from collections import Counter
+
                     cnt = Counter(etypes)
                     top_c = cnt.most_common(1)[0][1]
                     mono = top_c
@@ -1165,6 +1270,7 @@ class FiveDomainFeatureComputer:
             top_traj: float = 0.0
             try:
                 from engines.narrative_engine import build_narratives  # type: ignore
+
                 nr = build_narratives(news_list)
                 if isinstance(nr, dict):
                     narr_list = nr.get("narratives") or []
@@ -1231,28 +1337,50 @@ class FiveDomainFeatureComputer:
             # T1 政策情绪 × 政策条目数权重（含货币政策/监管政策/政策关键词）
             #    P1 升级：SentimentEngine 真实推理 + 时间衰减加权；3层 FAIL-OPEN fallback 回启发式
             policy_news: List[Dict[str, Any]] = []
-            POL_KEYWORDS = ("monetary_policy", "crypto_regulation", "us_policy", "regul",
-                            "降息", "加息", "监管", "审批", "SEC", "MiCA", "法案", "政策",
-                            "货币政策", "央行")
+            POL_KEYWORDS = (
+                "monetary_policy",
+                "crypto_regulation",
+                "us_policy",
+                "regul",
+                "降息",
+                "加息",
+                "监管",
+                "审批",
+                "SEC",
+                "MiCA",
+                "法案",
+                "政策",
+                "货币政策",
+                "央行",
+            )
             for n in news_list:
                 if not isinstance(n, dict):
                     continue
                 etype = str(n.get("event_type") or "").lower()
                 txt = f"{n.get('title','')} {n.get('content','')}"
-                is_pol = (etype in ("monetary_policy", "crypto_regulation", "us_policy", "us_data")
-                          or any(k.lower() in txt.lower() for k in POL_KEYWORDS))
+                is_pol = etype in (
+                    "monetary_policy",
+                    "crypto_regulation",
+                    "us_policy",
+                    "us_data",
+                ) or any(k.lower() in txt.lower() for k in POL_KEYWORDS)
                 if is_pol:
                     policy_news.append(n)
             p_count = len(policy_news)
 
             # [P1-5c] NOW 锚点策略：同 S1（优先 news_list 非零 max ts → fallback time.time()）
-            _t1_ts_list = [int(n.get('timestamp_ms') or n.get('ts_ms') or 0) for n in news_list if isinstance(n, dict)]
+            _t1_ts_list = [
+                int(n.get("timestamp_ms") or n.get("ts_ms") or 0)
+                for n in news_list
+                if isinstance(n, dict)
+            ]
             _t1_ts_nonzero = [t for t in _t1_ts_list if t > 0]
-            _t1_now_ms: int = (max(_t1_ts_nonzero) if _t1_ts_nonzero else int(time.time() * 1000))
+            _t1_now_ms: int = max(_t1_ts_nonzero) if _t1_ts_nonzero else int(time.time() * 1000)
             _t1_weighted: List[tuple] = []
             _t1_eng_works = False
             try:
-                from engines.sentiment_engine import SentimentEngine, time_decay_weight as _t1_tdw  # type: ignore
+                from engines.sentiment_engine import SentimentEngine, time_decay_weight as _t1_tdw  # type: ignore  # noqa: I001
+
                 _t1_se = SentimentEngine()
                 _t1_eng_works = True
             except Exception:
@@ -1260,6 +1388,7 @@ class FiveDomainFeatureComputer:
                 _t1_se = None  # type: ignore
                 # engines import 失败时造一个等价的衰减函数（与 time_decay_weight 同公式）
                 import math as _tm
+
                 def _t1_tdw(a: float, tau: float = 24.0) -> float:
                     return 1.0 if a <= 0 else _tm.exp(-max(0.0, float(a)) / max(1e-6, float(tau)))
 
@@ -1293,7 +1422,7 @@ class FiveDomainFeatureComputer:
                         else:
                             r_score = 0.0
                     # 时间衰减（ts=0 fail-open → age=0 → w=1.0；双 key 兼容）
-                    _ts_v = int(n.get('timestamp_ms') or n.get('ts_ms') or 0)
+                    _ts_v = int(n.get("timestamp_ms") or n.get("ts_ms") or 0)
                     if _ts_v == 0:
                         _age_h = 0.0
                     else:
@@ -1333,7 +1462,17 @@ class FiveDomainFeatureComputer:
             # T2 紧急压制：urgency_ratio > 0.4 → -0.05；>0.2 → -0.03；另 security/geo 类(规避) 每 1 项 -0.01（min -0.03）
             urgent_events = 0
             avoid_count = 0
-            URGENCY_KW = ("被黑", "黑客", "漏洞", "冲突", "SEC 起诉", "抛售", "破产", "冻结资金", "暂停提款")
+            URGENCY_KW = (
+                "被黑",
+                "黑客",
+                "漏洞",
+                "冲突",
+                "SEC 起诉",
+                "抛售",
+                "破产",
+                "冻结资金",
+                "暂停提款",
+            )
             for n in news_list:
                 if not isinstance(n, dict):
                     continue
@@ -1350,7 +1489,11 @@ class FiveDomainFeatureComputer:
             elif urgency_ratio > 0.2:
                 T2 += -0.03
             if avoid_count >= 1:
-                T2 += min(0.0, float(avoid_count) * -0.01) if False else -0.03 if avoid_count >= 1 else 0.0
+                T2 += (
+                    min(0.0, float(avoid_count) * -0.01)
+                    if False
+                    else -0.03 if avoid_count >= 1 else 0.0
+                )
             # 保守：避免一次性 T2 压 -0.08，clamp
             T2 = max(-0.08, T2)
 
@@ -1358,6 +1501,7 @@ class FiveDomainFeatureComputer:
             pass_rate = 0.8
             try:
                 from engines.news_contract_validator import validate_batch
+
                 vr = validate_batch(news_list)
                 if isinstance(vr, dict) and isinstance(vr.get("pass_rate"), (int, float)):
                     pass_rate = float(vr["pass_rate"])
@@ -1367,7 +1511,11 @@ class FiveDomainFeatureComputer:
 
             # T4 EventType 增长率：前后半段政策类比值；按与 T1 一致的 is_pol 判定统计
             sorted_n = sorted(
-                (n for n in news_list if isinstance(n, dict) and isinstance(n.get("ts_ms"), (int, float))),
+                (
+                    n
+                    for n in news_list
+                    if isinstance(n, dict) and isinstance(n.get("ts_ms"), (int, float))
+                ),
                 key=lambda n: float(n.get("ts_ms") or 0),
             )
             T4 = 0.0
@@ -1375,7 +1523,14 @@ class FiveDomainFeatureComputer:
                 mid = len(sorted_n) // 2
                 first_half = sorted_n[:mid]
                 second_half = sorted_n[mid:]
-                POL_ETYPES = ("monetary_policy", "crypto_regulation", "us_policy", "us_data", "geopolitics")
+                POL_ETYPES = (
+                    "monetary_policy",
+                    "crypto_regulation",
+                    "us_policy",
+                    "us_data",
+                    "geopolitics",
+                )
+
                 def _pol_count(arr):
                     cnt = 0
                     for n in arr:
@@ -1383,11 +1538,13 @@ class FiveDomainFeatureComputer:
                             continue
                         etype = str(n.get("event_type") or "").lower()
                         txt = f"{n.get('title','')} {n.get('content','')}"
-                        is_pol = (etype in POL_ETYPES
-                                  or any(k.lower() in txt.lower() for k in POL_KEYWORDS))
+                        is_pol = etype in POL_ETYPES or any(
+                            k.lower() in txt.lower() for k in POL_KEYWORDS
+                        )
                         if is_pol:
                             cnt += 1
                     return cnt
+
                 c_f = _pol_count(first_half)
                 c_s = _pol_count(second_half)
                 ratio = (float(c_s) + 1.0) / (float(c_f) + 1.0)  # Laplace 平滑
@@ -1403,8 +1560,11 @@ class FiveDomainFeatureComputer:
             reg_traj = 0.0
             try:
                 from engines.narrative_engine import build_narratives
+
                 nr = build_narratives(policy_news or news_list)
-                if isinstance(nr, dict) and isinstance(nr.get("regulation_policy_traj"), (int, float)):
+                if isinstance(nr, dict) and isinstance(
+                    nr.get("regulation_policy_traj"), (int, float)
+                ):
                     reg_traj = float(nr["regulation_policy_traj"])
                 elif isinstance(nr, dict):
                     nl = nr.get("narratives") or []
@@ -1453,11 +1613,19 @@ class FiveDomainFeatureComputer:
             if isinstance(system_state, dict):
                 r3d = system_state.get("r3d") or system_state.get("least_resistance_3d")
                 # 兼容：TC 直接传裸 r3d dict（含 direction/confidence 键）作为第二个参数传入
-                if not isinstance(r3d, dict) and "direction" in system_state and "confidence" in system_state:
+                if (
+                    not isinstance(r3d, dict)
+                    and "direction" in system_state
+                    and "confidence" in system_state
+                ):
                     r3d = system_state
             if not isinstance(r3d, dict) and isinstance(coin_data, dict):
                 r3d = coin_data.get("r3d") or coin_data.get("least_resistance_3d")
-                if not isinstance(r3d, dict) and "direction" in coin_data and "confidence" in coin_data:
+                if (
+                    not isinstance(r3d, dict)
+                    and "direction" in coin_data
+                    and "confidence" in coin_data
+                ):
                     r3d = coin_data
             if not isinstance(r3d, dict):
                 # A6 真实引擎：尝试 compute（coin_data 提供 raw_score/history 才调用）
@@ -1469,6 +1637,7 @@ class FiveDomainFeatureComputer:
                 if isinstance(raw, (int, float)) and isinstance(hist, list):
                     try:
                         from engines.least_resistance import compute_resistance_3d  # type: ignore
+
                         r3d = compute_resistance_3d(float(raw), hist)
                     except Exception:
                         r3d = None
@@ -1504,11 +1673,19 @@ class FiveDomainFeatureComputer:
             if isinstance(system_state, dict):
                 sig = system_state.get("signal_engine") or system_state.get("signal")
                 # 兼容：TC 直接传裸 signal dict（含 base_weight/effective_weight 键）
-                if not isinstance(sig, dict) and "base_weight" in system_state and "effective_weight" in system_state:
+                if (
+                    not isinstance(sig, dict)
+                    and "base_weight" in system_state
+                    and "effective_weight" in system_state
+                ):
                     sig = system_state
             if not isinstance(sig, dict) and isinstance(coin_data, dict):
                 sig = coin_data.get("signal_engine") or coin_data.get("signal")
-                if not isinstance(sig, dict) and "base_weight" in coin_data and "effective_weight" in coin_data:
+                if (
+                    not isinstance(sig, dict)
+                    and "base_weight" in coin_data
+                    and "effective_weight" in coin_data
+                ):
                     sig = coin_data
             if not isinstance(sig, dict):
                 # 空 → 0.0（A 级无数据中性）
@@ -1530,9 +1707,7 @@ class FiveDomainFeatureComputer:
         except Exception:
             return 0.0
 
-    def _compute_calendar_seasonality(
-        self, month: int, day: int = 15, weekday: int = 0
-    ) -> int:
+    def _compute_calendar_seasonality(self, month: int, day: int = 15, weekday: int = 0) -> int:
         """日历季节性：Q1/Q4效应 + 周末效应。
 
         §三 L127：统计历史均值，正收益期→加分。
@@ -1639,9 +1814,12 @@ class FiveDomainFeatureComputer:
         if isinstance(gchg, (int, float)):
             # 大涨>5%=过热减分；大跌<-5%=超跌加分；其他线性
             r = float(gchg)
-            if r > 5:       deltas.append(-0.04)
-            elif r < -5:    deltas.append(0.04)
-            else:           deltas.append(r * 0.008)
+            if r > 5:
+                deltas.append(-0.04)
+            elif r < -5:
+                deltas.append(0.04)
+            else:
+                deltas.append(r * 0.008)
         # P6：RWA 7日变化（机构对 RWA/加密的宏观仓位判断）
         rwa7d = cd.get("pn_rwa_change7d_pct")
         if isinstance(rwa7d, (int, float)):
@@ -1657,11 +1835,11 @@ class FiveDomainFeatureComputer:
         §11.1 L1204：地=regime→分数映射。
         """
         _REGIME_SCORES = {
-            "trend_up": 75,      # 上升趋势
-            "trend_down": 30,    # 下降趋势
-            "ranging": 50,       # 震荡
-            "high_volatility": 45, # 高波动
-            "breakout": 70,      # 突破
+            "trend_up": 75,  # 上升趋势
+            "trend_down": 30,  # 下降趋势
+            "ranging": 50,  # 震荡
+            "high_volatility": 45,  # 高波动
+            "breakout": 70,  # 突破
         }
         return _REGIME_SCORES.get(regime, 50)
 
@@ -1860,8 +2038,12 @@ class FiveDomainFeatureComputer:
         has_drawdown_limit = self._cls_get(system_state, cls, "has_drawdown_limit", True)
         has_daily_trade_limit = self._cls_get(system_state, cls, "has_daily_trade_limit", False)
         has_position_cap = self._cls_get(system_state, cls, "has_position_cap", True)
-        score = (has_stop_loss * 25 + has_drawdown_limit * 25 +
-                 has_daily_trade_limit * 25 + has_position_cap * 25)
+        score = (
+            has_stop_loss * 25
+            + has_drawdown_limit * 25
+            + has_daily_trade_limit * 25
+            + has_position_cap * 25
+        )
         return int(np.clip(round(score), 0, 100))
 
     # ==================================================================
@@ -1885,13 +2067,20 @@ class FiveDomainFeatureComputer:
             backtest = self._compute_backtest_verification(system_state, cls)
             review = self._compute_review_iteration(system_state, cls)
 
-            fa_raw = (completeness * 0.20 + adaptation * 0.25 +
-                      risk_rules * 0.25 + backtest * 0.20 + review * 0.10)
+            fa_raw = (
+                completeness * 0.20
+                + adaptation * 0.25
+                + risk_rules * 0.25
+                + backtest * 0.20
+                + review * 0.10
+            )
             return _normalize_0_100(fa_raw / 100.0)
         except Exception:
             return DEFAULT_NEUTRAL_SCORES["fa"]
 
-    def _compute_strategy_completeness(self, system_state: Optional[Dict[str, Any]], cls: str) -> int:
+    def _compute_strategy_completeness(
+        self, system_state: Optional[Dict[str, Any]], cls: str
+    ) -> int:
         """策略库完备性：6类策略是否实现。P0：按 cls 取值（不同类策略库可以不同）。"""
         if not system_state:
             return 50
@@ -1908,7 +2097,9 @@ class FiveDomainFeatureComputer:
         match_pct = self._cls_get(system_state, cls, "strategy_match_pct", 0.5)
         return int(np.clip(round(match_pct * 100), 0, 100))
 
-    def _compute_risk_rule_completeness(self, system_state: Optional[Dict[str, Any]], cls: str) -> int:
+    def _compute_risk_rule_completeness(
+        self, system_state: Optional[Dict[str, Any]], cls: str
+    ) -> int:
         """风控规则完整度：止损/回撤/仓位/相关性。P0：按 cls 取值（不同类风控强度可以不同）。"""
         if not system_state:
             return 50
@@ -1921,7 +2112,9 @@ class FiveDomainFeatureComputer:
         score = (has_sl + has_dd + has_pos + has_corr) * 25
         return int(np.clip(round(score), 0, 100))
 
-    def _compute_backtest_verification(self, system_state: Optional[Dict[str, Any]], cls: str) -> int:
+    def _compute_backtest_verification(
+        self, system_state: Optional[Dict[str, Any]], cls: str
+    ) -> int:
         """回测验证度：样本外/夏普/最大回撤/换手率。P0：按 cls 取值（不同类夏普/回撤差异显著）。"""
         if not system_state:
             return 50
@@ -1966,7 +2159,9 @@ class FiveDomainFeatureComputer:
             t = top1.upper()
             if "BTC" in t or "ETH" in t or "SOL" in t:
                 deltas.append(0.02)
-            elif "USD" in t or "USDT" in t or "USDC" in t or "TUSD" in t or "DAI" in t or "FRAX" in t:
+            elif (
+                "USD" in t or "USDT" in t or "USDC" in t or "TUSD" in t or "DAI" in t or "FRAX" in t
+            ):
                 deltas.append(-0.03)
         if not deltas:
             return 0.0
@@ -2090,6 +2285,7 @@ class FiveDomainFeatureComputer:
         sentiment_engine_ok = True
         try:
             import sys as _sys
+
             _fund_path = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析"
             if _fund_path not in _sys.path:
                 _sys.path.insert(0, _fund_path)
@@ -2105,10 +2301,12 @@ class FiveDomainFeatureComputer:
         if not sentiment_engine_ok:
             # ImportError 场景：生成 20 条 sent±0.01 小噪声（保持合法长度），但 import_fail_count++
             import numpy as _np
+
             rng = _np.random.default_rng(42 + int(sent * 1000))
             return [float(max(0.0, min(1.0, sent + rng.uniform(-0.01, +0.01)))) for _ in range(20)]
         # ── 3. 正常：模拟 4 引擎 × 5 条采样 = 20 点高斯小噪声
         import numpy as _np
+
         rng = _np.random.default_rng(1 + int(sent * 7919))
         out = []
         for _ in range(20):
@@ -2129,14 +2327,16 @@ class FiveDomainFeatureComputer:
           policy_ts_20_len / shadow_reason_code ∈ {OD_OK, OD_NO_ODAILY_FIELDS,
           OD_IMPORT_ERROR, OD_PERMISSION, OD_GENERIC_ERR} / import_fail_count
         """
-        import os as _os
+        import os as _os  # noqa: I001
         import time as _time
         import json as _json
 
         record: Dict[str, Any] = {
             "ts_ms": int(_time.time() * 1000),
             "asset_class_cnt": len(result) if isinstance(result, dict) else 0,
-            "coin_classes": sorted(list(result.keys())) if isinstance(result, dict) else [],
+            "coin_classes": (
+                sorted(list(result.keys())) if isinstance(result, dict) else []  # noqa: C414
+            ),  # noqa: C414
             "dao_boost_mean": 0.0,
             "tian_boost_mean": 0.0,
             "policy_ts_20_len": 0,
@@ -2148,11 +2348,16 @@ class FiveDomainFeatureComputer:
             has_od = False
             if isinstance(coin_data, dict):
                 # 扁平结构：coin_data 顶层有 odaily_* 字段
-                has_od = any(str(k).startswith("odaily_") and v is not None for k, v in coin_data.items())
+                has_od = any(
+                    str(k).startswith("odaily_") and v is not None for k, v in coin_data.items()
+                )
                 # 嵌套结构：coin_data[asset_class] 子 dict 有 odaily_* 字段
                 if not has_od:
                     for cls_cd in coin_data.values():
-                        if isinstance(cls_cd, dict) and any(str(k).startswith("odaily_") and v is not None for k, v in cls_cd.items()):
+                        if isinstance(cls_cd, dict) and any(
+                            str(k).startswith("odaily_") and v is not None
+                            for k, v in cls_cd.items()
+                        ):
                             has_od = True
                             break
             if not has_od:
@@ -2162,10 +2367,13 @@ class FiveDomainFeatureComputer:
             if isinstance(result, dict):
                 for cls in result.keys():
                     cls_cd = self._resolve_class_coin_data(coin_data, cls)
-                    if cls_cd is None: continue
+                    if cls_cd is None:
+                        continue
                     d = self._od_dao_boost(cls_cd)
                     t = self._od_tian_boost(cls_cd)
-                    dao_sum += d; tian_sum += t; n += 1
+                    dao_sum += d
+                    tian_sum += t
+                    n += 1
             if n > 0:
                 record["dao_boost_mean"] = round(dao_sum / n, 6)
                 record["tian_boost_mean"] = round(tian_sum / n, 6)
@@ -2178,10 +2386,12 @@ class FiveDomainFeatureComputer:
                 # 直接再验证一次 import（代价可接受，1μs）
                 try:
                     import sys as _sys2
+
                     _fund_path2 = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析"
                     if _fund_path2 not in _sys2.path:
                         _sys2.path.insert(0, _fund_path2)
                     from engines.sentiment_engine import SentimentEngine  # noqa: F401
+
                     _se_ok = True
                 except Exception:
                     _se_ok = False
@@ -2210,6 +2420,7 @@ class FiveDomainFeatureComputer:
             # 尽力写 logging（可失败）
             try:
                 import logging as _lg
+
                 _lg.getLogger("FiveDomain.OdailyShadow").warning(
                     "OD_PERMISSION 无法写入 shadow JSONL: %s", path
                 )
@@ -2234,7 +2445,7 @@ class FiveDomainFeatureComputer:
         result: Dict[str, Dict[str, int]],
     ) -> None:
         """Fundamental 7引擎 Shadow 主逻辑：JSONL append 1条（绝对不修改 result）。"""
-        import os as _os
+        import os as _os  # noqa: I001
         import time as _time
         import json as _json
         import importlib as _ilib
@@ -2242,7 +2453,9 @@ class FiveDomainFeatureComputer:
         record: Dict[str, Any] = {
             "ts_ms": int(_time.time() * 1000),
             "asset_class_cnt": len(result) if isinstance(result, dict) else 0,
-            "coin_classes": sorted(list(result.keys())) if isinstance(result, dict) else [],
+            "coin_classes": (
+                sorted(list(result.keys())) if isinstance(result, dict) else []  # noqa: C414
+            ),  # noqa: C414
             "fd_S_dao_mean": 0.0,
             "fd_S_tian_mean": 0.0,
             "fd_A_dao_mean": 0.0,
@@ -2259,10 +2472,16 @@ class FiveDomainFeatureComputer:
             import_fail = 0
             _engine_checks = (
                 ("engines.event_ledger_engine", lambda m: m.generate_ledger([])),
-                ("engines.event_mapping_engine", lambda m: m.map_event_type("", "")),  # topic/category keyword-only
+                (
+                    "engines.event_mapping_engine",
+                    lambda m: m.map_event_type("", ""),
+                ),  # topic/category keyword-only
                 ("engines.narrative_engine", lambda m: m.build_narratives([])),
                 ("engines.news_contract_validator", lambda m: m.validate_batch([])),
-                ("engines.sentiment_engine", lambda m: m.SentimentEngine().analyze_text("test")),  # 实例方法
+                (
+                    "engines.sentiment_engine",
+                    lambda m: m.SentimentEngine().analyze_text("test"),
+                ),  # 实例方法
                 ("engines.signal_engine", lambda m: None),
                 ("engines.least_resistance", lambda m: None),
             )
@@ -2298,12 +2517,15 @@ class FiveDomainFeatureComputer:
                     history = [(s - 50.0) / 50.0 for s in dao_scores]
                     try:
                         from engines.least_resistance import compute_resistance_3d  # type: ignore
+
                         r3d = compute_resistance_3d(float(raw_score), history)
                         if isinstance(r3d, dict):
                             # 将 direction 从字符串转换为数字（_fd_A_dao_boost 期望 int/float）
                             dir_val = r3d.get("direction")
                             if isinstance(dir_val, str):
-                                r3d["direction"] = 1.0 if dir_val == "up" else (-1.0 if dir_val == "down" else 0.0)
+                                r3d["direction"] = (
+                                    1.0 if dir_val == "up" else (-1.0 if dir_val == "down" else 0.0)
+                                )
                             shadow_state["r3d"] = r3d
                     except Exception:
                         pass
@@ -2313,7 +2535,9 @@ class FiveDomainFeatureComputer:
                     pf = float(system_state.get("profit_factor", 1.0) or 1.0)
                     base_w = 1.0
                     eff_w = 1.0 + (win_rate - 0.5) * 0.4 + max(0.0, (pf - 1.0)) * 0.05
-                    shadow_state.setdefault("signal_engine", {"base_weight": base_w, "effective_weight": eff_w})
+                    shadow_state.setdefault(
+                        "signal_engine", {"base_weight": base_w, "effective_weight": eff_w}
+                    )
                 except Exception:
                     pass
 
@@ -2350,13 +2574,28 @@ class FiveDomainFeatureComputer:
                     r_ok, s_ok = False, False
                     if not isinstance(dic, dict):
                         return False, False
-                    r_ok = (dic.get("r3d") is not None or dic.get("least_resistance_3d") is not None
-                            or ("direction" in dic and isinstance(dic.get("direction"), (int, float))
-                                and "confidence" in dic and isinstance(dic.get("confidence"), (int, float))))
-                    s_ok = (dic.get("signal_engine") is not None or dic.get("signal") is not None
-                            or ("base_weight" in dic and isinstance(dic.get("base_weight"), (int, float))
-                                and "effective_weight" in dic and isinstance(dic.get("effective_weight"), (int, float))))
+                    r_ok = (
+                        dic.get("r3d") is not None
+                        or dic.get("least_resistance_3d") is not None
+                        or (
+                            "direction" in dic
+                            and isinstance(dic.get("direction"), (int, float))
+                            and "confidence" in dic
+                            and isinstance(dic.get("confidence"), (int, float))
+                        )
+                    )
+                    s_ok = (
+                        dic.get("signal_engine") is not None
+                        or dic.get("signal") is not None
+                        or (
+                            "base_weight" in dic
+                            and isinstance(dic.get("base_weight"), (int, float))
+                            and "effective_weight" in dic
+                            and isinstance(dic.get("effective_weight"), (int, float))
+                        )
+                    )
                     return r_ok, s_ok
+
                 has_r3d, has_sig = False, False
                 if isinstance(shadow_state, dict):
                     has_r3d, has_sig = _check_r3d_sig(shadow_state)
@@ -2367,11 +2606,13 @@ class FiveDomainFeatureComputer:
                     if not (has_r3d and has_sig):
                         # 嵌套结构：遍历 coin_data 子 dict（按资产类分层格式）
                         for sub in coin_data.values():
-                            if not isinstance(sub, dict): continue
+                            if not isinstance(sub, dict):
+                                continue
                             r2, s2 = _check_r3d_sig(sub)
                             has_r3d = has_r3d or r2
                             has_sig = has_sig or s2
-                            if has_r3d and has_sig: break
+                            if has_r3d and has_sig:
+                                break
                 if not has_r3d and not has_sig:
                     record["shadow_reason_code"] = "FD7_NO_DATA"
                 elif not has_r3d:
@@ -2395,6 +2636,7 @@ class FiveDomainFeatureComputer:
             record["shadow_reason_code"] = "FD7_PERMISSION"
             try:
                 import logging as _lg
+
                 _lg.getLogger("FiveDomain.Fd7Shadow").warning(
                     "FD7_PERMISSION 无法写入 shadow JSONL: %s", path
                 )
@@ -2419,7 +2661,7 @@ class FiveDomainFeatureComputer:
         · JSONL append 一条完整记录；
         · 任何异常：标记 reason_code 后 return，绝不破坏 compute() 返回。
         """
-        import os as _os
+        import os as _os  # noqa: I001
         import time as _time
         import json as _json
         import importlib as _ilib
@@ -2428,7 +2670,9 @@ class FiveDomainFeatureComputer:
         record: Dict[str, Any] = {
             "ts_ms": int(_time.time() * 1000),
             "asset_class_cnt": len(result) if isinstance(result, dict) else 0,
-            "coin_classes": sorted(list(result.keys())) if isinstance(result, dict) else [],
+            "coin_classes": (
+                sorted(list(result.keys())) if isinstance(result, dict) else []  # noqa: C414
+            ),  # noqa: C414
             "force_vector_import_ok": False,
             "force_vector_data_ok": False,
             "force_vector_shadow_reason_code": "FV_START",
@@ -2448,7 +2692,7 @@ class FiveDomainFeatureComputer:
                 fv_pkg = _ilib.import_module("force_vector")
                 has_fv = bool(fv_pkg)
             except Exception:
-                has_fv = False
+                has_fv = False  # noqa: F841
                 record["force_vector_shadow_reason_code"] = "FV_IMPORT_ERROR"
                 return  # 无模块可跑，终止
 
@@ -2482,7 +2726,7 @@ class FiveDomainFeatureComputer:
             for cls in list(result.keys()):
                 cls_scores = result.get(cls, {}) or {}
                 cls_out: Dict[str, Any] = {
-                    "domain_scores": dict(cls_scores),   # 仅作审计快照，不参与评分
+                    "domain_scores": dict(cls_scores),  # 仅作审计快照，不参与评分
                     "force_vectors": None,
                     "feature_correlation": None,
                     "primary_contradiction": None,
@@ -2554,9 +2798,13 @@ class FiveDomainFeatureComputer:
 
                         if _hist_read_ok:
                             # 使用 JSONL 历史真实方向序列 + 当前 norms 作为最新点
-                            for _dim_idx, _dim_key in enumerate(("dao", "tian", "di", "jiang", "fa")):
+                            for _dim_idx, _dim_key in enumerate(
+                                ("dao", "tian", "di", "jiang", "fa")
+                            ):
                                 _real = _hist_series[_dim_key][-6:]  # 最多取最近6条
-                                _real.append(max(-1.0, min(1.0, float(norms[_dim_idx]))))  # 追加当前
+                                _real.append(
+                                    max(-1.0, min(1.0, float(norms[_dim_idx])))
+                                )  # 追加当前
                                 _real = [max(-1.0, min(1.0, v)) for v in _real]
                                 if _dim_key == "dao":
                                     dao_series = _real
@@ -2569,27 +2817,52 @@ class FiveDomainFeatureComputer:
                                 else:
                                     fa_series = _real
                             # hist30d_feat：用 JSONL 历史填充（不足30条→右侧pad合成）
-                            for _dim_idx, _dim_key in enumerate(("dao", "tian", "di", "jiang", "fa")):
+                            for _dim_idx, _dim_key in enumerate(
+                                ("dao", "tian", "di", "jiang", "fa")
+                            ):
                                 _h = list(_hist_series[_dim_key])
                                 _cur = max(-1.0, min(1.0, float(norms[_dim_idx])))
                                 _h.append(_cur)
                                 if len(_h) < 30:
                                     _pad_n = 30 - len(_h)
-                                    _h = _h + [max(-1.0, min(1.0, _cur * (1.0 - 0.01 * j) + float(_rng.normal(0, 0.008)))) for j in range(_pad_n)]
+                                    _h = _h + [
+                                        max(
+                                            -1.0,
+                                            min(
+                                                1.0,
+                                                _cur * (1.0 - 0.01 * j)
+                                                + float(_rng.normal(0, 0.008)),
+                                            ),
+                                        )
+                                        for j in range(_pad_n)
+                                    ]
                                 hist30d_feat[_dim_key] = _h[-30:]
                         else:
                             # 回退：合成噪声（原逻辑）
                             for i in range(7):
                                 w = 1.0 - 0.02 * i
                                 noise = _rng.normal(0, 0.01, size=5)
-                                dao_series.append(max(-1.0, min(1.0, norms[0]*w + float(noise[0]))))
-                                tian_series.append(max(-1.0, min(1.0, norms[1]*w + float(noise[1]))))
-                                di_series.append(max(-1.0, min(1.0, norms[2]*w + float(noise[2]))))
-                                jiang_series.append(max(-1.0, min(1.0, norms[3]*w + float(noise[3]))))
-                                fa_series.append(max(-1.0, min(1.0, norms[4]*w + float(noise[4]))))
+                                dao_series.append(
+                                    max(-1.0, min(1.0, norms[0] * w + float(noise[0])))
+                                )
+                                tian_series.append(
+                                    max(-1.0, min(1.0, norms[1] * w + float(noise[1])))
+                                )
+                                di_series.append(
+                                    max(-1.0, min(1.0, norms[2] * w + float(noise[2])))
+                                )
+                                jiang_series.append(
+                                    max(-1.0, min(1.0, norms[3] * w + float(noise[3])))
+                                )
+                                fa_series.append(
+                                    max(-1.0, min(1.0, norms[4] * w + float(noise[4])))
+                                )
                         fvs = fv_calc.compute_all(
-                            dao_data=dao_series, tian_data=tian_series, di_data=di_series,
-                            jiang_data=jiang_series, fa_data=fa_series,
+                            dao_data=dao_series,
+                            tian_data=tian_series,
+                            di_data=di_series,
+                            jiang_data=jiang_series,
+                            fa_data=fa_series,
                         )
                         if fvs is not None and isinstance(fvs, dict):
                             cls_out["force_vectors"] = {
@@ -2601,33 +2874,48 @@ class FiveDomainFeatureComputer:
                     # 3b. FeatureCorrelation（特征-价格 IC + MI + combined_score 排名）
                     try:
                         fc_calc = FeatureCorrelationCalculator()
-                        dom_score = float(norms[0])*0.25 + float(norms[1])*0.25 + float(norms[2])*0.25
+                        dom_score = (
+                            float(norms[0]) * 0.25 + float(norms[1]) * 0.25 + float(norms[2]) * 0.25
+                        )
                         returns_arr = _np.asarray(
-                            [dom_score*0.02*(1-0.03*i) + _rng.normal(0, 0.005) for i in range(7)],
+                            [
+                                dom_score * 0.02 * (1 - 0.03 * i) + _rng.normal(0, 0.005)
+                                for i in range(7)
+                            ],
                             dtype=float,
                         )
                         feats = {
-                            "dao": dao_series, "tian": tian_series, "di": di_series,
-                            "jiang": jiang_series, "fa": fa_series,
+                            "dao": dao_series,
+                            "tian": tian_series,
+                            "di": di_series,
+                            "jiang": jiang_series,
+                            "fa": fa_series,
                         }
                         # 先逐特征算 combined_score，再 rank_features
                         corrs = []
                         for name, arr in feats.items():
-                            ic = fc_calc.compute_ic(_np.asarray(arr[:-1], dtype=float), returns_arr[1:])
-                            mi = fc_calc.compute_mi_normalized(_np.asarray(arr, dtype=float), returns_arr)
+                            ic = fc_calc.compute_ic(
+                                _np.asarray(arr[:-1], dtype=float), returns_arr[1:]
+                            )
+                            mi = fc_calc.compute_mi_normalized(
+                                _np.asarray(arr, dtype=float), returns_arr
+                            )
                             combined = fc_calc.compute_combined_score(ic, mi)
                             from force_vector.models import FeatureCorrelation as _FC
-                            corrs.append(_FC(
-                                feature_name=name,
-                                dimension=name,  # 本阶段"特征名=所属维度"
-                                ic_30d=float(ic),
-                                mi_30d=float(mi),
-                                combined_score=float(combined),
-                                rank=0,
-                                ic_weight=0.6,   # 默认与 compute_combined_score.w_linear 一致
-                                beta_weight=1.0,  # 无 Beta 时中性权重
-                                final_weight=0.0,  # 将在 compute_optimal_weights 中更新
-                            ))
+
+                            corrs.append(
+                                _FC(
+                                    feature_name=name,
+                                    dimension=name,  # 本阶段"特征名=所属维度"
+                                    ic_30d=float(ic),
+                                    mi_30d=float(mi),
+                                    combined_score=float(combined),
+                                    rank=0,
+                                    ic_weight=0.6,  # 默认与 compute_combined_score.w_linear 一致
+                                    beta_weight=1.0,  # 无 Beta 时中性权重
+                                    final_weight=0.0,  # 将在 compute_optimal_weights 中更新
+                                )
+                            )
                         fc_ranked = fc_calc.rank_features(corrs)
                         if fc_ranked:
                             cls_out["feature_correlation"] = [
@@ -2640,7 +2928,9 @@ class FiveDomainFeatureComputer:
                                 "mi": float(getattr(top, "mi_30d", 0.0)),
                                 "final_score": float(getattr(top, "combined_score", 0.0)),
                                 "direction": "up" if getattr(top, "ic_30d", 0.0) >= 0 else "down",
-                                "confidence": min(1.0, abs(float(getattr(top, "combined_score", 0.0)))),
+                                "confidence": min(
+                                    1.0, abs(float(getattr(top, "combined_score", 0.0)))
+                                ),
                                 "data_quality": "ok",
                             }
                     except Exception as _fc_err:
@@ -2657,17 +2947,19 @@ class FiveDomainFeatureComputer:
                                 _v = _fv_dict.get(_dim, {})
                                 _mag = float(_v.get("magnitude", 0.0))
                                 _dir = float(_v.get("direction", 0.0))
-                                _fallback.append({
-                                    "rank": 0,
-                                    "feature_name": _dim,
-                                    "dimension": _dim,
-                                    "ic_30d": _dir,  # 用 direction 近似 IC
-                                    "mi_30d": 0.0,
-                                    "combined_score": abs(_mag),
-                                    "ic_weight": 0.6,
-                                    "beta_weight": 1.0,
-                                    "final_weight": 0.0,
-                                })
+                                _fallback.append(
+                                    {
+                                        "rank": 0,
+                                        "feature_name": _dim,
+                                        "dimension": _dim,
+                                        "ic_30d": _dir,  # 用 direction 近似 IC
+                                        "mi_30d": 0.0,
+                                        "combined_score": abs(_mag),
+                                        "ic_weight": 0.6,
+                                        "beta_weight": 1.0,
+                                        "final_weight": 0.0,
+                                    }
+                                )
                             # 按 combined_score 降序赋 rank
                             _fallback.sort(key=lambda x: x["combined_score"], reverse=True)
                             for _i, _f in enumerate(_fallback):
@@ -2691,19 +2983,25 @@ class FiveDomainFeatureComputer:
                     try:
                         pca_analyzer = PCAResonanceAnalyzer()
                         powers_now = {
-                            "dao": float(dao_series[-1]), "tian": float(tian_series[-1]),
-                            "di": float(di_series[-1]), "jiang": float(jiang_series[-1]),
+                            "dao": float(dao_series[-1]),
+                            "tian": float(tian_series[-1]),
+                            "di": float(di_series[-1]),
+                            "jiang": float(jiang_series[-1]),
                             "fa": float(fa_series[-1]),
                         }
                         # 主导维度：取绝对值最大
                         dom_dim_now = max(powers_now.keys(), key=lambda k: abs(powers_now[k]))
-                        pca_out = pca_analyzer.compute_resonance(powers_now, dominant_dim=dom_dim_now)
+                        pca_out = pca_analyzer.compute_resonance(
+                            powers_now, dominant_dim=dom_dim_now
+                        )
                         if pca_out is not None:
                             cls_out["pca_resonance"] = {
                                 "dominant_dim": getattr(pca_out, "dominant_dimension", dom_dim_now),
                                 "explained_ratio": getattr(pca_out, "explained_ratio", 0.0),
                                 "sign_alignment": getattr(pca_out, "sign_alignment", 0.0),
-                                "strength_coefficient": getattr(pca_out, "strength_coefficient", 1.0),
+                                "strength_coefficient": getattr(
+                                    pca_out, "strength_coefficient", 1.0
+                                ),
                                 "stable": getattr(pca_out, "alignment", "") != "broken",
                             }
                     except Exception:
@@ -2714,28 +3012,60 @@ class FiveDomainFeatureComputer:
                         cc_ = CycleComparator()
                         # 30d 合成：更慢衰减（若未预填充则生成）
                         if not hist30d_feat:
-                            for name, w0 in zip(("dao","tian","di","jiang","fa"), norms):
+                            for name, w0 in zip(  # noqa: B905
+                                ("dao", "tian", "di", "jiang", "fa"), norms
+                            ):  # noqa: B905
                                 hist30d_feat[name] = [
-                                    max(-1.0, min(1.0, w0*(1.0-0.01*i) + float(_rng.normal(0, 0.008))))
+                                    max(
+                                        -1.0,
+                                        min(
+                                            1.0,
+                                            w0 * (1.0 - 0.01 * i) + float(_rng.normal(0, 0.008)),
+                                        ),
+                                    )
                                     for i in range(30)
                                 ]
                         # 方向=均值，强度=平均绝对值
                         d7 = float(_np.mean([dao_series[-1], tian_series[-1], di_series[-1]]))
-                        d30 = float(_np.mean([
-                            hist30d_feat["dao"][-1], hist30d_feat["tian"][-1], hist30d_feat["di"][-1],
-                        ]))
-                        m7 = float(_np.mean([abs(x) for x in (dao_series[-1], tian_series[-1], di_series[-1], jiang_series[-1], fa_series[-1])]))
+                        d30 = float(
+                            _np.mean(
+                                [
+                                    hist30d_feat["dao"][-1],
+                                    hist30d_feat["tian"][-1],
+                                    hist30d_feat["di"][-1],
+                                ]
+                            )
+                        )
+                        m7 = float(
+                            _np.mean(
+                                [
+                                    abs(x)
+                                    for x in (
+                                        dao_series[-1],
+                                        tian_series[-1],
+                                        di_series[-1],
+                                        jiang_series[-1],
+                                        fa_series[-1],
+                                    )
+                                ]
+                            )
+                        )
                         m30 = float(_np.mean([abs(hist30d_feat[k][-1]) for k in hist30d_feat]))
-                        cc_out = cc_.compare(direction_7d=d7, direction_30d=d30,
-                                            magnitude_7d=m7, magnitude_30d=m30)
+                        cc_out = cc_.compare(
+                            direction_7d=d7, direction_30d=d30, magnitude_7d=m7, magnitude_30d=m30
+                        )
                         if cc_out is not None:
                             cls_out["cycle_comparison"] = {
                                 "short_window_avg": getattr(cc_out, "final_direction", d7),
                                 "long_window_avg": getattr(cc_out, "final_magnitude", m30),
                                 "short_direction": "up" if d7 >= 0 else "down",
                                 "long_direction": "up" if d30 >= 0 else "down",
-                                "consistency_state": getattr(cc_out, "consistency_state", "observation"),
-                                "adjustment_coefficient": getattr(cc_out, "adjustment_coefficient", 1.0),
+                                "consistency_state": getattr(
+                                    cc_out, "consistency_state", "observation"
+                                ),
+                                "adjustment_coefficient": getattr(
+                                    cc_out, "adjustment_coefficient", 1.0
+                                ),
                                 "data_sufficient": True,
                                 "turning_likelihood": getattr(cc_out, "turning_likelihood", 0.0),
                             }
@@ -2746,8 +3076,12 @@ class FiveDomainFeatureComputer:
                     try:
                         eb_ = ElasticityBetaCalculator()
                         price_hist = [100.0 + n * 1.0 for n in range(7)]
-                        force_hist_dao = list(dao_series) if dao_series else [0.0]*7
-                        force_30_dao = list(hist30d_feat.get("dao")) if ("dao" in hist30d_feat and len(hist30d_feat["dao"])>=30) else [0.0]*30
+                        force_hist_dao = list(dao_series) if dao_series else [0.0] * 7
+                        force_30_dao = (
+                            list(hist30d_feat.get("dao"))
+                            if ("dao" in hist30d_feat and len(hist30d_feat["dao"]) >= 30)
+                            else [0.0] * 30
+                        )
                         eb_out = eb_.compute(
                             price_changes_7d=price_hist,
                             force_changes_7d=force_hist_dao,
@@ -2761,11 +3095,15 @@ class FiveDomainFeatureComputer:
                                 "beta_ratio": getattr(eb_out, "beta_ratio", 1.0),
                                 "elasticity_state": getattr(eb_out, "elasticity_state", "normal"),
                                 "decay_days": int(getattr(eb_out, "decay_days", 0) or 0),
-                                "amplification_days": int(getattr(eb_out, "amplification_days", 0) or 0),
+                                "amplification_days": int(
+                                    getattr(eb_out, "amplification_days", 0) or 0
+                                ),
                                 "p_value": getattr(eb_out, "p_value", 1.0),
                                 # 兼容 detect API 需要的 decay_signal / amplification_signal：
                                 "decay_signal": bool(getattr(eb_out, "decay_signal", False)),
-                                "amplification_signal": bool(getattr(eb_out, "amplification_signal", False)),
+                                "amplification_signal": bool(
+                                    getattr(eb_out, "amplification_signal", False)
+                                ),
                             }
                     except Exception:
                         pass
@@ -2787,15 +3125,19 @@ class FiveDomainFeatureComputer:
                         rank_shift = bool(dom_cur and dom_prev != dom_cur)
                         # 共振破裂：alignment 进入 broken 或 sign_alignment<0.25
                         res_break = bool(
-                            (not pca.get("stable", True)) or
-                            float(pca.get("sign_alignment", 1.0)) < 0.25
+                            (not pca.get("stable", True))
+                            or float(pca.get("sign_alignment", 1.0)) < 0.25
                         )
                         # CBR 背离：历史数据无，则 False；通过 RegimeConditionalCalibrator 查
                         cbr_div = False
                         try:
                             rcc_detector = RegimeConditionalCalibrator()
                             cbr_div = rcc_detector.detect_cbr_divergence(
-                                float(pc.get("confidence", 0.0) if pc.get("direction") == "up" else -abs(float(pc.get("confidence", 0.0)))),
+                                float(
+                                    pc.get("confidence", 0.0)
+                                    if pc.get("direction") == "up"
+                                    else -abs(float(pc.get("confidence", 0.0)))
+                                ),
                                 [0.01, 0.005, 0.0],
                             )
                         except Exception:
@@ -2806,8 +3148,12 @@ class FiveDomainFeatureComputer:
                         s4_crr = 0.0
                         s4_mr = 1.0
                         if isinstance(system_state, dict):
-                            s3_pass_rate = float(system_state.get("news_contract_pass_rate", s3_pass_rate))
-                            s3_low_days = int(system_state.get("news_contract_low_days", s3_low_days) or 0)
+                            s3_pass_rate = float(
+                                system_state.get("news_contract_pass_rate", s3_pass_rate)
+                            )
+                            s3_low_days = int(
+                                system_state.get("news_contract_low_days", s3_low_days) or 0
+                            )
                             s4_crr = float(system_state.get("event_mapping_crr", s4_crr))
                             s4_mr = float(system_state.get("event_mapping_mr", s4_mr))
                         ct_out = ctd_.detect(
@@ -2823,7 +3169,9 @@ class FiveDomainFeatureComputer:
                         if ct_out is not None:
                             cls_out["contradiction_transform"] = {
                                 "transforming": getattr(ct_out, "transforming", False),
-                                "triggered_conditions": list(getattr(ct_out, "triggered_conditions", []) or []),
+                                "triggered_conditions": list(
+                                    getattr(ct_out, "triggered_conditions", []) or []
+                                ),
                                 "confidence": getattr(ct_out, "confidence", 0.0),
                                 "prev_direction": getattr(ct_out, "prev_direction", "up"),
                                 "new_direction": getattr(ct_out, "new_direction", "up"),
@@ -2837,7 +3185,11 @@ class FiveDomainFeatureComputer:
                     try:
                         rcc_ = RegimeConditionalCalibrator()
                         e_r_all = 0.005  # 基准中性
-                        e_r_cur = float(pc.get("confidence", 0.5)) * (1.0 if pc.get("direction", "up") == "up" else -1.0) * 0.01
+                        e_r_cur = (
+                            float(pc.get("confidence", 0.5))
+                            * (1.0 if pc.get("direction", "up") == "up" else -1.0)
+                            * 0.01
+                        )
                         ratio = rcc_.compute_adjustment(e_r_cur, e_r_all)
                         should_dampen = abs(ratio) < 0.3 or ratio == 0.0
                         should_amplify = abs(ratio) > 2.0
@@ -2863,7 +3215,9 @@ class FiveDomainFeatureComputer:
 
             record["per_class"] = per_class_out
             record["force_vector_data_ok"] = has_any_data_ok
-            record["force_vector_shadow_reason_code"] = "FV_OK" if has_any_data_ok else "FV_INSUFFICIENT_DATA"
+            record["force_vector_shadow_reason_code"] = (
+                "FV_OK" if has_any_data_ok else "FV_INSUFFICIENT_DATA"
+            )
 
             # ── 4. 全资产类 StrategicMapper.map（Shadow 验证：映射正确，且不注入评分）──
             try:
@@ -2885,7 +3239,9 @@ class FiveDomainFeatureComputer:
                 regime_ratio = float(rc.get("adjustment_ratio", 1.0))
                 if not (0.01 <= abs(regime_ratio) <= 100):
                     regime_ratio = 1.0
-                final_magnitude = max(0.0, min(1.0, pc_conf * res_coef * cycle_coef * dampen * amplify))
+                final_magnitude = max(
+                    0.0, min(1.0, pc_conf * res_coef * cycle_coef * dampen * amplify)
+                )
                 final_direction = pc_dir
                 # resonance_state：按 pca + cycle 映射为 StrategicMapper 识别的 6 态
                 _cc_state = str(cc.get("consistency_state", "observation") or "observation")
@@ -2905,6 +3261,7 @@ class FiveDomainFeatureComputer:
                 if ct:
                     try:
                         from force_vector.models import ContradictionTransform as _CT
+
                         ct_obj = _CT(
                             transforming=bool(ct.get("transforming", False)),
                             triggered_conditions=list(ct.get("triggered_conditions", []) or []),
@@ -2934,7 +3291,7 @@ class FiveDomainFeatureComputer:
                     def _to_dict_safe(obj: Any) -> Any:
                         if obj is None:
                             return None
-                        if hasattr(obj, "to_dict") and callable(getattr(obj, "to_dict")):
+                        if hasattr(obj, "to_dict") and callable(obj.to_dict):
                             try:
                                 return obj.to_dict()
                             except Exception:
@@ -2945,11 +3302,13 @@ class FiveDomainFeatureComputer:
                             return {k: _to_dict_safe(v) for k, v in obj.items()}
                         if hasattr(obj, "__dataclass_fields__"):
                             import dataclasses as _dc
+
                             try:
                                 return _dc.asdict(obj)
                             except Exception:
                                 return str(obj)
                         return obj
+
                     record["strategic_layer_output"] = _to_dict_safe(smap)
             except Exception:
                 pass
@@ -2981,18 +3340,24 @@ class FiveDomainFeatureComputer:
             record["force_vector_shadow_reason_code"] = "FV_GENERIC_ERR"
         finally:
             # ── 6. JSONL append（PermissionError fail-open）──
-            path = getattr(self, "_force_vector_shadow_jsonl_path", None) or self._FORCE_VECTOR_SHADOW_JSONL_DEFAULT
+            path = (
+                getattr(self, "_force_vector_shadow_jsonl_path", None)
+                or self._FORCE_VECTOR_SHADOW_JSONL_DEFAULT
+            )
             record["jsonl_path"] = path
             try:
                 _dir = _os.path.dirname(path)
                 if _dir and not _os.path.isdir(_dir):
                     _os.makedirs(_dir, exist_ok=True)
                 with open(path, "a", encoding="utf-8") as f:
-                    f.write(_json.dumps(record, ensure_ascii=False, sort_keys=True, default=str) + "\n")
+                    f.write(
+                        _json.dumps(record, ensure_ascii=False, sort_keys=True, default=str) + "\n"
+                    )
             except PermissionError:
                 record["force_vector_shadow_reason_code"] = "FV_PERMISSION"
                 try:
                     import logging as _lg
+
                     _lg.getLogger("FiveDomain.ForceVectorShadow").warning(
                         "FV_PERMISSION 无法写入 shadow JSONL: %s", path
                     )
@@ -3009,13 +3374,13 @@ class FiveDomainFeatureComputer:
 # 7子开关 → 编号(B1-B7)+短名 映射
 _SUB_SWITCH_NAME_MAP = (
     # (attr_name,                code, short_label)
-    ("enable_five_domain_style_mask",           "B1", "style_mask"),
-    ("enable_five_domain_war_state",             "B2", "war_state"),
-    ("enable_five_domain_position_cap",          "B3", "position_cap"),
-    ("enable_five_domain_cross_asset",           "B4", "cross_asset"),
-    ("enable_five_domain_dimensio",              "B5", "dimension_veto"),
-    ("enable_five_domain_front_layer_band",      "B6", "front_layer_band"),
-    ("enable_five_domain_ol",                    "B7", "ol_position_mult"),
+    ("enable_five_domain_style_mask", "B1", "style_mask"),
+    ("enable_five_domain_war_state", "B2", "war_state"),
+    ("enable_five_domain_position_cap", "B3", "position_cap"),
+    ("enable_five_domain_cross_asset", "B4", "cross_asset"),
+    ("enable_five_domain_dimensio", "B5", "dimension_veto"),
+    ("enable_five_domain_front_layer_band", "B6", "front_layer_band"),
+    ("enable_five_domain_ol", "B7", "ol_position_mult"),
 )
 
 
@@ -3042,10 +3407,7 @@ def describe_five_domain_subswitches(cfg: Any) -> str:
     if len(enabled) == 1:
         code, label = enabled[0]
         others = len(_SUB_SWITCH_NAME_MAP) - len(enabled)
-        return (
-            f"仅1个子开关开启（{code}:{label}），"
-            f"其余{others}项下游零影响"
-        )
+        return f"仅1个子开关开启（{code}:{label}），" f"其余{others}项下游零影响"
 
     # 多个开启
     items = "、".join(f"{c}({n})" for c, n in enabled)

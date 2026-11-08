@@ -6,10 +6,9 @@
 
 TDD：先写 RED → 实现 GREEN → 原有回归零破坏。
 """
-import pytest
 
+import pytest
 from data_center.core.contract import DataRecord
-from data_center.core.errors import RateLimitError
 
 DEFILLAMA_MOD = "data_center.collectors.chain.defillama_collector.requests"
 
@@ -69,6 +68,7 @@ def _protocol_fees_resp():
 
 # ── protocols route ──
 
+
 def test_protocols_route_returns_list(mocker):
     """protocols 路由返回 per-protocol TVL 列表。"""
     from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
@@ -110,6 +110,7 @@ def test_protocols_route_empty_api_returns_empty(mocker):
 
 
 # ── protocol_fees route ──
+
 
 def test_protocol_fees_route_returns_dict(mocker):
     """protocol_fees 路由返回 per-protocol 费用数据。"""
@@ -155,14 +156,17 @@ def test_protocol_fees_missing_fields_defaults_to_zero(mocker):
 
 # ── 回归：原有路由不破坏 ──
 
+
 def test_chains_route_still_works(mocker):
     """回归：原有 chains 路由不受影响。"""
     from data_center.collectors.chain.defillama_collector import DeFiLlamaCollector
 
     m = mocker.patch(DEFILLAMA_MOD)
-    m.get.return_value = _Resp([
-        {"name": "Ethereum", "tvl": 38_100_000_000.0, "symbol": "ETH", "gecko_id": "ethereum"},
-    ])
+    m.get.return_value = _Resp(
+        [
+            {"name": "Ethereum", "tvl": 38_100_000_000.0, "symbol": "ETH", "gecko_id": "ethereum"},
+        ]
+    )
 
     c = DeFiLlamaCollector()
     recs = c.fetch({"route": "chains"})

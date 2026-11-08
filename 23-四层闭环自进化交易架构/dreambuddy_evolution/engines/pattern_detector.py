@@ -4,6 +4,7 @@ SPEC-AGI升级蓝图.md §4.4.1
 
 检测头肩顶/底、双顶/双底等价格形态，接入BCRM2.0技术评估作为反向信号因子.
 """
+
 from __future__ import annotations
 
 import logging
@@ -86,8 +87,14 @@ class PatternDetector:
 
             # 置信度计算
             confidence = self._calc_hs_confidence(
-                closes, left_price, head_price, right_price,
-                left_idx, head_idx, right_idx, symmetry_diff,
+                closes,
+                left_price,
+                head_price,
+                right_price,
+                left_idx,
+                head_idx,
+                right_idx,
+                symmetry_diff,
             )
 
             return {
@@ -186,9 +193,7 @@ class PatternDetector:
         merged.append(group[len(group) // 2])
         return merged
 
-    def _find_trough_between(
-        self, troughs: list[int], left: int, right: int
-    ) -> int | None:
+    def _find_trough_between(self, troughs: list[int], left: int, right: int) -> int | None:
         """在left和right之间找最近的谷底."""
         for t in troughs:
             if left < t < right:

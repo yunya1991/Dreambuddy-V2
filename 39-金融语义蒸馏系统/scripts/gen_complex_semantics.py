@@ -13,6 +13,7 @@
 产出: complex_semantics.json（覆盖式更新，带样本量与证据强度标注）
 用法: python3 gen_complex_semantics.py [--force 强制运行忽略阈值]
 """
+
 import argparse
 import json
 import os
@@ -27,9 +28,9 @@ SEMANTIC_PATH = os.path.join(_SYS_DIR, "semantic_events.jsonl")
 AGGREGATE_PATH = os.path.join(_SYS_DIR, "aggregate_events.jsonl")
 OUT_PATH = os.path.join(_SYS_DIR, "complex_semantics.json")
 
-THRESHOLD_DAYS = 7          # 时间阈值：事件流跨度 ≥7 天
-MIN_SAMPLES = 30            # §7.4 红线：n<30 仅弱证据
-CAUSAL_TREND = 0.70         # §8.3：一致趋势 ≥70% 进因果候选池
+THRESHOLD_DAYS = 7  # 时间阈值：事件流跨度 ≥7 天
+MIN_SAMPLES = 30  # §7.4 红线：n<30 仅弱证据
+CAUSAL_TREND = 0.70  # §8.3：一致趋势 ≥70% 进因果候选池
 
 
 def _parse_ts(ts):
@@ -103,17 +104,25 @@ def derive_cooccurrence(semantic_events):
     n_win = max(1, len(windows))
     for (a, b), s in pair_stats.items():
         if s["both"] >= MIN_SAMPLES:
-            out.append({
-                "pair": [a, b], "cooccur_windows": s["both"],
-                "cooccur_rate": round(s["both"] / n_win, 4),
-                "evidence": "strong", "n": s["both"],
-            })
+            out.append(
+                {
+                    "pair": [a, b],
+                    "cooccur_windows": s["both"],
+                    "cooccur_rate": round(s["both"] / n_win, 4),
+                    "evidence": "strong",
+                    "n": s["both"],
+                }
+            )
         elif s["both"] >= 10:
-            out.append({
-                "pair": [a, b], "cooccur_windows": s["both"],
-                "cooccur_rate": round(s["both"] / n_win, 4),
-                "evidence": "weak", "n": s["both"],
-            })
+            out.append(
+                {
+                    "pair": [a, b],
+                    "cooccur_windows": s["both"],
+                    "cooccur_rate": round(s["both"] / n_win, 4),
+                    "evidence": "weak",
+                    "n": s["both"],
+                }
+            )
     out.sort(key=lambda x: -x["n"])
     return out[:50]
 
@@ -129,6 +138,7 @@ def derive_state_semantics(atomic_events):
     if not fg_values:
         return {}
     fg_values.sort()
+
     def fg_zone_at(ts):
         if ts is None:
             return None
@@ -145,13 +155,13 @@ def derive_state_semantics(atomic_events):
         if val < 75:
             return "greed"
         return "extreme_greed"
+
     by_state = defaultdict(lambda: defaultdict(int))
     for e in atomic_events:
         z = fg_zone_at(_parse_ts(e.get("timestamp", "")))
         if z:
             by_state[z][e.get("category", "?")] += 1
-    return {z: dict(sorted(c.items(), key=lambda kv: -kv[1])[:10])
-            for z, c in by_state.items()}
+    return {z: dict(sorted(c.items(), key=lambda kv: -kv[1])[:10]) for z, c in by_state.items()}
 
 
 def derive_causal_candidates(semantic_events):
@@ -167,6 +177,7 @@ def derive_causal_candidates(semantic_events):
     for s in opens:
         opens[s].sort()
     import bisect
+
     stats = defaultdict(lambda: {"n": 0, "followed": 0})
     for e in semantic_events:
         term = e.get("term")
@@ -188,9 +199,12 @@ def derive_causal_candidates(semantic_events):
         if s["n"] < MIN_SAMPLES:
             continue
         rate = s["followed"] / s["n"]
-        entry = {"term": term, "n": s["n"],
-             "follow_rate_4h": round(rate, 4),
-             "evidence": "strong" if s["n"] >= MIN_SAMPLES else "weak"}
+        entry = {
+            "term": term,
+            "n": s["n"],
+            "follow_rate_4h": round(rate, 4),
+            "evidence": "strong" if s["n"] >= MIN_SAMPLES else "weak",
+        }
         if rate >= CAUSAL_TREND:
             entry["causal_candidate"] = True
             entry["note"] = "一致趋势达标，进入因果候选池（供 23 自进化按其门禁流程消化）"
@@ -206,8 +220,10 @@ def main():
 
     ok, days, total = check_threshold()
     if not ok and not args.force:
-        print(f"[SKIP] 事件流跨度 {days} 天 < 阈值 {THRESHOLD_DAYS} 天（共 {total} 条事件），"
-              f"未达阈值自动跳过，待每日定时检查触发")
+        print(
+            f"[SKIP] 事件流跨度 {days} 天 < 阈值 {THRESHOLD_DAYS} 天（共 {total} 条事件），"
+            f"未达阈值自动跳过，待每日定时检查触发"
+        )
         return
 
     print(f"[OK] 阈值通过: 事件流跨度 {days} 天 ≥ {THRESHOLD_DAYS} 天，开始 P3 复杂语义衍生")
@@ -230,9 +246,13 @@ def main():
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"[OK] 复杂语义衍生完成 → {OUT_PATH}")
-    print(f"     时序共现: {len(cooccur)} 对（强证据 {sum(1 for c in cooccur if c['evidence']=='strong')}）")
+    print(
+        f"     时序共现: {len(cooccur)} 对（强证据 {sum(1 for c in cooccur if c['evidence']=='strong')}）"
+    )
     print(f"     状态语义: {len(state_sem)} 个市场状态分区")
-    print(f"     因果候选: {len(causal)} 项（达标 {sum(1 for c in causal if c.get('causal_candidate'))} 项）")
+    print(
+        f"     因果候选: {len(causal)} 项（达标 {sum(1 for c in causal if c.get('causal_candidate'))} 项）"
+    )
 
 
 if __name__ == "__main__":

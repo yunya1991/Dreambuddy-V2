@@ -14,16 +14,15 @@
 输出：
     runtime/five_domain_subindicator_ic_weights.json
 """
+
 from __future__ import annotations
 
 import json
 import math
-import os
-import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -38,21 +37,14 @@ if str(_HERE) not in sys.path:
 if str(_REPO / "18-数据获取中心") not in sys.path:
     sys.path.insert(0, str(_REPO / "18-数据获取中心"))
 
-from five_domain_sqlite_reader import (  # noqa: E402
-    read_three_classes_from_sqlite,
-    _compute_merrill,
-    _compute_liquidity_score,
-)
 from five_domain_ic_analysis import _get_daily_snapshots  # noqa: E402
 from five_domain_weight_optuna import (  # noqa: E402
-    precompute_domain_scores,
-    get_price_returns,
-    compute_walkforward_sharpe,
-    compute_max_drawdown,
-    sobol_sensitivity_test,
-    score_to_position,
-    _fill_proxy_fields,
     _fetch_yf_returns,
+    _fill_proxy_fields,
+    compute_max_drawdown,
+    compute_walkforward_sharpe,
+    get_price_returns,
+    precompute_domain_scores,
 )
 
 
@@ -69,11 +61,19 @@ def compute_dao_subindicators(cd: Dict[str, Any]) -> Dict[str, float]:
     """道维度 5 子指标分数 [0,100]。"""
     # 子指标1: 央行政策方向
     rate = cd.get("fedfunds_rate")
-    rate_score = float(np.clip(round(85 - _safe(rate, 5.0) * 8), 0, 100)) if isinstance(rate, (int, float)) else 50.0
+    rate_score = (
+        float(np.clip(round(85 - _safe(rate, 5.0) * 8), 0, 100))
+        if isinstance(rate, (int, float))
+        else 50.0
+    )
 
     # 子指标2: 机构资金净流入（稳定币市值）
     sc = cd.get("stablecoin_mcap_bln")
-    sc_score = float(np.clip(round((_safe(sc, 100.0) - 80) / 2), 30, 85)) if isinstance(sc, (int, float)) and sc > 0 else 50.0
+    sc_score = (
+        float(np.clip(round((_safe(sc, 100.0) - 80) / 2), 30, 85))
+        if isinstance(sc, (int, float)) and sc > 0
+        else 50.0
+    )
 
     # 子指标3: 政策景气度
     sent = cd.get("policy_sentiment_score")
@@ -85,7 +85,11 @@ def compute_dao_subindicators(cd: Dict[str, Any]) -> Dict[str, float]:
 
     # 子指标4: 变化率
     sc_change = cd.get("stablecoin_change_rate")
-    diff_score = float(np.clip(round(50 + _safe(sc_change, 0.0) * 400), 0, 100)) if isinstance(sc_change, (int, float)) else 50.0
+    diff_score = (
+        float(np.clip(round(50 + _safe(sc_change, 0.0) * 400), 0, 100))
+        if isinstance(sc_change, (int, float))
+        else 50.0
+    )
 
     # 子指标5: 大周期位置
     cycle = cd.get("cycle4y_t_rel")
@@ -154,11 +158,15 @@ def compute_di_subindicators(cd: Dict[str, Any]) -> Dict[str, float]:
 
     # 子指标2: 弹簧力场 MA
     spring = cd.get("spring_force_score")
-    ma_score = float(np.clip(_safe(spring, 50.0), 0, 100)) if isinstance(spring, (int, float)) else 50.0
+    ma_score = (
+        float(np.clip(_safe(spring, 50.0), 0, 100)) if isinstance(spring, (int, float)) else 50.0
+    )
 
     # 子指标3: 盘整持续
     consol = cd.get("consolidation_duration")
-    consol_score = float(np.clip(_safe(consol, 50.0), 20, 80)) if isinstance(consol, (int, float)) else 50.0
+    consol_score = (
+        float(np.clip(_safe(consol, 50.0), 20, 80)) if isinstance(consol, (int, float)) else 50.0
+    )
 
     # 子指标4: FTD
     ftd = cd.get("ftd_signal")
@@ -201,6 +209,7 @@ def compute_rank_ic(values: np.ndarray, forward_returns: np.ndarray) -> float:
     if len(v) < 10:
         return 0.0
     from scipy.stats import spearmanr
+
     try:
         ic, _ = spearmanr(v, r)
         return float(ic) if not math.isnan(ic) else 0.0
@@ -285,7 +294,7 @@ def compute_subindicator_ic_weights(
         if vals.sum() < 1e-9:
             # 全部 IC_IR 为 0，回退等权
             n = len(vals)
-            ic_weights[dim] = {k: 1.0 / n for k in ic_ir_map}
+            ic_weights[dim] = dict.fromkeys(ic_ir_map, 1.0 / n)
         else:
             # softmax
             exp_vals = np.exp(vals - vals.max())
@@ -350,8 +359,13 @@ def score_to_position_capped(total_score: float, max_position: float = 1.0) -> f
 
 
 def compute_walkforward_sharpe_capped(
-    scores, returns, weights, asset_class,
-    train_days=180, val_days=30, max_position=1.0,
+    scores,
+    returns,
+    weights,
+    asset_class,
+    train_days=180,
+    val_days=30,
+    max_position=1.0,
 ) -> float:
     """带仓位上限的 Walk-forward Sharpe。"""
     all_dates = sorted(set(scores.keys()) & set(returns.keys()))
@@ -369,7 +383,10 @@ def compute_walkforward_sharpe_capped(
         daily_rets = []
         for d in val_dates:
             dims = scores[d].get(asset_class, {})
-            total = sum(w[i] * dims.get(dim, 50.0) for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa")))
+            total = sum(
+                w[i] * dims.get(dim, 50.0)
+                for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa"))
+            )
             pos = score_to_position_capped(total, max_position)
             ret = returns.get(d, 0.0)
             daily_rets.append(pos * ret)
@@ -394,7 +411,9 @@ def compute_max_drawdown_capped(scores, returns, weights, asset_class, max_posit
     daily_rets = []
     for d in all_dates:
         dims = scores[d].get(asset_class, {})
-        total = sum(w[i] * dims.get(dim, 50.0) for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa")))
+        total = sum(
+            w[i] * dims.get(dim, 50.0) for i, dim in enumerate(("dao", "tian", "di", "jiang", "fa"))
+        )
         pos = score_to_position_capped(total, max_position)
         ret = returns.get(d, 0.0)
         daily_rets.append(pos * ret)
@@ -406,13 +425,23 @@ def compute_max_drawdown_capped(scores, returns, weights, asset_class, max_posit
     return float(abs(np.min(drawdown)))
 
 
-def sobol_sensitivity_test_capped(scores, returns, base_weights, asset_class,
-                                   n_samples=500, perturbation=0.10, seed=42, max_position=1.0):
+def sobol_sensitivity_test_capped(
+    scores,
+    returns,
+    base_weights,
+    asset_class,
+    n_samples=500,
+    perturbation=0.10,
+    seed=42,
+    max_position=1.0,
+):
     """带仓位上限的 Sobol' 检验。"""
     rng = np.random.default_rng(seed)
     dims = ("dao", "tian", "di", "jiang", "fa")
     base_w = np.array([base_weights[d] for d in dims])
-    base_sharpe = compute_walkforward_sharpe_capped(scores, returns, base_weights, asset_class, max_position=max_position)
+    base_sharpe = compute_walkforward_sharpe_capped(
+        scores, returns, base_weights, asset_class, max_position=max_position
+    )
     if base_sharpe == 0:
         return {"base_sharpe": 0.0, "max_change_pct": 0.0, "pass": True}
     perturbed_sharpes = []
@@ -421,7 +450,9 @@ def sobol_sensitivity_test_capped(scores, returns, base_weights, asset_class,
         pw = base_w * factors
         pw = pw / pw.sum()
         pw_dict = {d: float(pw[i]) for i, d in enumerate(dims)}
-        s = compute_walkforward_sharpe_capped(scores, returns, pw_dict, asset_class, max_position=max_position)
+        s = compute_walkforward_sharpe_capped(
+            scores, returns, pw_dict, asset_class, max_position=max_position
+        )
         perturbed_sharpes.append(s)
     arr = np.array(perturbed_sharpes)
     changes = np.abs(arr - base_sharpe) / abs(base_sharpe)
@@ -451,6 +482,7 @@ def main() -> None:
 
     # 预获取各资产类价格历史（用于代理填充）
     from five_domain_weight_optuna import ASSET_RETURN_MAP
+
     cls_prices = {}
     cls_price_history = {}
     for cls, symbol in ASSET_RETURN_MAP.items():
@@ -465,7 +497,8 @@ def main() -> None:
         filled = {}
         for cls, cd in coin_data.items():
             fcd = _fill_proxy_fields(
-                cd, cls_prices.get(cls, {}),
+                cd,
+                cls_prices.get(cls, {}),
                 cls_price_history.get(cls, []),
                 date_str,
             )
@@ -502,7 +535,9 @@ def main() -> None:
 
         # 计算子指标 IC 权重（用填充后的快照）
         max_sub = MAX_SUB_WEIGHT.get(cls, 1.0)
-        print(f"[Phase3] {cls}: 计算子指标 IC 权重... (max_position={max_pos}, max_sub_weight={max_sub})")
+        print(
+            f"[Phase3] {cls}: 计算子指标 IC 权重... (max_position={max_pos}, max_sub_weight={max_sub})"
+        )
         ic_weights = compute_subindicator_ic_weights(filled_snapshots, cls_returns, cls)
         # 对子指标权重做上限约束（metal 用 0.40）
         if max_sub < 1.0:
@@ -526,6 +561,7 @@ def main() -> None:
         # 重新优化五域权重
         print(f"[Phase3] {cls}: 优化五域权重...")
         import optuna
+
         optuna.logging.set_verbosity(optuna.logging.WARNING)
 
         def objective(trial):
@@ -538,7 +574,9 @@ def main() -> None:
             }
             total = sum(w.values())
             w = {k: v / total for k, v in w.items()}
-            return compute_walkforward_sharpe_capped(scores_ic, cls_returns, w, cls, max_position=max_pos)
+            return compute_walkforward_sharpe_capped(
+                scores_ic, cls_returns, w, cls, max_position=max_pos  # noqa: B023
+            )
 
         study = optuna.create_study(direction="maximize")
         study.optimize(objective, n_trials=200)
@@ -549,9 +587,13 @@ def main() -> None:
 
         # 验证：基线回撤无 cap，IC 策略回撤用 cap
         baseline_mdd = compute_max_drawdown(cls_scores_equal, cls_returns, baseline_w, cls)
-        best_mdd = compute_max_drawdown_capped(scores_ic, cls_returns, best_w, cls, max_position=max_pos)
+        best_mdd = compute_max_drawdown_capped(
+            scores_ic, cls_returns, best_w, cls, max_position=max_pos
+        )
         mdd_ratio = best_mdd / baseline_mdd if baseline_mdd > 0 else 1.0
-        sobol = sobol_sensitivity_test_capped(scores_ic, cls_returns, best_w, cls, max_position=max_pos)
+        sobol = sobol_sensitivity_test_capped(
+            scores_ic, cls_returns, best_w, cls, max_position=max_pos
+        )
 
         results[cls] = {
             "baseline_sharpe_equal": round(baseline_sharpe, 4),
@@ -559,7 +601,9 @@ def main() -> None:
             "sharpe_improvement": round(best_sharpe - baseline_sharpe, 4),
             "max_position": max_pos,
             "best_weights": {k: round(v, 4) for k, v in best_w.items()},
-            "subindicator_ic_weights": {d: {k: round(v, 4) for k, v in w.items()} for d, w in ic_weights.items()},
+            "subindicator_ic_weights": {
+                d: {k: round(v, 4) for k, v in w.items()} for d, w in ic_weights.items()
+            },
             "max_drawdown": {
                 "baseline": round(baseline_mdd, 4),
                 "best": round(best_mdd, 4),
@@ -568,17 +612,26 @@ def main() -> None:
             },
             "sobol_sensitivity": sobol,
         }
-        print(f"[Phase3] {cls}: 等权基线={baseline_sharpe:.4f} IC加权最优={best_sharpe:.4f} "
-              f"提升={best_sharpe - baseline_sharpe:+.4f}")
+        print(
+            f"[Phase3] {cls}: 等权基线={baseline_sharpe:.4f} IC加权最优={best_sharpe:.4f} "
+            f"提升={best_sharpe - baseline_sharpe:+.4f}"
+        )
         print(f"    权重: {best_w}")
-        print(f"    回撤: 基线={baseline_mdd:.2%} 最优={best_mdd:.2%} 比率={mdd_ratio:.3f} {'✅' if mdd_ratio <= 1.05 else '❌'}")
-        print(f"    Sobol: 最大变化={sobol['max_change_pct']:.1f}% {'✅' if sobol['pass'] else '❌'}")
+        print(
+            f"    回撤: 基线={baseline_mdd:.2%} 最优={best_mdd:.2%} 比率={mdd_ratio:.3f} {'✅' if mdd_ratio <= 1.05 else '❌'}"
+        )
+        print(
+            f"    Sobol: 最大变化={sobol['max_change_pct']:.1f}% {'✅' if sobol['pass'] else '❌'}"
+        )
 
     output = {
         "timestamp": datetime.now().isoformat(),
         "forward_days": 7,
         "n_trials": 200,
-        "all_ic_weights": {cls: {d: {k: round(v, 4) for k, v in w.items()} for d, w in iw.items()} for cls, iw in all_ic_weights.items()},
+        "all_ic_weights": {
+            cls: {d: {k: round(v, 4) for k, v in w.items()} for d, w in iw.items()}
+            for cls, iw in all_ic_weights.items()
+        },
         "results": results,
     }
     with open(_OUTPUT, "w", encoding="utf-8") as f:

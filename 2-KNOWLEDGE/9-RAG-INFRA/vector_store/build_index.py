@@ -20,7 +20,7 @@ try:
     from .chunker import chunk_markdown
     from .embedder import _embedder
 except ImportError:  # 直接以脚本运行时
-    import config
+    import config  # noqa: I001
     from chunker import chunk_markdown
     from embedder import _embedder
 
@@ -63,8 +63,9 @@ def _to_chroma_meta(meta: Dict, file_hash: str) -> Dict:
     }
 
 
-def build_index(knowledge_dir, force: bool = False,
-                db_path: str = None, collection_name: str = None) -> Dict:
+def build_index(
+    knowledge_dir, force: bool = False, db_path: str = None, collection_name: str = None
+) -> Dict:
     """扫描知识库构建/增量更新向量索引。
 
     Args:
@@ -93,12 +94,15 @@ def build_index(knowledge_dir, force: bool = False,
     # 命中清单的文件才重索引；41 不可用降级本地 md5 哈希账本（FAIL-OPEN）。
     fis_changed: set = set()
     try:
-        import subprocess as _sp
+        import subprocess as _sp  # noqa: I001
         import os as _os
+
         _proc = _sp.run(
             ["/home/ubuntu/fis-p0/.venv/bin/python", "/home/ubuntu/fis-p0/scripts/search_cli.py"],
             input=json.dumps({"cmd": "changed"}),
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
             env={**_os.environ, "FIS_PG_PASSWORD": _os.environ.get("FIS_PG_PASSWORD")},
         )
         _res = json.loads(_proc.stdout or "{}")

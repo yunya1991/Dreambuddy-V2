@@ -12,29 +12,35 @@ DreamOS 入场策略能力层（Entry Strategy）
 """
 
 from .entry_module_adapter import (
-    UnifiedEntryDecision,
-    BaseEntryAdapter,
-    ScenarioEmaAdapter,
     A2FusionAdapter,
+    BaseEntryAdapter,
     C2MomentumAdapter,
-    S3TrendAdapter,
-    YJInferAdapter,
     MartinV15Adapter,
-    get_all_entry_modules,
+    S3TrendAdapter,
+    ScenarioEmaAdapter,
+    UnifiedEntryDecision,
+    YJInferAdapter,
     create_entry_adapter,
+    get_all_entry_modules,
 )
-
-from .entry_module_selector import EntryModuleSelector, EntryModuleChoice
-
 from .entry_module_backtester import EntryModuleBacktester
+from .entry_module_selector import EntryModuleChoice, EntryModuleSelector
 
 __all__ = [
     # 统一结构
-    "UnifiedEntryDecision", "BaseEntryAdapter", "EntryModuleChoice",
+    "UnifiedEntryDecision",
+    "BaseEntryAdapter",
+    "EntryModuleChoice",
     # 适配器
-    "ScenarioEmaAdapter", "A2FusionAdapter", "C2MomentumAdapter",
-    "S3TrendAdapter", "YJInferAdapter", "MartinV15Adapter",
-    "get_all_entry_modules", "create_entry_adapter",
+    "ScenarioEmaAdapter",
+    "A2FusionAdapter",
+    "C2MomentumAdapter",
+    "S3TrendAdapter",
+    "YJInferAdapter",
+    "MartinV15Adapter",
+    "get_all_entry_modules",
+    "create_entry_adapter",
     # 选择器 / 回测器
-    "EntryModuleSelector", "EntryModuleBacktester",
+    "EntryModuleSelector",
+    "EntryModuleBacktester",
 ]

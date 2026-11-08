@@ -25,6 +25,7 @@
 - https://github.com/Tencent/BrowserSkill
 - bsk CLI v0.3.2 路径：/Users/zhangjiangtao/.local/bin/bsk
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,6 +42,7 @@ logger = logging.getLogger("real_env.bsk_runner")
 @dataclass
 class BskStep:
     """单条 bsk 命令执行结果"""
+
     command: str
     exit_code: int
     stdout: str
@@ -51,6 +53,7 @@ class BskStep:
 @dataclass
 class BskResult:
     """bsk 任务执行结果"""
+
     task: str
     passed: bool
     steps: List[BskStep] = field(default_factory=list)
@@ -250,8 +253,9 @@ class BskRunner:
     # ------------------------------------------------------------------
     # 命令执行
     # ------------------------------------------------------------------
-    def run_command(self, args: List[str], session: Optional[str] = None,
-                    timeout: Optional[int] = None) -> BskStep:
+    def run_command(
+        self, args: List[str], session: Optional[str] = None, timeout: Optional[int] = None
+    ) -> BskStep:
         """执行单条 bsk 命令。"""
         cmd = self._build_command(args, session)
         cmd_str = " ".join(cmd)
@@ -295,9 +299,9 @@ class BskRunner:
     # ------------------------------------------------------------------
     # 多步任务执行
     # ------------------------------------------------------------------
-    def run_task(self, steps: List[dict],
-                 session: Optional[str] = None,
-                 callback: Optional[Any] = None) -> BskResult:
+    def run_task(
+        self, steps: List[dict], session: Optional[str] = None, callback: Optional[Any] = None
+    ) -> BskResult:
         """从 YAML steps 列表执行多步任务。
 
         每步执行后调用 callback（可选），GLM-5.2 可注入判断逻辑：
@@ -322,7 +326,8 @@ class BskRunner:
                 all_passed = False
                 logger.warning(
                     "Step failed (exit=%d), bailing: %s",
-                    step_result.exit_code, step_result.command,
+                    step_result.exit_code,
+                    step_result.command,
                 )
                 break
 
@@ -330,8 +335,7 @@ class BskRunner:
                 try:
                     should_continue = callback(step_result)
                     if not should_continue:
-                        logger.info("Callback signaled stop after: %s",
-                                    step_result.command)
+                        logger.info("Callback signaled stop after: %s", step_result.command)
                         break
                 except Exception as e:
                     logger.warning("Callback error: %s", e)
@@ -414,8 +418,9 @@ class BskRunner:
     # ------------------------------------------------------------------
     # 三重验证集成
     # ------------------------------------------------------------------
-    def _run_verification(self, assertions: Optional[Dict[str, Any]],
-                         session: Optional[str] = None) -> VerificationResult:
+    def _run_verification(
+        self, assertions: Optional[Dict[str, Any]], session: Optional[str] = None
+    ) -> VerificationResult:
         """用 bsk snapshot/observe/console/get-html/evaluate/network 验证。
 
         - DOM 断言：调用 snapshot，从 stdout 检查 selector
@@ -450,7 +455,8 @@ class BskRunner:
         url_contains = assertions.get("url_contains")
         if url_contains:
             eval_step = self.run_command(
-                ["evaluate", "location.href"], session=session,
+                ["evaluate", "location.href"],
+                session=session,
             )
             details["url"] = eval_step.stdout
             if eval_step.exit_code != 0 or url_contains not in eval_step.stdout:
@@ -466,7 +472,10 @@ class BskRunner:
                 details["console_error"] = console_step.stderr
             else:
                 # 检查 stdout 是否含 error 级别日志
-                if '"error"' in console_step.stdout.lower() or '"level":"error"' in console_step.stdout.lower():
+                if (
+                    '"error"' in console_step.stdout.lower()
+                    or '"level":"error"' in console_step.stdout.lower()
+                ):
                     passed = False
                     details["console_has_errors"] = True
 

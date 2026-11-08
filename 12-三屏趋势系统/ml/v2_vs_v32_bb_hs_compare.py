@@ -3,13 +3,13 @@
 三层抄底架构 vs v2基线
 """
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
-import numpy as np
+import pandas as pd  # noqa: I001
 
 from backtest.strategy import EnhancedMA200Strategy
 from ml.bb_hs_dip_strategy import BBSHeadShoulderBottomStrategy
@@ -45,32 +45,44 @@ def run_compare():
     # 测试多组参数
     configs = [
         ("v2 基线", {}),
-        ("v3.2 默认参数", {
-            "bb_buy_position": 0.15,
-            "bb_sell_ratio": 0.3,
-            "hs_max_position": 1.0,
-            "dip_buy_max_position": 1.0,
-        }),
-        ("v3.2 保守型", {
-            "bb_buy_position": 0.1,
-            "bb_sell_ratio": 0.5,
-            "hs_max_position": 0.8,
-            "dip_buy_max_position": 0.8,
-        }),
-        ("v3.2 激进型", {
-            "bb_buy_position": 0.25,
-            "bb_sell_ratio": 0.2,
-            "hs_max_position": 1.0,
-            "dip_buy_max_position": 1.0,
-        }),
-        ("v3.2 宽布林带", {
-            "bb_period": 20,
-            "bb_std": 2.5,
-            "bb_buy_position": 0.2,
-            "bb_sell_ratio": 0.4,
-            "hs_max_position": 1.0,
-            "dip_buy_max_position": 1.0,
-        }),
+        (
+            "v3.2 默认参数",
+            {
+                "bb_buy_position": 0.15,
+                "bb_sell_ratio": 0.3,
+                "hs_max_position": 1.0,
+                "dip_buy_max_position": 1.0,
+            },
+        ),
+        (
+            "v3.2 保守型",
+            {
+                "bb_buy_position": 0.1,
+                "bb_sell_ratio": 0.5,
+                "hs_max_position": 0.8,
+                "dip_buy_max_position": 0.8,
+            },
+        ),
+        (
+            "v3.2 激进型",
+            {
+                "bb_buy_position": 0.25,
+                "bb_sell_ratio": 0.2,
+                "hs_max_position": 1.0,
+                "dip_buy_max_position": 1.0,
+            },
+        ),
+        (
+            "v3.2 宽布林带",
+            {
+                "bb_period": 20,
+                "bb_std": 2.5,
+                "bb_buy_position": 0.2,
+                "bb_sell_ratio": 0.4,
+                "hs_max_position": 1.0,
+                "dip_buy_max_position": 1.0,
+            },
+        ),
     ]
 
     results = {}
@@ -84,12 +96,17 @@ def run_compare():
             strategy = BBSHeadShoulderBottomStrategy(is_btc=True, **kwargs)
 
         result = engine.run_scenario_backtest(
-            prices, strategy, name.replace(" ", "_"),
-            symbol="BTC", experiment_name=f"v32_compare_{name.replace(' ', '_')}",
+            prices,
+            strategy,
+            name.replace(" ", "_"),
+            symbol="BTC",
+            experiment_name=f"v32_compare_{name.replace(' ', '_')}",
         )
         results[name] = result
         stats_dict[name] = strategy.get_stats()
-        print(f"  ✅ 完成 | 夏普 {result.overall_sharpe:.3f} | 收益 {result.overall_total_return:.1%} | 评分 {result.composite_score:.3f}")
+        print(
+            f"  ✅ 完成 | 夏普 {result.overall_sharpe:.3f} | 收益 {result.overall_total_return:.1%} | 评分 {result.composite_score:.3f}"
+        )
         print()
 
     # 整体对比
@@ -97,7 +114,9 @@ def run_compare():
     print("  一、整体表现对比")
     print("=" * 90)
     print()
-    print(f"{'配置':<20} {'总收益':>10} {'夏普':>8} {'卡玛':>8} {'最大回撤':>10} {'交易数':>8} {'综合评分':>10}")
+    print(
+        f"{'配置':<20} {'总收益':>10} {'夏普':>8} {'卡玛':>8} {'最大回撤':>10} {'交易数':>8} {'综合评分':>10}"
+    )
     print("-" * 90)
 
     for name, result in results.items():
@@ -119,7 +138,9 @@ def run_compare():
     print("  二、DIP_BUY（牛市抄底）对比")
     print("=" * 90)
     print()
-    print(f"{'配置':<20} {'信号数':>8} {'胜率':>8} {'平均收益':>10} {'Precision':>10} {'Recall':>8} {'F1':>8}")
+    print(
+        f"{'配置':<20} {'信号数':>8} {'胜率':>8} {'平均收益':>10} {'Precision':>10} {'Recall':>8} {'F1':>8}"
+    )
     print("-" * 90)
 
     for name, result in results.items():
@@ -161,12 +182,24 @@ def run_compare():
     print()
 
     default_stats = stats_dict.get("v3.2 默认参数", {})
-    relevant_keys = [k for k in default_stats if k in [
-        "dip_buy_days", "bb_buy_days", "bb_sell_days",
-        "hs_confirmed_days", "dip_bb_days",
-        "bull_days", "bear_short_l1_days", "bear_short_l2_days",
-        "sideways_days", "fib_tp_days", "trend_switches",
-    ]]
+    relevant_keys = [
+        k
+        for k in default_stats
+        if k
+        in [
+            "dip_buy_days",
+            "bb_buy_days",
+            "bb_sell_days",
+            "hs_confirmed_days",
+            "dip_bb_days",
+            "bull_days",
+            "bear_short_l1_days",
+            "bear_short_l2_days",
+            "sideways_days",
+            "fib_tp_days",
+            "trend_switches",
+        ]
+    ]
     for k in sorted(relevant_keys, key=lambda x: -default_stats.get(x, 0)):
         v = default_stats.get(k, 0)
         if v > 0:
@@ -187,15 +220,23 @@ def run_compare():
     print(f"🏆 最佳配置: {best_name}")
     print(f"   综合评分: {best_result.composite_score:.3f} (v2: {v2_result.composite_score:.3f})")
     print(f"   夏普比率: {best_result.overall_sharpe:.3f} (v2: {v2_result.overall_sharpe:.3f})")
-    print(f"   总收益: {best_result.overall_total_return:.1%} (v2: {v2_result.overall_total_return:.1%})")
+    print(
+        f"   总收益: {best_result.overall_total_return:.1%} (v2: {v2_result.overall_total_return:.1%})"
+    )
     print()
 
     best_dip = best_result.objective_metrics["dip_buy"]
     v2_dip = v2_result.objective_metrics["dip_buy"]
     print("📊 DIP_BUY改善：")
-    print(f"   胜率: {v2_dip.win_rate:.2%} → {best_dip.win_rate:.2%} ({best_dip.win_rate - v2_dip.win_rate:+.2%})")
-    print(f"   收益: {v2_dip.avg_return:.2%} → {best_dip.avg_return:.2%} ({best_dip.avg_return - v2_dip.avg_return:+.2%})")
-    print(f"   F1:   {v2_dip.label_f1:.3f} → {best_dip.label_f1:.3f} ({best_dip.label_f1 - v2_dip.label_f1:+.3f})")
+    print(
+        f"   胜率: {v2_dip.win_rate:.2%} → {best_dip.win_rate:.2%} ({best_dip.win_rate - v2_dip.win_rate:+.2%})"
+    )
+    print(
+        f"   收益: {v2_dip.avg_return:.2%} → {best_dip.avg_return:.2%} ({best_dip.avg_return - v2_dip.avg_return:+.2%})"
+    )
+    print(
+        f"   F1:   {v2_dip.label_f1:.3f} → {best_dip.label_f1:.3f} ({best_dip.label_f1 - v2_dip.label_f1:+.3f})"
+    )
 
     print()
 

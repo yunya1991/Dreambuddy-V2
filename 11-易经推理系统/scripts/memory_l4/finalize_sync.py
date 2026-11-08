@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """补全新同步持仓的默认SL/TP ROI + 最终校验"""
-import os
-import sys
+
 import json
+import sys
 from pathlib import Path
 
-_stdlib_paths = [p for p in sys.path if "site-packages" in p or "Frameworks/Python3" in p or p == ""]
+_stdlib_paths = [
+    p for p in sys.path if "site-packages" in p or "Frameworks/Python3" in p or p == ""
+]
 _yj_root = str(Path(__file__).resolve().parent.parent.parent)
 sys.path = _stdlib_paths + [_yj_root]
 
 positions_dir = Path(_yj_root) / ".workbuddy" / "memory_l4" / "open_positions"
 DEFAULT_SL_ROI = 0.75  # 参考HYPE
-DEFAULT_TP_ROI = 1.5   # 参考HYPE
+DEFAULT_TP_ROI = 1.5  # 参考HYPE
 
 print("补全新同步持仓的 base_sl_roi / base_tp_roi...")
 updated = 0
@@ -46,21 +48,25 @@ for f in sorted(positions_dir.glob("*.json")):
     with open(f) as fp:
         d = json.load(fp)
     sz = d.get("scale_params", {}).get("okx_actual_sz", "?")
-    print(f"  - {d['coin']:<8} {d['direction']:<5} entry={d['entry_price']:<10} sz={sz:<8} "
-          f"SL={d.get('base_sl_roi')}% TP={d.get('base_tp_roi')}% src={d.get('strategy_source')}")
+    print(
+        f"  - {d['coin']:<8} {d['direction']:<5} entry={d['entry_price']:<10} sz={sz:<8} "
+        f"SL={d.get('base_sl_roi')}% TP={d.get('base_tp_roi')}% src={d.get('strategy_source')}"
+    )
     yj_count += 1
 if yj_count == 0:
     print("  （零持仓）")
 
 # V15校验
 v15_state = Path(_yj_root).parent / "14-V15经典马丁策略" / "data" / "v15_state.json"
-print(f"\n【V15马丁系统 - 本地持仓】")
+print("\n【V15马丁系统 - 本地持仓】")
 v15_count = 0
 if v15_state.exists():
     with open(v15_state) as fp:
         s = json.load(fp)
     for coin, p in sorted(s.get("positions", {}).items()):
-        print(f"  - {coin:<8} {p.get('direction','?'):<5} entry={p.get('entry_price','?'):<12} sz={p.get('sz','?'):<8}")
+        print(
+            f"  - {coin:<8} {p.get('direction','?'):<5} entry={p.get('entry_price','?'):<12} sz={p.get('sz','?'):<8}"
+        )
         v15_count += 1
 if v15_count == 0:
     print("  （零持仓）")

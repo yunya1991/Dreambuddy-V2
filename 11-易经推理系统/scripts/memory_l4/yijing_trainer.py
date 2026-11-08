@@ -6,26 +6,26 @@
 训练循环：
 OKX历史K线 → 构造market_snapshot → BCRM推理 → 模拟交易 → 结果统计 → 两仪学习
 """
-import json
+
+import json  # noqa: I001
 import time
 import warnings
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
-from scripts.memory_l4.bcrm.engine import default_engine, BCRMEngine
-from scripts.memory_l4.bcrm.output_contract import BCRMOutput
-from scripts.memory_l4.bcrm.liangyi_engine import LiangyiEngine
-from scripts.memory_l4.bcrm.bagua_engine import BaguaEngine, default_bagua_engine
-from scripts.memory_l4.okx_simulated import OKXSimulatedClient
+from scripts.memory_l4.bcrm.engine import default_engine, BCRMEngine  # noqa: E402, I001
+from scripts.memory_l4.bcrm.liangyi_engine import LiangyiEngine  # noqa: E402
+from scripts.memory_l4.bcrm.bagua_engine import BaguaEngine  # noqa: E402
+from scripts.memory_l4.okx_simulated import OKXSimulatedClient  # noqa: E402
 
 TRAIN_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "training"
 TRAIN_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_dir
+from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_dir  # noqa: E402
 
 LIANGYI_STATE_FILE = memory_l4_dir() / "liangyi_state.json"
 
@@ -41,15 +41,18 @@ def _save_cases_to_l4(cases: List[Dict], source: str = "backtest") -> int:
     Returns:
         成功保存的案例数
     """
-    import uuid
+    import uuid  # noqa: I001
     import time
 
     cases_dir = memory_l4_cases_dir()
     cases_dir.mkdir(parents=True, exist_ok=True)
 
     saved = 0
-    for i, case in enumerate(cases):
-        case_id = case.get("case_id") or f"bcrm_backtest_{source}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+    for i, case in enumerate(cases):  # noqa: B007
+        case_id = (
+            case.get("case_id")
+            or f"bcrm_backtest_{source}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+        )
         case["case_id"] = case_id
         case["source"] = source
         case["version"] = "v0.2"
@@ -70,10 +73,11 @@ def _save_cases_to_l4(cases: List[Dict], source: str = "backtest") -> int:
 @dataclass
 class TradeRecord:
     """交易记录"""
+
     ts: str = ""
     price: float = 0
-    direction: str = ""      # UP/DOWN/FLAT
-    action: str = ""         # open_long/open_short/hold/close_long/close_short/reduce
+    direction: str = ""  # UP/DOWN/FLAT
+    action: str = ""  # open_long/open_short/hold/close_long/close_short/reduce
     confidence: float = 0.0
     hexagram: str = ""
     stop_loss: float = 0
@@ -82,12 +86,13 @@ class TradeRecord:
     exit_price: float = 0
     pnl: float = 0
     pnl_pct: float = 0
-    exit_reason: str = ""    # signal/stop_loss/take_profit/reverse
+    exit_reason: str = ""  # signal/stop_loss/take_profit/reverse
 
 
 @dataclass
 class ScenarioResult:
     """场景测试结果"""
+
     name: str = ""
     bar: str = ""
     start_price: float = 0
@@ -150,8 +155,11 @@ def _kline_to_snapshot(kline_data: List[Dict], idx: int = 0) -> Dict:
     atr_vals = []
     for i in range(idx, idx + min(14, len(kline_data) - idx)):
         k = kline_data[i]
-        tr = max(k["h"] - k["l"], abs(k["h"] - (kline_data[i+1]["c"] if i+1 < len(kline_data) else k["c"])),
-                 abs(k["l"] - (kline_data[i+1]["c"] if i+1 < len(kline_data) else k["c"])))
+        tr = max(
+            k["h"] - k["l"],
+            abs(k["h"] - (kline_data[i + 1]["c"] if i + 1 < len(kline_data) else k["c"])),
+            abs(k["l"] - (kline_data[i + 1]["c"] if i + 1 < len(kline_data) else k["c"])),
+        )
         if k["c"]:
             atr_vals.append(tr / k["c"])
     volatility = sum(atr_vals) / len(atr_vals) if atr_vals else 0.02
@@ -224,8 +232,8 @@ def _build_contradiction_list(snapshot: Dict) -> List[Dict]:
     vol_ratio = snapshot.get("volume_ratio", 1.0)
     sd = snapshot.get("supply_demand_score", 0.5)
     tech = snapshot.get("technical_score", 0.5)
-    cf = snapshot.get("capital_flow_score", 0.5)
-    sent = snapshot.get("sentiment_score", 0.5)
+    cf = snapshot.get("capital_flow_score", 0.5)  # noqa: F841
+    sent = snapshot.get("sentiment_score", 0.5)  # noqa: F841
 
     # 主矛盾：趋势方向
     if change > 0.01:
@@ -244,83 +252,117 @@ def _build_contradiction_list(snapshot: Dict) -> List[Dict]:
     tension = max(0.2, min(tension, 0.85))
     consistency = 0.5 + abs(sd - 0.5) + abs(tech - 0.5)
     consistency = max(0.3, min(consistency, 0.9))
-    contradictions.append({
-        "thesis": thesis,
-        "antithesis": antithesis,
-        "subject": "BTC趋势方向",
-        "tension": tension,
-        "consistency": consistency,
-    })
+    contradictions.append(
+        {
+            "thesis": thesis,
+            "antithesis": antithesis,
+            "subject": "BTC趋势方向",
+            "tension": tension,
+            "consistency": consistency,
+        }
+    )
 
     # 次矛盾：量价关系
     if change > 0 and vol_ratio > 1.2:
         thesis = "放量上涨，资金持续流入"
         antithesis = "量能过大，警惕阶段性顶部"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "量价配合", "tension": 0.5 + vol_ratio * 0.1,
-            "consistency": 0.6,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "量价配合",
+                "tension": 0.5 + vol_ratio * 0.1,
+                "consistency": 0.6,
+            }
+        )
     elif change < 0 and vol_ratio > 1.2:
         thesis = "放量下跌，恐慌情绪蔓延"
         antithesis = "恐慌出尽后或迎反弹"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "量价配合", "tension": 0.5 + vol_ratio * 0.1,
-            "consistency": 0.6,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "量价配合",
+                "tension": 0.5 + vol_ratio * 0.1,
+                "consistency": 0.6,
+            }
+        )
     elif change > 0 and vol_ratio < 0.8:
         thesis = "缩量上涨，抛压较轻"
         antithesis = "缺乏量能支撑，上涨难持续"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "量价配合", "tension": 0.4,
-            "consistency": 0.4,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "量价配合",
+                "tension": 0.4,
+                "consistency": 0.4,
+            }
+        )
     elif change < 0 and vol_ratio < 0.8:
         thesis = "缩量下跌，杀跌动能不足"
         antithesis = "买盘低迷，继续阴跌"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "量价配合", "tension": 0.4,
-            "consistency": 0.4,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "量价配合",
+                "tension": 0.4,
+                "consistency": 0.4,
+            }
+        )
 
     # 第三矛盾：中期 vs 短期
     if med_change > 0.05 and change < -0.005:
         thesis = "中期上升趋势完好"
         antithesis = "短期调整，考验支撑"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "多周期共振", "tension": 0.5,
-            "consistency": 0.5,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "多周期共振",
+                "tension": 0.5,
+                "consistency": 0.5,
+            }
+        )
     elif med_change < -0.05 and change > 0.005:
         thesis = "中期下降趋势完好"
         antithesis = "短期反弹，测试压力"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "多周期共振", "tension": 0.5,
-            "consistency": 0.5,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "多周期共振",
+                "tension": 0.5,
+                "consistency": 0.5,
+            }
+        )
 
     # 第四矛盾：情绪极值
     if price_pos > 0.85 and vol > 0.04:
         thesis = "市场极度亢奋，FOMO情绪"
         antithesis = "物极必反，警惕顶部"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "市场情绪", "tension": 0.7,
-            "consistency": 0.7,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "市场情绪",
+                "tension": 0.7,
+                "consistency": 0.7,
+            }
+        )
     elif price_pos < 0.15 and vol > 0.04:
         thesis = "市场极度恐慌，抛售情绪"
         antithesis = "否极泰来，底部临近"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "市场情绪", "tension": 0.7,
-            "consistency": 0.7,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "市场情绪",
+                "tension": 0.7,
+                "consistency": 0.7,
+            }
+        )
 
     return contradictions
 
@@ -378,25 +420,27 @@ def _contradictions_to_bcrm_format(contradictions: List[Dict], snapshot: Dict) -
         intensity = tension  # 0~1
         confidence = consistency  # 0~1
 
-        bcrm_contradictions.append({
-            "id": f"c{i}_{subject}",
-            "type": type_map.get(subject, "supply_demand"),
-            "dominant_side": dominant,
-            "direction": direction,
-            "intensity": round(intensity, 4),
-            "confidence": round(confidence, 4),
-            "tension": tension,
-            "thesis": c.get("thesis", ""),
-            "antithesis": c.get("antithesis", ""),
-            "subject": subject,
-        })
+        bcrm_contradictions.append(
+            {
+                "id": f"c{i}_{subject}",
+                "type": type_map.get(subject, "supply_demand"),
+                "dominant_side": dominant,
+                "direction": direction,
+                "intensity": round(intensity, 4),
+                "confidence": round(confidence, 4),
+                "tension": tension,
+                "thesis": c.get("thesis", ""),
+                "antithesis": c.get("antithesis", ""),
+                "subject": subject,
+            }
+        )
 
     return bcrm_contradictions
 
 
-def _load_kline_from_okx(inst_id: str = "BTC-USDT-SWAP",
-                         bar: str = "4H",
-                         limit: int = 200) -> List[Dict]:
+def _load_kline_from_okx(
+    inst_id: str = "BTC-USDT-SWAP", bar: str = "4H", limit: int = 200
+) -> List[Dict]:
     """从 OKX 获取 K 线数据"""
     client = OKXSimulatedClient()
     result = client.get_kline(inst_id=inst_id, bar=bar, limit=limit)
@@ -407,15 +451,19 @@ def _load_kline_from_okx(inst_id: str = "BTC-USDT-SWAP",
     formatted = []
     for c in candles:
         ts = c.get("ts", 0)
-        formatted.append({
-            "ts": ts,
-            "ts_str": datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat() if ts else "",
-            "o": c.get("o", 0),
-            "h": c.get("h", 0),
-            "l": c.get("l", 0),
-            "c": c.get("c", 0),
-            "v": c.get("vol", 0),
-        })
+        formatted.append(
+            {
+                "ts": ts,
+                "ts_str": (
+                    datetime.fromtimestamp(ts / 1000, tz=timezone.utc).isoformat() if ts else ""
+                ),
+                "o": c.get("o", 0),
+                "h": c.get("h", 0),
+                "l": c.get("l", 0),
+                "c": c.get("c", 0),
+                "v": c.get("vol", 0),
+            }
+        )
     return formatted
 
 
@@ -425,21 +473,83 @@ def _get_hexagram_risk_level(hexagram_name_cn: str) -> float:
     基于卦象含义的简化评估
     """
     good_gua = [
-        "乾为天", "坤为地", "水雷屯", "山水蒙", "水天需", "地水师",
-        "水地比", "风天小畜", "天泽履", "地天泰", "天地否", "天火同人",
-        "火天大有", "地山谦", "雷地豫", "泽雷随", "山风蛊", "地泽临",
-        "风地观", "火雷噬嗑", "山火贲", "山地剥", "地雷复", "天雷无妄",
-        "山天大畜", "山雷颐", "泽风大过", "坎为水", "离为火", "泽山咸",
-        "雷风恒", "天山遁", "雷天大壮", "火地晋", "地火明夷", "风火家人",
-        "火泽睽", "水山蹇", "雷水解", "山泽损", "风雷益", "泽天夬",
-        "天风姤", "泽地萃", "地风升", "泽水困", "水风井", "泽火革",
-        "火风鼎", "震为雷", "艮为山", "风山渐", "雷泽归妹", "雷火丰",
-        "火山旅", "巽为风", "兑为泽", "风水涣", "水泽节", "风泽中孚",
-        "雷山小过", "水火既济", "火水未济",
+        "乾为天",
+        "坤为地",
+        "水雷屯",
+        "山水蒙",
+        "水天需",
+        "地水师",
+        "水地比",
+        "风天小畜",
+        "天泽履",
+        "地天泰",
+        "天地否",
+        "天火同人",
+        "火天大有",
+        "地山谦",
+        "雷地豫",
+        "泽雷随",
+        "山风蛊",
+        "地泽临",
+        "风地观",
+        "火雷噬嗑",
+        "山火贲",
+        "山地剥",
+        "地雷复",
+        "天雷无妄",
+        "山天大畜",
+        "山雷颐",
+        "泽风大过",
+        "坎为水",
+        "离为火",
+        "泽山咸",
+        "雷风恒",
+        "天山遁",
+        "雷天大壮",
+        "火地晋",
+        "地火明夷",
+        "风火家人",
+        "火泽睽",
+        "水山蹇",
+        "雷水解",
+        "山泽损",
+        "风雷益",
+        "泽天夬",
+        "天风姤",
+        "泽地萃",
+        "地风升",
+        "泽水困",
+        "水风井",
+        "泽火革",
+        "火风鼎",
+        "震为雷",
+        "艮为山",
+        "风山渐",
+        "雷泽归妹",
+        "雷火丰",
+        "火山旅",
+        "巽为风",
+        "兑为泽",
+        "风水涣",
+        "水泽节",
+        "风泽中孚",
+        "雷山小过",
+        "水火既济",
+        "火水未济",
     ]
     bad_gua = [
-        "坎为水", "山地剥", "天地否", "泽风大过", "火水未济", "山雷颐",
-        "水山蹇", "泽水困", "雷山小过", "地火明夷", "火地晋", "天风姤",
+        "坎为水",
+        "山地剥",
+        "天地否",
+        "泽风大过",
+        "火水未济",
+        "山雷颐",
+        "水山蹇",
+        "泽水困",
+        "雷山小过",
+        "地火明夷",
+        "火地晋",
+        "天风姤",
     ]
     if hexagram_name_cn in bad_gua:
         return 0.8
@@ -455,7 +565,7 @@ def _build_research_contradictions(snapshot: Dict) -> List[Dict]:
     从宏观面、资金面、消息面生成多维度矛盾
     """
     contradictions = []
-    price = snapshot.get("price", 0)
+    price = snapshot.get("price", 0)  # noqa: F841
     med_change = snapshot.get("med_change_pct", 0)
     volatility = snapshot.get("volatility", 0.02)
     trend_str = snapshot.get("trend_strength", 0.5)
@@ -473,35 +583,55 @@ def _build_research_contradictions(snapshot: Dict) -> List[Dict]:
         thesis = "宏观政策中性偏暖，市场底部抬升"
         antithesis = "经济数据疲弱，上行动能不足"
         tension = 0.4
-    contradictions.append({
-        "thesis": thesis, "antithesis": antithesis,
-        "subject": "宏观政策面", "tension": tension, "consistency": 0.55,
-    })
+    contradictions.append(
+        {
+            "thesis": thesis,
+            "antithesis": antithesis,
+            "subject": "宏观政策面",
+            "tension": tension,
+            "consistency": 0.55,
+        }
+    )
 
     # 资金面矛盾：机构资金 vs 散户情绪
     if volatility > 0.04:
         thesis = "机构资金逢低布局，长线资金入场"
         antithesis = "散户恐慌抛售，短期流动性风险"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "资金面博弈", "tension": 0.6, "consistency": 0.5,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "资金面博弈",
+                "tension": 0.6,
+                "consistency": 0.5,
+            }
+        )
     elif med_change > 0.05:
         thesis = "资金持续流入，趋势加速"
         antithesis = "获利盘积累，回调风险增加"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "资金面博弈", "tension": 0.55, "consistency": 0.6,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "资金面博弈",
+                "tension": 0.55,
+                "consistency": 0.6,
+            }
+        )
 
     # 链上数据矛盾：链上活跃 vs 价格反应
     if trend_str > 0.5:
         thesis = "链上活跃度上升，基本面支撑强劲"
         antithesis = "链上数据滞后，价格或已提前反映"
-        contradictions.append({
-            "thesis": thesis, "antithesis": antithesis,
-            "subject": "链上基本面", "tension": 0.45, "consistency": 0.45,
-        })
+        contradictions.append(
+            {
+                "thesis": thesis,
+                "antithesis": antithesis,
+                "subject": "链上基本面",
+                "tension": 0.45,
+                "consistency": 0.45,
+            }
+        )
 
     return contradictions
 
@@ -555,9 +685,8 @@ def _calc_triple_screen_score(closes: List[float]) -> Dict:
     # 波动率（链上评分的简化）
     vol_20 = 0
     if len(closes) >= 20:
-        rets = [(closes[i] - closes[i-1]) / closes[i-1]
-                for i in range(1, len(closes[-20:]))]
-        vol_20 = (sum(r**2 for r in rets) / len(rets)) ** 0.5 * 100 * (365 ** 0.5)
+        rets = [(closes[i] - closes[i - 1]) / closes[i - 1] for i in range(1, len(closes[-20:]))]
+        vol_20 = (sum(r**2 for r in rets) / len(rets)) ** 0.5 * 100 * (365**0.5)
     onchain_score = max(0, 100 - int(vol_20 * 2))
 
     # 周期评分（简化：用价格位置模拟）
@@ -575,8 +704,9 @@ def _calc_triple_screen_score(closes: List[float]) -> Dict:
     total_weight = sum(d[2] for d in dimensions)
     weighted_score = sum(d[1] * d[2] for d in dimensions) / total_weight
 
-    direction = "BULLISH" if weighted_score > 55 else (
-        "BEARISH" if weighted_score < 45 else "NEUTRAL")
+    direction = (
+        "BULLISH" if weighted_score > 55 else ("BEARISH" if weighted_score < 45 else "NEUTRAL")
+    )
 
     return {
         "ok": True,
@@ -683,11 +813,9 @@ def _grid_trade_decision(price: float, grid_state: Dict, ranging_info: Dict) -> 
     }
 
 
-
-
-def _simulate_trade_pnl(entries: List[Dict], current_price: float,
-                        stop_loss: float, take_profit: float,
-                        direction: str) -> Tuple[bool, bool, float]:
+def _simulate_trade_pnl(
+    entries: List[Dict], current_price: float, stop_loss: float, take_profit: float, direction: str
+) -> Tuple[bool, bool, float]:
     """
     简化盈亏计算：判断是否触发止损止盈
 
@@ -698,7 +826,7 @@ def _simulate_trade_pnl(entries: List[Dict], current_price: float,
         return False, False, 0
 
     avg_entry = sum(e["price"] for e in entries) / len(entries)
-    qty = sum(e["qty"] for e in entries)
+    qty = sum(e["qty"] for e in entries)  # noqa: F841
 
     if direction == "long":
         pnl_pct = (current_price - avg_entry) / avg_entry
@@ -712,12 +840,16 @@ def _simulate_trade_pnl(entries: List[Dict], current_price: float,
     return sl_hit, tp_hit, pnl_pct
 
 
-def run_backtest(scenario_name: str, kline_data: List[Dict],
-                 engine: BCRMEngine = None,
-                 start_idx: int = 20, end_idx: int = None,
-                 initial_capital: float = 10000,
-                 position_pct: float = 0.1,
-                 slippage: float = 0.0005) -> ScenarioResult:
+def run_backtest(
+    scenario_name: str,
+    kline_data: List[Dict],
+    engine: BCRMEngine = None,
+    start_idx: int = 20,
+    end_idx: int = None,
+    initial_capital: float = 10000,
+    position_pct: float = 0.1,
+    slippage: float = 0.0005,
+) -> ScenarioResult:
     """
     运行回测
 
@@ -744,7 +876,9 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
     result.bar = "4H"
     result.start_price = kline_data[end_idx]["c"] if end_idx < len(kline_data) else 0
     result.end_price = kline_data[start_idx]["c"] if start_idx < len(kline_data) else 0
-    result.buy_hold_return = (result.end_price - result.start_price) / result.start_price if result.start_price else 0
+    result.buy_hold_return = (
+        (result.end_price - result.start_price) / result.start_price if result.start_price else 0
+    )
 
     capital = initial_capital
     peak_capital = capital
@@ -758,8 +892,8 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
 
     # 当前持仓状态
     position = {
-        "direction": "",   # long / short / ""
-        "entries": [],     # [{price, qty}]
+        "direction": "",  # long / short / ""
+        "entries": [],  # [{price, qty}]
         "stop_loss": 0,
         "take_profit": 0,
         "entry_price": 0,
@@ -768,14 +902,14 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
 
     # 两仪引擎（用于在线学习）—— 使用传入 engine 的实例，确保学习结果持久化
     liangyi_engine = engine.liangyi_engine if engine else LiangyiEngine()
-    learning_cases = []  # 积累的学习案例
+    learning_cases = []  # 积累的学习案例  # noqa: F841
 
     # 八卦力学引擎（第一性原理计算）
     bagua_engine = BaguaEngine()
 
     # 震荡市网格交易状态
-    grid_state = {"active": False}
-    use_grid_strategy = False  # 是否启用网格模式
+    grid_state = {"active": False}  # noqa: F841
+    use_grid_strategy = False  # 是否启用网格模式  # noqa: F841
 
     # 从旧到新遍历（end_idx 是最旧的，start_idx 是最新的）
     for i in range(end_idx, start_idx - 1, -1):
@@ -785,8 +919,7 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
         snapshot = _kline_to_snapshot(kline_data, idx=i)
 
         # --- 增强1: 三屏马丁评分注入快照 ---
-        closes_window = [kline_data[j]["c"] for j in range(
-            i, min(i + 60, len(kline_data)))]
+        closes_window = [kline_data[j]["c"] for j in range(i, min(i + 60, len(kline_data)))]
         screen_score = _calc_triple_screen_score(closes_window)
         if screen_score.get("ok"):
             snapshot["triple_screen_score"] = screen_score["total_score"]
@@ -824,10 +957,11 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
         # --- 增强: 八卦力学引擎（第一性原理校验）---
         try:
             # 获取K线窗口（旧→新）
-            closes_window = [kline_data[j]["c"] for j in range(
-                i, min(i + 60, len(kline_data)))]
-            volumes_window = [kline_data[j].get("vol", kline_data[j].get("v", 0))
-                              for j in range(i, min(i + 60, len(kline_data)))]
+            closes_window = [kline_data[j]["c"] for j in range(i, min(i + 60, len(kline_data)))]
+            volumes_window = [
+                kline_data[j].get("vol", kline_data[j].get("v", 0))
+                for j in range(i, min(i + 60, len(kline_data)))
+            ]
 
             bagua_result = bagua_engine.infer(
                 snapshot=snapshot,
@@ -869,7 +1003,7 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
             if bagua_result.hexagram_name_cn:
                 hex_cn = bagua_result.hexagram_name_cn
 
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             # 八卦引擎失败不影响主流程
             pass
 
@@ -878,12 +1012,11 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
         tp_px = 0
         reduce_ratio = 0
         if bcrm_result.strategy_branches:
-            b1 = next((b for b in bcrm_result.strategy_branches
-                       if b.branch_id == "B1"), None)
+            b1 = next((b for b in bcrm_result.strategy_branches if b.branch_id == "B1"), None)
             if b1:
                 sl_px = b1.stop_loss_px
                 tp_px = b1.take_profit_px
-                reduce_ratio = b1.reduce_ratio
+                reduce_ratio = b1.reduce_ratio  # noqa: F841
 
         price = snapshot["price"]
         ts = snapshot["snapshot_ts"]
@@ -891,49 +1024,86 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
         # ── 检查止盈止损 ──
         if position["direction"]:
             sl_hit, tp_hit, pnl_pct = _simulate_trade_pnl(
-                position["entries"], price,
-                position["stop_loss"], position["take_profit"],
-                position["direction"])
+                position["entries"],
+                price,
+                position["stop_loss"],
+                position["take_profit"],
+                position["direction"],
+            )
 
             if sl_hit:
                 # 止损
                 qty = sum(e["qty"] for e in position["entries"])
                 entry_px = sum(e["price"] * e["qty"] for e in position["entries"]) / qty
-                pnl = (price - entry_px) * qty if position["direction"] == "long" else (entry_px - price) * qty
+                pnl = (
+                    (price - entry_px) * qty
+                    if position["direction"] == "long"
+                    else (entry_px - price) * qty
+                )
                 pnl_with_slip = pnl - price * qty * slippage
                 capital += pnl_with_slip
 
-                all_trades.append({
-                    "ts": ts, "price": price, "action": "stop_loss",
-                    "direction": position["direction"], "hexagram": position["hexagram"],
-                    "entry_price": entry_px, "exit_price": price,
-                    "pnl": pnl_with_slip, "pnl_pct": pnl_pct,
-                    "exit_reason": "stop_loss",
-                })
+                all_trades.append(
+                    {
+                        "ts": ts,
+                        "price": price,
+                        "action": "stop_loss",
+                        "direction": position["direction"],
+                        "hexagram": position["hexagram"],
+                        "entry_price": entry_px,
+                        "exit_price": price,
+                        "pnl": pnl_with_slip,
+                        "pnl_pct": pnl_pct,
+                        "exit_reason": "stop_loss",
+                    }
+                )
                 loss_trades += 1
                 total_loss += abs(pnl_with_slip)
-                position = {"direction": "", "entries": [], "stop_loss": 0,
-                            "take_profit": 0, "entry_price": 0, "hexagram": ""}
+                position = {
+                    "direction": "",
+                    "entries": [],
+                    "stop_loss": 0,
+                    "take_profit": 0,
+                    "entry_price": 0,
+                    "hexagram": "",
+                }
 
             elif tp_hit:
                 # 止盈
                 qty = sum(e["qty"] for e in position["entries"])
                 entry_px = sum(e["price"] * e["qty"] for e in position["entries"]) / qty
-                pnl = (price - entry_px) * qty if position["direction"] == "long" else (entry_px - price) * qty
+                pnl = (
+                    (price - entry_px) * qty
+                    if position["direction"] == "long"
+                    else (entry_px - price) * qty
+                )
                 pnl_with_slip = pnl - price * qty * slippage
                 capital += pnl_with_slip
 
-                all_trades.append({
-                    "ts": ts, "price": price, "action": "take_profit",
-                    "direction": position["direction"], "hexagram": position["hexagram"],
-                    "entry_price": entry_px, "exit_price": price,
-                    "pnl": pnl_with_slip, "pnl_pct": pnl_pct,
-                    "exit_reason": "take_profit",
-                })
+                all_trades.append(
+                    {
+                        "ts": ts,
+                        "price": price,
+                        "action": "take_profit",
+                        "direction": position["direction"],
+                        "hexagram": position["hexagram"],
+                        "entry_price": entry_px,
+                        "exit_price": price,
+                        "pnl": pnl_with_slip,
+                        "pnl_pct": pnl_pct,
+                        "exit_reason": "take_profit",
+                    }
+                )
                 win_trades += 1
                 total_win += pnl_with_slip
-                position = {"direction": "", "entries": [], "stop_loss": 0,
-                            "take_profit": 0, "entry_price": 0, "hexagram": ""}
+                position = {
+                    "direction": "",
+                    "entries": [],
+                    "stop_loss": 0,
+                    "take_profit": 0,
+                    "entry_price": 0,
+                    "hexagram": "",
+                }
 
         # ── 根据 BCRM 信号交易 ──
         if fail_closed or confidence < 0.25:
@@ -960,7 +1130,7 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
             # 2. 降低单笔仓位
             grid_pos_pct = position_pct * 0.6
             # 3. 缩小止损止盈（贴近震荡区间边界）
-            range_width = ranging_info.get("range_width", 0.04)
+            range_width = ranging_info.get("range_width", 0.04)  # noqa: F841
             if sl_px and tp_px:
                 # 震荡市中止损止盈更紧凑
                 pass
@@ -984,15 +1154,25 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
                 "entry_price": entry_px,
                 "hexagram": hex_cn,
             }
-            all_trades.append({
-                "ts": ts, "price": entry_px, "action": "open_long",
-                "direction": "long", "hexagram": hex_cn,
-                "entry_price": entry_px, "exit_price": 0,
-                "pnl": 0, "pnl_pct": 0, "exit_reason": "",
-                "confidence": confidence, "stop_loss": sl_px, "take_profit": tp_px,
-                "liangyi_state": bcrm_result.liangyi_state,
-                "scale_params": bcrm_result.scale_params,
-            })
+            all_trades.append(
+                {
+                    "ts": ts,
+                    "price": entry_px,
+                    "action": "open_long",
+                    "direction": "long",
+                    "hexagram": hex_cn,
+                    "entry_price": entry_px,
+                    "exit_price": 0,
+                    "pnl": 0,
+                    "pnl_pct": 0,
+                    "exit_reason": "",
+                    "confidence": confidence,
+                    "stop_loss": sl_px,
+                    "take_profit": tp_px,
+                    "liangyi_state": bcrm_result.liangyi_state,
+                    "scale_params": bcrm_result.scale_params,
+                }
+            )
 
         elif direction == "DOWN" and not position["direction"]:
             # 开空
@@ -1006,44 +1186,69 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
                 "entry_price": entry_px,
                 "hexagram": hex_cn,
             }
-            all_trades.append({
-                "ts": ts, "price": entry_px, "action": "open_short",
-                "direction": "short", "hexagram": hex_cn,
-                "entry_price": entry_px, "exit_price": 0,
-                "pnl": 0, "pnl_pct": 0, "exit_reason": "",
-                "confidence": confidence, "stop_loss": sl_px, "take_profit": tp_px,
-                "liangyi_state": bcrm_result.liangyi_state,
-                "scale_params": bcrm_result.scale_params,
-            })
+            all_trades.append(
+                {
+                    "ts": ts,
+                    "price": entry_px,
+                    "action": "open_short",
+                    "direction": "short",
+                    "hexagram": hex_cn,
+                    "entry_price": entry_px,
+                    "exit_price": 0,
+                    "pnl": 0,
+                    "pnl_pct": 0,
+                    "exit_reason": "",
+                    "confidence": confidence,
+                    "stop_loss": sl_px,
+                    "take_profit": tp_px,
+                    "liangyi_state": bcrm_result.liangyi_state,
+                    "scale_params": bcrm_result.scale_params,
+                }
+            )
 
         elif direction == "FLAT" and position["direction"]:
             # 信号反转 → 平仓
             qty = sum(e["qty"] for e in position["entries"])
             entry_px = sum(e["price"] * e["qty"] for e in position["entries"]) / qty
-            pnl = (price - entry_px) * qty if position["direction"] == "long" else (entry_px - price) * qty
+            pnl = (
+                (price - entry_px) * qty
+                if position["direction"] == "long"
+                else (entry_px - price) * qty
+            )
             pnl_with_slip = pnl - price * qty * slippage
             capital += pnl_with_slip
 
             exit_reason = "signal_flat"
             pnl_pct = pnl_with_slip / (entry_px * qty) if entry_px * qty else 0
 
-            all_trades.append({
-                "ts": ts, "price": price,
-                "action": f"close_{position['direction']}",
-                "direction": position["direction"],
-                "hexagram": position["hexagram"],
-                "entry_price": entry_px, "exit_price": price,
-                "pnl": pnl_with_slip, "pnl_pct": pnl_pct,
-                "exit_reason": exit_reason,
-            })
+            all_trades.append(
+                {
+                    "ts": ts,
+                    "price": price,
+                    "action": f"close_{position['direction']}",
+                    "direction": position["direction"],
+                    "hexagram": position["hexagram"],
+                    "entry_price": entry_px,
+                    "exit_price": price,
+                    "pnl": pnl_with_slip,
+                    "pnl_pct": pnl_pct,
+                    "exit_reason": exit_reason,
+                }
+            )
             if pnl_with_slip >= 0:
                 win_trades += 1
                 total_win += pnl_with_slip
             else:
                 loss_trades += 1
                 total_loss += abs(pnl_with_slip)
-            position = {"direction": "", "entries": [], "stop_loss": 0,
-                        "take_profit": 0, "entry_price": 0, "hexagram": ""}
+            position = {
+                "direction": "",
+                "entries": [],
+                "stop_loss": 0,
+                "take_profit": 0,
+                "entry_price": 0,
+                "hexagram": "",
+            }
 
         elif direction == "UP" and position["direction"] == "short":
             # 反转：平空开多
@@ -1059,14 +1264,20 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
             else:
                 loss_trades += 1
                 total_loss += abs(pnl_with_slip)
-            all_trades.append({
-                "ts": ts, "price": price, "action": "close_short_reverse",
-                "direction": "short", "hexagram": position["hexagram"],
-                "entry_price": entry_px, "exit_price": price,
-                "pnl": pnl_with_slip,
-                "pnl_pct": pnl_with_slip / (entry_px * qty) if entry_px * qty else 0,
-                "exit_reason": "reverse",
-            })
+            all_trades.append(
+                {
+                    "ts": ts,
+                    "price": price,
+                    "action": "close_short_reverse",
+                    "direction": "short",
+                    "hexagram": position["hexagram"],
+                    "entry_price": entry_px,
+                    "exit_price": price,
+                    "pnl": pnl_with_slip,
+                    "pnl_pct": pnl_with_slip / (entry_px * qty) if entry_px * qty else 0,
+                    "exit_reason": "reverse",
+                }
+            )
             # 开多
             qty_new = (capital * grid_pos_pct) / price
             entry_px_new = price * (1 + slippage)
@@ -1078,15 +1289,25 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
                 "entry_price": entry_px_new,
                 "hexagram": hex_cn,
             }
-            all_trades.append({
-                "ts": ts, "price": entry_px_new, "action": "open_long",
-                "direction": "long", "hexagram": hex_cn,
-                "entry_price": entry_px_new, "exit_price": 0,
-                "pnl": 0, "pnl_pct": 0, "exit_reason": "",
-                "confidence": confidence, "stop_loss": sl_px, "take_profit": tp_px,
-                "liangyi_state": bcrm_result.liangyi_state,
-                "scale_params": bcrm_result.scale_params,
-            })
+            all_trades.append(
+                {
+                    "ts": ts,
+                    "price": entry_px_new,
+                    "action": "open_long",
+                    "direction": "long",
+                    "hexagram": hex_cn,
+                    "entry_price": entry_px_new,
+                    "exit_price": 0,
+                    "pnl": 0,
+                    "pnl_pct": 0,
+                    "exit_reason": "",
+                    "confidence": confidence,
+                    "stop_loss": sl_px,
+                    "take_profit": tp_px,
+                    "liangyi_state": bcrm_result.liangyi_state,
+                    "scale_params": bcrm_result.scale_params,
+                }
+            )
 
         elif direction == "DOWN" and position["direction"] == "long":
             # 反转：平多开空
@@ -1101,14 +1322,20 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
             else:
                 loss_trades += 1
                 total_loss += abs(pnl_with_slip)
-            all_trades.append({
-                "ts": ts, "price": price, "action": "close_long_reverse",
-                "direction": "long", "hexagram": position["hexagram"],
-                "entry_price": entry_px, "exit_price": price,
-                "pnl": pnl_with_slip,
-                "pnl_pct": pnl_with_slip / (entry_px * qty) if entry_px * qty else 0,
-                "exit_reason": "reverse",
-            })
+            all_trades.append(
+                {
+                    "ts": ts,
+                    "price": price,
+                    "action": "close_long_reverse",
+                    "direction": "long",
+                    "hexagram": position["hexagram"],
+                    "entry_price": entry_px,
+                    "exit_price": price,
+                    "pnl": pnl_with_slip,
+                    "pnl_pct": pnl_with_slip / (entry_px * qty) if entry_px * qty else 0,
+                    "exit_reason": "reverse",
+                }
+            )
             # 开空
             qty_new = (capital * grid_pos_pct) / price
             entry_px_new = price * (1 - slippage)
@@ -1120,15 +1347,25 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
                 "entry_price": entry_px_new,
                 "hexagram": hex_cn,
             }
-            all_trades.append({
-                "ts": ts, "price": entry_px_new, "action": "open_short",
-                "direction": "short", "hexagram": hex_cn,
-                "entry_price": entry_px_new, "exit_price": 0,
-                "pnl": 0, "pnl_pct": 0, "exit_reason": "",
-                "confidence": confidence, "stop_loss": sl_px, "take_profit": tp_px,
-                "liangyi_state": bcrm_result.liangyi_state,
-                "scale_params": bcrm_result.scale_params,
-            })
+            all_trades.append(
+                {
+                    "ts": ts,
+                    "price": entry_px_new,
+                    "action": "open_short",
+                    "direction": "short",
+                    "hexagram": hex_cn,
+                    "entry_price": entry_px_new,
+                    "exit_price": 0,
+                    "pnl": 0,
+                    "pnl_pct": 0,
+                    "exit_reason": "",
+                    "confidence": confidence,
+                    "stop_loss": sl_px,
+                    "take_profit": tp_px,
+                    "liangyi_state": bcrm_result.liangyi_state,
+                    "scale_params": bcrm_result.scale_params,
+                }
+            )
 
         # 跟踪最大回撤
         if capital > peak_capital:
@@ -1142,7 +1379,11 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
         last_price = kline_data[start_idx]["c"] if start_idx < len(kline_data) else 0
         qty = sum(e["qty"] for e in position["entries"])
         entry_px = sum(e["price"] * e["qty"] for e in position["entries"]) / qty
-        pnl = (last_price - entry_px) * qty if position["direction"] == "long" else (entry_px - last_price) * qty
+        pnl = (
+            (last_price - entry_px) * qty
+            if position["direction"] == "long"
+            else (entry_px - last_price) * qty
+        )
         pnl_with_slip = pnl - last_price * qty * slippage
         capital += pnl_with_slip
         total_pnl = capital - initial_capital
@@ -1152,17 +1393,20 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
         else:
             loss_trades += 1
             total_loss += abs(pnl_with_slip)
-        all_trades.append({
-            "ts": kline_data[start_idx].get("ts_str", ""),
-            "price": last_price,
-            "action": f"close_{position['direction']}",
-            "direction": position["direction"],
-            "hexagram": position["hexagram"],
-            "entry_price": entry_px, "exit_price": last_price,
-            "pnl": pnl_with_slip,
-            "pnl_pct": pnl_with_slip / (entry_px * qty) if entry_px * qty else 0,
-            "exit_reason": "end_of_test",
-        })
+        all_trades.append(
+            {
+                "ts": kline_data[start_idx].get("ts_str", ""),
+                "price": last_price,
+                "action": f"close_{position['direction']}",
+                "direction": position["direction"],
+                "hexagram": position["hexagram"],
+                "entry_price": entry_px,
+                "exit_price": last_price,
+                "pnl": pnl_with_slip,
+                "pnl_pct": pnl_with_slip / (entry_px * qty) if entry_px * qty else 0,
+                "exit_reason": "end_of_test",
+            }
+        )
 
     total_pnl = capital - initial_capital
     total_trades = win_trades + loss_trades
@@ -1186,7 +1430,9 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
     # 从交易记录中构建学习案例
     learned_cases = []
     try:
-        learned_cases = _train_liangyi_from_trades(liangyi_engine, all_trades, kline_data, start_idx, end_idx)
+        learned_cases = _train_liangyi_from_trades(
+            liangyi_engine, all_trades, kline_data, start_idx, end_idx
+        )
     except Exception:
         pass
 
@@ -1194,10 +1440,13 @@ def run_backtest(scenario_name: str, kline_data: List[Dict],
     return result
 
 
-def _train_liangyi_from_trades(liangyi_engine: LiangyiEngine,
-                                trades: List[Dict],
-                                kline_data: List[Dict],
-                                start_idx: int, end_idx: int) -> List[Dict]:
+def _train_liangyi_from_trades(
+    liangyi_engine: LiangyiEngine,
+    trades: List[Dict],
+    kline_data: List[Dict],
+    start_idx: int,
+    end_idx: int,
+) -> List[Dict]:
     """
     从交易记录训练两仪引擎
     构建案例格式: {liangyi_state, scale_params, actual_outcome: {is_correct}}
@@ -1247,9 +1496,13 @@ def _train_liangyi_from_trades(liangyi_engine: LiangyiEngine,
                 price_pos = 0.5
                 trend_str = 0.5
                 for i in range(end_idx, start_idx - 1, -1):
-                    if i < len(kline_data) and abs(kline_data[i]["c"] - entry_price) / entry_price < 0.001:
-                        closes_med = [kline_data[j]["c"] for j in range(
-                            i, min(i + 20, len(kline_data)))]
+                    if (
+                        i < len(kline_data)
+                        and abs(kline_data[i]["c"] - entry_price) / entry_price < 0.001
+                    ):
+                        closes_med = [
+                            kline_data[j]["c"] for j in range(i, min(i + 20, len(kline_data)))
+                        ]
                         if closes_med:
                             high_m = max(closes_med)
                             low_m = min(closes_med)
@@ -1275,10 +1528,18 @@ def _train_liangyi_from_trades(liangyi_engine: LiangyiEngine,
                     "liangyi_state": {
                         "macro_phase": macro_phase,
                         "micro_phase": micro_phase,
-                        "macro_season": {"recovery": "春", "overheat": "夏",
-                                          "stagflation": "秋", "recession": "冬"}.get(macro_phase, "春"),
-                        "micro_season": {"sprout": "春", "growth": "夏",
-                                          "mature": "秋", "decline": "冬"}.get(micro_phase, "春"),
+                        "macro_season": {
+                            "recovery": "春",
+                            "overheat": "夏",
+                            "stagflation": "秋",
+                            "recession": "冬",
+                        }.get(macro_phase, "春"),
+                        "micro_season": {
+                            "sprout": "春",
+                            "growth": "夏",
+                            "mature": "秋",
+                            "decline": "冬",
+                        }.get(micro_phase, "春"),
                     },
                     "scale_params": {
                         "weight_time": 0.25,
@@ -1326,36 +1587,35 @@ def run_multi_scenario_test(engine: BCRMEngine = None) -> List[ScenarioResult]:
     # 场景1：近期趋势（最近 50 根 4H = 约 8 天）
     if len(kline_4h) >= 70:
         print("\n运行场景1: 近期趋势 (4H × 50bar)...")
-        r = run_backtest("近期趋势(4H)", kline_4h, engine=engine,
-                         start_idx=0, end_idx=50)
+        r = run_backtest("近期趋势(4H)", kline_4h, engine=engine, start_idx=0, end_idx=50)
         scenarios.append(r)
 
     # 场景2：中期震荡（50-150 根 4H）
     if len(kline_4h) >= 170:
         print("运行场景2: 中期震荡 (4H × 100bar)...")
-        r = run_backtest("中期震荡(4H)", kline_4h, engine=engine,
-                         start_idx=50, end_idx=150)
+        r = run_backtest("中期震荡(4H)", kline_4h, engine=engine, start_idx=50, end_idx=150)
         scenarios.append(r)
 
     # 场景3：长期走势（150-250 根 4H）
     if len(kline_4h) >= 270:
         print("运行场景3: 长期走势 (4H × 100bar)...")
-        r = run_backtest("长期走势(4H)", kline_4h, engine=engine,
-                         start_idx=150, end_idx=250)
+        r = run_backtest("长期走势(4H)", kline_4h, engine=engine, start_idx=150, end_idx=250)
         scenarios.append(r)
 
     # 场景4：1H 高频（最近 200 根 1H）
     if kline_1h and len(kline_1h) >= 220:
         print("运行场景4: 高频交易 (1H × 200bar)...")
-        r = run_backtest("高频交易(1H)", kline_1h, engine=engine,
-                         start_idx=0, end_idx=200, position_pct=0.05)
+        r = run_backtest(
+            "高频交易(1H)", kline_1h, engine=engine, start_idx=0, end_idx=200, position_pct=0.05
+        )
         scenarios.append(r)
 
     # 场景5：日线趋势（最近 50 根日K）
     if kline_1d and len(kline_1d) >= 70:
         print("运行场景5: 日线趋势 (1D × 50bar)...")
-        r = run_backtest("日线趋势(1D)", kline_1d, engine=engine,
-                         start_idx=0, end_idx=50, position_pct=0.2)
+        r = run_backtest(
+            "日线趋势(1D)", kline_1d, engine=engine, start_idx=0, end_idx=50, position_pct=0.2
+        )
         scenarios.append(r)
 
     # --- L4 持久化：汇总所有场景的 cases ---
@@ -1402,7 +1662,9 @@ def print_report(results: List[ScenarioResult]):
     for r in results:
         pnl_str = f"+${r.total_pnl:,.0f}" if r.total_pnl >= 0 else f"-${abs(r.total_pnl):,.0f}"
         bh_str = f"+{r.buy_hold_return*100:+.1f}%"
-        print(f"{r.name:<20} {r.total_trades:>6} {r.win_rate*100:>7.1f}% {r.profit_factor:>8.2f} {pnl_str:>10} {r.max_drawdown*100:>7.2f}% {bh_str:>10}")
+        print(
+            f"{r.name:<20} {r.total_trades:>6} {r.win_rate*100:>7.1f}% {r.profit_factor:>8.2f} {pnl_str:>10} {r.max_drawdown*100:>7.2f}% {bh_str:>10}"
+        )
         total_trades += r.total_trades
         total_pnl += r.total_pnl
         if r.avg_win > 0:
@@ -1417,7 +1679,9 @@ def print_report(results: List[ScenarioResult]):
         win_count = sum(r.win_trades for r in results)
         overall_wr = win_count / total_trades
         overall_pf = total_win / total_loss if total_loss else 0
-    print(f"{'汇总':<20} {total_trades:>6} {overall_wr*100:>7.1f}% {overall_pf:>8.2f} {('+$' if total_pnl>=0 else '-$') + f'{abs(total_pnl):,.0f}':>10}")
+    print(
+        f"{'汇总':<20} {total_trades:>6} {overall_wr*100:>7.1f}% {overall_pf:>8.2f} {('+$' if total_pnl>=0 else '-$') + f'{abs(total_pnl):,.0f}':>10}"
+    )
 
     print("\n" + "=" * 80)
 
@@ -1462,21 +1726,23 @@ def main():
             out_file = TRAIN_DATA_DIR / f"backtest_result_{int(time.time())}.json"
             save_data = []
             for r in results:
-                save_data.append({
-                    "name": r.name,
-                    "bar": r.bar,
-                    "start_price": r.start_price,
-                    "end_price": r.end_price,
-                    "buy_hold_return": r.buy_hold_return,
-                    "total_trades": r.total_trades,
-                    "win_trades": r.win_trades,
-                    "loss_trades": r.loss_trades,
-                    "total_pnl": r.total_pnl,
-                    "win_rate": r.win_rate,
-                    "max_drawdown": r.max_drawdown,
-                    "profit_factor": r.profit_factor,
-                    "trade_count": len(r.trades),
-                })
+                save_data.append(
+                    {
+                        "name": r.name,
+                        "bar": r.bar,
+                        "start_price": r.start_price,
+                        "end_price": r.end_price,
+                        "buy_hold_return": r.buy_hold_return,
+                        "total_trades": r.total_trades,
+                        "win_trades": r.win_trades,
+                        "loss_trades": r.loss_trades,
+                        "total_pnl": r.total_pnl,
+                        "win_rate": r.win_rate,
+                        "max_drawdown": r.max_drawdown,
+                        "profit_factor": r.profit_factor,
+                        "trade_count": len(r.trades),
+                    }
+                )
             with open(out_file, "w") as f:
                 json.dump(save_data, f, indent=2, ensure_ascii=False)
             print(f"\n结果已保存到: {out_file}")

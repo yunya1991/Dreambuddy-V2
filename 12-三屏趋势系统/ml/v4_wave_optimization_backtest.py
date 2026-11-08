@@ -14,13 +14,18 @@
 评估指标：年化收益、夏普比率、最大回撤、Calmar比率
 评估标准：优化后 Calmar 比率 >= 基准，且年化收益 >= 基准
 """
-import os, sys, json, time
+
+import json
+import os
+import sys
+import time
+
 import numpy as np
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 
 def load_coin_data(symbol: str) -> pd.DataFrame:
@@ -42,7 +47,7 @@ def calc_metrics(prices, position_arr, valid_start=0):
     closes = prices["close"].values
     daily_returns = np.zeros(n)
     for i in range(1, n):
-        daily_returns[i] = position_arr[i-1] * (closes[i] / closes[i-1] - 1)
+        daily_returns[i] = position_arr[i - 1] * (closes[i] / closes[i - 1] - 1)
 
     valid_returns = daily_returns[valid_start:]
     valid_days = len(valid_returns)
@@ -84,7 +89,7 @@ def compute_v4_position(prices, symbol="BTC", config_override=None):
     """计算V4策略仓位，支持参数覆盖"""
     from ml.halving_top_exit_strategy import HalvingTopExitStrategy
 
-    is_btc = (symbol == "BTC")
+    is_btc = symbol == "BTC"
     strategy = HalvingTopExitStrategy(
         symbol=symbol,
         is_btc=is_btc,
@@ -97,7 +102,9 @@ def compute_v4_position(prices, symbol="BTC", config_override=None):
                 setattr(strategy, k, v)
 
     position_series = strategy.generate_signals(prices)
-    return position_series.values if hasattr(position_series, 'values') else np.array(position_series)
+    return (
+        position_series.values if hasattr(position_series, "values") else np.array(position_series)
+    )
 
 
 def generate_wave_signals(prices, zigzag_threshold=0.05):
@@ -248,12 +255,16 @@ def run_optimization_backtests(
     # step_pct从3%降到2%（更密集加仓）
     # max_position从0.9降到0.8（避免过高）
     print(f"  [{symbol}] {period_name} - 优化1：抄底分级调整...")
-    v4_opt1 = compute_v4_position(prices, symbol, config_override={
-        "dip_buy_initial_pct": 0.15,
-        "dip_buy_step_pct": 2.0,
-        "dip_buy_levels": 8,
-        "dip_buy_max_position": 0.8,
-    })
+    v4_opt1 = compute_v4_position(
+        prices,
+        symbol,
+        config_override={
+            "dip_buy_initial_pct": 0.15,
+            "dip_buy_step_pct": 2.0,
+            "dip_buy_levels": 8,
+            "dip_buy_max_position": 0.8,
+        },
+    )
     fused_opt1 = compute_v4_wave_fusion(prices, v4_opt1, wave_signals, wave_confs)
     results["opt1_dip_buy"] = {
         "name": "优化1：抄底分级(15%起步/2%步长/8级/80%上限)",
@@ -265,8 +276,7 @@ def run_optimization_backtests(
     # 优化2：波浪置信度阈值降低
     print(f"  [{symbol}] {period_name} - 优化2：波浪阈值降低...")
     fused_opt2 = compute_v4_wave_fusion(
-        prices, v4_pos, wave_signals, wave_confs,
-        config_override={"confirm_threshold": 0.4}
+        prices, v4_pos, wave_signals, wave_confs, config_override={"confirm_threshold": 0.4}
     )
     results["opt2_wave_threshold"] = {
         "name": "优化2：波浪阈值0.4",
@@ -276,10 +286,7 @@ def run_optimization_backtests(
 
     # 优化3：融合规则修复（保留V4 dip_buy仓位）
     print(f"  [{symbol}] {period_name} - 优化3：融合规则修复...")
-    fused_opt3 = compute_v4_wave_fusion(
-        prices, v4_pos, wave_signals, wave_confs,
-        fix_rule2b=True
-    )
+    fused_opt3 = compute_v4_wave_fusion(prices, v4_pos, wave_signals, wave_confs, fix_rule2b=True)
     results["opt3_fix_rule2b"] = {
         "name": "优化3：保留V4抄底仓位",
         "positions": fused_opt3,
@@ -290,9 +297,13 @@ def run_optimization_backtests(
     # 保护范围从5%扩大到8%
     # 上方保护仓位系数从线性衰减改为更平缓（sqrt）
     print(f"  [{symbol}] {period_name} - 优化4：支撑区域增强...")
-    v4_opt4 = compute_v4_position(prices, symbol, config_override={
-        "weekly_ma200_support_zone_pct": 8.0,
-    })
+    v4_opt4 = compute_v4_position(
+        prices,
+        symbol,
+        config_override={
+            "weekly_ma200_support_zone_pct": 8.0,
+        },
+    )
     fused_opt4 = compute_v4_wave_fusion(prices, v4_opt4, wave_signals, wave_confs)
     results["opt4_support_zone"] = {
         "name": "优化4：支撑区域增强(8%)",
@@ -303,17 +314,24 @@ def run_optimization_backtests(
 
     # 组合优化：1+2+3+4全部
     print(f"  [{symbol}] {period_name} - 组合优化：全部4项...")
-    v4_combo = compute_v4_position(prices, symbol, config_override={
-        "dip_buy_initial_pct": 0.15,
-        "dip_buy_step_pct": 2.0,
-        "dip_buy_levels": 8,
-        "dip_buy_max_position": 0.8,
-        "weekly_ma200_support_zone_pct": 8.0,
-    })
+    v4_combo = compute_v4_position(
+        prices,
+        symbol,
+        config_override={
+            "dip_buy_initial_pct": 0.15,
+            "dip_buy_step_pct": 2.0,
+            "dip_buy_levels": 8,
+            "dip_buy_max_position": 0.8,
+            "weekly_ma200_support_zone_pct": 8.0,
+        },
+    )
     fused_combo = compute_v4_wave_fusion(
-        prices, v4_combo, wave_signals, wave_confs,
+        prices,
+        v4_combo,
+        wave_signals,
+        wave_confs,
         config_override={"confirm_threshold": 0.4},
-        fix_rule2b=True
+        fix_rule2b=True,
     )
     results["combo_all"] = {
         "name": "组合优化：全部4项",
@@ -329,7 +347,9 @@ def print_comparison_table(results, title):
     print(f"\n{'='*80}")
     print(f"  {title}")
     print(f"{'='*80}")
-    print(f"{'方案':<35} {'年化%':>8} {'夏普':>7} {'最大回撤%':>10} {'Calmar':>7} {'胜率%':>7} {'平均仓位%':>9}")
+    print(
+        f"{'方案':<35} {'年化%':>8} {'夏普':>7} {'最大回撤%':>10} {'Calmar':>7} {'胜率%':>7} {'平均仓位%':>9}"
+    )
     print(f"{'-'*80}")
 
     baseline_key = "baseline_v4_wave"
@@ -361,7 +381,9 @@ def print_comparison_table(results, title):
                     reasons.append(f"年化{ann:.1f}%<{base_ann*100:.1f}%")
                 better = " ✗ " + ",".join(reasons)
 
-        print(f"{name:<35} {ann:>8.2f} {sharpe:>7.3f} {mdd:>10.2f} {calmar:>7.3f} {wr:>7.1f} {avg_pos:>9.1f}{better}")
+        print(
+            f"{name:<35} {ann:>8.2f} {sharpe:>7.3f} {mdd:>10.2f} {calmar:>7.3f} {wr:>7.1f} {avg_pos:>9.1f}{better}"
+        )
 
 
 def main():
@@ -372,7 +394,9 @@ def main():
     symbol = "BTC"
     prices = load_coin_data(symbol)
     n = len(prices)
-    print(f"\n数据: {symbol}, {n} 天 ({prices.index[0].strftime('%Y-%m-%d')} ~ {prices.index[-1].strftime('%Y-%m-%d')})")
+    print(
+        f"\n数据: {symbol}, {n} 天 ({prices.index[0].strftime('%Y-%m-%d')} ~ {prices.index[-1].strftime('%Y-%m-%d')})"
+    )
 
     # 8年期和4年期的切片索引
     four_year_days = 1460
@@ -386,9 +410,7 @@ def main():
 
     # 8年期回测
     results_8y = run_optimization_backtests(
-        prices, symbol, "8年期",
-        wave_signals, wave_confs,
-        valid_start=730
+        prices, symbol, "8年期", wave_signals, wave_confs, valid_start=730
     )
     print_comparison_table(results_8y, "8年期回测对比 (valid_start=730)")
 
@@ -398,9 +420,7 @@ def main():
     wave_confs_4y = wave_confs[four_year_start:]
 
     results_4y = run_optimization_backtests(
-        prices_4y, symbol, "4年期",
-        wave_signals_4y, wave_confs_4y,
-        valid_start=365
+        prices_4y, symbol, "4年期", wave_signals_4y, wave_confs_4y, valid_start=365
     )
     print_comparison_table(results_4y, "4年期回测对比 (valid_start=365)")
 
@@ -415,13 +435,25 @@ def main():
     passed = []
     failed = []
 
-    for key in ["opt1_dip_buy", "opt2_wave_threshold", "opt3_fix_rule2b", "opt4_support_zone", "combo_all"]:
+    for key in [
+        "opt1_dip_buy",
+        "opt2_wave_threshold",
+        "opt3_fix_rule2b",
+        "opt4_support_zone",
+        "combo_all",
+    ]:
         r8 = results_8y[key]["metrics"]
         r4 = results_4y[key]["metrics"]
         name = results_8y[key]["name"]
 
-        pass_8y = r8["calmar"] >= base_8y["calmar"] * 0.99 and r8["annualized"] >= base_8y["annualized"] * 0.99
-        pass_4y = r4["calmar"] >= base_4y["calmar"] * 0.99 and r4["annualized"] >= base_4y["annualized"] * 0.99
+        pass_8y = (
+            r8["calmar"] >= base_8y["calmar"] * 0.99
+            and r8["annualized"] >= base_8y["annualized"] * 0.99
+        )
+        pass_4y = (
+            r4["calmar"] >= base_4y["calmar"] * 0.99
+            and r4["annualized"] >= base_4y["annualized"] * 0.99
+        )
         both_pass = pass_8y and pass_4y
 
         status = "✓ 通过" if both_pass else "✗ 未通过"
@@ -436,11 +468,11 @@ def main():
     print(f"\n通过: {len(passed)} 项, 未通过: {len(failed)} 项")
     if passed:
         print("通过的优化方案:")
-        for key, name in passed:
+        for key, name in passed:  # noqa: B007
             print(f"  - {name}")
     if failed:
         print("未通过(需回退):")
-        for key, name in failed:
+        for key, name in failed:  # noqa: B007
             print(f"  - {name}")
 
     # 保存结果

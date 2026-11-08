@@ -10,17 +10,18 @@ TR-12.6 ENABLE_TEE=False V15 baseline: 现有 TEE 108 tests + V15 tests/test_v15
 TR-12.7 SHADOW 3笔流(BTC开 / ETH加 / SOL平) → JSONL 3条 _shadow 行齐全域
 TR-12.8 Engine FAIL-OPEN: engine 抛 RuntimeError → 降级直传 client.place_order() + 结果 ok=True 等价
 """
+
 from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
@@ -32,8 +33,7 @@ V15_CORE = REPO / "14-V15经典马丁策略/core"
 
 def _load_v15_module(name: str, relpath: Path):
     relpath = Path(relpath).resolve()
-    spec = importlib.util.spec_from_file_location(
-        f"_v15mod_{name}", str(relpath))
+    spec = importlib.util.spec_from_file_location(f"_v15mod_{name}", str(relpath))
     m = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = m
     spec.loader.exec_module(m)
@@ -43,8 +43,7 @@ def _load_v15_module(name: str, relpath: Path):
 def _load_tee_factory():
     """导入 build_v15_engine 工厂函数（位于 v15_integration 新文件）。"""
     path = (REPO / "22-执行引擎中心/tee_core/integrations/v15_integration.py").resolve()
-    spec = importlib.util.spec_from_file_location(
-        "_tee_v15_integration", str(path))
+    spec = importlib.util.spec_from_file_location("_tee_v15_integration", str(path))
     m = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = m
     spec.loader.exec_module(m)
@@ -54,12 +53,16 @@ def _load_tee_factory():
 def _fake_client() -> MagicMock:
     """Simulated V15-compatible OKX client mock."""
     c = MagicMock()
-    c.place_order.return_value = {"ok": True, "ord_id": "o-001",
-                                   "data": [{"ordId": "o-001", "fillSz": "1", "avgPx": "50000"}]}
+    c.place_order.return_value = {
+        "ok": True,
+        "ord_id": "o-001",
+        "data": [{"ordId": "o-001", "fillSz": "1", "avgPx": "50000"}],
+    }
     c.get_orderbook.return_value = {
         "asks": [["50001.0", "1.0"], ["50002.0", "1.5"]],
         "bids": [["49999.0", "1.2"], ["49998.0", "0.8"]],
-        "ok": True, "ts_ms": 1700000000000,
+        "ok": True,
+        "ts_ms": 1700000000000,
     }
     c.cancel_order.return_value = {"ok": True}
     c.cancel_algo_orders.return_value = {"ok": True}
@@ -72,7 +75,7 @@ def _fake_client() -> MagicMock:
 # =====================================================================
 class TestTR121BuildEngineFactory:
     def test_factory_file_exists_and_is_importable(self):
-        build_fn, p = _load_tee_factory()   # FileNotFoundError 若文件缺失
+        build_fn, p = _load_tee_factory()  # FileNotFoundError 若文件缺失
         assert callable(build_fn), f"{p} must expose callable build_v15_engine"
 
     def test_factory_returns_tuple_engine_and_auditor_dir(self):
@@ -84,8 +87,9 @@ class TestTR121BuildEngineFactory:
                 shadow_mode=False,
                 audit_dir=tmp,
             )
-            assert hasattr(engine, "execute_market_compat"), (
-                "Engine must expose execute_market_compat compat")
+            assert hasattr(
+                engine, "execute_market_compat"
+            ), "Engine must expose execute_market_compat compat"
             assert isinstance(info, dict)
             assert Path(info["audit_dir"]).is_dir()
 
@@ -98,16 +102,20 @@ class TestTR122DispatchByteIdentical:
         # 加载 V15 分发器函数（位于 v15_trader.py 的新 helper _v15_place_order）
         v15trader = _load_v15_module("trader", V15_CORE / "v15_trader.py")
         dispatch = getattr(v15trader, "_v15_place_order", None)
-        assert dispatch is not None, (
-            "v15_trader.py must expose module-level _v15_place_order dispatch"
-        )
+        assert (
+            dispatch is not None
+        ), "v15_trader.py must expose module-level _v15_place_order dispatch"
 
         captured: Dict[str, Any] = {}
         raw = MagicMock()
-        raw.place_order.side_effect = lambda **kw: (captured.update(kw),
-                                                    {"ok": True, "ord_id": "1"})[1]
-        with patch.object(v15trader, "AUTO_EXECUTE", True), \
-             patch.object(v15trader, "ENABLE_TEE", False):
+        raw.place_order.side_effect = lambda **kw: (
+            captured.update(kw),
+            {"ok": True, "ord_id": "1"},
+        )[1]
+        with (
+            patch.object(v15trader, "AUTO_EXECUTE", True),
+            patch.object(v15trader, "ENABLE_TEE", False),
+        ):
             r = dispatch(
                 client=raw,
                 order_reason="test_open",
@@ -121,9 +129,13 @@ class TestTR122DispatchByteIdentical:
         assert r["ok"]
         keys = set(captured.keys())
         # 字节等价：5 legacy keys only（禁止泄露 TEE key）
-        assert keys == {"inst_id", "side", "sz", "td_mode", "pos_side"}, (
-            f"Pure market keys mismatch: got {sorted(keys)}"
-        )
+        assert keys == {
+            "inst_id",
+            "side",
+            "sz",
+            "td_mode",
+            "pos_side",
+        }, f"Pure market keys mismatch: got {sorted(keys)}"
         assert "px" not in captured and "max_slippage_bps" not in captured
 
 
@@ -146,23 +158,42 @@ class TestTR123ShadowZeroRealIO:
             engine_mock = MagicMock(wraps=engine)
             # 3 main flows
             flow1 = engine_mock.execute_market_compat(
-                inst_id="BTC-USDT-SWAP", side="buy", sz="2",
-                td_mode="isolated", pos_side="long", tag="V15|BTC", reason="v15_open")
+                inst_id="BTC-USDT-SWAP",
+                side="buy",
+                sz="2",
+                td_mode="isolated",
+                pos_side="long",
+                tag="V15|BTC",
+                reason="v15_open",
+            )
             flow2 = engine_mock.execute_market_compat(
-                inst_id="ETH-USDT-SWAP", side="buy", sz="20",
-                td_mode="isolated", pos_side="long", tag="V15|ETH", reason="v15_addon")
+                inst_id="ETH-USDT-SWAP",
+                side="buy",
+                sz="20",
+                td_mode="isolated",
+                pos_side="long",
+                tag="V15|ETH",
+                reason="v15_addon",
+            )
             flow3 = engine_mock.execute_market_compat(
-                inst_id="SOL-USDT-SWAP", side="sell", sz="200",
-                td_mode="isolated", pos_side="short", tag="V15|SOL", reason="v15_close")
+                inst_id="SOL-USDT-SWAP",
+                side="sell",
+                sz="200",
+                td_mode="isolated",
+                pos_side="short",
+                tag="V15|SOL",
+                reason="v15_close",
+            )
             for f in (flow1, flow2, flow3):
                 # engine.execute_market_compat() 顶层 shadow alias = "shadow"
-                assert f.get("shadow_mode_hit") or f.get("shadow"), (
-                    f"Expected shadow flag in result; got keys={list(f.keys())}")
+                assert f.get("shadow_mode_hit") or f.get(
+                    "shadow"
+                ), f"Expected shadow flag in result; got keys={list(f.keys())}"
             # Raw client.place_order 不应被直接调用（影子模式经 client_adapter L1）
             po_calls = [c for c in raw.method_calls if c[0] == "place_order"]
-            assert len(po_calls) == 0, (
-                f"Raw client.place_order called {len(po_calls)} times in SHADOW mode"
-            )
+            assert (
+                len(po_calls) == 0
+            ), f"Raw client.place_order called {len(po_calls)} times in SHADOW mode"
 
 
 # =====================================================================
@@ -175,12 +206,15 @@ class TestTR124LimitOrdersBypassEngine:
         captured_direct = {}
 
         raw = MagicMock()
-        raw.place_order.side_effect = lambda **kw: (captured_direct.update(kw),
-                                                     {"ok": True, "ord_id": "g1",
-                                                      "data": [{"ordId": "g1"}]})[1]
+        raw.place_order.side_effect = lambda **kw: (
+            captured_direct.update(kw),
+            {"ok": True, "ord_id": "g1", "data": [{"ordId": "g1"}]},
+        )[1]
         # 模拟 v15 addon grid limit 调用
-        with patch.object(v15trader, "ENABLE_TEE", True), \
-             patch.object(v15trader, "SHADOW_MODE", False):
+        with (
+            patch.object(v15trader, "ENABLE_TEE", True),
+            patch.object(v15trader, "SHADOW_MODE", False),
+        ):
             r = dispatch(
                 client=raw,
                 order_reason="v15_martin_addon_grid_1",
@@ -200,11 +234,20 @@ class TestTR124LimitOrdersBypassEngine:
         assert captured_direct.get("px") == "45000.0"
         assert captured_direct.get("tag") == "v15_addon_grid"
         # 5 mandatory keys are there
-        mandatory = {"inst_id", "side", "sz", "td_mode", "pos_side",
-                      "ord_type", "px", "tag", "reason"}
+        mandatory = {
+            "inst_id",
+            "side",
+            "sz",
+            "td_mode",
+            "pos_side",
+            "ord_type",
+            "px",
+            "tag",
+            "reason",
+        }
         # note: `reason` may be added inside dispatch using order_reason
         present = set(captured_direct.keys())
-        missing = mandatory - present - {"reason"}   # order_reason fallback ok
+        missing = mandatory - present - {"reason"}  # order_reason fallback ok
         assert not missing, f"Missing LIMIT keys: {missing}"
 
 
@@ -212,12 +255,15 @@ class TestTR124LimitOrdersBypassEngine:
 # TR-12.5 — 平仓四兄弟 经分发器都走到 engine（ENABLE_TEE=True）
 # =====================================================================
 class TestTR125AllCloseFlowDispatch:
-    @pytest.mark.parametrize("flow,order_reason", [
-        ("v15_close_trailing_tp", "v15_trailing_tp"),
-        ("v15_close_fixed_tp", "v15_fixed_tp"),
-        ("v15_close_sl", "v15_stop_loss"),
-        ("v15_reduce_position", "v15_reduce_position"),
-    ])
+    @pytest.mark.parametrize(
+        "flow,order_reason",
+        [
+            ("v15_close_trailing_tp", "v15_trailing_tp"),
+            ("v15_close_fixed_tp", "v15_fixed_tp"),
+            ("v15_close_sl", "v15_stop_loss"),
+            ("v15_reduce_position", "v15_reduce_position"),
+        ],
+    )
     def test_close_flows_invoke_engine_compat(self, flow, order_reason):
         v15trader = _load_v15_module("trader", V15_CORE / "v15_trader.py")
         dispatch = v15trader._v15_place_order
@@ -238,8 +284,7 @@ class TestTR125AllCloseFlowDispatch:
             v15trader.SHADOW_MODE = True
 
             raw = MagicMock()
-            raw.place_order.return_value = {"ok": False,
-                                             "error": "must_not_hit_raw"}
+            raw.place_order.return_value = {"ok": False, "error": "must_not_hit_raw"}
             r = dispatch(
                 client=raw,
                 order_reason=order_reason,
@@ -253,8 +298,7 @@ class TestTR125AllCloseFlowDispatch:
             # 分发器必须走 engine compat（shadow=True 时直接ok=T）
             assert r.get("ok"), f"{flow}: dispatch fallback without engine call"
             # engine_spy.execute_market_compat 至少调用 1 次
-            calls = [c for c in engine_spy.method_calls
-                     if c[0] == "execute_market_compat"]
+            calls = [c for c in engine_spy.method_calls if c[0] == "execute_market_compat"]
             assert len(calls) >= 1, f"{flow}: execute_market_compat not called"
 
 
@@ -268,7 +312,7 @@ class TestTR126BaselineZeroRegression:
         """ENABLE_TEE=False 时，分发器调用 _v15_place_order 不应访问 V15_ENGINE。"""
         v15trader = _load_v15_module("trader", V15_CORE / "v15_trader.py")
         v15trader.ENABLE_TEE = False
-        v15trader.V15_ENGINE = None   # 显式置空：若代码误用则 AttributeError
+        v15trader.V15_ENGINE = None  # 显式置空：若代码误用则 AttributeError
         dispatch = v15trader._v15_place_order
         raw = MagicMock()
         raw.place_order.return_value = {"ok": True, "ord_id": "x"}
@@ -301,14 +345,20 @@ class TestTR127ShadowThreeFlowsAuditLines:
             )
             # 执行 3 笔影子交易
             flows = [
-                ("BTC-USDT-SWAP", "buy",  "2",  "long",  "v15_open"),
-                ("ETH-USDT-SWAP", "buy",  "20", "long",  "v15_addon"),
-                ("SOL-USDT-SWAP", "sell", "200","short", "v15_close"),
+                ("BTC-USDT-SWAP", "buy", "2", "long", "v15_open"),
+                ("ETH-USDT-SWAP", "buy", "20", "long", "v15_addon"),
+                ("SOL-USDT-SWAP", "sell", "200", "short", "v15_close"),
             ]
             for inst, sd, sz, ps, src in flows:
                 engine.execute_market_compat(
-                    inst_id=inst, side=sd, sz=sz,
-                    td_mode="isolated", pos_side=ps, tag=f"V15|{inst[:3]}", reason=src)
+                    inst_id=inst,
+                    side=sd,
+                    sz=sz,
+                    td_mode="isolated",
+                    pos_side=ps,
+                    tag=f"V15|{inst[:3]}",
+                    reason=src,
+                )
             # Force flush 审计文件（Auditor 有 60s 刷新间隔，我们通过调 internal flush）
             try:
                 engine.auditor.close()
@@ -318,23 +368,24 @@ class TestTR127ShadowThreeFlowsAuditLines:
             today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             shadow_path = audit_dir / f"{today}_shadow.jsonl"
             lines = shadow_path.read_text(encoding="utf-8").strip().splitlines()
-            assert len(lines) >= 3, (
-                f"Expected ≥3 _shadow lines, got {len(lines)}; files={list(audit_dir.iterdir())}"
-            )
+            assert (
+                len(lines) >= 3
+            ), f"Expected ≥3 _shadow lines, got {len(lines)}; files={list(audit_dir.iterdir())}"
             # 每行必须具备 6 大审计域（支持嵌套路径：parent.parent_id / router.bucket
             # / algo.name 等价 flat 字段）
             REQUIRED_FLAT = {"estimated_vwap", "shadow_mode_hit", "ts_epoch_ms"}
             REQUIRED_NESTED = {
-                ("parent", "parent_id"), ("parent", "source"),
-                ("router", "bucket"), ("algo", "name"),
+                ("parent", "parent_id"),
+                ("parent", "source"),
+                ("router", "bucket"),
+                ("algo", "name"),
             }
             for rawline in lines:
                 rec = json.loads(rawline)
                 flat_missing = REQUIRED_FLAT - set(rec.keys())
                 assert not flat_missing, f"Missing top-level {flat_missing}: {rec}"
                 nested_missing = [
-                    path for path in REQUIRED_NESTED
-                    if path[1] not in rec.get(path[0], {})
+                    path for path in REQUIRED_NESTED if path[1] not in rec.get(path[0], {})
                 ]
                 assert not nested_missing, (
                     f"Missing nested {nested_missing} (actual: "
@@ -342,11 +393,11 @@ class TestTR127ShadowThreeFlowsAuditLines:
                     f"parent keys={list(rec.get('parent', {}).keys())})"
                 )
             # 所有 algo 去重（至少 1 种）；router 至少 1 个决策
-            algo_names = {json.loads(l)["algo"]["name"] for l in lines[:3]}
-            router_decisions = {json.loads(l)["router"]["bucket"] for l in lines[:3]}
-            assert len(algo_names) >= 1 and len(router_decisions) >= 1, (
-                f"algos={algo_names} decisions={router_decisions}"
-            )
+            algo_names = {json.loads(l)["algo"]["name"] for l in lines[:3]}  # noqa: E741
+            router_decisions = {json.loads(l)["router"]["bucket"] for l in lines[:3]}  # noqa: E741
+            assert (
+                len(algo_names) >= 1 and len(router_decisions) >= 1
+            ), f"algos={algo_names} decisions={router_decisions}"
 
 
 # =====================================================================
@@ -367,8 +418,10 @@ class TestTR128FailOpenFallback:
 
         captured = {}
         raw = MagicMock()
-        raw.place_order.side_effect = lambda **kw: (captured.update(kw),
-                                                     {"ok": True, "ord_id": "fo"})[1]
+        raw.place_order.side_effect = lambda **kw: (
+            captured.update(kw),
+            {"ok": True, "ord_id": "fo"},
+        )[1]
         r = dispatch(
             client=raw,
             order_reason="v15_open_failopen_test",
@@ -382,5 +435,4 @@ class TestTR128FailOpenFallback:
         assert r["ok"], f"FAIL-OPEN must still return ok=True, got {r}"
         assert captured["inst_id"] == "BTC-USDT-SWAP"
         # 5 legacy keys presence（FAIL-OPEN 路径字节等价 — 不附 TEE extra）
-        assert set(captured.keys()) == {"inst_id", "side", "sz",
-                                         "td_mode", "pos_side"}
+        assert set(captured.keys()) == {"inst_id", "side", "sz", "td_mode", "pos_side"}

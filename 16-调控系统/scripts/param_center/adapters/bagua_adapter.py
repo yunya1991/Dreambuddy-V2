@@ -15,6 +15,7 @@
   - tp_floor = max(0.12, tp_atr * 0.04)  # tp_atr=3 → 12%, tp_atr=5 → 20%
   - confidence = mean(long_conf_threshold, short_conf_threshold)
 """
+
 from __future__ import annotations
 
 from typing import Optional
@@ -39,8 +40,10 @@ class BaguaAdapter(BaseAdapter):
         # 直接访问 DEFAULT_REGIME_PARAMS dict 更简单可靠
         try:
             from memory_l4.bcrm2.market_regime import DEFAULT_REGIME_PARAMS  # type: ignore
+
             rp = DEFAULT_REGIME_PARAMS.get(
-                regime_name, DEFAULT_REGIME_PARAMS["CONSOLIDATION"],
+                regime_name,
+                DEFAULT_REGIME_PARAMS["CONSOLIDATION"],
             )
         except Exception:
             return None

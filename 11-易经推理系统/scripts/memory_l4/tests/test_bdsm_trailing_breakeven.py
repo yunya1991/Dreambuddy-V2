@@ -8,9 +8,10 @@
 
 每个新测试 **先失败** → 对应代码实现后 **再通过**。
 """
+
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -25,6 +26,7 @@ class TestBDSMTrailingAndBreakEven:
     def trader(self):
         """构造 mock trader 实例（带 _bdsm_peak_upl dict 和 okx_client mock）"""
         from polling_trader import PollingTrader
+
         # 不真正初始化，用 __new__ 绕过 __init__
         t = PollingTrader.__new__(PollingTrader)
         t._bdsm_peak_upl = {}

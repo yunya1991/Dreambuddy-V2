@@ -9,11 +9,10 @@
 
 参考 spec：docs/superpowers/specs/2026-08-21-strategy-layer-v1p4p1-stage1-implementation-spec.md §二/§三
 """
+
 from __future__ import annotations
 
-import json
 import math
-from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -58,10 +57,11 @@ class DecisionAuditRecord:
 
     默认值全中性/None，保证fail-open字节等价。
     """
-    heuristic_arm_id: Optional[int] = None              # 阶段1: §15.5.2查表映射臂号0-7
-    ol_arm_id: Optional[int] = None                     # 阶段2: Beta-Bandit采样臂号
+
+    heuristic_arm_id: Optional[int] = None  # 阶段1: §15.5.2查表映射臂号0-7
+    ol_arm_id: Optional[int] = None  # 阶段2: Beta-Bandit采样臂号
     arm_reward_parts: Dict[str, float] = field(default_factory=dict)  # 阶段1预记录5项reward拆分
-    arm_timestamp: float = 0.0                           # unix秒时间戳（便于离线训练对齐）
+    arm_timestamp: float = 0.0  # unix秒时间戳（便于离线训练对齐）
 
 
 @dataclass
@@ -74,6 +74,7 @@ class StrategySelection:
     - style_exposures = 1/6 均匀 → 无风格偏好
     - strategy_type="heuristic_equilibrium" → 中性启发式均衡策略
     """
+
     strategy_type: str = "heuristic_equilibrium"
     strategy_version: str = "salv1.4.1"
     style_exposures: Dict[str, float] = field(
@@ -94,20 +95,29 @@ class StrategySelection:
     )
     front_layer_band: Optional[Dict[str, float]] = None
     asset_class: str = ""
-    five_scores_snapshot: Dict[str, int] = field(default_factory=lambda: dict(DEFAULT_NEUTRAL_SCORES))
+    five_scores_snapshot: Dict[str, int] = field(
+        default_factory=lambda: dict(DEFAULT_NEUTRAL_SCORES)
+    )
     audit: Optional[DecisionAuditRecord] = None
 
     def to_enhance_info(self) -> Dict[str, Any]:
         """绑定TradeRecord.enhance_info时序列化：Dict字段天然兼容白名单，缺键不崩（R1红线）。"""
         d = asdict(self)
+
         # numpy类型转原生JSON可序列化类型
         def _clean(o):
-            if isinstance(o, (np.integer,)): return int(o)
-            if isinstance(o, (np.floating,)): return float(o)
-            if isinstance(o, np.ndarray): return o.tolist()
-            if isinstance(o, dict): return {k: _clean(v) for k, v in o.items()}
-            if isinstance(o, (list, tuple)): return [_clean(x) for x in o]
+            if isinstance(o, (np.integer,)):
+                return int(o)
+            if isinstance(o, (np.floating,)):
+                return float(o)
+            if isinstance(o, np.ndarray):
+                return o.tolist()
+            if isinstance(o, dict):
+                return {k: _clean(v) for k, v in o.items()}
+            if isinstance(o, (list, tuple)):
+                return [_clean(x) for x in o]
             return o
+
         return _clean(d)
 
     @classmethod
@@ -127,6 +137,7 @@ class StrategyAlgoConfig:
 
     命名与polling_trader.__init__的enable_*属性保持1:1映射（§三.3.1开关表）。
     """
+
     # ===== 2总开关 =====
     enable_strategy_layer: bool = False
     enable_five_domain: bool = False
@@ -168,33 +179,33 @@ class StrategyAlgorithmLayer:
     # -----------------------------------------------------------------
     G6_SEED_TABLE: Dict[Tuple[str, str], float] = {
         # ── 趋势跟踪：放宽出场阈值，拉长持仓 ──
-        ("trend_follow",    "signal_reverse_threshold_factor"): 1.30,
-        ("trend_follow",    "min_holding_hours_factor"):         1.40,
-        ("trend_follow",    "ev_adjust_sensitivity_factor"):     0.80,
-        ("trend_follow",    "sl_tighten_factor"):                0.90,
+        ("trend_follow", "signal_reverse_threshold_factor"): 1.30,
+        ("trend_follow", "min_holding_hours_factor"): 1.40,
+        ("trend_follow", "ev_adjust_sensitivity_factor"): 0.80,
+        ("trend_follow", "sl_tighten_factor"): 0.90,
         # ── 突破：Chandelier Exit风格，SL/TP严格 ──
-        ("breakout",        "signal_reverse_threshold_factor"):  0.85,
-        ("breakout",        "p3_early_exit_profit_threshold_factor"): 0.75,
-        ("breakout",        "ranked_tp_rank_factor"):            1.30,
-        ("breakout",        "sl_tighten_factor"):                0.80,
+        ("breakout", "signal_reverse_threshold_factor"): 0.85,
+        ("breakout", "p3_early_exit_profit_threshold_factor"): 0.75,
+        ("breakout", "ranked_tp_rank_factor"): 1.30,
+        ("breakout", "sl_tighten_factor"): 0.80,
         # ── 均值回归：回归达标检测严格，最低持仓时间短 ──
-        ("mean_revert",     "signal_reverse_threshold_factor"):  0.70,
-        ("mean_revert",     "p3_early_exit_profit_threshold_factor"): 0.65,
-        ("mean_revert",     "min_holding_hours_factor"):         0.70,
-        ("mean_revert",     "timeout_profit_switch_hours_factor"): 0.80,
+        ("mean_revert", "signal_reverse_threshold_factor"): 0.70,
+        ("mean_revert", "p3_early_exit_profit_threshold_factor"): 0.65,
+        ("mean_revert", "min_holding_hours_factor"): 0.70,
+        ("mean_revert", "timeout_profit_switch_hours_factor"): 0.80,
         # ── 动量轮动：趋势延续略宽松，强止盈 ──
-        ("momentum",        "signal_reverse_threshold_factor"):  1.10,
-        ("momentum",        "ranked_tp_rank_factor"):            1.20,
-        ("momentum",        "sl_tighten_factor"):                0.85,
+        ("momentum", "signal_reverse_threshold_factor"): 1.10,
+        ("momentum", "ranked_tp_rank_factor"): 1.20,
+        ("momentum", "sl_tighten_factor"): 0.85,
         # ── 波动率策略：最小持仓严格，EV强平阈值收紧 ──
-        ("volatility",      "ev_force_close_threshold_factor"):  0.80,
-        ("volatility",      "min_holding_hours_factor"):         0.60,
-        ("volatility",      "sl_tighten_factor"):                0.70,
+        ("volatility", "ev_force_close_threshold_factor"): 0.80,
+        ("volatility", "min_holding_hours_factor"): 0.60,
+        ("volatility", "sl_tighten_factor"): 0.70,
         # ── 应急策略：所有阈值最保守，只求活下来 ──
-        ("emergency",       "ev_force_close_threshold_factor"):  0.50,
-        ("emergency",       "sl_tighten_factor"):                0.60,
-        ("emergency",       "min_holding_hours_factor"):         0.50,
-        ("emergency",       "p3_early_exit_profit_threshold_factor"): 0.50,
+        ("emergency", "ev_force_close_threshold_factor"): 0.50,
+        ("emergency", "sl_tighten_factor"): 0.60,
+        ("emergency", "min_holding_hours_factor"): 0.50,
+        ("emergency", "p3_early_exit_profit_threshold_factor"): 0.50,
         # ── 中性启发式均衡：全1.0默认 ──
         ("heuristic_equilibrium", "signal_reverse_threshold_factor"): 1.0,
         ("heuristic_equilibrium", "p3_early_exit_profit_threshold_factor"): 1.0,
@@ -218,29 +229,29 @@ class StrategyAlgorithmLayer:
     # -----------------------------------------------------------------
     REGIME_FACTORS: Dict[str, float] = {
         # --- 旧版4y大周期命名（向后兼容）---
-        "Bull":           1.08,
-        "Recovery":       1.04,
-        "Rebound":        1.02,
-        "Sideways":       1.00,
-        "LateBear":       0.95,
-        "EarlyBear":      0.90,
-        "Bear":           0.82,
+        "Bull": 1.08,
+        "Recovery": 1.04,
+        "Rebound": 1.02,
+        "Sideways": 1.00,
+        "LateBear": 0.95,
+        "EarlyBear": 0.90,
+        "Bear": 0.82,
         # --- 弹簧力场分类器命名（polling_trader.py L11219-L11245 产出）---
-        "TREND_BULL":         1.08,   # 多头趋势 → 进攻型，对应 Bull
-        "STRONG_TREND_BEAR":  0.82,   # 强空头趋势 → 最强防御，对应 Bear
-        "TREND_BEAR":         0.90,   # 弱空头趋势 → 防御，对应 EarlyBear
-        "MEAN_REVERTING":     1.02,   # 均值回归 → 有机会，对应 Rebound
-        "RANGING":            1.00,   # 震荡/筑底 → 中性，对应 Sideways
-        "UNKNOWN":            1.00,   # 未知 → FAIL-OPEN 中性
+        "TREND_BULL": 1.08,  # 多头趋势 → 进攻型，对应 Bull
+        "STRONG_TREND_BEAR": 0.82,  # 强空头趋势 → 最强防御，对应 Bear
+        "TREND_BEAR": 0.90,  # 弱空头趋势 → 防御，对应 EarlyBear
+        "MEAN_REVERTING": 1.02,  # 均值回归 → 有机会，对应 Rebound
+        "RANGING": 1.00,  # 震荡/筑底 → 中性，对应 Sideways
+        "UNKNOWN": 1.00,  # 未知 → FAIL-OPEN 中性
         # --- 八卦形态分类命名（bcrm2/market_regime.py GUA_REGIME_MAP）---
-        "TREND_UP_STRONG":    1.08,   # 乾 - 强趋势上涨 → 进攻
-        "TREND_UP_MILD":      1.04,   # 巽 - 温和上涨 → 轻度进攻
-        "RANGE_BOUND":        1.00,   # 震荡区间 → 中性
-        "BREAKOUT":           1.06,   # 突破 → 进攻（弱于强趋势）
-        "VOLATILE_DROP":      0.85,   # 波动下跌 → 防御（强于弱空头）
-        "FOMO_RALLY":         1.05,   # FOMO反弹 → 进攻（需警惕追高）
-        "CONSOLIDATION":      1.00,   # 整理 → 中性
-        "REVERSAL":           0.95,   # 反转 → 不确定防御
+        "TREND_UP_STRONG": 1.08,  # 乾 - 强趋势上涨 → 进攻
+        "TREND_UP_MILD": 1.04,  # 巽 - 温和上涨 → 轻度进攻
+        "RANGE_BOUND": 1.00,  # 震荡区间 → 中性
+        "BREAKOUT": 1.06,  # 突破 → 进攻（弱于强趋势）
+        "VOLATILE_DROP": 0.85,  # 波动下跌 → 防御（强于弱空头）
+        "FOMO_RALLY": 1.05,  # FOMO反弹 → 进攻（需警惕追高）
+        "CONSOLIDATION": 1.00,  # 整理 → 中性
+        "REVERSAL": 0.95,  # 反转 → 不确定防御
     }
     DEFAULT_REGIME_FACTOR = 1.00
 
@@ -264,14 +275,45 @@ class StrategyAlgorithmLayer:
         # ★ v1.4 大周期弹性闸门原则：仅在【极端场景】给带宽约束，正常区间留None=前置层完全自洽
         #   （三击/强势/极度劣势 → 3条规则；中间 40≤总分<75 → 不落规则=返回None=不clip）
         # 规则1：三击（道≥80 & 地≥75）→ 进攻型最宽带宽（允许前置层高L/T上限放大进攻）
-        (lambda s: (s.get("dao", 0) >= 80 and s.get("di", 0) >= 75),
-            (0.55, 0.98), (0.55, 0.98), (0.90, 1.20)),
+        (
+            lambda s: (s.get("dao", 0) >= 80 and s.get("di", 0) >= 75),
+            (0.55, 0.98),
+            (0.55, 0.98),
+            (0.90, 1.20),
+        ),
         # 规则2：强势（庙算总分≥75）→ 常规较宽带宽（比三击略保守）
-        (lambda s: sum([s.get(k,50)*w for k,w in zip(("dao","tian","di","jiang","fa"),(0.30,0.15,0.25,0.15,0.15))]) >= 75,
-            (0.50, 0.92), (0.50, 0.92), (0.85, 1.15)),
+        (
+            lambda s: sum(
+                [
+                    s.get(k, 50) * w
+                    for k, w in zip(  # noqa: B905
+                        ("dao", "tian", "di", "jiang", "fa"), (0.30, 0.15, 0.25, 0.15, 0.15)
+                    )
+                ]
+            )
+            >= 75,
+            (0.50, 0.92),
+            (0.50, 0.92),
+            (0.85, 1.15),
+        ),
         # 规则3：极度劣势（dao<40 维度否决 或 庙算总分<40）→ 最小带宽（收缩，抑制前置层高波动参数）
-        (lambda s: (s.get("dao", 0) < 40) or (sum([s.get(k,50)*w for k,w in zip(("dao","tian","di","jiang","fa"),(0.30,0.15,0.25,0.15,0.15))]) < 40),
-            (0.35, 0.65), (0.35, 0.65), (0.80, 1.00)),
+        (
+            lambda s: (s.get("dao", 0) < 40)
+            or (
+                sum(
+                    [
+                        s.get(k, 50) * w
+                        for k, w in zip(  # noqa: B905
+                            ("dao", "tian", "di", "jiang", "fa"), (0.30, 0.15, 0.25, 0.15, 0.15)
+                        )
+                    ]
+                )
+                < 40
+            ),
+            (0.35, 0.65),
+            (0.35, 0.65),
+            (0.80, 1.00),
+        ),
         # ★ 中间区间 40≤总分<75：无规则匹配 → 返回None（带宽全开，前置层参数自洽）
         #   符合§15.4方案B：战略层不精确修改前置层公式，仅做极端边界闸门
     ]
@@ -307,19 +349,26 @@ class StrategyAlgorithmLayer:
             # 与 five_domain_scorer.WEIGHTS_BY_CLASS 保持一致（TDD #约束：权重和=1.00）
             try:
                 from scripts.memory_l4.five_domain_scorer import FiveDomainHeuristicScorer as _FDHS
-                weights = dict(_FDHS.WEIGHTS_BY_CLASS.get(
-                    asset_class, _FDHS.WEIGHTS_BY_CLASS["crypto_usdt"]
-                ))
+
+                weights = dict(
+                    _FDHS.WEIGHTS_BY_CLASS.get(asset_class, _FDHS.WEIGHTS_BY_CLASS["crypto_usdt"])
+                )
             except Exception:
                 # 兜底：导入失败时保持crypto权重（fail-safe字节等价前）
-                weights = {"dao":0.30, "tian":0.15, "di":0.25, "jiang":0.15, "fa":0.15}
-            total = int(round(sum(scores.get(k,50)*w for k,w in weights.items())))
+                weights = {"dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15}
+            total = int(round(sum(scores.get(k, 50) * w for k, w in weights.items())))
 
             # =============================================================
             # 步骤1：决定strategy_type（基于allowed_style_mask + 风格暴露）
             # =============================================================
-            allowed_mask = {"emergency": True, "trend_follow": True, "breakout": True,
-                            "mean_revert": True, "momentum": True, "volatility": True}
+            allowed_mask = {
+                "emergency": True,
+                "trend_follow": True,
+                "breakout": True,
+                "mean_revert": True,
+                "momentum": True,
+                "volatility": True,
+            }
             if self.cfg.enable_five_domain_style_mask and five_domain_state is not None:
                 cls_mask = getattr(five_domain_state, "allowed_style_mask", {}).get(asset_class, {})
                 for s in STYLE_ORDER:
@@ -340,8 +389,12 @@ class StrategyAlgorithmLayer:
             #   calibration_bias_raw = clip( G6_seed × regime_factor × liquidity_factor, 0.30, 2.00 )
             #   calibration_bias_final = raw if (relax_allowed or raw <= 1.0) else 1.0
             # =============================================================
-            regime_factor = self.REGIME_FACTORS.get(str(regime_summary.get("phase", "")).strip() or "_", self.DEFAULT_REGIME_FACTOR)
-            liquidity_factor = self.LIQUIDITY_FACTORS.get(str(liquidity_tier).strip().upper() or "G2", self.DEFAULT_LIQUIDITY_FACTOR)
+            regime_factor = self.REGIME_FACTORS.get(
+                str(regime_summary.get("phase", "")).strip() or "_", self.DEFAULT_REGIME_FACTOR
+            )
+            liquidity_factor = self.LIQUIDITY_FACTORS.get(
+                str(liquidity_tier).strip().upper() or "G2", self.DEFAULT_LIQUIDITY_FACTOR
+            )
             default = StrategySelection()
             cb = dict(default.calibration_biases)  # 先默认全1.0
             for param in list(cb.keys()):
@@ -360,13 +413,16 @@ class StrategyAlgorithmLayer:
             # 步骤3：前置层带宽 front_layer_band（FRONT_BAND_RULES 查表）
             #   band子开关关断 → 返回None（0行clip）
             # =============================================================
-            band: Optional[Dict[str,float]] = None
+            band: Optional[Dict[str, float]] = None
             if self.cfg.enable_five_domain_front_layer_band:
                 # 优先从战略层five_domain_state取独立带宽；否则用这里的规则表
                 if five_domain_state is not None:
                     try:
-                        external = getattr(five_domain_state, "front_layer_band", {}).get(asset_class)
-                        if external: band = dict(external)
+                        external = getattr(five_domain_state, "front_layer_band", {}).get(
+                            asset_class
+                        )
+                        if external:
+                            band = dict(external)
                     except Exception:  # noqa: BLE001 fail-open
                         band = None
                 if band is None:
@@ -413,11 +469,11 @@ class StrategyAlgorithmLayer:
             return L, T, S
 
         L_min = float(band.get("L_min", -np.inf))
-        L_max = float(band.get("L_max",  np.inf))
+        L_max = float(band.get("L_max", np.inf))
         T_min = float(band.get("T_min", -np.inf))
-        T_max = float(band.get("T_max",  np.inf))
+        T_max = float(band.get("T_max", np.inf))
         S_min = float(band.get("sector_weights_min", -np.inf))
-        S_max = float(band.get("sector_weights_max",  np.inf))
+        S_max = float(band.get("sector_weights_max", np.inf))
         L_out = np.clip(L, L_min, L_max)
         T_out = np.clip(T, T_min, T_max)
         S_out = np.clip(S, S_min, S_max)
@@ -435,68 +491,101 @@ class StrategyAlgorithmLayer:
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """带cfg开关的版本。子开关关断时：即便有band，也严格0行clip（TDD #15检查）。"""
         if not self.cfg.enable_five_domain_front_layer_band:
-            return np.asarray(L_raw, float), np.asarray(T_raw, float), np.asarray(sector_weights_raw, float)
+            return (
+                np.asarray(L_raw, float),
+                np.asarray(T_raw, float),
+                np.asarray(sector_weights_raw, float),
+            )
         return StrategyAlgorithmLayer.apply_front_band_clip(L_raw, T_raw, sector_weights_raw, band)
 
     # =================================================================
     # 内部工具
     # =================================================================
     @classmethod
-    def _compute_front_layer_band(cls, five_scores: Dict[str,int], total: Optional[int] = None) -> Optional[Dict[str,float]]:
+    def _compute_front_layer_band(
+        cls, five_scores: Dict[str, int], total: Optional[int] = None
+    ) -> Optional[Dict[str, float]]:
         """§15.5.3 FRONT_BAND_RULES：按五计分查带宽；无匹配→None=默认全带宽不clip。"""
         if total is None:
-            w = {"dao":0.30, "tian":0.15, "di":0.25, "jiang":0.15, "fa":0.15}
-            total = int(round(sum(five_scores.get(k,50)*ww for k,ww in w.items())))
+            w = {"dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15}
+            total = int(round(sum(five_scores.get(k, 50) * ww for k, ww in w.items())))
         for rule, L_lims, T_lims, S_lims in cls.FRONT_BAND_RULES:
             try:
                 if bool(rule(five_scores)):
                     return {
-                        "L_min": float(L_lims[0]), "L_max": float(L_lims[1]),
-                        "T_min": float(T_lims[0]), "T_max": float(T_lims[1]),
-                        "sector_weights_min": float(S_lims[0]), "sector_weights_max": float(S_lims[1]),
+                        "L_min": float(L_lims[0]),
+                        "L_max": float(L_lims[1]),
+                        "T_min": float(T_lims[0]),
+                        "T_max": float(T_lims[1]),
+                        "sector_weights_min": float(S_lims[0]),
+                        "sector_weights_max": float(S_lims[1]),
                     }
             except Exception:  # noqa: BLE001 规则函数抛错 → 进入下一条
                 continue
         return None  # 无匹配 → 默认全带宽
 
     @staticmethod
-    def _heuristic_arm_id(total: int, five_scores: Dict[str,int]) -> int:
+    def _heuristic_arm_id(total: int, five_scores: Dict[str, int]) -> int:
         """阶段1预留：§15.5.2规则→臂号0-7（阶段2 Beta-Bandit离线训练的arm基准标签）。"""
-        dao, veto = five_scores.get("dao", 50), five_scores.get("di", 50) < 40 and five_scores.get("tian", 50) < 40
-        if five_scores.get("fa", 70) < 40: return 3
-        if total < 60 or dao < 40: return 3
-        if total < 65: return 2
-        if veto: return 7
-        if total >= 85 and dao >= 80 and five_scores.get("di", 50) >= 75: return 0
-        if total >= 75: return 1
-        if five_scores.get("di", 50) >= 60: return 5
+        dao, veto = (
+            five_scores.get("dao", 50),
+            five_scores.get("di", 50) < 40 and five_scores.get("tian", 50) < 40,
+        )
+        if five_scores.get("fa", 70) < 40:
+            return 3
+        if total < 60 or dao < 40:
+            return 3
+        if total < 65:
+            return 2
+        if veto:
+            return 7
+        if total >= 85 and dao >= 80 and five_scores.get("di", 50) >= 75:
+            return 0
+        if total >= 75:
+            return 1
+        if five_scores.get("di", 50) >= 60:
+            return 5
         return 6
 
     def _raw_style_exposures_from_scores(
-        self, total: int, scores: Dict[str,int], mask: Dict[str,bool]
+        self, total: int, scores: Dict[str, int], mask: Dict[str, bool]
     ) -> Dict[str, float]:
         """从五计分庙算+阈值映射 → 6策略原始得分 → 归一化权重。"""
         s = {
-            "emergency":    1.0 if (total < 60) else 0.15,
+            "emergency": 1.0 if (total < 60) else 0.15,
             "trend_follow": (min(total, 100) / 100.0) if mask["trend_follow"] else 0.0,
-            "breakout":     (scores.get("di", 50) / 100.0) if mask["breakout"] and total >= 65 else 0.0,
-            "mean_revert":  (1.0 - abs(scores.get("di", 50) - 50) / 50.0) if mask["mean_revert"] else 0.0,
-            "momentum":     (scores.get("dao", 50) / 100.0) if mask["momentum"] else 0.0,
-            "volatility":   1.0 if (mask["volatility"] and scores.get("di",50)<40 and scores.get("tian",50)<40) else 0.0,
+            "breakout": (scores.get("di", 50) / 100.0) if mask["breakout"] and total >= 65 else 0.0,
+            "mean_revert": (
+                (1.0 - abs(scores.get("di", 50) - 50) / 50.0) if mask["mean_revert"] else 0.0
+            ),
+            "momentum": (scores.get("dao", 50) / 100.0) if mask["momentum"] else 0.0,
+            "volatility": (
+                1.0
+                if (
+                    mask["volatility"] and scores.get("di", 50) < 40 and scores.get("tian", 50) < 40
+                )
+                else 0.0
+            ),
         }
         total_v = sum(max(v, 0.0) for v in s.values()) or 1.0
-        return {k: max(v,0.0)/total_v for k,v in s.items()}
+        return {k: max(v, 0.0) / total_v for k, v in s.items()}
 
-    def _ema_style(self, new: Dict[str,float]) -> Dict[str,float]:
+    def _ema_style(self, new: Dict[str, float]) -> Dict[str, float]:
         """GitHub G1：EMA平滑避免风格权重每轮跳变（span≈5轮=25分钟/5min轮询）。"""
         if self._last_style_exposures is None:
             out = dict(new)
         else:
             last = self._last_style_exposures
-            out = {s: (self._style_ema_alpha * new[s] + (1-self._style_ema_alpha) * last.get(s, new[s])) for s in STYLE_ORDER}
+            out = {
+                s: (
+                    self._style_ema_alpha * new[s]
+                    + (1 - self._style_ema_alpha) * last.get(s, new[s])
+                )
+                for s in STYLE_ORDER
+            }
         # 重归一化到sum=1.0
         ssum = sum(out.values()) or 1.0
-        out = {k: v/ssum for k,v in out.items()}
+        out = {k: v / ssum for k, v in out.items()}
         self._last_style_exposures = dict(out)
         return out
 
@@ -506,10 +595,10 @@ class StrategyAlgorithmLayer:
 # =====================================================================
 # ---- ExitStrategy 轻量子类（仅用于PORTFOLIO_MODE_CHAINS占位，真实evaluate由ExitManager已有子类完成）----
 try:
-    from .bcrm2.exit_manager import ExitStrategy, ExitDecision  # noqa: E402
+    from .bcrm2.exit_manager import ExitStrategy, ExitDecision  # noqa: E402, I001
 except Exception:  # noqa: BLE001 防御：独立脚本import时允许降级
     try:
-        from bcrm2.exit_manager import ExitStrategy, ExitDecision  # type: ignore
+        from bcrm2.exit_manager import ExitStrategy, ExitDecision  # type: ignore  # noqa: I001
     except Exception:  # noqa: BLE001
         # 终极兜底：用ABC类本地定义（保证import不崩，TDD RED阶段最小化耦合）
         from abc import ABC, abstractmethod  # noqa: E402
@@ -557,35 +646,37 @@ class _PortfolioChainPlaceholder(ExitStrategy):
 # ---------------------------------------------------------------------
 PORTFOLIO_MODE_CHAINS: Dict[str, List[ExitStrategy]] = {
     "default": [
-        _PortfolioChainPlaceholder("Portfolio_P3EarlyExit",    priority=10),
-        _PortfolioChainPlaceholder("Portfolio_SignalReverse",   priority=20),
-        _PortfolioChainPlaceholder("Portfolio_EvForceClose",    priority=30),
-        _PortfolioChainPlaceholder("Portfolio_TimeoutProfit",   priority=40),
-        _PortfolioChainPlaceholder("Portfolio_EvAdjust",        priority=60),
+        _PortfolioChainPlaceholder("Portfolio_P3EarlyExit", priority=10),
+        _PortfolioChainPlaceholder("Portfolio_SignalReverse", priority=20),
+        _PortfolioChainPlaceholder("Portfolio_EvForceClose", priority=30),
+        _PortfolioChainPlaceholder("Portfolio_TimeoutProfit", priority=40),
+        _PortfolioChainPlaceholder("Portfolio_EvAdjust", priority=60),
     ],
     "cta_risk_on": [
         # 趋势行情：P3更晚触发（让利润飘）priority=15（比default更晚），保留EvFC/Timeout
-        _PortfolioChainPlaceholder("CTA_P3EarlyExit",          priority=15),
-        _PortfolioChainPlaceholder("CTA_SignalReverse",        priority=20),
-        _PortfolioChainPlaceholder("CTA_EvForceClose",         priority=30),
-        _PortfolioChainPlaceholder("CTA_TimeoutProfitLong",    priority=50),  # 拉长持仓时间
-        _PortfolioChainPlaceholder("CTA_EvAdjust",             priority=65),
+        _PortfolioChainPlaceholder("CTA_P3EarlyExit", priority=15),
+        _PortfolioChainPlaceholder("CTA_SignalReverse", priority=20),
+        _PortfolioChainPlaceholder("CTA_EvForceClose", priority=30),
+        _PortfolioChainPlaceholder("CTA_TimeoutProfitLong", priority=50),  # 拉长持仓时间
+        _PortfolioChainPlaceholder("CTA_EvAdjust", priority=65),
     ],
     "mean_revert_mode": [
         # 震荡：P3更早出场（priority=8=最前线），Timeout短 → 快速止盈换仓
-        _PortfolioChainPlaceholder("MR_P3EarlyExit",           priority=8),
-        _PortfolioChainPlaceholder("MR_SignalReverse",         priority=20),
-        _PortfolioChainPlaceholder("MR_EvForceClose",          priority=30),
-        _PortfolioChainPlaceholder("MR_TimeoutProfitShort",    priority=35),  # 缩短换仓
-        _PortfolioChainPlaceholder("MR_EvAdjust",              priority=60),
+        _PortfolioChainPlaceholder("MR_P3EarlyExit", priority=8),
+        _PortfolioChainPlaceholder("MR_SignalReverse", priority=20),
+        _PortfolioChainPlaceholder("MR_EvForceClose", priority=30),
+        _PortfolioChainPlaceholder("MR_TimeoutProfitShort", priority=35),  # 缩短换仓
+        _PortfolioChainPlaceholder("MR_EvAdjust", priority=60),
     ],
     "risk_off_emergency": [
         # 应急：P3最紧(priority=5) → EvFC收紧阈值 → Timeout 6h上限
-        _PortfolioChainPlaceholder("EMG_P3EarlyExit_Tight",    priority=5),
-        _PortfolioChainPlaceholder("EMG_SignalReverse",        priority=18),
-        _PortfolioChainPlaceholder("EMG_EvForceClose_Squeeze", priority=28),  # ≤-0.20（对应factor≤0.80）
-        _PortfolioChainPlaceholder("EMG_Timeout_6hCap",        priority=38),  # ≤6h（对应factor≤0.50）
-        _PortfolioChainPlaceholder("EMG_EvAdjust_Defensive",   priority=60),
+        _PortfolioChainPlaceholder("EMG_P3EarlyExit_Tight", priority=5),
+        _PortfolioChainPlaceholder("EMG_SignalReverse", priority=18),
+        _PortfolioChainPlaceholder(
+            "EMG_EvForceClose_Squeeze", priority=28
+        ),  # ≤-0.20（对应factor≤0.80）
+        _PortfolioChainPlaceholder("EMG_Timeout_6hCap", priority=38),  # ≤6h（对应factor≤0.50）
+        _PortfolioChainPlaceholder("EMG_EvAdjust_Defensive", priority=60),
     ],
 }
 
@@ -744,7 +835,9 @@ __all__ = [
     "StrategySelection",
     "StrategyAlgoConfig",
     "StrategyAlgorithmLayer",
-    "ASSET_CLASSES", "DEFAULT_NEUTRAL_SCORES", "STYLE_ORDER",
+    "ASSET_CLASSES",
+    "DEFAULT_NEUTRAL_SCORES",
+    "STYLE_ORDER",
     # 路径 B 新增：
     "PORTFOLIO_MODE_CHAINS",
     "get_ranktp_allow_for_mode",

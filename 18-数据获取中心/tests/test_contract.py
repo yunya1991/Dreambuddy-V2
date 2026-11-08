@@ -2,14 +2,14 @@
 
 约束：metrics 仅存 number/string，不嵌套对象；timestamp 为 ISO8601；raw 保留溯源。
 """
-import pytest
 
+import pytest
 from data_center.core.contract import DataRecord, validate_record
 from data_center.core.errors import ContractError
 
 
 def _valid_record(**over):
-    base = dict(
+    base = dict(  # noqa: C408
         source="fred",
         category="macro",
         sub_category="FEDFUNDS",

@@ -9,6 +9,7 @@
 4. 衍生计算函数直接验证
 5. 旧记录被新记录覆盖（按 id 倒序取最新）
 """
+
 from __future__ import annotations
 
 import os
@@ -32,38 +33,56 @@ from scripts.memory_l4.five_domain_sqlite_reader import (  # noqa: E402
 
 
 def _ts(offset_min: float = 0.0) -> str:
-    return (datetime.now(timezone.utc).replace(microsecond=0) -
-            timedelta(minutes=offset_min)).isoformat()
+    return (
+        datetime.now(timezone.utc).replace(microsecond=0) - timedelta(minutes=offset_min)
+    ).isoformat()
 
 
-def _rec(source: str, category: str, sub: str, metrics: dict, raw: dict | None = None) -> DataRecord:
+def _rec(
+    source: str, category: str, sub: str, metrics: dict, raw: dict | None = None
+) -> DataRecord:
     return DataRecord(
-        source=source, category=category, sub_category=sub, timestamp=_ts(),
-        metrics=metrics, events={}, timeseries={}, raw=raw or {}, schema_version="v1",
+        source=source,
+        category=category,
+        sub_category=sub,
+        timestamp=_ts(),
+        metrics=metrics,
+        events={},
+        timeseries={},
+        raw=raw or {},
+        schema_version="v1",
     )
 
 
 def test_read_macro_from_sqlite_full(tmp_path):
     db = str(tmp_path / "t.db")
     sink = SqliteSink(db)
-    sink.write([
-        _rec("fred", "macro", "FEDFUNDS", {"value": 5.25, "date": "2026-07-01"}),
-        _rec("fred", "macro", "M2NS", {"value": 21000.0, "date": "2026-06-01"}),
-        _rec("fred", "macro", "WALCL", {"value": 7000000.0, "date": "2026-08-19"}),
-        _rec("fred", "macro", "CPIAUCSL", {"value": 310.0, "date": "2026-07-01"}),
-        _rec("fred", "macro", "PPIACO", {"value": 280.0, "date": "2026-07-01"}),
-        _rec("fred", "macro", "INDPRO", {"value": 105.0, "date": "2026-07-01"}),
-        _rec("yfinance", "finance", "^VIX", {"price": 20.0, "symbol": "^VIX"}),
-        _rec("defillama", "chain", "chains_summary",
-             {"total_tvl_bln": 80.0},
-             raw={"chains": {"Ethereum": {"tvl_bln": 30.0}, "TRON": {"tvl_bln": 10.0}}}),
-    ])
+    sink.write(
+        [
+            _rec("fred", "macro", "FEDFUNDS", {"value": 5.25, "date": "2026-07-01"}),
+            _rec("fred", "macro", "M2NS", {"value": 21000.0, "date": "2026-06-01"}),
+            _rec("fred", "macro", "WALCL", {"value": 7000000.0, "date": "2026-08-19"}),
+            _rec("fred", "macro", "CPIAUCSL", {"value": 310.0, "date": "2026-07-01"}),
+            _rec("fred", "macro", "PPIACO", {"value": 280.0, "date": "2026-07-01"}),
+            _rec("fred", "macro", "INDPRO", {"value": 105.0, "date": "2026-07-01"}),
+            _rec("yfinance", "finance", "^VIX", {"price": 20.0, "symbol": "^VIX"}),
+            _rec(
+                "defillama",
+                "chain",
+                "chains_summary",
+                {"total_tvl_bln": 80.0},
+                raw={"chains": {"Ethereum": {"tvl_bln": 30.0}, "TRON": {"tvl_bln": 10.0}}},
+            ),
+        ]
+    )
     snap = read_macro_from_sqlite(db)
     # FRED 6 项
     assert snap["fedfunds_rate"] == 5.25
     assert snap["m2_index_bln"] == 21000.0
     assert snap["m2_yoy_pct"] is None  # 绝对值，同比暂留空
-    assert snap["fed_balance_sheet_trillion"] == 0.0  # WALCL/1e12（pre-existing 换算，与 Fetcher 一致）
+    assert (
+        snap["fed_balance_sheet_trillion"] == 0.0
+    )  # WALCL/1e12（pre-existing 换算，与 Fetcher 一致）
     assert snap["us_cpi_yoy_pct"] == 310.0
     assert snap["us_ppi_yoy_pct"] == 280.0
     assert snap["us_indpro_yoy_pct"] == 105.0

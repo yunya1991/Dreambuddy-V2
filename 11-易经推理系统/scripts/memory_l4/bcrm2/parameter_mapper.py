@@ -20,6 +20,7 @@ Spec 映射关系：
       • 5 板块权重 ≡ 均匀 0.20 / 板块
     → 前置层「无偏/无共识」等价于 identity，不干扰 BCRM + 弹簧力场原链路。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -27,15 +28,14 @@ from typing import Dict, Tuple
 
 import numpy as np
 
-
 # ============================================================
 # Phase C: α blend 超参（前瞻参数上线）
 # 默认全关，ALPHA_BLEND_ENABLED=False 且 DEFAULT_ALPHA_BLEND=0.0 时字节等价 Phase 0
 # ============================================================
-ALPHA_BLEND_ENABLED: bool = True         # Phase C 总开关（已开启，alpha=0.0 仍字节等价）
-DEFAULT_ALPHA_BLEND: float = 0.0         # 默认 α 值（0=纯反应式）
-ALPHA_BLEND_MAX: float = 0.5             # α 上限（project_memory 硬约束）
-ALPHA_BLEND_STEP: float = 0.1            # 渐进步长
+ALPHA_BLEND_ENABLED: bool = True  # Phase C 总开关（已开启，alpha=0.0 仍字节等价）
+DEFAULT_ALPHA_BLEND: float = 0.0  # 默认 α 值（0=纯反应式）
+ALPHA_BLEND_MAX: float = 0.5  # α 上限（project_memory 硬约束）
+ALPHA_BLEND_STEP: float = 0.1  # 渐进步长
 
 
 # ============================================================
@@ -44,27 +44,27 @@ ALPHA_BLEND_STEP: float = 0.1            # 渐进步长
 # ============================================================
 @dataclass(frozen=True)
 class _RangeSpec:
-    base: float          # L=0, T=0 时的中心
-    w_L: float           # × L_norm（L/4 ∈ [-1, 1]）
-    w_T: float           # × T_norm（T/4 ∈ [-1, 1]）
-    clip_lo: float       # 中心最低
-    clip_hi: float       # 中心最高
-    base_width: float    # C=0 时的带宽（lo↔hi 全宽）
-    width_at_C1: float   # C=1 时的带宽（共识最高 → 最窄）
+    base: float  # L=0, T=0 时的中心
+    w_L: float  # × L_norm（L/4 ∈ [-1, 1]）
+    w_T: float  # × T_norm（T/4 ∈ [-1, 1]）
+    clip_lo: float  # 中心最低
+    clip_hi: float  # 中心最高
+    base_width: float  # C=0 时的带宽（lo↔hi 全宽）
+    width_at_C1: float  # C=1 时的带宽（共识最高 → 最窄）
 
 
 _PARAM_SPECS: Dict[str, _RangeSpec] = {
     #            base    w_L     w_T     clip    base_w   w@C1
-    "global_position_mult":  _RangeSpec(1.0,  0.40,  0.20,  0.30, 1.60, 0.80, 0.20),
-    "ls_ratio_cap":          _RangeSpec(0.5,  0.25,  0.15,  0.20, 1.00, 0.40, 0.10),
-    "long_bias":             _RangeSpec(0.0,  0.15,  0.10, -0.30, 0.30, 0.30, 0.08),
-    "short_bias":            _RangeSpec(0.0, -0.15, -0.10, -0.30, 0.30, 0.30, 0.08),
+    "global_position_mult": _RangeSpec(1.0, 0.40, 0.20, 0.30, 1.60, 0.80, 0.20),
+    "ls_ratio_cap": _RangeSpec(0.5, 0.25, 0.15, 0.20, 1.00, 0.40, 0.10),
+    "long_bias": _RangeSpec(0.0, 0.15, 0.10, -0.30, 0.30, 0.30, 0.08),
+    "short_bias": _RangeSpec(0.0, -0.15, -0.10, -0.30, 0.30, 0.30, 0.08),
     # 牛市(L高T高) → long_threshold_mult 中心下降 → 降低做多门槛 ✅T12(4)
-    "long_threshold_mult":   _RangeSpec(1.0, -0.10, -0.15,  0.70, 1.50, 0.40, 0.10),
+    "long_threshold_mult": _RangeSpec(1.0, -0.10, -0.15, 0.70, 1.50, 0.40, 0.10),
     # 熊市(L低T低) → short_threshold_mult 中心下降 → 降低做空门槛 ✅T12(4)
     #   注意：与 long_threshold_mult 相反，short 的 w_L/w_T 为正，
     #   当 L_norm/T_norm < 0 时中心 < 1.0（放宽做空），> 0 时中心 > 1.0（牛市抑制做空）
-    "short_threshold_mult":  _RangeSpec(1.0,  0.10,  0.15,  0.70, 1.50, 0.40, 0.10),
+    "short_threshold_mult": _RangeSpec(1.0, 0.10, 0.15, 0.70, 1.50, 0.40, 0.10),
 }
 
 SECTOR_NAMES = ("defi", "ai", "rwa", "meme", "l2")
@@ -76,9 +76,7 @@ _UNIFORM_WEIGHT = 1.0 / _N_SECTORS
 # 来源：_PARAM_SPECS[*].base（L=0, T=0 时的中心值）
 # 用途：polling_trader 融合层和 ShadowLogger 的 regime_baselines 兜底
 # ============================================================
-REGIME_BASE_PARAMS: Dict[str, float] = {
-    name: spec.base for name, spec in _PARAM_SPECS.items()
-}
+REGIME_BASE_PARAMS: Dict[str, float] = {name: spec.base for name, spec in _PARAM_SPECS.items()}
 
 
 # ============================================================
@@ -200,15 +198,14 @@ class ParameterMapper:
         # 输入完整性校验
         if set(sector_betas.keys()) != set(SECTOR_NAMES):
             raise ValueError(
-                f"sector_betas 必须恰好包含 {SECTOR_NAMES}，"
-                f"实际={sorted(sector_betas.keys())}"
+                f"sector_betas 必须恰好包含 {SECTOR_NAMES}，" f"实际={sorted(sector_betas.keys())}"
             )
 
         C_clamped = float(np.clip(C, 0.0, 1.0))
         # L 方向性：L>0 时正 α 加分，L<0 时负 α（空头贡献正收益）加分；|L|<0.5 视为中性 → 不看 α
         L_norm = _clip(L / 4.0, -1.0, 1.0)
         L_sign = 0.0
-        if L_norm > 0.125:   # ~ L > 0.5
+        if L_norm > 0.125:  # ~ L > 0.5
             L_sign = +1.0
         elif L_norm < -0.125:
             L_sign = -1.0
@@ -241,11 +238,7 @@ class ParameterMapper:
         # α 年化（日α × 252），再乘方向性 L_sign
         alpha_annual = alphas_arr * 252.0 * L_sign
 
-        score = (
-            W_BETA * beta_rel
-            + W_ALPHA * alpha_annual
-            + W_CORR * corrs_arr
-        )
+        score = W_BETA * beta_rel + W_ALPHA * alpha_annual + W_CORR * corrs_arr
 
         # Identity 不变量核心：(1 - C) * 均匀logit + C * score
         # 当 C=0 → logits = 全 0 → softmax 均匀 0.20 ✅
@@ -291,8 +284,8 @@ class ParameterMapper:
 
         # Identity 双重校验：L=0 且 T=0 且 C=0 → 所有板块 TP=1.0 SL=1.0
         if abs(L) < 1e-9 and abs(T) < 1e-9 and abs(C) < 1e-9:
-            sector_tp_mult = {n: 1.0 for n in SECTOR_NAMES}
-            sector_sl_mult = {n: 1.0 for n in SECTOR_NAMES}
+            sector_tp_mult = dict.fromkeys(SECTOR_NAMES, 1.0)
+            sector_sl_mult = dict.fromkeys(SECTOR_NAMES, 1.0)
 
         return {
             "weights": weights,
@@ -408,7 +401,9 @@ class ParameterMapper:
                 "long_conf_threshold": float(base_long_threshold) * thr_mult,
                 "short_conf_threshold": float(base_short_threshold) * thr_mult,
                 "ls_ratio_cap": float(regime_baselines.get("ls_ratio_cap", 0.5)),
-                "global_position_mult_raw": float(regime_baselines.get("global_position_mult", 1.0)),
+                "global_position_mult_raw": float(
+                    regime_baselines.get("global_position_mult", 1.0)
+                ),
                 "sector_weight_raw": 0.20,
                 "sector_tp_mult_raw": 1.0,
                 "sector_sl_mult_raw": 1.0,
@@ -417,9 +412,12 @@ class ParameterMapper:
         # ========== 开关打开：注入 + 融合 ==========
         # (1) 6 参数 resolve
         pm_params = self.resolve_point_estimate(
-            ranges=ranges, stats_row=stats_row,
-            forecast_L=forecast_L, forecast_T=forecast_T,
-            alpha_blend=alpha_blend, regime_baselines=regime_baselines,
+            ranges=ranges,
+            stats_row=stats_row,
+            forecast_L=forecast_L,
+            forecast_T=forecast_T,
+            alpha_blend=alpha_blend,
+            regime_baselines=regime_baselines,
         )
         pos_from_pm = pm_params["global_position_mult"]
         ls_cap = pm_params["ls_ratio_cap"]
@@ -467,9 +465,9 @@ class ParameterMapper:
         regime_thr = float(regime_multipliers.get("threshold_mult", 1.0))
         long_thr_component = regime_thr * float(long_thr_pm)
         short_thr_component = regime_thr * float(short_thr_pm)
-        threshold_mult_final = float(np.clip(
-            (long_thr_component + short_thr_component) * 0.5, 0.30, 3.0
-        ))
+        threshold_mult_final = float(
+            np.clip((long_thr_component + short_thr_component) * 0.5, 0.30, 3.0)
+        )
 
         # (5) 多空偏置 × 各自阈值组件：
         #     long/short 独立计算，bias>1 → 更谨慎 → 门槛更高；bias<1 → 更激进 → 门槛更低
@@ -506,6 +504,7 @@ class ParameterMapper:
 # ============================================================
 def _sync_module_aliases():
     import sys as _sys
+
     this_mod = _sys.modules.get(__name__)
     if this_mod is None:
         return

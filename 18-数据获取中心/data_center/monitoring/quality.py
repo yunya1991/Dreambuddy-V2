@@ -6,6 +6,7 @@
   DUPLICATE_DETECTED— 同批次 dedupe_key 重复
   TIMESTAMP_FRESHNESS — 最老记录超过 freshness_threshold
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -16,7 +17,6 @@ from typing import Iterable, Optional
 from data_center.core.contract import DataRecord, validate_record
 from data_center.core.errors import ContractError
 from data_center.storage.cache import dedupe_key as _canonical_dedupe_key
-
 
 # ---------------------------------------------------------------------------
 # Washout 硬门禁（W3b-1 §9.3 测试 6-7）
@@ -36,7 +36,7 @@ def validate_washout_data(data: dict) -> bool:
     """
     if not isinstance(data, dict):
         return False
-    for field in _WASHOUT_REQUIRED_FIELDS:
+    for field in _WASHOUT_REQUIRED_FIELDS:  # noqa: F402
         if field not in data or data[field] is None:
             return False
     # 数值边界校验
@@ -98,7 +98,9 @@ class QualityChecker:
         is_degraded: bool = False,
     ) -> list[QualityIssue]:
         issues: list[QualityIssue] = []
-        issues.extend(self._check_empty(records, source=source, category=category, is_degraded=is_degraded))
+        issues.extend(
+            self._check_empty(records, source=source, category=category, is_degraded=is_degraded)
+        )
         issues.extend(self._check_contract(records, source=source, category=category))
         issues.extend(self._check_duplicate(records, source=source, category=category))
         issues.extend(self._check_freshness(records, source=source, category=category))
@@ -119,12 +121,14 @@ class QualityChecker:
             return []
         if is_degraded or source in self._degraded_ok:
             return []
-        return [QualityIssue(
-            code=QualityIssueCode.EMPTY_RESULT,
-            message=f"返回空列表：source={source} category={category}",
-            source=source,
-            category=category,
-        )]
+        return [
+            QualityIssue(
+                code=QualityIssueCode.EMPTY_RESULT,
+                message=f"返回空列表：source={source} category={category}",
+                source=source,
+                category=category,
+            )
+        ]
 
     def _check_contract(
         self,
@@ -138,25 +142,29 @@ class QualityChecker:
             try:
                 validate_record(rec)
             except ContractError as e:
-                issues.append(QualityIssue(
-                    code=QualityIssueCode.CONTRACT_INVALID,
-                    message=f"records[{i}] 契约异常: {e}",
-                    source=source,
-                    category=category,
-                    extra={
-                        "index": i,
-                        "contract_error": str(e),
-                        "sub_category": rec.sub_category,
-                    },
-                ))
+                issues.append(
+                    QualityIssue(
+                        code=QualityIssueCode.CONTRACT_INVALID,
+                        message=f"records[{i}] 契约异常: {e}",
+                        source=source,
+                        category=category,
+                        extra={
+                            "index": i,
+                            "contract_error": str(e),
+                            "sub_category": rec.sub_category,
+                        },
+                    )
+                )
             except Exception as e:  # noqa: BLE001 — 防御性
-                issues.append(QualityIssue(
-                    code=QualityIssueCode.CONTRACT_INVALID,
-                    message=f"records[{i}] validate() 未预期异常: {type(e).__name__}: {e}",
-                    source=source,
-                    category=category,
-                    extra={"index": i, "error_type": type(e).__name__},
-                ))
+                issues.append(
+                    QualityIssue(
+                        code=QualityIssueCode.CONTRACT_INVALID,
+                        message=f"records[{i}] validate() 未预期异常: {type(e).__name__}: {e}",
+                        source=source,
+                        category=category,
+                        extra={"index": i, "error_type": type(e).__name__},
+                    )
+                )
         return issues
 
     def _check_duplicate(
@@ -174,13 +182,15 @@ class QualityChecker:
         issues: list[QualityIssue] = []
         for k, idxs in seen.items():
             if len(idxs) > 1:
-                issues.append(QualityIssue(
-                    code=QualityIssueCode.DUPLICATE_DETECTED,
-                    message=f"同批次发现 {len(idxs)} 条重复（key={k}），indices={idxs}",
-                    source=source,
-                    category=category,
-                    extra={"dedupe_key": k, "duplicate_indices": idxs},
-                ))
+                issues.append(
+                    QualityIssue(
+                        code=QualityIssueCode.DUPLICATE_DETECTED,
+                        message=f"同批次发现 {len(idxs)} 条重复（key={k}），indices={idxs}",
+                        source=source,
+                        category=category,
+                        extra={"dedupe_key": k, "duplicate_indices": idxs},
+                    )
+                )
         return issues
 
     def _check_freshness(
@@ -211,17 +221,17 @@ class QualityChecker:
             return []
         age = now - oldest
         if age > self.freshness_threshold:
-            return [QualityIssue(
-                code=QualityIssueCode.TIMESTAMP_FRESHNESS,
-                message=(
-                    f"最老记录距当前 {age}，超过阈值 {self.freshness_threshold}"
-                ),
-                source=source,
-                category=category,
-                extra={
-                    "oldest_ts": oldest.isoformat(),
-                    "age_seconds": age.total_seconds(),
-                    "threshold_seconds": self.freshness_threshold.total_seconds(),
-                },
-            )]
+            return [
+                QualityIssue(
+                    code=QualityIssueCode.TIMESTAMP_FRESHNESS,
+                    message=(f"最老记录距当前 {age}，超过阈值 {self.freshness_threshold}"),
+                    source=source,
+                    category=category,
+                    extra={
+                        "oldest_ts": oldest.isoformat(),
+                        "age_seconds": age.total_seconds(),
+                        "threshold_seconds": self.freshness_threshold.total_seconds(),
+                    },
+                )
+            ]
         return []

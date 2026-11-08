@@ -9,24 +9,24 @@ S链核心：将用户模糊需求转化为可执行的工程蓝图
 - Layer 3: 落地（线/网 → 可执行蓝图）
 """
 
+from .engine import IntentRecognitionEngine
 from .types import (
-    Objective,
-    KeyResult,
-    OKRSet,
     ExecutionBlueprint,
     IntentRecognitionResult,
+    KeyResult,
+    Objective,
+    OKRSet,
 )
-from .engine import IntentRecognitionEngine
 
 # 别名修复：文档/外部调用使用 IntentEngine，实际实现是 IntentRecognitionEngine
 IntentEngine = IntentRecognitionEngine
 
 __all__ = [
-    'Objective',
-    'KeyResult',
-    'OKRSet',
-    'ExecutionBlueprint',
-    'IntentRecognitionResult',
-    'IntentRecognitionEngine',
-    'IntentEngine',  # 别名，与文档保持一致
+    "Objective",
+    "KeyResult",
+    "OKRSet",
+    "ExecutionBlueprint",
+    "IntentRecognitionResult",
+    "IntentRecognitionEngine",
+    "IntentEngine",  # 别名，与文档保持一致
 ]

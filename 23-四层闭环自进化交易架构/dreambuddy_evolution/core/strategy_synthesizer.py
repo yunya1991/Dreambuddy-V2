@@ -17,6 +17,7 @@ StrategySynthesizer — 深度学习策略生成器（非LLM·数据驱动）
 
 FAIL-OPEN：任何步骤异常 → 空列表/保守评分，不 crash。
 """
+
 from __future__ import annotations
 
 import logging
@@ -24,7 +25,7 @@ import math
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -95,7 +96,9 @@ class _DecisionTransformer(nn.Module if nn is not None else object):
             nn.Linear(hidden_dim, action_dim),
         )
 
-    def forward(self, states: torch.Tensor, actions: torch.Tensor, rtgs: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, states: torch.Tensor, actions: torch.Tensor, rtgs: torch.Tensor
+    ) -> torch.Tensor:
         """
         Args:
             states: (B, T, state_dim)
@@ -126,7 +129,9 @@ class _DecisionTransformer(nn.Module if nn is not None else object):
 
         # 因果掩码（手动创建，避免 torch.generate_square_subsequent_mask 的兼容性崩溃）
         seq_len = 3 * T
-        mask = torch.triu(torch.full((seq_len, seq_len), float('-inf'), device=states.device), diagonal=1)
+        mask = torch.triu(
+            torch.full((seq_len, seq_len), float("-inf"), device=states.device), diagonal=1
+        )
         x = self.transformer(tokens, mask=mask, is_causal=True)
 
         # 取 action token 位置（索引 1, 4, 7, ... = 3t+1）
@@ -205,8 +210,13 @@ class StrategySynthesizer:
         FAIL-OPEN: 异常 → 返回空模式，method=statistical_fallback
         """
         if not historical_trades:
-            return {"method": "unavailable", "n_trajectories": 0, "top_sharpe": 0.0,
-                    "learned_patterns": [], "model_loaded": False}
+            return {
+                "method": "unavailable",
+                "n_trajectories": 0,
+                "top_sharpe": 0.0,
+                "learned_patterns": [],
+                "model_loaded": False,
+            }
 
         try:
             # 按 Sharpe 排序，取 top 30% 作为"最优轨迹"
@@ -239,8 +249,13 @@ class StrategySynthesizer:
             }
         except Exception as e:  # noqa: BLE001
             logger.warning("[StrategySynthesizer] dt_learn_trajectories failed: %s", e)
-            return {"method": "unavailable", "n_trajectories": 0, "top_sharpe": 0.0,
-                    "learned_patterns": [], "model_loaded": False}
+            return {
+                "method": "unavailable",
+                "n_trajectories": 0,
+                "top_sharpe": 0.0,
+                "learned_patterns": [],
+                "model_loaded": False,
+            }
 
     def _dt_train(self, top_trades: list[dict]) -> list[dict]:
         """用 torch 训练简化版 Decision Transformer"""
@@ -275,7 +290,7 @@ class StrategySynthesizer:
         actions_arr = np.zeros((B, max_len, action_dim), dtype=np.float32)
         rtgs_arr = np.zeros((B, max_len, 1), dtype=np.float32)
 
-        for i, (s, a, r) in enumerate(zip(states_list, actions_list, rewards_list)):
+        for i, (s, a, r) in enumerate(zip(states_list, actions_list, rewards_list)):  # noqa: B905
             L = min(len(s), max_len)
             states_arr[i, :L] = s[:L]
             actions_arr[i, :L] = a[:L]
@@ -298,7 +313,7 @@ class StrategySynthesizer:
 
         self._dt_model.train()
         n_epochs = 10
-        for epoch in range(n_epochs):
+        for epoch in range(n_epochs):  # noqa: B007
             pred = self._dt_model(states_t, actions_t, rtgs_t)
             loss = nn.functional.mse_loss(pred, actions_t)
             optimizer.zero_grad()
@@ -310,11 +325,13 @@ class StrategySynthesizer:
         # 提取学到的模式：top 轨迹的 action 均值 + state 均值
         patterns = []
         for i in range(min(5, B)):
-            patterns.append({
-                "avg_state": states_arr[i].mean(axis=0).tolist(),
-                "avg_action": actions_arr[i].mean(axis=0).tolist(),
-                "total_reward": float(rtgs_arr[i, 0, 0]),
-            })
+            patterns.append(
+                {
+                    "avg_state": states_arr[i].mean(axis=0).tolist(),
+                    "avg_action": actions_arr[i].mean(axis=0).tolist(),
+                    "total_reward": float(rtgs_arr[i, 0, 0]),
+                }
+            )
         return patterns
 
     def _statistical_fallback(self, top_trades: list[dict]) -> list[dict]:
@@ -324,11 +341,21 @@ class StrategySynthesizer:
             s = t.get("states") or []
             a = t.get("actions") or []
             if s and a:
-                patterns.append({
-                    "avg_state": list(np.mean(s, axis=0)) if isinstance(s[0], list) else [float(np.mean(s))],
-                    "avg_action": list(np.mean(a, axis=0)) if isinstance(a[0], list) else [float(np.mean(a))],
-                    "sharpe": float(t.get("sharpe", 0.0)),
-                })
+                patterns.append(
+                    {
+                        "avg_state": (
+                            list(np.mean(s, axis=0))
+                            if isinstance(s[0], list)
+                            else [float(np.mean(s))]
+                        ),
+                        "avg_action": (
+                            list(np.mean(a, axis=0))
+                            if isinstance(a[0], list)
+                            else [float(np.mean(a))]
+                        ),
+                        "sharpe": float(t.get("sharpe", 0.0)),
+                    }
+                )
         return patterns
 
     # ------------------------------------------------------------------
@@ -487,8 +514,14 @@ class StrategySynthesizer:
             # 无效候选直接返回保守评分（parameters 必须存在且为 dict）
             params = candidate.get("parameters")
             if not isinstance(params, dict) or not params:
-                return {"gene_id": gene_id, "sharpe": 0.0, "max_drawdown": 1.0,
-                        "n_trades": 0, "passes_threshold": False, "score": 0.0}
+                return {
+                    "gene_id": gene_id,
+                    "sharpe": 0.0,
+                    "max_drawdown": 1.0,
+                    "n_trades": 0,
+                    "passes_threshold": False,
+                    "score": 0.0,
+                }
 
             if price_data is None or len(price_data) < 10:
                 # 合成价格数据（几何布朗运动）
@@ -510,8 +543,14 @@ class StrategySynthesizer:
             strat_returns = strat_returns[np.isfinite(strat_returns)]
 
             if len(strat_returns) == 0:
-                return {"gene_id": gene_id, "sharpe": 0.0, "max_drawdown": 1.0,
-                        "n_trades": 0, "passes_threshold": False, "score": 0.0}
+                return {
+                    "gene_id": gene_id,
+                    "sharpe": 0.0,
+                    "max_drawdown": 1.0,
+                    "n_trades": 0,
+                    "passes_threshold": False,
+                    "score": 0.0,
+                }
 
             # Sharpe（年化，假设日频）
             mean_ret = float(np.mean(strat_returns))
@@ -548,8 +587,14 @@ class StrategySynthesizer:
             }
         except Exception as e:  # noqa: BLE001
             logger.warning("[StrategySynthesizer] backtest_validate failed for %s: %s", gene_id, e)
-            return {"gene_id": gene_id, "sharpe": 0.0, "max_drawdown": 1.0,
-                    "n_trades": 0, "passes_threshold": False, "score": 0.0}
+            return {
+                "gene_id": gene_id,
+                "sharpe": 0.0,
+                "max_drawdown": 1.0,
+                "n_trades": 0,
+                "passes_threshold": False,
+                "score": 0.0,
+            }
 
     def _gene_to_signal(self, gene: dict, prices: np.ndarray) -> Optional[np.ndarray]:
         """将候选基因的 parameters 转换为交易信号
@@ -563,11 +608,11 @@ class StrategySynthesizer:
             params = gene.get("parameters", {}) or {}
             rets = np.diff(prices) / prices[:-1]
             n = len(rets)
-            signal = np.zeros(n)
+            signal = np.zeros(n)  # noqa: F841
 
             # 提取参数值
             param_values = []
-            for pname, pdef in params.items():
+            for pname, pdef in params.items():  # noqa: B007
                 if isinstance(pdef, dict) and pdef.get("value") is not None:
                     try:
                         param_values.append(float(pdef["value"]))
@@ -587,8 +632,11 @@ class StrategySynthesizer:
                 rolling_mean = np.convolve(rets, np.ones(window) / window, mode="valid")
                 # 对齐长度
                 sig = np.zeros(n)
-                sig[window - 1:] = np.where(rolling_mean > threshold * 0.001, 1.0,
-                                            np.where(rolling_mean < -threshold * 0.001, -1.0, 0.0))
+                sig[window - 1 :] = np.where(
+                    rolling_mean > threshold * 0.001,
+                    1.0,
+                    np.where(rolling_mean < -threshold * 0.001, -1.0, 0.0),
+                )
                 return sig
             return None
         except Exception:
@@ -602,7 +650,7 @@ class StrategySynthesizer:
         sigma = 0.02
         dt = 1.0
         z = np.random.normal(0, 1, n)
-        log_ret = (mu - 0.5 * sigma ** 2) * dt + sigma * np.sqrt(dt) * z
+        log_ret = (mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z
         prices = 100.0 * np.exp(np.cumsum(log_ret))
         return prices
 
@@ -654,12 +702,14 @@ class StrategySynthesizer:
 
         # 4. 优胜劣汰
         accepted = []
-        for cand, v in zip(candidates, validated):
+        for cand, v in zip(candidates, validated):  # noqa: B905
             if v.get("passes_threshold", False):
-                accepted.append({
-                    "gene": cand,
-                    "validation": v,
-                })
+                accepted.append(
+                    {
+                        "gene": cand,
+                        "validation": v,
+                    }
+                )
                 self.stats["genes_accepted"] += 1
 
         return {
@@ -676,9 +726,9 @@ class StrategySynthesizer:
     # ------------------------------------------------------------------
     NEW_GENE_COLD_START_POSITION = 0.05  # HC-AGI-10: 新基因冷启动仓位地板 5%
 
-    def meta_rl_self_improve(self,
-                             validation_results: list[dict],
-                             learning_rate: float = 0.1) -> dict:
+    def meta_rl_self_improve(
+        self, validation_results: list[dict], learning_rate: float = 0.1
+    ) -> dict:
         """Meta-RL 三环自改进机制
 
         三环：
@@ -715,16 +765,13 @@ class StrategySynthesizer:
 
             # 2. 选择环：选中 Sharpe > 0 的基因
             selected = [
-                v.get("gene_id", "")
-                for v in validation_results
-                if float(v.get("sharpe", 0.0)) > 0
+                v.get("gene_id", "") for v in validation_results if float(v.get("sharpe", 0.0)) > 0
             ]
 
             # 3. 探索环：根据通过率调整探索率
-            pass_rate = (
-                sum(1 for v in validation_results if v.get("passes_threshold", False))
-                / len(validation_results)
-            )
+            pass_rate = sum(
+                1 for v in validation_results if v.get("passes_threshold", False)
+            ) / len(validation_results)
             # 通过率低 → 提高探索率；通过率高 → 降低探索率
             exploration_rate = max(0.1, min(0.7, 0.5 - pass_rate * 0.4))
 
@@ -746,10 +793,9 @@ class StrategySynthesizer:
     # ------------------------------------------------------------------
     # 6. 验证并集成到基因库（HC-AGI-04 / HC-AGI-10）
     # ------------------------------------------------------------------
-    def validate_and_integrate(self,
-                               candidate: dict,
-                               price_data: Optional[np.ndarray] = None,
-                               top_gene_sharpe: float = 1.0) -> dict:
+    def validate_and_integrate(
+        self, candidate: dict, price_data: Optional[np.ndarray] = None, top_gene_sharpe: float = 1.0
+    ) -> dict:
         """验证候选基因并集成到基因库
 
         HC-AGI-04: 新基因必须经过回测验证
@@ -786,7 +832,9 @@ class StrategySynthesizer:
                 "integrated": integrated,
             }
         except Exception as e:  # noqa: BLE001
-            logger.warning("[StrategySynthesizer] validate_and_integrate failed for %s: %s", gene_id, e)
+            logger.warning(
+                "[StrategySynthesizer] validate_and_integrate failed for %s: %s", gene_id, e
+            )
             return {
                 "gene_id": gene_id,
                 "validation": {"sharpe": 0.0, "passes_threshold": False},

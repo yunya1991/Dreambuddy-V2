@@ -5,10 +5,11 @@ test_position_ev.py — Phase B TDD 测试集
 
 RED 失败原因: calc_position_ev 不存在 / _execute_trade 插入点不存在 / 开关短路分支不存在。
 """
+
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
@@ -20,8 +21,7 @@ from scripts.memory_l4.trading_utils import RiskManager  # noqa: E402
 # ──────────────────────────────────────────────────────────
 # 轻量 mock 构造（同 Phase A 风格，避免真实初始化）
 # ──────────────────────────────────────────────────────────
-def _make_trader(coins=None, max_positions=3, enable_ev_radar=True,
-                 enable_mode_switch=True):
+def _make_trader(coins=None, max_positions=3, enable_ev_radar=True, enable_mode_switch=True):
     with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
         t = PollingTrader.__new__(PollingTrader)
 
@@ -35,10 +35,15 @@ def _make_trader(coins=None, max_positions=3, enable_ev_radar=True,
     t.enable_ranked_tp = True
 
     # 持仓跟踪 + OKX
-    t.position_tracker = MagicMock(spec=[
-        "all_open_positions", "all_closed_positions",
-        "get_open_position", "has_open_position", "is_in_cooldown",
-    ])
+    t.position_tracker = MagicMock(
+        spec=[
+            "all_open_positions",
+            "all_closed_positions",
+            "get_open_position",
+            "has_open_position",
+            "is_in_cooldown",
+        ]
+    )
     t.position_tracker.all_open_positions.return_value = []
     t.okx_client = MagicMock()
     t.okx_client.cfg = {"default_leverage": 3}
@@ -69,11 +74,11 @@ def _make_trader(coins=None, max_positions=3, enable_ev_radar=True,
     t.EXIT_ACT_EV_FORCE_CLOSE = "ev_force_close"
 
     # EV 雷达阈值 + 权重（Spec §4 默认值；测试手动挂确保 RED→GREEN 行为确定）
-    t.EV_FORCE_CLOSE_BELOW = -0.35    # EV<-0.35 强制离场
-    t.EV_WARN_LOWER_BOUND = -0.35     # -0.35 ≤ EV < -0.1 收紧止损
+    t.EV_FORCE_CLOSE_BELOW = -0.35  # EV<-0.35 强制离场
+    t.EV_WARN_LOWER_BOUND = -0.35  # -0.35 ≤ EV < -0.1 收紧止损
     t.EV_WARN_UPPER_BOUND = -0.10
-    t.EV_STRONG_HOLD_ABOVE = +0.30    # EV>+0.3 放宽止损
-    t.ev_weights = {                  # Spec 默认：7 子分权重，合计 1.0，正偏置 0.3
+    t.EV_STRONG_HOLD_ABOVE = +0.30  # EV>+0.3 放宽止损
+    t.ev_weights = {  # Spec 默认：7 子分权重，合计 1.0，正偏置 0.3
         "confidence_s": 0.22,
         "direction_consistency_s": 0.18,
         "trend_alignment_s": 0.15,
@@ -112,7 +117,7 @@ class TestCalcPositionEVWeights(unittest.TestCase):
             "holding_age_s": 0.10,
             "liquidity_risk_s": 0.10,
         }
-        expected_baseline = 0.3  # 文档正偏置
+        expected_baseline = 0.3  # 文档正偏置  # noqa: F841
         # EV = sum(w_i * s_i) - 0.2 + 0.3 ？ 或者直接 sum(w_i*s_i)=0.5 → 输出 0.3？
         # Spec 5.2 写的明确："用全中值输入（每子分=0.5 归一化值）断言 EV=0.3"
         # 我们约定：base_score = ∑w_i * s_i；EV = base_score - 0.2 → 0.5-0.2=0.3 ✓
@@ -140,7 +145,7 @@ class TestEVForceCloseTier(unittest.TestCase):
 
         def _fake_ev(subscores, weights):
             ev_calls.append(1)
-            return -0.40, {k: 0.5 for k in subscores}
+            return -0.40, dict.fromkeys(subscores, 0.5)
 
         tu.RiskManager.calc_position_ev = staticmethod(_fake_ev)
 
@@ -156,7 +161,7 @@ class TestEVForceCloseTier(unittest.TestCase):
 
         # 构造一个 age=20h（超出保护期）的持仓评估场景
         # 调用工具函数 _handle_ev_four_tier（RED 阶段不存在 → AttributeError）
-        ev_decision = t._handle_ev_four_tier(
+        ev_decision = t._handle_ev_four_tier(  # noqa: F841
             coin="BTC",
             inst_id="BTC-USDT-SWAP",
             pos_side="long",
@@ -174,8 +179,7 @@ class TestEVForceCloseTier(unittest.TestCase):
         )
 
         # 断言动作：强制离场 2/2 → handle_close_position 被调用且 exit_reason 前缀 = ev_force_close
-        self.assertEqual(len(close_calls), 1,
-                         "EV<-0.35 + 非保护期 → 必须执行 1 次平仓")
+        self.assertEqual(len(close_calls), 1, "EV<-0.35 + 非保护期 → 必须执行 1 次平仓")
         self.assertTrue(
             str(close_calls[0]["exit_reason"]).startswith("ev_force_close"),
             f"离场原因前缀必须是 ev_force_close，实际: {close_calls[0]['exit_reason']}",
@@ -193,7 +197,8 @@ class TestEVForceCloseInProtectionDisabled(unittest.TestCase):
         t.POSITION_PROTECTION_HOURS = 6.0
 
         import scripts.memory_l4.trading_utils as tu
-        tu.RiskManager.calc_position_ev = staticmethod(lambda s, w: (-0.40, {k: 0.5 for k in s}))
+
+        tu.RiskManager.calc_position_ev = staticmethod(lambda s, w: (-0.40, dict.fromkeys(s, 0.5)))
 
         close_calls = []
         t._handle_close_position = lambda **kw: close_calls.append(True) or None
@@ -211,18 +216,19 @@ class TestEVForceCloseInProtectionDisabled(unittest.TestCase):
             in_protection=True,
             upl=5.0,
             upl_ratio=0.01,
-            inference={"confidence": 0.80, "direction": "UP",
-                       "price": 60000.0, "volatility": 0.03},
+            inference={"confidence": 0.80, "direction": "UP", "price": 60000.0, "volatility": 0.03},
             all_inferences={},
         )
 
-        self.assertEqual(len(close_calls), 0,
-                         "EV 强制离场在保护期内必须绝对禁止调用 close_position")
-        self.assertEqual(t._exit_confirm.call_count, 0,
-                         "保护期内 even 不触发离场确认计数器")
+        self.assertEqual(
+            len(close_calls), 0, "EV 强制离场在保护期内必须绝对禁止调用 close_position"
+        )
+        self.assertEqual(t._exit_confirm.call_count, 0, "保护期内 even 不触发离场确认计数器")
         self.assertTrue(
-            any("protected" in msg.lower() or "skip" in msg.lower() or "保护" in msg
-                for _, msg in log_msgs),
+            any(
+                "protected" in msg.lower() or "skip" in msg.lower() or "保护" in msg
+                for _, msg in log_msgs
+            ),
             "保护期必须打 'protected skip EV_force' 或类似日志",
         )
 
@@ -240,14 +246,14 @@ class TestEVSwitchOffBypasses(unittest.TestCase):
 
         def _fake_ev(subscores, weights):
             ev_call_count["n"] += 1
-            return 0.0, {k: 0.5 for k in subscores}
+            return 0.0, dict.fromkeys(subscores, 0.5)
 
         tu.RiskManager.calc_position_ev = staticmethod(_fake_ev)
         t._exit_confirm = MagicMock()
         t._handle_close_position = MagicMock()
 
         # 在 S2 关的情况下跑 10 次 _handle_ev_four_tier（如果开关短路，应该直接 return 不调 ev）
-        for i in range(10):
+        for i in range(10):  # noqa: B007
             _ = t._handle_ev_four_tier(
                 coin="BTC",
                 inst_id="BTC-USDT-SWAP",
@@ -256,13 +262,18 @@ class TestEVSwitchOffBypasses(unittest.TestCase):
                 in_protection=False,
                 upl=5.0,
                 upl_ratio=0.01,
-                inference={"confidence": 0.80, "direction": "UP",
-                           "price": 60000.0, "volatility": 0.03},
+                inference={
+                    "confidence": 0.80,
+                    "direction": "UP",
+                    "price": 60000.0,
+                    "volatility": 0.03,
+                },
                 all_inferences={},
             )
 
         self.assertEqual(
-            ev_call_count["n"], 0,
+            ev_call_count["n"],
+            0,
             f"S2=OFF 时 calc_position_ev 必须从未被调用，实际调用 {ev_call_count['n']} 次",
         )
 
@@ -314,10 +325,18 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         #   SL = 65000 × (1 − 0.056) = 61360
         # TP 被 floor 钳制到 4.2% 价格间距（MIN_TP_PCT_NORMAL 6% × TIGHTEN 0.7）
         #   TP = 65000 × (1 + 0.042) = 67730
-        self.assertAlmostEqual(sl_px, 61360.0, delta=0.5,
-                               msg=f"tighten SL（floor 钳制到 5.6% 间距）偏差：expect≈61360, actual={sl_px}")
-        self.assertAlmostEqual(tp_px, 67730.0, delta=0.5,
-                               msg=f"tighten TP（floor 钳制到 4.2% 间距）偏差：expect≈67730, actual={tp_px}")
+        self.assertAlmostEqual(
+            sl_px,
+            61360.0,
+            delta=0.5,
+            msg=f"tighten SL（floor 钳制到 5.6% 间距）偏差：expect≈61360, actual={sl_px}",
+        )
+        self.assertAlmostEqual(
+            tp_px,
+            67730.0,
+            delta=0.5,
+            msg=f"tighten TP（floor 钳制到 4.2% 间距）偏差：expect≈67730, actual={tp_px}",
+        )
         # 取消旧 algo 也应调用
         t.okx_client.cancel_algo_orders.assert_called_once()
 
@@ -336,10 +355,18 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         #   SL = 65000 × (1 − 0.080) = 59800
         # relax TP 被 floor 钳制到 6.0% 价格间距（MIN_TP_PCT_NORMAL）
         #   TP = 65000 × (1 + 0.060) = 68900
-        self.assertAlmostEqual(sl_px, 59800.0, delta=0.5,
-                               msg=f"relax SL（floor 钳制到 8.0% 间距）偏差：expect≈59800, actual={sl_px}")
-        self.assertAlmostEqual(tp_px, 68900.0, delta=0.5,
-                               msg=f"relax TP（floor 钳制到 6.0% 间距）偏差：expect≈68900, actual={tp_px}")
+        self.assertAlmostEqual(
+            sl_px,
+            59800.0,
+            delta=0.5,
+            msg=f"relax SL（floor 钳制到 8.0% 间距）偏差：expect≈59800, actual={sl_px}",
+        )
+        self.assertAlmostEqual(
+            tp_px,
+            68900.0,
+            delta=0.5,
+            msg=f"relax TP（floor 钳制到 6.0% 间距）偏差：expect≈68900, actual={tp_px}",
+        )
         self.assertLess(sl_px, 65000)
         self.assertGreater(tp_px, 65000)
 
@@ -371,10 +398,11 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         # 第 2 次（同轮）→ 命中缓存，返回 False 不再调 API
         ok2 = t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         self.assertFalse(ok2, "同 mode 同轮第 2 次应缓存命中返回 False")
-        self.assertEqual(t.okx_client.place_stop_loss_take_profit.call_count, 1,
-                         "缓存命中期间不应多次调 API")
+        self.assertEqual(
+            t.okx_client.place_stop_loss_take_profit.call_count, 1, "缓存命中期间不应多次调 API"
+        )
         # 过 2 轮 TTL → 过期再次可调
-        t._cycle_idx += 3   # TTL=2，cycle_idx 增 3 > 2
+        t._cycle_idx += 3  # TTL=2，cycle_idx 增 3 > 2
         ok3 = t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         self.assertTrue(ok3)
         self.assertEqual(t.okx_client.place_stop_loss_take_profit.call_count, 2)
@@ -383,7 +411,8 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         """旧持仓 base_sl_roi/base_tp_roi 为 0 → 不动作，返回 False，不调 API"""
         t = _make_trader(coins=["BTC"])
         t.position_tracker.get_open_position.return_value = self._mock_position(
-            base_sl_roi=0.0, base_tp_roi=0.0)
+            base_sl_roi=0.0, base_tp_roi=0.0
+        )
         t.logger = MagicMock()
         ok = t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         self.assertFalse(ok, "base ROI 缺失时应跳过返回 False")
@@ -395,14 +424,16 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         被 MIN_SL_PCT_NORMAL(8%)×TIGHTEN(0.7)=5.6% 价格间距 floor 钳制"""
         t = _make_trader(coins=["BTC"])
         t.position_tracker.get_open_position.return_value = self._mock_position(
-            base_sl_roi=0.01, base_tp_roi=0.05, entry_price=100.0)
+            base_sl_roi=0.01, base_tp_roi=0.05, entry_price=100.0
+        )
         t.logger = MagicMock()
         t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
         sl_px = float(kwargs["stop_loss_px"])
         # floor 后: 5.6% 价格间距 → SL_px = 100 × (1 − 0.056) = 94.4
-        self.assertAlmostEqual(sl_px, 94.4, delta=0.01,
-                               msg=f"floor 到 5.6% 价格间距失败: SL={sl_px}，expect 94.4")
+        self.assertAlmostEqual(
+            sl_px, 94.4, delta=0.01, msg=f"floor 到 5.6% 价格间距失败: SL={sl_px}，expect 94.4"
+        )
 
     # ── 边界 B3: 连锁漂移修复（base_roi 冻结）验证 ─────────────
     def test_old_position_base_roi_frozen_after_first_adjust(self):
@@ -431,10 +462,12 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         ok1 = t._adjust_sl_tp("BTC", "BTC-USDT-SWAP", "long", "tighten")
         self.assertTrue(ok1)
         # 验证冻结生效：rec.base_sl_roi / base_tp_roi 被回填
-        self.assertAlmostEqual(rec.base_sl_roi, 0.03, delta=1e-6,
-                               msg="首次调完 base_sl_roi 应被冻结回 0.03")
-        self.assertAlmostEqual(rec.base_tp_roi, 0.09, delta=1e-6,
-                               msg="首次调完 base_tp_roi 应被冻结回 0.09")
+        self.assertAlmostEqual(
+            rec.base_sl_roi, 0.03, delta=1e-6, msg="首次调完 base_sl_roi 应被冻结回 0.03"
+        )
+        self.assertAlmostEqual(
+            rec.base_tp_roi, 0.09, delta=1e-6, msg="首次调完 base_tp_roi 应被冻结回 0.09"
+        )
 
         # Step 2: 模拟下一轮：OKX 平台上 SL/TP 已经是 tighten 后的值（61360 / 67730）
         # 如果没有冻结，下一轮 _get_base_sl_roi 会 fallback 反算，得到 SL ROI =
@@ -449,8 +482,9 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         self.assertTrue(ok2)
         kwargs = t.okx_client.place_stop_loss_take_profit.call_args.kwargs
         sl_px = float(kwargs["stop_loss_px"])
-        self.assertAlmostEqual(sl_px, 59800.0, delta=1.0,
-                               msg=f"B3 冻结后 relax 应=59800（floor 8%）；现 SL={sl_px}")
+        self.assertAlmostEqual(
+            sl_px, 59800.0, delta=1.0, msg=f"B3 冻结后 relax 应=59800（floor 8%）；现 SL={sl_px}"
+        )
 
     def test_old_position_base_roi_via_stable_cache(self):
         """B3 stable fallback：如果 PositionRecord 是不可写对象（dict/immutable），
@@ -466,14 +500,21 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         # 更简单：直接 setattr 后再删掉 base_sl_roi，或用 property 拦截
         class _Immutable:
             @property
-            def base_sl_roi(self): return 0.0
+            def base_sl_roi(self):
+                return 0.0
+
             @property
-            def base_tp_roi(self): return 0.0
+            def base_tp_roi(self):
+                return 0.0
+
             @property
-            def entry_price(self): return 65000.0
+            def entry_price(self):
+                return 65000.0
+
             @property
             def market_snapshot(self):
                 return {"stop_loss_px": 64350.0, "take_profit_px": 66950.0}
+
         rec = _Immutable()
         t.position_tracker.get_open_position.return_value = rec
 
@@ -484,12 +525,14 @@ class TestAdjustSLTPModulation(unittest.TestCase):
         # 稳定缓存应已写入：key=("stable_base_sl_roi", "BTC-USDT-SWAP")
         hit, cached_sl = t._cache_get(("stable_base_sl_roi", "BTC-USDT-SWAP"), ttl_cycles=99999)
         self.assertTrue(hit, "不可写 PositionRecord 时 stable 缓存应被写入")
-        self.assertAlmostEqual(cached_sl, 0.03, delta=1e-6,
-                               msg=f"stable_base_sl_roi 应为 0.03，实际={cached_sl}")
+        self.assertAlmostEqual(
+            cached_sl, 0.03, delta=1e-6, msg=f"stable_base_sl_roi 应为 0.03，实际={cached_sl}"
+        )
         # 再次调用 _get_base_sl_roi 应从缓存读而非 fallback 反算
         got = t._get_base_sl_roi("BTC-USDT-SWAP", 65000.0)
-        self.assertAlmostEqual(got, 0.03, delta=1e-6,
-                               msg=f"第二次读 base_sl_roi 应走缓存得 0.03，实际={got}")
+        self.assertAlmostEqual(
+            got, 0.03, delta=1e-6, msg=f"第二次读 base_sl_roi 应走缓存得 0.03，实际={got}"
+        )
 
 
 # =====================================================================
@@ -507,8 +550,7 @@ class TestCycleIdxRolloverCacheDefense(unittest.TestCase):
 
         new_idx = t._advance_cycle_idx()
         self.assertEqual(new_idx, 6)
-        self.assertEqual(len(t._mode_cache), 2,
-                         "单调推进不应清空 mode_cache")
+        self.assertEqual(len(t._mode_cache), 2, "单调推进不应清空 mode_cache")
 
     def test_cycle_rollback_triggers_clear(self):
         """B4 复现：_cycle_idx 回退时 mode_cache 被清（否则 written_cycle > new_cycle
@@ -525,10 +567,12 @@ class TestCycleIdxRolloverCacheDefense(unittest.TestCase):
         t._cycle_idx = 0
         new_idx = t._advance_cycle_idx()
         self.assertEqual(new_idx, 1, "回退后应从 0+1=1 开始")
-        self.assertEqual(len(t._mode_cache), 0,
-                         f"cycle_idx 回退时应清 mode_cache，残留={list(t._mode_cache.keys())}")
-        self.assertEqual(t._last_cycle_seen, 1,
-                         "推进后 _last_cycle_seen 应同步更新为新 cycle")
+        self.assertEqual(
+            len(t._mode_cache),
+            0,
+            f"cycle_idx 回退时应清 mode_cache，残留={list(t._mode_cache.keys())}",
+        )
+        self.assertEqual(t._last_cycle_seen, 1, "推进后 _last_cycle_seen 应同步更新为新 cycle")
 
     def test_first_call_never_clears(self):
         """进程启动第一次推进（_cycle_idx 未初始化）不应清空缓存。"""
@@ -540,8 +584,7 @@ class TestCycleIdxRolloverCacheDefense(unittest.TestCase):
         new_idx = t._advance_cycle_idx()
         self.assertEqual(new_idx, 1)
         # 注意：首进（_prev_idx=-1）命中 _prev_idx < 0 → 不走 clear 分支
-        self.assertIn(("preload",), t._mode_cache,
-                      "首次 advance 不应该清 preloaded 缓存")
+        self.assertIn(("preload",), t._mode_cache, "首次 advance 不应该清 preloaded 缓存")
 
 
 # =====================================================================
@@ -572,10 +615,15 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
         # mock _check_btc_trend：非 bearish（大势偏多）
         t._check_btc_trend = lambda: (False, "BTC多头趋势")
         subs = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={
-                "confidence": 0.6, "direction": "UP", "volatility": 0.03,
-                "bagua_direction": "long", "bagua_confidence": 0.9,
+                "confidence": 0.6,
+                "direction": "UP",
+                "volatility": 0.03,
+                "bagua_direction": "long",
+                "bagua_confidence": 0.9,
             },
         )
         # 0.4*1 + 0.4*1 + 0.2*0.9 = 0.98
@@ -588,10 +636,15 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
         t = _make_trader(coins=["BTC"], enable_ev_radar=True)
         t._check_btc_trend = lambda: (True, "BTC做空允许")
         subs = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={
-                "confidence": 0.6, "direction": "UP", "volatility": 0.03,
-                "bagua_direction": "short", "bagua_confidence": 0.8,
+                "confidence": 0.6,
+                "direction": "UP",
+                "volatility": 0.03,
+                "bagua_direction": "short",
+                "bagua_confidence": 0.8,
             },
         )
         # 0.4*0 + 0.4*0 + 0.2*0.8 = 0.16
@@ -601,13 +654,19 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
     def test_trend_alignment_neutral_mid(self):
         """bagua=neutral, BTC 无数据(抛异常降级) → 中值≈0.5。"""
         t = _make_trader(coins=["BTC"], enable_ev_radar=True)
+
         def _boom():
             raise RuntimeError("网络断开")
+
         t._check_btc_trend = _boom
         subs = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={
-                "confidence": 0.5, "direction": "UP", "volatility": 0.03,
+                "confidence": 0.5,
+                "direction": "UP",
+                "volatility": 0.03,
                 "bagua_direction": "neutral",
             },
         )
@@ -619,10 +678,15 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
         t = _make_trader(coins=["BTC"], enable_ev_radar=True)
         t._check_btc_trend = lambda: (True, "BTC做空允许")
         subs = t._build_ev_subscores(
-            pos_side="short", position_age_sec=7200, upl_ratio=0.01,
+            pos_side="short",
+            position_age_sec=7200,
+            upl_ratio=0.01,
             inference={
-                "confidence": 0.8, "direction": "DOWN", "volatility": 0.03,
-                "bagua_direction": "short", "bagua_confidence": 0.85,
+                "confidence": 0.8,
+                "direction": "DOWN",
+                "volatility": 0.03,
+                "bagua_direction": "short",
+                "bagua_confidence": 0.85,
             },
         )
         # 0.4*1 + 0.4*1 + 0.2*0.85 = 0.97
@@ -636,15 +700,22 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
         klines = [{"v": 100.0} for _ in range(59)]
         klines.append({"v": 200.0})  # last=2x mean
         subs = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={
-                "confidence": 0.5, "direction": "UP", "volatility": 0.01,  # 低 vol
+                "confidence": 0.5,
+                "direction": "UP",
+                "volatility": 0.01,  # 低 vol
                 "kline_data": klines,
             },
         )
         # vol_stability ≈ 1.0; spike≈2/1.02≈2 → normalized 接近上界
-        self.assertGreater(subs["liquidity_risk_s"], 0.75,
-                           f"稳定+放量+低波应得高分, got={subs['liquidity_risk_s']}")
+        self.assertGreater(
+            subs["liquidity_risk_s"],
+            0.75,
+            f"稳定+放量+低波应得高分, got={subs['liquidity_risk_s']}",
+        )
 
     def test_liquidity_unstable_shrink_high_vol_low_score(self):
         """量能剧烈波动(1→100锯齿) + 缩量 + 高vol(0.08) → 低分。"""
@@ -654,33 +725,46 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
             klines.append({"v": 1.0 if i % 2 == 0 else 100.0})  # 大跳 → std巨大
         klines[-1] = {"v": 1.0}  # 最后一根缩量
         subs = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={
-                "confidence": 0.5, "direction": "UP", "volatility": 0.08,  # 高 vol
+                "confidence": 0.5,
+                "direction": "UP",
+                "volatility": 0.08,  # 高 vol
                 "kline_data": klines,
             },
         )
-        self.assertLess(subs["liquidity_risk_s"], 0.55,
-                        f"不稳定+缩量+高波应得低分, got={subs['liquidity_risk_s']}")
+        self.assertLess(
+            subs["liquidity_risk_s"],
+            0.55,
+            f"不稳定+缩量+高波应得低分, got={subs['liquidity_risk_s']}",
+        )
 
     def test_liquidity_insufficient_kline_data_fallback_05(self):
         """kline<5根或全0 volume → 降级中性 0.5。"""
         t = _make_trader(coins=["BTC"], enable_ev_radar=True)
         # A: 仅 3 根 → <5 fallback
         subs_a = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={"kline_data": [{"v": 1} for _ in range(3)]},
         )
         self.assertEqual(subs_a["liquidity_risk_s"], 0.5)
         # B: 60 根但 volume 全=0 → sum=0 fallback
         subs_b = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={"kline_data": [{"v": 0} for _ in range(60)]},
         )
         self.assertEqual(subs_b["liquidity_risk_s"], 0.5)
         # C: kline_data 缺失 → 0.5
         subs_c = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={},
         )
         self.assertEqual(subs_c["liquidity_risk_s"], 0.5)
@@ -690,7 +774,9 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
         t = _make_trader(coins=["BTC"], enable_ev_radar=True)
         bad_klines = [{"v": "not_a_number"} for _ in range(20)]
         subs = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={"kline_data": bad_klines},
         )
         self.assertEqual(subs["liquidity_risk_s"], 0.5)
@@ -701,16 +787,20 @@ class TestEVSubscoresPhaseCRealized(unittest.TestCase):
         t = _make_trader(coins=["BTC"], enable_ev_radar=True)
         t._check_btc_trend = lambda: (False, "ok")
         subs = t._build_ev_subscores(
-            pos_side="long", position_age_sec=3600, upl_ratio=0.0,
+            pos_side="long",
+            position_age_sec=3600,
+            upl_ratio=0.0,
             inference={
-                "confidence": 0.5, "direction": "UP", "volatility": 0.03,
+                "confidence": 0.5,
+                "direction": "UP",
+                "volatility": 0.03,
             },
         )
         self.assertEqual(subs["confidence_s"], 0.5)
         self.assertEqual(subs["direction_consistency_s"], 1.0)  # long+UP
-        self.assertEqual(subs["pnl_momentum_s"], 0.5)          # upl=0%
-        self.assertEqual(subs["regime_friendly_s"], 0.6)       # vol=0.03 normal
-        self.assertAlmostEqual(subs["holding_age_s"], 1.0 - 1/60, places=3)
+        self.assertEqual(subs["pnl_momentum_s"], 0.5)  # upl=0%
+        self.assertEqual(subs["regime_friendly_s"], 0.6)  # vol=0.03 normal
+        self.assertAlmostEqual(subs["holding_age_s"], 1.0 - 1 / 60, places=3)
 
 
 if __name__ == "__main__":

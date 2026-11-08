@@ -13,18 +13,13 @@
 5. 按 market_regime 分组分析各形态下的做空表现
 """
 
-import json
 import sys
-import os
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 # 确保可以 import 项目模块
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-
-from scripts.memory_l4.yijing_trainer import _load_kline_from_okx
 
 
 def fetch_btc_daily_closes(limit: int = 1500) -> list:
@@ -54,14 +49,16 @@ def fetch_btc_daily_closes(limit: int = 1500) -> list:
             break
 
         for d in candles:
-            all_candles.append({
-                "ts": int(d[0]),
-                "c": float(d[4]),
-                "o": float(d[1]),
-                "h": float(d[2]),
-                "l": float(d[3]),
-                "vol": float(d[5]),
-            })
+            all_candles.append(
+                {
+                    "ts": int(d[0]),
+                    "c": float(d[4]),
+                    "o": float(d[1]),
+                    "h": float(d[2]),
+                    "l": float(d[3]),
+                    "vol": float(d[5]),
+                }
+            )
 
         # 下一页：用最旧一条的 ts 作为 before
         before_ts = int(candles[-1][0])
@@ -106,10 +103,10 @@ def generate_signals(closes: list, lookback: int = 20) -> list:
 
     for i in range(lookback + 1, len(closes) - 1):
         price = closes[i]
-        prev_price = closes[i+1]
+        prev_price = closes[i + 1]
         # MA(lookback)
-        ma = sum(closes[i:i+lookback]) / lookback
-        prev_ma = sum(closes[i+1:i+1+lookback]) / lookback
+        ma = sum(closes[i : i + lookback]) / lookback
+        prev_ma = sum(closes[i + 1 : i + 1 + lookback]) / lookback
 
         # A) MA20 交叉
         if prev_price <= prev_ma and price > ma:
@@ -120,7 +117,7 @@ def generate_signals(closes: list, lookback: int = 20) -> list:
         # B) RSI(14) 超买超卖
         rsi_period = 14
         if len(closes) - i >= rsi_period + 1:
-            changes = [closes[j] - closes[j+1] for j in range(i, i+rsi_period)]
+            changes = [closes[j] - closes[j + 1] for j in range(i, i + rsi_period)]
             gains = [c for c in changes if c > 0]
             losses = [-c for c in changes if c < 0]
             avg_gain = sum(gains) / rsi_period if gains else 0
@@ -134,8 +131,8 @@ def generate_signals(closes: list, lookback: int = 20) -> list:
 
         # C) 突破信号（20 日高低点）
         if len(closes) - i >= lookback:
-            recent_high = max(closes[i+1:i+1+lookback])
-            recent_low = min(closes[i+1:i+1+lookback])
+            recent_high = max(closes[i + 1 : i + 1 + lookback])
+            recent_low = min(closes[i + 1 : i + 1 + lookback])
             if price > recent_high:
                 signals.append((i, "long", price, ma, "breakout_high"))
             if price < recent_low:
@@ -190,6 +187,7 @@ def run_backtest():
 
     # 3. 准备 PollingTrader 实例（绕过 __init__）
     from scripts.memory_l4.polling_trader import PollingTrader
+
     with patch.object(PollingTrader, "__init__", lambda self, *a, **kw: None):
         trader = PollingTrader.__new__(PollingTrader)
     trader._log = MagicMock()
@@ -208,7 +206,7 @@ def run_backtest():
     #  regime, TR, CV, F_dot, allow_short, filter_reason, pnl_pct, valid_bd, sig_type)
     results_short = []
 
-    for idx, direction, price, ma_val, sig_type in short_signals:
+    for idx, direction, price, ma_val, sig_type in short_signals:  # noqa: B007
         # 取到 idx 位置为止的 closes（包含 idx）
         sub_closes = closes[idx:]
         if len(sub_closes) < 210:
@@ -253,13 +251,32 @@ def run_backtest():
         # 计算持有 5 天的盈亏
         pnl_pct, _ = calculate_hold_pnl(closes, idx, "short", hold_days=5)
 
-        results_short.append((idx, price, score, F_total, F_net, F_inter,
-                              U_short, U_total, slope, regime, TR, CV, F_dot,
-                              allow_short, filter_reason, pnl_pct, valid_bd, sig_type))
+        results_short.append(
+            (
+                idx,
+                price,
+                score,
+                F_total,
+                F_net,
+                F_inter,
+                U_short,
+                U_total,
+                slope,
+                regime,
+                TR,
+                CV,
+                F_dot,
+                allow_short,
+                filter_reason,
+                pnl_pct,
+                valid_bd,
+                sig_type,
+            )
+        )
 
     # 做多信号也计算 regime（用于对称验证）
     results_long = []
-    for idx, direction, price, ma_val, sig_type in long_signals:
+    for idx, direction, price, ma_val, sig_type in long_signals:  # noqa: B007
         sub_closes = closes[idx:]
         if len(sub_closes) < 210:
             continue
@@ -275,16 +292,16 @@ def run_backtest():
 
         pnl_pct, _ = calculate_hold_pnl(closes, idx, "long", hold_days=5)
 
-        results_long.append((idx, price, score, F_total, regime, strict_bull,
-                             U_short, pnl_pct, sig_type))
+        results_long.append(
+            (idx, price, score, F_total, regime, strict_bull, U_short, pnl_pct, sig_type)
+        )
 
     # 5. 分析做空回测结果
     print("\n" + "=" * 80)
     print("[4] 做空回测结果分析（Phase D 形态差异化过滤）")
     print("=" * 80)
 
-    regime_order = ["TREND_BULL", "STRONG_TREND_BEAR", "TREND_BEAR",
-                    "MEAN_REVERTING", "RANGING"]
+    regime_order = ["TREND_BULL", "STRONG_TREND_BEAR", "TREND_BEAR", "MEAN_REVERTING", "RANGING"]
 
     if not results_short:
         print("  无有效做空信号样本")
@@ -296,7 +313,7 @@ def run_backtest():
         all_pnl = sum(r[15] for r in all_short)
         all_winrate = len(all_wins) / len(all_short) * 100 if all_short else 0
 
-        print(f"\n  --- 无过滤（全部做空）---")
+        print("\n  --- 无过滤（全部做空）---")
         print(f"  信号数: {len(all_short)}")
         print(f"  胜率: {all_winrate:.1f}% ({len(all_wins)}胜 / {len(all_losses)}负)")
         print(f"  累计盈亏: {all_pnl*100:.2f}%")
@@ -310,8 +327,10 @@ def run_backtest():
             filt_pnl = sum(r[15] for r in filtered_short)
             filt_winrate = len(filt_wins) / len(filtered_short) * 100 if filtered_short else 0
 
-            print(f"\n  --- Phase D 形态过滤后做空 ---")
-            print(f"  信号数: {len(filtered_short)} (过滤掉 {len(all_short) - len(filtered_short)} 个)")
+            print("\n  --- Phase D 形态过滤后做空 ---")
+            print(
+                f"  信号数: {len(filtered_short)} (过滤掉 {len(all_short) - len(filtered_short)} 个)"
+            )
             print(f"  胜率: {filt_winrate:.1f}% ({len(filt_wins)}胜 / {len(filt_losses)}负)")
             print(f"  累计盈亏: {filt_pnl*100:.2f}%")
             print(f"  平均盈亏: {filt_pnl/len(filtered_short)*100:.3f}%")
@@ -319,14 +338,14 @@ def run_backtest():
             # 过滤效果
             delta_winrate = filt_winrate - all_winrate
             delta_pnl = filt_pnl - all_pnl
-            print(f"\n  --- 过滤效果 ---")
+            print("\n  --- 过滤效果 ---")
             print(f"  胜率提升: {delta_winrate:+.1f}%")
             print(f"  盈亏改善: {delta_pnl*100:+.2f}%")
         else:
             print(f"\n  Phase D 过滤后: 全部 {len(all_short)} 个做空信号被过滤")
 
         # 5c) 按 market_regime 分组（Phase D 核心分析）
-        print(f"\n  --- 按 market_regime 分组 ---")
+        print("\n  --- 按 market_regime 分组 ---")
         for regime_name in regime_order:
             group = [r for r in results_short if r[9] == regime_name]
             if not group:
@@ -340,12 +359,14 @@ def run_backtest():
             avg_u_short = sum(r[6] for r in group) / len(group)
             avg_fdot = sum(r[12] for r in group) / len(group)
             allowed = len([r for r in group if r[13]])
-            print(f"  {regime_name:20s}: n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}% "
-                  f"允许做空={allowed:3d} TR={avg_tr:.3f} CV={avg_cv:.4f} "
-                  f"slope={avg_slope:+.3f}% U_s={avg_u_short:.5f} F_dot={avg_fdot:+.4f}")
+            print(
+                f"  {regime_name:20s}: n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}% "
+                f"允许做空={allowed:3d} TR={avg_tr:.3f} CV={avg_cv:.4f} "
+                f"slope={avg_slope:+.3f}% U_s={avg_u_short:.5f} F_dot={avg_fdot:+.4f}"
+            )
 
         # 5d) 按 bearish_score 分组
-        print(f"\n  --- 按 bearish_score 分组 ---")
+        print("\n  --- 按 bearish_score 分组 ---")
         for score_name in ["STRONG", "NORMAL", "WEAK", "NONE"]:
             group = [r for r in results_short if r[2] == score_name]
             if not group:
@@ -355,8 +376,10 @@ def run_backtest():
             wr = len(wins) / len(group) * 100
             avg_f = sum(r[3] for r in group) / len(group)
             avg_u = sum(r[6] for r in group) / len(group)
-            print(f"  {score_name:6s}: n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}% "
-                  f"avg_F={avg_f:+.3f} avg_U_s={avg_u:.5f}")
+            print(
+                f"  {score_name:6s}: n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}% "
+                f"avg_F={avg_f:+.3f} avg_U_s={avg_u:.5f}"
+            )
 
         # 5e) regime 阈值调节器效果模拟
         # 理论：final_threshold = base(0.80) × score_multi × regime_multi
@@ -364,13 +387,14 @@ def run_backtest():
         # 由于回测无 confidence 值，用"信号在各 regime 下的保留比例"模拟
         # 假设：confidence ~ Uniform(0.5, 1.0) 近似分布
         #       threshold > 1.0 → 几乎全部过滤；threshold < 0.8 → 几乎全部保留
-        print(f"\n  --- regime 阈值调节器效果模拟 ---")
+        print("\n  --- regime 阈值调节器效果模拟 ---")
         import random
+
         random.seed(42)
         base_threshold = 0.80
         regime_filtered = []
         for r in results_short:
-            idx_r, price_r, score_r = r[0], r[1], r[2]
+            idx_r, price_r, score_r = r[0], r[1], r[2]  # noqa: F841
             regime_r = r[9]
             pnl_r = r[15]
             # 模拟 confidence（假设均匀分布 0.5~1.0）
@@ -388,13 +412,15 @@ def run_backtest():
             rf_pnl = sum(x[2] for x in regime_filtered)
             rf_wr = len(rf_wins) / len(regime_filtered) * 100
             print(f"  基础阈值: {base_threshold:.2f}")
-            print(f"  调节后信号数: {len(regime_filtered)} / {len(results_short)} (模拟过滤 {len(results_short) - len(regime_filtered)} 个)")
+            print(
+                f"  调节后信号数: {len(regime_filtered)} / {len(results_short)} (模拟过滤 {len(results_short) - len(regime_filtered)} 个)"
+            )
             print(f"  调节后胜率: {rf_wr:.1f}% ({len(rf_wins)}胜)")
             print(f"  调节后累计盈亏: {rf_pnl*100:.2f}%")
             print(f"  平均盈亏: {rf_pnl/len(regime_filtered)*100:.3f}%")
 
             # 按 regime 分组调节后表现
-            print(f"\n  --- 调节后按 regime 分组 ---")
+            print("\n  --- 调节后按 regime 分组 ---")
             for regime_name in regime_order:
                 group = [x for x in regime_filtered if x[0] == regime_name]
                 if not group:
@@ -404,7 +430,9 @@ def run_backtest():
                 gwr = len(gw) / len(group) * 100
                 # 该 regime 的乘数
                 gm = trader._get_regime_short_multiplier(regime_name)
-                print(f"  {regime_name:20s}: n={len(group):3d} 胜率={gwr:5.1f}% 累计={gp*100:+7.2f}% ×{gm:.2f}")
+                print(
+                    f"  {regime_name:20s}: n={len(group):3d} 胜率={gwr:5.1f}% 累计={gp*100:+7.2f}% ×{gm:.2f}"
+                )
 
         # 5f) 被过滤掉的做空信号
         blocked = [r for r in results_short if not r[13]]
@@ -412,17 +440,17 @@ def run_backtest():
             blocked_wins = [r for r in blocked if r[15] > 0]
             blocked_pnl = sum(r[15] for r in blocked)
             blocked_wr = len(blocked_wins) / len(blocked) * 100 if blocked else 0
-            print(f"\n  --- 被过滤掉的做空信号 ---")
+            print("\n  --- 被过滤掉的做空信号 ---")
             print(f"  数量: {len(blocked)}")
             print(f"  其中盈利: {len(blocked_wins)} (胜率 {blocked_wr:.1f}%)")
             print(f"  被过滤信号的累计盈亏: {blocked_pnl*100:+.2f}%")
             if blocked_wr < 50:
-                print(f"  ✓ 过滤掉的信号胜率 < 50%，过滤方向正确")
+                print("  ✓ 过滤掉的信号胜率 < 50%，过滤方向正确")
             else:
-                print(f"  ✗ 过滤掉的信号胜率 >= 50%，可能过滤过度")
+                print("  ✗ 过滤掉的信号胜率 >= 50%，可能过滤过度")
 
             # 被过滤信号按 regime 分布
-            print(f"\n  --- 被过滤信号按 regime 分布 ---")
+            print("\n  --- 被过滤信号按 regime 分布 ---")
             for regime_name in regime_order:
                 group = [r for r in blocked if r[9] == regime_name]
                 if group:
@@ -441,13 +469,13 @@ def run_backtest():
         all_pnl_l = sum(r[7] for r in all_long)
         all_wr_l = len(all_wins_l) / len(all_long) * 100 if all_long else 0
 
-        print(f"\n  --- 无过滤（全部做多）---")
+        print("\n  --- 无过滤（全部做多）---")
         print(f"  信号数: {len(all_long)}")
         print(f"  胜率: {all_wr_l:.1f}% ({len(all_wins_l)}胜)")
         print(f"  累计盈亏: {all_pnl_l*100:.2f}%")
 
         # 按 regime 分组做多
-        print(f"\n  --- 按 market_regime 分组做多 ---")
+        print("\n  --- 按 market_regime 分组做多 ---")
         for regime_name in regime_order:
             group = [r for r in results_long if r[3] == regime_name]
             if not group:
@@ -464,7 +492,7 @@ def run_backtest():
 
     if results_short:
         # TR 分析
-        print(f"\n  --- 趋势强度比 TR 分析 ---")
+        print("\n  --- 趋势强度比 TR 分析 ---")
         for tr_range in [(0.0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.01)]:
             group = [r for r in results_short if tr_range[0] <= r[10] < tr_range[1]]
             if not group:
@@ -472,10 +500,12 @@ def run_backtest():
             wins = [r for r in group if r[15] > 0]
             pnl = sum(r[15] for r in group)
             wr = len(wins) / len(group) * 100
-            print(f"  TR [{tr_range[0]:.1f}, {tr_range[1]:.1f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%")
+            print(
+                f"  TR [{tr_range[0]:.1f}, {tr_range[1]:.1f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%"
+            )
 
         # CV 分析
-        print(f"\n  --- 均线发散度 CV 分析 ---")
+        print("\n  --- 均线发散度 CV 分析 ---")
         for cv_range in [(0.0, 0.01), (0.01, 0.02), (0.02, 0.03), (0.03, 0.05), (0.05, 1.0)]:
             group = [r for r in results_short if cv_range[0] <= r[11] < cv_range[1]]
             if not group:
@@ -483,10 +513,12 @@ def run_backtest():
             wins = [r for r in group if r[15] > 0]
             pnl = sum(r[15] for r in group)
             wr = len(wins) / len(group) * 100
-            print(f"  CV [{cv_range[0]:.3f}, {cv_range[1]:.3f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%")
+            print(
+                f"  CV [{cv_range[0]:.3f}, {cv_range[1]:.3f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%"
+            )
 
         # Slope 分析
-        print(f"\n  --- 斜率强度分析 ---")
+        print("\n  --- 斜率强度分析 ---")
         for sl_range in [(-1.0, -0.03), (-0.03, -0.01), (-0.01, 0.01), (0.01, 0.03), (0.03, 1.0)]:
             group = [r for r in results_short if sl_range[0] <= r[8] < sl_range[1]]
             if not group:
@@ -494,21 +526,32 @@ def run_backtest():
             wins = [r for r in group if r[15] > 0]
             pnl = sum(r[15] for r in group)
             wr = len(wins) / len(group) * 100
-            print(f"  slope [{sl_range[0]:+.3f}, {sl_range[1]:+.3f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%")
+            print(
+                f"  slope [{sl_range[0]:+.3f}, {sl_range[1]:+.3f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%"
+            )
 
         # F_dot 分析
-        print(f"\n  --- F_dot 趋势加速度分析 ---")
-        for fd_range in [(-1.0, -0.01), (-0.01, -0.005), (-0.005, -0.002), (-0.002, 0.0), (0.0, 0.01), (0.01, 1.0)]:
+        print("\n  --- F_dot 趋势加速度分析 ---")
+        for fd_range in [
+            (-1.0, -0.01),
+            (-0.01, -0.005),
+            (-0.005, -0.002),
+            (-0.002, 0.0),
+            (0.0, 0.01),
+            (0.01, 1.0),
+        ]:
             group = [r for r in results_short if fd_range[0] <= r[12] < fd_range[1]]
             if not group:
                 continue
             wins = [r for r in group if r[15] > 0]
             pnl = sum(r[15] for r in group)
             wr = len(wins) / len(group) * 100
-            print(f"  F_dot [{fd_range[0]:+.4f}, {fd_range[1]:+.4f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%")
+            print(
+                f"  F_dot [{fd_range[0]:+.4f}, {fd_range[1]:+.4f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%"
+            )
 
         # U_short 分析
-        print(f"\n  --- U_short 超卖分析 ---")
+        print("\n  --- U_short 超卖分析 ---")
         for u_range in [(0.0, 0.001), (0.001, 0.002), (0.002, 0.005), (0.005, 0.01), (0.01, 1.0)]:
             group = [r for r in results_short if u_range[0] <= r[6] < u_range[1]]
             if not group:
@@ -516,7 +559,9 @@ def run_backtest():
             wins = [r for r in group if r[15] > 0]
             pnl = sum(r[15] for r in group)
             wr = len(wins) / len(group) * 100
-            print(f"  U_short [{u_range[0]:.4f}, {u_range[1]:.4f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%")
+            print(
+                f"  U_short [{u_range[0]:.4f}, {u_range[1]:.4f}): n={len(group):3d} 胜率={wr:5.1f}% 累计={pnl*100:+7.2f}%"
+            )
 
     # 8. 综合结论
     print("\n" + "=" * 80)
@@ -529,13 +574,13 @@ def run_backtest():
         filtered = [r for r in results_short if r[13]]
         filt_wr = len([r for r in filtered if r[15] > 0]) / len(filtered) * 100 if filtered else 0
 
-        print(f"\n  Phase D 做空过滤效果:")
+        print("\n  Phase D 做空过滤效果:")
         print(f"    过滤前胜率: {all_wr:.1f}% (n={len(results_short)})")
         print(f"    过滤后胜率: {filt_wr:.1f}% (n={len(filtered)})")
         print(f"    胜率变化: {filt_wr - all_wr:+.1f}%")
 
         # 各 regime 下的做空胜率
-        print(f"\n  各 regime 下做空胜率:")
+        print("\n  各 regime 下做空胜率:")
         for regime_name in regime_order:
             group = [r for r in results_short if r[9] == regime_name]
             if not group:

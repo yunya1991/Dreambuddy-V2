@@ -3,10 +3,13 @@
 简单回测引擎 — 用于验证进化提议的有效性
 基于历史K线数据进行快速回测，评估策略改进效果
 """
-import json, os, time, requests, warnings
+
+import json  # noqa: I001
+import time
+import requests
+import warnings
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
-from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
 warnings.filterwarnings("ignore")
 
@@ -194,8 +197,12 @@ class SimpleBacktestEngine:
                     entry_price = price
                     entry_idx = i
             else:
-                sl_price = entry_price * (1 - sl_pct) if position == "LONG" else entry_price * (1 + sl_pct)
-                tp_price = entry_price * (1 + tp_pct) if position == "LONG" else entry_price * (1 - tp_pct)
+                sl_price = (
+                    entry_price * (1 - sl_pct) if position == "LONG" else entry_price * (1 + sl_pct)
+                )
+                tp_price = (
+                    entry_price * (1 + tp_pct) if position == "LONG" else entry_price * (1 - tp_pct)
+                )
 
                 exit_price = None
                 exit_reason = ""
@@ -297,9 +304,7 @@ class SimpleBacktestEngine:
             "backtest_period": f"{len(closes)} bars",
         }
 
-    def compare_strategies(
-        self, coin: str, baseline_params: Dict, improved_params: Dict
-    ) -> Dict:
+    def compare_strategies(self, coin: str, baseline_params: Dict, improved_params: Dict) -> Dict:
         """
         对比两个策略参数的回测结果
         """
@@ -326,9 +331,7 @@ class SimpleBacktestEngine:
                 "max_drawdown_change_pct": round(
                     im.get("max_drawdown_pct", 0) - bm.get("max_drawdown_pct", 0), 2
                 ),
-                "sharpe_change": round(
-                    im.get("sharpe_ratio", 0) - bm.get("sharpe_ratio", 0), 4
-                ),
+                "sharpe_change": round(im.get("sharpe_ratio", 0) - bm.get("sharpe_ratio", 0), 4),
                 "trade_count_change": im.get("total_trades", 0) - bm.get("total_trades", 0),
             },
             "is_improvement": (

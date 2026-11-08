@@ -8,15 +8,22 @@ fail-open：40 产出物缺失/损坏/过期时返回空 dict，不影响 23 主
     from dreambuddy_evolution.adapters.macro_constraint_adapter import load_macro_constraint
     kline_data["macro_constraint"] = load_macro_constraint()
 """
+
 from __future__ import annotations
+
 import json
 import logging
 import os
 from datetime import datetime, timezone
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
 logger = logging.getLogger("dc.macro_constraint")
 
-_CYCLE_STATE_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json"
+_CYCLE_STATE_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
 _MAX_AGE_HOURS = 72  # 超过 72h 视为过期，返回空（fail-open）
 
 
@@ -53,8 +60,12 @@ def load_macro_constraint(path: str = _CYCLE_STATE_PATH) -> dict:
             age_h = (datetime.now(timezone.utc) - gen).total_seconds() / 3600.0
             stale = age_h > _MAX_AGE_HOURS
         if stale:
-            return {"available": False, "stale": True, "age_hours": age_h,
-                    "note": "cycle_state 过期（fail-open）"}
+            return {
+                "available": False,
+                "stale": True,
+                "age_hours": age_h,
+                "note": "cycle_state 过期（fail-open）",
+            }
         # 精简约束视图（只暴露 23 系统需要的宏观约束字段）
         ta = (cs.get("technical_anchor") or {}).get("assets", {}).get("BTC/USDT", {})
         return {

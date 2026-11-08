@@ -1,12 +1,13 @@
 """Task 3 RED → GREEN tests — Protocol (TR-3.1), OkxAdapter delegation (TR-3.2),
 PaperAdapter state flow (TR-3.3).
 """
+
 from __future__ import annotations
 
 import inspect
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,8 +16,8 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "14-V15经典马丁策略" / "lib"))
 sys.path.insert(0, str(REPO / "22-执行引擎中心"))
 
-from tee_core.core.protocol import ExchangeClient   # noqa: E402
 from tee_core.adapters.okx_adapter import OkxAdapter  # noqa: E402
+from tee_core.core.protocol import ExchangeClient  # noqa: E402
 
 
 # =====================================================================
@@ -39,11 +40,12 @@ class TestProtocolRuntimeCheckable:
         from tee_core.adapters.paper_adapter import PaperAdapter  # noqa
 
         from v15_paper_client import V15PaperClient
+
         paper = V15PaperClient(ledger_path=str(tmp_path / "x.json"))
         inst = PaperAdapter(paper)
-        assert isinstance(inst, ExchangeClient), (
-            "PaperAdapter missing a method declared in ExchangeClient Protocol."
-        )
+        assert isinstance(
+            inst, ExchangeClient
+        ), "PaperAdapter missing a method declared in ExchangeClient Protocol."
 
     def test_protocol_signature_parity_for_place_order(self):
         """place_order() signature must contain all 11 parameters
@@ -53,8 +55,17 @@ class TestProtocolRuntimeCheckable:
         sig = inspect.signature(ExchangeClient.place_order)
         names = list(sig.parameters.keys())
         required = [
-            "self", "inst_id", "side", "ord_type", "sz", "px",
-            "td_mode", "pos_side", "tag", "reason", "leverage",
+            "self",
+            "inst_id",
+            "side",
+            "ord_type",
+            "sz",
+            "px",
+            "td_mode",
+            "pos_side",
+            "tag",
+            "reason",
+            "leverage",
             "max_slippage_bps",
         ]
         assert required == names, f"Protocol signature mismatch: {names}"
@@ -95,16 +106,30 @@ class TestOkxAdapterDelegation:
 
     def test_place_order_all_kwargs_forwarded(self, adapter, raw):
         adapter.place_order(
-            inst_id="BTC", side="buy", ord_type="limit",
-            sz=2.0, px=67000.0,
-            td_mode="cross", pos_side="long",
-            tag="unittest", reason="delegation-check",
-            leverage=3.0, max_slippage_bps=15,
+            inst_id="BTC",
+            side="buy",
+            ord_type="limit",
+            sz=2.0,
+            px=67000.0,
+            td_mode="cross",
+            pos_side="long",
+            tag="unittest",
+            reason="delegation-check",
+            leverage=3.0,
+            max_slippage_bps=15,
         )
         raw.place_order.assert_called_once_with(
-            inst_id="BTC", side="buy", ord_type="limit", sz=2.0, px=67000.0,
-            td_mode="cross", pos_side="long", tag="unittest",
-            reason="delegation-check", leverage=3.0, max_slippage_bps=15,
+            inst_id="BTC",
+            side="buy",
+            ord_type="limit",
+            sz=2.0,
+            px=67000.0,
+            td_mode="cross",
+            pos_side="long",
+            tag="unittest",
+            reason="delegation-check",
+            leverage=3.0,
+            max_slippage_bps=15,
         )
 
     def test_place_order_max_slippage_none_not_forwarded_when_absent(self, adapter, raw):
@@ -159,9 +184,14 @@ class TestPaperAdapterStateFlow:
         # Submit a limit order far from mid — it should remain live.
         # Using an extreme price to avoid crossing synthetic fill window.
         open_r = pa.place_order(
-            inst_id="BTC-USDT-SWAP", side="buy", ord_type="limit",
-            sz=0.01, px=1.0,           # absurdly low; won't cross
-            td_mode="isolated", pos_side="long", tag="ut",
+            inst_id="BTC-USDT-SWAP",
+            side="buy",
+            ord_type="limit",
+            sz=0.01,
+            px=1.0,  # absurdly low; won't cross
+            td_mode="isolated",
+            pos_side="long",
+            tag="ut",
         )
         assert open_r.get("ok") is True, f"paper place_order failed: {open_r}"
         ord_id = open_r.get("ord_id")
@@ -171,12 +201,11 @@ class TestPaperAdapterStateFlow:
         g1 = pa.get_order(inst_id="BTC-USDT-SWAP", ord_id=ord_id)
         assert g1["ok"] is True
         assert g1["state"] == "live", (
-            f"Expected live after limit open, got {g1['state']}. "
-            f"get_order payload: {g1}"
+            f"Expected live after limit open, got {g1['state']}. " f"get_order payload: {g1}"
         )
-        assert float(g1.get("filled_sz", 1.0)) == 0.0, (
-            "far-from-mid limit should not have filled yet"
-        )
+        assert (
+            float(g1.get("filled_sz", 1.0)) == 0.0
+        ), "far-from-mid limit should not have filled yet"
 
         # Cancel → state transitions to canceled
         cr = pa.cancel_order(inst_id="BTC-USDT-SWAP", ord_id=ord_id)
@@ -184,6 +213,4 @@ class TestPaperAdapterStateFlow:
 
         g2 = pa.get_order(inst_id="BTC-USDT-SWAP", ord_id=ord_id)
         assert g2["ok"] is True
-        assert g2["state"] == "canceled", (
-            f"Expected canceled after cancel_order, got {g2['state']}"
-        )
+        assert g2["state"] == "canceled", f"Expected canceled after cancel_order, got {g2['state']}"

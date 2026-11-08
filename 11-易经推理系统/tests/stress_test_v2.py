@@ -9,15 +9,15 @@
   D组: 跨体系数据流（AB Trading → 共享目录 → 易经推理 完整链路）
   E组: 边界与异常场景（空文件/损坏JSON/极端参数/并发写入）
 """
-import sys
-import os
+
 import json
-import time
 import shutil
+import sys
 import tempfile
+import time
 import traceback
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timezone
 
 # 设置路径
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -36,12 +36,14 @@ def record(group: str, name: str, passed: bool, detail: str = ""):
         _pass_count += 1
     else:
         _fail_count += 1
-    _results.append({
-        "group": group,
-        "name": name,
-        "status": status,
-        "detail": detail[:200] if detail else "",
-    })
+    _results.append(
+        {
+            "group": group,
+            "name": name,
+            "status": status,
+            "detail": detail[:200] if detail else "",
+        }
+    )
     icon = "✅" if passed else "❌"
     print(f"  {icon} [{group}] {name}" + (f" — {detail[:80]}" if detail and not passed else ""))
 
@@ -55,6 +57,7 @@ def section(title: str):
 # ============================================================
 # A组: KnowledgeBridge 单元测试
 # ============================================================
+
 
 def test_group_a():
     section("A组: KnowledgeBridge 单元测试")
@@ -78,7 +81,9 @@ def test_group_a():
         loaded = bridge.load_ab_evolved_params()
         record("A", "A1 导入进化参数", loaded["ok"], str(loaded.get("error", "")))
         match = loaded.get("params", {}) == params
-        record("A", "A1 往返一致性", match, f"原:{len(params)} 导入:{len(loaded.get('params', {}))}")
+        record(
+            "A", "A1 往返一致性", match, f"原:{len(params)} 导入:{len(loaded.get('params', {}))}"
+        )
     finally:
         shutil.rmtree(tmpdir)
 
@@ -90,31 +95,51 @@ def test_group_a():
         # 测试高灵敏度（低阈值）
         bridge.export_ab_evolved_params({"momentum_threshold": 0.01})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("A", "A2a 高灵敏度转换", t.get("trend_sensitivity", 0) > 1.0,
-               f"sensitivity={t.get('trend_sensitivity'):.2f}")
+        record(
+            "A",
+            "A2a 高灵敏度转换",
+            t.get("trend_sensitivity", 0) > 1.0,
+            f"sensitivity={t.get('trend_sensitivity'):.2f}",
+        )
 
         # 测试低风险厌恶（宽止损）
         bridge.export_ab_evolved_params({"stop_loss_pct": 0.08})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("A", "A2b 宽止损→低风险厌恶", t.get("risk_aversion", 1.0) < 0.5,
-               f"risk_aversion={t.get('risk_aversion'):.2f}")
+        record(
+            "A",
+            "A2b 宽止损→低风险厌恶",
+            t.get("risk_aversion", 1.0) < 0.5,
+            f"risk_aversion={t.get('risk_aversion'):.2f}",
+        )
 
         # 测试紧止损→高风险厌恶
         bridge.export_ab_evolved_params({"stop_loss_pct": 0.02})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("A", "A2c 紧止损→高风险厌恶", t.get("risk_aversion", 0.0) > 0.8,
-               f"risk_aversion={t.get('risk_aversion'):.2f}")
+        record(
+            "A",
+            "A2c 紧止损→高风险厌恶",
+            t.get("risk_aversion", 0.0) > 0.8,
+            f"risk_aversion={t.get('risk_aversion'):.2f}",
+        )
 
         # 测试RSI偏移
         bridge.export_ab_evolved_params({"rsi_oversold": 20, "rsi_overbought": 80})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("A", "A2d RSI对称→零偏移", abs(t.get("signal_confidence_bias", 1.0)) < 0.01,
-               f"bias={t.get('signal_confidence_bias'):.4f}")
+        record(
+            "A",
+            "A2d RSI对称→零偏移",
+            abs(t.get("signal_confidence_bias", 1.0)) < 0.01,
+            f"bias={t.get('signal_confidence_bias'):.4f}",
+        )
 
         bridge.export_ab_evolved_params({"rsi_oversold": 25, "rsi_overbought": 65})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("A", "A2e RSI偏多→正偏移", t.get("signal_confidence_bias", 0) > 0,
-               f"bias={t.get('signal_confidence_bias'):.4f}")
+        record(
+            "A",
+            "A2e RSI偏多→正偏移",
+            t.get("signal_confidence_bias", 0) > 0,
+            f"bias={t.get('signal_confidence_bias'):.4f}",
+        )
     finally:
         shutil.rmtree(tmpdir)
 
@@ -123,27 +148,41 @@ def test_group_a():
     try:
         bridge = KnowledgeBridge(shared_dir=tmpdir)
         contradictions = [
-            {"id": "c1", "type": "theory_practice_mismatch", "description": "test", "severity": "HIGH"},
+            {
+                "id": "c1",
+                "type": "theory_practice_mismatch",
+                "description": "test",
+                "severity": "HIGH",
+            },
             {"id": "c2", "type": "risk_management", "description": "test2", "severity": "MEDIUM"},
-            {"id": "c3", "type": "compulsive_repetition", "description": "test3", "severity": "LOW"},
+            {
+                "id": "c3",
+                "type": "compulsive_repetition",
+                "description": "test3",
+                "severity": "LOW",
+            },
             {"id": "c4", "type": "unknown_type", "description": "test4", "severity": "LOW"},
         ]
         r = bridge.export_ab_contradictions(contradictions)
         record("A", "A3a 矛盾导出", r["ok"] and r["patterns_count"] == 4, str(r))
 
         loaded = bridge.load_ab_contradictions()
-        record("A", "A3b 矛盾导入", loaded["ok"] and loaded["count"] == 4, str(loaded.get("error", "")))
+        record(
+            "A", "A3b 矛盾导入", loaded["ok"] and loaded["count"] == 4, str(loaded.get("error", ""))
+        )
 
         # 检查易经解读
-        has_interpretation = all(
-            p.get("yijing_interpretation") for p in loaded.get("patterns", [])
-        )
+        has_interpretation = all(p.get("yijing_interpretation") for p in loaded.get("patterns", []))
         record("A", "A3c 易经解读完整", has_interpretation, "所有矛盾模式都有解读")
 
         # 未知类型有默认解读
         unknown = [p for p in loaded.get("patterns", []) if p.get("type") == "unknown_type"]
-        record("A", "A3d 未知类型默认解读", len(unknown) == 1 and bool(unknown[0].get("yijing_interpretation")),
-               unknown[0].get("yijing_interpretation", "")[:50] if unknown else "no pattern")
+        record(
+            "A",
+            "A3d 未知类型默认解读",
+            len(unknown) == 1 and bool(unknown[0].get("yijing_interpretation")),
+            unknown[0].get("yijing_interpretation", "")[:50] if unknown else "no pattern",
+        )
     finally:
         shutil.rmtree(tmpdir)
 
@@ -166,9 +205,12 @@ def test_group_a():
             yijing = loaded.get("yijing_compatible", {})
             macro_ok = yijing.get("macro_phase") == exp_macro
             micro_ok = yijing.get("micro_phase") == exp_micro
-            record("A", f"A4-{i} {regime['state']}→{exp_macro}/{exp_micro}",
-                   macro_ok and micro_ok,
-                   f"实际: {yijing.get('macro_phase')}/{yijing.get('micro_phase')}")
+            record(
+                "A",
+                f"A4-{i} {regime['state']}→{exp_macro}/{exp_micro}",
+                macro_ok and micro_ok,
+                f"实际: {yijing.get('macro_phase')}/{yijing.get('micro_phase')}",
+            )
     finally:
         shutil.rmtree(tmpdir)
 
@@ -181,8 +223,12 @@ def test_group_a():
         record("A", "A5a 空参数导出", r["ok"], str(r))
 
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("A", "A5b 空参数默认值", t.get("trend_sensitivity") == 1.0 and t.get("risk_aversion") == 0.5,
-               f"sensitivity={t.get('trend_sensitivity')}, risk={t.get('risk_aversion')}")
+        record(
+            "A",
+            "A5b 空参数默认值",
+            t.get("trend_sensitivity") == 1.0 and t.get("risk_aversion") == 0.5,
+            f"sensitivity={t.get('trend_sensitivity')}, risk={t.get('risk_aversion')}",
+        )
 
         r = bridge.export_ab_contradictions([])
         record("A", "A5c 空矛盾列表", r["ok"] and r["patterns_count"] == 0, str(r))
@@ -198,12 +244,18 @@ def test_group_a():
         bridge.export_market_regime({"state": "bear", "trend_strength": 0.6, "volatility": 0.5})
 
         summary = bridge.get_knowledge_summary()
-        record("A", "A6a 摘要完整性",
-               summary["evolved_params_count"] == 2 and summary["contradictions_count"] == 1,
-               f"params={summary['evolved_params_count']}, contradictions={summary['contradictions_count']}")
-        record("A", "A6b 摘要含转换值",
-               summary["trend_sensitivity"] > 1.0 and summary["risk_aversion"] > 0,
-               f"sensitivity={summary['trend_sensitivity']:.2f}, risk={summary['risk_aversion']:.2f}")
+        record(
+            "A",
+            "A6a 摘要完整性",
+            summary["evolved_params_count"] == 2 and summary["contradictions_count"] == 1,
+            f"params={summary['evolved_params_count']}, contradictions={summary['contradictions_count']}",
+        )
+        record(
+            "A",
+            "A6b 摘要含转换值",
+            summary["trend_sensitivity"] > 1.0 and summary["risk_aversion"] > 0,
+            f"sensitivity={summary['trend_sensitivity']:.2f}, risk={summary['risk_aversion']:.2f}",
+        )
     finally:
         shutil.rmtree(tmpdir)
 
@@ -212,10 +264,11 @@ def test_group_a():
 # B组: LearningScheduler 外部参数集成
 # ============================================================
 
+
 def test_group_b():
     section("B组: LearningScheduler 外部参数集成")
-    from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
     from scripts.memory_l4.bcrm.engine import BCRMEngine
+    from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
     from scripts.memory_l4.learning_scheduler import LearningScheduler
 
     # B1: 初始化时加载外部参数
@@ -223,15 +276,18 @@ def test_group_b():
     try:
         # 先准备共享知识
         bridge = KnowledgeBridge(shared_dir=tmpdir / "shared")
-        bridge.export_ab_evolved_params({
-            "momentum_threshold": 0.01,
-            "stop_loss_pct": 0.02,
-            "rsi_oversold": 25,
-            "rsi_overbought": 75,
-        })
+        bridge.export_ab_evolved_params(
+            {
+                "momentum_threshold": 0.01,
+                "stop_loss_pct": 0.02,
+                "rsi_oversold": 25,
+                "rsi_overbought": 75,
+            }
+        )
 
         # 修改 paths 模块指向临时目录
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -239,13 +295,19 @@ def test_group_b():
         engine = BCRMEngine()
         scheduler = LearningScheduler(bcrm_engine=engine, shared_dir=tmpdir / "shared")
 
-        record("B", "B1a 初始化加载外部参数",
-               len(scheduler.external_params) > 0,
-               f"params={len(scheduler.external_params)}")
+        record(
+            "B",
+            "B1a 初始化加载外部参数",
+            len(scheduler.external_params) > 0,
+            f"params={len(scheduler.external_params)}",
+        )
 
-        record("B", "B1b 外部参数含转换值",
-               "trend_sensitivity" in scheduler.external_params,
-               f"keys={list(scheduler.external_params.keys())[:5]}")
+        record(
+            "B",
+            "B1b 外部参数含转换值",
+            "trend_sensitivity" in scheduler.external_params,
+            f"keys={list(scheduler.external_params.keys())[:5]}",
+        )
     except Exception as e:
         record("B", "B1 初始化加载", False, str(e))
     finally:
@@ -259,6 +321,7 @@ def test_group_b():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -275,9 +338,12 @@ def test_group_b():
         scheduler._apply_external_params_to_learning()
 
         new_rate = engine.liangyi_engine.LEARN_RATE
-        record("B", "B2a 高灵敏度降低学习率",
-               new_rate < original_rate,
-               f"原={original_rate} 新={new_rate:.4f}")
+        record(
+            "B",
+            "B2a 高灵敏度降低学习率",
+            new_rate < original_rate,
+            f"原={original_rate} 新={new_rate:.4f}",
+        )
     except Exception as e:
         record("B", "B2 高灵敏度学习率", False, str(e))
     finally:
@@ -291,6 +357,7 @@ def test_group_b():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -307,9 +374,12 @@ def test_group_b():
         scheduler._apply_external_params_to_learning()
 
         new_rate = getattr(engine.liangyi_engine, "WEIGHT_LEARN_RATE", 0.1)
-        record("B", "B3 高风险厌恶降低权重学习率",
-               new_rate <= original_rate,
-               f"原={original_rate} 新={new_rate:.4f}")
+        record(
+            "B",
+            "B3 高风险厌恶降低权重学习率",
+            new_rate <= original_rate,
+            f"原={original_rate} 新={new_rate:.4f}",
+        )
     except Exception as e:
         record("B", "B3 高风险厌恶权重学习率", False, str(e))
     finally:
@@ -323,6 +393,7 @@ def test_group_b():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -335,9 +406,12 @@ def test_group_b():
         scheduler._apply_external_params_to_learning()
         new_rate = engine.liangyi_engine.LEARN_RATE
 
-        record("B", "B4 无外部参数不影响学习率",
-               abs(new_rate - original_rate) < 0.001,
-               f"原={original_rate} 新={new_rate}")
+        record(
+            "B",
+            "B4 无外部参数不影响学习率",
+            abs(new_rate - original_rate) < 0.001,
+            f"原={original_rate} 新={new_rate}",
+        )
     except Exception as e:
         record("B", "B4 无外部参数", False, str(e))
     finally:
@@ -351,6 +425,7 @@ def test_group_b():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         orig_memory_l4_cases_dir = paths_mod.memory_l4_cases_dir
@@ -398,6 +473,7 @@ def test_group_b():
 # C组: PollingTrader 外部知识应用
 # ============================================================
 
+
 def test_group_c():
     section("C组: PollingTrader 外部知识应用")
     from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
@@ -406,6 +482,7 @@ def test_group_c():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -414,22 +491,31 @@ def test_group_c():
         shared_dir = Path(".workbuddy/shared_knowledge")
         shared_dir.mkdir(parents=True, exist_ok=True)
         bridge = KnowledgeBridge(shared_dir=shared_dir)
-        bridge.export_ab_evolved_params({
-            "momentum_threshold": 0.015,
-            "stop_loss_pct": 0.03,
-        })
+        bridge.export_ab_evolved_params(
+            {
+                "momentum_threshold": 0.015,
+                "stop_loss_pct": 0.03,
+            }
+        )
 
         from scripts.memory_l4.polling_trader import PollingTrader
+
         trader = PollingTrader(coins=["BTC"], confidence_threshold=0.45, shared_dir=shared_dir)
         trader._load_external_knowledge()
 
-        record("C", "C1a 加载外部知识",
-               trader.external_knowledge.get("evolved_params_count", 0) > 0,
-               f"params={trader.external_knowledge.get('evolved_params_count')}")
+        record(
+            "C",
+            "C1a 加载外部知识",
+            trader.external_knowledge.get("evolved_params_count", 0) > 0,
+            f"params={trader.external_knowledge.get('evolved_params_count')}",
+        )
 
-        record("C", "C1b 含趋势灵敏度",
-               "trend_sensitivity" in trader.external_knowledge,
-               f"sensitivity={trader.external_knowledge.get('trend_sensitivity', 0):.2f}")
+        record(
+            "C",
+            "C1b 含趋势灵敏度",
+            "trend_sensitivity" in trader.external_knowledge,
+            f"sensitivity={trader.external_knowledge.get('trend_sensitivity', 0):.2f}",
+        )
     except Exception as e:
         record("C", "C1 加载外部知识", False, str(e))
     finally:
@@ -443,6 +529,7 @@ def test_group_c():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -454,13 +541,17 @@ def test_group_c():
         bridge.export_ab_evolved_params({"stop_loss_pct": 0.01})
 
         from scripts.memory_l4.polling_trader import PollingTrader
+
         trader = PollingTrader(coins=["BTC"], confidence_threshold=0.45, shared_dir=shared_dir)
         trader._load_external_knowledge()
 
         threshold = trader._adjust_confidence_threshold()
-        record("C", "C2a 高风险厌恶提高阈值",
-               threshold > 0.45,
-               f"threshold={threshold:.2f} (base=0.45)")
+        record(
+            "C",
+            "C2a 高风险厌恶提高阈值",
+            threshold > 0.45,
+            f"threshold={threshold:.2f} (base=0.45)",
+        )
     except Exception as e:
         record("C", "C2 高风险厌恶阈值", False, str(e))
     finally:
@@ -474,6 +565,7 @@ def test_group_c():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -487,15 +579,14 @@ def test_group_c():
         bridge.export_ab_evolved_params({"momentum_threshold": 0.02, "stop_loss_pct": 0.04})
 
         from scripts.memory_l4.polling_trader import PollingTrader
+
         trader = PollingTrader(coins=["BTC"], confidence_threshold=0.45, shared_dir=shared_dir)
         trader._load_external_knowledge()
 
         # 手动设置 market_bias 为 bear 来测试
         trader.external_knowledge["market_bias"] = "bear"
         threshold = trader._adjust_confidence_threshold()
-        record("C", "C3 熊市提高阈值",
-               threshold > 0.45,
-               f"threshold={threshold:.2f}")
+        record("C", "C3 熊市提高阈值", threshold > 0.45, f"threshold={threshold:.2f}")
     except Exception as e:
         record("C", "C3 熊市阈值", False, str(e))
     finally:
@@ -509,6 +600,7 @@ def test_group_c():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
@@ -520,13 +612,14 @@ def test_group_c():
         bridge.export_market_regime({"state": "neutral", "trend_strength": 0.5, "volatility": 0.3})
 
         from scripts.memory_l4.polling_trader import PollingTrader
+
         trader = PollingTrader(coins=["BTC"], confidence_threshold=0.45, shared_dir=shared_dir)
         trader._load_external_knowledge()
 
         threshold = trader._adjust_confidence_threshold()
-        record("C", "C4 正常市场阈值不变",
-               abs(threshold - 0.45) < 0.01,
-               f"threshold={threshold:.2f}")
+        record(
+            "C", "C4 正常市场阈值不变", abs(threshold - 0.45) < 0.01, f"threshold={threshold:.2f}"
+        )
     except Exception as e:
         record("C", "C4 正常市场阈值", False, str(e))
     finally:
@@ -540,11 +633,13 @@ def test_group_c():
     tmpdir = Path(tempfile.mkdtemp())
     try:
         from scripts.memory_l4 import paths as paths_mod
+
         orig_memory_l4_dir = paths_mod.memory_l4_dir
         paths_mod.memory_l4_dir = lambda: tmpdir / "memory_l4"
         (tmpdir / "memory_l4" / "cases").mkdir(parents=True, exist_ok=True)
 
         from scripts.memory_l4.polling_trader import PollingTrader
+
         trader = PollingTrader(coins=["BTC"], confidence_threshold=0.45)
 
         # 构造低置信度推理结果
@@ -567,13 +662,17 @@ def test_group_c():
         # 使用高阈值，应该跳过
         import io
         from contextlib import redirect_stdout
+
         f = io.StringIO()
         with redirect_stdout(f):
             trader._execute_trade(inference, confidence_threshold=0.60)
         output = f.getvalue()
-        record("C", "C5a 高阈值跳过低置信度",
-               "置信度不足" in output or "跳过" in output,
-               f"输出含跳过信息")
+        record(
+            "C",
+            "C5a 高阈值跳过低置信度",
+            "置信度不足" in output or "跳过" in output,
+            "输出含跳过信息",
+        )
 
         # 使用低阈值，应该尝试开仓（可能因API限制失败，但不应在置信度检查处被拒绝）
         try:
@@ -581,9 +680,12 @@ def test_group_c():
             with redirect_stdout(f):
                 trader._execute_trade(inference, confidence_threshold=0.25)
             output = f.getvalue()
-            record("C", "C5b 低阈值允许低置信度",
-                   "置信度不足" not in output or "轻仓" in output,
-                   f"输出未拒绝")
+            record(
+                "C",
+                "C5b 低阈值允许低置信度",
+                "置信度不足" not in output or "轻仓" in output,
+                "输出未拒绝",
+            )
         except Exception as e:
             # API调用失败是预期的（测试环境无实际持仓），关键是没有在置信度检查处被拒绝
             record("C", "C5b 低阈值允许低置信度", True, f"API错误（预期）: {str(e)[:50]}")
@@ -600,6 +702,7 @@ def test_group_c():
 # ============================================================
 # D组: 跨体系数据流
 # ============================================================
+
 
 def test_group_d():
     section("D组: 跨体系数据流（AB Trading → 易经推理）")
@@ -625,13 +728,25 @@ def test_group_d():
         record("D", "D1a AB导出参数", r1["ok"])
 
         contradictions = [
-            {"id": "c1", "type": "theory_practice_mismatch", "description": "HOLD率过高", "severity": "HIGH"},
-            {"id": "c2", "type": "risk_management", "description": "止损过宽", "severity": "MEDIUM"},
+            {
+                "id": "c1",
+                "type": "theory_practice_mismatch",
+                "description": "HOLD率过高",
+                "severity": "HIGH",
+            },
+            {
+                "id": "c2",
+                "type": "risk_management",
+                "description": "止损过宽",
+                "severity": "MEDIUM",
+            },
         ]
         r2 = bridge.export_ab_contradictions(contradictions, source="a8_theory_practice")
         record("D", "D1b AB导出矛盾", r2["ok"])
 
-        r3 = bridge.export_market_regime({"state": "bear", "trend_strength": 0.7, "volatility": 0.6})
+        r3 = bridge.export_market_regime(
+            {"state": "bear", "trend_strength": 0.7, "volatility": 0.6}
+        )
         record("D", "D1c AB导出市场状态", r3["ok"])
 
         # 模拟易经推理导入
@@ -639,25 +754,38 @@ def test_group_d():
         record("D", "D1d 易经导入参数", loaded_params["ok"])
 
         loaded_contradictions = bridge.load_ab_contradictions()
-        record("D", "D1e 易经导入矛盾", loaded_contradictions["ok"] and loaded_contradictions["count"] == 2)
+        record(
+            "D",
+            "D1e 易经导入矛盾",
+            loaded_contradictions["ok"] and loaded_contradictions["count"] == 2,
+        )
 
         loaded_regime = bridge.load_market_regime()
         record("D", "D1f 易经导入市场状态", loaded_regime["ok"])
 
         # 验证转换正确性
         t = loaded_params.get("transformed", {})
-        record("D", "D1g 转换灵敏度正确",
-               t.get("trend_sensitivity", 0) > 1.0,
-               f"sensitivity={t.get('trend_sensitivity', 0):.2f}")
+        record(
+            "D",
+            "D1g 转换灵敏度正确",
+            t.get("trend_sensitivity", 0) > 1.0,
+            f"sensitivity={t.get('trend_sensitivity', 0):.2f}",
+        )
 
-        record("D", "D1h 转换风险厌恶正确",
-               t.get("risk_aversion", 0) > 0.5,
-               f"risk={t.get('risk_aversion', 0):.2f}")
+        record(
+            "D",
+            "D1h 转换风险厌恶正确",
+            t.get("risk_aversion", 0) > 0.5,
+            f"risk={t.get('risk_aversion', 0):.2f}",
+        )
 
         yijing_regime = loaded_regime.get("yijing_compatible", {})
-        record("D", "D1i 市场状态转换为易经格式",
-               yijing_regime.get("macro_phase") in ("recession", "stagflation"),
-               f"macro={yijing_regime.get('macro_phase')}")
+        record(
+            "D",
+            "D1i 市场状态转换为易经格式",
+            yijing_regime.get("macro_phase") in ("recession", "stagflation"),
+            f"macro={yijing_regime.get('macro_phase')}",
+        )
     except Exception as e:
         record("D", "D1 完整链路", False, str(e))
     finally:
@@ -694,9 +822,12 @@ def test_group_d():
 
         r = bridge.export_yijing_cases(cases)
         record("D", "D2a 易经案例导出", r["ok"], str(r))
-        record("D", "D2b 只导出成功案例",
-               r.get("rules_count") == 2,
-               f"rules={r.get('rules_count')} (3案例中2个成功)")
+        record(
+            "D",
+            "D2b 只导出成功案例",
+            r.get("rules_count") == 2,
+            f"rules={r.get('rules_count')} (3案例中2个成功)",
+        )
 
         loaded = bridge.load_trading_rules()
         record("D", "D2c AB Trading导入规则", loaded["ok"] and len(loaded.get("rules", [])) == 2)
@@ -725,9 +856,12 @@ def test_group_d():
         record("D", "D3a 时间戳更新", t2 != t1, f"t1={t1[:19]} t2={t2[:19]}")
 
         loaded = bridge.load_ab_evolved_params()
-        record("D", "D3b 内容更新",
-               loaded.get("params", {}).get("momentum_threshold") == 0.01,
-               f"threshold={loaded.get('params', {}).get('momentum_threshold')}")
+        record(
+            "D",
+            "D3b 内容更新",
+            loaded.get("params", {}).get("momentum_threshold") == 0.01,
+            f"threshold={loaded.get('params', {}).get('momentum_threshold')}",
+        )
     except Exception as e:
         record("D", "D3 时效性", False, str(e))
     finally:
@@ -746,8 +880,12 @@ def test_group_d():
         bridge.export_market_regime({"state": "neutral"})
         bridge.export_yijing_cases([{"hexagram": "test", "actual_outcome": {"is_correct": True}}])
 
-        expected_files = ["evolved_params.json", "contradiction_patterns.json",
-                          "market_regimes.json", "trading_rules.json"]
+        expected_files = [
+            "evolved_params.json",
+            "contradiction_patterns.json",
+            "market_regimes.json",
+            "trading_rules.json",
+        ]
         for f in expected_files:
             exists = (shared_dir / f).exists()
             record("D", f"D4 文件存在:{f}", exists)
@@ -760,6 +898,7 @@ def test_group_d():
 # ============================================================
 # E组: 边界与异常场景
 # ============================================================
+
 
 def test_group_e():
     section("E组: 边界与异常场景")
@@ -802,7 +941,7 @@ def test_group_e():
         # 写入损坏的JSON
         (shared_dir / "evolved_params.json").write_text("{invalid json!!!")
         (shared_dir / "contradiction_patterns.json").write_text("not a json at all")
-        (shared_dir / "market_regimes.json").write_text("{\"incomplete\":")
+        (shared_dir / "market_regimes.json").write_text('{"incomplete":')
         (shared_dir / "trading_rules.json").write_text("null")
 
         bridge = KnowledgeBridge(shared_dir=shared_dir)
@@ -834,7 +973,12 @@ def test_group_e():
         # 零阈值
         bridge.export_ab_evolved_params({"momentum_threshold": 0})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("E", "E3a 零阈值不崩溃", "trend_sensitivity" in t, f"sensitivity={t.get('trend_sensitivity')}")
+        record(
+            "E",
+            "E3a 零阈值不崩溃",
+            "trend_sensitivity" in t,
+            f"sensitivity={t.get('trend_sensitivity')}",
+        )
 
         # 负值
         bridge.export_ab_evolved_params({"stop_loss_pct": -0.01})
@@ -844,16 +988,22 @@ def test_group_e():
         # 极大值
         bridge.export_ab_evolved_params({"momentum_threshold": 999, "stop_loss_pct": 999})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("E", "E3c 极大值不崩溃",
-               t.get("trend_sensitivity", 1) >= 0 and t.get("risk_aversion", 0) <= 1.0,
-               f"sensitivity={t.get('trend_sensitivity'):.4f}, risk={t.get('risk_aversion'):.4f}")
+        record(
+            "E",
+            "E3c 极大值不崩溃",
+            t.get("trend_sensitivity", 1) >= 0 and t.get("risk_aversion", 0) <= 1.0,
+            f"sensitivity={t.get('trend_sensitivity'):.4f}, risk={t.get('risk_aversion'):.4f}",
+        )
 
         # 空字典
         bridge.export_ab_evolved_params({})
         t = bridge.load_ab_evolved_params().get("transformed", {})
-        record("E", "E3d 空字典默认值",
-               t.get("trend_sensitivity") == 1.0 and t.get("risk_aversion") == 0.5,
-               f"defaults OK")
+        record(
+            "E",
+            "E3d 空字典默认值",
+            t.get("trend_sensitivity") == 1.0 and t.get("risk_aversion") == 0.5,
+            "defaults OK",
+        )
     except Exception as e:
         record("E", "E3 极端参数", False, str(e))
     finally:
@@ -862,8 +1012,9 @@ def test_group_e():
     # E4: 并发写入安全性
     tmpdir = Path(tempfile.mkdtemp())
     try:
-        from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
         import threading
+
+        from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
 
         shared_dir = tmpdir / "shared"
         bridge = KnowledgeBridge(shared_dir=shared_dir)
@@ -871,11 +1022,13 @@ def test_group_e():
 
         def writer(idx):
             try:
-                for i in range(20):
-                    bridge.export_ab_evolved_params({
-                        "momentum_threshold": 0.01 + idx * 0.001,
-                        "stop_loss_pct": 0.02 + idx * 0.001,
-                    })
+                for i in range(20):  # noqa: B007
+                    bridge.export_ab_evolved_params(
+                        {
+                            "momentum_threshold": 0.01 + idx * 0.001,
+                            "stop_loss_pct": 0.02 + idx * 0.001,
+                        }
+                    )
             except Exception as e:
                 errors.append(str(e))
 
@@ -904,22 +1057,30 @@ def test_group_e():
 
         # 导出大量矛盾模式
         big_contradictions = [
-            {"id": f"c{i}", "type": "risk_management", "description": f"contradiction {i}", "severity": "LOW"}
+            {
+                "id": f"c{i}",
+                "type": "risk_management",
+                "description": f"contradiction {i}",
+                "severity": "LOW",
+            }
             for i in range(1000)
         ]
         start = time.time()
         r = bridge.export_ab_contradictions(big_contradictions)
         export_time = time.time() - start
 
-        record("E", "E5a 1000条矛盾导出", r["ok"] and export_time < 2.0,
-               f"time={export_time:.3f}s")
+        record("E", "E5a 1000条矛盾导出", r["ok"] and export_time < 2.0, f"time={export_time:.3f}s")
 
         start = time.time()
         loaded = bridge.load_ab_contradictions()
         load_time = time.time() - start
 
-        record("E", "E5b 1000条矛盾导入", loaded["ok"] and loaded["count"] == 1000,
-               f"time={load_time:.3f}s, count={loaded.get('count')}")
+        record(
+            "E",
+            "E5b 1000条矛盾导入",
+            loaded["ok"] and loaded["count"] == 1000,
+            f"time={load_time:.3f}s, count={loaded.get('count')}",
+        )
 
         # 大量易经案例
         big_cases = [
@@ -935,8 +1096,12 @@ def test_group_e():
         r = bridge.export_yijing_cases(big_cases)
         export_time = time.time() - start
 
-        record("E", "E5c 500案例导出", r["ok"] and export_time < 2.0,
-               f"time={export_time:.3f}s, rules={r.get('rules_count')}")
+        record(
+            "E",
+            "E5c 500案例导出",
+            r["ok"] and export_time < 2.0,
+            f"time={export_time:.3f}s, rules={r.get('rules_count')}",
+        )
     except Exception as e:
         record("E", "E5 大量数据", False, str(e))
     finally:
@@ -975,15 +1140,21 @@ def test_group_e():
 
         # 导入函数
         import importlib.util
-        scheduler_path = PROJECT_ROOT.parent / "experiments" / "ab-trading" / "evolution_scheduler.py"
+
+        scheduler_path = (
+            PROJECT_ROOT.parent / "experiments" / "ab-trading" / "evolution_scheduler.py"
+        )
         if scheduler_path.exists():
-            spec = importlib.util.spec_from_file_location("evolution_scheduler", str(scheduler_path))
-            mod = importlib.util.module_from_spec(spec)
+            spec = importlib.util.spec_from_file_location(
+                "evolution_scheduler", str(scheduler_path)
+            )
+            mod = importlib.util.module_from_spec(spec)  # noqa: F841
             # 不执行模块（避免初始化依赖），只测试函数
             record("E", "E6 evolution_scheduler文件存在", True)
 
             # 直接测试 KnowledgeBridge 的功能（模拟函数行为）
             from scripts.memory_l4.knowledge_bridge import KnowledgeBridge
+
             bridge = KnowledgeBridge()
             mock_scheduler = MockScheduler()
             mock_memory = MockMemory()
@@ -1016,6 +1187,7 @@ def test_group_e():
 # ============================================================
 # 主函数
 # ============================================================
+
 
 def main():
     print("\n" + "=" * 60)

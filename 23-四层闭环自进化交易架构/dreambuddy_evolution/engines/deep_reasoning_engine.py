@@ -13,27 +13,27 @@ SPEC-AGI升级蓝图.md §4.2.3
 蓝本: signatory + TimesFM (32.2k★) + Stable-Neural-SDEs (ICLR 2024)
 FAIL-OPEN: 任一模块异常→降级为统计方法，不crash
 """
+
 from __future__ import annotations
 
 import logging
-import traceback
 from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
 
 from dreambuddy_evolution.core.signature_engine import SignatureEngine
-from dreambuddy_evolution.engines.signature_computer import (
-    SignatureComputer,
-    _SIGNATORY_AVAILABLE,
-)
+from dreambuddy_evolution.engines.monte_carlo_path_finder import MonteCarloPathFinder
 from dreambuddy_evolution.engines.sde_solver import (
-    SDESolver,
     _TIMESFM_API,
     _TIMESFM_AVAILABLE,
     _TORCH_AVAILABLE,
+    SDESolver,
 )
-from dreambuddy_evolution.engines.monte_carlo_path_finder import MonteCarloPathFinder
+from dreambuddy_evolution.engines.signature_computer import (
+    _SIGNATORY_AVAILABLE,
+    SignatureComputer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -166,8 +166,10 @@ class DeepReasoningEngine:
     ) -> list[np.ndarray]:
         """蒙特卡洛采样 N 条可能路径 — 委托给 MonteCarloPathFinder."""
         return self._path_finder.monte_carlo_paths(
-            start_price=start_price, horizon=horizon,
-            n_paths=n_paths, volatility=volatility,
+            start_price=start_price,
+            horizon=horizon,
+            n_paths=n_paths,
+            volatility=volatility,
         )
 
     # ------------------------------------------------------------------
@@ -212,13 +214,30 @@ class DeepReasoningEngine:
         signature_features: list[float] = []
         try:
             from dreambuddy_evolution.agi_config import is_enabled
-            sig_ext = self._get_signature_feature_extractor() if is_enabled("enable_signature_features") else None
+
+            sig_ext = (
+                self._get_signature_feature_extractor()
+                if is_enabled("enable_signature_features")
+                else None
+            )
             if sig_ext is not None:
                 # 从价格路径提取状态特征（简化：用收益率统计量）
-                returns = np.diff(price_path) / np.maximum(np.abs(price_path[:-1]), 1e-12) if len(price_path) > 1 else [0.0]
+                returns = (
+                    np.diff(price_path) / np.maximum(np.abs(price_path[:-1]), 1e-12)
+                    if len(price_path) > 1
+                    else [0.0]
+                )
                 state_features = [
-                    float(np.mean(returns[-20:])) if len(returns) >= 20 else float(np.mean(returns)) if len(returns) > 0 else 0.0,
-                    float(np.std(returns[-20:])) if len(returns) >= 20 else float(np.std(returns)) if len(returns) > 0 else 0.01,
+                    (
+                        float(np.mean(returns[-20:]))
+                        if len(returns) >= 20
+                        else float(np.mean(returns)) if len(returns) > 0 else 0.0
+                    ),
+                    (
+                        float(np.std(returns[-20:]))
+                        if len(returns) >= 20
+                        else float(np.std(returns)) if len(returns) > 0 else 0.01
+                    ),
                     float(price_path[-1]) if len(price_path) > 0 else 0.0,
                     float(np.max(returns[-20:])) if len(returns) >= 20 else 0.0,
                     float(np.min(returns[-20:])) if len(returns) >= 20 else 0.0,
@@ -233,13 +252,19 @@ class DeepReasoningEngine:
             forecast = self.timesfm_predict(price_path, horizon=horizon)
         except Exception as e:  # noqa: BLE001
             logger.warning("[FO-AGI-03] 预测失败: %s", e)
-            forecast = np.full(horizon, float(np.asarray(price_path[-1]).item()) if len(price_path) else 0.0)
+            forecast = np.full(
+                horizon, float(np.asarray(price_path[-1]).item()) if len(price_path) else 0.0
+            )
 
         # 2.5 Neural SDE 路径生成（4 级降级链：torchsde → EM → GARCH → GBM）
         sde_paths = None
         try:
             start_price = float(np.asarray(price_path[-1]).item()) if len(price_path) else 100.0
-            vol = float(np.std(np.diff(price_path) / np.maximum(np.abs(price_path[:-1]), 1e-12))) if len(price_path) > 5 else 0.02
+            vol = (
+                float(np.std(np.diff(price_path) / np.maximum(np.abs(price_path[:-1]), 1e-12)))
+                if len(price_path) > 5
+                else 0.02
+            )
             sde_paths = self.neural_sde_forecast(
                 np.array([start_price, max(vol, 0.001)]),
                 horizon=horizon,
@@ -256,8 +281,10 @@ class DeepReasoningEngine:
         else:
             try:
                 paths = self.monte_carlo_paths(
-                    start_price=start_price, horizon=horizon,
-                    n_paths=n_paths, volatility=max(vol, 0.001),
+                    start_price=start_price,
+                    horizon=horizon,
+                    n_paths=n_paths,
+                    volatility=max(vol, 0.001),
                 )
             except Exception as e:  # noqa: BLE001
                 logger.warning("[FO-AGI-03] 蒙特卡洛采样失败: %s", e)
@@ -280,7 +307,9 @@ class DeepReasoningEngine:
             "forecast": forecast,
             "min_resistance_path": min_resistance_path,
             "min_resistance": float(min_resistance),
-            "min_resistance_backend": mr.get("backend", "argmin") if isinstance(mr, dict) else "argmin",
+            "min_resistance_backend": (
+                mr.get("backend", "argmin") if isinstance(mr, dict) else "argmin"
+            ),
             "min_resistance_converged": mr.get("converged", True) if isinstance(mr, dict) else True,
             "n_paths": len(paths),
             "backends": self.backend_status(),

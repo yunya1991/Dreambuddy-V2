@@ -14,6 +14,7 @@
 红线：只读 18/21 系统模块，不修改任何外部系统文件；
   token 序列为训练特征数据，不产生交易信号。
 """
+
 import json
 import os
 import sys
@@ -22,20 +23,25 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-TREND = "/home/luke/dreambuddy/12-三屏趋势系统"
-DCENTER = "/home/luke/dreambuddy/18-数据获取中心"
-FHUB = "/home/luke/dreambuddy/21-特征工程中心"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+TREND = os.path.join(_DREAMBUDDY_ROOT, "12-三屏趋势系统")
+DCENTER = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心")
+FHUB = os.path.join(_DREAMBUDDY_ROOT, "21-特征工程中心")
 sys.path.insert(0, TREND)
 sys.path.insert(0, DCENTER)
 sys.path.insert(0, FHUB)
 
-OUT_PATH = "/home/luke/dreambuddy/40-周期神经网络系统/token_sequence.parquet"
-META_OUT = "/home/luke/dreambuddy/40-周期神经网络系统/token_sequence_meta.json"
+OUT_PATH = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "token_sequence.parquet")
+META_OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "token_sequence_meta.json")
 
 # 预注册参数（禁止运行时调整）
-SYMBOLS = ["BTC", "ETH", "SOL"]          # 跨资产共享样本（SPEC 风险 7a）
+SYMBOLS = ["BTC", "ETH", "SOL"]  # 跨资产共享样本（SPEC 风险 7a）
 SCREENS = {"1W": "weekly", "1D": "daily", "1H": "hourly"}  # 三屏
-CANDLE_LIMIT = 300                        # 每屏每资产 K 线数
+CANDLE_LIMIT = 300  # 每屏每资产 K 线数
 FEATURE_VERSION = "classic_indicators_v1+ma200_v1"  # 特征版本血缘
 
 
@@ -52,9 +58,7 @@ def _ma200_precompute(df: pd.DataFrame) -> pd.DataFrame:
     out = pd.DataFrame(index=df.index)
     out["ma200_dist_pct"] = (close - ma200) / (ma200 + 1e-9) * 100.0
     out["above_ma200"] = (close > ma200).astype(float)
-    out["ma50_ma100_state"] = np.sign(ma50 - ma100).where(
-        ma50.notna() & ma100.notna(), 0.0
-    )
+    out["ma50_ma100_state"] = np.sign(ma50 - ma100).where(ma50.notna() & ma100.notna(), 0.0)
     return out
 
 
@@ -64,18 +68,20 @@ def main() -> int:
 
     def _to_ohlcv(candles):
         """从原始 candles 构建 OHLCV DataFrame（18 中心 ts 为秒级，直接转换避免精度丢失）。"""
-        df = pd.DataFrame([
-            {
-                "date": pd.to_datetime(c["ts"], unit="s"),
-                "ts": int(c["ts"]),
-                "open": float(c["o"]),
-                "high": float(c["h"]),
-                "low": float(c["l"]),
-                "close": float(c["c"]),
-                "volume": float(c.get("vol", 0)),
-            }
-            for c in candles
-        ])
+        df = pd.DataFrame(
+            [
+                {
+                    "date": pd.to_datetime(c["ts"], unit="s"),
+                    "ts": int(c["ts"]),
+                    "open": float(c["o"]),
+                    "high": float(c["h"]),
+                    "low": float(c["l"]),
+                    "close": float(c["c"]),
+                    "volume": float(c.get("vol", 0)),
+                }
+                for c in candles
+            ]
+        )
         return df.sort_values("date").reset_index(drop=True)
 
     frames = []
@@ -112,13 +118,15 @@ def main() -> int:
                     token[col] = ma_feats[col]
 
             frames.append(token)
-            lineage.append({
-                "symbol": sym,
-                "timeframe": bar,
-                "candles": int(len(df)),
-                "feature_cols": int(len(feats.columns)),
-                "ma200_precompute": bar == "1D",
-            })
+            lineage.append(
+                {
+                    "symbol": sym,
+                    "timeframe": bar,
+                    "candles": int(len(df)),
+                    "feature_cols": int(len(feats.columns)),
+                    "ma200_precompute": bar == "1D",
+                }
+            )
 
     if not frames:
         print("[FAIL] 无有效 token 生成")
@@ -126,8 +134,11 @@ def main() -> int:
 
     all_tokens = pd.concat(frames, ignore_index=True)
     # 有效 token：剔除全特征 NaN 行（指标暖机期）
-    feat_cols = [c for c in all_tokens.columns
-                 if c not in ("symbol", "timeframe", "screen", "ts", "feature_version")]
+    feat_cols = [
+        c
+        for c in all_tokens.columns
+        if c not in ("symbol", "timeframe", "screen", "ts", "feature_version")
+    ]
     valid_mask = all_tokens[feat_cols].notna().any(axis=1)
     valid_tokens = all_tokens[valid_mask].reset_index(drop=True)
 

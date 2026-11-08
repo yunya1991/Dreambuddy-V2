@@ -3,12 +3,11 @@
 Task 1 of PoE 工程实践复现器 SPEC。
 依据：TASKS-工程实践复现器.md TR-1.1 / TR-1.2 / TR-1.3
 """
-import os
+
+import os  # noqa: I001
 import sys
 import tempfile
 from pathlib import Path
-
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -17,7 +16,6 @@ from core.architecture_pattern_detector import (
     ArchitecturePatternDetector,
     detect_architecture_patterns,
 )
-
 
 # ---------- 测试 fixture ----------
 
@@ -36,16 +34,22 @@ myapp/
 """
 
 MVC_USER_MODEL = "class User:\n    def __init__(self, name):\n        self.name = name\n"
-MVC_USER_VIEW = "class UserView:\n    def render(self, user):\n        return f'User: {user.name}'\n"
+MVC_USER_VIEW = (
+    "class UserView:\n    def render(self, user):\n        return f'User: {user.name}'\n"
+)
 MVC_USER_CTRL = "from myapp.models.user import User\nfrom myapp.views.user_view import UserView\n\nclass UserController:\n    def handle(self, name):\n        user = User(name)\n        view = UserView()\n        return view.render(user)\n"
 
 
 LAYERED_PROJECT_SERVICES = "class UserService:\n    def get(self, id):\n        return {'id': id}\n"
-LAYERED_PROJECT_REPOSITORIES = "class UserRepository:\n    def find(self, id):\n        return None\n"
+LAYERED_PROJECT_REPOSITORIES = (
+    "class UserRepository:\n    def find(self, id):\n        return None\n"
+)
 LAYERED_PROJECT_API = "from myapp.services.user_service import UserService\n\nclass UserAPI:\n    def get_user(self, id):\n        service = UserService()\n        return service.get(id)\n"
 
 
-SIMPLE_SCRIPT = "def add(a, b):\n    return a + b\n\n\nif __name__ == '__main__':\n    print(add(1, 2))\n"
+SIMPLE_SCRIPT = (
+    "def add(a, b):\n    return a + b\n\n\nif __name__ == '__main__':\n    print(add(1, 2))\n"
+)
 
 
 # ---------- 测试用例 ----------
@@ -72,14 +76,21 @@ def test_detect_architecture_patterns_mvc_detected():
         patterns = result["patterns"]
         assert isinstance(patterns, list)
 
-        mvc_hits = [p for p in patterns if "MVC" in str(p.get("pattern", "")) or "mvc" in str(p.get("pattern", "")).lower()]
+        mvc_hits = [
+            p
+            for p in patterns
+            if "MVC" in str(p.get("pattern", "")) or "mvc" in str(p.get("pattern", "")).lower()
+        ]
         assert len(mvc_hits) >= 1, "应检测到 MVC 模式"
 
         hit = mvc_hits[0]
         assert "evidence" in hit, "模式结论必须引用 Evidence (TR-1.3)"
         ev = hit["evidence"]
         assert ev.provenance, "provenance 必须非空 (TR-1.1)"
-        assert ev.level.value in ("observation", "derivation"), f"level 应为 observation/derivation，实际 {ev.level}"
+        assert ev.level.value in (
+            "observation",
+            "derivation",
+        ), f"level 应为 observation/derivation，实际 {ev.level}"
 
 
 def test_detect_architecture_patterns_layered_detected():
@@ -97,7 +108,11 @@ def test_detect_architecture_patterns_layered_detected():
 
         result = detect_architecture_patterns(d)
         patterns = result["patterns"]
-        layered_hits = [p for p in patterns if "layer" in str(p.get("pattern", "")).lower() or "分层" in str(p.get("pattern", ""))]
+        layered_hits = [
+            p
+            for p in patterns
+            if "layer" in str(p.get("pattern", "")).lower() or "分层" in str(p.get("pattern", ""))
+        ]
         assert len(layered_hits) >= 1, "应检测到分层模式"
 
 

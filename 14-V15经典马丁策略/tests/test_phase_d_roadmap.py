@@ -13,7 +13,6 @@ Phase D (MVP) TDD 测试套件（RED 阶段初稿：全部应失败）
 
 from __future__ import annotations
 
-import math
 import sys
 from pathlib import Path
 
@@ -262,14 +261,15 @@ class TestPhaseDDatasetGenerator:
 class TestAIBoundaryScaler:
     def test_s_bt_excellent_score_gives_k_120(self):
         """S_bt 优秀得分 → K_bound = 1.20（§3.4 规定 ≥1.20 → 1.20）
-        用 1.30×收益 + 1.35×卡尔马 + 5/5 段正向 + MDD持平 → S_bt = 1.30*0.40 + 1.35*0.30 + 1.0*0.20 + 1.0*0.10 = 0.52+0.405+0.2+0.1 = 1.225"""
+        用 1.30×收益 + 1.35×卡尔马 + 5/5 段正向 + MDD持平 → S_bt = 1.30*0.40 + 1.35*0.30 + 1.0*0.20 + 1.0*0.10 = 0.52+0.405+0.2+0.1 = 1.225
+        """
         from ai_boundary_scaler import compute_s_bt, k_bound_from_s_bt
 
         s = compute_s_bt(
             gross_return_ratio=1.30,  # +30% 相对基线
             calmar_ratio_ratio=1.35,  # 卡尔马显著更优
-            wf_positive_segments=5,   # 5/5 段正向
-            mdd_ratio=1.00,           # 回撤和基线一致
+            wf_positive_segments=5,  # 5/5 段正向
+            mdd_ratio=1.00,  # 回撤和基线一致
         )
         assert s >= 1.20, f"S_bt={s:.3f} 未达 1.20 档位下限"
         assert k_bound_from_s_bt(s) == pytest.approx(1.20)

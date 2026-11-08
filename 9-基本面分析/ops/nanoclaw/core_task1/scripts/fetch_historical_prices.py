@@ -9,16 +9,15 @@
 3. 数据格式兼容回测框架
 """
 
-import json
-import os
+import json  # noqa: I001
 import sys
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 try:
     import requests
+
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
@@ -33,12 +32,16 @@ class BinanceAPI:
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
-            "X-MBX-APIKEY": ""  # 公共端点不需要
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+                "X-MBX-APIKEY": "",  # 公共端点不需要
+            }
+        )
 
-    def get_klines(self, symbol: str, interval: str, start_time: int, end_time: int, limit: int = 1000) -> List[Dict]:
+    def get_klines(
+        self, symbol: str, interval: str, start_time: int, end_time: int, limit: int = 1000
+    ) -> List[Dict]:
         """
         获取 K 线数据
 
@@ -58,7 +61,7 @@ class BinanceAPI:
             "interval": interval,
             "startTime": start_time,
             "endTime": end_time,
-            "limit": min(limit, 1000)
+            "limit": min(limit, 1000),
         }
 
         try:
@@ -69,15 +72,17 @@ class BinanceAPI:
             # 解析 K 线数据
             klines = []
             for k in data:
-                klines.append({
-                    "timestamp": k[0],
-                    "datetime": datetime.fromtimestamp(k[0] / 1000).isoformat(),
-                    "open": float(k[1]),
-                    "high": float(k[2]),
-                    "low": float(k[3]),
-                    "close": float(k[4]),
-                    "volume": float(k[5])
-                })
+                klines.append(
+                    {
+                        "timestamp": k[0],
+                        "datetime": datetime.fromtimestamp(k[0] / 1000).isoformat(),
+                        "open": float(k[1]),
+                        "high": float(k[2]),
+                        "low": float(k[3]),
+                        "close": float(k[4]),
+                        "volume": float(k[5]),
+                    }
+                )
 
             return klines
 
@@ -117,7 +122,7 @@ class BinanceAPI:
                 "low": k["low"],
                 "close": k["close"],
                 "volume": k["volume"],
-                "source": "Binance"
+                "source": "Binance",
             }
 
         print(f"[✓] 获取成功：{len(daily_prices)} 天数据")
@@ -128,12 +133,8 @@ class BinanceAPI:
         print(f"[INFO] 从 CoinGecko 获取最近 {days} 天 BTC 数据...")
 
         try:
-            url = f"https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
-            params = {
-                "vs_currency": "usd",
-                "days": days,
-                "interval": "daily"
-            }
+            url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
+            params = {"vs_currency": "usd", "days": days, "interval": "daily"}
 
             resp = requests.get(url, params=params, timeout=30)
             resp.raise_for_status()
@@ -151,7 +152,7 @@ class BinanceAPI:
                     "low": price * 0.98,
                     "close": price,
                     "volume": 0,
-                    "source": "CoinGecko"
+                    "source": "CoinGecko",
                 }
 
             print(f"[✓] 获取成功：{len(daily_prices)} 天数据")
@@ -195,7 +196,7 @@ class HistoricalDataDownloader:
         # 按日期排序
         sorted_prices = dict(sorted(prices.items()))
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(sorted_prices, f, indent=2, ensure_ascii=False)
 
         print(f"[✓] 价格数据已保存：{output_path}")
@@ -221,11 +222,11 @@ class HistoricalDataDownloader:
             "price_data": {
                 "total_days": len(prices),
                 "date_range": f"{min(prices.keys())} ~ {max(prices.keys())}" if prices else "N/A",
-                "source": list(prices.values())[0].get("source", "unknown") if prices else "N/A"
-            }
+                "source": list(prices.values())[0].get("source", "unknown") if prices else "N/A",
+            },
         }
 
-        print(f"\n【下载完成】")
+        print("\n【下载完成】")
         print(f"  - 价格数据：{len(prices)} 天")
         print(f"  - 日期范围：{result['price_data']['date_range']}")
         print(f"  - 数据源：{result['price_data']['source']}")
@@ -255,9 +256,9 @@ def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='历史价格数据下载器')
-    parser.add_argument('--days', '-d', type=int, default=90, help='下载天数')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出目录')
+    parser = argparse.ArgumentParser(description="历史价格数据下载器")
+    parser.add_argument("--days", "-d", type=int, default=90, help="下载天数")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出目录")
     args = parser.parse_args()
 
     output_dir = Path(args.output) if args.output else None
@@ -265,10 +266,10 @@ def main():
     result = fetch_historical_data(days=args.days, output_dir=output_dir)
 
     # 打印摘要
-    print(f"\n【价格统计】")
+    print("\n【价格统计】")
     prices_file = Path(__file__).parent.parent / "historical_data" / "btc_daily_prices.json"
     if prices_file.exists():
-        with open(prices_file, 'r') as f:
+        with open(prices_file, "r") as f:
             prices = json.load(f)
 
         if prices:

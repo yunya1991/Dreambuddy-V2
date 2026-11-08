@@ -5,14 +5,17 @@ SPEC 9.2-9.4 五维评估体系：
 - LLM 分（60%）：冲突强度 + 话题升华度 + 文案可转化度
 - 综合分 = rule×0.4 + llm×0.6 → S/A/B/C 分级
 """
+
 from __future__ import annotations
 
-import json
 import logging
 
 from core.agents import LLMClient, _extract_json
 from core.models import (
-    Argument, Turn, MarketingMaterial, DebateQualityScore,
+    Argument,
+    DebateQualityScore,
+    MarketingMaterial,
+    Turn,
 )
 
 logger = logging.getLogger("debate.quality")
@@ -31,8 +34,7 @@ _QUALITY_SYSTEM_PROMPT = """你是辩论质量评估专家。请从以下三个�
 """
 
 
-def _calc_quote_density(transcript: list[Turn],
-                        material: MarketingMaterial) -> float:
+def _calc_quote_density(transcript: list[Turn], material: MarketingMaterial) -> float:
     """金句密度：金句数 / 总字数 × 1000（千字含金句数）。
 
     归一化到 0-10：千字含 5 句金句 = 满分 10。
@@ -79,10 +81,16 @@ def _calc_balance(transcript: list[Turn]) -> float:
 
     辅助信号（不纳入综合分），用于标记是否一边倒。
     """
-    bull_confs = [t.content.confidence for t in transcript
-                  if t.speaker == "bull" and isinstance(t.content, Argument)]
-    bear_confs = [t.content.confidence for t in transcript
-                  if t.speaker == "bear" and isinstance(t.content, Argument)]
+    bull_confs = [
+        t.content.confidence
+        for t in transcript
+        if t.speaker == "bull" and isinstance(t.content, Argument)
+    ]
+    bear_confs = [
+        t.content.confidence
+        for t in transcript
+        if t.speaker == "bear" and isinstance(t.content, Argument)
+    ]
 
     if not bull_confs or not bear_confs:
         return 1.0
@@ -95,13 +103,14 @@ def _calc_balance(transcript: list[Turn]) -> float:
 class QualityEvaluator:
     """辩论质量评估器。"""
 
-    def __init__(self, llm_client: LLMClient | None = None,
-                 max_tokens: int = 500):
+    def __init__(self, llm_client: LLMClient | None = None, max_tokens: int = 500):
         self.llm = llm_client
         self.max_tokens = max_tokens
 
     async def evaluate(
-        self, topic: str, transcript: list[Turn],
+        self,
+        topic: str,
+        transcript: list[Turn],
         material: MarketingMaterial,
     ) -> DebateQualityScore:
         """评估辩论质量。"""
@@ -152,7 +161,9 @@ class QualityEvaluator:
         )
 
     async def _llm_evaluate(
-        self, topic: str, transcript: list[Turn],
+        self,
+        topic: str,
+        transcript: list[Turn],
         material: MarketingMaterial,
     ) -> dict:
         """调用 LLM 评估三个维度，失败时 fallback。"""
@@ -176,7 +187,9 @@ class QualityEvaluator:
 
         try:
             raw = await self.llm.chat(
-                _QUALITY_SYSTEM_PROMPT, user_prompt, self.max_tokens,
+                _QUALITY_SYSTEM_PROMPT,
+                user_prompt,
+                self.max_tokens,
             )
         except Exception as e:
             logger.warning("质量评估 LLM 调用异常: %s", e)

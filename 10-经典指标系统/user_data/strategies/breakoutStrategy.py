@@ -20,91 +20,90 @@ class BottomConfirmationModule:
     """
     模块化底部确认组件
     """
+
     def __init__(self, accel_thr: float = 0.10):
         self.accel_thr = accel_thr
 
     def calculate_vwap(self, dataframe: DataFrame, window: int = 50) -> pd.Series:
-        typical_price = (dataframe['high'] + dataframe['low'] + dataframe['close']) / 3
-        volume_sum = dataframe['volume'].rolling(window=window, min_periods=1).sum()
+        typical_price = (dataframe["high"] + dataframe["low"] + dataframe["close"]) / 3
+        volume_sum = dataframe["volume"].rolling(window=window, min_periods=1).sum()
         # 安全处理：volume_sum 为 0 时用 1 代替，避免 NaN
         volume_sum = volume_sum.replace(0, 1)
-        
-        vwap = (typical_price * dataframe['volume']).rolling(window=window, min_periods=1).sum() / volume_sum
+
+        vwap = (typical_price * dataframe["volume"]).rolling(
+            window=window, min_periods=1
+        ).sum() / volume_sum
         return vwap.ffill()
 
     def calculate_cvd(self, dataframe: DataFrame) -> pd.Series:
-        price_change = dataframe['close'].diff()
-        buy_vol = np.where(price_change > 0, dataframe['volume'], 0)
-        sell_vol = np.where(price_change < 0, dataframe['volume'], 0)
-        
+        price_change = dataframe["close"].diff()
+        buy_vol = np.where(price_change > 0, dataframe["volume"], 0)
+        sell_vol = np.where(price_change < 0, dataframe["volume"], 0)
+
         cvd = (buy_vol - sell_vol).cumsum()
         return cvd
 
     def populate_indicators(self, dataframe: DataFrame) -> DataFrame:
         if len(dataframe) < 20:
-            dataframe['bottom_confirmation_score'] = 0
+            dataframe["bottom_confirmation_score"] = 0
             return dataframe
 
         # 安全计算收益率
-        close_shifted = dataframe['close'].shift(1)
+        close_shifted = dataframe["close"].shift(1)
         close_shifted = close_shifted.replace(0, np.nan)
-        close_shifted = close_shifted.fillna(dataframe['close'])
-        dataframe['ret'] = np.log(dataframe['close'] / close_shifted)
+        close_shifted = close_shifted.fillna(dataframe["close"])
+        dataframe["ret"] = np.log(dataframe["close"] / close_shifted)
 
-        dataframe['speed_short'] = dataframe['ret'].rolling(3, min_periods=1).mean()
-        dataframe['speed_mid'] = dataframe['ret'].rolling(6, min_periods=1).mean()
-        dataframe['speed_long'] = dataframe['ret'].rolling(12, min_periods=1).mean()
+        dataframe["speed_short"] = dataframe["ret"].rolling(3, min_periods=1).mean()
+        dataframe["speed_mid"] = dataframe["ret"].rolling(6, min_periods=1).mean()
+        dataframe["speed_long"] = dataframe["ret"].rolling(12, min_periods=1).mean()
 
-        dataframe['pump_acceleration'] = (
-            (dataframe['speed_short'] > dataframe['speed_mid'] * (1 + self.accel_thr)) &
-            (dataframe['speed_short'] > dataframe['speed_short'].shift(1)) &
-            (dataframe['speed_mid'] < dataframe['speed_long']) &
-            (dataframe['speed_mid'] < 0) &
-            (dataframe['speed_long'] <= 0)
+        dataframe["pump_acceleration"] = (
+            (dataframe["speed_short"] > dataframe["speed_mid"] * (1 + self.accel_thr))
+            & (dataframe["speed_short"] > dataframe["speed_short"].shift(1))
+            & (dataframe["speed_mid"] < dataframe["speed_long"])
+            & (dataframe["speed_mid"] < 0)
+            & (dataframe["speed_long"] <= 0)
         ).astype(int)
 
-        dataframe['vol_mean'] = dataframe['volume'].rolling(20, min_periods=1).mean()
-        dataframe['vol_std'] = dataframe['volume'].rolling(20, min_periods=1).std()
+        dataframe["vol_mean"] = dataframe["volume"].rolling(20, min_periods=1).mean()
+        dataframe["vol_std"] = dataframe["volume"].rolling(20, min_periods=1).std()
         # 安全处理除零：用极小值代替 0
-        dataframe['vol_std'] = dataframe['vol_std'].replace(0, 1e-8)
-        dataframe['vol_z'] = (dataframe['volume'] - dataframe['vol_mean']) / dataframe['vol_std']
-        dataframe['vol_z'] = dataframe['vol_z'].fillna(0)
-        dataframe['vol_anomaly'] = (dataframe['vol_z'] > 2.0).astype(int)
+        dataframe["vol_std"] = dataframe["vol_std"].replace(0, 1e-8)
+        dataframe["vol_z"] = (dataframe["volume"] - dataframe["vol_mean"]) / dataframe["vol_std"]
+        dataframe["vol_z"] = dataframe["vol_z"].fillna(0)
+        dataframe["vol_anomaly"] = (dataframe["vol_z"] > 2.0).astype(int)
 
-        dataframe['vwap'] = self.calculate_vwap(dataframe, window=50)
-        dataframe['vwap_support'] = (
-            (dataframe['close'] > dataframe['vwap']) &
-            (dataframe['low'] < dataframe['vwap'])
+        dataframe["vwap"] = self.calculate_vwap(dataframe, window=50)
+        dataframe["vwap_support"] = (
+            (dataframe["close"] > dataframe["vwap"]) & (dataframe["low"] < dataframe["vwap"])
         ).astype(int)
 
-        dataframe['cvd'] = self.calculate_cvd(dataframe)
-        dataframe['cvd_delta'] = dataframe['cvd'].diff()
-        pct_change = dataframe['close'].pct_change()
-        dataframe['absorption'] = (
-            (pct_change > 0) &
-            (dataframe['cvd_delta'] < 0)
+        dataframe["cvd"] = self.calculate_cvd(dataframe)
+        dataframe["cvd_delta"] = dataframe["cvd"].diff()
+        pct_change = dataframe["close"].pct_change()
+        dataframe["absorption"] = ((pct_change > 0) & (dataframe["cvd_delta"] < 0)).astype(int)
+
+        macd_line, macd_signal, macd_hist = ta.MACD(dataframe["close"])
+        dataframe["macd"] = macd_line
+        dataframe["macdsignal"] = macd_signal
+        dataframe["momentum_turn_up"] = (
+            (dataframe["macd"] > dataframe["macdsignal"])
+            & (dataframe["macd"].shift(1) <= dataframe["macdsignal"].shift(1))
         ).astype(int)
 
-        macd_line, macd_signal, macd_hist = ta.MACD(dataframe['close'])
-        dataframe['macd'] = macd_line
-        dataframe['macdsignal'] = macd_signal
-        dataframe['momentum_turn_up'] = (
-            (dataframe['macd'] > dataframe['macdsignal']) &
-            (dataframe['macd'].shift(1) <= dataframe['macdsignal'].shift(1))
-        ).astype(int)
-
-        dataframe['bottom_confirmation_score'] = (
-            dataframe['pump_acceleration'] +
-            dataframe['vol_anomaly'] +
-            dataframe['vwap_support'] +
-            dataframe['absorption'] +
-            dataframe['momentum_turn_up']
+        dataframe["bottom_confirmation_score"] = (
+            dataframe["pump_acceleration"]
+            + dataframe["vol_anomaly"]
+            + dataframe["vwap_support"]
+            + dataframe["absorption"]
+            + dataframe["momentum_turn_up"]
         ).fillna(0)
 
         return dataframe
 
     def get_entry_condition(self, dataframe: DataFrame, threshold: int = 2) -> pd.Series:
-        return dataframe['bottom_confirmation_score'] >= threshold
+        return dataframe["bottom_confirmation_score"] >= threshold
 
 
 class BreakoutStrategy(IStrategy):
@@ -114,17 +113,13 @@ class BreakoutStrategy(IStrategy):
     - 出场信号：4h MACD Histogram 连续2根斜率为负
     - RSI 出场改为超买 >70
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "1h"
     can_short = True
 
-    minimal_roi = {
-        "0": 0.50,
-        "22": 0.20,
-        "165": 0.10,
-        "222": 0
-    }
+    minimal_roi = {"0": 0.50, "22": 0.20, "165": 0.10, "222": 0}
 
     stoploss = -0.05
     trailing_stop = False
@@ -137,7 +132,7 @@ class BreakoutStrategy(IStrategy):
 
     tolerance_atr_mult = DecimalParameter(0.5, 2.0, default=2.0, space="buy")
     donchian_window = IntParameter(20, 100, default=20, space="buy")
-    
+
     bottom_accel_thr = DecimalParameter(0.05, 0.20, default=0.20, space="buy")
     bottom_confirmation_threshold = IntParameter(1, 5, default=2, space="buy")
 
@@ -151,16 +146,18 @@ class BreakoutStrategy(IStrategy):
         return [("BTC/USDT", "4h")]
 
     def calculate_cmf(self, dataframe: DataFrame, window=20) -> pd.Series:
-        hl_range = dataframe['high'] - dataframe['low']
+        hl_range = dataframe["high"] - dataframe["low"]
         hl_range = hl_range.replace(0, 1e-8)  # 防止除零
-        
-        mf_multiplier = ((dataframe['close'] - dataframe['low']) - (dataframe['high'] - dataframe['close'])) / hl_range
+
+        mf_multiplier = (
+            (dataframe["close"] - dataframe["low"]) - (dataframe["high"] - dataframe["close"])
+        ) / hl_range
         mf_multiplier = mf_multiplier.fillna(0)
-        mf_volume = mf_multiplier * dataframe['volume']
-        
-        volume_sum = dataframe['volume'].rolling(window=window, min_periods=1).sum()
+        mf_volume = mf_multiplier * dataframe["volume"]
+
+        volume_sum = dataframe["volume"].rolling(window=window, min_periods=1).sum()
         volume_sum = volume_sum.replace(0, 1)  # 防止除零
-        
+
         cmf = mf_volume.rolling(window=window, min_periods=1).sum() / volume_sum
         return cmf.fillna(0)
 
@@ -184,36 +181,46 @@ class BreakoutStrategy(IStrategy):
         if len(dataframe) < 50:
             return dataframe
 
-        dataframe['atr'] = ta.ATR(dataframe['high'], dataframe['low'], dataframe['close'], timeperiod=14)
-        dataframe['rsi'] = ta.RSI(dataframe['close'], timeperiod=14)
-        dataframe['ema_20'] = ta.EMA(dataframe['close'], timeperiod=20)
-        dataframe['ema_50'] = ta.EMA(dataframe['close'], timeperiod=50)
+        dataframe["atr"] = ta.ATR(
+            dataframe["high"], dataframe["low"], dataframe["close"], timeperiod=14
+        )
+        dataframe["rsi"] = ta.RSI(dataframe["close"], timeperiod=14)
+        dataframe["ema_20"] = ta.EMA(dataframe["close"], timeperiod=20)
+        dataframe["ema_50"] = ta.EMA(dataframe["close"], timeperiod=50)
 
         donchian_window = self.donchian_window.value
-        dataframe['donchian_upper'] = dataframe['high'].rolling(window=donchian_window, min_periods=1).max()
-        dataframe['donchian_lower'] = dataframe['low'].rolling(window=donchian_window, min_periods=1).min()
-        dataframe['donchian_middle'] = (dataframe['donchian_upper'] + dataframe['donchian_lower']) / 2
+        dataframe["donchian_upper"] = (
+            dataframe["high"].rolling(window=donchian_window, min_periods=1).max()
+        )
+        dataframe["donchian_lower"] = (
+            dataframe["low"].rolling(window=donchian_window, min_periods=1).min()
+        )
+        dataframe["donchian_middle"] = (
+            dataframe["donchian_upper"] + dataframe["donchian_lower"]
+        ) / 2
 
-        dataframe['volume_mean'] = dataframe['volume'].rolling(window=20, min_periods=1).mean()
-        dataframe['vroc_12'] = dataframe['volume'].pct_change(periods=12) * 100
-        dataframe['vroc_12'] = dataframe['vroc_12'].fillna(0)
+        dataframe["volume_mean"] = dataframe["volume"].rolling(window=20, min_periods=1).mean()
+        dataframe["vroc_12"] = dataframe["volume"].pct_change(periods=12) * 100
+        dataframe["vroc_12"] = dataframe["vroc_12"].fillna(0)
 
-        dataframe['close_mean'] = dataframe['close'].rolling(window=20, min_periods=1).mean()
-        dataframe['close_std'] = dataframe['close'].rolling(window=20, min_periods=1).std()
-        dataframe['close_std'] = dataframe['close_std'].replace(0, 1e-8)
-        dataframe['z_score'] = (dataframe['close'] - dataframe['close_mean']) / dataframe['close_std']
-        dataframe['z_score'] = dataframe['z_score'].fillna(0)
+        dataframe["close_mean"] = dataframe["close"].rolling(window=20, min_periods=1).mean()
+        dataframe["close_std"] = dataframe["close"].rolling(window=20, min_periods=1).std()
+        dataframe["close_std"] = dataframe["close_std"].replace(0, 1e-8)
+        dataframe["z_score"] = (dataframe["close"] - dataframe["close_mean"]) / dataframe[
+            "close_std"
+        ]
+        dataframe["z_score"] = dataframe["z_score"].fillna(0)
 
-        dataframe['cmf'] = self.calculate_cmf(dataframe, 20)
+        dataframe["cmf"] = self.calculate_cmf(dataframe, 20)
 
-        dataframe['obv'] = ta.OBV(dataframe['close'], dataframe['volume'])
-        dataframe['obv_high_20'] = dataframe['obv'].rolling(window=20, min_periods=1).max()
-        dataframe['obv_low_20'] = dataframe['obv'].rolling(window=20, min_periods=1).min()
+        dataframe["obv"] = ta.OBV(dataframe["close"], dataframe["volume"])
+        dataframe["obv_high_20"] = dataframe["obv"].rolling(window=20, min_periods=1).max()
+        dataframe["obv_low_20"] = dataframe["obv"].rolling(window=20, min_periods=1).min()
 
-        macd_line, macd_signal, macd_hist = ta.MACD(dataframe['close'])
-        dataframe['macd'] = macd_line
-        dataframe['macdsignal'] = macd_signal
-        dataframe['macdhist'] = macd_hist
+        macd_line, macd_signal, macd_hist = ta.MACD(dataframe["close"])
+        dataframe["macd"] = macd_line
+        dataframe["macdsignal"] = macd_signal
+        dataframe["macdhist"] = macd_hist
 
         dataframe = self.bottom_module.populate_indicators(dataframe)
 
@@ -228,78 +235,97 @@ class BreakoutStrategy(IStrategy):
                 if len(btc_4h) > 1:
                     btc_4h = btc_4h.iloc[:-1].copy()
 
-            macd_line, macd_signal, macd_hist = ta.MACD(btc_4h["close"], fastperiod=12, slowperiod=26, signalperiod=9)
+            macd_line, macd_signal, macd_hist = ta.MACD(
+                btc_4h["close"], fastperiod=12, slowperiod=26, signalperiod=9
+            )
             btc_4h["macdhist"] = pd.to_numeric(macd_hist, errors="coerce")
             btc_4h["macd_hist_positive_slope"] = btc_4h["macdhist"] > btc_4h["macdhist"].shift(1)
-            btc_4h["macd_hist_negative_slope_2"] = (btc_4h["macdhist"] < btc_4h["macdhist"].shift(1)) & (btc_4h["macdhist"].shift(1) < btc_4h["macdhist"].shift(2))
+            btc_4h["macd_hist_negative_slope_2"] = (
+                btc_4h["macdhist"] < btc_4h["macdhist"].shift(1)
+            ) & (btc_4h["macdhist"].shift(1) < btc_4h["macdhist"].shift(2))
 
-            informative_4h = btc_4h[["date", "macd_hist_positive_slope", "macd_hist_negative_slope_2"]].copy()
-            dataframe = merge_informative_pair(dataframe, informative_4h, self.timeframe, "4h", ffill=True)
-            dataframe["btc_4h_macd_hist_positive_slope"] = dataframe["macd_hist_positive_slope_4h"].fillna(False)
-            dataframe["btc_4h_macd_hist_negative_slope_2"] = dataframe["macd_hist_negative_slope_2_4h"].fillna(False)
-            dataframe.drop(columns=["macd_hist_positive_slope_4h", "macd_hist_negative_slope_2_4h"], inplace=True, errors="ignore")
+            informative_4h = btc_4h[
+                ["date", "macd_hist_positive_slope", "macd_hist_negative_slope_2"]
+            ].copy()
+            dataframe = merge_informative_pair(
+                dataframe, informative_4h, self.timeframe, "4h", ffill=True
+            )
+            dataframe["btc_4h_macd_hist_positive_slope"] = dataframe[
+                "macd_hist_positive_slope_4h"
+            ].fillna(False)
+            dataframe["btc_4h_macd_hist_negative_slope_2"] = dataframe[
+                "macd_hist_negative_slope_2_4h"
+            ].fillna(False)
+            dataframe.drop(
+                columns=["macd_hist_positive_slope_4h", "macd_hist_negative_slope_2_4h"],
+                inplace=True,
+                errors="ignore",
+            )
 
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         if len(dataframe) < 50:
-            dataframe['enter_long'] = 0
-            dataframe['enter_short'] = 0
-            dataframe['enter_tag'] = ''
+            dataframe["enter_long"] = 0
+            dataframe["enter_short"] = 0
+            dataframe["enter_tag"] = ""
             return dataframe
 
-        dataframe['enter_long'] = 0
-        dataframe['enter_short'] = 0
-        dataframe['enter_tag'] = ''
+        dataframe["enter_long"] = 0
+        dataframe["enter_short"] = 0
+        dataframe["enter_tag"] = ""
 
-        cond_breakout = (
-            dataframe['close'] > (dataframe['donchian_upper'].shift(1) - (dataframe['atr'] * self.tolerance_atr_mult.value))
+        cond_breakout = dataframe["close"] > (
+            dataframe["donchian_upper"].shift(1)
+            - (dataframe["atr"] * self.tolerance_atr_mult.value)
         )
 
         cond_volume_mix = (
-            (dataframe['volume'] > dataframe['volume_mean'] * 1.5) |
-            (dataframe['vroc_12'] > 15) |
-            (dataframe['z_score'] > 1.5)
+            (dataframe["volume"] > dataframe["volume_mean"] * 1.5)
+            | (dataframe["vroc_12"] > 15)
+            | (dataframe["z_score"] > 1.5)
         )
 
-        cond_cmf = (dataframe['cmf'] > 0)
+        cond_cmf = dataframe["cmf"] > 0
 
-        cond_obv = (dataframe['obv'] > dataframe['obv_high_20'].shift(1) * 0.995)
+        cond_obv = dataframe["obv"] > dataframe["obv_high_20"].shift(1) * 0.995
 
-        cond_vroc_explosive = (dataframe['vroc_12'] > 40)
+        cond_vroc_explosive = dataframe["vroc_12"] > 40
 
-        dataframe['buy_votes'] = (
-            cond_breakout.astype(int) +
-            cond_volume_mix.astype(int) +
-            cond_cmf.astype(int) +
-            cond_obv.astype(int) +
-            cond_vroc_explosive.astype(int)
+        dataframe["buy_votes"] = (
+            cond_breakout.astype(int)
+            + cond_volume_mix.astype(int)
+            + cond_cmf.astype(int)
+            + cond_obv.astype(int)
+            + cond_vroc_explosive.astype(int)
         )
-        cond_breakdown_short = (
-            dataframe['close'] < (dataframe['donchian_lower'].shift(1) + (dataframe['atr'] * self.tolerance_atr_mult.value))
+        cond_breakdown_short = dataframe["close"] < (
+            dataframe["donchian_lower"].shift(1)
+            + (dataframe["atr"] * self.tolerance_atr_mult.value)
         )
         cond_volume_mix_short = (
-            (dataframe['volume'] > dataframe['volume_mean'] * 1.5) |
-            (dataframe['vroc_12'] < -15) |
-            (dataframe['z_score'] < -1.5)
+            (dataframe["volume"] > dataframe["volume_mean"] * 1.5)
+            | (dataframe["vroc_12"] < -15)
+            | (dataframe["z_score"] < -1.5)
         )
-        cond_cmf_short = (dataframe['cmf'] < 0)
-        cond_obv_short = (dataframe['obv'] < dataframe['obv_low_20'].shift(1) * 1.005)
-        cond_vroc_explosive_short = (dataframe['vroc_12'] < -40)
-        dataframe['sell_votes'] = (
-            cond_breakdown_short.astype(int) +
-            cond_volume_mix_short.astype(int) +
-            cond_cmf_short.astype(int) +
-            cond_obv_short.astype(int) +
-            cond_vroc_explosive_short.astype(int)
+        cond_cmf_short = dataframe["cmf"] < 0
+        cond_obv_short = dataframe["obv"] < dataframe["obv_low_20"].shift(1) * 1.005
+        cond_vroc_explosive_short = dataframe["vroc_12"] < -40
+        dataframe["sell_votes"] = (
+            cond_breakdown_short.astype(int)
+            + cond_volume_mix_short.astype(int)
+            + cond_cmf_short.astype(int)
+            + cond_obv_short.astype(int)
+            + cond_vroc_explosive_short.astype(int)
         )
 
         bottom_confirmed = self.bottom_module.get_entry_condition(
-            dataframe, 
-            threshold=self.bottom_confirmation_threshold.value
+            dataframe, threshold=self.bottom_confirmation_threshold.value
         )
         dataframe["bottom_confirmed"] = bottom_confirmed.fillna(False).astype(bool)
-        atr_pct = (dataframe["atr"] / dataframe["close"]).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        atr_pct = (
+            (dataframe["atr"] / dataframe["close"]).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        )
         min_votes_long = np.where(atr_pct > 0.018, 3, 2)
         min_votes_short = np.where(atr_pct > 0.018, 3, 2)
         cooldown_long_bars = 10
@@ -312,38 +338,65 @@ class BreakoutStrategy(IStrategy):
         breakdown_followthrough_short = (
             dataframe["close"] < (dataframe["donchian_lower"].shift(1) - 0.10 * dataframe["atr"])
         ) & (dataframe["close"] < dataframe["close"].shift(1))
-        breakout_quality_long = cond_breakout & trend_up & breakout_followthrough_long & (dataframe["volume"] > dataframe["volume_mean"] * 0.8)
-        breakdown_quality_short = cond_breakdown_short & trend_down & breakdown_followthrough_short & (dataframe["volume"] > dataframe["volume_mean"] * 0.8)
+        breakout_quality_long = (
+            cond_breakout
+            & trend_up
+            & breakout_followthrough_long
+            & (dataframe["volume"] > dataframe["volume_mean"] * 0.8)
+        )
+        breakdown_quality_short = (
+            cond_breakdown_short
+            & trend_down
+            & breakdown_followthrough_short
+            & (dataframe["volume"] > dataframe["volume_mean"] * 0.8)
+        )
         tradable_vol_regime = (atr_pct >= 0.004) & (atr_pct <= 0.05)
         breakout_base_long = breakout_quality_long & (dataframe["rsi"] < 75)
         breakdown_base_short = breakdown_quality_short & (dataframe["rsi"] > 25)
 
         entry_condition_raw = (
-            ((dataframe['buy_votes'] >= min_votes_long) | breakout_base_long) &
-            (dataframe['close'] > dataframe['open']) &
-            (dataframe['volume'] > 0) &
-            (dataframe['rsi'] < 70) &
-            (dataframe["btc_4h_macd_hist_positive_slope"] | trend_up)
+            ((dataframe["buy_votes"] >= min_votes_long) | breakout_base_long)
+            & (dataframe["close"] > dataframe["open"])
+            & (dataframe["volume"] > 0)
+            & (dataframe["rsi"] < 70)
+            & (dataframe["btc_4h_macd_hist_positive_slope"] | trend_up)
         )
         short_entry_condition_raw = (
-            ((dataframe['sell_votes'] >= min_votes_short) | breakdown_base_short) &
-            (dataframe['close'] < dataframe['open']) &
-            (dataframe['volume'] > 0) &
-            (dataframe['rsi'] > 30) &
-            (dataframe["btc_4h_macd_hist_negative_slope_2"] | trend_down)
+            ((dataframe["sell_votes"] >= min_votes_short) | breakdown_base_short)
+            & (dataframe["close"] < dataframe["open"])
+            & (dataframe["volume"] > 0)
+            & (dataframe["rsi"] > 30)
+            & (dataframe["btc_4h_macd_hist_negative_slope_2"] | trend_down)
         )
-        recent_long_signal = entry_condition_raw.shift(1).fillna(False).rolling(window=cooldown_long_bars, min_periods=1).max().astype(bool)
-        recent_short_signal = short_entry_condition_raw.shift(1).fillna(False).rolling(window=cooldown_short_bars, min_periods=1).max().astype(bool)
+        recent_long_signal = (
+            entry_condition_raw.shift(1)
+            .fillna(False)
+            .rolling(window=cooldown_long_bars, min_periods=1)
+            .max()
+            .astype(bool)
+        )
+        recent_short_signal = (
+            short_entry_condition_raw.shift(1)
+            .fillna(False)
+            .rolling(window=cooldown_short_bars, min_periods=1)
+            .max()
+            .astype(bool)
+        )
         entry_condition = entry_condition_raw & (~recent_long_signal) & tradable_vol_regime
-        short_entry_condition = short_entry_condition_raw & (~recent_short_signal) & tradable_vol_regime
+        short_entry_condition = (
+            short_entry_condition_raw & (~recent_short_signal) & tradable_vol_regime
+        )
 
-        dataframe.loc[entry_condition, 'enter_long'] = 1
-        dataframe.loc[short_entry_condition, 'enter_short'] = 1
-        dataframe.loc[entry_condition & bottom_confirmed, 'enter_tag'] = 'breakout_4h_up_bc'
-        dataframe.loc[entry_condition & (~bottom_confirmed.fillna(False)), 'enter_tag'] = 'breakout_4h_up'
-        dataframe.loc[short_entry_condition, 'enter_tag'] = 'breakout_4h_down'
+        dataframe.loc[entry_condition, "enter_long"] = 1
+        dataframe.loc[short_entry_condition, "enter_short"] = 1
+        dataframe.loc[entry_condition & bottom_confirmed, "enter_tag"] = "breakout_4h_up_bc"
+        dataframe.loc[entry_condition & (~bottom_confirmed.fillna(False)), "enter_tag"] = (
+            "breakout_4h_up"
+        )
+        dataframe.loc[short_entry_condition, "enter_tag"] = "breakout_4h_down"
 
         try:
+
             def _normalize_signals_url(raw: str) -> str:
                 raw = str(raw or "").strip()
                 if not raw:
@@ -435,7 +488,11 @@ class BreakoutStrategy(IStrategy):
                         except Exception:
                             ts_ms = int(ts_ms)
 
-                    bar_closed0 = bool(tf_ms > 0 and ts_ms is not None and now_ms >= int(ts_ms) + int(tf_ms) - 2_000)
+                    bar_closed0 = bool(
+                        tf_ms > 0
+                        and ts_ms is not None
+                        and now_ms >= int(ts_ms) + int(tf_ms) - 2_000
+                    )
                     row = row0
                     if (not bar_closed0) and len(dataframe) >= 2:
                         row1 = dataframe.iloc[-2]
@@ -459,7 +516,11 @@ class BreakoutStrategy(IStrategy):
                             except Exception:
                                 ts1 = int(ts1)
 
-                        bar_closed1 = bool(tf_ms > 0 and ts1 is not None and now_ms >= int(ts1) + int(tf_ms) - 2_000)
+                        bar_closed1 = bool(
+                            tf_ms > 0
+                            and ts1 is not None
+                            and now_ms >= int(ts1) + int(tf_ms) - 2_000
+                        )
                         if bar_closed1:
                             row = row1
                             ts_ms = ts1
@@ -467,6 +528,7 @@ class BreakoutStrategy(IStrategy):
 
                     pair = metadata.get("pair")
                     if ts_ms is not None and pair:
+
                         def _emit(url: str, allow_trigger_decision: bool) -> None:
                             try:
                                 pth = ""
@@ -487,13 +549,23 @@ class BreakoutStrategy(IStrategy):
                                 close_v = _sf(row.get("close", 0.0) or 0.0)
                                 atr_v = _sf(row.get("atr", 0.0) or 0.0)
                                 enter_v = 1.0 if int(row.get("enter_long", 0) or 0) == 1 else 0.0
-                                enter_short_v = 1.0 if int(row.get("enter_short", 0) or 0) == 1 else 0.0
+                                enter_short_v = (
+                                    1.0 if int(row.get("enter_short", 0) or 0) == 1 else 0.0
+                                )
                                 side = "short" if enter_short_v > enter_v else "long"
                                 trigger_enter_v = enter_short_v if side == "short" else enter_v
 
                                 bar_closed = bool(bar_closed0)
 
-                                action = "open" if (allow_trigger_decision and trigger_enter_v == 1.0 and bar_closed) else "observe"
+                                action = (
+                                    "open"
+                                    if (
+                                        allow_trigger_decision
+                                        and trigger_enter_v == 1.0
+                                        and bar_closed
+                                    )
+                                    else "observe"
+                                )
                                 if not bar_closed:
                                     action = "observe"
 
@@ -517,15 +589,29 @@ class BreakoutStrategy(IStrategy):
                                     "donchian_lower": _sf(row.get("donchian_lower", 0.0) or 0.0),
                                     "donchian_middle": _sf(row.get("donchian_middle", 0.0) or 0.0),
                                     "macdhist": _sf(row.get("macdhist", 0.0) or 0.0),
-                                    "btc_4h_macd_hist_positive_slope": 1.0 if bool(row.get("btc_4h_macd_hist_positive_slope", False)) else 0.0,
-                                    "btc_4h_macd_hist_negative_slope_2": 1.0 if bool(row.get("btc_4h_macd_hist_negative_slope_2", False)) else 0.0,
+                                    "btc_4h_macd_hist_positive_slope": (
+                                        1.0
+                                        if bool(row.get("btc_4h_macd_hist_positive_slope", False))
+                                        else 0.0
+                                    ),
+                                    "btc_4h_macd_hist_negative_slope_2": (
+                                        1.0
+                                        if bool(row.get("btc_4h_macd_hist_negative_slope_2", False))
+                                        else 0.0
+                                    ),
                                     "bottom_confirmed": 1.0 if bottom_ok else 0.0,
-                                    "bottom_confirmation_score": _sf(row.get("bottom_confirmation_score", 0.0) or 0.0),
-                                    "pump_acceleration": _sf(row.get("pump_acceleration", 0.0) or 0.0),
+                                    "bottom_confirmation_score": _sf(
+                                        row.get("bottom_confirmation_score", 0.0) or 0.0
+                                    ),
+                                    "pump_acceleration": _sf(
+                                        row.get("pump_acceleration", 0.0) or 0.0
+                                    ),
                                     "vol_anomaly": _sf(row.get("vol_anomaly", 0.0) or 0.0),
                                     "vwap_support": _sf(row.get("vwap_support", 0.0) or 0.0),
                                     "absorption": _sf(row.get("absorption", 0.0) or 0.0),
-                                    "momentum_turn_up": _sf(row.get("momentum_turn_up", 0.0) or 0.0),
+                                    "momentum_turn_up": _sf(
+                                        row.get("momentum_turn_up", 0.0) or 0.0
+                                    ),
                                     "regime": "trend",
                                 }
 
@@ -552,11 +638,21 @@ class BreakoutStrategy(IStrategy):
                                     "features": features,
                                 }
 
-                                if allow_trigger_decision and trigger_enter_v == 1.0 and action == "open":
-                                    trigger_raw = str(os.environ.get("ML_EXPORT_TRIGGER_DECISION", "")).strip().lower()
+                                if (
+                                    allow_trigger_decision
+                                    and trigger_enter_v == 1.0
+                                    and action == "open"
+                                ):
+                                    trigger_raw = (
+                                        str(os.environ.get("ML_EXPORT_TRIGGER_DECISION", ""))
+                                        .strip()
+                                        .lower()
+                                    )
                                     if trigger_raw in ("1", "true", "yes", "y", "on"):
                                         payload["trigger_decision"] = True
-                                        thr_raw = str(os.environ.get("ML_EXPORT_THRESHOLD", "")).strip()
+                                        thr_raw = str(
+                                            os.environ.get("ML_EXPORT_THRESHOLD", "")
+                                        ).strip()
                                         if thr_raw:
                                             try:
                                                 payload["threshold"] = float(thr_raw)
@@ -575,7 +671,12 @@ class BreakoutStrategy(IStrategy):
 
                                 timeout_s = 0.5
                                 try:
-                                    timeout_s = float(str(os.environ.get("ML_EXPORT_TIMEOUT", "0.5") or "0.5").strip() or 0.5)
+                                    timeout_s = float(
+                                        str(
+                                            os.environ.get("ML_EXPORT_TIMEOUT", "0.5") or "0.5"
+                                        ).strip()
+                                        or 0.5
+                                    )
                                 except Exception:
                                     timeout_s = 0.5
 
@@ -590,7 +691,10 @@ class BreakoutStrategy(IStrategy):
 
                             min_interval_s = 0.0
                             try:
-                                raw = os.environ.get("ML_FEATURE_EXPORT_MIN_INTERVAL_SEC", os.environ.get("ML_EXPORT_MIN_INTERVAL_SEC", "0"))
+                                raw = os.environ.get(
+                                    "ML_FEATURE_EXPORT_MIN_INTERVAL_SEC",
+                                    os.environ.get("ML_EXPORT_MIN_INTERVAL_SEC", "0"),
+                                )
                                 min_interval_s = float(str(raw or "0").strip() or 0.0)
                             except Exception:
                                 min_interval_s = 0.0
@@ -603,7 +707,9 @@ class BreakoutStrategy(IStrategy):
                             last_ts = self._ml_decision_last_ts_by_pair.get(pair)
                             return last_ts is None or ts_ms > last_ts
 
-                        enter_now = (int(row.get("enter_long", 0) or 0) == 1) or (int(row.get("enter_short", 0) or 0) == 1)
+                        enter_now = (int(row.get("enter_long", 0) or 0) == 1) or (
+                            int(row.get("enter_short", 0) or 0) == 1
+                        )
                         if feature_url and (feature_url != decision_url) and _feature_ok_to_send():
                             _emit(feature_url, allow_trigger_decision=False)
                             self._ml_export_last_ts_by_pair[pair] = ts_ms
@@ -613,7 +719,9 @@ class BreakoutStrategy(IStrategy):
                             self._ml_decision_last_ts_by_pair[pair] = ts_ms
                             if decision_url == feature_url:
                                 self._ml_export_last_ts_by_pair[pair] = ts_ms
-                        elif feature_url and _feature_ok_to_send() and (feature_url == decision_url):
+                        elif (
+                            feature_url and _feature_ok_to_send() and (feature_url == decision_url)
+                        ):
                             _emit(feature_url, allow_trigger_decision=False)
                             self._ml_export_last_ts_by_pair[pair] = ts_ms
         except Exception:
@@ -623,63 +731,76 @@ class BreakoutStrategy(IStrategy):
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         if len(dataframe) < 50:
-            dataframe['exit_long'] = 0
-            dataframe['exit_short'] = 0
+            dataframe["exit_long"] = 0
+            dataframe["exit_short"] = 0
             return dataframe
 
-        dataframe['exit_long'] = 0
-        dataframe['exit_short'] = 0
+        dataframe["exit_long"] = 0
+        dataframe["exit_short"] = 0
 
-        cond_breakdown = (
-            dataframe['close'] < (dataframe['donchian_lower'].shift(1) + (dataframe['atr'] * self.tolerance_atr_mult.value))
+        cond_breakdown = dataframe["close"] < (
+            dataframe["donchian_lower"].shift(1)
+            + (dataframe["atr"] * self.tolerance_atr_mult.value)
         )
 
-        cond_volume_spike = (dataframe['volume'] > dataframe['volume_mean'] * 1.5)
+        cond_volume_spike = dataframe["volume"] > dataframe["volume_mean"] * 1.5
 
-        cond_cmf_negative = (dataframe['cmf'] < 0) & (dataframe['cmf'].shift(1) >= 0)
+        cond_cmf_negative = (dataframe["cmf"] < 0) & (dataframe["cmf"].shift(1) >= 0)
 
-        cond_obv_low = (dataframe['obv'] < dataframe['obv_low_20'].shift(1) * 1.001)
+        cond_obv_low = dataframe["obv"] < dataframe["obv_low_20"].shift(1) * 1.001
 
-        cond_rsi_overbought = (dataframe['rsi'] > 70)
+        cond_rsi_overbought = dataframe["rsi"] > 70
 
-        dataframe['exit_votes'] = (
-            cond_breakdown.astype(int) +
-            cond_volume_spike.astype(int) +
-            cond_cmf_negative.astype(int) +
-            cond_obv_low.astype(int) +
-            cond_rsi_overbought.astype(int)
+        dataframe["exit_votes"] = (
+            cond_breakdown.astype(int)
+            + cond_volume_spike.astype(int)
+            + cond_cmf_negative.astype(int)
+            + cond_obv_low.astype(int)
+            + cond_rsi_overbought.astype(int)
         )
 
         exit_condition = (
-            (dataframe['exit_votes'] >= 3) &
-            (dataframe['close'] < dataframe['open']) &
-            (dataframe['volume'] > 0)
+            (dataframe["exit_votes"] >= 3)
+            & (dataframe["close"] < dataframe["open"])
+            & (dataframe["volume"] > 0)
         )
-        cond_breakup_short = (
-            dataframe['close'] > (dataframe['donchian_upper'].shift(1) - (dataframe['atr'] * self.tolerance_atr_mult.value))
+        cond_breakup_short = dataframe["close"] > (
+            dataframe["donchian_upper"].shift(1)
+            - (dataframe["atr"] * self.tolerance_atr_mult.value)
         )
-        cond_cmf_positive_short = (dataframe['cmf'] > 0) & (dataframe['cmf'].shift(1) <= 0)
-        cond_obv_high_short = (dataframe['obv'] > dataframe['obv_high_20'].shift(1) * 0.995)
-        cond_rsi_oversold_short = (dataframe['rsi'] < 30)
-        dataframe['exit_short_votes'] = (
-            cond_breakup_short.astype(int) +
-            cond_volume_spike.astype(int) +
-            cond_cmf_positive_short.astype(int) +
-            cond_obv_high_short.astype(int) +
-            cond_rsi_oversold_short.astype(int)
+        cond_cmf_positive_short = (dataframe["cmf"] > 0) & (dataframe["cmf"].shift(1) <= 0)
+        cond_obv_high_short = dataframe["obv"] > dataframe["obv_high_20"].shift(1) * 0.995
+        cond_rsi_oversold_short = dataframe["rsi"] < 30
+        dataframe["exit_short_votes"] = (
+            cond_breakup_short.astype(int)
+            + cond_volume_spike.astype(int)
+            + cond_cmf_positive_short.astype(int)
+            + cond_obv_high_short.astype(int)
+            + cond_rsi_oversold_short.astype(int)
         )
         exit_short_condition = (
-            (dataframe['exit_short_votes'] >= 3) &
-            (dataframe['close'] > dataframe['open']) &
-            (dataframe['volume'] > 0)
+            (dataframe["exit_short_votes"] >= 3)
+            & (dataframe["close"] > dataframe["open"])
+            & (dataframe["volume"] > 0)
         )
 
-        dataframe.loc[exit_condition | dataframe["btc_4h_macd_hist_negative_slope_2"], 'exit_long'] = 1
-        dataframe.loc[exit_short_condition | dataframe["btc_4h_macd_hist_positive_slope"], 'exit_short'] = 1
+        dataframe.loc[
+            exit_condition | dataframe["btc_4h_macd_hist_negative_slope_2"], "exit_long"
+        ] = 1
+        dataframe.loc[
+            exit_short_condition | dataframe["btc_4h_macd_hist_positive_slope"], "exit_short"
+        ] = 1
         return dataframe
 
-    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
-                        current_rate: float, current_profit: float, **kwargs) -> float:
+    def custom_stoploss(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> float:
         try:
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             if dataframe is None or len(dataframe) < 20:
@@ -688,23 +809,23 @@ class BreakoutStrategy(IStrategy):
             entry_date = trade.open_date_utc
             if entry_date.tzinfo is None:
                 entry_date = entry_date.replace(tzinfo=timezone.utc)
-            
+
             temp_df = dataframe.copy()
             if temp_df.index.tz is None:
-                temp_df.index = temp_df.index.tz_localize('UTC')
+                temp_df.index = temp_df.index.tz_localize("UTC")
             else:
-                temp_df.index = temp_df.index.tz_convert('UTC')
+                temp_df.index = temp_df.index.tz_convert("UTC")
 
             mask = temp_df.index <= entry_date
             if not mask.any():
                 return self.stoploss
-                
+
             entry_candle = temp_df.loc[mask].iloc[-1]
-            atr_at_entry = entry_candle.get('atr', 0)
+            atr_at_entry = entry_candle.get("atr", 0)
             if pd.isna(atr_at_entry) or atr_at_entry <= 0:
                 return self.stoploss
-                
-            current_atr = temp_df['atr'].iloc[-1]
+
+            current_atr = temp_df["atr"].iloc[-1]
             if pd.isna(current_atr) or current_atr <= 0:
                 return self.stoploss
             is_short = bool(getattr(trade, "is_short", False))
@@ -731,30 +852,46 @@ class BreakoutStrategy(IStrategy):
                 stop_price = trade.open_rate
                 return (stop_price - current_rate) / current_rate
             return (initial_sl_price - current_rate) / current_rate
-            
+
         except Exception as e:
-            if hasattr(self, 'logger'):
+            if hasattr(self, "logger"):
                 self.logger.error(f"Stoploss error for {pair}: {str(e)}")
             return self.stoploss
 
-    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, 
-                    current_rate: float, current_profit: float, **kwargs) -> Optional[str]:
+    def custom_exit(
+        self,
+        pair: str,
+        trade: Trade,
+        current_time: datetime,
+        current_rate: float,
+        current_profit: float,
+        **kwargs,
+    ) -> Optional[str]:
         if current_profit > 0.15:
             return "quick_profit_15"
         if current_profit > 0.10:
             return "quick_profit_10"
         if current_profit > 0.07:
             return "quick_profit_7"
-        
+
         hold_hours = (current_time - trade.open_date_utc).total_seconds() / 3600
         if hold_hours > 168:
             return "time_exit_7d"
-        
+
         return None
 
-    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
-                           proposed_stake: float, min_stake: float, max_stake: float,
-                           entry_tag: Optional[str], side: str, **kwargs) -> float:
+    def custom_stake_amount(
+        self,
+        pair: str,
+        current_time: datetime,
+        current_rate: float,
+        proposed_stake: float,
+        min_stake: float,
+        max_stake: float,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> float:
         runmode = getattr(self.dp, "runmode", None)
         if runmode is not None and "backtest" in str(runmode).lower():
             return proposed_stake
@@ -763,17 +900,17 @@ class BreakoutStrategy(IStrategy):
             dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             if dataframe is None or len(dataframe) < 1:
                 return proposed_stake
-                
+
             last = dataframe.iloc[-1]
-            atr = last.get('atr', 0)
+            atr = last.get("atr", 0)
             if pd.isna(atr) or atr <= 0:
                 return proposed_stake
-                
+
             atr_pct = atr / current_rate
-            
+
             total = self.wallets.get_total_stake_amount()
             base = total * 0.02
-            
+
             if atr_pct > 0.05:
                 size = base * 0.5
             elif atr_pct > 0.03:
@@ -782,32 +919,47 @@ class BreakoutStrategy(IStrategy):
                 size = base * 1.5
             else:
                 size = base
-            
+
             return max(min(size, max_stake), min_stake)
-            
+
         except Exception:
             return proposed_stake
 
-    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
-                            time_in_force: str, current_time: datetime, entry_tag: Optional[str],
-                            side: str, **kwargs) -> bool:
+    def confirm_trade_entry(
+        self,
+        pair: str,
+        order_type: str,
+        amount: float,
+        rate: float,
+        time_in_force: str,
+        current_time: datetime,
+        entry_tag: Optional[str],
+        side: str,
+        **kwargs,
+    ) -> bool:
         dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
         if len(dataframe) < 1:
             return False
-            
+
         last = dataframe.iloc[-1]
-        
+
         checks = [
-            last.get('volume', 0) > 0,
-            last.get('atr', 0) > 0,
-            last.get('volume', 0) > last.get('volume_mean', 0) * 0.5,
+            last.get("volume", 0) > 0,
+            last.get("atr", 0) > 0,
+            last.get("volume", 0) > last.get("volume_mean", 0) * 0.5,
         ]
         if str(side).lower().strip() == "short":
-            checks.append(last.get('rsi', 0) > 25)
-            checks.append(bool(last.get('btc_4h_macd_hist_negative_slope_2', False)) or (last.get('ema_20', 0) < last.get('ema_50', 0)))
+            checks.append(last.get("rsi", 0) > 25)
+            checks.append(
+                bool(last.get("btc_4h_macd_hist_negative_slope_2", False))
+                or (last.get("ema_20", 0) < last.get("ema_50", 0))
+            )
         else:
-            checks.append(last.get('rsi', 100) < 75)
-            checks.append(bool(last.get('btc_4h_macd_hist_positive_slope', False)) or (last.get('ema_20', 0) > last.get('ema_50', 0)))
+            checks.append(last.get("rsi", 100) < 75)
+            checks.append(
+                bool(last.get("btc_4h_macd_hist_positive_slope", False))
+                or (last.get("ema_20", 0) > last.get("ema_50", 0))
+            )
         return all(checks)
 
     @property
@@ -848,5 +1000,5 @@ class BreakoutStrategy(IStrategy):
                 "Bottom Confirmation": {
                     "bottom_confirmation_score": {"color": "#2ca02c", "type": "bar"},
                 },
-            }
+            },
         }

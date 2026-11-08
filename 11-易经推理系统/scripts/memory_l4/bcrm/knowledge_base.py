@@ -9,12 +9,13 @@ BCRM 知识库。
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class KnowledgeEntry:
     """知识条目。"""
+
     id: str = ""
     category: str = ""
     title: str = ""
@@ -36,6 +37,7 @@ class KnowledgeEntry:
 @dataclass
 class GuaKnowledge:
     """卦象知识。"""
+
     gua: str = ""
     name_cn: str = ""
     nature: str = ""
@@ -75,56 +77,76 @@ class BCRMKnowledgeBase:
     def _init_default_knowledge(self):
         """初始化默认知识。"""
         # 技术指标知识
-        self._add_technical(KnowledgeEntry(
-            id="tech_ma",
-            category="technical",
-            title="移动平均线（MA）",
-            content="移动平均线是最常用的趋势指标，反映一段时间内的平均价格。",
-            tags=["technical", "trend", "ma"],
-        ))
-        self._add_technical(KnowledgeEntry(
-            id="tech_macd",
-            category="technical",
-            title="MACD 指标",
-            content="MACD 由快线、慢线和柱状图组成，用于判断趋势强度和转折。",
-            tags=["technical", "momentum", "macd"],
-        ))
-        self._add_technical(KnowledgeEntry(
-            id="tech_rsi",
-            category="technical",
-            title="相对强弱指标（RSI）",
-            content="RSI 衡量价格变动的速度和变化，范围 0-100。",
-            tags=["technical", "oscillator", "rsi"],
-        ))
+        self._add_technical(
+            KnowledgeEntry(
+                id="tech_ma",
+                category="technical",
+                title="移动平均线（MA）",
+                content="移动平均线是最常用的趋势指标，反映一段时间内的平均价格。",
+                tags=["technical", "trend", "ma"],
+            )
+        )
+        self._add_technical(
+            KnowledgeEntry(
+                id="tech_macd",
+                category="technical",
+                title="MACD 指标",
+                content="MACD 由快线、慢线和柱状图组成，用于判断趋势强度和转折。",
+                tags=["technical", "momentum", "macd"],
+            )
+        )
+        self._add_technical(
+            KnowledgeEntry(
+                id="tech_rsi",
+                category="technical",
+                title="相对强弱指标（RSI）",
+                content="RSI 衡量价格变动的速度和变化，范围 0-100。",
+                tags=["technical", "oscillator", "rsi"],
+            )
+        )
 
         # 交易规则
-        self._add_rule(KnowledgeEntry(
-            id="rule_risk_1",
-            category="rule",
-            title="止损原则",
-            content="单笔交易亏损不超过总资金的 2%。",
-            tags=["risk", "rule"],
-        ))
-        self._add_rule(KnowledgeEntry(
-            id="rule_trend_1",
-            category="rule",
-            title="顺势而为",
-            content="不逆大趋势操作，趋势不明朗时观望。",
-            tags=["trend", "rule"],
-        ))
-        self._add_rule(KnowledgeEntry(
-            id="rule_position_1",
-            category="rule",
-            title="仓位管理",
-            content="根据置信度调整仓位，高置信度重仓，低置信度轻仓。",
-            tags=["position", "rule", "risk"],
-        ))
+        self._add_rule(
+            KnowledgeEntry(
+                id="rule_risk_1",
+                category="rule",
+                title="止损原则",
+                content="单笔交易亏损不超过总资金的 2%。",
+                tags=["risk", "rule"],
+            )
+        )
+        self._add_rule(
+            KnowledgeEntry(
+                id="rule_trend_1",
+                category="rule",
+                title="顺势而为",
+                content="不逆大趋势操作，趋势不明朗时观望。",
+                tags=["trend", "rule"],
+            )
+        )
+        self._add_rule(
+            KnowledgeEntry(
+                id="rule_position_1",
+                category="rule",
+                title="仓位管理",
+                content="根据置信度调整仓位，高置信度重仓，低置信度轻仓。",
+                tags=["position", "rule", "risk"],
+            )
+        )
 
         # 八卦知识
         from ._constants import (
-            GUA_QIAN, GUA_KUN, GUA_ZHEN, GUA_XUN,
-            GUA_KAN, GUA_LI, GUA_GEN, GUA_DUI,
-            GUA_NAMES_CN, GUA_NATURE, GUA_WUXING,
+            GUA_DUI,
+            GUA_GEN,
+            GUA_KAN,
+            GUA_KUN,
+            GUA_LI,
+            GUA_NAMES_CN,
+            GUA_NATURE,
+            GUA_QIAN,
+            GUA_WUXING,
+            GUA_XUN,
+            GUA_ZHEN,
         )
 
         gua_info = {
@@ -222,9 +244,11 @@ class BCRMKnowledgeBase:
         keyword = keyword.lower()
         results = []
         for entry in self._technical.values():
-            if (keyword in entry.title.lower() or
-                keyword in entry.content.lower() or
-                any(keyword in t.lower() for t in entry.tags)):
+            if (
+                keyword in entry.title.lower()
+                or keyword in entry.content.lower()
+                or any(keyword in t.lower() for t in entry.tags)
+            ):
                 results.append(entry)
         return results
 
@@ -269,6 +293,7 @@ class BCRMKnowledgeBase:
 
     def to_json(self, indent: int = 2) -> str:
         import json
+
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent)
 
 

@@ -1,4 +1,5 @@
 """测试 CapitalRotationAdapter — 资金轮动检测器"""
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -7,7 +8,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dreambuddy_evolution.adapters.capital_rotation import (
     CapitalRotationAdapter,
-    COMPETITOR_GROUPS,
 )
 
 
@@ -15,7 +15,7 @@ def _make_candles(vols, closes):
     """构造 OKX 格式 candles（descending, newest first）"""
     return [
         {"c": str(c), "h": str(c), "l": str(c), "o": str(c), "vol": str(v)}
-        for c, v in zip(reversed(closes), reversed(vols))
+        for c, v in zip(reversed(closes), reversed(vols))  # noqa: B905
     ]
 
 
@@ -43,7 +43,9 @@ def test_rotation_positive():
         "ok": True,
         "candles": _make_candles(
             vols=[100] * 20 if "BTC" in inst_id else [50] * 20,
-            closes=[100 + i for i in range(20)] if "BTC" in inst_id else [100 - i for i in range(20)],
+            closes=(
+                [100 + i for i in range(20)] if "BTC" in inst_id else [100 - i for i in range(20)]
+            ),
         ),
     }
     client.get_open_interest.return_value = {"ok": True, "open_interest": 1e6}
@@ -57,11 +59,13 @@ def test_rotation_positive():
 def test_rotation_negative():
     """本币弱于组均值 → 负轮动（PUMP 案例）"""
     client = MagicMock()
+
     # PUMP 弱势，UNI 强势
     def kline_resp(inst_id, bar, limit):
         if "PUMP" in inst_id:
-            return {"ok": True, "candles": _make_candles([30]*20, [100-i for i in range(20)])}
-        return {"ok": True, "candles": _make_candles([150]*20, [100+i for i in range(20)])}
+            return {"ok": True, "candles": _make_candles([30] * 20, [100 - i for i in range(20)])}
+        return {"ok": True, "candles": _make_candles([150] * 20, [100 + i for i in range(20)])}
+
     client.get_kline.side_effect = kline_resp
     client.get_open_interest.return_value = {"ok": True, "open_interest": 1e6}
 
@@ -76,7 +80,7 @@ def test_capital_score_components():
     client = MagicMock()
     client.get_kline.return_value = {
         "ok": True,
-        "candles": _make_candles([200]*20, [100+i*0.5 for i in range(20)]),  # 放量+上涨
+        "candles": _make_candles([200] * 20, [100 + i * 0.5 for i in range(20)]),  # 放量+上涨
     }
     client.get_open_interest.return_value = {"ok": True, "open_interest": 1e7}  # 高OI
 

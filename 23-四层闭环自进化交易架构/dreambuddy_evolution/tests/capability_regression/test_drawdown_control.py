@@ -5,6 +5,7 @@
 
 硬约束: HC-DS4-08（纯只读验证，不修改实盘行为）.
 """
+
 from __future__ import annotations
 
 from conftest import calc_drawdowns
@@ -47,18 +48,20 @@ class TestDrawdownControl:
         # 带止损的最大回撤应小于无止损
         assert dd_sl < dd_no_sl, f"Stop-loss DD {dd_sl:.2%} >= no-SL DD {dd_no_sl:.2%}"
         # 止损至少减少 1 个百分点的回撤
-        assert dd_no_sl - dd_sl > 0.01, \
-            f"Stop-loss reduced DD by only {(dd_no_sl - dd_sl)*100:.2f}pp (< 1pp)"
+        assert (
+            dd_no_sl - dd_sl > 0.01
+        ), f"Stop-loss reduced DD by only {(dd_no_sl - dd_sl)*100:.2f}pp (< 1pp)"
 
     def test_consecutive_loss_reduces_risk(self):
         """连续亏损后应降低仓位（风险递减）"""
         # 模拟连续亏损
-        losses = [0.02, 0.02, 0.02, 0.02, 0.02]  # 连续 5 次 -2%
+        losses = [0.02, 0.02, 0.02, 0.02, 0.02]  # 连续 5 次 -2%  # noqa: F841
         position_sizes = [1.0, 0.8, 0.6, 0.5, 0.4]  # 仓位递减
         # 验证仓位随亏损递减
         for i in range(1, len(position_sizes)):
-            assert position_sizes[i] < position_sizes[i - 1], \
-                f"Position size should decrease after consecutive loss {i}"
+            assert (
+                position_sizes[i] < position_sizes[i - 1]
+            ), f"Position size should decrease after consecutive loss {i}"
 
     def test_drawdown_recovery(self, ranging_market):
         """震荡行情中，止损+止盈策略的回撤应能恢复"""
@@ -67,7 +70,7 @@ class TestDrawdownControl:
         for i in range(1, len(ranging_market)):
             bar = ranging_market[i]
             # 简单策略：价格低于 MA 做空，高于 MA 做多
-            ma = sum(b["close"] for b in ranging_market[max(0, i - 10):i]) / min(10, i)
+            ma = sum(b["close"] for b in ranging_market[max(0, i - 10) : i]) / min(10, i)
             if bar["close"] > ma:
                 # 做多，带 2% 止损 4% 止盈
                 ret = (bar["close"] - entry) / entry
@@ -85,6 +88,7 @@ class TestDrawdownControl:
     def test_equity_curve_smoother_with_sl(self, declining_market):
         """带止损的权益曲线比不带止损的更平滑（标准差更小）"""
         import statistics
+
         entry = declining_market[0]["close"]
 
         # 带止损

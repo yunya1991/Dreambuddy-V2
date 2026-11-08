@@ -15,16 +15,16 @@
   2. 硬约束兜底：试验结果违例时返回差评（不抛异常）
   3. 持久化：试验结果写入 artifacts/param_center/ray_tune_results.json
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import os
 import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,7 @@ def _safe_report(**kwargs):
     try:
         import ray
         from ray import tune
+
         # ray runtime 未初始化时，写入 fallback log（不调用 tune.report）
         if not ray.is_initialized():
             _REPORT_LOG.append(dict(kwargs))
@@ -88,6 +89,7 @@ _REPORT_LOG: list = []
 @dataclass
 class RayTuneResult:
     """Ray Tune 优化结果"""
+
     best_params: Dict[str, float] = field(default_factory=dict)
     best_calmar: float = 0.0
     best_drawdown: float = 0.0
@@ -146,7 +148,7 @@ class RayTuneOptimizer:
         try:
             import ray  # noqa: F401
             from ray import tune
-            from ray.tune.schedulers import AsyncHyperBandScheduler
+            from ray.tune.schedulers import AsyncHyperBandScheduler  # noqa: F401
         except ImportError as exc:
             logger.warning("ray 不可用，fallback 到单点验证: %s", exc)
             return self._fallback_single_point(symbol, history_days, str(exc))
@@ -157,6 +159,7 @@ class RayTuneOptimizer:
         # 加载数据一次（避免每个 worker 重复加载）
         try:
             from memory_l4.bcrm2.sltp_bayesian_optimizer import load_klines
+
             df = load_klines(symbol)
             if df is None or len(df) < 200:
                 logger.warning("%s 数据不足，fallback 到单点", symbol)
@@ -188,7 +191,9 @@ class RayTuneOptimizer:
 
             # 取最优
             best_trial = analysis.get_best_trial(
-                metric="calmar", scope="last", mode="max",
+                metric="calmar",
+                scope="last",
+                mode="max",
             )
             if best_trial is None:
                 return RayTuneResult(
@@ -207,8 +212,7 @@ class RayTuneOptimizer:
             best_dd = float(best_trial.last_result.get("max_drawdown", 0.0))
 
             # 持久化
-            self._save_result(symbol, best_params, best_calmar, best_dd,
-                              len(analysis.trials))
+            self._save_result(symbol, best_params, best_calmar, best_dd, len(analysis.trials))
 
             return RayTuneResult(
                 best_params=best_params,
@@ -228,14 +232,15 @@ class RayTuneOptimizer:
     def _build_search_space() -> dict:
         """搜索空间：sl_floor/tp_floor/atr_mult 在硬约束内"""
         return {
-            "sl_floor": tune.uniform(SL_FLOOR, SL_CEIL),       # [0.03, 0.15]
-            "tp_floor": tune.uniform(TP_FLOOR, TP_CEIL),        # [0.12, 0.30]
-            "atr_mult": tune.uniform(ATR_MULT_MIN, ATR_MULT_MAX),  # [2.0, 6.0]
+            "sl_floor": tune.uniform(SL_FLOOR, SL_CEIL),  # [0.03, 0.15]  # noqa: F821
+            "tp_floor": tune.uniform(TP_FLOOR, TP_CEIL),  # [0.12, 0.30]  # noqa: F821
+            "atr_mult": tune.uniform(ATR_MULT_MIN, ATR_MULT_MAX),  # [2.0, 6.0]  # noqa: F821
         }
 
     def _build_scheduler(self):
         """调度器"""
         from ray.tune.schedulers import AsyncHyperBandScheduler
+
         return AsyncHyperBandScheduler(
             time_attr="training_iteration",
             metric="calmar",
@@ -248,6 +253,7 @@ class RayTuneOptimizer:
         """搜索算法（贝叶斯优化优先，fallback 到 random）"""
         try:
             from ray.tune.search.bayesopt import BayesOptSearch
+
             return BayesOptSearch(
                 metric="calmar",
                 mode="max",
@@ -255,6 +261,7 @@ class RayTuneOptimizer:
         except Exception:
             # Fallback: random search
             from ray.tune.search.basic_variant import BasicVariantGenerator
+
             return BasicVariantGenerator()
 
     @staticmethod
@@ -264,6 +271,7 @@ class RayTuneOptimizer:
         内部用 _safe_report 安全引用 ray.tune.report，
         在 ray runtime 外被调用时也能正常测试。
         """
+
         def _trainable(config):
             # 硬约束兜底
             sl = config["sl_floor"]
@@ -276,6 +284,7 @@ class RayTuneOptimizer:
 
             try:
                 from memory_l4.bcrm2.sltp_bayesian_optimizer import run_backtest
+
                 bt = run_backtest(df, symbol, sl_floor=sl, tp_floor=tp, atr_mult=atr)
                 calmar = float(getattr(bt, "calmar", 0.0))
                 dd = abs(float(getattr(bt, "max_drawdown", 1.0)))
@@ -294,8 +303,9 @@ class RayTuneOptimizer:
     ) -> RayTuneResult:
         """单点 fallback：用默认参数跑一次 BayesianVerifier"""
         try:
-            from .verifier import BayesianVerifier
             from .aggregator import ParamProposal
+            from .verifier import BayesianVerifier
+
             # 默认参数
             default_params = {
                 "sl_floor": SL_FLOOR,

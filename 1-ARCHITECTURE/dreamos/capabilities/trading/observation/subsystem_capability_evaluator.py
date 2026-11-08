@@ -15,12 +15,10 @@
 - 评估结果用于 Dream OS 自身交易系统的节点优化参考
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-import csv
 import json
 import logging
-import gzip
 from collections import defaultdict
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
@@ -28,8 +26,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("subsystem_capability_evaluator")
 
@@ -43,20 +40,22 @@ while BASE_DIR.name != "dreambuddy-v2":
 # 数据类型定义
 # ============================================================
 
+
 @dataclass
 class SubsystemTrade:
     """子系统交易记录（标准化格式）"""
+
     trade_id: str
-    system: str                  # v15 | yijing | screen3 | ab_trading
+    system: str  # v15 | yijing | screen3 | ab_trading
     symbol: str
-    direction: str               # LONG | SHORT
+    direction: str  # LONG | SHORT
     entry_time: str
     entry_price: float
     exit_time: Optional[str]
     exit_price: Optional[float]
     pnl_percent: float
     holding_bars: int
-    scenario: str                # 场景ID（需要推断）
+    scenario: str  # 场景ID（需要推断）
     confidence: float
     meta: Dict[str, Any] = field(default_factory=dict)
 
@@ -67,6 +66,7 @@ class SubsystemTrade:
 @dataclass
 class ScenarioSystemMetrics:
     """单个场景-系统的指标"""
+
     scenario: str
     system: str
     total_trades: int
@@ -75,10 +75,10 @@ class ScenarioSystemMetrics:
     avg_pnl: float
     total_return: float
     max_drawdown: float
-    accuracy: float              # 方向准确率
-    stability: float             # 稳定性评分
-    sharpe: float                # 夏普比率
-    score: float                 # 综合评分
+    accuracy: float  # 方向准确率
+    stability: float  # 稳定性评分
+    sharpe: float  # 夏普比率
+    score: float  # 综合评分
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -87,12 +87,13 @@ class ScenarioSystemMetrics:
 @dataclass
 class SubsystemCapabilityReport:
     """子系统能力评估报告"""
+
     generated_at: str
     total_trades_analyzed: int
     systems_evaluated: List[str]
     scenario_metrics: Dict[str, Dict[str, Dict]]  # scenario -> system -> metrics
-    best_systems: Dict[str, str]                   # scenario -> best_system
-    recommendations: Dict[str, str]                # scenario -> recommendation
+    best_systems: Dict[str, str]  # scenario -> best_system
+    recommendations: Dict[str, str]  # scenario -> recommendation
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -101,6 +102,7 @@ class SubsystemCapabilityReport:
 # ============================================================
 # 子系统交易记录提取器
 # ============================================================
+
 
 class SubsystemTradeExtractor:
     """从各子系统提取交易记录"""
@@ -163,9 +165,9 @@ class SubsystemTradeExtractor:
                 # 将回测结果转为伪交易记录
                 total_return = perf.get("total_return_pct", 0)
                 win_rate = perf.get("win_rate_pct", 0) / 100
-                sharpe = perf.get("sharpe_ratio", 0)
+                sharpe = perf.get("sharpe_ratio", 0)  # noqa: F841
                 max_dd = perf.get("max_drawdown_pct", 0)
-                profit_factor = perf.get("profit_factor", 1)
+                profit_factor = perf.get("profit_factor", 1)  # noqa: F841
 
                 # 基于回测指标估算交易数量
                 # 假设回测期间平均每3天1笔交易
@@ -186,7 +188,11 @@ class SubsystemTradeExtractor:
                     if is_win:
                         pnl = total_return / max(1, winning_trades) if winning_trades > 0 else 0
                     else:
-                        pnl = -max_dd / max(1, estimated_trades - winning_trades) if estimated_trades > winning_trades else 0
+                        pnl = (
+                            -max_dd / max(1, estimated_trades - winning_trades)
+                            if estimated_trades > winning_trades
+                            else 0
+                        )
 
                     trade = SubsystemTrade(
                         trade_id=f"screen3_backtest_{record.get('version', 'v1')}_{i}",
@@ -201,7 +207,11 @@ class SubsystemTradeExtractor:
                         holding_bars=72,  # 假设3天 = 72小时
                         scenario=self._infer_scenario_from_backtest(perf),
                         confidence=perf.get("win_rate_pct", 50) / 100,
-                        meta={"version": record.get("version", ""), "period": record.get("period", ""), **perf},
+                        meta={
+                            "version": record.get("version", ""),
+                            "period": record.get("period", ""),
+                            **perf,
+                        },
                     )
                     trades.append(trade)
 
@@ -250,7 +260,11 @@ class SubsystemTradeExtractor:
                     if is_win:
                         pnl = total_return / max(1, winning_trades) if winning_trades > 0 else 0
                     else:
-                        pnl = -max_dd / max(1, estimated_trades - winning_trades) if estimated_trades > winning_trades else 0
+                        pnl = (
+                            -max_dd / max(1, estimated_trades - winning_trades)
+                            if estimated_trades > winning_trades
+                            else 0
+                        )
 
                     trade = SubsystemTrade(
                         trade_id=f"trend_backtest_{record.get('version', 'v1')}_{i}",
@@ -265,7 +279,11 @@ class SubsystemTradeExtractor:
                         holding_bars=72,
                         scenario=self._infer_scenario_from_backtest(perf),
                         confidence=perf.get("win_rate_pct", 50) / 100,
-                        meta={"version": record.get("version", ""), "period": record.get("period", ""), **perf},
+                        meta={
+                            "version": record.get("version", ""),
+                            "period": record.get("period", ""),
+                            **perf,
+                        },
                     )
                     trades.append(trade)
 
@@ -349,7 +367,7 @@ class SubsystemTradeExtractor:
                                     trades.append(trade)
                         except json.JSONDecodeError:
                             continue
-                logger.info(f"V15 历史交易已加载")
+                logger.info("V15 历史交易已加载")
             except Exception as e:
                 logger.error(f"读取 V15 审计日志失败: {e}")
 
@@ -373,7 +391,7 @@ class SubsystemTradeExtractor:
                 confidence=0.6,
                 meta=record,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             return None
 
     def _extract_yijing(self) -> List[SubsystemTrade]:
@@ -415,12 +433,12 @@ class SubsystemTradeExtractor:
             if not result_data:
                 return None
 
-            result = result_data[0]
+            result = result_data[0]  # noqa: F841
             inst_id = payload.get("instId", "")
             symbol = inst_id.split("-")[0]
 
             # 从 tag 或 side 推断方向
-            side = payload.get("side", "")
+            side = payload.get("side", "")  # noqa: F841
             pos_side = payload.get("posSide", "")
             direction = "LONG" if pos_side == "long" else "SHORT"
 
@@ -439,7 +457,7 @@ class SubsystemTradeExtractor:
                 confidence=0.6,
                 meta=record,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: F841
             return None
 
     def _estimate_holding_bars(self, open_time: str) -> int:
@@ -460,7 +478,7 @@ class SubsystemTradeExtractor:
     def _infer_scenario_from_position(self, pos: Dict) -> str:
         """从持仓信息推断场景（简化版）"""
         # 基于止损类型和波动率倍数推断
-        sl_type = pos.get("stop_loss_type", "")
+        sl_type = pos.get("stop_loss_type", "")  # noqa: F841
         vol_mult = pos.get("vol_mult", 1.0)
 
         # 简化场景推断
@@ -493,6 +511,7 @@ class SubsystemTradeExtractor:
 # ============================================================
 # 场景-系统能力评估器
 # ============================================================
+
 
 class ScenarioSystemEvaluator:
     """场景-系统二维能力评估"""
@@ -539,7 +558,7 @@ class ScenarioSystemEvaluator:
         report = SubsystemCapabilityReport(
             generated_at=datetime.now(timezone.utc).isoformat(),
             total_trades_analyzed=len(trades),
-            systems_evaluated=list(set(t.system for t in trades)),
+            systems_evaluated=list(set(t.system for t in trades)),  # noqa: C401
             scenario_metrics=scenario_metrics,
             best_systems=best_systems,
             recommendations=recommendations,
@@ -549,7 +568,9 @@ class ScenarioSystemEvaluator:
 
         return report
 
-    def _group_by_scenario_system(self, trades: List[SubsystemTrade]) -> Dict[Tuple[str, str], List[SubsystemTrade]]:
+    def _group_by_scenario_system(
+        self, trades: List[SubsystemTrade]
+    ) -> Dict[Tuple[str, str], List[SubsystemTrade]]:
         """按场景-系统分组"""
         grouped = defaultdict(list)
         for trade in trades:
@@ -557,7 +578,9 @@ class ScenarioSystemEvaluator:
             grouped[key].append(trade)
         return grouped
 
-    def _calculate_metrics(self, scenario: str, system: str, trades: List[SubsystemTrade]) -> ScenarioSystemMetrics:
+    def _calculate_metrics(
+        self, scenario: str, system: str, trades: List[SubsystemTrade]
+    ) -> ScenarioSystemMetrics:
         """计算单个场景-系统的指标"""
         total_trades = len(trades)
 
@@ -591,11 +614,11 @@ class ScenarioSystemEvaluator:
         # P1-1 修复: sharpe 双向裁剪到 [-1, 1]，负 sharpe 不再无限放大扣分
         #           负 total_return 扣分（而非贡献0），避免亏损场景得分偏高
         score = (
-            win_rate * self.WEIGHTS["win_rate"] +
-            accuracy * self.WEIGHTS["accuracy"] +
-            max(-1, min(sharpe / 2, 1)) * self.WEIGHTS["sharpe"] +  # 夏普归一化 [-1, 1]
-            stability * self.WEIGHTS["stability"] +
-            (1 if total_return > 0 else -1) * self.WEIGHTS["total_return"]  # 负收益扣分
+            win_rate * self.WEIGHTS["win_rate"]
+            + accuracy * self.WEIGHTS["accuracy"]
+            + max(-1, min(sharpe / 2, 1)) * self.WEIGHTS["sharpe"]  # 夏普归一化 [-1, 1]
+            + stability * self.WEIGHTS["stability"]
+            + (1 if total_return > 0 else -1) * self.WEIGHTS["total_return"]  # 负收益扣分
         )
 
         return ScenarioSystemMetrics(
@@ -622,8 +645,9 @@ class ScenarioSystemEvaluator:
         for trade in trades:
             if trade.exit_price and trade.entry_price:
                 price_change = trade.exit_price - trade.entry_price
-                if (trade.direction == "LONG" and price_change > 0) or \
-                   (trade.direction == "SHORT" and price_change < 0):
+                if (trade.direction == "LONG" and price_change > 0) or (
+                    trade.direction == "SHORT" and price_change < 0
+                ):
                     correct += 1
 
         return correct / len(trades) if trades else 0.5
@@ -653,12 +677,14 @@ class ScenarioSystemEvaluator:
     def _calculate_sharpe(self, pnls: List[float]) -> float:
         """计算年化夏普比率（样本标准差，年化）"""
         from dreamos.capabilities.trading.stats_utils import calculate_metrics
+
         metrics = calculate_metrics(pnls, periods_per_year=365)
         return metrics.sharpe_ratio
 
     def _calculate_sortino(self, pnls: List[float]) -> float:
         """计算年化 Sortino 比率"""
         from dreamos.capabilities.trading.stats_utils import calculate_metrics
+
         metrics = calculate_metrics(pnls, periods_per_year=365)
         return metrics.sortino_ratio
 
@@ -683,6 +709,7 @@ class ScenarioSystemEvaluator:
 # ============================================================
 # 主入口
 # ============================================================
+
 
 def evaluate_subsystems(output_file: Optional[str] = None) -> SubsystemCapabilityReport:
     """执行子系统能力评估
@@ -728,21 +755,16 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="子系统能力评估器")
-    parser.add_argument(
-        "--output", "-o",
-        type=str,
-        default=None,
-        help="输出文件路径（JSON格式）"
-    )
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件路径（JSON格式）")
 
     args = parser.parse_args()
 
     report = evaluate_subsystems(args.output)
 
     # 打印摘要
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("子系统能力评估摘要")
-    print("="*60)
+    print("=" * 60)
     print(f"分析交易数: {report.total_trades_analyzed}")
     print(f"评估系统数: {len(report.systems_evaluated)}")
     print(f"评估系统: {', '.join(report.systems_evaluated)}")
@@ -753,7 +775,7 @@ def main():
         for scenario, system in report.best_systems.items():
             print(f"  {scenario}: {system}")
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
 
     if not args.output:
         print("\n完整报告:")

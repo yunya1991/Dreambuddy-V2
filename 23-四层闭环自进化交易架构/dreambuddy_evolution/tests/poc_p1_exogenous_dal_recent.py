@@ -13,6 +13,7 @@
   - train: 前 70%
   - test: 后 30% (多个滚动窗口)
 """
+
 from __future__ import annotations
 
 import json
@@ -38,10 +39,13 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(
 logger = logging.getLogger(__name__)
 
 from dreambuddy_dal import get_market_macro_repo  # noqa: E402
-from dreambuddy_evolution.core.neural_sde_model import NeuralSDEModel, NeuralSDETrainer  # noqa: E402
-from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
 from dreambuddy_evolution.core.btc_regime_detector import BTCRegimeDetector  # noqa: E402
 from dreambuddy_evolution.core.exogenous_data_bridge import build_exogenous_series  # noqa: E402
+from dreambuddy_evolution.core.garch_fallback import GARCHFallback  # noqa: E402
+from dreambuddy_evolution.core.neural_sde_model import (  # noqa: E402
+    NeuralSDEModel,
+    NeuralSDETrainer,
+)  # noqa: E402
 
 
 def load_dal_price_and_exogenous():
@@ -68,8 +72,9 @@ def load_dal_price_and_exogenous():
     valid = np.isfinite(prices_raw) & (prices_raw > 1000)
     cap_ts = cap_ts[valid]
     prices_raw = prices_raw[valid]
-    logger.info("有效价格点: %d, range=%.0f~%.0f", len(prices_raw),
-                prices_raw.min(), prices_raw.max())
+    logger.info(
+        "有效价格点: %d, range=%.0f~%.0f", len(prices_raw), prices_raw.min(), prices_raw.max()
+    )
 
     # 按小时重采样 (取每小时第一个点, 缺失前向填充)
     hour_ts = np.arange(cap_ts.min(), cap_ts.max() + 1, 3600)
@@ -79,42 +84,63 @@ def load_dal_price_and_exogenous():
     # --- 外生数据: 时变链上/流动性信号 (覆盖价格窗口) ---
     # 1) stablecoins_top_10.total_circulating_usd_bln → funding_rate 代理 (fundamental short)
     sc_rows = repo.query_metric_by_time(
-        "stablecoins_top_10", "total_circulating_usd_bln", start, end)
+        "stablecoins_top_10", "total_circulating_usd_bln", start, end
+    )
     sc_ts = np.array([r[3].timestamp() for r in sc_rows])
     sc_vals = np.array([float(r[2]) for r in sc_rows])
-    sc_aligned = np.interp(hour_ts, sc_ts, sc_vals,
-                           left=sc_vals[0] if len(sc_vals) else 0.0,
-                           right=sc_vals[-1] if len(sc_vals) else 0.0)
+    sc_aligned = np.interp(
+        hour_ts,
+        sc_ts,
+        sc_vals,
+        left=sc_vals[0] if len(sc_vals) else 0.0,
+        right=sc_vals[-1] if len(sc_vals) else 0.0,
+    )
     # 稳定币供给变化率 → funding_rate 代理 (供给↑=流动性流入≈负funding=看涨)
     sc_pct = np.zeros_like(sc_aligned)
     sc_pct[1:] = (sc_aligned[1:] - sc_aligned[:-1]) / np.maximum(sc_aligned[:-1], 1e-9)
     funding_proxy = -sc_pct * 100.0  # 放大到 ±1% 量级, 负号: 供给↑→funding↓
 
     # 2) all_protocols.total_tvl_bln → dxy_change 代理 (macro long, 反向)
-    tvl_rows = repo.query_metric_by_time(
-        "all_protocols", "total_tvl_bln", start, end)
+    tvl_rows = repo.query_metric_by_time("all_protocols", "total_tvl_bln", start, end)
     tvl_ts = np.array([r[3].timestamp() for r in tvl_rows])
     tvl_vals = np.array([float(r[2]) for r in tvl_rows])
-    tvl_aligned = np.interp(hour_ts, tvl_ts, tvl_vals,
-                            left=tvl_vals[0] if len(tvl_vals) else 0.0,
-                            right=tvl_vals[-1] if len(tvl_vals) else 0.0)
+    tvl_aligned = np.interp(
+        hour_ts,
+        tvl_ts,
+        tvl_vals,
+        left=tvl_vals[0] if len(tvl_vals) else 0.0,
+        right=tvl_vals[-1] if len(tvl_vals) else 0.0,
+    )
     tvl_pct = np.zeros_like(tvl_aligned)
     tvl_pct[1:] = (tvl_aligned[1:] - tvl_aligned[:-1]) / np.maximum(tvl_aligned[:-1], 1e-9)
     dxy_proxy = -tvl_pct  # TVL↑=风险偏好↑≈DXY↓
 
     # 3) ex_bal_BTC_chg30d_pct → exchange_net_flow (链上巨鲸流向, fundamental medium)
-    exbal_rows = repo.query_metric_by_time(
-        "exchanges_whales", "ex_bal_BTC_chg30d_pct", start, end)
+    exbal_rows = repo.query_metric_by_time("exchanges_whales", "ex_bal_BTC_chg30d_pct", start, end)
     exbal_ts = np.array([r[3].timestamp() for r in exbal_rows])
     exbal_vals = np.array([float(r[2]) for r in exbal_rows])
-    exbal_aligned = np.interp(hour_ts, exbal_ts, exbal_vals,
-                              left=exbal_vals[0] if len(exbal_vals) else 0.0,
-                              right=exbal_vals[-1] if len(exbal_vals) else 0.0)
+    exbal_aligned = np.interp(
+        hour_ts,
+        exbal_ts,
+        exbal_vals,
+        left=exbal_vals[0] if len(exbal_vals) else 0.0,
+        right=exbal_vals[-1] if len(exbal_vals) else 0.0,
+    )
 
     logger.info("时变外生信号:")
-    logger.info("  stablecoin supply: %d 点, pct range=%.4f~%.4f", len(sc_aligned), sc_pct.min(), sc_pct.max())
+    logger.info(
+        "  stablecoin supply: %d 点, pct range=%.4f~%.4f",
+        len(sc_aligned),
+        sc_pct.min(),
+        sc_pct.max(),
+    )
     logger.info("  TVL: %d 点, pct range=%.4f~%.4f", len(tvl_aligned), tvl_pct.min(), tvl_pct.max())
-    logger.info("  ex_bal: %d 点, range=%.3f~%.3f", len(exbal_aligned), exbal_aligned.min(), exbal_aligned.max())
+    logger.info(
+        "  ex_bal: %d 点, range=%.3f~%.3f",
+        len(exbal_aligned),
+        exbal_aligned.min(),
+        exbal_aligned.max(),
+    )
 
     # --- 快照型外生 (CPI, rate_prob, etf_flow) ---
     snapshot = {}
@@ -133,7 +159,7 @@ def load_dal_price_and_exogenous():
         rc = float(fomc_row[1])
         snapshot["monetary_cycle"] = "easing" if rc < 0 else ("tightening" if rc > 0 else "neutral")
 
-    logger.info("快照型外生: %s", {k: v for k, v in snapshot.items()})
+    logger.info("快照型外生: %s", {k: v for k, v in snapshot.items()})  # noqa: C416
 
     # 构建 per_point_data: 每点 = snapshot + 时变信号
     per_point_data = []
@@ -150,14 +176,15 @@ def load_dal_price_and_exogenous():
     return prices, per_point_data, hour_ts
 
 
-def evaluate_on_windows(model, closes, test_starts, regime_labels,
-                         full_exo_series, n_paths=200, horizon=20):
+def evaluate_on_windows(
+    model, closes, test_starts, regime_labels, full_exo_series, n_paths=200, horizon=20
+):
     results = []
     for ts in test_starts:
         if ts + horizon >= len(closes):
             continue
-        history = closes[:ts + 1]
-        actual = closes[ts + 1:ts + 1 + horizon]
+        history = closes[: ts + 1]
+        actual = closes[ts + 1 : ts + 1 + horizon]
         init_price = float(history[-1])
         returns = np.diff(np.log(history))
         init_vol = float(np.std(returns)) if len(returns) > 2 else 0.02
@@ -174,8 +201,11 @@ def evaluate_on_windows(model, closes, test_starts, regime_labels,
             exo_snap = np.asarray(full_exo_series[ts], dtype=np.float64).ravel()
 
         sde_paths = model.forecast(
-            history, horizon, n_paths,
-            regime=test_regime, exogenous_snapshot=exo_snap,
+            history,
+            horizon,
+            n_paths,
+            regime=test_regime,
+            exogenous_snapshot=exo_snap,
         )
         if sde_paths is not None:
             sde_pred = np.mean(sde_paths[:, 1:], axis=0)
@@ -184,32 +214,41 @@ def evaluate_on_windows(model, closes, test_starts, regime_labels,
             sde_mae = float("inf")
 
         ratio = sde_mae / garch_mae if garch_mae > 0 else float("inf")
-        results.append({
-            "start_idx": ts,
-            "regime": test_regime,
-            "sde_mae": round(sde_mae, 4),
-            "garch_mae": round(garch_mae, 4),
-            "ratio": round(ratio, 4),
-        })
+        results.append(
+            {
+                "start_idx": ts,
+                "regime": test_regime,
+                "sde_mae": round(sde_mae, 4),
+                "garch_mae": round(garch_mae, 4),
+                "ratio": round(ratio, 4),
+            }
+        )
     return results
 
 
-def train_and_eval(closes, use_exogenous, exo_series, regime_labels,
-                   train_end, test_starts):
+def train_and_eval(closes, use_exogenous, exo_series, regime_labels, train_end, test_starts):
     import torch
+
     torch.manual_seed(42)
     model = NeuralSDEModel(
-        device="cpu", n_regimes=3,
-        use_moe=True, moe_routing="hard",
+        device="cpu",
+        n_regimes=3,
+        use_moe=True,
+        moe_routing="hard",
         dropout=0.05,
         use_exogenous=use_exogenous,
         exogenous_dim=9 if use_exogenous else 0,
     )
     trainer = NeuralSDETrainer(
-        model=model, lr=1e-4, seq_len=32, horizon=20,
-        batch_size=32, loss_type="return_mse",
+        model=model,
+        lr=1e-4,
+        seq_len=32,
+        horizon=20,
+        batch_size=32,
+        loss_type="return_mse",
         weight_decay=1e-4,
-        patience=10, val_split=0.1,
+        patience=10,
+        val_split=0.1,
     )
     closes_train = closes[:train_end]
     regime_train = regime_labels[:train_end] if regime_labels is not None else None
@@ -217,7 +256,8 @@ def train_and_eval(closes, use_exogenous, exo_series, regime_labels,
 
     t0 = time.time()
     report = trainer.train(
-        closes_train, epochs=150,
+        closes_train,
+        epochs=150,
         regime_labels=regime_train,
         regime_balance="natural",
         exogenous_series=exo_train,
@@ -225,9 +265,13 @@ def train_and_eval(closes, use_exogenous, exo_series, regime_labels,
     train_time = time.time() - t0
 
     results = evaluate_on_windows(
-        model=model, closes=closes, test_starts=test_starts,
-        regime_labels=regime_labels, full_exo_series=exo_series,
-        n_paths=100, horizon=20,
+        model=model,
+        closes=closes,
+        test_starts=test_starts,
+        regime_labels=regime_labels,
+        full_exo_series=exo_series,
+        n_paths=100,
+        horizon=20,
     )
     return report, train_time, results
 
@@ -240,9 +284,11 @@ def main():
     n = len(prices)
     logger.info("=== A2 近期窗口数据 ===")
     logger.info("价格点数: %d, 范围: %.0f ~ %.0f", n, prices.min(), prices.max())
-    logger.info("时间范围: %s ~ %s",
-                datetime.fromtimestamp(hour_ts[0], tz=timezone.utc).strftime("%Y-%m-%d"),
-                datetime.fromtimestamp(hour_ts[-1], tz=timezone.utc).strftime("%Y-%m-%d"))
+    logger.info(
+        "时间范围: %s ~ %s",
+        datetime.fromtimestamp(hour_ts[0], tz=timezone.utc).strftime("%Y-%m-%d"),
+        datetime.fromtimestamp(hour_ts[-1], tz=timezone.utc).strftime("%Y-%m-%d"),
+    )
 
     # Regime detection
     np.random.seed(42)
@@ -262,10 +308,7 @@ def main():
     train_end = int(n * 0.7)
     # 测试窗口: 从 train_end 开始, 每 24 点一个窗口 (~每天)
     step = 24
-    test_starts = [
-        train_end + i * step
-        for i in range((n - train_end - 20) // step)
-    ]
+    test_starts = [train_end + i * step for i in range((n - train_end - 20) // step)]
     logger.info("Walk-forward: train=%d, test_windows=%d", train_end, len(test_starts))
 
     if len(test_starts) < 2:
@@ -275,15 +318,23 @@ def main():
     # ===== Config A: 无外生 =====
     logger.info("=== 训练 Config A (无外生) ===")
     report_a, time_a, results_a = train_and_eval(
-        prices, use_exogenous=False, exo_series=None,
-        regime_labels=regime_labels, train_end=train_end, test_starts=test_starts,
+        prices,
+        use_exogenous=False,
+        exo_series=None,
+        regime_labels=regime_labels,
+        train_end=train_end,
+        test_starts=test_starts,
     )
 
     # ===== Config B: 有外生 =====
     logger.info("=== 训练 Config B (有外生, DAL 真实数据) ===")
     report_b, time_b, results_b = train_and_eval(
-        prices, use_exogenous=True, exo_series=exo_series,
-        regime_labels=regime_labels, train_end=train_end, test_starts=test_starts,
+        prices,
+        use_exogenous=True,
+        exo_series=exo_series,
+        regime_labels=regime_labels,
+        train_end=train_end,
+        test_starts=test_starts,
     )
 
     # 汇总
@@ -305,10 +356,18 @@ def main():
 
     logger.info("=" * 60)
     logger.info("=== A2 PoC: DAL 真实外生数据 近期窗口对比 ===")
-    logger.info("Config A (无外生): MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
-                sum_a["mean_sde_mae"], sum_a["mean_ratio"], sum_a["max_ratio"])
-    logger.info("Config B (有外生): MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
-                sum_b["mean_sde_mae"], sum_b["mean_ratio"], sum_b["max_ratio"])
+    logger.info(
+        "Config A (无外生): MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
+        sum_a["mean_sde_mae"],
+        sum_a["mean_ratio"],
+        sum_a["max_ratio"],
+    )
+    logger.info(
+        "Config B (有外生): MAE=%.2f, ratio=%.4f, max_ratio=%.4f",
+        sum_b["mean_sde_mae"],
+        sum_b["mean_ratio"],
+        sum_b["max_ratio"],
+    )
     logger.info("GARCH:           MAE=%.2f", sum_a["mean_garch_mae"])
     delta_ratio = (sum_b["mean_ratio"] - sum_a["mean_ratio"]) / sum_a["mean_ratio"] * 100
     logger.info("ratio 变化: %+.2f%% (越负越好)", delta_ratio)

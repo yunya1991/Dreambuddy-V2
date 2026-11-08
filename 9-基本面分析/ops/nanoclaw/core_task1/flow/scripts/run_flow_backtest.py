@@ -21,8 +21,8 @@ from pathlib import Path
 script_dir = Path(__file__).parent
 sys.path.insert(0, str(script_dir))
 
-from flow_backtester import run_flow_backtest, FlowBacktestConfig
-from flow_backtest_report_generator import save_backtest_report
+from flow_backtest_report_generator import save_backtest_report  # noqa: E402
+from flow_backtester import FlowBacktestConfig, run_flow_backtest  # noqa: E402
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
     if not end_date:
         end_date = datetime.now().strftime("%Y-%m-%d")
 
-    print(f"\n回测配置:")
+    print("\n回测配置:")
     print(f"  开始日期：{start_date}")
     print(f"  结束日期：{end_date}")
     print(f"  数据目录：{data_dir}")
@@ -51,16 +51,13 @@ def main():
     result = run_flow_backtest(start_date, end_date, data_dir)
 
     # 创建配置
-    config = FlowBacktestConfig(
-        start_date=start_date,
-        end_date=end_date
-    )
+    config = FlowBacktestConfig(start_date=start_date, end_date=end_date)
 
     # 基准数据
     benchmark = {
         "return": -0.2526,  # 基准收益 -25.26%
         "max_drawdown": 0.2856,  # 基准回撤 28.56%
-        "sharpe": 0  # 基准夏普
+        "sharpe": 0,  # 基准夏普
     }
 
     # 生成报告

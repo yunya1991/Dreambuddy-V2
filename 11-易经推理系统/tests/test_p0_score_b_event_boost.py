@@ -8,9 +8,10 @@ T1) compute_score_b_with_event_boost 函数存在，语义：
 
 T2) 卦方向矛盾 ×0.70 地板抬升 0.85 仍硬拦截（event_boost不绕过）
 """
-from __future__ import annotations
 
-import math
+from __future__ import annotations  # noqa: I001
+
+
 import pytest
 
 
@@ -39,8 +40,11 @@ class TestScoreBEventBoost:
             (0.75, 0.70, 2.0, 0.844, 0.10),
         ],
     )
-    def test_formula_and_clamp(self, cont, conf, strength, expected_score_b, expected_boost_max_0_10):
+    def test_formula_and_clamp(
+        self, cont, conf, strength, expected_score_b, expected_boost_max_0_10
+    ):
         from scripts.memory_l4.polling_trader import compute_score_b_with_event_boost
+
         score, boost = compute_score_b_with_event_boost(cont, conf, strength)
         assert abs(boost - expected_boost_max_0_10) < 1e-3, (
             f"event_boost clamp不符：期望={expected_boost_max_0_10:.4f} 实际={boost:.4f}  "
@@ -55,6 +59,7 @@ class TestScoreBEventBoost:
     def test_fail_open_on_exception(self):
         """mock抛出异常时score=baseline boost=0"""
         from scripts.memory_l4.polling_trader import compute_score_b_with_event_boost
+
         # 非法str类型注入 → 函数内部try/except应fail-open到0/原公式
         score, boost = compute_score_b_with_event_boost(0.75, 0.70, "not_a_number")  # type: ignore[arg-type]
         assert abs(score - (0.60 * 0.75 + 0.40 * 0.70)) < 1e-6
@@ -70,6 +75,7 @@ class TestScoreBEventBoost:
         from scripts.memory_l4.polling_trader import (
             apply_hex_conflict_multiplier_and_floor,  # RED阶段必失败，待实现
         )
+
         # 案例：confidence=0.80，hex_name="水天需"，hex_dir="LONG" vs decision_dir="SHORT"
         eff_conf, floor_hit = apply_hex_conflict_multiplier_and_floor(
             confidence=0.80,
@@ -83,8 +89,6 @@ class TestScoreBEventBoost:
         assert floor_hit is True, "地板抬升标志位应为True"
 
         # 反向校验：一致性卦（水天需LONG+决策LONG）→ 不×不抬
-        eff2, hit2 = apply_hex_conflict_multiplier_and_floor(
-            0.80, "水天需", "LONG", "LONG"
-        )
+        eff2, hit2 = apply_hex_conflict_multiplier_and_floor(0.80, "水天需", "LONG", "LONG")
         assert abs(eff2 - 0.80) < 1e-6, f"一致性卦不该惩罚，实际={eff2:.4f}"
         assert hit2 is False

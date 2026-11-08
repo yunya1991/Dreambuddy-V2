@@ -18,6 +18,7 @@
   - C-Drive Agent: 1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
   - 决策推导器: 34-前端应用训练系统/core/decision_deriver.py
 """
+
 import asyncio
 import os
 import sys
@@ -28,8 +29,11 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _34_DIR = os.path.dirname(_THIS_DIR)
 _PROJECT_ROOT = os.path.dirname(_34_DIR)
 _PYTHON_SERVER_DIR = os.path.join(
-    _PROJECT_ROOT, "1-ARCHITECTURE",
-    "dream-harness-bridge", "packages", "python-server",
+    _PROJECT_ROOT,
+    "1-ARCHITECTURE",
+    "dream-harness-bridge",
+    "packages",
+    "python-server",
 )
 
 for _p in [_THIS_DIR, _34_DIR, _PYTHON_SERVER_DIR]:
@@ -49,8 +53,17 @@ DEBATE_OUTCOMES = {"failure", "partial"}
 
 # 高价值案例关键词（触发 run_deep 而非 run_fast）
 HIGH_VALUE_KEYWORDS = [
-    "架构", "重写", "迁移", "核心", "关键", "重要",
-    "architecture", "rewrite", "migration", "critical", "core",
+    "架构",
+    "重写",
+    "迁移",
+    "核心",
+    "关键",
+    "重要",
+    "architecture",
+    "rewrite",
+    "migration",
+    "critical",
+    "core",
 ]
 
 
@@ -95,6 +108,7 @@ def _load_debate_engine():
 # ============================================================
 # 辩论触发判断
 # ============================================================
+
 
 def should_run_debate(
     confidence: float,
@@ -155,6 +169,7 @@ def is_high_value(intent: str, learned: list = None) -> bool:
 # 辩论执行
 # ============================================================
 
+
 def run_debate_for_case(
     case: Any,
     force: bool = False,
@@ -200,13 +215,9 @@ def run_debate_for_case(
 
         # 执行辩论（异步转同步）
         if high_value:
-            result = asyncio.run(
-                engine.run_fast(topic, background)  # 先走 fast，deep 需 LLM
-            )
+            result = asyncio.run(engine.run_fast(topic, background))  # 先走 fast，deep 需 LLM
         else:
-            result = asyncio.run(
-                engine.run_fast(topic, background)
-            )
+            result = asyncio.run(engine.run_fast(topic, background))
 
         # 提取 debate 元数据
         return {

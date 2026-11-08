@@ -10,9 +10,8 @@
 4. 与 hermes-rollback-actuator 格式兼容
 """
 
-import os
-from typing import Dict, Any, List
-from pathlib import Path
+import os  # noqa: I001
+from typing import Dict, Any
 
 
 class RollbackValidator:
@@ -42,28 +41,49 @@ class RollbackValidator:
             "rollback_points",
             "triggers",
             "actions",
-            "manual_trigger"
+            "manual_trigger",
         ]
 
         # 可观测指标 (用于 triggers)
         self.observable_metrics = [
-            "pnl", "max_drawdown", "sharpe",
-            "trade_count", "skip_rate", "slippage_sensitivity",
-            "reject_rate", "order_fail_rate", "equity", "balance",
-            "win_rate", "loss_streak", "drawdown_duration"
+            "pnl",
+            "max_drawdown",
+            "sharpe",
+            "trade_count",
+            "skip_rate",
+            "slippage_sensitivity",
+            "reject_rate",
+            "order_fail_rate",
+            "equity",
+            "balance",
+            "win_rate",
+            "loss_streak",
+            "drawdown_duration",
         ]
 
         # 幂等操作列表
         self.idempotent_actions = [
-            "restore_config", "restore_version", "revert_commit",
-            "disable_feature", "enable_fallback", "stop_bot",
-            "close_all_positions", "cancel_all_orders", "reset_to_default"
+            "restore_config",
+            "restore_version",
+            "revert_commit",
+            "disable_feature",
+            "enable_fallback",
+            "stop_bot",
+            "close_all_positions",
+            "cancel_all_orders",
+            "reset_to_default",
         ]
 
         # 非幂等/危险操作 (会警告)
         self.dangerous_actions = [
-            "delete", "remove", "drop", "truncate",
-            "rm", "del", "purge", "format"
+            "delete",
+            "remove",
+            "drop",
+            "truncate",
+            "rm",
+            "del",
+            "purge",
+            "format",
         ]
 
     def validate(self, change_bundle: Dict[str, Any]) -> Dict[str, Any]:
@@ -86,22 +106,26 @@ class RollbackValidator:
         # 检查 1: rollback_plan 是否存在
         rollback_plan = change_bundle.get("rollback_plan")
         if not rollback_plan:
-            details.append({
-                "id": "R001",
-                "check": "rollback_plan 存在性",
-                "status": "FAIL",
-                "message": "缺少 rollback_plan"
-            })
+            details.append(
+                {
+                    "id": "R001",
+                    "check": "rollback_plan 存在性",
+                    "status": "FAIL",
+                    "message": "缺少 rollback_plan",
+                }
+            )
             has_error = True
             print("    ✗ R001: 缺少 rollback_plan")
         else:
             # 检查 1 通过
-            details.append({
-                "id": "R001",
-                "check": "rollback_plan 存在性",
-                "status": "PASS",
-                "message": "rollback_plan 存在"
-            })
+            details.append(
+                {
+                    "id": "R001",
+                    "check": "rollback_plan 存在性",
+                    "status": "PASS",
+                    "message": "rollback_plan 存在",
+                }
+            )
             print("    ✓ R001: rollback_plan 存在")
 
             # 检查 2: rollback_points 存在且可执行
@@ -151,11 +175,7 @@ class RollbackValidator:
 
         print(f"  回滚验证完成: {summary}")
 
-        return {
-            "summary": summary,
-            "details": details,
-            "rollback_plan_id": rollback_plan_id
-        }
+        return {"summary": summary, "details": details, "rollback_plan_id": rollback_plan_id}
 
     def _validate_rollback_points(self, rollback_plan: Dict[str, Any]) -> Dict[str, Any]:
         """验证回滚点 - 检查路径是否真实存在"""
@@ -166,12 +186,14 @@ class RollbackValidator:
         rollback_points = rollback_plan.get("rollback_points", [])
 
         if not rollback_points:
-            details.append({
-                "id": "R002",
-                "check": "回滚点存在性",
-                "status": "FAIL",
-                "message": "rollback_points 为空"
-            })
+            details.append(
+                {
+                    "id": "R002",
+                    "check": "回滚点存在性",
+                    "status": "FAIL",
+                    "message": "rollback_points 为空",
+                }
+            )
             has_error = True
             print("    ✗ R002: rollback_points 为空")
         else:
@@ -181,12 +203,14 @@ class RollbackValidator:
 
             for i, point in enumerate(rollback_points):
                 if not point or not isinstance(point, str):
-                    details.append({
-                        "id": f"R002-{i+1}",
-                        "check": f"回滚点 {i+1} 格式",
-                        "status": "WARN",
-                        "message": f"回滚点格式异常: {point}"
-                    })
+                    details.append(
+                        {
+                            "id": f"R002-{i+1}",
+                            "check": f"回滚点 {i+1} 格式",
+                            "status": "WARN",
+                            "message": f"回滚点格式异常: {point}",
+                        }
+                    )
                     has_warn = True
                     continue
 
@@ -203,31 +227,37 @@ class RollbackValidator:
 
             # 判断结果
             if missing_points and len(missing_points) == len(rollback_points):
-                details.append({
-                    "id": "R002",
-                    "check": "回滚点存在性",
-                    "status": "FAIL",
-                    "message": f"所有回滚点都不存在: {missing_points}"
-                })
+                details.append(
+                    {
+                        "id": "R002",
+                        "check": "回滚点存在性",
+                        "status": "FAIL",
+                        "message": f"所有回滚点都不存在: {missing_points}",
+                    }
+                )
                 has_error = True
-                print(f"    ✗ R002: 所有回滚点都不存在")
+                print("    ✗ R002: 所有回滚点都不存在")
             elif missing_points:
-                details.append({
-                    "id": "R002",
-                    "check": "回滚点存在性",
-                    "status": "WARN",
-                    "message": f"{len(missing_points)} 个回滚点不存在: {missing_points}"
-                })
+                details.append(
+                    {
+                        "id": "R002",
+                        "check": "回滚点存在性",
+                        "status": "WARN",
+                        "message": f"{len(missing_points)} 个回滚点不存在: {missing_points}",
+                    }
+                )
                 has_warn = True
                 print(f"    ⚠ R002: {len(missing_points)} 个回滚点不存在")
             else:
-                details.append({
-                    "id": "R002",
-                    "check": "回滚点存在性",
-                    "status": "PASS",
-                    "message": f"所有 {len(existing_points)} 个回滚点均存在"
-                })
-                print(f"    ✓ R002: 所有回滚点存在")
+                details.append(
+                    {
+                        "id": "R002",
+                        "check": "回滚点存在性",
+                        "status": "PASS",
+                        "message": f"所有 {len(existing_points)} 个回滚点均存在",
+                    }
+                )
+                print("    ✓ R002: 所有回滚点存在")
 
         return {"details": details, "has_error": has_error, "has_warn": has_warn}
 
@@ -242,12 +272,14 @@ class RollbackValidator:
         triggers = rollback_plan.get("triggers", [])
 
         if not triggers:
-            details.append({
-                "id": "R003",
-                "check": "触发条件存在性",
-                "status": "FAIL",
-                "message": "triggers 为空，缺少自动触发条件"
-            })
+            details.append(
+                {
+                    "id": "R003",
+                    "check": "触发条件存在性",
+                    "status": "FAIL",
+                    "message": "triggers 为空，缺少自动触发条件",
+                }
+            )
             has_error = True
             print("    ✗ R003: triggers 为空")
         else:
@@ -256,34 +288,41 @@ class RollbackValidator:
             for i, trigger in enumerate(triggers):
                 if isinstance(trigger, str):
                     # 检查是否包含可观测指标
-                    is_observable = any(metric in trigger.lower()
-                                          for metric in self.observable_metrics)
+                    is_observable = any(
+                        metric in trigger.lower() for metric in self.observable_metrics
+                    )
                     if is_observable:
                         observable_count += 1
                     else:
-                        details.append({
-                            "id": f"R003-{i+1}",
-                            "check": f"触发条件 {i+1} 可观测性",
-                            "status": "WARN",
-                            "message": f"触发条件可能不可观测: {trigger[:50]}..."
-                        })
+                        details.append(
+                            {
+                                "id": f"R003-{i+1}",
+                                "check": f"触发条件 {i+1} 可观测性",
+                                "status": "WARN",
+                                "message": f"触发条件可能不可观测: {trigger[:50]}...",
+                            }
+                        )
                         has_warn = True
 
             if observable_count == len(triggers):
-                details.append({
-                    "id": "R003",
-                    "check": "触发条件可观测性",
-                    "status": "PASS",
-                    "message": f"所有 {len(triggers)} 个触发条件均可观测"
-                })
-                print(f"    ✓ R003: 所有触发条件可观测")
+                details.append(
+                    {
+                        "id": "R003",
+                        "check": "触发条件可观测性",
+                        "status": "PASS",
+                        "message": f"所有 {len(triggers)} 个触发条件均可观测",
+                    }
+                )
+                print("    ✓ R003: 所有触发条件可观测")
             else:
-                details.append({
-                    "id": "R003",
-                    "check": "触发条件可观测性",
-                    "status": "WARN",
-                    "message": f"{observable_count}/{len(triggers)} 个触发条件可观测"
-                })
+                details.append(
+                    {
+                        "id": "R003",
+                        "check": "触发条件可观测性",
+                        "status": "WARN",
+                        "message": f"{observable_count}/{len(triggers)} 个触发条件可观测",
+                    }
+                )
                 has_warn = True
                 print(f"    ⚠ R003: {observable_count}/{len(triggers)} 个触发条件可观测")
 
@@ -298,12 +337,14 @@ class RollbackValidator:
         actions = rollback_plan.get("actions", [])
 
         if not actions:
-            details.append({
-                "id": "R004",
-                "check": "回滚动作存在性",
-                "status": "FAIL",
-                "message": "actions 为空，缺少回滚动作定义"
-            })
+            details.append(
+                {
+                    "id": "R004",
+                    "check": "回滚动作存在性",
+                    "status": "FAIL",
+                    "message": "actions 为空，缺少回滚动作定义",
+                }
+            )
             has_error = True
             print("    ✗ R004: actions 为空")
         else:
@@ -320,61 +361,69 @@ class RollbackValidator:
                 action_lower = action.lower()
 
                 # 检查是否是幂等操作
-                is_idempotent = any(idem in action_lower
-                                          for idem in self.idempotent_actions)
+                is_idempotent = any(idem in action_lower for idem in self.idempotent_actions)
 
                 # 检查是否是危险操作
-                is_dangerous = any(danger in action_lower
-                                          for danger in self.dangerous_actions)
+                is_dangerous = any(danger in action_lower for danger in self.dangerous_actions)
 
                 if is_dangerous:
                     dangerous_count += 1
-                    details.append({
-                        "id": f"R004-{i+1}",
-                        "check": f"回滚动作 {i+1} 安全性",
-                        "status": "FAIL",
-                        "message": f"回滚动作包含危险操作: {action[:50]}..."
-                    })
+                    details.append(
+                        {
+                            "id": f"R004-{i+1}",
+                            "check": f"回滚动作 {i+1} 安全性",
+                            "status": "FAIL",
+                            "message": f"回滚动作包含危险操作: {action[:50]}...",
+                        }
+                    )
                     has_error = True
                 elif is_idempotent:
                     idempotent_count += 1
                 else:
                     unknown_count += 1
-                    details.append({
-                        "id": f"R004-{i+1}",
-                        "check": f"回滚动作 {i+1} 幂等性",
-                        "status": "WARN",
-                        "message": f"回滚动作可能不是幂等的: {action[:50]}..."
-                    })
+                    details.append(
+                        {
+                            "id": f"R004-{i+1}",
+                            "check": f"回滚动作 {i+1} 幂等性",
+                            "status": "WARN",
+                            "message": f"回滚动作可能不是幂等的: {action[:50]}...",
+                        }
+                    )
                     has_warn = True
 
             # 总结
             if dangerous_count > 0:
-                details.append({
-                    "id": "R004",
-                    "check": "回滚动作安全性",
-                    "status": "FAIL",
-                    "message": f"包含 {dangerous_count} 个危险操作"
-                })
+                details.append(
+                    {
+                        "id": "R004",
+                        "check": "回滚动作安全性",
+                        "status": "FAIL",
+                        "message": f"包含 {dangerous_count} 个危险操作",
+                    }
+                )
                 has_error = True
                 print(f"    ✗ R004: 包含 {dangerous_count} 个危险操作")
             elif idempotent_count == len(actions):
-                details.append({
-                    "id": "R004",
-                    "check": "回滚动作幂等性",
-                    "status": "PASS",
-                    "message": f"所有 {len(actions)} 个回滚动作均幂等"
-                })
-                print(f"    ✓ R004: 所有回滚动作幂等")
+                details.append(
+                    {
+                        "id": "R004",
+                        "check": "回滚动作幂等性",
+                        "status": "PASS",
+                        "message": f"所有 {len(actions)} 个回滚动作均幂等",
+                    }
+                )
+                print("    ✓ R004: 所有回滚动作幂等")
             else:
-                details.append({
-                    "id": "R004",
-                    "check": "回滚动作幂等性",
-                    "status": "WARN",
-                    "message": f"幂等: {idempotent_count}, 未知: {unknown_count}, 总计: {len(actions)}"
-                })
+                details.append(
+                    {
+                        "id": "R004",
+                        "check": "回滚动作幂等性",
+                        "status": "WARN",
+                        "message": f"幂等: {idempotent_count}, 未知: {unknown_count}, 总计: {len(actions)}",
+                    }
+                )
                 has_warn = True
-                print(f"    ⚠ R004: 部分回滚动作可能不是幂等的")
+                print("    ⚠ R004: 部分回滚动作可能不是幂等的")
 
         return {"details": details, "has_error": has_error, "has_warn": has_warn}
 
@@ -385,25 +434,28 @@ class RollbackValidator:
         has_warn = False
 
         # 检查兼容字段
-        missing_fields = [field for field in self.compatible_fields
-                         if field not in rollback_plan]
+        missing_fields = [field for field in self.compatible_fields if field not in rollback_plan]
 
         if not missing_fields:
-            details.append({
-                "id": "R005",
-                "check": "hermes 兼容性",
-                "status": "PASS",
-                "message": "所有兼容字段齐全"
-            })
+            details.append(
+                {
+                    "id": "R005",
+                    "check": "hermes 兼容性",
+                    "status": "PASS",
+                    "message": "所有兼容字段齐全",
+                }
+            )
             print("    ✓ R005: hermes 兼容性检查通过")
         else:
             # 部分字段缺失，只警告
-            details.append({
-                "id": "R005",
-                "check": "hermes 兼容性",
-                "status": "WARN",
-                "message": f"缺少兼容字段: {missing_fields}"
-            })
+            details.append(
+                {
+                    "id": "R005",
+                    "check": "hermes 兼容性",
+                    "status": "WARN",
+                    "message": f"缺少兼容字段: {missing_fields}",
+                }
+            )
             has_warn = True
             print(f"    ⚠ R005: 缺少兼容字段: {missing_fields}")
 
@@ -421,7 +473,7 @@ def test_rollback_validator():
             "rollback_points": ["v1.0", "snap_20260506"],
             "triggers": ["max_drawdown > 0.05", "pnl < -100"],
             "actions": ["restore_config", "disable_feature"],
-            "manual_trigger": "人工确认"
+            "manual_trigger": "人工确认",
         }
     }
 
@@ -430,11 +482,7 @@ def test_rollback_validator():
     print(f"结果: {result_pass['summary']}\n")
 
     # 测试 2: 缺失字段
-    bundle_fail = {
-        "rollback_plan": {
-            "rollback_plan_id": "rollback_002"
-        }
-    }
+    bundle_fail = {"rollback_plan": {"rollback_plan_id": "rollback_002"}}
 
     print("测试 2: 缺失字段 (期望: FAIL)")
     result_fail = validator.validate(bundle_fail)

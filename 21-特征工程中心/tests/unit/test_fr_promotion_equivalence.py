@@ -5,6 +5,7 @@
   T13-2  shim.ENABLED_SETS 逐 key 断言 dict 相等
   T13-3  shim.FeatureModuleSpec / _wdh_sub_key_splitter / _cycle_sub_key_splitter 身份一致
 """
+
 from __future__ import annotations
 
 import sys
@@ -48,9 +49,9 @@ def test_t13_2_enabled_sets_equal():
         f"shim_only={set(ShimSets) - set(HubSets)}"
     )
     for key in HubSets:
-        assert HubSets[key] == ShimSets[key], (
-            f"ENABLED_SETS['{key}'] 不一致: hub={HubSets[key]}, shim={ShimSets[key]}"
-        )
+        assert (
+            HubSets[key] == ShimSets[key]
+        ), f"ENABLED_SETS['{key}'] 不一致: hub={HubSets[key]}, shim={ShimSets[key]}"
 
 
 # ============================================================

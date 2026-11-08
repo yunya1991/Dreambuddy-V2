@@ -5,12 +5,13 @@ SPEC-事件驱动策略P0盲区修复 §3.1.3 — CESI 标准化：Surprise=(Act
 
 存储：JSON 文件（轻量级，无需 SQLite），格式 {indicator: [surprise1, surprise2, ...]}
 """
+
 from data_center.collectors.macro.cesi_history import (
-    get_surprise_history,
+    MIN_HISTORY_FOR_SIGMA,
+    WINDOW_SIZE,
     append_surprise,
     compute_cesi,
-    WINDOW_SIZE,
-    MIN_HISTORY_FOR_SIGMA,
+    get_surprise_history,
 )
 
 
@@ -55,6 +56,7 @@ def test_compute_cesi_with_sufficient_history():
     assert cesi is not None
     # σ = std([0.1,-0.1,0.2,-0.2,0.15,-0.15])
     import numpy as np
+
     expected_sigma = float(np.std(history))
     expected_cesi = round(0.5 / expected_sigma, 3)
     assert cesi == expected_cesi

@@ -17,6 +17,7 @@ Spec §2.4 Panel 2 + tasks.md L295-303：
   T9. test_unbuilt_lut_returns_neutral      — 未构建时返回 0.5 中性
   T10. test_known_regime_higher_support    — 已知 regime 样本中位数值时支持度最高
 """
+
 from __future__ import annotations
 
 import sys
@@ -33,7 +34,7 @@ assert _BCRM2_ROOT.name == "memory_l4", "tests 需放在 memory_l4/tests 下"
 if str(_BCRM2_ROOT) not in sys.path:
     sys.path.insert(0, str(_BCRM2_ROOT))
 
-from bcrm2.regime_mapper import RegimeMapper, REGIME_ORDER, DOTPLOT_INDICATORS  # noqa: E402
+from bcrm2.regime_mapper import DOTPLOT_INDICATORS, REGIME_ORDER, RegimeMapper  # noqa: E402
 
 
 # ====================================================================
@@ -110,7 +111,7 @@ def test_query_cdf_tied_values_median():
     等值区间 [0,3)，ys[0:3]=[1/6,2/6,3/6]，中位数=2/6≈0.333
     """
     xs = np.array([0.0, 0.0, 0.0, 1.0, 2.0])
-    ys = np.array([1/6, 2/6, 3/6, 4/6, 5/6])
+    ys = np.array([1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6])
     q = RegimeMapper._query_cdf(0.0, xs, ys)
     assert q == pytest.approx(2.0 / 6.0, abs=1e-6)
 
@@ -150,9 +151,12 @@ def _make_synthetic_data(n: int = 200, seed: int = 42):
     high = close * (1 + np.abs(rng.normal(0, 0.005, n)))
     low = close * (1 - np.abs(rng.normal(0, 0.005, n)))
     volume = rng.lognormal(10, 0.5, n)
-    df = pd.DataFrame({"open": close, "high": high, "low": low, "close": close, "volume": volume}, index=idx)
+    df = pd.DataFrame(
+        {"open": close, "high": high, "low": low, "close": close, "volume": volume}, index=idx
+    )
 
     from bcrm2.indicators import IndicatorBank
+
     bank = IndicatorBank()
     indicators = bank.compute_all(df)
 
@@ -257,8 +261,9 @@ def test_indicator_support_online_query_consistency():
         i = DOTPLOT_INDICATORS.index(ind_name)
         j = list(REGIME_ORDER).index(regime)
         offline = result["matrix"][i][j]
-        assert online == pytest.approx(offline, abs=1e-9), \
-            f"{ind_name}/{regime}: online={online} offline={offline}"
+        assert online == pytest.approx(
+            offline, abs=1e-9
+        ), f"{ind_name}/{regime}: online={online} offline={offline}"
 
 
 def test_indicator_support_row():
@@ -302,8 +307,9 @@ def test_save_load_lut_roundtrip(tmp_path):
     for ind_name, regime, v in test_pairs:
         s1 = mapper1.indicator_support(v, ind_name, regime)
         s2 = mapper2.indicator_support(v, ind_name, regime)
-        assert s1 == pytest.approx(s2, abs=1e-9), \
-            f"{ind_name}/{regime}/v={v}: mapper1={s1} mapper2={s2}"
+        assert s1 == pytest.approx(
+            s2, abs=1e-9
+        ), f"{ind_name}/{regime}/v={v}: mapper1={s1} mapper2={s2}"
 
 
 def test_save_lut_without_build_raises(tmp_path):
@@ -376,7 +382,7 @@ def test_median_quantile_highest_support():
         "TREND_UP_STRONG": {
             "test_indicator": (
                 np.array([1.0, 2.0, 3.0, 4.0, 5.0]),
-                np.array([1/6, 2/6, 3/6, 4/6, 5/6]),
+                np.array([1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6]),
             ),
         }
     }
@@ -385,10 +391,10 @@ def test_median_quantile_highest_support():
     assert s_mid == pytest.approx(1.0, abs=1e-6)
     # 极端最小值 1.0 → 命中 xs[0] → q=1/6≈0.167 → 支持度=1-2*0.333=0.333
     s_min = mapper.indicator_support(1.0, "test_indicator", "TREND_UP_STRONG")
-    assert s_min == pytest.approx(1.0 - 2.0 * abs(1.0/6.0 - 0.5), abs=1e-6)
+    assert s_min == pytest.approx(1.0 - 2.0 * abs(1.0 / 6.0 - 0.5), abs=1e-6)
     # 极端最大值 5.0 → 命中 xs[-1] → q=5/6≈0.833 → 支持度=0.333
     s_max = mapper.indicator_support(5.0, "test_indicator", "TREND_UP_STRONG")
-    assert s_max == pytest.approx(1.0 - 2.0 * abs(5.0/6.0 - 0.5), abs=1e-6)
+    assert s_max == pytest.approx(1.0 - 2.0 * abs(5.0 / 6.0 - 0.5), abs=1e-6)
     # 中位数支持度应高于极端值
     assert s_mid > s_min
     assert s_mid > s_max

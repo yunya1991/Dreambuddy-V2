@@ -13,13 +13,14 @@
 - 数据驱动优先：基本面来自数据中心真实数据，非研究文档
 - 与现有系统兼容：技术面复用 screen_engine.compute_full_trading_signal
 """
+
 from __future__ import annotations
 
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 # 确保可导入同目录模块
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -35,14 +36,14 @@ except ImportError:
 # ============================================================
 
 FUNDAMENTAL_DIMENSION_WEIGHTS = {
-    "fear_greed": 0.15,        # 情绪面：恐惧贪婪指数
-    "etf_flow": 0.20,           # 资金流：BTC ETF 净流入（权重最高，最直接）
+    "fear_greed": 0.15,  # 情绪面：恐惧贪婪指数
+    "etf_flow": 0.20,  # 资金流：BTC ETF 净流入（权重最高，最直接）
     "stablecoin_supply": 0.15,  # 链上：稳定币市值变化（购买力）
-    "fred_macro": 0.15,         # 宏观：美联储利率/流动性
-    "funding_rate": 0.10,       # 衍生品：资金费率
-    "deribit_oi": 0.10,         # 衍生品：期权持仓量
-    "defillama_tvl": 0.05,      # 链上：DeFi TVL
-    "fear_greed_enhanced": 0.10, # 增强情绪：多维情绪
+    "fred_macro": 0.15,  # 宏观：美联储利率/流动性
+    "funding_rate": 0.10,  # 衍生品：资金费率
+    "deribit_oi": 0.10,  # 衍生品：期权持仓量
+    "defillama_tvl": 0.05,  # 链上：DeFi TVL
+    "fear_greed_enhanced": 0.10,  # 增强情绪：多维情绪
 }
 
 # 方向分值
@@ -63,6 +64,7 @@ def _safe_conf(c: Optional[float]) -> float:
 # ============================================================
 # Screen1 — 战略层：技术面 + 多维基本面加权融合
 # ============================================================
+
 
 def compute_screen1(
     technical_signal: Dict[str, Any],
@@ -142,10 +144,7 @@ def compute_screen1(
     fund_confidence = min(100.0, abs(normalized_score) * 100)
 
     # 技术面 + 基本面融合
-    fusion_consistent = (
-        tech_dir == fund_direction
-        and tech_dir != "NEUTRAL"
-    )
+    fusion_consistent = tech_dir == fund_direction and tech_dir != "NEUTRAL"
 
     # 最终方向：技术面为主，基本面确认/修正
     if tech_dir == "NEUTRAL":
@@ -187,7 +186,17 @@ def compute_screen1(
         "fundamental_score": round(normalized_score, 4),
         "fusion": {
             "consistent": fusion_consistent,
-            "reason": "同向共振" if fusion_consistent else ("分歧" if tech_dir != fund_direction and tech_dir != "NEUTRAL" and fund_direction != "NEUTRAL" else "一方中性"),
+            "reason": (
+                "同向共振"
+                if fusion_consistent
+                else (
+                    "分歧"
+                    if tech_dir != fund_direction
+                    and tech_dir != "NEUTRAL"
+                    and fund_direction != "NEUTRAL"
+                    else "一方中性"
+                )
+            ),
         },
         "debate": debate,
     }
@@ -196,6 +205,7 @@ def compute_screen1(
 # ============================================================
 # Screen2 — 战术层：日线趋势 + 波动率 + 衍生品
 # ============================================================
+
 
 def compute_screen2(
     technical_signal: Dict[str, Any],
@@ -263,17 +273,23 @@ def compute_screen2(
 
     presets = []
     if direction_constraint != "NEUTRAL" and current_price > 0:
-        presets.append({
-            "id": f"data-driven-{technical_signal.get('symbol', 'BTC')}",
-            "symbol": technical_signal.get("symbol", "BTC"),
-            "entry": current_price,
-            "stop": round(current_price * (1 - sl_pct) if is_long else current_price * (1 + sl_pct), 2),
-            "target": round(current_price * (1 + tp_pct) if is_long else current_price * (1 - tp_pct), 2),
-            "timeframe": "1D",
-            "confidence": _safe_conf(fs.get("confidence")),
-            "take_profit_pct": round(tp_pct * 100, 2),
-            "stop_loss_pct": round(sl_pct * 100, 2),
-        })
+        presets.append(
+            {
+                "id": f"data-driven-{technical_signal.get('symbol', 'BTC')}",
+                "symbol": technical_signal.get("symbol", "BTC"),
+                "entry": current_price,
+                "stop": round(
+                    current_price * (1 - sl_pct) if is_long else current_price * (1 + sl_pct), 2
+                ),
+                "target": round(
+                    current_price * (1 + tp_pct) if is_long else current_price * (1 - tp_pct), 2
+                ),
+                "timeframe": "1D",
+                "confidence": _safe_conf(fs.get("confidence")),
+                "take_profit_pct": round(tp_pct * 100, 2),
+                "stop_loss_pct": round(sl_pct * 100, 2),
+            }
+        )
 
     return {
         "direction_constraint": direction_constraint,
@@ -298,6 +314,7 @@ def compute_screen2(
 # ============================================================
 # Screen3 — 执行层：入场信号 + 执行流水线
 # ============================================================
+
 
 def compute_screen3(
     technical_signal: Dict[str, Any],
@@ -354,7 +371,9 @@ def compute_screen3(
             "id": "C3_GATE",
             "name": "C3 门禁检查",
             "status": "done" if is_enter else "pending",
-            "output": f"仓位={fs.get('position', {}).get('position_pct', 0):.4f}" if is_enter else None,
+            "output": (
+                f"仓位={fs.get('position', {}).get('position_pct', 0):.4f}" if is_enter else None
+            ),
         },
         {
             "id": "A5_ENTRY",
@@ -379,20 +398,24 @@ def compute_screen3(
     # 监控告警
     monitor_alerts = []
     if screen1_result.get("fundamental", {}).get("fusion", {}).get("consistent") is False:
-        monitor_alerts.append({
-            "id": "tech-fund-divergence",
-            "level": "warning",
-            "message": "技术面与基本面分歧，注意风险",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        monitor_alerts.append(
+            {
+                "id": "tech-fund-divergence",
+                "level": "warning",
+                "message": "技术面与基本面分歧，注意风险",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
     if is_enter:
-        monitor_alerts.append({
-            "id": "entry-signal",
-            "level": "info",
-            "message": f"入场信号: {action}，置信度 {confidence:.1f}%",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        monitor_alerts.append(
+            {
+                "id": "entry-signal",
+                "level": "info",
+                "message": f"入场信号: {action}，置信度 {confidence:.1f}%",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
 
     return {
         "entry_signals": entry_signals,
@@ -405,6 +428,7 @@ def compute_screen3(
 # ============================================================
 # 综合三屏分析入口
 # ============================================================
+
 
 def compute_data_driven_three_screens(
     symbol: str = "BTC",
@@ -442,7 +466,9 @@ def compute_data_driven_three_screens(
     screen3 = compute_screen3(technical_signal, screen1)
 
     # 4. 综合摘要
-    dir_label = {"BULL": "看多", "BEAR": "看空", "NEUTRAL": "中性"}.get(screen1["direction"], "中性")
+    dir_label = {"BULL": "看多", "BEAR": "看空", "NEUTRAL": "中性"}.get(
+        screen1["direction"], "中性"
+    )
     summary = (
         f"【{symbol} 三屏综合分析】方向: {dir_label} | 置信度: {screen1['confidence']:.1f}% | "
         f"技术面: {screen1['technical']['direction']}({screen1['technical']['confidence']:.1f}%) | "
@@ -481,12 +507,18 @@ def _fetch_technical_signal(symbol: str) -> Dict[str, Any]:
 
     # 回退：直接调用 screen_engine
     try:
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "experiments" / "ab-trading"))
+        sys.path.insert(
+            0, str(Path(__file__).resolve().parent.parent / "experiments" / "ab-trading")
+        )
         from screen_engine import compute_full_trading_signal
+
         spot_inst = f"{symbol}-USDT"
         return compute_full_trading_signal(spot_inst=spot_inst, is_btc=(symbol.upper() == "BTC"))
     except Exception as e:
-        return {"error": f"无法获取技术面信号: {e}", "final_signal": {"direction": "NEUTRAL", "confidence": 0}}
+        return {
+            "error": f"无法获取技术面信号: {e}",
+            "final_signal": {"direction": "NEUTRAL", "confidence": 0},
+        }
 
 
 if __name__ == "__main__":

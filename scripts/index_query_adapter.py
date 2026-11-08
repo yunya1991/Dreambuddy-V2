@@ -8,8 +8,9 @@
 
 输出 JSON 到 stdout，失败输出 {"degraded": true, "results": []}
 """
-import sys
+
 import json
+import sys
 from pathlib import Path
 
 # 确保能找到 index_query_service
@@ -18,6 +19,7 @@ sys.path.insert(0, str(_RAG_DIR))
 
 try:
     from index_query_service import IndexQueryService
+
     _svc = IndexQueryService()
     _available = True
 except Exception as e:
@@ -60,8 +62,9 @@ def main():
             else:
                 i += 1
 
-        results = _svc.query(query_text, top_k=top_k, score_threshold=threshold,
-                             category_filter=category)
+        results = _svc.query(
+            query_text, top_k=top_k, score_threshold=threshold, category_filter=category
+        )
         print(json.dumps({"degraded": False, "results": results}, ensure_ascii=False))
 
     elif cmd == "count":

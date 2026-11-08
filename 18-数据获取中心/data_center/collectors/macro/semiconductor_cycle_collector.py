@@ -7,11 +7,11 @@
 
 FAIL-OPEN：所有异常被捕获，失败时返回空列表，不阻塞交易热路径。
 """
+
 from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
 import yfinance as yf
 

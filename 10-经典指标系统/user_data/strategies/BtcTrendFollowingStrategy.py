@@ -21,6 +21,7 @@ class BtcTrendFollowingStrategy(IStrategy):
     BTC 趋势跟随策略
     基于 EMA 趋势方向 + RSI 动量 + MACD 确认，在 1h 周期做多 BTC/USDT。
     """
+
     INTERFACE_VERSION = 3
 
     timeframe = "1h"
@@ -112,7 +113,7 @@ class BtcTrendFollowingStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 functools.reduce(lambda x, y: x & y, conditions),
-                'enter_long',
+                "enter_long",
             ] = 1
 
         return dataframe
@@ -136,7 +137,7 @@ class BtcTrendFollowingStrategy(IStrategy):
         if conditions:
             dataframe.loc[
                 functools.reduce(lambda x, y: x | y, conditions),
-                'exit_long',
+                "exit_long",
             ] = 1
 
         return dataframe

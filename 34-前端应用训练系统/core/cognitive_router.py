@@ -14,7 +14,8 @@ recall 返回的 memories 数量和 score 作为路由依据，替代单维 conf
   - C-Drive Agent: 1-ARCHITECTURE/dream-harness-bridge/packages/python-server/c_drive_agent.py
   - 33-REA: 34-前端应用训练系统/core/rea_cdrive_adapter.py (P4)
 """
-from typing import Any, Dict, List, Optional, Tuple, Union
+
+from typing import Any, List, Optional, Tuple
 
 # ============================================================
 # 常量
@@ -27,11 +28,11 @@ TIER3 = "TIER3"  # 案例少+低匹配 → SKILL 调研
 TIER4 = "TIER4"  # 多路径 → Debate
 
 # 路由阈值（对齐 SPEC §2.2.2）
-TIER1_MATCH_THRESHOLD = 0.7    # match_score >= 0.7
-TIER1_DENSITY_THRESHOLD = 3    # case_density >= 3
-TIER3_MATCH_THRESHOLD = 0.4    # match_score < 0.4
-TIER3_DENSITY_THRESHOLD = 2    # case_density < 2
-TIER2_DENSITY_THRESHOLD = 2    # case_density >= 2
+TIER1_MATCH_THRESHOLD = 0.7  # match_score >= 0.7
+TIER1_DENSITY_THRESHOLD = 3  # case_density >= 3
+TIER3_MATCH_THRESHOLD = 0.4  # match_score < 0.4
+TIER3_DENSITY_THRESHOLD = 2  # case_density < 2
+TIER2_DENSITY_THRESHOLD = 2  # case_density >= 2
 
 # 加权系数
 MAX_SCORE_WEIGHT = 0.6
@@ -41,6 +42,7 @@ AVG_SCORE_WEIGHT = 0.4
 # ============================================================
 # 数据结构
 # ============================================================
+
 
 class RouteResult:
     """路由结果"""
@@ -57,6 +59,7 @@ class RouteResult:
 # ============================================================
 # 匹配度评估
 # ============================================================
+
 
 def evaluate_match(memories: Optional[List[Any]]) -> Tuple[float, int]:
     """评估 recall 结果的匹配度和案例密度。
@@ -96,6 +99,7 @@ def evaluate_match(memories: Optional[List[Any]]) -> Tuple[float, int]:
 # ============================================================
 # 路由函数
 # ============================================================
+
 
 def route(
     match_score: float,

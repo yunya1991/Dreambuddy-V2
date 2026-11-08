@@ -11,6 +11,7 @@
     交易决策归 23 系统三步门禁；E2 未超 LightGBM 基线不进入 E3
 当前状态：框架骨架。训练主链路在门槛达标（p6_gate.all_passed）后解锁。
 """
+
 import json
 import os
 import sys
@@ -19,21 +20,26 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from p6_gate import check_gate, save_report
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 
 # ── 预注册超参数（SPEC_encoder §1.5 小模型红线，禁止运行时调整）──
 PREREG = {
-    "n_layers": 2,              # Encoder 层数（2-4）
-    "d_model": 64,              # 隐藏维度（64-128）
-    "n_heads": 4,               # 注意力头（4-8）
-    "max_params": 1_000_000,    # 总参数量红线 ≤ 1M
-    "n_classes": 3,             # UP / DOWN / NEUTRAL
-    "walk_forward_folds": 5,    # Walk-Forward 折数（禁止随机打乱）
-    "test_ratio": 0.2,          # 最近 20% 封板纯验证
-    "label_horizon": {          # 标签前瞻窗口（预注册）
-        "weekly": 4,           # 周线 N=4 周
-        "daily": 7,            # 日线 N=7 日（对齐 12 系统 label_samples）
-        "hourly": 24,          # 1H N=24 小时
+    "n_layers": 2,  # Encoder 层数（2-4）
+    "d_model": 64,  # 隐藏维度（64-128）
+    "n_heads": 4,  # 注意力头（4-8）
+    "max_params": 1_000_000,  # 总参数量红线 ≤ 1M
+    "n_classes": 3,  # UP / DOWN / NEUTRAL
+    "walk_forward_folds": 5,  # Walk-Forward 折数（禁止随机打乱）
+    "test_ratio": 0.2,  # 最近 20% 封板纯验证
+    "label_horizon": {  # 标签前瞻窗口（预注册）
+        "weekly": 4,  # 周线 N=4 周
+        "daily": 7,  # 日线 N=7 日（对齐 12 系统 label_samples）
+        "hourly": 24,  # 1H N=24 小时
     },
     "attention_entropy_reg": 0.01,  # 注意力熵正则（防近期 token 注意力过集中）
 }

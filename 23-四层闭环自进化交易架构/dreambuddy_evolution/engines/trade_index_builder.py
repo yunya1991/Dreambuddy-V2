@@ -11,11 +11,12 @@ TradeIndexBuilder — 系统级交易索引库构建器
 
 索引库位置: <project_root>/.workbuddy/trade_index/all_trades_index.jsonl
 """
+
 import json
-import os
-import time
 import logging
+import os
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any
 
@@ -23,15 +24,28 @@ logger = logging.getLogger(__name__)
 
 # 交易记录特征字段（用于自动发现）
 _TRADE_SIGNATURE_FIELDS = {
-    "trade_id", "coin", "symbol", "pnl", "pnl_pct",
-    "entry_price", "exit_price", "direction",
+    "trade_id",
+    "coin",
+    "symbol",
+    "pnl",
+    "pnl_pct",
+    "entry_price",
+    "exit_price",
+    "direction",
 }
 
 # 自动发现时排除的目录
 _EXCLUDE_DIRS = {
-    "node_modules", ".git", "__pycache__", ".pytest_cache",
-    "versions", "snapshots", "macro_cache", "chrome-profile",
-    ".sandbox-home", "chroma_db",
+    "node_modules",
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "versions",
+    "snapshots",
+    "macro_cache",
+    "chrome-profile",
+    ".sandbox-home",
+    "chroma_db",
 }
 
 # 自动发现时排除的文件名模式（日志/测试数据等）
@@ -78,7 +92,9 @@ class TradeIndexBuilder:
     # 自动发现扫描深度限制
     MAX_SCAN_DEPTH = 5
 
-    def __init__(self, project_root: str | Path | None = None, index_path: str | Path | None = None):
+    def __init__(
+        self, project_root: str | Path | None = None, index_path: str | Path | None = None
+    ):
         if project_root is None:
             project_root = Path.cwd()
         self._project_root = Path(project_root)
@@ -208,11 +224,10 @@ class TradeIndexBuilder:
         """探测 SQLite 文件是否有交易表"""
         try:
             import sqlite3
+
             conn = sqlite3.connect(str(file_path))
             cur = conn.cursor()
-            tables = cur.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
+            tables = cur.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
             table_names = {t[0].lower() for t in tables}
 
             # 检查是否有交易表
@@ -334,7 +349,11 @@ class TradeIndexBuilder:
             if not coin:
                 return None
             # SQLite trades 表的 id 字段作为 trade_id
-            trade_id = str(raw.get("trade_id") or raw.get("id") or f"{coin}_{raw.get('entry_time', raw.get('timestamp', ''))}")
+            trade_id = str(
+                raw.get("trade_id")
+                or raw.get("id")
+                or f"{coin}_{raw.get('entry_time', raw.get('timestamp', ''))}"
+            )
             # pnl: SQLite 可能只有 pnl_pct，没有 pnl 绝对值
             pnl = float(raw.get("pnl", 0))
             pnl_pct = float(raw.get("pnl_pct", 0))
@@ -349,7 +368,9 @@ class TradeIndexBuilder:
                 "direction": str(raw.get("direction", "")).lower(),
                 "entry_price": float(raw.get("entry_price", 0)),
                 "exit_price": float(raw.get("exit_price", 0)),
-                "entry_time": str(raw.get("entry_time") or raw.get("timestamp") or raw.get("created_at", "")),
+                "entry_time": str(
+                    raw.get("entry_time") or raw.get("timestamp") or raw.get("created_at", "")
+                ),
                 "exit_time": str(raw.get("exit_time") or raw.get("created_at", "")),
                 "pnl": pnl,
                 "pnl_pct": pnl_pct,
@@ -384,7 +405,9 @@ class TradeIndexBuilder:
                     if normalized:
                         all_trades[normalized["trade_id"]] = normalized
                 if raw_trades:
-                    source_stats.append(f"{src['source']}({src['path']}): {len(raw_trades)}笔(jsonl)")
+                    source_stats.append(
+                        f"{src['source']}({src['path']}): {len(raw_trades)}笔(jsonl)"
+                    )
             elif src["type"] == "sqlite":
                 table = src.get("table", "trades")
                 raw_trades = self._load_sqlite_trades(file_path, table)
@@ -393,7 +416,9 @@ class TradeIndexBuilder:
                     if normalized:
                         all_trades[normalized["trade_id"]] = normalized
                 if raw_trades:
-                    source_stats.append(f"{src['source']}({src['path']}): {len(raw_trades)}笔(sqlite)")
+                    source_stats.append(
+                        f"{src['source']}({src['path']}): {len(raw_trades)}笔(sqlite)"
+                    )
 
         result = list(all_trades.values())
         # 按退出时间排序

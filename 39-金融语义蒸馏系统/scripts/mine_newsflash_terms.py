@@ -10,6 +10,7 @@
 挖掘策略：精选种子词典（人工审定 quality=A）+ 快讯高频词统计补充（quality=B 待抽检）
 用法: python3 mine_newsflash_terms.py
 """
+
 import json
 import os
 import re
@@ -21,7 +22,7 @@ _SYS_DIR = os.path.dirname(_THIS_DIR)
 _REPO = os.path.dirname(_SYS_DIR)
 
 sys.path.insert(0, _THIS_DIR)
-import dc_pg  # PostgreSQL 辅助模块（18 中心迁移后替代 SQLite）
+import dc_pg  # PostgreSQL 辅助模块（18 中心迁移后替代 SQLite）  # noqa: E402
 
 # ── 精选种子词典（人工审定 quality=A）──────────────────────
 SEEDS = {
@@ -56,12 +57,18 @@ SEEDS = {
         {"term": "NFT", "definition": "非同质化代币，数字资产确权与交易板块"},
     ],
     "macro": [
-        {"term": "利率决议", "definition": "央行（美联储 FOMC）对基准利率的调整决定，市场最重磅事件"},
+        {
+            "term": "利率决议",
+            "definition": "央行（美联储 FOMC）对基准利率的调整决定，市场最重磅事件",
+        },
         {"term": "缩表", "definition": "央行缩减资产负债表，回收市场流动性"},
         {"term": "量化宽松", "definition": "央行购债向市场注入流动性"},
         {"term": "债务上限", "definition": "美国政府债务法定上限，触及将引发违约风险与政治博弈"},
         {"term": "地缘政治风险", "definition": "战争/制裁/冲突对风险资产的外溢冲击"},
-        {"term": "风险偏好", "definition": "市场对风险资产的配置意愿，宏观环境驱动（Risk-on/Risk-off）"},
+        {
+            "term": "风险偏好",
+            "definition": "市场对风险资产的配置意愿，宏观环境驱动（Risk-on/Risk-off）",
+        },
         {"term": "流动性", "definition": "市场资金充裕程度，决定资产估值水位"},
         {"term": "避险资产", "definition": "市场恐慌时资金流入的资产（黄金/美元/国债）"},
     ],
@@ -70,11 +77,28 @@ SEEDS = {
 # ── 快讯高频词挖掘模式（quality=B 待抽检）──────────────────
 # people 停用词：非人物的高频干扰词
 _PEOPLE_STOPWORDS = {
-    "平台", "发文", "此前", "知情人士", "消息", "分析", "报告", "数据", "研究",
-    "统特朗普", "总统", "主席", "行长", "官员", "发言人", "媒体", "记者",
+    "平台",
+    "发文",
+    "此前",
+    "知情人士",
+    "消息",
+    "分析",
+    "报告",
+    "数据",
+    "研究",
+    "统特朗普",
+    "总统",
+    "主席",
+    "行长",
+    "官员",
+    "发言人",
+    "媒体",
+    "记者",
 }
 MINE_PATTERNS = {
-    "people": re.compile(r"(?:创始人|分析师|CEO|首席|董事)([\u4e00-\u9fa5]{2,4})(?:表示|指出|称|认为)"),
+    "people": re.compile(
+        r"(?:创始人|分析师|CEO|首席|董事)([\u4e00-\u9fa5]{2,4})(?:表示|指出|称|认为)"
+    ),
     "tokenomics": re.compile(r"(解锁|销毁|质押|挖矿|空投|回购|增发|锁仓|减半|铸造)"),
     "sector": re.compile(r"(DeFi|Layer2|L2|RWA|GameFi|Meme|NFT|稳定币|现货ETF|公链|跨链)"),
     "macro": re.compile(r"(利率决议|缩表|加息|降息|通胀|债务上限|非农|地缘|制裁|流动性)"),
@@ -115,8 +139,15 @@ def mine_domain(texts, pattern, min_count=3, top_n=30, stopwords=None):
     out = []
     for word, n in counter.most_common(top_n):
         if n >= min_count:
-            out.append({"term": word, "definition": f"快讯高频词（出现 {n} 次），定义待人工补充",
-                        "source": "newsflash_mining", "quality": "B", "occurrences": n})
+            out.append(
+                {
+                    "term": word,
+                    "definition": f"快讯高频词（出现 {n} 次），定义待人工补充",
+                    "source": "newsflash_mining",
+                    "quality": "B",
+                    "occurrences": n,
+                }
+            )
     return out
 
 
@@ -133,8 +164,12 @@ def main():
         terms = seeds + mined
         out = os.path.join(_SYS_DIR, f"{domain}_terms.json")
         with open(out, "w", encoding="utf-8") as f:
-            json.dump({"domain": domain, "count": len(terms), "terms": terms},
-                      f, ensure_ascii=False, indent=2)
+            json.dump(
+                {"domain": domain, "count": len(terms), "terms": terms},
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
         print(f"[OK] {domain}_terms.json: 种子 {len(seeds)} + 挖掘 {len(mined)} = {len(terms)} 条")
     print("[DONE] P-术语四类术语表产出完成（零 token）")
 

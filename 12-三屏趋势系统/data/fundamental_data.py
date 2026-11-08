@@ -11,10 +11,8 @@
 
 import json
 import re
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-
+from typing import Dict, List, Optional
 
 # ── 路径配置 ──────────────────────────────────────────────────────────────
 
@@ -78,6 +76,7 @@ def _score_to_direction(score: float, threshold: float = 55) -> str:
 
 
 # ── A1 日报解析 ──────────────────────────────────────────────────────────
+
 
 def _parse_a1_daily(filepath: Path) -> Optional[Dict]:
     """解析单个 A1 日报 JSON 文件
@@ -208,6 +207,7 @@ def _get_recent_a1_dailies(days: int = 7) -> List[Dict]:
 
 # ── 周报解析 ──────────────────────────────────────────────────────────────
 
+
 def _parse_weekly_report(filepath: Path) -> Optional[Dict]:
     """解析周报 Markdown 文件
 
@@ -242,8 +242,8 @@ def _parse_weekly_report(filepath: Path) -> Optional[Dict]:
         (r'方向["\s|]*\*?\*?\s*(?:WAIT\s*→\s*)?(弱多头|多头|LONG|BULL|看多|多方)', "BULL"),
         (r'方向["\s|]*\*?\*?\s*(?:WAIT\s*→\s*)?(弱空头|空头|SHORT|BEAR|看空|空方)', "BEAR"),
         (r'方向["\s|]*\*?\*?\s*(?:WAIT|观望|中性|NEUTRAL)', "NEUTRAL"),
-        (r'\*\*方向\*\*\s*\|?\s*\*?\*?(?:WAIT\s*→\s*)?(弱多头|多头|LONG)', "BULL"),
-        (r'\*\*方向\*\*\s*\|?\s*\*?\*?(?:WAIT\s*→\s*)?(弱空头|空头|SHORT)', "BEAR"),
+        (r"\*\*方向\*\*\s*\|?\s*\*?\*?(?:WAIT\s*→\s*)?(弱多头|多头|LONG)", "BULL"),
+        (r"\*\*方向\*\*\s*\|?\s*\*?\*?(?:WAIT\s*→\s*)?(弱空头|空头|SHORT)", "BEAR"),
     ]
     for pattern, dir_label in dir_patterns:
         if re.search(pattern, content, re.IGNORECASE):
@@ -254,16 +254,20 @@ def _parse_weekly_report(filepath: Path) -> Optional[Dict]:
     #   | **评分** | **55/100** |    (markdown table)
     #   **周线评分**: 60/100         (inline)
     #   评分: 55/100                 (simple)
-    score_match = re.search(r'评分\*{0,2}\s*[\|:]\s*\*{0,2}\s*(\d+(?:\.\d+)?)\s*/\s*100', content)
+    score_match = re.search(r"评分\*{0,2}\s*[\|:]\s*\*{0,2}\s*(\d+(?:\.\d+)?)\s*/\s*100", content)
     if score_match:
         score = float(score_match.group(1))
     else:
-        score_match2 = re.search(r'周线评分\*{0,2}\s*[:：]\s*\*{0,2}\s*(\d+(?:\.\d+)?)\s*/\s*100', content)
+        score_match2 = re.search(
+            r"周线评分\*{0,2}\s*[:：]\s*\*{0,2}\s*(\d+(?:\.\d+)?)\s*/\s*100", content
+        )
         if score_match2:
             score = float(score_match2.group(1))
 
     # 提取 regime
-    regime_match = re.search(r'Regime["\s|:]*\*?\*?\s*(BEAR_\w+|BULL_\w+|NEUTRAL\w*|RANGE_\w+)', content, re.IGNORECASE)
+    regime_match = re.search(
+        r'Regime["\s|:]*\*?\*?\s*(BEAR_\w+|BULL_\w+|NEUTRAL\w*|RANGE_\w+)', content, re.IGNORECASE
+    )
     if regime_match:
         regime = regime_match.group(1).upper()
         regime_dir = _regime_to_direction(regime)
@@ -305,6 +309,7 @@ def _get_latest_weekly() -> Optional[Dict]:
 
 # ── 合并基本面数据 ────────────────────────────────────────────────────────
 
+
 def _merge_fundamental(weekly: Optional[Dict], daily: Optional[Dict]) -> Dict:
     """合并周报和日报的基本面数据
 
@@ -336,22 +341,26 @@ def _merge_fundamental(weekly: Optional[Dict], daily: Optional[Dict]) -> Dict:
     daily_conf = daily["confidence"] if daily else 0
 
     if weekly:
-        reports.append({
-            "type": "周报",
-            "timeframe": "weekly",
-            **weekly,
-        })
+        reports.append(
+            {
+                "type": "周报",
+                "timeframe": "weekly",
+                **weekly,
+            }
+        )
         if weekly_dir == "BULL":
             bull_count += 1
         elif weekly_dir == "BEAR":
             bear_count += 1
 
     if daily:
-        reports.append({
-            "type": "A1日报",
-            "timeframe": "daily",
-            **daily,
-        })
+        reports.append(
+            {
+                "type": "A1日报",
+                "timeframe": "daily",
+                **daily,
+            }
+        )
         if daily_dir == "BULL":
             bull_count += 1
         elif daily_dir == "BEAR":
@@ -390,6 +399,7 @@ def _merge_fundamental(weekly: Optional[Dict], daily: Optional[Dict]) -> Dict:
 
 
 # ── 公开接口 ──────────────────────────────────────────────────────────────
+
 
 def fetch_fundamental_data(symbol: str = "BTC") -> Dict:
     """

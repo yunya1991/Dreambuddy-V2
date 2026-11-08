@@ -9,6 +9,7 @@
   2. SignalEngine._bayesian_confidence() 需 predictions>=10 才生效；
      _adaptive_weight() 需 predictions>=5 才生效。适配层 FAIL-OPEN 调用。
 """
+
 from __future__ import annotations
 
 import os as _os
@@ -20,10 +21,10 @@ import sys as _sys
 #   再拼「9-基本面分析」子目录。Fail-Open：目录不存在或已在 path → 静默跳过。
 # ============================================================
 try:  # noqa: E402
-    _HERE = _os.path.dirname(_os.path.abspath(__file__))          # force_vector
-    _SCRIPTS = _os.path.dirname(_HERE)                            # scripts
-    _YIJING = _os.path.dirname(_SCRIPTS)                         # 11-易经推理系统
-    _ROOT = _os.path.dirname(_YIJING)                             # dreambuddy-v2
+    _HERE = _os.path.dirname(_os.path.abspath(__file__))  # force_vector
+    _SCRIPTS = _os.path.dirname(_HERE)  # scripts
+    _YIJING = _os.path.dirname(_SCRIPTS)  # 11-易经推理系统
+    _ROOT = _os.path.dirname(_YIJING)  # dreambuddy-v2
     _9_FUND_PATH = _os.path.join(_ROOT, "9-基本面分析")
     if _os.path.isdir(_9_FUND_PATH) and _9_FUND_PATH not in _sys.path:
         _sys.path.insert(0, _9_FUND_PATH)
@@ -37,8 +38,9 @@ class LeastResistanceAdapter:
     direction 取 direction_score(float [-1,1])，而非字符串 'up'/'down'/'neutral'。
     """
 
-    def to_force_vector_fields(self, dimension: str, r3d: dict,
-                               raw_confidence: float = 0.5) -> dict:
+    def to_force_vector_fields(
+        self, dimension: str, r3d: dict, raw_confidence: float = 0.5
+    ) -> dict:
         """将 compute_resistance_3d() 输出转换为 ForceVector 核心字段。
 
         Args:
@@ -87,8 +89,7 @@ class SignalEngineAdapter:
     返回中性默认值（bayesian_confidence 回退 raw_confidence，adaptive_weight 回退 1.0）。
     """
 
-    def bayesian_confidence(self, signal_engine, module_name: str,
-                            raw_confidence: float) -> float:
+    def bayesian_confidence(self, signal_engine, module_name: str, raw_confidence: float) -> float:
         """调用 signal_engine._bayesian_confidence()，异常时返回 raw_confidence。
 
         SignalEngine 内部需 predictions>=10 才做贝叶斯修正，否则原样返回 raw_confidence。

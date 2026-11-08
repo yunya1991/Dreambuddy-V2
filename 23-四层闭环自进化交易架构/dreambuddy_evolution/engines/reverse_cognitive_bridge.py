@@ -10,6 +10,7 @@ Evidence 结构:
   known_gaps: [...]
   root_cause / wrong_dimensions / root_cause_type
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,8 +27,12 @@ class ReverseCognitiveBridge:
     FAIL-OPEN: 认知入口不可用时返回 None，不阻塞交易流程。
     """
 
-    def __init__(self, db_path: str | None = None, enabled: bool = True,
-                 mask_override_path: str | None = None) -> None:
+    def __init__(
+        self,
+        db_path: str | None = None,
+        enabled: bool = True,
+        mask_override_path: str | None = None,
+    ) -> None:
         self._db_path = db_path
         self._enabled = enabled
         self._entry: Any = None  # CognitiveLoopEntry（懒加载）
@@ -36,16 +41,19 @@ class ReverseCognitiveBridge:
             self._mask_override_path = mask_override_path
         else:
             from pathlib import Path as _Path
+
             self._mask_override_path = str(
-                _Path(__file__).resolve().parents[1] / "gene_data"
+                _Path(__file__).resolve().parents[1]
+                / "gene_data"
                 / "factor_head_mask_override.json"
             )
 
     # ------------------------------------------------------------------
     # Evidence 结构转换
     # ------------------------------------------------------------------
-    def to_evidence(self, derive_result: Any, snapshot: dict[str, Any],
-                    outcome: dict[str, Any]) -> dict[str, Any]:
+    def to_evidence(
+        self, derive_result: Any, snapshot: dict[str, Any], outcome: dict[str, Any]
+    ) -> dict[str, Any]:
         """将 ReverseDeriveResult 转为 33-REA Evidence 结构."""
         per_dim = getattr(derive_result, "per_dimension_correctness", {}) or {}
         return {
@@ -68,8 +76,9 @@ class ReverseCognitiveBridge:
     # ------------------------------------------------------------------
     # 认知记忆入库
     # ------------------------------------------------------------------
-    def record_evidence(self, derive_result: Any, snapshot: dict[str, Any],
-                        outcome: dict[str, Any]) -> str | None:
+    def record_evidence(
+        self, derive_result: Any, snapshot: dict[str, Any], outcome: dict[str, Any]
+    ) -> str | None:
         """将逆向推导 Evidence 入库认知记忆.
 
         Returns:
@@ -149,7 +158,8 @@ class ReverseCognitiveBridge:
             path.write_text(_json.dumps(adjusted, ensure_ascii=False, indent=2))
             logger.info(
                 "[ReverseCog] mask_override updated: wrong_dims=%s → %s",
-                wrong_dims, {d: adjusted.get(d) for d in wrong_dims},
+                wrong_dims,
+                {d: adjusted.get(d) for d in wrong_dims},
             )
         except Exception as e:
             logger.debug("[FO] _update_mask_override fail: %s", e)

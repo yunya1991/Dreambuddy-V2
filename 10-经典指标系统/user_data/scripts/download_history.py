@@ -7,6 +7,7 @@
     cd 10-经典指标系统
     python user_data/scripts/download_history.py --days 90 --symbols BTC,ETH,SOL
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,11 +25,12 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "aggregated" / "fut
 
 def fetch_batch(coin: str, interval: str, start_ms: int, end_ms: int) -> list:
     """单批下载"""
-    payload = json.dumps({
-        "type": "candleSnapshot",
-        "req": {"coin": coin, "interval": interval,
-                "startTime": start_ms, "endTime": end_ms},
-    }).encode()
+    payload = json.dumps(
+        {
+            "type": "candleSnapshot",
+            "req": {"coin": coin, "interval": interval, "startTime": start_ms, "endTime": end_ms},
+        }
+    ).encode()
     req = urllib.request.Request(
         API_URL, data=payload, headers={"Content-Type": "application/json"}
     )
@@ -37,14 +39,16 @@ def fetch_batch(coin: str, interval: str, start_ms: int, end_ms: int) -> list:
     # 转为 [ts_ms, o, h, l, c, v]
     rows = []
     for k in data:
-        rows.append([
-            int(k["t"]),          # 开始时间 ms
-            float(k["o"]),        # open
-            float(k["h"]),        # high
-            float(k["l"]),        # low
-            float(k["c"]),        # close
-            float(k.get("v", 0)), # volume
-        ])
+        rows.append(
+            [
+                int(k["t"]),  # 开始时间 ms
+                float(k["o"]),  # open
+                float(k["h"]),  # high
+                float(k["l"]),  # low
+                float(k["c"]),  # close
+                float(k.get("v", 0)),  # volume
+            ]
+        )
     return rows
 
 
@@ -73,8 +77,10 @@ def download_symbol(coin: str, interval: str, days: int) -> list:
                 continue
         for r in rows:
             all_rows[r[0]] = r
-        print(f"  批次 {batch_idx}: {datetime.fromtimestamp(cur_ms/1000).date()} → "
-              f"{datetime.fromtimestamp(batch_end/1000).date()} | +{len(rows)} 根 | 累计 {len(all_rows)}")
+        print(
+            f"  批次 {batch_idx}: {datetime.fromtimestamp(cur_ms/1000).date()} → "
+            f"{datetime.fromtimestamp(batch_end/1000).date()} | +{len(rows)} 根 | 累计 {len(all_rows)}"
+        )
         cur_ms = batch_end
         batch_idx += 1
         time.sleep(0.3)  # 限流

@@ -1,8 +1,7 @@
+import fcntl
 import os
 from dataclasses import dataclass
 from pathlib import Path
-
-import fcntl
 
 
 @dataclass(frozen=True)
@@ -27,6 +26,5 @@ def acquire_single_instance_lock(lock_path: Path):
         fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         fh.close()
-        raise LiveGateError("GATE_SINGLE_INSTANCE_LOCKED")
+        raise LiveGateError("GATE_SINGLE_INSTANCE_LOCKED")  # noqa: B904
     return fh
-

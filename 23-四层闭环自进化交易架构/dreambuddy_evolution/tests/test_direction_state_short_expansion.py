@@ -15,6 +15,7 @@ SPEC-自进化系统做空能力疏通探讨 §4 路径C：
 安全侧 FAIL-OPEN: 异常/缺失 → 不解锁（维持 SHORT_BAN）
 开关: enable_direction_state_short_expansion（默认 False → 回退到仅 SHORT_ONLY 解锁）
 """
+
 import sys
 from pathlib import Path
 
@@ -32,7 +33,8 @@ def _auto_enable_direction_state_expansion():
 
     Switch 回退测试类内部会 set_switch 覆盖此 fixture。
     """
-    from dreambuddy_evolution.agi_config import set_switch, get_switch
+    from dreambuddy_evolution.agi_config import get_switch, set_switch
+
     _orig = get_switch("enable_direction_state_short_expansion")
     set_switch("enable_direction_state_short_expansion", True)
     yield
@@ -46,8 +48,8 @@ class TestResultFields:
         """DirectionStateShortResult 包含 unlocked/position_multiplier/state/concentration_limit/concentration_exceeded"""
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
-            DirectionStateShortResult,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "WEAK", 0.0)
         assert hasattr(result, "unlocked")
@@ -66,6 +68,7 @@ class TestSwitchOffFallback:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         set_switch("enable_direction_state_short_expansion", False)
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "WEAK", 0.0)
@@ -78,6 +81,7 @@ class TestSwitchOffFallback:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         set_switch("enable_direction_state_short_expansion", False)
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("OTHER", "WEAK", 0.0)
@@ -89,6 +93,7 @@ class TestSwitchOffFallback:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         set_switch("enable_direction_state_short_expansion", False)
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("REVERSAL", "WEAK", 0.0)
@@ -103,6 +108,7 @@ class TestSwitchOnShortOnly:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.0)
         assert result.unlocked is True
@@ -112,6 +118,7 @@ class TestSwitchOnShortOnly:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.0)
         assert result.position_multiplier == pytest.approx(1.0)
@@ -121,6 +128,7 @@ class TestSwitchOnShortOnly:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.0)
         assert result.state == "SHORT_ONLY"
@@ -134,6 +142,7 @@ class TestSwitchOnTrendBear:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("OTHER", "WEAK", 0.0)
         assert result.unlocked is True
@@ -143,6 +152,7 @@ class TestSwitchOnTrendBear:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("OTHER", "WEAK", 0.0)
         assert result.position_multiplier == pytest.approx(0.5)
@@ -152,6 +162,7 @@ class TestSwitchOnTrendBear:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("OTHER", "WEAK", 0.0)
         assert result.state == "TREND_BEAR"
@@ -161,6 +172,7 @@ class TestSwitchOnTrendBear:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("OTHER", "STRONG", 0.0)
         assert result.unlocked is False
@@ -170,6 +182,7 @@ class TestSwitchOnTrendBear:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("OTHER", "NEUTRAL", 0.0)
         assert result.unlocked is False
@@ -179,6 +192,7 @@ class TestSwitchOnTrendBear:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         for regime in ("weak", "WEAK", "Weak"):
             result = exp.evaluate("OTHER", regime, 0.0)
@@ -193,6 +207,7 @@ class TestSwitchOnReversal:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("REVERSAL", "WEAK", 0.0)
         assert result.unlocked is False
@@ -202,6 +217,7 @@ class TestSwitchOnReversal:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("REVERSAL", "WEAK", 0.0)
         assert result.position_multiplier == pytest.approx(0.0)
@@ -211,6 +227,7 @@ class TestSwitchOnReversal:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("REVERSAL", "WEAK", 0.0)
         assert result.state == "REVERSAL"
@@ -224,6 +241,7 @@ class TestConcentrationLimit:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.2)
         assert result.unlocked is True
@@ -234,6 +252,7 @@ class TestConcentrationLimit:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.3)
         assert result.unlocked is False
@@ -244,6 +263,7 @@ class TestConcentrationLimit:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.5)
         assert result.unlocked is False
@@ -254,6 +274,7 @@ class TestConcentrationLimit:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.0)
         assert result.concentration_limit == pytest.approx(0.3)
@@ -263,6 +284,7 @@ class TestConcentrationLimit:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("OTHER", "WEAK", 0.35)
         assert result.unlocked is False
@@ -277,6 +299,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate(None, "WEAK", 0.0)
         assert result.unlocked is False
@@ -286,6 +309,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         # SHORT_ONLY + None regime → should still unlock (SHORT_ONLY doesn't need regime)
         result = exp.evaluate("SHORT_ONLY", None, 0.0)
@@ -299,6 +323,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", None)
         assert result.unlocked is False
@@ -308,6 +333,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", float("nan"))
         assert result.unlocked is False
@@ -317,6 +343,7 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", "not_a_number")
         assert result.unlocked is False
@@ -326,8 +353,10 @@ class TestFailOpen:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         import dreambuddy_evolution.agi_config as agi_config
+
         original = agi_config.get_switch
 
         def _crash(*a, **kw):
@@ -349,6 +378,7 @@ class TestShortOnlyIndependentOfRegime:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "STRONG", 0.0)
         assert result.unlocked is True
@@ -359,6 +389,7 @@ class TestShortOnlyIndependentOfRegime:
         from dreambuddy_evolution.engines.direction_state_short_expansion import (
             DirectionStateShortExpansion,
         )
+
         exp = DirectionStateShortExpansion()
         result = exp.evaluate("SHORT_ONLY", "WEAK", 0.0)
         assert result.unlocked is True

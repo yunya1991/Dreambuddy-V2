@@ -4,7 +4,8 @@ test_core.py — 核心路径单元测试
 ===============================
 SPEC-41-文件索引系统 v0.6 §9（测试计划：分块/分词/检索/权限核心路径）
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 import sys
 from pathlib import Path
 
@@ -12,11 +13,11 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core.chunker import Chunker, WINDOW_LINES, WINDOW_OVERLAP
-from core.tokenizer import tokenize, JiebaTokenizer
-
+from core.chunker import Chunker, WINDOW_LINES, WINDOW_OVERLAP  # noqa: I001
+from core.tokenizer import tokenize
 
 # ---------- chunker 三级兜底（SPEC §2.2 / §9） ----------
+
 
 class TestChunker:
     def setup_method(self):
@@ -63,6 +64,7 @@ class TestChunker:
 
 # ---------- tokenizer 分词（SPEC §2.2 / §9） ----------
 
+
 class TestTokenizer:
     def test_chinese(self):
         tokens = tokenize("文件索引系统")
@@ -91,6 +93,7 @@ class TestTokenizer:
 DB_AVAILABLE = True
 try:
     from core.db import Database
+
     Database.instance().initialize()
 except Exception:
     DB_AVAILABLE = False
@@ -100,6 +103,7 @@ except Exception:
 class TestSearcher:
     def test_search_l1(self):
         from core.searcher import Searcher
+
         s = Searcher()
         result = s.search("SPEC", limit=10)
         assert result.took_ms < 100  # P0 验收：<100ms
@@ -107,12 +111,14 @@ class TestSearcher:
 
     def test_search_limit_cap(self):
         from core.searcher import Searcher
+
         s = Searcher()
         result = s.search("a", limit=999)
         assert len(result.hits) <= 100  # 上限 100
 
     def test_search_type_filter(self):
         from core.searcher import Searcher
+
         s = Searcher()
         result = s.search("md", filters={"type": ["doc"]}, limit=10)
         assert all(h.type == "doc" for h in result.hits)
@@ -122,7 +128,7 @@ class TestSearcher:
 class TestSearchAPIPermission:
     def test_fail_open_no_credential(self):
         from api.search_api import SearchAPI
-        import os
+
         api = SearchAPI(root=str(Path(__file__).resolve().parent.parent))
         # 显式传入错误凭证 → FAIL-OPEN 空结果
         result = api.search("SPEC", agent_token="wrong-token")
@@ -130,6 +136,7 @@ class TestSearchAPIPermission:
 
     def test_agent_token_full_visibility(self, monkeypatch):
         from api.search_api import SearchAPI
+
         monkeypatch.setenv("FIS_AGENT_TOKEN", "test-token-123")
         api = SearchAPI(root=str(Path(__file__).resolve().parent.parent))
         result = api.search("SPEC", agent_token="test-token-123", limit=5)
@@ -137,6 +144,7 @@ class TestSearchAPIPermission:
 
     def test_private_filtered_for_user(self, monkeypatch):
         from api.search_api import SearchAPI
+
         api = SearchAPI(root=str(Path(__file__).resolve().parent.parent))
         hits = [
             type("H", (), {"source": {"path": "private/secret.md", "line": 1}})(),

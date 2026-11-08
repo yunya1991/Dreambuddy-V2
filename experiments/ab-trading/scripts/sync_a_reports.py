@@ -16,7 +16,6 @@ A系列研报 桥接同步脚本
 
 import argparse
 import hashlib
-import json
 import os
 import shutil
 import time
@@ -24,13 +23,21 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-
 # ── 路径配置 ────────────────────────────────────────────────────────────────
 
 _SRC_DIR = Path.home() / ".workbuddy" / "skills" / "boss-secretary" / "reports" / "trading"
-_SRC_SCREEN1_DIR = Path.home() / ".workbuddy" / "skills" / "boss-secretary" / "reports" / "trading" / "6-trading" / "screen1"
-_DST_A1  = Path(__file__).resolve().parent.parent / "A系列研报" / "A1研报"
-_DST_A6  = Path(__file__).resolve().parent.parent / "A系列研报" / "A6研报"
+_SRC_SCREEN1_DIR = (
+    Path.home()
+    / ".workbuddy"
+    / "skills"
+    / "boss-secretary"
+    / "reports"
+    / "trading"
+    / "6-trading"
+    / "screen1"
+)
+_DST_A1 = Path(__file__).resolve().parent.parent / "A系列研报" / "A1研报"
+_DST_A6 = Path(__file__).resolve().parent.parent / "A系列研报" / "A6研报"
 _DST_WEEKLY = Path(__file__).resolve().parent.parent / "A系列研报" / "周报"
 
 # 确保目标目录存在
@@ -44,6 +51,7 @@ _MAX_AGE_WEEKLY = 86400 * 14  # 14 天 (周报，因为每周才生成一次)
 
 
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
+
 
 def _file_hash(filepath: Path) -> str:
     """计算文件内容 SHA-256，用于去重"""
@@ -142,6 +150,7 @@ def _copy_report(src: Path, dst_dir: Path, dry_run: bool = False) -> bool:
 
 
 # ── 核心同步逻辑 ────────────────────────────────────────────────────────────
+
 
 def sync_a1_reports(dry_run: bool = False) -> int:
     """
@@ -279,6 +288,7 @@ def run_watch(interval_sec: int = 60, dry_run: bool = False):
 
 # ── CLI 入口 ──────────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="A系列研报桥接同步脚本",
@@ -289,14 +299,13 @@ def main():
   python sync_a_reports.py --dry-run       # 预览，不实际复制
   python sync_a_reports.py --watch         # 持续监听（每60秒）
   python sync_a_reports.py --watch -i 300  # 持续监听（每5分钟）
-"""
+""",
     )
-    parser.add_argument("--watch", "-w", action="store_true",
-                        help="持续监听模式")
-    parser.add_argument("--interval", "-i", type=int, default=60,
-                        help="监听模式下的检查间隔（秒），默认 60")
-    parser.add_argument("--dry-run", "-n", action="store_true",
-                        help="仅打印操作，不实际复制文件")
+    parser.add_argument("--watch", "-w", action="store_true", help="持续监听模式")
+    parser.add_argument(
+        "--interval", "-i", type=int, default=60, help="监听模式下的检查间隔（秒），默认 60"
+    )
+    parser.add_argument("--dry-run", "-n", action="store_true", help="仅打印操作，不实际复制文件")
     args = parser.parse_args()
 
     if args.watch:

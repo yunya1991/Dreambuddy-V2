@@ -4,6 +4,7 @@
 修复前：试错评估只跑一次（trial_eval_done 永久 True），reverse 阈值 -0.5% 太敏感。
 修复后：每 60min 重评估一次，reverse 阈值放宽到 -3%（轻仓绝对亏损小，容忍噪音）。
 """
+
 import sys
 import time
 from pathlib import Path
@@ -20,11 +21,12 @@ def _trader():
 
 # ── 1. 试错动作判定阈值 ──
 
+
 def test_trial_action_reverse_at_minus_3pct():
     """价格变动 ≤ -3% 判定 reverse（放宽后阈值）。"""
     t = _trader()
     assert t._compute_trial_action(-0.031) == "reverse"
-    assert t._compute_trial_action(-0.03) == "reverse"   # 边界包含
+    assert t._compute_trial_action(-0.03) == "reverse"  # 边界包含
 
 
 def test_trial_action_maintain_between_thresholds():
@@ -43,6 +45,7 @@ def test_trial_action_confirm_at_plus_1pct():
 
 
 # ── 2. 定期重评估条件 ──
+
 
 def test_trial_eval_skipped_before_30min():
     """持仓 < 30min 不评估。"""

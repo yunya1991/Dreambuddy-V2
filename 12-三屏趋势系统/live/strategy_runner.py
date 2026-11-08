@@ -4,10 +4,10 @@
 支持多策略并行对比验证。
 """
 
-import time
+import time  # noqa: I001
 import signal
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable
 import json
@@ -19,8 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # 添加 data_center 包路径
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "18-数据获取中心"))
 
-from live.paper_trading import PaperTradingEngine
-from data_center.compat import fetch_candles, resample_candles
+from live.paper_trading import PaperTradingEngine  # noqa: I001
+from data_center.compat import fetch_candles
 from core.least_resistance import compute_least_resistance
 from core.config import CANDIDATE_COINS
 
@@ -89,9 +89,9 @@ class StrategyRunner:
             df = df.set_index("timestamp")
 
             # 重命名列
-            df = df.rename(columns={
-                "o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"
-            })
+            df = df.rename(
+                columns={"o": "open", "h": "high", "l": "low", "c": "close", "vol": "volume"}
+            )
 
             return df[["open", "high", "low", "close", "volume"]]
 
@@ -102,7 +102,7 @@ class StrategyRunner:
     def _fetch_multi_timeframe(
         self,
         inst_id: str,
-        bars: List[str] = ["1W", "1D", "4H"],
+        bars: List[str] = ["1W", "1D", "4H"],  # noqa: B006
         limit: int = 300,
     ) -> Dict[str, pd.DataFrame]:
         """获取多周期数据"""
@@ -169,7 +169,7 @@ class StrategyRunner:
                         signal=signal,
                         current_price=current_price,
                         timestamp=ts,
-                        notes=f"自动运行",
+                        notes="自动运行",
                     )
 
                     # 记录结果
@@ -224,7 +224,7 @@ class StrategyRunner:
         print(f"\n策略运行器启动，间隔: {self.run_interval}秒")
         print(f"交易对: {[c['symbol'] for c in self.symbols]}")
         print(f"策略: {list(self.strategies.keys())}")
-        print(f"\n按 Ctrl+C 停止...\n")
+        print("\n按 Ctrl+C 停止...\n")
 
         while self._running:
             try:
@@ -271,6 +271,7 @@ class StrategyRunner:
 
 # ==================== 预定义策略函数 ====================
 
+
 def create_rule_strategy(weekly_weight: float = 0.6) -> Callable:
     """创建规则引擎策略
 
@@ -280,6 +281,7 @@ def create_rule_strategy(weekly_weight: float = 0.6) -> Callable:
     返回:
         策略函数
     """
+
     def rule_strategy(prices: pd.DataFrame) -> float:
         """规则引擎策略：基于最小阻力方向"""
         if len(prices) < 50:
@@ -314,7 +316,7 @@ def create_ai_v1_strategy(
     返回:
         策略函数
     """
-    from ml.lr_ml_strategy import LeastResistanceAIStrategy
+    from ml.lr_ml_strategy import LeastResistanceAIStrategy  # noqa: I001
     from ml.lr_feature_engineer import LeastResistanceFeatureEngineer
 
     strategy = LeastResistanceAIStrategy(
@@ -384,6 +386,7 @@ def create_ai_v2_strategy(
 
 
 # ==================== 主函数 ====================
+
 
 def main():
     """主函数：启动策略运行器"""

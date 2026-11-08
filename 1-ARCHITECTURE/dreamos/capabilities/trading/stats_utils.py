@@ -19,13 +19,13 @@
 from __future__ import annotations
 
 import math
-from typing import List, Optional, Tuple, Sequence
 from dataclasses import dataclass, field
-
+from typing import List, Optional, Sequence, Tuple
 
 # ============================================================
 # 基础统计
 # ============================================================
+
 
 def mean(data: Sequence[float]) -> float:
     """算术平均，空序列返回 0"""
@@ -134,6 +134,7 @@ def normalize_signed(value: float, lo: float, hi: float) -> float:
 # 滚动窗口统计
 # ============================================================
 
+
 class RollingStats:
     """滚动窗口统计器
 
@@ -155,13 +156,13 @@ class RollingStats:
         """添加新数据点"""
         self._data.append(value)
         if len(self._data) > self.window:
-            self._data = self._data[-self.window:]
+            self._data = self._data[-self.window :]
 
     def push_batch(self, values: Sequence[float]) -> None:
         """批量添加"""
         self._data.extend(values)
         if len(self._data) > self.window:
-            self._data = self._data[-self.window:]
+            self._data = self._data[-self.window :]
 
     @property
     def count(self) -> int:
@@ -207,6 +208,7 @@ class RollingStats:
 # ============================================================
 # 回测指标统一计算
 # ============================================================
+
 
 @dataclass
 class BacktestMetrics:
@@ -272,10 +274,14 @@ def calculate_metrics(
     # Profit Factor
     gross_profit = sum(wins) if wins else 0.0
     gross_loss = abs(sum(losses)) if losses else 0.0
-    metrics.profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf') if gross_profit > 0 else 0.0
+    metrics.profit_factor = (
+        gross_profit / gross_loss if gross_loss > 0 else float("inf") if gross_profit > 0 else 0.0
+    )
 
     # 期望值
-    metrics.expectancy = metrics.win_rate * metrics.avg_win + (1 - metrics.win_rate) * metrics.avg_loss
+    metrics.expectancy = (
+        metrics.win_rate * metrics.avg_win + (1 - metrics.win_rate) * metrics.avg_loss
+    )
 
     # Sharpe Ratio（样本标准差，年化）
     sigma = stdev(trades, ddof=1)
@@ -289,7 +295,11 @@ def calculate_metrics(
 
     # Sortino Ratio（仅用下行标准差）
     downside_returns = [min(0, t) for t in trades]
-    downside_sigma = stdev([t for t in downside_returns if t < 0], ddof=1) if len([t for t in downside_returns if t < 0]) > 1 else 0.0
+    downside_sigma = (
+        stdev([t for t in downside_returns if t < 0], ddof=1)
+        if len([t for t in downside_returns if t < 0]) > 1
+        else 0.0
+    )
     if downside_sigma > 0:
         metrics.sortino_ratio = (excess_return / downside_sigma) * math.sqrt(periods_per_year)
     else:
@@ -306,7 +316,7 @@ def calculate_metrics(
         equity += t
         if equity > peak:
             peak = equity
-            dd_start = i
+            dd_start = i  # noqa: F841
             dd_duration = 0
         else:
             dd_duration += 1
@@ -331,6 +341,7 @@ def calculate_metrics(
 # ============================================================
 # 贝叶斯置信度更新
 # ============================================================
+
 
 def bayesian_update(
     prior_alpha: float,
@@ -381,6 +392,7 @@ def bayesian_confidence(alpha: float, beta: float, min_samples: int = 10) -> flo
 # ============================================================
 # 信号冲突检测
 # ============================================================
+
 
 @dataclass
 class SignalStats:
@@ -470,6 +482,7 @@ def detect_conflict(
 # ============================================================
 # 经典平滑与滤波算法
 # ============================================================
+
 
 def ewma_update(prev_ewma: float, new_value: float, alpha: float = 0.3) -> float:
     """EWMA 指数加权移动平均 — 增量更新

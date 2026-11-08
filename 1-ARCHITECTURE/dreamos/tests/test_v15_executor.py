@@ -1,8 +1,10 @@
 """Integration tests for V15Executor adapter layer."""
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+
+from unittest.mock import Mock, patch  # noqa: I001
+
+
 from dreamos.capabilities.trading.v15_executor import V15Executor, V15ExecutorNode
-from dreamos.shared.state import State, NodeStatus
+from dreamos.shared.state import NodeStatus, State
 
 
 class TestV15ExecutorAdapter:
@@ -11,7 +13,7 @@ class TestV15ExecutorAdapter:
     def test_executor_initialization_with_coin_pool(self):
         """Test that V15Executor loads coin pool on initialization."""
         executor = V15Executor(dry_run=True)
-        
+
         # Should load coin pool from coin_pool.json
         assert "long_pool" in executor._coin_pool
         assert "short_pool" in executor._coin_pool
@@ -28,7 +30,7 @@ class TestV15ExecutorAdapter:
             "entry_price": 50000.0,
         }
         result = executor.execute_signal(signal)
-        
+
         assert result["status"] == "REJECTED"
         assert result["reason"] == "HOLD signal not executable"
         assert result["source"] == "14-V15-adapter"
@@ -43,7 +45,7 @@ class TestV15ExecutorAdapter:
             "entry_price": 50000.0,
         }
         result = executor.execute_signal(signal)
-        
+
         assert result["status"] == "REJECTED"
         assert result["reason"] == "v15_long_only"
         assert result["source"] == "14-V15-adapter"
@@ -51,13 +53,13 @@ class TestV15ExecutorAdapter:
     def test_executor_rejects_symbol_not_in_pool(self):
         """Test that symbol not in coin pool is rejected."""
         executor = V15Executor(dry_run=True)
-        
+
         # Mock coin pool to only include BTC
         executor._coin_pool = {
             "long_pool": [{"symbol": "BTC", "score": 0.8}],
             "short_pool": [],
         }
-        
+
         signal = {
             "symbol": "ETH",  # Not in pool
             "direction": "LONG",
@@ -65,12 +67,12 @@ class TestV15ExecutorAdapter:
             "entry_price": 3000.0,
         }
         result = executor.execute_signal(signal)
-        
+
         assert result["status"] == "REJECTED"
         assert "not in long_pool" in result["reason"]
         assert result["source"] == "14-V15-adapter"
 
-    @patch('dreamos.capabilities.trading.v15_executor.v15_trader')
+    @patch("dreamos.capabilities.trading.v15_executor.v15_trader")
     def test_executor_delegates_to_14v15(self, mock_v15_trader):
         """Test that V15Executor delegates to 14-V15 execute_open_position."""
         # Mock 14-V15 functions
@@ -78,15 +80,15 @@ class TestV15ExecutorAdapter:
         mock_v15_trader._get_okx_client.return_value = Mock()
         mock_v15_trader.execute_open_position.return_value = True
         mock_v15_trader.save_state.return_value = None
-        
+
         executor = V15Executor(dry_run=True)
-        
+
         # Mock coin pool to include BTC
         executor._coin_pool = {
             "long_pool": [{"symbol": "BTC", "score": 0.8}],
             "short_pool": [],
         }
-        
+
         signal = {
             "symbol": "BTC",
             "direction": "LONG",
@@ -94,7 +96,7 @@ class TestV15ExecutorAdapter:
             "entry_price": 50000.0,
         }
         result = executor.execute_signal(signal)
-        
+
         # Should delegate to 14-V15
         assert mock_v15_trader.execute_open_position.called
         assert result["source"] == "14-V15-adapter"
@@ -103,22 +105,22 @@ class TestV15ExecutorAdapter:
     def test_executor_initializes_hyperliquid_client(self):
         """Test that HyperliquidClient is initialized when dry_run=False."""
         import dreamos.capabilities.trading.v15_executor as v15_module
-        
+
         # Save original state
         original_hl_available = v15_module._HL_AVAILABLE
-        original_hl_client = getattr(v15_module, 'HyperliquidClient', None)
-        
+        original_hl_client = getattr(v15_module, "HyperliquidClient", None)
+
         try:
             # Create mock HyperliquidClient class
             mock_hl_client_instance = Mock()
             mock_hl_client_class = Mock(return_value=mock_hl_client_instance)
-            
+
             # Patch module attributes
             v15_module._HL_AVAILABLE = True
             v15_module.HyperliquidClient = mock_hl_client_class
-            
+
             executor = V15Executor(dry_run=False, agent_id="c")
-            
+
             # Should initialize HyperliquidClient
             assert mock_hl_client_class.called
             assert mock_hl_client_class.call_args[0][0] == "c"
@@ -137,14 +139,16 @@ class TestV15ExecutorNode:
     def test_node_returns_valid_noderesult(self):
         """Test that V15ExecutorNode returns valid NodeResult."""
         node = V15ExecutorNode()
-        state = State(market={
-            "symbol": "BTC",
-            "direction": "LONG",
-            "confidence": 0.75,
-            "entry_price": 50000.0,
-        })
+        state = State(
+            market={
+                "symbol": "BTC",
+                "direction": "LONG",
+                "confidence": 0.75,
+                "entry_price": 50000.0,
+            }
+        )
         result = node.execute_core(state)
-        
+
         assert result.node_id == "V15_EXECUTOR"
         assert result.status in [NodeStatus.SUCCESS, NodeStatus.DEGRADED]
         assert 0.0 <= result.confidence <= 1.0
@@ -154,14 +158,16 @@ class TestV15ExecutorNode:
     def test_node_handles_hold_signal(self):
         """Test that V15ExecutorNode handles HOLD signal correctly."""
         node = V15ExecutorNode()
-        state = State(market={
-            "symbol": "BTC",
-            "direction": "HOLD",
-            "confidence": 0.75,
-            "entry_price": 50000.0,
-        })
+        state = State(
+            market={
+                "symbol": "BTC",
+                "direction": "HOLD",
+                "confidence": 0.75,
+                "entry_price": 50000.0,
+            }
+        )
         result = node.execute_core(state)
-        
+
         assert result.node_id == "V15_EXECUTOR"
         assert result.status == NodeStatus.DEGRADED
         assert result.outputs["status"] == "REJECTED"

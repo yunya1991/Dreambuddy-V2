@@ -8,6 +8,7 @@
   TC-4 网络 Timeout 返回空不抛（Spec §4.6 FAIL-OPEN L1 Session）
   TC-5 ImportError sentiment_engine 缺失 → sentiment=0.5 中性全行（Spec §4.6 FAIL-OPEN L2）
 """
+
 from __future__ import annotations
 
 import sys
@@ -69,32 +70,39 @@ def fx_http_20():
         "韩国金融委员会将在9月公布虚拟资产会计处理标准终稿",
     ]
     for i, t in enumerate(titles):
-        items.append({
-            "id": 5_137_000 + i,
-            "title": t,
-            "description": f"<p>快讯内容摘要{i}。</p>",
-            "isImportant": (i in {0, 2, 5, 8, 12, 16}),   # 官方打标重要
-            "publishTimestamp": 1_760_000_000_000 + i * 60_000,
-            "tags": [{"name": "政策"}, {"name": "快讯"}],
-            "newsUrl": f"https://www.odaily.news/newsflash/post/5137{i:03d}",
-            "images": [],
-        })
+        items.append(
+            {
+                "id": 5_137_000 + i,
+                "title": t,
+                "description": f"<p>快讯内容摘要{i}。</p>",
+                "isImportant": (i in {0, 2, 5, 8, 12, 16}),  # 官方打标重要
+                "publishTimestamp": 1_760_000_000_000 + i * 60_000,
+                "tags": [{"name": "政策"}, {"name": "快讯"}],
+                "newsUrl": f"https://www.odaily.news/newsflash/post/5137{i:03d}",
+                "images": [],
+            }
+        )
     assert len(items) == 20
 
     class _Resp:
         status_code = 200
+
         def json(self):
             return {"code": 200, "data": {"list": items, "total": 371403, "totalPage": 18571}}
+
     return _Resp()
 
 
 @pytest.fixture
 def fx_lastid_zero():
     """Fixture 2 — checkHasNew N=0 增量空响应。"""
+
     class _Resp:
         status_code = 200
+
         def json(self):
             return {"code": 200, "data": 0}
+
     return _Resp()
 
 
@@ -128,7 +136,9 @@ def fx_session_timeout(monkeypatch):
     class _TimeoutSession:
         def get(self, *a, **kw):
             from requests.exceptions import Timeout as _T
+
             raise _T("simulated timeout")
+
     return _TimeoutSession()
 
 
@@ -136,6 +146,7 @@ def fx_session_timeout(monkeypatch):
 def fx_import_error_sentiment(monkeypatch):
     """Fixture 5 — ImportError monkeypatch：sentiment_engine 缺失。"""
     import builtins
+
     real_import = builtins.__import__
 
     def fake_import(name, *args, **kwargs):
@@ -153,6 +164,7 @@ def fx_import_error_sentiment(monkeypatch):
 # ============================================================
 def _get_collector_cls():
     import importlib
+
     mod = importlib.import_module(COLLECTOR_MOD)
     return mod.OdailyNewsflashCollector
 
@@ -180,6 +192,7 @@ def test_tc1_normal_20_records_contract_and_metrics_ranges(mocker, fx_http_20):
     # 返回非中性值（0.3~0.8），验证 sentiment 字段正常工作
     def _fake_sentiment(title, desc):
         return (0.3 + (abs(hash(title)) % 50) / 100.0, True)
+
     mocker.patch(f"{COLLECTOR_MOD}._sentiment_lazy", side_effect=_fake_sentiment)
 
     cls = _get_collector_cls()
@@ -198,18 +211,37 @@ def test_tc1_normal_20_records_contract_and_metrics_ranges(mocker, fx_http_20):
         assert rec.sub_category.startswith("newsflash_"), "sub_category = newsflash_<od_id>"
         m = rec.metrics
         # 7 字段齐全
-        for k in ("od_source_id", "od_policy_sentiment_0_1", "od_event_type",
-                  "od_attention_type", "od_is_important", "od_decay_hl_hrs", "od_title_hash"):
+        for k in (
+            "od_source_id",
+            "od_policy_sentiment_0_1",
+            "od_event_type",
+            "od_attention_type",
+            "od_is_important",
+            "od_decay_hl_hrs",
+            "od_title_hash",
+        ):
             assert k in m, f"metrics 缺失字段 {k!r}"
         # 类型/范围
         assert isinstance(m["od_source_id"], int), f"od_source_id 非 int: {type(m['od_source_id'])}"
         s = m["od_policy_sentiment_0_1"]
         assert isinstance(s, float) and 0.0 <= s <= 1.0, f"sentiment ∉[0,1]: {s!r}"
-        assert m["od_event_type"] in {"monetary_policy", "crypto_regulation", "us_policy",
-                                      "us_data", "geopolitics", "security_incident",
-                                      "project_ecosystem", "market_sentiment"}
-        assert m["od_attention_type"] in {"policy_easing", "policy_tightening",
-                                          "market_risk_on", "market_risk_off", "neutral"}
+        assert m["od_event_type"] in {
+            "monetary_policy",
+            "crypto_regulation",
+            "us_policy",
+            "us_data",
+            "geopolitics",
+            "security_incident",
+            "project_ecosystem",
+            "market_sentiment",
+        }
+        assert m["od_attention_type"] in {
+            "policy_easing",
+            "policy_tightening",
+            "market_risk_on",
+            "market_risk_off",
+            "neutral",
+        }
         assert m["od_is_important"] in ("true", "false"), "bool 必须转 true/false 字符串"
         assert isinstance(m["od_decay_hl_hrs"], int) and m["od_decay_hl_hrs"] in {6, 24, 48, 72}
         assert isinstance(m["od_title_hash"], str) and len(m["od_title_hash"]) == 8
@@ -257,6 +289,7 @@ def test_tc3_event_type_distribution_counter_match(mocker, fx_http_20, fx_policy
     c = cls()
     recs = c.fetch({"route": "latest"})
     from collections import Counter
+
     actual = Counter(r.metrics["od_event_type"] for r in recs)
     expected = fx_policy_batch["event_types"]
     # 7 大类逐项匹配；允许 ±1 的容忍（关键词边界）
@@ -275,6 +308,7 @@ def test_tc4_network_timeout_returns_empty_no_raise(mocker, fx_session_timeout):
     """TC-4: 网络层 Timeout 必须静默回退 []，不抛到上层。"""
     mock_req = mocker.patch(REQ_MOD)
     from requests.exceptions import Timeout as _T
+
     mock_req.get.side_effect = _T("connect timeout")
     cls = _get_collector_cls()
     c = cls()

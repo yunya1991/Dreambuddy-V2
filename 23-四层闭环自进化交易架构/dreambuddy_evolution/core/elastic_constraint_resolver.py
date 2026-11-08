@@ -18,13 +18,12 @@ ElasticConstraintResolver — 弹性约束解析器
   floor ∈ [0.10, 0.30]       最低仓位比例
   bonus ∈ [0.00, 0.10]       方向对齐时的仓位加成
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import logging
 import math
 from typing import Any
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +37,13 @@ class ElasticConstraintResolver:
     因为市场偏离是弹簧式的——偏离越大，回弹力越强.
     """
 
-    def __init__(self,
-                 base_limit: float = 0.12,
-                 floor: float = 0.20,
-                 bonus: float = 0.05,
-                 steepness: float = 3.0):
+    def __init__(
+        self,
+        base_limit: float = 0.12,
+        floor: float = 0.20,
+        bonus: float = 0.05,
+        steepness: float = 3.0,
+    ):
         """
         Args:
             base_limit: 基础反弹上限（理论边界 [0.05, 0.20]）
@@ -56,12 +57,14 @@ class ElasticConstraintResolver:
         self._bonus = max(0.00, min(0.10, bonus))
         self._steepness = max(1.0, min(10.0, steepness))
 
-    def resolve(self,
-                primary: dict[str, Any] | None,
-                secondary: dict[str, Any] | None,
-                base_position: float = 1.0,
-                primary_tf: str = "medium",
-                secondary_tf: str = "medium") -> dict[str, Any]:
+    def resolve(
+        self,
+        primary: dict[str, Any] | None,
+        secondary: dict[str, Any] | None,
+        base_position: float = 1.0,
+        primary_tf: str = "medium",
+        secondary_tf: str = "medium",
+    ) -> dict[str, Any]:
         """
         解析弹性约束，返回调整后的仓位倍数.
 
@@ -132,7 +135,9 @@ class ElasticConstraintResolver:
             t_max = self._base_limit * (p_strength / total_strength)
         else:
             # 层级驱动: 长期约束短期 → T_max 增大
-            tier_bonus = TIER_WEIGHT.get(primary_tf, 0.3) / max(TIER_WEIGHT.get(secondary_tf, 0.2), 1e-6)
+            tier_bonus = TIER_WEIGHT.get(primary_tf, 0.3) / max(
+                TIER_WEIGHT.get(secondary_tf, 0.2), 1e-6
+            )
             t_max = self._base_limit * (p_strength / total_strength) * tier_bonus
             # clip 防止 T_max 超界
             t_max = min(t_max, self._base_limit * 2.0)
@@ -145,7 +150,7 @@ class ElasticConstraintResolver:
         if t_max > 1e-6:
             ratio = deviation / t_max
         else:
-            ratio = float('inf')
+            ratio = float("inf")
 
         # sigmoid(1 - ratio): ratio=0 → 1.0（满仓），ratio=1 → 0.5，ratio→∞ → 0.0
         sigmoid_val = 1.0 / (1.0 + math.exp(self._steepness * (ratio - 1.0)))
@@ -165,10 +170,13 @@ class ElasticConstraintResolver:
             "rebound_risk": round(rebound_risk, 6),
         }
 
-    def check_rebound_threshold(self, primary: dict | None,
-                                secondary: dict | None,
-                                current_price: float,
-                                reference_price: float) -> dict[str, Any]:
+    def check_rebound_threshold(
+        self,
+        primary: dict | None,
+        secondary: dict | None,
+        current_price: float,
+        reference_price: float,
+    ) -> dict[str, Any]:
         """
         检查短期矛盾是否已达到反弹阈值（量变即将引发质变）.
 

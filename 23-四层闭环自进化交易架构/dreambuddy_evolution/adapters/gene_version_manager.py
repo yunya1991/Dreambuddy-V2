@@ -18,6 +18,7 @@ gene_version_manager — 基因库版本控制（快照+回滚）
         actions/
         library.json
 """
+
 from __future__ import annotations
 
 import json
@@ -48,6 +49,7 @@ class GeneVersionManager:
         """
         try:
             import uuid
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             version_id = f"v{timestamp}_{uuid.uuid4().hex[:6]}"
             snap_dir = self._versions_dir / version_id

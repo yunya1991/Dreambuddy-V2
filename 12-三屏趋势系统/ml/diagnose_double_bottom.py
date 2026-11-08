@@ -1,11 +1,12 @@
 """诊断双底检测的触发时机和效果"""
 
-import sys
+import sys  # noqa: I001
 import os
 import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import pandas as pd
+import pandas as pd  # noqa: I001
 import numpy as np
 
 from backtest.strategy import EnhancedMA200Strategy
@@ -47,10 +48,12 @@ def diagnose():
             date = prices.index[i].strftime("%Y-%m-%d")
             price = close[i]
             # 看看后续5/10/20天收益
-            ret_5d = (close[min(i+5, len(close)-1)] - price) / price
-            ret_10d = (close[min(i+10, len(close)-1)] - price) / price
-            ret_20d = (close[min(i+20, len(close)-1)] - price) / price
-            print(f"  检测: {date} | 价格 {price:.0f} | 后5天 {ret_5d:+.1%} | 后10天 {ret_10d:+.1%} | 后20天 {ret_20d:+.1%}")
+            ret_5d = (close[min(i + 5, len(close) - 1)] - price) / price
+            ret_10d = (close[min(i + 10, len(close) - 1)] - price) / price
+            ret_20d = (close[min(i + 20, len(close) - 1)] - price) / price
+            print(
+                f"  检测: {date} | 价格 {price:.0f} | 后5天 {ret_5d:+.1%} | 后10天 {ret_10d:+.1%} | 后20天 {ret_20d:+.1%}"
+            )
         if confirmed:
             confirmed_days.append(i)
 
@@ -65,12 +68,16 @@ def diagnose():
         rets_10d = []
         rets_20d = []
         for i in detected_days:
-            rets_5d.append((close[min(i+5, len(close)-1)] - close[i]) / close[i])
-            rets_10d.append((close[min(i+10, len(close)-1)] - close[i]) / close[i])
-            rets_20d.append((close[min(i+20, len(close)-1)] - close[i]) / close[i])
+            rets_5d.append((close[min(i + 5, len(close) - 1)] - close[i]) / close[i])
+            rets_10d.append((close[min(i + 10, len(close) - 1)] - close[i]) / close[i])
+            rets_20d.append((close[min(i + 20, len(close) - 1)] - close[i]) / close[i])
         print(f"  后5天平均: {np.mean(rets_5d):+.2%}, 胜率: {np.mean(np.array(rets_5d) > 0):.0%}")
-        print(f"  后10天平均: {np.mean(rets_10d):+.2%}, 胜率: {np.mean(np.array(rets_10d) > 0):.0%}")
-        print(f"  后20天平均: {np.mean(rets_20d):+.2%}, 胜率: {np.mean(np.array(rets_20d) > 0):.0%}")
+        print(
+            f"  后10天平均: {np.mean(rets_10d):+.2%}, 胜率: {np.mean(np.array(rets_10d) > 0):.0%}"
+        )
+        print(
+            f"  后20天平均: {np.mean(rets_20d):+.2%}, 胜率: {np.mean(np.array(rets_20d) > 0):.0%}"
+        )
 
     # 看看布林带加仓的触发情况
     print()
@@ -89,12 +96,16 @@ def diagnose():
         rets_10d = []
         rets_20d = []
         for i in bb_add_days:
-            rets_5d.append((close[min(i+5, len(close)-1)] - close[i]) / close[i])
-            rets_10d.append((close[min(i+10, len(close)-1)] - close[i]) / close[i])
-            rets_20d.append((close[min(i+20, len(close)-1)] - close[i]) / close[i])
+            rets_5d.append((close[min(i + 5, len(close) - 1)] - close[i]) / close[i])
+            rets_10d.append((close[min(i + 10, len(close) - 1)] - close[i]) / close[i])
+            rets_20d.append((close[min(i + 20, len(close) - 1)] - close[i]) / close[i])
         print(f"  后5天平均: {np.mean(rets_5d):+.2%}, 胜率: {np.mean(np.array(rets_5d) > 0):.0%}")
-        print(f"  后10天平均: {np.mean(rets_10d):+.2%}, 胜率: {np.mean(np.array(rets_10d) > 0):.0%}")
-        print(f"  后20天平均: {np.mean(rets_20d):+.2%}, 胜率: {np.mean(np.array(rets_20d) > 0):.0%}")
+        print(
+            f"  后10天平均: {np.mean(rets_10d):+.2%}, 胜率: {np.mean(np.array(rets_10d) > 0):.0%}"
+        )
+        print(
+            f"  后20天平均: {np.mean(rets_20d):+.2%}, 胜率: {np.mean(np.array(rets_20d) > 0):.0%}"
+        )
 
     # 分析为什么加仓后反而亏
     print()

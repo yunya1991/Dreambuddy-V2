@@ -29,20 +29,20 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .types import IntentInput, IntentResult, RecognizerResult, IntentType, get_intent_definition
-from .recognizers.base import BaseRecognizer
-from .recognizers.rule_based import RuleBasedRecognizer
-from .recognizers.llm_based import LLMBasedRecognizer
-from .recognizers.dynamic import DynamicIntentRecognizer
-from .evaluators.intent_evaluator_agent import IntentEvaluatorAgent, EvalResult
-from .token_budget import TokenBudgetManager, BudgetLevel
 from dreamos.shared.llm_client import LLMClient
 from dreamos.shared.utils import Timer
 
+from .evaluators.intent_evaluator_agent import EvalResult, IntentEvaluatorAgent
+from .recognizers.base import BaseRecognizer
+from .recognizers.dynamic import DynamicIntentRecognizer
+from .recognizers.llm_based import LLMBasedRecognizer
+from .recognizers.rule_based import RuleBasedRecognizer
+from .token_budget import TokenBudgetManager
+from .types import IntentInput, IntentResult, IntentType, RecognizerResult, get_intent_definition
 
 # 默认阈值
-DEFAULT_LLM_TRIGGER_THRESHOLD = 0.55      # 规则置信度低于此值时触发 LLM
-DEFAULT_CLARIFY_THRESHOLD = 0.35          # 置信度低于此值时需要澄清
+DEFAULT_LLM_TRIGGER_THRESHOLD = 0.55  # 规则置信度低于此值时触发 LLM
+DEFAULT_CLARIFY_THRESHOLD = 0.35  # 置信度低于此值时需要澄清
 
 
 class IntentEngine:
@@ -61,17 +61,19 @@ class IntentEngine:
         print(result.base_chain)      # ["A1", "A2", "A3", "A4"]
     """
 
-    def __init__(self,
-                 budget_mode: str = "standard",
-                 llm_trigger_threshold: float = DEFAULT_LLM_TRIGGER_THRESHOLD,
-                 clarify_threshold: float = DEFAULT_CLARIFY_THRESHOLD,
-                 llm: Optional[LLMClient] = None,
-                 use_rule_based: bool = True,
-                 use_llm_based: bool = True,
-                 use_dynamic: bool = True,
-                 use_token_budget: bool = False,
-                 jev_fn=None,
-                 laya_fn=None):
+    def __init__(
+        self,
+        budget_mode: str = "standard",
+        llm_trigger_threshold: float = DEFAULT_LLM_TRIGGER_THRESHOLD,
+        clarify_threshold: float = DEFAULT_CLARIFY_THRESHOLD,
+        llm: Optional[LLMClient] = None,
+        use_rule_based: bool = True,
+        use_llm_based: bool = True,
+        use_dynamic: bool = True,
+        use_token_budget: bool = False,
+        jev_fn=None,
+        laya_fn=None,
+    ):
         # 预算管理（默认关闭：分析类任务可能较长，预算耗尽会导致 LLM 被跳过）
         self.budget = TokenBudgetManager(mode=budget_mode, enabled=use_token_budget)
         self._llm_trigger_threshold = llm_trigger_threshold
@@ -116,14 +118,16 @@ class IntentEngine:
 
     # ── 核心识别方法 ───────────────────────────────
 
-    def recognize(self,
-                  user_message: Optional[str] = None,
-                  market: Optional[Dict[str, Any]] = None,
-                  signals: Optional[List[Dict[str, Any]]] = None,
-                  memory: Optional[Dict[str, Any]] = None,
-                  knowledge_hits: Optional[List[Dict[str, Any]]] = None,
-                  context: Optional[Dict[str, Any]] = None,
-                  symbol: str = "BTC-USDT") -> IntentResult:
+    def recognize(
+        self,
+        user_message: Optional[str] = None,
+        market: Optional[Dict[str, Any]] = None,
+        signals: Optional[List[Dict[str, Any]]] = None,
+        memory: Optional[Dict[str, Any]] = None,
+        knowledge_hits: Optional[List[Dict[str, Any]]] = None,
+        context: Optional[Dict[str, Any]] = None,
+        symbol: str = "BTC-USDT",
+    ) -> IntentResult:
         """执行意图识别（主入口）
 
         Args:
@@ -162,12 +166,14 @@ class IntentEngine:
                     all_results.append(result)
                     recognizers_used.append(rec.name)
                 except Exception as e:
-                    all_results.append(RecognizerResult(
-                        recognizer=rec.name,
-                        intent_type=IntentType.UNCERTAIN.value,
-                        confidence=0.0,
-                        rationale=f"识别器异常: {e}",
-                    ))
+                    all_results.append(
+                        RecognizerResult(
+                            recognizer=rec.name,
+                            intent_type=IntentType.UNCERTAIN.value,
+                            confidence=0.0,
+                            rationale=f"识别器异常: {e}",
+                        )
+                    )
 
         # 取最佳本地结果
         best_local = self._pick_best(all_results) if all_results else None
@@ -186,12 +192,14 @@ class IntentEngine:
                     total_tokens += result.tokens_used
                     self.budget.consume(result.tokens_used, layer="sense")
                 except Exception as e:
-                    all_results.append(RecognizerResult(
-                        recognizer=llm_rec.name,
-                        intent_type=IntentType.UNCERTAIN.value,
-                        confidence=0.0,
-                        rationale=f"LLM 识别异常: {e}",
-                    ))
+                    all_results.append(
+                        RecognizerResult(
+                            recognizer=llm_rec.name,
+                            intent_type=IntentType.UNCERTAIN.value,
+                            confidence=0.0,
+                            rationale=f"LLM 识别异常: {e}",
+                        )
+                    )
 
         # ── 第3步：融合结果 ─────────────────────────
 
@@ -266,8 +274,9 @@ class IntentEngine:
             return None
         return max(valid, key=lambda r: r.confidence)
 
-    def _fuse_results(self, all_results: List[RecognizerResult],
-                      best_local: Optional[RecognizerResult]) -> IntentResult:
+    def _fuse_results(
+        self, all_results: List[RecognizerResult], best_local: Optional[RecognizerResult]
+    ) -> IntentResult:
         """融合多个识别器的结果
 
         融合策略:

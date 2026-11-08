@@ -10,6 +10,7 @@
 用法: /home/luke/venv-trading/bin/python3 gen_causal_candidates.py
 边界: 仅提供因果候选证据（描述性统计），不直接改 23 决策参数（SPEC §8.3 反哺边界）
 """
+
 import json
 import os
 
@@ -60,20 +61,22 @@ def main():
         deviation = s["win_rate"] - base_wr
         if abs(deviation) >= DEVIATION_THRESHOLD:
             trend = "胜率显著高于基线" if deviation > 0 else "胜率显著低于基线"
-            candidates.append({
-                "group": key,
-                "direction": direction,
-                "dim_state": dim_state,
-                "n": s["n"],
-                "win_rate": s["win_rate"],
-                "baseline_win_rate": round(base_wr, 4),
-                "deviation": round(deviation, 4),
-                "trend": trend,
-                "avg_pnl": s.get("avg_pnl"),
-                "evidence": "strong" if s["n"] >= N_FORMAL else "weak（弱证据）",
-                "window": "历史全量案例（2026-08 ~ 2026-10）",
-                "consumer": "23 自进化系统（提案→WalkForward→三步门禁，SPEC §8.3）",
-            })
+            candidates.append(
+                {
+                    "group": key,
+                    "direction": direction,
+                    "dim_state": dim_state,
+                    "n": s["n"],
+                    "win_rate": s["win_rate"],
+                    "baseline_win_rate": round(base_wr, 4),
+                    "deviation": round(deviation, 4),
+                    "trend": trend,
+                    "avg_pnl": s.get("avg_pnl"),
+                    "evidence": "strong" if s["n"] >= N_FORMAL else "weak（弱证据）",
+                    "window": "历史全量案例（2026-08 ~ 2026-10）",
+                    "consumer": "23 自进化系统（提案→WalkForward→三步门禁，SPEC §8.3）",
+                }
+            )
 
     candidates.sort(key=lambda c: -abs(c["deviation"]))
     out = {
@@ -90,8 +93,10 @@ def main():
     strong = [c for c in candidates if c["evidence"] == "strong"]
     print(f"     强证据候选: {len(strong)} | 弱证据候选: {len(candidates) - len(strong)}")
     for c in candidates[:8]:
-        print(f"     {c['group']}: n={c['n']}, 胜率 {c['win_rate']:.0%} vs 基线 {c['baseline_win_rate']:.0%}, "
-              f"偏离 {c['deviation']:+.0%}, {c['trend']}, 证据 {c['evidence']}")
+        print(
+            f"     {c['group']}: n={c['n']}, 胜率 {c['win_rate']:.0%} vs 基线 {c['baseline_win_rate']:.0%}, "
+            f"偏离 {c['deviation']:+.0%}, {c['trend']}, 证据 {c['evidence']}"
+        )
 
 
 if __name__ == "__main__":

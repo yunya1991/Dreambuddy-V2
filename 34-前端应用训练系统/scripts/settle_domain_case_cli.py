@@ -15,6 +15,7 @@
 写入 l1_case_store.jsonl（schema_version v2，case_type 标识域），
 FAIL-OPEN：任何异常输出 {"success": false}，不阻塞调用方。
 """
+
 import json
 import os
 import sys
@@ -25,8 +26,11 @@ _34_DIR = os.path.dirname(_THIS_DIR)
 _CASE_STORE = os.path.join(_34_DIR, "l1_case_store.jsonl")
 
 VALID_TYPES = {
-    "sacg_orchestration", "dsh_dispatch", "sub_agent",
-    "finance_semantic", "arch_layer",
+    "sacg_orchestration",
+    "dsh_dispatch",
+    "sub_agent",
+    "finance_semantic",
+    "arch_layer",
 }
 
 
@@ -54,7 +58,11 @@ def main() -> int:
         os.makedirs(os.path.dirname(_CASE_STORE), exist_ok=True)
         with open(_CASE_STORE, "a", encoding="utf-8") as f:
             f.write(json.dumps(case, ensure_ascii=False) + "\n")
-        print(json.dumps({"success": True, "settled": True, "case_type": case_type}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"success": True, "settled": True, "case_type": case_type}, ensure_ascii=False
+            )
+        )
         return 0
     except Exception as e:  # FAIL-OPEN
         print(json.dumps({"success": False, "error": f"{type(e).__name__}: {e}"}))

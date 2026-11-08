@@ -8,6 +8,7 @@
 免费 tier: 10,000 calls/月，需 CoinMarketCap API Key。
 与 CoinGecko 交叉验证排名数据。
 """
+
 from __future__ import annotations
 
 import os
@@ -33,9 +34,8 @@ class CoinMarketCapCollector(BaseCollector):
 
     def __init__(self, config: dict | None = None):
         super().__init__(config)
-        self._api_key: str = (
-            self.config.get("api_key")
-            or os.environ.get("COINMARKETCAP_API_KEY", "")
+        self._api_key: str = self.config.get("api_key") or os.environ.get(
+            "COINMARKETCAP_API_KEY", ""
         )
 
     def is_available(self) -> bool:
@@ -75,15 +75,19 @@ class CoinMarketCapCollector(BaseCollector):
             symbol = coin.get("symbol", "")
             mcap = float(coin.get("quote", {}).get("USD", {}).get("market_cap", 0) or 0)
             price = float(coin.get("quote", {}).get("USD", {}).get("price", 0) or 0)
-            change_24h = float(coin.get("quote", {}).get("USD", {}).get("percent_change_24h", 0) or 0)
-            ts_list.append({
-                "rank": coin.get("cmc_rank", 0),
-                "name": name,
-                "symbol": symbol,
-                "market_cap": mcap,
-                "price": price,
-                "change_24h_pct": change_24h,
-            })
+            change_24h = float(
+                coin.get("quote", {}).get("USD", {}).get("percent_change_24h", 0) or 0
+            )
+            ts_list.append(
+                {
+                    "rank": coin.get("cmc_rank", 0),
+                    "name": name,
+                    "symbol": symbol,
+                    "market_cap": mcap,
+                    "price": price,
+                    "change_24h_pct": change_24h,
+                }
+            )
             if not top_name:
                 top_name = symbol
                 top_mcap = mcap

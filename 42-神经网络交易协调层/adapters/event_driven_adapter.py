@@ -16,24 +16,35 @@
 
 用法：python3 event_driven_adapter.py（独立运行时打印发布结果）
 """
+
 import json
 import os
+import re
 import sys
-import uuid
 from datetime import datetime, timedelta, timezone
+
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 # 29 层影子模式状态文件路径（由 23 层 kline_event_handler 写入）
 _29_STATE_PATH = os.path.join(
-    "/home/luke/dreambuddy/11-易经推理系统", "data", "event_driven_state.json",
+    os.path.join(_DREAMBUDDY_ROOT, "11-易经推理系统"),
+    "data",
+    "event_driven_state.json",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # 状态新鲜度上限（事件驱动信号时效 4h）
 _MAX_AGE_SECONDS = 4 * 3600
 
 _VALID_DIRECTIONS = ("long", "short", "neutral")
+
+# 无有效事件的事件类型取值（源头无信号不发布）
+_NO_EVENT_TYPES = ("", "none", "null", "no_event")
 
 
 def _now() -> datetime:
@@ -53,8 +64,9 @@ def _parse_ts(value):
         return None
 
 
-def load_state(path: str = _29_STATE_PATH):
+def load_state(path: str = None):
     """只读加载 29 层事件驱动影子状态（fail-open）。返回 (state, note)。"""
+    path = path or _29_STATE_PATH
     try:
         if not os.path.exists(path):
             return None, "event_driven_state.json 不存在（fail-open）"
@@ -81,8 +93,11 @@ def build_signal(state: dict) -> dict:
     elasticity = abs(max(-1.0, min(1.0, float(sig.get("elasticity") or 0.0))))
 
     return {
-        "signal_id": "sig_{}_{}".format(
-            now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
+        # P1-01：确定性 signal_id（同 source+标的当日重跑幂等替换）
+        "signal_id": "sig_29-event_{}_{}".format(
+            re.sub(r"[^A-Za-z0-9]+", "_", str(state.get("symbol") or "MACRO")),
+            now.strftime("%Y%m%d"),
+        ),
         "source": "29-event",
         "ts": now.isoformat(),
         "symbol": str(state.get("symbol") or "MACRO"),
@@ -120,7 +135,24 @@ def main() -> int:
 
     sig = state.get("signal") or {}
     if sig.get("signal") not in _VALID_DIRECTIONS:
-        print(json.dumps({"status": "unavailable", "reason": "无有效事件驱动信号（fail-open）"}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"status": "unavailable", "reason": "无有效事件驱动信号（fail-open）"},
+                ensure_ascii=False,
+            )
+        )
+        return 1
+    # 源头无信号不发：event_type 为空/none 视为无事件（避免发布 neutral 0 置信噪音）
+    if str(sig.get("event_type") or "").strip().lower() in _NO_EVENT_TYPES:
+        print(
+            json.dumps(
+                {
+                    "status": "unavailable",
+                    "reason": "无有效事件（event_type={}），不发布".format(sig.get("event_type")),
+                },
+                ensure_ascii=False,
+            )
+        )
         return 1
 
     # 新鲜度预检：状态超过 4h 不发布
@@ -128,29 +160,40 @@ def main() -> int:
     if updated is not None:
         age = (_now() - updated).total_seconds()
         if age > _MAX_AGE_SECONDS:
-            print(json.dumps({
-                "status": "stale",
-                "reason": "事件驱动状态超过 4h，不发布",
-                "age_seconds": round(age, 1),
-            }, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {
+                        "status": "stale",
+                        "reason": "事件驱动状态超过 4h，不发布",
+                        "age_seconds": round(age, 1),
+                    },
+                    ensure_ascii=False,
+                )
+            )
             return 1
 
     signal = build_signal(state)
     bus = SignalBus()
     result = bus.publish(signal)
     bus.flush()
-    print(json.dumps({
-        "publish_result": result.get("status"),
-        "reason": result.get("reason"),
-        "signal_id": signal.get("signal_id"),
-        "source": signal.get("source"),
-        "symbol": signal.get("symbol"),
-        "direction": signal.get("direction"),
-        "confidence": signal.get("confidence"),
-        "risk_exposure_hint": signal.get("risk_exposure_hint"),
-        "bus_signal_count": bus.snapshot()["signal_count"],
-        "bus_sources": bus.snapshot()["sources"],
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+                "signal_id": signal.get("signal_id"),
+                "source": signal.get("source"),
+                "symbol": signal.get("symbol"),
+                "direction": signal.get("direction"),
+                "confidence": signal.get("confidence"),
+                "risk_exposure_hint": signal.get("risk_exposure_hint"),
+                "bus_signal_count": bus.snapshot()["signal_count"],
+                "bus_sources": bus.snapshot()["sources"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if result.get("status") == "accepted" else 1
 
 

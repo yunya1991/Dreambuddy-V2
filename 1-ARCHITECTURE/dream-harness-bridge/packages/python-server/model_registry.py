@@ -19,12 +19,10 @@ IPC handler:
 from __future__ import annotations
 
 import json
-import os
 import time
 import traceback
 import uuid
 from pathlib import Path
-from typing import Any
 
 # 复用 server.py 的 _send_stderr（结构化日志）
 try:
@@ -32,9 +30,8 @@ try:
 except ImportError:
     # 独立运行时 fallback
     import sys
-    _send_stderr = lambda level, msg: sys.stderr.write(  # noqa: E731
-        f"[{level}] {msg}\n"
-    )
+
+    _send_stderr = lambda level, msg: sys.stderr.write(f"[{level}] {msg}\n")  # noqa: E731
 
 # 模型注册表目录（HC-3 单一真相源：DreamOS 拥有模型主权）
 _MODEL_REGISTRY_DIR = Path.home() / ".workbuddy" / "model_registry"
@@ -78,9 +75,7 @@ def handle_publish_model_update(params: dict) -> dict:
         metrics = params.get("metrics") or {}
         dataset_size = params.get("dataset_size", 0)
         training_params = params.get("training_params") or {}
-        trained_at = params.get("trained_at") or time.strftime(
-            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
-        )
+        trained_at = params.get("trained_at") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         rollout_strategy = params.get("rollout_strategy", "canary_10pct")
         record_id = str(uuid.uuid4())
         registered_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

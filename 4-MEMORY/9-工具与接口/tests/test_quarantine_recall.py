@@ -5,9 +5,9 @@
 - include_quarantined=True 可显式查询
 - 恢复后 confidence 重初始化
 """
-import os
+
+import os  # noqa: I001
 import sys
-import pytest
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PARENT = os.path.dirname(_SCRIPT_DIR)
@@ -17,6 +17,7 @@ if _PARENT not in sys.path:
 
 def _make_cle(tmp_path):
     from cognitive_loop_entry import CognitiveLoopEntry
+
     db_path = str(tmp_path / "test_mem.db")
     cle = CognitiveLoopEntry(storage_path=db_path, memory_id="test-quarantine-recall")
     return cle

@@ -16,7 +16,8 @@ Flow:
     decisions → V15Executor.execute_signal() → positions
     decisions → HedgeExecutor.evaluate_entry() → hedge pair (if applicable)
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 from typing import Any, Dict, List, Optional
 from datetime import datetime
@@ -27,6 +28,7 @@ from dreamos.capabilities.trading.v15_executor import V15Executor
 
 try:
     from dreamos.capabilities.trading.hedge_executor import HedgeExecutor
+
     _HEDGE_AVAILABLE = True
 except ImportError:
     _HEDGE_AVAILABLE = False
@@ -61,7 +63,9 @@ class SignalRouter:
         self.coin_selector = CoinSelector(use_hermes=use_hermes)
         self.signal_generator = signal_generator or YijingSignalGenerator(seed=seed)
         self.executor = executor or V15Executor()
-        self.hedge_executor = hedge_executor or (HedgeExecutor(dry_run=False) if _HEDGE_AVAILABLE else None)
+        self.hedge_executor = hedge_executor or (
+            HedgeExecutor(dry_run=False) if _HEDGE_AVAILABLE else None
+        )
 
     def route(self, market_data: Dict[str, Any]) -> Dict[str, Any]:
         """Route a single symbol through all three layers.
@@ -159,13 +163,15 @@ class SignalRouter:
             }
             position = self.executor.execute_signal(exec_signal)
 
-            long_results.append({
-                "symbol": sym,
-                "direction": dec.get("final_direction", "HOLD"),
-                "confidence": dec.get("final_confidence", 0.0),
-                "hexagram": dec.get("hexagram", {}),
-                "position": position,
-            })
+            long_results.append(
+                {
+                    "symbol": sym,
+                    "direction": dec.get("final_direction", "HOLD"),
+                    "confidence": dec.get("final_confidence", 0.0),
+                    "hexagram": dec.get("hexagram", {}),
+                    "position": position,
+                }
+            )
 
         for dec in fused.get("short_decisions", []):
             sym = dec.get("symbol", "")
@@ -180,13 +186,15 @@ class SignalRouter:
             }
             position = self.executor.execute_signal(exec_signal)
 
-            short_results.append({
-                "symbol": sym,
-                "direction": dec.get("final_direction", "HOLD"),
-                "confidence": dec.get("final_confidence", 0.0),
-                "hexagram": dec.get("hexagram", {}),
-                "position": position,
-            })
+            short_results.append(
+                {
+                    "symbol": sym,
+                    "direction": dec.get("final_direction", "HOLD"),
+                    "confidence": dec.get("final_confidence", 0.0),
+                    "hexagram": dec.get("hexagram", {}),
+                    "position": position,
+                }
+            )
 
         # Multi-consumer broadcast: send signals to HedgeExecutor
         hedge_result = None
@@ -204,10 +212,24 @@ class SignalRouter:
                 # Get regime from pools
                 regime = pools.get("regime", "")
 
-                long_cand = {"symbol": best_long.get("symbol", ""), "score": best_long.get("confidence", 0.0)}
-                short_cand = {"symbol": best_short.get("symbol", ""), "score": best_short.get("confidence", 0.0)}
-                long_signal = {"direction": "LONG", "confidence": best_long.get("confidence", 0.0), "hexagram": best_long.get("hexagram", {})}
-                short_signal = {"direction": "SHORT", "confidence": best_short.get("confidence", 0.0), "hexagram": best_short.get("hexagram", {})}
+                long_cand = {
+                    "symbol": best_long.get("symbol", ""),
+                    "score": best_long.get("confidence", 0.0),
+                }
+                short_cand = {
+                    "symbol": best_short.get("symbol", ""),
+                    "score": best_short.get("confidence", 0.0),
+                }
+                long_signal = {
+                    "direction": "LONG",
+                    "confidence": best_long.get("confidence", 0.0),
+                    "hexagram": best_long.get("hexagram", {}),
+                }
+                short_signal = {
+                    "direction": "SHORT",
+                    "confidence": best_short.get("confidence", 0.0),
+                    "hexagram": best_short.get("hexagram", {}),
+                }
 
                 hedge_result = self.hedge_executor.evaluate_entry(
                     long_cand=long_cand,
@@ -219,6 +241,7 @@ class SignalRouter:
                 )
             except Exception as e:
                 import logging
+
                 logging.getLogger(__name__).warning(f"HedgeExecutor broadcast failed: {e}")
                 hedge_result = {"status": "ERROR", "reason": str(e)}
 
@@ -251,38 +274,56 @@ class SignalRouter:
             }
         """
         if not self.executor:
-            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
-                    "cooldown_active": False, "details": [], "error": "executor unavailable"}
+            return {
+                "managed_count": 0,
+                "closed_count": 0,
+                "addon_count": 0,
+                "cooldown_active": False,
+                "details": [],
+                "error": "executor unavailable",
+            }
 
         try:
             result = self.executor.manage_positions()
-            logger.info(f"SignalRouter manage_positions: managed={result.get('managed_count', 0)} "
-                        f"closed={result.get('closed_count', 0)} addon={result.get('addon_count', 0)}")
+            logger.info(  # noqa: F821
+                f"SignalRouter manage_positions: managed={result.get('managed_count', 0)} "
+                f"closed={result.get('closed_count', 0)} addon={result.get('addon_count', 0)}"
+            )
 
             # 方案B：对冲价差止盈止损监控
             hedge_results = []
             if self.hedge_executor:
                 try:
                     hedge_results = self.hedge_executor.check_spread_exit({})
-                    hedge_closed = sum(1 for r in hedge_results if r.get("action") in ("TP_SPREAD", "SL_SPREAD"))
+                    hedge_closed = sum(
+                        1 for r in hedge_results if r.get("action") in ("TP_SPREAD", "SL_SPREAD")
+                    )
                     if hedge_closed > 0:
-                        logger.info(f"SignalRouter hedge_spread_exit: closed={hedge_closed}")
+                        logger.info(  # noqa: F821
+                            f"SignalRouter hedge_spread_exit: closed={hedge_closed}"
+                        )  # noqa: F821
                 except Exception as e:
-                    logger.error(f"SignalRouter hedge_spread_exit error: {e}")
+                    logger.error(f"SignalRouter hedge_spread_exit error: {e}")  # noqa: F821
                     hedge_results = []
 
             result["hedge_spread_exit"] = hedge_results
             return result
         except Exception as e:
-            logger.error(f"SignalRouter manage_positions error: {e}")
-            return {"managed_count": 0, "closed_count": 0, "addon_count": 0,
-                    "cooldown_active": False, "details": [], "error": str(e)}
+            logger.error(f"SignalRouter manage_positions error: {e}")  # noqa: F821
+            return {
+                "managed_count": 0,
+                "closed_count": 0,
+                "addon_count": 0,
+                "cooldown_active": False,
+                "details": [],
+                "error": str(e),
+            }
 
 
 # ---- Task 2: SignalRouterNode ----
 
-from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult, NodeStatus
+from dreamos.registry.base import BaseNode  # noqa: E402, I001
+from dreamos.shared.state import State, NodeResult, NodeStatus  # noqa: E402
 
 
 class SignalRouterNode(BaseNode):

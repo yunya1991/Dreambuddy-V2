@@ -11,6 +11,7 @@ TDD 红灯阶段 — 验证 TrailingStopComponent 通过 param_center.api.get_sl
 运行：
   cd 16-调控系统 && python -m pytest tests/trailing_stop/test_param_center_integration.py -v
 """
+
 from __future__ import annotations
 
 import json
@@ -20,7 +21,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-_BASE_DIR = Path(__file__).resolve().parents[2]            # 16-调控系统
+_BASE_DIR = Path(__file__).resolve().parents[2]  # 16-调控系统
 _CORE_DIR = _BASE_DIR / "core"
 sys.path.insert(0, str(_CORE_DIR))
 
@@ -77,27 +78,30 @@ class TestParamCenterIntegration(unittest.TestCase):
         self._cfg_file = Path(self._tmpdir) / "trailing_stop.json"
         # 配置默认 atr_multiplier=2.5（FAIL-OPEN 回退值）
         self._cfg_file.write_text(
-            json.dumps({
-                "version": "1.0",
-                "enabled_systems": ["v15_martin", "yijing_bcrm"],
-                "cache_ttl_sec": 0,
-                "persist_enabled": True,
-                "persist_file": str(self._state_file),
-                "algorithm": {
-                    "arm_threshold_pct": 0.20,
-                    "atr_period": 14,
-                    "atr_multiplier": 2.5,        # FAIL-OPEN 回退值
-                    "min_trail_pct": 0.03,
-                    "atr_fallback_pct": 0.02,
-                },
-                "trigger_cooldown_sec": 300,
-                "auto_close_after_sec": 1_000_000,
-            }),
+            json.dumps(
+                {
+                    "version": "1.0",
+                    "enabled_systems": ["v15_martin", "yijing_bcrm"],
+                    "cache_ttl_sec": 0,
+                    "persist_enabled": True,
+                    "persist_file": str(self._state_file),
+                    "algorithm": {
+                        "arm_threshold_pct": 0.20,
+                        "atr_period": 14,
+                        "atr_multiplier": 2.5,  # FAIL-OPEN 回退值
+                        "min_trail_pct": 0.03,
+                        "atr_fallback_pct": 0.02,
+                    },
+                    "trigger_cooldown_sec": 300,
+                    "auto_close_after_sec": 1_000_000,
+                }
+            ),
             encoding="utf-8",
         )
 
     def tearDown(self):
         import shutil
+
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     # ----------------------------------------------------------------
@@ -108,30 +112,35 @@ class TestParamCenterIntegration(unittest.TestCase):
         from trailing_stop.types import TrailingAction, TrailingStatus
 
         # 100 → 104 × 5x = 20% 有效收益 → ARM
-        positions = _mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions = _mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         fake_params = _FakeSLTPParams(atr_mult_range=(4.0, 6.0))
 
-        with patch(
-            "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
-            return_value=positions,
-        ), patch(
-            "param_center.api.get_sltp_params",
-            return_value=fake_params,
-        ) as mock_get:
+        with (
+            patch(
+                "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
+                return_value=positions,
+            ),
+            patch(
+                "param_center.api.get_sltp_params",
+                return_value=fake_params,
+            ) as mock_get,
+        ):
             comp = TrailingStopComponent(config_path=self._cfg_file)
             snap = comp.evaluate()
 
@@ -159,30 +168,35 @@ class TestParamCenterIntegration(unittest.TestCase):
         from trailing_stop.component import TrailingStopComponent
         from trailing_stop.types import TrailingAction
 
-        positions = _mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions = _mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         def _raise(*args, **kwargs):
             raise RuntimeError("param_center unavailable")
 
-        with patch(
-            "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
-            return_value=positions,
-        ), patch(
-            "param_center.api.get_sltp_params",
-            side_effect=_raise,
+        with (
+            patch(
+                "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
+                return_value=positions,
+            ),
+            patch(
+                "param_center.api.get_sltp_params",
+                side_effect=_raise,
+            ),
         ):
             comp = TrailingStopComponent(config_path=self._cfg_file)
             snap = comp.evaluate()
@@ -201,30 +215,32 @@ class TestParamCenterIntegration(unittest.TestCase):
     def test_t3_per_symbol_routing(self):
         from trailing_stop.component import TrailingStopComponent
 
-        positions = _mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-                {
-                    "system": "v15_martin",
-                    "symbol": "PEPE-USDT",
-                    "direction": "LONG",
-                    "size": 1000.0,
-                    "entry_price": 0.01,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.05,
-                    "meta": {"current_price": 0.0105, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions = _mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                    {
+                        "system": "v15_martin",
+                        "symbol": "PEPE-USDT",
+                        "direction": "LONG",
+                        "size": 1000.0,
+                        "entry_price": 0.01,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.05,
+                        "meta": {"current_price": 0.0105, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
         # BTC → (4.0, 6.0) 中位 5.0；PEPE → (6.0, 10.0) 中位 8.0
         def _fake_get(symbol, *args, **kwargs):
@@ -234,12 +250,15 @@ class TestParamCenterIntegration(unittest.TestCase):
                 return _FakeSLTPParams(atr_mult_range=(6.0, 10.0))
             return _FakeSLTPParams()
 
-        with patch(
-            "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
-            return_value=positions,
-        ), patch(
-            "param_center.api.get_sltp_params",
-            side_effect=_fake_get,
+        with (
+            patch(
+                "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
+                return_value=positions,
+            ),
+            patch(
+                "param_center.api.get_sltp_params",
+                side_effect=_fake_get,
+            ),
         ):
             comp = TrailingStopComponent(config_path=self._cfg_file)
             snap = comp.evaluate()
@@ -263,27 +282,32 @@ class TestParamCenterIntegration(unittest.TestCase):
     def test_t4_snapshot_records_param_source(self):
         from trailing_stop.component import TrailingStopComponent
 
-        positions = _mock_fetch({
-            "v15_martin": [
-                {
-                    "system": "v15_martin",
-                    "symbol": "BTC-USDT",
-                    "direction": "LONG",
-                    "size": 0.1,
-                    "entry_price": 100.0,
-                    "leverage": 5.0,
-                    "upl_ratio": 0.04,
-                    "meta": {"current_price": 104.0, "atr_pct": 0.02},
-                },
-            ],
-        })
+        positions = _mock_fetch(
+            {
+                "v15_martin": [
+                    {
+                        "system": "v15_martin",
+                        "symbol": "BTC-USDT",
+                        "direction": "LONG",
+                        "size": 0.1,
+                        "entry_price": 100.0,
+                        "leverage": 5.0,
+                        "upl_ratio": 0.04,
+                        "meta": {"current_price": 104.0, "atr_pct": 0.02},
+                    },
+                ],
+            }
+        )
 
-        with patch(
-            "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
-            return_value=positions,
-        ), patch(
-            "param_center.api.get_sltp_params",
-            return_value=_FakeSLTPParams(atr_mult_range=(4.0, 6.0)),
+        with (
+            patch(
+                "trailing_stop.component.TrailingStopComponent._lazy_fetch_positions",
+                return_value=positions,
+            ),
+            patch(
+                "param_center.api.get_sltp_params",
+                return_value=_FakeSLTPParams(atr_mult_range=(4.0, 6.0)),
+            ),
         ):
             comp = TrailingStopComponent(config_path=self._cfg_file)
             snap = comp.evaluate()

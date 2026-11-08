@@ -2,6 +2,7 @@
 项目级 pytest 配置 - 统一测试框架入口
 支持多子系统测试发现和运行
 """
+
 import sys
 from pathlib import Path
 
@@ -32,12 +33,6 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "e2e: marks tests as end-to-end tests"
-    )
-    config.addinivalue_line(
-        "markers", "stress: marks tests as stress tests"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "e2e: marks tests as end-to-end tests")
+    config.addinivalue_line("markers", "stress: marks tests as stress tests")

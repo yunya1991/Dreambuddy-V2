@@ -3,6 +3,7 @@
 把 Spider/Playwright 提取的字段 dict 转成统一 DataRecord 契约。
 metrics 仅存扁平 string/number；summary/content 等长文本放 events；原始数据全量放 raw。
 """
+
 from __future__ import annotations
 
 import numbers

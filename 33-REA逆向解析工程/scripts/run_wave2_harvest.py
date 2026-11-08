@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """wave2（P1）外部真实源拉取，33 源。幂等：池中已有同 label 树则跳过。"""
+
 import subprocess
 import sys
 import time
@@ -49,29 +50,35 @@ harvester = ExternalHarvester(pool, work_dir="/tmp/rea_harvest")
 
 # 幂等保护：池中已有同 label 外部树则跳过
 existing_labels = {t.source_label for t in pool.list_trees("external")}
-todo = [(l, u, lic) for l, u, lic in WAVE2 if l not in existing_labels]
+todo = [(l, u, lic) for l, u, lic in WAVE2 if l not in existing_labels]  # noqa: E741
 skipped = len(WAVE2) - len(todo)
 print(f"WAVE2_START total={len(WAVE2)} skipped_existing={skipped} todo={len(todo)}", flush=True)
 
-sources = [HarvestSource(source_type="github_repo", location=url, label=label) for label, url, _ in todo]
+sources = [
+    HarvestSource(source_type="github_repo", location=url, label=label) for label, url, _ in todo
+]
 t0 = time.time()
 outcome = harvester.harvest(sources)
 print(f"harvest done in {time.time() - t0:.1f}s", flush=True)
-print(f"injected={len(outcome.injected_trees)} rejected={len(outcome.rejected)} errors={len(outcome.errors)}", flush=True)
+print(
+    f"injected={len(outcome.injected_trees)} rejected={len(outcome.rejected)} errors={len(outcome.errors)}",
+    flush=True,
+)
 for r in outcome.rejected:
     print(f"REJECTED {r}", flush=True)
 for e in outcome.errors:
     print(f"ERROR {e}", flush=True)
 
 # 元数据回填：按 source_label 从池中查找注入树（不依赖 inject_tree 返回值）
-lic_map = {l: lic for l, _u, lic in WAVE2}
-url_map = {l: u for l, u, _ in WAVE2}
+lic_map = {l: lic for l, _u, lic in WAVE2}  # noqa: E741
+url_map = {l: u for l, u, _ in WAVE2}  # noqa: E741
 new_labels = {t.source_label for t in pool.list_trees("external")} - existing_labels
 filled = 0
 for label in sorted(new_labels):
     matches = [t for t in pool.list_trees("external") if t.source_label == label]
     for t in matches[1:]:
         import os
+
         os.remove(f"reflection_data/replay_pool/external/{t.tree_id}.json")
         print(f"DEDUP_REMOVED {label} {t.tree_id}", flush=True)
     if not matches:
@@ -84,7 +91,9 @@ for label in sorted(new_labels):
     try:
         c = subprocess.run(
             ["git", "-C", f"/tmp/rea_harvest/{label}", "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         t.commit = c.stdout.strip()
     except Exception as exc:

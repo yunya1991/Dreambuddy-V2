@@ -1,9 +1,7 @@
 import importlib.util
-import json
 import socket
 import threading
 from pathlib import Path
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -152,13 +150,19 @@ def test_demo_redis_consumer_reads_envelope_from_stream():
         redis_url = f"redis://{fake.host}:{fake.port}"
         tp = adapters.RedisStreamsTransport(redis_url=redis_url, timeout_ms=1000)
         env = {
-            "header": {"trace_id": "t1", "loop_type": "intelligence", "target": "A4", "type": "EVENT"},
+            "header": {
+                "trace_id": "t1",
+                "loop_type": "intelligence",
+                "target": "A4",
+                "type": "EVENT",
+            },
             "payload": {"trace_id": "t1", "alert_level": "L1"},
         }
         tp.send_envelope(env)
-        out = consumer.consume_once(redis_url=redis_url, stream="dream.intelligence.a6.L1", last_id="0-0", block_ms=1)
+        out = consumer.consume_once(
+            redis_url=redis_url, stream="dream.intelligence.a6.L1", last_id="0-0", block_ms=1
+        )
         assert out
         assert out[0]["header"]["trace_id"] == "t1"
     finally:
         fake.stop()
-

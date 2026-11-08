@@ -6,26 +6,23 @@
 3. 优化超参数
 """
 
+import json
 import os
 import sys
-import json
 import time
+
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
-from sklearn.preprocessing import StandardScaler
-
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
+from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, BASE_DIR)
 
-from ml.models import LSTMModel
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+
+from ml.models import LSTMModel  # noqa: E402
 
 
 def load_btc_data():
@@ -53,9 +50,18 @@ def generate_labels(closes, lookahead=20, threshold=0.20, mode="drop"):
     return labels
 
 
-def walk_forward_validation(features, feature_names, labels, n_splits=12,
-                           train_days=730, test_days=180, step_days=180,
-                           seq_length=20, model_params=None, skip_folds=0):
+def walk_forward_validation(
+    features,
+    feature_names,
+    labels,
+    n_splits=12,
+    train_days=730,
+    test_days=180,
+    step_days=180,
+    seq_length=20,
+    model_params=None,
+    skip_folds=0,
+):
     """Walk-Forward验证"""
     n = len(features)
     splits = []
@@ -74,11 +80,13 @@ def walk_forward_validation(features, feature_names, labels, n_splits=12,
         splits = splits[skip_folds:]
 
     train_aucs, test_aucs = [], []
-    fold_details = []
+    fold_details = []  # noqa: F841
     valid_folds = 0
 
     print(f"\n  Walk-Forward: {len(splits)}折（跳过前{skip_folds}折）")
-    print(f"  {'折':<5s} {'训练区间':<20s} {'训练正样本':>12s} {'测试正样本':>12s} {'训练AUC':>10s} {'测试AUC':>10s} {'状态':>10s}")
+    print(
+        f"  {'折':<5s} {'训练区间':<20s} {'训练正样本':>12s} {'测试正样本':>12s} {'训练AUC':>10s} {'测试AUC':>10s} {'状态':>10s}"
+    )
     print("  " + "-" * 85)
 
     for i, (tr_s, tr_e, te_s, te_e) in enumerate(splits):
@@ -88,7 +96,9 @@ def walk_forward_validation(features, feature_names, labels, n_splits=12,
         y_test_arr = labels[te_s:te_e]
 
         if y_train_arr.sum() < 3 or y_test_arr.sum() < 2:
-            print(f"  {i+1+skip_folds:<5d} [{tr_s:5d}:{tr_e:5d}]  {y_train_arr.sum():>12.0f} ({y_train_arr.mean():.1%}) {y_test_arr.sum():>12.0f} ({y_test_arr.mean():.1%}) {'跳过':>10s} {'跳过':>10s} {'正样本不足':>10s}")
+            print(
+                f"  {i+1+skip_folds:<5d} [{tr_s:5d}:{tr_e:5d}]  {y_train_arr.sum():>12.0f} ({y_train_arr.mean():.1%}) {y_test_arr.sum():>12.0f} ({y_test_arr.mean():.1%}) {'跳过':>10s} {'跳过':>10s} {'正样本不足':>10s}"
+            )
             continue
 
         torch.manual_seed(42 + i)
@@ -116,24 +126,32 @@ def walk_forward_validation(features, feature_names, labels, n_splits=12,
                 valid_folds += 1
 
                 status = "✅ 有效" if test_auc > 0.5 else "❌ 差"
-                print(f"  {i+1+skip_folds:<5d} [{tr_s:5d}:{tr_e:5d}]  {y_train_arr.sum():>12.0f} ({y_train_arr.mean():.1%}) {y_test_arr.sum():>12.0f} ({y_test_arr.mean():.1%}) {train_auc:>10.4f} {test_auc:>10.4f} {status:>10s}")
+                print(
+                    f"  {i+1+skip_folds:<5d} [{tr_s:5d}:{tr_e:5d}]  {y_train_arr.sum():>12.0f} ({y_train_arr.mean():.1%}) {y_test_arr.sum():>12.0f} ({y_test_arr.mean():.1%}) {train_auc:>10.4f} {test_auc:>10.4f} {status:>10s}"
+                )
             else:
-                print(f"  {i+1+skip_folds:<5d} [{tr_s:5d}:{tr_e:5d}]  {y_train_arr.sum():>12.0f} ({y_train_arr.mean():.1%}) {y_test_arr.sum():>12.0f} ({y_test_arr.mean():.1%}) {'跳过':>10s} {'跳过':>10s} {'标签单一':>10s}")
+                print(
+                    f"  {i+1+skip_folds:<5d} [{tr_s:5d}:{tr_e:5d}]  {y_train_arr.sum():>12.0f} ({y_train_arr.mean():.1%}) {y_test_arr.sum():>12.0f} ({y_test_arr.mean():.1%}) {'跳过':>10s} {'跳过':>10s} {'标签单一':>10s}"
+                )
         except Exception as e:
             print(f"  {i+1+skip_folds:<5d} [{tr_s:5d}:{tr_e:5d}]  错误: {str(e)[:20]}")
 
     return {
-        'valid_folds': valid_folds,
-        'total_folds': len(splits),
-        'mean_train_auc': np.mean(train_aucs) if train_aucs else 0,
-        'std_train_auc': np.std(train_aucs) if train_aucs else 0,
-        'mean_test_auc': np.mean(test_aucs) if test_aucs else 0,
-        'std_test_auc': np.std(test_aucs) if test_aucs else 0,
-        'min_test_auc': np.min(test_aucs) if test_aucs else 0,
-        'max_test_auc': np.max(test_aucs) if test_aucs else 0,
-        'decay_rate': (1 - np.mean(test_aucs)/np.mean(train_aucs)) if train_aucs and test_aucs and np.mean(train_aucs) > 0 else 0,
-        'train_aucs': train_aucs,
-        'test_aucs': test_aucs,
+        "valid_folds": valid_folds,
+        "total_folds": len(splits),
+        "mean_train_auc": np.mean(train_aucs) if train_aucs else 0,
+        "std_train_auc": np.std(train_aucs) if train_aucs else 0,
+        "mean_test_auc": np.mean(test_aucs) if test_aucs else 0,
+        "std_test_auc": np.std(test_aucs) if test_aucs else 0,
+        "min_test_auc": np.min(test_aucs) if test_aucs else 0,
+        "max_test_auc": np.max(test_aucs) if test_aucs else 0,
+        "decay_rate": (
+            (1 - np.mean(test_aucs) / np.mean(train_aucs))
+            if train_aucs and test_aucs and np.mean(train_aucs) > 0
+            else 0
+        ),
+        "train_aucs": train_aucs,
+        "test_aucs": test_aucs,
     }
 
 
@@ -160,7 +178,11 @@ def main():
     v55_names = list(phil_features.columns)
     v56_names = [f for f in v55_names if f not in redundant_features]
 
-    features = pd.concat([trend_features, phil_features[v56_names]], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    features = (
+        pd.concat([trend_features, phil_features[v56_names]], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     feature_names = list(features.columns)
 
     print(f"  特征维度: {len(feature_names)}")
@@ -173,20 +195,36 @@ def main():
     labels_020 = generate_labels(closes, 20, 0.20, "drop")
 
     config1_params = {
-        'hidden_dim': 32, 'num_layers': 2, 'dropout': 0.5,
-        'weight_decay': 0.01, 'lr': 0.001, 'batch_size': 32,
-        'epochs': 15, 'patience': 5, 'seq_length': 20, 'pos_weight': True
+        "hidden_dim": 32,
+        "num_layers": 2,
+        "dropout": 0.5,
+        "weight_decay": 0.01,
+        "lr": 0.001,
+        "batch_size": 32,
+        "epochs": 15,
+        "patience": 5,
+        "seq_length": 20,
+        "pos_weight": True,
     }
 
     t0 = time.time()
     result_base = walk_forward_validation(
-        features, feature_names, labels_020,
-        n_splits=12, train_days=730, test_days=180, step_days=180,
-        seq_length=20, model_params=config1_params, skip_folds=0
+        features,
+        feature_names,
+        labels_020,
+        n_splits=12,
+        train_days=730,
+        test_days=180,
+        step_days=180,
+        seq_length=20,
+        model_params=config1_params,
+        skip_folds=0,
     )
     t_base = time.time() - t0
 
-    print(f"\n  平均训练AUC: {result_base['mean_train_auc']:.4f} ± {result_base['std_train_auc']:.4f}")
+    print(
+        f"\n  平均训练AUC: {result_base['mean_train_auc']:.4f} ± {result_base['std_train_auc']:.4f}"
+    )
     print(f"  平均测试AUC: {result_base['mean_test_auc']:.4f} ± {result_base['std_test_auc']:.4f}")
     print(f"  测试AUC范围: [{result_base['min_test_auc']:.4f}, {result_base['max_test_auc']:.4f}]")
     print(f"  衰减率: {result_base['decay_rate']:.1%}")
@@ -202,15 +240,28 @@ def main():
 
     t0 = time.time()
     result_thresh = walk_forward_validation(
-        features, feature_names, labels_015,
-        n_splits=12, train_days=730, test_days=180, step_days=180,
-        seq_length=20, model_params=config1_params, skip_folds=0
+        features,
+        feature_names,
+        labels_015,
+        n_splits=12,
+        train_days=730,
+        test_days=180,
+        step_days=180,
+        seq_length=20,
+        model_params=config1_params,
+        skip_folds=0,
     )
     t_thresh = time.time() - t0
 
-    print(f"\n  平均训练AUC: {result_thresh['mean_train_auc']:.4f} ± {result_thresh['std_train_auc']:.4f}")
-    print(f"  平均测试AUC: {result_thresh['mean_test_auc']:.4f} ± {result_thresh['std_test_auc']:.4f}")
-    print(f"  测试AUC范围: [{result_thresh['min_test_auc']:.4f}, {result_thresh['max_test_auc']:.4f}]")
+    print(
+        f"\n  平均训练AUC: {result_thresh['mean_train_auc']:.4f} ± {result_thresh['std_train_auc']:.4f}"
+    )
+    print(
+        f"  平均测试AUC: {result_thresh['mean_test_auc']:.4f} ± {result_thresh['std_test_auc']:.4f}"
+    )
+    print(
+        f"  测试AUC范围: [{result_thresh['min_test_auc']:.4f}, {result_thresh['max_test_auc']:.4f}]"
+    )
     print(f"  衰减率: {result_thresh['decay_rate']:.1%}")
     print(f"  有效折数: {result_thresh['valid_folds']}/{result_thresh['total_folds']}")
     print(f"  总耗时: {t_thresh:.1f}s")
@@ -222,13 +273,22 @@ def main():
 
     t0 = time.time()
     result_skip = walk_forward_validation(
-        features, feature_names, labels_020,
-        n_splits=12, train_days=730, test_days=180, step_days=180,
-        seq_length=20, model_params=config1_params, skip_folds=2
+        features,
+        feature_names,
+        labels_020,
+        n_splits=12,
+        train_days=730,
+        test_days=180,
+        step_days=180,
+        seq_length=20,
+        model_params=config1_params,
+        skip_folds=2,
     )
     t_skip = time.time() - t0
 
-    print(f"\n  平均训练AUC: {result_skip['mean_train_auc']:.4f} ± {result_skip['std_train_auc']:.4f}")
+    print(
+        f"\n  平均训练AUC: {result_skip['mean_train_auc']:.4f} ± {result_skip['std_train_auc']:.4f}"
+    )
     print(f"  平均测试AUC: {result_skip['mean_test_auc']:.4f} ± {result_skip['std_test_auc']:.4f}")
     print(f"  测试AUC范围: [{result_skip['min_test_auc']:.4f}, {result_skip['max_test_auc']:.4f}]")
     print(f"  衰减率: {result_skip['decay_rate']:.1%}")
@@ -242,13 +302,22 @@ def main():
 
     t0 = time.time()
     result_both = walk_forward_validation(
-        features, feature_names, labels_015,
-        n_splits=12, train_days=730, test_days=180, step_days=180,
-        seq_length=20, model_params=config1_params, skip_folds=2
+        features,
+        feature_names,
+        labels_015,
+        n_splits=12,
+        train_days=730,
+        test_days=180,
+        step_days=180,
+        seq_length=20,
+        model_params=config1_params,
+        skip_folds=2,
     )
     t_both = time.time() - t0
 
-    print(f"\n  平均训练AUC: {result_both['mean_train_auc']:.4f} ± {result_both['std_train_auc']:.4f}")
+    print(
+        f"\n  平均训练AUC: {result_both['mean_train_auc']:.4f} ± {result_both['std_train_auc']:.4f}"
+    )
     print(f"  平均测试AUC: {result_both['mean_test_auc']:.4f} ± {result_both['std_test_auc']:.4f}")
     print(f"  测试AUC范围: [{result_both['min_test_auc']:.4f}, {result_both['max_test_auc']:.4f}]")
     print(f"  衰减率: {result_both['decay_rate']:.1%}")
@@ -267,27 +336,35 @@ def main():
         ("方案4: 降阈值+跳早期(0.15,10折)", result_both, t_both),
     ]
 
-    print(f"\n  {'方案':<35s} {'有效折':>8s} {'训练AUC':>10s} {'测试AUC':>10s} {'衰减率':>8s} {'标准差':>8s}")
+    print(
+        f"\n  {'方案':<35s} {'有效折':>8s} {'训练AUC':>10s} {'测试AUC':>10s} {'衰减率':>8s} {'标准差':>8s}"
+    )
     print("  " + "-" * 85)
 
-    for name, res, t in results:
+    for name, res, t in results:  # noqa: B007
         fold_info = f"{res['valid_folds']}/{res['total_folds']}"
-        print(f"  {name:<35s} {fold_info:>8s} {res['mean_train_auc']:>10.4f} {res['mean_test_auc']:>10.4f} {res['decay_rate']:>7.1%} {res['std_test_auc']:>8.4f}")
+        print(
+            f"  {name:<35s} {fold_info:>8s} {res['mean_train_auc']:>10.4f} {res['mean_test_auc']:>10.4f} {res['decay_rate']:>7.1%} {res['std_test_auc']:>8.4f}"
+        )
 
     # LightGBM基准
     lgbm_train = 1.0
     lgbm_test = 0.7372
     lgbm_decay = 1 - lgbm_test / lgbm_train
-    print(f"\n  LightGBM V5.5基准: 训练AUC={lgbm_train:.4f}, 测试AUC={lgbm_test:.4f}, 衰减率={lgbm_decay:.1%}")
+    print(
+        f"\n  LightGBM V5.5基准: 训练AUC={lgbm_train:.4f}, 测试AUC={lgbm_test:.4f}, 衰减率={lgbm_decay:.1%}"
+    )
 
     # 综合得分
-    print(f"\n  综合得分（测试AUC + 过拟合缓解奖励）:")
+    print("\n  综合得分（测试AUC + 过拟合缓解奖励）:")
     best_score = 0
     best_name = ""
-    for name, res, t in results:
-        overfit_relief = max(0, (lgbm_decay - res['decay_rate']) * 0.5)
-        score = res['mean_test_auc'] + overfit_relief
-        print(f"    {name:<35s} 测试AUC={res['mean_test_auc']:.4f}, 缓解奖励={overfit_relief:.4f}, 总分={score:.4f}")
+    for name, res, t in results:  # noqa: B007
+        overfit_relief = max(0, (lgbm_decay - res["decay_rate"]) * 0.5)
+        score = res["mean_test_auc"] + overfit_relief
+        print(
+            f"    {name:<35s} 测试AUC={res['mean_test_auc']:.4f}, 缓解奖励={overfit_relief:.4f}, 总分={score:.4f}"
+        )
         if score > best_score:
             best_score = score
             best_name = name
@@ -296,28 +373,29 @@ def main():
 
     # 保存结果
     result_data = {
-        'baseline_v55': {
-            'model': 'LightGBM',
-            'top_exit': {'train_auc': 1.0, 'test_auc': 0.7372, 'decay': lgbm_decay}
+        "baseline_v55": {
+            "model": "LightGBM",
+            "top_exit": {"train_auc": 1.0, "test_auc": 0.7372, "decay": lgbm_decay},
         },
-        'optimization_configs': [
+        "optimization_configs": [
             {
-                'name': name,
-                'valid_folds': res['valid_folds'],
-                'total_folds': res['total_folds'],
-                'train_auc': res['mean_train_auc'],
-                'test_auc': res['mean_test_auc'],
-                'std_test_auc': res['std_test_auc'],
-                'decay': res['decay_rate'],
-                'min_test_auc': res['min_test_auc'],
-                'max_test_auc': res['max_test_auc'],
-            } for name, res, t in results
+                "name": name,
+                "valid_folds": res["valid_folds"],
+                "total_folds": res["total_folds"],
+                "train_auc": res["mean_train_auc"],
+                "test_auc": res["mean_test_auc"],
+                "std_test_auc": res["std_test_auc"],
+                "decay": res["decay_rate"],
+                "min_test_auc": res["min_test_auc"],
+                "max_test_auc": res["max_test_auc"],
+            }
+            for name, res, t in results
         ],
-        'best_config': {'name': best_name, 'score': best_score}
+        "best_config": {"name": best_name, "score": best_score},
     }
 
     out_path = os.path.join(BASE_DIR, "ml/backtest_results/v60_lstm_optimized.json")
-    with open(out_path, 'w', encoding='utf-8') as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(result_data, f, ensure_ascii=False, indent=2)
     print(f"\n  结果已保存: {out_path}")
 

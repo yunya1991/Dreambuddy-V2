@@ -5,12 +5,13 @@
 
 用法: python3 shadow_backtest.py
 """
+
 import json
+import math
 import os
 import sys
-from pathlib import Path
 from datetime import datetime
-import math
+from pathlib import Path
 
 # 路径设置
 BASE = Path(__file__).resolve().parent.parent
@@ -32,8 +33,8 @@ PHASE_E_GENE_IDS = [
 ]
 
 # 配置
-LOOKBACK = 20          # 指标计算回看bar数
-HOLD_BARS = 12         # 模拟持有bar数 (4h*12=48h)
+LOOKBACK = 20  # 指标计算回看bar数
+HOLD_BARS = 12  # 模拟持有bar数 (4h*12=48h)
 # P0-2 硬约束: 准入门槛从 10 提升至 30（统计检验要求 N≥30）
 # 详见 core.gene_promotion_stats.MIN_PROMOTION_SAMPLES
 SHADOW_MIN_SAMPLES = 30  # 向后兼容引用，实际逻辑见 check_promotion_with_stats
@@ -45,18 +46,21 @@ SHADOW_MAX_CONSEC_LOSS = 5
 def load_klines(path):
     """加载K线CSV"""
     import csv
+
     rows = []
     with open(path) as f:
         reader = csv.DictReader(f)
         for r in reader:
-            rows.append({
-                "timestamp": r["timestamp"],
-                "open": float(r["open"]),
-                "high": float(r["high"]),
-                "low": float(r["low"]),
-                "close": float(r["close"]),
-                "volume": float(r["volume"]),
-            })
+            rows.append(
+                {
+                    "timestamp": r["timestamp"],
+                    "open": float(r["open"]),
+                    "high": float(r["high"]),
+                    "low": float(r["low"]),
+                    "close": float(r["close"]),
+                    "volume": float(r["volume"]),
+                }
+            )
     return rows
 
 
@@ -68,7 +72,7 @@ def calc_indicators(klines):
     for i in range(n):
         # 20日最高价（不含当前bar）
         if i >= 1:
-            window = [bars[j]["high"] for j in range(max(0, i-20), i)]
+            window = [bars[j]["high"] for j in range(max(0, i - 20), i)]
             bars[i]["high_20d"] = max(window) if window else 0
         else:
             bars[i]["high_20d"] = 0
@@ -78,21 +82,21 @@ def calc_indicators(klines):
 
         # 10日唐奇安通道（短期敏感版）
         if i >= 10:
-            bars[i]["donchian_10_high"] = max(bars[j]["high"] for j in range(i-10, i))
-            bars[i]["donchian_10_low"] = min(bars[j]["low"] for j in range(i-10, i))
+            bars[i]["donchian_10_high"] = max(bars[j]["high"] for j in range(i - 10, i))
+            bars[i]["donchian_10_low"] = min(bars[j]["low"] for j in range(i - 10, i))
         else:
             bars[i]["donchian_10_high"] = 0
             bars[i]["donchian_10_low"] = 0
 
         # 55日最高价（不含当前bar，海龟慢系统）
         if i >= 55:
-            bars[i]["donchian_55_high"] = max(bars[j]["high"] for j in range(i-55, i))
+            bars[i]["donchian_55_high"] = max(bars[j]["high"] for j in range(i - 55, i))
         else:
             bars[i]["donchian_55_high"] = 0
 
         # 成交量均值（20bar）
         if i >= 20:
-            vol_window = [bars[j]["volume"] for j in range(i-20, i)]
+            vol_window = [bars[j]["volume"] for j in range(i - 20, i)]
             bars[i]["vol_ma_20"] = sum(vol_window) / 20
         else:
             bars[i]["vol_ma_20"] = 0
@@ -105,7 +109,7 @@ def calc_indicators(klines):
 
         # 量能分位（20bar）
         if i >= 20:
-            vol_window = sorted([bars[j]["volume"] for j in range(i-20, i)])
+            vol_window = sorted([bars[j]["volume"] for j in range(i - 20, i)])
             rank = 0
             for v in vol_window:
                 if bars[i]["volume"] > v:
@@ -118,8 +122,8 @@ def calc_indicators(klines):
         if i >= 15:
             gains = []
             losses = []
-            for j in range(i-14, i):
-                diff = bars[j]["close"] - bars[j-1]["close"]
+            for j in range(i - 14, i):
+                diff = bars[j]["close"] - bars[j - 1]["close"]
                 if diff > 0:
                     gains.append(diff)
                 else:
@@ -135,8 +139,8 @@ def calc_indicators(klines):
         if i >= 3:
             gains = []
             losses = []
-            for j in range(i-2, i):
-                diff = bars[j]["close"] - bars[j-1]["close"]
+            for j in range(i - 2, i):
+                diff = bars[j]["close"] - bars[j - 1]["close"]
                 if diff > 0:
                     gains.append(diff)
                 else:
@@ -150,24 +154,24 @@ def calc_indicators(klines):
 
         # SMA(50)
         if i >= 50:
-            bars[i]["sma_50"] = sum(bars[j]["close"] for j in range(i-50, i)) / 50
+            bars[i]["sma_50"] = sum(bars[j]["close"] for j in range(i - 50, i)) / 50
         else:
             bars[i]["sma_50"] = bars[i]["close"]
 
         # SMA(200)
         if i >= 200:
-            bars[i]["sma_200"] = sum(bars[j]["close"] for j in range(i-200, i)) / 200
+            bars[i]["sma_200"] = sum(bars[j]["close"] for j in range(i - 200, i)) / 200
         else:
             bars[i]["sma_200"] = bars[i]["close"]
 
         # ATR(14)
         if i >= 15:
             trs = []
-            for j in range(i-14, i):
+            for j in range(i - 14, i):
                 tr = max(
                     bars[j]["high"] - bars[j]["low"],
-                    abs(bars[j]["high"] - bars[j-1]["close"]),
-                    abs(bars[j]["low"] - bars[j-1]["close"])
+                    abs(bars[j]["high"] - bars[j - 1]["close"]),
+                    abs(bars[j]["low"] - bars[j - 1]["close"]),
                 )
                 trs.append(tr)
             bars[i]["atr"] = sum(trs) / 14
@@ -182,7 +186,7 @@ def calc_indicators(klines):
 
         # MA(ATR)
         if i >= 28:
-            atr_window = [bars[j]["atr"] for j in range(i-14, i)]
+            atr_window = [bars[j]["atr"] for j in range(i - 14, i)]
             bars[i]["ma_atr"] = sum(atr_window) / 14
         else:
             bars[i]["ma_atr"] = bars[i]["atr"]
@@ -192,16 +196,18 @@ def calc_indicators(klines):
             plus_dm_list = []
             minus_dm_list = []
             tr_list = []
-            for j in range(max(1, i-14), i):
-                up = bars[j]["high"] - bars[j-1]["high"]
-                down = bars[j-1]["low"] - bars[j]["low"]
+            for j in range(max(1, i - 14), i):
+                up = bars[j]["high"] - bars[j - 1]["high"]
+                down = bars[j - 1]["low"] - bars[j]["low"]
                 plus_dm_list.append(max(up, 0) if up > down else 0)
                 minus_dm_list.append(max(down, 0) if down > up else 0)
-                tr_list.append(max(
-                    bars[j]["high"] - bars[j]["low"],
-                    abs(bars[j]["high"] - bars[j-1]["close"]),
-                    abs(bars[j]["low"] - bars[j-1]["close"]),
-                ))
+                tr_list.append(
+                    max(
+                        bars[j]["high"] - bars[j]["low"],
+                        abs(bars[j]["high"] - bars[j - 1]["close"]),
+                        abs(bars[j]["low"] - bars[j - 1]["close"]),
+                    )
+                )
             if tr_list and sum(tr_list) > 0:
                 sum_tr = sum(tr_list)
                 plus_di = 100 * sum(plus_dm_list) / max(sum_tr, 1e-9)
@@ -220,13 +226,13 @@ def calc_indicators(klines):
 
         # SMA(20) — 用于 ATR 扩张方向判断
         if i >= 20:
-            bars[i]["sma_20"] = sum(bars[j]["close"] for j in range(i-20, i)) / 20
+            bars[i]["sma_20"] = sum(bars[j]["close"] for j in range(i - 20, i)) / 20
         else:
             bars[i]["sma_20"] = 0
 
         # ROC(20)
         if i >= 20:
-            bars[i]["roc_20d"] = (bars[i]["close"] - bars[i-20]["close"]) / bars[i-20]["close"]
+            bars[i]["roc_20d"] = (bars[i]["close"] - bars[i - 20]["close"]) / bars[i - 20]["close"]
         else:
             bars[i]["roc_20d"] = 0
 
@@ -238,13 +244,15 @@ def calc_indicators(klines):
 
         # 偏离SMA200百分比
         if bars[i]["sma_200"] > 0:
-            bars[i]["dist_sma200_pct"] = (bars[i]["close"] - bars[i]["sma_200"]) / bars[i]["sma_200"]
+            bars[i]["dist_sma200_pct"] = (bars[i]["close"] - bars[i]["sma_200"]) / bars[i][
+                "sma_200"
+            ]
         else:
             bars[i]["dist_sma200_pct"] = 0
 
         # 布林带宽度 (20, 2)
         if i >= 20:
-            closes = [bars[j]["close"] for j in range(i-20, i)]
+            closes = [bars[j]["close"] for j in range(i - 20, i)]
             mean = sum(closes) / 20
             std = math.sqrt(sum((c - mean) ** 2 for c in closes) / 20)
             bars[i]["boll_width_pct"] = (2 * std) / mean if mean > 0 else 0
@@ -253,13 +261,13 @@ def calc_indicators(klines):
 
         # 20bar最低价
         if i >= 20:
-            bars[i]["low_20d"] = min(bars[j]["low"] for j in range(i-20, i))
+            bars[i]["low_20d"] = min(bars[j]["low"] for j in range(i - 20, i))
         else:
             bars[i]["low_20d"] = 0
 
         # 55bar最低价（海龟慢系统下沿）
         if i >= 55:
-            bars[i]["low_55d"] = min(bars[j]["low"] for j in range(i-55, i))
+            bars[i]["low_55d"] = min(bars[j]["low"] for j in range(i - 55, i))
         else:
             bars[i]["low_55d"] = 0
 
@@ -267,7 +275,7 @@ def calc_indicators(klines):
         if i >= 48:
             tpv_sum = 0
             vol_sum = 0
-            for j in range(i-48, i):
+            for j in range(i - 48, i):
                 tpv_sum += bars[j]["close"] * bars[j]["volume"]
                 vol_sum += bars[j]["volume"]
             bars[i]["vwap"] = tpv_sum / vol_sum if vol_sum > 0 else bars[i]["close"]
@@ -276,7 +284,7 @@ def calc_indicators(klines):
 
         # Z-score price vs VWAP
         if i >= 48 and bars[i]["vwap"] > 0:
-            closes = [bars[j]["close"] for j in range(i-48, i)]
+            closes = [bars[j]["close"] for j in range(i - 48, i)]
             mean = sum(closes) / 48
             std = math.sqrt(sum((c - mean) ** 2 for c in closes) / 48)
             bars[i]["zscore_vwap"] = (bars[i]["close"] - bars[i]["vwap"]) / std if std > 0 else 0
@@ -312,11 +320,11 @@ _GENE_DIRECTION = {
 
 # 动态方向基因集合（根据价格方向动态判断 long/short）
 _DYNAMIC_DIRECTION_GENES = {
-    "CD-DONCHIAN-10-BREAK",   # 上突破→long，下突破→short（短期敏感）
-    "CD-DONCHIAN-20-BREAK",   # 上突破→long，下突破→short
-    "CD-DONCHIAN-55-BREAK",   # 上突破→long，下突破→short
-    "CD-ATR-EXPANDING",       # close > SMA20→long，close < SMA20→short
-    "CD-ADX-GT25-TREND",      # +DI > -DI→long，+DI < -DI→short
+    "CD-DONCHIAN-10-BREAK",  # 上突破→long，下突破→short（短期敏感）
+    "CD-DONCHIAN-20-BREAK",  # 上突破→long，下突破→short
+    "CD-DONCHIAN-55-BREAK",  # 上突破→long，下突破→short
+    "CD-ATR-EXPANDING",  # close > SMA20→long，close < SMA20→short
+    "CD-ADX-GT25-TREND",  # +DI > -DI→long，+DI < -DI→short
 }
 
 
@@ -362,17 +370,29 @@ def eval_gene_with_direction(gene_id, bar, klines=None, i=0):
 def _detect_dynamic_direction(gene_id, bar):
     """检测动态方向：根据基因类型和价格方向判断 long/short"""
     if gene_id == "CD-DONCHIAN-10-BREAK":
-        if bar.get("close", 0) > bar.get("donchian_10_high", 0) * 1.001 and bar.get("donchian_10_high", 0) > 0:
+        if (
+            bar.get("close", 0) > bar.get("donchian_10_high", 0) * 1.001
+            and bar.get("donchian_10_high", 0) > 0
+        ):
             return "long"
-        if bar.get("close", 0) < bar.get("donchian_10_low", 0) * 0.999 and bar.get("donchian_10_low", 0) > 0:
+        if (
+            bar.get("close", 0) < bar.get("donchian_10_low", 0) * 0.999
+            and bar.get("donchian_10_low", 0) > 0
+        ):
             return "short"
     elif gene_id == "CD-DONCHIAN-20-BREAK":
-        if bar.get("close", 0) > bar.get("donchian_20_high", 0) * 1.001 and bar.get("donchian_20_high", 0) > 0:
+        if (
+            bar.get("close", 0) > bar.get("donchian_20_high", 0) * 1.001
+            and bar.get("donchian_20_high", 0) > 0
+        ):
             return "long"
         if bar.get("close", 0) < bar.get("low_20d", 0) * 0.999 and bar.get("low_20d", 0) > 0:
             return "short"
     elif gene_id == "CD-DONCHIAN-55-BREAK":
-        if bar.get("close", 0) > bar.get("donchian_55_high", 0) * 1.001 and bar.get("donchian_55_high", 0) > 0:
+        if (
+            bar.get("close", 0) > bar.get("donchian_55_high", 0) * 1.001
+            and bar.get("donchian_55_high", 0) > 0
+        ):
             return "long"
         if bar.get("close", 0) < bar.get("low_55d", 0) * 0.999 and bar.get("low_55d", 0) > 0:
             return "short"
@@ -395,50 +415,46 @@ def _eval_gene_impl(gene_id, bar, klines=None, i=0):
     if gene_id == "CD-KNOW-LIVERMORE-PP":
         # 20日新高突破+放量1.8x+ATR<6%+ROC>3%确认
         return (
-            bar["close"] > bar["high_20d"] * 1.001 and
-            bar["vol_ratio"] > 1.8 and
-            bar["atr_pct"] < 0.06 and
-            bar["roc_20d"] > 0.03
+            bar["close"] > bar["high_20d"] * 1.001
+            and bar["vol_ratio"] > 1.8
+            and bar["atr_pct"] < 0.06
+            and bar["roc_20d"] > 0.03
         )
     elif gene_id == "CD-KNOW-WYCKOFF-SPRING":
         # 价格跌破20bar低点+缩量+RSI<35+偏离SMA50>3%
         return (
-            bar["close"] < bar["low_20d"] * 0.999 and
-            bar["vol_ratio"] < 0.8 and
-            bar["rsi_14"] < 35 and
-            bar["dist_sma50_pct"] < -0.03
+            bar["close"] < bar["low_20d"] * 0.999
+            and bar["vol_ratio"] < 0.8
+            and bar["rsi_14"] < 35
+            and bar["dist_sma50_pct"] < -0.03
         )
     elif gene_id == "CD-KNOW-DARVAS-BOX":
         # 唐奇安上沿突破+ATR<1.5倍均值+量比>1.2+趋势过滤(价格>SMA50)
         return (
-            bar["close"] > bar["donchian_20_high"] * 1.001 and
-            bar["ma_atr"] > 0 and
-            bar["atr"] < 1.5 * bar["ma_atr"] and
-            bar["vol_ratio"] > 1.2 and
-            bar["dist_sma50_pct"] > 0  # 仅多头趋势中突破
+            bar["close"] > bar["donchian_20_high"] * 1.001
+            and bar["ma_atr"] > 0
+            and bar["atr"] < 1.5 * bar["ma_atr"]
+            and bar["vol_ratio"] > 1.2
+            and bar["dist_sma50_pct"] > 0  # 仅多头趋势中突破
         )
     elif gene_id == "CD-KNOW-ICT-ORDERBLOCK":
         # 简化版：价格回踩前低+缩量+RSI<45
         # 完整OB检测需要更复杂的逻辑，这里用近似
         return (
-            bar["close"] < bar["low_20d"] * 1.01 and
-            bar["close"] > bar["low_20d"] * 0.98 and
-            bar["vol_ratio"] < 0.9 and
-            bar["rsi_14"] < 45
+            bar["close"] < bar["low_20d"] * 1.01
+            and bar["close"] > bar["low_20d"] * 0.98
+            and bar["vol_ratio"] < 0.9
+            and bar["rsi_14"] < 45
         )
     elif gene_id == "CD-KNOW-VWAP-REVERSION":
         # Z-score<-1.5(放宽) + RSI(2)<10(放宽) + 布林带宽>6%(放宽)
-        return (
-            bar["zscore_vwap"] < -1.5 and
-            bar["rsi_2"] < 10 and
-            bar["boll_width_pct"] > 0.06
-        )
+        return bar["zscore_vwap"] < -1.5 and bar["rsi_2"] < 10 and bar["boll_width_pct"] > 0.06
     elif gene_id == "CD-KNOW-MOMENTUM-BREAK":
         # ROC20>5% + 量能分位>80% + 价格>SMA100(适配600bar数据)
         return (
-            bar["roc_20d"] > 0.05 and
-            bar["vol_quantile"] > 0.8 and
-            bar["dist_sma200_pct"] > 0  # 仍用SMA200（如有足够数据）
+            bar["roc_20d"] > 0.05
+            and bar["vol_quantile"] > 0.8
+            and bar["dist_sma200_pct"] > 0  # 仍用SMA200（如有足够数据）
         )
     elif gene_id == "CD-KNOW-HEAD-SHOULDERS":
         # 头肩顶简化检测：
@@ -448,7 +464,7 @@ def _eval_gene_impl(gene_id, bar, klines=None, i=0):
         # 4. 量能从头部到右肩递减
         if bar.get("high_20d", 0) > 0 and bar.get("atr", 0) > 0 and i >= 55:
             # 55bar窗口
-            window_highs = [klines[j]["high"] for j in range(i-55, i)]
+            window_highs = [klines[j]["high"] for j in range(i - 55, i)]
             head_idx = window_highs.index(max(window_highs))
             head_high = window_highs[head_idx]
 
@@ -457,13 +473,13 @@ def _eval_gene_impl(gene_id, bar, klines=None, i=0):
                 return False
 
             # 左肩：头部之前5-20bar的最高
-            left_region = window_highs[max(0, head_idx-20):head_idx-3]
+            left_region = window_highs[max(0, head_idx - 20) : head_idx - 3]
             if not left_region:
                 return False
             left_shoulder = max(left_region)
 
             # 右肩：头部之后5-20bar的最高
-            right_region = window_highs[head_idx+4:min(55, head_idx+20)]
+            right_region = window_highs[head_idx + 4 : min(55, head_idx + 20)]
             if not right_region:
                 return False
             right_shoulder = max(right_region)
@@ -473,8 +489,14 @@ def _eval_gene_impl(gene_id, bar, klines=None, i=0):
                 return False
 
             # 颈线 = min(左肩前低点, 右肩后低点)
-            left_lows = [klines[j]["low"] for j in range(i-55+max(0, head_idx-20), i-55+head_idx-3)]
-            right_lows = [klines[j]["low"] for j in range(i-55+head_idx+4, min(i, i-55+head_idx+20))]
+            left_lows = [
+                klines[j]["low"]
+                for j in range(i - 55 + max(0, head_idx - 20), i - 55 + head_idx - 3)
+            ]
+            right_lows = [
+                klines[j]["low"]
+                for j in range(i - 55 + head_idx + 4, min(i, i - 55 + head_idx + 20))
+            ]
             if not left_lows or not right_lows:
                 return False
             neckline = min(min(left_lows), min(right_lows))
@@ -523,13 +545,13 @@ def _eval_gene_impl(gene_id, bar, klines=None, i=0):
         if klines is None or i < 50:
             return False
         # 颈线取 30~50 bar 前的最低点（左肩/双顶支撑位）
-        neckline = min(klines[j]["low"] for j in range(max(0, i-50), max(0, i-10)))
+        neckline = min(klines[j]["low"] for j in range(max(0, i - 50), max(0, i - 10)))
         if neckline <= 0:
             return False
         # close 跌破颈线 1%
         if bar["close"] < neckline * 0.99:
             # 放量确认（当前量 > 20bar 均量 × 1.2）
-            vol_ma = sum(klines[j]["volume"] for j in range(max(0, i-20), i)) / max(1, min(20, i))
+            vol_ma = sum(klines[j]["volume"] for j in range(max(0, i - 20), i)) / max(1, min(20, i))
             if bar["volume"] > vol_ma * 1.2:
                 return True
         return False
@@ -544,7 +566,11 @@ def _eval_gene_impl(gene_id, bar, klines=None, i=0):
         return bar.get("adx_14", 0) < 25
     elif gene_id == "CD-BOLL-WIDTH-NARROW":
         # 布林带收窄（震荡市网格入场信号）
-        return bar.get("boll_width_pct", 0) > 0 and bar.get("atr_pct", 0) > 0 and bar["boll_width_pct"] < bar["atr_pct"] * 2.0
+        return (
+            bar.get("boll_width_pct", 0) > 0
+            and bar.get("atr_pct", 0) > 0
+            and bar["boll_width_pct"] < bar["atr_pct"] * 2.0
+        )
     return False
 
 
@@ -580,11 +606,13 @@ def _build_l3_state(bar, klines, i):
       R_reflexivity = (zscore_vwap + 3) / 6  # 反身性 z-score 归一化
       quality_score = vol_quantile
     """
+
     def _clamp(v, lo=0.0, hi=1.0):
         try:
             return max(lo, min(hi, float(v)))
         except (TypeError, ValueError):
             return lo
+
     return {
         "R_up": _clamp(bar.get("rsi_2", 50) / 100.0),
         "R_down": _clamp(1.0 - bar.get("rsi_2", 50) / 100.0),
@@ -605,6 +633,7 @@ def inject_backtest_samples(tracker, klines, gene_ids=None):
     用法: python3 shadow_backtest.py --inject-rl
     """
     import math
+
     if gene_ids is None:
         gene_ids = PHASE_E_GENE_IDS
     total_injected = 0
@@ -621,8 +650,11 @@ def inject_backtest_samples(tracker, klines, gene_ids=None):
                     state = _build_l3_state(bar, klines, i)
                     reward = math.tanh(trade["pnl_pct"] / 0.02)  # 复用实盘归一化
                     tracker.record(
-                        symbol="BTC", state=state, action=direction,
-                        reward=reward, next_state=None,
+                        symbol="BTC",
+                        state=state,
+                        action=direction,
+                        reward=reward,
+                        next_state=None,
                     )
                     total_injected += 1
         print(f"  {gid}: 累计注入 {total_injected} 条")
@@ -641,12 +673,15 @@ def _inject_rl_main():
 
     # 构造 ShadowRLTracker 实例（与 evolution_pipeline 一致的持久化路径）
     import sys as _sys
+
     # _arch_root = 23-四层闭环自进化交易架构（dreambuddy_evolution 包的父目录）
     _arch_root = Path(__file__).resolve().parent.parent.parent
     if str(_arch_root) not in _sys.path:
         _sys.path.insert(0, str(_arch_root))
-    from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
     from pathlib import Path as _P
+
+    from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
     # persist_path 用绝对路径（gene_data/ 在 _arch_root 下）
     _persist = _P(_arch_root) / "dreambuddy_evolution" / "gene_data" / "shadow_rl_samples.jsonl"
     tracker = ShadowRLTracker(persist_path=_persist)
@@ -657,7 +692,9 @@ def _inject_rl_main():
 
     injected = inject_backtest_samples(tracker, klines)
     after = tracker.sample_count()
-    print(f"注入完成: 新增 {injected} 条，总计 {after} 条（有效 {tracker.effective_sample_count()}）")
+    print(
+        f"注入完成: 新增 {injected} 条，总计 {after} 条（有效 {tracker.effective_sample_count()}）"
+    )
     print(f"持久化文件: {_persist}")
     if tracker.is_phase3_activated():
         print("Phase3 已激活")
@@ -679,6 +716,7 @@ def check_promotion(samples):
     # 延迟导入避免循环依赖
     import sys as _sys
     from pathlib import Path as _Path
+
     _REPO = _Path(__file__).resolve().parents[2]
     if str(_REPO) not in _sys.path:
         _sys.path.insert(0, str(_REPO))
@@ -732,11 +770,19 @@ def main():
 
         if not should_trade(gene_weight):
             print(f"  ⏸ {gid} weight=0, 跳过")
-            summary.append({
-                "gene_id": gid, "n_samples": 0, "win_rate": 0, "avg_pnl": 0,
-                "weighted_pnl": 0, "weight": 0, "decision": {"promote": False, "reason": "weight=0"},
-                "status_icon": "⏸", "direction": "skip",
-            })
+            summary.append(
+                {
+                    "gene_id": gid,
+                    "n_samples": 0,
+                    "win_rate": 0,
+                    "avg_pnl": 0,
+                    "weighted_pnl": 0,
+                    "weight": 0,
+                    "decision": {"promote": False, "reason": "weight=0"},
+                    "status_icon": "⏸",
+                    "direction": "skip",
+                }
+            )
             continue
 
         for i in range(LOOKBACK, len(klines) - HOLD_BARS):
@@ -792,22 +838,28 @@ def main():
                 f.write(json.dumps(s, ensure_ascii=False) + "\n")
 
         # 汇总
-        status_icon = "✅" if decision.get("promote") else ("❌" if decision.get("retire") else "⏳")
+        status_icon = (
+            "✅" if decision.get("promote") else ("❌" if decision.get("retire") else "⏳")
+        )
         gene_dir = _GENE_DIRECTION.get(gid, "long")
-        summary.append({
-            "gene_id": gid,
-            "n_samples": n,
-            "win_rate": win_rate,
-            "avg_pnl": avg_pnl,
-            "weighted_pnl": weighted_pnl,
-            "weight": gene_weight,
-            "decision": decision,
-            "status_icon": status_icon,
-            "direction": gene_dir,
-        })
+        summary.append(
+            {
+                "gene_id": gid,
+                "n_samples": n,
+                "win_rate": win_rate,
+                "avg_pnl": avg_pnl,
+                "weighted_pnl": weighted_pnl,
+                "weight": gene_weight,
+                "decision": decision,
+                "status_icon": status_icon,
+                "direction": gene_dir,
+            }
+        )
 
         print(f"{status_icon} {gid} [{gene_dir}] w={gene_weight:.1f}")
-        print(f"   触发: {n} 次 | 胜率: {win_rate:.1%} | PnL: {avg_pnl:+.4f} | wPnL: {weighted_pnl:+.4f}")
+        print(
+            f"   触发: {n} 次 | 胜率: {win_rate:.1%} | PnL: {avg_pnl:+.4f} | wPnL: {weighted_pnl:+.4f}"
+        )
         print(f"   决定: {decision}")
         print()
 
@@ -818,7 +870,9 @@ def main():
     print(f"{'基因':<30} {'N':>4} {'胜率':>6} {'PnL':>10} {'方向':>6} {'状态':>6}")
     print("-" * 70)
     for s in summary:
-        print(f"{s['gene_id']:<30} {s['n_samples']:>4} {s['win_rate']:>5.0%} {s['avg_pnl']:>+10.4f} {s.get('direction','long'):>6} {s['status_icon']}")
+        print(
+            f"{s['gene_id']:<30} {s['n_samples']:>4} {s['win_rate']:>5.0%} {s['avg_pnl']:>+10.4f} {s.get('direction','long'):>6} {s['status_icon']}"
+        )
     print()
 
     # 写入汇总

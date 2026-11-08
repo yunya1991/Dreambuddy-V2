@@ -14,6 +14,7 @@ dreambuddy_dal.unified_models — 唯一数据模型 SSoT（Single Source of Tru
 - RiskCaseRecord → rs_cases 表
 - CloseInfo → trade_repo.close_position(...) 返回值（辅助结构，无独立表）
 """
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -25,6 +26,7 @@ from typing import Any, Dict, Optional
 # ---------------------------------------------------------------------------
 # 枚举（与表的 CHECK 约束一一对应）
 # ---------------------------------------------------------------------------
+
 
 class TradeDirection(str, Enum):
     LONG = "LONG"
@@ -39,6 +41,7 @@ class TradeStatus(str, Enum):
 
 class ExitReason(str, Enum):
     """TECHNICAL_DESIGN §2.2 close_position 7 种离场原因"""
+
     SL_HIT = "SL_HIT"
     TP_HIT = "TP_HIT"
     TS_HIT = "TS_HIT"
@@ -72,6 +75,7 @@ class PositionStyle(str, Enum):
 # ---------------------------------------------------------------------------
 # 序列化/反序列化公共 mixin（Decimal / datetime 类型安全）
 # ---------------------------------------------------------------------------
+
 
 class _JsonSerdeMixin:
     """
@@ -151,6 +155,7 @@ _ENUM_FIELD_MAP: Dict[str, type] = {}
 # CloseInfo：离场结果（trade_repo.close_position 返回值）
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class CloseInfo(_JsonSerdeMixin):
     exit_reason: ExitReason
@@ -168,9 +173,11 @@ _ENUM_FIELD_MAP["exit_reason"] = ExitReason
 # TradeRecord：tr_trades（DAL 唯一出口，所有消费方必须用这个）
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class TradeRecord(_JsonSerdeMixin):
     """交易记录主模型。字段严格按 SCHEMA_DESIGN.md §3.1 tr_trades 字段字典。"""
+
     # ---- 主键 + 来源系统（必填）----
     trade_id: str
     sub_system: str  # YIJING / V15 / CLASSIC / MANUAL
@@ -214,12 +221,14 @@ class TradeRecord(_JsonSerdeMixin):
     updated_at: Optional[datetime] = None
 
 
-_ENUM_FIELD_MAP.update({
-    "direction": TradeDirection,
-    "status": TradeStatus,
-    "position_style": PositionStyle,
-    "trial_status": TrialStatus,
-})
+_ENUM_FIELD_MAP.update(
+    {
+        "direction": TradeDirection,
+        "status": TradeStatus,
+        "position_style": PositionStyle,
+        "trial_status": TrialStatus,
+    }
+)
 
 # CloseInfo 字段是嵌套结构，from_dict 需要单独处理
 _orig_trade_from_dict = TradeRecord.from_dict
@@ -241,9 +250,11 @@ TradeRecord.from_dict = _trade_from_dict  # type: ignore[assignment]
 # PositionState：po_positions
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PositionState(_JsonSerdeMixin):
     """当前净持仓状态（SCHEMA_DESIGN §4.1 po_positions 字段字典）"""
+
     symbol: str
     sub_system: str
     direction: TradeDirection
@@ -283,9 +294,11 @@ _ENUM_FIELD_MAP["direction"] = TradeDirection  # 同名 OK
 # DailyStats：tr_daily_stats
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DailyStats(_JsonSerdeMixin):
     """策略每日统计快照（SCHEMA_DESIGN §3.2）"""
+
     stat_date: str  # YYYY-MM-DD（主键前缀）
     symbol: str
     sub_system: str
@@ -311,6 +324,7 @@ class DailyStats(_JsonSerdeMixin):
 # RiskState：rs_state（CHECK(id=1) 单行表 + 乐观锁 version）
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RiskState(_JsonSerdeMixin):
     """
@@ -319,6 +333,7 @@ class RiskState(_JsonSerdeMixin):
     - version 由 DB UPDATE 触发器自动 +1
     - updated_at 由 DB UPDATE 触发器自动刷当前时间
     """
+
     id: int  # 永远 1
     total_equity_usd: Decimal
     gross_exposure_usd: Decimal
@@ -354,9 +369,11 @@ _ENUM_FIELD_MAP["overall_risk"] = RiskLevel
 # RiskCaseRecord：rs_cases
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class RiskCaseRecord(_JsonSerdeMixin):
     """风控案例记录（SCHEMA_DESIGN §6.2 rs_cases）"""
+
     case_id: str
     detected_at: datetime
     risk_level: RiskLevel
@@ -386,9 +403,17 @@ _ENUM_FIELD_MAP["risk_level"] = RiskLevel
 # ---------------------------------------------------------------------------
 __all__ = [
     # 枚举
-    "TradeDirection", "TradeStatus", "ExitReason", "RiskLevel",
-    "TrialStatus", "PositionStyle",
+    "TradeDirection",
+    "TradeStatus",
+    "ExitReason",
+    "RiskLevel",
+    "TrialStatus",
+    "PositionStyle",
     # 数据模型
-    "TradeRecord", "CloseInfo", "PositionState", "DailyStats",
-    "RiskState", "RiskCaseRecord",
+    "TradeRecord",
+    "CloseInfo",
+    "PositionState",
+    "DailyStats",
+    "RiskState",
+    "RiskCaseRecord",
 ]

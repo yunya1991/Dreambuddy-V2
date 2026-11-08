@@ -17,6 +17,7 @@
     --years 5 (默认)
     --output data/btc_close_30m.json (默认)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,9 +25,9 @@ import json
 import sys
 import time
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
 
 REPO = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO / "dreambuddy_evolution" / "data"
@@ -67,16 +68,18 @@ def fetch_klines_page(
     Binance 返回格式: [[open_time, open, high, low, close, volume, ...], ...]
     索引 4 = close price (string).
     """
-    params = urlencode({
-        "symbol": symbol,
-        "interval": interval,
-        "startTime": start_ms,
-        "limit": limit,
-    })
+    params = urlencode(
+        {
+            "symbol": symbol,
+            "interval": interval,
+            "startTime": start_ms,
+            "limit": limit,
+        }
+    )
     url = f"{BINANCE_KLINES_URL}?{params}"
 
     last_err: Exception | None = None
-    for attempt in range(1, retries + 1):
+    for attempt in range(1, retries + 1):  # noqa: B007
         try:
             req = Request(url, headers={"User-Agent": "neural-sde-data-download/1.0"})
             with urlopen(req, timeout=30) as resp:

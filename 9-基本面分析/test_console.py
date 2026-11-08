@@ -10,7 +10,7 @@ with sync_playwright() as p:
 
     # 新前端：Next.js on port 3000
     print("Navigating to http://127.0.0.1:3000/dashboard/fundamental/overview")
-    page.goto('http://127.0.0.1:3000/dashboard/fundamental/overview', wait_until='networkidle')
+    page.goto("http://127.0.0.1:3000/dashboard/fundamental/overview", wait_until="networkidle")
 
     # Wait a bit just in case
     page.wait_for_timeout(2000)

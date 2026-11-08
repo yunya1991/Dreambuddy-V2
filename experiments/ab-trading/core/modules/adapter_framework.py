@@ -29,24 +29,22 @@ WorkBuddy OS 模块适配器框架 (Python 侧)
 
 import time
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Callable
-from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional
 
+from .module_registry import ModuleInfo, get_module_registry
 from .unified_types import (
-    ModuleResult,
+    ConfidenceDimensions,
     ExecutionContext,
     ModuleOutputs,
-    ConfidenceDimensions,
-    create_success_result,
+    ModuleResult,
     create_failure_result,
     create_fallback_result,
 )
-from .module_registry import get_module_registry, ModuleInfo
-
 
 # ============================================================
 # 适配器基类
 # ============================================================
+
 
 class BaseModuleAdapter(ABC):
     """
@@ -93,7 +91,9 @@ class BaseModuleAdapter(ABC):
         """
         return True, []
 
-    def get_fallback(self, inputs: Dict[str, Any], context: ExecutionContext) -> Optional[ModuleResult]:
+    def get_fallback(
+        self, inputs: Dict[str, Any], context: ExecutionContext
+    ) -> Optional[ModuleResult]:
         """
         获取降级实现
         默认返回 None，子类可覆盖
@@ -104,6 +104,7 @@ class BaseModuleAdapter(ABC):
 # ============================================================
 # Skill 适配器
 # ============================================================
+
 
 class SkillAdapter(BaseModuleAdapter):
     """
@@ -117,6 +118,7 @@ class SkillAdapter(BaseModuleAdapter):
 
     def is_available(self) -> bool:
         from .skill_loader import SkillLoader
+
         loader = SkillLoader()
         return loader.is_skill_available(self.skill_name)
 
@@ -127,16 +129,13 @@ class SkillAdapter(BaseModuleAdapter):
 
             is_valid, errors = self.validate_inputs(inputs)
             if not is_valid:
-                return create_failure_result(
-                    self.module_id,
-                    f"输入验证失败: {', '.join(errors)}"
-                )
+                return create_failure_result(self.module_id, f"输入验证失败: {', '.join(errors)}")
 
             skill_inputs = {
-                'mkt': context.mkt,
-                'memory': context.memory,
-                'data': inputs.get('data', {}),
-                'a0': inputs.get('a0', {}),
+                "mkt": context.mkt,
+                "memory": context.memory,
+                "data": inputs.get("data", {}),
+                "a0": inputs.get("a0", {}),
                 **inputs,
             }
 
@@ -145,8 +144,8 @@ class SkillAdapter(BaseModuleAdapter):
 
             outputs = ModuleOutputs(
                 direction=skill_result.direction.lower() if skill_result.direction else None,
-                analysis='\n'.join(skill_result.rationale),
-                reasoning='\n'.join(skill_result.rationale),
+                analysis="\n".join(skill_result.rationale),
+                reasoning="\n".join(skill_result.rationale),
                 extra=skill_result.data,
             )
 
@@ -156,8 +155,7 @@ class SkillAdapter(BaseModuleAdapter):
                 data_completeness=min(confidence + 5, 100) if skill_result.used_skill else 40,
                 logical_consistency=confidence,
                 historical_performance=(
-                    self.module_info.historical_accuracy
-                    if self.module_info else 70.0
+                    self.module_info.historical_accuracy if self.module_info else 70.0
                 ),
             )
 
@@ -167,18 +165,15 @@ class SkillAdapter(BaseModuleAdapter):
                 outputs=outputs,
                 confidence=confidence,
                 confidence_dimensions=confidence_dimensions,
-                tokens_used=(
-                    self.module_info.estimated_tokens
-                    if self.module_info else 1000
-                ),
+                tokens_used=(self.module_info.estimated_tokens if self.module_info else 1000),
                 latency_ms=latency_ms,
-                warnings=[] if skill_result.used_skill else ['使用降级实现'],
+                warnings=[] if skill_result.used_skill else ["使用降级实现"],
                 metadata={
-                    'skill_name': skill_result.skill_name,
-                    'skill_version': skill_result.version,
-                    'phases_executed': skill_result.phases_executed,
-                    'used_skill': skill_result.used_skill,
-                    'rationale': skill_result.rationale,
+                    "skill_name": skill_result.skill_name,
+                    "skill_version": skill_result.version,
+                    "phases_executed": skill_result.phases_executed,
+                    "used_skill": skill_result.used_skill,
+                    "rationale": skill_result.rationale,
                 },
                 fallback_used=not skill_result.used_skill,
                 fallback_reason=skill_result.fallback_reason,
@@ -197,17 +192,19 @@ class SkillAdapter(BaseModuleAdapter):
 # API 适配器
 # ============================================================
 
+
 class APIAdapter(BaseModuleAdapter):
     """
     API 适配器
     封装对外部 API 服务的调用
     """
 
-    def __init__(self, module_id: str, base_url: str, endpoint: str,
-                 method: str = 'POST', timeout: int = 10):
+    def __init__(
+        self, module_id: str, base_url: str, endpoint: str, method: str = "POST", timeout: int = 10
+    ):
         super().__init__(module_id)
-        self.base_url = base_url.rstrip('/')
-        self.endpoint = endpoint.lstrip('/')
+        self.base_url = base_url.rstrip("/")
+        self.endpoint = endpoint.lstrip("/")
         self.method = method.upper()
         self.timeout = timeout
         self._session = None
@@ -215,12 +212,14 @@ class APIAdapter(BaseModuleAdapter):
     def _get_session(self):
         if self._session is None:
             import requests
+
             self._session = requests.Session()
         return self._session
 
     def is_available(self) -> bool:
         try:
             import requests
+
             resp = requests.get(f"{self.base_url}", timeout=2)
             return resp.status_code < 500
         except Exception:
@@ -231,10 +230,10 @@ class APIAdapter(BaseModuleAdapter):
         url = f"{self.base_url}/{self.endpoint}"
 
         try:
-            import requests
+
             session = self._get_session()
 
-            if self.method == 'GET':
+            if self.method == "GET":
                 resp = session.get(url, params=inputs, timeout=self.timeout)
             else:
                 resp = session.post(url, json=inputs, timeout=self.timeout)
@@ -243,11 +242,11 @@ class APIAdapter(BaseModuleAdapter):
             data = resp.json()
             latency_ms = int((time.time() - start_time) * 1000)
 
-            outputs = ModuleOutputs.from_dict(data.get('outputs', data))
-            confidence = data.get('confidence', 60.0)
+            outputs = ModuleOutputs.from_dict(data.get("outputs", data))
+            confidence = data.get("confidence", 60.0)
 
             return ModuleResult(
-                success=data.get('success', True),
+                success=data.get("success", True),
                 capability_id=self.module_id,
                 outputs=outputs,
                 confidence=confidence,
@@ -255,11 +254,11 @@ class APIAdapter(BaseModuleAdapter):
                     data_completeness=min(confidence + 10, 100),
                     logical_consistency=confidence,
                 ),
-                tokens_used=data.get('tokensUsed', 500),
+                tokens_used=data.get("tokensUsed", 500),
                 latency_ms=latency_ms,
-                warnings=data.get('warnings', []),
-                suggestions=data.get('suggestions', []),
-                metadata=data.get('metadata', {}),
+                warnings=data.get("warnings", []),
+                suggestions=data.get("suggestions", []),
+                metadata=data.get("metadata", {}),
             )
 
         except Exception as e:
@@ -268,7 +267,9 @@ class APIAdapter(BaseModuleAdapter):
             result.latency_ms = latency_ms
             return result
 
-    def get_fallback(self, inputs: Dict[str, Any], context: ExecutionContext) -> Optional[ModuleResult]:
+    def get_fallback(
+        self, inputs: Dict[str, Any], context: ExecutionContext
+    ) -> Optional[ModuleResult]:
         """
         API适配器降级：使用本地规则替代API调用
 
@@ -276,8 +277,8 @@ class APIAdapter(BaseModuleAdapter):
         """
         # 定义本地降级规则
         fallback_rules = {
-            'classic-indicator-scan': self._local_c1_scan,
-            'classic-regime-detection': self._local_regime_detection,
+            "classic-indicator-scan": self._local_c1_scan,
+            "classic-regime-detection": self._local_regime_detection,
         }
 
         if self.module_id in fallback_rules:
@@ -293,19 +294,19 @@ class APIAdapter(BaseModuleAdapter):
         mkt = context.mkt or {}
 
         # 简化的技术分析
-        rsi = mkt.get('rsi14', 50)
-        price = mkt.get('price', 0)
-        ema20 = mkt.get('ema20', price)
-        ema50 = mkt.get('ema50', price)
-        ema200 = mkt.get('ema200', price)
-        change24h = mkt.get('change_24h', 0)
+        rsi = mkt.get("rsi14", 50)
+        price = mkt.get("price", 0)
+        ema20 = mkt.get("ema20", price)
+        ema50 = mkt.get("ema50", price)
+        ema200 = mkt.get("ema200", price)
+        change24h = mkt.get("change_24h", 0)
 
         # 简单趋势判断
-        direction = 'HOLD'
+        direction = "HOLD"
         if price > ema20 > ema50 > ema200 and change24h > 0:
-            direction = 'long'
+            direction = "long"
         elif price < ema20 < ema50 < ema200 and change24h < 0:
-            direction = 'short'
+            direction = "short"
 
         # RSI超买超卖判断
         confidence = 50.0
@@ -318,8 +319,8 @@ class APIAdapter(BaseModuleAdapter):
             success=True,
             capability_id=self.module_id,
             outputs=ModuleOutputs(
-                direction=direction.lower() if direction else 'hold',
-                analysis=f'本地简化分析: RSI={rsi:.1f}, 24H变化={change24h:.1f}%',
+                direction=direction.lower() if direction else "hold",
+                analysis=f"本地简化分析: RSI={rsi:.1f}, 24H变化={change24h:.1f}%",
             ),
             confidence=confidence,
             confidence_dimensions=ConfidenceDimensions(
@@ -327,47 +328,49 @@ class APIAdapter(BaseModuleAdapter):
                 logical_consistency=confidence,
             ),
             latency_ms=5,
-            warnings=['API不可用，使用本地降级实现'],
-            metadata={'source': 'local_fallback'},
+            warnings=["API不可用，使用本地降级实现"],
+            metadata={"source": "local_fallback"},
             fallback_used=True,
-            fallback_reason='API服务不可用',
+            fallback_reason="API服务不可用",
         )
 
-    def _local_regime_detection(self, inputs: Dict[str, Any], context: ExecutionContext) -> ModuleResult:
+    def _local_regime_detection(
+        self, inputs: Dict[str, Any], context: ExecutionContext
+    ) -> ModuleResult:
         """Regime检测本地降级实现"""
         mkt = context.mkt or {}
 
-        price = mkt.get('price', 0)
-        ema20 = mkt.get('ema20', price)
-        ema50 = mkt.get('ema50', price)
-        atr14 = mkt.get('atr14', price * 0.02)
-        vol_ratio = mkt.get('vol_ratio', 1.0)
+        price = mkt.get("price", 0)
+        ema20 = mkt.get("ema20", price)
+        ema50 = mkt.get("ema50", price)
+        atr14 = mkt.get("atr14", price * 0.02)  # noqa: F841
+        vol_ratio = mkt.get("vol_ratio", 1.0)
 
         # 简单Regime判断
-        regime = 'unknown'
+        regime = "unknown"
         if price > ema20 > ema50:
-            regime = 'trending_up'
+            regime = "trending_up"
         elif price < ema20 < ema50:
-            regime = 'trending_down'
+            regime = "trending_down"
         else:
-            regime = 'ranging'
+            regime = "ranging"
 
-        volatility = 'normal'
+        volatility = "normal"
         if vol_ratio > 1.5:
-            volatility = 'high'
+            volatility = "high"
         elif vol_ratio < 0.7:
-            volatility = 'low'
+            volatility = "low"
 
         return ModuleResult(
             success=True,
             capability_id=self.module_id,
             outputs=ModuleOutputs(
                 direction=regime,
-                analysis=f'Regime={regime}, Volatility={volatility}',
+                analysis=f"Regime={regime}, Volatility={volatility}",
                 extra={
-                    'regime': regime,
-                    'volatility': volatility,
-                }
+                    "regime": regime,
+                    "volatility": volatility,
+                },
             ),
             confidence=45.0,
             confidence_dimensions=ConfidenceDimensions(
@@ -375,16 +378,17 @@ class APIAdapter(BaseModuleAdapter):
                 logical_consistency=45.0,
             ),
             latency_ms=5,
-            warnings=['API不可用，使用本地降级实现'],
-            metadata={'source': 'local_fallback'},
+            warnings=["API不可用，使用本地降级实现"],
+            metadata={"source": "local_fallback"},
             fallback_used=True,
-            fallback_reason='API服务不可用',
+            fallback_reason="API服务不可用",
         )
 
 
 # ============================================================
 # Local 适配器（本地规则降级）
 # ============================================================
+
 
 class LocalAdapter(BaseModuleAdapter):
     """
@@ -407,7 +411,7 @@ class LocalAdapter(BaseModuleAdapter):
             result.latency_ms = latency_ms
             result.fallback_used = True
             if not result.warnings:
-                result.warnings = ['使用本地降级实现']
+                result.warnings = ["使用本地降级实现"]
             return result
         except Exception as e:
             latency_ms = int((time.time() - start_time) * 1000)
@@ -419,6 +423,7 @@ class LocalAdapter(BaseModuleAdapter):
 # ============================================================
 # 节点适配器（从现有的 nodes/ 模块创建）
 # ============================================================
+
 
 class NodeAdapter(BaseModuleAdapter):
     """
@@ -433,6 +438,7 @@ class NodeAdapter(BaseModuleAdapter):
     def is_available(self) -> bool:
         try:
             from core.nodes import get_node_handler
+
             return get_node_handler(self.node_id) is not None
         except Exception:
             return False
@@ -444,27 +450,24 @@ class NodeAdapter(BaseModuleAdapter):
 
             handler = get_node_handler(self.node_id)
             if handler is None:
-                return create_failure_result(
-                    self.module_id,
-                    f"节点 {self.node_id} 未找到"
-                )
+                return create_failure_result(self.module_id, f"节点 {self.node_id} 未找到")
 
-            mkt = context.mkt or inputs.get('mkt', {})
-            memory = context.memory or inputs.get('memory', {})
-            data = inputs.get('data', {})
+            mkt = context.mkt or inputs.get("mkt", {})
+            memory = context.memory or inputs.get("memory", {})
+            data = inputs.get("data", {})
 
             node_result = handler(mkt, memory, data)
             latency_ms = int((time.time() - start_time) * 1000)
 
-            direction = node_result.get('direction', 'HOLD')
-            confidence = node_result.get('confidence', 0.5) * 100
-            rationale = node_result.get('rationale', [])
-            result_data = node_result.get('data', {})
+            direction = node_result.get("direction", "HOLD")
+            confidence = node_result.get("confidence", 0.5) * 100
+            rationale = node_result.get("rationale", [])
+            result_data = node_result.get("data", {})
 
             outputs = ModuleOutputs(
                 direction=direction.lower() if direction else None,
-                analysis='\n'.join(rationale) if rationale else None,
-                reasoning='\n'.join(rationale) if rationale else None,
+                analysis="\n".join(rationale) if rationale else None,
+                reasoning="\n".join(rationale) if rationale else None,
                 extra=result_data,
             )
 
@@ -477,22 +480,18 @@ class NodeAdapter(BaseModuleAdapter):
                     data_completeness=min(confidence + 5, 100),
                     logical_consistency=confidence,
                     historical_performance=(
-                        self.module_info.historical_accuracy
-                        if self.module_info else 65.0
+                        self.module_info.historical_accuracy if self.module_info else 65.0
                     ),
                 ),
-                tokens_used=(
-                    self.module_info.estimated_tokens
-                    if self.module_info else 0
-                ),
+                tokens_used=(self.module_info.estimated_tokens if self.module_info else 0),
                 latency_ms=latency_ms,
-                warnings=['本地节点实现，零Token消耗'],
+                warnings=["本地节点实现，零Token消耗"],
                 metadata={
-                    'node_id': self.node_id,
-                    'rationale': rationale,
+                    "node_id": self.node_id,
+                    "rationale": rationale,
                 },
                 fallback_used=True,
-                fallback_reason='local_node',
+                fallback_reason="local_node",
             )
 
         except Exception as e:
@@ -505,6 +504,7 @@ class NodeAdapter(BaseModuleAdapter):
 # ============================================================
 # 模块执行器（统一调度 + 降级容错）
 # ============================================================
+
 
 class ModuleExecutor:
     """
@@ -538,26 +538,26 @@ class ModuleExecutor:
         if not module_info:
             return None
 
-        adapter_type = module_info.adapter.get('type', 'local')
+        adapter_type = module_info.adapter.get("type", "local")
 
-        if adapter_type == 'skill':
-            skill_md = module_info.adapter.get('skill_md', '')
+        if adapter_type == "skill":
+            skill_md = module_info.adapter.get("skill_md", "")  # noqa: F841
             skill_name = module_id
             return SkillAdapter(module_id, skill_name)
 
-        elif adapter_type == 'api':
-            base_url = module_info.adapter.get('base_url', '')
-            endpoint = module_info.adapter.get('endpoint', '')
+        elif adapter_type == "api":
+            base_url = module_info.adapter.get("base_url", "")
+            endpoint = module_info.adapter.get("endpoint", "")
             if base_url and endpoint:
                 return APIAdapter(module_id, base_url, endpoint)
 
-        elif adapter_type == 'local':
+        elif adapter_type == "local":
             node_map = {
-                'dream-contradiction-theory': 'A0_矛盾论',
-                'dream-first-principles': 'A2_分析(含A0)',
-                'dream-exit-skill-v2': 'A9_离场评估',
-                'classic-indicator-scan': 'C1_技术扫描',
-                'dream-oneirology': '做梦部',
+                "dream-contradiction-theory": "A0_矛盾论",
+                "dream-first-principles": "A2_分析(含A0)",
+                "dream-exit-skill-v2": "A9_离场评估",
+                "classic-indicator-scan": "C1_技术扫描",
+                "dream-oneirology": "做梦部",
             }
             node_id = node_map.get(module_id)
             if node_id:
@@ -565,8 +565,9 @@ class ModuleExecutor:
 
         return None
 
-    def execute(self, module_id: str, inputs: Dict[str, Any],
-                context: ExecutionContext) -> ModuleResult:
+    def execute(
+        self, module_id: str, inputs: Dict[str, Any], context: ExecutionContext
+    ) -> ModuleResult:
         """
         执行模块（含降级容错）
 
@@ -590,9 +591,7 @@ class ModuleExecutor:
         try:
             result = adapter.execute(inputs, context)
 
-            self._execution_count[module_id] = (
-                self._execution_count.get(module_id, 0) + 1
-            )
+            self._execution_count[module_id] = self._execution_count.get(module_id, 0) + 1
             if result.latency_ms:
                 self._total_latency[module_id] = (
                     self._total_latency.get(module_id, 0) + result.latency_ms
@@ -615,9 +614,13 @@ class ModuleExecutor:
 
             return create_failure_result(module_id, f"执行异常: {e}")
 
-    def _try_fallback(self, module_id: str, inputs: Dict[str, Any],
-                      context: ExecutionContext,
-                      adapter: BaseModuleAdapter) -> Optional[ModuleResult]:
+    def _try_fallback(
+        self,
+        module_id: str,
+        inputs: Dict[str, Any],
+        context: ExecutionContext,
+        adapter: BaseModuleAdapter,
+    ) -> Optional[ModuleResult]:
         """尝试降级执行"""
         try:
             fallback_result = adapter.get_fallback(inputs, context)
@@ -627,32 +630,31 @@ class ModuleExecutor:
             pass
 
         module_info = self._registry.get(module_id)
-        if module_info and module_info.fallback.get('enabled'):
-            fallback_module_id = module_info.fallback.get('fallback_module')
+        if module_info and module_info.fallback.get("enabled"):
+            fallback_module_id = module_info.fallback.get("fallback_module")
             if fallback_module_id and fallback_module_id != module_id:
                 try:
                     fallback_result = self.execute(fallback_module_id, inputs, context)
                     fallback_result.fallback_used = True
-                    fallback_result.fallback_reason = (
-                        module_info.fallback.get('fallback_reason', '模块降级')
+                    fallback_result.fallback_reason = module_info.fallback.get(
+                        "fallback_reason", "模块降级"
                     )
                     if not fallback_result.warnings:
-                        fallback_result.warnings = [
-                            f"从 {module_id} 降级到 {fallback_module_id}"
-                        ]
+                        fallback_result.warnings = [f"从 {module_id} 降级到 {fallback_module_id}"]
                     return fallback_result
                 except Exception:
                     pass
 
         return None
 
-    def execute_batch(self, calls: List[Dict[str, Any]],
-                      context: ExecutionContext) -> List[ModuleResult]:
+    def execute_batch(
+        self, calls: List[Dict[str, Any]], context: ExecutionContext
+    ) -> List[ModuleResult]:
         """批量执行模块"""
         results = []
         for call in calls:
-            module_id = call.get('module_id', call.get('skillId', ''))
-            inputs = call.get('inputs', {})
+            module_id = call.get("module_id", call.get("skillId", ""))
+            inputs = call.get("inputs", {})
             result = self.execute(module_id, inputs, context)
             results.append(result)
         return results
@@ -664,9 +666,9 @@ class ModuleExecutor:
             total_latency = self._total_latency.get(module_id, 0)
             avg_latency = total_latency / count if count > 0 else 0
             stats[module_id] = {
-                'execution_count': count,
-                'total_latency_ms': total_latency,
-                'avg_latency_ms': avg_latency,
+                "execution_count": count,
+                "total_latency_ms": total_latency,
+                "avg_latency_ms": avg_latency,
             }
         return stats
 
@@ -695,12 +697,12 @@ def get_module_executor() -> ModuleExecutor:
 AdapterFramework = ModuleExecutor
 
 __all__ = [
-    'BaseModuleAdapter',
-    'SkillAdapter',
-    'APIAdapter',
-    'LocalAdapter',
-    'NodeAdapter',
-    'ModuleExecutor',
-    'AdapterFramework',  # 文档别名
-    'get_module_executor',
+    "BaseModuleAdapter",
+    "SkillAdapter",
+    "APIAdapter",
+    "LocalAdapter",
+    "NodeAdapter",
+    "ModuleExecutor",
+    "AdapterFramework",  # 文档别名
+    "get_module_executor",
 ]

@@ -10,6 +10,7 @@
   - SilverRecord.gate_passed → outcome
   - FAIL-OPEN: 样本/pipeline 异常返回空列表
 """
+
 import os
 import sys
 from typing import List, Optional
@@ -24,12 +25,12 @@ for _p in [_THIS_DIR, _34_DIR, _18_DIR, _20_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # ============================================================
 # 节点格式化 — 包含关键状态标记,使不同路径产出不同序列
 # ============================================================
+
 
 def _format_node(a) -> str:
     """格式化 CleanAction 为节点描述。
@@ -67,10 +68,11 @@ def _format_node(a) -> str:
 # 样本 DataRecord 构造（覆盖不同清洗路径）
 # ============================================================
 
-def _mk_ohlcv_records(n: int = 10, with_outliers: bool = False,
-                      with_missing: bool = False) -> list:
+
+def _mk_ohlcv_records(n: int = 10, with_outliers: bool = False, with_missing: bool = False) -> list:
     """构造 OHLCV 时序列样本。"""
     from data_center.core.contract import DataRecord
+
     rows = []
     for i in range(n):
         base = 100.0 + i
@@ -91,86 +93,122 @@ def _mk_ohlcv_records(n: int = 10, with_outliers: bool = False,
         if with_missing and i == 3:
             row["close"] = None  # 触发 MissingImputer
         rows.append(row)
-    return [DataRecord(
-        source="sample_collector",
-        category="finance",
-        sub_category="ohlcv",
-        timestamp="2026-10-12T00:00:00Z",
-        metrics={"asset": "BTCUSDT"},
-        events=[],
-        timeseries=rows,
-        raw={},
-    )]
+    return [
+        DataRecord(
+            source="sample_collector",
+            category="finance",
+            sub_category="ohlcv",
+            timestamp="2026-10-12T00:00:00Z",
+            metrics={"asset": "BTCUSDT"},
+            events=[],
+            timeseries=rows,
+            raw={},
+        )
+    ]
 
 
 def _mk_macro_records() -> list:
     """构造宏观 CPI 样本（metrics 扁平模式）。"""
     from data_center.core.contract import DataRecord
-    return [DataRecord(
-        source="fred",
-        category="macro",
-        sub_category="cpi",
-        timestamp="2026-10-12T00:00:00Z",
-        metrics={"cpi": 2.5, "fetched_at": "2026-10-12T00:00:00Z"},
-        events=[],
-        timeseries=[],
-        raw={},
-    )]
+
+    return [
+        DataRecord(
+            source="fred",
+            category="macro",
+            sub_category="cpi",
+            timestamp="2026-10-12T00:00:00Z",
+            metrics={"cpi": 2.5, "fetched_at": "2026-10-12T00:00:00Z"},
+            events=[],
+            timeseries=[],
+            raw={},
+        )
+    ]
 
 
 def _mk_news_records() -> list:
     """构造新闻样本（events 模式,含重复行触发 DedupAlign）。"""
     from data_center.core.contract import DataRecord
-    return [DataRecord(
-        source="rsshub",
-        category="news",
-        sub_category="rss",
-        timestamp="2026-10-12T00:00:00Z",
-        metrics={"od_policy_sentiment_0_1": 0.8, "od_event_type": "rate"},
-        events=[
-            {"title": "Fed cuts rates", "timestamp": "2026-10-12T01:00:00Z"},
-            {"title": "Fed cuts rates", "timestamp": "2026-10-12T01:00:00Z"},
-        ],
-        timeseries=[],
-        raw={},
-    )]
+
+    return [
+        DataRecord(
+            source="rsshub",
+            category="news",
+            sub_category="rss",
+            timestamp="2026-10-12T00:00:00Z",
+            metrics={"od_policy_sentiment_0_1": 0.8, "od_event_type": "rate"},
+            events=[
+                {"title": "Fed cuts rates", "timestamp": "2026-10-12T01:00:00Z"},
+                {"title": "Fed cuts rates", "timestamp": "2026-10-12T01:00:00Z"},
+            ],
+            timeseries=[],
+            raw={},
+        )
+    ]
 
 
 def _mk_empty_records() -> list:
     """构造空数据样本（触发 fail-open 路径）。"""
     from data_center.core.contract import DataRecord
-    return [DataRecord(
-        source="sample_collector",
-        category="finance",
-        sub_category="ohlcv",
-        timestamp="2026-10-12T00:00:00Z",
-        metrics={},
-        events=[],
-        timeseries=[],
-        raw={},
-    )]
+
+    return [
+        DataRecord(
+            source="sample_collector",
+            category="finance",
+            sub_category="ohlcv",
+            timestamp="2026-10-12T00:00:00Z",
+            metrics={},
+            events=[],
+            timeseries=[],
+            raw={},
+        )
+    ]
 
 
 # 样本批次: (label, records_fn, pipeline_cfg_kwargs, clean_kwargs)
 _SAMPLE_BATCHES = [
-    ("normal_ohlcv",     lambda: _mk_ohlcv_records(10),                {},
-     {"category": "finance", "sub_category": "ohlcv"}),
-    ("outlier_ohlcv",    lambda: _mk_ohlcv_records(10, with_outliers=True),
-     {}, {"category": "finance", "sub_category": "ohlcv"}),
-    ("missing_ohlcv",    lambda: _mk_ohlcv_records(10, with_missing=True),
-     {}, {"category": "finance", "sub_category": "ohlcv"}),
-    ("macro_cpi",        _mk_macro_records,
-     {"category": "macro"}, {"category": "macro", "sub_category": "cpi"}),
-    ("news_rss",         _mk_news_records,
-     {"category": "news"}, {"category": "news", "sub_category": "rss"}),
-    ("empty_failopen",   _mk_empty_records,
-     {"fail_open": True}, {"category": "finance", "sub_category": "ohlcv"}),
+    (
+        "normal_ohlcv",
+        lambda: _mk_ohlcv_records(10),
+        {},
+        {"category": "finance", "sub_category": "ohlcv"},
+    ),
+    (
+        "outlier_ohlcv",
+        lambda: _mk_ohlcv_records(10, with_outliers=True),
+        {},
+        {"category": "finance", "sub_category": "ohlcv"},
+    ),
+    (
+        "missing_ohlcv",
+        lambda: _mk_ohlcv_records(10, with_missing=True),
+        {},
+        {"category": "finance", "sub_category": "ohlcv"},
+    ),
+    (
+        "macro_cpi",
+        _mk_macro_records,
+        {"category": "macro"},
+        {"category": "macro", "sub_category": "cpi"},
+    ),
+    (
+        "news_rss",
+        _mk_news_records,
+        {"category": "news"},
+        {"category": "news", "sub_category": "rss"},
+    ),
+    (
+        "empty_failopen",
+        _mk_empty_records,
+        {"fail_open": True},
+        {"category": "finance", "sub_category": "ohlcv"},
+    ),
 ]
 
 
 # ============================================================
 # 采集器主体
 # ============================================================
+
 
 class CleaningTraceCollector(TrainingDataProvider):
     """20-数据清洗中心 CleaningTrace 采集器。
@@ -188,9 +226,7 @@ class CleaningTraceCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "A"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """跑样本批次采集 CleaningTrace 序列。
 
         Args:
@@ -224,28 +260,32 @@ class CleaningTraceCollector(TrainingDataProvider):
                 outcome = "gate_passed" if silver.gate_passed else "gate_failed"
                 category = clean_kw.get("category", "finance")
 
-                cases.append(TrainingCase(
-                    intent=f"data_cleaning.{category}",
-                    actions=node_seq,
-                    outcome_text=outcome,
-                    learned=[f"trace_steps={len(node_seq)}",
-                             f"outcome={outcome}",
-                             f"clipped={silver.trace.total_clipped}",
-                             f"imputed={silver.trace.total_imputed}"],
-                    layer_tags=["DSH"],
-                    quality="A",
-                    confidence=0.8 if silver.gate_passed else 0.6,
-                    source="cleaning_trace",
-                    metadata={
-                        "batch_label": label,
-                        "category": category,
-                        "bronze_id": silver.bronze_id,
-                        "schema_tag": silver.schema_tag,
-                        "node_count": len(node_seq),
-                        "total_clipped": silver.trace.total_clipped,
-                        "total_imputed": silver.trace.total_imputed,
-                    },
-                ))
+                cases.append(
+                    TrainingCase(
+                        intent=f"data_cleaning.{category}",
+                        actions=node_seq,
+                        outcome_text=outcome,
+                        learned=[
+                            f"trace_steps={len(node_seq)}",
+                            f"outcome={outcome}",
+                            f"clipped={silver.trace.total_clipped}",
+                            f"imputed={silver.trace.total_imputed}",
+                        ],
+                        layer_tags=["DSH"],
+                        quality="A",
+                        confidence=0.8 if silver.gate_passed else 0.6,
+                        source="cleaning_trace",
+                        metadata={
+                            "batch_label": label,
+                            "category": category,
+                            "bronze_id": silver.bronze_id,
+                            "schema_tag": silver.schema_tag,
+                            "node_count": len(node_seq),
+                            "total_clipped": silver.trace.total_clipped,
+                            "total_imputed": silver.trace.total_imputed,
+                        },
+                    )
+                )
             except Exception:
                 continue  # FAIL-OPEN: 单批次失败不影响其他
 

@@ -22,6 +22,7 @@
   - GraphRAG: Leiden 社区检测 + 分层摘要
   - 协同 2-KNOWLEDGE/9-RAG-INFRA/knowledge_graph/build_graph.py
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -30,6 +31,7 @@ from typing import Any, Dict, List, Optional, Set
 try:
     import networkx as nx
     from networkx.algorithms import community as nx_community
+
     _HAS_NX = True
 except ImportError:
     _HAS_NX = False
@@ -71,9 +73,7 @@ class GraphRAGCommunity:
                 return []
 
             # greedy_modularity_communities（Leiden 风格的模块度优化）
-            communities = list(
-                nx_community.greedy_modularity_communities(graph)
-            )
+            communities = list(nx_community.greedy_modularity_communities(graph))
             self._graph = graph
             self.communities = {i: set(c) for i, c in enumerate(communities)}
             return [set(c) for c in communities]
@@ -218,11 +218,7 @@ class GraphRAGCommunity:
         return {
             "num_communities": len(self.communities),
             "total_nodes": total_nodes,
-            "avg_community_size": (
-                total_nodes / len(self.communities)
-                if self.communities
-                else 0
-            ),
+            "avg_community_size": (total_nodes / len(self.communities) if self.communities else 0),
             "has_summaries": bool(self.summaries),
         }
 

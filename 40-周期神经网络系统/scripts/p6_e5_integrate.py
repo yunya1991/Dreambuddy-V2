@@ -13,6 +13,7 @@
   交易决策归 23 系统三步门禁；与 40 L2 周期判定信号冲突时
   以 40 L2 为高级别约束（高级别弹性约束低级别）。
 """
+
 import argparse
 import json
 import os
@@ -22,7 +23,12 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 E4_REPORT_PATH = os.path.join(BASE, "e4_training_report.json")
@@ -57,8 +63,8 @@ def main() -> int:
 
     # 2) 加载分层式模型与最新 token 窗口
     import torch
-    from p6_e4_hierarchical_train import build_hierarchical_model
     from p6_e2_train_encoder import PREREG as E2_PREREG
+    from p6_e4_hierarchical_train import build_hierarchical_model
 
     if not os.path.exists(MODEL_PATH):
         print(f"[FAIL] 分层式模型不存在: {MODEL_PATH}")
@@ -70,7 +76,11 @@ def main() -> int:
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
 
-    tokens = pd.read_parquet(TOKEN_PATH).sort_values(["symbol", "timeframe", "ts"]).reset_index(drop=True)
+    tokens = (
+        pd.read_parquet(TOKEN_PATH)
+        .sort_values(["symbol", "timeframe", "ts"])
+        .reset_index(drop=True)
+    )
     L = E2_PREREG["seq_len"]
     tf_map = {"1W": 0, "1D": 1, "1H": 2}
 
@@ -91,7 +101,9 @@ def main() -> int:
             tf = torch.tensor([tf_map[bar]])
             with torch.no_grad():
                 # 周线上下文：同资产周线窗口独立编码
-                wsub = tokens[(tokens["symbol"] == sym) & (tokens["timeframe"] == "1W")].sort_values("ts")
+                wsub = tokens[
+                    (tokens["symbol"] == sym) & (tokens["timeframe"] == "1W")
+                ].sort_values("ts")
                 wwin = wsub[feat_cols].iloc[-L:].to_numpy(dtype=np.float32)
                 wwin = np.nan_to_num((wwin - mu) / sd, nan=0.0)
                 wctx = model.encode_weekly(torch.from_numpy(wwin).unsqueeze(0))
@@ -102,7 +114,11 @@ def main() -> int:
             per_st[f"{sym}_{bar}"] = {
                 "direction": direction,
                 "confidence": float(prob[cls]),
-                "calibrated_prob": {"UP": float(prob[1]), "NEUTRAL": float(prob[0]), "DOWN": float(prob[2])},
+                "calibrated_prob": {
+                    "UP": float(prob[1]),
+                    "NEUTRAL": float(prob[0]),
+                    "DOWN": float(prob[2]),
+                },
             }
 
     if args.dry_run:

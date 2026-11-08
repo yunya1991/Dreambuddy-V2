@@ -6,16 +6,17 @@
 用于 V9.3 回测验证
 """
 
-import json
+import json  # noqa: I001
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
 
 # 导入事件账本生成器
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent))
-from event_ledger_generator import EventLedgerGenerator, EventLedgerEntry
+from event_ledger_generator import EventLedgerGenerator
 
 
 def generate_news_for_backtest(prices: Dict, days: int = 90) -> List[Dict]:
@@ -34,28 +35,84 @@ def generate_news_for_backtest(prices: Dict, days: int = 90) -> List[Dict]:
 
     # 新闻模板（带 sentiment_score）
     positive_templates = [
-        ("比特币 ETF 单日净流入{amount}亿美元", "贝莱德 IBIT 单日流入{amount}亿美元", "onchain_data", "high", "T0", 0.7),
+        (
+            "比特币 ETF 单日净流入{amount}亿美元",
+            "贝莱德 IBIT 单日流入{amount}亿美元",
+            "onchain_data",
+            "high",
+            "T0",
+            0.7,
+        ),
         ("链上活跃地址数创新高", "日活跃地址突破{amount}万", "onchain_data", "high", "T1", 0.5),
-        ("机构持续增持比特币", "某机构宣布再买入{amount}万枚 BTC", "market_analysis", "medium", "T1", 0.6),
-        ("分析师：BTC 目标价{price}万美元", "技术分析显示突破关键阻力位", "kols_view", "low", "T2", 0.4),
-        ("稳定币市值突破{amount}亿美元", "USDT+USDC 总市值达{amount}亿", "onchain_data", "high", "T1", 0.5),
+        (
+            "机构持续增持比特币",
+            "某机构宣布再买入{amount}万枚 BTC",
+            "market_analysis",
+            "medium",
+            "T1",
+            0.6,
+        ),
+        (
+            "分析师：BTC 目标价{price}万美元",
+            "技术分析显示突破关键阻力位",
+            "kols_view",
+            "low",
+            "T2",
+            0.4,
+        ),
+        (
+            "稳定币市值突破{amount}亿美元",
+            "USDT+USDC 总市值达{amount}亿",
+            "onchain_data",
+            "high",
+            "T1",
+            0.5,
+        ),
     ]
 
     negative_templates = [
         ("监管担忧加剧，市场情绪承压", "某国考虑限制加密货币交易", "us_policy", "high", "T0", -0.7),
-        ("某交易所遭黑客攻击损失{amount}万美元", "漏洞已修复，团队正追踪资金", "security", "high", "T0", -0.8),
-        ("分析师：比特币可能测试支撑位", "技术分析显示关键支撑在{price}万", "kols_view", "low", "T2", -0.4),
+        (
+            "某交易所遭黑客攻击损失{amount}万美元",
+            "漏洞已修复，团队正追踪资金",
+            "security",
+            "high",
+            "T0",
+            -0.8,
+        ),
+        (
+            "分析师：比特币可能测试支撑位",
+            "技术分析显示关键支撑在{price}万",
+            "kols_view",
+            "low",
+            "T2",
+            -0.4,
+        ),
         ("美联储官员：通胀仍具粘性", "某票委称需更多证据支持降息", "fed", "high", "T0", -0.6),
-        ("ETF 单日净流出{amount}亿美元", "灰度 GBTC 流出占主导", "onchain_data", "high", "T0", -0.5),
+        (
+            "ETF 单日净流出{amount}亿美元",
+            "灰度 GBTC 流出占主导",
+            "onchain_data",
+            "high",
+            "T0",
+            -0.5,
+        ),
     ]
 
     neutral_templates = [
-        ("比特币在关键区间震荡", "等待方向选择，成交量萎缩", "market_analysis", "medium", "T1", 0.0),
+        (
+            "比特币在关键区间震荡",
+            "等待方向选择，成交量萎缩",
+            "market_analysis",
+            "medium",
+            "T1",
+            0.0,
+        ),
         ("市场交投清淡，假期临近", "多数投资者观望", "market_analysis", "low", "T2", 0.0),
         ("分析师：短期无明显方向信号", "技术指标中性", "kols_view", "low", "T2", 0.0),
     ]
 
-    for i, date in enumerate(dates):
+    for i, date in enumerate(dates):  # noqa: B007
         day_prices = prices[date]
         open_p = day_prices.get("open", 0)
         close_p = day_prices.get("close", 0)
@@ -91,7 +148,7 @@ def generate_news_for_backtest(prices: Dict, days: int = 90) -> List[Dict]:
         # 生成当日新闻
         date_dt = datetime.strptime(date, "%Y-%m-%d")
 
-        for j in range(num_news):
+        for j in range(num_news):  # noqa: B007
             rand = random.random()
 
             if rand < pos_ratio:
@@ -102,14 +159,10 @@ def generate_news_for_backtest(prices: Dict, days: int = 90) -> List[Dict]:
                 template = random.choice(neutral_templates)
 
             # 填充模板变量
-            title = template[0].format(
-                amount=random.randint(1, 50),
-                price=random.randint(60, 100)
-            )
+            title = template[0].format(amount=random.randint(1, 50), price=random.randint(60, 100))
 
             summary = template[1].format(
-                amount=random.randint(1, 50),
-                price=random.randint(60, 100)
+                amount=random.randint(1, 50), price=random.randint(60, 100)
             )
 
             # 生成发布时间
@@ -133,7 +186,7 @@ def generate_news_for_backtest(prices: Dict, days: int = 90) -> List[Dict]:
                 "impact_horizon": template[4],
                 "sentiment_score": template[5] + random.gauss(0, 0.1),
                 "cross_market_map": "宏观→加密传导",
-                "risk_flags": risk_flags
+                "risk_flags": risk_flags,
             }
 
             all_news.append(news_item)
@@ -161,7 +214,9 @@ def generate_top_kol_news(dates: list[str], every_n_days: int = 5) -> List[Dict]
         if date_dt.weekday() >= 5:
             continue
         influencer, title, summary, base_sent = random.choice(templates)
-        pub_dt = date_dt.replace(hour=random.randint(9, 22), minute=random.randint(0, 59), second=random.randint(0, 59))
+        pub_dt = date_dt.replace(
+            hour=random.randint(9, 22), minute=random.randint(0, 59), second=random.randint(0, 59)
+        )
         out.append(
             {
                 "title": title,
@@ -184,12 +239,19 @@ def generate_top_kol_news(dates: list[str], every_n_days: int = 5) -> List[Dict]
 def main():
     """主函数"""
     import argparse
+
     print("=" * 60)
     print("  生成回测用事件账本（90 天）")
     print("=" * 60)
     parser = argparse.ArgumentParser(description="生成回测用事件账本（支持 V9.5 / V9.7 Direct）")
     parser.add_argument("--days", type=int, default=90, help="生成天数")
-    parser.add_argument("--ledger-version", type=str, default="9.5", choices=["9.5", "9.7_direct"], help="事件账本生成器版本")
+    parser.add_argument(
+        "--ledger-version",
+        type=str,
+        default="9.5",
+        choices=["9.5", "9.7_direct"],
+        help="事件账本生成器版本",
+    )
     args = parser.parse_args()
 
     # 加载价格数据
@@ -200,7 +262,7 @@ def main():
         print("[ERROR] 价格数据文件不存在")
         return
 
-    with open(price_file, 'r', encoding='utf-8') as f:
+    with open(price_file, "r", encoding="utf-8") as f:
         prices = json.load(f)
 
     print(f"\n[INFO] 加载价格数据：{len(prices)} 天")
@@ -230,7 +292,7 @@ def main():
     generator.save_jsonl(entries, output_path)
 
     # 打印统计
-    print(f"\n【事件账本统计】")
+    print("\n【事件账本统计】")
 
     by_type = {}
     by_window = {}

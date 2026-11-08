@@ -14,7 +14,7 @@
 from typing import Dict, List, Optional
 
 try:
-    from .config import CANDIDATE_COINS
+    from .config import CANDIDATE_COINS  # noqa: F401
 except ImportError:
     pass
 
@@ -76,7 +76,7 @@ def calc_elder_ray(klines: List[Dict], period: int = 13) -> Optional[Dict]:
 
     ema_trend_up = ema_slope > 0.01
     ema_trend_down = ema_slope < -0.01
-    ema_trend_flat = not ema_trend_up and not ema_trend_down
+    ema_trend_flat = not ema_trend_up and not ema_trend_down  # noqa: F841
 
     lookback = min(20, n - 1)
     bearish_divergence = False

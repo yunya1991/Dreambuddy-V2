@@ -1,14 +1,14 @@
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import artifacts_memory_l4_dir, memory_l4_cases_dir
+from scripts.memory_l4.paths import artifacts_memory_l4_dir, memory_l4_cases_dir  # noqa: E402
 
 
 def now_iso_local() -> str:
@@ -53,23 +53,22 @@ def _extract_episode_pnl_and_reason(ep: Dict[str, Any]) -> Tuple[Optional[float]
         value = out.get(key)
         if value is not None:
             reason = str(
-                out.get("exit_reason")
-                or out.get("stop_reason")
-                or out.get("reason")
-                or "unknown"
+                out.get("exit_reason") or out.get("stop_reason") or out.get("reason") or "unknown"
             )
             return float(value), reason
     return None, str(out.get("exit_reason") or out.get("reason") or "unknown")
 
 
 def _extract_episode_path(case: Dict[str, Any]) -> str:
-    refs = ((case.get("execution") or {}).get("episode_refs") or [])
+    refs = (case.get("execution") or {}).get("episode_refs") or []
     if not refs:
         return ""
     return str((refs[0] or {}).get("path") or "")
 
 
-def _build_risk_signal(signal_key: str, rows: List[Dict[str, Any]], snapshot_ts: str) -> Dict[str, Any]:
+def _build_risk_signal(
+    signal_key: str, rows: List[Dict[str, Any]], snapshot_ts: str
+) -> Dict[str, Any]:
     first = rows[0] if rows else {}
     pnl_values = [float(r["pnl_pct"]) for r in rows]
     case_ids = [str(r["case_id"]) for r in rows]
@@ -193,7 +192,9 @@ def analyze_failure_memory(
         "distill_candidates_count": len(distill_candidates),
         "reason_counts": reason_counts,
     }
-    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
 
     return {
         "risk_signals_path": str(risk_signals_path),

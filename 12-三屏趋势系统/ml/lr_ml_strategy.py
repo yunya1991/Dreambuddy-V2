@@ -28,27 +28,34 @@
 - 回归目标：未来收益率（可选，用于置信度校准）
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Tuple  # noqa: I001
 import numpy as np
 import pandas as pd
-import sys, os
+import sys
+import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from backtest.strategy import BaseStrategy
+from backtest.strategy import BaseStrategy  # noqa: I001
 from ml.lr_feature_engineer import LeastResistanceFeatureEngineer
 from ml.models import LightGBMModel
 
 
 def _resample_to_weekly(df: pd.DataFrame) -> pd.DataFrame:
     """将日线数据重采样为周线（用于测试/回测）"""
-    weekly = df.resample('W').agg({
-        'open': 'first',
-        'high': 'max',
-        'low': 'min',
-        'close': 'last',
-        'volume': 'sum',
-    }).dropna()
+    weekly = (
+        df.resample("W")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
     return weekly
 
 
@@ -125,7 +132,8 @@ class LeastResistanceAIStrategy(BaseStrategy):
         # 提取特征
         try:
             features_df = self.feature_engineer.create_features(
-                weekly_df, prices,
+                weekly_df,
+                prices,
                 fundamental_data=self.fundamental_data,
                 label_lookahead=self.label_lookahead,
             )
@@ -145,14 +153,12 @@ class LeastResistanceAIStrategy(BaseStrategy):
         # ===== Walk-Forward 滚动训练与预测 =====
         if self.enable_walk_forward:
             positions = self._walk_forward_predict(
-                features_df, feature_cols, label_col,
-                start_idx, n, prices.index
+                features_df, feature_cols, label_col, start_idx, n, prices.index
             )
         else:
             # 单次训练（不推荐，会有未来函数）
             positions = self._single_train_predict(
-                features_df, feature_cols, label_col,
-                start_idx, n, prices.index
+                features_df, feature_cols, label_col, start_idx, n, prices.index
             )
 
         return pd.Series(positions, index=prices.index, name="position")
@@ -173,8 +179,7 @@ class LeastResistanceAIStrategy(BaseStrategy):
         for i in range(start_idx, n):
             # 检查是否需要重训练
             need_train = (
-                current_model is None or
-                (i - self._last_train_idx) >= self.retrain_interval
+                current_model is None or (i - self._last_train_idx) >= self.retrain_interval
             )
 
             if need_train and i >= self.train_window + self.label_lookahead + 10:
@@ -183,7 +188,9 @@ class LeastResistanceAIStrategy(BaseStrategy):
                 train_start = max(start_idx, train_end - self.train_window)
 
                 if train_end > train_start + 50:
-                    train_data = features_df.iloc[train_start:train_end].dropna(subset=feature_cols + [label_col])
+                    train_data = features_df.iloc[train_start:train_end].dropna(
+                        subset=feature_cols + [label_col]
+                    )
 
                     if len(train_data) >= 100:
                         X_train = train_data[feature_cols]
@@ -203,9 +210,7 @@ class LeastResistanceAIStrategy(BaseStrategy):
                     row = features_df.iloc[[i]][feature_cols]
                     if not row.isna().any().any():
                         prob = current_model.predict_proba(row)[0]
-                        direction, confidence = self._fuse_decision(
-                            features_df, i, prob
-                        )
+                        direction, confidence = self._fuse_decision(features_df, i, prob)
                         positions[i] = self._direction_to_position(direction, confidence)
                 except Exception:
                     pass
@@ -242,9 +247,7 @@ class LeastResistanceAIStrategy(BaseStrategy):
                 row = features_df.iloc[[i]][feature_cols]
                 if not row.isna().any().any():
                     prob = model.predict_proba(row)[0]
-                    direction, confidence = self._fuse_decision(
-                        features_df, i, prob
-                    )
+                    direction, confidence = self._fuse_decision(features_df, i, prob)
                     positions[i] = self._direction_to_position(direction, confidence)
             except Exception:
                 pass
@@ -278,10 +281,14 @@ class LeastResistanceAIStrategy(BaseStrategy):
         # 规则引擎方向判定
         if weekly_dir > 0.05:
             rule_direction = "LONG"
-            rule_confidence = weekly_conf * self.weekly_lr_weight + daily_conf * (1 - self.weekly_lr_weight)
+            rule_confidence = weekly_conf * self.weekly_lr_weight + daily_conf * (
+                1 - self.weekly_lr_weight
+            )
         elif weekly_dir < -0.05:
             rule_direction = "SHORT"
-            rule_confidence = weekly_conf * self.weekly_lr_weight + daily_conf * (1 - self.weekly_lr_weight)
+            rule_confidence = weekly_conf * self.weekly_lr_weight + daily_conf * (
+                1 - self.weekly_lr_weight
+            )
         else:
             # 周线中性，看日线
             if daily_dir > 0.05:
@@ -313,12 +320,15 @@ class LeastResistanceAIStrategy(BaseStrategy):
         # 同向 → 置信度增强
         if rule_direction == ml_direction and rule_direction != "NEUTRAL":
             final_confidence = (
-                rule_confidence * (1 - self.ml_weight) +
-                ml_confidence * self.ml_weight
+                rule_confidence * (1 - self.ml_weight) + ml_confidence * self.ml_weight
             )
             final_direction = rule_direction
         # 反向 → 置信度削弱
-        elif rule_direction != ml_direction and rule_direction != "NEUTRAL" and ml_direction != "NEUTRAL":
+        elif (
+            rule_direction != ml_direction
+            and rule_direction != "NEUTRAL"
+            and ml_direction != "NEUTRAL"
+        ):
             final_confidence = max(0.0, rule_confidence * 0.5 - ml_confidence * self.ml_weight)
             if final_confidence < 0.2:
                 final_direction = "NEUTRAL"

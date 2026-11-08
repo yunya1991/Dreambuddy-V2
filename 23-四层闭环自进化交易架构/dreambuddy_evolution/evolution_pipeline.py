@@ -20,6 +20,7 @@ AGI 阶段4增强点（只读，FAIL-OPEN）:
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -1033,7 +1034,7 @@ class EvolutionPipeline:
 
         评分公式（v3.0 扩展）：
           base_score = expected_return × confidence × (1 - resistance)
-          hjb_adjust = × (0.7 + 0.3 × v_adjust)          # HJB 值函数 30% 权重
+          hjb_adjust = × ((1 - w) + w × v_adjust)        # w=0.70（enable_hjb_dominant=True）或 0.30
           contradiction_adjust = × (1 + 0.2 × strength)  # 对齐主要矛盾加分
                                    × (1 - 0.3 × strength)  # 逆向减分
           continuation_adjust = × (0.8 + 0.4 × cont)      # 趋势延续性增强
@@ -1076,6 +1077,8 @@ class EvolutionPipeline:
 
         # === Phase 3.4: 主要矛盾识别（开关 + FAIL-OPEN）— 先于 HJB ===
         primary_contradiction = None
+        w6_status = None
+        self_vote_shadow = None
         self._last_dimension_predictions = {}
         try:
             from dreambuddy_evolution.agi_config import get_switch
@@ -1128,6 +1131,22 @@ class EvolutionPipeline:
                     # T5 实盘接入：维度力量参与主矛盾裁决（影子期数据已验证非空）
                     dimension_forces=getattr(self, "_last_dimension_forces", {}) or {},
                 )
+                # B-01: C→D 影子映射（只附加 shadow 字段，不改变 production dimension）
+                try:
+                    from dreambuddy_evolution.core.cd_mapping import attach_shadow
+
+                    attach_shadow(
+                        primary_contradiction,
+                        enabled=get_switch("enable_cd_shadow", False),
+                    )
+                except Exception as _cd_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+                    logger.debug("[FO][CDShadow] fail: %s", _cd_e)
+                # B-05: W6 样本链路状态监控（只读；默认关闭）
+                if get_switch("enable_w6_monitor", False):
+                    try:
+                        w6_status = identifier.w6_status()
+                    except Exception as _w6_e:  # noqa: BLE001
+                        logger.debug("[FO][W6Monitor] fail: %s", _w6_e)
                 # 方向3: 从 paths 提取每维度方向预测，供 ReverseDeriver 逆向推导
                 try:
                     from dreambuddy_evolution.engines.reverse_derivation_integration import (
@@ -1150,6 +1169,37 @@ class EvolutionPipeline:
                     )
         except Exception as e:  # noqa: BLE001  HC-AGI-18
             logger.debug("[FO-AGI-Pipeline][Contradiction] fail: %s", e)
+
+        # B-04: 事件主矛盾 shadow（只记录诊断，不改变裁决）
+        event_contradiction_shadow = None
+        try:
+            from dreambuddy_evolution.agi_config import get_switch as _gs_event
+            from dreambuddy_evolution.core.event_contradiction_shadow import (
+                compute_event_contradiction_shadow,
+            )
+
+            event_contradiction_shadow = compute_event_contradiction_shadow(
+                market_data or {},
+                enabled=_gs_event("enable_event_contradiction_shadow", False),
+            )
+        except Exception as _ec_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+            logger.debug("[FO][EventContradictionShadow] fail: %s", _ec_e)
+
+        # B-08: 自票上限 / 独立矛盾证据 shadow（只读诊断）
+        try:
+            from dreambuddy_evolution.agi_config import get_switch as _gs_sv
+            from dreambuddy_evolution.core.self_vote_guard import (
+                compute_self_vote_shadow,
+            )
+
+            self_vote_shadow = compute_self_vote_shadow(
+                paths,
+                primary_contradiction=primary_contradiction,
+                enabled=_gs_sv("enable_self_vote_shadow", False),
+                audit_path=os.environ.get("SELF_VOTE_AUDIT_PATH"),
+            )
+        except Exception as _sv_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+            logger.debug("[FO][SelfVoteShadow] fail: %s", _sv_e)
 
         # === Phase 3.2: TrendContinuationScorer 接入 — 填充 continuation_score ===
         try:
@@ -1250,11 +1300,32 @@ class EvolutionPipeline:
             if _gs_cv("enable_cross_validation_gate", False) and primary_contradiction is not None:
                 from dreambuddy_evolution.core.cross_validation_gate import CrossValidationGate
 
-                # A_dim (现在主矛盾): 从 primary_contradiction 获取
-                _a_dim = primary_contradiction.get("dimension") or primary_contradiction.get(
+                # A_dim (现在主矛盾): identifier C 维度 + 3 维映射 + attention shadow
+                _a_dim_c = primary_contradiction.get("dimension") or primary_contradiction.get(
                     "primary_dimension"
                 )
                 _a_strength = float(primary_contradiction.get("strength", 0.0))
+                _attention_shadow = None
+                try:
+                    from dreambuddy_evolution.core.attention_shadow import (
+                        compute_a_dim_shadow,
+                    )
+                    from dreambuddy_evolution.core.dimension_mapping import c_dim_to_three
+
+                    _a_dim_identifier_3 = c_dim_to_three(_a_dim_c)
+                    _attention_shadow = compute_a_dim_shadow(primary_contradiction)
+                    if _gs_cv("enable_attention_a_dim", False) and _attention_shadow.get(
+                        "available"
+                    ):
+                        _a_dim = _attention_shadow.get("a_dim_attention")
+                    elif _gs_cv("enable_a_dim_c_to_3", False):
+                        _a_dim = _a_dim_identifier_3
+                    else:
+                        _a_dim = _a_dim_c  # legacy：保持现有生产行为
+                except Exception as _att_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+                    _attention_shadow = None
+                    _a_dim = _a_dim_c
+                    logger.debug("[FO][AttentionShadow] fail: %s", _att_e)
 
                 # G_dim (过去主矛盾): Granger 因果检验, 从价格序列派生 3 维度因子
                 _g_dim = None
@@ -1320,6 +1391,11 @@ class EvolutionPipeline:
                     A_strength=_a_strength,
                     structural_break=_sb,
                 )
+
+                # B-03: A_dim 双链路 shadow 诊断（不改变 gate 结果）
+                if _attention_shadow is not None:
+                    _attention_shadow["gate_a_dim"] = _a_dim
+                    cv_result["attention_shadow"] = _attention_shadow
 
                 # 质变事件 → 认知记录 (FAIL-OPEN)
                 # quality_change 可能是 bool 或 dict，兼容两种格式
@@ -1555,6 +1631,20 @@ class EvolutionPipeline:
         best = scored[0]
         second = scored[1] if len(scored) > 1 else None
 
+        # B-02: 成对支配 shadow（只记录诊断，不改变 production argmax）
+        dominance_shadow = None
+        try:
+            from dreambuddy_evolution.core.dominance_resolver import resolve_shadow
+
+            dominance_shadow = resolve_shadow(
+                scored,
+                primary_contradiction=primary_contradiction,
+                production_path_id=best.get("path_id"),
+                enabled=get_switch("enable_dominance_shadow", False),
+            )
+        except Exception as _dom_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+            logger.debug("[FO][DominanceShadow] fail: %s", _dom_e)
+
         # 统计验证
         # P3 修复（主矛盾→实质交易影响链路）：验证阈值与交叉验证乘数联动。
         # 分歧期间（conf_mult < 1.0）得分已被压低 ×conf_mult，若阈值不变则
@@ -1610,6 +1700,14 @@ class EvolutionPipeline:
             "cognition_result": cognition_result,
             # §5.1 交叉验证层输出
             "cross_validation": cv_result,
+            # B-02: 成对支配 shadow 诊断
+            "dominance_shadow": dominance_shadow,
+            # B-04: 事件主矛盾 shadow 诊断
+            "event_contradiction_shadow": event_contradiction_shadow,
+            # B-05: W6 样本链路状态（只读）
+            "w6_status": w6_status,
+            # B-08: 自票上限 / 独立证据 shadow 诊断
+            "self_vote_shadow": self_vote_shadow,
         }
 
     def _load_library(self):

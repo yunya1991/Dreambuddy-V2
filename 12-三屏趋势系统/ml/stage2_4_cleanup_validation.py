@@ -17,12 +17,11 @@
     AUC >= 0.5929 (不劣于Stage 2.0基线) 且 衰减率 <= 37.5%
 """
 
-import json
+import json  # noqa: I001
 import sys
 import os
 import warnings
 import numpy as np
-import pandas as pd
 
 warnings.filterwarnings("ignore")
 
@@ -30,16 +29,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
 # 重用 Stage 2.0/2.1 验证脚本的函数
-from ml.stage2_dip_buy_validation import (
+from ml.stage2_dip_buy_validation import (  # noqa: E402, I001
     load_btc_data,
     extract_all_features,
     walk_forward_validation,
-    V2_DIP_FEATURES,
     DIP_001_FEATURES,
     V2_OTHER_PHILOSOPHY,
     V4_FEATURES,
 )
-from ml.four_objective_feature_mapper import FourObjectiveFeatureMapper
+from ml.four_objective_feature_mapper import FourObjectiveFeatureMapper  # noqa: E402
 
 # ── Stage 2.4 待清理的冗余特征 ──────────────────────────────────────
 # WF验证证据：
@@ -117,28 +115,49 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
     print("\n【2. Walk-Forward 验证概况】")
     print("  总特征数: {}".format(summary["n_features"]))
     print("  验证折数: {}".format(summary["n_folds"]))
-    print("  训练窗口: {}天 | 测试窗口: {}天".format(summary["train_window"], summary["test_window"]))
+    print(
+        "  训练窗口: {}天 | 测试窗口: {}天".format(summary["train_window"], summary["test_window"])
+    )
     print("  DIP_BUY正样本率: {:.1f}%".format(pos_rate))
     print("  平均训练AUC: {:.4f}".format(summary["mean_train_auc"]))
-    print("  平均测试AUC: {:.4f} (+/-{:.4f})".format(summary["mean_test_auc"], summary["std_test_auc"]))
+    print(
+        "  平均测试AUC: {:.4f} (+/-{:.4f})".format(
+            summary["mean_test_auc"], summary["std_test_auc"]
+        )
+    )
     print("  最小测试AUC: {:.4f}".format(summary["min_test_auc"]))
     print("  最大测试AUC: {:.4f}".format(summary["max_test_auc"]))
     print("  AUC衰减率: {:.1f}%".format(summary["decay_ratio"]))
 
     # 3. 各折详情
     print("\n【3. 各折详情】")
-    print("  {:>4} | {:>25} | {:>25} | {:>8} | {:>8} | {:>6}".format(
-        "Fold", "训练期", "测试期", "TrainAUC", "TestAUC", "正样本"))
-    print("  {} | {} | {} | {} | {} | {}".format("-"*4, "-"*25, "-"*25, "-"*8, "-"*8, "-"*6))
+    print(
+        "  {:>4} | {:>25} | {:>25} | {:>8} | {:>8} | {:>6}".format(
+            "Fold", "训练期", "测试期", "TrainAUC", "TestAUC", "正样本"
+        )
+    )
+    print(
+        "  {} | {} | {} | {} | {} | {}".format(
+            "-" * 4, "-" * 25, "-" * 25, "-" * 8, "-" * 8, "-" * 6
+        )
+    )
     for f in summary["folds"]:
-        print("  {:>4} | {:>25} | {:>25} | {:>8.4f} | {:>8.4f} | {}/{}".format(
-            f["fold"], f["train_period"], f["test_period"],
-            f["train_auc"], f["test_auc"], f["test_positives"], f["test_samples"]))
+        print(
+            "  {:>4} | {:>25} | {:>25} | {:>8.4f} | {:>8.4f} | {}/{}".format(
+                f["fold"],
+                f["train_period"],
+                f["test_period"],
+                f["train_auc"],
+                f["test_auc"],
+                f["test_positives"],
+                f["test_samples"],
+            )
+        )
 
     # 4. 特征重要性排名 Top 20
     print("\n【4. 特征重要性排名（Top 20）】")
     print("  {:>4} | {:>30} | {:>10} | {:>8}".format("排名", "特征名", "重要性", "类别"))
-    print("  {} | {} | {} | {}".format("-"*4, "-"*30, "-"*10, "-"*8))
+    print("  {} | {} | {} | {}".format("-" * 4, "-" * 30, "-" * 10, "-" * 8))
     for rank, (feat, imp) in enumerate(summary["sorted_features"][:20], 1):
         if feat in EFFECTIVE_V2_DIP:
             category = "V2抄底"
@@ -158,7 +177,7 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
 
     print("\n  保留的V2抄底特征（1个）:")
     print("  {:>30} | {:>6} | {:>10} | {:>6}".format("特征名", "排名", "重要性", "Top30%"))
-    print("  {} | {} | {} | {}".format("-"*30, "-"*6, "-"*10, "-"*6))
+    print("  {} | {} | {} | {}".format("-" * 30, "-" * 6, "-" * 10, "-" * 6))
     for f in EFFECTIVE_V2_DIP:
         if f in analysis["effective_v2_dip_ranks"]:
             r = analysis["effective_v2_dip_ranks"][f]
@@ -174,29 +193,49 @@ def print_report(summary: dict, analysis: dict, pos_rate: float):
             in_top = "YES" if r <= analysis["top_30_threshold"] else "NO"
             print("  {:>30} | {:>6} | {:>10.1f} | {:>6}".format(f, r, imp, in_top))
 
-    print("\n  抄底特征合集（3个）平均排名: {:.1f} / {}".format(
-        analysis["remaining_dip_avg_rank"], summary["n_features"]))
+    print(
+        "\n  抄底特征合集（3个）平均排名: {:.1f} / {}".format(
+            analysis["remaining_dip_avg_rank"], summary["n_features"]
+        )
+    )
     print("  进入Top30%: {}/3".format(analysis["remaining_dip_in_top30"]))
 
     # 6. Stage 2.4 vs Stage 2.0/2.1 对比
     print("\n【6. Stage 2.4 vs Stage 2.0/2.1 对比】")
-    print("  {:>12} | {:>10} | {:>10} | {:>10}".format("指标", "Stage 2.0", "Stage 2.1", "Stage 2.4"))
-    print("  {} | {} | {} | {}".format("-"*12, "-"*10, "-"*10, "-"*10))
-    print("  {:>12} | {:>10} | {:>10} | {:>10}".format(
-        "特征总数", "74", "76", str(summary["n_features"])))
-    print("  {:>12} | {:>10.4f} | {:>10.4f} | {:>10.4f}".format(
-        "平均测试AUC", 0.5929, 0.5540, summary["mean_test_auc"]))
-    print("  {:>12} | {:>10.1f} | {:>10.1f} | {:>10.1f}".format(
-        "AUC衰减率%", 37.5, 41.5, summary["decay_ratio"]))
+    print(
+        "  {:>12} | {:>10} | {:>10} | {:>10}".format("指标", "Stage 2.0", "Stage 2.1", "Stage 2.4")
+    )
+    print("  {} | {} | {} | {}".format("-" * 12, "-" * 10, "-" * 10, "-" * 10))
+    print(
+        "  {:>12} | {:>10} | {:>10} | {:>10}".format(
+            "特征总数", "74", "76", str(summary["n_features"])
+        )
+    )
+    print(
+        "  {:>12} | {:>10.4f} | {:>10.4f} | {:>10.4f}".format(
+            "平均测试AUC", 0.5929, 0.5540, summary["mean_test_auc"]
+        )
+    )
+    print(
+        "  {:>12} | {:>10.1f} | {:>10.1f} | {:>10.1f}".format(
+            "AUC衰减率%", 37.5, 41.5, summary["decay_ratio"]
+        )
+    )
 
     auc_24 = summary["mean_test_auc"]
     auc_20 = 0.5929
     auc_21 = 0.5540
     print("\n  AUC变化:")
-    print("    vs Stage 2.0: {:+.4f} {}".format(
-        auc_24 - auc_20, "✅ 提升" if auc_24 >= auc_20 else "❌ 下降"))
-    print("    vs Stage 2.1: {:+.4f} {}".format(
-        auc_24 - auc_21, "✅ 提升" if auc_24 >= auc_21 else "❌ 下降"))
+    print(
+        "    vs Stage 2.0: {:+.4f} {}".format(
+            auc_24 - auc_20, "✅ 提升" if auc_24 >= auc_20 else "❌ 下降"
+        )
+    )
+    print(
+        "    vs Stage 2.1: {:+.4f} {}".format(
+            auc_24 - auc_21, "✅ 提升" if auc_24 >= auc_21 else "❌ 下降"
+        )
+    )
 
     # 7. 结论
     print("\n【7. 验证结论】")
@@ -226,8 +265,9 @@ def main():
     # 1. 加载数据
     print("\n[1/4] 加载BTC日线数据...")
     prices = load_btc_data()
-    print("  数据: {}天, {} ~ {}".format(
-        len(prices), prices.index[0].date(), prices.index[-1].date()))
+    print(
+        "  数据: {}天, {} ~ {}".format(len(prices), prices.index[0].date(), prices.index[-1].date())
+    )
 
     # 2. 生成标签
     print("\n[2/4] 生成DIP_BUY标签...")
@@ -289,7 +329,11 @@ def main():
         "baseline_comparison": {
             "stage_2_0": {"auc": 0.5929, "decay_ratio": 37.5, "n_features": 74},
             "stage_2_1": {"auc": 0.5540, "decay_ratio": 41.5, "n_features": 76},
-            "stage_2_4": {"auc": summary["mean_test_auc"], "decay_ratio": summary["decay_ratio"], "n_features": n_after},
+            "stage_2_4": {
+                "auc": summary["mean_test_auc"],
+                "decay_ratio": summary["decay_ratio"],
+                "n_features": n_after,
+            },
         },
         "success": (summary["mean_test_auc"] >= 0.5929) and (summary["decay_ratio"] <= 37.5),
     }

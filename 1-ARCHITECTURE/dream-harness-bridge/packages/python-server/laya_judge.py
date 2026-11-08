@@ -83,6 +83,7 @@ _laya_load_error: str | None = None
 # 模型加载（惰性）
 # ============================================================
 
+
 def _get_agent() -> Any:
     """惰性加载 Laya 模型（线程不安全，单进程使用足够）
 
@@ -127,6 +128,7 @@ def _get_agent() -> Any:
 # 字段过滤（复用 jev_judge 的 HC-5/HC-9 策略）
 # ============================================================
 
+
 def _sanitize_answers(answers: dict[str, Any]) -> dict[str, Any]:
     """剔除禁止字段（HC-5/HC-9）
 
@@ -135,9 +137,7 @@ def _sanitize_answers(answers: dict[str, Any]) -> dict[str, Any]:
     sanitized: dict[str, Any] = {}
     for name, ans in answers.items():
         if isinstance(ans, dict):
-            sanitized[name] = {
-                k: v for k, v in ans.items() if k not in _FORBIDDEN_FIELDS
-            }
+            sanitized[name] = {k: v for k, v in ans.items() if k not in _FORBIDDEN_FIELDS}
         else:
             sanitized[name] = ans
     return sanitized
@@ -146,6 +146,7 @@ def _sanitize_answers(answers: dict[str, Any]) -> dict[str, Any]:
 # ============================================================
 # 主入口：judge
 # ============================================================
+
 
 def judge(state: Any, questions: dict[str, Any]) -> dict[str, Any]:
     """调用 Laya 进行决策判断
@@ -237,6 +238,7 @@ def judge(state: Any, questions: dict[str, Any]) -> dict[str, Any]:
 # ============================================================
 # IPC handler（供 server.py 路由调用）
 # ============================================================
+
 
 def handle_laya_judge(params: dict) -> dict:
     """laya_judge IPC handler

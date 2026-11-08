@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import json
 import os
-import time
 import traceback
 import urllib.error
 import urllib.request
@@ -47,9 +46,7 @@ ENABLE_JEV_JUDGE = os.environ.get("ENABLE_JEV_JUDGE", "0") == "1"
 
 # API 配置
 TYPESAFE_API_KEY = os.environ.get("TYPESAFE_API_KEY", "")
-TYPESAFE_BASE_URL = os.environ.get(
-    "TYPESAFE_BASE_URL", "https://api.typesafe.ai"
-).rstrip("/")
+TYPESAFE_BASE_URL = os.environ.get("TYPESAFE_BASE_URL", "https://api.typesafe.ai").rstrip("/")
 TYPESAFE_DEFAULT_MODEL = os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-latest")
 TYPESAFE_TIMEOUT_S = float(os.environ.get("TYPESAFE_TIMEOUT_S", "10"))
 
@@ -64,6 +61,7 @@ _VALID_QUESTION_TYPES = ("noul", "choice", "score")
 # ============================================================
 # 输入校验
 # ============================================================
+
 
 def _validate_questions(questions: dict[str, Any]) -> list[str]:
     """校验 questions 格式合法性
@@ -122,6 +120,7 @@ def _validate_questions(questions: dict[str, Any]) -> list[str]:
 # ============================================================
 # API 调用（SDK 优先，urllib fallback）
 # ============================================================
+
 
 def _call_via_sdk(state: Any, questions: dict[str, Any]) -> dict[str, Any]:
     """通过官方 typesafe-sdk 调用 Jev"""
@@ -184,6 +183,7 @@ def _call_jev_api(state: Any, questions: dict[str, Any]) -> dict[str, Any]:
 # ============================================================
 # 主入口：judge
 # ============================================================
+
 
 def judge(state: Any, questions: dict[str, Any]) -> dict[str, Any]:
     """调用 Jev 进行决策判断
@@ -314,6 +314,7 @@ def judge(state: Any, questions: dict[str, Any]) -> dict[str, Any]:
 # ============================================================
 # IPC handler（供 server.py 路由调用）
 # ============================================================
+
 
 def handle_jev_judge(params: dict) -> dict:
     """jev_judge IPC handler

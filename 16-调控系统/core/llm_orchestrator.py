@@ -40,21 +40,22 @@ Dream OS 大模型编排择优引擎（核心定位 ①）
 from __future__ import annotations
 
 import json
-import re
 import logging
-from datetime import datetime, timezone
+import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 
 # ── 数据模型 ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class NodeCapability:
     """节点能力画像（供 LLM 理解每个节点的专长）"""
+
     node_id: str
     name: str = ""
     chain: str = ""
@@ -71,6 +72,7 @@ class NodeCapability:
 @dataclass
 class OrchestrationResult:
     """编排择优结果"""
+
     action: str  # LONG / SHORT / HOLD / REDUCE / CLOSE
     confidence: float = 0.0
     # 各节点权重分配（总和=1.0）
@@ -84,6 +86,7 @@ class OrchestrationResult:
 
 
 # ── 节点能力画像生成 ──────────────────────────────────────────────────────
+
 
 def build_capability_profile(
     node_id: str,
@@ -133,6 +136,7 @@ def build_capability_profile(
 
 
 # ── 大模型编排择优核心 ────────────────────────────────────────────────────
+
 
 def _build_orchestration_prompt(
     market_context: Dict[str, Any],
@@ -206,6 +210,7 @@ def call_llm_orchestrate(prompt: str) -> Dict[str, Any]:
     """调用千问 LLM 做编排择优"""
     try:
         import sys as _sys
+
         _sys.path.insert(0, str(Path(__file__).resolve().parent))
         import qwen_client
 
@@ -249,6 +254,7 @@ def call_llm_orchestrate(prompt: str) -> Dict[str, Any]:
 
 # ── 规则 fallback（LLM 不可用时） ────────────────────────────────────────
 
+
 def _rule_fallback_orchestrate(
     market_context: Dict[str, Any],
     node_results: Dict[str, Dict[str, Any]],
@@ -289,8 +295,10 @@ def _rule_fallback_orchestrate(
             weights[nid] = round(weights[nid] / total_w, 3)
     else:
         return OrchestrationResult(
-            action="HOLD", confidence=0.0, node_weights={},
-            superseded={k: "全部节点无有效权重" for k in node_results},
+            action="HOLD",
+            confidence=0.0,
+            node_weights={},
+            superseded=dict.fromkeys(node_results, "全部节点无有效权重"),
             rationale="规则 fallback：全部节点权重归零",
             combo_type="rule_fallback",
         )
@@ -333,6 +341,7 @@ def _rule_fallback_orchestrate(
 
 # ── 主入口 ────────────────────────────────────────────────────────────────
 
+
 def orchestrate(
     market_context: Dict[str, Any],
     node_results: Dict[str, Dict[str, Any]],
@@ -362,10 +371,16 @@ def orchestrate(
         profiles[nid] = build_capability_profile(nid, metas.get(nid), perf.get(nid))
 
     debug = {
-        "profiles": {k: {
-            "name": v.name, "chain": v.chain, "tags": v.tags,
-            "regime_strengths": v.regime_strengths, "avg_win_rate": v.avg_win_rate,
-        } for k, v in profiles.items()},
+        "profiles": {
+            k: {
+                "name": v.name,
+                "chain": v.chain,
+                "tags": v.tags,
+                "regime_strengths": v.regime_strengths,
+                "avg_win_rate": v.avg_win_rate,
+            }
+            for k, v in profiles.items()
+        },
         "llm_used": False,
     }
 
@@ -384,7 +399,9 @@ def orchestrate(
             raw_weights = parsed.get("node_weights", {}) or {}
             total_w = sum(max(0, float(v)) for v in raw_weights.values())
             if total_w > 0:
-                norm_weights = {k: round(max(0, float(v)) / total_w, 3) for k, v in raw_weights.items()}
+                norm_weights = {
+                    k: round(max(0, float(v)) / total_w, 3) for k, v in raw_weights.items()
+                }
             else:
                 norm_weights = {k: 1.0 / len(node_results) for k in node_results}
 
@@ -406,6 +423,7 @@ def orchestrate(
 
 
 # ── 批量择优（多场景） ────────────────────────────────────────────────────
+
 
 def orchestrate_scenarios(
     scenarios: List[Dict[str, Any]],

@@ -12,12 +12,13 @@
 
 运行: python3 -m pytest tests/test_w5_washout_entry_accuracy.py -v -p no:warnings
 """
+
 from __future__ import annotations
 
 import sys
 import unittest
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -26,9 +27,10 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
 from scripts.memory_l4.bcrm2.washout_detector import (  # noqa: E402
-    WashoutDetector, WashoutLabel, WashoutVerdict,
+    WashoutDetector,
+    WashoutLabel,
+    WashoutVerdict,
 )
-from scripts.memory_l4.bcrm2.washout_trigger_gate import WashoutTriggerGate  # noqa: E402
 from scripts.memory_l4.bcrm2.washout_features import WashoutFeatureExtractor  # noqa: E402
 
 
@@ -42,15 +44,21 @@ class MockWashoutClassifier:
         vol_ratio = features.get("volume_ratio_20d", 1.0)
         if vol_ratio < 0.8:
             return WashoutVerdict(
-                label=WashoutLabel.WASHOUT, confidence=0.85,
-                trigger_activated=True, feature_snapshot=features,
-                reason="mock_washout_low_volume", timestamp="",
+                label=WashoutLabel.WASHOUT,
+                confidence=0.85,
+                trigger_activated=True,
+                feature_snapshot=features,
+                reason="mock_washout_low_volume",
+                timestamp="",
             )
         if vol_ratio > 1.5:
             return WashoutVerdict(
-                label=WashoutLabel.WEAKNESS, confidence=0.75,
-                trigger_activated=True, feature_snapshot=features,
-                reason="mock_weakness_high_volume", timestamp="",
+                label=WashoutLabel.WEAKNESS,
+                confidence=0.75,
+                trigger_activated=True,
+                feature_snapshot=features,
+                reason="mock_weakness_high_volume",
+                timestamp="",
             )
         return WashoutVerdict.unknown()
 
@@ -91,7 +99,7 @@ def _make_true_washout(seed: int, n_forward: int = 48) -> pd.DataFrame:
         frac = (i - 250) / n_forward
         prices[i] = recovery_start + (target - recovery_start) * frac
         # 加少量噪音
-        prices[i] *= (1 + rng.normal(0, 0.005))
+        prices[i] *= 1 + rng.normal(0, 0.005)
 
     volume = rng.uniform(2000, 4000, n)
     volume[240:250] *= 0.5  # 回调缩量
@@ -100,10 +108,16 @@ def _make_true_washout(seed: int, n_forward: int = 48) -> pd.DataFrame:
     low = prices * 0.995
 
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 def _make_false_washout(seed: int, n_forward: int = 48) -> pd.DataFrame:
@@ -137,7 +151,7 @@ def _make_false_washout(seed: int, n_forward: int = 48) -> pd.DataFrame:
         decline_target = decline_start * rng.uniform(0.85, 0.95)
         frac = (i - 250) / n_forward
         prices[i] = decline_start + (decline_target - decline_start) * frac
-        prices[i] *= (1 + rng.normal(0, 0.005))
+        prices[i] *= 1 + rng.normal(0, 0.005)
 
     volume = rng.uniform(2000, 4000, n)
     volume[240:250] *= 0.5  # 同样缩量（假洗盘迷惑性）
@@ -146,10 +160,16 @@ def _make_false_washout(seed: int, n_forward: int = 48) -> pd.DataFrame:
     low = prices * 0.995
 
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 def _make_normal_pullback(seed: int, n_forward: int = 48) -> pd.DataFrame:
@@ -185,10 +205,16 @@ def _make_normal_pullback(seed: int, n_forward: int = 48) -> pd.DataFrame:
     low = prices * 0.995
 
     dates = pd.date_range("2025-01-01", periods=n, freq="1h")
-    return pd.DataFrame({
-        "open": prices, "high": high, "low": low,
-        "close": prices, "volume": volume,
-    }, index=dates)
+    return pd.DataFrame(
+        {
+            "open": prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        },
+        index=dates,
+    )
 
 
 # ============================================================
@@ -196,10 +222,17 @@ def _make_normal_pullback(seed: int, n_forward: int = 48) -> pd.DataFrame:
 # ============================================================
 class EntryBacktestResult:
     """入场信号回测结果。"""
-    def __init__(self, scenario: str, detected_label: str,
-                 detected_confidence: float, forward_returns: Dict[str, float],
-                 entry_price: float, is_true_washout: bool,
-                 long_profitable: Optional[bool] = None):
+
+    def __init__(
+        self,
+        scenario: str,
+        detected_label: str,
+        detected_confidence: float,
+        forward_returns: Dict[str, float],
+        entry_price: float,
+        is_true_washout: bool,
+        long_profitable: Optional[bool] = None,
+    ):
         self.scenario = scenario
         self.detected_label = detected_label
         self.detected_confidence = detected_confidence
@@ -245,7 +278,7 @@ def run_entry_backtest(
         idx = 249 + h
         if idx < len(df):
             future_price = float(df["close"].iloc[idx])
-            forward_returns[f"{h}h"] = (future_price / entry_price - 1.0)
+            forward_returns[f"{h}h"] = future_price / entry_price - 1.0
 
     # 如果检测为 WASHOUT 且开多仓，是否盈利（24h 前向）
     long_profitable = None
@@ -275,9 +308,7 @@ def run_batch_backtest(
     if detector is None:
         ext = WashoutFeatureExtractor()
         clf = MockWashoutClassifier()
-        detector = WashoutDetector(
-            enable=True, classifier=clf, feature_extractor=ext
-        )
+        detector = WashoutDetector(enable=True, classifier=clf, feature_extractor=ext)
 
     results: List[EntryBacktestResult] = []
 
@@ -285,27 +316,21 @@ def run_batch_backtest(
     for i in range(n_scenarios):
         seed = 1000 + i
         df = _make_true_washout(seed)
-        r = run_entry_backtest(
-            df, detector, is_true_washout=True, scenario="true_washout"
-        )
+        r = run_entry_backtest(df, detector, is_true_washout=True, scenario="true_washout")
         results.append(r)
 
     # 假洗盘场景
     for i in range(n_scenarios):
         seed = 2000 + i
         df = _make_false_washout(seed)
-        r = run_entry_backtest(
-            df, detector, is_true_washout=False, scenario="false_washout"
-        )
+        r = run_entry_backtest(df, detector, is_true_washout=False, scenario="false_washout")
         results.append(r)
 
     # 普通回调场景
     for i in range(n_scenarios):
         seed = 3000 + i
         df = _make_normal_pullback(seed)
-        r = run_entry_backtest(
-            df, detector, is_true_washout=False, scenario="normal_pullback"
-        )
+        r = run_entry_backtest(df, detector, is_true_washout=False, scenario="normal_pullback")
         results.append(r)
 
     return results
@@ -318,7 +343,9 @@ def summarize_results(results: List[EntryBacktestResult]) -> Dict:
 
     total_detected = len(washout_detected)
     true_positive = sum(1 for r in washout_detected if r.is_true_washout and r.long_profitable)
-    false_positive = sum(1 for r in washout_detected if not r.is_true_washout and not r.long_profitable)
+    false_positive = sum(
+        1 for r in washout_detected if not r.is_true_washout and not r.long_profitable
+    )
     # 误判: 检测为 WASHOUT 但实际不是真洗盘
     misclassified = sum(1 for r in washout_detected if not r.is_true_washout)
     # 真洗盘漏判: 是真洗盘但未检测为 WASHOUT
@@ -372,8 +399,7 @@ class TestWashoutEntrySignalAccuracy(unittest.TestCase):
         detected = [r for r in true_results if r.detected_label == "washout"]
         detection_rate = len(detected) / len(true_results) if true_results else 0
         print(f"\n[真洗盘检测率] {len(detected)}/{len(true_results)} = {detection_rate:.1%}")
-        self.assertGreater(detection_rate, 0.5,
-                           "真洗盘检测率应 > 50%")
+        self.assertGreater(detection_rate, 0.5, "真洗盘检测率应 > 50%")
 
     def test_false_washout_also_detected_as_washout(self):
         """假洗盘场景也会被检测为 WASHOUT（误判）。
@@ -381,22 +407,22 @@ class TestWashoutEntrySignalAccuracy(unittest.TestCase):
         这是关键问题: 假洗盘和真洗盘在检测点（bar 249）的特征完全相同
         （都是缩量回调），detector 无法区分。只有前向价格走势不同。
         """
-        false_results = [r for r in self.results
-                         if r.scenario == "false_washout"]
-        false_detected = [r for r in false_results
-                          if r.detected_label == "washout"]
-        false_detection_rate = (len(false_detected) / len(false_results)
-                                if false_results else 0)
-        print(f"\n[假洗盘误判率] {len(false_detected)}/{len(false_results)} "
-              f"= {false_detection_rate:.1%}")
+        false_results = [r for r in self.results if r.scenario == "false_washout"]
+        false_detected = [r for r in false_results if r.detected_label == "washout"]
+        false_detection_rate = len(false_detected) / len(false_results) if false_results else 0
+        print(
+            f"\n[假洗盘误判率] {len(false_detected)}/{len(false_results)} "
+            f"= {false_detection_rate:.1%}"
+        )
         # 假洗盘也会被高比例检测为 WASHOUT → 证明入场信号不夠准
-        self.assertGreater(false_detection_rate, 0.5,
-                           "假洗盘应被高比例误判为 WASHOUT（证明入场信号不夠准）")
+        self.assertGreater(
+            false_detection_rate, 0.5, "假洗盘应被高比例误判为 WASHOUT（证明入场信号不夠准）"
+        )
 
     def test_entry_signal_win_rate(self):
         """如果以 WASHOUT 检测为入场信号开多仓，胜率应 < 60%。"""
         s = self.summary
-        print(f"\n[入场信号回测汇总]")
+        print("\n[入场信号回测汇总]")
         print(f"  总场景数: {s['total_scenarios']}")
         print(f"  WASHOUT 检测数: {s['washout_detected']}")
         print(f"  误判为 WASHOUT 的假洗盘: {s['misclassified_as_washout']}")
@@ -408,16 +434,20 @@ class TestWashoutEntrySignalAccuracy(unittest.TestCase):
         print(f"  漏判率: {s['miss_rate']:.1%}")
 
         # 胜率 < 60% → 不适合作为入场信号
-        self.assertLess(s["win_rate_24h"], 0.60,
-                        f"24h 胜率 {s['win_rate_24h']:.1%} < 60%，"
-                        "不适合作为入场信号")
+        self.assertLess(
+            s["win_rate_24h"],
+            0.60,
+            f"24h 胜率 {s['win_rate_24h']:.1%} < 60%，" "不适合作为入场信号",
+        )
 
     def test_false_positive_rate_high(self):
         """误判率（假洗盘被检测为 WASHOUT）应 > 50%。"""
         s = self.summary
-        self.assertGreater(s["false_positive_rate"], 0.50,
-                            f"误判率 {s['false_positive_rate']:.1%} > 50%，"
-                            "证明 detector 无法区分真假洗盘")
+        self.assertGreater(
+            s["false_positive_rate"],
+            0.50,
+            f"误判率 {s['false_positive_rate']:.1%} > 50%，" "证明 detector 无法区分真假洗盘",
+        )
 
     def test_forward_returns_comparison(self):
         """真洗盘 vs 假洗盘的前向收益差异。
@@ -427,21 +457,17 @@ class TestWashoutEntrySignalAccuracy(unittest.TestCase):
         但 detector 在检测点无法预知这个差异 → 入场信号不夠准。
         """
         true_results = [r for r in self.results if r.is_true_washout]
-        false_results = [r for r in self.results
-                         if r.scenario == "false_washout"]
+        false_results = [r for r in self.results if r.scenario == "false_washout"]
 
-        true_24h = np.mean([r.forward_returns.get("24h", 0.0)
-                           for r in true_results])
-        false_24h = np.mean([r.forward_returns.get("24h", 0.0)
-                            for r in false_results])
+        true_24h = np.mean([r.forward_returns.get("24h", 0.0) for r in true_results])
+        false_24h = np.mean([r.forward_returns.get("24h", 0.0) for r in false_results])
 
-        print(f"\n[前向收益对比]")
+        print("\n[前向收益对比]")
         print(f"  真洗盘 24h 平均收益: {true_24h:.4f}")
         print(f"  假洗盘 24h 平均收益: {false_24h:.4f}")
 
         # 真洗盘前向收益 > 假洗盘（验证合成数据正确性）
-        self.assertGreater(true_24h, false_24h,
-                           "真洗盘前向收益应 > 假洗盘")
+        self.assertGreater(true_24h, false_24h, "真洗盘前向收益应 > 假洗盘")
         # 但 detector 在检测点无法区分 → 不适合入场
 
     def test_detector_cannot_distinguish_at_detection_point(self):
@@ -460,7 +486,7 @@ class TestWashoutEntrySignalAccuracy(unittest.TestCase):
         true_vol = true_feats.get("volume_ratio_20d", 1.0)
         false_vol = false_feats.get("volume_ratio_20d", 1.0)
 
-        print(f"\n[检测点特征对比]")
+        print("\n[检测点特征对比]")
         print(f"  真洗盘 volume_ratio: {true_vol:.4f}")
         print(f"  假洗盘 volume_ratio: {false_vol:.4f}")
         print(f"  差异: {abs(true_vol - false_vol):.4f}")
@@ -473,26 +499,27 @@ class TestWashoutEntrySignalAccuracy(unittest.TestCase):
         v_true = self.detector.run("BTC", true_df, {})
         v_false = self.detector.run("BTC", false_df, {})
         self.assertEqual(v_true.label, WashoutLabel.WASHOUT)
-        self.assertEqual(v_false.label, WashoutLabel.WASHOUT,
-                         "假洗盘也被检测为 WASHOUT → 入场信号不夠准")
+        self.assertEqual(
+            v_false.label, WashoutLabel.WASHOUT, "假洗盘也被检测为 WASHOUT → 入场信号不夠准"
+        )
 
     def test_conclusion_defensive_only(self):
         """结论: 洗盘检测应仅作为防御层（离场侧），不作为入场信号。"""
         s = self.summary
         print(f"\n{'='*60}")
-        print(f"[最终结论]")
+        print("[最终结论]")
         print(f"  入场信号 24h 胜率: {s['win_rate_24h']:.1%}")
         print(f"  误判率: {s['false_positive_rate']:.1%}")
         print(f"  漏判率: {s['miss_rate']:.1%}")
-        print(f"  结论: 胜率 < 60%，误判率 > 50%")
-        print(f"  → 洗盘检测不适合作为入场信号")
-        print(f"  → 应仅作为防御层（离场侧 hold/force_close）")
+        print("  结论: 胜率 < 60%，误判率 > 50%")
+        print("  → 洗盘检测不适合作为入场信号")
+        print("  → 应仅作为防御层（离场侧 hold/force_close）")
         print(f"{'='*60}")
 
         # 胜率不达标 + 误判率高 → 不适合入场
         self.assertTrue(
             s["win_rate_24h"] < 0.60 or s["false_positive_rate"] > 0.50,
-            "洗盘检测作为入场信号: 胜率低/误判率高 → 仅作防御层"
+            "洗盘检测作为入场信号: 胜率低/误判率高 → 仅作防御层",
         )
 
 

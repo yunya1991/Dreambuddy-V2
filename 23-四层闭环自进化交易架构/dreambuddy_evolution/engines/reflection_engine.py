@@ -4,11 +4,11 @@ ReflectionEngine (§1.6 调查·反思·实践 三公理)
 
 pre_trade_snapshot → CS 一致性得分 → 四维奖惩表 → ESS/gmax 更新
 """
+
 import json
-import math
 import logging
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,9 @@ class ReflectionEngine:
     # 因子调整冷却期（秒）：同一因子在冷却期内不重复调整，防止过度拟合
     _FACTOR_COOLDOWN_SECONDS = 3600
 
-    def __init__(self, case_library: Any = None, gene_library: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, case_library: Any = None, gene_library: dict[str, Any] | None = None
+    ) -> None:
         # 入场侧 REDUCE_WEIGHT 样本计数器（cluster_id|ess_id → count）
         self._reduce_weight_counter: dict[str, int] = {}
         # 事件案例库（可选，用于胜率驱动权重自适应）
@@ -116,9 +118,11 @@ class ReflectionEngine:
                     return 1.0
                 return -1.0
 
-            cs = (0.4 * cos_dir(d_star, real_dir)
-                  + 0.3 * cos_dir(ess_dir, real_dir)
-                  + 0.3 * sign_match(cbr_outcome, real_outcome))
+            cs = (
+                0.4 * cos_dir(d_star, real_dir)
+                + 0.3 * cos_dir(ess_dir, real_dir)
+                + 0.3 * sign_match(cbr_outcome, real_outcome)
+            )
 
             return max(-1.0, min(1.0, cs))
         except Exception as e:
@@ -181,8 +185,12 @@ class ReflectionEngine:
 
         # CS≤-0.2 但 TP（判断错但赚了=运气）
         if cs <= -0.2 and outcome == "TP":
-            return {"ess_delta": 0.0, "gmax_mult": 1.0, "cluster_weight_mult": 1.0,
-                    "anti_pattern_flag": True}
+            return {
+                "ess_delta": 0.0,
+                "gmax_mult": 1.0,
+                "cluster_weight_mult": 1.0,
+                "anti_pattern_flag": True,
+            }
 
         # CS≥0.7 但 SL（方向对却被扫损=假失败）
         if cs >= 0.7 and outcome == "SL":
@@ -309,6 +317,7 @@ class ReflectionEngine:
             # 持久化到 library.json
             try:
                 from dreambuddy_evolution.core.strategy_gene import persist_library
+
                 persist_library(self._gene_library)
             except Exception as e:
                 logger.debug("[FO] persist_library fail: %s", e)
@@ -339,12 +348,8 @@ class ReflectionEngine:
             return ArchitectureHealthReport(
                 overall_score=round(overall, 4),
                 dimension_scores=dict(debt_dims),
-                triggered_windows=list(
-                    getattr(arch_debt_result, "triggered_windows", []) or []
-                ),
-                refactor_plan=list(
-                    getattr(arch_debt_result, "refactor_plan", []) or []
-                ),
+                triggered_windows=list(getattr(arch_debt_result, "triggered_windows", []) or []),
+                refactor_plan=list(getattr(arch_debt_result, "refactor_plan", []) or []),
                 health_level=self._health_level(overall),
                 confidence=getattr(arch_debt_result, "confidence", 0.0),
             )
@@ -368,6 +373,7 @@ class ReflectionEngine:
 @dataclass
 class ArchitectureHealthReport:
     """架构健康度报告（P3-3）。"""
+
     overall_score: float = 1.0
     dimension_scores: dict[str, float] = field(default_factory=dict)
     triggered_windows: list[str] = field(default_factory=list)
@@ -389,15 +395,11 @@ class ArchitectureHealthReport:
 
     def print_summary(self) -> None:
         """控制台摘要输出。"""
-        icon = {"healthy": "✅", "warning": "⚠️", "critical": "🚨"}.get(
-            self.health_level, "❓"
-        )
+        icon = {"healthy": "✅", "warning": "⚠️", "critical": "🚨"}.get(self.health_level, "❓")
         print(f"{icon} 架构健康度: {self.overall_score:.2f} ({self.health_level})")
         if self.dimension_scores:
             print("  维度债务:")
-            for dim, score in sorted(
-                self.dimension_scores.items(), key=lambda x: -x[1]
-            ):
+            for dim, score in sorted(self.dimension_scores.items(), key=lambda x: -x[1]):
                 print(f"    - {dim}: {score:.2f}")
         if self.triggered_windows:
             print(f"  已触发 refactor 窗口: {len(self.triggered_windows)}")

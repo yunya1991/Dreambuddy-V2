@@ -15,6 +15,7 @@
 S4辅助：crr>0.3或mr<0.5时，已触发条件置信度权重 ×1.2（不增加触发数，封顶1.0）
 transforming = 触发条件数>=2 或 data_quality_warning触发 或 (S4佐证 且 触发条件数>=1)
 """
+
 from __future__ import annotations
 
 import sys
@@ -46,32 +47,35 @@ class ContradictionTransformDetector:
     """
 
     # 数据质量预警阈值
-    _S3_LOW_THRESHOLD = 0.7        # pass_rate < 0.7 → 低质量
-    _S3_LOW_PERSIST_DAYS = 3      # 持续 3 天 → 触发预警
-    _DATA_QUALITY_FACTOR = 0.7     # 预警触发时的降级因子
-    _NEUTRAL_DQF = 1.0             # 正常数据质量因子
+    _S3_LOW_THRESHOLD = 0.7  # pass_rate < 0.7 → 低质量
+    _S3_LOW_PERSIST_DAYS = 3  # 持续 3 天 → 触发预警
+    _DATA_QUALITY_FACTOR = 0.7  # 预警触发时的降级因子
+    _NEUTRAL_DQF = 1.0  # 正常数据质量因子
 
     # S4 辅助佐证阈值
-    _S4_CRR_THRESHOLD = 0.3        # crr > 0.3 → S4佐证
-    _S4_MR_THRESHOLD = 0.5         # mr < 0.5 → S4佐证
-    _S4_CONFIDENCE_BOOST = 1.2     # 置信度放大系数
-    _CONFIDENCE_CAP = 1.0          # 置信度封顶
+    _S4_CRR_THRESHOLD = 0.3  # crr > 0.3 → S4佐证
+    _S4_MR_THRESHOLD = 0.5  # mr < 0.5 → S4佐证
+    _S4_CONFIDENCE_BOOST = 1.2  # 置信度放大系数
+    _CONFIDENCE_CAP = 1.0  # 置信度封顶
 
-    _TOTAL_CONDITIONS = 6          # 转化条件总数
+    _TOTAL_CONDITIONS = 6  # 转化条件总数
 
     # S3 / S4 FAIL-OPEN 中性默认值
     _S3_NEUTRAL_RATE = 0.8
     _S4_NEUTRAL_CRR = 0.0
     _S4_NEUTRAL_MR = 1.0
 
-    def detect(self, elasticity_beta: ElasticityBeta,
-               rank_shift: bool = False,
-               resonance_break: bool = False,
-               cbr_divergence: bool = False,
-               s3_pass_rate: float = 1.0,
-               s3_low_days: int = 0,
-               s4_crr: float = 0.0,
-               s4_mr: float = 1.0) -> ContradictionTransform:
+    def detect(
+        self,
+        elasticity_beta: ElasticityBeta,
+        rank_shift: bool = False,
+        resonance_break: bool = False,
+        cbr_divergence: bool = False,
+        s3_pass_rate: float = 1.0,
+        s3_low_days: int = 0,
+        s4_crr: float = 0.0,
+        s4_mr: float = 1.0,
+    ) -> ContradictionTransform:
         """6 类转化条件监控。
 
         elasticity_beta 为 None 时其两信号视为 False（FAIL-OPEN 不崩）。
@@ -121,10 +125,7 @@ class ContradictionTransformDetector:
             confidence = trigger_count / self._TOTAL_CONDITIONS
 
             # === S4 辅助佐证：crr>0.3 或 mr<0.5 → 已触发条件置信度权重 ×1.2 ===
-            s4_aux = (
-                float(s4_crr) > self._S4_CRR_THRESHOLD
-                or float(s4_mr) < self._S4_MR_THRESHOLD
-            )
+            s4_aux = float(s4_crr) > self._S4_CRR_THRESHOLD or float(s4_mr) < self._S4_MR_THRESHOLD
             if s4_aux and trigger_count > 0:
                 # 不增加触发数，仅放大置信度，封顶 1.0
                 confidence = min(
@@ -135,9 +136,7 @@ class ContradictionTransformDetector:
             # === transforming 判定 ===
             # 触发条件数>=2 或 数据质量预警触发 或 (S4佐证 且 至少1条件已触发)
             transforming = bool(
-                trigger_count >= 2
-                or data_quality_warning
-                or (s4_aux and trigger_count >= 1)
+                trigger_count >= 2 or data_quality_warning or (s4_aux and trigger_count >= 1)
             )
 
             # === transform_type 选取：取首个触发条件，无则 'none' ===
@@ -145,8 +144,7 @@ class ContradictionTransformDetector:
 
             # === data_quality_factor：预警触发→0.7，否则 1.0 ===
             data_quality_factor = (
-                self._DATA_QUALITY_FACTOR if data_quality_warning
-                else self._NEUTRAL_DQF
+                self._DATA_QUALITY_FACTOR if data_quality_warning else self._NEUTRAL_DQF
             )
 
             return ContradictionTransform(
@@ -175,6 +173,7 @@ class ContradictionTransformDetector:
         """
         try:
             from engines.news_contract_validator import validate_batch  # type: ignore
+
             result = validate_batch(news_list)
             if isinstance(result, dict):
                 rate = result.get("pass_rate", self._S3_NEUTRAL_RATE)
@@ -194,7 +193,7 @@ class ContradictionTransformDetector:
             if not isinstance(news_list, list):
                 return (self._S4_NEUTRAL_CRR, self._S4_NEUTRAL_MR)
 
-            from collections import Counter
+            from collections import Counter  # noqa: I001
             from engines.event_mapping_engine import map_event_type  # type: ignore
 
             total = len(news_list)
@@ -211,7 +210,10 @@ class ContradictionTransformDetector:
                 topic = str(n.get("event_type") or "")
                 category = str(n.get("category") or "")
                 mapped = map_event_type(
-                    title=title, body=body, topic=topic, category=category,
+                    title=title,
+                    body=body,
+                    topic=topic,
+                    category=category,
                 )
                 etypes.append(mapped)
                 declared = str(n.get("event_type") or "")

@@ -3,6 +3,7 @@
 加载最新回测报告，供 gate 校验（pf/dd/trades/winrate 阈值）使用。
 依赖大文件中的回测函数（_backtest_* / _bt_* / _eval_*）。
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,20 +12,39 @@ from typing import Any, Dict, Optional
 
 def _dep(name):
     import ml_trade_service as _mts
+
     return getattr(_mts, name)
 
+
 # 懒加载包装
-def _now_ms(*a, **k): return _dep("_now_ms")(*a, **k)
-def _backtest_zip_metrics(*a, **k): return _dep("_backtest_zip_metrics")(*a, **k)
-def _bt_aligned_metrics_from_zip(*a, **k): return _dep("_bt_aligned_metrics_from_zip")(*a, **k)
-def _bt_metrics_pick_strategy(*a, **k): return _dep("_bt_metrics_pick_strategy")(*a, **k)
-def _bt_metrics_slim(*a, **k): return _dep("_bt_metrics_slim")(*a, **k)
-def _eval_standard_pack(*a, **k): return _dep("_eval_standard_pack")(*a, **k)
+def _now_ms(*a, **k):
+    return _dep("_now_ms")(*a, **k)
+
+
+def _backtest_zip_metrics(*a, **k):
+    return _dep("_backtest_zip_metrics")(*a, **k)
+
+
+def _bt_aligned_metrics_from_zip(*a, **k):
+    return _dep("_bt_aligned_metrics_from_zip")(*a, **k)
+
+
+def _bt_metrics_pick_strategy(*a, **k):
+    return _dep("_bt_metrics_pick_strategy")(*a, **k)
+
+
+def _bt_metrics_slim(*a, **k):
+    return _dep("_bt_metrics_slim")(*a, **k)
+
+
+def _eval_standard_pack(*a, **k):
+    return _dep("_eval_standard_pack")(*a, **k)
 
 
 def _backtest_pick_latest_zip_path() -> Optional[Path]:
     try:
         from ml_trade_service import _backtest_last_result_zip_name, _backtests_dir
+
         name = _backtest_last_result_zip_name()
         if name:
             p = _backtests_dir() / name
@@ -52,11 +72,12 @@ def _backtest_report_from_zip(
     try:
         from ml_trade_service import (
             _backtest_zip_metrics,
+            _bt_aligned_metrics_from_zip,
             _bt_metrics_pick_strategy,
             _bt_metrics_slim,
-            _bt_aligned_metrics_from_zip,
             _eval_standard_pack,
         )
+
         from classic_pipeline.core.runtime import _now_ms
     except Exception:
         return {"ok": False, "error": "backtest_import_failed"}

@@ -15,6 +15,7 @@ RED 契约：
 
 注意：本任务只定义接口契约，不强制已有实现类继承 ABC（渐进式）。
 """
+
 from __future__ import annotations
 
 import inspect
@@ -22,14 +23,15 @@ from typing import Any
 
 import pytest
 
-
 # ============================================================
 # RED: CognitiveRouter (L3 路由层)
 # ============================================================
 
+
 def test_cognitive_router_is_abstract():
     """RED: CognitiveRouter 是 ABC，不能直接实例化。"""
     from cognitive_interfaces import CognitiveRouter
+
     with pytest.raises(TypeError):
         CognitiveRouter()
 
@@ -69,8 +71,10 @@ def test_cognitive_router_subclass_works():
 
 def test_cognitive_router_route_signature():
     """RED: route(self, intent_vector, databases) -> RecallResult 签名正确。"""
-    from cognitive_interfaces import CognitiveRouter, RecallResult
     import typing
+
+    from cognitive_interfaces import CognitiveRouter, RecallResult
+
     sig = inspect.signature(CognitiveRouter.route)
     params = list(sig.parameters.keys())
     # self + intent_vector + databases
@@ -84,9 +88,11 @@ def test_cognitive_router_route_signature():
 # RED: EvidenceSink (L2 Evidence Ledger)
 # ============================================================
 
+
 def test_evidence_sink_is_abstract():
     """RED: EvidenceSink 是 ABC，不能直接实例化。"""
     from cognitive_interfaces import EvidenceSink
+
     with pytest.raises(TypeError):
         EvidenceSink()
 
@@ -118,8 +124,10 @@ def test_evidence_sink_subclass_works():
 
 def test_evidence_sink_append_signature():
     """RED: append(self, entry) -> str 签名正确。"""
-    from cognitive_interfaces import EvidenceSink
     import typing
+
+    from cognitive_interfaces import EvidenceSink
+
     sig = inspect.signature(EvidenceSink.append)
     params = list(sig.parameters.keys())
     assert params == ["self", "entry"]
@@ -131,9 +139,11 @@ def test_evidence_sink_append_signature():
 # RED: MetacogMonitor (L4 元认知层 — 研究探索项)
 # ============================================================
 
+
 def test_metacog_monitor_is_abstract():
     """RED: MetacogMonitor 是 ABC，不能直接实例化。"""
     from cognitive_interfaces import MetacogMonitor
+
     with pytest.raises(TypeError):
         MetacogMonitor()
 
@@ -171,8 +181,10 @@ def test_metacog_monitor_subclass_works():
 
 def test_metacog_monitor_monitor_signature():
     """RED: monitor(self, workspace_state) -> MonitorResult 签名正确。"""
-    from cognitive_interfaces import MetacogMonitor, MonitorResult
     import typing
+
+    from cognitive_interfaces import MetacogMonitor, MonitorResult
+
     sig = inspect.signature(MetacogMonitor.monitor)
     params = list(sig.parameters.keys())
     assert params == ["self", "workspace_state"]
@@ -184,9 +196,11 @@ def test_metacog_monitor_monitor_signature():
 # RED: 结果类型 dataclass
 # ============================================================
 
+
 def test_recall_result_dataclass():
     """RED: RecallResult 是 dataclass，含 memories/skills/knowledge/confidence。"""
     from cognitive_interfaces import RecallResult
+
     result = RecallResult(memories=[], skills=[], knowledge=[])
     assert result.memories == []
     assert result.skills == []
@@ -197,6 +211,7 @@ def test_recall_result_dataclass():
 def test_monitor_result_dataclass():
     """RED: MonitorResult 是 dataclass，含 action/targets/calibration。"""
     from cognitive_interfaces import MonitorResult
+
     result = MonitorResult(action="verify")
     assert result.action == "verify"
     assert result.targets == []

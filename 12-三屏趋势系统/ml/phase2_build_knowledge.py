@@ -3,9 +3,9 @@
 将Phase 2的所有结果整理成结构化报告，存入闭环管理器，形成初始知识库。
 """
 
-import sys
+import sys  # noqa: I001
 import os
-import json
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from ml.closed_loop_manager import ClosedLoopManager, HypothesisStatus
@@ -25,12 +25,10 @@ def setup_phase2_knowledge():
     if not hypo:
         hypo = mgr.create_hypothesis(
             title="v2增强版MA200策略基线",
-            description=
-            "EnhancedMA200Strategy v2作为后续所有优化的对比基线。"
+            description="EnhancedMA200Strategy v2作为后续所有优化的对比基线。"
             "核心特征：周线MA200抄底、BTC分级做空、斐波那契止盈、小币双牛过滤。"
             "基线锚定：任何新策略必须综合评分>1.0才被采纳。",
-            theory_source=
-            "MA200牛熊经验法则 + 三重滤网思想 + 斐波那契回调理论 + 最小阻力方向",
+            theory_source="MA200牛熊经验法则 + 三重滤网思想 + 斐波那契回调理论 + 最小阻力方向",
             objective="all",
             expected_effect="作为后续所有优化的对比基准",
             expected_improvement=0.0,
@@ -46,8 +44,7 @@ def setup_phase2_knowledge():
     if not hypo2:
         hypo2 = mgr.create_hypothesis(
             title="v2核心特征贡献度排序",
-            description=
-            "基于消融实验，v2策略各核心特征的贡献度排序为："
+            description="基于消融实验，v2策略各核心特征的贡献度排序为："
             "周线MA200抄底 > BTC分级做空 > 斐波那契止盈。"
             "后续优化应优先加强高贡献特征，谨慎改动低贡献特征。",
             theory_source="特征消融实验 + 反事实推理",
@@ -65,8 +62,7 @@ def setup_phase2_knowledge():
     opt_hypos = [
         {
             "title": "DIP_BUY优化：提高牛市抄底精准度",
-            "description":
-            "当前v2的DIP_BUY胜率仅47.62%，平均收益-0.07%，是四类目的中最弱的。"
+            "description": "当前v2的DIP_BUY胜率仅47.62%，平均收益-0.07%，是四类目的中最弱的。"
             "假设通过加入RSI超卖、MACD底背离、成交量放大等确认特征，"
             "可以将抄底胜率提升至55%+，平均收益提升至2%+。",
             "theory_source": "超卖反转理论 + 量价确认理论 + 多周期共振",
@@ -77,8 +73,7 @@ def setup_phase2_knowledge():
         },
         {
             "title": "BEAR_EXIT优化：提高熊市空平收益",
-            "description":
-            "当前v2的BEAR_EXIT平均收益仅0.27%，虽然Precision不错（0.417），"
+            "description": "当前v2的BEAR_EXIT平均收益仅0.27%，虽然Precision不错（0.417），"
             "但空平时机偏晚。假设通过加入下跌衰竭、成交量萎缩、RSI底背离等特征，"
             "可以更早识别熊市底部，将平均收益提升至2%+。",
             "theory_source": "下跌衰竭理论 + 成交量萎缩确认 + 背离理论",
@@ -89,8 +84,7 @@ def setup_phase2_knowledge():
         },
         {
             "title": "TOP_EXIT优化：提高牛市离场收益",
-            "description":
-            "当前v2的TOP_EXIT胜率57.14%，平均收益1.63%，表现中等。"
+            "description": "当前v2的TOP_EXIT胜率57.14%，平均收益1.63%，表现中等。"
             "假设通过加入超买指标、顶部背离、资金流出等特征，"
             "可以更精准识别顶部，将平均收益提升至3%+。",
             "theory_source": "超买见顶理论 + 顶背离理论 + 资金流向理论",
@@ -101,8 +95,7 @@ def setup_phase2_knowledge():
         },
         {
             "title": "BEAR_SHORT优化：扩大做空机会同时保持胜率",
-            "description":
-            "当前v2的BEAR_SHORT表现最好（胜率61.22%，平均收益2.63%），"
+            "description": "当前v2的BEAR_SHORT表现最好（胜率61.22%，平均收益2.63%），"
             "但Recall仅0.026，错过很多做空机会。假设通过优化入场条件，"
             "在保持胜率>55%的前提下，将Recall提升至0.05+。",
             "theory_source": "趋势延续理论 + 分级入场策略",
@@ -119,7 +112,7 @@ def setup_phase2_knowledge():
         existing = mgr.list_hypotheses(objective=h["objective"])
         found = any(e.title == h["title"] for e in existing)
         if not found:
-            new_h = mgr.create_hypothesis(**h)
+            new_h = mgr.create_hypothesis(**h)  # noqa: F841
             print(f"  ✅ {h['title']}")
         else:
             print(f"  ℹ️  {h['title']} (已存在)")
@@ -184,6 +177,7 @@ def setup_phase2_knowledge():
     print("    高：BEAR_EXIT熊市空平（收益偏低，改善空平时机）")
     print("    中：TOP_EXIT牛市离场（收益尚可，进一步提高）")
     print("    中：BEAR_SHORT熊市做空（表现最佳，扩大机会）")
+
 
 if __name__ == "__main__":
     setup_phase2_knowledge()

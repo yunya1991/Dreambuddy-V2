@@ -15,10 +15,10 @@ C2 动量分析节点
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class C2MomentumNode(BaseNode):
@@ -87,10 +87,14 @@ class C2MomentumNode(BaseNode):
 
         # ── 4. MACD 动量 ─────────────────────────────
         if macd > macd_signal:
-            scores.append(("LONG", 0.15, f"MACD动量偏多(macd={macd:.3f}, signal={macd_signal:.3f})"))
+            scores.append(
+                ("LONG", 0.15, f"MACD动量偏多(macd={macd:.3f}, signal={macd_signal:.3f})")
+            )
             momentum_score += 0.15
         else:
-            scores.append(("SHORT", 0.15, f"MACD动量偏空(macd={macd:.3f}, signal={macd_signal:.3f})"))
+            scores.append(
+                ("SHORT", 0.15, f"MACD动量偏空(macd={macd:.3f}, signal={macd_signal:.3f})")
+            )
             momentum_score -= 0.15
 
         # ── 5. 动量背离检测 ──────────────────────────
@@ -155,12 +159,12 @@ class C2MomentumNode(BaseNode):
             if price < ema50:
                 confidence *= 0.90  # 轻微降权
             if price < ema200:
-                confidence *= 0.95   # 极轻微降权
+                confidence *= 0.95  # 极轻微降权
         elif direction == "SHORT":
             if price > ema50:
                 confidence *= 0.90  # 轻微降权
             if price > ema200:
-                confidence *= 0.95   # 极轻微降权
+                confidence *= 0.95  # 极轻微降权
 
         rationale = [r for _, _, r in scores[:6]]
         rationale.insert(0, f"[C2动量分析] 动量得分={momentum_score:+.2f} | 背离={divergence}")

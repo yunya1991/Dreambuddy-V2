@@ -8,8 +8,12 @@
   4. 高置信度场景 → 跳过四步循环 (HC-2)
   5. FAIL-OPEN: 无 llm_fn / 无 cognitive_adapter → 不阻塞
 """
+
 from __future__ import annotations
-import os, sys, unittest
+
+import os
+import sys
+import unittest
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -17,13 +21,13 @@ SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
     sys.path.insert(0, SERVER_DIR)
 
-from c_drive_agent import CDriveAgent, CDriveAction, CDriveDecision
-from subagent_types import SubagentOutput, Signal, ChartSpec
-
+from c_drive_agent import CDriveAction, CDriveAgent, CDriveDecision  # noqa: E402
+from subagent_types import ChartSpec, Signal, SubagentOutput  # noqa: E402
 
 # ============================================================
 # 辅助: subagent 聚合器 (E2E 测试核心)
 # ============================================================
+
 
 def aggregate_subagent_outputs(outputs: List[SubagentOutput]) -> Dict[str, Any]:
     """聚合多个 subagent 输出为统一摘要
@@ -31,11 +35,17 @@ def aggregate_subagent_outputs(outputs: List[SubagentOutput]) -> Dict[str, Any]:
     用于 C-Drive-Agent SUPPLEMENT 后的多 subagent 结果合并
     """
     if not outputs:
-        return {"summaries": [], "all_signals": [], "all_charts": [],
-                "modules": [], "total_signals": 0,
-                "consensus_direction": "neutral",
-                "long_count": 0, "short_count": 0,
-                "total_charts": 0}
+        return {
+            "summaries": [],
+            "all_signals": [],
+            "all_charts": [],
+            "modules": [],
+            "total_signals": 0,
+            "consensus_direction": "neutral",
+            "long_count": 0,
+            "short_count": 0,
+            "total_charts": 0,
+        }
 
     summaries = [o.summary for o in outputs]
     all_signals: List[Signal] = []
@@ -73,9 +83,11 @@ def aggregate_subagent_outputs(outputs: List[SubagentOutput]) -> Dict[str, Any]:
 # 辅助: 模拟节点结果
 # ============================================================
 
+
 @dataclass
 class MockNodeResult:
     """模拟 DreamOS 节点执行结果"""
+
     confidence: float
     direction: str
     status: str = "SUCCESS"
@@ -89,13 +101,16 @@ class MockNodeResult:
 
 def make_signals(directions: List[str], conf: float = 0.6) -> List[Dict[str, Any]]:
     """生成模拟信号列表"""
-    return [{"name": f"sig_{i}", "value": i, "direction": d, "confidence": conf}
-            for i, d in enumerate(directions)]
+    return [
+        {"name": f"sig_{i}", "value": i, "direction": d, "confidence": conf}
+        for i, d in enumerate(directions)
+    ]
 
 
 # ============================================================
 # 测试类
 # ============================================================
+
 
 class TestE2EHighConfidenceSkip(unittest.TestCase):
     """HC-2: 高置信度 > 0.75 → 跳过四步循环"""
@@ -118,7 +133,9 @@ class TestE2ESupplementRouting(unittest.TestCase):
         result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
         # 低置信度信号 → Bull/Bear avg=0.1 < 0.30 → SUPPLEMENT
         decision = agent.run(
-            node_id="F5", result=result, state=None,
+            node_id="F5",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
             intent_type="deep_analysis",
         )
@@ -129,7 +146,9 @@ class TestE2ESupplementRouting(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)
         result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F5", result=result, state=None,
+            node_id="F5",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
         )
         self.assertEqual(decision.supplement_module, "macro")
@@ -138,7 +157,9 @@ class TestE2ESupplementRouting(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)
         result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F2", result=result, state=None,
+            node_id="F2",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
         )
         self.assertEqual(decision.supplement_module, "flow")
@@ -147,7 +168,9 @@ class TestE2ESupplementRouting(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)
         result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
         decision = agent.run(
-            node_id="C1", result=result, state=None,
+            node_id="C1",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
         )
         self.assertEqual(decision.supplement_module, "technical")
@@ -156,7 +179,9 @@ class TestE2ESupplementRouting(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)
         result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F4", result=result, state=None,
+            node_id="F4",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
         )
         self.assertEqual(decision.supplement_module, "onchain")
@@ -165,7 +190,9 @@ class TestE2ESupplementRouting(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)
         result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F3", result=result, state=None,
+            node_id="F3",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
         )
         self.assertEqual(decision.supplement_module, "valuation")
@@ -176,14 +203,20 @@ class TestE2ESubagentExecution(unittest.TestCase):
 
     def _macro_node_output(self):
         return {
-            "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1,
-                           "interest_rate": 5.25, "liquidity_m2": 1.2e9},
+            "indicators": {
+                "gdp_yoy": 2.5,
+                "cpi_yoy": 3.1,
+                "interest_rate": 5.25,
+                "liquidity_m2": 1.2e9,
+            },
             "rationale": ["GDP 温和增长"],
-            "direction": "NEUTRAL", "confidence": 0.55,
+            "direction": "NEUTRAL",
+            "confidence": 0.55,
         }
 
     def test_macro_agent_execute(self):
         from macro_agent import MacroAgent
+
         agent = MacroAgent()
         out = agent.execute(self._macro_node_output())
         self.assertEqual(out.module, "macro")
@@ -191,58 +224,97 @@ class TestE2ESubagentExecution(unittest.TestCase):
 
     def test_flow_agent_execute(self):
         from flow_agent import FlowAgent
+
         agent = FlowAgent()
-        out = agent.execute({
-            "indicators": {"etf_inflow": 150, "leverage_ratio": 2.8,
-                           "stablecoin_mcap": 120e9, "fund_flow": 80},
-            "direction": "LONG", "confidence": 0.65,
-        })
+        out = agent.execute(
+            {
+                "indicators": {
+                    "etf_inflow": 150,
+                    "leverage_ratio": 2.8,
+                    "stablecoin_mcap": 120e9,
+                    "fund_flow": 80,
+                },
+                "direction": "LONG",
+                "confidence": 0.65,
+            }
+        )
         self.assertEqual(out.module, "flow")
         self.assertGreater(len(out.signals), 0)
 
     def test_onchain_agent_execute(self):
         from onchain_agent import OnchainAgent
+
         agent = OnchainAgent()
-        out = agent.execute({
-            "indicators": {"active_addresses": 1.1e6, "hashrate": 650e12,
-                           "mvrv": 1.8, "exchange_inflow": 1200, "nupl": 0.35},
-            "direction": "LONG", "confidence": 0.6,
-        })
+        out = agent.execute(
+            {
+                "indicators": {
+                    "active_addresses": 1.1e6,
+                    "hashrate": 650e12,
+                    "mvrv": 1.8,
+                    "exchange_inflow": 1200,
+                    "nupl": 0.35,
+                },
+                "direction": "LONG",
+                "confidence": 0.6,
+            }
+        )
         self.assertEqual(out.module, "onchain")
         self.assertGreater(len(out.signals), 0)
 
     def test_valuation_agent_execute(self):
         from valuation_agent import ValuationAgent
+
         agent = ValuationAgent()
-        out = agent.execute({
-            "indicators": {"nvt": 45, "stock_to_flow": 59,
-                           "market_cap_dominance": 52, "price": 95000},
-            "direction": "NEUTRAL", "confidence": 0.5,
-        })
+        out = agent.execute(
+            {
+                "indicators": {
+                    "nvt": 45,
+                    "stock_to_flow": 59,
+                    "market_cap_dominance": 52,
+                    "price": 95000,
+                },
+                "direction": "NEUTRAL",
+                "confidence": 0.5,
+            }
+        )
         self.assertEqual(out.module, "valuation")
         self.assertGreater(len(out.signals), 0)
 
     def test_risk_agent_execute(self):
         from risk_agent import RiskAgent
+
         agent = RiskAgent()
-        out = agent.execute({
-            "indicators": {"var_95": 0.035, "var_99": 0.058,
-                           "correlation_btc": 0.85, "stress_loss": 0.12},
-            "direction": "NEUTRAL", "confidence": 0.6,
-        })
+        out = agent.execute(
+            {
+                "indicators": {
+                    "var_95": 0.035,
+                    "var_99": 0.058,
+                    "correlation_btc": 0.85,
+                    "stress_loss": 0.12,
+                },
+                "direction": "NEUTRAL",
+                "confidence": 0.6,
+            }
+        )
         self.assertEqual(out.module, "risk")
         self.assertGreater(len(out.signals), 0)
 
     def test_portfolio_agent_execute(self):
         from portfolio_agent import PortfolioAgent
+
         agent = PortfolioAgent()
-        out = agent.execute({
-            "indicators": {
-                "positions": [{"symbol": "BTC", "weight": 0.45, "pnl_pct": 0.08}],
-                "drift": 0.05, "rebalance_needed": True, "total_weight": 1.0,
-            },
-            "direction": "NEUTRAL", "confidence": 0.55,
-        })
+        out = agent.execute(
+            {
+                "indicators": {
+                    "positions": [{"symbol": "BTC", "weight": 0.45, "pnl_pct": 0.08}],
+                    "drift": 0.05,
+                    "rebalance_needed": True,
+                    "total_weight": 1.0,
+                },
+                "direction": "NEUTRAL",
+                "confidence": 0.55,
+            }
+        )
         self.assertEqual(out.module, "portfolio")
         self.assertGreater(len(out.signals), 0)
 
@@ -257,24 +329,26 @@ class TestE2EAggregation(unittest.TestCase):
 
     def test_aggregate_single(self):
         from macro_agent import MacroAgent
-        out = MacroAgent().execute({
-            "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1},
-        })
+
+        out = MacroAgent().execute(
+            {
+                "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1},
+            }
+        )
         result = aggregate_subagent_outputs([out])
         self.assertEqual(len(result["modules"]), 1)
         self.assertEqual(result["modules"][0], "macro")
 
     def test_aggregate_multi_module(self):
-        from macro_agent import MacroAgent
         from flow_agent import FlowAgent
+        from macro_agent import MacroAgent
         from onchain_agent import OnchainAgent
 
-        macro_out = MacroAgent().execute({
-            "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}})
-        flow_out = FlowAgent().execute({
-            "indicators": {"etf_inflow": 150, "leverage_ratio": 2.8}})
-        onchain_out = OnchainAgent().execute({
-            "indicators": {"mvrv": 1.8, "active_addresses": 1.1e6}})
+        macro_out = MacroAgent().execute({"indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}})
+        flow_out = FlowAgent().execute({"indicators": {"etf_inflow": 150, "leverage_ratio": 2.8}})
+        onchain_out = OnchainAgent().execute(
+            {"indicators": {"mvrv": 1.8, "active_addresses": 1.1e6}}
+        )
 
         result = aggregate_subagent_outputs([macro_out, flow_out, onchain_out])
         self.assertEqual(len(result["modules"]), 3)
@@ -286,10 +360,18 @@ class TestE2EAggregation(unittest.TestCase):
     def test_aggregate_consensus_direction(self):
         """多数投票方向"""
         from macro_agent import MacroAgent
+
         # GDP > 2.0 → long, CPI > 1 < 5 → neutral → 多 long 信号
-        out = MacroAgent().execute({
-            "indicators": {"gdp_yoy": 3.0, "cpi_yoy": 2.0,
-                           "interest_rate": 0.5, "liquidity_m2": 1e9}})
+        out = MacroAgent().execute(
+            {
+                "indicators": {
+                    "gdp_yoy": 3.0,
+                    "cpi_yoy": 2.0,
+                    "interest_rate": 0.5,
+                    "liquidity_m2": 1e9,
+                }
+            }
+        )
         result = aggregate_subagent_outputs([out])
         # 至少有 long 信号
         self.assertGreater(result["long_count"], 0)
@@ -298,11 +380,17 @@ class TestE2EAggregation(unittest.TestCase):
         from macro_agent import MacroAgent
         from valuation_agent import ValuationAgent
 
-        macro_out = MacroAgent().execute({
-            "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}})
-        val_out = ValuationAgent().execute({
-            "indicators": {"nvt": 45, "stock_to_flow": 59,
-                           "market_cap_dominance": 52, "price": 95000}})
+        macro_out = MacroAgent().execute({"indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}})
+        val_out = ValuationAgent().execute(
+            {
+                "indicators": {
+                    "nvt": 45,
+                    "stock_to_flow": 59,
+                    "market_cap_dominance": 52,
+                    "price": 95000,
+                }
+            }
+        )
 
         result = aggregate_subagent_outputs([macro_out, val_out])
         self.assertGreater(result["total_charts"], 0)
@@ -317,7 +405,9 @@ class TestE2EFullPipeline(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)
         result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F5", result=result, state=None,
+            node_id="F5",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
             intent_type="deep_analysis",
         )
@@ -326,12 +416,18 @@ class TestE2EFullPipeline(unittest.TestCase):
 
         # Step 2: 根据 supplement_module 路由到 subagent
         from macro_agent import MacroAgent
+
         subagent = MacroAgent()
         node_output = {
-            "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1,
-                           "interest_rate": 5.25, "liquidity_m2": 1.2e9},
+            "indicators": {
+                "gdp_yoy": 2.5,
+                "cpi_yoy": 3.1,
+                "interest_rate": 5.25,
+                "liquidity_m2": 1.2e9,
+            },
             "rationale": ["GDP 温和增长"],
-            "direction": "NEUTRAL", "confidence": 0.55,
+            "direction": "NEUTRAL",
+            "confidence": 0.55,
         }
         sub_output = subagent.execute(node_output)
         self.assertEqual(sub_output.module, "macro")
@@ -347,22 +443,50 @@ class TestE2EFullPipeline(unittest.TestCase):
 
         # 模拟 3 个节点低置信度结果
         node_specs = [
-            ("F5", "macro", "macro_agent", "MacroAgent",
-             {"indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1,
-                             "interest_rate": 5.25}}),
-            ("F2", "flow", "flow_agent", "FlowAgent",
-             {"indicators": {"etf_inflow": 150, "leverage_ratio": 2.8,
-                             "stablecoin_mcap": 120e9, "fund_flow": 80}}),
-            ("F4", "onchain", "onchain_agent", "OnchainAgent",
-             {"indicators": {"active_addresses": 1.1e6, "hashrate": 650e12,
-                             "mvrv": 1.8, "exchange_inflow": 1200}}),
+            (
+                "F5",
+                "macro",
+                "macro_agent",
+                "MacroAgent",
+                {"indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1, "interest_rate": 5.25}},
+            ),
+            (
+                "F2",
+                "flow",
+                "flow_agent",
+                "FlowAgent",
+                {
+                    "indicators": {
+                        "etf_inflow": 150,
+                        "leverage_ratio": 2.8,
+                        "stablecoin_mcap": 120e9,
+                        "fund_flow": 80,
+                    }
+                },
+            ),
+            (
+                "F4",
+                "onchain",
+                "onchain_agent",
+                "OnchainAgent",
+                {
+                    "indicators": {
+                        "active_addresses": 1.1e6,
+                        "hashrate": 650e12,
+                        "mvrv": 1.8,
+                        "exchange_inflow": 1200,
+                    }
+                },
+            ),
         ]
 
         outputs = []
         for node_id, expected_mod, import_mod, class_name, node_output in node_specs:
             result = MockNodeResult(confidence=0.35, direction="NEUTRAL")
             decision = agent.run(
-                node_id=node_id, result=result, state=None,
+                node_id=node_id,
+                result=result,
+                state=None,
                 signals=make_signals(["long", "short"], conf=0.1),
             )
             self.assertEqual(decision.action, CDriveAction.SUPPLEMENT)
@@ -398,7 +522,9 @@ class TestE2EFailOpen(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)  # 无 cognitive_adapter
         result = MockNodeResult(confidence=0.40, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F5", result=result, state=None,
+            node_id="F5",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
         )
         # 应正常返回决策, 不抛异常
@@ -409,7 +535,9 @@ class TestE2EFailOpen(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None)
         result = MockNodeResult(confidence=0.40, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F5", result=result, state=None,
+            node_id="F5",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"]),
         )
         # 规则辩论应产生 bull/bear argument
@@ -421,7 +549,9 @@ class TestE2EFailOpen(unittest.TestCase):
         agent = CDriveAgent(llm_fn=None, jev_judge_fn=None)
         result = MockNodeResult(confidence=0.40, direction="NEUTRAL")
         decision = agent.run(
-            node_id="F5", result=result, state=None,
+            node_id="F5",
+            result=result,
+            state=None,
             signals=make_signals(["long", "short"], conf=0.1),
         )
         # jeval_noul 应为 None
@@ -433,20 +563,25 @@ class TestE2EIPCIntegration(unittest.TestCase):
 
     def test_c_drive_agent_ipc(self):
         from c_drive_agent import handle_c_drive_agent
-        result = handle_c_drive_agent({
-            "node_id": "F5",
-            "confidence": 0.35,
-            "direction": "NEUTRAL",
-            "signals": make_signals(["long", "short"], conf=0.1),
-            "intent_type": "deep_analysis",
-        })
+
+        result = handle_c_drive_agent(
+            {
+                "node_id": "F5",
+                "confidence": 0.35,
+                "direction": "NEUTRAL",
+                "signals": make_signals(["long", "short"], conf=0.1),
+                "intent_type": "deep_analysis",
+            }
+        )
         self.assertTrue(result["ok"])
         self.assertEqual(result["decision"]["action"], "supplement")
 
     def test_macro_agent_ipc(self):
         from macro_agent import handle_macro_agent
-        result = handle_macro_agent({"node_output": {
-            "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}}})
+
+        result = handle_macro_agent(
+            {"node_output": {"indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}}}
+        )
         self.assertTrue(result["ok"])
         self.assertEqual(result["output"]["module"], "macro")
 
@@ -456,18 +591,22 @@ class TestE2EIPCIntegration(unittest.TestCase):
         from macro_agent import handle_macro_agent
 
         # Step 1: C-Drive-Agent IPC
-        cd_result = handle_c_drive_agent({
-            "node_id": "F5", "confidence": 0.35,
-            "direction": "NEUTRAL",
-            "signals": make_signals(["long", "short"], conf=0.1),
-        })
+        cd_result = handle_c_drive_agent(
+            {
+                "node_id": "F5",
+                "confidence": 0.35,
+                "direction": "NEUTRAL",
+                "signals": make_signals(["long", "short"], conf=0.1),
+            }
+        )
         self.assertTrue(cd_result["ok"])
         module = cd_result["decision"]["supplement_module"]
         self.assertEqual(module, "macro")
 
         # Step 2: Subagent IPC
-        sub_result = handle_macro_agent({"node_output": {
-            "indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}}})
+        sub_result = handle_macro_agent(
+            {"node_output": {"indicators": {"gdp_yoy": 2.5, "cpi_yoy": 3.1}}}
+        )
         self.assertTrue(sub_result["ok"])
 
         # Step 3: 聚合

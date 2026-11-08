@@ -11,6 +11,7 @@
 
 预期: 20-40 条 (每个基因文件采样2-3条)
 """
+
 import json
 import os
 import sys
@@ -24,8 +25,7 @@ for _p in [_THIS_DIR, _34_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from interfaces.training_data_provider import TrainingDataProvider, TrainingCase
-
+from interfaces.training_data_provider import TrainingCase, TrainingDataProvider  # noqa: E402
 
 # 默认 shadow_validation 目录
 _DEFAULT_SAMPLES_DIR = os.path.join(
@@ -49,9 +49,7 @@ class ShadowValidationCollector(TrainingDataProvider):
     def get_quality_threshold(self) -> str:
         return "B"
 
-    def fetch_cases(
-        self, limit: int = 100, since: Optional[str] = None
-    ) -> List[TrainingCase]:
+    def fetch_cases(self, limit: int = 100, since: Optional[str] = None) -> List[TrainingCase]:
         """从 shadow_validation 样本文件采集训练案例。
 
         每个基因文件采样前2-3条样本(避免单一基因过多)。
@@ -65,11 +63,13 @@ class ShadowValidationCollector(TrainingDataProvider):
             return cases
 
         try:
-            sample_files = sorted([
-                os.path.join(self.samples_dir, f)
-                for f in os.listdir(self.samples_dir)
-                if f.endswith("_samples.jsonl")
-            ])
+            sample_files = sorted(
+                [
+                    os.path.join(self.samples_dir, f)
+                    for f in os.listdir(self.samples_dir)
+                    if f.endswith("_samples.jsonl")
+                ]
+            )
         except Exception:
             return cases
 
@@ -81,9 +81,7 @@ class ShadowValidationCollector(TrainingDataProvider):
 
         return cases[:limit]
 
-    def _parse_samples_file(
-        self, file_path: str, max_per_file: int = 3
-    ) -> List[TrainingCase]:
+    def _parse_samples_file(self, file_path: str, max_per_file: int = 3) -> List[TrainingCase]:
         """解析单个 _samples.jsonl 文件。
 
         每文件取前 max_per_file 条样本(覆盖不同基因)。

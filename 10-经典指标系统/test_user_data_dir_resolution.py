@@ -1,5 +1,6 @@
-import ml_trade_service as svc
 import os
+
+import ml_trade_service as svc
 
 
 def test_user_data_dir_prefers_explicit_env(monkeypatch):

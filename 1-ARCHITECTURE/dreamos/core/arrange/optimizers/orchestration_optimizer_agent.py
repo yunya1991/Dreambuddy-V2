@@ -12,6 +12,7 @@ complexity_tier >= "T2" 时触发, 对执行计划进行动态优化:
     - 认知闭环: recall 检索历史 → record 记录新优化结果
     - 不替换 GraphPlanner 原有规划逻辑, 仅增强
 """
+
 from __future__ import annotations
 
 import json
@@ -19,10 +20,10 @@ import traceback
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
-
 # ============================================================
 # 数据结构
 # ============================================================
+
 
 @dataclass
 class PlanOptimization:
@@ -36,6 +37,7 @@ class PlanOptimization:
         keep_static_fallback: 是否保留静态回退 (默认 True)
         reasoning: 优化推理过程 (用于 record)
     """
+
     add_nodes: List[str] = field(default_factory=list)
     remove_nodes: List[str] = field(default_factory=list)
     reorder: Optional[Dict[str, int]] = None
@@ -57,6 +59,7 @@ class PlanOptimization:
 # ============================================================
 # OrchestrationOptimizerAgent
 # ============================================================
+
 
 class OrchestrationOptimizerAgent:
     """A 层编排优化 subagent
@@ -167,16 +170,13 @@ class OrchestrationOptimizerAgent:
         """构建 LLM 优化 prompt"""
         chain = getattr(plan, "planned_chain", "")
         rationale = getattr(plan, "rationale", "")
-        selected = [getattr(n, "node_id", str(n)) for n in
-                    getattr(plan, "selected_nodes", [])]
+        selected = [getattr(n, "node_id", str(n)) for n in getattr(plan, "selected_nodes", [])]
         confidence = intent.get("confidence", 0.0)
         complexity = intent.get("complexity_tier", "T1")
 
         recalled_str = ""
         if recalled:
-            recalled_str = "\n".join(
-                f"- {r.get('content', '')[:120]}" for r in recalled[:3]
-            )
+            recalled_str = "\n".join(f"- {r.get('content', '')[:120]}" for r in recalled[:3])
 
         return f"""你是 DreamOS 编排优化器。请优化以下执行计划。
 
@@ -239,7 +239,7 @@ class OrchestrationOptimizerAgent:
             return PlanOptimization(
                 add_nodes=["A7"],  # 实践论门禁验证节点
                 keep_static_fallback=True,
-                reasoning=f"rule-based: low confidence + recalled, suggest A7 verification",
+                reasoning="rule-based: low confidence + recalled, suggest A7 verification",
             )
 
         return PlanOptimization(

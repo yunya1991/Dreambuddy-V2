@@ -13,6 +13,7 @@
 用法：
   python3 scripts/seed_cases.py [--pool-dir reflection_data/replay_pool]
 """
+
 from __future__ import annotations
 
 import os
@@ -27,9 +28,7 @@ for _p in (_PROJECT_ROOT,):
 from core.reflection import DiscoveryNode, DiscoveryTree, ReplayPool  # noqa: E402
 
 # 默认回放池目录（工程内）
-DEFAULT_POOL_DIR = os.path.join(
-    _PROJECT_ROOT, "reflection_data", "replay_pool"
-)
+DEFAULT_POOL_DIR = os.path.join(_PROJECT_ROOT, "reflection_data", "replay_pool")
 
 # 种子案例定义：验收包 → 最小发现树（单链路径，节点=关键步骤）
 # poe_score 依据 wrapup_report 验收门禁结果（PASS=0.8）
@@ -43,10 +42,30 @@ SEED_CASES = [
         },
         "source_label": "acceptance_bundle:20261011_poe_landing:16826f4eb1",
         "steps": [
-            {"analyzer": "acceptance_gate", "params": {"skill": "dream-acceptance-verify"}, "poe_score": 0.8, "cost_calls": 1},
-            {"analyzer": "code_commit", "params": {"commit": "16826f4eb1"}, "poe_score": 0.8, "cost_calls": 1},
-            {"analyzer": "doc_sync", "params": {"scope": "README+INDEX"}, "poe_score": 0.8, "cost_calls": 1},
-            {"analyzer": "cognitive_record", "params": {"vm": "VM-1791723832736"}, "poe_score": 0.8, "cost_calls": 1},
+            {
+                "analyzer": "acceptance_gate",
+                "params": {"skill": "dream-acceptance-verify"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
+            {
+                "analyzer": "code_commit",
+                "params": {"commit": "16826f4eb1"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
+            {
+                "analyzer": "doc_sync",
+                "params": {"scope": "README+INDEX"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
+            {
+                "analyzer": "cognitive_record",
+                "params": {"vm": "VM-1791723832736"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
         ],
     },
     {
@@ -58,10 +77,30 @@ SEED_CASES = [
         },
         "source_label": "acceptance_bundle:20261012_checkpoint_persistence:886a53501b",
         "steps": [
-            {"analyzer": "acceptance_gate", "params": {"skill": "dream-acceptance-verify"}, "poe_score": 0.8, "cost_calls": 1},
-            {"analyzer": "code_commit", "params": {"commit": "886a53501b"}, "poe_score": 0.8, "cost_calls": 1},
-            {"analyzer": "cognitive_record", "params": {"vm": "VM-1791737946287"}, "poe_score": 0.8, "cost_calls": 1},
-            {"analyzer": "passive_training", "params": {"decision": "ingest"}, "poe_score": 0.8, "cost_calls": 1},
+            {
+                "analyzer": "acceptance_gate",
+                "params": {"skill": "dream-acceptance-verify"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
+            {
+                "analyzer": "code_commit",
+                "params": {"commit": "886a53501b"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
+            {
+                "analyzer": "cognitive_record",
+                "params": {"vm": "VM-1791737946287"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
+            {
+                "analyzer": "passive_training",
+                "params": {"decision": "ingest"},
+                "poe_score": 0.8,
+                "cost_calls": 1,
+            },
         ],
     },
 ]
@@ -99,9 +138,7 @@ def main(pool_dir: str = DEFAULT_POOL_DIR) -> int:
     created = []
     for case in SEED_CASES:
         # 幂等：已存在同 source_label 的树则跳过
-        existing = {
-            t.source_label for t in pool.list_trees("internal")
-        }
+        existing = {t.source_label for t in pool.list_trees("internal")}
         if case["source_label"] in existing:
             print(f"SKIP (exists): {case['bundle']}")
             continue
@@ -114,5 +151,7 @@ def main(pool_dir: str = DEFAULT_POOL_DIR) -> int:
 
 
 if __name__ == "__main__":
-    _dir = sys.argv[sys.argv.index("--pool-dir") + 1] if "--pool-dir" in sys.argv else DEFAULT_POOL_DIR
+    _dir = (
+        sys.argv[sys.argv.index("--pool-dir") + 1] if "--pool-dir" in sys.argv else DEFAULT_POOL_DIR
+    )
     sys.exit(main(_dir))

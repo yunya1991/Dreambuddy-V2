@@ -20,10 +20,10 @@ A0 矛盾论内嵌关系:
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from dreamos.registry.base import BaseNode
-from dreamos.shared.state import State, NodeResult
+from dreamos.shared.state import NodeResult, State
 
 
 class A1DeepResearchNode(BaseNode):
@@ -50,10 +50,10 @@ class A1DeepResearchNode(BaseNode):
         ch1h = mkt.get("change_1h", 0)
         ema20 = mkt.get("ema20", price)
         ema50 = mkt.get("ema50", price)
-        ema200 = mkt.get("ema200", price)
-        rsi = mkt.get("rsi14", 50)
+        ema200 = mkt.get("ema200", price)  # noqa: F841
+        rsi = mkt.get("rsi14", 50)  # noqa: F841
         atr_pct = mkt.get("atr_pct", 0.02)
-        vol_ratio = mkt.get("vol_ratio", 1.0)
+        vol_ratio = mkt.get("vol_ratio", 1.0)  # noqa: F841
         high_24h = mkt.get("high_24h", price * 1.05)
         low_24h = mkt.get("low_24h", price * 0.95)
 
@@ -146,8 +146,12 @@ class A1DeepResearchNode(BaseNode):
         rationale.append(f"  24h位置: {pos_in_range:.0%} (高{high_24h:.2f} / 低{low_24h:.2f})")
         rationale.append(f"  趋势强度: {trend_strength:.0%} | 综合置信: {confidence:.1%}")
         # P2-2: A0 矛盾论结果
-        rationale.append(f"  [A0矛盾论] 主矛盾: {a0_main_contradiction} → 方向{a0_direction} (置信{a0_confidence:.1%})")
-        rationale.append(f"  [A0门禁] 方向{'一致' if a0_aligned else '矛盾'} → 置信{'加成+0.06' if a0_aligned and a0_direction != 'HOLD' else '无调整'}")
+        rationale.append(
+            f"  [A0矛盾论] 主矛盾: {a0_main_contradiction} → 方向{a0_direction} (置信{a0_confidence:.1%})"
+        )
+        rationale.append(
+            f"  [A0门禁] 方向{'一致' if a0_aligned else '矛盾'} → 置信{'加成+0.06' if a0_aligned and a0_direction != 'HOLD' else '无调整'}"
+        )
 
         return NodeResult(
             node_id="A1",
@@ -170,6 +174,7 @@ class A1DeepResearchNode(BaseNode):
         """P2-2: 调用 A0 矛盾论节点进行主要矛盾分析"""
         try:
             from dreamos.capabilities.trading.nodes.a0_contradiction import A0ContradictionNode
+
             a0_node = A0ContradictionNode()
             a0_result = a0_node.execute_core(state)
             return {

@@ -3,7 +3,7 @@
 
 理论映射 (传统美林时钟 → 加密市场):
   传统美林时钟核心: 通胀×增长两维 → 四阶段 → 资金跨资产流转
-  加密市场映射: 
+  加密市场映射:
     - 增长代理 = 库存周期阶段 (被动去库存/主动补库存/被动补库存/主动去库存)
     - 通胀代理 = BTC.Dominance (资金在BTC和altcoin之间流转)
     - 四阶段 = 库存周期 × BTC.D → 资金流转方向
@@ -24,17 +24,17 @@
   3. 流动性与信用因子 (Liquidity & Credit): 稳定币市值/成交量变化
 """
 
+from typing import Optional
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Tuple
-
 
 # 美林时钟四阶段 (基于库存周期 × BTC.D)
 MERRILL_PHASES = {
-    "RECOVERY": 0,    # 复苏期: 被动去库存 + BTC.D下降 → 资金流入altcoin
-    "OVERHEAT": 1,    # 过热期: 主动补库存 + BTC.D下降 → altcoin疯狂
-    "STAGFLATION": 2, # 滞胀期: 被动补库存 + BTC.D上升 → 资金回流BTC
-    "REFLATION": 3,   # 衰退期: 主动去库存 + BTC.D上升 → 资金流出加密市场
+    "RECOVERY": 0,  # 复苏期: 被动去库存 + BTC.D下降 → 资金流入altcoin
+    "OVERHEAT": 1,  # 过热期: 主动补库存 + BTC.D下降 → altcoin疯狂
+    "STAGFLATION": 2,  # 滞胀期: 被动补库存 + BTC.D上升 → 资金回流BTC
+    "REFLATION": 3,  # 衰退期: 主动去库存 + BTC.D上升 → 资金流出加密市场
 }
 
 PHASE_NAMES = {v: k for k, v in MERRILL_PHASES.items()}
@@ -42,29 +42,32 @@ PHASE_NAMES = {v: k for k, v in MERRILL_PHASES.items()}
 
 def _rolling_zscore(series: pd.Series, window: int) -> pd.Series:
     """滚动z-score (事前可见)"""
-    mean = series.rolling(window, min_periods=max(5, window//4)).mean()
-    std = series.rolling(window, min_periods=max(5, window//4)).std()
+    mean = series.rolling(window, min_periods=max(5, window // 4)).mean()
+    std = series.rolling(window, min_periods=max(5, window // 4)).std()
     return (series - mean) / (std + 1e-10)
 
 
 def _rolling_percentile(series: pd.Series, window: int) -> pd.Series:
     """滚动百分位 (事前可见, 0-1)"""
+
     def _pct(x):
         if len(x) < 5:
             return 0.5
         return np.sum(x[-1] >= x) / len(x)
-    return series.rolling(window, min_periods=max(5, window//4)).apply(_pct, raw=True)
+
+    return series.rolling(window, min_periods=max(5, window // 4)).apply(_pct, raw=True)
 
 
 # ============================================================
 # 1. BTC.Dominance 特征 (资金流转代理)
 # ============================================================
 
+
 def btc_dominance_features(df: pd.DataFrame, ref_df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
     """
     BTC.Dominance特征 — 资金在BTC和altcoin之间流转的代理
 
-    理论: 
+    理论:
       - BTC.D = BTC市值 / 加密市场总市值
       - BTC.D上升 = 资金从altcoin流入BTC (避险)
       - BTC.D下降 = 资金从BTC流入altcoin (风险偏好)
@@ -77,27 +80,44 @@ def btc_dominance_features(df: pd.DataFrame, ref_df: Optional[pd.DataFrame] = No
       - mc_capital_flow_dir: 资金流向方向 (+1=流入altcoin, -1=流入BTC)
     """
     result = pd.DataFrame(index=df.index)
-    close = df["close"]
+    close = df["close"]  # noqa: F841
 
     if ref_df is not None and len(ref_df) > 100:
-        aligned = df[["close"]].join(
-            ref_df[["close"]].rename(columns={"close": "btc_close"}),
-            how="left",
-        ).ffill().dropna()
+        aligned = (
+            df[["close"]]
+            .join(
+                ref_df[["close"]].rename(columns={"close": "btc_close"}),
+                how="left",
+            )
+            .ffill()
+            .dropna()
+        )
 
         if len(aligned) > 50:
             price_ratio = aligned["close"] / (aligned["btc_close"] + 1e-10)
-            result["mc_btcd_ratio"] = price_ratio.reindex(df.index).ffill().fillna(price_ratio.mean() if len(price_ratio) > 0 else 0)
+            result["mc_btcd_ratio"] = (
+                price_ratio.reindex(df.index)
+                .ffill()
+                .fillna(price_ratio.mean() if len(price_ratio) > 0 else 0)
+            )
 
             ratio_ma20 = price_ratio.rolling(20, min_periods=5).mean()
             ratio_ma60 = price_ratio.rolling(60, min_periods=20).mean()
-            result["mc_btcd_trend"] = (ratio_ma20 > ratio_ma60).astype(float).reindex(df.index).ffill().fillna(0.5)
+            result["mc_btcd_trend"] = (
+                (ratio_ma20 > ratio_ma60).astype(float).reindex(df.index).ffill().fillna(0.5)
+            )
 
-            result["mc_btcd_pct"] = _rolling_percentile(price_ratio, 120).reindex(df.index).ffill().fillna(0.5)
-            result["mc_btcd_zscore"] = _rolling_zscore(price_ratio, 120).reindex(df.index).ffill().fillna(0)
+            result["mc_btcd_pct"] = (
+                _rolling_percentile(price_ratio, 120).reindex(df.index).ffill().fillna(0.5)
+            )
+            result["mc_btcd_zscore"] = (
+                _rolling_zscore(price_ratio, 120).reindex(df.index).ffill().fillna(0)
+            )
 
             ratio_change = price_ratio.pct_change(20)
-            result["mc_capital_flow_dir"] = np.sign(ratio_change).reindex(df.index).ffill().fillna(0)
+            result["mc_capital_flow_dir"] = (
+                np.sign(ratio_change).reindex(df.index).ffill().fillna(0)
+            )
         else:
             result["mc_btcd_ratio"] = 0
             result["mc_btcd_trend"] = 0.5
@@ -118,6 +138,7 @@ def btc_dominance_features(df: pd.DataFrame, ref_df: Optional[pd.DataFrame] = No
 # 2. 库存周期特征 (增长代理)
 # ============================================================
 
+
 def inventory_cycle_proxy(df: pd.DataFrame) -> pd.DataFrame:
     """
     库存周期四阶段代理特征
@@ -137,18 +158,17 @@ def inventory_cycle_proxy(df: pd.DataFrame) -> pd.DataFrame:
     """
     result = pd.DataFrame(index=df.index)
 
-    close = df['close'].values
-    volume = df['volume'].values if 'volume' in df.columns else np.ones(len(close))
-    high = df['high'].values
-    low = df['low'].values
+    close = df["close"].values
+    volume = df["volume"].values if "volume" in df.columns else np.ones(len(close))
+    high = df["high"].values
+    low = df["low"].values
 
     roc20 = pd.Series(close).pct_change(20).fillna(0).values * 100
     roc60 = pd.Series(close).pct_change(60).fillna(0).values * 100
 
-    tr = np.maximum(high - low, np.maximum(
-        np.abs(high - np.roll(close, 1)),
-        np.abs(low - np.roll(close, 1))
-    ))
+    tr = np.maximum(
+        high - low, np.maximum(np.abs(high - np.roll(close, 1)), np.abs(low - np.roll(close, 1)))
+    )
     tr[0] = high[0] - low[0]
     atr20 = pd.Series(tr).rolling(20, min_periods=5).mean().values
     vol_ratio = atr20 / np.where(close > 0, close, 1) * 100
@@ -159,27 +179,30 @@ def inventory_cycle_proxy(df: pd.DataFrame) -> pd.DataFrame:
 
     ma20 = pd.Series(close).rolling(20, min_periods=5).mean().values
     ma60 = pd.Series(close).rolling(60, min_periods=10).mean().values
-    trend = np.where(ma60 > 0, (ma20 - ma60) / ma60 * 100, 0)
+    trend = np.where(ma60 > 0, (ma20 - ma60) / ma60 * 100, 0)  # noqa: F841
 
-    recovery = np.clip(roc20 * 0.3 + (10 - vol_ratio) * 0.4 + np.clip(vol_change, 0, 50) * 0.3, 0, 100)
+    recovery = np.clip(
+        roc20 * 0.3 + (10 - vol_ratio) * 0.4 + np.clip(vol_change, 0, 50) * 0.3, 0, 100
+    )
     expansion = np.clip(roc60 * 0.4 + vol_ratio * 0.2 + np.clip(vol_change, 0, 100) * 0.4, 0, 100)
     stagflation = np.clip(
-        (np.abs(roc20) < 5).astype(float) * 30
-        + vol_ratio * 3
-        + np.clip(-vol_change, 0, 50) * 0.8,
-        0, 100
+        (np.abs(roc20) < 5).astype(float) * 30 + vol_ratio * 3 + np.clip(-vol_change, 0, 50) * 0.8,
+        0,
+        100,
     )
-    contraction = np.clip(-roc20 * 0.3 + vol_ratio * 0.3 + np.clip(vol_change, -50, 50) * 0.2, 0, 100)
+    contraction = np.clip(
+        -roc20 * 0.3 + vol_ratio * 0.3 + np.clip(vol_change, -50, 50) * 0.2, 0, 100
+    )
     contraction = np.where(roc20 < 0, contraction, contraction * 0.3)
 
-    result['mc_inv_recovery_score'] = recovery
-    result['mc_inv_expansion_score'] = expansion
-    result['mc_inv_stagflation_score'] = stagflation
-    result['mc_inv_contraction_score'] = contraction
+    result["mc_inv_recovery_score"] = recovery
+    result["mc_inv_expansion_score"] = expansion
+    result["mc_inv_stagflation_score"] = stagflation
+    result["mc_inv_contraction_score"] = contraction
 
     scores = np.column_stack([recovery, expansion, stagflation, contraction])
     dominant_phase = np.argmax(scores, axis=1)
-    result['mc_inv_phase'] = dominant_phase
+    result["mc_inv_phase"] = dominant_phase
 
     return result
 
@@ -188,7 +211,10 @@ def inventory_cycle_proxy(df: pd.DataFrame) -> pd.DataFrame:
 # 3. 宏观-技术共振因子 (Resonance Factor)
 # ============================================================
 
-def resonance_factor_features(df: pd.DataFrame, cycle_phase: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+
+def resonance_factor_features(
+    df: pd.DataFrame, cycle_phase: Optional[pd.DataFrame] = None
+) -> pd.DataFrame:
     """
     宏观-技术共振因子 — 库存周期阶段 × 技术信号
 
@@ -215,37 +241,51 @@ def resonance_factor_features(df: pd.DataFrame, cycle_phase: Optional[pd.DataFra
     ema200 = close.rolling(200, min_periods=100).mean()
 
     tech_trend = np.sign((ema20 - ema60).fillna(0))
-    long_trend = np.sign((ema60 - ema200).fillna(0))
+    long_trend = np.sign((ema60 - ema200).fillna(0))  # noqa: F841
 
     momentum = close.pct_change(20).fillna(0) * 100
 
     high = df["high"]
     low = df["low"]
-    tr = pd.concat([high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1).max(axis=1)
+    tr = pd.concat(
+        [high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1
+    ).max(axis=1)
     atr14 = tr.rolling(14, min_periods=5).mean()
     atr_pct = (atr14 / close).fillna(0)
     vol_pct = _rolling_percentile(atr_pct, 60).fillna(0.5)
     tech_vol_regime = np.where(vol_pct < 0.33, -1, np.where(vol_pct > 0.66, 1, 0))
 
-    cycle_trend = np.where(ic_phase == 0, 1, np.where(ic_phase == 1, 1, np.where(ic_phase == 2, 0, -1)))
-    cycle_momentum = np.where(ic_phase == 0, 0.5, np.where(ic_phase == 1, 1.0, np.where(ic_phase == 2, 0.0, -0.5)))
-    cycle_vol_regime = np.where(ic_phase == 0, -1, np.where(ic_phase == 1, 1, np.where(ic_phase == 2, 1, 1)))
+    cycle_trend = np.where(
+        ic_phase == 0, 1, np.where(ic_phase == 1, 1, np.where(ic_phase == 2, 0, -1))
+    )
+    cycle_momentum = np.where(
+        ic_phase == 0, 0.5, np.where(ic_phase == 1, 1.0, np.where(ic_phase == 2, 0.0, -0.5))
+    )
+    cycle_vol_regime = np.where(
+        ic_phase == 0, -1, np.where(ic_phase == 1, 1, np.where(ic_phase == 2, 1, 1))
+    )
 
-    result["mc_resonance_trend"] = pd.Series(cycle_trend * np.array(tech_trend), index=df.index).fillna(0)
-    result["mc_resonance_momentum"] = pd.Series(cycle_momentum * np.sign(np.array(momentum)), index=df.index).fillna(0)
-    result["mc_resonance_volatility"] = pd.Series(cycle_vol_regime * tech_vol_regime, index=df.index).fillna(0)
+    result["mc_resonance_trend"] = pd.Series(
+        cycle_trend * np.array(tech_trend), index=df.index
+    ).fillna(0)
+    result["mc_resonance_momentum"] = pd.Series(
+        cycle_momentum * np.sign(np.array(momentum)), index=df.index
+    ).fillna(0)
+    result["mc_resonance_volatility"] = pd.Series(
+        cycle_vol_regime * tech_vol_regime, index=df.index
+    ).fillna(0)
 
     resonance_score = (
-        result["mc_resonance_trend"] * 0.4 +
-        result["mc_resonance_momentum"] * 0.3 +
-        result["mc_resonance_volatility"] * 0.3
+        result["mc_resonance_trend"] * 0.4
+        + result["mc_resonance_momentum"] * 0.3
+        + result["mc_resonance_volatility"] * 0.3
     )
     result["mc_resonance_score"] = resonance_score.clip(-1, 1).fillna(0)
 
     confidence = (
-        np.abs(result["mc_resonance_trend"]) * 0.4 +
-        np.abs(result["mc_resonance_momentum"]) * 0.3 +
-        np.abs(result["mc_resonance_volatility"]) * 0.3
+        np.abs(result["mc_resonance_trend"]) * 0.4
+        + np.abs(result["mc_resonance_momentum"]) * 0.3
+        + np.abs(result["mc_resonance_volatility"]) * 0.3
     )
     result["mc_resonance_confidence"] = confidence.clip(0, 1).fillna(0)
 
@@ -256,11 +296,14 @@ def resonance_factor_features(df: pd.DataFrame, cycle_phase: Optional[pd.DataFra
 # 4. 跨资产动量因子 (Cross-Asset Momentum)
 # ============================================================
 
-def cross_asset_momentum_features(df: pd.DataFrame, ref_df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+
+def cross_asset_momentum_features(
+    df: pd.DataFrame, ref_df: Optional[pd.DataFrame] = None
+) -> pd.DataFrame:
     """
     跨资产动量因子 — BTC vs altcoin相对强弱
 
-    理论: 
+    理论:
       - 相对强弱持续 = 资金持续流入某类资产
       - 相对强弱反转 = 资金开始流出
 
@@ -275,20 +318,29 @@ def cross_asset_momentum_features(df: pd.DataFrame, ref_df: Optional[pd.DataFram
     result = pd.DataFrame(index=df.index)
 
     if ref_df is not None and len(ref_df) > 100:
-        aligned = df[["close"]].join(
-            ref_df[["close"]].rename(columns={"close": "ref_close"}),
-            how="left",
-        ).ffill().dropna()
+        aligned = (
+            df[["close"]]
+            .join(
+                ref_df[["close"]].rename(columns={"close": "ref_close"}),
+                how="left",
+            )
+            .ffill()
+            .dropna()
+        )
 
         if len(aligned) > 50:
             for period in [6, 12, 24, 48, 168]:
                 target_ret = aligned["close"].pct_change(period).fillna(0)
                 ref_ret = aligned["ref_close"].pct_change(period).fillna(0)
-                result[f"mc_cam_return_diff_{period}"] = (target_ret - ref_ret).reindex(df.index).ffill().fillna(0).clip(-0.3, 0.3)
+                result[f"mc_cam_return_diff_{period}"] = (
+                    (target_ret - ref_ret).reindex(df.index).ffill().fillna(0).clip(-0.3, 0.3)
+                )
 
             target_mom = aligned["close"].pct_change(24).fillna(0) * 100
             ref_mom = aligned["ref_close"].pct_change(24).fillna(0) * 100
-            result["mc_cam_momentum_ratio"] = (target_mom / (ref_mom + 1e-10)).reindex(df.index).ffill().fillna(1).clip(-5, 5)
+            result["mc_cam_momentum_ratio"] = (
+                (target_mom / (ref_mom + 1e-10)).reindex(df.index).ffill().fillna(1).clip(-5, 5)
+            )
 
             target_ema20 = aligned["close"].rolling(20, min_periods=10).mean()
             target_ema60 = aligned["close"].rolling(60, min_periods=30).mean()
@@ -297,29 +349,35 @@ def cross_asset_momentum_features(df: pd.DataFrame, ref_df: Optional[pd.DataFram
 
             target_trend = (target_ema20 - target_ema60) / (target_ema60 + 1e-10) * 100
             ref_trend = (ref_ema20 - ref_ema60) / (ref_ema60 + 1e-10) * 100
-            result["mc_cam_trend_ratio"] = (target_trend / (ref_trend + 1e-10)).reindex(df.index).ffill().fillna(1).clip(-5, 5)
+            result["mc_cam_trend_ratio"] = (
+                (target_trend / (ref_trend + 1e-10)).reindex(df.index).ffill().fillna(1).clip(-5, 5)
+            )
 
             def _rsi(series, period=14):
                 delta = series.diff()
                 gain = delta.where(delta > 0, 0)
                 loss = -delta.where(delta < 0, 0)
-                avg_gain = gain.ewm(alpha=1/period, min_periods=period).mean()
-                avg_loss = loss.ewm(alpha=1/period, min_periods=period).mean()
+                avg_gain = gain.ewm(alpha=1 / period, min_periods=period).mean()
+                avg_loss = loss.ewm(alpha=1 / period, min_periods=period).mean()
                 rs = avg_gain / (avg_loss + 1e-10)
                 return 100 - (100 / (1 + rs))
 
             target_rsi = _rsi(aligned["close"])
             ref_rsi = _rsi(aligned["ref_close"])
-            result["mc_cam_rsi_spread"] = ((target_rsi - ref_rsi) / 100).reindex(df.index).ffill().fillna(0).clip(-1, 1)
+            result["mc_cam_rsi_spread"] = (
+                ((target_rsi - ref_rsi) / 100).reindex(df.index).ffill().fillna(0).clip(-1, 1)
+            )
 
             strength = (
-                result.get("mc_cam_return_diff_24", 0) * 0.3 +
-                np.sign(target_mom - ref_mom) * 0.3 +
-                result["mc_cam_rsi_spread"] * 0.4
+                result.get("mc_cam_return_diff_24", 0) * 0.3
+                + np.sign(target_mom - ref_mom) * 0.3
+                + result["mc_cam_rsi_spread"] * 0.4
             )
             result["mc_cam_strength"] = strength.clip(-1, 1).fillna(0)
 
-            result["mc_cam_strength_pct"] = _rolling_percentile(result["mc_cam_strength"], 120).fillna(0.5)
+            result["mc_cam_strength_pct"] = _rolling_percentile(
+                result["mc_cam_strength"], 120
+            ).fillna(0.5)
         else:
             for period in [6, 12, 24, 48, 168]:
                 result[f"mc_cam_return_diff_{period}"] = 0
@@ -343,6 +401,7 @@ def cross_asset_momentum_features(df: pd.DataFrame, ref_df: Optional[pd.DataFram
 # ============================================================
 # 5. 流动性与信用因子 (Liquidity & Credit)
 # ============================================================
+
 
 def liquidity_credit_features(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -377,18 +436,21 @@ def liquidity_credit_features(df: pd.DataFrame) -> pd.DataFrame:
     vol_trend = np.sign(volume.rolling(10).mean().pct_change(5).fillna(0))
     result["mc_liq_price_volume_divergence"] = (price_trend * vol_trend).fillna(0)
 
-    hl_range = (high - low) / (close + 1e-10)
+    hl_range = (high - low) / (close + 1e-10)  # noqa: F841
     close_position = (close - low) / (high - low + 1e-10)
-    result["mc_liq_smart_money"] = (close_position - 0.5).rolling(20, min_periods=5).mean().fillna(0).clip(-0.5, 0.5)
+    result["mc_liq_smart_money"] = (
+        (close_position - 0.5).rolling(20, min_periods=5).mean().fillna(0).clip(-0.5, 0.5)
+    )
 
     turnover_rate = (volume * close).rolling(20).mean().pct_change(20).fillna(0)
     result["mc_liq_turnover_rate"] = turnover_rate.clip(-0.5, 0.5)
 
     credit_score = (
-        result["mc_liq_volume_pct"] * 0.3 +
-        np.clip(result["mc_liq_volume_trend"], 0, 1) * 0.3 +
-        result["mc_liq_price_volume_divergence"] * 0.2 +
-        result["mc_liq_smart_money"] * 0.2 + 0.5
+        result["mc_liq_volume_pct"] * 0.3
+        + np.clip(result["mc_liq_volume_trend"], 0, 1) * 0.3
+        + result["mc_liq_price_volume_divergence"] * 0.2
+        + result["mc_liq_smart_money"] * 0.2
+        + 0.5
     )
     result["mc_liq_credit_score"] = credit_score.clip(0, 1).fillna(0.5)
 
@@ -398,6 +460,7 @@ def liquidity_credit_features(df: pd.DataFrame) -> pd.DataFrame:
 # ============================================================
 # 6. 美林时钟四阶段分类 (库存周期 × BTC.D)
 # ============================================================
+
 
 def merrill_clock_phase(
     df: pd.DataFrame,
@@ -431,7 +494,7 @@ def merrill_clock_phase(
 
     btc_d_feats = btc_dominance_features(df, ref_df)
     btc_d_trend = btc_d_feats["mc_btcd_trend"].values
-    btc_d_ratio = btc_d_feats["mc_btcd_ratio"].values
+    btc_d_ratio = btc_d_feats["mc_btcd_ratio"].values  # noqa: F841
 
     n = len(df)
     phases = np.zeros(n)
@@ -464,7 +527,9 @@ def merrill_clock_phase(
             if d_trend < 0.5:
                 phases[i] = MERRILL_PHASES["RECOVERY"] if inv_p == 0 else MERRILL_PHASES["OVERHEAT"]
             else:
-                phases[i] = MERRILL_PHASES["STAGFLATION"] if inv_p == 2 else MERRILL_PHASES["REFLATION"]
+                phases[i] = (
+                    MERRILL_PHASES["STAGFLATION"] if inv_p == 2 else MERRILL_PHASES["REFLATION"]
+                )
             confidence[i] = 0.3
 
     result["mc_phase"] = phases
@@ -479,6 +544,7 @@ def merrill_clock_phase(
 # ============================================================
 # 7. 交叉周期特征 (美林时钟 × 库存周期)
 # ============================================================
+
 
 def cross_cycle_features(
     df: pd.DataFrame,
@@ -510,8 +576,12 @@ def cross_cycle_features(
 
     result["mc_resonance_recovery"] = merrill["mc_phase_recovery"] * resonance["mc_resonance_score"]
     result["mc_resonance_overheat"] = merrill["mc_phase_overheat"] * resonance["mc_resonance_score"]
-    result["mc_resonance_stagflation"] = merrill["mc_phase_stagflation"] * resonance["mc_resonance_score"]
-    result["mc_resonance_reflation"] = merrill["mc_phase_reflation"] * resonance["mc_resonance_score"]
+    result["mc_resonance_stagflation"] = (
+        merrill["mc_phase_stagflation"] * resonance["mc_resonance_score"]
+    )
+    result["mc_resonance_reflation"] = (
+        merrill["mc_phase_reflation"] * resonance["mc_resonance_score"]
+    )
 
     result["mc_liquidity_recovery"] = merrill["mc_phase_recovery"] * flow["mc_btcd_pct"]
     result["mc_liquidity_overheat"] = merrill["mc_phase_overheat"] * flow["mc_btcd_pct"]
@@ -521,7 +591,7 @@ def cross_cycle_features(
     phase = merrill["mc_phase"].values
     phase_change = np.zeros(len(phase))
     for i in range(1, len(phase)):
-        if phase[i] != phase[i-1]:
+        if phase[i] != phase[i - 1]:
             phase_change[i] = 1
     result["mc_phase_change"] = phase_change
 
@@ -538,6 +608,7 @@ def cross_cycle_features(
 # ============================================================
 # 主类
 # ============================================================
+
 
 class MerrillClockFeatures:
     """
@@ -623,7 +694,7 @@ class MerrillClockFeatures:
 
 
 # ===== FeatureRegistry 注册 =====
-from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
+from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry  # noqa: E402
 
 FeatureRegistry.register(
     name="merrill_clock",

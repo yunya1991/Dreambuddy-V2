@@ -17,6 +17,7 @@
   - confidence > 当前持仓 confidence + 0.15
   - confidence >= 0.65（建仓最低门槛）
 """
+
 from __future__ import annotations
 
 import sys
@@ -37,6 +38,7 @@ class TestFindStrongestRotationSignal:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             find_strongest_rotation_signal,
         )
+
         evo_signals = {
             "COIN": {"top_path_confidence": 0.90, "top_path_direction": "long"},
         }
@@ -59,6 +61,7 @@ class TestFindStrongestRotationSignal:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             find_strongest_rotation_signal,
         )
+
         evo_signals = {}
         bcrm_signals = {
             "COIN": {"direction": "DOWN", "confidence": 0.98},
@@ -81,6 +84,7 @@ class TestFindStrongestRotationSignal:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             find_strongest_rotation_signal,
         )
+
         evo_signals = {
             "ETH": {"top_path_confidence": 0.99, "top_path_direction": "long"},
             "COIN": {"top_path_confidence": 0.90, "top_path_direction": "long"},
@@ -101,6 +105,7 @@ class TestFindStrongestRotationSignal:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             find_strongest_rotation_signal,
         )
+
         evo_signals = {
             "COIN": {"top_path_confidence": 0.80, "top_path_direction": "long"},
         }
@@ -119,6 +124,7 @@ class TestFindStrongestRotationSignal:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             find_strongest_rotation_signal,
         )
+
         evo_signals = {
             "COIN": {"top_path_confidence": 0.60, "top_path_direction": "short"},
         }
@@ -137,6 +143,7 @@ class TestFindStrongestRotationSignal:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             find_strongest_rotation_signal,
         )
+
         evo_signals = {
             "ARB": {"top_path_confidence": 0.88, "top_path_direction": "long"},
         }
@@ -159,6 +166,7 @@ class TestFindStrongestRotationSignal:
         from dreambuddy_evolution.engines.entry_signal_governor import (
             find_strongest_rotation_signal,
         )
+
         result = find_strongest_rotation_signal(
             evo_signals={},
             bcrm_signals={},

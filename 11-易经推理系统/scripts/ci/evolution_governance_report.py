@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse
+import argparse  # noqa: I001
 import glob
 import json
 import sys
@@ -36,7 +36,9 @@ def _parse_iso_utc(value: str) -> Optional[datetime]:
 def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build evolution weekly/monthly governance report")
     parser.add_argument("--decision-glob", default="artifacts/evolution/**/decision-*.json")
-    parser.add_argument("--rollback-exec-glob", default="artifacts/evolution/rollback/executions/*.json")
+    parser.add_argument(
+        "--rollback-exec-glob", default="artifacts/evolution/rollback/executions/*.json"
+    )
     parser.add_argument("--period", choices=["week", "month"], default="week")
     parser.add_argument("--output-json", required=True)
     parser.add_argument("--now-iso", default="")
@@ -95,12 +97,16 @@ def main(argv: List[str] = None) -> int:
             "total_decisions": decisions_total,
             "approve_count": approve_count,
             "reject_count": reject_count,
-            "approval_reject_count": sum(count for code, count in reason_counter.items() if code.startswith("APPROVAL_")),
+            "approval_reject_count": sum(
+                count for code, count in reason_counter.items() if code.startswith("APPROVAL_")
+            ),
             "rollback_execution_count": rollback_count,
             "rollback_applied_count": rollback_success,
             "avg_rto_seconds": avg_rto,
         },
-        "top_reason_codes": [{"code": code, "count": count} for code, count in reason_counter.most_common(10)],
+        "top_reason_codes": [
+            {"code": code, "count": count} for code, count in reason_counter.most_common(10)
+        ],
         "schema_version": "evolution-p2-governance-report-v0.1",
     }
     _write_json(Path(args.output_json), report)

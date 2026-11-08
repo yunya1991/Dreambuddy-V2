@@ -7,6 +7,7 @@ P1-3 RED: except pass 收敛 safe_call 契约测试
 - 两个热点文件 (data_center.py / evolution_pipeline.py) except-pass 归零
 - primary_contradiction_detector.py except-pass 归零
 """
+
 from __future__ import annotations
 
 import ast
@@ -49,9 +50,9 @@ class TestExceptPassConvergence:
     def test_total_except_pass_below_threshold(self):
         """全包 except-pass 合计 ≤ 15"""
         total = sum(_count_except_pass(p) for p in _iter_pkg_py_files())
-        assert total <= _THRESHOLD, (
-            f"except-pass 合计 {total} > 阈值 {_THRESHOLD}，需收敛到 safe_call 或加日志"
-        )
+        assert (
+            total <= _THRESHOLD
+        ), f"except-pass 合计 {total} > 阈值 {_THRESHOLD}，需收敛到 safe_call 或加日志"
 
     def test_hotspot_data_center_converged(self):
         """热点1: adapters/data_center.py except-pass 归零"""

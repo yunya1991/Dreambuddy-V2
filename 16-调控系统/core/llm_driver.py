@@ -21,10 +21,10 @@ Dream OS 大模型驱动器 — 千问 3.8 MAX 驱动系统编排/进化/修复
 模块归属：16-调控系统（跨系统调控与 LLM 驱动中枢）
 """
 
-import json
+import json  # noqa: I001
 import logging
 import time
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,6 +34,7 @@ try:
     from . import qwen_client
 except ImportError:
     import sys
+
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import qwen_client
 
@@ -44,9 +45,11 @@ _BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # ── 驱动结果 ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class DriveResult:
     """驱动结果"""
+
     success: bool
     purpose: str
     content: str = ""
@@ -131,9 +134,11 @@ _SYS_PARAM = """你是 Dream OS 参数调优引擎。
 
 # ── JSON 解析工具 ─────────────────────────────────────────────────────────
 
+
 def _parse_json(content: str) -> Optional[Dict[str, Any]]:
     """解析 LLM 输出中的 JSON（容错：去除 markdown 代码块标记）"""
     import re
+
     content = content.strip()
     if content.startswith("```"):
         content = re.sub(r"^```(?:json)?\s*", "", content)
@@ -152,6 +157,7 @@ def _parse_json(content: str) -> Optional[Dict[str, Any]]:
 
 
 # ── 四大驱动入口 ──────────────────────────────────────────────────────────
+
 
 def drive_a8_governance(
     stats: Dict[str, Any],
@@ -175,17 +181,25 @@ def drive_a8_governance(
 
     # 构建上下文
     recent = decisions[-5:] if len(decisions) > 5 else decisions
-    context = json.dumps({
-        "win_rate": stats.get("win_rate", "?"),
-        "hold_rate": stats.get("hold_rate", "?"),
-        "total_trades": stats.get("total_trades", 0),
-        "top_hexagrams": stats.get("top_hexagrams", {}),
-        "accuracy_trend": stats.get("accuracy_trend", []),
-        "recent_decisions": [
-            {"action": d.get("action"), "result": d.get("result"), "reason": d.get("reason", "")[:50]}
-            for d in recent
-        ],
-    }, ensure_ascii=False, indent=2)
+    context = json.dumps(
+        {
+            "win_rate": stats.get("win_rate", "?"),
+            "hold_rate": stats.get("hold_rate", "?"),
+            "total_trades": stats.get("total_trades", 0),
+            "top_hexagrams": stats.get("top_hexagrams", {}),
+            "accuracy_trend": stats.get("accuracy_trend", []),
+            "recent_decisions": [
+                {
+                    "action": d.get("action"),
+                    "result": d.get("result"),
+                    "reason": d.get("reason", "")[:50],
+                }
+                for d in recent
+            ],
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
 
     prompt = f"以下是交易系统近期表现数据，请分析理论与实践的偏差：\n\n{context}"
 
@@ -202,8 +216,10 @@ def drive_a8_governance(
 
     if not result.success:
         return DriveResult(
-            success=False, purpose="a8_governance",
-            error=result.error, latency_ms=latency,
+            success=False,
+            purpose="a8_governance",
+            error=result.error,
+            latency_ms=latency,
         )
 
     parsed = _parse_json(result.content)
@@ -244,13 +260,19 @@ def drive_dream_evolution(
     """
     start = time.time()
 
-    context = json.dumps({
-        "win_rate": stats.get("win_rate", "?"),
-        "hold_rate": stats.get("hold_rate", "?"),
-        "hold_streak": stats.get("hold_streak", 0),
-        "detected_signals": signals[:5],
-        "a8_gaps": [{"type": g.get("type"), "desc": g.get("desc")} for g in (a8_gaps or [])[:3]],
-    }, ensure_ascii=False, indent=2)
+    context = json.dumps(
+        {
+            "win_rate": stats.get("win_rate", "?"),
+            "hold_rate": stats.get("hold_rate", "?"),
+            "hold_streak": stats.get("hold_streak", 0),
+            "detected_signals": signals[:5],
+            "a8_gaps": [
+                {"type": g.get("type"), "desc": g.get("desc")} for g in (a8_gaps or [])[:3]
+            ],
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
 
     prompt = f"以下是交易系统的表现和已检测信号，请进行潜意识分析：\n\n{context}"
 
@@ -267,8 +289,10 @@ def drive_dream_evolution(
 
     if not result.success:
         return DriveResult(
-            success=False, purpose="dream_evolution",
-            error=result.error, latency_ms=latency,
+            success=False,
+            purpose="dream_evolution",
+            error=result.error,
+            latency_ms=latency,
         )
 
     parsed = _parse_json(result.content)
@@ -311,16 +335,20 @@ def drive_cognitive_reflection(
     """
     start = time.time()
 
-    context = json.dumps({
-        "memory_count": memory_stats.get("memory_count", 0),
-        "quality_distribution": memory_stats.get("quality_distribution", {}),
-        "recent_accuracy": memory_stats.get("recent_accuracy", "?"),
-        "stagnation_indicators": memory_stats.get("stagnation_indicators", []),
-        "recent_learnings": [
-            {"type": l.get("type"), "outcome": l.get("outcome")}
-            for l in (recent_learnings or [])[-5:]
-        ],
-    }, ensure_ascii=False, indent=2)
+    context = json.dumps(
+        {
+            "memory_count": memory_stats.get("memory_count", 0),
+            "quality_distribution": memory_stats.get("quality_distribution", {}),
+            "recent_accuracy": memory_stats.get("recent_accuracy", "?"),
+            "stagnation_indicators": memory_stats.get("stagnation_indicators", []),
+            "recent_learnings": [
+                {"type": l.get("type"), "outcome": l.get("outcome")}
+                for l in (recent_learnings or [])[-5:]  # noqa: E741
+            ],
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
 
     prompt = f"以下是系统认知和记忆的统计数据，请进行元认知反思：\n\n{context}"
 
@@ -337,8 +365,10 @@ def drive_cognitive_reflection(
 
     if not result.success:
         return DriveResult(
-            success=False, purpose="cognitive_reflection",
-            error=result.error, latency_ms=latency,
+            success=False,
+            purpose="cognitive_reflection",
+            error=result.error,
+            latency_ms=latency,
         )
 
     parsed = _parse_json(result.content)
@@ -380,17 +410,21 @@ def drive_parameter_tuning(
     """
     start = time.time()
 
-    context = json.dumps({
-        "backtest": {
-            "win_rate": backtest_stats.get("win_rate", "?"),
-            "avg_pnl": backtest_stats.get("avg_pnl", "?"),
-            "max_drawdown": backtest_stats.get("max_drawdown", "?"),
-            "sharpe": backtest_stats.get("sharpe", "?"),
-            "total_trades": backtest_stats.get("total_trades", 0),
-            "avg_hold_hours": backtest_stats.get("avg_hold_hours", "?"),
+    context = json.dumps(
+        {
+            "backtest": {
+                "win_rate": backtest_stats.get("win_rate", "?"),
+                "avg_pnl": backtest_stats.get("avg_pnl", "?"),
+                "max_drawdown": backtest_stats.get("max_drawdown", "?"),
+                "sharpe": backtest_stats.get("sharpe", "?"),
+                "total_trades": backtest_stats.get("total_trades", 0),
+                "avg_hold_hours": backtest_stats.get("avg_hold_hours", "?"),
+            },
+            "current_params": current_params,
         },
-        "current_params": current_params,
-    }, ensure_ascii=False, indent=2)
+        ensure_ascii=False,
+        indent=2,
+    )
 
     prompt = f"以下是回测统计和当前参数，请分析优化方向：\n\n{context}"
 
@@ -407,14 +441,16 @@ def drive_parameter_tuning(
 
     if not result.success:
         return DriveResult(
-            success=False, purpose="parameter_tuning",
-            error=result.error, latency_ms=latency,
+            success=False,
+            purpose="parameter_tuning",
+            error=result.error,
+            latency_ms=latency,
         )
 
     parsed = _parse_json(result.content)
     proposals = parsed.get("param_suggestions", []) if parsed else []
     warnings = parsed.get("risk_warnings", []) if parsed else []
-    analysis = parsed.get("analysis", "") if parsed else ""
+    analysis = parsed.get("analysis", "") if parsed else ""  # noqa: F841
 
     return DriveResult(
         success=True,
@@ -428,6 +464,7 @@ def drive_parameter_tuning(
 
 
 # ── 兼容 self_evolution_engine 的 callable 接口 ──────────────────────────
+
 
 def llm_call(
     prompt: str,
@@ -452,6 +489,7 @@ def llm_call(
 
 
 # ── 统一驱动入口 ──────────────────────────────────────────────────────────
+
 
 def drive_all(
     stats: Dict[str, Any],
@@ -483,14 +521,18 @@ def drive_all(
     # 1. A8 治理
     a8 = drive_a8_governance(stats, decisions)
     results["a8_governance"] = a8.to_dict()
-    logger.info(f"  [A8] success={a8.success} proposals={len(a8.proposals)} latency={a8.latency_ms}ms")
+    logger.info(
+        f"  [A8] success={a8.success} proposals={len(a8.proposals)} latency={a8.latency_ms}ms"
+    )
 
     # 2. 做梦部进化（传入 A8 的 gaps 作为上下文）
     a8_gaps = [{"type": "llm_detected", "desc": g} for g in a8.insights] if a8.success else []
     dream_signals = stats.get("detected_signals", [])
     dream = drive_dream_evolution(stats, dream_signals, a8_gaps)
     results["dream_evolution"] = dream.to_dict()
-    logger.info(f"  [Dream] success={dream.success} proposals={len(dream.proposals)} latency={dream.latency_ms}ms")
+    logger.info(
+        f"  [Dream] success={dream.success} proposals={len(dream.proposals)} latency={dream.latency_ms}ms"
+    )
 
     # 3. 认知系统反思
     cognitive = drive_cognitive_reflection(
@@ -498,7 +540,9 @@ def drive_all(
         recent_learnings=decisions,
     )
     results["cognitive_reflection"] = cognitive.to_dict()
-    logger.info(f"  [Cognitive] success={cognitive.success} proposals={len(cognitive.proposals)} latency={cognitive.latency_ms}ms")
+    logger.info(
+        f"  [Cognitive] success={cognitive.success} proposals={len(cognitive.proposals)} latency={cognitive.latency_ms}ms"
+    )
 
     # 4. 参数调优
     param = drive_parameter_tuning(
@@ -506,7 +550,9 @@ def drive_all(
         current_params or {},
     )
     results["parameter_tuning"] = param.to_dict()
-    logger.info(f"  [Param] success={param.success} proposals={len(param.proposals)} latency={param.latency_ms}ms")
+    logger.info(
+        f"  [Param] success={param.success} proposals={len(param.proposals)} latency={param.latency_ms}ms"
+    )
 
     # 汇总所有提案
     all_proposals = []

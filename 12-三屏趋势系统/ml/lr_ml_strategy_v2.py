@@ -16,27 +16,34 @@
 └──────────────────────────────────────────────────────────┘
 """
 
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any  # noqa: I001
 import numpy as np
 import pandas as pd
-import sys, os
+import sys
+import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from backtest.strategy import BaseStrategy
+from backtest.strategy import BaseStrategy  # noqa: I001
 from ml.lr_feature_engineer import LeastResistanceFeatureEngineer
 from ml.multitask_model import MultiTaskLightGBM, DynamicWeightFusion
 
 
 def _resample_to_weekly(df: pd.DataFrame) -> pd.DataFrame:
     """将日线数据重采样为周线"""
-    weekly = df.resample('W').agg({
-        'open': 'first',
-        'high': 'max',
-        'low': 'min',
-        'close': 'last',
-        'volume': 'sum',
-    }).dropna()
+    weekly = (
+        df.resample("W")
+        .agg(
+            {
+                "open": "first",
+                "high": "max",
+                "low": "min",
+                "close": "last",
+                "volume": "sum",
+            }
+        )
+        .dropna()
+    )
     return weekly
 
 
@@ -48,16 +55,16 @@ def _estimate_market_regime(prices: pd.DataFrame, idx: int, lookback: int = 20) 
     """
     if idx < lookback + 10:
         return {
-            'trend_strength': 0.5,
-            'volatility': 0.5,
-            'volume_spike': 0.0,
-            'trend_duration': 0.0,
-            'market_regime': 'normal',
+            "trend_strength": 0.5,
+            "volatility": 0.5,
+            "volume_spike": 0.0,
+            "trend_duration": 0.0,
+            "market_regime": "normal",
         }
 
-    slice_df = prices.iloc[idx - lookback:idx + 1]
-    close = slice_df['close']
-    volume = slice_df['volume']
+    slice_df = prices.iloc[idx - lookback : idx + 1]
+    close = slice_df["close"]
+    volume = slice_df["volume"]
 
     # 趋势强度：用价格斜率的绝对值，归一化到 0~1
     x = np.arange(len(close))
@@ -92,20 +99,20 @@ def _estimate_market_regime(prices: pd.DataFrame, idx: int, lookback: int = 20) 
 
     # 市场环境判定
     if trend_strength > 0.6 and volatility < 0.5:
-        market_regime = 'trending'
+        market_regime = "trending"
     elif volatility > 0.6:
-        market_regime = 'volatile'
+        market_regime = "volatile"
     elif trend_strength < 0.3 and volatility < 0.4:
-        market_regime = 'range'
+        market_regime = "range"
     else:
-        market_regime = 'normal'
+        market_regime = "normal"
 
     return {
-        'trend_strength': round(trend_strength, 4),
-        'volatility': round(volatility, 4),
-        'volume_spike': round(volume_spike, 4),
-        'trend_duration': round(trend_duration, 4),
-        'market_regime': market_regime,
+        "trend_strength": round(trend_strength, 4),
+        "volatility": round(volatility, 4),
+        "volume_spike": round(volume_spike, 4),
+        "trend_duration": round(trend_duration, 4),
+        "market_regime": market_regime,
     }
 
 
@@ -187,7 +194,8 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
         # 提取特征
         try:
             features_df = self.feature_engineer.create_features(
-                weekly_df, prices,
+                weekly_df,
+                prices,
                 fundamental_data=self.fundamental_data,
                 label_lookahead=self.label_lookahead,
             )
@@ -212,8 +220,7 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
         for i in range(start_idx, n):
             # 检查是否需要重训练
             need_train = (
-                current_model is None or
-                (i - self._last_train_idx) >= self.retrain_interval
+                current_model is None or (i - self._last_train_idx) >= self.retrain_interval
             )
 
             if need_train and i >= self.train_window + self.label_lookahead + 10:
@@ -228,7 +235,11 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                     if len(train_data) >= self.min_train_samples:
                         X_train = train_data[all_feature_cols]
                         y_dir = train_data[label_dir_col]
-                        y_ret = train_data[label_ret_col] if label_ret_col in train_data.columns else None
+                        y_ret = (
+                            train_data[label_ret_col]
+                            if label_ret_col in train_data.columns
+                            else None
+                        )
 
                         # 验证集（最后 20%，至少10个样本）
                         val_size = max(10, int(len(train_data) * 0.15))
@@ -247,7 +258,8 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                             if self.enable_multitask:
                                 model = MultiTaskLightGBM()
                                 model.fit(
-                                    X_tr, y_tr_dir,
+                                    X_tr,
+                                    y_tr_dir,
                                     y_confidence=y_tr_ret,
                                     y_drive_mode=None,  # 驱动模式标签暂不生成
                                     X_val=X_val,
@@ -256,7 +268,10 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                                 )
 
                                 # 特征筛选
-                                if self.enable_feature_selection and len(all_feature_cols) > self.top_k_features:
+                                if (
+                                    self.enable_feature_selection
+                                    and len(all_feature_cols) > self.top_k_features
+                                ):
                                     selected_features = model.select_features(
                                         X_tr, top_k=self.top_k_features
                                     )
@@ -264,6 +279,7 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                                     # 这里简化：只在预测时使用筛选特征
                             else:
                                 from ml.models import LightGBMModel
+
                                 model = LightGBMModel()
                                 model.fit(X_tr, y_tr_dir, X_val=X_val, y_val=y_val_dir)
 
@@ -282,49 +298,49 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                         continue
 
                     # 规则引擎方向（简化）
-                    weekly_res = features_df.iloc[i].get('weekly_res_diff', 0)
-                    daily_res = features_df.iloc[i].get('daily_res_diff', 0)
-                    weekly_conf = features_df.iloc[i].get('weekly_confidence', 0)
-                    daily_conf = features_df.iloc[i].get('daily_confidence', 0)
+                    weekly_res = features_df.iloc[i].get("weekly_res_diff", 0)
+                    daily_res = features_df.iloc[i].get("daily_res_diff", 0)
+                    weekly_conf = features_df.iloc[i].get("weekly_confidence", 0)
+                    daily_conf = features_df.iloc[i].get("daily_confidence", 0)
 
                     if weekly_res > 0.05:
-                        rule_dir = 'LONG'
+                        rule_dir = "LONG"
                         rule_conf = weekly_conf * 0.6 + daily_conf * 0.4
                     elif weekly_res < -0.05:
-                        rule_dir = 'SHORT'
+                        rule_dir = "SHORT"
                         rule_conf = weekly_conf * 0.6 + daily_conf * 0.4
                     else:
                         if daily_res > 0.05:
-                            rule_dir = 'LONG'
+                            rule_dir = "LONG"
                             rule_conf = daily_conf * 0.5
                         elif daily_res < -0.05:
-                            rule_dir = 'SHORT'
+                            rule_dir = "SHORT"
                             rule_conf = daily_conf * 0.5
                         else:
-                            rule_dir = 'NEUTRAL'
+                            rule_dir = "NEUTRAL"
                             rule_conf = 0.0
 
                     # AI 预测
                     if self.enable_multitask:
                         ai_pred = current_model.predict(row)
-                        ai_prob = ai_pred['direction_prob'][0]
-                        ai_final_score = ai_pred['final_score'][0]
+                        ai_prob = ai_pred["direction_prob"][0]
+                        ai_final_score = ai_pred["final_score"][0]
 
                         # 主置信度来自方向概率（与 v1 一致，保证可对比性）
                         if ai_prob > 0.5:
-                            ai_dir = 'LONG'
+                            ai_dir = "LONG"
                             ai_conf = (ai_prob - 0.5) * 2
                         elif ai_prob < 0.5:
-                            ai_dir = 'SHORT'
+                            ai_dir = "SHORT"
                             ai_conf = (0.5 - ai_prob) * 2
                         else:
-                            ai_dir = 'NEUTRAL'
+                            ai_dir = "NEUTRAL"
                             ai_conf = 0.0
 
                         # 多任务加成：final_score 同向增强、反向削弱
-                        if ai_dir != 'NEUTRAL':
+                        if ai_dir != "NEUTRAL":
                             score_sign = 1 if ai_final_score > 0 else -1
-                            dir_sign = 1 if ai_dir == 'LONG' else -1
+                            dir_sign = 1 if ai_dir == "LONG" else -1
                             if score_sign == dir_sign:
                                 # 同向：增强置信度（最多 +30%）
                                 ai_conf = min(1.0, ai_conf * (1.0 + 0.3 * abs(ai_final_score)))
@@ -334,13 +350,13 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                     else:
                         ai_prob = current_model.predict_proba(row)[0]
                         if ai_prob > 0.55:
-                            ai_dir = 'LONG'
+                            ai_dir = "LONG"
                             ai_conf = (ai_prob - 0.5) * 2
                         elif ai_prob < 0.45:
-                            ai_dir = 'SHORT'
+                            ai_dir = "SHORT"
                             ai_conf = (0.5 - ai_prob) * 2
                         else:
-                            ai_dir = 'NEUTRAL'
+                            ai_dir = "NEUTRAL"
                             ai_conf = 0.0
 
                     # AI 置信度过低则不参与
@@ -352,20 +368,18 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                     if self.enable_dynamic_weight:
                         regime = _estimate_market_regime(prices, i)
                         final_dir, final_conf, weight_info = self.dynamic_fusion.fuse_decision(
-                            rule_dir, rule_conf,
-                            ai_dir, ai_conf,
-                            **regime
+                            rule_dir, rule_conf, ai_dir, ai_conf, **regime
                         )
                         positions[i] = self._dir_to_pos(final_dir, final_conf)
                     else:
                         # 静态融合
-                        if rule_dir == ai_dir and rule_dir != 'NEUTRAL':
+                        if rule_dir == ai_dir and rule_dir != "NEUTRAL":
                             final_conf = rule_conf * 0.6 + ai_conf * 0.4
                             final_dir = rule_dir
-                        elif rule_dir != ai_dir and rule_dir != 'NEUTRAL' and ai_dir != 'NEUTRAL':
+                        elif rule_dir != ai_dir and rule_dir != "NEUTRAL" and ai_dir != "NEUTRAL":
                             final_conf = max(0.0, rule_conf * 0.5 - ai_conf * 0.4)
-                            final_dir = rule_dir if final_conf > 0.2 else 'NEUTRAL'
-                        elif rule_dir == 'NEUTRAL' and ai_dir != 'NEUTRAL':
+                            final_dir = rule_dir if final_conf > 0.2 else "NEUTRAL"
+                        elif rule_dir == "NEUTRAL" and ai_dir != "NEUTRAL":
                             final_dir = ai_dir
                             final_conf = ai_conf * 0.6
                         else:
@@ -373,21 +387,21 @@ class LeastResistanceAIStrategyV2(BaseStrategy):
                             final_conf = rule_conf
                         positions[i] = self._dir_to_pos(final_dir, final_conf)
 
-                except Exception as e:
+                except Exception as e:  # noqa: F841
                     pass
 
         return pd.Series(positions, index=prices.index, name="position")
 
     def _dir_to_pos(self, direction: str, confidence: float) -> float:
         """方向 + 置信度 → 仓位"""
-        if direction == 'LONG':
+        if direction == "LONG":
             return min(confidence, 1.0)
-        elif direction == 'SHORT':
+        elif direction == "SHORT":
             return -min(confidence, 1.0)
         else:
             return 0.0
 
-    def get_feature_importance(self, task: str = 'all') -> pd.Series:
+    def get_feature_importance(self, task: str = "all") -> pd.Series:
         """获取特征重要性"""
         if self._current_model is not None and self.enable_multitask:
             return self._current_model.feature_importance(task)

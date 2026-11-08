@@ -14,12 +14,13 @@
   Phase 2: 测试 top-K 子集 (K=0,3,5,8,12,24)，用 5 币种 3 折快速回测
   Phase 3: 最优 K 的特征列表保存，供 9 币种 5 折完整验证
 """
-import sys
-import os
-import json
-import time
-import logging
+
 import importlib
+import json
+import logging
+import os
+import sys
+import time
 
 import numpy as np
 import pandas as pd
@@ -30,8 +31,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
 sys.path.insert(0, PROJECT_ROOT)
 
 # 避免 inspect.py 冲突
-_std_inspect = importlib.import_module('inspect')
-sys.modules['inspect'] = _std_inspect
+_std_inspect = importlib.import_module("inspect")
+sys.modules["inspect"] = _std_inspect
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -62,11 +63,19 @@ TOP_K_CANDIDATES = [0, 3, 5, 8, 12, 24, 37]
 
 # 第一轮 13 个新特征（宏金融扩展 7 + 残差 1 + BTC 链上扩展 5），用于 NEW13_ONLY 独立评估
 FIRST_ROUND_13_NEW_FEATURES = [
-    "vix_zone", "us_macro_regime", "sp500_7d_break", "dxy_strength",
-    "btc_etf_flow_3d", "rwa_liquidity_pulse", "treasury_balance_delta",
+    "vix_zone",
+    "us_macro_regime",
+    "sp500_7d_break",
+    "dxy_strength",
+    "btc_etf_flow_3d",
+    "rwa_liquidity_pulse",
+    "treasury_balance_delta",
     "stablecoin_minus_rwa",
-    "whale_netflow_pulse", "exchange_btc_30d", "defi_breadth",
-    "oi_liq_pressure", "btc_dom_delta",
+    "whale_netflow_pulse",
+    "exchange_btc_30d",
+    "defi_breadth",
+    "oi_liq_pressure",
+    "btc_dom_delta",
 ]
 
 # 数据缓存
@@ -77,6 +86,7 @@ _REF_DF_CACHE = None
 def load_klines(symbol, timeframe="1H", max_bars=3000):
     if symbol not in _KLINE_CACHE:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         df = get_klines(symbol, timeframe, max_bars=max_bars)
         _KLINE_CACHE[symbol] = df
     return _KLINE_CACHE[symbol]
@@ -86,6 +96,7 @@ def get_ref_df():
     global _REF_DF_CACHE
     if _REF_DF_CACHE is None:
         from scripts.memory_l4.bcrm2.data_fetcher import get_klines
+
         _REF_DF_CACHE = get_klines("BTC", "1H", max_bars=3200)
     return _REF_DF_CACHE
 
@@ -94,26 +105,26 @@ def get_ref_df():
 # Phase 1: 特征重要性分析
 # ============================================================
 
+
 def analyze_feature_importance():
     """用 5 币种全特征构建，训练 LightGBM，获取宏观特征重要性排名"""
     print("\n" + "=" * 70)
     print("  Phase 1: 宏观特征重要性分析")
     print("=" * 70)
 
-    from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
     # 触发所有模块注册
     import scripts.memory_l4.bcrm2.bagua_feature_engine  # noqa: F401
     import scripts.memory_l4.bcrm2.classic_experience_features  # noqa: F401
+    import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
+    import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
     import scripts.memory_l4.bcrm2.fibonacci_features  # noqa: F401
+    import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
+    import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
+    import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
     import scripts.memory_l4.bcrm2.pivot_point_features  # noqa: F401
     import scripts.memory_l4.bcrm2.rsi_sentiment_features  # noqa: F401
     import scripts.memory_l4.bcrm2.wdh_features  # noqa: F401
-    import scripts.memory_l4.bcrm2.cycle_features  # noqa: F401
-    import scripts.memory_l4.bcrm2.market_cap  # noqa: F401
-    import scripts.memory_l4.bcrm2.cross_asset_features  # noqa: F401
-    import scripts.memory_l4.bcrm2.merrill_clock_features  # noqa: F401
-    import scripts.memory_l4.bcrm2.macro_features  # noqa: F401
-
+    from scripts.memory_l4.bcrm2.feature_registry import FeatureRegistry
     from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
     from scripts.memory_l4.bcrm2.triple_barrier_labeler import DialecticalLabeler
 
@@ -130,6 +141,7 @@ def analyze_feature_importance():
         # 获取宏观数据
         try:
             from scripts.memory_l4.bcrm2.macro_data_fetcher import MacroDataFetcher
+
             fetcher = MacroDataFetcher()
             macro_df = fetcher.fetch_all(symbol, df.index, live=False, verbose=False)
         except Exception as e:
@@ -137,8 +149,7 @@ def analyze_feature_importance():
             macro_df = None
 
         # 构建全部特征
-        enabled = ["bagua", "classic_exp", "fibonacci", "pivot_point",
-                   "rsi_sentiment", "wdh"]
+        enabled = ["bagua", "classic_exp", "fibonacci", "pivot_point", "rsi_sentiment", "wdh"]
         if ref_df is not None:
             enabled.append("cross_asset")
         if macro_df is not None and not macro_df.empty:
@@ -148,8 +159,12 @@ def analyze_feature_importance():
         _log_registry_evidence(enabled=enabled, extra_cfg=None)
 
         features, _ = FeatureRegistry.compute_all(
-            df=df, ref_df=ref_df, macro_df=macro_df,
-            symbol=symbol, enabled=enabled, verbose=False,
+            df=df,
+            ref_df=ref_df,
+            macro_df=macro_df,
+            symbol=symbol,
+            enabled=enabled,
+            verbose=False,
         )
 
         # === [DF] 三层判据日志：新特征真注入证据（经验 1433933）===
@@ -157,8 +172,10 @@ def analyze_feature_importance():
 
         # 生成标签
         labeler = DialecticalLabeler(
-            tp_atr=TP_ATR, sl_atr=SL_ATR,
-            max_bars=MAX_HOLD_BARS, atr_period=14,
+            tp_atr=TP_ATR,
+            sl_atr=SL_ATR,
+            max_bars=MAX_HOLD_BARS,
+            atr_period=14,
         )
         labels_df = labeler.label(df)
         y_series = labels_df["label"] if isinstance(labels_df, pd.DataFrame) else labels_df
@@ -179,6 +196,7 @@ def analyze_feature_importance():
         # 训练 LightGBM（用 Dataset API 原生支持 NaN）
         try:
             import lightgbm as lgb
+
             y_mapped = y + 1  # -1,0,1 → 0,1,2
             train_data = lgb.Dataset(X, label=y_mapped, feature_name=list(X.columns))
             params = {
@@ -191,7 +209,9 @@ def analyze_feature_importance():
                 "verbose": -1,
             }
             model = lgb.train(params, train_data, num_boost_round=100)
-            importances = dict(zip(X.columns, model.feature_importance(importance_type="split")))
+            importances = dict(
+                zip(X.columns, model.feature_importance(importance_type="split"))  # noqa: B905
+            )  # noqa: B905
 
             # === [LGBM] 三层判据日志：模型真消费新特征证据（经验 1433933）===
             _log_lgbm_evidence(importances=importances, symbol=symbol)
@@ -236,6 +256,7 @@ def analyze_feature_importance():
 # Phase 2: 子集测试
 # ============================================================
 
+
 def build_macro_feat_config(top_k_features):
     """构建特征级开关配置
 
@@ -246,6 +267,7 @@ def build_macro_feat_config(top_k_features):
         dict: {macro_feat_{name}: True/False}
     """
     from scripts.memory_l4.bcrm2.macro_features import MacroFeatures
+
     config = {}
     for feat in MacroFeatures.ALL_FEATURES:
         config[f"macro_feat_{feat}"] = feat in top_k_features
@@ -304,13 +326,7 @@ def compute_score(result):
     max_dd = result.max_drawdown
     pf = min(result.profit_factor, 5.0)  # cap at 5
 
-    score = (
-        1.0 * sharpe
-        + 2.0 * win_rate
-        + 0.01 * total_ret
-        - 0.05 * max_dd
-        + 0.3 * pf
-    )
+    score = 1.0 * sharpe + 2.0 * win_rate + 0.01 * total_ret - 0.05 * max_dd + 0.3 * pf
     return score
 
 
@@ -359,12 +375,14 @@ def test_top_k_subsets(ranked_features):
                 }
                 all_scores.append(score)
 
-                print(f"    {symbol}: 交易={result.total_trades:>3} "
-                      f"胜率={result.overall_win_rate:.1%} "
-                      f"收益={result.total_return:+.1f}% "
-                      f"夏普={result.sharpe_ratio:.2f} "
-                      f"回撤={result.max_drawdown:.2f}% "
-                      f"得分={score:.3f}")
+                print(
+                    f"    {symbol}: 交易={result.total_trades:>3} "
+                    f"胜率={result.overall_win_rate:.1%} "
+                    f"收益={result.total_return:+.1f}% "
+                    f"夏普={result.sharpe_ratio:.2f} "
+                    f"回撤={result.max_drawdown:.2f}% "
+                    f"得分={score:.3f}"
+                )
             except Exception as e:
                 print(f"    {symbol}: 回测失败: {e}")
                 coin_results[symbol] = None
@@ -388,15 +406,17 @@ def test_top_k_subsets(ranked_features):
                 "coin_results": coin_results,
             }
 
-            print(f"    → 平均: 得分={avg_score:.3f}, 夏普={avg_sharpe:.2f}, "
-                  f"胜率={avg_wr:.1%}, 收益={avg_ret:+.1f}%, 回撤={avg_dd:.2f}%")
+            print(
+                f"    → 平均: 得分={avg_score:.3f}, 夏普={avg_sharpe:.2f}, "
+                f"胜率={avg_wr:.1%}, 收益={avg_ret:+.1f}%, 回撤={avg_dd:.2f}%"
+            )
 
     # ──────────────────────────────────────────────────────────────────────
     # NEW13_ONLY 附加模式：只启用第一轮 13 新特征（完全不用旧 24 宏观特征的重要性排名）
     # 目的：评估「独立注入新13特征」本身是否具备增量价值（即便尾段只有3bars有值的严苛情形）
     # ──────────────────────────────────────────────────────────────────────
     _NEW13_KEY = "NEW13"
-    print(f"\n  [测试] NEW13_ONLY: 启用第一轮13新特征独立 (subset = FIRST_ROUND_13_NEW_FEATURES)")
+    print("\n  [测试] NEW13_ONLY: 启用第一轮13新特征独立 (subset = FIRST_ROUND_13_NEW_FEATURES)")
     subset_new13 = list(FIRST_ROUND_13_NEW_FEATURES)
     macro_cfg_new13 = build_macro_feat_config(subset_new13)
     coin_res_new13 = {}
@@ -418,12 +438,14 @@ def test_top_k_subsets(ranked_features):
                 "score": round(s, 4),
             }
             scores_new13.append(s)
-            print(f"    {symbol}: 交易={result.total_trades:>3} "
-                  f"胜率={result.overall_win_rate:.1%} "
-                  f"收益={result.total_return:+.1f}% "
-                  f"夏普={result.sharpe_ratio:.2f} "
-                  f"回撤={result.max_drawdown:.2f}% "
-                  f"得分={s:.3f}")
+            print(
+                f"    {symbol}: 交易={result.total_trades:>3} "
+                f"胜率={result.overall_win_rate:.1%} "
+                f"收益={result.total_return:+.1f}% "
+                f"夏普={result.sharpe_ratio:.2f} "
+                f"回撤={result.max_drawdown:.2f}% "
+                f"得分={s:.3f}"
+            )
         except Exception as e:
             print(f"    {symbol}: NEW13 回测失败: {e}")
             coin_res_new13[symbol] = None
@@ -444,30 +466,38 @@ def test_top_k_subsets(ranked_features):
             "avg_drawdown": round(avg_d, 2),
             "coin_results": coin_res_new13,
         }
-        print(f"    → NEW13 平均: 得分={avg_s:.3f}, 夏普={avg_sh:.2f}, "
-              f"胜率={avg_w:.1%}, 收益={avg_r:+.1f}%, 回撤={avg_d:.2f}%")
+        print(
+            f"    → NEW13 平均: 得分={avg_s:.3f}, 夏普={avg_sh:.2f}, "
+            f"胜率={avg_w:.1%}, 收益={avg_r:+.1f}%, 回撤={avg_d:.2f}%"
+        )
     else:
         print("    → NEW13_ONLY: 全部回测无有效结果")
 
     # 汇总对比
     print(f"\n  {'='*80}")
-    print(f"  Top-K 子集 + NEW13_ONLY 汇总")
+    print("  Top-K 子集 + NEW13_ONLY 汇总")
     print(f"  {'='*80}")
-    print(f"  {'Config':<7} {'特征数':>5} {'得分':>8} {'夏普':>8} {'胜率':>8} {'收益%':>8} {'回撤%':>8}")
+    print(
+        f"  {'Config':<7} {'特征数':>5} {'得分':>8} {'夏普':>8} {'胜率':>8} {'收益%':>8} {'回撤%':>8}"
+    )
     print(f"  {'-'*60}")
     # 先按 TOP_K 顺序输出
     for k in TOP_K_CANDIDATES:
         if k in results_by_k:
             r = results_by_k[k]
-            print(f"  K={k:<5} {r['n_features']:>5} {r['avg_score']:>8.3f} "
-                  f"{r['avg_sharpe']:>8.2f} {r['avg_win_rate']:>8.1%} "
-                  f"{r['avg_return_pct']:>+8.1f} {r['avg_drawdown']:>8.2f}")
+            print(
+                f"  K={k:<5} {r['n_features']:>5} {r['avg_score']:>8.3f} "
+                f"{r['avg_sharpe']:>8.2f} {r['avg_win_rate']:>8.1%} "
+                f"{r['avg_return_pct']:>+8.1f} {r['avg_drawdown']:>8.2f}"
+            )
     # 再单独输出 NEW13
     if _NEW13_KEY in results_by_k:
         r = results_by_k[_NEW13_KEY]
-        print(f"  NEW13   {r['n_features']:>5} {r['avg_score']:>8.3f} "
-              f"{r['avg_sharpe']:>8.2f} {r['avg_win_rate']:>8.1%} "
-              f"{r['avg_return_pct']:>+8.1f} {r['avg_drawdown']:>8.2f}")
+        print(
+            f"  NEW13   {r['n_features']:>5} {r['avg_score']:>8.3f} "
+            f"{r['avg_sharpe']:>8.2f} {r['avg_win_rate']:>8.1%} "
+            f"{r['avg_return_pct']:>+8.1f} {r['avg_drawdown']:>8.2f}"
+        )
 
     # 找最优配置（含 NEW13）
     all_keys = list(TOP_K_CANDIDATES) + ([_NEW13_KEY] if _NEW13_KEY in results_by_k else [])
@@ -479,16 +509,20 @@ def test_top_k_subsets(ranked_features):
     best_score = results_by_k[best_key]["avg_score"]
     baseline_score = results_by_k.get(baseline_key, {}).get("avg_score", 0)
 
-    print(f"\n  最优配置={'K='+str(best_key) if isinstance(best_key,int) else best_key}, 得分={best_score:.3f}")
+    print(
+        f"\n  最优配置={'K='+str(best_key) if isinstance(best_key,int) else best_key}, 得分={best_score:.3f}"
+    )
     print(f"  基线 K=0, 得分={baseline_score:.3f}")
     print(f"  提升: {best_score - baseline_score:+.3f}")
 
     if best_key != 0 and best_score > baseline_score:
-        print(f"\n  ✓ 最优配置优于无宏观基线")
-        print(f"  启用特征 ({len(results_by_k[best_key]['features'])}个): "
-              f"{results_by_k[best_key]['features']}")
+        print("\n  ✓ 最优配置优于无宏观基线")
+        print(
+            f"  启用特征 ({len(results_by_k[best_key]['features'])}个): "
+            f"{results_by_k[best_key]['features']}"
+        )
     else:
-        print(f"\n  ✗ 最优配置未超过无宏观基线，宏观特征不建议启用")
+        print("\n  ✗ 最优配置未超过无宏观基线，宏观特征不建议启用")
 
     return results_by_k, best_key
 
@@ -505,11 +539,11 @@ def test_top_k_subsets(ranked_features):
 _STRICT_THRESHOLDS = {
     # (劣于下限的容差减法, 显著高于 max 的加法门槛)
     # 对反向指标（drawdown）, 含义为: (上限加法, 显著低于 min 的减法门槛)
-    "sharpe":        {"worse_tol": 0.05, "sig_delta": 0.20},
-    "win_pct":       {"worse_tol": 0.005, "sig_delta": 0.02},
-    "return_pct":    {"worse_tol": 0.02,  "sig_delta": 0.05},
-    "max_dd_pct":    {"worse_tol": 0.02,  "sig_delta": 0.03},  # 反向指标
-    "profit_factor": {"worse_tol": 0.05,  "sig_delta": 0.10},
+    "sharpe": {"worse_tol": 0.05, "sig_delta": 0.20},
+    "win_pct": {"worse_tol": 0.005, "sig_delta": 0.02},
+    "return_pct": {"worse_tol": 0.02, "sig_delta": 0.05},
+    "max_dd_pct": {"worse_tol": 0.02, "sig_delta": 0.03},  # 反向指标
+    "profit_factor": {"worse_tol": 0.05, "sig_delta": 0.10},
 }
 
 
@@ -577,11 +611,17 @@ def print_baseline_with_evidence(B0: dict, B1: dict, coin: str, fold: int) -> st
 
     （经验 1433933：不新建脚本，直接在现有入口处打印可操作判据行）
     """
+
     def _row(d: dict) -> str:
-        return (f"S={d['sharpe']:.3f} WR={d['win_pct']*100:.2f}% "
-                f"R={d['return_pct']*100:+.2f}% DD={d['max_dd_pct']*100:.2f}% PF={d['profit_factor']:.3f}")
-    line = (f"[BASELINE] coin={coin} fold={fold} | B0(无宏观): {_row(B0)} | "
-            f"B1(现有TopK): {_row(B1)}")
+        return (
+            f"S={d['sharpe']:.3f} WR={d['win_pct']*100:.2f}% "
+            f"R={d['return_pct']*100:+.2f}% DD={d['max_dd_pct']*100:.2f}% PF={d['profit_factor']:.3f}"
+        )
+
+    line = (
+        f"[BASELINE] coin={coin} fold={fold} | B0(无宏观): {_row(B0)} | "
+        f"B1(现有TopK): {_row(B1)}"
+    )
     print(line)
     return line
 
@@ -598,7 +638,7 @@ def best_subset_search(scores: dict, threshold: float = 0.0) -> tuple:
     """
     eligible = [(k, v) for k, v in scores.items() if v >= threshold]
     if not eligible:
-        return (tuple(), 0.0)
+        return (tuple(), 0.0)  # noqa: C408
     best_key, best_score = max(eligible, key=lambda kv: kv[1])
     if isinstance(best_key, (tuple, list)):
         best_names = tuple(best_key)
@@ -607,8 +647,9 @@ def best_subset_search(scores: dict, threshold: float = 0.0) -> tuple:
     return best_names, best_score
 
 
-def paired_improvement_significant(baseline_metrics: list, cand_metrics: list,
-                                   alpha: float = 0.05) -> bool:
+def paired_improvement_significant(
+    baseline_metrics: list, cand_metrics: list, alpha: float = 0.05
+) -> bool:
     """配对 t 检验（单侧，cand 是否显著优于 baseline）。
 
     n_fold * n_coin = 3*5 = 15 样本。scipy 优先；缺失时用正态近似。
@@ -620,6 +661,7 @@ def paired_improvement_significant(baseline_metrics: list, cand_metrics: list,
     diff = c - b
     try:
         from scipy import stats as _stats  # 延迟导入，避免 import 成本
+
         # 单侧 t 检验：cand 是否 > baseline → H1: diff_mean > 0
         t_stat, p_two = _stats.ttest_rel(c, b)  # two-sided by default
         # 单侧 p = 如果 t>0（cand 更优）→ p_two/2；否则 1 - p_two/2
@@ -635,6 +677,7 @@ def paired_improvement_significant(baseline_metrics: list, cand_metrics: list,
         z = dmean / (dstd / np.sqrt(len(diff)))
         # Φ(z) >= 1-α → z >= norminv(1-α) ≈ 1.645 for α=0.05
         from math import erf, sqrt
+
         phi = 0.5 * (1.0 + erf(z / sqrt(2.0)))
         return bool(phi > (1.0 - alpha))
 
@@ -648,11 +691,19 @@ def paired_improvement_significant(baseline_metrics: list, cand_metrics: list,
 
 # 12/13 个第一轮新特征名（用于 [LGBM] 日志筛选）
 _NEW_EXT_FEATURES = [
-    "vix_zone", "us_macro_regime", "sp500_7d_break", "dxy_strength",
-    "btc_etf_flow_3d", "rwa_liquidity_pulse", "treasury_balance_delta",
+    "vix_zone",
+    "us_macro_regime",
+    "sp500_7d_break",
+    "dxy_strength",
+    "btc_etf_flow_3d",
+    "rwa_liquidity_pulse",
+    "treasury_balance_delta",
     "stablecoin_minus_rwa",  # 宏金融扩展 + 残差 8 个
-    "whale_netflow_pulse", "exchange_btc_30d", "defi_breadth",
-    "oi_liq_pressure", "btc_dom_delta",  # BTC 链上扩展 5 个
+    "whale_netflow_pulse",
+    "exchange_btc_30d",
+    "defi_breadth",
+    "oi_liq_pressure",
+    "btc_dom_delta",  # BTC 链上扩展 5 个
 ]
 
 
@@ -669,8 +720,9 @@ def _log_registry_evidence(enabled: list, extra_cfg: dict | None = None) -> None
     logger.info(line)
 
 
-def _log_dataframe_evidence(features_df: pd.DataFrame, macro_df: pd.DataFrame | None,
-                            symbol: str) -> None:
+def _log_dataframe_evidence(
+    features_df: pd.DataFrame, macro_df: pd.DataFrame | None, symbol: str
+) -> None:
     """[DF] 层日志：特征合并后的形状 + 新特征空值计数（证明数据底座真注入）。"""
     shape = tuple(features_df.shape)
     # 统计第一轮 13 个新特征的 null 率
@@ -681,8 +733,10 @@ def _log_dataframe_evidence(features_df: pd.DataFrame, macro_df: pd.DataFrame | 
             nulls = int(features_df[col].isna().sum())
             new_col_stats[col] = f"{total - nulls}/{total}"
     macro_shape = tuple(macro_df.shape) if macro_df is not None else None
-    line = (f"[DF] merge_klines_with_macro sym={symbol} feat_shape={shape} "
-            f"macro_shape={macro_shape} | new_ext_nonnull={new_col_stats}")
+    line = (
+        f"[DF] merge_klines_with_macro sym={symbol} feat_shape={shape} "
+        f"macro_shape={macro_shape} | new_ext_nonnull={new_col_stats}"
+    )
     print(line)
     logger.info(line)
 
@@ -691,11 +745,14 @@ def _log_lgbm_evidence(importances: dict, symbol: str) -> None:
     """[LGBM] 层日志：importance Top10 + 第一轮 13 新特征中 gain>0 的名单。"""
     top10 = sorted(importances.items(), key=lambda x: -x[1])[:10]
     new_ext_used = [
-        (f, float(importances[f])) for f in _NEW_EXT_FEATURES
+        (f, float(importances[f]))
+        for f in _NEW_EXT_FEATURES
         if f in importances and importances[f] > 0
     ]
-    line = (f"[LGBM] sym={symbol} top10_gain={[(k, round(v, 2)) for k, v in top10]} "
-            f"| new_ext_with_gain>0={new_ext_used}")
+    line = (
+        f"[LGBM] sym={symbol} top10_gain={[(k, round(v, 2)) for k, v in top10]} "
+        f"| new_ext_with_gain>0={new_ext_used}"
+    )
     print(line)
     logger.info(line)
 
@@ -703,6 +760,7 @@ def _log_lgbm_evidence(importances: dict, symbol: str) -> None:
 # ============================================================
 # 主函数
 # ============================================================
+
 
 def main():
     print("=" * 70)
@@ -743,19 +801,15 @@ def main():
             "scoring": "sharpe*1.0 + win_rate*2.0 + return*0.01 - dd*0.05 + pf*0.3",
         },
         "feature_ranking": [
-            {"rank": i + 1, "feature": f, "importance": imp}
-            for i, (f, imp) in enumerate(ranked)
+            {"rank": i + 1, "feature": f, "importance": imp} for i, (f, imp) in enumerate(ranked)
         ],
-        "results_by_k": {
-            str(k): v for k, v in results_by_k.items()
-        },
+        "results_by_k": {str(k): v for k, v in results_by_k.items()},
         "best_k": best_k,
         "best_features": results_by_k.get(best_k, {}).get("features", []),
     }
 
     output_path = os.path.join(
-        SCRIPT_DIR, "..", "..", "..", "data", "baseline",
-        "macro_feature_select_v2.json"
+        SCRIPT_DIR, "..", "..", "..", "data", "baseline", "macro_feature_select_v2.json"
     )
     output_path = os.path.abspath(output_path)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -765,7 +819,7 @@ def main():
 
     if best_k > 0:
         print(f"\n  下一步: 用 K={best_k} 的 {len(results_by_k[best_k]['features'])} 个特征")
-        print(f"  跑 9 币种 5 折完整回测，与 baseline-v1 对比")
+        print("  跑 9 币种 5 折完整回测，与 baseline-v1 对比")
 
     print("=" * 70)
 

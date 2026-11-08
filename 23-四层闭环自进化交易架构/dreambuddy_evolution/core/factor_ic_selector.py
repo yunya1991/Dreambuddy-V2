@@ -17,13 +17,12 @@ FAIL-OPEN:
   - 因子数据不足 → 跳过该因子
   - scipy 不可用 → 降级为 pandas rank 相关
 """
+
 from __future__ import annotations
 
 import logging
 import sqlite3
 from dataclasses import dataclass, field
-from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -204,9 +203,7 @@ class FactorICSelector:
             df = pd.DataFrame(data)
         return df
 
-    def _load_factor_from_dal(
-        self, sub_category: str, metric_name: str
-    ) -> Optional[pd.Series]:
+    def _load_factor_from_dal(self, sub_category: str, metric_name: str) -> Optional[pd.Series]:
         """从 19-DAL 加载单个因子时序。"""
         if self._factors_df is not None and metric_name in self._factors_df.columns:
             return self._factors_df[metric_name]
@@ -228,9 +225,7 @@ class FactorICSelector:
             logger.warning(f"加载因子 {sub_category}.{metric_name} 失败: {e}")
             return None
 
-    def _align_to_price(
-        self, factor: pd.Series, price_index: pd.DatetimeIndex
-    ) -> pd.Series:
+    def _align_to_price(self, factor: pd.Series, price_index: pd.DatetimeIndex) -> pd.Series:
         """将因子对齐到价格时间轴（前向填充低频数据）。"""
         # 重采样到日频（价格是小时频，但因子多为日频/月频）
         factor_daily = factor.resample("1D").last().ffill()
@@ -315,8 +310,10 @@ class FactorICSelector:
             ic_mean = float(np.mean(all_ic))
             if len(all_ic) > 1:
                 ic_std = float(np.std(all_ic, ddof=1))
-                ic_ir = ic_mean / (ic_std + 1e-12) if ic_std > 1e-12 else (
-                    10.0 if abs(ic_mean) > ic_threshold else 0.0
+                ic_ir = (
+                    ic_mean / (ic_std + 1e-12)
+                    if ic_std > 1e-12
+                    else (10.0 if abs(ic_mean) > ic_threshold else 0.0)
                 )
             else:
                 # 单 horizon：用 IC 绝对值作为显著性代理
@@ -337,9 +334,7 @@ class FactorICSelector:
             )
 
         # 构建排行榜（按 |IC_IR| 降序）
-        ranking_df = pd.DataFrame(factor_stats).sort_values(
-            "abs_ic_ir", ascending=False
-        )
+        ranking_df = pd.DataFrame(factor_stats).sort_values("abs_ic_ir", ascending=False)
 
         # 第一轮筛选：IC 显著性
         selected = []
@@ -369,9 +364,9 @@ class FactorICSelector:
             valid_cols = [c for c in selected if selected_df[c].notna().sum() >= 30]
             # 按 |IC_IR| 降序排列（保留优先级）
             ir_order = {
-                name: abs(stat["ic_ir"])
+                name: abs(stat["ic_ir"])  # noqa: B035
                 for stat in factor_stats
-                if stat["name"] in valid_cols
+                if stat["name"] in valid_cols  # noqa: B035
             }
             valid_cols.sort(key=lambda x: ir_order.get(x, 0), reverse=True)
 

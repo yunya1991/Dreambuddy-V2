@@ -19,12 +19,17 @@ import json
 import os
 import re
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
 # 18-数据获取中心数据库路径（SQLite 旧库，2026-10-17 迁移后仅历史数据）
-_DATA_CENTER_DB = "/home/luke/dreambuddy/18-数据获取中心/data_center.db"
+_DATA_CENTER_DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
 
 # PostgreSQL 连接参数（与 18 层 sink_postgres 保持一致，从环境变量读取）
 _PG_HOST = os.environ.get("DATA_CENTER_PG_HOST", "127.0.0.1")
@@ -46,7 +51,7 @@ def _discover_pg_password() -> str:
         return pwd
     for env_path in (
         Path.home() / "dreambuddy" / "7-产物中台" / "系统研究索引体系" / ".env",
-        Path("/home/luke/dreambuddy/7-产物中台/系统研究索引体系/.env"),
+        Path(_DREAMBUDDY_ROOT) / "7-产物中台" / "系统研究索引体系" / ".env",
     ):
         try:
             if env_path.exists():
@@ -79,13 +84,14 @@ def _row_to_result(row: Any, source: str) -> Dict[str, Any]:
         return {"available": False, "note": "F&G 时间戳非法（fail-open）"}
     age = (datetime.now(timezone.utc) - ts).total_seconds()
     if age < 0 or age > _MAX_AGE_SECONDS:
-        return {"available": False, "note": "F&G 数据过期（fail-open）", "age_hours": round(age / 3600, 1)}
+        return {
+            "available": False,
+            "note": "F&G 数据过期（fail-open）",
+            "age_hours": round(age / 3600, 1),
+        }
 
     metrics = json.loads(metrics_raw) if isinstance(metrics_raw, str) else (metrics_raw or {})
-    components = {
-        k: v for k, v in metrics.items()
-        if k in _COMPONENT_KEYS
-    }
+    components = {k: v for k, v in metrics.items() if k in _COMPONENT_KEYS}
     # 综合值：优先 value / fear_greed_value；缺失时回退分量均值
     value = metrics.get("value")
     if value is None:
@@ -112,8 +118,11 @@ def _load_fear_greed_pg() -> Dict[str, Any]:
     conn = None
     try:
         conn = psycopg2.connect(
-            host=_PG_HOST, port=_PG_PORT, user=_PG_USER,
-            password=_discover_pg_password(), dbname=_PG_DB,
+            host=_PG_HOST,
+            port=_PG_PORT,
+            user=_PG_USER,
+            password=_discover_pg_password(),
+            dbname=_PG_DB,
         )
         cur = conn.cursor()
         # 优先：增强版 F&G（含分量）
@@ -178,9 +187,13 @@ def query_pg(sql: str, params: tuple = ()) -> list:
     连接失败/异常时抛出原异常，由调用方决定 fail-open 策略。
     """
     import psycopg2
+
     conn = psycopg2.connect(
-        host=_PG_HOST, port=_PG_PORT, user=_PG_USER,
-        password=_discover_pg_password(), dbname=_PG_DB,
+        host=_PG_HOST,
+        port=_PG_PORT,
+        user=_PG_USER,
+        password=_discover_pg_password(),
+        dbname=_PG_DB,
     )
     try:
         cur = conn.cursor()
@@ -229,7 +242,11 @@ def compute_market_sentiment_score(db_path: str = _DATA_CENTER_DB) -> Dict[str, 
     components = fg.get("components") or {}
     try:
         if not isinstance(value, (int, float)):
-            return {"market_sentiment_score": 50, "available": False, "note": "F&G 值非法（fail-open 中性 50）"}
+            return {
+                "market_sentiment_score": 50,
+                "available": False,
+                "note": "F&G 值非法（fail-open 中性 50）",
+            }
         base = float(value)
         comp_vals = [float(v) for v in components.values() if isinstance(v, (int, float))]
         if comp_vals:
@@ -246,7 +263,11 @@ def compute_market_sentiment_score(db_path: str = _DATA_CENTER_DB) -> Dict[str, 
             "components": components,
         }
     except Exception:  # noqa: BLE001
-        return {"market_sentiment_score": 50, "available": False, "note": "情绪分计算异常（fail-open 中性 50）"}
+        return {
+            "market_sentiment_score": 50,
+            "available": False,
+            "note": "情绪分计算异常（fail-open 中性 50）",
+        }
 
 
 if __name__ == "__main__":

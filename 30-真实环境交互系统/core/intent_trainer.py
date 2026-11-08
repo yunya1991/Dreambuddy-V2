@@ -10,6 +10,7 @@
 2. distill_to_rules: 高频模式蒸馏（零 Token 规则）
 3. refine_orchestration: 场景→链路映射精确化（L3→L0）
 """
+
 from __future__ import annotations
 
 import json
@@ -43,9 +44,19 @@ class IntentTrainer:
         orch_path: Path = None,
         distill_accuracy_target: float = 0.85,
     ):
-        self._weights_path = Path(weights_path) if weights_path else Path("30-真实环境交互系统/training/weights.json")
-        self._rules_path = Path(rules_path) if rules_path else Path("30-真实环境交互系统/training/rules.json")
-        self._orch_path = Path(orch_path) if orch_path else Path("30-真实环境交互系统/training/orchestration_mapping.json")
+        self._weights_path = (
+            Path(weights_path)
+            if weights_path
+            else Path("30-真实环境交互系统/training/weights.json")
+        )
+        self._rules_path = (
+            Path(rules_path) if rules_path else Path("30-真实环境交互系统/training/rules.json")
+        )
+        self._orch_path = (
+            Path(orch_path)
+            if orch_path
+            else Path("30-真实环境交互系统/training/orchestration_mapping.json")
+        )
         self._distill_accuracy_target = distill_accuracy_target
         for p in [self._weights_path, self._rules_path, self._orch_path]:
             p.parent.mkdir(parents=True, exist_ok=True)
@@ -75,8 +86,14 @@ class IntentTrainer:
             "posterior_mean": posterior_mean,
         }
         self._save_weights(weights)
-        logger.info("贝叶斯更新 %s: alpha=%s beta=%s mean=%.3f (samples=%s)",
-                    key, alpha, beta, posterior_mean, len(samples))
+        logger.info(
+            "贝叶斯更新 %s: alpha=%s beta=%s mean=%.3f (samples=%s)",
+            key,
+            alpha,
+            beta,
+            posterior_mean,
+            len(samples),
+        )
 
     # ── Step 2: 规则蒸馏 ────────────────────────────────
     def distill_to_rules(self, bucket_key: Tuple[str, str], samples: List) -> bool:
@@ -87,8 +104,12 @@ class IntentTrainer:
         """
         accuracy = self._compute_accuracy(samples)
         if accuracy < self._distill_accuracy_target:
-            logger.info("桶 %s 准确率 %.2f < %.2f，不蒸馏",
-                        bucket_key, accuracy, self._distill_accuracy_target)
+            logger.info(
+                "桶 %s 准确率 %.2f < %.2f，不蒸馏",
+                bucket_key,
+                accuracy,
+                self._distill_accuracy_target,
+            )
             return False
 
         common = self._extract_common_features(samples)

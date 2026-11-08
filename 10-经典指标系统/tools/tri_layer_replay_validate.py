@@ -110,10 +110,14 @@ def _metrics(rows):
 def _delta(before, after):
     return {
         "open_total": int(after.get("open_total", 0)) - int(before.get("open_total", 0)),
-        "filled_open_total": int(after.get("filled_open_total", 0)) - int(before.get("filled_open_total", 0)),
-        "net_bias_count": float(after.get("net_bias_count", 0.0)) - float(before.get("net_bias_count", 0.0)),
-        "net_bias_notional": float(after.get("net_bias_notional", 0.0)) - float(before.get("net_bias_notional", 0.0)),
-        "addon_pass_rate": float(after.get("addon_pass_rate", 0.0)) - float(before.get("addon_pass_rate", 0.0)),
+        "filled_open_total": int(after.get("filled_open_total", 0))
+        - int(before.get("filled_open_total", 0)),
+        "net_bias_count": float(after.get("net_bias_count", 0.0))
+        - float(before.get("net_bias_count", 0.0)),
+        "net_bias_notional": float(after.get("net_bias_notional", 0.0))
+        - float(before.get("net_bias_notional", 0.0)),
+        "addon_pass_rate": float(after.get("addon_pass_rate", 0.0))
+        - float(before.get("addon_pass_rate", 0.0)),
     }
 
 

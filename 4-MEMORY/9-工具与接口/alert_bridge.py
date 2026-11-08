@@ -6,13 +6,14 @@
   - 同 condition + skill_id 10 分钟去重
   - Critical/Warning 两级
 """
+
 import json
 import logging
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +41,28 @@ def _build_alert_message(condition: str, level: str, context: Dict[str, Any]) ->
                 "template": template,
             },
             "elements": [
-                {"tag": "div", "text": {"tag": "lark_md", "content": f"**触发时间**: {datetime.now().isoformat()}"}},
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": f"**触发时间**: {datetime.now().isoformat()}",
+                    },
+                },
                 {"tag": "div", "text": {"tag": "lark_md", "content": f"**触发条件**: {condition}"}},
-                {"tag": "div", "text": {"tag": "lark_md",
-                    "content": f"**上下文**: ```{json.dumps(context, ensure_ascii=False, indent=2)}```"}},
-                {"tag": "div", "text": {"tag": "lark_md",
-                    "content": "**建议操作**: 见 superpowers-integration-design.md 附录 D"}},
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": f"**上下文**: ```{json.dumps(context, ensure_ascii=False, indent=2)}```",
+                    },
+                },
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": "**建议操作**: 见 superpowers-integration-design.md 附录 D",
+                    },
+                },
             ],
         },
     }
@@ -56,8 +73,9 @@ def _dedup_key(condition: str, skill_id: Optional[str]) -> str:
     return f"{condition}:{sid}"
 
 
-def _should_dedup(condition: str, skill_id: Optional[str], now: float,
-                  last_sent: Dict[str, float]) -> bool:
+def _should_dedup(
+    condition: str, skill_id: Optional[str], now: float, last_sent: Dict[str, float]
+) -> bool:
     """设计节 7.6：同 condition + skill_id 10 分钟内只发一次。"""
     key = _dedup_key(condition, skill_id)
     last = last_sent.get(key)
@@ -70,6 +88,7 @@ def _send_via_feishu(message: Dict[str, Any]) -> Dict[str, Any]:
     """调用 15-监控告警系统/feishu_alert.py 发送。"""
     try:
         import feishu_alert  # type: ignore
+
         if hasattr(feishu_alert, "send_interactive_card"):
             return feishu_alert.send_interactive_card(message)
         elif hasattr(feishu_alert, "send_card"):
@@ -78,7 +97,10 @@ def _send_via_feishu(message: Dict[str, Any]) -> Dict[str, Any]:
             logger.warning("feishu_alert 无 send_interactive_card/send_card 方法，仅记录日志")
             return {"status": "logged_only"}
     except ImportError:
-        logger.warning("feishu_alert 模块未找到，告警仅记录日志: %s", message["card"]["header"]["title"]["content"])
+        logger.warning(
+            "feishu_alert 模块未找到，告警仅记录日志: %s",
+            message["card"]["header"]["title"]["content"],
+        )
         return {"status": "logged_only"}
 
 

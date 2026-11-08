@@ -1,12 +1,12 @@
 """OrchestratorV2 test suite."""
-import pytest
+
+import sys  # noqa: I001
 from pathlib import Path
-import sys
 
 BASE = Path(__file__).parent.parent
 sys.path.insert(0, str(BASE))
 
-from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2
+from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2  # noqa: E402
 
 
 def test_orchestrator_v2_initialization():
@@ -63,6 +63,7 @@ def test_orchestrator_v2_get_status():
 
 # ---- Task 2: Bayesian optimization trigger ----
 
+
 def test_bayesian_trigger_consecutive_losses():
     """Test Bayesian trigger on 3 consecutive losses."""
     orch = OrchestratorV2(use_hermes=False)
@@ -92,10 +93,11 @@ def test_bayesian_trigger_no_loss():
 
 # ---- Task 3: OrchestratorV2Node + integration ----
 
+
 def test_orchestrator_v2_node():
     """Test OrchestratorV2Node node wrapper."""
     from dreamos.capabilities.trading.orchestrator_v2 import OrchestratorV2Node
-    from dreamos.shared.state import State, NodeResult, new_state
+    from dreamos.shared.state import NodeResult, new_state
 
     node = OrchestratorV2Node()
     assert node.node_id == "ORCHESTRATOR_V2"

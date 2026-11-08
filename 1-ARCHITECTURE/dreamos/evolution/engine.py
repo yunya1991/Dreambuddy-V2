@@ -31,7 +31,7 @@ Evolution 层主入口，整合:
     # report.lessons → 教训列表
     # report.gap_analysis → 差距分析
     # report.suggestions → 优化建议
-    
+
     # 新增：交易分析评估
     analysis_report = engine.analyze_trades(trade_history)
     # analysis_report.loss_reason_distribution → 亏损原因分布
@@ -42,17 +42,17 @@ Evolution 层主入口，整合:
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from dreamos.shared.state import State
 
 logger = logging.getLogger(__name__)
-from dreamos.core.graph_store.types import HistoryEntry
+from dreamos.core.graph_store.types import HistoryEntry  # noqa: E402
 
-from .types import EvolutionReport, Lesson, GapAnalysis, OptimizationSuggestion
-from .lesson_distiller import LessonDistiller
-from .gap_analyzer import GapAnalyzer
-from .node_optimizer import NodeOptimizer
+from .gap_analyzer import GapAnalyzer  # noqa: E402
+from .lesson_distiller import LessonDistiller  # noqa: E402
+from .node_optimizer import NodeOptimizer  # noqa: E402
+from .types import EvolutionReport, Lesson, OptimizationSuggestion  # noqa: E402
 
 
 class EvolutionEngine:
@@ -81,15 +81,18 @@ class EvolutionEngine:
         self._optimizer = NodeOptimizer()
         self._history: List[HistoryEntry] = []
         self._feedback_collector = None  # 延迟初始化
-        self._trading_evaluator = None   # 交易分析评估器（延迟初始化）
-        self._evaluation_memory = None   # 评估记忆系统（延迟初始化）
-        self._washout_reversal_genome = None  # 洗盘反转基因组（延迟初始化，HC-G5 默认 enable=False）
+        self._trading_evaluator = None  # 交易分析评估器（延迟初始化）
+        self._evaluation_memory = None  # 评估记忆系统（延迟初始化）
+        self._washout_reversal_genome = (
+            None  # 洗盘反转基因组（延迟初始化，HC-G5 默认 enable=False）
+        )
 
     def get_feedback_collector(self):
         """获取执行反馈收集器（延迟初始化）"""
         if self._feedback_collector is None:
             from dreamos.core.memory.execution_feedback import ExecutionFeedbackCollector
             from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+
             memory = OrchestrationMemory()
             memory.load()
             self._feedback_collector = ExecutionFeedbackCollector(memory)
@@ -104,15 +107,18 @@ class EvolutionEngine:
         if self._washout_reversal_genome is None:
             try:
                 from dreamos.evolution.washout_reversal_genome import WashoutReversalGenome
+
                 self._washout_reversal_genome = WashoutReversalGenome(enable=False)
             except Exception as _e:
                 logger.warning(f"洗盘反转基因组初始化失败（降级为None）: {_e}")
                 self._washout_reversal_genome = None
         return self._washout_reversal_genome
 
-    def evolve(self,
-               history: Optional[List[HistoryEntry]] = None,
-               node_stats: Optional[Dict[str, Dict[str, Any]]] = None) -> EvolutionReport:
+    def evolve(
+        self,
+        history: Optional[List[HistoryEntry]] = None,
+        node_stats: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> EvolutionReport:
         """执行完整的进化分析
 
         Args:
@@ -139,7 +145,7 @@ class EvolutionEngine:
         metrics = self._compute_metrics(entries)
 
         # 5. 编排优化（新增：orchestration_optimization 触发源）
-        orchestration_updates = self._check_orchestration_optimization()
+        orchestration_updates = self._check_orchestration_optimization()  # noqa: F841
 
         # 6. 洗盘反转基因组进化（HC-G5：默认 enable=False 降级；FAIL-OPEN 异常不阻塞）
         try:
@@ -191,7 +197,9 @@ class EvolutionEngine:
                 is_verified = scenario_data.get("verified", False)
                 confidence = scenario_data.get("confidence", "")
                 if not is_verified or confidence == "unverified":
-                    logger.info(f"P2-1: 场景 {scenario_id} 未验证(confidence={confidence}), 跳过进化")
+                    logger.info(
+                        f"P2-1: 场景 {scenario_id} 未验证(confidence={confidence}), 跳过进化"
+                    )
                     continue
 
             # 生成编排调整提案
@@ -206,22 +214,31 @@ class EvolutionEngine:
                     evidence=proposal["evidence"],
                 )
                 collector.memory.save()
-                updates.append({
-                    "scenario_id": scenario_id,
-                    "old_pattern": feedback.pattern_used,
-                    "new_pattern": proposal["new_pattern"],
-                    "score_improvement": proposal["score"] - feedback.expected_sharpe,
-                    "trigger_reason": "direction_accuracy" if feedback.direction_accuracy < 0.5 else "deviation",
-                })
-                logger.info(f"编排进化: {scenario_id} {feedback.pattern_used} → {proposal['new_pattern']}")
+                updates.append(
+                    {
+                        "scenario_id": scenario_id,
+                        "old_pattern": feedback.pattern_used,
+                        "new_pattern": proposal["new_pattern"],
+                        "score_improvement": proposal["score"] - feedback.expected_sharpe,
+                        "trigger_reason": (
+                            "direction_accuracy"
+                            if feedback.direction_accuracy < 0.5
+                            else "deviation"
+                        ),
+                    }
+                )
+                logger.info(
+                    f"编排进化: {scenario_id} {feedback.pattern_used} → {proposal['new_pattern']}"
+                )
 
         return updates
 
     def _generate_orchestration_proposal(self, feedback) -> Optional[Dict[str, Any]]:
         """生成编排调整提案：切换到次优模式"""
-        from dreamos.core.memory.orchestration_memory import OrchestrationMemory
 
-        memory = feedback.memory if hasattr(feedback, 'memory') else self.get_feedback_collector().memory
+        memory = (
+            feedback.memory if hasattr(feedback, "memory") else self.get_feedback_collector().memory
+        )
         scenario_data = memory.get_scenario(feedback.scenario_id)
         if not scenario_data:
             return None
@@ -232,6 +249,7 @@ class EvolutionEngine:
 
         # 简单策略：如果当前不是c_g_chain（含风控），加上风控
         from dreamos.core.memory.orchestration_memory import OrchestrationMemory as OM
+
         if current_pattern != "c_g_chain":
             return {
                 "new_pattern": "c_g_chain",
@@ -263,8 +281,8 @@ class EvolutionEngine:
             return False
 
         try:
-            from dreamos.core.memory.scenario_backtester import ScenarioBacktester
             from dreamos.core.memory.orchestration_memory import OrchestrationMemory
+            from dreamos.core.memory.scenario_backtester import ScenarioBacktester
 
             # 获取旧编排的节点列表
             memory = OrchestrationMemory()
@@ -318,6 +336,7 @@ class EvolutionEngine:
         """获取交易分析评估器（延迟初始化）"""
         if self._trading_evaluator is None:
             from dreamos.capabilities.trading.evaluator import TradingAnalysisEvaluator
+
             self._trading_evaluator = TradingAnalysisEvaluator()
         return self._trading_evaluator
 
@@ -325,12 +344,14 @@ class EvolutionEngine:
         """获取评估记忆系统（延迟初始化）"""
         if self._evaluation_memory is None:
             from dreamos.core.memory.evaluation_memory import EvaluationMemory
+
             self._evaluation_memory = EvaluationMemory()
             self._evaluation_memory.load()
         return self._evaluation_memory
 
-    def analyze_trades(self, trade_history: List[Dict[str, Any]],
-                       scenarios: Optional[List[str]] = None) -> Any:
+    def analyze_trades(
+        self, trade_history: List[Dict[str, Any]], scenarios: Optional[List[str]] = None
+    ) -> Any:
         """分析交易历史，生成完整的交易分析评估报告
 
         核心流程：亏损原因分析 → 模块能力评估 → 模块回测 → 编排推荐
@@ -355,14 +376,16 @@ class EvolutionEngine:
         evaluator = self.get_trading_evaluator()
         return evaluator.evaluate_module_capabilities(trade_history)
 
-    def backtest_modules(self, module_ids: List[str], scenario: str,
-                         period: str = "90d") -> Any:
+    def backtest_modules(self, module_ids: List[str], scenario: str, period: str = "90d") -> Any:
         """回测指定模块组合在特定场景下的表现"""
         evaluator = self.get_trading_evaluator()
         return evaluator.backtest_modules(module_ids, scenario, period)
 
-    def recommend_orchestration(self, scenarios: Optional[List[str]] = None,
-                                 module_capabilities: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def recommend_orchestration(
+        self,
+        scenarios: Optional[List[str]] = None,
+        module_capabilities: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """推荐最优节点编排
 
         根据模块能力评估结果，为各场景推荐最优节点编排
@@ -375,8 +398,9 @@ class EvolutionEngine:
             {scenario: OrchestrationRecommendation}
         """
         evaluator = self.get_trading_evaluator()
-        return evaluator.recommend_orchestration(scenarios=scenarios,
-                                                   module_capabilities=module_capabilities)
+        return evaluator.recommend_orchestration(
+            scenarios=scenarios, module_capabilities=module_capabilities
+        )
 
     def analyze_gap(self, state: State) -> float:
         """分析单次执行的知行差距分数
@@ -409,6 +433,7 @@ class EvolutionEngine:
     def record_from_state(self, state: State, report: Optional[Dict[str, Any]] = None) -> None:
         """从 State 记录历史累积"""
         from dreamos.core.graph_store.types import HistoryEntry
+
         intent = state.intent or {}
         plan = state.plan or {}
         report = report or {}
@@ -426,9 +451,11 @@ class EvolutionEngine:
         )
         self._history.append(entry)
 
-    def suggest(self,
-                 history: Optional[List[HistoryEntry]] = None,
-                 node_stats: Optional[Dict[str, Dict[str, Any]]] = None) -> List[OptimizationSuggestion]:
+    def suggest(
+        self,
+        history: Optional[List[HistoryEntry]] = None,
+        node_stats: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> List[OptimizationSuggestion]:
         """生成优化建议"""
         entries = history or self._history
         return self._optimizer.optimize(entries, node_stats)

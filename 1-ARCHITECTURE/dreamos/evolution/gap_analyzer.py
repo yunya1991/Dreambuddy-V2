@@ -13,8 +13,8 @@ gap_score: 0-1 之间，越小越好
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any
 from collections import defaultdict
+from typing import Any, Dict, List
 
 from dreamos.core.graph_store.types import HistoryEntry
 
@@ -32,9 +32,9 @@ class GapAnalyzer:
 
     def __init__(self):
         self._weights = {
-            "intent": 0.2,       # 意图识别权重
-            "plan": 0.2,         # 计划完成权重
-            "direction": 0.35,   # 方向判断权重
+            "intent": 0.2,  # 意图识别权重
+            "plan": 0.2,  # 计划完成权重
+            "direction": 0.35,  # 方向判断权重
             "confidence": 0.25,  # 置信度校准权重
         }
 
@@ -68,10 +68,10 @@ class GapAnalyzer:
         # 计算总分
         w = self._weights
         overall = (
-            intent_acc * w["intent"] +
-            plan_rate * w["plan"] +
-            dir_acc * w["direction"] +
-            conf_cal * w["confidence"]
+            intent_acc * w["intent"]
+            + plan_rate * w["plan"]
+            + dir_acc * w["direction"]
+            + conf_cal * w["confidence"]
         )
 
         # gap_score = 1 - 准确率，越小越好
@@ -105,12 +105,14 @@ class GapAnalyzer:
             accuracies.append(rate)
 
             if rate < 0.5:
-                gaps.append({
-                    "type": "intent",
-                    "intent": intent,
-                    "non_hold_rate": rate,
-                    "description": f"{intent} 意图产生有效方向的比例低",
-                })
+                gaps.append(
+                    {
+                        "type": "intent",
+                        "intent": intent,
+                        "non_hold_rate": rate,
+                        "description": f"{intent} 意图产生有效方向的比例低",
+                    }
+                )
 
         avg_acc = sum(accuracies) / len(accuracies) if accuracies else 0.5
 
@@ -134,11 +136,13 @@ class GapAnalyzer:
         completion = (avg_success + normal_rate) / 2
 
         if completion < 0.7:
-            gaps.append({
-                "type": "plan",
-                "completion": completion,
-                "description": f"计划完成率偏低 ({completion:.0%})",
-            })
+            gaps.append(
+                {
+                    "type": "plan",
+                    "completion": completion,
+                    "description": f"计划完成率偏低 ({completion:.0%})",
+                }
+            )
             insights.append("计划完成率不足 70%，建议检查节点依赖和稳定性")
 
         return min(completion, 1.0)
@@ -166,12 +170,14 @@ class GapAnalyzer:
             consistency_scores.append(score)
 
             if score < 0.6:
-                gaps.append({
-                    "type": "direction",
-                    "intent": intent,
-                    "consistency": score,
-                    "description": f"{intent} 场景方向判断不一致",
-                })
+                gaps.append(
+                    {
+                        "type": "direction",
+                        "intent": intent,
+                        "consistency": score,
+                        "description": f"{intent} 场景方向判断不一致",
+                    }
+                )
 
         avg_cons = sum(consistency_scores) / len(consistency_scores) if consistency_scores else 0.5
 
@@ -190,18 +196,20 @@ class GapAnalyzer:
         avg_conf = sum(confidences) / len(confidences)
         # 计算方差
         variance = sum((c - avg_conf) ** 2 for c in confidences) / len(confidences)
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
 
         # 校准度: 方差越小 + 平均越高 = 校准越好
         calibration = max(0, avg_conf - std_dev * 0.5)
 
         if std_dev > 0.3:
-            gaps.append({
-                "type": "confidence",
-                "avg_confidence": avg_conf,
-                "std_dev": std_dev,
-                "description": f"置信度波动大 (σ={std_dev:.2f})",
-            })
+            gaps.append(
+                {
+                    "type": "confidence",
+                    "avg_confidence": avg_conf,
+                    "std_dev": std_dev,
+                    "description": f"置信度波动大 (σ={std_dev:.2f})",
+                }
+            )
 
         if avg_conf < 0.5:
             insights.append(f"整体置信度偏低 ({avg_conf:.1%})，系统不够自信")

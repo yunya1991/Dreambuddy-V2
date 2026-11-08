@@ -12,24 +12,22 @@
   E组: 边界值测试（阈值边界 +/- epsilon）
   F组: 端到端架构验证（polling_trader 调用路径）
 """
-import sys
-import os
+
 import json
+import sys
 import time
 import traceback
 from pathlib import Path
-from dataclasses import dataclass
-from typing import Any, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # 设置路径
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from scripts.memory_l4.yijing_exit_system import (
-    YijingExitSystem, YijingExitConfig, YijingExitAction, YijingExitDecision,
+from scripts.memory_l4.yijing_exit_system import (  # noqa: E402
+    YijingExitAction,
+    YijingExitSystem,
 )
-from scripts.memory_l4.classic_exit_system import ExitAction
 
 # 测试结果收集
 _results = []
@@ -44,10 +42,14 @@ def record(group: str, name: str, passed: bool, detail: str = ""):
         _pass_count += 1
     else:
         _fail_count += 1
-    _results.append({
-        "group": group, "name": name, "status": status,
-        "detail": detail[:200] if detail else "",
-    })
+    _results.append(
+        {
+            "group": group,
+            "name": name,
+            "status": status,
+            "detail": detail[:200] if detail else "",
+        }
+    )
     icon = "✅" if passed else "❌"
     print(f"  {icon} [{group}] {name}" + (f" — {detail[:100]}" if detail and not passed else ""))
 
@@ -89,93 +91,140 @@ def test_group_a():
     # A1: FORCE_CLOSE — 高风险 + 方向冲突
     try:
         hex_data = make_hexagram(
-            name_cn="坤为地", risk_level="高",
-            current_phase="上九", development_stage="衰退期",
-            direction_hint="DOWN", confidence=0.85,
+            name_cn="坤为地",
+            risk_level="高",
+            current_phase="上九",
+            development_stage="衰退期",
+            direction_hint="DOWN",
+            confidence=0.85,
         )
         decision = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=98.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.02,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=98.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.02,
         )
         # 风险分 = 0.35*0.80 + 0.25*0.85 + 0.20*0.80 + 0.20*0.85 = 0.8225 > 0.80
         # direction_consistent = False (DOWN vs long)
-        passed = (decision.action == YijingExitAction.FORCE_CLOSE
-                  and decision.yijing_risk_score >= 0.80
-                  and not decision.direction_consistent)
-        record("A", "A1: FORCE_CLOSE 高风险+方向冲突", passed,
-               f"action={decision.action.value} risk={decision.yijing_risk_score:.3f} "
-               f"dir_consistent={decision.direction_consistent}")
+        passed = (
+            decision.action == YijingExitAction.FORCE_CLOSE
+            and decision.yijing_risk_score >= 0.80
+            and not decision.direction_consistent
+        )
+        record(
+            "A",
+            "A1: FORCE_CLOSE 高风险+方向冲突",
+            passed,
+            f"action={decision.action.value} risk={decision.yijing_risk_score:.3f} "
+            f"dir_consistent={decision.direction_consistent}",
+        )
     except Exception as e:
         record("A", "A1: FORCE_CLOSE 高风险+方向冲突", False, f"exception: {e}")
 
     # A2: RAISE_TP — 价值高 + 成长期 + 飞龙在天 + 盈利
     try:
         hex_data = make_hexagram(
-            name_cn="乾为天", risk_level="低",
-            current_phase="九五", development_stage="成长期",
-            direction_hint="UP", confidence=0.85,
+            name_cn="乾为天",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.85,
         )
         decision = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=105.0,
-            position_age_sec=3600, unrealized_pnl_pct=0.05,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=105.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.05,
         )
         # 价值分 = 0.45*0.90 + 0.40*0.85 + 0.15*(1-0.25) = 0.8725 > 0.70
         # direction_consistent = True (UP vs long)
-        passed = (decision.action == YijingExitAction.RAISE_TP
-                  and decision.tp_adjust_pct > 0
-                  and decision.direction_consistent)
-        record("A", "A2: RAISE_TP 价值高+成长期+盈利", passed,
-               f"action={decision.action.value} value={decision.yijing_value_score:.3f} "
-               f"tp_adjust={decision.tp_adjust_pct:.2f}")
+        passed = (
+            decision.action == YijingExitAction.RAISE_TP
+            and decision.tp_adjust_pct > 0
+            and decision.direction_consistent
+        )
+        record(
+            "A",
+            "A2: RAISE_TP 价值高+成长期+盈利",
+            passed,
+            f"action={decision.action.value} value={decision.yijing_value_score:.3f} "
+            f"tp_adjust={decision.tp_adjust_pct:.2f}",
+        )
     except Exception as e:
         record("A", "A2: RAISE_TP 价值高+成长期+盈利", False, f"exception: {e}")
 
     # A3: NO_INTERVENE 信号良好（应被 polling_trader 解释为 HOLD）
     try:
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.70,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.70,
         )
         decision = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
         )
         # 风险分 = 0.35*0.25 + 0.25*0.40 + 0.20*0.30 + 0.20*0.20 = 0.2825 < 0.35
         # 价值分 = 0.45*0.65 + 0.40*0.85 + 0.15*0.75 = 0.7425 > 0.60
         # direction_consistent = True
-        passed = (decision.action == YijingExitAction.NO_INTERVENE
-                  and decision.yijing_risk_score < 0.35
-                  and decision.yijing_value_score > 0.60
-                  and decision.direction_consistent)
-        record("A", "A3: NO_INTERVENE 信号良好(应HOLD)", passed,
-               f"action={decision.action.value} risk={decision.yijing_risk_score:.3f} "
-               f"value={decision.yijing_value_score:.3f}")
+        passed = (
+            decision.action == YijingExitAction.NO_INTERVENE
+            and decision.yijing_risk_score < 0.35
+            and decision.yijing_value_score > 0.60
+            and decision.direction_consistent
+        )
+        record(
+            "A",
+            "A3: NO_INTERVENE 信号良好(应HOLD)",
+            passed,
+            f"action={decision.action.value} risk={decision.yijing_risk_score:.3f} "
+            f"value={decision.yijing_value_score:.3f}",
+        )
     except Exception as e:
         record("A", "A3: NO_INTERVENE 信号良好(应HOLD)", False, f"exception: {e}")
 
     # A4: NO_INTERVENE 信号中性（风险偏高/价值偏低 → 应降级 classic）
     try:
         hex_data = make_hexagram(
-            name_cn="水雷屯", risk_level="中",
-            current_phase="九三", development_stage="萌芽期",
-            direction_hint="UP", confidence=0.55,
+            name_cn="水雷屯",
+            risk_level="中",
+            current_phase="九三",
+            development_stage="萌芽期",
+            direction_hint="UP",
+            confidence=0.55,
         )
         decision = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=99.5,
-            position_age_sec=3600, unrealized_pnl_pct=-0.005,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=99.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.005,
         )
         # 风险分 = 0.35*0.50 + 0.25*0.55 + 0.20*0.65 + 0.20*0.20 = 0.48
         # 应该是 NO_INTERVENE 但 risk > 0.35 → polling_trader 应降级 classic
-        passed = (decision.action == YijingExitAction.NO_INTERVENE
-                  and decision.yijing_risk_score >= 0.35)
-        record("A", "A4: NO_INTERVENE 信号中性(应降级)", passed,
-               f"action={decision.action.value} risk={decision.yijing_risk_score:.3f} "
-               f"value={decision.yijing_value_score:.3f}")
+        passed = (
+            decision.action == YijingExitAction.NO_INTERVENE and decision.yijing_risk_score >= 0.35
+        )
+        record(
+            "A",
+            "A4: NO_INTERVENE 信号中性(应降级)",
+            passed,
+            f"action={decision.action.value} risk={decision.yijing_risk_score:.3f} "
+            f"value={decision.yijing_value_score:.3f}",
+        )
     except Exception as e:
         record("A", "A4: NO_INTERVENE 信号中性(应降级)", False, f"exception: {e}")
 
@@ -201,10 +250,14 @@ def test_group_b():
         try:
             actual_risk = cfg.phase_risk_map.get(phase)
             actual_value = cfg.phase_value_map.get(phase)
-            passed = (actual_risk == exp_risk and actual_value == exp_value)
-            record("B", f"B: 六爻[{phase}]{name}", passed,
-                   f"expected risk={exp_risk} value={exp_value}, "
-                   f"actual risk={actual_risk} value={actual_value}")
+            passed = actual_risk == exp_risk and actual_value == exp_value
+            record(
+                "B",
+                f"B: 六爻[{phase}]{name}",
+                passed,
+                f"expected risk={exp_risk} value={exp_value}, "
+                f"actual risk={actual_risk} value={actual_value}",
+            )
         except Exception as e:
             record("B", f"B: 六爻[{phase}]{name}", False, f"exception: {e}")
 
@@ -219,35 +272,51 @@ def test_group_b():
         try:
             actual_risk = cfg.stage_risk_map.get(stage)
             actual_value = cfg.stage_value_map.get(stage)
-            passed = (actual_risk == exp_risk and actual_value == exp_value)
-            record("B", f"B: 四阶段[{stage}]", passed,
-                   f"expected risk={exp_risk} value={exp_value}, "
-                   f"actual risk={actual_risk} value={actual_value}")
+            passed = actual_risk == exp_risk and actual_value == exp_value
+            record(
+                "B",
+                f"B: 四阶段[{stage}]",
+                passed,
+                f"expected risk={exp_risk} value={exp_value}, "
+                f"actual risk={actual_risk} value={actual_value}",
+            )
         except Exception as e:
             record("B", f"B: 四阶段[{stage}]", False, f"exception: {e}")
 
     # B11: risk_level 映射
-    for rl_in, exp_risk in [("高", 0.80), ("中", 0.50), ("低", 0.25),
-                             ("high", 0.80), ("medium", 0.50), ("low", 0.25)]:
+    for rl_in, exp_risk in [
+        ("高", 0.80),
+        ("中", 0.50),
+        ("低", 0.25),
+        ("high", 0.80),
+        ("medium", 0.50),
+        ("low", 0.25),
+    ]:
         try:
             actual = cfg.risk_level_map.get(rl_in)
             passed = actual == exp_risk
-            record("B", f"B: risk_level[{rl_in}]", passed,
-                   f"expected={exp_risk}, actual={actual}")
+            record("B", f"B: risk_level[{rl_in}]", passed, f"expected={exp_risk}, actual={actual}")
         except Exception as e:
             record("B", f"B: risk_level[{rl_in}]", False, f"exception: {e}")
 
     # B12: 方向一致性映射
     for direction, side, exp_risk in [
-        ("UP", "long", 0.20), ("UP", "short", 0.85),
-        ("DOWN", "long", 0.85), ("DOWN", "short", 0.20),
-        ("FLAT", "long", 0.50), ("FLAT", "short", 0.50),
+        ("UP", "long", 0.20),
+        ("UP", "short", 0.85),
+        ("DOWN", "long", 0.85),
+        ("DOWN", "short", 0.20),
+        ("FLAT", "long", 0.50),
+        ("FLAT", "short", 0.50),
     ]:
         try:
             actual = cfg.direction_consistency_map.get(direction, {}).get(side)
             passed = actual == exp_risk
-            record("B", f"B: dir_map[{direction}/{side}]", passed,
-                   f"expected={exp_risk}, actual={actual}")
+            record(
+                "B",
+                f"B: dir_map[{direction}/{side}]",
+                passed,
+                f"expected={exp_risk}, actual={actual}",
+            )
         except Exception as e:
             record("B", f"B: dir_map[{direction}/{side}]", False, f"exception: {e}")
 
@@ -262,66 +331,93 @@ def test_group_c():
     # C1: hexagram=None → fail-open，返回 NO_INTERVENE + should_log=False
     try:
         decision = sys_obj.evaluate(
-            hexagram=None, pos_side="long",
-            entry_price=100.0, current_price=98.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.02,
+            hexagram=None,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=98.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.02,
         )
-        passed = (decision.action == YijingExitAction.NO_INTERVENE
-                  and decision.should_log is False
-                  and "fail_open" in decision.reason)
-        record("C", "C1: hexagram=None fail-open", passed,
-               f"action={decision.action.value} should_log={decision.should_log} "
-               f"reason={decision.reason}")
+        passed = (
+            decision.action == YijingExitAction.NO_INTERVENE
+            and decision.should_log is False
+            and "fail_open" in decision.reason
+        )
+        record(
+            "C",
+            "C1: hexagram=None fail-open",
+            passed,
+            f"action={decision.action.value} should_log={decision.should_log} "
+            f"reason={decision.reason}",
+        )
     except Exception as e:
         record("C", "C1: hexagram=None fail-open", False, f"exception: {e}")
 
     # C2: hexagram=空 dict → fail-open
     try:
         decision = sys_obj.evaluate(
-            hexagram={}, pos_side="long",
-            entry_price=100.0, current_price=98.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.02,
+            hexagram={},
+            pos_side="long",
+            entry_price=100.0,
+            current_price=98.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.02,
         )
         # 空 dict 不是 None，但所有字段都缺省
         # current_phase="" → phase_risk=0.50, risk_level=""→0.50
         passed = decision.action in (YijingExitAction.NO_INTERVENE, YijingExitAction.FORCE_CLOSE)
-        record("C", "C2: hexagram=空dict 容错", passed,
-               f"action={decision.action.value} risk={decision.yijing_risk_score:.3f}")
+        record(
+            "C",
+            "C2: hexagram=空dict 容错",
+            passed,
+            f"action={decision.action.value} risk={decision.yijing_risk_score:.3f}",
+        )
     except Exception as e:
         record("C", "C2: hexagram=空dict 容错", False, f"exception: {e}")
 
     # C3: hexagram=异常对象 → fail-open
     try:
         decision = sys_obj.evaluate(
-            hexagram=object(), pos_side="long",
-            entry_price=100.0, current_price=98.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.02,
+            hexagram=object(),
+            pos_side="long",
+            entry_price=100.0,
+            current_price=98.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.02,
         )
         # object() 没有属性 → _extract_hexagram 会尝试读属性，返回带默认值的 dict
         passed = decision.action in (YijingExitAction.NO_INTERVENE, YijingExitAction.FORCE_CLOSE)
-        record("C", "C3: hexagram=异常对象 容错", passed,
-               f"action={decision.action.value}")
+        record("C", "C3: hexagram=异常对象 容错", passed, f"action={decision.action.value}")
     except Exception as e:
         record("C", "C3: hexagram=异常对象 容错", False, f"exception: {e}")
 
     # C4: classic_decision=None 主离场模式（不应触发 VETO 路径）
     try:
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九五", development_stage="成长期",
-            direction_hint="UP", confidence=0.75,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.75,
         )
         decision = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=102.0,
-            position_age_sec=3600, unrealized_pnl_pct=0.02,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=102.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.02,
             classic_decision=None,  # 主离场模式
         )
         # 应该是 RAISE_TP（价值高+成长期+盈利），不是 VETO
-        passed = decision.action != YijingExitAction.VETO_CLOSE \
-                 and decision.action != YijingExitAction.VETO_REDUCE
-        record("C", "C4: classic_decision=None 不触发VETO", passed,
-               f"action={decision.action.value}")
+        passed = (
+            decision.action != YijingExitAction.VETO_CLOSE
+            and decision.action != YijingExitAction.VETO_REDUCE
+        )
+        record(
+            "C", "C4: classic_decision=None 不触发VETO", passed, f"action={decision.action.value}"
+        )
     except Exception as e:
         record("C", "C4: classic_decision=None 不触发VETO", False, f"exception: {e}")
 
@@ -336,159 +432,246 @@ def test_group_d():
     # D1: 趋势市嬴势 — 飞龙在天 + 做多 + 大盈利 → RAISE_TP or HOLD
     try:
         hex_data = make_hexagram(
-            name_cn="乾为天", risk_level="低",
-            current_phase="九五", development_stage="成长期",
-            direction_hint="UP", confidence=0.85,
+            name_cn="乾为天",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.85,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=110.0,
-            position_age_sec=7200, unrealized_pnl_pct=0.10,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=110.0,
+            position_age_sec=7200,
+            unrealized_pnl_pct=0.10,
         )
-        passed = d.action in (YijingExitAction.RAISE_TP, YijingExitAction.NO_INTERVENE) \
-                 and d.yijing_value_score > 0.70
-        record("D", "D1: 趋势市嬴势(飞龙在天+做多+10%盈利)", passed,
-               f"action={d.action.value} value={d.yijing_value_score:.3f}")
+        passed = (
+            d.action in (YijingExitAction.RAISE_TP, YijingExitAction.NO_INTERVENE)
+            and d.yijing_value_score > 0.70
+        )
+        record(
+            "D",
+            "D1: 趋势市嬴势(飞龙在天+做多+10%盈利)",
+            passed,
+            f"action={d.action.value} value={d.yijing_value_score:.3f}",
+        )
     except Exception as e:
         record("D", "D1: 趋势市嬴势", False, f"exception: {e}")
 
     # D2: 趋势市逆势 — 坤为地 + 做多 + 亏损 → FORCE_CLOSE
     try:
         hex_data = make_hexagram(
-            name_cn="坤为地", risk_level="高",
-            current_phase="上九", development_stage="衰退期",
-            direction_hint="DOWN", confidence=0.80,
+            name_cn="坤为地",
+            risk_level="高",
+            current_phase="上九",
+            development_stage="衰退期",
+            direction_hint="DOWN",
+            confidence=0.80,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=95.0,
-            position_age_sec=7200, unrealized_pnl_pct=-0.05,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=95.0,
+            position_age_sec=7200,
+            unrealized_pnl_pct=-0.05,
         )
         passed = d.action == YijingExitAction.FORCE_CLOSE
-        record("D", "D2: 趋势市逆势(坤为地+做多+亏损)", passed,
-               f"action={d.action.value} risk={d.yijing_risk_score:.3f}")
+        record(
+            "D",
+            "D2: 趋势市逆势(坤为地+做多+亏损)",
+            passed,
+            f"action={d.action.value} risk={d.yijing_risk_score:.3f}",
+        )
     except Exception as e:
         record("D", "D2: 趋势市逆势", False, f"exception: {e}")
 
     # D3: 震荡市持仓 — 坎为水 + 方向冲突 → 评估
     try:
         hex_data = make_hexagram(
-            name_cn="坎为水", risk_level="中",
-            current_phase="九三", development_stage="成熟期",
-            direction_hint="DOWN", confidence=0.55,
+            name_cn="坎为水",
+            risk_level="中",
+            current_phase="九三",
+            development_stage="成熟期",
+            direction_hint="DOWN",
+            confidence=0.55,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=99.8,
-            position_age_sec=3600, unrealized_pnl_pct=-0.002,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=99.8,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.002,
         )
         # 坎为水+做多 → 方向冲突，风险提升
         passed = (not d.direction_consistent) and d.yijing_risk_score > 0.40
-        record("D", "D3: 震荡市持仓(坎为水+方向冲突)", passed,
-               f"action={d.action.value} risk={d.yijing_risk_score:.3f} "
-               f"dir_consistent={d.direction_consistent}")
+        record(
+            "D",
+            "D3: 震荡市持仓(坎为水+方向冲突)",
+            passed,
+            f"action={d.action.value} risk={d.yijing_risk_score:.3f} "
+            f"dir_consistent={d.direction_consistent}",
+        )
     except Exception as e:
         record("D", "D3: 震荡市持仓", False, f"exception: {e}")
 
     # D4: 高波动顶部 — 亢龙有悔 + direction conflict → FORCE_CLOSE
     try:
         hex_data = make_hexagram(
-            name_cn="乾为天", risk_level="高",
-            current_phase="上九", development_stage="衰退期",
-            direction_hint="DOWN", confidence=0.75,
+            name_cn="乾为天",
+            risk_level="高",
+            current_phase="上九",
+            development_stage="衰退期",
+            direction_hint="DOWN",
+            confidence=0.75,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=105.0,
-            position_age_sec=5400, unrealized_pnl_pct=0.05,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=105.0,
+            position_age_sec=5400,
+            unrealized_pnl_pct=0.05,
         )
         # 上九风险=0.85 + DOWN vs long=0.85 → 风险高 + 方向冲突
         passed = d.action == YijingExitAction.FORCE_CLOSE
-        record("D", "D4: 高波动顶部(亢龙有悔+方向冲突)", passed,
-               f"action={d.action.value} risk={d.yijing_risk_score:.3f}")
+        record(
+            "D",
+            "D4: 高波动顶部(亢龙有悔+方向冲突)",
+            passed,
+            f"action={d.action.value} risk={d.yijing_risk_score:.3f}",
+        )
     except Exception as e:
         record("D", "D4: 高波动顶部", False, f"exception: {e}")
 
     # D5: 长期持仓过期 — position_age_sec > 48h → 不应主 HOLD（应降级 classic）
     try:
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.70,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.70,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.0,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.0,
             position_age_sec=200000,  # > 172800 = 48h
             unrealized_pnl_pct=0.01,
         )
         # yijing 返回 NO_INTERVENE，但 polling_trader 的 HOLD 判定会因 not_expired=False 而降级
-        passed = d.action == YijingExitAction.NO_INTERVENE  # yijing 本身不关心时间，由 polling_trader 判定
-        record("D", "D5: 长期持仓过期(>48h)", passed,
-               f"action={d.action.value} 需polling_trader判定 not_expired=False 降级")
+        passed = (
+            d.action == YijingExitAction.NO_INTERVENE
+        )  # yijing 本身不关心时间，由 polling_trader 判定
+        record(
+            "D",
+            "D5: 长期持仓过期(>48h)",
+            passed,
+            f"action={d.action.value} 需polling_trader判定 not_expired=False 降级",
+        )
     except Exception as e:
         record("D", "D5: 长期持仓过期", False, f"exception: {e}")
 
     # D6: 大亏损 — unrealized_pnl_pct < -3% → 不应主 HOLD（应降级 classic）
     try:
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.70,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.70,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=96.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.04,  # -4% < -3%
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=96.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.04,  # -4% < -3%
         )
         # yijing 返回 NO_INTERVENE，但 polling_trader 的 HOLD 判定会因 loss_acceptable=False 而降级
         passed = d.action == YijingExitAction.NO_INTERVENE
-        record("D", "D6: 大亏损(<-3%)", passed,
-               f"action={d.action.value} 需polling_trader判定 loss_acceptable=False 降级")
+        record(
+            "D",
+            "D6: 大亏损(<-3%)",
+            passed,
+            f"action={d.action.value} 需polling_trader判定 loss_acceptable=False 降级",
+        )
     except Exception as e:
         record("D", "D6: 大亏损", False, f"exception: {e}")
 
     # D7: 萌芽期持仓 — 风险高 + 价值低 → NO_INTERVENE 但应降级 classic
     try:
         hex_data = make_hexagram(
-            name_cn="水雷屯", risk_level="中",
-            current_phase="初九", development_stage="萌芽期",
-            direction_hint="UP", confidence=0.50,
+            name_cn="水雷屯",
+            risk_level="中",
+            current_phase="初九",
+            development_stage="萌芽期",
+            direction_hint="UP",
+            confidence=0.50,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=100.5,
-            position_age_sec=1800, unrealized_pnl_pct=0.005,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=100.5,
+            position_age_sec=1800,
+            unrealized_pnl_pct=0.005,
         )
         # 风险分 = 0.35*0.50 + 0.25*0.65 + 0.20*0.65 + 0.20*0.20 = 0.495 > 0.35
         # 价值分 = 0.45*0.35 + 0.40*0.40 + 0.15*0.50 = 0.3875 < 0.60
-        passed = (d.action == YijingExitAction.NO_INTERVENE
-                  and d.yijing_risk_score >= 0.35
-                  and d.yijing_value_score <= 0.60)
-        record("D", "D7: 萌芽期持仓(应降级)", passed,
-               f"action={d.action.value} risk={d.yijing_risk_score:.3f} "
-               f"value={d.yijing_value_score:.3f}")
+        passed = (
+            d.action == YijingExitAction.NO_INTERVENE
+            and d.yijing_risk_score >= 0.35
+            and d.yijing_value_score <= 0.60
+        )
+        record(
+            "D",
+            "D7: 萌芽期持仓(应降级)",
+            passed,
+            f"action={d.action.value} risk={d.yijing_risk_score:.3f} "
+            f"value={d.yijing_value_score:.3f}",
+        )
     except Exception as e:
         record("D", "D7: 萌芽期持仓", False, f"exception: {e}")
 
     # D8: 做空嬴势 — 坤为地 + 做空 + 盈利 → RAISE_TP or HOLD
     try:
         hex_data = make_hexagram(
-            name_cn="坤为地", risk_level="低",
-            current_phase="九五", development_stage="成长期",
-            direction_hint="DOWN", confidence=0.80,
+            name_cn="坤为地",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成长期",
+            direction_hint="DOWN",
+            confidence=0.80,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="short",
-            entry_price=100.0, current_price=92.0,
-            position_age_sec=7200, unrealized_pnl_pct=0.08,
+            hexagram=hex_data,
+            pos_side="short",
+            entry_price=100.0,
+            current_price=92.0,
+            position_age_sec=7200,
+            unrealized_pnl_pct=0.08,
         )
         # DOWN vs short = 0.20 → direction_consistent=True
-        passed = d.action in (YijingExitAction.RAISE_TP, YijingExitAction.NO_INTERVENE) \
-                 and d.direction_consistent
-        record("D", "D8: 做空嬴势(坤为地+做空+8%盈利)", passed,
-               f"action={d.action.value} value={d.yijing_value_score:.3f} "
-               f"dir_consistent={d.direction_consistent}")
+        passed = (
+            d.action in (YijingExitAction.RAISE_TP, YijingExitAction.NO_INTERVENE)
+            and d.direction_consistent
+        )
+        record(
+            "D",
+            "D8: 做空嬴势(坤为地+做空+8%盈利)",
+            passed,
+            f"action={d.action.value} value={d.yijing_value_score:.3f} "
+            f"dir_consistent={d.direction_consistent}",
+        )
     except Exception as e:
         record("D", "D8: 做空嬴势", False, f"exception: {e}")
 
@@ -499,7 +682,7 @@ def test_group_d():
 def test_group_e():
     section("E组: 边界值测试")
     sys_obj = YijingExitSystem()
-    cfg = sys_obj.config
+    cfg = sys_obj.config  # noqa: F841
 
     # E1: 风险分 = 0.80 边界（FORCE_CLOSE 阈值）
     try:
@@ -510,18 +693,28 @@ def test_group_e():
         # 选 risk_level=高(0.80) + phase=上九(0.85) + stage=衰退期(0.80) + direction_conflict
         # = 0.35*0.80 + 0.25*0.85 + 0.20*0.80 + 0.20*0.85 = 0.28+0.2125+0.16+0.17 = 0.8225 > 0.80
         hex_data = make_hexagram(
-            name_cn="坤为地", risk_level="高",
-            current_phase="上九", development_stage="衰退期",
-            direction_hint="DOWN", confidence=0.80,
+            name_cn="坤为地",
+            risk_level="高",
+            current_phase="上九",
+            development_stage="衰退期",
+            direction_hint="DOWN",
+            confidence=0.80,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=99.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.01,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=99.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.01,
         )
         passed = d.yijing_risk_score >= 0.80 and d.action == YijingExitAction.FORCE_CLOSE
-        record("E", "E1: 风险分>=0.80 触发FORCE_CLOSE", passed,
-               f"risk={d.yijing_risk_score:.4f} action={d.action.value}")
+        record(
+            "E",
+            "E1: 风险分>=0.80 触发FORCE_CLOSE",
+            passed,
+            f"risk={d.yijing_risk_score:.4f} action={d.action.value}",
+        )
     except Exception as e:
         record("E", "E1: 风险分>=0.80 触发FORCE_CLOSE", False, f"exception: {e}")
 
@@ -530,18 +723,28 @@ def test_group_e():
         # 选 risk_level=高(0.80) + phase=九三(0.55) + stage=成熟期(0.45) + direction_conflict
         # = 0.35*0.80 + 0.25*0.55 + 0.20*0.45 + 0.20*0.85 = 0.6775 < 0.80
         hex_data = make_hexagram(
-            name_cn="水雷屯", risk_level="高",
-            current_phase="九三", development_stage="成熟期",
-            direction_hint="DOWN", confidence=0.70,
+            name_cn="水雷屯",
+            risk_level="高",
+            current_phase="九三",
+            development_stage="成熟期",
+            direction_hint="DOWN",
+            confidence=0.70,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=99.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.01,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=99.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.01,
         )
         passed = d.yijing_risk_score < 0.80 and d.action != YijingExitAction.FORCE_CLOSE
-        record("E", "E2: 风险分<0.80 不触发FORCE_CLOSE", passed,
-               f"risk={d.yijing_risk_score:.4f} action={d.action.value}")
+        record(
+            "E",
+            "E2: 风险分<0.80 不触发FORCE_CLOSE",
+            passed,
+            f"risk={d.yijing_risk_score:.4f} action={d.action.value}",
+        )
     except Exception as e:
         record("E", "E2: 风险分<0.80 不触发FORCE_CLOSE", False, f"exception: {e}")
 
@@ -553,54 +756,74 @@ def test_group_e():
         # 选 phase=九五(0.90) + stage=成熟期(0.65) + risk_level=低(0.25 → value=0.75)
         # = 0.45*0.90 + 0.40*0.65 + 0.15*0.75 = 0.405 + 0.26 + 0.1125 = 0.7775 > 0.70
         hex_data = make_hexagram(
-            name_cn="乾为天", risk_level="低",
-            current_phase="九五", development_stage="成熟期",
-            direction_hint="UP", confidence=0.75,
+            name_cn="乾为天",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成熟期",
+            direction_hint="UP",
+            confidence=0.75,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=103.0,
-            position_age_sec=3600, unrealized_pnl_pct=0.03,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=103.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.03,
         )
         passed = d.yijing_value_score > 0.70 and d.action == YijingExitAction.RAISE_TP
-        record("E", "E3: 价值分>0.70 触发RAISE_TP", passed,
-               f"value={d.yijing_value_score:.4f} action={d.action.value}")
+        record(
+            "E",
+            "E3: 价值分>0.70 触发RAISE_TP",
+            passed,
+            f"value={d.yijing_value_score:.4f} action={d.action.value}",
+        )
     except Exception as e:
         record("E", "E3: 价值分>0.70 触发RAISE_TP", False, f"exception: {e}")
 
     # E4: 盈利 = 0.02 边界（RAISE_TP 最小盈利）
     try:
         hex_data = make_hexagram(
-            name_cn="乾为天", risk_level="低",
-            current_phase="九五", development_stage="成长期",
-            direction_hint="UP", confidence=0.80,
+            name_cn="乾为天",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.80,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=102.0,
-            position_age_sec=3600, unrealized_pnl_pct=0.02,  # exactly 0.02
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=102.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.02,  # exactly 0.02
         )
         passed = d.action == YijingExitAction.RAISE_TP
-        record("E", "E4: 盈利=0.02 边界触发RAISE_TP", passed,
-               f"action={d.action.value}")
+        record("E", "E4: 盈利=0.02 边界触发RAISE_TP", passed, f"action={d.action.value}")
     except Exception as e:
         record("E", "E4: 盈利=0.02 边界", False, f"exception: {e}")
 
     # E5: 盈利 < 0.02 → 不应 RAISE_TP
     try:
         hex_data = make_hexagram(
-            name_cn="乾为天", risk_level="低",
-            current_phase="九五", development_stage="成长期",
-            direction_hint="UP", confidence=0.80,
+            name_cn="乾为天",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.80,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,  # < 0.02
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,  # < 0.02
         )
         passed = d.action != YijingExitAction.RAISE_TP
-        record("E", "E5: 盈利<0.02 不触发RAISE_TP", passed,
-               f"action={d.action.value}")
+        record("E", "E5: 盈利<0.02 不触发RAISE_TP", passed, f"action={d.action.value}")
     except Exception as e:
         record("E", "E5: 盈利<0.02", False, f"exception: {e}")
 
@@ -631,20 +854,30 @@ def test_group_f():
 
         # 构造 FORCE_CLOSE 场景
         hex_data = make_hexagram(
-            name_cn="坤为地", risk_level="高",
-            current_phase="上九", development_stage="衰退期",
-            direction_hint="DOWN", confidence=0.85,
+            name_cn="坤为地",
+            risk_level="高",
+            current_phase="上九",
+            development_stage="衰退期",
+            direction_hint="DOWN",
+            confidence=0.85,
         )
         yijing_decision = trader.yijing_exit_system.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=98.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.02,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=98.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.02,
         )
         # 验证 yijing 决策是 FORCE_CLOSE
         force_close_triggered = yijing_decision.action == YijingExitAction.FORCE_CLOSE
         # 验证：架构上，FORCE_CLOSE 路径直接 return，不会调用 exit_system.evaluate_full
-        record("F", "F1: yijing FORCE_CLOSE 直接返回(不调classic)", force_close_triggered,
-               f"action={yijing_decision.action.value} risk={yijing_decision.yijing_risk_score:.3f}")
+        record(
+            "F",
+            "F1: yijing FORCE_CLOSE 直接返回(不调classic)",
+            force_close_triggered,
+            f"action={yijing_decision.action.value} risk={yijing_decision.yijing_risk_score:.3f}",
+        )
     except Exception as e:
         record("F", "F1: yijing FORCE_CLOSE", False, f"exception: {e}")
 
@@ -654,18 +887,28 @@ def test_group_f():
         trader.yijing_exit_system = YijingExitSystem()
 
         hex_data = make_hexagram(
-            name_cn="乾为天", risk_level="低",
-            current_phase="九五", development_stage="成长期",
-            direction_hint="UP", confidence=0.85,
+            name_cn="乾为天",
+            risk_level="低",
+            current_phase="九五",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.85,
         )
         yijing_decision = trader.yijing_exit_system.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=105.0,
-            position_age_sec=3600, unrealized_pnl_pct=0.05,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=105.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.05,
         )
         passed = yijing_decision.action == YijingExitAction.RAISE_TP
-        record("F", "F2: yijing RAISE_TP 直接返回(不调classic)", passed,
-               f"action={yijing_decision.action.value}")
+        record(
+            "F",
+            "F2: yijing RAISE_TP 直接返回(不调classic)",
+            passed,
+            f"action={yijing_decision.action.value}",
+        )
     except Exception as e:
         record("F", "F2: yijing RAISE_TP", False, f"exception: {e}")
 
@@ -676,16 +919,22 @@ def test_group_f():
         cfg = trader.yijing_exit_system.config
 
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.70,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.70,
         )
         upl_ratio = 0.015
         position_age_sec = 3600
         yijing_decision = trader.yijing_exit_system.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=position_age_sec, unrealized_pnl_pct=upl_ratio,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=position_age_sec,
+            unrealized_pnl_pct=upl_ratio,
         )
 
         # 模拟 polling_trader 的 HOLD 判定逻辑
@@ -693,16 +942,23 @@ def test_group_f():
         value_high = yijing_decision.yijing_value_score > cfg.veto_value_threshold
         loss_acceptable = upl_ratio > cfg.veto_max_loss_pct
         not_expired = position_age_sec < cfg.veto_max_hold_sec
-        should_hold = (risk_low and value_high
-                       and yijing_decision.direction_consistent
-                       and loss_acceptable and not_expired)
+        should_hold = (
+            risk_low
+            and value_high
+            and yijing_decision.direction_consistent
+            and loss_acceptable
+            and not_expired
+        )
 
-        passed = (yijing_decision.action == YijingExitAction.NO_INTERVENE
-                  and should_hold)
-        record("F", "F3: yijing NO_INTERVENE 信号良好→HOLD(不调classic)", passed,
-               f"action={yijing_decision.action.value} risk_low={risk_low} "
-               f"value_high={value_high} dir_consistent={yijing_decision.direction_consistent} "
-               f"loss_ok={loss_acceptable} not_expired={not_expired}")
+        passed = yijing_decision.action == YijingExitAction.NO_INTERVENE and should_hold
+        record(
+            "F",
+            "F3: yijing NO_INTERVENE 信号良好→HOLD(不调classic)",
+            passed,
+            f"action={yijing_decision.action.value} risk_low={risk_low} "
+            f"value_high={value_high} dir_consistent={yijing_decision.direction_consistent} "
+            f"loss_ok={loss_acceptable} not_expired={not_expired}",
+        )
     except Exception as e:
         record("F", "F3: yijing NO_INTERVENE→HOLD", False, f"exception: {e}")
 
@@ -713,16 +969,22 @@ def test_group_f():
         cfg = trader.yijing_exit_system.config
 
         hex_data = make_hexagram(
-            name_cn="水雷屯", risk_level="中",
-            current_phase="九三", development_stage="萌芽期",
-            direction_hint="UP", confidence=0.55,
+            name_cn="水雷屯",
+            risk_level="中",
+            current_phase="九三",
+            development_stage="萌芽期",
+            direction_hint="UP",
+            confidence=0.55,
         )
         upl_ratio = -0.005
         position_age_sec = 3600
         yijing_decision = trader.yijing_exit_system.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=99.5,
-            position_age_sec=position_age_sec, unrealized_pnl_pct=upl_ratio,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=99.5,
+            position_age_sec=position_age_sec,
+            unrealized_pnl_pct=upl_ratio,
         )
 
         # 模拟 polling_trader 的 HOLD 判定逻辑
@@ -730,15 +992,24 @@ def test_group_f():
         value_high = yijing_decision.yijing_value_score > cfg.veto_value_threshold
         loss_acceptable = upl_ratio > cfg.veto_max_loss_pct
         not_expired = position_age_sec < cfg.veto_max_hold_sec
-        should_hold = (risk_low and value_high
-                       and yijing_decision.direction_consistent
-                       and loss_acceptable and not_expired)
+        should_hold = (
+            risk_low
+            and value_high
+            and yijing_decision.direction_consistent
+            and loss_acceptable
+            and not_expired
+        )
 
-        passed = (yijing_decision.action == YijingExitAction.NO_INTERVENE
-                  and not should_hold)  # 信号中性 → 不 HOLD → 降级 classic
-        record("F", "F4: yijing NO_INTERVENE 信号中性→降级classic", passed,
-               f"action={yijing_decision.action.value} risk_low={risk_low} "
-               f"value_high={value_high} should_hold={should_hold}")
+        passed = (
+            yijing_decision.action == YijingExitAction.NO_INTERVENE and not should_hold
+        )  # 信号中性 → 不 HOLD → 降级 classic
+        record(
+            "F",
+            "F4: yijing NO_INTERVENE 信号中性→降级classic",
+            passed,
+            f"action={yijing_decision.action.value} risk_low={risk_low} "
+            f"value_high={value_high} should_hold={should_hold}",
+        )
     except Exception as e:
         record("F", "F4: yijing NO_INTERVENE→降级", False, f"exception: {e}")
 
@@ -749,15 +1020,24 @@ def test_group_f():
         # 这里只能验证 yijing_exit_system 的行为
         sys_obj = YijingExitSystem()
         d = sys_obj.evaluate(
-            hexagram=None, pos_side="long",
-            entry_price=100.0, current_price=98.0,
-            position_age_sec=3600, unrealized_pnl_pct=-0.02,
+            hexagram=None,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=98.0,
+            position_age_sec=3600,
+            unrealized_pnl_pct=-0.02,
         )
-        passed = (d.action == YijingExitAction.NO_INTERVENE
-                  and d.should_log is False
-                  and "fail_open" in d.reason)
-        record("F", "F5: yijing不可用→fail_open(走classic)", passed,
-               f"action={d.action.value} reason={d.reason}")
+        passed = (
+            d.action == YijingExitAction.NO_INTERVENE
+            and d.should_log is False
+            and "fail_open" in d.reason
+        )
+        record(
+            "F",
+            "F5: yijing不可用→fail_open(走classic)",
+            passed,
+            f"action={d.action.value} reason={d.reason}",
+        )
     except Exception as e:
         record("F", "F5: yijing不可用", False, f"exception: {e}")
 
@@ -789,45 +1069,59 @@ def test_group_g():
         # 风险 = 0.40*0.25 + 0.18*0.55 + 0.18*0.45 + 0.24*0.20 = 0.1+0.099+0.081+0.048 = 0.328
         # 价值 = 0.45*0.55 + 0.40*0.65 + 0.15*0.75 = 0.2475+0.26+0.1125 = 0.62 > 0.60 ✓
         hex_data = make_hexagram(
-            name_cn="天火同人", risk_level="低",
-            current_phase="九三", development_stage="成熟期",
-            direction_hint="UP", confidence=0.75,
+            name_cn="天火同人",
+            risk_level="低",
+            current_phase="九三",
+            development_stage="成熟期",
+            direction_hint="UP",
+            confidence=0.75,
         )
         # 第一次：main 模式主评估，会写入缓存
         main_decision = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
-            coin="BTC", open_time_sec=time.time() - 3600,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
+            coin="BTC",
+            open_time_sec=time.time() - 3600,
             mode="main",
         )
-        main_was_no_intervene = (main_decision.action == YijingExitAction.NO_INTERVENE)
+        main_was_no_intervene = main_decision.action == YijingExitAction.NO_INTERVENE
 
         # 第二次：立即 veto 模式评估（距上次<1h，正常应被门禁拦截）
         # 传入 classic_decision 模拟 classic 决定 CLOSE
         # 用 dict 形式，避免 str(enum) 解析问题：evaluate 中对 dict 取 ["action"]
         classic_dec = {
-            "action": "close",   # classic 决定平仓
+            "action": "close",  # classic 决定平仓
             "reason": "tb_stop_loss: ATR 止损触发",  # 噪音止损关键词，应被否决
         }
 
         veto_decision = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
             classic_decision=classic_dec,
-            coin="BTC", open_time_sec=time.time() - 3600,
+            coin="BTC",
+            open_time_sec=time.time() - 3600,
             mode="veto",
         )
         # 修复前：veto_decision.action == NO_INTERVENE（被缓存吞掉）
         # 修复后：veto_decision.action == VETO_CLOSE（真正执行了否决判定）
-        passed = (main_was_no_intervene
-                  and veto_decision.action == YijingExitAction.VETO_CLOSE)
-        record("G", "G1: veto 绕过 1h 门禁真正重算", passed,
-               f"main={main_decision.action.value}(risk={main_decision.yijing_risk_score:.3f},"
-               f"value={main_decision.yijing_value_score:.3f}) "
-               f"veto={veto_decision.action.value} "
-               f"(修复前 veto=no_intervene 为 BUG)")
+        passed = main_was_no_intervene and veto_decision.action == YijingExitAction.VETO_CLOSE
+        record(
+            "G",
+            "G1: veto 绕过 1h 门禁真正重算",
+            passed,
+            f"main={main_decision.action.value}(risk={main_decision.yijing_risk_score:.3f},"
+            f"value={main_decision.yijing_value_score:.3f}) "
+            f"veto={veto_decision.action.value} "
+            f"(修复前 veto=no_intervene 为 BUG)",
+        )
     except Exception as e:
         record("G", "G1: veto 绕过 1h 门禁真正重算", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -836,16 +1130,23 @@ def test_group_g():
     try:
         sys_obj = YijingExitSystem()
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.75,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.75,
         )
         # 主评估写缓存
         sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
-            coin="ETH", open_time_sec=time.time() - 3600,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
+            coin="ETH",
+            open_time_sec=time.time() - 3600,
             mode="main",
         )
         cache_before = sys_obj._eval_cache.get("ETH:long")
@@ -857,23 +1158,33 @@ def test_group_g():
             "reason": "trailing_stop: 跟踪止损",  # 噪音止损关键词
         }
         sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
             classic_decision=classic_dec,
-            coin="ETH", open_time_sec=time.time() - 3600,
+            coin="ETH",
+            open_time_sec=time.time() - 3600,
             mode="veto",
         )
         cache_after = sys_obj._eval_cache.get("ETH:long")
         main_last_ts_after = cache_after["last_eval_ts"] if cache_after else None
 
         # 修复后：veto 不写缓存，last_eval_ts 应保持不变
-        passed = (main_last_ts_before is not None
-                  and main_last_ts_after is not None
-                  and main_last_ts_before == main_last_ts_after)
-        record("G", "G2: veto 不污染主决策缓存", passed,
-               f"ts_before={main_last_ts_before} ts_after={main_last_ts_after} "
-               f"(修复前 ts_after 会刷新为 veto 时间，污染缓存)")
+        passed = (
+            main_last_ts_before is not None
+            and main_last_ts_after is not None
+            and main_last_ts_before == main_last_ts_after
+        )
+        record(
+            "G",
+            "G2: veto 不污染主决策缓存",
+            passed,
+            f"ts_before={main_last_ts_before} ts_after={main_last_ts_after} "
+            f"(修复前 ts_after 会刷新为 veto 时间，污染缓存)",
+        )
     except Exception as e:
         record("G", "G2: veto 不污染主决策缓存", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -882,31 +1193,49 @@ def test_group_g():
     try:
         sys_obj = YijingExitSystem()
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.75,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.75,
         )
         # 第一次 main 评估
         d1 = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
-            coin="SOL", open_time_sec=time.time() - 3600,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
+            coin="SOL",
+            open_time_sec=time.time() - 3600,
             mode="main",
         )
         # 立即第二次 main 评估：应被 1h 门禁拦截，返回缓存 NO_INTERVENE
         d2 = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
-            coin="SOL", open_time_sec=time.time() - 3600,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
+            coin="SOL",
+            open_time_sec=time.time() - 3600,
             mode="main",
         )
-        passed = (d1.action == YijingExitAction.NO_INTERVENE
-                  and d2.action == YijingExitAction.NO_INTERVENE
-                  and "cached" in d2.reason or "window" in d2.reason)
-        record("G", "G3: main 模式仍守 1h 门禁", passed,
-               f"d1={d1.action.value} d2={d2.action.value} d2.reason={d2.reason[:60]}")
+        passed = (
+            d1.action == YijingExitAction.NO_INTERVENE
+            and d2.action == YijingExitAction.NO_INTERVENE
+            and "cached" in d2.reason
+            or "window" in d2.reason
+        )
+        record(
+            "G",
+            "G3: main 模式仍守 1h 门禁",
+            passed,
+            f"d1={d1.action.value} d2={d2.action.value} d2.reason={d2.reason[:60]}",
+        )
     except Exception as e:
         record("G", "G3: main 模式仍守 1h 门禁", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -915,23 +1244,30 @@ def test_group_g():
     try:
         sys_obj = YijingExitSystem()
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.75,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.75,
         )
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.5,
-            position_age_sec=3600, unrealized_pnl_pct=0.015,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.5,
+            position_age_sec=3600,
+            unrealized_pnl_pct=0.015,
             classic_decision=None,
-            coin="XRP", open_time_sec=time.time() - 3600,
+            coin="XRP",
+            open_time_sec=time.time() - 3600,
             mode="veto",
         )
         # 无 classic_decision → 不应触发 VETO_CLOSE/VETO_REDUCE
-        passed = (d.action != YijingExitAction.VETO_CLOSE
-                  and d.action != YijingExitAction.VETO_REDUCE)
-        record("G", "G4: veto 无 classic_decision 不触发", passed,
-               f"action={d.action.value}")
+        passed = (
+            d.action != YijingExitAction.VETO_CLOSE and d.action != YijingExitAction.VETO_REDUCE
+        )
+        record("G", "G4: veto 无 classic_decision 不触发", passed, f"action={d.action.value}")
     except Exception as e:
         record("G", "G4: veto 无 classic_decision 不触发", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -950,14 +1286,19 @@ def test_group_h():
     try:
         sys_obj = YijingExitSystem()
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.70,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.70,
         )
         # 构造 position_age_sec=200000 > veto_max_hold_sec=172800(48h)
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.0,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.0,
             position_age_sec=200000,  # > 48h
             unrealized_pnl_pct=0.01,
         )
@@ -967,15 +1308,25 @@ def test_group_h():
         value_high = d.yijing_value_score > cfg.veto_value_threshold
         not_expired = 200000 < cfg.veto_max_hold_sec  # Bug1核心验证: 超时后此条件为False
         loss_acceptable = 0.01 > cfg.veto_max_loss_pct
-        hold_conditions_overall = risk_low and value_high and d.direction_consistent and loss_acceptable and not_expired
+        hold_conditions_overall = (
+            risk_low and value_high and d.direction_consistent and loss_acceptable and not_expired
+        )
         # 关键: not_expired必须为False → 整体HOLD失败 → 降级classic
-        passed = (not not_expired
-                  and risk_low and value_high and d.direction_consistent
-                  and not hold_conditions_overall)
-        record("H", "H1: 48h超时 HOLD条件整体False → 走降级路径", passed,
-               f"action={d.action.value} risk={d.yijing_risk_score:.3f} "
-               f"value={d.yijing_value_score:.3f} dir_consistent={d.direction_consistent} "
-               f"not_expired(超时后应False)={not_expired} hold_overall(应为False)={hold_conditions_overall}")
+        passed = (
+            not not_expired
+            and risk_low
+            and value_high
+            and d.direction_consistent
+            and not hold_conditions_overall
+        )
+        record(
+            "H",
+            "H1: 48h超时 HOLD条件整体False → 走降级路径",
+            passed,
+            f"action={d.action.value} risk={d.yijing_risk_score:.3f} "
+            f"value={d.yijing_value_score:.3f} dir_consistent={d.direction_consistent} "
+            f"not_expired(超时后应False)={not_expired} hold_overall(应为False)={hold_conditions_overall}",
+        )
     except Exception as e:
         record("H", "H1: 48h超时HOLD条件拦截", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -984,14 +1335,19 @@ def test_group_h():
     try:
         sys_obj = YijingExitSystem()
         hex_data = make_hexagram(
-            name_cn="风天小畜", risk_level="低",
-            current_phase="九二", development_stage="成长期",
-            direction_hint="UP", confidence=0.70,
+            name_cn="风天小畜",
+            risk_level="低",
+            current_phase="九二",
+            development_stage="成长期",
+            direction_hint="UP",
+            confidence=0.70,
         )
         # 构造正常持仓=2h（未超时）
         d = sys_obj.evaluate(
-            hexagram=hex_data, pos_side="long",
-            entry_price=100.0, current_price=101.0,
+            hexagram=hex_data,
+            pos_side="long",
+            entry_price=100.0,
+            current_price=101.0,
             position_age_sec=7200,  # 2h < 48h
             unrealized_pnl_pct=0.01,
         )
@@ -1000,12 +1356,20 @@ def test_group_h():
         value_high = d.yijing_value_score > cfg.veto_value_threshold
         not_expired = 7200 < cfg.veto_max_hold_sec
         loss_acceptable = 0.01 > cfg.veto_max_loss_pct  # 1% > -3%
-        hold_condition = risk_low and value_high and d.direction_consistent and loss_acceptable and not_expired
+        hold_condition = (
+            risk_low and value_high and d.direction_consistent and loss_acceptable and not_expired
+        )
         # 核心：not_expired为True，HOLD条件整体成立（即使yijing走了lower_sl分支，逻辑条件是对的）
-        passed = (not_expired and risk_low and value_high and d.direction_consistent and hold_condition)
-        record("H", "H2: 未超时 HOLD条件整体成立（对比组）", passed,
-               f"hold_cond={hold_condition} not_expired={not_expired} "
-               f"risk_low={risk_low} value_high={value_high} action={d.action.value}")
+        passed = (
+            not_expired and risk_low and value_high and d.direction_consistent and hold_condition
+        )
+        record(
+            "H",
+            "H2: 未超时 HOLD条件整体成立（对比组）",
+            passed,
+            f"hold_cond={hold_condition} not_expired={not_expired} "
+            f"risk_low={risk_low} value_high={value_high} action={d.action.value}",
+        )
     except Exception as e:
         record("H", "H2: 未超时 HOLD条件成立（对比组）", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -1015,9 +1379,13 @@ def test_group_h():
         sys_obj = YijingExitSystem()
         cfg = sys_obj.config
         expected_48h = 48 * 3600  # 172800
-        passed = (cfg.veto_max_hold_sec == expected_48h)
-        record("H", "H3: veto_max_hold_sec=48h(172800s) 配置正确", passed,
-               f"veto_max_hold_sec={cfg.veto_max_hold_sec} expected={expected_48h}")
+        passed = cfg.veto_max_hold_sec == expected_48h
+        record(
+            "H",
+            "H3: veto_max_hold_sec=48h(172800s) 配置正确",
+            passed,
+            f"veto_max_hold_sec={cfg.veto_max_hold_sec} expected={expected_48h}",
+        )
     except Exception as e:
         record("H", "H3: 48h超时配置值", False, f"exception: {e}")
 
@@ -1032,8 +1400,8 @@ def test_group_h():
         # 模拟polling_trader中修复后的配置
         exit_cfg = ExitConfig(
             l0_risk_gate_enabled=True,
-            l0_risk_gate_long_thr=0.65,        # Bug2修复: 从0.5→0.65
-            l0_risk_gate_short_thr=0.60,       # Bug2修复: 同步提高
+            l0_risk_gate_long_thr=0.65,  # Bug2修复: 从0.5→0.65
+            l0_risk_gate_short_thr=0.60,  # Bug2修复: 同步提高
             l0_risk_gate_min_hold_sec=3600.0,  # Bug2修复: 新增1h保护期
             l0_risk_gate_profit_bypass_pct=0.05,  # Bug2修复: 3%→5%
             l0_risk_gate_cooldown_min=60.0,
@@ -1042,14 +1410,20 @@ def test_group_h():
         classic_sys = ClassicExitSystem(config=exit_cfg)
         cfg = classic_sys.config
         # 检查4个关键参数是否正确写入
-        passed = (cfg.l0_risk_gate_long_thr == 0.65
-                  and cfg.l0_risk_gate_short_thr == 0.60
-                  and cfg.l0_risk_gate_min_hold_sec == 3600.0
-                  and cfg.l0_risk_gate_profit_bypass_pct == 0.05)
-        record("H", "H4: L0_RISK_GATE 4个关键参数正确写入配置", passed,
-               f"long_thr={cfg.l0_risk_gate_long_thr} short_thr={cfg.l0_risk_gate_short_thr} "
-               f"min_hold_sec={cfg.l0_risk_gate_min_hold_sec} "
-               f"profit_bypass_pct={cfg.l0_risk_gate_profit_bypass_pct}")
+        passed = (
+            cfg.l0_risk_gate_long_thr == 0.65
+            and cfg.l0_risk_gate_short_thr == 0.60
+            and cfg.l0_risk_gate_min_hold_sec == 3600.0
+            and cfg.l0_risk_gate_profit_bypass_pct == 0.05
+        )
+        record(
+            "H",
+            "H4: L0_RISK_GATE 4个关键参数正确写入配置",
+            passed,
+            f"long_thr={cfg.l0_risk_gate_long_thr} short_thr={cfg.l0_risk_gate_short_thr} "
+            f"min_hold_sec={cfg.l0_risk_gate_min_hold_sec} "
+            f"profit_bypass_pct={cfg.l0_risk_gate_profit_bypass_pct}",
+        )
     except Exception as e:
         record("H", "H4: L0_RISK_GATE参数写入配置", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -1058,16 +1432,19 @@ def test_group_h():
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "memory_l4"))
         from classic_exit_system import (
-            ClassicExitSystem, ExitConfig, ExitAction,
-            PositionState, ExitFeatureSet, ExitPriority
+            ClassicExitSystem,
+            ExitAction,
+            ExitConfig,
+            ExitFeatureSet,
+            PositionState,
         )
 
         exit_cfg = ExitConfig(
             l0_risk_gate_enabled=True,
             l0_risk_gate_long_thr=0.65,
             l0_risk_gate_min_hold_sec=3600.0,  # 1h保护期
-            l0_risk_gate_confirm_n=1,          # 降低确认数，便于触发
-            l0_risk_gate_cooldown_min=0.0,     # 取消冷却
+            l0_risk_gate_confirm_n=1,  # 降低确认数，便于触发
+            l0_risk_gate_cooldown_min=0.0,  # 取消冷却
             l0_risk_gate_profit_bypass_enabled=False,  # 关闭盈利旁路
         )
         classic_sys = ClassicExitSystem(config=exit_cfg)
@@ -1087,14 +1464,20 @@ def test_group_h():
         )
         features = ExitFeatureSet(
             hold_risk=0.90,  # 极高风险，远超0.65阈值
-            adx=25.0, dd=0.05, trend_shape=None,
+            adx=25.0,
+            dd=0.05,
+            trend_shape=None,
         )
         decision = classic_sys._check_risk_gate(pos, features, now_ts)
         # 持仓<min_hold_sec，应返回HOLD不触发减仓
-        passed = (decision.action == ExitAction.HOLD)
-        record("H", "H5: 持仓<1h保护期即使高风险也不触发risk_gate", passed,
-               f"action={decision.action.value} hold_risk=0.90 "
-               f"hold_age=30min min_hold_sec=3600s reason={decision.reason[:60]}")
+        passed = decision.action == ExitAction.HOLD
+        record(
+            "H",
+            "H5: 持仓<1h保护期即使高风险也不触发risk_gate",
+            passed,
+            f"action={decision.action.value} hold_risk=0.90 "
+            f"hold_age=30min min_hold_sec=3600s reason={decision.reason[:60]}",
+        )
     except Exception as e:
         record("H", "H5: min_hold_sec保护期拦截", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -1103,8 +1486,11 @@ def test_group_h():
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts" / "memory_l4"))
         from classic_exit_system import (
-            ClassicExitSystem, ExitConfig, ExitAction,
-            PositionState, ExitFeatureSet
+            ClassicExitSystem,
+            ExitAction,
+            ExitConfig,
+            ExitFeatureSet,
+            PositionState,
         )
 
         exit_cfg = ExitConfig(
@@ -1135,12 +1521,18 @@ def test_group_h():
         # hold_risk=0.60 < 0.65阈值，不应触发
         features = ExitFeatureSet(
             hold_risk=0.60,
-            adx=25.0, dd=0.05, trend_shape=None,
+            adx=25.0,
+            dd=0.05,
+            trend_shape=None,
         )
         decision = classic_sys._check_risk_gate(pos, features, now_ts)
-        passed = (decision.action == ExitAction.HOLD)
-        record("H", "H6: hold_risk=0.60 < 0.65阈值不触发risk_gate", passed,
-               f"action={decision.action.value} hold_risk=0.60 thr=0.65 reason={decision.reason[:60]}")
+        passed = decision.action == ExitAction.HOLD
+        record(
+            "H",
+            "H6: hold_risk=0.60 < 0.65阈值不触发risk_gate",
+            passed,
+            f"action={decision.action.value} hold_risk=0.60 thr=0.65 reason={decision.reason[:60]}",
+        )
     except Exception as e:
         record("H", "H6: long_thr=0.65阈值以下不触发", False, f"exception: {e}")
         print(traceback.format_exc())
@@ -1166,7 +1558,7 @@ def main():
 
     # 汇总
     print(f"\n{'='*60}")
-    print(f"  测试汇总")
+    print("  测试汇总")
     print(f"{'='*60}")
     total = _pass_count + _fail_count
     print(f"  总用例: {total}")
@@ -1177,7 +1569,7 @@ def main():
         print(f"  通过率: {pass_rate:.1f}%")
 
     # 按组统计
-    print(f"\n  按组统计:")
+    print("\n  按组统计:")
     groups = {}
     for r in _results:
         g = r["group"]
@@ -1196,7 +1588,7 @@ def main():
     # 输出失败用例详情
     failed = [r for r in _results if r["status"] == "FAIL"]
     if failed:
-        print(f"\n  失败用例详情:")
+        print("\n  失败用例详情:")
         for r in failed:
             print(f"    [{r['group']}] {r['name']}: {r['detail']}")
 

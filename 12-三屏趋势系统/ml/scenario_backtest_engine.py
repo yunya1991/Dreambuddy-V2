@@ -20,7 +20,7 @@
 - four_objective_feature_mapper.py：四类目的特征映射
 """
 
-import os
+import os  # noqa: I001
 import sys
 import json
 from pathlib import Path
@@ -33,43 +33,44 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from backtest.engine import BacktestEngine
+from backtest.engine import BacktestEngine  # noqa: I001
 from backtest.strategy import EnhancedMA200Strategy, BaseStrategy
-from backtest.metrics import calculate_performance_metrics
-
 
 # ── 数据结构 ──────────────────────────────────────────────────────────
+
 
 @dataclass
 class ObjectiveMetrics:
     """单个目的的回测指标"""
-    objective: str                    # 目的类型
-    objective_name: str               # 目的中文名
-    total_signals: int = 0            # 总信号数
-    signal_freq_pct: float = 0.0      # 信号频率（占总天数%）
-    win_rate: float = 0.0             # 胜率
-    avg_return: float = 0.0           # 平均收益
-    median_return: float = 0.0        # 中位数收益
-    max_return: float = 0.0           # 最大单笔收益
-    min_return: float = 0.0           # 最小单笔收益
-    profit_factor: float = 0.0        # 盈亏比
-    max_drawdown: float = 0.0         # 按信号顺序的最大回撤
-    sharpe_like: float = 0.0         # 类夏普比率（均收益/收益标准差）
-    label_precision: float = 0.0      # 标签准确率（和ground truth对比）
-    label_recall: float = 0.0         # 标签召回率
-    label_f1: float = 0.0             # 标签F1分数
-    baseline_delta: float = 0.0       # 相对基线的提升幅度
+
+    objective: str  # 目的类型
+    objective_name: str  # 目的中文名
+    total_signals: int = 0  # 总信号数
+    signal_freq_pct: float = 0.0  # 信号频率（占总天数%）
+    win_rate: float = 0.0  # 胜率
+    avg_return: float = 0.0  # 平均收益
+    median_return: float = 0.0  # 中位数收益
+    max_return: float = 0.0  # 最大单笔收益
+    min_return: float = 0.0  # 最小单笔收益
+    profit_factor: float = 0.0  # 盈亏比
+    max_drawdown: float = 0.0  # 按信号顺序的最大回撤
+    sharpe_like: float = 0.0  # 类夏普比率（均收益/收益标准差）
+    label_precision: float = 0.0  # 标签准确率（和ground truth对比）
+    label_recall: float = 0.0  # 标签召回率
+    label_f1: float = 0.0  # 标签F1分数
+    baseline_delta: float = 0.0  # 相对基线的提升幅度
 
 
 @dataclass
 class ScenarioBacktestResult:
     """分场景回测完整结果"""
-    experiment_name: str              # 实验名称
-    strategy_name: str                # 策略名称
-    symbol: str                       # 交易标的
-    start_date: str                   # 开始日期
-    end_date: str                     # 结束日期
-    total_days: int = 0               # 总交易日数
+
+    experiment_name: str  # 实验名称
+    strategy_name: str  # 策略名称
+    symbol: str  # 交易标的
+    start_date: str  # 开始日期
+    end_date: str  # 结束日期
+    total_days: int = 0  # 总交易日数
 
     # 各目的指标
     objective_metrics: Dict[str, ObjectiveMetrics] = field(default_factory=dict)
@@ -87,7 +88,7 @@ class ScenarioBacktestResult:
     baseline_sharpe: float = 0.0
     baseline_calmar: float = 0.0
     baseline_maxdd: float = 0.0
-    composite_score: float = 0.0     # 综合评分（>1.0优于基线）
+    composite_score: float = 0.0  # 综合评分（>1.0优于基线）
 
     # 元信息
     created_at: str = ""
@@ -116,18 +117,20 @@ class ScenarioBacktestResult:
 @dataclass
 class AblationResult:
     """消融实验结果"""
-    feature_name: str                  # 被移除的特征/特征组
-    objective: str                     # 目标目的
-    baseline_accuracy: float = 0.0     # 基线（全特征）准确率
-    ablated_accuracy: float = 0.0      # 消融后准确率
-    accuracy_delta: float = 0.0        # 准确率变化（负=该特征有正贡献）
-    baseline_sharpe: float = 0.0       # 基线夏普
-    ablated_sharpe: float = 0.0        # 消融后夏普
-    sharpe_delta: float = 0.0          # 夏普变化
-    importance_score: float = 0.0      # 重要性综合评分
+
+    feature_name: str  # 被移除的特征/特征组
+    objective: str  # 目标目的
+    baseline_accuracy: float = 0.0  # 基线（全特征）准确率
+    ablated_accuracy: float = 0.0  # 消融后准确率
+    accuracy_delta: float = 0.0  # 准确率变化（负=该特征有正贡献）
+    baseline_sharpe: float = 0.0  # 基线夏普
+    ablated_sharpe: float = 0.0  # 消融后夏普
+    sharpe_delta: float = 0.0  # 夏普变化
+    importance_score: float = 0.0  # 重要性综合评分
 
 
 # ── 分场景回测引擎 ────────────────────────────────────────────────────
+
 
 class ScenarioBacktestEngine:
     """分场景回测引擎
@@ -185,9 +188,9 @@ class ScenarioBacktestEngine:
         position_sizes = strategy.generate_signals(prices)
         bt_result = engine.run(prices["close"], position_sizes, symbol=symbol)
 
-        equity = bt_result["equity_curve"]
-        returns = bt_result["returns"]
-        trades = bt_result["trades"]
+        equity = bt_result["equity_curve"]  # noqa: F841
+        returns = bt_result["returns"]  # noqa: F841
+        trades = bt_result["trades"]  # noqa: F841
         overall_metrics = bt_result["metrics"]
 
         # 2. 计算基线（v2）的全周期指标
@@ -200,14 +203,10 @@ class ScenarioBacktestEngine:
         signals_df = pd.DataFrame({"position": position_sizes})
 
         # 4. 按四类目的分别评估
-        objective_metrics = self._evaluate_all_objectives(
-            prices, signals_df, strategy
-        )
+        objective_metrics = self._evaluate_all_objectives(prices, signals_df, strategy)
 
         # 5. 计算综合评分
-        composite_score = self._compute_composite_score(
-            overall_metrics, baseline_metrics
-        )
+        composite_score = self._compute_composite_score(overall_metrics, baseline_metrics)
 
         # 6. 组装结果
         result = ScenarioBacktestResult(
@@ -268,7 +267,8 @@ class ScenarioBacktestEngine:
         # 1. 基线（全特征）
         baseline_strategy = strategy_factory(baseline_feature_set)
         baseline_result = self.run_scenario_backtest(
-            prices, baseline_strategy,
+            prices,
+            baseline_strategy,
             strategy_name=f"{strategy_name_prefix}_baseline",
         )
         baseline_obj = baseline_result.objective_metrics.get(
@@ -281,7 +281,8 @@ class ScenarioBacktestEngine:
             ablated_features = [f for f in baseline_feature_set if f != feat]
             ablated_strategy = strategy_factory(ablated_features)
             ablated_result = self.run_scenario_backtest(
-                prices, ablated_strategy,
+                prices,
+                ablated_strategy,
                 strategy_name=f"{strategy_name_prefix}_no_{feat}",
             )
             ablated_obj = ablated_result.objective_metrics.get(
@@ -289,23 +290,23 @@ class ScenarioBacktestEngine:
             )
 
             acc_delta = ablated_obj.label_precision - baseline_obj.label_precision
-            sharpe_delta = (
-                ablated_result.overall_sharpe - baseline_result.overall_sharpe
-            )
+            sharpe_delta = ablated_result.overall_sharpe - baseline_result.overall_sharpe
             # 重要性：准确率下降越多 + 夏普下降越多 = 越重要
             importance = abs(acc_delta) * 0.6 + abs(sharpe_delta) * 0.4
 
-            results.append(AblationResult(
-                feature_name=feat,
-                objective=objective,
-                baseline_accuracy=baseline_obj.label_precision,
-                ablated_accuracy=ablated_obj.label_precision,
-                accuracy_delta=acc_delta,
-                baseline_sharpe=baseline_result.overall_sharpe,
-                ablated_sharpe=ablated_result.overall_sharpe,
-                sharpe_delta=sharpe_delta,
-                importance_score=importance,
-            ))
+            results.append(
+                AblationResult(
+                    feature_name=feat,
+                    objective=objective,
+                    baseline_accuracy=baseline_obj.label_precision,
+                    ablated_accuracy=ablated_obj.label_precision,
+                    accuracy_delta=acc_delta,
+                    baseline_sharpe=baseline_result.overall_sharpe,
+                    ablated_sharpe=ablated_result.overall_sharpe,
+                    sharpe_delta=sharpe_delta,
+                    importance_score=importance,
+                )
+            )
 
         # 按重要性降序
         results.sort(key=lambda x: x.importance_score, reverse=True)
@@ -322,9 +323,7 @@ class ScenarioBacktestEngine:
         """评估四类目的的表现"""
         results = {}
         for obj in self.mapper.list_objectives():
-            obj_metrics = self._evaluate_single_objective(
-                prices, signals, strategy, obj
-            )
+            obj_metrics = self._evaluate_single_objective(prices, signals, strategy, obj)
             results[obj] = obj_metrics
         return results
 
@@ -345,9 +344,7 @@ class ScenarioBacktestEngine:
         # 2. 提取策略在该目的上的信号
         #    这里需要根据策略类型做适配
         #    对于规则策略，用策略的买卖信号近似对应目的的信号
-        pred_signals = self._extract_objective_signals(
-            signals, strategy, objective
-        )
+        pred_signals = self._extract_objective_signals(signals, strategy, objective)
 
         # 3. 对齐长度
         min_len = min(len(true_labels), len(pred_signals))
@@ -366,8 +363,8 @@ class ScenarioBacktestEngine:
         )
 
         # 6. 计算按信号交易的收益统计
-        avg_ret, med_ret, max_ret, min_ret, pf, win_rate = (
-            self._calc_signal_returns(prices, pred_signals, objective)
+        avg_ret, med_ret, max_ret, min_ret, pf, win_rate = self._calc_signal_returns(
+            prices, pred_signals, objective
         )
 
         return ObjectiveMetrics(
@@ -411,25 +408,25 @@ class ScenarioBacktestEngine:
             if objective == "dip_buy":
                 # 抄底：仓位从空变多，且价格相对低位
                 for i in range(1, n):
-                    if pos[i] > 0 and pos[i-1] <= 0:
+                    if pos[i] > 0 and pos[i - 1] <= 0:
                         obj_signal[i] = 1.0
 
             elif objective == "top_exit":
                 # 逃顶：仓位从多变空/平
                 for i in range(1, n):
-                    if pos[i] <= 0 and pos[i-1] > 0:
+                    if pos[i] <= 0 and pos[i - 1] > 0:
                         obj_signal[i] = 1.0
 
             elif objective == "bear_short":
                 # 做空：仓位从平变负
                 for i in range(1, n):
-                    if pos[i] < 0 and pos[i-1] >= 0:
+                    if pos[i] < 0 and pos[i - 1] >= 0:
                         obj_signal[i] = 1.0
 
             elif objective == "bear_exit":
                 # 空平：仓位从负变平/正
                 for i in range(1, n):
-                    if pos[i] >= 0 and pos[i-1] < 0:
+                    if pos[i] >= 0 and pos[i - 1] < 0:
                         obj_signal[i] = 1.0
 
         return pd.Series(obj_signal, index=signals.index)
@@ -446,11 +443,7 @@ class ScenarioBacktestEngine:
 
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1 = (
-            2 * precision * recall / (precision + recall)
-            if (precision + recall) > 0
-            else 0.0
-        )
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
         return precision, recall, f1
 
     def _calc_signal_returns(
@@ -467,9 +460,7 @@ class ScenarioBacktestEngine:
         closes = prices["close"].values
         sig_values = signals.values
         n = len(closes)
-        lookahead = self.mapper.get_label_def(objective).get(
-            "lookahead_days", 10
-        )
+        lookahead = self.mapper.get_label_def(objective).get("lookahead_days", 10)
 
         returns = []
         for i in range(n - lookahead):
@@ -571,7 +562,9 @@ class ScenarioBacktestEngine:
         print(f"  卡玛比率: {result.overall_calmar:.3f} (基线: {result.baseline_calmar:.3f})")
         print(f"  最大回撤: {result.overall_max_drawdown:.2%} (基线: {result.baseline_maxdd:.2%})")
         print(f"  交易次数: {result.overall_trade_count}")
-        print(f"  综合评分: {result.composite_score:.3f} {'✅ 优于基线' if result.composite_score > 1.0 else '❌ 未优于基线'}")
+        print(
+            f"  综合评分: {result.composite_score:.3f} {'✅ 优于基线' if result.composite_score > 1.0 else '❌ 未优于基线'}"
+        )
         print()
         print("各目的表现:")
         for obj, m in result.objective_metrics.items():
@@ -579,7 +572,9 @@ class ScenarioBacktestEngine:
             print(f"    信号数: {m.total_signals} (频率: {m.signal_freq_pct:.2f}%)")
             print(f"    胜率: {m.win_rate:.2%} | 平均收益: {m.avg_return:.2%}")
             print(f"    盈亏比: {m.profit_factor:.2f}")
-            print(f"    标签Precision: {m.label_precision:.3f} | Recall: {m.label_recall:.3f} | F1: {m.label_f1:.3f}")
+            print(
+                f"    标签Precision: {m.label_precision:.3f} | Recall: {m.label_recall:.3f} | F1: {m.label_f1:.3f}"
+            )
         print()
         print("=" * 70)
 
@@ -592,6 +587,7 @@ class ScenarioBacktestEngine:
 
 
 # ── 便捷函数 ──────────────────────────────────────────────────────────
+
 
 def run_v2_baseline_scenarios(
     prices: pd.DataFrame,
@@ -609,7 +605,10 @@ def run_v2_baseline_scenarios(
     engine = ScenarioBacktestEngine()
     strategy = EnhancedMA200Strategy()
     result = engine.run_scenario_backtest(
-        prices, strategy, "EnhancedMA200_v2", symbol=symbol,
+        prices,
+        strategy,
+        "EnhancedMA200_v2",
+        symbol=symbol,
         experiment_name=f"v2_baseline_{symbol}",
     )
     return result
@@ -627,18 +626,24 @@ if __name__ == "__main__":
     returns = np.random.normal(0.001, 0.03, n_days)
     prices_arr = base_price * np.cumprod(1 + returns)
 
-    df = pd.DataFrame({
-        "open": prices_arr * (1 + np.random.normal(0, 0.01, n_days)),
-        "high": prices_arr * (1 + abs(np.random.normal(0, 0.02, n_days))),
-        "low": prices_arr * (1 - abs(np.random.normal(0, 0.02, n_days))),
-        "close": prices_arr,
-        "volume": np.random.randint(1000, 10000, n_days),
-    }, index=dates)
+    df = pd.DataFrame(
+        {
+            "open": prices_arr * (1 + np.random.normal(0, 0.01, n_days)),
+            "high": prices_arr * (1 + abs(np.random.normal(0, 0.02, n_days))),
+            "low": prices_arr * (1 - abs(np.random.normal(0, 0.02, n_days))),
+            "close": prices_arr,
+            "volume": np.random.randint(1000, 10000, n_days),
+        },
+        index=dates,
+    )
 
     engine = ScenarioBacktestEngine()
     strategy = EnhancedMA200Strategy()
     result = engine.run_scenario_backtest(
-        df, strategy, "Test_v2", symbol="TEST",
+        df,
+        strategy,
+        "Test_v2",
+        symbol="TEST",
     )
 
     engine.print_summary(result)

@@ -14,8 +14,6 @@
 from __future__ import annotations
 
 import shutil
-import subprocess
-import json
 from typing import Any
 
 from core.evidence import Evidence
@@ -49,7 +47,9 @@ class ReaMcpAdapter:
         return found
 
     def analyze_native_binary(
-        self, path: str, provider: str = "auto",
+        self,
+        path: str,
+        provider: str = "auto",
     ) -> dict[str, Any]:
         """调用 REA 分析原生二进制。
 
@@ -69,24 +69,25 @@ class ReaMcpAdapter:
 
         # 检查 rea 是否可用
         if not self.is_available():
-            evidence.append(Evidence(
-                result=(
-                    f"REA MCP server 不可用 "
-                    f"(command '{self._mcp_server_cmd}' not found)"
-                ),
-                provenance={
-                    "engine": "rea_mcp",
-                    "binary": path,
-                    "provider": provider,
-                },
-                confidence=1.0,
-                known_gaps=[
-                    "REA 未安装，无法进行二进制反编译分析",
-                    "建议安装: npm install -g rea-agents",
-                    "二进制分析能力缺失，仅能依赖 Python/TS AST 分析",
-                ],
-                level="unknown",
-            ))
+            evidence.append(
+                Evidence(
+                    result=(
+                        f"REA MCP server 不可用 " f"(command '{self._mcp_server_cmd}' not found)"
+                    ),
+                    provenance={
+                        "engine": "rea_mcp",
+                        "binary": path,
+                        "provider": provider,
+                    },
+                    confidence=1.0,
+                    known_gaps=[
+                        "REA 未安装，无法进行二进制反编译分析",
+                        "建议安装: npm install -g rea-agents",
+                        "二进制分析能力缺失，仅能依赖 Python/TS AST 分析",
+                    ],
+                    level="unknown",
+                )
+            )
             return {
                 "functions": [],
                 "sections": [],
@@ -104,24 +105,26 @@ class ReaMcpAdapter:
             n_funcs = len(functions)
             n_sections = len(sections)
 
-            evidence.append(Evidence(
-                result=f"二进制 {path} 包含 {n_funcs} 个函数, {n_sections} 个段",
-                provenance={
-                    "engine": "rea_mcp",
-                    "provider": provider,
-                    "binary": path,
-                    "tool": "binary_overview",
-                },
-                confidence=0.9,
-                known_gaps=[
-                    "stripped 二进制的函数名为地址（如 sub_1000），非源码函数名",
-                    "混淆/加密代码的反编译结果可能不准确",
-                    "动态计算的跳转目标可能被遗漏",
-                    "anti-debug 技术可能干扰分析器输出",
-                    "反编译伪代码与源码语义可能不完全等价",
-                ],
-                level="observation",
-            ))
+            evidence.append(
+                Evidence(
+                    result=f"二进制 {path} 包含 {n_funcs} 个函数, {n_sections} 个段",
+                    provenance={
+                        "engine": "rea_mcp",
+                        "provider": provider,
+                        "binary": path,
+                        "tool": "binary_overview",
+                    },
+                    confidence=0.9,
+                    known_gaps=[
+                        "stripped 二进制的函数名为地址（如 sub_1000），非源码函数名",
+                        "混淆/加密代码的反编译结果可能不准确",
+                        "动态计算的跳转目标可能被遗漏",
+                        "anti-debug 技术可能干扰分析器输出",
+                        "反编译伪代码与源码语义可能不完全等价",
+                    ],
+                    level="observation",
+                )
+            )
 
             summary = (
                 f"REA 二进制分析: {path} | "
@@ -139,22 +142,24 @@ class ReaMcpAdapter:
 
         except Exception as e:
             error_msg = str(e)
-            evidence.append(Evidence(
-                result=f"REA MCP 调用失败: {error_msg}",
-                provenance={
-                    "engine": "rea_mcp",
-                    "provider": provider,
-                    "binary": path,
-                    "tool": "binary_overview",
-                },
-                confidence=1.0,
-                known_gaps=[
-                    "MCP 通信可能中断（server 进程崩溃）",
-                    "provider 可能不支持该二进制架构",
-                    "建议检查 rea mcp 是否正常运行",
-                ],
-                level="unknown",
-            ))
+            evidence.append(
+                Evidence(
+                    result=f"REA MCP 调用失败: {error_msg}",
+                    provenance={
+                        "engine": "rea_mcp",
+                        "provider": provider,
+                        "binary": path,
+                        "tool": "binary_overview",
+                    },
+                    confidence=1.0,
+                    known_gaps=[
+                        "MCP 通信可能中断（server 进程崩溃）",
+                        "provider 可能不支持该二进制架构",
+                        "建议检查 rea mcp 是否正常运行",
+                    ],
+                    level="unknown",
+                )
+            )
             return {
                 "functions": [],
                 "sections": [],
@@ -203,10 +208,9 @@ class ReaMcpAdapter:
         try:
             import mcp  # noqa: F401
         except ImportError:
-            raise RuntimeError(
-                "mcp Python SDK not installed. "
-                "Install with: pip install mcp"
-            )
+            raise RuntimeError(  # noqa: B904
+                "mcp Python SDK not installed. " "Install with: pip install mcp"
+            )  # noqa: B904
 
         # TODO: 实际 MCP client 初始化
         # from mcp import ClientSession, StdioServerParameters

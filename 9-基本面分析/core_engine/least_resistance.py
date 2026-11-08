@@ -1,6 +1,6 @@
 import json
-import os
 import math
+import os
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -71,7 +71,9 @@ def compute_resistance_3d(raw_score: float, historical_scores=None) -> dict:
     }
 
 
-def generate_signal(r3d: dict, sentiment_index: float, flow_idx: float, heat: float, stress: str) -> dict:
+def generate_signal(
+    r3d: dict, sentiment_index: float, flow_idx: float, heat: float, stress: str
+) -> dict:
     signals = []
     direction = r3d.get("direction", "neutral")
     velocity = r3d.get("velocity", 0.0)
@@ -80,48 +82,60 @@ def generate_signal(r3d: dict, sentiment_index: float, flow_idx: float, heat: fl
     strength_soft = min(1.0, 0.3 + abs(score) * 0.4)
     if direction == "up":
         if velocity > 0.1 and (sentiment_index > 55 or flow_idx > 55):
-            signals.append({
-                "type": "strong_buy",
-                "strength": strength_base,
-                "reason": "方向向上且速度积极，市场或资金情绪偏强",
-                "horizon": "medium",
-            })
+            signals.append(
+                {
+                    "type": "strong_buy",
+                    "strength": strength_base,
+                    "reason": "方向向上且速度积极，市场或资金情绪偏强",
+                    "horizon": "medium",
+                }
+            )
         if sentiment_index > 52:
-            signals.append({
-                "type": "buy",
-                "strength": strength_soft,
-                "reason": "方向向上，市场情绪温和偏多",
-                "horizon": "short",
-            })
+            signals.append(
+                {
+                    "type": "buy",
+                    "strength": strength_soft,
+                    "reason": "方向向上，市场情绪温和偏多",
+                    "horizon": "short",
+                }
+            )
     if direction == "down":
         if velocity < -0.1 and (sentiment_index < 45 or flow_idx < 45):
-            signals.append({
-                "type": "strong_sell",
-                "strength": strength_base,
-                "reason": "方向向下且速度转负，市场或资金情绪偏弱",
-                "horizon": "medium",
-            })
+            signals.append(
+                {
+                    "type": "strong_sell",
+                    "strength": strength_base,
+                    "reason": "方向向下且速度转负，市场或资金情绪偏弱",
+                    "horizon": "medium",
+                }
+            )
         if sentiment_index < 48:
-            signals.append({
-                "type": "sell",
-                "strength": strength_soft,
-                "reason": "方向向下，市场情绪温和偏空",
-                "horizon": "short",
-            })
+            signals.append(
+                {
+                    "type": "sell",
+                    "strength": strength_soft,
+                    "reason": "方向向下，市场情绪温和偏空",
+                    "horizon": "short",
+                }
+            )
     if stress == "high" or heat > 0.7:
-        signals.append({
-            "type": "reduce",
-            "strength": min(1.0, 0.4 + heat * 0.6),
-            "reason": "市场过热或压力偏高，建议降低仓位",
-            "horizon": "risk_mgmt",
-        })
+        signals.append(
+            {
+                "type": "reduce",
+                "strength": min(1.0, 0.4 + heat * 0.6),
+                "reason": "市场过热或压力偏高，建议降低仓位",
+                "horizon": "risk_mgmt",
+            }
+        )
     if not signals:
-        signals.append({
-            "type": "hold",
-            "strength": 0.3,
-            "reason": "信号不明确，建议观望",
-            "horizon": "short",
-        })
+        signals.append(
+            {
+                "type": "hold",
+                "strength": 0.3,
+                "reason": "信号不明确，建议观望",
+                "horizon": "short",
+            }
+        )
     priority = {"strong_buy": 0, "strong_sell": 1, "buy": 2, "sell": 3, "reduce": 4, "hold": 5}
     signals.sort(key=lambda s: (priority.get(s["type"], 9), -s["strength"]))
     recommendation = signals[0] if signals else None
@@ -166,8 +180,15 @@ def save_module_timeseries(module_name: str, entry: dict) -> None:
     _save_timeseries_all(all_data)
 
 
-def run_module_analysis(module_name: str, events, raw_score: float, sentiment_idx: float,
-                        flow_idx: float, heat: float, stress: str) -> dict:
+def run_module_analysis(
+    module_name: str,
+    events,
+    raw_score: float,
+    sentiment_idx: float,
+    flow_idx: float,
+    heat: float,
+    stress: str,
+) -> dict:
     events = events or []
     history = load_module_timeseries(module_name)
     historical_scores = [e.get("direction_score", 0.0) for e in history]

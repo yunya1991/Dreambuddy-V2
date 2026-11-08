@@ -4,7 +4,7 @@
 策略的职责：根据历史数据，生成每个时间点的目标仓位。
 """
 
-from typing import Dict, Optional, List
+from typing import Optional  # noqa: I001
 import pandas as pd
 import numpy as np
 
@@ -61,7 +61,7 @@ class MovingAverageStrategy(BaseStrategy):
         position[ma_fast > ma_slow] = 1.0
         position[ma_fast < ma_slow] = -1.0
 
-        position.iloc[:self.slow_window] = 0.0
+        position.iloc[: self.slow_window] = 0.0
 
         return position
 
@@ -133,22 +133,21 @@ class TrendScreenStrategy(BaseStrategy):
             目标仓位比例序列
         """
         try:
-            from core import (
+            from core import (  # noqa: I001
                 calc_trend_consistency,
                 calc_bayesian_confidence,
-                calc_classic_indicator_confidence,
+                calc_classic_indicator_confidence,  # noqa: F401
             )
-            from core.fusion import fuse_technical_fundamental
+            from core.fusion import fuse_technical_fundamental  # noqa: F401
         except ImportError:
-            import sys
+            import sys  # noqa: I001
             import os
+
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-            from core import (
+            from core import (  # noqa: I001
                 calc_trend_consistency,
                 calc_bayesian_confidence,
-                calc_classic_indicator_confidence,
             )
-            from core.fusion import fuse_technical_fundamental
 
         n = len(prices)
         positions = np.zeros(n)
@@ -166,7 +165,7 @@ class TrendScreenStrategy(BaseStrategy):
 
         for i in range(warmup, n):
             if (i - warmup) % step == 0 or i == warmup:
-                daily_slice = prices.iloc[:i + 1].copy()
+                daily_slice = prices.iloc[: i + 1].copy()
                 weekly_df = self._resample_to_weekly(daily_slice)
 
                 if len(weekly_df) >= 10:
@@ -209,12 +208,14 @@ class TrendScreenStrategy(BaseStrategy):
         反方指标与趋势方向相反时，降低仓位（对冲确认偏误）
         """
         try:
-            from core.indicators import calc_indicator_dynamics
+            from core.indicators import calc_indicator_dynamics  # noqa: I001
             from core.config import COUNTER_INDICATORS
         except ImportError:
-            import sys, os
+            import sys  # noqa: I001
+            import os
+
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-            from core.indicators import calc_indicator_dynamics
+            from core.indicators import calc_indicator_dynamics  # noqa: I001
             from core.config import COUNTER_INDICATORS
 
         adjusted = signals.copy()
@@ -229,7 +230,7 @@ class TrendScreenStrategy(BaseStrategy):
             if abs(pos) < 0.01:
                 continue
 
-            daily_slice = prices.iloc[:i + 1]
+            daily_slice = prices.iloc[: i + 1]
             counter_votes = 0
             total_counters = 0
 
@@ -258,7 +259,9 @@ class TrendScreenStrategy(BaseStrategy):
         try:
             from core.risk_control import apply_risk_control
         except ImportError:
-            import sys, os
+            import sys  # noqa: I001
+            import os
+
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
             from core.risk_control import apply_risk_control
 
@@ -280,13 +283,19 @@ class TrendScreenStrategy(BaseStrategy):
         else:
             df = daily_df.copy()
 
-        weekly = df.resample("W").agg({
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum",
-        }).dropna()
+        weekly = (
+            df.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
 
         return weekly.reset_index(drop=False) if "date" not in daily_df.columns else weekly
 
@@ -302,6 +311,7 @@ class TrendScreenStrategy(BaseStrategy):
             A, B = self.calibration
             c = min(max(confidence, 0), 100) / 100.0
             import math
+
             calibrated = 1.0 / (1.0 + math.exp(-(A * c + B)))
             return calibrated * 100.0
         except Exception:
@@ -329,7 +339,7 @@ class TrendScreenStrategy(BaseStrategy):
             (calibration_params, ece_before, ece_after)
             calibration_params: Platt的(A,B)元组，或isotonic的校准函数
         """
-        from backtest.calibration import (
+        from backtest.calibration import (  # noqa: I001
             collect_calibration_data,
             platt_scaling,
             isotonic_calibration,
@@ -389,7 +399,7 @@ class TrendScreenStrategy(BaseStrategy):
             lookahead=lookahead,
             method=method,
             warmup_periods=warmup_periods,
-            **{k: v for k, v in kwargs.items() if k not in ['calibration', 'calibration_method']},
+            **{k: v for k, v in kwargs.items() if k not in ["calibration", "calibration_method"]},
         )
 
         strategy = cls(
@@ -425,9 +435,7 @@ class TrendScreenStrategy(BaseStrategy):
             if confidence < self.trial_confidence:
                 return 0.0
             position_ratio = (
-                min(confidence / 100.0, 1.0)
-                * self.max_position
-                * self.trial_position_ratio
+                min(confidence / 100.0, 1.0) * self.max_position * self.trial_position_ratio
             )
 
         if direction == "BULL":
@@ -492,7 +500,9 @@ class FullReasoningStrategy(BaseStrategy):
         self.fallback_confidence_threshold = fallback_confidence_threshold
         self.btc_prices = btc_prices
         self.use_btc_direction_filter = use_btc_direction_filter
-        self.use_fundamental = use_fundamental if use_fundamental is not None else True  # 默认启用基本面
+        self.use_fundamental = (
+            use_fundamental if use_fundamental is not None else True
+        )  # 默认启用基本面
 
         # 统计计数器
         self.stats = {
@@ -500,11 +510,11 @@ class FullReasoningStrategy(BaseStrategy):
             "enter_long": 0,
             "enter_short": 0,
             "wait": 0,
-            "wind_vane_blocked": 0,          # 硬拦截
-            "wind_vane_soft_blocked": 0,    # P0: 软拦截
-            "reversal_trial": 0,            # P0: 逆转轻仓试探入场
-            "strong_consistent": 0,         # P0: 强一致入场
-            "dynamic_timing_entry": 0,     # P1: 动态时机入场
+            "wind_vane_blocked": 0,  # 硬拦截
+            "wind_vane_soft_blocked": 0,  # P0: 软拦截
+            "reversal_trial": 0,  # P0: 逆转轻仓试探入场
+            "strong_consistent": 0,  # P0: 强一致入场
+            "dynamic_timing_entry": 0,  # P1: 动态时机入场
             # P2: 趋势阶段统计
             "phase_early": 0,
             "phase_accelerating": 0,
@@ -530,13 +540,14 @@ class FullReasoningStrategy(BaseStrategy):
         遍历每个时间点，构造历史切片，调用完整推理链。
         """
         try:
-            from engine import compute_trend_signal_from_dataframes
+            from engine import compute_trend_signal_from_dataframes  # noqa: I001
             import engine as engine_module
         except ImportError:
-            import sys
+            import sys  # noqa: I001
             import os
+
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-            from engine import compute_trend_signal_from_dataframes
+            from engine import compute_trend_signal_from_dataframes  # noqa: I001
             import engine as engine_module
 
         # 可选：LightGBM 集成推理
@@ -544,6 +555,7 @@ class FullReasoningStrategy(BaseStrategy):
         if self.use_ensemble:
             try:
                 from ml.algo_ensemble import predict_ensemble
+
                 ensemble_predict = predict_ensemble
             except Exception:
                 print("  [警告] LightGBM 集成推理模块不可用，将仅使用五大算法")
@@ -555,7 +567,9 @@ class FullReasoningStrategy(BaseStrategy):
             engine_module.BTC_WIND_VANE_ENABLED = False
 
         try:
-            return self._run_backtest(prices, compute_trend_signal_from_dataframes, ensemble_predict)
+            return self._run_backtest(
+                prices, compute_trend_signal_from_dataframes, ensemble_predict
+            )
         finally:
             engine_module.BTC_WIND_VANE_ENABLED = original_wv_enabled
 
@@ -582,7 +596,7 @@ class FullReasoningStrategy(BaseStrategy):
             btc_warmup = min(self.warmup_periods, btc_n - 10)
             for bi in range(btc_warmup, btc_n):
                 if (bi - btc_warmup) % step == 0 or bi == btc_warmup:
-                    btc_daily = self.btc_prices.iloc[:bi + 1].copy()
+                    btc_daily = self.btc_prices.iloc[: bi + 1].copy()
                     btc_weekly = self._resample_to_weekly(btc_daily)
                     if len(btc_weekly) >= 30:
                         try:
@@ -605,7 +619,7 @@ class FullReasoningStrategy(BaseStrategy):
 
         for i in range(warmup, n):
             if (i - warmup) % step == 0 or i == warmup:
-                daily_slice = prices.iloc[:i + 1].copy()
+                daily_slice = prices.iloc[: i + 1].copy()
                 weekly_slice = self._resample_to_weekly(daily_slice)
 
                 if len(weekly_slice) >= 30:
@@ -650,7 +664,11 @@ class FullReasoningStrategy(BaseStrategy):
                                         if ens_conf >= 60 and action == "WAIT":
                                             # 集成推理置信度足够，允许入场（仅当无Freqtrade要求时）
                                             if not self.require_freqtrade:
-                                                action = "ENTER_LONG" if ens_dir == "BULL" else "ENTER_SHORT"
+                                                action = (
+                                                    "ENTER_LONG"
+                                                    if ens_dir == "BULL"
+                                                    else "ENTER_SHORT"
+                                                )
                                                 pos_pct = max(pos_pct, 0.15)
                                 else:
                                     self.stats["ensemble_fallback"] += 1
@@ -748,13 +766,19 @@ class FullReasoningStrategy(BaseStrategy):
         else:
             df.index = pd.to_datetime(df.index)
 
-        weekly = df.resample("W").agg({
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum",
-        }).dropna()
+        weekly = (
+            df.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
 
         return weekly
 
@@ -825,7 +849,9 @@ class LeastResistanceStrategy(BaseStrategy):
         try:
             from core.least_resistance import compute_least_resistance_3d
         except ImportError:
-            import sys, os
+            import sys  # noqa: I001
+            import os
+
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
             from core.least_resistance import compute_least_resistance_3d
 
@@ -848,14 +874,17 @@ class LeastResistanceStrategy(BaseStrategy):
 
         for i in range(warmup, n):
             if (i - warmup) % step == 0 or i == warmup:
-                daily_slice = prices.iloc[:i + 1].copy()
+                daily_slice = prices.iloc[: i + 1].copy()
                 weekly_df = self._resample_to_weekly(daily_slice)
 
                 if len(weekly_df) >= 10:
                     try:
                         result = compute_least_resistance_3d(
-                            weekly_df, daily_slice,
-                            daily_history_diffs=daily_history_diffs if daily_history_diffs else None,
+                            weekly_df,
+                            daily_slice,
+                            daily_history_diffs=(
+                                daily_history_diffs if daily_history_diffs else None
+                            ),
                             history_3d=history_3d if history_3d else None,
                         )
 
@@ -868,17 +897,19 @@ class LeastResistanceStrategy(BaseStrategy):
                         if len(daily_history_diffs) > 30:
                             daily_history_diffs = daily_history_diffs[-30:]
 
-                        history_3d.append({
-                            "direction": direction,
-                            "velocity": result["velocity"],
-                            "acceleration": result["acceleration"],
-                        })
+                        history_3d.append(
+                            {
+                                "direction": direction,
+                                "velocity": result["velocity"],
+                                "acceleration": result["acceleration"],
+                            }
+                        )
                         if len(history_3d) > 20:
                             history_3d = history_3d[-20:]
 
                         signal_buffer.append(direction)
                         if len(signal_buffer) > self.signal_confirm_bars:
-                            signal_buffer = signal_buffer[-self.signal_confirm_bars:]
+                            signal_buffer = signal_buffer[-self.signal_confirm_bars :]
 
                         if holding_count > 0:
                             holding_count -= 1
@@ -887,16 +918,25 @@ class LeastResistanceStrategy(BaseStrategy):
                             self.stats["holding_wait"] += 1
                         else:
                             confirmed_direction = self._get_confirmed_direction(signal_buffer)
-                            raw_pos = self._signal_to_position(confirmed_direction, confidence, entry_signal)
-                            filtered_pos = self._apply_trend_filter(raw_pos, i, ma200, ma50, weekly_ma20)
+                            raw_pos = self._signal_to_position(
+                                confirmed_direction, confidence, entry_signal
+                            )
+                            filtered_pos = self._apply_trend_filter(
+                                raw_pos, i, ma200, ma50, weekly_ma20
+                            )
 
                             if filtered_pos != last_pos:
                                 last_pos = filtered_pos
                                 if abs(filtered_pos) > 0:
                                     holding_count = self.min_holding_bars
-                                    holding_direction = "BULL" if filtered_pos > 0 else "BEAR"
+                                    holding_direction = (  # noqa: F841
+                                        "BULL" if filtered_pos > 0 else "BEAR"
+                                    )  # noqa: F841
                             else:
-                                if confirmed_direction != direction and len(signal_buffer) >= self.signal_confirm_bars:
+                                if (
+                                    confirmed_direction != direction
+                                    and len(signal_buffer) >= self.signal_confirm_bars
+                                ):
                                     self.stats["confirm_wait"] += 1
 
                         self.stats["total_bars"] += 1
@@ -937,7 +977,7 @@ class LeastResistanceStrategy(BaseStrategy):
     def _get_confirmed_direction(self, signal_buffer):
         if len(signal_buffer) < self.signal_confirm_bars:
             return "NEUTRAL"
-        last_n = signal_buffer[-self.signal_confirm_bars:]
+        last_n = signal_buffer[-self.signal_confirm_bars :]
         if all(d == "BULL" for d in last_n):
             return "BULL"
         if all(d == "BEAR" for d in last_n):
@@ -951,11 +991,23 @@ class LeastResistanceStrategy(BaseStrategy):
         if abs(pos) < 0.01:
             return pos
 
-        in_bull = (i < len(ma200) and not np.isnan(ma200[i]) and ma200[i] > 0 and
-                   i < len(ma50) and not np.isnan(ma50[i]) and ma50[i] > ma200[i])
+        in_bull = (
+            i < len(ma200)
+            and not np.isnan(ma200[i])
+            and ma200[i] > 0
+            and i < len(ma50)
+            and not np.isnan(ma50[i])
+            and ma50[i] > ma200[i]
+        )
 
-        in_bear = (i < len(ma200) and not np.isnan(ma200[i]) and ma200[i] > 0 and
-                   i < len(ma50) and not np.isnan(ma50[i]) and ma50[i] < ma200[i])
+        in_bear = (
+            i < len(ma200)
+            and not np.isnan(ma200[i])
+            and ma200[i] > 0
+            and i < len(ma50)
+            and not np.isnan(ma50[i])
+            and ma50[i] < ma200[i]
+        )
 
         if pos > 0:
             if self.bear_short_only and in_bear:
@@ -977,11 +1029,7 @@ class LeastResistanceStrategy(BaseStrategy):
         elif entry_signal == "TIMING":
             if confidence < self.trial_confidence:
                 return 0.0
-            pos_ratio = (
-                min(confidence / 100.0, 1.0)
-                * self.max_position
-                * self.trial_position_ratio
-            )
+            pos_ratio = min(confidence / 100.0, 1.0) * self.max_position * self.trial_position_ratio
         else:
             return 0.0
 
@@ -1001,13 +1049,19 @@ class LeastResistanceStrategy(BaseStrategy):
         else:
             df.index = pd.to_datetime(df.index)
 
-        weekly = df.resample("W").agg({
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum",
-        }).dropna()
+        weekly = (
+            df.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
 
         return weekly
 
@@ -1025,9 +1079,9 @@ class AdaptiveLeastResistanceStrategy(BaseStrategy):
     """
 
     REGIME_PARAMS = {
-        "bull":      {"min_holding_bars": 15, "signal_confirm_bars": 1, "max_position": 1.0},
-        "bear":      {"min_holding_bars": 3,  "signal_confirm_bars": 1, "max_position": 1.0},
-        "sideways":  {"min_holding_bars": 3,  "signal_confirm_bars": 2, "max_position": 0.4},
+        "bull": {"min_holding_bars": 15, "signal_confirm_bars": 1, "max_position": 1.0},
+        "bear": {"min_holding_bars": 3, "signal_confirm_bars": 1, "max_position": 1.0},
+        "sideways": {"min_holding_bars": 3, "signal_confirm_bars": 2, "max_position": 0.4},
     }
 
     def __init__(
@@ -1055,7 +1109,9 @@ class AdaptiveLeastResistanceStrategy(BaseStrategy):
         try:
             from core.least_resistance import compute_least_resistance_3d
         except ImportError:
-            import sys, os
+            import sys  # noqa: I001
+            import os
+
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
             from core.least_resistance import compute_least_resistance_3d
 
@@ -1067,7 +1123,9 @@ class AdaptiveLeastResistanceStrategy(BaseStrategy):
         close = prices["close"]
         ma200 = close.rolling(window=200, min_periods=200).mean().values
         ma50 = close.rolling(window=50, min_periods=50).mean().values
-        ma200_slope = close.rolling(window=200, min_periods=200).mean().pct_change(periods=20).values
+        ma200_slope = (
+            close.rolling(window=200, min_periods=200).mean().pct_change(periods=20).values
+        )
 
         history_3d = []
         daily_history_diffs = []
@@ -1091,14 +1149,17 @@ class AdaptiveLeastResistanceStrategy(BaseStrategy):
             max_position = params["max_position"]
 
             if (i - warmup) % step == 0 or i == warmup:
-                daily_slice = prices.iloc[:i + 1].copy()
+                daily_slice = prices.iloc[: i + 1].copy()
                 weekly_df = self._resample_to_weekly(daily_slice)
 
                 if len(weekly_df) >= 10:
                     try:
                         result = compute_least_resistance_3d(
-                            weekly_df, daily_slice,
-                            daily_history_diffs=daily_history_diffs if daily_history_diffs else None,
+                            weekly_df,
+                            daily_slice,
+                            daily_history_diffs=(
+                                daily_history_diffs if daily_history_diffs else None
+                            ),
                             history_3d=history_3d if history_3d else None,
                         )
 
@@ -1111,11 +1172,13 @@ class AdaptiveLeastResistanceStrategy(BaseStrategy):
                         if len(daily_history_diffs) > 30:
                             daily_history_diffs = daily_history_diffs[-30:]
 
-                        history_3d.append({
-                            "direction": direction,
-                            "velocity": result["velocity"],
-                            "acceleration": result["acceleration"],
-                        })
+                        history_3d.append(
+                            {
+                                "direction": direction,
+                                "velocity": result["velocity"],
+                                "acceleration": result["acceleration"],
+                            }
+                        )
                         if len(history_3d) > 20:
                             history_3d = history_3d[-20:]
 
@@ -1153,7 +1216,9 @@ class AdaptiveLeastResistanceStrategy(BaseStrategy):
             return "sideways"
 
         price_above = ma50[i] > ma200[i]
-        slope_up = ma200_slope[i] > 0 if (i < len(ma200_slope) and not np.isnan(ma200_slope[i])) else False
+        slope_up = (
+            ma200_slope[i] > 0 if (i < len(ma200_slope) and not np.isnan(ma200_slope[i])) else False
+        )
 
         if price_above and slope_up:
             return "bull"
@@ -1215,14 +1280,24 @@ class AdaptiveLeastResistanceStrategy(BaseStrategy):
             df = df.set_index("date")
         else:
             df.index = pd.to_datetime(df.index)
-        weekly = df.resample("W").agg({
-            "open": "first", "high": "max", "low": "min",
-            "close": "last", "volume": "sum",
-        }).dropna()
+        weekly = (
+            df.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
         return weekly
 
     def get_stats(self) -> dict:
         return self.stats.copy()
+
 
 class MA200TrendFollowingStrategy(BaseStrategy):
     """MA200牛熊经验法则策略
@@ -1260,7 +1335,9 @@ class MA200TrendFollowingStrategy(BaseStrategy):
         n = len(prices)
         positions = np.zeros(n)
         close = prices["close"].values
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
 
         ma_slope = np.zeros(n)
@@ -1375,13 +1452,19 @@ class EnhancedMA200Strategy(BaseStrategy):
             df = df.set_index("date")
         else:
             df.index = pd.to_datetime(df.index)
-        weekly = df.resample("W").agg({
-            "open": "first",
-            "high": "max",
-            "low": "min",
-            "close": "last",
-            "volume": "sum",
-        }).dropna()
+        weekly = (
+            df.resample("W")
+            .agg(
+                {
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last",
+                    "volume": "sum",
+                }
+            )
+            .dropna()
+        )
         return weekly
 
     def _compute_weekly_ma200(self, prices: pd.DataFrame) -> np.ndarray:
@@ -1405,7 +1488,12 @@ class EnhancedMA200Strategy(BaseStrategy):
             return None
         btc_close = self.btc_prices["close"].values
         n_btc = len(btc_close)
-        btc_ma = pd.Series(btc_close).rolling(window=self.ma_period, min_periods=self.ma_period).mean().values
+        btc_ma = (
+            pd.Series(btc_close)
+            .rolling(window=self.ma_period, min_periods=self.ma_period)
+            .mean()
+            .values
+        )
         btc_slope = np.zeros(n_btc)
         for i in range(self.warmup_periods, n_btc):
             if not np.isnan(btc_ma[i]) and not np.isnan(btc_ma[i - self.slope_period]):
@@ -1416,7 +1504,7 @@ class EnhancedMA200Strategy(BaseStrategy):
                 continue
             price_above = btc_close[i] > btc_ma[i]
             slope_pos = btc_slope[i] > 0
-            slope_neg = btc_slope[i] < 0
+            slope_neg = btc_slope[i] < 0  # noqa: F841
             if price_above and slope_pos:
                 btc_regime[i] = "bull"
             elif not price_above:
@@ -1451,14 +1539,22 @@ class EnhancedMA200Strategy(BaseStrategy):
         n = len(prices)
         positions = np.zeros(n)
         close = prices["close"].values
-        ma_series = pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        ma_series = (
+            pd.Series(close).rolling(window=self.ma_period, min_periods=self.ma_period).mean()
+        )
         ma = ma_series.values
         ma_slope = np.zeros(n)
         for i in range(self.warmup_periods, n):
             if not np.isnan(ma[i]) and not np.isnan(ma[i - self.slope_period]):
                 ma_slope[i] = (ma[i] / ma[i - self.slope_period] - 1) * 100
-        weekly_ma200 = self._compute_weekly_ma200(prices) if (self.is_btc and self.weekly_ma200_dip_buy) else None
-        btc_regime = self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        weekly_ma200 = (
+            self._compute_weekly_ma200(prices)
+            if (self.is_btc and self.weekly_ma200_dip_buy)
+            else None
+        )
+        btc_regime = (
+            self._compute_btc_regime() if (not self.is_btc and self.alt_bear_no_trade) else None
+        )
         last_state = "init"
         short_entry_price = None
         for i in range(self.warmup_periods, n):
@@ -1478,15 +1574,20 @@ class EnhancedMA200Strategy(BaseStrategy):
                     short_entry_price = None
                 elif not price_above:
                     dip_buy_pos = 0.0
-                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                    if (
+                        self.weekly_ma200_dip_buy
+                        and not np.isnan(weekly_ma200[i])
+                        and weekly_ma200[i] > 0
+                    ):
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                         if weekly_below_pct > 0:
                             levels_filled = min(
-                                int(weekly_below_pct / self.dip_buy_step_pct),
-                                self.dip_buy_levels
+                                int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                             )
                             if levels_filled > 0:
-                                dip_buy_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                                dip_buy_pos = (
+                                    levels_filled / self.dip_buy_levels
+                                ) * self.dip_buy_max_position
                     if dip_buy_pos > 0:
                         current_state = "dip_buy"
                         target_pos = dip_buy_pos
@@ -1504,7 +1605,11 @@ class EnhancedMA200Strategy(BaseStrategy):
                             self.stats["bear_short_l1_days"] += 1
                         if base_short > 0 and short_entry_price is None:
                             short_entry_price = close[i]
-                        if base_short > 0 and short_entry_price is not None and self.fib_take_profit:
+                        if (
+                            base_short > 0
+                            and short_entry_price is not None
+                            and self.fib_take_profit
+                        ):
                             fib_pos = self._calc_fib_tp_position(
                                 close[i], short_entry_price, True, base_short
                             )
@@ -1515,15 +1620,20 @@ class EnhancedMA200Strategy(BaseStrategy):
                             target_pos = -base_short
                 else:
                     dip_buy_pos = 0.0
-                    if self.weekly_ma200_dip_buy and not np.isnan(weekly_ma200[i]) and weekly_ma200[i] > 0:
+                    if (
+                        self.weekly_ma200_dip_buy
+                        and not np.isnan(weekly_ma200[i])
+                        and weekly_ma200[i] > 0
+                    ):
                         weekly_below_pct = (weekly_ma200[i] - close[i]) / weekly_ma200[i] * 100
                         if weekly_below_pct > 0:
                             levels_filled = min(
-                                int(weekly_below_pct / self.dip_buy_step_pct),
-                                self.dip_buy_levels
+                                int(weekly_below_pct / self.dip_buy_step_pct), self.dip_buy_levels
                             )
                             if levels_filled > 0:
-                                dip_buy_pos = (levels_filled / self.dip_buy_levels) * self.dip_buy_max_position
+                                dip_buy_pos = (
+                                    levels_filled / self.dip_buy_levels
+                                ) * self.dip_buy_max_position
                     if dip_buy_pos > 0:
                         current_state = "dip_buy"
                         target_pos = dip_buy_pos

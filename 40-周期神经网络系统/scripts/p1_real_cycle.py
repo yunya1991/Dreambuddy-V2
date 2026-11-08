@@ -2,17 +2,26 @@
 """P1 周期判定模块 — 真实周期状态机 v1.1
 v1.1 修复：flat 分支补上去抖动切换 plateau；新增渐进趋势检测
 """
+
 from __future__ import annotations
+
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 
-DB = "/home/luke/dreambuddy/18-数据获取中心/data_center.db"
-OUT = "/home/luke/dreambuddy/40-周期神经网络系统/cycle_state.json"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
+OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
 
 PLATEAU_BAND = 0.25
 CONFIRM_N = 2
 GRAD_ACCUM = 0.5
+
 
 def load_fedfunds():
     conn = sqlite3.connect(DB)
@@ -23,6 +32,7 @@ def load_fedfunds():
     conn.close()
     return [(r[0][:7], float(r[1])) for r in rows if r[1] is not None]
 
+
 def classify_change(cur, prev):
     d = cur - prev
     if d > PLATEAU_BAND:
@@ -30,6 +40,7 @@ def classify_change(cur, prev):
     if d < -PLATEAU_BAND:
         return "cut"
     return "flat"
+
 
 def run_state_machine(series):
     states = []
@@ -75,6 +86,7 @@ def run_state_machine(series):
         states.append({"month": ts, "rate": cur, "change": chg, "state": state})
     return states
 
+
 def main():
     series = load_fedfunds()
     if len(series) < 3:
@@ -92,7 +104,11 @@ def main():
             "state": cur["state"],
             "last_change": cur["change"],
             "recent_12m_distribution": dist,
-            "confidence": "high" if dist[cur["state"]] >= 8 else ("medium" if dist[cur["state"]] >= 5 else "low"),
+            "confidence": (
+                "high"
+                if dist[cur["state"]] >= 8
+                else ("medium" if dist[cur["state"]] >= 5 else "low")
+            ),
         },
         "params": {"plateau_band": PLATEAU_BAND, "confirm_n": CONFIRM_N, "grad_accum": GRAD_ACCUM},
         "data_coverage": {"records": len(series), "first": series[0][0], "last": series[-1][0]},
@@ -101,6 +117,7 @@ def main():
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(json.dumps(out["real_cycle"], ensure_ascii=False))
     print("saved:", OUT)
+
 
 if __name__ == "__main__":
     main()

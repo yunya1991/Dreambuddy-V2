@@ -3,6 +3,7 @@
 T18-1: 血缘断链检测
 T18-2: semver 版本号校验
 """
+
 from __future__ import annotations
 
 import sys

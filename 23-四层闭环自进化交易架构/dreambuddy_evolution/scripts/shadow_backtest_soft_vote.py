@@ -15,6 +15,7 @@
     4. 对比指标：总PnL/胜率/强平次数/四voter独立胜率
     5. SKHYNIX 1289 案例回放：验证支撑位上方不误强平
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,7 +25,7 @@ import logging
 import math
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # 路径设置
 SCRIPT_DIR = Path(__file__).resolve().parent  # scripts/
@@ -53,7 +54,7 @@ DEFAULT_OKX_INST = {
     "ETH": "ETH-USDT-SWAP",
     "SKHYNIX": "SKHYNIX-USDT-SWAP",
 }
-HOLD_BARS_4H = 8   # 4H K线 × 8 = 32H（超过29H超时阈值）
+HOLD_BARS_4H = 8  # 4H K线 × 8 = 32H（超过29H超时阈值）
 HOLD_BARS_1H = 30  # 1H K线 × 30 = 30H
 LOOKBACK = 20
 TIMEOUT_SEC = 29 * 3600  # 29H 超时阈值
@@ -61,12 +62,13 @@ TIMEOUT_SEC = 29 * 3600  # 29H 超时阈值
 # SKHYNIX 1289 案例参数（关键验证场景）
 SKHYNIX_CASE_ENTRY = 1289.38
 SKHYNIX_CASE_SUPPORT = 1270.0  # 假设支撑位
-SKHYNIX_CASE_ATR_PCT = 0.025   # SKHYNIX 典型 ATR 2.5%
+SKHYNIX_CASE_ATR_PCT = 0.025  # SKHYNIX 典型 ATR 2.5%
 
 
 # ============================================================================
 # K线加载
 # ============================================================================
+
 
 def load_klines_from_csv(path: Path) -> List[dict]:
     """从CSV加载K线数据"""
@@ -76,14 +78,16 @@ def load_klines_from_csv(path: Path) -> List[dict]:
     with open(path) as f:
         reader = csv.DictReader(f)
         for r in reader:
-            rows.append({
-                "timestamp": r.get("timestamp", ""),
-                "open": float(r["open"]),
-                "high": float(r["high"]),
-                "low": float(r["low"]),
-                "close": float(r["close"]),
-                "volume": float(r.get("volume", 0)),
-            })
+            rows.append(
+                {
+                    "timestamp": r.get("timestamp", ""),
+                    "open": float(r["open"]),
+                    "high": float(r["high"]),
+                    "low": float(r["low"]),
+                    "close": float(r["close"]),
+                    "volume": float(r.get("volume", 0)),
+                }
+            )
     return rows
 
 
@@ -92,6 +96,7 @@ def load_klines_from_okx(inst_id: str, bar: str = "1H", limit: int = 500) -> Lis
     try:
         sys.path.insert(0, str(REPO_ROOT / "11-易经推理系统" / "scripts" / "memory_l4"))
         from okx_client import OKXClient  # type: ignore
+
         client = OKXClient()
         resp = client.get_kline(inst_id, bar=bar, limit=limit)
         if not resp or not resp.get("ok"):
@@ -101,14 +106,16 @@ def load_klines_from_okx(inst_id: str, bar: str = "1H", limit: int = 500) -> Lis
         # OKX 返回 [ts, o, h, l, c, vol, ...] 逆序
         rows = []
         for c in reversed(candles):
-            rows.append({
-                "timestamp": str(c[0]),
-                "open": float(c[1]),
-                "high": float(c[2]),
-                "low": float(c[3]),
-                "close": float(c[4]),
-                "volume": float(c[5] or 0),
-            })
+            rows.append(
+                {
+                    "timestamp": str(c[0]),
+                    "open": float(c[1]),
+                    "high": float(c[2]),
+                    "low": float(c[3]),
+                    "close": float(c[4]),
+                    "volume": float(c[5] or 0),
+                }
+            )
         return rows
     except Exception as e:
         logger.warning("OKX K线加载异常: %s", e)
@@ -118,6 +125,7 @@ def load_klines_from_okx(inst_id: str, bar: str = "1H", limit: int = 500) -> Lis
 def generate_synthetic_klines(symbol: str, n: int = 200) -> List[dict]:
     """生成合成K线数据（用于验证脚本自身可用性）"""
     import random
+
     random.seed(hash(symbol) % 2**32)
     base_price = {"BTC": 45000.0, "ETH": 2500.0, "SKHYNIX": 1289.0}.get(symbol, 100.0)
     rows = []
@@ -127,16 +135,18 @@ def generate_synthetic_klines(symbol: str, n: int = 200) -> List[dict]:
         drift = random.uniform(-0.008, 0.01)
         o = price
         h = o * (1 + vol_pct)
-        l = o * (1 - vol_pct)
+        l = o * (1 - vol_pct)  # noqa: E741
         c = o * (1 + drift)
-        rows.append({
-            "timestamp": str(i),
-            "open": round(o, 4),
-            "high": round(h, 4),
-            "low": round(l, 4),
-            "close": round(c, 4),
-            "volume": round(random.uniform(100, 10000), 2),
-        })
+        rows.append(
+            {
+                "timestamp": str(i),
+                "open": round(o, 4),
+                "high": round(h, 4),
+                "low": round(l, 4),
+                "close": round(c, 4),
+                "volume": round(random.uniform(100, 10000), 2),
+            }
+        )
         price = c
     return rows
 
@@ -168,6 +178,7 @@ def load_klines(symbol: str, kline_dir: Path, kline_map: dict, use_okx: bool = F
 # 指标计算（复用 shadow_backtest + 新增 swing_low/support/atr_daily）
 # ============================================================================
 
+
 def calc_indicators(klines: List[dict]) -> List[dict]:
     """计算指标：ATR(14) + swing_low + 支撑位 + atr_daily"""
     bars = [dict(k) for k in klines]
@@ -179,7 +190,7 @@ def calc_indicators(klines: List[dict]) -> List[dict]:
             trs = []
             for j in range(i - 13, i + 1):
                 h = bars[j]["high"]
-                l = bars[j]["low"]
+                l = bars[j]["low"]  # noqa: E741
                 prev_c = bars[j - 1]["close"]
                 tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
                 trs.append(tr)
@@ -240,6 +251,7 @@ def _calc_nearest_support(bars: List[dict], i: int) -> float:
 # 模拟交易
 # ============================================================================
 
+
 def simulate_position(
     klines: List[dict],
     entry_idx: int,
@@ -265,19 +277,21 @@ def simulate_position(
             upl_ratio = (current_price - entry_price) / entry_price
         else:
             upl_ratio = (entry_price - current_price) / entry_price
-        bars_data.append({
-            "bar_idx": j,
-            "timestamp": bar["timestamp"],
-            "current_price": current_price,
-            "entry_price": entry_price,
-            "upl_ratio": upl_ratio,
-            "position_age_sec": age_sec,
-            "recent_swing_low": bar.get("recent_swing_low", 0.0),
-            "nearest_support_level": bar.get("nearest_support_level", 0.0),
-            "atr_pct": bar.get("atr_pct", 0.0),
-            "atr_daily": bar.get("atr_daily", 0.0),
-            "pos_side": pos_side,
-        })
+        bars_data.append(
+            {
+                "bar_idx": j,
+                "timestamp": bar["timestamp"],
+                "current_price": current_price,
+                "entry_price": entry_price,
+                "upl_ratio": upl_ratio,
+                "position_age_sec": age_sec,
+                "recent_swing_low": bar.get("recent_swing_low", 0.0),
+                "nearest_support_level": bar.get("nearest_support_level", 0.0),
+                "atr_pct": bar.get("atr_pct", 0.0),
+                "atr_daily": bar.get("atr_daily", 0.0),
+                "pos_side": pos_side,
+            }
+        )
 
     # 最终平仓 PnL
     exit_price = klines[exit_idx]["close"]
@@ -299,6 +313,7 @@ def simulate_position(
 # ============================================================================
 # 基线规则3a：固定29H超时强平
 # ============================================================================
+
 
 def run_baseline_rule(position: dict) -> dict:
     """基线规则3a：29H超时 → 强平
@@ -336,11 +351,9 @@ def run_baseline_rule(position: dict) -> dict:
 # 软投票仲裁层
 # ============================================================================
 
+
 def run_soft_vote(position: dict, arbitrator: Any) -> dict:
     """软投票仲裁层：29H超时 → 四方案投票 → 仲裁决策"""
-    from dreambuddy_evolution.engines.exit_engine.timeout_voters.base_voter import (
-        TimeoutVoter,
-    )
 
     bars_data = position["bars_data"]
     voter_votes: Dict[str, List[dict]] = {"A": [], "B": [], "C": [], "D": []}
@@ -368,13 +381,15 @@ def run_soft_vote(position: dict, arbitrator: Any) -> dict:
         for voter in arbitrator._voters:
             ticket = voter.evaluate(ctx)
             if ticket is not None:
-                voter_votes[ticket.voter_id].append({
-                    "bar_idx": bd["bar_idx"],
-                    "action": ticket.action,
-                    "confidence": ticket.confidence,
-                    "reason": ticket.reason,
-                    "upl_ratio": bd["upl_ratio"],
-                })
+                voter_votes[ticket.voter_id].append(
+                    {
+                        "bar_idx": bd["bar_idx"],
+                        "action": ticket.action,
+                        "confidence": ticket.confidence,
+                        "reason": ticket.reason,
+                        "upl_ratio": bd["upl_ratio"],
+                    }
+                )
 
         # 调用仲裁层
         decision = arbitrator.arbitrate(ctx)
@@ -402,10 +417,17 @@ def run_soft_vote(position: dict, arbitrator: Any) -> dict:
 # 对比统计
 # ============================================================================
 
+
 def calc_stats(trades: List[dict]) -> dict:
     """计算交易统计"""
     if not trades:
-        return {"n": 0, "total_pnl": 0.0, "win_rate": 0.0, "max_drawdown": 0.0, "force_close_count": 0}
+        return {
+            "n": 0,
+            "total_pnl": 0.0,
+            "win_rate": 0.0,
+            "max_drawdown": 0.0,
+            "force_close_count": 0,
+        }
     pnls = [t["exit_pnl"] for t in trades]
     wins = sum(1 for p in pnls if p > 0)
     total_pnl = sum(pnls)
@@ -461,6 +483,7 @@ def calc_voter_stats(voter_votes: Dict[str, List[dict]]) -> dict:
 # ============================================================================
 # SKHYNIX 1289 案例回放
 # ============================================================================
+
 
 def replay_skhynix_case() -> dict:
     """SKHYNIX 1289 案例回放验证
@@ -529,6 +552,7 @@ def replay_skhynix_case() -> dict:
 # ============================================================================
 # 主回测函数
 # ============================================================================
+
 
 def run_soft_vote_backtest(
     symbols: list[str] | None = None,
@@ -614,15 +638,24 @@ def run_soft_vote_backtest(
             "voter_stats": voter_stats,
             "improvement": {
                 "pnl_delta": round(soft_vote_stats["total_pnl"] - baseline_stats["total_pnl"], 4),
-                "force_close_reduction": baseline_stats["force_close_count"] - soft_vote_stats["force_close_count"],
+                "force_close_reduction": baseline_stats["force_close_count"]
+                - soft_vote_stats["force_close_count"],
             },
         }
-        logger.info("[%s] 基线 PnL=%.4f 胜率=%.2f 强平=%d", symbol,
-                     baseline_stats["total_pnl"], baseline_stats["win_rate"],
-                     baseline_stats["force_close_count"])
-        logger.info("[%s] 软投票 PnL=%.4f 胜率=%.2f 强平=%d", symbol,
-                     soft_vote_stats["total_pnl"], soft_vote_stats["win_rate"],
-                     soft_vote_stats["force_close_count"])
+        logger.info(
+            "[%s] 基线 PnL=%.4f 胜率=%.2f 强平=%d",
+            symbol,
+            baseline_stats["total_pnl"],
+            baseline_stats["win_rate"],
+            baseline_stats["force_close_count"],
+        )
+        logger.info(
+            "[%s] 软投票 PnL=%.4f 胜率=%.2f 强平=%d",
+            symbol,
+            soft_vote_stats["total_pnl"],
+            soft_vote_stats["win_rate"],
+            soft_vote_stats["force_close_count"],
+        )
 
     # SKHYNIX 案例回放
     skhynix_case = replay_skhynix_case()
@@ -648,7 +681,7 @@ def _generate_summary(results: dict) -> dict:
     total_baseline_fc = 0
     total_sv_fc = 0
     valid_symbols = 0
-    for sym, r in results.items():
+    for sym, r in results.items():  # noqa: B007
         if "error" in r:
             continue
         total_baseline_pnl += r["baseline"]["total_pnl"]
@@ -673,14 +706,15 @@ def _generate_summary(results: dict) -> dict:
 # CLI 入口
 # ============================================================================
 
+
 def main():
     parser = argparse.ArgumentParser(description="软投票仲裁层回测")
-    parser.add_argument("--symbols", type=str, default=",".join(DEFAULT_SYMBOLS),
-                        help="回测标的（逗号分隔）")
+    parser.add_argument(
+        "--symbols", type=str, default=",".join(DEFAULT_SYMBOLS), help="回测标的（逗号分隔）"
+    )
     parser.add_argument("--okx", action="store_true", help="从OKX API获取K线")
     parser.add_argument("--hold-bars", type=int, default=30, help="持有bar数")
-    parser.add_argument("--output", type=str, default=str(REPORT_PATH),
-                        help="报告输出路径")
+    parser.add_argument("--output", type=str, default=str(REPORT_PATH), help="报告输出路径")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -735,8 +769,10 @@ def main():
         vs = r.get("voter_stats", {})
         for vid in ["A", "B", "C", "D"]:
             v = vs.get(vid, {})
-            print(f"  [{sym}] Voter {vid}: 胜率={v.get('win_rate', 0):.2f} "
-                  f"(n={v.get('n', 0)}, FC={v.get('force_close_count', 0)}, Hold={v.get('hold_count', 0)})")
+            print(
+                f"  [{sym}] Voter {vid}: 胜率={v.get('win_rate', 0):.2f} "
+                f"(n={v.get('n', 0)}, FC={v.get('force_close_count', 0)}, Hold={v.get('hold_count', 0)})"
+            )
 
 
 if __name__ == "__main__":

@@ -24,6 +24,7 @@
         return_tuple=True,
     )
 """
+
 from __future__ import annotations
 
 import logging
@@ -43,8 +44,8 @@ def _is_featurehub_enabled(strategy_name: str) -> bool:
 
 def _build_pipeline():
     """构建 FeaturePipeline + 注册模块 + 集合。"""
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
     from feature_hub.modules.loader import load_default_sets
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
 
     pipe = FeaturePipeline()
     load_default_sets(pipe)
@@ -120,7 +121,7 @@ def wrap_featurehub(
             new_cols = {}
             for col in df_out.columns:
                 sep_idx = col.find("__")
-                new_name = col[sep_idx + 2:] if sep_idx >= 0 else col
+                new_name = col[sep_idx + 2 :] if sep_idx >= 0 else col
                 new_cols[col] = new_name
             df_out = df_out.rename(columns=new_cols)
         logger.info(
@@ -138,7 +139,7 @@ def wrap_featurehub(
     except Exception as exc:
         logger.warning(
             "[H3] %s → FeatureHub failed: %s — falling back to original FE",
-            strategy_name, exc,
+            strategy_name,
+            exc,
         )
         return original_fe_fn()
-

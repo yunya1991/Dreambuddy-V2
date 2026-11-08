@@ -8,6 +8,7 @@
 回测准确率: 77.5% (vs volume-only 32.5%)，有判定准确率 96.9%。
 Spec: docs/superpowers/specs/2026-09-21-washout-detector-design.md §4
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,13 +34,13 @@ class EnhancedWashoutClassifier:
     """
 
     # 阈值常量（回测验证后固定）
-    VOL_WASHOUT_THRESHOLD = 0.8      # 缩量阈值
-    VOL_WEAKNESS_THRESHOLD = 1.5     # 放量阈值
-    OI_DECLINE_THRESHOLD = -0.02     # OI 温和下降（弱手离场）
-    OI_RISE_THRESHOLD = 0.03         # OI 上升（新空头涌入）
+    VOL_WASHOUT_THRESHOLD = 0.8  # 缩量阈值
+    VOL_WEAKNESS_THRESHOLD = 1.5  # 放量阈值
+    OI_DECLINE_THRESHOLD = -0.02  # OI 温和下降（弱手离场）
+    OI_RISE_THRESHOLD = 0.03  # OI 上升（新空头涌入）
     CVD_DIVERGENCE_THRESHOLD = -0.1  # CVD 与价格背离（聪明钱吸收）
-    CVD_SYNC_THRESHOLD = 0.2         # CVD 与价格同步下行（出货）
-    FUNDING_DEEP_NEGATIVE = -2.5     # funding 深度负值
+    CVD_SYNC_THRESHOLD = 0.2  # CVD 与价格同步下行（出货）
+    FUNDING_DEEP_NEGATIVE = -2.5  # funding 深度负值
 
     WASHOUT_CONFIDENCE = 0.85
     WEAKNESS_CONFIDENCE = 0.80
@@ -77,8 +78,7 @@ class EnhancedWashoutClassifier:
             # 缩量回调场景下进一步判定
             if vol < self.VOL_WASHOUT_THRESHOLD:
                 # 真洗盘: OI 温和下降 + CVD 背离
-                if (oi_rate < self.OI_DECLINE_THRESHOLD
-                        and cvd_corr < self.CVD_DIVERGENCE_THRESHOLD):
+                if oi_rate < self.OI_DECLINE_THRESHOLD and cvd_corr < self.CVD_DIVERGENCE_THRESHOLD:
                     return WashoutVerdict(
                         label=WashoutLabel.WASHOUT,
                         confidence=self.WASHOUT_CONFIDENCE,
@@ -88,8 +88,7 @@ class EnhancedWashoutClassifier:
                         timestamp="",
                     )
                 # 假洗盘: OI 上升 + CVD 同步下行
-                if (oi_rate > self.OI_RISE_THRESHOLD
-                        and cvd_corr > self.CVD_SYNC_THRESHOLD):
+                if oi_rate > self.OI_RISE_THRESHOLD and cvd_corr > self.CVD_SYNC_THRESHOLD:
                     return WashoutVerdict(
                         label=WashoutLabel.WEAKNESS,
                         confidence=self.WEAKNESS_CONFIDENCE,

@@ -16,13 +16,13 @@
     - 解析失败时返回 NEUTRAL，不阻断流程
 """
 
+import hashlib
+import json
 import os
 import re
-import json
 import time
-import hashlib
 from datetime import datetime, timezone
-from typing import Dict, Optional, List, Any
+from typing import Dict, List, Optional
 
 # ── 配置 ──
 TAVILY_API_KEY = os.environ.get(
@@ -53,10 +53,12 @@ FINANCE_DOMAINS = [
 
 # ── Tavily 客户端 ──
 
+
 def _get_tavily_client():
     """获取 Tavily 客户端（优先 SDK，回退 HTTP）"""
     try:
         from tavily import TavilyClient
+
         return TavilyClient(api_key=TAVILY_API_KEY), "sdk"
     except ImportError:
         return None, "http"
@@ -64,17 +66,19 @@ def _get_tavily_client():
 
 def _tavily_search_http(query: str, max_results: int = 5, topic: str = "news") -> dict:
     """HTTP 直调 Tavily API（SDK 不可用时的回退）"""
-    import urllib.request
     import urllib.error
+    import urllib.request
 
-    payload = json.dumps({
-        "api_key": TAVILY_API_KEY,
-        "query": query,
-        "max_results": max_results,
-        "topic": topic,
-        "search_depth": "basic",
-        "include_answer": True,
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "api_key": TAVILY_API_KEY,
+            "query": query,
+            "max_results": max_results,
+            "topic": topic,
+            "search_depth": "basic",
+            "include_answer": True,
+        }
+    ).encode("utf-8")
 
     req = urllib.request.Request(
         "https://api.tavily.com/search",
@@ -142,6 +146,7 @@ def tavily_search(query: str, max_results: int = 5, topic: str = "news") -> Opti
 
 # ── 文本解析工具 ──
 
+
 def _parse_number_near(text: str, keywords: List[str], default: float = 0) -> float:
     """
     在文本中搜索关键词附近的数字
@@ -169,9 +174,9 @@ def _parse_number_near(text: str, keywords: List[str], default: float = 0) -> fl
         if idx >= 0:
             # 在关键词之后搜索（跳过关键词本身）
             search_start = idx + len(kw_lower)
-            window = text[search_start:search_start + 200]
+            window = text[search_start : search_start + 200]
             # 匹配浮点数（含负数和小数）
-            numbers = re.findall(r'[-]?\d+\.?\d*', window)
+            numbers = re.findall(r"[-]?\d+\.?\d*", window)
             if numbers:
                 for n in numbers:
                     val = float(n)
@@ -200,6 +205,7 @@ def _extract_all_text(result: dict) -> str:
 
 # ── 4 维数据采集与评分 ──
 
+
 def collect_miner_economics() -> dict:
     """
     维度 C：矿工经济
@@ -224,7 +230,9 @@ def collect_miner_economics() -> dict:
     # 解析关键指标
     hashrate = _parse_number_near(all_text, ["hash rate", "hashrate", "EH/s"], 0)
     puell_multiple = _parse_number_near(all_text, ["Puell Multiple", "puell"], 0)
-    production_cost = _parse_number_near(all_text, ["production cost", "break even", "mining cost"], 0)
+    production_cost = _parse_number_near(
+        all_text, ["production cost", "break even", "mining cost"], 0
+    )
 
     # 评分逻辑
     score = 0
@@ -255,13 +263,23 @@ def collect_miner_economics() -> dict:
         signals.append(f"文本情绪偏多({bull_count} vs {bear_count})")
 
     direction = "BULL" if score > 3 else ("BEAR" if score < -3 else "NEUTRAL")
-    reasoning = f"矿工经济分析：Puell={puell_multiple:.2f}, Hashrate={hashrate:.0f}EH/s, " + "; ".join(signals)
+    reasoning = (
+        f"矿工经济分析：Puell={puell_multiple:.2f}, Hashrate={hashrate:.0f}EH/s, "
+        + "; ".join(signals)
+    )
 
-    return _make_dim_result("C_miner", True, score, direction, reasoning, {
-        "hashrate_ehs": hashrate,
-        "puell_multiple": puell_multiple,
-        "production_cost": production_cost,
-    })
+    return _make_dim_result(
+        "C_miner",
+        True,
+        score,
+        direction,
+        reasoning,
+        {
+            "hashrate_ehs": hashrate,
+            "puell_multiple": puell_multiple,
+            "production_cost": production_cost,
+        },
+    )
 
 
 def collect_onchain_valuation() -> dict:
@@ -327,13 +345,22 @@ def collect_onchain_valuation() -> dict:
             signals.append(f"NUPL={nupl:.2f} 恐惧/投降(<-0.1)")
 
     direction = "BULL" if score > 3 else ("BEAR" if score < -3 else "NEUTRAL")
-    reasoning = f"链上估值：MVRV={mvrv:.2f}, SOPR={sopr:.2f}, NUPL={nupl:.2f}; " + "; ".join(signals)
+    reasoning = f"链上估值：MVRV={mvrv:.2f}, SOPR={sopr:.2f}, NUPL={nupl:.2f}; " + "; ".join(
+        signals
+    )
 
-    return _make_dim_result("D_onchain", True, score, direction, reasoning, {
-        "mvrv": mvrv,
-        "sopr": sopr,
-        "nupl": nupl,
-    })
+    return _make_dim_result(
+        "D_onchain",
+        True,
+        score,
+        direction,
+        reasoning,
+        {
+            "mvrv": mvrv,
+            "sopr": sopr,
+            "nupl": nupl,
+        },
+    )
 
 
 def collect_macro_finance() -> dict:
@@ -401,10 +428,17 @@ def collect_macro_finance() -> dict:
     direction = "BULL" if score > 3 else ("BEAR" if score < -3 else "NEUTRAL")
     reasoning = f"宏观金融：DXY={dxy:.1f}, 10Y={us10y:.2f}%; " + "; ".join(signals)
 
-    return _make_dim_result("E_macro", True, score, direction, reasoning, {
-        "dxy": dxy,
-        "us10y": us10y,
-    })
+    return _make_dim_result(
+        "E_macro",
+        True,
+        score,
+        direction,
+        reasoning,
+        {
+            "dxy": dxy,
+            "us10y": us10y,
+        },
+    )
 
 
 def collect_cross_market() -> dict:
@@ -446,7 +480,9 @@ def collect_cross_market() -> dict:
         signals.append(f"市场风险偏好偏低(Risk-Off {risk_off_count} vs {risk_on_count})")
 
     # 黄金趋势：避险资产走强通常意味着风险偏好下降
-    gold_bullish = any(w in all_text.lower() for w in ["gold rally", "gold surge", "黄金上涨", "金价飙升"])
+    gold_bullish = any(
+        w in all_text.lower() for w in ["gold rally", "gold surge", "黄金上涨", "金价飙升"]
+    )
     gold_bearish = any(w in all_text.lower() for w in ["gold drop", "gold decline", "黄金下跌"])
 
     if gold_bullish:
@@ -459,13 +495,21 @@ def collect_cross_market() -> dict:
     direction = "BULL" if score > 2 else ("BEAR" if score < -2 else "NEUTRAL")
     reasoning = "; ".join(signals) if signals else "无明显跨市场信号"
 
-    return _make_dim_result("F_cross_market", True, score, direction, reasoning, {
-        "risk_on_signals": risk_on_count,
-        "risk_off_signals": risk_off_count,
-    })
+    return _make_dim_result(
+        "F_cross_market",
+        True,
+        score,
+        direction,
+        reasoning,
+        {
+            "risk_on_signals": risk_on_count,
+            "risk_off_signals": risk_off_count,
+        },
+    )
 
 
 # ── 统一输出格式 ──
+
 
 def _make_dim_result(
     dim_name: str,

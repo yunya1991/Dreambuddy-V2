@@ -7,6 +7,7 @@ data_server_fixed.py 需要:
   - compute_full_trading_signal()  -> /api/trend-screen 端点
   - CANDIDATE_COINS                -> 币种列表
 """
+
 import sys
 from pathlib import Path
 
@@ -17,6 +18,7 @@ if _THREE_SCREEN_DIR not in sys.path:
 
 try:
     from engine import compute_full_trading_signal
+
     _ENGINE_AVAILABLE = True
 except ImportError:
     _ENGINE_AVAILABLE = False

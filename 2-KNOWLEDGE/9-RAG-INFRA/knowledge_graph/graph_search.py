@@ -70,9 +70,9 @@ def _adjacent(graph: nx.DiGraph, node: str):
                 yield nbr, rel, "in"
 
 
-def graph_search(entity: str, hops: int = 2,
-                 relation_filter: Optional[List[str]] = None,
-                 graph_path=None) -> Dict:
+def graph_search(
+    entity: str, hops: int = 2, relation_filter: Optional[List[str]] = None, graph_path=None
+) -> Dict:
     """在图谱中 BFS 检索实体的多跳邻域。
 
     Args:
@@ -128,14 +128,16 @@ def graph_search(entity: str, hops: int = 2,
                 key = (nbr, rel)
                 if key not in visited_edges:
                     visited_edges.add(key)
-                    neighbors.append({
-                        "id": nbr,
-                        "name": nbr_data.get("name", nbr),
-                        "type": nbr_data.get("type", ""),
-                        "relation": rel,
-                        "direction": direction,
-                        "hops": dist[nbr],
-                    })
+                    neighbors.append(
+                        {
+                            "id": nbr,
+                            "name": nbr_data.get("name", nbr),
+                            "type": nbr_data.get("type", ""),
+                            "relation": rel,
+                            "direction": direction,
+                            "hops": dist[nbr],
+                        }
+                    )
                 if dist[nbr] < hops:
                     queue.append(nbr)
             elif dist[nbr] > dist[cur] + 1:
@@ -143,10 +145,7 @@ def graph_search(entity: str, hops: int = 2,
                 paths[nbr] = paths[cur] + [nbr]
 
     # 路径输出（排除中心节点自身的平凡路径）
-    out_paths = [
-        {"path": paths[nid], "hops": dist[nid]}
-        for nid in paths if nid != center
-    ]
+    out_paths = [{"path": paths[nid], "hops": dist[nid]} for nid in paths if nid != center]
 
     return {
         "center_node": center_node,
@@ -156,7 +155,7 @@ def graph_search(entity: str, hops: int = 2,
 
 
 if __name__ == "__main__":
-    import sys
+    import sys  # noqa: I001
     import json
 
     q = sys.argv[1] if len(sys.argv) > 1 else "11-易经推理系统"

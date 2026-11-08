@@ -5,6 +5,7 @@ M2/M1 RED: factor_head_mask 在 NeuralSDE 中的透传与序列化
   M2: _PathSignatureDriftNet / _MoEDriftNet 接收并传递 factor_head_mask
   M1: NeuralSDEModel.save()/load() 持久化 factor_head_mask
 """
+
 from __future__ import annotations
 
 import tempfile

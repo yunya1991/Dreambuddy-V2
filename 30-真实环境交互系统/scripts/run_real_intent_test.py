@@ -10,21 +10,21 @@ IntentSample 自动落盘到 pipeline，最后输出准确率报告。
     - 前端 chat 页面运行在 :3001
     - DreamOS run_api_server 运行在 :3847（/api/intent/route 可用）
 """
+
 import argparse
 import logging
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import yaml
+import yaml  # noqa: I001
 
 from core.browser_connector import BrowserConnector, BrowserMode
 from core.user_simulator import UserSimulator
 from core.result_verifier import ResultVerifier
 from core.scenario_runner import ScenarioRunner
-from core.intent_sample_pipeline import IntentSamplePipeline, IntentSample
+from core.intent_sample_pipeline import IntentSamplePipeline
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("real_intent_test")
@@ -89,14 +89,18 @@ def main():
             gold = scenario["intent_training"]["gold_intent"]
             logger.info("[%d/%d] %s (gold=%s)", i, len(scenarios), sc_path.name, gold)
             result = runner.run(page, scenario)
-            results.append({
-                "file": sc_path.name,
-                "gold": gold,
-                "scenario_passed": result.passed,
-            })
+            results.append(
+                {
+                    "file": sc_path.name,
+                    "gold": gold,
+                    "scenario_passed": result.passed,
+                }
+            )
         except Exception as e:
             logger.warning("[%d/%d] %s 执行异常: %s", i, len(scenarios), sc_path.name, e)
-            results.append({"file": sc_path.name, "gold": None, "scenario_passed": False, "error": str(e)})
+            results.append(
+                {"file": sc_path.name, "gold": None, "scenario_passed": False, "error": str(e)}
+            )
         finally:
             try:
                 page.close()
@@ -126,8 +130,10 @@ def main():
             canon = s.recognizer_output.get("canon_intent", "-")
             conf = s.recognizer_output.get("confidence", 0) or 0.0
             ok = "✓" if s.human_label.get("confirmed") else "✗"
-            print(f"  {ok} gold={s.gold['gold_intent']:<16} predicted={str(pred):<16} "
-                  f"canon={str(canon):<16} conf={conf:.2f} query={s.input['user_query'][:30]}")
+            print(
+                f"  {ok} gold={s.gold['gold_intent']:<16} predicted={str(pred):<16} "
+                f"canon={str(canon):<16} conf={conf:.2f} query={s.input['user_query'][:30]}"
+            )
     else:
         print("⚠ 无 IntentSample 落盘，检查场景执行是否正常")
 

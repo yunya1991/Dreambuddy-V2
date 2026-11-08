@@ -13,6 +13,7 @@
 红线：Shadow 输出为旁路观测，不产生交易信号，不影响任何交易链路；
   交易决策归 23 系统三步门禁。
 """
+
 import argparse
 import json
 import os
@@ -22,7 +23,12 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 MODEL_PATH = os.path.join(BASE, "encoder_trend_model.pt")
@@ -33,10 +39,10 @@ SHADOW_STATUS_OUT = os.path.join(BASE, "shadow_status.json")
 
 # 预注册参数（禁止运行时调整）
 PREREG = {
-    "min_weeks": 4,        # Shadow 运行 ≥ 4 周
+    "min_weeks": 4,  # Shadow 运行 ≥ 4 周
     "psi_threshold": 0.1,  # PSI < 0.1 分布稳定
-    "psi_bins": 10,       # 十分位分箱
-    "psi_window": 50,     # PSI 对比窗口（最近 50 条 vs 之前全部）
+    "psi_bins": 10,  # 十分位分箱
+    "psi_window": 50,  # PSI 对比窗口（最近 50 条 vs 之前全部）
 }
 SYMBOLS = ["BTC", "ETH", "SOL"]
 SCREENS = ["1W", "1D", "1H"]
@@ -62,8 +68,8 @@ def compute_psi(preds):
     if len(preds) < PREREG["psi_window"] * 2:
         return None
     probs = np.array([p.get("prob_up", 0.0) for p in preds], dtype=float)
-    recent = probs[-PREREG["psi_window"]:]
-    base = probs[:-PREREG["psi_window"]]
+    recent = probs[-PREREG["psi_window"] :]
+    base = probs[: -PREREG["psi_window"]]
     edges = np.linspace(0.0, 1.0, PREREG["psi_bins"] + 1)
     psi = 0.0
     for i in range(PREREG["psi_bins"]):
@@ -125,7 +131,8 @@ def main() -> int:
 
     # 2) 加载模型与最新 token 窗口
     import torch
-    from p6_e2_train_encoder import build_model, PREREG as E2_PREREG, make_windows
+    from p6_e2_train_encoder import PREREG as E2_PREREG
+    from p6_e2_train_encoder import build_model
 
     ckpt = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
     feat_cols = ckpt["feature_cols"]
@@ -162,25 +169,29 @@ def main() -> int:
                 prob = torch.softmax(logits, dim=1)[0].numpy()
             cls = int(np.argmax(prob))
             direction = {0: "NEUTRAL", 1: "UP", 2: "DOWN"}[cls]
-            preds.append({
-                "ts": now_ts,
-                "generated_at": now_iso,
-                "symbol": sym,
-                "timeframe": bar,
-                "direction": direction,
-                "prob_up": float(prob[1]),
-                "prob_neutral": float(prob[0]),
-                "prob_down": float(prob[2]),
-                "confidence": float(prob[cls]),
-                "model_version": "encoder_v1",
-                "feature_version": str(tokens["feature_version"].iloc[-1]),
-                "mode": "shadow",
-            })
+            preds.append(
+                {
+                    "ts": now_ts,
+                    "generated_at": now_iso,
+                    "symbol": sym,
+                    "timeframe": bar,
+                    "direction": direction,
+                    "prob_up": float(prob[1]),
+                    "prob_neutral": float(prob[0]),
+                    "prob_down": float(prob[2]),
+                    "confidence": float(prob[cls]),
+                    "model_version": "encoder_v1",
+                    "feature_version": str(tokens["feature_version"].iloc[-1]),
+                    "mode": "shadow",
+                }
+            )
 
     if args.dry_run:
         print(f"[OK] 干跑验证通过：模型加载与推理正常（{len(preds)} 条旁路预测，未落盘）")
         for p in preds[:3]:
-            print(f"     {p['symbol']} {p['timeframe']} -> {p['direction']} (conf {p['confidence']:.3f})")
+            print(
+                f"     {p['symbol']} {p['timeframe']} -> {p['direction']} (conf {p['confidence']:.3f})"
+            )
         return 0
 
     # 3) 追加落盘预测流

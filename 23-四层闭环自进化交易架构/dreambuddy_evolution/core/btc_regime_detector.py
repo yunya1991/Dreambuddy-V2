@@ -17,10 +17,10 @@
   2. FAIL-OPEN: 数据不足 / HMM 不收敛 → 简单 drawdown 阈值兜底, 不抛异常
   3. regime 标签排序: bull=0 (drawdown 接近 0), bear=2 (drawdown 最负), chop=1
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import numpy as np
 
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from statsmodels.tsa.regime_switching.markov_regression import MarkovRegression
+
     _HAS_HMM = True
 except ImportError:
     _HAS_HMM = False
@@ -77,9 +78,13 @@ class BTCRegimeDetector:
             return np.array([], dtype=float)
 
         # rolling max with min_periods=1 (expanding until window 满)
-        from numpy.lib.stride_tricks import sliding_window_view
+
         # 用 pandas 风格 rolling max, 简化实现:
-        rolling_max = np.maximum.accumulate(closes) if self.window >= n else self._rolling_max(closes, self.window)
+        rolling_max = (
+            np.maximum.accumulate(closes)
+            if self.window >= n
+            else self._rolling_max(closes, self.window)
+        )
         drawdown = (closes - rolling_max) / rolling_max
         # 处理 rolling_max 为 0 的情况 (理论上 BTC 不可能)
         drawdown = np.where(rolling_max > 0, drawdown, 0.0)
@@ -92,7 +97,7 @@ class BTCRegimeDetector:
         out = np.empty(n, dtype=float)
         for i in range(n):
             lo = max(0, i - window + 1)
-            out[i] = np.max(arr[lo:i + 1])
+            out[i] = np.max(arr[lo : i + 1])
         return out
 
     # ------------------------------------------------------------------
@@ -113,7 +118,9 @@ class BTCRegimeDetector:
 
         # FAIL-OPEN: 短数据
         if n < self.min_samples:
-            logger.debug("BTCRegimeDetector: n=%d < min_samples=%d, 返回 zeros 兜底", n, self.min_samples)
+            logger.debug(
+                "BTCRegimeDetector: n=%d < min_samples=%d, 返回 zeros 兜底", n, self.min_samples
+            )
             return np.zeros(n, dtype=int)
 
         # FAIL-OPEN: NaN 处理 (前向+后向填充均值)
@@ -160,10 +167,12 @@ class BTCRegimeDetector:
         # 标签重排: 使 0=bull (drawdown 接近 0), 2=bear (drawdown 最负)
         # 即: 按 regime 内 drawdown 均值降序排, 最大值→0(bull), 最小值→2(bear)
         n_regimes = self.n_regimes
-        mean_obs = np.array([
-            float(np.mean(obs[raw_labels == k])) if (raw_labels == k).any() else 0.0
-            for k in range(n_regimes)
-        ])
+        mean_obs = np.array(
+            [
+                float(np.mean(obs[raw_labels == k])) if (raw_labels == k).any() else 0.0
+                for k in range(n_regimes)
+            ]
+        )
         # 降序: argsort(-mean_obs) 给出 [最大值的 idx, ..., 最小值的 idx]
         order = np.argsort(-mean_obs)  # order[0]=bull 原始 idx, order[2]=bear 原始 idx
         remap = np.zeros(n_regimes, dtype=int)

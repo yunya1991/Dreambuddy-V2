@@ -1,13 +1,13 @@
 """test_data_center_adapter.py — DataCenterAdapter 单元测试
 覆盖: panewslab查询, DB不存在FO, 数据过期, per-coin匹配
 """
-from __future__ import annotations
+
+from __future__ import annotations  # noqa: I001
 
 import json
 import sqlite3
 from pathlib import Path
 
-import pytest
 
 from dreambuddy_evolution.adapters.data_center import DataCenterAdapter
 
@@ -28,17 +28,20 @@ def _make_test_db(tmp_path: Path, metrics=None, timeseries=None):
             timeseries TEXT
         )
     """)
-    metrics_str = json.dumps(metrics or {
-        "fut_liq_long_24h_usd": 1.5e8,
-        "fut_liq_short_24h_usd": 2.0e8,
-        "fut_liq_total_24h_usd": 3.5e8,
-        "fut_open_interest_usd": 5.0e10,
-    })
+    metrics_str = json.dumps(
+        metrics
+        or {
+            "fut_liq_long_24h_usd": 1.5e8,
+            "fut_liq_short_24h_usd": 2.0e8,
+            "fut_liq_total_24h_usd": 3.5e8,
+            "fut_open_interest_usd": 5.0e10,
+        }
+    )
     ts_str = json.dumps(timeseries or [])
     c.execute(
         "INSERT INTO records (source, category, sub_category, timestamp, metrics, timeseries) "
         "VALUES ('panewslab', 'derivatives', 'derivatives_spot', '2026-09-05T10:00:00Z', ?, ?)",
-        (metrics_str, ts_str)
+        (metrics_str, ts_str),
     )
     conn.commit()
     conn.close()
@@ -67,12 +70,15 @@ class TestDataCenterAdapter:
 
     def test_liq_index_change(self, tmp_path):
         """liq_index_change: 两次查询之间的变化比"""
-        db_path = _make_test_db(tmp_path, metrics={
-            "fut_liq_long_24h_usd": 1e8,
-            "fut_liq_short_24h_usd": 1e8,
-            "fut_liq_total_24h_usd": 2e8,
-            "fut_open_interest_usd": 5e10,
-        })
+        db_path = _make_test_db(
+            tmp_path,
+            metrics={
+                "fut_liq_long_24h_usd": 1e8,
+                "fut_liq_short_24h_usd": 1e8,
+                "fut_liq_total_24h_usd": 2e8,
+                "fut_open_interest_usd": 5e10,
+            },
+        )
         adapter = DataCenterAdapter(db_path)
 
         # 第一次查询
@@ -84,8 +90,7 @@ class TestDataCenterAdapter:
         # 更新 DB 中的 total
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
-        c.execute("UPDATE records SET metrics = ?",
-                  (json.dumps({"fut_liq_total_24h_usd": 4e8}),))
+        c.execute("UPDATE records SET metrics = ?", (json.dumps({"fut_liq_total_24h_usd": 4e8}),))
         conn.commit()
         conn.close()
 
@@ -97,15 +102,25 @@ class TestDataCenterAdapter:
 
     def test_per_coin_match(self, tmp_path):
         """per-coin 清算数据匹配"""
-        ts = [{
-            "name": "futures_markets",
-            "items": [
-                {"symbol": "BTC", "long_liq_usd_24h": 5e7, "short_liq_usd_24h": 6e7,
-                 "open_interest_usd": 1e10},
-                {"symbol": "ETH", "long_liq_usd_24h": 3e7, "short_liq_usd_24h": 4e7,
-                 "open_interest_usd": 5e9},
-            ],
-        }]
+        ts = [
+            {
+                "name": "futures_markets",
+                "items": [
+                    {
+                        "symbol": "BTC",
+                        "long_liq_usd_24h": 5e7,
+                        "short_liq_usd_24h": 6e7,
+                        "open_interest_usd": 1e10,
+                    },
+                    {
+                        "symbol": "ETH",
+                        "long_liq_usd_24h": 3e7,
+                        "short_liq_usd_24h": 4e7,
+                        "open_interest_usd": 5e9,
+                    },
+                ],
+            }
+        ]
         db_path = _make_test_db(tmp_path, timeseries=ts)
         adapter = DataCenterAdapter(db_path)
         result = adapter.query_latest_derivatives(symbol="BTC")
@@ -118,7 +133,9 @@ class TestDataCenterAdapter:
         db_path = str(tmp_path / "empty.db")
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
-        c.execute("CREATE TABLE records (source TEXT, sub_category TEXT, timestamp TEXT, metrics TEXT)")
+        c.execute(
+            "CREATE TABLE records (source TEXT, sub_category TEXT, timestamp TEXT, metrics TEXT)"
+        )
         conn.commit()
         conn.close()
 

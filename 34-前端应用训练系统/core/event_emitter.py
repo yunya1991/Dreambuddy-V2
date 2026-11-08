@@ -3,6 +3,7 @@
 
 FAIL-OPEN 设计：任何异常均静默吞掉，绝不影响业务主流程。
 """
+
 import json
 import os
 import time
@@ -11,13 +12,25 @@ from datetime import datetime
 
 _EVENTS_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "events", "dreamos",
+    "events",
+    "dreamos",
 )
 
 
-def emit_event(trace_id, system, layer, node, event_type, status,
-               span_id=None, parent_span_id=None, duration_ms=None,
-               payload_ref=None, error=None, meta=None):
+def emit_event(
+    trace_id,
+    system,
+    layer,
+    node,
+    event_type,
+    status,
+    span_id=None,
+    parent_span_id=None,
+    duration_ms=None,
+    payload_ref=None,
+    error=None,
+    meta=None,
+):
     """写入一条事件到本地 JSONL 文件（按本地日期分文件）。"""
     try:
         event = {
@@ -37,9 +50,7 @@ def emit_event(trace_id, system, layer, node, event_type, status,
             "unix_ts": time.time(),
         }
         os.makedirs(_EVENTS_DIR, exist_ok=True)
-        path = os.path.join(
-            _EVENTS_DIR, datetime.now().strftime("%Y-%m-%d") + ".jsonl"
-        )
+        path = os.path.join(_EVENTS_DIR, datetime.now().strftime("%Y-%m-%d") + ".jsonl")
         with open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(event, ensure_ascii=False) + "\n")
         return True

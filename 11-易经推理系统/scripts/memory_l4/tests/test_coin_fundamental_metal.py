@@ -7,8 +7,8 @@
 - risk_hedging_premium：VIX → 高波动→正（避险溢价）
 - compute_all：组合四个信号 + FAIL-OPEN
 """
-import pytest
-import sys
+
+import sys  # noqa: I001
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,12 +16,12 @@ _L4_DIR = Path(__file__).resolve().parent.parent
 if str(_L4_DIR) not in sys.path:
     sys.path.insert(0, str(_L4_DIR))
 
-from force_vector.coin_fundamental_metal import (
-    compute_rate_reversion,
-    compute_liquidity_expansion,
-    compute_inflation_pressure,
-    compute_risk_hedging_premium,
+from force_vector.coin_fundamental_metal import (  # noqa: E402
     compute_all,
+    compute_inflation_pressure,
+    compute_liquidity_expansion,
+    compute_rate_reversion,
+    compute_risk_hedging_premium,
 )
 
 
@@ -110,19 +110,27 @@ class TestRiskHedgingPremium:
 
 class TestComputeAll:
     def test_compute_all_returns_four_signals(self):
-        with patch("force_vector.coin_fundamental_metal._fetch_fred_series") as mock_fred, \
-             patch("force_vector.coin_fundamental_metal._fetch_vix") as mock_vix:
+        with (
+            patch("force_vector.coin_fundamental_metal._fetch_fred_series") as mock_fred,
+            patch("force_vector.coin_fundamental_metal._fetch_vix") as mock_vix,
+        ):
             # 模拟 FRED 数据：series_id → {"value": ..., "timeseries": [...]}
             mock_fred.side_effect = lambda db, sid: {
                 "FEDFUNDS": {"value": 0.25, "timeseries": []},
-                "M2NS": {"value": 21000.0, "timeseries": [
-                    {"date": "2025-01", "value": 18000.0},
-                    {"date": "2026-01", "value": 21000.0},
-                ]},
-                "CPIAUCSL": {"value": 315.0, "timeseries": [
-                    {"date": "2025-01", "value": 300.0},
-                    {"date": "2026-01", "value": 315.0},
-                ]},
+                "M2NS": {
+                    "value": 21000.0,
+                    "timeseries": [
+                        {"date": "2025-01", "value": 18000.0},
+                        {"date": "2026-01", "value": 21000.0},
+                    ],
+                },
+                "CPIAUCSL": {
+                    "value": 315.0,
+                    "timeseries": [
+                        {"date": "2025-01", "value": 300.0},
+                        {"date": "2026-01", "value": 315.0},
+                    ],
+                },
             }.get(sid, {})
             mock_vix.return_value = 35.0
             signals = compute_all("XAUUSD", db_path="/fake/db.db")
@@ -133,8 +141,10 @@ class TestComputeAll:
             assert "risk_hedging_premium" in signals
 
     def test_compute_all_missing_data_returns_zeros(self):
-        with patch("force_vector.coin_fundamental_metal._fetch_fred_series", return_value={}), \
-             patch("force_vector.coin_fundamental_metal._fetch_vix", return_value=0.0):
+        with (
+            patch("force_vector.coin_fundamental_metal._fetch_fred_series", return_value={}),
+            patch("force_vector.coin_fundamental_metal._fetch_vix", return_value=0.0),
+        ):
             signals = compute_all("XAUUSD", db_path="/fake/db.db")
             assert all(v == 0.0 for v in signals.values())
 
@@ -143,7 +153,9 @@ class TestComputeAll:
         assert all(v == 0.0 for v in signals.values())
 
     def test_compute_all_exception_returns_zeros(self):
-        with patch("force_vector.coin_fundamental_metal._fetch_fred_series",
-                   side_effect=RuntimeError("boom")):
+        with patch(
+            "force_vector.coin_fundamental_metal._fetch_fred_series",
+            side_effect=RuntimeError("boom"),
+        ):
             signals = compute_all("XAUUSD", db_path="/fake/db.db")
             assert all(v == 0.0 for v in signals.values())

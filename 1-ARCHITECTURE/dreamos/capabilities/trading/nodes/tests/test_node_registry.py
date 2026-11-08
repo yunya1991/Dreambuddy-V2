@@ -12,8 +12,8 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 sys.path.insert(0, str(PROJECT_ROOT / "1-ARCHITECTURE"))
 
-from dreamos.registry.node_registry import NodeRegistry
-from dreamos.shared.errors import ErrorCode, OSError
+from dreamos.registry.node_registry import NodeRegistry  # noqa: E402
+from dreamos.shared.errors import ErrorCode, OSError  # noqa: E402
 
 
 def make_mock_node(node_id, chain="A", tags=None):

@@ -20,14 +20,14 @@
 文件: 12-三屏趋势系统/live/aster_executor.py
 """
 
-import os
-import sys
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+import os
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # 加载 12-三屏趋势系统/.env
 ENV_FILE = Path(__file__).parent.parent / ".env"
@@ -50,14 +50,16 @@ try:
     _L4_ROOT = Path(__file__).resolve().parents[2] / "11-易经推理系统"
     if str(_L4_ROOT) not in sys.path:
         sys.path.insert(0, str(_L4_ROOT))
-    from scripts.memory_l4.trade_event import TradeEvent
     from scripts.memory_l4.case_registry import UnifiedCaseRegistry
+    from scripts.memory_l4.trade_event import TradeEvent
+
     _L4_ENABLED = True
 except Exception as _e:
     _L4_ENABLED = False
 
 try:
     import ml_trade_service as _ml
+
     ML_AVAILABLE = True
 except ImportError as e:
     ML_AVAILABLE = False
@@ -70,6 +72,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AsterConfig:
     """Aster 执行器配置"""
+
     owner: str = None
     signer: str = None
     private_key: str = None
@@ -106,11 +109,22 @@ class AsterExecutor:
         if not self.config.owner or not self.config.signer or not self.config.private_key:
             raise ValueError("缺少 aster 凭证（ASTER_USER/SIGNER/PRIVATE_KEY）")
 
-        logger.info(f"[AsterExecutor] 初始化完成 owner={self.config.owner[:10]}... dry_run={self.config.dry_run}")
+        logger.info(
+            f"[AsterExecutor] 初始化完成 owner={self.config.owner[:10]}... dry_run={self.config.dry_run}"
+        )
 
-    def _register_trade_to_l4(self, coin: str, side: str, entry_px: float, exit_px: float,
-                              qty: float, pnl: float, exit_reason: str, leverage: int = 3,
-                              screen_signals: Dict = None):
+    def _register_trade_to_l4(
+        self,
+        coin: str,
+        side: str,
+        entry_px: float,
+        exit_px: float,
+        qty: float,
+        pnl: float,
+        exit_reason: str,
+        leverage: int = 3,
+        screen_signals: Dict = None,
+    ):
         """将三屏趋势策略交易记录注册到 L4 统一案例库"""
         if not _L4_ENABLED:
             return None, False
@@ -253,7 +267,9 @@ class AsterExecutor:
                 owner=self.config.owner,
             )
 
-            logger.info(f"[AsterExecutor] 市价单成功 {coin} {side} ${notional_usd:.2f} qty={result.get('quantity')}")
+            logger.info(
+                f"[AsterExecutor] 市价单成功 {coin} {side} ${notional_usd:.2f} qty={result.get('quantity')}"
+            )
             return {"ok": True, **result}
 
         except Exception as e:
@@ -343,15 +359,24 @@ class AsterExecutor:
 
             entry_px = float(target_pos.get("entry_px", 0) or 0)
             exit_px = float(target_pos.get("mark_px", 0) or target_pos.get("current_price", 0) or 0)
-            pnl = (exit_px - entry_px) * abs(pos_qty) * (1 if pos_qty > 0 else -1) if entry_px > 0 else 0
+            pnl = (
+                (exit_px - entry_px) * abs(pos_qty) * (1 if pos_qty > 0 else -1)
+                if entry_px > 0
+                else 0
+            )
 
             if self.config.dry_run:
-                logger.info(f"[AsterExecutor] [DRY_RUN] 平仓 {coin} {close_side} qty={abs(pos_qty)}")
+                logger.info(
+                    f"[AsterExecutor] [DRY_RUN] 平仓 {coin} {close_side} qty={abs(pos_qty)}"
+                )
                 # dry_run 也注册到 L4（用于测试验证）
                 self._register_trade_to_l4(
-                    coin=coin, side="long" if pos_qty > 0 else "short",
-                    entry_px=entry_px, exit_px=exit_px,
-                    qty=abs(pos_qty), pnl=pnl,
+                    coin=coin,
+                    side="long" if pos_qty > 0 else "short",
+                    entry_px=entry_px,
+                    exit_px=exit_px,
+                    qty=abs(pos_qty),
+                    pnl=pnl,
                     exit_reason="dry_run_close",
                     leverage=self.config.default_leverage,
                 )
@@ -368,9 +393,12 @@ class AsterExecutor:
 
             # 注册到 L4
             self._register_trade_to_l4(
-                coin=coin, side="long" if pos_qty > 0 else "short",
-                entry_px=entry_px, exit_px=exit_px,
-                qty=abs(pos_qty), pnl=pnl,
+                coin=coin,
+                side="long" if pos_qty > 0 else "short",
+                entry_px=entry_px,
+                exit_px=exit_px,
+                qty=abs(pos_qty),
+                pnl=pnl,
                 exit_reason="close_position",
                 leverage=self.config.default_leverage,
             )
@@ -394,8 +422,9 @@ class AsterExecutor:
     # 止盈止损硬单（交易所级别）
     # ─────────────────────────────────────────────────────────────
 
-    def place_stop_loss_order(self, coin: str, position_side: str, qty: float,
-                               stop_price: float) -> Dict[str, Any]:
+    def place_stop_loss_order(
+        self, coin: str, position_side: str, qty: float, stop_price: float
+    ) -> Dict[str, Any]:
         """挂止损单（STOP_MARKET, reduceOnly）
 
         Args:
@@ -408,7 +437,9 @@ class AsterExecutor:
             {"ok": bool, "order_id": int, "resp": dict, ...}
         """
         if self.config.dry_run:
-            logger.info(f"[AsterExecutor] [DRY_RUN] 止损单 {coin} pos={position_side} qty={qty} @ {stop_price}")
+            logger.info(
+                f"[AsterExecutor] [DRY_RUN] 止损单 {coin} pos={position_side} qty={qty} @ {stop_price}"
+            )
             return {"ok": True, "dry_run": True, "coin": coin, "stop_price": stop_price}
 
         # 持仓方向 → 平仓方向
@@ -432,14 +463,17 @@ class AsterExecutor:
                     order_id = resp.get("orderId")
             except Exception:
                 pass
-            logger.info(f"[AsterExecutor] 止损单成功 {coin} {close_side} qty={qty} @ {stop_price} orderId={order_id}")
+            logger.info(
+                f"[AsterExecutor] 止损单成功 {coin} {close_side} qty={qty} @ {stop_price} orderId={order_id}"
+            )
             return {"ok": True, "order_id": order_id, "coin": coin, **result}
         except Exception as e:
             logger.error(f"[AsterExecutor] 止损单失败: {e}")
             return {"ok": False, "error": str(e)}
 
-    def place_take_profit_order(self, coin: str, position_side: str, qty: float,
-                                 trigger_price: float) -> Dict[str, Any]:
+    def place_take_profit_order(
+        self, coin: str, position_side: str, qty: float, trigger_price: float
+    ) -> Dict[str, Any]:
         """挂止盈单（TAKE_PROFIT_MARKET, reduceOnly）
 
         Args:
@@ -452,7 +486,9 @@ class AsterExecutor:
             {"ok": bool, "order_id": int, ...}
         """
         if self.config.dry_run:
-            logger.info(f"[AsterExecutor] [DRY_RUN] 止盈单 {coin} pos={position_side} qty={qty} @ {trigger_price}")
+            logger.info(
+                f"[AsterExecutor] [DRY_RUN] 止盈单 {coin} pos={position_side} qty={qty} @ {trigger_price}"
+            )
             return {"ok": True, "dry_run": True, "coin": coin, "trigger_price": trigger_price}
 
         close_side = "sell" if position_side.lower() == "long" else "buy"
@@ -475,7 +511,9 @@ class AsterExecutor:
                     order_id = resp.get("orderId")
             except Exception:
                 pass
-            logger.info(f"[AsterExecutor] 止盈单成功 {coin} {close_side} qty={qty} @ {trigger_price} orderId={order_id}")
+            logger.info(
+                f"[AsterExecutor] 止盈单成功 {coin} {close_side} qty={qty} @ {trigger_price} orderId={order_id}"
+            )
             return {"ok": True, "order_id": order_id, "coin": coin, **result}
         except Exception as e:
             logger.error(f"[AsterExecutor] 止盈单失败: {e}")
@@ -580,7 +618,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Aster 执行器测试")
-    parser.add_argument("action", choices=["balance", "positions", "open", "close"], help="操作类型")
+    parser.add_argument(
+        "action", choices=["balance", "positions", "open", "close"], help="操作类型"
+    )
     parser.add_argument("--coin", default="BTC", help="币种")
     parser.add_argument("--side", default="long", help="方向")
     parser.add_argument("--notional", type=float, default=5.0, help="名义价值（USDT）")
@@ -623,4 +663,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"错误: {e}")
         import traceback
+
         traceback.print_exc()

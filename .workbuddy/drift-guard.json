@@ -28,7 +28,13 @@
     },
     "trading": {
       "paths": [
-        "6-TRADING/**"
+        "6-TRADING/**",
+        "49-交易框架协议/**",
+        "42-神经网络交易协调层/**",
+        "43-战略承接推演层/**",
+        "40-周期神经网络系统/**",
+        "50-NN主矛盾评估器/**",
+        "51-OKX CLI 系统/**"
       ]
     },
     "frontend_gateway": {
@@ -37,10 +43,14 @@
       ]
     },
     "knowledge": {
-      "paths": ["2-KNOWLEDGE/**"]
+      "paths": [
+        "2-KNOWLEDGE/**"
+      ]
     },
     "chain_development": {
-      "paths": ["3-CHAIN-DEVELOPMENT/**"]
+      "paths": [
+        "3-CHAIN-DEVELOPMENT/**"
+      ]
     },
     "ci": {
       "paths": [
@@ -96,6 +106,17 @@
         "generate_fundamental_sample_data.py",
         "test_fundamental_endpoints.py"
       ]
+    },
+    "collab": {
+      "paths": [
+        "44-三端协作架构系统/**"
+      ]
+    },
+    "evolution": {
+      "paths": [
+        "23-四层闭环自进化交易架构/**",
+        "48-涌现架构/**"
+      ]
     }
   },
   "change_classes": {
@@ -109,7 +130,9 @@
         "governance",
         "intent_recognition",
         "runtime_data",
-        "fundamental_analysis"
+        "fundamental_analysis",
+        "collab",
+        "evolution"
       ]
     },
     "integration": {
@@ -122,17 +145,20 @@
         "chain_development",
         "intent_recognition",
         "runtime_data",
-        "fundamental_analysis"
+        "fundamental_analysis",
+        "collab",
+        "evolution"
       ]
     },
     "infra": {
       "allowed_modules": [
-        "ci"
+        "ci",
+        "collab",
+        "evolution"
       ]
     }
   },
   "required_docs": [
-    "1-ARCHITECTURE/中台设计/PRODUCT_HUB.md",
-    "docs/superpowers/plans/2026-05-17-agent-standard-dev-lifecycle-implementation-plan.md"
+    "1-ARCHITECTURE/中台设计/PRODUCT_HUB.md"
   ]
 }

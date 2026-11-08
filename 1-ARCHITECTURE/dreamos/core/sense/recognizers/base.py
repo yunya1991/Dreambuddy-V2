@@ -12,20 +12,19 @@ DreamOS S层 — 识别器基类
     3. DynamicRecognizer      动态意图（可扩展）
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 
-from ..types import IntentInput, RecognizerResult, IntentType, get_intent_definition
-from dreamos.shared.utils import Timer
+
+from ..types import IntentInput, IntentType, RecognizerResult, get_intent_definition
 
 
 class BaseRecognizer(ABC):
     """识别器基类"""
 
     name: str = "base"
-    level: str = "local"              # local / llm / hybrid
+    level: str = "local"  # local / llm / hybrid
     estimated_tokens: int = 0
 
     def __init__(self, **kwargs):
@@ -49,10 +48,11 @@ class BaseRecognizer(ABC):
 
     # ── 工具方法 ───────────────────────────────────
 
-    def _make_result(self, intent_type: str, confidence: float,
-                     rationale: str = "", **kwargs) -> RecognizerResult:
+    def _make_result(
+        self, intent_type: str, confidence: float, rationale: str = "", **kwargs
+    ) -> RecognizerResult:
         """便捷构造结果"""
-        definition = get_intent_definition(intent_type)
+        definition = get_intent_definition(intent_type)  # noqa: F841
         return RecognizerResult(
             recognizer=self.name,
             intent_type=intent_type,
@@ -67,5 +67,7 @@ class BaseRecognizer(ABC):
     def _uncertain(self, reason: str = "无法确定意图") -> RecognizerResult:
         """返回不确定结果"""
         return self._make_result(
-            IntentType.UNCERTAIN.value, 0.0, reason,
+            IntentType.UNCERTAIN.value,
+            0.0,
+            reason,
         )

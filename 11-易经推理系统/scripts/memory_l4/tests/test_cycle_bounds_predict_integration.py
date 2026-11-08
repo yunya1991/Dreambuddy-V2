@@ -5,6 +5,7 @@
 
 对应 Spec §3bis.5 predict() 内三轨编排 + §3bis.9 T_CB5。
 """
+
 from __future__ import annotations
 
 import sys
@@ -17,9 +18,9 @@ import pytest
 THIS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(THIS_DIR))
 
-from bcrm2 import morph_cycle_predictor as mcp
-from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame
-from bcrm2.morph_cycle_predictor import MorphCyclePredictor
+from bcrm2 import morph_cycle_predictor as mcp  # noqa: E402
+from bcrm2.morph_cycle_predictor import MorphCyclePredictor  # noqa: E402
+from bcrm2.storage import EvolutionStorageSQLite, RegimeStateFrame  # noqa: E402
 
 
 # ================================================================
@@ -29,10 +30,12 @@ def _make_synthetic_frames(days: int, seed: int = 42) -> list:
     """构造 days 根日线的合成形态数据。"""
     rng = np.random.default_rng(seed)
     t = np.arange(days, dtype=float)
-    level_raw = (2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
-                 + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
-                 + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
-                 + rng.normal(0, 0.15, days))
+    level_raw = (
+        2.0 * np.sin(2 * np.pi * t / 120.0 + 0.5)
+        + 1.2 * np.sin(2 * np.pi * t / 60.0 - 0.8)
+        + 0.5 * np.sin(2 * np.pi * t / 30.0 + 0.3)
+        + rng.normal(0, 0.15, days)
+    )
     smooth = np.zeros(days)
     smooth[0] = level_raw[0]
     for i in range(1, days):
@@ -43,30 +46,33 @@ def _make_synthetic_frames(days: int, seed: int = 42) -> list:
     frames = []
     for i in range(days):
         from datetime import date, timedelta
+
         d = date(2026, 1, 1) + timedelta(days=i)
-        frames.append(RegimeStateFrame(
-            t=d.strftime("%Y-%m-%d"),
-            price=float(price_base[i]),
-            level_raw=float(level_raw[i]),
-            trend_raw=float(trend_smooth[i]),
-            level_smooth=float(smooth[i]),
-            trend_smooth=float(trend_smooth[i] * 5.0),
-            regime_probs={
-                "TREND_UP_STRONG": float(max(0, smooth[i]) / 8.0),
-                "TREND_BULL": float(max(0, smooth[i]) / 8.0),
-                "RANGE_BOUND": float(1.0 - abs(smooth[i]) / 4.0) * 0.5,
-                "RANGING": 0.1,
-                "MEAN_REVERTING": 0.05,
-                "TREND_BEAR": float(max(0, -smooth[i]) / 8.0),
-                "STRONG_TREND_BEAR": 0.0,
-                "VOLATILE_DROP": 0.0,
-            },
-            top3=[["TREND_BULL", 0.4], ["RANGE_BOUND", 0.3], ["MEAN_REVERTING", 0.2]],
-            consensus=0.7,
-            hmm_state=2 if smooth[i] > 0 else 0,
-            bocpd_cp_prob=0.01,
-            indicators={},
-        ))
+        frames.append(
+            RegimeStateFrame(
+                t=d.strftime("%Y-%m-%d"),
+                price=float(price_base[i]),
+                level_raw=float(level_raw[i]),
+                trend_raw=float(trend_smooth[i]),
+                level_smooth=float(smooth[i]),
+                trend_smooth=float(trend_smooth[i] * 5.0),
+                regime_probs={
+                    "TREND_UP_STRONG": float(max(0, smooth[i]) / 8.0),
+                    "TREND_BULL": float(max(0, smooth[i]) / 8.0),
+                    "RANGE_BOUND": float(1.0 - abs(smooth[i]) / 4.0) * 0.5,
+                    "RANGING": 0.1,
+                    "MEAN_REVERTING": 0.05,
+                    "TREND_BEAR": float(max(0, -smooth[i]) / 8.0),
+                    "STRONG_TREND_BEAR": 0.0,
+                    "VOLATILE_DROP": 0.0,
+                },
+                top3=[["TREND_BULL", 0.4], ["RANGE_BOUND", 0.3], ["MEAN_REVERTING", 0.2]],
+                consensus=0.7,
+                hmm_state=2 if smooth[i] > 0 else 0,
+                bocpd_cp_prob=0.01,
+                indicators={},
+            )
+        )
     return frames
 
 
@@ -84,6 +90,7 @@ def tmp_storage(tmp_path) -> EvolutionStorageSQLite:
 # ================================================================
 # T_CB5: predict() 集成轨道三
 # ================================================================
+
 
 class TestPredictBoundsDisabled:
     """CYCLE_BOUNDS_ENABLED=False（默认）时，predict() 行为不变。"""
@@ -130,8 +137,15 @@ class TestPredictBoundsEnabled:
 
             cb = result.get("cycle_bounds")
             assert cb is not None, "cycle_bounds 不应为 None"
-            required = {"t_rel_current", "phase_hint", "level_lo", "level_hi",
-                        "level_mean", "amplitude_cap", "decay_strength"}
+            required = {
+                "t_rel_current",
+                "phase_hint",
+                "level_lo",
+                "level_hi",
+                "level_mean",
+                "amplitude_cap",
+                "decay_strength",
+            }
             assert set(cb.keys()) == required
         finally:
             mcp.CYCLE_BOUNDS_ENABLED = original

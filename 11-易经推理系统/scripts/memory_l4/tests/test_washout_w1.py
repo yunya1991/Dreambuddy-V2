@@ -26,6 +26,7 @@ TDD 流程：本文件先于生产代码编写，每一项测试保证 RED（先
   T10 / test_washout_detector_fail_open_on_exception
         — 异常 → unknown + 6 层堆栈日志
 """
+
 from __future__ import annotations
 
 import random
@@ -180,10 +181,7 @@ def test_washout_verdict_to_dict_from_dict_roundtrip_1000():
         label = rng.choice(labels)
         confidence = round(rng.uniform(0.0, 1.0), 6)
         trigger = rng.choice([True, False])
-        snap = {
-            f"f{i}": round(rng.uniform(-5.0, 5.0), 6)
-            for i in range(rng.randint(0, 12))
-        }
+        snap = {f"f{i}": round(rng.uniform(-5.0, 5.0), 6) for i in range(rng.randint(0, 12))}
         reason = f"reason_{rng.randint(0, 999)}"
         ts = f"2026-09-{rng.randint(1,30):02d}T{rng.randint(0,23):02d}:{rng.randint(0,59):02d}:00Z"
         v = WashoutVerdict(
@@ -211,9 +209,9 @@ def test_washout_verdict_to_dict_from_dict_roundtrip_1000():
 def test_washout_verdict_frozen_immutable():
     """WashoutVerdict 是 frozen dataclass，赋值应抛 FrozenInstanceError。"""
     v = WashoutVerdict.unknown()
-    with pytest.raises(Exception):  # dataclasses.FrozenInstanceError
+    with pytest.raises(Exception):  # dataclasses.FrozenInstanceError  # noqa: B017
         v.confidence = 0.5  # type: ignore[misc]
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         v.label = WashoutLabel.WASHOUT  # type: ignore[misc]
 
 

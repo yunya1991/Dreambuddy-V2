@@ -5,28 +5,31 @@ ClassicExitSystem 回测诊断脚本
 - 按币种/市态/ATR 分析离场效果
 - 用账户权益曲线重新计算真实回撤
 """
-import sys
+
 import os
+import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR in sys.path:
     sys.path.remove(SCRIPT_DIR)
 
-import json
-import math
-import logging
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field, asdict
-from copy import deepcopy
+import json  # noqa: E402
+import logging  # noqa: E402
+import math  # noqa: E402
+from dataclasses import asdict, dataclass, field  # noqa: E402
+from typing import Dict, List, Optional, Tuple  # noqa: E402
 
-import pandas as pd
-import numpy as np
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-from scripts.memory_l4.classic_exit_system import (
-    ClassicExitSystem, PositionState, ExitAction, ExitConfig, ExitPriority,
+from scripts.memory_l4.classic_exit_system import (  # noqa: E402
+    ClassicExitSystem,
+    ExitAction,
+    ExitConfig,
+    PositionState,
 )
 
 logging.basicConfig(level=logging.WARNING, format="%(message)s")
@@ -142,14 +145,19 @@ def compute_atr_pct(highs, lows, closes) -> float:
         return 0.02
     trs = []
     for i in range(1, len(highs)):
-        tr = max(highs[i] - lows[i], abs(highs[i] - closes[i-1]), abs(lows[i] - closes[i-1]))
+        tr = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
         trs.append(tr)
     atr = np.mean(trs[-14:]) if len(trs) >= 14 else np.mean(trs)
     return atr / closes[-1] if closes[-1] > 0 else 0.02
 
 
-def run_single_trade(system: ClassicExitSystem, symbol: str, row: pd.Series, klines: pd.DataFrame,
-                     verbose: bool = False) -> TradeResult:
+def run_single_trade(
+    system: ClassicExitSystem,
+    symbol: str,
+    row: pd.Series,
+    klines: pd.DataFrame,
+    verbose: bool = False,
+) -> TradeResult:
     direction = row["direction"]
     entry_price = float(row["entry_price"])
     entry_time = row["entry_time"]
@@ -159,9 +167,16 @@ def run_single_trade(system: ClassicExitSystem, symbol: str, row: pd.Series, kli
 
     kline_slice = klines[klines.index >= entry_time]
     if len(kline_slice) < 5:
-        return TradeResult(symbol=symbol, direction=direction, entry_price=entry_price,
-                           exit_price=entry_price, entry_time=entry_time, exit_time=entry_time,
-                           original_pnl_pct=original_pnl, original_exit_reason=original_exit_reason)
+        return TradeResult(
+            symbol=symbol,
+            direction=direction,
+            entry_price=entry_price,
+            exit_price=entry_price,
+            entry_time=entry_time,
+            exit_time=entry_time,
+            original_pnl_pct=original_pnl,
+            original_exit_reason=original_exit_reason,
+        )
 
     current_price = float(kline_slice.iloc[0]["close"])
     # 入场时 ATR
@@ -176,7 +191,11 @@ def run_single_trade(system: ClassicExitSystem, symbol: str, row: pd.Series, kli
         entry_price=entry_price,
         current_price=current_price,
         position_age_sec=0.0,
-        unrealized_pnl_pct=(current_price - entry_price) / entry_price if side == "long" else (entry_price - current_price) / entry_price,
+        unrealized_pnl_pct=(
+            (current_price - entry_price) / entry_price
+            if side == "long"
+            else (entry_price - current_price) / entry_price
+        ),
         leverage=LEVERAGE,
         atr_pct=atr_entry,
         mfe_pnl_pct=0.0,
@@ -206,16 +225,24 @@ def run_single_trade(system: ClassicExitSystem, symbol: str, row: pd.Series, kli
         pos.current_price = current_price
         pos.position_age_sec = age_sec
 
-        raw_pnl = (current_price - entry_price) / entry_price if side == "long" else (entry_price - current_price) / entry_price
+        raw_pnl = (
+            (current_price - entry_price) / entry_price
+            if side == "long"
+            else (entry_price - current_price) / entry_price
+        )
         pos.unrealized_pnl_pct = raw_pnl
-        if raw_pnl > mfe: mfe = raw_pnl
+        if raw_pnl > mfe:
+            mfe = raw_pnl
         pos.mfe_pnl_pct = mfe
         cur_dd = max(0.0, -raw_pnl)
-        if cur_dd > max_dd: max_dd = cur_dd
+        if cur_dd > max_dd:
+            max_dd = cur_dd
         pos.max_dd_pct = max_dd
 
-        recent = kline_slice.iloc[max(0, i - 14):i + 1]
-        atr_pct = compute_atr_pct(recent["high"].values, recent["low"].values, recent["close"].values)
+        recent = kline_slice.iloc[max(0, i - 14) : i + 1]
+        atr_pct = compute_atr_pct(
+            recent["high"].values, recent["low"].values, recent["close"].values
+        )
         pos.atr_pct = atr_pct
         atrs.append(atr_pct)
 
@@ -223,19 +250,25 @@ def run_single_trade(system: ClassicExitSystem, symbol: str, row: pd.Series, kli
         start_idx = max(0, i - 60)
         for j in range(start_idx, i + 1):
             b = kline_slice.iloc[j]
-            candles_window.append({
-                "t": int(kline_slice.index[j].timestamp()),
-                "o": float(b["open"]), "h": float(b["high"]),
-                "l": float(b["low"]), "c": float(b["close"]),
-                "v": float(b["volume"]),
-            })
+            candles_window.append(
+                {
+                    "t": int(kline_slice.index[j].timestamp()),
+                    "o": float(b["open"]),
+                    "h": float(b["high"]),
+                    "l": float(b["low"]),
+                    "c": float(b["close"]),
+                    "v": float(b["volume"]),
+                }
+            )
 
-        closes_21 = kline_slice["close"].iloc[max(0, i - 20):i + 1].values
+        closes_21 = kline_slice["close"].iloc[max(0, i - 20) : i + 1].values
         regime = infer_regime(closes_21, atr_pct)
         if i == 1:
             regime_at_entry = regime
 
-        decision = system.evaluate_full(pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp()))
+        decision = system.evaluate_full(
+            pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp())
+        )
         bars_held = i
 
         if decision.action == ExitAction.CLOSE:
@@ -271,17 +304,32 @@ def run_single_trade(system: ClassicExitSystem, symbol: str, row: pd.Series, kli
     pnl_raw -= fee_cost / LEVERAGE
 
     return TradeResult(
-        symbol=symbol, direction=direction, entry_price=entry_price, exit_price=exit_price,
-        entry_time=entry_time, exit_time=exit_time, pnl_pct=pnl_eff, pnl_raw_pct=pnl_raw,
-        hold_bars=bars_held, max_dd_pct_raw=max_dd, max_dd_pct_eff=max_dd * LEVERAGE,
-        mfe_pct_raw=mfe, exit_reason=exit_reason, original_pnl_pct=original_pnl,
-        original_exit_reason=original_exit_reason, leverage=LEVERAGE, reduce_count=reduce_count,
-        atr_pct_at_entry=atr_entry, avg_atr_pct=np.mean(atrs), regime=regime_at_entry,
+        symbol=symbol,
+        direction=direction,
+        entry_price=entry_price,
+        exit_price=exit_price,
+        entry_time=entry_time,
+        exit_time=exit_time,
+        pnl_pct=pnl_eff,
+        pnl_raw_pct=pnl_raw,
+        hold_bars=bars_held,
+        max_dd_pct_raw=max_dd,
+        max_dd_pct_eff=max_dd * LEVERAGE,
+        mfe_pct_raw=mfe,
+        exit_reason=exit_reason,
+        original_pnl_pct=original_pnl,
+        original_exit_reason=original_exit_reason,
+        leverage=LEVERAGE,
+        reduce_count=reduce_count,
+        atr_pct_at_entry=atr_entry,
+        avg_atr_pct=np.mean(atrs),
+        regime=regime_at_entry,
     )
 
 
-def compute_account_drawdown(results: List[TradeResult], initial_capital: float = 100.0,
-                             position_size_pct: float = 0.05) -> Tuple[float, pd.DataFrame]:
+def compute_account_drawdown(
+    results: List[TradeResult], initial_capital: float = 100.0, position_size_pct: float = 0.05
+) -> Tuple[float, pd.DataFrame]:
     """
     按账户权益曲线计算真实最大回撤。
     假设每笔交易占用固定仓位比例 position_size_pct，多币种并行持仓。
@@ -346,7 +394,7 @@ def compute_metrics(results: List[TradeResult]) -> BacktestMetrics:
 
     gross_profit = sum(r.pnl_pct for r in wins)
     gross_loss = abs(sum(r.pnl_pct for r in losses))
-    pf = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+    pf = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
     reason_dist = {}
     for r in results:
@@ -363,7 +411,11 @@ def compute_metrics(results: List[TradeResult]) -> BacktestMetrics:
                 "trades": len(rs),
                 "win_rate": sum(1 for p in sym_pnls if p > 0) / len(rs) * 100,
                 "total_return": sum(sym_pnls),
-                "sharpe": np.mean(sym_pnls) / np.std(sym_pnls) * math.sqrt(6048) if len(sym_pnls) > 1 and np.std(sym_pnls) > 0 else 0.0,
+                "sharpe": (
+                    np.mean(sym_pnls) / np.std(sym_pnls) * math.sqrt(6048)
+                    if len(sym_pnls) > 1 and np.std(sym_pnls) > 0
+                    else 0.0
+                ),
                 "avg_atr_pct": np.mean([r.atr_pct_at_entry for r in rs]) * 100,
                 "avg_hold_bars": np.mean([r.hold_bars for r in rs]),
                 "max_dd_raw": max(r.max_dd_pct_raw for r in rs) * 100,
@@ -435,36 +487,50 @@ def main():
     print(f"  平均持仓:      {metrics.avg_hold_bars:.1f} 根K线")
     print(f"\n  最大回撤（错误算法-累加pnl）: {metrics.max_drawdown_pct_wrong:.2f}%")
     print(f"  最大回撤（账户权益近似）:     {metrics.max_drawdown_pct_account:.2f}%")
-    print(f"\n  离场原因分布:")
+    print("\n  离场原因分布:")
     for reason, count in sorted(metrics.exit_reason_dist.items(), key=lambda x: -x[1]):
         print(f"    {reason:30s}: {count:3d} ({count/metrics.total_trades*100:.1f}%)")
 
     print(f"\n{'='*80}")
     print("  按币种分析")
     print(f"{'='*80}")
-    print(f"  {'币种':<6} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'夏普':>8} {'入场ATR%':>10} {'平均持仓h':>10} {'单笔最大回撤%':>14}")
+    print(
+        f"  {'币种':<6} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'夏普':>8} {'入场ATR%':>10} {'平均持仓h':>10} {'单笔最大回撤%':>14}"
+    )
     for sym, m in metrics.symbol_metrics.items():
-        print(f"  {sym:<6} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['sharpe']:>8.2f} {m['avg_atr_pct']:>10.2f} {m['avg_hold_bars']:>10.1f} {m['max_dd_raw']:>14.2f}")
+        print(
+            f"  {sym:<6} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['sharpe']:>8.2f} {m['avg_atr_pct']:>10.2f} {m['avg_hold_bars']:>10.1f} {m['max_dd_raw']:>14.2f}"
+        )
 
     print(f"\n{'='*80}")
     print("  按市态分析")
     print(f"{'='*80}")
-    print(f"  {'市态':<12} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'平均收益%':>10} {'平均持仓h':>10}")
+    print(
+        f"  {'市态':<12} {'交易数':>8} {'胜率%':>8} {'总收益%':>10} {'平均收益%':>10} {'平均持仓h':>10}"
+    )
     for reg, m in metrics.regime_metrics.items():
-        print(f"  {reg:<12} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['avg_return']:>+10.2f} {m['avg_hold_bars']:>10.1f}")
+        print(
+            f"  {reg:<12} {m['trades']:>8} {m['win_rate']:>8.1f} {m['total_return']:>+10.2f} {m['avg_return']:>+10.2f} {m['avg_hold_bars']:>10.1f}"
+        )
 
     # 诊断 L0 未触发原因：打印持仓超过 24 根 K 线但未因 L0_MAX_HOLD 离场的样本
-    long_hold_non_l0 = [r for r in all_results if r.hold_bars > 24 and "L0_MAX_HOLD" not in r.exit_reason]
+    long_hold_non_l0 = [
+        r for r in all_results if r.hold_bars > 24 and "L0_MAX_HOLD" not in r.exit_reason
+    ]
     print(f"\n{'='*80}")
     print(f"  诊断：持仓 >24 根 K 线但未触发 L0_MAX_HOLD 的交易数: {len(long_hold_non_l0)}")
-    print(f"  样本（前5笔）:")
+    print("  样本（前5笔）:")
     for r in long_hold_non_l0[:5]:
-        print(f"    {r.symbol} {r.entry_time} -> {r.exit_time}: {r.hold_bars}根K线, 原因={r.exit_reason}, 收益={r.pnl_pct:+.2f}%")
+        print(
+            f"    {r.symbol} {r.entry_time} -> {r.exit_time}: {r.hold_bars}根K线, 原因={r.exit_reason}, 收益={r.pnl_pct:+.2f}%"
+        )
 
     # 保存诊断结果
     output = {
         "timestamp": pd.Timestamp.now().isoformat(),
-        "config": {k: str(v) for k, v in asdict(config).items() if isinstance(v, (int, float, bool, str))},
+        "config": {
+            k: str(v) for k, v in asdict(config).items() if isinstance(v, (int, float, bool, str))
+        },
         "metrics": {
             "total_trades": metrics.total_trades,
             "win_rate": metrics.win_rate,

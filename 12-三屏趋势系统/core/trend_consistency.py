@@ -31,7 +31,7 @@ try:
         calc_trend_direction_static,
     )
 except ImportError:
-    from config import (
+    from config import (  # noqa: I001
         DAILY_WEIGHT,
         FUNDAMENTAL_FUND_WEIGHT,
         FUNDAMENTAL_SCREEN1_ENABLED,

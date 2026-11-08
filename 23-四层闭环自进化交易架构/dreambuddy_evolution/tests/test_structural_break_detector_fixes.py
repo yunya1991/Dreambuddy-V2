@@ -7,8 +7,8 @@ TDD-PRE-001/002: StructuralBreakDetector 前置修复测试
   - TDD-PRE-002: HMM 100% 收敛失败 (maxiter=100)
                  → maxiter=500
 """
+
 import numpy as np
-import pytest
 
 
 class TestCUSUMDependencyFix:
@@ -31,9 +31,9 @@ class TestCUSUMDependencyFix:
 
         assert result is not None, "相关性断裂数据不应返回 None"
         # 关键断言: 不再永远走 rolling_zscore fallback
-        assert result["method"] != "rolling_zscore", (
-            f"detect_correlation_break 应使用 welch_ttest，实际 fallback 到 {result['method']}"
-        )
+        assert (
+            result["method"] != "rolling_zscore"
+        ), f"detect_correlation_break 应使用 welch_ttest，实际 fallback 到 {result['method']}"
         assert result["method"] == "welch_ttest"
 
     def test_correlation_break_detected_on_true_break(self):
@@ -77,13 +77,16 @@ class TestHMMConvergenceFix:
     def test_hmm_maxiter_increased(self):
         """MarkovRegression fit 应使用 maxiter >= 500 以避免 100% 收敛失败."""
         import inspect
+
         from dreambuddy_evolution.core import structural_break_detector
 
-        source = inspect.getsource(structural_break_detector.StructuralBreakDetector.detect_volatility_regime)
-        # 关键断言: maxiter 应 >= 500
-        assert "maxiter=500" in source or "maxiter = 500" in source, (
-            "detect_volatility_regime 应使用 maxiter>=500 修复 HMM 收敛失败"
+        source = inspect.getsource(
+            structural_break_detector.StructuralBreakDetector.detect_volatility_regime
         )
+        # 关键断言: maxiter 应 >= 500
+        assert (
+            "maxiter=500" in source or "maxiter = 500" in source
+        ), "detect_volatility_regime 应使用 maxiter>=500 修复 HMM 收敛失败"
         # 不应再使用 maxiter=100
         assert "maxiter=100" not in source, "maxiter=100 导致 100% ConvergenceWarning，应移除"
 
@@ -94,10 +97,12 @@ class TestHMMConvergenceFix:
         detector = StructuralBreakDetector(min_samples=60)
         np.random.seed(42)
         # 构造低波→高波转换（真实 regime 切换）
-        returns = np.concatenate([
-            np.random.randn(100) * 0.005,
-            np.random.randn(100) * 0.03,
-        ])
+        returns = np.concatenate(
+            [
+                np.random.randn(100) * 0.005,
+                np.random.randn(100) * 0.03,
+            ]
+        )
 
         result = detector.detect_volatility_regime(returns)
         assert result is not None

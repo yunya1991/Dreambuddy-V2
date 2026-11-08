@@ -15,13 +15,11 @@ DreamOS A层 — 节点选择器
 
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from dreamos.shared.interfaces import Node
-from dreamos.shared.state import State
 from dreamos.registry.node_registry import NodeRegistry, get_default_registry
 
-from .types import ChainSpec, NodeMeta, STANDARD_CHAINS
+from .types import STANDARD_CHAINS, ChainSpec, NodeMeta
 
 
 class NodeSelector:
@@ -39,13 +37,15 @@ class NodeSelector:
     def __init__(self, registry: Optional[NodeRegistry] = None):
         self._registry = registry or get_default_registry()
 
-    def select(self,
-               chain: str = "A",
-               base_chain: Optional[List[str]] = None,
-               extend_nodes: Optional[List[str]] = None,
-               intent_confidence: float = 0.5,
-               include_optional: Optional[bool] = None,
-               scenario_id: Optional[str] = None) -> List[NodeMeta]:
+    def select(
+        self,
+        chain: str = "A",
+        base_chain: Optional[List[str]] = None,
+        extend_nodes: Optional[List[str]] = None,
+        intent_confidence: float = 0.5,
+        include_optional: Optional[bool] = None,
+        scenario_id: Optional[str] = None,
+    ) -> List[NodeMeta]:
         """选择节点
 
         Args:

@@ -9,16 +9,16 @@ LangChain ChatModel 接口：
     async def ainvoke(messages: list[BaseMessage]) -> AIMessage
         messages 支持 SystemMessage / HumanMessage
 """
+
 from __future__ import annotations
 
 from typing import Sequence
 
 import pytest
-
 from core.llm_adapter import LLMAdapter
 
-
 # ─── Mock LangChain ChatModel ───────────────────────────────────
+
 
 class MockChatModel:
     """模拟 LangChain ChatModel 的 ainvoke 接口。"""
@@ -45,6 +45,7 @@ class _FakeAIMessage:
 
 
 # ─── 基本接口测试 ────────────────────────────────────────────────
+
 
 class TestLLMAdapterBasic:
     """测试 LLMAdapter 基本接口。"""
@@ -83,6 +84,7 @@ class TestLLMAdapterBasic:
 
 # ─── max_tokens 传递测试 ────────────────────────────────────────
 
+
 class TestMaxTokensPassing:
     """测试 max_tokens 参数传递。"""
 
@@ -117,6 +119,7 @@ class TestMaxTokensPassing:
 
 # ─── 异常处理测试 ────────────────────────────────────────────────
 
+
 class TestErrorHandling:
     """测试 LLM 调用异常处理。"""
 
@@ -134,6 +137,7 @@ class TestErrorHandling:
 
 
 # ─── create_llm_adapter 工厂测试 ─────────────────────────────────
+
 
 class TestCreateLLMAdapter:
     """测试 create_llm_adapter 工厂函数（基于 config 创建）。"""

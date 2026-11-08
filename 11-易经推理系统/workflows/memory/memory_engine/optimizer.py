@@ -39,7 +39,9 @@ def update_bandit_scores(
         new_n = old_n + 1
         new_sum = old_sum + reward
         new_mean = new_sum / float(new_n)
-        item.update({"n": new_n, "reward_sum": round(new_sum, 6), "reward_mean": round(new_mean, 6)})
+        item.update(
+            {"n": new_n, "reward_sum": round(new_sum, 6), "reward_mean": round(new_mean, 6)}
+        )
         new_state[item_id] = item
         updates.append(
             {
@@ -55,7 +57,9 @@ def update_bandit_scores(
     return new_state, updates
 
 
-def score_with_ucb(item_id: str, state: Dict[str, Dict[str, Any]], total_steps: int, c: float = 1.0) -> float:
+def score_with_ucb(
+    item_id: str, state: Dict[str, Dict[str, Any]], total_steps: int, c: float = 1.0
+) -> float:
     item = (state or {}).get(str(item_id)) or {}
     n = max(0, int(item.get("n") or 0))
     mean = float(item.get("reward_mean") or 0.0)
@@ -64,7 +68,9 @@ def score_with_ucb(item_id: str, state: Dict[str, Dict[str, Any]], total_steps: 
     return max(0.0, mean + bonus)
 
 
-def write_bandit_audit_artifact(updates: List[Dict[str, Any]], context: Dict[str, Any], audit_dir: Path) -> str:
+def write_bandit_audit_artifact(
+    updates: List[Dict[str, Any]], context: Dict[str, Any], audit_dir: Path
+) -> str:
     audit_root = Path(audit_dir)
     audit_root.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().astimezone().isoformat(timespec="seconds")

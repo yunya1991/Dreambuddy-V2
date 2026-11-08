@@ -4,38 +4,40 @@ BCRM 回测门禁引擎。
 用 walk-forward 回测验证模型胜率，决定是否通过门禁。
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
 from collections import defaultdict
+from dataclasses import dataclass, field
 from itertools import product
+from typing import Any, Dict, List, Tuple
 
-from .engine import BCRMEngine
-from .walk_forward import (
-    run_bcrm_backtest, generate_synthetic_data,
-    WalkForwardResult,
-)
 from ._constants import (
-    is_zhishi_gua, is_qushi_gua,
-    get_gua_yin_yang,
-    QUALITATIVE_PNL_REVERSAL_THRESHOLD,
-    QUALITATIVE_LABEL_WINDOW,
-    QUALITATIVE_THRESHOLD_PERCENTILE,
-    QUALITATIVE_THRESHOLD_MIN,
-    QUALITATIVE_THRESHOLD_MAX,
-    QUALITATIVE_THRESHOLD_DEFAULT,
+    CONSISTENCY_WEIGHT_NEGATION,
     CONSISTENCY_WEIGHT_OPPOSITION,
     CONSISTENCY_WEIGHT_QUANTITATIVE,
-    CONSISTENCY_WEIGHT_NEGATION,
-    CONSISTENCY_THRESHOLD,
-    SPIRAL_FIRST_AFFIRMATION, SPIRAL_FIRST_NEGATION,
-    SPIRAL_SECOND_NEGATION, SPIRAL_UNKNOWN,
-    DIR_UP, DIR_DOWN, DIR_FLAT, DIR_TRANSITIONING,
+    QUALITATIVE_LABEL_WINDOW,
+    QUALITATIVE_PNL_REVERSAL_THRESHOLD,
+    QUALITATIVE_THRESHOLD_DEFAULT,
+    QUALITATIVE_THRESHOLD_MAX,
+    QUALITATIVE_THRESHOLD_MIN,
+    QUALITATIVE_THRESHOLD_PERCENTILE,
+    SPIRAL_FIRST_AFFIRMATION,
+    SPIRAL_FIRST_NEGATION,
+    SPIRAL_SECOND_NEGATION,
+    SPIRAL_UNKNOWN,
+    is_qushi_gua,
+    is_zhishi_gua,
+)
+from .engine import BCRMEngine
+from .walk_forward import (
+    WalkForwardResult,
+    generate_synthetic_data,
+    run_bcrm_backtest,
 )
 
 
 @dataclass
 class BacktestMetrics:
     """回测指标。"""
+
     total_bars: int = 0
     valid_predictions: int = 0
     fail_closed_count: int = 0
@@ -75,6 +77,7 @@ class BacktestMetrics:
 @dataclass
 class GateResult:
     """门禁结果。"""
+
     passed: bool
     overall_accuracy: float
     threshold: float
@@ -94,6 +97,7 @@ class GateResult:
 
     def to_json(self, indent: int = 2) -> str:
         import json
+
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent)
 
 
@@ -102,22 +106,26 @@ class BacktestGateEngine:
     BCRM 回测门禁引擎。
     """
 
-    def __init__(self,
-                 engine: BCRMEngine = None,
-                 memory_adapter=None,
-                 knowledge_base=None,
-                 accuracy_threshold: float = 0.55):
+    def __init__(
+        self,
+        engine: BCRMEngine = None,
+        memory_adapter=None,
+        knowledge_base=None,
+        accuracy_threshold: float = 0.55,
+    ):
         self.engine = engine or BCRMEngine()
         self.memory_adapter = memory_adapter
         self.knowledge_base = knowledge_base
         self.accuracy_threshold = accuracy_threshold
 
-    def run_backtest(self,
-                     data: List[Dict] = None,
-                     train_window_size: int = 50,
-                     test_window_size: int = 10,
-                     step_size: int = 10,
-                     use_walk_forward: bool = True) -> BacktestMetrics:
+    def run_backtest(
+        self,
+        data: List[Dict] = None,
+        train_window_size: int = 50,
+        test_window_size: int = 10,
+        step_size: int = 10,
+        use_walk_forward: bool = True,
+    ) -> BacktestMetrics:
         """运行回测。"""
         if data is None:
             data = generate_synthetic_data(num_bars=300, seed=42)
@@ -136,9 +144,7 @@ class BacktestGateEngine:
         else:
             return BacktestMetrics()
 
-    def _compute_metrics(self,
-                         wf_result: WalkForwardResult,
-                         data: List[Dict]) -> BacktestMetrics:
+    def _compute_metrics(self, wf_result: WalkForwardResult, data: List[Dict]) -> BacktestMetrics:
         """从 WalkForwardResult 计算详细指标。"""
         metrics = BacktestMetrics()
         metrics.total_bars = wf_result.total_bars
@@ -148,8 +154,7 @@ class BacktestGateEngine:
         metrics.fail_closed_count = wf_result.fail_closed_count
         metrics.avg_confidence = wf_result.avg_confidence
         metrics.win_rate = wf_result.direction_accuracy
-        metrics.valid_predictions = (
-            wf_result.correct_predictions + wf_result.wrong_predictions)
+        metrics.valid_predictions = wf_result.correct_predictions + wf_result.wrong_predictions
 
         gua_counts = defaultdict(lambda: {"total": 0, "correct": 0})
         regime_counts = defaultdict(lambda: {"total": 0, "correct": 0})
@@ -184,8 +189,7 @@ class BacktestGateEngine:
                 bcrm_output_dict = pred.get("bcrm_output", {})
                 actual_outcome = pred.get("actual_outcome", {})
                 if bcrm_output_dict and actual_outcome:
-                    consistency = compute_dialectical_consistency(
-                        bcrm_output_dict, actual_outcome)
+                    consistency = compute_dialectical_consistency(bcrm_output_dict, actual_outcome)
                     total_consistency += consistency
                     consistency_samples += 1
 
@@ -217,10 +221,9 @@ class BacktestGateEngine:
 
         return metrics
 
-    def check_gate(self,
-                   metrics: BacktestMetrics = None,
-                   data: List[Dict] = None,
-                   **backtest_kwargs) -> GateResult:
+    def check_gate(
+        self, metrics: BacktestMetrics = None, data: List[Dict] = None, **backtest_kwargs
+    ) -> GateResult:
         """门禁检查。"""
         if metrics is None:
             metrics = self.run_backtest(data=data, **backtest_kwargs)
@@ -228,14 +231,16 @@ class BacktestGateEngine:
         accuracy_pass = metrics.direction_accuracy >= self.accuracy_threshold
         regime_stable = self._check_regime_stability(metrics)
 
-        fail_rate = (metrics.fail_closed_count / metrics.total_bars
-                     if metrics.total_bars > 0 else 1.0)
+        fail_rate = (
+            metrics.fail_closed_count / metrics.total_bars if metrics.total_bars > 0 else 1.0
+        )
         fail_rate_pass = fail_rate < 0.3
 
         passed = accuracy_pass and regime_stable and fail_rate_pass
 
         report = self._generate_report(
-            metrics, passed, accuracy_pass, regime_stable, fail_rate_pass)
+            metrics, passed, accuracy_pass, regime_stable, fail_rate_pass
+        )
 
         return GateResult(
             passed=passed,
@@ -251,10 +256,7 @@ class BacktestGateEngine:
         if not metrics.regime_stats:
             return True
 
-        regimes_with_enough = {
-            k: v for k, v in metrics.regime_stats.items()
-            if v["total"] >= 5
-        }
+        regimes_with_enough = {k: v for k, v in metrics.regime_stats.items() if v["total"] >= 5}
 
         if len(regimes_with_enough) < 2:
             return True
@@ -262,12 +264,14 @@ class BacktestGateEngine:
         min_acc = min(v["accuracy"] for v in regimes_with_enough.values())
         return min_acc >= 0.5
 
-    def _generate_report(self,
-                         metrics: BacktestMetrics,
-                         passed: bool,
-                         accuracy_pass: bool,
-                         regime_stable: bool,
-                         fail_rate_pass: bool) -> str:
+    def _generate_report(
+        self,
+        metrics: BacktestMetrics,
+        passed: bool,
+        accuracy_pass: bool,
+        regime_stable: bool,
+        fail_rate_pass: bool,
+    ) -> str:
         """生成报告。"""
         lines = []
         lines.append("=" * 60)
@@ -298,21 +302,21 @@ class BacktestGateEngine:
 
         if metrics.gua_stats:
             lines.append("--- 分卦象统计 ---")
-            for gua, stats in sorted(metrics.gua_stats.items(),
-                                     key=lambda x: -x[1]["accuracy"]):
+            for gua, stats in sorted(metrics.gua_stats.items(), key=lambda x: -x[1]["accuracy"]):
                 lines.append(
-                    f"  {gua:6s}: 准确率={stats['accuracy']:.2%}, "
-                    f"样本数={stats['total']}")
+                    f"  {gua:6s}: 准确率={stats['accuracy']:.2%}, " f"样本数={stats['total']}"
+                )
             lines.append("")
 
         lines.append("=" * 60)
         return "\n".join(lines)
 
-    def run_parameter_sweep(self,
-                             data: List[Dict] = None,
-                             param_ranges: Dict[str, List] = None,
-                             metric_key: str = "direction_accuracy"
-                             ) -> List[Tuple[Dict, float]]:
+    def run_parameter_sweep(
+        self,
+        data: List[Dict] = None,
+        param_ranges: Dict[str, List] = None,
+        metric_key: str = "direction_accuracy",
+    ) -> List[Tuple[Dict, float]]:
         """参数扫描。"""
         if data is None:
             data = generate_synthetic_data(num_bars=300, seed=42)
@@ -327,7 +331,7 @@ class BacktestGateEngine:
         value_lists = [param_ranges[k] for k in keys]
 
         for combo in product(*value_lists):
-            params = dict(zip(keys, combo))
+            params = dict(zip(keys, combo))  # noqa: B905
 
             test_engine = BCRMEngine(**params)
             gate = BacktestGateEngine(engine=test_engine)
@@ -339,7 +343,9 @@ class BacktestGateEngine:
             )
 
             accuracy = metrics.direction_accuracy
-            coverage = metrics.valid_predictions / metrics.total_bars if metrics.total_bars > 0 else 0
+            coverage = (
+                metrics.valid_predictions / metrics.total_bars if metrics.total_bars > 0 else 0
+            )
 
             coverage_penalty = 0
             if coverage < 0.5:
@@ -363,8 +369,10 @@ def default_backtest_gate() -> BacktestGateEngine:
 # 质变阈值回测校准（双标签法 + 25 分位数）
 # ============================================================
 
-def label_qualitative_change(cases: List[Dict],
-                              window: int = QUALITATIVE_LABEL_WINDOW) -> List[Dict]:
+
+def label_qualitative_change(
+    cases: List[Dict], window: int = QUALITATIVE_LABEL_WINDOW
+) -> List[Dict]:
     """
     在 L4 历史 cases 上标注"质变已发生"的样本。
 
@@ -377,20 +385,16 @@ def label_qualitative_change(cases: List[Dict],
     labeled = []
     for i in range(len(cases) - window):
         case = cases[i]
-        future_cases = cases[i + 1: i + 1 + window]
+        future_cases = cases[i + 1 : i + 1 + window]
 
         # 主标签：蓄势 → 趋势
         pre_gua = case.get("bagua", "")
         post_guas = [c.get("bagua", "") for c in future_cases]
-        zhishi_to_qushi = (
-            is_zhishi_gua(pre_gua) and
-            any(is_qushi_gua(g) for g in post_guas if g)
-        )
+        zhishi_to_qushi = is_zhishi_gua(pre_gua) and any(is_qushi_gua(g) for g in post_guas if g)
 
         # 辅标签：PnL 反转
         pre_pnl = case.get("pnl", case.get("price_change", 0))
-        future_pnls = [c.get("pnl", c.get("price_change", 0))
-                       for c in future_cases]
+        future_pnls = [c.get("pnl", c.get("price_change", 0)) for c in future_cases]
         if future_pnls:
             max_reversal = max(abs(p - pre_pnl) for p in future_pnls)
             pnl_reversed = max_reversal > QUALITATIVE_PNL_REVERSAL_THRESHOLD
@@ -400,14 +404,16 @@ def label_qualitative_change(cases: List[Dict],
         # 真质变：主+辅同时满足
         is_real = zhishi_to_qushi and pnl_reversed
 
-        labeled.append({
-            **case,
-            "pre_gua": pre_gua,
-            "zhishi_to_qushi": zhishi_to_qushi,
-            "pnl_reversed": pnl_reversed,
-            "is_real_qualitative_change": is_real,
-            "accumulation_at_trigger": case.get("accumulation", 0.5),
-        })
+        labeled.append(
+            {
+                **case,
+                "pre_gua": pre_gua,
+                "zhishi_to_qushi": zhishi_to_qushi,
+                "pnl_reversed": pnl_reversed,
+                "is_real_qualitative_change": is_real,
+                "accumulation_at_trigger": case.get("accumulation", 0.5),
+            }
+        )
 
     return labeled
 
@@ -425,10 +431,10 @@ def calibrate_threshold(labeled_cases: List[Dict]) -> float:
       - 错过质变只是少赚，错判质变可能亏损
       - 25 分位数意味着 75% 的真质变会被触发，同时过滤 25% 的低累积度噪声
     """
-    real_changes = [c for c in labeled_cases
-                    if c.get("is_real_qualitative_change")]
-    accumulations = [c["accumulation_at_trigger"] for c in real_changes
-                     if "accumulation_at_trigger" in c]
+    real_changes = [c for c in labeled_cases if c.get("is_real_qualitative_change")]
+    accumulations = [
+        c["accumulation_at_trigger"] for c in real_changes if "accumulation_at_trigger" in c
+    ]
 
     if not accumulations:
         return QUALITATIVE_THRESHOLD_DEFAULT
@@ -443,15 +449,14 @@ def calibrate_threshold(labeled_cases: List[Dict]) -> float:
     threshold = accumulations[lower] * (1 - frac) + accumulations[upper] * frac
 
     # 边界约束：threshold 必须在 [0.5, 0.9] 之间
-    threshold = max(QUALITATIVE_THRESHOLD_MIN,
-                    min(QUALITATIVE_THRESHOLD_MAX, threshold))
+    threshold = max(QUALITATIVE_THRESHOLD_MIN, min(QUALITATIVE_THRESHOLD_MAX, threshold))
 
     return threshold
 
 
-def calibrate_engine_threshold(engine: BCRMEngine,
-                                cases: List[Dict] = None,
-                                data: List[Dict] = None) -> float:
+def calibrate_engine_threshold(
+    engine: BCRMEngine, cases: List[Dict] = None, data: List[Dict] = None
+) -> float:
     """
     便捷函数：从回测数据中校准引擎的质变阈值。
 
@@ -501,18 +506,19 @@ def _extract_cases_from_data(data: List[Dict]) -> List[Dict]:
         # PnL：与前一 bar 的价格变化
         pnl = 0.0
         if i > 0:
-            prev_price = data[i - 1].get("close",
-                                          data[i - 1].get("price", 0))
+            prev_price = data[i - 1].get("close", data[i - 1].get("price", 0))
             cur_price = bar.get("close", bar.get("price", 0))
             if prev_price > 0:
                 pnl = (cur_price - prev_price) / prev_price
 
-        cases.append({
-            "bagua": yijing_result.outer_gua,
-            "pnl": pnl,
-            "price_change": pnl,
-            "accumulation": bar.get("trend_strength", 0.5),
-        })
+        cases.append(
+            {
+                "bagua": yijing_result.outer_gua,
+                "pnl": pnl,
+                "price_change": pnl,
+                "accumulation": bar.get("trend_strength", 0.5),
+            }
+        )
 
     return cases
 
@@ -521,8 +527,8 @@ def _extract_cases_from_data(data: List[Dict]) -> List[Dict]:
 # 辩证一致性度量（三子维度加权）
 # ============================================================
 
-def compute_dialectical_consistency(bcrm_output: Dict,
-                                     actual_outcome: Dict) -> float:
+
+def compute_dialectical_consistency(bcrm_output: Dict, actual_outcome: Dict) -> float:
     """
     辩证一致性度量（参考 SIEV ΔDS）。
 
@@ -534,33 +540,30 @@ def compute_dialectical_consistency(bcrm_output: Dict,
     返回: 0.0 ~ 1.0，> 0.7 视为一致
     """
     # 1. 对立一致性
-    predicted_contradiction = bcrm_output.get(
-        "contradiction_state", {}).get("dominant_side", "EQUAL")
-    actual_contradiction = _infer_actual_contradiction(actual_outcome)
-    opposition_consistency = (
-        1.0 if predicted_contradiction == actual_contradiction else 0.5
+    predicted_contradiction = bcrm_output.get("contradiction_state", {}).get(
+        "dominant_side", "EQUAL"
     )
+    actual_contradiction = _infer_actual_contradiction(actual_outcome)
+    opposition_consistency = 1.0 if predicted_contradiction == actual_contradiction else 0.5
 
     # 2. 量变一致性
-    predicted_transformation = bcrm_output.get(
-        "transformation_trigger", {}).get("probability", "LOW")
-    actual_transformation = _detect_actual_transformation(actual_outcome)
-    quantitative_consistency = (
-        1.0 if predicted_transformation == actual_transformation else 0.3
+    predicted_transformation = bcrm_output.get("transformation_trigger", {}).get(
+        "probability", "LOW"
     )
+    actual_transformation = _detect_actual_transformation(actual_outcome)
+    quantitative_consistency = 1.0 if predicted_transformation == actual_transformation else 0.3
 
     # 3. 否定一致性
-    predicted_spiral = bcrm_output.get(
-        "spiral_position", {}).get("phase", "UNKNOWN")
+    predicted_spiral = bcrm_output.get("spiral_position", {}).get("phase", "UNKNOWN")
     actual_spiral = _detect_actual_spiral(actual_outcome)
-    negation_consistency = (
-        1.0 if predicted_spiral == actual_spiral else 0.3
-    )
+    negation_consistency = 1.0 if predicted_spiral == actual_spiral else 0.3
 
     # 加权
-    total = (opposition_consistency * CONSISTENCY_WEIGHT_OPPOSITION +
-             quantitative_consistency * CONSISTENCY_WEIGHT_QUANTITATIVE +
-             negation_consistency * CONSISTENCY_WEIGHT_NEGATION)
+    total = (
+        opposition_consistency * CONSISTENCY_WEIGHT_OPPOSITION
+        + quantitative_consistency * CONSISTENCY_WEIGHT_QUANTITATIVE
+        + negation_consistency * CONSISTENCY_WEIGHT_NEGATION
+    )
 
     return round(total, 4)
 
@@ -587,7 +590,7 @@ def _detect_actual_transformation(actual_outcome: Dict) -> str:
 
 def _detect_actual_spiral(actual_outcome: Dict) -> str:
     """从实际结果检测螺旋阶段。"""
-    price_change = actual_outcome.get("price_change", 0)
+    price_change = actual_outcome.get("price_change", 0)  # noqa: F841
     direction_changed = actual_outcome.get("direction_changed", False)
     negation_count = actual_outcome.get("negation_count", 0)
 

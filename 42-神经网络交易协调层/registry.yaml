@@ -7,34 +7,57 @@ subsystems:
     publisher: adapters/strategic_extension_adapter.py
     publish: [strategic_extension]
     subscribe: [elastic_params, risk_budget]
+    horizon: days
     enabled: true
 
   - name: 40-cycle
     publisher: adapters/cycle_state_adapter.py
     publish: [cycle_state]
     subscribe: []
+    horizon: days
     enabled: true
 
+  # P1-06：23 声明订阅弹性参数（分发 stub 消费可观测）
   - name: 23-contradiction
     publisher: adapters/contradiction_state_adapter.py
     publish: [contradiction_arbitration]
-    subscribe: []
+    subscribe: [elastic_params]
+    horizon: hours
     enabled: true
 
   - name: 29-event
     publisher: adapters/event_driven_adapter.py
     publish: [event_driven]
     subscribe: []
+    horizon: hours
     enabled: true
 
   - name: 11-bcrm
     publisher: adapters/bcrm_state_adapter.py
     publish: [bcrm_strategy_state]
     subscribe: []
+    horizon: days
     enabled: true
 
-  - name: bdsm
+  # P1-05：canonical source 更名 bdsm → 11-bdsm；旧别名信号经 SOURCE_ALIAS_MODE=1 双写兼容
+  - name: 11-bdsm
     publisher: adapters/bdsm_state_adapter.py
     publish: [bdsm_value_constraint]
     subscribe: []
+    horizon: days
+    enabled: true
+
+  # P1-04/DEC-08：11 子池状态文件只读适配器（开关 ENABLE_11_STATE_ADAPTER=1）
+  - name: 11-washout
+    publisher: adapters/washout_state_adapter.py
+    publish: [washout_entry_signal]
+    subscribe: []
+    horizon: hours
+    enabled: true
+
+  - name: 11-event-arbitrage
+    publisher: adapters/event_arbitrage_state_adapter.py
+    publish: [event_arbitrage_signal]
+    subscribe: []
+    horizon: hours
     enabled: true

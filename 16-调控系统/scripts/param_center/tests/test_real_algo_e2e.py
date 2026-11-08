@@ -12,6 +12,7 @@
 运行:
   python -m pytest 16-调控系统/scripts/param_center/tests/test_real_algo_e2e.py -v
 """
+
 from __future__ import annotations
 
 import csv
@@ -35,25 +36,23 @@ for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER, _EVO_ROOT]:
     if sp not in sys.path:
         sys.path.insert(0, sp)
 
-from param_center.aggregator import (  # noqa: E402
-    StatAggregator,
-    AlgoObservation,
-    ParamProposal,
-    SL_FLOOR,
-    TP_FLOOR,
-    RR_FLOOR,
-    trigger_recompute,
-)
 from param_center.adapters import (  # noqa: E402
-    HmmAdapter,
     BaguaAdapter,
+    CusumAdapter,
+    HmmAdapter,
     HurstAdapter,
     PmapperAdapter,
-    ShadowAdapter,
-    CusumAdapter,
     get_all_adapters,
 )
-
+from param_center.aggregator import (  # noqa: E402
+    RR_FLOOR,
+    SL_FLOOR,
+    TP_FLOOR,
+    AlgoObservation,
+    ParamProposal,
+    StatAggregator,
+    trigger_recompute,
+)
 
 # ============================================================================
 # 真实 K线数据 fixture
@@ -223,14 +222,15 @@ class TestTriggerRecomputeReal:
         assert isinstance(proposal, ParamProposal)
 
         # 硬约束兜底自检
-        assert proposal.params["sl_floor"] >= SL_FLOOR, \
-            f"SL {proposal.params['sl_floor']} < 下限 {SL_FLOOR}"
-        assert proposal.params["tp_floor"] >= TP_FLOOR, \
-            f"TP {proposal.params['tp_floor']} < 下限 {TP_FLOOR}"
+        assert (
+            proposal.params["sl_floor"] >= SL_FLOOR
+        ), f"SL {proposal.params['sl_floor']} < 下限 {SL_FLOOR}"
+        assert (
+            proposal.params["tp_floor"] >= TP_FLOOR
+        ), f"TP {proposal.params['tp_floor']} < 下限 {TP_FLOOR}"
         # RR 比 ≥ 2:1
         rr = proposal.params["tp_floor"] / proposal.params["sl_floor"]
-        assert rr >= RR_FLOOR, \
-            f"RR {rr:.2f} < 下限 {RR_FLOOR}"
+        assert rr >= RR_FLOOR, f"RR {rr:.2f} < 下限 {RR_FLOOR}"
         # atr_mult 合理范围
         assert 2.0 <= proposal.params["atr_mult"] <= 8.0
 
@@ -250,7 +250,7 @@ class TestTriggerRecomputeReal:
         )
 
         assert len(results) == 2
-        for sym, proposal in results.items():
+        for sym, proposal in results.items():  # noqa: B007
             assert isinstance(proposal, ParamProposal)
             assert proposal.params["sl_floor"] >= SL_FLOOR
             assert proposal.params["tp_floor"] >= TP_FLOOR
@@ -260,6 +260,7 @@ class TestTriggerRecomputeReal:
     def test_trigger_recompute_logs_weights(self, btc_market_data, caplog):
         """trigger_recompute 应在日志中输出权重分布"""
         import logging
+
         symbols = ["BTC"]
         market_data_map = {"BTC": btc_market_data}
 
@@ -275,7 +276,7 @@ class TestTriggerRecomputeReal:
         assert "trigger_recompute" in log_text
         assert "BTC" in log_text
         # 至少 1 个适配器产出观察
-        btc_proposal = results["BTC"]
+        btc_proposal = results["BTC"]  # noqa: F841
         # 即使 ShadowAdapter 返回 None（无影子数据），其他适配器应产出观察
         # weights 应非空（至少 1 个适配器贡献了权重）
         # 注：confidence 可能为 0（全 None 时），但其他应正常

@@ -6,9 +6,9 @@
 
 FAIL-OPEN：所有异常被捕获，失败时返回空列表。
 """
+
 from __future__ import annotations
 
-import json
 import logging
 import re
 from datetime import datetime, timezone
@@ -86,17 +86,13 @@ def _fetch_fedwatch_from_cme() -> dict:
     try:
         from cme_fedwatch import get_probabilities
     except ImportError:
-        logger.warning(
-            "[FedWatch] cme-fedwatch 包未安装，降级到 investing.com 爬虫"
-        )
+        logger.warning("[FedWatch] cme-fedwatch 包未安装，降级到 investing.com 爬虫")
         return _fetch_fedwatch_from_investing()
 
     try:
         data = get_probabilities("next")
     except Exception as e:
-        logger.warning(
-            "[FedWatch] cme-fedwatch 调用失败，FAIL-OPEN 降级: %s", e
-        )
+        logger.warning("[FedWatch] cme-fedwatch 调用失败，FAIL-OPEN 降级: %s", e)
         return _fetch_fedwatch_from_investing()
 
     if not data or not data.get("meetings"):
@@ -116,9 +112,7 @@ def _fetch_fedwatch_from_cme() -> dict:
     m = re.search(r"([\d.]+)", str(current_target))
     current_lower = float(m.group(1)) if m else 4.00
 
-    hike_prob, cut_prob, hold_prob = _classify_probabilities(
-        probabilities, current_lower
-    )
+    hike_prob, cut_prob, hold_prob = _classify_probabilities(probabilities, current_lower)
 
     if hike_prob == 0 and cut_prob == 0 and hold_prob == 0:
         logger.warning("[FedWatch] cme-fedwatch 概率全为 0")
@@ -142,8 +136,8 @@ def _get_current_fed_funds_rate() -> float:
     读取失败时返回 0.0，调用方需自行兜底。
     """
     try:
-        from pathlib import Path
         import sqlite3
+        from pathlib import Path
 
         _repo = Path(__file__).resolve().parents[4]
         _dal = str(_repo / "19-数据访问层" / "data" / "dreambuddy_core.db")
@@ -227,9 +221,7 @@ def _fetch_fedwatch_from_investing() -> dict:
         for rate_range, prob in rate_ranges:
             probabilities[rate_range] = prob * 100.0  # _classify_probabilities 期望百分比值
 
-        hike_prob, cut_prob, hold_prob = _classify_probabilities(
-            probabilities, current_lower
-        )
+        hike_prob, cut_prob, hold_prob = _classify_probabilities(probabilities, current_lower)
 
         if hike_prob == 0 and cut_prob == 0 and hold_prob == 0:
             logger.warning("[FedWatch] 概率全为 0")
@@ -322,7 +314,9 @@ def _fetch_fomc_decision() -> dict:
             return {}
 
         # 提取利率区间
-        rate_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:to|[-–])\s*(\d+(?:\.\d+)?)\s*(?:percent|%)", text)
+        rate_match = re.search(
+            r"(\d+(?:\.\d+)?)\s*(?:to|[-–])\s*(\d+(?:\.\d+)?)\s*(?:percent|%)", text
+        )
         new_rate_range = rate_match.group(0) if rate_match else ""
         if rate_match:
             low = float(rate_match.group(1))
@@ -335,7 +329,10 @@ def _fetch_fomc_decision() -> dict:
                 rate_change = -round(high - low, 2)
 
         # 提取会议日期
-        date_match = re.search(r"((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})|(\d{4}-\d{2}-\d{2})", text)
+        date_match = re.search(
+            r"((?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4})|(\d{4}-\d{2}-\d{2})",
+            text,
+        )
         meeting_date = date_match.group(0) if date_match else ""
 
         # 提取投票结果
@@ -505,8 +502,18 @@ class FedEventCollector(BaseCollector):
 # ----------------------------------------------------------------------
 
 _MONTH_MAP = {
-    "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
-    "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12,
+    "January": 1,
+    "February": 2,
+    "March": 3,
+    "April": 4,
+    "May": 5,
+    "June": 6,
+    "July": 7,
+    "August": 8,
+    "September": 9,
+    "October": 10,
+    "November": 11,
+    "December": 12,
 }
 
 

@@ -11,7 +11,7 @@
 符合 9.1/9.2/9.3 迭代规范
 """
 
-import json
+import json  # noqa: I001
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -21,100 +21,105 @@ from enum import Enum
 
 # 导入分析模块
 sys.path.insert(0, str(Path(__file__).parent))
-from traditional_finance_analyzer import TraditionalFinanceAnalyzer
+from traditional_finance_analyzer import TraditionalFinanceAnalyzer  # noqa: I001
 from event_mapping_policy import map_event_type, is_high_grade_event
 
 
 class EventType(Enum):
     """事件类型 - 9.1 规范"""
-    ONCHAIN_DATA = "onchain_data"           # 链上数据
-    KOL_VIEW = "kols_view"                  # 大 V 观点
-    PROJECT_UPDATE = "project_update"       # 项目动态
-    MONETARY_POLICY = "monetary_policy"     # 货币政策
-    US_DATA = "us_data"                     # 美国数据
-    GEOPOLITICS = "geopolitics"             # 地缘政治
-    CRYPTO_REGULATION = "crypto_regulation" # 加密监管
-    PROTOCOL_TECH = "protocol_tech"         # 协议技术
-    SECURITY_INCIDENT = "security_incident" # 黑客安全
-    MEME_CULTURE = "meme_culture"           # 文化与 meme
-    MARKET_ANALYSIS = "market_analysis"     # 市场分析
+
+    ONCHAIN_DATA = "onchain_data"  # 链上数据
+    KOL_VIEW = "kols_view"  # 大 V 观点
+    PROJECT_UPDATE = "project_update"  # 项目动态
+    MONETARY_POLICY = "monetary_policy"  # 货币政策
+    US_DATA = "us_data"  # 美国数据
+    GEOPOLITICS = "geopolitics"  # 地缘政治
+    CRYPTO_REGULATION = "crypto_regulation"  # 加密监管
+    PROTOCOL_TECH = "protocol_tech"  # 协议技术
+    SECURITY_INCIDENT = "security_incident"  # 黑客安全
+    MEME_CULTURE = "meme_culture"  # 文化与 meme
+    MARKET_ANALYSIS = "market_analysis"  # 市场分析
 
 
 class Window(Enum):
     """时间窗口 - 9.2 规范"""
-    T0 = "T0"       # 当日 (0-24h)
-    T1 = "T1"       # 数日 (1-7d)
-    T2 = "T2"       # 数周 (1-4w)
-    T3 = "T3"       # 数月 (1-6m)
+
+    T0 = "T0"  # 当日 (0-24h)
+    T1 = "T1"  # 数日 (1-7d)
+    T2 = "T2"  # 数周 (1-4w)
+    T3 = "T3"  # 数月 (1-6m)
 
 
 class SurpriseBucket(Enum):
     """意外程度分级 - 9.3 规范"""
-    EXPECTED = "expected"           # 符合预期
-    MILD_SURPRISE = "mild"          # 轻微意外
+
+    EXPECTED = "expected"  # 符合预期
+    MILD_SURPRISE = "mild"  # 轻微意外
     MODERATE_SURPRISE = "moderate"  # 中等意外
-    MAJOR_SURPRISE = "major"        # 重大意外
-    SHOCK = "shock"                 # 冲击性事件
+    MAJOR_SURPRISE = "major"  # 重大意外
+    SHOCK = "shock"  # 冲击性事件
 
 
 class RiskActionProposal(Enum):
     """风险行动建议 - 9.3 规范"""
-    HOLD = "hold"                   # 持有/观望
-    REDUCE = "reduce"               # 减仓
-    INCREASE = "increase"           # 加仓
-    HEDGE = "hedge"                 # 对冲
-    STOP_LOSS = "stop_loss"         # 止损
-    TAKE_PROFIT = "take_profit"     # 止盈
+
+    HOLD = "hold"  # 持有/观望
+    REDUCE = "reduce"  # 减仓
+    INCREASE = "increase"  # 加仓
+    HEDGE = "hedge"  # 对冲
+    STOP_LOSS = "stop_loss"  # 止损
+    TAKE_PROFIT = "take_profit"  # 止盈
 
 
 @dataclass
 class EventLedgerEntry:
     """事件账本条目 - V9.5 完整契约"""
+
     # 基础信息
-    event_id: str                           # 事件唯一标识
-    timestamp: str                          # ISO8601 时间戳
-    source: str                             # 数据来源
+    event_id: str  # 事件唯一标识
+    timestamp: str  # ISO8601 时间戳
+    source: str  # 数据来源
 
     # 9.1 规范：事件类型
-    event_type: str                         # EventType 枚举值
+    event_type: str  # EventType 枚举值
 
     # 9.2 规范：时间窗口
-    window: str                             # Window 枚举值
-    window_range: str                       # 文档口径：[-48h,+48h] 等
-    published_at: str                       # 发布时间
-    expiry_at: Optional[str]                # 失效时间
+    window: str  # Window 枚举值
+    window_range: str  # 文档口径：[-48h,+48h] 等
+    published_at: str  # 发布时间
+    expiry_at: Optional[str]  # 失效时间
 
     # 9.3 规范：意外程度
-    surprise_bucket: str                    # SurpriseBucket 枚举值
-    expectation_bucket: Optional[str]       # 文档口径：偏鹰/符合/偏鸽 或 利多/中性/利空
-    expected_value: Optional[float]         # 市场预期值
-    actual_value: Optional[float]           # 实际值
-    surprise_score: float                   # 意外分数 (-1 到 1)
+    surprise_bucket: str  # SurpriseBucket 枚举值
+    expectation_bucket: Optional[str]  # 文档口径：偏鹰/符合/偏鸽 或 利多/中性/利空
+    expected_value: Optional[float]  # 市场预期值
+    actual_value: Optional[float]  # 实际值
+    surprise_score: float  # 意外分数 (-1 到 1)
 
     # 9.3 规范：风险行动
-    risk_action_proposal: str               # RiskActionProposal 枚举值
-    confidence_level: float                 # 置信度 (0-1)
-    position_impact: float                  # 仓位影响 (-1 到 1)
+    risk_action_proposal: str  # RiskActionProposal 枚举值
+    confidence_level: float  # 置信度 (0-1)
+    position_impact: float  # 仓位影响 (-1 到 1)
 
     # 内容
-    title: str                              # 标题
-    summary: str                            # 摘要
-    content: str                            # 完整内容
-    source_url: str                         # 来源 URL
+    title: str  # 标题
+    summary: str  # 摘要
+    content: str  # 完整内容
+    source_url: str  # 来源 URL
 
     # 分析字段
-    sentiment_score: float                  # 情感分数 (-1 到 1)
-    credibility: str                        # 可信度 high/medium/low
-    cross_market_map: str                   # 跨市场映射
-    risk_flags: List[str]                   # 风险旗标
-    community_base_score: float             # 社区强度基线 [0,1]
-    decay_half_life_hours: int              # 衰减半衰期（小时）
-    decay_factor: float                     # 时效衰减因子 [0,1]
-    community_effective_score: float        # 社区有效强度 [0,1]
-    narrative_status: str                   # active|cooling|archive
+    sentiment_score: float  # 情感分数 (-1 到 1)
+    credibility: str  # 可信度 high/medium/low
+    cross_market_map: str  # 跨市场映射
+    risk_flags: List[str]  # 风险旗标
+    community_base_score: float  # 社区强度基线 [0,1]
+    decay_half_life_hours: int  # 衰减半衰期（小时）
+    decay_factor: float  # 时效衰减因子 [0,1]
+    community_effective_score: float  # 社区有效强度 [0,1]
+    narrative_status: str  # active|cooling|archive
 
     # 元数据
-    version: str                            # 契约版本
+    version: str  # 契约版本
     market_trend_state: str = ""
     market_trend_ma20: float = 0.0
     market_trend_volatility_20d: float = 0.0
@@ -135,12 +140,50 @@ class EventLedgerGenerator:
         self.event_counter = 0
         self.ledger_version = str(ledger_version or "9.5").strip() or "9.5"
         self._sentiment_pos_tokens = {
-            "上涨", "拉升", "突破", "创新高", "获批", "增持", "买入", "净流入", "流入", "利好", "adoption",
-            "approved", "inflow", "bullish", "surge", "partnership", "upgrade", "launch", "record high",
+            "上涨",
+            "拉升",
+            "突破",
+            "创新高",
+            "获批",
+            "增持",
+            "买入",
+            "净流入",
+            "流入",
+            "利好",
+            "adoption",
+            "approved",
+            "inflow",
+            "bullish",
+            "surge",
+            "partnership",
+            "upgrade",
+            "launch",
+            "record high",
         }
         self._sentiment_neg_tokens = {
-            "下跌", "暴跌", "回撤", "清算", "爆仓", "被盗", "黑客", "攻击", "漏洞", "监管调查", "处罚", "禁令", "流出",
-            "净流出", "利空", "bearish", "hack", "exploit", "outflow", "sell-off", "lawsuit", "ban", "liquidation",
+            "下跌",
+            "暴跌",
+            "回撤",
+            "清算",
+            "爆仓",
+            "被盗",
+            "黑客",
+            "攻击",
+            "漏洞",
+            "监管调查",
+            "处罚",
+            "禁令",
+            "流出",
+            "净流出",
+            "利空",
+            "bearish",
+            "hack",
+            "exploit",
+            "outflow",
+            "sell-off",
+            "lawsuit",
+            "ban",
+            "liquidation",
         }
         self._top_kol = {
             "vitalikbuterin": {"tier": "T0", "weight": 1.5},
@@ -198,13 +241,15 @@ class EventLedgerGenerator:
                 return max(-1.0, min(1.0, float(raw)))
         except Exception:
             pass
-        text = " ".join([
-            str(news_item.get("title") or ""),
-            str(news_item.get("summary") or news_item.get("key_fact") or ""),
-            str(news_item.get("content") or ""),
-            str(news_item.get("risk_action_proposal") or ""),
-            str(news_item.get("event_type") or news_item.get("category") or ""),
-        ]).lower()
+        text = " ".join(
+            [
+                str(news_item.get("title") or ""),
+                str(news_item.get("summary") or news_item.get("key_fact") or ""),
+                str(news_item.get("content") or ""),
+                str(news_item.get("risk_action_proposal") or ""),
+                str(news_item.get("event_type") or news_item.get("category") or ""),
+            ]
+        ).lower()
         if not text.strip():
             return 0.0
         pos = 0
@@ -293,7 +338,11 @@ class EventLedgerGenerator:
             if surprise < 0:
                 return "偏鸽"
             return "符合"
-        if event_type in {EventType.GEOPOLITICS.value, EventType.CRYPTO_REGULATION.value, EventType.MARKET_ANALYSIS.value}:
+        if event_type in {
+            EventType.GEOPOLITICS.value,
+            EventType.CRYPTO_REGULATION.value,
+            EventType.MARKET_ANALYSIS.value,
+        }:
             if surprise > 0:
                 return "利多"
             if surprise < 0:
@@ -328,8 +377,14 @@ class EventLedgerGenerator:
 
         return bucket, surprise_score
 
-    def propose_risk_action(self, sentiment_score: float, confidence: str,
-                            surprise_bucket: str, event_type: str, window_range: str) -> str:
+    def propose_risk_action(
+        self,
+        sentiment_score: float,
+        confidence: str,
+        surprise_bucket: str,
+        event_type: str,
+        window_range: str,
+    ) -> str:
         """
         提出风险行动建议 - 9.3 规范
         """
@@ -388,7 +443,9 @@ class EventLedgerGenerator:
 
         # 9.3: 风险行动
         confidence = news_item.get("source_confidence", "medium")
-        risk_action = self.propose_risk_action(sentiment, confidence, surprise_bucket, event_type, window_range)
+        risk_action = self.propose_risk_action(
+            sentiment, confidence, surprise_bucket, event_type, window_range
+        )
         if not bool(news_item.get("dynamic_window_gate_open", True)):
             risk_action = RiskActionProposal.HOLD.value
 
@@ -430,13 +487,18 @@ class EventLedgerGenerator:
         except Exception:
             community_base_score = 0.0
         community_base_score = max(0.0, min(1.0, community_base_score))
-        if self.ledger_version in {"9.7", "9.7_direct", "v97_direct"} and event_type == EventType.KOL_VIEW.value:
+        if (
+            self.ledger_version in {"9.7", "9.7_direct", "v97_direct"}
+            and event_type == EventType.KOL_VIEW.value
+        ):
             if kol_tier:
                 community_base_score = max(community_base_score, 0.18)
             else:
                 community_base_score = min(community_base_score, 0.12)
         try:
-            decay_half_life_hours = int(news_item.get("decay_half_life_hours", default_half_life) or default_half_life)
+            decay_half_life_hours = int(
+                news_item.get("decay_half_life_hours", default_half_life) or default_half_life
+            )
         except Exception:
             decay_half_life_hours = default_half_life
         decay_half_life_hours = max(1, decay_half_life_hours)
@@ -446,7 +508,9 @@ class EventLedgerGenerator:
             decay_factor = 1.0
         decay_factor = max(0.0, min(1.0, decay_factor))
         try:
-            community_effective_score = float(news_item.get("community_effective_score", 0.0) or 0.0)
+            community_effective_score = float(
+                news_item.get("community_effective_score", 0.0) or 0.0
+            )
         except Exception:
             community_effective_score = 0.0
         if community_effective_score <= 0.0:
@@ -519,7 +583,14 @@ class EventLedgerGenerator:
         """生成完整事件账本"""
         self.event_counter = 0
         entries = []
-        if self.ledger_version in {"9.7", "9.7_direct", "v97_direct", "9.8", "9.8_onchain", "v98_onchain"}:
+        if self.ledger_version in {
+            "9.7",
+            "9.7_direct",
+            "v97_direct",
+            "9.8",
+            "9.8_onchain",
+            "v98_onchain",
+        }:
             selected: list[dict] = []
             per_day_kol: dict[str, dict] = {}
             for item in news_list:
@@ -528,7 +599,11 @@ class EventLedgerGenerator:
                 if not self._is_kol_event(item):
                     selected.append(item)
                     continue
-                if self.ledger_version in {"9.8", "9.8_onchain", "v98_onchain"} and not self._is_onchain_kol(item):
+                if self.ledger_version in {
+                    "9.8",
+                    "9.8_onchain",
+                    "v98_onchain",
+                } and not self._is_onchain_kol(item):
                     continue
                 pub = str(item.get("published_at") or item.get("fetched_at") or "").strip()
                 day_key = pub[:10] if len(pub) >= 10 else ""
@@ -544,7 +619,9 @@ class EventLedgerGenerator:
                 except Exception:
                     sentiment = 0.0
                 try:
-                    conf = {"high": 0.9, "medium": 0.6, "low": 0.3}.get(str(item.get("source_confidence") or "medium"), 0.6)
+                    conf = {"high": 0.9, "medium": 0.6, "low": 0.3}.get(
+                        str(item.get("source_confidence") or "medium"), 0.6
+                    )
                 except Exception:
                     conf = 0.6
                 score = abs(sentiment) * conf * weight
@@ -557,7 +634,11 @@ class EventLedgerGenerator:
                 it = row.get("item")
                 if isinstance(it, dict):
                     selected.append(it)
-            selected.sort(key=lambda x: str((x or {}).get("published_at") or (x or {}).get("fetched_at") or ""))
+            selected.sort(
+                key=lambda x: str(
+                    (x or {}).get("published_at") or (x or {}).get("fetched_at") or ""
+                )
+            )
             news_list = selected
 
         for news in news_list:
@@ -578,7 +659,7 @@ class EventLedgerGenerator:
         """保存 JSONL 文件"""
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(self.to_jsonl(entries))
 
         print(f"[✓] 事件账本已保存：{output_path}")
@@ -600,7 +681,7 @@ def generate_mock_news_for_ledger(hours: int = 24) -> List[Dict]:
             "impact_horizon": "T0",
             "sentiment_score": 0.8,
             "cross_market_map": "ETF 流入→BTC 需求↑→价格上涨",
-            "risk_flags": []
+            "risk_flags": [],
         },
         {
             "title": "美联储 12 月会议纪要：官员们对通胀进展感到担忧",
@@ -613,7 +694,7 @@ def generate_mock_news_for_ledger(hours: int = 24) -> List[Dict]:
             "impact_horizon": "T0",
             "sentiment_score": -0.7,
             "cross_market_map": "鹰派纪要→美债收益率↑→风险资产承压",
-            "risk_flags": []
+            "risk_flags": [],
         },
         {
             "title": "某分析师称山寨季将在 2 周内到来",
@@ -626,7 +707,7 @@ def generate_mock_news_for_ledger(hours: int = 24) -> List[Dict]:
             "impact_horizon": "T2",
             "sentiment_score": 0.3,
             "cross_market_map": "山寨季预期→资金从 BTC 流出→小市值币种波动加大",
-            "risk_flags": ["单源爆料", "无数据支撑"]
+            "risk_flags": ["单源爆料", "无数据支撑"],
         },
         {
             "title": "中东局势升级：伊朗威胁封锁霍尔木兹海峡",
@@ -639,7 +720,7 @@ def generate_mock_news_for_ledger(hours: int = 24) -> List[Dict]:
             "impact_horizon": "T1",
             "sentiment_score": -0.5,
             "cross_market_map": "地缘风险→原油↑→通胀预期↑→VIX↑",
-            "risk_flags": ["标题与正文不一致"]
+            "risk_flags": ["标题与正文不一致"],
         },
         {
             "title": "以太坊链上稳定币结算量首次超越比特币",
@@ -652,21 +733,21 @@ def generate_mock_news_for_ledger(hours: int = 24) -> List[Dict]:
             "impact_horizon": "T1",
             "sentiment_score": 0.5,
             "cross_market_map": "以太坊生态活跃→ETH/BTC 走强",
-            "risk_flags": []
-        }
+            "risk_flags": [],
+        },
     ]
 
-    return news[:max(1, int(len(news) * hours / 24))]
+    return news[: max(1, int(len(news) * hours / 24))]
 
 
 def main():
     """主函数 - 生成事件账本 JSONL"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='生成事件账本 JSONL (V9.3)')
-    parser.add_argument('--hours', '-H', type=int, default=24, help='时间窗口 (小时)')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出文件名')
-    parser.add_argument('--demo', action='store_true', help='使用演示数据')
+    parser = argparse.ArgumentParser(description="生成事件账本 JSONL (V9.3)")
+    parser.add_argument("--hours", "-H", type=int, default=24, help="时间窗口 (小时)")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件名")
+    parser.add_argument("--demo", action="store_true", help="使用演示数据")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -703,7 +784,7 @@ def main():
     generator.save_jsonl(entries, output_path)
 
     # 打印摘要
-    print(f"\n【事件账本摘要】")
+    print("\n【事件账本摘要】")
 
     # 按事件类型统计
     by_type = {}
@@ -747,7 +828,7 @@ def main():
 
     # 打印示例条目
     if entries:
-        print(f"\n【示例条目】")
+        print("\n【示例条目】")
         sample = asdict(entries[0])
         print(json.dumps(sample, indent=2, ensure_ascii=False)[:1000] + "...")
 

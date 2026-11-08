@@ -5,6 +5,7 @@ dreambuddy_dal.protocols.cognitive_repo — 认知系统只读 Repository Protoc
 只读方法：recall / stats / health
 写入（record/verify）走后端工作流，不在此 Protocol 暴露。
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

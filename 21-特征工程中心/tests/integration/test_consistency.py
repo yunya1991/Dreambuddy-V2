@@ -5,15 +5,14 @@
   - fh 信号 = 同一价格信号 + 验证 FeatureHub 特征输出正常
   - 信号方向一致率 ≥ 95%；权益曲线 Pearson ≥ 0.97
 """
+
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _21_ROOT = _PROJECT_ROOT / "21-特征工程中心"
@@ -36,13 +35,16 @@ def _make_samples(n: int = N_SAMPLES, length: int = SAMPLE_LEN) -> list:
     for i in range(n):
         rng = np.random.default_rng(seed=42 + i)
         close = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, length)))
-        df = pd.DataFrame({
-            "open": close * (1 + rng.normal(0, 0.004, length)),
-            "high": close * (1 + np.abs(rng.normal(0, 0.01, length))),
-            "low": close * (1 - np.abs(rng.normal(0, 0.01, length))),
-            "close": close,
-            "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, length)),
-        }, index=pd.date_range("2024-01-01", periods=length, freq="D"))
+        df = pd.DataFrame(
+            {
+                "open": close * (1 + rng.normal(0, 0.004, length)),
+                "high": close * (1 + np.abs(rng.normal(0, 0.01, length))),
+                "low": close * (1 - np.abs(rng.normal(0, 0.01, length))),
+                "close": close,
+                "volume": 1e6 * (1 + rng.uniform(-0.5, 1.0, length)),
+            },
+            index=pd.date_range("2024-01-01", periods=length, freq="D"),
+        )
         samples.append(df)
     return samples
 
@@ -52,7 +54,7 @@ def _price_signal(df: pd.DataFrame) -> int:
     close = df["close"]
     if len(close) < 21:
         return 0
-    ret = (close.iloc[-1] / close.iloc[-21] - 1)
+    ret = close.iloc[-1] / close.iloc[-21] - 1
     return 1 if ret > 0 else (-1 if ret < 0 else 0)
 
 
@@ -66,8 +68,9 @@ def _equity_curve(signals: list) -> np.ndarray:
 
 
 def _build_pipeline():
-    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
     from feature_hub.modules.loader import load_default_sets
+    from feature_hub.pipeline.feature_pipeline import FeaturePipeline
+
     pipe = FeaturePipeline()
     load_default_sets(pipe)
     return pipe
@@ -105,7 +108,7 @@ def test_t25_1_consistency_btc():
     assert min(fh_feature_counts) >= 40, f"特征列数 < 40: {fh_feature_counts}"
 
     # 信号方向一致率
-    consistent = sum(1 for b, f in zip(baseline_signals, fh_signals) if b == f)
+    consistent = sum(1 for b, f in zip(baseline_signals, fh_signals) if b == f)  # noqa: B905
     consistency = consistent / len(baseline_signals)
 
     # 权益曲线 Pearson
@@ -144,7 +147,7 @@ def test_t25_2_consistency_alt():
     assert all(c > 0 for c in fh_feature_counts), f"FeatureHub 特征列数为 0: {fh_feature_counts}"
     assert min(fh_feature_counts) >= 60, f"特征列数 < 60: {fh_feature_counts}"
 
-    consistent = sum(1 for b, f in zip(baseline_signals, fh_signals) if b == f)
+    consistent = sum(1 for b, f in zip(baseline_signals, fh_signals) if b == f)  # noqa: B905
     consistency = consistent / len(baseline_signals)
 
     baseline_equity = _equity_curve(baseline_signals)
@@ -182,7 +185,7 @@ def test_t25_3_consistency_equity():
     assert all(c > 0 for c in fh_feature_counts), f"FeatureHub 特征列数为 0: {fh_feature_counts}"
     assert min(fh_feature_counts) >= 30, f"特征列数 < 30: {fh_feature_counts}"
 
-    consistent = sum(1 for b, f in zip(baseline_signals, fh_signals) if b == f)
+    consistent = sum(1 for b, f in zip(baseline_signals, fh_signals) if b == f)  # noqa: B905
     consistency = consistent / len(baseline_signals)
 
     baseline_equity = _equity_curve(baseline_signals)

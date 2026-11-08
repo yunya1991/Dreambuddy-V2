@@ -28,6 +28,7 @@ TDD 测试清单:
   T12 / test_min_cases_threshold                  — len() < 30 → 降级标识
   T13 / test_no_llm_dependency                    — grep 确认无 LLM 调用
 """
+
 from __future__ import annotations
 
 import math
@@ -52,10 +53,10 @@ for _p in (_BCRM2_SCRIPTS_ROOT, _ARCH_ROOT):
 # ============================================================
 # 导入（RED 阶段：模块不存在时 ImportError）
 # ============================================================
+from dreamos.evolution.washout_case_library import WashoutCase  # noqa: E402
 from dreamos.evolution.washout_reversal_case_library import (  # noqa: E402
     WashoutReversalCaseLibrary,
 )
-from dreamos.evolution.washout_case_library import WashoutCase  # noqa: E402
 
 
 # ============================================================
@@ -211,12 +212,15 @@ class TestEdgeCases:
 class TestNoLLMDependency:
     def test_no_llm_dependency(self):
         """T13: 源码中无 LLM/openai/anthropic 调用."""
-        source_path = (
-            _ARCH_ROOT / "dreamos" / "evolution"
-            / "washout_reversal_case_library.py"
-        )
+        source_path = _ARCH_ROOT / "dreamos" / "evolution" / "washout_reversal_case_library.py"
         if source_path.exists():
             source = source_path.read_text()
-            for kw in ("import openai", "from openai", "import anthropic", "from anthropic",
-                        "chat.completions.create", "messages.create"):
+            for kw in (
+                "import openai",
+                "from openai",
+                "import anthropic",
+                "from anthropic",
+                "chat.completions.create",
+                "messages.create",
+            ):
                 assert kw not in source.lower(), f"发现 LLM 依赖: {kw}"

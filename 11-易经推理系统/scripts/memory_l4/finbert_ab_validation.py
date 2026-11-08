@@ -12,10 +12,10 @@
 输出：
     runtime/finbert_ab_records.jsonl
 """
+
 from __future__ import annotations
 
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -29,13 +29,12 @@ _OUTPUT = _RUNTIME / "finbert_ab_records.jsonl"
 if str(_HERE) not in sys.path:
     sys.path.insert(0, str(_HERE))
 
-from five_domain_feature_computer import FiveDomainFeatureComputer  # noqa: E402
-
 
 def get_today_coin_data() -> Dict[str, Any]:
     """获取今日 coin_data（从数据中心或缓存）。"""
     try:
         from fivedomain_fetcher import FiveDomainDataFetcher
+
         fetcher = FiveDomainDataFetcher()
         return fetcher.fetch_coin_data()
     except Exception as e:
@@ -104,8 +103,10 @@ def run_ab_test() -> None:
     print(f"[FinBERT-AB] 记录已保存: {_OUTPUT}")
     for cls, data in record.items():
         if isinstance(data, dict) and data.get("has_finbert"):
-            print(f"  {cls}: sentiment_diff={data['sentiment_diff']} "
-                  f"(keyword={data['policy_sentiment_score']}, finbert={data['finbert_sentiment']})")
+            print(
+                f"  {cls}: sentiment_diff={data['sentiment_diff']} "
+                f"(keyword={data['policy_sentiment_score']}, finbert={data['finbert_sentiment']})"
+            )
 
 
 def print_summary() -> None:
@@ -124,14 +125,20 @@ def print_summary() -> None:
 
     print(f"\n[FinBERT-AB] 历史记录: {len(records)} 天")
     for cls in ("crypto_usdt", "us_stock", "precious_metal"):
-        diffs = [r[cls]["sentiment_diff"] for r in records
-                 if cls in r and isinstance(r[cls], dict) and r[cls].get("sentiment_diff") is not None]
+        diffs = [
+            r[cls]["sentiment_diff"]
+            for r in records
+            if cls in r and isinstance(r[cls], dict) and r[cls].get("sentiment_diff") is not None
+        ]
         if diffs:
             import statistics
-            print(f"  {cls}: 样本={len(diffs)} "
-                  f"均值差异={statistics.mean(diffs):+.4f} "
-                  f"标准差={statistics.stdev(diffs):.4f} "
-                  f"范围=[{min(diffs):+.4f}, {max(diffs):+.4f}]")
+
+            print(
+                f"  {cls}: 样本={len(diffs)} "
+                f"均值差异={statistics.mean(diffs):+.4f} "
+                f"标准差={statistics.stdev(diffs):.4f} "
+                f"范围=[{min(diffs):+.4f}, {max(diffs):+.4f}]"
+            )
 
 
 if __name__ == "__main__":

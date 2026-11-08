@@ -8,5 +8,5 @@ Layer 2: OKR目标分解层（展开：从单点到线/网）
 from .okr_builder import OKRBuilder
 
 __all__ = [
-    'OKRBuilder',
+    "OKRBuilder",
 ]

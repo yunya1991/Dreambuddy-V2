@@ -13,20 +13,27 @@
 
 用法：python3 contradiction_state_adapter.py（独立运行时打印发布结果）
 """
+
 import json
 import os
 import sys
-import uuid
 from datetime import datetime, timedelta, timezone
+
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 # 23 层产出物路径
 _23_SAMPLES_PATH = os.path.join(
-    "/home/luke/dreambuddy/23-四层闭环自进化交易架构",
-    "dreambuddy_evolution", "data", "contradiction_samples.json",
+    os.path.join(_DREAMBUDDY_ROOT, "23-四层闭环自进化交易架构"),
+    "dreambuddy_evolution",
+    "data",
+    "contradiction_samples.json",
 )
 
 # 42 层 SignalBus 模块路径
-_42_ROOT = "/home/luke/dreambuddy/42-神经网络交易协调层"
+_42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # 样本新鲜度上限（超过视为过期，不发布）
 _MAX_AGE_SECONDS = 24 * 3600
@@ -49,8 +56,7 @@ def load_latest_sample(path: str = _23_SAMPLES_PATH):
         if not isinstance(samples, list) or not samples:
             return None, "samples 为空（fail-open）"
         valid = [
-            s for s in samples
-            if isinstance(s, dict) and s.get("direction") in _VALID_DIRECTIONS
+            s for s in samples if isinstance(s, dict) and s.get("direction") in _VALID_DIRECTIONS
         ]
         if not valid:
             return None, "无有效 direction 样本（fail-open）"
@@ -66,8 +72,8 @@ def build_signal(sample: dict) -> dict:
     confidence = max(0.0, min(1.0, float(sample.get("confidence") or 0.0)))
     market_weight = max(0.0, min(1.0, float(sample.get("market_weight") or 0.0)))
     return {
-        "signal_id": "sig_{}_{}".format(
-            now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
+        # P1-01：确定性 signal_id（同 source 当日重跑幂等替换，配合总线按 signal_id 合并）
+        "signal_id": "sig_23-contradiction_MACRO_{}".format(now.strftime("%Y%m%d")),
         "source": "23-contradiction",
         "ts": now.isoformat(),
         "symbol": "MACRO",  # 矛盾仲裁为组合级信号，非单标的
@@ -100,29 +106,40 @@ def main() -> int:
     sample_ts = float(sample.get("ts") or 0)
     age = (_now() - datetime.fromtimestamp(sample_ts, tz=timezone.utc)).total_seconds()
     if age > _MAX_AGE_SECONDS:
-        print(json.dumps({
-            "status": "stale",
-            "reason": "最新矛盾仲裁样本超过 24h，不发布",
-            "age_seconds": round(age, 1),
-        }, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "status": "stale",
+                    "reason": "最新矛盾仲裁样本超过 24h，不发布",
+                    "age_seconds": round(age, 1),
+                },
+                ensure_ascii=False,
+            )
+        )
         return 1
 
     signal = build_signal(sample)
     bus = SignalBus()
     result = bus.publish(signal)
     bus.flush()
-    print(json.dumps({
-        "publish_result": result.get("status"),
-        "reason": result.get("reason"),
-        "signal_id": signal.get("signal_id"),
-        "source": signal.get("source"),
-        "direction": signal.get("direction"),
-        "confidence": signal.get("confidence"),
-        "risk_exposure_hint": signal.get("risk_exposure_hint"),
-        "sample_age_seconds": round(age, 1),
-        "bus_signal_count": bus.snapshot()["signal_count"],
-        "bus_sources": bus.snapshot()["sources"],
-    }, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "publish_result": result.get("status"),
+                "reason": result.get("reason"),
+                "signal_id": signal.get("signal_id"),
+                "source": signal.get("source"),
+                "direction": signal.get("direction"),
+                "confidence": signal.get("confidence"),
+                "risk_exposure_hint": signal.get("risk_exposure_hint"),
+                "sample_age_seconds": round(age, 1),
+                "bus_signal_count": bus.snapshot()["signal_count"],
+                "bus_sources": bus.snapshot()["sources"],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0 if result.get("status") == "accepted" else 1
 
 

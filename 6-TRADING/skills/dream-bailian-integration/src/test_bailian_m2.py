@@ -8,10 +8,10 @@
 
 测试策略: mock _call_api 避免实际网络调用.
 """
+
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -22,11 +22,12 @@ import pytest
 SRC_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SRC_DIR))
 
-from bailian_client import BailianClient, BailianAPIError  # type: ignore
+from bailian_client import BailianAPIError, BailianClient  # type: ignore  # noqa: E402
 
 
 class _MockResponse:
     """模拟 urlopen 响应"""
+
     def __init__(self, payload: Dict[str, Any], status: int = 200):
         self._payload = payload
         self.status = status
@@ -41,15 +42,17 @@ class _MockResponse:
         return False
 
 
-def _make_client_with_mock(mock_payload: Dict[str, Any],
-                            captured: Optional[List[Dict[str, Any]]] = None) -> BailianClient:
+def _make_client_with_mock(
+    mock_payload: Dict[str, Any], captured: Optional[List[Dict[str, Any]]] = None
+) -> BailianClient:
     """构造 BailianClient, _call_api 全部走 mock"""
-    client = BailianClient(api_key="sk-test-mock-key")
+    client = BailianClient(api_key="sk-test-mock-key")  # secret-scan: allow
     if captured is None:
         captured = []
 
-    def _mock_call(endpoint: str, data: Dict[str, Any],
-                    method: str = "POST", trace_id: Optional[str] = None) -> Dict[str, Any]:
+    def _mock_call(
+        endpoint: str, data: Dict[str, Any], method: str = "POST", trace_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         captured.append({"endpoint": endpoint, "data": data, "method": method})
         return mock_payload
 
@@ -59,33 +62,40 @@ def _make_client_with_mock(mock_payload: Dict[str, Any],
 
 # ── chat_with_tools 测试 ─────────────────────────
 
+
 def test_chat_with_tools_sends_tools_and_tool_choice():
     """chat_with_tools 正确构造 tools/tool_choice/temperature"""
     captured: List[Dict[str, Any]] = []
     mock_resp = {
-        "choices": [{
-            "message": {
-                "role": "assistant",
-                "content": None,
-                "tool_calls": [{
-                    "id": "call_1",
-                    "type": "function",
-                    "function": {"name": "get_price", "arguments": '{"symbol":"BTC"}'},
-                }],
-            },
-            "finish_reason": "tool_calls",
-        }],
+        "choices": [
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {"name": "get_price", "arguments": '{"symbol":"BTC"}'},
+                        }
+                    ],
+                },
+                "finish_reason": "tool_calls",
+            }
+        ],
     }
     client = _make_client_with_mock(mock_resp, captured)
 
-    tools = [{
-        "type": "function",
-        "function": {
-            "name": "get_price",
-            "description": "获取最新价格",
-            "parameters": {"type": "object", "properties": {"symbol": {"type": "string"}}},
-        },
-    }]
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_price",
+                "description": "获取最新价格",
+                "parameters": {"type": "object", "properties": {"symbol": {"type": "string"}}},
+            },
+        }
+    ]
     result = client.chat_with_tools(
         messages=[{"role": "user", "content": "BTC 价格?"}],
         tools=tools,
@@ -131,17 +141,21 @@ def test_chat_with_tools_max_tokens_passed_when_set():
 def test_chat_with_tools_extracts_tool_calls():
     """Function Calling 模型响应含 tool_calls"""
     mock_resp = {
-        "choices": [{
-            "message": {
-                "role": "assistant",
-                "content": None,
-                "tool_calls": [{
-                    "id": "call_1",
-                    "type": "function",
-                    "function": {"name": "get_price", "arguments": '{"symbol":"ETH"}'},
-                }],
-            },
-        }],
+        "choices": [
+            {
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {"name": "get_price", "arguments": '{"symbol":"ETH"}'},
+                        }
+                    ],
+                },
+            }
+        ],
     }
     client = _make_client_with_mock(mock_resp)
     result = client.chat_with_tools(
@@ -155,6 +169,7 @@ def test_chat_with_tools_extracts_tool_calls():
 
 
 # ── kb_query 测试 ────────────────────────────────
+
 
 def test_kb_query_without_app_id_returns_informative_error(monkeypatch):
     """无 BAILIAN_APP_ID 时返回 informative error, 不抛异常"""
@@ -198,6 +213,7 @@ def test_kb_query_explicit_app_id_overrides_env(monkeypatch):
 
 # ── rag_retrieve 测试 ───────────────────────────
 
+
 def test_rag_retrieve_without_collection_returns_informative_error(monkeypatch):
     """无 BAILIAN_COLLECTION 时返回 informative error"""
     monkeypatch.delenv("BAILIAN_COLLECTION", raising=False)
@@ -222,8 +238,9 @@ def test_rag_retrieve_with_collection_calls_embed_then_search(monkeypatch):
     resp_idx = [0]
     client = BailianClient(api_key="sk-test")
 
-    def _mock_call(endpoint: str, data: Dict[str, Any],
-                    method: str = "POST", trace_id=None) -> Dict[str, Any]:
+    def _mock_call(
+        endpoint: str, data: Dict[str, Any], method: str = "POST", trace_id=None
+    ) -> Dict[str, Any]:
         captured.append({"endpoint": endpoint, "data": data})
         r = responses[resp_idx[0]]
         resp_idx[0] += 1
@@ -250,8 +267,9 @@ def test_rag_retrieve_embed_failure_returns_error(monkeypatch):
     monkeypatch.setenv("BAILIAN_COLLECTION", "test_collection")
     client = BailianClient(api_key="sk-test")
 
-    def _bad_call(endpoint: str, data: Dict[str, Any],
-                    method: str = "POST", trace_id=None) -> Dict[str, Any]:
+    def _bad_call(
+        endpoint: str, data: Dict[str, Any], method: str = "POST", trace_id=None
+    ) -> Dict[str, Any]:
         if "embeddings" in endpoint:
             raise BailianAPIError(code=401, message="bad api key", trace_id="t1")
         return {}
@@ -265,11 +283,13 @@ def test_rag_retrieve_embed_failure_returns_error(monkeypatch):
 
 # ── HC-1 FAIL-OPEN 集成测试 ──────────────────────
 
+
 def test_bailian_client_no_api_key_raises_value_error():
     """无 API key 时 BailianClient 构造失败 (显式 raise, 由调用方 try/except 兜底)"""
     # BailianClient 强制要求 API key — 这是 M2 客户端层的行为契约
     # 真正的 FAIL-OPEN 在 subagent_registry.make_bailian_llm_fn() (M3 已实现)
     import os as _os
+
     saved = _os.environ.pop("BAILIAN_API_KEY", None)
     try:
         with pytest.raises(ValueError, match="API Key"):

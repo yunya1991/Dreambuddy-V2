@@ -13,10 +13,11 @@ TraditionalFinanceBridge — 传统金融方法论桥接器
   - 波动率缩放是桥水/风险平价的核心
   - Sharpe > 1 是策略有效性的机构标准
 """
+
 from __future__ import annotations
 
-import math
 import logging
+import math
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -43,11 +44,15 @@ class RegimeDetector:
             # 兼容 numpy 数组 / list
             closes = [float(p) for p in list(prices)]
             if len(closes) < 20:
-                return {"regime": "ranging", "trend_strength": 0.0,
-                        "volatility_ratio": 1.0, "adx": 0.0}
+                return {
+                    "regime": "ranging",
+                    "trend_strength": 0.0,
+                    "volatility_ratio": 1.0,
+                    "adx": 0.0,
+                }
 
             highs_list = [float(h) for h in list(highs)] if highs is not None else closes
-            lows_list = [float(l) for l in list(lows)] if lows is not None else closes
+            lows_list = [float(l) for l in list(lows)] if lows is not None else closes  # noqa: E741
 
             ma20 = sum(closes[-20:]) / 20
             price = closes[-1]
@@ -79,8 +84,7 @@ class RegimeDetector:
             }
         except Exception as e:
             logger.debug("[FO] regime detect: %s", e)
-            return {"regime": "ranging", "trend_strength": 0.0,
-                    "volatility_ratio": 1.0, "adx": 0.0}
+            return {"regime": "ranging", "trend_strength": 0.0, "volatility_ratio": 1.0, "adx": 0.0}
 
     @staticmethod
     def _calc_adx(highs, lows, closes, period: int = 14) -> float:
@@ -96,11 +100,13 @@ class RegimeDetector:
                 down = lows[i - 1] - lows[i]
                 plus_dm.append(max(up, 0) if up > down else 0)
                 minus_dm.append(max(down, 0) if down > up else 0)
-                tr.append(max(
-                    highs[i] - lows[i],
-                    abs(highs[i] - closes[i - 1]),
-                    abs(lows[i] - closes[i - 1]),
-                ))
+                tr.append(
+                    max(
+                        highs[i] - lows[i],
+                        abs(highs[i] - closes[i - 1]),
+                        abs(lows[i] - closes[i - 1]),
+                    )
+                )
             if not tr or sum(tr) == 0:
                 return 0.0
             plus_di = 100 * sum(plus_dm[-period:]) / max(sum(tr[-period:]), 1e-9)
@@ -133,8 +139,7 @@ class KellySizer:
     """
 
     @staticmethod
-    def kelly_fraction(win_rate: float, payoff_ratio: float,
-                       fraction: float = 0.5) -> float:
+    def kelly_fraction(win_rate: float, payoff_ratio: float, fraction: float = 0.5) -> float:
         """
         计算 Kelly 仓位比例。
         Args:
@@ -167,8 +172,12 @@ class VolatilityScaler:
     """
 
     @staticmethod
-    def vol_scalar(current_vol: float, target_vol: float = 0.02,
-                   min_scalar: float = 0.2, max_scalar: float = 2.0) -> float:
+    def vol_scalar(
+        current_vol: float,
+        target_vol: float = 0.02,
+        min_scalar: float = 0.2,
+        max_scalar: float = 2.0,
+    ) -> float:
         """
         计算波动率缩放系数。
         Args:
@@ -231,6 +240,7 @@ class PerformanceTracker:
         if len(self._returns) < 2:
             return 0.0
         import statistics
+
         mean_r = statistics.mean(self._returns)
         std_r = statistics.stdev(self._returns)
         if std_r == 0:
@@ -243,6 +253,7 @@ class PerformanceTracker:
         if len(self._returns) < 2:
             return 0.0
         import statistics
+
         mean_r = statistics.mean(self._returns)
         downside = [r for r in self._returns if r < 0]
         # statistics.stdev 要求 ≥2 个样本（样本标准差分母 n-1）
@@ -330,9 +341,7 @@ class TraditionalFinanceBridge:
 
             # 2. 波动率缩放
             closes_list = [float(p) for p in list(prices)]
-            current_vol = RegimeDetector._std(
-                closes_list[-20:]
-            ) if len(closes_list) >= 20 else 0.0
+            current_vol = RegimeDetector._std(closes_list[-20:]) if len(closes_list) >= 20 else 0.0
             vol_scalar = VolatilityScaler.vol_scalar(current_vol)
 
             # 3. Kelly 仓位（基于历史绩效，若没有交易记录则用中性 0.1）

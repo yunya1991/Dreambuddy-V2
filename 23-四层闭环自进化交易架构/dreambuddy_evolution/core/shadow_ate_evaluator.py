@@ -5,6 +5,7 @@ SPEC-Shadow验证自动放量门禁.md §3-§5
 仅由子进程 scripts/shadow_ate_eval.py 调用；FAIL-OPEN：任何异常 → None，不抛。
 注意：本模块 import DML 相关（causal），**不得**被门禁主链路 import。
 """
+
 from __future__ import annotations
 
 import logging
@@ -19,8 +20,8 @@ def evaluate_and_record(gate, switch_name: str | None = None) -> dict | None:
     Returns: 观测 dict（已 record 成功）或 None（无有效观测）。FAIL-OPEN。
     """
     try:
-        from dreambuddy_evolution.core.causal_sample_store import CausalSampleStore
         from dreambuddy_evolution.core.causal_engine import CausalEngine
+        from dreambuddy_evolution.core.causal_sample_store import CausalSampleStore
         from dreambuddy_evolution.core.contradiction_identifier import (
             SESOI_TAU_DEFAULT,
             classify_ate_state,

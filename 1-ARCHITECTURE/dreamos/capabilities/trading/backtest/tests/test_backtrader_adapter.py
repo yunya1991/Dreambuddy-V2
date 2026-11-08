@@ -10,9 +10,8 @@
 - 任何异常都不得冒泡到 C3 节点
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
-from typing import Any, Dict, List
 
 import pytest
 

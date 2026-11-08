@@ -34,6 +34,7 @@ TDD 流程：本文件先于生产代码编写，每一项测试保证 RED（先
   T14 / test_extract_all_features_dim_switch_off
         — 关闭 enable_volume_dim → extract_all 不含 volume_ratio_20d
 """
+
 from __future__ import annotations
 
 import sys
@@ -41,7 +42,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 
 _THIS_DIR = Path(__file__).resolve().parent
 _PROJECT_ROOT = _THIS_DIR.parent.parent  # 11-易经推理系统/
@@ -253,7 +253,7 @@ def test_extract_cycle_position_365d_high():
 # ============================================================
 def test_extract_rebound_ratio_5d_strong():
     """5d: low=95, high=105, current=102 → (102-95)/(105-95) = 0.7 > 0.5。"""
-    n = 5
+    n = 5  # noqa: F841
     closes = [100.0, 100.0, 100.0, 100.0, 102.0]
     highs = [105.0] * 5
     lows = [95.0] * 5
@@ -330,9 +330,7 @@ def test_extract_all_features_dim_switch_off():
     df = _make_ohlcv(closes, vols=vols)
     macro_data = {"oi_series": [100.0] * 7 + [110.0]}
     # 关闭 enable_volume_dim
-    extractor = WashoutFeatureExtractor(
-        config={"enable_volume_dim": False}
-    )
+    extractor = WashoutFeatureExtractor(config={"enable_volume_dim": False})
     feats = extractor.extract_all(df, macro_data)
     assert "volume_ratio_20d" not in feats
     # 其他维度仍存在

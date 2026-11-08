@@ -3,14 +3,14 @@
 - _extract_tickers_from_title()  从标题/描述中抓取出现的代币 TICKER（CRCL/BTC/SOL…）
 - compute_odaily_event_positive_strength(per-coin odaily records) → 供 polling_trader 读取
 """
+
 from __future__ import annotations
 
 import pytest
 from data_center.collectors.news.odaily_newsflash import (
-    _classify_event_type,
-    _EVENT_TYPE_ENUM,
     _DECAY_HRS,
-    _ATTENTION_TYPE_ENUM,
+    _EVENT_TYPE_ENUM,
+    _classify_event_type,
 )
 
 
@@ -44,9 +44,9 @@ class TestTokenMilestoneCategory:
 
     def test_token_milestone_in_event_type_enum(self):
         """RED阶段：EVENT_TYPE_ENUM不含 → 断言失败"""
-        assert "token_milestone" in _EVENT_TYPE_ENUM, (
-            f"_EVENT_TYPE_ENUM缺失token_milestone，当前={list(_EVENT_TYPE_ENUM)}"
-        )
+        assert (
+            "token_milestone" in _EVENT_TYPE_ENUM
+        ), f"_EVENT_TYPE_ENUM缺失token_milestone，当前={list(_EVENT_TYPE_ENUM)}"
 
 
 # ============================================================
@@ -55,7 +55,6 @@ class TestTokenMilestoneCategory:
 class TestExtractTickersFromTitle:
     def test_module_has_extract_tickers_function(self):
         """RED阶段：函数不存在，import失败"""
-        from data_center.collectors.news.odaily_newsflash import _extract_tickers_from_title  # noqa: F401
 
     @pytest.mark.parametrize(
         "title,expected",
@@ -72,10 +71,11 @@ class TestExtractTickersFromTitle:
     )
     def test_extract_tickers(self, title, expected):
         from data_center.collectors.news.odaily_newsflash import _extract_tickers_from_title
+
         got = set(_extract_tickers_from_title(title))
-        assert got == expected, (
-            f"标题「{title}」抓 ticker 期望={sorted(expected)} 实际={sorted(got)}"
-        )
+        assert (
+            got == expected
+        ), f"标题「{title}」抓 ticker 期望={sorted(expected)} 实际={sorted(got)}"
 
 
 # ============================================================
@@ -89,7 +89,10 @@ class TestOdailyEventPositiveStrength:
         )
 
     def test_strength_range_0_1_and_max_boost_clamp(self):
-        from data_center.collectors.news.odaily_newsflash import compute_coin_event_positive_strength
+        from data_center.collectors.news.odaily_newsflash import (
+            compute_coin_event_positive_strength,
+        )
+
         # 伪造 2 条强正面 token_milestone 快讯（sentiment=0.92 / 重要=true）
         now_ms = 1756700000000
         fake_records = [
@@ -100,8 +103,13 @@ class TestOdailyEventPositiveStrength:
                     "od_is_important": "true",
                     "od_decay_hl_hrs": 24,
                 },
-                "events": [{"event_type": "token_milestone", "importance": 2,
-                            "published_ms": now_ms - 1 * 3600_000}],
+                "events": [
+                    {
+                        "event_type": "token_milestone",
+                        "importance": 2,
+                        "published_ms": now_ms - 1 * 3600_000,
+                    }
+                ],
                 "tickers_hit": ["CRCL"],
             },
             {
@@ -111,8 +119,13 @@ class TestOdailyEventPositiveStrength:
                     "od_is_important": "false",
                     "od_decay_hl_hrs": 24,
                 },
-                "events": [{"event_type": "token_milestone", "importance": 1,
-                            "published_ms": now_ms - 5 * 3600_000}],
+                "events": [
+                    {
+                        "event_type": "token_milestone",
+                        "importance": 1,
+                        "published_ms": now_ms - 5 * 3600_000,
+                    }
+                ],
                 "tickers_hit": ["CRCL"],
             },
         ]
@@ -121,11 +134,22 @@ class TestOdailyEventPositiveStrength:
         assert strength > 0.65, f"2条强正面快讯 strength 应>0.65 实际={strength:.3f} debug={debug}"
         # 10条全1.0：strength不得>1.0
         many = [
-            {"metrics": {"od_event_type": "token_milestone", "od_policy_sentiment_0_1": 1.0,
-                         "od_is_important": "true", "od_decay_hl_hrs": 24},
-             "events": [{"event_type": "token_milestone", "importance": 2,
-                         "published_ms": now_ms - 1 * 3600_000}],
-             "tickers_hit": ["CRCL"]}
+            {
+                "metrics": {
+                    "od_event_type": "token_milestone",
+                    "od_policy_sentiment_0_1": 1.0,
+                    "od_is_important": "true",
+                    "od_decay_hl_hrs": 24,
+                },
+                "events": [
+                    {
+                        "event_type": "token_milestone",
+                        "importance": 2,
+                        "published_ms": now_ms - 1 * 3600_000,
+                    }
+                ],
+                "tickers_hit": ["CRCL"],
+            }
             for _ in range(10)
         ]
         s2, _ = compute_coin_event_positive_strength("CRCL", many, now_ms=now_ms)

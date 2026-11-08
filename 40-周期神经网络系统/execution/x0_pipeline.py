@@ -7,16 +7,33 @@ SPEC: docs/SPEC_execution_layer.md v0.2 第六章 X0
 - 红线：X0 不下单；代理信号仅验证管道，不出具任何验证指标
 - fail-open：本脚本任何异常不影响 40 主链路产出
 """
+
 import json
 import os
 import sys
 import traceback
-from datetime import datetime, timezone, date
+from datetime import date, datetime, timezone
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BASE)
 CONFIG_PATH = os.path.join(BASE, "config.json")
-ALERT_MODULE_DIR = "/home/luke/dreambuddy/15-监控告警系统"  # 15 系统统一飞书告警模块
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(ROOT)
+ALERT_MODULE_DIR = os.path.join(_DREAMBUDDY_ROOT, "15-监控告警系统")  # 15 系统统一飞书告警模块
+
+
+def _resolve_cfg_paths(cfg):
+    """config.json 中的信号源路径支持相对 DREAMBUDDY_ROOT（R-42-04/P1-03）；相对路径就地展开为绝对路径。"""
+    for src in (cfg.get("signal_sources") or {}).values():
+        paths = src.get("paths")
+        if paths:
+            for k, v in paths.items():
+                if v and not os.path.isabs(v):
+                    paths[k] = os.path.join(_DREAMBUDDY_ROOT, v)
+        p = src.get("path")
+        if p and not os.path.isabs(p):
+            src["path"] = os.path.join(_DREAMBUDDY_ROOT, p)
+    return cfg
 
 
 def now_iso():
@@ -47,7 +64,7 @@ def load_config():
         for k, v in expected.items():
             if limits.get(k) != v:
                 raise ValueError(f"风控红线 {k}={limits.get(k)} 与预注册冻结值 {v} 不符，禁止运行")
-    return cfg
+    return _resolve_cfg_paths(cfg)
 
 
 def receive_real_signal(cfg):
@@ -61,7 +78,7 @@ def receive_real_signal(cfg):
         "asset_rotation": rotation,
     }
     ta = cycle.get("technical_anchor", {}).get("assets", {})
-    quadrant = rotation.get("merrill_clock", {}).get("quadrant")
+    quadrant = rotation.get("merrill_clock", {}).get("quadrant")  # noqa: F841
     quadrant_conf = rotation.get("merrill_clock", {}).get("confidence")
     intents = []
     for symbol in cfg["whitelist"]:
@@ -71,15 +88,17 @@ def receive_real_signal(cfg):
         # 方向判别：MA200 锚点 above/below（日线级别）
         direction = "UP" if a.get("above") else "DOWN"
         conf = 0.6 if quadrant_conf == "high" else (0.5 if quadrant_conf == "medium" else 0.4)
-        intents.append({
-            "symbol": symbol,
-            "direction": direction,
-            "confidence": conf,
-            "timeframe": "1d",
-            "holding_period_days": cfg["holding_period_days"],
-            "notional_usdt": cfg["intent_notional_usdt"],
-            "leverage": cfg["leverage"],
-        })
+        intents.append(
+            {
+                "symbol": symbol,
+                "direction": direction,
+                "confidence": conf,
+                "timeframe": "1d",
+                "holding_period_days": cfg["holding_period_days"],
+                "notional_usdt": cfg["intent_notional_usdt"],
+                "leverage": cfg["leverage"],
+            }
+        )
     return snapshot, intents
 
 
@@ -94,15 +113,17 @@ def receive_proxy_signal(cfg):
         entry = pool.get(base, {}).get("4h", {})
         sig = entry.get("signal", "HOLD")
         direction = {"BUY": "UP", "SELL": "DOWN"}.get(sig, "NEUTRAL")
-        intents.append({
-            "symbol": symbol,
-            "direction": direction,
-            "confidence": entry.get("confidence", 0),
-            "timeframe": "4h",
-            "holding_period_days": cfg["holding_period_days"],
-            "notional_usdt": cfg["intent_notional_usdt"],
-            "leverage": cfg["leverage"],
-        })
+        intents.append(
+            {
+                "symbol": symbol,
+                "direction": direction,
+                "confidence": entry.get("confidence", 0),
+                "timeframe": "4h",
+                "holding_period_days": cfg["holding_period_days"],
+                "notional_usdt": cfg["intent_notional_usdt"],
+                "leverage": cfg["leverage"],
+            }
+        )
     return snapshot, intents
 
 
@@ -117,14 +138,19 @@ def notify_violation(violation, violations_path):
         if ALERT_MODULE_DIR not in sys.path:
             sys.path.insert(0, ALERT_MODULE_DIR)
         from feishu_alert import send_alert
+
         send_alert(
-            "trading", "warning",
+            "trading",
+            "warning",
             "40执行层风控红线违规: " + str(violation.get("symbol")),
             {"reasons": violation.get("reasons"), "ts": violation.get("ts")},
             system="40_execution_layer",
         )
     except Exception as e:
-        append_jsonl(violations_path, {"ts": now_iso(), "type": "alert_failed", "error": str(e), "violation": violation})
+        append_jsonl(
+            violations_path,
+            {"ts": now_iso(), "type": "alert_failed", "error": str(e), "violation": violation},
+        )
 
 
 def risk_check(intents, cfg, state, violations_path):
@@ -134,15 +160,20 @@ def risk_check(intents, cfg, state, violations_path):
     for i in intents:
         reasons = []
         if i["notional_usdt"] > limits["max_notional_per_order"]:
-            reasons.append(f"单笔名义 {i['notional_usdt']} > 上限 {limits['max_notional_per_order']}")
+            reasons.append(
+                f"单笔名义 {i['notional_usdt']} > 上限 {limits['max_notional_per_order']}"
+            )
         if i["leverage"] != "1x":
             reasons.append(f"杠杆 {i['leverage']} 违规（禁用杠杆）")
         if i["symbol"] not in cfg["whitelist"]:
             reasons.append(f"{i['symbol']} 不在白名单")
         if reasons:
             violation = {
-                "ts": now_iso(), "type": "risk_limit", "symbol": i["symbol"],
-                "reasons": reasons, "intent": i,
+                "ts": now_iso(),
+                "type": "risk_limit",
+                "symbol": i["symbol"],
+                "reasons": reasons,
+                "intent": i,
             }
             append_jsonl(violations_path, violation)
             notify_violation(violation, violations_path)
@@ -162,7 +193,13 @@ def existing_intent_keys(trades_path):
                 continue
             try:
                 r = json.loads(line)
-                keys.add((r.get("intent_date"), r.get("symbol"), (r.get("signal_snapshot") or {}).get("source")))
+                keys.add(
+                    (
+                        r.get("intent_date"),
+                        r.get("symbol"),
+                        (r.get("signal_snapshot") or {}).get("source"),
+                    )
+                )
             except json.JSONDecodeError:
                 continue
     return keys
@@ -211,8 +248,10 @@ def main():
 
     state = {
         "updated_at": now_iso(),
-        "stage": "X0", "signal_source": src,
-        "intents_today": len(intents), "written_today": written,
+        "stage": "X0",
+        "signal_source": src,
+        "intents_today": len(intents),
+        "written_today": written,
         "trades_path": trades_path,
     }
     with open(state_path, "w", encoding="utf-8") as f:

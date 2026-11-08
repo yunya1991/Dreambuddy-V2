@@ -18,21 +18,24 @@ LightGBM和LSTM分别在独立子进程中运行，结果通过json传递。
   python v60_hybrid_backtest.py --symbol BTC --skip-predict  # 跳过预测，直接用已有概率
 """
 
-import os
-import sys
-import json
-import time
 import argparse
+import json
+import os
 import subprocess
+import sys
+import time
+
 import numpy as np
-import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, BASE_DIR)
-sys.path.insert(0, os.path.join(BASE_DIR, '12-三屏趋势系统'))
+sys.path.insert(0, os.path.join(BASE_DIR, "12-三屏趋势系统"))
 
-from ml.v60_lstm_baseline.v60_common import (
-    load_coin_data, compute_v4_position, backtest_position, print_result_row,
+from ml.v60_lstm_baseline.v60_common import (  # noqa: E402
+    backtest_position,
+    compute_v4_position,
+    load_coin_data,
+    print_result_row,
 )
 
 
@@ -54,12 +57,12 @@ def load_proba(symbol, model_type):
     path = os.path.join(BASE_DIR, f"ml/backtest_results/v60_{model_type}_proba_{symbol}.json")
     with open(path) as f:
         data = json.load(f)
-    return np.array(data['proba'])
+    return np.array(data["proba"])
 
 
-def compute_hybrid_position(v4_pos, v4_dir, top_proba, dip_proba,
-                           top_threshold=0.5, dip_threshold=0.5,
-                           dip_max_position=0.2):
+def compute_hybrid_position(
+    v4_pos, v4_dir, top_proba, dip_proba, top_threshold=0.5, dip_threshold=0.5, dip_max_position=0.2
+):
     """计算 V4 + ML 混合仓位
 
     融合规则：
@@ -90,8 +93,9 @@ def compute_hybrid_position(v4_pos, v4_dir, top_proba, dip_proba,
     return hybrid_pos, hybrid_dir
 
 
-def run_comparison(symbol="BTC", top_threshold=0.5, dip_threshold=0.5,
-                   dip_max_position=0.2, skip_predict=False):
+def run_comparison(
+    symbol="BTC", top_threshold=0.5, dip_threshold=0.5, dip_max_position=0.2, skip_predict=False
+):
     print(f"\n{'='*80}")
     print(f"  V6.0 混合策略实盘回测 - {symbol}")
     print(f"  TOP_EXIT: LightGBM (阈值 {top_threshold})")
@@ -107,33 +111,37 @@ def run_comparison(symbol="BTC", top_threshold=0.5, dip_threshold=0.5,
     lstm_proba_path = os.path.join(BASE_DIR, f"ml/backtest_results/v60_lstm_proba_{symbol}.json")
 
     if not skip_predict or not os.path.exists(lgbm_proba_path):
-        print(f"\n  [1/4] LightGBM TOP_EXIT 概率预测...")
+        print("\n  [1/4] LightGBM TOP_EXIT 概率预测...")
         t0 = time.time()
         run_predict_script("v60_lgbm_predict.py", symbol)
         print(f"    总耗时: {time.time()-t0:.1f}s")
 
     if not skip_predict or not os.path.exists(lstm_proba_path):
-        print(f"\n  [2/4] LSTM DIP_BUY 概率预测...")
+        print("\n  [2/4] LSTM DIP_BUY 概率预测...")
         t0 = time.time()
         run_predict_script("v60_lstm_predict.py", symbol)
         print(f"    总耗时: {time.time()-t0:.1f}s")
 
     # 2. 加载概率
-    print(f"\n  [3/4] 加载ML概率...")
+    print("\n  [3/4] 加载ML概率...")
     top_proba = load_proba(symbol, "lgbm")
     dip_proba = load_proba(symbol, "lstm")
     print(f"    TOP_EXIT概率: 均值={np.mean(top_proba):.3f}, 最大={np.max(top_proba):.3f}")
     print(f"    DIP_BUY概率:  均值={np.mean(dip_proba):.3f}, 最大={np.max(dip_proba):.3f}")
 
     # 3. V4基线仓位 + 混合仓位
-    print(f"\n  [4/4] 计算仓位...")
+    print("\n  [4/4] 计算仓位...")
     t0 = time.time()
     v4_pos, v4_dir = compute_v4_position(prices, symbol=symbol)
     print(f"    V4仓位耗时: {time.time()-t0:.1f}s, 平均仓位: {np.mean(v4_pos):.3f}")
 
     hybrid_pos, hybrid_dir = compute_hybrid_position(
-        v4_pos, v4_dir, top_proba, dip_proba,
-        top_threshold=top_threshold, dip_threshold=dip_threshold,
+        v4_pos,
+        v4_dir,
+        top_proba,
+        dip_proba,
+        top_threshold=top_threshold,
+        dip_threshold=dip_threshold,
         dip_max_position=dip_max_position,
     )
 
@@ -149,47 +157,55 @@ def run_comparison(symbol="BTC", top_threshold=0.5, dip_threshold=0.5,
     print(f"\n{'='*80}")
     print(f"  回测结果对比（有效天数: {n-valid_start}天, 约{(n-valid_start)/365:.1f}年）")
     print(f"{'='*80}")
-    print(f"{'策略':<30s} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}")
+    print(
+        f"{'策略':<30s} {'年化':>8} {'总收益':>10} {'夏普':>8} {'回撤':>10} {'Calmar':>8} {'胜率':>8} {'均仓':>7}"
+    )
     print(f"{'-'*97}")
 
     results = {}
 
-    metrics = backtest_position(v4_pos[valid_start:], v4_dir[valid_start:],
-                                prices.iloc[valid_start:])
+    metrics = backtest_position(
+        v4_pos[valid_start:], v4_dir[valid_start:], prices.iloc[valid_start:]
+    )
     results["V4基线"] = metrics
     print_result_row("V4基线", metrics)
 
-    metrics = backtest_position(hybrid_pos[valid_start:], hybrid_dir[valid_start:],
-                                prices.iloc[valid_start:])
+    metrics = backtest_position(
+        hybrid_pos[valid_start:], hybrid_dir[valid_start:], prices.iloc[valid_start:]
+    )
     results["V4+ML混合(LGB+LSTM)"] = metrics
     print_result_row("V4+ML混合(LGB+LSTM)", metrics)
 
-    bh_pos = np.ones(n); bh_dir = np.ones(n)
-    metrics = backtest_position(bh_pos[valid_start:], bh_dir[valid_start:],
-                               prices.iloc[valid_start:])
+    bh_pos = np.ones(n)
+    bh_dir = np.ones(n)
+    metrics = backtest_position(
+        bh_pos[valid_start:], bh_dir[valid_start:], prices.iloc[valid_start:]
+    )
     results["买入持有"] = metrics
     print_result_row("买入持有", metrics)
 
     # ========== 增量分析 ==========
     print(f"\n{'='*80}")
-    print(f"  相对V4基线的增量价值")
+    print("  相对V4基线的增量价值")
     print(f"{'='*80}")
     print(f"{'策略':<30s} {'年化增量':>10} {'夏普增量':>10} {'回撤改善':>10} {'综合评分':>10}")
     print(f"{'-'*75}")
 
     v4_base = results["V4基线"]
-    v4_ann = v4_base['ann_return']
-    v4_sharpe = v4_base['sharpe']
-    v4_mdd = v4_base['max_drawdown']
+    v4_ann = v4_base["ann_return"]
+    v4_sharpe = v4_base["sharpe"]
+    v4_mdd = v4_base["max_drawdown"]
 
     for name, m in results.items():
         if name == "V4基线":
             continue
-        ann_delta = (m['ann_return'] - v4_ann) * 100
-        sharpe_delta = m['sharpe'] - v4_sharpe
-        mdd_delta = (m['max_drawdown'] - v4_mdd) * 100
+        ann_delta = (m["ann_return"] - v4_ann) * 100
+        sharpe_delta = m["sharpe"] - v4_sharpe
+        mdd_delta = (m["max_drawdown"] - v4_mdd) * 100
         score = sharpe_delta * 0.4 + ann_delta * 0.01 * 0.3 + (-mdd_delta) * 0.01 * 0.3
-        print(f"{name:<30s} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}")
+        print(
+            f"{name:<30s} {ann_delta:>+9.2f}pp {sharpe_delta:>+10.4f} {mdd_delta:>+9.2f}pp {score:>10.4f}"
+        )
 
     # ========== 保存结果 ==========
     out_path = os.path.join(BASE_DIR, "ml/backtest_results/v60_hybrid_backtest.json")
@@ -211,7 +227,7 @@ def run_comparison(symbol="BTC", top_threshold=0.5, dip_threshold=0.5,
         },
         "results": results,
     }
-    with open(out_path, 'w', encoding='utf-8') as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(save_data, f, ensure_ascii=False, indent=2)
     print(f"\n  结果已保存: {out_path}")
 

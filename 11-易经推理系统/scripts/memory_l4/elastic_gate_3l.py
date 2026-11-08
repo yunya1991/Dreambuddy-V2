@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class ElasticGate3L:
     _P1_SCORES = {
         "STANDARD": 1.00,
         "WEAK": 0.60,
-        "BLOCK": 0.10,    # F1 BLOCK 也给 10% 试错仓底
+        "BLOCK": 0.10,  # F1 BLOCK 也给 10% 试错仓底
     }
 
     # ----------------
@@ -73,6 +73,7 @@ class ElasticGate3L:
         try:
             import json as _json
             from pathlib import Path as _Path
+
             p = _Path(__file__).resolve().parent / "runtime" / "phase_c_default_params.json"
             if p.exists():
                 data = _json.loads(p.read_text(encoding="utf-8"))
@@ -105,13 +106,14 @@ class ElasticGate3L:
         return 0.85 + (1.50 - 0.85) * min(1.0, max(0.0, t))
 
     # -------- 公共：核心方法 --------
-    def apply_fuses(self,
-                    base_pos_mult: float,
-                    p1_out: str,
-                    elder_grade: str,
-                    f4_hit: bool,
-                    f4_similarity: float,
-                    ) -> float:
+    def apply_fuses(
+        self,
+        base_pos_mult: float,
+        p1_out: str,
+        elder_grade: str,
+        f4_hit: bool,
+        f4_similarity: float,
+    ) -> float:
         """
         §五 5.3 F1~F4 铁则叠加（按顺序：F3 → F4 → F2 → 全局clip[F1]）。
 
@@ -132,6 +134,7 @@ class ElasticGate3L:
             float: 最终 final_pos_mult，可直接 × position_usdt 使用
         """
         from . import phase_c_constants as C
+
         final = float(base_pos_mult)
 
         # ① F3：Elder 严重反信 0.70 折扣
@@ -160,6 +163,7 @@ class ElasticGate3L:
         """P14* F2 顶 cap，默认 0.10，runtime 参数可覆盖"""
         try:
             from . import phase_c_constants as C
+
             # runtime 动态参数优先（回测校准后覆盖）
             default_cap = float(C.F2_P1_BLOCK_CAP_DEFAULT)
             dp = getattr(self, "_params", None)
@@ -173,6 +177,7 @@ class ElasticGate3L:
         """P15* 全局 clip 上界，默认 1.50，runtime 参数可覆盖"""
         try:
             from . import phase_c_constants as C
+
             default_high = float(C.FINAL_POS_MULT_CLIP_HIGH_DEFAULT)
             dp = getattr(self, "_params", None)
             if dp and isinstance(dp, dict):
@@ -181,15 +186,16 @@ class ElasticGate3L:
         except Exception:
             return 1.50
 
-    def compute_with_fuses(self,
-                           p1_out: str,
-                           elder_grade: str,
-                           score_b: float,
-                           weights: Optional[Any] = None,
-                           f4_hit: bool = False,
-                           f4_similarity: float = 0.0,
-                           direction: Optional[str] = None,
-                           ) -> float:
+    def compute_with_fuses(
+        self,
+        p1_out: str,
+        elder_grade: str,
+        score_b: float,
+        weights: Optional[Any] = None,
+        f4_hit: bool = False,
+        f4_similarity: float = 0.0,
+        direction: Optional[str] = None,
+    ) -> float:
         """
         一站式：compute() → apply_fuses()，直接返回 final_pos_mult。
 
@@ -202,8 +208,11 @@ class ElasticGate3L:
           position_usdt = base_position_usdt * final_mult
         """
         out = self.compute(
-            p1_out=p1_out, elder_grade=elder_grade,
-            score_b=score_b, weights=weights, direction=direction,
+            p1_out=p1_out,
+            elder_grade=elder_grade,
+            score_b=score_b,
+            weights=weights,
+            direction=direction,
         )
         # 做空收紧时 apply_fuses 的 elder_grade 用实际参与 compute 的降档版（若被改写则体现在 out.score_e 上；此处保持一致）
         eg_for_fuses = elder_grade
@@ -211,6 +220,7 @@ class ElasticGate3L:
             _src = str(getattr(out, "source", "") or "")
             if _src.startswith("short_tightened:") and "Elder→" in _src:
                 import re as _re
+
                 _m = _re.search(r"Elder→([A-Z_]+)", _src)
                 if _m:
                     eg_for_fuses = _m.group(1)
@@ -218,17 +228,20 @@ class ElasticGate3L:
             pass
         return self.apply_fuses(
             base_pos_mult=out.base_pos_mult,
-            p1_out=p1_out, elder_grade=eg_for_fuses,
-            f4_hit=f4_hit, f4_similarity=f4_similarity,
+            p1_out=p1_out,
+            elder_grade=eg_for_fuses,
+            f4_hit=f4_hit,
+            f4_similarity=f4_similarity,
         )
 
-    def compute(self,
-                p1_out: str,
-                elder_grade: str,
-                score_b: float,
-                weights: Optional[Any] = None,
-                direction: Optional[str] = None,
-                ) -> ElasticGate3LOutput:
+    def compute(
+        self,
+        p1_out: str,
+        elder_grade: str,
+        score_b: float,
+        weights: Optional[Any] = None,
+        direction: Optional[str] = None,
+    ) -> ElasticGate3LOutput:
         """
         计算三层弹性放行 base_pos_mult。
 
@@ -296,7 +309,7 @@ class ElasticGate3L:
                     w_p = w_p * _rescale
                     w_e = w_e * _rescale
                 if _short_tightened_log:
-                    _short_tightened_log += f" / w_b×0.70 归一"
+                    _short_tightened_log += " / w_b×0.70 归一"
                 else:
                     _short_tightened_log = "SHORT收紧: w_b×0.70 归一"
 
@@ -310,7 +323,9 @@ class ElasticGate3L:
             # 6) 映射 → base_pos_mult
             base_mult = self._consensus_to_base(score_cons)
 
-            _src = "normal" if not _short_tightened_log else f"short_tightened:{_short_tightened_log}"
+            _src = (
+                "normal" if not _short_tightened_log else f"short_tightened:{_short_tightened_log}"
+            )
             return ElasticGate3LOutput(
                 base_pos_mult=base_mult,
                 score_p=sp,
@@ -321,8 +336,10 @@ class ElasticGate3L:
             )
 
         except Exception as e:  # noqa: BLE001 - fail-open 兜底
-            from . import phase_c_constants as C
             import datetime as _dt
+
+            from . import phase_c_constants as C
+
             hour_tag = _dt.datetime.now().strftime("%Y-%m-%dT%H")
             if self._last_failopen_logged_hour != hour_tag:
                 logger.warning(

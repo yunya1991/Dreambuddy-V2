@@ -7,6 +7,7 @@
 
 关联文档: COGNITIVE_ARCHITECTURE.md §5.4 P2-9 / spec 2026-08-05-cognitive-science-p2-p3-design.md §2
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,22 +18,24 @@ from typing import Dict
 @dataclass
 class Prediction:
     """事前预测（开仓时生成，平仓后校验）"""
-    expected_direction: str       # "LONG" / "SHORT" / "HOLD"
-    expected_horizon_bars: int    # 预期持仓周期（K线根数）
-    stop_loss_prob: float         # 预期止损触发概率 [0,1]
-    target_return_pct: float      # 预期目标收益率（%）
+
+    expected_direction: str  # "LONG" / "SHORT" / "HOLD"
+    expected_horizon_bars: int  # 预期持仓周期（K线根数）
+    stop_loss_prob: float  # 预期止损触发概率 [0,1]
+    target_return_pct: float  # 预期目标收益率（%）
     prediction_confidence: float  # 预测置信度 [0,1]
-    generated_at: str             # ISO 时间戳
+    generated_at: str  # ISO 时间戳
 
 
 @dataclass
 class PredictionError:
     """预测误差（平仓后计算）"""
-    direction_hit: bool           # 方向是否命中
-    target_hit: bool              # 目标收益是否达成
-    stop_triggered: bool          # 止损是否触发
-    magnitude_error: float        # 误差幅度
-    computed_at: str              # ISO 时间戳
+
+    direction_hit: bool  # 方向是否命中
+    target_hit: bool  # 目标收益是否达成
+    stop_triggered: bool  # 止损是否触发
+    magnitude_error: float  # 误差幅度
+    computed_at: str  # ISO 时间戳
 
 
 class PredictionEngine:
@@ -40,9 +43,9 @@ class PredictionEngine:
 
     # 波动率→持仓周期映射（高波动短周期）
     _HORIZON_MAP = [
-        (0.02, 48),   # vol<2% → 48根（约1天）
-        (0.05, 24),   # vol<5% → 24根（约12小时）
-        (0.10, 12),   # vol<10% → 12根（约6小时）
+        (0.02, 48),  # vol<2% → 48根（约1天）
+        (0.05, 24),  # vol<5% → 24根（约12小时）
+        (0.10, 12),  # vol<10% → 12根（约6小时）
         (float("inf"), 6),  # 高波动 → 6根（约3小时）
     ]
 
@@ -74,11 +77,10 @@ class PredictionEngine:
         actual_return_pct = float(actual.get("return_pct", 0.0))
         stop_triggered = bool(actual.get("stop_triggered", False))
 
-        direction_hit = (actual_direction.upper() == prediction.expected_direction.upper())
-        target_hit = (actual_return_pct >= prediction.target_return_pct)
-        magnitude_error = (
-            abs(actual_return_pct - prediction.target_return_pct)
-            / max(abs(prediction.target_return_pct), 0.01)
+        direction_hit = actual_direction.upper() == prediction.expected_direction.upper()
+        target_hit = actual_return_pct >= prediction.target_return_pct
+        magnitude_error = abs(actual_return_pct - prediction.target_return_pct) / max(
+            abs(prediction.target_return_pct), 0.01
         )
 
         return PredictionError(

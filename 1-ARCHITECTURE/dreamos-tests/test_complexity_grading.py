@@ -18,7 +18,7 @@ import sys
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ARCH_DIR = os.path.dirname(HERE)          # 1-ARCHITECTURE
+ARCH_DIR = os.path.dirname(HERE)  # 1-ARCHITECTURE
 GOLDEN_PATH = os.path.join(HERE, "golden_set_complexity.json")
 BASELINE_PATH = os.path.join(HERE, "baseline_complexity_snapshot.json")
 
@@ -37,33 +37,39 @@ def run_golden() -> int:
         decision = classify_complexity(c["q"], intent_type="")
         ok = decision.tier == c["expected"]
         mark = "PASS" if ok else "FAIL"
-        print(f"[{mark}] #{c['id']:02d} {c['expected']}→{decision.tier} "
-              f"({decision.rule_hit}) {c['q']}")
+        print(
+            f"[{mark}] #{c['id']:02d} {c['expected']}→{decision.tier} "
+            f"({decision.rule_hit}) {c['q']}"
+        )
         if ok:
             hits += 1
         else:
-            misses.append({
-                "id": c["id"], "q": c["q"], "expected": c["expected"],
-                "got": decision.tier, "rule_hit": decision.rule_hit,
-                "rationale": decision.rationale,
-            })
+            misses.append(
+                {
+                    "id": c["id"],
+                    "q": c["q"],
+                    "expected": c["expected"],
+                    "got": decision.tier,
+                    "rule_hit": decision.rule_hit,
+                    "rationale": decision.rationale,
+                }
+            )
 
     rate = hits / len(cases) if cases else 0.0
     print(f"\n一致率: {hits}/{len(cases)} = {rate:.1%} (AC2 要求 >= 90%)")
     if misses:
         print("不一致项:")
         for m in misses:
-            print(f"  #{m['id']} 期望{m['expected']} 实际{m['got']} "
-                  f"[{m['rule_hit']}] {m['q']}")
+            print(f"  #{m['id']} 期望{m['expected']} 实际{m['got']} " f"[{m['rule_hit']}] {m['q']}")
     return 0 if rate >= 0.9 else 1
 
 
 def run_baseline() -> int:
     """记录正典问题的当前编排行为（改造前/回归比对用）"""
-    from dreamos.core.sense.intent_engine import IntentEngine
-    from dreamos.core.arrange.graph_planner import GraphPlanner
-    from dreamos.registry.node_registry import get_default_registry
     from dreamos.capabilities.trading import TradingCapability
+    from dreamos.core.arrange.graph_planner import GraphPlanner
+    from dreamos.core.sense.intent_engine import IntentEngine
+    from dreamos.registry.node_registry import get_default_registry
 
     registry = get_default_registry()
     if len(registry) == 0:
@@ -71,9 +77,8 @@ def run_baseline() -> int:
     canonical_q = "BTC 现在能做多吗"
     market = {"price": 108400, "symbol": "BTC", "coin": "BTC"}
 
-    engine = IntentEngine(use_llm_based=False)     # 纯本地，零 Token
-    intent = engine.recognize(user_message=canonical_q, market=market,
-                              symbol="BTC")
+    engine = IntentEngine(use_llm_based=False)  # 纯本地，零 Token
+    intent = engine.recognize(user_message=canonical_q, market=market, symbol="BTC")
 
     planner = GraphPlanner(registry=registry)
     plan = planner.plan_from_intent(
@@ -84,8 +89,7 @@ def run_baseline() -> int:
         confidence=intent.confidence,
     )
 
-    tier_decision = classify_complexity(canonical_q,
-                                        intent_type=intent.intent_type)
+    tier_decision = classify_complexity(canonical_q, intent_type=intent.intent_type)
 
     snapshot = {
         "created_at": datetime.utcnow().isoformat(),

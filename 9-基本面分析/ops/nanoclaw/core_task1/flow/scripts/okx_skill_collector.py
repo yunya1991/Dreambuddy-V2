@@ -23,7 +23,9 @@ def build_snapshot_stub(asset: str = "BTC") -> dict:
     }
 
 
-def collect_okx_market_intel_latest(*, output_dir: Path, raw_dir: Path, asset: str = "BTC", cmd: list[str] | None = None) -> tuple[Path, Path]:
+def collect_okx_market_intel_latest(
+    *, output_dir: Path, raw_dir: Path, asset: str = "BTC", cmd: list[str] | None = None
+) -> tuple[Path, Path]:
     output_dir = Path(output_dir)
     raw_dir = Path(raw_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -72,12 +74,14 @@ def collect_okx_market_intel_latest(*, output_dir: Path, raw_dir: Path, asset: s
         inject = f"--require {str(dns_patch_path)}"
         if inject not in prev:
             base_env["NODE_OPTIONS"] = (inject if not prev else f"{inject} {prev}").strip()
-    for candidate in ([cmd] + [c for c in candidate_cmds if c != cmd]):
+    for candidate in [cmd] + [c for c in candidate_cmds if c != cmd]:
         if not candidate:
             continue
         tried.append(candidate)
         try:
-            rep = subprocess.run(candidate, capture_output=True, text=True, timeout=25, check=False, env=base_env)
+            rep = subprocess.run(
+                candidate, capture_output=True, text=True, timeout=25, check=False, env=base_env
+            )
         except Exception as e:
             last_err = f"run_error:{type(e).__name__}"
             continue
@@ -100,7 +104,11 @@ def collect_okx_market_intel_latest(*, output_dir: Path, raw_dir: Path, asset: s
         parsed = {"result": obj}
         break
 
-    topics = parsed.get("topics") if isinstance(parsed, dict) and isinstance(parsed.get("topics"), list) else []
+    topics = (
+        parsed.get("topics")
+        if isinstance(parsed, dict) and isinstance(parsed.get("topics"), list)
+        else []
+    )
     normalized_topics = [t for t in topics if isinstance(t, dict)]
     status = "ok" if normalized_topics else ("missing" if last_err else "stale")
     latest_path = output_dir / "okx_market_intel_latest.json"

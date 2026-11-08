@@ -5,6 +5,7 @@ Spec §4.3 FAIL-OPEN：ImportError 或任何异常 → 返回空 list，不阻�
   · 返回值语义：List[entry_dict]（entry_dict 至少含 event_type/risk_dir/sentiment_mean
     /sentiment_weighted/urgency_score/window/surprise_bucket/risk_action_proposal 等）
 """
+
 from __future__ import annotations
 
 import sys

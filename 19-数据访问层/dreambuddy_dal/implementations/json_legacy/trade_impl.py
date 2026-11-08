@@ -2,6 +2,7 @@
 JsonLegacyTradeRepository：现状薄适配 + P0 内存 dict 实现（模拟现有 trading_utils.jsonl）
 ⚠️ P0-only：真实接入 P1
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -48,8 +49,12 @@ class JsonLegacyTradeRepository(TradeRepository):
             return None
         t = _TRADE_STORE[trade_id]
         info = CloseInfo(
-            exit_reason=exit_reason, exit_price=exit_price, close_ts=close_ts,
-            realized_pnl=realized_pnl, slippage_bps=slippage_bps, execution_id=execution_id,
+            exit_reason=exit_reason,
+            exit_price=exit_price,
+            close_ts=close_ts,
+            realized_pnl=realized_pnl,
+            slippage_bps=slippage_bps,
+            execution_id=execution_id,
         )
         t.close_info = info
         t.status = TradeStatus.CLOSED

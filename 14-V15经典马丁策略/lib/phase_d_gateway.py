@@ -13,7 +13,6 @@ Phase D Gateway — BiLSTM-Attention 爆仓预警 + PatchTST 回撤预测 的三
 
 from __future__ import annotations
 
-import math
 import os
 import sys
 from dataclasses import dataclass, field
@@ -30,14 +29,17 @@ def _get_ab_comparator_cls():
     if _AB_COMPARATOR_CLS is None:
         try:
             import sys as _sys
+
             _root = str(Path(__file__).resolve().parent.parent)
             if _root not in _sys.path:
                 _sys.path.insert(0, _root)
             from ab_shadow_comparator import ABShadowComparator as _Cls
+
             _AB_COMPARATOR_CLS = _Cls
         except Exception:
             _AB_COMPARATOR_CLS = False  # 标记不可用
     return _AB_COMPARATOR_CLS if _AB_COMPARATOR_CLS is not False else None
+
 
 # ================================================================
 # 真实模型推理支撑（roadmap §4.4）— 懒加载 torch，模块导入零依赖
@@ -73,7 +75,6 @@ def _invalidate_model_cache(kind: Optional[str] = None, path: Optional[str] = No
     return removed
 
 
-
 def _candle_val(k: Any, key: str, idx: int) -> Optional[float]:
     """K线取值：兼容 dict / list|tuple 两种形态（v15 数据约定 o=1,h=2,l=3,c=4,v=5）。"""
     try:
@@ -94,18 +95,20 @@ def _ohlcv_rows(klines: Any, limit: int) -> list:
     for k in (klines or [])[-limit:]:
         o = _candle_val(k, "o", 1)
         h = _candle_val(k, "h", 2)
-        l = _candle_val(k, "l", 3)
+        l = _candle_val(k, "l", 3)  # noqa: E741
         c = _candle_val(k, "c", 4)
         v = _candle_val(k, "v", 5)
         if c is None:
             continue
-        rows.append([
-            o if o is not None else c,
-            h if h is not None else c,
-            l if l is not None else c,
-            c,
-            v if v is not None else 0.0,
-        ])
+        rows.append(
+            [
+                o if o is not None else c,
+                h if h is not None else c,
+                l if l is not None else c,
+                c,
+                v if v is not None else 0.0,
+            ]
+        )
     if not rows:
         return []
     if len(rows) < limit:
@@ -117,10 +120,10 @@ def _expand_4h_to_1h(klines_4h: Any) -> list:
     """确定性 4H→1H 展开（回测侧无 1H 数据时的兜底路径）：
     每根 4H 按 o→c 线性插值切 4 根 1H，上下影线均摊，成交量 /4。"""
     bars = []
-    for k in (klines_4h or []):
+    for k in klines_4h or []:
         o = _candle_val(k, "o", 1)
         h = _candle_val(k, "h", 2)
-        l = _candle_val(k, "l", 3)
+        l = _candle_val(k, "l", 3)  # noqa: E741
         c = _candle_val(k, "c", 4)
         v = _candle_val(k, "v", 5) or 0.0
         if o is None or c is None:
@@ -130,13 +133,15 @@ def _expand_4h_to_1h(klines_4h: Any) -> list:
         for j in range(4):
             so = o + (c - o) * (j / 4.0)
             sc = o + (c - o) * ((j + 1) / 4.0)
-            bars.append({
-                "o": so,
-                "h": max(so, sc) + hi_wick,
-                "l": min(so, sc) - lo_wick,
-                "c": sc,
-                "v": v / 4.0,
-            })
+            bars.append(
+                {
+                    "o": so,
+                    "h": max(so, sc) + hi_wick,
+                    "l": min(so, sc) - lo_wick,
+                    "c": sc,
+                    "v": v / 4.0,
+                }
+            )
     return bars
 
 
@@ -144,7 +149,7 @@ def _atr14_pure(rows: list) -> float:
     """ATR(14) 纯 Python（与训练生成器 _atr_from_ohlcv 同语义：真实波幅均值）。"""
     trs = []
     for i in range(1, len(rows)):
-        h, l, pc = rows[i][1], rows[i][2], rows[i - 1][3]
+        h, l, pc = rows[i][1], rows[i][2], rows[i - 1][3]  # noqa: E741
         trs.append(max(h - l, abs(h - pc), abs(l - pc)))
     if not trs:
         return 0.0
@@ -158,7 +163,7 @@ def _bilstm_scalar_features(ctx: Dict[str, Any], rows: list) -> list:
     atr_now = _atr14_pure(rows)
     atrs = []
     for w in range(max(0, len(rows) - 60), len(rows)):
-        seg = rows[max(0, w - 15): w + 1]
+        seg = rows[max(0, w - 15) : w + 1]
         if len(seg) >= 14:
             atrs.append(_atr14_pure(seg))
     if atrs:
@@ -258,7 +263,7 @@ def _probe_load_model(kind: str, path: Optional[str]) -> Tuple[bool, str]:
     if not path or not os.path.isfile(path):
         return False, f"权重文件不存在: {path!r}"
     # 临时 key，避免污染真实缓存；用后立即 pop
-    probe_key = (f"__probe__{kind}", path)
+    probe_key = (f"__probe__{kind}", path)  # noqa: F841
     try:
         if kind == "bilstm":
             result = _load_bilstm_model(path)
@@ -362,7 +367,9 @@ class PhaseDGateway:
 
     # ---- TDD / 诊断辅助字段（不参与启用逻辑） ----
     last_gate_code: Optional[str] = field(default=None, repr=False)
-    _mock_bilstm: Optional[float] = field(default=None, repr=False)  # 仅 _for_testing_use_mock_predictor 用
+    _mock_bilstm: Optional[float] = field(
+        default=None, repr=False
+    )  # 仅 _for_testing_use_mock_predictor 用
     _mock_patchtst: Optional[float] = field(default=None, repr=False)
     # A/B 影子对比器（None=不记录，设置后自动记录 G-D1/G-D2/G-D3 决策）
     ab_comparator: Optional[Any] = field(default=None, repr=False)
@@ -447,7 +454,9 @@ class PhaseDGateway:
             _invalidate_model_cache(kind=kind, path=path)
             swapped.append(f"{kind}: {old_path!r} -> {path!r}")
 
-        return True, f"热切换成功: {', '.join(swapped)}" + (f"; 跳过: {', '.join(skipped)}" if skipped else "")
+        return True, f"热切换成功: {', '.join(swapped)}" + (
+            f"; 跳过: {', '.join(skipped)}" if skipped else ""
+        )
 
     # ================================================================
     # 预测函数：真实加载模型 & 推理；或走 mock（TDD 场景）
@@ -559,9 +568,14 @@ class PhaseDGateway:
         # 确保 ctx 有 position_ref，供后续 ab_comparator 回填 PnL 匹配
         if self.ab_comparator is not None and isinstance(ctx, dict) and not ctx.get("position_ref"):
             try:
-                from datetime import datetime, timezone as _tz
+                from datetime import datetime
+                from datetime import timezone as _tz
+
                 coin = ctx.get("symbol") or ctx.get("coin") or "UNKNOWN"
-                ts = ctx.get("open_time") or datetime.now(_tz.utc).replace(second=0, microsecond=0).isoformat()
+                ts = (
+                    ctx.get("open_time")
+                    or datetime.now(_tz.utc).replace(second=0, microsecond=0).isoformat()
+                )
                 ctx["position_ref"] = type(self.ab_comparator).build_position_ref(coin, ts)
             except Exception:
                 pass
@@ -735,7 +749,7 @@ class PhaseDGateway:
             baseline_value=orig_power,
             relative_lower=0.60,
             relative_upper=1.0,  # G-D3 只放宽（往更小 size_power），不收紧
-            absolute_lo=1.00,   # §3.3 外层铁壳 [1.00, 4.00]
+            absolute_lo=1.00,  # §3.3 外层铁壳 [1.00, 4.00]
             absolute_hi=4.00,
         )
         self.last_gate_code = "G-D3-RELAX-UNCLEAR"

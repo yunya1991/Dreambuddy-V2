@@ -16,7 +16,6 @@ API:
 from __future__ import annotations
 
 import traceback
-from typing import Any
 
 # 复用 server.py 的 _send_stderr（结构化日志）
 try:
@@ -24,9 +23,8 @@ try:
 except ImportError:
     # 独立运行时 fallback
     import sys
-    _send_stderr = lambda level, msg: sys.stderr.write(  # noqa: E731
-        f"[{level}] {msg}\n"
-    )
+
+    _send_stderr = lambda level, msg: sys.stderr.write(f"[{level}] {msg}\n")  # noqa: E731
 
 # 单条样本必需字段（HC-3 数据主权：训练样本必须可追溯）
 _REQUIRED_FIELDS = ("id", "user_message", "algorithm_result")
@@ -137,9 +135,7 @@ def validate_dataset(dataset: list) -> dict:
                 invalid_count += 1
                 # 只记录前 3 条错误，避免日志膨胀
                 if len(issues) < 3:
-                    issues.append(
-                        f"sample#{idx} invalid: {'; '.join(result['errors'][:2])}"
-                    )
+                    issues.append(f"sample#{idx} invalid: {'; '.join(result['errors'][:2])}")
             # 统计标签分布（仅已标注样本）
             if isinstance(sample, dict):
                 label = sample.get("label")
@@ -164,23 +160,21 @@ def validate_dataset(dataset: list) -> dict:
         size_penalty = 0.0
         if len(dataset) < _MIN_DATASET_SIZE:
             size_penalty = 0.2
-            issues.append(
-                f"dataset too small: {len(dataset)} < {_MIN_DATASET_SIZE}"
-            )
+            issues.append(f"dataset too small: {len(dataset)} < {_MIN_DATASET_SIZE}")
 
         # 4. quality_score 计算
         #    基础分 1.0 - 无效样本比例 - 标签不平衡惩罚 - 规模惩罚
         invalid_ratio = invalid_count / len(dataset) if dataset else 1.0
-        imbalance_penalty = max(0.0, (max_ratio - _LABEL_BALANCE_MAX_RATIO)) if labeled_count > 0 else 0.0
+        imbalance_penalty = (
+            max(0.0, (max_ratio - _LABEL_BALANCE_MAX_RATIO)) if labeled_count > 0 else 0.0
+        )
         quality_score = max(
             0.0,
             1.0 - invalid_ratio - imbalance_penalty - size_penalty,
         )
 
         # 整体 valid：无无效样本 + 无标签不平衡
-        valid = invalid_count == 0 and (
-            labeled_count == 0 or max_ratio <= _LABEL_BALANCE_MAX_RATIO
-        )
+        valid = invalid_count == 0 and (labeled_count == 0 or max_ratio <= _LABEL_BALANCE_MAX_RATIO)
 
         return {
             "valid": valid,

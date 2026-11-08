@@ -21,5 +21,5 @@ __all__ = [
     "DebateEngine",
     "ConclusionExtractor",
     "MasterEvolution",
-    "ReportWriter"
+    "ReportWriter",
 ]

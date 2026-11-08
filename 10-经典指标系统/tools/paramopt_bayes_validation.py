@@ -51,12 +51,20 @@ def _pick(d: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
 
 
 class HttpClient:
-    def __init__(self, base_url: str, timeout_sec: float, headers: Optional[Dict[str, str]] = None) -> None:
+    def __init__(
+        self, base_url: str, timeout_sec: float, headers: Optional[Dict[str, str]] = None
+    ) -> None:
         self.base_url = str(base_url).rstrip("/")
         self.timeout_sec = float(timeout_sec)
         self.headers = dict(headers or {})
 
-    def request(self, method: str, path: str, payload: Optional[Dict[str, Any]] = None, query: Optional[Dict[str, Any]] = None) -> Tuple[int, Any, str]:
+    def request(
+        self,
+        method: str,
+        path: str,
+        payload: Optional[Dict[str, Any]] = None,
+        query: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[int, Any, str]:
         p = str(path or "")
         if not p.startswith("/"):
             p = "/" + p
@@ -78,7 +86,11 @@ class HttpClient:
                 return int(resp.status), _json_loads(b), b.decode("utf-8", errors="replace")
         except urllib.error.HTTPError as e:
             b = e.read() if hasattr(e, "read") else b""
-            return int(getattr(e, "code", 0) or 0), _json_loads(b), b.decode("utf-8", errors="replace")
+            return (
+                int(getattr(e, "code", 0) or 0),
+                _json_loads(b),
+                b.decode("utf-8", errors="replace"),
+            )
         except Exception as e:
             return 0, None, str(e)
 
@@ -93,15 +105,25 @@ class InProcessClient:
         self.svc = svc
         self.client = svc.app.test_client()
 
-    def request(self, method: str, path: str, payload: Optional[Dict[str, Any]] = None, query: Optional[Dict[str, Any]] = None) -> Tuple[int, Any, str]:
+    def request(
+        self,
+        method: str,
+        path: str,
+        payload: Optional[Dict[str, Any]] = None,
+        query: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[int, Any, str]:
         m = str(method or "GET").strip().upper()
         p = str(path or "")
         if not p.startswith("/"):
             p = "/" + p
         if m == "GET":
-            resp = self.client.get(p, query_string=(query or {}), environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            resp = self.client.get(
+                p, query_string=(query or {}), environ_base={"REMOTE_ADDR": "127.0.0.1"}
+            )
         else:
-            resp = self.client.open(p, method=m, json=(payload or {}), environ_base={"REMOTE_ADDR": "127.0.0.1"})
+            resp = self.client.open(
+                p, method=m, json=(payload or {}), environ_base={"REMOTE_ADDR": "127.0.0.1"}
+            )
         body = resp.get_json(silent=True)
         raw = ""
         try:
@@ -138,7 +160,9 @@ def _extract_eval_metrics(eval_mode: str, d: Dict[str, Any]) -> Dict[str, Option
     return out
 
 
-def _metrics_delta(a: Dict[str, Optional[float]], b: Dict[str, Optional[float]]) -> Dict[str, Optional[float]]:
+def _metrics_delta(
+    a: Dict[str, Optional[float]], b: Dict[str, Optional[float]]
+) -> Dict[str, Optional[float]]:
     out: Dict[str, Optional[float]] = {}
     keys = sorted(set(list(a.keys()) + list(b.keys())))
     for k in keys:
@@ -161,7 +185,9 @@ def _coerce_recent_items(x: Any) -> List[Dict[str, Any]]:
     return []
 
 
-def _seed_eval_samples_if_needed(cli: InProcessClient, n: int) -> Optional[Tuple[List[Any], Dict[str, Any]]]:
+def _seed_eval_samples_if_needed(
+    cli: InProcessClient, n: int
+) -> Optional[Tuple[List[Any], Dict[str, Any]]]:
     if int(n) <= 0:
         return None
     svc = cli.svc
@@ -194,7 +220,9 @@ def _seed_eval_samples_if_needed(cli: InProcessClient, n: int) -> Optional[Tuple
     return orig_samples, orig_cfg
 
 
-def _restore_inprocess_state(cli: InProcessClient, snap: Optional[Tuple[List[Any], Dict[str, Any]]]) -> None:
+def _restore_inprocess_state(
+    cli: InProcessClient, snap: Optional[Tuple[List[Any], Dict[str, Any]]]
+) -> None:
     if snap is None:
         return
     orig_samples, orig_cfg = snap
@@ -243,7 +271,9 @@ def main() -> None:
 
     cli: Any
     if str(args.transport) == "http":
-        cli = HttpClient(base_url=str(args.base_url), timeout_sec=float(args.timeout_sec), headers=headers)
+        cli = HttpClient(
+            base_url=str(args.base_url), timeout_sec=float(args.timeout_sec), headers=headers
+        )
     else:
         cli = InProcessClient()
 
@@ -277,7 +307,11 @@ def main() -> None:
 
         st_cfg0, cfg0, raw_cfg0 = cli.request("GET", "/config/get", query={})
         if st_cfg0 != 200 or not isinstance(cfg0, dict):
-            report["error"] = {"stage": "config_get_before", "status": st_cfg0, "raw": str(raw_cfg0)[:4000]}
+            report["error"] = {
+                "stage": "config_get_before",
+                "status": st_cfg0,
+                "raw": str(raw_cfg0)[:4000],
+            }
             print(_json_dumps(report))
             return
         val_before = cfg0.get(str(args.key))
@@ -285,13 +319,25 @@ def main() -> None:
         st_space, space_body, raw_space = cli.request(
             "POST",
             "/agent/paramopt/search_space",
-            payload={"trace_id": f"{trace_id}_space", "scopes": ["entry", "strategy", "quant", "overlay"], "include_suggest_only": False},
+            payload={
+                "trace_id": f"{trace_id}_space",
+                "scopes": ["entry", "strategy", "quant", "overlay"],
+                "include_suggest_only": False,
+            },
         )
         if st_space != 200 or not isinstance(space_body, dict):
-            report["error"] = {"stage": "search_space", "status": st_space, "raw": str(raw_space)[:4000]}
+            report["error"] = {
+                "stage": "search_space",
+                "status": st_space,
+                "raw": str(raw_space)[:4000],
+            }
             print(_json_dumps(report))
             return
-        items = ((_get_dict(space_body, "space")).get("items") if isinstance(_get_dict(space_body, "space").get("items"), list) else []) or []
+        items = (
+            (_get_dict(space_body, "space")).get("items")
+            if isinstance(_get_dict(space_body, "space").get("items"), list)
+            else []
+        ) or []
         item_by_key = {}
         for it in items:
             if isinstance(it, dict):
@@ -300,7 +346,11 @@ def main() -> None:
                     item_by_key[k] = it
         key = str(args.key).strip()
         if key not in item_by_key:
-            report["error"] = {"stage": "search_space_key_missing", "key": key, "space_n": len(items)}
+            report["error"] = {
+                "stage": "search_space_key_missing",
+                "key": key,
+                "space_n": len(items),
+            }
             print(_json_dumps(report))
             return
         key_meta = item_by_key.get(key) if isinstance(item_by_key.get(key), dict) else {}
@@ -322,7 +372,11 @@ def main() -> None:
         }
         st_run, run_body, raw_run = cli.request("POST", "/agent/paramopt/run", payload=payload_run)
         if st_run != 200 or not isinstance(run_body, dict):
-            report["error"] = {"stage": "paramopt_run", "status": st_run, "raw": str(raw_run)[:8000]}
+            report["error"] = {
+                "stage": "paramopt_run",
+                "status": st_run,
+                "raw": str(raw_run)[:8000],
+            }
             print(_json_dumps(report))
             return
 
@@ -340,8 +394,8 @@ def main() -> None:
         gate = _get_dict(run_body, "gate")
         policy = _get_dict(run_body, "policy_auto_approval")
         apply_obj = _get_dict(run_body, "apply")
-        approval_id = (str(apply_obj.get("approval_id") or "").strip() or None)
-        apply_mode = (str(apply_obj.get("mode") or "").strip() or None)
+        approval_id = str(apply_obj.get("approval_id") or "").strip() or None
+        apply_mode = str(apply_obj.get("mode") or "").strip() or None
 
         approval_path: Dict[str, Any] = {
             "initial_apply_mode": apply_mode,
@@ -354,15 +408,22 @@ def main() -> None:
 
         if approval_id:
             st_ap0, ap0, raw_ap0 = cli.request("GET", "/approvals/get", query={"id": approval_id})
-            approval_path["approval_lookup_before"] = {"status": st_ap0, "body": (ap0 if isinstance(ap0, dict) else {"raw": str(raw_ap0)[:4000]})}
+            approval_path["approval_lookup_before"] = {
+                "status": st_ap0,
+                "body": (ap0 if isinstance(ap0, dict) else {"raw": str(raw_ap0)[:4000]}),
+            }
 
         config_apply_result: Optional[Dict[str, Any]] = None
         if bool(args.apply_config) and isinstance(selected_patch, dict) and selected_patch:
             final_approval_id = approval_id
-            if (not final_approval_id) or (str(apply_mode or "").lower() in ("approval_requested", "pending")):
+            if (not final_approval_id) or (
+                str(apply_mode or "").lower() in ("approval_requested", "pending")
+            ):
                 if bool(args.manual_approve_fallback):
                     if not final_approval_id:
-                        final_approval_id = hashlib.sha256(f"{trace_id}|manual".encode("utf-8")).hexdigest()[:16]
+                        final_approval_id = hashlib.sha256(
+                            f"{trace_id}|manual".encode("utf-8")
+                        ).hexdigest()[:16]
                     ap_payload = {
                         "id": str(final_approval_id),
                         "trace_id": str(trace_id),
@@ -371,21 +432,41 @@ def main() -> None:
                         "action": "config.set",
                         "reason": "manual_approve_fallback_for_bayes_validation",
                     }
-                    st_log, log_body, raw_log = cli.request("POST", "/approvals/log", payload=ap_payload)
+                    st_log, log_body, raw_log = cli.request(
+                        "POST", "/approvals/log", payload=ap_payload
+                    )
                     approval_path["manual_approval_used"] = True
-                    approval_path["manual_approval_log"] = {"status": st_log, "body": (log_body if isinstance(log_body, dict) else {"raw": str(raw_log)[:4000]})}
+                    approval_path["manual_approval_log"] = {
+                        "status": st_log,
+                        "body": (
+                            log_body if isinstance(log_body, dict) else {"raw": str(raw_log)[:4000]}
+                        ),
+                    }
             if final_approval_id:
-                payload_cfg = {"trace_id": f"{trace_id}_config_set", "confirm_live": True, "approval_id": str(final_approval_id)}
+                payload_cfg = {
+                    "trace_id": f"{trace_id}_config_set",
+                    "confirm_live": True,
+                    "approval_id": str(final_approval_id),
+                }
                 payload_cfg.update(selected_patch)
                 st_cfg1, cfg1, raw_cfg1 = cli.request("POST", "/config/set", payload=payload_cfg)
-                config_apply_result = {"status": st_cfg1, "body": (cfg1 if isinstance(cfg1, dict) else {"raw": str(raw_cfg1)[:8000]})}
+                config_apply_result = {
+                    "status": st_cfg1,
+                    "body": (cfg1 if isinstance(cfg1, dict) else {"raw": str(raw_cfg1)[:8000]}),
+                }
                 approval_id = str(final_approval_id)
             else:
-                config_apply_result = {"status": None, "body": {"ok": False, "error": "approval_id_missing"}}
+                config_apply_result = {
+                    "status": None,
+                    "body": {"ok": False, "error": "approval_id_missing"},
+                }
 
         if approval_id:
             st_ap1, ap1, raw_ap1 = cli.request("GET", "/approvals/get", query={"id": approval_id})
-            approval_path["approval_lookup_after"] = {"status": st_ap1, "body": (ap1 if isinstance(ap1, dict) else {"raw": str(raw_ap1)[:4000]})}
+            approval_path["approval_lookup_after"] = {
+                "status": st_ap1,
+                "body": (ap1 if isinstance(ap1, dict) else {"raw": str(raw_ap1)[:4000]}),
+            }
 
         st_cfg2, cfg2, raw_cfg2 = cli.request("GET", "/config/get", query={})
         val_after = None
@@ -433,8 +514,13 @@ def main() -> None:
                 "ignore_cooldown": bool(args.order_ignore_cooldown),
                 "ignore_post_close_freeze": bool(args.order_ignore_post_close_freeze),
             }
-            st_ord, ord_body, raw_ord = cli.request("POST", "/execution/hyperliquid/market_open", payload=order_payload)
-            order_receipt = {"status": st_ord, "body": (ord_body if isinstance(ord_body, dict) else {"raw": str(raw_ord)[:8000]})}
+            st_ord, ord_body, raw_ord = cli.request(
+                "POST", "/execution/hyperliquid/market_open", payload=order_payload
+            )
+            order_receipt = {
+                "status": st_ord,
+                "body": (ord_body if isinstance(ord_body, dict) else {"raw": str(raw_ord)[:8000]}),
+            }
 
         st_or, or_body, raw_or = cli.request("GET", "/orders/recent", query={"limit": 10})
         st_sr, sr_body, raw_sr = cli.request("GET", "/signals/recent", query={"limit": 10})
@@ -444,9 +530,13 @@ def main() -> None:
         report["ok"] = True
         report["parameter"] = {
             "key": str(key),
-            "search_space_meta": _pick(key_meta, ["key", "type", "apply_mode", "tighten_rule", "range"]),
+            "search_space_meta": _pick(
+                key_meta, ["key", "type", "apply_mode", "tighten_rule", "range"]
+            ),
             "before": val_before,
-            "selected_patch_value": selected_patch.get(key) if isinstance(selected_patch, dict) else None,
+            "selected_patch_value": (
+                selected_patch.get(key) if isinstance(selected_patch, dict) else None
+            ),
             "after": val_after,
             "changed": (val_before != val_after),
         }
@@ -465,10 +555,23 @@ def main() -> None:
         }
         report["approval_path"] = approval_path
         report["receipts"] = {
-            "signal": {"status": st_sig, "body": (sig_body if isinstance(sig_body, dict) else {"raw": str(raw_sig)[:8000]})},
+            "signal": {
+                "status": st_sig,
+                "body": (sig_body if isinstance(sig_body, dict) else {"raw": str(raw_sig)[:8000]}),
+            },
             "order": order_receipt,
-            "orders_recent": {"status": st_or, "count": len(orders_items), "top": (orders_items[0] if orders_items else None), "raw": (None if isinstance(or_body, (list, dict)) else str(raw_or)[:4000])},
-            "signals_recent": {"status": st_sr, "count": len(signals_items), "top": (signals_items[0] if signals_items else None), "raw": (None if isinstance(sr_body, (list, dict)) else str(raw_sr)[:4000])},
+            "orders_recent": {
+                "status": st_or,
+                "count": len(orders_items),
+                "top": (orders_items[0] if orders_items else None),
+                "raw": (None if isinstance(or_body, (list, dict)) else str(raw_or)[:4000]),
+            },
+            "signals_recent": {
+                "status": st_sr,
+                "count": len(signals_items),
+                "top": (signals_items[0] if signals_items else None),
+                "raw": (None if isinstance(sr_body, (list, dict)) else str(raw_sr)[:4000]),
+            },
             "config_apply": config_apply_result,
         }
 

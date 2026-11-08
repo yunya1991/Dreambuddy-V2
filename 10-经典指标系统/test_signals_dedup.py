@@ -1,4 +1,4 @@
-import threading
+import threading  # noqa: I001
 import time
 import unittest
 
@@ -97,7 +97,10 @@ class TestSignalsDedup(unittest.TestCase):
             def worker(trig: bool) -> None:
                 results.append(svc._emit_signal_v1(dict(payload), trig, {"source": "unit"}))
 
-            threads = [threading.Thread(target=worker, args=(False,)), threading.Thread(target=worker, args=(True,))]
+            threads = [
+                threading.Thread(target=worker, args=(False,)),
+                threading.Thread(target=worker, args=(True,)),
+            ]
             for t in threads:
                 t.start()
             for t in threads:
@@ -270,16 +273,24 @@ class TestSignalsDedup(unittest.TestCase):
                 features={},
             )
 
-            r1 = client.post("/signals/v1", json={"signal": payload, "trigger_decision": True}).get_json()
-            r2 = client.post("/signals/v1", json={"signal": payload, "trigger_decision": True}).get_json()
+            r1 = client.post(
+                "/signals/v1", json={"signal": payload, "trigger_decision": True}
+            ).get_json()
+            r2 = client.post(
+                "/signals/v1", json={"signal": payload, "trigger_decision": True}
+            ).get_json()
             self.assertTrue(r1.get("ok"))
             self.assertTrue(r2.get("ok"))
             self.assertEqual(r1.get("id"), r2.get("id"))
 
             payload2 = dict(payload)
             payload2["tag"] = "upgrade"
-            r3 = client.post("/signals/v1", json={"signal": payload2, "trigger_decision": False}).get_json()
-            r4 = client.post("/signals/v1", json={"signal": payload2, "trigger_decision": True}).get_json()
+            r3 = client.post(
+                "/signals/v1", json={"signal": payload2, "trigger_decision": False}
+            ).get_json()
+            r4 = client.post(
+                "/signals/v1", json={"signal": payload2, "trigger_decision": True}
+            ).get_json()
             self.assertTrue(r3.get("ok"))
             self.assertTrue(r4.get("ok"))
             self.assertEqual(r3.get("id"), r4.get("id"))
@@ -332,16 +343,18 @@ class TestSignalsDedup(unittest.TestCase):
                 "source": "unit",
             }
 
-            out, code = svc._decision_entry_impl({
-                "event_id": "evt_tier_c",
-                "pair": "BTC-PERP",
-                "side": "long",
-                "tag": "unit",
-                "features": {"close": 40000},
-                "threshold": 0.5,
-                "size": 10,
-                "ts": ts0,
-            })
+            out, code = svc._decision_entry_impl(
+                {
+                    "event_id": "evt_tier_c",
+                    "pair": "BTC-PERP",
+                    "side": "long",
+                    "tag": "unit",
+                    "features": {"close": 40000},
+                    "threshold": 0.5,
+                    "size": 10,
+                    "ts": ts0,
+                }
+            )
             self.assertEqual(code, 200)
             self.assertTrue(out.get("ok"))
             self.assertEqual(out.get("decision"), "observe")
@@ -406,16 +419,18 @@ class TestSignalsDedup(unittest.TestCase):
                 "source": "unit",
             }
 
-            out, code = svc._decision_entry_impl({
-                "event_id": "evt_tier_b",
-                "pair": "ETH-PERP",
-                "side": "long",
-                "tag": "unit",
-                "features": {"close": 2000},
-                "threshold": 0.5,
-                "size": 10,
-                "ts": ts0,
-            })
+            out, code = svc._decision_entry_impl(
+                {
+                    "event_id": "evt_tier_b",
+                    "pair": "ETH-PERP",
+                    "side": "long",
+                    "tag": "unit",
+                    "features": {"close": 2000},
+                    "threshold": 0.5,
+                    "size": 10,
+                    "ts": ts0,
+                }
+            )
 
             self.assertEqual(code, 200)
             self.assertTrue(out.get("ok"))
@@ -464,8 +479,12 @@ class TestSignalIngestSyntheticEventFields(unittest.TestCase):
             "ab_owner": "quant",
             "system_id": "quant",
         }
-        svc._ensure_trace_event_for_order("sig_unit_1", order=order, strategy_id="quant_pairs_btcalt")
-        evt = svc.EVENTS.get("sig_unit_1") if isinstance(getattr(svc, "EVENTS", None), dict) else None
+        svc._ensure_trace_event_for_order(
+            "sig_unit_1", order=order, strategy_id="quant_pairs_btcalt"
+        )
+        evt = (
+            svc.EVENTS.get("sig_unit_1") if isinstance(getattr(svc, "EVENTS", None), dict) else None
+        )
         self.assertTrue(isinstance(evt, dict))
         self.assertEqual(str(evt.get("ab_owner")), "quant")
         self.assertEqual(str(evt.get("system_id")), "quant")
@@ -486,7 +505,9 @@ class TestSignalIngestSyntheticEventFields(unittest.TestCase):
             "system_id": "three_screen",
         }
         svc._ensure_trace_event_for_order("sig_unit_2", order=order, strategy_id="ThreeScreen")
-        evt = svc.EVENTS.get("sig_unit_2") if isinstance(getattr(svc, "EVENTS", None), dict) else None
+        evt = (
+            svc.EVENTS.get("sig_unit_2") if isinstance(getattr(svc, "EVENTS", None), dict) else None
+        )
         self.assertTrue(isinstance(evt, dict))
         self.assertEqual(str(evt.get("ab_owner")), "strategy")
         self.assertEqual(str(evt.get("system_id")), "strategy")

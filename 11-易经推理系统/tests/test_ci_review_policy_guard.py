@@ -1,7 +1,6 @@
 import importlib.util
 from pathlib import Path
 
-
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "ci" / "review_policy_guard.py"
 SPEC = importlib.util.spec_from_file_location("review_policy_guard", SCRIPT_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)

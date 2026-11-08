@@ -2,6 +2,7 @@
 
 generic_spider 用 Scrapy Selector 按 YAML 配置的选择器提取字段，支持 HTML 和 RSS。
 """
+
 from data_center.crawler.generic_spider import GenericSpider
 
 REQ_MOD = "data_center.crawler.generic_spider.requests"

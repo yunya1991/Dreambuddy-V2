@@ -3,6 +3,7 @@
 从 REA 架构 Evidence（文件行数/出度/豁口数/git演化类型）反推设计债务，
 触发 refactor 窗口。与交易域 ReverseDeriver 接口隔离。
 """
+
 import sys
 from pathlib import Path
 
@@ -11,12 +12,12 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "23-四层闭环自进化交易架构"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from dreambuddy_evolution.engines.reverse_deriver import (  # noqa: E402
+from dreambuddy_evolution.engines.reverse_deriver import (  # noqa: E402, I001
     ArchitectureReverseDeriver,
     ArchitectureDebtResult,
     ReverseDeriver,
 )
-from core.evidence import Evidence, EvidenceLevel, reverse_evidence  # noqa: E402
+from core.evidence import EvidenceLevel, reverse_evidence  # noqa: E402
 
 
 def _ev(result, analysis, level=EvidenceLevel.DERIVATION, file=None):
@@ -29,6 +30,7 @@ def _ev(result, analysis, level=EvidenceLevel.DERIVATION, file=None):
 # ---------------------------------------------------------------------------
 # 1. 可导入 + 接口隔离
 # ---------------------------------------------------------------------------
+
 
 class TestImportAndIsolation:
     def test_architecture_deriver_importable(self):
@@ -51,6 +53,7 @@ class TestImportAndIsolation:
 # ---------------------------------------------------------------------------
 # 2. FAIL-OPEN：空输入
 # ---------------------------------------------------------------------------
+
 
 class TestFailOpen:
     def setup_method(self):
@@ -77,6 +80,7 @@ class TestFailOpen:
 # ---------------------------------------------------------------------------
 # 3. 四维度数值解析 + 债务评分
 # ---------------------------------------------------------------------------
+
 
 class TestDimensionParsing:
     def setup_method(self):
@@ -126,6 +130,7 @@ class TestDimensionParsing:
 # ---------------------------------------------------------------------------
 # 4. refactor_plan 优先级排序
 # ---------------------------------------------------------------------------
+
 
 class TestRefactorPlan:
     def test_priority_p0_for_threshold_exceeded(self):

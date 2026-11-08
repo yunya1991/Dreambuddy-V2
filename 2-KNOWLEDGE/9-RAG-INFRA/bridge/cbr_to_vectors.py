@@ -21,15 +21,17 @@ from typing import Dict, List
 
 # === 路径 ===
 _THIS_DIR = Path(__file__).resolve().parent  # 9-RAG-INFRA/bridge
-_RAG_INFRA_DIR = _THIS_DIR.parent              # 9-RAG-INFRA
+_RAG_INFRA_DIR = _THIS_DIR.parent  # 9-RAG-INFRA
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-from vector_store.config import CHROMA_DB_PATH, COLLECTION_NAME, DISTANCE_METRIC
-from vector_store.embedder import Embedder
+from vector_store.config import CHROMA_DB_PATH, COLLECTION_NAME, DISTANCE_METRIC  # noqa: E402
+from vector_store.embedder import Embedder  # noqa: E402
 
 # CBR 案例库路径
-_CBR_JSONL = Path("/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/runtime/cbr_cases_v03.jsonl")
+_CBR_JSONL = Path(
+    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统/scripts/memory_l4/runtime/cbr_cases_v03.jsonl"
+)
 
 _embedder = Embedder()
 
@@ -38,6 +40,7 @@ _embedder = Embedder()
 # Phase 3：CBR 案例标签升级（setup_type / regime / failure_reason）
 # 基于案例已有技术指标字段推断，不修改原始 jsonl，仅在向量化时附加。
 # ============================================================
+
 
 def _infer_setup_type(case: Dict) -> str:
     """推断开仓形态类型。
@@ -53,8 +56,8 @@ def _infer_setup_type(case: Dict) -> str:
 
     vol_q = entry.get("vol_20d_quantile")
     ma_order = entry.get("triple_ma_order", "")
-    dist200 = entry.get("dist_sma200_pct")
-    rsi = entry.get("rsi_14")
+    dist200 = entry.get("dist_sma200_pct")  # noqa: F841
+    rsi = entry.get("rsi_14")  # noqa: F841
     roc5 = entry.get("roc_5d")
     bbw = entry.get("bollinger_width_pct")
 
@@ -185,10 +188,20 @@ def _case_to_text(case: Dict) -> str:
     if entry:
         lines.append("")
         lines.append("## 入场特征")
-        for k in ("bcrm_confidence", "hexagram_name", "rsi_14", "macd_hist",
-                   "dist_sma20_pct", "dist_sma50_pct", "dist_sma200_pct",
-                   "triple_ma_order", "atr14_norm_pct", "bollinger_width_pct",
-                   "vol_20d_quantile", "p1_output_label"):
+        for k in (
+            "bcrm_confidence",
+            "hexagram_name",
+            "rsi_14",
+            "macd_hist",
+            "dist_sma20_pct",
+            "dist_sma50_pct",
+            "dist_sma200_pct",
+            "triple_ma_order",
+            "atr14_norm_pct",
+            "bollinger_width_pct",
+            "vol_20d_quantile",
+            "p1_output_label",
+        ):
             if k in entry and entry[k] is not None:
                 lines.append(f"- {k}: {entry[k]}")
     if exit_:
@@ -202,8 +215,8 @@ def _case_to_text(case: Dict) -> str:
 
 def _case_to_meta(case: Dict) -> Dict:
     """结构化 metadata（扁平化，ChromaDB 要求 scalar）。"""
-    entry = case.get("entry_snapshot", {}) or {}
-    exit_ = case.get("exit_snapshot", {}) or {}
+    entry = case.get("entry_snapshot", {}) or {}  # noqa: F841
+    exit_ = case.get("exit_snapshot", {}) or {}  # noqa: F841
 
     # Phase 3：推断标签
     setup_type = _infer_setup_type(case)

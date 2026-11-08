@@ -18,7 +18,9 @@ def test_fundamental_news_brief_latest_uses_http_cache(monkeypatch, tmp_path: Pa
     risk.write_text("[]", encoding="utf-8")
 
     monkeypatch.setattr(svc, "_fundamental_news_pick_file", lambda name="": brief)
-    monkeypatch.setattr(svc, "_fundamental_news_pick_coverage_report_file", lambda name="": coverage)
+    monkeypatch.setattr(
+        svc, "_fundamental_news_pick_coverage_report_file", lambda name="": coverage
+    )
     monkeypatch.setattr(svc, "_fundamental_news_pick_risk_events_file", lambda name="": risk)
 
     client = svc.app.test_client()
@@ -33,7 +35,9 @@ def test_fundamental_news_brief_latest_uses_http_cache(monkeypatch, tmp_path: Pa
 
     monkeypatch.setattr(builtins, "open", _boom)
     monkeypatch.setattr(svc, "_fundamental_news_pick_file", lambda name="": (_boom()))
-    monkeypatch.setattr(svc, "_fundamental_news_pick_coverage_report_file", lambda name="": (_boom()))
+    monkeypatch.setattr(
+        svc, "_fundamental_news_pick_coverage_report_file", lambda name="": (_boom())
+    )
     monkeypatch.setattr(svc, "_fundamental_news_pick_risk_events_file", lambda name="": (_boom()))
 
     r2 = client.get("/fundamental/news/brief/latest?max_chars=4000")

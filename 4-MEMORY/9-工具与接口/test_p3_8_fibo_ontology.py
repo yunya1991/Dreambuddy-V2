@@ -20,13 +20,11 @@ RED 契约:
 
 参考: SPEC-CognitiveSystem-Evolution.md §4.3 P3-8 + §1.3 L49
 """
-from __future__ import annotations
 
-import json
+from __future__ import annotations  # noqa: I001
+
 import sys
 from pathlib import Path
-
-import pytest
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
@@ -301,8 +299,8 @@ class TestFIBOIndexLoader:
 
     def test_parse_index_creates_entities(self, tmp_path):
         """RED: parse_index() 解析 markdown 表格创建实体。"""
-        from fibo_ontology import FIBOOntology
         from fibo_index_loader import FIBOIndexLoader
+        from fibo_ontology import FIBOOntology
 
         md_path = tmp_path / "INDEX.md"
         md_path.write_text(SAMPLE_INDEX_MD, encoding="utf-8")
@@ -320,8 +318,8 @@ class TestFIBOIndexLoader:
 
         路径 10-经典指标系统/docs/TECHNICAL_DESIGN.md 应 part_of 10-经典指标系统
         """
-        from fibo_ontology import FIBOOntology
         from fibo_index_loader import FIBOIndexLoader
+        from fibo_ontology import FIBOOntology
 
         md_path = tmp_path / "INDEX.md"
         md_path.write_text(SAMPLE_INDEX_MD, encoding="utf-8")
@@ -341,8 +339,8 @@ class TestFIBOIndexLoader:
 
         ## L2 — 子系统文档 下属文档 covers_topic 'L2' 或 '子系统'
         """
-        from fibo_ontology import FIBOOntology
         from fibo_index_loader import FIBOIndexLoader
+        from fibo_ontology import FIBOOntology
 
         md_path = tmp_path / "INDEX.md"
         md_path.write_text(SAMPLE_INDEX_MD, encoding="utf-8")
@@ -359,8 +357,8 @@ class TestFIBOIndexLoader:
 
     def test_failopen_invalid_markdown(self, tmp_path):
         """RED: 解析失败不阻塞（FAIL-OPEN）。"""
-        from fibo_ontology import FIBOOntology
         from fibo_index_loader import FIBOIndexLoader
+        from fibo_ontology import FIBOOntology
 
         md_path = tmp_path / "bad.md"
         md_path.write_text("这不是 markdown 表格\n随便写的内容", encoding="utf-8")
@@ -374,8 +372,8 @@ class TestFIBOIndexLoader:
 
     def test_failopen_missing_file(self, tmp_path):
         """RED: 文件不存在不阻塞（FAIL-OPEN）。"""
-        from fibo_ontology import FIBOOntology
         from fibo_index_loader import FIBOIndexLoader
+        from fibo_ontology import FIBOOntology
 
         ont = FIBOOntology()
         loader = FIBOIndexLoader(ont)

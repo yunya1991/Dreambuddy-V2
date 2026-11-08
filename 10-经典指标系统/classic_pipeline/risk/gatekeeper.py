@@ -8,6 +8,7 @@
 
 所有函数为纯函数。
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -35,11 +36,23 @@ def check(
 
     direction = str(signal.get("direction") or "neutral").strip().lower()
     if direction not in ("long", "short"):
-        return {"approved": False, "position_size": 0.0, "stop_loss": 0.0, "take_profit": 0.0, "reason": "no_direction"}
+        return {
+            "approved": False,
+            "position_size": 0.0,
+            "stop_loss": 0.0,
+            "take_profit": 0.0,
+            "reason": "no_direction",
+        }
 
     equity = _sf0(ps.get("equity"), 0.0)
     if equity <= 0:
-        return {"approved": False, "position_size": 0.0, "stop_loss": 0.0, "take_profit": 0.0, "reason": "no_equity"}
+        return {
+            "approved": False,
+            "position_size": 0.0,
+            "stop_loss": 0.0,
+            "take_profit": 0.0,
+            "reason": "no_equity",
+        }
 
     # 单笔最大风险占总资产比例（默认 2%）
     max_risk_pct = float(cfg.get("max_risk_pct", 0.02))

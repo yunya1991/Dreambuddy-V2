@@ -3,17 +3,16 @@
 
 Task 18: 行动链压缩纯结构化 + register_applied_from_session 接受 5 个新字段。
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).parent
 _PARENT = _SCRIPT_DIR.parent
 if str(_PARENT) not in sys.path:
     sys.path.insert(0, str(_PARENT))
 
-from cognitive_session import _condense_action_chain
+from cognitive_session import _condense_action_chain  # noqa: E402
 
 
 def test_condense_merges_adjacent_same_file_edits():
@@ -59,8 +58,10 @@ def test_condense_produces_5_to_15_steps():
 def test_applied_metadata_has_five_new_fields():
     """设计节 4.5：register_applied_from_session 接受 5 个新字段并写入 metadata。"""
     from cognitive_superpowers import ProcessTemplateRegistry
+
     registry = ProcessTemplateRegistry()
     import time
+
     applied_id = f"APP-TEST-{int(time.time() * 1000)}"
     registry.register_applied_from_session(
         template_id=applied_id,

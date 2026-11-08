@@ -1,10 +1,11 @@
 """哲学贡献特征验证脚本 — 9年数据计算有效性测试"""
 
-import sys
+import sys  # noqa: I001
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
+import numpy as np  # noqa: I001
 import pandas as pd
 import json
 
@@ -47,7 +48,9 @@ def main():
         print(f"\n{'='*90}")
         print(f"  {symbol} — 哲学贡献特征计算结果")
         print(f"{'='*90}")
-        print(f"  数据: {len(prices)}天 ({prices.index[0].strftime('%Y-%m-%d')} ~ {prices.index[-1].strftime('%Y-%m-%d')})")
+        print(
+            f"  数据: {len(prices)}天 ({prices.index[0].strftime('%Y-%m-%d')} ~ {prices.index[-1].strftime('%Y-%m-%d')})"
+        )
 
         # 批量计算
         feats_df = engineer.extract_series(prices, symbol=symbol, btc_prices=btc_ref)
@@ -55,14 +58,16 @@ def main():
         # 过滤预热期
         valid = feats_df.iloc[260:]
         if len(valid) == 0:
-            print(f"  [WARN] 有效数据不足")
+            print("  [WARN] 有效数据不足")
             continue
 
         print(f"\n  特征维度: {len(engineer.FEATURE_NAMES)}维")
         print(f"  有效样本: {len(valid)}天")
 
         # 各特征统计
-        print(f"\n  {'特征名':>28} {'均值':>10} {'标准差':>10} {'最小值':>10} {'最大值':>10} {'非零比例':>10}")
+        print(
+            f"\n  {'特征名':>28} {'均值':>10} {'标准差':>10} {'最小值':>10} {'最大值':>10} {'非零比例':>10}"
+        )
         print(f"  {'-'*88}")
 
         for col in engineer.FEATURE_NAMES:
@@ -72,10 +77,12 @@ def main():
             mn = np.min(vals)
             mx = np.max(vals)
             nonzero_ratio = np.mean(np.abs(vals) > 0.001)
-            print(f"  {col:>28} {mean:>+9.4f} {std:>9.4f} {mn:>+9.4f} {mx:>+9.4f} {nonzero_ratio:>9.1%}")
+            print(
+                f"  {col:>28} {mean:>+9.4f} {std:>9.4f} {mn:>+9.4f} {mx:>+9.4f} {nonzero_ratio:>9.1%}"
+            )
 
         # 关键特征分布
-        print(f"\n  关键特征分布:")
+        print("\n  关键特征分布:")
 
         # BTC regime分布
         if "btc_regime_label" in valid.columns:
@@ -84,7 +91,9 @@ def main():
             bear = (regime < 0).sum()
             sideways = (regime == 0).sum()
             total = len(regime)
-            print(f"    BTC regime: 牛{bull}({bull/total*100:.0f}%) 熊{bear}({bear/total*100:.0f}%) 震{sideways}({sideways/total*100:.0f}%)")
+            print(
+                f"    BTC regime: 牛{bull}({bull/total*100:.0f}%) 熊{bear}({bear/total*100:.0f}%) 震{sideways}({sideways/total*100:.0f}%)"
+            )
 
         # 双牛过滤
         if "double_bull_score" in valid.columns:
@@ -93,7 +102,9 @@ def main():
             single_bull = ((db > 0) & (db < 1.0)).sum()
             no_bull = (db == 0).sum()
             total = len(db)
-            print(f"    双牛过滤: 双牛{double_bull}({double_bull/total*100:.0f}%) 单牛{single_bull}({single_bull/total*100:.0f}%) 非牛{no_bull}({no_bull/total*100:.0f}%)")
+            print(
+                f"    双牛过滤: 双牛{double_bull}({double_bull/total*100:.0f}%) 单牛{single_bull}({single_bull/total*100:.0f}%) 非牛{no_bull}({no_bull/total*100:.0f}%)"
+            )
 
         # 抄底档位分布
         if "dip_buy_level" in valid.columns:
@@ -116,7 +127,7 @@ def main():
 
     # 跨币种特征对比
     print(f"\n\n{'='*90}")
-    print(f"  跨币种特征对比（均值）")
+    print("  跨币种特征对比（均值）")
     print(f"{'='*90}")
 
     print(f"\n  {'特征':>28} {'BTC':>12} {'ETH':>12} {'SOL':>12} {'UNI':>12}")
@@ -137,9 +148,9 @@ def main():
         print(f"  {col:>28} " + " ".join(f"{v:>12}" for v in vals))
 
     print(f"\n\n{'='*90}")
-    print(f"  验证结论")
+    print("  验证结论")
     print(f"{'='*90}")
-    print(f"""
+    print("""
   1. 所有15维特征在9年数据上均能正确计算，无非NaN异常
   2. BTC regime特征在小币上正确反映BTC牛熊状态
   3. 抄底特征仅在BTC上触发（周线MA200），小币无抄底信号

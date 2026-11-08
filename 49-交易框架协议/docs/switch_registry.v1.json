@@ -1,0 +1,98 @@
+{
+  "registry_version": "m0-switch-registry-v1",
+  "updated_at": "2026-11-06",
+  "owner": "49-交易框架协议 / 23-四层闭环自进化",
+  "note": "M0-04 shadow/promotion 开关唯一事实源；回滚演练与校验脚本均读取本文件。",
+  "switches": [
+    {
+      "name": "enable_cd_shadow",
+      "default": false,
+      "kind": "shadow",
+      "production_impact": "none",
+      "since": "B-01",
+      "description": "C→D 维度影子映射，只附加 dimension_shadow。",
+      "rollback": "置 false 或 reset_switches()"
+    },
+    {
+      "name": "enable_dominance_shadow",
+      "default": false,
+      "kind": "shadow",
+      "production_impact": "none",
+      "since": "B-02",
+      "description": "成对支配解析 shadow，不替代 argmax。",
+      "rollback": "置 false，生产选择仍为 argmax"
+    },
+    {
+      "name": "enable_attention_a_dim",
+      "default": false,
+      "kind": "promotion",
+      "production_impact": "may_change",
+      "since": "B-03",
+      "description": "CV gate 使用 attention A_dim 替代 identifier C 维度。",
+      "rollback": "置 false，回退到 identifier A_dim"
+    },
+    {
+      "name": "enable_a_dim_c_to_3",
+      "default": false,
+      "kind": "promotion",
+      "production_impact": "may_change",
+      "since": "B-03",
+      "description": "将 identifier C 维度映射到 3 维后再入 CV gate。",
+      "rollback": "置 false，保留 legacy C 维度口径"
+    },
+    {
+      "name": "enable_primary_contradiction_detector",
+      "default": false,
+      "kind": "promotion",
+      "production_impact": "may_change",
+      "since": "B-04",
+      "description": "事件主矛盾检测器生产开关（非 force 路径）。",
+      "rollback": "置 false"
+    },
+    {
+      "name": "enable_event_contradiction_shadow",
+      "default": false,
+      "kind": "shadow",
+      "production_impact": "none",
+      "since": "B-04",
+      "description": "事件主矛盾 shadow 诊断。",
+      "rollback": "置 false"
+    },
+    {
+      "name": "enable_w6_monitor",
+      "default": false,
+      "kind": "shadow",
+      "production_impact": "none",
+      "since": "B-05",
+      "description": "W6 样本链路状态只读监控。",
+      "rollback": "置 false"
+    },
+    {
+      "name": "enable_d2_oi_liq",
+      "default": false,
+      "kind": "promotion",
+      "production_impact": "may_change",
+      "since": "B-06",
+      "description": "D2 叠加 OI/清算；真实覆盖率达标前保持关闭。",
+      "rollback": "置 false，回退到 long_short_ratio + funding_rate"
+    },
+    {
+      "name": "enable_self_vote_shadow",
+      "default": false,
+      "kind": "shadow",
+      "production_impact": "none",
+      "since": "B-08",
+      "description": "自票上限/独立证据 shadow 诊断。",
+      "rollback": "置 false"
+    },
+    {
+      "name": "enable_self_vote_cap",
+      "default": false,
+      "kind": "promotion",
+      "production_impact": "may_change",
+      "since": "B-08",
+      "description": "自票上限实际生效（当前尚无生产执行点）。",
+      "rollback": "置 false；需评审后启用"
+    }
+  ]
+}

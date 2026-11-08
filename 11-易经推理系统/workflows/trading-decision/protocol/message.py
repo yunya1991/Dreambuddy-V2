@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from uuid import uuid4
 
-
 VALID_LOOP_TYPES = {"execution", "intelligence", "governance"}
 
 

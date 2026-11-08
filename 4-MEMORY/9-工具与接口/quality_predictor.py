@@ -21,6 +21,7 @@
 - 输出始终 clamp 到 [0,1]
 - 可导出/导入参数
 """
+
 from __future__ import annotations
 
 import math
@@ -37,6 +38,7 @@ _K_NEIGHBORS = 5
 @dataclass
 class MemoryFeatures:
     """记忆特征向量。"""
+
     age_days: float = 0.0
     verify_count: int = 0
     quality_level: str = "C"
@@ -69,12 +71,13 @@ class MemoryFeatures:
 
 
 def _euclidean(a: List[float], b: List[float]) -> float:
-    return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
+    return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))  # noqa: B905
 
 
 @dataclass
 class QualityPredictor:
     """基于实例的质量预测器。"""
+
     _samples: List[Tuple[List[float], float]] = field(default_factory=list)
     _default_p: float = _DEFAULT_P
     _audit_log: List[Dict[str, Any]] = field(default_factory=list)
@@ -102,21 +105,17 @@ class QualityPredictor:
         if total_w <= 0:
             return self._default_p
 
-        weighted_p = sum(w * p for w, (_, p) in zip(weights, neighbors))
+        weighted_p = sum(w * p for w, (_, p) in zip(weights, neighbors))  # noqa: B905
         return max(0.0, min(1.0, weighted_p / total_w))
 
     def export_params(self) -> Dict[str, Any]:
         return {
-            "samples": [
-                {"vector": vec, "p": p} for vec, p in self._samples
-            ],
+            "samples": [{"vector": vec, "p": p} for vec, p in self._samples],
             "default_p": self._default_p,
         }
 
     def import_params(self, params: Dict[str, Any]) -> None:
-        self._samples = [
-            (s["vector"], s["p"]) for s in params.get("samples", [])
-        ]
+        self._samples = [(s["vector"], s["p"]) for s in params.get("samples", [])]
         self._default_p = float(params.get("default_p", _DEFAULT_P))
 
     def sample_count(self) -> int:
@@ -143,14 +142,16 @@ class QualityPredictor:
             suppressed = p < config.suppress_threshold
 
         # 审计日志
-        self._audit_log.append({
-            "memory_id": memory_id,
-            "predicted_p": float(self.predict(features)) if features else self._default_p,
-            "suppressed": suppressed,
-            "shadow_mode": config.shadow_mode,
-            "threshold": config.suppress_threshold,
-            "ts": time.time(),
-        })
+        self._audit_log.append(
+            {
+                "memory_id": memory_id,
+                "predicted_p": float(self.predict(features)) if features else self._default_p,
+                "suppressed": suppressed,
+                "shadow_mode": config.shadow_mode,
+                "threshold": config.suppress_threshold,
+                "ts": time.time(),
+            }
+        )
         return suppressed
 
     def should_route_to_predictor(self, config: "ShadowModeConfig") -> bool:
@@ -208,7 +209,7 @@ class QualityPredictor:
         if len(set(actuals)) < 2:
             return 0.5  # 只有一类，AUC 无意义，返回 0.5
         # 按预测值降序排列
-        pairs = sorted(zip(predictions, actuals), key=lambda x: x[0], reverse=True)
+        pairs = sorted(zip(predictions, actuals), key=lambda x: x[0], reverse=True)  # noqa: B905
         n_pos = sum(1 for _, a in pairs if a >= 0.5)
         n_neg = len(pairs) - n_pos
         if n_pos == 0 or n_neg == 0:
@@ -235,7 +236,11 @@ class QualityPredictor:
         for i in range(n_bins):
             lo, hi = bin_boundaries[i], bin_boundaries[i + 1]
             bin_preds = [p for p in predictions if lo <= p < hi or (i == n_bins - 1 and p == hi)]
-            bin_actuals = [a for p, a in zip(predictions, actuals) if lo <= p < hi or (i == n_bins - 1 and p == hi)]
+            bin_actuals = [
+                a
+                for p, a in zip(predictions, actuals)  # noqa: B905
+                if lo <= p < hi or (i == n_bins - 1 and p == hi)
+            ]
             if not bin_preds:
                 continue
             avg_pred = sum(bin_preds) / len(bin_preds)
@@ -247,6 +252,7 @@ class QualityPredictor:
 @dataclass
 class ShadowModeConfig:
     """N-P2 影子模式 + 灰度配置。"""
+
     shadow_mode: bool = True  # 默认影子模式（只打分不影响排序）
     suppress_threshold: float = 0.3  # p < 阈值则抑制
     gray_traffic_pct: float = 0.0  # 灰度放量百分比（0-100）
@@ -275,7 +281,7 @@ class DriftMonitor:
         c_norm = [x / c_sum for x in current]
 
         psi = 0.0
-        for b, c in zip(b_norm, c_norm):
+        for b, c in zip(b_norm, c_norm):  # noqa: B905
             # 避免除零和 log(0)
             b_safe = max(b, 1e-6)
             c_safe = max(c, 1e-6)

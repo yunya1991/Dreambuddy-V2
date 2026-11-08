@@ -8,10 +8,9 @@
   - btc_regime == "WEAK" (BTC 与美股高相关，风险资产联动)
   - etf_flow_norm < -0.1 (ETF 净流出)
 """
-import sys
-from pathlib import Path
 
-import pytest
+import sys  # noqa: I001
+from pathlib import Path
 
 # ---- path inject ----
 REPO = Path(__file__).resolve().parents[2]
@@ -27,6 +26,7 @@ class TestThreeFactorShortDetector:
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
+
         detector = ThreeFactorShortDetector()
         result = detector.detect(
             pattern_factor=-0.8,
@@ -40,6 +40,7 @@ class TestThreeFactorShortDetector:
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
+
         detector = ThreeFactorShortDetector()
         result = detector.detect(
             pattern_factor=-0.3,
@@ -53,6 +54,7 @@ class TestThreeFactorShortDetector:
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
+
         detector = ThreeFactorShortDetector()
         result = detector.detect(
             pattern_factor=-0.8,
@@ -66,6 +68,7 @@ class TestThreeFactorShortDetector:
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
+
         detector = ThreeFactorShortDetector()
         result = detector.detect(
             pattern_factor=-0.8,
@@ -79,6 +82,7 @@ class TestThreeFactorShortDetector:
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
+
         detector = ThreeFactorShortDetector()
         # pattern_factor=None
         assert detector.detect(pattern_factor=None, btc_regime="WEAK", etf_flow_norm=-0.3) is False
@@ -91,10 +95,11 @@ class TestThreeFactorShortDetector:
 
     def test_switch_disabled(self):
         """enable_three_factor_short=False → 不计算，返回 False"""
+        from dreambuddy_evolution.agi_config import get_switch, set_switch
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
-        from dreambuddy_evolution.agi_config import set_switch, get_switch
+
         # 保存原值
         _orig = get_switch("enable_three_factor_short")
         try:
@@ -114,6 +119,7 @@ class TestThreeFactorShortDetector:
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
+
         detector = ThreeFactorShortDetector()
         result = detector.detect(
             pattern_factor=-0.5,
@@ -127,6 +133,7 @@ class TestThreeFactorShortDetector:
         from dreambuddy_evolution.engines.three_factor_short import (
             ThreeFactorShortDetector,
         )
+
         detector = ThreeFactorShortDetector()
         result = detector.detect(
             pattern_factor=-0.8,

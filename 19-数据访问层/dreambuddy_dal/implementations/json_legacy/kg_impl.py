@@ -1,4 +1,5 @@
 """JsonLegacyKnowledgeGraphRepository（P0 内存实体/别名/三元组+简单 BM25 近似排序）"""
+
 from __future__ import annotations
 
 from typing import Dict, List, Set, Tuple
@@ -8,19 +9,25 @@ from dreambuddy_dal.protocols.kg_repo import KnowledgeGraphRepository
 
 class JsonLegacyKnowledgeGraphRepository(KnowledgeGraphRepository):
     def __init__(self):
-        self._entities: Dict[str, Dict] = {}  # id → {type,name,description,attrs,aliases:List[Tuple(alias,conf)]}
+        self._entities: Dict[str, Dict] = (
+            {}
+        )  # id → {type,name,description,attrs,aliases:List[Tuple(alias,conf)]}
         self._triples: List[Tuple] = []  # (s,p,o,conf,source,valid_from)
 
     # ---------- 写 ----------
-    def upsert_entity(self, entity_id, entity_type, canonical_name, *,
-                      description=None, attributes_json=None) -> bool:
+    def upsert_entity(
+        self, entity_id, entity_type, canonical_name, *, description=None, attributes_json=None
+    ) -> bool:
         existing = self._entities.get(entity_id) or {"aliases": []}
-        existing.update({
-            "entity_type": entity_type, "canonical_name": canonical_name,
-            "description": description or existing.get("description"),
-            "attributes_json": attributes_json or existing.get("attributes_json"),
-            "aliases": existing.get("aliases") or [],
-        })
+        existing.update(
+            {
+                "entity_type": entity_type,
+                "canonical_name": canonical_name,
+                "description": description or existing.get("description"),
+                "attributes_json": attributes_json or existing.get("attributes_json"),
+                "aliases": existing.get("aliases") or [],
+            }
+        )
         self._entities[entity_id] = existing
         return True
 
@@ -29,8 +36,9 @@ class JsonLegacyKnowledgeGraphRepository(KnowledgeGraphRepository):
         self._entities[entity_id].setdefault("aliases", []).append((alias, confidence))
         return True
 
-    def add_triple(self, subject_id, predicate, object_id, *, confidence=1.0,
-                   source=None, valid_from=None) -> bool:
+    def add_triple(
+        self, subject_id, predicate, object_id, *, confidence=1.0, source=None, valid_from=None
+    ) -> bool:
         self._triples.append((subject_id, predicate, object_id, confidence, source, valid_from))
         return True
 
@@ -51,8 +59,7 @@ class JsonLegacyKnowledgeGraphRepository(KnowledgeGraphRepository):
         scored.sort(key=lambda x: -x[0])
         return [(eid, etype, cname, s) for s, eid, etype, cname in scored[:limit]]
 
-    def query_subgraph_by_entity(self, entity_id, *, hops=2, direction="both",
-                                  min_confidence=0.5):
+    def query_subgraph_by_entity(self, entity_id, *, hops=2, direction="both", min_confidence=0.5):
         triples_out: List[Tuple[str, str, str, float]] = []
         entities_set: Set[str] = {entity_id}
         frontier: Set[str] = {entity_id}
@@ -70,8 +77,11 @@ class JsonLegacyKnowledgeGraphRepository(KnowledgeGraphRepository):
                     next_frontier.add(s)
                     entities_set.add(s)
             frontier = next_frontier - entities_set
-        entities_list = [(eid, self._entities[eid]["entity_type"], self._entities[eid]["canonical_name"])
-                         for eid in entities_set if eid in self._entities]
+        entities_list = [
+            (eid, self._entities[eid]["entity_type"], self._entities[eid]["canonical_name"])
+            for eid in entities_set
+            if eid in self._entities
+        ]
         return triples_out, entities_list
 
 

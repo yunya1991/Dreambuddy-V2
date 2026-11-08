@@ -20,13 +20,12 @@ import argparse
 import json
 import os
 import sys
-import time
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 # ============================================================================
 # 配置
@@ -40,8 +39,7 @@ SKILLS_DIR = Path(__file__).parent.parent.parent / "6-TRADING" / "skills"
 
 # 内部 API（产物中台 Next.js 服务）
 INTERNAL_API_BASE = os.environ.get(
-    "RECOMMENDATION_ENGINE_API_URL",
-    "http://localhost:3456/api/recommendation-engine/internal"
+    "RECOMMENDATION_ENGINE_API_URL", "http://localhost:3456/api/recommendation-engine/internal"
 )
 INTERNAL_API_KEY = os.environ.get("RECOMMENDATION_ENGINE_API_KEY", "")
 
@@ -61,6 +59,7 @@ DEFAULT_CONFIG = {
 # ============================================================================
 # 枚举和类型
 # ============================================================================
+
 
 class TriggerType(str, Enum):
     SCHEDULED = "scheduled"
@@ -91,6 +90,7 @@ class EngineStep(str, Enum):
 # ============================================================================
 # 数据模型
 # ============================================================================
+
 
 @dataclass
 class ResearchReport:
@@ -174,6 +174,7 @@ class EngineConfig:
 # 核心引擎类
 # ============================================================================
 
+
 class RecommendationEngine:
     """推荐策略引擎主类"""
 
@@ -200,6 +201,7 @@ class RecommendationEngine:
     def _api_post(self, path: str, data: dict) -> dict:
         """调用内部 API (POST)"""
         import requests
+
         url = f"{INTERNAL_API_BASE}/{path}"
         headers = {
             "Content-Type": "application/json",
@@ -212,6 +214,7 @@ class RecommendationEngine:
     def _api_get(self, path: str, params: Optional[dict] = None) -> dict:
         """调用内部 API (GET)"""
         import requests
+
         url = f"{INTERNAL_API_BASE}/{path}"
         headers = {"X-Internal-Api-Key": INTERNAL_API_KEY}
         resp = requests.get(url, params=params, headers=headers, timeout=10)
@@ -263,17 +266,20 @@ class RecommendationEngine:
 
         # 过滤 A1/A2/A3
         phases = ["A1", "A2", "A3"]
-        filtered = [
-            a for a in artifacts
-            if a.get("chain_phase", "").upper() in phases
-        ]
+        filtered = [a for a in artifacts if a.get("chain_phase", "").upper() in phases]
 
         # 按日期降序，取最近 7 天
         cutoff = datetime.now() - timedelta(days=7)
-        recent = [
-            a for a in filtered
-            if a.get("date") and datetime.fromisoformat(a["date"].replace("Z", "+00:00")) >= cutoff
-        ] if filtered else []
+        recent = (
+            [
+                a
+                for a in filtered
+                if a.get("date")
+                and datetime.fromisoformat(a["date"].replace("Z", "+00:00")) >= cutoff
+            ]
+            if filtered
+            else []
+        )
 
         recent.sort(key=lambda a: a.get("date", ""), reverse=True)
 
@@ -320,7 +326,9 @@ class RecommendationEngine:
         self._log(f"生成了 {len(self.candidates)} 个候选策略")
         return self.candidates
 
-    def _generate_candidate_from_report(self, report: ResearchReport) -> Optional[CandidateStrategy]:
+    def _generate_candidate_from_report(
+        self, report: ResearchReport
+    ) -> Optional[CandidateStrategy]:
         """基于单份研报生成候选策略"""
         # 解析研报中的方向和置信度
         direction = (report.direction or "BUY").upper()
@@ -330,12 +338,12 @@ class RecommendationEngine:
         # D-Z-E 思维链
         dze_chain = {
             "D": f"基于 {report.chain_phase} 研报「{report.title}」的市场分析，"
-                 f"判断当前 regime={regime}，推荐 direction={direction}",
+            f"判断当前 regime={regime}，推荐 direction={direction}",
             "Z": "清零旧认知：不受历史持仓影响，独立评估当前市场状态。"
-                 f"关注报告中的关键信号：{', '.join(report.key_signals[:3]) if report.key_signals else '无'}",
+            f"关注报告中的关键信号：{', '.join(report.key_signals[:3]) if report.key_signals else '无'}",
             "E": f"入场决策：在 regime={regime} 下，"
-                 f"当 BTC 处于 {regime} 状态时，执行 {direction} 方向马丁策略。"
-                 f"置信度 {confidence}%，建议仓位 50-100%，杠杆 1-3x"
+            f"当 BTC 处于 {regime} 状态时，执行 {direction} 方向马丁策略。"
+            f"置信度 {confidence}%，建议仓位 50-100%，杠杆 1-3x",
         }
 
         return CandidateStrategy(
@@ -377,7 +385,9 @@ class RecommendationEngine:
     def step_run_backtests(self) -> list[BacktestResult]:
         """对候选策略运行回测，对比基线"""
         self.current_step = EngineStep.RUNNING_BACKTESTS
-        self._log(f"开始回测 {len(self.candidates)} 个候选策略 (基线: {self.config.baseline_version})...")
+        self._log(
+            f"开始回测 {len(self.candidates)} 个候选策略 (基线: {self.config.baseline_version})..."
+        )
 
         results: list[BacktestResult] = []
         baseline_metrics = self._get_baseline_metrics(self.config.baseline_version)
@@ -449,7 +459,7 @@ class RecommendationEngine:
         script_path = self._find_backtest_script()
 
         if script_path is None:
-            self._log(f"未找到回测引擎脚本，使用模拟数据", "WARN")
+            self._log("未找到回测引擎脚本，使用模拟数据", "WARN")
             return self._mock_backtest(candidate, baseline_metrics)
 
         # 构建输出路径
@@ -460,16 +470,25 @@ class RecommendationEngine:
         # 调用回测引擎
         try:
             import subprocess as sp
+
             proc = sp.run(
                 [
-                    "python3", str(script_path),
-                    "--inst", self.config.symbol,
-                    "--from", start_date,
-                    "--to", end_date,
-                    "--capital", "200",
-                    "--output", str(output_file),
+                    "python3",
+                    str(script_path),
+                    "--inst",
+                    self.config.symbol,
+                    "--from",
+                    start_date,
+                    "--to",
+                    end_date,
+                    "--capital",
+                    "200",
+                    "--output",
+                    str(output_file),
                 ],
-                capture_output=True, text=True, timeout=300,
+                capture_output=True,
+                text=True,
+                timeout=300,
             )
 
             if proc.returncode != 0:
@@ -486,8 +505,9 @@ class RecommendationEngine:
                 profit_factor = raw.get("profit_factor", 0) or 0
                 trade_count = raw.get("total_trades", 0) or 0
             else:
-                sharpe_ratio, max_drawdown, total_return, win_rate, profit_factor, trade_count = \
+                sharpe_ratio, max_drawdown, total_return, win_rate, profit_factor, trade_count = (
                     self._parse_backtest_stdout(proc.stdout)
+                )
 
         except sp.TimeoutExpired:
             self._log("回测超时（5分钟），使用模拟数据", "WARN")
@@ -529,6 +549,7 @@ class RecommendationEngine:
     ) -> BacktestResult:
         """模拟回测结果（回测引擎不可用时的降级方案）"""
         import random
+
         random.seed(hash(candidate.name) % (2**32))
 
         base_sharpe = baseline_metrics["sharpe_ratio"]
@@ -566,23 +587,30 @@ class RecommendationEngine:
     def _parse_backtest_stdout(self, stdout: str) -> tuple:
         """从 stdout 解析回测指标（输出文件不存在时的 fallback）"""
         import re
+
         lines = stdout.split("\n")
         sharpe_ratio = max_drawdown = total_return = win_rate = profit_factor = 0
         trade_count = 0
 
         for line in lines:
             m = re.search(r"sharpe_ratio[:\s=]+([\d.\-]+)", line, re.I)
-            if m: sharpe_ratio = float(m.group(1))
+            if m:
+                sharpe_ratio = float(m.group(1))
             m = re.search(r"max_drawdown[:\s=]+([\d.]+)", line, re.I)
-            if m: max_drawdown = float(m.group(1))
+            if m:
+                max_drawdown = float(m.group(1))
             m = re.search(r"total_return[:\s=]+([\d.\-]+)", line, re.I)
-            if m: total_return = float(m.group(1))
+            if m:
+                total_return = float(m.group(1))
             m = re.search(r"win_rate[:\s=]+([\d.]+)", line, re.I)
-            if m: win_rate = float(m.group(1))
+            if m:
+                win_rate = float(m.group(1))
             m = re.search(r"profit_factor[:\s=]+([\d.]+)", line, re.I)
-            if m: profit_factor = float(m.group(1))
+            if m:
+                profit_factor = float(m.group(1))
             m = re.search(r"total_trades[:\s=]+(\d+)", line, re.I)
-            if m: trade_count = int(m.group(1))
+            if m:
+                trade_count = int(m.group(1))
 
         return sharpe_ratio, max_drawdown, total_return, win_rate, profit_factor, trade_count
 
@@ -608,9 +636,10 @@ class RecommendationEngine:
 
         # 过滤通过基线的策略
         passed = [
-            (r, c) for r, c in zip(backtest_results, candidates)
-            if r.is_better_than_baseline
-        ]
+            (r, c)
+            for r, c in zip(backtest_results, candidates)  # noqa: B905
+            if r.is_better_than_baseline  # noqa: B905
+        ]  # noqa: B905
 
         if not passed:
             self._log("没有策略通过基线，跳过贝叶斯优化")
@@ -650,8 +679,8 @@ class RecommendationEngine:
         end_date: str,
     ) -> Optional[BacktestResult]:
         """对单个策略运行贝叶斯优化"""
-        import subprocess as sp
         import re
+        import subprocess as sp
 
         safe_name = candidate.name.replace(r"[^a-zA-Z0-9_\-]", "_")
         opt_dir = RECOMMENDATION_ARTIFACTS / "optimization"
@@ -659,28 +688,39 @@ class RecommendationEngine:
 
         # 先生成回测报告（贝叶斯引擎需要）
         bt_report = opt_dir / f"bt_report_{safe_name}.json"
-        bt_report.write_text(json.dumps({
-            "backtest_status": "OK",
-            "sharpe_ratio": original_result.sharpe_ratio,
-            "max_drawdown": original_result.max_drawdown,
-            "win_rate": original_result.win_rate,
-            "profit_factor": original_result.profit_factor,
-            "total_return": original_result.total_return,
-            "annual_return": original_result.total_return / 7 * 365,
-            "total_trades": original_result.trade_count,
-        }, indent=2))
+        bt_report.write_text(
+            json.dumps(
+                {
+                    "backtest_status": "OK",
+                    "sharpe_ratio": original_result.sharpe_ratio,
+                    "max_drawdown": original_result.max_drawdown,
+                    "win_rate": original_result.win_rate,
+                    "profit_factor": original_result.profit_factor,
+                    "total_return": original_result.total_return,
+                    "annual_return": original_result.total_return / 7 * 365,
+                    "total_trades": original_result.trade_count,
+                },
+                indent=2,
+            )
+        )
 
         output_file = opt_dir / f"opt_{safe_name}_{self.run_id}.md"
 
         try:
             proc = sp.run(
                 [
-                    "python3", str(script_path),
-                    "--report", str(bt_report),
-                    "--objective", "sharpe",
-                    "--output", str(output_file),
+                    "python3",
+                    str(script_path),
+                    "--report",
+                    str(bt_report),
+                    "--objective",
+                    "sharpe",
+                    "--output",
+                    str(output_file),
                 ],
-                capture_output=True, text=True, timeout=1800,  # 30分钟超时
+                capture_output=True,
+                text=True,
+                timeout=1800,  # 30分钟超时
             )
 
             if proc.returncode != 0:
@@ -771,7 +811,8 @@ class RecommendationEngine:
 
         # 过滤优于基线的策略
         better = [
-            (r, c) for r, c in zip(self.backtest_results, self.candidates)
+            (r, c)
+            for r, c in zip(self.backtest_results, self.candidates)  # noqa: B905
             if r.is_better_than_baseline
         ]
 
@@ -810,8 +851,12 @@ class RecommendationEngine:
 
             # 找到对应的回测结果
             result = next(
-                (r for r in self.backtest_results if r.strategy_name == self.recommended_strategy.name),
-                None
+                (
+                    r
+                    for r in self.backtest_results
+                    if r.strategy_name == self.recommended_strategy.name
+                ),
+                None,
             )
 
             if not result:
@@ -869,10 +914,10 @@ class RecommendationEngine:
     def _calc_library_score(self, result: BacktestResult) -> float:
         """计算策略库评分"""
         # 综合评分 = Sharpe(40%) + 收益(30%) + 回撤控制(30%)
-        sharpe_score = max(0, result.sharpe_ratio / 1.0) * 0.4
+        sharpe_score = max(0, result.sharpe_ratio / 1.0) * 0.4  # noqa: F841
         return_score = max(0, result.total_return / 50.0) * 0.3
         dd_score = max(0, (20 - result.max_drawdown) / 20.0) * 0.3
-        return round(sarpe_score + return_score + dd_score, 4)
+        return round(sarpe_score + return_score + dd_score, 4)  # noqa: F821
 
     # -------------------------------------------------------------------------
     # Step 6: 记录引擎运行日志
@@ -885,29 +930,32 @@ class RecommendationEngine:
         duration_ms = int((ended_at - self.started_at).total_seconds() * 1000)
 
         try:
-            self._api_post("strategy", {
-                "action": "log_engine_run",
-                "log": {
-                    "runId": self.run_id,
-                    "runDate": self.started_at.isoformat(),
-                    "triggerType": "scheduled",
-                    "status": self.status.value,
-                    "reportsUsed": len(self.reports),
-                    "reportIds": [r.file for r in self.reports],
-                    "candidatesGenerated": len(self.candidates),
-                    "strategiesBacktested": len(self.backtest_results),
-                    "strategiesPassed": sum(
-                        1 for r in self.backtest_results if r.is_better_than_baseline
-                    ),
-                    "recommendedStrategyId": None,
-                    "isForcedRefresh": False,
-                    "decisionReason": self.decision_reason,
-                    "errorMessage": self.error_message,
-                    "durationMs": duration_ms,
-                    "startedAt": self.started_at.isoformat(),
-                    "endedAt": ended_at.isoformat(),
+            self._api_post(
+                "strategy",
+                {
+                    "action": "log_engine_run",
+                    "log": {
+                        "runId": self.run_id,
+                        "runDate": self.started_at.isoformat(),
+                        "triggerType": "scheduled",
+                        "status": self.status.value,
+                        "reportsUsed": len(self.reports),
+                        "reportIds": [r.file for r in self.reports],
+                        "candidatesGenerated": len(self.candidates),
+                        "strategiesBacktested": len(self.backtest_results),
+                        "strategiesPassed": sum(
+                            1 for r in self.backtest_results if r.is_better_than_baseline
+                        ),
+                        "recommendedStrategyId": None,
+                        "isForcedRefresh": False,
+                        "decisionReason": self.decision_reason,
+                        "errorMessage": self.error_message,
+                        "durationMs": duration_ms,
+                        "startedAt": self.started_at.isoformat(),
+                        "endedAt": ended_at.isoformat(),
+                    },
                 },
-            })
+            )
             self._log("运行日志已记录")
         except Exception as e:
             self._log(f"记录日志失败: {e}", "ERROR")
@@ -961,20 +1009,14 @@ class RecommendationEngine:
             "reportsUsed": len(self.reports),
             "candidatesGenerated": len(self.candidates),
             "strategiesBacktested": len(self.backtest_results),
-            "strategiesPassed": sum(
-                1 for r in self.backtest_results if r.is_better_than_baseline
-            ),
+            "strategiesPassed": sum(1 for r in self.backtest_results if r.is_better_than_baseline),
             "recommendedStrategy": (
-                self.recommended_strategy.name
-                if self.recommended_strategy
-                else "基线策略"
+                self.recommended_strategy.name if self.recommended_strategy else "基线策略"
             ),
             "decisionReason": self.decision_reason,
             "errorMessage": self.error_message,
             "startedAt": self.started_at.isoformat(),
-            "durationMs": int(
-                (datetime.now() - self.started_at).total_seconds() * 1000
-            ),
+            "durationMs": int((datetime.now() - self.started_at).total_seconds() * 1000),
         }
 
 
@@ -982,39 +1024,25 @@ class RecommendationEngine:
 # CLI 入口
 # ============================================================================
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="推荐策略引擎 - 从研报生成推荐策略并写入 Prisma"
-    )
+    parser = argparse.ArgumentParser(description="推荐策略引擎 - 从研报生成推荐策略并写入 Prisma")
+    parser.add_argument("--auto", action="store_true", help="自动运行模式（供 cron 调用）")
+    parser.add_argument("--force", action="store_true", help="强制刷新（绕过5日限制）")
     parser.add_argument(
-        "--auto",
-        action="store_true",
-        help="自动运行模式（供 cron 调用）"
+        "--baseline", default="v9", choices=["v9", "v15"], help="基线版本（默认 v9）"
     )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="强制刷新（绕过5日限制）"
-    )
-    parser.add_argument(
-        "--baseline",
-        default="v9",
-        choices=["v9", "v15"],
-        help="基线版本（默认 v9）"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="仅运行不回测（调试模式）"
-    )
+    parser.add_argument("--dry-run", action="store_true", help="仅运行不回测（调试模式）")
 
     args = parser.parse_args()
 
     trigger = TriggerType.FORCED if args.force else TriggerType.SCHEDULED
 
-    engine = RecommendationEngine(config=EngineConfig(
-        baseline_version=args.baseline,
-    ))
+    engine = RecommendationEngine(
+        config=EngineConfig(
+            baseline_version=args.baseline,
+        )
+    )
 
     result = engine.run(trigger_type=trigger)
 

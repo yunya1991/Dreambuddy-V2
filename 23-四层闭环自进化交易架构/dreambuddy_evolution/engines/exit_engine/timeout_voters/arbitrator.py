@@ -10,6 +10,7 @@
 
 FAIL-OPEN：权重加载异常 → 均等权重 0.25；持久化异常 → 跳过不阻塞
 """
+
 from __future__ import annotations
 
 import json
@@ -81,7 +82,9 @@ class TimeoutVoteArbitrator:
         self._voter_map: Dict[str, TimeoutVoter] = {v.voter_id: v for v in self._voters}
 
         # 权重存储 voter_id → weight
-        self._weight_store: Dict[str, float] = {v.voter_id: self.COLD_START_WEIGHT for v in self._voters}
+        self._weight_store: Dict[str, float] = {
+            v.voter_id: self.COLD_START_WEIGHT for v in self._voters
+        }
         # 样本存储 voter_id → list[(was_correct: bool, ...)]
         self._sample_store: Dict[str, List[dict]] = defaultdict(list)
         # 冷启动时间戳（首次 arbitrate 调用）
@@ -150,9 +153,7 @@ class TimeoutVoteArbitrator:
 
         # 计算 force_close 加权胜率
         total_weight = sum(weights.values()) or 1.0
-        force_close_weight = sum(
-            weights.get(t.voter_id, 0.0) for t in force_close_tickets
-        )
+        force_close_weight = sum(weights.get(t.voter_id, 0.0) for t in force_close_tickets)
         weighted_win_rate = force_close_weight / total_weight
 
         # ≥2 票 force_close + 加权胜率>0.5 → force_close
@@ -162,7 +163,9 @@ class TimeoutVoteArbitrator:
         ):
             # 取 force_close 中最高置信者
             best = max(force_close_tickets, key=lambda t: t.confidence)
-            reason_parts = [f"soft_vote:force_close_{len(force_close_tickets)}votes_wrate_{weighted_win_rate:.2f}"]
+            reason_parts = [
+                f"soft_vote:force_close_{len(force_close_tickets)}votes_wrate_{weighted_win_rate:.2f}"
+            ]
             reason_parts.append(best.reason)
             return ExitDecision(
                 action="force_close",

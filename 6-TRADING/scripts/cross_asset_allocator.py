@@ -28,57 +28,56 @@ Dalio 全天候框架 × BTC 中心化适配
 
 from typing import Dict, List, Optional, Tuple
 
-
 # ==================== 马丁模式参数 ====================
 
 MARTIN_MODES: Dict[str, Dict] = {
     "standard": {
-        "vol_mult_adj":  1.0,
-        "interval_pct":  8.0,
-        "tp_pct":        4.0,
-        "max_layers":    3,
-        "single_layer":  False,
-        "note":          "标准 V9 加密马丁",
+        "vol_mult_adj": 1.0,
+        "interval_pct": 8.0,
+        "tp_pct": 4.0,
+        "max_layers": 3,
+        "single_layer": False,
+        "note": "标准 V9 加密马丁",
     },
     "light": {
-        "vol_mult_adj":  1.5,
+        "vol_mult_adj": 1.5,
         "interval_pct": 12.0,
-        "tp_pct":        6.0,
-        "max_layers":    2,
-        "single_layer":  False,
-        "note":          "宽间隔轻仓（Overheat BTC）",
+        "tp_pct": 6.0,
+        "max_layers": 2,
+        "single_layer": False,
+        "note": "宽间隔轻仓（Overheat BTC）",
     },
     "wide_interval": {
-        "vol_mult_adj":  1.5,
+        "vol_mult_adj": 1.5,
         "interval_pct": 12.0,
-        "tp_pct":        6.0,
-        "max_layers":    3,
-        "single_layer":  False,
-        "note":          "宽间隔空头马丁（防逼空）",
+        "tp_pct": 6.0,
+        "max_layers": 3,
+        "single_layer": False,
+        "note": "宽间隔空头马丁（防逼空）",
     },
     "single_layer": {
-        "vol_mult_adj":  1.0,
-        "interval_pct":  0.0,
-        "tp_pct":        5.0,
-        "max_layers":    1,
-        "single_layer":  True,
-        "note":          "不加仓单层（高波动空头）",
+        "vol_mult_adj": 1.0,
+        "interval_pct": 0.0,
+        "tp_pct": 5.0,
+        "max_layers": 1,
+        "single_layer": True,
+        "note": "不加仓单层（高波动空头）",
     },
     "equity": {
-        "vol_mult_adj":  0.65,
-        "interval_pct":  4.0,
-        "tp_pct":        2.0,
-        "max_layers":    2,
-        "single_layer":  False,
-        "note":          "代币化股票/商品ETF标准",
+        "vol_mult_adj": 0.65,
+        "interval_pct": 4.0,
+        "tp_pct": 2.0,
+        "max_layers": 2,
+        "single_layer": False,
+        "note": "代币化股票/商品ETF标准",
     },
     "reflation_btc": {
-        "vol_mult_adj":  1.5,
+        "vol_mult_adj": 1.5,
         "interval_pct": 12.0,
-        "tp_pct":        8.0,
-        "max_layers":    2,
-        "single_layer":  False,
-        "note":          "左侧建仓，宽止盈等待反转",
+        "tp_pct": 8.0,
+        "max_layers": 2,
+        "single_layer": False,
+        "note": "左侧建仓，宽止盈等待反转",
     },
 }
 
@@ -86,25 +85,25 @@ MARTIN_MODES: Dict[str, Dict] = {
 # ==================== 资产相关性矩阵 ====================
 
 CORRELATION_MATRIX: Dict[Tuple[str, str], float] = {
-    ("BTC",  "ETH"):  0.75,
-    ("BTC",  "SOL"):  0.65,
-    ("BTC",  "GOLD"): -0.10,
-    ("BTC",  "SPY"):  0.52,
-    ("BTC",  "XLE"):  0.15,
-    ("BTC",  "XLP"):  -0.05,
-    ("ETH",  "SOL"):  0.80,
-    ("ETH",  "GOLD"): -0.15,
-    ("ETH",  "SPY"):  0.45,
-    ("ETH",  "XLE"):  0.10,
-    ("ETH",  "XLP"):  -0.10,
-    ("SOL",  "GOLD"): -0.20,
-    ("SOL",  "SPY"):  0.38,
-    ("GOLD", "SPY"):  0.05,
-    ("GOLD", "XLE"):  0.30,
-    ("GOLD", "XLP"):  0.20,
-    ("SPY",  "XLE"):  0.40,
-    ("SPY",  "XLP"):  0.50,
-    ("XLE",  "XLP"):  0.35,
+    ("BTC", "ETH"): 0.75,
+    ("BTC", "SOL"): 0.65,
+    ("BTC", "GOLD"): -0.10,
+    ("BTC", "SPY"): 0.52,
+    ("BTC", "XLE"): 0.15,
+    ("BTC", "XLP"): -0.05,
+    ("ETH", "SOL"): 0.80,
+    ("ETH", "GOLD"): -0.15,
+    ("ETH", "SPY"): 0.45,
+    ("ETH", "XLE"): 0.10,
+    ("ETH", "XLP"): -0.10,
+    ("SOL", "GOLD"): -0.20,
+    ("SOL", "SPY"): 0.38,
+    ("GOLD", "SPY"): 0.05,
+    ("GOLD", "XLE"): 0.30,
+    ("GOLD", "XLP"): 0.20,
+    ("SPY", "XLE"): 0.40,
+    ("SPY", "XLP"): 0.50,
+    ("XLE", "XLP"): 0.35,
 }
 
 
@@ -114,11 +113,11 @@ def get_correlation(a: str, b: str) -> float:
 
 
 BEST_HEDGE_PAIRS = {
-    "STAGFLATION":      ("XLP",  "ETH",  "相关 -0.10，最佳对冲对"),
-    "STAGFLATION_LITE": ("XLP",  "ETH",  "相关 -0.10，最佳对冲对"),
-    "OVERHEAT":         ("XLE",  "SPY",  "方向差即利润，相关 0.40"),
-    "RECOVERY":         ("SOL",  "BTC",  "同向加杠杆，相关 0.65"),
-    "REFLATION":        ("SPY",  "GOLD", "几乎独立，相关 0.05"),
+    "STAGFLATION": ("XLP", "ETH", "相关 -0.10，最佳对冲对"),
+    "STAGFLATION_LITE": ("XLP", "ETH", "相关 -0.10，最佳对冲对"),
+    "OVERHEAT": ("XLE", "SPY", "方向差即利润，相关 0.40"),
+    "RECOVERY": ("SOL", "BTC", "同向加杠杆，相关 0.65"),
+    "REFLATION": ("SPY", "GOLD", "几乎独立，相关 0.05"),
 }
 
 
@@ -127,74 +126,70 @@ BEST_HEDGE_PAIRS = {
 # 空头权重来自现金池支付保证金
 
 _ALLOC = {
-
     # ── 象限1: Recovery（春天）—— BTC 最优，全力做多 ──────────────────────
     "RECOVERY": {
-        "season":              "Spring",
+        "season": "Spring",
         "position_multiplier": 1.0,
-        "btc_role":            "high_beta_long",
-        "strategy_note":       "BTC 满仓主力，高贝塔全线做多",
+        "btc_role": "high_beta_long",
+        "strategy_note": "BTC 满仓主力，高贝塔全线做多",
         "longs": [
-            {"asset": "BTC",  "weight": 0.40, "martin_mode": "standard"},
-            {"asset": "ETH",  "weight": 0.20, "martin_mode": "standard"},
-            {"asset": "SOL",  "weight": 0.10, "martin_mode": "standard"},
+            {"asset": "BTC", "weight": 0.40, "martin_mode": "standard"},
+            {"asset": "ETH", "weight": 0.20, "martin_mode": "standard"},
+            {"asset": "SOL", "weight": 0.10, "martin_mode": "standard"},
             {"asset": "NVDA", "weight": 0.15, "martin_mode": "equity"},
             {"asset": "TSLA", "weight": 0.10, "martin_mode": "equity"},
         ],
         "shorts": [],
-        "cash":   0.05,
+        "cash": 0.05,
         "stop_rule": "20% 组合回撤强制全平",
     },
-
     # ── 象限2: Overheat（夏天）—— 商品 > 股票 > BTC ──────────────────────
     "OVERHEAT": {
-        "season":              "Summer",
+        "season": "Summer",
         "position_multiplier": 0.6,
-        "btc_role":            "light_long",
-        "strategy_note":       "能源/黄金多 + 少量 BTC + 空 SPY 对冲股市",
+        "btc_role": "light_long",
+        "strategy_note": "能源/黄金多 + 少量 BTC + 空 SPY 对冲股市",
         "longs": [
-            {"asset": "XLE",  "weight": 0.25, "martin_mode": "equity"},
+            {"asset": "XLE", "weight": 0.25, "martin_mode": "equity"},
             {"asset": "GOLD", "weight": 0.15, "martin_mode": "equity"},
-            {"asset": "BTC",  "weight": 0.20, "martin_mode": "light"},
+            {"asset": "BTC", "weight": 0.20, "martin_mode": "light"},
         ],
         "shorts": [
-            {"asset": "SPY",  "weight": 0.10, "martin_mode": "single_layer"},
+            {"asset": "SPY", "weight": 0.10, "martin_mode": "single_layer"},
         ],
-        "cash":   0.30,
+        "cash": 0.30,
         "stop_rule": "15% 组合回撤止损",
     },
-
     # ── 象限3: Stagflation（秋天）—— 防御优先，空高贝塔 ← 当前 ──────────
     "STAGFLATION": {
-        "season":              "Autumn",
+        "season": "Autumn",
         "position_multiplier": 0.4,
-        "btc_role":            "high_beta_short",
-        "strategy_note":       "防御商品多头 + BTC/ETH 空头马丁对冲",
+        "btc_role": "high_beta_short",
+        "strategy_note": "防御商品多头 + BTC/ETH 空头马丁对冲",
         "longs": [
-            {"asset": "XLP",  "weight": 0.25, "martin_mode": "equity"},
-            {"asset": "XLE",  "weight": 0.20, "martin_mode": "equity"},
+            {"asset": "XLP", "weight": 0.25, "martin_mode": "equity"},
+            {"asset": "XLE", "weight": 0.20, "martin_mode": "equity"},
             {"asset": "GOLD", "weight": 0.15, "martin_mode": "equity"},
         ],
         "shorts": [
-            {"asset": "BTC",  "weight": 0.10, "martin_mode": "wide_interval"},
-            {"asset": "ETH",  "weight": 0.05, "martin_mode": "single_layer"},
+            {"asset": "BTC", "weight": 0.10, "martin_mode": "wide_interval"},
+            {"asset": "ETH", "weight": 0.05, "martin_mode": "single_layer"},
         ],
-        "cash":   0.25,
+        "cash": 0.25,
         "stop_rule": "10% 组合回撤止损（防御模式严格）",
     },
-
     # ── 象限4: Reflation（冬天）—— 等待拐点，左侧建仓 BTC ──────────────
     "REFLATION": {
-        "season":              "Winter",
+        "season": "Winter",
         "position_multiplier": 0.5,
-        "btc_role":            "accumulation_lhs",
-        "strategy_note":       "SPY/债券先行，BTC 宽间隔左侧布局，保留弹药",
+        "btc_role": "accumulation_lhs",
+        "strategy_note": "SPY/债券先行，BTC 宽间隔左侧布局，保留弹药",
         "longs": [
-            {"asset": "SPY",  "weight": 0.30, "martin_mode": "equity"},
-            {"asset": "BTC",  "weight": 0.20, "martin_mode": "reflation_btc"},
+            {"asset": "SPY", "weight": 0.30, "martin_mode": "equity"},
+            {"asset": "BTC", "weight": 0.20, "martin_mode": "reflation_btc"},
         ],
         "shorts": [],
-        "cash":   0.50,
+        "cash": 0.50,
         "stop_rule": "15% 组合回撤止损",
     },
 }
@@ -211,27 +206,27 @@ _ALLOC["STAGFLATION_LITE"] = {
 
 REGIME_TRIGGERS: Dict[str, Dict[str, str]] = {
     "STAGFLATION_LITE": {
-        "to_recovery":    "CPI 连续 2 月 <2.5%  AND  10Y <4%  或  Fed 首次降息",
-        "to_overheat":    "GDP >3%  AND  CPI >3%（增长超预期）",
-        "to_reflation":   "GDP <0   AND  CPI <2%（滑入衰退 + 通胀回落）",
+        "to_recovery": "CPI 连续 2 月 <2.5%  AND  10Y <4%  或  Fed 首次降息",
+        "to_overheat": "GDP >3%  AND  CPI >3%（增长超预期）",
+        "to_reflation": "GDP <0   AND  CPI <2%（滑入衰退 + 通胀回落）",
         "to_stagflation": "GDP 转负，维持高通胀（进入经典滞胀）",
     },
     "STAGFLATION": {
-        "to_recovery":  "CPI 连续 2 月 <2.5%  AND  10Y <4%  或  Fed 首次降息",
-        "to_overheat":  "GDP >3%  AND  CPI >3%（增长复苏但通胀未控制）",
+        "to_recovery": "CPI 连续 2 月 <2.5%  AND  10Y <4%  或  Fed 首次降息",
+        "to_overheat": "GDP >3%  AND  CPI >3%（增长复苏但通胀未控制）",
         "to_reflation": "GDP <0   AND  CPI <2%（通缩式衰退）",
     },
     "RECOVERY": {
-        "to_overheat":    "CPI 连续 2 月 >3%  AND  GDP >2%",
+        "to_overheat": "CPI 连续 2 月 >3%  AND  GDP >2%",
         "to_stagflation": "GDP <1%  AND  CPI >3%（紧急防御）",
-        "to_reflation":   "GDP 快速下行至 <0",
+        "to_reflation": "GDP 快速下行至 <0",
     },
     "OVERHEAT": {
         "to_stagflation": "GDP 开始下行  AND  CPI 仍 >2%",
-        "to_recovery":    "CPI 明显回落 <2%  AND  GDP >2%（软着陆）",
+        "to_recovery": "CPI 明显回落 <2%  AND  GDP >2%（软着陆）",
     },
     "REFLATION": {
-        "to_recovery":    "GDP 触底反弹 >0  AND  CPI <2%（拐点确认）",
+        "to_recovery": "GDP 触底反弹 >0  AND  CPI <2%（拐点确认）",
         "to_stagflation": "GDP 未反弹，CPI 再起（二次通胀路径）",
     },
 }
@@ -243,6 +238,7 @@ _PHASE2_ASSETS = {"XLE", "XLP", "GOLD"}
 
 
 # ==================== 主函数 ====================
+
 
 def calc_cross_asset_allocation(
     clock_stage: Optional[str] = None,
@@ -281,10 +277,10 @@ def calc_cross_asset_allocation(
     if cs not in _ALLOC:
         cs = "STAGFLATION_LITE"
 
-    quad     = _ALLOC[cs]
-    longs    = [dict(x) for x in quad["longs"]]
-    shorts   = [dict(x) for x in quad["shorts"]]
-    cash     = quad["cash"]
+    quad = _ALLOC[cs]
+    longs = [dict(x) for x in quad["longs"]]
+    shorts = [dict(x) for x in quad["shorts"]]
+    cash = quad["cash"]
     excluded = []
 
     # Phase 1 过滤（多头中的 Phase 2 资产 → 现金；空头不受影响）
@@ -303,58 +299,58 @@ def calc_cross_asset_allocation(
         result = []
         for item in items:
             e = dict(item)
-            e["direction"]     = direction
-            mode               = e.get("martin_mode", "standard")
+            e["direction"] = direction
+            mode = e.get("martin_mode", "standard")
             e["martin_params"] = dict(MARTIN_MODES.get(mode, MARTIN_MODES["standard"]))
             result.append(e)
         return result
 
-    long_items  = enrich(longs,  "LONG")
+    long_items = enrich(longs, "LONG")
     short_items = enrich(shorts, "SHORT")
 
-    total_long  = sum(x["weight"] for x in long_items)
+    total_long = sum(x["weight"] for x in long_items)
     total_short = sum(x["weight"] for x in short_items)
     total_deployed = round(total_long + total_short, 4)
 
-    triggers   = dict(REGIME_TRIGGERS.get(cs, {}))
+    triggers = dict(REGIME_TRIGGERS.get(cs, {}))
     hedge_info = BEST_HEDGE_PAIRS.get(cs, ("—", "—", "—"))
 
     return {
-        "ml_clock_phase":      cs,
-        "btc_role":            quad["btc_role"],
-        "season":              quad["season"],
+        "ml_clock_phase": cs,
+        "btc_role": quad["btc_role"],
+        "season": quad["season"],
         "position_multiplier": quad["position_multiplier"],
         "allocation": {
-            "long":  long_items,
+            "long": long_items,
             "short": short_items,
-            "cash":  round(cash, 4),
+            "cash": round(cash, 4),
         },
-        "total_deployed":  total_deployed,
-        "regime_trigger":  triggers,
+        "total_deployed": total_deployed,
+        "regime_trigger": triggers,
         "best_hedge_pair": {
-            "long_asset":  hedge_info[0],
+            "long_asset": hedge_info[0],
             "short_asset": hedge_info[1],
-            "note":        hedge_info[2],
+            "note": hedge_info[2],
         },
         "excluded_phase2": excluded,
-        "strategy_note":   quad["strategy_note"],
-        "stop_rule":       quad.get("stop_rule", ""),
+        "strategy_note": quad["strategy_note"],
+        "stop_rule": quad.get("stop_rule", ""),
     }
 
 
 def get_btc_role_label(btc_role: str) -> str:
     """BTC 角色中文标签."""
     return {
-        "high_beta_long":   "高贝塔多头主力",
-        "light_long":       "轻仓多头（宽止损）",
-        "high_beta_short":  "高贝塔空头对冲标的",
+        "high_beta_long": "高贝塔多头主力",
+        "light_long": "轻仓多头（宽止损）",
+        "high_beta_short": "高贝塔空头对冲标的",
         "accumulation_lhs": "左侧积累建仓",
     }.get(btc_role, btc_role)
 
 
 def format_screen1_a_summary(result: Dict) -> str:
     """格式化 Screen 1 A系列最终输出摘要."""
-    clock  = result["ml_clock_phase"]
+    clock = result["ml_clock_phase"]
     season = result["season"]
     lines = [
         "=== Screen 1 A系列 跨资产多空配置 ===",
@@ -367,7 +363,7 @@ def format_screen1_a_summary(result: Dict) -> str:
         "─" * 55,
     ]
 
-    longs  = result["allocation"]["long"]
+    longs = result["allocation"]["long"]
     shorts = result["allocation"]["short"]
 
     if longs:
@@ -392,7 +388,9 @@ def format_screen1_a_summary(result: Dict) -> str:
 
     lines.append("─" * 55)
     hp = result["best_hedge_pair"]
-    lines.append(f"最佳对冲对:  Long {hp['long_asset']} + Short {hp['short_asset']}  ({hp['note']})")
+    lines.append(
+        f"最佳对冲对:  Long {hp['long_asset']} + Short {hp['short_asset']}  ({hp['note']})"
+    )
 
     lines.append("象限切换触发:")
     for k, v in result["regime_trigger"].items():
@@ -405,7 +403,9 @@ def format_screen1_a_summary(result: Dict) -> str:
 # ==================== 快速独立测试 ====================
 
 if __name__ == "__main__":
-    import sys, io
+    import io
+    import sys
+
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     print("=" * 80)
@@ -413,21 +413,29 @@ if __name__ == "__main__":
     print("=" * 80)
 
     test_cases = [
-        ("RECOVERY",         "STRONG_BULL",  "Recovery 春天（最优）"),
-        ("OVERHEAT",         "WEAK_BULL",    "Overheat 夏天"),
-        ("STAGFLATION_LITE", "STRONG_BEAR",  "Stagflation Lite 秋天（当前）"),
-        ("STAGFLATION",      "STRONG_BEAR",  "Stagflation 经典"),
-        ("REFLATION",        "WEAK_BEAR",    "Reflation 冬天"),
-        (None,               "CONSOLIDATION","无时钟数据（默认防御）"),
+        ("RECOVERY", "STRONG_BULL", "Recovery 春天（最优）"),
+        ("OVERHEAT", "WEAK_BULL", "Overheat 夏天"),
+        ("STAGFLATION_LITE", "STRONG_BEAR", "Stagflation Lite 秋天（当前）"),
+        ("STAGFLATION", "STRONG_BEAR", "Stagflation 经典"),
+        ("REFLATION", "WEAK_BEAR", "Reflation 冬天"),
+        (None, "CONSOLIDATION", "无时钟数据（默认防御）"),
     ]
 
     print(f"\n{'场景':30s}  {'乘数':6s}  {'多头':40s}  {'空头':25s}  {'现金':5s}")
     print("-" * 120)
     for clock, regime, label in test_cases:
-        r  = calc_cross_asset_allocation(clock, regime, phase1_only=False)
-        ls = " + ".join(f"{x['asset']} {x['weight']*100:.0f}%↑" for x in r["allocation"]["long"])  or "—"
-        ss = " + ".join(f"{x['asset']} {x['weight']*100:.0f}%↓" for x in r["allocation"]["short"]) or "—"
-        print(f"{label:30s}  {r['position_multiplier']:.1f}    {ls:40s}  {ss:25s}  {r['allocation']['cash']*100:.0f}%")
+        r = calc_cross_asset_allocation(clock, regime, phase1_only=False)
+        ls = (
+            " + ".join(f"{x['asset']} {x['weight']*100:.0f}%↑" for x in r["allocation"]["long"])
+            or "—"
+        )
+        ss = (
+            " + ".join(f"{x['asset']} {x['weight']*100:.0f}%↓" for x in r["allocation"]["short"])
+            or "—"
+        )
+        print(
+            f"{label:30s}  {r['position_multiplier']:.1f}    {ls:40s}  {ss:25s}  {r['allocation']['cash']*100:.0f}%"
+        )
 
     print("\n" + "=" * 80)
     print("当前完整输出（STAGFLATION_LITE，Phase 2 开启）")
@@ -445,11 +453,11 @@ if __name__ == "__main__":
     print("资产相关性矩阵（最佳对冲对）")
     print("=" * 80)
     pairs = [
-        ("XLP",  "ETH"),
-        ("XLE",  "SPY"),
-        ("SOL",  "BTC"),
-        ("SPY",  "GOLD"),
-        ("BTC",  "GOLD"),
+        ("XLP", "ETH"),
+        ("XLE", "SPY"),
+        ("SOL", "BTC"),
+        ("SPY", "GOLD"),
+        ("BTC", "GOLD"),
     ]
     for a, b in pairs:
         corr = get_correlation(a, b)

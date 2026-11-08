@@ -17,21 +17,22 @@ Screen 3 (AI屏): ML模型预测概率（基于方向+变化+速率三维度特�
 - 第三屏精确入场（涟漪）
 """
 
-from typing import Optional, List, Dict
+from typing import Optional  # noqa: I001
 import numpy as np
 import pandas as pd
 
 try:
-    from backtest.strategy import BaseStrategy
-    from backtest.engine import BacktestEngine
+    from backtest.strategy import BaseStrategy  # noqa: I001
+    from backtest.engine import BacktestEngine  # noqa: F401
 except ImportError:
-    import sys, os
+    import sys  # noqa: I001
+    import os
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
     from backtest.strategy import BaseStrategy
-    from backtest.engine import BacktestEngine
 
 from .feature_engineer import TrendFeatureEngineer
-from .models import MLModel, create_model, LightGBMModel
+from .models import MLModel, create_model
 from .tuner import ModelTuner
 
 
@@ -46,7 +47,7 @@ class MLTrendStrategy(BaseStrategy):
     def __init__(
         self,
         base_strategy=None,
-        model_type: str = 'lightgbm',
+        model_type: str = "lightgbm",
         model: Optional[MLModel] = None,
         feature_engineer: Optional[TrendFeatureEngineer] = None,
         ml_confidence_weight: float = 0.3,
@@ -92,13 +93,15 @@ class MLTrendStrategy(BaseStrategy):
     # ------------------------------------------------------------------
     def _compute_features(self, prices: pd.DataFrame) -> pd.DataFrame:
         from feature_hub.h3_wrapper import wrap_featurehub
+
         return wrap_featurehub(
             strategy_name="triple_screen",
             ohlcv_df=prices,
             symbol="BTC",
             set_name="triple_screen_only",
             original_fe_fn=lambda: self.feature_engineer.create_features(
-                prices, self.label_lookahead),
+                prices, self.label_lookahead
+            ),
             strip_prefix=True,
         )
 
@@ -113,7 +116,11 @@ class MLTrendStrategy(BaseStrategy):
         features_df = self._compute_features(prices)
 
         # 如果有预训练模型，用模型的feature_names（可能做过特征选择）
-        if self.model is not None and hasattr(self.model, 'feature_names') and self.model.feature_names:
+        if (
+            self.model is not None
+            and hasattr(self.model, "feature_names")
+            and self.model.feature_names
+        ):
             feature_names = self.model.feature_names
             # 确保所有需要的特征都存在
             missing = [f for f in feature_names if f not in features_df.columns]
@@ -126,7 +133,7 @@ class MLTrendStrategy(BaseStrategy):
         # 2. 训练模型（如果没有预训练）
         if self.model is None:
             # 去掉含NaN的行
-            valid = features_df.dropna(subset=feature_names + ['label'])
+            valid = features_df.dropna(subset=feature_names + ["label"])
             if len(valid) < 50:
                 return pd.Series(positions, index=prices.index, name="position")
 
@@ -135,13 +142,13 @@ class MLTrendStrategy(BaseStrategy):
             train_data = valid.iloc[:train_size]
 
             X_train = train_data[feature_names]
-            y_train = train_data['label']
+            y_train = train_data["label"]
 
             if self.enable_tuning and len(X_train) > 100:
                 tuner = ModelTuner(
                     model_type=self.model_type,
                     n_trials=self.n_trials,
-                    metric='accuracy',
+                    metric="accuracy",
                 )
                 tuner.tune(X_train, y_train)
                 self.model = tuner.train_best(X_train, y_train)
@@ -242,7 +249,7 @@ class MLTrendStrategy(BaseStrategy):
 def train_ml_strategy(
     prices: pd.DataFrame,
     base_strategy=None,
-    model_type: str = 'lightgbm',
+    model_type: str = "lightgbm",
     label_lookahead: int = 7,
     train_ratio: float = 0.6,
     enable_tuning: bool = False,

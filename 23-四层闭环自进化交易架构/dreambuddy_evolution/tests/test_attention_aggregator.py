@@ -6,13 +6,14 @@ RED 阶段断言：
 - dim_strengths 的 3 个 key 归一化后 sum ≈ 1.0
 - 最大维度 = A_dim
 """
+
 import torch
-import pytest
 
 
 def test_module_importable():
     """AttentionAggregator 模块可导入（RED: ModuleNotFoundError）。"""
     from dreambuddy_evolution.core.attention_aggregator import AttentionAggregator
+
     assert AttentionAggregator is not None
 
 

@@ -223,7 +223,7 @@ def calc_indicator_dynamics(df, indicator_name: str) -> dict:
             price = close.iloc[-1]
             upper_val = upper.iloc[-1]
             lower_val = lower.iloc[-1]
-            middle_val = middle.iloc[-1]
+            middle_val = middle.iloc[-1]  # noqa: F841
             band_width = upper_val - lower_val
 
             if band_width > 0:
@@ -250,8 +250,8 @@ def calc_indicator_dynamics(df, indicator_name: str) -> dict:
                 price_recent = close.iloc[-lookback:]
                 rsi_recent = rsi.iloc[-lookback:]
 
-                price_high = price_recent.max()
-                price_low = price_recent.min()
+                price_high = price_recent.max()  # noqa: F841
+                price_low = price_recent.min()  # noqa: F841
                 price_current = close.iloc[-1]
 
                 rsi_at_price_high = rsi_recent.loc[price_recent.idxmax()]
@@ -348,7 +348,7 @@ def calc_classic_indicator_confidence(weekly_df, daily_df) -> dict:
                 neutral_count += 1
             dynamics_list.append(dyn)
 
-        total = len(indicators)
+        total = len(indicators)  # noqa: F841
         if bull_count > bear_count:
             direction = "BULL"
             count = bull_count
@@ -540,7 +540,7 @@ def calc_elder_ray_advanced(df, period: int = 13, lookback: int = 20) -> dict:
 
         # 6. 背离检测（回看 lookback 根K线）
         window_start = max(0, len(closes) - lookback)
-        window_closes = closes[window_start:]
+        window_closes = closes[window_start:]  # noqa: F841
         window_highs = highs[window_start:]
         window_lows = lows[window_start:]
         window_bull = bull_power[window_start:]

@@ -1,15 +1,15 @@
 import json
 import os
-import sys
 import random
-import urllib.request
-import urllib.parse
+import sys
 import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE_DIR, "core_engine"))
-from least_resistance import run_module_analysis, compute_resistance_3d
+from least_resistance import compute_resistance_3d, run_module_analysis  # noqa: E402
 
 STORAGE_DIR = os.path.join(BASE_DIR, "storage")
 SNAPSHOT_FILE = os.path.join(STORAGE_DIR, "latest_snapshot.json")
@@ -18,27 +18,69 @@ TAVILY_API_KEY = "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"
 TAVILY_ENDPOINT = "https://api.tavily.com/search"
 
 POSITIVE_KW = [
-    "bullish", "rally", "surge", "approval", "inflow", "positive", "adoption",
-    "利好", "上涨", "突破", "机构", "流入",
+    "bullish",
+    "rally",
+    "surge",
+    "approval",
+    "inflow",
+    "positive",
+    "adoption",
+    "利好",
+    "上涨",
+    "突破",
+    "机构",
+    "流入",
 ]
 NEGATIVE_KW = [
-    "bearish", "crash", "selloff", "ban", "hack", "fraud", "liquidation",
-    "outflow", "reject", "negative",
-    "利空", "下跌", "暴跌", "监管", "禁令", "清算",
+    "bearish",
+    "crash",
+    "selloff",
+    "ban",
+    "hack",
+    "fraud",
+    "liquidation",
+    "outflow",
+    "reject",
+    "negative",
+    "利空",
+    "下跌",
+    "暴跌",
+    "监管",
+    "禁令",
+    "清算",
 ]
 
 NEW_QUERIES = {
     "news": ["crypto market news", "bitcoin ethereum price analysis", "blockchain industry"],
     "flow": ["bitcoin ETF inflow", "stablecoin supply", "institutional crypto capital flow"],
-    "sentiment": ["crypto market sentiment", "fear greed index", "investor psychology cryptocurrency"],
-    "macro": ["fed interest rate decision", "us dollar index crypto", "macroeconomic inflation recession"],
+    "sentiment": [
+        "crypto market sentiment",
+        "fear greed index",
+        "investor psychology cryptocurrency",
+    ],
+    "macro": [
+        "fed interest rate decision",
+        "us dollar index crypto",
+        "macroeconomic inflation recession",
+    ],
 }
 
 MODULE_KEYWORDS = {
     "news": ["news", "price", "industry", "market", "新闻", "价格", "行业", "市场"],
     "flow": ["inflow", "outflow", "capital", "supply", "etf", "资金", "流入", "流出", "供应"],
     "sentiment": ["sentiment", "fear", "greed", "psychology", "情绪", "恐惧", "贪婪"],
-    "macro": ["fed", "interest", "inflation", "recession", "dollar", "宏观", "利率", "通胀", "衰退", "美元"],
+    "macro": [
+        "fed",
+        "interest",
+        "inflation",
+        "recession",
+        "dollar",
+        "宏观",
+        "利率",
+        "通胀",
+        "衰退",
+        "美元",
+    ],
 }
 
 
@@ -91,14 +133,16 @@ def generate_mock_events(query: str) -> list:
         ts = now.isoformat() + "Z"
         sentiment = analyze_sentiment_keywords(content)
         category = classify_event_category(content)
-        events.append({
-            "timestamp": ts,
-            "title": f"[{category.upper()}] {query[:40]} sample-{i+1}",
-            "content": content,
-            "sentiment": sentiment,
-            "category": category,
-            "impact_score": abs(sentiment) * 100,
-        })
+        events.append(
+            {
+                "timestamp": ts,
+                "title": f"[{category.upper()}] {query[:40]} sample-{i+1}",
+                "content": content,
+                "sentiment": sentiment,
+                "category": category,
+                "impact_score": abs(sentiment) * 100,
+            }
+        )
     return events
 
 
@@ -129,14 +173,16 @@ def fetch_tavily_news(query: str) -> list:
             content = r.get("content") or title
             sentiment = analyze_sentiment_keywords(content)
             category = classify_event_category(content)
-            events.append({
-                "timestamp": now,
-                "title": title,
-                "content": content,
-                "sentiment": sentiment,
-                "category": category,
-                "impact_score": abs(sentiment) * 100,
-            })
+            events.append(
+                {
+                    "timestamp": now,
+                    "title": title,
+                    "content": content,
+                    "sentiment": sentiment,
+                    "category": category,
+                    "impact_score": abs(sentiment) * 100,
+                }
+            )
         if not events:
             return generate_mock_events(query)
         return events
@@ -182,7 +228,9 @@ def run_full_pipeline(use_tavily: bool = True) -> dict:
     for module in ["news", "flow", "sentiment", "macro"]:
         events = _gather_module_events(module, use_tavily)
         raw_score, sentiment_idx, flow_idx, heat, stress = _compute_module_metrics(module, events)
-        result = run_module_analysis(module, events, raw_score, sentiment_idx, flow_idx, heat, stress)
+        result = run_module_analysis(
+            module, events, raw_score, sentiment_idx, flow_idx, heat, stress
+        )
         modules_result[module] = result
         overall_scores.append((raw_score, weights.get(module, 0.25)))
     total_w = sum(w for _, w in overall_scores)
@@ -223,13 +271,23 @@ if __name__ == "__main__":
         except Exception:
             pass
     snap = run_full_pipeline(use_tavily=use_tavily)
-    print(json.dumps({
-        "ts": snap["ts"],
-        "overall": snap["overall"],
-        "modules": {k: {"direction": v["resistance_3d"]["direction"],
+    print(
+        json.dumps(
+            {
+                "ts": snap["ts"],
+                "overall": snap["overall"],
+                "modules": {
+                    k: {
+                        "direction": v["resistance_3d"]["direction"],
                         "sentiment_index": round(v["metrics"]["sentiment_index"], 2),
                         "heat": round(v["metrics"]["heat"], 2),
-                        "recommendation": v["signals"]["recommendation"]["type"]}
-                   for k, v in snap["modules"].items()},
-    }, ensure_ascii=False, indent=2))
+                        "recommendation": v["signals"]["recommendation"]["type"],
+                    }
+                    for k, v in snap["modules"].items()
+                },
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     print("tavily_data_generator 写入完成" if False else "tavily_data_generator 执行完成")

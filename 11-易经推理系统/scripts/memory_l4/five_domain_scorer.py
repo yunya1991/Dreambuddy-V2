@@ -12,15 +12,13 @@
 
 所有决策不等式按§2.2写成"可代入不等式"，便于shadow审计时50字内秒答原因。
 """
+
 from __future__ import annotations
 
 import json
-import math
-import time
-from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -32,7 +30,6 @@ from .strategy_algo_layer import (  # noqa: E402 相对导入：避免sys.path�
     _normalize_0_100,
 )
 
-
 # =====================================================================
 # FiveDomainState：战略层对外输出（9字段按类Dict，fail-open中性默认）
 # =====================================================================
@@ -41,34 +38,39 @@ CLASSES = tuple(ASSET_CLASSES)  # 本地别名，便于书写
 
 def _per_class_any() -> Dict[str, Any]:
     """工厂：按三类cls生成空Dict占位（fail-open填充时覆盖）。"""
-    return {c: None for c in CLASSES}
+    return dict.fromkeys(CLASSES)
 
 
 def _per_class_bool_true_dict() -> Dict[str, Dict[str, bool]]:
     """工厂：allowed_style_mask 每类 6策略默认全True（fail-open等价mask全开）。"""
-    return {c: {s: True for s in STYLE_ORDER} for c in CLASSES}
+    return {c: dict.fromkeys(STYLE_ORDER, True) for c in CLASSES}
 
 
 def _per_class_veto_flags() -> Dict[str, Dict[str, bool]]:
     """工厂：dimension_veto_flags 每类默认全False（无否决）。"""
-    FLAG_NAMES = ("dao_xiao_40", "jiang_xiao_40", "fa_xiao_40",
-                  "di_tian_shuang_cha", "dao_jv_fou_jue")
-    return {c: {f: False for f in FLAG_NAMES} for c in CLASSES}
+    FLAG_NAMES = (
+        "dao_xiao_40",
+        "jiang_xiao_40",
+        "fa_xiao_40",
+        "di_tian_shuang_cha",
+        "dao_jv_fou_jue",
+    )
+    return {c: dict.fromkeys(FLAG_NAMES, False) for c in CLASSES}
 
 
 def _per_class_war_state() -> Dict[str, str]:
     """工厂：war_state 每类默认="ALLOW"（fail-open等价无闸门）。"""
-    return {c: "ALLOW" for c in CLASSES}
+    return dict.fromkeys(CLASSES, "ALLOW")
 
 
 def _per_class_1_0() -> Dict[str, float]:
     """工厂：position_mult / cross_asset_multiplier / aggregate_position_cap_pct 中性默认1.0。"""
-    return {c: 1.0 for c in CLASSES}
+    return dict.fromkeys(CLASSES, 1.0)
 
 
-def _per_class_band_none() -> Dict[str, Optional[Dict[str,float]]]:
+def _per_class_band_none() -> Dict[str, Optional[Dict[str, float]]]:
     """工厂：front_layer_band 每类默认=None（不clip，方案B带宽全开）。"""
-    return {c: None for c in CLASSES}
+    return dict.fromkeys(CLASSES)
 
 
 def _per_class_forced_close() -> Dict[str, Dict[str, bool]]:
@@ -88,10 +90,13 @@ class FiveDomainState:
     关闭 enable_five_domain 时，返回该结构的 default_fail_open()，
     字节等价战略层不存在，所有下游 min/max/叠加 操作都是 identity 操作。
     """
+
     # 1/9 是否允许交易（FREEZE=不出战 / COOLDOWN=5分滞回解冻中 / ALLOW=允许）
     war_state: Dict[str, str] = field(default_factory=_per_class_war_state)
     # 2/9 允许哪类策略（6策略 bool，emergency永远True）
-    allowed_style_mask: Dict[str, Dict[str, bool]] = field(default_factory=_per_class_bool_true_dict)
+    allowed_style_mask: Dict[str, Dict[str, bool]] = field(
+        default_factory=_per_class_bool_true_dict
+    )
     # 3/9 允许多大仓位 cap（§5.2 四档：≥85→1.00，75→0.80，60→0.50，<60→0.20）
     aggregate_position_cap_pct: Dict[str, float] = field(default_factory=_per_class_1_0)
     # 4/9 跨类相关性乘数（两类同时<60→三类全×0.8；否则1.0）
@@ -101,19 +106,25 @@ class FiveDomainState:
     # 6/9 是否必须止损（strong=True=强平候选 / protect=True=保护模式SL收紧）
     forced_close_flags: Dict[str, Dict[str, bool]] = field(default_factory=_per_class_forced_close)
     # 7/9 前置层带宽（min/max范围；None=默认不clip）—— 方案B仅 np.clip 不乘系数
-    front_layer_band: Dict[str, Optional[Dict[str, float]]] = field(default_factory=_per_class_band_none)
+    front_layer_band: Dict[str, Optional[Dict[str, float]]] = field(
+        default_factory=_per_class_band_none
+    )
     # 8/9 5个维度否决旗标（dao/jiang/fa <40, 地天双差, 道否决）
     dimension_veto_flags: Dict[str, Dict[str, bool]] = field(default_factory=_per_class_veto_flags)
     # 9/9 五维评分原始快照（便于离线审计）
     five_scores: Dict[str, Dict[str, int]] = field(default_factory=_per_class_scores)
     # 10/9 BTC 强弱 regime（STRONG/WEAK/NEUTRAL），用户经验因子：BTC强势与美股脱钩，弱势类风险资产
-    btc_regime: Dict[str, str] = field(default_factory=lambda: {c: "NEUTRAL" for c in CLASSES})
+    btc_regime: Dict[str, str] = field(default_factory=lambda: dict.fromkeys(CLASSES, "NEUTRAL"))
     # 11/9 方向偏置分数（-100~+100，+看多/-看空），综合五维+技术面+BCRM方向预测
-    direction_bias: Dict[str, float] = field(default_factory=lambda: {c: 0.0 for c in CLASSES})
+    direction_bias: Dict[str, float] = field(default_factory=lambda: dict.fromkeys(CLASSES, 0.0))
     # 12/9 方向状态：LONG_ONLY/LONG_PREFER/NEUTRAL/SHORT_PREFER/SHORT_ONLY/FREEZE
-    direction_state: Dict[str, str] = field(default_factory=lambda: {c: "NEUTRAL" for c in CLASSES})
+    direction_state: Dict[str, str] = field(
+        default_factory=lambda: dict.fromkeys(CLASSES, "NEUTRAL")
+    )
     # 13/9 Phase 4.3 三因子共振做空信号（ETF流出+头肩顶+BTC WEAK），True 时允许 BTC/ETH 做空
-    three_factor_short_signal: Dict[str, bool] = field(default_factory=lambda: {c: False for c in CLASSES})
+    three_factor_short_signal: Dict[str, bool] = field(
+        default_factory=lambda: dict.fromkeys(CLASSES, False)
+    )
 
     # -----------------------------------------------------------------
     # 工厂：fail-open中性默认
@@ -155,13 +166,20 @@ class FiveDomainState:
 
     def _to_serializable(self) -> Dict[str, Any]:
         """numpy → 原生；避免JSON序列化失败。"""
+
         def clean(o):
-            if isinstance(o, (np.integer,)): return int(o)
-            if isinstance(o, (np.floating,)): return float(o)
-            if isinstance(o, np.ndarray): return o.tolist()
-            if isinstance(o, dict): return {k: clean(v) for k,v in o.items()}
-            if isinstance(o, (list, tuple)): return [clean(x) for x in o]
+            if isinstance(o, (np.integer,)):
+                return int(o)
+            if isinstance(o, (np.floating,)):
+                return float(o)
+            if isinstance(o, np.ndarray):
+                return o.tolist()
+            if isinstance(o, dict):
+                return {k: clean(v) for k, v in o.items()}
+            if isinstance(o, (list, tuple)):
+                return [clean(x) for x in o]
             return o
+
         return clean(asdict(self))
 
     @classmethod
@@ -189,17 +207,17 @@ class FiveDomainHeuristicScorer:
     #   会按 alpha 混合自适应权重，逐步替代硬编码值。
     WEIGHTS_BY_CLASS: Dict[str, Dict[str, float]] = {
         # 加密：政策一致性最重要 → dao 30%；趋势结构→地25%
-        "crypto_usdt":    {"dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15},
+        "crypto_usdt": {"dao": 0.30, "tian": 0.15, "di": 0.25, "jiang": 0.15, "fa": 0.15},
         # 美股：基本面/财报季更强 → jiang 提升到 18%，天12
-        "us_stock":       {"dao": 0.30, "tian": 0.12, "di": 0.25, "jiang": 0.18, "fa": 0.15},
+        "us_stock": {"dao": 0.30, "tian": 0.12, "di": 0.25, "jiang": 0.18, "fa": 0.15},
         # 黄金：宏观（实际利率/美元指数）= 天 权重提升 22%
         "precious_metal": {"dao": 0.28, "tian": 0.22, "di": 0.20, "jiang": 0.15, "fa": 0.15},
     }
     # 健康性断言：权重和 == 1.00（每个类都要，单元测试启动即assert）
     for _cls, _w in WEIGHTS_BY_CLASS.items():
-        assert abs(sum(_w.values()) - 1.00) < 1e-6, (
-            f"[FiveDomainHeuristicScorer] WEIGHTS_BY_CLASS[{_cls}] 权重和≠1：{_w}"
-        )
+        assert (
+            abs(sum(_w.values()) - 1.00) < 1e-6
+        ), f"[FiveDomainHeuristicScorer] WEIGHTS_BY_CLASS[{_cls}] 权重和≠1：{_w}"
     del _cls, _w  # 清理类命名空间
 
     def __init__(
@@ -210,8 +228,10 @@ class FiveDomainHeuristicScorer:
     ):
         self.enable = bool(enable)
         self.enable_adaptive_weights = bool(enable_adaptive_weights)
-        self.state_cache_path = Path(state_cache_path) if state_cache_path else (
-            Path(__file__).resolve().parent / "runtime" / "five_domain_state.json"
+        self.state_cache_path = (
+            Path(state_cache_path)
+            if state_cache_path
+            else (Path(__file__).resolve().parent / "runtime" / "five_domain_state.json")
         )
         # ★ FIX legacy#1/2：5 分滞回仅限**同进程内**连续 tick 有效（防止 5 分钟波动导致 FREEZE/ALLOW 来回切）。
         #   跨进程/单元测试 重新构造 Scorer 时，上一轮决策记忆清零：prev_ws=ALLOW。
@@ -222,14 +242,14 @@ class FiveDomainHeuristicScorer:
         # ★ P1: 解冻滞回计数器（连续N日≥60）。每类cls独立维护连续达标天数。
         #   避免单点顶解冻（某1天冲高触发ALLOW第二天回落）。
         self._hysteresis_config = {
-            "thaw_days": 3,     # 解冻门槛：连续3天 total≥60
-            "thaw_score": 60,   # 解冻分数线：≥60
+            "thaw_days": 3,  # 解冻门槛：连续3天 total≥60
+            "thaw_score": 60,  # 解冻分数线：≥60
             "re_freeze_score": 58,  # 解冻后回落门槛：<58 才重新冻回（2分缓冲，避免反复切）
         }
-        self._thaw_consecutive = {c: 0 for c in CLASSES}  # 连续达标日计数器
+        self._thaw_consecutive = dict.fromkeys(CLASSES, 0)  # 连续达标日计数器
         # ★ DAO veto 冻结态（每类资产独立）。True=该类资产被 DAO 维度冻结（禁止开仓）。
         #   滞回带内不切换，由 score_and_decide 中的滞回逻辑维护。
-        self._dao_veto_frozen = {c: False for c in CLASSES}
+        self._dao_veto_frozen = dict.fromkeys(CLASSES, False)
 
     # =================================================================
     # 对外：score_and_decide —— 日级打分+决策 → 返回 FiveDomainState
@@ -266,16 +286,20 @@ class FiveDomainHeuristicScorer:
 
         try:
             # 防御：补齐不存在的类/维度 → 用中性默认值
-            scores_by_cls: Dict[str, Dict[str,int]] = {}
+            scores_by_cls: Dict[str, Dict[str, int]] = {}
             for cls in CLASSES:
                 given = (raw_scores_by_class or {}).get(cls, {}) or {}
                 cleaned = {}
                 for dim in DEFAULT_NEUTRAL_SCORES.keys():
                     val = given.get(dim, DEFAULT_NEUTRAL_SCORES[dim])
-                    cleaned[dim] = _normalize_0_100(val, scale=1.0)  # 已是0-100 → scale=1确保int/边界
+                    cleaned[dim] = _normalize_0_100(
+                        val, scale=1.0
+                    )  # 已是0-100 → scale=1确保int/边界
                 scores_by_cls[cls] = cleaned
             # 决策不等式映射（核心）
-            state = self._apply_decision_rules(scores_by_cls, direction_context, force_vectors_by_class)
+            state = self._apply_decision_rules(
+                scores_by_cls, direction_context, force_vectors_by_class
+            )
         except Exception:  # noqa: BLE001 — F1 异常降级：默认fail-open
             state = FiveDomainState.default_fail_open()
 
@@ -304,8 +328,9 @@ class FiveDomainHeuristicScorer:
     # =================================================================
     # 内部：_compute_adaptive_weights（力向量 magnitude → 自适应权重）
     # =================================================================
-    def _compute_adaptive_weights(self, cls: str,
-                                 force_vectors: Optional[Dict] = None) -> Dict[str, float]:
+    def _compute_adaptive_weights(
+        self, cls: str, force_vectors: Optional[Dict] = None
+    ) -> Dict[str, float]:
         """从力向量 magnitude 计算自适应权重。
 
         权重 = |magnitude[dim]| / sum(|magnitude[dim]|)，再与硬编码权重 alpha 混合。
@@ -342,8 +367,7 @@ class FiveDomainHeuristicScorer:
 
             w_hard = fallback
             w_final = {
-                k: alpha * w_adaptive.get(k, 0) + (1 - alpha) * w_hard.get(k, 0.2)
-                for k in w_hard
+                k: alpha * w_adaptive.get(k, 0) + (1 - alpha) * w_hard.get(k, 0.2) for k in w_hard
             }
             s = sum(w_final.values())
             if s > 0:
@@ -357,8 +381,9 @@ class FiveDomainHeuristicScorer:
     # =================================================================
     # 内部：_weighted_total（§4.1 五维加权汇总庙算总分）
     # =================================================================
-    def _weighted_total(self, scores_cls: Dict[str, int], cls: str,
-                        force_vectors: Optional[Dict] = None) -> int:
+    def _weighted_total(
+        self, scores_cls: Dict[str, int], cls: str, force_vectors: Optional[Dict] = None
+    ) -> int:
         """§4.1 五维加权汇总庙算总分。
 
         权重选择优先级：
@@ -367,22 +392,31 @@ class FiveDomainHeuristicScorer:
         """
         w = self._compute_adaptive_weights(cls, force_vectors)
         assert abs(sum(w.values()) - 1.00) < 1e-6, f"[{cls}] 权重和≠1：{w}"
-        return int(round(sum(scores_cls.get(k, DEFAULT_NEUTRAL_SCORES[k]) * ww for k, ww in w.items())))
+        return int(
+            round(sum(scores_cls.get(k, DEFAULT_NEUTRAL_SCORES[k]) * ww for k, ww in w.items()))
+        )
 
     # =================================================================
     # 内部核心：_apply_decision_rules（6决策不等式 按类独立）
     # =================================================================
-    def _apply_decision_rules(self, scores_by_cls: Dict[str, Dict[str,int]],
-                              direction_context: Optional[Dict[str, Dict[str, Any]]] = None,
-                              force_vectors_by_class: Optional[Dict[str, Dict]] = None) -> FiveDomainState:
+    def _apply_decision_rules(
+        self,
+        scores_by_cls: Dict[str, Dict[str, int]],
+        direction_context: Optional[Dict[str, Dict[str, Any]]] = None,
+        force_vectors_by_class: Optional[Dict[str, Dict]] = None,
+    ) -> FiveDomainState:
         """§2.2 6 决策不等式映射。所有条件写成可代入不等式+阈值+代入值，便于shadow审计。
 
         每类cls独立循环，变量互不共享 → TDD #9-12 按类独立性保证。
         """
         state = FiveDomainState.default_fail_open()  # 先全中性，再逐类覆写
         # ── 先跑三类总分，便于后面跨类相关性乘数 ──
-        totals = {c: self._weighted_total(scores_by_cls[c], c,
-                    force_vectors=self._fv_for_class(force_vectors_by_class, c)) for c in CLASSES}
+        totals = {
+            c: self._weighted_total(
+                scores_by_cls[c], c, force_vectors=self._fv_for_class(force_vectors_by_class, c)
+            )
+            for c in CLASSES
+        }
 
         for cls in CLASSES:
             s = scores_by_cls[cls]
@@ -404,11 +438,11 @@ class FiveDomainHeuristicScorer:
             else:
                 _dao_jv = self._dao_veto_frozen.get(cls, False)
             veto = state.dimension_veto_flags[cls] = {
-                "dao_xiao_40":     (s["dao"]   < 40),
-                "jiang_xiao_40":   (s["jiang"] < 40),
-                "fa_xiao_40":      (s["fa"]    < 40),
+                "dao_xiao_40": (s["dao"] < 40),
+                "jiang_xiao_40": (s["jiang"] < 40),
+                "fa_xiao_40": (s["fa"] < 40),
                 "di_tian_shuang_cha": (s["di"] < 40 and s["tian"] < 40),
-                "dao_jv_fou_jue":  _dao_jv,
+                "dao_jv_fou_jue": _dao_jv,
             }
 
             # ===== 不等式1：war_state（Q1+Q6：是否允许交易+空仓等待）=====
@@ -428,7 +462,7 @@ class FiveDomainHeuristicScorer:
                 if total < hcfg["re_freeze_score"]:
                     self._thaw_consecutive[cls] = 0
                     if total < 50:
-                        state.war_state[cls] = "FREEZE"    # 全禁档
+                        state.war_state[cls] = "FREEZE"  # 全禁档
                     else:
                         state.war_state[cls] = "RESTRICT"  # 50≤total<58 轻仓防守
                 else:
@@ -445,25 +479,29 @@ class FiveDomainHeuristicScorer:
                 if self._thaw_consecutive[cls] >= hcfg["thaw_days"]:
                     state.war_state[cls] = "ALLOW"
                 elif total >= 60:
-                    state.war_state[cls] = "COOLDOWN"   # 解冻中
+                    state.war_state[cls] = "COOLDOWN"  # 解冻中
                 elif total >= 50:
-                    state.war_state[cls] = "RESTRICT"   # 轻仓防守
+                    state.war_state[cls] = "RESTRICT"  # 轻仓防守
                 else:
-                    state.war_state[cls] = "FREEZE"     # 全禁
+                    state.war_state[cls] = "FREEZE"  # 全禁
 
             # ===== 不等式2：aggregate_position_cap_pct（Q3：允许多大仓位）=====
-            if   total >= 85: cap = 1.00
-            elif total >= 75: cap = 0.80
-            elif total >= 60: cap = 0.50
-            else:             cap = 0.20
+            if total >= 85:
+                cap = 1.00
+            elif total >= 75:
+                cap = 0.80
+            elif total >= 60:
+                cap = 0.50
+            else:
+                cap = 0.20
             state.aggregate_position_cap_pct[cls] = float(cap)
 
             # ===== 方向偏置计算（综合五维+技术面+BCRM方向预测+BDSM估值）=====
             # direction_bias: -100~+100，+看多/-看空
             _bias = 0.0
             # 1. 五维评分方向（权重合计 0.5）
-            _bias += (s["dao"] - 50) * 0.25   # 基本面：dao>50偏多，<50偏空
-            _bias += (s["di"] - 50) * 0.15    # 技术面：di>50偏多（趋势健康）
+            _bias += (s["dao"] - 50) * 0.25  # 基本面：dao>50偏多，<50偏空
+            _bias += (s["di"] - 50) * 0.15  # 技术面：di>50偏多（趋势健康）
             _bias += (s["tian"] - 50) * 0.10  # 宏观：tian>50风险偏好高
             # 2. 方向上下文（如果有）
             _ctx = (direction_context or {}).get(cls, {}) or {}
@@ -512,9 +550,12 @@ class FiveDomainHeuristicScorer:
                 _etf_flow = _ctx.get("etf_flow_norm")
                 _pattern = _ctx.get("pattern")
                 _regime = _ctx.get("btc_regime", "NEUTRAL")
-                if (isinstance(_etf_flow, (int, float)) and _etf_flow < 0
-                        and _pattern == "hs_top"
-                        and _regime == "WEAK"):
+                if (
+                    isinstance(_etf_flow, (int, float))
+                    and _etf_flow < 0
+                    and _pattern == "hs_top"
+                    and _regime == "WEAK"
+                ):
                     _three_factor_short = True
                     _bias = min(_bias, -55.0)  # 强制进入 SHORT_ONLY 区间
                     state.direction_bias[cls] = round(_bias, 2)
@@ -543,32 +584,36 @@ class FiveDomainHeuristicScorer:
 
             # ===== 不等式3：allowed_style_mask（Q2：允许哪类策略）=====
             m = state.allowed_style_mask[cls]
-            m["emergency"]     = True   # R7红线：应急策略永不下架（强制赋值）
+            m["emergency"] = True  # R7红线：应急策略永不下架（强制赋值）
             # ★ 极差场景（total<50/dao否决/法否决）→ 除emergency+volatility外全部下架
             # ★ 防守场景（50≤total<60/COOLDOWN）→ 禁趋势策略，保留mean_revert+volatility
             is_extreme_bad = (total < 50) or veto["dao_jv_fou_jue"] or veto["fa_xiao_40"]
             is_defensive = (50 <= total < 60) and not is_extreme_bad
             if is_extreme_bad:
-                m["trend_follow"]  = False
-                m["breakout"]      = False
-                m["mean_revert"]   = False
-                m["momentum"]      = False
+                m["trend_follow"] = False
+                m["breakout"] = False
+                m["mean_revert"] = False
+                m["momentum"] = False
                 # 道绝否决(一票否决)时禁一切非应急策略；其他极差场景允许地天双差时波动率对冲
-                m["volatility"]    = bool(veto["di_tian_shuang_cha"]) and not veto["dao_jv_fou_jue"]
+                m["volatility"] = bool(veto["di_tian_shuang_cha"]) and not veto["dao_jv_fou_jue"]
             elif is_defensive:
                 # 防守档：禁趋势追涨杀跌，保留震荡回归+波动率对冲
-                m["trend_follow"]  = False
-                m["breakout"]      = False
-                m["mean_revert"]   = True   # 震荡市适合均值回归
-                m["momentum"]      = False
-                m["volatility"]    = True   # 允许波动率/对冲策略
+                m["trend_follow"] = False
+                m["breakout"] = False
+                m["mean_revert"] = True  # 震荡市适合均值回归
+                m["momentum"] = False
+                m["volatility"] = True  # 允许波动率/对冲策略
             else:
                 # 非极差：按不等式正常放行（符合project_memory维度否决规则）
-                m["trend_follow"]  = bool(total >= 70 and not veto["di_tian_shuang_cha"])
-                m["breakout"]      = bool(total >= 65 and s["di"] >= 60)
-                m["mean_revert"]   = bool(40 <= s["di"] <= 60)
-                m["momentum"]      = bool(s["dao"] >= 70 and not veto["di_tian_shuang_cha"])  # 地天双差时禁止动量策略
-                m["volatility"]    = bool(veto["di_tian_shuang_cha"])  # 双差极端波动 → 只允许对冲(波动率)策略
+                m["trend_follow"] = bool(total >= 70 and not veto["di_tian_shuang_cha"])
+                m["breakout"] = bool(total >= 65 and s["di"] >= 60)
+                m["mean_revert"] = bool(40 <= s["di"] <= 60)
+                m["momentum"] = bool(
+                    s["dao"] >= 70 and not veto["di_tian_shuang_cha"]
+                )  # 地天双差时禁止动量策略
+                m["volatility"] = bool(
+                    veto["di_tian_shuang_cha"]
+                )  # 双差极端波动 → 只允许对冲(波动率)策略
             # 注意：emergency 永远 True，其余可被否决；且按类独立不串值（TDD #9/#10）。
 
             # ===== 方向状态叠加：根据 direction_state 调整策略推荐 =====
@@ -579,27 +624,27 @@ class FiveDomainHeuristicScorer:
             if is_extreme_bad:
                 pass  # 极差场景：mask 已在上面设置，方向状态不覆盖
             elif _dstate == "SHORT_ONLY":
-                m["trend_follow"]  = False  # 禁趋势做多
-                m["breakout"]      = False  # 禁突破做多
-                m["momentum"]      = False  # 禁动量做多
-                m["mean_revert"]   = True   # 允许均值回归（含做空）
-                m["volatility"]    = True   # 允许波动率/对冲
+                m["trend_follow"] = False  # 禁趋势做多
+                m["breakout"] = False  # 禁突破做多
+                m["momentum"] = False  # 禁动量做多
+                m["mean_revert"] = True  # 允许均值回归（含做空）
+                m["volatility"] = True  # 允许波动率/对冲
             elif _dstate == "SHORT_PREFER":
-                m["trend_follow"]  = False
-                m["breakout"]      = False
-                m["momentum"]      = False
-                m["mean_revert"]   = True
-                m["volatility"]    = True
+                m["trend_follow"] = False
+                m["breakout"] = False
+                m["momentum"] = False
+                m["mean_revert"] = True
+                m["volatility"] = True
             elif _dstate == "LONG_ONLY":
-                m["trend_follow"]  = True
-                m["breakout"]      = True
-                m["momentum"]      = True
-                m["mean_revert"]   = False  # 禁反向做空
-                m["volatility"]    = bool(veto["di_tian_shuang_cha"])
+                m["trend_follow"] = True
+                m["breakout"] = True
+                m["momentum"] = True
+                m["mean_revert"] = False  # 禁反向做空
+                m["volatility"] = bool(veto["di_tian_shuang_cha"])
             elif _dstate == "LONG_PREFER":
-                m["trend_follow"]  = True
-                m["breakout"]      = True
-                m["momentum"]      = True
+                m["trend_follow"] = True
+                m["breakout"] = True
+                m["momentum"] = True
                 # mean_revert 保持原值（允许但非优先）
             # NEUTRAL/FREEZE：不覆盖，保持上面不等式的结果
 
@@ -614,8 +659,8 @@ class FiveDomainHeuristicScorer:
 
             # ===== 不等式5：forced_close_flags（Q4：是否必须止损）=====
             fc = state.forced_close_flags[cls]
-            fc["strong"]  = bool(veto["fa_xiao_40"])      # 法<40 = 纪律崩溃 → 强平候选
-            fc["protect"] = bool(total < 50)               # 总分过低 → 收紧SL保护模式
+            fc["strong"] = bool(veto["fa_xiao_40"])  # 法<40 = 纪律崩溃 → 强平候选
+            fc["protect"] = bool(total < 50)  # 总分过低 → 收紧SL保护模式
 
             # ===== 不等式6：front_layer_band（§15.5.3 FRONT_BAND_RULES 映射）=====
             state.front_layer_band[cls] = StrategyAlgorithmLayer._compute_front_layer_band(s, total)

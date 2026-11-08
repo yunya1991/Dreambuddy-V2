@@ -18,6 +18,7 @@ SPEC: SPEC-ds4架构借鉴与系统增强.md §3.2 Dimension 4
   - MarketState: 市场状态快照
   - PathCandidate: 候选交易路径
 """
+
 from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable

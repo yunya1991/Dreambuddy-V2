@@ -16,10 +16,9 @@ import json
 import logging
 import os
 from collections import Counter, defaultdict
-from dataclasses import asdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 # 延迟 import，与 bdsm_snapshot_writer 共享 sys.path 注入
 _MEM_L4_DIR = Path(__file__).resolve().parent.parent
@@ -27,8 +26,8 @@ if str(_MEM_L4_DIR) not in os.sys.path:
     os.sys.path.insert(0, str(_MEM_L4_DIR))
 
 from force_vector.bdsm_snapshot_writer import (  # noqa: E402
-    BDSM_COINS,
     _DEFAULT_SNAPSHOT_DIR,
+    BDSM_COINS,
     load_today_snapshot,
 )
 
@@ -77,9 +76,7 @@ def write_shadow_audit(
         # 非 BDSM 池币种不写（节省 IO），但要 FAIL-OPEN 而非报错
         return None
     try:
-        snapshot = load_today_snapshot(
-            out_dir=str(snapshot_dir) if snapshot_dir else None
-        )
+        snapshot = load_today_snapshot(out_dir=str(snapshot_dir) if snapshot_dir else None)
     except Exception as exc:  # pragma: no cover - FAIL-OPEN
         logger.warning("BDSM shadow 读取快照失败 coin=%s: %s", coin, exc)
         return None
@@ -96,7 +93,7 @@ def write_shadow_audit(
 
     # —— 反事实 A/B 计算（纯读，不执行任何下单）——
     bcrm_dir = str((bcrm_signal or {}).get("direction") or "HOLD")
-    bcrm_conf = float((bcrm_signal or {}).get("confidence") or 0.0)
+    bcrm_conf = float((bcrm_signal or {}).get("confidence") or 0.0)  # noqa: F841
     bcrm_pos_pct = float((bcrm_signal or {}).get("position_pct") or 0.0)
     bcrm_pos_usdt = float((bcrm_signal or {}).get("position_usdt") or 0.0)
 
@@ -244,9 +241,17 @@ def bdsm_ab_compare(
         dir_counter_a[a.get("direction", "HOLD")] += 1
         dir_counter_b[b.get("direction", "HOLD")] += 1
         # LONG_ONLY 把 UP→HOLD 即 禁多？不会：LONG_ONLY 只禁 DOWN→HOLD
-        if r.get("direction_constraint") == "LONG_ONLY" and a.get("direction") == "DOWN" and b.get("direction") == "HOLD":
+        if (
+            r.get("direction_constraint") == "LONG_ONLY"
+            and a.get("direction") == "DOWN"
+            and b.get("direction") == "HOLD"
+        ):
             short_blocked_by_dc += 1
-        if r.get("direction_constraint") == "SHORT_ONLY" and a.get("direction") == "UP" and b.get("direction") == "HOLD":
+        if (
+            r.get("direction_constraint") == "SHORT_ONLY"
+            and a.get("direction") == "UP"
+            and b.get("direction") == "HOLD"
+        ):
             long_blocked_by_dc += 1
         cm = float(r.get("cap_multiplier") or 1.0)
         cap_values.append(cm)
@@ -286,7 +291,9 @@ def bdsm_ab_compare(
             "with_bdsm_dir_dist": dict(dir_counter_b),
         },
         "position": {
-            "avg_cap_multiplier": round(sum(cap_values) / len(cap_values), 4) if cap_values else 0.0,
+            "avg_cap_multiplier": (
+                round(sum(cap_values) / len(cap_values), 4) if cap_values else 0.0
+            ),
             "cap_buckets": cap_buckets,
         },
         "exits": {
@@ -308,8 +315,12 @@ def bdsm_ab_compare(
 def _cli_main() -> None:
     parser = argparse.ArgumentParser(description="BDSM 审计 A/B 对比统计（最近 N 日）")
     parser.add_argument("--days", type=int, default=30, help="统计窗口天数，默认 30")
-    parser.add_argument("--audit-dir", type=str, default=None, help="审计日志目录，默认 .workbuddy/bdsm_shadow")
-    parser.add_argument("--out-json", type=str, default=None, help="把统计结果写入 JSON 路径（默认 stdout）")
+    parser.add_argument(
+        "--audit-dir", type=str, default=None, help="审计日志目录，默认 .workbuddy/bdsm_shadow"
+    )
+    parser.add_argument(
+        "--out-json", type=str, default=None, help="把统计结果写入 JSON 路径（默认 stdout）"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")

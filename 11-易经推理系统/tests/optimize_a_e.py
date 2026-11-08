@@ -10,15 +10,16 @@
   3. 夏普比 ≥ 基线 × 0.9
   4. 最大回撤 ≤ 基线 × 1.5
 """
-import sys
-import os
+
 import json
-import time
 import math
-import numpy as np
-from pathlib import Path
-from copy import deepcopy
+import os
+import sys
+import time
 from collections import defaultdict
+from pathlib import Path
+
+import numpy as np
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCRIPT_DIR = str(BASE_DIR / "scripts" / "memory_l4")
@@ -27,14 +28,23 @@ if SCRIPT_DIR in sys.path:
 PROJECT_ROOT = str(BASE_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-import pandas as pd
-from scripts.memory_l4.classic_exit_system import (
-    ClassicExitSystem, PositionState, ExitAction, ExitConfig, ExitPriority,
+import pandas as pd  # noqa: E402
+from scripts.memory_l4.classic_exit_system import (  # noqa: E402
+    ClassicExitSystem,
+    ExitAction,
+    ExitConfig,
+    ExitPriority,
+    PositionState,
 )
-from scripts.memory_l4.exit_backtest_optimize import (
-    run_backtest, run_single_trade, load_trades, load_klines,
-    compute_metrics, compute_account_equity,
-    SYMBOLS, LEVERAGE, FEE_PCT, TradeResult, BacktestMetrics,
+from scripts.memory_l4.exit_backtest_optimize import (  # noqa: E402
+    FEE_PCT,
+    LEVERAGE,
+    SYMBOLS,
+    BacktestMetrics,
+    TradeResult,
+    load_klines,
+    load_trades,
+    run_single_trade,
 )
 
 OUTPUT_DIR = BASE_DIR / "data" / "backtest"
@@ -44,27 +54,42 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # 基线配置（来自 analyze_low_yield.py，即当前修复后参数）
 # ════════════════════════════════════════════════════════════════════════════
 
+
 def make_baseline_config() -> ExitConfig:
     return ExitConfig(
         l0_max_loss_pct=-0.05,
-        l1_enabled=True, l2_close_threshold=0.75, l2_reduce_threshold=0.55,
+        l1_enabled=True,
+        l2_close_threshold=0.75,
+        l2_reduce_threshold=0.55,
         apply_leverage_to_thresholds=True,
-        tb_enabled=True, tb_sl_atr_mult=1.5, tb_tp_atr_mult=3.0,
-        tb_sl_min_pct=0.045, tb_tp_min_pct=0.04,
-        trailing_enabled=True, trailing_arm_profit_pct=0.04, trailing_retrace_pct=0.035,
+        tb_enabled=True,
+        tb_sl_atr_mult=1.5,
+        tb_tp_atr_mult=3.0,
+        tb_sl_min_pct=0.045,
+        tb_tp_min_pct=0.04,
+        trailing_enabled=True,
+        trailing_arm_profit_pct=0.04,
+        trailing_retrace_pct=0.035,
         # B项基线：使用落地前的原始值（非ExitConfig默认值，因默认值已被落地覆盖）
-        trailing_tp_arm_pct=0.015, trailing_tp_retrace_ratio=0.40,
-        tstp_enabled=True, inflight_cooldown_sec=180,
-        l0_risk_gate_enabled=True, l0_risk_gate_close_enabled=False,
-        l0_risk_gate_cooldown_min=60.0, l0_risk_gate_confirm_n=3,
-        l0_risk_gate_long_thr=0.65, l0_risk_gate_short_thr=0.60,
-        l0_risk_gate_min_hold_sec=3600.0, l0_risk_gate_profit_bypass_pct=0.05,
+        trailing_tp_arm_pct=0.015,
+        trailing_tp_retrace_ratio=0.40,
+        tstp_enabled=True,
+        inflight_cooldown_sec=180,
+        l0_risk_gate_enabled=True,
+        l0_risk_gate_close_enabled=False,
+        l0_risk_gate_cooldown_min=60.0,
+        l0_risk_gate_confirm_n=3,
+        l0_risk_gate_long_thr=0.65,
+        l0_risk_gate_short_thr=0.60,
+        l0_risk_gate_min_hold_sec=3600.0,
+        l0_risk_gate_profit_bypass_pct=0.05,
     )
 
 
 # ════════════════════════════════════════════════════════════════════════════
 # 辅助：带交易过滤的回测（用于A/D项）
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def run_backtest_filtered(
     config: ExitConfig,
@@ -132,7 +157,7 @@ def compute_metrics_custom(results, position_size_pct: float = 0.05) -> Backtest
 
     gross_profit = sum(r.pnl_pct for r in wins)
     gross_loss = abs(sum(r.pnl_pct for r in losses))
-    pf = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+    pf = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
     return BacktestMetrics(
         total_trades=n,
@@ -164,7 +189,7 @@ def compute_account_equity_custom(results, initial_capital=100.0, position_size_
     equity_curve = [capital]
     times = [events[0][0]]
 
-    for ts, evt_type, pnl, sym in events:
+    for ts, evt_type, pnl, sym in events:  # noqa: B007
         if evt_type == "exit":
             capital += initial_capital * position_size_pct * pnl / 100.0
             equity_curve.append(capital)
@@ -181,6 +206,7 @@ def compute_account_equity_custom(results, initial_capital=100.0, position_size_
 # ════════════════════════════════════════════════════════════════════════════
 # E项专用：限制减仓次数的回测（精确版，重跑单笔交易）
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def run_single_trade_max_reduce(
     system: ClassicExitSystem,
@@ -202,10 +228,14 @@ def run_single_trade_max_reduce(
     kline_slice = klines[klines.index >= entry_time]
     if len(kline_slice) < 5:
         return TradeResult(
-            symbol=symbol, direction=direction,
-            entry_price=entry_price, exit_price=entry_price,
-            entry_time=entry_time, exit_time=entry_time,
-            entry_time_str=str(entry_time), exit_time_str=str(entry_time),
+            symbol=symbol,
+            direction=direction,
+            entry_price=entry_price,
+            exit_price=entry_price,
+            entry_time=entry_time,
+            exit_time=entry_time,
+            entry_time_str=str(entry_time),
+            exit_time_str=str(entry_time),
             original_exit_reason=original_exit_reason,
             original_pnl_pct=original_pnl,
         )
@@ -222,8 +252,11 @@ def run_single_trade_max_reduce(
         entry_price=entry_price,
         current_price=current_price,
         position_age_sec=0.0,
-        unrealized_pnl_pct=(current_price - entry_price) / entry_price if side == "long"
-                           else (entry_price - current_price) / entry_price,
+        unrealized_pnl_pct=(
+            (current_price - entry_price) / entry_price
+            if side == "long"
+            else (entry_price - current_price) / entry_price
+        ),
         leverage=leverage,
         atr_pct=atr_entry,
         mfe_pnl_pct=0.0,
@@ -272,25 +305,33 @@ def run_single_trade_max_reduce(
             max_dd = cur_dd
         pos.max_dd_pct = max_dd
 
-        recent = kline_slice.iloc[max(0, i - 14):i + 1]
-        atr_pct = compute_atr_pct(recent["high"].values, recent["low"].values, recent["close"].values)
+        recent = kline_slice.iloc[max(0, i - 14) : i + 1]
+        atr_pct = compute_atr_pct(
+            recent["high"].values, recent["low"].values, recent["close"].values
+        )
         pos.atr_pct = atr_pct
 
         candles_window = []
         start_idx = max(0, i - 60)
         for j in range(start_idx, i + 1):
             b = kline_slice.iloc[j]
-            candles_window.append({
-                "t": int(kline_slice.index[j].timestamp()),
-                "o": float(b["open"]), "h": float(b["high"]),
-                "l": float(b["low"]), "c": float(b["close"]),
-                "v": float(b["volume"]),
-            })
+            candles_window.append(
+                {
+                    "t": int(kline_slice.index[j].timestamp()),
+                    "o": float(b["open"]),
+                    "h": float(b["high"]),
+                    "l": float(b["low"]),
+                    "c": float(b["close"]),
+                    "v": float(b["volume"]),
+                }
+            )
 
-        closes_21 = kline_slice["close"].iloc[max(0, i - 20):i + 1].values
+        closes_21 = kline_slice["close"].iloc[max(0, i - 20) : i + 1].values
         regime = infer_regime(closes_21) if len(closes_21) >= 21 else regime_at_entry
 
-        decision = system.evaluate_full(pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp()))
+        decision = system.evaluate_full(
+            pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp())
+        )
 
         bars_held = i
 
@@ -357,7 +398,7 @@ def compute_atr_pct(highs, lows, closes) -> float:
         return 0.02
     trs = []
     for i in range(1, len(highs)):
-        tr = max(highs[i] - lows[i], abs(highs[i] - closes[i-1]), abs(lows[i] - closes[i-1]))
+        tr = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
         trs.append(tr)
     atr = np.mean(trs[-14:]) if len(trs) >= 14 else np.mean(trs)
     return atr / closes[-1] if closes[-1] > 0 else 0.02
@@ -387,6 +428,7 @@ def infer_regime(closes: np.ndarray) -> str:
 # D项专用：min_hold_bars过滤的回测
 # ════════════════════════════════════════════════════════════════════════════
 
+
 def run_single_trade_min_hold(
     system: ClassicExitSystem,
     symbol: str,
@@ -411,10 +453,14 @@ def run_single_trade_min_hold(
     kline_slice = klines[klines.index >= entry_time]
     if len(kline_slice) < 5:
         return TradeResult(
-            symbol=symbol, direction=direction,
-            entry_price=entry_price, exit_price=entry_price,
-            entry_time=entry_time, exit_time=entry_time,
-            entry_time_str=str(entry_time), exit_time_str=str(entry_time),
+            symbol=symbol,
+            direction=direction,
+            entry_price=entry_price,
+            exit_price=entry_price,
+            entry_time=entry_time,
+            exit_time=entry_time,
+            entry_time_str=str(entry_time),
+            exit_time_str=str(entry_time),
             original_exit_reason=original_exit_reason,
             original_pnl_pct=original_pnl,
         )
@@ -431,8 +477,11 @@ def run_single_trade_min_hold(
         entry_price=entry_price,
         current_price=current_price,
         position_age_sec=0.0,
-        unrealized_pnl_pct=(current_price - entry_price) / entry_price if side == "long"
-                           else (entry_price - current_price) / entry_price,
+        unrealized_pnl_pct=(
+            (current_price - entry_price) / entry_price
+            if side == "long"
+            else (entry_price - current_price) / entry_price
+        ),
         leverage=leverage,
         atr_pct=atr_entry,
         mfe_pnl_pct=0.0,
@@ -481,30 +530,38 @@ def run_single_trade_min_hold(
             max_dd = cur_dd
         pos.max_dd_pct = max_dd
 
-        recent = kline_slice.iloc[max(0, i - 14):i + 1]
-        atr_pct = compute_atr_pct(recent["high"].values, recent["low"].values, recent["close"].values)
+        recent = kline_slice.iloc[max(0, i - 14) : i + 1]
+        atr_pct = compute_atr_pct(
+            recent["high"].values, recent["low"].values, recent["close"].values
+        )
         pos.atr_pct = atr_pct
 
         candles_window = []
         start_idx = max(0, i - 60)
         for j in range(start_idx, i + 1):
             b = kline_slice.iloc[j]
-            candles_window.append({
-                "t": int(kline_slice.index[j].timestamp()),
-                "o": float(b["open"]), "h": float(b["high"]),
-                "l": float(b["low"]), "c": float(b["close"]),
-                "v": float(b["volume"]),
-            })
+            candles_window.append(
+                {
+                    "t": int(kline_slice.index[j].timestamp()),
+                    "o": float(b["open"]),
+                    "h": float(b["high"]),
+                    "l": float(b["low"]),
+                    "c": float(b["close"]),
+                    "v": float(b["volume"]),
+                }
+            )
 
-        closes_21 = kline_slice["close"].iloc[max(0, i - 20):i + 1].values
+        closes_21 = kline_slice["close"].iloc[max(0, i - 20) : i + 1].values
         regime = infer_regime(closes_21) if len(closes_21) >= 21 else regime_at_entry
 
-        decision = system.evaluate_full(pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp()))
+        decision = system.evaluate_full(
+            pos, candles_window, regime=regime, now_ts=int(bar_time.timestamp())
+        )
 
         bars_held = i
 
         # D项：min_hold_bars保护期，只允许L0硬离场（安全网）
-        in_protection = (min_hold_bars > 0 and i < min_hold_bars)
+        in_protection = min_hold_bars > 0 and i < min_hold_bars
         is_l0_hard = decision.priority == ExitPriority.P0_L0_HARD
 
         if decision.action == ExitAction.CLOSE:
@@ -573,6 +630,7 @@ def run_single_trade_min_hold(
 # 贝叶斯优化目标函数
 # ════════════════════════════════════════════════════════════════════════════
 
+
 def score_metrics(metrics: BacktestMetrics) -> float:
     """综合得分：夏普 + 收益 - 回撤惩罚"""
     return (
@@ -603,26 +661,29 @@ def run_baseline():
 
 # ── A项：confidence过滤 ──────────────────────────────────────────────────────
 
+
 def objective_A(trial):
     thr = trial.suggest_float("confidence_thr", 0.0, 0.8)
     config = make_baseline_config()
-    metrics, _ = run_backtest_filtered(
-        config, confidence_thr=thr, position_size_pct=0.05
-    )
+    metrics, _ = run_backtest_filtered(config, confidence_thr=thr, position_size_pct=0.05)
     score = score_metrics(metrics)
-    trial.set_user_attr("metrics", {
-        "trades": metrics.total_trades,
-        "win_rate": metrics.win_rate,
-        "total_return": metrics.total_return_pct,
-        "account_return": metrics.total_return_account_pct,
-        "sharpe": metrics.sharpe_ratio,
-        "max_dd": metrics.max_drawdown_pct_account,
-        "pf": metrics.profit_factor,
-    })
+    trial.set_user_attr(
+        "metrics",
+        {
+            "trades": metrics.total_trades,
+            "win_rate": metrics.win_rate,
+            "total_return": metrics.total_return_pct,
+            "account_return": metrics.total_return_account_pct,
+            "sharpe": metrics.sharpe_ratio,
+            "max_dd": metrics.max_drawdown_pct_account,
+            "pf": metrics.profit_factor,
+        },
+    )
     return score
 
 
 # ── B项：放大止盈空间 ────────────────────────────────────────────────────────
+
 
 def objective_B(trial):
     arm_pct = trial.suggest_float("trailing_tp_arm_pct", 0.015, 0.06)
@@ -632,19 +693,23 @@ def objective_B(trial):
     config.trailing_tp_retrace_ratio = retrace_ratio
     metrics, _ = run_backtest_filtered(config, position_size_pct=0.05)
     score = score_metrics(metrics)
-    trial.set_user_attr("metrics", {
-        "trades": metrics.total_trades,
-        "win_rate": metrics.win_rate,
-        "total_return": metrics.total_return_pct,
-        "account_return": metrics.total_return_account_pct,
-        "sharpe": metrics.sharpe_ratio,
-        "max_dd": metrics.max_drawdown_pct_account,
-        "pf": metrics.profit_factor,
-    })
+    trial.set_user_attr(
+        "metrics",
+        {
+            "trades": metrics.total_trades,
+            "win_rate": metrics.win_rate,
+            "total_return": metrics.total_return_pct,
+            "account_return": metrics.total_return_account_pct,
+            "sharpe": metrics.sharpe_ratio,
+            "max_dd": metrics.max_drawdown_pct_account,
+            "pf": metrics.profit_factor,
+        },
+    )
     return score
 
 
 # ── C项：仓位管理 ────────────────────────────────────────────────────────────
+
 
 def objective_C(trial):
     pos_size = trial.suggest_float("position_size_pct", 0.05, 0.20)
@@ -652,20 +717,24 @@ def objective_C(trial):
     # 仓位不影响策略收益，只影响账户收益
     metrics, _ = run_backtest_filtered(config, position_size_pct=pos_size)
     score = score_metrics(metrics)
-    trial.set_user_attr("metrics", {
-        "trades": metrics.total_trades,
-        "win_rate": metrics.win_rate,
-        "total_return": metrics.total_return_pct,
-        "account_return": metrics.total_return_account_pct,
-        "sharpe": metrics.sharpe_ratio,
-        "max_dd": metrics.max_drawdown_pct_account,
-        "pf": metrics.profit_factor,
-        "position_size_pct": pos_size,
-    })
+    trial.set_user_attr(
+        "metrics",
+        {
+            "trades": metrics.total_trades,
+            "win_rate": metrics.win_rate,
+            "total_return": metrics.total_return_pct,
+            "account_return": metrics.total_return_account_pct,
+            "sharpe": metrics.sharpe_ratio,
+            "max_dd": metrics.max_drawdown_pct_account,
+            "pf": metrics.profit_factor,
+            "position_size_pct": pos_size,
+        },
+    )
     return score
 
 
 # ── D项：min_hold_bars保护 ───────────────────────────────────────────────────
+
 
 def objective_D(trial):
     min_hold = trial.suggest_int("min_hold_bars", 0, 8)
@@ -683,19 +752,23 @@ def objective_D(trial):
             all_results.append(result)
     metrics = compute_metrics_custom(all_results, position_size_pct=0.05)
     score = score_metrics(metrics)
-    trial.set_user_attr("metrics", {
-        "trades": metrics.total_trades,
-        "win_rate": metrics.win_rate,
-        "total_return": metrics.total_return_pct,
-        "account_return": metrics.total_return_account_pct,
-        "sharpe": metrics.sharpe_ratio,
-        "max_dd": metrics.max_drawdown_pct_account,
-        "pf": metrics.profit_factor,
-    })
+    trial.set_user_attr(
+        "metrics",
+        {
+            "trades": metrics.total_trades,
+            "win_rate": metrics.win_rate,
+            "total_return": metrics.total_return_pct,
+            "account_return": metrics.total_return_account_pct,
+            "sharpe": metrics.sharpe_ratio,
+            "max_dd": metrics.max_drawdown_pct_account,
+            "pf": metrics.profit_factor,
+        },
+    )
     return score
 
 
 # ── E项：max_reduce_count ────────────────────────────────────────────────────
+
 
 def objective_E(trial):
     max_rc = trial.suggest_int("max_reduce_count", 0, 5)
@@ -708,19 +781,24 @@ def objective_E(trial):
         if klines is None or trades is None:
             continue
         for _, row in trades.iterrows():
-            result = run_single_trade_max_reduce(system, symbol, row, klines, max_reduce_count=max_rc)
+            result = run_single_trade_max_reduce(
+                system, symbol, row, klines, max_reduce_count=max_rc
+            )
             all_results.append(result)
     metrics = compute_metrics_custom(all_results, position_size_pct=0.05)
     score = score_metrics(metrics)
-    trial.set_user_attr("metrics", {
-        "trades": metrics.total_trades,
-        "win_rate": metrics.win_rate,
-        "total_return": metrics.total_return_pct,
-        "account_return": metrics.total_return_account_pct,
-        "sharpe": metrics.sharpe_ratio,
-        "max_dd": metrics.max_drawdown_pct_account,
-        "pf": metrics.profit_factor,
-    })
+    trial.set_user_attr(
+        "metrics",
+        {
+            "trades": metrics.total_trades,
+            "win_rate": metrics.win_rate,
+            "total_return": metrics.total_return_pct,
+            "account_return": metrics.total_return_account_pct,
+            "sharpe": metrics.sharpe_ratio,
+            "max_dd": metrics.max_drawdown_pct_account,
+            "pf": metrics.profit_factor,
+        },
+    )
     return score
 
 
@@ -728,8 +806,10 @@ def objective_E(trial):
 # 贝叶斯优化运行器
 # ════════════════════════════════════════════════════════════════════════════
 
+
 def run_optimization(name: str, objective_fn, n_trials: int = 40):
     import optuna
+
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     print(f"\n{'─' * 70}")
@@ -761,17 +841,18 @@ def run_optimization(name: str, objective_fn, n_trials: int = 40):
 
     # Top 3
     sorted_trials = sorted(
-        [t for t in study.trials if t.value is not None],
-        key=lambda t: t.value, reverse=True
+        [t for t in study.trials if t.value is not None], key=lambda t: t.value, reverse=True
     )[:3]
-    print(f"\n  Top 3:")
+    print("\n  Top 3:")
     for t in sorted_trials:
         tm = t.user_attrs.get("metrics", {})
-        print(f"    #{t.number}: score={t.value:.4f}, "
-              f"ret={tm.get('total_return', 0):+.2f}%, "
-              f"acc={tm.get('account_return', 0):+.4f}%, "
-              f"sharpe={tm.get('sharpe', 0):.2f}, "
-              f"win={tm.get('win_rate', 0):.1f}%")
+        print(
+            f"    #{t.number}: score={t.value:.4f}, "
+            f"ret={tm.get('total_return', 0):+.2f}%, "
+            f"acc={tm.get('account_return', 0):+.4f}%, "
+            f"sharpe={tm.get('sharpe', 0):.2f}, "
+            f"win={tm.get('win_rate', 0):.1f}%"
+        )
 
     return best, study
 
@@ -779,6 +860,7 @@ def run_optimization(name: str, objective_fn, n_trials: int = 40):
 # ════════════════════════════════════════════════════════════════════════════
 # 持续上升判定
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def judge_improvement(baseline: BacktestMetrics, best_metrics: dict, name: str) -> dict:
     """判定是否持续上升"""
@@ -805,12 +887,14 @@ def judge_improvement(baseline: BacktestMetrics, best_metrics: dict, name: str) 
         "baseline_sharpe": bl_sharpe,
         "opt_sharpe": opt_sharpe,
     }
-    verdict["pass"] = all([
-        verdict["ret_up"],
-        verdict["acc_up"],
-        verdict["sharpe_ok"],
-        verdict["dd_ok"],
-    ])
+    verdict["pass"] = all(
+        [
+            verdict["ret_up"],
+            verdict["acc_up"],
+            verdict["sharpe_ok"],
+            verdict["dd_ok"],
+        ]
+    )
     return verdict
 
 
@@ -820,12 +904,12 @@ def judge_improvement(baseline: BacktestMetrics, best_metrics: dict, name: str) 
 
 # 已落地参数（与代码中一致）
 LANDED_PARAMS = {
-    "A_confidence_thr": 0.7955,       # polling_trader.py A_CONFIDENCE_FLOOR
-    "B_trailing_arm": 0.0508,          # classic_exit_system.py trailing_tp_arm_pct
-    "B_trailing_retrace": 0.4668,      # classic_exit_system.py trailing_tp_retrace_ratio
-    "C_position_size_pct": 0.20,       # .env DEFAULT_POSITION_PCT
-    "D_min_hold_bars": 8,              # classic_exit_system.py min_hold_bars (基线v0.1.0: 6→8 普遍性校验通过)
-    "E_max_reduce_count": 1,           # classic_exit_system.py max_reduce_count
+    "A_confidence_thr": 0.7955,  # polling_trader.py A_CONFIDENCE_FLOOR
+    "B_trailing_arm": 0.0508,  # classic_exit_system.py trailing_tp_arm_pct
+    "B_trailing_retrace": 0.4668,  # classic_exit_system.py trailing_tp_retrace_ratio
+    "C_position_size_pct": 0.20,  # .env DEFAULT_POSITION_PCT
+    "D_min_hold_bars": 8,  # classic_exit_system.py min_hold_bars (基线v0.1.0: 6→8 普遍性校验通过)
+    "E_max_reduce_count": 1,  # classic_exit_system.py max_reduce_count
 }
 
 
@@ -851,7 +935,10 @@ def run_landed_combined():
                 continue
             # D项 + E项：min_hold_bars 保护期 + max_reduce_count 限制
             result = run_single_trade_min_hold(
-                system, symbol, row, klines,
+                system,
+                symbol,
+                row,
+                klines,
                 min_hold_bars=LANDED_PARAMS["D_min_hold_bars"],
                 max_reduce_count=LANDED_PARAMS["E_max_reduce_count"],
             )
@@ -867,7 +954,7 @@ def verify_landed():
     print("=" * 70)
     print("  落地验证：A+B+C+D+E 组合效果对比")
     print("=" * 70)
-    print(f"\n  已落地参数:")
+    print("\n  已落地参数:")
     print(f"    A: confidence_thr      = {LANDED_PARAMS['A_confidence_thr']}")
     print(f"    B: trailing_arm_pct    = {LANDED_PARAMS['B_trailing_arm']}")
     print(f"    B: trailing_retrace    = {LANDED_PARAMS['B_trailing_retrace']}")
@@ -920,36 +1007,63 @@ def verify_landed():
         return f"{delta:+{fmt}}", arrow, verdict
 
     # 交易数
-    d_trades, a_trades, v_trades = _cmp(base_metrics.total_trades, landed_metrics.total_trades, higher_better=False, fmt="d")
-    print(f"  {'交易数':<16} {base_metrics.total_trades:>12d} {landed_metrics.total_trades:>12d} {d_trades:>12} {v_trades}")
+    d_trades, a_trades, v_trades = _cmp(
+        base_metrics.total_trades, landed_metrics.total_trades, higher_better=False, fmt="d"
+    )
+    print(
+        f"  {'交易数':<16} {base_metrics.total_trades:>12d} {landed_metrics.total_trades:>12d} {d_trades:>12} {v_trades}"
+    )
 
     # 胜率
     d_wr, a_wr, v_wr = _cmp(base_metrics.win_rate, landed_metrics.win_rate, fmt=".2f")
-    print(f"  {'胜率(%)':<16} {base_metrics.win_rate:>12.2f} {landed_metrics.win_rate:>12.2f} {d_wr:>12} {v_wr}")
+    print(
+        f"  {'胜率(%)':<16} {base_metrics.win_rate:>12.2f} {landed_metrics.win_rate:>12.2f} {d_wr:>12} {v_wr}"
+    )
 
     # 策略收益
-    d_sr, a_sr, v_sr = _cmp(base_metrics.total_return_pct, landed_metrics.total_return_pct, fmt=".2f")
-    print(f"  {'策略收益(%)':<16} {base_metrics.total_return_pct:>12.2f} {landed_metrics.total_return_pct:>12.2f} {d_sr:>12} {v_sr}")
+    d_sr, a_sr, v_sr = _cmp(
+        base_metrics.total_return_pct, landed_metrics.total_return_pct, fmt=".2f"
+    )
+    print(
+        f"  {'策略收益(%)':<16} {base_metrics.total_return_pct:>12.2f} {landed_metrics.total_return_pct:>12.2f} {d_sr:>12} {v_sr}"
+    )
 
     # 账户收益
-    d_ar, a_ar, v_ar = _cmp(base_metrics.total_return_account_pct, landed_metrics.total_return_account_pct, fmt=".4f")
-    print(f"  {'账户收益(%)':<16} {base_metrics.total_return_account_pct:>12.4f} {landed_metrics.total_return_account_pct:>12.4f} {d_ar:>12} {v_ar}")
+    d_ar, a_ar, v_ar = _cmp(
+        base_metrics.total_return_account_pct, landed_metrics.total_return_account_pct, fmt=".4f"
+    )
+    print(
+        f"  {'账户收益(%)':<16} {base_metrics.total_return_account_pct:>12.4f} {landed_metrics.total_return_account_pct:>12.4f} {d_ar:>12} {v_ar}"
+    )
 
     # 夏普
     d_sh, a_sh, v_sh = _cmp(base_metrics.sharpe_ratio, landed_metrics.sharpe_ratio, fmt=".2f")
-    print(f"  {'夏普':<16} {base_metrics.sharpe_ratio:>12.2f} {landed_metrics.sharpe_ratio:>12.2f} {d_sh:>12} {v_sh}")
+    print(
+        f"  {'夏普':<16} {base_metrics.sharpe_ratio:>12.2f} {landed_metrics.sharpe_ratio:>12.2f} {d_sh:>12} {v_sh}"
+    )
 
     # 最大回撤
-    d_dd, a_dd, v_dd = _cmp(base_metrics.max_drawdown_pct_account, landed_metrics.max_drawdown_pct_account, higher_better=False, fmt=".4f")
-    print(f"  {'最大回撤(%)':<16} {base_metrics.max_drawdown_pct_account:>12.4f} {landed_metrics.max_drawdown_pct_account:>12.4f} {d_dd:>12} {v_dd}")
+    d_dd, a_dd, v_dd = _cmp(
+        base_metrics.max_drawdown_pct_account,
+        landed_metrics.max_drawdown_pct_account,
+        higher_better=False,
+        fmt=".4f",
+    )
+    print(
+        f"  {'最大回撤(%)':<16} {base_metrics.max_drawdown_pct_account:>12.4f} {landed_metrics.max_drawdown_pct_account:>12.4f} {d_dd:>12} {v_dd}"
+    )
 
     # 盈亏比
     d_pf, a_pf, v_pf = _cmp(base_metrics.profit_factor, landed_metrics.profit_factor, fmt=".2f")
-    print(f"  {'盈亏比':<16} {base_metrics.profit_factor:>12.2f} {landed_metrics.profit_factor:>12.2f} {d_pf:>12} {v_pf}")
+    print(
+        f"  {'盈亏比':<16} {base_metrics.profit_factor:>12.2f} {landed_metrics.profit_factor:>12.2f} {d_pf:>12} {v_pf}"
+    )
 
     # 平均持仓
     d_hb, a_hb, v_hb = _cmp(base_metrics.avg_hold_bars, landed_metrics.avg_hold_bars, fmt=".1f")
-    print(f"  {'平均持仓(bars)':<16} {base_metrics.avg_hold_bars:>12.1f} {landed_metrics.avg_hold_bars:>12.1f} {d_hb:>12} {v_hb}")
+    print(
+        f"  {'平均持仓(bars)':<16} {base_metrics.avg_hold_bars:>12.1f} {landed_metrics.avg_hold_bars:>12.1f} {d_hb:>12} {v_hb}"
+    )
 
     # 总体判定
     checks = [
@@ -995,7 +1109,7 @@ def verify_landed():
         "verdict": {
             "passed": passed,
             "total": len(checks),
-            "checks": {name: v for name, v in checks},
+            "checks": {name: v for name, v in checks},  # noqa: C416
         },
     }
     report_path = OUTPUT_DIR / "verify_landed_report.json"
@@ -1009,6 +1123,7 @@ def verify_landed():
 # ════════════════════════════════════════════════════════════════════════════
 # 主流程
 # ════════════════════════════════════════════════════════════════════════════
+
 
 def main():
     # --verify 模式：用已落地参数验证组合效果（不运行贝叶斯寻优）
@@ -1056,30 +1171,38 @@ def main():
     print("\n" + "=" * 70)
     print("  落地决策汇总报告")
     print("=" * 70)
-    print(f"\n  基线: 策略收益={baseline_metrics.total_return_pct:.2f}%, "
-          f"账户收益={baseline_metrics.total_return_account_pct:.4f}%, "
-          f"夏普={baseline_metrics.sharpe_ratio:.2f}, "
-          f"回撤={baseline_metrics.max_drawdown_pct_account:.4f}%")
+    print(
+        f"\n  基线: 策略收益={baseline_metrics.total_return_pct:.2f}%, "
+        f"账户收益={baseline_metrics.total_return_account_pct:.4f}%, "
+        f"夏普={baseline_metrics.sharpe_ratio:.2f}, "
+        f"回撤={baseline_metrics.max_drawdown_pct_account:.4f}%"
+    )
 
-    print(f"\n  {'项':<4} {'策略收益':>10} {'账户收益':>10} {'夏普':>8} {'回撤':>8} {'参数':<30} {'判定':<6}")
+    print(
+        f"\n  {'项':<4} {'策略收益':>10} {'账户收益':>10} {'夏普':>8} {'回撤':>8} {'参数':<30} {'判定':<6}"
+    )
     print(f"  {'─' * 80}")
     for k in ["A", "B", "C", "D", "E"]:
         v = results[k]["verdict"]
         best = results[k]["best"]
         params_str = ", ".join(f"{pk}={pv:.4f}" for pk, pv in best.params.items())
         verdict_str = "✓通过" if v["pass"] else "✗不通过"
-        print(f"  {k:<4} {v['opt_ret']:>+9.2f}% {v['opt_acc']:>+9.4f}% "
-              f"{v['opt_sharpe']:>8.2f} {v.get('opt_dd', 0):>7.4f}% "
-              f"{params_str:<30} {verdict_str:<6}")
+        print(
+            f"  {k:<4} {v['opt_ret']:>+9.2f}% {v['opt_acc']:>+9.4f}% "
+            f"{v['opt_sharpe']:>8.2f} {v.get('opt_dd', 0):>7.4f}% "
+            f"{params_str:<30} {verdict_str:<6}"
+        )
 
-    print(f"\n  判定明细:")
+    print("\n  判定明细:")
     for k in ["A", "B", "C", "D", "E"]:
         v = results[k]["verdict"]
-        print(f"    {k}: 策略收益{'↑' if v['ret_up'] else '↓'} "
-              f"账户收益{'↑' if v['acc_up'] else '↓'} "
-              f"夏普{'✓' if v['sharpe_ok'] else '✗'} "
-              f"回撤{'✓' if v['dd_ok'] else '✗'} "
-              f"→ {'落地' if v['pass'] else '不落地'}")
+        print(
+            f"    {k}: 策略收益{'↑' if v['ret_up'] else '↓'} "
+            f"账户收益{'↑' if v['acc_up'] else '↓'} "
+            f"夏普{'✓' if v['sharpe_ok'] else '✗'} "
+            f"回撤{'✓' if v['dd_ok'] else '✗'} "
+            f"→ {'落地' if v['pass'] else '不落地'}"
+        )
 
     # 保存报告
     report = {

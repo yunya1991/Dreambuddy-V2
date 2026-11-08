@@ -18,8 +18,8 @@ SL/TP 计算规则（遵循项目硬约束）：
   python restore_sl_tp.py --dry-run # 仅检查不下单
   python restore_sl_tp.py --sl-pct 0.10 --tp-pct 0.08  # 自定义间距
 """
+
 import sys
-import os
 import time
 from pathlib import Path
 
@@ -29,9 +29,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from okx_simulated import OKXSimulatedClient
 
 
-def compute_sl_tp(entry_px: float, pos_side: str, liq_px: float = 0.0,
-                  mark_px: float = 0.0,
-                  sl_pct: float = 0.08, tp_pct: float = 0.06) -> tuple:
+def compute_sl_tp(
+    entry_px: float,
+    pos_side: str,
+    liq_px: float = 0.0,
+    mark_px: float = 0.0,
+    sl_pct: float = 0.08,
+    tp_pct: float = 0.06,
+) -> tuple:
     """计算 SL/TP 价格。
 
     Args:
@@ -98,7 +103,7 @@ def main():
         if arg == "--tp-pct" and i + 1 < len(sys.argv):
             tp_pct = float(sys.argv[i + 1])
 
-    print(f"=== SL/TP 恢复脚本 ===")
+    print("=== SL/TP 恢复脚本 ===")
     print(f"模式: {'DRY-RUN（仅检查）' if dry_run else '实盘（将下发 algo 单）'}")
     print(f"SL 间距: {sl_pct*100:.1f}% | TP 间距: {tp_pct*100:.1f}%")
     print()
@@ -155,20 +160,20 @@ def main():
         print(f"  现有 SL: {'有' if has_sl else '无'} | 现有 TP: {'有' if has_tp else '无'}")
 
         if has_sl and has_tp:
-            print(f"  → SL/TP 均存在，跳过")
+            print("  → SL/TP 均存在，跳过")
             skipped += 1
             continue
 
         # 2b. 计算 SL/TP
-        sl_px, tp_px = compute_sl_tp(entry_px, pos_side, liq_px,
-                                     mark_px=mark_px,
-                                     sl_pct=sl_pct, tp_pct=tp_pct)
+        sl_px, tp_px = compute_sl_tp(
+            entry_px, pos_side, liq_px, mark_px=mark_px, sl_pct=sl_pct, tp_pct=tp_pct
+        )
         print(f"  计算SL: {sl_px} ({abs(sl_px - entry_px) / entry_px * 100:.1f}%)")
         print(f"  计算TP: {tp_px} ({abs(tp_px - entry_px) / entry_px * 100:.1f}%)")
 
         # 2c. 安全检查：pos_size 不能为 0
         if pos_size == 0:
-            print(f"  → pos_size=0，跳过")
+            print("  → pos_size=0，跳过")
             skipped += 1
             continue
 
@@ -209,7 +214,7 @@ def main():
 
     # 3. 汇总
     print()
-    print(f"=== 汇总 ===")
+    print("=== 汇总 ===")
     print(f"总持仓: {len(positions)}")
     print(f"已恢复: {restored}")
     print(f"已跳过: {skipped}")

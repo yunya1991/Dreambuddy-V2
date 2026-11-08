@@ -27,11 +27,11 @@
   - SPEC-CognitiveSystem-Evolution.md §1.3 + §4.3 P3-7
   - arXiv:2606.19911 (Transactive Memory)
 """
+
 from __future__ import annotations
 
 import threading
 from typing import Any, Dict, List, Optional
-
 
 # ============================================================
 # 常量
@@ -116,12 +116,9 @@ class TransactiveMemory:
             experts = self._domain_experts.get(str(domain) if domain else "", {})
             if not experts:
                 return []
-            ranked = sorted(
-                experts.items(), key=lambda kv: kv[1], reverse=True
-            )[:limit]
+            ranked = sorted(experts.items(), key=lambda kv: kv[1], reverse=True)[:limit]
             return [
-                {"domain": str(domain), "agent_id": aid, "confidence": conf}
-                for aid, conf in ranked
+                {"domain": str(domain), "agent_id": aid, "confidence": conf} for aid, conf in ranked
             ]
 
     # ============================================================
@@ -183,11 +180,13 @@ class TransactiveMemory:
             for domain, experts in self._domain_experts.items():
                 conf = experts.get(str(agent_id))
                 if conf is not None:
-                    profile.append({
-                        "domain": domain,
-                        "agent_id": str(agent_id),
-                        "confidence": conf,
-                    })
+                    profile.append(
+                        {
+                            "domain": domain,
+                            "agent_id": str(agent_id),
+                            "confidence": conf,
+                        }
+                    )
             profile.sort(key=lambda p: p["confidence"], reverse=True)
             return profile
 

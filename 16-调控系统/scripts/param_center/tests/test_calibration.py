@@ -10,13 +10,14 @@
 运行:
   python -m pytest 16-调控系统/scripts/param_center/tests/test_calibration.py -v
 """
+
 from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -31,16 +32,13 @@ for p in [_YIJING_SCRIPTS, _SCRIPTS_16, _PARAM_CENTER]:
     if sp not in sys.path:
         sys.path.insert(0, sp)
 
+from param_center.aggregator import (  # noqa: E402
+    RR_FLOOR,
+    SL_FLOOR,
+    TP_FLOOR,
+)
 from param_center.calibration import (  # noqa: E402
     CalibrationAnalyzer,
-    CalibrationProposal,
-    DeviationStats,
-    MIN_SAMPLE_COUNT,
-    DEVIATION_AVG_THRESHOLD,
-    DEVIATION_STD_THRESHOLD,
-)
-from param_center.aggregator import (  # noqa: E402
-    SL_FLOOR, TP_FLOOR, RR_FLOOR,
 )
 
 
@@ -52,7 +50,9 @@ def _make_record(symbol: str, rec_sl=0.04, act_sl=0.05, rec_tp=0.12, act_tp=0.15
     return {
         "symbol": symbol.upper(),
         "timestamp": datetime.utcnow().isoformat(),
-        "param_center_recommended": json.dumps({"sl_floor": rec_sl, "tp_floor": rec_tp, "atr_mult": 4.5}),
+        "param_center_recommended": json.dumps(
+            {"sl_floor": rec_sl, "tp_floor": rec_tp, "atr_mult": 4.5}
+        ),
         "actual_used": json.dumps({"sl_floor": act_sl, "tp_floor": act_tp, "atr_mult": 4.5}),
         "deviation_pct": dev,
         "aggregator_weights": json.dumps({"hmm": 0.5, "bagua": 0.5}),
@@ -142,17 +142,23 @@ class TestCalibrationAnalyzer:
         """校准参数硬约束兜底：SL∈[4%, 15%], TP∈[12%, 30%]"""
         # 构造极端实际值：SL=0.30, TP=0.05（违反硬约束）
         records = []
-        for i in range(35):
-            records.append({
-                "symbol": "BTC",
-                "timestamp": datetime.utcnow().isoformat(),
-                "param_center_recommended": json.dumps({"sl_floor": 0.04, "tp_floor": 0.12, "atr_mult": 4.5}),
-                "actual_used": json.dumps({"sl_floor": 0.30, "tp_floor": 0.05, "atr_mult": 10.0}),
-                "deviation_pct": 0.50,
-                "aggregator_weights": "{}",
-                "confidence": 0.5,
-                "event_type": "polling",
-            })
+        for i in range(35):  # noqa: B007
+            records.append(
+                {
+                    "symbol": "BTC",
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "param_center_recommended": json.dumps(
+                        {"sl_floor": 0.04, "tp_floor": 0.12, "atr_mult": 4.5}
+                    ),
+                    "actual_used": json.dumps(
+                        {"sl_floor": 0.30, "tp_floor": 0.05, "atr_mult": 10.0}
+                    ),
+                    "deviation_pct": 0.50,
+                    "aggregator_weights": "{}",
+                    "confidence": 0.5,
+                    "event_type": "polling",
+                }
+            )
         mock_shadow_logger.query_deviation_report.return_value = records
         analyzer = CalibrationAnalyzer(shadow_logger=mock_shadow_logger)
         proposal = analyzer.propose_calibration("BTC", days=30)
@@ -182,6 +188,7 @@ class TestCalibrateWithVerifier:
         # 用 mock verifier 跳过真实回测
         mock_verifier = MagicMock()
         from param_center.verifier import VerificationResult
+
         mock_verifier.verify_and_upgrade.return_value = VerificationResult(
             passed=True,
             new_calmar=1.5,
@@ -192,7 +199,9 @@ class TestCalibrateWithVerifier:
         )
         analyzer = CalibrationAnalyzer(shadow_logger=populated_shadow_logger)
         proposal, ver_result = analyzer.calibrate_with_verifier(
-            "BTC", verifier=mock_verifier, days=30,
+            "BTC",
+            verifier=mock_verifier,
+            days=30,
         )
         assert proposal.should_calibrate
         assert ver_result.passed

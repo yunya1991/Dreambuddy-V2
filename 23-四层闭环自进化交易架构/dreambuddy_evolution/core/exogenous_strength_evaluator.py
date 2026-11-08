@@ -18,6 +18,7 @@ ExogenousStrengthEvaluator — 外生力量度量体系
   - 宏观面中期: 利率决议预期概率
   - 宏观面长期: 加息/降息周期方向
 """
+
 from __future__ import annotations
 
 import logging
@@ -86,7 +87,7 @@ class ExogenousStrengthEvaluator:
             # fallback: okx_positions 的集中度
             positions = data.get("okx_positions", {})
             if isinstance(positions, dict):
-                l = float(positions.get("long", 0.5))
+                l = float(positions.get("long", 0.5))  # noqa: E741
                 s = float(positions.get("short", 0.5))
                 total = l + s
                 medium_raw = abs(l - s) / total if total > 0 else 0.0
@@ -106,7 +107,11 @@ class ExogenousStrengthEvaluator:
             close_arr = data.get("close")
             if ma200 is not None and close_arr is not None:
                 try:
-                    last_close = float(close_arr[-1]) if hasattr(close_arr, '__getitem__') else float(close_arr)
+                    last_close = (
+                        float(close_arr[-1])
+                        if hasattr(close_arr, "__getitem__")
+                        else float(close_arr)
+                    )
                     ma200 = float(ma200)
                     if abs(ma200) > 1e-9:
                         pct_off = (last_close - ma200) / ma200
@@ -273,7 +278,7 @@ class ExogenousStrengthEvaluator:
         std = float(np.std(hist))
         if std < 1e-9:
             return 0.5
-        z = (raw_value - mean) / std
+        z = (raw_value - mean) / std  # noqa: F841
 
         # Percentile rank（用历史分布的 CDF 近似）
         rank = float(np.sum(hist <= raw_value)) / len(hist)
@@ -309,13 +314,15 @@ class ExogenousStrengthEvaluator:
 
                 # 力量 = 偏离中性的绝对值
                 adj_strength = abs(strength - 0.5) * 2.0  # [0, 1]
-                candidates.append({
-                    "dimension": dim,
-                    "timeframe": tf,
-                    "direction": direction,
-                    "strength": adj_strength,
-                    "normalized_strength": strength,
-                })
+                candidates.append(
+                    {
+                        "dimension": dim,
+                        "timeframe": tf,
+                        "direction": direction,
+                        "strength": adj_strength,
+                        "normalized_strength": strength,
+                    }
+                )
 
         if not candidates:
             return None
@@ -325,7 +332,7 @@ class ExogenousStrengthEvaluator:
         # TIER_WEIGHT：long > medium > short（长期矛盾约束短期）
         # 力量差大时力量驱动；力量接近时层级驱动
         TIER_WEIGHT = {"short": 0.2, "medium": 0.3, "long": 0.5}
-        DOMINANCE_GAP = 0.15  # 力量差超过此值时力量驱动
+        DOMINANCE_GAP = 0.15  # 力量差超过此值时力量驱动  # noqa: F841
 
         def _tier_score(c):
             tier = TIER_WEIGHT.get(c["timeframe"], 0.2)

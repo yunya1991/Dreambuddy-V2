@@ -9,9 +9,12 @@ SPEC v1.2-rc1 §5 Layer 3: Training
 - §5.7 冷启动退化: 0-5场纯Persona / 5-20弱增强 / 20-50正常 / 50+成熟
 - FAIL-OPEN: 无数据或异常时不崩溃
 """
+
 from __future__ import annotations
-import json, os, sys, unittest
-from unittest.mock import MagicMock
+
+import os
+import sys
+import unittest
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
@@ -20,9 +23,11 @@ if SERVER_DIR not in sys.path:
 
 # ── 简单 hash 编码器（测试用，替代 sentence-transformers） ────
 
+
 def _hash_encode(text: str, dim: int = 384) -> list[float]:
     """简单 hash 编码器，用于测试替代 all-MiniLM-L6-v2。"""
     import hashlib
+
     vec = [0.0] * dim
     for i, ch in enumerate(text):
         h = int(hashlib.md5(f"{ch}_{i}".encode()).hexdigest(), 16)
@@ -36,9 +41,11 @@ def _hash_encode(text: str, dim: int = 384) -> list[float]:
 
 # ── mock 数据 ─────────────────────────────────────────────────
 
+
 def _make_adjudication_result():
     """创建 mock AdjudicationResult。"""
     from adjudicator import AdjudicationResult
+
     return AdjudicationResult(
         topic="BTC是数字黄金",
         bull_turn_scores=[],
@@ -62,6 +69,7 @@ def _make_adjudication_result():
 def _make_reflection_report():
     """创建 mock ReflectionReport。"""
     from reflector import ReflectionReport
+
     return ReflectionReport(
         topic="BTC是数字黄金",
         review={"key_pivot": "第2轮"},
@@ -78,6 +86,7 @@ def _make_reflection_report():
 
 
 # ── Tests ─────────────────────────────────────────────────────
+
 
 class TestImport(unittest.TestCase):
     """RED: debate_trainer 模块可导入。"""
@@ -97,12 +106,14 @@ class TestImport(unittest.TestCase):
 
 # ── BayesianStrategyWeights ──────────────────────────────────
 
+
 class TestBayesianStrategyWeights(unittest.TestCase):
     """§5.2 贝叶斯策略权重更新。"""
 
     def test_initial_beta_uniform(self):
         """初始 Beta(1,1) 均匀分布。"""
         from debate_trainer import BayesianStrategyWeights
+
         bsw = BayesianStrategyWeights()
         prob = bsw.get_win_prob("evidence-heavy", "crypto")
         # Beta(1,1) → α/(α+β) = 1/2 = 0.5
@@ -111,24 +122,27 @@ class TestBayesianStrategyWeights(unittest.TestCase):
     def test_update_on_win(self):
         """策略被使用且获胜 → α += 1。"""
         from debate_trainer import BayesianStrategyWeights
+
         bsw = BayesianStrategyWeights()
         bsw.update("evidence-heavy", "crypto", won=True)
         prob = bsw.get_win_prob("evidence-heavy", "crypto")
         # α=2, β=1 → 2/3 ≈ 0.667
-        self.assertAlmostEqual(prob, 2/3, places=2)
+        self.assertAlmostEqual(prob, 2 / 3, places=2)
 
     def test_update_on_loss(self):
         """策略被使用且失败 → β += 1。"""
         from debate_trainer import BayesianStrategyWeights
+
         bsw = BayesianStrategyWeights()
         bsw.update("evidence-heavy", "crypto", won=False)
         prob = bsw.get_win_prob("evidence-heavy", "crypto")
         # α=1, β=2 → 1/3 ≈ 0.333
-        self.assertAlmostEqual(prob, 1/3, places=2)
+        self.assertAlmostEqual(prob, 1 / 3, places=2)
 
     def test_multiple_updates(self):
         """多次更新后概率收敛。"""
         from debate_trainer import BayesianStrategyWeights
+
         bsw = BayesianStrategyWeights()
         # 3胜1负
         bsw.update("evidence-heavy", "crypto", won=True)
@@ -137,22 +151,24 @@ class TestBayesianStrategyWeights(unittest.TestCase):
         bsw.update("evidence-heavy", "crypto", won=False)
         prob = bsw.get_win_prob("evidence-heavy", "crypto")
         # α=4, β=2 → 4/6 ≈ 0.667
-        self.assertAlmostEqual(prob, 4/6, places=2)
+        self.assertAlmostEqual(prob, 4 / 6, places=2)
 
     def test_different_topic_types(self):
         """不同话题类型的策略权重独立。"""
         from debate_trainer import BayesianStrategyWeights
+
         bsw = BayesianStrategyWeights()
         bsw.update("evidence-heavy", "crypto", won=True)
         # crypto 有更新，ai 没有
         prob_crypto = bsw.get_win_prob("evidence-heavy", "crypto")
         prob_ai = bsw.get_win_prob("evidence-heavy", "ai")
-        self.assertAlmostEqual(prob_crypto, 2/3, places=2)
+        self.assertAlmostEqual(prob_crypto, 2 / 3, places=2)
         self.assertAlmostEqual(prob_ai, 0.5)  # 无更新，仍为初始值
 
     def test_get_top_strategies(self):
         """获取胜率最高的策略排序。"""
         from debate_trainer import BayesianStrategyWeights
+
         bsw = BayesianStrategyWeights()
         bsw.update("evidence-heavy", "crypto", won=True)
         bsw.update("evidence-heavy", "crypto", won=True)
@@ -167,18 +183,21 @@ class TestBayesianStrategyWeights(unittest.TestCase):
 
 # ── PersonaElo ────────────────────────────────────────────────
 
+
 class TestPersonaElo(unittest.TestCase):
     """§5.3 Persona Elo 评分 + m2 draw 处理。"""
 
     def test_initial_elo(self):
         """初始 Elo = 1200。"""
         from debate_trainer import PersonaElo
+
         elo = PersonaElo()
         self.assertEqual(elo.get_elo("乐观分析师"), 1200)
 
     def test_update_on_win(self):
         """胜方 Elo 增加。"""
         from debate_trainer import PersonaElo
+
         elo = PersonaElo()
         old_bull = elo.get_elo("乐观分析师")
         elo.update("乐观分析师", "谨慎风控师", winner="bull")
@@ -188,6 +207,7 @@ class TestPersonaElo(unittest.TestCase):
     def test_update_on_loss(self):
         """败方 Elo 减少。"""
         from debate_trainer import PersonaElo
+
         elo = PersonaElo()
         old_bear = elo.get_elo("谨慎风控师")
         elo.update("乐观分析师", "谨慎风控师", winner="bull")
@@ -197,6 +217,7 @@ class TestPersonaElo(unittest.TestCase):
     def test_draw_handling(self):
         """平局时双方各得 0.5 (m2)。"""
         from debate_trainer import PersonaElo
+
         elo = PersonaElo()
         # 初始双方 Elo 相同(1200), expected=0.5
         # draw → score=0.5, delta = K*(0.5-0.5) = 0
@@ -208,6 +229,7 @@ class TestPersonaElo(unittest.TestCase):
     def test_draw_with_different_elo(self):
         """不同 Elo 平局时，高 Elo 方略降，低 Elo 方略升。"""
         from debate_trainer import PersonaElo
+
         elo = PersonaElo()
         # 先让 bull 赢一场 → Elo 更高
         elo.update("乐观分析师", "谨慎风控师", winner="bull")
@@ -225,6 +247,7 @@ class TestPersonaElo(unittest.TestCase):
     def test_dynamic_k(self):
         """动态 K = max(16, 32 - n/10)。"""
         from debate_trainer import PersonaElo
+
         elo = PersonaElo()
         # 前 50 场 K=32（但实际 32-n/10 > 16 当 n<160）
         k = elo.get_k_factor("乐观分析师")
@@ -240,12 +263,14 @@ class TestPersonaElo(unittest.TestCase):
 
 # ── CBRCaseLibrary ────────────────────────────────────────────
 
+
 class TestCBRCaseLibrary(unittest.TestCase):
     """§5.4 CBR 案例检索 + m3 embedding。"""
 
     def test_add_case(self):
         """案例入库。"""
         from debate_trainer import CBRCaseLibrary
+
         cbr = CBRCaseLibrary(encode_fn=_hash_encode)
         case_id = cbr.add_case(
             topic="BTC是数字黄金",
@@ -263,17 +288,42 @@ class TestCBRCaseLibrary(unittest.TestCase):
     def test_retrieve_similar(self):
         """检索相似案例。"""
         from debate_trainer import CBRCaseLibrary
+
         cbr = CBRCaseLibrary(encode_fn=_hash_encode)
         # 入库 3 个案例
-        cbr.add_case("BTC是数字黄金", "crypto",
-                     ["evidence-heavy"], "bull", 23, 19,
-                     ["fact_authenticity"], ["evidence-heavy"], [])
-        cbr.add_case("AI将取代人类工作", "ai",
-                     ["evidence-heavy"], "bear", 20, 22,
-                     ["logical_validity"], ["kritik"], [])
-        cbr.add_case("美股将迎来大牛市", "macro",
-                     ["evidence-heavy"], "bull", 25, 18,
-                     ["fact_authenticity"], ["evidence-heavy"], [])
+        cbr.add_case(
+            "BTC是数字黄金",
+            "crypto",
+            ["evidence-heavy"],
+            "bull",
+            23,
+            19,
+            ["fact_authenticity"],
+            ["evidence-heavy"],
+            [],
+        )
+        cbr.add_case(
+            "AI将取代人类工作",
+            "ai",
+            ["evidence-heavy"],
+            "bear",
+            20,
+            22,
+            ["logical_validity"],
+            ["kritik"],
+            [],
+        )
+        cbr.add_case(
+            "美股将迎来大牛市",
+            "macro",
+            ["evidence-heavy"],
+            "bull",
+            25,
+            18,
+            ["fact_authenticity"],
+            ["evidence-heavy"],
+            [],
+        )
 
         # 检索相似案例
         results = cbr.retrieve("BTC是数字黄金", top_k=2)
@@ -286,6 +336,7 @@ class TestCBRCaseLibrary(unittest.TestCase):
     def test_cold_start_skip_retrieval(self):
         """§5.7 冷启动: <5 案例时跳过检索。"""
         from debate_trainer import CBRCaseLibrary
+
         cbr = CBRCaseLibrary(encode_fn=_hash_encode)
         # 空库
         results = cbr.retrieve("BTC是数字黄金", top_k=3)
@@ -300,12 +351,21 @@ class TestCBRCaseLibrary(unittest.TestCase):
     def test_normal_retrieval_after_5_cases(self):
         """§5.7 正常期: >=5 案例后可检索。"""
         from debate_trainer import CBRCaseLibrary
+
         cbr = CBRCaseLibrary(encode_fn=_hash_encode)
         # 入库 5 个案例
         for i in range(5):
-            cbr.add_case(f"BTC案例{i}", "crypto",
-                         ["evidence-heavy"], "bull", 23, 19,
-                         ["fact_authenticity"], ["evidence-heavy"], [])
+            cbr.add_case(
+                f"BTC案例{i}",
+                "crypto",
+                ["evidence-heavy"],
+                "bull",
+                23,
+                19,
+                ["fact_authenticity"],
+                ["evidence-heavy"],
+                [],
+            )
         results = cbr.retrieve("BTC案例0", top_k=3)
         self.assertGreater(len(results), 0)
         self.assertLessEqual(len(results), 3)
@@ -313,12 +373,14 @@ class TestCBRCaseLibrary(unittest.TestCase):
 
 # ── DebateTrainer ─────────────────────────────────────────────
 
+
 class TestDebateTrainer(unittest.TestCase):
     """DebateTrainer 协调三参数更新。"""
 
     def test_train_updates_all(self):
         """train() 更新贝叶斯+Elo+CBR。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         adj = _make_adjudication_result()
         report = _make_reflection_report()
@@ -338,6 +400,7 @@ class TestDebateTrainer(unittest.TestCase):
     def test_train_bayesian_with_strategy_tags(self):
         """train 后贝叶斯权重按策略标签更新。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         adj = _make_adjudication_result()  # winner=bull
         report = _make_reflection_report()  # strategy_tags=["evidence-heavy", "definition-lock"]
@@ -351,6 +414,7 @@ class TestDebateTrainer(unittest.TestCase):
     def test_train_elo_updated(self):
         """train 后 Elo 更新。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         adj = _make_adjudication_result()  # winner=bull
         report = _make_reflection_report()
@@ -363,6 +427,7 @@ class TestDebateTrainer(unittest.TestCase):
     def test_train_cbr_ingested(self):
         """train 后案例入 CBR 库。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         adj = _make_adjudication_result()
         report = _make_reflection_report()
@@ -374,12 +439,14 @@ class TestDebateTrainer(unittest.TestCase):
 
 # ── 冷启动退化 (§5.7) ─────────────────────────────────────────
 
+
 class TestColdStartDegradation(unittest.TestCase):
     """§5.7 冷启动退化行为。"""
 
     def test_cold_start_0_5_debates(self):
         """0-5场: 纯Persona+SKILL无训练增强。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         # 0 场
         phase = trainer.get_cold_start_phase()
@@ -388,6 +455,7 @@ class TestColdStartDegradation(unittest.TestCase):
     def test_cold_start_5_20_debates(self):
         """5-20场: 弱增强标注低置信度。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         for _ in range(10):
             adj = _make_adjudication_result()
@@ -399,6 +467,7 @@ class TestColdStartDegradation(unittest.TestCase):
     def test_cold_start_20_50_debates(self):
         """20-50场: 正常增强。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         for _ in range(30):
             adj = _make_adjudication_result()
@@ -410,6 +479,7 @@ class TestColdStartDegradation(unittest.TestCase):
     def test_cold_start_50_plus_debates(self):
         """50+场: 成熟期。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         for _ in range(60):
             adj = _make_adjudication_result()
@@ -421,12 +491,14 @@ class TestColdStartDegradation(unittest.TestCase):
 
 # ── FAIL-OPEN ─────────────────────────────────────────────────
 
+
 class TestFailOpen(unittest.TestCase):
     """FAIL-OPEN: 异常时不崩溃。"""
 
     def test_train_with_none_args(self):
         """train 参数为 None 时不崩溃。"""
         from debate_trainer import DebateTrainer
+
         trainer = DebateTrainer(encode_fn=_hash_encode)
         result = trainer.train(None, None, "bull", "bear")
         self.assertIsInstance(result, dict)

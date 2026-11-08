@@ -23,6 +23,7 @@ EventDrivenStrategy — 宏观事件驱动策略引擎
 
 FAIL-OPEN: 数据缺失时返回中性信号 + 低置信度。
 """
+
 from __future__ import annotations
 
 import logging
@@ -45,8 +46,9 @@ def _get_sltp_constraints() -> dict:
     """
     # 优先：参数中心（含 SL_CEIL / TP_CEIL 完整硬约束）
     try:
-        from param_center.aggregator import SL_FLOOR, TP_FLOOR, RR_FLOOR
+        from param_center.aggregator import RR_FLOOR, SL_FLOOR, TP_FLOOR
         from param_center.verifier import SL_CEIL, TP_CEIL
+
         return {
             "sl_floor": float(SL_FLOOR),
             "sl_ceil": float(SL_CEIL),
@@ -59,6 +61,7 @@ def _get_sltp_constraints() -> dict:
     # 回退：BCRM2 sl_tp_config（仅 rr_ratio_target、SL/TP 下限）
     try:
         from memory_l4.bcrm2.sl_tp_config import SLTPParams
+
         p = SLTPParams()
         return {
             "sl_floor": p.sl_floor,
@@ -80,16 +83,21 @@ def _get_sltp_constraints() -> dict:
 
 
 # Phase 2: 弹性系数常量（SPEC-事件驱动策略独立化 §六）
-ELASTICITY_TREND_FOLLOW = 1.0   # 顺势共振（事件方向 = 趋势方向）
-ELASTICITY_MEAN_REVERT = -0.7   # 逆势均值回归（事件方向 ≠ 趋势方向）
-ELASTICITY_NONE = 0.0           # 无弹性约束（neutral 事件或无趋势）
+ELASTICITY_TREND_FOLLOW = 1.0  # 顺势共振（事件方向 = 趋势方向）
+ELASTICITY_MEAN_REVERT = -0.7  # 逆势均值回归（事件方向 ≠ 趋势方向）
+ELASTICITY_NONE = 0.0  # 无弹性约束（neutral 事件或无趋势）
 
 VALID_SIGNALS = ("long", "short", "neutral")
 # SPEC-Phase2 §5.1: 扩展至 9 种（8 event_type + none）
 VALID_EVENT_TYPES = (
-    "fomc", "nfp", "cpi", "ppi",                          # 现有
-    "tech_upgrade", "fed_speech",                          # Phase 2 新增
-    "sec_deadline", "congressional_hearing",               # Phase 2 新增
+    "fomc",
+    "nfp",
+    "cpi",
+    "ppi",  # 现有
+    "tech_upgrade",
+    "fed_speech",  # Phase 2 新增
+    "sec_deadline",
+    "congressional_hearing",  # Phase 2 新增
     "none",
 )
 
@@ -97,38 +105,38 @@ VALID_EVENT_TYPES = (
 # 数据来源: 事件研究法事件窗 [-10,+20] + Smales 黄金 VAR-GARCH
 # SPEC-Phase2 §5.2 (M4): 新增 4 个半衰期均为经验假设 v0，待 Phase 3 回测验证后校准
 EVENT_HALF_LIFE = {
-    "fomc": 3.0,   # FOMC 影响最持久（含纪要重定价）
-    "cpi": 2.0,    # CPI 影响中等
-    "nfp": 1.5,    # 非农影响较短
-    "ppi": 1.0,    # PPI 影响最短
-    "tech_upgrade": 1.0,          # 经验假设 v0
-    "fed_speech": 2.0,            # 经验假设 v0
-    "sec_deadline": 1.5,          # 经验假设 v0
-    "congressional_hearing": 2.5, # 经验假设 v0
+    "fomc": 3.0,  # FOMC 影响最持久（含纪要重定价）
+    "cpi": 2.0,  # CPI 影响中等
+    "nfp": 1.5,  # 非农影响较短
+    "ppi": 1.0,  # PPI 影响最短
+    "tech_upgrade": 1.0,  # 经验假设 v0
+    "fed_speech": 2.0,  # 经验假设 v0
+    "sec_deadline": 1.5,  # 经验假设 v0
+    "congressional_hearing": 2.5,  # 经验假设 v0
     "none": 0.0,
 }
 
 # Phase 3: 阶段动态信号阈值（替代固定 0.65/0.35）
 PHASE_THRESHOLDS = {
-    "pre_event":        {"long": 0.70, "short": 0.30},  # 保守：不确定性高
+    "pre_event": {"long": 0.70, "short": 0.30},  # 保守：不确定性高
     "expectation_build": {"long": 0.70, "short": 0.30},
-    "expectation_rise": {"long": 0.68, "short": 0.32},   # Phase 2 新增
+    "expectation_rise": {"long": 0.68, "short": 0.32},  # Phase 2 新增
     "expectation_jump": {"long": 0.65, "short": 0.32},  # 跳变期略放宽
     "expectation_digest": {"long": 0.65, "short": 0.32},
-    "event":            {"long": 0.55, "short": 0.40},  # 利空出尽，阈值放宽
-    "repricing":        {"long": 0.60, "short": 0.35},  # 三阶段权衡
-    "post_event":       {"long": 0.62, "short": 0.38},   # Phase 2 新增（GeneralEventWindowTracker）
-    "neutral":          {"long": 0.65, "short": 0.35},  # 兜底
+    "event": {"long": 0.55, "short": 0.40},  # 利空出尽，阈值放宽
+    "repricing": {"long": 0.60, "short": 0.35},  # 三阶段权衡
+    "post_event": {"long": 0.62, "short": 0.38},  # Phase 2 新增（GeneralEventWindowTracker）
+    "neutral": {"long": 0.65, "short": 0.35},  # 兜底
 }
 
 # Phase 3: 阶段仓位乘数
 PHASE_POSITION_MULT = {
     "pre_event": 0.8,
     "expectation_build": 0.8,
-    "expectation_rise": 1.0,    # Phase 2 新增
+    "expectation_rise": 1.0,  # Phase 2 新增
     "expectation_jump": 1.2,
     "expectation_digest": 1.0,
-    "event": 1.5,       # 事件当天仓位最大
+    "event": 1.5,  # 事件当天仓位最大
     "repricing": 1.0,
     "post_event": 1.0,  # Phase 2 新增
     "neutral": 0.0,
@@ -171,25 +179,27 @@ class EventSignal:
       - signal 字段保留（Phase 1 _inject_event_driven_path 无需改）
     """
 
-    signal: str                       # "long" / "short" / "neutral"
-    strength: float = 0.0             # 事件冲击强度 [0,1]（路径竞争得分）
-    elasticity: float = 0.0           # 弹性系数 [-1,1]
-    event_type: str = "none"          # fomc/nfp/cpi/ppi/none
-    event_phase: str = "neutral"      # expectation_build/.../neutral
+    signal: str  # "long" / "short" / "neutral"
+    strength: float = 0.0  # 事件冲击强度 [0,1]（路径竞争得分）
+    elasticity: float = 0.0  # 弹性系数 [-1,1]
+    event_type: str = "none"  # fomc/nfp/cpi/ppi/none
+    event_phase: str = "neutral"  # expectation_build/.../neutral
     window_start: Optional[str] = None  # ISO 日期
-    window_end: Optional[str] = None    # ISO 日期
-    confidence: float = 0.0           # 数据完整度 [0,1]
+    window_end: Optional[str] = None  # ISO 日期
+    confidence: float = 0.0  # 数据完整度 [0,1]
     scores: dict[str, float] = field(default_factory=dict)
     reason: str = ""
-    forward_guidance: str = ""        # hawkish/dovish/neutral
-    mode: str = "none"                # priced_in_bottom/expectation_short/none（向后兼容）
+    forward_guidance: str = ""  # hawkish/dovish/neutral
+    mode: str = "none"  # priced_in_bottom/expectation_short/none（向后兼容）
 
     def __post_init__(self) -> None:
         # 枚举校验
         if self.signal not in VALID_SIGNALS:
             raise ValueError(f"signal must be one of {VALID_SIGNALS}, got {self.signal!r}")
         if self.event_type not in VALID_EVENT_TYPES:
-            raise ValueError(f"event_type must be one of {VALID_EVENT_TYPES}, got {self.event_type!r}")
+            raise ValueError(
+                f"event_type must be one of {VALID_EVENT_TYPES}, got {self.event_type!r}"
+            )
         # 边界校验
         if not 0.0 <= self.strength <= 1.0:
             raise ValueError(f"strength must be in [0,1], got {self.strength}")
@@ -368,7 +378,7 @@ class EventDrivenStrategy:
 
         if not is_post_event and cycle_phase != "neutral" and hike_prob is not None:
             # 预期阶段：bearish bias proportional to hike_prob
-            composite *= (1.0 - float(hike_prob) * 0.35)
+            composite *= 1.0 - float(hike_prob) * 0.35
             composite = max(0.0, min(1.0, composite))
         elif cycle_phase == "event":
             # FOMC 当天：利空出尽，温和看多偏移
@@ -384,7 +394,7 @@ class EventDrivenStrategy:
 
         # 前瞻指引修正
         if forward_guidance == "hawkish":
-            composite *= (1.0 - self.FG_HAWKISH_DISCOUNT)
+            composite *= 1.0 - self.FG_HAWKISH_DISCOUNT
             composite = max(0.0, min(1.0, composite))
         elif forward_guidance == "dovish":
             composite = min(1.0, composite + self.FG_DOVISH_BONUS)
@@ -415,7 +425,11 @@ class EventDrivenStrategy:
         # Phase 3.1: 6 维评分，分母从 5.0 改为 6.0
         total_dims = 6.0
         data_quality = available / total_dims
-        strength = round(min(1.0, composite * data_quality), 3) if signal != "neutral" else round(data_quality * 0.3, 3)
+        strength = (
+            round(min(1.0, composite * data_quality), 3)
+            if signal != "neutral"
+            else round(data_quality * 0.3, 3)
+        )
         confidence = round(min(1.0, data_quality), 3)
 
         # Phase 2: 弹性系数（事件方向 × 趋势方向）
@@ -735,7 +749,11 @@ class EventDrivenStrategy:
         # 下行趋势比绝对水平更重要
         real_rate_history = data.get("real_rate_history")
         delta_score = level_score  # 无历史数据时回退到水平评分（保持原行为）
-        if real_rate_history and hasattr(real_rate_history, "__len__") and len(real_rate_history) >= 3:
+        if (
+            real_rate_history
+            and hasattr(real_rate_history, "__len__")
+            and len(real_rate_history) >= 3
+        ):
             try:
                 recent = [float(x) for x in real_rate_history[-3:]]
                 delta = recent[-1] - recent[0]
@@ -778,7 +796,7 @@ class EventDrivenStrategy:
             try:
                 ratio = ret_3d / float(expected_drop)  # 两者都为负
                 if ratio < 1.0:
-                    return 0.85   # 抗跌
+                    return 0.85  # 抗跌
                 elif ratio < 1.5:
                     return 0.60
                 else:
@@ -820,10 +838,10 @@ class EventDrivenStrategy:
             shadows = []
             for i in range(-3, 0):
                 h = float(high[i])
-                l = float(low[i])
+                l = float(low[i])  # noqa: E741
                 o = float(open_[i])
                 c = float(close[i])
-                body = abs(c - o)
+                body = abs(c - o)  # noqa: F841
                 full_range = h - l
                 if full_range < 1e-9:
                     shadows.append(0.0)
@@ -987,7 +1005,7 @@ class EventDrivenStrategy:
         fomc = data.get("fomc_decision", {})
         if isinstance(fomc, dict):
             dot_median = fomc.get("dot_plot_median")
-            rate_change = fomc.get("rate_change")
+            rate_change = fomc.get("rate_change")  # noqa: F841
             if dot_median is not None:
                 try:
                     dm = float(dot_median)
@@ -1071,8 +1089,8 @@ class EventDrivenStrategy:
 
         if sub_phase == "verification":
             # Phase B: 基本面验证
-            improvement, deterioration, available, details = (
-                self._score_fundamental_verification(data, event_ctx)
+            improvement, deterioration, available, details = self._score_fundamental_verification(
+                data, event_ctx
             )
             deep_bearish, bearish_conds = self._check_deep_bearish(
                 data, event_ctx, forward_guidance
@@ -1082,14 +1100,20 @@ class EventDrivenStrategy:
                 # 深层利空重新主导 → 反手做空偏向
                 adjusted = max(0.0, min(1.0, composite * 0.60))
                 cond_str = "+".join(bearish_conds)
-                return adjusted, f"verification(5-15d):深层利空[{cond_str}] {improvement}/{available}改善→反手做空"
+                return (
+                    adjusted,
+                    f"verification(5-15d):深层利空[{cond_str}] {improvement}/{available}改善→反手做空",
+                )
 
             if available > 0:
                 ratio = improvement / available
                 if ratio >= 0.5:
                     # ≥50% 改善 → 升级标准多仓
                     adjusted = min(1.0, composite * 1.15)
-                    return adjusted, f"verification(5-15d):{improvement}/{available}改善→升级标准多仓"
+                    return (
+                        adjusted,
+                        f"verification(5-15d):{improvement}/{available}改善→升级标准多仓",
+                    )
                 elif deterioration > 0:
                     # 有恶化项 → 减仓观望
                     adjusted = max(0.0, min(1.0, composite * 0.95))
@@ -1222,6 +1246,7 @@ class EventDrivenStrategy:
 # Phase 3: EventDrivenTrader — 独立子交易系统
 # ================================================================
 
+
 class EventDrivenTrader:
     """事件驱动独立子交易系统（Phase 3）。
 
@@ -1291,7 +1316,9 @@ class EventDrivenTrader:
         c = _get_sltp_constraints()
         atr = kline_data.get("atr", 0.0)
         close = kline_data.get("close")
-        close_price = float(close[-1]) if close and hasattr(close, "__len__") and len(close) > 0 else 0
+        close_price = (
+            float(close[-1]) if close and hasattr(close, "__len__") and len(close) > 0 else 0
+        )
         if atr is None or float(atr) <= 0 or close_price <= 0:
             return c["sl_floor"], c["tp_floor"]  # FAIL-OPEN：集中配置下限
         try:

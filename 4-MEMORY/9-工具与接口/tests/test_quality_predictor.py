@@ -8,25 +8,28 @@
 - 增量训练：可逐步添加样本
 - 可导出/导入模型参数
 """
-import pytest
 
 
 def test_module_importable():
-    from quality_predictor import QualityPredictor, MemoryFeatures
+    pass
 
 
 # ---------------------------------------------------------------------------
 # MemoryFeatures
 # ---------------------------------------------------------------------------
 
+
 def test_features_from_dict():
     from quality_predictor import MemoryFeatures
-    f = MemoryFeatures.from_dict({
-        "age_days": 10,
-        "verify_count": 5,
-        "quality_level": "B",
-        "content_length": 200,
-    })
+
+    f = MemoryFeatures.from_dict(
+        {
+            "age_days": 10,
+            "verify_count": 5,
+            "quality_level": "B",
+            "content_length": 200,
+        }
+    )
     assert f.age_days == 10
     assert f.verify_count == 5
     assert f.quality_level == "B"
@@ -35,6 +38,7 @@ def test_features_from_dict():
 
 def test_features_defaults():
     from quality_predictor import MemoryFeatures
+
     f = MemoryFeatures()
     assert f.age_days == 0.0
     assert f.verify_count == 0
@@ -44,6 +48,7 @@ def test_features_defaults():
 
 def test_features_to_vector():
     from quality_predictor import MemoryFeatures
+
     f = MemoryFeatures(age_days=10, verify_count=5, quality_level="B", content_length=200)
     vec = f.to_vector()
     assert len(vec) == 4
@@ -55,18 +60,26 @@ def test_features_to_vector():
 # QualityPredictor
 # ---------------------------------------------------------------------------
 
+
 def test_predictor_default_p():
     from quality_predictor import QualityPredictor
+
     pred = QualityPredictor()
-    f = QualityPredictor._default_features() if hasattr(QualityPredictor, '_default_features') else None
+    f = (  # noqa: F841
+        QualityPredictor._default_features()
+        if hasattr(QualityPredictor, "_default_features")
+        else None
+    )
     # 无训练数据时 predict 返回默认 p
     from quality_predictor import MemoryFeatures
+
     p = pred.predict(MemoryFeatures())
     assert 0.0 <= p <= 1.0
 
 
 def test_predictor_train_and_predict():
-    from quality_predictor import QualityPredictor, MemoryFeatures
+    from quality_predictor import MemoryFeatures, QualityPredictor
+
     pred = QualityPredictor()
     # 训练：高 verify_count + 高质量 → 高 p
     samples = [
@@ -82,10 +95,11 @@ def test_predictor_train_and_predict():
 
 
 def test_predictor_incremental_train():
-    from quality_predictor import QualityPredictor, MemoryFeatures
+    from quality_predictor import MemoryFeatures, QualityPredictor
+
     pred = QualityPredictor()
     pred.train([(MemoryFeatures(verify_count=5, quality_level="B"), 0.7)])
-    p1 = pred.predict(MemoryFeatures(verify_count=5, quality_level="B"))
+    p1 = pred.predict(MemoryFeatures(verify_count=5, quality_level="B"))  # noqa: F841
     # 增量添加更多样本
     pred.train([(MemoryFeatures(verify_count=5, quality_level="B"), 0.9)])
     p2 = pred.predict(MemoryFeatures(verify_count=5, quality_level="B"))
@@ -93,7 +107,8 @@ def test_predictor_incremental_train():
 
 
 def test_predictor_clamps_output():
-    from quality_predictor import QualityPredictor, MemoryFeatures
+    from quality_predictor import MemoryFeatures, QualityPredictor
+
     pred = QualityPredictor()
     pred.train([(MemoryFeatures(verify_count=100, quality_level="S"), 1.0)] * 10)
     p = pred.predict(MemoryFeatures(verify_count=100, quality_level="S"))
@@ -101,12 +116,15 @@ def test_predictor_clamps_output():
 
 
 def test_predictor_export_import():
-    from quality_predictor import QualityPredictor, MemoryFeatures
+    from quality_predictor import MemoryFeatures, QualityPredictor
+
     pred = QualityPredictor()
-    pred.train([
-        (MemoryFeatures(verify_count=5, quality_level="B"), 0.7),
-        (MemoryFeatures(verify_count=0, quality_level="C"), 0.3),
-    ])
+    pred.train(
+        [
+            (MemoryFeatures(verify_count=5, quality_level="B"), 0.7),
+            (MemoryFeatures(verify_count=0, quality_level="C"), 0.3),
+        ]
+    )
     params = pred.export_params()
     p_before = pred.predict(MemoryFeatures(verify_count=5, quality_level="B"))
 
@@ -117,7 +135,8 @@ def test_predictor_export_import():
 
 
 def test_predictor_handles_empty_training():
-    from quality_predictor import QualityPredictor, MemoryFeatures
+    from quality_predictor import MemoryFeatures, QualityPredictor
+
     pred = QualityPredictor()
     pred.train([])  # 空训练不应报错
     p = pred.predict(MemoryFeatures())

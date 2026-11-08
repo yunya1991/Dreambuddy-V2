@@ -4,16 +4,24 @@ A8 理论与实践验证进化模块
 基于A8-theory-practice-verification技能的自我批评自循环
 检查理论与实践的结合情况，通过自我批评推动系统进化
 """
-import json, os, time
-from pathlib import Path
-from typing import Dict, List, Optional
-from datetime import datetime, timezone
 
-from .evolution_engine import EvolutionEngine, EvolutionSource, EvolutionStatus
+import json
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, List
+
 from .backtest_engine import SimpleBacktestEngine
+from .evolution_engine import EvolutionEngine, EvolutionSource
 
 BASE_DIR = Path(__file__).parent.parent.parent
-SKILL_A8_PATH = Path(__file__).parent.parent.parent.parent / "6-TRADING" / "skills" / "A8-theory-practice-verification" / "SKILL.md"
+SKILL_A8_PATH = (
+    Path(__file__).parent.parent.parent.parent
+    / "6-TRADING"
+    / "skills"
+    / "A8-theory-practice-verification"
+    / "SKILL.md"
+)
 
 
 class A8TheoryPracticeEvolution:
@@ -68,7 +76,9 @@ class A8TheoryPracticeEvolution:
 
         self._save_inspection(report)
 
-        print(f"[A8进化] 检验完成: 发现{len(contradictions)}个矛盾, 生成{len(report['evolution_proposals'])}个进化提议")
+        print(
+            f"[A8进化] 检验完成: 发现{len(contradictions)}个矛盾, 生成{len(report['evolution_proposals'])}个进化提议"
+        )
         return report
 
     def _check_theory_practice_alignment(self, memory: Dict, decisions: List[Dict]) -> Dict:
@@ -88,11 +98,11 @@ class A8TheoryPracticeEvolution:
             return alignment
 
         lessons = memory.get("lessons", [])
-        lesson_contents = [l.get("content", "") for l in lessons]
+        lesson_contents = [l.get("content", "") for l in lessons]  # noqa: E741, F841
 
         hold_count = sum(1 for d in decisions if d.get("action") == "HOLD")
-        long_count = sum(1 for d in decisions if d.get("action") == "LONG")
-        short_count = sum(1 for d in decisions if d.get("action") == "SHORT")
+        long_count = sum(1 for d in decisions if d.get("action") == "LONG")  # noqa: F841
+        short_count = sum(1 for d in decisions if d.get("action") == "SHORT")  # noqa: F841
         total = len(decisions)
 
         hold_ratio = hold_count / total if total > 0 else 0
@@ -143,7 +153,7 @@ class A8TheoryPracticeEvolution:
         """
         contradictions = []
         lessons = memory.get("lessons", [])
-        lesson_contents = [l.get("content", "").lower() for l in lessons]
+        lesson_contents = [l.get("content", "").lower() for l in lessons]  # noqa: E741, F841
 
         if not decisions:
             return contradictions
@@ -153,47 +163,55 @@ class A8TheoryPracticeEvolution:
         hold_ratio = hold_count / total if total > 0 else 0
 
         if hold_ratio > 0.8 and len(decisions) >= 5:
-            contradictions.append({
-                "id": "C_A8_001",
-                "type": "theory_practice_mismatch",
-                "description": "过度保守矛盾：理论上应该寻找交易机会，但实践中连续观望",
-                "severity": "HIGH",
-                "hypothesis": "系统被'缩量不交易'等教训过度约束，导致在震荡市中完全不交易",
-                "verification_plan": "测试降低入场门槛后交易频率和胜率的变化",
-            })
+            contradictions.append(
+                {
+                    "id": "C_A8_001",
+                    "type": "theory_practice_mismatch",
+                    "description": "过度保守矛盾：理论上应该寻找交易机会，但实践中连续观望",
+                    "severity": "HIGH",
+                    "hypothesis": "系统被'缩量不交易'等教训过度约束，导致在震荡市中完全不交易",
+                    "verification_plan": "测试降低入场门槛后交易频率和胜率的变化",
+                }
+            )
 
         loss_streak = memory.get("loss_streak", 0)
         if loss_streak >= 3:
-            contradictions.append({
-                "id": "C_A8_002",
-                "type": "strategy_failure",
-                "description": f"连续亏损{loss_streak}次，当前策略可能不适应市场环境",
-                "severity": "CRITICAL",
-                "hypothesis": "当前大师风格或策略参数与当前市场状态不匹配",
-                "verification_plan": "回测不同大师风格在近期市场的表现",
-            })
+            contradictions.append(
+                {
+                    "id": "C_A8_002",
+                    "type": "strategy_failure",
+                    "description": f"连续亏损{loss_streak}次，当前策略可能不适应市场环境",
+                    "severity": "CRITICAL",
+                    "hypothesis": "当前大师风格或策略参数与当前市场状态不匹配",
+                    "verification_plan": "回测不同大师风格在近期市场的表现",
+                }
+            )
 
         max_dd = memory.get("max_drawdown_pct", 0)
         if max_dd > 10:
-            contradictions.append({
-                "id": "C_A8_003",
-                "type": "risk_management",
-                "description": f"最大回撤{max_dd:.1f}%超过10%，风控机制需要加强",
-                "severity": "HIGH",
-                "hypothesis": "止损设置过宽或仓位管理不当导致回撤过大",
-                "verification_plan": "测试更严格的止损和更小仓位的回测表现",
-            })
+            contradictions.append(
+                {
+                    "id": "C_A8_003",
+                    "type": "risk_management",
+                    "description": f"最大回撤{max_dd:.1f}%超过10%，风控机制需要加强",
+                    "severity": "HIGH",
+                    "hypothesis": "止损设置过宽或仓位管理不当导致回撤过大",
+                    "verification_plan": "测试更严格的止损和更小仓位的回测表现",
+                }
+            )
 
         duplicate_lessons = self._find_duplicate_lessons(lessons)
         if duplicate_lessons:
-            contradictions.append({
-                "id": "C_A8_004",
-                "type": "memory_bloat",
-                "description": f"存在{len(duplicate_lessons)}条重复教训，记忆系统有冗余",
-                "severity": "LOW",
-                "hypothesis": "每次HOLD都产生相似教训，记忆系统缺乏去重机制",
-                "verification_plan": "实现教训去重和质量评估机制",
-            })
+            contradictions.append(
+                {
+                    "id": "C_A8_004",
+                    "type": "memory_bloat",
+                    "description": f"存在{len(duplicate_lessons)}条重复教训，记忆系统有冗余",
+                    "severity": "LOW",
+                    "hypothesis": "每次HOLD都产生相似教训，记忆系统缺乏去重机制",
+                    "verification_plan": "实现教训去重和质量评估机制",
+                }
+            )
 
         return contradictions
 
@@ -209,7 +227,9 @@ class A8TheoryPracticeEvolution:
             seen.add(normalized)
         return duplicates
 
-    def _generate_proposals_from_contradiction(self, contradiction: Dict, memory: Dict) -> List[Dict]:
+    def _generate_proposals_from_contradiction(
+        self, contradiction: Dict, memory: Dict
+    ) -> List[Dict]:
         """
         从矛盾生成进化提议
         """

@@ -8,12 +8,11 @@ SPEC-AGI升级蓝图.md §4.1.1
   - Thompson sampling：基于Beta(α,β)分布采样策略选择
   - FAIL-OPEN：finrl未安装时降级为record-only，不crash
 """
-from __future__ import annotations
 
-import math
+from __future__ import annotations  # noqa: I001
+
 
 import numpy as np
-import pytest
 
 from dreambuddy_evolution.core.shadow_rl_trainer import ShadowRLTrainer
 
@@ -94,9 +93,13 @@ class TestThompsonSampling:
         trainer = ShadowRLTrainer()
         np.random.seed(42)
         # 高成功率基因
-        high_samples = [trainer.thompson_sample("high", successes=90, failures=10) for _ in range(200)]
+        high_samples = [
+            trainer.thompson_sample("high", successes=90, failures=10) for _ in range(200)
+        ]
         # 低成功率基因
-        low_samples = [trainer.thompson_sample("low", successes=10, failures=90) for _ in range(200)]
+        low_samples = [
+            trainer.thompson_sample("low", successes=10, failures=90) for _ in range(200)
+        ]
         assert np.mean(high_samples) > np.mean(low_samples)
 
     def test_beta_parameters_use_pseudocount(self):
@@ -114,9 +117,9 @@ class TestThompsonSampling:
         trainer = ShadowRLTrainer()
         np.random.seed(99)
         genes = {
-            "G-A": (50, 10),   # 高成功率
-            "G-B": (10, 50),   # 低成功率
-            "G-C": (30, 30),   # 中等
+            "G-A": (50, 10),  # 高成功率
+            "G-B": (10, 50),  # 低成功率
+            "G-C": (30, 30),  # 中等
         }
         best = trainer.select_best_gene(genes)
         assert best == "G-A"
@@ -133,7 +136,7 @@ class TestBetaUpdate:
         trainer.update_beta("G-001", success=True)
         stats = trainer.get_beta_stats("G-001")
         assert stats["alpha"] == 3  # 1 (pseudo) + 2
-        assert stats["beta"] == 1   # 1 (pseudo)
+        assert stats["beta"] == 1  # 1 (pseudo)
 
     def test_update_failure_increments_beta(self):
         """失败反馈增加β"""
@@ -195,6 +198,7 @@ class TestShadowRLTrackerIntegration:
     def test_tracker_has_trainer(self):
         """ShadowRLTracker内部持有ShadowRLTrainer实例"""
         from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         tracker = ShadowRLTracker()
         assert hasattr(tracker, "trainer")
         assert isinstance(tracker.trainer, ShadowRLTrainer)
@@ -202,6 +206,7 @@ class TestShadowRLTrackerIntegration:
     def test_tracker_not_activated_initially(self):
         """新tracker默认未激活Phase3"""
         from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         tracker = ShadowRLTracker()
         assert tracker.is_phase3_activated() is False
         assert tracker.trainer.is_activated() is False
@@ -209,8 +214,9 @@ class TestShadowRLTrackerIntegration:
     def test_auto_activate_at_2000_samples(self):
         """记录满2000样本时自动激活Phase3（HC-AGI-01）"""
         from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         tracker = ShadowRLTracker()
-        for i in range(1999):
+        for i in range(1999):  # noqa: B007
             tracker.record("BTC", {"R_up": 0.5}, "long", 0.01, {"R_up": 0.5})
         assert tracker.is_phase3_activated() is False
         # 第2000条触发自动激活
@@ -221,6 +227,7 @@ class TestShadowRLTrackerIntegration:
     def test_manual_activate_phase3(self):
         """手动调用activate_phase3()也能激活trainer"""
         from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         tracker = ShadowRLTracker()
         tracker.activate_phase3()
         assert tracker.is_phase3_activated() is True
@@ -229,9 +236,9 @@ class TestShadowRLTrackerIntegration:
     def test_mutate_gmax_via_tracker(self):
         """激活后可通过tracker.trainer执行gmax变异"""
         from dreambuddy_evolution.core.shadow_rl import ShadowRLTracker
+
         tracker = ShadowRLTracker()
         tracker.activate_phase3()
         mutated = tracker.trainer.mutate_gmax(0.5)
         assert 0.0 <= mutated <= 1.0
         assert abs(mutated - 0.5) >= 0.01
-

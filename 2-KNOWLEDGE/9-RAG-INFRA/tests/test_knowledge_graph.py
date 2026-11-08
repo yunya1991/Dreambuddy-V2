@@ -18,11 +18,10 @@ _RAG_INFRA_DIR = Path(__file__).resolve().parent.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-import pytest
+import pytest  # noqa: E402, I001
 
-from knowledge_graph import build_graph, graph_search, extract_entities
-from knowledge_graph.schema import NodeType
-
+from knowledge_graph import build_graph, graph_search, extract_entities  # noqa: E402
+from knowledge_graph.schema import NodeType  # noqa: E402
 
 # === 测试用 Markdown 固件（3 文件，2 域，仿真实知识库结构） ===
 FIXTURES = {
@@ -159,15 +158,14 @@ def test_tc11_graph_search(built_graph, graph_path):
 
     neighbor_names = {nb["name"] for nb in r["neighbors"]}
     # 依赖模块：通过 DEPENDS_ON 关系可达
-    dep_modules = {
-        nb["name"] for nb in r["neighbors"] if nb["relation"] == "DEPENDS_ON"
-    }
+    dep_modules = {nb["name"] for nb in r["neighbors"] if nb["relation"] == "DEPENDS_ON"}
     assert dep_modules, f"应返回依赖模块: {neighbor_names}"
     assert {"五计庙算", "CBR案例检索", "通用风控"} <= dep_modules, dep_modules
 
     # 实现概念：通过 IMPLEMENTS 关系可达的概念节点
     impl_concepts = {
-        nb["name"] for nb in r["neighbors"]
+        nb["name"]
+        for nb in r["neighbors"]
         if nb["relation"] == "IMPLEMENTS" and nb["type"] == NodeType.CONCEPT.value
     }
     assert impl_concepts, f"应返回实现概念: {neighbor_names}"
@@ -187,27 +185,20 @@ def test_tc12_multihop_search(built_graph, graph_path):
     assert extra, f"hops=2 应返回更多间接关联: {names_2}"
 
     # 参数节点不直接连到模块，需经概念中转（2 跳）才可达
-    params_hop1 = {
-        nb["name"] for nb in r1["neighbors"]
-        if nb["type"] == NodeType.PARAMETER.value
-    }
-    params_hop2 = {
-        nb["name"] for nb in r2["neighbors"]
-        if nb["type"] == NodeType.PARAMETER.value
-    }
+    params_hop1 = {nb["name"] for nb in r1["neighbors"] if nb["type"] == NodeType.PARAMETER.value}
+    params_hop2 = {nb["name"] for nb in r2["neighbors"] if nb["type"] == NodeType.PARAMETER.value}
     assert not params_hop1, f"hops=1 不应直达参数: {params_hop1}"
     assert params_hop2, f"hops=2 应经概念中转到达参数: {params_hop2}"
 
     # paths 应包含长度为 3 的路径（中心->概念->参数）
-    assert any(len(p["path"]) == 3 for p in r2["paths"]), [
-        len(p["path"]) for p in r2["paths"]
-    ]
+    assert any(len(p["path"]) == 3 for p in r2["paths"]), [len(p["path"]) for p in r2["paths"]]
 
 
 # ---------- TC13：关系过滤 ----------
 def test_tc13_relation_filter(built_graph, graph_path):
     r = graph_search(
-        "11-易经推理系统", hops=2,
+        "11-易经推理系统",
+        hops=2,
         relation_filter=["DEPENDS_ON"],
         graph_path=graph_path,
     )
@@ -219,9 +210,9 @@ def test_tc13_relation_filter(built_graph, graph_path):
     names = {nb["name"] for nb in r["neighbors"]}
     assert {"五计庙算", "CBR案例检索", "通用风控"} <= names, names
     # 不应包含概念节点（IMPLEMENTS 被过滤掉）
-    assert not any(
-        nb["type"] == NodeType.CONCEPT.value for nb in r["neighbors"]
-    ), [nb["name"] for nb in r["neighbors"]]
+    assert not any(nb["type"] == NodeType.CONCEPT.value for nb in r["neighbors"]), [
+        nb["name"] for nb in r["neighbors"]
+    ]
 
 
 # ---------- 附加：FAIL-OPEN ----------
@@ -231,7 +222,6 @@ def test_failopen_missing_entity_and_graph(graph_path):
     assert r["center_node"] is None
     assert r["neighbors"] == []
     # 不存在的图谱路径 -> 空结果
-    r2 = graph_search("11-易经推理系统", hops=2,
-                      graph_path="/tmp/__nonexistent_graph__.pkl")
+    r2 = graph_search("11-易经推理系统", hops=2, graph_path="/tmp/__nonexistent_graph__.pkl")
     assert r2["center_node"] is None
     assert r2["neighbors"] == []

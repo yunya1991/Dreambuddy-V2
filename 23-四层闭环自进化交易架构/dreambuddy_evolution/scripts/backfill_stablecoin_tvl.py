@@ -13,6 +13,7 @@ FAIL-OPEN: 网络/API 异常 → 记录日志退出, 不中断.
 用法:
   python backfill_stablecoin_tvl.py [--start 2020-12-01] [--end 2025-01-01]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -57,6 +58,7 @@ def write_to_dal(records: list[dict], start: datetime, end: datetime) -> int:
         return 0
     try:
         from dreambuddy_dal import get_market_macro_repo
+
         repo = get_market_macro_repo(backend="sqlite_unified")
     except Exception as exc:
         logger.error("无法获取 DAL repo: %s", exc)

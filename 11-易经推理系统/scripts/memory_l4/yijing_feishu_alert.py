@@ -15,19 +15,19 @@
   python -m scripts.memory_l4.yijing_feishu_alert heartbeat "心跳超时30分钟"
   python -m scripts.memory_l4.yijing_feishu_alert trading "连续亏损5次触发熔断"
 """
-import json
+
+import json  # noqa: I001
 import sys
 import os
 import requests
 from requests.adapters import HTTPAdapter
+
 try:
     from urllib3.util.retry import Retry
 except ImportError:  # 兼容老版本 urllib3
     Retry = None
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, Optional
-
+from typing import Dict
 
 FEISHU_APP_ID = os.environ.get("FEISHU_APP_ID", "cli_aa9442bde4b89be9")
 FEISHU_APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70")
@@ -97,10 +97,14 @@ def _get_session() -> requests.Session:
 
 
 def get_token() -> str:
-    resp = _get_session().post(TOKEN_URL, json={
-        "app_id": FEISHU_APP_ID,
-        "app_secret": FEISHU_APP_SECRET,
-    }, timeout=_REQUEST_TIMEOUT)
+    resp = _get_session().post(
+        TOKEN_URL,
+        json={
+            "app_id": FEISHU_APP_ID,
+            "app_secret": FEISHU_APP_SECRET,
+        },
+        timeout=_REQUEST_TIMEOUT,
+    )
     resp.raise_for_status()
     data = resp.json()
     if data["code"] != 0:
@@ -110,14 +114,19 @@ def get_token() -> str:
 
 def send_message(chat_id: str, msg_type: str, content: dict) -> dict:
     token = get_token()
-    resp = _get_session().post(MSG_URL, headers={
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }, json={
-        "receive_id": chat_id,
-        "msg_type": msg_type,
-        "content": json.dumps(content, ensure_ascii=False),
-    }, timeout=_REQUEST_TIMEOUT)
+    resp = _get_session().post(
+        MSG_URL,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "receive_id": chat_id,
+            "msg_type": msg_type,
+            "content": json.dumps(content, ensure_ascii=False),
+        },
+        timeout=_REQUEST_TIMEOUT,
+    )
     resp.raise_for_status()
     result = resp.json()
     if result["code"] != 0:
@@ -316,9 +325,7 @@ def notify_status_summary(health: bool, status: str, detail: Dict):
     elements.append(md(f"_时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}_"))
 
     chat_id = CHAT_IDS["management"]
-    result = send_message(chat_id, "interactive", card(
-        f"[易经推理] 状态汇总", level, elements
-    ))
+    result = send_message(chat_id, "interactive", card("[易经推理] 状态汇总", level, elements))
     print(f"[OK] 状态汇总已发送 -> #management (msg_id: {result['data']['message_id']})")
     return result
 

@@ -36,4 +36,3 @@ def episodes_dir() -> Path:
 
 def artifacts_memory_l4_dir() -> Path:
     return workspace_root() / "artifacts" / "memory_l4"
-

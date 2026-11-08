@@ -42,6 +42,7 @@ FIBO 风格类层级:
   - FIBO RDF/OWL (Financial Industry Business Ontology)
   - 协同 temporal_memory_graph.py (P1-3 双时序知识图)
 """
+
 from __future__ import annotations
 
 import json
@@ -51,7 +52,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-
 # ============================================================
 # 传递性关系类型（可做 transitive_closure）
 # ============================================================
@@ -59,17 +59,19 @@ from typing import Any, Dict, List, Optional, Set
 TRANSITIVE_RELATIONS: frozenset = frozenset({"part_of", "depends_on", "subClassOf"})
 
 # 关系类型白名单
-VALID_RELATION_TYPES: frozenset = frozenset({
-    "part_of",
-    "documents",
-    "covers_topic",
-    "depends_on",
-    "references",
-    "version_of",
-    "subClassOf",
-    "has_version",
-    "has_member",
-})
+VALID_RELATION_TYPES: frozenset = frozenset(
+    {
+        "part_of",
+        "documents",
+        "covers_topic",
+        "depends_on",
+        "references",
+        "version_of",
+        "subClassOf",
+        "has_version",
+        "has_member",
+    }
+)
 
 
 # ============================================================
@@ -192,9 +194,7 @@ class FIBOOntology:
         """
         self._entities: Dict[str, FIBOEntity] = {}
         self._relations: List[FIBORelation] = []
-        self._ontology_path: Optional[Path] = (
-            Path(ontology_path) if ontology_path else None
-        )
+        self._ontology_path: Optional[Path] = Path(ontology_path) if ontology_path else None
         self._lock = threading.Lock()
 
         if self._ontology_path and self._ontology_path.exists():
@@ -333,9 +333,7 @@ class FIBOOntology:
                 if entity_type and e.entity_type != entity_type:
                     continue
                 if where:
-                    match = all(
-                        e.properties.get(k) == v for k, v in where.items()
-                    )
+                    match = all(e.properties.get(k) == v for k, v in where.items())
                     if not match:
                         continue
                 results.append(e)
@@ -413,7 +411,7 @@ class FIBOOntology:
         """
         with self._lock:
             current_ids: Set[str] = {start_id}
-            for hop_idx, rel_type in enumerate(rel_chain):
+            for hop_idx, rel_type in enumerate(rel_chain):  # noqa: B007
                 next_ids: Set[str] = set()
                 for cur_id in current_ids:
                     for r in self._relations:
@@ -423,11 +421,7 @@ class FIBOOntology:
                 if not current_ids:
                     return []
 
-            return [
-                self._entities[eid]
-                for eid in current_ids
-                if eid in self._entities
-            ]
+            return [self._entities[eid] for eid in current_ids if eid in self._entities]
 
     # ============================================================
     # Schema 校验
@@ -538,9 +532,7 @@ class FIBOOntology:
             return False
         with self._lock:
             try:
-                self._ontology_path.parent.mkdir(
-                    parents=True, exist_ok=True
-                )
+                self._ontology_path.parent.mkdir(parents=True, exist_ok=True)
                 data = {
                     "version": 1,
                     "entities": [e.to_dict() for e in self._entities.values()],
@@ -599,8 +591,7 @@ if __name__ == "__main__":
         ont = FIBOOntology(ontology_path=Path(td) / "fibo.json")
 
         # 创建实体（类层级）
-        ont.add_entity("Document", "doc_001",
-                       properties={"path": "INDEX.md"})
+        ont.add_entity("Document", "doc_001", properties={"path": "INDEX.md"})
         ont.add_entity("Module", "mod_010", sub_class_of="Document")
         ont.add_entity("Module", "mod_000", sub_class_of="Document")
 

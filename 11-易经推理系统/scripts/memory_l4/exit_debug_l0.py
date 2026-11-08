@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """调试为什么 L0 时间硬退出在回测中不触发"""
-import sys
+
 import os
+import sys
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-if SCRIPT_DIR in sys.path: sys.path.remove(SCRIPT_DIR)
+if SCRIPT_DIR in sys.path:
+    sys.path.remove(SCRIPT_DIR)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 sys.path.insert(0, PROJECT_ROOT)
 
-import pandas as pd
-from scripts.memory_l4.classic_exit_system import ClassicExitSystem, PositionState, ExitAction, ExitConfig
+import pandas as pd  # noqa: E402
+
+from scripts.memory_l4.classic_exit_system import (  # noqa: E402
+    ClassicExitSystem,
+    ExitConfig,
+    PositionState,
+)
 
 config = ExitConfig()
 system = ClassicExitSystem(config=config)
@@ -39,26 +47,43 @@ for target_i in [24, 25, 30, 50, 100]:
     raw_pnl = (entry_price - current_price) / entry_price
 
     pos = PositionState(
-        coin=f"BTC_TEST", side=side, entry_price=entry_price, current_price=current_price,
-        position_age_sec=age_sec, unrealized_pnl_pct=raw_pnl, leverage=3.0, atr_pct=0.02,
-        mfe_pnl_pct=0.0, max_dd_pct=0.0, entry_ts=int(entry_time.timestamp()),
-        trailing_armed=False, trailing_stop_price=0.0,
+        coin="BTC_TEST",
+        side=side,
+        entry_price=entry_price,
+        current_price=current_price,
+        position_age_sec=age_sec,
+        unrealized_pnl_pct=raw_pnl,
+        leverage=3.0,
+        atr_pct=0.02,
+        mfe_pnl_pct=0.0,
+        max_dd_pct=0.0,
+        entry_ts=int(entry_time.timestamp()),
+        trailing_armed=False,
+        trailing_stop_price=0.0,
     )
 
     candles_window = []
     start_idx = max(0, target_i - 60)
     for j in range(start_idx, target_i + 1):
         b = kline_slice.iloc[j]
-        candles_window.append({
-            "t": int(kline_slice.index[j].timestamp()),
-            "o": float(b["open"]), "h": float(b["high"]),
-            "l": float(b["low"]), "c": float(b["close"]),
-            "v": float(b["volume"]),
-        })
+        candles_window.append(
+            {
+                "t": int(kline_slice.index[j].timestamp()),
+                "o": float(b["open"]),
+                "h": float(b["high"]),
+                "l": float(b["low"]),
+                "c": float(b["close"]),
+                "v": float(b["volume"]),
+            }
+        )
 
     decision = system.evaluate_full(pos, candles_window, regime="trend")
-    print(f"\ni={target_i}, bar_time={bar_time}, age={age_sec/3600:.1f}h, price={current_price:.1f}, pnl={raw_pnl*100:.2f}%")
-    print(f"  decision.action={decision.action}, reason={decision.reason}, l0_triggered={decision.l0_triggered}")
+    print(
+        f"\ni={target_i}, bar_time={bar_time}, age={age_sec/3600:.1f}h, price={current_price:.1f}, pnl={raw_pnl*100:.2f}%"
+    )
+    print(
+        f"  decision.action={decision.action}, reason={decision.reason}, l0_triggered={decision.l0_triggered}"
+    )
 
 # 检查 decision.action == HOLD 时 features 的内容
 print("\n--- 检查 i=25 的 features ---")
@@ -68,14 +93,34 @@ current_price = float(bar["close"])
 age_sec = (bar_time - entry_time).total_seconds()
 raw_pnl = (entry_price - current_price) / entry_price
 pos = PositionState(
-    coin=f"BTC_TEST", side=side, entry_price=entry_price, current_price=current_price,
-    position_age_sec=age_sec, unrealized_pnl_pct=raw_pnl, leverage=3.0, atr_pct=0.02,
-    mfe_pnl_pct=0.0, max_dd_pct=0.0, entry_ts=int(entry_time.timestamp()),
-    trailing_armed=False, trailing_stop_price=0.0,
+    coin="BTC_TEST",
+    side=side,
+    entry_price=entry_price,
+    current_price=current_price,
+    position_age_sec=age_sec,
+    unrealized_pnl_pct=raw_pnl,
+    leverage=3.0,
+    atr_pct=0.02,
+    mfe_pnl_pct=0.0,
+    max_dd_pct=0.0,
+    entry_ts=int(entry_time.timestamp()),
+    trailing_armed=False,
+    trailing_stop_price=0.0,
 )
 candles_window = []
 for j in range(0, 26):
     b = kline_slice.iloc[j]
-    candles_window.append({"t": int(kline_slice.index[j].timestamp()), "o": float(b["open"]), "h": float(b["high"]), "l": float(b["low"]), "c": float(b["close"]), "v": float(b["volume"])})
+    candles_window.append(
+        {
+            "t": int(kline_slice.index[j].timestamp()),
+            "o": float(b["open"]),
+            "h": float(b["high"]),
+            "l": float(b["low"]),
+            "c": float(b["close"]),
+            "v": float(b["volume"]),
+        }
+    )
 decision = system.evaluate_full(pos, candles_window, regime="trend")
-print(f"hold_risk={decision.features.hold_risk:.3f}, hold_value={decision.features.hold_value:.3f}, dd={decision.features.dd:.3f}")
+print(
+    f"hold_risk={decision.features.hold_risk:.3f}, hold_value={decision.features.hold_value:.3f}, dd={decision.features.dd:.3f}"
+)

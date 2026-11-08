@@ -9,14 +9,13 @@
 """
 
 import json
-import os
-import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 try:
     import requests
+
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
@@ -58,7 +57,7 @@ def fetch_btc_prices_from_coingecko(days: int = 90) -> dict:
                 "high": candle[2],
                 "low": candle[3],
                 "close": candle[4],
-                "volume": candle[5] if len(candle) > 5 else 0
+                "volume": candle[5] if len(candle) > 5 else 0,
             }
 
         return prices
@@ -78,11 +77,7 @@ def fetch_btc_prices_from_binance(days: int = 90) -> dict:
         return {}
 
     url = "https://api.binance.com/api/v3/klines"
-    params = {
-        "symbol": "BTCUSDT",
-        "interval": "1d",
-        "limit": days
-    }
+    params = {"symbol": "BTCUSDT", "interval": "1d", "limit": days}
 
     try:
         resp = requests.get(url, params=params, timeout=30)
@@ -101,7 +96,7 @@ def fetch_btc_prices_from_binance(days: int = 90) -> dict:
                 "high": float(candle[2]),
                 "low": float(candle[3]),
                 "close": float(candle[4]),
-                "volume": float(candle[5])
+                "volume": float(candle[5]),
             }
 
         return prices
@@ -127,12 +122,13 @@ def create_historical_news_from_outputs(data_dir: Path) -> list:
     # 读取所有简报文件
     for brief_file in outputs_dir.glob("brief_*.md"):
         try:
-            with open(brief_file, 'r', encoding='utf-8') as f:
+            with open(brief_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # 提取生成时间
             import re
-            time_match = re.search(r'\*\*生成时间\*\*: ([^\n]+)', content)
+
+            time_match = re.search(r"\*\*生成时间\*\*: ([^\n]+)", content)
             if not time_match:
                 continue
 
@@ -167,7 +163,8 @@ def create_historical_news_from_outputs(data_dir: Path) -> list:
                 for line in lines:
                     if "来源" in line and "http" in line:
                         import re
-                        url_match = re.search(r'\[.*\]\((https?://[^)]+)\)', line)
+
+                        url_match = re.search(r"\[.*\]\((https?://[^)]+)\)", line)
                         if url_match:
                             source = url_match.group(1)
                         break
@@ -184,7 +181,7 @@ def create_historical_news_from_outputs(data_dir: Path) -> list:
                     "source_confidence": "medium",  # 默认
                     "impact_horizon": "T1",
                     "risk_flags": ["⚠️" in section] if "⚠️" in section else [],
-                    "original_file": str(brief_file)
+                    "original_file": str(brief_file),
                 }
                 all_news.append(news_item)
 
@@ -204,13 +201,39 @@ def estimate_sentiment(text: str) -> float:
     text = text.lower()
 
     positive_words = [
-        "利好", "上涨", "突破", "新高", "流入", "强劲", "超预期",
-        "宽松", "支持", "增长", "繁荣", "复苏", "受益", "利好"
+        "利好",
+        "上涨",
+        "突破",
+        "新高",
+        "流入",
+        "强劲",
+        "超预期",
+        "宽松",
+        "支持",
+        "增长",
+        "繁荣",
+        "复苏",
+        "受益",
+        "利好",
     ]
     negative_words = [
-        "利空", "下跌", "抛售", "调查", "风险", "担忧", "收紧",
-        "监管", "制裁", "衰退", "危机", "违约", "恶化", "承压",
-        "恐慌", "暴跌", "崩盘"
+        "利空",
+        "下跌",
+        "抛售",
+        "调查",
+        "风险",
+        "担忧",
+        "收紧",
+        "监管",
+        "制裁",
+        "衰退",
+        "危机",
+        "违约",
+        "恶化",
+        "承压",
+        "恐慌",
+        "暴跌",
+        "崩盘",
     ]
 
     pos_count = sum(1 for w in positive_words if w in text)
@@ -234,7 +257,7 @@ def save_historical_data(data_dir: Path):
 
     if prices:
         price_file = data_dir / "btc_daily_prices.json"
-        with open(price_file, 'w', encoding='utf-8') as f:
+        with open(price_file, "w", encoding="utf-8") as f:
             json.dump(prices, f, indent=2, ensure_ascii=False)
         print(f"[✓] 价格数据已保存：{price_file} ({len(prices)} 天)")
     else:
@@ -258,7 +281,7 @@ def save_historical_data(data_dir: Path):
 
         for date, date_news in news_by_date.items():
             news_file = news_dir / f"news_{date}.json"
-            with open(news_file, 'w', encoding='utf-8') as f:
+            with open(news_file, "w", encoding="utf-8") as f:
                 json.dump(date_news, f, indent=2, ensure_ascii=False)
 
         print(f"[✓] 新闻数据已保存：{news_dir} ({len(news_by_date)} 天)")
@@ -281,7 +304,7 @@ def main():
 
     price_file = data_dir / "btc_daily_prices.json"
     if price_file.exists():
-        with open(price_file, 'r') as f:
+        with open(price_file, "r") as f:
             prices = json.load(f)
         print(f"  价格数据：{len(prices)} 天")
         if prices:

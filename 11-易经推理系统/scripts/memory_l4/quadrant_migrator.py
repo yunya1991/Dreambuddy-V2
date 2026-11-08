@@ -1,14 +1,14 @@
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_distills_dir
+from scripts.memory_l4.paths import memory_l4_cases_dir, memory_l4_distills_dir  # noqa: E402
 
 PCT_SCALE = 5.0
 USDT_SCALE = 50.0
@@ -57,7 +57,7 @@ def _list_json(dir_path: Path) -> List[Path]:
 
 
 def _read_episode_by_case(case: Dict[str, Any]) -> Dict[str, Any]:
-    refs = ((case.get("execution") or {}).get("episode_refs") or [])
+    refs = (case.get("execution") or {}).get("episode_refs") or []
     if not refs:
         return {}
     p = str((refs[0] or {}).get("path") or "")
@@ -144,7 +144,7 @@ def update_distill_with_migration(
     wins = 0
     valid = 0
     all_unrealized = True
-    for cid in (out.get("supporting_case_ids") or []):
+    for cid in out.get("supporting_case_ids") or []:
         ep = episodes_by_case_id.get(str(cid)) or {}
         pnl_usdt, pnl_pct, is_unrealized = _episode_pnl(ep)
         if pnl_usdt is None and pnl_pct is None:

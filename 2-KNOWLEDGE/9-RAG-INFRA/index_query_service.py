@@ -30,7 +30,8 @@ for _p in [_THIS_DIR, _VS_DIR]:
         sys.path.insert(0, str(_p))
 
 # 直接导入 embedder 模块，绕过 vector_store/__init__.py（避免触发 chromadb 导入）
-import importlib.util
+import importlib.util  # noqa: E402
+
 _embedder_path = _VS_DIR / "embedder.py"
 _spec = importlib.util.spec_from_file_location("embedder", _embedder_path)
 _mod = importlib.util.module_from_spec(_spec)
@@ -67,6 +68,7 @@ def _project_root() -> Path:
 # 1. 索引条目解析
 # ============================================================
 
+
 def parse_index_md(index_path: Path) -> List[Dict]:
     """解析单个 INDEX.md，提取目录条目。
 
@@ -97,13 +99,17 @@ def parse_index_md(index_path: Path) -> List[Dict]:
         link_match = re.findall(r"\[([^\]]+)\]\(([^)]+)\)", line)
         for name, rel_path in link_match:
             abs_path = (index_path.parent / rel_path).resolve()
-            entries.append({
-                "title": name.strip(),
-                "path": str(abs_path),
-                "category": "doc",
-                "description": line.split("]")[-1].strip(" -:：") if "]" in line else current_heading,
-                "domain": current_heading or index_path.parent.name,
-            })
+            entries.append(
+                {
+                    "title": name.strip(),
+                    "path": str(abs_path),
+                    "category": "doc",
+                    "description": (
+                        line.split("]")[-1].strip(" -:：") if "]" in line else current_heading
+                    ),
+                    "domain": current_heading or index_path.parent.name,
+                }
+            )
 
         # 表格行：| name | path | desc |
         if line.startswith("|") and "|" in line[1:]:
@@ -120,13 +126,15 @@ def parse_index_md(index_path: Path) -> List[Dict]:
                     rel_path = path_cell
                 if rel_path:
                     abs_path = (index_path.parent / rel_path).resolve()
-                    entries.append({
-                        "title": name,
-                        "path": str(abs_path),
-                        "category": "doc",
-                        "description": desc,
-                        "domain": current_heading or index_path.parent.name,
-                    })
+                    entries.append(
+                        {
+                            "title": name,
+                            "path": str(abs_path),
+                            "category": "doc",
+                            "description": desc,
+                            "domain": current_heading or index_path.parent.name,
+                        }
+                    )
 
     return entries
 
@@ -144,15 +152,17 @@ def parse_skill_registry(registry_path: Path) -> List[Dict]:
     skills = data.get("skills", [])
     entries: List[Dict] = []
     for s in skills:
-        entries.append({
-            "title": s.get("name", ""),
-            "path": s.get("path", ""),
-            "category": "skill",
-            "description": s.get("description", ""),
-            "domain": s.get("category", "general"),
-            "triggers": s.get("triggers", []),
-            "status": s.get("status", "unknown"),
-        })
+        entries.append(
+            {
+                "title": s.get("name", ""),
+                "path": s.get("path", ""),
+                "category": "skill",
+                "description": s.get("description", ""),
+                "domain": s.get("category", "general"),
+                "triggers": s.get("triggers", []),
+                "status": s.get("status", "unknown"),
+            }
+        )
     return entries
 
 
@@ -180,11 +190,11 @@ def discover_index_files() -> List[Path]:
 # 2. 索引构建与查询
 # ============================================================
 
+
 class IndexQueryService:
     """索引语义查询服务。"""
 
-    def __init__(self, collection_name: str = INDEX_COLLECTION,
-                 db_path: str = None):
+    def __init__(self, collection_name: str = INDEX_COLLECTION, db_path: str = None):
         self.collection_name = collection_name
         self.db_path = db_path or config.CHROMA_DB_PATH
         self._client = None
@@ -211,8 +221,9 @@ class IndexQueryService:
 
     # ---- 构建索引 ----
 
-    def build_index(self, index_files: Optional[List[Path]] = None,
-                    registry_path: Optional[Path] = None) -> int:
+    def build_index(
+        self, index_files: Optional[List[Path]] = None, registry_path: Optional[Path] = None
+    ) -> int:
         """构建索引：解析 INDEX.md + registry → 向量化 → 写入 ChromaDB。
 
         Returns:
@@ -228,7 +239,9 @@ class IndexQueryService:
 
         # 2. 解析 skill-registry.json
         if registry_path is None:
-            registry_path = _project_root() / "1-ARCHITECTURE" / "skills" / "_registry" / "registry.json"
+            registry_path = (
+                _project_root() / "1-ARCHITECTURE" / "skills" / "_registry" / "registry.json"
+            )
         entries.extend(parse_skill_registry(registry_path))
 
         if not entries:
@@ -250,13 +263,15 @@ class IndexQueryService:
                 text = f"{e['title']} {e.get('description','')} {' '.join(e.get('triggers',[]))}"
                 ids.append(f"idx_{i}")
                 documents.append(text)
-                metadatas.append({
-                    "title": e["title"],
-                    "path": e["path"],
-                    "category": e["category"],
-                    "description": e.get("description", ""),
-                    "domain": e.get("domain", "general"),
-                })
+                metadatas.append(
+                    {
+                        "title": e["title"],
+                        "path": e["path"],
+                        "category": e["category"],
+                        "description": e.get("description", ""),
+                        "domain": e.get("domain", "general"),
+                    }
+                )
 
             # 批量嵌入
             embeddings = [_embedder.embed(doc) for doc in documents]
@@ -277,9 +292,13 @@ class IndexQueryService:
 
     # ---- 查询 ----
 
-    def query(self, query_text: str, top_k: int = DEFAULT_TOP_K,
-              score_threshold: float = DEFAULT_SCORE_THRESHOLD,
-              category_filter: Optional[List[str]] = None) -> List[Dict]:
+    def query(
+        self,
+        query_text: str,
+        top_k: int = DEFAULT_TOP_K,
+        score_threshold: float = DEFAULT_SCORE_THRESHOLD,
+        category_filter: Optional[List[str]] = None,
+    ) -> List[Dict]:
         """语义查询索引。
 
         流水线决策点（配置 → 行为映射）：
@@ -313,17 +332,19 @@ class IndexQueryService:
             documents = raw.get("documents", [[]])[0]
             distances = raw.get("distances", [[]])[0]
 
-            for meta, doc, dist in zip(metadatas, documents, distances):
+            for meta, doc, dist in zip(metadatas, documents, distances):  # noqa: B007, B905
                 # ChromaDB cosine distance → 相似度：score = 1 - distance
                 score = max(0.0, 1.0 - float(dist))
                 if score >= score_threshold:
-                    results.append({
-                        "title": meta.get("title", ""),
-                        "path": meta.get("path", ""),
-                        "category": meta.get("category", "doc"),
-                        "description": meta.get("description", ""),
-                        "score": round(score, 4),
-                    })
+                    results.append(
+                        {
+                            "title": meta.get("title", ""),
+                            "path": meta.get("path", ""),
+                            "category": meta.get("category", "doc"),
+                            "description": meta.get("description", ""),
+                            "score": round(score, 4),
+                        }
+                    )
         else:
             # FAIL-OPEN：关键词匹配内存索引
             results = self._keyword_fallback(query_text, top_k, category_filter)
@@ -332,15 +353,14 @@ class IndexQueryService:
         results = results[:top_k]
         return results
 
-    def _keyword_fallback(self, query_text: str, top_k: int,
-                          category_filter: Optional[List[str]]) -> List[Dict]:
+    def _keyword_fallback(
+        self, query_text: str, top_k: int, category_filter: Optional[List[str]]
+    ) -> List[Dict]:
         """关键词匹配回退（ChromaDB 不可用时）。"""
         # 内存为空时从文件加载（跨进程持久化）
         if not self._fallback_index and self._fallback_file.exists():
             try:
-                self._fallback_index = json.loads(
-                    self._fallback_file.read_text(encoding="utf-8")
-                )
+                self._fallback_index = json.loads(self._fallback_file.read_text(encoding="utf-8"))
             except Exception:
                 pass
         if not self._fallback_index:
@@ -368,9 +388,7 @@ class IndexQueryService:
         # fallback: 从文件加载
         if not self._fallback_index and self._fallback_file.exists():
             try:
-                self._fallback_index = json.loads(
-                    self._fallback_file.read_text(encoding="utf-8")
-                )
+                self._fallback_index = json.loads(self._fallback_file.read_text(encoding="utf-8"))
             except Exception:
                 pass
         return len(self._fallback_index)
@@ -380,8 +398,10 @@ class IndexQueryService:
 # 3. CLI 入口
 # ============================================================
 
+
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="IndexQueryService")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
@@ -401,9 +421,12 @@ def main():
         n = svc.build_index(registry_path=args.registry)
         print(f"✅ 索引构建完成: {n} 条")
     elif args.cmd == "query":
-        results = svc.query(args.query_text, top_k=args.top_k,
-                            score_threshold=args.threshold,
-                            category_filter=args.category)
+        results = svc.query(
+            args.query_text,
+            top_k=args.top_k,
+            score_threshold=args.threshold,
+            category_filter=args.category,
+        )
         print(f"查询: {args.query_text} (top_k={args.top_k}, threshold={args.threshold})")
         print(f"返回 {len(results)} 条:")
         for r in results:

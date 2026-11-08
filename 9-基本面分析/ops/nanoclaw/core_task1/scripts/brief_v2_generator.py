@@ -9,12 +9,12 @@
 4. 生成 brief_v2_{YYYYMMDD_HHMM}.md
 """
 
-import json
+import json  # noqa: I001
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from collections import defaultdict
 
 
@@ -37,6 +37,7 @@ def _topic_key(title: str) -> str:
 @dataclass
 class NewsItem:
     """新闻条目"""
+
     title: str
     summary: str
     source: str
@@ -46,11 +47,11 @@ class NewsItem:
     category: str
     sentiment_score: float
     source_confidence: str  # high/medium/low
-    impact_horizon: str     # T0/T1/T2
+    impact_horizon: str  # T0/T1/T2
     cross_market_map: str
     risk_flags: List[str]
-    attention_score: int    # 0-5
-    attention_type: str     # narrative|event|policy|security|market_microstructure
+    attention_score: int  # 0-5
+    attention_type: str  # narrative|event|policy|security|market_microstructure
     confirmation_status: str  # confirmed|candidate|unverified
     confirming_sources: List[str]
 
@@ -69,13 +70,13 @@ class BriefV2Generator:
         if not changelog_path.exists():
             return []
 
-        with open(changelog_path, 'r', encoding='utf-8') as f:
+        with open(changelog_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-            if content.startswith('['):
+            if content.startswith("["):
                 return json.loads(content)
             else:
                 items = []
-                for line in content.split('\n'):
+                for line in content.split("\n"):
                     if line.strip():
                         items.append(json.loads(line))
                 return items
@@ -90,35 +91,35 @@ class BriefV2Generator:
         # 按主题分组
         by_topic = defaultdict(list)
         for item in news_items:
-            key = _topic_key(item.get('title', ''))
+            key = _topic_key(item.get("title", ""))
             by_topic[key].append(item)
 
         confirmed_items = []
         candidate_items = []
 
-        for topic, items in by_topic.items():
+        for topic, items in by_topic.items():  # noqa: B007
             sources = set()
             for item in items:
-                sources.add(item.get('source', ''))
+                sources.add(item.get("source", ""))
 
             for item in items:
-                confidence = item.get('source_confidence', 'low')
+                confidence = item.get("source_confidence", "low")
 
                 # 确认逻辑调整：
-                if confidence == 'high':
+                if confidence == "high":
                     # 权威媒体直接确认
-                    item['confirmation_status'] = 'confirmed'
-                    item['confirming_sources'] = list(sources)
+                    item["confirmation_status"] = "confirmed"
+                    item["confirming_sources"] = list(sources)
                     confirmed_items.append(item)
-                elif confidence == 'medium' and len(sources) >= self.confirmation_threshold:
+                elif confidence == "medium" and len(sources) >= self.confirmation_threshold:
                     # 中等可信度需多源确认
-                    item['confirmation_status'] = 'confirmed'
-                    item['confirming_sources'] = list(sources)
+                    item["confirmation_status"] = "confirmed"
+                    item["confirming_sources"] = list(sources)
                     confirmed_items.append(item)
                 else:
                     # 其他情况标记为候选
-                    item['confirmation_status'] = 'candidate'
-                    item['confirming_sources'] = list(sources)
+                    item["confirmation_status"] = "candidate"
+                    item["confirming_sources"] = list(sources)
                     candidate_items.append(item)
 
         return confirmed_items + candidate_items
@@ -130,11 +131,11 @@ class BriefV2Generator:
         - 3: 多源复述/主流媒体覆盖
         - 5: 跨圈层高频传播
         """
-        title_key = _topic_key(item.get('title', ''))
-        similar_count = sum(1 for i in all_items if _topic_key(i.get('title', '')) == title_key)
+        title_key = _topic_key(item.get("title", ""))
+        similar_count = sum(1 for i in all_items if _topic_key(i.get("title", "")) == title_key)
 
-        source_confidence = item.get('source_confidence', 'low')
-        source_type = item.get('source_type', '')
+        source_confidence = item.get("source_confidence", "low")
+        source_type = item.get("source_type", "")  # noqa: F841
 
         score = 0
         if similar_count >= 3:
@@ -145,7 +146,7 @@ class BriefV2Generator:
             score = 1  # 单源
 
         # 来源可信度调整
-        if source_confidence == 'high' and score < 4:
+        if source_confidence == "high" and score < 4:
             score = min(5, score + 1)
 
         return score
@@ -159,19 +160,19 @@ class BriefV2Generator:
         - security: 安全事件
         - market_microstructure: 市场微观结构
         """
-        category = item.get('category', '')
-        title = item.get('title', '').lower()
+        category = item.get("category", "")
+        title = item.get("title", "").lower()
 
-        if '政策' in title or '监管' in title or category in ['fed_policy', 'us_policy']:
-            return 'policy'
-        elif '攻击' in title or '黑客' in title or category == 'security':
-            return 'security'
-        elif '资金' in title or '交易所' in title or '链上' in title:
-            return 'market_microstructure'
-        elif '数据' in title or '分析' in title:
-            return 'event'
+        if "政策" in title or "监管" in title or category in ["fed_policy", "us_policy"]:
+            return "policy"
+        elif "攻击" in title or "黑客" in title or category == "security":
+            return "security"
+        elif "资金" in title or "交易所" in title or "链上" in title:
+            return "market_microstructure"
+        elif "数据" in title or "分析" in title:
+            return "event"
         else:
-            return 'narrative'
+            return "narrative"
 
     def generate_brief_v2(self, news_items: List[Dict]) -> str:
         """生成 V2 简报"""
@@ -180,28 +181,30 @@ class BriefV2Generator:
 
         # 计算注意力分数
         for item in confirmed_items:
-            item['attention_score'] = self.calculate_attention_score(item, news_items)
-            item['attention_type'] = self.determine_attention_type(item)
+            item["attention_score"] = self.calculate_attention_score(item, news_items)
+            item["attention_type"] = self.determine_attention_type(item)
 
         # 按确认状态分组
-        confirmed = [i for i in confirmed_items if i.get('confirmation_status') == 'confirmed']
-        candidates = [i for i in confirmed_items if i.get('confirmation_status') == 'candidate']
+        confirmed = [i for i in confirmed_items if i.get("confirmation_status") == "confirmed"]
+        candidates = [i for i in confirmed_items if i.get("confirmation_status") == "candidate"]
 
         # 按情感和影响分类
-        bullish = [i for i in confirmed if i.get('sentiment_score', 0) > 0.2]
-        bearish = [i for i in confirmed if i.get('sentiment_score', 0) < -0.2]
-        neutral = [i for i in confirmed if -0.2 <= i.get('sentiment_score', 0) <= 0.2]
+        bullish = [i for i in confirmed if i.get("sentiment_score", 0) > 0.2]
+        bearish = [i for i in confirmed if i.get("sentiment_score", 0) < -0.2]
+        neutral = [i for i in confirmed if -0.2 <= i.get("sentiment_score", 0) <= 0.2]
 
         # T0/T1 事件
-        t0_items = [i for i in confirmed if i.get('impact_horizon') == 'T0']
-        t1_items = [i for i in confirmed if i.get('impact_horizon') == 'T1']
+        t0_items = [i for i in confirmed if i.get("impact_horizon") == "T0"]
+        t1_items = [i for i in confirmed if i.get("impact_horizon") == "T1"]
 
         # 生成 Markdown
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         # 计算摘要统计
-        avg_sentiment = sum(i.get('sentiment_score', 0) for i in confirmed) / len(confirmed) if confirmed else 0
-        top_story = max(confirmed, key=lambda x: x.get('attention_score', 0)) if confirmed else None
+        avg_sentiment = (
+            sum(i.get("sentiment_score", 0) for i in confirmed) / len(confirmed) if confirmed else 0
+        )
+        top_story = max(confirmed, key=lambda x: x.get("attention_score", 0)) if confirmed else None
 
         md = f"""# 加密市场简报 V2 ({now})
 
@@ -287,13 +290,27 @@ class BriefV2Generator:
             md += "*无候选新闻*\n\n"
 
         # 整体分析
-        avg_sentiment = sum(i.get('sentiment_score', 0) for i in confirmed_items) / len(confirmed_items) if confirmed_items else 0
-        high_confidence_count = sum(1 for i in confirmed_items if i.get('source_confidence') == 'high')
-        t0_events = sum(1 for i in confirmed_items if i.get('impact_horizon') == 'T0')
+        avg_sentiment = (
+            sum(i.get("sentiment_score", 0) for i in confirmed_items) / len(confirmed_items)
+            if confirmed_items
+            else 0
+        )
+        high_confidence_count = sum(
+            1 for i in confirmed_items if i.get("source_confidence") == "high"
+        )
+        t0_events = sum(1 for i in confirmed_items if i.get("impact_horizon") == "T0")
 
         # 分类统计
-        crypto_news = [i for i in confirmed_items if i.get('category') in ['onchain_data', 'project_update', 'kols_view']]
-        macro_news = [i for i in confirmed_items if i.get('category') in ['fed_policy', 'us_policy', 'us_data', 'market_analysis']]
+        crypto_news = [
+            i
+            for i in confirmed_items
+            if i.get("category") in ["onchain_data", "project_update", "kols_view"]
+        ]
+        macro_news = [
+            i
+            for i in confirmed_items
+            if i.get("category") in ["fed_policy", "us_policy", "us_data", "market_analysis"]
+        ]
 
         md += """---
 
@@ -315,16 +332,24 @@ class BriefV2Generator:
 """
         if t0_items:
             for item in t0_items:
-                sentiment_icon = "🟢" if item.get('sentiment_score', 0) > 0.2 else "🔴" if item.get('sentiment_score', 0) < -0.2 else "🟡"
+                sentiment_icon = (
+                    "🟢"
+                    if item.get("sentiment_score", 0) > 0.2
+                    else "🔴" if item.get("sentiment_score", 0) < -0.2 else "🟡"
+                )
                 md += f"- {sentiment_icon} {item.get('title', '')}\n"
         else:
             md += "*无*\n"
 
-        t1_items = [i for i in confirmed_items if i.get('impact_horizon') == 'T1']
+        t1_items = [i for i in confirmed_items if i.get("impact_horizon") == "T1"]
         md += "\n**本周关注 **(T1)\n"
         if t1_items:
             for item in t1_items:
-                sentiment_icon = "🟢" if item.get('sentiment_score', 0) > 0.2 else "🔴" if item.get('sentiment_score', 0) < -0.2 else "🟡"
+                sentiment_icon = (
+                    "🟢"
+                    if item.get("sentiment_score", 0) > 0.2
+                    else "🔴" if item.get("sentiment_score", 0) < -0.2 else "🟡"
+                )
                 md += f"- {sentiment_icon} {item.get('title', '')}\n"
         else:
             md += "*无*\n"
@@ -340,10 +365,14 @@ class BriefV2Generator:
 ### T0 级事件详细分析
 
 """
-        t0_items = [i for i in confirmed_items if i.get('impact_horizon') == 'T0']
+        t0_items = [i for i in confirmed_items if i.get("impact_horizon") == "T0"]
         if t0_items:
             for item in t0_items:
-                sentiment_badge = "🟢" if item.get('sentiment_score', 0) > 0.2 else "🔴" if item.get('sentiment_score', 0) < -0.2 else "🟡"
+                sentiment_badge = (
+                    "🟢"
+                    if item.get("sentiment_score", 0) > 0.2
+                    else "🔴" if item.get("sentiment_score", 0) < -0.2 else "🟡"
+                )
                 md += f"""**{item.get('title', '')}** {sentiment_badge}
 - **情感**: {item.get('sentiment_score', 0):+.2f} | **可信度**: {item.get('source_confidence', 'unknown')}
 - **摘要**: {item.get('summary', 'N/A')}
@@ -356,7 +385,7 @@ class BriefV2Generator:
         md += """### 风险标记汇总
 
 """
-        risk_flagged = [i for i in confirmed_items if i.get('risk_flags')]
+        risk_flagged = [i for i in confirmed_items if i.get("risk_flags")]
         if risk_flagged:
             for item in risk_flagged:
                 md += f"- ⚠️ **{item.get('title', '')}**: {', '.join(item.get('risk_flags', []))}\n"
@@ -364,8 +393,8 @@ class BriefV2Generator:
             md += "- ✅ 无重大风险标记\n"
 
         # 最终投资建议
-        bullish_count = sum(1 for i in confirmed_items if i.get('sentiment_score', 0) > 0.3)
-        bearish_count = sum(1 for i in confirmed_items if i.get('sentiment_score', 0) < -0.3)
+        bullish_count = sum(1 for i in confirmed_items if i.get("sentiment_score", 0) > 0.3)
+        bearish_count = sum(1 for i in confirmed_items if i.get("sentiment_score", 0) < -0.3)
 
         if bullish_count > bearish_count * 2 and avg_sentiment > 0.3:
             recommendation = "偏向做多"
@@ -398,7 +427,9 @@ class BriefV2Generator:
         # 叙事变更日志引用
         changelog = self.load_narrative_changelog()
         if changelog:
-            active_narratives = [n for n in changelog if n.get('status') in ['active', 'recommended']]
+            active_narratives = [
+                n for n in changelog if n.get("status") in ["active", "recommended"]
+            ]
             if active_narratives:
                 md += """---
 
@@ -415,7 +446,8 @@ class BriefV2Generator:
 
 """
 
-        md += """---
+        md += (
+            """---
 
 ## 数据来源
 
@@ -428,9 +460,12 @@ class BriefV2Generator:
 ---
 
 **简报版本**: V2
-**生成时间**: """ + now + """
+**生成时间**: """
+            + now
+            + """
 **确认规则**: ≥2 个不同来源一致
 """
+        )
 
         return md
 
@@ -441,7 +476,7 @@ class BriefV2Generator:
             output_path = self.outputs_dir / f"brief_v2_{ts}.md"
 
         self.outputs_dir.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(md_content)
 
         return output_path
@@ -513,11 +548,11 @@ def main():
     """主函数"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='生成简报 V2')
-    parser.add_argument('--test', action='store_true', help='使用测试数据')
-    parser.add_argument('--output', '-o', type=str, default=None, help='输出文件')
-    parser.add_argument('--hours', type=int, default=4, help='时间窗口（小时），默认 4 小时')
-    parser.add_argument('--force', action='store_true', help='忽略日期检查强制生成')
+    parser = argparse.ArgumentParser(description="生成简报 V2")
+    parser.add_argument("--test", action="store_true", help="使用测试数据")
+    parser.add_argument("--output", "-o", type=str, default=None, help="输出文件")
+    parser.add_argument("--hours", type=int, default=4, help="时间窗口（小时），默认 4 小时")
+    parser.add_argument("--force", action="store_true", help="忽略日期检查强制生成")
     args = parser.parse_args()
 
     # 路径
@@ -538,7 +573,9 @@ def main():
                 continue
         return None
 
-    def _normalize(item: Dict, source_default: str, sentiment_default: float, is_macro: bool) -> Optional[Dict]:
+    def _normalize(
+        item: Dict, source_default: str, sentiment_default: float, is_macro: bool
+    ) -> Optional[Dict]:
         title = (item.get("title") or "").strip()
         url = (item.get("source_url") or item.get("url") or "").strip()
         if not title or not url:
@@ -586,6 +623,7 @@ def main():
 
         try:
             from news_crawler import fetch_odaily_newsflash, fetch_wallstreetcn_breakfast
+
             fresh_crypto = fetch_odaily_newsflash(limit=60, hours=args.hours, include_aux=True)
             fresh_macro = fetch_wallstreetcn_breakfast(limit=60, hours=args.hours)
             with open(raw_dir / f"raw_crypto_{file_ts}.json", "w", encoding="utf-8") as f:
@@ -685,9 +723,9 @@ def main():
     print(f"[✓] 简报已保存：{saved_path}")
 
     # 统计
-    confirmed = sum(1 for i in news_items if i.get('confirmation_status') == 'confirmed')
-    candidates = sum(1 for i in news_items if i.get('confirmation_status') == 'candidate')
-    print(f"\n【统计】")
+    confirmed = sum(1 for i in news_items if i.get("confirmation_status") == "confirmed")
+    candidates = sum(1 for i in news_items if i.get("confirmation_status") == "candidate")
+    print("\n【统计】")
     print(f"  已确认: {confirmed}")
     print(f"  候选: {candidates}")
 

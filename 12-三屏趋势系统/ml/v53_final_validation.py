@@ -11,27 +11,25 @@
 3. 扩展搜索：drawdown_vs_hist_avg 与其他特征的组合
 """
 
+import json
 import os
 import sys
-import json
-import time
+
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
-from sklearn.metrics import roc_auc_score
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 
-from ml.feature_engineer import TrendFeatureEngineer
-from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer
-from ml.v53_direction_d_validation import (
-    load_btc_data,
-    compute_v5_raw_features,
-    build_direction_d_features,
-    generate_labels,
-    walk_forward_validation,
+from ml.feature_engineer import TrendFeatureEngineer  # noqa: E402
+from ml.philosophy_feature_engineer import PhilosophyFeatureEngineer  # noqa: E402
+from ml.v53_direction_d_validation import (  # noqa: E402
     DIRECTION_D_FEATURES,
+    build_direction_d_features,
+    compute_v5_raw_features,
+    generate_labels,
+    load_btc_data,
+    walk_forward_validation,
 )
 
 
@@ -57,7 +55,11 @@ def main():
     v5_raw = compute_v5_raw_features(phil_fe, prices)
     direction_d = build_direction_d_features(phil_features, v5_raw)
 
-    v4_features = pd.concat([trend_features, phil_features], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+    v4_features = (
+        pd.concat([trend_features, phil_features], axis=1)
+        .fillna(0.0)
+        .replace([np.inf, -np.inf], 0.0)
+    )
     v4_feature_names = list(v4_features.columns)
 
     # 标签
@@ -75,34 +77,66 @@ def main():
     # 3. 候选组合
     print("\n【候选组合验证】")
 
-    all_d_features = DIRECTION_D_FEATURES  # 全部8个可用特征
+    all_d_features = DIRECTION_D_FEATURES  # 全部8个可用特征  # noqa: F841
     # 还可加入V5原始特征中未选入的
-    extra_v5 = ["cycle_path_similarity", "fed_easing_btc_dip", "fed_hawkish_top",
-                "bear_severity_score", "bear_phase_progress"]
+    extra_v5 = [  # noqa: F841
+        "cycle_path_similarity",
+        "fed_easing_btc_dip",
+        "fed_hawkish_top",
+        "bear_severity_score",
+        "bear_phase_progress",
+    ]
 
     combos = [
         # 核心候选（消融实验最佳）
         ("drawdown_vs_hist_avg only", ["drawdown_vs_hist_avg"]),
         ("fed_rate_level + drawdown_vs_hist", ["fed_rate_level", "drawdown_vs_hist_avg"]),
         ("drawdown + ma200_dist_x_fed", ["drawdown_vs_hist_avg", "ma200_dist_x_fed_action"]),
-        ("fed_level + drawdown + ma200_inter", ["fed_rate_level", "drawdown_vs_hist_avg", "ma200_dist_x_fed_action"]),
-
+        (
+            "fed_level + drawdown + ma200_inter",
+            ["fed_rate_level", "drawdown_vs_hist_avg", "ma200_dist_x_fed_action"],
+        ),
         # 扩展搜索
         ("drawdown + cycle_path_sim", ["drawdown_vs_hist_avg", "cycle_path_similarity"]),
-        ("fed_level + drawdown + cycle_path", ["fed_rate_level", "drawdown_vs_hist_avg", "cycle_path_similarity"]),
+        (
+            "fed_level + drawdown + cycle_path",
+            ["fed_rate_level", "drawdown_vs_hist_avg", "cycle_path_similarity"],
+        ),
         ("drawdown + fed_easing_dip", ["drawdown_vs_hist_avg", "fed_easing_btc_dip"]),
-        ("fed_level + drawdown + fed_easing", ["fed_rate_level", "drawdown_vs_hist_avg", "fed_easing_btc_dip"]),
-        ("drawdown + ma200_inter + fed_easing", ["drawdown_vs_hist_avg", "ma200_dist_x_fed_action", "fed_easing_btc_dip"]),
-
+        (
+            "fed_level + drawdown + fed_easing",
+            ["fed_rate_level", "drawdown_vs_hist_avg", "fed_easing_btc_dip"],
+        ),
+        (
+            "drawdown + ma200_inter + fed_easing",
+            ["drawdown_vs_hist_avg", "ma200_dist_x_fed_action", "fed_easing_btc_dip"],
+        ),
         # 4特征组合
-        ("fed_level + drawdown + ma200_inter + cycle_path",
-         ["fed_rate_level", "drawdown_vs_hist_avg", "ma200_dist_x_fed_action", "cycle_path_similarity"]),
-        ("fed_level + drawdown + ma200_inter + fed_easing",
-         ["fed_rate_level", "drawdown_vs_hist_avg", "ma200_dist_x_fed_action", "fed_easing_btc_dip"]),
+        (
+            "fed_level + drawdown + ma200_inter + cycle_path",
+            [
+                "fed_rate_level",
+                "drawdown_vs_hist_avg",
+                "ma200_dist_x_fed_action",
+                "cycle_path_similarity",
+            ],
+        ),
+        (
+            "fed_level + drawdown + ma200_inter + fed_easing",
+            [
+                "fed_rate_level",
+                "drawdown_vs_hist_avg",
+                "ma200_dist_x_fed_action",
+                "fed_easing_btc_dip",
+            ],
+        ),
     ]
 
-    print("  {:<45s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}  {:>8s}".format(
-        "组合", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP", "综合"))
+    print(
+        "  {:<45s}  {:>10s}  {:>10s}  {:>10s}  {:>10s}  {:>8s}".format(
+            "组合", "TOP_EXIT", "Δ TOP", "DIP_BUY", "Δ DIP", "综合"
+        )
+    )
     print("  " + "-" * 100)
 
     best_combo = None
@@ -133,7 +167,9 @@ def main():
             continue
 
         feat_df = pd.DataFrame(feat_dict, index=v4_features.index)
-        exp_features = pd.concat([v4_features, feat_df], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        exp_features = (
+            pd.concat([v4_features, feat_df], axis=1).fillna(0.0).replace([np.inf, -np.inf], 0.0)
+        )
         exp_names = list(exp_features.columns)
 
         top_result = walk_forward_validation(exp_features, top_exit_labels, exp_names)
@@ -153,21 +189,30 @@ def main():
         else:
             verdict = "❌"
 
-        print("  {:<45s}  {:>10.4f}  {:>+10.4f}  {:>10.4f}  {:>+10.4f}  {}".format(
-            name, top_result["avg_test_auc"], delta_top,
-            dip_result["avg_test_auc"], delta_dip, verdict))
+        print(
+            "  {:<45s}  {:>10.4f}  {:>+10.4f}  {:>10.4f}  {:>+10.4f}  {}".format(
+                name,
+                top_result["avg_test_auc"],
+                delta_top,
+                dip_result["avg_test_auc"],
+                delta_dip,
+                verdict,
+            )
+        )
 
-        results.append({
-            "name": name,
-            "features": feats,
-            "top_auc": top_result["avg_test_auc"],
-            "dip_auc": dip_result["avg_test_auc"],
-            "delta_top": delta_top,
-            "delta_dip": delta_dip,
-            "composite": composite,
-            "top_decay": top_result["decay_rate"],
-            "dip_decay": dip_result["decay_rate"],
-        })
+        results.append(
+            {
+                "name": name,
+                "features": feats,
+                "top_auc": top_result["avg_test_auc"],
+                "dip_auc": dip_result["avg_test_auc"],
+                "delta_top": delta_top,
+                "delta_dip": delta_dip,
+                "composite": composite,
+                "top_decay": top_result["decay_rate"],
+                "dip_decay": dip_result["decay_rate"],
+            }
+        )
 
         if composite > best_score:
             best_score = composite
@@ -181,10 +226,16 @@ def main():
     if best_combo:
         print("\n  组合名: {}".format(best_combo["name"]))
         print("  特征: {}".format(best_combo["features"]))
-        print("  TOP_EXIT: {:.4f} (Δ={:+.4f}, decay={:.1%})".format(
-            best_combo["top_auc"], best_combo["delta_top"], best_combo["top_decay"]))
-        print("  DIP_BUY:  {:.4f} (Δ={:+.4f}, decay={:.1%})".format(
-            best_combo["dip_auc"], best_combo["delta_dip"], best_combo["dip_decay"]))
+        print(
+            "  TOP_EXIT: {:.4f} (Δ={:+.4f}, decay={:.1%})".format(
+                best_combo["top_auc"], best_combo["delta_top"], best_combo["top_decay"]
+            )
+        )
+        print(
+            "  DIP_BUY:  {:.4f} (Δ={:+.4f}, decay={:.1%})".format(
+                best_combo["dip_auc"], best_combo["delta_dip"], best_combo["dip_decay"]
+            )
+        )
         print("  综合: {:+.4f}".format(best_combo["composite"]))
 
         # 决策
@@ -205,8 +256,11 @@ def main():
     print("\n【全部组合排名（按综合得分）】")
     sorted_results = sorted(results, key=lambda x: x["composite"], reverse=True)
     for i, r in enumerate(sorted_results, 1):
-        print("  #{} {:<40s}  综合={:+.4f}  (TOP {:+.4f}, DIP {:+.4f})".format(
-            i, r["name"], r["composite"], r["delta_top"], r["delta_dip"]))
+        print(
+            "  #{} {:<40s}  综合={:+.4f}  (TOP {:+.4f}, DIP {:+.4f})".format(
+                i, r["name"], r["composite"], r["delta_top"], r["delta_dip"]
+            )
+        )
 
     # 保存
     output = {
@@ -216,7 +270,7 @@ def main():
         "all_results": sorted_results,
     }
     output_path = os.path.join(BASE_DIR, "ml/backtest_results/v53_final_validation.json")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(output, f, indent=2, ensure_ascii=False, default=str)
     print("\n  结果已保存: {}".format(output_path))
 

@@ -35,13 +35,14 @@
       scripts.docs_consistency.score_report_spec_vs_tests(tasks_md_path,
       tests_dir) returns a score dict and overall 0-5 score.
 """
+
 from __future__ import annotations
 
 import importlib.util
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 import pytest
 
@@ -99,14 +100,14 @@ def audit_dir_with_shadow(tmp_path: Path) -> Path:
     d = tmp_path / "audit"
     d.mkdir(parents=True, exist_ok=True)
     lines: List[str] = []
-    specs: List[Dict[str, Any]] = []
+    specs: List[Dict[str, Any]] = []  # noqa: F841
     # Distribute improvements.
     schedule: list[tuple[float, int, str]] = [
         (-1.0, 2, "SmartTWAP"),
-        (0.5,  3, "SmartPassive"),
-        (1.4,  4, "SmartTWAP"),
-        (3.2,  7, "SmartPassive"),
-        (7.0,  4, "DirectMarket"),
+        (0.5, 3, "SmartPassive"),
+        (1.4, 4, "SmartTWAP"),
+        (3.2, 7, "SmartPassive"),
+        (7.0, 4, "DirectMarket"),
     ]
     idx = 0
     for impr, count, algo in schedule:
@@ -114,29 +115,31 @@ def audit_dir_with_shadow(tmp_path: Path) -> Path:
             idx += 1
             dm_bps = 10.0  # all fixed baseline for simplicity
             tee_bps = dm_bps - impr
-            lines.append(json.dumps({
-                "ts_epoch_ms": 1_716_200_000_000 + idx * 1000,
-                "parent": {
-                    "parent_id": f"SH{idx:03d}",
-                    "inst_id": ("BTC-USDT-SWAP" if idx % 2
-                                 else "ETH-USDT-SWAP"),
-                    "side": ("buy" if idx % 2 else "sell"),
-                    "sz": 0.5 + idx % 3,
-                },
-                "exec": {
-                    "slippage_bps_vs_decision": tee_bps,
-                    "baseline_direct_market_slippage_bps": dm_bps,
-                    "filled_sz_total": 0.5 + idx % 3,
-                },
-                "algo": {"name": algo},
-                "fail_open": {"triggered": idx % 7 == 0},  # fail_open 3×
-                "kill_switch": {
-                    "runtime_triggered": idx % 10 == 0,  # ks 2×
-                },
-            }, ensure_ascii=False))
-    (d / "2026-05-20_shadow.jsonl").write_text(
-        "\n".join(lines) + "\n", encoding="utf-8"
-    )
+            lines.append(
+                json.dumps(
+                    {
+                        "ts_epoch_ms": 1_716_200_000_000 + idx * 1000,
+                        "parent": {
+                            "parent_id": f"SH{idx:03d}",
+                            "inst_id": ("BTC-USDT-SWAP" if idx % 2 else "ETH-USDT-SWAP"),
+                            "side": ("buy" if idx % 2 else "sell"),
+                            "sz": 0.5 + idx % 3,
+                        },
+                        "exec": {
+                            "slippage_bps_vs_decision": tee_bps,
+                            "baseline_direct_market_slippage_bps": dm_bps,
+                            "filled_sz_total": 0.5 + idx % 3,
+                        },
+                        "algo": {"name": algo},
+                        "fail_open": {"triggered": idx % 7 == 0},  # fail_open 3×
+                        "kill_switch": {
+                            "runtime_triggered": idx % 10 == 0,  # ks 2×
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+            )
+    (d / "2026-05-20_shadow.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return d
 
 
@@ -144,28 +147,29 @@ def audit_dir_with_shadow(tmp_path: Path) -> Path:
 # TR-11.1 shadow_compare.py summary script
 # =====================================================================
 class TestTR111ShadowCompare:
-    def test_compute_summary_returns_all_required_keys(
-            self, audit_dir_with_shadow: Path):
+    def test_compute_summary_returns_all_required_keys(self, audit_dir_with_shadow: Path):
         shadow_compare = _load_shadow_compare()
         summary = shadow_compare.compute_summary(
             audit_dir=str(audit_dir_with_shadow),
             shadow_suffix="_shadow",
             bps_thresholds=[2.0, 5.0],
         )
-        required = ("total_parents", "avg_improvement_bps",
-                     "pct_beating_threshold_by_bps", "per_algo_stats")
+        required = (
+            "total_parents",
+            "avg_improvement_bps",
+            "pct_beating_threshold_by_bps",
+            "per_algo_stats",
+        )
         for k in required:
             assert k in summary, f"Missing summary key {k}"
         assert summary["total_parents"] == 20
         # Mean improvement 55.5/20 = 2.775
-        assert abs(float(summary["avg_improvement_bps"]) - 2.775) < 0.01, (
-            f"avg improvement wrong: {summary['avg_improvement_bps']}"
-        )
+        assert (
+            abs(float(summary["avg_improvement_bps"]) - 2.775) < 0.01
+        ), f"avg improvement wrong: {summary['avg_improvement_bps']}"
         # BPS 2.0 threshold → 11/20 = 0.55
         pct_2 = float(summary["pct_beating_threshold_by_bps"].get("2.0"))
-        assert abs(pct_2 - 0.55) < 0.001, (
-            f"beating 2bps pct wrong: {pct_2}"
-        )
+        assert abs(pct_2 - 0.55) < 0.001, f"beating 2bps pct wrong: {pct_2}"
         # BPS 5.0 → 4/20 = 0.20
         pct_5 = float(summary["pct_beating_threshold_by_bps"].get("5.0"))
         assert abs(pct_5 - 0.20) < 0.001
@@ -181,17 +185,22 @@ class TestTR111ShadowCompare:
 # TR-11.2 slip_compare_report.py
 # =====================================================================
 class TestTR112SlipCompareReport:
-    def test_generate_report_matches_hand_aggregates(
-            self, audit_dir_with_shadow: Path):
+    def test_generate_report_matches_hand_aggregates(self, audit_dir_with_shadow: Path):
         slip_compare_report = _load_slip_compare()
         report = slip_compare_report.generate_report(
             audit_dir=str(audit_dir_with_shadow),
             shadow_suffix="_shadow",
         )
-        required = ("slip_distribution_p50", "slip_distribution_p90",
-                     "slip_distribution_p99", "fail_open_total",
-                     "kill_switch_total", "algo_histogram",
-                     "n_parents", "per_coin_fail_open")
+        required = (
+            "slip_distribution_p50",
+            "slip_distribution_p90",
+            "slip_distribution_p99",
+            "fail_open_total",
+            "kill_switch_total",
+            "algo_histogram",
+            "n_parents",
+            "per_coin_fail_open",
+        )
         for k in required:
             assert k in report, f"Missing report key {k}"
         assert report["n_parents"] == 20
@@ -199,9 +208,9 @@ class TestTR112SlipCompareReport:
         # 7,14=2 → wait idx%7==0 → idx=7,14 → 2? Let's count. 1-indexed:
         # idx runs 1..20. idx%7==0 → {7,14} → 2. But wait idx=21 would also.
         # So 2 total fail_open in 1..20.
-        assert report["fail_open_total"] == 2, (
-            f"Expected 2 fail_open, got {report['fail_open_total']}"
-        )
+        assert (
+            report["fail_open_total"] == 2
+        ), f"Expected 2 fail_open, got {report['fail_open_total']}"
         # kill_switch: idx 10, 20 → 2×.
         assert report["kill_switch_total"] == 2
         # algo histogram: same as before.
@@ -227,8 +236,7 @@ class TestTR112SlipCompareReport:
 # TR-11.3 Rubric — slip-improvement bins (≥3/5 → pass)
 # =====================================================================
 class TestTR113SlipImprovementRubric:
-    def test_rubric_5_bin_coverage_scores_at_least_3_5(
-            self, audit_dir_with_shadow: Path):
+    def test_rubric_5_bin_coverage_scores_at_least_3_5(self, audit_dir_with_shadow: Path):
         shadow_compare = _load_shadow_compare()
         rubric = shadow_compare.improvement_bin_rubric(
             audit_dir=str(audit_dir_with_shadow),
@@ -240,8 +248,7 @@ class TestTR113SlipImprovementRubric:
         score = int(rubric.get("score"))
         bins_covered = int(rubric.get("bins_covered"))
         assert score >= 3, (
-            f"Rubric score {score} < 3/5 threshold (bins covered="
-            f"{bins_covered}/5)."
+            f"Rubric score {score} < 3/5 threshold (bins covered=" f"{bins_covered}/5)."
         )
         assert bins_covered == 5 and score == 5
 
@@ -252,11 +259,11 @@ class TestTR113SlipImprovementRubric:
 class TestTR114DocsConsistencyRubric:
     def test_score_spec_tasks_matches_tests_dir(self):
         docs_consistency = _load_docs_consistency()
-        spec_path = (REPO / ".trae" / "specs" /
-                      "execution-engine-smart-order-splitting" / "tasks.md")
+        spec_path = REPO / ".trae" / "specs" / "execution-engine-smart-order-splitting" / "tasks.md"
         tests_dir = REPO / "22-执行引擎中心" / "tests"
         result = docs_consistency.score_report_spec_vs_tests(
-            tasks_md_path=str(spec_path), tests_dir=str(tests_dir),
+            tasks_md_path=str(spec_path),
+            tests_dir=str(tests_dir),
         )
         assert "score_0_to_5" in result
         assert "summary_by_task_id" in result

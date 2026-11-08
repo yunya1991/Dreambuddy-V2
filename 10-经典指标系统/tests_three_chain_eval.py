@@ -7,13 +7,11 @@
 3. 三链协同能力（AI思维链 + 技术指标 + 基本面）
 """
 
-import sys
-import os
-import json
+import sys  # noqa: I001
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
-from dataclasses import dataclass, asdict
+from typing import Dict, Any, List
+from dataclasses import dataclass
 
 
 @dataclass
@@ -43,7 +41,7 @@ class ThreeChainEvaluator:
         print("=" * 80)
         print("  三链融合能力综合评估测试")
         print("=" * 80)
-        print(f"  评估维度: 3个")
+        print("  评估维度: 3个")
         print()
 
         # ===== 维度1: 经典技术指标系统 =====
@@ -96,6 +94,7 @@ class ThreeChainEvaluator:
             indicators = []
             if has_abstract:
                 import importlib.util
+
                 spec = importlib.util.spec_from_file_location(
                     "talib.abstract", talib_path / "abstract.py"
                 )
@@ -105,7 +104,8 @@ class ThreeChainEvaluator:
                 spec.loader.exec_module(module)
 
                 indicators = [
-                    name for name in dir(module)
+                    name
+                    for name in dir(module)
                     if name.isupper() and callable(getattr(module, name))
                 ]
 
@@ -124,32 +124,36 @@ class ThreeChainEvaluator:
                 score += 20
                 checks.append("指标丰富度达标")
 
-            self.add_result(TestResult(
-                name="技术指标 - 模块结构",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"模块结构检查: {', '.join(checks)}",
-                metrics={"指标数量": len(indicators), "检查项": len(checks)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 模块结构",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"模块结构检查: {', '.join(checks)}",
+                    metrics={"指标数量": len(indicators), "检查项": len(checks)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - 模块结构",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"模块结构检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 模块结构",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"模块结构检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_talib_indicators_rsi(self):
         """测试RSI指标计算"""
         try:
             import pandas as pd
-            import numpy as np
 
             talib_path = Path(__file__).parent / "talib"
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "talib.abstract", talib_path / "abstract.py"
             )
@@ -183,23 +187,27 @@ class ThreeChainEvaluator:
                 score += 20
                 checks.append("数值合理")
 
-            self.add_result(TestResult(
-                name="技术指标 - RSI",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"RSI指标: {', '.join(checks)}, 最新值={last_rsi:.2f}",
-                metrics={"最新RSI": round(float(last_rsi), 2), "数据点": len(rsi)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - RSI",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"RSI指标: {', '.join(checks)}, 最新值={last_rsi:.2f}",
+                    metrics={"最新RSI": round(float(last_rsi), 2), "数据点": len(rsi)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - RSI",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"RSI测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - RSI",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"RSI测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_talib_indicators_macd(self):
         """测试MACD指标计算"""
@@ -208,6 +216,7 @@ class ThreeChainEvaluator:
 
             talib_path = Path(__file__).parent / "talib"
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "talib.abstract", talib_path / "abstract.py"
             )
@@ -243,23 +252,27 @@ class ThreeChainEvaluator:
                 score = 40
                 checks.append("返回tuple格式")
 
-            self.add_result(TestResult(
-                name="技术指标 - MACD",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"MACD指标: {', '.join(checks)}",
-                metrics={"返回类型": type(macd_result).__name__},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - MACD",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"MACD指标: {', '.join(checks)}",
+                    metrics={"返回类型": type(macd_result).__name__},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - MACD",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"MACD测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - MACD",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"MACD测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_talib_indicators_bbands(self):
         """测试布林带指标计算"""
@@ -268,6 +281,7 @@ class ThreeChainEvaluator:
 
             talib_path = Path(__file__).parent / "talib"
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "talib.abstract", talib_path / "abstract.py"
             )
@@ -308,25 +322,31 @@ class ThreeChainEvaluator:
                 score = 50
                 checks.append("返回tuple格式")
 
-            self.add_result(TestResult(
-                name="技术指标 - 布林带",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"布林带: {', '.join(checks)}",
-                metrics={"上轨": round(float(last_upper), 2),
-                         "中轨": round(float(last_mid), 2),
-                         "下轨": round(float(last_lower), 2)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 布林带",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"布林带: {', '.join(checks)}",
+                    metrics={
+                        "上轨": round(float(last_upper), 2),
+                        "中轨": round(float(last_mid), 2),
+                        "下轨": round(float(last_lower), 2),
+                    },
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - 布林带",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"布林带测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 布林带",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"布林带测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_talib_indicators_atr_adx(self):
         """测试ATR和ADX指标"""
@@ -335,6 +355,7 @@ class ThreeChainEvaluator:
 
             talib_path = Path(__file__).parent / "talib"
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "talib.abstract", talib_path / "abstract.py"
             )
@@ -343,12 +364,14 @@ class ThreeChainEvaluator:
             sys.modules["talib.abstract"] = ta
             spec.loader.exec_module(ta)
 
-            df = pd.DataFrame({
-                "high": [100 + i * 0.5 + (i % 3) * 1.0 for i in range(50)],
-                "low": [98 + i * 0.5 - (i % 3) * 0.5 for i in range(50)],
-                "close": [99 + i * 0.5 + (i % 4) * 0.3 for i in range(50)],
-                "volume": [1000 + i * 10 for i in range(50)],
-            })
+            df = pd.DataFrame(
+                {
+                    "high": [100 + i * 0.5 + (i % 3) * 1.0 for i in range(50)],
+                    "low": [98 + i * 0.5 - (i % 3) * 0.5 for i in range(50)],
+                    "close": [99 + i * 0.5 + (i % 4) * 0.3 for i in range(50)],
+                    "volume": [1000 + i * 10 for i in range(50)],
+                }
+            )
 
             atr = ta.ATR(df, timeperiod=14)
             adx = ta.ADX(df, timeperiod=14)
@@ -378,24 +401,30 @@ class ThreeChainEvaluator:
                 score += 15
                 checks.append("ADX有效值")
 
-            self.add_result(TestResult(
-                name="技术指标 - ATR/ADX",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"ATR/ADX: {', '.join(checks)}",
-                metrics={"最新ATR": round(float(last_atr), 4),
-                         "最新ADX": round(float(last_adx), 2)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - ATR/ADX",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"ATR/ADX: {', '.join(checks)}",
+                    metrics={
+                        "最新ATR": round(float(last_atr), 4),
+                        "最新ADX": round(float(last_adx), 2),
+                    },
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - ATR/ADX",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"ATR/ADX测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - ATR/ADX",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"ATR/ADX测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_talib_fallback_pure_python(self):
         """测试纯Python回退模式（无talib依赖）"""
@@ -404,6 +433,7 @@ class ThreeChainEvaluator:
 
             talib_path = Path(__file__).parent / "talib"
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "talib.abstract", talib_path / "abstract.py"
             )
@@ -414,17 +444,50 @@ class ThreeChainEvaluator:
 
             # 测试所有公开的大写函数
             indicators = [
-                name for name in dir(ta)
-                if name.isupper() and callable(getattr(ta, name))
+                name for name in dir(ta) if name.isupper() and callable(getattr(ta, name))
             ]
 
-            df = pd.DataFrame({
-                "open": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-                "high": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-                "low": [0.5, 1.5, 2.5, 3.0, 4.0, 5.0, 6.2, 7.1, 8.2, 9.1, 10.1, 11.1, 12.1, 13.1, 14.1],
-                "close": [1.2, 2.2, 3.3, 4.2, 5.1, 6.0, 6.8, 7.9, 8.7, 9.8, 10.5, 11.3, 12.4, 13.2, 14.3],
-                "volume": [10, 12, 11, 15, 14, 16, 15, 13, 18, 20, 22, 19, 21, 23, 25],
-            })
+            df = pd.DataFrame(
+                {
+                    "open": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    "high": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                    "low": [
+                        0.5,
+                        1.5,
+                        2.5,
+                        3.0,
+                        4.0,
+                        5.0,
+                        6.2,
+                        7.1,
+                        8.2,
+                        9.1,
+                        10.1,
+                        11.1,
+                        12.1,
+                        13.1,
+                        14.1,
+                    ],
+                    "close": [
+                        1.2,
+                        2.2,
+                        3.3,
+                        4.2,
+                        5.1,
+                        6.0,
+                        6.8,
+                        7.9,
+                        8.7,
+                        9.8,
+                        10.5,
+                        11.3,
+                        12.4,
+                        13.2,
+                        14.3,
+                    ],
+                    "volume": [10, 12, 11, 15, 14, 16, 15, 13, 18, 20, 22, 19, 21, 23, 25],
+                }
+            )
 
             success_count = 0
             failed = []
@@ -441,24 +504,31 @@ class ThreeChainEvaluator:
             total = len(indicators)
             score = int((success_count / max(total, 1)) * 100)
 
-            self.add_result(TestResult(
-                name="技术指标 - 纯Python回退",
-                category="经典技术指标系统",
-                passed=score >= 70,
-                score=score,
-                details=f"纯Python回退模式: {success_count}/{total}个指标可运行, 失败: {', '.join(failed) if failed else '无'}",
-                metrics={"成功数": success_count, "总数": total,
-                         "失败指标": ", ".join(failed) if failed else "无"},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 纯Python回退",
+                    category="经典技术指标系统",
+                    passed=score >= 70,
+                    score=score,
+                    details=f"纯Python回退模式: {success_count}/{total}个指标可运行, 失败: {', '.join(failed) if failed else '无'}",
+                    metrics={
+                        "成功数": success_count,
+                        "总数": total,
+                        "失败指标": ", ".join(failed) if failed else "无",
+                    },
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - 纯Python回退",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"回退模式测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 纯Python回退",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"回退模式测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_frontend_bridge_api(self):
         """检查前端桥接层API设计"""
@@ -489,28 +559,34 @@ class ThreeChainEvaluator:
                 score += 20
                 checks.append("pipeline.ts存在")
 
-            self.add_result(TestResult(
-                name="技术指标 - 前端桥接",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"前端桥接层: {', '.join(checks)}",
-                metrics={"检查项数": len(checks)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 前端桥接",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"前端桥接层: {', '.join(checks)}",
+                    metrics={"检查项数": len(checks)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - 前端桥接",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"桥接层检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 前端桥接",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"桥接层检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_pipeline_integration(self):
         """测试策略pipeline集成度"""
         try:
-            pipeline_file = Path(__file__).parent / "frontend" / "src" / "lib" / "classic-system-pipeline.ts"
+            pipeline_file = (
+                Path(__file__).parent / "frontend" / "src" / "lib" / "classic-system-pipeline.ts"
+            )
 
             score = 0
             checks = []
@@ -536,23 +612,27 @@ class ThreeChainEvaluator:
                     score += 15
                     checks.append("完整pipeline函数")
 
-            self.add_result(TestResult(
-                name="技术指标 - Pipeline集成",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"Pipeline集成: {', '.join(checks)}",
-                metrics={"集成模块数": len(checks)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - Pipeline集成",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"Pipeline集成: {', '.join(checks)}",
+                    metrics={"集成模块数": len(checks)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - Pipeline集成",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"Pipeline集成检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - Pipeline集成",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"Pipeline集成检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_complex_strategies(self):
         """测试复杂策略系统支持"""
@@ -603,7 +683,7 @@ class ThreeChainEvaluator:
 
                 # 检查策略生命周期
                 lifecycle = ["approved", "deployed", "deprecated"]
-                found_lifecycle = sum(1 for l in lifecycle if l in content)
+                found_lifecycle = sum(1 for l in lifecycle if l in content)  # noqa: E741
                 if found_lifecycle >= 2:
                     score += 15
                     checks.append(f"生命周期: {found_lifecycle}状态")
@@ -613,23 +693,27 @@ class ThreeChainEvaluator:
                     score += 15
                     checks.append("策略注册API")
 
-            self.add_result(TestResult(
-                name="技术指标 - 复杂策略支持",
-                category="经典技术指标系统",
-                passed=score >= 60,
-                score=score,
-                details=f"复杂策略: {', '.join(checks) if checks else '未找到'}",
-                metrics={"策略数量": len(strategies), "策略列表": ", ".join(strategies)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 复杂策略支持",
+                    category="经典技术指标系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"复杂策略: {', '.join(checks) if checks else '未找到'}",
+                    metrics={"策略数量": len(strategies), "策略列表": ", ".join(strategies)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="技术指标 - 复杂策略支持",
-                category="经典技术指标系统",
-                passed=False,
-                score=0,
-                details=f"复杂策略检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="技术指标 - 复杂策略支持",
+                    category="经典技术指标系统",
+                    passed=False,
+                    score=0,
+                    details=f"复杂策略检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     # ============================================================
     # 维度2: 基本面分析系统
@@ -670,23 +754,27 @@ class ThreeChainEvaluator:
                 # 尝试从backend导入
                 pass
 
-            self.add_result(TestResult(
-                name="基本面 - 引擎结构",
-                category="基本面分析系统",
-                passed=score >= 60,
-                score=score,
-                details=f"引擎模块: {', '.join(checks)}",
-                metrics={"引擎列表": ", ".join(engines) if engines else "未找到"},
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 引擎结构",
+                    category="基本面分析系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"引擎模块: {', '.join(checks)}",
+                    metrics={"引擎列表": ", ".join(engines) if engines else "未找到"},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="基本面 - 引擎结构",
-                category="基本面分析系统",
-                passed=False,
-                score=0,
-                details=f"引擎结构检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 引擎结构",
+                    category="基本面分析系统",
+                    passed=False,
+                    score=0,
+                    details=f"引擎结构检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_sentiment_engine(self):
         """测试情绪分析引擎"""
@@ -695,6 +783,7 @@ class ThreeChainEvaluator:
             sys.path.insert(0, str(engines_path.parent))
 
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "sentiment_engine", engines_path / "sentiment_engine.py"
             )
@@ -704,13 +793,9 @@ class ThreeChainEvaluator:
             engine = module.SentimentEngine()
 
             # 测试正面文本
-            pos_result = engine.analyze_text(
-                "Bitcoin突破新高，机构资金大量流入，市场看涨情绪浓厚"
-            )
+            pos_result = engine.analyze_text("Bitcoin突破新高，机构资金大量流入，市场看涨情绪浓厚")
             # 测试负面文本
-            neg_result = engine.analyze_text(
-                "监管政策收紧，交易所被调查，市场恐慌抛售加剧"
-            )
+            neg_result = engine.analyze_text("监管政策收紧，交易所被调查，市场恐慌抛售加剧")
             # 测试中性文本
             neu_result = engine.analyze_text("今日市场横盘整理，交易量平稳")
 
@@ -730,25 +815,31 @@ class ThreeChainEvaluator:
                 score += 20
                 checks.append("关键词匹配返回")
 
-            self.add_result(TestResult(
-                name="基本面 - 情绪引擎",
-                category="基本面分析系统",
-                passed=score >= 60,
-                score=score,
-                details=f"情绪引擎: {', '.join(checks)}",
-                metrics={"正面得分": round(float(pos_result.get('score', 0)), 3),
-                         "负面得分": round(float(neg_result.get('score', 0)), 3),
-                         "正面分类数": len(pos_result.get('categories', []))},
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 情绪引擎",
+                    category="基本面分析系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"情绪引擎: {', '.join(checks)}",
+                    metrics={
+                        "正面得分": round(float(pos_result.get("score", 0)), 3),
+                        "负面得分": round(float(neg_result.get("score", 0)), 3),
+                        "正面分类数": len(pos_result.get("categories", [])),
+                    },
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="基本面 - 情绪引擎",
-                category="基本面分析系统",
-                passed=False,
-                score=0,
-                details=f"情绪引擎测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 情绪引擎",
+                    category="基本面分析系统",
+                    passed=False,
+                    score=0,
+                    details=f"情绪引擎测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_signal_engine(self):
         """测试信号生成引擎"""
@@ -757,6 +848,7 @@ class ThreeChainEvaluator:
             sys.path.insert(0, str(engines_path.parent))
 
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "signal_engine", engines_path / "signal_engine.py"
             )
@@ -797,24 +889,30 @@ class ThreeChainEvaluator:
                 score += 20
                 checks.append("信号强度字段完整")
 
-            self.add_result(TestResult(
-                name="基本面 - 信号引擎",
-                category="基本面分析系统",
-                passed=score >= 60,
-                score=score,
-                details=f"信号引擎: {', '.join(checks)}",
-                metrics={"信号数量": len(signals),
-                         "信号类型": ", ".join(s.get('type', '?') for s in signals[:3])},
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 信号引擎",
+                    category="基本面分析系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"信号引擎: {', '.join(checks)}",
+                    metrics={
+                        "信号数量": len(signals),
+                        "信号类型": ", ".join(s.get("type", "?") for s in signals[:3]),
+                    },
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="基本面 - 信号引擎",
-                category="基本面分析系统",
-                passed=False,
-                score=0,
-                details=f"信号引擎测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 信号引擎",
+                    category="基本面分析系统",
+                    passed=False,
+                    score=0,
+                    details=f"信号引擎测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_least_resistance_3d(self):
         """测试三维度阻力分析"""
@@ -823,6 +921,7 @@ class ThreeChainEvaluator:
             sys.path.insert(0, str(engines_path.parent))
 
             import importlib.util
+
             spec = importlib.util.spec_from_file_location(
                 "least_resistance", engines_path / "least_resistance.py"
             )
@@ -857,25 +956,31 @@ class ThreeChainEvaluator:
                 score += 15
                 checks.append("趋势摘要生成")
 
-            self.add_result(TestResult(
-                name="基本面 - 三维度分析",
-                category="基本面分析系统",
-                passed=score >= 60,
-                score=score,
-                details=f"三维度引擎: {', '.join(checks)}",
-                metrics={"上升方向": result_up.get('direction', '?'),
-                         "下降方向": result_down.get('direction', '?'),
-                         "上升置信度": round(float(result_up.get('confidence', 0)), 3)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 三维度分析",
+                    category="基本面分析系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"三维度引擎: {', '.join(checks)}",
+                    metrics={
+                        "上升方向": result_up.get("direction", "?"),
+                        "下降方向": result_down.get("direction", "?"),
+                        "上升置信度": round(float(result_up.get("confidence", 0)), 3),
+                    },
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="基本面 - 三维度分析",
-                category="基本面分析系统",
-                passed=False,
-                score=0,
-                details=f"三维度测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 三维度分析",
+                    category="基本面分析系统",
+                    passed=False,
+                    score=0,
+                    details=f"三维度测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_fundamental_api_endpoints(self):
         """检查基本面API端点覆盖"""
@@ -914,23 +1019,27 @@ class ThreeChainEvaluator:
                 score = int((found / len(api_patterns)) * 100)
                 checks.append(f"API覆盖: {found}/{len(api_patterns)}")
 
-            self.add_result(TestResult(
-                name="基本面 - API端点",
-                category="基本面分析系统",
-                passed=score >= 60,
-                score=score,
-                details=f"API端点: {', '.join(endpoints) if endpoints else '未找到'}",
-                metrics={"端点数量": len(endpoints), "端点列表": ", ".join(endpoints)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - API端点",
+                    category="基本面分析系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"API端点: {', '.join(endpoints) if endpoints else '未找到'}",
+                    metrics={"端点数量": len(endpoints), "端点列表": ", ".join(endpoints)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="基本面 - API端点",
-                category="基本面分析系统",
-                passed=False,
-                score=0,
-                details=f"API检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - API端点",
+                    category="基本面分析系统",
+                    passed=False,
+                    score=0,
+                    details=f"API检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_fundamental_extension_modules(self):
         """检查基本面扩展模块（宏观/链上/叙事/新闻等）"""
@@ -947,8 +1056,12 @@ class ThreeChainEvaluator:
 
                 # 1. 宏观分析模块 (Macro)
                 macro_apis = [
-                    "/macro/series/trend", "/macro/btc/dir", "/macro/series/energy",
-                    "/macro/series/flow", "/macro/btceth/overview", "/macro/gate/eval"
+                    "/macro/series/trend",
+                    "/macro/btc/dir",
+                    "/macro/series/energy",
+                    "/macro/series/flow",
+                    "/macro/btceth/overview",
+                    "/macro/gate/eval",
                 ]
                 macro_count = sum(1 for api in macro_apis if api in content)
                 if macro_count >= 3:
@@ -958,8 +1071,10 @@ class ThreeChainEvaluator:
 
                 # 2. 资金流模块 (Flow)
                 flow_apis = [
-                    "/fundamental/flows/brief", "/fundamental/flows/regime",
-                    "/fundamental/flows/explain", "/fundamental/flows/min_resistance"
+                    "/fundamental/flows/brief",
+                    "/fundamental/flows/regime",
+                    "/fundamental/flows/explain",
+                    "/fundamental/flows/min_resistance",
                 ]
                 flow_count = sum(1 for api in flow_apis if api in content)
                 if flow_count >= 2:
@@ -969,8 +1084,9 @@ class ThreeChainEvaluator:
 
                 # 3. 叙事分析模块 (Narrative)
                 narrative_apis = [
-                    "/fundamental/narrative/brief", "/fundamental/narrative/registry",
-                    "/fundamental/narrative/automation"
+                    "/fundamental/narrative/brief",
+                    "/fundamental/narrative/registry",
+                    "/fundamental/narrative/automation",
                 ]
                 narrative_count = sum(1 for api in narrative_apis if api in content)
                 if narrative_count >= 2:
@@ -980,8 +1096,10 @@ class ThreeChainEvaluator:
 
                 # 4. 新闻分析模块 (News)
                 news_apis = [
-                    "/fundamental/news/brief", "/fundamental/news/event_ledger",
-                    "/fundamental/news/risk_action", "/fundamental/news/anchor_delta"
+                    "/fundamental/news/brief",
+                    "/fundamental/news/event_ledger",
+                    "/fundamental/news/risk_action",
+                    "/fundamental/news/anchor_delta",
                 ]
                 news_count = sum(1 for api in news_apis if api in content)
                 if news_count >= 2:
@@ -991,7 +1109,8 @@ class ThreeChainEvaluator:
 
                 # 5. Web3/链上模块
                 web3_apis = [
-                    "/automation/web3/market_digest", "/automation/web3/market_digest/freq_filter"
+                    "/automation/web3/market_digest",
+                    "/automation/web3/market_digest/freq_filter",
                 ]
                 web3_count = sum(1 for api in web3_apis if api in content)
                 if web3_count >= 1:
@@ -1000,20 +1119,37 @@ class ThreeChainEvaluator:
                     modules["web3"] = web3_count
 
                 # 6. 传统金融分析
-                if "traditional_finance" in content.lower() or "格雷厄姆" in content or "价值投资" in content:
+                if (
+                    "traditional_finance" in content.lower()
+                    or "格雷厄姆" in content
+                    or "价值投资" in content
+                ):
                     score += 10
                     checks.append("传统金融分析框架")
                     modules["traditional_finance"] = 1
 
             # 检查扩展模块脚本
-            scripts_path = Path(__file__).parent.parent / "9-基本面分析" / "ops" / "nanoclaw" / "core_task1" / "scripts"
+            scripts_path = (
+                Path(__file__).parent.parent
+                / "9-基本面分析"
+                / "ops"
+                / "nanoclaw"
+                / "core_task1"
+                / "scripts"
+            )
             if scripts_path.exists():
                 script_files = list(scripts_path.glob("*.py"))
                 script_names = [f.stem for f in script_files]
 
                 # 检查关键脚本
-                key_scripts = ["flow_brief_generator", "narrative_analyzer", "news_crawler",
-                              "traditional_finance_analyzer", "regime_classifier", "signal_fusion"]
+                key_scripts = [
+                    "flow_brief_generator",
+                    "narrative_analyzer",
+                    "news_crawler",
+                    "traditional_finance_analyzer",
+                    "regime_classifier",
+                    "signal_fusion",
+                ]
                 found_scripts = [s for s in key_scripts if any(s in name for name in script_names)]
                 if len(found_scripts) >= 4:
                     score += 10
@@ -1021,7 +1157,14 @@ class ThreeChainEvaluator:
                     modules["scripts"] = len(found_scripts)
 
             # 检查schema定义
-            schema_path = Path(__file__).parent.parent / "9-基本面分析" / "ops" / "nanoclaw" / "core_task1" / "schema"
+            schema_path = (
+                Path(__file__).parent.parent
+                / "9-基本面分析"
+                / "ops"
+                / "nanoclaw"
+                / "core_task1"
+                / "schema"
+            )
             if schema_path.exists():
                 schema_files = list(schema_path.glob("*.json"))
                 if len(schema_files) >= 4:
@@ -1029,23 +1172,27 @@ class ThreeChainEvaluator:
                     checks.append(f"数据契约: {len(schema_files)}个")
                     modules["schemas"] = len(schema_files)
 
-            self.add_result(TestResult(
-                name="基本面 - 扩展模块",
-                category="基本面分析系统",
-                passed=score >= 60,
-                score=min(score, 100),
-                details=f"扩展模块: {', '.join(checks) if checks else '未找到'}",
-                metrics={"模块总数": len(modules), "详细": modules},
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 扩展模块",
+                    category="基本面分析系统",
+                    passed=score >= 60,
+                    score=min(score, 100),
+                    details=f"扩展模块: {', '.join(checks) if checks else '未找到'}",
+                    metrics={"模块总数": len(modules), "详细": modules},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="基本面 - 扩展模块",
-                category="基本面分析系统",
-                passed=False,
-                score=0,
-                details=f"扩展模块检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 扩展模块",
+                    category="基本面分析系统",
+                    passed=False,
+                    score=0,
+                    details=f"扩展模块检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_fundamental_modularity(self):
         """检查基本面系统模块化设计"""
@@ -1093,25 +1240,31 @@ class ThreeChainEvaluator:
                     score += 15
                     checks.append(f"Skill合约: {len(contracts)}个")
 
-            self.add_result(TestResult(
-                name="基本面 - 模块化设计",
-                category="基本面分析系统",
-                passed=score >= 60,
-                score=score,
-                details=f"模块化: {', '.join(checks)}",
-                metrics={"模块目录数": len(found_dirs),
-                         "测试文件数": len(test_files) if tests_path.exists() else 0,
-                         "文档数": len(docs)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 模块化设计",
+                    category="基本面分析系统",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"模块化: {', '.join(checks)}",
+                    metrics={
+                        "模块目录数": len(found_dirs),
+                        "测试文件数": len(test_files) if tests_path.exists() else 0,
+                        "文档数": len(docs),
+                    },
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="基本面 - 模块化设计",
-                category="基本面分析系统",
-                passed=False,
-                score=0,
-                details=f"模块化检查失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="基本面 - 模块化设计",
+                    category="基本面分析系统",
+                    passed=False,
+                    score=0,
+                    details=f"模块化检查失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     # ============================================================
     # 维度3: 三链协同能力
@@ -1130,15 +1283,24 @@ class ThreeChainEvaluator:
                 content = bridge_file.read_text()
 
                 # S链输入接口
-                s_interfaces = ["S1ResearchOutput", "S2AnalysisOutput",
-                                "S3DesignOutput", "S4ValidateOutput", "S5ExecuteOutput"]
+                s_interfaces = [
+                    "S1ResearchOutput",
+                    "S2AnalysisOutput",
+                    "S3DesignOutput",
+                    "S4ValidateOutput",
+                    "S5ExecuteOutput",
+                ]
                 s_count = sum(1 for s in s_interfaces if s in content)
                 score += int(s_count / len(s_interfaces) * 30)
                 checks.append(f"S链接口: {s_count}/{len(s_interfaces)}")
 
                 # Classic系统输出
-                classic_patterns = ["ClassicDraftPayload", "transformToClassicDraft",
-                                   "generateGateResult", "generateEvidence"]
+                classic_patterns = [
+                    "ClassicDraftPayload",
+                    "transformToClassicDraft",
+                    "generateGateResult",
+                    "generateEvidence",
+                ]
                 c_count = sum(1 for p in classic_patterns if p in content)
                 score += int(c_count / len(classic_patterns) * 30)
                 checks.append(f"转换函数: {c_count}/{len(classic_patterns)}")
@@ -1153,28 +1315,34 @@ class ThreeChainEvaluator:
                     score += 20
                     checks.append("回测配置生成")
 
-            self.add_result(TestResult(
-                name="三链协同 - 跨链桥接",
-                category="三链协同能力",
-                passed=score >= 60,
-                score=score,
-                details=f"跨链桥接: {', '.join(checks)}",
-                metrics={"S链接口数": s_count, "转换函数数": c_count},
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 跨链桥接",
+                    category="三链协同能力",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"跨链桥接: {', '.join(checks)}",
+                    metrics={"S链接口数": s_count, "转换函数数": c_count},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="三链协同 - 跨链桥接",
-                category="三链协同能力",
-                passed=False,
-                score=0,
-                details=f"跨链桥接测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 跨链桥接",
+                    category="三链协同能力",
+                    passed=False,
+                    score=0,
+                    details=f"跨链桥接测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_strategy_pipeline_flow(self):
         """测试策略治理流程完整性"""
         try:
-            pipeline_file = Path(__file__).parent / "frontend" / "src" / "lib" / "classic-system-pipeline.ts"
+            pipeline_file = (
+                Path(__file__).parent / "frontend" / "src" / "lib" / "classic-system-pipeline.ts"
+            )
 
             score = 0
             checks = []
@@ -1183,8 +1351,13 @@ class ThreeChainEvaluator:
                 content = pipeline_file.read_text()
 
                 # 五阶段治理
-                stages = ["pushStrategyDraft", "runGateEval", "requestApproval",
-                         "applyChangeset", "recordAudit"]
+                stages = [
+                    "pushStrategyDraft",
+                    "runGateEval",
+                    "requestApproval",
+                    "applyChangeset",
+                    "recordAudit",
+                ]
                 stage_count = sum(1 for s in stages if s in content)
                 score += int(stage_count / len(stages) * 40)
                 checks.append(f"治理阶段: {stage_count}/{len(stages)}")
@@ -1209,28 +1382,34 @@ class ThreeChainEvaluator:
                     score += 10
                     checks.append("系统监控")
 
-            self.add_result(TestResult(
-                name="三链协同 - 治理流程",
-                category="三链协同能力",
-                passed=score >= 60,
-                score=score,
-                details=f"治理流程: {', '.join(checks)}",
-                metrics={"阶段数": stage_count, "集成模块数": len(checks)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 治理流程",
+                    category="三链协同能力",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"治理流程: {', '.join(checks)}",
+                    metrics={"阶段数": stage_count, "集成模块数": len(checks)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="三链协同 - 治理流程",
-                category="三链协同能力",
-                passed=False,
-                score=0,
-                details=f"治理流程测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 治理流程",
+                    category="三链协同能力",
+                    passed=False,
+                    score=0,
+                    details=f"治理流程测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_knowledge_library_integration(self):
         """测试策略库作为知识库的能力"""
         try:
-            pipeline_file = Path(__file__).parent / "frontend" / "src" / "lib" / "classic-system-pipeline.ts"
+            pipeline_file = (
+                Path(__file__).parent / "frontend" / "src" / "lib" / "classic-system-pipeline.ts"
+            )
 
             score = 0
             checks = []
@@ -1238,8 +1417,12 @@ class ThreeChainEvaluator:
             if pipeline_file.exists():
                 content = pipeline_file.read_text()
 
-                library_methods = ["listStrategies", "getStrategy",
-                                   "getStrategyConfig", "previewStrategyParams"]
+                library_methods = [
+                    "listStrategies",
+                    "getStrategy",
+                    "getStrategyConfig",
+                    "previewStrategyParams",
+                ]
                 m_count = sum(1 for m in library_methods if m in content)
                 score += int(m_count / len(library_methods) * 50)
                 checks.append(f"知识库方法: {m_count}/{len(library_methods)}")
@@ -1254,23 +1437,27 @@ class ThreeChainEvaluator:
                     score += 25
                     checks.append("参数预览")
 
-            self.add_result(TestResult(
-                name="三链协同 - 知识库集成",
-                category="三链协同能力",
-                passed=score >= 60,
-                score=score,
-                details=f"知识库: {', '.join(checks)}",
-                metrics={"方法数": m_count},
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 知识库集成",
+                    category="三链协同能力",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"知识库: {', '.join(checks)}",
+                    metrics={"方法数": m_count},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="三链协同 - 知识库集成",
-                category="三链协同能力",
-                passed=False,
-                score=0,
-                details=f"知识库测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 知识库集成",
+                    category="三链协同能力",
+                    passed=False,
+                    score=0,
+                    details=f"知识库测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     def test_fallback_code_driven(self):
         """测试纯代码驱动回退模式"""
@@ -1309,23 +1496,27 @@ class ThreeChainEvaluator:
                 score += 10
                 checks.append("Carry服务纯代码")
 
-            self.add_result(TestResult(
-                name="三链协同 - 纯代码回退",
-                category="三链协同能力",
-                passed=score >= 60,
-                score=score,
-                details=f"纯代码回退: {', '.join(checks)}",
-                metrics={"回退模块数": len(checks)},
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 纯代码回退",
+                    category="三链协同能力",
+                    passed=score >= 60,
+                    score=score,
+                    details=f"纯代码回退: {', '.join(checks)}",
+                    metrics={"回退模块数": len(checks)},
+                )
+            )
         except Exception as e:
-            self.add_result(TestResult(
-                name="三链协同 - 纯代码回退",
-                category="三链协同能力",
-                passed=False,
-                score=0,
-                details=f"回退模式测试失败: {str(e)}",
-                error=str(e),
-            ))
+            self.add_result(
+                TestResult(
+                    name="三链协同 - 纯代码回退",
+                    category="三链协同能力",
+                    passed=False,
+                    score=0,
+                    details=f"回退模式测试失败: {str(e)}",
+                    error=str(e),
+                )
+            )
 
     # ============================================================
     # 报告生成

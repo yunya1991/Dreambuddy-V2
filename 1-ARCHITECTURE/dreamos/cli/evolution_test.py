@@ -11,13 +11,8 @@
 
 from __future__ import annotations
 
-import os
-import sys
-import json
-import time
-import subprocess
-from typing import Dict, Any, List
 from pathlib import Path
+from typing import Dict
 
 root_dir = Path(__file__).parent.parent.parent.parent
 
@@ -50,7 +45,9 @@ class EvolutionCapabilityTest:
         ]
         for f in files:
             fp = evolution_dir / f
-            result["files"].append({"name": f, "exists": fp.exists(), "size": fp.stat().st_size if fp.exists() else 0})
+            result["files"].append(
+                {"name": f, "exists": fp.exists(), "size": fp.stat().st_size if fp.exists() else 0}
+            )
 
         result["features"] = [
             {"name": "发现阶段", "status": "PASS"},
@@ -258,25 +255,25 @@ class EvolutionCapabilityTest:
     def run(self) -> Dict:
         """运行所有测试"""
         print(f"\n{'='*60}")
-        print(f"🧬 自进化能力验证测试")
+        print("🧬 自进化能力验证测试")
         print(f"{'='*60}")
 
-        print(f"\n1. 进化系统测试...")
+        print("\n1. 进化系统测试...")
         self.test_evolution_system()
 
-        print(f"2. 知识库测试...")
+        print("2. 知识库测试...")
         self.test_knowledge_base()
 
-        print(f"3. 记忆系统测试...")
+        print("3. 记忆系统测试...")
         self.test_memory_system()
 
-        print(f"4. 索引系统测试...")
+        print("4. 索引系统测试...")
         self.test_index_system()
 
-        print(f"5. 沙箱回测测试...")
+        print("5. 沙箱回测测试...")
         self.test_sandbox_backtest()
 
-        print(f"6. 经典指标系统测试...")
+        print("6. 经典指标系统测试...")
         self.test_classic_indicators()
 
         return self.results
@@ -284,16 +281,18 @@ class EvolutionCapabilityTest:
     def print_report(self):
         """打印测试报告"""
         print(f"\n{'='*60}")
-        print(f"🧬 自进化能力验证报告")
+        print("🧬 自进化能力验证报告")
         print(f"{'='*60}")
 
         for capability, info in self.results.items():
-            status_icon = "✅" if info["status"] == "PASS" else "⚠️" if info["status"] == "WARN" else "❌"
+            status_icon = (
+                "✅" if info["status"] == "PASS" else "⚠️" if info["status"] == "WARN" else "❌"
+            )
             print(f"\n{status_icon} {capability.replace('_', ' ').title()}: {info['status']}")
 
             details = info["details"]
             if "files" in details:
-                print(f"   文件:")
+                print("   文件:")
                 for f in details["files"]:
                     exists_icon = "✅" if f["exists"] else "❌"
                     size_info = f" ({f['size']} bytes)" if "size" in f else ""
@@ -304,21 +303,23 @@ class EvolutionCapabilityTest:
                 print(f"   章节 ({details['documents']} 文档):")
                 for s in details["sections"]:
                     exists_icon = "✅" if s["exists"] else "❌"
-                    print(f"     {exists_icon} {s['name']}: {s['description']} ({s['documents']} 文档)")
+                    print(
+                        f"     {exists_icon} {s['name']}: {s['description']} ({s['documents']} 文档)"
+                    )
 
             if "features" in details:
-                print(f"   功能特性:")
+                print("   功能特性:")
                 for feat in details["features"]:
                     print(f"     ✅ {feat['name']}")
 
             if "tools" in details:
-                print(f"   回测工具:")
+                print("   回测工具:")
                 for t in details["tools"]:
                     exists_icon = "✅" if t["exists"] else "❌"
                     print(f"     {exists_icon} {t['name']}")
 
             if "core_services" in details:
-                print(f"   核心服务:")
+                print("   核心服务:")
                 for cs in details["core_services"]:
                     exists_icon = "✅" if cs["exists"] else "❌"
                     size_info = f" ({cs['size_kb']} KB)" if "size_kb" in cs else ""
@@ -335,7 +336,7 @@ class EvolutionCapabilityTest:
                 print(f"   模型文件: {exists_icon} ({m['model_files']} 个模型)")
 
             if "indices" in details:
-                print(f"   索引文件:")
+                print("   索引文件:")
                 for i in details["indices"]:
                     exists_icon = "✅" if i["exists"] else "❌"
                     print(f"     {exists_icon} {i['name']}")
@@ -350,7 +351,7 @@ class EvolutionCapabilityTest:
 
 def main():
     tester = EvolutionCapabilityTest()
-    results = tester.run()
+    results = tester.run()  # noqa: F841
     tester.print_report()
 
 

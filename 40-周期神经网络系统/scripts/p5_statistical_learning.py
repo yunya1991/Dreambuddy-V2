@@ -11,6 +11,7 @@
 
 当前状态：框架骨架。训练主链路在门槛达标（p5_gate.all_passed）后解锁。
 """
+
 import json
 import os
 import sys
@@ -20,28 +21,33 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from p5_gate import check_gate, save_report
 
-BASE = "/home/luke/dreambuddy/40-周期神经网络系统"
+# R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
+_DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 
 # ── 预注册超参数（禁止运行时调整）────────────────────────────────
 PREREG = {
-    "train_ratio": 0.6,        # 前 60% 训练
-    "validate_ratio": 0.2,     # 中 20% 滚动验证
-    "test_ratio": 0.2,         # 最近 20% 封板纯验证
-    "walk_forward_step": 4,    # 滚动窗口步长（周）
+    "train_ratio": 0.6,  # 前 60% 训练
+    "validate_ratio": 0.2,  # 中 20% 滚动验证
+    "test_ratio": 0.2,  # 最近 20% 封板纯验证
+    "walk_forward_step": 4,  # 滚动窗口步长（周）
     "baseline_model": "logistic_regression",  # 简单统计基线
     "label_horizon_weeks": 4,  # 标签前瞻窗口（4 周后方向）
     "label_threshold_pct": 2.0,  # 涨跌幅超 ±2% 才标注方向，否则 NEUTRAL
 }
 
 FEATURE_SOURCES = [
-    "cycle_state.json",         # 周期状态（真实周期+技术锚+传导摘要）
-    "asset_rotation.json",      # 资产轮动
-    "strategy_mapping.json",    # 策略映射（含 effective_confidence）
-    "fund_flow.json",           # 资金流（七维度：层内/跨资产/相关性/RS 比率/价差/聪明钱）
-    "stovall_breadth.json",     # 市场广度
-    "sector_transmission.json", # 板块传导（L1-L4 分层资产+动量+相对强度）
-    "washout_verdicts.json",    # 洗盘判定（按资产 label/confidence/trigger）
-    "meme_platform.json",       # L4 meme 层平台观测
+    "cycle_state.json",  # 周期状态（真实周期+技术锚+传导摘要）
+    "asset_rotation.json",  # 资产轮动
+    "strategy_mapping.json",  # 策略映射（含 effective_confidence）
+    "fund_flow.json",  # 资金流（七维度：层内/跨资产/相关性/RS 比率/价差/聪明钱）
+    "stovall_breadth.json",  # 市场广度
+    "sector_transmission.json",  # 板块传导（L1-L4 分层资产+动量+相对强度）
+    "washout_verdicts.json",  # 洗盘判定（按资产 label/confidence/trigger）
+    "meme_platform.json",  # L4 meme 层平台观测
 ]
 
 
@@ -73,8 +79,14 @@ def extract_feature_vector(features: dict) -> dict:
         "cycle_state": cs.get("real_cycle", {}).get("state"),
         "cycle_rate": cs.get("real_cycle", {}).get("current_rate"),
         # 技术锚特征（BTC）
-        "btc_above_ma200": cs.get("technical_anchor", {}).get("assets", {}).get("BTC/USDT", {}).get("above"),
-        "btc_ma200_dist_pct": cs.get("technical_anchor", {}).get("assets", {}).get("BTC/USDT", {}).get("distance_pct"),
+        "btc_above_ma200": cs.get("technical_anchor", {})
+        .get("assets", {})
+        .get("BTC/USDT", {})
+        .get("above"),
+        "btc_ma200_dist_pct": cs.get("technical_anchor", {})
+        .get("assets", {})
+        .get("BTC/USDT", {})
+        .get("distance_pct"),
         # 传导特征
         "transmission_state": cs.get("sector_transmission", {}).get("state"),
         # 策略映射特征（消费 effective_confidence 而非原始置信度）
@@ -82,7 +94,10 @@ def extract_feature_vector(features: dict) -> dict:
         "effective_confidence": sm.get("risk_guards", {}).get("effective_confidence"),
         # 资金流特征（聪明钱：CFTC 净头寸 + 稳定币供应变化）
         "cftc_noncomm_net": ff.get("smart_money", {}).get("cftc_btc", {}).get("noncomm_net"),
-        "usdt_change_7d_pct": ff.get("smart_money", {}).get("stablecoin_supply", {}).get("usdt", {}).get("change_7d_pct"),
+        "usdt_change_7d_pct": ff.get("smart_money", {})
+        .get("stablecoin_supply", {})
+        .get("usdt", {})
+        .get("change_7d_pct"),
         # 板块传导特征（L1-L4 层动量中位数）
         "l1_anchor_momentum": st.get("layers", {}).get("L1_anchor"),
         # 洗盘判定特征（BTC 触发状态与标签）

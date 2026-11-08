@@ -2,6 +2,7 @@
 dreambuddy_dal.protocols.position_repo — PositionRepository Protocol（持仓域）
 对齐 TECHNICAL_DESIGN.md §2.2「2）PositionRepository：当前净持仓状态」
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

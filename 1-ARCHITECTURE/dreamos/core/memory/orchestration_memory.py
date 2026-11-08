@@ -11,12 +11,12 @@
 from __future__ import annotations
 
 import json
-import os
 import logging
-from dataclasses import dataclass, asdict, field
+import os
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Dict, Any, List, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OrchestrationChoice:
     """编排选择结果"""
-    pattern: str           # "c_f_chain"
-    nodes: List[str]       # ["C1", "C2", "F1", "F3"]
-    score: float           # 0.78
-    confidence: str        # "high" / "medium" / "low" / "default"
-    fallback_level: str    # "L0" / "L1" / "L2" / "L3"
-    source_scenario: str   # 实际命中的场景ID
+
+    pattern: str  # "c_f_chain"
+    nodes: List[str]  # ["C1", "C2", "F1", "F3"]
+    score: float  # 0.78
+    confidence: str  # "high" / "medium" / "low" / "default"
+    fallback_level: str  # "L0" / "L1" / "L2" / "L3"
+    source_scenario: str  # 实际命中的场景ID
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -50,11 +51,11 @@ class OrchestrationMemory:
     # 否则 A5 无法生成 trade_order, auto_trader 走降级 fallback 绕过门禁。
     # A2(策略合成) 提供策略参数, 一并加入。
     GRAPH_PATTERNS = {
-        "c_chain":     ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
-        "c_f_chain":   ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
-        "full_chain":  ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
-        "f_chain":     ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
-        "c_g_chain":   ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
+        "c_chain": ["C1", "C2", "C3", "A2", "A4", "A5", "A9"],
+        "c_f_chain": ["C1", "C2", "F1", "F3", "A2", "A4", "A5", "A9"],
+        "full_chain": ["C1", "C2", "F2", "G1", "A2", "A4", "A5", "A9"],
+        "f_chain": ["F1", "F2", "F3", "F4", "A2", "A4", "A5", "A9"],
+        "c_g_chain": ["C1", "C3", "G1", "A2", "A4", "A5", "A9"],
     }
 
     DEFAULT_PATTERN = "c_chain"
@@ -303,12 +304,16 @@ class OrchestrationMemory:
                 # 基于相似场景，但降低置信度并加上风控
                 ref_pattern = ref.get("best_pattern", "c_g_chain")
                 # EXTREME 场景强制加风控：若不含 G 节点则切换到 c_g_chain
-                new_pattern = ref_pattern if "G" in ref_pattern or ref_pattern == "c_g_chain" else "c_g_chain"
+                new_pattern = (
+                    ref_pattern if "G" in ref_pattern or ref_pattern == "c_g_chain" else "c_g_chain"
+                )
                 scenarios[sid] = {
                     "best_pattern": new_pattern,
                     "nodes": self.GRAPH_PATTERNS.get(new_pattern, self.GRAPH_PATTERNS["c_g_chain"]),
                     "score": round(ref.get("score", 0.5) * 0.8, 4),  # 降权
-                    "metrics": ref.get("metrics", {"sharpe": 0.3, "return": 0, "max_dd": 0.2, "win_rate": 0.4}),
+                    "metrics": ref.get(
+                        "metrics", {"sharpe": 0.3, "return": 0, "max_dd": 0.2, "win_rate": 0.4}
+                    ),
                     "sample_count": 0,
                     "confidence": "low",
                     "sparse": True,
@@ -329,8 +334,14 @@ class OrchestrationMemory:
                     "inferred_from": None,
                 }
 
-    def update_from_evolution(self, scenario_id: str, new_pattern: str,
-                              nodes: List[str], score: float, evidence: Dict[str, Any]) -> None:
+    def update_from_evolution(
+        self,
+        scenario_id: str,
+        new_pattern: str,
+        nodes: List[str],
+        score: float,
+        evidence: Dict[str, Any],
+    ) -> None:
         """进化引擎单场景更新
 
         Args:
@@ -381,10 +392,7 @@ class OrchestrationMemory:
     def list_scenarios(self) -> List[Dict[str, Any]]:
         """列出所有场景"""
         scenarios = self._data.get("scenarios", {})
-        return [
-            {"scenario_id": sid, **info}
-            for sid, info in sorted(scenarios.items())
-        ]
+        return [{"scenario_id": sid, **info} for sid, info in sorted(scenarios.items())]
 
     def get_scenario(self, scenario_id: str) -> Optional[Dict[str, Any]]:
         """获取单个场景详情"""
@@ -416,7 +424,9 @@ class OrchestrationMemory:
 
         if count > 0:
             self.save()
-            logger.info(f"P2-1: {count} 个场景标注为 unverified (已验证: {len(verified_scenario_ids)})")
+            logger.info(
+                f"P2-1: {count} 个场景标注为 unverified (已验证: {len(verified_scenario_ids)})"
+            )
         return count
 
     def is_verified(self, scenario_id: str) -> bool:
@@ -451,7 +461,5 @@ class OrchestrationMemory:
         kept = len(scenarios)
         if to_remove:
             self.save()
-            logger.info(
-                f"P0-2: 清除 {len(to_remove)} 条模板假数据, 保留 {kept} 条真实数据"
-            )
+            logger.info(f"P0-2: 清除 {len(to_remove)} 条模板假数据, 保留 {kept} 条真实数据")
         return {"purged": len(to_remove), "kept": kept}

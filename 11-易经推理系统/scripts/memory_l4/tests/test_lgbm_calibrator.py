@@ -5,6 +5,7 @@
                                                   p_out 所有帧 Σ=1；shape = (n,8)。
   T13d) test_lgbm_schema_mismatch_must_raise    — schema 存的列顺序/列数与推理传入不同 → 必须抛 ValueError（静默 reindex/fillna 都禁止）。
 """
+
 from __future__ import annotations
 
 import json
@@ -23,9 +24,14 @@ if str(_BCRM2_ROOT) not in sys.path:
     sys.path.insert(0, str(_BCRM2_ROOT))
 
 REGIME_ORDER = [
-    "RANGE_BOUND", "CONSOLIDATION", "ACCUMULATION",
-    "RECOVERY_MILD", "TREND_UP_MILD", "TREND_UP_STRONG",
-    "FOMO_RALLY", "VOLATILE_DROP",
+    "RANGE_BOUND",
+    "CONSOLIDATION",
+    "ACCUMULATION",
+    "RECOVERY_MILD",
+    "TREND_UP_MILD",
+    "TREND_UP_STRONG",
+    "FOMO_RALLY",
+    "VOLATILE_DROP",
 ]
 
 
@@ -36,22 +42,25 @@ def _make_synthetic_X_y(n=800):
     rng = np.random.default_rng(42)
     # 8 个聚类中心，每类 100 条
     n_per = n // 8
-    centers = np.array([
-        [0.0, 0.0],      # RANGE_BOUND
-        [-1.0, -0.5],    # CONSOLIDATION
-        [-2.0, +0.2],    # ACCUMULATION
-        [+0.5, +1.0],    # RECOVERY_MILD
-        [+1.5, +1.5],    # TREND_UP_MILD
-        [+2.5, +2.0],    # TREND_UP_STRONG
-        [+3.0, +3.5],    # FOMO_RALLY
-        [-2.5, -2.0],    # VOLATILE_DROP
-    ], dtype=float)
+    centers = np.array(
+        [
+            [0.0, 0.0],  # RANGE_BOUND
+            [-1.0, -0.5],  # CONSOLIDATION
+            [-2.0, +0.2],  # ACCUMULATION
+            [+0.5, +1.0],  # RECOVERY_MILD
+            [+1.5, +1.5],  # TREND_UP_MILD
+            [+2.5, +2.0],  # TREND_UP_STRONG
+            [+3.0, +3.5],  # FOMO_RALLY
+            [-2.5, -2.0],  # VOLATILE_DROP
+        ],
+        dtype=float,
+    )
     feats = []
     labels = []
     for i, (lx, ly) in enumerate(centers):
         x = rng.normal(loc=lx, scale=0.7, size=n_per)
         y = rng.normal(loc=ly, scale=0.7, size=n_per)
-        feats.append(np.c_[x, y, x*y, x**2, y**2])   # 5 特征
+        feats.append(np.c_[x, y, x * y, x**2, y**2])  # 5 特征
         labels.extend([REGIME_ORDER[i]] * n_per)
     X = np.vstack(feats)
     X_df = pd.DataFrame(X, columns=[f"feat_{k}" for k in range(X.shape[1])])
@@ -64,13 +73,13 @@ def _make_synthetic_X_y(n=800):
     for i in range(8):
         # 给 RANGE_BOUND 中心类别一个假的"偏向 CONSOLIDATION"偏移，让 LGBM 能校正过来
         if i == 0:
-            p_gauss[i*n_per:(i+1)*n_per, 0] = 0.45
-            p_gauss[i*n_per:(i+1)*n_per, 1] = 0.35  # 错放偏 1
+            p_gauss[i * n_per : (i + 1) * n_per, 0] = 0.45
+            p_gauss[i * n_per : (i + 1) * n_per, 1] = 0.35  # 错放偏 1
         elif i == 6:  # FOMO_RALLY 高斯偏成 TREND_UP_STRONG
-            p_gauss[i*n_per:(i+1)*n_per, 6] = 0.40
-            p_gauss[i*n_per:(i+1)*n_per, 5] = 0.35
+            p_gauss[i * n_per : (i + 1) * n_per, 6] = 0.40
+            p_gauss[i * n_per : (i + 1) * n_per, 5] = 0.35
         else:
-            p_gauss[i*n_per:(i+1)*n_per, i] = 0.40
+            p_gauss[i * n_per : (i + 1) * n_per, i] = 0.40
     # 归一
     p_gauss = p_gauss / p_gauss.sum(1, keepdims=True)
     return X_df, y_s, p_gauss
@@ -79,8 +88,10 @@ def _make_synthetic_X_y(n=800):
 def _js_divergence(p: np.ndarray, q: np.ndarray) -> float:
     eps = 1e-12
     m = 0.5 * (p + q)
+
     def kld(a, b):
         return (a * np.log((a + eps) / (b + eps))).sum(axis=1)
+
     js = 0.5 * kld(p, m) + 0.5 * kld(q, m)
     return float(js.mean())
 
@@ -90,6 +101,7 @@ def _js_divergence(p: np.ndarray, q: np.ndarray) -> float:
 # ================================================================
 def test_lgbm_calibrator_fusion_effect():
     from bcrm2.lgbm_calibrator import LGBMCalibrator
+
     X, y, p_gauss = _make_synthetic_X_y()
     cal = LGBMCalibrator()
     with tempfile.TemporaryDirectory() as td:
@@ -98,12 +110,16 @@ def test_lgbm_calibrator_fusion_effect():
         # schema 必须存在且是 JSON
         assert schema_path.exists()
         sc = json.loads(schema_path.read_text())
-        assert sc["feature_names_in_order"] == list(X.columns), "schema 保存的列顺序必须严格 == fit 时顺序"
+        assert sc["feature_names_in_order"] == list(
+            X.columns
+        ), "schema 保存的列顺序必须严格 == fit 时顺序"
         # 推理
         p_out = cal.calibrate(p_gauss, X)
         assert p_out.shape == (len(X), 8), f"shape 应为 (n,8)，实际 {p_out.shape}"
         sums = p_out.sum(axis=1)
-        assert np.allclose(sums, 1.0, atol=1e-6), f"p_out 不归一：sum min/max={sums.min():.5f}/{sums.max():.5f}"
+        assert np.allclose(
+            sums, 1.0, atol=1e-6
+        ), f"p_out 不归一：sum min/max={sums.min():.5f}/{sums.max():.5f}"
         js = _js_divergence(p_gauss, p_out)
         assert js >= 0.02, f"融合 JS 散度={js:.4f} < 0.02，融合没有真正生效（权重淹了？）"
 
@@ -113,6 +129,7 @@ def test_lgbm_calibrator_fusion_effect():
 # ================================================================
 def test_lgbm_schema_mismatch_must_raise():
     from bcrm2.lgbm_calibrator import LGBMCalibrator
+
     X, y, p_gauss = _make_synthetic_X_y(n=160)
     cal = LGBMCalibrator()
     with tempfile.TemporaryDirectory() as td:

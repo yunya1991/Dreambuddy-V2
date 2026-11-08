@@ -12,6 +12,7 @@
 
 若本地没有网络或 yfinance 下载失败，整个类 SKIP（不影响铁门槛 T-G1）。
 """
+
 from __future__ import annotations
 
 import os
@@ -31,6 +32,7 @@ sys.path.insert(0, str(_PROJECT_ROOT / "20-数据清洗中心"))
 def _has_yfinance_network() -> bool:
     try:
         import yfinance as yf  # noqa: F401
+
         return True
     except Exception:  # noqa: BLE001
         return False
@@ -48,10 +50,12 @@ class TestYfinanceBTCE2E:
         from data_center.monitoring.quality import QualityChecker
 
         class _NoopM:
-            def record(self, *a, **kw): return None
+            def record(self, *a, **kw):
+                return None
 
         class _NoopA:
-            def emit(self, *a, **kw): return None
+            def emit(self, *a, **kw):
+                return None
 
         class NoopBundle(MonitoringBundle):  # type: ignore[misc]
             def __init__(self) -> None:
@@ -67,6 +71,7 @@ class TestYfinanceBTCE2E:
             out = dc.fetch("finance", source="yfinance", symbol="BTC-USD")
         except Exception as exc:  # noqa: BLE001
             import traceback as _tb
+
             _tb.print_exc()
             pytest.skip(f"yfinance 下载失败（SKIP T12）: {exc}")
             return None  # pragma: no cover
@@ -85,11 +90,14 @@ class TestYfinanceBTCE2E:
         if btc_raw is None:
             pytest.skip("no raw data")
         from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
-        pipe = DataCleaningPipeline(PipelineConfig(
-            enforce_hard_block=True,
-            fail_open=False,
-            freshness_threshold=timedelta(days=30),
-        ))
+
+        pipe = DataCleaningPipeline(
+            PipelineConfig(
+                enforce_hard_block=True,
+                fail_open=False,
+                freshness_threshold=timedelta(days=30),
+            )
+        )
         silver = pipe.clean(btc_raw, source="yfinance", category="finance")
         assert silver.gate_passed is True, (
             f"真实BTC数据不应Gate Fail: issues={silver.quality_report[:3]} "
@@ -101,11 +109,14 @@ class TestYfinanceBTCE2E:
         if btc_raw is None:
             pytest.skip("no raw data")
         from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
-        pipe = DataCleaningPipeline(PipelineConfig(
-            enforce_hard_block=False,
-            fail_open=True,
-            freshness_threshold=timedelta(days=30),
-        ))
+
+        pipe = DataCleaningPipeline(
+            PipelineConfig(
+                enforce_hard_block=False,
+                fail_open=True,
+                freshness_threshold=timedelta(days=30),
+            )
+        )
         silver = pipe.clean(btc_raw, source="yfinance", category="finance")
         if "close" in silver.df.columns:
             nans = int(silver.df["close"].isna().sum())
@@ -118,14 +129,23 @@ class TestYfinanceBTCE2E:
         if btc_raw is None:
             pytest.skip("no raw data")
         from data_cleaning.pipeline import DataCleaningPipeline, PipelineConfig
-        pipe = DataCleaningPipeline(PipelineConfig(
-            enforce_hard_block=False, fail_open=True,
-            freshness_threshold=timedelta(days=30),
-        ))
+
+        pipe = DataCleaningPipeline(
+            PipelineConfig(
+                enforce_hard_block=False,
+                fail_open=True,
+                freshness_threshold=timedelta(days=30),
+            )
+        )
         silver = pipe.clean(btc_raw, source="yfinance", category="finance")
         steps = {a.step for a in silver.trace.actions}
-        for must in ("DedupAlignCleaner", "Outlier3LFilter",
-                      "MissingImputer", "UnitNormalizer", "QualityGate"):
+        for must in (
+            "DedupAlignCleaner",
+            "Outlier3LFilter",
+            "MissingImputer",
+            "UnitNormalizer",
+            "QualityGate",
+        ):
             assert must in steps, f"缺失 {must} 步骤: {steps}"
 
     # T12-4 H1 dispatcher EN_SILVER=true 返回的 DataRecord timeseries 非空 close == 总行数
@@ -137,10 +157,12 @@ class TestYfinanceBTCE2E:
         from data_center.monitoring.quality import QualityChecker
 
         class _NoopM:
-            def record(self, *a, **kw): return None
+            def record(self, *a, **kw):
+                return None
 
         class _NoopA:
-            def emit(self, *a, **kw): return None
+            def emit(self, *a, **kw):
+                return None
 
         class NoopBundle(MonitoringBundle):  # type: ignore[misc]
             def __init__(self) -> None:

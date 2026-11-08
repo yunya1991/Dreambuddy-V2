@@ -3,7 +3,6 @@ import time
 from typing import Any, Dict, Tuple
 from urllib.request import Request, urlopen
 
-
 BASE_URL = "http://127.0.0.1:8092"
 STRATEGY_ID = "Strategy005"
 BT_CONFIG = "user_data/config_local_backtest.json"
@@ -82,7 +81,12 @@ def main() -> None:
 
     _, resp = _post("/agent/paramopt/run", payload_run, timeout_sec=7200.0)
     if not isinstance(resp, dict) or not bool(resp.get("ok")):
-        raise SystemExit(json.dumps({"ok": False, "trace_id": trace_id, "error": resp.get("error"), "resp": resp}, ensure_ascii=False)[:4000])
+        raise SystemExit(
+            json.dumps(
+                {"ok": False, "trace_id": trace_id, "error": resp.get("error"), "resp": resp},
+                ensure_ascii=False,
+            )[:4000]
+        )
 
     selected = resp.get("selected") if isinstance(resp.get("selected"), dict) else {}
     patch = (
@@ -100,7 +104,11 @@ def main() -> None:
     }
     _, r0 = _post("/automation/backtest/run", bt0, timeout_sec=2400.0)
 
-    env = {"FT_STRATEGY_PARAMS_JSON": json.dumps({STRATEGY_ID: patch}, ensure_ascii=False, sort_keys=True)}
+    env = {
+        "FT_STRATEGY_PARAMS_JSON": json.dumps(
+            {STRATEGY_ID: patch}, ensure_ascii=False, sort_keys=True
+        )
+    }
     bt1 = {
         "trace_id": f"{trace_id}__bt_candidate",
         "config": BT_CONFIG,
@@ -125,7 +133,11 @@ def main() -> None:
         "candidate": m1,
         "delta": {k: _delta(m0, m1, k) for k in sorted(set(m0.keys()) | set(m1.keys()))},
         "selected_patch_n": (len(patch) if isinstance(patch, dict) else 0),
-        "selected_patch_top": dict(list(sorted((patch or {}).items(), key=lambda kv: kv[0]))[:20]) if isinstance(patch, dict) else {},
+        "selected_patch_top": (
+            dict(sorted((patch or {}).items(), key=lambda kv: kv[0])[:20])
+            if isinstance(patch, dict)
+            else {}
+        ),
         "baseline_zip": (r0.get("result_zip") if isinstance(r0, dict) else None),
         "candidate_zip": (r1.get("result_zip") if isinstance(r1, dict) else None),
     }
@@ -134,4 +146,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

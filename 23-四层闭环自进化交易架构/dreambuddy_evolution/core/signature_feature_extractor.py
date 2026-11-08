@@ -12,10 +12,10 @@ FAIL-OPEN:
   Level 3: numpy 手动迭代积分
   Level 4: pad zeros（policy 仍可工作于原始 5 维特征）
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import numpy as np
 
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # 尝试导入 SignatureEngine（复用现有实现）
 try:
     from dreambuddy_evolution.core.signature_engine import SignatureEngine
+
     _SIG_ENGINE_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _SIG_ENGINE_AVAILABLE = False
@@ -31,13 +32,13 @@ except Exception:  # noqa: BLE001
 
 # 尝试导入 signatory/esig（复用 SignatureEngine 的导入状态）
 try:
-    import signatory  # type: ignore
+
     _SIGNATORY_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _SIGNATORY_AVAILABLE = False
 
 try:
-    import esig  # type: ignore
+
     _ESIG_AVAILABLE = True
 except Exception:  # noqa: BLE001
     _ESIG_AVAILABLE = False
@@ -68,8 +69,9 @@ class SignatureFeatureExtractor:
         else:
             self._signature_engine = None
 
-    def extract(self, state_features: list[float] | np.ndarray,
-                price_path: list[float] | np.ndarray | list) -> list[float]:
+    def extract(
+        self, state_features: list[float] | np.ndarray, price_path: list[float] | np.ndarray | list
+    ) -> list[float]:
         """提取 17 维特征（5 状态 + 12 签名）.
 
         Args:
@@ -84,7 +86,7 @@ class SignatureFeatureExtractor:
         if len(state_arr) < self.STATE_DIM:
             state_arr = np.pad(state_arr, (0, self.STATE_DIM - len(state_arr)))
         elif len(state_arr) > self.STATE_DIM:
-            state_arr = state_arr[:self.STATE_DIM]
+            state_arr = state_arr[: self.STATE_DIM]
 
         # 签名特征部分
         sig_features = self._compute_signature(price_path)
@@ -92,7 +94,7 @@ class SignatureFeatureExtractor:
         if len(sig_features) < self.SIGNATURE_DIM:
             sig_features = np.pad(sig_features, (0, self.SIGNATURE_DIM - len(sig_features)))
         elif len(sig_features) > self.SIGNATURE_DIM:
-            sig_features = sig_features[:self.SIGNATURE_DIM]
+            sig_features = sig_features[: self.SIGNATURE_DIM]
 
         return list(np.concatenate([state_arr, sig_features]))
 
@@ -131,18 +133,23 @@ class SignatureFeatureExtractor:
         s3 = (1.0 / 6.0) * s1 * s1 * s1  # 三阶签名
 
         # 扩展到 12 维（重复+高阶，保持维度一致）
-        features = np.array([
-            s1, s2, s3,
-            float(np.std(increments)),  # 波动率特征
-            float(np.mean(increments)),  # 漂移
-            float(np.max(increments)),  # 最大增量
-            float(np.min(increments)),  # 最小增量
-            float(np.sum(np.abs(increments))),  # 总变差
-            float(len(increments)),  # 路径长度
-            s1 * float(np.std(increments)),  # 交叉项
-            s2 * float(np.mean(increments)),  # 交叉项
-            float(np.sum(increments ** 2)),  # 二次变差
-        ], dtype=np.float64)
+        features = np.array(
+            [
+                s1,
+                s2,
+                s3,
+                float(np.std(increments)),  # 波动率特征
+                float(np.mean(increments)),  # 漂移
+                float(np.max(increments)),  # 最大增量
+                float(np.min(increments)),  # 最小增量
+                float(np.sum(np.abs(increments))),  # 总变差
+                float(len(increments)),  # 路径长度
+                s1 * float(np.std(increments)),  # 交叉项
+                s2 * float(np.mean(increments)),  # 交叉项
+                float(np.sum(increments**2)),  # 二次变差
+            ],
+            dtype=np.float64,
+        )
         return features
 
     def _time_augment(self, price_path: np.ndarray) -> np.ndarray:

@@ -20,18 +20,108 @@ HC-AGI-23: 至少 2 路径才做矛盾分析，单路径返回 neutral
   C7 隐性 → synthesized
   C8 宏观交叉 → l2_gene
 """
+
 from __future__ import annotations
 
 import json
 import logging
-import math
 import os
 import time
 from typing import Any
 
 import numpy as np
 
+from dreambuddy_evolution.core.cd_mapping import build_shadow, map_c_to_d
+
 logger = logging.getLogger(__name__)
+
+# B-01 / DEC-11 / R-23-02：C→D 映射唯一事实源在 core/cd_mapping.py（冻结，变更须走 SPEC 评审）
+# C 编号是"路径来源映射"，D 编号是真实市场矛盾维度。
+_CD_SHADOW_DEFAULT = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "runtime",
+    "c_d_shadow.jsonl",
+)
+
+
+def c_to_d(c_dim: str) -> str:
+    """C 维度 → D 维度（未知值原样返回，保持 fail-open）。"""
+    return map_c_to_d(c_dim) or c_dim
+
+
+def _cd_shadow_enabled() -> bool:
+    """B-01 shadow 开关（与 get_switch 同款环境变量名）：默认关闭，生产行为不变。"""
+    return os.environ.get("ENABLE_CD_SHADOW", "").lower() in ("1", "true", "yes", "on")
+
+
+def _record_cd_shadow(c_dim: str, d_dim: str, source: str, confidence: float) -> None:
+    """追加 C/D shadow 观测（fail-open，仅观测不参与裁决）。"""
+    try:
+        path = os.environ.get("CD_SHADOW_PATH") or _CD_SHADOW_DEFAULT
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "c_dimension": c_dim,
+                        "d_dimension": d_dim,
+                        "source": source,
+                        "confidence": round(float(confidence), 4),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+    except Exception:  # noqa: BLE001  shadow 观测失败不影响裁决
+        pass
+
+
+def summarize_cd_shadow(path: str | None = None) -> dict:
+    """B-01 shadow 对比报告：C/D 分布 + 映射一致率（≥2 周观察口径）。"""
+    path = path or os.environ.get("CD_SHADOW_PATH") or _CD_SHADOW_DEFAULT
+    c_dist: dict[str, int] = {}
+    d_dist: dict[str, int] = {}
+    total = 0
+    consistent = 0
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                c_dim = rec.get("c_dimension")
+                d_dim = rec.get("d_dimension")
+                if not c_dim or not d_dim:
+                    continue
+                total += 1
+                c_dist[c_dim] = c_dist.get(c_dim, 0) + 1
+                d_dist[d_dim] = d_dist.get(d_dim, 0) + 1
+                if c_to_d(c_dim) == d_dim:
+                    consistent += 1
+    except FileNotFoundError:
+        return {
+            "available": False,
+            "path": path,
+            "reason": "shadow 观测文件不存在",
+            "total": 0,
+            "c_distribution": {},
+            "d_distribution": {},
+            "mapping_consistency": 1.0,
+        }
+    return {
+        "available": True,
+        "path": path,
+        "total": total,
+        "c_distribution": c_dist,
+        "d_distribution": d_dist,
+        "mapping_consistency": round(consistent / total, 4) if total else 1.0,
+    }
+
 
 # A2 经济显著性门禁（SPEC-A2 §6.2）：τ = SESOI，交易成本折算（≈5–10bps→reward 尺度），
 # 独立预注册、禁止事后反推；阈值稳健性三档。
@@ -99,7 +189,7 @@ class ContradictionWeightLearner:
         """从磁盘加载历史样本和已学权重."""
         try:
             if os.path.exists(self._storage_path):
-                with open(self._storage_path, "r") as f:
+                with open(self._storage_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 self._samples = data.get("samples", [])
                 w = data.get("learned_weights")
@@ -115,17 +205,61 @@ class ContradictionWeightLearner:
             logger.debug("[W6] load FAIL-OPEN: %s", e)
 
     def _save(self) -> None:
-        """持久化样本和权重到磁盘."""
+        """原子持久化样本和权重到磁盘（tmp + os.replace）."""
+        tmp_path = f"{self._storage_path}.tmp"
         try:
-            os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
-            with open(self._storage_path, "w") as f:
-                json.dump({
-                    "samples": self._samples[-2000:],  # 只保留最近 2000 条
-                    "learned_weights": self._learned_weights.tolist() if self._learned_weights is not None else None,
-                    "last_learn_ts": self._last_learn_ts,
-                }, f)
+            storage_dir = os.path.dirname(self._storage_path)
+            if storage_dir:
+                os.makedirs(storage_dir, exist_ok=True)
+            payload = {
+                "samples": self._samples[-2000:],  # 只保留最近 2000 条
+                "learned_weights": (
+                    self._learned_weights.tolist() if self._learned_weights is not None else None
+                ),
+                "last_learn_ts": self._last_learn_ts,
+            }
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, self._storage_path)
         except Exception as e:
             logger.debug("[W6] save FAIL-OPEN: %s", e)
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:  # noqa: BLE001
+                pass
+
+    def flush(self) -> None:
+        """显式落盘（测试/运维用）."""
+        self._save()
+
+    def status(self) -> dict:
+        """W6 样本链路状态（只读监控）."""
+        try:
+            path = os.path.abspath(self._storage_path)
+            exists = os.path.exists(path)
+            weights = self.get_weights()
+            labeled = self.labeled_count
+            total = len(self._samples)
+            return {
+                "available": True,
+                "path": path,
+                "exists": exists,
+                "bytes": os.path.getsize(path) if exists else 0,
+                "total_samples": total,
+                "labeled_samples": labeled,
+                "unlabeled_samples": total - labeled,
+                "min_samples": self.MIN_SAMPLES,
+                "learn_ready": labeled >= self.MIN_SAMPLES,
+                "learned": self.is_active,
+                "last_learn_ts": self._last_learn_ts,
+                "weights": [round(float(x), 6) for x in weights],
+                "retention": 2000,
+            }
+        except Exception as e:  # noqa: BLE001
+            return {"available": False, "reason": f"{type(e).__name__}: {e}"}
 
     def record_prediction(
         self,
@@ -136,16 +270,18 @@ class ContradictionWeightLearner:
     ) -> None:
         """记录一次矛盾识别的 4 维分数（未标注）."""
         ts = timestamp or time.time()
-        self._samples.append({
-            "ts": ts,
-            "power": float(scores.get("power", 0.0)),
-            "time": float(scores.get("time", 0.0)),
-            "consistency": float(scores.get("consistency", 0.0)),
-            "market_weight": float(scores.get("market_weight", 0.0)),
-            "direction": direction,
-            "confidence": confidence,
-            "actual_return": None,  # 延迟标注
-        })
+        self._samples.append(
+            {
+                "ts": ts,
+                "power": float(scores.get("power", 0.0)),
+                "time": float(scores.get("time", 0.0)),
+                "consistency": float(scores.get("consistency", 0.0)),
+                "market_weight": float(scores.get("market_weight", 0.0)),
+                "direction": direction,
+                "confidence": confidence,
+                "actual_return": None,  # 延迟标注
+            }
+        )
         if len(self._samples) % 100 == 0:
             self._save()
 
@@ -170,10 +306,9 @@ class ContradictionWeightLearner:
             return
         try:
             # X: 4 维分数, y: actual_return
-            X = np.array([
-                [s["power"], s["time"], s["consistency"], s["market_weight"]]
-                for s in labeled
-            ])
+            X = np.array(
+                [[s["power"], s["time"], s["consistency"], s["market_weight"]] for s in labeled]
+            )
             y = np.array([s["actual_return"] for s in labeled])
             # 最小二乘: w = (X^T X)^-1 X^T y
             # 加 L2 正则防止过拟合
@@ -225,7 +360,7 @@ class PrimaryContradictionIdentifier:
     """
 
     MIN_PATHS_FOR_ANALYSIS = 2  # HC-AGI-23: 至少 2 路径
-    RESONANCE_THRESHOLD = 0.6   # 共振阈值：≥60% 方向一致才算共振
+    RESONANCE_THRESHOLD = 0.6  # 共振阈值：≥60% 方向一致才算共振
     DOMINANCE_THRESHOLD = 0.55  # 主导阈值：力量对比 > 0.55 才算主导
 
     # 路径来源 → 矛盾维度映射 (SPEC §2.1)
@@ -265,8 +400,11 @@ class PrimaryContradictionIdentifier:
         "strategic": "long",
     }
 
-    def __init__(self, weight_learner: ContradictionWeightLearner | None = None,
-                 selection_policy: str = "auto"):
+    def __init__(
+        self,
+        weight_learner: ContradictionWeightLearner | None = None,
+        selection_policy: str = "auto",
+    ):
         """W6: 注入权重学习器（可选，None 时创建默认实例）.
 
         Args:
@@ -284,6 +422,13 @@ class PrimaryContradictionIdentifier:
         self._ate_cache: dict = {}
         # Shadow 自动放量门禁（懒加载；O(1)；FAIL-OPEN）
         self._shadow_gate = None
+
+    def w6_status(self) -> dict:
+        """W6 样本链路状态（只读；FAIL-OPEN）."""
+        try:
+            return self._weight_learner.status()
+        except Exception as e:  # noqa: BLE001
+            return {"available": False, "reason": f"{type(e).__name__}: {e}"}
 
     def identify(
         self,
@@ -322,8 +467,8 @@ class PrimaryContradictionIdentifier:
                     from dreambuddy_evolution.core.shadow_activation_gate import (
                         ShadowActivationGate,
                     )
-                    self._shadow_gate = ShadowActivationGate(
-                        "enable_causal_historical_samples")
+
+                    self._shadow_gate = ShadowActivationGate("enable_causal_historical_samples")
                 self._shadow_gate.maybe_activate()
             except Exception as e:  # noqa: BLE001
                 logger.debug("[FO-AGI][ShadowGate] fail: %s", e)
@@ -376,7 +521,11 @@ class PrimaryContradictionIdentifier:
                     _df_dir = str(_df_info.get("direction", "neutral"))
                     _df_str = float(_df_info.get("strength", 0.0) or 0.0)
                     _my_dir = str(primary.get("direction", "neutral"))
-                    if _df_dir in ("long", "short") and _df_str >= 0.05 and _my_dir in ("long", "short"):
+                    if (
+                        _df_dir in ("long", "short")
+                        and _df_str >= 0.05
+                        and _my_dir in ("long", "short")
+                    ):
                         _sign = 1.0 if _df_dir == _my_dir else -1.0
                         _mod = 1.0 + 0.3 * _sign * _df_str
                         _mod = max(0.7, min(1.3, _mod))
@@ -385,8 +534,13 @@ class PrimaryContradictionIdentifier:
                         primary["dimension_force_mod"] = round(_mod, 3)
                         logger.info(
                             "[T5-DimForce] dim=%s my=%s df=%s:%.2f mod=%.3f strength=%.3f->%.3f",
-                            _df_dim, _my_dir, _df_dir, _df_str, _mod,
-                            _pre, primary["strength"],
+                            _df_dim,
+                            _my_dir,
+                            _df_dir,
+                            _df_str,
+                            _mod,
+                            _pre,
+                            primary["strength"],
                         )
             except Exception as _t5_e:  # noqa: BLE001  T5 FAIL-OPEN
                 logger.debug("[T5-DimForce] modulate fail: %s", _t5_e)
@@ -473,6 +627,7 @@ class PrimaryContradictionIdentifier:
             if causal_engine is None:
                 return primary
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_causal_engine", False):
                 return primary
             import numpy as np
@@ -487,6 +642,7 @@ class PrimaryContradictionIdentifier:
                         from dreambuddy_evolution.core.causal_sample_store import (
                             CausalSampleStore,
                         )
+
                         store = CausalSampleStore()
                         self._causal_sample_store = store
                     triplet = store.build_ate_samples()
@@ -539,6 +695,7 @@ class PrimaryContradictionIdentifier:
     def _cached_ate(self, key, compute):
         """A2: ATE 结果 TTL 缓存（因果先验为全局量，SPEC §2.4）."""
         import time
+
         now = time.time()
         hit = self._ate_cache.get(key)
         if hit is not None and (now - hit[0]) < ATE_CACHE_TTL:
@@ -565,6 +722,7 @@ class PrimaryContradictionIdentifier:
             if meta_cognition_gate is None:
                 return primary
             from dreambuddy_evolution.agi_config import get_switch
+
             if not get_switch("enable_meta_cognition", False):
                 return primary
             original_conf = float(primary.get("confidence", 0.5))
@@ -618,20 +776,15 @@ class PrimaryContradictionIdentifier:
         - 矛盾论 §矛盾主要方面: 优势方即方向
         """
         long_weight = sum(
-            float(p.get("confidence", 0.5))
-            for p in paths
-            if p.get("direction") == "long"
+            float(p.get("confidence", 0.5)) for p in paths if p.get("direction") == "long"
         )
         short_weight = sum(
-            float(p.get("confidence", 0.5))
-            for p in paths
-            if p.get("direction") == "short"
+            float(p.get("confidence", 0.5)) for p in paths if p.get("direction") == "short"
         )
         total_weight = long_weight + short_weight
 
         if total_weight <= 0:
-            return {"score": 0.0, "direction": "neutral", "strength": 0.0,
-                    "consensus_penalty": 0.0}
+            return {"score": 0.0, "direction": "neutral", "strength": 0.0, "consensus_penalty": 0.0}
 
         if long_weight >= short_weight:
             direction = "long"
@@ -702,8 +855,13 @@ class PrimaryContradictionIdentifier:
         对齐 矛盾分析法.md §三 Step2
         """
         if not side_paths:
-            return {"power": 0.0, "time": 0.0, "consistency": 0.0,
-                    "market_weight": 0.0, "total": 0.0}
+            return {
+                "power": 0.0,
+                "time": 0.0,
+                "consistency": 0.0,
+                "market_weight": 0.0,
+                "total": 0.0,
+            }
 
         # 力量对比: Σ(confidence × expected_return)
         power = sum(
@@ -712,18 +870,14 @@ class PrimaryContradictionIdentifier:
         )
 
         # 时间紧迫性: 短期信号(bcrm/bdsm)权重高
-        time_urgency = sum(
-            1.0 if p.get("source") in ("bcrm", "bdsm") else 0.5
-            for p in side_paths
-        )
+        time_urgency = sum(1.0 if p.get("source") in ("bcrm", "bdsm") else 0.5 for p in side_paths)
 
         # 证据一致性: 同向路径数占比
         consistency = len(side_paths) / max(1, len(side_paths) + 1)
 
         # 市场影响权重
         market_weight = sum(
-            self.SOURCE_WEIGHT_MAP.get(p.get("source", ""), 0.05)
-            for p in side_paths
+            self.SOURCE_WEIGHT_MAP.get(p.get("source", ""), 0.05) for p in side_paths
         )
 
         # W6: 使用学习到的权重（自动激活）或硬编码默认值
@@ -776,7 +930,7 @@ class PrimaryContradictionIdentifier:
         _primary_path = max(paths, key=lambda p: float(p.get("confidence", 0.0))) if paths else {}
         timeframe = self.SOURCE_TF_MAP.get(_primary_path.get("source", ""), "medium")
 
-        return {
+        result = {
             "dimension": dimension,
             "timeframe": timeframe,
             "direction": dominance["direction"],
@@ -786,6 +940,18 @@ class PrimaryContradictionIdentifier:
             "effort_result": float(effort_result),
             "continuation_score": float(continuation),
         }
+        # B-01 shadow：附加 D 标签（与 cd_mapping.attach_shadow 同结构），生产字段 dimension 不变
+        if _cd_shadow_enabled():
+            source = str(_primary_path.get("source", ""))
+            result["dimension_shadow"] = build_shadow(
+                dimension,
+                direction=result["direction"],
+                strength=result["strength"],
+                confidence=result["confidence"],
+                source=source,
+            )
+            _record_cd_shadow(dimension, c_to_d(dimension), source, result["confidence"])
+        return result
 
     def _identify_dimension(self, paths: list[dict]) -> str:
         """识别主要矛盾维度: 置信度最高路径的来源 → C1-C8."""
@@ -846,8 +1012,16 @@ class PrimaryContradictionIdentifier:
                 return 0.5
 
             # HC-AGI-20: 趋势延续性字段全部缺失 → 中性 0.5
-            trend_fields = ("price", "ma50", "ma150", "ma200", "ma200_slope",
-                            "low_52w", "high_52w", "contractions")
+            trend_fields = (
+                "price",
+                "ma50",
+                "ma150",
+                "ma200",
+                "ma200_slope",
+                "low_52w",
+                "high_52w",
+                "contractions",
+            )
             if not any(f in kline for f in trend_fields):
                 return 0.5
 

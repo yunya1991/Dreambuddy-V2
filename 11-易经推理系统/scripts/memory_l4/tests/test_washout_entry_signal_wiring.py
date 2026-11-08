@@ -11,12 +11,13 @@
 
 运行: python3 -m pytest tests/test_washout_entry_signal_wiring.py -v -p no:warnings
 """
+
 from __future__ import annotations
 
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pandas as pd
 
@@ -29,6 +30,7 @@ from scripts.memory_l4.bcrm2.washout_detector import WashoutLabel, WashoutVerdic
 def _make_klines(n: int = 200) -> list:
     """构造 mock K 线数据。"""
     import numpy as np
+
     rng = np.random.RandomState(42)
     prices = np.cumprod(1 + rng.normal(0.001, 0.01, n))
     prices = prices * 100 / prices[0]
@@ -113,11 +115,15 @@ class TestWashoutEntrySignalWiring(unittest.TestCase):
 
         # mock _kline_to_dataframe
         trader._kline_to_dataframe = MagicMock(
-            return_value=pd.DataFrame({
-                "open": [100] * 200, "high": [100.5] * 200,
-                "low": [99.5] * 200, "close": [100] * 200,
-                "volume": [1000] * 200,
-            })
+            return_value=pd.DataFrame(
+                {
+                    "open": [100] * 200,
+                    "high": [100.5] * 200,
+                    "low": [99.5] * 200,
+                    "close": [100] * 200,
+                    "volume": [1000] * 200,
+                }
+            )
         )
 
         # mock _log

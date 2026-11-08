@@ -10,15 +10,19 @@
   6. 平均置信度计算
   7. top_signals 选取 (按置信度排序)
 """
+
 from __future__ import annotations
-import os, sys, unittest
+
+import os
+import sys
+import unittest
 from typing import List
 
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 if SERVER_DIR not in sys.path:
     sys.path.insert(0, SERVER_DIR)
 
-from subagent_types import SubagentOutput, Signal, ChartSpec
+from subagent_types import ChartSpec, Signal, SubagentOutput  # noqa: E402
 
 
 class TestAggregatorExistence(unittest.TestCase):
@@ -30,6 +34,7 @@ class TestAggregatorExistence(unittest.TestCase):
 
     def test_aggregate_function_exists(self):
         from aggregator import aggregate_subagent_outputs
+
         self.assertTrue(callable(aggregate_subagent_outputs))
 
 
@@ -38,6 +43,7 @@ class TestAggregatorEmpty(unittest.TestCase):
 
     def test_empty_returns_neutral(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs([])
         self.assertEqual(result["consensus_direction"], "neutral")
         self.assertEqual(result["total_signals"], 0)
@@ -47,11 +53,21 @@ class TestAggregatorEmpty(unittest.TestCase):
 
     def test_empty_has_all_fields(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs([])
-        expected_keys = {"summaries", "all_signals", "all_charts",
-                         "modules", "total_signals", "consensus_direction",
-                         "long_count", "short_count", "total_charts",
-                         "avg_confidence", "top_signals"}
+        expected_keys = {
+            "summaries",
+            "all_signals",
+            "all_charts",
+            "modules",
+            "total_signals",
+            "consensus_direction",
+            "long_count",
+            "short_count",
+            "total_charts",
+            "avg_confidence",
+            "top_signals",
+        }
         self.assertEqual(set(result.keys()), expected_keys)
 
 
@@ -60,6 +76,7 @@ class TestAggregatorSingle(unittest.TestCase):
 
     def test_single_output(self):
         from aggregator import aggregate_subagent_outputs
+
         out = SubagentOutput(
             module="macro",
             summary="GDP 温和增长",
@@ -111,6 +128,7 @@ class TestAggregatorMulti(unittest.TestCase):
 
     def test_multi_modules_collected(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs(self._make_outputs())
         self.assertEqual(len(result["modules"]), 3)
         self.assertIn("macro", result["modules"])
@@ -119,6 +137,7 @@ class TestAggregatorMulti(unittest.TestCase):
 
     def test_multi_signals_merged(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs(self._make_outputs())
         self.assertEqual(result["total_signals"], 5)
         self.assertEqual(result["long_count"], 3)
@@ -126,17 +145,20 @@ class TestAggregatorMulti(unittest.TestCase):
 
     def test_multi_charts_collected(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs(self._make_outputs())
         self.assertEqual(result["total_charts"], 2)
 
     def test_multi_summaries_list(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs(self._make_outputs())
         self.assertEqual(len(result["summaries"]), 3)
         self.assertIn("宏观偏多", result["summaries"])
 
     def test_multi_consensus_long(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs(self._make_outputs())
         self.assertEqual(result["consensus_direction"], "long")
 
@@ -146,6 +168,7 @@ class TestAggregatorConsensus(unittest.TestCase):
 
     def test_consensus_short_majority(self):
         from aggregator import aggregate_subagent_outputs
+
         out = SubagentOutput(
             module="risk",
             summary="高风险",
@@ -161,6 +184,7 @@ class TestAggregatorConsensus(unittest.TestCase):
 
     def test_consensus_tie_neutral(self):
         from aggregator import aggregate_subagent_outputs
+
         out = SubagentOutput(
             module="flow",
             summary="多空均衡",
@@ -174,8 +198,8 @@ class TestAggregatorConsensus(unittest.TestCase):
 
     def test_consensus_no_signals_neutral(self):
         from aggregator import aggregate_subagent_outputs
-        out = SubagentOutput(
-            module="macro", summary="无信号", signals=[], charts=[])
+
+        out = SubagentOutput(module="macro", summary="无信号", signals=[], charts=[])
         result = aggregate_subagent_outputs([out])
         self.assertEqual(result["consensus_direction"], "neutral")
         self.assertEqual(result["long_count"], 0)
@@ -187,6 +211,7 @@ class TestAggregatorAvgConfidence(unittest.TestCase):
 
     def test_avg_confidence_calculated(self):
         from aggregator import aggregate_subagent_outputs
+
         out = SubagentOutput(
             module="macro",
             summary="测试",
@@ -202,6 +227,7 @@ class TestAggregatorAvgConfidence(unittest.TestCase):
 
     def test_avg_confidence_empty_zero(self):
         from aggregator import aggregate_subagent_outputs
+
         result = aggregate_subagent_outputs([])
         self.assertEqual(result["avg_confidence"], 0.0)
 
@@ -211,6 +237,7 @@ class TestAggregatorTopSignals(unittest.TestCase):
 
     def test_top_signals_sorted_by_confidence(self):
         from aggregator import aggregate_subagent_outputs
+
         out = SubagentOutput(
             module="macro",
             summary="测试",
@@ -230,11 +257,15 @@ class TestAggregatorTopSignals(unittest.TestCase):
 
     def test_top_signals_limit(self):
         from aggregator import aggregate_subagent_outputs
-        outs = [SubagentOutput(
-            module=f"m{i}", summary=f"s{i}",
-            signals=[Signal(f"sig_{i}_{j}", j, "long", j * 0.1)
-                     for j in range(5)],
-        ) for i in range(3)]
+
+        outs = [
+            SubagentOutput(
+                module=f"m{i}",
+                summary=f"s{i}",
+                signals=[Signal(f"sig_{i}_{j}", j, "long", j * 0.1) for j in range(5)],
+            )
+            for i in range(3)
+        ]
         result = aggregate_subagent_outputs(outs)
         # 默认 top 5
         self.assertLessEqual(len(result["top_signals"]), 5)

@@ -1,12 +1,19 @@
 """Store port 内存 fake：read/write/query/health + 方言能力集声明。"""
-from typing import Any, Dict, List, Optional
+
+from typing import Any, Dict, Optional
 
 # 方言能力集（SPEC-C §3.1 adapter 规定）：操作符 + 类型与语义映射
 DIALECT_CAPABILITIES = {
-    "operators": {"upsert": True, "returning": False, "txn": False,
-                  "skip_locked": False, "jsonb_filter": False},
+    "operators": {
+        "upsert": True,
+        "returning": False,
+        "txn": False,
+        "skip_locked": False,
+        "jsonb_filter": False,
+    },
     "type_mapping": {"datetime": "text", "json": "text", "numeric": "float"},
-    "isolation": "serializable", "cursor_pagination": True,
+    "isolation": "serializable",
+    "cursor_pagination": True,
 }
 
 
@@ -15,7 +22,9 @@ class FakeStore:
         self._tables: Dict[str, Dict[str, Dict[str, Any]]] = {}
         self._idem: Dict[str, str] = {}
 
-    def read(self, table: str, *, key: str, cursor: Optional[str] = None, limit: int = 100) -> Dict[str, Any]:
+    def read(
+        self, table: str, *, key: str, cursor: Optional[str] = None, limit: int = 100
+    ) -> Dict[str, Any]:
         row = self._tables.get(table, {}).get(key)
         return {"row": row} if row else {"row": None, "error_code": "not_found"}
 
@@ -35,7 +44,14 @@ class FakeStore:
             self._idem[idempotency_key] = key
         return True
 
-    def query(self, table: str, *, filters: Optional[Dict[str, Any]] = None, cursor: Optional[str] = None, limit: int = 100) -> Dict[str, Any]:
+    def query(
+        self,
+        table: str,
+        *,
+        filters: Optional[Dict[str, Any]] = None,
+        cursor: Optional[str] = None,
+        limit: int = 100,
+    ) -> Dict[str, Any]:
         rows = list(self._tables.get(table, {}).values())
         for k, v in (filters or {}).items():
             rows = [r for r in rows if r.get(k) == v]
