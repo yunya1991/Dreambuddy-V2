@@ -1,3 +1,16 @@
+## [协作 PR]（lease-guard 必填）
+
+> `lease-guard` 会校验下列字段，且分支名须包含 `@<端>`（例：`feat/T-XXX@local`）。
+> 改动模块须持有对应租约（`44-三端协作架构系统/shared/tools/lease.py claim`）。
+> 仅改租约文件、`hotfix/*` 分支可豁免；紧急情况可加 `lease-waiver` 标签。
+> `会话` 仅评审/测试角色需要（同端评审必须用独立会话）；dev 角色请留空。
+
+Task ID: <task_id>
+端: local
+角色: dev
+模块: <module1, module2>
+会话:
+
 ## Task Card
 Task Card: <link or inline summary>
 
@@ -20,7 +33,6 @@ Implementation Plan: <plan link>
 Test Report: <comment url or artifact path>
 
 ## Collaboration Ledger
-Task ID: <task_id>
 Source Type: <assigned | derived | exploratory>
 Validator Agent: <agent>
 Claim Pointer: <comment url>
