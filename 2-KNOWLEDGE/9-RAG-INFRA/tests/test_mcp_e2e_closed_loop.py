@@ -30,12 +30,12 @@ _COGNITIVE_DIR = Path(__file__).resolve().parents[3] / "4-MEMORY" / "9-工具与
 if str(_COGNITIVE_DIR) not in sys.path:
     sys.path.insert(0, str(_COGNITIVE_DIR))
 
-from bridge import (  # noqa: E402, I001
-    record_retrieval_as_memory,
-    verify_and_feedback,
+from bridge import (  # noqa: E402
+    DEFAULT_BOOST,
     apply_boost_to_results,
     get_boost,
-    DEFAULT_BOOST,
+    record_retrieval_as_memory,
+    verify_and_feedback,
 )
 
 # === MCP stdio 客户端 ===
@@ -61,19 +61,33 @@ def call_tool(proc, tool_name, arguments):
         },
     )
     text = resp["result"]["content"][0]["text"]
-    return json.loads(text)
+    payload = json.loads(text)
+    # 统一信封：业务字段在 data 内
+    return payload.get("data", payload)
 
 
-def test_mcp_stdio_record_verify():
+def test_mcp_stdio_record_verify(tmp_path):
     """测试1：通过 MCP stdio 调用 record → verify → stats → health。"""
     print("\n=== 测试1：MCP stdio 接口闭环 ===")
+    env = dict(os.environ)
+    env.update(
+        {
+            "COGNITIVE_MCP_WRITE_ENABLED": "true",
+            "COGNITIVE_MCP_DEFAULT_PRINCIPAL": "admin",
+            "COGNITIVE_MCP_EVAL_GATE_MODE": "shadow",
+            "COGNITIVE_MCP_DB_PATH": str(tmp_path / "mcp_e2e.db"),
+        }
+    )
     proc = subprocess.Popen(
         ["python3", str(_COGNITIVE_DIR / "cognitive_mcp_server.py")],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=str(_COGNITIVE_DIR),
+        env=env,
     )
     try:
         # initialize
@@ -138,10 +152,10 @@ def test_bridge_e2e_closed_loop(mid_from_mcp=None):
     weight_path = tmp / "weight_feedback.json"
     map_path = tmp / "retrieval_memory_map.jsonl"
 
-    # 使用真实 CLE（懒加载，失败时 FAIL-OPEN）
-    from cognitive_loop_entry import get_cle
+    # 使用真实 CLE（隔离到临时库，避免污染生产认知库）
+    from cognitive_loop_entry import CognitiveLoopEntry
 
-    cle = get_cle()
+    cle = CognitiveLoopEntry(storage_path=str(tmp / "bridge_e2e.db"))
     assert cle is not None, "CognitiveLoopEntry 初始化失败"
     print(f"[OK] CLE 初始化: storage={cle._storage_path}")
 
@@ -225,6 +239,7 @@ def test_bridge_e2e_closed_loop(mid_from_mcp=None):
     assert bcrm_adjusted["rerank_signals"]["feedback_boost"] > DEFAULT_BOOST
     print(f"[OK] 闭环验证: BCRM2 final_score {0.80} → {bcrm_adjusted['final_score']}")
 
+    cle.close()
     return {"mappings": mappings, "weight_path": weight_path, "map_path": map_path}
 
 

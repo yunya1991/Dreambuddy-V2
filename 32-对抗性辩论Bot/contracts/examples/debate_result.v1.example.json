@@ -1,0 +1,27 @@
+{
+  "schema_version": "debate-result-v1",
+  "debate_id": "demo123",
+  "status": "completed",
+  "mode": "review",
+  "topic": "双决策链架构应进入 R0",
+  "rounds": 1,
+  "transcript": [
+    {
+      "speaker": "bull",
+      "round": 1,
+      "content": {"thesis": "正方", "arguments": ["a"], "quote": "q", "confidence": 0.8},
+      "timestamp": "2026-11-07T00:00:00"
+    }
+  ],
+  "verdict": {"summary": "s", "winner": "bear", "key_insights": ["k"], "topic_angle": "t"},
+  "adjudication": null,
+  "research": {
+    "brief": "<untrusted_source ...>...</untrusted_source>",
+    "citations": [{"source": "code_search", "ref": "49-交易框架协议/SPEC.md:1", "quote": "q"}],
+    "source_stats": [{"source": "code_search", "ok": true, "count": 1, "degraded": false, "reason": ""}],
+    "degraded": false,
+    "errors": []
+  },
+  "meta": {"provider": "anthropic", "model": "x"},
+  "error": ""
+}

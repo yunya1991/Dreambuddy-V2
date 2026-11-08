@@ -26,14 +26,17 @@ from vector_store.embedder import _embedder  # noqa: E402
 _embedder._use_tfidf_fallback = True
 _embedder._model = None
 
-from vector_store import build_index  # noqa: E402, I001
+from vector_store import build_index  # noqa: E402
+
+pytestmark = pytest.mark.skipif(build_index is None, reason="chromadb 未安装（向量检索为可选依赖）")
+
+from evolution import annotate_chunk, ingest_document, record_feedback  # noqa: E402
 from knowledge_graph import build_graph  # noqa: E402
 from rag_engine import (  # noqa: E402
-    hybrid_search,
-    generate,
     build_keyword_index,
+    generate,
+    hybrid_search,
 )
-from evolution import ingest_document, annotate_chunk, record_feedback  # noqa: E402
 
 # === 测试用 Markdown 固件（3 文件，2 域） ===
 FIXTURES = {

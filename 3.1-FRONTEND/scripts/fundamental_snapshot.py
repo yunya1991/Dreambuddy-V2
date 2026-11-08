@@ -152,13 +152,15 @@ def _build_onchain(raw: dict, ts: str) -> dict:
     onchain_trend = "积累" if isinstance(diff_pct, (int, float)) and diff_pct > 0.3 else "观望"
     # 规则移植自 9-基本面分析 collect_onchain: 交易所余额 30 日变化 → 净流向/积累信号
     _chg30d = raw.get("ex_bal_btc_chg30d_pct")
-    _ex_net_flow = (
-        round(-_chg30d * 10, 2) if isinstance(_chg30d, (int, float)) else None
-    )
+    _ex_net_flow = round(-_chg30d * 10, 2) if isinstance(_chg30d, (int, float)) else None
     _acc_sig = (
-        "积累" if isinstance(_ex_net_flow, (int, float)) and _ex_net_flow < -50
-        else "分发" if isinstance(_ex_net_flow, (int, float)) and _ex_net_flow > 50
-        else "中性" if _ex_net_flow is not None else None
+        "积累"
+        if isinstance(_ex_net_flow, (int, float)) and _ex_net_flow < -50
+        else (
+            "分发"
+            if isinstance(_ex_net_flow, (int, float)) and _ex_net_flow > 50
+            else "中性" if _ex_net_flow is not None else None
+        )
     )
     network_health = "优秀" if isinstance(mempool, (int, float)) and mempool > 50000 else "良好"
 
@@ -233,7 +235,8 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
     _etf_flow = flow_raw.get("etf_total_flow")
     _ffs = (
         round(_clamp(_etf_flow / 1000.0, -1.0, 1.0), 4)
-        if isinstance(_etf_flow, (int, float)) else None
+        if isinstance(_etf_flow, (int, float))
+        else None
     )
     core = {
         "etf_total_flow": _etf_flow,
@@ -241,9 +244,9 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
         "stablecoin_dominance_usdt": flow_raw.get("stablecoin_dominance_usdt"),
         "stablecoin_dominance_usdc": flow_raw.get("stablecoin_dominance_usdc"),  # 收口 P2
         "flow_regime": (  # 规则移植自 9-基本面分析: ±50M 判定
-            "流入" if isinstance(_etf_flow, (int, float)) and _etf_flow > 50
-            else "流出" if isinstance(_etf_flow, (int, float)) and _etf_flow < -50
-            else "中性"
+            "流入"
+            if isinstance(_etf_flow, (int, float)) and _etf_flow > 50
+            else "流出" if isinstance(_etf_flow, (int, float)) and _etf_flow < -50 else "中性"
         ),
     }
     has_real = any(isinstance(v, (int, float)) for v in core.values())
@@ -354,15 +357,17 @@ def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
 def _build_breadth(breadth_raw: dict, ts: str) -> dict:
     """breadth: DAL breadth 命令真实数据 (P1)。"""
     _gchg = breadth_raw.get("global_change_24h")
-    _adl = (
-        round(_clamp(_gchg * 10, -60, 70), 2) if isinstance(_gchg, (int, float)) else None
-    )
+    _adl = round(_clamp(_gchg * 10, -60, 70), 2) if isinstance(_gchg, (int, float)) else None
     core = {
         "btc_dominance": breadth_raw.get("btc_dominance_pct"),  # panewslab overview_market 真实值
         "breadth_confirmation": (  # 规则移植自 9-基本面分析: 广度线判定
-            "确认趋势" if _adl is not None and _adl > 30
-            else "存在分歧" if _adl is not None and _adl > 0
-            else "广度恶化" if _adl is not None else None
+            "确认趋势"
+            if _adl is not None and _adl > 30
+            else (
+                "存在分歧"
+                if _adl is not None and _adl > 0
+                else "广度恶化" if _adl is not None else None
+            )
         ),
         "global_change_24h": _gchg,
         "market_participation_index": (  # 规则移植自 9-基本面分析: 50 + ADL*0.3
@@ -426,15 +431,22 @@ def _build_intermarket(im_raw: dict, ts: str) -> dict:
         "dxy": im_raw.get("dxy"),
         "dxy_correlation": (  # 规则移植自 9-基本面分析: DXY 线性插值
             round(_clamp(-(im_raw.get("dxy") - 102.0) / 5.0, -1.0, 1.0), 4)
-            if isinstance(im_raw.get("dxy"), (int, float)) else None
+            if isinstance(im_raw.get("dxy"), (int, float))
+            else None
         ),
         "risk_regime": (  # 规则移植自 9-基本面分析: SPX/黄金上涨 + VIX<20
-            ("risk_on" if isinstance(im_raw.get("spx_price"), (int, float))
-             and isinstance(im_raw.get("gold_price"), (int, float))
-             and isinstance(im_raw.get("vix"), (int, float))
-             and im_raw.get("spx_price") > 0 and im_raw.get("gold_price") > 0
-             and im_raw.get("vix") < 20 else "risk_off")
-            if isinstance(im_raw.get("spx_price"), (int, float)) else None
+            (
+                "risk_on"
+                if isinstance(im_raw.get("spx_price"), (int, float))
+                and isinstance(im_raw.get("gold_price"), (int, float))
+                and isinstance(im_raw.get("vix"), (int, float))
+                and im_raw.get("spx_price") > 0
+                and im_raw.get("gold_price") > 0
+                and im_raw.get("vix") < 20
+                else "risk_off"
+            )
+            if isinstance(im_raw.get("spx_price"), (int, float))
+            else None
         ),
         "us10y_yield": im_raw.get("us10y_yield"),
         "spx_price": im_raw.get("spx_price"),
@@ -477,7 +489,9 @@ def _build_news(news_raw: dict, ts: str) -> dict:
     sem_themes = {}
     try:
         import json as _json
-        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+        from datetime import datetime as _dt
+        from datetime import timedelta as _td
+        from datetime import timezone as _tz
 
         p39 = "/home/luke/dreambuddy/39-金融语义蒸馏系统/semantic_events.jsonl"
         cutoff = _dt.now(_tz.utc) - _td(hours=24)

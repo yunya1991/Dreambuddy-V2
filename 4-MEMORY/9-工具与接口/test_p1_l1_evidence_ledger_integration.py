@@ -86,8 +86,9 @@ def test_handle_record_returns_receipt_hash(tmp_path):
                 }
             )
             data = json.loads(result)
-            assert "receipt_hash" in data
-            assert data["receipt_hash"]  # 非空
+            payload = data.get("data", data)
+            assert "receipt_hash" in payload
+            assert payload["receipt_hash"]  # 非空
         finally:
             cle.close()
 

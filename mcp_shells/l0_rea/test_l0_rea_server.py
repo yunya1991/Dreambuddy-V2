@@ -38,6 +38,7 @@ def _rpc(method: str, params: dict, call_name: str = None, arguments: dict = Non
         input=reqs,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         timeout=120,
         cwd=str(_REPO_ROOT),
     )

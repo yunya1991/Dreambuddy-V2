@@ -23,14 +23,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRANSMISSION = (
     _REPO_ROOT / "mcp_shells" / "_shared" / "assets" / "domain_transmission_static.json"
 )
-DEFAULT_STATE_SERIES = (
-    _REPO_ROOT / ".workbuddy" / "l1_training" / "domain_discovery_training.jsonl"
-)
+DEFAULT_STATE_SERIES = _REPO_ROOT / ".workbuddy" / "l1_training" / "domain_discovery_training.jsonl"
 
 PSI_DOMAINS = ("cognition", "rea", "search", "semantic", "data", "eval")
-PSI_BLOCK_DAYS = 7          # 分块粒度：自然周
+PSI_BLOCK_DAYS = 7  # 分块粒度：自然周
 PSI_MIN_HISTORY_BLOCKS = 3  # 历史块下限（不足则跳过该域）
-PSI_IGNITE_Z = 3.0          # 与总线 IGNITE_Z 一致
+PSI_IGNITE_Z = 3.0  # 与总线 IGNITE_Z 一致
 
 
 def probe_coupling(
@@ -103,9 +101,7 @@ def probe_psi_spike(
                     if psi is None:
                         continue
                     try:
-                        blocks.setdefault(domain, {}).setdefault(block_key, []).append(
-                            float(psi)
-                        )
+                        blocks.setdefault(domain, {}).setdefault(block_key, []).append(float(psi))
                     except (TypeError, ValueError):
                         continue
         signals: List[Dict[str, Any]] = []

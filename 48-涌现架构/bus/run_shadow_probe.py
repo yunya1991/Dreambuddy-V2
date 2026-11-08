@@ -7,6 +7,7 @@ FAIL-OPEN：任何异常不抛出，退出码恒为 0，不影响调用方。
   单次执行：python run_shadow_probe.py
   循环执行：python run_shadow_probe.py --interval 300
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,9 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from emergence_bus import EmergenceBus, enabled  # noqa: E402
-from anomaly_probe import run_probe  # noqa: E402
 import shadow_subscribers as ss  # noqa: E402
+from anomaly_probe import run_probe  # noqa: E402
+from emergence_bus import EmergenceBus, enabled  # noqa: E402
 
 logger = logging.getLogger("run_shadow_probe")
 SUBSCRIBER_DOMAINS = ("rea", "eval", "data")
@@ -85,4 +86,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

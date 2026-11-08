@@ -426,8 +426,8 @@ class TestFIXEV1AnnotateInRetrieval:
 
     def test_tc12_annotate_failopen(self, monkeypatch, isolated_paths):
         """[PASS条件] annotate模块抛异常时，search正常返回，annotations_applied=False。"""
-        from rag_engine import hybrid_retriever as hr_mod  # noqa: I001
         import evolution.annotate as ann_mod
+        from rag_engine import hybrid_retriever as hr_mod
 
         def _fake_hybrid_search(query, **kw):
             return [
@@ -506,6 +506,8 @@ class TestFIXEV2EvolutionCronRunner:
             capture_output=True,
             text=True,
             timeout=120,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(runner_p.parent),
             env=env,
         )
@@ -529,6 +531,8 @@ class TestFIXEV2EvolutionCronRunner:
             capture_output=True,
             text=True,
             timeout=30,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(runner_p.parent),
         )
         help_text = proc.stdout

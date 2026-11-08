@@ -8,6 +8,7 @@
   - 方向不一致 → unstable（如实降级，不硬撑）
 FAIL-OPEN：任何异常不抛出。
 """
+
 from __future__ import annotations
 
 import json
@@ -21,16 +22,17 @@ _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
 
 from coupling_counterfactual import (  # noqa: E402
-    load_domain_state_series,
+    _load_static_coupling,
     build_transition_pairs,
     evaluate_counterfactual,
-    _load_static_coupling,
-    DEFAULT_JSONL,
+    load_domain_state_series,
 )
 
 logger = logging.getLogger("e3_rolling_retest")
 RESULT_PATH = _HERE / "rolling_retest_result.json"
-WINDOWED = Path("/home/luke/dreambuddy/.workbuddy/l1_training/domain_discovery_training_windowed.jsonl")
+WINDOWED = Path(
+    "/home/luke/dreambuddy/.workbuddy/l1_training/domain_discovery_training_windowed.jsonl"
+)
 MIN_PAIRS_PER_WINDOW = 300
 
 
@@ -76,26 +78,38 @@ def run(
             rows = windows[wkey]
             X, Y = build_transition_pairs(rows)
             if len(X) < MIN_PAIRS_PER_WINDOW:
-                per_window.append({"window": wkey, "n_pairs": int(len(X)), "status": "skipped_small"})
+                per_window.append(
+                    {"window": wkey, "n_pairs": int(len(X)), "status": "skipped_small"}
+                )
                 continue
-            ev = evaluate_counterfactual(X, Y, coupling, min_pairs=MIN_PAIRS_PER_WINDOW, n_perm=n_perm, seed=seed)
-            per_window.append({
-                "window": wkey,
-                "n_pairs": int(len(X)),
-                "verdict": ev.get("verdict"),
-                "mae_coupled": ev.get("mae_coupled"),
-                "mae_ablated": ev.get("mae_ablated"),
-                "improvement_pct": ev.get("median_improvement_pct"),
-                "p_value": ev.get("p_value"),
-                "direction_positive": ev.get("direction_positive"),
-            })
+            ev = evaluate_counterfactual(
+                X, Y, coupling, min_pairs=MIN_PAIRS_PER_WINDOW, n_perm=n_perm, seed=seed
+            )
+            per_window.append(
+                {
+                    "window": wkey,
+                    "n_pairs": int(len(X)),
+                    "verdict": ev.get("verdict"),
+                    "mae_coupled": ev.get("mae_coupled"),
+                    "mae_ablated": ev.get("mae_ablated"),
+                    "improvement_pct": ev.get("median_improvement_pct"),
+                    "p_value": ev.get("p_value"),
+                    "direction_positive": ev.get("direction_positive"),
+                }
+            )
         result["per_window"] = per_window
-        evaluated = [w for w in per_window if w.get("verdict") in ("e3_candidate", "falsified", "inconclusive")]
+        evaluated = [
+            w
+            for w in per_window
+            if w.get("verdict") in ("e3_candidate", "falsified", "inconclusive")
+        ]
         if not evaluated:
             result.update(status="insufficient_data", reason="无足量窗口")
             return result
         n_pos = sum(1 for w in evaluated if w.get("direction_positive"))
-        n_sig = sum(1 for w in evaluated if w.get("direction_positive") and (w.get("p_value") or 1.0) < 0.05)
+        n_sig = sum(
+            1 for w in evaluated if w.get("direction_positive") and (w.get("p_value") or 1.0) < 0.05
+        )
         result.update(
             n_evaluated_windows=len(evaluated),
             n_direction_positive=n_pos,

@@ -31,7 +31,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
-from mcp_shells._shared.shadow_hook import observe_envelope  # noqa: E402
+from mcp_shells._shared.shell_runtime import run_stdio  # noqa: E402
 
 SHELL_SOURCE = "l0.rea.mcp"
 JOBS_DIR = _REPO_ROOT / "33-REA逆向解析工程" / "reflection_data" / "mcp_jobs"
@@ -198,6 +198,28 @@ def _handle_poll(name: str, args: Dict[str, Any]) -> str:
     return json.dumps(wrap(data, SHELL_SOURCE), ensure_ascii=False)
 
 
+TOOL_DEFS = {}
+for _n in ("analyze", "trace", "compare"):
+    TOOL_DEFS[f"submit_rea_{_n}"] = {
+        "description": f"Submit REA {_n} job (async, returns job_id)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "target": {"type": "string"},
+                "feature": {"type": "string"},
+                "trace_id": {"type": "string"},
+            },
+        },
+    }
+    TOOL_DEFS[f"poll_rea_{_n}"] = {
+        "description": f"Poll REA {_n} job status by job_id",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"job_id": {"type": "string"}},
+            "required": ["job_id"],
+        },
+    }
+
 TOOL_HANDLERS = {}
 for _n in _NODE_MAP:
     TOOL_HANDLERS[_n] = (lambda n: (lambda a: _handle_submit(n, a)))(_n)
@@ -205,88 +227,5 @@ for _n in _NODE_MAP:
     TOOL_HANDLERS[_poll] = (lambda p: (lambda a: _handle_poll(p, a)))(_poll)
 
 
-def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
-    method = req.get("method", "")
-    if method == "initialize":
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}}},
-        }
-    if method == "tools/list":
-        tools = []
-        for n in ("analyze", "trace", "compare"):
-            tools.append(
-                {
-                    "name": f"submit_rea_{n}",
-                    "description": f"Submit REA {n} job (async, returns job_id)",
-                    "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                }
-            )
-            tools.append(
-                {
-                    "name": f"poll_rea_{n}",
-                    "description": f"Poll REA {n} job status by job_id",
-                    "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                }
-            )
-        return {"jsonrpc": "2.0", "id": req.get("id"), "result": {"tools": tools}}
-    if method == "tools/call":
-        params = req.get("params", {})
-        name = params.get("name", "")
-        handler = TOOL_HANDLERS.get(name)
-        if handler is None:
-            return {
-                "jsonrpc": "2.0",
-                "id": req.get("id"),
-                "error": {"code": -32601, "message": f"Method not found: {name}"},
-            }
-        started = time.perf_counter()
-        result_text = handler(params.get("arguments", {}))
-        # COMM-SHADOW 旁路观察（默认关闭，FAIL-OPEN）：实测耗时 + 工具名补齐轨迹信号
-        observe_envelope(
-            result_text,
-            latency_ms=round((time.perf_counter() - started) * 1000.0, 3),
-            action=name,
-        )
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"content": [{"type": "text", "text": result_text}], "isError": False},
-        }
-    return {
-        "jsonrpc": "2.0",
-        "id": req.get("id"),
-        "error": {"code": -32601, "message": f"Method not found: {method}"},
-    }
-
-
-def main() -> None:
-    """stdio 主循环。"""
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            req = json.loads(line)
-        except json.JSONDecodeError:
-            sys.stdout.write(
-                json.dumps(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {"code": -32700, "message": "Parse error"},
-                    }
-                )
-                + "\n"
-            )
-            sys.stdout.flush()
-            continue
-        resp = _handle_request(req)
-        if resp is not None:
-            sys.stdout.write(json.dumps(resp) + "\n")
-            sys.stdout.flush()
-
-
 if __name__ == "__main__":
-    main()
+    run_stdio(SHELL_SOURCE, TOOL_DEFS, TOOL_HANDLERS)

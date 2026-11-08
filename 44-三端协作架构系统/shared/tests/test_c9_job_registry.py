@@ -292,8 +292,17 @@ def test_jsonl_adapter_is_store_and_event_port():
         store = JsonlStore(p)
         event = JsonlEvent(p)
         assert isinstance(store, StorePort) and isinstance(event, EventPort)
-        assert store.write("job_runs", data={"id": "k1"}, idempotency_key="k1")
-        assert store.write("job_runs", data={"id": "k1", "state": "succeeded"})
+        assert store.write(
+            "job_runs",
+            data={"id": "k1"},
+            idempotency_key="k1",
+            _principal={"role": "agent_admin"},  # D1：写接口需携带 principal
+        )
+        assert store.write(
+            "job_runs",
+            data={"id": "k1", "state": "succeeded"},
+            _principal={"role": "agent_admin"},
+        )
         rows = store.query("job_runs")["rows"]
         assert len(rows) == 1 and rows[0]["state"] == "succeeded"
         assert store.delete("job_runs", ids=["k1"]) == 1

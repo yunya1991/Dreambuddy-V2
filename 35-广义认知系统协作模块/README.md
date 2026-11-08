@@ -27,7 +27,8 @@
 | [SPEC-CognitiveSystem-Evolution.md](./SPEC-CognitiveSystem-Evolution.md) | 大认知系统进化蓝图：四层架构(C1基础→C4元认知) + 五系统接线 + PoE/因果/预测编码升级路线 | v0.2 评审后修改 |
 | [SPEC-Unified-PoE-Framework.md](./SPEC-Unified-PoE-Framework.md) | 统一 PoE 框架：双模式(重型/轻量) + 有界信任传递 + 6 失效条件 + Evidence Index | v2.0 用户确认 |
 | [INDEX.md](./INDEX.md) | 模块内文档索引 + 与各子系统协作关系图 | v1.0 |
-| [COLLABORATION-CONTRACT.md](./COLLABORATION-CONTRACT.md) | 跨系统协作接口契约：record_hook/verify_hook/Evidence Ledger/PoE 信任链路 | v1.0 |
+| [COLLABORATION-CONTRACT.md](./COLLABORATION-CONTRACT.md) | 跨系统协作接口契约：record_hook/verify_hook/Evidence Ledger/PoE 信任链路 + MCP 写治理 | v1.6 |
+| [QUICKSTART-AI-HOST-INTEGRATION.md](./QUICKSTART-AI-HOST-INTEGRATION.md) | 换 AI 宿主 3 分钟接入：安装器/print-config/自检/踩坑固化 | v1.0 |
 
 ## 与各子系统的关系
 

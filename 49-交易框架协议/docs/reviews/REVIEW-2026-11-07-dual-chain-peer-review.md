@@ -1,4 +1,4 @@
-﻿# 同行评审报告 — 49 双决策链架构 v0.14.1
+# 同行评审报告 — 49 双决策链架构 v0.14.1
 
 > 评审依据：`1-ARCHITECTURE/skills/dream-science-peer-review`（四视角 + Devil's Advocate 让步阈值 + 7 模式阻断清单）
 > 评审对象：SPEC-49 v0.14.1、ADR-0002、50 SPEC v0.1.1、42/48 集成文档

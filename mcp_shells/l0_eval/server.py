@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -30,7 +29,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
-from mcp_shells._shared.shadow_hook import observe_envelope  # noqa: E402
+from mcp_shells._shared.shell_runtime import run_stdio  # noqa: E402
 
 SHELL_SOURCE = "l0.eval.mcp"
 EVAL_BASE_URL = os.environ.get("EVAL_API_BASE", "http://127.0.0.1:8790").rstrip("/")
@@ -107,90 +106,26 @@ def _handle_eval_report(args: Dict[str, Any]) -> str:
         )
 
 
+TOOL_DEFS = {
+    "eval_analyze": {
+        "description": "Query eval status/result by eval_id (read-only, via 45 HTTP API)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"eval_id": {"type": "string"}},
+            "required": ["eval_id"],
+        },
+    },
+    "eval_report": {
+        "description": "Query eval metrics summary (read-only, via 45 HTTP API)",
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+}
+
 TOOL_HANDLERS = {
     "eval_analyze": _handle_eval_analyze,
     "eval_report": _handle_eval_report,
 }
 
 
-def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
-    method = req.get("method", "")
-    if method == "initialize":
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}}},
-        }
-    if method == "tools/list":
-        tools = [
-            {
-                "name": "eval_analyze",
-                "description": "Query eval status/result by eval_id (read-only, via 45 HTTP API)",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-            },
-            {
-                "name": "eval_report",
-                "description": "Query eval metrics summary (read-only, via 45 HTTP API)",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-            },
-        ]
-        return {"jsonrpc": "2.0", "id": req.get("id"), "result": {"tools": tools}}
-    if method == "tools/call":
-        params = req.get("params", {})
-        name = params.get("name", "")
-        handler = TOOL_HANDLERS.get(name)
-        if handler is None:
-            return {
-                "jsonrpc": "2.0",
-                "id": req.get("id"),
-                "error": {"code": -32601, "message": f"Method not found: {name}"},
-            }
-        started = time.perf_counter()
-        result_text = handler(params.get("arguments", {}))
-        # COMM-SHADOW 旁路观察（默认关闭，FAIL-OPEN）：实测耗时 + 工具名补齐轨迹信号
-        observe_envelope(
-            result_text,
-            latency_ms=round((time.perf_counter() - started) * 1000.0, 3),
-            action=name,
-        )
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"content": [{"type": "text", "text": result_text}], "isError": False},
-        }
-    return {
-        "jsonrpc": "2.0",
-        "id": req.get("id"),
-        "error": {"code": -32601, "message": f"Method not found: {method}"},
-    }
-
-
-def main() -> None:
-    """stdio 主循环。"""
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            req = json.loads(line)
-        except json.JSONDecodeError:
-            sys.stdout.write(
-                json.dumps(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {"code": -32700, "message": "Parse error"},
-                    }
-                )
-                + "\n"
-            )
-            sys.stdout.flush()
-            continue
-        resp = _handle_request(req)
-        if resp is not None:
-            sys.stdout.write(json.dumps(resp) + "\n")
-            sys.stdout.flush()
-
-
 if __name__ == "__main__":
-    main()
+    run_stdio(SHELL_SOURCE, TOOL_DEFS, TOOL_HANDLERS)

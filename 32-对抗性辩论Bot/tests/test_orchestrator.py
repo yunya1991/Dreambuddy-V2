@@ -18,6 +18,7 @@ import asyncio
 import pytest
 from core.models import (
     Argument,
+    CrossExamination,
     DebateQualityScore,
     DebateResult,
     MarketingMaterial,
@@ -41,6 +42,8 @@ class MockBullAgent:
             raw="{}",
         )
         self.calls: list[dict] = []
+        self.cross_calls: list[dict] = []
+        self.answer_calls: list[dict] = []
 
     async def argue(
         self,
@@ -59,6 +62,39 @@ class MockBullAgent:
         )
         return self._arg
 
+    async def cross_examine(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> list[str]:
+        self.cross_calls.append(
+            {
+                "topic": topic,
+                "transcript_len": len(transcript),
+                "injected_views": injected_views,
+            }
+        )
+        return ["质询问题1", "质询问题2"]
+
+    async def answer_cross(
+        self,
+        topic: str,
+        questions: list[str],
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> list[str]:
+        self.answer_calls.append(
+            {
+                "topic": topic,
+                "questions": list(questions),
+                "injected_views": injected_views,
+            }
+        )
+        return [f"回答:{q}" for q in questions]
+
 
 class MockBearAgent:
     """记录 rebut 调用，返回预设 Argument。"""
@@ -72,6 +108,8 @@ class MockBearAgent:
             raw="{}",
         )
         self.calls: list[dict] = []
+        self.cross_calls: list[dict] = []
+        self.answer_calls: list[dict] = []
 
     async def rebut(
         self,
@@ -89,6 +127,39 @@ class MockBearAgent:
             }
         )
         return self._arg
+
+    async def cross_examine(
+        self,
+        topic: str,
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> list[str]:
+        self.cross_calls.append(
+            {
+                "topic": topic,
+                "transcript_len": len(transcript),
+                "injected_views": injected_views,
+            }
+        )
+        return ["反方质询1"]
+
+    async def answer_cross(
+        self,
+        topic: str,
+        questions: list[str],
+        transcript: list[Turn],
+        background: str = "",
+        injected_views: list[str] | None = None,
+    ) -> list[str]:
+        self.answer_calls.append(
+            {
+                "topic": topic,
+                "questions": list(questions),
+                "injected_views": injected_views,
+            }
+        )
+        return [f"回答:{q}" for q in questions]
 
 
 class MockJudgeAgent:
@@ -179,6 +250,7 @@ def make_orchestrator(
     quality: MockQualityEvaluator | None = None,
     telegram: MockTelegramDualBot | None = None,
     pause_timeout: float = 10.0,
+    cross_examination: bool = False,
 ) -> tuple[DebateOrchestrator, dict]:
     """创建带 mock 依赖的 orchestrator，返回 (orchestrator, mocks)。"""
     bull = bull or MockBullAgent()
@@ -194,6 +266,7 @@ def make_orchestrator(
         quality_evaluator=quality,
         telegram_dual_bot=telegram,
         pause_timeout=pause_timeout,
+        cross_examination=cross_examination,
     )
     return orch, {
         "bull": bull,
@@ -356,6 +429,41 @@ class TestStop:
 # ─── /inject 测试 ────────────────────────────────────────────────
 
 
+class TestCrossExamination:
+    """测试交叉质询阶段（v2.0-rc3 §4.2）。"""
+
+    @pytest.mark.asyncio
+    async def test_cross_exam_turns_inserted_after_first_round(self):
+        orch, mocks = make_orchestrator(
+            judge=MockJudgeAgent(),
+            cross_examination=True,
+        )
+        result = await orch.run(topic="测试", chat_id=1, max_rounds=2)
+
+        exams = [t for t in result.transcript if isinstance(t.content, CrossExamination)]
+        assert len(exams) == 2
+        assert exams[0].content.questioner == "bear"
+        assert exams[0].content.respondent == "bull"
+        assert exams[1].content.questioner == "bull"
+        assert exams[1].content.respondent == "bear"
+        # 双向各 1 次质询 + 1 次回答
+        assert len(mocks["bear"].cross_calls) == 1
+        assert len(mocks["bull"].cross_calls) == 1
+        assert len(mocks["bull"].answer_calls) == 1
+        assert len(mocks["bear"].answer_calls) == 1
+        # 质询内容通过 Telegram 发出
+        assert any("交叉质询" in call["text"] for call in mocks["telegram"].calls)
+
+    @pytest.mark.asyncio
+    async def test_cross_exam_disabled_by_default(self):
+        orch, mocks = make_orchestrator(judge=MockJudgeAgent())
+        result = await orch.run(topic="测试", chat_id=1, max_rounds=1)
+
+        assert not any(isinstance(t.content, CrossExamination) for t in result.transcript)
+        assert mocks["bull"].cross_calls == []
+        assert mocks["bear"].cross_calls == []
+
+
 class TestInject:
     """测试 /inject 机制。"""
 
@@ -388,6 +496,24 @@ class TestInject:
         inject_turns = [t for t in result.transcript if t.speaker == "inject"]
         assert len(inject_turns) == 1
         assert inject_turns[0].content == "注入观点"
+
+    @pytest.mark.asyncio
+    async def test_inject_during_debate_affects_next_speaker(self):
+        """运行中 /inject 应在下一位辩手发言前生效。"""
+        orch, mocks = make_orchestrator(judge=MockJudgeAgent())
+        original_argue = mocks["bull"].argue
+
+        async def argue_then_inject(topic, transcript, background="", injected_views=None):
+            result = await original_argue(topic, transcript, background, injected_views)
+            orch.inject(1, "运行中注入")
+            return result
+
+        mocks["bull"].argue = argue_then_inject
+        result = await orch.run(topic="测试", chat_id=1, max_rounds=1)
+
+        assert mocks["bear"].calls[0]["injected_views"] == ["运行中注入"]
+        inject_turns = [t for t in result.transcript if t.speaker == "inject"]
+        assert [t.content for t in inject_turns] == ["运行中注入"]
 
 
 # ─── 并发锁测试 ──────────────────────────────────────────────────
@@ -471,6 +597,14 @@ class TestStatusTransitions:
 
 class TestPauseResume:
     """测试 /pause + /resume 机制。"""
+
+    def test_pause_clears_stale_resume_event(self):
+        """先 /resume 再 /pause 时，新的 pause 不应被旧事件穿透。"""
+        orch, _ = make_orchestrator()
+        orch.resume(1)
+        assert orch._resume_events[1].is_set()
+        orch.pause(1)
+        assert not orch._resume_events[1].is_set()
 
     @pytest.mark.asyncio
     async def test_pause_then_resume_completes(self):

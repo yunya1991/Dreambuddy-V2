@@ -744,7 +744,11 @@ _CHAIN_METRICS = [
     ("exchanges_whales", "us_SP500_value", "sp500_equity_value"),
     ("exchanges_whales", "us_VIXCLS_value", "vix_value"),
     ("exchanges_whales", "us_DTWEXBGS_value", "dollar_index_value"),
-    ("exchanges_whales", "ex_bal_BTC_chg30d_pct", "ex_bal_btc_chg30d_pct"),  # 交易所BTC余额30日变化%
+    (
+        "exchanges_whales",
+        "ex_bal_BTC_chg30d_pct",
+        "ex_bal_btc_chg30d_pct",
+    ),  # 交易所BTC余额30日变化%
     # btc_basics: 链上基础指标 (收口 P2: OnchainPanel 需要)
     ("btc_basics", "market_cap_usd", "market_cap_usd"),
     ("btc_basics", "total_btc", "total_btc"),
@@ -1023,12 +1027,8 @@ def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
                 output["positive_count"] = _pos
                 output["negative_count"] = _neg
                 output["neutral_count"] = _neu
-                output["avg_sentiment"] = (
-                    round(sum(_sents) / len(_sents), 3) if _sents else 0.5
-                )
-                output["high_impact_count"] = sum(
-                    1 for _s in _sents if abs(_s - 0.5) > 0.3
-                )
+                output["avg_sentiment"] = round(sum(_sents) / len(_sents), 3) if _sents else 0.5
+                output["high_impact_count"] = sum(1 for _s in _sents if abs(_s - 0.5) > 0.3)
             except Exception:
                 pass
         elif command == "narrative":

@@ -62,7 +62,7 @@
 | 前端系统 README | [3.1-FRONTEND/README.md](../3.1-FRONTEND/README.md) | 3.1 项目说明、快速开始、目录结构 | ✅ |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
-| ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ 新建 v1.0 |
+| ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ v1.6（契约治理已落地） |
 
 ---
 
@@ -203,10 +203,10 @@
 | 29-事件驱动策略系统 | [29-事件驱动策略系统/docs/](../29-事件驱动策略系统/docs/) | ✅ 6文档齐全 | 事件驱动策略引擎 |
 | 30-真实环境交互系统 | [30-真实环境交互系统/README.md](../30-真实环境交互系统/README.md) | 🟡 README+SKILL.md | Chrome自动化+BSK运行器 |
 | 31-分布式计算部署 | [31-分布式计算部署/docs/](../31-分布式计算部署/docs/) | ✅ 5文档齐全 | 云端部署与分布式计算 |
-| 32-对抗性辩论Bot | [32-对抗性辩论Bot/SPEC.md](../32-对抗性辩论Bot/SPEC.md) | 🟡 SPEC v0.5 | 营销型对抗辩论内容生产引擎 |
+| 32-对抗性辩论Bot | [32-对抗性辩论Bot/SPEC.md](../32-对抗性辩论Bot/SPEC.md) | ✅ 实现（v0.5 + P0/P1/P2 附录） | 营销型对抗辩论内容生产引擎 |
 | 33-REA逆向解析工程 | [33-REA逆向解析工程/README.md](../33-REA逆向解析工程/README.md) | ✅ 文档齐全（PoE设计哲学v1.1+假设验证v1.1+同行评审v1.0+SPEC v0.3+TASKS v1.0） | Evidence-First工程逆向解析 + PoE工程证明协议 |
 | 34-前端应用训练系统 | [34-前端应用训练系统/README.md](../34-前端应用训练系统/README.md) | ✅ README+SPEC（P0-P4全部完成） | 前端应用独立学习训练模块：主动训练(多源采集+统计训练)+被动训练(Trae在线辅导) |
-| 35-广义认知系统协作模块 | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | ✅ 文档齐全（认知进化SPEC v0.2+统一PoE框架v2.0+协作契约v1.0） | 跨系统协作设计SSoT：SPEC收敛+协作接口契约+PoE统一框架（纯文档统筹层） |
+| 35-广义认知系统协作模块 | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | ✅ 文档齐全（认知进化SPEC v0.2+统一PoE框架v2.0+协作契约v1.6） | 跨系统协作设计SSoT：SPEC收敛+协作接口契约+PoE统一框架（纯文档统筹层） |
 | 1-ARCHITECTURE/dreamos | [1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md](../1-ARCHITECTURE/dreamos/docs/ENGINEERING_INDEX.md) | ⚠️ 部分完整 | DreamOS CLI |
 | **0-系统文档管理/4-工具与自动化** | [4-工具与自动化/README.md](./4-工具与自动化/README.md) | ✅ 已建成 4 脚本 | doc_lint/doc_coverage/index_generator/link_checker |
 | **0-系统文档管理/3-文档治理/audits** | [audits/2026-08_月度审计报告.md](./3-文档治理/audits/2026-08_月度审计报告.md) | ✅ 首份报告 | 月度审计报告归档 |
@@ -214,7 +214,7 @@
 | **辩论系统（dream-harness-bridge）** | `.trae/documents/debate-engine-v2-spec.md`（本地草稿，`.trae/` 不入库） · `.trae/documents/debate-adjudication-training-spec.md`（本地草稿） | ✅ v2.0 + v1.2 | 对抗性辩论引擎：6维评审+5步反思+Bayesian/Elo/CBR训练 |
 | **★ Jev 决策模型接入辩论** | `.trae/documents/debate-jev-integration-spec.md`（本地草稿） **v1.1** | ✅ 已落地 | C质量门控+B评审校验+A补充评分+D DPO偏好，43 tests GREEN |
 | **★ 44-三端协作架构系统** | [44-三端协作架构系统/README.md](../44-三端协作架构系统/README.md) | ✅ README + docs/tech 8 份 SPEC | 本地评审 / GitHub 存证 / 云端运行三端协同；L0 契约测试在 `shared/tests/` |
-| **★ 47-MCP管理系统** | [47-MCP管理系统/README.md](../47-MCP管理系统/README.md) · [docs/tech/](../47-MCP管理系统/docs/tech/) | ✅ README + docs/tech 11 份（4 SPEC + TECH v0.1.1 + ROADMAP + PLAN + REVIEW + SHADOW + ALIGNMENT） | L0 六域 MCP 封装 + 训练基座（TB1-TB5，48/48 TDD）+ 域内 agent 路线；契约注册表在 `registry/`，壳在 `mcp_shells/` |
+| **★ 47-MCP管理系统** | [47-MCP管理系统/README.md](../47-MCP管理系统/README.md) · [docs/tech/](../47-MCP管理系统/docs/tech/) | ✅ README + docs/tech 18 份（7 SPEC + TECH v0.1.5 + ROADMAP + PLAN + REVIEW + SHADOW + ALIGNMENT + **ASSESSMENT 通用性 v0.1** + **SPEC 网关 v0.1** + **SPEC 能力发现 v0.1**） | L0 六域 MCP 封装 + 训练基座（TB1-TB5，48/48 TDD）+ 域内 agent 路线；契约注册表在 `registry/`，壳在 `mcp_shells/`；2026-11-08 P0-P3b 已落地（漂移门禁/`mcpctl`/网关/8 壳运行时/install/new-shell/协议协商/Agent Card/Docker）；G1-b 全局软上限 80 |
 | **★ 48-涌现架构** | [48-涌现架构/README.md](../48-涌现架构/README.md) | 🟡 README + SPEC-EMERGENCE-EVOLUTION v0.1（初稿） | 智能涌现研究/度量/实验域：E1-E5 可证伪判据 + Phase E1-E4 路径；不动 35/46/47 既有定义与门禁 |
 | **★ L0 三层目标架构（SPEC-C）** | [44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md](../44-三端协作架构系统/docs/tech/SPEC-L0-three-layer-architecture.md) **v0.4** | ✅ C1-C13 已落地（G0 全关闭） | L0-P 封装 / L0-I 互联 / L0-S 调度；C10 gated、C11 检索触发、C12 health 聚合、C13 只读旁路；契约测试入 `l0-contracts` 阻断 job |
 | **★ L0 公共门面代码** | [dreambuddy_l0/](../dreambuddy_l0/) | ✅ 六 port + 六 fake + adapters | 新代码唯一入口：`ports/`（Protocol）+ `fakes/` + `adapters/`（jsonl/cognitive）+ `scheduling/`（registry/windows/job_runs/event_bridge/trigger/health/sidecar）+ `search/` |

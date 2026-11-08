@@ -6,8 +6,11 @@ RED 1-4 对应 SPEC §4.4。随机过程显式 seed 保证可复现。
 import random
 
 import pytest
+
+pytest.importorskip("scipy", reason="regime gate 统计检验依赖可选依赖 scipy")
+
 from regime_gate import REGIME_ARMS, ThompsonSamplingRegimeGate
-from scipy import stats
+from scipy import stats  # noqa: E402
 
 
 # RED 1: 初始 Beta(1,1) → 四 arm 被选中概率 ≈ 0.25（卡方检验 p > 0.05）

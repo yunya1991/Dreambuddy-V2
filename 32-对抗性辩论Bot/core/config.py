@@ -31,6 +31,8 @@ class DebateConfig:
 
     max_rounds: int = 2
     judge_enabled: bool = True
+    cross_examination: bool = False
+    profile: str = "marketing"  # marketing | technical | signal
     pause_timeout_minutes: float = 30.0
     models: dict = field(
         default_factory=lambda: {
@@ -66,12 +68,40 @@ class TopicFilterConfig:
 
 
 @dataclass
+class LLMConfig:
+    """LLM 适配配置（与 LangChain 解耦）。"""
+
+    provider: str = "auto"  # auto | anthropic | openai_compat | langchain
+    base_url: str | None = None
+    api_key: str | None = None
+    models: dict = field(
+        default_factory=lambda: {
+            "debater": None,
+            "judge": None,
+            "marketing": None,
+            "quality": None,
+        }
+    )
+    timeout_sec: float = 90.0
+    max_retries: int = 2
+    max_tokens: dict = field(
+        default_factory=lambda: {
+            "debater": 2000,
+            "judge": 1600,
+            "marketing": 1200,
+            "quality": 1200,
+        }
+    )
+
+
+@dataclass
 class AppConfig:
     """应用顶层配置。"""
 
     debate: DebateConfig = field(default_factory=DebateConfig)
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
     topic_filter: TopicFilterConfig = field(default_factory=TopicFilterConfig)
+    llm: LLMConfig = field(default_factory=LLMConfig)
 
 
 def resolve_env_value(value: str | None) -> str | None:
@@ -94,6 +124,15 @@ def resolve_env_value(value: str | None) -> str | None:
     return value
 
 
+def resolve_optional_env(value: str | None) -> str | None:
+    """解析 env:VAR；变量缺失时返回 None（不抛异常，供 LLM 自动探测）。"""
+    if value is None:
+        return None
+    if isinstance(value, str) and value.startswith(ENV_PREFIX):
+        return os.environ.get(value[len(ENV_PREFIX) :])
+    return value
+
+
 def _resolve_dict(data: dict) -> dict:
     """递归解析字典中的 env: 引用。"""
     resolved = {}
@@ -106,6 +145,23 @@ def _resolve_dict(data: dict) -> dict:
             ]
         elif isinstance(value, str):
             resolved[key] = resolve_env_value(value)
+        else:
+            resolved[key] = value
+    return resolved
+
+
+def _resolve_optional_dict(data: dict) -> dict:
+    """递归解析 env: 引用；缺失变量降级为 None。"""
+    resolved = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            resolved[key] = _resolve_optional_dict(value)
+        elif isinstance(value, list):
+            resolved[key] = [
+                resolve_optional_env(item) if isinstance(item, str) else item for item in value
+            ]
+        elif isinstance(value, str):
+            resolved[key] = resolve_optional_env(value)
         else:
             resolved[key] = value
     return resolved
@@ -130,7 +186,10 @@ def load_config(path: str) -> AppConfig:
     with open(config_path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f) or {}
 
-    # 解析 env: 引用
+    # LLM 段用“可选 env”解析：缺失变量降级为 None，由 llm_compat 自动探测
+    llm_data = _resolve_optional_dict(raw.pop("llm", {}) or {})
+
+    # 其余段保持严格 env 解析（telegram token 缺失应显式报错）
     raw = _resolve_dict(raw)
 
     # 构建 AppConfig，填充默认值
@@ -141,6 +200,8 @@ def load_config(path: str) -> AppConfig:
     debate = DebateConfig(
         max_rounds=debate_data.get("max_rounds", 2),
         judge_enabled=debate_data.get("judge_enabled", True),
+        cross_examination=bool(debate_data.get("cross_examination", False)),
+        profile=str(debate_data.get("profile", "marketing")),
         pause_timeout_minutes=debate_data.get("pause_timeout_minutes", 30.0),
         models=debate_data.get("models", DebateConfig().models),
         budget=debate_data.get("budget", DebateConfig().budget),
@@ -158,8 +219,25 @@ def load_config(path: str) -> AppConfig:
         blacklist_keywords=topic_data.get("blacklist_keywords", []),
     )
 
+    default_llm = LLMConfig()
+    llm_models = dict(default_llm.models)
+    llm_models.update(llm_data.get("models") or {})
+    if not any(llm_models.values()):
+        llm_models = dict(debate.models)
+
+    llm = LLMConfig(
+        provider=str(llm_data.get("provider", "auto")),
+        base_url=llm_data.get("base_url"),
+        api_key=llm_data.get("api_key"),
+        models=llm_models,
+        timeout_sec=float(llm_data.get("timeout_sec", 90.0)),
+        max_retries=int(llm_data.get("max_retries", 2)),
+        max_tokens={**default_llm.max_tokens, **(llm_data.get("max_tokens") or {})},
+    )
+
     return AppConfig(
         debate=debate,
         telegram=telegram,
         topic_filter=topic_filter,
+        llm=llm,
     )

@@ -1,9 +1,29 @@
 # config.yaml — 对抗性辩论 Bot 配置
 # SPEC 第四节：debate + telegram + topic_filter 三段配置
+# llm：与 LangChain 解耦的适配配置（anthropic / openai_compat / langchain / auto）
+
+llm:
+  provider: auto                     # auto | anthropic | openai_compat | langchain
+  base_url: env:ANTHROPIC_BASE_URL   # 缺失时由 llm_compat 自动探测
+  api_key: env:ANTHROPIC_AUTH_TOKEN
+  models:
+    debater: env:ANTHROPIC_MODEL
+    judge: env:ANTHROPIC_MODEL
+    marketing: env:ANTHROPIC_MODEL
+    quality: env:ANTHROPIC_MODEL
+  timeout_sec: 90
+  max_retries: 2
+  max_tokens:
+    debater: 2000
+    judge: 1600
+    marketing: 1000
+    quality: 1000
 
 debate:
   max_rounds: 2
   judge_enabled: true
+  profile: marketing              # marketing | technical | signal（C-Drive 用 signal）
+  cross_examination: false        # true = 第 1 轮后插入双向交叉质询（v2.0-rc3 §4.2）
   pause_timeout_minutes: 30       # /pause 超时自动 stop
   models:
     debater: qwen-turbo           # 辩手用低成本模型

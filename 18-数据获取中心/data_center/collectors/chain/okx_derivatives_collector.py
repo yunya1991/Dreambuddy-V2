@@ -9,10 +9,14 @@
 用途: 前端 capital_flow 模块 OKX 口径衍生品数据（与 Binance 口径交叉验证）。
 FAIL-OPEN 铁律: 单端点异常跳过，全异常返回空列表不阻塞。
 """
+
 from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
+
 import requests
+
 from data_center.collectors._base import BaseCollector
 from data_center.core.contract import DataRecord, validate_record
 

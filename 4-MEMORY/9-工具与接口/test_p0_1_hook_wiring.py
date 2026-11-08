@@ -19,6 +19,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
+def _data(result):
+    """兼容统一信封：业务字段在 result['data'] 内。"""
+    return result.get("data", result)
+
+
 @pytest.fixture(autouse=True)
 def _mock_find_skill_dir(monkeypatch):
     """autouse: 避免 record_hook 写真实 SKILL.md（测试副作用隔离）。
@@ -46,8 +51,8 @@ def test_handle_record_returns_skill_links_field():
                 }
             )
         )
-    assert (
-        "skill_links" in result
+    assert "skill_links" in _data(
+        result
     ), "P0-1 RED: _handle_record 响应应包含 skill_links 字段（record_hook 结果）"
 
 
@@ -80,8 +85,8 @@ def test_handle_record_skill_links_populated_when_skill_indexer_available():
                 }
             )
         )
-    assert result["skill_links"], "skill_links 非空"
-    assert result["skill_links"][0]["skill_id"] == "dream-doc-sync-workflow"
+    assert _data(result)["skill_links"], "skill_links 非空"
+    assert _data(result)["skill_links"][0]["skill_id"] == "dream-doc-sync-workflow"
     # record_hook 被调用，传入了 skill_id + memory_id
     fake_si.record_hook.assert_called_once()
 
@@ -96,8 +101,8 @@ def test_handle_record_fail_open_when_skill_indexer_unavailable():
     ):
         mock_cle.return_value.record.return_value = "VM-TEST-FAIL"
         result = json.loads(_handle_record({"content": "x", "tags": ""}))
-    assert result["memory_id"] == "VM-TEST-FAIL"
-    assert result["skill_links"] == []
+    assert _data(result)["memory_id"] == "VM-TEST-FAIL"
+    assert _data(result)["skill_links"] == []
 
 
 # ─────────────────────────────── RED: _handle_verify ───────────────────────────────
@@ -119,8 +124,8 @@ def test_handle_verify_returns_skill_hooks_field():
                 }
             )
         )
-    assert (
-        "skill_hooks" in result
+    assert "skill_hooks" in _data(
+        result
     ), "P0-1 RED: _handle_verify 响应应包含 skill_hooks 字段（verify_hook 结果）"
 
 
@@ -160,7 +165,7 @@ def test_handle_verify_skill_hooks_populated_when_skill_has_cognitive_link():
                 }
             )
         )
-    assert result["skill_hooks"], "skill_hooks 非空"
+    assert _data(result)["skill_hooks"], "skill_hooks 非空"
     fake_si.verify_hook.assert_called_once()
 
 
@@ -182,7 +187,7 @@ def test_handle_verify_fail_open_when_skill_indexer_unavailable():
             )
         )
     assert result.get("ok") is True
-    assert result["skill_hooks"] == []
+    assert _data(result)["skill_hooks"] == []
 
 
 def test_handle_verify_fail_open_when_no_skill_linked():
@@ -204,4 +209,4 @@ def test_handle_verify_fail_open_when_no_skill_linked():
                 }
             )
         )
-    assert result["skill_hooks"] == []
+    assert _data(result)["skill_hooks"] == []

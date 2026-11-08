@@ -8,6 +8,7 @@
 + MLP/logistic 组合器 vs kNN 检索基线 + 配对置换检验 + 方向检查）。
 FAIL-OPEN：数据缺失/异常返回 insufficient_data，不抛出。
 """
+
 from __future__ import annotations
 
 import json
@@ -26,14 +27,14 @@ from cbr_holdout import (  # noqa: E402
     ENTRY_ACTIONS,
     SHADOW_RL_PATH,
     assign_cells,
-    select_holdout_cells,
-    holdout_split,
     composition_predict,
-    mlp_composition_predict,
-    knn_baseline_predict,
-    permutation_test,
-    verdict,
+    holdout_split,
     homomorphism_error,
+    knn_baseline_predict,
+    mlp_composition_predict,
+    permutation_test,
+    select_holdout_cells,
+    verdict,
 )
 
 logger = logging.getLogger("e5_strong_primitives")
