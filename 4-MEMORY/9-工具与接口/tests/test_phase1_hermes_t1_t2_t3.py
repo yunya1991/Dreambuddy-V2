@@ -113,6 +113,8 @@ class TestEVT1Scheduler:
             text=True,
             check=False,
             timeout=30,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(_PARENT),
         )
         stdout = result.stdout + result.stderr
@@ -155,6 +157,8 @@ class TestEVT1Scheduler:
             text=True,
             check=False,
             timeout=60,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(_PARENT),
             env=env,
         )
@@ -215,6 +219,8 @@ class TestEVT1Scheduler:
             text=True,
             check=False,
             timeout=60,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(_PARENT),
             env=env,
         )
@@ -304,6 +310,8 @@ class TestEVT1Scheduler:
             text=True,
             check=False,
             timeout=60,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(_PARENT),
             env=env,
         )
@@ -354,6 +362,8 @@ class TestEVT1Scheduler:
             text=True,
             check=False,
             timeout=60,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(_PARENT),
             env=env,
         )
@@ -592,7 +602,6 @@ class TestEVT3Voyager:
 
     # --- TC t20: record() auto 打分 → bayesian 记忆 voyager_scores.overall ---
     def test_t20_record_auto_voyager_scores_stored(self, workdirs, monkeypatch):
-
         # mock 内部存储：不让它读真实 DB，改写到 workdirs["bayesian"]
         cle = _build_cle_with_db(workdirs, monkeypatch)
 
@@ -620,7 +629,6 @@ class TestEVT3Voyager:
 
     # --- TC t21: record() 显式 voyager_scores 优先，overall=1.0 ----------------
     def test_t21_record_explicit_voyager_priority(self, workdirs, monkeypatch):
-
         cle = _build_cle_with_db(workdirs, monkeypatch)
         explicit = {
             "completeness": 1.0,
@@ -648,7 +656,6 @@ class TestEVT3Voyager:
 
     # --- TC t22: verify 连续 3 次 success → meets_draft_threshold=True --------
     def test_t22_verify_three_consecutive_success_produces_draft(self, workdirs, monkeypatch):
-
         # 把审核队列路径 & voyager_jsonl 路径定向到 workdirs
         cle = _build_cle_with_db(workdirs, monkeypatch)
         # 注入 3 条不同 memory_id，但 domain+tags 一致的"高分 auto"记录，并连续 verify(success=True)
@@ -690,11 +697,6 @@ class TestEVT3Voyager:
         assert (
             len(drafts_after) == drafts_before + 1
         ), f"应新增 1 份 APP-DEV-AUTO-* 草案；之前 {drafts_before} 之后 {len(drafts_after)}；voyager={last_voyager}"
-        draft_path = (  # noqa: F841
-            (set(str(p) for p in drafts_after) - set([])).pop()  # noqa: C401, C405
-            if drafts_after
-            else str(drafts_after[-1])
-        )
         d = json.loads(Path(drafts_after[-1]).read_text(encoding="utf-8"))
         assert str(d.get("template_id")).startswith("APP-DEV-AUTO-"), d.get("template_id")
         # 严格降级 + 审核状态
@@ -736,7 +738,6 @@ class TestEVT3Voyager:
             ),
             encoding="utf-8",
         )
-
         cle = _build_cle_with_db(workdirs, monkeypatch)
         # 再连续 3 次同 domain+tags 的 verify
         for i in range(3):  # noqa: B007
@@ -767,7 +768,6 @@ class TestEVT3Voyager:
 
     # --- TC t24: 草案 JSON 严格字段 ------------------------------------------
     def test_t24_draft_json_strictly_downgraded_fields(self, workdirs, monkeypatch):
-
         cle = _build_cle_with_db(workdirs, monkeypatch)
         for i in range(3):  # noqa: B007
             mid = cle.record(
@@ -802,7 +802,6 @@ class TestEVT3Voyager:
 
     # --- TC t25: 中间插入失败 → 连续计数归零，不触发草案 ----------------------
     def test_t25_consecutive_reset_on_failure(self, workdirs, monkeypatch):
-
         cle = _build_cle_with_db(workdirs, monkeypatch)
         # success / success / failure / success / success → 最后连续=2，不够 3
         pattern = [True, True, False, True, True]
@@ -861,7 +860,6 @@ class TestEVT3Voyager:
         workdirs["bayesian"].write_text(
             json.dumps(db, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-
         cle = _build_cle_with_db(workdirs, monkeypatch)
         # 直接 verify → 不能抛异常
         vr = cle.verify(legacy_id, success=True)

@@ -21,7 +21,6 @@ stdio JSON-RPC 2.0，按需拉起，不常驻。
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import sys
@@ -32,15 +31,43 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+try:
+    import fcntl
+
+    msvcrt = None
+except ImportError:  # Windows: 无 fcntl，改用 msvcrt 单字节锁
+    fcntl = None
+    import msvcrt
+
+
 # ── 壳进程 import 规约（SPEC-L0-MCP-PACKAGING §3.4）────────
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
-from mcp_shells._shared.shadow_hook import observe_envelope  # noqa: E402
+from mcp_shells._shared.shell_runtime import run_stdio  # noqa: E402
 
 SHELL_SOURCE = "l0.trade-exec.mcp"  # 与注册表 shell_id 对齐（多词统一连字符）
+
+
+# ── 跨平台文件锁（POSIX flock / Windows msvcrt）─────────────
+def _lock_file(fh, exclusive: bool) -> None:
+    if fcntl is not None:
+        fcntl.flock(fh, fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH)
+    else:
+        # msvcrt 无共享锁语义，统一按独占锁处理（临界区极短）
+        fh.seek(0)
+        msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
+
+
+def _unlock_file(fh) -> None:
+    if fcntl is not None:
+        fcntl.flock(fh, fcntl.LOCK_UN)
+    else:
+        fh.seek(0)
+        msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+
 
 # ── OKX 行情配置 ──────────────────────────────────────────
 OKX_BASE_URL = os.environ.get("OKX_BASE_URL", "https://www.okx.com").rstrip("/")
@@ -159,23 +186,23 @@ class OKXPaperLedger:
 
     # ── 文件锁原子读写 ─────────────────────────────────────
     def _load(self) -> Dict[str, Any]:
-        with open(self.path, "r") as f:
-            fcntl.flock(f, fcntl.LOCK_SH)
+        with open(self.path, "r", encoding="utf-8") as f:
+            _lock_file(f, exclusive=False)
             try:
                 return json.load(f)
             finally:
-                fcntl.flock(f, fcntl.LOCK_UN)
+                _unlock_file(f)
 
     def _save(self, led: Dict[str, Any]) -> None:
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         led["updated_at"] = _now_iso()
         tmp = self.path + ".tmp"
-        with open(tmp, "w") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
+        with open(tmp, "w", encoding="utf-8") as f:
+            _lock_file(f, exclusive=True)
             try:
                 json.dump(led, f, ensure_ascii=False, indent=1)
             finally:
-                fcntl.flock(f, fcntl.LOCK_UN)
+                _unlock_file(f)
         os.replace(tmp, self.path)
 
     # ── 撮合引擎 ──────────────────────────────────────────
@@ -1409,7 +1436,7 @@ def _handle_ingest_signal(args: Dict[str, Any]) -> str:
         raw_sig = args.get("signal") or {}
         if source == "50" or source == "50-nn" or str(raw_sig.get("source") or "") == "50-nn":
             norm = _signal_adapter.from_50_signal(raw_sig)
-        elif source == "42" or ("signal_id" in raw_sig and "source" in raw_sig):
+        if source == "42" or ("signal_id" in raw_sig and "source" in raw_sig):
             norm = _signal_adapter.from_42_signal(raw_sig)
         else:
             # inline 宽松模式：用 42 schema 校验，失败则按简化 dict 兜底
@@ -1637,6 +1664,187 @@ def _handle_ingest_signal(args: Dict[str, Any]) -> str:
     )
 
 
+_TOOL_SPECS = [
+    {
+        "name": "place_order",
+        "description": (
+            "Place a simulated (paper) order. "
+            "Only paper mode — does NOT touch real exchange. "
+            "Market orders fill instantly at OKX mid ± 5bps; "
+            "Limit orders cross when OKX mid crosses the price."
+        ),
+        "annotations": {"readOnlyHint": False, "destructiveHint": True},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "OKX instId, e.g. BTC-USDT-SWAP",
+                },
+                "side": {"type": "string", "enum": ["buy", "sell"]},
+                "order_type": {
+                    "type": "string",
+                    "enum": ["market", "limit"],
+                    "default": "market",
+                },
+                "size": {"type": "number", "description": "contract size"},
+                "price": {"type": "number", "description": "required for limit orders"},
+                "pos_side": {
+                    "type": "string",
+                    "enum": ["long", "short", "net"],
+                    "default": "net",
+                },
+            },
+            "required": ["symbol", "side", "size"],
+        },
+    },
+    {
+        "name": "cancel_order",
+        "description": "Cancel a pending paper order by order_id.",
+        "annotations": {"readOnlyHint": False, "destructiveHint": True},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "order_id": {
+                    "type": "string",
+                    "description": "order_id returned by place_order",
+                },
+            },
+            "required": ["order_id"],
+        },
+    },
+    {
+        "name": "get_positions",
+        "description": "Get current paper positions. mark_px uses live OKX ticker when available.",
+        "annotations": {"readOnlyHint": True, "destructiveHint": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "optional: filter by instId"},
+            },
+        },
+    },
+    {
+        "name": "get_balance",
+        "description": "Get paper account balance (balance / realized_pnl / fee_paid).",
+        "annotations": {"readOnlyHint": True, "destructiveHint": False},
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "pre_trade_check",
+        "description": (
+            "Run pre-trade risk check via 13-domain RiskEngine "
+            "(RiskCheckPort, SPEC §1.2). Fail-Closed: RiskEngine unavailable → rejected. "
+            "Returns risk pass/fail + reason_code + position_modifier + sizing suggestion."
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "description": "OKX instId"},
+                "side": {"type": "string", "enum": ["buy", "sell"], "default": "buy"},
+                "confidence": {
+                    "type": "number",
+                    "description": "signal confidence 0-1",
+                    "default": 0.5,
+                },
+            },
+            "required": ["symbol"],
+        },
+    },
+    {
+        "name": "check_exit",
+        "description": (
+            "Evaluate exit decisions for paper positions via 13-domain ExitEngine "
+            "(ExitCheckPort, SPEC §1.2). Read-only advisory: returns action/reason/reduce_frac, "
+            "never places orders. FAIL-OPEN: engine unavailable → all HOLD + degraded."
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "OKX instId; omit to evaluate all paper positions",
+                }
+            },
+        },
+    },
+    {
+        "name": "get_account_mode",
+        "description": "AccountPort.get_account_mode. Returns {mode, exchange, endpoints, risk_engine_available}.",
+        "annotations": {"readOnlyHint": True, "destructiveHint": False},
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "reconcile",
+        "description": (
+            "PositionPort.reconcile. Paper-only shell returns self-consistent report "
+            "(no real exchange to compare against). Live-mode reconciliation belongs to 11-domain."
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False},
+        "inputSchema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "read_signals",
+        "description": (
+            "Read latest signals from 23-evolution (event_driven_state.json) and "
+            "42-coordination (bus_state.json), normalized to a unified schema. "
+            "FAIL-OPEN: a broken source degrades only itself."
+        ),
+        "annotations": {"readOnlyHint": True, "destructiveHint": False},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "sources": {
+                    "type": "array",
+                    "items": {"type": "string", "enum": ["23", "42"]},
+                    "description": "signal sources, default ['23','42']",
+                },
+                "include_neutral": {"type": "boolean", "default": True},
+                "limit": {"type": "integer", "default": 20},
+            },
+        },
+    },
+    {
+        "name": "ingest_signal",
+        "description": (
+            "Signal → full execution pipeline (RiskCheck → sizing → paper order), "
+            "with expiry check and signal_id idempotency. "
+            "Risk side is FAIL-CLOSED. This is the stage-3 entry for 23-domain signals."
+        ),
+        "annotations": {"readOnlyHint": False, "destructiveHint": True},
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "enum": ["inline", "23", "42", "50"],
+                    "default": "inline",
+                    "description": "inline=use signal arg; 23/42=read latest from that source; 50=50-nn FinalDecisionSignal v1.1",
+                },
+                "signal": {
+                    "type": "object",
+                    "description": "inline signal (42 SignalSchema or simplified {symbol,direction,confidence})",
+                },
+                "size": {
+                    "type": "number",
+                    "description": "explicit size overriding sizing step",
+                },
+                "paper_execute": {"type": "boolean", "default": True},
+            },
+        },
+    },
+]
+
+TOOL_DEFS = {
+    t["name"]: {
+        "description": t.get("description", ""),
+        "inputSchema": t.get("inputSchema") or {"type": "object", "properties": {}},
+    }
+    for t in _TOOL_SPECS
+}
+
 TOOL_HANDLERS = {
     "place_order": _handle_place_order,
     "cancel_order": _handle_cancel_order,
@@ -1651,244 +1859,5 @@ TOOL_HANDLERS = {
 }
 
 
-# ── JSON-RPC 主处理 ────────────────────────────────────────
-def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
-    method = req.get("method", "")
-    if method == "initialize":
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}}},
-        }
-    if method == "tools/list":
-        tools = [
-            {
-                "name": "place_order",
-                "description": (
-                    "Place a simulated (paper) order. "
-                    "Only paper mode — does NOT touch real exchange. "
-                    "Market orders fill instantly at OKX mid ± 5bps; "
-                    "Limit orders cross when OKX mid crosses the price."
-                ),
-                "annotations": {"readOnlyHint": False, "destructiveHint": True},
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "symbol": {
-                            "type": "string",
-                            "description": "OKX instId, e.g. BTC-USDT-SWAP",
-                        },
-                        "side": {"type": "string", "enum": ["buy", "sell"]},
-                        "order_type": {
-                            "type": "string",
-                            "enum": ["market", "limit"],
-                            "default": "market",
-                        },
-                        "size": {"type": "number", "description": "contract size"},
-                        "price": {"type": "number", "description": "required for limit orders"},
-                        "pos_side": {
-                            "type": "string",
-                            "enum": ["long", "short", "net"],
-                            "default": "net",
-                        },
-                    },
-                    "required": ["symbol", "side", "size"],
-                },
-            },
-            {
-                "name": "cancel_order",
-                "description": "Cancel a pending paper order by order_id.",
-                "annotations": {"readOnlyHint": False, "destructiveHint": True},
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "order_id": {
-                            "type": "string",
-                            "description": "order_id returned by place_order",
-                        },
-                    },
-                    "required": ["order_id"],
-                },
-            },
-            {
-                "name": "get_positions",
-                "description": "Get current paper positions. mark_px uses live OKX ticker when available.",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "symbol": {"type": "string", "description": "optional: filter by instId"},
-                    },
-                },
-            },
-            {
-                "name": "get_balance",
-                "description": "Get paper account balance (balance / realized_pnl / fee_paid).",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                "inputSchema": {"type": "object", "properties": {}},
-            },
-            {
-                "name": "pre_trade_check",
-                "description": (
-                    "Run pre-trade risk check via 13-domain RiskEngine "
-                    "(RiskCheckPort, SPEC §1.2). Fail-Closed: RiskEngine unavailable → rejected. "
-                    "Returns risk pass/fail + reason_code + position_modifier + sizing suggestion."
-                ),
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "symbol": {"type": "string", "description": "OKX instId"},
-                        "side": {"type": "string", "enum": ["buy", "sell"], "default": "buy"},
-                        "confidence": {
-                            "type": "number",
-                            "description": "signal confidence 0-1",
-                            "default": 0.5,
-                        },
-                    },
-                    "required": ["symbol"],
-                },
-            },
-            {
-                "name": "check_exit",
-                "description": (
-                    "Evaluate exit decisions for paper positions via 13-domain ExitEngine "
-                    "(ExitCheckPort, SPEC §1.2). Read-only advisory: returns action/reason/reduce_frac, "
-                    "never places orders. FAIL-OPEN: engine unavailable → all HOLD + degraded."
-                ),
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "symbol": {
-                            "type": "string",
-                            "description": "OKX instId; omit to evaluate all paper positions",
-                        }
-                    },
-                },
-            },
-            {
-                "name": "get_account_mode",
-                "description": "AccountPort.get_account_mode. Returns {mode, exchange, endpoints, risk_engine_available}.",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                "inputSchema": {"type": "object", "properties": {}},
-            },
-            {
-                "name": "reconcile",
-                "description": (
-                    "PositionPort.reconcile. Paper-only shell returns self-consistent report "
-                    "(no real exchange to compare against). Live-mode reconciliation belongs to 11-domain."
-                ),
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                "inputSchema": {"type": "object", "properties": {}},
-            },
-            {
-                "name": "read_signals",
-                "description": (
-                    "Read latest signals from 23-evolution (event_driven_state.json) and "
-                    "42-coordination (bus_state.json), normalized to a unified schema. "
-                    "FAIL-OPEN: a broken source degrades only itself."
-                ),
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "sources": {
-                            "type": "array",
-                            "items": {"type": "string", "enum": ["23", "42"]},
-                            "description": "signal sources, default ['23','42']",
-                        },
-                        "include_neutral": {"type": "boolean", "default": True},
-                        "limit": {"type": "integer", "default": 20},
-                    },
-                },
-            },
-            {
-                "name": "ingest_signal",
-                "description": (
-                    "Signal → full execution pipeline (RiskCheck → sizing → paper order), "
-                    "with expiry check and signal_id idempotency. "
-                    "Risk side is FAIL-CLOSED. This is the stage-3 entry for 23-domain signals."
-                ),
-                "annotations": {"readOnlyHint": False, "destructiveHint": True},
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "source": {
-                            "type": "string",
-                            "enum": ["inline", "23", "42", "50"],
-                            "default": "inline",
-                            "description": "inline=use signal arg; 23/42=read latest from that source; 50=50-nn FinalDecisionSignal v1.1",
-                        },
-                        "signal": {
-                            "type": "object",
-                            "description": "inline signal (42 SignalSchema or simplified {symbol,direction,confidence})",
-                        },
-                        "size": {
-                            "type": "number",
-                            "description": "explicit size overriding sizing step",
-                        },
-                        "paper_execute": {"type": "boolean", "default": True},
-                    },
-                },
-            },
-        ]
-        return {"jsonrpc": "2.0", "id": req.get("id"), "result": {"tools": tools}}
-    if method == "tools/call":
-        params = req.get("params", {})
-        name = params.get("name", "")
-        handler = TOOL_HANDLERS.get(name)
-        if handler is None:
-            return {
-                "jsonrpc": "2.0",
-                "id": req.get("id"),
-                "error": {"code": -32601, "message": f"Method not found: {name}"},
-            }
-        started = time.perf_counter()
-        result_text = handler(params.get("arguments", {}))
-        observe_envelope(
-            result_text,
-            latency_ms=round((time.perf_counter() - started) * 1000.0, 3),
-            action=name,
-        )
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"content": [{"type": "text", "text": result_text}], "isError": False},
-        }
-    return {
-        "jsonrpc": "2.0",
-        "id": req.get("id"),
-        "error": {"code": -32601, "message": f"Method not found: {method}"},
-    }
-
-
-def main() -> None:
-    """stdio 主循环。"""
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            req = json.loads(line)
-        except json.JSONDecodeError:
-            sys.stdout.write(
-                json.dumps(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {"code": -32700, "message": "Parse error"},
-                    }
-                )
-                + "\n"
-            )
-            sys.stdout.flush()
-            continue
-        resp = _handle_request(req)
-        if resp is not None:
-            sys.stdout.write(json.dumps(resp) + "\n")
-            sys.stdout.flush()
-
-
 if __name__ == "__main__":
-    main()
+    run_stdio(SHELL_SOURCE, TOOL_DEFS, TOOL_HANDLERS)

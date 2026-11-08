@@ -8,12 +8,12 @@
 零外部依赖：纯Python标准库实现JSON-RPC 2.0 over stdio。
 不修改cognitive_loop_entry.py任何代码（Adapter Pattern）。
 
-暴露5个标准MCP tools:
-  - recall: 检索相关记忆（任务前调用）
-  - record: 记录新经验（任务后调用）
-  - verify: A8校验 + 贝叶斯更新（验证后调用）
-  - stats: 记忆系统统计
-  - health: 健康检查
+暴露7个标准MCP tools:
+  - recall: 检索相关记忆（任务前调用，只读）
+  - unified_search: 41/Chroma/recall 三后端统一检索（只读）
+  - record: 记录新经验（写，需 host write scope）
+  - verify: A8校验 + 贝叶斯更新（写，需 host write scope）
+  - stats / health / l4_status: 统计、健康、L4 元认知状态（只读）
 
 用法（MCP客户端配置）:
   在IDE的MCP配置中添加:
@@ -49,6 +49,18 @@ if str(_ENVELOPE_DIR) not in sys.path:
     sys.path.insert(0, str(_ENVELOPE_DIR))
 from envelope_wrap import wrap as _wrap  # noqa: E402
 
+# 统一壳运行时（P2 全量迁移）：协议循环 + registry 派生 tools/list
+_REPO_ROOT = _ENVELOPE_DIR.parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+from mcp_shells._shared.shell_runtime import (  # noqa: E402
+    build_tool_list,
+    run_stdio,
+)
+from mcp_shells._shared.shell_runtime import (  # noqa: E402
+    handle_request as _runtime_handle,
+)
+
 # ============================================================
 # 双模（D5 / M3⑧）：ssh 云端默认（单一事实源）+ 本地只读降级
 # COGNITIVE_MCP_MODE=local → 写工具（record/verify）明确拒绝（非静默），审计留痕
@@ -57,10 +69,14 @@ COGNITIVE_MCP_MODE = os.environ.get("COGNITIVE_MCP_MODE", "ssh").strip().lower()
 _LOCAL_READONLY = COGNITIVE_MCP_MODE == "local"
 
 
-def _write_denied(tool: str) -> str:
-    """本地只读降级模式：写工具明确拒绝（SPEC §3.3 / D5），审计留痕（stderr）。"""
+def _write_denied(tool: str, *, reason: str | None = None, error_code: str = "conflict") -> str:
+    """写工具拒绝：本地只读或写 scope/principal 不满足（审计留痕 stderr）。"""
     import sys as _sys
 
+    reason = (
+        reason
+        or "write tool disabled in local readonly mode (D5); use ssh cloud profile for writes"
+    )
     print(
         json.dumps(
             {
@@ -68,7 +84,8 @@ def _write_denied(tool: str) -> str:
                 "shell": "l0.cognition.mcp",
                 "tool": tool,
                 "mode": COGNITIVE_MCP_MODE,
-                "reason": "local readonly degraded mode (D5): write tools disabled",
+                "reason": reason,
+                "error_code": error_code,
             }
         ),
         file=_sys.stderr,
@@ -78,13 +95,91 @@ def _write_denied(tool: str) -> str:
             None,
             "cognition." + tool,
             degraded=True,
-            error_code="conflict",
-            meta={
-                "reason": "write tool disabled in local readonly mode (D5); use ssh cloud profile for writes"
-            },
+            error_code=error_code,
+            meta={"reason": reason},
         ),
         ensure_ascii=False,
     )
+
+
+# §5.2 C6：写主体矩阵（Worker 默认只读）
+PRINCIPAL_ROLES = ("worker", "orchestrator", "verifier", "admin")
+WRITE_ROLES = frozenset({"orchestrator", "verifier", "admin"})
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _write_principal(args: Dict[str, Any]) -> str:
+    """解析写主体：默认由宿主 Mandate（env）注入，不信任调用方自声明。"""
+    if _env_flag("COGNITIVE_MCP_ALLOW_CALLER_PRINCIPAL", default=False):
+        caller = str(args.get("principal") or "").strip()
+        if caller:
+            return caller
+    return os.environ.get("COGNITIVE_MCP_DEFAULT_PRINCIPAL", "").strip()
+
+
+def _write_gate(tool: str, args: Dict[str, Any]) -> Optional[str]:
+    """写门禁（§5.2 C6）：返回 None 放行，否则返回拒绝响应 JSON。"""
+    if _LOCAL_READONLY:
+        return _write_denied(tool)
+    if not _env_flag("COGNITIVE_MCP_WRITE_ENABLED", default=False):
+        return _write_denied(
+            tool,
+            reason="write scope not granted (COGNITIVE_MCP_WRITE_ENABLED != true)",
+            error_code="scope_denied",
+        )
+    principal = _write_principal(args)
+    if principal not in WRITE_ROLES:
+        return _write_denied(
+            tool,
+            reason=f"principal={principal!r} not allowed for write; "
+            f"need one of {sorted(WRITE_ROLES)}",
+            error_code="principal_denied",
+        )
+    return None
+
+
+def _trace_id(args: Dict[str, Any]) -> str:
+    """§5.2 C4：trace 贯穿，优先调用方 trace_id，其次宿主环境变量。"""
+    return str(args.get("trace_id") or os.environ.get("MCP_TRACE_ID", "")).strip()
+
+
+def _eval_gate(args: Dict[str, Any]) -> tuple[bool, Dict[str, Any]]:
+    """§5.2 C5：45 评测门禁。off / shadow（默认仅记录）/ enforce（fail-closed）。"""
+    mode = os.environ.get("COGNITIVE_MCP_EVAL_GATE_MODE", "shadow").strip().lower()
+    eval_id = str(args.get("eval_id") or "").strip()
+    if mode == "off":
+        return True, {"mode": "off", "decision": "SKIP"}
+    if mode == "shadow":
+        return True, {
+            "mode": "shadow",
+            "decision": "OBSERVED" if eval_id else "SHADOW_WOULD_BLOCK",
+            "eval_id": eval_id,
+            "reasons": [] if eval_id else ["eval_id_missing (shadow only)"],
+        }
+    if not eval_id:
+        return False, {"mode": "live", "decision": "BLOCK", "reasons": ["eval_id_missing"]}
+    try:
+        gate_dir = Path(__file__).resolve().parents[2] / "45-评测系统"
+        if str(gate_dir) not in sys.path:
+            sys.path.insert(0, str(gate_dir))
+        from core.enforcement import Enforcer  # type: ignore[import-not-found]
+        from core.gate import Gate  # type: ignore[import-not-found]
+        from storage.repo import EvalRepo  # type: ignore[import-not-found]
+
+        decision = Enforcer(Gate(EvalRepo()), shadow=False).enforce("l0_settle", eval_id)
+        return bool(decision.allowed), decision.to_dict()
+    except Exception as exc:
+        return False, {
+            "mode": "live",
+            "decision": "BLOCK",
+            "reasons": [f"eval_gate_unavailable: {exc}"],
+        }
 
 
 from envelope_wrap import wrap_merge_partial as _wrap_merge  # noqa: E402
@@ -96,6 +191,7 @@ from envelope_wrap import wrap_merge_partial as _wrap_merge  # noqa: E402
 SERVER_NAME = "cognitive-memory-server"
 SERVER_VERSION = "1.0.0"
 PROTOCOL_VERSION = "2024-11-05"
+SHELL_ID = "l0.cognition.mcp"
 
 # ============================================================
 # Tool Definitions
@@ -105,6 +201,7 @@ TOOL_DEFINITIONS = [
     {
         "name": "recall",
         "description": "【硬约束·不可跳过】在开始任何编码/调试/分析任务前必须调用。检索相关历史经验，避免重复踩坑、复用已有解决方案。即使认为没有相关经验也必须调用一次——记忆库可能有你不知道的记录。此工具只读不写，无副作用。默认 min_quality=C 返回最多结果，按相关度排序。",
+        "annotations": {"readOnlyHint": True},
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -128,7 +225,8 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "record",
-        "description": "记录新的开发经验到记忆系统。在完成任务后发现新经验时调用。",
+        "description": "记录新的开发经验到记忆系统。在完成任务后发现新经验时调用。写工具需宿主写 scope + 授权主体（默认禁用）。",
+        "annotations": {"readOnlyHint": False, "destructiveHint": False},
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -170,13 +268,35 @@ TOOL_DEFINITIONS = [
                     "items": {"type": "object"},
                     "description": "支撑观察列表",
                 },
+                "external_id": {
+                    "type": "string",
+                    "description": "幂等键（同 key 只写 1 条，C3）",
+                },
+                "idempotency_key": {
+                    "type": "string",
+                    "description": "external_id 的同义字段（C3）",
+                },
+                "principal": {
+                    "type": "string",
+                    "enum": list(PRINCIPAL_ROLES),
+                    "description": "写主体（仅当宿主允许调用方自声明时生效；默认由宿主 Mandate 注入）",
+                },
+                "trace_id": {
+                    "type": "string",
+                    "description": "链路追踪 ID（C4）",
+                },
+                "eval_id": {
+                    "type": "string",
+                    "description": "45 评测受理 ID（C5；enforce 模式必填）",
+                },
             },
             "required": ["content"],
         },
     },
     {
         "name": "verify",
-        "description": "验证记忆并触发贝叶斯置信度更新。在A8校验或测试完成后调用。",
+        "description": "验证记忆并触发贝叶斯置信度更新。在A8校验或测试完成后调用。写工具需宿主写 scope + 授权主体（默认禁用）。",
+        "annotations": {"readOnlyHint": False, "destructiveHint": False},
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -194,6 +314,19 @@ TOOL_DEFINITIONS = [
                     "items": {"type": "string"},
                     "description": "验证后更新的已知局限列表（仅 success=True 时生效，验证后局限可能缩小）",
                 },
+                "principal": {
+                    "type": "string",
+                    "enum": list(PRINCIPAL_ROLES),
+                    "description": "写主体（仅当宿主允许调用方自声明时生效；默认由宿主 Mandate 注入）",
+                },
+                "trace_id": {
+                    "type": "string",
+                    "description": "链路追踪 ID（C4）",
+                },
+                "eval_id": {
+                    "type": "string",
+                    "description": "45 评测受理 ID（C5；enforce 模式必填）",
+                },
             },
             "required": ["memory_id"],
         },
@@ -201,6 +334,7 @@ TOOL_DEFINITIONS = [
     {
         "name": "stats",
         "description": "获取记忆系统统计信息（总数、质量分布、容量等）。",
+        "annotations": {"readOnlyHint": True},
         "inputSchema": {
             "type": "object",
             "properties": {},
@@ -209,6 +343,7 @@ TOOL_DEFINITIONS = [
     {
         "name": "health",
         "description": "记忆系统健康检查（存储状态、引擎状态、容量等）。",
+        "annotations": {"readOnlyHint": True},
         "inputSchema": {
             "type": "object",
             "properties": {},
@@ -227,7 +362,47 @@ _cle_instance: Optional[CognitiveLoopEntry] = None
 
 
 def _get_cle() -> CognitiveLoopEntry:
-    return get_cle()
+    """获取 CLE 单例。
+
+    COGNITIVE_MCP_DB_PATH（或 DREAMBUDDY_COGNITIVE_DB）可显式指定共享库，
+    便于多个 AI 宿主指向同一事实源，避免各自生成 4-MEMORY/data 分叉。
+    """
+    global _cle_instance
+    db_path = (
+        os.environ.get("COGNITIVE_MCP_DB_PATH") or os.environ.get("DREAMBUDDY_COGNITIVE_DB") or ""
+    ).strip()
+    if not db_path:
+        return get_cle()
+    if _cle_instance is None:
+        _cle_instance = CognitiveLoopEntry(storage_path=db_path)
+    return _cle_instance
+
+
+def _write_policy_snapshot() -> Dict[str, Any]:
+    """写治理快照：供新宿主/Agent 自诊断为何写工具不可用。"""
+    return {
+        "mode": COGNITIVE_MCP_MODE,
+        "write_enabled": (not _LOCAL_READONLY)
+        and _env_flag("COGNITIVE_MCP_WRITE_ENABLED", default=False),
+        "principal": _write_principal({}),
+        "eval_gate_mode": os.environ.get("COGNITIVE_MCP_EVAL_GATE_MODE", "shadow").strip().lower(),
+        "db_path": (
+            os.environ.get("COGNITIVE_MCP_DB_PATH")
+            or os.environ.get("DREAMBUDDY_COGNITIVE_DB")
+            or ""
+        ),
+        "allowed_write_roles": sorted(WRITE_ROLES),
+    }
+
+
+def _optional_deps_snapshot() -> Dict[str, bool]:
+    """可选依赖探测（新宿主排障用）。"""
+    import importlib.util
+
+    return {
+        name: importlib.util.find_spec(name) is not None
+        for name in ("networkx", "scipy", "chromadb")
+    }
 
 
 def _l4_snapshot() -> dict:
@@ -260,6 +435,8 @@ def _get_skill_loader():
 
 def _reset_cle():
     """重置单例（测试用）"""
+    global _cle_instance
+    _cle_instance = None
     reset_cle()
 
 
@@ -443,8 +620,22 @@ def _resolve_triggered_skills(tags: List[str]) -> List[str]:
 
 
 def _handle_record(args: Dict[str, Any]) -> str:
-    if _LOCAL_READONLY:  # M3⑧：本地只读降级，写工具明确拒绝
-        return _write_denied("record")
+    denied = _write_gate("record", args)
+    if denied:
+        return denied
+    gate_ok, eval_info = _eval_gate(args)
+    if not gate_ok:
+        return json.dumps(
+            _wrap(
+                None,
+                "cognition.record",
+                degraded=True,
+                error_code="eval_gate_denied",
+                meta={"eval_gate": eval_info},
+                trace_id=_trace_id(args),
+            ),
+            ensure_ascii=False,
+        )
     content = args.get("content", "")
     quality_level = args.get("quality_level", "C")
     tags_str = args.get("tags", "")
@@ -473,6 +664,8 @@ def _handle_record(args: Dict[str, Any]) -> str:
     if "硬约束" in tags and not known_gaps:
         known_gaps = ["硬约束记忆需补充具体 known_gaps（已知局限）"]
 
+    external_id = args.get("external_id") or args.get("idempotency_key")
+
     memory_id = _get_cle().record(
         content=content,
         quality_level=quality_level,
@@ -484,6 +677,7 @@ def _handle_record(args: Dict[str, Any]) -> str:
         observations=observations,
         expected_outcome=expected_outcome,
         actual_outcome=actual_outcome,
+        external_id=external_id,
     )
 
     # TAG_HOOKS：查询 tags → triggered_skills（FAIL-OPEN）
@@ -529,17 +723,35 @@ def _handle_record(args: Dict[str, Any]) -> str:
                 "skill_links": skill_links,
                 "knowledge_ingest_required": knowledge_ingest_required,
                 "receipt_hash": receipt_hash,
+                "external_id": external_id,
+                "principal": _write_principal(args),
+                "eval_gate": eval_info,
                 "l4": _l4_snapshot(),
             },
             "cognition.record",
+            trace_id=_trace_id(args),
         ),
         ensure_ascii=False,
     )
 
 
 def _handle_verify(args: Dict[str, Any]) -> str:
-    if _LOCAL_READONLY:  # M3⑧：本地只读降级，写工具明确拒绝
-        return _write_denied("verify")
+    denied = _write_gate("verify", args)
+    if denied:
+        return denied
+    gate_ok, eval_info = _eval_gate(args)
+    if not gate_ok:
+        return json.dumps(
+            _wrap(
+                None,
+                "cognition.verify",
+                degraded=True,
+                error_code="eval_gate_denied",
+                meta={"eval_gate": eval_info},
+                trace_id=_trace_id(args),
+            ),
+            ensure_ascii=False,
+        )
     memory_id = args.get("memory_id", "")
     success = args.get("success", True)
     known_gaps_update = args.get("known_gaps_update")
@@ -577,21 +789,31 @@ def _handle_verify(args: Dict[str, Any]) -> str:
             pass  # FAIL-OPEN：扫描失败不影响 verify 主流程
 
     result["skill_hooks"] = skill_hooks
+    result["principal"] = _write_principal(args)
+    result["eval_gate"] = eval_info
     # L4: 反思裁决结果（verdict / lessons / should_record）
     try:
         result["l4"] = _l4_snapshot()
     except Exception:
         pass
-    return json.dumps(_wrap(result, "cognition.verify"), ensure_ascii=False)
+    return json.dumps(
+        _wrap(result, "cognition.verify", trace_id=_trace_id(args)),
+        ensure_ascii=False,
+    )
 
 
 def _handle_stats(args: Dict[str, Any]) -> str:
     result = _get_cle().stats()
+    if isinstance(result, dict):
+        result["mcp_policy"] = _write_policy_snapshot()
     return json.dumps(_wrap(result, "cognition.stats"), ensure_ascii=False)
 
 
 def _handle_health(args: Dict[str, Any]) -> str:
     result = _get_cle().healthcheck()
+    if isinstance(result, dict):
+        result["mcp_policy"] = _write_policy_snapshot()
+        result["optional_deps"] = _optional_deps_snapshot()
     # C12：job_runs + 五能力 health_cmd 聚合（FAIL-OPEN，不拖垮认知基础健康）
     try:
         import os as _os
@@ -649,6 +871,14 @@ def _handle_unified_search(args: Dict[str, Any]) -> str:
     top_k = int(args.get("top_k", 5))
     sources = args.get("sources") or None
     result = get_unified_search().search(query, sources=sources, top_k=top_k)
+    # unified_search already returns a full envelope ({ok, data:{hits,...}}).
+    # Do NOT wrap it again via _wrap_merge: that helper drops the nested
+    # `data` field (it treats it as an envelope key), producing `data: {}`.
+    if isinstance(result, dict) and "data" in result:
+        result = dict(result)
+        result["source"] = "search.unified"
+        result.setdefault("version", "0.1")
+        return json.dumps(result, ensure_ascii=False)
     return json.dumps(_wrap_merge(result, "search.unified"), ensure_ascii=False)
 
 
@@ -656,6 +886,7 @@ TOOL_DEFINITIONS.append(
     {
         "name": "unified_search",
         "description": "C7 统一检索：经 Search port 分发三后端（41-SearchAPI/ChromaDB RAG/认知 recall），分数归一化合并去重。单后端失败自动降级其余；全后端不可用返回 error_code=all_sources_unavailable。",
+        "annotations": {"readOnlyHint": True},
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -669,6 +900,15 @@ TOOL_DEFINITIONS.append(
             },
             "required": ["query"],
         },
+    }
+)
+
+TOOL_DEFINITIONS.append(
+    {
+        "name": "l4_status",
+        "description": "L4 元认知层状态聚合：WorkspaceBus / SelfModel / PredictionErrorGate / ReflectionNode / MetacogHarness。",
+        "annotations": {"readOnlyHint": True},
+        "inputSchema": {"type": "object", "properties": {}},
     }
 )
 
@@ -686,109 +926,47 @@ TOOL_HANDLERS = {
 
 
 # ============================================================
-# JSON-RPC 2.0 Handler
+# JSON-RPC 2.0 Handler（P2：转交统一壳运行时）
 # ============================================================
 
-
-def handle_jsonrpc(request: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    处理单个JSON-RPC 2.0请求。
-
-    支持的method:
-      - initialize: MCP握手
-      - tools/list: 列出可用工具
-      - tools/call: 调用工具
-      - notifications/initialized: 初始化完成通知（无需响应）
-    """
-    method = request.get("method", "")
-    req_id = request.get("id")
-    params = request.get("params", {})
-
-    # === initialize ===
-    if method == "initialize":
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "result": {
-                "protocolVersion": PROTOCOL_VERSION,
-                "capabilities": {
-                    "tools": {"listChanged": False},
-                },
-                "serverInfo": {
-                    "name": SERVER_NAME,
-                    "version": SERVER_VERSION,
-                },
-            },
-        }
-
-    # === notifications/initialized (无需响应) ===
-    if method == "notifications/initialized":
-        return None  # 通知不需要响应
-
-    # === tools/list ===
-    if method == "tools/list":
-        return {
-            "jsonrpc": "2.0",
-            "id": req_id,
-            "result": {
-                "tools": TOOL_DEFINITIONS,
-            },
-        }
-
-    # === tools/call ===
-    if method == "tools/call":
-        tool_name = params.get("name", "")
-        tool_args = params.get("arguments", {})
-        # 部分MCP客户端将arguments序列化为JSON字符串而非嵌套对象，需统一解析为dict
-        if isinstance(tool_args, str):
-            try:
-                tool_args = json.loads(tool_args)
-            except json.JSONDecodeError:
-                tool_args = {}
-        if not isinstance(tool_args, dict):
-            tool_args = {}
-
-        if tool_name not in TOOL_NAMES:
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "error": {
-                    "code": -32602,
-                    "message": f"Unknown tool: {tool_name}. Available: {sorted(TOOL_NAMES)}",
-                },
-            }
-
-        try:
-            handler = TOOL_HANDLERS[tool_name]
-            result_text = handler(tool_args)
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "result": {
-                    "content": [
-                        {"type": "text", "text": result_text},
-                    ],
-                },
-            }
-        except Exception as e:
-            return {
-                "jsonrpc": "2.0",
-                "id": req_id,
-                "error": {
-                    "code": -32603,
-                    "message": f"Tool execution error: {type(e).__name__}: {e}",
-                },
-            }
-
-    # === 未知方法 ===
-    return {
-        "jsonrpc": "2.0",
-        "id": req_id,
-        "error": {
-            "code": -32601,
-            "message": f"Method not found: {method}",
-        },
+TOOL_DEFS = {
+    tool["name"]: {
+        "description": tool.get("description", ""),
+        "inputSchema": tool.get("inputSchema") or {"type": "object", "properties": {}},
     }
+    for tool in TOOL_DEFINITIONS
+}
+
+_RUNTIME_TOOLS_CACHE: Optional[List[Dict[str, Any]]] = None
+
+
+def _runtime_tools() -> List[Dict[str, Any]]:
+    global _RUNTIME_TOOLS_CACHE
+    if _RUNTIME_TOOLS_CACHE is None:
+        _RUNTIME_TOOLS_CACHE = build_tool_list(SHELL_ID, TOOL_DEFS)
+    return _RUNTIME_TOOLS_CACHE
+
+
+def handle_jsonrpc(request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """兼容入口：保留旧 API，内部走统一壳运行时。
+
+    部分 MCP 客户端把 arguments 序列化成 JSON 字符串，这里先归一化为 dict。
+    """
+    params = request.get("params")
+    if isinstance(params, dict) and isinstance(params.get("arguments"), str):
+        try:
+            request = dict(request)
+            request["params"] = dict(params, arguments=json.loads(params["arguments"]))
+        except json.JSONDecodeError:
+            pass
+
+    return _runtime_handle(
+        request,
+        shell_id=SHELL_ID,
+        tools=_runtime_tools(),
+        handlers=TOOL_HANDLERS,
+        server_name=SERVER_NAME,
+    )
 
 
 # ============================================================
@@ -796,36 +974,14 @@ def handle_jsonrpc(request: Dict[str, Any]) -> Dict[str, Any]:
 # ============================================================
 
 
-def run_server():
-    """
-    MCP stdio server主循环。
-    从stdin读取JSON-RPC请求，向stdout写入JSON-RPC响应。
-    """
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
-
-        try:
-            request = json.loads(line)
-        except json.JSONDecodeError:
-            response = {
-                "jsonrpc": "2.0",
-                "id": None,
-                "error": {"code": -32700, "message": "Parse error: invalid JSON"},
-            }
-            sys.stdout.write(json.dumps(response) + "\n")
-            sys.stdout.flush()
-            continue
-
-        response = handle_jsonrpc(request)
-
-        # 通知类消息不需要响应
-        if response is None:
-            continue
-
-        sys.stdout.write(json.dumps(response) + "\n")
-        sys.stdout.flush()
+def run_server() -> None:
+    """MCP stdio 主循环（统一壳运行时）。"""
+    run_stdio(
+        SHELL_ID,
+        TOOL_DEFS,
+        TOOL_HANDLERS,
+        server_name=SERVER_NAME,
+    )
 
 
 def _warmup_process_cli(context: str) -> int:

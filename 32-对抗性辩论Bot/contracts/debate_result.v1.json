@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "debate_result.v1",
+  "title": "DebateResult v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "debate_id", "status", "mode", "transcript",
+    "verdict", "adjudication", "research", "meta"
+  ],
+  "properties": {
+    "schema_version": {"const": "debate-result-v1"},
+    "debate_id": {"type": "string"},
+    "status": {"type": "string", "enum": ["queued", "running", "completed", "error"]},
+    "mode": {"type": "string", "enum": ["fast", "deep", "review"]},
+    "topic": {"type": "string"},
+    "rounds": {"type": "integer", "minimum": 1},
+    "transcript": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["speaker", "round", "content"],
+        "properties": {
+          "speaker": {"type": "string", "enum": ["bull", "bear", "judge", "inject"]},
+          "round": {"type": "integer", "minimum": 0},
+          "content": {},
+          "timestamp": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "verdict": {
+      "type": ["object", "null"],
+      "properties": {
+        "summary": {"type": "string"},
+        "winner": {"type": ["string", "null"], "enum": ["bull", "bear", null]},
+        "key_insights": {"type": "array", "items": {"type": "string"}},
+        "topic_angle": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "adjudication": {"type": ["object", "null"]},
+    "research": {
+      "type": ["object", "null"],
+      "required": ["brief", "citations", "source_stats", "degraded"],
+      "properties": {
+        "brief": {"type": "string"},
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "ref", "quote"],
+            "properties": {
+              "source": {"type": "string"},
+              "ref": {"type": "string"},
+              "quote": {"type": "string"},
+              "line": {"type": "integer"},
+              "meta": {"type": "object"}
+            },
+            "additionalProperties": true
+          }
+        },
+        "source_stats": {"type": "array", "items": {"type": "object"}},
+        "degraded": {"type": "boolean"},
+        "errors": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "meta": {"type": "object"},
+    "error": {"type": "string"}
+  }
+}

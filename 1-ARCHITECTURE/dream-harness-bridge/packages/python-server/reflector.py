@@ -20,10 +20,11 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Optional
+
+from robust_json import extract_json_object
 
 logger = logging.getLogger("debate.reflector")
 
@@ -138,23 +139,7 @@ class ReflectionReport:
         }
 
 
-# ── JSON 解析 ─────────────────────────────────────────────────
-
-
-def _extract_json(raw: str) -> dict | None:
-    """从 LLM 输出中提取 JSON 对象。"""
-    raw = raw.strip()
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
-    return None
+# ── JSON 解析：收敛到共享 robust_json（32 canonical + DSH fallback） ──
 
 
 def _extract_argument_text(turn: dict) -> str:
@@ -222,7 +207,7 @@ class Reflector:
             )
 
             raw = self._call_llm(prompt)
-            data = _extract_json(raw)
+            data = extract_json_object(raw)
 
             if data is None:
                 return {"bull_strategies": [], "bear_strategies": [], "confidence": 0.0}
@@ -291,7 +276,7 @@ class Reflector:
             )
 
             raw = self._call_llm(prompt)
-            data = _extract_json(raw)
+            data = extract_json_object(raw)
 
             if data is None:
                 logger.warning("反思 JSON 解析失败，降级")

@@ -48,9 +48,20 @@
 - 50 的 source 角色分类/去重规则见 50 SPEC §4；42 不承担去重语义（仅按 `signal_id` 合并）。
 - 需要新增字段时，优先放在 `payload`（不破坏 SignalSchema v1）；顶层字段变更需 ADR。
 
-## 6. 待办（R0）
+## 6. 11 子池状态写入条件（M5）
 
-1. 打开 `ENABLE_11_STATE_ADAPTER=1`，验证 washout/event-arbitrage 信号 TTL 与去重。
-2. `run_bus` 调度上线（按 horizon/频率）。
-3. 验证 8 源共存、空 bus 告警、源计数指标。
+- `polling_trader._write_subpool_state()` 只在 `_write_shadow_signal()` 内调用（`polling_trader.py:6785/6810`），即**仅被执行权限拦截的开仓意图**才落盘。
+- 若 11 对 washout/event-arbitrage 有 live 执行权，信号会被执行而不是写状态文件 → 42 无源、50 无输入。
+- R0 要求：11 子池配置为 signal-only / authority 可拦截；否则相关标的的 50 输入标记 unavailable（fail-open），不得把“8 源”当既成事实。
+
+## 7. D3 技术源（M2）
+
+- 42 现有 8 源中没有每币技术源（`11-bcrm` 是资产类）。
+- R0 新增 `11-bcrm-tactical`：11 `_last_bcrm2_result` 每币快照 + 42 只读适配器；无该源时 50 的 D3=neutral（降级可观测），不得用资产类信号冒充。
+
+## 8. 待办（R0）
+
+1. 打开 `ENABLE_11_STATE_ADAPTER=1`，验证 washout/event-arbitrage 信号 TTL 与去重；确认 11 子池 authority 配置。
+2. `run_bus` 调度上线（按 horizon/频率）+ 资源基线。
+3. 验证 8 源共存、空 bus 告警、源计数指标；新增 `11-bcrm-tactical`。
 4. 为 50 提供只读快照（bus_state + 源健康度），不新增写接口。

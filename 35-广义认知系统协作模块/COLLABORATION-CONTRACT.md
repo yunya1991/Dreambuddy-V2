@@ -1,6 +1,6 @@
 # 跨系统协作接口契约 — COLLABORATION-CONTRACT
 
-> **版本**: v1.5 | **更新日期**: 2026-11-02
+> **版本**: v1.6 | **更新日期**: 2026-11-08
 > **定位**: 广义认知系统各子系统间协作调用的**接口契约**（权威定义）
 > **SSoT 层级**: L1（协作接口层），各子系统实现必须遵循
 > **关联**: [SPEC-CognitiveSystem-Evolution.md](./SPEC-CognitiveSystem-Evolution.md) §2 L1基础层接线 + [SPEC-Unified-PoE-Framework.md](./SPEC-Unified-PoE-Framework.md) §2.3 有界信任传递 + [SYSTEM_ARCHITECTURE_OVERVIEW v4.1](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) §1.7 L0 统一出口层
@@ -17,7 +17,7 @@
 | Evidence Ledger 接入 | 本契约 | 4-MEMORY/cognitive_loop_entry.py + evidence_ledger.py | P1-L1-1 已落地 |
 | PoE 信任机制 | 本契约 | 4-MEMORY/cognitive_loop_entry.py._check_poe_trust | P1-L1-2b 已落地 |
 | 33-REA → Ledger → record 闭环 | 本契约 | 33-REA/cognitive_integration.py + 4-MEMORY | P1-L1-3 已落地 |
-| 认知 MCP 工具面（读/写 scope + 信封） | 本契约 §5 | 4-MEMORY/cognitive_mcp_server.py | v1.4 新增（口径先行，scope 实现待落地） |
+| 认知 MCP 工具面（读/写 scope + 信封） | 本契约 §5 | 4-MEMORY/cognitive_mcp_server.py | v1.6 已落地（scope/principal/幂等/annotations/eval gate shadow） |
 
 ---
 
@@ -208,12 +208,28 @@ params = prepare_audit_record_params(audit_result)
 - §2 Evidence Ledger：写工具的每次调用都产生 `EvidenceEntry`，`receipt_hash` 作为证据边界供 45 与 A 层 `evidence_backed` 验收消费。
 - **边界**：本契约只管「谁能写、怎么写」；**分域聚合粒度与部署形态不属于本契约**（见 46-DSH架构评估报告）。
 
+### 5.4 实现映射（cognitive_mcp_server.py v1.6）
+
+| 契约 | 环境变量 / 字段 | 默认 | 说明 |
+|---|---|---|---|
+| C3 幂等 | 工具字段 `external_id` / `idempotency_key` | 空 | 原样透传 `CognitiveLoopEntry.record(external_id=...)` |
+| C4 trace | 工具字段 `trace_id` / env `MCP_TRACE_ID` | 空 | 写入统一信封 `trace_id` |
+| C5 45 门禁 | env `COGNITIVE_MCP_EVAL_GATE_MODE` + 工具字段 `eval_id` | `shadow` | `off`/`shadow` 仅记录；`enforce` 无 `eval_id` 或门禁不可用 → `eval_gate_denied` |
+| C6 写 scope | env `COGNITIVE_MCP_WRITE_ENABLED` | `false` | `false` → `scope_denied`（写工具默认禁用） |
+| C6 principal | env `COGNITIVE_MCP_DEFAULT_PRINCIPAL`；可选 `COGNITIVE_MCP_ALLOW_CALLER_PRINCIPAL` | 空 / `false` | 宿主 Mandate 注入；`worker` 只读 → `principal_denied` |
+| C7 annotations | `readOnlyHint` / `destructiveHint` | — | 读工具 `readOnlyHint=true`；`record`/`verify` 为 false |
+| 本地只读降级 | env `COGNITIVE_MCP_MODE=local` | `ssh` | 写工具明确拒绝（`conflict`） |
+
+> **宿主配置建议**：项目级 `.mcp.json` 显式设置 `COGNITIVE_MCP_WRITE_ENABLED=true` +
+> `COGNITIVE_MCP_DEFAULT_PRINCIPAL=admin` 才允许本地写；未配置时写工具保持禁用。
+
 ---
 
 ## 6. 修订记录
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| v1.6 | 2026-11-08 | §5 治理落地：写 scope/principal 门禁、external_id 幂等、trace_id 贯穿、45 eval gate shadow、tool annotations；补 §5.4 实现映射 |
 | v1.0 | 2026-10-11 | 初始版本：从散落 SPEC 收敛 + 定义 4 类协作契约 |
 | v1.1 | 2026-10-11 | P0 落地完成：P0-1/2/5/6 全部 ✅（_check_poe_trust 索引查询 + verify_receipt_exists + WAL + 启动健康检查） |
 | v1.2 | 2026-10-11 | P1 批次1+2 落地：P1-1 poe_mode + P1-2 sample 10% + P1-3 六失效条件 + P1-5 git_commit_hash 全部 ✅（P1-4 待补） |

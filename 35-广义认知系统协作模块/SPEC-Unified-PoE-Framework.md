@@ -1,7 +1,7 @@
 # 统一 PoE 框架 SPEC — Evidence-First 工程审计框架
 
 > **版本**: v2.0 (2026-10-11)
-> **状态**: 草案（v1.0 经 4 维度调研修正后版本）
+> **状态**: ✅ 用户确认（2026-11-02，见 47 ALIGNMENT-46-47 v1.0；实现契约见 [COLLABORATION-CONTRACT.md](./COLLABORATION-CONTRACT.md) v1.6）
 > **父文档**: [DESIGN-PHILOSOPHY-PoE.md](../33-REA逆向解析工程/DESIGN-PHILOSOPHY-PoE.md) v1.1、[SPEC-工程实践复现器.md](../33-REA逆向解析工程/SPEC-工程实践复现器.md) v0.3、[SPEC-CognitiveSystem-Evolution.md](./SPEC-CognitiveSystem-Evolution.md)
 > **关联**: 认知系统 (4-MEMORY)、33-REA 逆向解析工程、自进化系统 (23-)
 

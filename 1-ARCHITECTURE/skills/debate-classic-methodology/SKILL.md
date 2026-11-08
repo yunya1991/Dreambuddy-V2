@@ -6,6 +6,8 @@ status: active
 # debate-classic-methodology — Oxford 式经典辩论赛制
 
 > SPEC v2.0-rc3 第四节。将 v1 的简单轮次循环升级为正式辩论赛制。
+>
+> **实施状态（2026-11-08）**：32 Bot 已实现交叉质询阶段（`core/cross_exam.py` + `orchestrator` + `review_runner` + CLI `--cross-exam`）；Persona 全链路与四阶段完整状态机仍以本地草稿为准。
 
 ## 一、何时调用
 

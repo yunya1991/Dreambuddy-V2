@@ -17,12 +17,12 @@ FAIL-OPEN (HC1): 无 LLM 或异常时返回降级结果，不阻塞主流程。
 
 from __future__ import annotations
 
-import json
 import logging
-import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
+
+from robust_json import extract_json_object
 
 logger = logging.getLogger("debate.adjudicator")
 
@@ -114,24 +114,7 @@ class AdjudicationResult:
         }
 
 
-# ── JSON 解析 ─────────────────────────────────────────────────
-
-
-def _extract_json(raw: str) -> dict | None:
-    """从 LLM 输出中提取 JSON 对象。"""
-    raw = raw.strip()
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        pass
-    # 尝试提取第一个 JSON 对象
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
-    return None
+# ── JSON 解析：收敛到共享 robust_json（32 canonical + DSH fallback） ──
 
 
 def _extract_argument_text(turn: dict) -> str:
@@ -218,7 +201,7 @@ class Adjudicator:
             )
 
             raw = self._call_llm(prompt)
-            data = _extract_json(raw)
+            data = extract_json_object(raw)
 
             if data is None:
                 logger.warning("裁判评分 JSON 解析失败，降级")

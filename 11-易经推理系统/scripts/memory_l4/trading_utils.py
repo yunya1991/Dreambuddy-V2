@@ -9,13 +9,17 @@
    SSoT 文档：19-数据访问层/docs/SCHEMA_DESIGN.md §3.1 / §3.2
 """
 
-import fcntl
 import json
-import logging
 import os
 import sys
 import time
 import uuid
+
+try:
+    import fcntl
+except ImportError:  # Windows：无 fcntl，退化为进程内写
+    fcntl = None
+import logging
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
@@ -459,13 +463,15 @@ class RiskManager:
                 "min_position_usdt": self.state.min_position_usdt,
             }
             with open(self.state_file, "w", encoding="utf-8") as f:
-                fcntl.flock(f, fcntl.LOCK_EX)
+                if fcntl is not None:
+                    fcntl.flock(f, fcntl.LOCK_EX)
                 try:
                     json.dump(data, f, indent=2, ensure_ascii=False)
                     f.flush()
                     os.fsync(f.fileno())
                 finally:
-                    fcntl.flock(f, fcntl.LOCK_UN)
+                    if fcntl is not None:
+                        fcntl.flock(f, fcntl.LOCK_UN)
             self._save_failed = False
         except Exception:
             logger.exception("保存风控状态失败，后续开仓将被拒绝直到恢复")

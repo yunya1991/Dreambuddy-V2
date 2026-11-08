@@ -12,6 +12,7 @@
 - 分割：IS 前 70% / OOS 后 30%；slice = OOS 三等分；
 - FAIL-OPEN：任何异常返回 {}（run_e2 视为该变体不可评估，不中断批次）。
 """
+
 from __future__ import annotations
 
 import csv
@@ -75,14 +76,16 @@ def _backtest_segment(
             if abs(sig) >= confidence and len(open_pos) < max_positions and c > 0:
                 qty = (capital * position_pct) / c
                 if qty > 0:
-                    open_pos.append({
-                        "dir": 1.0 if sig > 0 else -1.0,
-                        "entry": c, "qty": qty, "bars": 0,
-                    })
+                    open_pos.append(
+                        {
+                            "dir": 1.0 if sig > 0 else -1.0,
+                            "entry": c,
+                            "qty": qty,
+                            "bars": 0,
+                        }
+                    )
         # 权益曲线回撤
-        equity = capital + sum(
-            (c - p["entry"]) * p["qty"] * p["dir"] for p in open_pos
-        )
+        equity = capital + sum((c - p["entry"]) * p["qty"] * p["dir"] for p in open_pos)
         peak = max(peak, equity)
         max_dd = max(max_dd, (peak - equity) / peak) if peak > 0 else max_dd
     # 段末强平
@@ -96,7 +99,7 @@ def _backtest_segment(
     if n >= 2:
         mean = sum(trade_pnls) / n
         var = sum((t - mean) ** 2 for t in trade_pnls) / (n - 1)
-        sharpe = mean / (var ** 0.5) if var > 0 else 0.0
+        sharpe = mean / (var**0.5) if var > 0 else 0.0
     else:
         sharpe = 0.0
     return {
@@ -155,7 +158,9 @@ def _load_source(spec: Dict[str, Any]) -> Dict[str, List[float]]:
         return {}
 
 
-def load_extra_sources(extra_sources: Optional[List[Dict[str, Any]]] = None) -> Dict[str, List[float]]:
+def load_extra_sources(
+    extra_sources: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, List[float]]:
     """批量加载额外源（去重：后加载不覆盖先加载）。FAIL-OPEN。"""
     merged: Dict[str, List[float]] = {}
     for spec in extra_sources or []:
@@ -189,8 +194,11 @@ def make_evaluator(
 
             agg: Dict[str, Dict[str, float]] = {}
             for name, (seg_start, seg_end) in (
-                ("is", (0.0, 0.7)), ("oos", (0.7, 1.0)),
-                ("slice0", (0.7, 0.8)), ("slice1", (0.8, 0.9)), ("slice2", (0.9, 1.0)),
+                ("is", (0.0, 0.7)),
+                ("oos", (0.7, 1.0)),
+                ("slice0", (0.7, 0.8)),
+                ("slice1", (0.8, 0.9)),
+                ("slice2", (0.9, 1.0)),
             ):
                 pnl = 0.0
                 trades = 0
@@ -201,8 +209,13 @@ def make_evaluator(
                     s = int(n * seg_start)
                     e = max(s + 1, int(n * seg_end))
                     r = _backtest_segment(
-                        closes, s, e, confidence, position_pct,
-                        max_positions, interval_bars,
+                        closes,
+                        s,
+                        e,
+                        confidence,
+                        position_pct,
+                        max_positions,
+                        interval_bars,
                     )
                     pnl += r["total_pnl_pct"]
                     trades += r["n_trades"]
@@ -235,4 +248,5 @@ if __name__ == "__main__":
     ev = make_evaluator()
     demo = {"struct_vector": {"threshold_bins": [10, 3, 10, 4]}}
     import json
+
     print(json.dumps(ev(demo), ensure_ascii=False, indent=2))

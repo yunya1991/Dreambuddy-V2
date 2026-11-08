@@ -122,6 +122,7 @@ def _drive_domain(
     started_all = time.perf_counter()
     proc: Optional[subprocess.Popen] = None
     try:
+        env = dict(env, PYTHONIOENCODING="utf-8")
         proc = subprocess.Popen(
             [python_bin, str(server)],
             cwd=str(_REPO_ROOT),
@@ -129,6 +130,7 @@ def _drive_domain(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
             env=env,
         )
         _write_request(

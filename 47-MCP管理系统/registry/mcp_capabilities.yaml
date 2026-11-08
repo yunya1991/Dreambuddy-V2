@@ -27,8 +27,8 @@
 #   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
 #   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
 schema_version: "1.1-mcp"
-registry_version: "0.4"
-last_updated: "2026-11-05"
+registry_version: "0.5"
+last_updated: "2026-11-08"
 # 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
 # 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
 single_source_of_truth: true
@@ -84,6 +84,12 @@ shells:
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
       - name: health
+        port: memory
+        domain: cognition
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: l4_status              # L4 元认知层状态（P0 漂移门禁实测补登）
         port: memory
         domain: cognition
         read_write: read
@@ -362,6 +368,114 @@ shells:
         requires_mandate: true
         annotations: { readOnlyHint: false, destructiveHint: true }
 
+  # 壳 ⑨ 对抗性辩论 Bot（32）——评审/红队计算，只读；异步 job 模式
+  # start_debate 立即返回 debate_id，get_debate_result 轮询；不阻塞 MCP 调用。
+  - shell_id: agent.debate.mcp
+    capability_id: l0.rea        # analysis 域，复用 l0.rea（不新增 capability_id）
+    transport: stdio
+    shell_path: "mcp_shells/debate_adversarial/server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.1"
+    status: available
+    capabilities:
+      shadow_capable: false
+      training_hooks: []
+      oracle_verifiable: false
+    tools:
+      - name: start_debate
+        port: analysis
+        domain: eval
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_debate_result
+        port: analysis
+        domain: eval
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: debate_health
+        port: analysis
+        domain: eval
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+
+  # 壳 ⑩ L1 交易层 MCP（49 §3.8，10 工具）——L2 只读观察 + L1 内部 forward
+  # 读工具聚合 23/40/42/43 状态与执行层持仓/余额；forward_signal 需 Mandate。
+  - shell_id: l1.trading.mcp
+    capability_id: l1.trading
+    transport: stdio
+    shell_path: "mcp_shells/l1_trading/server.py"
+    shell_cmd: "python3 {path}"
+    envelope_version: "0.1"
+    status: available
+    capabilities:
+      shadow_capable: false
+      training_hooks: []
+      oracle_verifiable: false
+    tools:
+      - name: get_signal_state
+        port: analysis
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_bus_state
+        port: analysis
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_constraint_state
+        port: analysis
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_cycle_state
+        port: analysis
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_strategic_extension
+        port: analysis
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_decision_diagnostics
+        port: analysis
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_training_status
+        port: analysis
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_positions
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_balance
+        port: event
+        domain: trade-exec
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: forward_signal
+        port: event
+        domain: trade-exec
+        read_write: write
+        requires_mandate: true
+        annotations: { readOnlyHint: false, destructiveHint: false }
+
 # ── Worker 角色→能力标签（46-DSH ADR-4 / DD2 定稿，A3 落地）────────────
 # 分工：「角色→能力标签」在此登记（唯一载体）；「能力标签→工具集」由上方
 # shells 段推导，不重复定义工具 schema。Router 只感知角色/标签，不感知全量
@@ -395,6 +509,21 @@ worker_roles:
             get_account_mode, reconcile, read_signals]
     # 硬约束（ADR-9/H7）：Worker 角色只读，禁止纳入 requires_mandate=true 的写工具。
     # place_order / cancel_order / ingest_signal 仅由编排侧（持 Mandate）调用。
+  l2_analysis:
+    description: L2 分析 Worker——只读辩论/调研 + 认知检索（不触发信号/执行/训练）
+    shells: [agent.debate.mcp, l0.cognition.mcp]
+    tools: [start_debate, get_debate_result, debate_health,
+            recall, unified_search, stats, health]
+    # start_debate 仅创建本地 job（readOnlyHint=true），不产生交易/外部写。
+
+  l2_trading_analysis:
+    description: L2 交易观察 Worker——只读 L1 状态（信号/总线/周期/战略/持仓/余额）
+    shells: [l1.trading.mcp]
+    tools: [get_signal_state, get_bus_state, get_constraint_state,
+            get_cycle_state, get_strategic_extension,
+            get_decision_diagnostics, get_training_status,
+            get_positions, get_balance]
+    # 只读 9 工具；forward_signal 是写工具（requires_mandate=true），不进入 Worker 角色。
 
 # ── 枚举词典（校验器参照）───────────────────────────────────────
 enums:
@@ -406,5 +535,6 @@ enums:
   envelope_version: ["0.1", "0.2"]
   # 每个 shell 的工具数硬上限（SPEC §3.3 B2：Worker 角色→工具集矩阵，每角色 ≤10 工具）
   max_tools_per_shell: 10
-  # 聚合 2-3 shell 总工具数上限（SPEC R1 工具面膨胀治理）
-  max_total_tools: 40
+  # 全局软上限（G1-b，用户 2026-11-08 确认）：主约束是每壳/每角色 ≤10，
+  # 全局 80 仅作工具面膨胀的兜底护栏（原 40 会阻塞新域接入）
+  max_total_tools: 80

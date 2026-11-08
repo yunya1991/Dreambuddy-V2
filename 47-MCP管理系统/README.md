@@ -20,7 +20,10 @@ L0 六域 MCP 化封装（用户决策 2026-11-02，D1-D6）涉及跨域契约�
 |---|---|---|
 | [docs/tech/SPEC-L0-MCP-PACKAGING-v0.3.md](./docs/tech/SPEC-L0-MCP-PACKAGING-v0.3.md) | L0 六域 MCP 封装实施 SPEC：契约映射/写工具治理/P0-P3 路线/D1-D6 决策记录 | **v0.3 决议落定**（B1-B6/G1-G3），可开工；R8 终审待云端签发 |
 | [docs/tech/ALIGNMENT-46-47-v1.0.md](./docs/tech/ALIGNMENT-46-47-v1.0.md) | 与 46-DSH 升级文档的对齐审查：6 冲突 + 3 架构缺口 + 合并开工顺序 + Go/No-Go | 开工前终审输入 |
-| [docs/tech/TECH-L0-MCP-v0.1.md](./docs/tech/TECH-L0-MCP-v0.1.md) | MCP 技术设计：壳层 envelope、工具注册表、能力集、已落地工具测试方法；§10.1 云端审计快照（v0.1.1） | ✅ M1①-④ 已落地；基线报告已生成 |
+| [docs/tech/ASSESSMENT-L0-MCP-GENERALITY-v0.1.md](./docs/tech/ASSESSMENT-L0-MCP-GENERALITY-v0.1.md) | L0 MCP 通用性评估：八维评分、六个硬障碍、三件套、A→B 路线；P3 拆 P3a/P3b + P4 共享沉淀草案（暂不开发） | 🟢 **P0-P3b 已落地（2026-11-08）**；P3a 的 SDK/wheel 后置；G1-b 全局软上限 80 |
+| [docs/tech/SPEC-L0-MCP-GATEWAY-v0.1.md](./docs/tech/SPEC-L0-MCP-GATEWAY-v0.1.md) | L0 角色能力网关协议：角色投影、forbidden 语义、失败分型、壳生命周期、单条接入、G1 已决 | ✅ P1 已落地（2026-11-08） |
+| [docs/tech/SPEC-L0-MCP-DISCOVERY-v0.1.md](./docs/tech/SPEC-L0-MCP-DISCOVERY-v0.1.md) | L0 能力发现：Agent Card schema、静态索引、运行时 `_meta`、协议版本协商、未做边界 | ✅ P3b 已落地（2026-11-08） |
+| [docs/tech/TECH-L0-MCP-v0.1.md](./docs/tech/TECH-L0-MCP-v0.1.md) | MCP 技术设计：壳层 envelope、工具注册表、能力集、已落地工具测试方法；§6.4 `mcpctl`、§6.5 网关、§6.6 发现/协商、§6.7 Docker、§10.1 云端审计（v0.1.5） | ✅ M1①-④ 已落地；P0-P3 控制面/网关/运行时/发现/分发已接线 |
 | [docs/tech/SPEC-L0-DOMAIN-AGENTS-v0.2.md](./docs/tech/SPEC-L0-DOMAIN-AGENTS-v0.2.md) | 域内 agent SPEC：Phase A-E 路线 + Dream-RSI `V_new(π,T)` α 分量 | ✅ v0.2；Phase A 已落地 |
 | [docs/tech/SPEC-L0-DATA-AGENT-v0.1.md](./docs/tech/SPEC-L0-DATA-AGENT-v0.1.md) | 数据域 agent L0 底层能力管理协议：六子 agent 独立子协议（[data-agents/](./docs/tech/data-agents/)）+ DAL 查询面扩展 + P0-P3 路线 | ✅ v0.1；P0/P1/P2 已落地（macro/chain/flow/breadth/capital_flow/sentiment 六子协议文件已登记） |
 | [docs/tech/SPEC-L0-AGENT-TRAIN-BASE-v0.1.md](./docs/tech/SPEC-L0-AGENT-TRAIN-BASE-v0.1.md) | 训练基座 SPEC：TB1 PSI / TB2 Beta verify / TB3 AlphaPareto 七维 / TB4 Thompson / TB5 GRPO | ✅ TB1-TB5 + Phase A **48/48 TDD**，影子验证 PASS |
@@ -40,7 +43,8 @@ L0 六域 MCP 化封装（用户决策 2026-11-02，D1-D6）涉及跨域契约�
 | REPORT-L0-MCP-DSH-IMPACT v1.1 | `46-DSH架构/docs/tech/` | 影响评估（本 SPEC 上游，评估归档，已勘误 F1/F2/F6/F7） |
 | ANALYSIS-L0-MCP-ENCAPSULATION | `46-DSH架构/docs/tech/` | 评估底稿 |
 | SPEC-L0-three-layer-architecture | `44-三端协作架构系统/docs/tech/` | 六 port + 统一信封（内层不动） |
-| COLLABORATION-CONTRACT.md | `35-广义认知系统协作模块/` | 认知 MCP 工具面协作契约（待按 SPEC §6.3 更新 scope/写门禁） |
+| COLLABORATION-CONTRACT.md | `35-广义认知系统协作模块/` | 认知 MCP 工具面协作契约（v1.6：scope/写门禁已落地） |
+| QUICKSTART-AI-HOST-INTEGRATION.md | `35-广义认知系统协作模块/` | AI 宿主快速接入与踩坑固化（安装器/print-config/自检） |
 
 ## 存量 MCP 面登记（契约注册表 P0 前过渡）
 

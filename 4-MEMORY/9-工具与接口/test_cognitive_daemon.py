@@ -261,7 +261,7 @@ def test_daemon_log_file_redirect():
 
         # 验证写入了日志文件
         assert os.path.exists(log_path), f"日志文件应被创建: {log_path}"
-        content = Path(log_path).read_text()
+        content = Path(log_path).read_text(encoding="utf-8")
         assert "测试日志行 A" in content, f"日志应包含行A，实际：{content[:500]}"
         assert "测试日志行 B" in content, f"日志应包含行B，实际：{content[:500]}"
 

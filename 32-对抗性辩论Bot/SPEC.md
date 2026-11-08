@@ -1,9 +1,27 @@
 # 32-对抗性辩论Bot — 设计规格 (SPEC)
 
-> **版本**: v0.5 (修复评审全部 6 Major + 8 Minor + 3 Nit 问题，SPEC 设计定稿)
-> **日期**: 2026-10-10
+> **版本**: v0.5 设计稿 + v0.6/v0.7/P0/P1/P2 + 交叉质询/L1 MCP 实施附录（2026-11-08）
+> **日期**: 2026-10-10（设计）；2026-11-08（实施状态更新）
 > **定位**: 营销型内容生产引擎 — 在社群中让两个持对立立场的 AI 辩手机器人围绕指定话题展开多轮辩论，产出有传播价值的话题内容
 > **参考基准**: [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) 的 Bull/Bear 对抗辩论机制
+
+## 实施状态摘要（2026-11-08）
+
+| 范围 | 状态 | 证据 |
+|---|---|---|
+| v0.5 核心设计（§1-§12） | ✅ 已实现 | `core/orchestrator.py`、`core/agents.py`、`core/telegram_bot.py`、`core/bot_handler.py`、`core/marketing.py`、`core/quality.py` + 单测 |
+| v0.6 工程化修复（附录） | ✅ 已实现 | `core/llm_compat.py`、`core/robust_json.py`、`cli.py`、`core/review_runner.py`、`mcp_shells/debate_adversarial/` |
+| v0.7 Research Prepass P0 + L1 | ✅ 已实现 | `core/research.py`（L0 + `l1_signal`/`l1_bus`/`l1_cycle`）、`contracts/*.v1.json`、P0/P3 记录 |
+| P1 fast/deep + adjudication | ✅ 已实现 | `core/dsh_backend.py`、47 `l2_analysis` 注册、P1 记录 |
+| P2（32 模块内） | ✅ 已实现 | MCP 频控/并发/TTL/结果截断；DSH `robust_json` 收敛；P2 记录 |
+| 交叉质询阶段（v2.0-rc3 §4） | ✅ 已实现 | `core/cross_exam.py` + `agents.cross_examine/answer_cross` + 编排器/review/CLI/MCP 接入 |
+| 业务 Profile 层 | ✅ 已实现 | `core/profiles/`：`marketing` / `technical` / `signal`；配置/CLI/MCP/review 入口 |
+| review 模式 adjudication | ✅ 已实现 | `review_runner` 默认调用 DSH `Adjudicator`；`adjudication=false` 可关闭 |
+| C-Drive v1→MCP 迁移 | ✅ 已实现（默认关闭） | `debate_mcp_client.py` + `DEBATE_MCP_ENABLED` / 灰度 / 连续失败回滚 |
+| `l1.trading.mcp` | ✅ 已实现 | `mcp_shells/l1_trading/server.py` 10 工具；47 `l2_trading_analysis` 注册 |
+| TokenBudget（§5.6） | ⏳ 未实现 | 仅 `config.debate.budget` 配置项，无追踪/降级代码 |
+
+> 结论：**32 模块 P0/P1/P2 与三项跨模块集成已完成**；仅 TokenBudget 为设计稿遗留。真实 Telegram 群 E2E 仍需 token 环境验收。
 
 ---
 
@@ -130,6 +148,18 @@ Telegram Bot API 默认情况下，一个 bot **收不到另一个 bot 在群里
 
 ---
 
+### 2.3 业务 Profile 层（2026-11-08）
+
+通用辩论循环（轮次/状态机/交叉质询/裁判/结果契约）与业务语义解耦，profile 只替换角色设定与输出字段：
+
+| profile | 适用 | 关键差异 | 输出扩展 |
+|---|---|---|---|
+| `marketing` | 社群营销 | 营销辩手/裁判；保留传播力评分与素材提取 | 金句/标签/精华/短文案 |
+| `technical` | 技术方案/架构红队 | 论点必须带 `file:line`/文档/命令证据；裁判关注可行性/风险/证据缺口 | `Argument.evidence`；`Verdict.feasibility/risks/evidence_gaps/recommendation` |
+| `signal` | C-Drive 交易信号 | 多空信号评审；输入为信号 bundle；不以营销话术立论 | `Verdict.signal{direction, confidence, risk_flags, evidence, counter_evidence}` |
+
+入口：`debate.profile` / CLI `--profile` / MCP `start_debate.profile` / `run_review_sync(profile=...)`。C-Drive 固定 `signal`；49/架构评审用 `technical`；Telegram 营销默认 `marketing`。profile 注册表：`core/profiles/__init__.py`。
+
 ## 三、核心组件设计
 
 ### 3.1 DebateOrchestrator（辩论编排器）
@@ -230,6 +260,8 @@ class Argument:
     confidence: float     # 本方置信度（0-1）
     raw: str              # 原始 LLM 输出
 ```
+
+> **交叉质询（v2.0-rc3 §4.2，已实现，默认关闭）**：`core/cross_exam.py` 执行 Bear→Bull、Bull→Bear 双向质询；`orchestrator` 在第 1 轮后插入 `cross_exam` 阶段，`review_runner`/CLI/MCP 均可开启。`MarketingExtractor._extract_cross_exam_highlights()` 提取精彩 Q&A。完整赛制参见 `.trae/documents/debate-engine-v2-spec.md`（本地草稿，未入库）。
 
 ### 3.3 JudgeAgent（综合裁判，可选）
 
@@ -392,7 +424,11 @@ topic_filter:
 - **输出限长**：辩手 `max_tokens` 限制在 600，避免啰嗦
 - **立场 prompt 精简**：去除冗余说明，保留核心约束
 
+> **实施状态（2026-11-08）**：v0.6 为修复输出截断，将评审路径辩手 `max_tokens` 提升到 2000、裁判 1600；Telegram/CLI 路径现读取 `config.llm.max_tokens`（默认 debater=2000、judge=1600、marketing/quality=1000）。上表 600 为初稿成本估算，不是当前默认值。
+
 ### 5.6 Token 预算门禁
+
+> **实施状态（2026-11-08）：⏳ 未实现。** 当前只有 `config.debate.budget.monthly_limit_yuan` 配置项，没有 `TokenBudget` 类、用量统计或超预算降级逻辑。以下为设计稿。
 
 在 `DebateOrchestrator` 内置成本追踪器，超预算自动降级或拒绝：
 
@@ -623,15 +659,120 @@ def is_admin(update) -> bool:
 
 ---
 
-## 十二、验收标准（初稿）
+## 十二、验收标准与状态（2026-11-08）
 
-- [ ] 两个 bot 能在同一 Telegram 群中交替发言辩论
-- [ ] 辩论轮次受 max_rounds 控制，不会无限循环
-- [ ] 双方立场稳定，不出现中立/让步
-- [ ] 输出结构化 Argument，JSON 解析成功率 > 95%
-- [ ] 能提取至少 2 条金句 + 3 个话题标签 + 1 段精华段落
-- [ ] LLM 调用失败时有明确降级，不崩溃
-- [ ] 辩论结束后自动生成质量评分（含 S/A/B/C 分级）
-- [ ] 管理员 `/stop` `/pause` `/resume` 命令生效，非管理员无权限
-- [ ] `/inject <观点>` 后下一轮辩手能回应注入观点
-- [ ] 输出完整辩论记录（transcript + verdict + material + quality_score）供外部分发
+| 验收项 | 状态 | 证据/说明 |
+|---|---|---|
+| 两个 bot 能在同一 Telegram 群中交替发言辩论 | ✅ 单测覆盖 | `orchestrator` + `TelegramDualBot` + `listener`；真实群需 token 环境验收 |
+| 辩论轮次受 max_rounds 控制，不会无限循环 | ✅ | `orchestrator._run_debate` + 测例 |
+| 双方立场稳定，不出现中立/让步 | ✅ | 立场锁 prompt + 对方论点定向反驳（已修复 bear 提示词误标“反方”） |
+| 输出结构化 Argument，JSON 解析成功率 > 95% | ✅ 机制覆盖 | `robust_json` + 重试 1 次 + FAIL-OPEN；未做线上成功率统计 |
+| 能提取至少 2 条金句 + 3 个话题标签 + 1 段精华段落 | ✅ | `marketing` 规则提取；话题标签已扩展到 topic + thesis + arguments |
+| LLM 调用失败时有明确降级，不崩溃 | ✅ | `Argument.fallback` / `_fallback_verdict` / 营销/质量 fallback |
+| 辩论结束后自动生成质量评分（含 S/A/B/C 分级） | ✅ | `quality.py` + 测例 |
+| 管理员 `/stop` `/pause` `/resume` 命令生效，非管理员无权限 | ✅ | `bot_handler.py` + `listener.is_admin` + 测例 |
+| `/inject <观点>` 后下一轮辩手能回应注入观点 | ✅ | 已修复运行中注入：每次辩手调用前同步 `_injected_views` |
+| `/debate <话题> --bg <背景>` 生效 | ✅ | `bot_handler._parse_topic_background` + 测例 |
+| 交叉质询双向 Q&A 写入 transcript | ✅ | `core/cross_exam.py` + `orchestrator`/`review_runner` 接入 + 测例 |
+| marketing profile 行为不变 | ✅ | 默认 `debate.profile=marketing`；原营销/质量测试全绿 |
+| technical profile 输出证据/可行性/风险 | ✅ | `Argument.evidence` + `Verdict.feasibility/risks/evidence_gaps/recommendation` + 测例 |
+| signal profile 输出信号方向/置信度/风险 | ✅ | `Verdict.signal{direction,confidence,risk_flags,evidence,counter_evidence}` + 测例 |
+| review 模式产出 6 维 adjudication | ✅ | `review_runner._run_adjudication` + 测例（`adjudication=false` 可关闭） |
+| 输出完整辩论记录（transcript + verdict + material + quality_score）供外部分发 | ✅ | `DebateResult.to_dict()` |
+
+---
+
+## 附：v0.6 工程化修复与 Agent/MCP 接入（2026-11-07）
+
+> 背景：2026-11-07 用本 Bot 对 49 双链架构做对抗评审时，暴露了调用链上的实际 bug；本版按“下次直接可用、其他 Agent 易接入”目标修复。
+
+1. **LLM 适配解耦（核心修复）**：新增 `core/llm_compat.py`，支持 `anthropic`（含 Claude Code 代理）/ `openai_compat`（DashScope/OpenAI）/ 可选 `langchain`；`provider=auto` 自动探测，缺依赖/缺 key 给出明确错误。旧 `core/llm_adapter.py` 保留为兼容层，并内置无 LangChain 的消息 fallback。
+2. **健壮 JSON 解析**：新增 `core/robust_json.py`，支持代码围栏、前后散文、嵌套对象；旧 `_extract_json` 的 `{[^{}]*}` 截断问题已修，解析失败会记录 raw 前 300 字符。
+3. **输出截断修复**：辩手 `max_tokens` 默认 2000、裁判 1600；裁判 prompt 压缩为“双方最后一轮 + 前 2 条论据”，避免长 prompt 被网关截断（曾出现只返回 `{"`）。
+4. **重试/超时**：LLM 调用带 `timeout_sec` 与指数退避重试；失败不阻塞整场辩论（FAIL-OPEN）。
+5. **CLI 增强**：`--doctor` 连通性自检；`--json/--review` 输出结构化评审 JSON；`--background-file` 读背景文件；`--provider/--model` 覆盖配置。
+6. **Agent 复用入口**：新增 `core/review_runner.py` 的 `run_review_sync()`，返回 `{topic, rounds, status, transcript, verdict, meta}`；不产生营销素材，便于其他系统直接消费。
+7. **MCP 封装（47 注册）**：新增 `mcp_shells/debate_adversarial/server.py`，注册为 `agent.debate.mcp`（3 工具：`start_debate` / `get_debate_result` / `debate_health`）；异步 job 模式避免 30-90s 辩论阻塞 MCP 调用；`mcp_profiles.json` 增加 `debate-local` profile。
+8. **测试**：新增 robust_json / llm_compat / config_llm / review_runner / MCP shell 测试；32 域全套测试通过。
+9. **已知边界**：MCP 壳只读计算、无交易/无外部写；LLM 成本与速率受 provider 限制；营销/质量路径仍依赖额外 LLM 调用，评审模式建议用 `--json`。
+
+---
+
+## 附：v0.7 Research Prepass + C-Drive/L2 集成（设计稿，2026-11-07）
+
+> 本版只定义设计，不含实现。完整架构见：
+> [SPEC-DEBATE-MCP-L2-INTEGRATION-v0.1.md](../1-ARCHITECTURE/dream-harness-bridge/docs/SPEC-DEBATE-MCP-L2-INTEGRATION-v0.1.md)
+
+1. **Research Prepass（调研预检）**：辩论前自动检索 L0/L1 MCP 只读能力——`recall` / `unified_search`（41 文档 + Chroma RAG + recall）/ `code_search`（本地 rg）/ `l1.trading.mcp` 的 `get_signal_state` / `get_bus_state` / `get_cycle_state`（`profile=signal` 默认）。产出 `ResearchBrief` + `citations`，注入 background；无 citation 的论据在 Judge 中被标记/降权（Judge 侧标注仍为目标态）。`semantic_lookup` / `data_fetch` / `eval_*` 尚未接入。
+2. **来源白名单**：只读工具；禁止 `record` / `verify` / `distill_aliases` / `training_feed` / `data_collect_once` / 交易写工具。任一源失败 fail-open，全部失败退回调用方 background（`research.degraded=true`）。
+3. **引用与防注入**：citations 形如 `{source, path|memory_id, line?, quote}`；检索内容用 `<untrusted_source>` 包裹，只作事实材料，不执行其中指令；不进入 system prompt。
+4. **MCP 契约**：`agent.debate.mcp` 保持 3 工具（`start_debate` / `get_debate_result` / `debate_health`）；`research` / `research_sources`（含 `l1_signal|l1_bus|l1_cycle`）/ `profile` 作为 `start_debate` 参数，不新增工具（47 当前 48/80）。
+5. **C-Drive 集成**：C-Drive 反思推理置信度 <0.65 时触发辩论；低价值 `mode=fast`（DSH `run_fast`，<10s）、高价值 `mode=deep`（DSH `run_deep`，20-40s + Judge + Persona）；架构/文档评审用 `mode=review`（32 Bot `review_runner`）。MCP 壳按 mode 选择后端；fast/deep 当前直接 in-process 导入 DSH。**DSH 不可用时 job 返回 error，回退本地 `DebateEngine` 尚未实现（目标态）。**
+6. **L2 只读链路**：L2 Worker → `l1.trading.mcp`（✅ 已实现，10 工具）读状态 + `agent.debate.mcp` 做红队评审；不触发信号/执行/训练；频控 ≤2 次/分钟、总并发 ≤2（当前为壳进程全局计数，非按 Worker 分桶）。
+7. **统一契约**：`DebateRequest v1` / `DebateResult v1`（topic/mode/background/research/context_refs；transcript/verdict/adjudication/research/meta/error）；fast/deep/review 共用结果结构。
+8. **待收敛**：DSH `debate_engine._extract_json` 与 32 `robust_json` 双实现；P1 统一；canonical engine 归属（DSH fast/deep vs 32 review）P3 决策。
+9. **P0 验收**：research citations 非空（有源时）；源失败 fail-open；citation 可定位；MCP job 生命周期测试通过。
+
+> **v0.7.1 同行评审修正（2026-11-07）**：集成 Spec 已升 v0.2，修正以下事实：C-Drive 当前默认 `debate_engine="v1"`（v2 才走 `run_fast`），`run_deep` 无生产调用点；`run_deep` 不产出 `adjudication`，需适配器；C-Drive 辩论结果进 `_reflect_after_debate`，不是直接进 Aggregator/A0；`unified_search` 经 MCP 返回 `data:{}`（双层信封 bug），是 Research Prepass 的 P0 硬前置；L2 Worker 需在 47 `worker_roles` 注册 `agent.debate.mcp`；`l1.trading.mcp` 当前不存在。详见集成 Spec v0.2 §12。**上述缺口已于 2026-11-08 修复/落地，见下方 P3 实施记录。**
+
+### P0 实施记录（2026-11-07）
+
+| 项 | 状态 | 落点 |
+|---|---|---|
+| M1 `unified_search` 双层信封 | ✅ 已修 | `4-MEMORY/9-工具与接口/cognitive_mcp_server.py` `_handle_unified_search` 保留 `data.hits`；实测 `hits=1` |
+| M2 CitationAdapter | ✅ 已实现 | `core/research.py`：unified/recall/code 三源映射、`(source,ref)` 去重、`<untrusted_source>` 包裹 |
+| M8 源健康 | ✅ 已实现 | `source_stats`：`source_unavailable` / `no_results` / `partial_sources`；`research.degraded` |
+| M9 安全 | ✅ 已实现 | code_search 排除 `.env/.key/.pem/credentials` 等；`redact()` 脱敏 `sk-*`/`gho_*`/AKIA/Bearer/私钥 |
+| M7 契约 | ✅ 已实现 | `contracts/debate_request.v1.json`、`debate_result.v1.json` + 示例 + `jsonschema` 测试 |
+| MCP `mode`/`research` | ✅ P0→P1 | `mcp_shells/debate_adversarial/server.py`：P0 落 `mode=review` + `research`；P1 已补 `fast/deep` |
+| 裁判稳定性 | ✅ 已修 | 长 prompt 截断时 `JudgeAgent` 规则降级裁决；CLI/MCP stdout UTF-8 |
+| 代码检索兜底 | ✅ 已实现 | 无 `rg` 时 `git grep` → Python 预算扫描（6s/5000 文件），避免 MCP job 卡死 |
+| MCP job 超时/编码 | ✅ 已修 | `DEBATE_JOB_TIMEOUT_SEC=180`；**stdin/stdout/stderr 全部 UTF-8**（修复中文 topic 被 GBK 解码成 `双决`） |
+| 测试 | ✅ | 32 域测试全绿；MCP 壳测试 7 个全绿；47 registry 校验通过 |
+
+**实跑**：
+- CLI：`python cli.py "49 双决策链架构 50 评估器" --rounds 1 --json --research` → `status=completed`、`citations=3`、`research.degraded=false`。
+- MCP：`start_debate(topic="49 双决策链架构", rounds=1, research=true)` → `status=completed`、`citations=4`、`research.degraded=false`、`winner=bear`；source_stats：`unified_search:partial_sources(search41)`、`recall:ok`、`code_search:ok`。
+
+### P1 实施记录（2026-11-08）
+
+| 项 | 状态 | 落点 |
+|---|---|---|
+| **fast 后端** | ✅ 已实现 | `core/dsh_backend.py`：DSH `DebateEngine.run_fast`；1 轮 2 调用；MCP `mode=fast` |
+| **deep 后端** | ✅ 已实现 | `core/dsh_backend.py`：DSH `DebateEngine.run_deep`（2 轮 + Judge + Persona）；MCP `mode=deep` |
+| **adjudication** | ✅ 已实现 | DSH `Adjudicator.adjudicate` → 6 维评分 + RFD；`adjudication` 字段落盘 |
+| **L2 注册** | ✅ 已实现 | 47 `worker_roles.l2_analysis`：`agent.debate.mcp` + `l0.cognition.mcp`（只读，7 工具） |
+| **测试** | ✅ | 32 域测试全绿；MCP 壳测试全绿；47 registry 校验通过 |
+| **实跑** | ✅ | fast：`status=completed`、2 turns、adjudication=null；deep：`status=completed`、4 turns、winner=bear、adjudication={bear_total:24 vs bull_total:23, rfd} |
+| **剩余** | ✅ P2 已完成 | 见下方 P2 实施记录 |
+
+### P2 实施记录（2026-11-08）
+
+| 项 | 状态 | 落点 |
+|---|---|---|
+| **JSON 解析收敛** | ✅ 已实现 | DSH 新增 `packages/python-server/robust_json.py`（优先导入 32 `core.robust_json` canonical，独立运行回退同算法本地实现）；`debate_engine.py`/`adjudicator.py`/`reflector.py` 三处 `_extract_json` 移除，统一调用 `extract_json_object`；修复旧 `\{[^{}]*\}` 正则无法处理嵌套对象的 bug |
+| **L2 频控** | ✅ 已实现 | MCP `server.py`：滑动窗口 `_rate_limit_check()`，默认 ≤2 次/分钟/Worker，超限返回 `error_code=timeout`，不排队 |
+| **并发上限** | ✅ 已实现 | `_concurrent_acquire/release()`，默认 ≤2 并发，超限返回 `timeout` 并回退频控配额 |
+| **Job TTL** | ✅ 已实现 | job 写入 `expires_at`（默认 24h）；`get_debate_result` 检测过期返回 `not_found` 并删文件；`_sweep_jobs()` 清理过期 + 裁剪到最多 100 个 |
+| **结果大小限制** | ✅ 已实现 | `_truncate_result()`：单 job >1MB 时截断 `result` 并标记 `degraded/result_truncated` |
+| **测试** | ✅ | 当前全量 357 passed（32 域 268 + debate MCP 壳 16 + DSH debate/adjudicator/reflector/validator/robust_json/C-Drive MCP 73），0 failed |
+| **剩余** | — | **32 模块内 P2 全部完成** |
+
+> **范围说明（2026-11-08）**：集成 SPEC 的 P2 项中，C-Drive `v1→v2/MCP` 迁移（feature flag + 灰度 + 回滚）与 `l1.trading.mcp` 已落地；仅 L2 报告链路未单独验收。详见 [SPEC-DEBATE-MCP-L2-INTEGRATION-v0.1.md](../1-ARCHITECTURE/dream-harness-bridge/docs/SPEC-DEBATE-MCP-L2-INTEGRATION-v0.1.md) §9。
+
+### P3 实施记录（2026-11-08）
+
+| 项 | 状态 | 落点 |
+|---|---|---|
+| **交叉质询** | ✅ 已实现 | `core/cross_exam.py`：Bear→Bull、Bull→Bear 双向 Q&A；`agents.cross_examine/answer_cross`；`orchestrator` 第 1 轮后插入；`review_runner`/CLI `--cross-exam`/MCP `cross_examination` |
+| **review adjudication** | ✅ 已实现 | `review_runner` 默认调用 DSH `Adjudicator`，6 维评分 + RFD；`adjudication=false` 关闭；失败 FAIL-OPEN |
+| **C-Drive MCP 迁移** | ✅ 已实现 | `debate_mcp_client.py` + `c_drive_agent._mcp_debate`；`DEBATE_MCP_ENABLED`、`DEBATE_MCP_GRAY_PERCENT`、连续失败自动回退本地 |
+| **L1 交易 MCP** | ✅ 已实现 | `mcp_shells/l1_trading/server.py` 10 工具；47 `worker_roles.l2_trading_analysis` 9 只读工具；`mcp_profiles.json` `l1-trading-local` |
+| **Business profile** | ✅ 已实现 | `core/profiles/{marketing,technical,signal}.py`；`Argument.evidence` + `Verdict.{feasibility,risks,evidence_gaps,recommendation,signal}`；C-Drive 经 MCP 传 `profile=signal` |
+| **测试** | ✅ | l1 壳 14 passed；C-Drive 迁移 7 passed；32 域 268 passed；47 registry 48 active 工具校验通过；真实 LLM signal + L1 research 链路实跑通过 |
+
+> **真实 LLM signal 实跑（2026-11-08）**：`DebateMCPClient → agent.debate.mcp(mode=fast, profile=signal, research=True)`，provider=anthropic（代理），`status=completed`、`profile=signal`、`backend=32-signal`、2 turns、`degraded=false`；裁判输出 `signal.direction/confidence/risk_flags/evidence/counter_evidence`。C-Drive `_bull_bear_debate` 映射成功：bull=0.74 / bear=0.60、`signal.direction=long`、`signal.confidence=0.65`、5 条 `risk_flags`，MCP 错误计数 0。
+>
+> **L1 research 实跑（2026-11-08）**：`research=True` + `research_sources=[unified_search,recall,code,l1_signal,l1_bus,l1_cycle]` → 8 条 citation，其中 `l1_bus`、`l1_cycle` 各 1 条；`l1_signal` 因当前无 `23_signal_state.json`/`11 event_driven_state.json` 标记 `source_unavailable`（fail-open）；`research.degraded=false`。C-Drive signal 辩论已显式启用 research。
+>
+> **设计稿遗留**：TokenBudget（§5.6）仍未实现；`SPEC v2.0-rc3` 其余赛制（Persona 全链路/四阶段完整状态机）未纳入本 SPEC v0.5 验收。

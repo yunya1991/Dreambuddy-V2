@@ -298,13 +298,16 @@ class TemplateMappingRegistry:
             "updated_at": time.time(),
             "mappings": [m.to_dict() for m in self.list_all()],
         }
-        self.storage_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        self.storage_path.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     def load(self):
         if not self.storage_path.exists():
             return
         try:
-            data = json.loads(self.storage_path.read_text())
+            data = json.loads(self.storage_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             return
         self._mapping = {}
@@ -462,7 +465,7 @@ class ProcessTemplateRegistry:
         if not self.meta_storage.exists():
             return
         try:
-            data = json.loads(self.meta_storage.read_text())
+            data = json.loads(self.meta_storage.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             return
         for tid, tdata in data.items():
@@ -476,7 +479,7 @@ class ProcessTemplateRegistry:
                 if f.name.startswith("."):
                     continue
                 try:
-                    data = json.loads(f.read_text())
+                    data = json.loads(f.read_text(encoding="utf-8"))
                 except (json.JSONDecodeError, OSError):
                     continue
                 templates = data if isinstance(data, list) else [data]
@@ -794,7 +797,10 @@ class ProcessTemplateRegistry:
 
     def _save_meta_templates(self):
         data = {tid: t.to_dict() for tid, t in self._meta_templates.items()}
-        self.meta_storage.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+        self.meta_storage.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     def _persist_applied_template(self, template: ProcessTemplate):
         """将单个应用模板持久化到对应应用记忆单元的 solution_paths。"""
@@ -832,7 +838,10 @@ class ProcessTemplateRegistry:
 
         target_dir.mkdir(parents=True, exist_ok=True)
         file_path = target_dir / f"{template.template_id}.json"
-        file_path.write_text(json.dumps(template.to_dict(), indent=2, ensure_ascii=False))
+        file_path.write_text(
+            json.dumps(template.to_dict(), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     def load(self):
         """从文件重新加载所有模板（元 + 应用）。"""

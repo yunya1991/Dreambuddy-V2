@@ -8,7 +8,10 @@
       "args": ["<REPO_ROOT>/4-MEMORY/9-工具与接口/cognitive_mcp_server.py"],
       "env": {
         "COGNITIVE_MCP_MODE": "local",
-        "PYTHONPATH": "<REPO_ROOT>"
+        "COGNITIVE_MCP_WRITE_ENABLED": "false",
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONPATH": "<REPO_ROOT>/4-MEMORY/9-工具与接口"
       }
     },
     "cognitive-cloud-ssh": {
@@ -18,9 +21,38 @@
         "-o",
         "BatchMode=yes",
         "dreambuddy-remote",
-        "sudo -n -u luke -H env PYTHONPATH=/home/luke/dreambuddy/4-MEMORY/9-工具与接口 /home/luke/venv-trading/bin/python /home/luke/dreambuddy/4-MEMORY/9-工具与接口/cognitive_mcp_server.py"
+        "sudo -n -u luke -H env PYTHONPATH=/home/luke/dreambuddy/4-MEMORY/9-工具与接口 PYTHONUTF8=1 PYTHONIOENCODING=utf-8 COGNITIVE_MCP_WRITE_ENABLED=true COGNITIVE_MCP_DEFAULT_PRINCIPAL=admin /home/luke/venv-trading/bin/python /home/luke/dreambuddy/4-MEMORY/9-工具与接口/cognitive_mcp_server.py"
       ],
       "env": {}
+    },
+    "gateway-research": {
+      "description": "P1 单条角色网关：tools/list 精确等于 worker_roles.research.tools（≤10），角色外/写工具 forbidden",
+      "command": "python3",
+      "args": ["<REPO_ROOT>/mcp_shells/l0_gateway/server.py", "--role", "research"],
+      "env": {
+        "PYTHONPATH": "<REPO_ROOT>",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
+    "debate-local": {
+      "description": "本地 stdio 对抗辩论壳（32 Bot）：异步 job；LLM 经 ANTHROPIC_* 或 DASHSCOPE_API_KEY",
+      "command": "python3",
+      "args": ["<REPO_ROOT>/mcp_shells/debate_adversarial/server.py"],
+      "env": {
+        "PYTHONPATH": "<REPO_ROOT>",
+        "DEBATE_PROVIDER": "auto",
+        "DEBATE_MAX_ROUNDS": "3"
+      }
+    },
+    "l1-trading-local": {
+      "description": "本地 stdio L1 交易层只读壳：23/40/42/43 状态 + 执行层持仓/余额；forward_signal 需 Mandate",
+      "command": "python3",
+      "args": ["<REPO_ROOT>/mcp_shells/l1_trading/server.py"],
+      "env": {
+        "PYTHONPATH": "<REPO_ROOT>",
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8"
+      }
     }
   }
 }

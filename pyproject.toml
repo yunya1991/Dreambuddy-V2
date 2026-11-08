@@ -48,6 +48,13 @@ sde = [
     "torch>=2.0",
     "torchsde>=0.2.6",
 ]
+knowledge = [
+    "networkx>=3.0",
+    "chromadb>=1.0",
+]
+embedding = [
+    "sentence-transformers>=2.0",
+]
 
 [tool.black]
 line-length = 100

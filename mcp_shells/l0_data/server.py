@@ -20,7 +20,6 @@ from __future__ import annotations
 import json
 import os
 import sys
-import time
 from pathlib import Path
 from typing import Any, Dict
 
@@ -30,7 +29,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
-from mcp_shells._shared.shadow_hook import observe_envelope  # noqa: E402
+from mcp_shells._shared.shell_runtime import run_stdio  # noqa: E402
 
 SHELL_SOURCE = "l0.data.mcp"
 
@@ -312,6 +311,51 @@ def _handle_data_store_write(args: Dict[str, Any]) -> str:
         )
 
 
+TOOL_DEFS = {
+    "data_fetch": {
+        "description": "Fetch data context by scope (Collector, read-only)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "scope": {"type": "string"},
+                "params": {"type": "object"},
+            },
+            "required": ["scope"],
+        },
+    },
+    "data_collect_once": {
+        "description": "List available data scopes (Collector, read-only)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"source": {"type": "string"}},
+        },
+    },
+    "data_store_read": {
+        "description": "Read-only store query via DAL (Store, read-only)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "table": {"type": "string"},
+                "filters": {"type": "object"},
+                "limit": {"type": "integer"},
+            },
+            "required": ["table"],
+        },
+    },
+    "data_store_write": {
+        "description": "Store write (BANNED by default, requires Mandate)",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "table": {"type": "string"},
+                "data": {"type": "object"},
+                "idempotency_key": {"type": "string"},
+            },
+            "required": ["table", "data"],
+        },
+    },
+}
+
 TOOL_HANDLERS = {
     "data_fetch": _handle_data_fetch,
     "data_collect_once": _handle_data_collect_once,
@@ -320,94 +364,5 @@ TOOL_HANDLERS = {
 }
 
 
-def _handle_request(req: Dict[str, Any]) -> Dict[str, Any]:
-    method = req.get("method", "")
-    if method == "initialize":
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}}},
-        }
-    if method == "tools/list":
-        tools = [
-            {
-                "name": "data_fetch",
-                "description": "Fetch data context by scope (Collector, read-only)",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-            },
-            {
-                "name": "data_collect_once",
-                "description": "List available data scopes (Collector, read-only)",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-            },
-            {
-                "name": "data_store_read",
-                "description": "Read-only store query via DAL (Store, read-only)",
-                "annotations": {"readOnlyHint": True, "destructiveHint": False},
-            },
-            {
-                "name": "data_store_write",
-                "description": "Store write (BANNED by default, requires Mandate)",
-                "annotations": {"readOnlyHint": False, "destructiveHint": True},
-            },
-        ]
-        return {"jsonrpc": "2.0", "id": req.get("id"), "result": {"tools": tools}}
-    if method == "tools/call":
-        params = req.get("params", {})
-        name = params.get("name", "")
-        handler = TOOL_HANDLERS.get(name)
-        if handler is None:
-            return {
-                "jsonrpc": "2.0",
-                "id": req.get("id"),
-                "error": {"code": -32601, "message": f"Method not found: {name}"},
-            }
-        started = time.perf_counter()
-        result_text = handler(params.get("arguments", {}))
-        # COMM-SHADOW 旁路观察（默认关闭，FAIL-OPEN）：实测耗时 + 工具名补齐轨迹信号
-        observe_envelope(
-            result_text,
-            latency_ms=round((time.perf_counter() - started) * 1000.0, 3),
-            action=name,
-        )
-        return {
-            "jsonrpc": "2.0",
-            "id": req.get("id"),
-            "result": {"content": [{"type": "text", "text": result_text}], "isError": False},
-        }
-    return {
-        "jsonrpc": "2.0",
-        "id": req.get("id"),
-        "error": {"code": -32601, "message": f"Method not found: {method}"},
-    }
-
-
-def main() -> None:
-    """stdio 主循环：逐行读取 JSON-RPC 请求。"""
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            req = json.loads(line)
-        except json.JSONDecodeError:
-            sys.stdout.write(
-                json.dumps(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {"code": -32700, "message": "Parse error"},
-                    }
-                )
-                + "\n"
-            )
-            sys.stdout.flush()
-            continue
-        resp = _handle_request(req)
-        if resp is not None:
-            sys.stdout.write(json.dumps(resp) + "\n")
-            sys.stdout.flush()
-
-
 if __name__ == "__main__":
-    main()
+    run_stdio(SHELL_SOURCE, TOOL_DEFS, TOOL_HANDLERS)

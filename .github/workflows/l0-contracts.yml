@@ -31,7 +31,8 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pyyaml numpy pandas scipy requests lightgbm
+          pip install pytest pytest-asyncio pyyaml numpy pandas scipy requests lightgbm
+          pip install httpx jsonschema anthropic openai
       - name: Validate capabilities declaration (C6)
         run: |
           python scripts/validate_capabilities.py
@@ -41,6 +42,20 @@ jobs:
       - name: Validate capability set (47 M1② — cross-refs 47 registry)
         run: |
           python "0-系统文档管理/scripts/validate_capability_set.py" --quiet
+      - name: Validate MCP registry ↔ shell tools/list drift (P0)
+        run: |
+          python "47-MCP管理系统/registry/scripts/check_mcp_tool_drift.py" --quiet
+      - name: Validate gateway profile generation (P1)
+        run: |
+          python "47-MCP管理系统/registry/scripts/mcpctl.py" profile --role research --gateway --out /tmp/l0-research.mcp.json
+          python -c "import json; d=json.load(open('/tmp/l0-research.mcp.json')); assert list(d['mcpServers']) == ['l0-research']"
+      - name: Validate new-shell scaffold (P2)
+        run: |
+          python "47-MCP管理系统/registry/scripts/mcpctl.py" new-shell --name ci-demo --domain data --port analysis --tools demo_read:read --repo-root /tmp/ci-demo
+          python -m py_compile /tmp/ci-demo/mcp_shells/ci-demo/server.py
+      - name: Validate Agent Card index (P3b)
+        run: |
+          python "47-MCP管理系统/registry/scripts/mcpctl.py" cards --check
       - name: C10 direct-connection gate (ratchet, blocking)
         run: |
           python scripts/check_db_direct_imports.py --ratchet
@@ -50,3 +65,45 @@ jobs:
       - name: Run MCP shell contract tests (M2/M3/M4 + V5 trace_id 贯穿)
         run: |
           python -m pytest mcp_shells/ -v --tb=short
+      - name: Run 32 debate bot tests (core + contracts + P0/P1/P2)
+        run: |
+          python -m pytest "32-对抗性辩论Bot/tests" -q --tb=short
+      - name: Run DSH debate tests (C-Drive MCP migration + adjudication)
+        run: |
+          python -m pytest \
+            1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_c_drive_debate_mcp.py \
+            1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_debate_engine.py \
+            1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_adjudicator.py \
+            1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_reflector.py \
+            1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_adjudication_validator.py \
+            1-ARCHITECTURE/dream-harness-bridge/packages/python-server/test_robust_json.py \
+            -q --tb=short
+      - name: Run mcpctl P0-P3 tests (profile / doctor / drift / cards / new-shell)
+        run: |
+          python -m pytest "47-MCP管理系统/registry/scripts/test_mcpctl.py" -v --tb=short
+
+  mcp-docker:
+    name: MCP Docker packaging (P3a, blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build L0 MCP gateway image
+        run: |
+          docker build -f deploy/mcp/Dockerfile -t l0-mcp .
+      - name: Smoke test protocol negotiation + role tools
+        run: |
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | docker run -i --rm l0-mcp --role verifier > /tmp/mcp-out.jsonl
+          python - <<'PY'
+          import json
+          lines = [json.loads(line) for line in open('/tmp/mcp-out.jsonl') if line.strip()]
+          by_id = {m.get('id'): m for m in lines}
+          assert by_id[1]['result']['protocolVersion'] == '2025-06-18'
+          names = [t['name'] for t in by_id[2]['result']['tools']]
+          expected = ['eval_analyze', 'eval_report', 'store_admin_status',
+                      'store_admin_query', 'recall']
+          assert names == expected, names
+          print('docker gateway smoke OK:', names)
+          PY

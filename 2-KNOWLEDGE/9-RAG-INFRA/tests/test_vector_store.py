@@ -20,9 +20,11 @@ _RAG_INFRA_DIR = Path(__file__).resolve().parent.parent
 if str(_RAG_INFRA_DIR) not in sys.path:
     sys.path.insert(0, str(_RAG_INFRA_DIR))
 
-import pytest  # noqa: E402, I001
-from vector_store import build_index, search, chunk_markdown, Embedder  # noqa: E402
+import pytest  # noqa: E402
+from vector_store import Embedder, build_index, chunk_markdown, search  # noqa: E402
 from vector_store.embedder import _embedder  # noqa: E402
+
+pytestmark = pytest.mark.skipif(build_index is None, reason="chromadb 未安装（向量检索为可选依赖）")
 
 # 测试环境未缓存 bge 模型：直接启用 TF-IDF 回退路径（与生产 FAIL-OPEN 行为一致），
 # 同时避免加载真实模型时导入 torch，保持测试快速且不依赖网络。
@@ -140,9 +142,9 @@ def test_tc2_incremental_update(kb_dir, db_dir):
 def test_tc3_semantic_search_bcrm(db_dir):
     results = search("BCRM推理模型", db_path=str(db_dir), top_k=5)
     assert len(results) > 0
-    assert any(r["source_file"] == "1-TRADING/BCRM推理引擎.md" for r in results), [
-        r["source_file"] for r in results
-    ]
+    assert any(
+        r["source_file"].replace("\\", "/") == "1-TRADING/BCRM推理引擎.md" for r in results
+    ), [r["source_file"] for r in results]
 
 
 # ---------- TC4：域过滤 ----------

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "debate_request.v1",
+  "title": "DebateRequest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "topic", "mode"],
+  "properties": {
+    "schema_version": {"const": "debate-request-v1"},
+    "topic": {"type": "string", "minLength": 1, "maxLength": 2000},
+    "mode": {"type": "string", "enum": ["fast", "deep", "review"]},
+    "profile": {
+      "type": "string",
+      "enum": ["auto", "marketing", "technical", "signal", "generic"]
+    },
+    "client": {"type": "string", "enum": ["cdrive", "bot32", "l2", "external"]},
+    "background": {"type": "string", "maxLength": 20000},
+    "context_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {"type": "string", "enum": ["doc", "memory", "code", "data"]},
+          "id": {"type": "string"},
+          "path": {"type": "string"},
+          "line": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": true
+      }
+    },
+    "research": {"type": "boolean", "default": false},
+    "research_sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["unified_search", "recall", "semantic", "data", "code", "code_search", "eval", "l1_signal", "l1_bus", "l1_cycle", "l1", "l1_trading"]
+      }
+    },
+    "rounds": {"type": "integer", "minimum": 1, "maximum": 3},
+    "judge": {"type": "boolean"},
+    "adjudication": {"type": "boolean"},
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_chars": {"type": "integer", "minimum": 1},
+        "max_sources": {"type": "integer", "minimum": 1},
+        "max_tokens": {"type": "integer", "minimum": 1},
+        "timeout_sec": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "trace_id": {"type": "string"}
+  }
+}

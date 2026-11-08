@@ -1,0 +1,440 @@
+{
+  "schema_version": "1.0-agent-card-index",
+  "generated_by": "mcpctl cards",
+  "registry": {
+    "schema_version": "1.1-mcp",
+    "registry_version": "0.5"
+  },
+  "cards": {
+    "research": {
+      "schema_version": "1.0-agent-card",
+      "name": "l0-research",
+      "display_name": "L0 research capability gateway",
+      "description": "研究 Worker——认知检索 / 金融语义 / REA 分析（只读）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "research"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "recall",
+            "read_only": true
+          },
+          {
+            "name": "unified_search",
+            "read_only": true
+          },
+          {
+            "name": "stats",
+            "read_only": true
+          },
+          {
+            "name": "health",
+            "read_only": true
+          },
+          {
+            "name": "query_entity",
+            "read_only": true
+          },
+          {
+            "name": "semantic_lookup",
+            "read_only": true
+          },
+          {
+            "name": "submit_rea_analyze",
+            "read_only": true
+          },
+          {
+            "name": "poll_rea_analyze",
+            "read_only": true
+          }
+        ],
+        "tool_count": 8,
+        "read_only": true
+      },
+      "registry": {
+        "schema_version": "1.1-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "engineer": {
+      "schema_version": "1.0-agent-card",
+      "name": "l0-engineer",
+      "display_name": "L0 engineer capability gateway",
+      "description": "工程 Worker——数据读取 / REA 分析与对比（只读）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "engineer"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "data_fetch",
+            "read_only": true
+          },
+          {
+            "name": "data_store_read",
+            "read_only": true
+          },
+          {
+            "name": "recall",
+            "read_only": true
+          },
+          {
+            "name": "submit_rea_analyze",
+            "read_only": true
+          },
+          {
+            "name": "poll_rea_analyze",
+            "read_only": true
+          },
+          {
+            "name": "submit_rea_compare",
+            "read_only": true
+          },
+          {
+            "name": "poll_rea_compare",
+            "read_only": true
+          }
+        ],
+        "tool_count": 7,
+        "read_only": true
+      },
+      "registry": {
+        "schema_version": "1.1-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "verifier": {
+      "schema_version": "1.0-agent-card",
+      "name": "l0-verifier",
+      "display_name": "L0 verifier capability gateway",
+      "description": "验收 Worker——评测 / 库管只读 / 证据检索（只读）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "verifier"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "eval_analyze",
+            "read_only": true
+          },
+          {
+            "name": "eval_report",
+            "read_only": true
+          },
+          {
+            "name": "store_admin_status",
+            "read_only": true
+          },
+          {
+            "name": "store_admin_query",
+            "read_only": true
+          },
+          {
+            "name": "recall",
+            "read_only": true
+          }
+        ],
+        "tool_count": 5,
+        "read_only": true
+      },
+      "registry": {
+        "schema_version": "1.1-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "executor": {
+      "schema_version": "1.0-agent-card",
+      "name": "l0-executor",
+      "display_name": "L0 executor capability gateway",
+      "description": "执行 Worker——交易执行观测（trade-exec 壳，只读）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "executor"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "get_positions",
+            "read_only": true
+          },
+          {
+            "name": "get_balance",
+            "read_only": true
+          },
+          {
+            "name": "pre_trade_check",
+            "read_only": true
+          },
+          {
+            "name": "check_exit",
+            "read_only": true
+          },
+          {
+            "name": "get_account_mode",
+            "read_only": true
+          },
+          {
+            "name": "reconcile",
+            "read_only": true
+          },
+          {
+            "name": "read_signals",
+            "read_only": true
+          }
+        ],
+        "tool_count": 7,
+        "read_only": true
+      },
+      "registry": {
+        "schema_version": "1.1-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "l2_analysis": {
+      "schema_version": "1.0-agent-card",
+      "name": "l0-l2_analysis",
+      "display_name": "L0 l2_analysis capability gateway",
+      "description": "L2 分析 Worker——只读辩论/调研 + 认知检索（不触发信号/执行/训练）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "l2_analysis"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "start_debate",
+            "read_only": true
+          },
+          {
+            "name": "get_debate_result",
+            "read_only": true
+          },
+          {
+            "name": "debate_health",
+            "read_only": true
+          },
+          {
+            "name": "recall",
+            "read_only": true
+          },
+          {
+            "name": "unified_search",
+            "read_only": true
+          },
+          {
+            "name": "stats",
+            "read_only": true
+          },
+          {
+            "name": "health",
+            "read_only": true
+          }
+        ],
+        "tool_count": 7,
+        "read_only": true
+      },
+      "registry": {
+        "schema_version": "1.1-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "l2_trading_analysis": {
+      "schema_version": "1.0-agent-card",
+      "name": "l0-l2_trading_analysis",
+      "display_name": "L0 l2_trading_analysis capability gateway",
+      "description": "L2 交易观察 Worker——只读 L1 状态（信号/总线/周期/战略/持仓/余额）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "l2_trading_analysis"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "get_signal_state",
+            "read_only": true
+          },
+          {
+            "name": "get_bus_state",
+            "read_only": true
+          },
+          {
+            "name": "get_constraint_state",
+            "read_only": true
+          },
+          {
+            "name": "get_cycle_state",
+            "read_only": true
+          },
+          {
+            "name": "get_strategic_extension",
+            "read_only": true
+          },
+          {
+            "name": "get_decision_diagnostics",
+            "read_only": true
+          },
+          {
+            "name": "get_training_status",
+            "read_only": true
+          },
+          {
+            "name": "get_positions",
+            "read_only": true
+          },
+          {
+            "name": "get_balance",
+            "read_only": true
+          }
+        ],
+        "tool_count": 9,
+        "read_only": true
+      },
+      "registry": {
+        "schema_version": "1.1-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    }
+  }
+}

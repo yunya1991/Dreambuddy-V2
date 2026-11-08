@@ -26,7 +26,6 @@
 
 import json
 import logging
-import os
 import sys
 import time
 from dataclasses import dataclass
@@ -39,12 +38,12 @@ _SCRIPT_DIR = Path(__file__).parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from cognitive_loop_entry import CognitiveLoopEntry, get_cle
-
+from cognitive_loop_entry import CognitiveLoopEntry, get_cle  # noqa: E402
 
 # ============================================================
 # 会话数据模型
 # ============================================================
+
 
 @dataclass
 class RecalledProcessItem:
@@ -52,12 +51,13 @@ class RecalledProcessItem:
 
     kind='meta' = 原版 SKILL.md；kind='applied' = 历史 Solution Path。
     """
+
     kind: str  # 'meta' or 'applied'
-    meta: Optional[Any]        # SuperpowersSkill 对象（meta 时）
+    meta: Optional[Any]  # SuperpowersSkill 对象（meta 时）
     applied: Optional[Dict[str, Any]]  # 应用认知流程摘要（applied 时）
     match_score: float
     match_reason: str
-    skill_id: Optional[str]    # 原版 Skill ID（meta 时必填；applied 时 parent_skill_id）
+    skill_id: Optional[str]  # 原版 Skill ID（meta 时必填；applied 时 parent_skill_id）
     applied_id: Optional[str]  # applied 的 template_id（applied 时必填）
 
 
@@ -71,8 +71,12 @@ class CognitiveSession:
         self.status: str = "active"  # active, ended
         self.action_chain: List[Dict[str, Any]] = []
         self.recalled_memory_ids: List[str] = []  # recall注入的建议记忆ID
-        self.active_reflection_id: Optional[str] = None  # 最近一次建议注入的reflection_id（动作侧补记用）
-        self.recalled_processes: List[RecalledProcessItem] = []   # recall注入的流程（设计节 4.2 强类型）
+        self.active_reflection_id: Optional[str] = (
+            None  # 最近一次建议注入的reflection_id（动作侧补记用）
+        )
+        self.recalled_processes: List[RecalledProcessItem] = (
+            []
+        )  # recall注入的流程（设计节 4.2 强类型）
         self.task_type: str = ""  # 从首批文件变更推断
         self.files_touched: set = set()
         # task_type演进历史: [{from, to, action_count, timestamp}]
@@ -101,16 +105,22 @@ class CognitiveSession:
         recalled_processes_serialized = []
         for item in self.recalled_processes:
             try:
-                recalled_processes_serialized.append({
-                    "kind": item.kind,
-                    "match_score": item.match_score,
-                    "match_reason": item.match_reason,
-                    "skill_id": item.skill_id,
-                    "applied_id": item.applied_id,
-                    "meta_skill_id": getattr(item.meta, "skill_id", None) if item.meta else None,
-                    "meta_display_name": getattr(item.meta, "display_name", None) if item.meta else None,
-                    "applied_summary": item.applied,
-                })
+                recalled_processes_serialized.append(
+                    {
+                        "kind": item.kind,
+                        "match_score": item.match_score,
+                        "match_reason": item.match_reason,
+                        "skill_id": item.skill_id,
+                        "applied_id": item.applied_id,
+                        "meta_skill_id": (
+                            getattr(item.meta, "skill_id", None) if item.meta else None
+                        ),
+                        "meta_display_name": (
+                            getattr(item.meta, "display_name", None) if item.meta else None
+                        ),
+                        "applied_summary": item.applied,
+                    }
+                )
             except Exception:
                 continue
         return {
@@ -147,15 +157,17 @@ class CognitiveSession:
         # 恢复 recalled_processes（修复：原遗漏导致跨进程丢失）
         for rp in data.get("recalled_processes", []):
             try:
-                sess.recalled_processes.append(RecalledProcessItem(
-                    kind=rp.get("kind", "meta"),
-                    meta=None,  # SuperpowersSkill 对象不反序列化（按需重新 retrieve）
-                    applied=rp.get("applied_summary"),
-                    match_score=rp.get("match_score", 0.0),
-                    match_reason=rp.get("match_reason", ""),
-                    skill_id=rp.get("skill_id"),
-                    applied_id=rp.get("applied_id"),
-                ))
+                sess.recalled_processes.append(
+                    RecalledProcessItem(
+                        kind=rp.get("kind", "meta"),
+                        meta=None,  # SuperpowersSkill 对象不反序列化（按需重新 retrieve）
+                        applied=rp.get("applied_summary"),
+                        match_score=rp.get("match_score", 0.0),
+                        match_reason=rp.get("match_reason", ""),
+                        skill_id=rp.get("skill_id"),
+                        applied_id=rp.get("applied_id"),
+                    )
+                )
             except Exception:
                 continue
         # 兼容旧数据：反序列化后，用重载后的action_chain长度恢复检查点
@@ -169,7 +181,7 @@ class CognitiveSession:
         if not chain_file.exists():
             return
         try:
-            with open(chain_file, "r") as f:
+            with open(chain_file, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -257,6 +269,7 @@ def _should_evolve_task_type(
 
     # 统计最近窗口内每个task_type的出现次数
     from collections import Counter
+
     type_counter: Counter = Counter()
     for f in recent_files:
         t = infer_task_type([f])
@@ -291,7 +304,7 @@ def _should_evolve_task_type(
 # ============================================================
 
 INACTIVITY_THRESHOLD = 600  # 10分钟无活动 → 新会话
-SESSION_TIMEOUT = 1800      # 30分钟无活动 → 会话结束
+SESSION_TIMEOUT = 1800  # 30分钟无活动 → 会话结束
 
 # SP（Solution Path）沉淀门槛：避免每次会话超时都生成低质 C 级 SP 噪声。
 # 满足任一条件才沉淀到 solution_paths 活跃目录：
@@ -306,10 +319,10 @@ SP_DEPOSIT_MIN_FILES = 5
 class CognitiveSessionManager:
     """
     管理认知会话的生命周期。
-    
+
     集成到daemon中：daemon检测到文件变更时调用on_file_change()
     集成到git hook中：commit时调用on_commit()
-    """
+    """  # noqa: W293
 
     def __init__(self, sessions_dir: Optional[str] = None):
         """
@@ -335,7 +348,7 @@ class CognitiveSessionManager:
     def _persist_current_session_id(self):
         """将当前会话ID持久化到磁盘，供其他进程（git hook）恢复。"""
         if self.current_session:
-            self._current_session_file.write_text(self.current_session.id)
+            self._current_session_file.write_text(self.current_session.id, encoding="utf-8")
         else:
             self._clear_current_session_id()
 
@@ -352,7 +365,7 @@ class CognitiveSessionManager:
         if not self._current_session_file.exists():
             return
         try:
-            session_id = self._current_session_file.read_text().strip()
+            session_id = self._current_session_file.read_text(encoding="utf-8").strip()
         except OSError:
             return
         if not session_id:
@@ -364,7 +377,7 @@ class CognitiveSessionManager:
             self._clear_current_session_id()
             return
         try:
-            data = json.loads(meta_file.read_text())
+            data = json.loads(meta_file.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             return
         # 只恢复未结束的会话
@@ -384,8 +397,7 @@ class CognitiveSessionManager:
         now = time.time()
 
         # 检查是否需要开新会话
-        if (self.current_session is None or
-                now - self._last_activity > INACTIVITY_THRESHOLD):
+        if self.current_session is None or now - self._last_activity > INACTIVITY_THRESHOLD:
             # 结束旧会话（如果有）
             if self.current_session and self.current_session.status == "active":
                 self._end_session(timeout=True)
@@ -401,7 +413,9 @@ class CognitiveSessionManager:
             self._inject_recall(self.current_session)
 
             # 记录行动
-            self.current_session.add_action("file_change", f"{change_type}: {filepath}", file=filepath)
+            self.current_session.add_action(
+                "file_change", f"{change_type}: {filepath}", file=filepath
+            )
 
             # 持久化会话
             self._save_session(self.current_session)
@@ -435,12 +449,14 @@ class CognitiveSessionManager:
             if new_type:
                 old_type = sess.task_type
                 # 记录演进历史
-                sess.task_type_history.append({
-                    "from": old_type,
-                    "to": new_type,
-                    "action_count": len(sess.action_chain),
-                    "timestamp": now,
-                })
+                sess.task_type_history.append(
+                    {
+                        "from": old_type,
+                        "to": new_type,
+                        "action_count": len(sess.action_chain),
+                        "timestamp": now,
+                    }
+                )
                 # 更新task_type
                 sess.task_type = new_type
                 # 记录演进行动
@@ -462,6 +478,7 @@ class CognitiveSessionManager:
             else:
                 # 检查是否应进入灵敏模式：非当前 task_type 的累计占比是否 ≥ 灵敏阈值
                 from collections import Counter
+
                 type_counter: Counter = Counter()
                 for f in recent_files:
                     type_counter[infer_task_type([f])] += 1
@@ -478,15 +495,21 @@ class CognitiveSessionManager:
             try:
                 if self._refresher is None:
                     from auto_update_trigger import SuggestionsRefresher
+
                     self._refresher = SuggestionsRefresher()
                 # 计算自上次刷新以来的动作数
                 meta_path = self.sessions_dir / sess.id / "suggestions_meta.json"
                 actions_since_last = len(sess.action_chain)
                 if meta_path.exists():
                     import json as _json
-                    meta = _json.loads(meta_path.read_text())
-                    actions_since_last = len(sess.action_chain) - int(meta.get("actions_at_last_refresh", 0))
-                self._refresher.refresh_if_needed(self, actions_since_last=max(0, actions_since_last))
+
+                    meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+                    actions_since_last = len(sess.action_chain) - int(
+                        meta.get("actions_at_last_refresh", 0)
+                    )
+                self._refresher.refresh_if_needed(
+                    self, actions_since_last=max(0, actions_since_last)
+                )
             except Exception:
                 pass  # 刷新失败不阻塞主流程
 
@@ -497,8 +520,7 @@ class CognitiveSessionManager:
         """MCP工具调用时记录"""
         if self.current_session and self.current_session.status == "active":
             self.current_session.add_action(
-                "tool_call", f"{tool_name}({args})",
-                tool=tool_name, result_summary=result_summary
+                "tool_call", f"{tool_name}({args})", tool=tool_name, result_summary=result_summary
             )
             self._last_activity = time.time()
             self._save_session(self.current_session)
@@ -526,7 +548,8 @@ class CognitiveSessionManager:
             self._inject_recall(self.current_session)
 
         self.current_session.add_action(
-            "git_commit", commit_info.get("message", ""),
+            "git_commit",
+            commit_info.get("message", ""),
             commit_hash=commit_hash,
             files=commit_info.get("files", []),
         )
@@ -534,9 +557,11 @@ class CognitiveSessionManager:
 
     def check_timeout(self) -> bool:
         """检查会话是否超时（30分钟无活动）"""
-        if (self.current_session and 
-                self.current_session.status == "active" and
-                time.time() - self._last_activity > SESSION_TIMEOUT):
+        if (
+            self.current_session
+            and self.current_session.status == "active"
+            and time.time() - self._last_activity > SESSION_TIMEOUT
+        ):
             self._end_session(timeout=True)
             return True
         return False
@@ -564,23 +589,36 @@ class CognitiveSessionManager:
 
             # 检索相关流程（改造后用 SkillLoader，设计节 3.6）
             from cognitive_superpowers import SkillLoader, resolve_unit_for_task
+
             loader = SkillLoader()
-            proc_result = loader.retrieve(session.task_type, top_meta=3, top_applied=2, task_type=session.task_type)
+            proc_result = loader.retrieve(
+                session.task_type, top_meta=3, top_applied=2, task_type=session.task_type
+            )
             new_items: List[RecalledProcessItem] = []
-            for (skill, score, reason) in proc_result.get("meta", []):
-                new_items.append(RecalledProcessItem(
-                    kind="meta", meta=skill, applied=None,
-                    match_score=score, match_reason=reason,
-                    skill_id=skill.skill_id, applied_id=None,
-                ))
+            for skill, score, reason in proc_result.get("meta", []):
+                new_items.append(
+                    RecalledProcessItem(
+                        kind="meta",
+                        meta=skill,
+                        applied=None,
+                        match_score=score,
+                        match_reason=reason,
+                        skill_id=skill.skill_id,
+                        applied_id=None,
+                    )
+                )
             for a in proc_result.get("applied", []):
-                new_items.append(RecalledProcessItem(
-                    kind="applied", meta=None, applied=a,
-                    match_score=a.get("match_score", 0.0),
-                    match_reason=a.get("match_reason", ""),
-                    skill_id=a.get("skill_id") or a.get("parent_skill"),
-                    applied_id=a.get("applied_id"),
-                ))
+                new_items.append(
+                    RecalledProcessItem(
+                        kind="applied",
+                        meta=None,
+                        applied=a,
+                        match_score=a.get("match_score", 0.0),
+                        match_reason=a.get("match_reason", ""),
+                        skill_id=a.get("skill_id") or a.get("parent_skill"),
+                        applied_id=a.get("applied_id"),
+                    )
+                )
             # 去抖合并（设计节 3.6：稳定优先，按 skill_id/applied_id 去重，保留高分项）
             if evolved:
                 existing_map = {}
@@ -608,7 +646,11 @@ class CognitiveSessionManager:
                             md_parts.append(
                                 f"## [元认知] {item.meta.skill_id} · 匹配度 {item.match_score:.2f}\n"
                                 f"> {item.match_reason}\n"
-                                + ("\n".join(f"- {g}" for g in item.meta.hard_gates) if item.meta.hard_gates else "")
+                                + (
+                                    "\n".join(f"- {g}" for g in item.meta.hard_gates)
+                                    if item.meta.hard_gates
+                                    else ""
+                                )
                             )
                         elif item.kind == "applied" and item.applied is not None:
                             title = item.applied.get("title", item.applied_id)
@@ -627,9 +669,12 @@ class CognitiveSessionManager:
             # 生成建议文件
             if results or session.recalled_processes:
                 import uuid as _uuid
+
                 reflection_id = f"RF-{time.strftime('%Y%m%d%H%M%S')}-{_uuid.uuid4().hex[:8]}"
                 session.active_reflection_id = reflection_id  # 动作侧 add_action 补记此 ID
-                suggestions = self._format_suggestions(results, session.recalled_processes, reflection_id=reflection_id)
+                suggestions = self._format_suggestions(
+                    results, session.recalled_processes, reflection_id=reflection_id
+                )
                 suggestion_file = self.sessions_dir / session.id / "suggestions.md"
                 suggestion_file.parent.mkdir(parents=True, exist_ok=True)
                 if evolved and suggestion_file.exists():
@@ -639,10 +684,10 @@ class CognitiveSessionManager:
                         f"## 🔄 演进于 {time.strftime('%Y-%m-%d %H:%M:%S')}  "
                         f"task_type → {session.task_type}\n\n"
                     )
-                    existing = suggestion_file.read_text()
-                    suggestion_file.write_text(existing + header + suggestions)
+                    existing = suggestion_file.read_text(encoding="utf-8")
+                    suggestion_file.write_text(existing + header + suggestions, encoding="utf-8")
                 else:
-                    suggestion_file.write_text(suggestions)
+                    suggestion_file.write_text(suggestions, encoding="utf-8")
 
             # 注意：不调用 cle.close()，因为 get_cle() 返回进程级单例，
             # close 后后续调用会失败（原旧代码用 CognitiveLoopEntry() 每次新实例所以无此问题）
@@ -657,6 +702,7 @@ class CognitiveSessionManager:
     ) -> str:
         """格式化建议文本（知识+记忆+流程，非约束）"""
         import uuid as _uuid
+
         if reflection_id is None:
             reflection_id = f"RF-{time.strftime('%Y%m%d%H%M%S')}-{_uuid.uuid4().hex[:8]}"
         lines = [
@@ -681,11 +727,14 @@ class CognitiveSessionManager:
                     elif item.kind == "applied" and item.applied is not None:
                         title = item.applied.get("title", item.applied_id)
                         lines.append(f"### {i}. [应用案例] {title}")
-                        lines.append(f"   父 Skill: {item.skill_id} | 匹配度: {item.match_score:.2f}")
+                        lines.append(
+                            f"   父 Skill: {item.skill_id} | 匹配度: {item.match_score:.2f}"
+                        )
                 lines.append("")
             else:
                 # 旧格式（ProcessTemplate）向后兼容
                 from cognitive_superpowers import format_process_suggestions
+
                 process_text = format_process_suggestions(processes)
                 lines.append("## 🎯 流程建议")
                 lines.append(process_text)
@@ -701,11 +750,13 @@ class CognitiveSessionManager:
                 lines.append(f"{i}. [{ql}] {content}")
             lines.append("")
 
-        lines.extend([
-            "---",
-            "💡 注: 以上建议来自历史沉淀和工程最佳实践，可作为参考但非强制约束。",
-            "   如果您有更好的方法，请自由探索——系统会记录并对比不同方案。",
-        ])
+        lines.extend(
+            [
+                "---",
+                "💡 注: 以上建议来自历史沉淀和工程最佳实践，可作为参考但非强制约束。",
+                "   如果您有更好的方法，请自由探索——系统会记录并对比不同方案。",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -796,7 +847,7 @@ class CognitiveSessionManager:
                 ProcessTemplateRegistry,
                 feedback_to_meta_template,
             )
-            from skill_verifier import verify_skill_followed, FOLLOW_SCORE_THRESHOLD
+            from skill_verifier import verify_skill_followed
 
             registry = ProcessTemplateRegistry()
 
@@ -831,9 +882,7 @@ class CognitiveSessionManager:
             reproducible_steps = _condense_action_chain(session.action_chain)
 
             # 4. 推断实际步骤（从行动链，保留原逻辑兼容）
-            steps = _infer_steps_from_action_chain(
-                session.action_chain, parent_id
-            )
+            steps = _infer_steps_from_action_chain(session.action_chain, parent_id)
 
             # 5. 收集 key_artifacts
             files_touched = list(session.files_touched)
@@ -847,10 +896,18 @@ class CognitiveSessionManager:
 
             # 6. 生成应用模板ID
             # P2: 交易类 task_type 用 APP-TRD- 前缀，开发类用 APP- 前缀
-            _trading_types = frozenset([
-                "trading-system", "trading-data", "strategy-state", "risk-control",
-                "strategy-research", "strategy-backtest", "strategy-execution", "strategy-governance",
-            ])
+            _trading_types = frozenset(
+                [
+                    "trading-system",
+                    "trading-data",
+                    "strategy-state",
+                    "risk-control",
+                    "strategy-research",
+                    "strategy-backtest",
+                    "strategy-execution",
+                    "strategy-governance",
+                ]
+            )
             _prefix = "APP-TRD-" if session.task_type in _trading_types else "APP-"
             applied_id = f"{_prefix}{session.id.split('-')[-1]}"
             name = f"{session.task_type} 的解决路径"
@@ -890,13 +947,18 @@ class CognitiveSessionManager:
 
         # 会话元数据
         meta_file = session_dir / "session.json"
-        meta_file.write_text(json.dumps(session.to_dict(), indent=2, ensure_ascii=False, default=str))
+        meta_file.write_text(
+            json.dumps(session.to_dict(), indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
 
         # 行动链
         if session.action_chain:
             chain_file = session_dir / "action_chain.jsonl"
-            with open(chain_file, "a") as f:
-                f.write(json.dumps(session.action_chain[-1], ensure_ascii=False, default=str) + "\n")
+            with open(chain_file, "a", encoding="utf-8") as f:
+                f.write(
+                    json.dumps(session.action_chain[-1], ensure_ascii=False, default=str) + "\n"
+                )
 
 
 # ============================================================
@@ -904,17 +966,19 @@ class CognitiveSessionManager:
 # ============================================================
 
 # 交易相关顶层目录集合（易经推理/马丁/三屏/风控/监控/调控/指标/交易脚本等）
-_TRADING_DIRS = frozenset([
-    "10-经典指标系统",
-    "11-易经推理系统",
-    "12-三屏趋势系统",
-    "13-通用风控模块",
-    "14-V15经典马丁策略",
-    "15-监控告警系统",
-    "16-调控系统",
-    "6-TRADING",
-    "experiments",  # P0: experiments/ab-trading/ 含 A 系列节点代码和回测
-])
+_TRADING_DIRS = frozenset(
+    [
+        "10-经典指标系统",
+        "11-易经推理系统",
+        "12-三屏趋势系统",
+        "13-通用风控模块",
+        "14-V15经典马丁策略",
+        "15-监控告警系统",
+        "16-调控系统",
+        "6-TRADING",
+        "experiments",  # P0: experiments/ab-trading/ 含 A 系列节点代码和回测
+    ]
+)
 
 # P0: 交易目录细粒度 task_type 路由规则
 # (顶层目录, 二级目录关键词) → task_type
@@ -1008,16 +1072,17 @@ def infer_task_type(filepaths: List[str]) -> str:
 # 解决路径生成
 # ============================================================
 
+
 def generate_solution_path(
     session: CognitiveSession,
     commit_info: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     从行动链生成结构化解决路径。
-    
+
     当前使用模板推断（从行动模式推断思维链），不依赖外部LLM。
     未来可增强为LLM总结。
-    """
+    """  # noqa: W293
     action_count = len(session.action_chain)
     file_changes = [a for a in session.action_chain if a["action_type"] == "file_change"]
     tool_calls = [a for a in session.action_chain if a["action_type"] == "tool_call"]
@@ -1034,7 +1099,7 @@ def generate_solution_path(
     if file_changes:
         approach_parts.append(f"修改了 {len(file_changes)} 次文件")
     if tool_calls:
-        tool_names = set(a.get("tool", "") for a in tool_calls)
+        tool_names = {a.get("tool", "") for a in tool_calls}
         approach_parts.append(f"使用了 {len(tool_names)} 种工具({', '.join(tool_names)})")
     if commits:
         approach_parts.append(f"提交了 {len(commits)} 次")
@@ -1088,6 +1153,7 @@ def generate_solution_path(
 # 事后校验
 # ============================================================
 
+
 def _condense_action_chain(
     action_chain: List[Dict[str, Any]], min_steps: int = 5, max_steps: int = 15
 ) -> List[str]:
@@ -1106,8 +1172,11 @@ def _condense_action_chain(
     def _flush_buf():
         nonlocal merged_detail_buf
         if merged_detail_buf:
-            summary = merged_detail_buf[0] if len(merged_detail_buf) == 1 else \
-                f"{merged_detail_buf[0]}（共 {len(merged_detail_buf)} 次修改）"
+            summary = (
+                merged_detail_buf[0]
+                if len(merged_detail_buf) == 1
+                else f"{merged_detail_buf[0]}（共 {len(merged_detail_buf)} 次修改）"
+            )
             raw_steps.append(summary)
             merged_detail_buf = []
 
@@ -1166,10 +1235,22 @@ def _is_pure_comment_edit(detail: str) -> bool:
     """
     d = detail.lower()
     has_comment = "comment" in d or "注释" in d
-    has_substantive = any(w in d for w in [
-        "real logic", "logic", "bug", "function", "class", "method",
-        "算法", "逻辑", "函数", "方法", "类",
-    ])
+    has_substantive = any(
+        w in d
+        for w in [
+            "real logic",
+            "logic",
+            "bug",
+            "function",
+            "class",
+            "method",
+            "算法",
+            "逻辑",
+            "函数",
+            "方法",
+            "类",
+        ]
+    )
     return has_comment and not has_substantive
 
 
@@ -1181,7 +1262,7 @@ def _compress_thought_chain(
     skill_ids_injected: List[str],
     outcome_metrics: Dict[str, float],
     hard_gate_violations: Optional[List[str]] = None,
-) -> "EvaluationSample":
+) -> "EvaluationSample":  # noqa: F821
     """设计节 7.3 + GC8：思维链压缩，纯结构化提取（不靠 LLM）。
 
     借鉴 hermes-agent trajectory_compressor 的"相邻合并/纯注释剔除/关键决策点提取"，
@@ -1256,6 +1337,7 @@ def _compress_thought_chain(
 # ============================================================
 # Task 25: 评测闭环（设计节 7.2/7.5/7.7）
 # ============================================================
+
 
 def _count_reworks(action_chain: List[Dict[str, Any]]) -> int:
     """统计同文件被反复修改次数（每个文件 max(0, count-1) 求和）。"""
@@ -1342,14 +1424,14 @@ def _run_evaluation_closed_loop(session: CognitiveSession, applied_id: str) -> D
     所有外部调用（send_cognitive_alert、record_evaluation、update_path_advantage）
     均用 try/except 包裹，单点失败不破坏闭环返回值。
     """
+    from alert_bridge import send_cognitive_alert
+    from cognitive_superpowers import ProcessTemplateRegistry
     from evaluation_engine import (
         compute_path_advantage,
         decide_learning_action,
-        record_evaluation,
         load_history_baseline,
+        record_evaluation,
     )
-    from cognitive_superpowers import ProcessTemplateRegistry
-    from alert_bridge import send_cognitive_alert
 
     # 1. 收集 gate_violations 与 follow_score
     verify_reports = getattr(session, "_verify_reports", {}) or {}
@@ -1377,8 +1459,7 @@ def _run_evaluation_closed_loop(session: CognitiveSession, applied_id: str) -> D
 
     # 3. 压缩思维链
     skill_ids_injected = [
-        i.skill_id for i in session.recalled_processes
-        if i.kind == "meta" and i.skill_id
+        i.skill_id for i in session.recalled_processes if i.kind == "meta" and i.skill_id
     ]
     sample = _compress_thought_chain(
         action_chain=session.action_chain,
@@ -1422,8 +1503,7 @@ def _run_evaluation_closed_loop(session: CognitiveSession, applied_id: str) -> D
     # 7. 告警 / quarantine
     if action["decision"] in ("alert", "quarantine"):
         skill_id_for_alert = (
-            session.recalled_processes[0].skill_id
-            if session.recalled_processes else None
+            session.recalled_processes[0].skill_id if session.recalled_processes else None
         )
         level = "Warning" if action["decision"] == "alert" else "Critical"
         try:
@@ -1464,17 +1544,17 @@ def post_hoc_verify(
 ):
     """
     事后校验: 对比recall建议 vs 实际行为，更新置信度。
-    
+
     包含两层校验:
       1. 记忆校验：检查是否遵循了recall注入的经验
       2. 流程校验：检查是否遵循了Superpowers流程模板
-    
+
     逻辑:
       遵循建议 + 成功 → 置信度上升
       遵循建议 + 失败 → 置信度下降
       未遵循 + 成功  → 新路径有价值，不降级旧建议
       未遵循 + 失败  → 旧建议更可信，置信度上升
-    """
+    """  # noqa: W293
     success = solution_path["outcome"]["success"]
     files_touched = set(solution_path["approach"].get("files_touched", []))
 
@@ -1504,11 +1584,15 @@ def post_hoc_verify(
                 pass  # 静默失败
 
     # === 2. 流程校验（改造后用 verify_skill_followed，设计节 4.4）===
-    meta_items = [i for i in getattr(session, "_meta_processes", [])
-                  if i.kind == "meta" and i.meta is not None]
+    meta_items = [
+        i
+        for i in getattr(session, "_meta_processes", [])
+        if i.kind == "meta" and i.meta is not None
+    ]
     if meta_items:
         try:
             from skill_verifier import verify_skill_followed
+
             verify_reports = {}
             for item in meta_items:
                 report = verify_skill_followed(item.meta, session.action_chain)
@@ -1517,8 +1601,7 @@ def post_hoc_verify(
                 if report["gate_violations"]:
                     try:
                         cle.logger.warning(
-                            "HARD-GATE 违反 %s: %s",
-                            item.meta.skill_id, report["gate_violations"]
+                            "HARD-GATE 违反 %s: %s", item.meta.skill_id, report["gate_violations"]
                         )
                     except Exception:
                         pass
@@ -1539,7 +1622,8 @@ def _check_if_followed(
     """
     # 从记忆内容中提取文件名
     import re
-    file_patterns = re.findall(r'[\w_]+\.\w{1,4}', mem_content)
+
+    file_patterns = re.findall(r"[\w_]+\.\w{1,4}", mem_content)
 
     for pattern in file_patterns:
         for f in files_touched:
@@ -1561,6 +1645,7 @@ def _check_if_followed(
 # 行动链 → 步骤 推断
 # ============================================================
 
+
 def _infer_steps_from_action_chain(
     action_chain: List[Dict[str, Any]],
     parent_template_id: Optional[str] = None,
@@ -1580,6 +1665,7 @@ def _infer_steps_from_action_chain(
     if parent_template_id:
         try:
             from cognitive_superpowers import ProcessTemplateRegistry
+
             registry = ProcessTemplateRegistry(auto_discover=False)
             meta = registry.get_meta(parent_template_id)
             if meta:
@@ -1588,7 +1674,7 @@ def _infer_steps_from_action_chain(
             pass
 
     # 分析行动链
-    action_types = set(a.get("action_type", "") for a in action_chain)
+    action_types = {a.get("action_type", "") for a in action_chain}
     details_text = " ".join(str(a.get("detail", "")) for a in action_chain).lower()
 
     # 若没有元模板参考，根据行动链合成步骤
@@ -1647,6 +1733,7 @@ def _infer_steps_from_action_chain(
 # 路径对比
 # ============================================================
 
+
 def find_similar_solutions(
     problem: str,
     cle: Optional[CognitiveLoopEntry] = None,
@@ -1655,10 +1742,8 @@ def find_similar_solutions(
     """
     检索同一问题的不同解法，按置信度排序。
     """
-    own_cle = False
     if cle is None:
         cle = get_cle()
-        own_cle = True
 
     try:
         results = cle.search(problem, top_k=top_k, tags=["solution_path"])
@@ -1677,8 +1762,10 @@ def find_similar_solutions(
 # 主入口
 # ============================================================
 
+
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="认知会话包裹器")
     parser.add_argument("--status", action="store_true", help="查看当前会话状态")
     parser.add_argument("--end", action="store_true", help="强制结束当前会话")
@@ -1711,9 +1798,11 @@ def main():
             if d.is_dir():
                 meta = d / "session.json"
                 if meta.exists():
-                    s = json.loads(meta.read_text())
-                    print(f"  {s['id']} | {s.get('task_type','?')} | "
-                          f"{s.get('action_count',0)}步 | {s.get('status','?')}")
+                    s = json.loads(meta.read_text(encoding="utf-8"))
+                    print(
+                        f"  {s['id']} | {s.get('task_type','?')} | "
+                        f"{s.get('action_count',0)}步 | {s.get('status','?')}"
+                    )
 
 
 if __name__ == "__main__":

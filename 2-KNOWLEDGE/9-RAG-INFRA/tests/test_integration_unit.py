@@ -569,9 +569,16 @@ def test_tc44_workflow_default_knowledge_dir(monkeypatch, tmp_path):
     """knowledge_dir 为 None 时使用 config 默认 KNOWLEDGE_BASE_DIR。"""
     default_dir = tmp_path / "default_kb"
     monkeypatch.setattr(workflow_mod, "KNOWLEDGE_BASE_DIR", str(default_dir))
+    # 隔离测试副作用：默认 Chroma / 映射表 / 权重反馈都指向 tmp
+    monkeypatch.setattr("evolution.ingest.CHROMA_DB_PATH", str(tmp_path / "chroma"))
+    monkeypatch.setenv("TEST_BRIDGE_WEIGHT_PATH", str(tmp_path / "weight.json"))
 
     content = "Kalman 量化滤波"
-    result = archive_from_conversation(content, research_topic="默认路径测试")
+    result = archive_from_conversation(
+        content,
+        research_topic="默认路径测试",
+        map_path=tmp_path / "map.jsonl",
+    )
     assert result["status"] == "done"
     fp = Path(result["archived"][0]["file_path"])
     assert "default_kb" in str(fp)

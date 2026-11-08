@@ -6,6 +6,7 @@
 FAIL-OPEN：任何异常不抛出，退出码恒为 0。
 用法：python accumulation_gate.py [--json]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,8 +20,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_REPO_ROOT / "48-涌现架构" / "bus"))
 sys.path.insert(0, str(_REPO_ROOT / "48-涌现架构" / "metrics"))
 
-from m1_linkage import compute_m1, DEFAULT_EVENTS_DIR  # noqa: E402
 from e4b_cascade import compute_cascade  # noqa: E402
+from m1_linkage import DEFAULT_EVENTS_DIR, compute_m1  # noqa: E402
 
 logger = logging.getLogger("accumulation_gate")
 GATES_DIR = _REPO_ROOT / "48-涌现架构" / "events" / "gates"
@@ -134,8 +135,13 @@ def main() -> int:
         e1, e4b = result.get("e1", {}), result.get("e4b_cascade", {})
         logger.info(
             "E1: days=%s/%s actions=%s released=%s | E4b: n_events=%s status=%s released=%s",
-            e1.get("distinct_days"), e1.get("min_days"), e1.get("m1_actions"), e1.get("released"),
-            e4b.get("n_events"), e4b.get("status"), e4b.get("released"),
+            e1.get("distinct_days"),
+            e1.get("min_days"),
+            e1.get("m1_actions"),
+            e1.get("released"),
+            e4b.get("n_events"),
+            e4b.get("status"),
+            e4b.get("released"),
         )
     return 0
 

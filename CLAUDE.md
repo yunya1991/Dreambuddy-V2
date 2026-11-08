@@ -22,15 +22,20 @@ recall(context="当前任务描述或问题关键词", top_k=5, min_quality="C")
 
 ## 🔧 可用的认知 MCP 工具
 
-认知系统通过 MCP server 暴露 5 个工具，IDE 可直接调用：
+认知系统通过 MCP server 暴露 7 个工具，IDE 可直接调用：
 
-| 工具       | 何时调用                | 作用              |
-| -------- | ------------------- | --------------- |
-| `recall` | **任务开始前**（硬约束，不可跳过） | 检索相关历史经验，避免重复踩坑 |
-| `record` | 发现新经验/反模式时          | 将经验写入记忆系统       |
-| `verify` | 实践验证后（成功或失败）        | 贝叶斯置信度更新，触发蒸馏   |
-| `stats`  | 需要查看系统状态时           | 记忆统计            |
-| `health` | 排查问题时               | 健康检查            |
+| 工具       | 读/写 | 何时调用                | 作用              |
+| -------- | --- | ------------------- | --------------- |
+| `recall` | 读 | **任务开始前**（硬约束，不可跳过） | 检索相关历史经验，避免重复踩坑 |
+| `unified_search` | 读 | 需要跨 41/Chroma/recall 检索时 | 三后端统一检索 |
+| `stats` / `health` / `l4_status` | 读 | 查看状态/排查问题 | 统计、健康、L4 元认知状态 |
+| `record` | 写 | 发现新经验/反模式时          | 将经验写入记忆系统       |
+| `verify` | 写 | 实践验证后（成功或失败）        | 贝叶斯置信度更新，触发蒸馏   |
+
+> **写工具治理**：`record` / `verify` 默认禁用；宿主须设置
+> `COGNITIVE_MCP_WRITE_ENABLED=true` 且注入授权主体
+> `COGNITIVE_MCP_DEFAULT_PRINCIPAL ∈ {orchestrator,verifier,admin}`（Worker 只读）。
+> 详见 [COLLABORATION-CONTRACT.md](./35-广义认知系统协作模块/COLLABORATION-CONTRACT.md) §5.4。
 
 ## 📋 标准协作流程
 
@@ -93,6 +98,7 @@ verify(memory_id="VM-xxx", success=true)
 
 ## 📁 系统位置
 
+- 换 AI 宿主/重新接入：`35-广义认知系统协作模块/QUICKSTART-AI-HOST-INTEGRATION.md`
 - 核心代码：`4-MEMORY/9-工具与接口/`
 
 - 记忆数据库：`4-MEMORY/data/cognitive_memory.db`

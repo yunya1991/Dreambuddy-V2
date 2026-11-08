@@ -25,10 +25,12 @@ from __future__ import annotations
 
 import json
 import os
-import select
+import queue
 import shlex
 import subprocess
-from typing import Any, Dict, Optional
+import threading
+import time
+from typing import Any, Dict, List, Optional
 
 # core/ → 34-前端应用训练系统/ → repo 根（registry shell_path 相对 repo 根解析）
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -54,6 +56,11 @@ class StdioShell:
         self._call_timeout = call_timeout
         self._next_id = 0
         self._closed = False
+        # 跨平台：Windows 的 select 只支持 socket，不能读管道。
+        # 统一用后台读线程 + 队列，POSIX/Windows 行为一致。
+        self._lines: "queue.Queue[Optional[str]]" = queue.Queue()
+        self._reader = threading.Thread(target=self._pump_stdout, daemon=True)
+        self._reader.start()
 
     @property
     def pid(self) -> Optional[int]:
@@ -63,6 +70,18 @@ class StdioShell:
         return not self._closed and self._proc.poll() is None
 
     # -- 传输原语 -----------------------------------------------------------
+
+    def _pump_stdout(self) -> None:
+        try:
+            stream = self._proc.stdout
+            if stream is None:
+                return
+            for line in stream:
+                self._lines.put(line)
+        except (OSError, ValueError):
+            pass
+        finally:
+            self._lines.put(None)  # EOF 哨兵
 
     def _send(self, req: Dict[str, Any]) -> None:
         if not self.is_alive():
@@ -76,42 +95,64 @@ class StdioShell:
             raise StdioShellError("stdin write failed: %s" % exc) from exc
 
     def _read_line(self, timeout: float) -> Dict[str, Any]:
-        """读一行响应（POSIX select 超时）。严格请求-响应协议:壳不会主动
-        推行,故 text buffer 不会出现「已缓冲未消费」的多余行。"""
-        if not self.is_alive():
-            raise StdioShellError("shell process not running")
-        assert self._proc.stdout is not None
-        try:
-            ready, _, _ = select.select([self._proc.stdout], [], [], timeout)
-        except (OSError, ValueError) as exc:
-            raise StdioShellError("select failed: %s" % exc) from exc
-        if not ready:
-            raise StdioShellTimeout("no response within %.1fs" % timeout)
-        try:
-            line = self._proc.stdout.readline()
-        except (OSError, ValueError) as exc:
-            raise StdioShellError("stdout read failed: %s" % exc) from exc
-        if not line:
-            raise StdioShellError("shell closed stdout (EOF)")
-        try:
-            resp = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise StdioShellError("bad JSON response: %r" % line[:200]) from exc
-        if not isinstance(resp, dict):
-            raise StdioShellError("response not a JSON object")
-        return resp
+        """读一行响应（后台读线程 + 超时，POSIX/Windows 一致）。"""
+        deadline = time.monotonic() + timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise StdioShellTimeout("no response within %.1fs" % timeout)
+            try:
+                line = self._lines.get(timeout=remaining)
+            except queue.Empty:
+                raise StdioShellTimeout("no response within %.1fs" % timeout) from None
+            if line is None:
+                raise StdioShellError("shell closed stdout (EOF)")
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                resp = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise StdioShellError("bad JSON response: %r" % line[:200]) from exc
+            if not isinstance(resp, dict):
+                raise StdioShellError("response not a JSON object")
+            return resp
 
     # -- 对外 ---------------------------------------------------------------
 
     def handshake(self, timeout: float) -> None:
         """initialize 握手（launcher 内部调用;失败抛 StdioShellError）。"""
         self._next_id += 1
-        self._send({"jsonrpc": "2.0", "id": self._next_id, "method": "initialize"})
+        self._send(
+            {
+                "jsonrpc": "2.0",
+                "id": self._next_id,
+                "method": "initialize",
+                "params": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "dreambuddy-host", "version": "0.1"},
+                },
+            }
+        )
         resp = self._read_line(timeout)
         if "error" in resp:
             raise StdioShellError("initialize rejected: %s" % resp["error"])
         if not isinstance(resp.get("result"), dict):
             raise StdioShellError("initialize: no result in response")
+
+    def list_tools(self, timeout: Optional[float] = None) -> List[Dict[str, Any]]:
+        """tools/list → 工具定义列表（供网关按角色裁剪）。"""
+        self._next_id += 1
+        req_id = self._next_id
+        self._send({"jsonrpc": "2.0", "id": req_id, "method": "tools/list", "params": {}})
+        resp = self._read_line(timeout if timeout is not None else self._call_timeout)
+        if resp.get("id") != req_id:
+            raise StdioShellError("response id mismatch: want %s got %s" % (req_id, resp.get("id")))
+        if "error" in resp:
+            raise StdioShellError("JSON-RPC error: %s" % resp["error"])
+        tools = (resp.get("result") or {}).get("tools") or []
+        return [t for t in tools if isinstance(t, dict)]
 
     def call(self, tool: str, args: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """tools/call → 解析后的统一信封 dict。
@@ -170,6 +211,19 @@ class StdioShell:
                     pass
 
 
+def _split_cmd(cmd: str) -> List[str]:
+    """跨平台拆分 shell_cmd。Windows 的 shlex.split 默认会吞反斜杠路径。"""
+    if os.name != "nt":
+        return shlex.split(cmd)
+    tokens = shlex.split(cmd, posix=False)
+    out: List[str] = []
+    for token in tokens:
+        if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'":
+            token = token[1:-1]
+        out.append(token)
+    return out
+
+
 def stdio_launcher(
     spec: Dict[str, Any],
     *,
@@ -199,7 +253,7 @@ def stdio_launcher(
             raise StdioShellError("shell_path not found: %s" % shell_path)
         shell_cmd = shell_cmd.replace("{path}", shlex.quote(abs_path))
     try:
-        argv = shlex.split(shell_cmd)
+        argv = _split_cmd(shell_cmd)
     except ValueError as exc:
         raise StdioShellError("bad shell_cmd: %s" % exc) from exc
     if not argv:

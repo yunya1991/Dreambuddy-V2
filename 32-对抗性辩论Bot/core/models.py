@@ -22,9 +22,10 @@ class Argument:
 
     thesis: str  # 核心论点
     arguments: list[str]  # 论据列表
-    quote: str  # 金句（用于营销提取）
+    quote: str  # 金句（营销）或最关键证据（technical/signal）
     confidence: float  # 本方置信度（0-1）
     raw: str  # 原始 LLM 输出
+    evidence: list[str] = field(default_factory=list)  # 技术/信号 profile 的证据引用
 
     @classmethod
     def fallback(cls) -> "Argument":
@@ -40,10 +41,11 @@ class Argument:
 
 @dataclass
 class CrossExamination:
-    """交叉质询记录（SPEC v2.0-rc3 第 4.2 节）。
+    """交叉质询记录（v2.0-rc3 §4.2，本地草稿 `.trae/documents/debate-engine-v2-spec.md`）。
 
     交叉质询不是 Argument，是独立的问答数据类型。
     questioner 和 respondent 互为对方（bull/bear）。
+    注意：当前仅数据模型 + 营销提取可用，编排器尚未接入该阶段。
     """
 
     questioner: str  # 提问方: 'bull' | 'bear'
@@ -76,6 +78,13 @@ class Verdict:
     winner: str | None  # 'bull' | 'bear' | None(平局)
     key_insights: list[str]  # 核心洞察
     topic_angle: str  # 话题升华角度（用于营销）
+    # technical profile
+    feasibility: float | None = None  # 技术可行性 0-1
+    risks: list[str] = field(default_factory=list)
+    evidence_gaps: list[str] = field(default_factory=list)
+    recommendation: str = ""
+    # signal profile
+    signal: dict | None = None  # {direction, confidence, risk_flags, evidence, counter_evidence}
 
 
 @dataclass

@@ -69,7 +69,7 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
             data.get("schema_version") == "1.1-mcp",
             "ERR",
             "schema_version",
-            f"必须是 1.0-mcp，当前 {data.get('schema_version')!r}",
+            f"必须是 1.1-mcp，当前 {data.get('schema_version')!r}",
             violations,
         )
 
@@ -99,7 +99,7 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
         status_enum = set(enums.get("status", []))
         env_enum = set(enums.get("envelope_version", []))
         max_tools_per_shell = enums.get("max_tools_per_shell", 10)
-        max_total_tools = enums.get("max_total_tools", 40)
+        max_total_tools = enums.get("max_total_tools", 80)
 
         total_active_tools = 0
 
@@ -215,7 +215,7 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
             total_active_tools <= max_total_tools,
             "ERR",
             "total_active_tools",
-            f"{total_active_tools} 超过上限 {max_total_tools}（R1 工具面膨胀）",
+            f"{total_active_tools} 超过全局软上限 {max_total_tools}（R1 工具面膨胀）",
             violations,
         )
 
@@ -226,14 +226,18 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
             )
 
         # 9. worker_roles（46-DSH ADR-4：角色→能力标签唯一载体）
-        tool_index: dict[str, dict] = {}  # tool_name -> {"shell": sid, "requires_mandate": bool}
+        # 同名工具可能存在于多个壳（如 get_positions：l0.trade-exec / l1.trading），
+        # 按角色 shells 解析到正确的壳，而不是让后登记的壳覆盖前者。
+        tool_index: dict[str, list[dict]] = {}
         for shell in all_shells:
             for t in shell.get("tools", []) or []:
                 if t.get("name"):
-                    tool_index[t["name"]] = {
-                        "shell": shell.get("shell_id"),
-                        "requires_mandate": t.get("requires_mandate") is True,
-                    }
+                    tool_index.setdefault(t["name"], []).append(
+                        {
+                            "shell": shell.get("shell_id"),
+                            "requires_mandate": t.get("requires_mandate") is True,
+                        }
+                    )
 
         for role, spec in (data.get("worker_roles", {}) or {}).items():
             path = f"worker_roles.{role}"
@@ -262,7 +266,11 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
                 violations,
             )
             for tname in role_tools:
-                info = tool_index.get(tname)
+                infos = tool_index.get(tname, [])
+                info = next(
+                    (i for i in infos if i["shell"] in role_shells),
+                    infos[0] if infos else None,
+                )
                 _check(
                     info is not None,
                     "ERR",
@@ -306,6 +314,11 @@ def validate(registry_path: Path, quiet: bool = False) -> int:
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="校验 47-MCP 契约注册表")
     ap.add_argument("--registry", default=str(REGISTRY_DEFAULT))
     ap.add_argument("--quiet", action="store_true", help="CI 模式，只输出错误摘要")

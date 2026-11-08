@@ -36,6 +36,7 @@ def _call_tool(name: str, arguments: dict) -> dict:
         input=reqs,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         timeout=60,
         cwd=str(_REPO_ROOT),
     )
@@ -57,6 +58,7 @@ def _tools_list() -> list:
         input=reqs,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         timeout=60,
         cwd=str(_REPO_ROOT),
     )

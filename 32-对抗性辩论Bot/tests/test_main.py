@@ -136,6 +136,30 @@ class TestBuildApp:
         app = main.build_app(cfg)
         assert app.orchestrator.telegram_dual_bot.judge is None
 
+    def test_build_app_uses_config_max_tokens(self, monkeypatch):
+        """config.llm.max_tokens 应传给各 Agent/提取器。"""
+        import main
+
+        monkeypatch.setattr(
+            main,
+            "create_llm_adapter",
+            lambda config=None, model_name=None: _FakeLLM(),
+        )
+        cfg = make_config()
+        cfg.llm.max_tokens = {
+            "debater": 1234,
+            "judge": 567,
+            "marketing": 890,
+            "quality": 432,
+        }
+        app = main.build_app(cfg)
+
+        assert app.orchestrator.bull_agent.max_tokens == 1234
+        assert app.orchestrator.bear_agent.max_tokens == 1234
+        assert app.orchestrator.judge_agent.max_tokens == 567
+        assert app.orchestrator.marketing_extractor.max_tokens == 890
+        assert app.orchestrator.quality_evaluator.max_tokens == 432
+
 
 # ─── 辅助 ────────────────────────────────────────────────────────
 

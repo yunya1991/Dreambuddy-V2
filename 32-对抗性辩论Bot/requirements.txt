@@ -1,7 +1,16 @@
 # requirements.txt — 对抗性辩论 Bot 依赖
 pyyaml>=6.0
 httpx>=0.27                 # Telegram Bot API 异步 HTTP 客户端
-# LLM 依赖：复用 30-真实环境交互系统 的 llm_factory
-# 需要 browser-use（LangChain ChatOpenAI 兼容）
+
+# LLM 适配（任选其一；core.llm_compat 自动探测）
+anthropic>=0.40             # provider=anthropic（含 Claude Code 代理）
+openai>=1.40                # provider=openai_compat（DashScope/OpenAI/自建网关）
+
+# 可选：provider=langchain 时才需要（旧适配路径）
+# langchain-core>=0.3
+# langchain-openai>=0.2
+# browser-use（Qwen VL 场景）
+
+# 测试
 pytest>=8.0
 pytest-asyncio>=0.23
