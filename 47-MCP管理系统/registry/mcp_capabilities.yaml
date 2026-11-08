@@ -27,8 +27,8 @@
 #   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
 #   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
 schema_version: "1.1-mcp"
-registry_version: "0.4"
-last_updated: "2026-11-05"
+registry_version: "0.5"
+last_updated: "2026-11-08"
 # 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
 # 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
 single_source_of_truth: true
@@ -84,6 +84,12 @@ shells:
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
       - name: health
+        port: memory
+        domain: cognition
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: l4_status              # L4 元认知层状态（P0 漂移门禁实测补登）
         port: memory
         domain: cognition
         read_write: read
@@ -406,5 +412,6 @@ enums:
   envelope_version: ["0.1", "0.2"]
   # 每个 shell 的工具数硬上限（SPEC §3.3 B2：Worker 角色→工具集矩阵，每角色 ≤10 工具）
   max_tools_per_shell: 10
-  # 聚合 2-3 shell 总工具数上限（SPEC R1 工具面膨胀治理）
-  max_total_tools: 40
+  # 全局软上限（G1-b，用户 2026-11-08 确认）：主约束是每壳/每角色 ≤10，
+  # 全局 80 仅作工具面膨胀的兜底护栏（原 40 会阻塞新域接入）
+  max_total_tools: 80

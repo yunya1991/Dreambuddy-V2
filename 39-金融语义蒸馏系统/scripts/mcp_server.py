@@ -23,20 +23,14 @@ import sys
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
 _REPO = os.path.dirname(_SYS_DIR)
-# 统一信封映射层（SPEC-L0 §3.1，注册表 envelope_version 0.1）：
-# 优先走宿主注入的 PYTHONPATH；独立拉起时按文件路径加载，
-# 不新增 sys.path hack（SPEC §3.4 红线）
+# 统一壳运行时（含统一信封映射，SPEC-L0 §3.1）。优先走宿主注入的
+# PYTHONPATH；独立拉起时补一次仓库根（存量壳过渡，SPEC §3.4 白名单）。
 try:
-    from mcp_shells._shared.envelope_wrap import wrap as _envelope_wrap
+    from mcp_shells._shared.shell_runtime import run_stdio
 except ImportError:
-    import importlib.util as _ilu
-    _spec = _ilu.spec_from_file_location(
-        "envelope_wrap",
-        os.path.join(_REPO, "mcp_shells", "_shared", "envelope_wrap.py"),
-    )
-    _mod = _ilu.module_from_spec(_spec)
-    _spec.loader.exec_module(_mod)
-    _envelope_wrap = _mod.wrap
+    if _REPO not in sys.path:
+        sys.path.insert(0, _REPO)
+    from mcp_shells._shared.shell_runtime import run_stdio
 _ALIASES_PATH = os.path.join(_REPO, "3.1-FRONTEND", "scripts", "entity_aliases.json")
 _DISTILL_SCRIPT = os.path.join(_THIS_DIR, "distill_aliases.py")
 _TRAINING_URL = "http://localhost:3001/api/training"
@@ -232,47 +226,21 @@ def _dispatch(name, args):
     return _r
 
 
-def main():
-    """MCP stdio 主循环: JSON-RPC 2.0。FAIL-OPEN: 任何异常返回错误响应不崩溃。"""
-    for line in sys.stdin:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            req = json.loads(line)
-        except Exception:
-            continue
-        method = req.get("method", "")
-        rid = req.get("id")
-        try:
-            if method == "initialize":
-                result = {"protocolVersion": "2024-11-05",
-                          "capabilities": {"tools": {}},
-                          "serverInfo": {"name": "mcp-server-finance-distill", "version": "0.1.0"}}
-            elif method == "notifications/initialized":
-                continue
-            elif method == "tools/list":
-                result = {"tools": TOOLS}
-            elif method == "tools/call":
-                params = req.get("params", {})
-                _body = _dispatch(params.get("name", ""), params.get("arguments", {}))
-                # 统一信封：业务体原样透传到 envelope.data，零删零改
-                _env = _envelope_wrap(_body, "l0.semantic-39.mcp")
-                result = {"content": [{"type": "text",
-                                        "text": json.dumps(_env, ensure_ascii=False)}]}
-            else:
-                resp = {"jsonrpc": "2.0", "id": rid,
-                        "error": {"code": -32601, "message": f"method not found: {method}"}}
-                sys.stdout.write(json.dumps(resp) + "\n")
-                sys.stdout.flush()
-                continue
-            resp = {"jsonrpc": "2.0", "id": rid, "result": result}
-        except Exception as e:
-            resp = {"jsonrpc": "2.0", "id": rid,
-                    "error": {"code": -32603, "message": str(e)}}
-        sys.stdout.write(json.dumps(resp) + "\n")
-        sys.stdout.flush()
+TOOL_DEFS = {
+    tool["name"]: {
+        "description": tool.get("description", ""),
+        "inputSchema": tool.get("inputSchema") or {"type": "object", "properties": {}},
+    }
+    for tool in TOOLS
+}
+
+
+def _make_handler(name):
+    return lambda arguments: _dispatch(name, arguments)
+
+
+TOOL_HANDLERS = {name: _make_handler(name) for name in TOOL_DEFS}
 
 
 if __name__ == "__main__":
-    main()
+    run_stdio("l0.semantic-39.mcp", TOOL_DEFS, TOOL_HANDLERS)

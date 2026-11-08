@@ -1,6 +1,6 @@
 # TECH:L0 六域 MCP 封装 — 实现手册 v0.1
 
-> **版本**: v0.1 ｜ **更新日期**: 2026-11-04 ｜ **状态**: ✅ M1-M4 全部落地 + D1/D2 已落（2026-11-04 复核：6 壳 24 工具真实拉起、统一信封 6/6、契约测试全绿、L0 测试 EXIT=0、四联门禁注册表 7 存量壳 / 24 工具通过）
+> **版本**: v0.1.5 ｜ **更新日期**: 2026-11-08 ｜ **状态**: ✅ M1-M4 全部落地 + D1/D2 已落 + **P0 控制面** + **P1 角色网关** + **P2 运行时/install/new-shell** + **P3 协议协商 / Agent Card / Docker 包**；2026-11-08 复核：8 壳注册（7 active）真实拉起、漂移 0、`doctor --deep` 全通过、4 张 Agent Card 与 registry 一致
 > **上游**: [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（契约）· [PLAN-L0-MCP-P0-P3 v0.1](./PLAN-L0-MCP-P0-P3-v0.1.md)（路线）· [ALIGNMENT-46-47 v1.0](./ALIGNMENT-46-47-v1.0.md)（决议）
 > **读者**: M2/M3/M4 壳开发者 · 云端运维 · DSH Worker 消费方 · 壳后域内 agent 化 SPEC 作者
 > **边界**: 本手册覆盖 **M1-M4 全部落地**（注册表 v1 / 信封映射层 / 基线脚本 / 校验器 / 认知壳 6 工具 / 39 壳 4 工具 / 数据壳 / 评测壳 / REA 壳 / 库管壳）。M2/M3/M4 壳实现细节见各壳 server.py 与契约测试。
@@ -168,7 +168,7 @@ def _handle_tool_x(args: dict) -> dict:
 | 阈值 | 值 | 含义 |
 |---|---|---|
 | `max_tools_per_shell` | 10 | Worker 角色→工具集矩阵，每角色 ≤10 工具（SPEC B2） |
-| `max_total_tools` | 40 | 聚合 2-3 shell 总工具上限（SPEC R1 工具面膨胀治理） |
+| `max_total_tools` | 80 | 全局**软上限**（G1-b，2026-11-08 确认）；主约束是每壳/每角色 ≤10 |
 
 ### 3.3 存量 vs 规划壳的 status 语义
 
@@ -347,9 +347,12 @@ python3 scripts/validate_capabilities.py
 
 # ④ C10 DAL 直连白名单 ratchet（拦截新直连）
 python3 scripts/check_db_direct_imports.py --ratchet
+
+# ⑤ 注册表 ↔ 壳代码 tools/list 漂移（P0）
+python3 "47-MCP管理系统/registry/scripts/check_mcp_tool_drift.py"
 ```
 
-**顺序约束**：①② 是 MCP 域门禁，必须先过；③④ 是全局门禁，放后面。任何一步 exit 非零 = 阻断提交。
+**顺序约束**：①⑤ 是 MCP 域门禁，必须先过；③④ 是全局门禁，放后面。任何一步 exit 非零 = 阻断提交。
 
 ### 6.2 validate_mcp_registry.py 8 项校验
 
@@ -362,7 +365,7 @@ python3 scripts/check_db_direct_imports.py --ratchet
 | 5 | tools[].domain 枚举合法 | 不在七域 |
 | 6 | tools[].requires_mandate + read_write 一致性 | `write + false` 或 `read + true`（read 工具不该要 mandate） |
 | 7 | 每壳工具数 ≤ 10 | 触发 `max_tools_per_shell` 门禁 |
-| 8 | 全量聚合工具数 ≤ 40 | 触发 `max_total_tools` 门禁 |
+| 8 | 全量聚合工具数 ≤ 80（软上限） | 触发 `max_total_tools` 门禁 |
 
 ### 6.3 CI 阻断点
 
@@ -373,6 +376,59 @@ python3 scripts/check_db_direct_imports.py --ratchet
 - name: Validate capability set single source
   run: python3 0-系统文档管理/scripts/validate_capability_set.py
 ```
+
+---
+
+### 6.4 mcpctl — 角色接入控制面（P0）
+
+> 对应 [ASSESSMENT-L0-MCP-GENERALITY-v0.1](./ASSESSMENT-L0-MCP-GENERALITY-v0.1.md) §七 P0。
+
+| 命令 | 作用 |
+|---|---|
+| `python3 "47-MCP管理系统/registry/scripts/mcpctl.py" doctor --deep` | 环境体检 + 逐壳真实握手 |
+| `... profile --role research --out .mcp.json` | 按角色生成宿主配置 |
+| `... profile --role verifier --host claude-project --install` | 合并写入宿主配置（自动备份） |
+| `... profile --role research --gateway --out .mcp.json` | 生成**单条**角色网关配置（P1，工具级最小权限） |
+| `... install --role research --gateway --host all` | 一键写入全部宿主（自动备份），P2 |
+| `... new-shell --name quant --domain data --port analysis --tools a:read,b:write` | 生成壳骨架 + 测试 + registry 片段；`--register` 自动登记 |
+| `... cards` / `... cards --check` | 生成 / 校验全部角色 Agent Card（P3b） |
+| `... card --role research` | 输出单角色 Agent Card |
+| `... verify` | 注册表 ↔ 代码漂移门禁（同 §6.1 ⑤） |
+| `... list-roles` / `list-shells` | 查看角色 / 壳工具面 |
+
+**P0 边界**：角色包是**壳级**的——MCP 配置只能按 server 粒度挂载，工具级最小权限待 P1 `l0-gateway --role` 落地后由网关注入；`profile` 会在 stderr 明确列出"随壳额外暴露"的工具。
+
+### 6.5 角色能力网关（P1）
+
+> 完整契约见 [SPEC-L0-MCP-GATEWAY v0.1](./SPEC-L0-MCP-GATEWAY-v0.1.md)。
+
+- 入口：`python3 mcp_shells/l0_gateway/server.py --role <role>`
+- `tools/list` 精确等于 `worker_roles[role].tools`（≤10），不是整壳工具面；
+- 角色外 / 写工具 → `ok=false, error_code=forbidden`；
+- 壳不可用 → `unavailable + degraded`；传输失败 → 重试一次 → `shell_degraded`；
+- 复用 `34/core/ShellHandleManager`（单壳复用 / 健康检查 / 重拉）；
+- 本地 stdio 统一使用网关自身解释器 + `PYTHONIOENCODING=utf-8`。
+
+**壳运行时（P1/P2）**：[shell_runtime.py](../../../mcp_shells/_shared/shell_runtime.py) 提供统一的 `initialize / tools/list / tools/call` 循环，`tools/list` 从 registry 派生。P2 已迁移 7 壳：cognition / semantic-39 / rea / data / eval / store-admin / trade-exec；代码有 handler 但 registry 未登记的工具不再暴露（结构性消除漂移）。`agent.debate.mcp` / `l1.trading.mcp` 属其他在途分支，未纳入本次提交。
+
+**自定义注册表**：`DREAMBUDDY_MCP_REGISTRY` 环境变量可覆盖默认 registry 路径（`shell_runtime` / `mcpctl` / 漂移门禁均生效），便于非默认部署。
+
+### 6.6 能力发现与协议协商（P3）
+
+> 完整契约见 [SPEC-L0-MCP-DISCOVERY v0.1](./SPEC-L0-MCP-DISCOVERY-v0.1.md)。
+
+- **协议版本**：`shell_runtime` 支持 `2024-11-05 / 2025-03-26 / 2025-06-18 / 2025-11-25`，按客户端请求回显，未知回退 `2024-11-05`。
+- **静态索引**：`47-MCP管理系统/registry/agent_cards.json`（由 `mcpctl cards` 生成，CI `--check` 阻断漂移）。
+- **运行时卡片**：网关 `initialize.serverInfo._meta.agent_card`，含角色、工具面、只读边界、启动命令。
+- 外部 Agent / 注册表可直接抓取卡片，无需人工读 SPEC。
+
+### 6.7 Docker 分发包（P3a）
+
+- 文件：[deploy/mcp/Dockerfile](../../../deploy/mcp/Dockerfile) + [deploy/mcp/README.md](../../../deploy/mcp/README.md)
+- 构建：`docker build -f deploy/mcp/Dockerfile -t l0-mcp .`
+- 运行：`docker run -i --rm l0-mcp --role verifier`
+- CI：`.github/workflows/l0-contracts.yml` 的 `mcp-docker` job 实跑构建 + `initialize` + `tools/list` 断言。
+- **边界**：官方 MCP SDK 未迁移（`mcp` 包未引入，需独立全量回归）；wheel 分发因中文目录/域内私有依赖暂不做。
 
 ---
 
@@ -571,6 +627,10 @@ L0 测试               pytest mcp_shells dreambuddy_l0 → EXIT=0 全绿
 |---|---|---|
 | v0.1 | 2026-11-02 | 首版，覆盖 P0/M1 已落地模块 |
 | v0.1.1 | 2026-11-03 | 新增 §10.1 云端现状审计快照 + M1④ 基线报告引用 + L1/DOMAIN-DISCOVERY/TRAIN-BASE/COMM-SHADOW/Roadmap 交叉引用 |
+| v0.1.2 | 2026-11-08 | P0 通用化：§6.1 增漂移门禁 ⑤、§6.4 `mcpctl` CLI；补登 `l4_status`；trade-exec 壳 Windows `msvcrt` 兼容 |
+| v0.1.3 | 2026-11-08 | P1：§6.5 角色网关 + `shell_runtime.py`；`l0_data` / `l0_eval` 迁移；`StdioShell` 改跨平台读线程 + `list_tools()`；G1-b 全局软上限 40→80 |
+| v0.1.4 | 2026-11-08 | P2：壳运行时迁移至 7 壳；`mcpctl install --host all`；`mcpctl new-shell`（骨架+测试+登记）；`DREAMBUDDY_MCP_REGISTRY` 覆盖 |
+| v0.1.5 | 2026-11-08 | P3：协议版本协商；Agent Card 静态索引 + 运行时 `_meta`；Docker 分发 + CI `mcp-docker`；SDK/wheel 明确后置 |
 | （待更新） | M2 完成后 | 增补数据壳/评测壳实现细节 |
 | （待更新） | M3 完成后 | 增补 REA 壳/认知壳双模 |
 | （待更新） | M4 完成后 | 增补库管壳只读 + 45 契约评测 |

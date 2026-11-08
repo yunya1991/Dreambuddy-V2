@@ -1,0 +1,23 @@
+# 镜像只保留代码与注册表；数据/模型/本地状态一律运行时挂载
+.git
+.gitignore
+.github
+node_modules
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.venv
+venv
+htmlcov
+.pytest_cache
+.ruff_cache
+.mypy_cache
+**/data
+**/models
+**/artifacts
+**/user_data
+**/reflection_data
+.workbuddy
+.cognitive
+**/dist
+**/build

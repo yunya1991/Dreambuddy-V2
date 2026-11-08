@@ -21,6 +21,15 @@
         "sudo -n -u luke -H env PYTHONPATH=/home/luke/dreambuddy/4-MEMORY/9-工具与接口 /home/luke/venv-trading/bin/python /home/luke/dreambuddy/4-MEMORY/9-工具与接口/cognitive_mcp_server.py"
       ],
       "env": {}
+    },
+    "gateway-research": {
+      "description": "P1 单条角色网关：tools/list 精确等于 worker_roles.research.tools（≤10），角色外/写工具 forbidden",
+      "command": "python3",
+      "args": ["<REPO_ROOT>/mcp_shells/l0_gateway/server.py", "--role", "research"],
+      "env": {
+        "PYTHONPATH": "<REPO_ROOT>",
+        "PYTHONIOENCODING": "utf-8"
+      }
     }
   }
 }

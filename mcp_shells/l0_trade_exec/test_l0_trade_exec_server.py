@@ -46,6 +46,7 @@ def _call(name: str, arguments: dict, env: dict) -> dict:
         input=json.dumps(req),
         capture_output=True,
         text=True,
+        encoding="utf-8",
         env=env,
         timeout=60,
     )
@@ -60,6 +61,7 @@ def _list_tools(env: dict) -> list:
         input=json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}),
         capture_output=True,
         text=True,
+        encoding="utf-8",
         env=env,
         timeout=60,
     )
