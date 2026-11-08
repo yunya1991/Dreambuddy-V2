@@ -744,6 +744,7 @@ _CHAIN_METRICS = [
     ("exchanges_whales", "us_SP500_value", "sp500_equity_value"),
     ("exchanges_whales", "us_VIXCLS_value", "vix_value"),
     ("exchanges_whales", "us_DTWEXBGS_value", "dollar_index_value"),
+    ("exchanges_whales", "ex_bal_BTC_chg30d_pct", "ex_bal_btc_chg30d_pct"),  # 交易所BTC余额30日变化%
     # btc_basics: 链上基础指标 (收口 P2: OnchainPanel 需要)
     ("btc_basics", "market_cap_usd", "market_cap_usd"),
     ("btc_basics", "total_btc", "total_btc"),
@@ -758,7 +759,7 @@ _CHAIN_METRICS = [
     ("btc_metrics", "realized_price", "realized_price"),
     ("btc_metrics", "nvt_ratio", "nvt_ratio"),
     # chains_summary: DeFi TVL (收口 P2: BreadthPanel 需要)
-    ("chains_summary", "tvl_bln", "defi_tvl_bln"),
+    ("chains_summary", "total_tvl_bln", "defi_tvl_bln"),  # DeFi 总 TVL(十亿), tvl_bln 键为 0.0 坏值
     # utxo_age_distribution: 持有者分布 (收口 P2: OnchainPanel 需要)
     ("utxo_age_distribution", "long_term_holder_supply_pct", "lth_supply_pct"),
     ("utxo_age_distribution", "short_term_holder_supply_pct", "sth_supply_pct"),
@@ -780,6 +781,8 @@ _MACRO_METRICS = [
     ("DCOILWTICO", "value", "WTI"),  # 原油
     ("CL=F", "value", "Oil_futures"),  # 原油期货
     ("NASDAQCOM", "value", "NASDAQ"),  # 纳指
+    ("M2NS", "value", "m2_supply"),  # M2 货币供应(十亿)
+    ("INDPRO", "value", "industrial_production"),  # 工业产出指数
     # fedwatch: CME FedWatch 利率概率 (fed_event_collector)
     ("fedwatch", "cut_prob", "cut_probability"),
     ("fedwatch", "hold_prob", "hold_probability"),
@@ -814,6 +817,8 @@ _BREADTH_METRICS = [
     ("social_volume", "social_volume", "social_volume"),
     ("social_volume", "news_count_24h", "news_count_24h"),
     ("overview_market", "btc_dominance_pct", "btc_dominance_pct"),  # BTC 市占率 (panewslab)
+    ("chains_summary", "total_tvl_bln", "defi_tvl_bln"),  # DeFi 总 TVL(十亿), tvl_bln 键为 0.0 坏值
+    ("overview_market", "global_change24_pct", "global_change_24h"),  # 全球市值24h涨跌%
 ]
 # capital_flow 指标定义 (P1)
 _CAPITAL_FLOW_METRICS = [
@@ -842,6 +847,8 @@ _SENTIMENT_METRICS = [
     ("fear_greed_enhanced", "volatility", "fg_volatility"),
     ("fear_greed_enhanced", "capital_flow", "fg_capital_flow"),
     ("fear_greed_enhanced", "funding", "fg_funding"),
+    ("social_volume", "social_volume", "social_volume"),  # 社交讨论量
+    ("social_volume", "news_count_24h", "news_count_24h"),  # 24h 新闻数
 ]
 
 
@@ -851,6 +858,21 @@ def _query_metric(conn, sub_cat: str, name: str):
         (sub_cat, name),
     )
     return cur.fetchone()
+
+
+_NEWS_METRICS = [
+    ("social_volume", "news_count_24h", "news_count_24h"),
+    ("social_volume", "social_volume", "social_volume"),
+    ("social_volume", "total_news_records", "total_news_records"),
+]
+
+_NARRATIVE_METRICS = [
+    ("crypto_fear_greed", "value", "fg_value"),
+    ("fear_greed_enhanced", "capital_flow", "capital_flow"),
+    ("fear_greed_enhanced", "funding", "funding"),
+    ("fear_greed_enhanced", "momentum", "momentum"),
+    ("fear_greed_enhanced", "volatility", "volatility"),
+]
 
 
 def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -963,6 +985,54 @@ def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
                     output[out_key] = row[0]
         elif command == "sentiment":
             for sub_cat, name, out_key in _SENTIMENT_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+        elif command == "news":
+            for sub_cat, name, out_key in _NEWS_METRICS:
+                row = _query_metric(conn, sub_cat, name)
+                if row:
+                    output[out_key] = row[0]
+            # newsflash 情绪分布 (48h 窗口 200 条, 移植自 9 层 collect_news)
+            try:
+                import time as _time
+
+                _end = int(_time.time())
+                _start = _end - 48 * 3600
+                _rows = conn.execute(
+                    """SELECT metric_value FROM mm_metrics
+                       WHERE metric_name='od_policy_sentiment_0_1'
+                         AND sub_category LIKE 'newsflash_%'
+                         AND timestamp BETWEEN ? AND ?
+                       ORDER BY timestamp DESC LIMIT 200""",
+                    (_start, _end),
+                ).fetchall()
+                _pos = _neg = _neu = 0
+                _sents = []
+                for _r in _rows:
+                    _v = _r[0]
+                    if _v is None or not isinstance(_v, (int, float)):
+                        continue
+                    _sents.append(float(_v))
+                    if _v > 0.55:
+                        _pos += 1
+                    elif _v < 0.45:
+                        _neg += 1
+                    else:
+                        _neu += 1
+                output["positive_count"] = _pos
+                output["negative_count"] = _neg
+                output["neutral_count"] = _neu
+                output["avg_sentiment"] = (
+                    round(sum(_sents) / len(_sents), 3) if _sents else 0.5
+                )
+                output["high_impact_count"] = sum(
+                    1 for _s in _sents if abs(_s - 0.5) > 0.3
+                )
+            except Exception:
+                pass
+        elif command == "narrative":
+            for sub_cat, name, out_key in _NARRATIVE_METRICS:
                 row = _query_metric(conn, sub_cat, name)
                 if row:
                     output[out_key] = row[0]

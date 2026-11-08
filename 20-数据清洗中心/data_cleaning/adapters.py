@@ -197,6 +197,13 @@ def cleaned_df_to_records(
             if c not in {"timestamp", "source", "sub_category", "fetched_at", asset_col}
             and c not in _event_excluded
         }
+        # FIX 2026-11-07: timeseries 结构列 {metric, date, value} 泄漏进 metrics
+        # （bgeometrics 等带 timeseries 的 chain 记录，DF 往返后 metrics 混入
+        #   语义不明的 value 键）。检测到 metric 列即表明来自 timeseries 结构，
+        #   将三个结构列排除，防止泄漏。不影响非 timeseries 来源的合法 value 指标
+        #   （如 fear_greed 的 value，其 DF 中无 metric 列）。
+        if "metric" in grp_cols:
+            metrics_cols -= {"metric", "date", "value"}
         if category == "news":
             # events 流
             ev_cols = [c for c in ("timestamp", "title", "importance", "event_type", "published_ms") if c in grp_cols]

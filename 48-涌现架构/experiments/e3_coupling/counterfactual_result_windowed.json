@@ -1,0 +1,20 @@
+{
+  "verdict": "falsified",
+  "n_pairs": 9011,
+  "n_oos": 2704,
+  "mae_coupled": 0.070012,
+  "mae_ablated": 0.045907,
+  "median_improvement": -0.01673,
+  "median_improvement_pct": -36.444,
+  "p_value": 0.0001,
+  "direction_positive": false,
+  "n_perm": 10000,
+  "train_frac": 0.7,
+  "ts": "2026-11-06T09:57:58.791020+00:00",
+  "data_sources": [
+    "/home/luke/dreambuddy/.workbuddy/l1_training/domain_discovery_training_windowed.jsonl"
+  ],
+  "n_series_raw": 9012,
+  "coupling_source": "static_json",
+  "spec": "SPEC-EMERGENCE-EVOLUTION v0.5 §4 E3"
+}

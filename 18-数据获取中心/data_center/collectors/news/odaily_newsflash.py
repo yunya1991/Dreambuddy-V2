@@ -375,8 +375,12 @@ def _sentiment_lazy(title: str, description: str) -> tuple[float, bool]:
     """
     try:
         # 9基本面真实路径：/9-基本面分析/engines/sentiment_engine.py
+        import os as _os
         import sys
-        nine_root = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析"
+        # 服务器真实路径优先，保留 macOS 本地路径兼容
+        nine_root = "/home/luke/dreambuddy/9-基本面分析"
+        if not _os.path.isdir(nine_root):
+            nine_root = "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/9-基本面分析"
         if nine_root not in sys.path:
             sys.path.insert(0, nine_root)
         from engines.sentiment_engine import SentimentEngine  # type: ignore

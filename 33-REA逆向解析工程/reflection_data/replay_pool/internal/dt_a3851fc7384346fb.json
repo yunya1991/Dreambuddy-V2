@@ -1,0 +1,84 @@
+{
+  "tree_id": "dt_a3851fc7384346fb",
+  "task": {
+    "target": "/home/luke/dreambuddy/mcp_shells/l0_rea/server.py",
+    "task_type": "analyze",
+    "scope": "architecture"
+  },
+  "nodes": [
+    {
+      "node_id": "dn_29326251510e4099",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "/home/luke/dreambuddy/mcp_shells/l0_rea/server.py"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_1e70387afa4c44c3",
+          "parent_id": "dn_29326251510e4099",
+          "action": {
+            "analyzer": "python_analyzer",
+            "params": {
+              "target": "/home/luke/dreambuddy/mcp_shells/l0_rea/server.py"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "s33_rea_analyze",
+              "detail": "单文件 AST 分析"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1793620068300
+        }
+      ],
+      "created_at": 1793620068262
+    },
+    {
+      "node_id": "dn_1e70387afa4c44c3",
+      "parent_id": "dn_29326251510e4099",
+      "action": {
+        "analyzer": "python_analyzer",
+        "params": {
+          "target": "/home/luke/dreambuddy/mcp_shells/l0_rea/server.py"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "s33_rea_analyze",
+          "detail": "单文件 AST 分析"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1793620068300
+    }
+  ],
+  "provenance": "internal",
+  "source_label": "",
+  "weight": 1.0,
+  "created_at": 1793620068262,
+  "source_id": "",
+  "repo_url": "",
+  "commit": "",
+  "license": "",
+  "collected_at": 0
+}

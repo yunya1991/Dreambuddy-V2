@@ -71,6 +71,7 @@ class CognitiveSession:
         self.status: str = "active"  # active, ended
         self.action_chain: List[Dict[str, Any]] = []
         self.recalled_memory_ids: List[str] = []  # recall注入的建议记忆ID
+        self.active_reflection_id: Optional[str] = None  # 最近一次建议注入的reflection_id（动作侧补记用）
         self.recalled_processes: List[RecalledProcessItem] = []   # recall注入的流程（设计节 4.2 强类型）
         self.task_type: str = ""  # 从首批文件变更推断
         self.files_touched: set = set()
@@ -89,6 +90,9 @@ class CognitiveSession:
             "action_type": action_type,
             "detail": detail,
         }
+        # E4b 动作侧补记：动作发生时活跃的 reflection_id（建议→动作精确 join 锚点）
+        if getattr(self, "active_reflection_id", None):
+            event["active_reflection_id"] = self.active_reflection_id
         event.update(extra)
         self.action_chain.append(event)
 
@@ -117,6 +121,7 @@ class CognitiveSession:
             "task_type": self.task_type,
             "action_count": len(self.action_chain),
             "recalled_memory_ids": self.recalled_memory_ids,
+            "active_reflection_id": getattr(self, "active_reflection_id", None),
             "recalled_processes": recalled_processes_serialized,
             "files_touched": list(self.files_touched),
             "task_type_history": self.task_type_history,
@@ -136,6 +141,7 @@ class CognitiveSession:
         sess.status = data.get("status", "active")
         sess.task_type = data.get("task_type", "")
         sess.recalled_memory_ids = data.get("recalled_memory_ids", [])
+        sess.active_reflection_id = data.get("active_reflection_id")
         sess.files_touched = set(data.get("files_touched", []))
         sess.task_type_history = data.get("task_type_history", [])
         # 恢复 recalled_processes（修复：原遗漏导致跨进程丢失）
@@ -620,7 +626,10 @@ class CognitiveSessionManager:
 
             # 生成建议文件
             if results or session.recalled_processes:
-                suggestions = self._format_suggestions(results, session.recalled_processes)
+                import uuid as _uuid
+                reflection_id = f"RF-{time.strftime('%Y%m%d%H%M%S')}-{_uuid.uuid4().hex[:8]}"
+                session.active_reflection_id = reflection_id  # 动作侧 add_action 补记此 ID
+                suggestions = self._format_suggestions(results, session.recalled_processes, reflection_id=reflection_id)
                 suggestion_file = self.sessions_dir / session.id / "suggestions.md"
                 suggestion_file.parent.mkdir(parents=True, exist_ok=True)
                 if evolved and suggestion_file.exists():
@@ -644,11 +653,16 @@ class CognitiveSessionManager:
         self,
         memories: List[Dict[str, Any]],
         processes: Optional[List[Any]] = None,
+        reflection_id: Optional[str] = None,
     ) -> str:
         """格式化建议文本（知识+记忆+流程，非约束）"""
+        import uuid as _uuid
+        if reflection_id is None:
+            reflection_id = f"RF-{time.strftime('%Y%m%d%H%M%S')}-{_uuid.uuid4().hex[:8]}"
         lines = [
             "# 💡 认知系统建议（非约束，可自由选择是否遵循）",
             f"# 生成时间: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+            f"# reflection_id: {reflection_id}",
             "",
         ]
 

@@ -89,6 +89,7 @@ def _register_defaults(reg: Registry) -> None:
     # 🆕 P0 基本面缺失数据补全（Binance 免费 API + 派生）
     from data_center.collectors.chain.long_short_ratio_collector import LongShortRatioCollector
     from data_center.collectors.chain.binance_funding_rate_collector import BinanceFundingRateCollector
+    from data_center.collectors.chain.okx_derivatives_collector import OkxDerivativesCollector
     from data_center.collectors.chain.utxo_age_collector import UTXOAgeDistributionCollector
     from data_center.collectors.chain.social_volume_collector import SocialVolumeCollector
 
@@ -144,6 +145,7 @@ def _register_defaults(reg: Registry) -> None:
     # 🆕 P0 基本面缺失数据补全（Binance 免费 API + 派生）
     reg.register("chain", "long_short_ratio", LongShortRatioCollector)
     reg.register("chain", "binance_funding_rate", BinanceFundingRateCollector)
+    reg.register("chain", "okx_derivatives", OkxDerivativesCollector)
     reg.register("chain", "utxo_age_distribution", UTXOAgeDistributionCollector)
     reg.register("chain", "social_volume", SocialVolumeCollector)
 

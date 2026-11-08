@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-11-08T04:00:03",
+  "dry_run": false,
+  "roots": [
+    "."
+  ],
+  "docs_scanned": 2660,
+  "urls_found": 146,
+  "total_sources": 146,
+  "new": 3,
+  "updated": 0,
+  "skipped": 143,
+  "truncated": false,
+  "new_items": [
+    {
+      "id": "evals",
+      "location": "https://github.com/openai/evals",
+      "category": "finance_models"
+    },
+    {
+      "id": "lm-evaluation-harness",
+      "location": "https://github.com/EleutherAI/lm-evaluation-harness",
+      "category": "dsh"
+    },
+    {
+      "id": "zipline-reloaded",
+      "location": "https://github.com/stefan-jansen/zipline-reloaded",
+      "category": "finance_models"
+    }
+  ],
+  "updated_items": [],
+  "archived": [
+    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/evals.md",
+    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/dsh/lm-evaluation-harness.md",
+    "2-KNOWLEDGE/7-EXTERNAL-RESEARCH/external-sources/finance_models/zipline-reloaded.md"
+  ]
+}

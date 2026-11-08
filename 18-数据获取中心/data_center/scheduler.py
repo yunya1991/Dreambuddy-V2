@@ -758,6 +758,18 @@ class CollectionScheduler:
                 interval_sec=28800,  # 8 小时
             )
         )
+        # ── chain/okx_derivatives（5min，OKX 衍生品四合一）
+        #    资金费率/多空比(持仓人数)/OI/主动买卖比，免 Key 公开 API
+        #    与 Binance 口径交叉验证，覆盖 capital_flow 模块 OKX 口径
+        tasks.append(
+            CollectionTask(
+                name="okx_derivatives",
+                category="chain",
+                source="okx_derivatives",
+                params={"instId": "BTC-USDT-SWAP", "ccy": "BTC"},
+                interval_sec=300,
+            )
+        )
         # ── chain/long_short_ratio（5min，Binance Futures 真实多空比）
         #    5min 轮询与 Binance 数据更新频率对齐
         tasks.append(

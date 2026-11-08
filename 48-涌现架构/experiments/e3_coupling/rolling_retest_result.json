@@ -1,0 +1,45 @@
+{
+  "ts": "2026-11-07T04:55:31.958526+00:00",
+  "spec": "SPEC-EMERGENCE-EVOLUTION v0.5 §4 E3 rolling retest",
+  "data_source": "/home/luke/dreambuddy/.workbuddy/l1_training/domain_discovery_training_windowed.jsonl",
+  "window": "quarterly",
+  "n_series": 9051,
+  "n_windows": 3,
+  "per_window": [
+    {
+      "window": "2026-Q2",
+      "n_pairs": 2851,
+      "verdict": "e3_candidate",
+      "mae_coupled": 0.04363,
+      "mae_ablated": 0.044705,
+      "improvement_pct": 2.995,
+      "p_value": 0.0005,
+      "direction_positive": true
+    },
+    {
+      "window": "2026-Q3",
+      "n_pairs": 4414,
+      "verdict": "e3_candidate",
+      "mae_coupled": 0.043465,
+      "mae_ablated": 0.044449,
+      "improvement_pct": 2.853,
+      "p_value": 0.0005,
+      "direction_positive": true
+    },
+    {
+      "window": "2026-Q4",
+      "n_pairs": 1783,
+      "verdict": "inconclusive",
+      "mae_coupled": 0.050519,
+      "mae_ablated": 0.049373,
+      "improvement_pct": -0.542,
+      "p_value": 0.45677,
+      "direction_positive": false
+    }
+  ],
+  "n_evaluated_windows": 3,
+  "n_direction_positive": 2,
+  "n_significant_positive": 2,
+  "verdict": "e3_candidate_weak",
+  "status": "ok"
+}

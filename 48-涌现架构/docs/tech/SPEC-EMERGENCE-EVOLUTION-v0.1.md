@@ -2,7 +2,8 @@
 
 > 日期：2026-11-05（v0.1 初稿 → v0.2 调研回填+E-BIZ → v0.3 正反方辩论评审后修订 → v0.4 架构×数据流双维深度评审 → v0.5 六维实证评审封口）
 > 来源：用户提问"系统能否出现智能涌现效应"+ 两线调研 + 用户"涌现什么"方向修正 + v0.3 评审裁决（25/30，修改后接受）+ v0.4 双维评审（P0×5 + P1×7）
-> 状态：🟢 v0.5 落地中——E0a（配置 hash）+ E0b（回放器 + 33 笔实盘 OOS 基线）+ E4a（metrics 骨架 + 云端每日 timer）+ E4b（三埋点设施 + 首跑，两项代理退化已标注）已落盘（2026-11-05）；下一阶段 E6/E1/E3/E5 并行候选，E2 放最后
+> 状态：🟢 v0.6 落地中——E0a/E0b/E4a/E4b/E1/E2/E3/E5/E6 全部至少落盘（2026-11-07）：E1 shadow 探针 runner 已部署 systemd 常驻（300s 周期）+ 积累达标自动放行开关（每日 06:30 timer）；E2 评估器升级多源可插拔（v2_multisrc）；E3 滚动复测 e3_candidate_weak（Q2/Q3 显著正，Q4 不显著）；E5 强原语复测 inconclusive 方向转正；E4b 动作侧 active_reflection_id 补齐；E6 需求单 4 张已发
+> 变更（v0.5→v0.6，实验进度对齐 2026-11-06/07）：E1 补 shadow 探针 runner（bus/run_shadow_probe.py，systemd yijing-emergence-shadow-probe）+ 积累达标自动放行（registry/accumulation_gate.py，systemd timer 每日 06:30，E1 判据=7 自然日+M1 动作≥1，E4b cascade 判据=点火事件≥20）；E2 评估器多源升级（backtest_evaluator.py v2_multisrc：kline_csv/json_ts/json_closes/memory 四种可插拔源规格，不局限 11 域）；E3 滚动复测（e3_coupling/rolling_retest.py，季度切窗：Q2 +3.0%/Q3 +2.9% 显著正，Q4 -0.5% 不显著 → e3_candidate_weak 如实降级）；E5 强原语复测（e5_cbr_holdout/e5_strong_primitives.py：6 维状态含 quality_score + median 分位标签，+1.34pp p=0.72 inconclusive 方向转正；next_state 全空已如实标注）；E4b 动作侧补记 active_reflection_id（cognitive_session.py 6 处，精确 join 锚点就绪）；18 标的 K 线核验通过（4×6101 行 + 14×2101 行）
 > 变更（v0.4→v0.5，六维实证评审）：K 线回填标记完成（btc_1h_ts.json fetched 11-04，5022 根至 11-05）；ckpt 日期修正（10-06 → 实际 11-03，重训前置降级为常规步骤）；E0b 估时回调 5-7 → 3-4 天；登记第三轮评审记录（修改后接受）
 > 上游：35-广义认知 C1-C4（SPEC-CognitiveSystem-Evolution v0.2）、46-DSH、47-MCP、44-三端协作架构、4-MEMORY workspace_bus.py、19-数据访问层
 > 下游：Phase E0b-E6 实施任务、48/experiments 实验记录、48/metrics 度量快照

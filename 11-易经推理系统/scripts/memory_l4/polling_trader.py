@@ -1239,7 +1239,7 @@ class PollingTrader:
         try:
             import sys as _sys
 
-            _cog_path = str(Path(__file__).resolve().parents[2] / "4-MEMORY" / "9-工具与接口")
+            _cog_path = str(Path(__file__).resolve().parents[3] / "4-MEMORY" / "9-工具与接口")
             if _cog_path not in _sys.path:
                 _sys.path.insert(0, _cog_path)
             from cognitive_loop_entry import trading_recall as _trading_recall
