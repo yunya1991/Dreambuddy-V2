@@ -1,0 +1,15 @@
+{
+  "schema_version": "debate-request-v1",
+  "topic": "双决策链架构应进入 R0",
+  "mode": "review",
+  "profile": "technical",
+  "client": "bot32",
+  "background": "背景材料",
+  "research": true,
+  "research_sources": ["unified_search", "recall", "code"],
+  "rounds": 2,
+  "judge": true,
+  "adjudication": false,
+  "budget": {"max_chars": 12000, "max_sources": 8, "max_tokens": 8000, "timeout_sec": 20},
+  "trace_id": "trace-demo"
+}

@@ -80,6 +80,8 @@ Bull/Bear 辩论流程（置信度 < 0.65 时触发）
 - 辩论结果（多空论据+置信度）比简单 recall 历史经验更有效
 - 避免单一视角偏见，确保 balanced analysis
 
+> **统一封装（2026-11-07 设计；2026-11-08 状态更新）**：`agent.debate.mcp` 已支持 fast/deep/review + Research Prepass + citations；C-Drive 已落 `DEBATE_MCP_ENABLED` 灰度迁移（默认 false，连续失败回退本地 v1/v2），并经 `profile=signal` 做交易信号评审（technical profile 用于架构/文档红队）；L2 `l2_analysis` / `l2_trading_analysis` 已注册。完整契约与状态见 [SPEC-DEBATE-MCP-L2-INTEGRATION-v0.1.md](./SPEC-DEBATE-MCP-L2-INTEGRATION-v0.1.md) §9/§11。
+
 ---
 
 ## 二、调研结论

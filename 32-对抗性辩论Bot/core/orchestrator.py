@@ -15,11 +15,13 @@ import asyncio
 import logging
 
 from core.agents import BullAgent, BearAgent, JudgeAgent
+from core.cross_exam import run_cross_examination
 from core.marketing import MarketingExtractor
 from core.models import (
-    Argument, Turn, Verdict, MarketingMaterial,
+    Argument, CrossExamination, Turn, Verdict, MarketingMaterial,
     DebateQualityScore, DebateResult,
 )
+from core.profiles import DebateProfile, get_profile
 from core.quality import QualityEvaluator
 from core.telegram_bot import TelegramDualBot
 
@@ -33,6 +35,17 @@ def _format_argument(arg: Argument, side_name: str) -> str:
         lines.append("论据：" + "；".join(arg.arguments))
     if arg.quote:
         lines.append(f"💬 {arg.quote}")
+    return "\n".join(lines)
+
+
+def _format_cross_exam(
+    exam: CrossExamination, questioner_name: str, respondent_name: str,
+) -> str:
+    """格式化交叉质询为 Telegram 消息文本。"""
+    lines = [f"【交叉质询】{questioner_name} → {respondent_name}"]
+    for question, answer in zip(exam.questions, exam.answers):
+        lines.append(f"Q: {question}")
+        lines.append(f"A: {answer}")
     return "\n".join(lines)
 
 
@@ -63,6 +76,8 @@ class DebateOrchestrator:
         quality_evaluator: QualityEvaluator,
         telegram_dual_bot: TelegramDualBot,
         pause_timeout: float = 30 * 60,  # 30 分钟
+        cross_examination: bool = False,
+        profile: DebateProfile | str | None = None,
     ):
         self.bull_agent = bull_agent
         self.bear_agent = bear_agent
@@ -71,6 +86,8 @@ class DebateOrchestrator:
         self.quality_evaluator = quality_evaluator
         self.telegram_dual_bot = telegram_dual_bot
         self.pause_timeout = pause_timeout
+        self.cross_examination = cross_examination
+        self.profile = get_profile(profile)
 
         # 全局状态（单进程单群场景）
         self.status: str = "idle"
@@ -81,6 +98,8 @@ class DebateOrchestrator:
         self._pause_flags: dict[int, bool] = {}
         self._resume_events: dict[int, asyncio.Event] = {}
         self._injected_views: dict[int, list[str]] = {}
+        # 已写入 transcript 的注入观点，用于运行中 /inject 的增量同步
+        self._recorded_injections: dict[int, list[str]] = {}
 
     # ─── 公共控制方法（供 Telegram 命令处理器调用） ──────────────
 
@@ -97,8 +116,12 @@ class DebateOrchestrator:
     def pause(self, chat_id: int) -> None:
         """请求暂停辩论。"""
         self._pause_flags[chat_id] = True
-        if chat_id not in self._resume_events:
-            self._resume_events[chat_id] = asyncio.Event()
+        event = self._resume_events.get(chat_id)
+        if event is None:
+            event = asyncio.Event()
+            self._resume_events[chat_id] = event
+        # 清掉上一次 resume 遗留的 set 状态，否则新的 pause 会立即穿透
+        event.clear()
 
     def resume(self, chat_id: int) -> None:
         """恢复暂停的辩论。"""
@@ -111,6 +134,7 @@ class DebateOrchestrator:
         """清空注入观点（/inject clear）。"""
         if chat_id in self._injected_views:
             self._injected_views[chat_id].clear()
+        self._recorded_injections[chat_id] = []
 
     # ─── 主入口 ──────────────────────────────────────────────────
 
@@ -139,6 +163,28 @@ class DebateOrchestrator:
         if chat_id not in self._locks:
             self._locks[chat_id] = asyncio.Lock()
         return self._locks[chat_id]
+
+    def _sync_injected_views(
+        self, chat_id: int, transcript: list[Turn],
+    ) -> list[str] | None:
+        """把新增注入观点写入 transcript，并返回当前观点列表。
+
+        每次辩手调用前执行，使 /inject 在下一轮生效（而不是只在下一次
+        新开辩论时生效）；/inject clear 后重置记录，避免重复写入。
+        """
+        current = list(self._injected_views.get(chat_id, []))
+        recorded = self._recorded_injections.get(chat_id, [])
+
+        if current[:len(recorded)] == recorded:
+            new_views = current[len(recorded):]
+        else:
+            # 列表被 clear 或替换：只记录当前列表，不重复已有 transcript
+            new_views = current
+
+        for view in new_views:
+            transcript.append(Turn(speaker="inject", round=0, content=view))
+        self._recorded_injections[chat_id] = current
+        return current or None
 
     async def _wait_if_paused(self, chat_id: int) -> None:
         """如果被暂停，等待 resume（超时则自动 stop）。"""
@@ -174,25 +220,15 @@ class DebateOrchestrator:
         self._pause_flags[chat_id] = False
 
         transcript: list[Turn] = []
-
-        # 注入观点写入 transcript
-        injected_views = self._injected_views.get(chat_id, [])
-        for view in injected_views:
-            transcript.append(Turn(
-                speaker="inject", round=0, content=view,
-            ))
-
-        # 注入观点传给辩手（None 如果空）
-        views_for_agents: list[str] | None = (
-            list(injected_views) if injected_views else None
-        )
+        self._recorded_injections[chat_id] = []
 
         # ─── 辩论轮次循环 ────────────────────────────────────
         for round_num in range(1, max_rounds + 1):
             if self._stop_flags.get(chat_id, False):
                 break
 
-            # 正方发言
+            # 正方发言（每次调用前同步，保证运行中 /inject 下一轮生效）
+            views_for_agents = self._sync_injected_views(chat_id, transcript)
             self.status = "bull_turn"
             bull_arg = await self.bull_agent.argue(
                 topic, transcript, background, views_for_agents,
@@ -208,6 +244,7 @@ class DebateOrchestrator:
             await self._wait_if_paused(chat_id)
 
             # 反方反驳
+            views_for_agents = self._sync_injected_views(chat_id, transcript)
             self.status = "bear_turn"
             bear_arg = await self.bear_agent.rebut(
                 topic, transcript, background, views_for_agents,
@@ -222,6 +259,31 @@ class DebateOrchestrator:
             # 暂停检查
             await self._wait_if_paused(chat_id)
 
+            # ─── 交叉质询（v2.0-rc3 §4.2，可选）──────────────
+            if (self.cross_examination and round_num == 1
+                    and not self._stop_flags.get(chat_id, False)):
+                self.status = "cross_exam"
+
+                async def _send_cross(turn: Turn) -> None:
+                    exam = turn.content
+                    if not isinstance(exam, CrossExamination):
+                        return
+                    self.status = f"{turn.speaker}_cross"
+                    q_name = "正方" if exam.questioner == "bull" else "反方"
+                    a_name = "正方" if exam.respondent == "bull" else "反方"
+                    await self.telegram_dual_bot.send_as(
+                        turn.speaker, chat_id,
+                        _format_cross_exam(exam, q_name, a_name),
+                    )
+
+                await run_cross_examination(
+                    self.bull_agent, self.bear_agent, topic, transcript,
+                    background=background,
+                    injected_views=views_for_agents,
+                    round_num=round_num,
+                    on_turn=_send_cross,
+                )
+
         # ─── 裁判综合 ────────────────────────────────────────
         verdict: Verdict | None = None
         if self.judge_agent is not None:
@@ -234,17 +296,27 @@ class DebateOrchestrator:
                 speaker="judge", round=max_rounds, content=verdict,
             ))
 
-        # ─── 营销素材提取 ────────────────────────────────────
-        self.status = "marketing"
-        material = await self.marketing_extractor.extract(
-            topic, transcript, verdict,
-        )
+        # ─── 营销素材/质量（仅 marketing profile）────────────
+        if self.profile.marketing:
+            self.status = "marketing"
+            material = await self.marketing_extractor.extract(
+                topic, transcript, verdict,
+            )
 
-        # ─── 质量评估 ────────────────────────────────────────
-        self.status = "quality"
-        quality_score = await self.quality_evaluator.evaluate(
-            topic, transcript, material,
-        )
+            self.status = "quality"
+            quality_score = await self.quality_evaluator.evaluate(
+                topic, transcript, material,
+            )
+        else:
+            material = MarketingMaterial(
+                quotes=[], hashtags=[], highlight_paragraph="",
+                short_copy=[], debate_title="",
+            )
+            quality_score = DebateQualityScore(
+                overall=0.0, grade="C", dimensions={},
+                rule_score=0.0, llm_score=0.0,
+                highlights=[], suggestions=["非 marketing profile，跳过营销质量评分"],
+            )
 
         # ─── 完成 ────────────────────────────────────────────
         self.status = "done"

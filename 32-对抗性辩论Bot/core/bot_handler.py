@@ -31,6 +31,14 @@ class CommandHandler:
         self.telegram_bot = telegram_bot
         self.config = config
 
+    @staticmethod
+    def _parse_topic_background(args: str) -> tuple[str, str]:
+        """解析 `/debate <topic> --bg <background>`（SPEC §7.1）。"""
+        if "--bg" not in args:
+            return args.strip(), ""
+        topic, background = args.split("--bg", 1)
+        return topic.strip(), background.strip()
+
     async def handle_command(
         self, text: str, chat_id: int, user_id: int,
         is_admin: bool,
@@ -75,8 +83,9 @@ class CommandHandler:
                              is_admin: bool) -> str:
         if not is_admin:
             return "⚠️ 仅群主/管理员可操作此命令"
+        topic, background = self._parse_topic_background(topic)
         if not topic:
-            return "用法：/debate <话题>"
+            return "用法：/debate <话题> [--bg <背景材料>]"
 
         # 群白名单
         whitelist = self.config.telegram.allowed_chat_ids
@@ -92,7 +101,7 @@ class CommandHandler:
         # 后台启动辩论
         max_rounds = self.config.debate.max_rounds
         asyncio.create_task(
-            self.orchestrator.run(topic, chat_id, max_rounds)
+            self.orchestrator.run(topic, chat_id, max_rounds, background)
         )
         logger.info("辩论启动 (chat_id=%s, topic=%s)", chat_id, topic)
         return f"🎤 辩论开始：{topic}（{max_rounds} 轮）"
@@ -129,8 +138,9 @@ class CommandHandler:
     # ─── /change_topic ───────────────────────────────────────
 
     async def _handle_change_topic(self, topic: str, chat_id: int) -> str:
+        topic, background = self._parse_topic_background(topic)
         if not topic:
-            return "用法：/change_topic <新话题>"
+            return "用法：/change_topic <新话题> [--bg <背景材料>]"
         # 先停止当前辩论
         self.orchestrator.stop(chat_id)
         # 话题黑名单
@@ -141,7 +151,7 @@ class CommandHandler:
         # 启动新辩论
         max_rounds = self.config.debate.max_rounds
         asyncio.create_task(
-            self.orchestrator.run(topic, chat_id, max_rounds)
+            self.orchestrator.run(topic, chat_id, max_rounds, background)
         )
         return f"🔄 话题切换：{topic}（旧辩论已停止，新辩论启动中）"
 

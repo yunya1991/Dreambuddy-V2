@@ -153,6 +153,7 @@ class TestBullAgent:
 
         user_prompt = mock.calls[0]["user"]
         assert "BTC 不是数字黄金" in user_prompt  # Bear 的 thesis 出现在 prompt
+        assert "反方上一轮论点" in user_prompt
 
     @pytest.mark.asyncio
     async def test_background_injected(self):
@@ -194,6 +195,45 @@ class TestBullAgent:
 
         assert mock.calls[0]["max_tokens"] == 600
 
+    @pytest.mark.asyncio
+    async def test_cross_examine_questions(self):
+        """交叉质询：解析 questions，并带上对方上一轮论点。"""
+        mock = MockLLMClient([json.dumps(
+            {"questions": ["数据来源是什么？", "如何解释高波动？"]},
+            ensure_ascii=False,
+        )])
+        agent = BullAgent(mock)
+        bear_turn = Turn(speaker="bear", round=1, content=make_bear_arg())
+
+        questions = await agent.cross_examine(
+            "BTC 是数字黄金吗？", [bear_turn],
+        )
+
+        assert questions == ["数据来源是什么？", "如何解释高波动？"]
+        assert "反方上一轮论点" in mock.calls[0]["user"]
+
+    @pytest.mark.asyncio
+    async def test_cross_examine_invalid_json_returns_empty(self):
+        """质询 JSON 两次失败 → 返回空列表（跳过该方向）。"""
+        mock = MockLLMClient([INVALID_JSON, INVALID_JSON])
+        agent = BullAgent(mock)
+        assert await agent.cross_examine("话题", []) == []
+
+    @pytest.mark.asyncio
+    async def test_answer_cross_pads_missing_answers(self):
+        """回答数量不足时补齐，保证与 questions 一一对应。"""
+        mock = MockLLMClient([json.dumps({"answers": ["只有一条"]},
+                                          ensure_ascii=False)])
+        agent = BearAgent(mock)
+
+        answers = await agent.answer_cross(
+            "话题", ["Q1", "Q2"], [],
+        )
+
+        assert answers[0] == "只有一条"
+        assert len(answers) == 2
+        assert "未能回答" in answers[1]
+
 
 # ─── BearAgent 测试 ───────────────────────────────────────────────
 
@@ -232,6 +272,8 @@ class TestBearAgent:
 
         user_prompt = mock.calls[0]["user"]
         assert "数字黄金" in user_prompt  # Bull 的 thesis 出现在 prompt
+        assert "正方上一轮论点" in user_prompt
+        assert "反方上一轮论点" not in user_prompt
 
     @pytest.mark.asyncio
     async def test_json_retry_fail_fallback(self):

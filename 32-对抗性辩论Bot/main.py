@@ -23,8 +23,8 @@ from pathlib import Path
 
 from core.agents import BullAgent, BearAgent, JudgeAgent
 from core.bot_handler import CommandHandler
-from core.config import AppConfig, load_config
-from core.llm_adapter import create_llm_adapter
+from core.config import AppConfig, LLMConfig, load_config
+from core.llm_compat import LLMSettings, create_llm_client
 from core.listener import TelegramListener
 from core.marketing import MarketingExtractor
 from core.orchestrator import DebateOrchestrator
@@ -37,6 +37,41 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
 logger = logging.getLogger("debate.main")
+
+
+def create_llm_adapter(
+    config: LLMConfig | dict | None = None,
+    model_name: str | None = None,
+):
+    """创建 LLM 客户端（兼容旧 `create_llm_adapter` 调用点）。
+
+    - config=LLMConfig：使用新配置（provider/base_url/api_key/timeout）
+    - config=dict：显式 provider/model
+    - config=None：自动探测（Anthropic 代理优先，其次 OpenAI 兼容）
+    """
+    if isinstance(config, LLMConfig):
+        settings = LLMSettings(
+            provider=config.provider,
+            model=model_name,
+            base_url=config.base_url,
+            api_key=config.api_key,
+            timeout_sec=config.timeout_sec,
+            max_retries=config.max_retries,
+            max_tokens=int(config.max_tokens.get("debater", 2000)),
+        )
+    elif isinstance(config, dict):
+        settings = LLMSettings(
+            provider=str(config.get("provider", "auto")),
+            model=model_name or config.get("model"),
+            base_url=config.get("base_url"),
+            api_key=config.get("api_key"),
+            timeout_sec=float(config.get("timeout_sec", 90.0)),
+            max_retries=int(config.get("max_retries", 2)),
+            max_tokens=int(config.get("max_tokens", 2000)),
+        )
+    else:
+        settings = LLMSettings(model=model_name)
+    return create_llm_client(settings)
 
 
 @dataclass
@@ -58,22 +93,44 @@ def build_app(config: AppConfig) -> DebateApp:
     Returns:
         DebateApp 实例
     """
-    models = config.debate.models
+    debate_models = config.debate.models
+    llm_models = config.llm.models
 
-    # ─── LLM 适配器（按角色分档模型） ──────────────────────────
-    debater_llm = create_llm_adapter(model_name=models.get("debater", "qwen-turbo"))
-    judge_llm = create_llm_adapter(model_name=models.get("judge", "qwen-plus"))
-    marketing_llm = create_llm_adapter(model_name=models.get("marketing", "qwen-plus"))
-    quality_llm = create_llm_adapter(model_name=models.get("quality", "qwen-plus"))
+    def _model(role: str, default: str) -> str:
+        return llm_models.get(role) or debate_models.get(role) or default
+
+    def _max_tokens(role: str, default: int) -> int:
+        return int(config.llm.max_tokens.get(role, default))
+
+    # ─── LLM 适配器（按角色分档模型；与 LangChain 解耦） ──────
+    debater_llm = create_llm_adapter(config=config.llm, model_name=_model("debater", "qwen-turbo"))
+    judge_llm = create_llm_adapter(config=config.llm, model_name=_model("judge", "qwen-plus"))
+    marketing_llm = create_llm_adapter(config=config.llm, model_name=_model("marketing", "qwen-plus"))
+    quality_llm = create_llm_adapter(config=config.llm, model_name=_model("quality", "qwen-plus"))
 
     # ─── Agent ───────────────────────────────────────────────
-    bull_agent = BullAgent(debater_llm)
-    bear_agent = BearAgent(debater_llm)
-    judge_agent = JudgeAgent(judge_llm) if config.debate.judge_enabled else None
+    profile = config.debate.profile
+    bull_agent = BullAgent(
+        debater_llm, max_tokens=_max_tokens("debater", 2000),
+        profile=profile,
+    )
+    bear_agent = BearAgent(
+        debater_llm, max_tokens=_max_tokens("debater", 2000),
+        profile=profile,
+    )
+    judge_agent = (
+        JudgeAgent(judge_llm, max_tokens=_max_tokens("judge", 1600),
+                   profile=profile)
+        if config.debate.judge_enabled else None
+    )
 
     # ─── 营销 + 质量 ──────────────────────────────────────────
-    marketing_extractor = MarketingExtractor(marketing_llm)
-    quality_evaluator = QualityEvaluator(quality_llm)
+    marketing_extractor = MarketingExtractor(
+        marketing_llm, max_tokens=_max_tokens("marketing", 1000),
+    )
+    quality_evaluator = QualityEvaluator(
+        quality_llm, max_tokens=_max_tokens("quality", 1000),
+    )
 
     # ─── Telegram Bot ────────────────────────────────────────
     bull_tg = TelegramHTTPClient(token=config.telegram.bull_token)
@@ -98,6 +155,8 @@ def build_app(config: AppConfig) -> DebateApp:
         quality_evaluator=quality_evaluator,
         telegram_dual_bot=telegram_dual_bot,
         pause_timeout=pause_timeout,
+        cross_examination=config.debate.cross_examination,
+        profile=profile,
     )
 
     # ─── CommandHandler + Listener ───────────────────────────

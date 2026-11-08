@@ -28,6 +28,24 @@ if str(_LLM_FACTORY_DIR) not in sys.path:
 
 from llm_factory import create_llm  # noqa: E402
 
+# 无 LangChain 环境下的轻量消息兼容层（旧适配器测试/降级路径使用）。
+# 真实 LangChain 模型仍优先使用官方 BaseMessage；仅当 langchain_core 缺失时
+# 使用本 fallback，避免“没装 langchain 就整个 bot 不可用”。
+try:  # pragma: no cover - 依赖环境分支
+    from langchain_core.messages import HumanMessage, SystemMessage
+except ImportError:  # pragma: no cover
+    class _CompatMessage:
+        type = "message"
+
+        def __init__(self, content: str):
+            self.content = content
+
+    class SystemMessage(_CompatMessage):
+        type = "system"
+
+    class HumanMessage(_CompatMessage):
+        type = "human"
+
 
 class LLMAdapter:
     """将 LangChain ChatModel 适配为 LLMClient Protocol。"""
@@ -51,8 +69,6 @@ class LLMAdapter:
         Returns:
             LLM 输出的纯文本
         """
-        from langchain_core.messages import SystemMessage, HumanMessage
-
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt),

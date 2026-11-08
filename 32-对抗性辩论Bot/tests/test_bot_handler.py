@@ -110,6 +110,18 @@ class TestDebateCommand:
         assert orch.run_calls[0]["chat_id"] == 123
 
     @pytest.mark.asyncio
+    async def test_debate_with_background(self):
+        """/debate <话题> --bg <背景> 解析出 topic/background（SPEC §7.1）。"""
+        handler, orch, _ = make_handler()
+        await handler.handle_command(
+            "/debate BTC 是数字黄金 --bg 2024 年减半 + ETF 获批",
+            chat_id=123, user_id=1, is_admin=True,
+        )
+        await asyncio.sleep(0.01)
+        assert orch.run_calls[0]["topic"] == "BTC 是数字黄金"
+        assert orch.run_calls[0]["background"] == "2024 年减半 + ETF 获批"
+
+    @pytest.mark.asyncio
     async def test_debate_non_admin_rejected(self):
         """非管理员发起 /debate 被拒绝。"""
         handler, orch, _ = make_handler()

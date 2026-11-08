@@ -20,6 +20,7 @@ Spec §3.4 C-Drive-Agent 四步循环:
 """
 from __future__ import annotations
 
+import hashlib
 import importlib
 import os
 import re
@@ -140,6 +141,9 @@ class CDriveDecision:
     bear_argument: Optional[str] = None
     bull_confidence: Optional[float] = None
     bear_confidence: Optional[float] = None
+    # signal profile 输出（C-Drive 交易信号评审）
+    signal: Optional[Dict[str, Any]] = None
+    risk_flags: List[str] = field(default_factory=list)
     # JUMP 目标
     jump_to: Optional[str] = None
     # SUPPLEMENT 路由目标
@@ -170,6 +174,8 @@ class CDriveDecision:
             "bear_argument": self.bear_argument,
             "bull_confidence": self.bull_confidence,
             "bear_confidence": self.bear_confidence,
+            "signal": self.signal,
+            "risk_flags": self.risk_flags,
             "jump_to": self.jump_to,
             "supplement_module": self.supplement_module,
             "jeval_noul": self.jeval_noul,
@@ -257,6 +263,27 @@ class CDriveAgent:
         self._debate_engine_version = cfg.get("debate_engine", "v1")
         self._debate_error_count = 0
         self._debate_max_errors = cfg.get("debate_max_consecutive_errors", 3)
+
+        # 集成 SPEC P2：C-Drive → agent.debate.mcp 迁移（feature flag + 灰度 + 回滚）
+        self._debate_mcp_enabled = (
+            os.environ.get("DEBATE_MCP_ENABLED", "false").lower() == "true"
+        )
+        try:
+            self._debate_mcp_gray_percent = int(
+                os.environ.get("DEBATE_MCP_GRAY_PERCENT", "100")
+            )
+        except (TypeError, ValueError):
+            self._debate_mcp_gray_percent = 100
+        self._debate_mcp_gray_percent = max(
+            0, min(100, self._debate_mcp_gray_percent)
+        )
+        try:
+            self._debate_mcp_max_errors = int(
+                os.environ.get("DEBATE_MCP_MAX_ERRORS", "3")
+            )
+        except (TypeError, ValueError):
+            self._debate_mcp_max_errors = 3
+        self._debate_mcp_error_count = 0
 
         # SPEC §3.4: C-Drive v3 feature flag + 灰度部署
         # CDRIVE_V3=true → 强制全量启用 v3 路由
@@ -706,6 +733,8 @@ class CDriveAgent:
             bear_argument=debate.get("bear_argument"),
             bull_confidence=bull_conf,
             bear_confidence=bear_conf,
+            signal=debate.get("signal"),
+            risk_flags=list(debate.get("risk_flags") or []),
         )
 
         if confidence < self.CONF_REDO:
@@ -744,6 +773,24 @@ class CDriveAgent:
         bull_signals = [s for s in sigs if s.get("direction") == "long"]
         bear_signals = [s for s in sigs if s.get("direction") == "short"]
 
+        # P2 迁移：优先经 agent.debate.mcp（feature flag + 灰度）；失败回退 v2/v1
+        if self._mcp_selected(sigs, direction):
+            try:
+                return self._mcp_debate(sigs, direction)
+            except Exception as e:  # noqa: BLE001 — FAIL-OPEN 回退本地引擎
+                self._debate_mcp_error_count += 1
+                import logging
+                logging.getLogger("cdrive.debate").warning(
+                    "MCP 辩论异常 #%d: %s, fallback to local engine",
+                    self._debate_mcp_error_count, e,
+                )
+                if self._debate_mcp_error_count >= self._debate_mcp_max_errors:
+                    self._debate_mcp_enabled = False
+                    logging.getLogger("cdrive.debate").error(
+                        "MCP 连续 %d 次异常，关闭 DEBATE_MCP_ENABLED 并回退本地",
+                        self._debate_mcp_error_count,
+                    )
+
         if self._llm_fn is None:
             return self._rule_based_debate(bull_signals, bear_signals, round_num)
 
@@ -767,6 +814,70 @@ class CDriveAgent:
                     bull_signals, bear_signals, direction, round_num)
 
         return self._llm_based_debate(bull_signals, bear_signals, direction, round_num)
+
+    def _mcp_selected(self, signals: List[Dict], direction: str) -> bool:
+        """feature flag + 灰度选择：是否走 MCP 辩论。"""
+        if not self._debate_mcp_enabled:
+            return False
+        pct = self._debate_mcp_gray_percent
+        if pct <= 0:
+            return False
+        if pct >= 100:
+            return True
+        names = "、".join(str(s.get("name", "?")) for s in signals[:3])
+        key = f"{direction}|{names}"
+        bucket = int(hashlib.md5(key.encode("utf-8")).hexdigest(), 16) % 100
+        return bucket < pct
+
+    def _mcp_debate(
+        self, signals: List[Dict], direction: str,
+    ) -> Dict[str, Any]:
+        """经 agent.debate.mcp（fast）执行辩论，映射为 v1 兼容格式。"""
+        from debate_mcp_client import DebateMCPClient
+
+        import json
+
+        names = "、".join(str(s.get("name", "?")) for s in signals[:3])
+        topic = f"{names} 信号 {direction} 方向判断"
+        background = json.dumps(
+            {"signals": signals, "direction": direction},
+            ensure_ascii=False, default=str,
+        )
+        with DebateMCPClient() as client:
+            result = client.run(
+                topic, mode="fast", background=background,
+                profile="signal",
+                research=True,
+                research_sources=[
+                    "unified_search", "recall", "code",
+                    "l1_signal", "l1_bus", "l1_cycle",
+                ],
+            )
+
+        transcript = result.get("transcript") or []
+
+        def _content(side: str) -> Dict[str, Any]:
+            for turn in transcript:
+                if turn.get("speaker") == side:
+                    content = turn.get("content")
+                    return content if isinstance(content, dict) else {}
+            return {}
+
+        bull = _content("bull")
+        bear = _content("bear")
+        verdict = result.get("verdict") or {}
+        signal = verdict.get("signal") or {}
+        self._debate_mcp_error_count = 0
+        return {
+            "bull_argument": bull.get("thesis", ""),
+            "bear_argument": bear.get("thesis", ""),
+            "bull_confidence": float(bull.get("confidence") or 0.5),
+            "bear_confidence": float(bear.get("confidence") or 0.5),
+            "signal": signal or None,
+            "risk_flags": list(
+                verdict.get("risks") or signal.get("risk_flags") or []
+            ),
+        }
 
     def _v2_debate(self, signals: List[Dict], direction: str) -> Dict[str, Any]:
         """v2 辩论：调用 DebateEngine.run_fast()。
@@ -1439,6 +1550,31 @@ def handle_debate(params: dict) -> dict:
             topic = params.get("topic", "")
             mode = params.get("mode", "fast")
             background = params.get("background", "")
+
+            # P2 迁移：feature flag 开启时优先经 agent.debate.mcp；失败回退本地引擎
+            if os.environ.get("DEBATE_MCP_ENABLED", "false").lower() == "true":
+                try:
+                    from debate_mcp_client import DebateMCPClient
+                    with DebateMCPClient() as client:
+                        mcp_result = client.run(
+                            topic, mode=mode, background=background,
+                            profile="signal",
+                            research=True,
+                            research_sources=[
+                                "unified_search", "recall", "code",
+                                "l1_signal", "l1_bus", "l1_cycle",
+                            ],
+                        )
+                    return {
+                        "ok": True, "result": mcp_result,
+                        "via": "agent.debate.mcp",
+                    }
+                except Exception as e:  # noqa: BLE001 — FAIL-OPEN 回退本地
+                    import logging
+                    logging.getLogger("cdrive.debate").warning(
+                        "handle_debate MCP 失败，回退本地引擎: %s", e,
+                    )
+
             llm_fn = _make_synthesizer_llm_fn()
             if llm_fn is None:
                 return {"ok": False, "error": "LLM not available for debate"}

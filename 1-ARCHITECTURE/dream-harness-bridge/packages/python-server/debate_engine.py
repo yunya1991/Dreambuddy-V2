@@ -20,7 +20,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Optional
@@ -28,6 +27,7 @@ from typing import Any, Callable, Optional
 from persona import (
     Persona, DEFAULT_BULL, DEFAULT_BEAR, DEFAULT_JUDGE, match_personas,
 )
+from robust_json import extract_json_object
 
 logger = logging.getLogger("cdrive.debate_engine")
 
@@ -57,22 +57,7 @@ _JUDGE_PROMPT = """你是一位中立裁判。请综合双方辩手的论点，�
 6. 只输出 JSON"""
 
 
-# ── JSON 解析（C-Drive 内部，不依赖 32-bot） ───────────────────
-
-def _extract_json(raw: str) -> dict | None:
-    """从 LLM 输出中提取 JSON 对象。"""
-    raw = raw.strip()
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r'\{[^{}]*\}', raw, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
-    return None
+# ── JSON 解析：收敛到共享 robust_json（32 canonical + DSH fallback） ──
 
 
 @dataclass
@@ -91,7 +76,7 @@ class _Argument:
     @classmethod
     def parse(cls, raw: str) -> "_Argument":
         """从 LLM 输出解析 Argument，失败返回 fallback。"""
-        data = _extract_json(raw)
+        data = extract_json_object(raw)
         if data is None:
             return cls.fallback()
         try:
@@ -262,7 +247,7 @@ class DebateEngine:
         )
         prompt = f"{_JUDGE_PROMPT}\n\n辩论话题:{topic}\n辩论记录:\n{debate_summary}"
         raw = await asyncio.to_thread(self._call_llm, prompt)
-        data = _extract_json(raw)
+        data = extract_json_object(raw)
         if data is None:
             return {"summary": "裁判裁决生成失败", "winner": None,
                     "key_insights": [], "topic_angle": ""}

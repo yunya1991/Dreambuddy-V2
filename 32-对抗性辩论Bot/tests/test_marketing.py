@@ -13,7 +13,9 @@ import json
 
 import pytest
 
-from core.models import Argument, Turn, Verdict, MarketingMaterial
+from core.models import (
+    Argument, CrossExamination, Turn, Verdict, MarketingMaterial,
+)
 from core.marketing import MarketingExtractor
 
 
@@ -88,8 +90,25 @@ class TestMarketingExtractor:
         m = await extractor.extract("BTC 是数字黄金吗？", _make_transcript(),
                                      _make_verdict())
 
-        assert len(m.hashtags) >= 2
+        assert len(m.hashtags) >= 3
         assert any("BTC" in tag or "比特币" in tag for tag in m.hashtags)
+
+    @pytest.mark.asyncio
+    async def test_extract_cross_exam_into_short_copy(self):
+        """交叉质询精彩 Q&A 应进入营销短文案。"""
+        extractor = MarketingExtractor(MockLLMClient([VALID_SHORT_COPY_JSON]))
+        transcript = _make_transcript() + [
+            Turn(speaker="bear", round=2, content=CrossExamination(
+                questioner="bear", respondent="bull",
+                questions=["数据来源是什么？"],
+                answers=["CoinGecko"],
+                raw="{}",
+            )),
+        ]
+        m = await extractor.extract("BTC 是数字黄金吗？", transcript,
+                                     _make_verdict())
+
+        assert any("🔥" in copy for copy in m.short_copy)
 
     @pytest.mark.asyncio
     async def test_highlight_with_verdict(self):

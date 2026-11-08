@@ -36,40 +36,46 @@ def _extract_quotes(transcript: list[Turn]) -> list[str]:
     return quotes
 
 
-def _extract_hashtags(topic: str, transcript: list[Turn]) -> list[str]:
-    """从 topic 和论点中提取话题标签。
+_HASHTAG_STOP_CHARS = "是了吗呢吧啊呀的么个"
 
-    策略：从 topic 提取关键词 + 论点高频词，生成 #标签。
-    """
-    hashtags = set()
 
-    # 从 topic 提取关键词
-    # 中文按字符截取关键短语，英文按单词
-    keywords = set()
-
-    # 英文关键词（BTC, ETH 等大写词）
-    for match in re.findall(r'[A-Za-z]{2,}', topic):
+def _keyword_candidates(text: str) -> list[str]:
+    """从一段文本提取英文词/中文短语（中文去掉首尾语气词）。"""
+    candidates: list[str] = []
+    for match in re.findall(r'[A-Za-z][A-Za-z0-9]{1,}', text):
+        candidates.append(match)
+    cleaned = re.sub(r'[？?！!。，,、；;：:（）()\[\]【】\s]', '', text)
+    for match in re.findall(r'[一-鿿]{2,8}', cleaned):
+        match = match.strip(_HASHTAG_STOP_CHARS)
         if len(match) >= 2:
-            keywords.add(match)
+            candidates.append(match)
+    return candidates
 
-    # 中文关键词（简单分词：2-4字短语）
-    # 去掉标点后按常见停用词分割
-    cleaned = re.sub(r'[？?！!。，,、；;：:]', '', topic)
-    # 提取 2-6 字的中文片段
-    for match in re.findall(r'[\u4e00-\u9fff]{2,6}', cleaned):
-        keywords.add(match)
 
-    for kw in keywords:
-        hashtags.add(f"#{kw}")
+def _extract_hashtags(topic: str, transcript: list[Turn]) -> list[str]:
+    """从 topic 和论点中提取话题标签（至少覆盖 topic + 双方论点）。"""
+    hashtags: list[str] = []
+    seen: set[str] = set()
 
-    # 从论点提取
+    def add(raw: str) -> None:
+        tag = f"#{raw}"
+        key = tag.lower()
+        if key not in seen:
+            seen.add(key)
+            hashtags.append(tag)
+
+    for candidate in _keyword_candidates(topic):
+        add(candidate)
+
     for turn in transcript:
         if isinstance(turn.content, Argument):
-            for match in re.findall(r'[A-Za-z]{2,}', turn.content.thesis):
-                hashtags.add(f"#{match}")
+            for candidate in _keyword_candidates(turn.content.thesis):
+                add(candidate)
+            for argument in turn.content.arguments:
+                for candidate in _keyword_candidates(argument):
+                    add(candidate)
 
-    # 限制数量，取前 5 个
-    return list(hashtags)[:5]
+    return hashtags[:5]
 
 
 def _build_highlight(transcript: list[Turn],
@@ -135,6 +141,8 @@ class MarketingExtractor:
         short_copy, debate_title = await self._generate_copy_and_title(
             topic, transcript,
         )
+        # 交叉质询精彩 Q&A 直接作为短文案素材（规则部分，无需 LLM）
+        short_copy = short_copy + self._extract_cross_exam_highlights(transcript)
 
         return MarketingMaterial(
             quotes=quotes,
@@ -202,7 +210,7 @@ class MarketingExtractor:
     def _extract_cross_exam_highlights(self, transcript: list[Turn]) -> list[str]:
         """从交叉质询中提取精彩 Q&A 作为营销素材。
 
-        SPEC v2.0-rc3 第 4.5 节。
+        v2.0-rc3 §4.5（本地草稿）；仅在 transcript 含 CrossExamination 时生效。
 
         策略：
         1. 遍历 transcript 中 CrossExamination 类型的 Turn

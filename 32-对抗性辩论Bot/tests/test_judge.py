@@ -100,8 +100,8 @@ class TestJudgeAgent:
         verdict = await judge.synthesize("BTC 是数字黄金吗？", _make_transcript())
 
         assert isinstance(verdict, Verdict)
-        assert verdict.winner is None
-        assert verdict.summary != ""  # 有兜底文本
+        assert verdict.winner in ("bull", "bear", None)
+        assert "规则降级" in verdict.summary  # 规则降级裁决（非空）
 
     @pytest.mark.asyncio
     async def test_llm_exception_fallback(self):
@@ -110,7 +110,8 @@ class TestJudgeAgent:
         verdict = await judge.synthesize("BTC 是数字黄金吗？", _make_transcript())
 
         assert isinstance(verdict, Verdict)
-        assert verdict.winner is None
+        assert verdict.winner in ("bull", "bear", None)
+        assert "规则降级" in verdict.summary
         assert mock._idx == 1
 
     @pytest.mark.asyncio
