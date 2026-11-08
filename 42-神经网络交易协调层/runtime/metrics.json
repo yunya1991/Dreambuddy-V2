@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-11-08T16:30:43.982597+00:00",
+  "signal_count": 1,
+  "rejected_count": 0,
+  "source_counts": {
+    "11-washout": 1
+  },
+  "rejected_reasons": [],
+  "expiring_within_1h": 0,
+  "alert": {
+    "empty_bus": false
+  }
+}

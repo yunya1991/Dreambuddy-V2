@@ -39,6 +39,14 @@ subsystems:
     horizon: days
     enabled: true
 
+  # R0-07：每币 BCRM2 技术层源（50 层 SPEC D3 数据源；无源时 D3=neutral，不得用 11-bcrm 冒充）
+  - name: 11-bcrm-tactical
+    publisher: adapters/bcrm_tactical_state_adapter.py
+    publish: [bcrm_tactical_state]
+    subscribe: []
+    horizon: hours
+    enabled: true
+
   # P1-05：canonical source 更名 bdsm → 11-bdsm；旧别名信号经 SOURCE_ALIAS_MODE=1 双写兼容
   - name: 11-bdsm
     publisher: adapters/bdsm_state_adapter.py

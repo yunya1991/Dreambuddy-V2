@@ -42,6 +42,7 @@ from .layers.expansion_gate import GlobalExpansionGate  # noqa: E402
 from .layers.hierarchical_allocator import HierarchicalAllocator  # noqa: E402
 from .layers.kelly_sizer import KellySizer  # noqa: E402
 from .layers.performance_tracker import PerformanceTracker  # noqa: E402
+from .constraint_envelope import ConstraintEnvelopeReader  # noqa: E402
 from .types import (  # noqa: E402
     AllocationResult,
     AllocationSnapshot,
@@ -147,6 +148,12 @@ class CapitalAllocatorComponent:
         self._lock = threading.RLock()
         self._last_snapshot: Optional[AllocationSnapshot] = None
         self._last_eval_ts: float = 0.0
+        # 6) R1b：约束包络读取器（43 层信号 -> 四档约束钳位；降级不钳位）
+        _sig_path = self._config.get("constraint_signal_path")
+        self._envelope_reader = ConstraintEnvelopeReader(
+            signal_path=Path(_sig_path) if _sig_path else None,
+            cache_ttl=int(self._config.get("constraint_cache_ttl_sec", 600)),
+        )
 
     # ------------------------------------------------------------------
     # 初始化工具
@@ -231,6 +238,7 @@ class CapitalAllocatorComponent:
                     "mode": self._mode.value,
                     "fallback_used": True,
                     "reason": "coin_not_in_cache_cold_start",
+                    "constraint_envelope": self._envelope_reader.get_envelope(),
                 }
             return {
                 "position_pct": result.position_pct,
@@ -241,6 +249,7 @@ class CapitalAllocatorComponent:
                 "mode": self._mode.value,
                 "fallback_used": result.fallback_used,
                 "reason": result.fallback_reason or "ok",
+                "constraint_envelope": self._envelope_reader.get_envelope(),
             }
         except Exception as exc:
             default_pct = self._config.get("default_pct", 0.10)
@@ -253,6 +262,7 @@ class CapitalAllocatorComponent:
                 "mode": self._mode.value,
                 "fallback_used": True,
                 "reason": f"paca_exception:{exc}",
+                "constraint_envelope": None,
             }
 
     def get_global_expansion_mult(self) -> float:
@@ -280,6 +290,10 @@ class CapitalAllocatorComponent:
     def get_snapshot(self) -> Optional[AllocationSnapshot]:
         """返回最近一次 evaluate() 的快照缓存。"""
         return self._last_snapshot
+
+    def get_constraint_envelope(self) -> Optional[Dict[str, Any]]:
+        # R1b：返回当前约束包络（tier + 5 字段）；降级时返回 None。
+        return self._envelope_reader.get_envelope()
 
     def health_check(self) -> Dict[str, Any]:
         """组件健康检查——用于 16-调控系统统一健康监控。"""
@@ -343,6 +357,10 @@ class CapitalAllocatorComponent:
             # 安全约束：final_pct 不超过 max_position_pct
             max_pct = self._config.get("max_position_pct", 0.25)
             final_pct = min(final_pct, max_pct)
+            # R1b：约束包络杠杆钳位（pct_cap = max_pct * leverage_cap / 5；降级不钳位）
+            _pct_cap = self._envelope_reader.leverage_pct_cap(max_pct)
+            if _pct_cap is not None:
+                final_pct = min(final_pct, _pct_cap)
             by_coin[coin] = AllocationResult(
                 coin=coin,
                 source_tag=source_tag,

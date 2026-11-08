@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "generated_at": "2026-11-08T21:52:28+08:00",
+    "purpose": "R0-05 资源基线：云端 CPU/内存/磁盘余量 + 双链增量预算（49 SPEC §13.10 R0-05）",
+    "host": "lighthouse lhins-dy3kb79r (ap-singapore)",
+    "uptime_days": 22
+  },
+  "cpu": {
+    "cores": 4,
+    "load_average": {
+      "1m": 4.1,
+      "5m": 3.72,
+      "15m": 3.19
+    },
+    "note": "负载/核 = 1.03，持续高于 1.0；SPEC 记录 load 3.97 连续 21 天，本次复核 4.10，属实"
+  },
+  "memory": {
+    "total_gib": 15,
+    "used_gib": 5.4,
+    "available_gib": 9.9,
+    "swap_total_gib": 7.9,
+    "swap_used_gib": 1.7,
+    "top_consumers": [
+      {
+        "proc": "data_server_fixed.py",
+        "mem_pct": 7.6,
+        "rss_mib": 1188
+      },
+      {
+        "proc": "polling_trader (11)",
+        "mem_pct": 6.2,
+        "rss_mib": 970
+      },
+      {
+        "proc": "data_center_scheduler.py",
+        "mem_pct": 5.1,
+        "rss_mib": 803
+      },
+      {
+        "proc": "run_l1_loop.py (23)",
+        "mem_pct": 3.2,
+        "rss_mib": 514
+      },
+      {
+        "proc": "next-server (前端)",
+        "mem_pct": 2.7,
+        "rss_mib": 429
+      }
+    ]
+  },
+  "disk": {
+    "filesystem": "/dev/vda2",
+    "total_gib": 178,
+    "used_gib": 56,
+    "avail_gib": 115,
+    "use_pct": 33
+  },
+  "dual_chain_increment_budget": {
+    "50_shadow_paper": {
+      "est_cpu_cores": 0.3,
+      "est_mem_gib": 0.5,
+      "verdict": "可承载（内存余量 9.9G 充足）"
+    },
+    "50_full_chain_r2_r3": {
+      "est_cpu_cores": 0.5,
+      "est_mem_gib": 1.0,
+      "verdict": "可承载"
+    },
+    "r4_training_gateway": {
+      "est_cpu_cores": 1.5,
+      "est_mem_gib": 3.0,
+      "verdict": "需错峰训练（当前负载/核已 1.03，训练任务建议夜间窗口或限核运行）"
+    },
+    "risk": [
+      "CPU 负载持续高于核数（4.10/4），双链并行前建议优化常驻进程或错峰调度",
+      "存在僵尸进程 [python] <defunct>（PID 3325492），建议清理父进程回收",
+      "Swap 已用 1.7G，内存压力中等，R4 训练前建议复核"
+    ]
+  },
+  "conclusion": "内存与磁盘余量满足 50 + 训练负载；CPU 为瓶颈项，R4 训练需错峰/限核；R0-R3 阶段双链并行可承载。MVB 资源基线验收：通过（附 CPU 错峰约束）",
+  "recheck_observations": [
+    {
+      "ts": "2026-11-08T16:32:49.618678+00:00",
+      "loadavg_1_5_15": [
+        2.9,
+        3.14,
+        3.05
+      ],
+      "note": "R0-03 washout/event-arbitrage 接线后复核：load 较 11-08 的 4.10 回落至 2.90-3.14（负载/核约 0.75），内存可用 10G，无恶化"
+    }
+  ]
+}

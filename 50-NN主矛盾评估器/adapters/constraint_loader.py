@@ -39,19 +39,36 @@ def load_constraints(
     freeze = bool(strategy.get("risk_guards", {}).get("event_window", {}).get("in_window", False))
     confidence = strategy.get("risk_guards", {}).get("effective_confidence")
 
-    per_asset_class = strategic.get("per_asset_class", {}) or {}
-    leverage_cap = None
-    for group in per_asset_class.values():
-        if isinstance(group, dict) and group.get("leverage_cap"):
-            leverage_cap = group["leverage_cap"]
-            break
+    # 43 落盘结构：per_asset_class/asset_groups 嵌套在 payload 内；兼容顶层旧格式（payload 优先，顶层回退）
+    _payload = strategic.get("payload") if isinstance(strategic.get("payload"), dict) else {}
+    per_asset_class = _payload.get("per_asset_class") or strategic.get("per_asset_class") or {}
+    asset_groups = _payload.get("asset_groups") or strategic.get("asset_groups") or {}
+    # R1a：四档约束包络字段（leverage_cap 已有，补 asset_count_cap/long_count_cap/short_count_cap/net_bias）
+    _CONSTRAINT_FIELDS = (
+        "leverage_cap",
+        "asset_count_cap",
+        "long_count_cap",
+        "short_count_cap",
+        "net_bias",
+    )
+    tier_constraints: dict[str, Any] = {}
+    for field in _CONSTRAINT_FIELDS:
+        for group in per_asset_class.values():
+            if isinstance(group, dict) and group.get(field) is not None:
+                tier_constraints[field] = group[field]
+                break
 
     return {
         "position_band": band,
         "freeze": freeze,
         "effective_confidence": confidence,
         "per_asset_class": per_asset_class,
-        "leverage_cap": leverage_cap,
+        "asset_groups": asset_groups,
+        "leverage_cap": tier_constraints.get("leverage_cap"),
+        "asset_count_cap": tier_constraints.get("asset_count_cap"),
+        "long_count_cap": tier_constraints.get("long_count_cap"),
+        "short_count_cap": tier_constraints.get("short_count_cap"),
+        "net_bias": tier_constraints.get("net_bias"),
         "degraded": degraded,
     }
 

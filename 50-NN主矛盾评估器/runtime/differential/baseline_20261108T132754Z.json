@@ -1,0 +1,153 @@
+{
+  "_meta": {
+    "generated_at": "2026-11-08T13:27:54.843648+00:00",
+    "purpose": "R0-04 differential harness 分歧率基线（R2 A/B 只解释相对此基线增量）",
+    "control_snapshots": 15,
+    "treatment_source": "42 bus_state.json -> 50 path_synthesis",
+    "alignment": "symbol-level",
+    "fields": [
+      "direction",
+      "dimension",
+      "horizon",
+      "confidence"
+    ]
+  },
+  "mean_divergence_rate": 1.051975,
+  "snapshots": [
+    {
+      "snapshot": "control_baseline-001.json",
+      "control_symbols": 192,
+      "treatment_symbols": 28,
+      "shared_symbols": 23,
+      "direction_agreement": 0.521739,
+      "field_diff_count": 15,
+      "divergence_rate": 0.959391
+    },
+    {
+      "snapshot": "control_hist-20261108T1430.json",
+      "control_symbols": 51,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.125,
+      "field_diff_count": 27,
+      "divergence_rate": 1.054545
+    },
+    {
+      "snapshot": "control_hist-20261108T1500.json",
+      "control_symbols": 55,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.083333,
+      "field_diff_count": 28,
+      "divergence_rate": 1.067797
+    },
+    {
+      "snapshot": "control_hist-20261108T1530.json",
+      "control_symbols": 53,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.083333,
+      "field_diff_count": 28,
+      "divergence_rate": 1.070175
+    },
+    {
+      "snapshot": "control_hist-20261108T1600.json",
+      "control_symbols": 51,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.083333,
+      "field_diff_count": 28,
+      "divergence_rate": 1.072727
+    },
+    {
+      "snapshot": "control_hist-20261108T1630.json",
+      "control_symbols": 52,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.083333,
+      "field_diff_count": 28,
+      "divergence_rate": 1.071429
+    },
+    {
+      "snapshot": "control_hist-20261108T1700.json",
+      "control_symbols": 52,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.083333,
+      "field_diff_count": 28,
+      "divergence_rate": 1.071429
+    },
+    {
+      "snapshot": "control_hist-20261108T1730.json",
+      "control_symbols": 51,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.083333,
+      "field_diff_count": 28,
+      "divergence_rate": 1.072727
+    },
+    {
+      "snapshot": "control_hist-20261108T1800.json",
+      "control_symbols": 51,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.125,
+      "field_diff_count": 27,
+      "divergence_rate": 1.054545
+    },
+    {
+      "snapshot": "control_hist-20261108T1830.json",
+      "control_symbols": 52,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.125,
+      "field_diff_count": 27,
+      "divergence_rate": 1.053571
+    },
+    {
+      "snapshot": "control_hist-20261108T1900.json",
+      "control_symbols": 54,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.125,
+      "field_diff_count": 27,
+      "divergence_rate": 1.051724
+    },
+    {
+      "snapshot": "control_hist-20261108T1930.json",
+      "control_symbols": 51,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.166667,
+      "field_diff_count": 26,
+      "divergence_rate": 1.036364
+    },
+    {
+      "snapshot": "control_hist-20261108T2000.json",
+      "control_symbols": 51,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.125,
+      "field_diff_count": 27,
+      "divergence_rate": 1.054545
+    },
+    {
+      "snapshot": "control_hist-20261108T2030.json",
+      "control_symbols": 53,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.166667,
+      "field_diff_count": 26,
+      "divergence_rate": 1.035088
+    },
+    {
+      "snapshot": "control_hist-20261108T2100.json",
+      "control_symbols": 52,
+      "treatment_symbols": 28,
+      "shared_symbols": 24,
+      "direction_agreement": 0.125,
+      "field_diff_count": 27,
+      "divergence_rate": 1.053571
+    }
+  ]
+}

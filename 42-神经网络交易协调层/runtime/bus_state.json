@@ -1,22 +1,385 @@
 {
-  "bus_id": "bus_610919a3",
-  "generated_at": "2026-10-29T09:38:32.965695+00:00",
-  "signal_count": 10,
+  "bus_id": "bus_1de6c33e",
+  "generated_at": "2026-11-08T16:30:02.177666+00:00",
+  "signal_count": 40,
   "rejected_count": 0,
   "sources": [
-    "bdsm"
+    "11-bcrm",
+    "11-bcrm-tactical",
+    "23-contradiction",
+    "40-cycle",
+    "bdsm",
+    "strategic_extension"
   ],
   "signals": [
     {
-      "signal_id": "sig_20261029_873554f9",
+      "signal_id": "sig_40-cycle_MACRO_20261108",
+      "source": "40-cycle",
+      "ts": "2026-11-08T16:30:02.136136+00:00",
+      "symbol": "MACRO",
+      "direction": "long",
+      "confidence": 0.8,
+      "horizon": "days",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-09T16:30:02.136136+00:00",
+      "payload": {
+        "real_cycle": {
+          "anchor": "FEDFUNDS",
+          "current_month": "2026-09",
+          "current_rate": 3.75,
+          "state": "plateau",
+          "last_change": "flat",
+          "recent_12m_distribution": {
+            "hiking": 0,
+            "cutting": 0,
+            "plateau": 12
+          },
+          "confidence": "high"
+        },
+        "technical_anchor_summary": {
+          "assets_total": 8,
+          "above_ma200": 8,
+          "below_ma200": 0
+        },
+        "state_generated_at": "2026-10-26T04:48:54.017547+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_20261108_5c76d9ea",
+      "source": "strategic_extension",
+      "ts": "2026-11-08T16:18:01.661979+00:00",
+      "symbol": "BTC/USDT",
+      "direction": "neutral",
+      "confidence": 0.52,
+      "horizon": "days",
+      "risk_exposure_hint": 0.1,
+      "expires_at": "2026-11-09T16:18:01.661979+00:00",
+      "shadow": true,
+      "payload": {
+        "per_asset_class": {
+          "crypto_usdt": {
+            "five_scores": {
+              "dao": 50,
+              "tian": 59,
+              "di": 50,
+              "jiang": 50,
+              "fa": 50
+            },
+            "total": 51,
+            "tier": "light_defense",
+            "position_band": "0-20%",
+            "war_state": "FREEZE",
+            "direction": "neutral",
+            "confidence": 0.52,
+            "risk_exposure_hint": 0.1,
+            "leverage_cap": 2,
+            "asset_count_cap": 3,
+            "long_count_cap": 2,
+            "short_count_cap": 1,
+            "net_bias": -0.2
+          },
+          "us_stock": {
+            "five_scores": {
+              "dao": 50,
+              "tian": 59,
+              "di": 50,
+              "jiang": 50,
+              "fa": 50
+            },
+            "total": 51,
+            "tier": "light_defense",
+            "position_band": "0-20%",
+            "war_state": "FREEZE",
+            "direction": "neutral",
+            "confidence": 0.52,
+            "risk_exposure_hint": 0.1,
+            "leverage_cap": 2,
+            "asset_count_cap": 3,
+            "long_count_cap": 2,
+            "short_count_cap": 1,
+            "net_bias": -0.2
+          },
+          "precious_metal": {
+            "five_scores": {
+              "dao": 50,
+              "tian": 59,
+              "di": 50,
+              "jiang": 50,
+              "fa": 50
+            },
+            "total": 51,
+            "tier": "light_defense",
+            "position_band": "0-20%",
+            "war_state": "FREEZE",
+            "direction": "neutral",
+            "confidence": 0.52,
+            "risk_exposure_hint": 0.1,
+            "leverage_cap": 2,
+            "asset_count_cap": 3,
+            "long_count_cap": 2,
+            "short_count_cap": 1,
+            "net_bias": -0.2
+          }
+        },
+        "asset_groups": {
+          "crypto_usdt": [
+            "crypto_usdt"
+          ],
+          "us_stock": [
+            "us_stock"
+          ],
+          "precious_metal": [
+            "precious_metal"
+          ]
+        },
+        "strategic_elements": {
+          "strategic_view": {
+            "asset_allocation": {
+              "totals": {
+                "crypto_usdt": 51,
+                "us_stock": 51,
+                "precious_metal": 51
+              },
+              "allocation": {
+                "crypto_usdt": 0.3333,
+                "us_stock": 0.3333,
+                "precious_metal": 0.3333
+              },
+              "leader": "crypto_usdt",
+              "note": "资金在哪种资产上更容易赚钱：配比基于五维总分横向归一"
+            },
+            "direction_bias": {
+              "per_class": {
+                "crypto_usdt": {
+                  "long": 0.0667,
+                  "short": 0.0,
+                  "neutral": 0.9333,
+                  "dominant": "neutral"
+                },
+                "us_stock": {
+                  "long": 0.0667,
+                  "short": 0.0,
+                  "neutral": 0.9333,
+                  "dominant": "neutral"
+                },
+                "precious_metal": {
+                  "long": 0.0667,
+                  "short": 0.0,
+                  "neutral": 0.9333,
+                  "dominant": "neutral"
+                }
+              },
+              "note": "在哪种资产上做多/做空更容易盈利"
+            },
+            "capital_posture": {
+              "posture": "conservative",
+              "exposure_hint": 0.25,
+              "factors": {
+                "cycle_phase": {
+                  "phase": null,
+                  "score": 50
+                },
+                "ma200_anchor": {
+                  "percentile": null,
+                  "score": 50
+                },
+                "five_domain_total": 51
+              },
+              "fused": 50.33,
+              "note": "当下市场环境激进/适中/保守（仅建议，13 系统门禁兜底）"
+            },
+            "target_ranking": {
+              "ranking": [
+                {
+                  "symbol": "AVAX/USDT",
+                  "composite": 67.6,
+                  "tech_score": 50,
+                  "fund_score": 94,
+                  "sentiment_score": 50,
+                  "layer": "L3_growth"
+                },
+                {
+                  "symbol": "PEPE/USDT",
+                  "composite": 62.4,
+                  "tech_score": 50,
+                  "fund_score": 81,
+                  "sentiment_score": 50,
+                  "layer": "L4_meme"
+                },
+                {
+                  "symbol": "SOL/USDT",
+                  "composite": 54.0,
+                  "tech_score": 50,
+                  "fund_score": 60,
+                  "sentiment_score": 50,
+                  "layer": "L2_major"
+                }
+              ],
+              "note": "标的潜力排序（技术面洗盘+资金面轮动+情绪面聚合，仅 crypto_usdt 类）",
+              "data_available": true
+            }
+          },
+          "branch_view": {
+            "posture": "conservative",
+            "fused": 50.0,
+            "factors": {
+              "cycle_phase": {
+                "phase": null,
+                "score": 50
+              },
+              "ma200_anchor": {
+                "percentile": null,
+                "score": 50
+              },
+              "liquidity": {
+                "value": null,
+                "score": 50
+              }
+            },
+            "note": "分支视角：40 承接数据直接推导（周期相位+MA200+流动性）"
+          },
+          "divergences": [],
+          "contradiction_trigger": false,
+          "note": "分歧即是否需要矛盾系统介入的触发依据（SPEC §12.2）"
+        },
+        "semantic_view": {
+          "scores": {
+            "capital_flow": 50,
+            "macro_policy": 59,
+            "technical": 50,
+            "market_sentiment": 50,
+            "fundamental": 50
+          },
+          "total": 52,
+          "weights": {
+            "macro_policy": 0.2,
+            "technical": 0.25,
+            "capital_flow": 0.2,
+            "market_sentiment": 0.15,
+            "fundamental": 0.2
+          },
+          "descriptions": {
+            "macro_policy": "宏观政策：美林时钟/流动性周期/日历季节性/央行政策方向",
+            "technical": "技术分析：市场结构regime/弹簧力场MA/盘整持续/FTD/MA200距离/洗盘判定",
+            "capital_flow": "资金流向：CFTC投机头寸/稳定币供应变化/交易所净流入/板块轮动",
+            "market_sentiment": "市场情绪：自建情绪通道：F&G恐惧贪婪指数+分量（动量/资金费率/资金流/波动率）",
+            "fundamental": "基本面分析：系统质量（智信仁勇严）+ 链上基本面（NVT/MVRV/SOPR/活跃地址）"
+          },
+          "sentiment_channel": {
+            "market_sentiment_score": 50,
+            "available": false,
+            "note": "PG: F&G PostgreSQL 加载失败（fail-open）: connection to server at \"127.0.0.1\", port 5432 failed: fe_sendauth: no password supplied\n | SQLite: F&G SQLite 加载失败（fail-open）: no such table: records"
+          }
+        },
+        "bridge_switch": false,
+        "disclaimer": "战略建议非交易信号；13 系统风控门禁兜底"
+      }
+    },
+    {
+      "signal_id": "sig_23-contradiction_MACRO_20261108",
+      "source": "23-contradiction",
+      "ts": "2026-11-08T16:30:02.155176+00:00",
+      "symbol": "MACRO",
+      "direction": "long",
+      "confidence": 1.0,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.15,
+      "expires_at": "2026-11-09T16:30:02.155176+00:00",
+      "payload": {
+        "power": 0.0,
+        "consistency": 1.0,
+        "time": 1.0,
+        "actual_return": null,
+        "sample_ts": 1794155314.5465465
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm_crypto_usdt_20261108",
+      "source": "11-bcrm",
+      "ts": "2026-11-08T16:30:02.161945+00:00",
+      "symbol": "crypto_usdt",
+      "direction": "long",
+      "confidence": 0.566,
+      "horizon": "days",
+      "risk_exposure_hint": 0.2,
+      "expires_at": "2026-11-09T16:30:02.161945+00:00",
+      "payload": {
+        "direction_state": "LONG_PREFER",
+        "direction_bias": 26.6,
+        "five_scores": {
+          "dao": 45,
+          "di": 53,
+          "fa": 83,
+          "jiang": 69,
+          "tian": 50
+        },
+        "btc_regime": "NEUTRAL",
+        "state_updated_date": "2026-11-09"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm_precious_metal_20261108",
+      "source": "11-bcrm",
+      "ts": "2026-11-08T16:30:02.161945+00:00",
+      "symbol": "precious_metal",
+      "direction": "long",
+      "confidence": 0.584,
+      "horizon": "days",
+      "risk_exposure_hint": 0.2,
+      "expires_at": "2026-11-09T16:30:02.161945+00:00",
+      "payload": {
+        "direction_state": "LONG_PREFER",
+        "direction_bias": 28.4,
+        "five_scores": {
+          "dao": 49,
+          "di": 55,
+          "fa": 65,
+          "jiang": 57,
+          "tian": 55
+        },
+        "btc_regime": "NEUTRAL",
+        "state_updated_date": "2026-11-09"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm_us_stock_20261108",
+      "source": "11-bcrm",
+      "ts": "2026-11-08T16:30:02.161945+00:00",
+      "symbol": "us_stock",
+      "direction": "long",
+      "confidence": 0.5795,
+      "horizon": "days",
+      "risk_exposure_hint": 0.2,
+      "expires_at": "2026-11-09T16:30:02.161945+00:00",
+      "payload": {
+        "direction_state": "LONG_PREFER",
+        "direction_bias": 27.95,
+        "five_scores": {
+          "dao": 49,
+          "di": 52,
+          "fa": 80,
+          "jiang": 72,
+          "tian": 55
+        },
+        "btc_regime": "NEUTRAL",
+        "state_updated_date": "2026-11-09"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_bdsm_HYPE_20261108",
       "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
       "symbol": "HYPE",
       "direction": "neutral",
       "confidence": 0.0,
       "horizon": "days",
       "risk_exposure_hint": 0.0,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
       "payload": {
         "direction_constraint": "NEUTRAL",
         "score": 0.0,
@@ -26,7 +389,7 @@
         "valuation_percentile": 50.0,
         "exit_action": "NONE",
         "data_quality": "insufficient",
-        "snapshot_date": "2026-10-29"
+        "snapshot_date": "2026-11-09"
       },
       "filter_notes": [
         "F2: confidence<0.3 降级 neutral"
@@ -34,113 +397,38 @@
       "shadow": false
     },
     {
-      "signal_id": "sig_20261029_b09bc9d9",
+      "signal_id": "sig_bdsm_SOL_20261108",
       "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
-      "symbol": "ETH",
-      "direction": "neutral",
-      "confidence": 0.75,
-      "horizon": "days",
-      "risk_exposure_hint": 0.1,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
-      "payload": {
-        "direction_constraint": "NEUTRAL",
-        "score": -0.0561,
-        "rank": "B",
-        "phase": "P2_REVENUE_EXPANSION",
-        "phase_confidence": 0.3,
-        "valuation_percentile": 50.0,
-        "exit_action": "NONE",
-        "data_quality": "sufficient",
-        "snapshot_date": "2026-10-29"
-      },
-      "shadow": false
-    },
-    {
-      "signal_id": "sig_20261029_0a05e2ab",
-      "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
-      "symbol": "ARB",
-      "direction": "neutral",
-      "confidence": 0.0,
-      "horizon": "days",
-      "risk_exposure_hint": 0.0,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
-      "payload": {
-        "direction_constraint": "NEUTRAL",
-        "score": 0.0,
-        "rank": "B",
-        "phase": "P2_REVENUE_EXPANSION",
-        "phase_confidence": 0.3,
-        "valuation_percentile": 50.0,
-        "exit_action": "NONE",
-        "data_quality": "insufficient",
-        "snapshot_date": "2026-10-29"
-      },
-      "filter_notes": [
-        "F2: confidence<0.3 降级 neutral"
-      ],
-      "shadow": false
-    },
-    {
-      "signal_id": "sig_20261029_f0d312c0",
-      "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
-      "symbol": "UNI",
-      "direction": "neutral",
-      "confidence": 0.125,
-      "horizon": "days",
-      "risk_exposure_hint": 0.175,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
-      "payload": {
-        "direction_constraint": "NEUTRAL",
-        "score": 0.1059,
-        "rank": "B",
-        "phase": "P2_REVENUE_EXPANSION",
-        "phase_confidence": 0.3,
-        "valuation_percentile": 50.0,
-        "exit_action": "NONE",
-        "data_quality": "partial",
-        "snapshot_date": "2026-10-29"
-      },
-      "filter_notes": [
-        "F2: confidence<0.3 降级 neutral"
-      ],
-      "shadow": false
-    },
-    {
-      "signal_id": "sig_20261029_81720ec0",
-      "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
       "symbol": "SOL",
       "direction": "neutral",
       "confidence": 0.625,
       "horizon": "days",
       "risk_exposure_hint": 0.07,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
       "payload": {
         "direction_constraint": "NEUTRAL",
-        "score": -0.0512,
+        "score": -0.0423,
         "rank": "B",
         "phase": "P2_REVENUE_EXPANSION",
         "phase_confidence": 0.3,
         "valuation_percentile": 50.0,
         "exit_action": "NONE",
         "data_quality": "partial",
-        "snapshot_date": "2026-10-29"
+        "snapshot_date": "2026-11-09"
       },
       "shadow": false
     },
     {
-      "signal_id": "sig_20261029_a40420c8",
+      "signal_id": "sig_bdsm_UNI_20261108",
       "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
-      "symbol": "AAVE",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
+      "symbol": "UNI",
       "direction": "neutral",
       "confidence": 0.0,
       "horizon": "days",
       "risk_exposure_hint": 0.0,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
       "payload": {
         "direction_constraint": "NEUTRAL",
         "score": 0.0,
@@ -150,7 +438,7 @@
         "valuation_percentile": 50.0,
         "exit_action": "NONE",
         "data_quality": "insufficient",
-        "snapshot_date": "2026-10-29"
+        "snapshot_date": "2026-11-09"
       },
       "filter_notes": [
         "F2: confidence<0.3 降级 neutral"
@@ -158,64 +446,15 @@
       "shadow": false
     },
     {
-      "signal_id": "sig_20261029_e7d8b440",
+      "signal_id": "sig_bdsm_CRCL_20261108",
       "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
-      "symbol": "ZEC",
-      "direction": "short",
-      "confidence": 0.5,
-      "horizon": "days",
-      "risk_exposure_hint": 0.175,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
-      "payload": {
-        "direction_constraint": "SHORT_ONLY",
-        "score": 0.2086,
-        "rank": "B",
-        "phase": "P2_REVENUE_EXPANSION",
-        "phase_confidence": 0.3,
-        "valuation_percentile": 50.0,
-        "exit_action": "NONE",
-        "data_quality": "partial",
-        "snapshot_date": "2026-10-29"
-      },
-      "shadow": false
-    },
-    {
-      "signal_id": "sig_20261029_58b79728",
-      "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
-      "symbol": "PUMP",
-      "direction": "neutral",
-      "confidence": 0.0,
-      "horizon": "days",
-      "risk_exposure_hint": 0.0,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
-      "payload": {
-        "direction_constraint": "NEUTRAL",
-        "score": 0.0,
-        "rank": "B",
-        "phase": "P2_REVENUE_EXPANSION",
-        "phase_confidence": 0.3,
-        "valuation_percentile": 50.0,
-        "exit_action": "NONE",
-        "data_quality": "insufficient",
-        "snapshot_date": "2026-10-29"
-      },
-      "filter_notes": [
-        "F2: confidence<0.3 降级 neutral"
-      ],
-      "shadow": false
-    },
-    {
-      "signal_id": "sig_20261029_4b72617c",
-      "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
       "symbol": "CRCL",
       "direction": "neutral",
       "confidence": 0.0,
       "horizon": "days",
       "risk_exposure_hint": 0.0,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
       "payload": {
         "direction_constraint": "NEUTRAL",
         "score": 0.0,
@@ -225,7 +464,7 @@
         "valuation_percentile": 50.0,
         "exit_action": "NONE",
         "data_quality": "insufficient",
-        "snapshot_date": "2026-10-29"
+        "snapshot_date": "2026-11-09"
       },
       "filter_notes": [
         "F2: confidence<0.3 降级 neutral"
@@ -233,25 +472,653 @@
       "shadow": false
     },
     {
-      "signal_id": "sig_20261029_845c0ea3",
+      "signal_id": "sig_bdsm_BTC_20261108",
       "source": "bdsm",
-      "ts": "2026-10-29T09:38:32.965284+00:00",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
       "symbol": "BTC",
       "direction": "neutral",
-      "confidence": 0.75,
+      "confidence": 0.625,
       "horizon": "days",
-      "risk_exposure_hint": 0.1,
-      "expires_at": "2026-10-30T09:38:32.965284+00:00",
+      "risk_exposure_hint": 0.07,
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
       "payload": {
         "direction_constraint": "NEUTRAL",
-        "score": -0.07,
+        "score": -0.0928,
         "rank": "B",
         "phase": "P2_REVENUE_EXPANSION",
         "phase_confidence": 0.3,
         "valuation_percentile": 50.0,
         "exit_action": "NONE",
-        "data_quality": "sufficient",
-        "snapshot_date": "2026-10-29"
+        "data_quality": "partial",
+        "snapshot_date": "2026-11-09"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_bdsm_ZEC_20261108",
+      "source": "bdsm",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
+      "symbol": "ZEC",
+      "direction": "neutral",
+      "confidence": 0.5,
+      "horizon": "days",
+      "risk_exposure_hint": 0.175,
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.271,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "partial",
+        "snapshot_date": "2026-11-09"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_bdsm_AAVE_20261108",
+      "source": "bdsm",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
+      "symbol": "AAVE",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-11-09"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_bdsm_ARB_20261108",
+      "source": "bdsm",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
+      "symbol": "ARB",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-11-09"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_bdsm_PUMP_20261108",
+      "source": "bdsm",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
+      "symbol": "PUMP",
+      "direction": "neutral",
+      "confidence": 0.0,
+      "horizon": "days",
+      "risk_exposure_hint": 0.0,
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": 0.0,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "insufficient",
+        "snapshot_date": "2026-11-09"
+      },
+      "filter_notes": [
+        "F2: confidence<0.3 降级 neutral"
+      ],
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_bdsm_ETH_20261108",
+      "source": "bdsm",
+      "ts": "2026-11-08T16:30:02.167251+00:00",
+      "symbol": "ETH",
+      "direction": "neutral",
+      "confidence": 0.625,
+      "horizon": "days",
+      "risk_exposure_hint": 0.07,
+      "expires_at": "2026-11-09T16:30:02.167251+00:00",
+      "payload": {
+        "direction_constraint": "NEUTRAL",
+        "score": -0.1276,
+        "rank": "B",
+        "phase": "P2_REVENUE_EXPANSION",
+        "phase_confidence": 0.3,
+        "valuation_percentile": 50.0,
+        "exit_action": "NONE",
+        "data_quality": "partial",
+        "snapshot_date": "2026-11-09"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_PUMP_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "PUMP",
+      "direction": "long",
+      "confidence": 0.6377,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:24.830421+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_ETH_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "ETH",
+      "direction": "long",
+      "confidence": 0.7709,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:26.439240+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_XAG_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "XAG",
+      "direction": "long",
+      "confidence": 0.793,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:28.230161+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_GOOGL_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "GOOGL",
+      "direction": "short",
+      "confidence": 0.9115,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "DOWN",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:30.148660+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_COIN_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "COIN",
+      "direction": "short",
+      "confidence": 0.7744,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "DOWN",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:20.878820+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_AMZN_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "AMZN",
+      "direction": "short",
+      "confidence": 0.9946,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "DOWN",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:31.910548+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_ARB_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "ARB",
+      "direction": "short",
+      "confidence": 0.8956,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "DOWN",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:33.410011+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_BMNR_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "BMNR",
+      "direction": "long",
+      "confidence": 0.8897,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:34.871122+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_BNB_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "BNB",
+      "direction": "long",
+      "confidence": 0.5656,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:36.082682+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_BTC_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "BTC",
+      "direction": "long",
+      "confidence": 0.5257,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:37.069798+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_CRCL_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "CRCL",
+      "direction": "short",
+      "confidence": 0.8248,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "DOWN",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:38.217698+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_HYPE_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "HYPE",
+      "direction": "long",
+      "confidence": 0.9501,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:39.495131+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_LINK_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "LINK",
+      "direction": "long",
+      "confidence": 1.0,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:41.048801+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_MSTR_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "MSTR",
+      "direction": "long",
+      "confidence": 0.7278,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:42.208853+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_MU_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "MU",
+      "direction": "long",
+      "confidence": 0.9358,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:43.302397+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_NVDA_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "NVDA",
+      "direction": "long",
+      "confidence": 0.9239,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:44.414583+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_OKB_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "OKB",
+      "direction": "long",
+      "confidence": 0.948,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:45.522571+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_SKHYNIX_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "SKHYNIX",
+      "direction": "long",
+      "confidence": 0.7914,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:46.645382+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_SNDK_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "SNDK",
+      "direction": "long",
+      "confidence": 0.929,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:47.776566+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_SOL_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "SOL",
+      "direction": "short",
+      "confidence": 0.7319,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "DOWN",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:48.873335+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_SPCX_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "SPCX",
+      "direction": "short",
+      "confidence": 0.838,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "DOWN",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:49.957838+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_UNI_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "UNI",
+      "direction": "long",
+      "confidence": 0.9622,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:51.046424+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_XAU_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "XAU",
+      "direction": "long",
+      "confidence": 0.8179,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:52.157220+00:00"
+      },
+      "shadow": false
+    },
+    {
+      "signal_id": "sig_11-bcrm-tactical_ZEC_2026110816",
+      "source": "11-bcrm-tactical",
+      "ts": "2026-11-08T16:30:02.171697+00:00",
+      "symbol": "ZEC",
+      "direction": "long",
+      "confidence": 0.8308,
+      "horizon": "hours",
+      "risk_exposure_hint": 0.5,
+      "expires_at": "2026-11-08T18:30:02.171697+00:00",
+      "payload": {
+        "raw_direction": "UP",
+        "pattern": {
+          "hs_top": false,
+          "hs_bottom": false,
+          "confidence": 0.0
+        },
+        "state_updated_at": "2026-11-08T16:29:53.417746+00:00"
       },
       "shadow": false
     }

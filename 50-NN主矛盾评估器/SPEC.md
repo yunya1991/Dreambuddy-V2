@@ -269,6 +269,20 @@ risk_exposure_hint, ts, expires_at, provenance, payload
 
 基因登记字段：`gene_id, source, version, module|config, shadow_evidence, promotion_state, rollback`。
 
+### §6.1 NN→23 优质基因注入通道（落地机制）
+
+23 层定位（对照链 + 基因承接方，不参与神经网络信号）：
+- 对照链：R5 双链对照的 control 基线；A/B 只解释相对 R0-04 分歧率基线的增量，不解释绝对值。
+- 基因承接方：NN→23 优质基因的唯一宿主；23→NN 仅设计参考/复制，不做持续基因流。
+
+注入通道（不绕过 23 层既有门禁）：
+1. 50 层产出基因包：将验证过的优质基因（维度口径/置信度校准/证据融合参数）序列化为 23 层 condition/action/combination JSON Schema 兼容的候选定义，登记 `genes/registry.json`（promotion_state=candidate）。
+2. 文件落盘投放：写入 23 层 `gene_data/candidates/`（仅基因定义数据文件；不写 23 样本/权重/运行时状态）。
+3. 23 层自主裁决：候选经 `FTCEvolutionBridge.run_gene_innovation` 三级审核门禁（Schema 校验 + 统计验证 N≥30 + 相对提升）选择性采纳；不通过即丢弃（bad_genes.log），不破坏 23 主链。
+4. promotion 条件：50 侧 shadow evidence（R5 双链对照数据）支撑后 promotion_state: candidate→promoted；rollback 路径必填。
+
+隔离约束：50 不 import 23 运行时模块；注入物为基因定义（数据文件），非运行时依赖；23 层对注入基因有完全采纳否决权。
+
 ---
 
 ## §7 目录结构（建议）
@@ -377,4 +391,6 @@ risk_exposure_hint, ts, expires_at, provenance, payload
 
 - v0.1（2026-11-07）：初稿；双决策链、独立实现、基因方向 NN→23、48 为 40 唯一对接口。
 - v0.1.1（2026-11-07）：按外部评审修订——horizon 唯一事实源改为 SignalSchema v1；§9.2 对照预注册（3 主 + 2 安全指标、Sharpe 95%CI 下界 > -0.2、多重比较校正）；W6 冷启动披露 + differential harness 基线；29-event 输入依赖标注；R0 重定义为底座验证周（bus ≥6 源/TTL/3 日信号量/契约落地/资源基线）。
+- v0.2.1（2026-11-08）：新增 §6.1 NN→23 优质基因注入通道落地机制（candidates/ 落盘投放 + 23 三级审核门禁自主裁决 + promotion/rollback 条件）；R0-04 冻结快照机制落地（fixtures/control_snapshots/，上限 20 组）；R0-07 每币 BCRM2 持久化 + 42 层 11-bcrm-tactical 适配器注册。
 - v0.2.0（2026-11-07）：按同行评审 M1-M9 修订——新增 §4.1a evidence→path 合成（23 算法输入形态修正）；D3 数据源明确为 R0 新增 `11-bcrm-tactical`；新增 §3.1 执行权/Mandate/kill-switch/限额/审计；§2.1 补 11 子池状态写入条件；§4.10 补 asset_groups/asset_count_cap/long-short_count_cap/net_bias/leverage_cap 定义；§5.1 W6 样本 schema/冷启动；§5.2 状态恢复/fail-open/fail-closed。
+- v0.3.0（2026-11-08）：R3 执行接线落地——50 决策 -> 13 PreTradeGate（fail-closed，neutral 跳过）-> 16 PACA（建议制不拦截）-> 22 tee_core（shadow 模式 + no-op paper client，回执透传），三适配器均零侵入 sys.path 注入 + 各 4-5 测试全绿；端到端 paper 冒烟贯通（13 门禁通过/16 建议 shadow/22 审计 OK_WRITTEN）。R4 训练网关落地——W6 独立实现确认（R2-04 已覆盖 §5.1）；50 训练门禁（建议制裁决不改权重、40 P5/P6 不放宽、冷启动拒绝权重建议、审计 append-only）；48 反馈样本写入适配器（48 未就绪降级本地缓冲 + sample_id 幂等 + replay 回放钩子）；训练链路 shadow 冒烟贯通。已知问题修复：50/13/16 三层共用顶层 core 包名导致 sys.modules 缓存冲突，适配器加载函数已加 core.* 模块缓存隔离（加载前摘除、加载后恢复）。

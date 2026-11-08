@@ -5721,6 +5721,54 @@ class PollingTrader:
         df.sort_index(inplace=True)
         return df
 
+    def _persist_bcrm2_tactical_state(self, coin: str, bcrm_result: dict) -> None:
+        """R0-07：每币 BCRM2 结果持久化（per-symbol 快照，供 42 层 11-bcrm-tactical 适配器消费）。
+
+        fail-open：任何异常仅记日志，不影响交易主流程。
+        """
+        from datetime import timedelta
+        try:
+            runtime_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runtime")
+            os.makedirs(runtime_dir, exist_ok=True)
+            state_path = os.path.join(runtime_dir, "bcrm2_tactical_state.json")
+            state = {}
+            if os.path.exists(state_path):
+                try:
+                    with open(state_path, encoding="utf-8") as f:
+                        state = json.load(f)
+                except Exception:
+                    state = {}
+            if not isinstance(state, dict):
+                state = {}
+            coins = state.get("coins")
+            if not isinstance(coins, dict):
+                coins = {}
+            now = datetime.now(timezone.utc)
+            ns = (bcrm_result or {}).get("next_state", {}) or {}
+            raw_dir = str(ns.get("direction", "HOLD"))
+            direction = "long" if raw_dir == "UP" else ("short" if raw_dir == "DOWN" else "flat")
+            try:
+                confidence = float(ns.get("confidence", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                confidence = 0.0
+            coins[str(coin)] = {
+                "ok": bool((bcrm_result or {}).get("ok")),
+                "direction": direction,
+                "raw_direction": raw_dir,
+                "confidence": confidence,
+                "pattern": ns.get("pattern"),
+                "updated_at": now.isoformat(),
+                "expires_at": (now + timedelta(hours=2)).isoformat(),
+            }
+            state["coins"] = coins
+            state["_meta"] = {"updated_at": now.isoformat(), "schema_version": "1"}
+            tmp_path = state_path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(state, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, state_path)
+        except Exception as e:
+            self._log(f"[{coin}] BCRM2 每币快照持久化失败（fail-open）: {e}", "WARN")
+
     def _infer_bcrm2(self, coin: str, inst_id: str, kline_data: list) -> dict:
         """使用 BCRM 2.0 (辩证ML) 执行推理"""
 
@@ -5823,6 +5871,8 @@ class PollingTrader:
         bcrm_result = adapter.infer(df, idx=-1)
         # 保存到实例属性供 SubSystemBridge 消费（自进化系统接入）
         self._last_bcrm2_result = bcrm_result
+        # R0-07：每币 BCRM2 快照持久化（fail-open，供 42 层 11-bcrm-tactical 消费）
+        self._persist_bcrm2_tactical_state(coin, bcrm_result)
 
         if not bcrm_result.get("ok"):
             # 措施2：推理失败时立即发送飞书告警（fail_closed 也会走这里）

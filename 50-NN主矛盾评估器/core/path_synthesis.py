@@ -132,6 +132,42 @@ def _continuation(
     return _clamp(confidence * HORIZON_PERSISTENCE[horizon])
 
 
+def _aggregate_subpools(subpools: list, fallback_direction: str) -> tuple[float, str]:
+    # R2-01（SPEC §4.8）：同源多子池未在 11 侧聚合时，50 加权聚合并按 1-dispersion 打折。
+    items: list[tuple[str, float, float]] = []
+    for sp in subpools:
+        if not isinstance(sp, dict):
+            continue
+        conf = _clamp(float(sp.get("confidence") or 0.0))
+        if conf <= 0:
+            continue
+        d = normalize_direction(sp.get("direction"))
+        if d not in ("long", "short"):
+            continue
+        w = float(sp.get("weight") or 0.0)
+        if w < 0:
+            w = 0.0
+        items.append((d, conf, w))
+    if not items:
+        return 0.0, fallback_direction
+    weights = [w for _, _, w in items]
+    total_w = sum(weights)
+    if total_w <= 0:
+        weights = [1.0] * len(items)
+        total_w = float(len(items))
+    signed = [conf if d == "long" else -conf for d, conf, _ in items]
+    mean = sum(w * v for w, v in zip(weights, signed)) / total_w
+    dispersion = sum(w * abs(v - mean) for w, v in zip(weights, signed)) / total_w
+    confidence = _clamp(abs(mean) * (1.0 - _clamp(dispersion)))
+    if mean > 0:
+        direction = "long"
+    elif mean < 0:
+        direction = "short"
+    else:
+        direction = "neutral"
+    return confidence, direction
+
+
 def synthesize_paths(
     evidences: Iterable[dict[str, Any]],
     now: datetime | None = None,
@@ -166,6 +202,12 @@ def synthesize_paths(
 
         horizon = _horizon(source, evidence.get("horizon"), degraded)
         payload = evidence.get("payload") if isinstance(evidence.get("payload"), dict) else {}
+        # R2-01：同源多子池未聚合时，50 侧加权聚合并按 1-dispersion 打折（SPEC §4.8）
+        subpools = payload.get("subpools")
+        if isinstance(subpools, list) and subpools:
+            raw_confidence, direction = _aggregate_subpools(subpools, direction)
+            if raw_confidence <= 0:
+                continue
         penalty = _clamp(float(payload.get("conflict_penalty", conflict_penalty)), 0.0, 1.0)
 
         confidence = _clamp(raw_confidence * freshness * (1.0 - penalty))
@@ -203,8 +245,19 @@ def synthesize_paths(
         key = (source, symbol, dimension, horizon)
         counts[key] = counts.get(key, 0) + 1
         current = winners.get(key)
-        if current is None or path.confidence > current.confidence:
+        if current is None:
             winners[key] = path
+        else:
+            # R2-01（SPEC §4.8）：11-bdsm 42 版与内部 bridge 同源时，bus 新鲜取 bus，严禁双票。
+            # freshness<=0 的证据已被过滤，存活的 bus 证据必然新鲜。
+            new_bus = path.metadata.get("provenance") == "42-bus"
+            cur_bus = current.metadata.get("provenance") == "42-bus"
+            if new_bus and not cur_bus:
+                winners[key] = path
+            elif cur_bus and not new_bus:
+                pass  # bus 已占位，bridge 让位
+            elif path.confidence > current.confidence:
+                winners[key] = path
 
     result = []
     for key, path in winners.items():

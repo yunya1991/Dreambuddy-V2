@@ -39,6 +39,7 @@ from . import config as _cfg
 from .auditor import STATUS_OK_WRITTEN, Auditor
 from .failopen import FailOpenManager
 from .kill_switch import KillSwitch
+from .contract import Urgency
 from .router import OrderRouter, RouterDecision
 
 # Idempotency TTL default.
@@ -400,13 +401,12 @@ class TradeExecutionEngine:
 
         # Step 4 Slippage estimate.
         estimate = self.estimator.estimate(
-            client=self.client,
             inst_id=inst_id,
             side=side,
-            sz=sz,
+            sz_contracts=(float(sz) if sz is not None else None),
             decision_px=decision_px,
         )
-        slip_bps = float(estimate.get("slippage_bps") or estimate.get("slip_bps") or 0.0)
+        slip_bps = float(getattr(estimate, "slippage_bps", 0.0) or 0.0)
 
         # Step 5 Pre killswitch.
         max_bps = _cfg.DEFAULT_MAX_SLIPPAGE_BPS_NORMAL
@@ -440,10 +440,13 @@ class TradeExecutionEngine:
         # Step 6b: actual router.decide.
         if size_ratio is None:
             size_ratio = 0.01  # conservative default
+        # urgency 字符串 -> Urgency 枚举（NORMAL/未知值归一为 MEDIUM，不改变路由档位）
+        _urg_raw = str(pr.get("urgency") or "NORMAL").upper()
+        _urgency = Urgency.HIGH if _urg_raw == "HIGH" else (Urgency.LOW if _urg_raw == "LOW" else Urgency.MEDIUM)
         decision: RouterDecision = self.router.decide(
             size_ratio=float(size_ratio),
-            urgency=str(pr.get("urgency") or "NORMAL"),
-            algo_override=pr.get("algo_override"),
+            urgency=_urgency,
+            override=pr.get("algo_override"),
         )
 
         algo_name = decision.algo_name  # DIRECT / TWAP15 / TWAP60 / PASSIVE
@@ -492,16 +495,10 @@ class TradeExecutionEngine:
         )
         estimate_dict = {
             "slippage_bps": slip_bps,
-            "market_impact_usd": float(
-                estimate.get("market_impact_cost_usd") if isinstance(estimate, dict) else 0.0
-            ),
-            "walk_depth_level": int(
-                estimate.get("walk_depth_level") if isinstance(estimate, dict) else 0
-            ),
-            "thin_book_warning": bool(
-                estimate.get("thin_book_warning") if isinstance(estimate, dict) else False
-            ),
-            "fail_open": bool(estimate.get("fail_open") if isinstance(estimate, dict) else False),
+            "market_impact_usd": float(getattr(estimate, "market_impact_cost_usd", 0.0) or 0.0),
+            "walk_depth_level": int(getattr(estimate, "walk_depth_level", 0) or 0),
+            "thin_book_warning": bool(getattr(estimate, "thin_book_warning", False)),
+            "fail_open": bool(getattr(estimate, "fail_open", False)),
         }
         return self._shape_result_from_algo(
             pr,

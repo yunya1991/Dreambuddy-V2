@@ -1,0 +1,3656 @@
+{
+  "_meta": {
+    "frozen_at": "2026-11-08T07:21:22.633946+00:00",
+    "coin_count": 192,
+    "schema_version": "1"
+  },
+  "coins": {
+    "WLD": {
+      "symbol": "WLD",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "FARTCOIN": {
+      "symbol": "FARTCOIN",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "METIS": {
+      "symbol": "METIS",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "RAY": {
+      "symbol": "RAY",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "TAO": {
+      "symbol": "TAO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "VVV": {
+      "symbol": "VVV",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NMR": {
+      "symbol": "NMR",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "VIRTUAL": {
+      "symbol": "VIRTUAL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {}
+    },
+    "TRB": {
+      "symbol": "TRB",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "XPT": {
+      "symbol": "XPT",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AMD": {
+      "symbol": "AMD",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BICO": {
+      "symbol": "BICO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "TSLA": {
+      "symbol": "TSLA",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LAYER": {
+      "symbol": "LAYER",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "SOXL": {
+      "symbol": "SOXL",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ENS": {
+      "symbol": "ENS",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ORDI": {
+      "symbol": "ORDI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SUSHI": {
+      "symbol": "SUSHI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "XPD": {
+      "symbol": "XPD",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ETHFI": {
+      "symbol": "ETHFI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "APE": {
+      "symbol": "APE",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "YFI": {
+      "symbol": "YFI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AAPL": {
+      "symbol": "AAPL",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "JTO": {
+      "symbol": "JTO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "RENDER": {
+      "symbol": "RENDER",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "KORU": {
+      "symbol": "KORU",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CXMT": {
+      "symbol": "CXMT",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "TRUMP": {
+      "symbol": "TRUMP",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "TSM": {
+      "symbol": "TSM",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "XIAOMI": {
+      "symbol": "XIAOMI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AUCTION": {
+      "symbol": "AUCTION",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AVGO": {
+      "symbol": "AVGO",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AMAT": {
+      "symbol": "AMAT",
+      "u_open": 0.84,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.2939,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "AAOI": {
+      "symbol": "AAOI",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NOK": {
+      "symbol": "NOK",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LITE": {
+      "symbol": "LITE",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "EGLD": {
+      "symbol": "EGLD",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "ENA": {
+      "symbol": "ENA",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "GRASS": {
+      "symbol": "GRASS",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "KO": {
+      "symbol": "KO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BB": {
+      "symbol": "BB",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "OP": {
+      "symbol": "OP",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NES": {
+      "symbol": "NES",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "EIGEN": {
+      "symbol": "EIGEN",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AR": {
+      "symbol": "AR",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "GME": {
+      "symbol": "GME",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "FIL": {
+      "symbol": "FIL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BTC-USDT-SWAP": {
+      "symbol": "BTC-USDT-SWAP",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {},
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "UNKNOWN": {
+      "symbol": "UNKNOWN",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "NVDA": {
+      "symbol": "NVDA",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "USELESS": {
+      "symbol": "USELESS",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "BCH": {
+      "symbol": "BCH",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SNXX": {
+      "symbol": "SNXX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AVAX": {
+      "symbol": "AVAX",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SUI": {
+      "symbol": "SUI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ZEN": {
+      "symbol": "ZEN",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "HOOD": {
+      "symbol": "HOOD",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SOXS": {
+      "symbol": "SOXS",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "DELL": {
+      "symbol": "DELL",
+      "u_open": 0.7,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "BERA": {
+      "symbol": "BERA",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "KAITO": {
+      "symbol": "KAITO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "ASTER": {
+      "symbol": "ASTER",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LAB": {
+      "symbol": "LAB",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "NBIS": {
+      "symbol": "NBIS",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "COAI": {
+      "symbol": "COAI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BZ": {
+      "symbol": "BZ",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ADBE": {
+      "symbol": "ADBE",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MERL": {
+      "symbol": "MERL",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NFLX": {
+      "symbol": "NFLX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AXTI": {
+      "symbol": "AXTI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MRVL": {
+      "symbol": "MRVL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "PLTR": {
+      "symbol": "PLTR",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SMCI": {
+      "symbol": "SMCI",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "EDEN": {
+      "symbol": "EDEN",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BNB": {
+      "symbol": "BNB",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "QQQ": {
+      "symbol": "QQQ",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ZHONGJI": {
+      "symbol": "ZHONGJI",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MSFT": {
+      "symbol": "MSFT",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "UNITREE": {
+      "symbol": "UNITREE",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "STRK": {
+      "symbol": "STRK",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ZHIPU": {
+      "symbol": "ZHIPU",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BE": {
+      "symbol": "BE",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NEAR": {
+      "symbol": "NEAR",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SAND": {
+      "symbol": "SAND",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "LDO": {
+      "symbol": "LDO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CVX": {
+      "symbol": "CVX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CRV": {
+      "symbol": "CRV",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ICP": {
+      "symbol": "ICP",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MUU": {
+      "symbol": "MUU",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "INJ": {
+      "symbol": "INJ",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ARM": {
+      "symbol": "ARM",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MET": {
+      "symbol": "MET",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ORCL": {
+      "symbol": "ORCL",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LLY": {
+      "symbol": "LLY",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "APT": {
+      "symbol": "APT",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ATOM": {
+      "symbol": "ATOM",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LPT": {
+      "symbol": "LPT",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "PENDLE": {
+      "symbol": "PENDLE",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "MRNA": {
+      "symbol": "MRNA",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "GMX": {
+      "symbol": "GMX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "QUANT": {
+      "symbol": "QUANT",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NKE": {
+      "symbol": "NKE",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "META": {
+      "symbol": "META",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "JNJ": {
+      "symbol": "JNJ",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "UMA": {
+      "symbol": "UMA",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {}
+    },
+    "ONDO": {
+      "symbol": "ONDO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AAVE": {
+      "symbol": "AAVE",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SECZ": {
+      "symbol": "SECZ",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "RIVER": {
+      "symbol": "RIVER",
+      "u_open": 0.7,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ASTS": {
+      "symbol": "ASTS",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "DOT": {
+      "symbol": "DOT",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "GMT": {
+      "symbol": "GMT",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {}
+    },
+    "IMX": {
+      "symbol": "IMX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": ""
+    },
+    "TIA": {
+      "symbol": "TIA",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "COMP": {
+      "symbol": "COMP",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CL": {
+      "symbol": "CL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CFX": {
+      "symbol": "CFX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BTC": {
+      "symbol": "BTC",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ACT": {
+      "symbol": "ACT",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {}
+    },
+    "VANA": {
+      "symbol": "VANA",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SPCX": {
+      "symbol": "SPCX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "COIN": {
+      "symbol": "COIN",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "KSM": {
+      "symbol": "KSM",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CRCL": {
+      "symbol": "CRCL",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AXS": {
+      "symbol": "AXS",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "UNH": {
+      "symbol": "UNH",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LIT": {
+      "symbol": "LIT",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ZRO": {
+      "symbol": "ZRO",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CT": {
+      "symbol": "CT",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "W": {
+      "symbol": "W",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BSP": {
+      "symbol": "BSP",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "WAL": {
+      "symbol": "WAL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "UNI": {
+      "symbol": "UNI",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "XAU": {
+      "symbol": "XAU",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "GOOGL": {
+      "symbol": "GOOGL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NOW": {
+      "symbol": "NOW",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "QCOM": {
+      "symbol": "QCOM",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MAGIC": {
+      "symbol": "MAGIC",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ARB": {
+      "symbol": "ARB",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "UVXY": {
+      "symbol": "UVXY",
+      "u_open": 0.7,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BAT": {
+      "symbol": "BAT",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "DASH": {
+      "symbol": "DASH",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MU": {
+      "symbol": "MU",
+      "u_open": 0.7,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SKHYNIX": {
+      "symbol": "SKHYNIX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SSV": {
+      "symbol": "SSV",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "WIF": {
+      "symbol": "WIF",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SKHY": {
+      "symbol": "SKHY",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SAMSUNG": {
+      "symbol": "SAMSUNG",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "DRAM": {
+      "symbol": "DRAM",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SKUU": {
+      "symbol": "SKUU",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BEAT": {
+      "symbol": "BEAT",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BTW": {
+      "symbol": "BTW",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "GLW": {
+      "symbol": "GLW",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "PONS": {
+      "symbol": "PONS",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CRWV": {
+      "symbol": "CRWV",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ETHW": {
+      "symbol": "ETHW",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CBRS": {
+      "symbol": "CBRS",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SKDD": {
+      "symbol": "SKDD",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "TQQQ": {
+      "symbol": "TQQQ",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "INTC": {
+      "symbol": "INTC",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MVLL": {
+      "symbol": "MVLL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "DOS": {
+      "symbol": "DOS",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "PURR": {
+      "symbol": "PURR",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "KLAC": {
+      "symbol": "KLAC",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "INTW": {
+      "symbol": "INTW",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MORPHO": {
+      "symbol": "MORPHO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SQQQ": {
+      "symbol": "SQQQ",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "WET": {
+      "symbol": "WET",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "SNDK": {
+      "symbol": "SNDK",
+      "u_open": 0.7,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LTC": {
+      "symbol": "LTC",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BIO": {
+      "symbol": "BIO",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "AMZN": {
+      "symbol": "AMZN",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "XPL": {
+      "symbol": "XPL",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "EWY": {
+      "symbol": "EWY",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LRCX": {
+      "symbol": "LRCX",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "PFE": {
+      "symbol": "PFE",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "CSOPSKHYNIX2L": {
+      "symbol": "CSOPSKHYNIX2L",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "KSTR": {
+      "symbol": "KSTR",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "long",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "APP": {
+      "symbol": "APP",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "XTZ": {
+      "symbol": "XTZ",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "HYPE": {
+      "symbol": "HYPE",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MSTR": {
+      "symbol": "MSTR",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "NG": {
+      "symbol": "NG",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "short"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "OKB": {
+      "symbol": "OKB",
+      "u_open": 0.4,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "neutral",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "PUMP": {
+      "symbol": "PUMP",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "short",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "LINK": {
+      "symbol": "LINK",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "XAG": {
+      "symbol": "XAG",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "GIGGLE": {
+      "symbol": "GIGGLE",
+      "u_open": 0.4,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ETH": {
+      "symbol": "ETH",
+      "u_open": 0.32000000000000006,
+      "action": "long",
+      "level0_dstar": "long",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "BMNR": {
+      "symbol": "BMNR",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "neutral"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "MINIMAX": {
+      "symbol": "MINIMAX",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    },
+    "ZEC": {
+      "symbol": "ZEC",
+      "u_open": 0.32000000000000006,
+      "action": "short",
+      "level0_dstar": "short",
+      "ess_id": "",
+      "ess_dir": "",
+      "cbr_sim": 0.5,
+      "cbr_top1_outcome": "TP",
+      "cluster_id": "",
+      "dimension_predictions": {
+        "C8": "long",
+        "C2": "neutral",
+        "C3": "long",
+        "C6": "long"
+      },
+      "dimension_factors": {},
+      "attention_weights": [],
+      "factor_values": {}
+    }
+  }
+}

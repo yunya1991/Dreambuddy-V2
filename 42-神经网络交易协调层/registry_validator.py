@@ -31,6 +31,7 @@ CANONICAL_SOURCES = (
     "23-contradiction",
     "29-event",
     "11-bcrm",
+    "11-bcrm-tactical",
     "11-bdsm",
     "11-washout",
     "11-event-arbitrage",

@@ -128,11 +128,19 @@ def build_signal(
         except Exception:  # noqa: BLE001
             semantic_view = None
 
+        # R1a：四档约束包络（tier → 杠杆/资产数量/多空数量/净偏置；与 a3_strategy_adapter 口径对齐）
+        _TIER_CONSTRAINTS = {
+            "attack": {"leverage_cap": 5, "asset_count_cap": 8, "long_count_cap": 6, "short_count_cap": 4, "net_bias": 0.2},
+            "defend": {"leverage_cap": 3, "asset_count_cap": 5, "long_count_cap": 4, "short_count_cap": 3, "net_bias": 0.0},
+            "light_defense": {"leverage_cap": 2, "asset_count_cap": 3, "long_count_cap": 2, "short_count_cap": 1, "net_bias": -0.2},
+            "full_freeze": {"leverage_cap": 1, "asset_count_cap": 0, "long_count_cap": 0, "short_count_cap": 0, "net_bias": 0.0},
+        }
         per_class = {}
         for cls in ASSET_CLASSES:
             s = scores.get(cls) or {}
             total = int(round(sum(s.get(d, 50) * w for d, w in _DOMAIN_WEIGHTS.items())))
             tier_info = _tier_of(total)
+            _tc = _TIER_CONSTRAINTS.get(tier_info["tier"], _TIER_CONSTRAINTS["full_freeze"])
             per_class[cls] = {
                 "five_scores": s,
                 "total": total,
@@ -142,6 +150,11 @@ def build_signal(
                 "direction": _direction_of(total, s.get("dao", 50)),
                 "confidence": _confidence_of(total),
                 "risk_exposure_hint": _risk_exposure_hint(tier_info["tier"]),
+                "leverage_cap": _tc["leverage_cap"],
+                "asset_count_cap": _tc["asset_count_cap"],
+                "long_count_cap": _tc["long_count_cap"],
+                "short_count_cap": _tc["short_count_cap"],
+                "net_bias": _tc["net_bias"],
             }
 
         # 主信号取 crypto_usdt 类（当前白名单仅 BTC）
@@ -159,6 +172,7 @@ def build_signal(
             "shadow": True,
             "payload": {
                 "per_asset_class": per_class,
+                "asset_groups": {cls: [cls] for cls in ASSET_CLASSES},
                 "strategic_elements": strategic_elements,
                 "semantic_view": semantic_view,
                 "bridge_switch": bool(getattr(computer, "enable_cycle_state_bridge", False)),

@@ -131,3 +131,88 @@ def test_dimension_hint_overrides_map():
 def test_direction_aliases():
     paths = synthesize_paths([evidence(direction="buy")], now=NOW)
     assert paths[0].direction == "long"
+
+
+
+def _ev(source, symbol, direction, confidence, provenance="42-bus", payload=None, **kw):
+    base = {
+        "evidence_id": "e-" + source + "-" + symbol + "-" + str(confidence),
+        "source": source,
+        "symbol": symbol,
+        "direction": direction,
+        "confidence": confidence,
+        "horizon": "hours",
+        "ts": "2026-11-08T10:00:00Z",
+        "expires_at": "2026-11-08T22:00:00Z",
+        "provenance": provenance,
+        "payload": payload or {},
+    }
+    base.update(kw)
+    return base
+
+
+def test_r2_01_subpools_aggregate_discount():
+    now = datetime(2026, 11, 8, 12, 0, 0, tzinfo=timezone.utc)
+    # 两个同向子池：mean=0.6，dispersion=0.0 -> 聚合 0.6；freshness=10/12 -> 0.5
+    ev = _ev(
+        "11-bdsm",
+        "BTC-USDT-SWAP",
+        "long",
+        0.9,
+        payload={
+            "subpools": [
+                {"direction": "long", "confidence": 0.6, "weight": 0.5},
+                {"direction": "long", "confidence": 0.6, "weight": 0.5},
+            ]
+        },
+    )
+    paths = synthesize_paths([ev], now=now)
+    assert len(paths) == 1
+    assert paths[0].direction == "long"
+    assert abs(paths[0].confidence - 0.5) < 1e-9
+
+
+def test_r2_01_subpools_conflict_discounted():
+    now = datetime(2026, 11, 8, 12, 0, 0, tzinfo=timezone.utc)
+    # 反向子池：mean=0.2，dispersion=0.4 -> 聚合 0.12；freshness=10/12 -> 0.1
+    ev = _ev(
+        "11-bdsm",
+        "BTC-USDT-SWAP",
+        "long",
+        0.9,
+        payload={
+            "subpools": [
+                {"direction": "long", "confidence": 0.6, "weight": 0.5},
+                {"direction": "short", "confidence": 0.2, "weight": 0.5},
+            ]
+        },
+    )
+    paths = synthesize_paths([ev], now=now)
+    assert len(paths) == 1
+    assert paths[0].direction == "long"
+    assert abs(paths[0].confidence - 0.1) < 1e-9
+
+
+def test_r2_01_subpools_all_invalid_skipped():
+    now = datetime(2026, 11, 8, 12, 0, 0, tzinfo=timezone.utc)
+    ev = _ev(
+        "11-bdsm",
+        "BTC-USDT-SWAP",
+        "long",
+        0.9,
+        payload={"subpools": [{"direction": "neutral", "confidence": 0.1}]},
+    )
+    paths = synthesize_paths([ev], now=now)
+    assert paths == []
+
+
+def test_r2_01_bus_preferred_over_bridge():
+    now = datetime(2026, 11, 8, 12, 0, 0, tzinfo=timezone.utc)
+    bus_ev = _ev("11-bdsm", "BTC-USDT-SWAP", "long", 0.5, provenance="42-bus")
+    bridge_ev = _ev("11-bdsm", "BTC-USDT-SWAP", "short", 0.9, provenance="internal")
+    paths = synthesize_paths([bridge_ev, bus_ev], now=now)
+    assert len(paths) == 1
+    # bus 新鲜优先占位，bridge 让位（即使 bridge confidence 更高）
+    assert paths[0].direction == "long"
+    assert paths[0].metadata["provenance"] == "42-bus"
+    assert paths[0].metadata["dedup_count"] == 2

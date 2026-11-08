@@ -33,8 +33,20 @@ if _42_ROOT not in sys.path:
 if _ADAPTERS_DIR not in sys.path:
     sys.path.insert(0, _ADAPTERS_DIR)
 
-# C 阶段白名单：只有这两个源不依赖上游快照新鲜度
-DEFAULT_WHITELIST = ("40-cycle", "29-event")
+# R0-03 白名单扩展（2026-11-08）：加入数据已验证新鲜的 4 源，共 6 源。
+# 43-strategic-extension / 23-contradiction / 11-bcrm / 11-bdsm 上游快照均在线；
+# 40-cycle 快照可能 stale（fail-open 不阻断）；11-bcrm-tactical 待 11 层进程加载新代码后加入。
+DEFAULT_WHITELIST = (
+    "40-cycle",
+    "29-event",
+    "43-strategic-extension",
+    "23-contradiction",
+    "11-bcrm",
+    "11-bdsm",
+    "11-bcrm-tactical",
+    "11-washout",
+    "11-event-arbitrage",
+)
 
 
 def select_subsystems(registry_path: str = None, whitelist=DEFAULT_WHITELIST) -> list:

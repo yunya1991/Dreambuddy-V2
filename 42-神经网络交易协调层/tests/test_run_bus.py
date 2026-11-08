@@ -13,16 +13,26 @@ if _42_ROOT not in sys.path:
 import run_bus  # noqa: E402
 
 
-# ── 1. 默认白名单只含不依赖上游快照的两个源 ──
+# ── 1. 默认白名单（R0-03 扩展：9 源）──
 def test_default_whitelist():
-    assert run_bus.DEFAULT_WHITELIST == ("40-cycle", "29-event")
+    assert run_bus.DEFAULT_WHITELIST == (
+        "40-cycle",
+        "29-event",
+        "43-strategic-extension",
+        "23-contradiction",
+        "11-bcrm",
+        "11-bdsm",
+        "11-bcrm-tactical",
+        "11-washout",
+        "11-event-arbitrage",
+    )
 
 
 # ── 2. select_subsystems 按白名单过滤 registry ──
 def test_select_subsystems_default():
     subs = run_bus.select_subsystems()
     names = [s["name"] for s in subs]
-    assert names == ["40-cycle", "29-event"], names
+    assert names == ["40-cycle", "29-event", "43-strategic-extension", "23-contradiction", "11-bcrm", "11-bdsm", "11-bcrm-tactical", "11-washout", "11-event-arbitrage"], names
     assert all(s["publisher"] for s in subs)
 
 
@@ -45,8 +55,9 @@ def test_run_only_whitelisted():
         return 0
 
     result = run_bus.run(runner=fake_runner, flush=False)
-    assert called == ["40-cycle", "29-event"], called
-    assert result["executed"] == ["40-cycle", "29-event"]
+    expected = ["40-cycle", "29-event", "43-strategic-extension", "23-contradiction", "11-bcrm", "11-bdsm", "11-bcrm-tactical", "11-washout", "11-event-arbitrage"]
+    assert called == expected, called
+    assert result["executed"] == expected
     assert result["status"] == "ok"
 
 
@@ -59,7 +70,7 @@ def test_run_failopen_on_adapter_error():
 
     result = run_bus.run(runner=bad_runner, flush=False)
     assert result["status"] == "degraded"
-    assert result["executed"] == ["29-event"]
+    assert result["executed"] == ["29-event", "43-strategic-extension", "23-contradiction", "11-bcrm", "11-bdsm", "11-bcrm-tactical", "11-washout", "11-event-arbitrage"]
     assert any(e["name"] == "40-cycle" for e in result["errors"])
 
 

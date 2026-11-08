@@ -1,0 +1,315 @@
+{
+  "_meta": {
+    "frozen_at": "2026-11-08T13:24:20.553428+00:00",
+    "coin_count": 51,
+    "schema_version": "1"
+  },
+  "coins": {
+    "BTC": {
+      "symbol": "BTC",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "ETH": {
+      "symbol": "ETH",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "SOL": {
+      "symbol": "SOL",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "BNB": {
+      "symbol": "BNB",
+      "u_open": 0.5429,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "OKB": {
+      "symbol": "OKB",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "UNI": {
+      "symbol": "UNI",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "HYPE": {
+      "symbol": "HYPE",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "PUMP": {
+      "symbol": "PUMP",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "ZEC": {
+      "symbol": "ZEC",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "ARB": {
+      "symbol": "ARB",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "LINK": {
+      "symbol": "LINK",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "XAU": {
+      "symbol": "XAU",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "XAG": {
+      "symbol": "XAG",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "MU": {
+      "symbol": "MU",
+      "u_open": 0.56,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "SKHYNIX": {
+      "symbol": "SKHYNIX",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "GOOGL": {
+      "symbol": "GOOGL",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "NVDA": {
+      "symbol": "NVDA",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "AMZN": {
+      "symbol": "AMZN",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "SNDK": {
+      "symbol": "SNDK",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "SPCX": {
+      "symbol": "SPCX",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "MSTR": {
+      "symbol": "MSTR",
+      "u_open": 0.5,
+      "action": "short",
+      "level0_dstar": "short"
+    },
+    "COIN": {
+      "symbol": "COIN",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "CRCL": {
+      "symbol": "CRCL",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "BMNR": {
+      "symbol": "BMNR",
+      "u_open": 0.5,
+      "action": "short",
+      "level0_dstar": "short"
+    },
+    "BCH": {
+      "symbol": "BCH",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "BTW": {
+      "symbol": "BTW",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "STRK": {
+      "symbol": "STRK",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "ANTHROPIC": {
+      "symbol": "ANTHROPIC",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "FIL": {
+      "symbol": "FIL",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "BERA": {
+      "symbol": "BERA",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "TIA": {
+      "symbol": "TIA",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "RIVER": {
+      "symbol": "RIVER",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "VVV": {
+      "symbol": "VVV",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "ORDI": {
+      "symbol": "ORDI",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "WLD": {
+      "symbol": "WLD",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "AR": {
+      "symbol": "AR",
+      "u_open": 0.5,
+      "action": "short",
+      "level0_dstar": "short"
+    },
+    "APE": {
+      "symbol": "APE",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "GIGGLE": {
+      "symbol": "GIGGLE",
+      "u_open": 0.5,
+      "action": "short",
+      "level0_dstar": "short"
+    },
+    "ICP": {
+      "symbol": "ICP",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "ZEN": {
+      "symbol": "ZEN",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "NMR": {
+      "symbol": "NMR",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "SNXX": {
+      "symbol": "SNXX",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "XPT": {
+      "symbol": "XPT",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "SOXS": {
+      "symbol": "SOXS",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "COMP": {
+      "symbol": "COMP",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "AVAX": {
+      "symbol": "AVAX",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "AAVE": {
+      "symbol": "AAVE",
+      "u_open": 0.5,
+      "action": "long",
+      "level0_dstar": "long"
+    },
+    "YFI": {
+      "symbol": "YFI",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "LIT": {
+      "symbol": "LIT",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    },
+    "AAPL": {
+      "symbol": "AAPL",
+      "u_open": 0.5,
+      "action": "short",
+      "level0_dstar": "short"
+    },
+    "BZ": {
+      "symbol": "BZ",
+      "u_open": 0.5,
+      "action": "WAIT",
+      "level0_dstar": "WAIT"
+    }
+  }
+}

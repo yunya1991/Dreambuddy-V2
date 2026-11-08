@@ -1,8 +1,8 @@
 {
   "version": "0.1",
-  "updated": "2026-11-05",
+  "updated": "2026-11-08",
   "owner": "47-MCP管理系统",
-  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:11-bypass=11-易经推理系统 polling_trader 经 okx_client 旁路网关实盘（不经 MCP）；disabled=两出口均不执行。",
+  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:11-bypass=11-易经推理系统 polling_trader 经 okx_client 旁路网关实盘（不经 MCP）；disabled=两出口均不执行。 fifty_nn_domain 分区：50-NN主矛盾评估器 paper-only（R1c 显式声明），23 live 走 eleven_domain 路径。",
   "defaults": {
     "outcome": "paper",
     "conflict_policy": "reject_mcp"
@@ -25,10 +25,24 @@
   "fifty_nn_domain": {
     "gate": "50_KILL_SWITCH",
     "default_outcome": "paper",
-    "allowed_outcomes": ["paper", "live:50-bypass", "disabled"],
+    "allowed_outcomes": [
+      "paper",
+      "live:50-bypass",
+      "disabled"
+    ],
     "mandate_required_for_live": true,
     "kill_switch_env": "50_KILL_SWITCH",
     "kill_switch_value": "1",
-    "mapping_note": "50-NN主矛盾评估器初期 paper-only；live 需 execution_rights 授权 + Mandate；同一标的同时刻单出口，不得与 23 live 并存。"
+    "mapping_note": "50-NN主矛盾评估器初期 paper-only；live 需 execution_rights 授权 + Mandate；同一标的同时刻单出口，不得与 23 live 并存。 23 live 与 50 paper 并行期间，同一标的 50 分区不得声明 live:50-bypass。",
+    "symbols": {
+      "BTC-USDT-SWAP": {
+        "outcome": "paper",
+        "note": "50 层 paper-only（R1c 显式声明，便于后续灰度切换）"
+      },
+      "ETH-USDT-SWAP": {
+        "outcome": "paper",
+        "note": "50 层 paper-only（R1c 显式声明，便于后续灰度切换）"
+      }
+    }
   }
 }
