@@ -15,6 +15,11 @@ from unittest.mock import patch
 import pytest
 
 
+def _data(result):
+    """兼容统一信封：业务字段在 result['data'] 内。"""
+    return result.get("data", result)
+
+
 @pytest.fixture(autouse=True)
 def _mock_find_skill_dir(monkeypatch):
     """autouse: 避免 record_hook 写真实 SKILL.md（测试副作用隔离）。
@@ -36,7 +41,7 @@ def test_handle_record_knowledge_ingest_required_when_tag_present():
             "content": "调研结论：马丁策略在震荡市夏普优于趋势市",
             "tags": "knowledge-ingest,调研,马丁策略",
         }))
-    assert result.get("knowledge_ingest_required") is True, (
+    assert _data(result).get("knowledge_ingest_required") is True, (
         "P0-2 RED: tags 含 knowledge-ingest 时应返回 knowledge_ingest_required=True"
     )
 
@@ -50,7 +55,7 @@ def test_handle_record_knowledge_ingest_not_required_when_tag_absent():
             "content": "普通经验记录",
             "tags": "bugfix,mcp",
         }))
-    assert result.get("knowledge_ingest_required") is False, (
+    assert _data(result).get("knowledge_ingest_required") is False, (
         "P0-2: tags 不含 knowledge-ingest 时 knowledge_ingest_required 应为 False"
     )
 
@@ -64,7 +69,7 @@ def test_handle_record_knowledge_ingest_required_field_exists_always():
             "content": "无 tags 的记录",
             "tags": "",
         }))
-    assert "knowledge_ingest_required" in result, (
+    assert "knowledge_ingest_required" in _data(result), (
         "P0-2: knowledge_ingest_required 字段应始终存在"
     )
 
@@ -82,8 +87,8 @@ def test_handle_record_knowledge_ingest_mark_distinct_from_triggered_skills():
             "tags": "knowledge-ingest",
         }))
     # triggered_skills 是软触发（列表），knowledge_ingest_required 是硬标记（布尔）
-    assert isinstance(result.get("knowledge_ingest_required"), bool)
-    assert "knowledge-ingest" in result.get("triggered_skills", [])
+    assert isinstance(_data(result).get("knowledge_ingest_required"), bool)
+    assert "knowledge-ingest" in _data(result).get("triggered_skills", [])
 
 
 def test_handle_record_knowledge_ingest_required_preserves_main_flow():
@@ -96,9 +101,9 @@ def test_handle_record_knowledge_ingest_required_preserves_main_flow():
             "tags": "knowledge-ingest",
         }))
     # 主流程字段仍存在
-    assert result["memory_id"] == "VM-TEST-PRESERVE"
-    assert result["status"] == "recorded"
-    assert "triggered_skills" in result
-    assert "skill_links" in result  # P0-1 字段
+    assert _data(result)["memory_id"] == "VM-TEST-PRESERVE"
+    assert _data(result)["status"] == "recorded"
+    assert "triggered_skills" in _data(result)
+    assert "skill_links" in _data(result)  # P0-1 字段
     # P0-2 新增字段
-    assert result["knowledge_ingest_required"] is True
+    assert _data(result)["knowledge_ingest_required"] is True

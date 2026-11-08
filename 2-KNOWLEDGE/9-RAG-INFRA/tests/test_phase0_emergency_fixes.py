@@ -411,6 +411,7 @@ class TestFIXEV2EvolutionCronRunner:
             [sys.executable, runner, "--dry-run",
              "--report-dir", str(report_dir)],
             capture_output=True, text=True, timeout=120,
+            encoding="utf-8", errors="replace",
             cwd=str(runner_p.parent),
             env=env,
         )
@@ -430,6 +431,7 @@ class TestFIXEV2EvolutionCronRunner:
         proc = subprocess.run(
             [sys.executable, runner, "--help"],
             capture_output=True, text=True, timeout=30,
+            encoding="utf-8", errors="replace",
             cwd=str(runner_p.parent),
         )
         help_text = proc.stdout

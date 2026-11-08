@@ -63,10 +63,34 @@ class BackendChroma:
         hits = []
         items = result.get("results", result.get("hits", [])) if isinstance(result, dict) else result
         for h in items or []:
-            if isinstance(h, dict):
-                ref = str(h.get("id", h.get("source", "")))
-                hits.append(_norm_hit(str(h.get("text", h.get("content", ""))), self.name,
-                                      float(h.get("score", h.get("distance", 0.0))), ref))
+            if not isinstance(h, dict):
+                continue
+            # IndexQueryService 返回 title/path/category/description，
+            # 与 hybrid_search 的 text/content 形状不同；这里统一归一化。
+            text = (
+                h.get("text")
+                or h.get("content")
+                or h.get("title")
+                or h.get("description")
+                or ""
+            )
+            ref = (
+                h.get("id")
+                or h.get("path")
+                or h.get("source_file")
+                or h.get("source")
+                or ""
+            )
+            meta = {
+                k: h[k]
+                for k in ("title", "path", "category", "description")
+                if k in h
+            }
+            hits.append(_norm_hit(
+                str(text), self.name,
+                float(h.get("score", h.get("distance", 0.0))),
+                str(ref), meta,
+            ))
         return hits
 
 

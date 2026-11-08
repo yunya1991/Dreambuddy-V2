@@ -174,7 +174,7 @@ def test_rebuild_solution_paths_from_high_quality_memories():
         # 断言质量分布
         qc = Counter()
         for f in files:
-            with open(os.path.join(sp_dir, f)) as fp:
+            with open(os.path.join(sp_dir, f), encoding="utf-8") as fp:
                 data = json.load(fp)
             qc[data.get("quality_level", "?")] += 1
         b_plus = qc.get("S", 0) + qc.get("A", 0) + qc.get("B", 0)
@@ -205,7 +205,7 @@ def test_rebuild_skip_noise_memories():
         files = [f for f in os.listdir(sp_dir) if f.endswith(".json")]
         ids = set()
         for f in files:
-            with open(os.path.join(sp_dir, f)) as fp:
+            with open(os.path.join(sp_dir, f), encoding="utf-8") as fp:
                 data = json.load(fp)
             ids.add(data.get("template_id", ""))
         assert "VM-C-NOISE-1" not in ids, "C 级噪声不应被重建为 SP 模板"

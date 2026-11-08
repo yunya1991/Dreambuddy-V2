@@ -1,6 +1,6 @@
 # TECH:L0 六域 MCP 封装 — 实现手册 v0.1
 
-> **版本**: v0.1.5 ｜ **更新日期**: 2026-11-08 ｜ **状态**: ✅ M1-M4 全部落地 + D1/D2 已落 + **P0 控制面** + **P1 角色网关** + **P2 运行时/install/new-shell** + **P3 协议协商 / Agent Card / Docker 包**；2026-11-08 复核：8 壳注册（7 active）真实拉起、漂移 0、`doctor --deep` 全通过、4 张 Agent Card 与 registry 一致
+> **版本**: v0.1.5 ｜ **更新日期**: 2026-11-08 ｜ **状态**: ✅ M1-M4 全部落地 + D1/D2 已落 + **P0 控制面** + **P1 角色网关** + **P2 运行时/install/new-shell** + **P3 协议协商 / Agent Card / Docker 包**；2026-11-08 复核：9 壳真实拉起、漂移 0、`doctor --deep` 全通过、6 张 Agent Card 与 registry 一致
 > **上游**: [SPEC-L0-MCP-PACKAGING v0.3](./SPEC-L0-MCP-PACKAGING-v0.3.md)（契约）· [PLAN-L0-MCP-P0-P3 v0.1](./PLAN-L0-MCP-P0-P3-v0.1.md)（路线）· [ALIGNMENT-46-47 v1.0](./ALIGNMENT-46-47-v1.0.md)（决议）
 > **读者**: M2/M3/M4 壳开发者 · 云端运维 · DSH Worker 消费方 · 壳后域内 agent 化 SPEC 作者
 > **边界**: 本手册覆盖 **M1-M4 全部落地**（注册表 v1 / 信封映射层 / 基线脚本 / 校验器 / 认知壳 6 工具 / 39 壳 4 工具 / 数据壳 / 评测壳 / REA 壳 / 库管壳）。M2/M3/M4 壳实现细节见各壳 server.py 与契约测试。
@@ -409,7 +409,7 @@ python3 "47-MCP管理系统/registry/scripts/check_mcp_tool_drift.py"
 - 复用 `34/core/ShellHandleManager`（单壳复用 / 健康检查 / 重拉）；
 - 本地 stdio 统一使用网关自身解释器 + `PYTHONIOENCODING=utf-8`。
 
-**壳运行时（P1/P2）**：[shell_runtime.py](../../../mcp_shells/_shared/shell_runtime.py) 提供统一的 `initialize / tools/list / tools/call` 循环，`tools/list` 从 registry 派生。P2 已迁移 7 壳：cognition / semantic-39 / rea / data / eval / store-admin / trade-exec；代码有 handler 但 registry 未登记的工具不再暴露（结构性消除漂移）。`agent.debate.mcp` / `l1.trading.mcp` 属其他在途分支，未纳入本次提交。
+**壳运行时（P1/P2）**：[shell_runtime.py](../../../mcp_shells/_shared/shell_runtime.py) 提供统一的 `initialize / tools/list / tools/call` 循环，`tools/list` 从 registry 派生。P2 已迁移 8 壳：cognition / semantic-39 / rea / data / eval / store-admin / trade-exec / debate；代码有 handler 但 registry 未登记的工具不再暴露（结构性消除漂移）。`l1.trading.mcp` 属未提交新壳，待其分支合入后迁移。
 
 **自定义注册表**：`DREAMBUDDY_MCP_REGISTRY` 环境变量可覆盖默认 registry 路径（`shell_runtime` / `mcpctl` / 漂移门禁均生效），便于非默认部署。
 
@@ -629,7 +629,7 @@ L0 测试               pytest mcp_shells dreambuddy_l0 → EXIT=0 全绿
 | v0.1.1 | 2026-11-03 | 新增 §10.1 云端现状审计快照 + M1④ 基线报告引用 + L1/DOMAIN-DISCOVERY/TRAIN-BASE/COMM-SHADOW/Roadmap 交叉引用 |
 | v0.1.2 | 2026-11-08 | P0 通用化：§6.1 增漂移门禁 ⑤、§6.4 `mcpctl` CLI；补登 `l4_status`；trade-exec 壳 Windows `msvcrt` 兼容 |
 | v0.1.3 | 2026-11-08 | P1：§6.5 角色网关 + `shell_runtime.py`；`l0_data` / `l0_eval` 迁移；`StdioShell` 改跨平台读线程 + `list_tools()`；G1-b 全局软上限 40→80 |
-| v0.1.4 | 2026-11-08 | P2：壳运行时迁移至 7 壳；`mcpctl install --host all`；`mcpctl new-shell`（骨架+测试+登记）；`DREAMBUDDY_MCP_REGISTRY` 覆盖 |
+| v0.1.4 | 2026-11-08 | P2：壳运行时迁移至 8 壳；`mcpctl install --host all`；`mcpctl new-shell`（骨架+测试+登记）；`DREAMBUDDY_MCP_REGISTRY` 覆盖 |
 | v0.1.5 | 2026-11-08 | P3：协议版本协商；Agent Card 静态索引 + 运行时 `_meta`；Docker 分发 + CI `mcp-docker`；SDK/wheel 明确后置 |
 | （待更新） | M2 完成后 | 增补数据壳/评测壳实现细节 |
 | （待更新） | M3 完成后 | 增补 REA 壳/认知壳双模 |

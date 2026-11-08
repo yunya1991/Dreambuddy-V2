@@ -375,3 +375,67 @@ def prepare_audit_record_params(audit_result: dict[str, Any]) -> dict[str, Any]:
         "tags": tags,
         "evidence_entries": evidence_entries,
     }
+
+
+def investigate_and_record(
+    target: str,
+    feature: str | None = None,
+    entry: str | None = None,
+    *,
+    source: str = "33-REA",
+) -> dict[str, Any]:
+    """执行 investigate 并直接落认知库，闭合 33-REA → Ledger → record 链路。
+
+    与「Agent 手动 prepare_record_params + record」等价，但提供编程式入口，
+    避免生产代码只有契约没有调用点。认知系统不可用时 FAIL-OPEN：返回
+    status=skipped + record_params，调用方可回退到 Agent 手动 record。
+    """
+    import sys
+    from pathlib import Path
+
+    from core.investigation_workflow import investigate
+
+    investigation = investigate(target, feature=feature, entry=entry)
+    params = prepare_record_params(investigation)
+
+    repo_root = Path(__file__).resolve().parents[2]
+    cog_dir = repo_root / "4-MEMORY" / "9-工具与接口"
+    if str(cog_dir) not in sys.path:
+        sys.path.insert(0, str(cog_dir))
+
+    try:
+        from cognitive_loop_entry import get_cle
+        from evidence_ledger import EvidenceEntry
+    except Exception as exc:  # FAIL-OPEN：认知系统不可用
+        return {
+            "status": "skipped",
+            "reason": f"cognitive_unavailable: {exc}",
+            "investigation": investigation,
+            "record_params": params,
+        }
+
+    cle = get_cle()
+    tags = [t.strip() for t in str(params.get("tags", "")).split(",") if t.strip()]
+    memory_id = cle.record(
+        content=params["content"],
+        quality_level=params.get("quality_level", "B"),
+        tags=tags,
+        source=source,
+        level="derivation",
+    )
+
+    evidence_appended = 0
+    for entry_dict in params.get("evidence_entries", []) or []:
+        try:
+            cle.evidence_ledger.append(EvidenceEntry(**entry_dict))
+            evidence_appended += 1
+        except Exception:
+            continue
+
+    return {
+        "status": "recorded",
+        "memory_id": memory_id,
+        "evidence_appended": evidence_appended,
+        "investigation": investigation,
+        "record_params": params,
+    }

@@ -15,7 +15,12 @@ class UnifiedSearch:
             return hits
         scores = [h["score"] for h in hits]
         lo, hi = min(scores), max(scores)
-        span = (hi - lo) or 1.0
+        if hi == lo:
+            # 所有命中同分（如关键词回退全为 1.0）时保留满分，避免被压成 0
+            for h in hits:
+                h["score"] = 1.0 if hi > 0 else 0.0
+            return hits
+        span = hi - lo
         for h in hits:
             h["score"] = round((h["score"] - lo) / span, 4)
         return hits

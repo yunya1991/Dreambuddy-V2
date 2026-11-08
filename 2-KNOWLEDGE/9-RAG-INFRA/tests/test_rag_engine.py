@@ -26,7 +26,12 @@ _embedder._use_tfidf_fallback = True
 _embedder._model = None
 
 from vector_store import build_index
-from knowledge_graph import build_graph
+
+pytestmark = pytest.mark.skipif(
+    build_index is None, reason="chromadb 未安装（向量检索为可选依赖）"
+)
+
+from knowledge_graph import build_graph  # noqa: E402
 from rag_engine import (
     hybrid_search,
     generate,

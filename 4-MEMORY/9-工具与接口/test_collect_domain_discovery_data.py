@@ -38,7 +38,7 @@ def _write_trajectory(store: Path, domain: str, trace_id: str = "", poe_score: f
 def test_training_sample_schema(isolated_store):
     _write_trajectory(isolated_store, "cognition", "shadow-trace")
     sample = cdd.build_training_sample(
-        json.loads(isolated_store.read_text().splitlines()[0]),
+        json.loads(isolated_store.read_text(encoding="utf-8").splitlines()[0]),
         source="phaseA_shadow_traj",
     )
 
@@ -71,7 +71,7 @@ def test_training_sample_schema(isolated_store):
 def test_drift_matches_psi(isolated_store):
     """每个域的 drift 档必须等于 classify_drift(psi) — 硬同步约束。"""
     _write_trajectory(isolated_store, "rea")
-    sample = cdd.build_training_sample(json.loads(isolated_store.read_text().splitlines()[0]))
+    sample = cdd.build_training_sample(json.loads(isolated_store.read_text(encoding="utf-8").splitlines()[0]))
     states = sample["input"]["domain_states"]
     for d, s in states.items():
         assert s["drift"] == classify_drift(s["psi"]), f"{d} drift/psi 不同步"
@@ -79,7 +79,7 @@ def test_drift_matches_psi(isolated_store):
 
 def test_reward_verify_rate_equals_beta_mean_average(isolated_store):
     _write_trajectory(isolated_store, "rea")
-    sample = cdd.build_training_sample(json.loads(isolated_store.read_text().splitlines()[0]))
+    sample = cdd.build_training_sample(json.loads(isolated_store.read_text(encoding="utf-8").splitlines()[0]))
     states = sample["input"]["domain_states"]
     # participate 域只有 rea；beta_mean 桥接 confidence_mean
     expected = states["rea"]["confidence_mean"]
@@ -96,7 +96,7 @@ def test_fail_open_missing_store(tmp_path):
         seed=42,
     )
     assert written == out
-    rows = [json.loads(ln) for ln in out.read_text().splitlines()]
+    rows = [json.loads(ln) for ln in out.read_text(encoding="utf-8").splitlines()]
     assert len(rows) == 3
     assert all(r["source"] == "phaseA_static_fill" for r in rows)
 
@@ -109,7 +109,7 @@ def test_fail_open_bad_json_lines(isolated_store, tmp_path):
     _ = cdd.collect(
         shadow_store_path=str(isolated_store), output_path=str(out), num_samples=2, seed=1
     )
-    rows = [json.loads(ln) for ln in out.read_text().splitlines()]
+    rows = [json.loads(ln) for ln in out.read_text(encoding="utf-8").splitlines()]
     assert len(rows) == 2
     # 坏行被静默跳过，第一条正常写入
     assert rows[0]["source"] == "phaseA_shadow_traj"
@@ -124,7 +124,7 @@ def test_seed_makes_static_fill_deterministic(tmp_path):
     out2 = tmp_path / "t2.jsonl"
     cdd.collect(output_path=str(out1), num_samples=5, seed=7)
     cdd.collect(output_path=str(out2), num_samples=5, seed=7)
-    assert out1.read_text() == out2.read_text()
+    assert out1.read_text(encoding="utf-8") == out2.read_text(encoding="utf-8")
 
 
 def test_build_training_sample_none_succeeds():
@@ -146,7 +146,7 @@ def test_collect_end_to_end_appends(tmp_path, isolated_store):
     written = cdd.collect(
         shadow_store_path=str(isolated_store), output_path=str(out), num_samples=5, seed=3
     )
-    rows_a = [json.loads(ln) for ln in written.read_text().splitlines()]
+    rows_a = [json.loads(ln) for ln in written.read_text(encoding="utf-8").splitlines()]
     assert len(rows_a) == 5
     # shadow 轨迹优先
     assert rows_a[0]["trace_id"] == "shadow-abc"
@@ -158,7 +158,7 @@ def test_collect_end_to_end_appends(tmp_path, isolated_store):
     written = cdd.collect(
         shadow_store_path=str(isolated_store), output_path=str(out), num_samples=2, seed=3
     )
-    rows_b = [json.loads(ln) for ln in written.read_text().splitlines()]
+    rows_b = [json.loads(ln) for ln in written.read_text(encoding="utf-8").splitlines()]
     assert len(rows_b) == 7  # 5 + 2
 
 
@@ -299,7 +299,7 @@ def test_collect_windowed_writes_state_labeled_samples(tmp_path):
         window_seconds=tnum,
         btc_ts_path=str(btc),
     )
-    rows = [json.loads(ln) for ln in written.read_text().splitlines()]
+    rows = [json.loads(ln) for ln in written.read_text(encoding="utf-8").splitlines()]
     assert len(rows) == 2
     assert all(r["source"] == "phaseA_shadow_window" for r in rows)
     # 两窗 regime 不同, 且 psi 不同 → 状态化 target 的输入不再同构
@@ -317,7 +317,7 @@ def test_collect_windowed_no_real_trajectories_writes_empty(tmp_path):
     store.write_text("")
     out = tmp_path / "out.jsonl"
     written = cdd.collect_windowed(shadow_store_path=str(store), output_path=str(out))
-    assert written == out and out.read_text() == ""
+    assert written == out and out.read_text(encoding="utf-8") == ""
 
 
 def test_collect_windowed_is_idempotent_on_rerun(tmp_path):
@@ -339,10 +339,10 @@ def test_collect_windowed_is_idempotent_on_rerun(tmp_path):
         "window_seconds": tnum,
     }
     cdd.collect_windowed(**kwargs)
-    first = len(out.read_text().splitlines())
+    first = len(out.read_text(encoding="utf-8").splitlines())
     cdd.collect_windowed(**kwargs)
     cdd.collect_windowed(**kwargs)
-    assert len(out.read_text().splitlines()) == first == 2
+    assert len(out.read_text(encoding="utf-8").splitlines()) == first == 2
 
 
 def test_collect_windowed_skips_unfinished_window(tmp_path):
@@ -365,7 +365,7 @@ def test_collect_windowed_skips_unfinished_window(tmp_path):
     }
     # 第二窗还没结束 → 只采到第一窗
     cdd.collect_windowed(**kwargs, now_ts=ts0 + tnum + 5)
-    assert len(out.read_text().splitlines()) == 1
+    assert len(out.read_text(encoding="utf-8").splitlines()) == 1
     # 第二窗结束后 → 补采第二窗
     cdd.collect_windowed(**kwargs, now_ts=ts0 + 2 * tnum + 5)
-    assert len(out.read_text().splitlines()) == 2
+    assert len(out.read_text(encoding="utf-8").splitlines()) == 2

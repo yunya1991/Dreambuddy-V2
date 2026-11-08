@@ -130,8 +130,9 @@ def test_tc5_archive_research(isolated_kb):
     assert result["status"] in ("indexed", "duplicate")
     fp = Path(result["file_path"])
     assert fp.exists(), "归档 md 文件应存在"
-    assert "7-EXTERNAL-RESEARCH" in str(fp)
-    assert "finance/quant-methods" in str(fp)
+    fp_posix = fp.as_posix()
+    assert "7-EXTERNAL-RESEARCH" in fp_posix
+    assert "finance/quant-methods" in fp_posix
     assert result["chunks_indexed"] > 0, "应触发 ingest 并产生分块"
 
     # md 文件应含模板字段

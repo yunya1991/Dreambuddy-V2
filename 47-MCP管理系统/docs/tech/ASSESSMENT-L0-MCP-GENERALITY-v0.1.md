@@ -36,9 +36,10 @@
 | `l0.eval.mcp` | available | stdio | 2 | eval_analyze / eval_report |
 | `l0.store-admin.mcp` | available | stdio | 2 | store_admin_status / store_admin_query |
 | `l0.trade-exec.mcp` | available | stdio | 10 | place_order / cancel_order / get_positions / get_balance / pre_trade_check / check_exit / get_account_mode / reconcile / read_signals / ingest_signal |
+| `agent.debate.mcp` | available | stdio | 3 | start_debate / get_debate_result / debate_health |
 | `l0.rea-client.mcp` | deprecated | http | 3 | rea_analyze / rea_trace / rea_compare（npm 存量面，保留登记） |
 
-**门禁余量**：活跃工具合计 **35 个，全局软上限 80**（[mcp_capabilities.yaml](../../registry/mcp_capabilities.yaml) `enums.max_total_tools`；G1-b 于 2026-11-08 用户确认，原硬顶 40 已上调；P0 漂移门禁补登 `l4_status` 后由 34 升至 35）。
+**门禁余量**：活跃工具合计 **38 个，全局软上限 80**（[mcp_capabilities.yaml](../../registry/mcp_capabilities.yaml) `enums.max_total_tools`；G1-b 于 2026-11-08 用户确认，原硬顶 40 已上调；P0 漂移门禁补登 `l4_status` 后由 37 升至 38）。
 **角色面**：`research` 8 / `engineer` 7 / `verifier` 5 / `executor` 7 / `l2_analysis` 7，均 ≤10 符合 ADR-4。
 
 ### 2.2 已具备的通用资产（应保留、不重构）
@@ -62,7 +63,7 @@
 | D3 | 全壳统一协议版本 | ✅ **P3 已消除**：`shell_runtime` 版本协商（2024-11-05 / 2025-03-26 / 2025-06-18 / 2025-11-25），按请求回显、未知回退 | 已改为协商，不再硬编码 |
 | D4 | 全壳统一走 JSON-RPC 壳 | 无任何官方 MCP SDK 依赖，`initialize/tools/list/tools/call/main` 在 8 个文件中重复实现 | 单壳 ~80 行协议样板，扩展成本与一致性风险高 |
 | D5 | 角色能力集约束所有 Worker | `worker_roles` 仅被 [worker_tool_call.py](../../../34-前端应用训练系统/core/worker_tool_call.py) 读取，**外部 MCP 宿主不经此链路** | 外部 Agent 接入即获得整壳工具面，最小权限在协议面失效 |
-| D6 | `mcp_profiles.json` 提供可复制 profile | 仅有 2 个手写 profile（cognitive-local / cognitive-cloud-ssh），无生成器 | 7 壳 × N 宿主需人工组合，无法一键 |
+| D6 | `mcp_profiles.json` 提供可复制 profile | 仅有 3 个手写 profile（cognitive-local / cognitive-cloud-ssh / debate-local），无生成器 | 8 壳 × N 宿主需人工组合，无法一键 |
 
 ---
 
@@ -98,7 +99,7 @@
 
 ### H4 全局工具上限曾成天花板（G1-b 已解决）
 
-原 `max_total_tools = 40` 按"全局注册工具数"计，34 个已近触顶。**2026-11-08 用户确认 G1-b**：主约束改为「每壳 / 每角色 ≤10」，全局 40 → **软上限 80**，新增域不再被容量直接卡死。
+原 `max_total_tools = 40` 按"全局注册工具数"计，38 个已近触顶。**2026-11-08 用户确认 G1-b**：主约束改为「每壳 / 每角色 ≤10」，全局 40 → **软上限 80**，新增域不再被容量直接卡死。
 
 ### H5 注册表↔代码漂移无校验
 
@@ -132,7 +133,7 @@ D2 所述。缺少 `tools/list` 与注册表的比对门禁，注册表的"SSoT"
 |---|---|---|---|
 | **`mcpctl` CLI** | `doctor` 环境体检 / `profile --role --host` 生成配置 / `install` 写入宿主 / `verify` 冒烟 / `new-shell` 脚手架 | 泛化现有 installer 的检测、备份、合并、验证逻辑 | 中 |
 | **`l0-gateway`** | 单条配置接入；按角色裁剪 `tools/list`；集中执行 Mandate、trace、审计、限流 | `ShellHandleManager` + `mandate_gate` + 注册表 | 中 |
-| **`shell_runtime.py`** | 统一 JSON-RPC 循环；`tools/list` 从注册表派生；分发到 HANDLERS；信封与 shadow 内置 | 抽取 7 壳公共段 | 小 |
+| **`shell_runtime.py`** | 统一 JSON-RPC 循环；`tools/list` 从注册表派生；分发到 HANDLERS；信封与 shadow 内置 | 抽取 8 壳公共段 | 小 |
 
 ### 5.2 为什么网关优于"继续直连整壳"
 
@@ -176,7 +177,7 @@ D2 所述。缺少 `tools/list` 与注册表的比对门禁，注册表的"SSoT"
 |---|---|---|
 | **P0（S）✅ 已落地（2026-11-08）** | ① 注册表↔代码漂移校验；② `mcpctl doctor`；③ `mcpctl profile --role --host` 生成 `.mcp.json` | 任一角色一条命令产出可用配置；漂移可被 CI 拦截 |
 | **P1（M）🟡 主体已落地（2026-11-08；G1 待确认）** | ① ✅ `l0-gateway --role`；② ⏸ 治理口径 G1 待用户确认；③ ✅ 壳运行时抽取 + `l0_data`/`l0_eval` 迁移 | 外部 Agent 单条接入；`tools/list` 精确等于角色白名单 |
-| **P2（M）✅ 已落地（2026-11-08）** | ① 壳运行时迁移 7 壳；② `mcpctl install --host all`；③ `new-shell` 脚手架；④ `DREAMBUDDY_MCP_REGISTRY` 覆盖 | 新域从 0 到可调用 ≤30 分钟；`agent.debate` / `l1.trading` 属其他在途分支 |
+| **P2（M）✅ 已落地（2026-11-08）** | ① 壳运行时迁移 8 壳；② `mcpctl install --host all`；③ `new-shell` 脚手架；④ `DREAMBUDDY_MCP_REGISTRY` 覆盖 | 新域从 0 到可调用 ≤30 分钟；`l1.trading` 待其分支合入后迁移 |
 | **P3a（L）🟡 部分落地（2026-11-08）** | ✅ 协议版本协商 + ✅ Docker 分发包；⏸ 官方 MCP SDK / wheel 后置（依赖与全量回归成本） | 干净机器单命令安装；协议版本协商通过；三端 `doctor` 一致 |
 | **P3b（L）✅ 已落地（2026-11-08）** | Agent Card 静态索引 + 运行时 `serverInfo._meta.agent_card` | 外部 Agent 可机器发现角色与能力，不需人工读文档 |
 | **P4（XL，⏸ 暂不开发）** | 共享沉淀协议：tenant 命名空间、provenance 血缘、trust tier、合并/蒸馏 | 不排期；仅草案登记，见 §八 |
@@ -185,13 +186,13 @@ D2 所述。缺少 `tools/list` 与注册表的比对门禁，注册表的"SSoT"
 
 | 交付 | 载体 |
 |---|---|
-| 漂移门禁 | [check_mcp_tool_drift.py](../../registry/scripts/check_mcp_tool_drift.py)：7 壳真实 stdio 探测，`extra` / `missing` / `readOnlyHint` 三类漂移；CI 已接线（`.github/workflows/l0-contracts.yml`） |
+| 漂移门禁 | [check_mcp_tool_drift.py](../../registry/scripts/check_mcp_tool_drift.py)：8 壳真实 stdio 探测，`extra` / `missing` / `readOnlyHint` 三类漂移；CI 已接线（`.github/workflows/l0-contracts.yml`） |
 | 控制面 CLI | [mcpctl.py](../../registry/scripts/mcpctl.py)：`doctor --deep` / `profile --role` / `verify` / `list-roles` / `list-shells` |
 | 角色配置生成 | `profile` 输出 `mcpServers`，支持 `json / claude-project / trae / claude / cursor / windsurf / continue`，`--install` 自动备份合并 |
 | 测试 | [test_mcpctl.py](../../registry/scripts/test_mcpctl.py)：8 项（profile 全角色覆盖 / SSH 分支 / 漂移比对 / 真实壳零漂移） |
-| 首轮实测 | 发现并修复 2 处存量问题：① 认知壳 `l4_status` 未登记 → 已补注册表（现 35/80）；② `l0_trade_exec` 依赖 POSIX `fcntl` → 已加 Windows `msvcrt` 兼容 |
+| 首轮实测 | 发现并修复 2 处存量问题：① 认知壳 `l4_status` 未登记 → 已补注册表（现 38/80）；② `l0_trade_exec` 依赖 POSIX `fcntl` → 已加 Windows `msvcrt` 兼容 |
 
-> P0 验收口径：`check_mcp_tool_drift.py` 退出 0；`mcpctl doctor --deep` 7/7 壳握手通过；`mcpctl profile --role <任一角色>` 产出可解析的 `mcpServers`。
+> P0 验收口径：`check_mcp_tool_drift.py` 退出 0；`mcpctl doctor --deep` 8/8 壳握手通过；`mcpctl profile --role <任一角色>` 产出可解析的 `mcpServers`。
 
 **P1 落地记录（2026-11-08）**
 
@@ -211,12 +212,12 @@ D2 所述。缺少 `tools/list` 与注册表的比对门禁，注册表的"SSoT"
 
 | 交付 | 载体 / 结果 |
 |---|---|
-| 壳运行时全量迁移 | 7 壳：cognition / semantic-39 / rea / data / eval / store-admin / trade-exec；`agent.debate` / `l1.trading` 属其他在途分支 |
+| 壳运行时全量迁移 | 8 壳：cognition / semantic-39 / rea / data / eval / store-admin / trade-exec / debate；`l1.trading` 属未提交新壳，待其分支合入后迁移 |
 | 一键安装 | `mcpctl install --role <role> [--gateway] --host all`：自动备份并合并到全部可写宿主 |
 | 新壳脚手架 | `mcpctl new-shell`：生成 `server.py` + 契约测试 + registry 片段；`--register` 自动插入并校验（失败回滚） |
 | 自定义注册表 | `DREAMBUDDY_MCP_REGISTRY` 环境变量覆盖，`shell_runtime` / `mcpctl` / 漂移门禁均生效 |
 | 跨平台 | 迁移后的壳统一 UTF-8 stdio；`StdioShell` 读线程 + Windows 命令拆分 |
-| 测试 | `pytest mcp_shells/ + test_mcpctl.py` 全绿；漂移 0；`doctor --deep` 8 壳通过（7 active + 1 deprecated） |
+| 测试 | `pytest mcp_shells/ + test_mcpctl.py` 全绿；漂移 0；`doctor --deep` 9 壳通过 |
 | 脚手架实测 | `new-shell` 生成临时壳 + 临时注册表：`tools/list = [demo_read]`，调用返回 `not_found` 信封，验证后已清理 |
 
 **P3 落地记录（2026-11-08）**
@@ -294,7 +295,7 @@ P3 的三项能力分别解决"能连"（SDK）、"能装"（wheel/Docker）、"
 - **U3** 零漂移：CI 中注册表与代码工具面不一致即阻断。
 - **U4** 可扩展：新增一个域（≤10 工具）不触发现有工具上限，注册表校验仍通过。
 - **U5** 跨平台：Windows / macOS / Linux 三端 `doctor` 与 `profile` 输出一致（路径分隔符除外）。
-- **U6** 零回归：现有 7 壳 35 工具契约测试全绿；热路径延迟不劣化（壳 P50 ≤ 基线 + 45ms）。
+- **U6** 零回归：现有 8 壳 38 工具契约测试全绿；热路径延迟不劣化（壳 P50 ≤ 基线 + 45ms）。
 
 ---
 

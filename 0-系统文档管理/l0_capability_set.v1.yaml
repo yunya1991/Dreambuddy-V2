@@ -12,11 +12,11 @@
 
 schema_version: "1.0"
 capability_set_version: "1.0"
-last_updated: "2026-11-02"
+last_updated: "2026-11-08"
 # 引用的注册表版本（漂移即校验器报错）
 registry_ref:
   path: "47-MCP管理系统/registry/mcp_capabilities.yaml"
-  registry_version: "0.1"
+  registry_version: "0.5"
   schema_version: "1.1-mcp"
 
 # ── Worker 角色清单（首批三类起步，DD2 决策）───────────────────────
@@ -125,5 +125,5 @@ write_subject_matrix:
 # ── 治理：单角色工具上限（与 47 registry 一致）───────────────────────
 limits:
   max_tools_per_role: 10      # 与 47 registry max_tools_per_shell 呼应
-  max_active_tools_total: 40  # 与 47 registry max_total_tools 一致（R1 治理）
+  max_active_tools_total: 80  # 与 47 registry max_total_tools 一致（R1 治理）
   read_write_default: read-only  # 所有 Worker 默认只读（ADR-9）

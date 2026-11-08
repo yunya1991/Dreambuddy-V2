@@ -26,6 +26,7 @@ def test_session_lifecycle():
     session.add_action("file_change", "modified test.py", file="test.py")
     assert len(session.action_chain) == 1
 
+    session.start_time = time.time() - 1
     session.end_time = time.time()
     session.status = "ended"
     assert session.status == "ended"

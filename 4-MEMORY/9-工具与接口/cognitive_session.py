@@ -163,7 +163,7 @@ class CognitiveSession:
         if not chain_file.exists():
             return
         try:
-            with open(chain_file, "r") as f:
+            with open(chain_file, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -329,7 +329,7 @@ class CognitiveSessionManager:
     def _persist_current_session_id(self):
         """将当前会话ID持久化到磁盘，供其他进程（git hook）恢复。"""
         if self.current_session:
-            self._current_session_file.write_text(self.current_session.id)
+            self._current_session_file.write_text(self.current_session.id, encoding="utf-8")
         else:
             self._clear_current_session_id()
 
@@ -346,7 +346,7 @@ class CognitiveSessionManager:
         if not self._current_session_file.exists():
             return
         try:
-            session_id = self._current_session_file.read_text().strip()
+            session_id = self._current_session_file.read_text(encoding="utf-8").strip()
         except OSError:
             return
         if not session_id:
@@ -358,7 +358,7 @@ class CognitiveSessionManager:
             self._clear_current_session_id()
             return
         try:
-            data = json.loads(meta_file.read_text())
+            data = json.loads(meta_file.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             return
         # 只恢复未结束的会话
@@ -478,7 +478,7 @@ class CognitiveSessionManager:
                 actions_since_last = len(sess.action_chain)
                 if meta_path.exists():
                     import json as _json
-                    meta = _json.loads(meta_path.read_text())
+                    meta = _json.loads(meta_path.read_text(encoding="utf-8"))
                     actions_since_last = len(sess.action_chain) - int(meta.get("actions_at_last_refresh", 0))
                 self._refresher.refresh_if_needed(self, actions_since_last=max(0, actions_since_last))
             except Exception:
@@ -630,10 +630,10 @@ class CognitiveSessionManager:
                         f"## 🔄 演进于 {time.strftime('%Y-%m-%d %H:%M:%S')}  "
                         f"task_type → {session.task_type}\n\n"
                     )
-                    existing = suggestion_file.read_text()
-                    suggestion_file.write_text(existing + header + suggestions)
+                    existing = suggestion_file.read_text(encoding="utf-8")
+                    suggestion_file.write_text(existing + header + suggestions, encoding="utf-8")
                 else:
-                    suggestion_file.write_text(suggestions)
+                    suggestion_file.write_text(suggestions, encoding="utf-8")
 
             # 注意：不调用 cle.close()，因为 get_cle() 返回进程级单例，
             # close 后后续调用会失败（原旧代码用 CognitiveLoopEntry() 每次新实例所以无此问题）
@@ -876,12 +876,12 @@ class CognitiveSessionManager:
 
         # 会话元数据
         meta_file = session_dir / "session.json"
-        meta_file.write_text(json.dumps(session.to_dict(), indent=2, ensure_ascii=False, default=str))
+        meta_file.write_text(json.dumps(session.to_dict(), indent=2, ensure_ascii=False, default=str), encoding="utf-8")
 
         # 行动链
         if session.action_chain:
             chain_file = session_dir / "action_chain.jsonl"
-            with open(chain_file, "a") as f:
+            with open(chain_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(session.action_chain[-1], ensure_ascii=False, default=str) + "\n")
 
 
@@ -1697,7 +1697,7 @@ def main():
             if d.is_dir():
                 meta = d / "session.json"
                 if meta.exists():
-                    s = json.loads(meta.read_text())
+                    s = json.loads(meta.read_text(encoding="utf-8"))
                     print(f"  {s['id']} | {s.get('task_type','?')} | "
                           f"{s.get('action_count',0)}步 | {s.get('status','?')}")
 

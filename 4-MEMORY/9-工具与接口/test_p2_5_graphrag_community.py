@@ -26,6 +26,9 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
+# networkx 为可选依赖（GraphRAG 社区检测）；缺失时跳过该文件而非报错
+pytest.importorskip("networkx", reason="GraphRAG 社区检测依赖可选依赖 networkx")
+
 
 class TestGraphRAGCommunityCore:
     """GraphRAG 社区检测核心能力。"""

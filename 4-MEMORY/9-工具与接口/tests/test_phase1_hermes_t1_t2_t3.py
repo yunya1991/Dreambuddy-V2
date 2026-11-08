@@ -101,6 +101,7 @@ class TestEVT1Scheduler:
         result = subprocess.run(
             [sys.executable, str(runner), "--help"],
             capture_output=True, text=True, check=False, timeout=30,
+            encoding="utf-8", errors="replace",
             cwd=str(_PARENT),
         )
         stdout = result.stdout + result.stderr
@@ -125,6 +126,7 @@ class TestEVT1Scheduler:
              "--max-proposals", "3",
              "--work-dir", str(workdirs["pipeline"])],
             capture_output=True, text=True, check=False, timeout=60,
+            encoding="utf-8", errors="replace",
             cwd=str(_PARENT), env=env,
         )
         assert result.returncode == 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
@@ -168,6 +170,7 @@ class TestEVT1Scheduler:
              "--role", "critic", "--no-llm",
              "--work-dir", str(workdirs["pipeline"])],
             capture_output=True, text=True, check=False, timeout=60,
+            encoding="utf-8", errors="replace",
             cwd=str(_PARENT), env=env,
         )
         assert result.returncode == 0, \
@@ -233,6 +236,7 @@ class TestEVT1Scheduler:
              "--role", "verifier", "--no-llm",
              "--work-dir", str(workdirs["pipeline"])],
             capture_output=True, text=True, check=False, timeout=60,
+            encoding="utf-8", errors="replace",
             cwd=str(_PARENT), env=env,
         )
         assert result.returncode == 0, \
@@ -265,6 +269,7 @@ class TestEVT1Scheduler:
              "--role", "gardener", "--dry-run", "--no-llm",
              "--work-dir", str(workdirs["pipeline"])],
             capture_output=True, text=True, check=False, timeout=60,
+            encoding="utf-8", errors="replace",
             cwd=str(_PARENT), env=env,
         )
         assert result.returncode == 0, f"stderr:\n{result.stderr}"

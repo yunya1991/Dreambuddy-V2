@@ -323,6 +323,7 @@ def test_mcp_tool_call_stats():
         assert "result" in response
         content_text = response["result"]["content"][0]["text"]
         stats = json.loads(content_text)
+        stats = stats.get("data", stats)
         # 真实结构：stats["memory"]["total"]，非 stats["total"]
         assert stats["memory"]["total"] == 10, f"统计应返回 memory.total=10: {stats}"
 

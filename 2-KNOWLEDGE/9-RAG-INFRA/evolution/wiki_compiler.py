@@ -877,19 +877,43 @@ class WikiCompiler:
         """
         result: Dict[str, Any] = {
             "results": [],
+            "memory_mappings": [],
+            "record_done": False,
             "write_back_performed": False,
             "synthesis_page": "",
             "value_score": 0.0,
         }
 
-        # 1. 检索
+        # 1. 检索：第二波 RAG → 认知记忆闭环；FAIL-OPEN 回退基础检索
         try:
+            import os as _os
+
             from rag_engine.hybrid_retriever import hybrid_search
-            results = hybrid_search(question, top_k=top_k)
+
+            closed_loop = _os.environ.get(
+                "DREAMBUDDY_RAG_CLOSED_LOOP", "1"
+            ).strip().lower()
+            if closed_loop not in {"0", "false", "off", "no"}:
+                from rag_engine.hybrid_retriever import search_with_feedback
+
+                feedback = search_with_feedback(question, top_k=top_k)
+                results = feedback.get("results", [])
+                result["memory_mappings"] = feedback.get("memory_mappings", [])
+                result["record_done"] = feedback.get("record_done", False)
+            else:
+                results = hybrid_search(question, top_k=top_k)
             result["results"] = results
         except Exception as e:
-            logger.warning(f"wiki_query 检索失败: {e}")
-            return result
+            # 闭环桥接不可用 → 回退基础检索（不阻塞主流程）
+            try:
+                from rag_engine.hybrid_retriever import hybrid_search
+
+                results = hybrid_search(question, top_k=top_k)
+                result["results"] = results
+                logger.warning(f"wiki_query 闭环桥接降级为 hybrid_search: {e}")
+            except Exception as e2:
+                logger.warning(f"wiki_query 检索失败: {e2}")
+                return result
 
         if not enable_write_back or not results:
             return result

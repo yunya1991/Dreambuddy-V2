@@ -21,7 +21,7 @@ def _seed_session_with_suggestions(tmpdir: str, hours_ago: float = 2,
 
     # 1) 写 .current（跨进程恢复需要）
     current_file = os.path.join(sessions_dir, ".current")
-    with open(current_file, "w") as f:
+    with open(current_file, "w", encoding="utf-8") as f:
         f.write(session_id)
 
     # 2) 写 session.json（模拟 CognitiveSession）—— 必须 status=active 才会被恢复
@@ -35,7 +35,7 @@ def _seed_session_with_suggestions(tmpdir: str, hours_ago: float = 2,
         "total_actions": action_count,  # ⚠️ 模拟到目前为止的动作计数
         "chains": [],
     }
-    with open(os.path.join(session_dir, "session.json"), "w") as f:
+    with open(os.path.join(session_dir, "session.json"), "w", encoding="utf-8") as f:
         json.dump(session_meta, f)
 
     # 3) 写 stale suggestions.md（mtime = created_ts）
@@ -46,7 +46,7 @@ def _seed_session_with_suggestions(tmpdir: str, hours_ago: float = 2,
 1. 旧的建议1（过期）
 """
     sug_file = os.path.join(session_dir, "suggestions.md")
-    with open(sug_file, "w") as f:
+    with open(sug_file, "w", encoding="utf-8") as f:
         f.write(old_sug)
     os.utime(sug_file, (created_ts, created_ts))
 
@@ -125,7 +125,7 @@ def test_refresh_updates_suggestions_file_keeps_history():
         mgr = CognitiveSessionManager(sessions_dir=sessions_dir)
         refresher = SuggestionsRefresher(ttl_seconds=600, action_threshold=5)
 
-        before = Path(sug_file).read_text()
+        before = Path(sug_file).read_text(encoding="utf-8")
 
         # 记录 before 中没有 🔄 标记
         assert "🔄 刷新第" not in before
@@ -134,7 +134,7 @@ def test_refresh_updates_suggestions_file_keeps_history():
         did_refresh = refresher.refresh_if_needed(mgr, actions_since_last=10)
         assert did_refresh is True, "满足刷新条件应返回 True"
 
-        after = Path(sug_file).read_text()
+        after = Path(sug_file).read_text(encoding="utf-8")
         # 刷新过的应有 🔄
         assert "🔄 刷新第 1 次" in after, f"刷新后应有 🔄 标记，实际: {after[:500]}"
         # 新 suggestions 内容不应是旧的完全相同（时间戳肯定不同）
@@ -158,12 +158,12 @@ def test_refresh_skipped_when_not_needed():
         refresher = SuggestionsRefresher(ttl_seconds=15 * 60, action_threshold=5)
 
         mtime_before = os.path.getmtime(sug_file)
-        content_before = Path(sug_file).read_text()
+        content_before = Path(sug_file).read_text(encoding="utf-8")
         # 仅 1 个新动作，且 TTL 未过期 → 不刷新
         did_refresh = refresher.refresh_if_needed(mgr, actions_since_last=1)
         assert did_refresh is False, "无刷新必要时应返回 False"
         mtime_after = os.path.getmtime(sug_file)
-        content_after = Path(sug_file).read_text()
+        content_after = Path(sug_file).read_text(encoding="utf-8")
         assert content_before == content_after, "NOOP 不应修改文件内容"
         print("✅ test_refresh_skipped_when_not_needed 通过")
         return True

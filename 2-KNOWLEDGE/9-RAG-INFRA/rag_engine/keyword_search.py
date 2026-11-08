@@ -5,9 +5,12 @@
 FAIL-OPEN：Whoosh 不可用或索引不存在时返回空列表，不阻塞混合检索。
 """
 
+import json
+import math
 import re
 import shutil
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -75,6 +78,111 @@ def _make_schema():
     )
 
 
+_BM25_FILE = "bm25_index.json"
+_BM25_K1 = 1.5
+_BM25_B = 0.75
+
+
+def _tokenize(text: str) -> List[str]:
+    return _TOKEN_RE.findall(text.lower())
+
+
+def _build_bm25_index(knowledge_dir: Path, index_path: Path) -> Dict:
+    """纯 Python BM25 回退索引（Whoosh 不可用时）。
+
+    与 Whoosh 路径使用同一 chunk_markdown 分块，保证结果形状一致；
+    索引为单个 JSON，零外部依赖。
+    """
+    index_path.mkdir(parents=True, exist_ok=True)
+    records: List[Dict] = []
+    md_files = sorted(knowledge_dir.rglob("*.md"))
+    for f in md_files:
+        rel = f.relative_to(knowledge_dir)
+        rel_str = str(rel)
+        parts = rel.parts
+        domain = parts[0] if len(parts) > 1 else "root"
+        try:
+            text = f.read_text(encoding="utf-8")
+            chunks = chunk_markdown(text, rel_str, domain)
+        except Exception:
+            continue
+        for chunk in chunks:
+            meta = chunk["metadata"]
+            content = chunk["content"]
+            records.append({
+                "content": content,
+                "source_file": meta["source_file"],
+                "domain": meta["domain"],
+                "heading": meta["heading"],
+                "position": meta["position"],
+                "tokens": _tokenize(content),
+            })
+    (index_path / _BM25_FILE).write_text(
+        json.dumps(records, ensure_ascii=False), encoding="utf-8"
+    )
+    return {
+        "status": "ok",
+        "backend": "bm25_fallback",
+        "total_files": len(md_files),
+        "total_docs": len(records),
+        "index_path": str(index_path),
+    }
+
+
+def _bm25_search(query: str, top_k: int, index_path: Path) -> List[Dict]:
+    """纯 Python BM25 检索（Whoosh 不可用时）。"""
+    index_file = index_path / _BM25_FILE
+    if not index_file.exists():
+        return []
+    try:
+        records = json.loads(index_file.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    q_tokens = _tokenize(query)
+    if not q_tokens or not records:
+        return []
+
+    n_docs = len(records)
+    avgdl = sum(len(r.get("tokens", [])) for r in records) / max(n_docs, 1)
+    df: Counter = Counter()
+    for r in records:
+        for term in set(r.get("tokens", [])):
+            df[term] += 1
+
+    scored = []
+    for r in records:
+        tokens = r.get("tokens", [])
+        if not tokens:
+            continue
+        tf = Counter(tokens)
+        dl = len(tokens)
+        score = 0.0
+        for term in q_tokens:
+            freq = tf.get(term, 0)
+            if not freq:
+                continue
+            idf = math.log(1 + (n_docs - df[term] + 0.5) / (df[term] + 0.5))
+            score += idf * (freq * (_BM25_K1 + 1)) / (
+                freq + _BM25_K1 * (1 - _BM25_B + _BM25_B * dl / max(avgdl, 1))
+            )
+        if score > 0:
+            scored.append((score, r))
+
+    scored.sort(key=lambda x: -x[0])
+    max_score = scored[0][0] if scored else 1.0
+    results: List[Dict] = []
+    for score, r in scored[:top_k]:
+        results.append({
+            "content": r["content"],
+            "source_file": r["source_file"],
+            "domain": r["domain"],
+            "heading": r["heading"],
+            "score": round(score / max_score, 4),
+            "bm25_score": round(score, 4),
+        })
+    return results
+
+
 def build_keyword_index(knowledge_dir, index_path: Optional[Path] = None) -> Dict:
     """扫描知识库 Markdown，分块后构建 Whoosh BM25 倒排索引。
 
@@ -89,7 +197,7 @@ def build_keyword_index(knowledge_dir, index_path: Optional[Path] = None) -> Dic
     index_path = Path(index_path) if index_path else DEFAULT_INDEX_PATH
 
     if not _WHOOSH_AVAILABLE:
-        return {"status": "whoosh_unavailable", "total_files": 0, "total_docs": 0}
+        return _build_bm25_index(knowledge_dir, index_path)
 
     # 清理旧索引后重建（关键词索引轻量，全量重建开销可接受）
     if index_path.exists():
@@ -150,10 +258,14 @@ def keyword_search(query: str, top_k: int = 5,
         每项含 content / source_file / domain / heading / score。
         索引不存在或查询失败返回空列表（FAIL-OPEN）。
     """
-    if not _WHOOSH_AVAILABLE or not query or not query.strip():
+    if not query or not query.strip():
         return []
 
     index_path = Path(index_path) if index_path else DEFAULT_INDEX_PATH
+
+    if not _WHOOSH_AVAILABLE:
+        return _bm25_search(query, top_k, index_path)
+
     if not index_path.exists():
         return []  # FAIL-OPEN：索引不存在
 

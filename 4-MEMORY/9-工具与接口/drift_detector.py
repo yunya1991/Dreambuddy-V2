@@ -11,8 +11,16 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
+import math
+
 import numpy as np
-from scipy import stats
+
+try:  # scipy 属可选依赖（pyproject trading extra）；缺失时用渐近公式回退
+    from scipy import stats
+    _HAS_SCIPY = True
+except ImportError:  # pragma: no cover - 依赖环境差异
+    stats = None
+    _HAS_SCIPY = False
 
 # ---------------------------------------------------------------------------
 # H8 硬编码阈值（禁止 env override / 运行期调整）
@@ -63,16 +71,39 @@ def compute_psi(
     return max(psi, 0.0)
 
 
+def _ks_2samp_fallback(a: np.ndarray, b: np.ndarray) -> Tuple[float, float]:
+    """无 scipy 时的双样本 KS 渐近近似（Kolmogorov 分布）。"""
+    a = np.sort(a)
+    b = np.sort(b)
+    if a.size == 0 or b.size == 0:
+        return 0.0, 1.0
+    data = np.concatenate([a, b])
+    cdf_a = np.searchsorted(a, data, side="right") / a.size
+    cdf_b = np.searchsorted(b, data, side="right") / b.size
+    d = float(np.max(np.abs(cdf_a - cdf_b)))
+    n_eff = a.size * b.size / (a.size + b.size)
+    if n_eff <= 0:
+        return d, 1.0
+    lam = (math.sqrt(n_eff) + 0.12 + 0.11 / math.sqrt(n_eff)) * d
+    if lam <= 0:
+        return d, 1.0
+    p = 2.0 * sum((-1) ** (k - 1) * math.exp(-2.0 * k * k * lam * lam)
+                  for k in range(1, 101))
+    return d, float(min(1.0, max(0.0, p)))
+
+
 def ks_test_drift(
     expected: Sequence[float],
     actual: Sequence[float],
     alpha: float = KS_ALPHA,
 ) -> Tuple[bool, float]:
     """KS 双样本检验。返回 (是否检出漂移, p_value)。"""
-    ks_stat, p_value = stats.ks_2samp(
-        np.asarray(expected, dtype=float),
-        np.asarray(actual, dtype=float),
-    )
+    a = np.asarray(expected, dtype=float)
+    b = np.asarray(actual, dtype=float)
+    if _HAS_SCIPY:
+        ks_stat, p_value = stats.ks_2samp(a, b)
+    else:
+        ks_stat, p_value = _ks_2samp_fallback(a, b)
     return bool(p_value < alpha), float(p_value)
 
 

@@ -134,15 +134,36 @@ def check_server_script() -> bool:
 
 # === 步骤2：生成配置 ===
 
-def build_mcp_config(python_path: str) -> Dict:
-    """生成单个 MCP server 配置块。"""
+def build_mcp_config(
+    python_path: str,
+    *,
+    read_only: bool = False,
+    principal: str = "admin",
+    db_path: Optional[str] = None,
+) -> Dict:
+    """生成单个 MCP server 配置块。
+
+    - 默认作为宿主 Mandate 启用写主体（35-COLLABORATION-CONTRACT §5.4）；
+    - `--read-only` 时切到 local 只读降级；
+    - 统一注入 UTF-8 环境，避免 Windows GBK 下的 stdio/文本编码故障；
+    - `--db` 可让多个 AI 宿主共享同一认知库，避免分叉。
+    """
+    env = {
+        "PYTHONPATH": COGNITIVE_DIR,
+        "ANONYMIZED_TELEMETRY": "False",
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8",
+        "COGNITIVE_MCP_MODE": "local" if read_only else "ssh",
+        "COGNITIVE_MCP_WRITE_ENABLED": "false" if read_only else "true",
+        "COGNITIVE_MCP_DEFAULT_PRINCIPAL": "worker" if read_only else principal,
+        "COGNITIVE_MCP_EVAL_GATE_MODE": "shadow",
+    }
+    if db_path:
+        env["COGNITIVE_MCP_DB_PATH"] = str(db_path)
     return {
         "command": python_path,
         "args": [str(COGNITIVE_SERVER)],
-        "env": {
-            "PYTHONPATH": COGNITIVE_DIR,
-            "ANONYMIZED_TELEMETRY": "False",
-        },
+        "env": env,
     }
 
 
@@ -150,6 +171,9 @@ def build_remote_ssh_config(
     ssh_alias: str,
     remote_repo: str = "/home/luke/dreambuddy",
     remote_venv: str = "/home/luke/venv-trading/bin/python",
+    *,
+    read_only: bool = False,
+    principal: str = "admin",
 ) -> Dict:
     """生成「经 SSH 在远端运行 cognitive_mcp_server.py」的 MCP 配置块。
 
@@ -158,12 +182,19 @@ def build_remote_ssh_config(
     只读快照。远端以 luke 身份运行（repo 属主 luke）。
     """
     server_dir = f"{remote_repo}/4-MEMORY/9-工具与接口"
+    write_env = (
+        ""
+        if read_only
+        else f"COGNITIVE_MCP_WRITE_ENABLED=true "
+             f"COGNITIVE_MCP_DEFAULT_PRINCIPAL={principal} "
+    )
     return {
         "command": "ssh",
         "args": [
             "-o", "BatchMode=yes",
             ssh_alias,
             f"sudo -n -u luke -H env PYTHONPATH={server_dir} "
+            f"PYTHONUTF8=1 PYTHONIOENCODING=utf-8 {write_env}"
             f"{remote_venv} {server_dir}/cognitive_mcp_server.py",
         ],
         "env": {},
@@ -292,7 +323,11 @@ def verify_server(python_path: str) -> bool:
 
 def deploy_target(target: str, python_path: str,
                   project: Optional[str],
-                  remote_alias: Optional[str] = None) -> bool:
+                  remote_alias: Optional[str] = None,
+                  *,
+                  read_only: bool = False,
+                  principal: str = "admin",
+                  db_path: Optional[str] = None) -> bool:
     """部署到单个目标工具。"""
     cfg = TOOL_CONFIGS[target]
     log(f"\n{'='*50}", "STEP")
@@ -301,10 +336,14 @@ def deploy_target(target: str, python_path: str,
 
     config_path = get_config_path(target, project)
     if remote_alias:
-        new_server = build_remote_ssh_config(remote_alias)
+        new_server = build_remote_ssh_config(
+            remote_alias, read_only=read_only, principal=principal
+        )
         log(f"模式: SSH stdio 托管远端 (alias={remote_alias})", "INFO")
     else:
-        new_server = build_mcp_config(python_path)
+        new_server = build_mcp_config(
+            python_path, read_only=read_only, principal=principal, db_path=db_path
+        )
     log(f"配置文件: {config_path}", "INFO")
 
     if not write_config(target, config_path, new_server):
@@ -328,10 +367,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  python3 install_cognitive_mcp.py --target trae --project /path/to/dreambuddy-v2
-  python3 install_cognitive_mcp.py --target claude
-  python3 install_cognitive_mcp.py --target all --project /path/to/dreambuddy-v2
-  python3 install_cognitive_mcp.py --list
+  python install_cognitive_mcp.py --target claude
+  python install_cognitive_mcp.py --target claude --read-only
+  python install_cognitive_mcp.py --print-config --target claude
+  python install_cognitive_mcp.py --target all --project /path/to/dreambuddy-v2
+  python install_cognitive_mcp.py --list
+
+提示:
+  1) 从任意目录运行请使用脚本绝对路径；
+  2) 宿主禁止写配置时，用 --print-config 输出 JSON 手工粘贴；
+  3) 多个 AI 宿主共用同一认知库时加 --db <path>。
         """,
     )
     parser.add_argument("--target", "-t",
@@ -346,6 +391,15 @@ def main():
                         help="仅验证 server 不写配置")
     parser.add_argument("--remote-ssh", metavar="ALIAS",
                         help="经 SSH 别名在远端运行 cognitive_mcp_server（远端权威库模式；跳过本地验证）")
+    parser.add_argument("--print-config", action="store_true",
+                        help="仅打印配置 JSON，不写文件、不启动验证")
+    parser.add_argument("--read-only", action="store_true",
+                        help="注册为只读 profile（写工具禁用，COGNITIVE_MCP_MODE=local）")
+    parser.add_argument("--principal", default="admin",
+                        choices=["orchestrator", "verifier", "admin"],
+                        help="写主体（默认 admin；Worker 只读）")
+    parser.add_argument("--db", dest="db_path",
+                        help="COGNITIVE_MCP_DB_PATH：多宿主共享的认知库路径")
     args = parser.parse_args()
 
     if args.list:
@@ -353,6 +407,22 @@ def main():
         for k, v in TOOL_CONFIGS.items():
             needs = "（需要 --project）" if v["needs_project"] else ""
             print(f"  {k:10s} {v['name']}{needs}")
+        return
+
+    if args.print_config:
+        if args.remote_ssh:
+            cfg = build_remote_ssh_config(
+                args.remote_ssh, read_only=args.read_only,
+                principal=args.principal,
+            )
+        else:
+            cfg = build_mcp_config(
+                sys.executable, read_only=args.read_only,
+                principal=args.principal, db_path=args.db_path,
+            )
+        # ensure_ascii=True：中文路径转 \uXXXX，避免 Windows 控制台编码导致复制后路径损坏
+        print(json.dumps({"mcpServers": {"cognitive": cfg}},
+                         ensure_ascii=True, indent=2))
         return
 
     # 步骤1：环境检查
@@ -380,7 +450,12 @@ def main():
     failed = []
     for t in targets:
         try:
-            if deploy_target(t, python_path, args.project, args.remote_ssh):
+            if deploy_target(
+                t, python_path, args.project, args.remote_ssh,
+                read_only=args.read_only,
+                principal=args.principal,
+                db_path=args.db_path,
+            ):
                 success.append(t)
             else:
                 failed.append(t)
@@ -398,7 +473,8 @@ def main():
         log(f"失败 ({len(failed)}): {', '.join(failed)}", "FAIL")
     if success and not failed:
         log("\n认知 MCP Server 部署完成！重启对应 AI 工具后即可调用 "
-            "recall/record/verify/stats/health 五个工具。", "OK")
+            "recall/unified_search/record/verify/stats/health/l4_status 七个工具；"
+            "写工具需设置 COGNITIVE_MCP_WRITE_ENABLED=true + 授权 principal。", "OK")
 
 
 if __name__ == "__main__":
