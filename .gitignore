@@ -65,6 +65,9 @@ deploy/ops/state/
 
 # === 产物/缓存/测试输出/回测报告 ===
 artifacts/
+# 放行：48 P0 基线产物（代码派生图谱可入库；D3 原始事件含内部 session 数据仍排除）
+!48-涌现架构/baselines/artifacts/
+48-涌现架构/baselines/artifacts/d3_intent_events/intent_events.jsonl
 data/
 # === 放行: Phase B NeuralSDE checkpoint (338KB 模型权重, 非缓存) ===
 !23-四层闭环自进化交易架构/data/

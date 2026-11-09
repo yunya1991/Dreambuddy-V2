@@ -174,7 +174,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 #### 2.2.4 缺口
 
-1. **文档-代码统一图（P0-3）**：v0.1 时不存在；2026-11-09 已生成基线（574 nodes / 3522 edges，0 悬挂边，见 §12.1），**待人工复核 3-5 个 holdout 模块**后方可用于正式 D2-A（此前只能探索性运行）；
+1. **文档-代码统一图（P0-3）**：v0.1 时不存在；2026-11-09 基线脚本与产物已入库（7859 nodes / 53959 edges，0 悬挂边，sha256 可核验，见 §12.1），**待人工复核 3-5 个 holdout 模块**后方可用于正式 D2-A（此前只能探索性运行）；
 2. **架构 holdout 协议**：没有「扣留模块代码/文档」的实验；
 3. **生成器**：33-REA 是分析已有架构，不是提出新架构；
 4. **新颖度**：E2 的结构向量编辑距离不能直接用于图/接口/ADR；
@@ -381,7 +381,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 **假设 H2A**：扣留某模块的代码与文档后，系统从其余证据重建其接口、依赖、数据流、设计决策的能力，显著高于「检索最近模块文档」基线。
 
-> **前置（P0-3）**：统一 `ArchitectureGraph` 基线已于 2026-11-09 生成（574 nodes / 3522 edges，0 悬挂边，见 §12.1）；**人工复核 3-5 个 holdout 模块之前**，D2-A 只能探索性运行（`run_class=exploratory`）。
+> **前置（P0-3）**：统一 `ArchitectureGraph` 基线已于 2026-11-09 入库（7859 nodes / 53959 edges，0 悬挂边，见 §12.1）；**人工复核 3-5 个 holdout 模块之前**，D2-A 只能探索性运行（`run_class=exploratory`）。
 
 **实验单元**：模块（Python package 或 TS 子目录）。
 
@@ -834,8 +834,8 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 | ID | 状态 | 关闭动作 | 退出条件 | 证据/产物 |
 |---|---|---|---|---|
 | P0-1 | **确认开放** | 复审完成：确认代码级 OOD 强制点缺失；按方案 A 实现两 hook + 回归测试，或方案 C 临时降级宣称 | 代码 hook/等价强制点 + 回归测试；主 SPEC 引用更新为真实路径 | [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md) |
-| P0-2 | **生成器未入库**（v0.4 复审修正：仅 README 声明） | 生成器脚本 `baselines/build_d3_intent_events.py` 声明合成会话冒烟通过（2/2），但脚本与产物**均未入库**——须先入库代码与运行证据；本地安全分类器拦截 `.cognitive/sessions` 读取，需授权环境执行；11-09 复核 1072 个非空 sessions（75/25 约 268 test ≥200），量级门槛可过、类分布待按冻结切分表复核；**仍缺直接意图标签**——补采前不得申报意图涌现 | ≥200 测试事件；直接 intent 标签可用；脚本与产物入库 | `baselines/README.md`（声明） |
-| P0-3 | **基线产物未入库**（v0.4 复审修正：仅 README 声明，待人工复核） | 图基线与生成脚本须先入库，sha256 才可核验；人工复核 3-5 个 holdout 模块 | 图 artifact + 生成脚本入库 + schema 校验 + 人工复核 | `baselines/artifacts/d2_architecture_graph/`（声明值：574 nodes / 3522 edges；sha256 `89aeab3b828a...`，暂不可核验） |
+| P0-2 | **baseline-generated**（2026-11-09 脚本入库并真实执行） | 生成器 `baselines/build_d3_intent_events.py` 已入库（测试 3 项覆盖字段/隐私/时序切分）；真实运行 1089 sessions（0 解析错误），75/25 时序切分 train=816 / test=273（≥200 达标）；raw JSONL 按隐私约束不入库（仅 summary/split/manifest 入库）；**仍缺直接意图标签**——补采前不得申报意图涌现 | ~~≥200 测试事件~~（已达成）；直接 intent 标签可用（**未达成，保持开放**） | `baselines/artifacts/d3_intent_events/`（summary + split + manifest，sha256 可核验） |
+| P0-3 | **baseline-generated**（2026-11-09 脚本入库并真实执行，待人工复核） | 生成器 `baselines/build_d2_architecture_graph.py` 已入库（测试 4 项覆盖闭合/确定性/FAIL-OPEN/scope）；真实全仓运行：7859 nodes（4110 py / 3303 md / 446 external）、53959 edges（24640 import / 27563 call / 1756 doc_ref）、闭合校验 0 悬挂边、parse_errors=97（FileNotFoundError 为主，FAIL-OPEN 计数）；sha256 `3b95a04a3f9e...` 可核验（剔除 generated_at 的结构哈希）；**人工复核 3-5 个 holdout 模块前** D2-A 只能探索性运行 | ~~图 artifact + 生成脚本入库 + schema 校验~~（已达成）；人工复核 3-5 个 holdout 模块（**未达成，保持开放**） | `baselines/artifacts/d2_architecture_graph/`（graph + summary + manifest，已入库） |
 | P1-1 | open | 文件已恢复在位（11-09 复核，5 张需求单）；注入 3 个已知缺口；扩展 `ROUTE_TABLE` | 3 个已知缺口 + 路由测试 | E6 registry |
 | P1-2 | open | 明确云端交易 DB/快照获取路径 | D1 指标可用快照 hash 复现 | `human_baseline.json` + 快照 |
 | P1-3 | open | 提供 DreamOS 轻量导入路径或依赖清单 | `IntentEngine` 可导入/可跑 smoke | requirements/导入脚本 |
@@ -849,8 +849,8 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 | 基线 | 生成器 | 输出 | 状态 |
 |---|---|---|---|
-| D2 架构图 | [build_d2_architecture_graph.py](../../baselines/build_d2_architecture_graph.py) | `baselines/artifacts/d2_architecture_graph/`（graph + summary + manifest） | ✅ 已生成：574 nodes / 3522 edges；闭合校验 0 悬挂边；待人工复核 |
-| D3 意图事件 | [build_d3_intent_events.py](../../baselines/build_d3_intent_events.py) | `baselines/artifacts/d3_intent_events/`（events + summary + split + manifest） | 🟡 生成器就绪；合成会话冒烟通过；真实 session 读取被安全分类器拦截，需授权环境执行 |
+| D2 架构图 | [build_d2_architecture_graph.py](../../baselines/build_d2_architecture_graph.py) | `baselines/artifacts/d2_architecture_graph/`（graph + summary + manifest） | ✅ 已入库（2026-11-09 真实运行）：7859 nodes / 53959 edges；闭合校验 0 悬挂边；parse_errors=97 已计数；sha256 可核验（结构哈希，剔除 generated_at）；待人工复核 3-5 个 holdout 模块 |
+| D3 意图事件 | [build_d3_intent_events.py](../../baselines/build_d3_intent_events.py) | `baselines/artifacts/d3_intent_events/`（summary + split + manifest；raw JSONL 按隐私约束不入库） | ✅ 已执行（2026-11-09）：1089 sessions / 0 解析错误 / 75:25 时序切分 train=816 test=273（≥200 达标）；task_type 12 类（configuration 392 为最大类）；仍缺直接意图标签 |
 
 运行：
 

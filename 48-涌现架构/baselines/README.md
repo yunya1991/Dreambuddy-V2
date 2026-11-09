@@ -1,8 +1,8 @@
 # 48 涌现基线（P0）
 
-> 状态：🟡 P0 基线生成器 + 本地快照（2026-11-09）
+> 状态：✅ 生成器与产物已入库（2026-11-09，feat/48-baselines-p0@local）
 >
-> ⚠️ **2026-11-09 复审确认**：本目录的生成脚本与 artifacts **当前未入库**（目录内仅含本 README）。SPEC §12 P0-2/P0-3 状态已同步修正为「未入库」；脚本与产物入库并附运行证据前，P0-2/P0-3 不得标 closed，sha256 暂不可核验。
+> 2026-11-09 复审曾确认「脚本与产物未入库」；本次实施已将两生成器入库（测试 7 项），并真实运行产出 artifacts（D3 raw JSONL 按隐私约束不入库）。P0-2/P0-3 状态升级为 **baseline-generated**（≠ closed：直接意图标签 / 图人工复核仍是前置）。
 > 归属：48-涌现架构；只读消费 33-REA / `.cognitive/sessions`，不改既有域代码。
 > 关联：[SPEC-EMERGENCE-3D-v0.1](../docs/tech/SPEC-EMERGENCE-3D-v0.1.md) §12 P0-2/P0-3
 
@@ -15,12 +15,12 @@
 | `artifacts/d2_architecture_graph/` | 图基线产物（`architecture_graph.json` + summary/manifest） |
 | `artifacts/d3_intent_events/` | 意图事件产物（`intent_events.jsonl` + summary/split/manifest） |
 
-## 当前产物状态（2026-11-09）
+## 当前产物状态（2026-11-09 真实运行）
 
 | 基线 | 状态 | 关键数字 |
 |---|---|---|
-| D2 架构图 | ✅ 已生成（待人工复核） | 574 nodes（420 Python / 124 docs / 30 other；146 external）、3522 edges（2578 call / 704 import / 240 doc_ref）、parse_errors=0、闭合校验 0 悬挂边、1,031,413 bytes、sha256 `89aeab3b828a...` |
-| D3 意图事件 | 🟡 生成器就绪，产物待执行 | 合成会话冒烟通过（2/2）；本地 Bash 安全分类器拦截 `.cognitive/sessions` 读取；已知 365 non-empty sessions，75/25 → 92 test <200，session 级 D3-A 会 `insufficient_data`；需授权环境运行 `python 48-涌现架构/baselines/build_d3_intent_events.py` |
+| D2 架构图 | ✅ 已入库（待人工复核） | 7859 nodes（4110 python_file / 3303 markdown_doc / 446 external）、53959 edges（24640 import / 27563 call / 1756 doc_ref）、闭合校验 0 悬挂边、parse_errors=97（FileNotFoundError 为主，FAIL-OPEN 计数）、9,494,459 bytes、sha256 `3b95a04a3f9e...`（结构哈希，剔除 generated_at，可复现核验） |
+| D3 意图事件 | ✅ 已执行（raw JSONL 不入库） | 1089 sessions（0 解析错误），时序 75/25 → train=816 / test=273（≥200 达标）；task_type 12 类（configuration 392 / strategy-execution 259 / architecture-design 131 / python-development 128 / 其余 179）；日期范围 2026-08-09 → 2026-11-09；sha256 `44bd72e4bd91...` |
 
 > D3 产物含 session id/task_type/文件路径，属内部 runtime 数据；生成后请先确认访问策略，不要直接提交原始 JSONL。P0-2 在直接意图标签补采前不能标 `closed`。
 
@@ -44,13 +44,12 @@ python 48-涌现架构/baselines/build_d3_intent_events.py --train-ratio 0.8
 
 ## D2 图基线包含什么
 
-- `python_file` / `markdown_doc` 节点；
-- `import` 边：轻量 AST 解析器，文件级、跨 scope；
-- `call` 边：33-REA `CallChainTracer` 的函数名级调用关系；
-- `doc_ref` 边：Markdown 链接解析；
-- `patterns`：33-REA `ArchitecturePatternDetector` 的架构模式 Evidence。
+- `python_file` / `markdown_doc` / `external` 节点；
+- `import` 边：轻量 AST 解析器，文件级；未解析的外部依赖吸收为 `external:<top>` 节点（保证 0 悬挂边）；
+- `call` 边：AST 函数名级调用关系（重名取路径排序首个，确定性）；
+- `doc_ref` 边：Markdown 相对链接解析（doc→doc）。
 
-不包含：TS/JS import、运行时数据流、ADR 设计决策（v0.2 再补）。
+不包含：TS/JS import、运行时数据流、ADR 设计决策、33-REA 架构模式 Evidence（v0.2 再补）。
 
 ## D3 事件基线包含什么
 
