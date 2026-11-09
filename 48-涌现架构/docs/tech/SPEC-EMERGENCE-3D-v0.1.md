@@ -1,12 +1,14 @@
-# SPEC — 三维涌现（D1 交易 / D2 工程 / D3 意图）v0.2
+# SPEC — 三维涌现（D1 交易 / D2 工程 / D3 意图）v0.4
 
-> **状态**：🟡 讨论稿（拟并入 48 SPEC v0.6；2026-11-09 外部评审：**需修改**，暂不作为实施就绪基线，只作三维涌现方案讨论稿）
-> **日期**：2026-11-08（v0.1）→ 2026-11-09（v0.2）
+> **状态**：🟡 讨论稿（拟并入 48 SPEC v0.6；2026-11-09 外部评审「需修改」→ v0.2/v0.3/v0.4 已整合修订并经一轮内部复审（§11.5 修改后接受），**待外部复审**；复审通过前暂不作为实施就绪基线，只作三维涌现方案讨论稿）
+> **日期**：2026-11-08（v0.1）→ 2026-11-09（v0.2 / v0.3 / v0.4）
 > **归属**：48-涌现架构
 > **上游**：[SPEC-EMERGENCE-EVOLUTION v0.5](./SPEC-EMERGENCE-EVOLUTION-v0.1.md) · [SPEC-NN-FEEDBACK-GATEWAY v0.1](./SPEC-NN-FEEDBACK-GATEWAY-v0.1.md) · 35-广义认知 C1-C4 · 46-DSH · 47-MCP · 33-REA · 45-评测系统 · DreamOS
 > **下游**：P0 度量字典与基线盘点 · P1 D2-A/D3-A 实验 · P2 D2-B/D3-B 实验 · P3 跨域迁移 · P4 三维度量面板
 > **变更（v0.1→v0.2，外部评审修订）**：①重写跨域判定（共同效用前置 + 2×2×2 因子 + 三阶交互；无法建立共同效用时只称「跨域联合收益」）；②移除 D2-A 新颖度门槛（归 D2-B 并与去重/可行性联合评估）；③统一 candidate/verified/rejected 状态流转与三态判定边界；④统计方案补主终点/独立样本单元/聚类重采样/多重比较；⑤OOD 未闭合前所有 D2-A/D3-A 运行降级为探索性运行并区分实验隔离与 FAIL-OPEN；⑥补 D3-A 预测目标/特征截止/切分表与泄漏审计；⑦同步 P0 状态（P0-1 本地实现 + 测试，P0-3 基线已生成待复核，P0-2 未达标）；⑧schema 复合值结构与阈值冻结口径。
-> **评审状态**：2026-11-08 内部六维评审「修改后接受」（§11.1-11.3，**文档层裁决，不等于实施批准**）；2026-11-09 外部评审「需修改」（§11.4）。
+> **变更（v0.2→v0.3，评审整合复核）**：①§4.5.3 与 §1.2 对齐（清除已废除超加性公式的残留表述，补 2×2×2 全 8 臂）；②数据快照刷新（sessions 366→1072，D3-A 样本量级结论重估）；③§12 状态术语中文化；④P1-1/P1-4 证据按工作树实况更新；⑤§6.3 隐私补强（hash≠匿名化：访问控制/保留期/删除机制/小样本识别风险）；⑥A.1 阻力归一化禁用滚动窗口；⑦附录 D 补登 v0.2/v0.3。
+> **变更（v0.3→v0.4，外部成熟经验整合）**：2026-11-09 五路调研（AI 涌现工程 / 金融工程 / 代码工程 / 意图学习 / 生物复杂系统，44 条候选交叉验证采纳 23 条，详见附录 E）。正文修订 4 处：①§1.2 增设 O-information 协同复核通道（Ω>0）；②§1.1 E5(b) 检验升级（Clauset 幂律 MLE+x_min+null model 似然比对照 + MR-estimator + 禁止肉眼报拐点）；③§4.0 第 11 条泄漏审计加第 4 重 canary string；④§2.1 D1 多重比较三层防线（批内 Holm→批级 PBO→胜出者 SPA/DSR）与 E2 收益层去重。Tier 2/3 条目落附录 E，参数随预注册冻结。
+> **评审状态**：2026-11-08 内部六维评审「修改后接受」（§11.1-11.3，**文档层裁决，不等于实施批准**）；2026-11-09 外部评审「需修改」（§11.4）；2026-11-09 v0.3 整合复核 + v0.4 外部经验整合（本版，待复审）。
 
 ---
 
@@ -38,7 +40,7 @@
 
 1. **48 当前只有 D1 真正落地**：E2 首次批次 32/32 新颖但 `evaluator_missing`，M2=0；E5 四组配置无一显著（最优配置下 kNN 仅 53.6%-59.7%）。**生成器不是瓶颈，评估信号才是。**
 2. **D2 底座最厚**：33-REA 已有架构模式识别、调用链、依赖图、设计决策复原、演化叙事、覆盖率；45 已有技术工程类评测标准与 LLM-as-Judge 协议。缺的是「文档-代码统一图 + holdout + 生成器 + 新颖度定义」。
-3. **D3 底座中等**：DreamOS IntentEngine + IntentEvaluator + 35 记忆 + shadow-probe 模式已存在；本地 `.cognitive/sessions` 当前 366 个 session dir（E4b 历史回填报告 884 事件，二者口径不同），可作为 task_type 粗粒度代理；缺的是「直接意图标签 + 预测目标 + 时序 holdout + 接受标签 + 三套意图体系收敛」。
+3. **D3 底座中等**：DreamOS IntentEngine + IntentEvaluator + 35 记忆 + shadow-probe 模式已存在；本地 `.cognitive/sessions` 已积累 **1073 个 session dir（1072 个非空，2026-11-09 复核；11-08 快照为 366，数据在快速增长，口径随预注册冻结）**，可作为 task_type 粗粒度代理；缺的是「直接意图标签 + 接受标签 + 三套意图体系收敛」（预测目标与时序 holdout 已在 §4.3 定义）。
 4. **三维不是三个独立优化**：在共同效用函数建立并预注册 2×2×2 因子设计之前，只能报告「跨域联合收益」；「三维涌现」表述必须通过三阶交互检验（§1.2）。
 
 ### 0.4 与 48 v0.5 A/B/C 的关系
@@ -75,6 +77,8 @@ E1-E5 的定义沿用 48 v0.5 §1，不因新增维度而放宽。每个维度�
 | **E5 规模相变** | 能力-规模曲线拐点 / 临界态三件套 | 文档/模块/案例规模曲线拐点（E5a 为主） | 意图/会话/知识规模曲线拐点（E5a 为主） |
 
 > D2/D3 的 E5 以 **E5(a) 能力-规模曲线拐点**为主；E5(b) 临界态三件套（级联幂律 + σ≈1 + 序参量凝结）仅在事件流足够时适用，不强制套用。
+>
+> **E5 检验升级（v0.4，附录 E-T1.1/T1.6）**：①幂律拟合必须 Clauset 口径——MLE + x_min 截断 + KS 拟合优度 + 与随机化 null model 似然比对照（亚采样下亚临界/混响/临界均可呈 α≈1.5，**仅拟合出幂律不通过**）；②σ 估计用欠采样稳健估计量（MR-estimator 类）并报告事件捕获率作为置信前提；③相变改报连续指标 + log-log 形状检验（线性=可外推、凹=真加速），**禁止肉眼报拐点**；④事件量不足时记 `insufficient_data`，不得为过关凑事件。
 
 ### 1.2 跨域联合收益与「三维涌现」的严格定义
 
@@ -93,7 +97,7 @@ E1-E5 的定义沿用 48 v0.5 §1，不因新增维度而放宽。每个维度�
 **「三维涌现候选」必须同时满足**：
 
 1. 每个维度的单域判据至少有 1 条达到 `candidate`（E1/E2 优先）；
-2. 三因素交互项 `G_123` 显著（预注册检验，95% CI 不含 0 且方向为正）；
+2. 三因素交互项 `G_123` 显著（预注册检验，95% CI 不含 0 且方向为正），**且**通过 O-information 协同复核通道 `Ω(D1,D2,D3) > 0`（冗余−协同平衡，SΩI score-based 估计，附录 E-T1.2；估计器不可用时记 `insufficient_data`，不得跳过）；
 3. 至少一个两因素交互项 `G_ij` 为正且经多重比较校正（三维涌现是两两协同的加强，不是替代）；
 4. 联合增益不能由脚手架/数据红利解释（§4.5 消融）；
 5. 通过 48 v0.5 §5 七关门禁（双度量、OOD、稳健性、辩论、人工复核、消融、可复现）。
@@ -114,7 +118,9 @@ E1-E5 的定义沿用 48 v0.5 §1，不因新增维度而放宽。每个维度�
 D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件事：
 
 1. 把 D1 的度量纳入统一 `EmergenceMetric` schema（§3.1），便于与 D2/D3 并列；
-2. 补充「最小阻力」的显式口径：`{slippage_bps, fee_bps, holding_hours, maxdd_pct}` 四元组 + 归一化综合分，避免只报 PnL 不报阻力。
+2. 补充「最小阻力」的显式口径：`{slippage_bps, fee_bps, holding_hours, maxdd_pct}` 四元组 + 归一化综合分，避免只报 PnL 不报阻力；
+3. **D1 多重比较三层防线**（v0.4 增补，拟落主 SPEC E0/E2 准入；主 SPEC 修订前先在 48 域预注册内执行，附录 E-T1.4）：批内次要指标 Holm 校正 → 变体批级 PBO/CSCV（PBO>0.5 整批拒入）→ 胜出者 vs 人工基线用 SPA/DSR（`trials_count` 必须写入 `EmergenceMetric.evidence`）；三层全部预注册冻结，**禁止**事后选最有利口径；
+4. **E2 收益层去重**（v0.4 增补，附录 E-T2.4）：变体除结构编辑距离 ≥k 外，须对已准入变体池收益 |ρ|<0.5 且组合池 IC 边际增量 >0——去重从结构层提到收益层；walk-forward 升级 CPCV+embargo（embargo=变体最大 holding_hours）。
 
 **当前状态（2026-11-08 快照）**：E2 的 M2=0（evaluator_missing）；E3 生产 coupling falsified、shadow 重训 inconclusive；E5 四组配置无一显著。D1 的实验协议已在 v0.5 定义，本 Spec 不重复。
 
@@ -195,7 +201,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 **输入**：
 
-- `.cognitive/sessions/`：本地当前 366 个 session dir / 1142 文件；`session.json` 含 `task_type`、`action_count`、`recalled_memory_ids`、`task_type_history`，`action_chain.jsonl` 含 action_type/detail/files；E4b 历史回填报告 884 事件，与本地快照口径不同
+- `.cognitive/sessions/`：本地 1073 个 session dir / 1072 个非空 `session.json`（2026-11-09 复核；11-08 快照为 366 dirs / 1142 文件）；`session.json` 含 `task_type`、`action_count`、`recalled_memory_ids`、`task_type_history`，`action_chain.jsonl` 含 action_type/detail/files
 - 前端四级意图管线与 35 型正典、DreamOS 7 型策略意图、6×30 对话意图（见 [SPEC_INTENT_DREAMOS_OPTIMIZATION.md](../../../1-ARCHITECTURE/dream-harness-bridge/SPEC_INTENT_DREAMOS_OPTIMIZATION.md) §5.5）
 - 用户历史意图、习惯、错误案例（35 记忆库 + recall 日志）
 - git commit / task history / 会话 outcome
@@ -280,7 +286,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 | `M-D1-*` | 交易路径 | `M-D1-NET-PNL-OOS`、`M-D1-SHARPE-OOS`、`M-D1-RESISTANCE` |
 | `M-D2-*` | 工程架构 | `M-D2-EDGE-F1`、`M-D2-INTERFACE-MATCH`、`M-D2-ENG-GATE-PASS` |
 | `M-D3-*` | 意图 | `M-D3-TOP1`、`M-D3-ACCEPT-RATE`、`M-D3-CLARIFY-TURNS` |
-| `M-X-*` | 跨域迁移 | `M-X-I2E-GAIN`、`M-X-E2T-GAIN`、`M-X-SUPERADDITIVITY` |
+| `M-X-*` | 跨域迁移 | `M-X-I2E-GAIN`、`M-X-E2T-GAIN`、`M-X-INTERACTION-3` |
 
 完整目录见附录 A。
 
@@ -366,9 +372,10 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 6. **产物落盘**：预测、评估、人工评审、数据快照、局限，全部 append-only JSONL/JSON；
 7. **状态流转**：统计达标 → `candidate`；`candidate` 经人工复核 + 消融 + 独立复现 → `verified` / `rejected`（§3.5）；AI 评审不能单独发证；
 8. **阈值预注册**：`k`（新颖度距离，仅 D2-B/D3-B）、盲评阈值、最小样本量、复述比例阈值等，均在 `experiment_prereg.json` 中冻结；未预注册的阈值不得事后调整；
-9. **OOD 强制点（P0-1）**：两个 hook 已于 2026-11-09 **本地实现**并有回归测试（`case_ingest_gate.exclude_out_of_sample_interval`：区间命中/缺时间戳/区间非法均 fail-closed SKIP；`bayesian_memory_updater.is_in_oos_interval`：命中/缺时间戳/hook 异常均不更新；注册表 `48-涌现架构/registry/ood_intervals.py|.json`；测试 20/20）。但**生产调用方尚未接线、区间注册表为空、未经评审**——在此之前，D2-A/D3-A 全部运行标注 `run_class=exploratory`，不得产出正式 `candidate`/涌现申报。若采用临时降级方案，须同步更新主 SPEC §5 表述，并列出降级期间允许的实验、禁止的结论与复核责任人；
+9. **OOD 强制点（P0-1，v0.4 复审修订）**：设计目标为两 hook（`case_ingest_gate.exclude_out_of_sample_interval`：区间命中/缺时间戳/区间非法均 fail-closed SKIP；`bayesian_memory_updater.is_in_oos_interval`：命中/缺时间戳/hook 异常均不更新；注册表 `48-涌现架构/registry/ood_intervals.py|.json`）。**工作树复核：上述代码与注册表当前均未入库**（全仓 `.py` 零命中，§11.5）——若已在云端/他端实现，须同步入库并附回归测试证据，否则按未实现处理。在 hook 入库 + 生产调用方接线 + 评审之前，D2-A/D3-A 全部运行标注 `run_class=exploratory`，不得产出正式 `candidate`/涌现申报。若采用临时降级方案，须同步更新主 SPEC §5 表述，并列出降级期间允许的实验、禁止的结论与复核责任人；
 10. **实验隔离 ≠ FAIL-OPEN**：FAIL-OPEN 保护生产主链路；实验链路中泄漏审计或 OOD 校验失败时，**实验立即停止且不计入正式结果**，不得降级继续；
-11. **泄漏审计**：每个 holdout 生成独立数据快照与排除清单（`exclusion_manifest.json`），启动前校验 RAG 索引、prompt、few-shot、缓存与派生文档无扣留内容残留（路径 + 关键词 + hash 三重检查），审计落 `leak_audit.json`；未通过不得启动实验。
+11. **泄漏审计**：每个 holdout 生成独立数据快照与排除清单（`exclusion_manifest.json`），启动前校验 RAG 索引、prompt、few-shot、缓存与派生文档无扣留内容残留（路径 + 关键词 + hash 三重检查 + **第 4 重 canary string**：holdout 快照内嵌唯一 GUID，在上述任一位置检出即污染铁证，附录 E-T1.5），审计落 `leak_audit.json`；未通过不得启动实验。
+12. **脚手架披露卡**（v0.4，附录 E-T1.3）：跨域/生成类实验的预注册必须附脚手架披露卡（脚手架构成、版本、预期影响）并锁为常量；交互显著仍须报告脚手架方差分量，方差分量可解释增益时不得申报协同（SWE-bench 实证：纯脚手架波动 11-15pp 可逆转排名）。
 
 ### 4.1 D2-A：架构复原 holdout
 
@@ -443,7 +450,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 **缺口来源**：
 
-> **数据现实（P1-1）**：当前工作树无 `48/registry/capability_gaps.jsonl`；D2-B 启动前必须由 E6 产生/恢复需求单，或按 L1 验收模式人工注入 3 个已知缺口。新 gap_type 也尚未注册到 `gap_router.ROUTE_TABLE`。
+> **数据现实（P1-1，2026-11-09 复核）**：`48-涌现架构/registry/capability_gaps.jsonl` 已恢复在位（5 张需求单：1 resolved / 4 open）；D2-B 启动前仍需 E6 产生对应类型需求单，或按 L1 验收模式人工注入 3 个已知缺口。新 gap_type 尚未注册到 `gap_router.ROUTE_TABLE`。
 
 - E6 `capability_gaps.jsonl` 新增类型（建议，需 45/33/35/47 协商）：
   - `architecture_gap`：架构图/数据流缺失或不一致；
@@ -505,10 +512,10 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 **数据与切分（预注册切分表）**：
 
-- 数据源（2026-11-08 核验）：`.cognitive/sessions/`（366 dirs；非空 `session.json` 365；`task_type` 9 类；`action_chain.jsonl` 可 join）、git commit/task history；**前端/DreamOS 结构化 intent 日志当前未找到**，需 P0 接入或从 sessions 派生；
+- 数据源（2026-11-09 复核）：`.cognitive/sessions/`（1073 dirs；非空 `session.json` 1072；`task_type` 12 类：configuration 380 / strategy-execution 259 / architecture-design 131 / python-development 126 / 其余 8 类 176；11-08 快照为 366 dirs / 365 非空 / 9 类；`action_chain.jsonl` 可 join）、git commit/task history；**前端/DreamOS 结构化 intent 日志当前未找到**，需 P0 接入或从 sessions 派生；
 - 首轮代理：`session.task_type` 作 `intent_type` 代理；报告统一标注 **「task_type 预测」**，不得与真实意图标签实验混报，不得申报「意图涌现」；
 - 时序切分：按 session start_time 排序，前 75% 训练/验证、后 25% 测试（或前 3 周/第 4 周滚动）；**切分表（train/val/test session id 清单 + cut 时间戳）随预注册冻结**；
-- 最少 **200 个测试 session**（独立单元）；当前 365 sessions → 92 test < 200，首轮必然 `insufficient_data`——需改 action-level 事件定义或积累更多 session，两者都是预注册变更，**不得**事后下调阈值；
+- 最少 **200 个测试 session**（独立单元）；2026-11-09 快照 1072 sessions 按 75/25 约可得 268 test ≥ 200，**量级门槛可过**——但测试段类分布须按冻结切分表复核（`configuration` 类 380 条未必是真实用户意图，过滤策略随预注册冻结）；若按冻结切分表复核后仍 <200，记 `insufficient_data`，需改 action-level 事件定义或积累更多 session，两者都是预注册变更，**不得**事后下调阈值；
 - 同一 session 不跨训练/测试；
 - `taxonomy` 字段必须记录使用的正典版本；跨正典比较先映射到 35 型正典或统一中间层，映射表版本化，避免 35 型/7 型/6×30 混算。
 
@@ -549,7 +556,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 - 按用户/时间段监控漂移；漂移超阈值时暂停 `candidate` 申报；
 - n=1 用户场景需额外报告「跨用户泛化」缺口，不得宣称通用意图涌现。
 
-**运行方式**：shadow-probe 模式；旧路径为准；`recordMemory=false` 防污染；200 样本预算；失败静默。P0-1（生产接线/区间配置）与 P0-2（直接意图标签）关闭前，全部运行标 `run_class=exploratory`。
+**运行方式**：shadow-probe 模式；旧路径为准；`recordMemory=false` 防污染；探针单次记录预算 200 条（区别于正式评估的 ≥200 测试 session 门槛）；失败静默。P0-1（生产接线/区间配置）与 P0-2（直接意图标签）关闭前，全部运行标 `run_class=exploratory`。
 
 ### 4.4 D3-B：意图知识组合
 
@@ -596,11 +603,12 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 #### 4.5.3 联合 vs 独立
 
-- 运行 D1-only、D2-only、D3-only、D1+D2、D1+D3、D2+D3、D1+D2+D3；
-- 统一归一化增益 `G`；
-- `M-X-SUPERADDITIVITY = G(joint) - [G(D1)+G(D2)+G(D3)]`；
-- 配对 bootstrap 95% CI 不含 0 且方向为正 → 三维涌现候选；
-- 否则报告「三个独立维度的优化」，不申报三维涌现。
+- 预注册完整 **2×2×2 因子设计**（D1/D2/D3 各 on/off，共 8 臂：000 全域基线臂 + 001/010/100 单维臂 + 011/101/110 两维臂 + 111 联合臂），每臂按真实独立实验单元重复；
+- 统一归一化增益 `G`（共同效用前置，归一化方法随预注册冻结，§1.2）；
+- 估计单因素主效应 `G(D1)/G(D2)/G(D3)`、两因素交互 `G_ij`（i<j）、三因素交互 `G_123`；
+- 判定（与 §1.2 一致；**禁止**退回已废除的 `G(joint) - [G(D1)+G(D2)+G(D3)]` 口径——它无法区分两维与三阶交互）：`G_123` 显著（预注册检验，95% CI 不含 0 且方向为正）**且** O-information 复核通道 `Ω(D1,D2,D3)>0`（附录 E-T1.2；估计器不可用记 `insufficient_data`）**且**至少一个 `G_ij` 为正（Holm 校正）→ 三维涌现候选；
+- `G_123` 不显著但有正的两因素交互 → 报告「两维协同 + 单维优化」；无任何显著交互 → 报告「多个独立维度的优化」或「跨域联合收益」，均不得申报三维涌现；
+- 联合增益须通过脚手架/数据红利消融（§4.0 通用规则，含第 12 条脚手架披露卡），消融未过即使交互显著也不得申报。
 
 ### 4.6 人工与 AI 评审协议
 
@@ -645,7 +653,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 | **P0 度量字典与基线盘点** | 1-2 周 | `EmergenceMetric`/`LabelEvent`/`ExperimentResult` schema；D2 文档-代码图盘点；D3 意图日志盘点；三套意图体系 SSoT 决策建议；基线数据快照 | 所有引用路径核验；数据健康度报告；无代码变更 |
 | **P1 D2-A + D3-A** | 3-4 周 | 两个 holdout 协议实现与首轮真实结果（shadow） | 各 ≥3 模块/≥200 事件；`candidate`/`falsified`/`inconclusive` 如实记录 |
 | **P2 D2-B + D3-B** | 3-4 周 | 生成/知识组合协议 + 45 门禁接入 + 沙箱 | 生成物零执行权；门禁证据链完整 |
-| **P3 跨域迁移** | 4-6 周 | T-I2E / T-E2T / 联合 vs 独立 | 超加性检验完成；无论正负均记录 |
+| **P3 跨域迁移** | 4-6 周 | T-I2E / T-E2T / 联合 vs 独立 | 三阶交互 `G_123` + Ω 双通道检验完成（§1.2/§4.5.3）；无论正负均记录 |
 | **P4 三维面板与门禁** | 持续 | 三维度量面板、七关门禁、人工复核流程 | 连续 ≥7 天数据；可复现；人工复核 |
 
 **关键顺序**：P0 先做；P1 的 D2-A 与 D3-A 可并行；P2 必须在 P1 有可评估结果后进行；P3 必须在 P1/P2 至少各有一域 `candidate` 后进行；P4 最后。
@@ -680,12 +688,13 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 路由表扩展需 45/33/35/47 协商；未知类型仍落 `gap_type_proposals.jsonl` + 人工评审，不自动路由。
 
-> **当前实现状态（P1-1）**：`gap_router.ROUTE_TABLE` 尚未注册上表任何新类型；`capability_gaps.jsonl` 在当前工作树不存在。P1 必须先补数据与路由测试，否则 D2-B 只停留在协议层。
+> **当前实现状态（P1-1，2026-11-09 复核）**：`gap_router.ROUTE_TABLE` 尚未注册上表任何新类型；`capability_gaps.jsonl` 已恢复在位（5 张需求单：1 resolved / 4 open）。P1 必须先补缺口注入与路由测试，否则 D2-B 只停留在协议层。
 
 ### 6.3 安全与隐私
 
 - D2 生成物零执行权；只在 45 沙箱构建/测试；不得直接改生产代码；
 - D3 只做建议，不自动执行交易/写操作；意图日志脱敏（message hash）；
+- **隐私治理（hash ≠ 匿名化）**：度量产物只存 message hash、不存原文，但 hash 本身不构成匿名化——须配访问控制（仅评审 owner 与实验进程可读）、保留期（建议 90 天，到期删除，预注册冻结）、删除机制（可按 session_id 定位删除）；n=1 用户数据存在小样本可识别风险，聚合对外报告前做 k-匿名性检查（建议 k≥5，预注册冻结）；
 - 所有实验 shadow、FAIL-OPEN；异常不阻断主链；
 - 不放宽既有门禁/阈值；不为涌现指标调参；
 - 生成式模型/裁判模型记录 id/snapshot/prompt hash，支持追溯。
@@ -797,14 +806,26 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 | P1-5 | P1 | 意图体系 SSoT 未决（35 型/7 型/6×30） | 三套实现 + 映射表 | P0/P1 由 35/DreamOS 决策；实验记录 taxonomy 版本 |
 | P1-6 | P1 | 人工/AI 评审 owner、预算、校准集未定 | 45 §9 要求 ≥200 人工标注 | P1 前指定 owner/预算；未校准不进硬门禁 |
 | P2-1 | P2 | `k`/ECE/用户确认阈值未具体化 | 文中多处「≥阈值/≥k」 | 预注册时冻结；建议 D2 图编辑距离 k=2、D3 ECE≤0.1，待评审 |
-| P2-2 | P2 | D2-A 3-5 模块对模块级 Wilcoxon 功效弱 | 统计方案 | 主判用边级 bootstrap；模块数尽量 ≥5；3 个仅最小可运行 |
+| P2-2 | P2 | D2-A 3-5 模块对模块级 Wilcoxon 功效弱 | 统计方案 | 主判用边级 bootstrap；模块数尽量 ≥5；3 个仅最小可运行（**已被 v0.2 §4.1 取代**：主判改模块级聚类 bootstrap，边级仅辅证） |
 | P2-3 | P2 | 33-REA 实际入口类名与表内能力名不同 | `DesignDecisionRecoverer`/`MethodologyAbstractor`/`EvolutionNarrator` | 文档按实际符号实现；已加注 §2.2.3 |
 
 ### 11.3 裁决与后续
 
 **修改后接受**：文档层引用/格式/口径问题已修（见本次改动）；P0-1/P0-2/P0-3 是实施/申报阻塞项，必须在 P1 前关闭。P0-1 涉及主 SPEC v0.5 §5 的 OOD 强制点，建议同步发起主 SPEC 复审；P0-2/P0-3 属于 P0 数据/图基线建设，不进入本版代码。
 
-> **后续进展（2026-11-09）**：P0-1 复审完成（确认代码级 OOD 强制点缺失，见 [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md)）；P0-3 图基线已生成（574 nodes / 3522 edges，0 悬挂边）；P0-2 生成器合成会话冒烟通过，但真实 `.cognitive/sessions` 执行被本地安全守门拦截，且 365 sessions 的 75/25 切分只有 92 test <200。详见 §12。
+> **后续进展（2026-11-09）**：P0-1 复审完成（确认代码级 OOD 强制点缺失，见 [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md)）；P0-3 图基线声明已生成（574 nodes / 3522 edges，0 悬挂边；**产物未入库，仅 README 声明，v0.4 复审修正**）；P0-2 生成器声明合成会话冒烟通过（**脚本未入库**），且真实 `.cognitive/sessions` 执行被本地安全守门拦截；11-08 快照 365 sessions 的 75/25 切分只有 92 test <200，**11-09 复核已积累至 1072 sessions（75/25 约 268 test），量级门槛可过，类分布待按冻结切分表复核**；直接意图标签仍缺。详见 §12。
+
+---
+
+### 11.5 内部复审（2026-11-09，v0.4）
+
+裁定：**修改后接受**（复审时判「需修改」：P0×3 / P1×4 / P2×4，本版全部修订）。
+
+- **P0-1**：§4.0 第 9 条 OOD hook「已本地实现、测试 20/20」与工作树全仓零命中矛盾 → 改为「未入库」如实标注，云端/他端若已实现须同步入库附证据；
+- **P0-2**：§12 生成器脚本与图基线产物未入库（`baselines/` 仅 README）→ 状态修正为「未入库」，hash 暂不可核验；
+- **P0-3**：§4.5.3 与附录 A `M-X-INTERACTION-3` 漏 Ω 复核通道 → 已补齐双通道判定；
+- **P1**：§2.1「落主 SPEC」改「拟落」；§5 P3 残留「超加性检验」改 `G_123`+Ω；§4.0 增第 12 条脚手架披露卡；附录 E 标注 T1 方法零实现待新建；
+- **P2**：附录 E 条数 25→23；头部日期/状态行补 v0.4；B.4 `verdict` 补 `rejected`；§11.2 P2-2 标注已被 v0.2 取代。
 
 ---
 
@@ -812,13 +833,13 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 | ID | 状态 | 关闭动作 | 退出条件 | 证据/产物 |
 |---|---|---|---|---|
-| P0-1 | **confirmed open** | 复审完成：确认代码级 OOD 强制点缺失；按方案 A 实现两 hook + 回归测试，或方案 C 临时降级宣称 | 代码 hook/等价强制点 + 回归测试；主 SPEC 引用更新为真实路径 | [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md) |
-| P0-2 | generator ready（smoke-tested；artifact blocked） | 生成器已落盘 `baselines/build_d3_intent_events.py`；合成会话冒烟通过（2/2）；本地安全分类器拦截 `.cognitive/sessions` 读取，需授权环境执行；已知 365 non-empty sessions，75/25 → 92 test <200，session 级 D3-A 会 insufficient_data；需 action-level 事件或更多 session；补采直接意图标签 | ≥200 测试事件；直接 intent 标签可用 | `baselines/README.md`；运行 `python 48-涌现架构/baselines/build_d3_intent_events.py` |
-| P0-3 | baseline-generated（待人工复核） | 已生成图基线；人工复核 3-5 个 holdout 模块 | 图 artifact + schema 校验 + 人工复核 | `baselines/artifacts/d2_architecture_graph/`（574 nodes / 3522 edges；sha256 `89aeab3b828a...`） |
-| P1-1 | open | 恢复/注入 E6 `capability_gaps.jsonl`；扩展 `ROUTE_TABLE` | 3 个已知缺口 + 路由测试 | E6 registry |
+| P0-1 | **确认开放** | 复审完成：确认代码级 OOD 强制点缺失；按方案 A 实现两 hook + 回归测试，或方案 C 临时降级宣称 | 代码 hook/等价强制点 + 回归测试；主 SPEC 引用更新为真实路径 | [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md) |
+| P0-2 | **生成器未入库**（v0.4 复审修正：仅 README 声明） | 生成器脚本 `baselines/build_d3_intent_events.py` 声明合成会话冒烟通过（2/2），但脚本与产物**均未入库**——须先入库代码与运行证据；本地安全分类器拦截 `.cognitive/sessions` 读取，需授权环境执行；11-09 复核 1072 个非空 sessions（75/25 约 268 test ≥200），量级门槛可过、类分布待按冻结切分表复核；**仍缺直接意图标签**——补采前不得申报意图涌现 | ≥200 测试事件；直接 intent 标签可用；脚本与产物入库 | `baselines/README.md`（声明） |
+| P0-3 | **基线产物未入库**（v0.4 复审修正：仅 README 声明，待人工复核） | 图基线与生成脚本须先入库，sha256 才可核验；人工复核 3-5 个 holdout 模块 | 图 artifact + 生成脚本入库 + schema 校验 + 人工复核 | `baselines/artifacts/d2_architecture_graph/`（声明值：574 nodes / 3522 edges；sha256 `89aeab3b828a...`，暂不可核验） |
+| P1-1 | open | 文件已恢复在位（11-09 复核，5 张需求单）；注入 3 个已知缺口；扩展 `ROUTE_TABLE` | 3 个已知缺口 + 路由测试 | E6 registry |
 | P1-2 | open | 明确云端交易 DB/快照获取路径 | D1 指标可用快照 hash 复现 | `human_baseline.json` + 快照 |
 | P1-3 | open | 提供 DreamOS 轻量导入路径或依赖清单 | `IntentEngine` 可导入/可跑 smoke | requirements/导入脚本 |
-| P1-4 | open | 恢复/文档化 events/trajectories/l1_case_store | E4b/E5 事件源可复现 | 数据源清单 |
+| P1-4 | open | `events/` 已在位（11-09 复核）；文档化/恢复 `trajectories.jsonl`、`l1_case_store.jsonl` | E4b/E5 事件源可复现 | 数据源清单 |
 | P1-5 | open | 35/DreamOS 决定意图 SSoT | 单一正典 + 映射表版本化 | 决策记录 |
 | P1-6 | open | 指定人工/AI 评审 owner、预算、校准集 | ≥200 人工标注 + 45 §9 校准 | 评审记录 |
 
@@ -851,7 +872,7 @@ python 48-涌现架构/baselines/build_d3_intent_events.py
 | `M-D1-NET-PNL-OOS` | 成本后 OOS 净 PnL | bcrm_trades.db / shadow 回测 | 每周 |
 | `M-D1-SHARPE-OOS` | OOS Sharpe | 同上 | 每周 |
 | `M-D1-MAXDD` | 最大回撤 | 同上 | 每周 |
-| `M-D1-RESISTANCE` | `{slippage_bps, fee_bps, holding_hours, maxdd_pct}` 归一化综合（归一化方法 P0 冻结，建议 90 日滚动 min-max） | 执行/成交/持仓 | 每周 |
+| `M-D1-RESISTANCE` | `{slippage_bps, fee_bps, holding_hours, maxdd_pct}` 归一化综合（四项统一 lower_better；归一化 P0 冻结：**禁用滚动窗口 min-max**——历史分数不得随窗口回变，建议固定参考区间 min-max；缺失值策略 report，不填补） | 执行/成交/持仓 | 每周 |
 | `M1-M7` | 48 v0.5 既有 M1-M7 | 48 metrics | 每日/每周 |
 
 ### A.2 D2
@@ -888,7 +909,8 @@ python 48-涌现架构/baselines/build_d3_intent_events.py
 |---|---|---|
 | `M-X-I2E-GAIN` | 有/无 D3 预测的工程任务完成时间/迭代/纠正差异 | 显著为正 |
 | `M-X-E2T-GAIN` | D2 方案对交易模块缺陷率/shadow 指标的改善 | 显著为正 |
-| `M-X-SUPERADDITIVITY` | `G(joint) - ΣG(independent)` | >0 且 CI 不含 0 |
+| `M-X-INTERACTION-3` | 三因素交互项 `G_123`（2×2×2 因子设计，§1.2/§4.5.3） | 95% CI 不含 0 且方向为正，且 Ω>0 复核通过，且 ≥1 个 `G_ij` 为正（Holm 校正） |
+| ~~`M-X-SUPERADDITIVITY`~~ | `G(joint) - ΣG(independent)`（**v0.3 起废除**：无法区分两维与三阶交互） | — |
 
 ---
 
@@ -977,7 +999,7 @@ python 48-涌现架构/baselines/build_d3_intent_events.py
   "stat_test": "",
   "p_value": null,
   "effect_size": null,
-  "verdict": "not_run|insufficient_data|falsified|inconclusive|candidate|verified",
+  "verdict": "not_run|insufficient_data|falsified|inconclusive|candidate|rejected|verified",
   "limitation": "",
   "artifacts": [],
   "review": {"human": false, "reviewer": "", "date": ""},
@@ -1000,7 +1022,7 @@ python 48-涌现架构/baselines/build_d3_intent_events.py
 | D2 文档检索 | 2-KNOWLEDGE RAG / 41 索引 | 只读检索 | 需文档-代码统一图 |
 | D3 意图识别 | DreamOS IntentEngine | 只读调用/shadow | 预测目标需新建；本地导入需 flask/轻量路径 |
 | D3 意图评估 | IntentEvaluatorAgent | 复用 recall/jev/laya | 需结构化意图标签 |
-| D3 会话数据 | `.cognitive/sessions`（366 dirs；task_type/action_chain） | 只读派生 | 无直接 intent 标签；gitignored runtime data |
+| D3 会话数据 | `.cognitive/sessions`（11-09 复核 1073 dirs / 1072 非空；task_type/action_chain） | 只读派生 | 无直接 intent 标签；gitignored runtime data |
 | D3 灰度 | 前端 `shadow-probe.ts` | 复用模式 | Python 侧需等价实现 |
 | D3 评测 | 45 §9-10 | 引用协议 | 校准集未建；owner/预算待定 |
 | 记忆 | 35 C1-C4 / 4-MEMORY | recall/record/verify | 需 D2/D3 标签 schema |
@@ -1014,6 +1036,11 @@ python 48-涌现架构/baselines/build_d3_intent_events.py
 |---|---|---|---|
 | 2026-11-08 | v0.1 | 首版：三维判据矩阵、统一度量/标签 schema、D2-A/D2-B/D3-A/D3-B/跨域协议、P0-P4、六维自检 | 🟡 草案 |
 | 2026-11-08 | v0.1-review | 六维评审（§11）：修改后接受；数据口径修正（366 sessions/无直接 intent 日志/E6/trade/events 缺失）；加 OOD 强制点 P0 前置 | 🟡 P0×3/P1×6/P2×3 待关闭 |
+| 2026-11-09 | v0.2 | 外部评审修订：重写跨域判定（共同效用前置 + 2×2×2 因子 + 三阶交互）；移除 D2-A 新颖度门槛；candidate/verified/rejected 流转统一；模块级聚类 bootstrap 与主终点唯一化；OOD 未闭合前 D2-A/D3-A 降级探索性并区分实验隔离与 FAIL-OPEN；D3-A 预测目标/特征截止/切分表与泄漏审计；P0 状态同步；复合值 schema | 🟡 讨论稿（外部评审「需修改」修订版） |
+| 2026-11-09 | v0.3 | 评审整合复核：§4.5.3 与 §1.2 对齐（清除已废除超加性公式残留，补全 8 臂）；数据快照刷新（sessions 366→1072，D3-A 量级结论重估）；§12 状态术语中文化；P1-1/P1-4 证据按实况更新；§6.3 隐私补强（hash≠匿名化）；A.1 阻力归一化禁滚动窗口；附录 D 补登 | 🟡 讨论稿（待复审） |
+| 2026-11-09 | v0.4 | 外部成熟经验整合（五路调研 44 候选→采纳 23，附录 E）：§1.2 增设 Ω 协同复核通道；E5(b) 升级 Clauset 幂律检验 + MR-estimator + log-log 形状检验；§4.0 泄漏审计加 canary 第 4 重 + 第 12 条脚手架披露卡；§2.1 D1 三层多重比较防线 + E2 收益层去重；复审修订（§11.5）：OOD hook/基线产物「未入库」如实标注、§4.5.3/附录A 补 Ω、§5 P3 清残留、B.4 补 rejected | 🟡 讨论稿（内部复审修改后接受，待外部复审） |
+
+> **文件名说明**：文件名冻结为 `SPEC-EMERGENCE-3D-v0.1.md` 以避免外部引用（README / INDEX / 评审记录 / baselines README）链接漂移；内容版本以本文头部与附录 D 为准。
 
 **下一步**：
 
@@ -1021,3 +1048,56 @@ python 48-涌现架构/baselines/build_d3_intent_events.py
 2. P0 盘点 D2 文档-代码图与 D3 意图日志，产出基线数据快照；
 3. 决策 §8 开放问题（所有权、意图 SSoT、gap_type、预算、隐私、OOD 归属、v0.6 范围）；
 4. P0/P1 关闭后再进入 P1 实验实现，不在本版写代码。
+
+---
+
+## 附录 E：外部成熟经验借鉴（v0.4 新增）
+
+来源：2026-11-09 五路并行调研（AI 涌现工程 / 金融工程 / 代码工程 / 意图学习 / 生物复杂系统），44 条候选经交叉验证采纳 23 条。分级：**T1 判据级**（已入正文）、**T2 工程级**（实施时采用）、**T3 概念级**（参考）。凡涉阈值/参数，一律随 `experiment_prereg.json` 预注册冻结，不得事后调整。
+
+> **实现状态（v0.4 复审确认）**：T1 全部方法（SΩI/Ω 估计、Clauset/powerlaw、MR-estimator、PBO/CSCV、SPA/DSR、purgedcv）当前工作树**零实现、零依赖**，均属新建项——实施任务必须含依赖登记与最小实现；正文判据均有 `insufficient_data` 兜底，不得因工具缺失虚报或跳过。
+
+### E-T1 判据级（正文已修订）
+
+| # | 来源 | 做法 | 落点 |
+|---|---|---|---|
+| T1.1 | Clauset et al. 2009；PLOS Comp Biol 2023 亚采样研究 | 幂律须 MLE+x_min 截断+KS 拟合优度+随机化 null model 似然比对照；亚采样下亚临界/混响/临界均呈 α≈1.5 | §1.1 E5(b) 升级 |
+| T1.2 | O-information / SΩI（arXiv 2402.05667） | Ω=冗余−协同，符号判定三元交互；score-based 神经估计器工程可行 | §1.2 协同复核通道 |
+| T1.3 | Harness 归因（arXiv 2605.23950） | SWE-bench 纯脚手架波动 11-15pp 可逆转排名；预注册附「脚手架披露卡」并锁为常量，G_123 显著仍须报脚手架方差分量 | §4.5 消融强化 |
+| T1.4 | DSR / PBO-CSCV / SPA（Bailey & López de Prado） | 批内 Holm→批级 PBO（>0.5 整批拒入）→胜出者 SPA/DSR；trials_count 入 evidence | §2.1 D1 三层防线 |
+| T1.5 | BIG-bench canary string | 基准内嵌唯一 GUID，语料检出即污染铁证 | §4.0 第 11 条第 4 重 |
+| T1.6 | PASSUNTIL（ICLR'24） | 海量采样构造连续指标，log-log 形状判真加速，禁止肉眼报拐点 | §1.1 E5(a) |
+
+### E-T2 工程级（实施时采用）
+
+| # | 来源 | 做法 | 落点 |
+|---|---|---|---|
+| T2.1 | Copilot 三级漏斗（CACM'24） | 接受率拆 shown/accept/persist（120s 内未修改才算真接受） | §4.3/§4.4 D3-B 指标 |
+| T2.2 | OpenHands/SWE-agent 沙箱三铁律 | 测试文件只读、隐藏套件不进 agent 文件系统、判分用全新容器 | §4.2 D2-B 执行协议 |
+| T2.3 | EvalPlus | 隐藏测试加 LLM+变异增强（~80×），防脆弱「恰过」解 | §4.2 隐藏测试 |
+| T2.4 | AlphaGen | 新颖性=对既有 alpha 池收益 \|ρ\|<0.5 + 组合 IC 边际增量>0（收益层去重） | §2.1 E2 准入（已入正文） |
+| T2.5 | CPCV+embargo（AFML ch.12） | 组合吹扫 CV，embargo=最大 holding_hours，准入用路径中位数与下分位 | §2.1（已入正文） |
+| T2.6 | SWE-bench Verified | holdout 人工核验三标准（问题清晰/测试可判/信息可解）+ 快照记「人工核验率」 | §4.1 P0-3 复核 rubric |
+| T2.7 | MMAS 蚁群信息素 | 需求单机制三参数：蒸发率 ρ∈[0.02,0.5]、[τ_min,τ_max] 硬界防锁死、仅当轮最优响应者强化 | C 类 stigmergy（主 SPEC §0.4） |
+| T2.8 | MoJoFM/a2a（Lutellier ASE'15） | D2-A 保留 EDGE-F1 主判，增设 MoJoFM/a2a 聚类级辅证（前提：两边实体集相同，演化场景失效） | §4.1 辅证指标 |
+
+### E-T3 概念级（参考）
+
+| # | 来源 | 做法 | 落点 |
+|---|---|---|---|
+| T3.1 | JetBrains 触发模型 | 补 B4「触发时机基线」——何时沉默与预测内容同等重要，误触发记负样本 | §4.3 基线表 |
+| T3.2 | Smart Compose（KDD'19） | 离线 Top1 与在线接受率严格分离报告，不得混报 | §4.3 报告纪律 |
+| T3.3 | Observe.AI taxonomy 收敛 | 不重建 SSoT：按「动作计划等价」把 35/7/6×30 映射到 L1，三体系降级 L2 视图，映射表版本化 | §2.3.4 缺口 5 |
+| T3.4 | USER-LLM 参数隔离 | n=1 个性化层（用户 embedding/prefix）与全局参数隔离，防单用户污染全局 | §4.3 n=1 条款 |
+| T3.5 | 形态发生鲁棒性（Nagpal） | E2 自生成结构须 ±20% 参数扰动下保持模式，否则算脆弱凑巧 | E2 判据补充 |
+| T3.6 | 生态位维度假说 | G1 多样性缺口操作化：定义能力生态位轴 + Shannon/Simpson 定期计量，低于阈值注入新生态位而非随机变异 | 主 SPEC §3 G1 |
+| T3.7 | Almgren 滑点曲线 | D1 阻力分量从常数 bps 改条件成本模型，regime 乘数按决策时点 trailing vol（禁全样本标签防前视） | 附录 A.1 细化 |
+| T3.8 | Brinson 多策略归因 | E3 超加性以 Interaction 项 95% CI 与反事实 MAE 双口径并列报告 | 主 SPEC E3 |
+| T3.9 | ΦID 信息原子谱 | 跨域迁移归因：迁移主要由 redundancy 承载则非真协同，协同原子占比设阈值 | §4.5 X-A 增强 |
+
+### E.4 冲突仲裁记录
+
+1. **Holm / SPA / DSR / PBO 不混用**：分层各司其职（批内/批级/胜出者），预注册冻结；禁止事后选最有利口径。
+2. **Ω 信息不替换 G_123 主判**：计算成本高、估计器需训练，定位复核通道；双通道一致才可申报。
+3. **MoJoFM 只能辅证**：实体集一致性前提在演化场景失效，不作主终点。
+4. **E5 加严与数据现实**：Clauset 标准需要事件量，当前 cascade n_events 极小——加严的同时允许 `insufficient_data` 如实记录，不得为过关凑事件。
