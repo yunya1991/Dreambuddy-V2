@@ -318,4 +318,4 @@ fitness = 人工权重（MAE/PSI/pnl 七维奖励）。自然界的涌现 fitnes
 - 用户 2026-11-08 提出将 48 从交易单维扩展为三维：**D1 交易路径涌现**（最小阻力/盈利）、**D2 工程架构涌现**（技术文档/测试/既有架构/逆向解析 → 架构图/数据流/技术设计原理）、**D3 意图涌现**（历史意图/习惯/错误案例 → 意图预测 + 知识组合，喂给 D2）。
 - 本增补不修改 v0.5 已评审正文；三维判据矩阵（A/B/C × D1/D2/D3）、统一 `EmergenceMetric`/`LabelEvent` schema、D2-A/D2-B/D3-A/D3-B/跨域迁移实验协议、P0-P4 路线与六维自检见 `docs/tech/SPEC-EMERGENCE-3D-v0.1.md`（草案，待 48 SPEC v0.6 评审）。
 - 边界：48 仍只做涌现判据、度量、实验与观测；D2 做梦器归 33-REA/46-DSH，D3 归 DreamOS/35，45 负责评测与门禁，35 负责记忆沉淀。新增 gap_type/route table 需 45/33/35/47 协商，不在本草案内实施。
-- **六维评审交叉发现（2026-11-08）**：v0.5 §5 声称的 OOD 强制点（`exclude_out_of_sample_interval` / `is_in_oos_interval`）在当前工作树仅见文档、未见代码；主 SPEC 复审前不得视为已强制。详见 `docs/tech/SPEC-EMERGENCE-3D-v0.1.md` §11 P0-1。
+- **六维评审交叉发现（2026-11-08，2026-11-09 复审确认）**：v0.5 §5 声称的 OOD 强制点（`exclude_out_of_sample_interval` / `is_in_oos_interval`）在当前工作树仅见文档、未见代码；`git log -S -- '*.py'` 无提交，`CaseIngestGate`/`BayesianMemoryUpdater` 无对应参数/hook。详见 [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md)；修复前不得视为已强制。

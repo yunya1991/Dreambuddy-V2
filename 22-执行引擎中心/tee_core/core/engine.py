@@ -37,9 +37,9 @@ from ..algorithms.smart_twap import SmartTWAP
 from ..estimators.slippage import SlippageEstimator
 from . import config as _cfg
 from .auditor import STATUS_OK_WRITTEN, Auditor
+from .contract import Urgency
 from .failopen import FailOpenManager
 from .kill_switch import KillSwitch
-from .contract import Urgency
 from .router import OrderRouter, RouterDecision
 
 # Idempotency TTL default.
@@ -443,7 +443,11 @@ class TradeExecutionEngine:
             size_ratio = 0.01  # conservative default
         # urgency 字符串 -> Urgency 枚举（NORMAL/未知值归一为 MEDIUM，不改变路由档位）
         _urg_raw = str(pr.get("urgency") or "NORMAL").upper()
-        _urgency = Urgency.HIGH if _urg_raw == "HIGH" else (Urgency.LOW if _urg_raw == "LOW" else Urgency.MEDIUM)
+        _urgency = (
+            Urgency.HIGH
+            if _urg_raw == "HIGH"
+            else (Urgency.LOW if _urg_raw == "LOW" else Urgency.MEDIUM)
+        )
         decision: RouterDecision = self.router.decide(
             size_ratio=float(size_ratio),
             urgency=_urgency,

@@ -9,6 +9,7 @@ from typing import Any
 
 from adapters.constraint_loader import clamp_position, load_constraints
 from adapters.execution_writer import validate_execution
+
 from core.dominance import resolve_dominance
 from core.path_synthesis import synthesize_paths
 from core.w4 import adjudicate
@@ -39,7 +40,9 @@ def make_decision(
     direction = w4["direction"]
     confidence = w4["total"]
     # 5) 约束钳位（只钳位，不进矛盾评分）
-    raw_position = 50.0 + 50.0 * (confidence if direction == "long" else -confidence if direction == "short" else 0.0)
+    raw_position = 50.0 + 50.0 * (
+        confidence if direction == "long" else -confidence if direction == "short" else 0.0
+    )
     position_pct = clamp_position(constraints, raw_position, asset_class)
     # 6) 组装决策信号
     decision = {

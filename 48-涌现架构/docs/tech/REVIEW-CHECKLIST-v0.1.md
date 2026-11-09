@@ -83,6 +83,7 @@ v0.3 评审做的是『文档 vs 文档』一致性检查，v0.4 双维评审做
 |---|---|---|---|---|
 | 2026-11-05 | v0.4 | 六维清单本体检出 5 项 P0（均已在 v0.4 封口） | 见 §0 表 | 已全部封口 |
 | 2026-11-08 | SPEC-EMERGENCE-3D v0.1 | 引用 ✅ 文件级（48 links 无断链）；数据 ⚠️（366 sessions、无直接 intent 日志、E6/trade/events 缺失）；版本 ✅/N/A；存量 ✅（33-REA/45 冒烟通过；IntentEngine 缺 flask）；门禁 ⚠️（协议级，OOD hook 未检出）；可观测 ⚠️（session 可 join，D2 图/D3 标签缺失） | P0×3 / P1×6 / P2×3，详见 3D Spec §11 | 文档层已修；P0-1/P0-2/P0-3 待 P0/P1 关闭 |
+| 2026-11-09 | SPEC-EMERGENCE-EVOLUTION v0.5 §5 OOD claim | 引用存在性 ❌：精确 hook 名仅文档命中；`git log -S -- '*.py'` 无提交；`CaseIngestGate`/`BayesianMemoryUpdater` 无对应参数/hook | P0-1（主 SPEC 代码级 OOD 强制点缺失） | 已出 [复审报告](./reviews/REVIEW-2026-11-09-main-spec-ood.md)；方案 A/B/C；修复前保持 open |
 
 ## 5. 维护
 

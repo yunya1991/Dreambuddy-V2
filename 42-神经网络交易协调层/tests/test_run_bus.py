@@ -32,7 +32,17 @@ def test_default_whitelist():
 def test_select_subsystems_default():
     subs = run_bus.select_subsystems()
     names = [s["name"] for s in subs]
-    assert names == ["40-cycle", "29-event", "43-strategic-extension", "23-contradiction", "11-bcrm", "11-bdsm", "11-bcrm-tactical", "11-washout", "11-event-arbitrage"], names
+    assert names == [
+        "40-cycle",
+        "29-event",
+        "43-strategic-extension",
+        "23-contradiction",
+        "11-bcrm",
+        "11-bdsm",
+        "11-bcrm-tactical",
+        "11-washout",
+        "11-event-arbitrage",
+    ], names
     assert all(s["publisher"] for s in subs)
 
 
@@ -55,7 +65,17 @@ def test_run_only_whitelisted():
         return 0
 
     result = run_bus.run(runner=fake_runner, flush=False)
-    expected = ["40-cycle", "29-event", "43-strategic-extension", "23-contradiction", "11-bcrm", "11-bdsm", "11-bcrm-tactical", "11-washout", "11-event-arbitrage"]
+    expected = [
+        "40-cycle",
+        "29-event",
+        "43-strategic-extension",
+        "23-contradiction",
+        "11-bcrm",
+        "11-bdsm",
+        "11-bcrm-tactical",
+        "11-washout",
+        "11-event-arbitrage",
+    ]
     assert called == expected, called
     assert result["executed"] == expected
     assert result["status"] == "ok"
@@ -70,7 +90,16 @@ def test_run_failopen_on_adapter_error():
 
     result = run_bus.run(runner=bad_runner, flush=False)
     assert result["status"] == "degraded"
-    assert result["executed"] == ["29-event", "43-strategic-extension", "23-contradiction", "11-bcrm", "11-bdsm", "11-bcrm-tactical", "11-washout", "11-event-arbitrage"]
+    assert result["executed"] == [
+        "29-event",
+        "43-strategic-extension",
+        "23-contradiction",
+        "11-bcrm",
+        "11-bdsm",
+        "11-bcrm-tactical",
+        "11-washout",
+        "11-event-arbitrage",
+    ]
     assert any(e["name"] == "40-cycle" for e in result["errors"])
 
 

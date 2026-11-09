@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "module": "0-系统文档管理",
+  "leases": [
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-48-3D-SPEC",
+      "session": null,
+      "base_sha": null,
+      "started_at": "2026-11-09T15:04:12+08:00",
+      "ttl_hours": 24,
+      "status": "released",
+      "released_at": "2026-11-09T15:26:30+08:00"
+    }
+  ]
+}
