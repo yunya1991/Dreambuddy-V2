@@ -5,15 +5,18 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
 from core.mappings import (
     DEFAULT_DIMENSION,
+    DEFAULT_TTL_HOURS,
     DEFAULT_WEIGHT,
     SOURCE_DIM_MAP,
     SOURCE_TF_MAP,
+    SOURCE_TTL_HOURS,
     SOURCE_WEIGHT_MAP,
     VALID_DIMENSIONS,
     intent_of,
@@ -74,7 +77,9 @@ def normalize_direction(value: object) -> str:
     return DIRECTION_ALIASES.get(direction, direction)
 
 
-def _freshness(evidence: dict[str, Any], now: datetime) -> tuple[float, list[str]]:
+def _freshness(
+    evidence: dict[str, Any], now: datetime, source: str = ""
+) -> tuple[float, list[str]]:
     degraded: list[str] = []
     expires = _parse_ts(evidence.get("expires_at"))
     if evidence.get("expires_at") is None:
@@ -90,7 +95,22 @@ def _freshness(evidence: dict[str, Any], now: datetime) -> tuple[float, list[str
     total = (expires - started).total_seconds()
     if total <= 0:
         return 1.0, ["invalid_ttl"]
-    return _clamp((expires - now).total_seconds() / total), degraded
+    bus_freshness = _clamp((expires - now).total_seconds() / total)
+
+    # F3（SPEC-M1 M8）：源数据年龄校验——总线新鲜不代表源数据新鲜。
+    # payload 携带 state_generated_at/updated_at 时按源 TTL 指数衰减；超 2×TTL 丢弃。
+    payload = evidence.get("payload") if isinstance(evidence.get("payload"), dict) else {}
+    state_ts = _parse_ts(payload.get("state_generated_at") or payload.get("updated_at"))
+    if state_ts is None:
+        return bus_freshness, degraded
+    ttl_hours = SOURCE_TTL_HOURS.get(source, DEFAULT_TTL_HOURS)
+    age_hours = (now - state_ts).total_seconds() / 3600.0
+    if age_hours < 0:
+        age_hours = 0.0
+    if age_hours > 2.0 * ttl_hours:
+        return 0.0, ["source_stale"]
+    source_freshness = math.exp(-age_hours / ttl_hours)
+    return min(bus_freshness, source_freshness), degraded
 
 
 def _dimension(source: str, hint: object, degraded: list[str]) -> str:
@@ -194,7 +214,7 @@ def synthesize_paths(
         if direction not in ("long", "short", "neutral"):
             continue
 
-        freshness, degraded = _freshness(evidence, moment)
+        freshness, degraded = _freshness(evidence, moment, source)
         if freshness <= 0:
             continue
         if role == "unknown":
@@ -279,4 +299,34 @@ def synthesize_paths(
                 metadata=metadata,
             )
         )
-    return sorted(result, key=lambda item: (-item.confidence, item.path_id))
+
+    # F2（SPEC-M1 M3）：权重按 source 归一——path 有效权重 = source_weight / 该源当批 path 数，
+    # 消除"币数放大"（如 26 条 bcrm-tactical path 总权重 9.10 压垮裁决），单 path 权重截断 [0,1]。
+    per_source: dict[str, int] = {}
+    for path in result:
+        per_source[path.source] = per_source.get(path.source, 0) + 1
+    normalized: list[Path] = []
+    for path in result:
+        raw_weight = float(path.metadata.get("weight") or 0.0)
+        effective = _clamp(raw_weight / max(per_source[path.source], 1))
+        metadata = dict(path.metadata)
+        metadata["weight_raw"] = raw_weight
+        metadata["weight"] = effective
+        metadata["source_path_count"] = per_source[path.source]
+        normalized.append(
+            Path(
+                path_id=path.path_id,
+                source=path.source,
+                symbol=path.symbol,
+                direction=path.direction,
+                confidence=path.confidence,
+                expected_return=path.expected_return,
+                resistance=path.resistance,
+                continuation_score=path.continuation_score,
+                dimension=path.dimension,
+                horizon=path.horizon,
+                intent=path.intent,
+                metadata=metadata,
+            )
+        )
+    return sorted(normalized, key=lambda item: (-item.confidence, item.path_id))

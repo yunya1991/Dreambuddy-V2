@@ -91,6 +91,104 @@ def _risk_exposure_hint(tier: str) -> float:
     }.get(tier, 0.0)
 
 
+# ── R0-3 shadow 解除门禁（PLAN-NN闭环链施工 WP-R0；预注册条件，禁止临时放宽）──
+_RUNTIME_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime")
+_GATE_STATE_PATH = os.path.join(_RUNTIME_DIR, "shadow_gate_state.json")
+_GATE_AUDIT_PATH = os.path.join(_RUNTIME_DIR, "shadow_gate_audit.jsonl")
+# P3 迁移一致性报告（docs/p3_shadow_compare.py 产出，需桥关闭状态下测量）
+_P3_REPORT_PATH = os.path.join(_RUNTIME_DIR, "p3_shadow_compare_report.json")
+_GATE_REQUIRED_DAYS = 7  # 连续 7 天五维非默认
+_GATE_P3_MIN_RATE = 0.95  # P3 一致性 ≥95%
+_GATE_P3_MAX_AGE_DAYS = 30  # P3 报告有效期
+
+
+def _shadow_gate_decision(
+    now: datetime, crypto_scores: Dict[str, Any], bridge_on: bool
+) -> "tuple[bool, Dict[str, Any]]":
+    """shadow 解除条件（预注册，两条件同时满足才解除）：
+
+    1) 连续 7 天五维非默认：CYCLE_STATE_BRIDGE 开启且 crypto_usdt 的
+       天/地/将/法四维任一 ≠ 50（50 为 fail-open 默认值，≠50 证明 40→43 承接生效）
+    2) P3 迁移一致性 ≥95%：p3_shadow_compare_report.json consistency_rate ≥ 0.95
+       且测量时间在 30 天内（桥关闭态测得，证明 43 与 11 原位置等价）
+
+    fail-open：任何异常/文件缺失 → shadow 保持 True。解除瞬间写 released 审计事件。
+    """
+    audit: Dict[str, Any] = {
+        "ts": now.isoformat(),
+        "bridge_on": bool(bridge_on),
+        "qualifying_today": False,
+        "consecutive_days": 0,
+        "p3_rate": None,
+        "p3_ok": False,
+        "shadow": True,
+        "released": False,
+    }
+    try:
+        # 条件 1：当日是否达标
+        non_default = any(
+            (crypto_scores or {}).get(d, 50) != 50 for d in ("tian", "di", "jiang", "fa")
+        )
+        qualifying = bool(bridge_on) and non_default
+        audit["qualifying_today"] = qualifying
+
+        state: Dict[str, Any] = {}
+        if os.path.exists(_GATE_STATE_PATH):
+            with open(_GATE_STATE_PATH, encoding="utf-8") as f:
+                state = json.load(f)
+        days = int(state.get("consecutive_days") or 0)
+        today = now.date().isoformat()
+        yesterday = (now.date() - timedelta(days=1)).isoformat()
+        if qualifying:
+            last = state.get("last_qualifying_date")
+            if last == today:
+                pass  # 当日重复发布不累加
+            elif last == yesterday:
+                days += 1
+            else:
+                days = 1
+            state = {"consecutive_days": days, "last_qualifying_date": today}
+        else:
+            state = {"consecutive_days": 0, "last_qualifying_date": None}
+            days = 0
+        audit["consecutive_days"] = days
+        os.makedirs(_RUNTIME_DIR, exist_ok=True)
+        with open(_GATE_STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+
+        # 条件 2：P3 迁移一致性
+        if os.path.exists(_P3_REPORT_PATH):
+            with open(_P3_REPORT_PATH, encoding="utf-8") as f:
+                report = json.load(f)
+            rate = float(report.get("consistency_rate") or 0.0)
+            generated = str(report.get("generated_at") or "")
+            audit["p3_rate"] = rate
+            try:
+                measured = datetime.fromisoformat(generated.replace("Z", "+00:00"))
+                age_ok = (now - measured.astimezone(timezone.utc)) <= timedelta(
+                    days=_GATE_P3_MAX_AGE_DAYS
+                )
+            except Exception:  # noqa: BLE001
+                age_ok = False
+            audit["p3_ok"] = bool(rate >= _GATE_P3_MIN_RATE and age_ok)
+
+        released = bool(days >= _GATE_REQUIRED_DAYS and audit["p3_ok"])
+        audit["shadow"] = not released
+        audit["released"] = released
+        with open(_GATE_AUDIT_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(audit, ensure_ascii=False, sort_keys=True) + "\n")
+        return audit["shadow"], audit
+    except Exception as exc:  # noqa: BLE001  fail-open：门禁故障不解除 shadow
+        audit["shadow"] = True
+        audit["error"] = str(exc)
+        try:
+            with open(_GATE_AUDIT_PATH, "a", encoding="utf-8") as f:
+                f.write(json.dumps(audit, ensure_ascii=False, sort_keys=True) + "\n")
+        except Exception:  # noqa: BLE001
+            pass
+        return True, audit
+
+
 def build_signal(
     coin_data: Optional[Dict[str, Any]] = None,
     system_state: Optional[Dict[str, Any]] = None,
@@ -183,6 +281,9 @@ def build_signal(
 
         # 主信号取 crypto_usdt 类（当前白名单仅 BTC）
         main = per_class.get("crypto_usdt") or {}
+        # R0-3：shadow 解除门禁（预注册条件，fail-open 保持 shadow=True）
+        bridge_on = bool(getattr(computer, "enable_cycle_state_bridge", False))
+        shadow, gate_audit = _shadow_gate_decision(now, scores.get("crypto_usdt") or {}, bridge_on)
         signal = {
             "signal_id": "sig_{}_{}".format(now.strftime("%Y%m%d"), uuid.uuid4().hex[:8]),
             "source": "strategic_extension",
@@ -193,13 +294,19 @@ def build_signal(
             "horizon": "days",
             "risk_exposure_hint": main.get("risk_exposure_hint", 0.0),
             "expires_at": (now + timedelta(hours=24)).isoformat(),
-            "shadow": True,
+            "shadow": shadow,
             "payload": {
                 "per_asset_class": per_class,
                 "asset_groups": {cls: [cls] for cls in ASSET_CLASSES},
                 "strategic_elements": strategic_elements,
                 "semantic_view": semantic_view,
-                "bridge_switch": bool(getattr(computer, "enable_cycle_state_bridge", False)),
+                "bridge_switch": bridge_on,
+                "shadow_gate": {
+                    "qualifying_today": gate_audit.get("qualifying_today"),
+                    "consecutive_days": gate_audit.get("consecutive_days"),
+                    "p3_rate": gate_audit.get("p3_rate"),
+                    "p3_ok": gate_audit.get("p3_ok"),
+                },
                 "disclaimer": "战略建议非交易信号；13 系统风控门禁兜底",
             },
         }

@@ -116,10 +116,10 @@ def test_event_shock_continuation_equals_confidence():
     assert paths[0].continuation_score == pytest.approx(paths[0].confidence)
 
 
-def test_unknown_source_degrades_to_c3():
+def test_unknown_source_degrades_to_c7():
     paths = synthesize_paths([evidence(source="99-unknown")], now=NOW)
     assert len(paths) == 1
-    assert paths[0].dimension == "C3"
+    assert paths[0].dimension == "C7"
     assert "source_unmapped" in paths[0].metadata["degraded"]
 
 
