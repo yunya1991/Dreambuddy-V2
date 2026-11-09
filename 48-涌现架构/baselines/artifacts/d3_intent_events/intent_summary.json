@@ -1,0 +1,35 @@
+{
+ "session_count": 1089,
+ "parse_error_count": 0,
+ "parse_errors": [],
+ "task_type_distribution": {
+  "configuration": 392,
+  "strategy-execution": 259,
+  "architecture-design": 131,
+  "python-development": 128,
+  "documentation": 54,
+  "memory-system": 51,
+  "frontend-development": 32,
+  "trading-data": 19,
+  "general": 12,
+  "trading-system": 5,
+  "knowledge-management": 5,
+  "strategy-governance": 1
+ },
+ "date_range": [
+  "2026-08-09T01:28:53.440633+00:00",
+  "2026-11-09T10:58:16.192262+00:00"
+ ],
+ "split": {
+  "train_ratio": 0.75,
+  "total": 1089,
+  "train_count": 816,
+  "test_count": 273
+ },
+ "limitations": [
+  "intent_proxy 是 session.task_type 代理标签，不是用户直接意图标签",
+  "P0-2 关闭（直接意图标签补采）前不得申报「意图涌现」，D3-A 仅限 task_type 预测",
+  "actions 只保留 action_type/文件列表，未复制用户自由文本"
+ ],
+ "generated_at": "2026-11-09T11:04:23.062011+00:00"
+}

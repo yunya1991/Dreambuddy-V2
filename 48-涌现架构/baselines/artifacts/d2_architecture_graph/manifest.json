@@ -1,0 +1,19 @@
+{
+ "generated_at": "2026-11-09T11:04:52.985007+00:00",
+ "git_commit": "d8aa6fc2f87889549fe1cf388d7513992d850615",
+ "artifacts": {
+  "architecture_graph.json": {
+   "sha256": "3b95a04a3f9e031ab9fa23ddea27bbb7f6a36257ce92ea95af078ed8a78ab5a9",
+   "bytes": 9494459,
+   "sha_note": "sha256 覆盖剔除 generated_at 的结构内容"
+  }
+ },
+ "scopes": [
+  "<repo>"
+ ],
+ "limits": [
+  "Python-only；不含 TS/JS import 与运行时数据流",
+  "call 边为函数名级（重名取排序首个），非精确调用图",
+  "doc_ref 仅覆盖 Markdown 相对链接"
+ ]
+}

@@ -1,0 +1,225 @@
+{
+ "generated_at": "2026-11-09T11:04:52.985007+00:00",
+ "scopes": [
+  "<repo>"
+ ],
+ "node_count": 7859,
+ "edge_count": 53959,
+ "node_type_distribution": {
+  "markdown_doc": 3303,
+  "python_file": 4110,
+  "external": 446
+ },
+ "edge_kind_distribution": {
+  "doc_ref": 1756,
+  "call": 27563,
+  "import": 24640
+ },
+ "parse_error_count": 97,
+ "parse_errors": [
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FOttStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FOttStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FSupertrendStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__FSupertrendStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__TrendFollowingStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade-strategies__TrendFollowingStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_family/trend/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_market/futures/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__FOttStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__FOttStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__FSupertrendStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__FSupertrendStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__TrendFollowingStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_market/spot/freqtrade-strategies__TrendFollowingStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FOttStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FOttStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FSupertrendStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__FSupertrendStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__TrendFollowingStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade-strategies/freqtrade-strategies__TrendFollowingStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade__freqtrade-strategies/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_repo/freqtrade__freqtrade-strategies/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FOttStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FOttStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FSupertrendStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__FSupertrendStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__TrendFollowingStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade-strategies__TrendFollowingStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_stage/research/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FOttStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FOttStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/adx/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/atr/freqtrade-strategies__FSupertrendStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/atr/freqtrade-strategies__FSupertrendStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/bbands/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/bbands/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/bbands/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/bbands/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FOttStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FOttStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/ema/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/futures/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FReinforcedStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FReinforcedStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FSupertrendStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade-strategies__FSupertrendStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/hyperopt/freqtrade__freqtrade-strategies__FAdxSmaStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/macd/freqtrade-strategies__FSampleStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/macd/freqtrade-strategies__FSampleStrategy.py'"
+  },
+  {
+   "file": "10-经典指标系统/user_data/strategies/github/_by_tag/ott/freqtrade-strategies__FOttStrategy.py",
+   "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/10-经典指标系统/user_data/strategies/github/_by_tag/ott/freqtrade-strategies__FOttStrategy.py'"
+  }
+ ],
+ "dangling_edge_count": 0,
+ "closed_check": "pass",
+ "sha256": "3b95a04a3f9e031ab9fa23ddea27bbb7f6a36257ce92ea95af078ed8a78ab5a9",
+ "bytes": 9494459
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "module": "root:repo",
+  "leases": [
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-48-BASELINES-P0",
+      "session": null,
+      "base_sha": null,
+      "started_at": "2026-11-09T19:14:03+08:00",
+      "ttl_hours": 24,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}

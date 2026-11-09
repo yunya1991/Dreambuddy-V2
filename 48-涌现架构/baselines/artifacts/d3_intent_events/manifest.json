@@ -1,0 +1,12 @@
+{
+ "generated_at": "2026-11-09T11:04:23.062011+00:00",
+ "git_commit": "d8aa6fc2f87889549fe1cf388d7513992d850615",
+ "artifacts": {
+  "intent_events.jsonl": {
+   "sha256": "44bd72e4bd91b7ea8fad9176eefdf6a07c4712bb7102a61f46da2c59bbd2935d",
+   "bytes": 8507850
+  }
+ },
+ "train_ratio": 0.75,
+ "privacy": "raw JSONL 含内部 session id/文件路径，不入库提交；仅 summary/split/manifest 可入库"
+}
