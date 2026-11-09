@@ -496,9 +496,7 @@ class TradeExecutionEngine:
                     max_bps=max_bps,
                 )
 
-        bucket_str = (
-            decision.algo.name
-        )
+        bucket_str = decision.algo.name
         estimate_dict = {
             "slippage_bps": slip_bps,
             "market_impact_usd": float(getattr(estimate, "market_impact_cost_usd", 0.0) or 0.0),
