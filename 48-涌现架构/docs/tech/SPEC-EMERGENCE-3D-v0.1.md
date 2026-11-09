@@ -1,12 +1,12 @@
-# SPEC — 三维涌现（D1 交易 / D2 工程 / D3 意图）v0.1
+# SPEC — 三维涌现（D1 交易 / D2 工程 / D3 意图）v0.2
 
-> **状态**：🟡 草案（拟并入 48 SPEC v0.6；本版只写 Spec 与实验协议，不含代码实施；六维评审：**修改后接受**，P0×3/P1×6/P2×3 见 §11）
-> **日期**：2026-11-08
+> **状态**：🟡 讨论稿（拟并入 48 SPEC v0.6；2026-11-09 外部评审：**需修改**，暂不作为实施就绪基线，只作三维涌现方案讨论稿）
+> **日期**：2026-11-08（v0.1）→ 2026-11-09（v0.2）
 > **归属**：48-涌现架构
 > **上游**：[SPEC-EMERGENCE-EVOLUTION v0.5](./SPEC-EMERGENCE-EVOLUTION-v0.1.md) · [SPEC-NN-FEEDBACK-GATEWAY v0.1](./SPEC-NN-FEEDBACK-GATEWAY-v0.1.md) · 35-广义认知 C1-C4 · 46-DSH · 47-MCP · 33-REA · 45-评测系统 · DreamOS
 > **下游**：P0 度量字典与基线盘点 · P1 D2-A/D3-A 实验 · P2 D2-B/D3-B 实验 · P3 跨域迁移 · P4 三维度量面板
-> **变更**：首版。吸收 2026-11-08 用户提出的「D2 工程架构涌现 + D3 意图涌现」，把 48 从交易单维扩展为三维判据矩阵；**不修改 48 v0.5 已评审正文**。
-> **评审状态**：已跑 [REVIEW-CHECKLIST-v0.1](./REVIEW-CHECKLIST-v0.1.md) 六维评审（2026-11-08）；裁决**修改后接受**，详细证据与处置见 §11。本文 §9 保留起草自检摘要。
+> **变更（v0.1→v0.2，外部评审修订）**：①重写跨域判定（共同效用前置 + 2×2×2 因子 + 三阶交互；无法建立共同效用时只称「跨域联合收益」）；②移除 D2-A 新颖度门槛（归 D2-B 并与去重/可行性联合评估）；③统一 candidate/verified/rejected 状态流转与三态判定边界；④统计方案补主终点/独立样本单元/聚类重采样/多重比较；⑤OOD 未闭合前所有 D2-A/D3-A 运行降级为探索性运行并区分实验隔离与 FAIL-OPEN；⑥补 D3-A 预测目标/特征截止/切分表与泄漏审计；⑦同步 P0 状态（P0-1 本地实现 + 测试，P0-3 基线已生成待复核，P0-2 未达标）；⑧schema 复合值结构与阈值冻结口径。
+> **评审状态**：2026-11-08 内部六维评审「修改后接受」（§11.1-11.3，**文档层裁决，不等于实施批准**）；2026-11-09 外部评审「需修改」（§11.4）。
 
 ---
 
@@ -32,13 +32,14 @@
 | 不让 48 接管 D2/D3 系统所有权 | 48 只做判据、度量、实验、观测；D2 做梦器归 33-REA/46-DSH，D3 归 DreamOS/35 |
 | 不让 AI 评审直接当硬门禁 | AI-as-Judge 未经 45 §9 校准只能进加权项 |
 | 不在生产链路做生成/执行 | 全部 shadow / 沙箱；生成物零执行权、FAIL-OPEN |
+| 不把本 Spec 当作实施就绪基线 | 2026-11-09 外部评审结论：核心判定方法与统计方案仍在修订；仅作三维涌现讨论稿 |
 
 ### 0.3 核心判断
 
 1. **48 当前只有 D1 真正落地**：E2 首次批次 32/32 新颖但 `evaluator_missing`，M2=0；E5 四组配置无一显著（最优配置下 kNN 仅 53.6%-59.7%）。**生成器不是瓶颈，评估信号才是。**
 2. **D2 底座最厚**：33-REA 已有架构模式识别、调用链、依赖图、设计决策复原、演化叙事、覆盖率；45 已有技术工程类评测标准与 LLM-as-Judge 协议。缺的是「文档-代码统一图 + holdout + 生成器 + 新颖度定义」。
 3. **D3 底座中等**：DreamOS IntentEngine + IntentEvaluator + 35 记忆 + shadow-probe 模式已存在；本地 `.cognitive/sessions` 当前 366 个 session dir（E4b 历史回填报告 884 事件，二者口径不同），可作为 task_type 粗粒度代理；缺的是「直接意图标签 + 预测目标 + 时序 holdout + 接受标签 + 三套意图体系收敛」。
-4. **三维不是三个独立优化**：只有「联合运行 > 三个独立运行之和」（超加性）才可申报三维涌现；否则如实报告「三个独立维度的优化」。
+4. **三维不是三个独立优化**：在共同效用函数建立并预注册 2×2×2 因子设计之前，只能报告「跨域联合收益」；「三维涌现」表述必须通过三阶交互检验（§1.2）。
 
 ### 0.4 与 48 v0.5 A/B/C 的关系
 
@@ -75,22 +76,34 @@ E1-E5 的定义沿用 48 v0.5 §1，不因新增维度而放宽。每个维度�
 
 > D2/D3 的 E5 以 **E5(a) 能力-规模曲线拐点**为主；E5(b) 临界态三件套（级联幂律 + σ≈1 + 序参量凝结）仅在事件流足够时适用，不强制套用。
 
-### 1.2 三维涌现的严格定义
+### 1.2 跨域联合收益与「三维涌现」的严格定义
 
-设：
+**共同效用前置**：跨域比较前必须先定义同一评价单位下的共同主结果（primary endpoint）、共同效用函数或显式归一化方法（含固定基准、损失方向、权重）。归一化一经预注册不得更换；不同归一化产生不同结论时，必须报告全部口径，不得只报有利口径。
 
-- `G(D)` = 维度 D 单独运行时的目标增益（相对各自基线，先归一化为百分比增益，且同一任务/同一评价窗口）
-- `G(D1,D2,D3)` = 三维联合运行时的目标增益
-- `G_pair` = 两两组合增益
+**无法建立共同效用函数时**：结论只能表述为「跨域联合收益」，**不得**使用「三维涌现」。
 
-**三维涌现候选**必须同时满足：
+**因子设计**：预注册完整 2×2×2 因子实验（D1 on/off × D2 on/off × D3 on/off，共 8 臂），每臂按真实独立实验单元重复。设：
+
+- `G(D1)` / `G(D2)` / `G(D3)`：单因素主效应（相对各自基线的增益，统一归一化）；
+- `G_ij`（i<j）：两因素交互项；
+- `G_123`：三因素交互项。
+
+> v0.1 的 `G(joint) - [G(D1)+G(D2)+G(D3)] > 0` 口径已废除：联合高于单项之和可能来自任意两维交互，**不足以**证明三阶交互。
+
+**「三维涌现候选」必须同时满足**：
 
 1. 每个维度的单域判据至少有 1 条达到 `candidate`（E1/E2 优先）；
-2. `G(D1,D2,D3) - [G(D1)+G(D2)+G(D3)] > 0`，且配对 bootstrap 95% CI 不含 0；
-3. 联合增益不能由脚手架/数据红利解释（§4.5 消融）；
-4. 通过 48 v0.5 §5 七关门禁（双度量、OOD、稳健性、辩论、人工复核、消融、可复现）。
+2. 三因素交互项 `G_123` 显著（预注册检验，95% CI 不含 0 且方向为正）；
+3. 至少一个两因素交互项 `G_ij` 为正且经多重比较校正（三维涌现是两两协同的加强，不是替代）；
+4. 联合增益不能由脚手架/数据红利解释（§4.5 消融）；
+5. 通过 48 v0.5 §5 七关门禁（双度量、OOD、稳健性、辩论、人工复核、消融、可复现）。
 
-只满足 1、不满足 2 时，只能报告「三个独立维度的优化」，**不得**使用「三维涌现」表述。
+**不满足 2 时的降级表述**：
+
+- 有正的两因素交互 → 报告「两维协同 + 单维优化」；
+- 无任何显著交互 → 报告「多个独立维度的优化」或「跨域联合收益」。
+
+以上情形**均不得**使用「三维涌现」表述。
 
 ---
 
@@ -104,6 +117,8 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 2. 补充「最小阻力」的显式口径：`{slippage_bps, fee_bps, holding_hours, maxdd_pct}` 四元组 + 归一化综合分，避免只报 PnL 不报阻力。
 
 **当前状态（2026-11-08 快照）**：E2 的 M2=0（evaluator_missing）；E3 生产 coupling falsified、shadow 重训 inconclusive；E5 四组配置无一显著。D1 的实验协议已在 v0.5 定义，本 Spec 不重复。
+
+> **数据现实（2026-11-08 核验，P1-2）**：本地 `11-易经推理系统/scripts/data/bcrm_trades.db` 为 0 字节空文件；`human_baseline.json` 的 24 IS/9 OOS 来自云端实盘快照。D1 指标复现需云端 DB 或快照，不在本机重算；P0/P1 需明确数据获取路径并记录快照 hash。
 
 ### 2.2 D2 工程架构涌现
 
@@ -153,7 +168,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 #### 2.2.4 缺口
 
-1. **文档-代码统一图（P0 前置）**：现有 33-REA 偏 AST，ARCHITECTURE_MAP 偏人读，当前工作树**没有**统一的 `ArchitectureGraph` artifact；D2-A 启动前必须先产出图基线；
+1. **文档-代码统一图（P0-3）**：v0.1 时不存在；2026-11-09 已生成基线（574 nodes / 3522 edges，0 悬挂边，见 §12.1），**待人工复核 3-5 个 holdout 模块**后方可用于正式 D2-A（此前只能探索性运行）；
 2. **架构 holdout 协议**：没有「扣留模块代码/文档」的实验；
 3. **生成器**：33-REA 是分析已有架构，不是提出新架构；
 4. **新颖度**：E2 的结构向量编辑距离不能直接用于图/接口/ADR；
@@ -204,6 +219,8 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 | 认知记忆 | [SPEC-CognitiveSystem-Evolution.md](../../../35-广义认知系统协作模块/SPEC-CognitiveSystem-Evolution.md) | recall/record/verify、C1-C4 |
 | 评测协议 | [SPEC-评测系统.md](../../../45-评测系统/SPEC-评测系统.md) §9-10 | LLM 裁判校准、人工评测协议 |
 
+> **导入现实（2026-11-08 核验，P1-3）**：`IntentEvaluatorAgent` 可独立导入；`IntentEngine` 因 `dreamos/__init__.py` 在包初始化时导入 `apps.api_server`（依赖 Flask），本地缺 flask 时导入失败。D3 实验需轻量导入路径或依赖清单，**不改 DreamOS 包结构**。
+
 #### 2.3.4 缺口
 
 1. **预测目标未定义**：当前是「识别当前意图」，不是「预测下一意图/动作/知识组合」；
@@ -226,24 +243,35 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 ## §3 统一度量与标签
 
-### 3.1 `EmergenceMetric` schema
+### 3.1 `EmergenceMetric` schema（复合值版）
 
 ```json
 {
-  "metric_id": "M-D2-ARCH-EDGE-F1",
-  "domain": "D1|D2|D3|X",
-  "criterion": "E1|E2|E3|E4|E5|B|C",
-  "value": 0.0,
-  "unit": "ratio|pct|count|hours|score",
-  "baseline": {"id": "B0", "value": 0.0},
-  "status": "not_run|insufficient_data|falsified|inconclusive|candidate|verified",
-  "evidence": {"artifact": "", "sha256": "", "n": 0},
+  "metric_id": "M-D2-EDGE-F1",
+  "domain": "D2",
+  "criterion": "E1",
+  "value": {
+    "kind": "composite",
+    "fields": {"precision": 0.0, "recall": 0.0, "f1": 0.0}
+  },
+  "unit": "ratio",
+  "direction": "higher_better|lower_better",
+  "primary": false,
+  "baseline": {"id": "B0", "value": {"kind": "scalar", "number": 0.0}},
+  "status": "not_run|insufficient_data|falsified|inconclusive|candidate|verified|rejected",
+  "evidence": {"artifact": "", "sha256": "", "n_units": 0, "unit_of_analysis": "module|session|task"},
   "limitation": "",
   "provenance": {"owner": "", "source": "", "version": ""},
   "holdout": {"split": "temporal|module|none", "contaminated": false},
+  "missing_policy": "report|drop|fail",
   "ts": "ISO8601"
 }
 ```
+
+- `value.kind=scalar` 用 `number`；`composite` 用 `fields`（P/R/F1、ECE/Brier、阻力四元组、交互项组等复合指标）；
+- `direction` 声明损失方向；`primary=true` 标记预注册主终点（每个实验唯一）；
+- 文中数值阈值（ECE≤0.1、盲评 ≥4/5、k 等）均为**建议值**，正式门槛在预注册冻结（§4.0 第 8 条）；
+- 本节与 §3.3/B.4 为示例级；可校验 JSON Schema（required/enum/format）是 P0 交付物，落盘 `48-涌现架构/registry/schema/` 后由本附录引用。
 
 ### 3.2 度量命名空间
 
@@ -288,16 +316,29 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 **禁止**：用 `ai_judge` 单独判定 E2 候选；用测试集标签训练；用同一模型生成并评审。
 
-### 3.5 状态词表
+### 3.5 状态词表（状态流转与判定边界）
 
-| 状态 | 含义 | 是否可申报 |
-|---|---|---|
-| `not_run` | 未运行 | 否 |
-| `insufficient_data` | 样本/评估器不足 | 否 |
-| `falsified` | 明确证伪 | 否，记录 |
-| `inconclusive` | 有数据但不显著 | 否，记录 |
-| `candidate` | 显著且方向为正，待人工复核 | 候选 |
-| `verified` | 人工复核 + 可复现 + 消融通过 | 是 |
+| 代码 | 中文 | 含义 | 可申报 |
+|---|---|---|---|
+| `not_run` | 未运行 | 实验未执行 | 否 |
+| `insufficient_data` | 样本不足 | 独立实验单元数/评估器低于预注册最小值 | 否 |
+| `inconclusive` | 证据不足 | 有数据但主终点 CI 跨 0 / 无法区分 | 否 |
+| `falsified` | 已证伪 | 有足够证据证明无改善或方向为负（预注册证伪条件命中） | 否 |
+| `candidate` | 候选 | **统计达标**（主终点显著且方向为正），人工复核**之前** | 候选 |
+| `verified` | 已验证 | candidate 经人工复核 + 消融 + 独立复现通过 | 是 |
+| `rejected` | 复核驳回 | candidate 人工复核/消融/复现未通过 | 否 |
+
+**状态流转**：`not_run → insufficient_data | inconclusive | falsified | candidate → verified | rejected`；`rejected` 必须记录驳回理由与证据，不得静默删除。
+
+**判定边界（排他顺序，逐级判定）**：
+
+1. 独立单元数 < 预注册最小值 → `insufficient_data`；
+2. 主终点 CI 跨 0 或无法计算 → `inconclusive`；
+3. 预注册证伪条件命中（主终点差值 CI 上界 ≤ 0 等）→ `falsified`；
+4. 主终点显著且方向为正 → `candidate`；
+5. `candidate` 经人工复核 + 消融 + 复现 → `verified` / `rejected`。
+
+> 「不显著」**不等于** `falsified`：只有能正面证明「无改善/为负」才记 `falsified`；证据不足一律 `inconclusive`。
 
 ### 3.6 溯源与隔离
 
@@ -323,15 +364,17 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 4. **零执行权**：D2 生成物只在 45 沙箱构建/测试；D3 预测只做建议，不自动执行；
 5. **不放宽门禁**：45 阈值、ablation gate、PSI 阈值保持；
 6. **产物落盘**：预测、评估、人工评审、数据快照、局限，全部 append-only JSONL/JSON；
-7. **人工复核**：`candidate` 升 `verified` 必须人工复核；AI 评审不能单独发证；
-8. **阈值预注册**：`k`（新颖度距离）、盲评阈值、最小样本量、复述比例阈值等，均在 `experiment_prereg.json` 中冻结；未预注册的阈值不得事后调整；
-9. **OOD 强制点前置（P0-1）**：当前工作树未检出 `exclude_out_of_sample_interval` / `is_in_oos_interval` 等代码 hook；P0 必须先实现/确认强制点，否则 D2-A/D3-A 不得启动，OOD 只能算协议自律、不算门禁。
+7. **状态流转**：统计达标 → `candidate`；`candidate` 经人工复核 + 消融 + 独立复现 → `verified` / `rejected`（§3.5）；AI 评审不能单独发证；
+8. **阈值预注册**：`k`（新颖度距离，仅 D2-B/D3-B）、盲评阈值、最小样本量、复述比例阈值等，均在 `experiment_prereg.json` 中冻结；未预注册的阈值不得事后调整；
+9. **OOD 强制点（P0-1）**：两个 hook 已于 2026-11-09 **本地实现**并有回归测试（`case_ingest_gate.exclude_out_of_sample_interval`：区间命中/缺时间戳/区间非法均 fail-closed SKIP；`bayesian_memory_updater.is_in_oos_interval`：命中/缺时间戳/hook 异常均不更新；注册表 `48-涌现架构/registry/ood_intervals.py|.json`；测试 20/20）。但**生产调用方尚未接线、区间注册表为空、未经评审**——在此之前，D2-A/D3-A 全部运行标注 `run_class=exploratory`，不得产出正式 `candidate`/涌现申报。若采用临时降级方案，须同步更新主 SPEC §5 表述，并列出降级期间允许的实验、禁止的结论与复核责任人；
+10. **实验隔离 ≠ FAIL-OPEN**：FAIL-OPEN 保护生产主链路；实验链路中泄漏审计或 OOD 校验失败时，**实验立即停止且不计入正式结果**，不得降级继续；
+11. **泄漏审计**：每个 holdout 生成独立数据快照与排除清单（`exclusion_manifest.json`），启动前校验 RAG 索引、prompt、few-shot、缓存与派生文档无扣留内容残留（路径 + 关键词 + hash 三重检查），审计落 `leak_audit.json`；未通过不得启动实验。
 
 ### 4.1 D2-A：架构复原 holdout
 
 **假设 H2A**：扣留某模块的代码与文档后，系统从其余证据重建其接口、依赖、数据流、设计决策的能力，显著高于「检索最近模块文档」基线。
 
-> **前置（P0-3）**：必须先有统一的 `ArchitectureGraph` 基线（模块/接口/import/call/data_flow/doc_ref 节点与边）；当前工作树无该 artifact，D2-A 不得启动。
+> **前置（P0-3）**：统一 `ArchitectureGraph` 基线已于 2026-11-09 生成（574 nodes / 3522 edges，0 悬挂边，见 §12.1）；**人工复核 3-5 个 holdout 模块之前**，D2-A 只能探索性运行（`run_class=exploratory`）。
 
 **实验单元**：模块（Python package 或 TS 子目录）。
 
@@ -361,37 +404,38 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 **指标**：
 
-- `M-D2-EDGE-P/R/F1`：预测图边 vs 实际 import/call/data_flow 边；
-- `M-D2-INTERFACE-MATCH`：接口签名结构匹配率；
-- `M-D2-DATAFLOW-ACC`：数据流路径准确率；
-- `M-D2-ADR-MATCH`：设计决策匹配率（允许 inference 级，但必须带 known_gaps）；
-- `M-D2-DOC-COVERAGE`：生成结论中有证据链接的比例；
-- `M-D2-HUMAN-RUBRIC`：盲评 1-5 分；
-- `M-D2-NOVELTY`：与最近已有架构的图编辑距离 ≥k。
+- **主终点（唯一）**：`M-D2-EDGE-F1`（预测图边 vs 实际 import/call/data_flow 边）；
+- 次要（仅报告，不参与判定）：`M-D2-INTERFACE-MATCH`、`M-D2-DATAFLOW-ACC`、`M-D2-ADR-MATCH`（允许 inference 级，必须带 known_gaps）、`M-D2-DOC-COVERAGE`；
+- 门槛（gate，不作主判）：`M-D2-HUMAN-RUBRIC` 盲评 1-5；
+- `M-D2-NOVELTY` **不用于 D2-A**——复原任务奖励接近 ground truth，与新颖度要求直接冲突；新颖度只属于 D2-B（§4.2）。
 
-**样本与统计**：
+**样本与统计（预注册冻结）**：
 
-- 最少 3 模块 × 3 次独立运行（temperature=0，seed 固定）；3 个模块仅作最小可运行，建议 ≥5 个模块；
-- 模块级 F1 用 Wilcoxon signed-rank（n≥3 时仅作参考，**不作主判**）；主判用边级配对 bootstrap 10k 次；
-- 报告均值、95% CI、效应量；p<0.05 且方向为正才可 `candidate`。
+- **独立实验单元 = 模块**；模块内的边/接口是相关观测，不作独立样本——边级 bootstrap 会低估方差、虚高显著性；
+- 最少 **5 个模块**（3 个仅探索性可运行）；3 次固定 seed 运行（temperature=0）按模块取均值后汇总，**不作独立样本**；
+- 主终点检验：**模块级配对聚类 bootstrap**（重采样单元 = 模块，10k 次，percentile CI），报告效应量与 95% CI；
+- 多重比较：判定只看主终点；次要指标如需判定，预注册 Holm 校正；
+- 判定顺序按 §3.5 排他判定执行。
 
 **判定**：
 
 | 结果 | 条件 |
 |---|---|
-| `candidate` | F1 显著 > 最佳检索基线；盲评 ≥4/5；新颖度 ≥k；人工复核通过 |
-| `falsified` | F1 ≤ 基线；或生成物 >80% 文本复述检索文档；或盲评 <3/5 |
-| `inconclusive` | 模块/运行数不足；或评估器缺失；或置信区间跨 0 |
+| `candidate` | 主终点 F1 模块级 95% CI 下界 > 0（高于最佳检索基线）且盲评门槛 ≥4/5 |
+| `falsified` | 主终点差值 95% CI 上界 ≤ 0（有足够证据证明不优于基线）；或生成物 >80% 文本复述检索文档；或盲评 <3/5 |
+| `inconclusive` | 主终点 CI 跨 0（证据不足，不判证伪） |
+| `insufficient_data` | 模块数 < 预注册最小值（5） |
 
-**污染控制**：
+**污染控制与泄漏审计**：
 
-- 确保扣留模块的源码/文档不在 RAG 索引、prompt、few-shot 中；
-- 记录数据快照 hash；同一模块不得同时出现在训练与测试；
-- 生成物不得回写训练集，直到实验结束并冻结。
+- 每个 holdout 模块生成独立数据快照 + `exclusion_manifest.json`（删除的源码/文档/图节点/图边/索引项清单）；
+- 启动前校验 RAG 索引、prompt、few-shot、缓存与派生文档无扣留模块内容残留（路径 + 关键词 + hash 三重检查），结果落 `leak_audit.json`（§4.0 第 11 条）；
+- 泄漏审计失败 → 实验停止且不计入正式结果（§4.0 第 10 条）；
+- 记录数据快照 hash；同一模块不得同时出现在训练与测试；生成物在实验冻结前不得回写训练集。
 
 **产物**：
 
-`predictions.jsonl`、`evaluation.json`、`human_rubric.jsonl`、`data_snapshot.json`、`limitation.md`、`prereg.json`。
+`predictions.jsonl`、`evaluation.json`、`human_rubric.jsonl`、`data_snapshot.json`、`exclusion_manifest.json`、`leak_audit.json`、`limitation.md`、`prereg.json`。
 
 ### 4.2 D2-B：工程方案生成
 
@@ -417,20 +461,29 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 **评估**：
 
 - 45 §5.3 工程门禁：E-H1..H5、E-W1..W6；
-- 新增行覆盖率 ≥0.80、用例通过率 ≥0.95、pycg ≥0.70；
+- 新增行覆盖率 ≥0.80、用例通过率 ≥0.95、pycg ≥0.70（建议值，预注册冻结）；
+- **指标分母预注册**：覆盖率按 base_sha 自算（不信任提交方数字）；用例通过率分母 = 预注册测试集用例数，flaky 隔离后不计分母；
+- **测试独立性**：评估用例须独立于生成器（隐藏测试/冻结基准集），不得计入生成方案针对性优化的用例；pycg 基准对照使用冻结版本；
 - 人工盲评 rubric（架构合理性、可维护性、风险、证据充分性）；
-- 新颖度：与现有方案的图编辑距离 ≥k，且不是检索文档复述；
+- 新颖度：与现有方案的图编辑距离 ≥k，且与**去重、可行性、缺口解决**联合评估——任一不满足即不得申报（单纯新颖不是成果）；
 - E6 缺口是否被解决（回填验证）。
 
 **判定**：
 
-- `candidate`：门禁通过 + 盲评 ≥4/5 + 新颖度 ≥k + 缺口解决；
-- `falsified`：门禁失败 / 重复已有方案 / 盲评 <3/5；
-- `inconclusive`：评估器缺失 / 样本不足。
+- `candidate`：门禁通过 + 盲评 ≥4/5 + 新颖度 ≥k + 去重/可行性通过 + 缺口解决；
+- `falsified`：门禁失败 / 重复已有方案（去重未过）/ 盲评 <3/5；
+- `inconclusive`：评估器缺失 / 样本不足 / CI 跨 0。
 
 ### 4.3 D3-A：意图预测 holdout
 
-**假设 H3A**：从历史会话、习惯、错误案例预测下一个意图/动作，显著优于频率/规则/当前 IntentEngine/kNN 基线。
+**假设 H3A（代理阶段重述）**：在 session i 开始时（特征截止点 = 该 session 开始前的全部历史），预测 **session i 的 `task_type`**，显著优于频率/规则/当前 IntentEngine/kNN 基线。
+
+**预测目标定义（首轮，代理阶段）**：
+
+- **样本单位与预测时点**：以 session 为独立实验单元；在 session i 开始时刻预测其 `task_type`（「下一意图」= 下一 session 的任务类型，**不是**下一消息或下一动作——后者属直接意图标签阶段）；
+- **标签**：`y_i = session_i.task_type`；标签生成方式与特征截止点随预注册冻结；
+- **防标签泄漏**：`action_chain`、`files_touched`、`recalled_memory_ids`、`task_type_history`、outcome/correction 属于 session 内**结果侧**字段，**禁止**作为预测特征；首轮特征仅允许历史序列（过往 session 的 task_type / 时间戳 / 间隔）；
+- **去重/聚类**：同一 session 不拆分为多条事件；重复 task_type 按 session 计数；跨源对齐用 message hash，不改变 session 独立单元计数。
 
 **事件 schema**：
 
@@ -450,13 +503,13 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 }
 ```
 
-**数据与切分**：
+**数据与切分（预注册切分表）**：
 
-- 数据源（2026-11-08 核验）：`.cognitive/sessions/`（366 dirs；`task_type` 9 类；`action_chain.jsonl` 可 join）、git commit/task history；**前端/DreamOS 结构化 intent 日志当前未找到**，需 P0 接入或从 sessions 派生；
-- 首轮代理：用 `session.task_type` 作 `intent_type` 代理；只能申报 **task_type 预测**，不得申报「意图涌现」；
-- 时序切分：前 3 周训练/验证，第 4 周测试；滚动 4 周窗口；
-- 最少 200 个测试事件；不足 → `insufficient_data`；
-- 同一 session 不跨训练/测试；用户消息 hash 去重；
+- 数据源（2026-11-08 核验）：`.cognitive/sessions/`（366 dirs；非空 `session.json` 365；`task_type` 9 类；`action_chain.jsonl` 可 join）、git commit/task history；**前端/DreamOS 结构化 intent 日志当前未找到**，需 P0 接入或从 sessions 派生；
+- 首轮代理：`session.task_type` 作 `intent_type` 代理；报告统一标注 **「task_type 预测」**，不得与真实意图标签实验混报，不得申报「意图涌现」；
+- 时序切分：按 session start_time 排序，前 75% 训练/验证、后 25% 测试（或前 3 周/第 4 周滚动）；**切分表（train/val/test session id 清单 + cut 时间戳）随预注册冻结**；
+- 最少 **200 个测试 session**（独立单元）；当前 365 sessions → 92 test < 200，首轮必然 `insufficient_data`——需改 action-level 事件定义或积累更多 session，两者都是预注册变更，**不得**事后下调阈值；
+- 同一 session 不跨训练/测试；
 - `taxonomy` 字段必须记录使用的正典版本；跨正典比较先映射到 35 型正典或统一中间层，映射表版本化，避免 35 型/7 型/6×30 混算。
 
 **基线**：
@@ -470,21 +523,25 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 **指标**：
 
-- `M-D3-TOP1`、`M-D3-TOP3`、`M-D3-MRR`；
-- `M-D3-ACCEPT-RATE`：用户接受/未修改比例；
-- `M-D3-CLARIFY-TURNS`：平均澄清轮次；
-- `M-D3-TIME-TO-ACTION`：从输入到正确动作的时间；
-- `M-D3-CORRECTION-RATE`：后续纠正比例；
-- `M-D3-ECE`、`M-D3-BRIER`：置信度校准；
-- `M-D3-NOVELTY`：意图组合与正典/历史的距离。
+- **主终点（唯一）**：`M-D3-TOP1`（session 级 task_type 预测命中率）；
+- 次要（仅报告）：`M-D3-TOP3`、`M-D3-MRR`、`M-D3-ACCEPT-RATE`（用户接受/未修改比例）、`M-D3-CLARIFY-TURNS`、`M-D3-TIME-TO-ACTION`、`M-D3-CORRECTION-RATE`；
+- 校准门槛（gate）：`M-D3-ECE` / `M-D3-BRIER`；
+- `M-D3-NOVELTY`：仅**直接意图标签阶段**使用（代理阶段无用户确认通道，无法评估新颖组合）。
+
+**样本与统计（预注册冻结）**：
+
+- 独立实验单元 = session；主终点用 session 级配对/置换检验（相对基线的差值，报告 95% CI）；
+- 多重比较：判定只看主终点；次要指标如需判定，预注册 Holm 校正；
+- 判定顺序按 §3.5 排他判定执行。
 
 **判定**：
 
 | 结果 | 条件 |
 |---|---|
-| `candidate` | TOP1 或接受率显著 > 最佳基线；ECE≤0.1；新颖组合经用户确认；人工复核 |
-| `falsified` | ≤ 基线；或接受率无提升；或纠正率上升 |
-| `inconclusive` | <200 测试事件；或标签缺失；或置信区间跨 0 |
+| `candidate` | 主终点 TOP1 相对最佳基线的差值 95% CI 下界 > 0 且 ECE 门槛达标（建议 ≤0.1，预注册冻结） |
+| `falsified` | 主终点差值 95% CI 上界 ≤ 0（有足够证据证明不优于基线）；或纠正率显著上升 |
+| `inconclusive` | 主终点 CI 跨 0 |
+| `insufficient_data` | 测试 session < 200 或标签缺失 |
 
 **隐私与漂移**：
 
@@ -492,7 +549,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 - 按用户/时间段监控漂移；漂移超阈值时暂停 `candidate` 申报；
 - n=1 用户场景需额外报告「跨用户泛化」缺口，不得宣称通用意图涌现。
 
-**运行方式**：shadow-probe 模式；旧路径为准；`recordMemory=false` 防污染；200 样本预算；失败静默。
+**运行方式**：shadow-probe 模式；旧路径为准；`recordMemory=false` 防污染；200 样本预算；失败静默。P0-1（生产接线/区间配置）与 P0-2（直接意图标签）关闭前，全部运行标 `run_class=exploratory`。
 
 ### 4.4 D3-B：意图知识组合
 
@@ -730,7 +787,7 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 
 | ID | 级别 | 发现 | 证据 | 处置 |
 |---|---|---|---|---|
-| P0-1 | P0 | OOD/时序隔离无代码强制点；主 SPEC v0.5 §5 声称的 hook 在当前工作树未检出 | 全仓 grep `exclude_out_of_sample_interval`/`is_in_oos_interval` 0 命中；`case_ingest_gate.py`/`bayesian_memory_updater.py` 无对应 hook | P0 前置：P1 前实现/确认强制点；否则 D2-A/D3-A 不得启动 |
+| P0-1 | P0 | OOD/时序隔离无代码强制点；主 SPEC v0.5 §5 声称的 hook 在当前工作树未检出 | 2026-11-09 复审确认：精确名仅文档命中；`git log -S -- '*.py'` 无提交；`CaseIngestGate`/`BayesianMemoryUpdater` 无对应参数/hook；详见 [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md) | P0-1 复审完成，修复未实施；方案 A（两 hook + 测试）或方案 C（降级宣称）；关闭前 D2-A/D3-A 只做探索性实验 |
 | P0-2 | P0 | D3-A 直接意图标签缺失 | 仅有 `intent_taxonomy.schema.json`；sessions 只有 `task_type` 9 类 | 首轮只做 task_type 代理；真实意图标签 P0 补采；补采前不得申报意图涌现 |
 | P0-3 | P0 | D2-A 统一 `ArchitectureGraph` 未建 | 33-REA 分析器存在，但无统一图 artifact | P0 先产出图基线；否则 D2-A 阻塞 |
 | P1-1 | P1 | E6 `capability_gaps.jsonl` 缺失；新 gap_type 未注册 | 文件不存在；`ROUTE_TABLE` 无新类型 | D2-B 前恢复/注入缺口；P1 扩展路由并测试 |
@@ -746,6 +803,42 @@ D1 沿用 48 v0.5 的 E0-E6 与 M1-M7，不重复定义。本 Spec 只做两件�
 ### 11.3 裁决与后续
 
 **修改后接受**：文档层引用/格式/口径问题已修（见本次改动）；P0-1/P0-2/P0-3 是实施/申报阻塞项，必须在 P1 前关闭。P0-1 涉及主 SPEC v0.5 §5 的 OOD 强制点，建议同步发起主 SPEC 复审；P0-2/P0-3 属于 P0 数据/图基线建设，不进入本版代码。
+
+> **后续进展（2026-11-09）**：P0-1 复审完成（确认代码级 OOD 强制点缺失，见 [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md)）；P0-3 图基线已生成（574 nodes / 3522 edges，0 悬挂边）；P0-2 生成器合成会话冒烟通过，但真实 `.cognitive/sessions` 执行被本地安全守门拦截，且 365 sessions 的 75/25 切分只有 92 test <200。详见 §12。
+
+---
+
+## §12 P0/P1 关闭清单（2026-11-09）
+
+| ID | 状态 | 关闭动作 | 退出条件 | 证据/产物 |
+|---|---|---|---|---|
+| P0-1 | **confirmed open** | 复审完成：确认代码级 OOD 强制点缺失；按方案 A 实现两 hook + 回归测试，或方案 C 临时降级宣称 | 代码 hook/等价强制点 + 回归测试；主 SPEC 引用更新为真实路径 | [REVIEW-2026-11-09-main-spec-ood.md](./reviews/REVIEW-2026-11-09-main-spec-ood.md) |
+| P0-2 | generator ready（smoke-tested；artifact blocked） | 生成器已落盘 `baselines/build_d3_intent_events.py`；合成会话冒烟通过（2/2）；本地安全分类器拦截 `.cognitive/sessions` 读取，需授权环境执行；已知 365 non-empty sessions，75/25 → 92 test <200，session 级 D3-A 会 insufficient_data；需 action-level 事件或更多 session；补采直接意图标签 | ≥200 测试事件；直接 intent 标签可用 | `baselines/README.md`；运行 `python 48-涌现架构/baselines/build_d3_intent_events.py` |
+| P0-3 | baseline-generated（待人工复核） | 已生成图基线；人工复核 3-5 个 holdout 模块 | 图 artifact + schema 校验 + 人工复核 | `baselines/artifacts/d2_architecture_graph/`（574 nodes / 3522 edges；sha256 `89aeab3b828a...`） |
+| P1-1 | open | 恢复/注入 E6 `capability_gaps.jsonl`；扩展 `ROUTE_TABLE` | 3 个已知缺口 + 路由测试 | E6 registry |
+| P1-2 | open | 明确云端交易 DB/快照获取路径 | D1 指标可用快照 hash 复现 | `human_baseline.json` + 快照 |
+| P1-3 | open | 提供 DreamOS 轻量导入路径或依赖清单 | `IntentEngine` 可导入/可跑 smoke | requirements/导入脚本 |
+| P1-4 | open | 恢复/文档化 events/trajectories/l1_case_store | E4b/E5 事件源可复现 | 数据源清单 |
+| P1-5 | open | 35/DreamOS 决定意图 SSoT | 单一正典 + 映射表版本化 | 决策记录 |
+| P1-6 | open | 指定人工/AI 评审 owner、预算、校准集 | ≥200 人工标注 + 45 §9 校准 | 评审记录 |
+
+> **状态规则**：只有产物落盘 + 证据链接 + 退出条件满足才可置 `closed`；P0-2/P0-3 的基线生成不等于关闭——直接意图标签/图人工复核仍是前置。
+
+### 12.1 P0 基线生成器（2026-11-09）
+
+| 基线 | 生成器 | 输出 | 状态 |
+|---|---|---|---|
+| D2 架构图 | [build_d2_architecture_graph.py](../../baselines/build_d2_architecture_graph.py) | `baselines/artifacts/d2_architecture_graph/`（graph + summary + manifest） | ✅ 已生成：574 nodes / 3522 edges；闭合校验 0 悬挂边；待人工复核 |
+| D3 意图事件 | [build_d3_intent_events.py](../../baselines/build_d3_intent_events.py) | `baselines/artifacts/d3_intent_events/`（events + summary + split + manifest） | 🟡 生成器就绪；合成会话冒烟通过；真实 session 读取被安全分类器拦截，需授权环境执行 |
+
+运行：
+
+```bash
+python 48-涌现架构/baselines/build_d2_architecture_graph.py
+python 48-涌现架构/baselines/build_d3_intent_events.py
+```
+
+口径：D3 产物是 `task_type` 代理，不是用户意图标签；D2 产物是 Python-only 基线，call 边为函数名级、无运行时数据流。详见 [baselines/README.md](../../baselines/README.md)。
 
 ---
 
