@@ -108,6 +108,8 @@ def _register_defaults(reg: Registry) -> None:
     from data_center.collectors.news.feedparser_collector import FeedparserCollector
     from data_center.collectors.news.gdelt_collector import GdeltCollector
     from data_center.collectors.news.odaily_newsflash import OdailyNewsflashCollector
+    from data_center.collectors.news.odaily_post import OdailyPostCollector
+    from data_center.collectors.news.odaily_post_content import OdailyPostContentCollector
 
     # 🆕 Scrapling 增强新闻源
     from data_center.collectors.news.okx_announcement import OkxAnnouncementCollector
@@ -152,6 +154,10 @@ def _register_defaults(reg: Registry) -> None:
     reg.register("news", "gdelt", GdeltCollector)
     reg.register("news", "theblockbeats_dataview", TheBlockBeatsDataviewCollector)
     reg.register("news", "odaily_newsflash", OdailyNewsflashCollector)
+    # 🆕 深度文章：与 odaily_newsflash 互补的长文源（/post/page）
+    reg.register("news", "odaily_post", OdailyPostCollector)
+    # 🆕 P0 叙事原语前置：深度文章正文二次爬取（/post/{id} 详情页）
+    reg.register("news", "odaily_post_content", OdailyPostContentCollector)
     # 🆕 Scrapling 增强新闻源
     reg.register("news", "okx_announcement", OkxAnnouncementCollector)
     reg.register("news", "cointelegraph_cn", CointelegraphCnCollector)
