@@ -47,12 +47,27 @@ ASSETS = [
 DAY_MS = 86400000
 
 
-def fetch_ohlcv_all(ex, symbol, total=400):
-    """分页拉取日线 K 线（OKX 单次上限 100 根），凑足 total 根。"""
+def fetch_ohlcv_all(ex, symbol, total=400, max_retries=3, base_delay=1.0):
+    """分页拉取日线 K 线（OKX 单次上限 100 根），凑足 total 根。网络错误逐批重试。"""
+    import time as _time
+
     candles = {}
     since = ex.milliseconds() - (total + 5) * DAY_MS
     while len(candles) < total:
-        batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
+        batch = None
+        for attempt in range(max_retries):
+            try:
+                batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
+                break
+            except Exception as exc:  # noqa: BLE001  网络错误重试
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)
+                    print(
+                        f"  [retry] {symbol} fetch_ohlcv attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
+                    )
+                    _time.sleep(delay)
+                else:
+                    return None
         if not batch:
             break
         for c in batch:

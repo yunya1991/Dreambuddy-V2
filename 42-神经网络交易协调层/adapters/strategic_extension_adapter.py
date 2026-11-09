@@ -4,7 +4,9 @@
 
 职责（42 层 SPEC §2.3/§21.1）：
 - 只读 43 层信号产出物 runtime/strategic_extension_signal.json，不侵入 43 系统
-- 将信号发布到 SignalBus，source=strategic_extension（主网络侧路径）
+- 将信号发布到 SignalBus；F1（SPEC-M1 M1）：canonical source=43-strategic，
+  SOURCE_ALIAS_MODE=1 时 canonical(43-strategic) 与旧别名(strategic_extension) 双写，
+  默认仅旧别名（回滚路径，对齐 bdsm P1-05 先例）
 - shadow 信号原样透传（shadow 标记由总线消费方处理，不参与矛盾裁决权重）
 - fail-open：43 信号文件缺失/损坏 → 返回 unavailable，不阻断总线
 
@@ -30,6 +32,24 @@ _43_SIGNAL_PATH = os.path.join(
 # 42 层 SignalBus 模块路径
 _42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
+# F1（SPEC-M1 M1）：canonical source 与旧别名
+CANONICAL_SOURCE = "43-strategic"
+ALIAS_SOURCE = "strategic_extension"
+
+
+def alias_mode_enabled() -> bool:
+    """F1 开关：SOURCE_ALIAS_MODE=1 时 canonical(43-strategic)/旧别名双写（默认关=回滚路径）。"""
+    return os.environ.get("SOURCE_ALIAS_MODE") == "1"
+
+
+def _with_source(signal: dict, source: str) -> dict:
+    """生成指定 source 名的信号副本（signal_id 附加 source 后缀，避免总线按 id 去重合并）。"""
+    out = dict(signal)
+    out["source"] = source
+    base_id = signal.get("signal_id") or "sig"
+    out["signal_id"] = f"{base_id}:{source}"
+    return out
+
 
 def load_43_signal(path: str = _43_SIGNAL_PATH) -> dict:
     """只读加载 43 层信号（fail-open 返回 {available: False}）。"""
@@ -46,10 +66,24 @@ def load_43_signal(path: str = _43_SIGNAL_PATH) -> dict:
 
 
 def publish_to_bus(bus, signal: dict) -> dict:
-    """将 43 信号发布到总线实例。"""
+    """将 43 信号发布到总线实例（F1 双写：alias 模式发 canonical+旧名两条）。"""
     if not signal.get("source"):
         return {"status": "unavailable", "reason": signal.get("note", "信号不可用")}
-    return bus.publish(signal)
+    results = []
+    if alias_mode_enabled():
+        signals = [
+            _with_source(signal, CANONICAL_SOURCE),
+            _with_source(signal, ALIAS_SOURCE),
+        ]
+    else:
+        signals = [_with_source(signal, ALIAS_SOURCE)]
+    last = None
+    for sig in signals:
+        last = bus.publish(sig)
+        results.append({"source": sig.get("source"), "status": last.get("status")})
+    out = dict(last or {"status": "error"})
+    out["published"] = results
+    return out
 
 
 def main() -> int:

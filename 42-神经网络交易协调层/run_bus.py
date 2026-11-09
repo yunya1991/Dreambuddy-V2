@@ -34,12 +34,13 @@ if _ADAPTERS_DIR not in sys.path:
     sys.path.insert(0, _ADAPTERS_DIR)
 
 # R0-03 白名单扩展（2026-11-08）：加入数据已验证新鲜的 4 源，共 6 源。
-# 43-strategic-extension / 23-contradiction / 11-bcrm / 11-bdsm 上游快照均在线；
-# 40-cycle 快照可能 stale（fail-open 不阻断）；11-bcrm-tactical 待 11 层进程加载新代码后加入。
+# F1（SPEC-M1 M1）：43 canonical source 更名 strategic_extension → 43-strategic；
+# SOURCE_ALIAS_MODE=1 时双写过渡，50 侧别名表兼容两旧名。
 DEFAULT_WHITELIST = (
     "40-cycle",
+    "40-divergence",
     "29-event",
-    "43-strategic-extension",
+    "43-strategic",
     "23-contradiction",
     "11-bcrm",
     "11-bdsm",
@@ -47,6 +48,35 @@ DEFAULT_WHITELIST = (
     "11-washout",
     "11-event-arbitrage",
 )
+
+# M3-1：bus_history 归档上限（滚动覆盖，原子写）
+BUS_HISTORY_CAP = 500
+_BUS_HISTORY_PATH = os.path.join(_42_ROOT, "runtime", "bus_history.jsonl")
+
+
+def _append_bus_history(snapshot: dict, cap: int = BUS_HISTORY_CAP) -> None:
+    """将一次 bus snapshot 追加到 bus_history.jsonl（滚动上限 cap，原子写）。
+
+    M3-1：为 pit_replay 提供回放数据底座。
+    fail-open：任何 IO 异常静默忽略，不影响主流程。
+    """
+    try:
+        os.makedirs(os.path.dirname(_BUS_HISTORY_PATH), exist_ok=True)
+        existing: list[str] = []
+        if os.path.exists(_BUS_HISTORY_PATH):
+            with open(_BUS_HISTORY_PATH, encoding="utf-8") as f:
+                existing = f.read().splitlines()
+        # 滚动截断：保留最新 cap-1 条 + 新 1 条
+        if len(existing) >= cap:
+            existing = existing[-(cap - 1) :]
+        line = json.dumps(snapshot, ensure_ascii=False)
+        existing.append(line)
+        tmp = _BUS_HISTORY_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write("\n".join(existing) + "\n")
+        os.replace(tmp, _BUS_HISTORY_PATH)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def select_subsystems(registry_path: str = None, whitelist=DEFAULT_WHITELIST) -> list:
@@ -112,15 +142,39 @@ def run(
             executed.append(sub["name"])
             if rc not in (0, None):
                 errors.append({"name": sub["name"], "exit": rc})
+                try:
+                    from degraded_events import record_degraded_event
+
+                    record_degraded_event(
+                        "42",
+                        sub["name"],
+                        "adapter_error",
+                        f"exit_code={rc}",
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
         except Exception as exc:  # noqa: BLE001  fail-open：单源异常不阻断
             errors.append({"name": sub["name"], "error": "{}: {}".format(type(exc).__name__, exc)})
             traceback.print_exc()
+            try:
+                from degraded_events import record_degraded_event
+
+                record_degraded_event(
+                    "42",
+                    sub["name"],
+                    "adapter_error",
+                    f"{type(exc).__name__}: {exc}",
+                )
+            except Exception:  # noqa: BLE001
+                pass
 
     if flush:
         from signal_bus import SignalBus
 
         bus = SignalBus(state_path=bus_state_path) if bus_state_path else SignalBus()
-        bus.flush(metrics_path=metrics_path)
+        state = bus.flush(metrics_path=metrics_path)
+        # M3-1：归档 bus snapshot 到 bus_history.jsonl（回放底座）
+        _append_bus_history(state)
 
     return {
         "status": "degraded" if errors else "ok",

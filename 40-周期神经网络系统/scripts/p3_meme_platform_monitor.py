@@ -9,8 +9,11 @@ meme 热点更替快，固定代币清单会滞后，改为平台级指标观测
 产出：meme_platform.json
 """
 
+import http.client
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from statistics import median
@@ -25,11 +28,28 @@ OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "meme_platfo
 PAGES = 5  # 5 页 × 20 池 = 100 个最新池
 
 
-def fetch_page(page):
+def fetch_page(page, max_retries=3, base_delay=1.0):
     url = f"{API}?include=dex&page={page}"
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.load(r)
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                return json.load(r)
+        except (
+            urllib.error.URLError,
+            http.client.IncompleteRead,
+            TimeoutError,
+            json.JSONDecodeError,
+        ) as exc:
+            last_exc = exc
+            if attempt < max_retries - 1:
+                delay = base_delay * (2**attempt)
+                print(
+                    f"  [retry] page {page} attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
+                )
+                time.sleep(delay)
+    raise last_exc
 
 
 def main():

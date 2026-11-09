@@ -14,8 +14,11 @@ if _42_ROOT not in sys.path:
 from signal_bus import SignalBus  # noqa: E402
 
 
-def _sig(source, symbol, day, confidence=0.8):
-    base = datetime(2026, 11, day, 3, 0, tzinfo=timezone.utc)
+def _sig(source, symbol, day_offset, confidence=0.8):
+    """day_offset 相对 now 的天数偏移，确保信号在测试运行时未过期。"""
+    base = datetime.now(timezone.utc).replace(
+        hour=3, minute=0, second=0, microsecond=0
+    ) + timedelta(days=day_offset)
     return {
         "signal_id": "sig_{}_{}_{}".format(
             source.replace("-", "_"), symbol, base.strftime("%Y%m%d")
@@ -38,7 +41,11 @@ def test_same_source_symbol_keeps_latest(tmp_path):
     bus.publish(_sig("40-cycle", "MACRO", 6))
     bus.publish(_sig("40-cycle", "MACRO", 7))
     assert len(bus.signals) == 1
-    assert bus.signals[0]["signal_id"] == "sig_40_cycle_MACRO_20261107"
+    expected_date = (
+        datetime.now(timezone.utc).replace(hour=3, minute=0, second=0, microsecond=0)
+        + timedelta(days=7)
+    ).strftime("%Y%m%d")
+    assert bus.signals[0]["signal_id"] == "sig_40_cycle_MACRO_{}".format(expected_date)
 
 
 # ── 2. 后发信号更旧 → 拒绝，保留已有较新 ──
@@ -48,7 +55,11 @@ def test_older_signal_rejected(tmp_path):
     result = bus.publish(_sig("40-cycle", "MACRO", 6))
     assert result["status"] == "rejected"
     assert len(bus.signals) == 1
-    assert bus.signals[0]["signal_id"] == "sig_40_cycle_MACRO_20261107"
+    expected_date = (
+        datetime.now(timezone.utc).replace(hour=3, minute=0, second=0, microsecond=0)
+        + timedelta(days=7)
+    ).strftime("%Y%m%d")
+    assert bus.signals[0]["signal_id"] == "sig_40_cycle_MACRO_{}".format(expected_date)
 
 
 # ── 3. 不同源同标 → 各保留一条 ──
@@ -85,4 +96,8 @@ def test_load_persistent_state_dedupes(monkeypatch, tmp_path):
     )
     bus = SignalBus(state_path=str(bus_path))
     assert len(bus.signals) == 1
-    assert bus.signals[0]["signal_id"] == "sig_40_cycle_MACRO_20261107"
+    expected_date = (
+        datetime.now(timezone.utc).replace(hour=3, minute=0, second=0, microsecond=0)
+        + timedelta(days=7)
+    ).strftime("%Y%m%d")
+    assert bus.signals[0]["signal_id"] == "sig_40_cycle_MACRO_{}".format(expected_date)

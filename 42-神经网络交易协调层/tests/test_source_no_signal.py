@@ -82,7 +82,7 @@ def test_event_present_published(monkeypatch, tmp_path, bus_path):
     assert bus["signals"][0]["payload"]["event_type"] == "FOMC"
 
 
-# ── 40-cycle：无技术锚资产（assets 空）→ 不发布 ──
+# ── 40-cycle：无技术锚资产（assets 空）→ cycle 信号不发布（divergence 独立发布）──
 def test_cycle_no_assets_not_published(monkeypatch, tmp_path, bus_path, capsys):
     state = {
         "real_cycle": {"state": "plateau", "confidence": "medium"},
@@ -93,13 +93,24 @@ def test_cycle_no_assets_not_published(monkeypatch, tmp_path, bus_path, capsys):
     state_path.write_text(json.dumps(state), encoding="utf-8")
     monkeypatch.setattr(cycle_state_adapter, "_40_STATE_PATH", str(state_path))
 
+    # divergence 独立于 cycle，此处用空 asset_rotation 产出 neutral 背离信号
+    rot_path = tmp_path / "asset_rotation.json"
+    rot_path.write_text(json.dumps({}), encoding="utf-8")
+    monkeypatch.setattr(cycle_state_adapter, "_40_ROTATION_PATH", str(rot_path))
+
     rc = cycle_state_adapter.main()
-    assert rc == 1
-    assert not os.path.exists(bus_path)
-    assert "无技术锚" in capsys.readouterr().out
+    # divergence 仍发布（neutral），任一信号 accepted → rc=0
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "无技术锚" in out
+    with open(bus_path, encoding="utf-8") as f:
+        bus = json.load(f)
+    sources = {s["source"] for s in bus["signals"]}
+    assert "40-cycle" not in sources  # cycle 无资产 → 不发布
+    assert "40-divergence" in sources  # divergence 独立发布
 
 
-# ── 40-cycle：有资产数据 → 正常发布 ──
+# ── 40-cycle：有资产数据 → cycle + divergence 双信号发布 ──
 def test_cycle_with_assets_published(monkeypatch, tmp_path, bus_path):
     state = {
         "real_cycle": {"state": "plateau", "confidence": "high"},
@@ -110,8 +121,14 @@ def test_cycle_with_assets_published(monkeypatch, tmp_path, bus_path):
     state_path.write_text(json.dumps(state), encoding="utf-8")
     monkeypatch.setattr(cycle_state_adapter, "_40_STATE_PATH", str(state_path))
 
+    rot_path = tmp_path / "asset_rotation.json"
+    rot_path.write_text(json.dumps({}), encoding="utf-8")
+    monkeypatch.setattr(cycle_state_adapter, "_40_ROTATION_PATH", str(rot_path))
+
     assert cycle_state_adapter.main() == 0
     with open(bus_path, encoding="utf-8") as f:
         bus = json.load(f)
-    assert bus["signal_count"] == 1
-    assert bus["signals"][0]["direction"] == "long"
+    sources = {s["source"] for s in bus["signals"]}
+    assert sources == {"40-cycle", "40-divergence"}
+    cycle_sig = next(s for s in bus["signals"] if s["source"] == "40-cycle")
+    assert cycle_sig["direction"] == "long"

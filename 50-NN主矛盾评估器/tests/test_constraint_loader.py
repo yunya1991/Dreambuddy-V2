@@ -99,9 +99,11 @@ def test_r1a_tier_constraint_fields(tmp_path):
     assert c["asset_count_cap"] == 8
     assert c["long_count_cap"] == 6
     assert c["short_count_cap"] == 4
-    assert c["net_bias"] == 0.2
+    # F5：net_bias 是方向字段，强制剥离，不进约束通道
+    assert c["net_bias"] is None
     assert c["asset_groups"] == {"L1_anchor": ["L1_anchor"], "L2_anchor": ["L2_anchor"]}
-    assert c["degraded"] == []
+    assert "direction_leak_check" in c["degraded"]
+    assert c["direction_leak_check"]["passed"] is False
 
 
 def test_r1a_full_freeze_zero_values_extracted(tmp_path):
@@ -132,4 +134,103 @@ def test_r1a_full_freeze_zero_values_extracted(tmp_path):
     assert c["asset_count_cap"] == 0
     assert c["long_count_cap"] == 0
     assert c["short_count_cap"] == 0
-    assert c["net_bias"] == 0.0
+    # F5：net_bias 方向字段强制剥离
+    assert c["net_bias"] is None
+
+
+# ---------- F5 direction_leak_check ----------
+
+
+def test_f5_direction_fields_stripped_from_per_asset_class(tmp_path):
+    """F5：direction/net_bias 等方向字段必须从 per_asset_class 中剥离。"""
+    strat = tmp_path / "strategy_mapping.json"
+    strat.write_text(
+        json.dumps({"strategy_suggestion": {"position_band_pct": [0, 100]}}), encoding="utf-8"
+    )
+    ext = tmp_path / "strategic_extension_signal.json"
+    ext.write_text(
+        json.dumps(
+            {
+                "per_asset_class": {
+                    "crypto_usdt": {
+                        "direction": "long",
+                        "net_bias": 0.8,
+                        "sentiment": "bullish",
+                        "leverage_cap": 3,
+                        "position_band": [0, 30],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    c = load_constraints(strategy_mapping_path=str(strat), strategic_extension_path=str(ext))
+    pac = c["per_asset_class"]["crypto_usdt"]
+    # 方向字段被剥离
+    assert "direction" not in pac
+    assert "net_bias" not in pac
+    assert "sentiment" not in pac
+    # 中性约束字段保留
+    assert pac["leverage_cap"] == 3
+    assert pac["position_band"] == [0, 30]
+    # 审计字段
+    assert c["direction_leak_check"]["passed"] is False
+    assert len(c["direction_leak_check"]["stripped_fields"]) >= 3
+    assert "direction_leak_check" in c["degraded"]
+
+
+def test_f5_no_directional_fields_passes(tmp_path):
+    """F5：无方向字段时 direction_leak_check 通过。"""
+    strat = tmp_path / "strategy_mapping.json"
+    strat.write_text(
+        json.dumps({"strategy_suggestion": {"position_band_pct": [0, 100]}}), encoding="utf-8"
+    )
+    ext = tmp_path / "strategic_extension_signal.json"
+    ext.write_text(
+        json.dumps(
+            {
+                "per_asset_class": {
+                    "crypto_usdt": {
+                        "leverage_cap": 2,
+                        "asset_count_cap": 5,
+                        "position_band": [0, 20],
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    c = load_constraints(strategy_mapping_path=str(strat), strategic_extension_path=str(ext))
+    assert c["direction_leak_check"]["passed"] is True
+    assert c["direction_leak_check"]["stripped_fields"] == []
+    assert "direction_leak_check" not in c["degraded"]
+
+
+# ---------- F4 degraded_events ----------
+
+
+def test_f4_degraded_event_written_on_missing_strategy(tmp_path, monkeypatch):
+    """F4：strategy_mapping 缺失时应写入 degraded_events.jsonl。"""
+    from pathlib import Path
+
+    # 重定向 degraded_events 输出到临时目录
+    repo_root = Path(__file__).resolve().parents[2]
+    degraded_path = repo_root / "42-神经网络交易协调层" / "runtime" / "degraded_events.jsonl"
+    backup = degraded_path.read_text(encoding="utf-8") if degraded_path.exists() else ""
+    try:
+        if degraded_path.exists():
+            degraded_path.unlink()
+        load_constraints(
+            strategy_mapping_path=str(tmp_path / "missing.json"),
+            strategic_extension_path=str(tmp_path / "missing2.json"),
+        )
+        assert degraded_path.exists(), "degraded_events.jsonl 应被创建"
+        lines = degraded_path.read_text(encoding="utf-8").strip().split("\n")
+        events = [json.loads(line) for line in lines if line.strip()]
+        assert any(e["reason"] == "bridge_closed_using_defaults" for e in events)
+        assert all(e["layer"] == "50" for e in events)
+    finally:
+        if backup:
+            degraded_path.write_text(backup, encoding="utf-8")
+        elif degraded_path.exists():
+            degraded_path.unlink()

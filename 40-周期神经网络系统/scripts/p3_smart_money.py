@@ -9,8 +9,7 @@ CFTC：CME Bitcoin 期货非商业/商业头寸与未平仓量（周更，public
 import json
 import os
 import sqlite3
-import urllib.parse
-import urllib.request
+import time
 from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -25,12 +24,33 @@ CFTC_URL = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
 LLAMA_URL = "https://stablecoins.llama.fi/stablecoins?includePrices=false"
 
 
-def http_json(url, params=None):
+def http_json(url, params=None, max_retries=3, base_delay=1.0):
+    """HTTP GET JSON，网络错误自动重试（指数退避）。重试后仍失败则抛出。"""
+    import http.client
+    import urllib.error
+
     if params:
         url = url + "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r)
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.load(r)
+        except (
+            urllib.error.URLError,
+            http.client.IncompleteRead,
+            TimeoutError,
+            json.JSONDecodeError,
+        ) as exc:
+            last_exc = exc
+            if attempt < max_retries - 1:
+                delay = base_delay * (2**attempt)
+                print(
+                    f"  [retry] http_json attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
+                )
+                time.sleep(delay)
+    raise last_exc
 
 
 def upsert_record(conn, source, category, sub, ts_iso, metrics, raw):
@@ -53,15 +73,19 @@ def upsert_record(conn, source, category, sub, ts_iso, metrics, raw):
 
 
 def fetch_cftc_btc(conn):
-    """CME Bitcoin 期货持仓（主合约，周更）。"""
-    rows = http_json(
-        CFTC_URL,
-        {
-            "$limit": 60,
-            "commodity_name": "BITCOIN",
-            "$order": "report_date_as_yyyy_mm_dd DESC",
-        },
-    )
+    """CME Bitcoin 期货持仓（主合约，周更）。fail-open：拉取失败返回 (None, 0, 0)。"""
+    try:
+        rows = http_json(
+            CFTC_URL,
+            {
+                "$limit": 60,
+                "commodity_name": "BITCOIN",
+                "$order": "report_date_as_yyyy_mm_dd DESC",
+            },
+        )
+    except Exception as exc:  # noqa: BLE001  fail-open：CFTC 数据缺失不中止脚本
+        print(f"[warn] CFTC fetch failed: {exc}")
+        return None, 0, 0
     # 主合约：CHICAGO MERCANTILE EXCHANGE 的 BITCOIN（非 Nano/Micro）
     cme = [
         r
@@ -99,8 +123,12 @@ def fetch_cftc_btc(conn):
 
 
 def fetch_stablecoins(conn):
-    """DefiLlama 稳定币流通量（USDT/USDC，日更）。"""
-    d = http_json(LLAMA_URL)
+    """DefiLlama 稳定币流通量（USDT/USDC，日更）。fail-open：拉取失败返回 ({}, 0)。"""
+    try:
+        d = http_json(LLAMA_URL)
+    except Exception as exc:  # noqa: BLE001  fail-open：稳定币数据缺失不中止脚本
+        print(f"[warn] DefiLlama fetch failed: {exc}")
+        return {}, 0
     assets = {a["symbol"]: a for a in d.get("peggedAssets", [])}
     now = datetime.now(timezone.utc)
     ts_iso = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()

@@ -42,8 +42,9 @@ def test_external_weights_sum_to_one():
 
 
 def test_roles():
-    assert role_of("40-cycle") == "constraint"
-    assert role_of("43-strategic") == "constraint"
+    assert role_of("40-cycle") == "macro_force"
+    assert role_of("43-strategic") == "macro_force"
+    assert role_of("40-divergence") == "macro_force"
     assert role_of("29-event") == "self_mirror"
     assert role_of("23-contradiction") == "self_mirror"
     assert role_of("11-bdsm") == "external"

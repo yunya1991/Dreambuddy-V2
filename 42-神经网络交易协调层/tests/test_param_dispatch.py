@@ -198,7 +198,7 @@ def test_dispatch_writes_subscriber_views(monkeypatch, gov):
     )
     assert result["status"] == "dispatched", result
     subscribers = result["subscribers"]
-    assert "43-strategic-extension" in subscribers
+    assert "43-strategic" in subscribers
     assert "23-contradiction" in subscribers, "23 必须在 registry 声明订阅参数"
     for name in subscribers:
         view_path = os.path.join(gov["dispatch_dir"], "{}.json".format(name))
@@ -223,7 +223,7 @@ def test_consumers_log_consumption(monkeypatch, gov, tmp_path):
     )
     consumers = [
         ("consumer_23", "23-四层闭环自进化交易架构/param_consumer.py", "23-contradiction"),
-        ("consumer_43", "43-战略承接推演层/param_consumer.py", "43-strategic-extension"),
+        ("consumer_43", "43-战略承接推演层/param_consumer.py", "43-strategic"),
     ]
     for key, rel, sub_name in consumers:
         module = _load_consumer(key, rel)

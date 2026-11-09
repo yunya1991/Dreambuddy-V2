@@ -43,17 +43,30 @@ def test_external_evidence_generates_path_with_formula():
     assert path.continuation_score == pytest.approx(0.2)  # 0.4 * 0.5
 
 
-def test_constraint_and_self_mirror_do_not_generate_paths():
+def test_self_mirror_does_not_generate_paths():
     paths = synthesize_paths(
         [
-            evidence(source="40-cycle"),
-            evidence(source="43-strategic"),
             evidence(source="29-event"),
             evidence(source="23-contradiction"),
         ],
         now=NOW,
     )
     assert paths == []
+
+
+def test_macro_force_generates_paths_with_zero_weight():
+    """N3：macro_force 源产 D1 path，但权重 0（G1 红线）。"""
+    paths = synthesize_paths(
+        [
+            evidence(source="40-cycle"),
+            evidence(source="43-strategic"),
+        ],
+        now=NOW,
+    )
+    assert len(paths) == 2
+    for p in paths:
+        assert p.dimension == "D1"
+        assert p.metadata["weight"] == 0.0
 
 
 def test_expired_or_zero_confidence_dropped():
@@ -116,10 +129,10 @@ def test_event_shock_continuation_equals_confidence():
     assert paths[0].continuation_score == pytest.approx(paths[0].confidence)
 
 
-def test_unknown_source_degrades_to_c3():
+def test_unknown_source_degrades_to_c7():
     paths = synthesize_paths([evidence(source="99-unknown")], now=NOW)
     assert len(paths) == 1
-    assert paths[0].dimension == "C3"
+    assert paths[0].dimension == "C7"
     assert "source_unmapped" in paths[0].metadata["degraded"]
 
 

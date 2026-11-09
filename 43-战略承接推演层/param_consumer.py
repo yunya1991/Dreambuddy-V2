@@ -3,7 +3,7 @@
 """43 层参数消费者 stub（P1-06，SPEC-49 §13.5）。
 
 只读 42 层 ParamGovernor 订阅分发视图
-（42-神经网络交易协调层/runtime/param_dispatch/43-strategic-extension.json），
+（42-神经网络交易协调层/runtime/param_dispatch/43-strategic.json），
 追加本地消费日志（runtime/param_consumption_log.jsonl）。
 
 - FAIL-OPEN：视图缺失/损坏 → 返回 unavailable，不抛异常，不影响裁决
@@ -20,7 +20,8 @@ from datetime import datetime, timezone
 _ROOT = os.path.dirname(os.path.abspath(__file__))
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(_ROOT)
 
-CONSUMER_NAME = "43-strategic-extension"
+# F1（SPEC-M1 M1）：canonical source 更名 strategic_extension → 43-strategic
+CONSUMER_NAME = "43-strategic"
 _DEFAULT_VIEW = os.path.join(
     _DREAMBUDDY_ROOT,
     "42-神经网络交易协调层",

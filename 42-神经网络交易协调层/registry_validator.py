@@ -26,8 +26,9 @@ _VALID_HORIZONS = ("hours", "days", "weeks")
 # 旧别名（bdsm）仅作为总线信号别名兼容，不允许作为 registry 名；
 # 禁止 11-strategy（strategy 不是独立 canonical source）。
 CANONICAL_SOURCES = (
-    "43-strategic-extension",
     "40-cycle",
+    "40-divergence",
+    "43-strategic",
     "23-contradiction",
     "29-event",
     "11-bcrm",

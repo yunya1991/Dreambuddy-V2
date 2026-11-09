@@ -13,12 +13,13 @@ if _42_ROOT not in sys.path:
 import run_bus  # noqa: E402
 
 
-# ── 1. 默认白名单（R0-03 扩展：9 源）──
+# ── 1. 默认白名单（R0-03 扩展 + N4 40-divergence）──
 def test_default_whitelist():
     assert run_bus.DEFAULT_WHITELIST == (
         "40-cycle",
+        "40-divergence",
         "29-event",
-        "43-strategic-extension",
+        "43-strategic",
         "23-contradiction",
         "11-bcrm",
         "11-bdsm",
@@ -34,8 +35,9 @@ def test_select_subsystems_default():
     names = [s["name"] for s in subs]
     assert names == [
         "40-cycle",
+        "40-divergence",
         "29-event",
-        "43-strategic-extension",
+        "43-strategic",
         "23-contradiction",
         "11-bcrm",
         "11-bdsm",
@@ -67,8 +69,9 @@ def test_run_only_whitelisted():
     result = run_bus.run(runner=fake_runner, flush=False)
     expected = [
         "40-cycle",
+        "40-divergence",
         "29-event",
-        "43-strategic-extension",
+        "43-strategic",
         "23-contradiction",
         "11-bcrm",
         "11-bdsm",
@@ -91,8 +94,9 @@ def test_run_failopen_on_adapter_error():
     result = run_bus.run(runner=bad_runner, flush=False)
     assert result["status"] == "degraded"
     assert result["executed"] == [
+        "40-divergence",
         "29-event",
-        "43-strategic-extension",
+        "43-strategic",
         "23-contradiction",
         "11-bcrm",
         "11-bdsm",

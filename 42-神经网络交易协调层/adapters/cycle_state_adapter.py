@@ -28,6 +28,14 @@ _40_STATE_PATH = os.path.join(
     os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统"),
     "cycle_state.json",
 )
+_40_ROTATION_PATH = os.path.join(
+    os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统"),
+    "asset_rotation.json",
+)
+_40_RESONANCE_PATH = os.path.join(
+    os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统"),
+    "resonance_matrix.json",
+)
 
 # 42 层 SignalBus 模块路径
 _42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
@@ -98,45 +106,234 @@ def build_signal(state: dict) -> dict:
     }
 
 
+def load_asset_rotation(path: str = None) -> dict:
+    """只读加载 40 层 asset_rotation.json（fail-open 返回 {}）。"""
+    path = path or _40_ROTATION_PATH
+    try:
+        if not os.path.exists(path):
+            return {}
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return {}
+        return data
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def build_divergence_signal(rotation: dict) -> dict:
+    """将 asset_rotation.divergence 转为 40-divergence 信号。
+
+    - symbol=MACRO（宏观级别背离，非单标的）
+    - confidence = 0.8 × (1 - n_divergent / n_scored)
+    - direction：背离率 < 0.5 → long（时钟被印证）；>= 0.5 → short（时钟被打破）；
+      无评分数据 → neutral
+    - horizon=days
+    """
+    now = _now()
+    divergence = rotation.get("divergence") if isinstance(rotation, dict) else None
+    if not isinstance(divergence, dict):
+        divergence = {}
+
+    n_divergent = int(divergence.get("n_divergent") or 0)
+    n_scored = int(divergence.get("n_scored") or 0)
+    quadrant = divergence.get("quadrant")
+
+    if n_scored <= 0:
+        direction = "neutral"
+        confidence = 0.0
+    else:
+        divergence_ratio = n_divergent / n_scored
+        confidence = round(0.8 * (1.0 - divergence_ratio), 6)
+        if divergence_ratio < 0.5:
+            direction = "long"
+        else:
+            direction = "short"
+
+    return {
+        "signal_id": "sig_40-divergence_MACRO_{}".format(now.strftime("%Y%m%d")),
+        "source": "40-divergence",
+        "ts": now.isoformat(),
+        "symbol": "MACRO",
+        "direction": direction,
+        "confidence": confidence,
+        "horizon": "days",
+        "risk_exposure_hint": 0.4,
+        "expires_at": (now + timedelta(hours=24)).isoformat(),
+        "payload": {
+            "quadrant": quadrant,
+            "n_divergent": n_divergent,
+            "n_scored": n_scored,
+            "state_generated_at": divergence.get("generated_at"),
+        },
+    }
+
+
+def load_resonance_matrix(path: str = None) -> dict:
+    """只读加载 40 层 resonance_matrix.json（fail-open 返回 {}）。
+
+    M1（SPEC-M2 §1.2）：resonance_matrix 由 40 p3_resonance_matrix.py 日更产出，
+    含每标的 R(s)={corr0, lag_profile, beta, down_corr} + granger_p。
+    """
+    path = path or _40_RESONANCE_PATH
+    try:
+        if not os.path.exists(path):
+            return {}
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return {}
+        return data
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def build_resonance_signal(matrix: dict) -> dict:
+    """将 resonance_matrix 转为 40-resonance 信号（M1，SPEC-M2）。
+
+    - symbol=MACRO（宏观共振级别，非单标的）
+    - direction：龙头 BTC corr0 方向（corr0>0 → long，<0 → short，≈0 → neutral）
+    - confidence：0.8 × |corr0| × granger_significant_ratio（Granger 显著标的占比）
+    - horizon=days
+    - payload：携带龙头 R(s)、granger 统计、state_generated_at
+    - fail-open：matrix 为空 → confidence=0, direction=neutral
+    """
+    now = _now()
+    assets = matrix.get("assets") if isinstance(matrix, dict) else None
+    if not isinstance(assets, dict):
+        assets = {}
+
+    # 龙头 BTC 的 R(s) 作为方向锚
+    btc = assets.get("BTC/USDT") or assets.get("BTC") or {}
+    corr0 = float(btc.get("corr0") or 0.0)
+
+    if corr0 > 0.1:
+        direction = "long"
+    elif corr0 < -0.1:
+        direction = "short"
+    else:
+        direction = "neutral"
+
+    # Granger 显著标的占比（p < 0.05）
+    n_total = len(assets)
+    n_granger_sig = sum(
+        1
+        for a in assets.values()
+        if isinstance(a, dict) and (a.get("granger_p") is not None) and float(a["granger_p"]) < 0.05
+    )
+    granger_ratio = (n_granger_sig / n_total) if n_total > 0 else 0.0
+
+    confidence = round(0.8 * abs(corr0) * granger_ratio, 6) if n_total > 0 else 0.0
+
+    # fail-open 审计：样本不足或 Granger 全不显著 → degraded
+    degraded = []
+    if n_total == 0:
+        degraded.append("resonance_matrix_empty")
+    if granger_ratio == 0.0 and n_total > 0:
+        degraded.append("granger_not_significant")
+
+    return {
+        "signal_id": "sig_40-resonance_MACRO_{}".format(now.strftime("%Y%m%d")),
+        "source": "40-resonance",
+        "ts": now.isoformat(),
+        "symbol": "MACRO",
+        "direction": direction,
+        "confidence": confidence,
+        "horizon": "days",
+        "risk_exposure_hint": 0.3,  # 共振信号保守
+        "expires_at": (now + timedelta(hours=24)).isoformat(),
+        "payload": {
+            "btc_corr0": corr0,
+            "btc_beta": btc.get("beta"),
+            "btc_lag_profile": btc.get("lag_profile"),
+            "n_assets": n_total,
+            "n_granger_significant": n_granger_sig,
+            "granger_significant_ratio": granger_ratio,
+            "state_generated_at": matrix.get("generated_at"),
+            "degraded": degraded,
+        },
+    }
+
+
 def main() -> int:
     if _42_ROOT not in sys.path:
         sys.path.insert(0, _42_ROOT)
     from signal_bus import SignalBus  # noqa: E402
 
-    state = load_cycle_state()
-    if not state.get("real_cycle"):
-        print(
-            json.dumps({"status": "unavailable", "reason": state.get("note")}, ensure_ascii=False)
-        )
-        return 1
-
-    # 源头无信号不发：无技术锚资产数据时 direction 恒为 neutral，不发布
-    assets = (state.get("technical_anchor") or {}).get("assets") or {}
-    if not assets:
-        print(
-            json.dumps(
-                {
-                    "status": "unavailable",
-                    "reason": "无技术锚资产数据（assets 为空），不发布",
-                },
-                ensure_ascii=False,
-            )
-        )
-        return 1
-
-    signal = build_signal(state)
     bus = SignalBus()
-    result = bus.publish(signal)
+    results = []
+
+    # ── 40-cycle 信号 ────────────────────────────────────────────
+    state = load_cycle_state()
+    if state.get("real_cycle"):
+        assets = (state.get("technical_anchor") or {}).get("assets") or {}
+        if assets:
+            signal = build_signal(state)
+            result = bus.publish(signal)
+            results.append(
+                {
+                    "source": signal.get("source"),
+                    "signal_id": signal.get("signal_id"),
+                    "direction": signal.get("direction"),
+                    "confidence": signal.get("confidence"),
+                    "publish_result": result.get("status"),
+                    "reason": result.get("reason"),
+                }
+            )
+        else:
+            results.append(
+                {"source": "40-cycle", "publish_result": "skipped", "reason": "无技术锚资产数据"}
+            )
+    else:
+        results.append(
+            {"source": "40-cycle", "publish_result": "unavailable", "reason": state.get("note")}
+        )
+
+    # ── 40-divergence 信号（N4，独立于 cycle_state）──────────────
+    rotation = load_asset_rotation()
+    div_signal = build_divergence_signal(rotation)
+    div_result = bus.publish(div_signal)
+    results.append(
+        {
+            "source": div_signal.get("source"),
+            "signal_id": div_signal.get("signal_id"),
+            "direction": div_signal.get("direction"),
+            "confidence": div_signal.get("confidence"),
+            "publish_result": div_result.get("status"),
+            "reason": div_result.get("reason"),
+        }
+    )
+
+    # ── 40-resonance 信号（M1，SPEC-M2 宏观力传导）────────────────
+    matrix = load_resonance_matrix()
+    res_signal = build_resonance_signal(matrix)
+    res_payload = res_signal.get("payload") or {}
+    if res_payload.get("degraded") and "resonance_matrix_empty" in res_payload["degraded"]:
+        results.append(
+            {
+                "source": "40-resonance",
+                "publish_result": "skipped",
+                "reason": "resonance_matrix.json 不存在或为空（fail-open）",
+            }
+        )
+    else:
+        res_result = bus.publish(res_signal)
+        results.append(
+            {
+                "source": res_signal.get("source"),
+                "signal_id": res_signal.get("signal_id"),
+                "direction": res_signal.get("direction"),
+                "confidence": res_signal.get("confidence"),
+                "publish_result": res_result.get("status"),
+                "reason": res_result.get("reason"),
+            }
+        )
+
     bus.flush()
     print(
         json.dumps(
             {
-                "publish_result": result.get("status"),
-                "reason": result.get("reason"),
-                "signal_id": signal.get("signal_id"),
-                "source": signal.get("source"),
-                "direction": signal.get("direction"),
-                "confidence": signal.get("confidence"),
+                "signals": results,
                 "bus_signal_count": bus.snapshot()["signal_count"],
                 "bus_sources": bus.snapshot()["sources"],
             },
@@ -144,7 +341,8 @@ def main() -> int:
             indent=2,
         )
     )
-    return 0 if result.get("status") == "accepted" else 1
+    # 任一信号成功发布即返回 0（fail-open：不互相阻塞）
+    return 0 if any(r.get("publish_result") == "accepted" for r in results) else 1
 
 
 if __name__ == "__main__":

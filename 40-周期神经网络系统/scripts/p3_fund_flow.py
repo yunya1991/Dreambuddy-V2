@@ -46,8 +46,10 @@ def load_daily(sid):
     return {r[0][:10]: float(r[1]) for r in rows if r[1] is not None}
 
 
-def fetch_okx_daily(symbol, total=400):
-    """分页拉取 OKX 日线，返回 {日期字符串: 收盘价}。"""
+def fetch_okx_daily(symbol, total=400, max_retries=3, base_delay=1.0):
+    """分页拉取 OKX 日线，返回 {日期字符串: 收盘价}。网络错误逐批重试。"""
+    import time as _time
+
     import ccxt
 
     ex = ccxt.okx({"enableRateLimit": True})
@@ -55,7 +57,20 @@ def fetch_okx_daily(symbol, total=400):
     candles = {}
     since = ex.milliseconds() - (total + 5) * day_ms
     while len(candles) < total:
-        batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
+        batch = None
+        for attempt in range(max_retries):
+            try:
+                batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
+                break
+            except (ccxt.NetworkError, ccxt.RequestTimeout) as exc:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt)
+                    print(
+                        f"  [retry] {symbol} fetch_ohlcv attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
+                    )
+                    _time.sleep(delay)
+                else:
+                    raise
         if not batch:
             break
         for c in batch:
@@ -178,15 +193,26 @@ def main():
 
     # ---------- 跨资产类别流动 ----------
     mom = rot["asset_momentum_3m_pct"]
+
+    # 容错：asset_rotation 可能混入错误字符串（如 crypto_error），只保留可转 float 的值
+    def _to_float(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
     ranked_assets = sorted(
-        [(k, v) for k, v in mom.items() if v is not None],
+        [(k, fv) for k, v in mom.items() if (fv := _to_float(v)) is not None],
         key=lambda x: x[1],
         reverse=True,
     )
     cat_mom = {}
     for k, v in mom.items():
+        fv = _to_float(v)
+        if fv is None:
+            continue
         cat = ASSET_LABELS.get(k, k)
-        cat_mom.setdefault(cat, []).append(v)
+        cat_mom.setdefault(cat, []).append(fv)
     cat_ranked = sorted(
         [(c, round(mean(vs), 2)) for c, vs in cat_mom.items()],
         key=lambda x: x[1],
@@ -212,9 +238,17 @@ def main():
     spx = load_daily("SP500")
     dgs10 = load_daily("DGS10")
     dxy = load_daily("DTWEXBGS")
-    btc = fetch_okx_daily("BTC/USDT", 400)
+    try:
+        btc = fetch_okx_daily("BTC/USDT", 400)
+    except Exception as exc:  # noqa: BLE001  fail-open
+        print(f"[warn] BTC fetch failed: {exc}")
+        btc = {}
 
-    xaut = fetch_okx_daily("XAUT/USDT", 400)
+    try:
+        xaut = fetch_okx_daily("XAUT/USDT", 400)
+    except Exception as exc:  # noqa: BLE001  fail-open
+        print(f"[warn] XAUT fetch failed: {exc}")
+        xaut = {}
     correlation_matrix = {
         "spx_vs_10y": rolling_corr_last(spx, dgs10),
         "gold_vs_usd": rolling_corr_last(xaut, dxy),

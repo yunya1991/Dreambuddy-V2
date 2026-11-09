@@ -8,6 +8,7 @@
 
 import json
 import os
+import time
 from datetime import datetime, timezone
 from statistics import median
 
@@ -28,12 +29,28 @@ LAYERS = {
 }
 
 
-def fetch_daily(symbol):
+def fetch_daily(symbol, max_retries=3, base_delay=1.0):
+    """拉取日线收盘序列，网络错误自动重试（指数退避）。
+
+    重试后仍失败则抛出 NetworkError，由调用方决定 fail-open 策略。
+    """
     import ccxt
 
     ex = ccxt.okx({"enableRateLimit": True})
-    o = ex.fetch_ohlcv(symbol, "1d", limit=120)
-    return [c[4] for c in o if c[4]]
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            o = ex.fetch_ohlcv(symbol, "1d", limit=120)
+            return [c[4] for c in o if c[4]]
+        except (ccxt.NetworkError, ccxt.RequestTimeout) as exc:
+            last_exc = exc
+            if attempt < max_retries - 1:
+                delay = base_delay * (2**attempt)
+                print(
+                    f"  [retry] {symbol} attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
+                )
+                time.sleep(delay)
+    raise last_exc
 
 
 def momentum_3m(closes):
@@ -48,7 +65,17 @@ def main():
     assets = {}
     for layer, symbols in LAYERS.items():
         for sym in symbols:
-            closes = fetch_daily(sym)
+            try:
+                closes = fetch_daily(sym)
+            except Exception as exc:  # noqa: BLE001  fail-open：单标的拉取失败不中止全链
+                print(f"{sym:<12} layer={layer:<9} ERROR {exc}")
+                assets[sym] = {
+                    "layer": layer,
+                    "momentum_3m_pct": None,
+                    "samples": 0,
+                    "error": str(exc)[:120],
+                }
+                continue
             mom = momentum_3m(closes)
             assets[sym] = {
                 "layer": layer,
