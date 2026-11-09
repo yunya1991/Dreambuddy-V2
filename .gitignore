@@ -68,6 +68,8 @@ artifacts/
 # 放行：48 P0 基线产物（代码派生图谱可入库；D3 原始事件含内部 session 数据仍排除）
 !48-涌现架构/baselines/artifacts/
 48-涌现架构/baselines/artifacts/d3_intent_events/intent_events.jsonl
+# D2-A holdout 运行产物：单次 run 50-120MB（含 kept_nodes 全量快照），仅本地保留
+48-涌现架构/experiments/d2a_holdout/results/
 data/
 # === 放行: Phase B NeuralSDE checkpoint (338KB 模型权重, 非缓存) ===
 !23-四层闭环自进化交易架构/data/
