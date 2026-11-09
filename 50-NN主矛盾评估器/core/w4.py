@@ -55,7 +55,9 @@ def urgency_score(paths: list[Path]) -> float:
     return best
 
 
-def consistency_score(paths: list[Path], reconciliation: dict[str, Any] | None) -> tuple[float, bool]:
+def consistency_score(
+    paths: list[Path], reconciliation: dict[str, Any] | None
+) -> tuple[float, bool]:
     # 证据一致性：内部 vs 42 对账结果调制置信度（一致 x1.0~1.15；分歧 x0.85~0.95 + conflict_flag）。
     # 返回 (score, conflict_flag)。
     rec = reconciliation or {}
@@ -115,7 +117,12 @@ def adjudicate(
         "resonance": total >= RESONANCE_THRESHOLD,
         "dominant": total >= DOMINANCE_THRESHOLD,
         "conflict_flag": conflict,
-        "weights": {"force": W_FORCE, "urgency": W_URGENCY, "consistency": W_CONSISTENCY, "impact": W_IMPACT},
+        "weights": {
+            "force": W_FORCE,
+            "urgency": W_URGENCY,
+            "consistency": W_CONSISTENCY,
+            "impact": W_IMPACT,
+        },
         "thresholds": {"resonance": RESONANCE_THRESHOLD, "dominance": DOMINANCE_THRESHOLD},
         "path_count": len(items),
     }

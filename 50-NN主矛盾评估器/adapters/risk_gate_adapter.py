@@ -31,6 +31,7 @@ def _load_13_modules() -> tuple[Any, Any, Any, Any] | None:
     try:
         from core.context import Direction, RiskContext, Signal  # noqa: E402
         from core.pre_trade_gate import PreTradeGate  # noqa: E402
+
         _13_MODULES = (PreTradeGate, Signal, RiskContext, Direction)
         return _13_MODULES
     except Exception:
@@ -50,10 +51,22 @@ def check_decision(
     # 返回 {passed, reason, position_modifier, source}；异常 fail-closed。
     direction = str(decision.get("direction") or "neutral")
     if direction == "neutral":
-        return {"passed": False, "reason": "neutral_no_execution", "reason_code": "NEUTRAL_NO_EXECUTION", "position_modifier": 1.0, "source": "13-pre-trade-gate"}
+        return {
+            "passed": False,
+            "reason": "neutral_no_execution",
+            "reason_code": "NEUTRAL_NO_EXECUTION",
+            "position_modifier": 1.0,
+            "source": "13-pre-trade-gate",
+        }
     modules = _load_13_modules()
     if modules is None:
-        return {"passed": False, "reason": "risk_module_load_failed", "reason_code": "RISK_MODULE_LOAD_FAILED", "position_modifier": 1.0, "source": "13-pre-trade-gate"}
+        return {
+            "passed": False,
+            "reason": "risk_module_load_failed",
+            "reason_code": "RISK_MODULE_LOAD_FAILED",
+            "position_modifier": 1.0,
+            "source": "13-pre-trade-gate",
+        }
     PreTradeGate, Signal, RiskContext, Direction = modules
     try:
         if gate is None:
@@ -81,4 +94,10 @@ def check_decision(
             "source": "13-pre-trade-gate",
         }
     except Exception as exc:
-        return {"passed": False, "reason": f"risk_gate_exception:{exc}", "reason_code": "RISK_GATE_EXCEPTION", "position_modifier": 1.0, "source": "13-pre-trade-gate"}
+        return {
+            "passed": False,
+            "reason": f"risk_gate_exception:{exc}",
+            "reason_code": "RISK_GATE_EXCEPTION",
+            "position_modifier": 1.0,
+            "source": "13-pre-trade-gate",
+        }

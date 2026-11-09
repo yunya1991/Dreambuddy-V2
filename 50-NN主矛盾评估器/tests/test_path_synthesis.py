@@ -133,7 +133,6 @@ def test_direction_aliases():
     assert paths[0].direction == "long"
 
 
-
 def _ev(source, symbol, direction, confidence, provenance="42-bus", payload=None, **kw):
     base = {
         "evidence_id": "e-" + source + "-" + symbol + "-" + str(confidence),

@@ -5,6 +5,7 @@
 # （显式目录注入），预留 48 写入钩子，就绪后可回放。
 # 样本 append-only + 幂等（sample_id 去重）；任何异常 fail-safe 不阻断决策链路。
 from __future__ import annotations
+
 import json
 import time
 from pathlib import Path
@@ -27,22 +28,36 @@ def build_feedback_sample(
         "confidence": decision.get("confidence"),
         "position_pct": decision.get("position_pct"),
         "shadow": decision.get("shadow", True),
-        "risk": {
-            "passed": (risk_result or {}).get("passed"),
-            "reason_code": (risk_result or {}).get("reason_code"),
-            "position_modifier": (risk_result or {}).get("position_modifier"),
-        } if risk_result else None,
-        "paca": {
-            "ok": (paca_result or {}).get("ok"),
-            "final_position_pct": ((paca_result or {}).get("advice") or {}).get("final_position_pct"),
-            "fallback_used": ((paca_result or {}).get("advice") or {}).get("fallback_used"),
-        } if paca_result else None,
-        "exec": {
-            "ok": (exec_result or {}).get("ok"),
-            "parent_id": exec_receipt.get("parent", {}).get("parent_id"),
-            "audit_status": exec_receipt.get("_audit_status"),
-            "fail_open_triggered": exec_receipt.get("fail_open", {}).get("triggered"),
-        } if exec_result else None,
+        "risk": (
+            {
+                "passed": (risk_result or {}).get("passed"),
+                "reason_code": (risk_result or {}).get("reason_code"),
+                "position_modifier": (risk_result or {}).get("position_modifier"),
+            }
+            if risk_result
+            else None
+        ),
+        "paca": (
+            {
+                "ok": (paca_result or {}).get("ok"),
+                "final_position_pct": ((paca_result or {}).get("advice") or {}).get(
+                    "final_position_pct"
+                ),
+                "fallback_used": ((paca_result or {}).get("advice") or {}).get("fallback_used"),
+            }
+            if paca_result
+            else None
+        ),
+        "exec": (
+            {
+                "ok": (exec_result or {}).get("ok"),
+                "parent_id": exec_receipt.get("parent", {}).get("parent_id"),
+                "audit_status": exec_receipt.get("_audit_status"),
+                "fail_open_triggered": exec_receipt.get("fail_open", {}).get("triggered"),
+            }
+            if exec_result
+            else None
+        ),
         "created_ts": time.time(),
         "source": "50-nn",
         "dest": "48-emergence",
@@ -76,19 +91,44 @@ class FeedbackWriter:
         try:
             sid = str(sample.get("sample_id") or "")
             if not sid:
-                return {"written": False, "deduped": False, "delivery": "none", "reason": "missing_sample_id"}
+                return {
+                    "written": False,
+                    "deduped": False,
+                    "delivery": "none",
+                    "reason": "missing_sample_id",
+                }
             if sid in self._seen_ids:
-                return {"written": False, "deduped": True, "delivery": "none", "reason": "duplicate_sample_id"}
+                return {
+                    "written": False,
+                    "deduped": True,
+                    "delivery": "none",
+                    "reason": "duplicate_sample_id",
+                }
             # 48 钩子优先
             if self._sink is not None:
                 delivered = bool(self._sink(sample))
                 if delivered:
                     self._seen_ids.add(sid)
-                    return {"written": True, "deduped": False, "delivery": "delivered", "reason": "ok"}
-                return {"written": False, "deduped": False, "delivery": "none", "reason": "sink_rejected"}
+                    return {
+                        "written": True,
+                        "deduped": False,
+                        "delivery": "delivered",
+                        "reason": "ok",
+                    }
+                return {
+                    "written": False,
+                    "deduped": False,
+                    "delivery": "none",
+                    "reason": "sink_rejected",
+                }
             # 降级：本地缓冲
             if self._buffer_path is None:
-                return {"written": False, "deduped": False, "delivery": "none", "reason": "no_buffer_no_sink"}
+                return {
+                    "written": False,
+                    "deduped": False,
+                    "delivery": "none",
+                    "reason": "no_buffer_no_sink",
+                }
             payload = dict(sample)
             payload["delivery"] = "buffered"
             with open(self._buffer_path, "a", encoding="utf-8") as f:
@@ -97,7 +137,12 @@ class FeedbackWriter:
             self._seen_ids.add(sid)
             return {"written": True, "deduped": False, "delivery": "buffered", "reason": "ok"}
         except Exception as exc:
-            return {"written": False, "deduped": False, "delivery": "none", "reason": f"feedback_writer_exception:{exc}"}
+            return {
+                "written": False,
+                "deduped": False,
+                "delivery": "none",
+                "reason": f"feedback_writer_exception:{exc}",
+            }
 
     def replay_to_sink(self, sink: Any) -> dict[str, Any]:
         # 回放：48 就绪后把本地缓冲样本重放到 48 钩子（幂等，成功后标记 delivered）。
@@ -105,7 +150,9 @@ class FeedbackWriter:
             return {"replayed": 0, "failed": 0}
         replayed = 0
         failed = 0
-        lines = [ln for ln in self._buffer_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        lines = [
+            ln for ln in self._buffer_path.read_text(encoding="utf-8").splitlines() if ln.strip()
+        ]
         for line in lines:
             try:
                 sample = json.loads(line)

@@ -5727,6 +5727,7 @@ class PollingTrader:
         fail-open：任何异常仅记日志，不影响交易主流程。
         """
         from datetime import timedelta
+
         try:
             runtime_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runtime")
             os.makedirs(runtime_dir, exist_ok=True)

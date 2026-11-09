@@ -130,10 +130,34 @@ def build_signal(
 
         # R1a：四档约束包络（tier → 杠杆/资产数量/多空数量/净偏置；与 a3_strategy_adapter 口径对齐）
         _TIER_CONSTRAINTS = {
-            "attack": {"leverage_cap": 5, "asset_count_cap": 8, "long_count_cap": 6, "short_count_cap": 4, "net_bias": 0.2},
-            "defend": {"leverage_cap": 3, "asset_count_cap": 5, "long_count_cap": 4, "short_count_cap": 3, "net_bias": 0.0},
-            "light_defense": {"leverage_cap": 2, "asset_count_cap": 3, "long_count_cap": 2, "short_count_cap": 1, "net_bias": -0.2},
-            "full_freeze": {"leverage_cap": 1, "asset_count_cap": 0, "long_count_cap": 0, "short_count_cap": 0, "net_bias": 0.0},
+            "attack": {
+                "leverage_cap": 5,
+                "asset_count_cap": 8,
+                "long_count_cap": 6,
+                "short_count_cap": 4,
+                "net_bias": 0.2,
+            },
+            "defend": {
+                "leverage_cap": 3,
+                "asset_count_cap": 5,
+                "long_count_cap": 4,
+                "short_count_cap": 3,
+                "net_bias": 0.0,
+            },
+            "light_defense": {
+                "leverage_cap": 2,
+                "asset_count_cap": 3,
+                "long_count_cap": 2,
+                "short_count_cap": 1,
+                "net_bias": -0.2,
+            },
+            "full_freeze": {
+                "leverage_cap": 1,
+                "asset_count_cap": 0,
+                "long_count_cap": 0,
+                "short_count_cap": 0,
+                "net_bias": 0.0,
+            },
         }
         per_class = {}
         for cls in ASSET_CLASSES:

@@ -12,7 +12,9 @@ from core.w4 import (
 )
 
 
-def _path(source, direction, confidence, dimension="D3", horizon="hours", intent="trend", weight=0.2):
+def _path(
+    source, direction, confidence, dimension="D3", horizon="hours", intent="trend", weight=0.2
+):
     return Path(
         path_id=f"ev:{source}:BTC:{dimension}:{horizon}:{intent}",
         source=source,

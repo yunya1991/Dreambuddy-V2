@@ -1,10 +1,10 @@
 """R0-04: 23 层冻结快照固化/加载/转换/diff 全链路一致性测试。"""
+
 from __future__ import annotations
 
 import json
 
 import pytest
-
 import tools.differential_harness as dh
 from tools.differential_harness import (
     diff_path_sets,

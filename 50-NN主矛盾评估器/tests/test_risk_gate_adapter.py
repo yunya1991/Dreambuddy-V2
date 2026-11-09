@@ -102,8 +102,14 @@ class RiskGateAdapterTests(unittest.TestCase):
         self.assertEqual(ctx.total_equity, 10000.0)
 
     def test_gate_block_fail_closed(self):
-        gate = self._patch_modules(_FakeGate(result=_FakeResult(False, "leverage cap exceeded", _ReasonCode.LEVERAGE_CAP, 1.0)))
-        out = rga.check_decision({"direction": "short", "symbol": "ETH", "confidence": 0.6}, gate=gate)
+        gate = self._patch_modules(
+            _FakeGate(
+                result=_FakeResult(False, "leverage cap exceeded", _ReasonCode.LEVERAGE_CAP, 1.0)
+            )
+        )
+        out = rga.check_decision(
+            {"direction": "short", "symbol": "ETH", "confidence": 0.6}, gate=gate
+        )
         self.assertFalse(out["passed"])
         self.assertEqual(out["reason"], "leverage cap exceeded")
         self.assertEqual(out["reason_code"], "LEVERAGE_CAP")
