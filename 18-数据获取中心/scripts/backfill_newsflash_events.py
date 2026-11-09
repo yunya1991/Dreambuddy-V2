@@ -27,6 +27,7 @@ from data_center.processing.newsflash_events import build_events_from_newsflash 
 
 DB = ROOT / "data_center.db"
 OUT = ROOT / "backfill" / "events_d1.jsonl"
+HISTORY = ROOT / "backfill" / "newsflash_history.jsonl"
 
 
 def _day_ts(ts: int) -> int:
@@ -75,13 +76,47 @@ def main() -> None:
     )
 
     recs = []
-    for ts_s, m in conn.execute(
-        "SELECT timestamp, metrics FROM records WHERE source='odaily_newsflash'"
+    db_ids: set[int] = set()
+    for ts_s, m, raw_s in conn.execute(
+        "SELECT timestamp, metrics, raw FROM records WHERE source='odaily_newsflash'"
     ):
         d = json.loads(m)
+        # 2317/3048 条 description/publishTimestamp 只在 raw 列 → 回退补齐
+        try:
+            raw = json.loads(raw_s) if raw_s else {}
+        except ValueError:
+            raw = {}
+        d.setdefault("description", raw.get("description", ""))
+        if not d.get("published_ms") and raw.get("publishTimestamp"):
+            d["published_ms"] = str(raw["publishTimestamp"])
         d["_fallback_ts"] = ts_s  # 2096/3048 缺 published_ms，回退记录时间戳
+        if d.get("od_source_id"):
+            db_ids.add(int(d["od_source_id"]))
         recs.append(d)
-    print(f"newsflash records: {len(recs)}")
+    print(f"newsflash records (DB): {len(recs)}")
+
+    # 历史翻页回填合并（按 id 去重 DB 已有条目）
+    n_hist = 0
+    if HISTORY.exists():
+        for line in HISTORY.open(encoding="utf-8"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                h = json.loads(line)
+            except ValueError:
+                continue
+            if int(h.get("id") or 0) in db_ids:
+                continue
+            recs.append(
+                {
+                    "od_event_type": h.get("od_event_type", ""),
+                    "description": h.get("description", ""),
+                    "published_ms": str(h.get("published_ms", 0)),
+                }
+            )
+            n_hist += 1
+    print(f"newsflash records (history merged): +{n_hist} → total {len(recs)}")
 
     if OUT.exists():  # 幂等重跑：清空重建（EventStore 内部也按 event_id 幂等）
         os.remove(OUT)

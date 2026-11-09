@@ -1,19 +1,26 @@
-"""C1 广告/软文剔除 v0（规则版）— SPEC-D1-NARRATIVE-PRIMITIVES §2.1。
+"""C1 广告/软文剔除 v0.1（规则版）— SPEC-D1-NARRATIVE-PRIMITIVES §2.1。
 
 双判据：
-  1. 推广特征：推广关键词 / 返佣外链 / 免责声明模板叠加推广
+  1. 推广特征：推广关键词 + 推广意图证据 / 返佣外链 / 免责声明模板叠加推广
   2. 命题密度（启发式占位，P1 由 NPE 精化）：文本过短且无因果触发词
      → 标记 low_density（保留不剔除，下游自行降权）
+
+v0.1 变更（P0 试爬实测：29 drop 中 18 误判，剔除精度仅 ~34%）：
+  - 根因：返佣/瓜分/邀请码 在商业模式分析文中是正常词汇
+    （返佣机制拆解、瓜分蛋糕比喻、邀请码产品事实），单关键词命中即剔过杀
+  - 新口径（预注册）：推广词命中需叠加推广意图证据才 drop：
+      a) 标题命中推广词；或
+      b) 正文命中位置 ±80 字窗口内含动作词（注册/点击/链接/http/领取/
+         奖励/奖金/福利/活动/任务/积分/STEP/签到/促销/空投）
+  - 仅关键词无意图 → keep + promo_kw_weak:<kw> 审计标记（下游可降权）
+  - 注：动作词不含"获得"——实测其为分析文高频词（"获得优势/获得收入"），
+    是 v0.1 首轮误判主因
 
 硬约束：
   - 剔除决策可审计：filter_article 返回 {decision, hit_rules}；
     filter_batch 支持 audit_path JSONL 落盘
   - 边界样本保留并标 low_density
   - FAIL-OPEN：输入异常一律 keep + hit_rules=["error:..."]
-
-v0 局限（P1 迭代方向）：
-  - 关键词表靠人工维护，召回有限
-  - 命题密度为启发式（长度+因果触发词），非真正命题计数
 """
 
 from __future__ import annotations
@@ -25,7 +32,7 @@ from typing import Any
 
 logger = logging.getLogger("data_center.processing.ad_filter")
 
-# ── 推广关键词（命中即 drop）────────────────────────────────
+# ── 推广关键词（需叠加意图证据才 drop）──────────────────────
 _PROMO_KEYWORDS = [
     "注册即送",
     "注册立送",
@@ -42,6 +49,26 @@ _PROMO_KEYWORDS = [
     "专属链接",
     "推广链接",
 ]
+
+# ── 推广意图动作词（±80 字窗口共现 = 推广意图证据）──────────
+_PROMO_ACTION_WORDS = [
+    "注册",
+    "点击",
+    "链接",
+    "http",
+    "领取",
+    "奖励",
+    "奖金",
+    "福利",
+    "活动",
+    "任务",
+    "积分",
+    "STEP",
+    "签到",
+    "促销",
+    "空投",
+]
+_ACTION_WINDOW = 80
 
 # ── 返佣/推广外链特征（URL 路径含 ref/invite/promo 参数）───
 _REF_LINK_RE = re.compile(
@@ -96,10 +123,27 @@ def filter_article(title: Any = "", summary: Any = "", content: Any = "", **_: A
 
         hit: list[str] = []
 
-        # 判据 1a：推广关键词（标题/摘要/正文三路）
+        # 判据 1a（v0.1）：推广关键词需叠加意图证据
+        #   - 标题命中 → drop 级
+        #   - 正文/摘要命中 ±80 字窗口含动作词 → drop 级
+        #   - 仅关键词无意图 → promo_kw_weak（保留，审计可降权）
+        body_text = f"{summary_s}\n{content_s}"
         for kw in _PROMO_KEYWORDS:
-            if re.search(kw, all_text):
+            if re.search(kw, title_s):
                 hit.append(f"promo_kw:{kw}")
+                continue
+            strong = False
+            for m in re.finditer(kw, body_text):
+                lo = max(0, m.start() - _ACTION_WINDOW)
+                hi = m.end() + _ACTION_WINDOW
+                window = body_text[lo:hi]
+                if any(a in window for a in _PROMO_ACTION_WORDS):
+                    strong = True
+                    break
+            if strong:
+                hit.append(f"promo_kw:{kw}")
+            elif re.search(kw, body_text):
+                hit.append(f"promo_kw_weak:{kw}")
 
         # 判据 1b：返佣外链
         m = _REF_LINK_RE.search(all_text)

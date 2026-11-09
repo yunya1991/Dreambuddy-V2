@@ -223,10 +223,11 @@ pattern = (event_type, market_state_bucket) → {
 **Fail-open 退出**：任一 Phase 验收不达标即停在该阶段如实报告（参考 E2/E5 的"如实降级"先例），不为过关凑数。
 
 > **进度快照（2026-11-10）**：
-> - **P0**：正文爬取器 + C1 v0 完成（TDD 绿）；500 篇试爬进行中，验收待完成
-> - **P1**：✅ NPE v0（R1 规则版）+ Snorkel LF 层完成——[npe_rules.py](../../../../18-数据获取中心/data_center/processing/npe_rules.py)（11 测试）、[npe_lfs.py](../../../../18-数据获取中心/data_center/processing/npe_lfs.py)（8 LF + 预注册聚合，7 测试）；冒烟 0.40 命题/篇；100 篇人工复核 precision 验收待试爬完成后执行
-> - **P2**：部分完成——事件 schema 落地（[event_store.py](../../../../18-数据获取中心/data_center/processing/event_store.py)，含 D3 双硬字段校验）+ 回填路径②（快讯对齐 [newsflash_events.py](../../../../18-数据获取中心/data_center/processing/newsflash_events.py)：120 事件、reaction 完整率 92%，产物 [events_d1.jsonl](../../../../18-数据获取中心/backfill/events_d1.jsonl)）+ 路径③（行情反查 [event_reaction.py](../../../../18-数据获取中心/data_center/processing/event_reaction.py)：median/MAD 稳健 3σ，BTC 1348 日检出 59 事件）；路径①文章回溯待试爬完成。funding/OI 按降级方案确认（覆盖盘点：funding 仅 8 天、OI 无源）
-> - 实测修复：均值/标准差 z-score 掩蔽效应 → 切换 median/MAD；newsflash 2096/3048 缺 published_ms → 记录时间戳回退
+> - **P0**：✅ 基本完成——500 篇试爬验收：成功率 **96.4%**（≥90% ✓）、C1 剔除率 5.8%、avg 正文 3304 字、深度板块分布符合预期。C1 v0 验收**不达标如实修复**：29 条剔除中 18 条误判（剔除精度仅 34%，"返佣/瓜分/邀请码"在商业模式分析文中是正常词汇）→ v0.1 口径=推广词须叠加意图证据（标题命中 / ±80 字窗口共现动作词，动作词剔除"获得"），修复后 13 条剔除中 12 条明确正确（**精度 ~92%**，审计 [c1_audit_v01.jsonl](../../../../18-数据获取中心/backfill/odaily_p0/c1_audit_v01.jsonl)）；50 篇人工复核终审待用户参与
+> - **P1**：✅ NPE v0（R1 规则版）+ Snorkel LF 层完成——[npe_rules.py](../../../../18-数据获取中心/data_center/processing/npe_rules.py)（11 测试）、[npe_lfs.py](../../../../18-数据获取中心/data_center/processing/npe_lfs.py)（8 LF + 预注册聚合，7 测试）；冒烟 0.40 命题/篇；100 篇人工复核 precision 验收待用户参与
+> - **P2**：推进中——事件 schema 落地（[event_store.py](../../../../18-数据获取中心/data_center/processing/event_store.py)，含 D3 双硬字段校验）+ 回填路径②（快讯对齐 [newsflash_events.py](../../../../18-数据获取中心/data_center/processing/newsflash_events.py)）+ 路径③（行情反查 [event_reaction.py](../../../../18-数据获取中心/data_center/processing/event_reaction.py)：median/MAD 稳健 3σ，BTC 1348 日检出 59 事件）。**补量**：实测 newsflash API 翻页参数为 `page`（cursor/pageNum 均被忽略），limit 锁 20/页，可回溯至 2018-05；历史翻页回填器 [newsflash_history.py](../../../../18-数据获取中心/data_center/processing/newsflash_history.py)（12 测试）已启动回填至 2023-01（对齐价格覆盖起点）。raw 列回退补齐 description 后事件 120→160（listing 11→31、etf 12→29），reaction 完整率 91%（缺口=近尾事件 T+7d 超出价格覆盖 10-29，属数据边界如实报告）。funding/OI 按降级方案确认（覆盖盘点：funding 仅 8 天、OI 无源）
+> - 实测修复：均值/标准差 z-score 掩蔽效应 → 切换 median/MAD；newsflash 2096/3048 缺 published_ms → 记录时间戳回退 + raw 列回退
+> - 待推进：路径①文章回溯（命题 condition_event 历史日期落地需额外设计，R1 规则对日期 grounding 能力有限，提请用户决策口径）；P3 三层防线统计模块（Holm/PBO/CSCV/SPA/DSR 全仓无实现）
 
 ---
 

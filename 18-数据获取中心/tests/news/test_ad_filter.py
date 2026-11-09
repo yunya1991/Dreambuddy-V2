@@ -144,3 +144,37 @@ def test_tc8_title_hit():
     d = filter_article(**art)
     assert d["decision"] == "drop"
     assert any(r.startswith("promo_kw:") for r in d["hit_rules"])
+
+
+# TC-9 v0.1：分析文中的推广词（无动作上下文）→ keep + promo_kw_weak 审计标记
+# 实测误判场景（P0 试爬 29 drop 中 18 误判）：返佣=交易所机制拆解、
+# 瓜分=比喻用法、邀请码=产品事实陈述，单关键词命中不再剔除。
+def test_tc9_analytical_mention_keeps():
+    from data_center.processing.ad_filter import filter_article
+
+    art = _art(
+        title="Hyperliquid暴利背后的零和真相",
+        summary="",
+        content="Hyperliquid 通过推荐码折扣（4%）、HYPE 质押折扣（5-40%）和做市返佣"
+        "降低用户的交易成本。早期质押者瓜分了大部分收益。该产品目前仍需邀请码激活。"
+        "这意味着费率优势是其护城河，因为成本结构决定了竞争力。",
+    )
+    d = filter_article(**art)
+    assert d["decision"] == "keep"
+    assert any(r.startswith("promo_kw_weak:") for r in d["hit_rules"])
+    assert not any(r.startswith("promo_kw:") for r in d["hit_rules"])
+
+
+# TC-10 v0.1：推广词 + 动作上下文（非标题）→ drop
+def test_tc10_promo_with_action_context_drops():
+    from data_center.processing.ad_filter import filter_article
+
+    art = _art(
+        title="热门交互合集 | 某项目候补名单申请",
+        summary="",
+        content="STEP 1. 进入交互网站，填完邀请码后登录。STEP 2. 完成每日签到任务，"
+        "邀请好友可获得额外积分，参与瓜分奖励。",
+    )
+    d = filter_article(**art)
+    assert d["decision"] == "drop"
+    assert any(r.startswith("promo_kw:") for r in d["hit_rules"])
