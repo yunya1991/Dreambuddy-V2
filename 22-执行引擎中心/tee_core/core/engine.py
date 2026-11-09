@@ -337,7 +337,8 @@ class TradeExecutionEngine:
             "leverage": leverage,
             "decision_px": decision_px,
             "urgency": "MEDIUM" if (reason or "").startswith("close") else "NORMAL",
-            "algo_override": None,
+            # compat 路径保持旧版单笔市价单语义：强制 DIRECT，不进 TWAP/Passive 桶
+            "algo_override": "direct",
             "source": f"compat::{tag}" + (f":{reason}" if reason else ""),
             "compat_max_slippage_bps": max_slippage_bps,
             "compat_px": px,
@@ -449,7 +450,7 @@ class TradeExecutionEngine:
             override=pr.get("algo_override"),
         )
 
-        algo_name = decision.algo_name  # DIRECT / TWAP15 / TWAP60 / PASSIVE
+        algo_name = decision.algo.name  # DIRECT / TWAP15 / TWAP60 / PASSIVE
         algo = self._instantiate_algo(algo_name, decision, pr)
 
         # Step 7 Run.
@@ -460,6 +461,7 @@ class TradeExecutionEngine:
             "max_slippage_bps": pr.get("compat_max_slippage_bps"),
             "direct_wait_sec": 5.0,
         }
+        algo_params.update(self._bucket_algo_params(algo_name))
         # KS hook signature per Task 6 base.py: callback(running_slip_bps: float,
         # context: dict) -> (triggered: bool, reason: str). Wrap our richer
         # cb into a plain-tuple return.
@@ -491,7 +493,7 @@ class TradeExecutionEngine:
                 )
 
         bucket_str = (
-            decision.bucket.value if hasattr(decision.bucket, "value") else str(decision.bucket)
+            decision.algo.name
         )
         estimate_dict = {
             "slippage_bps": slip_bps,
@@ -513,31 +515,39 @@ class TradeExecutionEngine:
 
     # ── algorithm factory ──
     def _instantiate_algo(self, algo_name: str, decision: RouterDecision, pr: Dict[str, Any]):
-        bucket = decision.bucket
-
-        bucket_str = bucket.value if hasattr(bucket, "value") else str(bucket)
+        bucket_str = decision.algo.name
         if bucket_str == "DIRECT":
             return DirectMarket()
         if bucket_str == "TWAP15":
-            return SmartTWAP(
-                window_sec=15 * 60,
-                n_slices=_cfg.TWAP_NUM_SLICES_TWAP15,
-                jitter_pct=_cfg.TWAP_JITTER_PCT,
-            )
+            return SmartTWAP()
         if bucket_str == "TWAP60":
-            return SmartTWAP(
-                window_sec=60 * 60,
-                n_slices=_cfg.TWAP_NUM_SLICES_TWAP60,
-                jitter_pct=_cfg.TWAP_JITTER_PCT,
-            )
+            return SmartTWAP()
         if bucket_str == "PASSIVE":
-            return SmartPassive(
-                rehang_sec=_cfg.PASSIVE_REHANG_SEC,
-                twap_fallback_sec=_cfg.PASSIVE_TWAP_FALLBACK_SEC,
-                twap_fallback_fill_ratio=_cfg.PASSIVE_TWAP_FALLBACK_FILL_RATIO,
-            )
+            return SmartPassive()
         # Safety: DIRECT.
         return DirectMarket()
+
+    def _bucket_algo_params(self, algo_name: str) -> Dict[str, Any]:
+        # 桶级配置经 algo_params 传入（Task-6 run 契约：算法构造无参）。
+        if algo_name == "TWAP15":
+            return {
+                "window_sec": 15 * 60,
+                "num_slices": _cfg.TWAP_NUM_SLICES_TWAP15,
+                "jitter_pct": _cfg.TWAP_JITTER_PCT,
+            }
+        if algo_name == "TWAP60":
+            return {
+                "window_sec": 60 * 60,
+                "num_slices": _cfg.TWAP_NUM_SLICES_TWAP60,
+                "jitter_pct": _cfg.TWAP_JITTER_PCT,
+            }
+        if algo_name == "PASSIVE":
+            return {
+                "rehang_sec": _cfg.PASSIVE_REHANG_SEC,
+                "twap_fallback_sec": _cfg.PASSIVE_TWAP_FALLBACK_SEC,
+                "twap_fallback_fill_ratio": _cfg.PASSIVE_TWAP_FALLBACK_FILL_RATIO,
+            }
+        return {}
 
     # ── runtime ks callback — 2 variants ──
     def _build_runtime_killswitch_cb_tuple(
