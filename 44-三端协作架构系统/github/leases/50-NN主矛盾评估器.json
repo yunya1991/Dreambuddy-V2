@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "module": "50-NN主矛盾评估器",
+  "leases": [
+    {
+      "end": "local",
+      "role": "dev",
+      "task_id": "T-P1-03",
+      "session": null,
+      "base_sha": null,
+      "started_at": "2026-11-09T20:58:48+08:00",
+      "ttl_hours": 24,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}

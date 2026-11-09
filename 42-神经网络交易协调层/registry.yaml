@@ -3,7 +3,9 @@
 # Subscriber：子系统按需消费总线信号与参数，不订阅 = 不受影响
 
 subsystems:
-  - name: 43-strategic-extension
+  # F1（SPEC-M1 M1）：canonical source 更名 strategic_extension → 43-strategic；
+  # SOURCE_ALIAS_MODE=1 时双写过渡（对齐 bdsm P1-05 先例），50 侧别名表兼容两旧名
+  - name: 43-strategic
     publisher: adapters/strategic_extension_adapter.py
     publish: [strategic_extension]
     subscribe: [elastic_params, risk_budget]
