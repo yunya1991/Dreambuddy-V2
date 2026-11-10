@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-11-10T17:43:33.796142+00:00",
+  "module": "P5 统计学习",
+  "status": "OK",
+  "model": "logistic_regression",
+  "walk_forward": {
+    "feature_names": [
+      "st_hiking",
+      "st_cutting",
+      "st_plateau",
+      "rate",
+      "rate_chg_3m",
+      "mom_4w",
+      "mom_12w",
+      "above_ma200"
+    ],
+    "n_samples": 37,
+    "oos_samples": 15,
+    "first_oos_month": "2025-05",
+    "label_distribution": {
+      "UP": 19,
+      "DOWN": 15,
+      "NEUTRAL": 3
+    },
+    "accuracy": 0.26666666666666666,
+    "direction_ic": -0.23928571428571427,
+    "baseline_majority_class": "DOWN",
+    "baseline_majority_accuracy": 0.5333333333333333,
+    "sealed_test": {
+      "n": 7,
+      "accuracy": 0.42857142857142855,
+      "direction_ic": 0.03571428571428572
+    },
+    "beats_majority": false
+  },
+  "gate_report": {
+    "generated_at": "2026-11-10T17:43:32.650214+00:00",
+    "module": "P5 门槛守卫（预注册，禁止放宽）",
+    "items": [
+      {
+        "name": "contradiction_events",
+        "current": 1376,
+        "required": 200,
+        "passed": true,
+        "gap": 0
+      },
+      {
+        "name": "semantic_events",
+        "current": 20927,
+        "required": 1000,
+        "passed": true,
+        "gap": 0
+      },
+      {
+        "name": "x1_gate",
+        "current": {
+          "samples": 96,
+          "min_samples": 90,
+          "weeks": 1.71,
+          "min_weeks": 1.5,
+          "x1_ready": true
+        },
+        "required": "x1_ready == true",
+        "passed": true,
+        "gap": 0
+      }
+    ],
+    "all_passed": true,
+    "decision": "ALLOW_TRAINING",
+    "note": "门槛全部达标，P5 训练入口开放"
+  },
+  "note": "简单统计基线（逻辑回归，扩张窗 Walk-Forward，时序不打乱）。复杂模型须证明相对本基线的增量收益方可替换（SPEC 风险 3e 最小复杂度原则）。本地验证轮数据窗口受本地 FEDFUNDS/yfinance 深度限制；云端全量历史自动生效。"
+}

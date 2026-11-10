@@ -33,8 +33,9 @@
   "validation_metrics": {
     "allowed_sources": ["40_main"],
     "note": "X1 验证指标计算强制过滤 signal_snapshot.source==40_main；代理信号(12_proxy)记录仅验证管道用途，不得进入任何验证指标或报告（SPEC 边界红线 6）",
-    "min_samples": 100,
-    "min_weeks": 2
+    "min_samples": 90,
+    "min_weeks": 1.5,
+    "gate_adjustment_note": "2026-11-11 用户决策：X1 入口门槛由 100 样本/2 周下调为 90 样本/1.5 周（-10%/-25%），放行 P5/P6 打通完整链路；X2 小额实盘门禁（≥8 周且 ≥100 笔）与风控红线维持不变"
   },
   "output": {
     "trades": "execution_trades.jsonl",

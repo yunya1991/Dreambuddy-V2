@@ -107,6 +107,155 @@ def extract_feature_vector(features: dict) -> dict:
     return vec
 
 
+def _build_dataset() -> list:
+    """历史逐期特征回放（SPEC 风险 3/7：时序样本，禁止随机打乱）。
+
+    样本：每个 FEDFUNDS 月度观测一行。
+    特征（全部 t 期可得，无未来函数）：
+      - 周期状态机回放态（hiking/cutting/plateau one-hot，复用 p1_real_cycle）
+      - 利率水平与 3 个月变化
+      - BTC 4 周/12 周动量、MA200 上方标记（月末收盘 vs 日线 MA200）
+    标签：月末收盘后 4 周（28 天）收益，>+2% UP / <-2% DOWN / 其余 NEUTRAL
+      （PREREG label_horizon_weeks=4 / label_threshold_pct=2.0）
+    数据源：18 中心 records（db_access 只读；fred FEDFUNDS + yfinance BTC-USD）。
+    """
+    import db_access
+    from p1_real_cycle import run_state_machine
+
+    fred = [
+        (r[0][:7], float(r[1])) for r in db_access.query_fred_series("FEDFUNDS") if r[1] is not None
+    ]
+    states = run_state_machine(fred)
+
+    px_rows = db_access.query_fred_series("BTC-USD", source="yfinance")
+    daily = sorted(((r[0][:10], float(r[1])) for r in px_rows if r[1] is not None))
+    if len(daily) < 210:
+        raise RuntimeError(f"BTC-USD 日线不足（{len(daily)} 条 < 210）")
+
+    # 月末收盘映射（月份 → 该月最后一个有数据的交易日的收盘价/在 MA200 上方）
+    month_end: dict = {}
+    for i, (d, c) in enumerate(daily):
+        m = d[:7]
+        lo = max(0, i - 199)
+        ma200 = sum(x[1] for x in daily[lo : i + 1]) / (i - lo + 1)
+        month_end[m] = {"close": c, "above_ma200": c > ma200, "ma_ready": (i - lo + 1) >= 200}
+
+    months = [s["month"] for s in states if s["month"] in month_end]
+    samples = []
+    thr = PREREG["label_threshold_pct"] / 100.0
+    for i, s in enumerate(states):
+        m = s["month"]
+        if m not in month_end or not month_end[m]["ma_ready"]:
+            continue
+        idx = months.index(m)
+        if idx + 1 >= len(months):
+            continue  # 末月无前瞻标签
+        c0 = month_end[m]["close"]
+        c1 = month_end[months[idx + 1]]["close"]
+        fwd = c1 / c0 - 1.0
+        label = "UP" if fwd > thr else ("DOWN" if fwd < -thr else "NEUTRAL")
+        rate_3m = s["rate"] - states[i - 3]["rate"] if i >= 3 else 0.0
+        prev_c = month_end[months[idx - 1]]["close"] if idx >= 1 else None
+        prev3_c = month_end[months[idx - 3]]["close"] if idx >= 3 else None
+        samples.append(
+            {
+                "month": m,
+                "features": {
+                    "st_hiking": 1.0 if s["state"] == "hiking" else 0.0,
+                    "st_cutting": 1.0 if s["state"] == "cutting" else 0.0,
+                    "st_plateau": 1.0 if s["state"] == "plateau" else 0.0,
+                    "rate": s["rate"],
+                    "rate_chg_3m": rate_3m,
+                    "mom_4w": (c0 / prev_c - 1.0) if prev_c else 0.0,
+                    "mom_12w": (c0 / prev3_c - 1.0) if prev3_c else 0.0,
+                    "above_ma200": 1.0 if month_end[m]["above_ma200"] else 0.0,
+                },
+                "fwd_ret_4w": fwd,
+                "label": label,
+            }
+        )
+    return samples
+
+
+def _walk_forward(samples: list) -> dict:
+    """扩张窗 Walk-Forward（PREREG walk_forward_step=4 期；禁止随机打乱）。
+
+    初始训练窗 = 前 60%（train_ratio）；其后每步扩张 4 期、预测下一批，
+    全程仅用 t 之前数据预测 t；最后 20% 为封板纯验证段（单列报告）。
+    """
+    import numpy as np
+    from scipy.stats import spearmanr
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import StandardScaler
+
+    feat_names = list(samples[0]["features"].keys())
+    X = np.array([[s["features"][k] for k in feat_names] for s in samples])
+    y = np.array([s["label"] for s in samples])
+    fwd = np.array([s["fwd_ret_4w"] for s in samples])
+
+    n = len(samples)
+    n_test = max(1, int(round(n * PREREG["test_ratio"])))
+    test_start = n - n_test
+    start = int(round(n * PREREG["train_ratio"]))
+    step = PREREG["walk_forward_step"]
+
+    oos_idx, oos_pred, oos_score = [], [], []
+    t = start
+    while t < n:
+        end = min(t + step, n)
+        Xtr, ytr = X[:t], y[:t]
+        if len(set(ytr.tolist())) < 2:
+            t = end
+            continue  # 单类训练窗跳过（记录于 folds_skipped）
+        sc = StandardScaler().fit(Xtr)
+        clf = LogisticRegression(max_iter=1000)
+        clf.fit(sc.transform(Xtr), ytr)
+        proba = clf.predict_proba(sc.transform(X[t:end]))
+        classes = list(clf.classes_)
+        for j, k in enumerate(range(t, end)):
+            oos_idx.append(k)
+            oos_pred.append(classes[int(np.argmax(proba[j]))])
+            p_up = proba[j][classes.index("UP")] if "UP" in classes else 0.0
+            p_dn = proba[j][classes.index("DOWN")] if "DOWN" in classes else 0.0
+            oos_score.append(float(p_up - p_dn))
+        t = end
+
+    oos_idx = np.array(oos_idx)
+    oos_pred = np.array(oos_pred)
+    oos_score = np.array(oos_score)
+    y_oos = y[oos_idx]
+    fwd_oos = fwd[oos_idx]
+    acc = float(np.mean(oos_pred == y_oos)) if len(oos_idx) else None
+    ic = None
+    if len(oos_idx) >= 5 and len(set(oos_score.tolist())) > 1:
+        ic = float(spearmanr(oos_score, fwd_oos).statistic)
+    majority = max(set(y_oos.tolist()), key=y_oos.tolist().count) if len(y_oos) else None
+    acc_majority = float(np.mean(y_oos == majority)) if majority else None
+
+    test_mask = oos_idx >= test_start
+    test = {"n": int(test_mask.sum())}
+    if test_mask.any():
+        test["accuracy"] = float(np.mean(oos_pred[test_mask] == y_oos[test_mask]))
+        if test_mask.sum() >= 5 and len(set(oos_score[test_mask].tolist())) > 1:
+            test["direction_ic"] = float(
+                spearmanr(oos_score[test_mask], fwd_oos[test_mask]).statistic
+            )
+
+    return {
+        "feature_names": feat_names,
+        "n_samples": n,
+        "oos_samples": int(len(oos_idx)),
+        "first_oos_month": samples[int(oos_idx[0])]["month"] if len(oos_idx) else None,
+        "label_distribution": {k: int((y == k).sum()) for k in ("UP", "DOWN", "NEUTRAL")},
+        "accuracy": acc,
+        "direction_ic": ic,
+        "baseline_majority_class": majority,
+        "baseline_majority_accuracy": acc_majority,
+        "sealed_test": test,
+        "beats_majority": (acc is not None and acc_majority is not None and acc > acc_majority),
+    }
+
+
 def train() -> dict:
     """训练入口：先过门槛守卫，未达标拒绝启动。"""
     report = check_gate()
@@ -118,17 +267,37 @@ def train() -> dict:
             "gate_report": report,
         }
 
-    # ── 门槛达标后的训练主链路（骨架，待解锁后实现）──
-    # 1. 历史逐期特征回放（时序样本构建，Walk-Forward 切分）
-    # 2. 标签构建（前瞻 4 周，±2% 阈值三分类）
-    # 3. 简单统计基线训练（逻辑回归）
-    # 4. 封板验证段评估（最近 20%）
-    # 5. 产出 p5_model_status.json（含相对基线增量收益证据）
-    return {
-        "status": "NOT_IMPLEMENTED",
-        "reason": "门槛已达标，训练主链路待实现（框架骨架阶段）",
+    samples = _build_dataset()
+    if len(samples) < 20:
+        return {
+            "status": "INSUFFICIENT_DATA",
+            "reason": f"回放样本 {len(samples)} < 20，统计学习无意义（样本量红线）",
+            "gate_report": report,
+        }
+    wf = _walk_forward(samples)
+    out = {
+        "status": "OK",
+        "model": PREREG["baseline_model"],
+        "walk_forward": wf,
         "gate_report": report,
+        "note": (
+            "简单统计基线（逻辑回归，扩张窗 Walk-Forward，时序不打乱）。"
+            "复杂模型须证明相对本基线的增量收益方可替换（SPEC 风险 3e 最小复杂度原则）。"
+            "本地验证轮数据窗口受本地 FEDFUNDS/yfinance 深度限制；云端全量历史自动生效。"
+        ),
     }
+    with open(os.path.join(BASE, "p5_model_status.json"), "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "module": "P5 统计学习",
+                **out,
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+    return out
 
 
 def main() -> int:
