@@ -1,6 +1,6 @@
 # SPEC — Agentic Self-Improvement Loop (ASIL) v0.2
 
-> **状态**：🟢 评审通过（2026-11-10 Devil's Advocate 攻击 → 7 漏洞 → 全部修复）
+> **状态**：🟢 评审通过（2026-11-10 Devil's Advocate 攻击 → 7 漏洞 → 全部修复）· **v0.2.1 已回写实施状态（见 §0.5）**
 > **归属**：48-涌现架构（叠加层，不替代 v0.5 Phase E0-E6 与 v0.5 三维 D1/D2/D3）
 > **上游**：48 v0.5 Phase E0-E6 · 48 v0.5 三维 D1/D2/D3 · 35-广义认知系统（recall/record/verify） · 47-MCP管理系统 · 23-四层闭环
 > **下游**：ASIL-Orchestrator（编排器 MVP） · 48 NN 反馈网关 v0.1 · 33-REA 做梦器 · 45-评测系统
@@ -48,9 +48,32 @@ SPEC 引入三级就绪标记，避免笼统的 ✅/❌ 造成乐观假设：
 | **D3-B 知识组合** | 🟡 代理可用（反事实 A/B，步降 7.10） | 在线 shadow A/B runner（~20 样本） | ~150 行 |
 | **X-A 跨域迁移** | 🟡 代理可用（proxy G₁₂₃=0.080） | 真实在线 A/B（T-I2E / T-E2T） | Phase 3 |
 | 45 评测门禁 | 🟢 生产（D2 本地 E-H1~H5 硬项 5/5） | D2 加权项 + 人工盲评 | 人工流程 |
-| 编排器 | 🔴 未实现 | **ASIL-Orchestrator MVP** | ≤ 500 行 Python |
-| Oracle 验证层 | 🔴 未实现 | Phase 1 纯静态校验器 | ~150 行 |
-| 反馈信号扩维 | 🟡 部分 | session outcome 自动落盘 | ~100 行 |
+| 编排器 | 🟢 已实现（v0.2.1） | ASIL-Orchestrator 8 步管道 | 见 §0.5 |
+| Oracle 验证层 | 🟢 已实现（v0.2.1） | V1 纯静态校验 + V2 AST 拓扑六项 | 见 §0.5 |
+| 反馈信号扩维 | 🟡 部分（v0.2.1） | session outcome 已落盘；D3-B 在线 shadow 待做 | 见 §0.5 |
+
+---
+
+### 0.5 实施状态回写（v0.2.1，2026-11-10）
+
+> 本节只记录"已落地事实 + 证据"，不改动上文的判据与边界。代码位置：`48-涌现架构/asil/`。
+
+| 项 | 状态 | 证据 |
+|---|---|---|
+| Phase 1 Orchestrator MVP | ✅ 已落地 | 8 步管道 + 六触发源 + 冷却/合并 + CP1/CP2 + Bootstrap fallback；`llm_tokens_used = 0` |
+| Phase 2 D3/D2 真实接入 | ✅ 已落地 | D3 真实 1092 条 intent events；D2 真实 `capability_gaps.jsonl`；OracleV2 六项校验（AST/无环/复杂度/旁路） |
+| P0-1 真实认知回写 | ✅ 已修复 | `asil/cognitive_writeback.py`：verdict → `record()`（幂等）+ `verify()`；生产库示例 `VM-1794286846721-c316a951`，confidence 0.5→0.75，`recall` 排名 #1；M-ASIL-1 由自报计数改为可审计事实 |
+| P0-2 统计门禁 | ✅ 已落地 | `asil/stat_gate.py`：配对 bootstrap CI + Holm 校正；三段切分 train 547 / val 328 / holdout 217；holdout 仅判定不择优（有测试锁死）；首轮 family=0（候选全被 val 筛掉） |
+| D2 Wilson 区间 | ✅ 已补 | 每类 gap 输出 `p/ci_low/ci_high/n/evidence_level`；冠军按 `pass_rate → CI 下界 → n` 三级择优，避免 n=1 的 100% 假象 |
+| TRAE 评注闭环 | ✅ 已实证 | 文件握手 `request(tag+digest) → result.json → 重跑采纳`；D2 驳回使 `architecture_gap` 1.0→0.0、冠军切换、overall 0.6→0.4；D3 驳回被采纳且理由入历史；含防篡改绑定、无效回写显式降级、`pending_reviews` 清单暴露 |
+| 单测 | ✅ 112 passed | `asil/__tests__/`（含测试库隔离 conftest，禁止污染生产记忆） |
+| 跨域迁移 T-I2E/T-E2T | ⏸ 挂起 | 等交易涌现闭环重构完成后启动 |
+
+**遗留风险（不掩盖）**
+
+1. D3 变体仍限于 24 格规则网格，基线已处局部最优；需扩展特征空间（session 长度 / 时段 / 文件域基数），而非继续调阈值。
+2. D2 每类 gap 仅 n=1，`evidence_level = insufficient`，「pass_rate 0.6」只能作为描述性快照，不构成统计结论；真正杠杆是扩充 gap 样本并扩展 generator 覆盖类型。
+3. 生产 `recall` 实测 4479ms（SLA 阈值 200ms），会成为闭环吞吐瓶颈，需单独优化。
 
 ---
 
@@ -321,7 +344,7 @@ DEAD ──记录──▶ REPORT（不计入 valid_completion_rate）
 
 ## §8 实施路径（v0.2 修订 Phase 1 交付物）
 
-### Phase 1：Orchestrator MVP（1-2 周）
+### Phase 1：Orchestrator MVP（1-2 周）✅ 已完成（2026-11-10）
 
 **交付物**：
 - `asil/orchestrator.py` + `oracle_validator.py` + `llm_budget_tracker.py`
@@ -344,7 +367,7 @@ DEAD ──记录──▶ REPORT（不计入 valid_completion_rate）
 - ✅ valid_completion_rate ≥ 0.70
 - ✅ 全部单测通过
 
-### Phase 2：反馈信号扩维 + Oracle 独立 REA 分析（2-3 周）
+### Phase 2：反馈信号扩维 + Oracle 独立 REA 分析（2-3 周）🟡 部分完成（真实接入已完成；D3-B 在线 shadow 与 45 门禁加权项顺延）
 
 **交付物**：
 - session outcome 结构化落盘
@@ -432,5 +455,6 @@ DEAD ──记录──▶ REPORT（不计入 valid_completion_rate）
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.2.1** | **2026-11-10** | **实施状态回写（§0.5）**：Phase 1 完成；Phase 2 真实接入完成（在线 shadow 顺延）；P0-1 认知回写接通（record+verify 可审计，confidence 贝叶斯升级）；P0-2 三段切分 + 配对 bootstrap + Holm；D2 补 Wilson 区间与证据等级；TRAE 评注闭环实证（D2/D3 双向覆盖、防篡改、pending_reviews）；单测 112 passed；跨域迁移挂起 |
 | **v0.2** | **2026-11-10** | **Devil's Advocate 攻击后修订（7 漏洞全部修复）**：<br>🔴 P0-1 Oracle Phase 1 降级为纯静态校验器（AST + schema + py_compile）+ C11 代码隔离硬约束<br>🔴 P0-2 Step③ bootstrap fallback（E6 空 → D2-B 预注册模板 + 低置信伪 gap）+ Pipeline Schema 新增 bootstrap_source 字段<br>🔴 P0-3 引入🟢/🟡/🔴就绪等级，降级 D2-B/D3-B/D3-Implement 为代理可用<br>🟠 P1-1 R5 落地为启发式规则（Query→Search→Read→Synthesize）+ 六维 reward 全部归一化到 [0,1]<br>🟠 P1-2 新增 §13.1 LLM 预算表 + §4.1 Phase 1 零 LLM 硬约束（C12）<br>🟠 P1-3 新增 §3.6 存活检查点 CP1/CP2 + Step④⑤ FAIL-OPEN fallback + M-ASIL-0 拆为 0a/0b（valid_completion_rate 硬指标）<br>🟠 P1-4 §1.3 新增冷却时间表 + 合并策略 + 触发频率审计（M-ASIL-4b）<br>🟡 P2-1 §5.2 OOD Phase 1 降级跳过验证 + Beta 基线 ≥ 50 后启用<br>🟡 P2-3 §9 门禁强制等级显式标注（🔴硬/🟡软）<br>状态从"初稿"升为"评审通过" |
 | v0.1 | 2026-11-10 | 初稿完成 |
