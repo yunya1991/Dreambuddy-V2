@@ -1,0 +1,175 @@
+{
+  "mapping_version": "news-factor-v1",
+  "generated_at_utc": "2026-11-10T04:23:13.533518+00:00",
+  "corpus": "backfill/newsflash_history.jsonl",
+  "n_records": 193300,
+  "v1_event_type": {
+    "mapping_version": "news-factor-v1",
+    "mapping": "v1",
+    "total": 193300,
+    "mapped": 193300,
+    "coverage": 1.0,
+    "by_source": {
+      "event_type": 193300
+    },
+    "by_event_type": {
+      "market_sentiment": 118108,
+      "monetary_policy": 10096,
+      "security_incident": 7483,
+      "project_ecosystem": 6859,
+      "us_policy": 3765,
+      "token_milestone": 20157,
+      "crypto_regulation": 23280,
+      "geopolitics": 2638,
+      "us_data": 914
+    },
+    "unmapped_types": {}
+  },
+  "v2_keyword_first": {
+    "mapping_version": "news-factor-v1",
+    "mapping": "v2",
+    "total": 193300,
+    "mapped": 193300,
+    "coverage": 1.0,
+    "by_source": {
+      "event_type_v2": 121009,
+      "keyword": 72291
+    },
+    "by_event_type": {
+      "market_sentiment": 118108,
+      "monetary_policy": 10096,
+      "security_incident": 7483,
+      "project_ecosystem": 6859,
+      "us_policy": 3765,
+      "token_milestone": 20157,
+      "crypto_regulation": 23280,
+      "geopolitics": 2638,
+      "us_data": 914
+    },
+    "unmapped_types": {}
+  },
+  "event_type_factor_dims": {
+    "market_sentiment": [
+      "D4"
+    ],
+    "monetary_policy": [
+      "D1"
+    ],
+    "crypto_regulation": [
+      "D1",
+      "D4"
+    ],
+    "us_policy": [
+      "D1"
+    ],
+    "security_incident": [
+      "C7",
+      "D4"
+    ],
+    "token_milestone": [
+      "C7",
+      "D3"
+    ],
+    "project_ecosystem": [
+      "C7",
+      "D3"
+    ],
+    "geopolitics": [
+      "D1"
+    ],
+    "us_data": [
+      "D1"
+    ]
+  },
+  "keyword_rules": [
+    {
+      "keywords": [
+        "ETF",
+        "etf"
+      ],
+      "dims": [
+        "D2"
+      ]
+    },
+    {
+      "keywords": [
+        "减半",
+        "halving",
+        "销毁",
+        "burn"
+      ],
+      "dims": [
+        "C7"
+      ]
+    },
+    {
+      "keywords": [
+        "解锁",
+        "unlock"
+      ],
+      "dims": [
+        "C7"
+      ]
+    },
+    {
+      "keywords": [
+        "上线",
+        "listing",
+        "首发"
+      ],
+      "dims": [
+        "D4",
+        "D3"
+      ]
+    },
+    {
+      "keywords": [
+        "加息",
+        "降息",
+        "利率",
+        "rate hike",
+        "rate cut"
+      ],
+      "dims": [
+        "D1"
+      ]
+    },
+    {
+      "keywords": [
+        "黑客",
+        "被盗",
+        "漏洞",
+        "hack",
+        "exploit"
+      ],
+      "dims": [
+        "C7"
+      ]
+    },
+    {
+      "keywords": [
+        "监管",
+        "SEC",
+        "诉讼",
+        "lawsuit",
+        "regulation"
+      ],
+      "dims": [
+        "D1",
+        "D4"
+      ]
+    },
+    {
+      "keywords": [
+        "巨鲸",
+        "whale",
+        "持仓",
+        "增持",
+        "减持"
+      ],
+      "dims": [
+        "D2"
+      ]
+    }
+  ]
+}

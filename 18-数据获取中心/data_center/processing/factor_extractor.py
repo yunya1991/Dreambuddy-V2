@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import logging
 
+from data_center.processing.dimension_context import ALL_DIMENSIONS, DIMENSION_MAP
+
 logger = logging.getLogger("data_center.processing.factor_extractor")
 
 # ── F1 因素本体：6 大类 × 10 细类（别名用于术语匹配）───────────
@@ -351,3 +353,111 @@ def extract_article_factors(text: object, doc_id: str = "") -> dict:
             "categories": [],
             "composite": {"direction": "neutral", "score": 0.0},
         }
+
+
+# ── F3 主导因素主张（claim）— SPEC §2.5.1 / D8 ─────────────────
+# 主张提取，不是信号合成：抽出"作者认为哪个因素主导、指向哪个方向"。
+
+_HORIZON_RULES: list[tuple[str, tuple[str, ...]]] = [
+    ("intraday", ("日内", "今日", "今天", "24小时", "盘中", "短线")),
+    ("days", ("本周", "这周", "短期", "近期", "未来几天")),
+    ("weeks", ("本月", "中期", "未来几周", "数周")),
+    ("months", ("长期", "季度", "半年")),
+]
+
+_HORIZON_URGENCY = {"intraday": 0.9, "days": 0.6, "weeks": 0.35, "months": 0.2}
+
+_CONFIDENCE_BY_STRENGTH = {"strong": 0.8, "moderate": 0.6, "hedged": 0.35}
+
+
+def _detect_horizon(text: str) -> str:
+    for horizon, kws in _HORIZON_RULES:
+        if any(kw in text for kw in kws):
+            return horizon
+    return "days"
+
+
+def extract_dominance_claim(text: object, doc_id: str = "", published_at: str = "") -> dict:
+    """F3：主导因素主张（DominanceClaim）。FAIL-OPEN。"""
+    empty = {
+        "claim_type": "dominance",
+        "doc_id": doc_id,
+        "published_at": published_at,
+        "dominant_factor": None,
+        "dominant_dimension": None,
+        "direction": "neutral",
+        "horizon": "days",
+        "confidence_in_text": 0.0,
+        "urgency": _HORIZON_URGENCY["days"],
+        "impact": 1.0,
+        "supporting_factors": [],
+        "opposing_factors": [],
+        "salience_distribution": dict.fromkeys(ALL_DIMENSIONS, 0.0),
+        "evidence_spans": [],
+    }
+    try:
+        factors = extract_factors(text)
+        if not factors:
+            return empty
+
+        dist = dict.fromkeys(ALL_DIMENSIONS, 0.0)
+        for f in factors:
+            dim = DIMENSION_MAP.get(f["category"])
+            if dim:
+                dist[dim] += f["count"] * CATEGORY_WEIGHTS.get(f["category"], 1.0)
+        total = sum(dist.values())
+        if total > 0:
+            dist = {k: round(v / total, 6) for k, v in dist.items()}
+
+        candidates = [f for f in factors if f["direction"] != "neutral"]
+        if not candidates:
+            return {**empty, "salience_distribution": dist}
+
+        candidates.sort(
+            key=lambda f: (
+                -(f["count"] * CATEGORY_WEIGHTS.get(f["category"], 1.0)),
+                f["factor_id"],
+            )
+        )
+        dom = candidates[0]
+        direction = dom["direction"]
+        text_s = text if isinstance(text, str) else ""
+        horizon = _detect_horizon(text_s)
+
+        supporting = [
+            f"{f['factor_id']}:{f['direction']}"
+            for f in factors
+            if f is not dom and f["direction"] == direction
+        ][:5]
+        opposing = [
+            f"{f['factor_id']}:{f['direction']}"
+            for f in factors
+            if f["direction"] not in ("neutral", direction)
+        ][:5]
+
+        spans = []
+        for ev in dom.get("evidence", [])[:3]:
+            span = ev.get("span") or [0, 0]
+            spans.append({"doc_id": doc_id, "start": span[0], "end": span[1]})
+
+        return {
+            "claim_type": "dominance",
+            "doc_id": doc_id,
+            "published_at": published_at,
+            "dominant_factor": dom["factor_id"],
+            "dominant_dimension": DIMENSION_MAP.get(dom["category"]),
+            "direction": direction,
+            "horizon": horizon,
+            "confidence_in_text": _CONFIDENCE_BY_STRENGTH.get(dom["strength"], 0.6),
+            "urgency": _HORIZON_URGENCY[horizon],
+            "impact": CATEGORY_WEIGHTS.get(dom["category"], 1.0),
+            "supporting_factors": supporting,
+            "opposing_factors": opposing,
+            "salience_distribution": dist,
+            "evidence_spans": spans,
+        }
+    except Exception as e:  # noqa: BLE003  FAIL-OPEN
+        logger.warning(
+            "[FAIL-OPEN] extract_dominance_claim 异常 %s: %s", type(e).__name__, str(e)[:200]
+        )
+        return empty

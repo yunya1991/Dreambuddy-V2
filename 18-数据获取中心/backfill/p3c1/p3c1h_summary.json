@@ -1,0 +1,350 @@
+{
+  "mapping_version": "news-factor-v1",
+  "granularity": "1h",
+  "n_records": 193300,
+  "kline": {
+    "n_bars": 33815,
+    "first_bar": "2023-01-01T00:00:00+00:00",
+    "last_bar": "2026-11-09T23:00:00+00:00",
+    "coverage_pct": 100.0,
+    "missing_hours_total": 1
+  },
+  "v1": {
+    "granularity": "1h",
+    "mapping": "v1",
+    "mapping_version": "news-factor-v1",
+    "degraded": false,
+    "n_records": 193300,
+    "n_hours": 33813,
+    "n_event_hours_by_family": {
+      "crypto_regulation": 13463,
+      "geopolitics": 2011,
+      "market_sentiment": 25511,
+      "monetary_policy": 6549,
+      "project_ecosystem": 5733,
+      "security_incident": 5908,
+      "token_milestone": 12706,
+      "us_data": 678,
+      "us_policy": 3236
+    },
+    "n_dropped_insufficient": [],
+    "hac_lag_by_window": {
+      "pre_1h": 1,
+      "post_1h": 1,
+      "pre_24h": 24,
+      "post_24h": 24,
+      "post_4h": 4
+    }
+  },
+  "v2": {
+    "granularity": "1h",
+    "mapping": "v2",
+    "mapping_version": "news-factor-v1",
+    "degraded": false,
+    "n_records": 193300,
+    "n_hours": 33813,
+    "n_event_hours_by_family": {
+      "crypto_regulation": 13463,
+      "geopolitics": 2011,
+      "market_sentiment": 25511,
+      "monetary_policy": 6549,
+      "project_ecosystem": 5733,
+      "security_incident": 5908,
+      "token_milestone": 12706,
+      "us_data": 678,
+      "us_policy": 3236
+    },
+    "n_dropped_insufficient": [],
+    "hac_lag_by_window": {
+      "pre_1h": 1,
+      "post_1h": 1,
+      "pre_24h": 24,
+      "post_24h": 24,
+      "post_4h": 4
+    }
+  },
+  "spearman_v1_v2_dim": 0.4,
+  "validation_type": "same_source_review",
+  "n_rows": 13,
+  "n_eligible": 0,
+  "families_v1": [
+    {
+      "key": "monetary_policy",
+      "n_events": 6549,
+      "sens_f_bp": 3.52,
+      "t_post": 1.706,
+      "p_holm": 0.703824,
+      "post_1h_bp": -0.46,
+      "post_4h_bp": 0.57,
+      "eligible": false
+    },
+    {
+      "key": "market_sentiment",
+      "n_events": 25511,
+      "sens_f_bp": 3.15,
+      "t_post": 0.936,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.21,
+      "post_4h_bp": 0.36,
+      "eligible": false
+    },
+    {
+      "key": "us_data",
+      "n_events": 678,
+      "sens_f_bp": -3.05,
+      "t_post": -2.654,
+      "p_holm": 0.071559,
+      "post_1h_bp": 0.12,
+      "post_4h_bp": -0.44,
+      "eligible": false
+    },
+    {
+      "key": "crypto_regulation",
+      "n_events": 13463,
+      "sens_f_bp": -2.58,
+      "t_post": -1.286,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.0,
+      "post_4h_bp": -0.17,
+      "eligible": false
+    },
+    {
+      "key": "token_milestone",
+      "n_events": 12706,
+      "sens_f_bp": -2.19,
+      "t_post": -0.932,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.14,
+      "post_4h_bp": 0.25,
+      "eligible": false
+    },
+    {
+      "key": "project_ecosystem",
+      "n_events": 5733,
+      "sens_f_bp": 2.03,
+      "t_post": 1.131,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.22,
+      "post_4h_bp": 0.19,
+      "eligible": false
+    },
+    {
+      "key": "security_incident",
+      "n_events": 5908,
+      "sens_f_bp": -1.78,
+      "t_post": -1.029,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.33,
+      "post_4h_bp": -0.28,
+      "eligible": false
+    },
+    {
+      "key": "geopolitics",
+      "n_events": 2011,
+      "sens_f_bp": 1.29,
+      "t_post": 0.929,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.15,
+      "post_4h_bp": 0.17,
+      "eligible": false
+    },
+    {
+      "key": "us_policy",
+      "n_events": 3236,
+      "sens_f_bp": -0.77,
+      "t_post": -0.43,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.35,
+      "post_4h_bp": -0.59,
+      "eligible": false
+    }
+  ],
+  "dims_v1": [
+    {
+      "key": "C7",
+      "n_events": 17166,
+      "sens_f_bp": -5.56,
+      "t_post": -1.189,
+      "p_holm": 0.937596,
+      "post_1h_bp": -1.0,
+      "post_4h_bp": -0.97,
+      "eligible": false
+    },
+    {
+      "key": "D3",
+      "n_events": 15044,
+      "sens_f_bp": 3.96,
+      "t_post": 0.812,
+      "p_holm": 1.0,
+      "post_1h_bp": 1.1,
+      "post_4h_bp": 1.17,
+      "eligible": false
+    },
+    {
+      "key": "D4",
+      "n_events": 26258,
+      "sens_f_bp": 2.53,
+      "t_post": 0.635,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.35,
+      "post_4h_bp": 0.33,
+      "eligible": false
+    },
+    {
+      "key": "D1",
+      "n_events": 17635,
+      "sens_f_bp": -0.72,
+      "t_post": -0.321,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.49,
+      "post_4h_bp": -0.11,
+      "eligible": false
+    }
+  ],
+  "families_v2": [
+    {
+      "key": "monetary_policy",
+      "n_events": 6549,
+      "sens_f_bp": 3.52,
+      "t_post": 1.706,
+      "p_holm": 0.703824,
+      "post_1h_bp": -0.46,
+      "post_4h_bp": 0.57,
+      "eligible": false
+    },
+    {
+      "key": "market_sentiment",
+      "n_events": 25511,
+      "sens_f_bp": 3.15,
+      "t_post": 0.936,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.21,
+      "post_4h_bp": 0.36,
+      "eligible": false
+    },
+    {
+      "key": "us_data",
+      "n_events": 678,
+      "sens_f_bp": -3.05,
+      "t_post": -2.654,
+      "p_holm": 0.071559,
+      "post_1h_bp": 0.12,
+      "post_4h_bp": -0.44,
+      "eligible": false
+    },
+    {
+      "key": "crypto_regulation",
+      "n_events": 13463,
+      "sens_f_bp": -2.58,
+      "t_post": -1.286,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.0,
+      "post_4h_bp": -0.17,
+      "eligible": false
+    },
+    {
+      "key": "token_milestone",
+      "n_events": 12706,
+      "sens_f_bp": -2.19,
+      "t_post": -0.932,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.14,
+      "post_4h_bp": 0.25,
+      "eligible": false
+    },
+    {
+      "key": "project_ecosystem",
+      "n_events": 5733,
+      "sens_f_bp": 2.03,
+      "t_post": 1.131,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.22,
+      "post_4h_bp": 0.19,
+      "eligible": false
+    },
+    {
+      "key": "security_incident",
+      "n_events": 5908,
+      "sens_f_bp": -1.78,
+      "t_post": -1.029,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.33,
+      "post_4h_bp": -0.28,
+      "eligible": false
+    },
+    {
+      "key": "geopolitics",
+      "n_events": 2011,
+      "sens_f_bp": 1.29,
+      "t_post": 0.929,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.15,
+      "post_4h_bp": 0.17,
+      "eligible": false
+    },
+    {
+      "key": "us_policy",
+      "n_events": 3236,
+      "sens_f_bp": -0.77,
+      "t_post": -0.43,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.35,
+      "post_4h_bp": -0.59,
+      "eligible": false
+    }
+  ],
+  "dims_v2": [
+    {
+      "key": "D4",
+      "n_events": 25722,
+      "sens_f_bp": 4.48,
+      "t_post": 1.205,
+      "p_holm": 0.886312,
+      "post_1h_bp": 0.25,
+      "post_4h_bp": 1.13,
+      "eligible": false
+    },
+    {
+      "key": "C7",
+      "n_events": 14223,
+      "sens_f_bp": -3.61,
+      "t_post": -1.537,
+      "p_holm": 0.62176,
+      "post_1h_bp": -0.19,
+      "post_4h_bp": -0.01,
+      "eligible": false
+    },
+    {
+      "key": "D2",
+      "n_events": 13524,
+      "sens_f_bp": -2.17,
+      "t_post": -1.222,
+      "p_holm": 0.886312,
+      "post_1h_bp": 0.09,
+      "post_4h_bp": -0.16,
+      "eligible": false
+    },
+    {
+      "key": "D3",
+      "n_events": 13792,
+      "sens_f_bp": -1.29,
+      "t_post": -0.603,
+      "p_holm": 1.0,
+      "post_1h_bp": 0.03,
+      "post_4h_bp": -1.1,
+      "eligible": false
+    },
+    {
+      "key": "D1",
+      "n_events": 14283,
+      "sens_f_bp": 1.18,
+      "t_post": 0.536,
+      "p_holm": 1.0,
+      "post_1h_bp": -0.28,
+      "post_4h_bp": 0.16,
+      "eligible": false
+    }
+  ],
+  "conclusion": "p3c1h_failed_no_significant_factor",
+  "eligible": []
+}

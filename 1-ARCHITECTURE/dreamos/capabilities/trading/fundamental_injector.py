@@ -156,8 +156,8 @@ class FundamentalDataInjector:
                 self._tavily_valid = self._check_tavily_valid()
                 if not self._tavily_valid:
                     logger.warning(
-                        "TAVILY_API_KEY 存在但无效（Unauthorized），"
-                        "flow/valuation/macro/news 模块将走 Mock 兜底"
+                        "TAVILY_API_KEY 存在但无效（Unauthorized）；"
+                        "9 域 DataCollector 已优先走 19-DAL，DAL 无数据时才回退 Mock"
                     )
             else:
                 self._tavily_valid = False
@@ -453,10 +453,20 @@ class FundamentalDataInjector:
     def _detect_source(self, module_name: str) -> str:
         """检测模块的数据来源
 
-        - flow/valuation/macro/news/breadth/intermarket/calendar/narrative: 依赖 Tavily
-        - onchain: 依赖 Blockchain.info
-        - sentiment: 依赖 alternative.me
+        - 9 域 DataCollector 已下沉 19-DAL 优先：DAL 在线时全部模块标记 19-DAL
+        - DAL 离线才按原链路标注：flow/valuation/macro/news/... → tavily|mock，
+          onchain → blockchain.info，sentiment → alternative.me
         """
+        try:
+            if _DATA_COLLECTOR_DIR not in sys.path:
+                sys.path.insert(0, _DATA_COLLECTOR_DIR)
+            from data_collector import _get_dal_provider
+
+            if _get_dal_provider() is not None:
+                return "19-DAL"
+        except Exception as e:
+            logger.debug(f"DAL 可用性探测失败: {e}")
+
         tavily_modules = {
             "flow",
             "valuation",

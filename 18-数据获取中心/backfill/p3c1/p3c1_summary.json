@@ -1,0 +1,49 @@
+{
+  "mapping_version": "news-factor-v1",
+  "n_records": 193300,
+  "v1": {
+    "mapping": "v1",
+    "mapping_version": "news-factor-v1",
+    "degraded": false,
+    "n_records": 0,
+    "n_days": 1348,
+    "n_event_days_by_family": {
+      "crypto_regulation": 1409,
+      "geopolitics": 672,
+      "market_sentiment": 1410,
+      "monetary_policy": 1307,
+      "project_ecosystem": 1321,
+      "security_incident": 1351,
+      "token_milestone": 1404,
+      "us_data": 465,
+      "us_policy": 1127
+    },
+    "n_dropped_insufficient": []
+  },
+  "v2": {
+    "mapping": "v2",
+    "mapping_version": "news-factor-v1",
+    "degraded": false,
+    "n_records": 0,
+    "n_days": 1348,
+    "n_event_days_by_family": {
+      "crypto_regulation": 1409,
+      "geopolitics": 672,
+      "market_sentiment": 1410,
+      "monetary_policy": 1307,
+      "project_ecosystem": 1321,
+      "security_incident": 1351,
+      "token_milestone": 1404,
+      "us_data": 465,
+      "us_policy": 1127
+    },
+    "n_dropped_insufficient": []
+  },
+  "spearman_v1_v2": 0.4,
+  "validation_type": "same_source_review",
+  "n_rows": 13,
+  "n_eligible": 0,
+  "conclusion": "p3c1_failed_no_significant_factor",
+  "eligible": [],
+  "kline_gap": "2026-09-11..2026-10-28 无日线，事件日落入缺口即丢弃"
+}

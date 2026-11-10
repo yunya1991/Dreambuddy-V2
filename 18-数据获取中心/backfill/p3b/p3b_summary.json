@@ -1,0 +1,72 @@
+{
+  "n_total": 500,
+  "n_measurable": 333,
+  "n_agree": 73,
+  "agreement_rate": 0.21921921921921922,
+  "gate_counts": {
+    "unmeasurable": 167,
+    "no_signal": 260,
+    "consistent": 47,
+    "divergent_but_valid": 26
+  },
+  "n_articles": 500,
+  "n_with_dominant": 379,
+  "n_no_dominant": 121,
+  "dominant_dimension_dist": {
+    "D4": 64,
+    "NEWS": 129,
+    "D1": 85,
+    "D2": 50,
+    "C7": 15,
+    "D3": 36
+  },
+  "n_as_of_after_kline_end": 43,
+  "kline_last_date": "2026-10-29",
+  "flash_coverage": {
+    "n_flashes": 193300,
+    "n_polar": 141778,
+    "coverage": 0.7335,
+    "n_bull": 108833,
+    "n_bear": 32945,
+    "bull_share": 0.7676,
+    "source_dist": {
+      "lexicon": 140613,
+      "none": 51522,
+      "event_prior": 1165
+    }
+  },
+  "news_subset": {
+    "n": 129,
+    "n_measurable": 129,
+    "measurable_rate": 1.0,
+    "n_agree": 23,
+    "agreement_rate_zbasis": 0.1783,
+    "realtime": {
+      "n_measurable": 124,
+      "n_agree": 103,
+      "agreement_rate": 0.8306,
+      "bull_claims_agree": 103,
+      "bull_claims_total": 106,
+      "bear_claims_agree": 0,
+      "bear_claims_total": 18,
+      "sensitivity_bull": 0.9717,
+      "specificity_bear": 0.0,
+      "balanced_accuracy": 0.4858,
+      "threshold": 0.05
+    },
+    "lead_lag_dist": {
+      "lead": 7,
+      "lag": 10,
+      "coincident": 93,
+      "undetermined": 19
+    }
+  },
+  "gate_weights": {
+    "consistent": 1.0,
+    "divergent_but_valid": 1.5,
+    "no_signal": 0.3
+  },
+  "min_z_valid": 1.0,
+  "source": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/backfill/odaily_p0/contents.jsonl",
+  "newsflash": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/backfill/newsflash_history.jsonl"
+}

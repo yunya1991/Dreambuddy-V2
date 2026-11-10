@@ -1,0 +1,11 @@
+{
+  "version": "factor-prior-v1",
+  "generated_at": "2026-11-10T05:13:10.326444+00:00",
+  "as_of": null,
+  "source": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/backfill/p3c1/factor_sensitivity.jsonl",
+  "degraded": true,
+  "n_factors": 0,
+  "dims": {},
+  "factors": [],
+  "reason": "newsflash_prior_disabled_by_default"
+}

@@ -29,6 +29,58 @@ try:
 except Exception:
     pass
 
+
+# ── 19-DAL 优先接入（消除 mock；FAIL-OPEN 回退 legacy）──────────────
+# 与 ml_trade_service_v2.MODULE_COLLECTORS 同一套语义，但下沉到 DataCollector 自身，
+# 使所有直接使用 DataCollector 的调用方（backend / scripts / 其他域）都接通真实数据。
+_DAL_MODULE_METHOD = {
+    "flow": "collect_flow",
+    "sentiment": "collect_sentiment",
+    "macro": "collect_macro",
+    "breadth": "collect_breadth",
+    "valuation": "collect_valuation",
+    "onchain": "collect_onchain",
+    "intermarket": "collect_intermarket",
+}
+
+_DAL_PROVIDER: Any = None  # None=未尝试 / False=不可用 / 实例=可用
+
+
+def _get_dal_provider() -> Any:
+    """惰性获取 19-DAL 快照源；不可用返回 None（只尝试一次）。"""
+    global _DAL_PROVIDER
+    if _DAL_PROVIDER is not None:
+        return _DAL_PROVIDER or None
+    try:
+        try:
+            from dal_snapshot_provider import DalSnapshotProvider
+        except ImportError:
+            import sys
+
+            _root = os.path.dirname(os.path.abspath(__file__))
+            if _root not in sys.path:
+                sys.path.insert(0, _root)
+            from dal_snapshot_provider import DalSnapshotProvider
+
+        _DAL_PROVIDER = DalSnapshotProvider()
+    except Exception as exc:  # FAIL-OPEN：DAL 不可用不影响 legacy 链路
+        print(f"[DAL][FALLBACK][ERROR] provider init failed: {exc}")
+        _DAL_PROVIDER = False
+    return _DAL_PROVIDER or None
+
+
+def _mark_dal_source(data: Dict[str, Any], *, used: bool) -> Dict[str, Any]:
+    """统一标记数据来源，供健康检查 / 前端识别是否用了 mock。"""
+    data["_dal_fallback"] = not used
+    meta = data.get("meta")
+    if not isinstance(meta, dict):
+        meta = {}
+    meta["dal_fallback"] = not used
+    meta["source"] = "19-DAL" if used else (meta.get("source") or "legacy")
+    data["meta"] = meta
+    return data
+
+
 # ============== 全局配置 ==============
 TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
@@ -1416,6 +1468,22 @@ class DataCollector:
     def __init__(self, storage_dir: str = None):
         self.storage_dir = storage_dir or "./storage"
 
+    # ---------- 0. 数据源优先级：19-DAL → legacy ----------
+    def _collect_with_dal(self, module: str, legacy) -> Dict[str, Any]:
+        """19-DAL 优先；无数据 / 异常回退 legacy，并显式标记 `_dal_fallback`。"""
+        provider = _get_dal_provider()
+        method_name = _DAL_MODULE_METHOD.get(module)
+        if provider is not None and method_name:
+            try:
+                fn = getattr(provider, method_name, None)
+                data = fn() if fn is not None else None
+                if isinstance(data, dict) and data:
+                    return _mark_dal_source(data, used=True)
+            except Exception as exc:  # FAIL-OPEN
+                print(f"[DAL][FALLBACK][ERROR] {module}: {exc}")
+        out = legacy()
+        return _mark_dal_source(out, used=False) if isinstance(out, dict) else out
+
     # ---------- 1. News ----------
     def collect_news(self) -> Dict[str, Any]:
         queries = [
@@ -1590,6 +1658,9 @@ class DataCollector:
 
     # ---------- 2. Flow ----------
     def collect_flow(self) -> Dict[str, Any]:
+        return self._collect_with_dal("flow", self._collect_flow_legacy)
+
+    def _collect_flow_legacy(self) -> Dict[str, Any]:
         # Tavily: 搜索 BTC ETF 资金流向、资金费率、OI 关键数据
         articles = _fetch_tavily_market_data(
             "bitcoin ETF fund flow funding rate open interest 24h", max_results=4
@@ -1704,6 +1775,9 @@ class DataCollector:
 
     # ---------- 3. Sentiment ----------
     def collect_sentiment(self) -> Dict[str, Any]:
+        return self._collect_with_dal("sentiment", self._collect_sentiment_legacy)
+
+    def _collect_sentiment_legacy(self) -> Dict[str, Any]:
         now = _now_iso()
         # 真实数据：alternative.me Fear & Greed
         fng = _fetch_fear_greed()
@@ -1821,6 +1895,9 @@ class DataCollector:
 
     # ---------- 4. Macro ----------
     def collect_macro(self) -> Dict[str, Any]:
+        return self._collect_with_dal("macro", self._collect_macro_legacy)
+
+    def _collect_macro_legacy(self) -> Dict[str, Any]:
         now = _now_iso()
         # Tavily: 搜索美联储政策、CPI、美元指数
         articles = _fetch_tavily_market_data(
@@ -1933,6 +2010,9 @@ class DataCollector:
 
     # ---------- 5. Breadth ----------
     def collect_breadth(self) -> Dict[str, Any]:
+        return self._collect_with_dal("breadth", self._collect_breadth_legacy)
+
+    def _collect_breadth_legacy(self) -> Dict[str, Any]:
         now = _now_iso()
         # Tavily: 搜索加密市场广度、BTC 占比、山寨表现
         articles = _fetch_tavily_market_data(
@@ -2054,6 +2134,9 @@ class DataCollector:
 
     # ---------- 6. Valuation ----------
     def collect_valuation(self) -> Dict[str, Any]:
+        return self._collect_with_dal("valuation", self._collect_valuation_legacy)
+
+    def _collect_valuation_legacy(self) -> Dict[str, Any]:
         now = _now_iso()
         # Tavily: 搜索 MVRV、SOPR、估值指标
         articles = _fetch_tavily_market_data(
@@ -2176,6 +2259,9 @@ class DataCollector:
 
     # ---------- 7. Onchain ----------
     def collect_onchain(self) -> Dict[str, Any]:
+        return self._collect_with_dal("onchain", self._collect_onchain_legacy)
+
+    def _collect_onchain_legacy(self) -> Dict[str, Any]:
         now = _now_iso()
         # 真实数据：Blockchain.info 公开统计
         bc_stats = _fetch_blockchain_info()
@@ -2410,6 +2496,9 @@ class DataCollector:
 
     # ---------- 9. Intermarket（跨市场） ----------
     def collect_intermarket(self) -> Dict[str, Any]:
+        return self._collect_with_dal("intermarket", self._collect_intermarket_legacy)
+
+    def _collect_intermarket_legacy(self) -> Dict[str, Any]:
         now = _now_iso()
         # Tavily: 搜索 DXY、黄金、标普、VIX 当前行情
         articles = _fetch_tavily_market_data(

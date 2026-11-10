@@ -1,0 +1,25 @@
+{
+  "target": 500,
+  "meta_collected": 500,
+  "crawled": 500,
+  "fetch_ok": 482,
+  "success_rate": 0.964,
+  "c1_drop": 29,
+  "c1_drop_rate": 0.058,
+  "low_density": 34,
+  "depth_plate_dist": {
+    "1": 235,
+    "3": 72,
+    "2": 44,
+    "11": 37,
+    "6": 34,
+    "10": 19,
+    "12": 12,
+    "13": 9,
+    "8": 8,
+    "4": 6,
+    "7": 5,
+    "9": 1
+  },
+  "avg_content_len": 3304
+}
