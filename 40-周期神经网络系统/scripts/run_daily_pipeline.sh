@@ -6,6 +6,8 @@
 #   → p3_stovall_breadth → p3_resonance_matrix → p3_cross_asset_matrix
 #   → p3_washout_integration
 #   → p3_meme_platform_monitor → p4_strategy_mapping
+#   → p6_e0_token_sequence（E3 前置：刷新当日 token 窗口）
+#   → p6_e3_shadow_run（E3 Shadow 旁路推理+PSI 监测，2026-11-11 用户拍板挂日更）
 # 任一步失败：告警接 15 并中止（下游会读到陈旧输入，宁停勿错）。
 set -uo pipefail
 
@@ -32,6 +34,8 @@ STEPS=(
   p3_washout_integration.py
   p3_meme_platform_monitor.py
   p4_strategy_mapping.py
+  p6_e0_token_sequence.py
+  p6_e3_shadow_run.py
 )
 
 alert_failure() {
