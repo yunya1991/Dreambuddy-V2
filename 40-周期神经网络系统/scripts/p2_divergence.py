@@ -8,7 +8,7 @@
 
 import json
 import os
-import sqlite3
+import sys
 from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -17,7 +17,10 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
 )
 
 ROT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "asset_rotation.json")
-DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
+
+# 2026-11-10 修复：数据源跟随 DATA_CENTER_BACKEND（postgres|sqlite），统一走 db_access
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import db_access  # noqa: E402
 
 # 各象限下资产的预期 3 月动量方向：+1 预期上涨 / -1 预期下跌 / 0 中性（不参与判定）
 # crypto 视为高风险流动性资产，与股票同向处理
@@ -76,12 +79,7 @@ def hy_oas_signal(window=20, widen_threshold=0.5):
     过热象限下风险偏好应扩张，信用利差持续走阔为反向证据：
     20 日走阔 >= widen_threshold → 背离信号（自动纳入背离计数）。
     """
-    conn = sqlite3.connect(DB)
-    rows = conn.execute(
-        "SELECT timestamp, json_extract(metrics, '$.value') FROM records "
-        "WHERE source = 'fred' AND sub_category = 'BAMLH0A0HYM2' ORDER BY timestamp",
-    ).fetchall()
-    conn.close()
+    rows = db_access.query_fred_series("BAMLH0A0HYM2")
     vals = [float(r[1]) for r in rows if r[1] is not None]
     dates = [r[0][:10] for r in rows if r[1] is not None]
     if len(vals) < window + 5:

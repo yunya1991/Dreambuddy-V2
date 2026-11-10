@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
+import sys
 from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -15,8 +15,11 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 
-DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
 OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
+
+# 2026-11-10 修复：数据源跟随 DATA_CENTER_BACKEND（postgres|sqlite），统一走 db_access
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import db_access  # noqa: E402
 
 PLATEAU_BAND = 0.25
 CONFIRM_N = 2
@@ -24,12 +27,7 @@ GRAD_ACCUM = 0.5
 
 
 def load_fedfunds():
-    conn = sqlite3.connect(DB)
-    rows = conn.execute(
-        "SELECT timestamp, json_extract(metrics, ?) FROM records WHERE source = ? AND sub_category = ? ORDER BY timestamp",
-        ("$.value", "fred", "FEDFUNDS"),
-    ).fetchall()
-    conn.close()
+    rows = db_access.query_fred_series("FEDFUNDS")
     return [(r[0][:7], float(r[1])) for r in rows if r[1] is not None]
 
 

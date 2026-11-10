@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import os
-import sqlite3
+import sys
 from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -13,20 +13,18 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 
-DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
 OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "asset_rotation.json")
+
+# 2026-11-10 修复：数据源跟随 DATA_CENTER_BACKEND（postgres|sqlite），统一走 db_access
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import db_access  # noqa: E402
 
 GROWTH_THRESHOLD = 1.5
 INFLATION_THRESHOLD = 2.5
 
 
 def load_series(sid):
-    conn = sqlite3.connect(DB)
-    rows = conn.execute(
-        "SELECT timestamp, json_extract(metrics, ?) FROM records WHERE source = ? AND sub_category = ? ORDER BY timestamp",
-        ("$.value", "fred", sid),
-    ).fetchall()
-    conn.close()
+    rows = db_access.query_fred_series(sid)
     return {r[0][:7]: float(r[1]) for r in rows if r[1] is not None}
 
 
@@ -60,6 +58,12 @@ def clock_quadrant(growth, inflation):
 
 
 def asset_momentum():
+    """3 个月资产动量（%）。
+    2026-11-10 修复：原走 Yahoo 行情被限流（HTTP 429），四个传统资产切换数据源——
+    黄金走 OKX XAU/USDT 永续（ccxt 公共接口，无需鉴权），
+    标普/美元/10Y 收益率走 FRED 已回填序列（SP500/DTWEXBGS/DGS10），
+    键名对齐下游消费方（p2_divergence / p3_fund_flow）。
+    """
     mom = {}
     try:
         import ccxt
@@ -71,26 +75,36 @@ def asset_momentum():
                 mom[name] = round((o[-1][4] / o[0][4] - 1) * 100, 2)
     except Exception as e:
         mom["crypto_error"] = str(e)[:100]
+    # 黄金：OKX XAU/USDT 永续（ccxt 公共行情，无需鉴权）
     try:
-        import yfinance as yf
+        import ccxt
 
-        for sym, name in (
-            ("GC=F", "gold"),
-            ("DX-Y.NYB", "dollar"),
-            ("^TNX", "treasury_yield"),
-            ("^GSPC", "equity"),
-        ):
-            df = yf.download(sym, period="3mo", interval="1d", progress=False)
-            if df is None or df.empty:
-                continue
-            try:
-                closes = df["Close"].dropna()
-            except Exception:
-                closes = df.xs("Close", axis=1, level=-1).dropna()
-            if len(closes) >= 60:
-                mom[name] = round((float(closes.iloc[-1]) / float(closes.iloc[0]) - 1) * 100, 2)
+        okx = ccxt.okx({"enableRateLimit": True})
+        o = okx.fetch_ohlcv("XAU/USDT:USDT", "1d", limit=91)
+        if len(o) >= 60:
+            mom["gold_xaut"] = round((o[-1][4] / o[0][4] - 1) * 100, 2)
     except Exception as e:
-        mom["yf_error"] = str(e)[:100]
+        mom["gold_error"] = str(e)[:100]
+    # 标普/美元/10Y 收益率：FRED 已回填序列（db_access，跟随 DATA_CENTER_BACKEND）
+    def _fred_momentum(sid):
+        from datetime import datetime, timedelta
+        rows = db_access.query_fred_series(sid)
+        pts = [(r[0][:10], float(r[1])) for r in rows if r[1] is not None]
+        if len(pts) < 60:
+            return None
+        latest_d, latest_v = pts[-1]
+        try:
+            cutoff = (datetime.strptime(latest_d, "%Y-%m-%d") - timedelta(days=90)).strftime("%Y-%m-%d")
+            base = next((v for d, v in pts if d >= cutoff), None)
+        except ValueError:
+            base = None
+        if base in (None, 0):
+            return None
+        return round((latest_v / base - 1) * 100, 2)
+    for sid, name in (("SP500", "equity_spx"), ("DTWEXBGS", "usd_dxy"), ("DGS10", "rates_10y")):
+        m = _fred_momentum(sid)
+        if m is not None:
+            mom[name] = m
     return mom
 
 

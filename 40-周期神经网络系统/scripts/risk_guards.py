@@ -14,7 +14,7 @@ fail-open：本模块任何异常不阻断主流程，仅记录 guard_errors。
 
 import json
 import os
-import sqlite3
+import sys
 from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
@@ -22,7 +22,9 @@ _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 
-DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
+# 2026-11-10 修复：数据源跟随 DATA_CENTER_BACKEND（postgres|sqlite），统一走 db_access
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import db_access  # noqa: E402
 
 CONFIDENCE_LADDER = ["high", "medium", "low"]
 
@@ -80,30 +82,24 @@ def check_freshness(artifacts, max_age_hours=48):
     return result
 
 
-def check_event_window(db_path=DB, window_days=2):
+def check_event_window(db_path=None, window_days=2):  # 2026-11-10 修复：db_path 保留兼容签名，数据走 db_access
     """机制3：FOMC/CPI 事件 ±2 日窗口检查。
     数据源：cme/fomc_decision 与 econ_calendar/cpi 的最近事件时间戳。
     返回 {in_window, event, event_ts, days_to_event}；数据不足 fail-open 不冻结。
     """
     try:
-        conn = sqlite3.connect(db_path)
         now = now_utc()
         for source, sub, label in (
             ("cme", "fomc_decision", "FOMC"),
             ("econ_calendar", "cpi", "CPI"),
         ):
-            rows = conn.execute(
-                "SELECT timestamp FROM records WHERE source=? AND sub_category=? "
-                "ORDER BY timestamp DESC LIMIT 5",
-                (source, sub),
-            ).fetchall()
+            rows = db_access.query_recent_timestamps(source, sub, limit=5)
             for (ts,) in rows:
                 dt = parse_ts(ts)
                 if dt is None:
                     continue
                 delta_days = (dt - now).total_seconds() / 86400.0
                 if abs(delta_days) <= window_days:
-                    conn.close()
                     return {
                         "in_window": True,
                         "event": label,
@@ -111,7 +107,6 @@ def check_event_window(db_path=DB, window_days=2):
                         "days_to_event": round(delta_days, 2),
                         "note": "事件窗口内状态冻结，不更新周期判定",
                     }
-        conn.close()
     except Exception:
         pass
     return {"in_window": False, "note": "无临近事件或数据不足（fail-open 不冻结）"}
@@ -134,23 +129,19 @@ def check_clock_degradation(rotation, freshness):
     return {"clock_degraded": bool(reasons), "reasons": reasons}
 
 
-def check_tail_confidence(db_path=DB, series=("INDPRO", "CPIAUCSL"), tail_n=6):
+def check_tail_confidence(db_path=None, series=("INDPRO", "CPIAUCSL"), tail_n=6):  # 2026-11-10 修复：同上
     """机制4：末端 6 期低置信标记（初值/修正期）。
     返回 {series: {tail_points, low_confidence_tail}}
     """
     result = {}
     try:
-        conn = sqlite3.connect(db_path)
         for s in series:
-            n = conn.execute(
-                "SELECT COUNT(*) FROM records WHERE source='fred' AND sub_category=?", (s,)
-            ).fetchone()[0]
+            n = db_access.count_series("fred", s)
             result[s] = {
                 "tail_points": min(n, tail_n),
                 "low_confidence_tail": n >= tail_n,
                 "note": "末端 6 期为初值/修正期，置信度降权" if n >= tail_n else "序列不足 6 期",
             }
-        conn.close()
     except Exception as e:
         result["error"] = str(e)
     return result

@@ -8,16 +8,19 @@ CFTC：CME Bitcoin 期货非商业/商业头寸与未平仓量（周更，public
 
 import json
 import os
-import sqlite3
+import sys
 import time
 from datetime import datetime, timezone
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import db_access  # 2026-11-10 修复：数据源跟随 DATA_CENTER_BACKEND（postgres|sqlite）
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 
-DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
+# 2026-11-10 修复：移除 SQLite 旧库直连，写入统一走 db_access（跟随 DATA_CENTER_BACKEND）
 FF = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "fund_flow.json")
 
 CFTC_URL = "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
@@ -28,6 +31,8 @@ def http_json(url, params=None, max_retries=3, base_delay=1.0):
     """HTTP GET JSON，网络错误自动重试（指数退避）。重试后仍失败则抛出。"""
     import http.client
     import urllib.error
+    import urllib.parse
+    import urllib.request
 
     if params:
         url = url + "?" + urllib.parse.urlencode(params)
@@ -54,22 +59,17 @@ def http_json(url, params=None, max_retries=3, base_delay=1.0):
 
 
 def upsert_record(conn, source, category, sub, ts_iso, metrics, raw):
+    # 2026-11-10 修复：写入走 db_access（跟随 DATA_CENTER_BACKEND），conn 参数保留兼容签名
     dedupe_key = f"{source}|{category}|{sub}|{ts_iso}"
-    cur = conn.execute(
-        "INSERT OR IGNORE INTO records "
-        "(dedupe_key, source, category, sub_category, timestamp, metrics, events, timeseries, raw, schema_version) "
-        "VALUES (?, ?, ?, ?, ?, ?, '[]', '[]', ?, 'v1')",
-        (
-            dedupe_key,
-            source,
-            category,
-            sub,
-            ts_iso,
-            json.dumps(metrics, ensure_ascii=False),
-            json.dumps(raw, ensure_ascii=False),
-        ),
+    return db_access.insert_record(
+        dedupe_key=dedupe_key,
+        source=source,
+        category=category,
+        sub_category=sub,
+        timestamp=ts_iso,
+        metrics=metrics,
+        raw=raw,
     )
-    return cur.rowcount > 0
 
 
 def fetch_cftc_btc(conn):
@@ -157,12 +157,11 @@ def fetch_stablecoins(conn):
 
 def main():
     now = datetime.now(timezone.utc).isoformat()
-    conn = sqlite3.connect(DB)
+    conn = None  # 2026-11-10 修复：写入走 db_access，conn 仅作兼容占位
 
     cftc_latest, cftc_ins, cftc_n = fetch_cftc_btc(conn)
     stable, stable_ins = fetch_stablecoins(conn)
-    conn.commit()
-    conn.close()
+    # 2026-11-10 修复：commit/close 由 db_access.insert_record 内部处理
 
     print(f"CFTC BTC CME: rows={cftc_n} inserted={cftc_ins} latest={cftc_latest}")
     for sym, m in stable.items():

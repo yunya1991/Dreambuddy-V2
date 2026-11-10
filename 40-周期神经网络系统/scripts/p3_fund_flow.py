@@ -10,7 +10,7 @@
 
 import json
 import os
-import sqlite3
+import sys
 from datetime import datetime, timezone
 from statistics import mean, stdev
 
@@ -23,7 +23,9 @@ BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 TRANS = f"{BASE}/sector_transmission.json"
 ROT = f"{BASE}/asset_rotation.json"
 OUT = f"{BASE}/fund_flow.json"
-DB = os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心", "data_center.db")
+# 2026-11-10 修复：数据源跟随 DATA_CENTER_BACKEND（postgres|sqlite），统一走 db_access
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import db_access  # noqa: E402
 
 ASSET_LABELS = {
     "crypto_btc": "加密",
@@ -36,13 +38,7 @@ ASSET_LABELS = {
 
 
 def load_daily(sid):
-    conn = sqlite3.connect(DB)
-    rows = conn.execute(
-        "SELECT timestamp, json_extract(metrics, '$.value') FROM records "
-        "WHERE source = 'fred' AND sub_category = ? ORDER BY timestamp",
-        (sid,),
-    ).fetchall()
-    conn.close()
+    rows = db_access.query_fred_series(sid)
     return {r[0][:10]: float(r[1]) for r in rows if r[1] is not None}
 
 

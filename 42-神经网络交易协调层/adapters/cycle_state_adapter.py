@@ -42,6 +42,32 @@ _42_ROOT = os.path.join(_DREAMBUDDY_ROOT, "42-神经网络交易协调层")
 
 # confidence 映射（real_cycle.confidence → [0,1]）
 _CONF_MAP = {"high": 0.8, "medium": 0.6, "low": 0.4}
+# 2026-11-10 修复：陈旧闸门——40 产出物停更时信号降级/不发布，不再假新鲜
+# 超过 _STALE_DEGRADE_HOURS：confidence 减半 + payload.stale 标注；超过 _STALE_MAX_HOURS：不发布
+_STALE_DEGRADE_HOURS = 48
+_STALE_MAX_HOURS = 7 * 24
+
+
+def _staleness_info(generated_at):
+    """解析 state_generated_at，返回 (age_hours, degraded 标记列表)。
+
+    无法解析/缺失时 age_hours=None（不降级不拦截，仅审计标注），保持原 fail-open 语义。
+    """
+    degraded = []
+    age_hours = None
+    if generated_at:
+        try:
+            dt = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            age_hours = (_now() - dt).total_seconds() / 3600.0
+        except (ValueError, TypeError):
+            degraded.append("state_generated_at_unparseable")
+    else:
+        degraded.append("state_generated_at_missing")
+    if age_hours is not None and age_hours > _STALE_DEGRADE_HOURS:
+        degraded.append("stale_input")
+    return age_hours, degraded
 
 
 def _now() -> datetime:
@@ -82,6 +108,13 @@ def build_signal(state: dict) -> dict:
 
     # confidence：real_cycle.confidence 映射；无周期置信度时降级 0.4
     conf = _CONF_MAP.get(str(real_cycle.get("confidence", "")).lower(), 0.4)
+    # 2026-11-10 修复：陈旧闸门
+    age_hours, stale_degraded = _staleness_info(state.get("generated_at"))
+    if age_hours is not None and age_hours > _STALE_MAX_HOURS:
+        return None
+    if age_hours is not None and age_hours > _STALE_DEGRADE_HOURS:
+        conf = round(conf * 0.5, 6)
+        stale_degraded.append("confidence_halved")
 
     return {
         # P1-01：确定性 signal_id（同 source+symbol 当日重跑幂等替换，配合总线按 signal_id 合并）
@@ -102,6 +135,7 @@ def build_signal(state: dict) -> dict:
                 "below_ma200": below_n,
             },
             "state_generated_at": state.get("generated_at"),
+            "stale": stale_degraded,
         },
     }
 
@@ -149,6 +183,13 @@ def build_divergence_signal(rotation: dict) -> dict:
             direction = "long"
         else:
             direction = "short"
+    # 2026-11-10 修复：陈旧闸门
+    age_hours, stale_degraded = _staleness_info(divergence.get("generated_at"))
+    if age_hours is not None and age_hours > _STALE_MAX_HOURS:
+        return None
+    if age_hours is not None and age_hours > _STALE_DEGRADE_HOURS and confidence:
+        confidence = round(confidence * 0.5, 6)
+        stale_degraded.append("confidence_halved")
 
     return {
         "signal_id": "sig_40-divergence_MACRO_{}".format(now.strftime("%Y%m%d")),
@@ -165,6 +206,7 @@ def build_divergence_signal(rotation: dict) -> dict:
             "n_divergent": n_divergent,
             "n_scored": n_scored,
             "state_generated_at": divergence.get("generated_at"),
+            "stale": stale_degraded,
         },
     }
 
@@ -231,6 +273,13 @@ def build_resonance_signal(matrix: dict) -> dict:
         degraded.append("resonance_matrix_empty")
     if granger_ratio == 0.0 and n_total > 0:
         degraded.append("granger_not_significant")
+    # 2026-11-10 修复：陈旧闸门
+    age_hours, stale_degraded = _staleness_info(matrix.get("generated_at"))
+    if age_hours is not None and age_hours > _STALE_MAX_HOURS:
+        return None
+    if age_hours is not None and age_hours > _STALE_DEGRADE_HOURS and confidence:
+        confidence = round(confidence * 0.5, 6)
+        stale_degraded.append("confidence_halved")
 
     return {
         "signal_id": "sig_40-resonance_MACRO_{}".format(now.strftime("%Y%m%d")),
@@ -250,7 +299,8 @@ def build_resonance_signal(matrix: dict) -> dict:
             "n_granger_significant": n_granger_sig,
             "granger_significant_ratio": granger_ratio,
             "state_generated_at": matrix.get("generated_at"),
-            "degraded": degraded,
+            "degraded": degraded + stale_degraded,
+            "stale": stale_degraded,
         },
     }
 
@@ -269,17 +319,22 @@ def main() -> int:
         assets = (state.get("technical_anchor") or {}).get("assets") or {}
         if assets:
             signal = build_signal(state)
-            result = bus.publish(signal)
-            results.append(
-                {
-                    "source": signal.get("source"),
-                    "signal_id": signal.get("signal_id"),
-                    "direction": signal.get("direction"),
-                    "confidence": signal.get("confidence"),
-                    "publish_result": result.get("status"),
-                    "reason": result.get("reason"),
-                }
-            )
+            if signal is None:
+                results.append(
+                    {"source": "40-cycle", "publish_result": "skipped", "reason": "cycle_state 陈旧超期（陈旧闸门，不发布）"}
+                )
+            else:
+                result = bus.publish(signal)
+                results.append(
+                    {
+                        "source": signal.get("source"),
+                        "signal_id": signal.get("signal_id"),
+                        "direction": signal.get("direction"),
+                        "confidence": signal.get("confidence"),
+                        "publish_result": result.get("status"),
+                        "reason": result.get("reason"),
+                    }
+                )
         else:
             results.append(
                 {"source": "40-cycle", "publish_result": "skipped", "reason": "无技术锚资产数据"}
@@ -292,17 +347,22 @@ def main() -> int:
     # ── 40-divergence 信号（N4，独立于 cycle_state）──────────────
     rotation = load_asset_rotation()
     div_signal = build_divergence_signal(rotation)
-    div_result = bus.publish(div_signal)
-    results.append(
-        {
-            "source": div_signal.get("source"),
-            "signal_id": div_signal.get("signal_id"),
-            "direction": div_signal.get("direction"),
-            "confidence": div_signal.get("confidence"),
-            "publish_result": div_result.get("status"),
-            "reason": div_result.get("reason"),
-        }
-    )
+    if div_signal is None:
+        results.append(
+            {"source": "40-divergence", "publish_result": "skipped", "reason": "divergence 陈旧超期（陈旧闸门，不发布）"}
+        )
+    else:
+        div_result = bus.publish(div_signal)
+        results.append(
+            {
+                "source": div_signal.get("source"),
+                "signal_id": div_signal.get("signal_id"),
+                "direction": div_signal.get("direction"),
+                "confidence": div_signal.get("confidence"),
+                "publish_result": div_result.get("status"),
+                "reason": div_result.get("reason"),
+            }
+        )
 
     # ── 40-resonance 信号（M1，SPEC-M2 宏观力传导）────────────────
     matrix = load_resonance_matrix()
@@ -315,6 +375,10 @@ def main() -> int:
                 "publish_result": "skipped",
                 "reason": "resonance_matrix.json 不存在或为空（fail-open）",
             }
+        )
+    elif res_signal is None:
+        results.append(
+            {"source": "40-resonance", "publish_result": "skipped", "reason": "resonance_matrix 陈旧超期（陈旧闸门，不发布）"}
         )
     else:
         res_result = bus.publish(res_signal)
