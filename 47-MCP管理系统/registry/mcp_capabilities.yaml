@@ -525,6 +525,13 @@ worker_roles:
             get_positions, get_balance]
     # 只读 9 工具；forward_signal 是写工具（requires_mandate=true），不进入 Worker 角色。
 
+  lobehub_frontend:
+    description: 52-LobeHub 前台叠加层——认知检索（恒只读，SPEC v0.4.0 R1/R3）
+    shells: [l0.cognition.mcp]
+    tools: [recall]
+    # 硬约束（52-SPEC D3/R3）：该角色恒只读，禁止纳入任何写工具（record/verify 仅蒸馏桥
+    # orchestrator 主体 Phase 3 放行，trade-exec 类交易写工具永不开放）。
+
 # ── 枚举词典（校验器参照）───────────────────────────────────────
 enums:
   transport: [stdio, ssh-stdio, http, in-process]
