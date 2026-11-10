@@ -26,10 +26,17 @@
 当前系统状态：E4 部分具备，E1-E3 有种子未验证，E5 无度量。
 三维定义：D1 交易路径 / D2 工程架构 / D3 意图预测；判据矩阵、统一度量/标签 schema 与实验协议见 [三维子 Spec](./docs/tech/SPEC-EMERGENCE-3D-v0.1.md)。
 
+## 🧭 全链路总索引（特别标识 · FULL-CHAIN-SSOT）
+
+> 端到端“9 域上下文 → 深度文章三层解构 → 33-REA 做梦器（思维树）→ 最小阻力路径/矛盾识别 → 48 涌现 → 40 周期神经网络 → 49 交易框架协议（神经链路）→ 50-NN → 执行层 → 训练事件回流”的唯一索引：
+> **[docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md)**（🟢 v1.0 代码核查完成，2026-11-10）
+> 该文件只做编排与契约汇编，各段定义权仍归 9/33/39/40/47/49/50 各自 SPEC；含 3 项口径冲突（C1-C3）与 8 项 gap，实施前先看 §7/§8。
+
 ## 文档清单
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
+| 🧭 [docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md) | **全链路总架构（FULL-CHAIN-SSOT）**：训练侧/推理侧/执行侧/回流侧四段数据流、六类契约、三闭环、口径冲突 C1-C3、gap 表 | 🟢 v1.0（2026-11-10 代码核查完成：29 核查点 19✅/4🟡/6⬜） |
 | [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E0-E6 实施路径 | 🟡 v0.6：实验进度对齐（2026-11-07）——E0-E6 全部至少落盘；E1 shadow 探针 runner 已部署 systemd 常驻 + 积累达标自动放行开关；E2 评估器升级多源可插拔（v2_multisrc）；E3 滚动复测 e3_candidate_weak；E5 强原语复测 inconclusive 方向转正；E4b 动作侧 active_reflection_id 补齐；E6 需求单 5 张归一化落盘（1 resolved / 4 open，2026-11-09 复核）；v0.6 增补草案：NN 反馈网关 + 三维涌现（见 3D 子 Spec） |
 | [docs/tech/SPEC-EMERGENCE-3D-v0.1.md](./docs/tech/SPEC-EMERGENCE-3D-v0.1.md) | 三维涌现子 Spec（D1 交易 / D2 工程 / D3 意图）：A/B/C × D1/D2/D3 判据矩阵、统一度量/标签 schema、D2-A/D2-B/D3-A/D3-B/跨域迁移实验协议、P0-P4 路线、六维评审 | 🟡 v0.4 讨论稿（2026-11-09，内部复审修改后接受，待外部复审）：拟并入 48 SPEC v0.6；v0.1 六维评审**修改后接受**（见 §11.1-11.3），外部评审**需修改**（§11.4）→ v0.2 修订 + v0.3 整合复核（§4.5.3 与 §1.2 对齐、数据快照刷新、sessions 366→1072）+ v0.4 外部成熟经验整合（附录 E 采纳 23 条 + Ω 协同复核通道 + E5 检验升级）；v0.4 复审修订见 §11.5；P0-1 OOD 强制点复审确认缺失（见 reviews/）；只含 Spec/协议，不含代码 |
 | [docs/tech/REVIEW-CHECKLIST-v0.1.md](./docs/tech/REVIEW-CHECKLIST-v0.1.md) | SPEC 评审六维检查清单（引用存在性/数据健康度/版本一致性/存量盘点/门禁强制等级/可观测性） | ✅ v0.1：SPEC 升版评审必跑 |

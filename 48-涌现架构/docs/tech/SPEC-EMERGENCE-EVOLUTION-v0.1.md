@@ -1,5 +1,6 @@
 # SPEC-EMERGENCE-EVOLUTION v0.5
 
+> 🧭 **全链路总索引**：[SPEC-EMERGENCE-FULL-CHAIN-v1.0](./SPEC-EMERGENCE-FULL-CHAIN-v1.0.md)（FULL-CHAIN-SSOT）——本文件负责 E0-E6 判据与度量定义；端到端编排（9/33/39/40/49/50/执行/回流）见总索引 §1/§3。
 > 日期：2026-11-05（v0.1 初稿 → v0.2 调研回填+E-BIZ → v0.3 正反方辩论评审后修订 → v0.4 架构×数据流双维深度评审 → v0.5 六维实证评审封口）
 > 来源：用户提问"系统能否出现智能涌现效应"+ 两线调研 + 用户"涌现什么"方向修正 + v0.3 评审裁决（25/30，修改后接受）+ v0.4 双维评审（P0×5 + P1×7）
 > 状态：🟢 v0.6 落地中——E0a/E0b/E4a/E4b/E1/E2/E3/E5/E6 全部至少落盘（2026-11-07）：E1 shadow 探针 runner 已部署 systemd 常驻（300s 周期）+ 积累达标自动放行开关（每日 06:30 timer）；E2 评估器升级多源可插拔（v2_multisrc）；E3 滚动复测 e3_candidate_weak（Q2/Q3 显著正，Q4 不显著）；E5 强原语复测 inconclusive 方向转正；E4b 动作侧 active_reflection_id 补齐；E6 需求单 4 张已发
