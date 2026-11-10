@@ -1,0 +1,43 @@
+{
+  "tag": "d2-g5-GAP-20261109-1713fa7b",
+  "digest": "880d77fd",
+  "created_at": "2026-11-10T13:20:22",
+  "instruction": "请评审后写入同名 .result.json：{decision: accept|reject, notes: str}",
+  "payload": {
+    "domain": "D2",
+    "gap": {
+      "gap_id": "GAP-20261109-1713fa7b",
+      "gap_type": "interface_mismatch",
+      "evidence": {
+        "source": "d2_holdout_review",
+        "issue": "架构图仅记录 import 边，不记录接口签名/参数契约，holdout 复原时无法校验接口一致性"
+      },
+      "expected_value": "架构图节点含公开接口签名（函数名+参数+返回类型），可用于 interface_mismatch 检测"
+    },
+    "plan_summary": {
+      "module_name": "33-REA/interface_signature_extractor.py",
+      "modules": [
+        "33-REA/interface_signature_extractor.py",
+        "ast",
+        "33-REA/architecture_graph_builder.py"
+      ],
+      "design_rationale": "缺口: 架构图仅记录 import 边，不记录接口签名/参数契约，holdout 复原时无法校验接口一致性。预期: 架构图节点含公开接口签名（函数名+参数+返回类型），可用于 interface_mismatch 检测。方案: 用 ast 提取每个公开函数的签名（name + args + return annotation），写入架构图节点的 interface_signature 字段，供 interface_mismatch 检测。"
+    },
+    "oracle": {
+      "schema_ok": true,
+      "compile_ok": true,
+      "bypass_clean": true,
+      "ast_parseable": true,
+      "dependency_acyclic": true,
+      "complexity_ok": true,
+      "confidence": 1.0,
+      "violations": [
+        "module file not found (tolerated): 33-REA/interface_signature_extractor.py",
+        "module file not found (tolerated): ast",
+        "module file not found (tolerated): 33-REA/architecture_graph_builder.py"
+      ],
+      "verdict": "candidate"
+    },
+    "gate_45": null
+  }
+}

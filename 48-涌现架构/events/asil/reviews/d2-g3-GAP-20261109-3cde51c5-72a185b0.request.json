@@ -1,0 +1,45 @@
+{
+  "tag": "d2-g3-GAP-20261109-3cde51c5",
+  "digest": "72a185b0",
+  "created_at": "2026-11-10T13:20:22",
+  "instruction": "请评审后写入同名 .result.json：{decision: accept|reject, notes: str}",
+  "payload": {
+    "domain": "D2",
+    "gap": {
+      "gap_id": "GAP-20261109-3cde51c5",
+      "gap_type": "architecture_gap",
+      "evidence": {
+        "source": "d2_architecture_graph",
+        "edge_kind": "call",
+        "total_call_edges": 27563,
+        "issue": "函数名级解析（重名取路径排序首个），大量重名假依赖，无运行时数据流"
+      },
+      "expected_value": "call 边升级为 AST 精确解析或运行时追踪，假依赖率 < 5%"
+    },
+    "plan_summary": {
+      "module_name": "33-REA/ast_call_resolver.py",
+      "modules": [
+        "33-REA/ast_call_resolver.py",
+        "ast",
+        "33-REA/architecture_graph_builder.py"
+      ],
+      "design_rationale": "缺口: 函数名级解析（重名取路径排序首个），大量重名假依赖，无运行时数据流。预期: call 边升级为 AST 精确解析或运行时追踪，假依赖率 < 5%。方案: 用 Python ast 模块对每个 python_file 做精确函数定义解析，call 边改为 AST 节点级绑定（消除重名假依赖），并记录运行时追踪 hook。"
+    },
+    "oracle": {
+      "schema_ok": true,
+      "compile_ok": true,
+      "bypass_clean": true,
+      "ast_parseable": true,
+      "dependency_acyclic": true,
+      "complexity_ok": true,
+      "confidence": 1.0,
+      "violations": [
+        "module file not found (tolerated): 33-REA/ast_call_resolver.py",
+        "module file not found (tolerated): ast",
+        "module file not found (tolerated): 33-REA/architecture_graph_builder.py"
+      ],
+      "verdict": "candidate"
+    },
+    "gate_45": null
+  }
+}

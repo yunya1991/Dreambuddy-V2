@@ -1,0 +1,11 @@
+{
+  "champion": "baseline_general_sum",
+  "metrics": {
+    "top1": 0.780488,
+    "ece": 0.157486,
+    "n_val": 328,
+    "holdout_top1": 0.792627,
+    "holdout_ece": 0.178586,
+    "n_holdout": 217
+  }
+}

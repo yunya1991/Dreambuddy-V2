@@ -10,6 +10,7 @@ from __future__ import annotations
 import time
 from typing import Any, Dict, List, Optional
 
+from .cognitive_writeback import CognitiveWriteback
 from .d2b_adapter import D2B_TYPES, D2BAdapter
 from .d3_adapter import D3Adapter, D3IntentResult
 from .drift_detector_wrapper import classify_drift_asil
@@ -46,6 +47,7 @@ class ASILOrchestrator:
         d3_adapter: Optional[D3Adapter] = None,
         d2b_adapter: Optional[D2BAdapter] = None,
         session_collector: Optional[SessionOutcomeCollector] = None,
+        writeback: Optional[Any] = None,  # CognitiveWriteback（P0-1 真实认知回写）
         use_phase2_oracle: bool = True,
     ):
         # Oracle 默认 Phase 2 V2，失败降级 Phase 1
@@ -68,6 +70,7 @@ class ASILOrchestrator:
         self.d3 = d3_adapter or D3Adapter()
         self.d2b = d2b_adapter or D2BAdapter()
         self.session_collector = session_collector or SessionOutcomeCollector()
+        self.writeback = writeback or CognitiveWriteback()
 
     # ------------------------------------------------------------------
     # 触发扫描入口（Phase 2 加 session outcome）
@@ -171,9 +174,20 @@ class ASILOrchestrator:
         route = self.verdict_router.route(verdict)
         self.feedback_writer.write_verdict(verdict_result, trace_id)
 
-        # --- Step⑦ Verify 回写 ---
+        # --- Step⑦ Verify 回写（真实写入广义认知库） ---
+        writeback_result: Dict[str, Any] = {"backend": "skipped", "memory_id": None}
         if route != "REPORT_ONLY":
-            self.metrics.record_verify_writeback()
+            writeback_result = self.writeback.record_verdict(
+                verdict_result.to_dict(), trace_id, tags=[trigger.type]
+            )
+            if writeback_result.get("fallback"):
+                self.metrics.record_writeback_fallback()
+            else:
+                self.metrics.record_verify_writeback()
+                writeback_result["verify"] = self.writeback.verify_memory(
+                    writeback_result["memory_id"],
+                    success=(verdict == "candidate"),
+                )
 
         # --- Step⑧ 蒸馏 ---
         if route == "FEEDBACK_VERIFY_DISTILL":
@@ -206,6 +220,7 @@ class ASILOrchestrator:
             "verdict": verdict_result.to_dict(),
             "route": route,
             "kill_switch": {"level": ks_action.level, "action": ks_action.action},
+            "writeback": writeback_result,
             "llm_tokens_used": self.llm_budget.daily_used,
             "phase": 2,
         }

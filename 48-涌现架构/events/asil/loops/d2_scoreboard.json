@@ -1,0 +1,45 @@
+{
+  "scoreboard": {
+    "backtest_evaluator_missing": {
+      "p": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.793451,
+      "n": 1,
+      "pass_rate": 0.0,
+      "evidence_level": "insufficient"
+    },
+    "domain_state_series_missing": {
+      "p": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.793451,
+      "n": 1,
+      "pass_rate": 0.0,
+      "evidence_level": "insufficient"
+    },
+    "architecture_gap": {
+      "p": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.793451,
+      "n": 1,
+      "pass_rate": 0.0,
+      "evidence_level": "insufficient"
+    },
+    "doc_debt": {
+      "p": 1.0,
+      "ci_low": 0.206549,
+      "ci_high": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "evidence_level": "insufficient"
+    },
+    "interface_mismatch": {
+      "p": 1.0,
+      "ci_low": 0.206549,
+      "ci_high": 1.0,
+      "n": 1,
+      "pass_rate": 1.0,
+      "evidence_level": "insufficient"
+    }
+  },
+  "champion_template": "doc_debt"
+}

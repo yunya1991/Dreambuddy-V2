@@ -1,0 +1,6 @@
+{
+  "decision": "reject",
+  "notes": "Trae 评审：候选 majority_sum 与冠军 baseline_general_sum 在 val(0.780488)/holdout(0.792627)/ECE(0.157486) 三项上完全同值，说明该变体在参数空间中与基线等价，无任何信息增益，val 筛选即不通过，holdout 不应被用来寻找差异。建议后续变体改为改变特征空间（session 长度、时段、文件域基数）而非只调 aggregate 与 min_conf 阈值；否则网格搜索只会重复产出等价解。",
+  "reviewer": "trae",
+  "reviewed_at": "2026-11-10T13:31:30"
+}

@@ -1,0 +1,44 @@
+{
+  "tag": "d2-g4-GAP-20261109-2d97f2fe",
+  "digest": "89f25b3a",
+  "created_at": "2026-11-10T13:20:22",
+  "instruction": "请评审后写入同名 .result.json：{decision: accept|reject, notes: str}",
+  "payload": {
+    "domain": "D2",
+    "gap": {
+      "gap_id": "GAP-20261109-2d97f2fe",
+      "gap_type": "doc_debt",
+      "evidence": {
+        "source": "d2_architecture_graph",
+        "metric": "doc_coverage",
+        "issue": "架构图中部分 python_file 节点无对应 markdown_doc，文档断链/覆盖率不足"
+      },
+      "expected_value": "核心模块文档覆盖率 ≥ 0.9，断链数 = 0"
+    },
+    "plan_summary": {
+      "module_name": "0-系统文档管理/doc_coverage_checker.py",
+      "modules": [
+        "0-系统文档管理/doc_coverage_checker.py",
+        "0-系统文档管理/2-文档地图",
+        "architecture_graph.json"
+      ],
+      "design_rationale": "缺口: 架构图中部分 python_file 节点无对应 markdown_doc，文档断链/覆盖率不足。预期: 核心模块文档覆盖率 ≥ 0.9，断链数 = 0。方案: 对每个 python_file 节点检查是否存在对应 markdown_doc（同目录或 docs/ 下），输出断链清单 + 覆盖率报告；核心模块自动生成 SKILL.md 骨架。"
+    },
+    "oracle": {
+      "schema_ok": true,
+      "compile_ok": true,
+      "bypass_clean": true,
+      "ast_parseable": true,
+      "dependency_acyclic": true,
+      "complexity_ok": true,
+      "confidence": 1.0,
+      "violations": [
+        "module file not found (tolerated): 0-系统文档管理/doc_coverage_checker.py",
+        "module file not found (tolerated): 0-系统文档管理/2-文档地图",
+        "module file not found (tolerated): architecture_graph.json"
+      ],
+      "verdict": "candidate"
+    },
+    "gate_45": null
+  }
+}

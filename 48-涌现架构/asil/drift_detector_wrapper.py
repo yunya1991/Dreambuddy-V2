@@ -11,7 +11,8 @@ from importlib import import_module
 from pathlib import Path
 
 # 复用已有漂移检测器 — 不重写
-_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+# parents: [0]=asil, [1]=48-涌现架构, [2]=仓库根
+_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(_ROOT))
 
 # 已有实现：compute_psi / ks_test_drift / classify_drift / classify_drift_triple / drift_kill_switch
