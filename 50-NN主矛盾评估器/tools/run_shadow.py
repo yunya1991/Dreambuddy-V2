@@ -10,6 +10,7 @@ shadow 模式只产出审计信号，不执行任何交易。
 - 总线无信号：记录 no_evidences 后正常退出
 - 决策结果原子写 runtime/shadow/latest.json；摘要追加 shadow_history.jsonl（滚动上限 500）
 - 决策追加 runtime/decisions.jsonl（M3-2 账本）与 runtime/audit/decisions.jsonl（审计）
+- trigger 防振荡裁决追加 runtime/trigger_flap.jsonl（M4-7）
 
 用法：python3 tools/run_shadow.py [--bus-state PATH] [--out-dir PATH]
 """
@@ -35,8 +36,9 @@ from adapters.audit_logger import log_decision  # noqa: E402
 from adapters.bus_reader import load_evidences  # noqa: E402
 from adapters.constraint_loader import load_constraints  # noqa: E402
 from adapters.execution_writer import is_kill_switch_on  # noqa: E402
-from core.decision import record_decision  # noqa: E402
+from core.decision import _extract_trigger, record_decision  # noqa: E402
 from core.shadow_decision import make_shadow_decision  # noqa: E402
+from core.trigger_flap import check_trigger_flap  # noqa: E402
 
 SHADOW_HISTORY_CAP = 500
 DEFAULT_BUS_STATE = _42_ROOT / "runtime" / "bus_state.json"
@@ -90,6 +92,20 @@ def run(bus_state: Path, out_dir: Path) -> dict[str, Any]:
 
     constraints = load_constraints()
     decision = make_shadow_decision(evidences, constraints, now=now)
+
+    # M4-7：与主决策入口一致，提取 trigger 并做防振荡裁决（写 runtime/trigger_flap.jsonl）
+    proposed_trigger = _extract_trigger(evidences)
+    flap = check_trigger_flap(str(decision.get("symbol") or "MULTI"), proposed_trigger, now=now)
+    decision["trigger"] = flap.trigger
+    payload = decision.get("payload")
+    if isinstance(payload, dict):
+        payload["proposed_trigger"] = proposed_trigger
+        payload["trigger_flap"] = {
+            "locked": flap.locked,
+            "switches_in_window": flap.switches_in_window,
+            "reason": flap.reason,
+        }
+
     result["decision"] = decision
     return result
 

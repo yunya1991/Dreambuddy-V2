@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from adapters import audit_logger
 from core import decision as decision_mod
+from core import trigger_flap as flap_mod
 from tools import run_shadow
 
 
@@ -33,8 +34,10 @@ def _bus_state(path):
 def test_main_appends_decision_and_audit(tmp_path, monkeypatch):
     ledger = tmp_path / "decisions.jsonl"
     audit = tmp_path / "audit" / "decisions.jsonl"
+    flap = tmp_path / "trigger_flap.jsonl"
     monkeypatch.setattr(decision_mod, "_DECISIONS_PATH", ledger)
     monkeypatch.setattr(audit_logger, "DEFAULT_AUDIT_PATH", audit)
+    monkeypatch.setattr(flap_mod, "_FLAP_PATH", flap)
 
     bus = _bus_state(tmp_path / "bus_state.json")
     out_dir = tmp_path / "shadow"
@@ -55,12 +58,21 @@ def test_main_appends_decision_and_audit(tmp_path, monkeypatch):
     assert len(audits) == 1
     assert audits[0]["decision"]["signal_id"] == decisions[0]["signal_id"]
 
+    flaps = [json.loads(x) for x in flap.read_text(encoding="utf-8").splitlines()]
+    assert len(flaps) == 1
+    assert flaps[0]["symbol"] == "MULTI"
+    assert flaps[0]["adopted_trigger"] == "default"
+    assert decisions[0]["trigger"] == "default"
+    assert decisions[0]["payload"]["trigger_flap"]["locked"] is False
+
 
 def test_main_without_decision_skips_ledger(tmp_path, monkeypatch):
     ledger = tmp_path / "decisions.jsonl"
     audit = tmp_path / "audit" / "decisions.jsonl"
+    flap = tmp_path / "trigger_flap.jsonl"
     monkeypatch.setattr(decision_mod, "_DECISIONS_PATH", ledger)
     monkeypatch.setattr(audit_logger, "DEFAULT_AUDIT_PATH", audit)
+    monkeypatch.setattr(flap_mod, "_FLAP_PATH", flap)
 
     empty = tmp_path / "empty_bus.json"
     empty.write_text(json.dumps({"signals": []}), encoding="utf-8")
@@ -73,3 +85,4 @@ def test_main_without_decision_skips_ledger(tmp_path, monkeypatch):
     assert run_shadow.main() == 0
     assert not ledger.exists()
     assert not audit.exists()
+    assert not flap.exists()
