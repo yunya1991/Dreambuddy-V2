@@ -135,6 +135,29 @@ v0.1 在 160 事件时曾判断"样本不足"，扩样 42 倍到 6,697 事件后
 | **open interest** | **无** | — | ❌ 缺源 |
 | 链上 MVRV / SOPR / 交易所净流入 | **无** | — | ❌ 缺源 |
 
+### 2.3.1 19 数据访问层（DAL）实测 —— 长历史原料的真正来源
+
+> 补测于 2026-11-10。DAL 落盘库 `19-数据访问层/data/dreambuddy_core.db`，`mm_metrics` 表 **267,761 行 / 479 个 source×metric 组合**。关键：**行数多来自高采集频率，而非长历史**——除 fred 外全部指标仅覆盖 2026-09-28→11-10（41 天）。
+
+| 数据源 | 覆盖 | 说明 |
+|---|---|---|
+| **fred（宏观 20 序列）** | ✅ **1962→2026 / 95,100 行** | DGS10 美债（16,269 点）、NASDAQCOM（14,129）、T10Y2Y 收益率曲线（12,607）、DCOILWTICO 原油（9,608）、VIXCLS（9,384）、T10YIE 通胀预期（5,968）、DFII10 TIPS（5,967）、DTWEXBGS 美元指数（5,298）、RRPONTSYD 逆回购（3,364）、SP500（2,584）、PPIACO/INDPRO/PAYEMS/CPIAUCSL/FEDFUNDS/M2NS/M2SL/WALCL（1913-1959 起）、BAMLH0A0HYM2 高收益利差（2023-11 起，**恰覆盖验证窗口**） |
+| blockchain_info | ⚠️ 41 天 | hashrate / difficulty / tx_count_24h / market_cap_usd / total_btc |
+| fear_greed | ⚠️ 41 天 | 801 点 |
+| ccxt | ⚠️ 40 天 | last/bid/ask/high/low/volume |
+| defillama | ⚠️ 40 天 | tvl / total_tvl |
+| **deribit OI** | ⚠️ 40 天 | `oi` 817 点（**OI 有数据，非无源**） |
+| **binance_funding_rate** | ⚠️ 15 天 | funding_rate_pct / annualized |
+| binance_futures 多空比 | ⚠️ 2 天 | long_short_ratio / long_account_pct |
+| bgeometrics 链上估值 | ⚠️ **6 天** | mvrv / sopr / nupl / realized_price / puell_multiple / nvt_ratio（**指标有定义，历史几乎为零**） |
+| coinglass | ⚠️ 32 天 | item_count 等 |
+
+**两处重要修正**：
+1. **macro 从"未核验"升级为"完全可长历史回填"**（fred 20 序列可覆盖全部验证窗口）
+2. **funding / OI 从"缺源"修正为"协议已就绪、数据仅 15-40 天、可补齐"**——DAL `market_macro_repo` 已定义 `upsert_funding_rate` / `upsert_open_interest` / `upsert_liquidation` / `upsert_long_short_ratio` / `upsert_taker_volume` / `upsert_fear_greed` 的完整读写契约，写入通道无需新建，只缺历史数据灌入
+
+**DAL 到 18 库的桥接已存在**：`implementations/postgres/datacenter_impl.py` 可只读查询 PG `data_center.records`（`fetch_records` / `fetch_records_since` / `fetch_latest_by_source` / `fetch_source_groups`），并有 `scripts/backfill_18_records.py` 先例。
+
 ### 2.4 48 消费端契约（既有，不变）
 
 | 消费端 | 接口 | 备注 |
@@ -184,14 +207,16 @@ v0.1 在 160 事件时曾判断"样本不足"，扩样 42 倍到 6,697 事件后
 
 | 维度 | 可回填性 | 方案 | 预期覆盖 |
 |---|---|---|---|
+| **macro（fred 20 序列）** | ✅ **完全可回填** | `mm_metrics` source=`fred`：DGS10 / NASDAQCOM / T10Y2Y / VIXCLS / T10YIE / DFII10 / DTWEXBGS / RRPONTSYD / SP500 / BAMLH0A0HYM2 等 | **1962→今**，对齐验证窗口无缺口 |
 | **sentiment** | ✅ **直接可回填** | newsflash description → `SentimentEngine.analyze_batch` → 日度均值/分位 | 2023-01 → 今，~1,400 天 |
-| **momentum / volatility / breadth（自建）** | ✅ **直接可回填** | BTC 日 K 派生：20/60/252 日动量、ATR 分位、涨跌家数代理（若有多币 K 线则真实 breadth） | 2023-01 → 今 |
-| **fear_greed** | ⚠️ 部分 | 现有 495 条 1.7 月；历史需外部源（alternative.me 有全历史 API，待核验） | 待 P1 核验 |
-| **co-occurrence（原子→细胞）** | ✅ 可回填（需重建输入） | 用 newsflash 的 `od_event_type` + tickers_hit 作为原子事件源，套 39 域细胞层聚合公式 | 2023-01 → 今 |
+| **momentum / volatility / intermarket** | ✅ **直接可回填** | BTC 日 K 派生 + fred NASDAQCOM/SP500 做跨市场 | 2023-01 → 今 |
+| **breadth** | ✅ 可回填（代理） | 多币日 K 若可得则真实；否则用 BTC 趋势 + fred 风险资产广度代理 | 2023-01 → 今 |
+| **co-occurrence（原子→细胞）** | ✅ 可回填（需重建输入） | newsflash `od_event_type` + tickers_hit 作原子事件源，套 39 域细胞层聚合公式 | 2023-01 → 今 |
 | **narrative** | ⚠️ 需补正文 | 63,750 篇仅 500 篇有正文 → 需先扩爬（P0 爬虫已有，96.4% 成功率） | 视爬取进度 |
-| **flow（ETF/资金流）** | ❌ 不可回填 | 只有 2026-08 起 2.2 月；历史 ETF 流向需外部源 | 只能向前累积 |
-| **onchain（MVRV/SOPR/净流入）** | ❌ 不可回填 | 无任何历史源 | 只能向前累积 |
-| **funding / OI** | ❌ 缺源 | 数据源本身不存在 | 需先接交易所历史接口 |
+| **fear_greed** | ⚠️ 仅 41 天 | DAL 801 点；alternative.me 有全历史 API（待核验即可补） | 可补齐 |
+| **valuation（MVRV/SOPR/NUPL/Puell）** | ⚠️ **仅 6 天** | bgeometrics 全历史 API 待核验 | 可补齐 |
+| **onchain（hashrate/tx_count）** | ⚠️ 仅 41 天 | blockchain.info chart 端点有全历史（待核验） | 可补齐 |
+| **flow（funding / OI / 多空比 / TVL）** | ⚠️ 15-41 天 | DAL 写协议已就绪；binance fundingRate + deribit OI 有全历史 REST，需 P1b 灌数 | 可补齐（需额外接源） |
 
 ### 4.2 回填设计要点
 
@@ -217,18 +242,22 @@ v0.1 在 160 事件时曾判断"样本不足"，扩样 42 倍到 6,697 事件后
 
 ### 5.1 状态向量定义（v0.1 冻结 8 维）
 
-| # | 维度 | 计算 | 归一化 |
-|---|---|---|---|
-| 1 | `sent` | newsflash FinBERT 日度均值 | 滚动 252 日 **分位** ∈ [0,1] |
-| 2 | `sent_disp` | 日度情绪标准差 | 同上 |
-| 3 | `mom` | BTC 60 日收益率 | 滚动 252 日 z-score |
-| 4 | `vol` | 20 日已实现波动率 | 滚动 252 日 z-score |
-| 5 | `breadth` | 上涨标的占比（有多币 K 线时） | 分位 |
-| 6 | `fg` | fear_greed 指数 | 分位 |
-| 7 | `lsr` | 多空比 | 分位 |
-| 8 | `tvl_chg` | TVL 20 日变化率 | z-score |
+| # | 维度 | 信息族 | 计算 | 归一化 | 历史 |
+|---|---|---|---|---|---|
+| 1 | `sent` | 文本族 | newsflash FinBERT 日度均值 | 滚动 252 日分位 | ✅ 2023-01→今 |
+| 2 | `sent_disp` | 文本族 | 日度情绪标准差 | 分位 | ✅ 2023-01→今 |
+| 3 | `mom` | 价格族 | BTC 60 日收益率 | 滚动 252 日 z-score | ✅ 2023-01→今 |
+| 4 | `vol` | 价格族 | 20 日已实现波动率 | z-score | ✅ 2023-01→今 |
+| 5 | `breadth` | 价格族 | 上涨标的占比（多币 K 线；否则代理） | 分位 | ✅ 2023-01→今 |
+| 6 | `macro_tight` | 宏观族 | 收益率曲线 T10Y2Y + 高收益利差 BAMLH0A0HYM2 合成 | 分位 | ✅ 1976→今 |
+| 7 | `macro_risk` | 宏观族 | VIX 分位 + NASDAQ 60 日动量合成 | 分位 | ✅ 1971→今 |
+| 8 | `macro_liq` | 宏观族 | RRP + WALCL + M2 同比合成 | z-score | ✅ 1959→今 |
 
-**可用性降级**：`breadth`/`fg`/`lsr`/`tvl_chg` 历史不足时，状态向量自动降为 4 维（`sent/sent_disp/mom/vol`），并在产物标 `dims_effective`。**不允许用 mock 或插值补齐。**
+**设计意图**：三族各占席位（文本 2 / 价格 3 / 宏观 3），使 §6.4 的 U2 真交叉验证在 v0.1 就具备可执行条件。
+
+**降级备选（不进 v0.1 状态向量）**：`fg`（fear_greed，41 天）、`lsr`（多空比，2 天）、`tvl_chg`（TVL，40 天）、`mvrv/sopr`（6 天）——历史不足，仅作 P1b 增量或 U1 数据校验的辅助源，**不得用于主检验**。
+
+**可用性降级**：任一维历史缺失时，状态向量自动降维并在产物标 `dims_effective`。**不允许用 mock 或插值补齐。**
 
 ### 5.2 归一化的前视防护
 
@@ -301,13 +330,47 @@ NPE 命题: "资金费率>0.1% 且 OI 创新高时，短期回调概率大"
 
 **未冻结前不得跑验证**——否则 PBO 失去意义。
 
+### 6.4 多维交叉验证（回填的第二个用途，用户强调）
+
+回填的价值不只是「维度更多」，更是**相互验证**。三类用途必须分开，不可混用：
+
+| 用途 | 做法 | 产出 | 判据 |
+|---|---|---|---|
+| **U1 数据质量校验** | 同一构念用两个独立源计算，偏差超阈值即标记可疑 | 数据可信度报告 | 偏差 > 3σ 标 `suspect`，验证时剔除 |
+| **U2 假设稳健性** | 同一命题在**不同独立信息族**内分别找代理谓词，检验是否同向 | 弱 / 中 / 强证据分级 | 三族同向=强，两族=中，单族=弱 |
+| **U3 组合条件模式** | 多族状态同时极端时的条件收益 vs 单族极端 | 组合条件模式 | 需样本 n≥30 |
+
+#### 信息族与独立性声明（**关键约束，防止虚假交叉**）
+
+| 族 | 数据源 | 与加密行情的独立性 |
+|---|---|---|
+| **宏观族** | fred 20 序列（美债 / VIX / 美元 / 收益率曲线 / 高收益利差） | ✅ **真独立**（外部宏观，加密不驱动） |
+| **加密价格族** | BTC K 线派生（momentum / vol / breadth） | — 基准 |
+| **加密文本族** | newsflash → FinBERT sentiment | ⚠️ **非独立**（新闻被价格驱动，反向因果） |
+| **事件流族** | newsflash `od_event_type` → co-occurrence | ⚠️ **与文本族同源**（同一批 newsflash） |
+
+**结论（必须写进预注册）**：
+- **U2 假设稳健性只能用「宏观族 vs 加密价格族」做真交叉**——这两族信息源独立
+- **加密文本族与事件流族同源**，只能做 U1 一致性校验，**不可当作两条独立证据**（否则 n 条新闻被误算成 n 重验证）
+- 情绪族与价格族同向，只能说明"价格与新闻同步"，**不构成因果证据**
+
+#### 交叉验证是加严，不是放松
+
+| 层级 | 原判据 | 本 SPEC 追加 |
+|---|---|---|
+| candidate | holm_p < 0.05（不变） | 无追加 |
+| **verified** | 三层全过 + 方向稳定 ≥2 独立时间窗 | **+ 跨族一致**：宏观族与加密族同向 |
+
+即交叉验证只用于**晋级门槛加严**，绝不用于放宽 p 值阈值。
+
 ---
 
 ## §7 分阶段实施路径
 
 | Phase | 目标 | 产出 | 验收判据 | 依赖 |
 |---|---|---|---|---|
-| **P1 回填地基** | 真实日度序列 | `sentiment_daily` + `market_state_daily` + `cooccurrence_daily`（或明示缺哪维） | ①≥900 天序列 ②每日带 `n_inputs` ③抽查 10 天人工核对情绪方向 ④覆盖日占比 ≥80% | 无（原料已就绪） |
+| **P1 回填地基** | 真实日度序列（3 族） | `sentiment_daily`（文本族）+ `market_state_daily`（价格族）+ `macro_daily`（宏观族，从 DAL mm_metrics 读 fred） | ①3 族各 ≥900 天 ②每日带 `n_inputs`/`provenance` ③抽查 10 天人工核对情绪方向 ④覆盖日占比 ≥80% ⑤**无插值、无 mock** | 无（原料已就绪） |
+| **P1b 增量补源（可选）** | fear_greed / valuation / onchain / flow | 接外部全历史 API 并走 DAL `market_macro_repo` 写入协议 | 各维补至 ≥900 天；不达标则该维不进状态向量 | P1 |
 | **P2 命题映射** | 假设集冻结 | `hypotheses_v0.json`（命题→谓词映射 + unmappable 清单）+ SPEC-PREREG-v0.2 | ①可映射命题 ≥20 条 ②映射损失率如实报告 ③预注册文件冻结 | P1 + NPE 500 篇产出 |
 | **P3 条件验证** | 三层防线跑通 | `conditional_patterns.jsonl` | ①≥3 假设达 candidate ②PBO 可算 ③不达标如实停在 P3 | P1+P2 |
 | **P4 消费接入** | 注入 48 消费端 | E5 重测报告（shadow） | kNN 基线显著超 53.6%（方向转正即初步信号） | P3 有 verified |
