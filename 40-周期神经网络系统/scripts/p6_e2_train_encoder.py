@@ -37,11 +37,14 @@ sys.path.insert(0, DCENTER)
 sys.path.insert(0, TREND)
 
 TOKEN_PATH = os.path.join(BASE, "token_sequence.parquet")
-BASELINE_PATH = os.path.join(BASE, "baseline_metrics.json")
+BASELINE_PATH = os.path.join(BASE, "baseline_metrics_v2.json")  # C1：同口径基线（2026-11-11 拍板）
+BASELINE_LEGACY_PATH = os.path.join(BASE, "baseline_metrics.json")  # E1 旧口径基线（仅存档参考）
 REPORT_OUT = os.path.join(BASE, "e2_training_report.json")
 MODEL_OUT = os.path.join(BASE, "encoder_trend_model.pt")
 
-# ── 预注册超参（禁止运行时调整）──────────────────────────────
+# ── 预注册超参 v2（2026-11-11 PROPOSAL-E2-PREREG-CHANGE-v0.1 用户拍板变更，重新冻结）──
+# v2 变更：B1 标签阈值按屏差异化 / B2 特征版本 v2 无量纲化 / B3 类别权重 / B4 熵正则 0.01→0.001
+# 不变：n_layers=2, d_model=64, n_heads=4, ≤1M, 5 折, seq_len=32（B5/B6 本轮冻结），前瞻窗口, 20% 封板
 PREREG = {
     "n_layers": 2,
     "d_model": 64,
@@ -52,8 +55,11 @@ PREREG = {
     "walk_forward_folds": 5,
     "seq_len": 32,  # 每样本 token 窗口长度
     "label_horizon": {"1W": 4, "1D": 7, "1H": 24},
-    "label_threshold_pct": 2.0,  # ±2% 三分类阈值
-    "attn_entropy_reg": 0.01,
+    # B1：按屏差异化阈值（依据各屏 |前瞻收益| 分布 q33 取整：1W 7.42→7.0 / 1D 2.35→2.0 / 1H 0.71→0.75）
+    "label_threshold_pct": {"1W": 7.0, "1D": 2.0, "1H": 0.75},
+    "attn_entropy_reg": 0.001,  # B4：真注意力熵正则（A4 修复实现后）系数
+    "class_weight": "balanced_train_fold",  # B3：按当前折训练段逆频率加权（封板段统计禁用）
+    "feature_version_required": "classic_indicators_v2_dimensionless+ma200_v1",  # B2
     "lr": 1e-3,
     "epochs": 30,
     "batch_size": 64,
@@ -67,6 +73,13 @@ META_COLS = ["symbol", "timeframe", "screen", "ts", "feature_version"]
 
 def load_tokens() -> pd.DataFrame:
     df = pd.read_parquet(TOKEN_PATH)
+    # B2：特征版本校验（E0 重生成后版本必须匹配，防止旧版特征混入）
+    versions = set(df["feature_version"].unique())
+    req = PREREG["feature_version_required"]
+    if versions != {req}:
+        raise RuntimeError(
+            f"[REJECT] token 特征版本不匹配：{versions}，要求 {req}（请先重跑 p6_e0_token_sequence.py）"
+        )
     return df.sort_values(["symbol", "timeframe", "ts"]).reset_index(drop=True)
 
 
@@ -91,7 +104,7 @@ def build_labels(tokens: pd.DataFrame) -> pd.DataFrame:
             c = c.sort_values("ts").reset_index(drop=True)
             close = c["c"].astype(float)
             fut = close.shift(-horizon) / close - 1.0
-            thr = PREREG["label_threshold_pct"] / 100.0
+            thr = PREREG["label_threshold_pct"][bar] / 100.0  # B1：按屏差异化阈值
             lab = np.where(fut > thr, 1, np.where(fut < -thr, 2, 0))  # 0=N,1=UP,2=DOWN
             ts2lab = dict(zip(c["ts"], lab))  # noqa: B905
             ts2ret = dict(zip(c["ts"], fut))  # noqa: B905
@@ -147,9 +160,11 @@ def build_model(n_features: int):
             )
             self.ln1 = nn.LayerNorm(d)
             self.ln2 = nn.LayerNorm(d)
+            self.last_attn = None  # A4：保留真实注意力权重供熵正则使用
 
         def forward(self, x):
-            a, _ = self.attn(x, x, x, need_weights=True)
+            a, w = self.attn(x, x, x, need_weights=True, average_attn_weights=False)
+            self.last_attn = w  # (B, heads, T, T)
             h = self.ln1(x + a)
             return self.ln2(h + self.ffn(h))
 
@@ -175,23 +190,71 @@ def build_model(n_features: int):
 
 
 def attn_entropy_loss(model) -> "torch.Tensor":  # noqa: F821
-    """注意力熵正则：对每块注意力权重计算 -H(p)（鼓励分布不过度集中）。
-    简化实现：对 QK 投影权重的 L2 正则近似（小模型骨架级）。"""
+    """A4 修复：真注意力熵正则。对每块多头注意力分布计算平均熵 H(p)，
+    损失项取 -coeff * H（最大化熵，鼓励注意力分布不过度集中，SPEC §1.4）。
+    v1 误实现为 in_proj_weight 的 L2 范数，与预注册语义不符，已废弃。"""
 
-    loss = 0.0
+    import torch
+
+    ent = None
+    n = 0
     for blk in model.blocks:
-        for p in blk.attn.in_proj_weight:
-            loss = loss + p.pow(2).sum() * PREREG["attn_entropy_reg"]
-    return loss
+        w = blk.last_attn
+        if w is None:
+            continue
+        p = w.clamp_min(1e-9)
+        h = -(p * p.log()).sum(dim=-1).mean()  # 熵在最后一维（注意力分布维）求和
+        ent = h if ent is None else ent + h
+        n += 1
+    if ent is None:
+        return torch.tensor(0.0)
+    return -PREREG["attn_entropy_reg"] * (ent / n)
+
+
+def _train_epochs(model, X_t, y_t, tf_t, idx, lossf):
+    """单模型在给定训练索引上训练 PREREG['epochs'] 轮（batch 内 SGD 洗牌不算时序泄漏）。"""
+    import torch
+
+    opt = torch.optim.Adam(model.parameters(), lr=PREREG["lr"])
+    for _ep in range(PREREG["epochs"]):
+        model.train()
+        perm = np.random.permutation(len(idx))
+        for s in range(0, len(perm), PREREG["batch_size"]):
+            bidx = idx[perm[s : s + PREREG["batch_size"]]]
+            logits = model(X_t[bidx], tf_t[bidx])
+            loss = lossf(logits, y_t[bidx]) + attn_entropy_loss(model)
+            # A5：NaN 防护——出现非有限损失立即失败，禁止带病训练（v1 全网 NaN 教训）
+            if not torch.isfinite(loss):
+                raise RuntimeError("[FAIL] 训练损失非有限（NaN/Inf），中止——检查特征 NaN 与标准化")
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+
+
+def _eval_model(model, X_t, tf_t, y_true, ret_true):
+    """评估：准确率 + direction IC（P(UP) 与未来收益的 Spearman）。"""
+    import torch
+    from scipy.stats import spearmanr
+
+    model.eval()
+    with torch.no_grad():
+        lv = model(X_t, tf_t)
+        pred = lv.argmax(dim=1).numpy()
+        prob_up = torch.softmax(lv, dim=1)[:, 1].numpy()
+    acc = float(np.mean(pred == y_true))
+    m = ~np.isnan(ret_true)
+    ic = float(spearmanr(prob_up[m], ret_true[m]).statistic) if m.sum() >= 10 else 0.0
+    if ic != ic:
+        ic = 0.0
+    return acc, ic, pred
 
 
 def walk_forward_train(X, y, ret, meta, feat_cols):
-    """Walk-Forward 5 折：按时间顺序切折，禁止随机打乱；最近 20% 封板纯验证。"""
+    """Walk-Forward 5 折（A2 修复：真扩张窗，仅用历史训练，禁止随机打乱时序）；
+    最近 20% 封板纯验证（由独立最终模型评估，A3：每折模型全新初始化）。"""
     import torch
     import torch.nn as nn
-    from scipy.stats import spearmanr
 
-    torch.manual_seed(PREREG["seed"])
     np.random.seed(PREREG["seed"])
 
     n = len(X)
@@ -202,100 +265,82 @@ def walk_forward_train(X, y, ret, meta, feat_cols):
     X_hold, y_hold, ret_hold = X[-n_test:], y[-n_test:], ret[-n_test:]
     X_tr, y_tr, ret_tr = X[:-n_test], y[:-n_test], ret[:-n_test]
 
-    # 特征标准化（仅用训练段统计量，防泄漏）
-    mu = X_tr.reshape(-1, X.shape[2]).mean(axis=0)
-    sd = X_tr.reshape(-1, X.shape[2]).std(axis=0) + 1e-8
-    X_tr = (X_tr - mu) / sd
-    X_hold = (X_hold - mu) / sd
+    # 特征标准化（仅用训练段统计量，防泄漏；A5：NaN 列用 nanmean/nanstd，残余 NaN→0=列均值中性值）
+    flat = X_tr.reshape(-1, X.shape[2])
+    mu = np.nanmean(flat, axis=0)
+    sd = np.nanstd(flat, axis=0) + 1e-8
+    mu = np.where(np.isfinite(mu), mu, 0.0)
+    sd = np.where(np.isfinite(sd), sd, 1.0)
+    X_tr = np.nan_to_num((X_tr - mu) / sd, nan=0.0)
+    X_hold = np.nan_to_num((X_hold - mu) / sd, nan=0.0)
+    # A5：入口硬校验——v1 因 1W/1H 屏 ma200 列全 NaN 致全网权重 NaN，禁止复发
+    assert np.isfinite(X_tr).all() and np.isfinite(X_hold).all(), "[FAIL] 特征含非有限值"
 
     tf_map = {"1W": 0, "1D": 1, "1H": 2}
-    tf_tr = (
-        np.array([tf_map[m["timeframe"]] for m in meta])[:-n_test][
-            np.argsort([m["ts"] for m in meta][:-n_test])
-        ]
-        if False
-        else None
-    )
-    # 简化：tf 索引按样本顺序构造（order 已排序，重新对齐）
     meta_sorted = [meta[i] for i in order]
     tf_all = np.array([tf_map[m["timeframe"]] for m in meta_sorted], dtype=np.int64)
     tf_tr, tf_hold = tf_all[:-n_test], tf_all[-n_test:]
 
-    model = build_model(X.shape[2])
-    n_params = count_params(model)
+    # 参数量红线校验（用临时模型）
+    probe = build_model(X.shape[2])
+    n_params = count_params(probe)
+    del probe
     if n_params > PREREG["max_params"]:
         print(f"[REJECT] 参数量 {n_params} 超过 1M 红线")
         return None
 
     folds = PREREG["walk_forward_folds"]
-    fold_results = []
     Xtr_t = torch.from_numpy(X_tr)
-    ytr_t = torch.from_numpy(y_tr).long()
     tftr_t = torch.from_numpy(tf_tr)
-    opt = torch.optim.Adam(model.parameters(), lr=PREREG["lr"])
-    lossf = nn.CrossEntropyLoss()
 
-    # Walk-Forward：训练段内按时间切 5 折，末折为验证折滚动
-    fold_edges = np.linspace(0, len(X_tr), folds + 1).astype(int)
-    for k in range(folds):
-        lo, hi = fold_edges[k], fold_edges[k + 1]
-        # 除当前折外训练，当前折验证（时序滚动）
-        idx = np.arange(len(X_tr))
-        tr_idx = idx[(idx < lo) | (idx >= hi)]
-        va_idx = idx[lo:hi]
+    def _make_lossf(y_seg):
+        # B3：类别权重 = 当前（折）训练段逆频率，时序安全
+        cnt = np.bincount(y_seg, minlength=PREREG["n_classes"]).astype(np.float64)
+        w = len(y_seg) / (PREREG["n_classes"] * np.maximum(cnt, 1.0))
+        return nn.CrossEntropyLoss(weight=torch.from_numpy(w).float())
+
+    # A2 真 Walk-Forward 扩张窗：训练段切成 folds+1 段，
+    # 折 k 用 [0, edges[k]) 训练、[edges[k], edges[k+1]) 验证——仅用验证段之前的历史
+    edges = np.linspace(0, len(X_tr), folds + 2).astype(int)
+    fold_results = []
+    for k in range(1, folds + 1):
+        tr_idx = np.arange(0, edges[k])
+        va_idx = np.arange(edges[k], edges[k + 1])
         if len(tr_idx) < 50 or len(va_idx) < 10:
             continue
-        # 重置头部权重（保留编码器主干，模拟滚动重训骨架）
-        for ep in range(PREREG["epochs"]):  # noqa: B007
-            model.train()
-            perm = np.random.permutation(len(tr_idx))
-            for s in range(0, len(perm), PREREG["batch_size"]):
-                bidx = tr_idx[perm[s : s + PREREG["batch_size"]]]
-                xb = Xtr_t[bidx]
-                tfb = tftr_t[bidx]
-                yb = ytr_t[bidx]
-                logits = model(xb, tfb)
-                loss = lossf(logits, yb) + attn_entropy_loss(model)
-                opt.zero_grad()
-                loss.backward()
-                opt.step()
-        model.eval()
-        with torch.no_grad():
-            lv = model(Xtr_t[va_idx], tftr_t[va_idx])
-            pred = lv.argmax(dim=1).numpy()
-            prob_up = torch.softmax(lv, dim=1)[:, 1].numpy()
-            acc = float(np.mean(pred == y_tr[va_idx]))
-            m = ~np.isnan(ret_tr[va_idx])
-            ic = float(spearmanr(prob_up[m], ret_tr[va_idx][m]).statistic) if m.sum() >= 10 else 0.0
-            if ic != ic:
-                ic = 0.0
+        # A3：每折全新初始化模型（固定种子保证可复现），禁止跨折累计训练
+        torch.manual_seed(PREREG["seed"])
+        model = build_model(X.shape[2])
+        _train_epochs(
+            model, Xtr_t, torch.from_numpy(y_tr).long(), tftr_t, tr_idx, _make_lossf(y_tr[tr_idx])
+        )
+        acc, ic, _pred = _eval_model(
+            model, Xtr_t[va_idx], tftr_t[va_idx], y_tr[va_idx], ret_tr[va_idx]
+        )
         fold_results.append(
             {
-                "fold": k,
+                "fold": k - 1,
                 "train_n": int(len(tr_idx)),
                 "valid_n": int(len(va_idx)),
                 "accuracy": acc,
                 "direction_ic": ic,
             }
         )
-        print(f"  [fold {k}] train={len(tr_idx)} valid={len(va_idx)} acc={acc:.4f} ic={ic:.4f}")
+        print(f"  [fold {k-1}] train={len(tr_idx)} valid={len(va_idx)} acc={acc:.4f} ic={ic:.4f}")
 
-    # 封板纯验证段评估
-    model.eval()
-    with torch.no_grad():
-        Xh_t = torch.from_numpy(X_hold)
-        tfh_t = torch.from_numpy(tf_hold)
-        lv = model(Xh_t, tfh_t)
-        pred = lv.argmax(dim=1).numpy()
-        prob_up = torch.softmax(lv, dim=1)[:, 1].numpy()
-        hold_acc = float(np.mean(pred == y_hold))
-        m = ~np.isnan(ret_hold)
-        hold_ic = float(spearmanr(prob_up[m], ret_hold[m]).statistic) if m.sum() >= 10 else 0.0
-        if hold_ic != hold_ic:
-            hold_ic = 0.0
+    # 最终模型：用全部训练段（80%）重训，用于封板纯验证与落盘
+    torch.manual_seed(PREREG["seed"])
+    final_model = build_model(X.shape[2])
+    all_idx = np.arange(len(X_tr))
+    _train_epochs(
+        final_model, Xtr_t, torch.from_numpy(y_tr).long(), tftr_t, all_idx, _make_lossf(y_tr)
+    )
+    hold_acc, hold_ic, pred = _eval_model(
+        final_model, torch.from_numpy(X_hold), torch.from_numpy(tf_hold), y_hold, ret_hold
+    )
 
     return {
-        "model": model,
+        "model": final_model,
         "n_params": n_params,
         "fold_results": fold_results,
         "wf_accuracy": (
@@ -352,7 +397,12 @@ def main() -> int:
     if result is None:
         return 1
 
-    # 4) 基线对照与晋级判定
+    # 4) 基线对照与晋级判定（C1：同口径基线 baseline_metrics_v2.json）
+    if not os.path.exists(BASELINE_PATH):
+        print(
+            "[REJECT] 同口径基线缺失，请先运行 p6_e1b_aligned_baseline.py 生成 baseline_metrics_v2.json"
+        )
+        return 1
     with open(BASELINE_PATH, "r", encoding="utf-8") as f:
         baseline = json.load(f)
     b_acc = float(baseline["accuracy"])
@@ -387,12 +437,13 @@ def main() -> int:
         },
         "holdout": result["holdout"],
         "baseline_comparison": {
+            "baseline_source": "baseline_metrics_v2.json（C1 同口径：同数据/同标签/同 Walk-Forward 切分）",
             "baseline_accuracy": b_acc,
             "baseline_direction_ic": b_ic,
             "wf_accuracy": result["wf_accuracy"],
             "wf_direction_ic": result["wf_direction_ic"],
             "e2_passed": passed,
-            "rule": "SPEC 红线 3：Walk-Forward 准确率与方向 IC 均不低于基线方可晋级 E3",
+            "rule": "SPEC 红线 3（C1 口径）：Walk-Forward 准确率与方向 IC 均不低于同口径基线方可晋级 E3",
         },
         "note": "E2 训练记录：输出为趋势判别语义输入与建议，不产生交易信号；交易决策归 23 系统三步门禁",
     }

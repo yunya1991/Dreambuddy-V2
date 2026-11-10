@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-11-10T18:21:26.068352+00:00",
+  "module": "P6 C1 同口径基线（LightGBM，对齐 E2 数据/标签/切分）",
+  "protocol": {
+    "data": "token_sequence.parquet v2（3 资产 × 3 屏），标签按屏阈值（B1），前瞻窗口同 PREREG",
+    "split": "时间排序 → 最近 20% 封板 → 训练段扩张窗 5 折（与 E2 逐边一致）",
+    "lgb_params": {
+      "n_estimators": 200,
+      "num_leaves": 31,
+      "learning_rate": 0.05,
+      "class_weight": "balanced",
+      "random_state": 42,
+      "verbose": -1
+    },
+    "nan_policy": "LightGBM 原生处理（树模型对单调变换不变，不标准化）"
+  },
+  "samples": {
+    "windows": 2307,
+    "holdout": 461
+  },
+  "walk_forward": {
+    "folds": [
+      {
+        "fold": 0,
+        "train_n": 307,
+        "valid_n": 308,
+        "accuracy": 0.32792207792207795,
+        "direction_ic": 0.07107597819466514
+      },
+      {
+        "fold": 1,
+        "train_n": 615,
+        "valid_n": 308,
+        "accuracy": 0.35714285714285715,
+        "direction_ic": 0.14797210632256963
+      },
+      {
+        "fold": 2,
+        "train_n": 923,
+        "valid_n": 307,
+        "accuracy": 0.31921824104234525,
+        "direction_ic": -0.2858996722763728
+      },
+      {
+        "fold": 3,
+        "train_n": 1230,
+        "valid_n": 308,
+        "accuracy": 0.3051948051948052,
+        "direction_ic": -0.030887742282068836
+      },
+      {
+        "fold": 4,
+        "train_n": 1538,
+        "valid_n": 308,
+        "accuracy": 0.39935064935064934,
+        "direction_ic": 0.05566496373238729
+      }
+    ],
+    "mean_accuracy": 0.341765726130547,
+    "mean_direction_ic": -0.008414873261763914
+  },
+  "holdout": {
+    "n": 461,
+    "accuracy": 0.3926247288503254,
+    "direction_ic": 0.35499325723790504
+  },
+  "accuracy": 0.341765726130547,
+  "direction_ic": -0.008414873261763914,
+  "note": "C1 同口径基线：替代 E1 旧口径（BTC 单资产日线 32 评估样本 acc 0.75），作为红线 3 的比较对象；不产生交易信号"
+}

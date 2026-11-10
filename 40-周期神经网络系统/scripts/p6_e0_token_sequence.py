@@ -42,7 +42,9 @@ META_OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "token_
 SYMBOLS = ["BTC", "ETH", "SOL"]  # 跨资产共享样本（SPEC 风险 7a）
 SCREENS = {"1W": "weekly", "1D": "daily", "1H": "hourly"}  # 三屏
 CANDLE_LIMIT = 300  # 每屏每资产 K 线数
-FEATURE_VERSION = "classic_indicators_v1+ma200_v1"  # 特征版本血缘
+# v2（2026-11-11，PROPOSAL-E2-PREREG-CHANGE-v0.1 B2 项用户拍板）：
+# 绝对价位/绝对成交量特征做无量纲化，消除"学价格水平"捷径与跨时间分布漂移
+FEATURE_VERSION = "classic_indicators_v2_dimensionless+ma200_v1"  # 特征版本血缘
 
 
 def _ma200_precompute(df: pd.DataFrame) -> pd.DataFrame:
@@ -59,6 +61,30 @@ def _ma200_precompute(df: pd.DataFrame) -> pd.DataFrame:
     out["ma200_dist_pct"] = (close - ma200) / (ma200 + 1e-9) * 100.0
     out["above_ma200"] = (close > ma200).astype(float)
     out["ma50_ma100_state"] = np.sign(ma50 - ma100).where(ma50.notna() & ma100.notna(), 0.0)
+    return out
+
+
+def _dimensionless_transform(feats: pd.DataFrame, ohlcv: pd.DataFrame) -> pd.DataFrame:
+    """B2 无量纲化变换（PROPOSAL-E2-PREREG-CHANGE-v0.1，2026-11-11 用户拍板）。
+    绝对价位特征 → 对收盘价的相对距离（%）；绝对成交量特征 → 相对流量强度。
+    已无量纲的指标（rsi/adx/willr/cci/ma200 三列）原样保留。
+    """
+    close = ohlcv["close"].astype(float)
+    vol = ohlcv["volume"].astype(float)
+    out = pd.DataFrame(index=feats.index)
+    for c in ("sma_10", "sma_20", "sma_50", "ema_12"):
+        out[c + "_pct"] = (feats[c] / close - 1.0) * 100.0
+    bb_w = feats["bb_upper"] - feats["bb_lower"]
+    out["bb_width_pct"] = bb_w / close * 100.0
+    out["bb_percent_b"] = (close - feats["bb_lower"]) / (bb_w + 1e-9)
+    out["macd_pct"] = feats["macd"] / close * 100.0
+    out["macd_signal_pct"] = feats["macd_signal"] / close * 100.0
+    out["atr_14_pct"] = feats["atr_14"] / close * 100.0
+    # OBV：14 期净流量 / 同期均量（无量纲流强）
+    out["obv_flow_14"] = feats["obv"].diff(14) / (vol.rolling(14).mean() * 14 + 1e-9)
+    out["dc_width_pct"] = feats["dc_width"] / close * 100.0
+    for c in ("rsi_14", "adx_14", "willr_14", "cci_20"):
+        out[c] = feats[c]
     return out
 
 
@@ -89,6 +115,9 @@ def main() -> int:
     for sym in SYMBOLS:
         for bar, screen_name in SCREENS.items():
             candles = fetch_candles(f"{sym}-USDT", bar, CANDLE_LIMIT)
+            if not candles:
+                print(f"[WARN] {sym} {bar}: 无 K 线数据，跳过")
+                continue
             df = _to_ohlcv(candles)
             if df is None or len(df) < 60:
                 print(f"[WARN] {sym} {bar}: K 线不足（{0 if df is None else len(df)}），跳过")
@@ -100,6 +129,9 @@ def main() -> int:
             except Exception as e:
                 print(f"[WARN] {sym} {bar}: 特征计算失败 {e}，跳过")
                 continue
+
+            # B2 无量纲化（v2 特征版本）
+            feats = _dimensionless_transform(feats, df)
 
             token = pd.DataFrame(index=df.index)
             token["symbol"] = sym

@@ -1,0 +1,101 @@
+{
+  "generated_at": "2026-11-10T18:22:59.662296+00:00",
+  "module": "P6 E2 拼接式 Encoder 训练（Walk-Forward 5 折）",
+  "prereg": {
+    "n_layers": 2,
+    "d_model": 64,
+    "n_heads": 4,
+    "ffn_mult": 4,
+    "n_classes": 3,
+    "max_params": 1000000,
+    "walk_forward_folds": 5,
+    "seq_len": 32,
+    "label_horizon": {
+      "1W": 4,
+      "1D": 7,
+      "1H": 24
+    },
+    "label_threshold_pct": {
+      "1W": 7.0,
+      "1D": 2.0,
+      "1H": 0.75
+    },
+    "attn_entropy_reg": 0.001,
+    "class_weight": "balanced_train_fold",
+    "feature_version_required": "classic_indicators_v2_dimensionless+ma200_v1",
+    "lr": 0.001,
+    "epochs": 30,
+    "batch_size": 64,
+    "test_ratio": 0.2,
+    "seed": 42
+  },
+  "samples": {
+    "windows": 2307,
+    "holdout": 461
+  },
+  "model": {
+    "n_params": 105795,
+    "within_1m_limit": true
+  },
+  "walk_forward": {
+    "folds": [
+      {
+        "fold": 0,
+        "train_n": 307,
+        "valid_n": 308,
+        "accuracy": 0.3181818181818182,
+        "direction_ic": 0.16778632644671038
+      },
+      {
+        "fold": 1,
+        "train_n": 615,
+        "valid_n": 308,
+        "accuracy": 0.36363636363636365,
+        "direction_ic": 0.1090747271766215
+      },
+      {
+        "fold": 2,
+        "train_n": 923,
+        "valid_n": 307,
+        "accuracy": 0.3485342019543974,
+        "direction_ic": 0.02919444354585186
+      },
+      {
+        "fold": 3,
+        "train_n": 1230,
+        "valid_n": 308,
+        "accuracy": 0.42857142857142855,
+        "direction_ic": 0.19338742911684945
+      },
+      {
+        "fold": 4,
+        "train_n": 1538,
+        "valid_n": 308,
+        "accuracy": 0.36038961038961037,
+        "direction_ic": 0.2528029827292975
+      }
+    ],
+    "mean_accuracy": 0.3638626845467236,
+    "mean_direction_ic": 0.15044918180306616
+  },
+  "holdout": {
+    "n": 461,
+    "accuracy": 0.3297180043383948,
+    "direction_ic": 0.38104334597779854,
+    "class_dist": {
+      "UP": 307,
+      "DOWN": 39,
+      "NEUTRAL": 115
+    }
+  },
+  "baseline_comparison": {
+    "baseline_source": "baseline_metrics_v2.json（C1 同口径：同数据/同标签/同 Walk-Forward 切分）",
+    "baseline_accuracy": 0.341765726130547,
+    "baseline_direction_ic": -0.008414873261763914,
+    "wf_accuracy": 0.3638626845467236,
+    "wf_direction_ic": 0.15044918180306616,
+    "e2_passed": true,
+    "rule": "SPEC 红线 3（C1 口径）：Walk-Forward 准确率与方向 IC 均不低于同口径基线方可晋级 E3"
+  },
+  "note": "E2 训练记录：输出为趋势判别语义输入与建议，不产生交易信号；交易决策归 23 系统三步门禁"
+}
