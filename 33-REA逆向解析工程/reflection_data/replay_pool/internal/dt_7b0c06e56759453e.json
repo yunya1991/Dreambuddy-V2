@@ -1,0 +1,364 @@
+{
+  "tree_id": "dt_7b0c06e56759453e",
+  "task": {
+    "target": "33-REA逆向解析工程",
+    "task_type": "l1_loop",
+    "feature": "L1 无大模型闭环自检"
+  },
+  "nodes": [
+    {
+      "node_id": "dn_9f2351b5de344f38",
+      "parent_id": null,
+      "action": {
+        "analyzer": "init",
+        "params": {
+          "target": "33-REA逆向解析工程"
+        }
+      },
+      "evidence_refs": [],
+      "poe_score": 0.0,
+      "cost": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_1cfaa6a561ad4409",
+          "parent_id": "dn_9f2351b5de344f38",
+          "action": {
+            "analyzer": "acceptance_gate",
+            "params": {
+              "skill": "dream-acceptance-verify"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "l1_loop/self_check",
+              "detail": "步骤 acceptance_gate 自检 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_56fccb04b9194c91",
+              "parent_id": "dn_1cfaa6a561ad4409",
+              "action": {
+                "analyzer": "code_commit",
+                "params": {
+                  "commit": "l1loop001"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "l1_loop/self_check",
+                  "detail": "步骤 code_commit 自检 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_7773c372a2f64751",
+                  "parent_id": "dn_56fccb04b9194c91",
+                  "action": {
+                    "analyzer": "doc_sync",
+                    "params": {
+                      "scope": "README+INDEX"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "source": "l1_loop/self_check",
+                      "detail": "步骤 doc_sync 自检 PASS"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [
+                    {
+                      "node_id": "dn_19eca8b5facc48f2",
+                      "parent_id": "dn_7773c372a2f64751",
+                      "action": {
+                        "analyzer": "cognitive_record",
+                        "params": {
+                          "vm": "L1-LOOP"
+                        }
+                      },
+                      "evidence_refs": [
+                        {
+                          "source": "l1_loop/self_check",
+                          "detail": "步骤 cognitive_record 自检 PASS"
+                        }
+                      ],
+                      "poe_score": 0.8,
+                      "cost": {
+                        "calls": 1,
+                        "tokens": 0
+                      },
+                      "children_record": [],
+                      "created_at": 1794285783753
+                    }
+                  ],
+                  "created_at": 1794285783753
+                }
+              ],
+              "created_at": 1794285783753
+            }
+          ],
+          "created_at": 1794285783753
+        }
+      ],
+      "created_at": 1794285783753
+    },
+    {
+      "node_id": "dn_1cfaa6a561ad4409",
+      "parent_id": "dn_9f2351b5de344f38",
+      "action": {
+        "analyzer": "acceptance_gate",
+        "params": {
+          "skill": "dream-acceptance-verify"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "l1_loop/self_check",
+          "detail": "步骤 acceptance_gate 自检 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_56fccb04b9194c91",
+          "parent_id": "dn_1cfaa6a561ad4409",
+          "action": {
+            "analyzer": "code_commit",
+            "params": {
+              "commit": "l1loop001"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "l1_loop/self_check",
+              "detail": "步骤 code_commit 自检 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_7773c372a2f64751",
+              "parent_id": "dn_56fccb04b9194c91",
+              "action": {
+                "analyzer": "doc_sync",
+                "params": {
+                  "scope": "README+INDEX"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "l1_loop/self_check",
+                  "detail": "步骤 doc_sync 自检 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [
+                {
+                  "node_id": "dn_19eca8b5facc48f2",
+                  "parent_id": "dn_7773c372a2f64751",
+                  "action": {
+                    "analyzer": "cognitive_record",
+                    "params": {
+                      "vm": "L1-LOOP"
+                    }
+                  },
+                  "evidence_refs": [
+                    {
+                      "source": "l1_loop/self_check",
+                      "detail": "步骤 cognitive_record 自检 PASS"
+                    }
+                  ],
+                  "poe_score": 0.8,
+                  "cost": {
+                    "calls": 1,
+                    "tokens": 0
+                  },
+                  "children_record": [],
+                  "created_at": 1794285783753
+                }
+              ],
+              "created_at": 1794285783753
+            }
+          ],
+          "created_at": 1794285783753
+        }
+      ],
+      "created_at": 1794285783753
+    },
+    {
+      "node_id": "dn_56fccb04b9194c91",
+      "parent_id": "dn_1cfaa6a561ad4409",
+      "action": {
+        "analyzer": "code_commit",
+        "params": {
+          "commit": "l1loop001"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "l1_loop/self_check",
+          "detail": "步骤 code_commit 自检 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_7773c372a2f64751",
+          "parent_id": "dn_56fccb04b9194c91",
+          "action": {
+            "analyzer": "doc_sync",
+            "params": {
+              "scope": "README+INDEX"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "l1_loop/self_check",
+              "detail": "步骤 doc_sync 自检 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [
+            {
+              "node_id": "dn_19eca8b5facc48f2",
+              "parent_id": "dn_7773c372a2f64751",
+              "action": {
+                "analyzer": "cognitive_record",
+                "params": {
+                  "vm": "L1-LOOP"
+                }
+              },
+              "evidence_refs": [
+                {
+                  "source": "l1_loop/self_check",
+                  "detail": "步骤 cognitive_record 自检 PASS"
+                }
+              ],
+              "poe_score": 0.8,
+              "cost": {
+                "calls": 1,
+                "tokens": 0
+              },
+              "children_record": [],
+              "created_at": 1794285783753
+            }
+          ],
+          "created_at": 1794285783753
+        }
+      ],
+      "created_at": 1794285783753
+    },
+    {
+      "node_id": "dn_7773c372a2f64751",
+      "parent_id": "dn_56fccb04b9194c91",
+      "action": {
+        "analyzer": "doc_sync",
+        "params": {
+          "scope": "README+INDEX"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "l1_loop/self_check",
+          "detail": "步骤 doc_sync 自检 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [
+        {
+          "node_id": "dn_19eca8b5facc48f2",
+          "parent_id": "dn_7773c372a2f64751",
+          "action": {
+            "analyzer": "cognitive_record",
+            "params": {
+              "vm": "L1-LOOP"
+            }
+          },
+          "evidence_refs": [
+            {
+              "source": "l1_loop/self_check",
+              "detail": "步骤 cognitive_record 自检 PASS"
+            }
+          ],
+          "poe_score": 0.8,
+          "cost": {
+            "calls": 1,
+            "tokens": 0
+          },
+          "children_record": [],
+          "created_at": 1794285783753
+        }
+      ],
+      "created_at": 1794285783753
+    },
+    {
+      "node_id": "dn_19eca8b5facc48f2",
+      "parent_id": "dn_7773c372a2f64751",
+      "action": {
+        "analyzer": "cognitive_record",
+        "params": {
+          "vm": "L1-LOOP"
+        }
+      },
+      "evidence_refs": [
+        {
+          "source": "l1_loop/self_check",
+          "detail": "步骤 cognitive_record 自检 PASS"
+        }
+      ],
+      "poe_score": 0.8,
+      "cost": {
+        "calls": 1,
+        "tokens": 0
+      },
+      "children_record": [],
+      "created_at": 1794285783753
+    }
+  ],
+  "provenance": "internal",
+  "source_label": "",
+  "weight": 1.0,
+  "created_at": 1794285783753
+}

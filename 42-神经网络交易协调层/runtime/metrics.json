@@ -1,19 +1,20 @@
 {
-  "generated_at": "2026-11-10T05:27:16.136680+00:00",
-  "signal_count": 19,
+  "generated_at": "2026-11-10T12:00:02.581051+00:00",
+  "signal_count": 45,
   "rejected_count": 0,
   "source_counts": {
-    "23-contradiction": 1,
-    "11-bcrm": 3,
-    "bdsm": 10,
     "43-strategic": 1,
+    "11-bcrm-tactical": 26,
     "40-cycle": 1,
     "40-divergence": 1,
     "40-resonance": 1,
-    "strategic_extension": 1
+    "strategic_extension": 1,
+    "23-contradiction": 1,
+    "11-bcrm": 3,
+    "bdsm": 10
   },
   "rejected_reasons": [],
-  "expiring_within_1h": 0,
+  "expiring_within_1h": 1,
   "alert": {
     "empty_bus": false
   }
