@@ -9,9 +9,11 @@ shadow 模式只产出审计信号，不执行任何交易。
 - 50_KILL_SWITCH=1：跳过决策，记录 skipped 后正常退出
 - 总线无信号：记录 no_evidences 后正常退出
 - 决策结果原子写 runtime/shadow/latest.json；摘要追加 shadow_history.jsonl（滚动上限 500）
+- 决策追加 runtime/decisions.jsonl（M3-2 账本）与 runtime/audit/decisions.jsonl（审计）
 
 用法：python3 tools/run_shadow.py [--bus-state PATH] [--out-dir PATH]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,9 +31,11 @@ _42_ROOT = _REPO_ROOT / "42-神经网络交易协调层"
 if str(_50_ROOT) not in sys.path:
     sys.path.insert(0, str(_50_ROOT))
 
+from adapters.audit_logger import log_decision  # noqa: E402
 from adapters.bus_reader import load_evidences  # noqa: E402
 from adapters.constraint_loader import load_constraints  # noqa: E402
 from adapters.execution_writer import is_kill_switch_on  # noqa: E402
+from core.decision import record_decision  # noqa: E402
 from core.shadow_decision import make_shadow_decision  # noqa: E402
 
 SHADOW_HISTORY_CAP = 500
@@ -92,7 +96,9 @@ def run(bus_state: Path, out_dir: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="50 shadow 决策调度入口")
-    parser.add_argument("--bus-state", default=str(DEFAULT_BUS_STATE), help="42 bus_state.json 路径")
+    parser.add_argument(
+        "--bus-state", default=str(DEFAULT_BUS_STATE), help="42 bus_state.json 路径"
+    )
     parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR), help="shadow 结果输出目录")
     args = parser.parse_args()
 
@@ -119,6 +125,14 @@ def main() -> int:
             }
         )
     _append_history(out_dir / "shadow_history.jsonl", summary)
+
+    if isinstance(decision, dict):
+        # 决策账本 + 审计落盘（fail-open：写失败不影响 shadow 主流程）
+        try:
+            record_decision(decision)
+            log_decision(decision)
+        except Exception:  # noqa: BLE001
+            pass
 
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
