@@ -32,11 +32,18 @@
 > **[docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md)**（🟢 v1.0 代码核查完成，2026-11-10）
 > 该文件只做编排与契约汇编，各段定义权仍归 9/33/39/40/47/49/50 各自 SPEC；含 3 项口径冲突（C1-C3）与 8 项 gap，实施前先看 §7/§8。
 
+## 🔗 D2/D3 双链路索引（特别标识 · D2-D3-CHAIN-SSOT）
+
+> D2 技术架构涌现（离线静态证据：架构复原/生成）与 D3 意图涌现（在线行为序列：意图预测/知识组合）的独立技术文档，与 D1 FULL-CHAIN 并列、不混写：
+> **[docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md](./docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md)**（🟢 v0.1 代码核查完成，2026-11-11）
+> 含两条链路的端到端数据流、契约、度量、当前 verdict 与 P0-P2 缺口；X-A 真实联合 A/B 当前 `deferred`，只能表述为“跨域联合收益（代理）”。
+
 ## 文档清单
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
 | 🧭 [docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md) | **全链路总架构（FULL-CHAIN-SSOT）**：训练侧/推理侧/执行侧/回流侧四段数据流、六类契约、三闭环、口径冲突 C1-C3、gap 表 | 🟢 v1.0（2026-11-10 代码核查完成：29 核查点 19✅/4🟡/6⬜） |
+| 🔗 [docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md](./docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md) | **D2/D3 双链路（D2-D3-CHAIN-SSOT）**：D2 架构复原/生成链路、D3 意图预测/知识组合链路、数据流、契约、度量、D1/D2/D3 三链差异、X-A 代理现状、P0-P2 缺口 | 🟢 v0.1（2026-11-11 代码核查）：D2-A/D2-B/D3-A/D3-B 均 formal `candidate`；X-A 为代理 `candidate`，`XA-REAL` deferred；D2-A 人工盲评、D2-B 需求单回填、D3 在线 A/B 为 P0 缺口 |
 | [docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md](./docs/tech/SPEC-EMERGENCE-EVOLUTION-v0.1.md) | 涌现评估 + 判据 + 缺口 + Phase E0-E6 实施路径 | 🟡 v0.6：实验进度对齐（2026-11-07）——E0-E6 全部至少落盘；E1 shadow 探针 runner 已部署 systemd 常驻 + 积累达标自动放行开关；E2 评估器升级多源可插拔（v2_multisrc）；E3 滚动复测 e3_candidate_weak；E5 强原语复测 inconclusive 方向转正；E4b 动作侧 active_reflection_id 补齐；E6 需求单 5 张归一化落盘（1 resolved / 4 open，2026-11-09 复核）；v0.6 增补草案：NN 反馈网关 + 三维涌现（见 3D 子 Spec） |
 | [docs/tech/SPEC-EMERGENCE-3D-v0.1.md](./docs/tech/SPEC-EMERGENCE-3D-v0.1.md) | 三维涌现子 Spec（D1 交易 / D2 工程 / D3 意图）：A/B/C × D1/D2/D3 判据矩阵、统一度量/标签 schema、D2-A/D2-B/D3-A/D3-B/跨域迁移实验协议、P0-P4 路线、六维评审 | 🟡 v0.4 讨论稿（2026-11-09，内部复审修改后接受，待外部复审）：拟并入 48 SPEC v0.6；v0.1 六维评审**修改后接受**（见 §11.1-11.3），外部评审**需修改**（§11.4）→ v0.2 修订 + v0.3 整合复核（§4.5.3 与 §1.2 对齐、数据快照刷新、sessions 366→1072）+ v0.4 外部成熟经验整合（附录 E 采纳 23 条 + Ω 协同复核通道 + E5 检验升级）；v0.4 复审修订见 §11.5；P0-1 OOD 强制点复审确认缺失（见 reviews/）；只含 Spec/协议，不含代码 |
 | [docs/tech/REVIEW-CHECKLIST-v0.1.md](./docs/tech/REVIEW-CHECKLIST-v0.1.md) | SPEC 评审六维检查清单（引用存在性/数据健康度/版本一致性/存量盘点/门禁强制等级/可观测性） | ✅ v0.1：SPEC 升版评审必跑 |
