@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dreambuddy/schemas/plancard.schema.json",
+  "title": "PlanCard",
+  "description": "52-LobeHub 协议集成 R8：辩论胜负方案交接与蒸馏桥产物共用结构化载体",
+  "type": "object",
+  "required": ["id", "intent", "plan_steps", "validation"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^pc-" },
+    "intent": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "context_refs": { "type": "array", "items": { "type": "string" } },
+    "plan_steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["step", "action", "tool"],
+        "properties": {
+          "step": { "type": "integer", "minimum": 1 },
+          "action": { "type": "string", "minLength": 1 },
+          "tool": {
+            "type": "string",
+            "pattern": "^l0\\.[a-z0-9_-]+\\.mcp\\.[a-z0-9_]+$",
+            "description": "必须引用 47 registry 已注册工具，格式 l0.<shell>.mcp.<tool>"
+          },
+          "args_hint": { "type": "object" }
+        }
+      }
+    },
+    "evidence_refs": { "type": "array", "items": { "type": "string" } },
+    "risk_flags": { "type": "array", "items": { "type": "string" } },
+    "cost_estimate": {
+      "type": "object",
+      "properties": {
+        "tokens": { "type": "integer", "minimum": 0 },
+        "tool_calls": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "expected_outcome": { "type": "string", "maxLength": 1000 },
+    "validation": {
+      "type": "object",
+      "required": ["evaluator_refs"],
+      "properties": {
+        "evaluator_refs": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^45\\.[a-z0-9_]+@\\d+\\.\\d+\\.\\d+$" }
+        },
+        "acceptance_checks": { "type": "array", "items": { "type": "string" } },
+        "outcome": { "type": "string", "description": "执行后回填" }
+      }
+    },
+    "debate_meta": {
+      "type": "object",
+      "properties": {
+        "debate_id": { "type": "string" },
+        "side": { "enum": ["A", "B"] },
+        "verdict": { "enum": ["WIN", "LOSE", "INCONCLUSIVE"] }
+      }
+    }
+  }
+}
