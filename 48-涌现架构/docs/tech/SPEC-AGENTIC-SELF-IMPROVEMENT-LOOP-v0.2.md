@@ -1,6 +1,6 @@
 # SPEC — Agentic Self-Improvement Loop (ASIL) v0.2
 
-> **状态**：🟢 评审通过（2026-11-10 Devil's Advocate 攻击 → 7 漏洞 → 全部修复）· **v0.2.1 已回写实施状态（见 §0.5）**
+> **状态**：🟢 评审通过（2026-11-10 Devil's Advocate 攻击 → 7 漏洞 → 全部修复）· **v0.2.2 已回写 D2 扩样与分类型结论（见 §0.5）**
 > **归属**：48-涌现架构（叠加层，不替代 v0.5 Phase E0-E6 与 v0.5 三维 D1/D2/D3）
 > **上游**：48 v0.5 Phase E0-E6 · 48 v0.5 三维 D1/D2/D3 · 35-广义认知系统（recall/record/verify） · 47-MCP管理系统 · 23-四层闭环
 > **下游**：ASIL-Orchestrator（编排器 MVP） · 48 NN 反馈网关 v0.1 · 33-REA 做梦器 · 45-评测系统
@@ -66,13 +66,16 @@ SPEC 引入三级就绪标记，避免笼统的 ✅/❌ 造成乐观假设：
 | P0-2 统计门禁 | ✅ 已落地 | `asil/stat_gate.py`：配对 bootstrap CI + Holm 校正；三段切分 train 547 / val 328 / holdout 217；holdout 仅判定不择优（有测试锁死）；首轮 family=0（候选全被 val 筛掉） |
 | D2 Wilson 区间 | ✅ 已补 | 每类 gap 输出 `p/ci_low/ci_high/n/evidence_level`；冠军按 `pass_rate → CI 下界 → n` 三级择优，避免 n=1 的 100% 假象 |
 | TRAE 评注闭环 | ✅ 已实证 | 文件握手 `request(tag+digest) → result.json → 重跑采纳`；D2 驳回使 `architecture_gap` 1.0→0.0、冠军切换、overall 0.6→0.4；D3 驳回被采纳且理由入历史；含防篡改绑定、无效回写显式降级、`pending_reviews` 清单暴露 |
-| 单测 | ✅ 112 passed | `asil/__tests__/`（含测试库隔离 conftest，禁止污染生产记忆） |
+| D2 gap 样本扩容（v0.2.2） | ✅ 已落地 | `registry/gap_audit.py` 只对**可客观测量**维度扩样：doc_debt 12 + architecture_gap 10 + interface_mismatch 12（共 22 条真实缺口，`--write` 幂等，二次写入 0 条）；open gap 5 → 39 |
+| D2 generator 覆盖（v0.2.2） | ✅ 5/5 类 | `experiments/d2b_engineering/generator.py` 新增 `backtest_evaluator_missing`（`evaluate_configs`，IS/OOS 双段）与 `domain_state_series_missing`（`collect_series`，15min 时序）；`d2b_adapter.D2B_TYPES` 同步 5 类，`emergence_loop` 改为单一来源引用避免漂移 |
+| D2 分类型结论（v0.2.2） | ✅ 3/5 adequate | doc_debt n=13 `ci=[0.772,1.0]`；interface_mismatch n=13 `ci=[0.772,1.0]`；architecture_gap n=11 `ci=[0.741,1.0]`；新增 `claimable_types` / `blocked_types` 字段显式区分「可下结论」与「仍 insufficient」 |
+| 单测 | ✅ 327 passed | `asil/__tests__/` + `tests/`（含测试库隔离 conftest，禁止污染生产记忆；新增 `tests/test_gap_audit.py` 12 例） |
 | 跨域迁移 T-I2E/T-E2T | ⏸ 挂起 | 等交易涌现闭环重构完成后启动 |
 
 **遗留风险（不掩盖）**
 
 1. D3 变体仍限于 24 格规则网格，基线已处局部最优；需扩展特征空间（session 长度 / 时段 / 文件域基数），而非继续调阈值。
-2. D2 每类 gap 仅 n=1，`evidence_level = insufficient`，「pass_rate 0.6」只能作为描述性快照，不构成统计结论；真正杠杆是扩充 gap 样本并扩展 generator 覆盖类型。
+2. D2 已摆脱「全类型 n=1」：doc_debt / interface_mismatch / architecture_gap 三类达到 `adequate`（n=11~13）。但 `backtest_evaluator_missing` 与 `domain_state_series_missing` 仍停留在 n=1（前者真实缺口是 config 级能力、后者无稳定时序数据源），**明确拒绝造数**，故 `claim_ready` 仍为 False，overall 通过率不可作为结论，只能按 `claimable_types` 分类型陈述。
 3. 生产 `recall` 实测 4479ms（SLA 阈值 200ms），会成为闭环吞吐瓶颈，需单独优化。
 
 ---
@@ -455,6 +458,7 @@ DEAD ──记录──▶ REPORT（不计入 valid_completion_rate）
 
 | 版本 | 日期 | 变更 |
 |---|---|---|
+| **v0.2.2** | **2026-11-10** | **D2 扩样 + 分类型结论**：新增 `registry/gap_audit.py`（doc_debt 逐文件口径 / architecture_gap 函数名重名率 / interface_mismatch 公开函数注解缺失率，22 条真实缺口，幂等）；generator 补齐 5/5 gap 类型；`emergence_loop` 单源引用 `D2B_TYPES` 并新增 `claimable_types`/`blocked_types`；D2 三类达 adequate（n=11~13），2 类仍 n=1 且拒绝造数；单测 327 passed |
 | **v0.2.1** | **2026-11-10** | **实施状态回写（§0.5）**：Phase 1 完成；Phase 2 真实接入完成（在线 shadow 顺延）；P0-1 认知回写接通（record+verify 可审计，confidence 贝叶斯升级）；P0-2 三段切分 + 配对 bootstrap + Holm；D2 补 Wilson 区间与证据等级；TRAE 评注闭环实证（D2/D3 双向覆盖、防篡改、pending_reviews）；单测 112 passed；跨域迁移挂起 |
 | **v0.2** | **2026-11-10** | **Devil's Advocate 攻击后修订（7 漏洞全部修复）**：<br>🔴 P0-1 Oracle Phase 1 降级为纯静态校验器（AST + schema + py_compile）+ C11 代码隔离硬约束<br>🔴 P0-2 Step③ bootstrap fallback（E6 空 → D2-B 预注册模板 + 低置信伪 gap）+ Pipeline Schema 新增 bootstrap_source 字段<br>🔴 P0-3 引入🟢/🟡/🔴就绪等级，降级 D2-B/D3-B/D3-Implement 为代理可用<br>🟠 P1-1 R5 落地为启发式规则（Query→Search→Read→Synthesize）+ 六维 reward 全部归一化到 [0,1]<br>🟠 P1-2 新增 §13.1 LLM 预算表 + §4.1 Phase 1 零 LLM 硬约束（C12）<br>🟠 P1-3 新增 §3.6 存活检查点 CP1/CP2 + Step④⑤ FAIL-OPEN fallback + M-ASIL-0 拆为 0a/0b（valid_completion_rate 硬指标）<br>🟠 P1-4 §1.3 新增冷却时间表 + 合并策略 + 触发频率审计（M-ASIL-4b）<br>🟡 P2-1 §5.2 OOD Phase 1 降级跳过验证 + Beta 基线 ≥ 50 后启用<br>🟡 P2-3 §9 门禁强制等级显式标注（🔴硬/🟡软）<br>状态从"初稿"升为"评审通过" |
 | v0.1 | 2026-11-10 | 初稿完成 |

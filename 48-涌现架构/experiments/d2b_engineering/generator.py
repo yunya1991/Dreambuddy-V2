@@ -166,6 +166,64 @@ def generate(gap: dict) -> BuildPlan:
         deps = ["ast", "33-REA/architecture_graph_builder.py"]
         novelty = "现有架构图仅记录 import 边；本方案新增 AST 签名提取 + 契约校验"
 
+    elif gap_type == "backtest_evaluator_missing":
+        module_name = "45-评测系统/config_backtest_evaluator.py"
+        patch = {
+            "add_nodes": [{"id": module_name, "type": "python_file"}],
+            "add_edges": [
+                {"source": module_name, "target": "45-评测系统/evaluators", "kind": "doc_ref"},
+                {
+                    "source": module_name,
+                    "target": "experiments/e2_hypothesis/ablation_gate.py",
+                    "kind": "call",
+                },
+            ],
+        }
+        rationale = (
+            f"缺口: {evidence.get('issue', evidence.get('need', ''))}。预期: {expected}。"
+            "方案: 新增 config 级回测评估器，输入策略结构变体（谓词/阈值组合），"
+            "输出 IS/OOS 双段指标 + 分片指标，供 ablation gate 双判据使用；"
+            "评估器只读历史 K 线，不触发实盘，结果写入评测系统 artifact。"
+        )
+        steps = [
+            "1. 定义 ConfigVariant schema（谓词列表 + 阈值 + 方向 + 持有期）",
+            "2. 加载 IS/OOS 时间切分与 K 线，按变体逐笔回放（复用 14-V15 回测内核）",
+            "3. 输出 IS/OOS 的胜率/盈亏比/期望/最大回撤 + 分片（按币种/时段）指标",
+            "4. 与 ablation gate 双判据对接：IS 通过且 OOS 不显著退化才记为有效变体",
+            "5. 结果落 45-评测系统 artifact，供 E2 的 M2 比率计算",
+        ]
+        deps = ["45-评测系统/evaluators", "experiments/e2_hypothesis/ablation_gate.py"]
+        novelty = (
+            "现有 backtest_evaluator 仅评估固定策略；本方案评估 config 级结构变体，"
+            "补上 IS/OOS 双段判据，与现有评估器互补"
+        )
+
+    elif gap_type == "domain_state_series_missing":
+        module_name = "4-MEMORY/9-工具与接口/domain_state_series.py"
+        patch = {
+            "add_nodes": [{"id": module_name, "type": "python_file"}],
+            "add_edges": [
+                {"source": module_name, "target": "4-MEMORY/2-交易记忆单元", "kind": "doc_ref"},
+            ],
+        }
+        rationale = (
+            f"缺口: {evidence.get('issue', evidence.get('needs', ''))}。预期: {expected}。"
+            "方案: 新增域状态时序采集器，按固定窗口（如 15min）落 6 域的 psi/drift 快照，"
+            "带真实时间戳与去重键，供 E3 反事实 MAE 检验使用。"
+        )
+        steps = [
+            "1. 定义 DomainStateSeries schema（ts/domain/psi/drift/version）",
+            "2. 定时任务每窗口读取各域 psi/drift 当前值并追加写入 jsonl（带幂等键）",
+            "3. 写入前校验 ts 单调递增，重复窗口直接跳过",
+            "4. 提供 read_window(domain, start, end) 查询接口",
+            "5. 导出 E3 所需的最小窗口序列（≥N 个唯一时间戳）",
+        ]
+        deps = ["4-MEMORY/2-交易记忆单元", "4-MEMORY/9-工具与接口/drift_detector.py"]
+        novelty = (
+            "现有域状态仅有单批导出（唯一时间戳极少），本方案新增时序采集与窗口查询，"
+            "使 E3 反事实从 insufficient_data 转为可判定"
+        )
+
     else:
         module_name = f"unknown_{gap_type}_handler.py"
         patch = {"add_nodes": [], "add_edges": []}
@@ -178,6 +236,8 @@ def generate(gap: dict) -> BuildPlan:
         "architecture_gap": "resolve_calls",
         "doc_debt": "check_doc_coverage",
         "interface_mismatch": "extract_signatures",
+        "backtest_evaluator_missing": "evaluate_configs",
+        "domain_state_series_missing": "collect_series",
     }
     skeleton = (
         _skeleton(module_name, rationale, steps, entry_by_type.get(gap_type, "run"))
@@ -210,7 +270,14 @@ def load_gaps(path: str | Path) -> list[dict]:
 
 if __name__ == "__main__":
     gaps = load_gaps(PKG_ROOT / "registry" / "capability_gaps.jsonl")
-    d2b_types = {"architecture_gap", "doc_debt", "interface_mismatch", "module_missing"}
+    d2b_types = {
+        "architecture_gap",
+        "doc_debt",
+        "interface_mismatch",
+        "module_missing",
+        "backtest_evaluator_missing",
+        "domain_state_series_missing",
+    }
     for g in gaps:
         if g.get("gap_type") in d2b_types:
             plan = generate(g)

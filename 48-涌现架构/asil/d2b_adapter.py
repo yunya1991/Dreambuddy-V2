@@ -16,7 +16,13 @@ if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
 D2B_GAPS_PATH = _PKG_ROOT / "registry" / "capability_gaps.jsonl"
-D2B_TYPES = {"architecture_gap", "doc_debt", "interface_mismatch"}
+D2B_TYPES = {
+    "architecture_gap",
+    "doc_debt",
+    "interface_mismatch",
+    "backtest_evaluator_missing",
+    "domain_state_series_missing",
+}
 
 
 class D2BAdapter:

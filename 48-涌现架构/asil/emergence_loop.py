@@ -22,6 +22,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
+from .d2b_adapter import D2B_TYPES as D2B_SUPPORTED
 from .stat_gate import evidence_level, holm_adjust, paired_bootstrap, wilson_interval
 from .variant_generator import (
     DEFAULT_D3_VARIANTS,
@@ -42,9 +43,6 @@ DEFAULT_EVENTS_PATH = (
 DEFAULT_GAPS_PATH = _PKG_ROOT / "registry" / "capability_gaps.jsonl"
 LOOP_DIR = _PKG_ROOT / "events" / "asil" / "loops"
 REVIEW_DIR = _PKG_ROOT / "events" / "asil" / "reviews"
-
-# D2-B generator 支持的三类预注册 gap
-D2B_SUPPORTED = {"architecture_gap", "doc_debt", "interface_mismatch"}
 
 
 # ---------------------------------------------------------------------------
@@ -629,6 +627,7 @@ class D2EmergenceLoop:
         }
         overall = wilson_interval(total_hits, total_n)
         champion = self._pick_champion(scoreboard)
+        claimable = sorted(g for g, v in scoreboard.items() if v["evidence_level"] == "adequate")
 
         return {
             "domain": "D2",
@@ -638,6 +637,11 @@ class D2EmergenceLoop:
             "overall_pass_rate": round(total_hits / total_n, 3) if total_n else 0.0,
             "overall_ci": overall,
             "overall_evidence": evidence_level(total_n),
+            # 任一类型证据不足即不允许把 overall 通过率当作结论（防口径漂移）
+            "claim_ready": all(v["evidence_level"] == "adequate" for v in scoreboard.values()),
+            # 分类型结论：哪些类型的通过率已可下结论，哪些仍停在 insufficient
+            "claimable_types": claimable,
+            "blocked_types": sorted(g for g in scoreboard if g not in claimable),
             "pending_reviews": list(self.checkpoint.pending),
             "history": [r.to_dict() for r in records],
             # 只写建议，不修改 capability_gaps.jsonl（零执行权）
@@ -744,6 +748,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             f"[D2] gaps={s['n_gaps']} scoreboard={s['scoreboard']} champion={s['champion_template']}"
         )
         print(f"  pending_reviews={len(s['pending_reviews'])}")
+        print(f"  claim_ready={s['claim_ready']}")
+        print(f"  claimable_types={s['claimable_types']}")
+        print(f"  blocked_types={s['blocked_types']}")
         if "policy_round" in s:
             pr = s["policy_round"]
             print(

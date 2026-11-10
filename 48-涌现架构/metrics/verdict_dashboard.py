@@ -364,7 +364,7 @@ def _render_table(dash: dict) -> str:
         elif "n_candidate" in e:
             metric = f"{e['n_candidate']}/{e.get('n_gaps', '?')} gaps resolved"
         elif "g123" in e:
-            metric = f"G123={e['g123']:.3f} Ω={e.get('omega', 0):.3f}"
+            metric = f"G123={(e.get('g123') or 0.0):.3f} Ω={(e.get('omega') or 0.0):.3f}"
         ev = e.get("evidence", "")
         lines.append(f"{exp:<6} {verdict:<18} {metric:<28} {ev}")
     lines.append("")
