@@ -1,14 +1,16 @@
 {
-  "generated_at": "2026-11-09T07:30:02.306320+00:00",
-  "signal_count": 42,
+  "generated_at": "2026-11-10T05:27:16.136680+00:00",
+  "signal_count": 19,
   "rejected_count": 0,
   "source_counts": {
-    "40-cycle": 1,
-    "strategic_extension": 1,
     "23-contradiction": 1,
     "11-bcrm": 3,
     "bdsm": 10,
-    "11-bcrm-tactical": 26
+    "43-strategic": 1,
+    "40-cycle": 1,
+    "40-divergence": 1,
+    "40-resonance": 1,
+    "strategic_extension": 1
   },
   "rejected_reasons": [],
   "expiring_within_1h": 0,

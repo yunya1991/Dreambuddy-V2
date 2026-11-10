@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-26T05:39:46.620293+00:00",
+  "generated_at": "2026-11-10T05:20:56.032803+00:00",
   "layers": {
     "L1_anchor": [
       "BTC/USDT"
@@ -22,160 +22,184 @@
   "assets": {
     "BTC/USDT": {
       "layer": "L1_anchor",
-      "momentum_3m_pct": 2.14,
+      "momentum_3m_pct": -4.39,
       "samples": 120,
       "relative_strength_vs_btc": 0.0
     },
     "ETH/USDT": {
       "layer": "L2_major",
-      "momentum_3m_pct": -4.8,
+      "momentum_3m_pct": -13.89,
       "samples": 120,
-      "relative_strength_vs_btc": -6.94
+      "relative_strength_vs_btc": -9.5
     },
     "SOL/USDT": {
       "layer": "L2_major",
-      "momentum_3m_pct": 5.0,
+      "momentum_3m_pct": -15.19,
       "samples": 120,
-      "relative_strength_vs_btc": 2.86
+      "relative_strength_vs_btc": -10.8
     },
     "AVAX/USDT": {
       "layer": "L3_growth",
-      "momentum_3m_pct": 21.83,
+      "momentum_3m_pct": 9.82,
       "samples": 120,
-      "relative_strength_vs_btc": 19.69
+      "relative_strength_vs_btc": 14.21
     },
     "LINK/USDT": {
       "layer": "L3_growth",
-      "momentum_3m_pct": 1.51,
+      "momentum_3m_pct": -10.01,
       "samples": 120,
-      "relative_strength_vs_btc": -0.63
+      "relative_strength_vs_btc": -5.62
     },
     "ADA/USDT": {
       "layer": "L3_growth",
-      "momentum_3m_pct": -2.01,
+      "momentum_3m_pct": -15.63,
       "samples": 120,
-      "relative_strength_vs_btc": -4.15
+      "relative_strength_vs_btc": -11.24
     },
     "DOGE/USDT": {
       "layer": "L4_meme",
-      "momentum_3m_pct": -9.87,
+      "momentum_3m_pct": -18.8,
       "samples": 120,
-      "relative_strength_vs_btc": -12.01
+      "relative_strength_vs_btc": -14.41
     },
     "PEPE/USDT": {
       "layer": "L4_meme",
-      "momentum_3m_pct": 15.49,
+      "momentum_3m_pct": 51.78,
       "samples": 120,
-      "relative_strength_vs_btc": 13.35
+      "relative_strength_vs_btc": 56.17
     },
     "WIF/USDT": {
       "layer": "L4_meme",
-      "momentum_3m_pct": -7.49,
+      "momentum_3m_pct": -22.95,
       "samples": 120,
-      "relative_strength_vs_btc": -9.63
+      "relative_strength_vs_btc": -18.56
     }
   },
   "layer_median_momentum_3m_pct": {
-    "L1_anchor": 2.14,
-    "L2_major": 0.1,
-    "L3_growth": 1.51,
-    "L4_meme": -7.49
+    "L1_anchor": -4.39,
+    "L2_major": -14.54,
+    "L3_growth": -10.01,
+    "L4_meme": -18.8
   },
   "transmission": {
-    "state": "neutral",
-    "meme_vs_major_gap_pct": -7.59,
-    "btc_above_ma200": true,
-    "regime": "bull_consolidation"
+    "state": "expanding",
+    "meme_vs_major_gap_pct": -4.26,
+    "btc_above_ma200": null,
+    "regime": "bear_or_transition"
   },
   "note": "expanding=资金沿传导链下沉扩散；contracting=资金收缩回主流层（周期晚期信号）；regime 联动 MA200 牛熊锚点",
   "breadth": {
-    "assets_above_ma200": 8,
+    "assets_above_ma200": 6,
     "assets_valid": 9,
-    "assets_total": 9,
-    "breadth_pct": 88.9,
-    "state": "strong",
+    "assets_total": 13,
+    "breadth_pct": 66.7,
+    "state": "mixed",
     "layer_breadth": {
       "L1_anchor": {
-        "above": 1,
-        "valid": 1,
+        "above": 0,
+        "valid": 0,
         "total": 1,
-        "breadth_pct": 100.0
+        "breadth_pct": null
       },
       "L2_major": {
-        "above": 2,
-        "valid": 2,
-        "total": 2,
+        "above": 4,
+        "valid": 4,
+        "total": 7,
         "breadth_pct": 100.0
       },
       "L3_growth": {
-        "above": 3,
-        "valid": 3,
-        "total": 3,
-        "breadth_pct": 100.0
+        "above": 1,
+        "valid": 2,
+        "total": 2,
+        "breadth_pct": 50.0
       },
       "L4_meme": {
-        "above": 2,
+        "above": 1,
         "valid": 3,
         "total": 3,
-        "breadth_pct": 66.7
+        "breadth_pct": 33.3
       }
     },
     "detail": {
       "BTC/USDT": {
         "layer": "L1_anchor",
-        "above": true,
-        "distance_pct": 9.73,
+        "above": null,
+        "distance_pct": null,
         "source": "cycle_state_anchor"
       },
       "ETH/USDT": {
         "layer": "L2_major",
-        "above": true,
-        "distance_pct": 7.63,
+        "above": null,
+        "distance_pct": null,
         "source": "cycle_state_anchor"
       },
       "SOL/USDT": {
         "layer": "L2_major",
+        "above": null,
+        "distance_pct": null,
+        "source": "cycle_state_anchor"
+      },
+      "UNI/USDT": {
+        "layer": "L2_major",
         "above": true,
-        "distance_pct": 14.58,
+        "distance_pct": 42.14,
+        "source": "cycle_state_anchor"
+      },
+      "AAVE/USDT": {
+        "layer": "L2_major",
+        "above": true,
+        "distance_pct": 15.73,
+        "source": "cycle_state_anchor"
+      },
+      "NEAR/USDT": {
+        "layer": "L2_major",
+        "above": true,
+        "distance_pct": 36.67,
+        "source": "cycle_state_anchor"
+      },
+      "ARB/USDT": {
+        "layer": "L2_major",
+        "above": true,
+        "distance_pct": 38.04,
+        "source": "cycle_state_anchor"
+      },
+      "LINK/USDT": {
+        "layer": "L2_major",
+        "above": null,
+        "distance_pct": null,
         "source": "cycle_state_anchor"
       },
       "AVAX/USDT": {
         "layer": "L3_growth",
         "above": true,
-        "distance_pct": 17.99,
-        "source": "okx_ma200"
-      },
-      "LINK/USDT": {
-        "layer": "L3_growth",
-        "above": true,
-        "distance_pct": 26.31,
+        "distance_pct": 0.42,
         "source": "okx_ma200"
       },
       "ADA/USDT": {
         "layer": "L3_growth",
-        "above": true,
-        "distance_pct": 6.34,
+        "above": false,
+        "distance_pct": -13.0,
         "source": "okx_ma200"
       },
       "DOGE/USDT": {
         "layer": "L4_meme",
         "above": false,
-        "distance_pct": -5.96,
+        "distance_pct": -17.08,
         "source": "okx_ma200"
       },
       "PEPE/USDT": {
         "layer": "L4_meme",
         "above": true,
-        "distance_pct": 35.1,
+        "distance_pct": 36.72,
         "source": "okx_ma200"
       },
       "WIF/USDT": {
         "layer": "L4_meme",
-        "above": true,
-        "distance_pct": 13.59,
+        "above": false,
+        "distance_pct": -11.9,
         "source": "okx_ma200"
       }
     },
-    "note": "广度=传导链 9 资产站上 MA200 占比（L1/L2 复用锚点，L3/L4 OKX 现算）；>=75 强势 / 50-75 分化 / <50 走弱；配合 meme 平台毕业率构成双层广度观测"
+    "note": "广度=传导链 14 资产站上 MA200 占比（L1/L2 复用锚点 8 资产，L3/L4 OKX 现算）；>=75 强势 / 50-75 分化 / <50 走弱；配合 meme 平台毕业率构成双层广度观测"
   }
 }

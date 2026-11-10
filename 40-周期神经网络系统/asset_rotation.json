@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-10-26T05:24:28.189737+00:00",
+  "generated_at": "2026-11-10T05:20:55.768478+00:00",
   "merrill_clock": {
-    "month": "2026-09",
-    "growth_yoy_pct": 2.25,
-    "inflation_yoy_pct": 3.72,
-    "quadrant": "overheat",
+    "month": "2026-08",
+    "growth_yoy_pct": 1.35,
+    "inflation_yoy_pct": 2.95,
+    "quadrant": "stagflation",
     "thresholds": {
       "growth": 1.5,
       "inflation": 2.5
@@ -12,86 +12,68 @@
     "confidence": "medium"
   },
   "asset_momentum_3m_pct": {
-    "crypto_btc": 25.38,
-    "crypto_eth": 20.89,
-    "equity_spx": 4.64,
-    "usd_dxy": 0.85,
-    "rates_10y": 6.67,
-    "gold_xaut": -13.46
+    "crypto_btc": 17.92,
+    "crypto_eth": 13.04,
+    "gold": -6.71,
+    "dollar": 1.84,
+    "treasury_yield": 3.51,
+    "equity": -2.62
   },
   "data_coverage": {
-    "indpro": 1294,
-    "cpi": 957,
-    "sp500": 2513,
-    "dtwexbgs": 5213,
-    "dgs10": 16188,
-    "xaut_okx": 120
-  },
-  "data_source": {
-    "equity_spx": "fred_data_center:SP500",
-    "usd_dxy": "fred_data_center:DTWEXBGS",
-    "rates_10y": "fred_data_center:DGS10",
-    "gold_xaut": "okx:XAUT/USDT",
-    "crypto_btc": "okx:BTC/USDT",
-    "crypto_eth": "okx:ETH/USDT"
+    "indpro": 44,
+    "cpi": 44
   },
   "divergence": {
-    "generated_at": "2026-10-26T11:54:29.247022+00:00",
-    "quadrant": "overheat",
+    "generated_at": "2026-11-10T05:20:55.968708+00:00",
+    "quadrant": "stagflation",
     "flat_band_pct": 1.0,
     "checks": [
       {
         "asset": "equity_spx",
-        "expected_dir": 0,
-        "actual_momentum_3m_pct": 4.64,
-        "actual_dir": 1,
+        "expected_dir": -1,
+        "actual_momentum_3m_pct": null,
+        "actual_dir": null,
         "verdict": "neutral"
       },
       {
         "asset": "crypto_btc",
-        "expected_dir": 1,
-        "actual_momentum_3m_pct": 25.38,
+        "expected_dir": -1,
+        "actual_momentum_3m_pct": 17.92,
         "actual_dir": 1,
-        "verdict": "consistent"
+        "verdict": "divergent"
       },
       {
         "asset": "crypto_eth",
-        "expected_dir": 1,
-        "actual_momentum_3m_pct": 20.89,
+        "expected_dir": -1,
+        "actual_momentum_3m_pct": 13.04,
         "actual_dir": 1,
-        "verdict": "consistent"
+        "verdict": "divergent"
       },
       {
         "asset": "gold_xaut",
         "expected_dir": 1,
-        "actual_momentum_3m_pct": -13.46,
-        "actual_dir": -1,
-        "verdict": "divergent"
+        "actual_momentum_3m_pct": null,
+        "actual_dir": null,
+        "verdict": "neutral"
       },
       {
         "asset": "usd_dxy",
-        "expected_dir": -1,
-        "actual_momentum_3m_pct": 0.85,
-        "actual_dir": 0,
-        "verdict": "flat"
+        "expected_dir": 0,
+        "actual_momentum_3m_pct": null,
+        "actual_dir": null,
+        "verdict": "neutral"
       },
       {
         "asset": "rates_10y",
         "expected_dir": 1,
-        "actual_momentum_3m_pct": 6.67,
-        "actual_dir": 1,
-        "verdict": "consistent"
+        "actual_momentum_3m_pct": null,
+        "actual_dir": null,
+        "verdict": "neutral"
       }
     ],
     "n_divergent": 2,
-    "n_scored": 5,
-    "hy_oas_check": {
-      "latest": 3.4,
-      "date": "2026-10-22",
-      "change_20d": 0.6,
-      "widen_threshold": 0.5,
-      "divergent": true
-    },
+    "n_scored": 2,
+    "hy_oas_check": null,
     "quadrant_confidence": "medium",
     "note": "美林时钟（预期）vs 资产动量（真实）互为印证修正；背离数>1 时象限置信度降级；HY OAS 20日走阔>=0.5=信用利差背离（v0.7，候选移交23矛盾系统）"
   }

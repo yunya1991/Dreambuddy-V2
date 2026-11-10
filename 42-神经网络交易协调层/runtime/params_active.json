@@ -1,6 +1,6 @@
 {
   "version": "v1.0",
-  "generated_at": "2026-10-29T02:32:14.867386+00:00",
+  "generated_at": "2026-11-09T14:06:59.136850+00:00",
   "params": {
     "long_threshold_multiplier": 1.0,
     "position_size_factor": 1.0,
@@ -9,5 +9,5 @@
     "cooldown_period_hours": 24,
     "risk_budget_ratio": {}
   },
-  "note": "42 层 ParamGovernor 参数集（SPEC §4.1 预注册默认值）；初始版本"
+  "note": "42 层 ParamGovernor 参数集（SPEC §4.1 预注册默认值）；N5 e2e 测试后重置回 v1.0 默认值"
 }

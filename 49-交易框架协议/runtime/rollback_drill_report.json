@@ -1,0 +1,171 @@
+{
+  "drill_version": "m0-rollback-drill-v1",
+  "timestamp": "2026-11-06T17:33:46.287488+00:00",
+  "checks": [
+    {
+      "id": "contract_integrity",
+      "passed": true,
+      "contracts": [
+        {
+          "contract": "SignalSchema",
+          "version": "v1",
+          "file": "signal_schema.v1.json",
+          "expected": "87858d5a6b1233fb52806bb6d1078aa08c4e7fcf6baf4cf9f5d7c1c1e38a73d3",
+          "actual": "87858d5a6b1233fb52806bb6d1078aa08c4e7fcf6baf4cf9f5d7c1c1e38a73d3",
+          "passed": true
+        },
+        {
+          "contract": "FinalDecisionSignal",
+          "version": "v1",
+          "file": "final_decision_signal.v1.json",
+          "expected": "6a208a4caef8c900554f443e3b47442fbd6207181649ce55eda5c5f0799d6527",
+          "actual": "6a208a4caef8c900554f443e3b47442fbd6207181649ce55eda5c5f0799d6527",
+          "passed": true
+        },
+        {
+          "contract": "MacroElasticConstraint",
+          "version": "v1",
+          "file": "macro_elastic_constraint.v1.json",
+          "expected": "c69017e9caa9cb3faeb6c2f7bdfa387c49f6f86036d0306bbc112cf11a947a3d",
+          "actual": "c69017e9caa9cb3faeb6c2f7bdfa387c49f6f86036d0306bbc112cf11a947a3d",
+          "passed": true
+        },
+        {
+          "contract": "UpperLayerContext",
+          "version": "v1",
+          "file": "upper_layer_context.v1.json",
+          "expected": "d3cac9d144c78ff2d4eb83264d19930686425ed3a547635035204953ee9ae9f8",
+          "actual": "d3cac9d144c78ff2d4eb83264d19930686425ed3a547635035204953ee9ae9f8",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "switch_rollback",
+      "passed": true,
+      "switches": [
+        {
+          "switch": "enable_cd_shadow",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_dominance_shadow",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_event_contradiction_shadow",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_w6_monitor",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_self_vote_shadow",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_attention_a_dim",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_a_dim_c_to_3",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_primary_contradiction_detector",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_d2_oi_liq",
+          "on": true,
+          "off": false,
+          "passed": true
+        },
+        {
+          "switch": "enable_self_vote_cap",
+          "on": true,
+          "off": false,
+          "passed": true
+        }
+      ],
+      "defaults": {
+        "enable_cd_shadow": false,
+        "enable_dominance_shadow": false,
+        "enable_event_contradiction_shadow": false,
+        "enable_w6_monitor": false,
+        "enable_self_vote_shadow": false,
+        "enable_attention_a_dim": false,
+        "enable_a_dim_c_to_3": false,
+        "enable_primary_contradiction_detector": false,
+        "enable_d2_oi_liq": false,
+        "enable_self_vote_cap": false
+      }
+    },
+    {
+      "id": "production_unchanged_with_shadow_switches",
+      "passed": true,
+      "mode": "pipeline",
+      "before": {
+        "action": "WAIT",
+        "tier": null,
+        "position_mult": null,
+        "regime": "RANGE",
+        "d_star": null,
+        "ri": null,
+        "l4_v": 0.05,
+        "primary_contradiction": null,
+        "cross_validation": null,
+        "production_fields_available": true
+      },
+      "after": {
+        "action": "WAIT",
+        "tier": null,
+        "position_mult": null,
+        "regime": "RANGE",
+        "d_star": null,
+        "ri": null,
+        "l4_v": 0.05,
+        "primary_contradiction": null,
+        "cross_validation": null,
+        "production_fields_available": true
+      }
+    },
+    {
+      "id": "execution_rights_default_paper",
+      "passed": true,
+      "sample": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/49-交易框架协议/contracts/examples/execution_rights.sample.json",
+      "defaults": {
+        "outcome": "paper",
+        "conflict_policy": "reject_mcp"
+      },
+      "symbols": {
+        "BTC-USDT-SWAP": {
+          "outcome": "paper",
+          "note": "默认模拟盘验证"
+        },
+        "ETH-USDT-SWAP": {
+          "outcome": "paper",
+          "note": "默认模拟盘验证"
+        }
+      }
+    }
+  ],
+  "overall": "pass"
+}

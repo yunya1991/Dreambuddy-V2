@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-26T04:48:54.017547+00:00",
+  "generated_at": "2026-11-10T05:19:20.897168+00:00",
   "real_cycle": {
     "anchor": "FEDFUNDS",
-    "current_month": "2026-09",
+    "current_month": "2026-10",
     "current_rate": 3.75,
     "state": "plateau",
     "last_change": "flat",
@@ -19,81 +19,68 @@
     "grad_accum": 0.5
   },
   "data_coverage": {
-    "records": 868,
-    "first": "1954-07",
-    "last": "2026-09"
+    "records": 45,
+    "first": "2023-01",
+    "last": "2026-10"
   },
   "technical_anchor": {
     "type": "MA200",
-    "generated_at": "2026-10-27T13:52:34.172778+00:00",
+    "generated_at": "2026-11-10T05:20:35.960470+00:00",
     "assets": {
       "BTC/USDT": {
-        "last_close": 80066.01,
-        "ma200": 73065.11,
-        "above": true,
-        "distance_pct": 9.58,
-        "samples": 400
+        "error": "binance GET https://api.binance.com/api/v3/exchangeInfo"
       },
       "ETH/USDT": {
-        "last_close": 2323.65,
-        "ma200": 2159.56,
-        "above": true,
-        "distance_pct": 7.6,
-        "samples": 400
+        "error": "binance GET https://api.binance.com/api/v3/exchangeInfo"
       },
       "SOL/USDT": {
-        "last_close": 100.17,
-        "ma200": 88.58,
-        "above": true,
-        "distance_pct": 13.08,
-        "samples": 400
+        "error": "binance GET https://api.binance.com/api/v3/exchangeInfo"
       },
       "UNI/USDT": {
-        "last_close": 7.08,
-        "ma200": 4.64,
+        "last_close": 6.97,
+        "ma200": 4.9,
         "above": true,
-        "distance_pct": 52.71,
+        "distance_pct": 42.14,
         "samples": 400
       },
       "AAVE/USDT": {
-        "last_close": 131.01,
-        "ma200": 107.43,
+        "last_close": 126.85,
+        "ma200": 109.61,
         "above": true,
-        "distance_pct": 21.95,
+        "distance_pct": 15.73,
         "samples": 400
       },
       "NEAR/USDT": {
-        "last_close": 4.51,
-        "ma200": 2.46,
+        "last_close": 3.61,
+        "ma200": 2.64,
         "above": true,
-        "distance_pct": 83.33,
+        "distance_pct": 36.67,
         "samples": 400
       },
       "ARB/USDT": {
         "last_close": 0.17,
         "ma200": 0.12,
         "above": true,
-        "distance_pct": 37.4,
+        "distance_pct": 38.04,
         "samples": 400
       },
       "LINK/USDT": {
-        "last_close": 11.33,
-        "ma200": 9.97,
-        "above": true,
-        "distance_pct": 13.57,
-        "samples": 400
+        "error": "binance GET https://dapi.binance.com/dapi/v1/exchangeInfo"
+      },
+      "^GSPC": {
+        "error": "only 0-dimensional arrays can be converted to Python scalars"
       }
     }
   },
   "sector_transmission": {
-    "generated_at": "2026-10-26T05:39:46.620293+00:00",
-    "state": "neutral",
-    "regime": "bull_consolidation",
+    "generated_at": "2026-11-10T05:20:56.032803+00:00",
+    "state": "expanding",
+    "regime": "bear_or_transition",
     "layer_median_momentum_3m_pct": {
-      "L1_anchor": 2.14,
-      "L2_major": 0.1,
-      "L3_growth": 1.51,
-      "L4_meme": -7.49
+      "L1_anchor": -4.39,
+      "L2_major": -14.54,
+      "L3_growth": -10.01,
+      "L4_meme": -18.8
     }
   }
 }

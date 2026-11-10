@@ -1,33 +1,32 @@
 {
-  "generated_at": "2026-10-26T14:43:57.889534+00:00",
+  "generated_at": "2026-11-10T05:25:47.220281+00:00",
   "module": "P4 策略映射（L5）",
   "inputs": {
-    "quadrant": "overheat",
+    "quadrant": "stagflation",
     "quadrant_confidence": "medium",
     "transmission_state": "neutral",
-    "breadth_state": "strong",
-    "breadth_pct": 88.9,
-    "stagflation_correction_active": false,
+    "breadth_state": "mixed",
+    "breadth_pct": 66.7,
+    "stagflation_correction_active": true,
     "effective_confidence": "medium",
     "event_window_frozen": false,
     "clock_degraded": false
   },
   "strategy_suggestion": {
-    "stance": "防御性进攻",
+    "stance": "防御",
     "position_band_pct": [
-      30,
-      60
+      0,
+      25
     ],
     "crypto_layer_focus": [
-      "L1_anchor",
-      "L2_major"
+      "L1_anchor"
     ],
     "equity_sector_preference": [
-      "能源",
-      "材料",
-      "工业"
+      "必需消费",
+      "医疗",
+      "公用事业"
     ],
-    "rationale": "过热：增长与通胀同步上行，受益于价格与产能的板块领先"
+    "rationale": "滞胀：增长回落+通胀高企，防御板块与现金为王"
   },
   "adjustments_applied": {
     "transmission": {
@@ -36,8 +35,8 @@
       "position_shift": 0
     },
     "breadth": {
-      "state": "strong",
-      "position_shift": 5
+      "state": "mixed",
+      "position_shift": 0
     },
     "confidence": {
       "level": "medium",
@@ -46,40 +45,39 @@
   },
   "risk_notes": [
     "象限置信度 medium（背离降级），建议降权使用",
-    "L4 meme 层广度 66.7% 为最弱层，传导末端不健康",
     "聪明钱张力：CFTC 投机净多 vs 稳定币供应收缩并存，资金面内部矛盾"
   ],
   "risk_guards": {
-    "generated_at": "2026-10-26T14:43:57.875836+00:00",
+    "generated_at": "2026-11-10T05:25:47.217911+00:00",
     "guard_errors": [],
     "freshness": {
       "cycle_state": {
-        "age_hours": 9.9,
+        "age_hours": 0.1,
         "degrade_steps": 0,
         "stale": false
       },
       "asset_rotation": {
-        "age_hours": 9.3,
+        "age_hours": 0.1,
         "degrade_steps": 0,
         "stale": false
       },
       "sector_transmission": {
-        "age_hours": 9.1,
+        "age_hours": 0.1,
         "degrade_steps": 0,
         "stale": false
       },
       "stovall_breadth": {
-        "age_hours": 2.5,
+        "age_hours": 0.1,
         "degrade_steps": 0,
         "stale": false
       },
       "fund_flow": {
-        "age_hours": 3.0,
+        "age_hours": 0.1,
         "degrade_steps": 0,
         "stale": false
       },
       "washout_verdicts": {
-        "age_hours": 8.1,
+        "age_hours": 0.0,
         "degrade_steps": 0,
         "stale": false
       }
