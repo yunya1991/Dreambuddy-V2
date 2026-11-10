@@ -1,0 +1,36 @@
+{
+ "run_id": "D3A-0000ebfa7eba",
+ "run_class": "formal",
+ "n_train": 819,
+ "n_test": 273,
+ "system": {
+  "top1": 0.908425,
+  "ece": 0.065687,
+  "alpha": 0.6
+ },
+ "baselines": {
+  "B0_majority": {
+   "top1": 0.007326
+  },
+  "B1_intent_engine": {
+   "top1": 0.886447
+  },
+  "B3_knn": {
+   "top1": 0.772894
+  }
+ },
+ "best_baseline": "B1_intent_engine",
+ "best_baseline_top1": 0.886447,
+ "delta_top1": 0.021978,
+ "bootstrap_ci": {
+  "n": 273,
+  "mean_delta": 0.021978,
+  "ci_low": 0.003663,
+  "ci_high": 0.043956
+ },
+ "ece_threshold": 0.1,
+ "decision": {
+  "verdict": "candidate",
+  "reason": "主终点 M-D3-TOP1 95% CI 下界 0.003663 > 0 且 ECE=0.065687 ≤ 0.1"
+ }
+}

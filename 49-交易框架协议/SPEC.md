@@ -722,6 +722,11 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 | Shadow-RL 样本 | `23-.../dreambuddy_evolution/gene_data/shadow_rl_samples.jsonl` | 23 L3 探索（约 275 万条） |
 | 矛盾样本 | `23-.../dreambuddy_evolution/data/contradiction_samples.json` | W6 权重学习（生产链路待补齐） |
 | 约束审计样本 | `49-交易框架协议/runtime/constraint_audit.jsonl`（规划） | 42 / 子策略适配器 |
+| **交易 recall 事件**（新增） | `48-涌现架构/events/memory_readout/recall_events.jsonl`（`domain=trading`） | 11 `polling_trader._inject_cognitive_recall` → 48 `e4b_readout.record_recall()` |
+| **认知 reflection 事件**（新增） | `.cognitive/sessions/*/suggestions.md`（reflection_id）+ action_chain.jsonl（active_reflection_id） | 4-MEMORY `cognitive_session`（建议生成 + add_action 补记） |
+| **广播联动事件**（已有） | `48-涌现架构/events/emergence_shadow/` | 48 `emergence_bus` shadow 订阅者 |
+
+> **认知链路样本说明（2026-11-10 增补）**：上述三类样本是 48 涌现架构 E1（广播联动）/ E4（recall 读回 / cascade / 自纠错）度量的数据源。当前 E4 readout/self-correction 为 `pipeline_only` 代理（会话域退化率趋近 1），根因是交易域 recall 无结构化日志 + `active_reflection_id` 覆盖率 0%。11 域 recall 埋点与 reflection_id 生产链路激活后，E4 可脱离 `pipeline_only`。详见 [SPEC-NN-FEEDBACK-GATEWAY-v0.1.md](../48-涌现架构/docs/tech/SPEC-NN-FEEDBACK-GATEWAY-v0.1.md) §2.2。
 
 ### 5.3 训练管线
 
@@ -1714,3 +1719,20 @@ M6（训练/反馈/约束校准）
 9. **M9 DEC-02 修订**：DEC-02 行标注对照期修订；ADR-0002 增加正式修订说明。
 10. **Minor**：W6 样本 schema/冷启动、A/B 功效分析与多重比较方法、50 状态恢复/fail-open-fail-closed、架构 SSoT 收录（R0-09）、P1 code-complete vs runtime 口径。
 11. **R0 出口 MVB（32 对抗性辩论评审，2026-11-07）**：R0 改为“MVB 验证周”；5 项硬条件见 §13.10.1（契约 v1.1、bus ≥6 源、path 合成+D3、执行权骨架、differential harness）；裁判裁决“支持反方（R0 不应启动）”；MVB 5/5 全绿前不得进入 R2。
+
+---
+
+## 附：v0.14.3 认知链路数据采集增补（2026-11-10）
+
+**背景**：48 涌现架构 E4 度量（recall 读回率 / cascade / 自纠错率）当前为 `pipeline_only` 代理，根因是 49 反馈层只采集执行数据（成交/PnL/拒单），未采集认知链路数据（交易 recall 事件、reflection 事件、action 事件）。
+
+**改动**：
+1. **§5.2 样本来源表**新增三行：交易 recall 事件、认知 reflection 事件、广播联动事件，附产生方与路径。
+2. **关联 48 NN 反馈网关**：[SPEC-NN-FEEDBACK-GATEWAY-v0.1.md](../48-涌现架构/docs/tech/SPEC-NN-FEEDBACK-GATEWAY-v0.1.md) §2.2 事件 schema 扩展 `cognitive_recall` / `reflection` / `action` 字段，定义 trace_id 传递规则。
+
+**实施项**：
+- 11 域 `_inject_cognitive_recall` 增加结构化 recall 日志（调用 48 `e4b_readout.record_recall()`）；
+- 排查修复 `active_reflection_id` 覆盖率 0%（4-MEMORY `cognitive_session` 建议生成链路）；
+- `e4b_reflection.py` 升级为 `active_reflection_id` 精确 join。
+
+**边界**：认知链路数据的 schema 定义权在 48，产生方在 11/4-MEMORY；49 继续拥有交易域四契约。48 SPEC v0.6 评审通过前仅做只读数据对接（11 域埋点），不启动训练网关开发。

@@ -3,7 +3,9 @@
 
 从 `.cognitive/sessions/*/session.json` + `action_chain.jsonl` 提取每会话一行事件：
   - session_id / ts / end_ts / status / action_count
-  - intent_proxy = session.task_type（**不是用户意图标签**）
+  - intent_proxy = session.task_type（粗粒度代理）
+  - intent_label / intent_stable / intent_trajectory / intent_signals / intent_label_confidence
+    （P0-2 直接意图标签：结构化启发式，确定性可复现，无自由文本）
   - recalled_memory_ids / recalled_skills / files_touched
   - task_type_transitions / correction_count
   - action_type 分布 + 涉及文件列表（**不复制 detail 用户原文**）
@@ -31,6 +33,65 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SESSIONS = REPO_ROOT / ".cognitive" / "sessions"
 DEFAULT_OUT = Path(__file__).resolve().parent / "artifacts" / "d3_intent_events"
+
+
+def _intent_trajectory(final_task_type: str | None, transitions: list[dict]) -> list[str]:
+    """还原意图演化轨迹：初始 task_type → 每次跃迁后的 to。
+
+    无跃迁时返回 [final_task_type]。左闭右开地保留每个状态；重复相邻状态折叠。
+    """
+    states: list[str] = []
+    if transitions:
+        first = transitions[0].get("from")
+        if first:
+            states.append(first)
+    for t in transitions:
+        to = t.get("to")
+        if to and (not states or states[-1] != to):
+            states.append(to)
+    if not states:
+        states = [final_task_type] if final_task_type else []
+    elif final_task_type and states[-1] != final_task_type:
+        states.append(final_task_type)
+    return states
+
+
+def _intent_signals(session: dict, action_files: set[str]) -> dict:
+    """结构化意图信号（不含自由文本）：技能数、文件域、跃迁数、稳定性。"""
+    files = session.get("files_touched") or []
+    domains = sorted({str(f).split("/", 1)[0] for f in files if f and isinstance(f, str)})
+    if not domains:
+        domains = sorted({str(f).split("/", 1)[0] for f in action_files if f})
+    return {
+        "recalled_skill_count": len(
+            {
+                p.get("skill_id")
+                for p in session.get("recalled_processes", [])
+                if isinstance(p, dict) and p.get("skill_id")
+            }
+        ),
+        "file_domains": domains,
+        "transition_count": len(session.get("task_type_history") or []),
+    }
+
+
+def _intent_label(final_task_type: str | None, trajectory: list[str], signals: dict) -> dict:
+    """确定性直接意图标签：<task_type>:<stable|drifted-N>[:primary_domain]。
+
+    - stable：无跃迁；drifted-N：N 次跃迁。
+    - primary_domain：信号中出现的首个文件域（结构化，非自由文本）。
+    - confidence：1.0 稳定，随跃迁数衰减；无 task_type 时 0.0。
+    """
+    n = signals.get("transition_count", 0)
+    stable = n == 0
+    domain = signals.get("file_domains", [None])[0] if signals.get("file_domains") else None
+    parts = [final_task_type or "unknown", "stable" if stable else f"drifted-{n}"]
+    if domain:
+        parts.append(domain)
+    confidence = 1.0 if stable else max(0.4, 1.0 - 0.15 * n)
+    if not final_task_type:
+        confidence = 0.0
+    return {"label": ":".join(parts), "stable": stable, "confidence": round(confidence, 3)}
 
 
 def load_events(sessions_dir: Path) -> tuple[list[dict], list[dict]]:
@@ -77,6 +138,9 @@ def load_events(sessions_dir: Path) -> tuple[list[dict], list[dict]]:
                 errors.append({"session_dir": sdir.name, "error": "action_chain parse failed"})
 
         transitions = s.get("task_type_history", []) or []
+        trajectory = _intent_trajectory(s.get("task_type"), transitions)
+        signals = _intent_signals(s, action_files)
+        label = _intent_label(s.get("task_type"), trajectory, signals)
         events.append(
             {
                 "session_id": s.get("id", sdir.name),
@@ -85,6 +149,12 @@ def load_events(sessions_dir: Path) -> tuple[list[dict], list[dict]]:
                 "status": s.get("status"),
                 "action_count": s.get("action_count", 0),
                 "intent_proxy": s.get("task_type"),
+                # ---- P0-2 直接意图标签（结构化、确定性、无自由文本）----
+                "intent_label": label["label"],
+                "intent_stable": label["stable"],
+                "intent_trajectory": trajectory,
+                "intent_signals": signals,
+                "intent_label_confidence": label["confidence"],
                 "recalled_memory_ids": sorted(s.get("recalled_memory_ids", []) or []),
                 "recalled_skills": skills,
                 "files_touched": sorted(s.get("files_touched", []) or []),
@@ -136,14 +206,16 @@ def build_summary(events: list[dict], errors: list[dict], split: dict) -> dict:
         "parse_error_count": len(errors),
         "parse_errors": errors[:50],
         "task_type_distribution": dict(sorted(tt_dist.items(), key=lambda x: -x[1])),
+        "intent_label_count": sum(1 for e in events if e.get("intent_label")),
+        "intent_stable_count": sum(1 for e in events if e.get("intent_stable")),
         "date_range": [
             datetime.fromtimestamp(min(tss), tz=timezone.utc).isoformat() if tss else None,
             datetime.fromtimestamp(max(tss), tz=timezone.utc).isoformat() if tss else None,
         ],
         "split": {k: split[k] for k in ("train_ratio", "total", "train_count", "test_count")},
         "limitations": [
-            "intent_proxy 是 session.task_type 代理标签，不是用户直接意图标签",
-            "P0-2 关闭（直接意图标签补采）前不得申报「意图涌现」，D3-A 仅限 task_type 预测",
+            "intent_label 为结构化启发式标签（task_type + 稳定性 + 文件域），非用户自由文本意图",
+            "intent_proxy = session.task_type；intent_label 在其基础上叠加轨迹/信号，确定性可复现",
             "actions 只保留 action_type/文件列表，未复制用户自由文本",
         ],
     }

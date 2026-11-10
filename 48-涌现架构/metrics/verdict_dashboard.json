@@ -1,0 +1,120 @@
+{
+  "generated_at": "2026-11-09T17:13:41.399388+00:00",
+  "metrics_ts": "2026-11-09T16:43:37.528790+00:00",
+  "entries": [
+    {
+      "experiment": "D2-A",
+      "run_id": "D2A-ba929d3fac60",
+      "verdict": "candidate",
+      "metric": "M-D2-EDGE-F1",
+      "value": 0.985714,
+      "ci_low": 0.957143,
+      "ci_high": 1.0,
+      "evidence": "experiments/d2a_holdout/results/D2A-ba929d3fac60/evaluation.json"
+    },
+    {
+      "experiment": "D2-B",
+      "run_id": "D2B-85719d4f2ca4",
+      "verdict": "candidate",
+      "metric": "M-D2B-gap-resolution",
+      "n_candidate": 3,
+      "n_gaps": 3,
+      "evidence": "experiments/d2b_engineering/results/D2B-85719d4f2ca4.json"
+    },
+    {
+      "experiment": "D3-A",
+      "run_id": "D3A-0000ebfa7eba",
+      "verdict": "candidate",
+      "metric": "M-D3-TOP1",
+      "value": 0.908425,
+      "delta": 0.021978,
+      "ci_low": 0.003663,
+      "ci_high": 0.043956,
+      "ece": 0.065687,
+      "reason": "主终点 M-D3-TOP1 95% CI 下界 0.003663 > 0 且 ECE=0.065687 ≤ 0.1",
+      "evidence": "experiments/d3a_intent/results/D3A-0000ebfa7eba.json"
+    },
+    {
+      "experiment": "D3-B",
+      "run_id": "D3B-e1b0514d4971",
+      "verdict": "candidate",
+      "metric": "M-D3B-recall-step-reduction",
+      "delta_recall_steps": 7.095238095238095,
+      "ci_low": 7.018315018315018,
+      "ci_high": 7.194139194139194,
+      "hit_rate": 0.588096844675792,
+      "evidence": "experiments/d3b_intent_combo/results/D3B-e1b0514d4971.json"
+    },
+    {
+      "experiment": "X-A",
+      "run_id": "XA-899fa1a5e9ed",
+      "verdict": "candidate",
+      "metric": "M-X-G123",
+      "g123": 0.07999999999999985,
+      "omega": 0.059999999999999845,
+      "ci_low": 0.023325364072016228,
+      "ci_high": 0.135617817016024,
+      "evidence": "experiments/xa_transfer/results/XA-899fa1a5e9ed.json"
+    },
+    {
+      "experiment": "E2",
+      "verdict": "falsified",
+      "metric": "M2-self-generated-ratio",
+      "value": 0.0,
+      "n_admitted": 0,
+      "n_novel": 32,
+      "reason": "M2=0.0, admitted=0 (无自生成验证策略)",
+      "evidence": "experiments/e2_hypothesis/e2_batch_result.json"
+    },
+    {
+      "experiment": "E3",
+      "verdict": "e3_candidate",
+      "metric": "M3-coupling-MAE",
+      "mae_coupled": 0.045131,
+      "mae_ablated": 0.045743,
+      "p_value": 0.0001,
+      "improvement_pct": 2.48,
+      "evidence": "experiments/e3_coupling/counterfactual_result.json"
+    },
+    {
+      "experiment": "E5",
+      "verdict": "inconclusive",
+      "metric": "M6-compositional-generalization",
+      "acc_composition": 0.5020080321285141,
+      "acc_knn": 0.536144578313253,
+      "p_value": 0.23657634236576341,
+      "homomorphism_error": 0.015037835680061807,
+      "evidence": "experiments/e5_cbr_holdout/e5_holdout_shadow_rl_result.json"
+    },
+    {
+      "experiment": "E1",
+      "verdict": "candidate_weak",
+      "metric": "M1-broadcast-linkage",
+      "broadcasts": 1,
+      "actions": 1,
+      "m1_rate": 0.5,
+      "note": "需 7 天 shadow 跑数 + ≥1 次非预设联动候选",
+      "evidence": "metrics/emergence_metrics.jsonl (latest)"
+    },
+    {
+      "experiment": "E4",
+      "verdict": "insufficient_data",
+      "metric": "E4-self-correction (readout+cascade+reflection)",
+      "readout_rate": 1.0,
+      "readout_grade": "pipeline_only",
+      "cascade_status": "insufficient_data",
+      "self_correction_rate": 0.9522935779816514,
+      "selfcorr_grade": "pipeline_only",
+      "note": "三指标均需脱离 pipeline_only 代理才可申报",
+      "evidence": "metrics/emergence_metrics.jsonl (latest)"
+    }
+  ],
+  "summary": {
+    "candidate": 5,
+    "falsified": 1,
+    "e3_candidate": 1,
+    "inconclusive": 1,
+    "candidate_weak": 1,
+    "insufficient_data": 1
+  }
+}

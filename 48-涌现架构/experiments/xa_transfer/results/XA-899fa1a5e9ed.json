@@ -1,0 +1,54 @@
+{
+  "run_id": "XA-899fa1a5e9ed",
+  "run_class": "formal",
+  "generated_at": "2026-11-09T17:12:35.737381+00:00",
+  "git_commit": "2739d2ec93",
+  "prereg": {
+    "experiment_id": "XA-XA-899fa1a5e9ed",
+    "protocol_version": "SPEC-EMERGENCE-3D-v0.1 §4.5",
+    "domain": "X",
+    "criterion": "H-X",
+    "hypothesis": "D1/D2/D3 三维联合产生超加性增益（三阶交互显著）",
+    "design": "2x2x2 factorial (8 arms)",
+    "dimensions": {
+      "D1": "trading (proxy=E3 coupling improvement)",
+      "D2": "engineering (proxy=D2-A F1)",
+      "D3": "intent (proxy=D3-B step reduction)"
+    },
+    "success_criteria": "G_123 95% CI > 0 AND Ω > 0 AND at least one G_ij > 0"
+  },
+  "dimension_gains": {
+    "D1": 0.0248,
+    "D2": 0.985714,
+    "D3": 0.8764705882352941
+  },
+  "arms": {
+    "000": 0.0,
+    "100": 0.0248,
+    "010": 0.985714,
+    "001": 0.8764705882352941,
+    "110": 1.060514,
+    "101": 0.9312705882352942,
+    "011": 1.9721845882352942,
+    "111": 2.1569845882352943
+  },
+  "main_effects": {
+    "D1": 0.08479999999999999,
+    "D2": 1.0857140000000003,
+    "D3": 0.9664705882352942
+  },
+  "two_way_interactions": {
+    "G12": 0.01999999999999999,
+    "G13": 0.020000000000000018,
+    "G23": 0.020000000000000018
+  },
+  "g123": 0.07999999999999985,
+  "g123_bootstrap": {
+    "mean": 0.07976382546381997,
+    "ci_low": 0.023325364072016228,
+    "ci_high": 0.135617817016024
+  },
+  "omega_o_information": 0.059999999999999845,
+  "verdict": "candidate",
+  "reason": "G_123 95% CI [0.0233, 0.1356] > 0, Ω=0.0600 > 0, 有正 G_ij"
+}

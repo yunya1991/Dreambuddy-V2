@@ -1,0 +1,362 @@
+{
+  "generated_at": "2026-10-30T00:42:23+08:00",
+  "registry_path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/1-ARCHITECTURE/skills/_registry/registry.json",
+  "schema_version": "1.1",
+  "declared_total_count": 186,
+  "total": 186,
+  "status_counts": {
+    "active": 166,
+    "proposed": 14,
+    "shadow": 6
+  },
+  "category_counts": {
+    "orchestration": 50,
+    "trading": 48,
+    "research": 33,
+    "tooling": 33,
+    "cognition": 10,
+    "meta": 3,
+    "core": 2,
+    "governance": 2,
+    "collaboration": 1,
+    "knowledge": 1,
+    "memory": 1,
+    "support": 1,
+    "trigger": 1
+  },
+  "role_counts": {
+    "coordinator": 58,
+    "researcher": 45,
+    "trader": 40,
+    "operator": 35,
+    "risk": 8
+  },
+  "tier_counts": {
+    "local+github+cloud": 62,
+    "local": 49,
+    "cloud": 30,
+    "local+cloud": 30,
+    "local+github": 12,
+    "github+cloud": 3
+  },
+  "duplicate_names": {
+    "count": 34,
+    "entry_count": 70,
+    "entries": [
+      {
+        "name": "A7-practice-theory",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/A7-practice-theory/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/A7-practice-theory/SKILL.md"
+        ]
+      },
+      {
+        "name": "A8-theory-practice-verification",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/A8-theory-practice-verification/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/A8-theory-practice-verification/SKILL.md"
+        ]
+      },
+      {
+        "name": "drawio",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/drawio/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/drawio/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-bailian-integration",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/2-INTELLIGENCE/dream-bailian-integration/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-bailian-integration/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-contradiction-theory",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-contradiction-theory/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-contradiction-theory/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-data-analysis",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/2-INTELLIGENCE/dream-data-analysis/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-data-analysis/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-exit-skill-v2",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-exit-skill-v2/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-exit-skill-v2/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-first-principles",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-first-principles/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-first-principles/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-intelligence-monitor",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-intelligence-monitor/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-intelligence-monitor/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-knowledge",
+        "path_count": 3,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/0-CORE/dream-knowledge/SKILL.md",
+          "/home/luke/dreambuddy/11-易经推理系统/skills/2-INTELLIGENCE/dream-knowledge/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-knowledge/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-oneirology",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/2-INTELLIGENCE/dream-oneirology/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-oneirology/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-pretrade-gatekeeper",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-pretrade-gatekeeper/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-pretrade-gatekeeper/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-regime-detector",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-regime-detector/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-regime-detector/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-risk-position-sizing",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-risk-position-sizing/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-risk-position-sizing/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-cross-disciplinary",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-cross-disciplinary/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-cross-disciplinary/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-experiment-design",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-experiment-design/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-experiment-design/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-framework-research",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-framework-research/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-framework-research/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-hypothesis-verification",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-hypothesis-verification/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-hypothesis-verification/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-literature-review",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-literature-review/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-literature-review/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-orchestrator",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-orchestrator/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-orchestrator/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-paper-writing",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-paper-writing/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-paper-writing/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-peer-review",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-peer-review/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-peer-review/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-statistics-check",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-statistics-check/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-statistics-check/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-science-uncertainty-reasoning",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-uncertainty-reasoning/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/dream-science-uncertainty-reasoning/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-signal-scoring-spec",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-signal-scoring-spec/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-signal-scoring-spec/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-strategy-designer",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-strategy-designer/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-strategy-designer/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-strategy-parser",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-strategy-parser/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-strategy-parser/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-strategy-research",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-strategy-research/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-strategy-research/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-tactical-executor",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-tactical-executor/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-tactical-executor/SKILL.md"
+        ]
+      },
+      {
+        "name": "dream-tactical-validator",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/1-TRADE/dream-tactical-validator/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/dream-tactical-validator/SKILL.md"
+        ]
+      },
+      {
+        "name": "learning-episode-writer",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/0-CORE/learning-episode-writer/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/learning-episode-writer/SKILL.md"
+        ]
+      },
+      {
+        "name": "master-seminar",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/11-易经推理系统/skills/2-INTELLIGENCE/master-seminar/SKILL.md",
+          "/home/luke/dreambuddy/6-TRADING/skills/master-seminar/SKILL.md"
+        ]
+      },
+      {
+        "name": "nature-figure",
+        "path_count": 2,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/nature-figure/SKILL.md",
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/research/nature-figure/SKILL.md"
+        ]
+      },
+      {
+        "name": "skill-creator",
+        "path_count": 3,
+        "paths": [
+          "/home/luke/dreambuddy/1-ARCHITECTURE/skills/skill-creator/SKILL.md",
+          "/home/luke/dreambuddy/11-易经推理系统/skills/4-GENERIC/skill-creator/SKILL.md",
+          "/home/luke/dreambuddy/11-易经推理系统/skills/4-GENERIC/skill-creator/skill-creator/SKILL.md"
+        ]
+      }
+    ]
+  },
+  "missing_path": {
+    "count": 186,
+    "samples": [
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/polling-trader-reload/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-arch-research-orchestrator/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-research-workflow/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-framework-research/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-scattered-file-cleanup/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-genome-factor-workflow/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-skill-index-governance/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/nature-shared/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-uncertainty-reasoning/SKILL.md",
+      "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dream-science-peer-review/SKILL.md"
+    ]
+  },
+  "deprecated_archived": {
+    "deprecated": 0,
+    "archived": 0,
+    "total": 0,
+    "names": []
+  },
+  "missing_fields": {
+    "role": {
+      "count": 0,
+      "names": []
+    },
+    "tier": {
+      "count": 0,
+      "names": []
+    },
+    "role_or_tier": {
+      "count": 0,
+      "names": []
+    },
+    "content_hash": {
+      "count": 0,
+      "names": []
+    }
+  },
+  "anomalies": []
+}

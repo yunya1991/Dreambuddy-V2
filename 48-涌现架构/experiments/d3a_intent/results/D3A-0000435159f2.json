@@ -1,0 +1,36 @@
+{
+ "run_id": "D3A-0000435159f2",
+ "run_class": "exploratory",
+ "n_train": 819,
+ "n_test": 273,
+ "system": {
+  "top1": 0.835165,
+  "ece": 0.349911,
+  "alpha": 0.6
+ },
+ "baselines": {
+  "B0_majority": {
+   "top1": 0.007326
+  },
+  "B1_intent_engine": {
+   "top1": 0.886447
+  },
+  "B3_knn": {
+   "top1": 0.772894
+  }
+ },
+ "best_baseline": "B1_intent_engine",
+ "best_baseline_top1": 0.886447,
+ "delta_top1": -0.051282,
+ "bootstrap_ci": {
+  "n": 273,
+  "mean_delta": 0.758242,
+  "ci_low": 0.688645,
+  "ci_high": 0.824176
+ },
+ "ece_threshold": 0.1,
+ "decision": {
+  "verdict": "inconclusive",
+  "reason": "ECE=0.349911 > 0.1，校准未过门槛"
+ }
+}

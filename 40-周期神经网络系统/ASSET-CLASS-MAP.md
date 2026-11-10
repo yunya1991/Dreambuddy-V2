@@ -184,7 +184,7 @@ G2 类内层级（类内轮动/广度）
 
 | 阶段 | 范围 | 依赖 | 验收 |
 |---|---|---|---|
-| P0（现状） | 加密 4 层 + 宏观序列 | 已跑通 | washout 全链刷新（云端） |
+| P0（本地） | 加密 4 层 + 宏观序列 | 本地已跑通 | 本地 washout 全链刷新；**云端 40 日更 2026-11-10 实测在 p1 中断**（见 §九） |
 | P1（已实施 2026-11-09） | 接入贵金属 + 能源龙头（XAU/CL），跨类 R(BTC↔XAU, BTC↔CL)，G1 六锚全量 | OKX 日线 | R 显著性 + t_arrive 稳定；`cross_asset_matrix.json` 产出 |
 | P2 | 跨类 R 显著性调优 + 股票类永续流动性/交易时段质量校验（US500/JP225/TLT 已随 P1 接入） | 交易时段对齐 | 大类间 Granger 显著且 t_arrive 稳定 |
 | P3 | 类内 ETF/个股轮动（SPY→SMH/XLE→NVDA 等） | 流动性筛选 | 类内层级动量梯度有效 |
@@ -200,3 +200,17 @@ G2 类内层级（类内轮动/广度）
 1. 黄金主源：**双轨已确认** —— `XAU-USDT-SWAP` 做交易/传导；`XAUT/USDT` spot 仅作宏观背离参考（`GOLD_DUAL_TRACK`）。
 2. 股票类永续日线对齐：**已确认按 OKX 24h 连续报价对齐**（`EQUITY_ALIGNMENT="continuous_24h"`），产出物逐标的标注 `session`。
 3. G1 大类锚：**已确认包含 TLT**（`TLT_IN_G1=True`），利率类参与跨类 R 矩阵；`DGS10/T10Y2Y/HY OAS` 留在 G0 宏观层。G1 共 6 锚：BTC、XAU、CL、US500、JP225、TLT。
+
+---
+
+## 九、云端运行实况（2026-11-10 实测）
+
+| 项 | 实况 | 证据 |
+|---|---|---|
+| 40 日更调度 | 已有 crontab：`2 0 * * *` + `flock /tmp/40_daily_pipeline.lock`（2026-11-10 00:19 写入，尚未到首次触发） | `crontab -l` |
+| 40 首节点 | **失败**：`p1_real_cycle.py` → `sqlite3.OperationalError: no such table: records` | `40/logs/daily_pipeline_20261109.log` |
+| 根因 | 云端 18 采集已切到 PostgreSQL（`DATA_CENTER_BACKEND=postgres`，库 `data_center`，15063 条，最新 2026-11-09T16:22Z）；40 仍读 SQLite `18-数据获取中心/data_center.db`（0 字节） | `systemctl cat datacenter-scheduler.service`；PG `data_center.records` |
+| FRED 历史 | PG 中每个 FRED 序列仅 1 条最新值（`FEDFUNDS=3.88`，无 `date`），不足以驱动周期状态机；本地 SQLite 有 45 条 FEDFUNDS 月度历史 | PG `records` 查询；本地 SQLite 查询 |
+| 云端 40 产出物 | 停滞于 2026-11-05 16:32（`cycle_state.json` / `asset_rotation.json` / `washout_verdicts.json`） | `stat` |
+
+结论：**云端 40 链路未畅通**，卡在「18 写 PG / 40 读 SQLite」的后端错配 + FRED 历史缺失；需先修复数据源再谈 P1 验收。

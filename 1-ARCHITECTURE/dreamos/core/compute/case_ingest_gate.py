@@ -24,9 +24,11 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 logger = logging.getLogger(__name__)
+
+OOS_TS_KEYS = ("ts", "timestamp", "datetime", "time", "date", "observed_at")
 
 # ── 价值评估阈值 ────────────────────────────────────────
 NOVELTY_THRESHOLD = 0.6  # 新颖性 ≥ 0.6 → 高价值
@@ -263,20 +265,100 @@ class CaseIngestGate:
 
     # ── 主循环 ───────────────────────────────────────────
 
+    @staticmethod
+    def _extract_ts(cycle_result: Dict[str, Any]) -> Optional[datetime]:
+        """从 cycle_result 提取时间戳（宽容多种键名与格式）。"""
+        for key in OOS_TS_KEYS:
+            raw = cycle_result.get(key) if isinstance(cycle_result, dict) else None
+            if raw is None:
+                continue
+            if isinstance(raw, datetime):
+                return raw
+            if isinstance(raw, (int, float)):
+                # 秒级或毫秒级时间戳
+                ts = float(raw)
+                if ts > 1e12:
+                    ts /= 1000.0
+                try:
+                    return datetime.fromtimestamp(ts, tz=timezone.utc)
+                except (OSError, ValueError, OverflowError):
+                    continue
+            if isinstance(raw, str):
+                s = raw.strip()
+                if not s:
+                    continue
+                if s.endswith("Z"):
+                    s = s[:-1] + "+00:00"
+                try:
+                    return datetime.fromisoformat(s)
+                except ValueError:
+                    continue
+        return None
+
+    @staticmethod
+    def _in_oos_interval(
+        ts: Optional[datetime],
+        oos_intervals: Optional[Sequence[Tuple[datetime, datetime]]],
+    ) -> bool:
+        """左闭右开区间命中；优先复用 48 registry 的统一实现。"""
+        if ts is None or not oos_intervals:
+            return False
+        try:
+            from registry.ood_intervals import in_oos_interval as _hit  # type: ignore
+
+            return _hit(ts, oos_intervals)
+        except Exception:  # noqa: BLE001 隔离失败 → 本地兜底
+            ts_tz = ts.tzinfo or timezone.utc
+            ts_aware = ts if ts.tzinfo else ts.replace(tzinfo=ts_tz)
+            for start, end in oos_intervals:
+                s = start.astimezone(ts_tz) if start.tzinfo else start.replace(tzinfo=ts_tz)
+                e = end.astimezone(ts_tz) if end.tzinfo else end.replace(tzinfo=ts_tz)
+                if s <= ts_aware < e:
+                    return True
+            return False
+
     def evaluate_and_ingest(
         self,
         cycle_result: Dict[str, Any],
         market_context: Optional[Dict[str, Any]] = None,
+        oos_intervals: Optional[Sequence[Tuple[datetime, datetime]]] = None,
+        allow_missing_ts: bool = False,
     ) -> IngestReport:
         """评估学习价值并决定是否入库
 
         Args:
             cycle_result: SACG 循环结果, 含 direction/signals/indicators/pnl_pct/confidence
             market_context: 市场上下文 (可选)
+            oos_intervals: OOS 黑名单区间 [(start, end), ...]；命中则直接 SKIP 不入。
+                None（默认）→ 不做 OOD 隔离（向后兼容）。
+            allow_missing_ts: cycle_result 无时间戳时是否放行；默认 False（fail-closed）。
 
         Returns:
             IngestReport
         """
+        # P0-1: OOD walk-forward 隔离 —— 命中 OOS 区间直接拒绝入库
+        ts = self._extract_ts(cycle_result)
+        if oos_intervals:
+            if ts is None:
+                if not allow_missing_ts:
+                    report = IngestReport(
+                        decision=IngestDecision.SKIP,
+                        value=LearningValue(),
+                        ingested=False,
+                        reason="oos_interval_excluded: missing_timestamp_fail_closed",
+                    )
+                    logger.info("[case_ingest] OOD 拒绝：缺时间戳，fail-closed")
+                    return report
+            elif self._in_oos_interval(ts, oos_intervals):
+                report = IngestReport(
+                    decision=IngestDecision.SKIP,
+                    value=LearningValue(),
+                    ingested=False,
+                    reason=f"oos_interval_excluded: ts={ts.isoformat()}",
+                )
+                logger.info(f"[case_ingest] OOD 拒绝：ts={ts.isoformat()} 落在 OOS 区间")
+                return report
+
         value = self.evaluate_learning_value(cycle_result, market_context)
         decision = self._decide_ingest(value)
 

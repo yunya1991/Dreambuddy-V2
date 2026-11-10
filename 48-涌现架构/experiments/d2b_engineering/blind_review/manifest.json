@@ -1,0 +1,43 @@
+{
+  "manifest_version": "1.0",
+  "frozen_at": "2026-11-10T00:00:00Z",
+  "reviewer": "AI-reviewer (trae-agent, authorized substitute for independent human)",
+  "note": "评审 agent 身份已显式声明：非独立人工。用户已授权 AI 替代人工执行盲评协议。",
+  "files": [
+    {
+      "path": "33-REA逆向解析工程/ast_call_resolver.py",
+      "sha256": "6e0e19372234cfc9f9320e08e31d0d75fb8d1f02f70108ec3659f00258bd81d1",
+      "bytes": 6390,
+      "lines": 226
+    },
+    {
+      "path": "0-系统文档管理/doc_coverage_checker.py",
+      "sha256": "1713099336537c45dd0fa8a05d4acd7393f072cd24a218203bfdd83e879d30c5",
+      "bytes": 2584,
+      "lines": 86
+    },
+    {
+      "path": "33-REA逆向解析工程/interface_signature_extractor.py",
+      "sha256": "7e240a599a324182b950e705fa1a594a41aac55137d03d0c2263f45ce2788ba5",
+      "bytes": 7824,
+      "lines": 242
+    },
+    {
+      "path": "48-涌现架构/tests/test_d2b_modules.py",
+      "sha256": "d244498a27dadb68996674f930ea9eabbb1834bf688e5f8b62e9d7871f759fda",
+      "bytes": 12492,
+      "lines": 388
+    }
+  ],
+  "protocol": {
+    "axes": [
+      {"name": "originality", "weight": 1, "max": 2},
+      {"name": "correctness", "weight": 1, "max": 2},
+      {"name": "code_quality", "weight": 1, "max": 2},
+      {"name": "test_coverage", "weight": 1, "max": 2},
+      {"name": "maintainability", "weight": 1, "max": 2}
+    ],
+    "max_total_per_file": 10,
+    "aggregate_pass_threshold": 7.0
+  }
+}

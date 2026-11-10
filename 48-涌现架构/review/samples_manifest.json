@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-11-09",
+  "sample_count": 240,
+  "d2_count": 120,
+  "d3_count": 120,
+  "stratum_counts": {
+    "good": 40,
+    "medium": 120,
+    "poor": 80
+  },
+  "sha256": "f63a15c13bab28e5227747a60897137b3eba1e49388083c22bd53daaaf9b89a7",
+  "stratification": {
+    "D2": "edge_in_graph(good)/same_module_not_in_graph(medium)/cross_module_not_in_graph(poor)",
+    "D3": "intent_label_confidence terciles: hi(good)/mid(medium)/lo(poor)"
+  },
+  "seed": 42
+}

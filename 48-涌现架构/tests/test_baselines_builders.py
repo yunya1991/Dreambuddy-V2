@@ -113,7 +113,7 @@ def mini_sessions(tmp_path: Path) -> Path:
                     "action_count": 2,
                     "recalled_memory_ids": ["VM-1"],
                     "recalled_processes": [{"skill_id": "brainstorming", "kind": "meta"}],
-                    "files_touched": ["a.py"],
+                    "files_touched": ["pkg/a.py"],
                     "task_type_history": (
                         [{"from": "configuration", "to": tt, "timestamp": ts + 50}]
                         if i == 1
@@ -154,6 +154,12 @@ class TestBuildD3IntentEvents:
         e = events[0]
         assert e["session_id"] == "CS-1"
         assert e["intent_proxy"] == "configuration"
+        # P0-2 直接意图标签
+        assert e["intent_label"] == "configuration:stable:pkg"
+        assert e["intent_stable"] is True
+        assert e["intent_trajectory"] == ["configuration"]
+        assert e["intent_signals"]["transition_count"] == 0
+        assert e["intent_label_confidence"] == 1.0
         assert e["recalled_skills"] == ["brainstorming"]
         assert e["action_type_distribution"] == {"file_change": 1, "recall": 1}
         assert e["action_files"] == ["a.py"]
@@ -161,6 +167,14 @@ class TestBuildD3IntentEvents:
         assert "隐私" not in json.dumps(events, ensure_ascii=False)
         # correction_count 来自 task_type_history
         assert events[1]["correction_count"] == 1
+
+    def test_intent_label_drifted_trajectory(self, mini_sessions: Path):
+        events, _ = d3.load_events(mini_sessions)
+        drifted = next(e for e in events if e["correction_count"] > 0)
+        assert drifted["intent_stable"] is False
+        assert "drifted-1" in drifted["intent_label"]
+        assert len(drifted["intent_trajectory"]) >= 2
+        assert drifted["intent_label_confidence"] < 1.0
 
     def test_temporal_split(self, mini_sessions: Path):
         events, _ = d3.load_events(mini_sessions)

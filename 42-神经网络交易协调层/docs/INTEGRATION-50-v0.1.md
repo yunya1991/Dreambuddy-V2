@@ -1,26 +1,28 @@
 # 42 × 50 集成说明（v0.1 草案）
 
-> 状态：🟡 草案，待评审；不修改 42 SPEC v1.2 冻结正文
-> 日期：2026-11-07
+> 状态：🟡 草案，待评审；不修改 42 SPEC v1.2 冻结正文（2026-11-10 回填云端实测，见 §9）
+> 日期：2026-11-07（状态更新 2026-11-10）
 > 关联：SPEC-49 v0.14；50-NN主矛盾评估器 SPEC v0.1；ADR-0002
 
 ## 1. 目的
 
 明确 42 总线在 NN 闭环链中的角色：**input-only 信号汇聚 + 约束/参数透传**，下游由 50-NN主矛盾评估器消费；42 不做策略判断、不下单。
 
-## 2. 当前落地状态（2026-11-07，main `3422766`）
+## 2. 当前落地状态（2026-11-10 实测，main `1867585a`）
 
 - P1-01～P1-07 已完成：SignalBus 持久化/去重/TTL、registry horizon、`DREAMBUDDY_ROOT`、11 子池状态文件、canonical source、ParamGovernor、可观测性、`run_bus`。
-- registry 8 源：
+- registry 10 源（`registry.yaml` 实测）：
   - `43-strategic-extension`（days）
   - `40-cycle`（days）
+  - `40-divergence`（days）
   - `23-contradiction`（hours，23 输出镜像）
   - `29-event`（hours，由 23 写入）
   - `11-bcrm`（days，资产类）
+  - `11-bcrm-tactical`（hours，D3 每币技术源，已实现）
   - `11-bdsm`（days，每币）
   - `11-washout`（hours，11 子池状态文件）
   - `11-event-arbitrage`（hours，11 子池状态文件）
-- `ENABLE_11_STATE_ADAPTER` 默认关闭（回滚路径）；R0 需打开并验证。
+- 云端 crontab 已设 `ENABLE_11_STATE_ADAPTER=1`，`run_bus` 每 15 分钟运行；实测 `runtime/bus_state.json` 含 43 条信号、7 个源（`29-event` / `11-washout` / `11-event-arbitrage` 无信号）。
 
 ## 3. 下游 50 的消费规则
 
@@ -56,12 +58,24 @@
 
 ## 7. D3 技术源（M2）
 
-- 42 现有 8 源中没有每币技术源（`11-bcrm` 是资产类）。
-- R0 新增 `11-bcrm-tactical`：11 `_last_bcrm2_result` 每币快照 + 42 只读适配器；无该源时 50 的 D3=neutral（降级可观测），不得用资产类信号冒充。
+- 原 8 源中没有每币技术源（`11-bcrm` 是资产类）。
+- `11-bcrm-tactical` 已实现并注册（hours，11 `_last_bcrm2_result` 每币快照 + 42 只读适配器）；云端实测已产出 26 条信号。
 
 ## 8. 待办（R0）
 
-1. 打开 `ENABLE_11_STATE_ADAPTER=1`，验证 washout/event-arbitrage 信号 TTL 与去重；确认 11 子池 authority 配置。
-2. `run_bus` 调度上线（按 horizon/频率）+ 资源基线。
-3. 验证 8 源共存、空 bus 告警、源计数指标；新增 `11-bcrm-tactical`。
+1. ~~打开 `ENABLE_11_STATE_ADAPTER=1`~~（云端 crontab 已开启）；待验证 washout/event-arbitrage 信号 TTL 与去重，并确认 11 子池 authority 配置。
+2. ~~`run_bus` 调度上线~~（云端每 15 分钟）；待补资源基线与空 bus 告警验证。
+3. 验证 10 源共存与源计数指标；补齐 `29-event` / `11-washout` / `11-event-arbitrage` 无信号原因。
 4. 为 50 提供只读快照（bus_state + 源健康度），不新增写接口。
+
+## 9. 云端实测状态（2026-11-10）
+
+| 链路 | 状态 | 证据 |
+|---|---|---|
+| 42 `run_bus` 调度 | PASS | crontab `*/15`；`runtime/bus_state.json` 最新 2026-11-09T16:15Z |
+| 42 信号内容 | PASS（7/10 源） | 43 条信号：40-cycle/40-divergence/43/23/11-bcrm/11-bdsm/11-bcrm-tactical |
+| 40 → 42 新鲜度 | **FAIL** | `40-cycle` payload `state_generated_at=2026-10-26T04:48:54Z`；40 产出物 mtime 2026-11-05；适配器无 staleness 闸门，仅 `expires_at=now+24h` |
+| 42 → 43 | PASS（降级） | 43 每 30 分钟发布；F&G 不可用（cron 无 PG 密码 + SQLite 无 `records` 表），fail-open |
+| 50 消费 | **NOT DEPLOYED** | 云端 `50/runtime/` 仅空目录；生产代码无 import 50；无 systemd/cron |
+
+结论：42/43 自身在跑，但上游 40 断流且 50 未接入，端到端 NN 闭环**未畅通**。

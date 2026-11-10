@@ -23,6 +23,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PROPOSALS_PATH = _REPO_ROOT / "48-涌现架构" / "registry" / "gap_type_proposals.jsonl"
 
 # gap_type → 能力域 映射表（SPEC §4 E6：19 数据采集 / 因子工程 / evolution-case-ingest / wind 数据）
+# SPEC-EMERGENCE-3D v0.1 §6.2 新增 D2/D3 架构与意图类 gap_type（P1-1 注册）
 ROUTE_TABLE = {
     "missing_market_data": "19-数据访问层",
     "missing_fundamental_data": "19-数据访问层",
@@ -33,6 +34,14 @@ ROUTE_TABLE = {
     "trading_recall_log_missing": "11-易经推理系统",
     "reflection_log_missing": "35-广义认知",
     "domain_state_series_missing": "4-MEMORY",
+    # D2-B 架构类（§6.2）
+    "architecture_gap": "33-REA",
+    "module_missing": "33-REA",
+    "doc_debt": "0-系统文档管理",
+    "interface_mismatch": "33-REA",
+    # D3-B 意图类（§6.2）
+    "intent_label_missing": "35-广义认知",
+    "intent_taxonomy_conflict": "35-广义认知",
 }
 
 CLAIM_ALERT_HOURS = 48

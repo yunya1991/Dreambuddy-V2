@@ -42,6 +42,25 @@ def test_route_unknown_type_goes_to_proposals(tmp_path):
     assert proposal["status"] == "pending_human_review"
 
 
+def test_route_d2_d3_architecture_types(tmp_path):
+    """P1-1：SPEC §6.2 新增的 D2/D3 架构与意图类 gap_type 路由。"""
+    path = tmp_path / "gaps.jsonl"
+    proposals = tmp_path / "proposals.jsonl"
+    cases = {
+        "architecture_gap": "33-REA",
+        "module_missing": "33-REA",
+        "doc_debt": "0-系统文档管理",
+        "interface_mismatch": "33-REA",
+        "intent_label_missing": "35-广义认知",
+        "intent_taxonomy_conflict": "35-广义认知",
+    }
+    for gap_type, expected_domain in cases.items():
+        gap = cg.new_gap(gap_type, {"probe": True}, created_by="t")
+        assert gr.route_gap(gap, gaps_path=path, proposals_path=proposals) == expected_domain
+    # 新类型不应落 proposals
+    assert not proposals.exists()
+
+
 def test_scan_timeouts_alert_and_expire(tmp_path):
     path = tmp_path / "gaps.jsonl"
     now = datetime(2026, 11, 5, 12, 0, tzinfo=timezone.utc)

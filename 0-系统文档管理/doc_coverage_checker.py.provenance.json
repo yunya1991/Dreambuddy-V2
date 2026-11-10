@@ -1,0 +1,7 @@
+{
+  "commit_sha": "d3032c139e258d52cfc69d5b2a86195fef6ea007",
+  "artifact": "doc_coverage_checker.py",
+  "artifact_sha256": "1713099336537c45dd0fa8a05d4acd7393f072cd24a218203bfdd83e879d30c5",
+  "generated_at": "2026-11-10T02:18:20.639109+00:00",
+  "generator": "d2b gate_45 local_attestation"
+}

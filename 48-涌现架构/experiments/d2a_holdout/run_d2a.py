@@ -57,7 +57,7 @@ def _corpus_paths(root: Path, snapshot: dict) -> list[Path]:
 def run_module(
     root: Path, graph: dict, mod: holdout.HoldoutModule, out_dir: Path, system_cmd: str | None
 ) -> dict:
-    built = holdout.build_snapshot(graph, mod, salt=_git_commit())
+    built = holdout.build_snapshot(graph, mod, salt=_git_commit(), root=root)
     snap, manifest = built["snapshot"], built["exclusion_manifest"]
     mod_dir = out_dir / mod.module.replace("/", "_")
     mod_dir.mkdir(parents=True, exist_ok=True)
@@ -86,6 +86,9 @@ def run_module(
     system_status = "not_provided"
     if system_cmd:
         system_pred, system_status = _run_system(system_cmd, snap, manifest, mod_dir)
+        # 与基线/GT 同口径：dst 归一到模块级（module_of）
+        if system_pred is not None:
+            system_pred = baselines.normalize_predictions(system_pred)
 
     scores = evaluate.evaluate_module(system_pred, base_preds, truth)
     return {

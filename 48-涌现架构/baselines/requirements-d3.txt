@@ -1,0 +1,4 @@
+# D3 意图预测实验依赖清单（P1-3）
+# IntentEngine 导入链：dreamos/__init__.py → apps → api_server(Flask)
+# 仅 flask 为导入时硬依赖；requests 为 LLM 调用时 lazy import（规则基线不需要）
+flask>=2.0

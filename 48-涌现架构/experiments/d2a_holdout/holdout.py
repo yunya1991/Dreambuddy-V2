@@ -209,15 +209,60 @@ def make_canary(module: str, salt: str = "") -> str:
     return f"CANARY-{digest.upper()}"
 
 
+def _contaminating_kept_files(
+    root: Path, removed_files: list[str], kept_file_ids: list[str]
+) -> set[str]:
+    """识别与任一被扣留文件内容高度重叠的保留文件（去污染）。
+
+    复用 leak_audit 的 shingle/containment 口径：若某保留文件包含某被扣留文件
+    ≥ CONTAINMENT_THRESHOLD 比例的 5-gram，则该保留文件属于重复副本或嵌入源码的
+    文档，留在语料中会触发泄漏审计第 2 重（content），故一并移除。
+
+    仅对 python/markdown 节点做检查；其他节点类型无文本内容，不参与。
+    """
+    from .leak_audit import CONTAINMENT_THRESHOLD, containment, shingles
+
+    removed_shingles: dict[str, set[str]] = {}
+    for f in removed_files:
+        p = root / f
+        if p.is_file():
+            try:
+                removed_shingles[f] = shingles(p.read_text(encoding="utf-8", errors="replace"))
+            except OSError:
+                continue
+
+    contaminating: set[str] = set()
+    for kid in kept_file_ids:
+        p = root / kid
+        if not p.is_file():
+            continue
+        try:
+            text = p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        ks = shingles(text)
+        if not ks:
+            continue
+        for inner in removed_shingles.values():
+            if inner and containment(inner, ks) >= CONTAINMENT_THRESHOLD:
+                contaminating.add(kid)
+                break
+    return contaminating
+
+
 def build_snapshot(
     graph: dict,
     module: HoldoutModule,
     salt: str = "",
+    root: Path | None = None,
 ) -> dict:
     """构建单模块 holdout 快照 + exclusion_manifest（§4.1 污染控制）。
 
     返回 dict(snapshot, exclusion_manifest)。snapshot 不含被扣留模块任何节点/边内容。
     指向被扣留模块的边也一律不保留——线索只存在于其他文件的源码文本中。
+
+    若传入 ``root``，额外执行去污染：移除与任一被扣留文件内容高度重叠的保留文件
+    （重复副本 / 嵌入源码的文档），避免泄漏审计第 2 重（content containment）误报。
     """
     canary = make_canary(module.module, salt)
     module.canary = canary
@@ -228,6 +273,16 @@ def build_snapshot(
         for n in graph.get("nodes", [])
         if n["id"] not in holdout_files and module_of(n["id"]) != module.module
     ]
+
+    # 去污染：移除内容与被扣留文件高度重叠的保留文件
+    decontaminated: set[str] = set()
+    if root is not None:
+        kept_file_ids = [
+            n["id"] for n in kept_nodes if n["type"] in ("python_file", "markdown_doc")
+        ]
+        decontaminated = _contaminating_kept_files(root, module.files, kept_file_ids)
+        kept_nodes = [n for n in kept_nodes if n["id"] not in decontaminated]
+
     kept_ids = {n["id"] for n in kept_nodes}
     kept_edges = [
         {"src": e["src"], "dst": e["dst"], "kind": e["kind"]}
@@ -254,9 +309,12 @@ def build_snapshot(
         "removed_node_count": len(holdout_files),
         "removed_edges": removed_edges,
         "removed_edge_count": len(removed_edges),
+        "decontaminated_kept_files": sorted(decontaminated),
+        "decontaminated_count": len(decontaminated),
         "ground_truth_edges": module.inbound_edges,
         "ground_truth_edge_count": len(module.inbound_edges),
-        "note": "ground truth 从完整仓库提取，不进入输入语料",
+        "note": "ground truth 从完整仓库提取，不进入输入语料；"
+        "decontaminated_kept_files 为内容与被扣留文件高度重叠而一并移除的保留文件",
     }
     return {"snapshot": snapshot, "exclusion_manifest": exclusion_manifest}
 

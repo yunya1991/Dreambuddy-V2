@@ -20,7 +20,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-_REPO_ROOT = Path("/home/luke/dreambuddy")
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 KLINE_DIR = _REPO_ROOT / "11-易经推理系统" / "scripts" / "data" / "klines"
 DEFAULT_SYMBOLS = ("BTC", "ETH", "SOL", "BNB")
 INITIAL_CAPITAL = 10000.0

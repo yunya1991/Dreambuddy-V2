@@ -250,31 +250,37 @@ class BayesianMemoryUpdater:
         memory_id: str,
         observation_success: bool,
         followed_memory: bool,
+        observation_ts: Optional[datetime] = None,
+        oos_intervals: Optional[List[Tuple[datetime, datetime]]] = None,
+        allow_missing_ts: bool = False,
     ) -> Tuple[float, str]:
         """
         严格贝叶斯置信度更新。
 
-        步骤：
-        1. 获取先验 P(A) = entry.confidence
-        2. 用 Beta 分布计算似然度 P(B|A)
-           - 成功: P(B_success|A) = α/(α+β)
-           - 失败: P(B_failure|A) = β/(α+β) = 1 - 成功似然度
-           - 未遵循: 0.5 (中性)
-        3. 用全概率公式计算证据 P(B)
-           - P(B) = P(B|A)P(A) + P(B|¬A)P(¬A)
-           - P(B_success|¬A) = base_success_rate
-           - P(B_failure|¬A) = 1 - base_success_rate
-        4. 贝叶斯: posterior = likelihood × prior / evidence
-        5. 先更新 Beta 参数 (α+=1 or β+=1，若遵循)
-        6. 基于"创建时间→年龄"计算指数遗忘因子，向 0.5 回归
-        7. 质量等级判定
+        新增 P0-1 OOD 隔离参数：
+          - observation_ts: 验证观察发生的时间戳；落在 oos_intervals 内则不更新 posterior。
+          - oos_intervals: OOS 黑名单区间 [(start, end), ...]；None（默认）不隔离。
+          - allow_missing_ts: 缺 observation_ts 时是否放行；默认 False（fail-closed，不更新）。
+
+        其余逻辑见原 docstring 步骤 1-7。
         """
         entry = self.memories.get(memory_id)
         if not entry:
             raise ValueError(f"记忆不存在: {memory_id}")
 
-        # ---------- Step 1: 先验 ----------
         prior = entry.confidence
+
+        # P0-1: OOS 观察不得污染记忆升级 —— 命中区间或缺时间戳则直接返回先验
+        if oos_intervals:
+            if observation_ts is None:
+                if not allow_missing_ts:
+                    self._record_oos_audit(memory_id, observation_ts, None, "missing_ts")
+                    return prior, entry.quality_level
+            elif self._in_oos_interval(observation_ts, oos_intervals):
+                self._record_oos_audit(memory_id, observation_ts, oos_intervals, "in_interval")
+                return prior, entry.quality_level
+
+        # ---------- Step 1: 先验 ----------
         prior = max(0.0001, min(0.9999, prior))  # 防止极端值导致除0
 
         # ---------- Step 2: Beta 似然度 (优化点1) ----------
@@ -332,6 +338,56 @@ class BayesianMemoryUpdater:
             self._deposit_to_knowledge_base(entry)
 
         return posterior, entry.quality_level
+
+    # ============================================================
+    #  P0-1: OOD 隔离辅助
+    # ============================================================
+
+    def _in_oos_interval(
+        self,
+        ts: Optional[datetime],
+        oos_intervals: Optional[List[Tuple[datetime, datetime]]],
+    ) -> bool:
+        """左闭右开区间命中；优先复用 48 registry 的统一实现。"""
+        if ts is None or not oos_intervals:
+            return False
+        try:
+            from registry.ood_intervals import in_oos_interval as _hit  # type: ignore
+
+            return _hit(ts, oos_intervals)
+        except Exception:  # noqa: BLE001 隔离失败 → 本地兜底
+            ts_tz = ts.tzinfo or datetime.now().astimezone().tzinfo
+            ts_aware = ts if ts.tzinfo else ts.replace(tzinfo=ts_tz)
+            for start, end in oos_intervals:
+                s = start.astimezone(ts_tz) if start.tzinfo else start.replace(tzinfo=ts_tz)
+                e = end.astimezone(ts_tz) if end.tzinfo else end.replace(tzinfo=ts_tz)
+                if s <= ts_aware < e:
+                    return True
+            return False
+
+    def _record_oos_audit(
+        self,
+        memory_id: str,
+        observation_ts: Optional[datetime],
+        oos_intervals: Optional[List[Tuple[datetime, datetime]]],
+        reason: str,
+    ) -> None:
+        """记录 OOS 排除审计事件（内存列表，便于测试断言；生产可对接日志/审计库）。"""
+        if not hasattr(self, "_oos_audit_log"):
+            self._oos_audit_log: list = []
+        self._oos_audit_log.append(
+            {
+                "memory_id": memory_id,
+                "observation_ts": observation_ts.isoformat() if observation_ts else None,
+                "interval_count": len(oos_intervals) if oos_intervals else 0,
+                "action": "oos_excluded",
+                "reason": reason,
+                "at": datetime.now().isoformat(),
+            }
+        )
+
+    def get_oos_audit_log(self) -> list:
+        return getattr(self, "_oos_audit_log", [])
 
     # ============================================================
     #  优化点1：Beta分布似然度

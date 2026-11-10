@@ -203,11 +203,29 @@ M0 完成后 → G1 解除 → 启动 M1。
 
 ---
 
+## 七、云端链路实测（2026-11-10，main `1867585a`）
+
+| 检查项 | 结果 | 证据 |
+|---|---|---|
+| 40 日更调度 | PASS（刚补） | crontab `2 0 * * *` + flock，2026-11-10 00:19 写入，尚未首次触发 |
+| 40 执行 | **FAIL** | `p1_real_cycle.py` → `sqlite3.OperationalError: no such table: records`（`40/logs/daily_pipeline_20261109.log`） |
+| 数据源 | **错配** | 云端 18 采集写 PG `data_center`（15063 条，最新 2026-11-09T16:22Z）；40 读 SQLite `data_center.db`（0 字节） |
+| FRED 历史 | **缺失** | PG 每序列仅 1 条最新值（`FEDFUNDS=3.88`，无 `date`）；本地 SQLite 有 45 条月度历史 |
+| 40 产出物 | **停滞** | `cycle_state.json` / `asset_rotation.json` / `washout_verdicts.json` 均为 2026-11-05 16:32 |
+| 42 `run_bus` | PASS | 每 15 分钟；`bus_state.json` 43 条信号 / 7 个源 |
+| 40 → 42 新鲜度 | **FAIL** | `40-cycle` payload `state_generated_at=2026-10-26T04:48:54Z`，适配器无 staleness 闸门 |
+| 43 发布 | PASS（降级） | 每 30 分钟；F&G unavailable（cron 缺 PG 密码 + SQLite 无表），fail-open |
+| 50 运行 | **NOT DEPLOYED** | 云端 `50/runtime/` 为空；无 systemd/cron；生产代码无 import 50 |
+
+结论：**端到端 NN 闭环未畅通**。阻塞点按优先级：① 40 数据源后端错配 + FRED 历史缺失；② 40→42 缺新鲜度闸门；③ 50 未部署接入。
+
+---
+
 ## 附录 A · 与 PLAN-v0.1 的差异
 
 | v0.1 任务 | v0.2 状态 | 说明 |
 |---|---|---|
-| R0-1 恢复 40 调度 | ✅ 脚本已建，需修 p3_sector | 流水线存在但中途失败 |
+| R0-1 恢复 40 调度 | ⚠️ 脚本+云端 cron 已建；2026-11-10 实测 p1 失败 | 不是 p3_sector，而是 40 读 SQLite、云端 18 写 PG 的后端错配 + FRED 无历史 |
 | R0-2 开 43 桥 | ✅ 已完成（shadow 条件已预注册） | — |
 | R0-3 shadow 条件文档化 | ✅ 已完成 | 代码即文档 |
 | R0-4 washout 激活 | ❌ 被 p3_sector 阻塞 | 非 washout 逻辑问题 |

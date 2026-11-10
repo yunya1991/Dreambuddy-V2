@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-11-09T14:30:00+08:00",
+  "purpose": "P1-5 三套意图体系映射表与 SSoT 决策建议（SPEC-EMERGENCE-3D v0.1 §2.3.4 / §8.2）",
+  "ssot_decision": {
+    "dialog_intent_ssot": "DreamOS 6×30 对话意图体系（core/sense/dialogue_intent/）",
+    "dialog_intent_ssot_path": "1-ARCHITECTURE/dreamos/core/sense/dialogue_intent/taxonomy.py + intent_taxonomy.schema.json",
+    "dialog_intent_ssot_version": "1.0.0",
+    "strategy_intent_ssot": "DreamOS IntentType 策略6型（旧体系，待迁移到 6×30）",
+    "strategy_intent_ssot_path": "1-ARCHITECTURE/dreamos/core/sense/types.py",
+    "legacy_systems": [
+      {"name": "DreamOS IntentType(12型)", "path": "1-ARCHITECTURE/dreamos/core/sense/types.py", "status": "旧过渡方案，intent_engine.py 仍在用，待迁移到 6×30"},
+      {"name": "35型前端正典", "path": "3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-schema.ts", "status": "前端层意图，需映射到 6×30"}
+    ],
+    "rationale": "DreamOS S 层已完成意图体系升级：`core/sense/dialogue_intent/` 下的 6×30 体系（6大类×30二级意图）是权威正典——`intent_taxonomy.schema.json` 明确标注为 SSoT version 1.0.0，含风险等级映射(low/medium/high)、能力路由(database/trading_nodes/direct_response等)、槽位归一化、多意图检测。旧 `types.py` IntentType(12型) 为过渡方案，`intent_engine.py` 尚未迁移；35型前端正典为前端层意图，需通过映射桥接到 6×30。"
+  },
+  "systems": {
+    "frontend_35": {
+      "name": "35型前端正典",
+      "source": "3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-schema.ts",
+      "count": 35,
+      "categories": ["BASE(15)", "SCENARIO(20)"],
+      "types": [
+        "market_query", "deep_analysis", "scenario_sim", "strategy_verify",
+        "execute_trade", "simple_qa", "command", "system_config",
+        "credits_query", "artifact_query", "risk_alert_response", "triple_chain",
+        "need_clarification", "clarification_result", "developer",
+        "asset_comparison", "entry_timing", "exit_timing", "risk_analysis",
+        "position_sizing", "market_sentiment", "trend_analysis", "technical_signal",
+        "support_resistance", "portfolio_allocation", "portfolio_rebalance",
+        "event_analysis", "concept_explain", "strategy_recommendation",
+        "backtest_help", "volatility_analysis", "macro_analysis", "dca_strategy",
+        "arbitrage_opportunity", "sector_rotation"
+      ]
+    },
+    "dreamos_intent_type": {
+      "name": "DreamOS IntentType",
+      "source": "1-ARCHITECTURE/dreamos/core/sense/types.py",
+      "count": 12,
+      "categories": ["通用用户意图(5)", "交易策略意图(6)", "UNCERTAIN(1)"],
+      "types": [
+        "MARKET_QUERY", "EXECUTE_TRADE", "STRATEGY_VERIFY", "SCENARIO_SIM",
+        "SIMPLE_QA", "TREND_FOLLOWING", "MEAN_REVERSION", "FUNDAMENTAL_PLAY",
+        "BREAKOUT", "KNOWLEDGE_MATCH", "DEEP_ANALYSIS", "UNCERTAIN"
+      ]
+    },
+    "kernel_6x30": {
+      "name": "6×30 内核对话意图体系（SSoT）",
+      "source": "1-ARCHITECTURE/dreamos/core/sense/dialogue_intent/taxonomy.py + intent_taxonomy.schema.json",
+      "count": 36,
+      "primary_count": 6,
+      "secondary_count": 30,
+      "status": "已落地，schema 标注为 SSoT v1.0.0",
+      "primary_types": ["query", "analysis", "trade", "strategy", "risk", "dialog"],
+      "secondary_by_primary": {
+        "query": ["market_query", "holding_query", "order_query", "account_query", "market_overview"],
+        "analysis": ["technical_analysis", "holding_analysis", "deep_analysis", "three_screen_analysis", "sector_analysis"],
+        "trade": ["buy", "add_position", "sell", "close_position", "conditional_order", "order_manage"],
+        "strategy": ["stock_recommendation", "factor_screen", "strategy_design", "strategy_optimization"],
+        "risk": ["risk_assessment", "risk_advice", "alert_setup", "portfolio_risk"],
+        "dialog": ["confirm", "cancel", "modify", "repeat", "clarify", "chitchat"]
+      },
+      "risk_levels": {"query": "low", "analysis": "medium", "trade": "high", "strategy": "medium", "risk": "medium", "dialog": "low"},
+      "capability_routes": {"query": "database", "analysis": "trading_nodes", "trade": "trading_nodes", "strategy": "trading_nodes", "risk": "trading_nodes", "dialog": "direct_response"}
+    },
+    "d3_task_type": {
+      "name": "D3 意图事件 task_type（工程任务维度）",
+      "source": "48-涌现架构/baselines/artifacts/d3_intent_events/intent_summary.json",
+      "count": 12,
+      "note": "DreamOS 会话任务分类，与对话意图/策略意图正交；用于 D3-A 意图预测实验的标签体系",
+      "types": [
+        "configuration", "strategy-execution", "architecture-design",
+        "python-development", "documentation", "memory-system",
+        "frontend-development", "trading-data", "general",
+        "trading-system", "knowledge-management", "strategy-governance"
+      ]
+    }
+  },
+  "mappings_6x30_to_legacy": [
+    {"primary": "query", "secondary": "market_query", "frontend_35": "market_query", "dreamos_12": "MARKET_QUERY"},
+    {"primary": "query", "secondary": "holding_query", "frontend_35": null, "dreamos_12": null},
+    {"primary": "query", "secondary": "order_query", "frontend_35": null, "dreamos_12": null},
+    {"primary": "query", "secondary": "account_query", "frontend_35": "credits_query", "dreamos_12": null},
+    {"primary": "query", "secondary": "market_overview", "frontend_35": null, "dreamos_12": null},
+    {"primary": "analysis", "secondary": "technical_analysis", "frontend_35": "technical_signal", "dreamos_12": null},
+    {"primary": "analysis", "secondary": "holding_analysis", "frontend_35": null, "dreamos_12": null},
+    {"primary": "analysis", "secondary": "deep_analysis", "frontend_35": "deep_analysis", "dreamos_12": "DEEP_ANALYSIS"},
+    {"primary": "analysis", "secondary": "three_screen_analysis", "frontend_35": null, "dreamos_12": null},
+    {"primary": "analysis", "secondary": "sector_analysis", "frontend_35": "sector_rotation", "dreamos_12": null},
+    {"primary": "trade", "secondary": "buy", "frontend_35": "execute_trade", "dreamos_12": "EXECUTE_TRADE"},
+    {"primary": "trade", "secondary": "add_position", "frontend_35": null, "dreamos_12": null},
+    {"primary": "trade", "secondary": "sell", "frontend_35": "execute_trade", "dreamos_12": "EXECUTE_TRADE"},
+    {"primary": "trade", "secondary": "close_position", "frontend_35": null, "dreamos_12": null},
+    {"primary": "trade", "secondary": "conditional_order", "frontend_35": null, "dreamos_12": null},
+    {"primary": "trade", "secondary": "order_manage", "frontend_35": null, "dreamos_12": null},
+    {"primary": "strategy", "secondary": "stock_recommendation", "frontend_35": "strategy_recommendation", "dreamos_12": null},
+    {"primary": "strategy", "secondary": "factor_screen", "frontend_35": null, "dreamos_12": null},
+    {"primary": "strategy", "secondary": "strategy_design", "frontend_35": null, "dreamos_12": "STRATEGY_VERIFY"},
+    {"primary": "strategy", "secondary": "strategy_optimization", "frontend_35": null, "dreamos_12": null},
+    {"primary": "risk", "secondary": "risk_assessment", "frontend_35": "risk_analysis", "dreamos_12": null},
+    {"primary": "risk", "secondary": "risk_advice", "frontend_35": "risk_alert_response", "dreamos_12": null},
+    {"primary": "risk", "secondary": "alert_setup", "frontend_35": null, "dreamos_12": null},
+    {"primary": "risk", "secondary": "portfolio_risk", "frontend_35": null, "dreamos_12": null},
+    {"primary": "dialog", "secondary": "confirm", "frontend_35": null, "dreamos_12": null},
+    {"primary": "dialog", "secondary": "cancel", "frontend_35": null, "dreamos_12": null},
+    {"primary": "dialog", "secondary": "modify", "frontend_35": null, "dreamos_12": null},
+    {"primary": "dialog", "secondary": "repeat", "frontend_35": null, "dreamos_12": null},
+    {"primary": "dialog", "secondary": "clarify", "frontend_35": "need_clarification", "dreamos_12": "UNCERTAIN"},
+    {"primary": "dialog", "secondary": "chitchat", "frontend_35": "simple_qa", "dreamos_12": "SIMPLE_QA"}
+  ],
+  "legacy_mappings_35_to_12": [
+    {"frontend_35": "market_query", "dreamos_12": "MARKET_QUERY"},
+    {"frontend_35": "execute_trade", "dreamos_12": "EXECUTE_TRADE"},
+    {"frontend_35": "strategy_verify", "dreamos_12": "STRATEGY_VERIFY"},
+    {"frontend_35": "scenario_sim", "dreamos_12": "SCENARIO_SIM"},
+    {"frontend_35": "simple_qa", "dreamos_12": "SIMPLE_QA"},
+    {"frontend_35": "deep_analysis", "dreamos_12": "DEEP_ANALYSIS"},
+    {"frontend_35": "trend_analysis", "dreamos_12": "TREND_FOLLOWING"},
+    {"frontend_35": "entry_timing", "dreamos_12": "BREAKOUT"},
+    {"frontend_35": "exit_timing", "dreamos_12": "MEAN_REVERSION"},
+    {"frontend_35": "macro_analysis", "dreamos_12": "FUNDAMENTAL_PLAY"},
+    {"frontend_35": "artifact_query", "dreamos_12": "KNOWLEDGE_MATCH"},
+    {"frontend_35": "need_clarification", "dreamos_12": "UNCERTAIN"},
+    {"frontend_35": "clarification_result", "dreamos_12": "UNCERTAIN"}
+  ],
+  "unmapped_frontend_35": [
+    "command", "system_config", "credits_query", "risk_alert_response",
+    "triple_chain", "developer", "asset_comparison", "risk_analysis",
+    "position_sizing", "market_sentiment", "technical_signal",
+    "support_resistance", "portfolio_allocation", "portfolio_rebalance",
+    "event_analysis", "concept_explain", "strategy_recommendation",
+    "backtest_help", "volatility_analysis", "dca_strategy",
+    "arbitrage_opportunity", "sector_rotation"
+  ],
+  "notes": [
+    "DreamOS S 层已升级：6×30 体系（core/sense/dialogue_intent/）是对话意图 SSoT，schema 标注 version 1.0.0",
+    "旧 types.py IntentType(12型) 为过渡方案，intent_engine.py 尚未迁移到 6×30 体系",
+    "35型前端正典为前端层意图，通过 mappings_6x30_to_legacy 桥接到 6×30 SSoT",
+    "D3 task_type（12类工程任务）与对话意图正交，用于 D3-A 意图预测实验标签"
+  ]
+}

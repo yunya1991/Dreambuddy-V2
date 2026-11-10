@@ -1,0 +1,322 @@
+{
+  "run_id": "D2B-85719d4f2ca4",
+  "run_class": "formal",
+  "generated_at": "2026-11-10T01:36:42.822167+00:00",
+  "git_commit": "ed454e2c06",
+  "prereg": {
+    "experiment_id": "D2B-D2B-85719d4f2ca4",
+    "protocol_version": "SPEC-EMERGENCE-3D-v0.1 §4.2",
+    "domain": "D2",
+    "criterion": "H2B",
+    "hypothesis": "系统能针对 E6 缺口生成人未写过、通过 45 门禁的工程方案",
+    "n_gaps": 3,
+    "gate_thresholds": {
+      "coverage": 0.8,
+      "test_pass": 0.95,
+      "pycg": 0.7
+    },
+    "novelty": "模块名不在现有架构图中",
+    "success_criteria": "gap_addressed + novelty + feasibility + 45_gate 全通过"
+  },
+  "n_gaps": 3,
+  "overall_verdict": "candidate",
+  "n_candidate": 3,
+  "evaluations": [
+    {
+      "gap_id": "GAP-20261109-3cde51c5",
+      "gap_type": "architecture_gap",
+      "module_name": "33-REA/ast_call_resolver.py",
+      "gap_addressed": true,
+      "novelty": true,
+      "feasibility": true,
+      "sandbox_errors": [],
+      "gate": {
+        "gate_mode": "real_45_local",
+        "gate_pass": true,
+        "syntax_pass": true,
+        "secrets_pass": true,
+        "bypass_pass": true,
+        "vuln_pass": true,
+        "vuln_status": "stdlib_only",
+        "vuln_count": 0,
+        "traceability_pass": true,
+        "traceability_mode": "local_attestation",
+        "traceability_commit": "ed454e2c06",
+        "coverage_pass": true,
+        "coverage_rate": 0.9767,
+        "coverage_status": "measured",
+        "implemented": true,
+        "secret_hits": [],
+        "bypass_hits": [],
+        "artifact": "33-REA逆向解析工程/ast_call_resolver.py",
+        "deferred": [
+          "E-W5",
+          "E-W6"
+        ],
+        "deferred_reason": {
+          "E-W5": "pycg 需基准集运行",
+          "E-W6": "OpenSSF Scorecard 需网络"
+        },
+        "evaluator_items": {
+          "E-H1-secrets": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H2-vulns": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H3-traceability": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H5-bypass": {
+            "status": "PASS",
+            "detail": null
+          }
+        },
+        "note": "真实门禁：E-H1 秘密 + E-H5 旁路 + py_compile + E-H2 pip-audit (stdlib_only) + E-H3 本地可追溯链(local_attestation)；deferred 项需 CI 环境或方案完整实现",
+        "proxy_metrics_note": "E-H4 已由 coverage 真实测量；E-W5 deferred（pycg 需基准集）"
+      },
+      "verdict": "candidate",
+      "reason": "gap_addressed + novelty + feasibility + 45_gate(real_45_local) 全通过"
+    },
+    {
+      "gap_id": "GAP-20261109-2d97f2fe",
+      "gap_type": "doc_debt",
+      "module_name": "0-系统文档管理/doc_coverage_checker.py",
+      "gap_addressed": true,
+      "novelty": true,
+      "feasibility": true,
+      "sandbox_errors": [],
+      "gate": {
+        "gate_mode": "real_45_local",
+        "gate_pass": true,
+        "syntax_pass": true,
+        "secrets_pass": true,
+        "bypass_pass": true,
+        "vuln_pass": true,
+        "vuln_status": "stdlib_only",
+        "vuln_count": 0,
+        "traceability_pass": true,
+        "traceability_mode": "local_attestation",
+        "traceability_commit": "ed454e2c06",
+        "coverage_pass": true,
+        "coverage_rate": 1.0,
+        "coverage_status": "measured",
+        "implemented": true,
+        "secret_hits": [],
+        "bypass_hits": [],
+        "artifact": "0-系统文档管理/doc_coverage_checker.py",
+        "deferred": [
+          "E-W5",
+          "E-W6"
+        ],
+        "deferred_reason": {
+          "E-W5": "pycg 需基准集运行",
+          "E-W6": "OpenSSF Scorecard 需网络"
+        },
+        "evaluator_items": {
+          "E-H1-secrets": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H2-vulns": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H3-traceability": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H5-bypass": {
+            "status": "PASS",
+            "detail": null
+          }
+        },
+        "note": "真实门禁：E-H1 秘密 + E-H5 旁路 + py_compile + E-H2 pip-audit (stdlib_only) + E-H3 本地可追溯链(local_attestation)；deferred 项需 CI 环境或方案完整实现",
+        "proxy_metrics_note": "E-H4 已由 coverage 真实测量；E-W5 deferred（pycg 需基准集）"
+      },
+      "verdict": "candidate",
+      "reason": "gap_addressed + novelty + feasibility + 45_gate(real_45_local) 全通过"
+    },
+    {
+      "gap_id": "GAP-20261109-1713fa7b",
+      "gap_type": "interface_mismatch",
+      "module_name": "33-REA/interface_signature_extractor.py",
+      "gap_addressed": true,
+      "novelty": true,
+      "feasibility": true,
+      "sandbox_errors": [],
+      "gate": {
+        "gate_mode": "real_45_local",
+        "gate_pass": true,
+        "syntax_pass": true,
+        "secrets_pass": true,
+        "bypass_pass": true,
+        "vuln_pass": true,
+        "vuln_status": "stdlib_only",
+        "vuln_count": 0,
+        "traceability_pass": true,
+        "traceability_mode": "local_attestation",
+        "traceability_commit": "ed454e2c06",
+        "coverage_pass": true,
+        "coverage_rate": 0.9653,
+        "coverage_status": "measured",
+        "implemented": true,
+        "secret_hits": [],
+        "bypass_hits": [],
+        "artifact": "33-REA逆向解析工程/interface_signature_extractor.py",
+        "deferred": [
+          "E-W5",
+          "E-W6"
+        ],
+        "deferred_reason": {
+          "E-W5": "pycg 需基准集运行",
+          "E-W6": "OpenSSF Scorecard 需网络"
+        },
+        "evaluator_items": {
+          "E-H1-secrets": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H2-vulns": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H3-traceability": {
+            "status": "PASS",
+            "detail": null
+          },
+          "E-H5-bypass": {
+            "status": "PASS",
+            "detail": null
+          }
+        },
+        "note": "真实门禁：E-H1 秘密 + E-H5 旁路 + py_compile + E-H2 pip-audit (stdlib_only) + E-H3 本地可追溯链(local_attestation)；deferred 项需 CI 环境或方案完整实现",
+        "proxy_metrics_note": "E-H4 已由 coverage 真实测量；E-W5 deferred（pycg 需基准集）"
+      },
+      "verdict": "candidate",
+      "reason": "gap_addressed + novelty + feasibility + 45_gate(real_45_local) 全通过"
+    }
+  ],
+  "plans": {
+    "GAP-20261109-3cde51c5": {
+      "gap_id": "GAP-20261109-3cde51c5",
+      "gap_type": "architecture_gap",
+      "module_name": "33-REA/ast_call_resolver.py",
+      "architecture_graph_patch": {
+        "add_nodes": [
+          {
+            "id": "33-REA/ast_call_resolver.py",
+            "type": "python_file"
+          }
+        ],
+        "add_edges": [
+          {
+            "source": "33-REA/ast_call_resolver.py",
+            "target": "ast",
+            "kind": "import"
+          },
+          {
+            "source": "33-REA/ast_call_resolver.py",
+            "target": "33-REA/architecture_graph_builder.py",
+            "kind": "call"
+          }
+        ],
+        "upgrade_edges": {
+          "kind": "call",
+          "from": "name_resolution",
+          "to": "ast_precise"
+        }
+      },
+      "design_rationale": "缺口: 函数名级解析（重名取路径排序首个），大量重名假依赖，无运行时数据流。预期: call 边升级为 AST 精确解析或运行时追踪，假依赖率 < 5%。方案: 用 Python ast 模块对每个 python_file 做精确函数定义解析，call 边改为 AST 节点级绑定（消除重名假依赖），并记录运行时追踪 hook。",
+      "steps": [
+        "1. 遍历 architecture_graph 中所有 python_file 节点",
+        "2. 对每个 .py 文件用 ast.parse 提取 FunctionDef/AsyncFunctionDef 的 qualified name",
+        "3. call 边从「函数名匹配」升级为「qualified_name + 定义位置」精确匹配",
+        "4. 统计假依赖率（重名冲突数 / 总 call 边数），目标 < 5%",
+        "5. 回写 architecture_graph.json 的 call 边并加 ast_resolved 标记"
+      ],
+      "dependencies": [
+        "ast",
+        "33-REA/architecture_graph_builder.py"
+      ],
+      "novelty_note": "现有架构图仅用 os.walk + 名称匹配；本方案引入 AST 精确解析，与现有 builder 无重叠",
+      "code_skeleton": "\"\"\"33-REA/ast_call_resolver.py — D2-B 生成方案骨架。\n\n设计依据: 缺口: 函数名级解析（重名取路径排序首个），大量重名假依赖，无运行时数据流。预期: call 边升级为 AST 精确解析或运行时追踪，假依赖率 < 5%。方案: 用 Python ast 模块对每个 python_file 做精确函数定义解析，call 边改为 AST 节点级绑定（消除重名假依赖），并记录运行时追踪 hook。\n\n实施步骤:\n#   1. 遍历 architecture_graph 中所有 python_file 节点\n#   2. 对每个 .py 文件用 ast.parse 提取 FunctionDef/AsyncFunctionDef 的 qualified name\n#   3. call 边从「函数名匹配」升级为「qualified_name + 定义位置」精确匹配\n#   4. 统计假依赖率（重名冲突数 / 总 call 边数），目标 < 5%\n#   5. 回写 architecture_graph.json 的 call 边并加 ast_resolved 标记\n\"\"\"\n\nfrom __future__ import annotations\n\n\ndef resolve_calls(*args, **kwargs):\n    \"\"\"方案入口（骨架：未实现，门禁通过后按步骤实施）。\"\"\"\n    raise NotImplementedError(\n        \"D2-B 骨架：45 门禁通过后按 design_rationale 步骤实施\"\n    )\n"
+    },
+    "GAP-20261109-2d97f2fe": {
+      "gap_id": "GAP-20261109-2d97f2fe",
+      "gap_type": "doc_debt",
+      "module_name": "0-系统文档管理/doc_coverage_checker.py",
+      "architecture_graph_patch": {
+        "add_nodes": [
+          {
+            "id": "0-系统文档管理/doc_coverage_checker.py",
+            "type": "python_file"
+          }
+        ],
+        "add_edges": [
+          {
+            "source": "0-系统文档管理/doc_coverage_checker.py",
+            "target": "0-系统文档管理/2-文档地图",
+            "kind": "doc_ref"
+          }
+        ]
+      },
+      "design_rationale": "缺口: 架构图中部分 python_file 节点无对应 markdown_doc，文档断链/覆盖率不足。预期: 核心模块文档覆盖率 ≥ 0.9，断链数 = 0。方案: 对每个 python_file 节点检查是否存在对应 markdown_doc（同目录或 docs/ 下），输出断链清单 + 覆盖率报告；核心模块自动生成 SKILL.md 骨架。",
+      "steps": [
+        "1. 加载 architecture_graph，按目录聚合 python_file 节点",
+        "2. 对每个核心目录检查是否存在 README.md / SKILL.md",
+        "3. 缺失文档的核心模块生成 markdown 骨架（含 import 边摘要）",
+        "4. 统计覆盖率 = 有文档的核心模块数 / 核心模块总数，目标 >= 0.9",
+        "5. 断链数 = 无对应 markdown_doc 的 python_file 数，目标 = 0"
+      ],
+      "dependencies": [
+        "0-系统文档管理/2-文档地图",
+        "architecture_graph.json"
+      ],
+      "novelty_note": "现有无文档覆盖率自动化检查；本方案新增断链检测 + 骨架生成",
+      "code_skeleton": "\"\"\"0-系统文档管理/doc_coverage_checker.py — D2-B 生成方案骨架。\n\n设计依据: 缺口: 架构图中部分 python_file 节点无对应 markdown_doc，文档断链/覆盖率不足。预期: 核心模块文档覆盖率 ≥ 0.9，断链数 = 0。方案: 对每个 python_file 节点检查是否存在对应 markdown_doc（同目录或 docs/ 下），输出断链清单 + 覆盖率报告；核心模块自动生成 SKILL.md 骨架。\n\n实施步骤:\n#   1. 加载 architecture_graph，按目录聚合 python_file 节点\n#   2. 对每个核心目录检查是否存在 README.md / SKILL.md\n#   3. 缺失文档的核心模块生成 markdown 骨架（含 import 边摘要）\n#   4. 统计覆盖率 = 有文档的核心模块数 / 核心模块总数，目标 >= 0.9\n#   5. 断链数 = 无对应 markdown_doc 的 python_file 数，目标 = 0\n\"\"\"\n\nfrom __future__ import annotations\n\n\ndef check_doc_coverage(*args, **kwargs):\n    \"\"\"方案入口（骨架：未实现，门禁通过后按步骤实施）。\"\"\"\n    raise NotImplementedError(\n        \"D2-B 骨架：45 门禁通过后按 design_rationale 步骤实施\"\n    )\n"
+    },
+    "GAP-20261109-1713fa7b": {
+      "gap_id": "GAP-20261109-1713fa7b",
+      "gap_type": "interface_mismatch",
+      "module_name": "33-REA/interface_signature_extractor.py",
+      "architecture_graph_patch": {
+        "add_nodes": [
+          {
+            "id": "33-REA/interface_signature_extractor.py",
+            "type": "python_file"
+          }
+        ],
+        "add_edges": [
+          {
+            "source": "33-REA/interface_signature_extractor.py",
+            "target": "ast",
+            "kind": "import"
+          },
+          {
+            "source": "33-REA/interface_signature_extractor.py",
+            "target": "33-REA/architecture_graph_builder.py",
+            "kind": "call"
+          }
+        ]
+      },
+      "design_rationale": "缺口: 架构图仅记录 import 边，不记录接口签名/参数契约，holdout 复原时无法校验接口一致性。预期: 架构图节点含公开接口签名（函数名+参数+返回类型），可用于 interface_mismatch 检测。方案: 用 ast 提取每个公开函数的签名（name + args + return annotation），写入架构图节点的 interface_signature 字段，供 interface_mismatch 检测。",
+      "steps": [
+        "1. 对每个 python_file 节点用 ast.parse 提取公开函数（非 _ 开头）",
+        "2. 记录 function name + args (name, annotation, default) + return annotation",
+        "3. 将 interface_signature 字段写入 architecture_graph 对应节点",
+        "4. interface_mismatch 检测: 比较 call 边两端的签名兼容性",
+        "5. 输出 mismatch 清单（参数数量/类型不匹配）"
+      ],
+      "dependencies": [
+        "ast",
+        "33-REA/architecture_graph_builder.py"
+      ],
+      "novelty_note": "现有架构图仅记录 import 边；本方案新增 AST 签名提取 + 契约校验",
+      "code_skeleton": "\"\"\"33-REA/interface_signature_extractor.py — D2-B 生成方案骨架。\n\n设计依据: 缺口: 架构图仅记录 import 边，不记录接口签名/参数契约，holdout 复原时无法校验接口一致性。预期: 架构图节点含公开接口签名（函数名+参数+返回类型），可用于 interface_mismatch 检测。方案: 用 ast 提取每个公开函数的签名（name + args + return annotation），写入架构图节点的 interface_signature 字段，供 interface_mismatch 检测。\n\n实施步骤:\n#   1. 对每个 python_file 节点用 ast.parse 提取公开函数（非 _ 开头）\n#   2. 记录 function name + args (name, annotation, default) + return annotation\n#   3. 将 interface_signature 字段写入 architecture_graph 对应节点\n#   4. interface_mismatch 检测: 比较 call 边两端的签名兼容性\n#   5. 输出 mismatch 清单（参数数量/类型不匹配）\n\"\"\"\n\nfrom __future__ import annotations\n\n\ndef extract_signatures(*args, **kwargs):\n    \"\"\"方案入口（骨架：未实现，门禁通过后按步骤实施）。\"\"\"\n    raise NotImplementedError(\n        \"D2-B 骨架：45 门禁通过后按 design_rationale 步骤实施\"\n    )\n"
+    }
+  }
+}

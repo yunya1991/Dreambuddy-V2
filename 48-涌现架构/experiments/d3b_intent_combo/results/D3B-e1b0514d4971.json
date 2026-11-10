@@ -1,0 +1,347 @@
+{
+  "run_id": "D3B-e1b0514d4971",
+  "run_class": "formal",
+  "generated_at": "2026-11-09T16:56:59.889500+00:00",
+  "git_commit": "1867585a26",
+  "prereg": {
+    "experiment_id": "D3B-D3B-e1b0514d4971",
+    "protocol_version": "SPEC-EMERGENCE-3D-v0.1 §4.4",
+    "domain": "D3",
+    "criterion": "H3B",
+    "hypothesis": "意图知识组合显著减少 recall 步数且不增加错误",
+    "n_train": 819,
+    "n_test": 273,
+    "min_combo_size": 3,
+    "hit_rate_threshold": 0.3,
+    "stat_test": "paired_bootstrap_10k",
+    "success_criteria": "delta_recall_steps CI 下界 > 0 且 hit_rate >= 0.3",
+    "falsification_criteria": "delta CI 上界 <= 0 或 hit_rate < 0.1"
+  },
+  "n_train": 819,
+  "n_test": 273,
+  "n_combos": 11,
+  "result": {
+    "n_test": 273,
+    "n_with_combo": 273,
+    "mean_actual_recall_steps": 8.095238095238095,
+    "mean_combo_recall_steps": 1,
+    "mean_delta_recall_steps": 7.095238095238095,
+    "delta_ci_low": 7.018315018315018,
+    "delta_ci_high": 7.194139194139194,
+    "mean_hit_rate": 0.588096844675792,
+    "mean_correction_count": 0.4725274725274725,
+    "verdict": "candidate",
+    "reason": "delta_recall_steps 95% CI [7.0183, 7.1941] > 0 且 hit_rate=0.588 >= 0.3"
+  },
+  "combos": {
+    "memory-system": {
+      "intent_proxy": "memory-system",
+      "memory_ids": [
+        "VM-1791117019444-132d2aa2",
+        "VM-1791719915640-01ee5234",
+        "VM-1786781770811-b879025a",
+        "VM-1791719928395-66f4c87b",
+        "VM-1791620305009-11606ecc",
+        "VM-1786242777697-0c9bbfa7",
+        "VM-1786251509040-be900c20",
+        "VM-1786271612589-1f3eb672",
+        "VM-1786241745186-252e0fb3",
+        "VM-1793529548467-e008d231"
+      ],
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans"
+      ],
+      "file_domains": [
+        "4-MEMORY",
+        "23-四层闭环自进化交易架构",
+        "experiments",
+        "47-MCP管理系统",
+        ".bsk-home",
+        "0-系统文档管理"
+      ],
+      "support": 47,
+      "size": 19
+    },
+    "general": {
+      "intent_proxy": "general",
+      "memory_ids": [
+        "VM-1786646435873-3614d5ab",
+        "VM-1786646652730-ce49df0a",
+        "VM-1786646516626-13f41a46",
+        "VM-1786862822784-f2a90b4a",
+        "VM-1786871150456-62353870",
+        "VM-1786239393716-7615a51b",
+        "VM-1786239393818-a9d715b6",
+        "VM-1786240081532-803e5a10",
+        "VM-1786271612589-1f3eb672",
+        "VM-1786302733261-b3abf7e1"
+      ],
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans"
+      ],
+      "file_domains": [
+        "\"14-V15\\347\\273\\217\\345\\205\\270\\351\\251\\254\\344\\270\\201\\347\\255\\226\\347\\225\\245",
+        ".gitignore",
+        "\"0-\\347\\263\\273\\347\\273\\237\\346\\226\\207\\346\\241\\243\\347\\256\\241\\347\\220\\206",
+        "6-TRADING",
+        "\"3-EVOLUTION",
+        "4-MEMORY"
+      ],
+      "support": 12,
+      "size": 19
+    },
+    "strategy-execution": {
+      "intent_proxy": "strategy-execution",
+      "memory_ids": [
+        "VM-1786324739675-1e9dbf76",
+        "VM-1786646938426-bac2ac3c",
+        "VM-1786647110263-08d88a9d",
+        "VM-1786245012612-4c1f8f27",
+        "VM-1786781770811-b879025a",
+        "VM-1786327730044-53538f98",
+        "VM-1786327975263-2c8011a6",
+        "VM-1786324739691-b2d3b184",
+        "VM-1786647429645-58f5cef5",
+        "VM-1786971810459-87330884"
+      ],
+      "skills": [
+        "t0-market-cognition",
+        "t1-strategy-synthesis",
+        "t2-trade-execution"
+      ],
+      "file_domains": [
+        "experiments",
+        "11-易经推理系统",
+        "4-MEMORY",
+        "14-V15经典马丁策略",
+        "23-四层闭环自进化交易架构",
+        "1-ARCHITECTURE"
+      ],
+      "support": 257,
+      "size": 19
+    },
+    "documentation": {
+      "intent_proxy": "documentation",
+      "memory_ids": [
+        "VM-1791658490264-2a77b235",
+        "VM-1791658499069-3eb1340a",
+        "VM-1791458631598-2f9a4c9a",
+        "VM-1791546723303-b210beab",
+        "VM-1791558207967-29d11c9d",
+        "VM-1791806872467-1c70fdd0",
+        "VM-1792086153266-ec9b36c3",
+        "VM-1792133601635-c7dc55d8",
+        "VM-1791349257311-6f43f0c3",
+        "VM-1791458196691-fa3aa4b3"
+      ],
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans"
+      ],
+      "file_domains": [
+        "23-四层闭环自进化交易架构",
+        "4-MEMORY",
+        "0-系统文档管理",
+        "31-分布式计算部署",
+        "33-REA逆向解析工程",
+        "1-ARCHITECTURE"
+      ],
+      "support": 48,
+      "size": 19
+    },
+    "configuration": {
+      "intent_proxy": "configuration",
+      "memory_ids": [
+        "VM-1791658490264-2a77b235",
+        "VM-1791658499069-3eb1340a",
+        "VM-1791736498113-5a802bbd",
+        "VM-1791806872467-1c70fdd0",
+        "VM-1791806982696-0b920fbe",
+        "VM-1786327975263-2c8011a6",
+        "VM-1791458631598-2f9a4c9a"
+      ],
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans"
+      ],
+      "file_domains": [
+        "23-四层闭环自进化交易架构",
+        ".bsk-home",
+        "4-MEMORY",
+        "experiments",
+        "33-REA逆向解析工程",
+        "1-ARCHITECTURE"
+      ],
+      "support": 152,
+      "size": 16
+    },
+    "architecture-design": {
+      "intent_proxy": "architecture-design",
+      "memory_ids": [
+        "VM-1786647429645-58f5cef5",
+        "VM-1786646593517-0f3474b3",
+        "VM-1786646938573-8a7ba004",
+        "VM-1786648081660-e520378b",
+        "VM-1786806964827-0179a5ad",
+        "VM-1786251509040-be900c20",
+        "VM-1786646689081-0a2b9705",
+        "VM-1786646593353-d0ff4e7b",
+        "VM-1791185208763-7f64351e",
+        "VM-1791123481022-c2943b74"
+      ],
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans",
+        "t0-market-cognition",
+        "t1-strategy-synthesis",
+        "t2-trade-execution"
+      ],
+      "file_domains": [
+        "1-ARCHITECTURE",
+        "experiments",
+        "4-MEMORY",
+        "12-三屏趋势系统",
+        "11-易经推理系统",
+        "23-四层闭环自进化交易架构"
+      ],
+      "support": 131,
+      "size": 22
+    },
+    "trading-system": {
+      "intent_proxy": "trading-system",
+      "memory_ids": [
+        "VM-1787072586068-52da82b6",
+        "VM-1786327696433-202fad41",
+        "VM-1786677182373-e3c1195e"
+      ],
+      "skills": [
+        "t0-market-cognition",
+        "t4-intelligence-radar",
+        "t5-meta-reflection"
+      ],
+      "file_domains": [
+        "11-易经推理系统",
+        "14-V15经典马丁策略",
+        "12-三屏趋势系统",
+        "15-监控告警系统",
+        "experiments"
+      ],
+      "support": 5,
+      "size": 11
+    },
+    "trading-data": {
+      "intent_proxy": "trading-data",
+      "memory_ids": [
+        "VM-1791130472314-1966d620",
+        "VM-1791261711333-c96eb4b7",
+        "VM-1791380441364-5550f31e",
+        "VM-1791979104545-2bc7964a",
+        "VM-1791998543578-cc689bd0"
+      ],
+      "skills": [
+        "t0-market-cognition",
+        "t4-intelligence-radar",
+        "t5-meta-reflection"
+      ],
+      "file_domains": [
+        "12-三屏趋势系统",
+        "experiments",
+        "4-MEMORY",
+        "23-四层闭环自进化交易架构",
+        "3.1-FRONTEND",
+        "1-ARCHITECTURE"
+      ],
+      "support": 19,
+      "size": 14
+    },
+    "python-development": {
+      "intent_proxy": "python-development",
+      "memory_ids": [
+        "VM-1791126687261-c4dc4d34",
+        "VM-1791515576108-ff4b4187",
+        "VM-1791552980655-b5e794ea",
+        "VM-1791349257311-6f43f0c3",
+        "VM-1791546723303-b210beab",
+        "VM-1791982507451-dad1bc05",
+        "VM-1793300400742-4e2b9890",
+        "VM-1786302733261-b3abf7e1",
+        "VM-1786648411312-f5916e50",
+        "VM-1791654802036-44fa704a"
+      ],
+      "skills": [
+        "executing-plans",
+        "test-driven-development",
+        "writing-skills"
+      ],
+      "file_domains": [
+        "bayesian_memory_updater.py",
+        "23-四层闭环自进化交易架构",
+        "cognitive_loop_entry.py",
+        "4-MEMORY",
+        "30-真实环境交互系统",
+        "9-基本面分析"
+      ],
+      "support": 111,
+      "size": 19
+    },
+    "frontend-development": {
+      "intent_proxy": "frontend-development",
+      "memory_ids": [
+        "VM-1786271612589-1f3eb672",
+        "VM-1786251509040-be900c20",
+        "VM-1786648411312-f5916e50",
+        "VM-1791103373624-d3aaac8f",
+        "VM-1791126687261-c4dc4d34",
+        "VM-1791515576108-ff4b4187",
+        "VM-1791552980655-b5e794ea",
+        "VM-1791103407072-eec71dab",
+        "VM-1791118735825-c34fb882",
+        "VM-1786803955966-123ece4d"
+      ],
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans"
+      ],
+      "file_domains": [
+        "3.1-FRONTEND",
+        "23-四层闭环自进化交易架构",
+        "4-MEMORY",
+        "12-三屏趋势系统",
+        "experiments"
+      ],
+      "support": 32,
+      "size": 18
+    },
+    "knowledge-management": {
+      "intent_proxy": "knowledge-management",
+      "memory_ids": [
+        "VM-1786971810459-87330884",
+        "VM-1791451243109-5312a219",
+        "VM-1791157189581-c4321647",
+        "VM-1791439947106-d4b8045d",
+        "VM-1791718120123-fbebf687",
+        "VM-1791718153336-850a6b81",
+        "VM-1791737319759-ceab82d6"
+      ],
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans"
+      ],
+      "file_domains": [
+        "2-KNOWLEDGE",
+        "23-四层闭环自进化交易架构"
+      ],
+      "support": 4,
+      "size": 12
+    }
+  }
+}

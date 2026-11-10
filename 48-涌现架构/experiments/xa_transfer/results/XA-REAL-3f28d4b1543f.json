@@ -1,0 +1,83 @@
+{
+  "run_id": "XA-REAL-3f28d4b1543f",
+  "run_class": "exploratory",
+  "generated_at": "2026-11-10T02:18:40.271208+00:00",
+  "git_commit": "d3032c139e",
+  "prereg": {
+    "experiment_id": "XA-REAL-3f28d4b1543f",
+    "protocol_version": "SPEC-EMERGENCE-3D-v0.1 §4.6 (真实 A/B)",
+    "domain": "X-REAL",
+    "criterion": "H-X-REAL",
+    "hypothesis": "真实 session 跨域匹配验证三维超加性增益",
+    "design": "真实 A/B cross-domain session matching (task_type overlap)",
+    "dimensions": {
+      "D1": "trading coupling (真实 session metrics)",
+      "D2": "engineering arch (真实 session metrics)",
+      "D3": "intent routing (真实 session metrics)"
+    },
+    "success_criteria": "G_123_real 95% CI > 0 AND Ω_real > 0"
+  },
+  "status": "deferred",
+  "deferred_reason": "insufficient_pairs",
+  "verdict": "deferred",
+  "reason": "真实 A/B 数据不可用：insufficient_pairs",
+  "scan_stats": {
+    "files_scanned": 931,
+    "records_parsed": 7511,
+    "records_skipped": 0,
+    "by_task_type": {
+      "unknown": 7511
+    },
+    "by_domain": {
+      "unknown": 6626,
+      "SESSION": 884,
+      "TRADING": 1
+    }
+  },
+  "session_dirs_searched": [
+    "/Users/zhangjiangtao/.trae-cn/memory/projects",
+    "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/events"
+  ],
+  "proxy_result": {
+    "dimension_gains": {
+      "D1": 0.0248,
+      "D2": 0.985714,
+      "D3": 0.8764705882352941
+    },
+    "arms": {
+      "000": 0.0,
+      "100": 0.0248,
+      "010": 0.985714,
+      "001": 0.8764705882352941,
+      "110": 1.060514,
+      "101": 0.9312705882352942,
+      "011": 1.9721845882352942,
+      "111": 2.1569845882352943
+    },
+    "main_effects": {
+      "D1": 0.08479999999999999,
+      "D2": 1.0857140000000003,
+      "D3": 0.9664705882352942
+    },
+    "two_way_interactions": {
+      "G12": 0.01999999999999999,
+      "G13": 0.020000000000000018,
+      "G23": 0.020000000000000018
+    },
+    "g123": 0.07999999999999985,
+    "g123_bootstrap": {
+      "mean": 0.07976382546381997,
+      "ci_low": 0.023325364072016228,
+      "ci_high": 0.135617817016024
+    },
+    "omega_o_information": 0.059999999999999845,
+    "verdict": "candidate",
+    "reason": "G_123 95% CI [0.0233, 0.1356] > 0, Ω=0.0600 > 0, 有正 G_ij"
+  },
+  "match_meta": {
+    "n_pairs": 0,
+    "min_pairs_required": 10,
+    "domain_a": "A",
+    "domain_b": "B"
+  }
+}

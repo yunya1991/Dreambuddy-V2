@@ -32,6 +32,7 @@ import ablation_gate as ag  # noqa: E402
 import batch_schema as bs  # noqa: E402
 import capability_gaps as cg  # noqa: E402
 import variant_generator as vg  # noqa: E402
+from backtest_evaluator import make_evaluator  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -177,11 +178,13 @@ def run(
 
 
 def main() -> int:
-    result = run()
+    evaluator = make_evaluator()
+    result = run(evaluator=evaluator)
     stats = result.get("stats", {})
     print(
         f"E2: status={result.get('status')} verify={result.get('verify_status')} "
         f"n_generated={stats.get('n_generated')} n_novel={stats.get('n_novel')} "
+        f"n_verified_success={stats.get('n_verified_success')} "
         f"m2_ratio={stats.get('m2_ratio')}"
     )
     return 0

@@ -2,13 +2,12 @@
 
 口径：反思 → 实际修复动作 的 join 比例。
 数据源（零侵入起步，2026-11-05 实证）：
-  - 反思代理：`.cognitive/sessions/*/suggestions.md` 的「生成时间」（881 个可解析）
-    ——认知系统输出建议，等价于反思产物批次
-  - 修复动作：同 session `action_chain.jsonl` 中生成时间之后的 git_commit / file_change
+  - 反思代理：`.cognitive/sessions/*/suggestions.md` 的「生成时间」+「reflection_id」
+  - 修复动作：同 session `action_chain.jsonl` 中的 git_commit / file_change
 
-**已知断链（如实）**：HermesReflector 的 `reflection_id` 未落盘，反思→修复无法精确 mapping。
-本模块用 session 级时序 join 作代理（note 明确标注），修复窗口保守取 72h；
-精确 join 需求已记入 E6 缺口（reflection_log_missing）待 35/46 域协商。
+**2026-11-10 升级**：`active_reflection_id` 已在动作侧补记（cognitive_session.add_action），
+可做 reflection_id 精确 join；旧会话（无 rid）仍用时序代理（72h 窗口）。
+evidence_grade 随精确 join 覆盖率自动提升：pipeline_only → proxy → real。
 
 FAIL-OPEN：异常 → no_data。
 """
@@ -72,6 +71,8 @@ def compute_self_correction_rate(
     n_fixed = 0
     n_with_rid = 0
     n_actions = 0
+    n_precise = 0  # 有 reflection_id 且可做精确 join 的会话数
+    n_precise_fixed = 0  # 精确 join 命中的会话数
     window = fix_window_hours * 3600
     try:
         for d in sorted(p for p in root.iterdir() if p.is_dir()):
@@ -82,8 +83,10 @@ def compute_self_correction_rate(
             if gen_ts is None:
                 continue
             n_ref += 1
-            rid_m = _RID_RE.search(md.read_text(encoding="utf-8", errors="ignore")[:600])
-            if rid_m:
+            md_text = md.read_text(encoding="utf-8", errors="ignore")[:600]
+            rid_m = _RID_RE.search(md_text)
+            rid = rid_m.group(1) if rid_m else None
+            if rid:
                 n_with_rid += 1
             chain = d / "action_chain.jsonl"
             if not chain.exists():
@@ -93,6 +96,7 @@ def compute_self_correction_rate(
             except Exception:  # noqa: BLE001
                 continue
             fixed = False
+            precise_match = False
             for line in lines:
                 line = line.strip()
                 if not line:
@@ -107,8 +111,17 @@ def compute_self_correction_rate(
                 if not isinstance(ts, (int, float)):
                     continue
                 n_actions += 1
-                if 0 < float(ts) - gen_ts <= window:
+                # 精确 join：action.active_reflection_id == suggestions.md reflection_id
+                if rid and a.get("active_reflection_id") == rid:
+                    precise_match = True
                     fixed = True
+                # 时序代理（仅在无 rid 或精确未命中时作为降级）
+                elif not rid and 0 < float(ts) - gen_ts <= window:
+                    fixed = True
+            if rid:
+                n_precise += 1
+                if precise_match:
+                    n_precise_fixed += 1
             if fixed:
                 n_fixed += 1
     except Exception as exc:  # noqa: BLE001 — FAIL-OPEN
@@ -130,22 +143,39 @@ def compute_self_correction_rate(
             "note": "无反思产物（suggestions.md 不存在）",
         }
     rate = n_fixed / n_ref
-    # 会话域退化：建议在会话早期生成、动作必然随后 → 率趋近 1，仅验证管道
-    degenerate = rate >= 0.95 and n_with_rid == 0
+    # evidence_grade 自动升级：
+    #   - pipeline_only：无 reflection_id，纯时序代理（会话域退化率趋近 1）
+    #   - proxy：有 reflection_id 但精确 join 覆盖率不足（新旧混合）
+    #   - real：精确 join 已命中（reflection_id → action 精确 mapping）
+    if n_precise_fixed > 0:
+        grade = "real"
+    elif n_with_rid > 0:
+        grade = "proxy"
+    else:
+        grade = "pipeline_only"
+    degenerate = grade == "pipeline_only"
     return {
         "value": rate,
         "status": "ok" if n_ref >= min_reflections else "insufficient_data",
-        "evidence_grade": "pipeline_only" if degenerate else "proxy",
+        "evidence_grade": grade,
         "n_reflections": n_ref,
         "n_fixed": n_fixed,
         "n_actions": n_actions,
         "fix_window_hours": fix_window_hours,
         "n_with_reflection_id": n_with_rid,
         "reflection_id_coverage": round(n_with_rid / n_ref, 4) if n_ref else 0.0,
-        "note": "时序 join 代理：反思生成后 72h 内同 session 有修复动作即计；reflection_id 已落盘（覆盖率见上），精确 join 待动作侧记录 active_reflection_id",
+        "n_precise_join": n_precise,
+        "n_precise_fixed": n_precise_fixed,
+        "precise_fix_rate": round(n_precise_fixed / n_precise, 4) if n_precise else 0.0,
+        "note": (
+            "精确 join（active_reflection_id == reflection_id）已启用；"
+            f"精确命中 {n_precise_fixed}/{n_precise}，时序代理覆盖旧会话"
+            if n_precise
+            else "时序 join 代理：反思生成后 72h 内同 session 有修复动作即计；reflection_id 未覆盖，待新会话积累"
+        ),
         "caveat": (
             "会话域建议批次在会话早期、动作必然随后 → 率退化接近 1，仅验证管道，"
-            "不构成「反思驱动修复」证据；需 HermesReflector 落盘 reflection_id"
+            "不构成「反思驱动修复」证据；需 reflection_id 覆盖率提升后精确 join"
             if degenerate
             else None
         ),

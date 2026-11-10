@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "batch_id": "BATCH-20261105-2ea039d8",
-  "generated_at": "2026-11-05T15:40:29.371048+00:00",
+  "batch_id": "BATCH-20261109-b49e4d3f",
+  "generated_at": "2026-11-09T15:55:11.430495+00:00",
   "generator": "e2_hypothesis_variant_generator",
   "space": "trading_struct_vector",
   "items": [
@@ -49,18 +49,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "switch_flip"
@@ -109,18 +110,20 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "overfit_degradation=0.593 > 0.5",
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-11.8356 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": 0.5928831944874365,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 93
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "overfit_degradation=0.593 > 0.5; stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-11.8356 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "threshold_shift"
@@ -169,18 +172,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "phase_flip"
@@ -229,18 +233,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-6.9509 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.22529340302932366,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-6.9509 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "threshold_shift"
@@ -288,18 +293,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "coin_change"
@@ -348,18 +354,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "env_flip"
@@ -407,18 +414,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "coin_change"
@@ -467,18 +475,20 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "overfit_degradation=1.358 > 0.5",
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-6.1179 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": 1.358117483811286,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 47
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "overfit_degradation=1.358 > 0.5; stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-6.1179 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "threshold_shift"
@@ -526,18 +536,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "coin_change"
@@ -586,18 +597,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "env_flip"
@@ -646,18 +658,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "switch_flip"
@@ -706,18 +719,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "threshold_shift"
@@ -766,18 +780,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "bdsm_flip"
@@ -826,18 +841,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "bdsm_flip"
@@ -885,18 +901,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "coin_change"
@@ -945,18 +962,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "phase_flip"
@@ -1005,18 +1023,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "env_flip"
@@ -1065,18 +1084,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "switch_flip"
@@ -1125,18 +1145,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-5.1694 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.8013076015389878,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 40
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-5.1694 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "threshold_shift"
@@ -1185,18 +1206,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "env_flip"
@@ -1245,18 +1267,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "env_flip"
@@ -1305,18 +1328,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "switch_flip"
@@ -1365,18 +1389,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "env_flip"
@@ -1425,18 +1450,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "switch_flip"
@@ -1484,18 +1510,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "coin_change"
@@ -1544,18 +1571,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "switch_flip"
@@ -1604,18 +1632,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "bdsm_flip"
@@ -1664,18 +1693,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "phase_flip"
@@ -1724,18 +1754,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "phase_flip"
@@ -1784,18 +1815,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "phase_flip"
@@ -1844,18 +1876,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "env_flip"
@@ -1903,18 +1936,19 @@
       },
       "gate": {
         "admitted": false,
-        "status": "evaluator_missing",
+        "status": "ok",
         "reasons": [
-          "evaluator_missing: 无 config 级回测评估器，未做任何指标判定"
+          "stability_win_ratio=0.333 < 0.6",
+          "not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
         ],
-        "is_oos_degradation": null,
-        "stability_win_ratio": null,
-        "n_trades": null
+        "is_oos_degradation": -0.23369840434510622,
+        "stability_win_ratio": 0.3333333333333333,
+        "n_trades": 60
       },
       "verify": {
-        "success": null,
-        "evaluated_by": null,
-        "reason": "evaluator_missing"
+        "success": false,
+        "evaluated_by": "ablation_gate",
+        "reason": "stability_win_ratio=0.333 < 0.6; not_better_than_baseline: oos=-7.7175 <= baseline=-0.2707"
       },
       "space": "trading_struct_vector",
       "transform": "coin_change"
@@ -1923,7 +1957,7 @@
   "stats": {
     "n_generated": 32,
     "n_novel": 32,
-    "n_verified": 0,
+    "n_verified": 32,
     "n_verified_success": 0,
     "n_gate_admitted": 0,
     "n_novel_verified": 0,
@@ -1940,8 +1974,8 @@
       "dropped_min_distances": []
     },
     "attempts": 99,
-    "evaluator": null
+    "evaluator": "ablation_gate"
   },
   "status": "ok",
-  "verify_status": "evaluator_missing"
+  "verify_status": "ok"
 }

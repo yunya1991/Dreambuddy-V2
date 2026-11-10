@@ -26,6 +26,9 @@
 | 40/43 | 只读 | 宏观状态/弹性约束 |
 | 50/23 决策与执行 | 反馈接口 | 决策、成交、PnL、拒单、跳过 |
 | 13/16/22/11 | 只读审计 | 风控/定容/执行/成交 |
+| **11 域交易 recall** | 结构化日志（新增） | `trading_recall()` 召回事件：memory_ids、trace_id、coin、direction |
+| **4-MEMORY 认知会话** | 结构化日志（新增） | reflection 事件（reflection_id）+ action 事件（active_reflection_id） |
+| **48 emergence bus** | 事件流（已有） | 广播联动事件（E1 cascade） |
 
 ### 2.2 事件 schema（建议）
 
@@ -37,11 +40,26 @@ evidence(provenance, agreement, conflict_flags),
 decision(action, tier, position_mult, primary_contradiction),
 execution(order_id, fill, reject_reason, slippage),
 pnl(realized, unrealized, fees),
+cognitive_recall(trace_id, memory_ids[], ts, coin, direction, source_domain),
+reflection(reflection_id, ts, session_id, suggestions_count),
+action(action_type, active_reflection_id, ts, changed_decision, detail),
 provenance, version
 ```
 
+**认知链路字段说明（E1/E4 度量数据源）**：
+
+| 字段 | 来源 | 用途 |
+|---|---|---|
+| `cognitive_recall` | 11 域 `_inject_cognitive_recall` → 48 `e4b_readout.record_recall()` | E4 readout_rate：召回→决策改变 join |
+| `reflection` | 4-MEMORY `cognitive_session` 建议生成（reflection_id） | E4 self_correction：反思→修复精确 join 的一端 |
+| `action` | 4-MEMORY `cognitive_session.add_action()`（active_reflection_id） | E4 self_correction：反思→修复精确 join 的另一端 |
+| emergence bus 事件 | 48 `emergence_bus` shadow 订阅者 | E1 cascade_sigma：级联尺寸/幂律斜率 |
+
+**trace_id 传递规则**：decision_id → cognitive_recall.trace_id → action.trace_id → execution，保证全链路可 join。
+
 - OOD 隔离：沿用 48 §5 纪律；paper/实盘分目录；黑名单/隔离参数入库。
 - 版本化：数据 schema、40/50 权重、基因版本、契约版本。
+- 数据保留：recall/reflection/action 事件保留期与 W6 样本一致（2000 条 rolling），脱敏（无 API key/凭证/原文）。
 
 ## 3. 训练网关
 
@@ -110,3 +128,8 @@ provenance, version
 2. E0b 回放器补齐（训练/对照前置）。
 3. NN 链 KPI 接入 E4 度量面板。
 4. 与 50 R4 对齐训练建议接口与门禁。
+5. **认知链路数据采集（E1/E4 脱离 pipeline_only 前置）**：
+   - 11 域 `_inject_cognitive_recall` 增加结构化 recall 日志（调用 48 `e4b_readout.record_recall()`）；
+   - 排查并修复 `active_reflection_id` 覆盖率 0% 问题（4-MEMORY `cognitive_session` 建议生成链路）；
+   - `e4b_reflection.py` 升级为 `active_reflection_id` 精确 join（替代时序代理）；
+   - 交易域 recall 数据 ≥30 条 + reflection_id 覆盖率 ≥30% 后，E4 readout/self-correction 脱离 `pipeline_only`。

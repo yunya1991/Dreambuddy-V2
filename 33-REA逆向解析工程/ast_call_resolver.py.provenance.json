@@ -1,0 +1,7 @@
+{
+  "commit_sha": "d3032c139e258d52cfc69d5b2a86195fef6ea007",
+  "artifact": "ast_call_resolver.py",
+  "artifact_sha256": "6e0e19372234cfc9f9320e08e31d0d75fb8d1f02f70108ec3659f00258bd81d1",
+  "generated_at": "2026-11-10T02:18:24.037635+00:00",
+  "generator": "d2b gate_45 local_attestation"
+}

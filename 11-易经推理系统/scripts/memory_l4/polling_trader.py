@@ -18855,6 +18855,39 @@ class PollingTrader:
                     f"T系列Skill={meta_count}个 | 历史路径={applied_count}条",
                     "INFO",
                 )
+                # P0(2026-11-10): 结构化 recall 日志埋点（48 E4 readout 数据源）
+                # FAIL-OPEN：落盘失败不影响交易决策
+                try:
+                    import sys
+                    from datetime import datetime, timezone
+
+                    memory_ids = [
+                        str(m.get("id") or m.get("memory_id") or "")
+                        for m in result.get("memories", [])
+                        if (m.get("id") or m.get("memory_id"))
+                    ]
+                    if memory_ids:
+                        trace_id = (
+                            f"trading-{coin}-{int(datetime.now(timezone.utc).timestamp() * 1000)}"
+                        )
+                        repo_root = Path(__file__).resolve().parents[3]
+                        metrics_dir = repo_root / "48-涌现架构" / "metrics"
+                        if str(metrics_dir) not in sys.path:
+                            sys.path.insert(0, str(metrics_dir))
+                        import e4b_readout as _e4b_readout  # noqa: E402
+
+                        _e4b_readout.record_recall(
+                            trace_id=trace_id,
+                            session_id=f"trading-{coin}",
+                            memory_ids=memory_ids,
+                            domain="trading",
+                            query=f"{coin}|{direction}|c={confidence:.2f}",
+                        )
+                except Exception as _e4b_err:
+                    self._log(
+                        f"[{coin}] P3认知召回结构化落盘失败(FAIL-OPEN): {_e4b_err}",
+                        "DEBUG",
+                    )
             return result
         except Exception as e:
             self._log(f"[{coin}] P3认知召回失败: {e}", "WARN")

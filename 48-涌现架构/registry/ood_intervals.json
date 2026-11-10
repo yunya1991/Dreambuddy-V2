@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-11-09T00:00:00Z",
+  "source": "P0-1 OOD hook registry (48-涌现架构)",
+  "intervals": [
+    {
+      "start": "2026-11-04T00:00:00Z",
+      "end": "2026-11-05T00:00:00Z",
+      "source": "E0b_oos",
+      "version": "v0.1"
+    }
+  ],
+  "known_gaps": [
+    "区间由 45/19 提供，48 仅定义格式与消费纪律；当前为占位示例，正式实验前须用真实 OOS 区间覆盖。"
+  ]
+}
