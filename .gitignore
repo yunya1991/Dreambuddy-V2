@@ -268,3 +268,7 @@ DreamOS_intermediate.pptx
 # 运行期产物：自进化系统自动生成的训练案例（人工精选案例入库用 git add -f）
 2-KNOWLEDGE/1-TRADING/cases/
 
+
+# 48 全链路运行时事件（可重放生成，不入库）
+48-涌现架构/events/training_events/
+48-涌现架构/events/nn_feedback/

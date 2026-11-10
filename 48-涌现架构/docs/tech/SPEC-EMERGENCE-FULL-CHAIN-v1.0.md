@@ -1,13 +1,13 @@
 # SPEC — 交易涌现全链路技术文档 v1.0
 
 > 🧭 **特别标识：FULL-CHAIN-SSOT**
-> 本文件是 48-涌现架构对“交易涌现”端到端链路的**唯一技术总文档**：9 域上下文 → 深度文章三层解构 → L0 MCP → 33-REA 做梦器/思维树 → 最小阻力路径与矛盾识别 → 48 涌现 → 40 周期神经网络 → 49 交易框架协议（神经链路）→ 50-NN → 执行层 → 训练事件回流。
+> 本文件是 48-涌现架构对“交易涌现”端到端链路的**唯一技术总文档**：9 域上下文 → 深度文章三层解构 → L0 MCP → 33-REA 做梦器/思维树 → 最小阻力路径与矛盾识别 → 48 涌现 → **40 周期神经网络 → 43 战略承接 → 49 交易框架协议（神经链路）→ 50-NN → 执行器** → 训练事件回流。
 >
-> **版本**：v1.0（2026-11-10）
-> **状态**：🟢 代码核查完成（只读核查，未运行生产）
+> **版本**：v1.0 + P0 补丁 r1（2026-11-10）
+> **状态**：🟢 代码核查完成 + P0 已实现并真实回填（TrainingEvent / 48→40 网关）
 > **核查范围**：9 / 18 / 23 / 33 / 39 / 40 / 42 / 43 / 47 / 48 / 49 / 50 / 11 / 13 / 16 / 22
 > **状态图例**：✅ 已实现且有运行产物/测试 ｜ 🟡 部分实现或默认降级 ｜ ⬜ 仅 Spec / 未实现
-> **统计**：29 个核查点 → ✅ 19 ｜ 🟡 4 ｜ ⬜ 6
+> **统计**：29 个核查点 → ✅ 20 ｜ 🟡 5 ｜ ⬜ 4（r1：TrainingEvent 已落盘、48→40 网关已实现）
 > **边界**：本文件只做编排、契约汇编与实现核验，不重复定义各域内部口径；定义权归各域 SPEC。
 
 ---
@@ -16,7 +16,7 @@
 
 **训练侧**已具备完整的“文章 → F1 因素 → F2 方向 → F3 主张”抽取能力（18 域 `factor_extractor.py`，500 篇实测产物在 `backfill/p3a|p3b`），并已实现 9 域 `DimensionContext` 8 维上下文与快讯敏感因子（18 域 adapter）。
 **推理侧**已有 33-REA 做梦器（随机变异 + argmax V）、48 嵌套 walk-forward 反思、23 的 HJB + 矛盾修正路径寻优、40 五层传导、49 冻结契约、50-NN `source=50-nn` 决策（paper）。
-**主要缺口**有 6 个：①文章/因子样本写入 48 的训练入口未接；②思维树未实现；③48→40 网关未接；④40 未输出因子/矛盾先验；⑤50 live 执行权未开放；⑥统一 TrainingEvent 回流未落盘。
+**主要缺口**有 5 个：①文章/因子样本写入 48 的训练入口未接；②思维树未实现；③40 未启用 48 网关（默认关、双读未做）；④40 未输出因子/矛盾先验；⑤50 live 执行权未开放。
 **另有两处口径需注意**：组合因子 `factor_prior.json` 当前 `degraded=true / n_factors=0`（快讯先验默认关闭）；50 决策当前全部为 `execution_rights=paper`。
 
 ---
@@ -47,14 +47,15 @@ flowchart TB
     B3["33-REA 做梦器 ✅<br/>思维树 ⬜"]
     B4["最小阻力+矛盾识别 ✅<br/>23 HJB / primary_contradiction"]
     B5["48 反思/验证 ✅<br/>nested_walk_forward"]
-    B6["48→40 网关 ⬜"]
+    B6["48→40 网关 🟡<br/>已实现，默认关/待双读"]
     B7["40 五层传导 ✅<br/>因子/矛盾先验输出 ⬜"]
-    B8["42/43 信号与约束 ✅"]
-    B9["50-NN 决策 ✅ paper<br/>live 执行权 ⬜"]
+    B8["43 战略承接/弹性约束 ✅"]
+    B9["49 契约（神经链路）✅"]
+    B10["50-NN 决策 ✅ paper<br/>live 执行权 ⬜"]
 
     B1 --> B3
     B2 --> B3
-    B3 --> B4 --> B5 --> B6 --> B7 --> B8 --> B9
+    B3 --> B4 --> B5 --> B6 --> B7 --> B8 --> B9 --> B10
   end
 
   subgraph EXEC["C 执行侧"]
@@ -70,11 +71,11 @@ flowchart TB
   end
 
   A9 -.未接.-> B3
-  B9 --> C1
+  B10 --> C1
   C4 --> D1
   D4 -.回灌.-> B3
   D4 -.回灌.-> B7
-  D4 -.回灌.-> B9
+  D4 -.回灌.-> B10
 ```
 
 ---
@@ -145,16 +146,18 @@ flowchart TB
 | 40 五层传导脚本 | ✅ | `40/scripts/p1_*`、`p2_*`、`p3_sector_transmission.py`、`p5_*` |
 | 40 产出 | ✅ | [40 根目录](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统) `cycle_state.json` / `asset_rotation.json` / `cross_asset_matrix.json` / `fund_flow.json` / `meme_platform.json`（2026-11-10 17:40 更新） |
 | L4 板块传导状态机 | ✅ | [p3_sector_transmission.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/p3_sector_transmission.py#L104-L165) `expanding/neutral/contracting` + MA200 regime |
-| 48 → 40 网关 | ⬜ | 48 内无任何 `cycle_state/40` 引用；[NN 反馈网关 SPEC](./SPEC-NN-FEEDBACK-GATEWAY-v0.1.md) 仍是草案 |
+| 48 → 40 网关 | 🟡 | [nn_feedback_gateway.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/metrics/nn_feedback_gateway.py#L1-L60)：聚合/建议/写盘 + 双读容差；40 侧 [adapter_48_feedback.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/adapter_48_feedback.py)；产物 `events/nn_feedback/40_feedback.json`；`ENABLE_40_VIA_48` 默认关，待双读校验后切换 |
 | 40 输出“有效因子/矛盾先验” | ⬜ | 40 脚本无 factor/dominance/prior 输出；`p5_gate.py` 仅**统计** `43/contradiction_events.jsonl` 条数（≥200 门槛），不产出先验 |
 
-### L7 协议与神经链路（49 / 42 / 43）
+### L7 战略承接与协议链路（43 → 49；42 为总线）
+
+> 主链顺序按用户 2026-11-10 裁决：**48 → 40 → 43 → 49 → 50 → 执行器**；42 是信号总线通道，不占主链节点。
 
 | 项 | 状态 | 证据 |
 |---|---|---|
-| 49 契约冻结 | ✅ | [contract_manifest.v1.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/49-交易框架协议/contracts/contract_manifest.v1.json)：`SignalSchema v1` / `FinalDecisionSignal v1.1` / `MacroElasticConstraint v1`，`contract-freeze-v2` |
-| 42 信号总线 | ✅ | [signal_bus.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/42-神经网络交易协调层/signal_bus.py#L22-L118)：`SignalSchema` 必需字段 + TTL 剪枝 + 同 id 合并 |
 | 43 战略延伸发布 | ✅ | [signal_publisher.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/43-战略承接推演层/strategic_extension/signal_publisher.py#L105-L371)：`_shadow_gate_decision/build_signal/publish` |
+| 49 契约冻结 | ✅ | [contract_manifest.v1.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/49-交易框架协议/contracts/contract_manifest.v1.json)：`SignalSchema v1` / `FinalDecisionSignal v1.1` / `MacroElasticConstraint v1`，`contract-freeze-v2` |
+| 42 信号总线（通道） | ✅ | [signal_bus.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/42-神经网络交易协调层/signal_bus.py#L22-L118)：`SignalSchema` 必需字段 + TTL 剪枝 + 同 id 合并 |
 | 执行权注册表 | ✅ | [execution_rights.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/47-MCP管理系统/registry/execution_rights.json#L5-L36)：单出口 + `50_KILL_SWITCH` + paper-only |
 | 约束链实盘化 | 🟡 | 契约与适配在；43 侧仍含 shadow gate，部分约束默认降级 |
 
@@ -177,7 +180,7 @@ flowchart TB
 | 16 定容 | ✅ | `16-调控系统`（含 `constraint_envelope`） |
 | 22 执行 / 11 live | ✅ | `22-执行引擎中心`；`11/scripts/memory_l4/param_consumer.py` |
 | 49 反馈契约 | ✅ | 契约目录与示例存在 |
-| 统一 TrainingEvent | ⬜ | `48/events/` 仅有 `asil/emergence_shadow/gates/memory_readout`，**无 `training_events/`**；全仓无 `TrainingEvent` 类 |
+| 统一 TrainingEvent | ✅ | [training_events.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/metrics/training_events.py)：`events/training_events/train_50_decisions.jsonl` 已落 12 条；二次回填 0 新增（幂等） |
 | 数据 join 锚点 | 🟡 | `decision_id/trace_id` 在 11/4-MEMORY 已部分埋点；未形成统一落盘 |
 | 训练建议回灌 | 🟡 | 48 度量/实验能出建议，但“建议→40/50 权重”仍为人工流程 |
 
@@ -201,10 +204,10 @@ flowchart TB
 
 ### 3.2 B 推理侧
 
-`9 域上下文 + 快讯先验 → 33-REA 做梦器（候选）→ 23 路径寻优/矛盾 → 48 反思验证 → 40 五层传导 → 42/43 → 50 决策`
+`9 域上下文 + 快讯先验 → 33-REA 做梦器（候选）→ 23 路径寻优/矛盾 → 48 反思验证 → 48→40 网关 → 40 五层传导 → 43 战略承接 → 49 契约 → 50 决策`
 
-- 当前“48 反思验证”在实验侧可用（`nested_walk_forward`），但**没有在线调用点**；48→40 网关缺失，因此 B 段是“各段可运行、连线未接”。
-- 50 已消费 11-bcrm 等 evidence 并输出 paper 决策，说明“40→42/43→50”段有实际链路。
+- 当前“48 反思验证”在实验侧可用（`nested_walk_forward`），但**没有在线调用点**；48→40 网关已实现（`ENABLE_40_VIA_48` 默认关），B 段处于“连线已通、默认不启用”状态。
+- 50 已消费 11-bcrm 等 evidence 并输出 paper 决策，说明“40→43→49→50”段有实际链路。
 
 ### 3.3 C 执行侧
 
@@ -218,7 +221,7 @@ flowchart TB
 | 执行/成交/PnL | 13/16/22/11 各自日志 🟡 | 统一 `TrainingEvent` |
 | recall/reflection/action | 48 `events/memory_readout` + 4-MEMORY ✅ | 统一 join |
 | bus/cascade | `events/emergence_shadow` ✅ | 复用 |
-| **统一 TrainingEvent** | ⬜ | `48/events/training_events/*.jsonl` |
+| **统一 TrainingEvent** | ✅ 已落盘 12 条（幂等） | `events/training_events/train_50_decisions.jsonl` |
 
 ---
 
@@ -265,7 +268,7 @@ flowchart TB
 
 | 闭环 | 路径 | 状态 | 证据 |
 |---|---|---|---|
-| 快环 | 上下文 → 做梦/路径/矛盾 → 40 → 42/43 → 50 → 执行 | 🟡 50 paper 段真实跑；48→40 未接 | `50/runtime/decisions.jsonl` |
+| 快环 | 上下文 → 做梦/路径/矛盾 → 48→40 网关 → 40 → 43 → 49 → 50 → 执行 | 🟡 50 paper 段真实跑；网关默认关 | `50/runtime/decisions.jsonl`、`events/nn_feedback/40_feedback.json` |
 | 慢环 | 执行事件 → TrainingEvent → 做梦/反思 → 建议 → 回灌 | 🟡 反思/做梦有；统一事件与自动回灌缺 | `nested_walk_forward.py`、`dreaming.py` |
 | 观测环 | E0-E6 实验 → M1-M7 → verdict → 缺口单 | ✅ 脚本与 10 个 verdict 已落盘 | [verdict_dashboard.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/metrics/verdict_dashboard.json) |
 
@@ -280,8 +283,7 @@ flowchart TB
 | # | 缺口 | 证据 | 影响 | 优先级 | 责任域 |
 |---|---|---|---|---|---|
 | G1 | 文章/因子样本未写入 48 | 无写入代码；48 无 training 入口 | 训练侧与涌现实验断链 | P0 | 48 + 18 |
-| G2 | 统一 TrainingEvent 未落盘 | `48/events/` 无 `training_events/`；全仓无 `TrainingEvent` | 慢环无法按事件 join | P0 | 48 |
-| G3 | 48→40 网关未接 | 48 无 40 引用；网关 SPEC 为草案 | 48 不能成为 40 唯一对接口 | P0 | 48 + 40 |
+| G3 | 40 未启用 48 网关 | 网关与适配器已实现；`ENABLE_40_VIA_48` 默认关，双读未跑 | 48 尚不能成为 40 唯一对接口 | P0 | 48 + 40 |
 | G4 | 40 不输出因子/矛盾先验 | 40 脚本无 factor/prior 输出；`p5_gate` 仅计数 | “因子/矛盾经神经链传递”未兑现 | P0 | 40 |
 | G5 | 思维树未实现 | 33 仅随机变异 + argmax；无 tree/beam | 候选路径多样性与可解释性不足 | P1 | 33 + 48 |
 | G6 | 50 live 未开放 | `execution_rights=paper`；`50_KILL_SWITCH` 机制在 | 末端仍为 shadow | P1 | 50 + 47 |
@@ -291,6 +293,8 @@ flowchart TB
 | G10 | 48 在线反思未接线 | `nested_walk_forward` 仅实验调用 | 复盘不进入实时决策 | P2 | 48 |
 
 **已关闭/需修正的旧口径**：
+- **G2 统一 TrainingEvent** → 已落盘（`training_events.py`，12 条真实事件，二次回填 0 新增），关闭。
+- **“48→40 网关未接”** → 网关 + 40 适配器已实现（`nn_feedback_gateway.py` / `adapter_48_feedback.py`），降级为 G3（默认关/双读未做）。
 - “23 路径选择是纯 argmax” → 已含 HJB + 矛盾修正，关闭。
 - “DimensionContext 未落盘” → 已在 18 域实现，修正为 🟡（9 域 API 归属问题）。
 - “F1/F2/F3 产线脚本未落盘” → 已在 18 域实现并有 500 篇产物，修正为 ✅。
@@ -326,13 +330,19 @@ flowchart TB
 
 **代码核查验收**：
 - [x] 29 个核查点逐项标注状态与证据（文件#行/产物）。
-- [x] 6 个 P0 缺口均有可复现证据。
+- [x] P0 缺口均有可复现证据。
 - [x] 3 个旧口径已修正并记录。
 - [x] 与 D1-MULTIDIM / 网关 SPEC / 49 / 40 / 50 的定义源互链。
 
+**P0 补丁验收（r1）**：
+- [x] `training_events.py`：`normalize_event/record_event/backfill_from_decisions/load_events`；幂等已验证（首跑 184 扫描→12 唯一事件，二跑 0 新增）。
+- [x] `nn_feedback_gateway.py`：聚合/建议/`40_feedback.json` + `verify_dual_read`；一键 CLI 已真实产出（12 事件、5 类主矛盾）。
+- [x] `adapter_48_feedback.py`（40 侧）：`ENABLE_40_VIA_48` 默认关，开启后读取、缺失 FAIL-OPEN。
+- [x] 48 域全套测试通过（223 passed）；新增 8 条测试；ruff 全绿。
+
 **同步**（2026-11-10）：
-- 远端 GitHub：已推送 `origin/main`（首版 `6a407c87b7`，回填记录 `33b6fc4937`）。
-- 云端 `43.160.201.117:/home/luke/dreambuddy`：已 fast-forward 至含本文档的 `origin/main`；本次仅文档，**未重启任何服务**。
+- 远端 GitHub：已推送 `origin/main`（首版 `6a407c87b7`，回填记录 `33b6fc4937`，P0 补丁见本次提交）。
+- 云端 `43.160.201.117:/home/luke/dreambuddy`：已 fast-forward 至含本文档的 `origin/main`；P0 补丁仅新增代码/文档/事件样例，**未重启服务**。
 
 ---
 
@@ -342,3 +352,4 @@ flowchart TB
 |---|---|---|
 | v0.1 | 2026-11-10 | 首版：四段式全链路草稿 + C1-C3 冲突登记 |
 | v1.0 | 2026-11-10 | 代码核查完成：29 核查点（19✅/4🟡/6⬜）；修正 3 处旧口径；新增 G1-G10 缺口表与逐项证据 |
+| v1.0-r1 | 2026-11-10 | P0 补丁：TrainingEvent 落盘（12 条真实事件、幂等）+ 48→40 网关/40 适配器；主链口径修正为 48→40→43→49→50→执行器；统计更新为 20✅/5🟡/4⬜ |
