@@ -1,8 +1,8 @@
 # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
 
-> 版本：v0.4.0（R1-R9 全部评审决议落地：首挂壳/白名单/部署/评估器/桥schema/裁决AB/PlanCard/路由）
+> 版本：v0.5.0（架构修正：弃用独立应用形态——desktop 已卸载；LobeHub 降级为协议参考；**唯一前端 = 3.1 前端**，集成落点改为 3.1 内置 LLM 协议层）
 > 日期：2026-11-11
-> 状态：🟢 评审闭环完成，Phase 0 可开工
+> 状态：🟢 Phase 0 已完成（协议层三模型 PASS）；Phase 1 改为 3.1 前端内置协议层实施
 > 归属：52-LobeHub协议集成（叠加层，非主骨架）
 > 上游：47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构（子域能力供给）
 > 下游：DreamOS/SACG（主骨架编排）、33-REA / 48-涌现架构（反思与涌现回流）
@@ -36,20 +36,21 @@
 
 | 编号 | 决策 | 对 52 的约束 |
 |---|---|---|
-| D1 | 52 定位 = **协议叠加层** | 独立部署，不并入主骨架代码；只通过 MCP 与现有架构交互 |
-| D2 | **协议集成，禁止 fork 改源码** | 上游 nightly 迭代极快；定制只走配置/插件/MCP 挂载，不修改 lobehub 仓库代码 |
-| D3 | 能力边界：**前台接入 + 模型路由** | agent runtime / skills 市场归 LobeHub；能力执行、认知记忆、交易执行归现有架构 |
-| D4 | **双轨治理**（R-B 新增） | LobeHub 的 agent runtime 仅作"执行器"，编排主权归 DreamOS；其 expertise/userMemories（agent 成长记忆）**不回写我方认知库**，Phase 3 蒸馏桥建成后经桥回流 |
+| D1 | 52 定位 = **内置协议层**（v0.5.0 修正） | **唯一前端 = 3.1 前端**；不部署任何独立 LobeHub 应用（desktop 已卸载、server/docker 形态弃用）。LobeHub 降级为协议与设计参考，集成落点 = 3.1 前端内置 LLM 协议层（Vercel AI SDK 模型路由 + MCP client → l0_gateway）。依据：@lobechat/* 全部 `private: true` 未发布 npm，代码级嵌入 = vendor fork 违反 D2 |
+| D2 | **协议集成，禁止 fork 改源码** | 上游 nightly 迭代极快；不 vendor 其代码进 3.1，只在 3.1 协议层实现同构模式（模型工厂/MCP 消费/loop 语义），持续跟踪其 release 做协议对齐 |
+| D3 | 能力边界：**3.1 协议层只做模型路由 + MCP 消费** | 能力执行、认知记忆、交易执行归现有架构；3.1 是唯一前端，不引入第二套 UI |
+| D4 | **双轨治理**（v0.5.0 修正） | 3.1 协议层的 agent loop 仅作"执行器"，编排主权归 DreamOS；协议层侧产生的会话/辩论数据**不直写认知库**，Phase 3 蒸馏桥建成后经桥回流 |
 | D5 | **执行+监督双链协作**（2026-11-11 用户确认） | 统一入口 → 双方意图规划 → Debate MCP 辩论 → 评估器裁决 → 胜者方案执行/败者后勤+门禁监督 → L0 统一沉淀 → 涌现回流。四条修正铁律见 §7.2 |
 
 ### 0.4 不做什么
 
 | 禁止 | 原因 |
 |---|---|
-| 不 fork lobehub 源码做二次开发 | D2：上游日更，分叉维护成本不可控 |
-| 不让 LobeHub 直接读写 4-MEMORY / 认知库 | 认知写入仍走 L0 cognition 壳（worker 只读治理不变） |
-| 不在 52 内实现交易/策略/风控能力 | 能力供给归 DSH 各域 + L0 壳；52 只做消费方 |
-| 不把 LobeHub 的 agent runtime 替代 DreamOS NodeRegistry | 双轨风险：DreamOS 是主骨架，LobeHub 是前台 |
+| **不部署任何独立 LobeHub 应用形态**（desktop/server/docker/Web 版） | v0.5.0 用户修正：唯一前端 = 3.1 前端；第二 UI = 双轨 |
+| 不 fork / vendor lobehub 源码进 3.1 | D2：上游日更，分叉维护成本不可控；其包均 private 未发布，vendor 是唯一代码路径，已排除 |
+| 不让 3.1 协议层直接读写 4-MEMORY / 认知库 | 认知写入仍走 L0 cognition 壳（worker 只读治理不变） |
+| 不在 52/3.1 协议层内实现交易/策略/风控能力 | 能力供给归 DSH 各域 + L0 壳；协议层只做消费方 |
+| 不把 3.1 协议层的 agent loop 替代 DreamOS NodeRegistry | 双轨风险：DreamOS 是主骨架，3.1 协议层是执行器 |
 | 不将 LobeHub 的 expertise / userMemories 与我方认知库互写 | D4：其 agent 成长数据锁在其 PG；认知记忆唯一事实源是 35 协作模块 |
 | 不采用集成路径 B（heterogeneous agent / lobehub-gateway 接入 DSH 为异构 agent） | R-D：与 MCP 路径互斥、复杂度更高，仅记录为备选 |
 | 不将 LobeHub 会话存储与认知记忆混用 | 会话上下文归 LobeHub Postgres；认知记忆归 35 协作模块 |
@@ -61,13 +62,13 @@
 ## §1 在现有架构中的位置
 
 ```text
-用户 / IM 渠道（Telegram / Discord / 飞书 / Web）
+用户（唯一前端 = 3.1 前端 Web UI）
         │
-┌───────▼────────────────┐
-│  52 LobeHub（叠加层）    │  模型路由（任意 LLM）+ 对话前台 + 渠道接入
-│  独立服务 docker/systemd │  + acceptance 验收（可选）
-└───────┬────────────────┘
-        │ MCP 协议（唯一接口，stdio/sse）
+┌───────▼─────────────────────────┐
+│  3.1 前端内置 LLM 协议层（52 落点） │  模型路由（Vercel AI SDK，任意 LLM）
+│  src/app/api/agent/*            │  + MCP client 桥 + PlanCard 执行语义
+└───────┬─────────────────────────┘
+        │ MCP 协议（唯一接口，stdio 本地 / sse 云端）
 ┌───────▼────────────────┐
 │  L0 MCP 网关（47）       │  ← 现有壳零改造；mcp_capabilities.yaml 仍是唯一事实源
 ├────────────────────────┤
@@ -75,8 +76,9 @@
 ├────────────────────────┤
 │  DreamOS/SACG（1）       │  意图识别 / NodeRegistry / 编排（主骨架不变）
 ├────────────────────────┤
-│  REA + 做梦器（33/48）   │  反思/涌现经 cognition record 回流，LobeHub 无感知
+│  REA + 做梦器（33/48）   │  反思/涌现经 cognition record 回流，协议层无感知
 └────────────────────────┘
+（LobeHub = 协议与设计参考，不作为应用存在；持续跟踪其 release 做协议对齐）
 ```
 
 **关键边界：**
@@ -97,16 +99,14 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 - 复用 [mcpctl.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/47-MCP管理系统/registry/scripts/mcpctl.py) 生成 LobeHub 专用 profile（角色：`lobehub_frontend`，默认只读）。
 - 新壳上线门禁不变：registry 登记 → drift 检查通过 → 方可被 52 挂载。
-- **R-C 部署形态修正（源码实证）**：LobeHub 的 stdio 本地 MCP 由 **desktop（Electron）主进程**执行；远程 MCP 走 HTTP/cloud-gateway。因此：
-  - **本地 PoC**：用 LobeHub desktop 版挂 stdio l0_gateway（最简路径）；
-  - **云端部署**：需将 l0_gateway 包一层 SSE/HTTP 暴露（Phase 2 时实施，作为独立小服务）。
+- **部署形态（v0.5.0 修正）**：本地开发 = 3.1 dev server 内经 stdio 直连 l0_gateway（复用 Phase 0 已验证的 `/tmp/lobehub_frontend_profile.json` 参数）；云端 = l0_gateway 包 SSE/HTTP 小服务（Phase 2 实施），3.1 协议层经 sse endpoint 接入。
 
 ### 2.2 模型路由契约
 
 | 项 | 约定 |
 |---|---|
-| Provider 配置 | 全部在 LobeHub 侧环境变量/UI 配置；52 仓内不存任何 API Key |
-| 模型切换 | 换模型 = 改 LobeHub 配置，不动现有架构任何代码 |
+| Provider 配置 | 全部在 3.1 前端服务端环境变量配置（.env.local / 云端 env）；仓内不存任何 API Key |
+| 模型切换 | 换模型 = 改 provider 配置（AI SDK 工厂模式，同构 LobeHub RouterRuntime），不动现有架构任何代码 |
 | 能力发现 | LLM 通过 MCP `tools/list` 发现 L0 能力；工具描述质量由 47 registry 保证 |
 
 ### 2.3 数据边界契约
@@ -122,35 +122,34 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 ## §3 分阶段落地路线
 
-### Phase 0 — PoC（本地跑通，验证最小闭环）
+### Phase 0 — PoC ✅ 已完成（2026-11-11，协议层验收）
 
-目标：**换 3 家模型（如 Claude / GPT / Qwen）都能经 LobeHub 调通一个 L0 只读能力。**
+1. ~~本地部署 LobeHub desktop~~（v0.5.0 弃用，已卸载）→ 改为**协议层直接验证**：registry 新增 `lobehub_frontend` 只读角色（verify 9 壳 0 漂移）+ mcpctl 生成 profile。
+2. **A1 模型无关性实证**：kimi-k3 / claude-sonnet / claude-opus 三模型经同一 stdio 链路全部 PASS（initialize / recall 命中 52 认知 / 写门禁 record 被拒）。
+3. 产物：commit 85e2bd7297（SPEC+REVIEW+registry）、fcf36548df（PlanCard schema）。
 
-1. 本地部署 LobeHub **desktop 版**（R-C：stdio MCP 依赖 Electron 主进程；若用 server 版须先完成 l0_gateway SSE 封装，作为备选路径）。版本锁定官方 release tag，不改源码。
-2. 用 mcpctl 生成 `lobehub_frontend` 只读 profile，挂载首壳 **cognition（recall）**（R1 已决议：只读零风险、直接展示记忆检索能力）。
-3. 验收：3 家模型分别完成"调用 L0 工具并返回正确结果"。
+### Phase 1 — 3.1 前端内置协议层（v0.5.0 修订，当前阶段）
 
-### Phase 1 — 能力面扩展
+1. 在 3.1-FRONTEND 新建 `src/app/api/agent/chat` 路由：**Vercel AI SDK**（依赖已存在）做模型路由（OpenAI/Anthropic/Google/Qwen 走 openai-compatible 工厂），**MCP client**（stdio 起 l0_gateway，参数复用 lobehub_frontend profile）桥接 L0 工具（首挂 recall）。
+2. UI 侧复用 3.1 现有组件，不引入第二套前端。
+3. 验收：dream-acceptance-verify 五维 + 三模型（Trae 内 kimi/sonnet/opus 经路由）调通 recall 的 E2E。
+4. 能力面扩展：按 mcp_capabilities.yaml 逐个挂载研究/数据类只读壳（unified_search → 18/19/41 等），每壳挂载后五维验收。
 
-1. 按 mcp_capabilities.yaml 逐个挂载研究/数据类只读壳（第二个挂 unified_search，R1；随后 18/19/41 等）。
-2. 每个壳挂载后统一用 dream-acceptance-verify 五维验证（R2 已决议：不引入 LobeHub acceptance 为依赖）。
-3. 评估写工具开放范围（须授权主体 + 独立评审）。
+### Phase 2 — 云端部署（v0.5.0 修订）
 
-### Phase 2 — 云端部署与渠道接入
+1. l0_gateway 包 SSE/HTTP 小服务上云（systemd），3.1 前端随既有部署链路走 dream-code-deploy-pipeline。
+2. 三端协同更新：44-三端协作架构登记 52（3.1 协议层）拓扑与健康检查。
+3. ~~LobeHub 独立服务部署~~（v0.5.0 弃用）。
 
-1. LobeHub 作为独立 systemd 服务上云（第 23 类服务），走 dream-code-deploy-pipeline。
-2. IM 渠道接入（TG/飞书）在 LobeHub 层配置。
-3. 三端协同更新：44-三端协作架构登记 52 的部署拓扑与健康检查。
+### Phase 3 — 蒸馏桥（v0.5.0 修订）
 
-### Phase 3 — 蒸馏桥（D5 新增）
-
-1. 建桥：LobeHub 会话/expertise 成长数据 → 经 L0 cognition 壳（record，授权主体）→ 35 认知库。
+1. 建桥：3.1 协议层会话摘要/辩论 trace/PlanCard 回填产物 → 经 L0 cognition 壳（record，授权主体 orchestrator，仅放行 record/verify）→ 35 认知库。
 2. 桥的写入仍遵守 worker 只读治理：桥本身不直连 cognitive_memory.db，只调壳。
-3. 验收：LobeHub 侧产生的经验可在 recall 中命中，且来源标签可溯（tags 含 lobehub-bridge）。
+3. 验收：桥数据可在 recall 中命中，且来源标签可溯（tags 含 protocol-bridge）。
 
-### Phase 4 — Debate MCP 壳上线（shadow 模式）
+### Phase 4 — Debate 壳激活（shadow 模式，v0.5.0 修订）
 
-1. 按 §7.3 契约实现 debate 壳，registry 登记 + drift 检查。
+1. **复用现有 `agent.debate.mcp` 壳**（registry 已有：start_debate/get_debate_result/debate_health），按需对照 §7.3 契约补工具缺口（argue/trace/adjudicate），registry 变更走 drift 门禁。
 2. **shadow 运行 2-4 周**：辩论全程 trace 落盘（复用 50 域 decisions.jsonl 范式），只记录不影响执行。
 3. 验收：trace 完整率、评估器裁决一致性人工抽检达标。
 
@@ -166,17 +165,17 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 | 风险 | 等级 | 对策 |
 |---|---|---|
-| 上游日更导致版本漂移 | 中 | 锁定 docker tag 版本升级（周/月节奏）；不追 nightly |
-| 双轨：LobeHub runtime vs DreamOS 编排 | 高 | D3+D4 边界硬约束；能力实现零迁入；SPEC 评审时逐条核对 |
-| expertise/userMemories 与我方认知库分叉 | 高 | D4：不回写（直连）；Phase 3 蒸馏桥统一回流；此前其成长数据视为易失 |
-| 功能面膨胀诱导越界（task/goal/signal 侵蚀 D3） | 中 | §0.4 禁止清单 + 挂载评审时重申"只用前台与路由" |
-| proactive 旁路（schedule/heartbeat 动作绕过 MCP） | 中 | A6 验收硬门禁；其自动化任务只允许调 MCP 工具 |
+| 上游日更导致协议漂移 | 低 | v0.5.0：不消费其代码/应用，仅跟踪 release 做协议语义对齐（月节奏） |
+| 双轨：3.1 协议层 loop vs DreamOS 编排 | 高 | D3+D4 边界硬约束；能力实现零迁入；SPEC 评审时逐条核对 |
+| 协议层会话/成长数据与认知库分叉 | 高 | D4：不直写；Phase 3 蒸馏桥统一回流；此前协议层数据视为易失 |
+| 功能面膨胀诱导越界（协议层长出 task/goal 等编排侵蚀 D3） | 中 | §0.4 禁止清单 + 评审时重申"只做模型路由与 MCP 消费" |
+| proactive 旁路（定时/自动动作绕过 MCP） | 中 | A6 验收硬门禁；3.1 侧任何自动化动作只允许调 MCP 工具 |
 | 辩论裁判漂移递归（LLM 裁 LLM） | 高 | D5 修正铁律①：裁判必须是评估器（45评测+acceptance证据+回测），LLM 仅有限仲裁 |
 | 竞争成本翻倍（双份规划 token） | 中 | 竞争仅对高价值任务开启（意图路由分流）；shadow 期先量化成本收益 |
 | 败方监督能力错配 | 中 | D5 修正铁律③：监督交确定性门禁，败方只做后勤 |
 | 数据双写/记忆混乱 | 高 | §2.3 数据边界契约；认知写入只走 L0 壳 |
-| 引入第二运维栈（Node/Next/Postgres） | 中 | 独立容器部署，与 Python 服务进程级隔离 |
-| stdio 路径依赖 desktop（无头 CI/服务器不可用） | 低 | R-C：PoC 用 desktop；云端用 SSE 封装（Phase 2） |
+| ~~引入第二运维栈~~ | ✅ 已消除 | v0.5.0：无独立应用，3.1 同栈（Next/Prisma 现有依赖） |
+| stdio 云端不可用（无头服务器） | 低 | Phase 2：l0_gateway 包 SSE/HTTP 小服务 |
 | MCP 工具面膨胀失控 | 低 | 47 registry 唯一事实源 + drift CI 门禁（现有机制复用） |
 
 ---
@@ -215,18 +214,19 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 ### 7.1 统一闭环
 
 ```text
-用户意图（统一入口：LobeHub 渠道层）
+用户意图（统一入口：3.1 前端）
       │
-  意图规划 ×2 ─────────────────────┐
-  ├─ DreamOS 侧（NodeRegistry/SACG） │
-  └─ LobeHub 侧（agent-runtime）     │
-      ▼                             │
-  Debate MCP（新 L0 壳：命题/论据/反驳轮次协议）
+  意图规划 ×2 ───────────────────────────┐
+  ├─ DreamOS 侧（NodeRegistry/SACG）      │
+  └─ 3.1 协议层侧（Vercel AI SDK loop，    │
+     同构 LobeHub agent-runtime 语义）     │
+      ▼                                   │
+  Debate MCP（复用现有 agent.debate.mcp 壳：start_debate/get_debate_result）
       ▼
   评估器裁决（45 评测 + acceptance 证据 + 回测，非 LLM）
       ▼
   分工：胜出方案 → DreamOS 执行（唯一执行体）
-        败方 → 后勤（渠道/数据/上下文组装）
+        败方 → 后勤（数据/上下文组装）
         监督 = 确定性门禁（13 风控 / 27 审批 / drift 检查）
       ▼
   统一沉淀 L0：①能力壳入 47 registry
@@ -248,7 +248,7 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 | 补充铁律 | 依据 |
 |---|---|
-| ⑤ **辩论多样性契约化**：双方禁止同模型配置；证据路径差异化（DreamOS 走 L0 数据壳，LobeHub 走其 web-crawler/builtin tools 独立取证）；裁决三态含 INCONCLUSIVE（对齐 45 评测契约） | arXiv《More Debate, Same Evidence》：同模型+同证据池的辩论错误强相关，加轮次/改 persona 无效，增益只来自模型/证据多样性 + 弃权政策 |
+| ⑤ **辩论多样性契约化**：双方禁止同模型配置；证据路径差异化（DreamOS 侧走 L0 数据壳，3.1 协议层侧经 web 检索/独立数据源取证）；裁决三态含 INCONCLUSIVE（对齐 45 评测契约） | arXiv《More Debate, Same Evidence》：同模型+同证据池的辩论错误强相关，加轮次/改 persona 无效，增益只来自模型/证据多样性 + 弃权政策 |
 | ⑥ **任务类型分流**：探索性复杂任务 → 单边规划 + orchestrator-workers；方案择优任务 → 才进 Debate | Anthropic Building Effective Agents：orchestrator-workers 适合子任务不可预测场景；辩论研究实证收益仅 1-3pp 且成本高 |
 | ⑦ **结构化产物交接**：胜负方案以 PlanCard schema（非自然语言）交执行方；蒸馏桥产物同 schema | Anthropic harness 长时任务教训：structured artifacts 是跨会话/跨系统交接唯一可靠方式 |
 
@@ -282,7 +282,7 @@ debate.adjudicate(debate_id, evaluator_refs) -> verdict        # 评估器裁决
 | 辩论败方方案 | D | 反模式，附裁决证据（负样本价值） |
 | 会话摘要 | C | 仅高价值会话（人工/规则筛选） |
 
-- 必填字段：`content`（≤300字精炼）、`tags`（必含 `lobehub-bridge` + 来源域 + 类型）、`source_ref`（LobeHub 侧可追溯 ID/trace 链接）、`bridge_ts`。
+- 必填字段：`content`（≤300字精炼）、`tags`（必含 `protocol-bridge` + 来源域 + 类型）、`source_ref`（3.1 协议层侧可追溯 ID/trace 链接）、`bridge_ts`。
 - 回流验证：桥数据可被 recall 命中、可被 verify 升级，与本地经验同权参与贝叶斯蒸馏。
 
 ### 7.5 PlanCard schema（R8 已决议，铁律⑦落地）
