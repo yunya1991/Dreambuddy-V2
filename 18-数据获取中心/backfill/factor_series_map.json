@@ -1,0 +1,556 @@
+{
+ "generated_at": "2026-11-10T10:05:01",
+ "total_factors": 60,
+ "l1_verifiable": 24,
+ "l2l3_usable": 30,
+ "unverifiable": 30,
+ "counts": {
+  "long": 24,
+  "short": 6,
+  "none": 30
+ },
+ "kline_days": 1349,
+ "event_span_days": 1408,
+ "factors": {
+  "technical.trend": {
+   "series": "kline:ma_spread_20_60",
+   "source": "kline",
+   "note": "MA20-MA60 价差",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.momentum": {
+   "series": "kline:rsi14",
+   "source": "kline",
+   "note": "RSI14",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.level": {
+   "series": "kline:dist_to_high20",
+   "source": "kline",
+   "note": "距 20 日高/低点距离",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.volume": {
+   "series": "kline:volume_z20",
+   "source": "kline",
+   "note": "成交量 20 日 z-score",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.pattern": {
+   "series": "kline:atr14_ratio",
+   "source": "kline",
+   "note": "ATR/价格（形态强度代理，非严格形态识别）",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.ma_cross": {
+   "series": "kline:ma_cross_flag",
+   "source": "kline",
+   "note": "MA20/MA60 交叉标志",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.volatility": {
+   "series": "kline:rv20",
+   "source": "kline",
+   "note": "20 日已实现波动率",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.fib": {
+   "series": "kline:retrace_ratio",
+   "source": "kline",
+   "note": "回撤比例（斐波那契代理）",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.candlestick": {
+   "series": "kline:body_ratio",
+   "source": "kline",
+   "note": "K 线实体占比",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "technical.trendline": {
+   "series": "kline:slope20",
+   "source": "kline",
+   "note": "20 日线性斜率",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "flow.funding": {
+   "series": "mm:binance_funding_rate.funding_rate.funding_rate_pct",
+   "source": "mm",
+   "note": "资金费率",
+   "days": 15,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.oi": {
+   "series": "mm:deribit.options.oi",
+   "source": "mm",
+   "note": "未平仓合约（Deribit 期权 OI）",
+   "days": 40,
+   "availability": "short",
+   "l1_verifiable": false,
+   "l2l3_usable": true
+  },
+  "flow.long_short": {
+   "series": "mm:binance_futures.long_short_ratio",
+   "source": "mm",
+   "note": "多空比",
+   "days": 2,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.etf_flow": {
+   "series": null,
+   "source": "none",
+   "note": "无全历史 ETF 净流入源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.stablecoin": {
+   "series": null,
+   "source": "none",
+   "note": "无稳定币增发历史源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.exchange_netflow": {
+   "series": null,
+   "source": "none",
+   "note": "无交易所净流历史源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.whale": {
+   "series": null,
+   "source": "none",
+   "note": "无巨鲸转账历史源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.liquidation": {
+   "series": null,
+   "source": "none",
+   "note": "mm 无 liquidation 序列",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.taker": {
+   "series": null,
+   "source": "none",
+   "note": "mm 无 taker_volume 序列",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "flow.etf_premium": {
+   "series": null,
+   "source": "none",
+   "note": "无 GBTC 溢价历史源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "onchain.active_addr": {
+   "series": "mm:blockchain_info.btc_basics.active_addresses",
+   "source": "mm",
+   "note": "活跃地址数",
+   "days": 34,
+   "availability": "short",
+   "l1_verifiable": false,
+   "l2l3_usable": true
+  },
+  "onchain.hashrate": {
+   "series": "mm:blockchain_info.btc_basics.hashrate",
+   "source": "mm",
+   "note": "哈希率",
+   "days": 41,
+   "availability": "short",
+   "l1_verifiable": false,
+   "l2l3_usable": true
+  },
+  "onchain.mvrv": {
+   "series": null,
+   "source": "none",
+   "note": "bgeometrics 未按指标细分",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "onchain.sopr": {
+   "series": null,
+   "source": "none",
+   "note": "bgeometrics 未按指标细分",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "onchain.nupl": {
+   "series": null,
+   "source": "none",
+   "note": "bgeometrics 未按指标细分",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "onchain.holder": {
+   "series": null,
+   "source": "none",
+   "note": "无持币分布历史源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "onchain.tvl": {
+   "series": "mm:defillama.all_protocols",
+   "source": "mm",
+   "note": "DeFi 总锁仓",
+   "days": 38,
+   "availability": "short",
+   "l1_verifiable": false,
+   "l2l3_usable": true
+  },
+  "onchain.gas": {
+   "series": null,
+   "source": "none",
+   "note": "无 Gas 费历史源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "onchain.exchange_supply": {
+   "series": null,
+   "source": "none",
+   "note": "无交易所存量历史源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "onchain.realized_cap": {
+   "series": null,
+   "source": "none",
+   "note": "bgeometrics 未按指标细分",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "macro.rate": {
+   "series": "mm:fred.DGS10",
+   "source": "mm",
+   "note": "10 年期美债收益率（市场利率代理）",
+   "days": 16202,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.inflation": {
+   "series": "mm:fred.CPIAUCSL",
+   "source": "mm",
+   "note": "CPI",
+   "days": 962,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.employment": {
+   "series": "mm:fred.PAYEMS",
+   "source": "mm",
+   "note": "非农就业",
+   "days": 1054,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.liquidity": {
+   "series": "mm:fred.WALCL",
+   "source": "mm",
+   "note": "美联储资产负债表",
+   "days": 1253,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.dollar": {
+   "series": "mm:fred.DTWEXBGS",
+   "source": "mm",
+   "note": "美元指数",
+   "days": 5231,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.treasury": {
+   "series": "mm:fred.T10Y2Y",
+   "source": "mm",
+   "note": "期限利差",
+   "days": 12607,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.equity": {
+   "series": "mm:fred.NASDAQCOM",
+   "source": "mm",
+   "note": "纳斯达克指数",
+   "days": 14062,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.gdp": {
+   "series": "mm:fred.INDPRO",
+   "source": "mm",
+   "note": "工业生产指数（GDP 代理）",
+   "days": 1299,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "macro.central_bank": {
+   "series": "mm:fred.FEDFUNDS",
+   "source": "mm",
+   "note": "联邦基金利率（仅美联储口径，欧/日/中无源）",
+   "days": 874,
+   "availability": "short",
+   "l1_verifiable": false,
+   "l2l3_usable": true
+  },
+  "macro.credit": {
+   "series": "mm:fred.BAMLH0A0HYM2",
+   "source": "mm",
+   "note": "高收益债利差",
+   "days": 784,
+   "availability": "short",
+   "l1_verifiable": false,
+   "l2l3_usable": true
+  },
+  "event.regulation": {
+   "series": "events:regulation.crypto",
+   "source": "events",
+   "note": "加密监管事件",
+   "days": 1408,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "event.etf_approval": {
+   "series": "events:etf.regulation",
+   "source": "events",
+   "note": "ETF 审批事件",
+   "days": 1408,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "event.hack": {
+   "series": "events:hack.security",
+   "source": "events",
+   "note": "安全事件",
+   "days": 1408,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "event.unlock": {
+   "series": "events:unlock.supply",
+   "source": "events",
+   "note": "代币解锁",
+   "days": 1408,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "event.listing": {
+   "series": "events:listing.exchange",
+   "source": "events",
+   "note": "交易所上线",
+   "days": 1408,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "event.partnership": {
+   "series": null,
+   "source": "none",
+   "note": "事件库无合作类",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "event.funding_round": {
+   "series": null,
+   "source": "none",
+   "note": "事件库无融资类",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "event.legal": {
+   "series": null,
+   "source": "none",
+   "note": "事件库无诉讼类",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "event.upgrade": {
+   "series": null,
+   "source": "none",
+   "note": "事件库无升级类",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "event.airdrop": {
+   "series": null,
+   "source": "none",
+   "note": "事件库无空投类",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.fear_greed": {
+   "series": null,
+   "source": "none",
+   "note": "mm 无 alternative 源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.social_heat": {
+   "series": null,
+   "source": "none",
+   "note": "社交量仅 24 天，不足",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.narrative": {
+   "series": null,
+   "source": "none",
+   "note": "依赖 39 域 S1 主题聚类回填（P1 未做）",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.retail": {
+   "series": null,
+   "source": "none",
+   "note": "无散户情绪源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.institutional": {
+   "series": null,
+   "source": "none",
+   "note": "无机构持仓源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.analyst": {
+   "series": null,
+   "source": "none",
+   "note": "无研报源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.community": {
+   "series": null,
+   "source": "none",
+   "note": "无社区活跃度源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.halving": {
+   "series": null,
+   "source": "none",
+   "note": "减半日历可手工补，暂缺",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  },
+  "sentiment.cycle": {
+   "series": "kline:trend_200",
+   "source": "kline",
+   "note": "200 日均线趋势（周期代理）",
+   "days": 1349,
+   "availability": "long",
+   "l1_verifiable": true,
+   "l2l3_usable": true
+  },
+  "sentiment.altseason": {
+   "series": null,
+   "source": "none",
+   "note": "无山寨季指数源",
+   "days": 0,
+   "availability": "none",
+   "l1_verifiable": false,
+   "l2l3_usable": false
+  }
+ }
+}
