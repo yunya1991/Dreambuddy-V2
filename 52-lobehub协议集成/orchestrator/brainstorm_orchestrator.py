@@ -44,6 +44,8 @@ from proposers import (  # noqa: E402
     build_proposers,
 )
 from registry_tools import RegistryView, load_registry  # noqa: E402
+from router import ROUTE_RULES_VERSION  # noqa: E402
+from router import route as route_intent  # noqa: E402
 from scoring import gate, score, triggers, validate_diversity  # noqa: E402
 
 DEFAULT_TRACE_PATH = ORCHESTRATOR_DIR / "traces" / "brainstorm.jsonl"
@@ -361,11 +363,15 @@ def run(
     registry: RegistryView | None = None,
     n_per_side: int = 1,
     adjudicator_mode: str = "both",
+    route_hint: dict[str, Any] | None = None,
+    force: bool = False,
 ) -> dict[str, Any]:
     """执行一次脑暴（shadow）。任何子步骤失败降级记录，不中断。
 
     n_per_side：每侧发散候选数（CLI 默认 2）；adjudicator_mode：
     heuristic（不跑 grounded）/ grounded / both（默认，shadow 并行记录）。
+    Phase 4.6：候选池生成前先跑 router（五分流）；force=False 且 route ∉
+    {debate, workers} 时只写 trace 后返回 skipped；workers 单边不升级 Debate。
     """
     if not shadow:
         raise NotImplementedError(
@@ -378,6 +384,71 @@ def run(
     refs = list(context_refs or [])
     run_id = f"bs-{int(time.time() * 1000)}-{random.randint(0, 0xFFFFFF):06x}"
     errors: list[dict[str, str]] = []
+
+    # ⓪ 意图路由（Phase 4.6）：必须在候选池生成之前分流（铁律⑥）
+    if isinstance(route_hint, dict) and route_hint.get("route"):
+        routing = dict(route_hint)
+        routing.setdefault("version", ROUTE_RULES_VERSION)
+    elif user_requested_debate:
+        routing = {
+            "route": "debate",
+            "reason": "T4 用户显式要求辩论（跳过关键词路由）",
+            "matched": ["user_requested_debate"],
+            "version": ROUTE_RULES_VERSION,
+        }
+    else:
+        routing = route_intent(intent)
+    route_name = str(routing.get("route") or "workers")
+    # workers = 单边规划（不升级 Debate）；--force 跳过路由直接脑暴
+    mode = "debate" if force or route_name == "debate" else "workers"
+    effective_n = 1 if mode == "workers" else n_per_side
+
+    if not force and route_name not in ("debate", "workers"):
+        # 交易执行 / 高风险 / 直答：不生成候选、不调 Debate、不写 outbox
+        skipped_record = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            "run_id": run_id,
+            "intent": intent,
+            "shadow": shadow,
+            "route": route_name,
+            "route_reason": routing.get("reason"),
+            "route_rules_version": ROUTE_RULES_VERSION,
+            "route_matched": routing.get("matched") or [],
+            "mode": "skip",
+            "decision": {
+                "kind": "route_skipped",
+                "route": route_name,
+                "reason": routing.get("reason"),
+                "executed": False,
+            },
+            "dispatch": {"intent": None, "executed": False},
+            "errors": [],
+        }
+        try:
+            append_jsonl(trace_file, skipped_record)
+        except OSError as exc:
+            errors.append({"step": "trace", "error": f"{type(exc).__name__}: {exc}"})
+        return {
+            "run_id": run_id,
+            "trace_id": run_id,
+            "intent": intent,
+            "shadow": shadow,
+            "skipped": True,
+            "route": route_name,
+            "route_reason": routing.get("reason"),
+            "reason": routing.get("reason"),
+            "route_rules_version": ROUTE_RULES_VERSION,
+            "mode": "skip",
+            "force": force,
+            "winner": None,
+            "adjudication": None,
+            "diversity_violations": [],
+            "outbox_written": 0,
+            "trace_path": str(trace_file),
+            "decision": skipped_record["decision"],
+            "errors": errors,
+        }
+
     registry = registry if registry is not None else load_registry()
     if len(registry) == 0:
         errors.append({"step": "registry", "error": "registry_empty_or_missing"})
@@ -388,7 +459,7 @@ def run(
     )
     try:
         proposals = collect_proposals(
-            intent, refs, proposer_list, side_a_plancard, n_per_side=n_per_side
+            intent, refs, proposer_list, side_a_plancard, n_per_side=effective_n
         )
     except Exception as exc:  # noqa: BLE001 — 降级不中断
         proposals = []
@@ -425,6 +496,10 @@ def run(
     trigger_result = triggers(
         scored, gates, recall_hits=recall_hits, user_requested=user_requested_debate
     )
+    if mode == "workers" and trigger_result["escalate"]:
+        # workers 路由：单边语义，不升级 Debate（T1-T4 仅记录不触发）
+        trigger_result["escalate"] = False
+        trigger_result["bypassed"] = "workers_route"
 
     # ⑥ 论证学裁决器（shadow 并行 A/B，不改变决策）
     scored_by_score = sorted(scored, key=lambda item: float(item.get("score") or 0.0), reverse=True)
@@ -505,7 +580,11 @@ def run(
         "run_id": run_id,
         "intent": intent,
         "shadow": shadow,
-        "n_per_side": n_per_side,
+        "route": route_name,
+        "route_reason": routing.get("reason"),
+        "route_rules_version": ROUTE_RULES_VERSION,
+        "mode": mode,
+        "n_per_side": effective_n,
         "pool_size": len(pool),
         "proposals": [
             {
@@ -569,9 +648,17 @@ def run(
 
     return {
         "run_id": run_id,
+        "trace_id": run_id,
         "intent": intent,
         "shadow": shadow,
-        "n_per_side": n_per_side,
+        "skipped": False,
+        "route": route_name,
+        "route_reason": routing.get("reason"),
+        "route_rules_version": ROUTE_RULES_VERSION,
+        "mode": mode,
+        "force": force,
+        "winner": decision.get("plancard_id") if decision.get("kind") == "dispatch" else None,
+        "n_per_side": effective_n,
         "pool_size": len(pool),
         "proposals": len(proposals),
         "scored": len(scored),
@@ -583,6 +670,25 @@ def run(
         "trace_path": str(trace_file),
         "outbox_written": written_outbox,
         "errors": errors,
+    }
+
+
+def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    """CLI --json-out / 3.1 API 消费的单行摘要（字段稳定，便于前端渲染）。"""
+    return {
+        "ok": True,
+        "route": summary.get("route"),
+        "route_rules_version": summary.get("route_rules_version"),
+        "skipped": bool(summary.get("skipped")),
+        "reason": summary.get("reason") or summary.get("route_reason"),
+        "mode": summary.get("mode"),
+        "winner": summary.get("winner"),
+        "trace_id": summary.get("trace_id") or summary.get("run_id"),
+        "trace_path": summary.get("trace_path"),
+        "outbox_written": summary.get("outbox_written", 0),
+        "diversity_violations": summary.get("diversity_violations") or [],
+        "adjudication": summary.get("adjudication"),
+        "decision": summary.get("decision"),
     }
 
 
@@ -605,6 +711,16 @@ def main(argv: list[str] | None = None) -> int:
         "--side-a-plancard", default=None, help="给定则跳过 A 侧 HTTP 取卡（离线测试用）"
     )
     parser.add_argument("--disable-recall", action="store_true", help="禁用 cognition recall 取证")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="跳过意图路由直接脑暴（人工指定；用于强制观察 debate/workers 全链路）",
+    )
+    parser.add_argument(
+        "--json-out",
+        action="store_true",
+        help="stdout 只输出单行 JSON 摘要（无日志噪音，供 3.1 /api/agent/brainstorm 消费）",
+    )
     parser.add_argument(
         "--n-per-side",
         type=int,
@@ -633,10 +749,15 @@ def main(argv: list[str] | None = None) -> int:
             disable_recall=args.disable_recall,
             n_per_side=args.n_per_side,
             adjudicator_mode=args.adjudicator,
+            force=args.force,
         )
     except NotImplementedError as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
+
+    if args.json_out:
+        print(json.dumps(_compact_summary(summary), ensure_ascii=False))
+        return 0
 
     print(json.dumps({"ok": True, "data": summary}, ensure_ascii=False, indent=2))
     return 0

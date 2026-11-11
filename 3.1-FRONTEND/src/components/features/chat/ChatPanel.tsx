@@ -29,6 +29,7 @@ import { DecisionHooks, type DecisionHook } from './DecisionHooks';
 import { StrategyHooks, type StrategyHook } from './StrategyHooks';
 import { ExecutionReviewHooks, type ExecutionReviewHook } from './ExecutionReviewHooks';
 import { MonitorHooks, type MonitorHook } from './MonitorHooks';
+import { formatBrainstormMessage } from './brainstorm-format';
 
 /**
  * ChatPanel — 聊天主面板 (DREAM OS 核心交互入口)
@@ -57,6 +58,9 @@ export function ChatPanel() {
   const [inputValue, setInputValue] = useState('');
   const [inputMode, setInputMode] = useState<'chat' | 'command'>('chat');
   const [error, setError] = useState<string | null>(null);
+  // Phase 4.6：择优脑暴入口（开启后发送走 /api/agent/brainstorm 意图路由 + 双链脑暴）
+  const [brainstormMode, setBrainstormMode] = useState(false);
+  const [brainstormBusy, setBrainstormBusy] = useState(false);
 
   // 消息列表底部锚点
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -132,7 +136,7 @@ export function ChatPanel() {
   // 发送消息
   const handleSend = useCallback(() => {
     const content = inputValue.trim();
-    if (!content || isStreaming) return;
+    if (!content || isStreaming || brainstormBusy) return;
 
     // 从 store 读取最新的 activeSessionId，避免闭包竞态
     const storeState = useSessionStore.getState();
@@ -150,6 +154,41 @@ export function ChatPanel() {
     });
 
     setInputValue('');
+
+    // Phase 4.6：择优脑暴开关 → 经后端 /api/agent/brainstorm（不直连编排器）
+    if (brainstormMode) {
+      setBrainstormBusy(true);
+      (async () => {
+        try {
+          const res = await fetch('/api/agent/brainstorm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ intent: content }),
+          });
+          const summary = await res.json();
+          useSessionStore.getState().addMessage(sessionId as string, {
+            id: `msg-${Date.now()}-brainstorm`,
+            role: 'assistant',
+            content: formatBrainstormMessage(summary),
+            timestamp: Date.now(),
+          });
+        } catch (e) {
+          useSessionStore.getState().addMessage(sessionId as string, {
+            id: `msg-${Date.now()}-brainstorm`,
+            role: 'assistant',
+            content: formatBrainstormMessage({
+              ok: false,
+              degraded: true,
+              error: e instanceof Error ? e.message : 'brainstorm_request_failed',
+            }),
+            timestamp: Date.now(),
+          });
+        } finally {
+          setBrainstormBusy(false);
+        }
+      })();
+      return;
+    }
 
     // 设置流式状态
     // 三层路由器消费 (SPEC v1.0 §5 / PLAN P3):
@@ -199,7 +238,7 @@ export function ChatPanel() {
       useSessionStore.getState().setStreaming(true, '');
       sendToTaskStream(content, sessionId, l1Intent);
     })();
-  }, [inputValue, isStreaming, sendToTaskStream]);
+  }, [inputValue, isStreaming, brainstormBusy, brainstormMode, sendToTaskStream]);
 
   // 取消流式请求
   const handleCancel = useCallback(() => {
@@ -495,12 +534,34 @@ export function ChatPanel() {
 
       {/* 输入区 — ChatInput */}
       <div className="px-4 py-3 border-t border-slate-700/30">
+        {/* Phase 4.6：择优脑暴开关（复用现有按钮样式；开启后发送走 /api/agent/brainstorm） */}
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => setBrainstormMode((v) => !v)}
+            disabled={isStreaming || brainstormBusy}
+            aria-pressed={brainstormMode}
+            title="开启后发送经意图路由：trade_deny/high_risk_human 直接拦截，debate 走双链脑暴"
+            className={`px-2.5 py-1 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+              brainstormMode
+                ? 'bg-indigo-600 text-white border-indigo-500'
+                : 'bg-slate-800/50 text-slate-300 border-slate-700/30 hover:bg-slate-700/50'
+            }`}
+          >
+            {brainstormBusy ? '脑暴中…' : `择优脑暴：${brainstormMode ? '开' : '关'}`}
+          </button>
+          <span className="text-[10px] text-slate-500">
+            {brainstormMode
+              ? '本次发送走意图路由（交易拦截 / 高风险人工 / 择优辩论 / 单边规划 / 直答）'
+              : '关闭：常规对话'}
+          </span>
+        </div>
         <ChatInput
           value={inputValue}
           onChange={setInputValue}
           onSend={handleSend}
-          disabled={isStreaming}
-          loading={isStreaming}
+          disabled={isStreaming || brainstormBusy}
+          loading={isStreaming || brainstormBusy}
           mode={inputMode}
           onModeToggle={() => setInputMode(inputMode === 'chat' ? 'command' : 'chat')}
         />

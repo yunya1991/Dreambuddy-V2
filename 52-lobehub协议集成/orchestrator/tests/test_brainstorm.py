@@ -549,6 +549,8 @@ def test_run_n_per_side_pool_and_trace_fields(tmp_path):
         ],
         registry=REGISTRY,
         debate_opener=lambda topic, bg, models, cards: "debate-n",
+        # Phase 4.6：该用例专测 N-per-side 发散，显式 --force 跳过意图路由（否则 workers 单边 n=1）
+        force=True,
     )
 
     assert summary["n_per_side"] == 2
@@ -596,3 +598,117 @@ def test_diversity_rejects_unknown_model_and_skips_outbox(tmp_path, monkeypatch)
     record = json.loads(trace.read_text(encoding="utf-8").strip().splitlines()[-1])
     assert record["diversity_violations"]
     assert record["decision"]["executed"] is False
+
+
+# ---------- ⑨ Phase 4.6：意图路由接编排器 ----------
+
+
+def test_trade_intent_route_skipped_writes_trace_no_outbox(tmp_path):
+    trace = tmp_path / "t.jsonl"
+    outbox = tmp_path / "o.jsonl"
+    summary = orch.run(
+        intent="帮我买入 100 股茅台",
+        trace_path=trace,
+        outbox_path=outbox,
+        disable_recall=True,
+        proposers=_build_proposers(),
+        registry=REGISTRY,
+    )
+
+    assert summary["skipped"] is True
+    assert summary["route"] == "trade_deny"
+    assert summary["winner"] is None
+    assert summary["outbox_written"] == 0
+    assert not outbox.exists()
+    record = json.loads(trace.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert record["route"] == "trade_deny"
+    assert record["route_rules_version"] == "r9-v1"
+    assert record["decision"]["kind"] == "route_skipped"
+    assert record["decision"]["executed"] is False
+
+
+def test_high_risk_intent_route_skipped(tmp_path):
+    summary = orch.run(
+        intent="要不要全仓押注这个方向",
+        trace_path=tmp_path / "t.jsonl",
+        outbox_path=tmp_path / "o.jsonl",
+        disable_recall=True,
+        proposers=_build_proposers(),
+        registry=REGISTRY,
+    )
+    assert summary["skipped"] is True
+    assert summary["route"] == "high_risk_human"
+    assert summary["reason"]
+
+
+def test_workers_route_single_pass_no_debate_escalation(tmp_path):
+    calls = {"a": 0}
+
+    def a_poster(url, payload, **_kwargs):
+        calls["a"] += 1
+        return {
+            "ok": True,
+            "data": {
+                "plancard": make_card(id="pc-a"),
+                "model": "qwen-plus",
+                "evidence_path": "unified_search+recall",
+            },
+        }
+
+    def b_poster(url, payload, **_kwargs):
+        return _fake_b_response()
+
+    trace = tmp_path / "t.jsonl"
+    summary = orch.run(
+        intent="帮我整理一下最近的工程改动",
+        trace_path=trace,
+        outbox_path=tmp_path / "o.jsonl",
+        disable_recall=True,
+        n_per_side=3,
+        proposers=[
+            SideAProposer(poster=a_poster, model_hint="qwen-plus"),
+            SideBProposer(poster=b_poster, allowed_tools=REGISTRY.allowed()),
+        ],
+        registry=REGISTRY,
+        debate_opener=lambda *args: "should-not-open",
+    )
+
+    assert summary["route"] == "workers"
+    assert summary["mode"] == "workers"
+    assert summary["n_per_side"] == 1
+    assert calls["a"] == 1  # side-A 只走一次（单边语义）
+    assert summary["decision"]["kind"] == "dispatch"
+    assert summary["debate"]["debate_id"] is None
+    record = json.loads(trace.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert record["mode"] == "workers"
+    assert record["triggers"]["escalate"] is False
+
+
+def test_debate_route_keeps_dual_chain(tmp_path):
+    summary = orch.run(
+        intent="离场模块要不要加波动率自适应阈值，哪种更好，看回测和风险",
+        trace_path=tmp_path / "t.jsonl",
+        outbox_path=tmp_path / "o.jsonl",
+        disable_recall=True,
+        proposers=_build_proposers(),
+        registry=REGISTRY,
+    )
+    assert summary["route"] == "debate"
+    assert summary["mode"] == "debate"
+    assert summary["skipped"] is False
+
+
+def test_force_bypasses_router_skip(tmp_path):
+    summary = orch.run(
+        intent="帮我买入 100 股茅台",
+        trace_path=tmp_path / "t.jsonl",
+        outbox_path=tmp_path / "o.jsonl",
+        disable_recall=True,
+        proposers=_build_proposers(),
+        registry=REGISTRY,
+        force=True,
+    )
+    assert summary["skipped"] is False
+    assert summary["force"] is True
+    assert summary["mode"] == "debate"
+    assert summary["decision"]["kind"] == "dispatch"

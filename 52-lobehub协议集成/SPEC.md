@@ -1,8 +1,8 @@
 # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
 
-> 版本：v0.7.0（Phase 4.5 补齐：N-per-side 发散 + grounded semantics shadow A/B + 铁律⑤加固）
+> 版本：v0.8.0（Phase 4.6 补齐：意图路由五分流 + workers 单边语义 + 3.1 用户入口）
 > 日期：2026-11-11
-> 状态：🟢 Phase 0/1/3/4/4.5 已实施（本地）；Phase 2 云端部署待定
+> 状态：🟢 Phase 0/1/3/4/4.5/4.6 已实施（本地）；Phase 2 云端部署待定
 > 归属：52-LobeHub协议集成（叠加层，非主骨架）
 > 上游：47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构（子域能力供给）
 > 下游：DreamOS/SACG（主骨架编排）、33-REA / 48-涌现架构（反思与涌现回流）
@@ -186,6 +186,13 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 **Phase 4.5 交付**：`adjudicator.py`、`tests/test_adjudicator.py`；`proposers.py`/`plancard.py`/`scoring.py`/`brainstorm_orchestrator.py` 增量；3.1 侧 `src/lib/agent/plan-variant.ts` + `/api/agent/plan` variant 支持。
 
+### Phase 4.6 — 意图路由与用户入口（2026-11-11 实施）
+
+1. **router.py 五分流 ✅**：`orchestrator/router.py`（纯确定性、零 token、零三方依赖），规则版本 `ROUTE_RULES_VERSION = "r9-v1"` 随每条 trace 落盘。`route(intent, risk_flags=None, intent_type=None)` 严格按序返回 `trade_deny / high_risk_human / debate / direct_answer / workers`；DreamOS 六类意图映射：`TREND_FOLLOWING/MEAN_REVERSION/FUNDAMENTAL_PLAY/BREAKOUT → trade_deny`、`KNOWLEDGE_MATCH → direct_answer`、`UNCERTAIN` 回退关键词；`reason` 标注来源 `dreamos_intent` / `keyword` / `risk_flags`。
+2. **编排器接路由 ✅**：`run(..., route_hint=None, force=False)` 在候选池生成**之前**分流；`force=False` 且 route ∉ {debate, workers} 时只写 trace 后返回 `{skipped:true, route, reason}`（不生成候选、不调 Debate、不写 outbox）。`workers` = 单边语义（side-B DreamOS 规划 + side-A 一次，`n_per_side` 强制 1），T1-T4 只记录不升级，trace 标 `mode:"workers"`；`debate` 保持双链 + N-per-side + T1-T4 不变。CLI 新增 `--force`（人工指定跳过路由）与 `--json-out`（stdout 单行 JSON 摘要：`route/skipped/winner/trace_id/outbox_written/diversity_violations/adjudication/mode`）；trace 新增 `route` / `route_rules_version` / `mode`。
+3. **3.1 用户入口 ✅**：新增 `POST /api/agent/brainstorm`（intent 非空且 ≤2000 字；`spawn` 调编排器 CLI，`ORCHESTRATOR_PY` 可覆盖 python 路径，180s 超时 kill；成功解析 stdout 末行 JSON，失败/非 JSON/超时一律 200 degraded 信封，GET 405）；前端入口落在既有 `ChatPanel` 输入区（"择优脑暴"开关，不新建页面、不改路由结构），结果以助手消息展示 route 中文名 / skipped+reason / winner+score / 蒸馏写入数，`trade_deny` 与 `high_risk_human` 显式提示"已拦截"。
+4. **尚缺项**：真实 shadow 数据（Phase 5 激活前仍需 2-4 周 trace 积累）；45 域评测器适配层未接（继续 `45.heuristic@1.0.0`）。`--force` 仅供人工观察全链路，不得作为线上默认。
+
 ### Phase 5 — 竞争模式激活（非交易任务）
 
 1. 对研究/分析/工程类任务激活"脑暴-裁决-分工"全链路（争议时升级 Debate）。
@@ -353,6 +360,7 @@ debate.adjudicate(debate_id, evaluator_refs) -> verdict        # 评估器裁决
 | 高风险类 | risk_flags 命中 13 风控域 | 强制人工审批节点，无论类型 |
 
 - 路由规则版本化（存 47 registry 同仓），变更需评审；初期按上表保守分流，shadow 数据驱动调优。
+- **已实现（Phase 4.6）：`orchestrator/router.py`，版本 `r9-v1`**；交易/高风险分支在候选池生成前拦截，workers 单边不升级 Debate。
 
 ### 7.7 发散与收敛执行基线（Phase 4.5）
 
