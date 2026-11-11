@@ -26,8 +26,22 @@ describe('StdioMcpClient（真实 stdio 集成）', () => {
     expect(tools.length).toBeGreaterThanOrEqual(7);
     const names = tools.map((t) => t.name);
     expect(names).toContain('recall');
+    expect(names).toContain('unified_search');
     const recall = tools.find((t) => t.name === 'recall');
     expect(recall?.inputSchema).toMatchObject({ type: 'object' });
+  });
+
+  it('callTool unified_search 三后端统一检索命中数据（Phase 1 收尾挂载验收）', async () => {
+    const result = await client.callTool('unified_search', {
+      query: '52 LobeHub 协议集成',
+      top_k: 3,
+    });
+    expect(result.isError).not.toBe(true);
+    const text = result.content.map((c) => c.text ?? '').join('\n');
+    expect(text.length).toBeGreaterThan(0);
+    // 统一检索返回 ok:true 且 hits 非空（chroma/recall/41 任一路命中即算）
+    expect(text).toMatch(/"ok":\s*true/);
+    expect(text).toMatch(/hits/);
   });
 
   it('callTool recall 返回含 LobeHub 或 52 的记忆内容', async () => {
