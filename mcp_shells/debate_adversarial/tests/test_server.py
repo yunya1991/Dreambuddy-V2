@@ -157,6 +157,81 @@ def test_fast_and_deep_modes_start_jobs(monkeypatch):
         assert payload["data"]["status"] == "running"
 
 
+# ── Phase 4：model_pair / plancards 可选参数（向后兼容） ──────────
+
+
+def test_model_pair_same_model_rejected():
+    """铁律⑤：壳层强制拒绝同模型开题。"""
+    payload = json.loads(
+        server.start_debate({"topic": "t", "model_pair": ["qwen-plus", "qwen-plus"]})
+    )
+    assert payload["ok"] is False
+    assert payload["error_code"] == "invalid"
+    assert "铁律⑤" in payload["meta"]["reason"]
+
+
+def test_model_pair_distinct_models_accepted(monkeypatch):
+    server._reset_governance()
+
+    def fake_run_job(*args, **kwargs):
+        debate_id = args[0]
+        server._write_job(debate_id, {"debate_id": debate_id, "status": "completed"})
+
+    monkeypatch.setattr(server, "_run_job", fake_run_job)
+    payload = json.loads(
+        server.start_debate({"topic": "t", "model_pair": ["qwen-plus", "claude-sonnet-4"]})
+    )
+    assert payload["ok"] is True
+
+
+def test_model_pair_wrong_shape_rejected():
+    payload = json.loads(server.start_debate({"topic": "t", "model_pair": ["only-one"]}))
+    assert payload["ok"] is False
+    assert payload["error_code"] == "invalid"
+
+
+def test_plancards_prepended_to_background(monkeypatch):
+    server._reset_governance()
+    captured = {}
+
+    def fake_run_job(*args, **kwargs):
+        captured["background"] = args[3]
+        debate_id = args[0]
+        server._write_job(debate_id, {"debate_id": debate_id, "status": "completed"})
+
+    monkeypatch.setattr(server, "_run_job", fake_run_job)
+    cards = [{"id": "pc-a", "intent": "A 方案"}, {"id": "pc-b", "intent": "B 方案"}]
+    payload = json.loads(
+        server.start_debate({"topic": "t", "background": "原始背景", "plancards": cards})
+    )
+    assert payload["ok"] is True
+    assert captured["background"].startswith("【PlanCard 交接】")
+    assert "pc-a" in captured["background"] and "pc-b" in captured["background"]
+    assert captured["background"].endswith("原始背景")
+
+
+def test_plancards_wrong_shape_rejected():
+    payload = json.loads(server.start_debate({"topic": "t", "plancards": [{"id": "pc-a"}]}))
+    assert payload["ok"] is False
+    assert payload["error_code"] == "invalid"
+
+
+def test_optional_params_default_do_not_break(monkeypatch):
+    """不传 model_pair / plancards 时行为与旧版一致。"""
+    server._reset_governance()
+    captured = {}
+
+    def fake_run_job(*args, **kwargs):
+        captured["background"] = args[3]
+        debate_id = args[0]
+        server._write_job(debate_id, {"debate_id": debate_id, "status": "completed"})
+
+    monkeypatch.setattr(server, "_run_job", fake_run_job)
+    payload = json.loads(server.start_debate({"topic": "t", "background": "b"}))
+    assert payload["ok"] is True
+    assert captured["background"] == "b"
+
+
 # ── M10 频控 / 并发 / TTL 测试 ─────────────────────────────────
 
 

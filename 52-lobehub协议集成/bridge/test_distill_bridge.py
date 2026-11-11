@@ -62,6 +62,8 @@ def test_r6_quality_map_exact():
         "expertise_candidate": "C",
         "debate_winner": "B",
         "debate_loser": "D",
+        "brainstorm_winner": "B",
+        "brainstorm_loser": "D",
         "session_summary": "C",
     }
 
@@ -73,6 +75,8 @@ def test_r6_quality_map_exact():
         ("expertise_candidate", "C"),
         ("debate_winner", "B"),
         ("debate_loser", "D"),
+        ("brainstorm_winner", "B"),
+        ("brainstorm_loser", "D"),
         ("session_summary", "C"),
     ],
 )

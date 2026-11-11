@@ -287,6 +287,14 @@ def _run_job(
     _write_job(debate_id, payload)
 
 
+def _plancards_preamble(plancards: list[dict[str, Any]]) -> str:
+    """PlanCard 交接前置块（Phase 4 脑暴升级 Debate 时拼入 background 前部）。"""
+    lines = ["【PlanCard 交接】"]
+    for index, card in enumerate(plancards, start=1):
+        lines.append(f"- side {index}: {json.dumps(card, ensure_ascii=False)}")
+    return "\n".join(lines)
+
+
 def start_debate(arguments: dict[str, Any]) -> str:
     topic = str(arguments.get("topic") or "").strip()
     if not topic:
@@ -324,7 +332,62 @@ def start_debate(arguments: dict[str, Any]) -> str:
             ensure_ascii=False,
         )
     rounds = max(1, min(int(arguments.get("rounds", 2)), _MAX_ROUNDS))
-    background = str(arguments.get("background") or "")[:_MAX_BACKGROUND]
+    background = str(arguments.get("background") or "")
+
+    # Phase 4：双方模型声明与 PlanCard 交接（均可选，向后兼容）
+    model_pair = arguments.get("model_pair")
+    if model_pair is not None:
+        if (
+            not isinstance(model_pair, list)
+            or len(model_pair) != 2
+            or not all(isinstance(m, str) and m.strip() for m in model_pair)
+        ):
+            return json.dumps(
+                wrap(
+                    {},
+                    SHELL_SOURCE,
+                    degraded=True,
+                    error_code="invalid",
+                    meta={"tool": "start_debate", "reason": "model_pair 须为 2 个非空字符串"},
+                ),
+                ensure_ascii=False,
+            )
+        # 铁律⑤：壳层强制拒绝同模型开题
+        if model_pair[0].strip() == model_pair[1].strip():
+            return json.dumps(
+                wrap(
+                    {},
+                    SHELL_SOURCE,
+                    degraded=True,
+                    error_code="invalid",
+                    meta={
+                        "tool": "start_debate",
+                        "reason": f"model_pair 禁止同模型（铁律⑤）: {model_pair[0].strip()}",
+                    },
+                ),
+                ensure_ascii=False,
+            )
+
+    plancards = arguments.get("plancards")
+    if plancards is not None:
+        if (
+            not isinstance(plancards, list)
+            or len(plancards) != 2
+            or not all(isinstance(card, dict) for card in plancards)
+        ):
+            return json.dumps(
+                wrap(
+                    {},
+                    SHELL_SOURCE,
+                    degraded=True,
+                    error_code="invalid",
+                    meta={"tool": "start_debate", "reason": "plancards 须为 2 个对象"},
+                ),
+                ensure_ascii=False,
+            )
+        background = f"{_plancards_preamble(plancards)}\n\n{background}"
+    background = background[:_MAX_BACKGROUND]
+
     judge = bool(arguments.get("judge", True))
     provider = arguments.get("provider")
     model = arguments.get("model")
@@ -550,6 +613,20 @@ _TOOLS = [
                     "description": "review=结构化评审；fast=DSH 1 轮并行；deep=DSH 2 轮+Judge+6 维评分",
                 },
                 "background": {"type": "string", "description": "背景材料（可选）"},
+                "model_pair": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "双方模型声明（可选）；壳层拒绝同模型（铁律⑤）",
+                },
+                "plancards": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "双方候选 PlanCard（可选）；提供则拼入 background 前部",
+                },
                 "rounds": {"type": "integer", "default": 2, "minimum": 1, "maximum": _MAX_ROUNDS},
                 "judge": {"type": "boolean", "default": True},
                 "research": {

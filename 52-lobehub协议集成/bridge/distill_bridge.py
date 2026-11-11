@@ -64,6 +64,8 @@ R6_QUALITY_MAP = {
     "expertise_candidate": "C",
     "debate_winner": "B",
     "debate_loser": "D",
+    "brainstorm_winner": "B",
+    "brainstorm_loser": "D",
     "session_summary": "C",
 }
 

@@ -148,17 +148,32 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 2. 桥的写入仍遵守 worker 只读治理：桥本身不直连 cognitive_memory.db，只调壳。
 3. 验收：桥数据可在 recall 中命中，且来源标签可溯（tags 含 protocol-bridge）。
 
-### Phase 4 — Debate 壳激活（shadow 模式，v0.5.0 修订）
+### Phase 4 — 脑暴编排器 + Debate 壳扩展（shadow 模式）✅ 已实施（2026-11-11）
 
-1. **复用现有 `agent.debate.mcp` 壳**（registry 已有：start_debate/get_debate_result/debate_health），按需对照 §7.3 契约补工具缺口（argue/trace/adjudicate），registry 变更走 drift 门禁。
-2. **shadow 运行 2-4 周**：辩论全程 trace 落盘（复用 50 域 decisions.jsonl 范式），只记录不影响执行。
-3. 验收：trace 完整率、评估器裁决一致性人工抽检达标。
+**落点决议**（2026-11-11 用户确认）：编排器放 `52-lobehub协议集成/orchestrator/`（Python），不放 3.1、不改 DreamOS 源码（保 A3 零侵入）。理由：编排器含裁决/分派/门禁属主权件（D3/D4），依赖全在 Python 侧，shadow 期需常驻/定时。
+
+**双链划分**：
+- side-A：3.1 `/api/agent/plan`（3.1 模型链 + unified_search/recall 独立取证）
+- side-B：DreamOS `/api/v1/intent`（chain 规划 + recall 取证）→ 经 `plancard.from_dreamos_intent` 转 PlanCard
+- 编排列：收集 → 多样性校验（铁律⑤）→ gate(G1-G4) → score → recall 取证 → T1-T4 → 升级 Debate 或 shadow 记 dispatch 意图 → trace jsonl + 蒸馏桥 outbox
+
+**交付**：
+- `orchestrator/{brainstorm_orchestrator.py, plancard.py, registry_tools.py, scoring.py, proposers.py, debate_client.py, tests/}`
+- 3.1 侧 `src/lib/agent/plancard.ts` + `src/app/api/agent/plan/route.ts`
+- 桥 R6 新增 `brainstorm_winner→B` / `brainstorm_loser→D`
+- `agent.debate.mcp` 壳新增可选 `model_pair`/`plancards`（同模型开题在壳层拒绝，铁律⑤契约强制）
+
+**已知差距（Phase 5 前需补）**：
+- 评估器目前为确定性启发式（`45.heuristic@1.0.0`）；45 域评测器输入为领域产物（EngineeringScan/回测统计等），PlanCard 无法直接喂入 → 需补"PlanCard→领域产物"适配层
+- live 执行分支未实现（`--no-shadow` 抛 NotImplementedError），符合 Phase 5 门禁
+
+**运行方式**：手动 CLI 触发（暂不上 launchd，避免与现有 2 个 plist 冲突）。shadow 2-4 周收集 trace 后评审激活。
 
 ### Phase 5 — 竞争模式激活（非交易任务）
 
-1. 对研究/分析/工程类任务激活"辩论-裁决-分工"全链路。
-2. 交易域：辩论结果仅作信号输入，裁决与执行仍走 27 治理审批（§0.4 硬约束）。
-3. 激活门槛：评估器裁决率、翻盘率、败方负样本蒸馏价值达标（Phase 4 shadow 数据支撑）。
+1. 对研究/分析/工程类任务激活"脑暴-裁决-分工"全链路（争议时升级 Debate）。
+2. 交易域：脑暴/辩论结果仅作信号输入，裁决与执行仍走 27 治理审批（§0.4 硬约束）。
+3. 激活门槛：评估分差分布、T1-T4 触发率、翻盘率、败方负样本蒸馏价值达标（Phase 4 shadow 数据支撑）。
 
 ---
 
