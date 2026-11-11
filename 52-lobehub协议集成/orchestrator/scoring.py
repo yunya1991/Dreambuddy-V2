@@ -236,10 +236,31 @@ def triggers(
     scored = [c for c in cards if isinstance(c, dict)]
     scores = sorted((float(c.get("score") or 0.0) for c in scored), reverse=True)
 
-    # T1：Top2 分差 < 阈值
-    if len(scores) >= 2:
+    # T1：**跨侧**最高分差 < 阈值。同侧多 variant 天然只差几分（同一规划器、
+    # 同一证据基础），拿全局 Top1/Top2 比较会让 T1 恒命中、永远进不了 dispatch。
+    # 两侧都有有效卡时按跨侧最佳比较；只有单侧时退回 Top2。
+    by_side: dict[str, float] = {}
+    for item in scored:
+        side = _side_of(item)
+        value = float(item.get("score") or 0.0)
+        if value > by_side.get(side, -1.0):
+            by_side[side] = value
+    if "side_a" in by_side and "side_b" in by_side:
+        gap = round(abs(by_side["side_a"] - by_side["side_b"]), 4)
+        basis = "cross_side"
+    elif len(scores) >= 2:
         gap = round(scores[0] - scores[1], 4)
-        detail["T1"] = {"gap": gap, "threshold": threshold, "fired": gap < threshold}
+        basis = "top2"
+    else:
+        gap = None
+        basis = None
+    if gap is not None:
+        detail["T1"] = {
+            "gap": gap,
+            "threshold": threshold,
+            "fired": gap < threshold,
+            "basis": basis,
+        }
         if gap < threshold:
             fired.append("T1")
     else:

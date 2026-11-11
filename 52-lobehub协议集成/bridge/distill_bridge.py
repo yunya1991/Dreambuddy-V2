@@ -22,9 +22,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -37,6 +39,19 @@ REPO_ROOT = BRIDGE_DIR.parents[1]
 
 DEFAULT_OUTBOX = BRIDGE_DIR / "outbox.jsonl"
 DEFAULT_CURSOR = BRIDGE_DIR / ".cursor"
+DEFAULT_SEEN = BRIDGE_DIR / ".seen"
+
+# 归一化指纹：抹去每次运行必然不同的 plancard id / score，用于跨批次去重
+_PLANCARD_RE = re.compile(r"plancard=\S+")
+_SCORE_RE = re.compile(r"score=[\d.]+")
+
+
+def content_fingerprint(content: str) -> str:
+    """内容指纹（跨批次去重）：同一意图的重复胜/负记录只蒸馏一次。"""
+    text = _PLANCARD_RE.sub("plancard=*", content)
+    text = _SCORE_RE.sub("score=*", text)
+    return hashlib.sha1(text.encode("utf-8")).hexdigest()
+
 
 # server 路径与基础 env 同 lobehub_frontend profile（/tmp/lobehub_frontend_profile.json）。
 DEFAULT_COMMAND = "/opt/anaconda3/bin/python3"
@@ -255,16 +270,27 @@ def process_outbox(
     outbox_path: Path,
     cursor_path: Path,
     shell_factory: Callable[[], Any] = StdioMcpShell,
+    seen_path: Path | None = None,
 ) -> dict[str, int]:
     """处理 outbox 一批（从游标之后开始），返回统计。幂等：游标外行不重写。
 
     - 校验失败（fail-closed）：跳过该行、记日志、游标照常推进（毒丸不阻塞队列）；
+    - 内容重复（seen_path 命中）：跳过写入但推进游标，避免同一意图反复蒸馏成噪音；
     - 传输错误：中止本批，游标停在最后成功行，下次重跑续传。
     """
     stats = {"processed": 0, "written": 0, "skipped": 0, "errors": 0}
     if not outbox_path.exists():
         logger.info("outbox 不存在，无待处理条目: %s", outbox_path)
         return stats
+
+    seen: set[str] = set()
+    if seen_path is not None and seen_path.exists():
+        seen = {
+            line.strip()
+            for line in seen_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+    seen_new: list[str] = []
 
     cursor = _read_cursor(cursor_path)
     shell = None
@@ -285,6 +311,12 @@ def process_outbox(
                     logger.warning("跳过不合规条目 line=%d: %s", line_no, e)
                     _write_cursor(cursor_path, line_no)
                     continue
+                digest = content_fingerprint(entry["content"]) if seen_path is not None else None
+                if digest is not None and digest in seen:
+                    stats["skipped"] += 1
+                    logger.info("跳过重复条目 line=%d source_ref=%s", line_no, entry["source_ref"])
+                    _write_cursor(cursor_path, line_no)
+                    continue
                 if shell is None:
                     shell = shell_factory()
                 try:
@@ -295,6 +327,9 @@ def process_outbox(
                     break  # 不推进游标，下次重跑续传
                 stats["written"] += 1
                 _write_cursor(cursor_path, line_no)
+                if digest is not None:
+                    seen.add(digest)
+                    seen_new.append(digest)
                 logger.info(
                     "已蒸馏 line=%d type=%s quality=%s source_ref=%s",
                     line_no,
@@ -305,6 +340,9 @@ def process_outbox(
     finally:
         if shell is not None and hasattr(shell, "close"):
             shell.close()
+        if seen_new and seen_path is not None:
+            with seen_path.open("a", encoding="utf-8") as fh:
+                fh.write("\n".join(seen_new) + "\n")
     return stats
 
 
@@ -317,6 +355,13 @@ def main(argv: list[str] | None = None) -> int:
         default=Path(os.environ.get("BRIDGE_OUTBOX_PATH", str(DEFAULT_OUTBOX))),
     )
     parser.add_argument("--cursor", type=Path, default=DEFAULT_CURSOR)
+    parser.add_argument(
+        "--seen",
+        type=Path,
+        default=Path(os.environ.get("BRIDGE_SEEN_PATH", str(DEFAULT_SEEN))),
+        help="去重指纹文件（命中则跳过写入）",
+    )
+    parser.add_argument("--no-dedupe", action="store_true", help="关闭内容去重（调试用）")
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args(argv)
 
@@ -325,7 +370,11 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         stream=sys.stderr,
     )
-    stats = process_outbox(args.outbox, args.cursor)
+    stats = process_outbox(
+        args.outbox,
+        args.cursor,
+        seen_path=None if args.no_dedupe else args.seen,
+    )
     logger.info("批次完成: %s", stats)
     return 0 if stats["errors"] == 0 else 1
 

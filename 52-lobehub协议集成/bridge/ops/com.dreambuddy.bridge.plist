@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.dreambuddy.bridge</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/anaconda3/bin/python3</string>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge/distill_bridge.py</string>
+    <string>--once</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge</string>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>23</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge/logs/bridge_stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge/logs/bridge_stderr.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>LANG</key>
+    <string>zh_CN.UTF-8</string>
+  </dict>
+</dict>
+</plist>

@@ -191,3 +191,30 @@ def test_invalid_entries_skipped_without_blocking(tmp_path):
     assert stats["skipped"] == 2
     assert cursor.read_text().strip() == "3"  # 毒丸不阻塞，游标照常推进
     assert len(shell.calls) == 1
+
+
+def test_duplicate_content_deduped_across_batches(tmp_path):
+    """内容指纹去重：同意图重复胜/负记录只写一次，游标照常推进。"""
+    outbox = tmp_path / "outbox.jsonl"
+    cursor = tmp_path / ".cursor"
+    seen = tmp_path / ".seen"
+    first = make_entry(content="[脑暴胜出][X] plancard=pc-1 score=0.9 steps=2")
+    dup = make_entry(content="[脑暴胜出][X] plancard=pc-2 score=0.8 steps=2")
+    other = make_entry(content="会话摘要：另一个意图", source_ref="msg-002")
+    outbox.write_text(
+        "\n".join(json.dumps(e, ensure_ascii=False) for e in (first, dup, other)) + "\n",
+        encoding="utf-8",
+    )
+    shell = FakeShell()
+    stats = process_outbox(outbox, cursor, shell_factory=lambda: shell, seen_path=seen)
+    assert stats == {"processed": 3, "written": 2, "skipped": 1, "errors": 0}
+    assert len(shell.calls) == 2
+    assert cursor.read_text().strip() == "3"
+    assert len(seen.read_text(encoding="utf-8").splitlines()) == 2
+
+    # 游标回退模拟重跑：已见过的内容全部跳过，不重复写壳
+    cursor.write_text("0\n", encoding="utf-8")
+    shell2 = FakeShell()
+    stats2 = process_outbox(outbox, cursor, shell_factory=lambda: shell2, seen_path=seen)
+    assert stats2 == {"processed": 3, "written": 0, "skipped": 3, "errors": 0}
+    assert shell2.calls == []

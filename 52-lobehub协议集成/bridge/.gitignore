@@ -1,3 +1,4 @@
 outbox.jsonl
 .cursor
+.seen
 __pycache__/

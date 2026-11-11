@@ -186,11 +186,11 @@
 
 | 文档 | 路径 | 版本 |
 |------|------|------|
-| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.10.0（Phase 0/1/3/4/4.5/4.6 已实施；Phase 5 限量；Phase 2 待定；§3.0 落地状态总表） |
+| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.11.0（Phase 0/1/3/4/4.5/4.6 已实施；Phase 5 限量；桥已常态运转；Phase 2 待定） |
 | 架构调研与评审 | [52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md](../52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md) | 2026-11-11（R1-R9 已闭环） |
 | 协议层能力件 | [3.1-FRONTEND/src/lib/agent/](../3.1-FRONTEND/src/lib/agent/) | mcp-client / providers / plancard / plan-variant / distill-outbox（各带 vitest） |
-| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring / domain_eval / adjudicator（75 tests） |
-| 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 19 tests；未接定时，outbox 88 条待消费 |
+| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧）/ domain_eval / adjudicator（78 tests） |
+| 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 20 tests；积压已消化（52 写 / 36 去重）；每日守护 `ops/supervisor.py` |
 
 ---
 

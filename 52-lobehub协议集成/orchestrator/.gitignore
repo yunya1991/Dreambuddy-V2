@@ -1,4 +1,6 @@
 traces/
+logs/
 __pycache__/
 *.pyc
 .pytest_cache/
+.supervisor.pid

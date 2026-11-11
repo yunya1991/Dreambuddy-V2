@@ -202,6 +202,38 @@ def test_t1_not_fired_on_clear_gap():
     assert result["escalate"] is False
 
 
+def test_t1_uses_cross_side_gap_not_global_top2():
+    """同侧两 variant 只差 0.02，但跨侧差 0.20 → 不算争议（否则 T1 恒命中）。"""
+    result = triggers(
+        [_scored("side_a#1", 0.92), _scored("side_a#2", 0.90), _scored("side_b#1", 0.70)],
+        _gates(("side_a#1", "PASS"), ("side_a#2", "PASS"), ("side_b#1", "PASS")),
+        recall_hits=[],
+    )
+    assert result["detail"]["T1"]["basis"] == "cross_side"
+    assert result["detail"]["T1"]["gap"] == 0.22
+    assert "T1" not in result["fired"]
+
+
+def test_t1_fires_on_close_cross_side_scores():
+    result = triggers(
+        [_scored("side_a#1", 0.90), _scored("side_a#2", 0.60), _scored("side_b#1", 0.88)],
+        _gates(("side_a#1", "PASS"), ("side_a#2", "PASS"), ("side_b#1", "PASS")),
+        recall_hits=[],
+    )
+    assert result["detail"]["T1"]["basis"] == "cross_side"
+    assert "T1" in result["fired"]
+
+
+def test_t1_falls_back_to_top2_on_single_side():
+    result = triggers(
+        [_scored("pc-a", 0.85), _scored("pc-b", 0.80)],
+        _gates(("pc-a", "PASS"), ("pc-b", "PASS")),
+        recall_hits=None,
+    )
+    assert result["detail"]["T1"]["basis"] == "top2"
+    assert "T1" in result["fired"]
+
+
 def test_t2_fires_when_blocked_scores_higher():
     result = triggers(
         [_scored("pc-a", 0.40), _scored("pc-b", 0.90, "BLOCK")],
