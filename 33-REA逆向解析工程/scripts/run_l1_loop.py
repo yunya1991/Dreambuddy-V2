@@ -12,6 +12,7 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from core.reflection.dreaming import DreamingLoop  # noqa: E402
+from core.reflection.thought_tree import beam_search_dream  # noqa: E402
 from core.reflection.recorder import AnalysisRecorder  # noqa: E402
 from core.reflection.replay_simulator import ReplayPool  # noqa: E402
 from core.reflection.training_cases import TrainingCaseGenerator, TrainingCaseStore  # noqa: E402
@@ -193,6 +194,22 @@ def main():
             dream.get("best_v", 0),
             dream.get("improved"),
             len(dream.get("candidates") or []),
+        ),
+    )
+    # ---- 阶段5b: 思维树束搜索 (G5: 多步展开/剪枝/回溯) ----
+    tot = beam_search_dream(loop, current, depth=3, beam_width=4)
+    log(
+        "TOT",
+        "version=%s current_v=%.4f best_v=%.4f improved=%s expanded=%s evaluated=%s pruned=%s path_len=%s"
+        % (
+            tot.get("version"),
+            tot.get("current_v", 0),
+            tot.get("best_v", 0),
+            tot.get("improved"),
+            tot.get("nodes_expanded"),
+            tot.get("nodes_evaluated"),
+            sum(tot.get("pruned_per_round") or []),
+            len(tot.get("path") or []),
         ),
     )
 

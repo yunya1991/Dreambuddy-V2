@@ -3,11 +3,11 @@
 > 🧭 **特别标识：FULL-CHAIN-SSOT**
 > 本文件是 48-涌现架构对“交易涌现”端到端链路的**唯一技术总文档**：9 域上下文 → 深度文章三层解构 → L0 MCP → 33-REA 做梦器/思维树 → 最小阻力路径与矛盾识别 → 48 涌现 → **40 周期神经网络 → 43 战略承接 → 49 交易框架协议（神经链路）→ 50-NN → 执行器** → 训练事件回流。
 >
-> **版本**：v1.0 + P0 补丁 r5（2026-11-11 G4 下游消费点关闭 + 训练产物入库留痕）
-> **状态**：🟡 代码核查完成；P0 接线落地，G1/G3/G4/G12 已关闭（r5）
+> **版本**：v1.0 + P0 补丁 r6（2026-11-11 G5 思维树落地：束搜索多步展开/剪枝/回溯）
+> **状态**：🟡 代码核查完成；P0 接线落地，G1/G3/G4/G5/G12 已关闭（r6）
 > **核查范围**：9 / 18 / 23 / 33 / 39 / 40 / 42 / 43 / 47 / 48 / 49 / 50 / 11 / 13 / 16 / 22
 > **状态图例**：✅ 已实现且有运行产物/测试 ｜ 🟡 部分实现或默认降级 ｜ ⬜ 仅 Spec / 未实现
-> **统计**：43 个核查点 → ✅ 35 ｜ 🟡 6 ｜ ⬜ 2（r5：G4 消费点关闭、训练产物入库）
+> **统计**：43 个核查点 → ✅ 36 ｜ 🟡 6 ｜ ⬜ 1（r6：G5 思维树落地）
 > **边界**：本文件只做编排、契约汇编与实现核验，不重复定义各域内部口径；定义权归各域 SPEC。
 
 ---
@@ -15,8 +15,8 @@
 ## §0 摘要
 
 **训练侧**已具备完整的“文章 → F1 因素 → F2 方向 → F3 主张”抽取能力（18 域 `factor_extractor.py`；本地 `backfill/p3a|p3b` 各 500 行，云端仅 p3a、p3b 缺失），并已实现 9 域 `DimensionContext` 8 维上下文与快讯敏感因子（18 域 adapter）。
-**推理侧**已有 33-REA 做梦器（随机变异 + argmax V）、48 嵌套 walk-forward 反思、23 的 HJB + 矛盾修正路径寻优、40 五层传导、49 冻结契约、50-NN `source=50-nn` 决策（shadow/paper 口径；shadow 产物已附 `execution_rights/kill_switch/mandate_id`，G12 已修复）。
-**主要缺口**余 2 个：①思维树未实现；②50 live 执行权未开放。G1/G3/G4/G12 已关闭：G1 入 crontab 调度 + 9 项单测全过；G3 消费端入 STEPS、消费证据落盘；G12 shadow 决策接入 `validate_execution`；G4 先验产物已有 50 域消费点（`prior_reader.py`，r5）。
+**推理侧**已有 33-REA 做梦器（随机变异 + argmax V + 思维树束搜索）、48 嵌套 walk-forward 反思、23 的 HJB + 矛盾修正路径寻优、40 五层传导、49 冻结契约、50-NN `source=50-nn` 决策（shadow/paper 口径；shadow 产物已附 `execution_rights/kill_switch/mandate_id`，G12 已修复）。
+**主要缺口**余 1 个：①50 live 执行权未开放（设计上暂不开放）。G5 思维树已于 r6 落地（33 域 `thought_tree.py` 束搜索：多步展开/剪枝/回溯，L1 实测 V 0.5586→0.7780）。G1/G3/G4/G12 已关闭：G1 入 crontab 调度 + 9 项单测全过；G3 消费端入 STEPS、消费证据落盘；G12 shadow 决策接入 `validate_execution`；G4 先验产物已有 50 域消费点（`prior_reader.py`，r5）。
 **另有三处口径需注意**：组合因子 `factor_prior.json` 仍 `degraded=true / n_factors=0`（快讯先验默认关闭）；“50 决策全部 `execution_rights=paper`”仅对本地 11-08/09 的 194 条陈旧记录成立，云端 r4 起新 shadow 记录已附该字段（历史 51 条旧记录无）；`p3a|p3b` 500 篇产物为本地状态，云端缺 `p3b/news_agreement.jsonl`。
 
 ---
@@ -44,7 +44,7 @@ flowchart TB
   subgraph INFER["B 推理侧（在线）"]
     B1["9 域实时上下文 ✅"]
     B2["快讯先验 🟡 默认关"]
-    B3["33-REA 做梦器 ✅<br/>思维树 ⬜"]
+    B3["33-REA 做梦器 ✅<br/>思维树 ✅ 束搜索"]
     B4["最小阻力+矛盾识别 ✅<br/>23 HJB / primary_contradiction"]
     B5["48 反思/验证 ✅<br/>nested_walk_forward"]
     B6["48→40 网关 🟡<br/>开关已开，无消费端"]
@@ -124,9 +124,9 @@ flowchart TB
 | 33-REA 做梦器候选生成 | ✅ | [dreaming.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/core/reflection/dreaming.py#L97-L177) `generate_candidates()`：序列重排/预算/并行度/深度截断 |
 | 做梦评估循环 | ✅ | [dreaming.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/33-REA逆向解析工程/core/reflection/dreaming.py#L183-L260) `DreamingLoop`：回放池 → 评估 → `argmax V` |
 | 48 嵌套 walk-forward 反思 | ✅ | [nested_walk_forward.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/reflection/nested_walk_forward.py#L124) `nested_walk_forward()`、`FoldRecord/NestedResult` |
-| 思维树（多步展开/剪枝/回溯） | ⬜ | 全仓无 `tree_of_thought/thought_tree/beam_search` 实现；当前是“随机变异 + argmax”非搜索树 |
+| 思维树（多步展开/剪枝/回溯） | ✅ | r6 落地 `33/core/reflection/thought_tree.py`：`beam_search_dream()` 束搜索——以 `generate_candidates` 为展开算子、`evaluate_strategy` 为价值函数，每轮剪枝保留 top-K（束宽），父链路 `backtrace()` 可回溯至根；不劣化保证（根始终在束内）、确定性、fail-open。已接线 `run_l1_loop.py` 阶段5b，实测 V 0.5586→0.7780（improved=True，展开5/评估6/剪枝1/路径2层）；9 项单测全过（`tests/test_thought_tree.py`） |
 
-**结论**：你要求的“基于 33-REA/做梦器形成思维树”目前只有**候选生成 + 评分选择**，没有树的扩展与剪枝。这是 L4 的核心缺口。
+**结论**：r6 起思维树已落地——束搜索实现多步展开/剪枝/回溯，与做梦器候选生成/评估循环复用同一算子与价值函数，L4 核心缺口关闭。
 
 ### L5 最小阻力路径与矛盾识别
 
@@ -286,7 +286,7 @@ flowchart TB
 | G1 | 文章/因子样本未完全写入 48 | **已关闭（r4/r5）**：`training_ingest.py` 幂等（云端 p3a 500 条）；r4 入 crontab 调度（每日 00:30）+ 9 项单测全过；r5 训练样本/事件产物经 .gitignore 放行入库留痕。遗留：p3b 样本依赖本地数据推送 | 训练入口已自动供给 | P0 | 48 + 18 |
 | G3 | 40 未启用 48 网关 | **已关闭（r4）**：`40/scripts/consume_48_feedback.py` 落地（经 adapter_48_feedback 读取反馈、落盘 `40/nn_feedback_consumption.json`、双读校验持久化 consistent=true/6 项差异全 0、FAIL-OPEN），已入 `run_daily_pipeline.sh` STEPS；40 管线有 crontab 调度（`2 0 * * *`，r3“云端无 40 定时器”表述有误，已修正） | 48 已成为 40 对接口 | P0 | 48 + 40 |
 | G4 | 40 未输出因子/矛盾先验 | **已关闭（r4/r5）**：`factor_contradiction_priors.py` 入 STEPS、产物路径仓库相对（r4）；r5 新增 50 域消费点 `adapters/prior_reader.py`——shadow 决策载荷携带 priors_40 摘要（实测 34 因子先验/top5 因子/1376 矛盾事件统计，fail-open） | 先验已产出且被 50 消费 | P0 | 40 + 50 |
-| G5 | 思维树未实现 | 33 仅随机变异 + argmax；无 tree/beam | 候选路径多样性与可解释性不足 | P1 | 33 + 48 |
+| G5 | 思维树未实现 | **已关闭（r6）**：`thought_tree.py` 束搜索落地（多步展开/剪枝/回溯 + 不劣化保证），接线 L1 主循环实测 V 0.5586→0.7780，9 项单测全过 | 候选路径多样性与可解释性已补齐 | P1 | 33 + 48 |
 | G6 | 50 live 未开放 | 现网为 shadow（云端 `mode=shadow`）；`50_KILL_SWITCH` 机制在；shadow 路径已写 `execution_rights`（G12 已修复） | 末端仍为 shadow | P1 | 50 + 47 |
 | G7 | 组合因子降级 | `factor_prior.json degraded=true, n_factors=0` | 组合因子/主次矛盾体不可用 | P1 | 18 |
 | G8 | 快讯先验默认关闭 | `reason=newsflash_prior_disabled_by_default`；13 条 sens_f | 快讯维度未参与 | P2 | 18 |
@@ -368,3 +368,4 @@ flowchart TB
 | v1.0-r3 | 2026-11-11 | 本地+云端代码双侧复核回写：G1/G3/G4 从“已关闭”退回 🟡；新增 G11（40 调度回退）/G12（50 shadow 绕过执行权）；修正 C2 归因（49 内部新旧章节冲突）；同步 §0/§1/§3.2/§3.3/§4.7/§5/§6 与统计口径为 43 核查点（30✅/11🟡/2⬜） |
 | v1.0-r4 | 2026-11-11 | 云端接线落地：G1 关闭（training_ingest 入 crontab 00:30 + 9 项单测全过）；G3 关闭（consume_48_feedback.py 入 STEPS，消费证据落盘，双读一致）；G12 关闭（shadow 决策接入 validate_execution，三字段落盘）；G4 先验脚本入 STEPS 且路径相对化；修正 r3“40 管线无调度”错误表述（实际 crontab `2 0 * * *`）；统计更新为 33✅/8🟡/2⬜ |
 | v1.0-r5 | 2026-11-11 | G4 关闭：50 域新增 `adapters/prior_reader.py` 消费 40 域先验产物，shadow 决策载荷携带 priors_40 摘要（实测 34 因子/1376 矛盾事件，fail-open）；.gitignore 放行训练样本/训练事件/nn 反馈产物入库留痕；统计更新为 35✅/6🟡/2⬜ |
+| v1.0-r6 | 2026-11-11 | G5 关闭：33 域新增 `core/reflection/thought_tree.py` 束搜索（多步展开/剪枝/回溯，不劣化保证/确定性/fail-open），接线 `run_l1_loop.py` 阶段5b 实测 V 0.5586→0.7780（improved=True）；9 项单测全过（`tests/test_thought_tree.py`）；统计更新为 36✅/6🟡/1⬜ |
