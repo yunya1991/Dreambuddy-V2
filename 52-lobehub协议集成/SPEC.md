@@ -133,7 +133,8 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 1. 在 3.1-FRONTEND 新建 `src/app/api/agent/chat` 路由：**Vercel AI SDK**（依赖已存在）做模型路由（OpenAI/Anthropic/Google/Qwen 走 openai-compatible 工厂），**MCP client**（stdio 起 l0_gateway，参数复用 lobehub_frontend profile）桥接 L0 工具（首挂 recall）。
 2. UI 侧复用 3.1 现有组件，不引入第二套前端。
 3. 验收：dream-acceptance-verify 五维 + 三模型（Trae 内 kimi/sonnet/opus 经路由）调通 recall 的 E2E。
-4. 能力面扩展：按 mcp_capabilities.yaml 逐个挂载研究/数据类只读壳（unified_search → 18/19/41 等），每壳挂载后五维验收。
+4. 能力面扩展：unified_search 已完成（零代码同壳复用，commit e2af60ba2e，12/12 测试）。
+   **⏸️ 18/19/41 数据域壳挂载暂缓（2026-11-11 用户决策）**：等待实际需求场景出现再做——它们是独立 server，需扩 registry 角色 + mcpctl 新 profile + 3.1 前端多 MCP 连接支持（当前单例 client），避免无消费方的能力面膨胀。届时按本 Phase 验收流程补齐。
 
 ### Phase 2 — 云端部署（v0.5.0 修订）
 

@@ -19,6 +19,7 @@ import { convertToModelMessages, stepCountIs, streamText } from 'ai';
 import type { Tool, UIMessage } from 'ai';
 import { resolveAgentModel } from '@/lib/agent/providers';
 import { getCognitionMcpClient } from '@/lib/agent/mcp-client';
+import { maybeWriteSessionSummary } from '@/lib/agent/distill-outbox';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,6 +68,16 @@ export async function POST(request: NextRequest) {
       messages: convertToModelMessages(body.messages),
       tools,
       stopWhen: stepCountIs(5),
+      onFinish: (event) => {
+        // Phase 3 蒸馏桥出口：会话轮数 ≥2 且有实质工具结果时写 session_summary 到 outbox。
+        // FAIL-OPEN：maybeWriteSessionSummary 内部已 catch，此处再兜底绝不影响流响应。
+        try {
+          const hasToolResults = event.steps.some((s) => s.toolResults.length > 0);
+          maybeWriteSessionSummary({ messages: body.messages ?? [], hasToolResults });
+        } catch (e) {
+          console.warn('[AgentChat] distill outbox 失败（FAIL-OPEN）:', e instanceof Error ? e.message : e);
+        }
+      },
     });
     return result.toUIMessageStreamResponse();
   } catch (e) {
