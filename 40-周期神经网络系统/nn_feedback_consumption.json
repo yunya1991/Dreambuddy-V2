@@ -1,0 +1,25 @@
+{
+  "schema_version": "nn_feedback_consumption.v0.1",
+  "generated_at": "2026-11-11T05:55:14.566944+00:00",
+  "enable_40_via_48": true,
+  "status": "consumed",
+  "feedback": {
+    "gateway_version": "nn_feedback_gateway.v0.1",
+    "data_version": "DV-688e09da4507",
+    "n_events": 3,
+    "n_training_suggestions": 1
+  },
+  "dual_read": {
+    "consistent": true,
+    "diffs": {
+      "join_coverage": 0.0,
+      "n_complete": 0.0,
+      "n_contradiction_priors": 0.0,
+      "n_events": 0.0,
+      "n_incomplete": 0.0,
+      "n_training_suggestions": 0.0
+    },
+    "mismatches": []
+  },
+  "out": "40-周期神经网络系统/nn_feedback_consumption.json"
+}

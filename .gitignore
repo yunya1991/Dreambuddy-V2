@@ -272,3 +272,11 @@ DreamOS_intermediate.pptx
 # 48 全链路运行时事件（可重放生成，不入库）
 48-涌现架构/events/training_events/
 48-涌现架构/events/nn_feedback/
+
+# 48 训练样本/训练事件/nn 反馈产物入库留痕（G1/G3/G4 产物可追溯）
+!48-涌现架构/events/training_samples/
+!48-涌现架构/events/training_samples/**
+!48-涌现架构/events/training_events/
+!48-涌现架构/events/training_events/**
+!48-涌现架构/events/nn_feedback/
+!48-涌现架构/events/nn_feedback/**

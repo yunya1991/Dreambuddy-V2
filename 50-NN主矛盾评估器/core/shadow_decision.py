@@ -8,6 +8,7 @@ from typing import Any
 from adapters.constraint_loader import clamp_position
 
 from core.path_synthesis import synthesize_paths
+from adapters.execution_writer import load_rights, validate_execution
 
 
 def _signed_score(path) -> float:
@@ -39,7 +40,7 @@ def make_shadow_decision(
     asset_class = "crypto_usdt"  # TODO: 由 per-asset 决策补齐
     position_pct = clamp_position(constraints, raw_position, asset_class)
 
-    return {
+    decision = {
         "signal_id": f"50-nn|shadow|{moment.strftime('%Y%m%dT%H%M%SZ')}",
         "source": "50-nn",
         "ts": moment.isoformat().replace("+00:00", "Z"),
@@ -71,3 +72,12 @@ def make_shadow_decision(
             ],
         },
     }
+    # G12：shadow 决策同样走执行权校验（fail-closed），
+    # 回填 execution_rights / kill_switch / mandate_id 字段。
+    validation = validate_execution(decision, load_rights())
+    decision["execution"] = {
+        "outcome": validation["outcome"],
+        "allowed": validation["allowed"],
+        "reason": validation["reason"],
+    }
+    return decision

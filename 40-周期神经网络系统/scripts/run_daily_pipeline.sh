@@ -34,6 +34,8 @@ STEPS=(
   p3_washout_integration.py
   p3_meme_platform_monitor.py
   p4_strategy_mapping.py
+  factor_contradiction_priors.py
+  consume_48_feedback.py
 )
 
 alert_failure() {

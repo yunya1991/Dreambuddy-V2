@@ -36,6 +36,7 @@ from adapters.audit_logger import log_decision  # noqa: E402
 from adapters.bus_reader import load_evidences  # noqa: E402
 from adapters.constraint_loader import load_constraints  # noqa: E402
 from adapters.execution_writer import is_kill_switch_on  # noqa: E402
+from adapters.prior_reader import load_priors_summary  # noqa: E402
 from core.decision import _extract_trigger, record_decision  # noqa: E402
 from core.shadow_decision import make_shadow_decision  # noqa: E402
 from core.trigger_flap import check_trigger_flap  # noqa: E402
@@ -106,6 +107,12 @@ def run(bus_state: Path, out_dir: Path) -> dict[str, Any]:
             "reason": flap.reason,
         }
 
+    # G4：消费 40 域因子/矛盾先验（fail-open，缺失时跳过）
+    priors_40 = load_priors_summary()
+    if priors_40 is not None:
+        payload = decision.get("payload")
+        if isinstance(payload, dict):
+            payload["priors_40"] = priors_40
     result["decision"] = decision
     return result
 

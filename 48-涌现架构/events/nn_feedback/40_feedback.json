@@ -1,0 +1,59 @@
+{
+  "gateway_version": "nn_feedback_gateway.v0.1",
+  "generated_at": "2026-11-10T17:05:53.295696+00:00",
+  "data_version": "DV-688e09da4507",
+  "source_window": {
+    "n_events": 3,
+    "first_ts": "2026-11-10T16:44:56.636622Z",
+    "last_ts": "2026-11-10T17:00:35.518544Z"
+  },
+  "factor_priors": {
+    "version": "factor-prior-v1",
+    "generated_at": "2026-11-10T05:13:10.326444+00:00",
+    "as_of": null,
+    "source": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/backfill/p3c1/factor_sensitivity.jsonl",
+    "degraded": true,
+    "n_factors": 0,
+    "dims": {},
+    "factors": [],
+    "reason": "newsflash_prior_disabled_by_default"
+  },
+  "contradiction_priors": [],
+  "direction_priors": {
+    "MULTI": {
+      "long": 3
+    }
+  },
+  "training_suggestions": [
+    {
+      "suggestion_id": "S40-688e09da4507",
+      "target": "40",
+      "type": "regime_prior_hint",
+      "payload": {
+        "direction_priors": {
+          "MULTI": {
+            "long": 3
+          }
+        },
+        "top_contradiction": null
+      },
+      "evidence_count": 3,
+      "provenance": {
+        "gateway": "nn_feedback_gateway.v0.1",
+        "advisory_only": true
+      }
+    }
+  ],
+  "quality": {
+    "n_complete": 0,
+    "n_incomplete": 3,
+    "join_coverage": 0.0
+  },
+  "backfill": {
+    "scanned": 3,
+    "appended": 3,
+    "duplicates": 0,
+    "invalid": 0,
+    "error": 0
+  }
+}

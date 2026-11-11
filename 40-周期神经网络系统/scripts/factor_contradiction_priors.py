@@ -40,6 +40,11 @@ OUT_PATH = os.path.join(D40, "factor_contradiction_priors.json")
 SCHEMA_VERSION = "factor_contradiction_priors.v0.1"
 
 
+def _rel(p: str) -> str:
+    """绝对路径 → 仓库相对路径（产物可移植，避免硬编码部署路径）。"""
+    return os.path.relpath(p, _BASE)
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -95,7 +100,7 @@ def build_contradiction_priors() -> Dict[str, Any]:
         "by_contradiction_type": dict(by_type.most_common(20)),
         "by_layer": dict(by_layer.most_common(20)),
         "last_window_end": last_window or None,
-        "source": CONTRADICTION_EVENTS,
+        "source": _rel(CONTRADICTION_EVENTS),
     }
 
 
@@ -132,7 +137,7 @@ def build_factor_direction_priors() -> Dict[str, Any]:
     return {
         "n_samples": n,
         "factors": factors,
-        "source": TRAINING_SAMPLES_DIR,
+        "source": _rel(TRAINING_SAMPLES_DIR),
     }
 
 
@@ -145,7 +150,7 @@ def build_priors() -> Dict[str, Any]:
             "degraded": bool(factor_prior_18.get("degraded", True)),
             "n_factors": factor_prior_18.get("n_factors", 0),
             "reason": factor_prior_18.get("reason"),
-            "source": FACTOR_PRIOR,
+            "source": _rel(FACTOR_PRIOR),
         },
         "factor_direction_priors": build_factor_direction_priors(),
         "contradiction_priors": build_contradiction_priors(),
@@ -160,7 +165,7 @@ def main() -> int:
     print(
         json.dumps(
             {
-                "out": OUT_PATH,
+                "out": _rel(OUT_PATH),
                 "n_samples": priors["factor_direction_priors"]["n_samples"],
                 "n_factors": len(priors["factor_direction_priors"]["factors"]),
                 "n_contradiction_events": priors["contradiction_priors"]["n_events"],
