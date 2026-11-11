@@ -1,11 +1,11 @@
 {
   "schema_version": "factor_contradiction_priors.v0.1",
-  "generated_at": "2026-11-10T16:52:57.952995+00:00",
+  "generated_at": "2026-11-11T05:47:25.574516+00:00",
   "factor_prior_18": {
     "degraded": true,
     "n_factors": 0,
     "reason": "newsflash_prior_disabled_by_default",
-    "source": "/home/luke/dreambuddy/18-数据获取中心/backfill/p3c1/factor_prior.json"
+    "source": "18-数据获取中心/backfill/p3c1/factor_prior.json"
   },
   "factor_direction_priors": {
     "n_samples": 396,
@@ -401,7 +401,7 @@
         "total_weight": 1.0
       }
     },
-    "source": "/home/luke/dreambuddy/48-涌现架构/events/training_samples"
+    "source": "48-涌现架构/events/training_samples"
   },
   "contradiction_priors": {
     "n_events": 1376,
@@ -414,6 +414,6 @@
       "organizational": 1376
     },
     "last_window_end": "2026-11-01 21:29",
-    "source": "/home/luke/dreambuddy/39-金融语义蒸馏系统/contradiction_events.jsonl"
+    "source": "39-金融语义蒸馏系统/contradiction_events.jsonl"
   }
 }
