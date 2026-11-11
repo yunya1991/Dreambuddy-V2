@@ -1,0 +1,2250 @@
+diff --git a/0-系统文档管理/INDEX.md b/0-系统文档管理/INDEX.md
+index af213b43c3..533e3c86ee 100644
+--- a/0-系统文档管理/INDEX.md
++++ b/0-系统文档管理/INDEX.md
+@@ -1,6 +1,6 @@
+ # 全项目文档索引 — INDEX
+ 
+-> **版本**: v2.14 | **更新日期**: 2026-11-11
++> **版本**: v2.15 | **更新日期**: 2026-11-11
+ > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
+ > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
+ > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
+@@ -164,6 +164,8 @@
+ | PoE 工程实践复现器 TASKS | [33-REA逆向解析工程/TASKS-工程实践复现器.md](../33-REA逆向解析工程/TASKS-工程实践复现器.md) | v1.0（8任务，依赖链已规划） |
+ | ★ SPEC-33-D REA as L0 MCP | [33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md](../33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md) | v0.1.0（P0+P1 已落地，301 passed） |
+ | ★ SPEC-33-E LLM 混合层 | [33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md](../33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md) | v0.1.1（🚧 P0 已落地：假设契约+PoE裁判+cognitive_hint；P1/P2 待开工） |
++| ★ SPEC-33-F REA 能力增强 | [33-REA逆向解析工程/SPEC-33-F-REA能力增强.md](../33-REA逆向解析工程/SPEC-33-F-REA能力增强.md) | v0.2.0（📝 待评审；含上游核实 §0.6，20 任务 P0/P1/P2） |
++| ★ SPEC-33-G 反思进化与分层自更新 | [33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md](../33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md) | v0.4.0（📝 待评审；L1/L2/L3 分级 + 案例入库 + 调研参考 + DreamOS/脑暴/DSH/L0 研发流水线，15 任务；ADR-001 脑暴出关已灰度） |
+ | SKILL dream-rea-architecture-query | [.trae/skills/dream-rea-architecture-query/SKILL.md](../.trae/skills/dream-rea-architecture-query/SKILL.md) | v1.0.0（何时调用/token纪律/认知闭环） |
+ 
+ ### 49-交易框架协议
+@@ -186,11 +188,14 @@
+ 
+ | 文档 | 路径 | 版本 |
+ |------|------|------|
+-| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.10.0（Phase 0/1/3/4/4.5/4.6 已实施；Phase 5 限量；Phase 2 待定；§3.0 落地状态总表） |
++| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.11.0（Phase 0/1/3/4/4.5/4.6 已实施；Phase 5 限量；桥已常态运转；Phase 2 待定） |
++| 使用说明 README | [52-lobehub协议集成/README.md](../52-lobehub协议集成/README.md) | v0.11.0（目录/快速开始/环境变量/已知限制） |
++| 工程文档（五文档标准） | [52-lobehub协议集成/docs/](../52-lobehub协议集成/docs/) | ENGINEERING_INDEX / TECHNICAL_DESIGN / API_SPEC / CHANGELOG（5/5 齐全） |
+ | 架构调研与评审 | [52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md](../52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md) | 2026-11-11（R1-R9 已闭环） |
+ | 协议层能力件 | [3.1-FRONTEND/src/lib/agent/](../3.1-FRONTEND/src/lib/agent/) | mcp-client / providers / plancard / plan-variant / distill-outbox（各带 vitest） |
+-| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring / domain_eval / adjudicator（75 tests） |
+-| 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 19 tests；未接定时，outbox 88 条待消费 |
++| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧）/ domain_eval / adjudicator / live_policy（84 tests） |
++| 实盘出关 ADR | [52-lobehub协议集成/decisions/ADR-001-脑暴出关.md](../52-lobehub协议集成/decisions/ADR-001-脑暴出关.md) | 2026-11-11（已采纳灰度：auditor + 1 次/周 + 只执行 dispatch 胜方） |
++| 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 20 tests；积压已消化（52 写 / 36 去重）；每日守护 `ops/supervisor.py` |
+ 
+ ---
+ 
+@@ -264,11 +269,11 @@
+ 
+ | 层级 | 模块数 | 文档齐全 | 部分完整 | 缺失 | 覆盖率 |
+ |------|--------|----------|----------|------|--------|
+-| L2 子系统 | 29 | 17 | 6 | 6 | 63% |
++| L2 子系统 | 30 | 18 | 6 | 6 | 64% |
+ | L3 辅助模块 | 6 | 6 | 0 | 0 | 100% |
+-| **合计** | **35** | **23** | **6** | **6** | **69%** |
++| **合计** | **36** | **24** | **6** | **6** | **70%** |
+ 
+-> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-08 实测：35 模块 / 23 齐全 / 6 部分 / 6 缺失 / 69%；`50-NN主矛盾评估器` R0 阶段与 `52-lobehub协议集成` 尚无 `docs/` 目录，均未纳入工具统计（52 当前为 SPEC + REVIEW 两份文档，5 文档标准缺口待补）。断链校验：`link_checker.py` 2026-11-08 实测 588 链接 / 2 断链，均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`（存量归档文档，指向本地不存在的 3.1-FRONTEND 文件，FAIL-OPEN 不阻塞）。
++> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-11 实测：36 模块 / 24 齐全 / 6 部分 / 6 缺失 / 70%；`52-lobehub协议集成` 已补齐 `docs/` 四文档 + 根 README，5/5 纳入统计；`50-NN主矛盾评估器` 仍为 R0 阶段、无 `docs/`，未纳入）。断链校验：`link_checker.py` 2026-11-11 实测 `0-系统文档管理` 604 链接 / 2 断链（均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`，存量归档，FAIL-OPEN 不阻塞）、`2-KNOWLEDGE` 287 链接 / 0 断链、`52-lobehub协议集成` 10 链接 / 0 断链。
+ 
+ ---
+ 
+diff --git a/52-lobehub协议集成/README.md b/52-lobehub协议集成/README.md
+new file mode 100644
+index 0000000000..acc0388a82
+--- /dev/null
++++ b/52-lobehub协议集成/README.md
+@@ -0,0 +1,142 @@
++# 52-LobeHub 协议集成
++
++> 版本：v0.11.0
++> 更新：2026-11-11
++> 状态：协议层 / 蒸馏桥 / 脑暴编排器已落地；云端部署（Phase 2）待开工
++
++## 1. 这是什么
++
++52 把 LobeHub 的 agent 协议模式（模型路由 + MCP 消费 + PlanCard 执行语义）以**协议层**形式接入
++DreamOS(SACG) → DSH → L0 MCP → REA/涌现 的既有架构，使"接入任意大模型即可驱动现有能力"。
++
++52 **不是**主骨架、**不是**能力实现层、**不是**认知记忆库、**不是**交易系统：
++
++| 项 | 内容 |
++|---|---|
++| 集成形态 | 内置协议层（唯一前端仍是 3.1-FRONTEND，不部署任何独立 LobeHub 应用） |
++| 唯一接口 | MCP（stdio 本地 / SSE 云端），无直连 DB、无直连 Python 模块旁路 |
++| 不 fork | 不 vendor `lobehub/lobehub` 源码，只做协议语义对齐 |
++| 上游 | 47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构 |
++| 下游 | DreamOS/SACG 编排、33-REA / 48-涌现（反思与涌现回流） |
++
++设计全文见 [SPEC.md](SPEC.md)；架构调研与评审见
++[REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md](REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md)。
++
++## 2. 目录结构
++
++```text
++52-lobehub协议集成/
++├── SPEC.md                     # 协议层 SSoT（定位/决策/阶段/契约/风险/验收）
++├── README.md                   # 本文件
++├── REVIEW-20261111-...md       # 架构调研与 SPEC 评审（R1-R9）
++├── decisions/
++│   └── ADR-001-脑暴出关.md      # shadow → 限量实盘（live）的出关决策
++├── schemas/
++│   └── plancard.schema.json    # PlanCard JSON Schema（R8）
++├── docs/
++│   ├── ENGINEERING_INDEX.md    # 文件地图 / 依赖 / 测试矩阵
++│   ├── TECHNICAL_DESIGN.md     # 进程模型 / 门禁评分 / 幂等 / 治理
++│   ├── API_SPEC.md             # CLI、PlanCard、outbox、HTTP、MCP 契约
++│   └── CHANGELOG.md            # 版本变更记录
++├── orchestrator/               # 脑暴编排器（Python，标准库 + 可选 yaml）
++│   ├── brainstorm_orchestrator.py  # 主流程 run() + CLI
++│   ├── proposers.py                # side-A / side-B 双链提案（N-per-side）
++│   ├── plancard.py                 # PlanCard 校验 + DreamOS intent → PlanCard
++│   ├── registry_tools.py           # 47 registry 只读工具集
++│   ├── scoring.py                  # G1-G4 门禁 / 结构分 / T1-T4 触发器
++│   ├── domain_eval.py              # 45 域评测器适配层 + 结构分
++│   ├── adjudicator.py              # 论证学裁决器（shadow A/B）
++│   ├── debate_client.py            # agent.debate.mcp stdio 客户端
++│   ├── router.py                   # 意图路由 r9-v1（零 token）
++│   ├── live_policy.py / .json      # ADR-001 三道门 + 周预算账本
++│   ├── shadow_batch.py             # shadow 批量跑（定时入口）
++│   ├── ops/
++│   │   ├── supervisor.py           # 每日守护（launchd 被 TCC 拦截时的替代）
++│   │   ├── daily_pipeline.sh       # shadow → bridge 串联
++│   │   └── com.dreambuddy.shadow.plist  # launchd 模板
++│   └── tests/                      # 84 passed
++└── bridge/                     # 蒸馏桥（outbox → cognition record）
++    ├── distill_bridge.py           # 校验 + R6 映射 + 游标 + 内容指纹去重
++    ├── test_distill_bridge.py      # 20 passed
++    └── ops/com.dreambuddy.bridge.plist  # launchd 模板
++```
++
++3.1 前端侧协议层能力件（非本目录）：`3.1-FRONTEND/src/lib/agent/{providers,mcp-client,plancard,plan-variant,distill-outbox}.ts`
++及 `src/app/api/agent/{chat,plan,brainstorm}/route.ts`。
++
++## 3. 快速开始
++
++### 3.1 跑测试
++
++```bash
++cd 52-lobehub协议集成/orchestrator
++python3 -m pytest tests -q          # 84 passed
++
++cd ../bridge
++python3 -m pytest -q                # 20 passed
++```
++
++### 3.2 单次脑暴（shadow）
++
++```bash
++cd 52-lobehub协议集成/orchestrator
++python3 brainstorm_orchestrator.py --intent "对比两种回撤控制方案" --json-out
++```
++
++前置条件：side-A（3.1 `POST /api/agent/plan`，默认 `127.0.0.1:3001`）与
++side-B（DreamOS `POST /api/v1/intent`，默认 `127.0.0.1:8000`）同时在线；否则提案失败但流程不崩。
++
++### 3.3 批量 shadow + 蒸馏
++
++```bash
++python3 orchestrator/shadow_batch.py --max 2 --n-per-side 2
++python3 bridge/distill_bridge.py --once
++```
++
++### 3.4 每日守护
++
++```bash
++# 前台调试：只看下一次触发时间
++python3 orchestrator/ops/supervisor.py --dry-run
++
++# 后台常驻（每日 22:30 触发 shadow → bridge）
++nohup python3 orchestrator/ops/supervisor.py >> orchestrator/logs/supervisor.log 2>&1 &
++
++# 停止
++kill "$(cat orchestrator/ops/.supervisor.pid)"
++```
++
++> launchd 在本机恒返回 `Input/output error (5)`（与 plist 路径无关），因此默认用守护进程；
++> `ops/*.plist` 仅作模板，可在有 launchd 注册权限的环境安装。
++
++## 4. 环境变量
++
++| 变量 | 默认 | 说明 |
++|---|---|---|
++| `SIDE_A_URL` | `http://127.0.0.1:3001` | 3.1 规划 API |
++| `SIDE_B_URL` | `http://127.0.0.1:8000` | DreamOS 意图 API |
++| `SIDE_A_MODEL` / `SIDE_B_MODEL` | `unknown` / `dreamos-intent-engine` | 多样性校验用 model 标识 |
++| `PROPOSER_TIMEOUT_SEC` | `60` | 提案 HTTP 超时 |
++| `BRAINSTORM_DEBATE_ROUNDS` | `1` | Debate 轮次 |
++| `BRAINSTORM_EXECUTOR_MODULE` | 空 | 实盘执行器模块（须暴露 `execute(card)->dict`） |
++| `COGNITION_MCP_CMD` / `COGNITION_MCP_SERVER` | `sys.executable` / 4-MEMORY 壳路径 | recall 取证通道 |
++| `BRIDGE_OUTBOX_PATH` / `BRIDGE_SEEN_PATH` | 桥目录下 | 蒸馏桥输入与去重指纹 |
++| `ORCHESTRATOR_PY` | `python3` | 3.1 `/api/agent/brainstorm` spawn 的 Python 路径 |
++
++## 5. 已知限制
++
++| 限制 | 影响 | 现状 |
++|---|---|---|
++| launchd / crontab 被 macOS TCC 拦截 | 无系统级定时 | 用 `ops/supervisor.py` 守护；重启后需重拉 |
++| 45 评测器缺领域产物 | `verdict` 恒 `INCONCLUSIVE` | 只做契约接入，不编造分数；待 artifacts 落盘映射 |
++| Phase 2 云端部署未开工 | 云端只有 stdio 不可用 | l0_gateway 需包 SSE/HTTP；44 未登记 52 拓扑 |
++| 规划期无真实 trace 长跑 | 激活门槛未达 | shadow 累计 2-4 周后评审 |
++
++## 6. 相关文档
++
++- 协议层 SSoT：[SPEC.md](SPEC.md)
++- 工程索引：[docs/ENGINEERING_INDEX.md](docs/ENGINEERING_INDEX.md)
++- 技术设计：[docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md)
++- 接口契约：[docs/API_SPEC.md](docs/API_SPEC.md)
++- 变更记录：[docs/CHANGELOG.md](docs/CHANGELOG.md)
++- 出关决策：[decisions/ADR-001-脑暴出关.md](decisions/ADR-001-脑暴出关.md)
+diff --git a/52-lobehub协议集成/SPEC.md b/52-lobehub协议集成/SPEC.md
+index 2fcf5aa0e4..2354230908 100644
+--- a/52-lobehub协议集成/SPEC.md
++++ b/52-lobehub协议集成/SPEC.md
+@@ -1,6 +1,6 @@
+ # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
+ 
+-> 版本：v0.10.0（Phase 5 收尾：side-B 同量级结构扣分，消除双链分不对称）
++> 版本：v0.11.0（蒸馏桥常态运转 + T1 改跨侧 + 本地守护调度）
+ > 日期：2026-11-11
+ > 状态：🟢 Phase 0/1/3/4/4.5/4.6 已实施（本地）；Phase 5 已实施（限量）；Phase 2 云端部署待定
+ > 文档对齐：2026-11-11 全量核对代码/测试/trace 后回填本节状态（见 §3.0 落地状态总表）
+@@ -138,12 +138,12 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
+ | 0 PoC | ✅ 完成 | 三模型（kimi/sonnet/opus）经路由调通 recall | 2026-11-11 协议层验收 |
+ | 1 内置协议层 | ✅ 完成 | `src/lib/agent/{mcp-client,providers,plancard,plan-variant,distill-outbox}.ts` + `/api/agent/chat` | 5 个 vitest 文件 |
+ | 2 云端部署 | ⏸ 未开工 | l0_gateway SSE/HTTP；44 登记 52 拓扑 | 44-三端协作架构系统当前无 52 条目（grep 0 命中） |
+-| 3 蒸馏桥 | ✅ 建成 / ⚠ 未常态运行 | `bridge/distill_bridge.py`（19 tests，R6 映射 + 游标幂等） | outbox 89 条，`.cursor=1` → 88 条待消费；未接定时 |
++| 3 蒸馏桥 | ✅ 建成 / ✅ 常态运转 | `bridge/distill_bridge.py`（20 tests，R6 映射 + 游标幂等 + 内容指纹去重） | 积压 88 条已消化：written 52 / deduped 36 / errors 0，cursor=89；recall 已命中 `source=protocol-bridge` |
+ | 4 脑暴编排器（shadow） | ✅ 完成 | `orchestrator/{brainstorm_orchestrator,proposers,plancard,registry_tools,debate_client}.py` | traces 70 条 / shadow 批次 40 条 |
+ | 4.5 补齐 | ✅ 完成 | `adjudicator.py`（grounded semantics A/B）、N-per-side、铁律⑤ fail-closed | test_adjudicator + test_brainstorm |
+ | 4.6 意图路由 + 入口 | ✅ 完成 | `router.py`（r9-v1 五分流）、`POST /api/agent/brainstorm`、ChatPanel「择优脑暴」开关 | test_router 16 例 |
+-| 5 45 域适配层 | ✅ 限量 | `domain_eval.py` + 结构分 + side-B 同量级扣分 | orchestrator 75 / bridge 19 / debate 壳 22 全绿 |
+-| 5.5 定时任务 | ⏸ 受阻 | `ops/com.dreambuddy.shadow.plist` 模板 + `shadow_batch.py` | macOS TCC：launchd bootstrap EIO、crontab operation not permitted；当前手动执行 |
++| 5 45 域适配层 | ✅ 限量 | `domain_eval.py` + 结构分 + side-B 同量级扣分 + T1 跨侧判定 | orchestrator 78 / bridge 20 / debate 壳 22 全绿 |
++| 5.5 定时任务 | 🟡 本地守护已启用 | `ops/supervisor.py` + `ops/daily_pipeline.sh`（每日 22:30 shadow → bridge） | launchd/crontab 仍被 TCC 拦截；守护进程 pidfile 已起，重启后需重拉或改 launchd |
+ 
+ > 说明：状态以**代码 + 可复跑测试 + 真实 trace** 三重证据为准，不以文档声明为准；`⏸` 项均已标注阻塞原因与替代入口。
+ 
+@@ -172,7 +172,10 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
+ 1. 建桥：3.1 协议层会话摘要/辩论 trace/PlanCard 回填产物 → 经 L0 cognition 壳（record，授权主体 orchestrator，仅放行 record/verify）→ 35 认知库。
+ 2. 桥的写入仍遵守 worker 只读治理：桥本身不直连 cognitive_memory.db，只调壳。
+ 3. 验收：桥数据可在 recall 中命中，且来源标签可溯（tags 含 protocol-bridge）。
+-4. **运行现状（2026-11-11 核对）**：桥代码 + 19 tests 已完成（R6 映射 canon≥B / 候选 C / 胜 B / 败 D，游标幂等）；入口为手动 CLI，未接定时。`bridge/outbox.jsonl` 89 条、`.cursor=1` → **88 条待消费**，即"桥已建成、回流未常态"。接入定时（与 Phase 5.5 同批）后再做"recall 可命中"的终验。
++4. **运行现状（2026-11-11 收口）✅**：桥代码 + 20 tests（R6 映射 canon≥B / 候选 C / 胜 B / 败 D，游标幂等，新增内容指纹去重）。
++   - 积压消化：88 条 → `written=52 / skipped=36（重复）/ errors=0`，`.cursor=89`；重复条目按归一化指纹（抹去 plancard id / score）跳过，避免同一意图反复蒸馏成噪音。
++   - 回流验证：`recall("脑暴胜出 离场模块 波动率自适应阈值")` 命中 `source=protocol-bridge` 的记忆，闭环打通。
++   - 常态入口：`ops/supervisor.py`（每日 22:30 调 `ops/daily_pipeline.sh`：shadow → bridge）；launchd 受阻时的本地替代。
+ 
+ ### Phase 4 — 脑暴编排器 + Debate 壳扩展（shadow 模式）✅ 已实施（2026-11-11）
+ 
+@@ -191,9 +194,9 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
+ 
+ **已知差距（Phase 5 前需补）**：
+ - 评估器目前为确定性启发式（`45.heuristic@1.0.0`）；45 域评测器输入为领域产物（EngineeringScan/回测统计等），PlanCard 无法直接喂入 → 需补"PlanCard→领域产物"适配层
+-- live 执行分支未实现（`--no-shadow` 抛 NotImplementedError），符合 Phase 5 门禁
++- ~~live 执行分支未实现（`--no-shadow` 抛 NotImplementedError）~~ → 已由 ADR-001 出关（见 Phase 5 第 10 条）
+ 
+-**运行方式**：以手动 CLI / `shadow_batch.py` 批量触发为主。`ops/com.dreambuddy.shadow.plist` 模板已备（每日 22:30、`--max 5`），但 macOS TCC 拦截导致无法自动装载（`launchctl bootstrap` EIO、`crontab` operation not permitted），定时落地见 §3.0 的 Phase 5.5。shadow 2-4 周收集 trace 后评审激活。
++**运行方式**：`ops/supervisor.py` 常驻守护（每日 22:30 触发 `ops/daily_pipeline.sh`），也支持 `shadow_batch.py` / `daily_pipeline.sh` 手动触发。`ops/com.dreambuddy.shadow.plist` 与 `bridge/ops/com.dreambuddy.bridge.plist` 为 launchd 模板，但当前 `launchctl bootstrap` 恒返回 EIO（进程无 launchd 注册权限，路径无关），故以守护进程替代；重启后需重拉守护（或由用户在终端执行 plist 安装）。shadow 2-4 周收集 trace 后评审激活。
+ 
+ ### Phase 4.5 — 补齐项（2026-11-11 实施）
+ 
+@@ -238,6 +241,17 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
+    - `_enrich_side_b_card()`：注入 3 条真实局限 risk（`deterministic_planner_no_independent_evidence` / `registry_mapping_unvalidated` / `single_intent_call_no_variant_diversity`），已有人工 risk 时不覆盖。
+    - `_evidence_raw()`：`dreamos.*` 自证引用不计入独立取证，仅 `recall:` / `unified_search:` 等外部取证计分。
+    - 实测：B 由 `1.0` 降至 `0.736`；Top2 回归**同侧 A vs A**（gap 0.027），T1 仅在真实变体分歧时触发。扣分依据是可证伪的规划器局限，未来 B 侧接入独立取证/多 intent 后分数自动回升，无需改代码。
++9. **T1 改为跨侧判定 ✅（v0.11.0）**：原 T1 比较全局 Top1/Top2，而 `--n-per-side 2` 时 Top2 常是同侧变体（同一规划器、同一证据基础，天然只差 0.02-0.03）→ T1 恒命中、永远 `escalate_debate`、outbox 永不增长、蒸馏桥无料可吃。
++   - 新逻辑：两侧都有有效卡时，按**跨侧最佳分差**判定（`basis=cross_side`）；只有单侧时退回 Top2（`basis=top2`）。
++   - 实测：`gap=0.155 / 0.182 → dispatch`，outbox 2 轮新增 6 条并被桥全部消费（`written=6`），闭环运转。
++   - 新增测试：`test_t1_uses_cross_side_gap_not_global_top2` / `test_t1_fires_on_close_cross_side_scores` / `test_t1_falls_back_to_top2_on_single_side`。
++10. **实盘出关 ✅（ADR-001，2026-11-11）**：`--no-shadow` 不再是 NotImplementedError，改为「三道门 + 周预算账本 + 胜方执行」。
++   - `orchestrator/live_policy.py`（标准库）：`load_policy`（缺失/损坏 → 默认关闭）、`check_live_allowed`（enabled → role ∈ allowed_roles → route ∈ allowed_routes → 本自然周预算）、`count_this_week`、`record_execution`（append-only JSONL）。
++   - `brainstorm_orchestrator.py`：`shadow=False` 时先过门禁，未过直接 `PermissionError`（CLI exit 2）；仅对 `decision.kind=dispatch` 的胜方卡调用 `executor(card)`；执行异常降级为 `execution.error`，不中断主流程；成功与失败都记账（**失败也占预算**）。
++   - 默认策略 `orchestrator/live_policy.json`：`enabled=true / allowed_roles=[auditor] / allowed_routes=[workers,debate] / max_per_week=1`；提额须改 ADR。
++   - 决策记录：`decisions/ADR-001-脑暴出关.md`；与 SPEC-33-G §2.11.6 自举问题对齐。
++   - 证据：`tests/test_brainstorm.py` 6 条 live 用例（disabled / 非 auditor / 缺 executor / 成功执行 / 预算耗尽 / 执行器异常）全绿，orchestrator 全量 84 passed、ruff 通过；CLI 实测：第一次 `executed=true, live.allowed=true, used=0/1`，第二次 `live gate denied: weekly budget exhausted (1/1)` exit 2。
++   - 边界：交易域仍受 G3/G4 与 §0.4 硬约束阻断；live 只执行 dispatch 胜方，**不执行 debate 结论**。
+ 
+ ---
+ 
+diff --git a/52-lobehub协议集成/bridge/.gitignore b/52-lobehub协议集成/bridge/.gitignore
+index e7d2fbe83b..5dba558b61 100644
+--- a/52-lobehub协议集成/bridge/.gitignore
++++ b/52-lobehub协议集成/bridge/.gitignore
+@@ -1,3 +1,4 @@
+ outbox.jsonl
+ .cursor
++.seen
+ __pycache__/
+diff --git a/52-lobehub协议集成/bridge/distill_bridge.py b/52-lobehub协议集成/bridge/distill_bridge.py
+index 7d3d1d085c..8fe905af60 100644
+--- a/52-lobehub协议集成/bridge/distill_bridge.py
++++ b/52-lobehub协议集成/bridge/distill_bridge.py
+@@ -22,9 +22,11 @@
+ from __future__ import annotations
+ 
+ import argparse
++import hashlib
+ import json
+ import logging
+ import os
++import re
+ import subprocess
+ import sys
+ from pathlib import Path
+@@ -37,6 +39,19 @@ REPO_ROOT = BRIDGE_DIR.parents[1]
+ 
+ DEFAULT_OUTBOX = BRIDGE_DIR / "outbox.jsonl"
+ DEFAULT_CURSOR = BRIDGE_DIR / ".cursor"
++DEFAULT_SEEN = BRIDGE_DIR / ".seen"
++
++# 归一化指纹：抹去每次运行必然不同的 plancard id / score，用于跨批次去重
++_PLANCARD_RE = re.compile(r"plancard=\S+")
++_SCORE_RE = re.compile(r"score=[\d.]+")
++
++
++def content_fingerprint(content: str) -> str:
++    """内容指纹（跨批次去重）：同一意图的重复胜/负记录只蒸馏一次。"""
++    text = _PLANCARD_RE.sub("plancard=*", content)
++    text = _SCORE_RE.sub("score=*", text)
++    return hashlib.sha1(text.encode("utf-8")).hexdigest()
++
+ 
+ # server 路径与基础 env 同 lobehub_frontend profile（/tmp/lobehub_frontend_profile.json）。
+ DEFAULT_COMMAND = "/opt/anaconda3/bin/python3"
+@@ -255,10 +270,12 @@ def process_outbox(
+     outbox_path: Path,
+     cursor_path: Path,
+     shell_factory: Callable[[], Any] = StdioMcpShell,
++    seen_path: Path | None = None,
+ ) -> dict[str, int]:
+     """处理 outbox 一批（从游标之后开始），返回统计。幂等：游标外行不重写。
+ 
+     - 校验失败（fail-closed）：跳过该行、记日志、游标照常推进（毒丸不阻塞队列）；
++    - 内容重复（seen_path 命中）：跳过写入但推进游标，避免同一意图反复蒸馏成噪音；
+     - 传输错误：中止本批，游标停在最后成功行，下次重跑续传。
+     """
+     stats = {"processed": 0, "written": 0, "skipped": 0, "errors": 0}
+@@ -266,6 +283,15 @@ def process_outbox(
+         logger.info("outbox 不存在，无待处理条目: %s", outbox_path)
+         return stats
+ 
++    seen: set[str] = set()
++    if seen_path is not None and seen_path.exists():
++        seen = {
++            line.strip()
++            for line in seen_path.read_text(encoding="utf-8").splitlines()
++            if line.strip()
++        }
++    seen_new: list[str] = []
++
+     cursor = _read_cursor(cursor_path)
+     shell = None
+     try:
+@@ -285,6 +311,12 @@ def process_outbox(
+                     logger.warning("跳过不合规条目 line=%d: %s", line_no, e)
+                     _write_cursor(cursor_path, line_no)
+                     continue
++                digest = content_fingerprint(entry["content"]) if seen_path is not None else None
++                if digest is not None and digest in seen:
++                    stats["skipped"] += 1
++                    logger.info("跳过重复条目 line=%d source_ref=%s", line_no, entry["source_ref"])
++                    _write_cursor(cursor_path, line_no)
++                    continue
+                 if shell is None:
+                     shell = shell_factory()
+                 try:
+@@ -295,6 +327,9 @@ def process_outbox(
+                     break  # 不推进游标，下次重跑续传
+                 stats["written"] += 1
+                 _write_cursor(cursor_path, line_no)
++                if digest is not None:
++                    seen.add(digest)
++                    seen_new.append(digest)
+                 logger.info(
+                     "已蒸馏 line=%d type=%s quality=%s source_ref=%s",
+                     line_no,
+@@ -305,6 +340,9 @@ def process_outbox(
+     finally:
+         if shell is not None and hasattr(shell, "close"):
+             shell.close()
++        if seen_new and seen_path is not None:
++            with seen_path.open("a", encoding="utf-8") as fh:
++                fh.write("\n".join(seen_new) + "\n")
+     return stats
+ 
+ 
+@@ -317,6 +355,13 @@ def main(argv: list[str] | None = None) -> int:
+         default=Path(os.environ.get("BRIDGE_OUTBOX_PATH", str(DEFAULT_OUTBOX))),
+     )
+     parser.add_argument("--cursor", type=Path, default=DEFAULT_CURSOR)
++    parser.add_argument(
++        "--seen",
++        type=Path,
++        default=Path(os.environ.get("BRIDGE_SEEN_PATH", str(DEFAULT_SEEN))),
++        help="去重指纹文件（命中则跳过写入）",
++    )
++    parser.add_argument("--no-dedupe", action="store_true", help="关闭内容去重（调试用）")
+     parser.add_argument("--verbose", "-v", action="store_true")
+     args = parser.parse_args(argv)
+ 
+@@ -325,7 +370,11 @@ def main(argv: list[str] | None = None) -> int:
+         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+         stream=sys.stderr,
+     )
+-    stats = process_outbox(args.outbox, args.cursor)
++    stats = process_outbox(
++        args.outbox,
++        args.cursor,
++        seen_path=None if args.no_dedupe else args.seen,
++    )
+     logger.info("批次完成: %s", stats)
+     return 0 if stats["errors"] == 0 else 1
+ 
+diff --git a/52-lobehub协议集成/bridge/ops/com.dreambuddy.bridge.plist b/52-lobehub协议集成/bridge/ops/com.dreambuddy.bridge.plist
+new file mode 100644
+index 0000000000..f171963223
+--- /dev/null
++++ b/52-lobehub协议集成/bridge/ops/com.dreambuddy.bridge.plist
+@@ -0,0 +1,42 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++  <key>Label</key>
++  <string>com.dreambuddy.bridge</string>
++
++  <key>ProgramArguments</key>
++  <array>
++    <string>/opt/anaconda3/bin/python3</string>
++    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge/distill_bridge.py</string>
++    <string>--once</string>
++  </array>
++
++  <key>WorkingDirectory</key>
++  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge</string>
++
++  <key>StartCalendarInterval</key>
++  <dict>
++    <key>Hour</key>
++    <integer>23</integer>
++    <key>Minute</key>
++    <integer>0</integer>
++  </dict>
++
++  <key>RunAtLoad</key>
++  <false/>
++
++  <key>StandardOutPath</key>
++  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge/logs/bridge_stdout.log</string>
++  <key>StandardErrorPath</key>
++  <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成/bridge/logs/bridge_stderr.log</string>
++
++  <key>EnvironmentVariables</key>
++  <dict>
++    <key>PATH</key>
++    <string>/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
++    <key>LANG</key>
++    <string>zh_CN.UTF-8</string>
++  </dict>
++</dict>
++</plist>
+diff --git a/52-lobehub协议集成/bridge/test_distill_bridge.py b/52-lobehub协议集成/bridge/test_distill_bridge.py
+index 15a17a5230..635d7a8da4 100644
+--- a/52-lobehub协议集成/bridge/test_distill_bridge.py
++++ b/52-lobehub协议集成/bridge/test_distill_bridge.py
+@@ -191,3 +191,30 @@ def test_invalid_entries_skipped_without_blocking(tmp_path):
+     assert stats["skipped"] == 2
+     assert cursor.read_text().strip() == "3"  # 毒丸不阻塞，游标照常推进
+     assert len(shell.calls) == 1
++
++
++def test_duplicate_content_deduped_across_batches(tmp_path):
++    """内容指纹去重：同意图重复胜/负记录只写一次，游标照常推进。"""
++    outbox = tmp_path / "outbox.jsonl"
++    cursor = tmp_path / ".cursor"
++    seen = tmp_path / ".seen"
++    first = make_entry(content="[脑暴胜出][X] plancard=pc-1 score=0.9 steps=2")
++    dup = make_entry(content="[脑暴胜出][X] plancard=pc-2 score=0.8 steps=2")
++    other = make_entry(content="会话摘要：另一个意图", source_ref="msg-002")
++    outbox.write_text(
++        "\n".join(json.dumps(e, ensure_ascii=False) for e in (first, dup, other)) + "\n",
++        encoding="utf-8",
++    )
++    shell = FakeShell()
++    stats = process_outbox(outbox, cursor, shell_factory=lambda: shell, seen_path=seen)
++    assert stats == {"processed": 3, "written": 2, "skipped": 1, "errors": 0}
++    assert len(shell.calls) == 2
++    assert cursor.read_text().strip() == "3"
++    assert len(seen.read_text(encoding="utf-8").splitlines()) == 2
++
++    # 游标回退模拟重跑：已见过的内容全部跳过，不重复写壳
++    cursor.write_text("0\n", encoding="utf-8")
++    shell2 = FakeShell()
++    stats2 = process_outbox(outbox, cursor, shell_factory=lambda: shell2, seen_path=seen)
++    assert stats2 == {"processed": 3, "written": 0, "skipped": 3, "errors": 0}
++    assert shell2.calls == []
+diff --git a/52-lobehub协议集成/decisions/ADR-001-脑暴出关.md b/52-lobehub协议集成/decisions/ADR-001-脑暴出关.md
+new file mode 100644
+index 0000000000..fe7ca12497
+--- /dev/null
++++ b/52-lobehub协议集成/decisions/ADR-001-脑暴出关.md
+@@ -0,0 +1,93 @@
++# ADR-001：脑暴编排器出关（shadow → 限量实盘）
++
++- 状态：已采纳（灰度中）
++- 日期：2026-11-11
++- 决策人：用户（审核）+ 编排器维护方（提案）
++- 关联：SPEC-33-G §2.11.6（自举问题）、§2.8（八门禁）；52 SPEC Phase 5 第 10 条
++
++## 1. 背景与触发证据
++
++脑暴编排器自 Phase 4 起为 shadow 模式：`executed` 恒为 `false`，只写 trace / outbox，不执行任何 DreamOS 执行链。这使得 SPEC-33-G 的 L2（功能级）自更新流水线一直没有执行端——「提案→门禁→合入」的最后一跳缺失。
++
++触发证据：
++
++- 52 SPEC Phase 4「已知差距」：`--no-shadow` 抛 `NotImplementedError`。
++- SPEC-33-G §2.11.6 显式记录该自举问题，要求以 ADR 解锁而非直接改代码。
++- shadow trace 已积累（`orchestrator/traces/brainstorm.jsonl`），双链提案、T1-T4 触发器、dispatch 决策链路均有实测数据。
++
++这是一次 **L3（架构级）变更**：它改变了「系统可以自己执行什么」的边界，因此只出 ADR + 实现方案，不进入自动通道。
++
++## 2. 候选方案
++
++| 方案 | 描述 | 优点 | 缺点 |
++|---|---|---|---|
++| A. 保持 shadow | 继续只记录，不执行 | 零风险 | L2 流水线永远缺执行端，自进化闭环断在最后一跳 |
++| B. 直接全量实盘 | 删除 shadow，任何角色/任意频次均可执行 | 实现最简单 | 无预算、无角色隔离、失败不可控，等于把编排器变成无闸门的执行器 |
++| C. 门禁式限量实盘（采纳） | 策略文件 + 角色白名单 + 自然周预算 + 只执行 dispatch 胜方 + 失败也占预算 | 可执行、可回滚、可观测；灰度对象与额度都可审计 | 需要额外维护策略文件与账本 |
++
++## 3. 取舍理由与 PoE 评分
++
++采用 C。判据按 SPEC-33-G §2.8 的精神对齐：
++
++| 判据 | C 的满足方式 |
++|---|---|
++| 证据充分 | shadow trace 已覆盖双链提案、触发器、dispatch 分支 |
++| 变更幅度 | 新增 1 个策略模块（`live_policy.py`）+ 编排器局部分支，不改 DreamOS / 3.1 源码 |
++| 可回滚 | 策略文件 `enabled=false` 即回到 shadow；账本 append-only 可审计 |
++| 提案/评估分离 | 策略由 ADR 定义，执行器由调用方注入，二者不混在编排器内 |
++| 预算与断路器 | 自然周额度 + 失败也占额，天然限流 |
++
++PoE 自评：`evidence_chain=0.8`（trace + 单测 + CLI 双跑）、`coverage=0.7`（缺真实业务 outcome 回传）、`complexity_penalty=0.1` → `poe≈0.79`，接近门槛但不足以进入 S3 全自动，故**只批准灰度（auditor + 1 次/周）**。
++
++## 4. 影响面
++
++| 项 | 影响 |
++|---|---|
++| `orchestrator/brainstorm_orchestrator.py` | 删除 `NotImplementedError`；新增 live 三道门、`_execute_live`、`_load_executor`、CLI `--role/--executor-module/--live-policy/--live-ledger` |
++| `orchestrator/live_policy.py` | 新增：策略加载、周预算计算、门禁判定、账本写入 |
++| `orchestrator/live_policy.json` | 新增：灰度策略（默认关闭可一键回退） |
++| `orchestrator/tests/test_brainstorm.py` | 旧 NotImplementedError 用例改为门禁用例；新增 6 条 live 契约用例 |
++| DreamOS / 3.1 / 47 registry | **零改动**（执行器由外部模块注入） |
++| 交易域 | 不变：G3（trade-exec 域拦截）+ G4（实盘/下单 risk_flag 拦截）+ §0.4 硬约束仍然生效 |
++
++## 5. 回滚与灰度
++
++灰度阶梯：
++
++1. **S1（当前）**：仅 `auditor` 角色，`allowed_routes=[workers,debate]`，`max_per_week=1`，只执行 `decision.kind=dispatch` 的胜方 PlanCard。
++2. **S2**：观察 2 周，若执行成功率 100% 且无越权记录（账本 `role/route` 全在允许集内），扩到 3 次/周。
++3. **S3**：仍不开放全自动；提额与开放新角色**必须新增 ADR**，不在本文件内自行修改。
++
++回滚动作（任一触发即执行）：
++
++- 策略文件改 `enabled=false` → 立即回到 shadow（无需重启，每次运行重读）。
++- 若发生越权执行（账本出现非白名单 role/route）或执行器产生副作用：将对应 run 的 trace + 账本记录标 `tainted=true`，并按 SPEC-33-G §2.6 对污染 Case/Evidence 降权。
++
++## 6. 后续 L2 任务清单
++
++| # | 任务 | 前置 |
++|---|---|---|
++| 1 | 接入真实 `executor`（DreamOS dispatch → DSH 子 Agent） | 本 ADR |
++| 2 | 账本增加 `outcome` 字段并回传（成功/失败/人工否决） | 1 |
++| 3 | 运维看板：周预算使用率、执行成功率、越权计数 | 1 |
++| 4 | 灰度扩额评审（S2 → S3） | 2、3 完成且观察期满 |
++
++## 7. 验证证据
++
++- 单测：`python3 -m pytest tests/ -q` → **84 passed**；`ruff check` → **All checks passed**。
++- CLI 首次实盘：
++
++  ```json
++  {"shadow": false, "executed": true,
++   "live": {"enabled": true, "role": "auditor", "route": "workers",
++            "used": 0, "max_per_week": 1, "adr": "ADR-001",
++            "allowed": true, "reason": "ok"}}
++  ```
++
++- CLI 第二次（预算耗尽）：
++
++  ```json
++  {"ok": false, "error": "live gate denied: weekly budget exhausted (1/1)"}
++  ```
++
++  exit code = 2。
+diff --git a/52-lobehub协议集成/docs/API_SPEC.md b/52-lobehub协议集成/docs/API_SPEC.md
+new file mode 100644
+index 0000000000..1b1a8e556c
+--- /dev/null
++++ b/52-lobehub协议集成/docs/API_SPEC.md
+@@ -0,0 +1,322 @@
++# API SPEC — 52-LobeHub 协议集成
++
++> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> 覆盖：CLI 契约、PlanCard、outbox 条目、3.1 HTTP 路由、MCP 工具面、trace 字段
++
++---
++
++## 1. 契约总览
++
++| 契约 | 提供方 | 消费方 | 传输 |
++|---|---|---|---|
++| 编排器 CLI | `orchestrator/brainstorm_orchestrator.py` | 人 / `shadow_batch.py` / 3.1 `/api/agent/brainstorm` | 进程 stdout（末行 JSON） |
++| PlanCard | side-A / side-B | 编排器、执行器、蒸馏桥 | HTTP JSON |
++| outbox 条目 | 编排器 | 蒸馏桥 | `bridge/outbox.jsonl` |
++| cognition record | 蒸馏桥 | L0 cognition 壳 | stdio JSON-RPC |
++| Debate 壳 | `agent.debate.mcp` | 编排器 | stdio JSON-RPC |
++| 3.1 HTTP | 3.1-FRONTEND | 浏览器 / 编排器 | HTTP POST |
++
++所有契约都遵守：**未知字段容错、必填字段 fail-closed、异常一律降级为可读错误，不抛 500。**
++
++---
++
++## 2. 编排器 CLI
++
++```bash
++python3 orchestrator/brainstorm_orchestrator.py --intent "<议题>" [options]
++```
++
++| 参数 | 类型 | 默认 | 说明 |
++|---|---|---|---|
++| `--intent` | str | 必填 | 议题/用户意图原文 |
++| `--context-refs` | str... | `[]` | 上下文引用列表 |
++| `--shadow / --no-shadow` | bool | `True` | 默认 shadow；`--no-shadow` 走 ADR-001 三道门 |
++| `--role` | str | `auditor` | 实盘角色，须在 `live_policy.allowed_roles` |
++| `--executor-module` | path | `BRAINSTORM_EXECUTOR_MODULE` | 实盘执行器模块（须暴露 `execute(card)->dict`） |
++| `--live-policy` | path | `orchestrator/live_policy.json` | 策略文件 |
++| `--live-ledger` | path | `orchestrator/live_ledger.jsonl` | 预算账本 |
++| `--user-requested-debate` | flag | `False` | T4：用户显式要求辩论 |
++| `--trace-path` | path | `orchestrator/traces/brainstorm.jsonl` | trace 输出 |
++| `--outbox-path` | path | `bridge/outbox.jsonl` | 蒸馏 outbox |
++| `--side-a-plancard` | path | 空 | 给定则跳过 A 侧 HTTP（离线测试） |
++| `--disable-recall` | flag | `False` | 禁用 cognition recall 取证（T3 skipped） |
++| `--force` | flag | `False` | 跳过意图路由，强制脑暴（仅供人工观察） |
++| `--json-out` | flag | `False` | stdout 只输出单行 JSON 摘要 |
++| `--n-per-side` | int | `2` | 每侧发散候选数，范围 1-3，越界 exit 2 |
++| `--adjudicator` | enum | `both` | `heuristic` / `grounded` / `both` |
++
++### 2.1 退出码
++
++| 码 | 含义 |
++|---|---|
++| 0 | 成功（含 `skipped=true` 的路由拦截） |
++| 2 | 参数非法；或 `--no-shadow` 被 live 门禁拒绝（`PermissionError`） |
++
++### 2.2 stdout 契约
++
++`--json-out` 输出单行 JSON（字段稳定，供 3.1 消费）：
++
++```json
++{
++  "ok": true,
++  "route": "debate",
++  "route_rules_version": "r9-v1",
++  "skipped": false,
++  "reason": null,
++  "mode": "debate",
++  "winner": {"card_id": "pc-...", "side": "A", "score": 0.912},
++  "executed": false,
++  "n_per_side": 2,
++  "pool_size": 4,
++  "debate_id": "deb-...",
++  "debate_error": null,
++  "trace_id": "run-...",
++  "trace_path": "orchestrator/traces/brainstorm.jsonl",
++  "outbox_written": 3,
++  "evaluators": {"available": true, "names": 7},
++  "diversity_violations": [],
++  "adjudication": {"heuristic_top": "pc-...", "grounded_winner": "pc-...", "agree": true},
++  "decision": {"kind": "dispatch"}
++}
++```
++
++失败时（stderr）：`{"ok": false, "error": "<原因>"}`，退出码 2。
++
++---
++
++## 3. PlanCard 契约（R8）
++
++Schema 文件：[`schemas/plancard.schema.json`](../schemas/plancard.schema.json)（draft-07）。
++
++| 字段 | 类型 | 必填 | 约束 |
++|---|---|---|---|
++| `id` | string | 是 | 前缀 `pc-` |
++| `intent` | string | 是 | 1-500 字 |
++| `context_refs` | string[] | 否 | L0 工具证据引用 |
++| `plan_steps` | object[] | 是 | ≥1 项 |
++| `plan_steps[].step` | integer | 是 | ≥1 |
++| `plan_steps[].action` | string | 是 | 非空 |
++| `plan_steps[].tool` | string | 是 | `^l0\.[a-z0-9_-]+\.mcp\.[a-z0-9_]+$`，且必须在 47 registry 内 |
++| `plan_steps[].args_hint` | object | 否 | 参数提示 |
++| `evidence_refs` | string[] | 否 | debate trace / recall id / backtest id |
++| `risk_flags` | string[] | 否 | 命中禁令时进 G4 |
++| `cost_estimate` | object | 否 | `{tokens:int, tool_calls:int}` |
++| `expected_outcome` | string | 否 | ≤1000 字 |
++| `validation.evaluator_refs` | string[] | 是 | `^45\.[a-z0-9_]+@\d+\.\d+\.\d+$` |
++| `validation.acceptance_checks` | string[] | 否 | 可观测验收项 |
++| `validation.outcome` | string | 否 | 执行后回填 |
++| `debate_meta` | object | 否 | `{debate_id, side: A/B, verdict: WIN/LOSE/INCONCLUSIVE}` |
++
++不支持字段不报错（容错），但未知字段不参与门禁与评分。
++
++---
++
++## 4. outbox 条目契约
++
++路径：`bridge/outbox.jsonl`（append-only）；每行一个 JSON 对象。
++
++| 字段 | 类型 | 必填 | 约束 |
++|---|---|---|---|
++| `type` | string | 是 | 必须命中 R6 映射表，否则拒写 |
++| `content` | string | 是 | 非空且 ≤300 字 |
++| `tags` | string[] 或逗号串 | 是 | 必须含 `protocol-bridge` |
++| `source_ref` | string | 是 | 可追溯（编排器写 `run_id:card_id`） |
++| `bridge_ts` | string | 是 | ISO8601 带时区 |
++
++R6 质量映射：
++
++| type | quality_level |
++|---|---|
++| `expertise_canon` | B |
++| `expertise_candidate` | C |
++| `debate_winner` | B |
++| `debate_loser` | D |
++| `brainstorm_winner` | B |
++| `brainstorm_loser` | D |
++| `session_summary` | C |
++
++编排器实际写入示例（胜方）：
++
++```json
++{
++  "type": "brainstorm_winner",
++  "content": "[脑暴胜出][对比两种回撤控制方案] plancard=pc-01J... side=A score=0.912 steps=3 expected=...",
++  "tags": ["protocol-bridge", "brainstorm", "52-lobehub", "winner"],
++  "source_ref": "run-20261111T193000:pc-01J...",
++  "bridge_ts": "2026-11-11T19:30:00+0800"
++}
++```
++
++---
++
++## 5. 蒸馏桥 CLI
++
++```bash
++python3 bridge/distill_bridge.py --once [options]
++```
++
++| 参数 | 默认 | 说明 |
++|---|---|---|
++| `--once` | 关 | 处理一批后退出（当前唯一模式） |
++| `--outbox` | `BRIDGE_OUTBOX_PATH` 或 `bridge/outbox.jsonl` | 输入队列 |
++| `--cursor` | `bridge/.cursor` | 已消费行号 |
++| `--seen` | `BRIDGE_SEEN_PATH` 或 `bridge/.seen` | 内容指纹去重文件 |
++| `--no-dedupe` | 关 | 关闭去重（调试用） |
++| `--verbose / -v` | 关 | DEBUG 日志 |
++
++统计输出（stderr，末行）：`批次完成: {'processed': n, 'written': n, 'skipped': n, 'errors': n}`。
++
++| 退出码 | 含义 |
++|---|---|
++| 0 | `errors == 0` |
++| 1 | 存在写壳失败（游标停在最后成功行，可重跑续传） |
++
++幂等语义：
++
++- `processed` 只统计游标之后的行；
++- 校验失败 → `skipped` 且推进游标（毒丸不阻塞）；
++- 指纹命中 → `skipped` 且推进游标（不重复写入认知库）；
++- 传输失败 → `errors` 且**不推进**游标。
++
++---
++
++## 6. 批量与调度 CLI
++
++### 6.1 `shadow_batch.py`
++
++```bash
++python3 orchestrator/shadow_batch.py [--intents-file PATH] [--log-path PATH] [--max N] [--n-per-side N] [--dry-run]
++```
++
++- 逐条 spawn `brainstorm_orchestrator.py --intent ... --json-out`，超时 300s；
++- side-A / side-B 任一不可用 → 写 `{"ok":false,"skipped":"services_down"} ` 并跳过整批（不刷错误）；
++- 退出码恒 0；结果落 `--log-path`（默认 `orchestrator/logs/shadow_batch.log`）。
++
++### 6.2 `ops/supervisor.py`
++
++```bash
++python3 orchestrator/ops/supervisor.py [--hour 22] [--minute 30] [--dry-run]
++```
++
++- 每日固定时刻执行 `ops/daily_pipeline.sh`；
++- `--dry-run` 只打印 `next run <ISO8601>`；
++- pidfile：`orchestrator/ops/.supervisor.pid`；SIGTERM/SIGINT 优雅退出。
++
++### 6.3 `ops/daily_pipeline.sh`
++
++```bash
++bash 52-lobehub协议集成/orchestrator/ops/daily_pipeline.sh
++```
++
++顺序：`shadow_batch.py --max 5 --n-per-side 2` → `distill_bridge.py --once`；
++退出码 = 任一环节失败即非 0；汇总写 `orchestrator/logs/pipeline.log`。
++
++---
++
++## 7. 3.1 HTTP 路由
++
++全部位于 `3.1-FRONTEND/src/app/api/agent/`，统一降级信封：
++
++```json
++{"ok": false, "data": null, "degraded": true, "error": "<code>"}
++```
++
++### 7.1 `POST /api/agent/brainstorm`
++
++| 项 | 值 |
++|---|---|
++| Body | `{ "intent": string, "nPerSide"?: 1-3, "force"?: boolean }` |
++| 校验 | `intent` 非空且 ≤2000 字；否则 200 `degraded` + `intent_required / intent_too_long` |
++| 行为 | spawn 编排器 CLI（`--intent ... --json-out`），超时 180s kill |
++| 成功 | 200 + stdout 末行 JSON（即 §2.2 摘要） |
++| 失败 | 200 `degraded` + `orchestrator_failed / bad_json / timeout` |
++| 其他方法 | 405 |
++
++### 7.2 `POST /api/agent/plan`（side-A）
++
++| 项 | 值 |
++|---|---|
++| Body | `{ "intent": string, "context_refs"?: string[], "variant"?: {focus, seed} }` |
++| 行为 | Vercel AI SDK 选模型 → 生成 PlanCard → `validatePlanCard` 校验 |
++| 校验失败 | 200 `degraded` + 错误明细（绝不 500） |
++| 未配置模型 | 200 `degraded` |
++| 其他方法 | 405 |
++
++### 7.3 `POST /api/agent/chat`
++
++| 项 | 值 |
++|---|---|
++| Body | `{ "messages": UIMessage[], "provider"?: string, "model"?: string }` |
++| 行为 | 模型路由 + MCP 工具消费（含会话摘要写入 outbox） |
++| 未配置/异常 | 200 `degraded`，不阻塞主链路 |
++| 其他方法 | 405 |
++
++---
++
++## 8. MCP 工具面与授权
++
++| 消费方 | 角色 | 允许工具 | 强制方式 |
++|---|---|---|---|
++| 3.1 协议层 | `lobehub_frontend` | 只读（如 `recall`、`unified_search`） | 47 registry profile + drift 检查 |
++| 蒸馏桥 | `orchestrator` | `record`、`verify` | 代码层白名单断言 `ALLOWED_TOOLS` |
++| Debate 壳 | `orchestrator` | `start_debate`、`get_debate_result` | 壳层参数校验 + 铁律⑤ |
++| 任何 52 组件 | — | **禁止** trade-exec 及一切交易写工具 | G3/G4 + registry 角色 |
++
++桥调壳时的环境变量覆写（仅此三项）：
++
++```text
++COGNITIVE_MCP_MODE=ssh
++COGNITIVE_MCP_WRITE_ENABLED=true
++COGNITIVE_MCP_DEFAULT_PRINCIPAL=orchestrator
++```
++
++`record` 参数由 `build_record_arguments()` 生成：
++
++```json
++{
++  "content": "<≤300 字>",
++  "quality_level": "B",
++  "tags": "protocol-bridge,brainstorm,52-lobehub,winner",
++  "source": "protocol-bridge",
++  "external_id": "bridge:<source_ref>"
++}
++```
++
++---
++
++## 9. trace 字段
++
++每轮一行（`orchestrator/traces/brainstorm.jsonl`）：
++
++| 字段 | 说明 |
++|---|---|
++| `run_id` / `trace_id` | 本轮唯一标识 |
++| `intent` / `context_refs` | 输入 |
++| `route` / `route_rules_version` / `mode` | 路由结果（`debate`/`workers`） |
++| `n_per_side` / `pool_size` | 发散与去重后池大小 |
++| `proposals[]` | 原始提案（含 `proposer_id`、`model`、`model_kind`、`evidence_path`） |
++| `diversity_violations[]` | 铁律⑤ 违规明细 |
++| `gates[]` | `{card_id, verdict, reasons}` |
++| `scores[]` | `{card_id, score, verdict, breakdown, evaluator_provenance}` |
++| `domain_eval` | `{available, names, verdicts}` |
++| `triggers` | `{escalate, fired, detail}`（T1 `basis` 标注 `cross_side`/`top2`） |
++| `decision` | `{kind: dispatch\|escalate_debate, ...}` |
++| `debate` | `{debate_id, error}` |
++| `adjudication` | `{heuristic_top, grounded_winner, agree}`（不参与决策） |
++| `outbox_written` | 写入条数 |
++| `executed` / `execution` | 实盘执行结果（shadow 恒 false）；`execution.ok/result/error` |
++| `live` | 三道门判定快照：`enabled/allowed/reason/role/route/used/max_per_week` |
++
++---
++
++## 10. 错误码速查
++
++| 来源 | code | 触发 |
++|---|---|---|
++| 编排器 stderr | `live gate denied: ...` | live 门禁未过（exit 2） |
++| 3.1 brainstorm | `intent_required` | 空 intent |
++| 3.1 brainstorm | `intent_too_long` | >2000 字 |
++| 3.1 brainstorm | `orchestrator_failed` / `bad_json` / `timeout` | spawn 失败 / 非 JSON / 超 180s |
++| 3.1 plan | `messages_required` / 校验明细 | 参数缺失 / PlanCard 不合规 |
++| 桥 | `unknown_type` / `content_empty` / `content_too_long` / `missing_protocol_bridge_tag` / `missing_source_ref` / `missing_bridge_ts` | 条目不合规（计 `skipped`） |
++| 45 适配 | `45_unavailable` / `evaluator_not_found` / `missing_artifacts` / `artifact_not_evaluated` | 均落到 `INCONCLUSIVE` |
+diff --git a/52-lobehub协议集成/docs/CHANGELOG.md b/52-lobehub协议集成/docs/CHANGELOG.md
+new file mode 100644
+index 0000000000..706e367346
+--- /dev/null
++++ b/52-lobehub协议集成/docs/CHANGELOG.md
+@@ -0,0 +1,128 @@
++# CHANGELOG — 52-LobeHub 协议集成
++
++> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> 格式：按版本倒序；日期为本地决策/落地日期。
++> 版本以 `SPEC.md` 头部版本号为准；本文件只记录**已落地**的变更。
++
++---
++
++## v0.11.0 — 2026-11-11（ADR-001 实盘出关 + 蒸馏桥常态运转 + T1 跨侧 + 本地守护）
++
++### 新增（ADR-001 脑暴出关）
++
++- `orchestrator/live_policy.py`：三道门（策略 / 角色 / 自然周预算）+ append-only 账本；
++  策略缺失或损坏一律返回「关闭」，绝不隐式开启实盘。
++- `orchestrator/live_policy.json`：灰度策略 `enabled=true / allowed_roles=[auditor] /
++  allowed_routes=[workers,debate] / max_per_week=1`。
++- `brainstorm_orchestrator.py`：`shadow=False` 走实盘分支——先过三道门（未过 `PermissionError`，
++  CLI exit 2），仅对 `decision.kind=dispatch` 的胜方卡调用 `executor(card)`；执行异常降级为
++  `execution.error` 不中断；成功与失败都记账（失败也占预算）。
++- `decisions/ADR-001-脑暴出关.md`：方案对比、PoE 自评 0.79、灰度阶梯 S1-S3、回滚方式。
++- CLI 新增 `--role / --executor-module / --live-policy / --live-ledger`。
++
++### 新增（桥与调度）
++
++- `bridge/distill_bridge.py`：内容指纹去重（`.seen`，sha1；归一化抹去 `plancard=\S+` 与
++  `score=[\d.]+`），跨批次不重复蒸馏同一意图；新增 CLI `--seen`、`--no-dedupe`。
++- `orchestrator/scoring.py`：T1 改为**跨侧最佳分差**判定（`basis=cross_side`），单侧退回 Top2
++  （`basis=top2`）；避免同侧 variant 恒触发导致永不分派。
++- `orchestrator/ops/supervisor.py`：每日守护（默认 22:30，pidfile，SIGTERM 优雅退出），
++  作为 launchd 被 macOS TCC 拦截时的本地替代。
++- `orchestrator/ops/daily_pipeline.sh`：shadow → bridge 串联，双 rc 记账到 `logs/pipeline.log`。
++- `bridge/ops/com.dreambuddy.bridge.plist`、`orchestrator/ops/com.dreambuddy.shadow.plist`：
++  launchd 模板（本机不可用，仅备用）。
++- `docs/` 五文档标准补齐：`ENGINEERING_INDEX.md`、`TECHNICAL_DESIGN.md`、`API_SPEC.md`、
++  `CHANGELOG.md`，根目录 `README.md`。
++
++### 变更
++
++- `orchestrator/tests/test_brainstorm.py`：新增 T1 跨侧三例
++  （`test_t1_uses_cross_side_gap_not_global_top2` / `test_t1_fires_on_close_cross_side_scores` /
++  `test_t1_falls_back_to_top2_on_single_side`）。
++- `bridge/test_distill_bridge.py`：新增跨批次去重用例（3 条含 1 重复 → `written=2, skipped=1`；
++  游标回退重跑 → `written=0, skipped=3`）。
++- `.gitignore`：orchestrator 忽略 `traces/ logs/ .supervisor.pid`；bridge 忽略
++  `outbox.jsonl .cursor .seen logs/`。
++
++### 验证
++
++- 积压 88 条：`written=52 / skipped=36 / errors=0`，`.cursor=89`。
++- 复跑 shadow：`T1 gap=0.155/0.182 → dispatch`，outbox 新增 6 条被桥全部消费。
++- 回归：orchestrator 84 passed、bridge 20 passed、debate 壳 22 passed；ruff/black 通过。
++- 认知回流：`recall` 命中 `source=protocol-bridge`。
++
++---
++
++## v0.10.0 — 2026-11-11（side-B 同量级结构扣分）
++
++- `orchestrator/domain_eval.py`：`_evidence_raw()` 排除 `dreamos.*` 自证引用，仅外部取证计分。
++- `orchestrator/proposers.py`：`_enrich_side_b_card()` 注入 3 条可证伪的规划器局限
++  （`deterministic_planner_no_independent_evidence` / `registry_mapping_unvalidated` /
++  `single_intent_call_no_variant_diversity`），已有人工 risk 不覆盖。
++- 效果：side-B 由恒 `1.0` 降至约 `0.736`，与 side-A 可比；Top2 回归同侧 A vs A（gap 0.027）。
++
++---
++
++## v0.9.0 — 2026-11-11（Phase 5：45 域评测器适配层）
++
++- 新增 `orchestrator/domain_eval.py`：`discover()` 隔离导入 45 评测 registry（fail-open），
++  `DOMAIN_MAP` 三域映射，`evaluate_plan()` 四类 `INCONCLUSIVE` 原因，缺产物绝不编造分数。
++- 新增 `structural_score()`：六维确定性结构分（权重和 1.10，归一化防饱和），替代退化常数。
++- `scoring.score()`：结构分叠加 45 verdict（BLOCK→0 / PASS→+0.05 / INCONCLUSIVE→仅 base），
++  新增 `evaluator_provenance`。
++- 候选池新增同侧结构指纹去重（`dedupe_pool`），跨侧不合并。
++
++---
++
++## v0.6.1 — 2026-11-11（"唯一前端"澄清）
++
++- 明确删除第二 UI（`src/app/agent/page.tsx`），保留协议层能力件
++  `src/lib/agent/{providers,mcp-client,distill-outbox,plancard}.ts` 与 `api/agent/{chat,plan}`。
++- 远端 `360e1f78dd` 误回退 SPEC（删脑暴章节）作废，以本地为准。
++
++---
++
++## v0.5.0 — 2026-11-11（内置协议层定案）
++
++- 弃用 LobeHub desktop/server/docker 等独立应用形态；52 定位改为 3.1 前端内置协议层。
++- 决策：不 fork、不 vendor 上游源码（其包均 `private: true`），只做协议语义对齐。
++- Phase 0 PoC：三模型（kimi / sonnet / opus）经同一 stdio 链路调通 `recall`；写门禁正确拒绝。
++
++---
++
++## v0.3.1 — 2026-11-11（成熟实践对标）
++
++- 新增铁律⑤（多样性契约化，fail-closed）、⑥（任务类型分流）、⑦（结构化产物交接）。
++- 依据：Anthropic Building Effective Agents、arXiv《More Debate, Same Evidence》。
++
++---
++
++## v0.3.0 — 2026-11-11（双链协作定案）
++
++- 用户确认 D5：统一入口 → 双链意图规划 → Debate → 评估器裁决 → 分工 → L0 沉淀 → 涌现回流。
++- 新增四条修正铁律①-④（评估器裁决 / 竞争限规划层 / 门禁监督 / live 永禁）。
++- 新增评审决议 R1-R9 与 `schemas/plancard.schema.json`。
++
++---
++
++## v0.2.0 — 2026-11-11（SPEC 初稿 + 架构评审）
++
++- 形成 Phase 0-5 路线、集成契约、数据边界、风险对策、验收标准 A1-A6。
++- 完成 GitHub 调研与代码架构评审：`REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md`。
++
++---
++
++## v0.1.0 — 2026-11-11（立项）
++
++- 新建 `52-lobehub协议集成`，明确其为叠加层而非主骨架，唯一接口 = MCP。
++
++---
++
++## 未发布 / 待落地
++
++| 项 | 状态 | 说明 |
++|---|---|---|
++| Phase 2 云端部署 | 未开工 | l0_gateway SSE/HTTP 封装；44-三端协作登记 52 拓扑 |
++| 45 真实产物评测 | 待接入 | 需 `artifacts/inputs/{run_id}.json` 领域对象映射 |
++| 定时跨重启 | 受限 | macOS TCC 拦截 launchd/crontab；现用 `ops/supervisor.py` |
++| T2-T4 真实触发样本 | 待积累 | 现有 trace 以 T1 跨侧判定为主 |
+diff --git a/52-lobehub协议集成/docs/ENGINEERING_INDEX.md b/52-lobehub协议集成/docs/ENGINEERING_INDEX.md
+new file mode 100644
+index 0000000000..2de91c9d82
+--- /dev/null
++++ b/52-lobehub协议集成/docs/ENGINEERING_INDEX.md
+@@ -0,0 +1,147 @@
++# ENGINEERING INDEX — 52-LobeHub 协议集成
++
++> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> 状态：协议层 / 蒸馏桥 / 脑暴编排器已落地；Phase 2 云端部署待开工
++
++---
++
++## 1. 模块定位
++
++| 项 | 内容 |
++|---|---|
++| 模块编号 | 52 |
++| 模块名 | LobeHub 协议集成（Agent 前台与模型路由叠加层） |
++| 层级 | 叠加层（非主骨架） |
++| 唯一职责 | 以 MCP 唯一接口，把任意 LLM 的规划/脑暴能力接到既有 L0 能力面 |
++| 不是 | 主骨架 / 能力实现层 / 认知记忆库 / 交易系统 / 第二套前端 |
++| 上游 | 47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构 |
++| 下游 | DreamOS/SACG 编排（唯一执行体）、33-REA / 48-涌现（反思回流） |
++| 外部依赖 | `lobehub/lobehub`（仅协议对齐，不 fork、不 vendor、不部署） |
++| 运行时依赖 | Python 3.10+ 标准库；`yaml` 可选（缺失走正则解析 registry） |
++
++---
++
++## 2. 文件地图
++
++| 路径 | 职责 | 状态 |
++|---|---|---|
++| `SPEC.md` | 协议层 SSoT：定位/决策/阶段/契约/风险/验收 | 已建（v0.11.0） |
++| `README.md` | 使用说明、目录、环境变量、已知限制 | 已建 |
++| `REVIEW-20261111-...md` | GitHub 调研 + SPEC 评审 R1-R9 | 已建 |
++| `decisions/ADR-001-脑暴出关.md` | shadow → 限量实盘（live）出关决策 | 已采纳（灰度） |
++| `schemas/plancard.schema.json` | PlanCard JSON Schema（R8） | 已建 |
++| `docs/ENGINEERING_INDEX.md` | 本文件 | 已建 |
++| `docs/TECHNICAL_DESIGN.md` | 进程模型、门禁评分、幂等、治理 | 已建 |
++| `docs/API_SPEC.md` | CLI / PlanCard / outbox / HTTP / MCP 契约 | 已建 |
++| `docs/CHANGELOG.md` | 版本变更 | 已建 |
++| `orchestrator/brainstorm_orchestrator.py` | 主流程 `run()`、trace/outbox、live 执行、CLI（1024 行） | 已落地 |
++| `orchestrator/proposers.py` | side-A（3.1 `/plan`）/ side-B（DreamOS intent）双链提案，N-per-side | 已落地 |
++| `orchestrator/plancard.py` | PlanCard 校验、`from_dreamos_intent`、variant 链构造 | 已落地 |
++| `orchestrator/registry_tools.py` | 47 `mcp_capabilities.yaml` 只读加载（yaml 优先，正则兜底） | 已落地 |
++| `orchestrator/scoring.py` | 铁律⑤多样性校验、G1-G4 门禁、结构分、T1-T4 | 已落地 |
++| `orchestrator/domain_eval.py` | 45 评测器发现与适配、`structural_score`、side-B 扣分 | 已落地 |
++| `orchestrator/adjudicator.py` | grounded semantics 裁决器（shadow 并行 A/B，214 行） | 已落地 |
++| `orchestrator/debate_client.py` | `agent.debate.mcp` stdio JSON-RPC 客户端 | 已落地 |
++| `orchestrator/router.py` | 意图路由 `r9-v1`（五分流，纯确定性） | 已落地 |
++| `orchestrator/live_policy.py` | 三道门 + 周预算账本（append-only JSONL） | 已落地 |
++| `orchestrator/live_policy.json` | 默认策略：auditor / workers+debate / 每周 1 次 | 已落地 |
++| `orchestrator/shadow_batch.py` | 批量 shadow 入口（服务未就绪静默跳过） | 已落地 |
++| `orchestrator/ops/supervisor.py` | 每日守护（pidfile，默认 22:30） | 已落地 |
++| `orchestrator/ops/daily_pipeline.sh` | shadow → bridge 串联，双 rc 记账 | 已落地 |
++| `orchestrator/ops/com.dreambuddy.shadow.plist` | launchd 模板（本机 EIO，仅备用） | 模板 |
++| `bridge/distill_bridge.py` | outbox → cognition record（R6 映射/游标/去重，383 行） | 已落地 |
++| `bridge/test_distill_bridge.py` | 桥测试 20 例 | 已落地 |
++| `bridge/ops/com.dreambuddy.bridge.plist` | launchd 模板（同上，仅备用） | 模板 |
++| `orchestrator/tests/test_brainstorm.py` | 主流程 / 门禁 / T1 / live 用例 | 已落地 |
++| `orchestrator/tests/test_router.py` | 五分流与优先序 | 已落地 |
++| `orchestrator/tests/test_domain_eval.py` | 45 适配与结构分 | 已落地 |
++| `orchestrator/tests/test_adjudicator.py` | grounded semantics 求解 | 已落地 |
++
++3.1 前端侧（不属本目录，但为 52 的落点）：
++
++| 路径 | 职责 |
++|---|---|
++| `3.1-FRONTEND/src/lib/agent/providers.ts` | Vercel AI SDK 模型工厂（任意 provider） |
++| `3.1-FRONTEND/src/lib/agent/mcp-client.ts` | stdio MCP 客户端（l0_gateway） |
++| `3.1-FRONTEND/src/lib/agent/plancard.ts` / `plan-variant.ts` | PlanCard 契约与变体提示 |
++| `3.1-FRONTEND/src/lib/agent/distill-outbox.ts` | outbox 写入器 |
++| `3.1-FRONTEND/src/app/api/agent/{chat,plan,brainstorm}/route.ts` | 聊天 / 规划 / 脑暴入口 |
++
++---
++
++## 3. 依赖图
++
++```text
++brainstorm_orchestrator.py
++  ├─ router.py            （意图分流，先于候选池生成）
++  ├─ proposers.py         （side-A HTTP / side-B HTTP）
++  ├─ plancard.py ── schemas/plancard.schema.json
++  ├─ registry_tools.py ── 47-MCP管理系统/registry/mcp_capabilities.yaml
++  ├─ scoring.py ── domain_eval.py ── 45-评测系统/evaluators/registry
++  ├─ adjudicator.py       （shadow 并行裁决）
++  ├─ debate_client.py ── mcp_shells/debate_adversarial/server.py
++  └─ live_policy.py ── live_policy.json + live_ledger.jsonl
++
++shadow_batch.py ── subprocess ── brainstorm_orchestrator.py
++ops/supervisor.py ── subprocess ── ops/daily_pipeline.sh
++                                   ├─ shadow_batch.py
++                                   └─ bridge/distill_bridge.py
++                                          └─ 4-MEMORY/9-工具与接口/cognitive_mcp_server.py（stdio）
++```
++
++无反向依赖：52 不被任何交易热路径引用。
++
++---
++
++## 4. 测试矩阵
++
++| 套件 | 用例数 | 覆盖点 |
++|---|---|---|
++| `orchestrator/tests/test_brainstorm.py` | 49 | 双链收集、去重、门禁、评分、T1-T4、outbox、live 出关六例 |
++| `orchestrator/tests/test_router.py` | 16 | `trade_deny / high_risk_human / debate / direct_answer / workers` 与优先序 |
++| `orchestrator/tests/test_domain_eval.py` | 15 | 45 发现/映射/fail-open、结构分权重、side-B 扣分 |
++| `orchestrator/tests/test_adjudicator.py` | 4 | grounded semantics 最小不动点、agree 记录 |
++| 小计 | **84 passed** | `python3 -m pytest orchestrator/tests -q` |
++| `bridge/test_distill_bridge.py` | **20 passed** | R6 映射、校验 fail-closed、游标续跑、内容指纹去重 |
++| `mcp_shells/debate_adversarial` | **22 passed** | model 多样性拒绝、plancards 契约（跨模块回归） |
++
++---
++
++## 5. 数据流与产物
++
++| 产物 | 位置 | 可提交 | 说明 |
++|---|---|---|---|
++| 脑暴 trace | `orchestrator/traces/brainstorm.jsonl` | 否（gitignore） | 每轮 route/gate/score/decision/adjudication |
++| 蒸馏 outbox | `bridge/outbox.jsonl` | 否（gitignore） | 编排器写、桥消费（append-only） |
++| 桥游标 | `bridge/.cursor` | 否 | 已消费行号 |
++| 桥去重指纹 | `bridge/.seen` | 否 | 内容指纹（sha1） |
++| 实盘预算账本 | `orchestrator/live_ledger.jsonl` | 否 | 成功与失败都占预算 |
++| shadow 批次日志 | `orchestrator/logs/shadow_batch.log` | 否 | 每意图一行 JSON |
++| 守护日志 | `orchestrator/logs/supervisor.log` | 否 | 启动/触发/退出 |
++
++认知写入唯一出口：`bridge → cognition MCP 壳 record`（`source=protocol-bridge`）。
++
++---
++
++## 6. 运行入口速查
++
++| 场景 | 命令 |
++|---|---|
++| 单次脑暴（shadow） | `python3 orchestrator/brainstorm_orchestrator.py --intent "..." --json-out` |
++| 批量 shadow | `python3 orchestrator/shadow_batch.py --max 2 --n-per-side 2` |
++| 桥消费一批 | `python3 bridge/distill_bridge.py --once` |
++| 每日守护 | `nohup python3 orchestrator/ops/supervisor.py >> orchestrator/logs/supervisor.log 2>&1 &` |
++| 3.1 入口 | `POST /api/agent/brainstorm`（ChatPanel「择优脑暴」开关） |
++| 实盘（受控） | `--no-shadow --role auditor --executor-module ...`（ADR-001 三道门） |
++
++---
++
++## 7. 已知差距
++
++| # | 差距 | 阻塞原因 | 后续入口 |
++|---|---|---|---|
++| 1 | Phase 2 云端部署未开工 | l0_gateway 需 SSE/HTTP 封装；44 未登记 52 拓扑 | 按 SPEC Phase 2 清单推进 |
++| 2 | 45 真实评测未执行 | 规划期无 `artifacts/inputs/{run_id}.json` | 产物落盘格式冻结后替换 `artifact_not_evaluated` 分支 |
++| 3 | 定时不跨重启 | macOS TCC 拦截 launchd/crontab | 有权限环境装 `ops/*.plist`，或每次登录重拉守护 |
++| 4 | shadow 样本不足 | 需 2-4 周 trace 积累 | 用 `supervisor.py` 常态跑批 |
++| 5 | T2-T4 真实触发样本少 | 现有 trace 以 T1 跨侧判定为主 | 增加 BLOCK 卡/证据冲突/用户显式辩论样本 |
+diff --git a/52-lobehub协议集成/docs/TECHNICAL_DESIGN.md b/52-lobehub协议集成/docs/TECHNICAL_DESIGN.md
+new file mode 100644
+index 0000000000..8da8c45be9
+--- /dev/null
++++ b/52-lobehub协议集成/docs/TECHNICAL_DESIGN.md
+@@ -0,0 +1,263 @@
++# TECHNICAL DESIGN — 52-LobeHub 协议集成
++
++> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> 适用代码：`orchestrator/`、`bridge/`、`orchestrator/ops/`
++
++---
++
++## 1. 设计目标与约束
++
++| 目标 | 落地方式 |
++|---|---|
++| 零侵入主骨架 | 编排器/桥全部放 52 目录，不改 DreamOS、DSH、L0 源码 |
++| 协议唯一 | 与既有架构只通过 MCP 交互；无 DB 直连、无 Python 模块反向引用 |
++| 确定性可审计 | 门禁、评分、路由、裁决全部确定性；LLM 只产生候选方案 |
++| 认知写入可治理 | 只有蒸馏桥写认知库，且只经 L0 cognition 壳的 record |
++| 失败不阻塞 | 提案/评测/召回任一环节失败均降级，不抛穿主流程 |
++
++四条修正铁律（SPEC §7.2）在代码层的硬落点：
++
++| 铁律 | 代码位置 | 表现形式 |
++|---|---|---|
++| ① 裁判是评估器 | `scoring.py::score`、`domain_eval.py` | 评分只读结构分与 45 verdict，不调 LLM |
++| ② 竞争限定在规划层 | `brainstorm_orchestrator.py::run` | 只比较 PlanCard，不比较执行结果 |
++| ③ 监督交确定性门禁 | `scoring.py::gate` | G1-G4 纯规则，败方只进 outbox 作负样本 |
++| ④ live 交易永禁 | `gate` G3/G4、`router.py` | trade-exec 域工具与实盘 risk 直接 BLOCK；交易意图 `trade_deny` |
++| ⑤ 多样性 fail-closed | `scoring.py::validate_diversity` | model 空/占位、跨侧同 model、同 evidence_path 一律拒绝开题 |
++
++---
++
++## 2. 进程与组件模型
++
++```text
++┌────────────────────────── 3.1-FRONTEND（唯一前端）──────────────────────────┐
++│ ChatPanel「择优脑暴」 → POST /api/agent/brainstorm                          │
++│ POST /api/agent/plan（side-A 规划，Vercel AI SDK + MCP）                    │
++│ POST /api/agent/chat（普通对话，MCP 消费）                                   │
++└───────────────┬─────────────────────────────────────────────────────────────┘
++                │ HTTP
++┌───────────────▼───────────────┐        ┌──────────────────────────────┐
++│ orchestrator/（Python 进程）   │◀──────▶│ DreamOS POST /api/v1/intent  │
++│  router → proposers → gate    │        │ （side-B 确定性意图引擎）     │
++│  → score → triggers → trace   │        └──────────────────────────────┘
++│  → outbox / debate / live     │
++└───────┬───────────────┬───────┘
++        │               │ stdio JSON-RPC
++        │               ▼
++        │      mcp_shells/debate_adversarial（Debate 壳）
++        ▼
++┌───────────────────────────────┐
++│ bridge/distill_bridge.py      │  outbox.jsonl → cognition record
++│ （独立进程，可 cron/守护触发）  │  只经 4-MEMORY/9-工具与接口/cognitive_mcp_server.py
++└───────────────────────────────┘
++```
++
++- 编排器是**短时进程**：一次 `--intent` 跑完即退，不常驻（便于定时与超时控制）。
++- 桥是**短时进程**：`--once` 处理一批即退，游标保证续跑。
++- 调度由 `ops/supervisor.py`（常驻）或外部调度器提供，二者都不进入编排器主流程。
++
++---
++
++## 3. 主流程时序
++
++```text
++run(intent, n_per_side, shadow, force, ...)
++ 1. route(intent, risk_flags, intent_type)        # r9-v1 五分流
++    ├─ trade_deny / high_risk_human → 仅写 trace，直接返回 skipped
++    ├─ direct_answer              → 同上（省 token）
++    ├─ workers                    → 单边（n_per_side 强制 1），T1-T4 只记录
++    └─ debate                     → 继续；--force 可跳过路由
++ 2. collect_proposals(n_per_side)                 # 双链并行/顺序取卡
++    ├─ side-A: N 次 POST /api/agent/plan（variant: focus/seed 轮转）
++    └─ side-B: 1 次 POST /api/v1/intent，本地派生 N 个 variant
++ 3. dedupe_pool(cards)                            # card_id + 同侧结构指纹去重
++ 4. validate_diversity(proposals)                 # 铁律⑤，违规即终止开题
++ 5. gate(card, registry_view) × N                 # G1-G4
++ 6. score(card) × N                               # 结构分 + 45 域结果
++ 7. recall_via_mcp(intent)                        # T3 证据
++ 8. triggers(cards, gates, recall_hits, ...)      # T1-T4
++ 9. decision = escalate_debate | dispatch
++    ├─ escalate_debate → debate_client.start_debate(...)（写败方/胜方证据）
++    └─ dispatch        → shadow: executed=false，仅记意图
++                          live : 过 live_policy 三道门后执行胜方卡
++10. trace jsonl + outbox.jsonl（winner=B / loser=D）
++11. （异步）bridge --once 消费 outbox → cognition record
++```
++
++一次 `run` 的稳定摘要字段见 `docs/API_SPEC.md` §3。
++
++---
++
++## 4. 门禁算法（G1-G4）
++
++| 门禁 | 判据 | 结果 |
++|---|---|---|
++| G1 | PlanCard schema 校验（必填、类型、`id` 前缀 `pc-`、`intent ≤500`、`plan_steps ≥1`） | 任一不合规 → BLOCK |
++| G2 | `plan_steps[].tool` 必须在 47 registry 的允许集内 | 未注册 → BLOCK |
++| G3 | 工具所属壳 `domain == trade-exec` | 命中 → BLOCK（铁律④） |
++| G4 | `risk_flags` 含 `实盘 / live / 下单 / order`（大小写不敏感子串） | 命中 → BLOCK |
++
++BLOCK 卡不进入候选池排名（`score` 返回 0.0），但仍写 trace 供分析；T2 用其分数检测
++"高分被拦"的治理冲突。
++
++---
++
++## 5. 评分算法
++
++### 5.1 结构分（确定性，`domain_eval.structural_score`）
++
++| 维度 | 权重 | 归一化口径 |
++|---|---|---|
++| tool 合法率 | 0.25 | 合法工具步数 / 总步数 |
++| 步骤数 | 0.15 | `min(1, steps/6)` 阶梯 |
++| validation | 0.20 | 有 `evaluator_refs` 或 `acceptance_checks` 计 1 |
++| evidence_refs | 0.20 | **排除 `dreamos.*` 自证**，有效独立取证 ≥2 计满 |
++| risk_flags | 0.20 | `max(0.4, 1-0.15n)`：有风险标注优于无标注 |
++| cost_estimate | 0.10 | 显式 tokens/tool_calls 计 1 |
++
++权重和 1.10，按总权重归一化，避免满分饱和；明细 `{name, raw, weight, contribution}` 全量入 trace。
++
++### 5.2 域评测叠加（`scoring.score`）
++
++```text
++final = base                                   # INCONCLUSIVE
++final = min(1, base + 0.05)                    # PASS
++final = 0.0                                    # BLOCK
++```
++
++45 不可用（导入失败/未注册/缺 artifacts/产物未映射）→ `INCONCLUSIVE`，**绝不编造分数**；
++`evaluator_provenance.source` 区分 `structural` 与 `45`。
++
++### 5.3 side-B 同量级扣分
++
++side-B 是确定性意图引擎，天然无独立取证。为使其与 side-A 可比：
++
++- `_enrich_side_b_card()` 在 `risk_flags` 为空（或仅 `chain_unmapped`）时注入 3 条**可证伪的规划器局限**：
++  `deterministic_planner_no_independent_evidence` / `registry_mapping_unvalidated` /
++  `single_intent_call_no_variant_diversity`；已有人工 risk 时不覆盖。
++- `_evidence_raw()` 不把 `dreamos.*` 自证计入独立取证。
++
++效果：B 侧由 `1.0` 降至约 `0.736`；未来 B 侧接入独立取证后分数自动回升，无需改代码。
++
++---
++
++## 6. 争议触发器 T1-T4
++
++| 触发器 | 判据 | 语义 |
++|---|---|---|
++| T1 | **跨侧最佳分差** `< 0.1`（两侧都有卡时）；单侧退回全局 Top1-Top2 | 方案难分优劣 → 升级 Debate |
++| T2 | 存在 BLOCK 卡且其分数 > 可行卡最高分 | 治理与效用的冲突 → 升级 |
++| T3 | recall 命中 D 级记忆，且其词元与任一 plan 文本有交集 | 历史反例冲突 → 升级 |
++| T4 | 用户显式要求辩论（`--user-requested-debate`） | 人工指定 → 升级 |
++
++T1 为什么必须跨侧：`--n-per-side ≥2` 时全局 Top1/Top2 常是同侧变体（同一规划器、同一证据基础，
++天然只差 0.02-0.03），会导致 T1 恒命中、永远 `escalate_debate`、outbox 永不增长。
++跨侧比较后实测 `gap=0.155/0.182`，恢复正常 `dispatch`。
++
++`workers` 模式下 T1-T4 只记录不升级（`escalate` 被忽略）。
++
++---
++
++## 7. 幂等与去重
++
++| 层 | 机制 | 保证 |
++|---|---|---|
++| 候选池 | `card_id` 去重 + 同侧结构指纹去重（跨侧不合并） | 同一侧重复 variant 不占用 Top 位 |
++| trace | append-only，每轮独立 `run_id` | 可回放、可审计 |
++| outbox | append-only，`source_ref = run_id:card_id` | 可追溯来源 |
++| 桥游标 `.cursor` | 记录最后消费行号 | 不重读，跨批续跑 |
++| 桥指纹 `.seen` | `sha1(content)`，抹去 `plancard=\S+` 与 `score=[\d.]+` | 不重写，跨批去重 |
++| cognition | `external_id = bridge:{source_ref}` | 壳层幂等，同键单条 |
++
++游标与指纹是两层不同保证：游标防"重复读"，指纹防"重复写"。游标回退或重跑时，
++指纹仍能拦住同一意图的重复蒸馏（实测 88 条 → `written=52 / skipped=36`）。
++
++---
++
++## 8. 认知写入治理（R3）
++
++- 桥是唯一写入方；工具白名单在代码层断言：`ALLOWED_TOOLS = {"record","verify"}`。
++- 子进程仅覆写三个 env：`COGNITIVE_MCP_MODE=ssh`、`COGNITIVE_MCP_WRITE_ENABLED=true`、
++  `COGNITIVE_MCP_DEFAULT_PRINCIPAL=orchestrator`；其余继承宿主环境。
++- 桥不直连 `cognitive_memory.db`；无 SQLite 句柄、无 ORM。
++- R6 质量映射（fail-closed，未知类型拒写）：
++
++| outbox.type | quality | 用途 |
++|---|---|---|
++| `expertise_canon` | B | 上游已固化条目 |
++| `expertise_candidate` | C | 待验证假设 |
++| `debate_winner` / `brainstorm_winner` | B | 胜方方案 |
++| `debate_loser` / `brainstorm_loser` | D | 反模式负样本 |
++| `session_summary` | C | 高价值会话摘要 |
++
++---
++
++## 9. fail-open / fail-closed 矩阵
++
++| 环节 | 异常 | 策略 |
++|---|---|---|
++| 45 发现与评测 | 导入失败 / 未注册 / 缺 artifacts | fail-open → `INCONCLUSIVE`，流程继续 |
++| registry 加载 | yaml 缺失 | 正则兜底解析；仍失败则 G2 全拒（等价 fail-closed） |
++| 提案 HTTP | 超时 / 非 200 / 非法 JSON | 该侧记 error，不整体失败；无卡则返回 `diversity_violations` 或空池 |
++| recall 取证 | 壳不可用 | `recall_hits=None` → T3 `skipped` |
++| Debate 壳 | 传输错误 | 记 `debate.error`，不阻断 trace/outbox |
++| 桥校验 | 条目不合规 | 跳过该行并推进游标（毒丸不阻塞队列） |
++| 桥传输 | stdio 错误 | 中止本批，游标停在最后成功行，下次续传 |
++| 桥去重 | 指纹命中 | 跳过写入、推进游标，计 `skipped` |
++| live 执行 | 门禁未过 | `PermissionError` → CLI exit 2 |
++| live 执行器 | 运行异常 | 记 `execution.error`，不中断主流程；失败仍占预算 |
++
++---
++
++## 10. 实盘出关（ADR-001）
++
++```text
++shadow=False
++  → live_policy.check_live_allowed(role, route, policy, ledger)
++      ├─ enabled == false            → 拒绝
++      ├─ role ∉ allowed_roles        → 拒绝
++      ├─ route ∉ allowed_routes      → 拒绝
++      └─ 本自然周记录数 ≥ max_per_week → 拒绝
++  → 仅对 decision.kind == "dispatch" 的胜方卡调用 executor(card)
++  → record_execution(...)   # 成功/失败都 append
++```
++
++默认 `live_policy.json`：`enabled=true`、`allowed_roles=["auditor"]`、
++`allowed_routes=["workers","debate"]`、`max_per_week=1`。提额必须改 ADR。
++边界：live 只执行 dispatch 胜方，**不执行 debate 结论**；交易域仍被 G3/G4 与路由阻断。
++
++---
++
++## 11. 调度设计
++
++launchd 在本机 `bootstrap/load` 恒返回 `Input/output error (5)`（`/tmp` 路径同样失败，
++判定为进程无 launchd 注册权限，非路径 TCC 问题），crontab 与产品 Schedule 不可用。
++替代方案：
++
++```text
++ops/supervisor.py（常驻）
++  ├─ pidfile ops/.supervisor.pid，重复启动直接退出
++  ├─ next_run(hour=22, minute=30) 计算下一次触发
++  ├─ subprocess.run(["bash", "ops/daily_pipeline.sh"])
++  └─ SIGTERM/SIGINT 退出；每次跑完 sleep 61s 再排期
++
++ops/daily_pipeline.sh
++  ├─ shadow_batch.py --max 5 --n-per-side 2 >> logs/shadow_batch.cron.log
++  ├─ distill_bridge.py --once        >> bridge/logs/bridge.cron.log
++  └─ logs/pipeline.log 记 "时间 shadow_rc=… bridge_rc=…"
++```
++
++局限：不跨重启；机器重启后需重新 `nohup` 拉起（或改用有权限环境的 launchd）。
++
++---
++
++## 12. 扩展点
++
++| 扩展 | 位置 | 方式 |
++|---|---|---|
++| 新增提案方（第三链） | `proposers.py::build_proposers` | 实现 `Proposer.propose()` 返回卡列表 |
++| 新增门禁 G5+ | `scoring.py::gate` | 追加规则并同步 SPEC 铁律 |
++| 接入 45 真实产物 | `domain_eval.py::evaluate_plan` | 替换 `artifact_not_evaluated` 分支 |
++| 调整路由规则 | `router.py` + `ROUTE_RULES_VERSION` | 版本号随 trace 落盘，变更需评审 |
++| 新增蒸馏类型 | `bridge/distill_bridge.py::R6_QUALITY_MAP` | 同步 SPEC §7.4 与测试 |
++| 云端部署 | 新 SSE/HTTP 适配 | 保持 MCP 语义，前端只改连接方式 |
+diff --git a/52-lobehub协议集成/orchestrator/.gitignore b/52-lobehub协议集成/orchestrator/.gitignore
+index 4632135b5b..c3aa987fb3 100644
+--- a/52-lobehub协议集成/orchestrator/.gitignore
++++ b/52-lobehub协议集成/orchestrator/.gitignore
+@@ -1,4 +1,6 @@
+ traces/
++logs/
+ __pycache__/
+ *.pyc
+ .pytest_cache/
++.supervisor.pid
+diff --git a/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py b/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py
+index b2df1cc2f5..4b3fb737c1 100644
+--- a/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py
++++ b/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py
+@@ -1,9 +1,14 @@
+ #!/usr/bin/env python3
+-"""52-LobeHub 协议集成 Phase 4.5 — 脑暴编排器（Brainstorm Orchestrator，shadow 模式）。
++"""52-LobeHub 协议集成 Phase 4.5 — 脑暴编排器（Brainstorm Orchestrator）。
+ 
+ SPEC §7.7：默认低成本协作（双链各发散 N 张 → 池内确定性收敛 → Top1 定选），
+ 命中争议触发器 T1-T4 才升级 Debate。shadow 模式为默认：
+ **只记录 trace / outbox，绝不执行任何 DreamOS 执行链**（executed 恒为 false）。
++
++Phase 5（ADR-001 脑暴出关）：`shadow=False` 时启用实盘分支，但必须先过
++`live_policy` 三道门（策略文件 / 角色 / 周预算），任一不过直接 PermissionError。
++实盘只对 `decision.kind == dispatch` 的胜方 PlanCard 执行，执行结果写 trace
++`execution` 与 `traces/live_executions.jsonl`（失败也占预算）。
+ Phase 4.5：`--n-per-side`（1-3，默认 2）控制每侧候选数；grounded 裁决器
+ 与启发式打分并行写 trace `adjudication`（不参与决策）；铁律⑤ fail-closed
+ （model 空/unknown 或跨侧同 model/证据路径 → 拒绝开题且不写 outbox）。
+@@ -32,6 +37,7 @@ if str(ORCHESTRATOR_DIR) not in sys.path:
+     sys.path.insert(0, str(ORCHESTRATOR_DIR))
+ 
+ import domain_eval  # noqa: E402
++import live_policy  # noqa: E402
+ from adjudicator import adjudicate  # noqa: E402
+ from debate_client import (  # noqa: E402
+     DebateTransportError,
+@@ -52,6 +58,8 @@ from scoring import gate, score, triggers, validate_diversity  # noqa: E402
+ DEFAULT_TRACE_PATH = ORCHESTRATOR_DIR / "traces" / "brainstorm.jsonl"
+ DEFAULT_OUTBOX_PATH = REPO_ROOT / "52-lobehub协议集成" / "bridge" / "outbox.jsonl"
+ DEFAULT_COGNITION_SERVER = REPO_ROOT / "4-MEMORY" / "9-工具与接口" / "cognitive_mcp_server.py"
++DEFAULT_LIVE_POLICY_PATH = live_policy.DEFAULT_POLICY_PATH
++DEFAULT_LIVE_LEDGER_PATH = live_policy.DEFAULT_LEDGER_PATH
+ 
+ OUTBOX_CONTENT_MAX = 300
+ DEBATE_ROUNDS = int(os.environ.get("BRAINSTORM_DEBATE_ROUNDS", "1"))
+@@ -440,19 +448,19 @@ def run(
+     route_hint: dict[str, Any] | None = None,
+     force: bool = False,
+     evaluators_root: str | None = None,
++    role: str = "auditor",
++    executor: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
++    live_policy_path: str | Path | None = None,
++    live_ledger_path: str | Path | None = None,
+ ) -> dict[str, Any]:
+-    """执行一次脑暴（shadow）。任何子步骤失败降级记录，不中断。
++    """执行一次脑暴。任何子步骤失败降级记录，不中断。
+ 
+     n_per_side：每侧发散候选数（CLI 默认 2）；adjudicator_mode：
+     heuristic（不跑 grounded）/ grounded / both（默认，shadow 并行记录）。
+     Phase 4.6：候选池生成前先跑 router（五分流）；force=False 且 route ∉
+     {debate, workers} 时只写 trace 后返回 skipped；workers 单边不升级 Debate。
++    Phase 5：shadow=False 时走实盘分支，须过 live_policy 三道门 + 提供 executor。
+     """
+-    if not shadow:
+-        raise NotImplementedError(
+-            "live 执行分支属 Phase 5（竞争模式激活），当前仅支持 shadow 模式；"
+-            "请移除 --no-shadow 或等待 Phase 5 落地。"
+-        )
+ 
+     trace_file = Path(trace_path) if trace_path else DEFAULT_TRACE_PATH
+     outbox_file = Path(outbox_path) if outbox_path else DEFAULT_OUTBOX_PATH
+@@ -536,6 +544,26 @@ def run(
+             "errors": errors,
+         }
+ 
++    # Phase 5（ADR-001）：实盘三道门。shadow 模式不校验，保持零副作用。
++    live_state: dict[str, Any] = {
++        "enabled": False,
++        "allowed": False,
++        "reason": "shadow mode (no execution)",
++        "role": role,
++        "route": route_name,
++        "used": 0,
++        "max_per_week": 0,
++    }
++    if not shadow:
++        policy = live_policy.load_policy(live_policy_path)
++        live_state = live_policy.check_live_allowed(
++            policy, role=role, route=route_name, ledger_path=live_ledger_path
++        )
++        if not live_state["allowed"]:
++            raise PermissionError(f"live gate denied: {live_state['reason']}")
++        if executor is None:
++            raise PermissionError("live gate denied: executor is required in live mode")
++
+     registry = registry if registry is not None else load_registry()
+     if len(registry) == 0:
+         errors.append({"step": "registry", "error": "registry_empty_or_missing"})
+@@ -631,6 +659,8 @@ def run(
+     # ⑦ 决策
+     debate_info: dict[str, Any] = {"debate_id": None}
+     dispatch: dict[str, Any] = {"intent": None, "executed": False}
++    execution: dict[str, Any] = {}
++    executed = False
+     viable = [item for item in scored if item.get("gate_verdict") == "PASS"]
+     viable_sorted = sorted(viable, key=lambda item: float(item.get("score") or 0.0), reverse=True)
+ 
+@@ -677,6 +707,23 @@ def run(
+             "note": "shadow：仅记录 dispatch 意图，不执行 DreamOS 链路",
+         }
+ 
++    # ⑦.1 实盘执行（Phase 5 / ADR-001）：只执行 dispatch 胜方，失败不中断
++    if not shadow and decision.get("kind") == "dispatch":
++        executed, execution = _execute_live(
++            executor,
++            top_card,
++            run_id=run_id,
++            role=role,
++            route=route_name,
++            ledger_path=live_ledger_path,
++        )
++        decision["executed"] = executed
++        decision["note"] = (
++            "live：已执行 DreamOS 链路" if executed else "live：执行失败（见 execution）"
++        )
++        dispatch["executed"] = executed
++        dispatch["shadow"] = False
++
+     # ⑧ trace（append-only）
+     trace_record = {
+         "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+@@ -725,6 +772,8 @@ def run(
+         "decision": decision,
+         "debate": debate_info,
+         "dispatch": dispatch,
++        "live": live_state,
++        "execution": execution,
+         "errors": errors,
+     }
+     try:
+@@ -759,6 +808,9 @@ def run(
+         "trace_id": run_id,
+         "intent": intent,
+         "shadow": shadow,
++        "executed": executed,
++        "execution": execution,
++        "live": live_state,
+         "skipped": False,
+         "route": route_name,
+         "route_reason": routing.get("reason"),
+@@ -786,6 +838,54 @@ def run(
+     }
+ 
+ 
++def _execute_live(
++    executor: Callable[[dict[str, Any]], dict[str, Any]] | None,
++    card: dict[str, Any],
++    *,
++    run_id: str,
++    role: str,
++    route: str,
++    ledger_path: str | Path | None,
++) -> tuple[bool, dict[str, Any]]:
++    """执行胜方 PlanCard（实盘）。异常降级为 execution.error，绝不中断主流程。"""
++    result: dict[str, Any] = {}
++    ok = False
++    error = ""
++    if executor is None:
++        error = "executor is None"
++    else:
++        try:
++            raw = executor(card) or {}
++            result = raw if isinstance(raw, dict) else {"value": raw}
++            ok = bool(result.get("ok", True))
++        except Exception as exc:  # 实盘失败必须落账，但不污染 run 结果
++            error = f"{type(exc).__name__}: {exc}"
++    execution: dict[str, Any] = {
++        "ok": ok,
++        "run_id": run_id,
++        "card_id": card.get("id"),
++        "result": result,
++    }
++    if error:
++        execution["error"] = error
++    try:
++        live_policy.record_execution(
++            ledger_path,
++            {
++                "ts": time.time(),
++                "run_id": run_id,
++                "role": role,
++                "route": route,
++                "card_id": card.get("id"),
++                "ok": ok,
++                "error": error,
++            },
++        )
++    except OSError as exc:
++        execution["ledger_error"] = f"{type(exc).__name__}: {exc}"
++    return ok, execution
++
++
+ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
+     """CLI --json-out / 3.1 API 消费的单行摘要（字段稳定，便于前端渲染）。"""
+     return {
+@@ -796,6 +896,7 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
+         "reason": summary.get("reason") or summary.get("route_reason"),
+         "mode": summary.get("mode"),
+         "winner": summary.get("winner"),
++        "executed": bool(summary.get("executed")),
+         "n_per_side": summary.get("n_per_side"),
+         "pool_size": summary.get("pool_size"),
+         "debate_id": (summary.get("debate") or {}).get("debate_id"),
+@@ -810,9 +911,29 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
+     }
+ 
+ 
++def _load_executor(module_path: str | None) -> Callable[[dict[str, Any]], dict[str, Any]] | None:
++    """从模块文件加载 `execute(card)->dict`；缺省返回 None（实盘门禁会拒绝）。"""
++    if not module_path:
++        return None
++    import importlib.util
++
++    p = Path(module_path)
++    if not p.exists():
++        raise PermissionError(f"executor module not found: {module_path}")
++    spec = importlib.util.spec_from_file_location("brainstorm_live_executor", p)
++    if spec is None or spec.loader is None:
++        raise PermissionError(f"executor module not loadable: {module_path}")
++    module = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(module)
++    fn = getattr(module, "execute", None)
++    if not callable(fn):
++        raise PermissionError(f"executor module missing execute(card): {module_path}")
++    return fn
++
++
+ def main(argv: list[str] | None = None) -> int:
+     parser = argparse.ArgumentParser(
+-        description="52 Phase 4 脑暴编排器（shadow：只记录 trace/outbox，不执行）"
++        description="52 脑暴编排器（默认 shadow；--no-shadow 实盘，需过 live_policy 三道门）"
+     )
+     parser.add_argument("--intent", required=True, help="议题/用户意图原文")
+     parser.add_argument("--context-refs", nargs="*", default=[], help="上下文引用列表")
+@@ -820,7 +941,23 @@ def main(argv: list[str] | None = None) -> int:
+         "--shadow",
+         action=argparse.BooleanOptionalAction,
+         default=True,
+-        help="默认 shadow（True）；--no-shadow 为 Phase 5 预留（当前直接报错）",
++        help="默认 shadow（True）；--no-shadow 实盘（ADR-001：角色+周预算门禁）",
++    )
++    parser.add_argument(
++        "--role",
++        default="auditor",
++        help="实盘调用角色（默认 auditor；须在 live_policy.allowed_roles 内）",
++    )
++    parser.add_argument(
++        "--executor-module",
++        default=os.environ.get("BRAINSTORM_EXECUTOR_MODULE"),
++        help="实盘执行器模块路径（须暴露 execute(card)->dict）；缺省读 BRAINSTORM_EXECUTOR_MODULE",
++    )
++    parser.add_argument(
++        "--live-policy", default=str(DEFAULT_LIVE_POLICY_PATH), help="实盘策略文件路径"
++    )
++    parser.add_argument(
++        "--live-ledger", default=str(DEFAULT_LIVE_LEDGER_PATH), help="实盘预算账本路径"
+     )
+     parser.add_argument("--user-requested-debate", action="store_true", help="T4：用户显式要求辩论")
+     parser.add_argument("--trace-path", default=str(DEFAULT_TRACE_PATH))
+@@ -868,8 +1005,12 @@ def main(argv: list[str] | None = None) -> int:
+             n_per_side=args.n_per_side,
+             adjudicator_mode=args.adjudicator,
+             force=args.force,
++            role=args.role,
++            executor=_load_executor(args.executor_module),
++            live_policy_path=args.live_policy,
++            live_ledger_path=args.live_ledger,
+         )
+-    except NotImplementedError as exc:
++    except (NotImplementedError, PermissionError) as exc:
+         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+         return 2
+ 
+diff --git a/52-lobehub协议集成/orchestrator/live_policy.json b/52-lobehub协议集成/orchestrator/live_policy.json
+new file mode 100644
+index 0000000000..cbd511a1b4
+--- /dev/null
++++ b/52-lobehub协议集成/orchestrator/live_policy.json
+@@ -0,0 +1,9 @@
++{
++  "version": 1,
++  "adr": "ADR-001",
++  "enabled": true,
++  "allowed_roles": ["auditor"],
++  "allowed_routes": ["workers", "debate"],
++  "max_per_week": 1,
++  "note": "ADR-001 脑暴出关：仅 auditor 角色、每周 1 次、只执行 dispatch 胜方；提额须改 ADR"
++}
+diff --git a/52-lobehub协议集成/orchestrator/live_policy.py b/52-lobehub协议集成/orchestrator/live_policy.py
+new file mode 100644
+index 0000000000..ee08cba776
+--- /dev/null
++++ b/52-lobehub协议集成/orchestrator/live_policy.py
+@@ -0,0 +1,128 @@
++#!/usr/bin/env python3
++"""ADR-001 脑暴出关（live）的策略门禁与预算账本 — 纯标准库。
++
++三道门（全部 fail-closed）：
++  ① 策略文件：`enabled` / `allowed_roles` / `allowed_routes` / `max_per_week`
++  ② 角色：只有 `allowed_roles` 内的角色可实盘（默认仅 auditor）
++  ③ 预算：按自然周（周一起算）计数，超额即拒绝
++
++设计约束（SPEC-33-G §2.11.6）：
++  - 策略文件缺失时默认**关闭**，绝不隐式开启实盘
++  - 预算按「尝试执行」计数（失败也占额），避免失败重试无限放大
++  - 账本 append-only JSONL，禁外发
++"""
++
++from __future__ import annotations
++
++import json
++import time
++from datetime import datetime, timedelta
++from pathlib import Path
++from typing import Any
++
++ORCHESTRATOR_DIR = Path(__file__).resolve().parent
++DEFAULT_POLICY_PATH = ORCHESTRATOR_DIR / "live_policy.json"
++DEFAULT_LEDGER_PATH = ORCHESTRATOR_DIR / "traces" / "live_executions.jsonl"
++
++DEFAULT_POLICY: dict[str, Any] = {
++    "version": 1,
++    "adr": "ADR-001",
++    "enabled": False,
++    "allowed_roles": ["auditor"],
++    "allowed_routes": ["workers"],
++    "max_per_week": 1,
++}
++
++
++def load_policy(path: str | Path | None = None) -> dict[str, Any]:
++    """读取实盘策略；文件缺失或解析失败一律返回默认（关闭）。"""
++    policy = dict(DEFAULT_POLICY)
++    p = Path(path) if path else DEFAULT_POLICY_PATH
++    try:
++        loaded = json.loads(p.read_text(encoding="utf-8"))
++    except (OSError, ValueError):
++        return policy
++    if not isinstance(loaded, dict):
++        return policy
++    for key in ("version", "adr", "enabled", "max_per_week"):
++        if key in loaded:
++            policy[key] = loaded[key]
++    for key in ("allowed_roles", "allowed_routes"):
++        value = loaded.get(key)
++        if isinstance(value, list):
++            policy[key] = [str(v) for v in value]
++    return policy
++
++
++def week_start(now: float | None = None) -> float:
++    """自然周起点（本地时区周一 00:00）的 epoch 秒。"""
++    ts = time.time() if now is None else now
++    today = datetime.fromtimestamp(ts).date()
++    monday = today - timedelta(days=today.weekday())
++    return datetime(monday.year, monday.month, monday.day).timestamp()
++
++
++def count_this_week(ledger_path: str | Path | None = None, now: float | None = None) -> int:
++    """统计本周已尝试的实盘次数（坏行忽略，不抛异常）。"""
++    p = Path(ledger_path) if ledger_path else DEFAULT_LEDGER_PATH
++    start = week_start(now)
++    count = 0
++    try:
++        with open(p, encoding="utf-8") as f:
++            for line in f:
++                line = line.strip()
++                if not line:
++                    continue
++                try:
++                    record = json.loads(line)
++                    ts = float(record.get("ts") or 0)
++                except (ValueError, TypeError):
++                    continue
++                if ts >= start:
++                    count += 1
++    except OSError:
++        return 0
++    return count
++
++
++def check_live_allowed(
++    policy: dict[str, Any],
++    *,
++    role: str,
++    route: str,
++    ledger_path: str | Path | None = None,
++    now: float | None = None,
++) -> dict[str, Any]:
++    """三道门依次校验，返回可写入 trace 的判定结果。"""
++    used = count_this_week(ledger_path, now)
++    max_per_week = int(policy.get("max_per_week") or 0)
++    result: dict[str, Any] = {
++        "enabled": bool(policy.get("enabled")),
++        "role": role,
++        "route": route,
++        "used": used,
++        "max_per_week": max_per_week,
++        "adr": policy.get("adr"),
++        "allowed": False,
++        "reason": "",
++    }
++    if not result["enabled"]:
++        result["reason"] = "live disabled by policy (live_policy.json enabled=false)"
++    elif role not in (policy.get("allowed_roles") or []):
++        result["reason"] = f"role '{role}' not in allowed_roles {policy.get('allowed_roles')}"
++    elif route not in (policy.get("allowed_routes") or []):
++        result["reason"] = f"route '{route}' not in allowed_routes {policy.get('allowed_routes')}"
++    elif used >= max_per_week:
++        result["reason"] = f"weekly budget exhausted ({used}/{max_per_week})"
++    else:
++        result["allowed"] = True
++        result["reason"] = "ok"
++    return result
++
++
++def record_execution(ledger_path: str | Path | None, record: dict[str, Any]) -> None:
++    """append-only 记录一次实盘尝试（失败也必须记，占预算）。"""
++    p = Path(ledger_path) if ledger_path else DEFAULT_LEDGER_PATH
++    p.parent.mkdir(parents=True, exist_ok=True)
++    with open(p, "a", encoding="utf-8") as f:
++        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+diff --git a/52-lobehub协议集成/orchestrator/ops/daily_pipeline.sh b/52-lobehub协议集成/orchestrator/ops/daily_pipeline.sh
+new file mode 100644
+index 0000000000..5f182c2d6b
+--- /dev/null
++++ b/52-lobehub协议集成/orchestrator/ops/daily_pipeline.sh
+@@ -0,0 +1,24 @@
++#!/bin/bash
++# 52-LobeHub 每日流水线：shadow 批量 → 蒸馏桥消费。
++# 用途：作为 launchd / crontab 被 macOS TCC 拦截时的统一入口，
++# 供产品 Schedule 定时任务或人工手动调用；幂等（桥按游标 + 内容指纹去重）。
++set -uo pipefail
++
++ROOT="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/52-lobehub协议集成"
++PY="/opt/anaconda3/bin/python3"
++LOG_DIR="$ROOT/orchestrator/logs"
++mkdir -p "$LOG_DIR"
++
++started_at="$(date -Iseconds)"
++
++cd "$ROOT/orchestrator" || exit 1
++"$PY" shadow_batch.py --max 5 --n-per-side 2 >> "$LOG_DIR/shadow_batch.cron.log" 2>&1
++shadow_rc=$?
++
++cd "$ROOT/bridge" || exit 1
++"$PY" distill_bridge.py --once >> "$ROOT/bridge/logs/bridge.cron.log" 2>&1
++bridge_rc=$?
++
++echo "$started_at shadow_rc=$shadow_rc bridge_rc=$bridge_rc" >> "$LOG_DIR/pipeline.log"
++echo "shadow_rc=$shadow_rc bridge_rc=$bridge_rc"
++exit $(( shadow_rc != 0 || bridge_rc != 0 ))
+diff --git a/52-lobehub协议集成/orchestrator/ops/supervisor.py b/52-lobehub协议集成/orchestrator/ops/supervisor.py
+new file mode 100644
+index 0000000000..e130a2d181
+--- /dev/null
++++ b/52-lobehub协议集成/orchestrator/ops/supervisor.py
+@@ -0,0 +1,91 @@
++#!/usr/bin/env python3
++"""52-LobeHub 每日流水线守护进程（launchd 被 macOS TCC 拦截时的本地替代）。
++
++行为：每天固定时刻执行 `ops/daily_pipeline.sh`（shadow 批量 → 蒸馏桥消费），
++写 pidfile 防重复启动，收到 SIGTERM/SIGINT 后退出。
++
++用法：
++  python3 ops/supervisor.py --dry-run          # 只打印下一次执行时间
++  nohup python3 ops/supervisor.py >> logs/supervisor.log 2>&1 &
++  kill "$(cat ops/.supervisor.pid)"            # 停止
++
++局限：进程随宿主环境（本机登录会话）存活；重启后需重新启动，
++或改为 launchd（plist 模板见 ops/com.dreambuddy.shadow.plist、bridge/ops/com.dreambuddy.bridge.plist）。
++"""
++
++from __future__ import annotations
++
++import argparse
++import os
++import signal
++import subprocess
++import sys
++import time
++from datetime import datetime, timedelta
++from pathlib import Path
++
++OPS_DIR = Path(__file__).resolve().parent
++ORCH_DIR = OPS_DIR.parent
++PIPELINE = OPS_DIR / "daily_pipeline.sh"
++PIDFILE = OPS_DIR / ".supervisor.pid"
++
++
++def next_run(hour: int, minute: int, now: datetime | None = None) -> datetime:
++    current = now or datetime.now()
++    target = current.replace(hour=hour, minute=minute, second=0, microsecond=0)
++    if target <= current:
++        target += timedelta(days=1)
++    return target
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(description="52 每日 shadow + 蒸馏调度守护")
++    parser.add_argument("--hour", type=int, default=22)
++    parser.add_argument("--minute", type=int, default=30)
++    parser.add_argument("--dry-run", action="store_true", help="只打印下一次执行时间")
++    args = parser.parse_args(argv)
++
++    if args.dry_run:
++        print(next_run(args.hour, args.minute).isoformat(timespec="seconds"))
++        return 0
++
++    if PIDFILE.exists():
++        print(f"已有守护进程在运行: {PIDFILE.read_text().strip()}", file=sys.stderr)
++        return 1
++    PIDFILE.write_text(str(os.getpid()), encoding="utf-8")
++
++    stopping = False
++
++    def _stop(_signum, _frame):
++        nonlocal stopping
++        stopping = True
++
++    signal.signal(signal.SIGTERM, _stop)
++    signal.signal(signal.SIGINT, _stop)
++
++    try:
++        while not stopping:
++            target = next_run(args.hour, args.minute)
++            print(f"[supervisor] next run {target.isoformat(timespec='seconds')}", flush=True)
++            while not stopping and datetime.now() < target:
++                remaining = (target - datetime.now()).total_seconds()
++                time.sleep(max(1.0, min(30.0, remaining)))
++            if stopping:
++                break
++            print(f"[supervisor] start {datetime.now().isoformat(timespec='seconds')}", flush=True)
++            result = subprocess.run(["bash", str(PIPELINE)], capture_output=True, text=True)
++            tail = (result.stdout or "").strip().splitlines()[-1:] or [""]
++            print(
++                f"[supervisor] done rc={result.returncode} {tail[0]} "
++                f"err={(result.stderr or '').strip()[-200:]}",
++                flush=True,
++            )
++            # 防止同一分钟内重复触发
++            time.sleep(61)
++    finally:
++        PIDFILE.unlink(missing_ok=True)
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/52-lobehub协议集成/orchestrator/scoring.py b/52-lobehub协议集成/orchestrator/scoring.py
+index 80da9133c0..714b93b7fc 100644
+--- a/52-lobehub协议集成/orchestrator/scoring.py
++++ b/52-lobehub协议集成/orchestrator/scoring.py
+@@ -236,10 +236,31 @@ def triggers(
+     scored = [c for c in cards if isinstance(c, dict)]
+     scores = sorted((float(c.get("score") or 0.0) for c in scored), reverse=True)
+ 
+-    # T1：Top2 分差 < 阈值
+-    if len(scores) >= 2:
++    # T1：**跨侧**最高分差 < 阈值。同侧多 variant 天然只差几分（同一规划器、
++    # 同一证据基础），拿全局 Top1/Top2 比较会让 T1 恒命中、永远进不了 dispatch。
++    # 两侧都有有效卡时按跨侧最佳比较；只有单侧时退回 Top2。
++    by_side: dict[str, float] = {}
++    for item in scored:
++        side = _side_of(item)
++        value = float(item.get("score") or 0.0)
++        if value > by_side.get(side, -1.0):
++            by_side[side] = value
++    if "side_a" in by_side and "side_b" in by_side:
++        gap = round(abs(by_side["side_a"] - by_side["side_b"]), 4)
++        basis = "cross_side"
++    elif len(scores) >= 2:
+         gap = round(scores[0] - scores[1], 4)
+-        detail["T1"] = {"gap": gap, "threshold": threshold, "fired": gap < threshold}
++        basis = "top2"
++    else:
++        gap = None
++        basis = None
++    if gap is not None:
++        detail["T1"] = {
++            "gap": gap,
++            "threshold": threshold,
++            "fired": gap < threshold,
++            "basis": basis,
++        }
+         if gap < threshold:
+             fired.append("T1")
+     else:
+diff --git a/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py b/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py
+index 6300c035cd..4845441335 100644
+--- a/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py
++++ b/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py
+@@ -202,6 +202,38 @@ def test_t1_not_fired_on_clear_gap():
+     assert result["escalate"] is False
+ 
+ 
++def test_t1_uses_cross_side_gap_not_global_top2():
++    """同侧两 variant 只差 0.02，但跨侧差 0.20 → 不算争议（否则 T1 恒命中）。"""
++    result = triggers(
++        [_scored("side_a#1", 0.92), _scored("side_a#2", 0.90), _scored("side_b#1", 0.70)],
++        _gates(("side_a#1", "PASS"), ("side_a#2", "PASS"), ("side_b#1", "PASS")),
++        recall_hits=[],
++    )
++    assert result["detail"]["T1"]["basis"] == "cross_side"
++    assert result["detail"]["T1"]["gap"] == 0.22
++    assert "T1" not in result["fired"]
++
++
++def test_t1_fires_on_close_cross_side_scores():
++    result = triggers(
++        [_scored("side_a#1", 0.90), _scored("side_a#2", 0.60), _scored("side_b#1", 0.88)],
++        _gates(("side_a#1", "PASS"), ("side_a#2", "PASS"), ("side_b#1", "PASS")),
++        recall_hits=[],
++    )
++    assert result["detail"]["T1"]["basis"] == "cross_side"
++    assert "T1" in result["fired"]
++
++
++def test_t1_falls_back_to_top2_on_single_side():
++    result = triggers(
++        [_scored("pc-a", 0.85), _scored("pc-b", 0.80)],
++        _gates(("pc-a", "PASS"), ("pc-b", "PASS")),
++        recall_hits=None,
++    )
++    assert result["detail"]["T1"]["basis"] == "top2"
++    assert "T1" in result["fired"]
++
++
+ def test_t2_fires_when_blocked_scores_higher():
+     result = triggers(
+         [_scored("pc-a", 0.40), _scored("pc-b", 0.90, "BLOCK")],
+@@ -383,9 +415,16 @@ def test_debate_escalation_records_debate_id(tmp_path):
+     assert len(captured["plancards"]) == 2
+ 
+ 
+-def test_live_branch_not_implemented():
+-    with pytest.raises(NotImplementedError):
+-        orch.run(intent="x", shadow=False)
++def test_live_branch_requires_gate(tmp_path):
++    """Phase 5：live 不再 NotImplementedError，改为 live_policy 门禁拒绝。"""
++    policy = tmp_path / "p.json"
++    policy.write_text(json.dumps({"enabled": False}), encoding="utf-8")
++    with pytest.raises(PermissionError, match="disabled"):
++        orch.run(
++            intent="评估是否给离场模块增加波动率自适应阈值",
++            shadow=False,
++            live_policy_path=policy,
++        )
+ 
+ 
+ def test_side_b_unreachable_degrades_gracefully(tmp_path):
+@@ -756,3 +795,113 @@ def test_force_bypasses_router_skip(tmp_path):
+     assert summary["force"] is True
+     assert summary["mode"] == "debate"
+     assert summary["decision"]["kind"] == "dispatch"
++
++
++# ---------------------------------------------------------------------------
++# Phase 5 / ADR-001：脑暴实盘（live gate + 执行 + 预算 + 失败降级）
++# ---------------------------------------------------------------------------
++
++_LIVE_INTENT = "评估是否给离场模块增加波动率自适应阈值"
++
++
++def _live_policy(tmp_path, **overrides):
++    policy = {
++        "version": 1,
++        "adr": "ADR-001",
++        "enabled": True,
++        "allowed_roles": ["auditor"],
++        "allowed_routes": ["workers", "debate"],
++        "max_per_week": 1,
++    }
++    policy.update(overrides)
++    p = tmp_path / "live_policy.json"
++    p.write_text(json.dumps(policy), encoding="utf-8")
++    return p
++
++
++def _run_live(tmp_path, **kwargs):
++    params = {
++        "intent": _LIVE_INTENT,
++        "shadow": False,
++        "trace_path": tmp_path / "t.jsonl",
++        "outbox_path": tmp_path / "o.jsonl",
++        "disable_recall": True,
++        "proposers": _build_proposers(),
++        "registry": REGISTRY,
++    }
++    params.update(kwargs)
++    if "live_policy_path" not in params:
++        params["live_policy_path"] = _live_policy(tmp_path)
++    if "live_ledger_path" not in params:
++        params["live_ledger_path"] = tmp_path / "live.jsonl"
++    return orch.run(**params)
++
++
++def test_live_denied_when_policy_disabled(tmp_path):
++    with pytest.raises(PermissionError, match="disabled"):
++        _run_live(
++            tmp_path,
++            executor=lambda card: {"ok": True},
++            live_policy_path=_live_policy(tmp_path, enabled=False),
++        )
++
++
++def test_live_denied_for_non_auditor_role(tmp_path):
++    with pytest.raises(PermissionError, match="allowed_roles"):
++        _run_live(tmp_path, executor=lambda card: {"ok": True}, role="worker")
++
++
++def test_live_requires_executor(tmp_path):
++    with pytest.raises(PermissionError, match="executor"):
++        _run_live(tmp_path, executor=None)
++
++
++def test_live_dispatch_executes_and_records(tmp_path):
++    seen = []
++
++    def executor(card):
++        seen.append(card.get("id"))
++        return {"ok": True, "steps": 2, "note": "dry-run"}
++
++    summary = _run_live(tmp_path, executor=executor)
++
++    assert summary["decision"]["kind"] == "dispatch"
++    assert summary["executed"] is True
++    assert summary["shadow"] is False
++    assert summary["live"]["allowed"] is True
++    assert summary["execution"]["ok"] is True
++    assert seen  # 胜方 PlanCard 被真实送入执行器
++
++    ledger = [json.loads(x) for x in (tmp_path / "live.jsonl").read_text().splitlines()]
++    assert len(ledger) == 1
++    assert ledger[0]["ok"] is True and ledger[0]["role"] == "auditor"
++
++    record = json.loads((tmp_path / "t.jsonl").read_text().strip().splitlines()[-1])
++    assert record["live"]["allowed"] is True
++    assert record["execution"]["ok"] is True
++    assert record["dispatch"]["executed"] is True
++    assert record["dispatch"]["shadow"] is False
++
++
++def test_live_budget_exhausted(tmp_path):
++    import time
++
++    ledger = tmp_path / "live.jsonl"
++    ledger.write_text(json.dumps({"ts": time.time(), "ok": True}) + "\n", encoding="utf-8")
++    with pytest.raises(PermissionError, match="budget"):
++        _run_live(tmp_path, executor=lambda card: {"ok": True}, live_ledger_path=ledger)
++
++
++def test_live_executor_failure_recorded(tmp_path):
++    def boom(card):
++        raise RuntimeError("dreamos down")
++
++    summary = _run_live(tmp_path, executor=boom)
++
++    assert summary["executed"] is False
++    assert "dreamos down" in summary["execution"]["error"]
++
++    ledger = [json.loads(x) for x in (tmp_path / "live.jsonl").read_text().splitlines()]
++    assert len(ledger) == 1
++    assert ledger[0]["ok"] is False  # 失败也占预算
++    assert "dreamos down" in ledger[0]["error"]

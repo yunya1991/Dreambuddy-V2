@@ -271,14 +271,16 @@ def evaluate_proposals(
             verdict = domain_eval.VERDICT_BLOCK
             evaluator = (score_result.get("evaluator_provenance") or {}).get("evaluator")
             reasons.append(f"D1:domain_block:{evaluator}")
-        gates.append(
-            {
-                "card_id": card.get("id"),
-                "side": proposal.get("proposer_id"),
-                "verdict": verdict,
-                "reasons": reasons,
-            }
-        )
+        gate_entry = {
+            "card_id": card.get("id"),
+            "side": proposal.get("proposer_id"),
+            "verdict": verdict,
+            "reasons": reasons,
+        }
+        # G4 降级留痕：风险描述/否定语境不拦截，但必须可审计
+        if gate_result.get("notes"):
+            gate_entry["notes"] = list(gate_result["notes"])
+        gates.append(gate_entry)
         scored.append(
             {
                 "card": card,
@@ -491,6 +493,10 @@ def run(
     route_name = str(routing.get("route") or "workers")
     # workers = 单边规划（不升级 Debate）；--force 跳过路由直接脑暴
     mode = "debate" if force or route_name == "debate" else "workers"
+    # mode 的来源：避免 route=workers + mode=debate 在审计时看起来自相矛盾
+    mode_basis = (
+        "force" if force else ("user_requested_debate" if user_requested_debate else "route")
+    )
     effective_n = 1 if mode == "workers" else n_per_side
 
     if not force and route_name not in ("debate", "workers"):
@@ -505,6 +511,7 @@ def run(
             "route_rules_version": ROUTE_RULES_VERSION,
             "route_matched": routing.get("matched") or [],
             "mode": "skip",
+            "mode_basis": mode_basis,
             "decision": {
                 "kind": "route_skipped",
                 "route": route_name,
@@ -530,6 +537,7 @@ def run(
             "reason": routing.get("reason"),
             "route_rules_version": ROUTE_RULES_VERSION,
             "mode": "skip",
+            "mode_basis": mode_basis,
             "force": force,
             "winner": None,
             "adjudication": None,
@@ -734,6 +742,8 @@ def run(
         "route_reason": routing.get("reason"),
         "route_rules_version": ROUTE_RULES_VERSION,
         "mode": mode,
+        "mode_basis": mode_basis,
+        "executed": executed,
         "n_per_side": effective_n,
         "pool_size": len(pool),
         "proposals": [
@@ -816,6 +826,7 @@ def run(
         "route_reason": routing.get("reason"),
         "route_rules_version": ROUTE_RULES_VERSION,
         "mode": mode,
+        "mode_basis": mode_basis,
         "force": force,
         "winner": decision.get("plancard_id") if decision.get("kind") == "dispatch" else None,
         "n_per_side": effective_n,
@@ -895,6 +906,7 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
         "skipped": bool(summary.get("skipped")),
         "reason": summary.get("reason") or summary.get("route_reason"),
         "mode": summary.get("mode"),
+        "mode_basis": summary.get("mode_basis"),
         "winner": summary.get("winner"),
         "executed": bool(summary.get("executed")),
         "n_per_side": summary.get("n_per_side"),

@@ -132,11 +132,41 @@ def test_gate_g3_trade_exec_domain():
     assert "G3:trade_exec_forbidden:l0.trade-exec.mcp.place_order" in result["reasons"]
 
 
-@pytest.mark.parametrize("flag", ["实盘", "live trading", "下单", "Order"])
+@pytest.mark.parametrize(
+    "flag",
+    ["实盘", "live trading", "下单", "Order", "实盘下单", "接入实盘", "live_trading"],
+)
 def test_gate_g4_live_trading_flag(flag):
     result = gate(make_card(risk_flags=[flag]), REGISTRY)
     assert result["verdict"] == "BLOCK"
     assert any(r.startswith("G4:live_trading_flag") for r in result["reasons"])
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "回测样本期与实盘波动率分布可能不一致",
+        "历史回测与实盘执行差异（流动性、成交假设）",
+        "需确保参数切换可回滚，避免实盘误用",
+        "no_live_trading",
+        "live_disabled",
+    ],
+)
+def test_gate_g4_risk_description_not_blocked(flag):
+    """R1：风险描述/否定语境只留痕不拦截（真实执行护栏是 G3 + ADR-001 三道门）。"""
+    result = gate(make_card(risk_flags=[flag]), REGISTRY)
+    assert result["verdict"] == "PASS"
+    assert result["reasons"] == []
+    assert any(n.startswith("G4:live_trading_mention") for n in result.get("notes") or [])
+
+
+@pytest.mark.parametrize("flag", ["delivery_risk", "reorder_steps", "liveness_check"])
+def test_gate_g4_word_boundary_no_false_positive(flag):
+    """R1：live/order 改为词边界，不再子串误伤 deliver/liveness/reorder。"""
+    result = gate(make_card(risk_flags=[flag]), REGISTRY)
+    assert result["verdict"] == "PASS"
+    assert result["reasons"] == []
+    assert "notes" not in result
 
 
 def test_gate_pass_clean_card():
@@ -758,6 +788,7 @@ def test_workers_route_single_pass_no_debate_escalation(tmp_path):
 
     assert summary["route"] == "workers"
     assert summary["mode"] == "workers"
+    assert summary["mode_basis"] == "route"
     assert summary["n_per_side"] == 1
     assert calls["a"] == 1  # side-A 只走一次（单边语义）
     assert summary["decision"]["kind"] == "dispatch"
@@ -795,6 +826,13 @@ def test_force_bypasses_router_skip(tmp_path):
     assert summary["force"] is True
     assert summary["mode"] == "debate"
     assert summary["decision"]["kind"] == "dispatch"
+    # R2：--force 时 mode=debate 但 route 仍是 router 原文，必须显式标注来源
+    assert summary["mode_basis"] == "force"
+    record = json.loads((tmp_path / "t.jsonl").read_text().strip().splitlines()[-1])
+    assert record["mode"] == "debate"
+    assert record["mode_basis"] == "force"
+    assert record["route"] == "trade_deny"  # 路由原文不变（可直接用于审计）
+    assert record["executed"] is False  # R3：shadow 下显式为 False 而非缺失
 
 
 # ---------------------------------------------------------------------------
@@ -881,6 +919,9 @@ def test_live_dispatch_executes_and_records(tmp_path):
     assert record["execution"]["ok"] is True
     assert record["dispatch"]["executed"] is True
     assert record["dispatch"]["shadow"] is False
+    # R3：trace 顶层 executed 必须与 summary 一致，避免审计读到 null
+    assert record["executed"] is True
+    assert record["executed"] == summary["executed"]
 
 
 def test_live_budget_exhausted(tmp_path):

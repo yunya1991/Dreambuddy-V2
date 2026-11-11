@@ -1,6 +1,6 @@
 # ENGINEERING INDEX — 52-LobeHub 协议集成
 
-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
+> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
 > 状态：协议层 / 蒸馏桥 / 脑暴编排器已落地；Phase 2 云端部署待开工
 
 ---
@@ -25,7 +25,7 @@
 
 | 路径 | 职责 | 状态 |
 |---|---|---|
-| `SPEC.md` | 协议层 SSoT：定位/决策/阶段/契约/风险/验收 | 已建（v0.11.0） |
+| `SPEC.md` | 协议层 SSoT：定位/决策/阶段/契约/风险/验收 | 已建（v0.12.0） |
 | `README.md` | 使用说明、目录、环境变量、已知限制 | 已建 |
 | `REVIEW-20261111-...md` | GitHub 调研 + SPEC 评审 R1-R9 | 已建 |
 | `decisions/ADR-001-脑暴出关.md` | shadow → 限量实盘（live）出关决策 | 已采纳（灰度） |
@@ -97,11 +97,11 @@ ops/supervisor.py ── subprocess ── ops/daily_pipeline.sh
 
 | 套件 | 用例数 | 覆盖点 |
 |---|---|---|
-| `orchestrator/tests/test_brainstorm.py` | 49 | 双链收集、去重、门禁、评分、T1-T4、outbox、live 出关六例 |
+| `orchestrator/tests/test_brainstorm.py` | 60 | 双链收集、去重、门禁（G4 三档含误伤回归）、评分、T1-T4、outbox、live 出关六例 |
 | `orchestrator/tests/test_router.py` | 16 | `trade_deny / high_risk_human / debate / direct_answer / workers` 与优先序 |
 | `orchestrator/tests/test_domain_eval.py` | 15 | 45 发现/映射/fail-open、结构分权重、side-B 扣分 |
 | `orchestrator/tests/test_adjudicator.py` | 4 | grounded semantics 最小不动点、agree 记录 |
-| 小计 | **84 passed** | `python3 -m pytest orchestrator/tests -q` |
+| 小计 | **95 passed** | `python3 -m pytest orchestrator/tests -q` |
 | `bridge/test_distill_bridge.py` | **20 passed** | R6 映射、校验 fail-closed、游标续跑、内容指纹去重 |
 | `mcp_shells/debate_adversarial` | **22 passed** | model 多样性拒绝、plancards 契约（跨模块回归） |
 

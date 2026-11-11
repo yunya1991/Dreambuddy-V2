@@ -1,0 +1,1 @@
+{"ok": false, "error": "live gate denied: role 'auditor' not in allowed_roles ['worker']"}

@@ -1,6 +1,6 @@
 # TECHNICAL DESIGN — 52-LobeHub 协议集成
 
-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
+> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
 > 适用代码：`orchestrator/`、`bridge/`、`orchestrator/ops/`
 
 ---
@@ -95,7 +95,7 @@ run(intent, n_per_side, shadow, force, ...)
 | G1 | PlanCard schema 校验（必填、类型、`id` 前缀 `pc-`、`intent ≤500`、`plan_steps ≥1`） | 任一不合规 → BLOCK |
 | G2 | `plan_steps[].tool` 必须在 47 registry 的允许集内 | 未注册 → BLOCK |
 | G3 | 工具所属壳 `domain == trade-exec` | 命中 → BLOCK（铁律④） |
-| G4 | `risk_flags` 含 `实盘 / live / 下单 / order`（大小写不敏感子串） | 命中 → BLOCK |
+| G4 | `risk_flags` 的实盘意图：执行动作 / 裸声明 / 无否定前缀的英文标识符 → BLOCK；风险描述或否定语境 → `notes` 放行（v0.12.0 起，真实护栏是 G3 + ADR-001） | 见右 |
 
 BLOCK 卡不进入候选池排名（`score` 返回 0.0），但仍写 trace 供分析；T2 用其分数检测
 "高分被拦"的治理冲突。

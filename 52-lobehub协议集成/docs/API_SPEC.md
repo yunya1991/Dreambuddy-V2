@@ -1,6 +1,6 @@
 # API SPEC — 52-LobeHub 协议集成
 
-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
+> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
 > 覆盖：CLI 契约、PlanCard、outbox 条目、3.1 HTTP 路由、MCP 工具面、trace 字段
 
 ---
@@ -64,6 +64,7 @@ python3 orchestrator/brainstorm_orchestrator.py --intent "<议题>" [options]
   "skipped": false,
   "reason": null,
   "mode": "debate",
+  "mode_basis": "route",
   "winner": {"card_id": "pc-...", "side": "A", "score": 0.912},
   "executed": false,
   "n_per_side": 2,
@@ -99,7 +100,7 @@ Schema 文件：[`schemas/plancard.schema.json`](../schemas/plancard.schema.json
 | `plan_steps[].tool` | string | 是 | `^l0\.[a-z0-9_-]+\.mcp\.[a-z0-9_]+$`，且必须在 47 registry 内 |
 | `plan_steps[].args_hint` | object | 否 | 参数提示 |
 | `evidence_refs` | string[] | 否 | debate trace / recall id / backtest id |
-| `risk_flags` | string[] | 否 | 命中禁令时进 G4 |
+| `risk_flags` | string[] | 否 | G4 判定：执行动作/裸声明 → BLOCK；风险描述或否定语境 → 记 `notes` 放行 |
 | `cost_estimate` | object | 否 | `{tokens:int, tool_calls:int}` |
 | `expected_outcome` | string | 否 | ≤1000 字 |
 | `validation.evaluator_refs` | string[] | 是 | `^45\.[a-z0-9_]+@\d+\.\d+\.\d+$` |
@@ -293,10 +294,12 @@ COGNITIVE_MCP_DEFAULT_PRINCIPAL=orchestrator
 | `run_id` / `trace_id` | 本轮唯一标识 |
 | `intent` / `context_refs` | 输入 |
 | `route` / `route_rules_version` / `mode` | 路由结果（`debate`/`workers`） |
+| `mode_basis` | `mode` 来源：`force` / `user_requested_debate` / `route`（`--force` 时解释 route 与 mode 不同） |
+| `executed` | 顶层实盘执行结果；shadow 恒 `false`，与 summary 同值 |
 | `n_per_side` / `pool_size` | 发散与去重后池大小 |
 | `proposals[]` | 原始提案（含 `proposer_id`、`model`、`model_kind`、`evidence_path`） |
 | `diversity_violations[]` | 铁律⑤ 违规明细 |
-| `gates[]` | `{card_id, verdict, reasons}` |
+| `gates[]` | `{card_id, verdict, reasons, notes?}`；`notes` 为 G4 降级留痕（`G4:live_trading_mention:<flag>`） |
 | `scores[]` | `{card_id, score, verdict, breakdown, evaluator_provenance}` |
 | `domain_eval` | `{available, names, verdicts}` |
 | `triggers` | `{escalate, fired, detail}`（T1 `basis` 标注 `cross_side`/`top2`） |

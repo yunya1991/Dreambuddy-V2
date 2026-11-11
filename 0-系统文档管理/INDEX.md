@@ -188,12 +188,12 @@
 
 | 文档 | 路径 | 版本 |
 |------|------|------|
-| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.11.0（Phase 0/1/3/4/4.5/4.6 已实施；Phase 5 限量；桥已常态运转；Phase 2 待定） |
-| 使用说明 README | [52-lobehub协议集成/README.md](../52-lobehub协议集成/README.md) | v0.11.0（目录/快速开始/环境变量/已知限制） |
+| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.12.0（Phase 0/1/3/4/4.5/4.6/5.1 已实施；Phase 5 限量；桥已常态运转；Phase 2 待定） |
+| 使用说明 README | [52-lobehub协议集成/README.md](../52-lobehub协议集成/README.md) | v0.12.0（目录/快速开始/环境变量/已知限制） |
 | 工程文档（五文档标准） | [52-lobehub协议集成/docs/](../52-lobehub协议集成/docs/) | ENGINEERING_INDEX / TECHNICAL_DESIGN / API_SPEC / CHANGELOG（5/5 齐全） |
 | 架构调研与评审 | [52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md](../52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md) | 2026-11-11（R1-R9 已闭环） |
 | 协议层能力件 | [3.1-FRONTEND/src/lib/agent/](../3.1-FRONTEND/src/lib/agent/) | mcp-client / providers / plancard / plan-variant / distill-outbox（各带 vitest） |
-| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧）/ domain_eval / adjudicator / live_policy（84 tests） |
+| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧 + G4 三档）/ domain_eval / adjudicator / live_policy（95 tests） |
 | 实盘出关 ADR | [52-lobehub协议集成/decisions/ADR-001-脑暴出关.md](../52-lobehub协议集成/decisions/ADR-001-脑暴出关.md) | 2026-11-11（已采纳灰度：auditor + 1 次/周 + 只执行 dispatch 胜方） |
 | 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 20 tests；积压已消化（52 写 / 36 去重）；每日守护 `ops/supervisor.py` |
 

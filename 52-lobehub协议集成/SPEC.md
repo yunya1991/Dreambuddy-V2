@@ -1,6 +1,6 @@
 # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
 
-> 版本：v0.11.0（蒸馏桥常态运转 + T1 改跨侧 + 本地守护调度）
+> 版本：v0.12.0（验收红旗修正 R1/R2/R3：G4 词法误伤收窄 + mode_basis + trace executed）
 > 日期：2026-11-11
 > 状态：🟢 Phase 0/1/3/4/4.5/4.6 已实施（本地）；Phase 5 已实施（限量）；Phase 2 云端部署待定
 > 文档对齐：2026-11-11 全量核对代码/测试/trace 后回填本节状态（见 §3.0 落地状态总表）
@@ -252,6 +252,17 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
    - 决策记录：`decisions/ADR-001-脑暴出关.md`；与 SPEC-33-G §2.11.6 自举问题对齐。
    - 证据：`tests/test_brainstorm.py` 6 条 live 用例（disabled / 非 auditor / 缺 executor / 成功执行 / 预算耗尽 / 执行器异常）全绿，orchestrator 全量 84 passed、ruff 通过；CLI 实测：第一次 `executed=true, live.allowed=true, used=0/1`，第二次 `live gate denied: weekly budget exhausted (1/1)` exit 2。
    - 边界：交易域仍受 G3/G4 与 §0.4 硬约束阻断；live 只执行 dispatch 胜方，**不执行 debate 结论**。
+
+### Phase 5.1 — 验收红旗修正 R1/R2/R3（2026-11-11，v0.12.0）
+
+1. **R1 G4 词法误伤 ✅**：原实现按子串匹配 `实盘|live|下单|order`。实测 77 条 trace / 220 张卡中 15 次命中**全部是风险描述**（"回测与实盘滑点差异""缺少实盘验证"），0 条实盘请求；且 `live`/`order` 会误伤 `deliver`/`liveness`/`border`/`reorder`。
+   - 改法（三档判定，`scoring._live_trading_flag_verdict`）：**否定语境 → notes 放行**；**执行动作 / 裸声明 / 无否定前缀的英文标识符 → BLOCK**；其余自然语言描述 → notes 放行。
+   - 安全护栏不变：G3（trade-exec 工具域拦截）与 ADR-001 三道门仍是**真实执行护栏**，G4 只做意图探测。11 条安全下限守卫（`实盘`/`下单`/`live`/`order`/`live trading`/`实盘下单`/`接入实盘`/`live_trading`/`place order`/`直接下单`/`真实账户下单`）实测仍全部 BLOCK。
+   - 降级留痕：`gate()` 新增 `notes`（`G4:live_trading_mention:<flag>`），trace `gates[]` 同步落盘，可审计。
+2. **R2 `--force` 的 mode/route 可解释 ✅**：`--force` 时 `mode=debate` 而 `route` 保留 router 原文，审计看似矛盾。trace / summary / `--json-out` 新增 `mode_basis ∈ {force, user_requested_debate, route}`；`route` 原文不变（保持审计事实）。
+3. **R3 trace 顶层 executed ✅**：trace 记录新增 `executed`；shadow 下显式 `false`（此前字段缺失，审计读到 null），与 summary 的 `executed` 同源同值。
+   - 验收包：`acceptance_bundles/20261111_52_lobehub_r1r2r3`（15/15 历史误伤旗标转 PASS + notes、11/11 守卫仍 BLOCK、workers+force 的 `mode_basis=force`、orchestrator 95 passed / bridge 20 / debate 22，ruff + black 通过）。
+   - 未处理（留 Phase 2）：R4（44 拓扑未登记本链路）、R5（守护进程不跨重启）。
 
 ---
 

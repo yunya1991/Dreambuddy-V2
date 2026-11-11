@@ -16,8 +16,62 @@ import domain_eval
 from plancard import plan_text, validate_plancard
 
 TRADE_EXEC_DOMAIN = "trade-exec"
-# 铁律④：实盘/live/下单/order 语义一律 BLOCK（大小写不敏感，子串匹配）
-FORBIDDEN_RISK_KEYWORDS = ("实盘", "live", "下单", "order")
+
+# 铁律④的 G4 只做「实盘意图」词法探测；真实执行护栏是 G3（工具域）+ ADR-001 三道门。
+# 2026-11-11 实测（77 条 trace / 220 张卡）：15 次 G4 命中全部是风险描述
+# （"回测与实盘滑点差异""缺少实盘验证"），0 条是实盘请求；且 live/order 子串会
+# 误伤 deliver/liveness/border/reorder。故 G4 改为三档：
+#   动作或裸声明 → BLOCK；风险描述/否定语境 → 记 notes 放行；未命中 → 通过。
+LIVE_TRADING_ACTION_PATTERNS = (
+    re.compile(r"(直接|立即|自动|批量)(下单|委托|交易|执行)"),
+    re.compile(r"实盘(下单|委托|开仓|平仓|接入)"),
+    re.compile(r"(接入|启用|开启|切换?到?|转到)实盘"),
+    re.compile(r"真实(账户|资金)(下|委托|交易)"),
+    re.compile(
+        r"(?<![a-z])(go[\s_-]*live|live[\s_-]*trading|live[\s_-]*order"
+        r"|place[\s_-]*order|submit[\s_-]*order|execute[\s_-]*order)(?![a-z])"
+    ),
+)
+# 纯提及（含实盘/live/order 但非执行动作）：英文按词边界，避免 deliver/reorder 误伤
+LIVE_TRADING_MENTION_PATTERNS = (
+    re.compile(r"实盘"),
+    re.compile(r"下单"),
+    re.compile(r"(?<![a-z])live(?![a-z])"),
+    re.compile(r"(?<![a-z])order(?![a-z])"),
+)
+# 裸声明：风险旗标本身即该词，等于显式标注实盘语义 → BLOCK
+BARE_LIVE_FLAGS = frozenset(
+    {
+        "实盘",
+        "下单",
+        "live",
+        "order",
+        "live trading",
+        "live_trading",
+        "livetrading",
+        "order execution",
+        "place order",
+    }
+)
+# 否定/规避语境：命中即降级为 notes，不 BLOCK（无法判定时仍按描述放行并由 notes 留痕）
+NEGATION_MARKERS = (
+    "no_",
+    "non_",
+    "not_",
+    "without",
+    "avoid",
+    "disable",
+    "_off",
+    "off_",
+    "offline",
+    "不",
+    "非",
+    "无",
+    "禁止",
+    "避免",
+    "仅回测",
+)
+IDENTIFIER_RE = re.compile(r"^[a-z0-9_.\-]+$")
 
 T1_SCORE_GAP_THRESHOLD = 0.1
 MAX_SCORE_EVIDENCE_BONUS_THRESHOLD = 5
@@ -100,19 +154,39 @@ def validate_diversity(proposals: Sequence[Mapping[str, Any]]) -> list[dict[str,
     return violations
 
 
+def _live_trading_flag_verdict(flag: Any) -> str:
+    """G4 单条旗标判定：'block'（执行动作/裸声明）| 'note'（风险描述/否定语境）| ''。"""
+    text = str(flag).strip()
+    lowered = text.lower()
+    if not any(p.search(lowered) for p in LIVE_TRADING_MENTION_PATTERNS):
+        return ""
+    if any(marker in lowered for marker in NEGATION_MARKERS):
+        return "note"
+    if any(p.search(lowered) for p in LIVE_TRADING_ACTION_PATTERNS):
+        return "block"
+    if lowered in BARE_LIVE_FLAGS:
+        return "block"
+    if IDENTIFIER_RE.match(lowered):
+        # 形如 live_trading / order_execution 的显式标识符（无否定前缀）→ 视为声明
+        return "block"
+    return "note"
+
+
 def gate(
     card: dict[str, Any],
     allowed_tools: Iterable[str] | Any,
     domains: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    """四道确定性门禁，返回 {verdict: PASS|BLOCK, reasons: [...]}。
+    """四道确定性门禁，返回 {verdict: PASS|BLOCK, reasons: [...], notes?: [...]}。
 
     G1 schema 不合规（含 unknown 字段容错）→ BLOCK
     G2 plan_steps[].tool 未注册 → BLOCK
     G3 工具所属壳 domain == trade-exec → BLOCK（铁律④）
-    G4 risk_flags 命中 实盘|live|下单|order → BLOCK
+    G4 risk_flags 声明实盘执行动作或裸实盘标识 → BLOCK；
+       仅作风险描述/否定语境 → 记 notes 放行（真实执行护栏是 G3 + ADR-001）
     """
     reasons: list[str] = []
+    notes: list[str] = []
 
     ok, errors = validate_plancard(card)
     if not ok:
@@ -138,13 +212,16 @@ def gate(
 
     risk_flags = card.get("risk_flags") if isinstance(card, dict) else None
     for flag in risk_flags if isinstance(risk_flags, list) else []:
-        lowered = str(flag).lower()
-        for keyword in FORBIDDEN_RISK_KEYWORDS:
-            if keyword in lowered:
-                reasons.append(f"G4:live_trading_flag:{flag}")
-                break
+        verdict = _live_trading_flag_verdict(flag)
+        if verdict == "block":
+            reasons.append(f"G4:live_trading_flag:{flag}")
+        elif verdict == "note":
+            notes.append(f"G4:live_trading_mention:{flag}")
 
-    return {"verdict": "BLOCK" if reasons else "PASS", "reasons": reasons}
+    result: dict[str, Any] = {"verdict": "BLOCK" if reasons else "PASS", "reasons": reasons}
+    if notes:
+        result["notes"] = notes
+    return result
 
 
 def score(

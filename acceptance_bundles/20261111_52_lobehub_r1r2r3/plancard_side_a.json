@@ -1,0 +1,27 @@
+{
+  "id": "pc-acc-r1-0001",
+  "intent": "验收：离场模块波动率自适应阈值是否值得做",
+  "context_refs": ["l0.cognition.mcp.health"],
+  "plan_steps": [
+    {
+      "step": 1,
+      "action": "读取认知系统健康指标",
+      "tool": "l0.cognition.mcp.health",
+      "args_hint": {}
+    },
+    {
+      "step": 2,
+      "action": "读取 L4 元认知状态",
+      "tool": "l0.cognition.mcp.l4_status",
+      "args_hint": {}
+    }
+  ],
+  "evidence_refs": ["backtest:acc-r1-001", "recall:VM-1794396006591-dfb79907"],
+  "risk_flags": ["历史回测与实盘执行差异（流动性、成交假设）", "回测样本期与实盘波动率分布可能不一致"],
+  "cost_estimate": {"tokens": 800, "tool_calls": 2},
+  "expected_outcome": "输出认知库健康度与 L4 状态，不产生任何写操作",
+  "validation": {
+    "evaluator_refs": ["45.heuristic@1.0.0"],
+    "acceptance_checks": ["health 返回 ok", "l4_status 返回可用"]
+  }
+}

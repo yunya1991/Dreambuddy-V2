@@ -1,0 +1,217 @@
+{
+ "R1_replay": [
+  {
+   "flag": "证据仅来自检索与记忆，缺少实盘验证",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:证据仅来自检索与记忆，缺少实盘验证"
+   ]
+  },
+  {
+   "flag": "证据仅覆盖检索与记忆，缺少实盘验证",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:证据仅覆盖检索与记忆，缺少实盘验证"
+   ]
+  },
+  {
+   "flag": "需确保参数切换可回滚，避免实盘误用",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:需确保参数切换可回滚，避免实盘误用"
+   ]
+  },
+  {
+   "flag": "实盘与回测偏离",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:实盘与回测偏离"
+   ]
+  },
+  {
+   "flag": "实盘与回测滑点差异",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:实盘与回测滑点差异"
+   ]
+  },
+  {
+   "flag": "实盘滑点与回测偏差",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:实盘滑点与回测偏差"
+   ]
+  },
+  {
+   "flag": "实盘持仓范围未确认前改动存在敞口风险",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:实盘持仓范围未确认前改动存在敞口风险"
+   ]
+  },
+  {
+   "flag": "历史回测与实盘执行差异（流动性、成交假设）",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:历史回测与实盘执行差异（流动性、成交假设）"
+   ]
+  },
+  {
+   "flag": "回滚机制未验证前存在实盘风险",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:回滚机制未验证前存在实盘风险"
+   ]
+  },
+  {
+   "flag": "回测与实盘偏差：滑点与流动性假设可能低估成本",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:回测与实盘偏差：滑点与流动性假设可能低估成本"
+   ]
+  },
+  {
+   "flag": "回测与实盘滑点差异",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:回测与实盘滑点差异"
+   ]
+  },
+  {
+   "flag": "回测与实盘滑点/流动性差异",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:回测与实盘滑点/流动性差异"
+   ]
+  },
+  {
+   "flag": "回测样本期与实盘波动率分布可能不一致",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:回测样本期与实盘波动率分布可能不一致"
+   ]
+  },
+  {
+   "flag": "成本估计依赖历史数据，实盘滑点未纳入",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:成本估计依赖历史数据，实盘滑点未纳入"
+   ]
+  },
+  {
+   "flag": "参数切换缺少回滚点，实盘切换风险",
+   "verdict": "PASS",
+   "reasons": [],
+   "notes": [
+    "G4:live_trading_mention:参数切换缺少回滚点，实盘切换风险"
+   ]
+  }
+ ],
+ "R1_guards": [
+  {
+   "flag": "实盘",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "下单",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "live",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "order",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "live trading",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "实盘下单",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "接入实盘",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "live_trading",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "place order",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "直接下单",
+   "verdict": "BLOCK"
+  },
+  {
+   "flag": "真实账户下单",
+   "verdict": "BLOCK"
+  }
+ ],
+ "R1_summary": {
+  "replay_total": 15,
+  "replay_pass": 15,
+  "replay_with_notes": 15,
+  "guards_total": 11,
+  "guards_block": 11
+ },
+ "E2E": {
+  "cli_exit": 0,
+  "stderr_tail": [],
+  "summary_mode": "debate",
+  "summary_mode_basis": "force",
+  "summary_executed": false,
+  "trace_mode": "debate",
+  "trace_mode_basis": "force",
+  "trace_route": "debate",
+  "trace_executed": false,
+  "decision": "dispatch",
+  "gates": [
+   {
+    "card_id": "pc-acc-r1-0001",
+    "verdict": "PASS",
+    "reasons": [],
+    "notes": [
+     "G4:live_trading_mention:历史回测与实盘执行差异（流动性、成交假设）",
+     "G4:live_trading_mention:回测样本期与实盘波动率分布可能不一致"
+    ]
+   },
+   {
+    "card_id": "pc-mwc326f868qmucfsxr",
+    "verdict": "PASS",
+    "reasons": [],
+    "notes": []
+   }
+  ]
+ },
+ "E2E_workers_force": {
+  "cli_exit": 0,
+  "summary_route": "workers",
+  "summary_mode": "debate",
+  "summary_mode_basis": "force",
+  "trace_route": "workers",
+  "trace_mode": "debate",
+  "trace_mode_basis": "force",
+  "trace_executed": false,
+  "decision": "dispatch"
+ }
+}

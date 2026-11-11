@@ -1,8 +1,27 @@
 # CHANGELOG — 52-LobeHub 协议集成
 
-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
+> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
 > 格式：按版本倒序；日期为本地决策/落地日期。
 > 版本以 `SPEC.md` 头部版本号为准；本文件只记录**已落地**的变更。
+
+---
+
+## v0.12.0 — 2026-11-11（验收红旗修正 R1/R2/R3）
+
+### 修复
+
+- **R1 G4 词法误伤**：`scoring.gate()` 原按子串匹配 `实盘|live|下单|order`，实测 77 条 trace / 220 张卡中 15 次命中**全部是风险描述**（"回测与实盘滑点差异""缺少实盘验证"），0 条实盘请求；`live`/`order` 还会误伤 `deliver`/`liveness`/`border`/`reorder`。
+  - 改为三档判定（`_live_trading_flag_verdict`）：否定语境 → `notes` 放行；执行动作 / 裸声明 / 无否定前缀的英文标识符 → BLOCK；其余描述 → `notes` 放行。
+  - 安全下限不变：G3（trade-exec 域拦截）与 ADR-001 三道门仍是真实执行护栏；11 条守卫旗标实测仍全部 BLOCK。
+  - `gate()` 新增可选 `notes`（`G4:live_trading_mention:<flag>`），trace `gates[]` 同步落盘。
+- **R2 `--force` 的 mode/route 不一致**：trace / summary / `--json-out` 新增 `mode_basis ∈ {force, user_requested_debate, route}`，解释 `route=workers + mode=debate`；`route` 原文保持不变。
+- **R3 trace 顶层 `executed` 缺失**：trace 记录新增 `executed`，shadow 下显式 `false`，与 summary 同源同值。
+
+### 验证
+
+- 回归：orchestrator 95 passed（新增 11 条 G4 用例）、bridge 20 passed、debate 壳 22 passed；ruff + black 通过。
+- 验收包：`acceptance_bundles/20261111_52_lobehub_r1r2r3`（15/15 历史误伤旗标转 PASS、11/11 守卫仍 BLOCK、workers+force 的 `mode_basis=force`）。
+- 留 Phase 2：R4（44 拓扑未登记本链路）、R5（守护进程不跨重启）。
 
 ---
 
