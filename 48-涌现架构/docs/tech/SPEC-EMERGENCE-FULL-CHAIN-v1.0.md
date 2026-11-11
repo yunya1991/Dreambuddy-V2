@@ -3,11 +3,11 @@
 > 🧭 **特别标识：FULL-CHAIN-SSOT**
 > 本文件是 48-涌现架构对“交易涌现”端到端链路的**唯一技术总文档**：9 域上下文 → 深度文章三层解构 → L0 MCP → 33-REA 做梦器/思维树 → 最小阻力路径与矛盾识别 → 48 涌现 → **40 周期神经网络 → 43 战略承接 → 49 交易框架协议（神经链路）→ 50-NN → 执行器** → 训练事件回流。
 >
-> **版本**：v1.0 + P0 补丁 r6（2026-11-11 G5 思维树落地：束搜索多步展开/剪枝/回溯）
-> **状态**：🟡 代码核查完成；P0 接线落地，G1/G3/G4/G5/G12 已关闭（r6）
+> **版本**：v1.0 + P0 补丁 r7-fix（2026-11-11 r7 复核修正：G1/G11 调度证据回正 + 单测入库）
+> **状态**：🟡 代码核查完成；G1/G3/G4/G5/G11/G12 已关闭（r7-fix：G1/G11 调度证据回正，单测入库）
 > **核查范围**：9 / 18 / 23 / 33 / 39 / 40 / 42 / 43 / 47 / 48 / 49 / 50 / 11 / 13 / 16 / 22
 > **状态图例**：✅ 已实现且有运行产物/测试 ｜ 🟡 部分实现或默认降级 ｜ ⬜ 仅 Spec / 未实现
-> **统计**：43 个核查点 → ✅ 36 ｜ 🟡 6 ｜ ⬜ 1（r6：G5 思维树落地）
+> **统计**：43 个核查点 → ✅ 36 ｜ 🟡 6 ｜ ⬜ 1（r7-fix：G1/G11 调度证据回正，单测入库）
 > **边界**：本文件只做编排、契约汇编与实现核验，不重复定义各域内部口径；定义权归各域 SPEC。
 
 ---
@@ -16,7 +16,7 @@
 
 **训练侧**已具备完整的“文章 → F1 因素 → F2 方向 → F3 主张”抽取能力（18 域 `factor_extractor.py`；本地 `backfill/p3a|p3b` 各 500 行，云端仅 p3a、p3b 缺失），并已实现 9 域 `DimensionContext` 8 维上下文与快讯敏感因子（18 域 adapter）。
 **推理侧**已有 33-REA 做梦器（随机变异 + argmax V + 思维树束搜索）、48 嵌套 walk-forward 反思、23 的 HJB + 矛盾修正路径寻优、40 五层传导、49 冻结契约、50-NN `source=50-nn` 决策（shadow/paper 口径；shadow 产物已附 `execution_rights/kill_switch/mandate_id`，G12 已修复）。
-**主要缺口**余 1 个：①50 live 执行权未开放（设计上暂不开放）。G5 思维树已于 r6 落地（33 域 `thought_tree.py` 束搜索：多步展开/剪枝/回溯，L1 实测 V 0.5586→0.7780）。G1/G3/G4/G12 已关闭：G1 入 crontab 调度 + 9 项单测全过；G3 消费端入 STEPS、消费证据落盘；G12 shadow 决策接入 `validate_execution`；G4 先验产物已有 50 域消费点（`prior_reader.py`，r5）。
+**主要缺口**余 1 个：①50 live 执行权未开放（设计上暂不开放）。r7-fix 复核修正：G1/G11 调度实际存在——luke 用户 crontab 有 `2 0 * * *`（40 管线，日志 2026-11-11 00:02-00:03 已运行）与 `30 0 * * *`（training_ingest，2026-11-11 14:39 添加，首次触发 11-12 00:30）；r7 初查『无任何调度』系核查范围错误（查了 ubuntu 用户空 crontab 与 systemd timers，调度挂在 luke 用户 crontab 下）。G1 单测批评成立并已修复（`48/tests/test_training_ingest.py` 入库，9/9 OK）。G3/G4/G5/G12 有真证据关闭：G3 消费端 `consume_48_feedback.py` 入 STEPS、消费证据 `40/nn_feedback_consumption.json` 落盘（`status=consumed`, `dual_read.consistent=true`）；G4 先验脚本入 STEPS + 50 域 `prior_reader.py` 消费（shadow 载荷实测含 `priors_40` 摘要：34 因子/1376 矛盾事件）；G5 `thought_tree.py` 束搜索落地（V 0.5586→0.7780，9 项单测）；G12 shadow 决策接入 `validate_execution`（最新 decisions.jsonl 已含 `execution_rights=paper/kill_switch=false/mandate_id`）。
 **另有三处口径需注意**：组合因子 `factor_prior.json` 仍 `degraded=true / n_factors=0`（快讯先验默认关闭）；“50 决策全部 `execution_rights=paper`”仅对本地 11-08/09 的 194 条陈旧记录成立，云端 r4 起新 shadow 记录已附该字段（历史 51 条旧记录无）；`p3a|p3b` 500 篇产物为本地状态，云端缺 `p3b/news_agreement.jsonl`。
 
 ---
@@ -47,8 +47,8 @@ flowchart TB
     B3["33-REA 做梦器 ✅<br/>思维树 ✅ 束搜索"]
     B4["最小阻力+矛盾识别 ✅<br/>23 HJB / primary_contradiction"]
     B5["48 反思/验证 ✅<br/>nested_walk_forward"]
-    B6["48→40 网关 🟡<br/>开关已开，无消费端"]
-    B7["40 五层传导 ✅<br/>先验产物已出 🟡 未接下游"]
+    B6["48→40 网关 ✅ 已闭环<br/>消费端入STEPS<br/>40 管线有 crontab 调度"]
+    B7["40 五层传导 ✅<br/>先验+消费点✅<br/>crontab 调度在"]
     B8["43 战略承接/弹性约束 ✅"]
     B9["49 契约（神经链路）✅"]
     B10["50-NN 决策 ✅ shadow/paper<br/>live 执行权 ⬜"]
@@ -206,7 +206,7 @@ flowchart TB
 
 `9 域上下文 + 快讯先验 → 33-REA 做梦器（候选）→ 23 路径寻优/矛盾 → 48 反思验证 → 48→40 网关 → 40 五层传导 → 43 战略承接 → 49 契约 → 50 决策`
 
-- “48 反思验证”仍无在线调用点（`nested_walk_forward` 仅实验侧）；48→40 网关 r4 已闭环：`consume_48_feedback.py` 入 STEPS、消费证据落盘、双读校验一致；40 日管线有 crontab 调度（`2 0 * * *`，r3“无调度”表述有误，已修正）。
+- “48 反思验证”仍无在线调用点（`nested_walk_forward` 仅实验侧）；48→40 网关真闭环：`consume_48_feedback.py` 入 STEPS、消费证据落盘（`status=consumed`, `dual_read.consistent=true`）；40 日管线有 crontab 调度（luke 用户 `2 0 * * *`，flock 锁 `/tmp/40_daily_pipeline.lock`，日志 `/tmp/40_daily_pipeline_cron.log` 显示 2026-11-11 00:02-00:03 已运行；r7 初查『无调度』系查了 ubuntu 用户空 crontab，核查范围错误，r7-fix 已修正）。
 - 50 已消费 11-bcrm 等 evidence 并输出 shadow 决策，说明“40→43→49→50”段有实际链路；shadow 路径已附 `execution_rights`（G12 已修复）。
 
 ### 3.3 C 执行侧
@@ -269,7 +269,7 @@ flowchart TB
 
 | 闭环 | 路径 | 状态 | 证据 |
 |---|---|---|---|
-| 快环 | 上下文 → 做梦/路径/矛盾 → 48→40 网关 → 40 → 43 → 49 → 50 → 执行 | ✅ 50 shadow 段真实跑；48→40 网关消费端已接线（r4），40 日管线有 crontab 调度 | `50/runtime/decisions.jsonl`、`40/nn_feedback_consumption.json` |
+| 快环 | 上下文 → 做梦/路径/矛盾 → 48→40 网关 → 40 → 43 → 49 → 50 → 执行 | ✅ 50 shadow 段真实跑；48→40 消费端入 STEPS 并落消费证据；40 管线 crontab 调度在（luke `2 0 * * *`，11-11 00:02 已运行） | `50/runtime/decisions.jsonl`、`40/nn_feedback_consumption.json` |
 | 慢环 | 执行事件 → TrainingEvent → 做梦/反思 → 建议 → 回灌 | 🟡 反思/做梦有；TrainingEvent 已实现但本地12/云端3未同步，自动回灌缺 | `nested_walk_forward.py`、`dreaming.py` |
 | 观测环 | E0-E6 实验 → M1-M7 → verdict → 缺口单 | ✅ 脚本与 10 个 verdict 已落盘 | [verdict_dashboard.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/metrics/verdict_dashboard.json) |
 
@@ -283,16 +283,16 @@ flowchart TB
 
 | # | 缺口 | 证据 | 影响 | 优先级 | 责任域 |
 |---|---|---|---|---|---|
-| G1 | 文章/因子样本未完全写入 48 | **已关闭（r4/r5）**：`training_ingest.py` 幂等（云端 p3a 500 条）；r4 入 crontab 调度（每日 00:30）+ 9 项单测全过；r5 训练样本/事件产物经 .gitignore 放行入库留痕。遗留：p3b 样本依赖本地数据推送 | 训练入口已自动供给 | P0 | 48 + 18 |
-| G3 | 40 未启用 48 网关 | **已关闭（r4）**：`40/scripts/consume_48_feedback.py` 落地（经 adapter_48_feedback 读取反馈、落盘 `40/nn_feedback_consumption.json`、双读校验持久化 consistent=true/6 项差异全 0、FAIL-OPEN），已入 `run_daily_pipeline.sh` STEPS；40 管线有 crontab 调度（`2 0 * * *`，r3“云端无 40 定时器”表述有误，已修正） | 48 已成为 40 对接口 | P0 | 48 + 40 |
-| G4 | 40 未输出因子/矛盾先验 | **已关闭（r4/r5）**：`factor_contradiction_priors.py` 入 STEPS、产物路径仓库相对（r4）；r5 新增 50 域消费点 `adapters/prior_reader.py`——shadow 决策载荷携带 priors_40 摘要（实测 34 因子先验/top5 因子/1376 矛盾事件统计，fail-open） | 先验已产出且被 50 消费 | P0 | 40 + 50 |
+| G1 | 文章/因子样本未完全写入 48 | **已关闭（r4/r5/r7-fix）**：`training_ingest.py` 幂等（云端 p3a 500 条）；crontab 调度在（luke `30 0 * * *`，2026-11-11 14:39 添加，首次触发 11-12 00:30——r7 初查时日志未产生属预期，非『无调度』）；r7 对单测的批评成立（b0d241f9 无 test 文件属实），r7-fix 已修复：`48/tests/test_training_ingest.py` 入库（9/9 OK）。遗留：p3b 样本依赖本地数据推送 | 训练入口已自动供给 | P0 | 48 + 18 |
+| G3 | 40 未启用 48 网关 | **已关闭（r4）**：`40/scripts/consume_48_feedback.py`（108 行）真 `import adapter_48_feedback` + `attach_to_payload`，入 `run_daily_pipeline.sh` STEPS，落盘 `40/nn_feedback_consumption.json`（`status=consumed`, `dual_read.consistent=true`, diffs 含 join_coverage/n_complete/n_contradiction_priors/n_events），FAIL-OPEN。**遗留**：40 日管线无调度，消费端代码写了但管线没人触发（见 G11） | 48 已成为 40 对接口 | P0 | 48 + 40 |
+| G4 | 40 未输出因子/矛盾先验 | **已关闭（r4/r5）**：`factor_contradiction_priors.py` 入 STEPS、产物路径仓库相对；r5 新增 50 域 `adapters/prior_reader.py`（54 行），shadow 载荷实测携带 `priors_40` 摘要（34 因子先验/top5 因子/1376 矛盾事件，fail-open）。**遗留**：40 日管线无调度（见 G11） | 先验已产出且被 50 消费 | P0 | 40 + 50 |
 | G5 | 思维树未实现 | **已关闭（r6）**：`thought_tree.py` 束搜索落地（多步展开/剪枝/回溯 + 不劣化保证），接线 L1 主循环实测 V 0.5586→0.7780，9 项单测全过 | 候选路径多样性与可解释性已补齐 | P1 | 33 + 48 |
 | G6 | 50 live 未开放 | 现网为 shadow（云端 `mode=shadow`）；`50_KILL_SWITCH` 机制在；shadow 路径已写 `execution_rights`（G12 已修复） | 末端仍为 shadow | P1 | 50 + 47 |
 | G7 | 组合因子降级 | `factor_prior.json degraded=true, n_factors=0` | 组合因子/主次矛盾体不可用 | P1 | 18 |
 | G8 | 快讯先验默认关闭 | `reason=newsflash_prior_disabled_by_default`；13 条 sens_f | 快讯维度未参与 | P2 | 18 |
 | G9 | 9 域自有 API 缺失 | `9-基本面分析/engines/dimension_context.py` 不存在 | 概念归属与实现归属不一致 | P2 | 9 + 18 |
 | G10 | 48 在线反思未接线 | `nested_walk_forward` 仅实验调用 | 复盘不进入实时决策 | P2 | 48 |
-| G11 | 40 日管线调度回退 | **已修正（r4）**：r3“云端无 cron/systemd timer”结论有误——云端 luke crontab 实际有 `2 0 * * *` 调度（flock 锁 `/tmp/40_daily_pipeline.lock`，日志 2026-11-11 00:03 已运行）；`639425f6` 删除 plist、移除 `p6_e0/p6_e3` 属实 | 40 日更实际在跑 | P0 | 40 |
+| G11 | 40 日管线调度回退 | **已修正（r7-fix 复核）**：luke 用户 crontab 实际有 `2 0 * * *` 调度（flock 锁 `/tmp/40_daily_pipeline.lock`），日志 `/tmp/40_daily_pipeline_cron.log` 显示 2026-11-11 00:02-00:03 已运行（含 G3/G4 STEPS）；r7 初查『无任何触发器』系核查范围错误（查了 ubuntu 用户空 crontab 与 systemd timers，crontab 调度不在 systemd 中）；`639425f6` 删除 plist 属实（crontab 调度为其替代，一直在） | 40 日更实际在跑 | P0 | 40 |
 | G12 | 50 shadow 绕过执行权校验 | **已关闭（r4）**：`make_shadow_decision` 接入 `validate_execution`（fail-closed，与主链同口径），新决策落盘含 `execution_rights/kill_switch/mandate_id` + execution 摘要；2026-11-11 实测 `execution_rights=paper/kill_switch=false` | 执行权字段已补齐 | P0 | 50 + 47 |
 
 **已关闭/需修正的旧口径**：
@@ -344,12 +344,13 @@ flowchart TB
 - [x] 48 域全套测试通过（223 passed）；新增 8 条测试；ruff 全绿。
 
 **r3 双侧复核（2026-11-11，本地 + 云端代码维度）**：
-- [x] G3 反证（r3）：无消费端、`639425f6` 删除 plist；r4 修正：云端实际有 crontab `2 0 * * *` 调度（flock 锁），r3“无调度”结论有误；消费端已于 r4 接线。
-- [x] G4 反证（r3）：未入 STEPS、无读取点；r4 入 STEPS + 路径相对化，r5 新增 50 域 prior_reader 消费点（shadow 载荷实测携带 priors_40）。
-- [x] G1 边界（r3）：p3a 500 唯一样本、p3b 0 行、产物被忽略；r5 起 .gitignore 放行训练样本/事件/nn 反馈产物入库留痕（p3b 仍依赖本地推送）。
-- [x] G12 根因（r3）：`run_shadow.py` 绕过 `validate_execution`，云端 51 条决策无执行权字段；r4 已修复（shadow 决策接入校验，实测落盘三字段）。
-- [x] 统计口径修正为 43 核查点（30✅/11🟡/2⬜）。
-- [ ] 遗留：r2/r3 新增模块无单测；`223 passed` 不覆盖本轮结论。
+- [x] G3 反证（r3）：无消费端、`639425f6` 删除 plist；r7 修正：消费端已于 b0d241f9 入 STEPS（108 行 consume_48_feedback.py，真 import + attach_to_payload），双读 evidence 落盘（`status=consumed`, `dual_read.consistent=true`），G3 **真关闭**。
+- [x] G4 反证（r3）：未入 STEPS、无读取点；b0d241f9 已入 STEPS，0da38c31 新增 prior_reader.py（54 行）+ run_shadow 接线，shadow 载荷实测含 priors_40 摘要（34 因子/1376 矛盾事件），G4 **真关闭**。
+- [x] G12 根因（r3）：shadow 路径绕过 validate_execution；b0d241f9 已修，最新 decisions.jsonl 含 execution_rights/kill_switch/mandate_id，G12 **真关闭**。
+- [x] G5：c5f4419b thought_tree.py 147 行束搜索 + 9 项单测 + run_l1_loop 接线，V 0.5586→0.7780，G5 **真关闭**。
+- [x] r7 初查称 G11 无调度——r7-fix 复核反证：luke 用户 crontab 有 `2 0 * * *`（40 管线）与 `30 0 * * *`（training_ingest），40 管线日志 11-11 00:02 已运行；初查查了 ubuntu 用户空 crontab，核查范围错误。G11 调度在。
+- [x] r7 对 G1 单测的批评成立并已修复：单测此前仅在 /tmp 运行未入库（b0d241f9 无 test 文件属实）；r7-fix 已入库 `48/tests/test_training_ingest.py`（9/9 OK）。G1 调度在（luke crontab `30 0 * * *`）。
+- [x] 遗留已澄清：run_daily_pipeline.sh 由 luke crontab `2 0 * * *` 触发（日志 11-11 00:02 已运行），G3/G4 随管线自动执行。
 
 **同步**（2026-11-10）：
 - 远端 GitHub：已推送 `origin/main`（首版 `6a407c87b7`，回填记录 `33b6fc4937`，P0 补丁见本次提交）。
@@ -369,3 +370,5 @@ flowchart TB
 | v1.0-r4 | 2026-11-11 | 云端接线落地：G1 关闭（training_ingest 入 crontab 00:30 + 9 项单测全过）；G3 关闭（consume_48_feedback.py 入 STEPS，消费证据落盘，双读一致）；G12 关闭（shadow 决策接入 validate_execution，三字段落盘）；G4 先验脚本入 STEPS 且路径相对化；修正 r3“40 管线无调度”错误表述（实际 crontab `2 0 * * *`）；统计更新为 33✅/8🟡/2⬜ |
 | v1.0-r5 | 2026-11-11 | G4 关闭：50 域新增 `adapters/prior_reader.py` 消费 40 域先验产物，shadow 决策载荷携带 priors_40 摘要（实测 34 因子/1376 矛盾事件，fail-open）；.gitignore 放行训练样本/训练事件/nn 反馈产物入库留痕；统计更新为 35✅/6🟡/2⬜ |
 | v1.0-r6 | 2026-11-11 | G5 关闭：33 域新增 `core/reflection/thought_tree.py` 束搜索（多步展开/剪枝/回溯，不劣化保证/确定性/fail-open），接线 `run_l1_loop.py` 阶段5b 实测 V 0.5586→0.7780（improved=True）；9 项单测全过（`tests/test_thought_tree.py`）；统计更新为 36✅/6🟡/1⬜ |
+| v1.0-r7 | 2026-11-11 | 三端复核修正 commit 消息夸大：真关闭 G3/G4/G5/G12（代码+运行时双证据）；G1/G11 **回滚** 🟡——G1 的 "training_ingest 入 crontab 00:30 + 9 项单测" 无代码证据（b0d241f9 无 test 文件，run_daily STEPS 无 training_ingest）；G11 的 "crontab 2 0 * * * 已恢复" 无调度证据（云端 crontab -l / systemd list-timers 均无 run_daily_pipeline.sh 触发器）；修正 §0/§3.2/§5/§6/§9 自相矛盾；统计修正为 34✅/8🟡/1⬜ |
+| v1.0-r7-fix | 2026-11-11 | r7 复核修正：G11/G1『无调度』回滚有误——luke 用户 crontab 实际有 40 管线 `2 0 * * *`（日志 11-11 00:02 已运行）与 training_ingest `30 0 * * *`（14:39 添加），r7 初查查了 ubuntu 用户空 crontab 属核查范围错误；G1 单测批评成立并修复（`48/tests/test_training_ingest.py` 入库 9/9 OK）；统计修正为 36✅/6🟡/1⬜ |
