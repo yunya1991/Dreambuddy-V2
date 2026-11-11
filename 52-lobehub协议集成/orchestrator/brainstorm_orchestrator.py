@@ -255,16 +255,40 @@ def _start_debate(
     scored: Sequence[dict[str, Any]],
     opener: Callable[[str, str, list[str], list[dict[str, Any]]], str] | None,
 ) -> dict[str, Any]:
-    """升级 Debate：只记录 debate_id（shadow 不等待裁决结果）。"""
+    """升级 Debate：只记录 debate_id（shadow 不等待裁决结果）。
+
+    配对必须**跨侧**（每侧各取最佳一张）：同侧两张会导致 model_pair 同模型，
+    被 debate 壳按铁律⑤拒绝（实测 2026-11-11）。
+    """
     if len(scored) < 2:
         return {
             "debate_id": None,
             "error": "need_two_sides",
             "note": "T 命中但仅一方有效提案，无法开题（shadow 记录）",
         }
-    model_pair = [str(item.get("model") or "unknown") for item in scored[:2]]
-    plancards = [item.get("card") for item in scored[:2] if isinstance(item.get("card"), dict)]
-    background = _build_debate_background(scored[:2])
+    # 按侧分组取各自最佳（scored 已按分数降序，首次出现即该侧最佳）
+    by_side: dict[str, dict[str, Any]] = {}
+    for item in scored:
+        side = str(item.get("side") or "")
+        if side and side not in by_side:
+            by_side[side] = item
+    if len(by_side) < 2:
+        return {
+            "debate_id": None,
+            "error": "need_two_sides",
+            "note": "有效提案仅来自单侧，无法跨侧开题（shadow 记录）",
+        }
+    pair = [by_side[side] for side in sorted(by_side)[:2]]
+    model_pair = [str(item.get("model") or "unknown") for item in pair]
+    if model_pair[0] == model_pair[1]:
+        return {
+            "debate_id": None,
+            "error": "same_model",
+            "note": f"跨侧配对仍为同模型 {model_pair[0]}，按铁律⑤拒绝开题",
+            "model_pair": model_pair,
+        }
+    plancards = [item.get("card") for item in pair if isinstance(item.get("card"), dict)]
+    background = _build_debate_background(pair)
     try:
         if opener is not None:
             debate_id = opener(intent, background, model_pair, plancards)
@@ -626,9 +650,11 @@ def run(
     except OSError as exc:
         errors.append({"step": "trace", "error": f"{type(exc).__name__}: {exc}"})
 
-    # ⑨ outbox（胜方 B / 败方 D，附裁决证据）；铁律⑤拒绝时不写 outbox
+    # ⑨ outbox（胜方 B / 败方 D，附裁决证据）
+    # 铁律⑤拒绝时、以及升级 Debate 尚无裁决时都不写：后者写 loser 会把未定方案
+    # 误标为 D 级反模式，污染认知库（2026-11-11 实测 5 轮各写 4 条后修正）
     outbox_entries: list[dict[str, Any]] = []
-    if not violations:
+    if not violations and decision.get("kind") != "escalate_debate":
         outbox_entries = build_outbox_entries(
             intent,
             scored,
@@ -683,6 +709,10 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
         "reason": summary.get("reason") or summary.get("route_reason"),
         "mode": summary.get("mode"),
         "winner": summary.get("winner"),
+        "n_per_side": summary.get("n_per_side"),
+        "pool_size": summary.get("pool_size"),
+        "debate_id": (summary.get("debate") or {}).get("debate_id"),
+        "debate_error": (summary.get("debate") or {}).get("error"),
         "trace_id": summary.get("trace_id") or summary.get("run_id"),
         "trace_path": summary.get("trace_path"),
         "outbox_written": summary.get("outbox_written", 0),

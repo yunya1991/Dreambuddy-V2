@@ -22,7 +22,7 @@ from plancard import describe_variant, from_dreamos_intent
 
 DEFAULT_SIDE_A_URL = "http://127.0.0.1:3001"
 DEFAULT_SIDE_B_URL = "http://127.0.0.1:8000"
-DEFAULT_TIMEOUT_SEC = float(os.environ.get("PROPOSER_TIMEOUT_SEC", "15"))
+DEFAULT_TIMEOUT_SEC = float(os.environ.get("PROPOSER_TIMEOUT_SEC", "60"))
 
 # 取证路径声明（铁律⑤：双方证据路径必须差异化）
 SIDE_A_EVIDENCE_PATH = "unified_search+recall"

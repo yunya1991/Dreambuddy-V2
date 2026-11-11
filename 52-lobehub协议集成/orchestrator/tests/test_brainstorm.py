@@ -563,9 +563,51 @@ def test_run_n_per_side_pool_and_trace_fields(tmp_path):
     assert isinstance(record["adjudication"]["agree"], bool)
     assert len(record["gates"]) == 4
 
-    entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines()]
-    assert sum(1 for e in entries if e["type"] == "brainstorm_winner") == 1
-    assert sum(1 for e in entries if e["type"] == "brainstorm_loser") == 3
+    # 升级 Debate 尚无裁决 → 不写 outbox（否则未定方案被误标 D 级）
+    decision = record["decision"]
+    if decision["kind"] == "escalate_debate":
+        assert summary["outbox_written"] == 0
+        assert not outbox.exists()
+    else:
+        entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines()]
+        assert sum(1 for e in entries if e["type"] == "brainstorm_winner") == 1
+        assert sum(1 for e in entries if e["type"] == "brainstorm_loser") == 3
+
+
+def test_escalate_debate_skips_outbox(tmp_path):
+    """T 命中升级 Debate 时不得写 loser（认知库 D 级污染防护）。"""
+
+    def a_poster(url, payload, **_kwargs):
+        return {
+            "ok": True,
+            "data": {
+                "plancard": make_card(id=f"pc-a{payload['variant']['seed']}"),
+                "model": "qwen-plus",
+                "evidence_path": "unified_search+recall",
+            },
+        }
+
+    outbox = tmp_path / "o.jsonl"
+    summary = orch.run(
+        intent="哪个方案更好，看回测和成本",
+        trace_path=tmp_path / "t.jsonl",
+        outbox_path=outbox,
+        disable_recall=True,
+        n_per_side=2,
+        proposers=[
+            SideAProposer(poster=a_poster, model_hint="qwen-plus"),
+            SideBProposer(
+                poster=lambda *a, **k: _fake_b_response(), allowed_tools=REGISTRY.allowed()
+            ),
+        ],
+        registry=REGISTRY,
+        debate_opener=lambda topic, bg, models, cards: "debate-x",
+        force=True,
+    )
+    assert summary["decision"]["kind"] == "escalate_debate"
+    assert summary["debate"]["debate_id"] == "debate-x"
+    assert summary["outbox_written"] == 0
+    assert not outbox.exists()
 
 
 def test_diversity_rejects_unknown_model_and_skips_outbox(tmp_path, monkeypatch):
