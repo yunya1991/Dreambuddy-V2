@@ -1,8 +1,8 @@
 # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
 
-> 版本：v0.6.0（脑暴机制：方案择优默认发散-收敛，争议触发器 T1-T4 命中才升级 Debate；成本降至 ~1/3）
+> 版本：v0.6.1（D1 澄清：唯一前端 = 单套 UI，协议层能力件保留；云端 `360e1f78dd` 误删作废，以本地为准）
 > 日期：2026-11-11
-> 状态：🟢 Phase 0 已完成（协议层三模型 PASS）；Phase 1 3.1 内置协议层实施中
+> 状态：🟢 Phase 0/1/3/4 已实施（本地）；Phase 2 云端部署待定
 > 归属：52-LobeHub协议集成（叠加层，非主骨架）
 > 上游：47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构（子域能力供给）
 > 下游：DreamOS/SACG（主骨架编排）、33-REA / 48-涌现架构（反思与涌现回流）
@@ -36,17 +36,25 @@
 
 | 编号 | 决策 | 对 52 的约束 |
 |---|---|---|
-| D1 | 52 定位 = **内置协议层**（v0.5.0 修正） | **唯一前端 = 3.1 前端**；不部署任何独立 LobeHub 应用（desktop 已卸载、server/docker 形态弃用）。LobeHub 降级为协议与设计参考，集成落点 = 3.1 前端内置 LLM 协议层（Vercel AI SDK 模型路由 + MCP client → l0_gateway）。依据：@lobechat/* 全部 `private: true` 未发布 npm，代码级嵌入 = vendor fork 违反 D2 |
+| D1 | 52 定位 = **内置协议层**（v0.5.0 修正，v0.6.1 澄清） | **唯一前端 = 3.1 前端**；不部署任何独立 LobeHub 应用（desktop 已卸载、server/docker 形态弃用）。LobeHub 降级为协议与设计参考，集成落点 = 3.1 前端内置 LLM 协议层（Vercel AI SDK 模型路由 + MCP client → l0_gateway）。依据：@lobechat/* 全部 `private: true` 未发布 npm，代码级嵌入 = vendor fork 违反 D2 |
 | D2 | **协议集成，禁止 fork 改源码** | 上游 nightly 迭代极快；不 vendor 其代码进 3.1，只在 3.1 协议层实现同构模式（模型工厂/MCP 消费/loop 语义），持续跟踪其 release 做协议对齐 |
 | D3 | 能力边界：**3.1 协议层只做模型路由 + MCP 消费** | 能力执行、认知记忆、交易执行归现有架构；3.1 是唯一前端，不引入第二套 UI |
 | D4 | **双轨治理**（v0.5.0 修正） | 3.1 协议层的 agent loop 仅作"执行器"，编排主权归 DreamOS；协议层侧产生的会话/辩论数据**不直写认知库**，Phase 3 蒸馏桥建成后经桥回流 |
 | D5 | **执行+监督双链协作**（2026-11-11 用户确认） | 统一入口 → 双方意图规划 → Debate MCP 辩论 → 评估器裁决 → 胜者方案执行/败者后勤+门禁监督 → L0 统一沉淀 → 涌现回流。四条修正铁律见 §7.2 |
+
+> **D1 澄清（v0.6.1，2026-11-11 用户裁定）**："唯一前端"指**只保留一套 UI（3.1 前端）**，不建第二个聊天界面；**不是删除协议层**。具体边界：
+> - ❌ 删除：`src/app/agent/page.tsx`（独立第二 UI）
+> - ✅ 保留：`src/lib/agent/{providers,mcp-client,distill-outbox,plancard}.ts`（模型路由 / MCP 消费 / 蒸馏写入 / PlanCard 契约）
+> - ✅ 保留：`src/app/api/agent/{chat,plan}`（后端 API，非 UI，供 3.1 既有界面消费）
+> - 背景：远端 `360e1f78dd`（云端提交）误读为"删除整个 3.1 agent 协议层"并回退 SPEC 至 v0.5.0（脑暴章节被删），**该提交作废，以本地为准**。
 
 ### 0.4 不做什么
 
 | 禁止 | 原因 |
 |---|---|
 | **不部署任何独立 LobeHub 应用形态**（desktop/server/docker/Web 版） | v0.5.0 用户修正：唯一前端 = 3.1 前端；第二 UI = 双轨 |
+| **不新建第二个聊天页面**（`/agent` 等独立 UI） | v0.6.1 用户裁定：协议层保留，UI 只有一个（3.1 既有界面） |
+| **不删除协议层能力件**（providers/mcp-client/plan/chat/distill 写入器） | v0.6.1 用户裁定：这些是能力件非 UI，删除即误伤 |
 | 不 fork / vendor lobehub 源码进 3.1 | D2：上游日更，分叉维护成本不可控；其包均 private 未发布，vendor 是唯一代码路径，已排除 |
 | 不让 3.1 协议层直接读写 4-MEMORY / 认知库 | 认知写入仍走 L0 cognition 壳（worker 只读治理不变） |
 | 不在 52/3.1 协议层内实现交易/策略/风控能力 | 能力供给归 DSH 各域 + L0 壳；协议层只做消费方 |
@@ -131,7 +139,7 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 ### Phase 1 — 3.1 前端内置协议层（v0.5.0 修订，当前阶段）
 
 1. 在 3.1-FRONTEND 新建 `src/app/api/agent/chat` 路由：**Vercel AI SDK**（依赖已存在）做模型路由（OpenAI/Anthropic/Google/Qwen 走 openai-compatible 工厂），**MCP client**（stdio 起 l0_gateway，参数复用 lobehub_frontend profile）桥接 L0 工具（首挂 recall）。
-2. UI 侧复用 3.1 现有组件，不引入第二套前端。
+2. UI 侧复用 3.1 现有组件，不引入第二套前端；**不新建独立 `/agent` 聊天页**（v0.6.1）。
 3. 验收：dream-acceptance-verify 五维 + 三模型（Trae 内 kimi/sonnet/opus 经路由）调通 recall 的 E2E。
 4. 能力面扩展：unified_search 已完成（零代码同壳复用，commit e2af60ba2e，12/12 测试）。
    **⏸️ 18/19/41 数据域壳挂载暂缓（2026-11-11 用户决策）**：等待实际需求场景出现再做——它们是独立 server，需扩 registry 角色 + mcpctl 新 profile + 3.1 前端多 MCP 连接支持（当前单例 client），避免无消费方的能力面膨胀。届时按本 Phase 验收流程补齐。
