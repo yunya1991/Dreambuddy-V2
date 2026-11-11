@@ -1,8 +1,9 @@
 # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
 
-> 版本：v0.9.0（Phase 5 已实施（限量）：45 域评测器适配层 + 结构分替代退化常数）
+> 版本：v0.10.0（Phase 5 收尾：side-B 同量级结构扣分，消除双链分不对称）
 > 日期：2026-11-11
 > 状态：🟢 Phase 0/1/3/4/4.5/4.6 已实施（本地）；Phase 5 已实施（限量）；Phase 2 云端部署待定
+> 文档对齐：2026-11-11 全量核对代码/测试/trace 后回填本节状态（见 §3.0 落地状态总表）
 > 归属：52-LobeHub协议集成（叠加层，非主骨架）
 > 上游：47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构（子域能力供给）
 > 下游：DreamOS/SACG（主骨架编排）、33-REA / 48-涌现架构（反思与涌现回流）
@@ -32,7 +33,7 @@
 
 **我方缺口（调研确认）**：全仓 Python 代码内**零 LLM client**（无 anthropic/openai/qwen 任何调用），"大脑"完全外挂于 AI 宿主。LobeHub 补的正是这一结构性缺口——**接入任意大模型即可驱动现有能力**。
 
-### 0.3 用户决策（2026-11-11，待确认）
+### 0.3 用户决策（2026-11-11，已确认）
 
 | 编号 | 决策 | 对 52 的约束 |
 |---|---|---|
@@ -130,13 +131,29 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 ## §3 分阶段落地路线
 
+### 3.0 落地状态总表（2026-11-11 全量核对）
+
+| Phase | 状态 | 关键交付物 | 核对证据 |
+|---|---|---|---|
+| 0 PoC | ✅ 完成 | 三模型（kimi/sonnet/opus）经路由调通 recall | 2026-11-11 协议层验收 |
+| 1 内置协议层 | ✅ 完成 | `src/lib/agent/{mcp-client,providers,plancard,plan-variant,distill-outbox}.ts` + `/api/agent/chat` | 5 个 vitest 文件 |
+| 2 云端部署 | ⏸ 未开工 | l0_gateway SSE/HTTP；44 登记 52 拓扑 | 44-三端协作架构系统当前无 52 条目（grep 0 命中） |
+| 3 蒸馏桥 | ✅ 建成 / ⚠ 未常态运行 | `bridge/distill_bridge.py`（19 tests，R6 映射 + 游标幂等） | outbox 89 条，`.cursor=1` → 88 条待消费；未接定时 |
+| 4 脑暴编排器（shadow） | ✅ 完成 | `orchestrator/{brainstorm_orchestrator,proposers,plancard,registry_tools,debate_client}.py` | traces 70 条 / shadow 批次 40 条 |
+| 4.5 补齐 | ✅ 完成 | `adjudicator.py`（grounded semantics A/B）、N-per-side、铁律⑤ fail-closed | test_adjudicator + test_brainstorm |
+| 4.6 意图路由 + 入口 | ✅ 完成 | `router.py`（r9-v1 五分流）、`POST /api/agent/brainstorm`、ChatPanel「择优脑暴」开关 | test_router 16 例 |
+| 5 45 域适配层 | ✅ 限量 | `domain_eval.py` + 结构分 + side-B 同量级扣分 | orchestrator 75 / bridge 19 / debate 壳 22 全绿 |
+| 5.5 定时任务 | ⏸ 受阻 | `ops/com.dreambuddy.shadow.plist` 模板 + `shadow_batch.py` | macOS TCC：launchd bootstrap EIO、crontab operation not permitted；当前手动执行 |
+
+> 说明：状态以**代码 + 可复跑测试 + 真实 trace** 三重证据为准，不以文档声明为准；`⏸` 项均已标注阻塞原因与替代入口。
+
 ### Phase 0 — PoC ✅ 已完成（2026-11-11，协议层验收）
 
 1. ~~本地部署 LobeHub desktop~~（v0.5.0 弃用，已卸载）→ 改为**协议层直接验证**：registry 新增 `lobehub_frontend` 只读角色（verify 9 壳 0 漂移）+ mcpctl 生成 profile。
 2. **A1 模型无关性实证**：kimi-k3 / claude-sonnet / claude-opus 三模型经同一 stdio 链路全部 PASS（initialize / recall 命中 52 认知 / 写门禁 record 被拒）。
 3. 产物：commit 85e2bd7297（SPEC+REVIEW+registry）、fcf36548df（PlanCard schema）。
 
-### Phase 1 — 3.1 前端内置协议层（v0.5.0 修订，当前阶段）
+### Phase 1 — 3.1 前端内置协议层（v0.5.0 修订）✅ 已实施（2026-11-11）
 
 1. 在 3.1-FRONTEND 新建 `src/app/api/agent/chat` 路由：**Vercel AI SDK**（依赖已存在）做模型路由（OpenAI/Anthropic/Google/Qwen 走 openai-compatible 工厂），**MCP client**（stdio 起 l0_gateway，参数复用 lobehub_frontend profile）桥接 L0 工具（首挂 recall）。
 2. UI 侧复用 3.1 现有组件，不引入第二套前端；**不新建独立 `/agent` 聊天页**（v0.6.1）。
@@ -150,11 +167,12 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 2. 三端协同更新：44-三端协作架构登记 52（3.1 协议层）拓扑与健康检查。
 3. ~~LobeHub 独立服务部署~~（v0.5.0 弃用）。
 
-### Phase 3 — 蒸馏桥（v0.5.0 修订）
+### Phase 3 — 蒸馏桥（v0.5.0 修订）✅ 已实施（2026-11-11）
 
 1. 建桥：3.1 协议层会话摘要/辩论 trace/PlanCard 回填产物 → 经 L0 cognition 壳（record，授权主体 orchestrator，仅放行 record/verify）→ 35 认知库。
 2. 桥的写入仍遵守 worker 只读治理：桥本身不直连 cognitive_memory.db，只调壳。
 3. 验收：桥数据可在 recall 中命中，且来源标签可溯（tags 含 protocol-bridge）。
+4. **运行现状（2026-11-11 核对）**：桥代码 + 19 tests 已完成（R6 映射 canon≥B / 候选 C / 胜 B / 败 D，游标幂等）；入口为手动 CLI，未接定时。`bridge/outbox.jsonl` 89 条、`.cursor=1` → **88 条待消费**，即"桥已建成、回流未常态"。接入定时（与 Phase 5.5 同批）后再做"recall 可命中"的终验。
 
 ### Phase 4 — 脑暴编排器 + Debate 壳扩展（shadow 模式）✅ 已实施（2026-11-11）
 
@@ -175,7 +193,7 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 - 评估器目前为确定性启发式（`45.heuristic@1.0.0`）；45 域评测器输入为领域产物（EngineeringScan/回测统计等），PlanCard 无法直接喂入 → 需补"PlanCard→领域产物"适配层
 - live 执行分支未实现（`--no-shadow` 抛 NotImplementedError），符合 Phase 5 门禁
 
-**运行方式**：手动 CLI 触发（暂不上 launchd，避免与现有 2 个 plist 冲突）。shadow 2-4 周收集 trace 后评审激活。
+**运行方式**：以手动 CLI / `shadow_batch.py` 批量触发为主。`ops/com.dreambuddy.shadow.plist` 模板已备（每日 22:30、`--max 5`），但 macOS TCC 拦截导致无法自动装载（`launchctl bootstrap` EIO、`crontab` operation not permitted），定时落地见 §3.0 的 Phase 5.5。shadow 2-4 周收集 trace 后评审激活。
 
 ### Phase 4.5 — 补齐项（2026-11-11 实施）
 
@@ -211,11 +229,15 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 3. **scoring 接入 ✅**：`score()` = 结构分基线叠加域结果（BLOCK→0 且排除候选池；PASS→`min(1, base+0.05)`；INCONCLUSIVE→仅 base）。每条 scored 新增 `evaluator_provenance {source: structural|45, evaluator, verdict, reason, structural_detail}`；45 不可用时 `source=structural` 且不抛。
 4. **trace / 摘要 ✅**：trace 每条新增 `domain_eval {available, names, verdicts}`；`--json-out` 新增 `evaluators {available, names:int}`。
 5. **候选池同侧去重 ✅**：side-B 多个 variant 在 `extend_nodes` 为空时内容完全相同，保留会使 Top1/Top2 恒同分（gap 恒 0、T1 恒命中）。`dedupe_pool` 增加同侧结构指纹去重（跨侧不合并，保留争议检测）。
-6. **真实复跑（2026-11-11，5 轮）✅**：`pool=3`、`evaluators.available=true/names=7`、`evaluator_provenance.verdict=INCONCLUSIVE/missing_artifacts`；T1 gap 由修复前 `0.0` 变为 `0.082`（`1.0 - 0.918`，A 侧 3 个 risk_flags 的结构差），5 轮均 `escalate_debate`（0.082 < 0.1 阈值，属"接近分差"）。补充 `--n-per-side 1` 复跑：gap `0.109 > 0.1` → 5 轮 `dispatch`、`outbox_written=2`，证明分差可越过阈值且不再恒 0。
+6. **真实复跑（2026-11-11）✅**：`pool=3`、`evaluators.available=true/names=7`、`evaluator_provenance.verdict=INCONCLUSIVE/missing_artifacts`（未编造分数）。结构分替代退化常数后 gap 不再恒 0：`--n-per-side 1` 复跑 gap `0.109 > 0.1` → 5 轮 `dispatch`、`outbox_written=2`。
 7. **已知局限 / 后续接入时机**：
    - 规划期无领域产物，真实评测器**一律不执行**，`verdict` 恒 `INCONCLUSIVE`；`source=45` 仅代表契约可用，不代表已评测。
    - 真实产物评测需上游先把 `artifacts/inputs/{run_id}.json` 映射为 45 领域对象（EngineeringScan/BacktestStats/StressPlan）；接入时机 = shadow trace 累计 2-4 周且产物落盘格式冻结后，届时仅替换 `evaluate_plan()` 的 `artifact_not_evaluated` 分支。
-   - 默认 `--n-per-side 2` 时 A 侧最优卡 0.918 vs B 1.0，gap 0.082，T1 持续命中；是否下调 T1 阈值需 Phase 5 门槛评审用更多 trace 决定。
+   - T1 阈值（0.1）暂不下调：side-B 分不对称已由第 8 条修复，阈值调整需更多 trace 支撑。
+8. **side-B 同量级结构扣分 ✅（v0.10.0）**：side-B 由确定性意图引擎生成，原卡 `risk_flags` 为空、evidence 仅 `dreamos.*` 自证 → 结构分恒 `1.0`，与 A 侧 0.89–0.92 不可比（Top1 恒为 B，T1 gap 恒 0.082 → 假争议）。
+   - `_enrich_side_b_card()`：注入 3 条真实局限 risk（`deterministic_planner_no_independent_evidence` / `registry_mapping_unvalidated` / `single_intent_call_no_variant_diversity`），已有人工 risk 时不覆盖。
+   - `_evidence_raw()`：`dreamos.*` 自证引用不计入独立取证，仅 `recall:` / `unified_search:` 等外部取证计分。
+   - 实测：B 由 `1.0` 降至 `0.736`；Top2 回归**同侧 A vs A**（gap 0.027），T1 仅在真实变体分歧时触发。扣分依据是可证伪的规划器局限，未来 B 侧接入独立取证/多 intent 后分数自动回升，无需改代码。
 
 ---
 

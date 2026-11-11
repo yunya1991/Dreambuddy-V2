@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.13 | **更新日期**: 2026-11-09
+> **版本**: v2.14 | **更新日期**: 2026-11-11
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -60,6 +60,10 @@
 | 前端系统 (3.0) | [3-FRONTEND/FRONTEND_SYSTEM.md](../3-FRONTEND/FRONTEND_SYSTEM.md) v3.0 | 3.0 前端架构设计 (Dream Universal Gateway, Next.js 14, 端口3000) | 📦 归档参考 |
 | ★ **前端系统 (3.1)** | [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) **v3.1** | **3.1 前端技术文档**：L0/L1/L2 意图路由 + 56页面+100+组件+12Store+96+API+P0-P3已全部完成（§3.2 旧 SACG 已更新指向 SSoT v4.0） | ✅ 已实现 |
 | 前端系统 README | [3.1-FRONTEND/README.md](../3.1-FRONTEND/README.md) | 3.1 项目说明、快速开始、目录结构 | ✅ |
+| ★ **3.1 前端改建 SPEC** | [3.1-FRONTEND/docs/SPEC-20261111-前端交互内核与设计系统改建.md](../3.1-FRONTEND/docs/SPEC-20261111-前端交互内核与设计系统改建.md) **v0.1.0** | 交互内核（part/ToolCard/PlanCard）+ 设计 token + 壳层合一，P0/P1/P2 与 A1-A10 验收 | 📝 待评审 |
+| ★ **SPEC-A 唯一壳收口与流式传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-A-唯一壳收口与流式传输治理.md) **v0.1.0** | Agent/Board 归位 + 任务流/monitor 流单例 + REST 传输统一 + 构建门禁，G1-G6/T-A1~T-A7 | 📝 待评审 |
+| ★ **SPEC-B 交互内核与会话可用性** | [3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md](../3.1-FRONTEND/docs/SPEC-20261111-B-交互内核与会话可用性.md) **v0.1.0** | AgentPart/PartRenderer/ToolCard/PlanCardView + 会话持久化/虚拟化/输入器/⌘K，G-B1~G-B8 | 📝 待评审 |
+| ★ **SPEC-C 契约与传输治理** | [3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md](../3.1-FRONTEND/docs/SPEC-20261111-C-契约与传输治理.md) **v0.1.0** | 信封/错误码/SSE v1/PlanCard 漂移/Query/鉴权/认知-DSH 代理/边界门禁，G-C1~G-C8 | 📝 待评审 |
 | ★ **SKILL 编排主 SPEC** | [1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md](../1-ARCHITECTURE/specs/DREAMOS_SKILL_ORCHESTRATION_SPEC.md) | HC-1~HC-9 硬约束 + 三路径编排 + M2五组件 + 8.1 F1-F20 | ✅ 落地中 |
 | ★ **SKILL 模仿进化 SPEC** | [1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md](../1-ARCHITECTURE/specs/SKILL_IMITATION_EVOLUTION_SPEC.md) **v0.3** | 路径B模仿+路径C联网兜底+ImitationCounter+token埋点 | ✅ 172/172 GREEN |
 | ★ **广义认知系统协作** | [35-广义认知系统协作模块/README.md](../35-广义认知系统协作模块/README.md) · [INDEX.md](../35-广义认知系统协作模块/INDEX.md) | 跨系统协作设计 SSoT：SPEC 收敛 + 协作接口契约 + PoE 统一框架（纯文档统筹层，不含代码） | ✅ v1.6（契约治理已落地） |
@@ -158,6 +162,9 @@
 | ★ PoE 同行评审 | [33-REA逆向解析工程/PEER-REVIEW-PoE.md](../33-REA逆向解析工程/PEER-REVIEW-PoE.md) | v1.0（四角色评审+7模式阻断，决议：修改后接受） |
 | PoE 工程实践复现器 SPEC | [33-REA逆向解析工程/SPEC-工程实践复现器.md](../33-REA逆向解析工程/SPEC-工程实践复现器.md) | v0.3（设计决策还原+演化叙事+方法论抽象+AI审计） |
 | PoE 工程实践复现器 TASKS | [33-REA逆向解析工程/TASKS-工程实践复现器.md](../33-REA逆向解析工程/TASKS-工程实践复现器.md) | v1.0（8任务，依赖链已规划） |
+| ★ SPEC-33-D REA as L0 MCP | [33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md](../33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md) | v0.1.0（P0+P1 已落地，301 passed） |
+| ★ SPEC-33-E LLM 混合层 | [33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md](../33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md) | v0.1.1（🚧 P0 已落地：假设契约+PoE裁判+cognitive_hint；P1/P2 待开工） |
+| SKILL dream-rea-architecture-query | [.trae/skills/dream-rea-architecture-query/SKILL.md](../.trae/skills/dream-rea-architecture-query/SKILL.md) | v1.0.0（何时调用/token纪律/认知闭环） |
 
 ### 49-交易框架协议
 
@@ -174,6 +181,16 @@
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | SPEC | [50-NN主矛盾评估器/SPEC.md](../50-NN主矛盾评估器/SPEC.md) | v0.2.0（R0 进行中；本地-only / paper-only） |
+
+### 52-LobeHub 协议集成
+
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.10.0（Phase 0/1/3/4/4.5/4.6 已实施；Phase 5 限量；Phase 2 待定；§3.0 落地状态总表） |
+| 架构调研与评审 | [52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md](../52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md) | 2026-11-11（R1-R9 已闭环） |
+| 协议层能力件 | [3.1-FRONTEND/src/lib/agent/](../3.1-FRONTEND/src/lib/agent/) | mcp-client / providers / plancard / plan-variant / distill-outbox（各带 vitest） |
+| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring / domain_eval / adjudicator（75 tests） |
+| 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 19 tests；未接定时，outbox 88 条待消费 |
 
 ---
 
@@ -251,7 +268,7 @@
 | L3 辅助模块 | 6 | 6 | 0 | 0 | 100% |
 | **合计** | **35** | **23** | **6** | **6** | **69%** |
 
-> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-08 实测：35 模块 / 23 齐全 / 6 部分 / 6 缺失 / 69%；`50-NN主矛盾评估器` R0 阶段尚无 `docs/` 目录，未纳入工具统计）。断链校验：`link_checker.py` 2026-11-08 实测 588 链接 / 2 断链，均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`（存量归档文档，指向本地不存在的 3.1-FRONTEND 文件，FAIL-OPEN 不阻塞）。
+> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-08 实测：35 模块 / 23 齐全 / 6 部分 / 6 缺失 / 69%；`50-NN主矛盾评估器` R0 阶段与 `52-lobehub协议集成` 尚无 `docs/` 目录，均未纳入工具统计（52 当前为 SPEC + REVIEW 两份文档，5 文档标准缺口待补）。断链校验：`link_checker.py` 2026-11-08 实测 588 链接 / 2 断链，均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`（存量归档文档，指向本地不存在的 3.1-FRONTEND 文件，FAIL-OPEN 不阻塞）。
 
 ---
 
