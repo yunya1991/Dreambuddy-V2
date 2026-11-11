@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""52-LobeHub 协议集成 Phase 4 — 脑暴编排器（Brainstorm Orchestrator，shadow 模式）。
+"""52-LobeHub 协议集成 Phase 4.5 — 脑暴编排器（Brainstorm Orchestrator，shadow 模式）。
 
-SPEC §7.7：默认低成本协作（并行发散 → 确定性收敛 → Top1 定选），
+SPEC §7.7：默认低成本协作（双链各发散 N 张 → 池内确定性收敛 → Top1 定选），
 命中争议触发器 T1-T4 才升级 Debate。shadow 模式为默认：
 **只记录 trace / outbox，绝不执行任何 DreamOS 执行链**（executed 恒为 false）。
+Phase 4.5：`--n-per-side`（1-3，默认 2）控制每侧候选数；grounded 裁决器
+与启发式打分并行写 trace `adjudication`（不参与决策）；铁律⑤ fail-closed
+（model 空/unknown 或跨侧同 model/证据路径 → 拒绝开题且不写 outbox）。
 
 用法：
   python3 brainstorm_orchestrator.py --intent "评估是否给离场模块增加波动率自适应阈值" \
-      --side-a-plancard /tmp/side_a.json --disable-recall
+      --side-a-plancard /tmp/side_a.json --disable-recall --n-per-side 2
 
 仅标准库依赖。
 """
@@ -28,6 +31,7 @@ REPO_ROOT = ORCHESTRATOR_DIR.parents[1]
 if str(ORCHESTRATOR_DIR) not in sys.path:
     sys.path.insert(0, str(ORCHESTRATOR_DIR))
 
+from adjudicator import adjudicate  # noqa: E402
 from debate_client import (  # noqa: E402
     DebateTransportError,
     StdioShellClient,
@@ -40,7 +44,7 @@ from proposers import (  # noqa: E402
     build_proposers,
 )
 from registry_tools import RegistryView, load_registry  # noqa: E402
-from scoring import gate, score, triggers  # noqa: E402
+from scoring import gate, score, triggers, validate_diversity  # noqa: E402
 
 DEFAULT_TRACE_PATH = ORCHESTRATOR_DIR / "traces" / "brainstorm.jsonl"
 DEFAULT_OUTBOX_PATH = REPO_ROOT / "52-lobehub协议集成" / "bridge" / "outbox.jsonl"
@@ -82,29 +86,12 @@ def recall_via_mcp(intent: str, top_k: int = RECALL_TOP_K) -> list[dict[str, Any
     return [m for m in memories or [] if isinstance(m, dict)]
 
 
-# ── 多样性校验（铁律⑤） ──────────────────────────────────────────
+# ── 多样性校验（铁律⑤，fail-closed 见 scoring.validate_diversity） ─────────
 
 
 def check_diversity(proposals: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
-    """两两比较有效提案：model 相同 或 evidence_path 相同 → 违规（拒绝该对）。"""
-    valid = [p for p in proposals if isinstance(p, dict) and isinstance(p.get("card"), dict)]
-    violations: list[dict[str, Any]] = []
-    for i in range(len(valid)):
-        for j in range(i + 1, len(valid)):
-            left, right = valid[i], valid[j]
-            same_model = left.get("model") == right.get("model")
-            same_path = left.get("evidence_path") == right.get("evidence_path")
-            if same_model or same_path:
-                violations.append(
-                    {
-                        "pair": [left.get("proposer_id"), right.get("proposer_id")],
-                        "same_model": same_model,
-                        "same_evidence_path": same_path,
-                        "models": [left.get("model"), right.get("model")],
-                        "evidence_paths": [left.get("evidence_path"), right.get("evidence_path")],
-                    }
-                )
-    return violations
+    """兼容入口：转调 scoring.validate_diversity（Phase 4.5 加固版）。"""
+    return validate_diversity(proposals)
 
 
 # ── 提案收集 ────────────────────────────────────────────────────
@@ -126,8 +113,9 @@ def collect_proposals(
     context_refs: list[str],
     proposers: Sequence[Proposer],
     side_a_plancard: str | Path | None = None,
+    n_per_side: int = 1,
 ) -> list[dict[str, Any]]:
-    """收集双方提案（任一失败只记 error，不中断）。"""
+    """收集双方全部候选卡（每侧 N 张）；任一失败只记 error，不中断。"""
     proposals: list[dict[str, Any]] = []
     for proposer in proposers:
         is_side_a = isinstance(proposer, SideAProposer)
@@ -136,24 +124,77 @@ def collect_proposals(
             proposals.append(
                 {
                     "proposer_id": proposer.proposer_id,
-                    "model": "offline-plancard",
-                    "evidence_path": "plancard_file",
+                    "model": os.environ.get("SIDE_A_MODEL", "offline-plancard"),
+                    "evidence_path": os.environ.get("SIDE_A_EVIDENCE_PATH", "plancard_file"),
+                    "model_kind": "llm",
+                    "variant": 0,
+                    "selection_basis": "offline_plancard",
                     "card": card,
                     "error": error,
                 }
             )
             continue
-        card = proposer.propose(intent, context_refs)
-        proposals.append(
-            {
-                "proposer_id": proposer.proposer_id,
-                "model": proposer.model,
-                "evidence_path": proposer.evidence_path,
-                "card": card,
-                "error": proposer.last_error if card is None else None,
-            }
-        )
+
+        try:
+            results = proposer.propose(intent, context_refs, n=n_per_side)
+        except Exception as exc:  # noqa: BLE001 — 单个提案方失败不中断另一侧
+            results = []
+            proposals.append(
+                {
+                    "proposer_id": proposer.proposer_id,
+                    "model": proposer.model,
+                    "evidence_path": proposer.evidence_path,
+                    "model_kind": getattr(proposer, "model_kind", "unknown"),
+                    "variant": None,
+                    "selection_basis": None,
+                    "card": None,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+            )
+
+        for result in results:
+            proposals.append(
+                {
+                    "proposer_id": proposer.proposer_id,
+                    "model": proposer.model,
+                    "evidence_path": proposer.evidence_path,
+                    "model_kind": getattr(proposer, "model_kind", "unknown"),
+                    "variant": result.get("variant"),
+                    "selection_basis": result.get("selection_basis"),
+                    "card": result.get("card"),
+                    "error": None,
+                }
+            )
+        for error in getattr(proposer, "last_errors", []):
+            proposals.append(
+                {
+                    "proposer_id": proposer.proposer_id,
+                    "model": proposer.model,
+                    "evidence_path": proposer.evidence_path,
+                    "model_kind": getattr(proposer, "model_kind", "unknown"),
+                    "variant": None,
+                    "selection_basis": None,
+                    "card": None,
+                    "error": error,
+                }
+            )
     return proposals
+
+
+def dedupe_pool(proposals: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """候选池按 card_id 去重（保留首次出现）。"""
+    seen: set[str] = set()
+    pool: list[dict[str, Any]] = []
+    for proposal in proposals:
+        card = proposal.get("card")
+        if not isinstance(card, dict):
+            continue
+        card_id = str(card.get("id") or "")
+        if card_id in seen:
+            continue
+        seen.add(card_id)
+        pool.append(proposal)
+    return pool
 
 
 # ── 收敛：门禁 + 评分 ────────────────────────────────────────────
@@ -318,8 +359,14 @@ def run(
     recall_fetcher: Callable[[str], list[dict[str, Any]]] | None = None,
     debate_opener: Callable[[str, str, list[str], list[dict[str, Any]]], str] | None = None,
     registry: RegistryView | None = None,
+    n_per_side: int = 1,
+    adjudicator_mode: str = "both",
 ) -> dict[str, Any]:
-    """执行一次脑暴（shadow）。任何子步骤失败降级记录，不中断。"""
+    """执行一次脑暴（shadow）。任何子步骤失败降级记录，不中断。
+
+    n_per_side：每侧发散候选数（CLI 默认 2）；adjudicator_mode：
+    heuristic（不跑 grounded）/ grounded / both（默认，shadow 并行记录）。
+    """
     if not shadow:
         raise NotImplementedError(
             "live 执行分支属 Phase 5（竞争模式激活），当前仅支持 shadow 模式；"
@@ -335,12 +382,14 @@ def run(
     if len(registry) == 0:
         errors.append({"step": "registry", "error": "registry_empty_or_missing"})
 
-    # ① 发散：双方独立提案（不互相评判）
+    # ① 发散：双方独立提案（每侧 N 张，不互相评判）
     proposer_list = (
         list(proposers) if proposers is not None else build_proposers(registry.allowed())
     )
     try:
-        proposals = collect_proposals(intent, refs, proposer_list, side_a_plancard)
+        proposals = collect_proposals(
+            intent, refs, proposer_list, side_a_plancard, n_per_side=n_per_side
+        )
     except Exception as exc:  # noqa: BLE001 — 降级不中断
         proposals = []
         errors.append({"step": "collect_proposals", "error": f"{type(exc).__name__}: {exc}"})
@@ -350,13 +399,14 @@ def run(
                 {"step": "propose", "error": f"{proposal.get('proposer_id')}:{proposal['error']}"}
             )
 
-    # ② 多样性校验（铁律⑤）
-    violations = check_diversity(proposals)
+    # ② 候选池去重 → 多样性校验（铁律⑤ fail-closed）
+    pool = dedupe_pool(proposals)
+    violations = check_diversity(pool)
     for violation in violations:
         errors.append({"step": "diversity", "error": json.dumps(violation, ensure_ascii=False)})
 
-    # ③ 收敛：gate + score
-    gates, scored = evaluate_proposals(proposals, registry)
+    # ③ 收敛：池内每张各自 gate + score
+    gates, scored = evaluate_proposals(pool, registry)
 
     # ④ recall 取证（可禁用；失败 FAIL-OPEN）
     recall_hits: list[dict[str, Any]] | None = None
@@ -376,7 +426,31 @@ def run(
         scored, gates, recall_hits=recall_hits, user_requested=user_requested_debate
     )
 
-    # ⑥ 决策
+    # ⑥ 论证学裁决器（shadow 并行 A/B，不改变决策）
+    scored_by_score = sorted(scored, key=lambda item: float(item.get("score") or 0.0), reverse=True)
+    heuristic_top = (scored_by_score[0].get("card") or {}).get("id") if scored_by_score else None
+    adjudication: dict[str, Any] = {
+        "mode": adjudicator_mode,
+        "heuristic_top": heuristic_top,
+        "grounded_winner": None,
+        "agree": None,
+    }
+    if adjudicator_mode in ("grounded", "both") and scored:
+        grounded = adjudicate(scored, gates)
+        adjudication.update(
+            {
+                "grounded_winner": grounded["winner"],
+                "grounded_verdict": grounded["verdict"],
+                "agree": grounded["winner"] == heuristic_top,
+                "in_set": grounded["in_set"],
+                "out_set": grounded["out_set"],
+                "undec_set": grounded["undec_set"],
+                "attack_edges": grounded["attack_edges"],
+                "explain": grounded["explain"],
+            }
+        )
+
+    # ⑦ 决策
     debate_info: dict[str, Any] = {"debate_id": None}
     dispatch: dict[str, Any] = {"intent": None, "executed": False}
     viable = [item for item in scored if item.get("gate_verdict") == "PASS"]
@@ -385,7 +459,8 @@ def run(
     if violations:
         decision = {
             "kind": "diversity_violation",
-            "reason": "铁律⑤：双方 model/evidence_path 不得相同，该对被拒绝",
+            "reason": "铁律⑤ fail-closed：model 为空/unknown 或两侧 model/evidence_path 相同",
+            "violations": violations,
             "executed": False,
         }
     elif not scored:
@@ -424,17 +499,22 @@ def run(
             "note": "shadow：仅记录 dispatch 意图，不执行 DreamOS 链路",
         }
 
-    # ⑦ trace（append-only）
+    # ⑧ trace（append-only）
     trace_record = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "run_id": run_id,
         "intent": intent,
         "shadow": shadow,
+        "n_per_side": n_per_side,
+        "pool_size": len(pool),
         "proposals": [
             {
                 "proposer_id": p.get("proposer_id"),
                 "model": p.get("model"),
+                "model_kind": p.get("model_kind"),
                 "evidence_path": p.get("evidence_path"),
+                "variant": p.get("variant"),
+                "selection_basis": p.get("selection_basis"),
                 "card_id": (
                     (p.get("card") or {}).get("id") if isinstance(p.get("card"), dict) else None
                 ),
@@ -443,6 +523,7 @@ def run(
             }
             for p in proposals
         ],
+        "diversity_violations": violations,
         "gates": gates,
         "scores": [
             {
@@ -455,6 +536,7 @@ def run(
         ],
         "recall": recall_step,
         "triggers": trigger_result,
+        "adjudication": adjudication,
         "decision": decision,
         "debate": debate_info,
         "dispatch": dispatch,
@@ -465,16 +547,18 @@ def run(
     except OSError as exc:
         errors.append({"step": "trace", "error": f"{type(exc).__name__}: {exc}"})
 
-    # ⑧ outbox（胜方 B / 败方 D，附裁决证据）
-    outbox_entries = build_outbox_entries(
-        intent,
-        scored,
-        gates,
-        run_id,
-        loser_extra=(
-            f"debate={debate_info.get('debate_id')}" if debate_info.get("debate_id") else ""
-        ),
-    )
+    # ⑨ outbox（胜方 B / 败方 D，附裁决证据）；铁律⑤拒绝时不写 outbox
+    outbox_entries: list[dict[str, Any]] = []
+    if not violations:
+        outbox_entries = build_outbox_entries(
+            intent,
+            scored,
+            gates,
+            run_id,
+            loser_extra=(
+                f"debate={debate_info.get('debate_id')}" if debate_info.get("debate_id") else ""
+            ),
+        )
     written_outbox = 0
     for entry in outbox_entries:
         try:
@@ -487,8 +571,12 @@ def run(
         "run_id": run_id,
         "intent": intent,
         "shadow": shadow,
+        "n_per_side": n_per_side,
+        "pool_size": len(pool),
         "proposals": len(proposals),
         "scored": len(scored),
+        "diversity_violations": violations,
+        "adjudication": adjudication,
         "decision": decision,
         "debate": debate_info,
         "triggers": {"escalate": trigger_result["escalate"], "fired": trigger_result["fired"]},
@@ -517,7 +605,21 @@ def main(argv: list[str] | None = None) -> int:
         "--side-a-plancard", default=None, help="给定则跳过 A 侧 HTTP 取卡（离线测试用）"
     )
     parser.add_argument("--disable-recall", action="store_true", help="禁用 cognition recall 取证")
+    parser.add_argument(
+        "--n-per-side",
+        type=int,
+        default=2,
+        help="每侧发散候选数（1-3，默认 2；超范围直接报错退出）",
+    )
+    parser.add_argument(
+        "--adjudicator",
+        choices=("heuristic", "grounded", "both"),
+        default="both",
+        help="裁决器模式（默认 both：grounded 仅 shadow 并行记录）",
+    )
     args = parser.parse_args(argv)
+    if not 1 <= args.n_per_side <= 3:
+        parser.error(f"--n-per-side 必须在 1-3 之间，收到 {args.n_per_side}")
 
     try:
         summary = run(
@@ -529,6 +631,8 @@ def main(argv: list[str] | None = None) -> int:
             outbox_path=args.outbox_path,
             side_a_plancard=args.side_a_plancard,
             disable_recall=args.disable_recall,
+            n_per_side=args.n_per_side,
+            adjudicator_mode=args.adjudicator,
         )
     except NotImplementedError as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)

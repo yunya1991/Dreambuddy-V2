@@ -177,36 +177,66 @@ def map_node_to_tool(node_id: str) -> str | None:
     return None
 
 
+def _ordered_nodes(nodes: Any) -> list[str]:
+    """链字段 → 去重保序节点列表。"""
+    values = nodes if isinstance(nodes, list) else [nodes] if isinstance(nodes, str) else []
+    ordered: list[str] = []
+    for node in values:
+        if isinstance(node, str) and node and node not in ordered:
+            ordered.append(node)
+    return ordered
+
+
+def chain_for_variant(response: dict[str, Any], variant: int = 0) -> list[str]:
+    """variant 0=base+extend；1=仅 base（空则取 extend 子集）；≥2=反转 extend。"""
+    base = _ordered_nodes(response.get("base_chain"))
+    extend = _ordered_nodes(response.get("extend_nodes"))
+    if variant <= 0:
+        return base + [node for node in extend if node not in base]
+    if variant == 1:
+        return base or extend[: max(1, (len(extend) + 1) // 2)]
+    reversed_extend = list(reversed(extend))
+    chain = base + [node for node in reversed_extend if node not in base]
+    return chain or list(reversed(base))
+
+
+def describe_variant(response: dict[str, Any], variant: int = 0) -> str:
+    """变体依据（写入 proposal.selection_basis，便于 trace 审计）。"""
+    base = _ordered_nodes(response.get("base_chain"))
+    extend = _ordered_nodes(response.get("extend_nodes"))
+    if variant <= 0:
+        return f"完整链：base_chain({len(base)}) + extend_nodes({len(extend)})"
+    if variant == 1:
+        if base:
+            return f"基链优先：仅 base_chain({len(base)})"
+        return f"基链为空：取 extend_nodes({len(extend)}) 前段子集"
+    return f"链序扰动：base_chain + 反转 extend_nodes({len(extend)})"
+
+
 def from_dreamos_intent(
     intent: str,
     intent_response: dict[str, Any],
     allowed_tools: Iterable[str],
     context_refs: Sequence[str] | None = None,
+    variant: int = 0,
 ) -> dict[str, Any]:
-    """DreamOS `/api/v1/intent` 响应 → side-B PlanCard。
+    """DreamOS `/api/v1/intent` 响应 → side-B PlanCard（variant 决定链组成）。
 
     base_chain + extend_nodes 顺序映射为 plan_steps；工具必须真实注册，
     否则回退 `l0.cognition.mcp.recall` 并在 risk_flags 标 `chain_unmapped`。
     """
     allowed = set(allowed_tools)
     response = intent_response if isinstance(intent_response, dict) else {}
-    chain: list[str] = []
-
-    def _append(nodes: Any) -> None:
-        values = nodes if isinstance(nodes, list) else [nodes] if isinstance(nodes, str) else []
-        for node in values:
-            if isinstance(node, str) and node and node not in chain:
-                chain.append(node)
-
-    _append(response.get("base_chain"))
-    _append(response.get("extend_nodes"))
+    chain: list[str] = chain_for_variant(response, variant)
     if not chain:
         # recommended_chain 可能为 "A->B" / "A,B" 形式的汇总串，仅在主链缺失时兜底
         recommended = response.get("recommended_chain")
         if isinstance(recommended, str):
-            _append([n for n in re.split(r"\s*(?:->|>|\||,|\s)\s*", recommended) if n])
+            chain = _ordered_nodes(
+                [n for n in re.split(r"\s*(?:->|>|\||,|\s)\s*", recommended) if n]
+            )
         else:
-            _append(recommended)
+            chain = _ordered_nodes(recommended)
 
     steps: list[dict[str, Any]] = []
     risk_flags: list[str] = []

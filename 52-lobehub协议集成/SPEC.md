@@ -1,8 +1,8 @@
 # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
 
-> 版本：v0.6.1（D1 澄清：唯一前端 = 单套 UI，协议层能力件保留；云端 `360e1f78dd` 误删作废，以本地为准）
+> 版本：v0.7.0（Phase 4.5 补齐：N-per-side 发散 + grounded semantics shadow A/B + 铁律⑤加固）
 > 日期：2026-11-11
-> 状态：🟢 Phase 0/1/3/4 已实施（本地）；Phase 2 云端部署待定
+> 状态：🟢 Phase 0/1/3/4/4.5 已实施（本地）；Phase 2 云端部署待定
 > 归属：52-LobeHub协议集成（叠加层，非主骨架）
 > 上游：47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构（子域能力供给）
 > 下游：DreamOS/SACG（主骨架编排）、33-REA / 48-涌现架构（反思与涌现回流）
@@ -177,6 +177,15 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 **运行方式**：手动 CLI 触发（暂不上 launchd，避免与现有 2 个 plist 冲突）。shadow 2-4 周收集 trace 后评审激活。
 
+### Phase 4.5 — 补齐项（2026-11-11 实施）
+
+1. **N-per-side 发散 ✅**：双链各发散 N 张候选（默认 N=2，`--n-per-side` 可调 1-3），候选池按 card_id 去重后逐张 gate+score；Top1 → winner、其余 → loser 入蒸馏桥。详见 §7.7.1。
+2. **grounded semantics shadow A/B ✅**：新增 `orchestrator/adjudicator.py`（标准库 ≤220 行）：论点=card/step 两级，攻击边 R-a/R-b/R-c 全确定性，标准最小不动点求解 IN/OUT/UNDEC；与启发式打分并行写入 trace `adjudication`，**不改变 shadow 决策**（仍取启发式 Top1）。
+3. **铁律⑤ 加固 ✅**：`validate_diversity` fail-closed——model 空/unknown/none/null、跨侧同 model、跨侧 evidence_path 相同或为空一律拒绝；拒绝时仍写 trace 但不写 outbox、不升级 Debate，CLI 摘要标注原因；SideB model 可由 `SIDE_B_MODEL` 配置，trace 新增 `model_kind`（llm / deterministic_planner）。
+4. **45 域评测器适配层 ⏸️ 顺延 Phase 5**：45 evaluator 输入为领域产物（EngineeringScan/回测统计等），PlanCard 需先经"PlanCard→领域产物"适配层；本轮不接真实评测器，继续用 `45.heuristic@1.0.0`。
+
+**Phase 4.5 交付**：`adjudicator.py`、`tests/test_adjudicator.py`；`proposers.py`/`plancard.py`/`scoring.py`/`brainstorm_orchestrator.py` 增量；3.1 侧 `src/lib/agent/plan-variant.ts` + `/api/agent/plan` variant 支持。
+
 ### Phase 5 — 竞争模式激活（非交易任务）
 
 1. 对研究/分析/工程类任务激活"脑暴-裁决-分工"全链路（争议时升级 Debate）。
@@ -272,7 +281,7 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 | 补充铁律 | 依据 |
 |---|---|
-| ⑤ **辩论多样性契约化**：双方禁止同模型配置；证据路径差异化（DreamOS 侧走 L0 数据壳，3.1 协议层侧经 web 检索/独立数据源取证）；裁决三态含 INCONCLUSIVE（对齐 45 评测契约） | arXiv《More Debate, Same Evidence》：同模型+同证据池的辩论错误强相关，加轮次/改 persona 无效，增益只来自模型/证据多样性 + 弃权政策 |
+| ⑤ **辩论多样性契约化**：双方禁止同模型配置；证据路径差异化（DreamOS 侧走 L0 数据壳，3.1 协议层侧经 web 检索/独立数据源取证）；裁决三态含 INCONCLUSIVE（对齐 45 评测契约）。**Phase 4.5 加固**：`model` 为空/`unknown`/`none`/`null` 一律拒绝开题（fail-closed）；跨侧同 model、evidence_path 相同或为空同样拒绝；trace 标注 `model_kind`（`llm` / `deterministic_planner`），区分"真模型多样性"与"架构异质性" | arXiv《More Debate, Same Evidence》：同模型+同证据池的辩论错误强相关，加轮次/改 persona 无效，增益只来自模型/证据多样性 + 弃权政策 |
 | ⑥ **任务类型分流**：探索性复杂任务 → 单边规划 + orchestrator-workers；方案择优任务 → 才进 Debate | Anthropic Building Effective Agents：orchestrator-workers 适合子任务不可预测场景；辩论研究实证收益仅 1-3pp 且成本高 |
 | ⑦ **结构化产物交接**：胜负方案以 PlanCard schema（非自然语言）交执行方；蒸馏桥产物同 schema | Anthropic harness 长时任务教训：structured artifacts 是跨会话/跨系统交接唯一可靠方式 |
 
@@ -344,4 +353,15 @@ debate.adjudicate(debate_id, evaluator_refs) -> verdict        # 评估器裁决
 | 高风险类 | risk_flags 命中 13 风控域 | 强制人工审批节点，无论类型 |
 
 - 路由规则版本化（存 47 registry 同仓），变更需评审；初期按上表保守分流，shadow 数据驱动调优。
+
+### 7.7 发散与收敛执行基线（Phase 4.5）
+
+#### 7.7.1 N-per-side 候选发散
+
+- **实现默认 N=2，池内 ≤2N 张**；`--n-per-side` 可调 **1-3**，越界 CLI 直接报错退出（退出码 2）。
+- side-A：对 3.1 `/api/agent/plan` 调用 N 次，body 携带 `variant: {focus, seed}`，focus 轮转 `risk-first` / `cost-first` / `speed-first`；任一调用失败仅记 error，不整体失败。
+- side-B：只调 DreamOS `/api/v1/intent` 一次；variant 0 = 完整链（base_chain + extend_nodes），variant 1 = 仅 base_chain（为空则取 extend_nodes 子集），variant ≥2 = 反转 extend_nodes 顺序；每张卡 `card_id` 唯一，`selection_basis` 记录变体依据。
+- 候选池按 `card_id` 去重，池内每张各自 gate(G1-G4) + score；Top1 → `brainstorm_winner`（B），其余全部 → `brainstorm_loser`（D）。
+- trace 新增 `n_per_side` / `pool_size`；T1 语义不变：Top1 与 Top2 分差 < 0.1 触发升级 Debate。
+- grounded 裁决与启发式并行写入 trace `adjudication`（`heuristic_top` / `grounded_winner` / `agree`），**不参与决策**；`--adjudicator heuristic|grounded|both`（默认 both）。
 

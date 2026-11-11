@@ -2,12 +2,16 @@
  * POST /api/agent/plan
  * 52-LobeHub 协议集成 Phase 4 — side-A PlanCard 生成入口（脑暴编排器 A 侧提案方）。
  *
- * Body: { intent: string, context_refs?: string[] }
+ * Body: { intent: string, context_refs?: string[], variant?: { focus, seed } }
  *
  * 流程：resolveAgentModel（env 驱动）→ null 则 200 degraded 信封；
  * 否则独立取证（MCP unified_search → recall，FAIL-OPEN）→ 模型生成 PlanCard
  * → validatePlanCard 手写校验（不合规 200 degraded + 错误明细，绝不抛 500）
  * → { ok:true, data:{ plancard, model, evidence_path } }。
+ *
+ * variant（Phase 4.5）：脑暴编排器按 --n-per-side 多次调用本路由，
+ * focus ∈ risk-first/cost-first/speed-first 注入提示词；缺省不改变原行为。
+ * 返回前统一重签 card_id，保证并发/多次调用 id 唯一。
  *
  * 边界（硬约束）：只做规划层产物生成；plan_steps[].tool 只允许引用 47 registry
  * 已注册的 l0.* 工具；无任何执行/交易/记忆写能力（写工具由服务端拒绝）。
@@ -19,7 +23,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { resolveAgentModel } from '@/lib/agent/providers';
 import { getCognitionMcpClient } from '@/lib/agent/mcp-client';
-import { validatePlanCard, PLAN_CARD_ID_PREFIX } from '@/lib/agent/plancard';
+import {
+  validatePlanCard,
+  newPlanCardId,
+  PLAN_CARD_ID_PREFIX,
+} from '@/lib/agent/plancard';
+import {
+  buildVariantPromptSection,
+  normalizeVariant,
+  type PlanVariant,
+} from '@/lib/agent/plan-variant';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -145,6 +158,7 @@ function buildPrompt(
   contextRefs: string[],
   evidence: EvidenceBundle,
   allowedTools: string[],
+  variant: PlanVariant | null,
 ): string {
   return [
     '你是 DreamBuddy 的规划提案方（side A），只输出一个 JSON 对象，不要任何解释文字。',
@@ -152,6 +166,7 @@ function buildPrompt(
     '',
     `意图：${intent}`,
     contextRefs.length > 0 ? `上下文引用：${JSON.stringify(contextRefs)}` : '',
+    ...buildVariantPromptSection(variant),
     '独立取证结果（只能引用这些 evidence_refs）：',
     evidence.refs.length > 0 ? JSON.stringify(evidence.refs) : '（无，evidence_refs 留空数组）',
     '',
@@ -176,7 +191,13 @@ function buildPrompt(
 }
 
 export async function POST(request: NextRequest) {
-  let body: { intent?: string; context_refs?: string[]; provider?: string; model?: string };
+  let body: {
+    intent?: string;
+    context_refs?: string[];
+    provider?: string;
+    model?: string;
+    variant?: { focus?: string; seed?: number };
+  };
   try {
     body = await request.json();
   } catch {
@@ -190,6 +211,7 @@ export async function POST(request: NextRequest) {
   const contextRefs = Array.isArray(body?.context_refs)
     ? body.context_refs.filter((r): r is string => typeof r === 'string')
     : [];
+  const variant = normalizeVariant(body?.variant);
 
   try {
     const model = resolveAgentModel({ provider: body.provider, model: body.model });
@@ -208,7 +230,7 @@ export async function POST(request: NextRequest) {
 
     const { text } = await generateText({
       model,
-      prompt: buildPrompt(intent, contextRefs, evidence, allowedTools),
+      prompt: buildPrompt(intent, contextRefs, evidence, allowedTools, variant),
       temperature: 0.2,
     });
 
@@ -239,9 +261,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       data: {
-        plancard: parsed,
+        // 统一重签 id：同一 intent 多次调用（N-per-side 发散）也保证 card_id 唯一
+        plancard: { ...card, id: newPlanCardId() },
         model: modelName,
         evidence_path: 'unified_search+recall',
+        variant,
       },
     });
   } catch (e) {

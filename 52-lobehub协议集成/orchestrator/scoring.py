@@ -22,6 +22,82 @@ T1_SCORE_GAP_THRESHOLD = 0.1
 MAX_SCORE_EVIDENCE_BONUS_THRESHOLD = 5
 COST_TOKEN_SOFT_CAP = 20000
 
+# 铁律⑤ fail-closed：模型标识为空/占位一律视为未声明多样性
+INVALID_MODEL_VALUES = {"", "unknown", "none", "null"}
+
+
+def _normalized_model(value: Any) -> str:
+    return "" if value is None else str(value).strip().lower()
+
+
+def _side_of(proposal: Mapping[str, Any]) -> str:
+    """推断提案所属侧（side_a / side_b）；未知侧不参与跨侧比较。"""
+    raw = str(proposal.get("proposer_id") or proposal.get("side") or "")
+    if raw.startswith("side_a") or raw == "A":
+        return "side_a"
+    if raw.startswith("side_b") or raw == "B":
+        return "side_b"
+    return raw
+
+
+def validate_diversity(proposals: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """铁律⑤ fail-closed 校验（Phase 4.5 加固）。
+
+    拒绝：任一卡 model 空/unknown/none/null；跨侧同 model；
+    跨侧 evidence_path 相同或任一侧为空。
+    返回违规列表（空列表 = 通过）；每条含 rule/reason/same_model/same_evidence_path。
+    """
+    valid = [p for p in proposals if isinstance(p, Mapping) and isinstance(p.get("card"), dict)]
+    violations: list[dict[str, Any]] = []
+
+    for item in valid:
+        model = item.get("model")
+        if _normalized_model(model) in INVALID_MODEL_VALUES:
+            violations.append(
+                {
+                    "rule": "model_unknown",
+                    "pair": [item.get("proposer_id")],
+                    "models": [model],
+                    "evidence_paths": [item.get("evidence_path")],
+                    "same_model": False,
+                    "same_evidence_path": False,
+                    "reason": "model 为空/unknown/none/null，拒绝开题（铁律⑤）",
+                }
+            )
+
+    sides = {_side_of(item) for item in valid}
+    compare_cross_side = {"side_a", "side_b"} <= sides
+    if compare_cross_side:
+        for i in range(len(valid)):
+            for j in range(i + 1, len(valid)):
+                left, right = valid[i], valid[j]
+                if _side_of(left) == _side_of(right):
+                    continue
+                same_model = _normalized_model(left.get("model")) == _normalized_model(
+                    right.get("model")
+                )
+                left_path = str(left.get("evidence_path") or "").strip()
+                right_path = str(right.get("evidence_path") or "").strip()
+                bad_path = not left_path or not right_path or left_path == right_path
+                if not (same_model or bad_path):
+                    continue
+                violations.append(
+                    {
+                        "rule": "model_collision" if same_model else "evidence_path_collision",
+                        "pair": [left.get("proposer_id"), right.get("proposer_id")],
+                        "models": [left.get("model"), right.get("model")],
+                        "evidence_paths": [left.get("evidence_path"), right.get("evidence_path")],
+                        "same_model": same_model,
+                        "same_evidence_path": bad_path,
+                        "reason": (
+                            "两侧 model 相同，拒绝开题"
+                            if same_model
+                            else "两侧 evidence_path 相同或为空，拒绝开题"
+                        ),
+                    }
+                )
+    return violations
+
 
 def gate(
     card: dict[str, Any],

@@ -469,3 +469,130 @@ def test_from_dreamos_intent_maps_and_flags_unmapped():
 def test_r6_map_contains_brainstorm_types():
     assert R6_QUALITY_MAP["brainstorm_winner"] == "B"
     assert R6_QUALITY_MAP["brainstorm_loser"] == "D"
+
+
+# ---------- ⑧ Phase 4.5：N-per-side 发散 / 铁律⑤加固 ----------
+
+
+def test_side_a_propose_rotates_focus_and_returns_unique_cards():
+    payloads = []
+
+    def poster(url, payload, **_kwargs):
+        payloads.append(payload)
+        seed = payload["variant"]["seed"]
+        return {
+            "ok": True,
+            "data": {
+                "plancard": make_card(id=f"pc-a{seed}"),
+                "model": "qwen-plus",
+                "evidence_path": "unified_search+recall",
+            },
+        }
+
+    proposer = SideAProposer(poster=poster, model_hint="qwen-plus")
+    results = proposer.propose("意图", [], n=2)
+
+    assert [p["variant"]["focus"] for p in payloads] == ["risk-first", "cost-first"]
+    assert [p["variant"]["seed"] for p in payloads] == [0, 1]
+    assert [r["card"]["id"] for r in results] == ["pc-a0", "pc-a1"]
+    assert all(r["selection_basis"] for r in results)
+
+
+def test_side_b_propose_variants_have_unique_ids_and_basis():
+    def poster(url, payload, **_kwargs):
+        return {
+            "intent_type": "analysis",
+            "confidence": 0.8,
+            "base_chain": ["A1"],
+            "extend_nodes": ["F1", "C1"],
+        }
+
+    proposer = SideBProposer(poster=poster, allowed_tools=REGISTRY.allowed())
+    results = proposer.propose("意图", [], n=3)
+
+    assert len(results) == 3
+    assert len({r["card"]["id"] for r in results}) == 3
+    assert all(r["selection_basis"] for r in results)
+    assert len(results[0]["card"]["plan_steps"]) == 3
+    assert len(results[1]["card"]["plan_steps"]) == 1
+    reversed_actions = [s["action"] for s in results[2]["card"]["plan_steps"]]
+    assert "C1" in reversed_actions[1] and "F1" in reversed_actions[2]
+
+
+def test_run_n_per_side_pool_and_trace_fields(tmp_path):
+    def a_poster(url, payload, **_kwargs):
+        seed = payload["variant"]["seed"]
+        evidence = [f"recall:a{i}" for i in range(5 if seed == 0 else 2)]
+        return {
+            "ok": True,
+            "data": {
+                "plancard": make_card(id=f"pc-a{seed}", evidence_refs=evidence),
+                "model": "qwen-plus",
+                "evidence_path": "unified_search+recall",
+            },
+        }
+
+    def b_poster(url, payload, **_kwargs):
+        return _fake_b_response()
+
+    trace = tmp_path / "t.jsonl"
+    outbox = tmp_path / "o.jsonl"
+    summary = orch.run(
+        intent="N 张发散",
+        trace_path=trace,
+        outbox_path=outbox,
+        disable_recall=True,
+        n_per_side=2,
+        proposers=[
+            SideAProposer(poster=a_poster, model_hint="qwen-plus"),
+            SideBProposer(poster=b_poster, allowed_tools=REGISTRY.allowed()),
+        ],
+        registry=REGISTRY,
+        debate_opener=lambda topic, bg, models, cards: "debate-n",
+    )
+
+    assert summary["n_per_side"] == 2
+    assert summary["pool_size"] == 4
+    record = json.loads(trace.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert record["n_per_side"] == 2
+    assert record["pool_size"] == 4
+    assert summary["diversity_violations"] == []
+    assert record["adjudication"]["mode"] == "both"
+    assert isinstance(record["adjudication"]["agree"], bool)
+    assert len(record["gates"]) == 4
+
+    entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines()]
+    assert sum(1 for e in entries if e["type"] == "brainstorm_winner") == 1
+    assert sum(1 for e in entries if e["type"] == "brainstorm_loser") == 3
+
+
+def test_diversity_rejects_unknown_model_and_skips_outbox(tmp_path, monkeypatch):
+    monkeypatch.setenv("SIDE_A_MODEL", "unknown")
+    side_a_file = tmp_path / "side_a.json"
+    side_a_file.write_text(json.dumps(make_card(id="pc-offline-a")), encoding="utf-8")
+    outbox = tmp_path / "o.jsonl"
+    trace = tmp_path / "t.jsonl"
+
+    def b_poster(url, payload, **_kwargs):
+        return _fake_b_response()
+
+    summary = orch.run(
+        intent="unknown 模型应被拒",
+        side_a_plancard=side_a_file,
+        trace_path=trace,
+        outbox_path=outbox,
+        disable_recall=True,
+        proposers=[
+            SideAProposer(poster=b_poster),
+            SideBProposer(poster=b_poster, allowed_tools=REGISTRY.allowed()),
+        ],
+        registry=REGISTRY,
+    )
+
+    assert summary["decision"]["kind"] == "diversity_violation"
+    assert any(v["rule"] == "model_unknown" for v in summary["diversity_violations"])
+    assert summary["outbox_written"] == 0
+    assert not outbox.exists()
+    record = json.loads(trace.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert record["diversity_violations"]
+    assert record["decision"]["executed"] is False
