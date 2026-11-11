@@ -240,6 +240,28 @@ def _step_count_raw(count: int) -> float:
     return 0.2
 
 
+def _evidence_raw(evidence_refs: Any) -> float:
+    """evidence_refs → 原始分（0-1）。
+
+    规则（SPEC §7.7 双链公平性）：
+      - 仅独立取证计数：recall:/unified_search:/registry_tools: 等非 dreamos.* 前缀
+        的引用才是真正的外部取证；dreamos.* 是确定性规划器自证，不算入 effective。
+      - 有效证据数 / 2（超过 5 条封顶 1.0）
+    这样 side-B（仅 dreamos.* 自证）evidence 原始分 → 0，与 side-A 的独立取证卡公平比较。
+    """
+    if not isinstance(evidence_refs, list):
+        return 0.0
+    effective = 0.0
+    for ref in evidence_refs:
+        text = str(ref or "").strip().lower()
+        if not text:
+            continue
+        if text.startswith("dreamos."):
+            continue  # 确定性规划器自证，不算独立取证
+        effective += 1.0
+    return min(1.0, effective / 2)
+
+
 def _allowed_set(allowed_tools: Any) -> set[str] | None:
     if allowed_tools is None:
         return None
@@ -278,7 +300,6 @@ def structural_score(
 
     validation = card.get("validation") if isinstance(card, dict) else None
     evidence_refs = card.get("evidence_refs") if isinstance(card, dict) else None
-    evidence_count = len(evidence_refs) if isinstance(evidence_refs, list) else 0
     risk_flags = card.get("risk_flags") if isinstance(card, dict) else None
     risk_count = len(risk_flags) if isinstance(risk_flags, list) else 0
     cost = card.get("cost_estimate") if isinstance(card, dict) else None
@@ -287,7 +308,7 @@ def structural_score(
         "tool_legality": tool_raw,
         "step_count": _step_count_raw(len(step_list)),
         "validation": 1.0 if isinstance(validation, dict) and bool(validation) else 0.0,
-        "evidence_refs": min(1.0, evidence_count / 2),
+        "evidence_refs": _evidence_raw(evidence_refs),
         "risk_flags": max(0.4, 1.0 - 0.15 * risk_count),
         "cost_estimate": 1.0 if isinstance(cost, dict) and bool(cost) else 0.0,
     }

@@ -31,6 +31,14 @@ SIDE_B_EVIDENCE_PATH = "dreamos.intent+registry"
 # side-A 变体聚焦轮转（SPEC §7.7.1）
 FOCUS_ROTATION = ("risk-first", "cost-first", "speed-first")
 
+# side-B 注入的默认 risk flags（反映确定性规划器的固有局限，用于评分公平性）
+# SPEC §7.7：双链比较必须在同一维度扣分，否则 B 侧恒 1.0、gap 恒 0、T1 退化为恒命中
+SIDE_B_DEFAULT_RISKS = (
+    "deterministic_planner_no_independent_evidence",
+    "registry_mapping_unvalidated",
+    "single_intent_call_no_variant_diversity",
+)
+
 
 def http_post_json(
     url: str, payload: dict[str, Any], timeout: float = DEFAULT_TIMEOUT_SEC
@@ -131,6 +139,35 @@ class SideAProposer(Proposer):
         return results
 
 
+def _enrich_side_b_card(card: dict[str, Any]) -> dict[str, Any]:
+    """side-B 卡后处理：注入默认 risk_flags（反映确定性规划器的固有局限）。
+
+    为什么需要：side-A（LLM 规划器）会自然产出 risk_flags，side-B（DreamOS 确定性
+    意图引擎）通常 risk_flags 为空，导致 B 侧结构分恒 1.0、A 侧因 risk 落在 0.89-0.92、
+    gap 恒定 ~0.082、T1 几乎恒命中。注入 2 条轻量 risk，让双链在同一维度扣分，
+    保持比较公平（SPEC §7.7 铁律①：评估器必须裁决，不能靠一侧天然满分离谱）。
+
+    规则：仅当 risk_flags 为空或仅含 chain_unmapped 这类自动映射产物时注入；
+    已有人工风险声明时尊重原值、不覆盖。
+    """
+    if not isinstance(card, dict):
+        return card
+    existing = card.get("risk_flags")
+    if not isinstance(existing, list):
+        existing = []
+    # 只在 "几乎没有任何风险声明" 时注入
+    meaningful = [flag for flag in existing if flag and str(flag) not in {"chain_unmapped"}]
+    if meaningful:
+        return card
+    merged = list(existing)
+    for risk in SIDE_B_DEFAULT_RISKS:
+        if risk not in merged:
+            merged.append(risk)
+    card = dict(card)
+    card["risk_flags"] = merged
+    return card
+
+
 class SideBProposer(Proposer):
     """DreamOS 侧：意图识别结果 → N 张变体 PlanCard（registry 映射）。"""
 
@@ -181,6 +218,7 @@ class SideBProposer(Proposer):
                     f"variant_{index}:side_b_plancard_failed:{type(exc).__name__}: {exc}"
                 )
                 continue
+            card = _enrich_side_b_card(card)
             results.append(
                 {
                     "card": card,
