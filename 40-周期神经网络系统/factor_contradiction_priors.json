@@ -1,0 +1,419 @@
+{
+  "schema_version": "factor_contradiction_priors.v0.1",
+  "generated_at": "2026-11-10T16:52:57.952995+00:00",
+  "factor_prior_18": {
+    "degraded": true,
+    "n_factors": 0,
+    "reason": "newsflash_prior_disabled_by_default",
+    "source": "/home/luke/dreambuddy/18-数据获取中心/backfill/p3c1/factor_prior.json"
+  },
+  "factor_direction_priors": {
+    "n_samples": 396,
+    "factors": {
+      "macro.equity": {
+        "directions": {
+          "bullish": 10.500000000000004,
+          "bearish": 2.5
+        },
+        "counts": {
+          "bullish": 28,
+          "bearish": 6
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 13.0
+      },
+      "macro.liquidity": {
+        "directions": {
+          "bearish": 2.2,
+          "bullish": 7.999999999999998
+        },
+        "counts": {
+          "bearish": 5,
+          "bullish": 22
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 10.2
+      },
+      "flow.oi": {
+        "directions": {
+          "bearish": 4.6,
+          "bullish": 18.2
+        },
+        "counts": {
+          "bearish": 6,
+          "bullish": 21
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 22.8
+      },
+      "technical.trend": {
+        "directions": {
+          "bullish": 8.0,
+          "bearish": 8.0
+        },
+        "counts": {
+          "bullish": 8,
+          "bearish": 8
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 16.0
+      },
+      "sentiment.retail": {
+        "directions": {
+          "bearish": 5.0,
+          "bullish": 10.0
+        },
+        "counts": {
+          "bearish": 5,
+          "bullish": 10
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 15.0
+      },
+      "event.listing": {
+        "directions": {
+          "bullish": 18.0,
+          "bearish": 1.0
+        },
+        "counts": {
+          "bullish": 18,
+          "bearish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 19.0
+      },
+      "macro.rate": {
+        "directions": {
+          "bearish": 6.099999999999998,
+          "bullish": 5.499999999999999
+        },
+        "counts": {
+          "bearish": 18,
+          "bullish": 9
+        },
+        "dominant_direction": "bearish",
+        "total_weight": 11.6
+      },
+      "event.hack": {
+        "directions": {
+          "bullish": 23.0,
+          "bearish": 4.0
+        },
+        "counts": {
+          "bullish": 23,
+          "bearish": 4
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 27.0
+      },
+      "event.upgrade": {
+        "directions": {
+          "bullish": 5.0,
+          "bearish": 1.0
+        },
+        "counts": {
+          "bullish": 5,
+          "bearish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 6.0
+      },
+      "event.regulation": {
+        "directions": {
+          "bullish": 46.0,
+          "bearish": 7.0
+        },
+        "counts": {
+          "bullish": 46,
+          "bearish": 7
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 53.0
+      },
+      "flow.liquidation": {
+        "directions": {
+          "bullish": 5.9,
+          "bearish": 1.6
+        },
+        "counts": {
+          "bullish": 8,
+          "bearish": 3
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 7.5
+      },
+      "event.unlock": {
+        "directions": {
+          "bullish": 4.0,
+          "bearish": 3.0
+        },
+        "counts": {
+          "bullish": 4,
+          "bearish": 3
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 7.0
+      },
+      "sentiment.institutional": {
+        "directions": {
+          "bullish": 6.0,
+          "bearish": 2.0
+        },
+        "counts": {
+          "bullish": 6,
+          "bearish": 2
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 8.0
+      },
+      "onchain.hashrate": {
+        "directions": {
+          "bearish": 2.6,
+          "bullish": 5.6
+        },
+        "counts": {
+          "bearish": 4,
+          "bullish": 7
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 8.2
+      },
+      "flow.etf_premium": {
+        "directions": {
+          "bearish": 2.3,
+          "bullish": 3.3
+        },
+        "counts": {
+          "bearish": 3,
+          "bullish": 4
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 5.6
+      },
+      "technical.fib": {
+        "directions": {
+          "bullish": 1.0
+        },
+        "counts": {
+          "bullish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 1.0
+      },
+      "event.legal": {
+        "directions": {
+          "bullish": 8.0,
+          "bearish": 1.0
+        },
+        "counts": {
+          "bullish": 8,
+          "bearish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 9.0
+      },
+      "technical.level": {
+        "directions": {
+          "bullish": 14.0,
+          "bearish": 2.0
+        },
+        "counts": {
+          "bullish": 14,
+          "bearish": 2
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 16.0
+      },
+      "sentiment.community": {
+        "directions": {
+          "bullish": 14.0,
+          "bearish": 1.0
+        },
+        "counts": {
+          "bullish": 14,
+          "bearish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 15.0
+      },
+      "flow.whale": {
+        "directions": {
+          "bearish": 1.3,
+          "bullish": 0.3
+        },
+        "counts": {
+          "bearish": 2,
+          "bullish": 1
+        },
+        "dominant_direction": "bearish",
+        "total_weight": 1.6
+      },
+      "sentiment.narrative": {
+        "directions": {
+          "bullish": 15.0,
+          "bearish": 2.0
+        },
+        "counts": {
+          "bullish": 15,
+          "bearish": 2
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 17.0
+      },
+      "event.airdrop": {
+        "directions": {
+          "bullish": 8.0,
+          "bearish": 2.0
+        },
+        "counts": {
+          "bullish": 8,
+          "bearish": 2
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 10.0
+      },
+      "sentiment.cycle": {
+        "directions": {
+          "bearish": 1.0
+        },
+        "counts": {
+          "bearish": 1
+        },
+        "dominant_direction": "bearish",
+        "total_weight": 1.0
+      },
+      "flow.funding": {
+        "directions": {
+          "bullish": 4.3,
+          "bearish": 1.0
+        },
+        "counts": {
+          "bullish": 5,
+          "bearish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 5.3
+      },
+      "onchain.tvl": {
+        "directions": {
+          "bearish": 0.3,
+          "bullish": 2.0
+        },
+        "counts": {
+          "bearish": 1,
+          "bullish": 2
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 2.3
+      },
+      "sentiment.analyst": {
+        "directions": {
+          "bullish": 8.0,
+          "bearish": 1.0
+        },
+        "counts": {
+          "bullish": 8,
+          "bearish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 9.0
+      },
+      "technical.pattern": {
+        "directions": {
+          "bullish": 1.0
+        },
+        "counts": {
+          "bullish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 1.0
+      },
+      "macro.inflation": {
+        "directions": {
+          "bullish": 1.0,
+          "bearish": 0.6
+        },
+        "counts": {
+          "bullish": 1,
+          "bearish": 2
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 1.6
+      },
+      "onchain.active_addr": {
+        "directions": {
+          "bullish": 1.0
+        },
+        "counts": {
+          "bullish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 1.0
+      },
+      "sentiment.fear_greed": {
+        "directions": {
+          "bearish": 2.0
+        },
+        "counts": {
+          "bearish": 2
+        },
+        "dominant_direction": "bearish",
+        "total_weight": 2.0
+      },
+      "macro.central_bank": {
+        "directions": {
+          "bearish": 0.3
+        },
+        "counts": {
+          "bearish": 1
+        },
+        "dominant_direction": "bearish",
+        "total_weight": 0.3
+      },
+      "technical.volatility": {
+        "directions": {
+          "bullish": 1.0
+        },
+        "counts": {
+          "bullish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 1.0
+      },
+      "event.funding_round": {
+        "directions": {
+          "bullish": 1.0
+        },
+        "counts": {
+          "bullish": 1
+        },
+        "dominant_direction": "bullish",
+        "total_weight": 1.0
+      },
+      "technical.momentum": {
+        "directions": {
+          "bearish": 1.0
+        },
+        "counts": {
+          "bearish": 1
+        },
+        "dominant_direction": "bearish",
+        "total_weight": 1.0
+      }
+    },
+    "source": "/home/luke/dreambuddy/48-涌现架构/events/training_samples"
+  },
+  "contradiction_priors": {
+    "n_events": 1376,
+    "by_contradiction_type": {
+      "individual_whole": 1048,
+      "short_long": 170,
+      "macro_micro": 158
+    },
+    "by_layer": {
+      "organizational": 1376
+    },
+    "last_window_end": "2026-11-01 21:29",
+    "source": "/home/luke/dreambuddy/39-金融语义蒸馏系统/contradiction_events.jsonl"
+  }
+}
