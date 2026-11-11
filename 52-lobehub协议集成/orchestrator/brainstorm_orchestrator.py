@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""52-LobeHub 协议集成 Phase 4.5 — 脑暴编排器（Brainstorm Orchestrator，shadow 模式）。
+"""52-LobeHub 协议集成 Phase 4.5 — 脑暴编排器（Brainstorm Orchestrator）。
 
 SPEC §7.7：默认低成本协作（双链各发散 N 张 → 池内确定性收敛 → Top1 定选），
 命中争议触发器 T1-T4 才升级 Debate。shadow 模式为默认：
 **只记录 trace / outbox，绝不执行任何 DreamOS 执行链**（executed 恒为 false）。
+
+Phase 5（ADR-001 脑暴出关）：`shadow=False` 时启用实盘分支，但必须先过
+`live_policy` 三道门（策略文件 / 角色 / 周预算），任一不过直接 PermissionError。
+实盘只对 `decision.kind == dispatch` 的胜方 PlanCard 执行，执行结果写 trace
+`execution` 与 `traces/live_executions.jsonl`（失败也占预算）。
 Phase 4.5：`--n-per-side`（1-3，默认 2）控制每侧候选数；grounded 裁决器
 与启发式打分并行写 trace `adjudication`（不参与决策）；铁律⑤ fail-closed
 （model 空/unknown 或跨侧同 model/证据路径 → 拒绝开题且不写 outbox）。
@@ -32,6 +37,7 @@ if str(ORCHESTRATOR_DIR) not in sys.path:
     sys.path.insert(0, str(ORCHESTRATOR_DIR))
 
 import domain_eval  # noqa: E402
+import live_policy  # noqa: E402
 from adjudicator import adjudicate  # noqa: E402
 from debate_client import (  # noqa: E402
     DebateTransportError,
@@ -52,6 +58,8 @@ from scoring import gate, score, triggers, validate_diversity  # noqa: E402
 DEFAULT_TRACE_PATH = ORCHESTRATOR_DIR / "traces" / "brainstorm.jsonl"
 DEFAULT_OUTBOX_PATH = REPO_ROOT / "52-lobehub协议集成" / "bridge" / "outbox.jsonl"
 DEFAULT_COGNITION_SERVER = REPO_ROOT / "4-MEMORY" / "9-工具与接口" / "cognitive_mcp_server.py"
+DEFAULT_LIVE_POLICY_PATH = live_policy.DEFAULT_POLICY_PATH
+DEFAULT_LIVE_LEDGER_PATH = live_policy.DEFAULT_LEDGER_PATH
 
 OUTBOX_CONTENT_MAX = 300
 DEBATE_ROUNDS = int(os.environ.get("BRAINSTORM_DEBATE_ROUNDS", "1"))
@@ -440,19 +448,19 @@ def run(
     route_hint: dict[str, Any] | None = None,
     force: bool = False,
     evaluators_root: str | None = None,
+    role: str = "auditor",
+    executor: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+    live_policy_path: str | Path | None = None,
+    live_ledger_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """执行一次脑暴（shadow）。任何子步骤失败降级记录，不中断。
+    """执行一次脑暴。任何子步骤失败降级记录，不中断。
 
     n_per_side：每侧发散候选数（CLI 默认 2）；adjudicator_mode：
     heuristic（不跑 grounded）/ grounded / both（默认，shadow 并行记录）。
     Phase 4.6：候选池生成前先跑 router（五分流）；force=False 且 route ∉
     {debate, workers} 时只写 trace 后返回 skipped；workers 单边不升级 Debate。
+    Phase 5：shadow=False 时走实盘分支，须过 live_policy 三道门 + 提供 executor。
     """
-    if not shadow:
-        raise NotImplementedError(
-            "live 执行分支属 Phase 5（竞争模式激活），当前仅支持 shadow 模式；"
-            "请移除 --no-shadow 或等待 Phase 5 落地。"
-        )
 
     trace_file = Path(trace_path) if trace_path else DEFAULT_TRACE_PATH
     outbox_file = Path(outbox_path) if outbox_path else DEFAULT_OUTBOX_PATH
@@ -535,6 +543,26 @@ def run(
             },
             "errors": errors,
         }
+
+    # Phase 5（ADR-001）：实盘三道门。shadow 模式不校验，保持零副作用。
+    live_state: dict[str, Any] = {
+        "enabled": False,
+        "allowed": False,
+        "reason": "shadow mode (no execution)",
+        "role": role,
+        "route": route_name,
+        "used": 0,
+        "max_per_week": 0,
+    }
+    if not shadow:
+        policy = live_policy.load_policy(live_policy_path)
+        live_state = live_policy.check_live_allowed(
+            policy, role=role, route=route_name, ledger_path=live_ledger_path
+        )
+        if not live_state["allowed"]:
+            raise PermissionError(f"live gate denied: {live_state['reason']}")
+        if executor is None:
+            raise PermissionError("live gate denied: executor is required in live mode")
 
     registry = registry if registry is not None else load_registry()
     if len(registry) == 0:
@@ -631,6 +659,8 @@ def run(
     # ⑦ 决策
     debate_info: dict[str, Any] = {"debate_id": None}
     dispatch: dict[str, Any] = {"intent": None, "executed": False}
+    execution: dict[str, Any] = {}
+    executed = False
     viable = [item for item in scored if item.get("gate_verdict") == "PASS"]
     viable_sorted = sorted(viable, key=lambda item: float(item.get("score") or 0.0), reverse=True)
 
@@ -676,6 +706,23 @@ def run(
             "executed": False,
             "note": "shadow：仅记录 dispatch 意图，不执行 DreamOS 链路",
         }
+
+    # ⑦.1 实盘执行（Phase 5 / ADR-001）：只执行 dispatch 胜方，失败不中断
+    if not shadow and decision.get("kind") == "dispatch":
+        executed, execution = _execute_live(
+            executor,
+            top_card,
+            run_id=run_id,
+            role=role,
+            route=route_name,
+            ledger_path=live_ledger_path,
+        )
+        decision["executed"] = executed
+        decision["note"] = (
+            "live：已执行 DreamOS 链路" if executed else "live：执行失败（见 execution）"
+        )
+        dispatch["executed"] = executed
+        dispatch["shadow"] = False
 
     # ⑧ trace（append-only）
     trace_record = {
@@ -725,6 +772,8 @@ def run(
         "decision": decision,
         "debate": debate_info,
         "dispatch": dispatch,
+        "live": live_state,
+        "execution": execution,
         "errors": errors,
     }
     try:
@@ -759,6 +808,9 @@ def run(
         "trace_id": run_id,
         "intent": intent,
         "shadow": shadow,
+        "executed": executed,
+        "execution": execution,
+        "live": live_state,
         "skipped": False,
         "route": route_name,
         "route_reason": routing.get("reason"),
@@ -786,6 +838,54 @@ def run(
     }
 
 
+def _execute_live(
+    executor: Callable[[dict[str, Any]], dict[str, Any]] | None,
+    card: dict[str, Any],
+    *,
+    run_id: str,
+    role: str,
+    route: str,
+    ledger_path: str | Path | None,
+) -> tuple[bool, dict[str, Any]]:
+    """执行胜方 PlanCard（实盘）。异常降级为 execution.error，绝不中断主流程。"""
+    result: dict[str, Any] = {}
+    ok = False
+    error = ""
+    if executor is None:
+        error = "executor is None"
+    else:
+        try:
+            raw = executor(card) or {}
+            result = raw if isinstance(raw, dict) else {"value": raw}
+            ok = bool(result.get("ok", True))
+        except Exception as exc:  # 实盘失败必须落账，但不污染 run 结果
+            error = f"{type(exc).__name__}: {exc}"
+    execution: dict[str, Any] = {
+        "ok": ok,
+        "run_id": run_id,
+        "card_id": card.get("id"),
+        "result": result,
+    }
+    if error:
+        execution["error"] = error
+    try:
+        live_policy.record_execution(
+            ledger_path,
+            {
+                "ts": time.time(),
+                "run_id": run_id,
+                "role": role,
+                "route": route,
+                "card_id": card.get("id"),
+                "ok": ok,
+                "error": error,
+            },
+        )
+    except OSError as exc:
+        execution["ledger_error"] = f"{type(exc).__name__}: {exc}"
+    return ok, execution
+
+
 def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
     """CLI --json-out / 3.1 API 消费的单行摘要（字段稳定，便于前端渲染）。"""
     return {
@@ -796,6 +896,7 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
         "reason": summary.get("reason") or summary.get("route_reason"),
         "mode": summary.get("mode"),
         "winner": summary.get("winner"),
+        "executed": bool(summary.get("executed")),
         "n_per_side": summary.get("n_per_side"),
         "pool_size": summary.get("pool_size"),
         "debate_id": (summary.get("debate") or {}).get("debate_id"),
@@ -810,9 +911,29 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _load_executor(module_path: str | None) -> Callable[[dict[str, Any]], dict[str, Any]] | None:
+    """从模块文件加载 `execute(card)->dict`；缺省返回 None（实盘门禁会拒绝）。"""
+    if not module_path:
+        return None
+    import importlib.util
+
+    p = Path(module_path)
+    if not p.exists():
+        raise PermissionError(f"executor module not found: {module_path}")
+    spec = importlib.util.spec_from_file_location("brainstorm_live_executor", p)
+    if spec is None or spec.loader is None:
+        raise PermissionError(f"executor module not loadable: {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    fn = getattr(module, "execute", None)
+    if not callable(fn):
+        raise PermissionError(f"executor module missing execute(card): {module_path}")
+    return fn
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="52 Phase 4 脑暴编排器（shadow：只记录 trace/outbox，不执行）"
+        description="52 脑暴编排器（默认 shadow；--no-shadow 实盘，需过 live_policy 三道门）"
     )
     parser.add_argument("--intent", required=True, help="议题/用户意图原文")
     parser.add_argument("--context-refs", nargs="*", default=[], help="上下文引用列表")
@@ -820,7 +941,23 @@ def main(argv: list[str] | None = None) -> int:
         "--shadow",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="默认 shadow（True）；--no-shadow 为 Phase 5 预留（当前直接报错）",
+        help="默认 shadow（True）；--no-shadow 实盘（ADR-001：角色+周预算门禁）",
+    )
+    parser.add_argument(
+        "--role",
+        default="auditor",
+        help="实盘调用角色（默认 auditor；须在 live_policy.allowed_roles 内）",
+    )
+    parser.add_argument(
+        "--executor-module",
+        default=os.environ.get("BRAINSTORM_EXECUTOR_MODULE"),
+        help="实盘执行器模块路径（须暴露 execute(card)->dict）；缺省读 BRAINSTORM_EXECUTOR_MODULE",
+    )
+    parser.add_argument(
+        "--live-policy", default=str(DEFAULT_LIVE_POLICY_PATH), help="实盘策略文件路径"
+    )
+    parser.add_argument(
+        "--live-ledger", default=str(DEFAULT_LIVE_LEDGER_PATH), help="实盘预算账本路径"
     )
     parser.add_argument("--user-requested-debate", action="store_true", help="T4：用户显式要求辩论")
     parser.add_argument("--trace-path", default=str(DEFAULT_TRACE_PATH))
@@ -868,8 +1005,12 @@ def main(argv: list[str] | None = None) -> int:
             n_per_side=args.n_per_side,
             adjudicator_mode=args.adjudicator,
             force=args.force,
+            role=args.role,
+            executor=_load_executor(args.executor_module),
+            live_policy_path=args.live_policy,
+            live_ledger_path=args.live_ledger,
         )
-    except NotImplementedError as exc:
+    except (NotImplementedError, PermissionError) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
 

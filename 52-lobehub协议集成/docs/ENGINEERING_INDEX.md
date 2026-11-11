@@ -97,11 +97,11 @@ ops/supervisor.py ── subprocess ── ops/daily_pipeline.sh
 
 | 套件 | 用例数 | 覆盖点 |
 |---|---|---|
-| `orchestrator/tests/test_brainstorm.py` | 46 | 双链收集、去重、门禁、评分、T1-T4、outbox、live 六例 |
+| `orchestrator/tests/test_brainstorm.py` | 49 | 双链收集、去重、门禁、评分、T1-T4、outbox、live 出关六例 |
 | `orchestrator/tests/test_router.py` | 16 | `trade_deny / high_risk_human / debate / direct_answer / workers` 与优先序 |
 | `orchestrator/tests/test_domain_eval.py` | 15 | 45 发现/映射/fail-open、结构分权重、side-B 扣分 |
 | `orchestrator/tests/test_adjudicator.py` | 4 | grounded semantics 最小不动点、agree 记录 |
-| 小计 | **78 passed** | `python3 -m pytest orchestrator/tests -q` |
+| 小计 | **84 passed** | `python3 -m pytest orchestrator/tests -q` |
 | `bridge/test_distill_bridge.py` | **20 passed** | R6 映射、校验 fail-closed、游标续跑、内容指纹去重 |
 | `mcp_shells/debate_adversarial` | **22 passed** | model 多样性拒绝、plancards 契约（跨模块回归） |
 

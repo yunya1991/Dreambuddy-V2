@@ -194,7 +194,7 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 
 **已知差距（Phase 5 前需补）**：
 - 评估器目前为确定性启发式（`45.heuristic@1.0.0`）；45 域评测器输入为领域产物（EngineeringScan/回测统计等），PlanCard 无法直接喂入 → 需补"PlanCard→领域产物"适配层
-- live 执行分支未实现（`--no-shadow` 抛 NotImplementedError），符合 Phase 5 门禁
+- ~~live 执行分支未实现（`--no-shadow` 抛 NotImplementedError）~~ → 已由 ADR-001 出关（见 Phase 5 第 10 条）
 
 **运行方式**：`ops/supervisor.py` 常驻守护（每日 22:30 触发 `ops/daily_pipeline.sh`），也支持 `shadow_batch.py` / `daily_pipeline.sh` 手动触发。`ops/com.dreambuddy.shadow.plist` 与 `bridge/ops/com.dreambuddy.bridge.plist` 为 launchd 模板，但当前 `launchctl bootstrap` 恒返回 EIO（进程无 launchd 注册权限，路径无关），故以守护进程替代；重启后需重拉守护（或由用户在终端执行 plist 安装）。shadow 2-4 周收集 trace 后评审激活。
 
@@ -245,6 +245,13 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
    - 新逻辑：两侧都有有效卡时，按**跨侧最佳分差**判定（`basis=cross_side`）；只有单侧时退回 Top2（`basis=top2`）。
    - 实测：`gap=0.155 / 0.182 → dispatch`，outbox 2 轮新增 6 条并被桥全部消费（`written=6`），闭环运转。
    - 新增测试：`test_t1_uses_cross_side_gap_not_global_top2` / `test_t1_fires_on_close_cross_side_scores` / `test_t1_falls_back_to_top2_on_single_side`。
+10. **实盘出关 ✅（ADR-001，2026-11-11）**：`--no-shadow` 不再是 NotImplementedError，改为「三道门 + 周预算账本 + 胜方执行」。
+   - `orchestrator/live_policy.py`（标准库）：`load_policy`（缺失/损坏 → 默认关闭）、`check_live_allowed`（enabled → role ∈ allowed_roles → route ∈ allowed_routes → 本自然周预算）、`count_this_week`、`record_execution`（append-only JSONL）。
+   - `brainstorm_orchestrator.py`：`shadow=False` 时先过门禁，未过直接 `PermissionError`（CLI exit 2）；仅对 `decision.kind=dispatch` 的胜方卡调用 `executor(card)`；执行异常降级为 `execution.error`，不中断主流程；成功与失败都记账（**失败也占预算**）。
+   - 默认策略 `orchestrator/live_policy.json`：`enabled=true / allowed_roles=[auditor] / allowed_routes=[workers,debate] / max_per_week=1`；提额须改 ADR。
+   - 决策记录：`decisions/ADR-001-脑暴出关.md`；与 SPEC-33-G §2.11.6 自举问题对齐。
+   - 证据：`tests/test_brainstorm.py` 6 条 live 用例（disabled / 非 auditor / 缺 executor / 成功执行 / 预算耗尽 / 执行器异常）全绿，orchestrator 全量 84 passed、ruff 通过；CLI 实测：第一次 `executed=true, live.allowed=true, used=0/1`，第二次 `live gate denied: weekly budget exhausted (1/1)` exit 2。
+   - 边界：交易域仍受 G3/G4 与 §0.4 硬约束阻断；live 只执行 dispatch 胜方，**不执行 debate 结论**。
 
 ---
 

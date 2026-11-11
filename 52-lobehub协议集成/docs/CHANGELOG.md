@@ -6,9 +6,21 @@
 
 ---
 
-## v0.11.0 — 2026-11-11（蒸馏桥常态运转 + T1 跨侧 + 本地守护）
+## v0.11.0 — 2026-11-11（ADR-001 实盘出关 + 蒸馏桥常态运转 + T1 跨侧 + 本地守护）
 
-### 新增
+### 新增（ADR-001 脑暴出关）
+
+- `orchestrator/live_policy.py`：三道门（策略 / 角色 / 自然周预算）+ append-only 账本；
+  策略缺失或损坏一律返回「关闭」，绝不隐式开启实盘。
+- `orchestrator/live_policy.json`：灰度策略 `enabled=true / allowed_roles=[auditor] /
+  allowed_routes=[workers,debate] / max_per_week=1`。
+- `brainstorm_orchestrator.py`：`shadow=False` 走实盘分支——先过三道门（未过 `PermissionError`，
+  CLI exit 2），仅对 `decision.kind=dispatch` 的胜方卡调用 `executor(card)`；执行异常降级为
+  `execution.error` 不中断；成功与失败都记账（失败也占预算）。
+- `decisions/ADR-001-脑暴出关.md`：方案对比、PoE 自评 0.79、灰度阶梯 S1-S3、回滚方式。
+- CLI 新增 `--role / --executor-module / --live-policy / --live-ledger`。
+
+### 新增（桥与调度）
 
 - `bridge/distill_bridge.py`：内容指纹去重（`.seen`，sha1；归一化抹去 `plancard=\S+` 与
   `score=[\d.]+`），跨批次不重复蒸馏同一意图；新增 CLI `--seen`、`--no-dedupe`。
@@ -36,7 +48,7 @@
 
 - 积压 88 条：`written=52 / skipped=36 / errors=0`，`.cursor=89`。
 - 复跑 shadow：`T1 gap=0.155/0.182 → dispatch`，outbox 新增 6 条被桥全部消费。
-- 回归：orchestrator 78 passed、bridge 20 passed、debate 壳 22 passed；ruff/black 通过。
+- 回归：orchestrator 84 passed、bridge 20 passed、debate 壳 22 passed；ruff/black 通过。
 - 认知回流：`recall` 命中 `source=protocol-bridge`。
 
 ---

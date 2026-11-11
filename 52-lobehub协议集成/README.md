@@ -54,7 +54,7 @@ DreamOS(SACG) → DSH → L0 MCP → REA/涌现 的既有架构，使"接入任�
 │   │   ├── supervisor.py           # 每日守护（launchd 被 TCC 拦截时的替代）
 │   │   ├── daily_pipeline.sh       # shadow → bridge 串联
 │   │   └── com.dreambuddy.shadow.plist  # launchd 模板
-│   └── tests/                      # 78 passed
+│   └── tests/                      # 84 passed
 └── bridge/                     # 蒸馏桥（outbox → cognition record）
     ├── distill_bridge.py           # 校验 + R6 映射 + 游标 + 内容指纹去重
     ├── test_distill_bridge.py      # 20 passed
@@ -70,7 +70,7 @@ DreamOS(SACG) → DSH → L0 MCP → REA/涌现 的既有架构，使"接入任�
 
 ```bash
 cd 52-lobehub协议集成/orchestrator
-python3 -m pytest tests -q          # 78 passed
+python3 -m pytest tests -q          # 84 passed
 
 cd ../bridge
 python3 -m pytest -q                # 20 passed

@@ -193,7 +193,8 @@
 | 工程文档（五文档标准） | [52-lobehub协议集成/docs/](../52-lobehub协议集成/docs/) | ENGINEERING_INDEX / TECHNICAL_DESIGN / API_SPEC / CHANGELOG（5/5 齐全） |
 | 架构调研与评审 | [52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md](../52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md) | 2026-11-11（R1-R9 已闭环） |
 | 协议层能力件 | [3.1-FRONTEND/src/lib/agent/](../3.1-FRONTEND/src/lib/agent/) | mcp-client / providers / plancard / plan-variant / distill-outbox（各带 vitest） |
-| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧）/ domain_eval / adjudicator（78 tests） |
+| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧）/ domain_eval / adjudicator / live_policy（84 tests） |
+| 实盘出关 ADR | [52-lobehub协议集成/decisions/ADR-001-脑暴出关.md](../52-lobehub协议集成/decisions/ADR-001-脑暴出关.md) | 2026-11-11（已采纳灰度：auditor + 1 次/周 + 只执行 dispatch 胜方） |
 | 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 20 tests；积压已消化（52 写 / 36 去重）；每日守护 `ops/supervisor.py` |
 
 ---

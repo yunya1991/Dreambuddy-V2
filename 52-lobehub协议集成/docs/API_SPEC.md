@@ -304,7 +304,8 @@ COGNITIVE_MCP_DEFAULT_PRINCIPAL=orchestrator
 | `debate` | `{debate_id, error}` |
 | `adjudication` | `{heuristic_top, grounded_winner, agree}`（不参与决策） |
 | `outbox_written` | 写入条数 |
-| `executed` / `execution` | 实盘执行结果（shadow 恒 false） |
+| `executed` / `execution` | 实盘执行结果（shadow 恒 false）；`execution.ok/result/error` |
+| `live` | 三道门判定快照：`enabled/allowed/reason/role/route/used/max_per_week` |
 
 ---
 

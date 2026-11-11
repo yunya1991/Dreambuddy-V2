@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "adr": "ADR-001",
+  "enabled": true,
+  "allowed_roles": ["auditor"],
+  "allowed_routes": ["workers", "debate"],
+  "max_per_week": 1,
+  "note": "ADR-001 脑暴出关：仅 auditor 角色、每周 1 次、只执行 dispatch 胜方；提额须改 ADR"
+}

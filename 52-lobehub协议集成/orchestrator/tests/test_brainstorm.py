@@ -415,9 +415,16 @@ def test_debate_escalation_records_debate_id(tmp_path):
     assert len(captured["plancards"]) == 2
 
 
-def test_live_branch_not_implemented():
-    with pytest.raises(NotImplementedError):
-        orch.run(intent="x", shadow=False)
+def test_live_branch_requires_gate(tmp_path):
+    """Phase 5：live 不再 NotImplementedError，改为 live_policy 门禁拒绝。"""
+    policy = tmp_path / "p.json"
+    policy.write_text(json.dumps({"enabled": False}), encoding="utf-8")
+    with pytest.raises(PermissionError, match="disabled"):
+        orch.run(
+            intent="评估是否给离场模块增加波动率自适应阈值",
+            shadow=False,
+            live_policy_path=policy,
+        )
 
 
 def test_side_b_unreachable_degrades_gracefully(tmp_path):
@@ -788,3 +795,113 @@ def test_force_bypasses_router_skip(tmp_path):
     assert summary["force"] is True
     assert summary["mode"] == "debate"
     assert summary["decision"]["kind"] == "dispatch"
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 / ADR-001：脑暴实盘（live gate + 执行 + 预算 + 失败降级）
+# ---------------------------------------------------------------------------
+
+_LIVE_INTENT = "评估是否给离场模块增加波动率自适应阈值"
+
+
+def _live_policy(tmp_path, **overrides):
+    policy = {
+        "version": 1,
+        "adr": "ADR-001",
+        "enabled": True,
+        "allowed_roles": ["auditor"],
+        "allowed_routes": ["workers", "debate"],
+        "max_per_week": 1,
+    }
+    policy.update(overrides)
+    p = tmp_path / "live_policy.json"
+    p.write_text(json.dumps(policy), encoding="utf-8")
+    return p
+
+
+def _run_live(tmp_path, **kwargs):
+    params = {
+        "intent": _LIVE_INTENT,
+        "shadow": False,
+        "trace_path": tmp_path / "t.jsonl",
+        "outbox_path": tmp_path / "o.jsonl",
+        "disable_recall": True,
+        "proposers": _build_proposers(),
+        "registry": REGISTRY,
+    }
+    params.update(kwargs)
+    if "live_policy_path" not in params:
+        params["live_policy_path"] = _live_policy(tmp_path)
+    if "live_ledger_path" not in params:
+        params["live_ledger_path"] = tmp_path / "live.jsonl"
+    return orch.run(**params)
+
+
+def test_live_denied_when_policy_disabled(tmp_path):
+    with pytest.raises(PermissionError, match="disabled"):
+        _run_live(
+            tmp_path,
+            executor=lambda card: {"ok": True},
+            live_policy_path=_live_policy(tmp_path, enabled=False),
+        )
+
+
+def test_live_denied_for_non_auditor_role(tmp_path):
+    with pytest.raises(PermissionError, match="allowed_roles"):
+        _run_live(tmp_path, executor=lambda card: {"ok": True}, role="worker")
+
+
+def test_live_requires_executor(tmp_path):
+    with pytest.raises(PermissionError, match="executor"):
+        _run_live(tmp_path, executor=None)
+
+
+def test_live_dispatch_executes_and_records(tmp_path):
+    seen = []
+
+    def executor(card):
+        seen.append(card.get("id"))
+        return {"ok": True, "steps": 2, "note": "dry-run"}
+
+    summary = _run_live(tmp_path, executor=executor)
+
+    assert summary["decision"]["kind"] == "dispatch"
+    assert summary["executed"] is True
+    assert summary["shadow"] is False
+    assert summary["live"]["allowed"] is True
+    assert summary["execution"]["ok"] is True
+    assert seen  # 胜方 PlanCard 被真实送入执行器
+
+    ledger = [json.loads(x) for x in (tmp_path / "live.jsonl").read_text().splitlines()]
+    assert len(ledger) == 1
+    assert ledger[0]["ok"] is True and ledger[0]["role"] == "auditor"
+
+    record = json.loads((tmp_path / "t.jsonl").read_text().strip().splitlines()[-1])
+    assert record["live"]["allowed"] is True
+    assert record["execution"]["ok"] is True
+    assert record["dispatch"]["executed"] is True
+    assert record["dispatch"]["shadow"] is False
+
+
+def test_live_budget_exhausted(tmp_path):
+    import time
+
+    ledger = tmp_path / "live.jsonl"
+    ledger.write_text(json.dumps({"ts": time.time(), "ok": True}) + "\n", encoding="utf-8")
+    with pytest.raises(PermissionError, match="budget"):
+        _run_live(tmp_path, executor=lambda card: {"ok": True}, live_ledger_path=ledger)
+
+
+def test_live_executor_failure_recorded(tmp_path):
+    def boom(card):
+        raise RuntimeError("dreamos down")
+
+    summary = _run_live(tmp_path, executor=boom)
+
+    assert summary["executed"] is False
+    assert "dreamos down" in summary["execution"]["error"]
+
+    ledger = [json.loads(x) for x in (tmp_path / "live.jsonl").read_text().splitlines()]
+    assert len(ledger) == 1
+    assert ledger[0]["ok"] is False  # 失败也占预算
+    assert "dreamos down" in ledger[0]["error"]
