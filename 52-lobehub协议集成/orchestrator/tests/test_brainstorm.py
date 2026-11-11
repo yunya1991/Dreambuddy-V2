@@ -152,12 +152,13 @@ def test_score_monotonic_with_more_evidence():
     assert high["score"] > low["score"]
 
 
-def test_score_penalizes_risk_flags_and_cost():
+def test_score_penalizes_risk_flags_and_rewards_cost_estimate():
+    """Phase 5 结构分：risk_flags 单调扣分；cost_estimate 仅按「是否非空」计分。"""
     low = score(make_card(evidence_refs=["recall:only-one"]))
     flagged = score(make_card(evidence_refs=["recall:only-one"], risk_flags=["依赖外部数据"]))
-    costly = score(make_card(evidence_refs=["recall:only-one"], cost_estimate={"tokens": 50000}))
-    assert flagged["score"] == pytest.approx(round(low["score"] - 0.10, 4))
-    assert costly["score"] == pytest.approx(round(low["score"] - 0.05, 4))
+    no_cost = score(make_card(evidence_refs=["recall:only-one"], cost_estimate=None))
+    assert flagged["score"] < low["score"]
+    assert low["score"] > no_cost["score"]
 
 
 def test_score_clamped_zero_to_one():
@@ -263,7 +264,6 @@ def _fake_b_response():
     # B 侧仅 1 步且工具未注册 → 分数明显低于 A，用于覆盖「无争议 → dispatch」分支
     return {
         "intent_type": "analysis",
-        "confidence": 0.82,
         "recommended_chain": "F",
         "base_chain": ["F1"],
         "extend_nodes": [],
@@ -553,15 +553,16 @@ def test_run_n_per_side_pool_and_trace_fields(tmp_path):
         force=True,
     )
 
+    # side-B 多个 variant 内容相同 → 同侧结构指纹去重后只保留 1 张
     assert summary["n_per_side"] == 2
-    assert summary["pool_size"] == 4
+    assert summary["pool_size"] == 3
     record = json.loads(trace.read_text(encoding="utf-8").strip().splitlines()[-1])
     assert record["n_per_side"] == 2
-    assert record["pool_size"] == 4
+    assert record["pool_size"] == 3
     assert summary["diversity_violations"] == []
     assert record["adjudication"]["mode"] == "both"
     assert isinstance(record["adjudication"]["agree"], bool)
-    assert len(record["gates"]) == 4
+    assert len(record["gates"]) == 3
 
     # 升级 Debate 尚无裁决 → 不写 outbox（否则未定方案被误标 D 级）
     decision = record["decision"]
@@ -571,7 +572,7 @@ def test_run_n_per_side_pool_and_trace_fields(tmp_path):
     else:
         entries = [json.loads(line) for line in outbox.read_text(encoding="utf-8").splitlines()]
         assert sum(1 for e in entries if e["type"] == "brainstorm_winner") == 1
-        assert sum(1 for e in entries if e["type"] == "brainstorm_loser") == 3
+        assert sum(1 for e in entries if e["type"] == "brainstorm_loser") == 2
 
 
 def test_escalate_debate_skips_outbox(tmp_path):
@@ -603,6 +604,7 @@ def test_escalate_debate_skips_outbox(tmp_path):
         registry=REGISTRY,
         debate_opener=lambda topic, bg, models, cards: "debate-x",
         force=True,
+        user_requested_debate=True,
     )
     assert summary["decision"]["kind"] == "escalate_debate"
     assert summary["debate"]["debate_id"] == "debate-x"

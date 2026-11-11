@@ -1,8 +1,8 @@
 # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
 
-> 版本：v0.8.0（Phase 4.6 补齐：意图路由五分流 + workers 单边语义 + 3.1 用户入口）
+> 版本：v0.9.0（Phase 5 已实施（限量）：45 域评测器适配层 + 结构分替代退化常数）
 > 日期：2026-11-11
-> 状态：🟢 Phase 0/1/3/4/4.5/4.6 已实施（本地）；Phase 2 云端部署待定
+> 状态：🟢 Phase 0/1/3/4/4.5/4.6 已实施（本地）；Phase 5 已实施（限量）；Phase 2 云端部署待定
 > 归属：52-LobeHub协议集成（叠加层，非主骨架）
 > 上游：47-MCP 管理系统（L0 能力面唯一事实源）、46-DSH 架构（子域能力供给）
 > 下游：DreamOS/SACG（主骨架编排）、33-REA / 48-涌现架构（反思与涌现回流）
@@ -182,7 +182,7 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 1. **N-per-side 发散 ✅**：双链各发散 N 张候选（默认 N=2，`--n-per-side` 可调 1-3），候选池按 card_id 去重后逐张 gate+score；Top1 → winner、其余 → loser 入蒸馏桥。详见 §7.7.1。
 2. **grounded semantics shadow A/B ✅**：新增 `orchestrator/adjudicator.py`（标准库 ≤220 行）：论点=card/step 两级，攻击边 R-a/R-b/R-c 全确定性，标准最小不动点求解 IN/OUT/UNDEC；与启发式打分并行写入 trace `adjudication`，**不改变 shadow 决策**（仍取启发式 Top1）。
 3. **铁律⑤ 加固 ✅**：`validate_diversity` fail-closed——model 空/unknown/none/null、跨侧同 model、跨侧 evidence_path 相同或为空一律拒绝；拒绝时仍写 trace 但不写 outbox、不升级 Debate，CLI 摘要标注原因；SideB model 可由 `SIDE_B_MODEL` 配置，trace 新增 `model_kind`（llm / deterministic_planner）。
-4. **45 域评测器适配层 ⏸️ 顺延 Phase 5**：45 evaluator 输入为领域产物（EngineeringScan/回测统计等），PlanCard 需先经"PlanCard→领域产物"适配层；本轮不接真实评测器，继续用 `45.heuristic@1.0.0`。
+4. **45 域评测器适配层 ✅ v0.9.0 已接入（限量，见 Phase 5）**：45 evaluator 输入为领域产物（EngineeringScan/回测统计等），规划期 PlanCard 无产物 → 适配器只做契约接入与 provenance，一律 `INCONCLUSIVE`，不编造 PASS/BLOCK。
 
 **Phase 4.5 交付**：`adjudicator.py`、`tests/test_adjudicator.py`；`proposers.py`/`plancard.py`/`scoring.py`/`brainstorm_orchestrator.py` 增量；3.1 侧 `src/lib/agent/plan-variant.ts` + `/api/agent/plan` variant 支持。
 
@@ -191,13 +191,31 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
 1. **router.py 五分流 ✅**：`orchestrator/router.py`（纯确定性、零 token、零三方依赖），规则版本 `ROUTE_RULES_VERSION = "r9-v1"` 随每条 trace 落盘。`route(intent, risk_flags=None, intent_type=None)` 严格按序返回 `trade_deny / high_risk_human / debate / direct_answer / workers`；DreamOS 六类意图映射：`TREND_FOLLOWING/MEAN_REVERSION/FUNDAMENTAL_PLAY/BREAKOUT → trade_deny`、`KNOWLEDGE_MATCH → direct_answer`、`UNCERTAIN` 回退关键词；`reason` 标注来源 `dreamos_intent` / `keyword` / `risk_flags`。
 2. **编排器接路由 ✅**：`run(..., route_hint=None, force=False)` 在候选池生成**之前**分流；`force=False` 且 route ∉ {debate, workers} 时只写 trace 后返回 `{skipped:true, route, reason}`（不生成候选、不调 Debate、不写 outbox）。`workers` = 单边语义（side-B DreamOS 规划 + side-A 一次，`n_per_side` 强制 1），T1-T4 只记录不升级，trace 标 `mode:"workers"`；`debate` 保持双链 + N-per-side + T1-T4 不变。CLI 新增 `--force`（人工指定跳过路由）与 `--json-out`（stdout 单行 JSON 摘要：`route/skipped/winner/trace_id/outbox_written/diversity_violations/adjudication/mode`）；trace 新增 `route` / `route_rules_version` / `mode`。
 3. **3.1 用户入口 ✅**：新增 `POST /api/agent/brainstorm`（intent 非空且 ≤2000 字；`spawn` 调编排器 CLI，`ORCHESTRATOR_PY` 可覆盖 python 路径，180s 超时 kill；成功解析 stdout 末行 JSON，失败/非 JSON/超时一律 200 degraded 信封，GET 405）；前端入口落在既有 `ChatPanel` 输入区（"择优脑暴"开关，不新建页面、不改路由结构），结果以助手消息展示 route 中文名 / skipped+reason / winner+score / 蒸馏写入数，`trade_deny` 与 `high_risk_human` 显式提示"已拦截"。
-4. **尚缺项**：真实 shadow 数据（Phase 5 激活前仍需 2-4 周 trace 积累）；45 域评测器适配层未接（继续 `45.heuristic@1.0.0`）。`--force` 仅供人工观察全链路，不得作为线上默认。
+4. **尚缺项**：真实 shadow 数据（Phase 5 激活前仍需 2-4 周 trace 积累）；45 域评测器适配层已于 v0.9.0 接入（契约可用、产物缺 → `INCONCLUSIVE`）。`--force` 仅供人工观察全链路，不得作为线上默认。
 
 ### Phase 5 — 竞争模式激活（非交易任务）
+
+> **状态：已实施（限量）** — 评测器契约接入 + 结构分上线；真实产物评测待产物落盘接入。
 
 1. 对研究/分析/工程类任务激活"脑暴-裁决-分工"全链路（争议时升级 Debate）。
 2. 交易域：脑暴/辩论结果仅作信号输入，裁决与执行仍走 27 治理审批（§0.4 硬约束）。
 3. 激活门槛：评估分差分布、T1-T4 触发率、翻盘率、败方负样本蒸馏价值达标（Phase 4 shadow 数据支撑）。
+
+**Phase 5 实施（v0.9.0，2026-11-11）**
+
+1. **45 评测器适配层 ✅**：新增 `orchestrator/domain_eval.py`。
+   - `discover()`：临时隔离导入 `45-评测系统`（不改 45 源码、不污染宿主同名包），调 `evaluators.registry.load_defaults()`；任何异常 fail-open 返回 `{available: False, error}`，绝不抛。
+   - `DOMAIN_MAP`：`engineering→engineering-scan`、`finance→finance-backtest-stats`、`ai→ai-stress`；域判定顺序 = `plan_steps[].tool` 前缀（`backtest.*→finance`、`scan.*/tests.*→engineering`、`stress.*→ai`）→ 意图关键词 → 默认 engineering。
+   - `evaluate_plan()`：45 不可用 → `INCONCLUSIVE/45_unavailable`；评测器未注册 → `INCONCLUSIVE/evaluator_not_found`；缺 `45-评测系统/artifacts/inputs/{run_id}.json` → `INCONCLUSIVE/missing_artifacts`；产物存在但领域对象映射未接 → `INCONCLUSIVE/artifact_not_evaluated`。**缺产物时严禁 PASS/BLOCK**。
+2. **结构分替代退化常数 ✅**：`structural_score()` 确定性 0-1（3 位小数），权重：tool 合法率 0.25 / 步骤数 0.15 / validation 0.20 / evidence_refs 0.20 / risk_flags 0.20（`max(0.4, 1-0.15n)`）/ cost_estimate 0.10；权重和 1.10，按总权重归一化避免满分饱和。明细 `{name, raw, weight, contribution}` 全量入 trace。
+3. **scoring 接入 ✅**：`score()` = 结构分基线叠加域结果（BLOCK→0 且排除候选池；PASS→`min(1, base+0.05)`；INCONCLUSIVE→仅 base）。每条 scored 新增 `evaluator_provenance {source: structural|45, evaluator, verdict, reason, structural_detail}`；45 不可用时 `source=structural` 且不抛。
+4. **trace / 摘要 ✅**：trace 每条新增 `domain_eval {available, names, verdicts}`；`--json-out` 新增 `evaluators {available, names:int}`。
+5. **候选池同侧去重 ✅**：side-B 多个 variant 在 `extend_nodes` 为空时内容完全相同，保留会使 Top1/Top2 恒同分（gap 恒 0、T1 恒命中）。`dedupe_pool` 增加同侧结构指纹去重（跨侧不合并，保留争议检测）。
+6. **真实复跑（2026-11-11，5 轮）✅**：`pool=3`、`evaluators.available=true/names=7`、`evaluator_provenance.verdict=INCONCLUSIVE/missing_artifacts`；T1 gap 由修复前 `0.0` 变为 `0.082`（`1.0 - 0.918`，A 侧 3 个 risk_flags 的结构差），5 轮均 `escalate_debate`（0.082 < 0.1 阈值，属"接近分差"）。补充 `--n-per-side 1` 复跑：gap `0.109 > 0.1` → 5 轮 `dispatch`、`outbox_written=2`，证明分差可越过阈值且不再恒 0。
+7. **已知局限 / 后续接入时机**：
+   - 规划期无领域产物，真实评测器**一律不执行**，`verdict` 恒 `INCONCLUSIVE`；`source=45` 仅代表契约可用，不代表已评测。
+   - 真实产物评测需上游先把 `artifacts/inputs/{run_id}.json` 映射为 45 领域对象（EngineeringScan/BacktestStats/StressPlan）；接入时机 = shadow trace 累计 2-4 周且产物落盘格式冻结后，届时仅替换 `evaluate_plan()` 的 `artifact_not_evaluated` 分支。
+   - 默认 `--n-per-side 2` 时 A 侧最优卡 0.918 vs B 1.0，gap 0.082，T1 持续命中；是否下调 T1 阈值需 Phase 5 门槛评审用更多 trace 决定。
 
 ---
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 from typing import Any, Iterable, Mapping, Sequence
 
+import domain_eval
 from plancard import plan_text, validate_plancard
 
 TRADE_EXEC_DOMAIN = "trade-exec"
@@ -146,65 +147,60 @@ def gate(
     return {"verdict": "BLOCK" if reasons else "PASS", "reasons": reasons}
 
 
-def score(card: dict[str, Any]) -> dict[str, Any]:
-    """确定性启发式评分（0-1），返回 {score, breakdown}。
+def score(
+    card: dict[str, Any],
+    *,
+    run_id: str | None = None,
+    allowed_tools: Any = None,
+    evaluators_root: str | None = None,
+    discovery: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """确定性规划评分（0-1）：结构分基线 + 45 域评测契约结果。
 
-    base 0.5
-    evidence_refs ≥2 +0.15；≥5 再 +0.05
-    plan_steps ≥2 +0.10
-    validation.evaluator_refs 非空 +0.10
-    validation.acceptance_checks ≥1 +0.10
-    expected_outcome 非空 +0.10
-    每个 risk_flag -0.10
-    cost_estimate.tokens > 20000 -0.05
-    clamp[0, 1]
+    base = domain_eval.structural_score（确定性、非退化）
+    BLOCK → 0.0 且 verdict=BLOCK；PASS → min(1.0, base+0.05)；
+    INCONCLUSIVE → 仅 base（45 不可用/缺产物时绝不编造分数）。
+    返回 {score, verdict, breakdown, evaluator_provenance}。
     """
-    breakdown: dict[str, float] = {"base": 0.5}
-    total = breakdown["base"]
+    base, structural_detail = domain_eval.structural_score(card, allowed_tools)
+    eval_result = domain_eval.evaluate_plan(
+        card,
+        run_id=run_id or "unspecified",
+        evaluators_root=evaluators_root,
+        discovery=discovery,
+    )
+    verdict = str(eval_result.get("verdict") or domain_eval.VERDICT_INCONCLUSIVE)
+    domain_delta = 0.0
+    final = base
+    if verdict == domain_eval.VERDICT_BLOCK:
+        domain_delta = -base
+        final = 0.0
+    elif verdict == domain_eval.VERDICT_PASS:
+        final = min(1.0, base + 0.05)
+        domain_delta = round(final - base, 3)
 
-    evidence_refs = card.get("evidence_refs") if isinstance(card, dict) else None
-    evidence_count = len(evidence_refs) if isinstance(evidence_refs, list) else 0
-    if evidence_count >= 2:
-        total += 0.15
-        breakdown["evidence_refs>=2"] = 0.15
-        if evidence_count >= MAX_SCORE_EVIDENCE_BONUS_THRESHOLD:
-            total += 0.05
-            breakdown["evidence_refs>=5"] = 0.05
+    unavailable = eval_result.get("reason") == "45_unavailable"
+    provenance = {
+        "source": "structural" if unavailable else "45",
+        "evaluator": eval_result.get("evaluator"),
+        "verdict": verdict,
+        "reason": eval_result.get("reason"),
+        "structural_detail": structural_detail,
+    }
+    breakdown: dict[str, Any] = {
+        "structural": base,
+        "domain_delta": round(domain_delta, 3),
+        "domain": eval_result.get("domain"),
+    }
+    for item in structural_detail:
+        breakdown[item["name"]] = item["contribution"]
 
-    steps = card.get("plan_steps") if isinstance(card, dict) else None
-    if isinstance(steps, list) and len(steps) >= 2:
-        total += 0.10
-        breakdown["plan_steps>=2"] = 0.10
-
-    validation = card.get("validation") if isinstance(card, dict) else None
-    if isinstance(validation, dict):
-        refs = validation.get("evaluator_refs")
-        if isinstance(refs, list) and refs:
-            total += 0.10
-            breakdown["evaluator_refs"] = 0.10
-        checks = validation.get("acceptance_checks")
-        if isinstance(checks, list) and len(checks) >= 1:
-            total += 0.10
-            breakdown["acceptance_checks"] = 0.10
-
-    outcome = card.get("expected_outcome") if isinstance(card, dict) else None
-    if isinstance(outcome, str) and outcome.strip():
-        total += 0.10
-        breakdown["expected_outcome"] = 0.10
-
-    risk_flags = card.get("risk_flags") if isinstance(card, dict) else None
-    if isinstance(risk_flags, list) and risk_flags:
-        penalty = -0.10 * len(risk_flags)
-        total += penalty
-        breakdown["risk_flags"] = penalty
-
-    cost = card.get("cost_estimate") if isinstance(card, dict) else None
-    tokens = cost.get("tokens") if isinstance(cost, dict) else None
-    if isinstance(tokens, int) and not isinstance(tokens, bool) and tokens > COST_TOKEN_SOFT_CAP:
-        total -= 0.05
-        breakdown["cost_tokens>20000"] = -0.05
-
-    return {"score": max(0.0, min(1.0, round(total, 4))), "breakdown": breakdown}
+    return {
+        "score": round(final, 3),
+        "verdict": verdict,
+        "breakdown": breakdown,
+        "evaluator_provenance": provenance,
+    }
 
 
 _TOKEN_RE = re.compile(r"[a-z0-9]{2,}")

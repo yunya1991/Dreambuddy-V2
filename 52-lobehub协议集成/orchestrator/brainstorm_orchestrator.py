@@ -31,6 +31,7 @@ REPO_ROOT = ORCHESTRATOR_DIR.parents[1]
 if str(ORCHESTRATOR_DIR) not in sys.path:
     sys.path.insert(0, str(ORCHESTRATOR_DIR))
 
+import domain_eval  # noqa: E402
 from adjudicator import adjudicate  # noqa: E402
 from debate_client import (  # noqa: E402
     DebateTransportError,
@@ -183,18 +184,46 @@ def collect_proposals(
     return proposals
 
 
+def _card_fingerprint(card: dict[str, Any]) -> str:
+    """结构指纹（排除 id）：用于识别同一侧内容完全相同的候选变体。"""
+    payload = {
+        key: card.get(key)
+        for key in (
+            "intent",
+            "plan_steps",
+            "evidence_refs",
+            "risk_flags",
+            "cost_estimate",
+            "expected_outcome",
+            "validation",
+        )
+    }
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
 def dedupe_pool(proposals: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
-    """候选池按 card_id 去重（保留首次出现）。"""
-    seen: set[str] = set()
+    """候选池去重（保留首次出现）。
+
+    先按 card_id 去重；同侧再按结构指纹去重——side-B 的多个 variant 在
+    extend_nodes 为空时内容完全相同，保留会让 Top1/Top2 恒定同分（T1 恒命中、
+    gap 恒 0），因此同侧相同方案只保留一张。跨侧相同方案不合并（供 T1 判争议）。
+    """
+    seen_ids: set[str] = set()
+    seen_side_fingerprints: set[tuple[str, str]] = set()
     pool: list[dict[str, Any]] = []
     for proposal in proposals:
         card = proposal.get("card")
         if not isinstance(card, dict):
             continue
         card_id = str(card.get("id") or "")
-        if card_id in seen:
+        if card_id in seen_ids:
             continue
-        seen.add(card_id)
+        side = str(proposal.get("proposer_id") or "")
+        fingerprint = (side, _card_fingerprint(card))
+        if fingerprint in seen_side_fingerprints:
+            continue
+        seen_ids.add(card_id)
+        seen_side_fingerprints.add(fingerprint)
         pool.append(proposal)
     return pool
 
@@ -203,9 +232,17 @@ def dedupe_pool(proposals: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def evaluate_proposals(
-    proposals: Sequence[dict[str, Any]], registry: RegistryView
+    proposals: Sequence[dict[str, Any]],
+    registry: RegistryView,
+    run_id: str | None = None,
+    evaluators_root: str | None = None,
+    discovery: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """对每张有效卡跑 gate + score，返回 (gates, scored)。"""
+    """对每张有效卡跑 gate + score（含 45 域契约 provenance），返回 (gates, scored)。
+
+    域评测 BLOCK 时把该卡在 gate 层记为 BLOCK（排除出可行候选池），
+    G1-G4 原有判定与 reasons 保持不变。
+    """
     gates: list[dict[str, Any]] = []
     scored: list[dict[str, Any]] = []
     for proposal in proposals:
@@ -213,13 +250,25 @@ def evaluate_proposals(
         if not isinstance(card, dict):
             continue
         gate_result = gate(card, registry)
-        score_result = score(card)
+        score_result = score(
+            card,
+            run_id=run_id,
+            allowed_tools=registry,
+            evaluators_root=evaluators_root,
+            discovery=discovery,
+        )
+        verdict = gate_result["verdict"]
+        reasons = list(gate_result["reasons"])
+        if score_result.get("verdict") == domain_eval.VERDICT_BLOCK:
+            verdict = domain_eval.VERDICT_BLOCK
+            evaluator = (score_result.get("evaluator_provenance") or {}).get("evaluator")
+            reasons.append(f"D1:domain_block:{evaluator}")
         gates.append(
             {
                 "card_id": card.get("id"),
                 "side": proposal.get("proposer_id"),
-                "verdict": gate_result["verdict"],
-                "reasons": gate_result["reasons"],
+                "verdict": verdict,
+                "reasons": reasons,
             }
         )
         scored.append(
@@ -229,7 +278,8 @@ def evaluate_proposals(
                 "model": proposal.get("model"),
                 "score": score_result["score"],
                 "breakdown": score_result["breakdown"],
-                "gate_verdict": gate_result["verdict"],
+                "gate_verdict": verdict,
+                "evaluator_provenance": score_result.get("evaluator_provenance"),
             }
         )
     return gates, scored
@@ -389,6 +439,7 @@ def run(
     adjudicator_mode: str = "both",
     route_hint: dict[str, Any] | None = None,
     force: bool = False,
+    evaluators_root: str | None = None,
 ) -> dict[str, Any]:
     """执行一次脑暴（shadow）。任何子步骤失败降级记录，不中断。
 
@@ -408,6 +459,13 @@ def run(
     refs = list(context_refs or [])
     run_id = f"bs-{int(time.time() * 1000)}-{random.randint(0, 0xFFFFFF):06x}"
     errors: list[dict[str, str]] = []
+    # 45 域评测器发现（fail-open：不可用只降级为 structural provenance）
+    discovery = domain_eval.discover(evaluators_root)
+    domain_trace: dict[str, Any] = {
+        "available": bool(discovery.get("available")),
+        "names": list(discovery.get("names") or []),
+        "verdicts": {},
+    }
 
     # ⓪ 意图路由（Phase 4.6）：必须在候选池生成之前分流（铁律⑥）
     if isinstance(route_hint, dict) and route_hint.get("route"):
@@ -446,6 +504,7 @@ def run(
                 "executed": False,
             },
             "dispatch": {"intent": None, "executed": False},
+            "domain_eval": domain_trace,
             "errors": [],
         }
         try:
@@ -470,6 +529,10 @@ def run(
             "outbox_written": 0,
             "trace_path": str(trace_file),
             "decision": skipped_record["decision"],
+            "evaluators": {
+                "available": domain_trace["available"],
+                "names": len(domain_trace["names"]),
+            },
             "errors": errors,
         }
 
@@ -500,8 +563,24 @@ def run(
     for violation in violations:
         errors.append({"step": "diversity", "error": json.dumps(violation, ensure_ascii=False)})
 
-    # ③ 收敛：池内每张各自 gate + score
-    gates, scored = evaluate_proposals(pool, registry)
+    # ③ 收敛：池内每张各自 gate + score（结构分 + 45 域契约 provenance）
+    gates, scored = evaluate_proposals(
+        pool,
+        registry,
+        run_id=run_id,
+        evaluators_root=evaluators_root,
+        discovery=discovery,
+    )
+    for item in scored:
+        card_id = str((item.get("card") or {}).get("id"))
+        provenance = item.get("evaluator_provenance") or {}
+        domain_trace["verdicts"][card_id] = {
+            "verdict": provenance.get("verdict"),
+            "reason": provenance.get("reason"),
+            "evaluator": provenance.get("evaluator"),
+            "domain": (item.get("breakdown") or {}).get("domain"),
+            "source": provenance.get("source"),
+        }
 
     # ④ recall 取证（可禁用；失败 FAIL-OPEN）
     recall_hits: list[dict[str, Any]] | None = None
@@ -634,9 +713,12 @@ def run(
                 "card_id": (item.get("card") or {}).get("id"),
                 "score": item.get("score"),
                 "breakdown": item.get("breakdown"),
+                "gate_verdict": item.get("gate_verdict"),
+                "evaluator_provenance": item.get("evaluator_provenance"),
             }
             for item in scored
         ],
+        "domain_eval": domain_trace,
         "recall": recall_step,
         "triggers": trigger_result,
         "adjudication": adjudication,
@@ -693,6 +775,11 @@ def run(
         "decision": decision,
         "debate": debate_info,
         "triggers": {"escalate": trigger_result["escalate"], "fired": trigger_result["fired"]},
+        "domain_eval": domain_trace,
+        "evaluators": {
+            "available": domain_trace["available"],
+            "names": len(domain_trace["names"]),
+        },
         "trace_path": str(trace_file),
         "outbox_written": written_outbox,
         "errors": errors,
@@ -716,6 +803,7 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
         "trace_id": summary.get("trace_id") or summary.get("run_id"),
         "trace_path": summary.get("trace_path"),
         "outbox_written": summary.get("outbox_written", 0),
+        "evaluators": summary.get("evaluators") or {"available": False, "names": 0},
         "diversity_violations": summary.get("diversity_violations") or [],
         "adjudication": summary.get("adjudication"),
         "decision": summary.get("decision"),
