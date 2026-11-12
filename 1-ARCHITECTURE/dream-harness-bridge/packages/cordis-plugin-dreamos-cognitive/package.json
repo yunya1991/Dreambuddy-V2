@@ -1,0 +1,17 @@
+{
+  "name": "dreambuddy-dreamos-cognitive",
+  "version": "0.1.0",
+  "description": "DreamBuddy 认知能力 Cordis 插件 — recall / search / record / verify，复用 python-server/server.py 单进程 IPC 桥接 4-MEMORY 认知系统",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "import": "./lib/index.js" }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-tools": "*"
+  }
+}

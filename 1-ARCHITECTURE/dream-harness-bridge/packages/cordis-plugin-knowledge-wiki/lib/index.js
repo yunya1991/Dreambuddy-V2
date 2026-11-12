@@ -10,10 +10,9 @@
  * Python server 内部调用 2-KNOWLEDGE/9-RAG-INFRA/evolution/wiki_compiler.py。
  */
 
-import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomUUID } from "node:crypto";
+import { getSharedIPC } from "../../python-server/shared-ipc.mjs";
 import z from "@deepseek-ai/schemastery";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 
@@ -29,113 +28,13 @@ const Config = z.object({
 
 const CURRENT_SCHEMA_VERSION = "1.0.0";
 
-class PythonIPCClient {
-  constructor(executable, serverPath) {
-    this.executable = executable;
-    this.serverPath = serverPath;
-    this.process = null;
-    this.pendingRequests = new Map();
-    this.started = false;
-    this.startPromise = null;
-  }
-
-  async start() {
-    if (this.started) return;
-    if (this.startPromise) return this.startPromise;
-    this.startPromise = this._doStart();
-    return this.startPromise;
-  }
-
-  async _doStart() {
-    return new Promise((resolveP, rejectP) => {
-      const timeout = setTimeout(() => {
-        rejectP(new Error("Python server 启动超时 (10s)"));
-      }, 10000);
-
-      this.process = spawn(this.executable, [this.serverPath], {
-        stdio: ["pipe", "pipe", "pipe"],
-      });
-
-      let stderrBuffer = "";
-      this.process.stderr.on("data", (data) => {
-        stderrBuffer += data.toString();
-        if (stderrBuffer.includes("启动") && !this.started) {
-          this.started = true;
-          clearTimeout(timeout);
-          resolveP();
-        }
-      });
-
-      this.process.stdout.on("data", (data) => {
-        const lines = data.toString().split("\n");
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const response = JSON.parse(line);
-            const id = response.id;
-            if (id && this.pendingRequests.has(id)) {
-              const { resolve: res } = this.pendingRequests.get(id);
-              this.pendingRequests.delete(id);
-              res(response);
-            }
-          } catch {
-            // 忽略非 JSON 行
-          }
-        }
-      });
-
-      this.process.on("error", (err) => {
-        clearTimeout(timeout);
-        rejectP(err);
-      });
-    });
-  }
-
-  async callMethod(method, params, timeoutMs = 30000) {
-    await this.start();
-    const id = randomUUID();
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.pendingRequests.delete(id);
-        reject(new Error(`方法 ${method} 调用超时 (${timeoutMs / 1000}s)`));
-      }, timeoutMs);
-
-      this.pendingRequests.set(id, {
-        resolve: (resp) => {
-          clearTimeout(timeout);
-          resolve(resp);
-        },
-      });
-
-      const request = JSON.stringify({
-        schema_version: CURRENT_SCHEMA_VERSION,
-        message_type: "request",
-        method,
-        params,
-        id,
-      });
-
-      this.process.stdin.write(request + "\n");
-    });
-  }
-
-  stop() {
-    if (this.process) {
-      this.process.kill();
-      this.process = null;
-      this.started = false;
-      this.startPromise = null;
-    }
-  }
-}
-
 function apply(ctx, config) {
   const serverPath =
     config.pythonServerPath ||
     resolve(__dirname, "../../python-server/server.py");
   const executable = config.pythonExecutable || "python3";
 
-  const ipcClient = new PythonIPCClient(executable, serverPath);
+  const ipcClient = getSharedIPC({ serverPath, executable });
 
   let startPromise = null;
 
@@ -426,9 +325,7 @@ function apply(ctx, config) {
     })
   );
 
-  ctx.on("dispose", () => {
-    ipcClient.stop();
-  });
+  // 共享 IPC 进程由 shared-ipc.mjs 在 Node 退出时统一回收,单插件 dispose 不 stop
 }
 
 export { Config, apply, inject, name };

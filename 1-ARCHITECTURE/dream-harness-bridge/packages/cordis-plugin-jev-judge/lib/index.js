@@ -23,10 +23,9 @@
  * 来源: Jev 引入调研（2026-09-22）
  */
 
-import { spawn } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomUUID } from "node:crypto";
+import { getSharedIPC } from "../../python-server/shared-ipc.mjs";
 import { readFileSync, existsSync } from "node:fs";
 import z from "@deepseek-ai/schemastery";
 
@@ -114,140 +113,6 @@ const DEFAULT_INTENT_CRITERIA = {
   strategy_recommendation: "策略建议、方案设计",
   other: "其他或无法分类",
 };
-
-class PythonIPCClient {
-  constructor(executable, serverPath) {
-    this.executable = executable;
-    this.serverPath = serverPath;
-    this.process = null;
-    this.pendingRequests = new Map();
-    this.started = false;
-    this.startPromise = null;
-  }
-
-  async start() {
-    if (this.started) return;
-    if (this.startPromise) return this.startPromise;
-    this.startPromise = this._doStart();
-    return this.startPromise;
-  }
-
-  async _doStart() {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error("Python server 启动超时 (10s)"));
-      }, 10000);
-
-      // 加载 .env 文件中的环境变量（shell 环境变量优先，不覆盖）
-      const envFromFile = loadEnvFile(this.serverPath);
-      const mergedEnv = { ...envFromFile, ...process.env };
-
-      this.process = spawn(this.executable, [this.serverPath], {
-        stdio: ["pipe", "pipe", "pipe"],
-        env: mergedEnv,
-      });
-
-      let stderrBuffer = "";
-      this.process.stderr.on("data", (data) => {
-        stderrBuffer += data.toString();
-        if (stderrBuffer.includes("启动") && !this.started) {
-          this.started = true;
-          clearTimeout(timeout);
-          this._handshake()
-            .then(() => resolve())
-            .catch((e) => reject(e));
-        }
-      });
-
-      let stdoutBuffer = "";
-      this.process.stdout.on("data", (data) => {
-        stdoutBuffer += data.toString();
-        const lines = stdoutBuffer.split("\n");
-        stdoutBuffer = lines.pop();
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const parsed = JSON.parse(line);
-            const hasVersion = typeof parsed.schema_version === "string";
-            const isResponse = parsed.message_type === "response";
-            if (hasVersion && isResponse) {
-              const pending = this.pendingRequests.get(parsed.id);
-              if (pending) {
-                this.pendingRequests.delete(parsed.id);
-                pending(parsed);
-              }
-            }
-          } catch {
-            // 非 JSON 行，忽略
-          }
-        }
-      });
-
-      this.process.on("exit", () => {
-        this.started = false;
-        this.process = null;
-      });
-
-      this.process.on("error", (err) => {
-        clearTimeout(timeout);
-        reject(new Error(`Python server 启动失败: ${err.message}`));
-      });
-    });
-  }
-
-  async _handshake() {
-    const request = {
-      schema_version: CURRENT_SCHEMA_VERSION,
-      message_type: "handshake_request",
-      client_version: CURRENT_SCHEMA_VERSION,
-      id: randomUUID(),
-      timestamp: new Date().toISOString(),
-    };
-    const response = await this.send(request);
-    if (!response.ok) {
-      throw new Error(`版本握手失败: ${JSON.stringify(response.error)}`);
-    }
-  }
-
-  async send(request) {
-    if (!this.started || !this.process) {
-      throw new Error("Python server 未启动");
-    }
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this.pendingRequests.delete(request.id);
-        reject(new Error(`IPC 请求超时: ${request.method || request.message_type}`));
-      }, 15000);
-
-      this.pendingRequests.set(request.id, (response) => {
-        clearTimeout(timeout);
-        resolve(response);
-      });
-
-      this.process.stdin.write(JSON.stringify(request) + "\n");
-    });
-  }
-
-  async callMethod(method, params) {
-    const request = {
-      schema_version: CURRENT_SCHEMA_VERSION,
-      message_type: "request",
-      method,
-      params,
-      id: randomUUID(),
-      timestamp: new Date().toISOString(),
-    };
-    return this.send(request);
-  }
-
-  stop() {
-    if (this.process) {
-      this.process.kill("SIGTERM");
-      this.process = null;
-      this.started = false;
-    }
-  }
-}
 
 // ============================================================
 // 工具函数
@@ -413,7 +278,7 @@ function apply(ctx, config = {}) {
   const stepQualityLowThreshold = config.stepQualityLowThreshold ?? 0.4;
   const intentRoutingThreshold = config.intentRoutingThreshold ?? 0.7;
 
-  const ipcClient = new PythonIPCClient(executable, serverPath);
+  const ipcClient = getSharedIPC({ serverPath, executable });
   let startPromise = null;
 
   async function ensureStarted() {
@@ -563,9 +428,7 @@ function apply(ctx, config = {}) {
     });
   }
 
-  ctx.on("dispose", () => {
-    ipcClient.stop();
-  });
+  // 共享 IPC 进程由 shared-ipc.mjs 在 Node 退出时统一回收,单插件 dispose 不 stop
 }
 
 export { Config, apply, inject, name };

@@ -1,0 +1,17 @@
+{
+  "name": "dreambuddy-superagent-p0",
+  "version": "0.1.0",
+  "description": "DreamBuddy Super-agent P0 Cordis plugin — event_gateway + ticket_router + ticket_bridge + ticket_state，复用 python-server/server.py 单进程 IPC",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": { "import": "./lib/index.js" }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-tools": "*"
+  }
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": "1.1",
-  "total_count": 186,
+  "total_count": 187,
   "skills": [
     {
       "name": "polling-trader-reload",
@@ -2394,7 +2394,7 @@
       "version": "1.1.0",
       "path": "/home/luke/dreambuddy/1-ARCHITECTURE/skills/dreambuddy-os/SKILL.md",
       "location_role": "project-index",
-      "status": "active",
+      "status": "deprecated",
       "category": "orchestration",
       "triggers": [],
       "depends_on": [],
@@ -2441,7 +2441,12 @@
         "local",
         "github",
         "cloud"
-      ]
+      ],
+      "lifecycle": {
+        "status": "deprecated",
+        "deprecated_at": "2026-11-12",
+        "replaced_by": "dreamos-dev"
+      }
     },
     {
       "name": "debate-adjudication-methodology",
@@ -7195,6 +7200,58 @@
         "local",
         "github",
         "cloud"
+      ]
+    },
+    {
+      "name": "dreamos-dev",
+      "description": "DREAM 架构落地的元 SKILL（唯一入口）：以 run 绑定 + G0-G5 机器可判定门禁驱动工程开发流程，只做路由与门禁，不内联实现。",
+      "version": "0.1.0",
+      "path": ".trae/skills/dreamos-dev/SKILL.md",
+      "location_role": "trae-entry",
+      "status": "active",
+      "category": "orchestration",
+      "triggers": [
+        "开工",
+        "run绑定",
+        "G0",
+        "G3",
+        "门禁",
+        "阶段推进",
+        "架构落地",
+        "dreamos-dev"
+      ],
+      "depends_on": [
+        "dream-rea-architecture-query",
+        "dream-arch-research-orchestrator",
+        "dream-tdd-dev-workflow",
+        "dream-acceptance-verify",
+        "dream-completion-evolution-workflow"
+      ],
+      "provides": [
+        "run-binding-gate",
+        "dev-phase-machine",
+        "gate-rules",
+        "dev-node-mapping"
+      ],
+      "cognitive_links": [],
+      "content_hash": "c2668610c16ed132956ed1f82209799ac5bd47e6263a5a6f517d0da1c1cfa3e8",
+      "parse_error": null,
+      "override_fields": null,
+      "facets": {
+        "domain": "architecture",
+        "task_type": "general",
+        "potency": "unipotent",
+        "resource_cost": "medium",
+        "execution_mode": "auto"
+      },
+      "confidence": 0.4,
+      "apply_count": 0,
+      "last_verified": null,
+      "execution_history": [],
+      "evolution_log": [],
+      "role": "coordinator",
+      "tier": [
+        "local"
       ]
     }
   ]

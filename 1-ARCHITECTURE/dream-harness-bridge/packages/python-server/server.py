@@ -99,6 +99,53 @@ except ImportError:
     )
 
 
+# D3: Super-agent P0 方法(由同目录 superagent_p0.py 进程内提供,不再单独 spawn 子进程)
+_P0_METHOD_NAMES = frozenset(
+    {
+        "superagent_p0_health",
+        "event_gateway_route",
+        "ticket_router_dispatch",
+        "ticket_bridge_translate",
+        "ticket_state_transition",
+        "router_pass",
+        "router_loop_stats",
+    }
+)
+
+
+def _load_p0_handlers():
+    """延迟加载 P0 handlers(FAIL-OPEN: 加载失败返回 None,IPCServer 继续工作)"""
+    try:
+        import superagent_p0  # noqa: PLC0415
+
+        return superagent_p0
+    except Exception as e:  # noqa: BLE001
+        _send_stderr("WARN", f"superagent_p0 加载失败(FAIL-OPEN): {e}")
+        return None
+
+
+# P1-1: 认知能力(进程内 cognitive_bridge,复用 4-MEMORY 认知系统,不另起 MCP 进程)
+_COGNITIVE_METHOD_NAMES = frozenset(
+    {
+        "cognitive_recall",
+        "cognitive_search",
+        "cognitive_record",
+        "cognitive_verify",
+    }
+)
+
+
+def _load_cognitive_bridge():
+    """延迟加载认知桥(FAIL-OPEN: 加载失败返回 None)。"""
+    try:
+        import cognitive_bridge  # noqa: PLC0415
+
+        return cognitive_bridge
+    except Exception as e:  # noqa: BLE001
+        _send_stderr("WARN", f"cognitive_bridge 加载失败(FAIL-OPEN): {e}")
+        return None
+
+
 # F-02: DreamBuddy 硬约束检查（占位，Phase 0 POC 时接入真实 DreamBuddy）
 def check_hard_constraints(method: str, params: dict[str, Any]) -> dict[str, Any]:
     """F-02: 协议级硬约束检查
@@ -1745,6 +1792,26 @@ def handle_request(raw_line: str, protocol_server) -> Optional[dict[str, Any]]:
             result = _handle_trade_index(params)
         elif method == "build_vector_index":
             result = _handle_build_vector_index(params)
+        elif method in _P0_METHOD_NAMES:
+            # D3: Super-agent P0 —— 进程内调用,省去独立 bridge 子进程
+            p0 = _load_p0_handlers()
+            result = (
+                p0.handle(method, params)
+                if p0 is not None
+                else {"ok": False, "degraded": True, "reason": "p0_unavailable"}
+            )
+        elif method in _COGNITIVE_METHOD_NAMES:
+            # P1-1: 认知能力 —— 进程内调用 4-MEMORY 认知系统
+            cognitive = _load_cognitive_bridge()
+            result = (
+                cognitive.handle(method, params)
+                if cognitive is not None
+                else {
+                    "ok": False,
+                    "degraded": True,
+                    "reason": "cognitive_bridge_unavailable",
+                }
+            )
         else:
             result = {"echo": {"method": method, "params": params}}
 

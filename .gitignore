@@ -289,3 +289,11 @@ DreamOS_intermediate.pptx
 # 运行期产物：部署健康日志与 48 域运行时数据质量目录
 .deploy/
 48-涌现架构/runtime/
+
+# 运行期产物（2026-11-13 收口：只入库源码/配置/SPEC，不入库生成数据与本地运行目录）
+.runs/
+.arch-map/
+scheduler_data/
+33-REA逆向解析工程/reflection_data/snapshots/
+33-REA逆向解析工程/reflection_data/mcp_cache/
+33-REA逆向解析工程/reflection_data/sarif/

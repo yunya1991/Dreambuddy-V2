@@ -259,6 +259,34 @@ python 34-前端应用训练系统/trigger_passive_training.py --case-data <case
 
 ---
 
+### 步骤 5.6：架构地图复盘（FAIL-OPEN · 防大模型漂移）
+
+> 契约：`1-ARCHITECTURE/specs/ARCH_ENGINEERING_MAP_SPEC.md` §5。每次「架构推进」结束跑一次，产出快照供下轮 diff；不跑就等于失去漂移检测手段。
+
+1. **重生成 + 投影 + 快照**（一条命令，内含 graph 重生成）：
+```bash
+python3 48-涌现架构/baselines/arch_map_review.py --run-id <本轮ID> --rebuild \
+  --runtime <可选：/dev/arch-map「导出本次点亮」得到的 json>
+```
+
+2. **读** `.arch-map/history/<ts>_<run-id>.md` 四类信号：
+
+| 信号 | 含义 | 处置 |
+|---|---|---|
+| `topology_delta` | 能力增删 >5% 或聚合边 >10% | 对照本轮 SPEC 范围，越界则在报告中标注 |
+| `orphan` | 有文件但无任何边 | 疑似未接线/死代码，记红旗 |
+| `never_lit` | 本轮运行态从未点亮 | 数据流未覆盖或 phase 映射缺失 |
+| `ghost` | 运行态出现图中不存在的 cap | 规则表过期，补 `arch_map_rules.yaml` |
+
+3. **回写**：结论摘要贴进收尾报告；属于架构缺口 → 回写 DREAM 落地 SPEC §4 或本轮 SPEC。
+
+**FAIL-OPEN 策略**：
+- 脚本失败 → 记红旗 `arch-map-review-failed`，不阻塞收尾
+- 无 `--runtime` → `never_lit`/`ghost` 仅基于图内信息，报告中注明
+- `--fail-on-drift` 只在用户显式要求「漂移即失败」时使用
+
+---
+
 ### 步骤 6：最终报告（内部生成）
 
 > **借鉴 GitHub 生态**：CI/CD 完成后的 status summary + 红旗清单。
@@ -284,6 +312,7 @@ python 34-前端应用训练系统/trigger_passive_training.py --case-data <case
 | 4. SKILL 治理 | dream-skill-index-governance | ✅/⏭️ | <ok/skip> | <N> |
 | 5. 认知闭环 | mcp_cognitive | ✅ | <memory_id> | - |
 | 5.5 被动训练 | trigger_passive_training.py | ✅/⏭️ | <coaching_started/skipped> | <N> |
+| 5.6 架构地图复盘 | arch_map_review.py | ✅/⏭️ | <pass/drift/skip> | <N> |
 
 ## 红旗清单
 - <如有红旗，逐条列出，含步骤+原因+建议>

@@ -178,10 +178,44 @@ jobs:
             --threshold 0.7
         continue-on-error: true
 
+  frontend:
+    name: Frontend (typecheck + jest + boundary)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: 3.1-FRONTEND/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: 3.1-FRONTEND
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (tsc --noEmit)
+        working-directory: 3.1-FRONTEND
+        run: pnpm exec tsc --noEmit
+
+      - name: Unit tests (jest)
+        working-directory: 3.1-FRONTEND
+        run: pnpm exec jest --ci --runInBand
+
+      - name: Route boundary gate (fs/child_process 不得增加)
+        working-directory: 3.1-FRONTEND
+        run: pnpm run check:boundary
+
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, frontend]
     if: always()
     steps:
       - name: Check results
@@ -189,9 +223,14 @@ jobs:
           echo "=== CI Quality Gate ==="
           echo "Lint: ${{ needs.lint.result }}"
           echo "Test: ${{ needs.test.result }}"
+          echo "Frontend: ${{ needs.frontend.result }}"
           echo ""
           if [ "${{ needs.lint.result }}" = "failure" ]; then
             echo "❌ Lint failed - quality gate not passed"
+            exit 1
+          fi
+          if [ "${{ needs.frontend.result }}" = "failure" ]; then
+            echo "❌ Frontend (typecheck/jest/boundary) failed - quality gate not passed"
             exit 1
           fi
           echo "✅ Quality gate passed"

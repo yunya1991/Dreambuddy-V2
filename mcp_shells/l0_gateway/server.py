@@ -48,6 +48,46 @@ from mcp_shells._shared.shell_runtime import (  # noqa: E402
 GATEWAY_SOURCE = "l0.gateway.mcp"
 REGISTRY_DEFAULT = _REPO_ROOT / "47-MCP管理系统" / "registry" / "mcp_capabilities.yaml"
 
+_CATALOG_HOT_ONLY_ENV = "REA_CATALOG_HOT_ONLY"
+_CATALOG_HOT_BUDGET_BYTES = 8_192
+_CATALOG_FAMILY_BUDGET_BYTES = 4_096
+_ENGINEER_HOT_TOOLS = frozenset(
+    {
+        "submit_rea_analyze",
+        "poll_rea_analyze",
+        "submit_rea_trace",
+        "poll_rea_trace",
+        "submit_rea_compare",
+        "poll_rea_compare",
+        "get_rea_snapshot",
+        "rea_audit",
+        "get_rea_methodology",
+        "recall",
+    }
+)
+
+
+def _compact_schema(value: Any) -> Any:
+    """移除 schema 文档性描述，保留类型、约束、必填项等调用语义。"""
+    if isinstance(value, dict):
+        return {key: _compact_schema(item) for key, item in value.items() if key != "description"}
+    if isinstance(value, list):
+        return [_compact_schema(item) for item in value]
+    return value
+
+
+def _catalog_family(name: str) -> str:
+    if name.startswith(("cancel_rea_", "rea_cancel_")):
+        return "cancel"
+    if name.startswith("rea_"):
+        return name[len("rea_") :].split("_", 1)[0] or "other"
+    return "other"
+
+
+def _catalog_response_bytes(req_id: Any, result: Dict[str, Any]) -> int:
+    response = {"jsonrpc": "2.0", "id": req_id, "result": result}
+    return len(json.dumps(response, ensure_ascii=False).encode("utf-8"))
+
 
 def _configure_stdio() -> None:
     for stream in (sys.stdout, sys.stderr):
@@ -199,6 +239,52 @@ class L0Gateway:
         self._tools = tools
         return tools
 
+    def load_catalog(self, params: Dict[str, Any], req_id: Any) -> Dict[str, Any]:
+        """engineer 热/冷目录投影；完整工具面仍由 load_tools 保持供调用路由使用。"""
+        tools = self.load_tools()
+        cold = [t for t in tools if str(t["name"]) not in _ENGINEER_HOT_TOOLS]
+        families = sorted({_catalog_family(str(t["name"])) for t in cold})
+        requested_family = str(params.get("family") or "").strip()
+
+        if requested_family:
+            result = {
+                "tools": [t for t in cold if _catalog_family(str(t["name"])) == requested_family],
+                "family": requested_family,
+                "families": families,
+                "trimmed": [],
+            }
+            return self._fit_catalog(req_id, result, _CATALOG_FAMILY_BUDGET_BYTES)
+
+        projected = []
+        for tool in tools:
+            name = str(tool["name"])
+            if name in _ENGINEER_HOT_TOOLS:
+                item = dict(tool)
+                item["inputSchema"] = _compact_schema(tool.get("inputSchema") or {})
+                projected.append(item)
+            else:
+                projected.append(
+                    {
+                        "name": name,
+                        "description": tool.get("description", ""),
+                        "family": _catalog_family(name),
+                    }
+                )
+        result = {"tools": projected, "families": families, "trimmed": []}
+        return self._fit_catalog(req_id, result, _CATALOG_HOT_BUDGET_BYTES)
+
+    @staticmethod
+    def _fit_catalog(
+        req_id: Any,
+        result: Dict[str, Any],
+        budget_bytes: int,
+    ) -> Dict[str, Any]:
+        """从尾部裁剪条目直至整个 JSON-RPC 响应满足预算，并保留 trimmed 留痕。"""
+        while result["tools"] and _catalog_response_bytes(req_id, result) > budget_bytes:
+            removed = result["tools"].pop()
+            result["trimmed"].append(str(removed["name"]))
+        return result
+
     # -- 请求处理 ---------------------------------------------------------
 
     def handle_request(self, req: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -229,7 +315,12 @@ class L0Gateway:
             return {"jsonrpc": "2.0", "id": req_id, "result": {}}
 
         if method == "tools/list":
-            return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": self.load_tools()}}
+            params = req.get("params") or {}
+            if self.role == "engineer" and os.environ.get(_CATALOG_HOT_ONLY_ENV, "1") != "0":
+                result = self.load_catalog(params, req_id)
+            else:
+                result = {"tools": self.load_tools()}
+            return {"jsonrpc": "2.0", "id": req_id, "result": result}
 
         if method == "tools/call":
             params = req.get("params") or {}

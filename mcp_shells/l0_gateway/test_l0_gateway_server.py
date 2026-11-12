@@ -198,3 +198,143 @@ def test_real_verifier_gateway_end_to_end():
     assert envelope["ok"] is False
     assert envelope["error_code"] == "invalid"
     assert envelope["meta"]["gateway_role"] == "verifier"
+
+
+def _engineer_catalog_gateway(*, with_cold: bool = False):
+    """构造带真实 schema 形态的 engineer 目录；冷工具仅存在于测试角色副本。"""
+    doc = json.loads(json.dumps(load_registry_doc()))
+    if with_cold:
+        doc["worker_roles"]["engineer"]["tools"].append("rea_metrics")
+        rea_spec = next(s for s in doc["shells"] if s["shell_id"] == "l0.rea.mcp")
+        rea_spec["tools"].append(
+            {
+                "name": "rea_metrics",
+                "read_write": "read",
+                "requires_mandate": False,
+                "annotations": {"readOnlyHint": True, "destructiveHint": False},
+            }
+        )
+
+    manager = _fake_manager(doc, "engineer")
+    live_tools = manager._mapping["l0.rea.mcp"].shell._tools
+    for tool in live_tools:
+        if tool["name"] == "submit_rea_analyze":
+            tool["description"] = "Submit REA analyze job"
+            tool["inputSchema"] = {
+                "type": "object",
+                "properties": {"target": {"type": "string", "description": "本地目录或文件路径"}},
+                "required": ["target"],
+            }
+        elif tool["name"] == "rea_metrics":
+            tool["description"] = "Collect code metrics"
+            tool["inputSchema"] = {
+                "type": "object",
+                "properties": {"target": {"type": "string", "description": "待采集目录"}},
+                "required": ["target"],
+            }
+    return doc, L0Gateway(doc, "engineer", manager), manager
+
+
+def _catalog_response(gateway, params=None):
+    return gateway.handle_request(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list",
+            "params": params or {},
+        }
+    )
+
+
+def _catalog_bytes(response):
+    return len(json.dumps(response, ensure_ascii=False).encode("utf-8"))
+
+
+def test_engineer_catalog_compacts_hot_schema_within_8kb():
+    _doc, gateway, _manager = _engineer_catalog_gateway()
+    resp = _catalog_response(gateway)
+    tools = {t["name"]: t for t in resp["result"]["tools"]}
+
+    assert resp["result"]["families"] == []
+    assert _catalog_bytes(resp) <= 8192
+    schema = tools["submit_rea_analyze"]["inputSchema"]
+    assert schema["required"] == ["target"]
+    assert schema["properties"]["target"] == {"type": "string"}
+    original = gateway.load_tools()[0]["inputSchema"]
+    assert original["properties"]["target"]["description"] == "本地目录或文件路径"
+
+
+def test_engineer_catalog_advertises_cold_tool_as_single_line():
+    _doc, gateway, _manager = _engineer_catalog_gateway(with_cold=True)
+    resp = _catalog_response(gateway)
+    tools = {t["name"]: t for t in resp["result"]["tools"]}
+
+    assert tools["rea_metrics"] == {
+        "name": "rea_metrics",
+        "description": "Collect code metrics",
+        "family": "metrics",
+    }
+    assert resp["result"]["families"] == ["metrics"]
+
+
+def test_engineer_catalog_family_expands_full_cold_schema():
+    _doc, gateway, _manager = _engineer_catalog_gateway(with_cold=True)
+    resp = _catalog_response(gateway, {"family": "metrics"})
+
+    assert resp["result"]["family"] == "metrics"
+    assert [t["name"] for t in resp["result"]["tools"]] == ["rea_metrics"]
+    schema = resp["result"]["tools"][0]["inputSchema"]
+    assert schema["properties"]["target"]["description"] == "待采集目录"
+    assert _catalog_bytes(resp) <= 4096
+
+
+def test_engineer_catalog_trims_hot_tools_over_8kb():
+    _doc, gateway, manager = _engineer_catalog_gateway()
+    recall = next(
+        t for t in manager._mapping["l0.cognition.mcp"].shell._tools if t["name"] == "recall"
+    )
+    recall["inputSchema"] = {
+        "type": "object",
+        "properties": {"context": {"type": "string", "const": "x" * 9000}},
+    }
+    resp = _catalog_response(gateway)
+
+    assert _catalog_bytes(resp) <= 8192
+    assert "recall" in resp["result"]["trimmed"]
+    assert "submit_rea_analyze" in {t["name"] for t in resp["result"]["tools"]}
+
+
+def test_engineer_catalog_trims_cold_family_over_4kb():
+    _doc, gateway, manager = _engineer_catalog_gateway(with_cold=True)
+    cold = next(
+        t for t in manager._mapping["l0.rea.mcp"].shell._tools if t["name"] == "rea_metrics"
+    )
+    cold["inputSchema"]["properties"]["payload"] = {"type": "string", "const": "x" * 5000}
+    resp = _catalog_response(gateway, {"family": "metrics"})
+
+    assert _catalog_bytes(resp) <= 4096
+    assert resp["result"]["tools"] == []
+    assert resp["result"]["trimmed"] == ["rea_metrics"]
+
+
+def test_engineer_catalog_rollback_restores_full_schemas(monkeypatch):
+    monkeypatch.setenv("REA_CATALOG_HOT_ONLY", "0")
+    _doc, gateway, _manager = _engineer_catalog_gateway(with_cold=True)
+    resp = _catalog_response(gateway)
+    tools = {t["name"]: t for t in resp["result"]["tools"]}
+
+    assert "families" not in resp["result"]
+    assert tools["submit_rea_analyze"]["inputSchema"]["properties"]["target"]["description"]
+    assert tools["rea_metrics"]["inputSchema"]["required"] == ["target"]
+
+
+def test_engineer_catalog_cold_tool_call_contract_is_unchanged():
+    _doc, gateway, _manager = _engineer_catalog_gateway(with_cold=True)
+    _catalog_response(gateway)
+    envelope = _call(gateway, "rea_metrics", {"target": "/tmp/project"})
+
+    assert envelope["ok"] is True
+    assert envelope["data"] == {
+        "tool": "rea_metrics",
+        "args": {"target": "/tmp/project"},
+    }
