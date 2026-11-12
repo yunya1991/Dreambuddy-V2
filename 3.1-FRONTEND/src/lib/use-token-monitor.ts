@@ -12,7 +12,14 @@
  *   });
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   TokenMonitor,
   type TokenMonitorState,
@@ -44,11 +51,40 @@ export interface UseTokenMonitorReturn {
   triggerRecovery: () => void;
 }
 
+/**
+ * 全局监控器 Context —— 由 TokenMonitorProvider 提供。
+ * 未挂载 Provider 时为 null，useTokenMonitor 回退到自建实例（向后兼容）。
+ */
+export const TokenMonitorContext = createContext<UseTokenMonitorReturn | null>(
+  null
+);
+
+/**
+ * 获取 Token 监控器。
+ *
+ * - Provider 内：直接复用全局单实例，不再创建/启动自己的 TokenMonitor（避免双轮询）
+ * - Provider 外：自建实例（原有行为）
+ */
 export function useTokenMonitor(
   options: UseTokenMonitorOptions
 ): UseTokenMonitorReturn {
-  const { fetchBalance, config, callbacks, autoStart = true } = options;
+  const shared = useContext(TokenMonitorContext);
+  const own = useTokenMonitorInternal({ ...options, enabled: !shared });
+  return shared ?? own;
+}
 
+interface UseTokenMonitorInternalOptions extends UseTokenMonitorOptions {
+  /** false 时只占位不创建实例（Provider 内使用） */
+  enabled: boolean;
+}
+
+function useTokenMonitorInternal({
+  fetchBalance,
+  config,
+  callbacks,
+  autoStart = true,
+  enabled,
+}: UseTokenMonitorInternalOptions): UseTokenMonitorReturn {
   const [state, setState] = useState<TokenMonitorState>({
     status: "idle",
     balance: 0,
@@ -73,8 +109,10 @@ export function useTokenMonitor(
     }
   }, [callbacks]);
 
-  // 初始化监控器
+  // 初始化监控器（Provider 内 enabled=false，不创建第二份实例/定时器）
   useEffect(() => {
+    if (!enabled) return;
+
     const wrappedCallbacks = wrapCallbacks(callbacksRef.current, setState);
     const monitor = new TokenMonitor(fetchBalance, config, wrappedCallbacks);
     monitorRef.current = monitor;

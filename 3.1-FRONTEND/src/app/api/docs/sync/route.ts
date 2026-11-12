@@ -28,7 +28,7 @@ interface SyncReport {
 }
 
 const ADAPTER_PATH = path.join(process.cwd(), 'scripts', 'doc_index_adapter.py');
-const PYTHON_BIN = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+const PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 const TIMEOUT_MS = 20000;  // sync 涉及认知库 record，给 20s
 
 async function callDocSync<T>(

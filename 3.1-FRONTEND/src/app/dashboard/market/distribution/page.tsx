@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { marketApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface PushRecord {
   id: string;
@@ -16,16 +17,15 @@ const STATUS_COLOR = { sent: '#34d399', failed: '#f87171', pending: '#f59e0b' };
 const STATUS_LABEL = { sent: '已发送', failed: '失败', pending: '待发送' };
 
 export default function DistributionPage() {
-  const [records, setRecords] = useState<PushRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const distributionQuery = useQuery({
+    queryKey: queryKey('market', 'distribution'),
+    queryFn: () => marketApi.getDistribution(),
+    staleTime: queryStaleTime('market'),
+  });
 
-  useEffect(() => {
-    marketApi.getDistribution()
-      .then(data => setRecords((data as unknown as PushRecord[]) ?? []))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const records = (distributionQuery.data as unknown as PushRecord[] | undefined) ?? [];
+  const loading = distributionQuery.isLoading;
+  const error = distributionQuery.error instanceof Error ? distributionQuery.error.message : null;
 
   const byChannel = records.reduce<Record<string, number>>((acc, r) => {
     acc[r.channelType] = (acc[r.channelType] || 0) + 1;

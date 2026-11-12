@@ -35,7 +35,22 @@ export interface Proposal {
 export interface ApprovalSummary {
   total: number;
   pending: number;
+  approved: number;
+  rejected: number;
   [key: string]: unknown;
+}
+
+/** 执行评审记录（GET /api/board/review） */
+export interface ReviewRecord {
+  id: string;
+  strategyName: string;
+  status: string;
+  totalTrades: number;
+  winRate: number;
+  pnl: number;
+  score: number | null;
+  review: string | null;
+  appliedAt: string | null;
 }
 
 // P1: 提案投票
@@ -82,6 +97,10 @@ export const boardApi = {
   /** 提交评审 */
   submitReview: (body: unknown) =>
     api.post<{ success: boolean }>('/api/board/review', body),
+
+  /** 获取执行评审记录 */
+  listReviews: () =>
+    api.get<ReviewRecord[]>('/api/board/review'),
 
   /** 获取审批摘要 */
   getApprovalSummary: () =>

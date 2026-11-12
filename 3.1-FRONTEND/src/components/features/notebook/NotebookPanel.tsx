@@ -7,6 +7,7 @@
 // ============================================================
 
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import StepProgress from './StepProgress';
 import StepActionMenu from './StepActionMenu';
 import TaskCard from './TaskCard';
@@ -14,6 +15,7 @@ import ActiveDZEChain from './ActiveDZEChain';
 import ActiveStrategyChain from './ActiveStrategyChain';
 import { useNotebookStore } from '@/stores/notebook-store';
 import { notebookApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import type { NotebookTask, StepAction, NotebookState } from '@/lib/notebook/types';
 
 interface Props {
@@ -46,25 +48,30 @@ export default function NotebookPanel({ onNewTask }: Props) {
   const { currentTaskId, tasks, startTask, applyStepAction, syncFromServer, init } = useNotebookStore();
   const [tab, setTab] = useState<'current' | 'history'>('current');
   const [busy, setBusy] = useState(false);
-  const [serverState, setServerState] = useState<NotebookState | null>(null);
+
+  const stateQuery = useQuery({
+    queryKey: queryKey('notebook', 'state'),
+    queryFn: () => notebookApi.getState(),
+    staleTime: queryStaleTime('notebook'),
+    retry: false, // 静默失败 — dev 环境服务端可能未启动
+  });
+
+  const serverState = (stateQuery.data as unknown as NotebookState | null) ?? null;
 
   useEffect(() => {
     init();
-    fetchServer();
   }, [init]);
 
-  async function fetchServer() {
-    try {
-      const data = await notebookApi.getState();
-      if (data) {
-        const state = data as unknown as NotebookState;
-        setServerState(state);
-        syncFromServer(state);
-      }
-    } catch {
-      // 静默失败 — dev 环境服务端可能未启动
+  // 服务端状态同步回 notebook store
+  useEffect(() => {
+    if (stateQuery.data) {
+      syncFromServer(stateQuery.data as unknown as NotebookState);
     }
-  }
+  }, [stateQuery.data, syncFromServer]);
+
+  const fetchServer = () => {
+    void stateQuery.refetch();
+  };
 
   async function handleAction(action: StepAction, targetStep?: number, reason?: string) {
     if (!currentTaskId) return;

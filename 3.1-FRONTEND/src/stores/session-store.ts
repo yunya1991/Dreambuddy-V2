@@ -102,6 +102,8 @@ interface SessionState {
   pendingStepConfirmation: StepConfirmation | null;
   lastSynthesis: FinalSynthesisData | null;
   lastChartSpecs: any[] | null;
+  /** 任务流最近一次错误（由 task-stream-manager 写入，切页后仍可展示） */
+  lastTaskError: string | null;
 
   createSession: (title?: string) => string;
   setActiveSession: (id: string) => void;
@@ -118,6 +120,7 @@ interface SessionState {
   setLastChartSpecs: (specs: any[] | null) => void;
   setPendingStepConfirmation: (data: StepConfirmation | null) => void;
   setLastSynthesis: (data: FinalSynthesisData | null) => void;
+  setLastTaskError: (error: string | null) => void;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
@@ -134,6 +137,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   pendingStepConfirmation: null,
   lastSynthesis: null,
   lastChartSpecs: null,
+  lastTaskError: null,
 
   createSession: (title = '新会话') => {
     const id = `sess_${Date.now()}`;
@@ -174,4 +178,5 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   setLastChartSpecs: (specs) => set({ lastChartSpecs: specs }),
   setPendingStepConfirmation: (data) => set({ pendingStepConfirmation: data }),
   setLastSynthesis: (data) => set({ lastSynthesis: data }),
+  setLastTaskError: (error) => set({ lastTaskError: error }),
 }));

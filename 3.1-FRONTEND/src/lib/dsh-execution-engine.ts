@@ -57,9 +57,13 @@ interface IpcResult {
 
 const ENGINE_CONFIG = {
   adapter_path: path.join(process.cwd(), 'scripts', 'dsh_adapter.py'),
-  python_bin: process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3',
+  // 解释器不写死本机路径：云端与本地分别用 COGNITIVE_PYTHON / PYTHON 覆盖，缺省回落 python3
+  python_bin: process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3',
   timeout_ms: 15000,   // SubAgent 执行可能涉及数据查询，给 15s
   confidence_threshold: 0.3,  // 低于此值触发 LLM 兜底
+  // orchestrator 单次 run_cycle >15s，云端走「提交 + 轮询」，总预算独立配置
+  orchestrator_timeout_ms: Number(process.env.DSH_ORCHESTRATOR_TIMEOUT_MS || 120000),
+  orchestrator_poll_ms: Number(process.env.DSH_ORCHESTRATOR_POLL_MS || 1000),
 };
 
 /**
@@ -114,17 +118,152 @@ const SKILL_KEYWORD_MAP: Array<{ keywords: string[]; module: string }> = [
 // ============================================================
 
 /**
- * 调用 DSH Python handler（通过 dsh_adapter.py 桥接）
+ * 调用 DSH Python handler
+ *
+ * 传输顺序（SPEC-20261111-C §3.5 / T-C5）：
+ *  1. 配置 `DSH_API_BASE` 时优先 HTTP（`POST {base}/execute`）
+ *  2. HTTP 不可用/未配置时回退既有 IPC（dsh_adapter.py spawn）
  *
  * @param module - SubAgent module 名（technical/sentiment/...）或 'c_drive'/'synthesizer'
  * @param params - handler 参数对象
  * @param timeoutMs - 超时毫秒
  * @returns IpcResult，失败时 degraded=true（FAIL-OPEN）
  */
-export function callDshHandler(
+export async function callDshHandler(
   module: string,
   params: Record<string, any>,
   timeoutMs: number = ENGINE_CONFIG.timeout_ms,
+): Promise<IpcResult> {
+  // 链路 ID 只解析一次，HTTP / IPC 两条通路都带上（GAP-2 全链透传）
+  const traceId = await inboundTraceId();
+  // orchestrator 单次 run_cycle 远超 15s：配置了云端 HTTP 时改走「提交 + 轮询」
+  if (module === 'orchestrator' && process.env.DSH_API_BASE?.trim()) {
+    return callOrchestratorAsync(params, traceId);
+  }
+  const viaHttp = await callDshHttp(module, params, timeoutMs, traceId);
+  if (viaHttp) return viaHttp;
+  return callDshSpawn(module, params, timeoutMs, traceId);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * orchestrator 异步执行（云端）：提交作业 → 轮询 orchestrator.status → 返回与同步一致的信封。
+ * 任一步 HTTP 不可用则回退本地 spawn（保持原降级语义）。
+ */
+async function callOrchestratorAsync(
+  params: Record<string, any>,
+  traceId?: string,
+): Promise<IpcResult> {
+  const submit = await callDshHttp(
+    'orchestrator',
+    { ...params, async: true },
+    ENGINE_CONFIG.timeout_ms,
+    traceId,
+  );
+  if (!submit) return callDshSpawn('orchestrator', params, ENGINE_CONFIG.timeout_ms, traceId);
+
+  const jobId = (submit.output as { job_id?: unknown } | undefined)?.job_id;
+  if (!submit.ok || typeof jobId !== 'string' || !jobId) return submit;
+
+  const deadline = Date.now() + ENGINE_CONFIG.orchestrator_timeout_ms;
+  while (Date.now() < deadline) {
+    await sleep(ENGINE_CONFIG.orchestrator_poll_ms);
+    // 能力名必须与 dsh_frontend_bridge.HANDLER_TO_SHELL_ID 一致（下划线，不是点号）
+    const poll = await callDshHttp(
+      'orchestrator_status',
+      { job_id: jobId },
+      ENGINE_CONFIG.timeout_ms,
+      traceId,
+    );
+    if (!poll) return { ok: false, degraded: true, error: 'orchestrator_poll_unavailable' };
+    if (!poll.ok) return poll;
+    const data = (poll.output ?? {}) as { status?: string; output?: IpcResult; ok?: boolean };
+    if (data.status === 'done') {
+      return data.output ?? { ok: true, output: data };
+    }
+    // 作业完成时 call_handler 会剥掉 status、把 run_cycle 结果直接作为 output 返回；
+    // 结果信封必带布尔 ok，据此判定终态（pending 只有 {job_id, status:'pending'}）
+    if (typeof data.ok === 'boolean') return data as IpcResult;
+  }
+  return {
+    ok: false,
+    degraded: true,
+    error: `orchestrator_timeout_${ENGINE_CONFIG.orchestrator_timeout_ms}ms`,
+  };
+}
+
+/**
+ * 读取入站请求的链路 ID（GAP-2 trace_id 全链透传）
+ *
+ * 仅在 Next 请求作用域内可用（route handler / server component）；
+ * 脚本、测试、后台任务下 `headers()` 抛错 → 返回 undefined（FAIL-OPEN，不阻塞调用）。
+ */
+async function inboundTraceId(): Promise<string | undefined> {
+  try {
+    const { headers } = await import('next/headers');
+    const h = await headers();
+    return h.get('x-request-id') ?? h.get('x-trace-id') ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** HTTP 代理调用（T-C5）；null 表示不可用，回退 IPC */
+async function callDshHttp(
+  module: string,
+  params: Record<string, any>,
+  timeoutMs: number,
+  traceId?: string,
+): Promise<IpcResult | null> {
+  const base = process.env.DSH_API_BASE?.trim();
+  if (!base) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.min(timeoutMs, 60000));
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(traceId ? { 'X-Request-Id': traceId } : {}),
+  };
+  // 云端 /execute 开启 Bearer 鉴权后，前端需带同一 token
+  const token = process.env.DSH_API_TOKEN?.trim();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  try {
+    const res = await fetch(`${base.replace(/\/+$/, '')}/execute`, {
+      method: 'POST',
+      headers,
+      // trace_id 走 body 是云端 /execute 的回显契约（execute_http_server.dispatch）
+      body: JSON.stringify({
+        capability: module,
+        payload: params,
+        ...(traceId ? { trace_id: traceId } : {}),
+      }),
+      signal: controller.signal,
+    });
+    // 鉴权失败是配置错误，不能静默降级到本地 spawn
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, degraded: true, error: 'unauthorized' };
+    }
+    if (!res.ok) return null;
+    const body = (await res.json()) as unknown;
+    if (body && typeof body === 'object' && 'ok' in (body as Record<string, unknown>)) {
+      return body as IpcResult;
+    }
+    return { ok: true, output: body };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** IPC 回退路径（既有实现，语义未改动；仅补 trace_id 透传） */
+function callDshSpawn(
+  module: string,
+  params: Record<string, any>,
+  timeoutMs: number,
+  traceId?: string,
 ): Promise<IpcResult> {
   return new Promise<IpcResult>((resolve) => {
     let stdoutBuf = '';
@@ -132,7 +271,11 @@ export function callDshHandler(
 
     const child = spawn(
       ENGINE_CONFIG.python_bin,
-      [ENGINE_CONFIG.adapter_path, module, JSON.stringify(params)],
+      [
+        ENGINE_CONFIG.adapter_path,
+        module,
+        JSON.stringify(traceId ? { ...params, trace_id: traceId } : params),
+      ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
 
@@ -163,13 +306,22 @@ export function callDshHandler(
       });
     });
 
-    child.on('close', () => {
+    child.on('close', (code: number | null) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
 
       // adapter 保证 stdout 最后一行是单行 JSON
       const lines = stdoutBuf.split('\n').filter((l) => l.trim().startsWith('{'));
+      if (lines.length === 0 && code !== 0) {
+        // 非零退出且无任何输出：解释器/依赖缺失等情况，不能把 '{}' 当成功信封
+        resolve({
+          ok: false,
+          degraded: true,
+          error: `exit_code_${code ?? 'null'}`,
+        });
+        return;
+      }
       const lastLine = lines[lines.length - 1] || '{}';
       try {
         const parsed = JSON.parse(lastLine) as IpcResult;

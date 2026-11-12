@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import {
   V3Card, V3Button, V3Badge, V3StatusDot,
   IconRefresh, IconPlus, IconClose,
@@ -99,8 +101,6 @@ function emptyForm(): ChannelForm {
 }
 
 export function ChannelManager() {
-  const [channels, setChannels] = useState<ChannelEntry[]>([]);
-  const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<ChannelForm>(emptyForm());
   const [saving, setSaving] = useState(false);
@@ -109,20 +109,21 @@ export function ChannelManager() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchChannels();
-  }, []);
+  const channelsQuery = useQuery({
+    queryKey: queryKey('settings', 'channels'),
+    queryFn: () =>
+      api
+        .get<ChannelEntry[]>('/api/config/channels')
+        .then((data) => (Array.isArray(data) ? data : [])),
+    staleTime: queryStaleTime('settings'),
+    retry: false, // 静默降级：失败按空列表处理
+  });
 
-  const fetchChannels = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get<ChannelEntry[]>('/api/config/channels');
-      setChannels(Array.isArray(data) ? data : []);
-    } catch {
-      // 静默处理
-    } finally {
-      setLoading(false);
-    }
+  const channels = channelsQuery.data ?? [];
+  const loading = channelsQuery.isFetching;
+
+  const fetchChannels = () => {
+    void channelsQuery.refetch();
   };
 
   const openAddForm = () => {

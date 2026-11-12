@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
 import { fundamentalApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface BreadthModule {
   metrics?: {
@@ -27,29 +28,33 @@ function fmt(n: number | string, digits = 2): string {
   return n.toFixed(digits);
 }
 
+async function fetchGlobalMarket(): Promise<{ btcDominance: number } | null> {
+  const r = await fetch('/api/market/global', { cache: 'no-store' });
+  const d = await r.json();
+  if (!d?.ok) return null;
+  return { btcDominance: Number(d.btc_dominance) };
+}
+
 export function BreadthPanel() {
-  const [mod, setMod] = useState<BreadthModule | null>(null);
-  const [btcDominance, setBtcDominance] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const snapshotQuery = useQuery({
+    queryKey: queryKey('fundamental', 'snapshot'),
+    queryFn: () => fundamentalApi.getSnapshot(),
+    staleTime: queryStaleTime('fundamental'),
+  });
 
-  useEffect(() => {
-    fundamentalApi
-      .getSnapshot()
-      .then(data => {
-        const snap = data as { modules?: Record<string, BreadthModule> } | null;
-        setMod(snap?.modules?.breadth ?? null);
-      })
-      .catch(e => setError(e?.message ?? '获取广度数据失败'))
-      .finally(() => setLoading(false));
-  }, []);
+  const globalQuery = useQuery({
+    queryKey: queryKey('market', 'global'),
+    queryFn: fetchGlobalMarket,
+    staleTime: queryStaleTime('market'),
+    retry: false, // FAIL-OPEN：失败保留旧数据
+  });
 
-  useEffect(() => {
-    fetch('/api/market/global', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => { if (d?.ok) setBtcDominance(Number(d.btc_dominance)); })
-      .catch(() => {});
-  }, []);
+  const mod = (snapshotQuery.data as { modules?: Record<string, BreadthModule> } | null)?.modules?.breadth ?? null;
+  const btcDominance = globalQuery.data?.btcDominance ?? null;
+  const loading = snapshotQuery.isLoading;
+  const error = snapshotQuery.isError
+    ? ((snapshotQuery.error as Error | null)?.message ?? '获取广度数据失败')
+    : null;
 
   if (loading) return <div className="h-48 rounded-xl bg-slate-800/50 animate-pulse" />;
   if (error) return <div className="rounded-lg bg-red-950/30 border border-red-800/30 p-4 text-xs text-red-300">广度数据加载失败：{error}</div>;

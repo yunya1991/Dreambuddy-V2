@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { marketApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface AuditEntry {
   id: string;
@@ -16,16 +17,15 @@ interface AuditEntry {
 const RESULT_COLOR = { success: '#34d399', failure: '#f87171', pending: '#f59e0b' };
 
 export default function AuditPage() {
-  const [entries, setEntries] = useState<AuditEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const auditQuery = useQuery({
+    queryKey: queryKey('market', 'audit'),
+    queryFn: () => marketApi.getAudit(),
+    staleTime: queryStaleTime('market'),
+  });
 
-  useEffect(() => {
-    marketApi.getAudit()
-      .then(data => setEntries((data as unknown as AuditEntry[]) ?? []))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const entries = (auditQuery.data as unknown as AuditEntry[] | undefined) ?? [];
+  const loading = auditQuery.isLoading;
+  const error = auditQuery.error instanceof Error ? auditQuery.error.message : null;
 
   return (
     <div className="px-6 py-4">

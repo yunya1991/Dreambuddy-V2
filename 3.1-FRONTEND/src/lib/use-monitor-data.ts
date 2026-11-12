@@ -1,22 +1,29 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useMonitorStore, useMemoryStore } from '@/stores';
 import type { SACELayer, SACGLayerEvent } from '@/stores';
 import api from '@/lib/api-client';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
+import {
+  subscribeMonitor,
+  subscribeMonitorStatus,
+  type MonitorStreamEvent,
+  type MonitorStreamStatus,
+} from '@/lib/stream/monitor-stream-manager';
 
 /**
  * useMonitorData — 监控页独立数据接入 hook
  *
  * 职责：
- * 1. 建立 /api/monitor/stream SSE 连接，接收 monitor-bus 真实事件
+ * 1. 订阅 monitor-stream-manager 单例流（/api/monitor/stream），不自己持有连接
  * 2. 按 phase 语义将事件映射到 SACG 四层，写入 monitor-store
  * 3. 每 10s 轮询 /api/monitor/stats，更新 pipelineThroughput
- * 4. 断线自动重连（指数退避，最多 5 次）
  *
  * 与 AI 对话系统联动：
  * - 聊天任务通过 /api/task/stream SSE 更新 monitor-store（sse-dispatcher）
- * - 本 hook 通过 /api/monitor/stream SSE 补充 monitor-bus 全量事件
+ * - 本 hook 通过 monitor-stream-manager 补充 monitor-bus 全量事件
  * - 两者共享同一组 zustand stores，数据一致
  */
 
@@ -58,134 +65,72 @@ function mapPhaseToLayer(phase: string): SACELayer {
   return PHASE_TO_LAYER[phase] || 'C';
 }
 
-interface MonitorStreamEvent {
-  id: string;
-  trace_id: string;
-  uid: string;
-  timestamp: string;
-  layer: string;
-  phase: string;
-  status: string;
-  intent?: string;
-  thinking_mode?: string;
-  chain?: string[];
-  duration_ms?: number;
-  error?: string;
-  artifact_file?: string;
-  message_preview?: string;
-  type?: string;
+function mapStreamStatus(s: MonitorStreamStatus): 'disconnected' | 'connecting' | 'connected' | 'error' {
+  if (s === 'open') return 'connected';
+  if (s === 'connecting') return 'connecting';
+  if (s === 'reconnecting') return 'error';
+  return 'disconnected';
+}
+
+interface MonitorStatsResponse {
+  stats: {
+    total_requests: number;
+    total_completed: number;
+    total_failed: number;
+    success_rate: number;
+    avg_duration_ms: number;
+    active_traces: number;
+  };
 }
 
 export function useMonitorData() {
-  const esRef = useRef<EventSource | null>(null);
-  const reconnectCountRef = useRef(0);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mountedRef = useRef(true);
+  // 统计轮询（10s）交由 react-query 托管：去重、共享缓存、卸载即停
+  const statsQuery = useQuery({
+    queryKey: queryKey('monitor', 'stats'),
+    queryFn: () => api.get<MonitorStatsResponse>('/api/monitor/stats'),
+    staleTime: queryStaleTime('monitor'),
+    refetchInterval: 10_000,
+    retry: false, // 静默失败，保留上次成功数据
+  });
+
+  // 统计数据写入 monitor-store
+  useEffect(() => {
+    const s = statsQuery.data?.stats;
+    if (!s) return;
+    useMonitorStore.getState().setThroughput({
+      totalProcessed: s.total_requests,
+      successRate: s.success_rate / 100,
+      avgLatencyMs: s.avg_duration_ms,
+      activeCount: s.active_traces,
+    });
+  }, [statsQuery.data]);
 
   useEffect(() => {
-    mountedRef.current = true;
-
-    const connect = () => {
-      if (!mountedRef.current) return;
-
-      useMonitorStore.getState().setSSEStatus('connecting');
-
-      let es: EventSource;
-      try {
-        es = new EventSource('/api/monitor/stream');
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      esRef.current = es;
-
-      es.onopen = () => {
-        reconnectCountRef.current = 0;
-        useMonitorStore.getState().setSSEStatus('connected');
+    // 订阅单例流：多页面共享同一条 EventSource
+    const unsubscribe = subscribeMonitor((event: MonitorStreamEvent) => {
+      const phase = event.phase || '';
+      const layer = mapPhaseToLayer(phase);
+      const storeEvent: SACGLayerEvent = {
+        id: event.id || `evt_${Date.now()}`,
+        layer,
+        type: phase,
+        description: event.message_preview || `${phase}: ${event.status}`,
+        timestamp: event.timestamp ? new Date(event.timestamp).getTime() : Date.now(),
+        duration: event.duration_ms,
       };
+      useMonitorStore.getState().addEvent(layer, storeEvent);
+    });
 
-      es.onmessage = (e: MessageEvent) => {
-        try {
-          const event = JSON.parse(e.data) as MonitorStreamEvent;
-          // 跳过系统消息
-          if (event.type === 'connected' || event.type === 'system') return;
-
-          const layer = mapPhaseToLayer(event.phase);
-          const storeEvent: SACGLayerEvent = {
-            id: event.id || `evt_${Date.now()}`,
-            layer,
-            type: event.phase,
-            description: event.message_preview || `${event.phase}: ${event.status}`,
-            timestamp: event.timestamp ? new Date(event.timestamp).getTime() : Date.now(),
-            duration: event.duration_ms,
-          };
-          useMonitorStore.getState().addEvent(layer, storeEvent);
-        } catch {
-          // 忽略解析错误
-        }
-      };
-
-      es.onerror = () => {
-        useMonitorStore.getState().setSSEStatus('error');
-        es.close();
-        scheduleReconnect();
-      };
-    };
-
-    const scheduleReconnect = () => {
-      if (!mountedRef.current) return;
-      if (reconnectCountRef.current >= 5) {
-        useMonitorStore.getState().setSSEStatus('disconnected');
-        return;
-      }
-      const delay = Math.pow(2, reconnectCountRef.current) * 1000;
-      reconnectCountRef.current += 1;
-      reconnectTimerRef.current = setTimeout(connect, delay);
-    };
-
-    // 轮询监控统计
-    const fetchStats = async () => {
-      try {
-        const data = await api.get<{
-          stats: {
-            total_requests: number;
-            total_completed: number;
-            total_failed: number;
-            success_rate: number;
-            avg_duration_ms: number;
-            active_traces: number;
-          };
-        }>('/api/monitor/stats');
-        if (data?.stats && mountedRef.current) {
-          const s = data.stats;
-          useMonitorStore.getState().setThroughput({
-            totalProcessed: s.total_requests,
-            successRate: s.success_rate / 100,
-            avgLatencyMs: s.avg_duration_ms,
-            activeCount: s.active_traces,
-          });
-        }
-      } catch {
-        // 静默失败
-      }
-    };
-
-    connect();
-    fetchStats();
-    pollTimerRef.current = setInterval(fetchStats, 10000);
+    const unsubscribeStatus = subscribeMonitorStatus((s) => {
+      useMonitorStore.getState().setSSEStatus(mapStreamStatus(s));
+    });
 
     // 拉取认知系统 BAC 压缩统计（/api/cognitive/stats）
     useMemoryStore.getState().fetchStats();
 
     return () => {
-      mountedRef.current = false;
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      if (esRef.current) {
-        esRef.current.close();
-        esRef.current = null;
-      }
+      unsubscribe();
+      unsubscribeStatus();
     };
   }, []);
 }

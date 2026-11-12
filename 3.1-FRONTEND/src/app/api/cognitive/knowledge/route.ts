@@ -17,7 +17,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const ADAPTER_PATH = path.join(process.cwd(), 'scripts', 'knowledge_search_adapter.py');
-const PYTHON_BIN = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+const PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 const TIMEOUT_MS = 30000;
 
 interface KnowledgeResult {

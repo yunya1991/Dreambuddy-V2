@@ -5,7 +5,10 @@
 // 列表 + 详情双栏布局
 // ============================================================
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { briefingApi } from "@/lib/v3/api/briefing";
+import { queryKey, queryStaleTime } from "@/lib/query-keys";
 
 interface Briefing {
   id: string;
@@ -32,45 +35,31 @@ const TYPE_META: Record<string, { label: string; color: string; icon: string }> 
 };
 
 export default function BriefingPage() {
-  const [briefings, setBriefings] = useState<Briefing[]>([]);
-  const [selected, setSelected] = useState<BriefingDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchList();
-  }, []);
+  const listQuery = useQuery({
+    queryKey: queryKey("briefing", "list", { limit: 50 }),
+    queryFn: () => briefingApi.list(50),
+    staleTime: queryStaleTime("briefing"),
+  });
+  const detailQuery = useQuery({
+    queryKey: queryKey("briefing", "detail", { id: selectedId }),
+    queryFn: () => briefingApi.detail(selectedId as string),
+    staleTime: queryStaleTime("briefing"),
+    enabled: selectedId !== null,
+  });
 
-  async function fetchList() {
-    setLoading(true);
-    try {
-      // TODO: migrate to domain client — non-standard response (uses data.briefings, not data.data)
-      const res = await fetch("/api/briefings?limit=50");
-      const data = await res.json();
-      if (data.success) {
-        setBriefings(data.briefings || []);
-      }
-    } catch (e) {
-      console.error("加载简报列表失败:", e);
-    } finally {
-      setLoading(false);
-    }
+  const briefings = (listQuery.data ?? []) as Briefing[];
+  const selected = (detailQuery.data ?? null) as unknown as BriefingDetail | null;
+  const loading = listQuery.isLoading;
+  const detailLoading = detailQuery.isFetching;
+
+  function fetchList() {
+    void listQuery.refetch();
   }
 
-  async function fetchDetail(id: string) {
-    setDetailLoading(true);
-    try {
-      // TODO: migrate to domain client — non-standard response (uses data.briefing, not data.data)
-      const res = await fetch(`/api/briefings/${id}`);
-      const data = await res.json();
-      if (data.success) {
-        setSelected(data.briefing);
-      }
-    } catch (e) {
-      console.error("加载简报详情失败:", e);
-    } finally {
-      setDetailLoading(false);
-    }
+  function fetchDetail(id: string) {
+    setSelectedId(id);
   }
 
   return (

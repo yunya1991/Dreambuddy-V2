@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Badge } from '@/components';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface ArtifactMeta {
   artifact_id: string;
@@ -28,22 +30,22 @@ const TYPE_COLORS: Record<string, string> = {
  * 列出 DreamOS 产物中台的所有产物，支持按类型筛选
  */
 export function ArtifactGallery() {
-  const [artifacts, setArtifacts] = useState<ArtifactMeta[]>([]);
   const [filter, setFilter] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const url = filter === 'all' ? '/api/artifacts?limit=50' : `/api/artifacts?type=${filter}&limit=50`;
-    setLoading(true);
-    // TODO: migrate to domain client — query params (?limit=50, ?type=) not supported by artifactApi.list()
-    fetch(url)
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) setArtifacts(d.items || []);
-      })
-      .catch(() => setArtifacts([]))
-      .finally(() => setLoading(false));
-  }, [filter]);
+  const artifactsQuery = useQuery({
+    queryKey: queryKey('artifacts', 'list', { filter }),
+    queryFn: async (): Promise<ArtifactMeta[]> => {
+      const url = filter === 'all' ? '/api/artifacts?limit=50' : `/api/artifacts?type=${filter}&limit=50`;
+      const r = await fetch(url);
+      const d = await r.json();
+      return d.success ? (d.items || []) : [];
+    },
+    staleTime: queryStaleTime('artifacts'),
+    retry: false, // 失败按空列表展示
+  });
+
+  const artifacts = artifactsQuery.data ?? [];
+  const loading = artifactsQuery.isLoading;
 
   const types = ['all', 'briefing', 'mood_board', 'insight_card', 'bull_bear_debate', 'report', 'chart'];
 

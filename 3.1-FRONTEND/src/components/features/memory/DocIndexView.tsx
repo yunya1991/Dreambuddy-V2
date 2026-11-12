@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Button } from '@/components';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface DocItem {
   path: string;
@@ -26,33 +28,32 @@ interface SyncResult {
   changes_count?: number;
 }
 
+interface DocsIndexResponse {
+  docs?: DocItem[];
+  reconcile?: ReconcileInfo;
+}
+
 export function DocIndexView() {
-  const [docs, setDocs] = useState<DocItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [degraded, setDegraded] = useState(false);
   const [filterRoot, setFilterRoot] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
-  // A5（SPEC §13.1）：41 reconcile_diff 新鲜度展示
-  const [reconcile, setReconcile] = useState<ReconcileInfo | null>(null);
 
-  useEffect(() => {
-    fetch('/api/docs/index')
-      .then(r => r.ok ? r.json() : null)
-      .catch(() => null)
-      .then(data => {
-        if (!data || !data.docs) {
-          setDegraded(true);
-          setLoading(false);
-          return;
-        }
-        setDocs(data.docs);
-        setReconcile(data.reconcile ?? null);
-        setDegraded(false);
-        setLoading(false);
-      });
-  }, []);
+  const docsQuery = useQuery({
+    queryKey: queryKey('memory', 'docs-index'),
+    queryFn: async (): Promise<DocsIndexResponse | null> => {
+      const r = await fetch('/api/docs/index');
+      return r.ok ? ((await r.json()) as DocsIndexResponse) : null;
+    },
+    staleTime: queryStaleTime('memory'),
+    retry: false, // 后端不可达时展示降级提示
+  });
+
+  const docs = docsQuery.data?.docs ?? [];
+  // A5（SPEC §13.1）：41 reconcile_diff 新鲜度展示
+  const reconcile = docsQuery.data?.reconcile ?? null;
+  const loading = docsQuery.isLoading;
+  const degraded = docsQuery.isFetched && !docsQuery.data?.docs;
 
   const filtered = docs.filter(d => {
     if (filterRoot && d.root !== filterRoot) return false;
@@ -80,9 +81,9 @@ export function DocIndexView() {
         });
       } else {
         setSyncResult(data);
-        // sync 成功后刷新列表（标记 cognitive_linked）
+        // sync 成功后重新拉取索引（标记 cognitive_linked）
         if (data.memory_id) {
-          setDocs(prev => prev.map(d => ({ ...d, cognitive_linked: true })));
+          void docsQuery.refetch();
         }
       }
     } catch (e) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import BdsmAPI, {
   BdsmSnapshot,
@@ -8,6 +8,7 @@ import BdsmAPI, {
   SectorWaterline,
   SectorValuationSummary,
 } from '@/lib/bdsm-api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 /**
  * BDSM 独立页面 — 完整展示每日快照
@@ -27,29 +28,22 @@ import BdsmAPI, {
 const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
 
 export default function BdsmPage() {
-  const [snapshot, setSnapshot] = useState<BdsmSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+  const snapshotQuery = useQuery({
+    queryKey: queryKey('bdsm', 'snapshot'),
+    queryFn: () => BdsmAPI.fetchSnapshot(),
+    staleTime: queryStaleTime('bdsm'),
+    refetchInterval: REFRESH_INTERVAL_MS,
+  });
 
-  const fetchSnapshot = useCallback(async () => {
-    try {
-      setError(null);
-      const data = await BdsmAPI.fetchSnapshot();
-      setSnapshot(data);
-      setLastFetch(new Date());
-    } catch (e: any) {
-      setError(e?.message || '获取 BDSM 快照失败');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSnapshot();
-    const id = setInterval(fetchSnapshot, REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [fetchSnapshot]);
+  const snapshot = (snapshotQuery.data as BdsmSnapshot | null) ?? null;
+  const loading = snapshotQuery.isLoading;
+  const error = snapshotQuery.error instanceof Error
+    ? snapshotQuery.error.message
+    : snapshotQuery.error
+      ? '获取 BDSM 快照失败'
+      : null;
+  const lastFetch = snapshotQuery.dataUpdatedAt ? new Date(snapshotQuery.dataUpdatedAt) : null;
+  const fetchSnapshot = () => snapshotQuery.refetch();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 p-6">

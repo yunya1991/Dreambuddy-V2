@@ -107,7 +107,7 @@ export interface CaseBankResult<T = unknown> {
 // ============================================================
 
 const DEFAULT_ADAPTER_PATH = path.join(process.cwd(), 'scripts', 'case_bank_adapter.py');
-const DEFAULT_PYTHON_BIN = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+const DEFAULT_PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 const DEFAULT_TIMEOUT_MS = 10000;
 const CAPACITY_LIMIT = 10000;
 

@@ -27,3 +27,5 @@ export type { Notification } from './ui-store';
 export { useApiConfigStore } from './api-config-store';
 export type { ApiProfile } from './api-config-store';
 export { useAuthStore } from './auth-store';
+export { useAgentSessionStore } from './agent-session-store';
+export type { AgentSession, PersistedAgentSessions } from './agent-session-store';

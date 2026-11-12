@@ -1,0 +1,118 @@
+{
+  "generated_at": "2026-11-12T06:41:43.308Z",
+  "note": "只允许下降。新增 fs/child_process 使用必须先评审，再运行 node scripts/check-route-boundary.mjs --update-baseline 登记。",
+  "totals": {
+    "fs": 41,
+    "child_process": 31
+  },
+  "files": {
+    "src/app/api/agent/brainstorm/route.ts": {
+      "fs": 0,
+      "child_process": 2
+    },
+    "src/app/api/agent/plan/route.ts": {
+      "fs": 1,
+      "child_process": 0
+    },
+    "src/app/api/artifact/route.ts": {
+      "fs": 1,
+      "child_process": 0
+    },
+    "src/app/api/briefings/[id]/route.ts": {
+      "fs": 3,
+      "child_process": 0
+    },
+    "src/app/api/briefings/route.ts": {
+      "fs": 3,
+      "child_process": 0
+    },
+    "src/app/api/cognitive/knowledge/route.ts": {
+      "fs": 0,
+      "child_process": 2
+    },
+    "src/app/api/cognitive/unified/route.ts": {
+      "fs": 0,
+      "child_process": 2
+    },
+    "src/app/api/config/api-keys/test/route.ts": {
+      "fs": 0,
+      "child_process": 2
+    },
+    "src/app/api/data/chain/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/data/macro/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/data/market/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/data/query/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/docs/index/route.ts": {
+      "fs": 0,
+      "child_process": 4
+    },
+    "src/app/api/docs/sync/route.ts": {
+      "fs": 0,
+      "child_process": 2
+    },
+    "src/app/api/fundamental/[...path]/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/mood-board/route.ts": {
+      "fs": 3,
+      "child_process": 0
+    },
+    "src/app/api/onchain/datacenter/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/onchain/panewslab/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    },
+    "src/app/api/reports/generate/route.ts": {
+      "fs": 14,
+      "child_process": 0
+    },
+    "src/app/api/reports/route.ts": {
+      "fs": 5,
+      "child_process": 0
+    },
+    "src/app/api/search/route.ts": {
+      "fs": 0,
+      "child_process": 2
+    },
+    "src/app/api/skills/index/route.ts": {
+      "fs": 0,
+      "child_process": 2
+    },
+    "src/app/api/task/confirm/route.ts": {
+      "fs": 1,
+      "child_process": 0
+    },
+    "src/app/api/task/result/[id]/route.ts": {
+      "fs": 6,
+      "child_process": 0
+    },
+    "src/app/api/task/route.ts": {
+      "fs": 1,
+      "child_process": 3
+    },
+    "src/app/api/task/stream/route.ts": {
+      "fs": 3,
+      "child_process": 2
+    },
+    "src/app/api/trading-ranking/today/route.ts": {
+      "fs": 0,
+      "child_process": 1
+    }
+  }
+}

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { marketApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface EffectivenessRecord {
   id: string;
@@ -13,16 +14,15 @@ interface EffectivenessRecord {
 }
 
 export default function EffectivenessPage() {
-  const [records, setRecords] = useState<EffectivenessRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const effectivenessQuery = useQuery({
+    queryKey: queryKey('market', 'effectiveness'),
+    queryFn: () => marketApi.getEffectiveness(),
+    staleTime: queryStaleTime('market'),
+  });
 
-  useEffect(() => {
-    marketApi.getEffectiveness()
-      .then(data => setRecords((data as unknown as EffectivenessRecord[]) ?? []))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const records = (effectivenessQuery.data as unknown as EffectivenessRecord[] | undefined) ?? [];
+  const loading = effectivenessQuery.isLoading;
+  const error = effectivenessQuery.error instanceof Error ? effectivenessQuery.error.message : null;
 
   return (
     <div className="px-6 py-4">

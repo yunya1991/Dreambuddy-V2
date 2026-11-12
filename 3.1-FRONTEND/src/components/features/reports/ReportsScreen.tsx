@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge, V3Empty, V3Spinner, IconSearch } from '@/components';
 import { useSessionStore } from '@/stores';
 import api from '@/lib/api-client';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
+
+type Suggestion = { id: string; title: string; subtitle?: string };
 
 // === 报告数据结构 (来自 /api/task/result/[id]) ===
 interface ReportStep {
@@ -38,31 +42,41 @@ interface ReportData {
 
 export function ReportsScreen() {
   const { lastReportId } = useSessionStore();
-  const [report, setReport] = useState<ReportData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [searchTaskId, setSearchTaskId] = useState('');
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
   // 模糊搜索联想（阶段二 P1）
-  const [suggestions, setSuggestions] = useState<Array<{ id: string; title: string; subtitle?: string }>>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [genMessage, setGenMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // 加载报告
-  const loadReport = useCallback(async (taskId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await api.get<ReportData>(`/api/task/result/${taskId}`);
-      setReport(data);
-    } catch (err: any) {
-      setError(err.message || '加载报告失败');
-      setReport(null);
-    } finally {
-      setLoading(false);
+  // 报告查询：仅当有 taskId 时发起
+  const reportQuery = useQuery({
+    queryKey: queryKey('reports', 'report', { taskId: activeTaskId ?? '' }),
+    queryFn: () => api.get<ReportData>(`/api/task/result/${activeTaskId as string}`),
+    enabled: !!activeTaskId,
+    staleTime: queryStaleTime('reports'),
+    retry: false,
+  });
+
+  // 错误态不回落到旧报告（与原 setReport(null) 语义一致）
+  const report = reportQuery.isError ? null : (reportQuery.data ?? null);
+  const loading = reportQuery.isFetching;
+  const error = reportQuery.isError
+    ? reportQuery.error instanceof Error
+      ? reportQuery.error.message
+      : '加载报告失败'
+    : null;
+
+  // 加载报告（同 id 直接刷新，不同 id 切换查询 key）
+  const loadReport = (taskId: string) => {
+    if (taskId === activeTaskId) {
+      void reportQuery.refetch();
+    } else {
+      setActiveTaskId(taskId);
     }
-  }, []);
+  };
 
   // 生成报告（写入 ~/.workbuddy/artifacts/trading/）
   const handleGenerate = useCallback(async () => {
@@ -97,34 +111,38 @@ export function ReportsScreen() {
   useEffect(() => {
     if (lastReportId) {
       setSearchTaskId(lastReportId);
-      loadReport(lastReportId);
+      setActiveTaskId(lastReportId);
     }
-  }, [lastReportId, loadReport]);
+  }, [lastReportId]);
 
-  // 防抖联想：输入变化时调用统一检索 API 模糊匹配报告（300ms）
+  // 防抖：输入变化 300ms 后触发联想查询
   useEffect(() => {
     const q = searchTaskId.trim();
     if (!q) {
-      setSuggestions([]);
+      setDebouncedQuery('');
       return;
     }
-    const timer = setTimeout(async () => {
-      try {
-        const res = await api.get<{ success: boolean; results?: Array<{ id: string; title: string; subtitle?: string }> }>(
-          `/api/search?query=${encodeURIComponent(q)}&module=report&limit=8`,
-        );
-        if (res && Array.isArray(res.results)) {
-          setSuggestions(res.results);
-        }
-      } catch {
-        // FAIL-OPEN：联想失败不影响手动输入
-      }
-    }, 300);
+    const timer = setTimeout(() => setDebouncedQuery(q), 300);
     return () => clearTimeout(timer);
   }, [searchTaskId]);
+
+  // 联想查询：空关键词不发起，失败静默（FAIL-OPEN）
+  const suggestionsQuery = useQuery({
+    queryKey: queryKey('search', 'reports', { q: debouncedQuery }),
+    queryFn: async () => {
+      const res = await api.get<{ success: boolean; results?: Suggestion[] }>(
+        `/api/search?query=${encodeURIComponent(debouncedQuery)}&module=report&limit=8`,
+      );
+      return res?.results ?? [];
+    },
+    enabled: debouncedQuery.length > 0,
+    staleTime: queryStaleTime('search'),
+    retry: false,
+  });
+  const suggestions = suggestionsQuery.data ?? [];
+
   // 选中联想建议：直接加载对应报告
   const handleSelectSuggestion = (id: string) => {
-    setSuggestions([]);
     setShowSuggestions(false);
     setSearchTaskId(id);
     loadReport(id);

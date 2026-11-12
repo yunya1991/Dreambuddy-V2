@@ -1,6 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { feedApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface FeedItem {
   id: string;
@@ -35,31 +38,19 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function FeedPage() {
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [workflowFilter, setWorkflowFilter] = useState<string | null>(null);
 
-  const fetchFeed = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const qs = workflowFilter ? `?workflow_type=${workflowFilter}` : '';
-    try {
-      // TODO: migrate to domain client — optional query param ?workflow_type= not supported by feedApi.get()
-      const res = await fetch(`/api/feed${qs}`);
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error ?? 'fetch_failed');
-      setItems(json.data ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'unknown');
-    } finally {
-      setLoading(false);
-    }
-  }, [workflowFilter]);
+  const feedQuery = useQuery({
+    queryKey: queryKey('feed', 'list', workflowFilter ? { workflowType: workflowFilter } : undefined),
+    queryFn: () => feedApi.list(workflowFilter ?? undefined),
+    staleTime: queryStaleTime('feed'),
+  });
 
-  useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
+  const items = (feedQuery.data as unknown as FeedItem[] | undefined) ?? [];
+  const loading = feedQuery.isFetching;
+  const error = feedQuery.error instanceof Error ? feedQuery.error.message : null;
+
+  const fetchFeed = () => feedQuery.refetch();
 
   return (
     <div className="px-6 py-4">

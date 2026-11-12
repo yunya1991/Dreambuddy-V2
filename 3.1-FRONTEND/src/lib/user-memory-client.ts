@@ -50,7 +50,7 @@ export interface UserMemoryHealth {
 }
 
 const ADAPTER_PATH = path.join(process.cwd(), 'scripts', 'user_memory_adapter.py');
-const PYTHON_BIN = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+const PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 const TIMEOUT_MS = 10000;
 
 /**

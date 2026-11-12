@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { marketApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface UserStats {
   total: number;
@@ -30,16 +31,15 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 };
 
 export default function SegmentsPage() {
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const segmentsQuery = useQuery({
+    queryKey: queryKey('market', 'segments'),
+    queryFn: () => marketApi.getSegments(),
+    staleTime: queryStaleTime('market'),
+  });
 
-  useEffect(() => {
-    marketApi.getSegments()
-      .then(data => setStats(data as unknown as UserStats | null))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const stats = (segmentsQuery.data as unknown as UserStats | null) ?? null;
+  const loading = segmentsQuery.isLoading;
+  const error = segmentsQuery.error instanceof Error ? segmentsQuery.error.message : null;
 
   const segments: Segment[] = stats
     ? [

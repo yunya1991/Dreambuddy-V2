@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useSessionStore, useChainStore } from '@/stores';
 import type { FinalSynthesisData } from '@/stores/session-store';
 import { V3Badge } from '@/components';
-import { createSSEConnection, type SSEConnection } from '@/lib/sse-client';
-import { createTaskStreamHandlers } from '@/lib/sse-dispatcher';
+import { startTaskStream, abortTaskStream } from '@/lib/stream/task-stream-manager';
 import {
   canHandleL1WithSignal,
   fallbackIntent,
@@ -50,21 +49,19 @@ export function ChatPanel() {
     createSession, setActiveSession, addMessage,
     setStreaming, setSLayerIntent,
     setCurrentTaskId, setLastIntent, setLastTaskStatus, setLastReportId,
-    setPendingStepConfirmation, setLastChartSpecs,
+    setPendingStepConfirmation, setLastChartSpecs, lastTaskError, setLastTaskError,
   } = useSessionStore();
 
   const { resetChain } = useChainStore();
 
   const [inputValue, setInputValue] = useState('');
   const [inputMode, setInputMode] = useState<'chat' | 'command'>('chat');
-  const [error, setError] = useState<string | null>(null);
   // Phase 4.6：择优脑暴入口（开启后发送走 /api/agent/brainstorm 意图路由 + 双链脑暴）
   const [brainstormMode, setBrainstormMode] = useState(false);
   const [brainstormBusy, setBrainstormBusy] = useState(false);
 
   // 消息列表底部锚点
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const sseConnectionRef = useRef<SSEConnection | null>(null);
 
   // 当前会话消息
   const currentMessages = activeSessionId ? (messages[activeSessionId] || []) : [];
@@ -81,56 +78,22 @@ export function ChatPanel() {
     }
   }, [activeSessionId, createSession]);
 
-  // 组件卸载时关闭 SSE 连接
-  useEffect(() => {
-    return () => {
-      sseConnectionRef.current?.close();
-      const state = useSessionStore.getState();
-      if (state.isStreaming) {
-        state.setStreaming(false, '');
-      }
-    };
-  }, []);
+  // 组件卸载不再关闭任务流：连接由 task-stream-manager 模块单例持有，切页不断流。
 
-  // 发送消息到 /api/task/stream
-  const sendToTaskStream = useCallback(async (userContent: string, sessionId: string, l1IntentHint?: string) => {
-    setError(null);
-
+  // 发送消息到 /api/task/stream（连接生命周期由 task-stream-manager 管理）
+  const sendToTaskStream = useCallback((userContent: string, sessionId: string, l1IntentHint?: string) => {
     // 重置链路状态
     resetChain();
 
-    // 创建 SSE 事件处理器
-    const handlers = createTaskStreamHandlers({
-      onDone: (data) => {
-        sseConnectionRef.current = null;
-      },
-      onError: (err) => {
-        setError(err.message);
-        sseConnectionRef.current = null;
-      },
+    startTaskStream({
+      message: userContent,
+      thinking_mode: 'deep',
+      session_id: sessionId,
+      lang: 'zh',
+      trading_mode: 'ai_skill',
+      // 交接协议 (SPEC v1.1 §4.2-3): L1 意图预测结果作为 L2 上下文
+      ...(l1IntentHint ? { l1_intent_hint: l1IntentHint } : {}),
     });
-
-    // 通过 SSE 发送任务
-    sseConnectionRef.current = createSSEConnection(
-      '/api/task/stream',
-      {
-        message: userContent,
-        thinking_mode: 'deep',
-        session_id: sessionId,
-        lang: 'zh',
-        trading_mode: 'ai_skill',
-        // 交接协议 (SPEC v1.1 §4.2-3): L1 意图预测结果作为 L2 上下文
-        ...(l1IntentHint ? { l1_intent_hint: l1IntentHint } : {}),
-      },
-      handlers,
-      {
-        onError: (err) => {
-          setError(err.message);
-          useSessionStore.getState().setStreaming(false, '');
-          sseConnectionRef.current = null;
-        },
-      }
-    );
   }, [resetChain]);
 
   // 发送消息
@@ -242,8 +205,7 @@ export function ChatPanel() {
 
   // 取消流式请求
   const handleCancel = useCallback(() => {
-    sseConnectionRef.current?.close();
-    sseConnectionRef.current = null;
+    abortTaskStream();
     const storeState = useSessionStore.getState();
     if (storeState.isStreaming) {
       const sessionId = storeState.activeSessionId;
@@ -312,10 +274,10 @@ export function ChatPanel() {
       </div>
 
       {/* 错误提示 */}
-      {error && (
+      {lastTaskError && (
         <div className="shrink-0 px-4 py-2 bg-red-950/30 border-b border-red-800/30 flex items-center justify-between">
-          <span className="text-xs text-red-300">⚠ {error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 text-xs">×</button>
+          <span className="text-xs text-red-300">⚠ {lastTaskError}</span>
+          <button onClick={() => setLastTaskError(null)} className="text-red-400 hover:text-red-300 text-xs">×</button>
         </div>
       )}
 

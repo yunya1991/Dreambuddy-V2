@@ -6,12 +6,31 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-sacg-s: #a78bfa;
-  --color-sacg-a: #3b82f6;
-  --color-sacg-c: #34d399;
-  --color-sacg-g: #f87171;
+  /* === 背景 === */
+  --color-bg-primary: var(--background);    /* 深色根背景 #0a0e17 */
+  --color-bg-secondary: #111827;             /* 层叠卡片 */
+  --color-bg-tertiary: #1f2937;              /* 悬停 / 输入框 */
+
+  /* === 文字 === */
+  --color-text-primary: var(--foreground);   /* 主文字 #e5e7eb */
+  --color-text-secondary: #9ca3af;           /* 次要文字 */
+  --color-text-muted: #6b7280;               /* 占位符 / 禁用 */
+
+  /* === 边框 === */
+  --color-border-primary: #374151;           /* 输入框 / 卡片边框 */
+  --color-border-secondary: #1f2937;         /* 分隔线 */
+
+  /* === SACG 四色 === */
+  --color-sacg-s: #a78bfa;                   /* Sense 紫 */
+  --color-sacg-a: #3b82f6;                   /* Acceptance 蓝 */
+  --color-sacg-c: #34d399;                   /* Compute 绿 */
+  --color-sacg-g: #f87171;                   /* Graph 红 */
+
+  /* === 状态 === */
+  --color-status-success: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-danger: #ef4444;
+  --color-status-info: #3b82f6;
 }
 
 body {

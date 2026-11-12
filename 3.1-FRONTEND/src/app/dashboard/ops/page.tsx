@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { opsApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface QueueStats {
   total_tasks: number;
@@ -55,48 +57,33 @@ const MOCK_LEVELS: DecisionLevel[] = [
 ];
 
 export default function OpsPage() {
-  const [stats, setStats] = useState<QueueStats | null>(null);
-  const [items, setItems] = useState<QueueItem[]>([]);
-  const [levels, setLevels] = useState<DecisionLevel[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState(5);
-  const [usingMock, setUsingMock] = useState(false);
 
-  async function fetchData() {
-    try {
+  const opsQuery = useQuery({
+    queryKey: queryKey('ops', 'dashboard'),
+    queryFn: async () => {
       const [statsData, levelsData] = await Promise.all([
         opsApi.getQueues(),
         opsApi.getDecisionLevels(),
       ]);
+      if (!statsData) throw new Error('stats_unavailable');
+      return {
+        stats: statsData as unknown as QueueStats,
+        levels: (levelsData as unknown as DecisionLevel[]) ?? [],
+      };
+    },
+    staleTime: queryStaleTime('ops'),
+    refetchInterval: refreshInterval * 1000,
+  });
 
-      if (statsData) {
-        const stats = statsData as unknown as QueueStats;
-        setStats(stats);
-        setItems(stats.items ?? []);
-      } else {
-        throw new Error('stats_unavailable');
-      }
-      setLevels((levelsData as unknown as DecisionLevel[]) ?? []);
-      setUsingMock(false);
-      setError(null);
-    } catch (e) {
-      // Dev fallback: render mock data so the panel stays usable.
-      setStats(MOCK_STATS);
-      setItems(MOCK_STATS.items ?? []);
-      setLevels(MOCK_LEVELS);
-      setUsingMock(true);
-      setError(e instanceof Error ? e.message : 'Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, refreshInterval * 1000);
-    return () => clearInterval(interval);
-  }, [refreshInterval]);
+  // Dev fallback: 接口不可用时回落 mock，面板保持可用
+  const usingMock = opsQuery.isError;
+  const stats = usingMock ? MOCK_STATS : (opsQuery.data?.stats ?? null);
+  const items = usingMock ? (MOCK_STATS.items ?? []) : (stats?.items ?? []);
+  const levels = usingMock ? MOCK_LEVELS : (opsQuery.data?.levels ?? []);
+  const loading = opsQuery.isLoading;
+  const error = opsQuery.error instanceof Error ? opsQuery.error.message : null;
+  const fetchData = () => opsQuery.refetch();
 
   if (loading && !stats) {
     return (

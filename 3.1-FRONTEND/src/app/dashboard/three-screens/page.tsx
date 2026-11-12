@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useThreeScreensStore } from '@/stores';
 import { Screen1Panel } from '@/components/features/three-screens/Screen1Panel';
 import { Screen2Panel } from '@/components/features/three-screens/Screen2Panel';
@@ -9,6 +10,7 @@ import { PipelineView } from '@/components/features/three-screens/PipelineView';
 import { V3Card, V3Badge, V3StatusDot } from '@/components';
 import { ThreeScreensAPI } from '@/lib/three-screens-api';
 import { mapScreen1, mapScreen2, mapScreen3 } from '@/lib/three-screens-mapper';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 type TabKey = 'overview' | 'screen1' | 'screen2' | 'screen3' | 'pipeline';
 
@@ -21,8 +23,6 @@ const SYMBOLS = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP'] as const;
 const TREND_INTERVAL_MS = 120_000;       // 2 分钟（战略层：周线/日线趋势变化慢）
 const WAVE_INTERVAL_MS = 120_000;        // 2 分钟（战术层：与 trend 错开 60s）
 const DATA_DRIVEN_INTERVAL_MS = 300_000; // 5 分钟（基本面/多维数据变化最慢）
-const WAVE_INITIAL_DELAY_MS = 60_000;     // wave 错峰 60s 启动
-const DATA_DRIVEN_INITIAL_DELAY_MS = 120_000; // data-driven 错峰 120s 启动
 const MAX_BACKOFF_MS = 600_000;          // 失败 backoff 封顶 10 分钟
 
 interface ApiStatus {
@@ -32,12 +32,20 @@ interface ApiStatus {
   failStreak: number;
 }
 
-const initialStatus: ApiStatus = {
-  loading: false,
-  error: null,
-  lastUpdated: null,
-  failStreak: 0,
-};
+/** 由 Query 状态派生页面展示用的 ApiStatus（保持原 UI 契约） */
+function toApiStatus(q: {
+  isFetching: boolean;
+  error: unknown;
+  dataUpdatedAt: number;
+  failureCount: number;
+}): ApiStatus {
+  return {
+    loading: q.isFetching,
+    error: q.error ? (q.error instanceof Error ? q.error.message : String(q.error)) : null,
+    lastUpdated: q.dataUpdatedAt || null,
+    failStreak: q.failureCount,
+  };
+}
 
 function nextBackoff(streak: number, baseMs: number): number {
   // 指数退避：base * 2^min(streak, 4)，封顶 MAX_BACKOFF_MS
@@ -50,204 +58,94 @@ export default function ThreeScreensPage() {
           setScreen1, setScreen2, setScreen3 } = useThreeScreensStore();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [symbol, setSymbol] = useState<string>('BTC');
-  // data-driven 是否已启动：等 trend 首次完成（lastUpdated 有值）后再启动，
-  // 避免 trend cache 未建好时 data-driven fallback HTTP 调 8765/api/trend-screen 自调用
-  const [dataDrivenStarted, setDataDrivenStarted] = useState(false);
+  // 错误横幅手动关闭（新错误出现时自动重新展示）
+  const [errorDismissed, setErrorDismissed] = useState(false);
+  // === 三层数据轮询（react-query）===
+  // 关键：8765 后端是单线程 BaseHTTPRequestHandler，串行处理请求。
+  // trend 首次冷启动需 ~60s，wave/data-driven 若并发命中会排队等 trend 完成，
+  // 因此用 enabled: trendQuery.data !== undefined 保证 trend 首次成功后再启动。
+  const trendQuery = useQuery({
+    queryKey: queryKey('three-screens', 'trend', { symbol }),
+    queryFn: () => ThreeScreensAPI.fetchTrendScreen(symbol),
+    staleTime: queryStaleTime('three-screens'),
+    refetchInterval: (q) => q.state.fetchFailureCount > 0
+      ? nextBackoff(q.state.fetchFailureCount, TREND_INTERVAL_MS)
+      : TREND_INTERVAL_MS,
+  });
+
+  const trendReady = trendQuery.data !== undefined;
+
+  const waveQuery = useQuery({
+    queryKey: queryKey('three-screens', 'wave', { symbol }),
+    queryFn: () => ThreeScreensAPI.fetchV4WaveStrategy(symbol),
+    staleTime: queryStaleTime('three-screens'),
+    enabled: trendReady,
+    refetchInterval: (q) => q.state.fetchFailureCount > 0
+      ? nextBackoff(q.state.fetchFailureCount, WAVE_INTERVAL_MS)
+      : WAVE_INTERVAL_MS,
+  });
+
+  const dataDrivenQuery = useQuery({
+    queryKey: queryKey('three-screens', 'data-driven', { symbol }),
+    queryFn: () => ThreeScreensAPI.fetchDataDrivenScreens(symbol),
+    staleTime: queryStaleTime('three-screens'),
+    enabled: trendReady,
+    refetchInterval: (q) => q.state.fetchFailureCount > 0
+      ? nextBackoff(q.state.fetchFailureCount, DATA_DRIVEN_INTERVAL_MS)
+      : DATA_DRIVEN_INTERVAL_MS,
+  });
 
   // 每个 API 独立状态（失败不擦旧数据，独立显示）
-  const [trendStatus, setTrendStatus] = useState<ApiStatus>(initialStatus);
-  const [waveStatus, setWaveStatus] = useState<ApiStatus>(initialStatus);
-  const [dataDrivenStatus, setDataDrivenStatus] = useState<ApiStatus>(initialStatus);
+  const trendStatus = toApiStatus(trendQuery);
+  const waveStatus = toApiStatus(waveQuery);
+  const dataDrivenStatus = toApiStatus(dataDrivenQuery);
 
-  const trendFailRef = useRef(0);
-  const waveFailRef = useRef(0);
-  const dataDrivenFailRef = useRef(0);
-
-  // === Trend-screen 轮询（Screen1 战略层，2 分钟）===
-  const fetchTrend = useCallback(async (sym: string) => {
-    setTrendStatus(s => ({ ...s, loading: true, error: null }));
-    try {
-      const trend = await ThreeScreensAPI.fetchTrendScreen(sym);
-      // 只更新 screen1，不传空 wave 避免覆盖 screen2/3
-      const screen1Data = mapScreen1(trend, null);
-      setScreen1(screen1Data);
-      trendFailRef.current = 0;
-      setTrendStatus({ loading: false, error: null, lastUpdated: Date.now(), failStreak: 0 });
-    } catch (e: any) {
-      const streak = trendFailRef.current + 1;
-      trendFailRef.current = streak;
-      setTrendStatus(s => ({
-        ...s,
-        loading: false,
-        error: e?.message || String(e),
-        failStreak: streak,
-        // 失败不擦 lastUpdated，保留上次成功时间显示
-      }));
-    }
-  }, [setScreen1]);
-
-  // === V4-wave-strategy 轮询（Screen2/3 战术执行层，2 分钟，错峰）===
-  // 关键：8765 后端是单线程 BaseHTTPRequestHandler，串行处理请求。
-  // trend 首次冷启动需 ~60s，wave 如果并发命中会排队等 trend 完成后才能处理，
-  // 导致 wave 总耗时 = 60s(queue) + 处理时间。所以必须让 wave 等 trend 完成后再启动。
-  const fetchWave = useCallback(async (sym: string) => {
-    setWaveStatus(s => ({ ...s, loading: true, error: null }));
-    try {
-      const wave = await ThreeScreensAPI.fetchV4WaveStrategy(sym);
-      // 用独立 mapper 只更新 screen2/3，不传空 trend 避免覆盖 screen1
-      setScreen2(mapScreen2(wave));
-      setScreen3(mapScreen3(wave));
-      waveFailRef.current = 0;
-      setWaveStatus({ loading: false, error: null, lastUpdated: Date.now(), failStreak: 0 });
-    } catch (e: any) {
-      const streak = waveFailRef.current + 1;
-      waveFailRef.current = streak;
-      setWaveStatus(s => ({
-        ...s,
-        loading: false,
-        error: e?.message || String(e),
-        failStreak: streak,
-      }));
-    }
-  }, [setScreen2, setScreen3]);
-
-  // wave 是否已启动：等 trend 首次完成（lastUpdated 有值 + 不在 loading）后再启动，
-  // 避免并发命中单线程后端排队导致 wave 超时失败
-  const [waveStarted, setWaveStarted] = useState(false);
-
-  // === Data-driven-screens 轮询（多维基本面，5 分钟，错峰 120s）===
-  const fetchDataDriven = useCallback(async (sym: string) => {
-    setDataDrivenStatus(s => ({ ...s, loading: true, error: null }));
-    try {
-      const dataDriven = await ThreeScreensAPI.fetchDataDrivenScreens(sym);
-      // data-driven 包含 screen1 的基本面扩展字段，合并到现有 screen1
-      if (dataDriven?.screen1) {
-        const prev = useThreeScreensStore.getState().screen1;
-        if (prev) {
-          setScreen1({
-            ...prev,
-            fundamentalDirection: dataDriven.screen1.fundamental_direction as any,
-            fundamentalConfidence: dataDriven.screen1.fundamental_confidence,
-            fundamentalDimensions: dataDriven.screen1.fundamental_dimensions,
-            fusionConsistent: dataDriven.screen1.fusion?.consistent,
-            fusionReason: dataDriven.screen1.fusion?.reason,
-          });
-        }
-      }
-      dataDrivenFailRef.current = 0;
-      setDataDrivenStatus({ loading: false, error: null, lastUpdated: Date.now(), failStreak: 0 });
-    } catch (e: any) {
-      const streak = dataDrivenFailRef.current + 1;
-      dataDrivenFailRef.current = streak;
-      setDataDrivenStatus(s => ({
-        ...s,
-        loading: false,
-        error: e?.message || String(e),
-        failStreak: streak,
-      }));
-    }
-  }, [setScreen1]);
-
-  // === 三个独立轮询 useEffect（带失败 backoff）===
+  // === Query 数据同步到 zustand store（JSX 仍读 store，UI 契约不变）===
   useEffect(() => {
-    let active = true;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const runWithBackoff = async (sym: string) => {
-      await fetchTrend(sym);
-      if (!active) return;
-      const base = TREND_INTERVAL_MS;
-      const delay = trendFailRef.current > 0
-        ? nextBackoff(trendFailRef.current, base)
-        : base;
-      timer = setTimeout(() => runWithBackoff(sym), delay);
-    };
-
-    runWithBackoff(symbol);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [symbol, fetchTrend]);
+    if (!trendQuery.data) return;
+    // 只更新 screen1，不传空 wave 避免覆盖 screen2/3
+    setScreen1(mapScreen1(trendQuery.data, null));
+  }, [trendQuery.data, setScreen1]);
 
   useEffect(() => {
-    let active = true;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const runWithBackoff = async (sym: string) => {
-      await fetchWave(sym);
-      if (!active) return;
-      const base = WAVE_INTERVAL_MS;
-      const delay = waveFailRef.current > 0
-        ? nextBackoff(waveFailRef.current, base)
-        : base;
-      timer = setTimeout(() => runWithBackoff(sym), delay);
-    };
-
-    // 等 trend 首次完成后才启动（避免并发命中单线程后端排队）
-    if (!waveStarted) return;
-    runWithBackoff(symbol);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [waveStarted, symbol, fetchWave]);
-
-  // Starter: 等 trend 首次完成后再启动 wave
-  useEffect(() => {
-    if (trendStatus.lastUpdated && !trendStatus.loading && !waveStarted) {
-      setWaveStarted(true);
-    }
-  }, [trendStatus.lastUpdated, trendStatus.loading, waveStarted]);
-
-  // 切币时重置 waveStarted 和 dataDrivenStarted
-  useEffect(() => {
-    setWaveStarted(false);
-    setDataDrivenStarted(false);
-  }, [symbol]);
-
-  // Starter: 等 trend 首次完成（lastUpdated 有值 + 不在 loading）后再启动 data-driven
-  // 避免 trend cache 未建好时 data-driven fallback HTTP 调 8765/api/trend-screen 自调用
-  useEffect(() => {
-    if (trendStatus.lastUpdated && !trendStatus.loading && !dataDrivenStarted) {
-      setDataDrivenStarted(true);
-    }
-  }, [trendStatus.lastUpdated, trendStatus.loading, dataDrivenStarted]);
+    if (!waveQuery.data) return;
+    // 用独立 mapper 只更新 screen2/3，不传空 trend 避免覆盖 screen1
+    setScreen2(mapScreen2(waveQuery.data));
+    setScreen3(mapScreen3(waveQuery.data));
+  }, [waveQuery.data, setScreen2, setScreen3]);
 
   useEffect(() => {
-    let active = true;
-    let timer: ReturnType<typeof setTimeout>;
+    // data-driven 包含 screen1 的基本面扩展字段，合并到现有 screen1
+    const dd = dataDrivenQuery.data?.screen1;
+    if (!dd) return;
+    const prev = useThreeScreensStore.getState().screen1;
+    if (!prev) return;
+    setScreen1({
+      ...prev,
+      fundamentalDirection: dd.fundamental_direction as any,
+      fundamentalConfidence: dd.fundamental_confidence,
+      fundamentalDimensions: dd.fundamental_dimensions,
+      fusionConsistent: dd.fusion?.consistent,
+      fusionReason: dd.fusion?.reason,
+    });
+  }, [dataDrivenQuery.data, setScreen1]);
 
-    const runWithBackoff = async (sym: string) => {
-      await fetchDataDriven(sym);
-      if (!active) return;
-      const base = DATA_DRIVEN_INTERVAL_MS;
-      const delay = dataDrivenFailRef.current > 0
-        ? nextBackoff(dataDrivenFailRef.current, base)
-        : base;
-      timer = setTimeout(() => runWithBackoff(sym), delay);
-    };
-
-    // 等 trend 首次完成后才启动（由上方 starter effect 控制 dataDrivenStarted）
-    // 后续轮询按 DATA_DRIVEN_INTERVAL_MS 错峰，仍保留 backoff 防雪崩
-    if (!dataDrivenStarted) return;
-    runWithBackoff(symbol);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [dataDrivenStarted, symbol, fetchDataDriven]);
-
-  const handleManualRefresh = useCallback(() => {
-    fetchTrend(symbol);
-    fetchWave(symbol);
-    fetchDataDriven(symbol);
-  }, [fetchTrend, fetchWave, fetchDataDriven, symbol]);
+  const handleManualRefresh = () => {
+    void trendQuery.refetch();
+    void waveQuery.refetch();
+    void dataDrivenQuery.refetch();
+  };
 
   // 总状态汇总
   const anyLoading = trendStatus.loading || waveStatus.loading || dataDrivenStatus.loading;
   const allErrors = [trendStatus.error, waveStatus.error, dataDrivenStatus.error].filter(Boolean);
-  const anyError = allErrors.length > 0;
+  const anyError = allErrors.length > 0 && !errorDismissed;
+
+  // 错误内容变化时重新展示横幅
+  useEffect(() => {
+    setErrorDismissed(false);
+  }, [trendStatus.error, waveStatus.error, dataDrivenStatus.error]);
+
   const lastUpdated = [trendStatus.lastUpdated, waveStatus.lastUpdated, dataDrivenStatus.lastUpdated]
     .filter(Boolean)
     .reduce((max, t) => ((t as number) > (max as number) ? t : max), 0) || null;
@@ -366,11 +264,7 @@ export default function ThreeScreensPage() {
       {anyError && (
         <div className="mb-3 px-3 py-2 bg-red-950/30 border border-red-800/30 rounded flex items-center justify-between">
           <span className="text-xs text-red-300">⚠ 部分接口异常（旧数据保留）: {allErrors.join(' | ').slice(0, 200)}</span>
-          <button onClick={() => {
-            setTrendStatus(s => ({ ...s, error: null }));
-            setWaveStatus(s => ({ ...s, error: null }));
-            setDataDrivenStatus(s => ({ ...s, error: null }));
-          }} className="text-red-400 hover:text-red-300 text-xs">×</button>
+          <button onClick={() => setErrorDismissed(true)} className="text-red-400 hover:text-red-300 text-xs">×</button>
         </div>
       )}
 

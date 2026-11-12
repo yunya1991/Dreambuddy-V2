@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { marketApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface RouteDecision {
   id: string;
@@ -42,28 +44,26 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function MarketPage() {
   const [tab, setTab] = useState<'route' | 'content'>('route');
-  const [decisions, setDecisions] = useState<RouteDecision[]>([]);
-  const [contents, setContents] = useState<ContentItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tab === 'route') {
-      setLoading(true);
-      setError(null);
-      marketApi.getRoute()
-        .then(data => setDecisions((data as unknown as RouteDecision[]) ?? []))
-        .catch(e => setError(e.message))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(true);
-      setError(null);
-      marketApi.getContent()
-        .then(data => setContents((data as unknown as ContentItem[]) ?? []))
-        .catch(e => setError(e.message))
-        .finally(() => setLoading(false));
-    }
-  }, [tab]);
+  // 两个 tab 各自独立缓存；未激活的 tab 不请求（enabled）
+  const routeQuery = useQuery({
+    queryKey: queryKey('market', 'route'),
+    queryFn: () => marketApi.getRoute(),
+    staleTime: queryStaleTime('market'),
+    enabled: tab === 'route',
+  });
+  const contentQuery = useQuery({
+    queryKey: queryKey('market', 'content'),
+    queryFn: () => marketApi.getContent(),
+    staleTime: queryStaleTime('market'),
+    enabled: tab === 'content',
+  });
+
+  const decisions = (routeQuery.data as unknown as RouteDecision[]) ?? [];
+  const contents = (contentQuery.data as unknown as ContentItem[]) ?? [];
+  const activeQuery = tab === 'route' ? routeQuery : contentQuery;
+  const loading = activeQuery.isLoading;
+  const error = activeQuery.error instanceof Error ? activeQuery.error.message : null;
 
   return (
     <div className="px-6 py-4">

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
 import { fundamentalApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import NetFlowTrendChart from './NetFlowTrendChart';
 import WhaleTracker from './WhaleTracker';
 
@@ -64,21 +65,17 @@ function formatPct(v: number, digits = 2): string {
 }
 
 export function FlowPanel() {
-  const [flow, setFlow] = useState<FlowModule | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const snapshotQuery = useQuery({
+    queryKey: queryKey('fundamental', 'snapshot'),
+    queryFn: () => fundamentalApi.getSnapshot(),
+    staleTime: queryStaleTime('fundamental'),
+  });
 
-  useEffect(() => {
-    fundamentalApi
-      .getSnapshot()
-      .then(data => {
-        const snap = data as SnapshotResponse | null;
-        const mod = snap?.modules?.flow ?? null;
-        setFlow(mod);
-      })
-      .catch(e => setError(e?.message ?? '获取资金流向数据失败'))
-      .finally(() => setLoading(false));
-  }, []);
+  const flow = (snapshotQuery.data as SnapshotResponse | null)?.modules?.flow ?? null;
+  const loading = snapshotQuery.isLoading;
+  const error = snapshotQuery.isError
+    ? ((snapshotQuery.error as Error | null)?.message ?? '获取资金流向数据失败')
+    : null;
 
   if (loading) {
     return (

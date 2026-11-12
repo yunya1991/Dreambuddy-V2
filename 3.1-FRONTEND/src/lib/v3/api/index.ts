@@ -46,7 +46,7 @@ export { chainApi } from './chain';
 
 // === 治理域 ===
 export { boardApi } from './board';
-export type { Proposal, ProposalVote, StrategyStatus, Stage } from './board';
+export type { Proposal, ProposalVote, StrategyStatus, Stage, ReviewRecord, ApprovalSummary } from './board';
 export { deriveStageFromStatus } from './board';
 
 // === 基本面域 ===
@@ -54,6 +54,10 @@ export { fundamentalApi } from './fundamental';
 
 // === 消息流域 ===
 export { feedApi } from './feed';
+
+// === Meta-Labeling 域 ===
+export { metaLabelingApi, fetchMetaLabeling } from './meta-labeling';
+export type { MetaLabelResult, MetaLabelL1Signal } from './meta-labeling';
 
 // === 认证域 ===
 export { authApi } from './auth';

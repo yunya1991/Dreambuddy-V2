@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 // ============== 类型 ==============
 interface Resistance3D {
@@ -123,34 +124,33 @@ function fmtMetric(v: number | string): string {
   return Math.abs(v) >= 100 ? v.toFixed(1) : v.toFixed(3);
 }
 
+// ============== 取数 ==============
+async function fetchModuleSnapshot(moduleKey: string): Promise<ModuleSnapshot> {
+  const res = await fetch(`/api/fundamental/${moduleKey}/snapshot`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const body = await res.json();
+  if (body && body.resistance_3d && !body.error) {
+    return body as ModuleSnapshot;
+  }
+  throw new Error(body?.error || '数据格式异常');
+}
+
 // ============== 组件 ==============
 export function ModuleDetail({ module: moduleKey, title }: { module: string; title: string }) {
-  const [data, setData] = useState<ModuleSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const snapshotQuery = useQuery({
+    queryKey: queryKey('fundamental', 'module-snapshot', { module: moduleKey }),
+    queryFn: () => fetchModuleSnapshot(moduleKey),
+    staleTime: queryStaleTime('fundamental'),
+  });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/fundamental/${moduleKey}/snapshot`, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.json();
-      if (body && body.resistance_3d && !body.error) {
-        setData(body as ModuleSnapshot);
-      } else {
-        throw new Error(body?.error || '数据格式异常');
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '获取数据失败');
-    } finally {
-      setLoading(false);
-    }
-  }, [moduleKey]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const load = () => {
+    void snapshotQuery.refetch();
+  };
+  const data = snapshotQuery.data ?? null;
+  const loading = snapshotQuery.isFetching;
+  const error = snapshotQuery.isError
+    ? ((snapshotQuery.error as Error | null)?.message ?? '获取数据失败')
+    : null;
 
   if (loading && !data) {
     return (

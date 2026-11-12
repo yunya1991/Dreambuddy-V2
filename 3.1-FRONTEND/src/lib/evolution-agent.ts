@@ -80,7 +80,7 @@ const EVOLUTION_CONFIG = {
     return process.env.EVOLUTION_ENABLED !== 'false';
   },
   /** Python 解释器路径 */
-  python_bin: process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3',
+  python_bin: process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3',
   /** 子进程超时 */
   timeout_ms: 60000,
   /** 是否使用 dry-run 模式（APPLIED 需人工审核） */

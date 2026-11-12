@@ -20,6 +20,7 @@ describe('boardApi.listProposals', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
+      headers: new Headers(),
       json: async () => ({ success: true, data: [] }),
     } as unknown as Response);
 
@@ -46,6 +47,7 @@ describe('boardApi.listProposals', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
+      headers: new Headers(),
       json: async () => ({ success: true, data: [fakeProposal] }),
     } as unknown as Response);
 
@@ -85,6 +87,7 @@ describe('boardApi.vote (P1)', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
+      headers: new Headers(),
       json: async () => ({ success: true }),
     } as unknown as Response);
 
@@ -103,6 +106,7 @@ describe('boardApi.getProposalVotes (P1)', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
+      headers: new Headers(),
       json: async () => ({ success: true, data: [{ id: 'v1', vote: 'FOR' }] }),
     } as unknown as Response);
 

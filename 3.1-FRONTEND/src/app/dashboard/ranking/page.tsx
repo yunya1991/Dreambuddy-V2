@@ -6,11 +6,14 @@
 // REFACTOR: 通过 /api/trading-ranking/today 获取真实数据，API 不可用时降级到 mock
 // ============================================
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { RankingCard } from '@/components/features/ranking/RankingCard';
 import { PrefillOrderBanner } from '@/components/features/ranking/PrefillOrderBanner';
 import { RankingMonitor } from '@/components/features/ranking/RankingMonitor';
 import { mockRankingItems, mockMonitorMetrics, type CategoryType, type TradingRankingItem, type RankingMonitorMetrics } from '@/components/features/ranking/types';
+import { fetchTradingRanking } from '@/lib/v3/api/ranking';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 const filters: { key: 'all' | CategoryType; label: string }[] = [
   { key: 'all', label: '全部' },
@@ -21,37 +24,21 @@ const filters: { key: 'all' | CategoryType; label: string }[] = [
 
 export default function RankingPage() {
   const [filter, setFilter] = useState<'all' | CategoryType>('all');
-  const [items, setItems] = useState<TradingRankingItem[]>(mockRankingItems);
-  const [metrics, setMetrics] = useState<RankingMonitorMetrics>(mockMonitorMetrics);
-  const [loading, setLoading] = useState(true);
-  const [dataSource, setDataSource] = useState<'api' | 'mock'>('mock');
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
+  // 接口不可用/返回空时保持 mock 降级（queryFn 返回 null）
+  const rankingQuery = useQuery({
+    queryKey: queryKey('ranking', 'today'),
+    queryFn: fetchTradingRanking,
+    staleTime: queryStaleTime('ranking'),
+  });
 
-    fetch('/api/trading-ranking/today', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (cancelled) return;
-        if (data.success && Array.isArray(data.items) && data.items.length > 0) {
-          setItems(data.items);
-          setDataSource('api');
-        }
-        if (data.metrics) {
-          setMetrics(data.metrics);
-        }
-        // API 返回空数据时保持 mock
-      })
-      .catch(() => {
-        // API 不可用时保持 mock（降级策略）
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, []);
+  const apiItems = rankingQuery.data?.items?.length
+    ? (rankingQuery.data.items as TradingRankingItem[])
+    : null;
+  const items = apiItems ?? mockRankingItems;
+  const metrics = (rankingQuery.data?.metrics as RankingMonitorMetrics | null) ?? mockMonitorMetrics;
+  const loading = rankingQuery.isLoading;
+  const dataSource: 'api' | 'mock' = apiItems ? 'api' : 'mock';
 
   const filtered = filter === 'all'
     ? items

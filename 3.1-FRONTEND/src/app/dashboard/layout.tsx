@@ -6,29 +6,17 @@ import { usePathname } from 'next/navigation';
 import { V3StatusDot } from '@/components';
 import api from '@/lib/api-client';
 import GlobalSearchDialog from '@/components/features/search/GlobalSearchDialog';
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: string;
-  badgeKey?: 'approval_pending';
-}
-
-// 侧边栏顺序：核心交易在前，治理/审批/报告在底部
-const navItems: NavItem[] = [
-  { label: '概览', href: '/dashboard', icon: '◉' },
-  { label: 'AI 交易', href: '/dashboard/trade', icon: '⚡' },
-  { label: '交易榜单', href: '/dashboard/ranking', icon: '🏆' },
-  { label: '经典系统', href: '/dashboard/classic', icon: '📊' },
-  { label: '基本面', href: '/dashboard/fundamental', icon: '📈' },
-  { label: '三屏系统', href: '/dashboard/three-screens', icon: '🖥' },
-  { label: 'SACG 监控', href: '/dashboard/monitor', icon: '🔍' },
-  { label: '记忆管理', href: '/dashboard/memory', icon: '🧠' },
-  { label: '设置', href: '/dashboard/settings', icon: '⚙' },
-  { label: '治理', href: '/dashboard/governance', icon: '🏛' },
-  { label: '人工审批', href: '/board/approval', icon: '🛡️', badgeKey: 'approval_pending' },
-  { label: '报告', href: '/dashboard/reports', icon: '📋' },
-];
+import { NAV_ITEMS, type NavItem } from '@/lib/navigation';
+import { ToastProvider } from '@/components/feedback/ToastProvider';
+import { QueryProvider } from '@/components/providers/QueryProvider';
+import {
+  TokenMonitorProvider,
+  DEFAULT_TOKEN_MONITOR_CONFIG,
+  fetchTokenBalance,
+  useTokenMonitorContext,
+} from '@/lib/token-monitor-provider';
+import { getLevelBgColor, getLevelLabel } from '@/lib/token-monitor';
+import { TokenMonitorBadge } from '@/components/features/token-monitor/TokenMonitorBadge';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -74,59 +62,106 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="flex h-screen">
-      <aside className={`${collapsed ? 'w-14' : 'w-48'} flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-200`}>
-        <div className="p-3 border-b border-slate-800 flex items-center justify-between">
-          {!collapsed && <span className="text-sm font-bold text-indigo-400">DreamBuddy v3</span>}
-          <button onClick={() => setCollapsed(!collapsed)} className="text-slate-500 hover:text-slate-300 text-xs">{collapsed ? '›' : '‹'}</button>
-        </div>
-        <div className="px-2 pb-2">
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-slate-400 bg-slate-800/60 hover:bg-slate-800 hover:text-slate-300 transition-colors"
-          >
-            <span>🔍</span>
-            {!collapsed && <span className="flex-1 text-left">全局搜索</span>}
-            {!collapsed && <kbd className="text-[9px] text-slate-600 border border-slate-700 rounded px-1">⌘K</kbd>}
-          </button>
-        </div>
-        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
-          {navItems.map(item => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            const badge = badgeFor(item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors ${isActive ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-300'}`}
-              >
-                <span className="relative inline-flex">
-                  {item.icon}
-                  {badge > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none ring-2 ring-slate-900">
-                      {badge > 99 ? '99+' : badge}
-                    </span>
-                  )}
-                </span>
-                {!collapsed && <span className="flex-1">{item.label}</span>}
-                {!collapsed && badge > 0 && (
-                  <span className="text-[9px] text-red-400 font-bold">{badge}</span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="p-3 border-t border-slate-800">
-          <div className="flex items-center gap-2">
-            <V3StatusDot status="success" size="sm" pulse />
-            {!collapsed && <span className="text-[10px] text-slate-500">SACG 在线</span>}
+    <TokenMonitorProvider fetchBalance={fetchTokenBalance} config={DEFAULT_TOKEN_MONITOR_CONFIG}>
+      <div className="flex h-screen">
+        <aside className={`${collapsed ? 'w-14' : 'w-48'} flex-shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-200`}>
+          <div className="p-3 border-b border-slate-800 flex items-center justify-between">
+            {!collapsed && <span className="text-sm font-bold text-indigo-400">DreamBuddy v3</span>}
+            <button onClick={() => setCollapsed(!collapsed)} className="text-slate-500 hover:text-slate-300 text-xs">{collapsed ? '›' : '‹'}</button>
           </div>
-        </div>
-      </aside>
-      <main className="flex-1 overflow-y-auto bg-[var(--color-bg-primary)]">
-        {children}
-      </main>
-      <GlobalSearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+          <div className="px-2 pb-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-slate-400 bg-slate-800/60 hover:bg-slate-800 hover:text-slate-300 transition-colors"
+            >
+              <span>🔍</span>
+              {!collapsed && <span className="flex-1 text-left">全局搜索</span>}
+              {!collapsed && <kbd className="text-[9px] text-slate-600 border border-slate-700 rounded px-1">⌘K</kbd>}
+            </button>
+          </div>
+          <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+            {NAV_ITEMS.map(item => {
+              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              const badge = badgeFor(item);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-colors ${isActive ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-300'}`}
+                >
+                  <span className="relative inline-flex">
+                    {item.icon}
+                    {badge > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none ring-2 ring-slate-900">
+                        {badge > 99 ? '99+' : badge}
+                      </span>
+                    )}
+                  </span>
+                  {!collapsed && <span className="flex-1">{item.label}</span>}
+                  {!collapsed && badge > 0 && (
+                    <span className="text-[9px] text-red-400 font-bold">{badge}</span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="p-3 border-t border-slate-800 space-y-2">
+            <SidebarTokenMonitor collapsed={collapsed} />
+            <div className="flex items-center gap-2">
+              <V3StatusDot status="success" size="sm" pulse />
+              {!collapsed && <span className="text-[10px] text-slate-500">SACG 在线</span>}
+            </div>
+          </div>
+        </aside>
+        <main className="flex-1 overflow-y-auto bg-[var(--color-bg-primary)]">
+          <QueryProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </QueryProvider>
+        </main>
+        <GlobalSearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+      </div>
+    </TokenMonitorProvider>
+  );
+}
+
+/** 侧栏 Token 余额徽标：消费全局监控器，点击进入 /dashboard/token-monitor */
+function SidebarTokenMonitor({ collapsed }: { collapsed: boolean }) {
+  const { state, isLowBalance, isCritical } = useTokenMonitorContext();
+
+  // 首次成功取数前不渲染，避免展示误导性的 0
+  if (!state.lastChecked) return null;
+
+  const needsRecharge = isLowBalance || isCritical || state.isDowngraded;
+
+  if (collapsed) {
+    return (
+      <Link
+        href={needsRecharge ? '/recharge' : '/dashboard/token-monitor'}
+        title={
+          needsRecharge
+            ? `积分不足（${getLevelLabel(state.level)}），点击去充值`
+            : `Token：${getLevelLabel(state.level)}`
+        }
+        className="flex items-center justify-center py-1"
+      >
+        <span className={`w-2 h-2 rounded-full ${getLevelBgColor(state.level)}`} />
+      </Link>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <Link href="/dashboard/token-monitor" className="block py-1">
+        <TokenMonitorBadge state={state} size="sm" />
+      </Link>
+      {needsRecharge && (
+        <Link
+          href="/recharge"
+          className="block text-center text-[10px] font-medium text-amber-400 hover:text-amber-300 bg-amber-500/10 rounded px-2 py-1 transition-colors"
+        >
+          积分不足 · 去充值
+        </Link>
+      )}
     </div>
   );
 }

@@ -41,21 +41,27 @@ export function BACTimeline() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const fetchData = async () => {
       try {
-        const data = await api.get<CompressionResponse>('/api/compression/stats');
+        const data = await api.get<CompressionResponse>('/api/compression/stats', undefined, {
+          signal: controller.signal,
+        });
         if (!cancelled && data) {
           setStats(data.stats);
           setSessions(data.sessions || []);
         }
       } catch {
-        // FAIL-OPEN: 静默失败，显示空状态
+        // FAIL-OPEN: 静默失败，显示空状态（含卸载时主动取消）
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
     fetchData();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   // 按 messageCount 规模将会话映射到 BAC 层（B=大/全量, A=中/结构化, C=小/压缩）

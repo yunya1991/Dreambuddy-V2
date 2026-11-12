@@ -11,17 +11,21 @@
  * 空闲 IDLE_TIMEOUT_MS 后自动回收（kill），下次调用重新 spawn。
  * 并发安全：请求 id 单调递增，响应按 id 匹配到 pending 回调。
  */
+import path from 'path';
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import { jsonSchema, tool } from 'ai';
 import type { Tool } from 'ai';
 
 /** 47 registry 只读 profile（/tmp/lobehub_frontend_profile.json 对齐，唯一事实源）。 */
-const DEFAULT_COMMAND = '/opt/anaconda3/bin/python3';
+const DEFAULT_COMMAND = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
+// 脚本与 PYTHONPATH 按仓库根推导（前端 cwd 为 3.1-FRONTEND），云端可用 DREAMBUDDY_ROOT 覆盖
+const REPO_ROOT = process.env.DREAMBUDDY_ROOT || path.resolve(process.cwd(), '..');
 const DEFAULT_ARGS = [
-  '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口/cognitive_mcp_server.py',
+  process.env.COGNITIVE_MCP_SERVER
+    || path.join(REPO_ROOT, '4-MEMORY', '9-工具与接口', 'cognitive_mcp_server.py'),
 ];
 const DEFAULT_ENV = {
-  PYTHONPATH: '/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2',
+  PYTHONPATH: REPO_ROOT,
   PYTHONIOENCODING: 'utf-8',
   COGNITIVE_MCP_MODE: 'local',
   COGNITIVE_MCP_WRITE_ENABLED: 'false',

@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 /**
  * 40-周期神经网络系统 周期思考卡片面板
@@ -138,29 +140,24 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function CycleThinkingPanel() {
-  const [data, setData] = useState<CycleApiResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
+  const cycleQuery = useQuery({
+    queryKey: queryKey('cycle', 'research'),
+    queryFn: async (): Promise<CycleApiResponse> => {
       const res = await fetch('/api/cycle', { cache: 'no-store' });
       const json = (await res.json()) as CycleApiResponse;
       if (!json.success) throw new Error(json.error || '加载失败');
-      setData(json);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return json;
+    },
+    staleTime: queryStaleTime('cycle'),
+    refetchInterval: 60_000,
+    retry: false, // 失败保留上次成功数据，仅展示错误提示
+  });
 
-  useEffect(() => {
-    load();
-    const timer = setInterval(load, 60000);
-    return () => clearInterval(timer);
-  }, [load]);
+  const data = cycleQuery.data ?? null;
+  const loading = cycleQuery.isLoading;
+  const error = cycleQuery.isError
+    ? ((cycleQuery.error as Error | null)?.message ?? '加载失败')
+    : null;
 
   if (loading) {
     return <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 text-center text-xs text-slate-500">周期研究数据加载中…</div>;

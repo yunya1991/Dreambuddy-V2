@@ -8,6 +8,7 @@ import React from 'react';
 import { jest } from '@jest/globals';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { boardApi, type Proposal } from '@/lib/v3/api/board';
 import { GovernanceScreen } from './GovernanceScreen';
 
@@ -24,6 +25,18 @@ jest.mock('@/lib/v3/api/board', () => ({
 const mockedListProposals = boardApi.listProposals as unknown as jest.MockedFunction<typeof boardApi.listProposals>;
 const mockedVote = boardApi.vote as unknown as jest.MockedFunction<typeof boardApi.vote>;
 const mockedGetProposalVotes = boardApi.getProposalVotes as unknown as jest.MockedFunction<typeof boardApi.getProposalVotes>;
+
+/** useQuery 迁移后需包裹 QueryClientProvider；每用例独立 client，避免缓存互相污染 */
+function renderScreen() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <GovernanceScreen />
+    </QueryClientProvider>,
+  );
+}
 
 const fakeProposal = (overrides: Partial<Proposal> = {}): Proposal => ({
   id: '1',
@@ -50,7 +63,7 @@ describe('GovernanceScreen', () => {
   it('shows loading skeleton before fetch resolves', async () => {
     // 永不 resolve — 保持 loading 状态
     mockedListProposals.mockReturnValue(new Promise(() => {}));
-    render(<GovernanceScreen />);
+    renderScreen();
     // 骨架屏用 animate-pulse 类，至少存在 1 个占位元素
     const skeletons = document.querySelectorAll('.animate-pulse');
     expect(skeletons.length).toBeGreaterThan(0);
@@ -62,7 +75,7 @@ describe('GovernanceScreen', () => {
       fakeProposal({ id: '2', title: '已批准提案', status: 'APPROVED' }),
       fakeProposal({ id: '3', title: '执行中提案', status: 'APPLIED' }),
     ]);
-    render(<GovernanceScreen />);
+    renderScreen();
 
     await waitFor(() => {
       expect(screen.getByText('草稿态提案')).toBeInTheDocument();
@@ -77,7 +90,7 @@ describe('GovernanceScreen', () => {
 
   it('renders empty state when API returns []', async () => {
     mockedListProposals.mockResolvedValue([]);
-    render(<GovernanceScreen />);
+    renderScreen();
 
     await waitFor(() => {
       expect(screen.getByText('暂无提案')).toBeInTheDocument();
@@ -86,7 +99,7 @@ describe('GovernanceScreen', () => {
 
   it('renders error banner when API rejects', async () => {
     mockedListProposals.mockRejectedValue(new Error('boom'));
-    render(<GovernanceScreen />);
+    renderScreen();
 
     await waitFor(() => {
       // 错误横幅显示错误消息
@@ -107,7 +120,7 @@ describe('GovernanceScreen', () => {
       { id: 'v4', vote: 'AGAINST' },
     ]);
 
-    render(<GovernanceScreen />);
+    renderScreen();
 
     await waitFor(() => {
       expect(screen.getByText('提案一')).toBeInTheDocument();
@@ -121,7 +134,7 @@ describe('GovernanceScreen', () => {
   it('does NOT render hardcoded mock proposals (BTC 多头策略调整 etc.)', async () => {
     // 真实 API 返回空数组,绝不能回退到硬编码 mock
     mockedListProposals.mockResolvedValue([]);
-    render(<GovernanceScreen />);
+    renderScreen();
 
     await waitFor(() => {
       expect(screen.getByText('暂无提案')).toBeInTheDocument();
@@ -150,7 +163,7 @@ describe('GovernanceScreen', () => {
     ]);
     mockedVote.mockResolvedValue({ success: true });
 
-    render(<GovernanceScreen />);
+    renderScreen();
 
     await waitFor(() => {
       expect(screen.getByText('可投票提案')).toBeInTheDocument();
@@ -174,7 +187,7 @@ describe('GovernanceScreen', () => {
     mockedListProposals.mockResolvedValueOnce([
       fakeProposal({ id: '1', title: '演示提案', status: 'DRAFT', dataSource: 'mock' }),
     ]);
-    const { unmount } = render(<GovernanceScreen />);
+    const { unmount } = renderScreen();
     await waitFor(() => {
       expect(screen.getByText('演示提案')).toBeInTheDocument();
     });
@@ -185,7 +198,7 @@ describe('GovernanceScreen', () => {
     mockedListProposals.mockResolvedValueOnce([
       fakeProposal({ id: '2', title: '真实提案', status: 'DRAFT', dataSource: 'db' }),
     ]);
-    render(<GovernanceScreen />);
+    renderScreen();
     await waitFor(() => {
       expect(screen.getByText('真实提案')).toBeInTheDocument();
     });

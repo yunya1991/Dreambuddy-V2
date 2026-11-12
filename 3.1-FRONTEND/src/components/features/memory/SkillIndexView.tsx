@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface SkillItem {
   name: string;
@@ -33,24 +35,18 @@ const statusColor: Record<string, string> = {
 };
 
 export function SkillIndexView() {
-  const [skills, setSkills] = useState<SkillItem[]>([]);
-  const [stats, setStats] = useState<SkillStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [degraded, setDegraded] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterCategory, setFilterCategory] = useState<string>('');
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/skills/index').then(r => r.ok ? r.json() : null).catch(() => null),
-      // stats 走单独 adapter 命令（轻量化，避免重复扫描）
-      fetch('/api/skills/index?status=active').then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([listData]) => {
-      if (!listData || !listData.skills) {
-        setDegraded(true);
-        setLoading(false);
-        return;
-      }
+  const skillsQuery = useQuery({
+    queryKey: queryKey('memory', 'skills-index'),
+    queryFn: async (): Promise<{ skills: SkillItem[]; stats: SkillStats } | null> => {
+      const [listData] = await Promise.all([
+        fetch('/api/skills/index').then(r => r.ok ? r.json() : null).catch(() => null),
+        // stats 走单独 adapter 命令（轻量化，避免重复扫描）
+        fetch('/api/skills/index?status=active').then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+      if (!listData || !listData.skills) return null;
       // 用 listData 推导 stats（避免多次扫描）
       const byStatus: Record<string, number> = {};
       const byCategory: Record<string, number> = {};
@@ -58,17 +54,24 @@ export function SkillIndexView() {
         byStatus[s.status] = (byStatus[s.status] || 0) + 1;
         byCategory[s.category] = (byCategory[s.category] || 0) + 1;
       });
-      setSkills(listData.skills);
-      setStats({
-        total_count: listData.total_count ?? listData.count ?? listData.skills.length,
-        by_status: byStatus,
-        by_category: byCategory,
-        roots_scanned: 0,
-      });
-      setDegraded(false);
-      setLoading(false);
-    });
-  }, []);
+      return {
+        skills: listData.skills,
+        stats: {
+          total_count: listData.total_count ?? listData.count ?? listData.skills.length,
+          by_status: byStatus,
+          by_category: byCategory,
+          roots_scanned: 0,
+        },
+      };
+    },
+    staleTime: queryStaleTime('memory'),
+    retry: false, // 后端不可达时展示降级提示
+  });
+
+  const skills = skillsQuery.data?.skills ?? [];
+  const stats = skillsQuery.data?.stats ?? null;
+  const loading = skillsQuery.isLoading;
+  const degraded = skillsQuery.isFetched && !skillsQuery.data;
 
   const filtered = skills.filter(s => {
     if (filterStatus && s.status !== filterStatus) return false;

@@ -9,15 +9,18 @@
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:intent": "tsx src/lib/intent/intent-multiround.test.ts"
+    "test:intent": "tsx src/lib/intent/intent-multiround.test.ts",
+    "check:contracts": "jest src/lib/contracts --runInBand",
+    "check:boundary": "node scripts/check-route-boundary.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.141",
     "@ai-sdk/react": "^2.0.289",
     "@auth/prisma-adapter": "^2.11.2",
     "@prisma/client": "^6.19.3",
-    "bcryptjs": "^3.0.3",
+    "@tanstack/react-query": "^5.107.1",
     "ai": "^5.0.286",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "minisearch": "^7.2.0",
     "nanoid": "^5.1.16",

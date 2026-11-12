@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
+import { fetchMetaLabeling } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 /**
  * F6: Meta-Labeling 前端入口
@@ -87,6 +90,9 @@ function computeMetaLabel(signal: L1Signal): MetaLabelResult {
   return { signal, winProbability: winProb, expectedValue: ev, decision, sizeMultiplier };
 }
 
+// 降级 fallback：API 不可用时使用本地预计算结果
+const MOCK_RESULTS: MetaLabelResult[] = MOCK_SIGNALS.map(computeMetaLabel);
+
 const decisionStyles: Record<string, { bg: string; text: string; label: string }> = {
   execute: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', label: '执行' },
   observe: { bg: 'bg-amber-500/15', text: 'text-amber-400', label: '观望' },
@@ -101,34 +107,18 @@ const directionStyles: Record<string, string> = {
 
 export default function MetaLabelingPage() {
   const [filter, setFilter] = useState<'all' | 'execute' | 'observe' | 'skip'>('all');
-  // 降级 fallback：API 不可用时使用本地预计算结果
-  const [results, setResults] = useState<MetaLabelResult[]>(() => MOCK_SIGNALS.map(computeMetaLabel));
-  const [loading, setLoading] = useState(true);
-  const [dataSource, setDataSource] = useState<'api' | 'mock'>('mock');
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
+  const resultsQuery = useQuery({
+    queryKey: queryKey('meta-labeling', 'results'),
+    queryFn: () => fetchMetaLabeling(),
+    staleTime: queryStaleTime('meta-labeling'),
+  });
 
-    fetch('/api/meta-labeling', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (cancelled) return;
-        if (data.success && Array.isArray(data.results) && data.results.length > 0) {
-          setResults(data.results);
-          setDataSource('api');
-        }
-        // API 返回空数据时保持本地降级 mock
-      })
-      .catch(() => {
-        // API 不可用时保持本地降级 mock
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => { cancelled = true; };
-  }, []);
+  // API 返回空数据或不可用时保持本地降级 mock
+  const usingApi = Array.isArray(resultsQuery.data) && resultsQuery.data.length > 0;
+  const results = usingApi ? (resultsQuery.data as MetaLabelResult[]) : MOCK_RESULTS;
+  const loading = resultsQuery.isLoading;
+  const dataSource: 'api' | 'mock' = usingApi ? 'api' : 'mock';
 
   const filtered = useMemo(
     () => filter === 'all' ? results : results.filter(r => r.decision === filter),

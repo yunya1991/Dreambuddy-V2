@@ -94,7 +94,7 @@ export function TokenMonitorPanel({
           >
             {formatTokenAmount(state.balance)}
           </span>
-          <span className="text-slate-500 text-sm">tokens</span>
+          <span className="text-slate-500 text-sm">积分</span>
         </div>
 
         {/* 进度条 */}

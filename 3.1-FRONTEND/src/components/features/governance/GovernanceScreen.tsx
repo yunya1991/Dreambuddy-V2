@@ -7,8 +7,39 @@
 // ============================================
 
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge, V3StatusDot, V3Empty } from '@/components';
 import { boardApi, deriveStageFromStatus, type Proposal } from '@/lib/v3/api/board';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
+
+type VoteCounts = Record<string, { for: number; against: number }>;
+
+interface GovernanceData {
+  proposals: Proposal[];
+  votes: VoteCounts;
+  dataSource: 'mock' | 'db';
+}
+
+/** 一次取全：提案列表 + 每提案投票计数 + 数据源 */
+async function fetchGovernance(): Promise<GovernanceData> {
+  const list = await boardApi.listProposals();
+  const entries = await Promise.all(
+    list.map((p) =>
+      boardApi.getProposalVotes(p.id).then((vs) => ({
+        [p.id]: {
+          for: vs.filter((v) => v.vote === 'FOR').length,
+          against: vs.filter((v) => v.vote === 'AGAINST').length,
+        },
+      })),
+    ),
+  );
+  return {
+    proposals: list,
+    votes: Object.assign({}, ...entries) as VoteCounts,
+    // 所有 proposal 同源 (DB 或 mock), 取首个 dataSource 即可
+    dataSource: (list[0]?.dataSource as 'mock' | 'db' | undefined) ?? 'db',
+  };
+}
 
 const stageLabels: Record<string, string> = {
   draft: '草稿',
@@ -36,48 +67,32 @@ const statusLabel: Record<string, string> = {
 };
 
 export function GovernanceScreen() {
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<'mock' | 'db' | null>(null);
-  const [voteCounts, setVoteCounts] = useState<Record<string, { for: number; against: number }>>({});
+  const proposalsQuery = useQuery({
+    queryKey: queryKey('governance', 'proposals'),
+    queryFn: fetchGovernance,
+    staleTime: queryStaleTime('governance'),
+    retry: false,
+  });
 
+  const proposals = proposalsQuery.data?.proposals ?? [];
+  const dataSource = proposalsQuery.data?.dataSource ?? null;
+  const loading = proposalsQuery.isLoading;
+
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const [voteCounts, setVoteCounts] = useState<VoteCounts>({});
+
+  // 查询成功后同步投票计数（投票交互仍走局部更新）
   useEffect(() => {
-    let active = true;
-    boardApi
-      .listProposals()
-      .then((list) => {
-        if (!active) return;
-        setProposals(list);
-        // 所有 proposal 同源 (DB 或 mock), 取首个 dataSource 即可
-        setDataSource((list[0]?.dataSource as 'mock' | 'db' | undefined) ?? 'db');
-        // 并发拉取每条提案的投票计数
-        return Promise.all(
-          list.map((p) =>
-            boardApi.getProposalVotes(p.id).then((vs) => ({
-              [p.id]: {
-                for: vs.filter((v) => v.vote === 'FOR').length,
-                against: vs.filter((v) => v.vote === 'AGAINST').length,
-              },
-            }))
-          )
-        );
-      })
-      .then((entries) => {
-        if (!active || !entries) return;
-        setVoteCounts(Object.assign({}, ...entries));
-      })
-      .catch((e: unknown) => {
-        if (!active) return;
-        setError(e instanceof Error ? e.message : '加载失败');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+    if (proposalsQuery.data) setVoteCounts(proposalsQuery.data.votes);
+  }, [proposalsQuery.data]);
+
+  const error =
+    voteError ??
+    (proposalsQuery.isError
+      ? proposalsQuery.error instanceof Error
+        ? proposalsQuery.error.message
+        : '加载失败'
+      : null);
 
   // 投票交互: 调用 vote → 刷新计数
   const handleVote = async (proposalId: string, vote: 'FOR' | 'AGAINST') => {
@@ -92,7 +107,7 @@ export function GovernanceScreen() {
         },
       }));
     } catch (e) {
-      setError(e instanceof Error ? e.message : '投票失败');
+      setVoteError(e instanceof Error ? e.message : '投票失败');
     }
   };
 

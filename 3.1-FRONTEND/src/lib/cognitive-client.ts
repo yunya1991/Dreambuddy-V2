@@ -1,12 +1,12 @@
 /**
- * 认知系统 TS 客户端 — 通过子进程调用 cognitive_adapter.py
+ * 认知系统 TS 客户端
  *
- * 复刻 dream-harness-bridge P0-5 IPC 模式 (VM-1789618914215):
- *  - child_process.spawn + 行过滤 stdout
- *  - 10s 超时
- *  - FAIL-OPEN: 失败返回 {degraded: true}, 不抛异常
+ * 传输顺序（SPEC-20261111-C §3.5 / T-C5）：
+ *  1. 若配置 `COGNITIVE_API_BASE`，优先 HTTP 代理（前端 route.ts 不新增 spawn）
+ *  2. HTTP 不可用/未配置时回退既有 IPC：child_process.spawn + 行过滤 stdout
  *
- * 不改 4-MEMORY 后端, 仅在 3.1-FRONTEND 接入层新增。
+ * IPC 模式复刻 dream-harness-bridge P0-5 (VM-1789618914215):
+ *  - 10s 超时；FAIL-OPEN: 失败返回 {degraded: true}, 不抛异常
  */
 
 import { spawn } from 'child_process';
@@ -21,8 +21,40 @@ export interface CognitiveResult<T = unknown> {
 }
 
 const ADAPTER_PATH = path.join(process.cwd(), 'scripts', 'cognitive_adapter.py');
-const PYTHON_BIN = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+// 不写死本机解释器路径：云端用 COGNITIVE_PYTHON / PYTHON 覆盖，缺省回落 python3
+const PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 const TIMEOUT_MS = 10000;
+
+/**
+ * HTTP 代理调用（T-C5）。
+ * 返回 null 表示「不可用/不可解析」——调用方回退 IPC，保证 FAIL-OPEN。
+ */
+async function callCognitiveHttp<T>(
+  base: string,
+  toolName: string,
+  args: Record<string, unknown>,
+): Promise<CognitiveResult<T> | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(`${base.replace(/\/+$/, '')}/cognitive/${encodeURIComponent(toolName)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(args),
+      signal: controller.signal,
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as unknown;
+    if (body && typeof body === 'object' && 'ok' in (body as Record<string, unknown>)) {
+      return body as CognitiveResult<T>;
+    }
+    return { ok: true, data: body as T };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /**
  * 调用认知系统 MCP 工具（单次请求模式）。
@@ -35,6 +67,16 @@ export async function callCognitive<T = unknown>(
   toolName: string,
   args: Record<string, unknown> = {}
 ): Promise<CognitiveResult<T>> {
+  const httpBase = process.env.COGNITIVE_API_BASE?.trim();
+  if (httpBase) {
+    const viaHttp = await callCognitiveHttp<T>(httpBase, toolName, args);
+    if (viaHttp) return viaHttp;
+  }
+  return callCognitiveIpc<T>(toolName, args);
+}
+
+/** IPC 回退路径（既有实现，未改动语义） */
+function callCognitiveIpc<T>(toolName: string, args: Record<string, unknown>): Promise<CognitiveResult<T>> {
   return new Promise<CognitiveResult<T>>((resolve) => {
     let stdoutBuf = '';
     let stderrBuf = '';

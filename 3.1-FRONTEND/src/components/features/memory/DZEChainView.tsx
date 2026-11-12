@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Button, V3StatusDot } from '@/components';
 import { useMemoryStore } from '@/stores';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 const chainColors = {
   D: { border: 'border-blue-500/30', bg: 'bg-blue-900/10', text: 'text-blue-400', dot: 'active' as const },
@@ -51,22 +52,22 @@ function matchTypeCount(typeDist: Record<string, number> | undefined, matchers: 
 
 export function DZEChainView() {
   const { dzeChains, updateChainStatus } = useMemoryStore();
-  // P2: 本地 state 持有 type_distribution（避免依赖 store 的 fetchStats）
-  const [typeDist, setTypeDist] = useState<Record<string, number> | null>(null);
 
-  // P2: 挂载时内联 fetch /api/cognitive/stats 获取 type_distribution
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/cognitive/stats')
-      .then(r => r.ok ? r.json() : null)
-      .catch(() => null)
-      .then(data => {
-        if (cancelled || !data || !data.memory) return;
-        const td = data.memory.type_distribution || {};
-        setTypeDist(td);
-      });
-    return () => { cancelled = true; };
-  }, []);
+  // P2: 从 /api/cognitive/stats 获取 type_distribution
+  const statsQuery = useQuery({
+    queryKey: queryKey('cognitive', 'stats'),
+    queryFn: async (): Promise<{ type_distribution: Record<string, number> } | null> => {
+      const r = await fetch('/api/cognitive/stats');
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (!data || !data.memory) return null;
+      return { type_distribution: data.memory.type_distribution || {} };
+    },
+    staleTime: queryStaleTime('cognitive'),
+    retry: false, // 静默降级：失败时不展示分类轴概览
+  });
+
+  const typeDist = statsQuery.data?.type_distribution ?? null;
 
   return (
     <div className="space-y-4">

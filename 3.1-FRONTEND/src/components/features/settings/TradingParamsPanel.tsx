@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import type { UserProfileView, TradeType, TradeMode, RiskTolerance } from '@/types';
 import { V3Card, V3Button, V3Badge } from '@/components';
 
@@ -21,27 +23,21 @@ function parseSymbols(raw: unknown): string[] {
 }
 
 export function TradingParamsPanel() {
-  const [params, setParams] = useState<TradingConfig | null>(null);
+  const queryClient = useQueryClient();
   const [draft, setDraft] = useState<TradingConfig | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api.get<{ params?: TradingConfig }>('/api/config/trading-params');
-        if (!cancelled && data?.params) setParams(data.params);
-      } catch {
-        // 后端未就绪时静默降级
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const paramsQuery = useQuery({
+    queryKey: queryKey('settings', 'trading-params'),
+    queryFn: () => api.get<{ params?: TradingConfig }>('/api/config/trading-params'),
+    staleTime: queryStaleTime('settings'),
+    retry: false, // 后端未就绪时静默降级
+  });
+
+  const params = paramsQuery.data?.params ?? null;
+  const loading = paramsQuery.isLoading;
 
   const startEdit = () => {
     if (!params) return;
@@ -62,7 +58,9 @@ export function TradingParamsPanel() {
     setError(null);
     try {
       await api.patch('/api/config/trading-params', draft);
-      setParams({ ...draft });
+      // 写后更新缓存并失效（SPEC §3.4）
+      queryClient.setQueryData(queryKey('settings', 'trading-params'), { params: { ...draft } });
+      void queryClient.invalidateQueries({ queryKey: queryKey('settings', 'trading-params') });
       setEditing(false);
       setDraft(null);
     } catch (err) {

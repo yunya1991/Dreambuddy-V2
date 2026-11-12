@@ -115,14 +115,37 @@ export interface SSEConnection {
   readyState: number;
 }
 
+/** SSE v1 帧元数据（T-C3）—— 供调用方做重连/观测，不影响事件分发 */
+export interface SSEEventMeta {
+  /** 本帧 `id:` 行 */
+  id?: string;
+  /** 最近一次成功分发的 id（monitor 重连用） */
+  lastEventId?: string;
+  /** 本帧 `retry:` 行（毫秒） */
+  retry?: number;
+  /** 是否为心跳注释帧（`: ping`） */
+  heartbeat?: boolean;
+}
+
+export interface SSEConnectionOptions {
+  onError?: (error: Error) => void;
+  /** v1 元数据回调（可选，默认不启用） */
+  onEventMeta?: (meta: SSEEventMeta) => void;
+  /** 带 `id:` 的帧是否去重（默认 true；无 id 的旧帧不受影响） */
+  dedupeById?: boolean;
+}
+
 // === 创建 SSE 连接 ===
 export function createSSEConnection(
   url: string,
   body: unknown,
   handlers: SSEHandlerMap,
-  options?: { onError?: (error: Error) => void }
+  options?: SSEConnectionOptions
 ): SSEConnection {
   const controller = new AbortController();
+  const dedupeById = options?.dedupeById !== false;
+  const seenIds = new Set<string>();
+  let lastEventId: string | undefined;
 
   // 使用 fetch + ReadableStream 实现 POST-based SSE
   fetch(url, {
@@ -160,23 +183,46 @@ export function createSSEConnection(
 
         let currentEventType: SSEEventType | null = null;
         let currentData = '';
+        let currentId: string | undefined;
+        let currentRetry: number | undefined;
 
         for (const line of lines) {
-          if (line.startsWith('event: ')) {
+          if (line.startsWith(':')) {
+            // 注释帧 / 心跳（`: ping`）：不触发任何 handler
+            if (line.includes('ping')) {
+              options?.onEventMeta?.({ heartbeat: true, lastEventId });
+            }
+          } else if (line.startsWith('id: ')) {
+            currentId = line.slice(4).trim();
+          } else if (line.startsWith('retry: ')) {
+            const retryValue = Number(line.slice(7).trim());
+            currentRetry = Number.isFinite(retryValue) ? retryValue : undefined;
+          } else if (line.startsWith('event: ')) {
             currentEventType = line.slice(7).trim() as SSEEventType;
           } else if (line.startsWith('data: ')) {
             currentData = line.slice(6);
           } else if (line === '' && currentEventType && currentData) {
             // 空行表示事件结束，分发
-            try {
-              const parsed = JSON.parse(currentData);
-              dispatchSSEEvent(currentEventType, parsed, handlers);
-            } catch {
-              // data 不是 JSON，尝试按纯文本处理
-              dispatchSSEEvent(currentEventType, { raw: currentData }, handlers);
+            const duplicate = dedupeById && currentId !== undefined && seenIds.has(currentId);
+            if (duplicate) {
+              // 重复 id 不消费
+              options?.onEventMeta?.({ id: currentId, retry: currentRetry, lastEventId });
+            } else {
+              if (dedupeById && currentId !== undefined) seenIds.add(currentId);
+              try {
+                const parsed = JSON.parse(currentData);
+                dispatchSSEEvent(currentEventType, parsed, handlers);
+              } catch {
+                // data 不是 JSON，尝试按纯文本处理
+                dispatchSSEEvent(currentEventType, { raw: currentData }, handlers);
+              }
+              if (currentId !== undefined) lastEventId = currentId;
+              options?.onEventMeta?.({ id: currentId, retry: currentRetry, lastEventId });
             }
             currentEventType = null;
             currentData = '';
+            currentId = undefined;
+            currentRetry = undefined;
           }
         }
       }

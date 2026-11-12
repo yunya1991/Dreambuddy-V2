@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { marketApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface Campaign {
   id: string;
@@ -30,17 +32,17 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
 
-  useEffect(() => {
-    marketApi.getCampaigns()
-      .then(data => setCampaigns((data as unknown as Campaign[]) ?? []))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const campaignsQuery = useQuery({
+    queryKey: queryKey('market', 'campaigns'),
+    queryFn: () => marketApi.getCampaigns(),
+    staleTime: queryStaleTime('market'),
+  });
+
+  const campaigns = (campaignsQuery.data as unknown as Campaign[] | undefined) ?? [];
+  const loading = campaignsQuery.isLoading;
+  const error = campaignsQuery.error instanceof Error ? campaignsQuery.error.message : null;
 
   const filtered = filterStatus ? campaigns.filter(c => c.status === filterStatus) : campaigns;
 

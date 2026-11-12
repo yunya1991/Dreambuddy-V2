@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import {
   V3Card, V3Button, V3Badge, V3StatusDot,
   IconRefresh, IconPlus, IconClose,
@@ -95,8 +97,6 @@ const DIRECTION_LABEL: Record<string, string> = {
 };
 
 export function StrategyManager() {
-  const [strategies, setStrategies] = useState<StrategyView[]>([]);
-  const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<StrategyForm>(EMPTY_FORM);
   const [parsing, setParsing] = useState(false);
@@ -107,22 +107,26 @@ export function StrategyManager() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStrategies();
-  }, []);
+  const strategiesQuery = useQuery({
+    queryKey: queryKey('settings', 'strategies'),
+    queryFn: async () => {
+      const data = await api.get<{
+        strategies: StrategyView[];
+        recommended: StrategyView[];
+        custom: StrategyView[];
+        applied: StrategyView[];
+      }>('/api/config/strategies');
+      return data?.strategies || [];
+    },
+    staleTime: queryStaleTime('settings'),
+    retry: false, // 静默降级：失败按空列表处理
+  });
 
-  const fetchStrategies = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get<{ strategies: StrategyView[]; recommended: StrategyView[]; custom: StrategyView[]; applied: StrategyView[] }>(
-        '/api/config/strategies'
-      );
-      setStrategies(data?.strategies || []);
-    } catch {
-      // 静默处理
-    } finally {
-      setLoading(false);
-    }
+  const strategies = strategiesQuery.data ?? [];
+  const loading = strategiesQuery.isFetching;
+
+  const fetchStrategies = () => {
+    void strategiesQuery.refetch();
   };
 
   const openForm = () => {

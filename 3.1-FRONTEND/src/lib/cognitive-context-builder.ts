@@ -177,7 +177,7 @@ async function fetchKnowledge(intent: string, intentType: string): Promise<Knowl
 async function fetchReferences(intent: string): Promise<IndexReference[]> {
   const { spawn } = await import('child_process');
   const adapterPath = Path.join(process.cwd(), 'scripts', 'index_query_adapter.py');
-  const pythonBin = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+  const pythonBin = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 
   return new Promise<IndexReference[]>((resolve) => {
     const child = spawn(pythonBin, [adapterPath, 'query', intent, '--top-k', '5'], {

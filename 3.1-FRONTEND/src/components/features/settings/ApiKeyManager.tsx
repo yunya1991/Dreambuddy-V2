@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import {
   V3Card, V3Button, V3Badge, V3StatusDot,
   IconPlus, IconRefresh, IconClose,
@@ -68,28 +70,27 @@ function emptyForm(): ApiKeyForm {
 }
 
 export function ApiKeyManager() {
-  const [keys, setKeys] = useState<ApiKeyEntry[]>([]);
-  const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<ApiKeyForm>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchKeys();
-  }, []);
+  const keysQuery = useQuery({
+    queryKey: queryKey('settings', 'api-keys'),
+    queryFn: () =>
+      api
+        .get<ApiKeyEntry[]>('/api/config/api-keys')
+        .then(data => (Array.isArray(data) ? data : [])),
+    staleTime: queryStaleTime('settings'),
+    retry: false, // 静默降级：失败按空列表处理
+  });
 
-  const fetchKeys = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get<ApiKeyEntry[]>('/api/config/api-keys');
-      setKeys(Array.isArray(data) ? data : []);
-    } catch {
-      // 静默处理
-    } finally {
-      setLoading(false);
-    }
+  const keys = keysQuery.data ?? [];
+  const loading = keysQuery.isFetching;
+
+  const fetchKeys = () => {
+    void keysQuery.refetch();
   };
 
   const openAddForm = () => {

@@ -12,7 +12,7 @@ import path from 'path';
 
 const SKILL_ADAPTER = path.join(process.cwd(), 'scripts', 'skill_index_adapter.py');
 const KNOWLEDGE_ADAPTER = path.join(process.cwd(), 'scripts', 'knowledge_search_adapter.py');
-const PYTHON_BIN = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+const PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 const TIMEOUT_MS = 30000;
 
 function spawnAdapter(

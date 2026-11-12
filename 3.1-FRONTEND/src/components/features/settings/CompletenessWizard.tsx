@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import { V3Card, V3Badge, V3StatusDot } from '@/components';
 import type { CompletenessStep, TradingParamsView, StrategyView } from '@/types';
 
@@ -17,16 +18,9 @@ interface ChannelEntryLite {
 }
 
 export function CompletenessWizard() {
-  const [steps, setSteps] = useState<CompletenessStep[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    compute();
-  }, []);
-
-  const compute = async () => {
-    setLoading(true);
-    try {
+  const stepsQuery = useQuery({
+    queryKey: queryKey('settings', 'completeness'),
+    queryFn: async (): Promise<CompletenessStep[]> => {
       // 并行拉取所需数据
       const [apiKeys, paramsView, strategiesRes, channels] = await Promise.all([
         api.get<ApiKeyEntryLite[]>('/api/config/api-keys').catch(() => [] as ApiKeyEntryLite[]),
@@ -45,7 +39,7 @@ export function CompletenessWizard() {
       const hasAppliedStrategy = strategyList.some((s) => s.status === 'APPLIED');
       const hasOnlineChannel = channels.some((c) => c.isOnline);
 
-      const computed: CompletenessStep[] = [
+      return [
         {
           key: 'exchange_api',
           label: '交易所 API',
@@ -83,12 +77,12 @@ export function CompletenessWizard() {
           completed: hasOnlineChannel,
         },
       ];
+    },
+    staleTime: queryStaleTime('settings'),
+  });
 
-      setSteps(computed);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const steps = stepsQuery.data ?? [];
+  const loading = stepsQuery.isLoading;
 
   const completedRequired = steps.filter((s) => s.required && s.completed).length;
   const totalRequired = steps.filter((s) => s.required).length;

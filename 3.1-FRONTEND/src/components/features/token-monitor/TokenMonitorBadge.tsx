@@ -82,7 +82,7 @@ export function TokenMonitorBadge({
       {/* 余额显示 */}
       {showBalance && (
         <span className="tabular-nums">
-          {formatTokenAmount(state.balance)} tokens
+          {formatTokenAmount(state.balance)} 积分
         </span>
       )}
 

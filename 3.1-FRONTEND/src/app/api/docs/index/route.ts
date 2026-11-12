@@ -31,7 +31,7 @@ interface DocIndexData {
 }
 
 const ADAPTER_PATH = path.join(process.cwd(), 'scripts', 'doc_index_adapter.py');
-const PYTHON_BIN = process.env.COGNITIVE_PYTHON || '/opt/anaconda3/bin/python3';
+const PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
 const TIMEOUT_MS = 15000;  // 文档扫描稍慢，给 15s
 
 async function callDocIndex<T>(

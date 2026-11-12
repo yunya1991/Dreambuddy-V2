@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
 import { fundamentalApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import UTXOAgeDistribution from './UTXOAgeDistribution';
 
 interface OnchainModule {
@@ -50,20 +51,17 @@ function signalOf(v: number | string | null | undefined): 'bullish' | 'bearish' 
 }
 
 export function OnchainPanel() {
-  const [mod, setMod] = useState<OnchainModule | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const snapshotQuery = useQuery({
+    queryKey: queryKey('fundamental', 'snapshot'),
+    queryFn: () => fundamentalApi.getSnapshot(),
+    staleTime: queryStaleTime('fundamental'),
+  });
 
-  useEffect(() => {
-    fundamentalApi
-      .getSnapshot()
-      .then(data => {
-        const snap = data as { modules?: Record<string, OnchainModule> } | null;
-        setMod(snap?.modules?.onchain ?? null);
-      })
-      .catch(e => setError(e?.message ?? '获取链上数据失败'))
-      .finally(() => setLoading(false));
-  }, []);
+  const mod = (snapshotQuery.data as { modules?: Record<string, OnchainModule> } | null)?.modules?.onchain ?? null;
+  const loading = snapshotQuery.isLoading;
+  const error = snapshotQuery.isError
+    ? ((snapshotQuery.error as Error | null)?.message ?? '获取链上数据失败')
+    : null;
 
   if (loading) {
     return <div className="h-64 rounded-xl bg-slate-800/50 animate-pulse" />;

@@ -9,8 +9,9 @@
  * - 自动刷新 (30s)
  */
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge, V3StatusDot } from '@/components';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface ArtifactStats {
   total: number;
@@ -18,32 +19,29 @@ interface ArtifactStats {
   total_size_bytes: number;
 }
 
+// TODO: migrate to domain client — query param ?stats=1 not supported by artifactApi.list()
+async function fetchArtifactStats(): Promise<ArtifactStats> {
+  const resp = await fetch('/api/artifacts?stats=1');
+  if (!resp.ok) throw new Error(`artifacts_stats_${resp.status}`);
+  const body = await resp.json();
+  if (!body?.success || !body.stats) throw new Error('artifacts_stats_invalid');
+  return body.stats as ArtifactStats;
+}
+
 export function LiveStatusPanel() {
-  const [stats, setStats] = useState<ArtifactStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<string>('');
+  const statsQuery = useQuery({
+    queryKey: queryKey('dashboard', 'live-status'),
+    queryFn: fetchArtifactStats,
+    staleTime: queryStaleTime('dashboard'),
+    refetchInterval: 30_000, // 30s 自动刷新
+  });
 
-  const fetchStats = async () => {
-    try {
-      // TODO: migrate to domain client — query param ?stats=1 not supported by artifactApi.list()
-      const resp = await fetch('/api/artifacts?stats=1');
-      const body = await resp.json();
-      if (body.success) {
-        setStats(body.stats);
-        setLastUpdate(new Date().toLocaleTimeString());
-      }
-    } catch {
-      // FAIL-OPEN: 静默失败
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-    const timer = setInterval(fetchStats, 30000); // 30s 自动刷新
-    return () => clearInterval(timer);
-  }, []);
+  // FAIL-OPEN: 失败保留旧数据，UI 不展示错误
+  const stats = statsQuery.data ?? null;
+  const loading = statsQuery.isLoading;
+  const lastUpdate = statsQuery.dataUpdatedAt
+    ? new Date(statsQuery.dataUpdatedAt).toLocaleTimeString()
+    : '';
 
   const typeLabels: Record<string, string> = {
     insight_card: '洞察卡',

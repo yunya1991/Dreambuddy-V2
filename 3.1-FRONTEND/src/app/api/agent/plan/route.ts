@@ -48,7 +48,7 @@ function degraded(reason: string, extra: Record<string, unknown> = {}) {
  * 从 47 registry 读取已注册 l0 工具集合（{shell}.{tool}）。
  * 极简行解析（不引 yaml 依赖）：shell_id 后跟 tools 列表。文件缺失 → 退回最小只读集合。
  */
-export function loadRegisteredTools(): string[] {
+function loadRegisteredTools(): string[] {
   const registryPath =
     process.env.L0_REGISTRY_PATH ??
     path.join(process.cwd(), '..', '47-MCP管理系统', 'registry', 'mcp_capabilities.yaml');

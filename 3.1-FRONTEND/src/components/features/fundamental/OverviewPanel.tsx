@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { V3Card, V3Badge } from '@/components';
 import { fundamentalApi } from '@/lib/v3/api';
+import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
 interface SnapshotModules {
   flow?: { metrics?: { core?: Record<string, number | string>; breakdown?: Record<string, number> } };
@@ -29,43 +30,49 @@ interface Highlight {
   group: string;
 }
 
+async function fetchBtcPrice(): Promise<{ price: number; change24h: number } | null> {
+  const r = await fetch('/api/price/btc', { cache: 'no-store' });
+  const d = await r.json();
+  if (!d?.ok) return null;
+  return { price: Number(d.price), change24h: Number(d.change24h) };
+}
+
+async function fetchGlobalMarket(): Promise<{ btcDominance: number } | null> {
+  const r = await fetch('/api/market/global', { cache: 'no-store' });
+  const d = await r.json();
+  if (!d?.ok) return null;
+  return { btcDominance: Number(d.btc_dominance) };
+}
+
 export function OverviewPanel() {
-  const [mods, setMods] = useState<SnapshotModules | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [btcPrice, setBtcPrice] = useState<number | null>(null);
-  const [btcChange24h, setBtcChange24h] = useState<number | null>(null);
-  const [btcDominance, setBtcDominance] = useState<number | null>(null);
+  const snapshotQuery = useQuery({
+    queryKey: queryKey('fundamental', 'snapshot'),
+    queryFn: () => fundamentalApi.getSnapshot(),
+    staleTime: queryStaleTime('fundamental'),
+  });
 
-  useEffect(() => {
-    fundamentalApi
-      .getSnapshot()
-      .then(data => {
-        const snap = data as { modules?: SnapshotModules } | null;
-        setMods(snap?.modules ?? null);
-      })
-      .catch(e => setError(e?.message ?? '获取总览数据失败'))
-      .finally(() => setLoading(false));
-  }, []);
+  const priceQuery = useQuery({
+    queryKey: queryKey('price', 'btc'),
+    queryFn: fetchBtcPrice,
+    staleTime: queryStaleTime('price'),
+    retry: false, // FAIL-OPEN：失败保留旧数据
+  });
 
-  useEffect(() => {
-    fetch('/api/price/btc', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => {
-        if (d?.ok) {
-          setBtcPrice(Number(d.price));
-          setBtcChange24h(Number(d.change24h));
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const globalQuery = useQuery({
+    queryKey: queryKey('market', 'global'),
+    queryFn: fetchGlobalMarket,
+    staleTime: queryStaleTime('market'),
+    retry: false, // FAIL-OPEN：失败保留旧数据
+  });
 
-  useEffect(() => {
-    fetch('/api/market/global', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(d => { if (d?.ok) setBtcDominance(Number(d.btc_dominance)); })
-      .catch(() => {});
-  }, []);
+  const mods = (snapshotQuery.data as { modules?: SnapshotModules } | null)?.modules ?? null;
+  const loading = snapshotQuery.isLoading;
+  const error = snapshotQuery.isError
+    ? ((snapshotQuery.error as Error | null)?.message ?? '获取总览数据失败')
+    : null;
+  const btcPrice = priceQuery.data?.price ?? null;
+  const btcChange24h = priceQuery.data?.change24h ?? null;
+  const btcDominance = globalQuery.data?.btcDominance ?? null;
 
   if (loading) {
     return (
