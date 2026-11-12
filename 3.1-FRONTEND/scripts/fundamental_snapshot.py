@@ -421,9 +421,21 @@ def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
     # 收口 P2: 优先 bgeometrics 真实 MVRV (DAL chain → btc_metrics/mvrv)
     real_mvrv = chain_raw.get("mvrv")
     mvrv = real_mvrv if isinstance(real_mvrv, (int, float)) else None
+    real_z = chain_raw.get("mvrv_z_score")
+    mvrv_z = round(float(real_z), 2) if isinstance(real_z, (int, float)) else None
     valuation_zone = None
-    if mvrv is not None:
-        # 真实 MVRV 区间: >2 偏高, <1 低估
+    if mvrv_z is not None:
+        # MVRV Z-Score 标准区间: <0 低估, 0-3 合理, 3-7 偏高, >7 泡沫
+        if mvrv_z > 7:
+            valuation_zone = "泡沫"
+        elif mvrv_z > 3:
+            valuation_zone = "偏高"
+        elif mvrv_z >= 0:
+            valuation_zone = "合理"
+        else:
+            valuation_zone = "低估"
+    elif mvrv is not None:
+        # MVRV 比率区间: >2 偏高, <1 低估
         if mvrv > 2:
             valuation_zone = "偏高"
         elif mvrv < 1:
@@ -450,6 +462,7 @@ def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
     )
     core = {
         "mvrv_ratio": mvrv,
+        "mvrv_z_score": mvrv_z,
         "nvt_ratio": _nvt_ratio,
         "nvt_z_score": _nvt_z,
         "valuation_zone": valuation_zone,
@@ -503,6 +516,14 @@ def _build_breadth(breadth_raw: dict, ts: str) -> dict:
         "defi_tvl_bln": breadth_raw.get("defi_tvl_bln"),  # 收口 P2: DeFi TVL
     }
     has_real = any(isinstance(v, (int, float)) for v in core.values())
+    # 板块广度细分：来源 34 bridge breadth（coingecko chart_* 最新两次快照价格比较）
+    bd = {}
+    for _k in ("advance_count", "decline_count", "unchanged_count", "scanned_assets"):
+        _v = breadth_raw.get(_k)
+        if isinstance(_v, (int, float)):
+            bd[_k] = int(_v)
+    if isinstance(breadth_raw.get("breadth_ratio"), (int, float)):
+        bd["breadth_ratio"] = round(float(breadth_raw["breadth_ratio"]), 4)
     return {
         "timestamp": ts,
         "data": {
@@ -510,7 +531,7 @@ def _build_breadth(breadth_raw: dict, ts: str) -> dict:
             "usdc_bln": {"value": breadth_raw.get("usdc_bln"), "label": "USDC 市值(十亿)"},
             "social_volume": {"value": breadth_raw.get("social_volume"), "label": "社交讨论量"},
         },
-        "metrics": {"core": core, "breakdown": {}},
+        "metrics": {"core": core, "breakdown": bd},
         "meta": {
             "last_update": ts,
             "source": ["data.dal_query"] if has_real else [],
@@ -682,6 +703,97 @@ def _build_news(news_raw: dict, ts: str) -> dict:
     }
 
 
+def _build_calendar(calendar_raw: dict, ts: str) -> dict:
+    """calendar: 经济日历 (19-DAL mm_events: FOMC/CPI/非农/PPI 官方日程).
+
+    impact_score = 未来 7 天内高影响事件的临近度加权和（每个事件权重
+    max(0, 1 - 距今天数/7)），clamp 到 [0, 1]。无事件则不产出该指标。
+    """
+    import time as _time
+    from datetime import datetime as _dt
+    from datetime import timezone as _tz
+
+    events = calendar_raw.get("events") or []
+    now = calendar_raw.get("server_now")
+    if not isinstance(now, (int, float)):
+        now = int(_time.time())
+
+    def _ts(e):
+        v = e.get("event_time")
+        return v if isinstance(v, (int, float)) else None
+
+    valid = [e for e in events if _ts(e) is not None]
+    upcoming = sorted([e for e in valid if _ts(e) >= now], key=_ts)
+    recent = sorted([e for e in valid if _ts(e) < now], key=_ts, reverse=True)
+    high_types = {"fomc", "rate_decision", "cpi", "nfp"}
+    high_upcoming = [e for e in upcoming if e.get("event_type") in high_types]
+
+    impact = 0.0
+    near_term = 0
+    for e in high_upcoming:
+        days = (_ts(e) - now) / 86400.0
+        if days <= 7:
+            impact += max(0.0, 1.0 - days / 7.0)
+            near_term += 1
+
+    core = {}
+    if valid:
+        core["total_events"] = len(upcoming)
+        core["high_impact_events"] = len(high_upcoming)
+        if near_term:  # 未来 7 天无高影响事件时不产出 impact_score，避免恒 0 误导
+            core["impact_score"] = round(_clamp(impact, 0.0, 1.0), 3)
+        if upcoming:
+            core["next_event_hours"] = round((_ts(upcoming[0]) - now) / 3600.0, 1)
+
+    def _iso(ts_val):
+        return _dt.fromtimestamp(ts_val, tz=_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def _item(e):
+        return {
+            "event_id": e.get("event_id"),
+            "event_time": _iso(_ts(e)),
+            "type": e.get("event_type") or "",
+            "source": e.get("source") or "",
+            "title": e.get("title") or "",
+        }
+
+    signals = []
+    for e in upcoming[:10]:
+        days = (_ts(e) - now) / 86400.0
+        signals.append(
+            {
+                "type": "event",
+                "reason": e.get("title") or "",
+                "horizon": _iso(_ts(e)),
+                "strength": round(max(0.0, 1.0 - days / 7.0), 3),
+            }
+        )
+
+    by_type = {}
+    for e in valid:
+        t = e.get("event_type") or "other"
+        by_type[t] = by_type.get(t, 0) + 1
+
+    return {
+        "timestamp": ts,
+        "data": {"source": "19-DAL mm_events"},
+        "metrics": {
+            "core": core,
+            "breakdown": {
+                "upcoming_events": [_item(e) for e in upcoming[:20]],
+                "recent_events": [_item(e) for e in recent[:10]],
+                "by_type": by_type,
+            },
+        },
+        "signals": signals,
+        "meta": {
+            "last_update": ts,
+            "source": ["data.dal_query", "mm_events"],
+            "data_quality": "good" if valid else "empty",
+        },
+    }
+
+
 def _build_narrative(narrative_raw: dict, ts: str) -> dict:
     """narrative: 市场叙事 (fear_greed_enhanced 四子维度, 移植 9 层 collect_narrative)."""
     fg = narrative_raw.get("fg_value")
@@ -756,6 +868,7 @@ def main():
     news_raw = _fetch("data.dal_query", "news")
     narrative_raw = _fetch("data.dal_query", "narrative")
     intermarket_raw = _fetch("data.dal_query", "intermarket")
+    calendar_raw = _fetch("data.dal_query", "calendar")
     ts = macro_raw.get("timestamp") or chain_raw.get("timestamp")
 
     # ── 2. 构建各模块 (双轨 schema) ─────────────────────────────────
@@ -770,6 +883,7 @@ def main():
         "intermarket": _build_intermarket(intermarket_raw, ts),
         "news": _build_news(news_raw, ts),
         "narrative": _build_narrative(narrative_raw, ts),
+        "calendar": _build_calendar(calendar_raw, ts),
     }
 
     has_real = any(

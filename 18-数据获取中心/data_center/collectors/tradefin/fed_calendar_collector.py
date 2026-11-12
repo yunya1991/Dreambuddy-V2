@@ -60,10 +60,12 @@ def statement_time(year: int, month: int, day: int) -> datetime:
 
 
 def meetings_to_events(
-    meetings: list[dict], *, days: int = 30, now: datetime | None = None
+    meetings: list[dict], *, days: int = 30, ahead_days: int = 0, now: datetime | None = None
 ) -> list[dict]:
+    """ahead_days>0 时额外纳入未来已公布日程（经济日历用，非事件流默认行为）。"""
     now = now or datetime.now(timezone.utc)
     start = now - timedelta(days=days)
+    end = now + timedelta(days=ahead_days)
 
     events: list[dict] = []
     for m in meetings:
@@ -71,7 +73,7 @@ def meetings_to_events(
             ts = statement_time(m["year"], m["month"], m["last_day"])
         except ValueError:
             continue
-        if not (start <= ts <= now):
+        if not (start <= ts <= end):
             continue
         iso = ts.isoformat().replace("+00:00", "Z")
         month_name = datetime(m["year"], m["month"], 1).strftime("%B")
@@ -93,10 +95,10 @@ def meetings_to_events(
     return events
 
 
-def fetch(days: int = 30, now: datetime | None = None) -> list[dict]:
+def fetch(days: int = 30, ahead_days: int = 0, now: datetime | None = None) -> list[dict]:
     try:
         html = get_text(CALENDAR_URL)
     except Exception as e:  # noqa: BLE001
         logger.warning("[fed_calendar] 日历抓取失败，FAIL-OPEN：%s", e)
         return []
-    return meetings_to_events(parse_calendar(html), days=days, now=now)
+    return meetings_to_events(parse_calendar(html), days=days, ahead_days=ahead_days, now=now)

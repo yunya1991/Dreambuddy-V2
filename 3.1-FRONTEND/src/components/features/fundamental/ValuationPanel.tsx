@@ -73,8 +73,8 @@ export function ValuationPanel() {
   const bd = mod?.metrics?.breakdown ?? {};
   const realizedPrice = Number(mod?.realized_price ?? core.realized_price ?? 0);
 
-  const zScore = Number(core.nvt_z_score) ?? 0;
-  const mvrvRatio = Number(core.mvrv_ratio) ?? undefined;
+  const zScore = Number(core.mvrv_z_score ?? core.nvt_z_score);
+  const mvrvRatio = Number(core.mvrv_ratio);
   const valuationRange = String(core.valuation_zone || '');
 
   const rangeSignal = /偏高|过热|热/.test(valuationRange) ? 'bearish' : /偏低|低估/.test(valuationRange) ? 'bullish' : 'neutral';

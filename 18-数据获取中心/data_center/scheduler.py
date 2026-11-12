@@ -165,7 +165,8 @@ class CollectionScheduler:
     # 39 语义事件流水线（P1：由调度器自动产出，不依赖人工 CLI）
     # ------------------------------------------------------------------
     def _semantic_loop(self) -> None:
-        """每 DC_SEMANTIC_INTERVAL_SEC 跑一次：18 事件流采集 → 9 FinBERT 打分 → 39 语义事件。"""
+        """每 DC_SEMANTIC_INTERVAL_SEC 跑一次：18 事件流采集 → 9 FinBERT 打分 → 39 语义事件；
+        同轮补跑经济日历日程（calendar_schedule.jsonl）并同步 19-DAL mm_events。"""
         import logging
         import subprocess
         from pathlib import Path
@@ -178,6 +179,7 @@ class CollectionScheduler:
         root = Path(__file__).resolve().parents[1]  # 18-数据获取中心
         repo = root.parent
         gen_script = repo / "39-金融语义蒸馏系统" / "scripts" / "gen_semantic_events.py"
+        sync_script = repo / "19-数据访问层" / "scripts" / "sync_events_to_dal.py"
         while not self._stop_flag.is_set():
             try:
                 ev = subprocess.run(
@@ -212,6 +214,39 @@ class CollectionScheduler:
                         "semantic gen rc=%s %s",
                         gen.returncode,
                         (gen.stderr or gen.stdout).strip()[-200:],
+                    )
+                # 经济日历：未来已公布日程独立落 calendar_schedule.jsonl（不污染事件流）
+                cal = subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "data_center.cli.collect_calendar",
+                        "--ahead-days",
+                        "90",
+                    ],
+                    cwd=str(root),
+                    capture_output=True,
+                    text=True,
+                    timeout=600,
+                )
+                log.info(
+                    "calendar collect rc=%s %s",
+                    cal.returncode,
+                    (cal.stderr or cal.stdout).strip()[-200:],
+                )
+                # 事件流 → 19-DAL mm_events（前端经济日历数据源）
+                if sync_script.is_file():
+                    syn = subprocess.run(
+                        [sys.executable, str(sync_script)],
+                        cwd=str(sync_script.parent.parent),
+                        capture_output=True,
+                        text=True,
+                        timeout=300,
+                    )
+                    log.info(
+                        "dal sync rc=%s %s",
+                        syn.returncode,
+                        (syn.stderr or syn.stdout).strip()[-200:],
                     )
             except Exception:
                 # FAIL-OPEN：语义流水线失败不影响采集主循环

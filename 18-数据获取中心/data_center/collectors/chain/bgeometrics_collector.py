@@ -90,6 +90,11 @@ class BGeometricsCollector(BaseCollector):
                 if val is not None:
                     all_metrics[name] = val
                 all_raw[name] = data
+                if name == "mvrv":
+                    # 复用同一次 /mvrv 响应内的全量日线计算 MVRV Z-Score（不额外消耗配额）
+                    z = self._mvrv_zscore(data)
+                    if z is not None:
+                        all_metrics["mvrv_z_score"] = z
                 ts_data = self._extract_timeseries(data, name)
                 if ts_data:
                     all_ts.extend(ts_data)
@@ -125,6 +130,32 @@ class BGeometricsCollector(BaseCollector):
             return resp.json()
         except Exception:
             return None  # fail-open per metric
+
+    @staticmethod
+    def _mvrv_zscore(data: dict | list) -> float | None:
+        """MVRV Z-Score = (最新 MVRV - 历史均值) / 历史标准差（bgeometrics 返回全量日线）。
+
+        口径：使用响应内全部日线点做总体标准差，与 Glassnode 的 Z-Score 定义一致
+        （差异仅在于窗口长度）。样本不足 30 点返回 None，避免给出伪信号。
+        """
+        try:
+            if not isinstance(data, list) or len(data) < 30:
+                return None
+            vals = [
+                float(d["mvrv"])
+                for d in data
+                if isinstance(d, dict) and isinstance(d.get("mvrv"), (int, float))
+            ]
+            if len(vals) < 30:
+                return None
+            n = len(vals)
+            mean = sum(vals) / n
+            std = (sum((v - mean) ** 2 for v in vals) / n) ** 0.5
+            if std <= 0:
+                return None
+            return round((vals[-1] - mean) / std, 3)
+        except (KeyError, TypeError, ValueError):
+            return None
 
     @staticmethod
     def _extract_latest(data: dict | list, name: str | None = None) -> float | None:

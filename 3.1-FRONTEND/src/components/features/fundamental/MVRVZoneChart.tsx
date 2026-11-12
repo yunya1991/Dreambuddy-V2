@@ -3,7 +3,7 @@
 import React from 'react';
 
 interface MVRVZoneChartProps {
-  zScore: number;
+  zScore?: number;
   mvrvRatio?: number;
   title?: string;
   size?: number;
@@ -15,7 +15,8 @@ export default function MVRVZoneChart({
   title = 'MVRV Z-Score 区间',
   size = 280,
 }: MVRVZoneChartProps) {
-  const z = typeof zScore === 'number' && isFinite(zScore) ? zScore : 0;
+  const hasZ = typeof zScore === 'number' && isFinite(zScore);
+  const z = hasZ ? (zScore as number) : 0;
   const ratio = typeof mvrvRatio === 'number' && isFinite(mvrvRatio) ? mvrvRatio : 1.0;
 
   const zones = [
@@ -36,10 +37,10 @@ export default function MVRVZoneChart({
       <div style={{ fontSize: 14, fontWeight: 600, color: '#e0e0e0', marginBottom: 16 }}>{title}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ fontSize: 32, fontWeight: 700, color: currentZone.color }}>{z.toFixed(2)}</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: hasZ ? currentZone.color : '#6b7280' }}>{hasZ ? z.toFixed(2) : '--'}</div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: currentZone.color }}>{currentZone.label}</div>
-            <div style={{ fontSize: 12, color: '#8a8a8a' }}>{currentZone.desc}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: hasZ ? currentZone.color : '#6b7280' }}>{hasZ ? currentZone.label : '数据缺失'}</div>
+            <div style={{ fontSize: 12, color: '#8a8a8a' }}>{hasZ ? currentZone.desc : '等待 MVRV Z-Score 采集'}</div>
           </div>
         </div>
         <div style={{ position: 'relative', width: zoneWidth, height: zoneHeight, borderRadius: 8, overflow: 'hidden' }}>
@@ -52,7 +53,9 @@ export default function MVRVZoneChart({
               </div>
             );
           })}
-          <div style={{ position: 'absolute', left: normalizedPosition * zoneWidth - 4, top: -8, width: 8, height: zoneHeight + 16, backgroundColor: '#fff', borderRadius: 4, boxShadow: '0 0 8px rgba(255,255,255,0.5)' }} />
+          {hasZ && (
+            <div style={{ position: 'absolute', left: normalizedPosition * zoneWidth - 4, top: -8, width: 8, height: zoneHeight + 16, backgroundColor: '#fff', borderRadius: 4, boxShadow: '0 0 8px rgba(255,255,255,0.5)' }} />
+          )}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#8a8a8a' }}>
           <span>-2 (底部)</span><span>0 (合理)</span><span>+3 (过热)</span><span>+7 (泡沫)</span>

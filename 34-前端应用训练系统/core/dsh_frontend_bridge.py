@@ -897,6 +897,7 @@ _CHAIN_METRICS = [
     ("btc_basics", "tx_count_24h", "tx_count_24h"),
     # btc_metrics: bgeometrics 链上估值指标 (收口 P2: ValuationPanel 真实 MVRV)
     ("btc_metrics", "mvrv", "mvrv"),
+    ("btc_metrics", "mvrv_z_score", "mvrv_z_score"),
     ("btc_metrics", "sopr", "sopr"),
     ("btc_metrics", "nupl", "nupl"),
     ("btc_metrics", "puell_multiple", "puell_multiple"),
@@ -1134,6 +1135,46 @@ def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
                 row = _query_metric(conn, sub_cat, name)
                 if row:
                     output[out_key] = row[0]
+            # 板块广度细分：coingecko chart_* 最新两次快照价格比较 → 上涨/下跌资产数
+            try:
+                _rows = conn.execute(
+                    """WITH ranked AS (
+                           SELECT sub_category, metric_value,
+                                  ROW_NUMBER() OVER (
+                                      PARTITION BY sub_category ORDER BY timestamp DESC
+                                  ) AS rn
+                           FROM mm_metrics
+                           WHERE metric_name='latest_price'
+                             AND sub_category LIKE 'chart_%'
+                             AND metric_value IS NOT NULL
+                             AND timestamp >= ?
+                       )
+                       SELECT a.sub_category, a.metric_value, b.metric_value
+                       FROM ranked a
+                       LEFT JOIN ranked b
+                         ON a.sub_category = b.sub_category AND b.rn = 2
+                       WHERE a.rn = 1""",
+                    (int(time.time()) - 7 * 86400,),
+                ).fetchall()
+                _adv = _dec = _flat = 0
+                for _sub, _cur, _prev in _rows:
+                    if _prev in (None, 0):
+                        continue
+                    if _cur > _prev:
+                        _adv += 1
+                    elif _cur < _prev:
+                        _dec += 1
+                    else:
+                        _flat += 1
+                _scanned = _adv + _dec + _flat
+                if _scanned:
+                    output["advance_count"] = _adv
+                    output["decline_count"] = _dec
+                    output["unchanged_count"] = _flat
+                    output["scanned_assets"] = _scanned
+                    output["breadth_ratio"] = round(_adv / _scanned, 4)
+            except Exception:
+                pass
         elif command == "capital_flow":
             for sub_cat, name, out_key in _CAPITAL_FLOW_METRICS:
                 row = _query_metric(conn, sub_cat, name)
@@ -1183,6 +1224,39 @@ def _handle_dal_query(args: Dict[str, Any]) -> Dict[str, Any]:
                 output["high_impact_count"] = sum(1 for _s in _sents if abs(_s - 0.5) > 0.3)
             except Exception:
                 pass
+        elif command == "calendar":
+            # 经济日历：19-DAL mm_events（由 19/scripts/sync_events_to_dal.py 从 18 事件流同步）
+            try:
+                import time as _time
+
+                _now = int(_time.time())
+                _rows = conn.execute(
+                    """SELECT event_id, event_time, event_type, subtype, source, title, symbols, confidence
+                       FROM mm_events
+                       WHERE event_time BETWEEN ? AND ?
+                       ORDER BY event_time ASC
+                       LIMIT 200""",
+                    (_now - 7 * 86400, _now + 60 * 86400),
+                ).fetchall()
+                output["events"] = [
+                    {
+                        "event_id": _r[0],
+                        "event_time": _r[1],
+                        "event_type": _r[2] or "",
+                        "subtype": _r[3] or "",
+                        "source": _r[4] or "",
+                        "title": _r[5] or "",
+                        "symbols": _r[6] or "",
+                        "confidence": _r[7],
+                    }
+                    for _r in _rows
+                ]
+                output["server_now"] = _now
+            except Exception as _e:
+                output["events"] = []
+                output["server_now"] = int(__import__("time").time())
+                output["degraded"] = True
+                output["error"] = f"mm_events: {type(_e).__name__}: {_e}"
         elif command == "narrative":
             for sub_cat, name, out_key in _NARRATIVE_METRICS:
                 row = _query_metric(conn, sub_cat, name)

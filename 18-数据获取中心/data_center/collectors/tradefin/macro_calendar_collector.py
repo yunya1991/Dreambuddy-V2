@@ -61,9 +61,13 @@ def classify_release(release: str) -> tuple[str, str] | None:
     return None
 
 
-def rows_to_events(rows: list[str], *, days: int = 30, now: datetime | None = None) -> list[dict]:
+def rows_to_events(
+    rows: list[str], *, days: int = 30, ahead_days: int = 0, now: datetime | None = None
+) -> list[dict]:
+    """ahead_days>0 时额外纳入未来已公布日程（经济日历用，非事件流默认行为）。"""
     now = now or datetime.now(timezone.utc)
     start = now - timedelta(days=days)
+    end = now + timedelta(days=ahead_days)
 
     events: list[dict] = []
     for row in rows:
@@ -84,7 +88,7 @@ def rows_to_events(rows: list[str], *, days: int = 30, now: datetime | None = No
             )
         except ValueError:
             continue
-        if not (start <= ts <= now):
+        if not (start <= ts <= end):
             continue
 
         iso = ts.isoformat().replace("+00:00", "Z")
@@ -106,9 +110,11 @@ def rows_to_events(rows: list[str], *, days: int = 30, now: datetime | None = No
     return events
 
 
-def fetch(days: int = 30, now: datetime | None = None) -> list[dict]:
+def fetch(days: int = 30, ahead_days: int = 0, now: datetime | None = None) -> list[dict]:
     now = now or datetime.now(timezone.utc)
-    years = sorted({(now - timedelta(days=days)).year, now.year})
+    years = sorted(
+        {(now - timedelta(days=days)).year, now.year, (now + timedelta(days=ahead_days)).year}
+    )
     events: list[dict] = []
     for year in years:
         try:
@@ -116,5 +122,5 @@ def fetch(days: int = 30, now: datetime | None = None) -> list[dict]:
         except Exception as e:  # noqa: BLE001
             logger.warning("[macro_calendar] %d 日历抓取失败，FAIL-OPEN：%s", year, e)
             continue
-        events.extend(rows_to_events(extract_rows(page), days=days, now=now))
+        events.extend(rows_to_events(extract_rows(page), days=days, ahead_days=ahead_days, now=now))
     return events
