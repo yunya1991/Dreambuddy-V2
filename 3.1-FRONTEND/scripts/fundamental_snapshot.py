@@ -630,9 +630,8 @@ def _build_news(news_raw: dict, ts: str) -> dict:
     neu = news_raw.get("neutral_count") or 0
     total = pos + neg + neu
     has_real = bool(news_count or social_volume or total)
-    # 39 层语义事件统计 (24h 事件数 + 主题分布)
+    # 39 层语义事件统计（24h 事件数）
     sem_count = 0
-    sem_themes = {}
     try:
         import json as _json
         from datetime import datetime as _dt
@@ -661,11 +660,42 @@ def _build_news(news_raw: dict, ts: str) -> dict:
                     evt = evt.replace(tzinfo=_tz.utc)
                 if evt >= cutoff:
                     sem_count += 1
-                    theme = ev.get("term") or "other"
-                    sem_themes[theme] = sem_themes.get(theme, 0) + 1
     except Exception:
         pass
-    top_themes = dict(sorted(sem_themes.items(), key=lambda x: -x[1])[:5])
+    # 热点新闻影响力榜（39 产物，KB 级；禁止在此解析 2 万行 JSONL，见 SPEC §5.2/R-6）
+    hot_news = {}
+    try:
+        import json as _json
+
+        ph = os.environ.get("HOT_NEWS_PATH") or os.path.join(
+            os.path.dirname(_resolve_34_core_dir()),
+            "..",
+            "39-金融语义蒸馏系统",
+            "hot_news.json",
+        )
+        with open(os.path.normpath(ph), "r", encoding="utf-8") as f:
+            loaded = _json.load(f)
+        if isinstance(loaded, dict):
+            hot_news = loaded
+    except Exception:
+        hot_news = {}
+
+    hot_top = hot_news.get("top")
+    hot_top = hot_top[:10] if isinstance(hot_top, list) else []
+    hot_stats = hot_news.get("stats") if isinstance(hot_news.get("stats"), dict) else {}
+    hot_summary = {
+        "total": hot_stats.get("total"),
+        "scored": hot_stats.get("scored"),
+        "clusters": hot_stats.get("clusters"),
+        "dedup_saved": hot_stats.get("dedup_saved"),
+        "high_impact": hot_stats.get("high_impact"),
+        "avg_importance": hot_stats.get("avg_importance"),
+        "generated_at": hot_news.get("generated_at"),
+        "window_h": hot_news.get("window_h"),
+    }
+    theme_clusters = hot_news.get("clusters")
+    theme_clusters = theme_clusters[:8] if isinstance(theme_clusters, list) else []
+
     t = total or 1
     avg_s = news_raw.get("avg_sentiment")
     if not isinstance(avg_s, (int, float)):
@@ -692,13 +722,18 @@ def _build_news(news_raw: dict, ts: str) -> dict:
             "breakdown": {
                 "social_volume": social_volume,
                 "total_news_records": news_raw.get("total_news_records"),
-                "semantic_top_themes": top_themes,
+                # 弃用：原为标题原文重复计数（P-H2），保留 key 置空
+                "semantic_top_themes": {},
+                "hot_news_top10": hot_top,
+                "hot_news_summary": hot_summary,
+                "theme_clusters": theme_clusters,
             },
         },
         "meta": {
             "last_update": ts,
-            "source": ["data.dal_query", "semantic_distill"],
-            "data_quality": "good" if has_real else "empty",
+            "source": ["data.dal_query", "semantic_distill"]
+            + (["hot_news_39"] if hot_news else []),
+            "data_quality": "good" if hot_top else ("partial" if has_real else "empty"),
         },
     }
 

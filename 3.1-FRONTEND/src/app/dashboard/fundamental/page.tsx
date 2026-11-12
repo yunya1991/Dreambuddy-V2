@@ -10,6 +10,7 @@ import { ValuationPanel } from '@/components/features/fundamental/ValuationPanel
 import { OverviewPanel } from '@/components/features/fundamental/OverviewPanel';
 import { IntermarketPanel } from '@/components/features/fundamental/IntermarketPanel';
 import { BreadthPanel } from '@/components/features/fundamental/BreadthPanel';
+import { HotNewsPanel } from '@/components/features/fundamental/HotNewsPanel';
 
 const tabModules: Record<string, string> = {
   flow: 'flow',
@@ -60,6 +61,16 @@ export default function FundamentalPage() {
         {activeTab === 'flow' && <FlowPanel />}
         {activeTab === 'intermarket' && <IntermarketPanel />}
         {activeTab === 'breadth' && <BreadthPanel />}
+        {activeTab === 'news' && (
+          <div className="space-y-4">
+            <HotNewsPanel />
+            <ModuleDetail
+              key={activeTab}
+              module={tabModules[activeTab]}
+              title={tabs.find(t => t.id === activeTab)?.label || activeTab}
+            />
+          </div>
+        )}
         {activeTab === 'valuation' && (
           <div className="space-y-4">
             <ValuationPanel />
@@ -70,7 +81,7 @@ export default function FundamentalPage() {
             />
           </div>
         )}
-        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && activeTab !== 'flow' && activeTab !== 'valuation' && activeTab !== 'intermarket' && activeTab !== 'breadth' && tabModules[activeTab] && (
+        {activeTab !== 'overview' && activeTab !== 'onchain' && activeTab !== 'macro' && activeTab !== 'sentiment' && activeTab !== 'flow' && activeTab !== 'valuation' && activeTab !== 'intermarket' && activeTab !== 'breadth' && activeTab !== 'news' && tabModules[activeTab] && (
           <ModuleDetail
             key={activeTab}
             module={tabModules[activeTab]}

@@ -23,10 +23,14 @@
 """
 
 import argparse
+import difflib
 import importlib.util
 import json
+import math
 import os
 import re
+import unicodedata
+from datetime import datetime, timedelta, timezone
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SYS_DIR = os.path.dirname(_THIS_DIR)
@@ -34,6 +38,8 @@ _REPO = os.path.dirname(_SYS_DIR)
 
 TRADER_LOG = "/home/luke/logs/yijing/trader.log"
 OUT_PATH = os.path.join(_SYS_DIR, "semantic_events.jsonl")
+# 热点新闻影响力榜产物（SPEC-20261113 §5.1）；env HOT_NEWS_PATH 可覆盖
+HOT_NEWS_PATH = os.path.join(_SYS_DIR, "hot_news.json")
 STATE_PATH = os.path.join(_SYS_DIR, ".semantic_events_state.json")
 EVENTS_PATH = os.path.join(_REPO, "18-数据获取中心", "data_center", "events", "events.jsonl")
 # P1-A：中文财经正文外置存储（事件 body_ref → bodies.jsonl#<id>）
@@ -56,6 +62,481 @@ HALF_LIFE_H = {
     "product": 48,
     "legal": 48,
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 热点新闻影响力榜（SPEC-20261113 §3–§5）
+# 权重集中定义，改权重不需要动公式；全链路零 token。
+# ─────────────────────────────────────────────────────────────────────────────
+TYPE_WEIGHT = {
+    "rate_decision": 1.00,
+    "fomc": 0.95,
+    "cpi": 0.95,
+    "nfp": 0.95,
+    "earnings": 0.85,
+    "guidance": 0.85,
+    "regulatory": 0.80,
+    "legal": 0.75,
+    "mna": 0.75,
+    "buyback": 0.60,
+    "dividend": 0.60,
+    "product": 0.50,
+    "macro_other": 0.40,
+}
+SOURCE_WEIGHT = {
+    "sec_edgar": 1.00,
+    "fed_calendar": 1.00,
+    "macro_calendar": 0.90,
+    "jin10": 0.80,
+    "wallstreetcn": 0.80,
+    "cls": 0.75,
+    "sina_finance": 0.70,
+}
+DEFAULT_TYPE_WEIGHT = 0.40
+DEFAULT_SOURCE_WEIGHT = 0.60
+SENTIMENT_THRESHOLD = 0.15
+IMPORTANCE_WEIGHTS = {
+    "type": 0.30,
+    "sentiment": 0.25,
+    "recency": 0.20,
+    "source": 0.15,
+    "corroboration": 0.10,
+}
+DEDUP_JACCARD = 0.78
+DEDUP_RATIO = 0.90
+# 短中文标题单字改写（正处于/正处在，13 字）4-gram Jaccard 实测≈0.43，故 ratio 门限取 0.40；
+# 仍由 ratio≥0.90 + 同 type + symbols 交集双重守卫，避免跨主题误合并
+DEDUP_RATIO_MIN_JACCARD = 0.40
+HOT_NEWS_WINDOW_H = 24
+HOT_NEWS_CLUSTER_WINDOW_H = 48
+HOT_NEWS_TOP_N = 50
+
+# 主题簇：顺序即优先级，命中多个取最靠前（§4.1）
+TOPIC_RULES = [
+    (
+        "rates_policy",
+        "利率与央行",
+        [
+            "美联储",
+            "FOMC",
+            "降息",
+            "加息",
+            "利率",
+            "鲍威尔",
+            "点阵图",
+            "逆回购",
+            "欧央行",
+            "日本央行",
+            "LPR",
+        ],
+    ),
+    ("inflation", "通胀", ["CPI", "PCE", "通胀", "物价", "核心通胀"]),
+    ("labor", "就业", ["非农", "就业", "失业率", "ADP", "就业报告"]),
+    (
+        "growth",
+        "增长景气",
+        ["GDP", "PMI", "社融", "M2", "社零", "进出口", "工业增加值", "零售销售"],
+    ),
+    (
+        "crypto_reg",
+        "加密监管",
+        ["加密", "比特币", "以太坊", "稳定币", "ETF", "SEC", "币安", "Coinbase"],
+    ),
+    (
+        "geopolitics",
+        "地缘政治",
+        ["战争", "袭击", "制裁", "胡塞", "俄乌", "中东", "关税", "贸易战", "停火"],
+    ),
+    ("earnings", "财报业绩", ["财报", "业绩", "营收", "净利润", "EPS", "指引", "预警"]),
+    (
+        "capital_action",
+        "资本运作",
+        ["收购", "并购", "回购", "分红", "减持", "增持", "IPO", "私有化", "评级"],
+    ),
+    (
+        "tech_ai",
+        "科技与 AI",
+        ["AI", "芯片", "算力", "英伟达", "OpenAI", "大模型", "半导体", "量子"],
+    ),
+    ("commodities", "商品", ["黄金", "原油", "天然气", "铜", "OPEC", "白银", "油价", "金价"]),
+]
+TOPIC_LABELS = {t: label for t, label, _ in TOPIC_RULES}
+TOPIC_LABELS["other"] = "其他"
+
+
+def topic_of(text):
+    """标题 → 单标签主题簇；未命中返回 other。"""
+    low = str(text or "").lower()
+    for topic, _label, keywords in TOPIC_RULES:
+        for kw in keywords:
+            if kw.lower() in low:
+                return topic
+    return "other"
+
+
+def sentiment_label(score):
+    if not isinstance(score, (int, float)):
+        return "未知"
+    if score > SENTIMENT_THRESHOLD:
+        return "利好"
+    if score < -SENTIMENT_THRESHOLD:
+        return "利空"
+    return "中性"
+
+
+def corroboration_from_source_count(n):
+    """多源印证：单源 0.5 / 双源 0.815 / 三源 1.0。"""
+    if n <= 1:
+        return 0.5
+    return round(min(1.0, 0.5 + 0.5 * math.log2(n) / math.log2(3)), 3)
+
+
+def _parse_ts(value):
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    except Exception:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def importance_parts(
+    published_at=None, etype="macro_other", sentiment=None, origin=None, source_count=1, now=None
+):
+    """评分分解（各 0–1）；sentiment 缺失时 S=0，但禁止用 0 冒充已打分。"""
+    now = now or datetime.now(timezone.utc)
+    t = TYPE_WEIGHT.get(etype, DEFAULT_TYPE_WEIGHT)
+    if isinstance(sentiment, dict) and isinstance(sentiment.get("score"), (int, float)):
+        score = float(sentiment["score"])
+        conf = sentiment.get("confidence")
+        conf = float(conf) if isinstance(conf, (int, float)) else 1.0
+        s = min(1.0, abs(score) * conf)
+        half_life = sentiment.get("half_life_h") or HALF_LIFE_H.get(etype, 24)
+    else:
+        s = 0.0
+        half_life = HALF_LIFE_H.get(etype, 24)
+    dt = _parse_ts(published_at)
+    if dt is None:
+        r = 0.0
+    else:
+        age_h = max(0.0, (now - dt).total_seconds() / 3600.0)
+        hl = half_life if isinstance(half_life, (int, float)) and half_life > 0 else 24
+        r = 0.5 ** (age_h / hl)
+    return {
+        "type": round(t, 3),
+        "sentiment": round(s, 3),
+        "recency": round(r, 3),
+        "source": round(SOURCE_WEIGHT.get(str(origin or ""), DEFAULT_SOURCE_WEIGHT), 3),
+        "corroboration": corroboration_from_source_count(source_count),
+    }
+
+
+def importance(
+    published_at=None, etype="macro_other", sentiment=None, origin=None, source_count=1, now=None
+):
+    """importance = 100 × Σ(权重 × 分项)。"""
+    parts = importance_parts(published_at, etype, sentiment, origin, source_count, now)
+    total = sum(IMPORTANCE_WEIGHTS[k] * parts[k] for k in IMPORTANCE_WEIGHTS)
+    return round(100.0 * total, 1), parts
+
+
+# ── 去重：boilerplate 归一化 + 4-gram Jaccard / difflib ratio ──
+_SOURCE_PREFIX_RE = re.compile(
+    r"^(财联社.{0,6}电[，、,]?|金十数据整理[：:]|市场消息[：:]|快讯[：:]|据[^，。：:]{2,14}[：:])"
+)
+_BRACKET_RE = re.compile(r"【[^】]*】")
+_CODE_SUFFIX_RE = re.compile(r"\([A-Za-z0-9.]{2,12}\)")
+_NON_WORD_RE = re.compile(r"[\W_]+", re.UNICODE)
+
+
+def normalize_title(text):
+    """NFKC → 去【】→ 去源前缀 → 去证券代码后缀 → 小写 → 去空白标点（保留数字）。"""
+    s = unicodedata.normalize("NFKC", str(text or ""))
+    s = _BRACKET_RE.sub("", s)
+    s = _SOURCE_PREFIX_RE.sub("", s.strip())
+    s = _CODE_SUFFIX_RE.sub("", s)
+    return _NON_WORD_RE.sub("", s.lower())
+
+
+def _ngrams(s, n=4):
+    if not s:
+        return set()
+    if len(s) <= n:
+        return {s}
+    return {s[i : i + n] for i in range(len(s) - n + 1)}
+
+
+def _jaccard(a, b):
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def _similar(grams_a, text_a, grams_b, text_b):
+    j = _jaccard(grams_a, grams_b)
+    if j >= DEDUP_JACCARD:
+        return True
+    if j < DEDUP_RATIO_MIN_JACCARD:
+        return False
+    return difflib.SequenceMatcher(None, text_a, text_b).ratio() >= DEDUP_RATIO
+
+
+_CUT_MARKS = "。，；："
+
+
+def title_short(text, limit=40):
+    """≤40 字；优先在句读处截断，硬截断不切数字/英文单词。"""
+    s = str(text or "").strip()
+    if len(s) <= limit:
+        return s
+    head = s[:limit]
+    cut = max(head.rfind(m) for m in _CUT_MARKS)
+    if cut >= 10:
+        return s[:cut]
+    i = limit - 1
+    while (
+        i > 0
+        and s[i].isascii()
+        and s[i].isalnum()
+        and s[i - 1].isascii()
+        and (s[i - 1].isalnum() or s[i - 1] in ".-")
+    ):
+        i -= 1
+    return s[: max(i, 1)] + "…"
+
+
+def _sentiment_block(sentiment):
+    if not isinstance(sentiment, dict):
+        return None
+    score = sentiment.get("score")
+    if not isinstance(score, (int, float)):
+        return None
+    return {
+        "score": round(float(score), 4),
+        "confidence": sentiment.get("confidence"),
+        "label": sentiment_label(float(score)),
+    }
+
+
+def _row_title(row):
+    return str(row.get("raw") or row.get("term") or "").strip()
+
+
+def _row_event_type(row):
+    return (row.get("event") or {}).get("type") or "macro_other"
+
+
+def _collect_rows(rows, now, hours):
+    """只取 events 源、有 event 块、且在窗口内的行（排除 trader.log 历史行）。"""
+    cutoff = now - timedelta(hours=hours)
+    out = []
+    for row in rows:
+        if row.get("source") != "events.jsonl":
+            continue
+        if not isinstance(row.get("event"), dict):
+            continue
+        dt = _parse_ts(row.get("timestamp"))
+        if dt is None or dt < cutoff:
+            continue
+        out.append((row, dt))
+    return out
+
+
+def build_hot_news(
+    rows,
+    now=None,
+    window_h=HOT_NEWS_WINDOW_H,
+    cluster_window_h=HOT_NEWS_CLUSTER_WINDOW_H,
+    top_n=HOT_NEWS_TOP_N,
+):
+    """语义事件行 → 热点新闻影响力榜产物（dict）。纯函数，便于测试。"""
+    now = now or datetime.now(timezone.utc)
+    entries = []
+    for row, dt in _collect_rows(rows, now, cluster_window_h):
+        title = _row_title(row) or _row_event_type(row)
+        norm = normalize_title(title)
+        entries.append(
+            {
+                "row": row,
+                "ts": dt,
+                "type": _row_event_type(row),
+                "title": title,
+                "norm": norm,
+                "grams": _ngrams(norm),
+                "symbols": {str(row.get("symbol") or "MACRO")},
+            }
+        )
+    entries.sort(key=lambda e: e["ts"])
+
+    # 贪心聚类：同 type + symbols 有交集 + 文本相似
+    clusters = []
+    for entry in entries:
+        target = None
+        for cluster in clusters:
+            if cluster["type"] != entry["type"]:
+                continue
+            if not (cluster["symbols"] & entry["symbols"]):
+                continue
+            if _similar(cluster["grams"], cluster["norm"], entry["grams"], entry["norm"]):
+                target = cluster
+                break
+        if target is None:
+            clusters.append(
+                {
+                    "type": entry["type"],
+                    "symbols": set(entry["symbols"]),
+                    "norm": entry["norm"],
+                    "grams": entry["grams"],
+                    "members": [entry],
+                }
+            )
+        else:
+            target["members"].append(entry)
+            target["symbols"] |= entry["symbols"]
+
+    window_cutoff = now - timedelta(hours=window_h)
+    items = []
+    total = scored = unscored = cluster_24h = 0
+    type_dist, topic_dist = {}, {}
+    topic_scores = {}
+    models = {}
+
+    for cluster in clusters:
+        origins = {str(m["row"].get("origin") or "unknown") for m in cluster["members"]}
+        source_count = len(origins)
+        in_window = []
+        for member in cluster["members"]:
+            row = member["row"]
+            sentiment = row.get("sentiment")
+            member["importance"], member["parts"] = importance(
+                published_at=row.get("timestamp"),
+                etype=member["type"],
+                sentiment=sentiment,
+                origin=row.get("origin"),
+                source_count=source_count,
+                now=now,
+            )
+            if member["ts"] >= window_cutoff:
+                in_window.append(member)
+                total += 1
+                type_dist[member["type"]] = type_dist.get(member["type"], 0) + 1
+                topic = row.get("topic") or topic_of(member["title"])
+                topic_dist[topic] = topic_dist.get(topic, 0) + 1
+                if _sentiment_block(sentiment) is not None:
+                    scored += 1
+                    topic_scores.setdefault(topic, []).append(member["importance"])
+                    if isinstance(sentiment, dict) and sentiment.get("model"):
+                        models[sentiment["model"]] = models.get(sentiment["model"], 0) + 1
+                else:
+                    unscored += 1
+        if not in_window:
+            continue
+        cluster_24h += 1
+        # 簇代表：24h 内已打分成员中 importance 最高者（未打分不进榜）
+        ranked = [m for m in in_window if _sentiment_block(m["row"].get("sentiment")) is not None]
+        if not ranked:
+            continue
+        rep = max(ranked, key=lambda m: (m["importance"], m["ts"].timestamp()))
+        row = rep["row"]
+        topic = row.get("topic") or topic_of(rep["title"])
+        items.append(
+            {
+                "event_id": row.get("trace_id"),
+                "title": rep["title"],
+                "title_short": title_short(rep["title"]),
+                "topic": topic,
+                "event_type": rep["type"],
+                "symbols": sorted(rep["symbols"]),
+                "sentiment": _sentiment_block(row.get("sentiment")),
+                "importance": rep["importance"],
+                "parts": rep["parts"],
+                "published_at": row.get("timestamp"),
+                "origin": row.get("origin"),
+                "source_url": row.get("source_url"),
+                "source_count": source_count,
+                "dup_count": len(cluster["members"]) - 1,
+                "recomputed": not all(
+                    row.get(key) is not None for key in ("topic", "importance", "origin")
+                ),
+                "_ts": rep["ts"].timestamp(),
+            }
+        )
+
+    items.sort(key=lambda x: (-x["importance"], -x["_ts"]))
+    top = []
+    for rank, item in enumerate(items[:top_n], start=1):
+        item.pop("_ts", None)
+        item["rank"] = rank
+        top.append(item)
+
+    clusters_out = [
+        {
+            "topic": topic,
+            "label": TOPIC_LABELS.get(topic, topic),
+            "count": count,
+            "avg_importance": (
+                round(sum(topic_scores[topic]) / len(topic_scores[topic]), 1)
+                if topic_scores.get(topic)
+                else 0.0
+            ),
+        }
+        for topic, count in sorted(topic_dist.items(), key=lambda kv: -kv[1])
+    ]
+    avg_importance = round(sum(i["importance"] for i in items) / len(items), 1) if items else 0.0
+    model_name = max(models, key=models.get) if models else "unavailable"
+
+    return {
+        "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "window_h": window_h,
+        "model": {"name": model_name, "normalized": True},
+        "stats": {
+            "total": total,
+            "scored": scored,
+            "unscored": unscored,
+            "clusters": cluster_24h,
+            "dedup_saved": total - cluster_24h,
+            "high_impact": sum(1 for i in items if i["importance"] >= 70),
+            "avg_importance": avg_importance,
+            "type_dist": dict(sorted(type_dist.items(), key=lambda kv: -kv[1])),
+            "topic_dist": dict(sorted(topic_dist.items(), key=lambda kv: -kv[1])),
+        },
+        "top": top,
+        "clusters": clusters_out,
+        "degraded": unscored > 0,
+    }
+
+
+def _atomic_write_json(path, payload):
+    tmp = f"{path}.tmp"
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
+def write_hot_news(semantic_path=None, out_path=None, now=None):
+    """每轮无条件重写 hot_news.json（recency 才会衰减、generated_at 才会滚动）。"""
+    semantic_path = semantic_path or OUT_PATH
+    out_path = out_path or os.environ.get("HOT_NEWS_PATH") or HOT_NEWS_PATH
+    rows = []
+    if os.path.isfile(semantic_path):
+        with open(semantic_path, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rows.append(json.loads(line))
+                except Exception:
+                    continue
+    payload = build_hot_news(rows, now=now)
+    _atomic_write_json(out_path, payload)
+    return payload
+
 
 _sentiment_engine = None
 
@@ -220,16 +701,21 @@ def _resolve_body(ev, bodies):
 
 
 def _event_to_line(ev, scorer=_score_text, bodies=None):
-    """canonical EventRecord → 39 语义事件行（新增 sentiment / event / trace_id）。"""
+    """canonical EventRecord → 39 语义事件行（新增 sentiment/event/trace_id + 榜单字段）。"""
     etype = ev.get("type") or "macro_other"
     title = str(ev.get("title") or "").strip()
     body = _resolve_body(ev, bodies or {})
     text = f"{title}。{body}".strip("。 ") if title else ""
     sentiment = scorer(text, HALF_LIFE_H.get(etype, 24)) if text else None
     symbols = [str(s) for s in (ev.get("symbols") or []) if s]
+    ts = ev.get("available_at") or ev.get("event_time") or ""
+    origin = ev.get("source")
+    imp, parts = importance(
+        published_at=ts, etype=etype, sentiment=sentiment, origin=origin, source_count=1
+    )
     return {
         "term": title[:80] or etype,
-        "timestamp": ev.get("available_at") or ev.get("event_time") or "",
+        "timestamp": ts,
         "symbol": symbols[0] if symbols else "MACRO",
         "values": [f"{sentiment['score']:.4f}"] if sentiment else [],
         "raw": title[:200],
@@ -241,6 +727,14 @@ def _event_to_line(ev, scorer=_score_text, bodies=None):
             "surprise_unit": ev.get("surprise_unit"),
         },
         "trace_id": ev.get("event_id"),
+        # 榜单字段（SPEC §4.4）：origin 修复 P-H5 来源丢失；sentiment_missing 禁止 0 冒充
+        "origin": origin,
+        "source_url": ev.get("source_url"),
+        "topic": topic_of(title),
+        "importance": imp,
+        "importance_parts": parts,
+        "cluster_id": ev.get("event_id"),
+        "sentiment_missing": sentiment is None,
     }
 
 
@@ -301,6 +795,13 @@ def main():
     if args.source == "events":
         emitted, skipped = emit_from_events(args.events_path)
         print(f"[OK] 事件源：新增 {len(emitted)} 条，跳过已处理 {skipped} 条 → {OUT_PATH}")
+        # 每轮无条件重写榜单（SPEC §7 第 8 项）：recency 衰减 / generated_at 滚动
+        payload = write_hot_news()
+        stats = payload["stats"]
+        print(
+            f"[OK] 热点榜：Top {len(payload['top'])} 条 / {stats['total']} 事件 / "
+            f"去重节省 {stats['dedup_saved']} / 高影响 {stats['high_impact']} → {HOT_NEWS_PATH}"
+        )
         return
 
     if args.backfill:

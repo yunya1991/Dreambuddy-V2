@@ -24,14 +24,15 @@ interface TradingSignal {
   module?: string;
 }
 
-interface ModuleSnapshot {
+export interface ModuleSnapshot {
   module?: string;
   ts?: string;
   resistance_3d: Resistance3D;
   signals?: TradingSignal[];
   metrics?: {
     core?: Record<string, number | string>;
-    breakdown?: Record<string, number>;
+    // breakdown 含 list/object 字段（hot_news_top10 / theme_clusters），故放宽为 unknown
+    breakdown?: Record<string, unknown>;
   };
   timeseries?: Array<{
     ts: string;
@@ -125,7 +126,7 @@ function fmtMetric(v: number | string): string {
 }
 
 // ============== 取数 ==============
-async function fetchModuleSnapshot(moduleKey: string): Promise<ModuleSnapshot> {
+export async function fetchModuleSnapshot(moduleKey: string): Promise<ModuleSnapshot> {
   const res = await fetch(`/api/fundamental/${moduleKey}/snapshot`, { cache: 'no-store' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const body = await res.json();

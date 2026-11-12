@@ -222,6 +222,7 @@ DreamOS_intermediate.pptx
 
 # 39-金融语义蒸馏系统：运行时数据产出物（代码与文档保留版本控制）
 39-金融语义蒸馏系统/semantic_events.jsonl
+39-金融语义蒸馏系统/hot_news.json
 39-金融语义蒸馏系统/atomic_events.jsonl
 39-金融语义蒸馏系统/aggregate_events.jsonl
 39-金融语义蒸馏系统/contradiction_events.jsonl
