@@ -1,0 +1,28 @@
+[Unit]
+Description=Dreambuddy D3 Worker Launcher (方案 B：单运行时多会话)
+Documentation=file:///opt/dreambuddy/46-DSH架构/docs/tech/PROPOSAL-P0-D3-WORKER-LAUNCHER-v0.1.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=dreambuddy
+Group=dreambuddy
+WorkingDirectory=/opt/dreambuddy/34-前端应用训练系统
+EnvironmentFile=-/etc/dreambuddy/worker-launcher.env
+# 花名册/目录/offset 任一不满足即拒绝启动（退出码 2）
+ExecStartPre=/opt/dreambuddy/.venv/bin/python -m core.worker_launcher_cli preflight
+ExecStart=/opt/dreambuddy/.venv/bin/python -m core.worker_launcher_cli run
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=30
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

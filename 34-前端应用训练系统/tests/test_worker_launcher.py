@@ -440,3 +440,43 @@ def test_router_end_to_end_reaches_ended(tmp_path):
     assert out2["receipts"]["applied"][0]["to"] == "ended"
     assert recover_tickets(store)[ticket_id]["state"] == "ended"
     assert out2["assignments"] == []
+
+
+class _BatchExecutor:
+    """方案 B：一次 run_batch 承载整批 assignment。"""
+
+    def __init__(self):
+        self.batches = []
+
+    def run_batch(self, assignments):
+        self.batches.append([a["ticket_id"] for a in assignments])
+        return {
+            a["ticket_id"]: {
+                "status": "done",
+                "evidence": {
+                    "summary": "batch-done",
+                    "pid": 4242,
+                    "session_id": "sess-" + a["ticket_id"],
+                },
+            }
+            for a in assignments
+        }
+
+
+def test_batch_executor_runs_whole_pass_in_one_runtime(tmp_path):
+    """一批 due 任务只调用一次 run_batch，回执带同一 pid、不同 session。"""
+    _append_inbox(tmp_path, _assignment())
+    _append_inbox(tmp_path, _assignment(ticket_id="TK-R2", external_ref="R2"))
+
+    executor = _BatchExecutor()
+    lc = _launcher(tmp_path, executor)
+    stats = lc.run_once()
+
+    assert len(executor.batches) == 1
+    assert sorted(executor.batches[0]) == ["TK-R1", "TK-R2"]
+    receipts = _read_receipts(tmp_path)
+    assert sorted(r["ticket_id"] for r in receipts) == ["TK-R1", "TK-R2"]
+    assert {r["evidence"]["pid"] for r in receipts} == {4242}
+    assert len({r["evidence"]["session_id"] for r in receipts}) == 2
+    assert stats["executed"] == 2
+    assert stats["receipts"] == 2

@@ -12,6 +12,7 @@ W2 能力：
   - task_timeout（默认 300s，角色可覆盖）+ max_task_duration（30min 硬上限）
   - 失败分类：工具异常/超时/租约丢失 → retryable；未知角色/契约错误 → manual
   - 坏行 FAIL-OPEN；已回执 Ticket 跳过（重放防护）
+  - 每轮统计并入 `<state_dir>/metrics.json`（W4 可观测，见 `worker_launcher_metrics`）
 
 硬约束：
   - 拉起器**禁止写** `dsh_tickets.jsonl`（SSoT 只归 Router）
@@ -33,6 +34,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
+from .worker_launcher_metrics import LauncherMetrics
 from .worker_roles import RolePolicy
 
 _INBOX_REL_PATH = os.path.join("34-前端应用训练系统", "dsh_worker_inbox.jsonl")
@@ -74,6 +76,8 @@ class WorkerLauncher:
         max_task_duration: float = 1800.0,
         heartbeat_enabled: bool = True,
         rng: Optional[random.Random] = None,
+        metrics_path: Optional[str] = None,
+        metrics_enabled: bool = True,
     ) -> None:
         self.root = str(root or _default_root())
         self.inbox_path = os.path.join(self.root, _INBOX_REL_PATH)
@@ -95,21 +99,38 @@ class WorkerLauncher:
         self.max_task_duration = max(0.0, float(max_task_duration))
         self.heartbeat_enabled = bool(heartbeat_enabled)
         self._rng = rng or random.Random()
+        if metrics_path is None and metrics_enabled:
+            metrics_path = os.path.join(self.state_dir, "metrics.json")
+        self.metrics = LauncherMetrics(metrics_path if metrics_enabled else None)
 
     # ---------- 主循环 ----------
 
     def run_once(self, now: Optional[float] = None) -> Dict[str, Any]:
+        """消费一次并记录指标；指标异常不影响本轮结果（FAIL-OPEN）。"""
+        stats = self._run_once(now)
+        try:
+            self.metrics.record(stats)
+        except Exception as exc:
+            stats["errors"].append("metrics: %s" % exc)
+        return stats
+
+    def _run_once(self, now: Optional[float] = None) -> Dict[str, Any]:
         """消费一次：恢复过期 claim → 纳入新派单 → 执行到期任务。FAIL-OPEN。"""
         stats: Dict[str, Any] = {
             "consumed": 0,
             "skipped": 0,
             "executed": 0,
+            "done": 0,
             "receipts": 0,
             "failed": 0,
             "retried": 0,
             "recovered": 0,
             "timeouts": 0,
+            "role_rejections": 0,
             "bad_lines": 0,
+            "pass_offset": 0,
+            "in_flight_peak": 0,
+            "latencies_ms": [],
             "errors": [],
         }
         ts = float(now if now is not None else self.clock())
@@ -132,6 +153,7 @@ class WorkerLauncher:
                 continue
             violation = self._role_violation(item)
             if violation:
+                stats["role_rejections"] += 1
                 self._emit(
                     item, "failed", "manual", {"reason": "role_violation", "summary": violation}
                 )
@@ -163,6 +185,7 @@ class WorkerLauncher:
 
         try:
             self._save_offset(new_offset, head)
+            stats["pass_offset"] = int(new_offset)
         except Exception as exc:
             stats["errors"].append("save_offset: %s" % exc)
         return stats
@@ -257,11 +280,14 @@ class WorkerLauncher:
             return
 
         stats["executed"] += 1
+        stats["in_flight_peak"] = max(int(stats.get("in_flight_peak") or 0), 1)
+        started = self.clock()
         heartbeat = self._start_heartbeat(ticket_id)
         try:
             kind, payload = self._run_with_timeout(item, self._role_timeout(item))
         finally:
             heartbeat.stop()
+        self._record_latency(stats, payload, started)
         self._classify(item, ticket_id, attempt, first_started, now, kind, payload, stats)
 
     def _classify(
@@ -303,6 +329,7 @@ class WorkerLauncher:
         if status == "done":
             self._emit(item, "done", None, evidence, attempts=attempt)
             stats["receipts"] += 1
+            stats["done"] += 1
             self._finish(ticket_id, terminal=True, stats=stats)
             return
         if status == "failed":
@@ -362,6 +389,8 @@ class WorkerLauncher:
             return
 
         stats["executed"] += len(runnable)
+        stats["in_flight_peak"] = max(int(stats.get("in_flight_peak") or 0), len(runnable))
+        batch_started = self.clock()
         heartbeats = [
             self._start_heartbeat(str(entry.get("ticket_id"))) for entry, _, _ in runnable
         ]
@@ -377,7 +406,7 @@ class WorkerLauncher:
             for heartbeat in heartbeats:
                 heartbeat.stop()
 
-        finished_at = self._clock()
+        finished_at = self.clock()
         results = payload if isinstance(payload, dict) else {}
         for entry, attempt, first_started in runnable:
             ticket_id = str(entry.get("ticket_id"))
@@ -407,6 +436,8 @@ class WorkerLauncher:
                     stats,
                 )
                 continue
+            result = results.get(ticket_id)
+            self._record_latency(stats, result, batch_started)
             self._classify(
                 item,
                 ticket_id,
@@ -414,7 +445,7 @@ class WorkerLauncher:
                 first_started,
                 finished_at,
                 "ok",
-                results.get(ticket_id),
+                result,
                 stats,
             )
 
@@ -483,6 +514,19 @@ class WorkerLauncher:
                 "first_started_at": first_started,
             },
         )
+
+    def _record_latency(self, stats: Dict[str, Any], payload: Any, started: float) -> None:
+        """记一条执行时延：优先用 executor 回传的 duration_ms，否则用墙钟差。"""
+        duration = None
+        if isinstance(payload, dict):
+            evidence = payload.get("evidence")
+            if isinstance(evidence, dict):
+                value = evidence.get("duration_ms")
+                if isinstance(value, (int, float)) and value >= 0:
+                    duration = int(value)
+        if duration is None:
+            duration = max(0, int((self.clock() - started) * 1000))
+        stats.setdefault("latencies_ms", []).append(duration)
 
     def _backoff_for(self, attempt: int) -> float:
         base = self.backoff[min(max(attempt, 1) - 1, len(self.backoff) - 1)]

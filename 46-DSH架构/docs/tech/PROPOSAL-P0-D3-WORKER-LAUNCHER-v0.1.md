@@ -1,6 +1,6 @@
 # PROPOSAL-P0-D3 Worker 拉起器立项文档（草案）
 
-- **版本**: v0.4 ｜ **日期**: 2026-11-13 ｜ **状态**: 草案（S0/W0/W1/W2 已通过；W3 静态部分完成，实跑待 A7）
+- **版本**: v0.5 ｜ **日期**: 2026-11-13 ｜ **状态**: 草案（S0/W0/W1/W2 已完成；W3 静态部分完成 + A7 实跑通过；W4 可观测/CLI/systemd 已就位，剩余需云端与真实额度）
 - **归属**: 46-DSH架构 / 执行侧运行时
 - **上游约束**: [DESIGN-P0-D2-ROUTER-LOOP-v0.1](DESIGN-P0-D2-ROUTER-LOOP-v0.1.md)（DD-D2-4）｜ DESIGN-DSH-ARCH-UPGRADE v0.2（ADR-9/ADR-10、G1/G2/G3）｜ [47 worker_roles](../../../47-MCP管理系统/registry/mcp_capabilities.yaml#L540)
 - **下游影响**: `34-前端应用训练系统/` 新增执行侧运行时；`dsh_worker_inbox.jsonl` 消费方；`dsh_worker_receipts.jsonl` 生产方
@@ -203,7 +203,7 @@ D2 已把「Router 派单 → inbox 投递 → 回执消费 → 依赖解除」�
 ### 4.8 可观测
 
 - 结构化日志：`pass_offset`、`claimed`、`started`、`finished`、`failed`、`receipt_written`。
-- 指标（本地 JSON）：在途数、成功率、P50/P95 时延、超时数、角色拒绝数。
+- 指标（本地 JSON）：在途数、成功率、P50/P95 时延、超时数、角色拒绝数。→ 已在 §4.16 落地（`metrics.json` + `status` 子命令）
 - 与 Router `router_loop_stats` 对账：`inbox_lines ≈ receipts + in_flight`。
 
 ### 4.9 部署形态（D6 决策：云端 systemd）
@@ -218,10 +218,12 @@ D2 已把「Router 派单 → inbox 投递 → 回执消费 → 依赖解除」�
 | 停止语义 | `KillMode=mixed`、`TimeoutStopSec=30`，先 SIGTERM 触发优雅退出并 flush offset/claims |
 | 日志 | 直接写 journald（`StandardOutput=journal`），不落自定义日志文件 |
 | 配置 | `EnvironmentFile=/etc/dreambuddy/worker-launcher.env` + 花名册只读注入 |
-| 启动前检查 | `ExecStartPre` 校验 L0 目录可读、offset 文件可写、花名册非空 |
+| 启动前检查 | `ExecStartPre` 跑 `preflight`：花名册非空且自检通过、状态/回执目录可写（offset 同目录，写权限由目录探针覆盖）、offset 可解析 |
 | 高可用 | 首版单实例 + `flock` 防双开；多实例需先做分片（按 role/worker_id） |
 
 > 选择 systemd 的理由：云端已有 systemd 基础设施；`Restart=on-failure` + journald 满足崩溃恢复与可观测的最小闭环，无需引入额外 supervisor。容器化（K8s）留作规模化后的演进，不作为首版依赖。
+>
+> 落地清单（unit 文件、env 模板、`preflight/once/run/status` 子命令）见 §4.16。
 
 ### 4.10 L0 归属与 StorePort 对齐（W0 冻结）
 
@@ -366,6 +368,101 @@ ROOT_DONE
 - 本次未验证：真实 LLM 下的 P95 时延与 token 成本、8 Worker 场景 MCP 实际连接计数（A5 实跑口径）、child 会话失败传播。均需额度恢复后补测。
 - 探针仅挂在 sandbox profile，不进入 headless/web，不影响生产路径。
 
+### 4.15 方案 B 下沉：InProcessSessionExecutor（2026-11-13）
+
+**目标**：D3 执行侧不再「一任务一进程」（方案 A），改为「一批任务一个运行时、批内多 child session 并发」（方案 B）。
+
+**组成**：
+
+| 层 | 文件 | 职责 |
+|---|---|---|
+| Python 执行器 | `34-前端应用训练系统/core/inproc_session_executor.py` | `run_batch(assignments)`：写批次输入 → 拉一个 `dsh` → 读批次输出 → 归一化为既有 result 契约；`__call__` 兼容单任务接口 |
+| Node 宿主插件 | `34-前端应用训练系统/tools/dsh_session_host/` | `apply()` 内创建 1 个根 agent，按 `D3_HOST_MAX` 并发启动 K 个 child session（`ctx.subagents.start('spawn', {parent, prompt, agentOptions, signal})`），写结果后退出 |
+| 拉起器接线 | `core/worker_launcher.py` | `run_once` 检测 executor 是否提供 `run_batch`：有则整批一次调用，无则保持逐任务 `_execute`（向后兼容） |
+
+**契约**：
+- 批次输入 `[{ticket_id, role, goal, timeout_ms, provider?, model?}]`；输出 `{ticket_id: {status, failure_class?, evidence:{summary, reason, duration_ms, session_id, pid}}}`。
+- 归类逻辑与单任务完全一致（`_classify` 共用）：`done` → 终态；`retryable` → 退避重试；`manual` → `waitsForPerson`。
+- 超时三层：单 child `timeout_ms`（宿主侧 AbortController）→ 批次 join 超时（Python 侧释放线程）→ `max_task_duration` 硬上限。
+- 模型路由必须显式：根 agent 与 child 都需 `provider/model`（`D3_MODEL_PROVIDER` / `D3_MODEL_NAME`，或 assignment 级覆盖）。空路由会让 child 直接 `stopReason=error`。
+
+**实跑证据（2026-11-13，stub LLM）**：
+
+```
+D3_HOST batch tasks=2 max=4 pid=24062
+TK-A7-1 → done session=0f5f08f6… duration_ms=1590
+TK-A7-2 → done session=a0b3cbb5… duration_ms=1591
+```
+
+同 pid、两个不同 session、耗时几乎相同（并行而非串行），说明一批 2 个 assignment 只起 1 个运行时。
+
+**边界**：
+- 当前是「**批级**单运行时」：每个 `run_once` 批次起一个 `dsh`，批次结束即退出；不是跨批次常驻守护。常驻化需要 `dsh` 提供 serve/长连接能力，留作后续。
+- 批内并发上限 = `D3_HOST_MAX`（默认 8，与花名册硬上限对齐）；超时强杀仍是进程级（Python 杀宿主进程），不是单会话级取消。
+- 生产需配真实 provider/model；本轮仅用 stub 验证链路。
+
+### 4.16 W4 收口：可观测 + 运维 CLI + systemd unit（2026-11-13）
+
+**可观测（§4.8 落地）**
+
+| 层 | 文件 | 内容 |
+|---|---|---|
+| 聚合器 | `core/worker_launcher_metrics.py` | 每轮 `run_once` 统计并入 `<state_dir>/metrics.json`；累计计数 + 滚动时延窗口（默认 500）→ P50/P95/max + 成功率 + 在途峰值；坏文件 FAIL-OPEN |
+| 拉起器接线 | `core/worker_launcher.py` | 新增 `pass_offset`、`role_rejections`、`done`、`latencies_ms`、`in_flight_peak`；`run_once` = `_run_once` + `metrics.record`（指标异常不影响本轮） |
+| 结构化日志 | CLI `run` | 每轮向 journald 打一行 JSON：`{"event":"pass", ...stats}` |
+
+时延口径：优先取 executor 回传的 `evidence.duration_ms`（方案 B 下是单个 child session 的真实耗时），缺失时回退墙钟差；批次超时/异常也计入一条。
+
+**运维 CLI（`core/worker_launcher_cli.py`）**
+
+| 子命令 | 用途 | 退出码 |
+|---|---|---|
+| `preflight` | 花名册非空 + 自检通过、状态/回执目录可写、offset 可读 | 0 通过 / 2 失败（systemd `ExecStartPre` 据此拒绝启动） |
+| `once` | 单轮消费（联调 / 手动补跑） | 0 无 error / 1 有 error |
+| `run` | 常驻循环，SIGTERM/SIGINT 优雅退出；`flock` 单实例（已被占用退出码 3） | 0 |
+| `status` | 打印 `metrics.json` 派生视图 + claims 状态分布 | 0 |
+
+参数默认值全部来自 `EnvironmentFile`：`D3_ROOT` / `D3_ROLES_PATH` / `D3_WORKERS` / `D3_EXECUTOR`（`inproc`｜`dsh-cli`｜`noop`）/ `D3_PROFILE` / `D3_MAX_CONCURRENCY` / `D3_POLL_INTERVAL` / `D3_MODEL_PROVIDER` / `D3_MODEL_NAME`。`noop` 仅用于本地冒烟，生产必须是 `inproc`。
+
+**systemd 与部署清单**
+
+| 文件 | 说明 |
+|---|---|
+| `34-前端应用训练系统/deploy/dreambuddy-worker-launcher.service` | `WorkingDirectory=/opt/dreambuddy/34-前端应用训练系统`；`ExecStartPre=... -m core.worker_launcher_cli preflight`；`Restart=on-failure` / `RestartSec=5` / `KillMode=mixed` / `TimeoutStopSec=30`；`NoNewPrivileges` / `PrivateTmp` |
+| `34-前端应用训练系统/deploy/worker-launcher.env.example` | 上表环境变量模板；不含任何密钥（凭据由宿主注入） |
+
+```bash
+sudo cp deploy/dreambuddy-worker-launcher.service /etc/systemd/system/
+sudo install -m 600 -o dreambuddy -g dreambuddy deploy/worker-launcher.env.example /etc/dreambuddy/worker-launcher.env
+sudo systemctl daemon-reload && sudo systemctl enable --now dreambuddy-worker-launcher
+journalctl -u dreambuddy-worker-launcher -f
+```
+
+**验证（2026-11-13）**
+
+- 新增 `tests/test_worker_launcher_metrics.py`（4 例）+ `tests/test_worker_launcher_cli.py`（6 例，含 `flock` 双开拒绝）；D2+D3 回归 **71 passed**；`ruff check` 全通过。
+- CLI 端到端冒烟（真实 47 registry 花名册 + `noop` executor）：
+
+```
+{"ok": true, "problems": [], "root": "/tmp/d3cli-smoke"}
+{"consumed": 1, "executed": 1, "done": 1, "receipts": 1, "pass_offset": 69, "in_flight_peak": 1, "errors": []}
+{"metrics": {"passes": 1, "counters": {...}, "success_rate": 1.0}, "claims": {"total": 0, "by_state": {}}}
+```
+
+**仍未覆盖（需外部条件）**：真实额度下的 P95 时延与 token 成本、A5「8 Worker 场景 MCP 实际连接计数」、systemd 重启恢复联调（需云端）、影子运行一周。
+
+**W4 验收（2026-11-13，五维证据）**
+
+| 维度 | 结果 | 证据 |
+|---|---|---|
+| 症状/功能复测 | ✅ | 真实 dsh 批：`host_pid=26786`，ACC-1/ACC-2 两个不同 `session_id` 均 `done`，各 1662ms（单运行时多会话） |
+| 日志/输出证据 | ✅ | `metrics.json` 非默认值（`passes=2`、`role_rejections=1`、`success_rate=0.5`）；CLI `once/status` JSON |
+| 回归 | ✅ | 全量 `pytest tests` **1132 collected / exit 0**；`ruff check core tools tests` exit 0 |
+| 影响面 | ✅ | 12 个文件（5 改 7 增），全部在 `34-前端应用训练系统/{core,tools,tests,deploy}` 与本文；未触碰 `router_loop.py` |
+| 边界 | ✅ | 坏 metrics FAIL-OPEN、`flock` 双开退出 3、坏 inbox 行 `bad_lines=1` 且继续消费、角色越权 `failed(manual)` |
+
+证据包：`acceptance_bundles/20261113_d3_w4_closeout/`（`repro_after.log` / `cli_chain.log` / `boundary.log` / `test.log` / `fix.diff` / `acceptance_report.md`）。
+
 ## §5 关键决策（ADR）
 
 | # | 决策 | 理由 |
@@ -387,8 +484,8 @@ ROOT_DONE
 | W0 契约冻结 | inbox/receipt schema v0.2（含 `failure_class`）、claim 状态机、开关命名；扩展 D2 `worker_receipts` 映射（retryable→paused/waiting_job，manual→waitsForPerson，旧回执按 manual 兼容）；L0 归属澄清 + StorePort 适配（§4.10） | ✅ 已完成（2026-11-13）：消费端映射 + 4 类输入单测；`TicketStoreAdapter` + 8 项单测；D2 回归 240 项全绿 |
 | W1 单角色 MVP | `research` 单 Worker、单进程（sandbox 方案 A 兜底）、done/failed 回执 | ✅ 已完成（2026-11-13）：`core/worker_launcher.py` + 9 项单测；端到端 1 任务闭环，Router 下一轮 `ended`；D2+D3 回归 303 项全绿 |
 | W2 恢复与超时 | offset 恢复、心跳/lease、退避重试、两类失败回执、坏行 FAIL-OPEN | ✅ 已完成（2026-11-13）：heartbeat 10s / lease 30s、退避 5/20/60s、300s 超时、30min 硬上限；四类故障注入（kill -9 现场 / 超时 / 心跳丢失 / 坏行）单测通过；D2+D3 回归 309 项全绿 |
-| W3 多角色 + G2 | 8 角色白名单、单运行时多会话（若 spike 通过） | ✅ 部分完成（2026-11-13）：`core/worker_roles.py` 花名册自检 + 越权矩阵（5 类输入）+ `g2_summary` 静态聚合；拉起器二次校验接入；相关套件 61 项全绿。**未含**：真实单进程多会话实跑与连接计数（A7，quota 受限）→ W4 |
-| W4 收口 | 可观测、运维 CLI、systemd unit 与云端部署、影子运行一周、文档与认知闭环 | A7 已实测通过（stub LLM，§4.14）；剩余：A5 实跑连接计数、真实额度下的时延/成本、systemd 重启恢复、影子运行 |
+| W3 多角色 + G2 | 8 角色白名单、单运行时多会话（若 spike 通过） | ✅ 部分完成（2026-11-13）：`core/worker_roles.py` 花名册自检 + 越权矩阵（5 类输入）+ `g2_summary` 静态聚合；拉起器二次校验接入；相关套件 61 项全绿。**未含**：真实连接计数（A5 实跑口径）；A7 已在 W4 补测通过（§4.14/§4.15） |
+| W4 收口 | 可观测、运维 CLI、systemd unit 与云端部署、影子运行一周、文档与认知闭环 | 方案 B 已下沉（§4.15）；可观测 + 运维 CLI + systemd unit 已就位（§4.16，71 passed）；剩余：真实额度下时延/成本、A5 实跑连接计数、云端 systemd 重启恢复联调、影子运行一周 |
 
 ## §7 验收标准
 
@@ -398,7 +495,7 @@ ROOT_DONE
 | A2 | `done/failed` 回执字段完整 | ✅ 2026-11-13：`test_worker_launcher.py` 断言 `receipt_id/attempts/failure_class/worker_id/trace_id/at` |
 | A3 | kill -9 后恢复 | ✅ 模拟验证（租约过期 + offset 已推进的崩溃现场 → 回收后续接 attempt 完成）；真实进程 kill 联调留 W4 |
 | A4 | 越权角色/工具被拒 | ✅ 2026-11-13：未知 worker_id / role / 非白名单 tools → `failed(manual, role_violation)`，executor 零调用（W1 基础项 + W3 工具级子集校验） |
-| A5 | G2 连接数 | ✅ 静态口径（2026-11-13）：`g2_summary()` 显示角色网关 profile 共用单一入口，连接数不随 Worker 数增长；**实跑连接计数**（8 Worker 场景 =3）待 A7 后补测 |
+| A5 | G2 连接数 | ✅ 静态口径（2026-11-13）：`g2_summary()` 显示角色网关 profile 共用单一入口，连接数不随 Worker 数增长；**实跑连接计数**（8 Worker 场景 =3）待 A7 后补测，计数所需指标已就绪（§4.16 `in_flight_peak`/`passes`） |
 | A6 | 零 Router 改动 | `git diff` 不触碰 `router_loop.py` 的八步语义 |
 | A7 | 单进程并发 ≥2 会话 | ✅ 2026-11-13 实测（§4.14）：单 pid 21057 内 2 个 `origin=subagent/depth=1` 子会话并发（stub inflight 峰值 2），workflow 返回 2 个 agent 结果。LLM 层为 stub（quota 不可用），运行时全真实 |
 
@@ -502,51 +599,45 @@ DSH_HOME=<bridge>/.dsh-home dsh --profile sandbox probe
 
 ---
 
-## 附：建议目录（W1 开工时创建）
+## 附：落地目录（W1-W4 实际实现）
 
 ```
 34-前端应用训练系统/
-  worker_launcher/
-    __init__.py
-    launcher.py        # 主循环 / offset / claim
-    executor.py        # 角色能力集装载与执行
-    receipts.py        # 回执写出（复用 worker_receipts 契约）
-    state.py           # claims.json 与 lease
+  core/
+    worker_launcher.py          # 主循环 / offset / claim / 心跳 / 批路径
+    worker_launcher_metrics.py  # W4 指标聚合（metrics.json）
+    worker_launcher_cli.py      # W4 运维 CLI（preflight/once/run/status）
+    worker_roles.py             # 8 角色白名单 + 越权矩阵 + G2 聚合
+    inproc_session_executor.py  # 方案 B：单运行时多会话执行器
+  tools/
+    dsh_session_host/           # DSH 宿主插件（host.patch.yml + lib/index.js）
+    a7_probe/                   # A7 探针（stub LLM 插件）
+  deploy/
+    dreambuddy-worker-launcher.service
+    worker-launcher.env.example
   tests/
     test_worker_launcher.py
+    test_worker_launcher_metrics.py
+    test_worker_launcher_cli.py
+    test_worker_roles.py
+    test_inproc_session_executor.py
 ```
 
-## 附：systemd unit 草案（D6）
+## 附：systemd unit（已落地，W4）
+
+唯一真源：`34-前端应用训练系统/deploy/dreambuddy-worker-launcher.service`（本文不重复维护副本）。关键字段：
 
 ```ini
-# /etc/systemd/system/dreambuddy-worker-launcher.service
-[Unit]
-Description=Dreambuddy D3 Worker Launcher
-After=network-online.target
-Wants=network-online.target
-StartLimitIntervalSec=60
-StartLimitBurst=10
-
-[Service]
-Type=simple
-User=dreambuddy
-Group=dreambuddy
-WorkingDirectory=/opt/dreambuddy
-EnvironmentFile=/etc/dreambuddy/worker-launcher.env
-ExecStartPre=/opt/dreambuddy/.venv/bin/python -m worker_launcher.preflight
-ExecStart=/opt/dreambuddy/.venv/bin/python -m worker_launcher
+WorkingDirectory=/opt/dreambuddy/34-前端应用训练系统
+EnvironmentFile=-/etc/dreambuddy/worker-launcher.env
+ExecStartPre=/opt/dreambuddy/.venv/bin/python -m core.worker_launcher_cli preflight
+ExecStart=/opt/dreambuddy/.venv/bin/python -m core.worker_launcher_cli run
 Restart=on-failure
-RestartSec=5
-KillMode=mixed
-TimeoutStopSec=30
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
 ```
 
 ```bash
+sudo cp deploy/dreambuddy-worker-launcher.service /etc/systemd/system/
+sudo install -m 600 -o dreambuddy -g dreambuddy deploy/worker-launcher.env.example /etc/dreambuddy/worker-launcher.env
 sudo systemctl daemon-reload
 sudo systemctl enable --now dreambuddy-worker-launcher
 journalctl -u dreambuddy-worker-launcher -f

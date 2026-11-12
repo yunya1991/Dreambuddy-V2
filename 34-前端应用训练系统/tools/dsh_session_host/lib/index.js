@@ -82,7 +82,7 @@ function classify(result) {
 }
 
 export const name = 'd3-session-host';
-export const inject = { required: ['agents', 'subagents'] };
+export const inject = ['agents', 'subagents'];
 
 export async function apply(ctx) {
   const inputPath = process.env.D3_BATCH_INPUT;
@@ -105,8 +105,12 @@ export async function apply(ctx) {
 
   let root;
   try {
+    const route = {};
+    if (process.env.D3_MODEL_PROVIDER) route.provider = process.env.D3_MODEL_PROVIDER;
+    if (process.env.D3_MODEL_NAME) route.model = process.env.D3_MODEL_NAME;
     root = await ctx.agents.create({
       sessionId: randomUUID(),
+      agentOptions: route,
       meta: { cwd: process.cwd() },
     });
   } catch (exc) {
@@ -116,6 +120,8 @@ export async function apply(ctx) {
 
   const results = {};
   let cursor = 0;
+  // create 返回 AgentHandle；subagents.start 的 parent 需要 live Agent 本体。
+  const rootAgent = root.agent || root;
 
   async function runOne(task) {
     const ticketId = String(task.ticket_id || '');
@@ -125,19 +131,24 @@ export async function apply(ctx) {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const request = {
-        parent: root,
+        parent: rootAgent,
         prompt: [{ type: 'text', text: String(task.goal || '') }],
         signal: controller.signal,
       };
-      if (task.provider || task.model) {
+      const provider = task.provider || process.env.D3_MODEL_PROVIDER;
+      const model = task.model || process.env.D3_MODEL_NAME;
+      if (provider || model) {
         request.agentOptions = {
-          ...(task.provider ? { provider: String(task.provider) } : {}),
-          ...(task.model ? { model: String(task.model) } : {}),
+          ...(provider ? { provider: String(provider) } : {}),
+          ...(model ? { model: String(model) } : {}),
         };
       }
       const run = await ctx.subagents.start('spawn', request);
       try {
         const result = await run.result;
+        log(
+          `task=${ticketId} raw_result=${JSON.stringify(result).slice(0, 600)}`,
+        );
         const verdict = classify(result);
         results[ticketId] = {
           ...verdict,

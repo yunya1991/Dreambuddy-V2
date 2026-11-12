@@ -42,6 +42,8 @@ class InProcessSessionExecutor:
         dsh_bin: str = "dsh",
         timeout: float = 600.0,
         max_concurrency: int = 8,
+        model_provider: Optional[str] = None,
+        model_name: Optional[str] = None,
         install_plugins: bool = True,
         popen: Any = subprocess.Popen,
         env: Optional[Dict[str, str]] = None,
@@ -60,6 +62,8 @@ class InProcessSessionExecutor:
         self.dsh_bin = dsh_bin
         self.timeout = float(timeout)
         self.max_concurrency = int(max_concurrency)
+        self.model_provider = model_provider or os.environ.get("D3_MODEL_PROVIDER")
+        self.model_name = model_name or os.environ.get("D3_MODEL_NAME")
         self.install_plugins = install_plugins
         self._popen = popen
         self._env = dict(env or {})
@@ -89,6 +93,10 @@ class InProcessSessionExecutor:
         env["D3_BATCH_INPUT"] = in_path
         env["D3_BATCH_OUTPUT"] = out_path
         env["D3_HOST_MAX"] = str(max(1, self.max_concurrency))
+        if self.model_provider:
+            env["D3_MODEL_PROVIDER"] = self.model_provider
+        if self.model_name:
+            env["D3_MODEL_NAME"] = self.model_name
 
         cmd = [self.dsh_bin, "--profile", self.profile]
         for patch in self.patches:
