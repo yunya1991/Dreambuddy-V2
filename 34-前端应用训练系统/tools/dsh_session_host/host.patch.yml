@@ -1,0 +1,6 @@
+# D3 单运行时多会话宿主插件挂载。
+# 新增插件必须走 insert（直接写 name 会被判为 entry not found）。
+- insert:
+    - id: d3-session-host
+      name: dsh-plugin-d3-session-host
+      config: {}

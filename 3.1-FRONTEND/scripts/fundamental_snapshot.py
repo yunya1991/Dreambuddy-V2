@@ -183,7 +183,19 @@ def _build_onchain(raw: dict, ts: str) -> dict:
     return {
         "timestamp": ts,
         "data": data,
-        "metrics": {"core": core, "breakdown": {}},
+        "metrics": {
+            "core": core,
+            "breakdown": {
+                # P0 修复: UTXO 年龄分布 (DAL utxo_age_distribution 真实值)
+                # OnchainPanel 用 hodl_waves_1y_plus / short_term_holder_supply 计算长中短期占比
+                "hodl_waves_1y_plus": raw.get("hodl_waves_1y_plus_pct"),
+                "long_term_holder_supply": raw.get("lth_supply_pct"),
+                "mid_term_holder_supply": raw.get("mth_supply_pct"),
+                "short_term_holder_supply": raw.get("sth_supply_pct"),
+                "profit_supply": raw.get("profit_supply_pct"),
+                "utxo_count": raw.get("utxo_count"),
+            },
+        },
         "meta": {"last_update": ts, "source": ["data.dal_query"], "data_quality": "good"},
     }
 
@@ -238,6 +250,40 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
         if isinstance(_etf_flow, (int, float))
         else None
     )
+
+    # P0: 资金费率 / 多空比 / 鲸鱼 / 清算 (OKX 优先, Binance/panewslab 回退)
+    _funding_pct = flow_raw.get("funding_rate_pct_okx")
+    _funding_src = "okx"
+    if not isinstance(_funding_pct, (int, float)):
+        _funding_pct = flow_raw.get("funding_rate_pct")
+        _funding_src = "binance" if isinstance(_funding_pct, (int, float)) else None
+    # 前端展示时 *100, 故这里传小数 (DAL 存储为百分数)
+    _funding_rate = (
+        round(_funding_pct / 100.0, 8) if isinstance(_funding_pct, (int, float)) else None
+    )
+
+    _ls_ratio = flow_raw.get("long_short_ratio_okx")
+    if not isinstance(_ls_ratio, (int, float)):
+        _ls_ratio = flow_raw.get("long_short_ratio")
+
+    _whale_netflow = flow_raw.get("whale_netflow_to_ex_usd")
+    _whale_activity = (
+        round(_clamp(abs(_whale_netflow) / 1e8, 0.0, 100.0), 2)
+        if isinstance(_whale_netflow, (int, float))
+        else None
+    )
+    _liq_total = flow_raw.get("liquidations_24h_usd")
+    _liq_pressure = (
+        round(_clamp(_liq_total / 1e9 * 20.0, 0.0, 100.0), 2)
+        if isinstance(_liq_total, (int, float))
+        else None
+    )
+    # 规则移植自 9-基本面分析: 鲸鱼净流出交易所(负值)加分
+    _smart_score = (_ffs or 0.0) + (
+        0.2 if isinstance(_whale_netflow, (int, float)) and _whale_netflow < 0 else 0.0
+    )
+    _smart_score = round(_clamp(_smart_score, -1.0, 1.0), 4)
+
     core = {
         "etf_total_flow": _etf_flow,
         "fund_flow_score": _ffs,  # 规则移植自 9-基本面分析: ETF净流入/1000 截断 [-1,1]
@@ -248,6 +294,75 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
             if isinstance(_etf_flow, (int, float)) and _etf_flow > 50
             else "流出" if isinstance(_etf_flow, (int, float)) and _etf_flow < -50 else "中性"
         ),
+        "funding_rate": _funding_rate,
+        "funding_rate_source": _funding_src,
+        "long_short_ratio": _ls_ratio,
+        "whale_activity": _whale_activity,
+        "liquidation_pressure": _liq_pressure,
+        "smart_money_direction": (
+            "增持" if _smart_score > 0.15 else "减持" if _smart_score < -0.15 else "观望"
+        ),
+    }
+    has_real = any(isinstance(v, (int, float)) for v in core.values())
+    return {
+        "timestamp": ts,
+        "data": {
+            "etf_total_flow": {
+                "value": flow_raw.get("etf_total_flow"),
+                "label": "ETF 总净流入(百万美元)",
+            },
+            "usdt_circulating_bln": {
+                "value": flow_raw.get("usdt_circulating_bln"),
+                "label": "USDT 流通量(十亿)",
+            },
+            "usdc_circulating_bln": {
+                "value": flow_raw.get("usdc_circulating_bln"),
+                "label": "USDC 流通量(十亿)",
+            },
+            "funding_rate_pct": {"value": _funding_pct, "label": "资金费率(%)"},
+            "long_short_ratio": {"value": _ls_ratio, "label": "多空比"},
+            "whale_netflow_to_ex_usd": {
+                "value": _whale_netflow,
+                "label": "鲸鱼净流入交易所(美元)",
+            },
+            "liquidations_24h_usd": {"value": _liq_total, "label": "24h 清算额(美元)"},
+        },
+        "metrics": {
+            "core": core,
+            "breakdown": {
+                # ETF 分发行商明细 (farside per-issuer, 百万美元)
+                "etf_issuer_flows": {
+                    k[4:]: flow_raw.get(k)
+                    for k in (
+                        "etf_ibit",
+                        "etf_fbtc",
+                        "etf_arkb",
+                        "etf_gbtc",
+                        "etf_btco",
+                        "etf_bitb",
+                        "etf_ezbc",
+                        "etf_btcw",
+                        "etf_brrr",
+                        "etf_hodl",
+                        "etf_msbt",
+                        "etf_btc",
+                    )
+                    if isinstance(flow_raw.get(k), (int, float))
+                },
+                # P0: 衍生品 / 鲸鱼明细
+                "funding_rate_pct": _funding_pct,
+                "long_short_ratio": _ls_ratio,
+                "whale_netflow_to_ex_usd": _whale_netflow,
+                "liquidations_24h_usd": _liq_total,
+                "liquidations_long_24h_usd": flow_raw.get("liquidations_long_24h_usd"),
+                "liquidations_short_24h_usd": flow_raw.get("liquidations_short_24h_usd"),
+            },
+        },
+        "meta": {
+            "last_update": ts,
+            "source": ["data.dal_query"] if has_real else [],
+            "data_quality": "good" if has_real else "empty",
+        },
     }
     has_real = any(isinstance(v, (int, float)) for v in core.values())
     return {

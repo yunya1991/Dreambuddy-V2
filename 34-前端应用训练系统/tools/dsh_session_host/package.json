@@ -1,0 +1,8 @@
+{
+  "name": "dsh-plugin-d3-session-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "description": "D3 单运行时多会话宿主：读取批次任务，在同一 DSH 进程内以 child session 并发执行并写回结果"
+}
