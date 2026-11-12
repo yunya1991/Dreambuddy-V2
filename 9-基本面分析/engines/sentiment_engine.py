@@ -1,6 +1,6 @@
 """
 情绪分析引擎 v2.0
-P1 升级：规则引擎 ← (FAIL-OPEN 3层回退) ← 双FinBERT模型（ProsusAI/finbert 英文 + valuesimplex/FinBERT2 中文）
+P1 升级：规则引擎 ← (FAIL-OPEN 3层回退) ← 双FinBERT模型（ProsusAI/finbert 英文 + yiyanghkust/finbert-tone-chinese 中文）
 
 接口**完全不变**（字节兼容）：
     SentimentEngine.analyze_text(text: str) -> Dict[str, Any]
@@ -14,6 +14,7 @@ P1 升级：规则引擎 ← (FAIL-OPEN 3层回退) ← 双FinBERT模型（Prosu
 import math
 import os
 import re
+import warnings
 from typing import Any, Dict, List, Optional
 
 
@@ -43,7 +44,7 @@ _CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
 
 def chinese_ratio(text: str) -> float:
     """CJK 字符占比（排除空白做分母）；空串返回 0.0；
-    >= 0.30 判定为中文主体，走 valuesimplex/FinBERT2。
+    >= 0.30 判定为中文主体，走 finbert-tone-chinese。
     """
     if not text:
         return 0.0
@@ -176,7 +177,14 @@ FINBERT_EN_LABEL_MAP: Dict[str, float] = {
     "LABEL_NEUTRAL": 0.0,
 }
 
-# valuesimplex/FinBERT2（KDD2025 中文金融）— 中英 label 名双兼容
+# yiyanghkust/finbert-tone-chinese 的 label 契约（模型只输出 LABEL_0/1/2）
+# 0=Neutral / 1=Positive / 2=Negative（config.id2label 已确认）
+FINBERT_ZH_LABEL_CONTRACTS: Dict[str, Dict[str, float]] = {
+    "finbert-tone-chinese": {"LABEL_0": 0.0, "LABEL_1": +1.0, "LABEL_2": -1.0},
+}
+_FINBERT_ZH_DEFAULT_MODEL_ID = "yiyanghkust/finbert-tone-chinese"
+
+# finbert-tone-chinese（中文金融情绪）— 中文 label 名兼容 + LABEL_* 前缀兼容
 FINBERT_ZH_LABEL_MAP: Dict[str, float] = {
     "positive": +1.0,
     "POSITIVE": +1.0,
@@ -190,9 +198,15 @@ FINBERT_ZH_LABEL_MAP: Dict[str, float] = {
     "看跌": -1.0,
     "neutral": 0.0,
     "NEUTRAL": 0.0,
+    "Neutral": 0.0,
     "中性": 0.0,
     "NEU": 0.0,
     "持平": 0.0,
+    "Positive": +1.0,
+    "Negative": -1.0,
+    "LABEL_0": 0.0,
+    "LABEL_1": +1.0,
+    "LABEL_2": -1.0,
 }
 
 
@@ -215,6 +229,24 @@ class SentimentEngine:
         "models",
         "finbert",
     )
+    # 中文 FinBERT 本地模型目录（18 域现役 finbert-tone-chinese）；env FINBERT_ZH_MODEL_PATH 可覆盖
+    _FINBERT_ZH_LOCAL_DIR: str = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "18-数据获取中心",
+        "models",
+        "finbert-tone-chinese",
+    )
+
+    # 进程级共享模型（类属性）：SentimentEngine 每次 new 都重新 load 模型代价极高
+    # （caller 如 odaily_newsflash 逐条 new 引擎 → 每条新闻重复 load 400MB 模型）。
+    # ready=True 后所有实例复用同一 pipeline 对象。
+    _SHARED_ENGINES: Dict[str, Any] = {
+        "ready": False,
+        "en": None,
+        "zh": None,
+        "en_id": "",
+        "zh_id": "",
+    }
 
     # 垃圾文本过滤（保守高置信，避免误杀正经金融新闻；gdelt 实测垃圾率 ~1.4%）：
     # 规则1 SEO导航/注册引流 = 导航词 + 行动词 同时出现（单词不杀，如诈骗报道是有效负面新闻）
@@ -249,7 +281,11 @@ class SentimentEngine:
         # --- L1：模型懒加载占位（首次 analyze_text 调用时初始化；__init__ 绝不加载） ---
         self._eng_ready: bool = False
         self._en_pipe: Optional[Any] = None  # ProsusAI/finbert
-        self._zh_pipe: Optional[Any] = None  # valuesimplex/FinBERT2
+        self._zh_pipe: Optional[Any] = None  # yiyanghkust/finbert-tone-chinese
+        self._en_model_id: str = "ProsusAI/finbert"
+        self._zh_model_id: str = _FINBERT_ZH_DEFAULT_MODEL_ID
+        self._last_model: str = "rule_fallback"
+        self._last_confidence: float = 0.0
         self._en_label_map: Dict[str, float] = dict(FINBERT_EN_LABEL_MAP)
         self._zh_label_map: Dict[str, float] = dict(FINBERT_ZH_LABEL_MAP)
 
@@ -318,6 +354,18 @@ class SentimentEngine:
             # L0：env 已关闭，永不加载模型
             self._eng_ready = False
             return
+        shared = SentimentEngine._SHARED_ENGINES
+        if shared.get("ready"):
+            self._en_pipe = shared.get("en")
+            self._zh_pipe = shared.get("zh")
+            self._en_model_id = shared.get("en_id") or self._en_model_id
+            self._zh_model_id = shared.get("zh_id") or self._zh_model_id
+            if self._zh_pipe is not None:
+                self._zh_label_map.update(
+                    self._build_label_map_from_pipe(self._zh_pipe, self._zh_model_id)
+                )
+            self._eng_ready = True
+            return
         try:
             from transformers import pipeline as _hf_pipeline  # type: ignore
         except Exception:
@@ -333,6 +381,7 @@ class SentimentEngine:
                 en_model = env_path
             elif os.path.isdir(self._FINBERT_EN_LOCAL_DIR):
                 en_model = self._FINBERT_EN_LOCAL_DIR
+            self._en_model_id = self._normalize_model_id(en_model)
             self._en_pipe = _hf_pipeline(
                 "text-classification",
                 model=en_model,
@@ -342,18 +391,82 @@ class SentimentEngine:
         except Exception:
             self._en_pipe = None
         try:
-            # 中文：valuesimplex/FinBERT2（首次冷启动下载 420MB，缓存到 ~/.cache/huggingface）
+            # 中文：yiyanghkust/finbert-tone-chinese（18 域现役本地模型，离线可用）
+            # 模型源优先级：env FINBERT_ZH_MODEL_PATH → 18/models/finbert-tone-chinese → HF repo_id
+            zh_model: Any = _FINBERT_ZH_DEFAULT_MODEL_ID
+            zh_env_path = os.environ.get("FINBERT_ZH_MODEL_PATH", "").strip()
+            if zh_env_path and os.path.isdir(zh_env_path):
+                zh_model = zh_env_path
+            elif os.path.isdir(self._FINBERT_ZH_LOCAL_DIR):
+                zh_model = self._FINBERT_ZH_LOCAL_DIR
+            self._zh_model_id = self._normalize_model_id(zh_model)
             self._zh_pipe = _hf_pipeline(
                 "text-classification",
-                model="valuesimplex/FinBERT2",
+                model=zh_model,
                 truncation=True,
                 max_length=self.MAX_TEXT_LEN,
             )
+            if self._zh_pipe is not None:
+                self._zh_label_map.update(
+                    self._build_label_map_from_pipe(self._zh_pipe, self._zh_model_id)
+                )
         except Exception:
             self._zh_pipe = None
 
         # 至少一个引擎加载成功才算 ready（两都失败 → 回旧规则，但不阻塞）
         self._eng_ready = (self._en_pipe is not None) or (self._zh_pipe is not None)
+        shared.update(
+            ready=self._eng_ready,
+            en=self._en_pipe,
+            zh=self._zh_pipe,
+            en_id=self._en_model_id,
+            zh_id=self._zh_model_id,
+        )
+
+    # ---------------------------------------------------------------- labels
+    def _normalize_model_id(self, model_ref: Any) -> str:
+        """本地绝对路径 → 稳定模型标识（契约键优先，其次目录名），避免把机器路径写进产物。"""
+        ref = str(model_ref or "").strip()
+        if not ref:
+            return ""
+        if os.path.isdir(ref):
+            key = self._model_contract_key(ref)
+            return key or os.path.basename(ref.rstrip(os.sep))
+        return ref
+
+    def _model_contract_key(self, model_id: str) -> str:
+        """把 model_id / 本地路径归一为 label 契约键（如 finbert-tone-chinese）。"""
+        mid = str(model_id or "").lower()
+        for key in FINBERT_ZH_LABEL_CONTRACTS:
+            if key in mid:
+                return key
+        return ""
+
+    def _build_label_map_from_pipe(self, pipe: Any, model_id: str) -> Dict[str, float]:
+        """从 pipeline 的 config.id2label + 已知模型契约构建 label→polarity 映射。
+
+        finbert-tone-chinese 只输出 LABEL_0/1/2，不解析契约就会全部落空 → 静默回中性。
+        """
+        mapping: Dict[str, float] = {}
+        cfg = getattr(getattr(pipe, "model", None), "config", None)
+        id2label = getattr(cfg, "id2label", None) or {}
+        for _idx, name in id2label.items():
+            key = str(name)
+            # LABEL_* 是通用占位名，语义只能由模型契约确定，不能凭编号猜
+            if key.upper().startswith("LABEL_"):
+                continue
+            if key in FINBERT_ZH_LABEL_MAP:
+                mapping[key] = FINBERT_ZH_LABEL_MAP[key]
+        contract = FINBERT_ZH_LABEL_CONTRACTS.get(self._model_contract_key(model_id))
+        if contract:
+            mapping.update(contract)
+        if not mapping:
+            warnings.warn(
+                f"中文模型 {model_id} 的 label 未映射，将回退规则引擎",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+        return mapping
 
     # =========================================================
     # 垃圾文本检测（保守：只拦高置信 SEO 导航/引流/广告，宁漏勿杀）
@@ -390,29 +503,29 @@ class SentimentEngine:
         zh_rate = chinese_ratio(safe_text)
         if zh_rate >= self.ZH_RATIO_THRESHOLD:
             pipe, label_map = self._zh_pipe, self._zh_label_map
+            model_id = self._zh_model_id
         else:
             pipe, label_map = self._en_pipe, self._en_label_map
+            model_id = self._en_model_id
 
         if pipe is None:
-            # 路由目标模型加载失败（如只装了英文但文本是中文）→ fallback 另一模型，再不行旧规则
-            other_pipe, other_map = (
-                (self._en_pipe, self._en_label_map)
-                if zh_rate >= self.ZH_RATIO_THRESHOLD
-                else (self._zh_pipe, self._zh_label_map)
-            )
-            if other_pipe is None:
-                return None
-            pipe, label_map = other_pipe, other_map
+            # 路由目标模型不可用（如中文模型未装）→ 回旧规则（关键词打分），
+            # 不再跨语言回退：英文模型对中文文本恒输出 neutral，等于伪造中性信号。
+            self._last_model = "rule_fallback"
+            return None
 
         try:
             out = pipe(safe_text)
         except Exception:
+            self._last_model = "unavailable"
             return None
         # pipeline 标准返回：List[Dict]，取第一条
         if not isinstance(out, list) or not out:
+            self._last_model = "unavailable"
             return None
         item = out[0]
         if not isinstance(item, dict):
+            self._last_model = "unavailable"
             return None
         label = str(item.get("label") or "")
         conf = item.get("score")
@@ -422,21 +535,27 @@ class SentimentEngine:
         polar = label_map.get(label)
         if polar is None:
             # 未知 label → 不猜，回旧规则（fail-safe）
+            self._last_model = "rule_fallback"
             return None
         # 极性 × 置信度 → [-1,1]
         raw = polar * conf
+        self._last_model = model_id
+        self._last_confidence = round(float(conf), 4)
         return max(-1.0, min(1.0, float(raw)))
 
     # =========================================================
     # 主入口（对外签名 100% 不变 → Dict 四键齐全）
     # 流程：L0 env → L1 懒加载 → L2 推理（FAIL→旧规则）→ 归一映射
     # =========================================================
-    def analyze_text(self, text: str) -> Dict[str, Any]:
+    def analyze_text(self, text: str, with_meta: bool = False) -> Dict[str, Any]:
         """
         分析单条文本的情绪（接口字节兼容 v1）。
 
         Args:
             text: 待分析的文本 str
+            with_meta: False（默认）→ 仅返回 4 键（字节兼容旧调用方）；
+                       True → 追加 model（finbert-tone-chinese / ProsusAI/finbert /
+                       rule_fallback / unavailable）与 confidence 溯源字段。
 
         Returns:
             dict，键：
@@ -444,25 +563,39 @@ class SentimentEngine:
                 sentiment   str   ∈ {positive, neutral, negative}（阈值 ±0.2 与旧规则一致）
                 categories  List[str]（正则检测 categories，零模型依赖）
                 matches     Dict[str,int]（键 positive/negative → 正/负命中计数）
+                model       str（仅 with_meta=True）
+                confidence  float（仅 with_meta=True）
         """
+
+        def _out(payload: Dict[str, Any], model: str, confidence: float) -> Dict[str, Any]:
+            if not with_meta:
+                return payload
+            payload["model"] = model
+            payload["confidence"] = round(max(0.0, min(1.0, float(confidence))), 4)
+            return payload
+
         # 先就算规则规则结果（categories + matches 永远走正则，零模型依赖，结构对齐TC-1）
         rule = self._analyze_text_rule(text)
         # 垃圾文本（SEO 导航/引流/广告）→ 强制中性（四键结构对齐，score=0 不产生情绪信号）
         if self._is_garbage_text(text or ""):
-            return {
-                "score": 0.0,
-                "sentiment": "neutral",
-                "categories": list(rule["categories"]),
-                "matches": dict(rule["matches"]),
-            }
+            return _out(
+                {
+                    "score": 0.0,
+                    "sentiment": "neutral",
+                    "categories": list(rule["categories"]),
+                    "matches": dict(rule["matches"]),
+                },
+                "rule_fallback",
+                0.0,
+            )
         # L0：USE_FINBERT=0 → 完全走旧规则（字节等价）
         if not self._use_finbert_env_ok:
-            return rule
+            return _out(rule, "rule_fallback", abs(float(rule["score"])))
 
         # L1/L2：尝试 FinBERT；失败 → rule_score 兜底
         pipe_score = self._try_pipe_score(text)
         if pipe_score is None:
-            return rule
+            return _out(rule, self._last_model or "rule_fallback", abs(float(rule["score"])))
 
         # 有模型分数 → 替换 score 和 sentiment；保留 categories + matches（正则计算）
         score_raw = float(pipe_score)
@@ -473,12 +606,16 @@ class SentimentEngine:
             sent = "negative"
         else:
             sent = "neutral"
-        return {
-            "score": round(score_clamped, 4),
-            "sentiment": sent,
-            "categories": list(rule["categories"]),
-            "matches": dict(rule["matches"]),
-        }
+        return _out(
+            {
+                "score": round(score_clamped, 4),
+                "sentiment": sent,
+                "categories": list(rule["categories"]),
+                "matches": dict(rule["matches"]),
+            },
+            self._last_model,
+            self._last_confidence,
+        )
 
     # ==================================================================
     # 批量分析（保留原 analyze_batch API 行为不变：内部调 analyze_text，天然升级）

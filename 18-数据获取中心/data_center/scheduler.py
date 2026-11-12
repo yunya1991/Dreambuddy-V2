@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -69,6 +70,7 @@ class CollectionScheduler:
         self._run_task_key = run_task_key
         self._last_run_window: Optional[int] = None
         self._thread: Optional[threading.Thread] = None
+        self._semantic_thread: Optional[threading.Thread] = None
         self._stop_flag = threading.Event()
         self._last_run: dict[str, float] = {}  # task.name -> last ts
         self._last_backfill: float = 0.0
@@ -143,6 +145,11 @@ class CollectionScheduler:
         self._stop_flag.clear()
         self._thread = threading.Thread(target=self._run_loop, daemon=True, name="dc-scheduler")
         self._thread.start()
+        # 39 语义事件自动产出（18 事件流 → 9 FinBERT → 39/semantic_events.jsonl）
+        self._semantic_thread = threading.Thread(
+            target=self._semantic_loop, daemon=True, name="dc-semantic"
+        )
+        self._semantic_thread.start()
 
     def stop(self, timeout: float = 5.0) -> None:
         """停止后台线程。"""
@@ -150,6 +157,66 @@ class CollectionScheduler:
         if self._thread is not None:
             self._thread.join(timeout=timeout)
             self._thread = None
+        if self._semantic_thread is not None:
+            self._semantic_thread.join(timeout=timeout)
+            self._semantic_thread = None
+
+    # ------------------------------------------------------------------
+    # 39 语义事件流水线（P1：由调度器自动产出，不依赖人工 CLI）
+    # ------------------------------------------------------------------
+    def _semantic_loop(self) -> None:
+        """每 DC_SEMANTIC_INTERVAL_SEC 跑一次：18 事件流采集 → 9 FinBERT 打分 → 39 语义事件。"""
+        import logging
+        import subprocess
+        from pathlib import Path
+
+        log = logging.getLogger("dc.scheduler.semantic")
+        if os.environ.get("DC_SEMANTIC_AUTO", "1") != "1":
+            return
+        interval = int(os.environ.get("DC_SEMANTIC_INTERVAL_SEC", "1800"))
+        self._stop_flag.wait(180)  # 避开启动错峰
+        root = Path(__file__).resolve().parents[1]  # 18-数据获取中心
+        repo = root.parent
+        gen_script = repo / "39-金融语义蒸馏系统" / "scripts" / "gen_semantic_events.py"
+        while not self._stop_flag.is_set():
+            try:
+                ev = subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "data_center.cli.collect_events",
+                        "--source",
+                        "cn",
+                        "--days",
+                        "1",
+                    ],
+                    cwd=str(root),
+                    capture_output=True,
+                    text=True,
+                    timeout=600,
+                )
+                log.info(
+                    "events collect rc=%s %s",
+                    ev.returncode,
+                    (ev.stderr or ev.stdout).strip()[-200:],
+                )
+                if gen_script.is_file():
+                    gen = subprocess.run(
+                        [sys.executable, str(gen_script), "--source", "events"],
+                        cwd=str(gen_script.parent.parent),
+                        capture_output=True,
+                        text=True,
+                        timeout=600,
+                    )
+                    log.info(
+                        "semantic gen rc=%s %s",
+                        gen.returncode,
+                        (gen.stderr or gen.stdout).strip()[-200:],
+                    )
+            except Exception:
+                # FAIL-OPEN：语义流水线失败不影响采集主循环
+                log.error("39 语义流水线失败", exc_info=True)
+            self._stop_flag.wait(interval)
 
     def _run_loop(self) -> None:
         """主循环：每秒检查各 task 是否到期；每 backfill_interval_sec 执行 18→19 回填。

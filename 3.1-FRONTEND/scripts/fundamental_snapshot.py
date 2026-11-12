@@ -200,7 +200,55 @@ def _build_onchain(raw: dict, ts: str) -> dict:
     }
 
 
-def _build_sentiment(sentiment_raw: dict, macro_raw: dict, ts: str) -> dict:
+def _build_heatmap(
+    sentiment_raw: dict,
+    macro_raw: dict,
+    flow_raw: dict,
+    breadth_raw: dict,
+    index: int,
+) -> list:
+    """P1: 情绪热力图 (指标 × 0-100 分), 每个 cell 仅由真实 DAL 指标派生, 无 mock。
+
+    规则移植 9-基本面分析 dal_snapshot_provider.collect_sentiment 的 5 cell,
+    并补充 OKX 多空比 / 市场 24h 动量 / VIX 三个跨市场维度。
+    """
+    cells = []
+
+    def _add(name, score):
+        if isinstance(score, (int, float)):
+            cells.append({"category": name, "score": round(_clamp(float(score), 0.0, 100.0), 1)})
+
+    _add("贪婪恐惧", index)
+
+    # 增强 F&G 四子维度 (crypto.feargreedchart.com, 0-100 原始分)
+    _add("波动率", sentiment_raw.get("fg_volatility"))
+    _add("动量", sentiment_raw.get("fg_momentum"))
+    _add("资金费率", sentiment_raw.get("fg_funding"))
+    _add("资金流向", sentiment_raw.get("fg_capital_flow"))
+
+    # 多空比 (OKX 优先): 1.0 中性, 每 0.1 偏离 ±1 分
+    _ls = flow_raw.get("long_short_ratio_okx")
+    if not isinstance(_ls, (int, float)):
+        _ls = flow_raw.get("long_short_ratio")
+    if isinstance(_ls, (int, float)):
+        _add("多空比", 50 + (_ls - 1.0) * 10)
+
+    # 加密市场 24h 动量 (panewslab global_change24_pct): ±5% 对应 ±25 分
+    _chg = breadth_raw.get("global_change_24h")
+    if isinstance(_chg, (int, float)):
+        _add("市场动量", 50 + _chg * 5)
+
+    # VIX (跨市场风险偏好): 20 中性, 每 +1 点风险偏好 -3 分
+    _vix = macro_raw.get("VIX")
+    if isinstance(_vix, (int, float)):
+        _add("VIX", 50 - (_vix - 20) * 3)
+
+    return cells
+
+
+def _build_sentiment(
+    sentiment_raw: dict, macro_raw: dict, flow_raw: dict, breadth_raw: dict, ts: str
+) -> dict:
     """sentiment: 优先 DAL 真实 fear_greed (P1), 缺失时回退 VIX 派生。"""
     fg = sentiment_raw.get("crypto_fear_greed")
     source = ["data.dal_query"]
@@ -222,7 +270,7 @@ def _build_sentiment(sentiment_raw: dict, macro_raw: dict, ts: str) -> dict:
         "fear_greed_index": index,  # 收口 P2: SentimentPanel 字段名对齐
         "sentiment_classification": classification,
         "market_psychology": classification,  # 收口 P2: SentimentPanel 字段名对齐
-        "sentiment_regime": "neutral",
+        "sentiment_regime": classification,  # P1: 由真实 F&G 派生, 不再硬编码 neutral
         "social_volume": sentiment_raw.get("social_volume"),  # social_volume 真实值
     }
 
@@ -238,6 +286,7 @@ def _build_sentiment(sentiment_raw: dict, macro_raw: dict, ts: str) -> dict:
                 "fg_funding": sentiment_raw.get("fg_funding"),
             },
         },
+        "heatmap_data": _build_heatmap(sentiment_raw, macro_raw, flow_raw, breadth_raw, index),
         "meta": {"last_update": ts, "source": source, "data_quality": quality},
     }
 
@@ -364,53 +413,6 @@ def _build_flow(flow_raw: dict, ts: str) -> dict:
             "data_quality": "good" if has_real else "empty",
         },
     }
-    has_real = any(isinstance(v, (int, float)) for v in core.values())
-    return {
-        "timestamp": ts,
-        "data": {
-            "etf_total_flow": {
-                "value": flow_raw.get("etf_total_flow"),
-                "label": "ETF 总净流入(百万美元)",
-            },
-            "usdt_circulating_bln": {
-                "value": flow_raw.get("usdt_circulating_bln"),
-                "label": "USDT 流通量(十亿)",
-            },
-            "usdc_circulating_bln": {
-                "value": flow_raw.get("usdc_circulating_bln"),
-                "label": "USDC 流通量(十亿)",
-            },
-        },
-        "metrics": {
-            "core": core,
-            "breakdown": {
-                # ETF 分发行商明细 (farside per-issuer, 百万美元)
-                "etf_issuer_flows": {
-                    k[4:]: flow_raw.get(k)
-                    for k in (
-                        "etf_ibit",
-                        "etf_fbtc",
-                        "etf_arkb",
-                        "etf_gbtc",
-                        "etf_btco",
-                        "etf_bitb",
-                        "etf_ezbc",
-                        "etf_btcw",
-                        "etf_brrr",
-                        "etf_hodl",
-                        "etf_msbt",
-                        "etf_btc",
-                    )
-                    if isinstance(flow_raw.get(k), (int, float))
-                },
-            },
-        },
-        "meta": {
-            "last_update": ts,
-            "source": ["data.dal_query"] if has_real else [],
-            "data_quality": "good" if has_real else "empty",
-        },
-    }
 
 
 def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
@@ -439,9 +441,17 @@ def _build_valuation(macro_raw: dict, chain_raw: dict, ts: str) -> dict:
         else:
             valuation_zone = "合理"
             mvrv = 1.8
+    # P0 修复: NVT 比率与 Z 分数分列 (此前把比率误写入 z_score)
+    _nvt_ratio = chain_raw.get("nvt_ratio")
+    _nvt_z = (
+        round(_clamp((_nvt_ratio - 20.0) / 15.0, -3.0, 3.0), 2)
+        if isinstance(_nvt_ratio, (int, float)) and 5 <= _nvt_ratio <= 100
+        else None
+    )
     core = {
         "mvrv_ratio": mvrv,
-        "nvt_z_score": chain_raw.get("nvt_ratio"),  # bgeometrics NVT 真实值
+        "nvt_ratio": _nvt_ratio,
+        "nvt_z_score": _nvt_z,
         "valuation_zone": valuation_zone,
         "market_price": sp500,
     }
@@ -608,7 +618,13 @@ def _build_news(news_raw: dict, ts: str) -> dict:
         from datetime import timedelta as _td
         from datetime import timezone as _tz
 
-        p39 = "/home/luke/dreambuddy/39-金融语义蒸馏系统/semantic_events.jsonl"
+        p39 = os.environ.get("SEMANTIC_EVENTS_PATH") or os.path.join(
+            os.path.dirname(_resolve_34_core_dir()),
+            "..",
+            "39-金融语义蒸馏系统",
+            "semantic_events.jsonl",
+        )
+        p39 = os.path.normpath(p39)
         cutoff = _dt.now(_tz.utc) - _td(hours=24)
         with open(p39, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
@@ -746,7 +762,7 @@ def main():
     modules = {
         "macro": _build_macro(macro_raw, ts),
         "onchain": _build_onchain(chain_raw, ts),
-        "sentiment": _build_sentiment(sentiment_raw, macro_raw, ts),
+        "sentiment": _build_sentiment(sentiment_raw, macro_raw, flow_raw, breadth_raw, ts),
         "valuation": _build_valuation(macro_raw, chain_raw, ts),
         "flow": _build_flow(flow_raw, ts),
         "breadth": _build_breadth(breadth_raw, ts),
