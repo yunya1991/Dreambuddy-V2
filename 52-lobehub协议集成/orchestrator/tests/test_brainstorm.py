@@ -132,11 +132,41 @@ def test_gate_g3_trade_exec_domain():
     assert "G3:trade_exec_forbidden:l0.trade-exec.mcp.place_order" in result["reasons"]
 
 
-@pytest.mark.parametrize("flag", ["实盘", "live trading", "下单", "Order"])
+@pytest.mark.parametrize(
+    "flag",
+    ["实盘", "live trading", "下单", "Order", "实盘下单", "接入实盘", "live_trading"],
+)
 def test_gate_g4_live_trading_flag(flag):
     result = gate(make_card(risk_flags=[flag]), REGISTRY)
     assert result["verdict"] == "BLOCK"
     assert any(r.startswith("G4:live_trading_flag") for r in result["reasons"])
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "回测样本期与实盘波动率分布可能不一致",
+        "历史回测与实盘执行差异（流动性、成交假设）",
+        "需确保参数切换可回滚，避免实盘误用",
+        "no_live_trading",
+        "live_disabled",
+    ],
+)
+def test_gate_g4_risk_description_not_blocked(flag):
+    """R1：风险描述/否定语境只留痕不拦截（真实执行护栏是 G3 + ADR-001 三道门）。"""
+    result = gate(make_card(risk_flags=[flag]), REGISTRY)
+    assert result["verdict"] == "PASS"
+    assert result["reasons"] == []
+    assert any(n.startswith("G4:live_trading_mention") for n in result.get("notes") or [])
+
+
+@pytest.mark.parametrize("flag", ["delivery_risk", "reorder_steps", "liveness_check"])
+def test_gate_g4_word_boundary_no_false_positive(flag):
+    """R1：live/order 改为词边界，不再子串误伤 deliver/liveness/reorder。"""
+    result = gate(make_card(risk_flags=[flag]), REGISTRY)
+    assert result["verdict"] == "PASS"
+    assert result["reasons"] == []
+    assert "notes" not in result
 
 
 def test_gate_pass_clean_card():
@@ -415,9 +445,16 @@ def test_debate_escalation_records_debate_id(tmp_path):
     assert len(captured["plancards"]) == 2
 
 
-def test_live_branch_not_implemented():
-    with pytest.raises(NotImplementedError):
-        orch.run(intent="x", shadow=False)
+def test_live_branch_requires_gate(tmp_path):
+    """Phase 5：live 不再 NotImplementedError，改为 live_policy 门禁拒绝。"""
+    policy = tmp_path / "p.json"
+    policy.write_text(json.dumps({"enabled": False}), encoding="utf-8")
+    with pytest.raises(PermissionError, match="disabled"):
+        orch.run(
+            intent="评估是否给离场模块增加波动率自适应阈值",
+            shadow=False,
+            live_policy_path=policy,
+        )
 
 
 def test_side_b_unreachable_degrades_gracefully(tmp_path):
@@ -751,6 +788,7 @@ def test_workers_route_single_pass_no_debate_escalation(tmp_path):
 
     assert summary["route"] == "workers"
     assert summary["mode"] == "workers"
+    assert summary["mode_basis"] == "route"
     assert summary["n_per_side"] == 1
     assert calls["a"] == 1  # side-A 只走一次（单边语义）
     assert summary["decision"]["kind"] == "dispatch"
@@ -788,3 +826,123 @@ def test_force_bypasses_router_skip(tmp_path):
     assert summary["force"] is True
     assert summary["mode"] == "debate"
     assert summary["decision"]["kind"] == "dispatch"
+    # R2：--force 时 mode=debate 但 route 仍是 router 原文，必须显式标注来源
+    assert summary["mode_basis"] == "force"
+    record = json.loads((tmp_path / "t.jsonl").read_text().strip().splitlines()[-1])
+    assert record["mode"] == "debate"
+    assert record["mode_basis"] == "force"
+    assert record["route"] == "trade_deny"  # 路由原文不变（可直接用于审计）
+    assert record["executed"] is False  # R3：shadow 下显式为 False 而非缺失
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 / ADR-001：脑暴实盘（live gate + 执行 + 预算 + 失败降级）
+# ---------------------------------------------------------------------------
+
+_LIVE_INTENT = "评估是否给离场模块增加波动率自适应阈值"
+
+
+def _live_policy(tmp_path, **overrides):
+    policy = {
+        "version": 1,
+        "adr": "ADR-001",
+        "enabled": True,
+        "allowed_roles": ["auditor"],
+        "allowed_routes": ["workers", "debate"],
+        "max_per_week": 1,
+    }
+    policy.update(overrides)
+    p = tmp_path / "live_policy.json"
+    p.write_text(json.dumps(policy), encoding="utf-8")
+    return p
+
+
+def _run_live(tmp_path, **kwargs):
+    params = {
+        "intent": _LIVE_INTENT,
+        "shadow": False,
+        "trace_path": tmp_path / "t.jsonl",
+        "outbox_path": tmp_path / "o.jsonl",
+        "disable_recall": True,
+        "proposers": _build_proposers(),
+        "registry": REGISTRY,
+    }
+    params.update(kwargs)
+    if "live_policy_path" not in params:
+        params["live_policy_path"] = _live_policy(tmp_path)
+    if "live_ledger_path" not in params:
+        params["live_ledger_path"] = tmp_path / "live.jsonl"
+    return orch.run(**params)
+
+
+def test_live_denied_when_policy_disabled(tmp_path):
+    with pytest.raises(PermissionError, match="disabled"):
+        _run_live(
+            tmp_path,
+            executor=lambda card: {"ok": True},
+            live_policy_path=_live_policy(tmp_path, enabled=False),
+        )
+
+
+def test_live_denied_for_non_auditor_role(tmp_path):
+    with pytest.raises(PermissionError, match="allowed_roles"):
+        _run_live(tmp_path, executor=lambda card: {"ok": True}, role="worker")
+
+
+def test_live_requires_executor(tmp_path):
+    with pytest.raises(PermissionError, match="executor"):
+        _run_live(tmp_path, executor=None)
+
+
+def test_live_dispatch_executes_and_records(tmp_path):
+    seen = []
+
+    def executor(card):
+        seen.append(card.get("id"))
+        return {"ok": True, "steps": 2, "note": "dry-run"}
+
+    summary = _run_live(tmp_path, executor=executor)
+
+    assert summary["decision"]["kind"] == "dispatch"
+    assert summary["executed"] is True
+    assert summary["shadow"] is False
+    assert summary["live"]["allowed"] is True
+    assert summary["execution"]["ok"] is True
+    assert seen  # 胜方 PlanCard 被真实送入执行器
+
+    ledger = [json.loads(x) for x in (tmp_path / "live.jsonl").read_text().splitlines()]
+    assert len(ledger) == 1
+    assert ledger[0]["ok"] is True and ledger[0]["role"] == "auditor"
+
+    record = json.loads((tmp_path / "t.jsonl").read_text().strip().splitlines()[-1])
+    assert record["live"]["allowed"] is True
+    assert record["execution"]["ok"] is True
+    assert record["dispatch"]["executed"] is True
+    assert record["dispatch"]["shadow"] is False
+    # R3：trace 顶层 executed 必须与 summary 一致，避免审计读到 null
+    assert record["executed"] is True
+    assert record["executed"] == summary["executed"]
+
+
+def test_live_budget_exhausted(tmp_path):
+    import time
+
+    ledger = tmp_path / "live.jsonl"
+    ledger.write_text(json.dumps({"ts": time.time(), "ok": True}) + "\n", encoding="utf-8")
+    with pytest.raises(PermissionError, match="budget"):
+        _run_live(tmp_path, executor=lambda card: {"ok": True}, live_ledger_path=ledger)
+
+
+def test_live_executor_failure_recorded(tmp_path):
+    def boom(card):
+        raise RuntimeError("dreamos down")
+
+    summary = _run_live(tmp_path, executor=boom)
+
+    assert summary["executed"] is False
+    assert "dreamos down" in summary["execution"]["error"]
+
+    ledger = [json.loads(x) for x in (tmp_path / "live.jsonl").read_text().splitlines()]
+    assert len(ledger) == 1
+    assert ledger[0]["ok"] is False  # 失败也占预算
+    assert "dreamos down" in ledger[0]["error"]

@@ -1,0 +1,1 @@
+{"version": "acc", "adr": "ADR-001", "enabled": false, "allowed_roles": ["auditor"], "allowed_routes": ["debate", "workers"], "max_per_week": 1}

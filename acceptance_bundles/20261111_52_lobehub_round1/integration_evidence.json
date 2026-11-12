@@ -1,0 +1,90 @@
+{
+ "registry": {
+  "allowed_count": 54,
+  "domain_count": 8,
+  "trade_exec_tools": [
+   "l0.trade-exec.mcp.cancel_order",
+   "l0.trade-exec.mcp.check_exit",
+   "l0.trade-exec.mcp.get_account_mode",
+   "l0.trade-exec.mcp.get_balance",
+   "l0.trade-exec.mcp.get_positions"
+  ],
+  "safe_tool_sample": [
+   "l0.cognition.mcp.health",
+   "l0.cognition.mcp.l4_status",
+   "l0.cognition.mcp.recall"
+  ]
+ },
+ "gate_clean": {
+  "verdict": "PASS",
+  "reasons": []
+ },
+ "gate_trade_exec": {
+  "verdict": "BLOCK",
+  "reasons": [
+   "G3:trade_exec_forbidden:l0.trade-exec.mcp.cancel_order"
+  ]
+ },
+ "gate_live_flag": {
+  "verdict": "BLOCK",
+  "reasons": [
+   "G4:live_trading_flag:实盘下单回撤 3%"
+  ]
+ },
+ "evaluators": {
+  "available": true,
+  "names": 7,
+  "reason": null
+ },
+ "evaluate_plan": {
+  "verdict": "INCONCLUSIVE",
+  "reason": "missing_artifacts"
+ },
+ "structural": {
+  "base": 0.659,
+  "dims": [
+   [
+    "tool_legality",
+    0.25
+   ],
+   [
+    "step_count",
+    0.075
+   ],
+   [
+    "validation",
+    0.2
+   ],
+   [
+    "evidence_refs",
+    0.0
+   ],
+   [
+    "risk_flags",
+    0.2
+   ],
+   [
+    "cost_estimate",
+    0.0
+   ]
+  ]
+ },
+ "bridge": {
+  "first": {
+   "processed": 3,
+   "written": 1,
+   "skipped": 2,
+   "errors": 0
+  },
+  "cursor_after": "3\n",
+  "seen_lines": 1,
+  "shell_calls": 1,
+  "cursor_rollback_rerun": {
+   "processed": 3,
+   "written": 0,
+   "skipped": 3,
+   "errors": 0
+  },
+  "shell_calls_after_rerun": 1
+ }
+}

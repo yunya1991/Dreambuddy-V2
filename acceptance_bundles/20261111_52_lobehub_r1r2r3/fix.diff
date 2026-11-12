@@ -1,0 +1,492 @@
+diff --git a/52-lobehub协议集成/README.md b/52-lobehub协议集成/README.md
+index acc0388a82..9e66e17fb7 100644
+--- a/52-lobehub协议集成/README.md
++++ b/52-lobehub协议集成/README.md
+@@ -1,6 +1,6 @@
+ # 52-LobeHub 协议集成
+ 
+-> 版本：v0.11.0
++> 版本：v0.12.0
+ > 更新：2026-11-11
+ > 状态：协议层 / 蒸馏桥 / 脑暴编排器已落地；云端部署（Phase 2）待开工
+ 
+@@ -54,7 +54,7 @@ DreamOS(SACG) → DSH → L0 MCP → REA/涌现 的既有架构，使"接入任
+ │   │   ├── supervisor.py           # 每日守护（launchd 被 TCC 拦截时的替代）
+ │   │   ├── daily_pipeline.sh       # shadow → bridge 串联
+ │   │   └── com.dreambuddy.shadow.plist  # launchd 模板
+-│   └── tests/                      # 84 passed
++│   └── tests/                      # 95 passed
+ └── bridge/                     # 蒸馏桥（outbox → cognition record）
+     ├── distill_bridge.py           # 校验 + R6 映射 + 游标 + 内容指纹去重
+     ├── test_distill_bridge.py      # 20 passed
+@@ -70,7 +70,7 @@ DreamOS(SACG) → DSH → L0 MCP → REA/涌现 的既有架构，使"接入任
+ 
+ ```bash
+ cd 52-lobehub协议集成/orchestrator
+-python3 -m pytest tests -q          # 84 passed
++python3 -m pytest tests -q          # 95 passed
+ 
+ cd ../bridge
+ python3 -m pytest -q                # 20 passed
+diff --git a/52-lobehub协议集成/SPEC.md b/52-lobehub协议集成/SPEC.md
+index 2354230908..ecafb6854d 100644
+--- a/52-lobehub协议集成/SPEC.md
++++ b/52-lobehub协议集成/SPEC.md
+@@ -1,6 +1,6 @@
+ # SPEC: 52-LobeHub 协议集成（Agent 前台与模型路由叠加层）
+ 
+-> 版本：v0.11.0（蒸馏桥常态运转 + T1 改跨侧 + 本地守护调度）
++> 版本：v0.12.0（验收红旗修正 R1/R2/R3：G4 词法误伤收窄 + mode_basis + trace executed）
+ > 日期：2026-11-11
+ > 状态：🟢 Phase 0/1/3/4/4.5/4.6 已实施（本地）；Phase 5 已实施（限量）；Phase 2 云端部署待定
+ > 文档对齐：2026-11-11 全量核对代码/测试/trace 后回填本节状态（见 §3.0 落地状态总表）
+@@ -253,6 +253,17 @@ LobeHub MCP 配置 ──▶ l0_gateway server（stdio）或远端 sse endpoint
+    - 证据：`tests/test_brainstorm.py` 6 条 live 用例（disabled / 非 auditor / 缺 executor / 成功执行 / 预算耗尽 / 执行器异常）全绿，orchestrator 全量 84 passed、ruff 通过；CLI 实测：第一次 `executed=true, live.allowed=true, used=0/1`，第二次 `live gate denied: weekly budget exhausted (1/1)` exit 2。
+    - 边界：交易域仍受 G3/G4 与 §0.4 硬约束阻断；live 只执行 dispatch 胜方，**不执行 debate 结论**。
+ 
++### Phase 5.1 — 验收红旗修正 R1/R2/R3（2026-11-11，v0.12.0）
++
++1. **R1 G4 词法误伤 ✅**：原实现按子串匹配 `实盘|live|下单|order`。实测 77 条 trace / 220 张卡中 15 次命中**全部是风险描述**（"回测与实盘滑点差异""缺少实盘验证"），0 条实盘请求；且 `live`/`order` 会误伤 `deliver`/`liveness`/`border`/`reorder`。
++   - 改法（三档判定，`scoring._live_trading_flag_verdict`）：**否定语境 → notes 放行**；**执行动作 / 裸声明 / 无否定前缀的英文标识符 → BLOCK**；其余自然语言描述 → notes 放行。
++   - 安全护栏不变：G3（trade-exec 工具域拦截）与 ADR-001 三道门仍是**真实执行护栏**，G4 只做意图探测。11 条安全下限守卫（`实盘`/`下单`/`live`/`order`/`live trading`/`实盘下单`/`接入实盘`/`live_trading`/`place order`/`直接下单`/`真实账户下单`）实测仍全部 BLOCK。
++   - 降级留痕：`gate()` 新增 `notes`（`G4:live_trading_mention:<flag>`），trace `gates[]` 同步落盘，可审计。
++2. **R2 `--force` 的 mode/route 可解释 ✅**：`--force` 时 `mode=debate` 而 `route` 保留 router 原文，审计看似矛盾。trace / summary / `--json-out` 新增 `mode_basis ∈ {force, user_requested_debate, route}`；`route` 原文不变（保持审计事实）。
++3. **R3 trace 顶层 executed ✅**：trace 记录新增 `executed`；shadow 下显式 `false`（此前字段缺失，审计读到 null），与 summary 的 `executed` 同源同值。
++   - 验收包：`acceptance_bundles/20261111_52_lobehub_r1r2r3`（15/15 历史误伤旗标转 PASS + notes、11/11 守卫仍 BLOCK、workers+force 的 `mode_basis=force`、orchestrator 95 passed / bridge 20 / debate 22，ruff + black 通过）。
++   - 未处理（留 Phase 2）：R4（44 拓扑未登记本链路）、R5（守护进程不跨重启）。
++
+ ---
+ 
+ ## §4 风险与对策
+diff --git a/52-lobehub协议集成/docs/API_SPEC.md b/52-lobehub协议集成/docs/API_SPEC.md
+index 1b1a8e556c..c55cc4de23 100644
+--- a/52-lobehub协议集成/docs/API_SPEC.md
++++ b/52-lobehub协议集成/docs/API_SPEC.md
+@@ -1,6 +1,6 @@
+ # API SPEC — 52-LobeHub 协议集成
+ 
+-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
+ > 覆盖：CLI 契约、PlanCard、outbox 条目、3.1 HTTP 路由、MCP 工具面、trace 字段
+ 
+ ---
+@@ -64,6 +64,7 @@ python3 orchestrator/brainstorm_orchestrator.py --intent "<议题>" [options]
+   "skipped": false,
+   "reason": null,
+   "mode": "debate",
++  "mode_basis": "route",
+   "winner": {"card_id": "pc-...", "side": "A", "score": 0.912},
+   "executed": false,
+   "n_per_side": 2,
+@@ -99,7 +100,7 @@ Schema 文件：[`schemas/plancard.schema.json`](../schemas/plancard.schema.json
+ | `plan_steps[].tool` | string | 是 | `^l0\.[a-z0-9_-]+\.mcp\.[a-z0-9_]+$`，且必须在 47 registry 内 |
+ | `plan_steps[].args_hint` | object | 否 | 参数提示 |
+ | `evidence_refs` | string[] | 否 | debate trace / recall id / backtest id |
+-| `risk_flags` | string[] | 否 | 命中禁令时进 G4 |
++| `risk_flags` | string[] | 否 | G4 判定：执行动作/裸声明 → BLOCK；风险描述或否定语境 → 记 `notes` 放行 |
+ | `cost_estimate` | object | 否 | `{tokens:int, tool_calls:int}` |
+ | `expected_outcome` | string | 否 | ≤1000 字 |
+ | `validation.evaluator_refs` | string[] | 是 | `^45\.[a-z0-9_]+@\d+\.\d+\.\d+$` |
+@@ -293,10 +294,12 @@ COGNITIVE_MCP_DEFAULT_PRINCIPAL=orchestrator
+ | `run_id` / `trace_id` | 本轮唯一标识 |
+ | `intent` / `context_refs` | 输入 |
+ | `route` / `route_rules_version` / `mode` | 路由结果（`debate`/`workers`） |
++| `mode_basis` | `mode` 来源：`force` / `user_requested_debate` / `route`（`--force` 时解释 route 与 mode 不同） |
++| `executed` | 顶层实盘执行结果；shadow 恒 `false`，与 summary 同值 |
+ | `n_per_side` / `pool_size` | 发散与去重后池大小 |
+ | `proposals[]` | 原始提案（含 `proposer_id`、`model`、`model_kind`、`evidence_path`） |
+ | `diversity_violations[]` | 铁律⑤ 违规明细 |
+-| `gates[]` | `{card_id, verdict, reasons}` |
++| `gates[]` | `{card_id, verdict, reasons, notes?}`；`notes` 为 G4 降级留痕（`G4:live_trading_mention:<flag>`） |
+ | `scores[]` | `{card_id, score, verdict, breakdown, evaluator_provenance}` |
+ | `domain_eval` | `{available, names, verdicts}` |
+ | `triggers` | `{escalate, fired, detail}`（T1 `basis` 标注 `cross_side`/`top2`） |
+diff --git a/52-lobehub协议集成/docs/CHANGELOG.md b/52-lobehub协议集成/docs/CHANGELOG.md
+index 706e367346..0013ceea72 100644
+--- a/52-lobehub协议集成/docs/CHANGELOG.md
++++ b/52-lobehub协议集成/docs/CHANGELOG.md
+@@ -1,11 +1,30 @@
+ # CHANGELOG — 52-LobeHub 协议集成
+ 
+-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
+ > 格式：按版本倒序；日期为本地决策/落地日期。
+ > 版本以 `SPEC.md` 头部版本号为准；本文件只记录**已落地**的变更。
+ 
+ ---
+ 
++## v0.12.0 — 2026-11-11（验收红旗修正 R1/R2/R3）
++
++### 修复
++
++- **R1 G4 词法误伤**：`scoring.gate()` 原按子串匹配 `实盘|live|下单|order`，实测 77 条 trace / 220 张卡中 15 次命中**全部是风险描述**（"回测与实盘滑点差异""缺少实盘验证"），0 条实盘请求；`live`/`order` 还会误伤 `deliver`/`liveness`/`border`/`reorder`。
++  - 改为三档判定（`_live_trading_flag_verdict`）：否定语境 → `notes` 放行；执行动作 / 裸声明 / 无否定前缀的英文标识符 → BLOCK；其余描述 → `notes` 放行。
++  - 安全下限不变：G3（trade-exec 域拦截）与 ADR-001 三道门仍是真实执行护栏；11 条守卫旗标实测仍全部 BLOCK。
++  - `gate()` 新增可选 `notes`（`G4:live_trading_mention:<flag>`），trace `gates[]` 同步落盘。
++- **R2 `--force` 的 mode/route 不一致**：trace / summary / `--json-out` 新增 `mode_basis ∈ {force, user_requested_debate, route}`，解释 `route=workers + mode=debate`；`route` 原文保持不变。
++- **R3 trace 顶层 `executed` 缺失**：trace 记录新增 `executed`，shadow 下显式 `false`，与 summary 同源同值。
++
++### 验证
++
++- 回归：orchestrator 95 passed（新增 11 条 G4 用例）、bridge 20 passed、debate 壳 22 passed；ruff + black 通过。
++- 验收包：`acceptance_bundles/20261111_52_lobehub_r1r2r3`（15/15 历史误伤旗标转 PASS、11/11 守卫仍 BLOCK、workers+force 的 `mode_basis=force`）。
++- 留 Phase 2：R4（44 拓扑未登记本链路）、R5（守护进程不跨重启）。
++
++---
++
+ ## v0.11.0 — 2026-11-11（ADR-001 实盘出关 + 蒸馏桥常态运转 + T1 跨侧 + 本地守护）
+ 
+ ### 新增（ADR-001 脑暴出关）
+diff --git a/52-lobehub协议集成/docs/ENGINEERING_INDEX.md b/52-lobehub协议集成/docs/ENGINEERING_INDEX.md
+index 2de91c9d82..1c9bfea54f 100644
+--- a/52-lobehub协议集成/docs/ENGINEERING_INDEX.md
++++ b/52-lobehub协议集成/docs/ENGINEERING_INDEX.md
+@@ -1,6 +1,6 @@
+ # ENGINEERING INDEX — 52-LobeHub 协议集成
+ 
+-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
+ > 状态：协议层 / 蒸馏桥 / 脑暴编排器已落地；Phase 2 云端部署待开工
+ 
+ ---
+@@ -25,7 +25,7 @@
+ 
+ | 路径 | 职责 | 状态 |
+ |---|---|---|
+-| `SPEC.md` | 协议层 SSoT：定位/决策/阶段/契约/风险/验收 | 已建（v0.11.0） |
++| `SPEC.md` | 协议层 SSoT：定位/决策/阶段/契约/风险/验收 | 已建（v0.12.0） |
+ | `README.md` | 使用说明、目录、环境变量、已知限制 | 已建 |
+ | `REVIEW-20261111-...md` | GitHub 调研 + SPEC 评审 R1-R9 | 已建 |
+ | `decisions/ADR-001-脑暴出关.md` | shadow → 限量实盘（live）出关决策 | 已采纳（灰度） |
+@@ -97,11 +97,11 @@ ops/supervisor.py ── subprocess ── ops/daily_pipeline.sh
+ 
+ | 套件 | 用例数 | 覆盖点 |
+ |---|---|---|
+-| `orchestrator/tests/test_brainstorm.py` | 49 | 双链收集、去重、门禁、评分、T1-T4、outbox、live 出关六例 |
++| `orchestrator/tests/test_brainstorm.py` | 60 | 双链收集、去重、门禁（G4 三档含误伤回归）、评分、T1-T4、outbox、live 出关六例 |
+ | `orchestrator/tests/test_router.py` | 16 | `trade_deny / high_risk_human / debate / direct_answer / workers` 与优先序 |
+ | `orchestrator/tests/test_domain_eval.py` | 15 | 45 发现/映射/fail-open、结构分权重、side-B 扣分 |
+ | `orchestrator/tests/test_adjudicator.py` | 4 | grounded semantics 最小不动点、agree 记录 |
+-| 小计 | **84 passed** | `python3 -m pytest orchestrator/tests -q` |
++| 小计 | **95 passed** | `python3 -m pytest orchestrator/tests -q` |
+ | `bridge/test_distill_bridge.py` | **20 passed** | R6 映射、校验 fail-closed、游标续跑、内容指纹去重 |
+ | `mcp_shells/debate_adversarial` | **22 passed** | model 多样性拒绝、plancards 契约（跨模块回归） |
+ 
+diff --git a/52-lobehub协议集成/docs/TECHNICAL_DESIGN.md b/52-lobehub协议集成/docs/TECHNICAL_DESIGN.md
+index 8da8c45be9..14fe93dc78 100644
+--- a/52-lobehub协议集成/docs/TECHNICAL_DESIGN.md
++++ b/52-lobehub协议集成/docs/TECHNICAL_DESIGN.md
+@@ -1,6 +1,6 @@
+ # TECHNICAL DESIGN — 52-LobeHub 协议集成
+ 
+-> **版本**: v1.0.0（对应 52 模块 v0.11.0） | **更新日期**: 2026-11-11
++> **版本**: v1.1.0（对应 52 模块 v0.12.0） | **更新日期**: 2026-11-11
+ > 适用代码：`orchestrator/`、`bridge/`、`orchestrator/ops/`
+ 
+ ---
+@@ -95,7 +95,7 @@ run(intent, n_per_side, shadow, force, ...)
+ | G1 | PlanCard schema 校验（必填、类型、`id` 前缀 `pc-`、`intent ≤500`、`plan_steps ≥1`） | 任一不合规 → BLOCK |
+ | G2 | `plan_steps[].tool` 必须在 47 registry 的允许集内 | 未注册 → BLOCK |
+ | G3 | 工具所属壳 `domain == trade-exec` | 命中 → BLOCK（铁律④） |
+-| G4 | `risk_flags` 含 `实盘 / live / 下单 / order`（大小写不敏感子串） | 命中 → BLOCK |
++| G4 | `risk_flags` 的实盘意图：执行动作 / 裸声明 / 无否定前缀的英文标识符 → BLOCK；风险描述或否定语境 → `notes` 放行（v0.12.0 起，真实护栏是 G3 + ADR-001） | 见右 |
+ 
+ BLOCK 卡不进入候选池排名（`score` 返回 0.0），但仍写 trace 供分析；T2 用其分数检测
+ "高分被拦"的治理冲突。
+diff --git a/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py b/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py
+index 4b3fb737c1..d1db25a3df 100644
+--- a/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py
++++ b/52-lobehub协议集成/orchestrator/brainstorm_orchestrator.py
+@@ -271,14 +271,16 @@ def evaluate_proposals(
+             verdict = domain_eval.VERDICT_BLOCK
+             evaluator = (score_result.get("evaluator_provenance") or {}).get("evaluator")
+             reasons.append(f"D1:domain_block:{evaluator}")
+-        gates.append(
+-            {
+-                "card_id": card.get("id"),
+-                "side": proposal.get("proposer_id"),
+-                "verdict": verdict,
+-                "reasons": reasons,
+-            }
+-        )
++        gate_entry = {
++            "card_id": card.get("id"),
++            "side": proposal.get("proposer_id"),
++            "verdict": verdict,
++            "reasons": reasons,
++        }
++        # G4 降级留痕：风险描述/否定语境不拦截，但必须可审计
++        if gate_result.get("notes"):
++            gate_entry["notes"] = list(gate_result["notes"])
++        gates.append(gate_entry)
+         scored.append(
+             {
+                 "card": card,
+@@ -491,6 +493,10 @@ def run(
+     route_name = str(routing.get("route") or "workers")
+     # workers = 单边规划（不升级 Debate）；--force 跳过路由直接脑暴
+     mode = "debate" if force or route_name == "debate" else "workers"
++    # mode 的来源：避免 route=workers + mode=debate 在审计时看起来自相矛盾
++    mode_basis = (
++        "force" if force else ("user_requested_debate" if user_requested_debate else "route")
++    )
+     effective_n = 1 if mode == "workers" else n_per_side
+ 
+     if not force and route_name not in ("debate", "workers"):
+@@ -505,6 +511,7 @@ def run(
+             "route_rules_version": ROUTE_RULES_VERSION,
+             "route_matched": routing.get("matched") or [],
+             "mode": "skip",
++            "mode_basis": mode_basis,
+             "decision": {
+                 "kind": "route_skipped",
+                 "route": route_name,
+@@ -530,6 +537,7 @@ def run(
+             "reason": routing.get("reason"),
+             "route_rules_version": ROUTE_RULES_VERSION,
+             "mode": "skip",
++            "mode_basis": mode_basis,
+             "force": force,
+             "winner": None,
+             "adjudication": None,
+@@ -734,6 +742,8 @@ def run(
+         "route_reason": routing.get("reason"),
+         "route_rules_version": ROUTE_RULES_VERSION,
+         "mode": mode,
++        "mode_basis": mode_basis,
++        "executed": executed,
+         "n_per_side": effective_n,
+         "pool_size": len(pool),
+         "proposals": [
+@@ -816,6 +826,7 @@ def run(
+         "route_reason": routing.get("reason"),
+         "route_rules_version": ROUTE_RULES_VERSION,
+         "mode": mode,
++        "mode_basis": mode_basis,
+         "force": force,
+         "winner": decision.get("plancard_id") if decision.get("kind") == "dispatch" else None,
+         "n_per_side": effective_n,
+@@ -895,6 +906,7 @@ def _compact_summary(summary: dict[str, Any]) -> dict[str, Any]:
+         "skipped": bool(summary.get("skipped")),
+         "reason": summary.get("reason") or summary.get("route_reason"),
+         "mode": summary.get("mode"),
++        "mode_basis": summary.get("mode_basis"),
+         "winner": summary.get("winner"),
+         "executed": bool(summary.get("executed")),
+         "n_per_side": summary.get("n_per_side"),
+diff --git a/52-lobehub协议集成/orchestrator/scoring.py b/52-lobehub协议集成/orchestrator/scoring.py
+index 714b93b7fc..ed95b0ef0a 100644
+--- a/52-lobehub协议集成/orchestrator/scoring.py
++++ b/52-lobehub协议集成/orchestrator/scoring.py
+@@ -16,8 +16,62 @@ import domain_eval
+ from plancard import plan_text, validate_plancard
+ 
+ TRADE_EXEC_DOMAIN = "trade-exec"
+-# 铁律④：实盘/live/下单/order 语义一律 BLOCK（大小写不敏感，子串匹配）
+-FORBIDDEN_RISK_KEYWORDS = ("实盘", "live", "下单", "order")
++
++# 铁律④的 G4 只做「实盘意图」词法探测；真实执行护栏是 G3（工具域）+ ADR-001 三道门。
++# 2026-11-11 实测（77 条 trace / 220 张卡）：15 次 G4 命中全部是风险描述
++# （"回测与实盘滑点差异""缺少实盘验证"），0 条是实盘请求；且 live/order 子串会
++# 误伤 deliver/liveness/border/reorder。故 G4 改为三档：
++#   动作或裸声明 → BLOCK；风险描述/否定语境 → 记 notes 放行；未命中 → 通过。
++LIVE_TRADING_ACTION_PATTERNS = (
++    re.compile(r"(直接|立即|自动|批量)(下单|委托|交易|执行)"),
++    re.compile(r"实盘(下单|委托|开仓|平仓|接入)"),
++    re.compile(r"(接入|启用|开启|切换?到?|转到)实盘"),
++    re.compile(r"真实(账户|资金)(下|委托|交易)"),
++    re.compile(
++        r"(?<![a-z])(go[\s_-]*live|live[\s_-]*trading|live[\s_-]*order"
++        r"|place[\s_-]*order|submit[\s_-]*order|execute[\s_-]*order)(?![a-z])"
++    ),
++)
++# 纯提及（含实盘/live/order 但非执行动作）：英文按词边界，避免 deliver/reorder 误伤
++LIVE_TRADING_MENTION_PATTERNS = (
++    re.compile(r"实盘"),
++    re.compile(r"下单"),
++    re.compile(r"(?<![a-z])live(?![a-z])"),
++    re.compile(r"(?<![a-z])order(?![a-z])"),
++)
++# 裸声明：风险旗标本身即该词，等于显式标注实盘语义 → BLOCK
++BARE_LIVE_FLAGS = frozenset(
++    {
++        "实盘",
++        "下单",
++        "live",
++        "order",
++        "live trading",
++        "live_trading",
++        "livetrading",
++        "order execution",
++        "place order",
++    }
++)
++# 否定/规避语境：命中即降级为 notes，不 BLOCK（无法判定时仍按描述放行并由 notes 留痕）
++NEGATION_MARKERS = (
++    "no_",
++    "non_",
++    "not_",
++    "without",
++    "avoid",
++    "disable",
++    "_off",
++    "off_",
++    "offline",
++    "不",
++    "非",
++    "无",
++    "禁止",
++    "避免",
++    "仅回测",
++)
++IDENTIFIER_RE = re.compile(r"^[a-z0-9_.\-]+$")
+ 
+ T1_SCORE_GAP_THRESHOLD = 0.1
+ MAX_SCORE_EVIDENCE_BONUS_THRESHOLD = 5
+@@ -100,19 +154,39 @@ def validate_diversity(proposals: Sequence[Mapping[str, Any]]) -> list[dict[str,
+     return violations
+ 
+ 
++def _live_trading_flag_verdict(flag: Any) -> str:
++    """G4 单条旗标判定：'block'（执行动作/裸声明）| 'note'（风险描述/否定语境）| ''。"""
++    text = str(flag).strip()
++    lowered = text.lower()
++    if not any(p.search(lowered) for p in LIVE_TRADING_MENTION_PATTERNS):
++        return ""
++    if any(marker in lowered for marker in NEGATION_MARKERS):
++        return "note"
++    if any(p.search(lowered) for p in LIVE_TRADING_ACTION_PATTERNS):
++        return "block"
++    if lowered in BARE_LIVE_FLAGS:
++        return "block"
++    if IDENTIFIER_RE.match(lowered):
++        # 形如 live_trading / order_execution 的显式标识符（无否定前缀）→ 视为声明
++        return "block"
++    return "note"
++
++
+ def gate(
+     card: dict[str, Any],
+     allowed_tools: Iterable[str] | Any,
+     domains: Mapping[str, str] | None = None,
+ ) -> dict[str, Any]:
+-    """四道确定性门禁，返回 {verdict: PASS|BLOCK, reasons: [...]}。
++    """四道确定性门禁，返回 {verdict: PASS|BLOCK, reasons: [...], notes?: [...]}。
+ 
+     G1 schema 不合规（含 unknown 字段容错）→ BLOCK
+     G2 plan_steps[].tool 未注册 → BLOCK
+     G3 工具所属壳 domain == trade-exec → BLOCK（铁律④）
+-    G4 risk_flags 命中 实盘|live|下单|order → BLOCK
++    G4 risk_flags 声明实盘执行动作或裸实盘标识 → BLOCK；
++       仅作风险描述/否定语境 → 记 notes 放行（真实执行护栏是 G3 + ADR-001）
+     """
+     reasons: list[str] = []
++    notes: list[str] = []
+ 
+     ok, errors = validate_plancard(card)
+     if not ok:
+@@ -138,13 +212,16 @@ def gate(
+ 
+     risk_flags = card.get("risk_flags") if isinstance(card, dict) else None
+     for flag in risk_flags if isinstance(risk_flags, list) else []:
+-        lowered = str(flag).lower()
+-        for keyword in FORBIDDEN_RISK_KEYWORDS:
+-            if keyword in lowered:
+-                reasons.append(f"G4:live_trading_flag:{flag}")
+-                break
+-
+-    return {"verdict": "BLOCK" if reasons else "PASS", "reasons": reasons}
++        verdict = _live_trading_flag_verdict(flag)
++        if verdict == "block":
++            reasons.append(f"G4:live_trading_flag:{flag}")
++        elif verdict == "note":
++            notes.append(f"G4:live_trading_mention:{flag}")
++
++    result: dict[str, Any] = {"verdict": "BLOCK" if reasons else "PASS", "reasons": reasons}
++    if notes:
++        result["notes"] = notes
++    return result
+ 
+ 
+ def score(
+diff --git a/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py b/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py
+index 4845441335..18f83b87b8 100644
+--- a/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py
++++ b/52-lobehub协议集成/orchestrator/tests/test_brainstorm.py
+@@ -132,13 +132,43 @@ def test_gate_g3_trade_exec_domain():
+     assert "G3:trade_exec_forbidden:l0.trade-exec.mcp.place_order" in result["reasons"]
+ 
+ 
+-@pytest.mark.parametrize("flag", ["实盘", "live trading", "下单", "Order"])
++@pytest.mark.parametrize(
++    "flag",
++    ["实盘", "live trading", "下单", "Order", "实盘下单", "接入实盘", "live_trading"],
++)
+ def test_gate_g4_live_trading_flag(flag):
+     result = gate(make_card(risk_flags=[flag]), REGISTRY)
+     assert result["verdict"] == "BLOCK"
+     assert any(r.startswith("G4:live_trading_flag") for r in result["reasons"])
+ 
+ 
++@pytest.mark.parametrize(
++    "flag",
++    [
++        "回测样本期与实盘波动率分布可能不一致",
++        "历史回测与实盘执行差异（流动性、成交假设）",
++        "需确保参数切换可回滚，避免实盘误用",
++        "no_live_trading",
++        "live_disabled",
++    ],
++)
++def test_gate_g4_risk_description_not_blocked(flag):
++    """R1：风险描述/否定语境只留痕不拦截（真实执行护栏是 G3 + ADR-001 三道门）。"""
++    result = gate(make_card(risk_flags=[flag]), REGISTRY)
++    assert result["verdict"] == "PASS"
++    assert result["reasons"] == []
++    assert any(n.startswith("G4:live_trading_mention") for n in result.get("notes") or [])
++
++
++@pytest.mark.parametrize("flag", ["delivery_risk", "reorder_steps", "liveness_check"])
++def test_gate_g4_word_boundary_no_false_positive(flag):
++    """R1：live/order 改为词边界，不再子串误伤 deliver/liveness/reorder。"""
++    result = gate(make_card(risk_flags=[flag]), REGISTRY)
++    assert result["verdict"] == "PASS"
++    assert result["reasons"] == []
++    assert "notes" not in result
++
++
+ def test_gate_pass_clean_card():
+     assert gate(make_card(), REGISTRY) == {"verdict": "PASS", "reasons": []}
+ 
+@@ -758,6 +788,7 @@ def test_workers_route_single_pass_no_debate_escalation(tmp_path):
+ 
+     assert summary["route"] == "workers"
+     assert summary["mode"] == "workers"
++    assert summary["mode_basis"] == "route"
+     assert summary["n_per_side"] == 1
+     assert calls["a"] == 1  # side-A 只走一次（单边语义）
+     assert summary["decision"]["kind"] == "dispatch"
+@@ -795,6 +826,13 @@ def test_force_bypasses_router_skip(tmp_path):
+     assert summary["force"] is True
+     assert summary["mode"] == "debate"
+     assert summary["decision"]["kind"] == "dispatch"
++    # R2：--force 时 mode=debate 但 route 仍是 router 原文，必须显式标注来源
++    assert summary["mode_basis"] == "force"
++    record = json.loads((tmp_path / "t.jsonl").read_text().strip().splitlines()[-1])
++    assert record["mode"] == "debate"
++    assert record["mode_basis"] == "force"
++    assert record["route"] == "trade_deny"  # 路由原文不变（可直接用于审计）
++    assert record["executed"] is False  # R3：shadow 下显式为 False 而非缺失
+ 
+ 
+ # ---------------------------------------------------------------------------
+@@ -881,6 +919,9 @@ def test_live_dispatch_executes_and_records(tmp_path):
+     assert record["execution"]["ok"] is True
+     assert record["dispatch"]["executed"] is True
+     assert record["dispatch"]["shadow"] is False
++    # R3：trace 顶层 executed 必须与 summary 一致，避免审计读到 null
++    assert record["executed"] is True
++    assert record["executed"] == summary["executed"]
+ 
+ 
+ def test_live_budget_exhausted(tmp_path):

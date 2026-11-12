@@ -1,6 +1,6 @@
 # 全项目文档索引 — INDEX
 
-> **版本**: v2.14 | **更新日期**: 2026-11-11
+> **版本**: v2.15 | **更新日期**: 2026-11-11
 > **定位（视角 B）**: **文档导航中枢，不是架构内容本身**。由 0-系统文档管理 维护，告诉你「到哪里找什么文档」。
 > **架构唯一事实源（SSoT）**: 所有架构争议以 [1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md](../1-ARCHITECTURE/SYSTEM_ARCHITECTURE_OVERVIEW.md) **v4.0** 为准（L0/L1/L2 三层 + L2 内部新 SACG + 认知 C1-C4 + 置信度门控）。被取代的旧架构文档已加「已归档」横幅，禁止作为实现依据。
 > **维护**: 每次新增/删除文档时同步更新；由 `4-工具与自动化/doc_coverage.py` 自动校验（已建成）
@@ -164,6 +164,8 @@
 | PoE 工程实践复现器 TASKS | [33-REA逆向解析工程/TASKS-工程实践复现器.md](../33-REA逆向解析工程/TASKS-工程实践复现器.md) | v1.0（8任务，依赖链已规划） |
 | ★ SPEC-33-D REA as L0 MCP | [33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md](../33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md) | v0.1.0（P0+P1 已落地，301 passed） |
 | ★ SPEC-33-E LLM 混合层 | [33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md](../33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md) | v0.1.1（🚧 P0 已落地：假设契约+PoE裁判+cognitive_hint；P1/P2 待开工） |
+| ★ SPEC-33-F REA 能力增强 | [33-REA逆向解析工程/SPEC-33-F-REA能力增强.md](../33-REA逆向解析工程/SPEC-33-F-REA能力增强.md) | v0.2.0（📝 待评审；含上游核实 §0.6，20 任务 P0/P1/P2） |
+| ★ SPEC-33-G 反思进化与分层自更新 | [33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md](../33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md) | v0.4.0（📝 待评审；L1/L2/L3 分级 + 案例入库 + 调研参考 + DreamOS/脑暴/DSH/L0 研发流水线，15 任务；ADR-001 脑暴出关已灰度） |
 | SKILL dream-rea-architecture-query | [.trae/skills/dream-rea-architecture-query/SKILL.md](../.trae/skills/dream-rea-architecture-query/SKILL.md) | v1.0.0（何时调用/token纪律/认知闭环） |
 
 ### 49-交易框架协议
@@ -186,10 +188,13 @@
 
 | 文档 | 路径 | 版本 |
 |------|------|------|
-| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.11.0（Phase 0/1/3/4/4.5/4.6 已实施；Phase 5 限量；桥已常态运转；Phase 2 待定） |
+| SPEC（协议层 SSoT） | [52-lobehub协议集成/SPEC.md](../52-lobehub协议集成/SPEC.md) | v0.12.0（Phase 0/1/3/4/4.5/4.6/5.1 已实施；Phase 5 限量；桥已常态运转；Phase 2 待定） |
+| 使用说明 README | [52-lobehub协议集成/README.md](../52-lobehub协议集成/README.md) | v0.12.0（目录/快速开始/环境变量/已知限制） |
+| 工程文档（五文档标准） | [52-lobehub协议集成/docs/](../52-lobehub协议集成/docs/) | ENGINEERING_INDEX / TECHNICAL_DESIGN / API_SPEC / CHANGELOG（5/5 齐全） |
 | 架构调研与评审 | [52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md](../52-lobehub协议集成/REVIEW-20261111-LobeHub代码架构调研与SPEC评审.md) | 2026-11-11（R1-R9 已闭环） |
 | 协议层能力件 | [3.1-FRONTEND/src/lib/agent/](../3.1-FRONTEND/src/lib/agent/) | mcp-client / providers / plancard / plan-variant / distill-outbox（各带 vitest） |
-| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧）/ domain_eval / adjudicator（78 tests） |
+| 脑暴编排器 | [52-lobehub协议集成/orchestrator/](../52-lobehub协议集成/orchestrator/) | router r9-v1 / scoring（T1 跨侧 + G4 三档）/ domain_eval / adjudicator / live_policy（95 tests） |
+| 实盘出关 ADR | [52-lobehub协议集成/decisions/ADR-001-脑暴出关.md](../52-lobehub协议集成/decisions/ADR-001-脑暴出关.md) | 2026-11-11（已采纳灰度：auditor + 1 次/周 + 只执行 dispatch 胜方） |
 | 蒸馏桥 | [52-lobehub协议集成/bridge/distill_bridge.py](../52-lobehub协议集成/bridge/distill_bridge.py) | 20 tests；积压已消化（52 写 / 36 去重）；每日守护 `ops/supervisor.py` |
 
 ---
@@ -264,11 +269,11 @@
 
 | 层级 | 模块数 | 文档齐全 | 部分完整 | 缺失 | 覆盖率 |
 |------|--------|----------|----------|------|--------|
-| L2 子系统 | 29 | 17 | 6 | 6 | 63% |
+| L2 子系统 | 30 | 18 | 6 | 6 | 64% |
 | L3 辅助模块 | 6 | 6 | 0 | 0 | 100% |
-| **合计** | **35** | **23** | **6** | **6** | **69%** |
+| **合计** | **36** | **24** | **6** | **6** | **70%** |
 
-> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-08 实测：35 模块 / 23 齐全 / 6 部分 / 6 缺失 / 69%；`50-NN主矛盾评估器` R0 阶段与 `52-lobehub协议集成` 尚无 `docs/` 目录，均未纳入工具统计（52 当前为 SPEC + REVIEW 两份文档，5 文档标准缺口待补）。断链校验：`link_checker.py` 2026-11-08 实测 588 链接 / 2 断链，均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`（存量归档文档，指向本地不存在的 3.1-FRONTEND 文件，FAIL-OPEN 不阻塞）。
+> 统计由 `4-工具与自动化/doc_coverage.py` 生成（2026-11-11 实测：36 模块 / 24 齐全 / 6 部分 / 6 缺失 / 70%；`52-lobehub协议集成` 已补齐 `docs/` 四文档 + 根 README，5/5 纳入统计；`50-NN主矛盾评估器` 仍为 R0 阶段、无 `docs/`，未纳入）。断链校验：`link_checker.py` 2026-11-11 实测 `0-系统文档管理` 604 链接 / 2 断链（均在 `archive/trae-documents/classic-pipeline-c0-c8-node-spec.md`，存量归档，FAIL-OPEN 不阻塞）、`2-KNOWLEDGE` 287 链接 / 0 断链、`52-lobehub协议集成` 10 链接 / 0 断链。
 
 ---
 
