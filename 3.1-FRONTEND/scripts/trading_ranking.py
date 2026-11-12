@@ -5,15 +5,37 @@
 走统一壳层 (dsh_frontend_bridge), FAIL-OPEN 降级返回空列表。
 """
 
+import importlib.util
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 def _resolve_34_core_dir() -> str:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.normpath(os.path.join(script_dir, "..", "..", "34-前端应用训练系统", "core"))
+
+
+def _resolve_repo_root() -> str:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.normpath(os.path.join(script_dir, "..", ".."))
+
+
+# 多资产榜单池（大宗商品 / 美股指数·ETF·个股），由 ranking_asset_pool.py 周期产出
+_RANKING_POOL_FILE = os.path.join(
+    _resolve_repo_root(),
+    "1-ARCHITECTURE",
+    "dreamos",
+    "cli",
+    "scheduler_data",
+    "ranking_asset_pool.json",
+)
+_RANKING_POOL_MAX_AGE_DAYS = 8
+
+# 品类配额（对齐 TOP10_RANKING_RECOMMENDATION_SPEC §3.1 / §4.4：6+2+2）
+_CATEGORY_QUOTA = (("crypto", 6), ("commodity", 2), ("index", 2))
+_TOP_N = 10
 
 
 def _score_to_signal(score: float) -> str:
@@ -33,21 +55,154 @@ def _score_to_signal(score: float) -> str:
     return "NEUTRAL"
 
 
+_FALLBACK_COMMODITY = {"XAU", "XAG", "XPT", "XPD", "XCU", "CL", "BZ", "NG", "USO"}
+_FALLBACK_INDEX = {
+    "US500",
+    "US100",
+    "SPX",
+    "JP225",
+    "KR200",
+    "SPY",
+    "QQQ",
+    "IWM",
+    "SMH",
+    "XLE",
+    "XLV",
+    "XBI",
+    "URNM",
+    "TLT",
+    "NVDA",
+    "AMD",
+    "AVGO",
+    "TSM",
+    "ASML",
+    "MU",
+    "ARM",
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "META",
+    "NFLX",
+    "GS",
+    "JPM",
+    "V",
+    "BRKB",
+    "IBKR",
+    "COIN",
+    "MSTR",
+    "HOOD",
+    "CRCL",
+    "XOM",
+    "CVX",
+    "OXY",
+    "GE",
+    "DELL",
+}
+
+
+def _normalize_symbol(symbol: str) -> str:
+    """XAU-USDT-SWAP / XAU/USDT:USDT → XAU。"""
+    text = str(symbol or "").upper()
+    for suffix in ("-USDT-SWAP", "/USDT:USDT", "/USDT", "-USDT", "-SWAP"):
+        if text.endswith(suffix):
+            text = text[: -len(suffix)]
+            break
+    return text
+
+
+def _asset_class_sets() -> tuple:
+    """品类符号表：优先读 40/asset_classes.py，失败时用内置兜底。"""
+    commodity = set(_FALLBACK_COMMODITY)
+    index = set(_FALLBACK_INDEX)
+    path = os.path.join(_resolve_repo_root(), "40-周期神经网络系统", "asset_classes.py")
+    if not os.path.isfile(path):
+        return commodity, index
+    try:
+        spec = importlib.util.spec_from_file_location("asset_classes_40", path)
+        if spec is None or spec.loader is None:
+            return commodity, index
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        classes = getattr(module, "ASSET_CLASSES", {})
+        commodity = {
+            sym
+            for key in ("precious_metal", "industrial_metal", "energy")
+            for sym in classes.get(key, {}).get("members", [])
+        } or commodity
+        index = {
+            sym
+            for key in ("us_index", "us_etf", "us_stock")
+            for sym in classes.get(key, {}).get("members", [])
+            if sym != "TLT"
+        } or index
+    except Exception:
+        pass
+    return commodity, index
+
+
+_COMMODITY_SYMBOLS, _INDEX_SYMBOLS = _asset_class_sets()
+
+
 def _symbol_category(symbol: str) -> str:
-    """symbol → category。"""
-    s = symbol.upper()
-    if (
-        s
-        in ("BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "LINK", "LTC", "ZEC", "HYPE")
-        or "/USDT" in s
-        or "/USDC" in s
-    ):
-        return "crypto"
-    if s in ("GC=F", "CL=F", "SI=F", "HG=F", "WTI", "BRENT"):
+    """symbol → crypto / commodity / index。"""
+    text = _normalize_symbol(symbol)
+    if text in _COMMODITY_SYMBOLS or text.split("=")[0] in {"GC", "CL", "SI", "HG"}:
         return "commodity"
-    if s in ("SPY", "QQQ", "IWM", "DIA", "^GSPC", "^IXIC", "^DJI", "NASDAQ", "SP500"):
+    if text in _INDEX_SYMBOLS or text.startswith("^"):
         return "index"
-    return "crypto"  # default
+    return "crypto"
+
+
+def _load_ranking_asset_pool() -> list:
+    """读取多资产榜单池；文件缺失/过期/损坏时返回空列表（FAIL-OPEN）。"""
+    try:
+        if not os.path.isfile(_RANKING_POOL_FILE):
+            return []
+        with open(_RANKING_POOL_FILE, encoding="utf-8") as fh:
+            data = json.load(fh)
+        generated_at = data.get("generated_at")
+        if not generated_at:
+            return []
+        generated = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00"))
+        age = datetime.now(timezone.utc) - generated
+        if age > timedelta(days=_RANKING_POOL_MAX_AGE_DAYS):
+            return []
+        items = data.get("items")
+        return items if isinstance(items, list) else []
+    except Exception:
+        return []
+
+
+def _select_top10(candidates: list, total: int = _TOP_N) -> list:
+    """按 6 crypto + 2 commodity + 2 index 配额选 TopN；品类不足时用剩余最高分补足。"""
+    ordered = sorted(candidates, key=lambda c: c["score"], reverse=True)
+    picked = []
+    picked_keys = set()
+
+    for category, quota in _CATEGORY_QUOTA:
+        taken = 0
+        for candidate in ordered:
+            if taken >= quota:
+                break
+            key = _normalize_symbol(candidate["symbol"])
+            if candidate.get("category") != category or key in picked_keys:
+                continue
+            picked.append(candidate)
+            picked_keys.add(key)
+            taken += 1
+
+    for candidate in ordered:
+        if len(picked) >= total:
+            break
+        key = _normalize_symbol(candidate["symbol"])
+        if key in picked_keys:
+            continue
+        picked.append(candidate)
+        picked_keys.add(key)
+
+    picked.sort(key=lambda c: c["score"], reverse=True)
+    return picked[:total]
 
 
 # orchestrator 影子模式里可能触发信号的币种 + 基础分数
@@ -116,29 +271,50 @@ def _orchestrator_to_items(orch_data: dict) -> list:
     for entry in long_pool:
         symbol = entry.get("symbol", "")
         score = float(entry.get("score", 0))
-        if symbol in used_symbols:
+        key = _normalize_symbol(symbol)
+        if key in used_symbols:
             continue
-        used_symbols.add(symbol)
+        used_symbols.add(key)
         candidates.append(
             {
                 "symbol": symbol,
                 "score": score,
                 "direction": "BUY",
+                "category": _symbol_category(symbol),
                 "reasons": entry.get("reasons", []) or ["orchestrator long_pool"],
             }
         )
     for entry in short_pool:
         symbol = entry.get("symbol", "")
         score = float(entry.get("score", 0))
-        if symbol in used_symbols:
+        key = _normalize_symbol(symbol)
+        if key in used_symbols:
             continue
-        used_symbols.add(symbol)
+        used_symbols.add(key)
         candidates.append(
             {
                 "symbol": symbol,
                 "score": score,
                 "direction": "SELL",
+                "category": _symbol_category(symbol),
                 "reasons": entry.get("reasons", []) or ["orchestrator short_pool"],
+            }
+        )
+
+    # 1.5 多资产榜单池（大宗商品 / 美股指数·ETF·个股），由 40+OKX CLI 周期产出
+    for entry in _load_ranking_asset_pool():
+        symbol = entry.get("symbol", "")
+        key = _normalize_symbol(symbol)
+        if not key or key in used_symbols:
+            continue
+        used_symbols.add(key)
+        candidates.append(
+            {
+                "symbol": symbol,
+                "score": float(entry.get("score", 0)),
+                "direction": "BUY",
+                "category": entry.get("category") or _symbol_category(symbol),
+                "reasons": entry.get("reasons", []) or ["multi-asset pool"],
             }
         )
 
@@ -152,6 +328,7 @@ def _orchestrator_to_items(orch_data: dict) -> list:
                 "symbol": sym,
                 "score": base,
                 "direction": "BUY",
+                "category": _symbol_category(sym),
                 "reasons": ["rebound signal", "shadow mode trigger"],
             }
         )
@@ -170,6 +347,7 @@ def _orchestrator_to_items(orch_data: dict) -> list:
                 "symbol": sym,
                 "score": round(fallback_score, 3),
                 "direction": "HOLD",
+                "category": _symbol_category(sym),
                 "reasons": ["full pool candidate"],
             }
         )
@@ -184,19 +362,19 @@ def _orchestrator_to_items(orch_data: dict) -> list:
                 "symbol": sym,
                 "score": conf,
                 "direction": signal.get("direction", "HOLD"),
+                "category": _symbol_category(sym),
                 "reasons": [],
             }
         )
 
-    # 排序 + Top10
-    candidates.sort(key=lambda c: c["score"], reverse=True)
-    candidates = candidates[:10]
+    # 5. 按 6 crypto + 2 commodity + 2 index 配额选 Top10
+    candidates = _select_top10(candidates)
 
     for i, c in enumerate(candidates):
         symbol = c["symbol"]
         score = c["score"]
         direction = c["direction"]
-        category = _symbol_category(symbol)
+        category = c.get("category") or _symbol_category(symbol)
         signal_type = (
             _score_to_signal(score) if direction != "SELL" else _score_to_signal(1 - score)
         )
