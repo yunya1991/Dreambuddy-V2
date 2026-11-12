@@ -15,6 +15,8 @@ import warnings
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 
+from engines.least_resistance import velocity_label_of
+
 warnings.warn(
     "data_collector 已废弃，请迁移到 from data_center.compat import ...",
     DeprecationWarning,
@@ -340,19 +342,9 @@ def _make_timeseries(
         vel = value - prev_val
         acc = vel - prev_vel
 
-        # 速度文案（仅当区间为 -1~1 时给出语义）
-        velocity_label = ""
-        if vmin == -1.0 and vmax == 1.0:
-            if vel > 0.05:
-                velocity_label = "加速流入"
-            elif vel > 0.01:
-                velocity_label = "温和流入"
-            elif vel > -0.01:
-                velocity_label = "持平"
-            elif vel > -0.05:
-                velocity_label = "温和流出"
-            else:
-                velocity_label = "加速流出"
+        # 速度文案五档统一走 engines.dimension_history（仅 -1~1 量纲给语义）
+        scale = "score_neg1_pos1" if (vmin == -1.0 and vmax == 1.0) else "other"
+        velocity_label = velocity_label_of(vel, scale)
 
         direction_score = round((value - (vmin + vmax) / 2) / ((vmax - vmin) / 2), 4)
         direction_score = _clamp(direction_score, -1.0, 1.0)

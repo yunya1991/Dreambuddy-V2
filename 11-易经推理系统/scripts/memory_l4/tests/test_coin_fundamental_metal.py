@@ -112,7 +112,7 @@ class TestComputeAll:
     def test_compute_all_returns_four_signals(self):
         with (
             patch("force_vector.coin_fundamental_metal._fetch_fred_series") as mock_fred,
-            patch("force_vector.coin_fundamental_metal._fetch_vix") as mock_vix,
+            patch("force_vector.coin_fundamental_metal._read_stored_price") as mock_vix,
         ):
             # 模拟 FRED 数据：series_id → {"value": ..., "timeseries": [...]}
             mock_fred.side_effect = lambda db, sid: {
@@ -143,7 +143,7 @@ class TestComputeAll:
     def test_compute_all_missing_data_returns_zeros(self):
         with (
             patch("force_vector.coin_fundamental_metal._fetch_fred_series", return_value={}),
-            patch("force_vector.coin_fundamental_metal._fetch_vix", return_value=0.0),
+            patch("force_vector.coin_fundamental_metal._read_stored_price", return_value=0.0),
         ):
             signals = compute_all("XAUUSD", db_path="/fake/db.db")
             assert all(v == 0.0 for v in signals.values())

@@ -84,6 +84,7 @@ def _register_defaults(reg: Registry) -> None:
         StablecoinTransparencyCollector,
     )
     from data_center.collectors.chain.utxo_age_collector import UTXOAgeDistributionCollector
+    from data_center.collectors.chain.vix_collector import VixCollector
     from data_center.collectors.coin.coingecko_collector import CoinGeckoCollector
     from data_center.collectors.coin.coinmarketcap_collector import CoinMarketCapCollector
     from data_center.collectors.finance.cftc_cot_collector import CftcCotCollector
@@ -130,6 +131,8 @@ def _register_defaults(reg: Registry) -> None:
     reg.register("chain", "etherscan", EtherscanCollector)
     reg.register("chain", "defillama", DeFiLlamaCollector)
     reg.register("chain", "panewslab", PanewslabCollector)
+    # SPEC-EMERGENCE-FINANCIAL-ENV §5.2.1（P1-B）：VIX 三件套唯一实现
+    reg.register("chain", "vix", VixCollector)
     reg.register("chain", "stablecoin_transparency", StablecoinTransparencyCollector)
     # 🆕 P0 数据源补全
     reg.register("chain", "fear_greed", FearGreedCollector)
