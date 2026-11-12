@@ -147,12 +147,19 @@ class WorkerLauncher:
             stats["errors"].append("prepare_claims: %s" % exc)
             return stats
 
-        # 执行
-        for entry in due:
+        # 执行：executor 提供 run_batch 时走方案 B（单运行时多会话），否则逐任务执行
+        batch_runner = getattr(self.executor, "run_batch", None)
+        if due and callable(batch_runner):
             try:
-                self._execute(entry, ts, stats)
-            except Exception as exc:  # 单任务异常不拖垮守护进程
-                stats["errors"].append("execute %s: %s" % (entry.get("ticket_id"), exc))
+                self._execute_batch(due, ts, stats)
+            except Exception as exc:  # 整批异常不拖垮守护进程
+                stats["errors"].append("execute_batch: %s" % exc)
+        else:
+            for entry in due:
+                try:
+                    self._execute(entry, ts, stats)
+                except Exception as exc:  # 单任务异常不拖垮守护进程
+                    stats["errors"].append("execute %s: %s" % (entry.get("ticket_id"), exc))
 
         try:
             self._save_offset(new_offset, head)
@@ -255,7 +262,20 @@ class WorkerLauncher:
             kind, payload = self._run_with_timeout(item, self._role_timeout(item))
         finally:
             heartbeat.stop()
+        self._classify(item, ticket_id, attempt, first_started, now, kind, payload, stats)
 
+    def _classify(
+        self,
+        item: Dict[str, Any],
+        ticket_id: str,
+        attempt: int,
+        first_started: float,
+        now: float,
+        kind: str,
+        payload: Any,
+        stats: Dict[str, Any],
+    ) -> None:
+        """把 executor 返回归类为 done / retryable / manual 并写回执。"""
         if kind == "timeout":
             stats["timeouts"] += 1
             self._retry_or_exhaust(
@@ -313,6 +333,113 @@ class WorkerLauncher:
         stats["receipts"] += 1
         stats["failed"] += 1
         self._finish(ticket_id, terminal=True, stats=stats)
+
+    def _execute_batch(
+        self, entries: List[Dict[str, Any]], now: float, stats: Dict[str, Any]
+    ) -> None:
+        """方案 B：一批 assignment 交给同一个运行时并发执行。"""
+        runnable: List[Tuple[Dict[str, Any], int, float]] = []
+        for entry in entries:
+            item = entry.get("assignment") or {}
+            ticket_id = str(entry.get("ticket_id"))
+            attempt = int(entry.get("attempt") or 0) + 1
+            first_started = entry.get("first_started_at")
+            first_started = float(first_started) if first_started else now
+            if now - first_started > self.max_task_duration:
+                self._emit(
+                    item,
+                    "failed",
+                    "manual",
+                    {"reason": "timeout", "summary": "max_task_duration exceeded"},
+                )
+                stats["receipts"] += 1
+                stats["failed"] += 1
+                self._finish(ticket_id, terminal=True, stats=stats)
+                continue
+            runnable.append((entry, attempt, first_started))
+
+        if not runnable:
+            return
+
+        stats["executed"] += len(runnable)
+        heartbeats = [
+            self._start_heartbeat(str(entry.get("ticket_id"))) for entry, _, _ in runnable
+        ]
+        try:
+            timeout = max(
+                self._role_timeout(entry.get("assignment") or {}) for entry, _, _ in runnable
+            )
+            join_timeout = min(self.max_task_duration, timeout * len(runnable))
+            kind, payload = self._run_batch_with_timeout(
+                [entry for entry, _, _ in runnable], join_timeout
+            )
+        finally:
+            for heartbeat in heartbeats:
+                heartbeat.stop()
+
+        finished_at = self._clock()
+        results = payload if isinstance(payload, dict) else {}
+        for entry, attempt, first_started in runnable:
+            ticket_id = str(entry.get("ticket_id"))
+            item = entry.get("assignment") or {}
+            if kind == "timeout":
+                stats["timeouts"] += 1
+                self._retry_or_exhaust(
+                    item,
+                    ticket_id,
+                    attempt,
+                    first_started,
+                    finished_at,
+                    "timeout",
+                    "batch exceeded %ss" % join_timeout,
+                    stats,
+                )
+                continue
+            if kind == "error":
+                self._retry_or_exhaust(
+                    item,
+                    ticket_id,
+                    attempt,
+                    first_started,
+                    finished_at,
+                    "runtime_error",
+                    str(payload),
+                    stats,
+                )
+                continue
+            self._classify(
+                item,
+                ticket_id,
+                attempt,
+                first_started,
+                finished_at,
+                "ok",
+                results.get(ticket_id),
+                stats,
+            )
+
+    def _run_batch_with_timeout(
+        self, entries: List[Dict[str, Any]], timeout: float
+    ) -> Tuple[str, Any]:
+        """返回 ("ok", {ticket_id: result}) / ("timeout", None) / ("error", exc)。"""
+        assignments = [dict(entry.get("assignment") or {}) for entry in entries]
+        batch = getattr(self.executor, "run_batch", None)
+        box: Dict[str, Any] = {}
+
+        def target() -> None:
+            try:
+                box["results"] = batch(assignments)
+            except Exception as exc:  # 交给主线程归类
+                box["error"] = exc
+
+        worker = threading.Thread(target=target, daemon=True)
+        worker.start()
+        worker.join(timeout)
+        if worker.is_alive():
+            return "timeout", None
+        if "error" in box:
+            return "error", box["error"]
+        return "ok", box.get("results")
 
     def _retry_or_exhaust(
         self,
