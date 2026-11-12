@@ -6,7 +6,7 @@ Flask + flask-cors 实现，端口9094
 import os  # noqa: I001
 import json
 import argparse
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from functools import wraps
 from threading import Thread
 from typing import Dict, List, Optional
@@ -22,6 +22,12 @@ _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "18-数据获取�
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "19-数据访问层"))
 _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "21-特征工程中心"))
 from data_center.compat import DataCollector, generate_timeseries  # noqa: I001
+from engines.dimension_history import (
+    append_observation,
+    compute_dimension_history,
+    load_series,
+    observation_from_snapshot,
+)
 from engines.least_resistance import compute_resistance_3d
 from engines.sentiment_engine import create_sentiment_engine
 from engines.signal_engine import create_signal_engine
@@ -314,6 +320,7 @@ def build_module_snapshot(module: str) -> Dict:
 
     # 构建响应
     ts = datetime.now(timezone.utc).isoformat()
+    observed_date, observed_date_source = _resolve_observed_date(raw_data)
 
     # 基础响应
     response = {
@@ -329,6 +336,8 @@ def build_module_snapshot(module: str) -> Dict:
         "meta": {
             "source": ["19-DAL"] if module in DAL_COLLECTORS else ["legacy"],
             "last_update": ts,
+            "observed_date": observed_date,
+            "observed_date_source": observed_date_source,
             "data_quality": "high",
             "feature_count": len(features),
         },
@@ -354,6 +363,51 @@ def build_module_snapshot(module: str) -> Dict:
     return response
 
 
+_OBSERVED_DATE_KEYS = ("as_of", "observed_date", "date", "last_update")
+
+
+def _resolve_observed_date(raw_data: Dict) -> tuple[str, str]:
+    """观测日来源优先级：payload.meta → payload 顶层 → fallback now(UTC)。"""
+    containers = []
+    if isinstance(raw_data, Dict):
+        meta = raw_data.get("meta")
+        if isinstance(meta, Dict):
+            containers.append(("payload.meta", meta))
+        containers.append(("payload", raw_data))
+    for label, container in containers:
+        for key in _OBSERVED_DATE_KEYS:
+            value = container.get(key)
+            if not value:
+                continue
+            try:
+                day = datetime.fromisoformat(str(value)[:10]).date()
+            except ValueError:
+                continue
+            return day.isoformat(), f"{label}.{key}"
+    return datetime.now(timezone.utc).date().isoformat(), "fallback_now"
+
+
+def _select_timeseries(module: str, min_real_days: int = 30) -> tuple[List[Dict], bool]:
+    """真实历史足够则返回真实序列，否则回退 mock 并标记 synthetic。"""
+    real = load_series(module)
+    if len(real) >= min_real_days:
+        return (
+            [
+                {
+                    "timestamp": f"{row['date']}T00:00:00Z",
+                    "value": row.get("value"),
+                    "direction_score": row.get("direction_score"),
+                    "velocity": row.get("velocity"),
+                    "velocity_label": row.get("velocity_label", ""),
+                    "acceleration": row.get("acceleration"),
+                }
+                for row in real
+            ],
+            False,
+        )
+    return generate_timeseries(module, days=90), True
+
+
 def refresh_module(module: str) -> Dict:
     """
     刷新模块数据
@@ -366,11 +420,16 @@ def refresh_module(module: str) -> Dict:
     """
     snapshot = build_module_snapshot(module)
 
-    # 保存快照和时间序列
-    save_snapshot(module, snapshot)
+    # 真实观测 append-only（缺观测日则拒写，不污染历史）
+    obs = observation_from_snapshot(snapshot)
+    if obs is not None:
+        append_observation(module, obs)
 
-    # 更新时序数据
-    ts_data = generate_timeseries(module, days=90)
+    # 时序数据：真实历史优先，不足则沿用 mock 并标记
+    ts_data, synthetic = _select_timeseries(module)
+    snapshot.setdefault("meta", {})["timeseries_synthetic"] = synthetic
+
+    save_snapshot(module, snapshot)
     save_timeseries(module, ts_data)
 
     return snapshot
@@ -533,6 +592,36 @@ def snapshot():
 
 
 # ============== 模块端点 ==============
+
+
+@app.route("/fundamental/history/<module>", methods=["GET"])
+@handle_errors
+def module_history(module: str):
+    """各维历史统计（只读，不触发采集；SPEC §7.1）。"""
+    if module not in MODULES:
+        return jsonify({"error": f"unknown module: {module}", "modules": MODULES}), 400
+
+    as_of = request.args.get("as_of")
+    if as_of:
+        try:
+            date.fromisoformat(as_of)
+        except ValueError:
+            return jsonify({"error": f"invalid as_of: {as_of}"}), 400
+
+    lookback_raw = request.args.get("lookback")
+    lookback = None
+    if lookback_raw:
+        try:
+            lookback = int(lookback_raw)
+        except ValueError:
+            return jsonify({"error": f"invalid lookback: {lookback_raw}"}), 400
+        if lookback <= 0:
+            return jsonify({"error": f"invalid lookback: {lookback_raw}"}), 400
+
+    series = load_series(module, as_of=as_of)
+    if lookback is not None:
+        series = series[-lookback:]
+    return jsonify(compute_dimension_history(series, module, as_of))
 
 
 def make_module_handlers():

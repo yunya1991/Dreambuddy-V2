@@ -3,15 +3,16 @@
 F3 是主张提取，不是信号合成：
   - 输出 dominant_factor / dominant_dimension / direction / horizon
   - urgency（时间窗映射）/ impact（因素类先验）
-  - salience_distribution（8 维软标签，和为 1）
+  - salience_distribution（13 维软标签，和为 1）
 """
 
 from __future__ import annotations
 
 import pytest
+from data_center.processing.dimension_context import ALL_DIMENSIONS
 from data_center.processing.factor_extractor import extract_dominance_claim
 
-ALL_DIMS = {"D1", "D2", "D3", "D4", "C6", "C7", "C8", "NEWS"}
+ALL_DIMS = set(ALL_DIMENSIONS)
 
 FLOW_DOMINANT = (
     "资金费率持续攀升至0.18%，资金费率处于极端高位，多头拥挤。"

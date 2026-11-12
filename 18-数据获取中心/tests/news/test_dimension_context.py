@@ -140,8 +140,53 @@ def test_percentile_and_z_ranges(dbs):
 def test_matrix_has_all_dimensions(dbs):
     kdb, mdb = dbs
     matrix = get_dimension_matrix("2025-06-01", kline_db=kdb, mm_db=mdb)
-    assert set(matrix) == {"D1", "D2", "D3", "D4", "C6", "C7", "C8", "NEWS"}
+    assert set(matrix) == {
+        "D1",
+        "D2",
+        "D3",
+        "D4",
+        "C6",
+        "C7",
+        "C8",
+        "NEWS",
+        "D5",
+        "C9",
+        "C10",
+        "C11",
+        "C12",
+    }
     assert all(isinstance(v, DimensionContext) for v in matrix.values())
+
+
+# ── 9 域 5 维（SPEC-9DOMAIN-HISTORY v1.1 §7.2）─────────────
+
+
+def test_nine_domain_dimension_consumes_history(monkeypatch):
+    """D5(breadth) 消费 9 域历史：单调上升 60 观测 → upward + short。"""
+    import data_center.processing.dimension_context as dc
+
+    d0 = datetime(2026, 1, 1)
+    seq = tuple((d0 + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(60))
+    seq = tuple((d, i / 60.0) for i, d in enumerate(seq))
+    monkeypatch.setitem(dc._NINE_CACHE, "breadth", seq)
+    ctx = get_dimension_context("D5", "2026-03-01")
+    assert ctx.direction == "up"
+    assert ctx.strength > 0
+    assert ctx.availability == "short"
+    assert ctx.data_points == 60
+    assert ctx.factors_used == ("nine.breadth",)
+
+
+def test_nine_domain_dimension_empty_is_fail_open(monkeypatch):
+    """9 域无观测 → availability=none、neutral，不抛异常。"""
+    import data_center.processing.dimension_context as dc
+
+    monkeypatch.setitem(dc._NINE_CACHE, "intermarket", ())
+    ctx = get_dimension_context("C9", "2026-03-01")
+    assert ctx.availability == "none"
+    assert ctx.direction == "neutral"
+    assert ctx.strength == 0.0
+    assert ctx.data_points == 0
 
 
 def test_fail_open_on_bad_db(tmp_path):

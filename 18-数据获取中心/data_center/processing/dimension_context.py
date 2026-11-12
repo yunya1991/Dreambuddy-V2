@@ -1,7 +1,8 @@
 """维度上下文 DimensionContext — SPEC-D1-MULTIDIM-STATE §2.6（P3-a）。
 
-18 域临时 adapter：按 §2.6 冻结契约，把真实序列归一为 8 维上下文。
-9 域官方 `engines/dimension_context.py` 上线后按 provider 替换，调用方零改动。
+18 域临时 adapter：按 §2.6 冻结契约，把真实序列归一为 13 维上下文
+（8 维 kline/mm/快讯 + 5 维消费 9 域 `dimension_history`，SPEC-9DOMAIN-HISTORY v1.1 §7.2）。
+9 域官方 adapter 上线后按 provider 替换，调用方零改动。
 
 口径（预注册）：
   - direction  ±0.3 阈值（对齐 9 域 least_resistance）
@@ -20,6 +21,7 @@ import logging
 import math
 import re
 import sqlite3
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,8 +36,18 @@ _REPO = Path(__file__).resolve().parents[3]
 DEFAULT_KLINE_DB = _REPO / "18-数据获取中心" / "data_center.db"
 DEFAULT_MM_DB = _REPO / "19-数据访问层" / "data" / "dreambuddy_core.db"
 DEFAULT_EVENT_JSONL = _REPO / "18-数据获取中心" / "backfill" / "events_d1.jsonl"
+NINE_DOMAIN_ROOT = _REPO / "9-基本面分析"
 
-ALL_DIMENSIONS = ("D1", "D2", "D3", "D4", "C6", "C7", "C8", "NEWS")
+# 9 域各维历史统计 → 新增 5 维（只增不改，编号衔接现有体系）
+NINE_DOMAIN_DIMENSIONS = {
+    "D5": "breadth",
+    "C9": "intermarket",
+    "C10": "valuation",
+    "C11": "calendar",
+    "C12": "narrative",
+}
+
+ALL_DIMENSIONS = ("D1", "D2", "D3", "D4", "C6", "C7", "C8", "NEWS", *NINE_DOMAIN_DIMENSIONS)
 
 # 因素大类 → 50 域维度（SPEC §2.6 维度映射表）
 DIMENSION_MAP = {
@@ -141,6 +153,7 @@ class DimensionContext:
 
 _KLINE_CACHE: dict[str, tuple] = {}
 _MM_CACHE: dict[tuple, tuple] = {}
+_NINE_CACHE: dict[str, tuple] = {}
 
 
 def _load_kline(db: Any) -> tuple:
@@ -436,6 +449,70 @@ def _context_for_dim(
     )
 
 
+# ── 9 域历史序列（SPEC-9DOMAIN-HISTORY v1.1 §7.2）──────────
+
+
+def _load_nine_series(module: str) -> tuple:
+    """9 域 `dimension_history/{module}.jsonl` → ((date, value), ...)；不可用 → ()。"""
+    if module in _NINE_CACHE:
+        return _NINE_CACHE[module]
+    res: tuple = ()
+    try:
+        root = str(NINE_DOMAIN_ROOT)
+        if root not in sys.path:
+            sys.path.append(root)  # append：不抢占其它域同名包
+        from engines.dimension_history import load_series as _nine_load
+
+        res = tuple(
+            (str(row["date"]), float(row["value"]))
+            for row in _nine_load(module)
+            if row.get("date") and isinstance(row.get("value"), (int, float))
+        )
+    except Exception as e:  # noqa: BLE003  FAIL-OPEN
+        logger.warning("[FAIL-OPEN] load_nine_series %s: %s", module, type(e).__name__)
+    _NINE_CACHE[module] = res
+    return res
+
+
+def _nine_context(dimension: str, module: str, as_of: str, window: int) -> DimensionContext:
+    """9 域单维上下文：value 的 window 观测滚动 z → direction/strength。"""
+    series = _load_nine_series(module)
+    r = _z_pct(series, as_of, window)
+    if r is None:
+        return _empty(dimension, as_of)
+    z, pct, n_obs = r
+    direction = (
+        "up" if z > DIRECTION_THRESHOLD else "down" if z < -DIRECTION_THRESHOLD else "neutral"
+    )
+    observed = sum(1 for d, _ in series if d <= as_of)
+    return DimensionContext(
+        dimension=dimension,
+        as_of=as_of,
+        direction=direction,
+        strength=abs(math.tanh(z)),
+        z=round(z, 4),
+        percentile=round(pct, 4),
+        data_points=n_obs,
+        availability=_availability(observed),
+        series_id=f"dim:{dimension}",
+        factors_used=(f"nine.{module}",),
+    )
+
+
+def _context_for(
+    dimension: str, by_dim: dict[str, dict[str, tuple]], as_of: str, window: int
+) -> DimensionContext:
+    """单维分派：9 域 5 维走 dimension_history，其余走 kline/mm/快讯。FAIL-OPEN。"""
+    module = NINE_DOMAIN_DIMENSIONS.get(dimension)
+    if module:
+        try:
+            return _nine_context(dimension, module, as_of, window)
+        except Exception as e:  # noqa: BLE003  FAIL-OPEN
+            logger.warning("[FAIL-OPEN] nine_context %s: %s", dimension, type(e).__name__)
+            return _empty(dimension, as_of)
+    return _context_for_dim(dimension, by_dim.get(dimension, {}), as_of, window)
+
+
 def get_dimension_context(
     dimension: str,
     as_of: str,
@@ -450,12 +527,14 @@ def get_dimension_context(
     try:
         if dimension not in ALL_DIMENSIONS:
             return _empty(dimension, as_of)
+        if dimension in NINE_DOMAIN_DIMENSIONS:
+            return _context_for(dimension, {}, as_of, window)
         by_dim = _series_by_dim(
             kline_db or DEFAULT_KLINE_DB,
             mm_db or DEFAULT_MM_DB,
             newsflash_jsonl,
         )
-        return _context_for_dim(dimension, by_dim.get(dimension, {}), as_of, window)
+        return _context_for(dimension, by_dim, as_of, window)
     except Exception as e:  # noqa: BLE003  FAIL-OPEN
         logger.warning("[FAIL-OPEN] get_dimension_context %s: %s", dimension, type(e).__name__)
         return _empty(dimension, as_of)
@@ -471,7 +550,7 @@ def get_dimension_matrix(
     event_jsonl: Any = None,
     newsflash_jsonl: Any = None,
 ) -> dict[str, DimensionContext]:
-    """8 维上下文矩阵。FAIL-OPEN（异常时各维为空上下文）。"""
+    """13 维上下文矩阵。FAIL-OPEN（异常时各维为空上下文）。"""
     dims = tuple(dimensions) if dimensions else ALL_DIMENSIONS
     try:
         by_dim = _series_by_dim(
@@ -479,7 +558,7 @@ def get_dimension_matrix(
             mm_db or DEFAULT_MM_DB,
             newsflash_jsonl,
         )
-        return {d: _context_for_dim(d, by_dim.get(d, {}), as_of, window) for d in dims}
+        return {d: _context_for(d, by_dim, as_of, window) for d in dims}
     except Exception as e:  # noqa: BLE003  FAIL-OPEN
         logger.warning("[FAIL-OPEN] get_dimension_matrix %s: %s", as_of, type(e).__name__)
         return {d: _empty(d, as_of) for d in dims}

@@ -73,6 +73,21 @@ def compute_resistance_3d(
     }
 
 
+def velocity_label_of(velocity: float, value_scale: str = "score_neg1_pos1") -> str:
+    """速度五档文案；非 -1~1 量纲不给语义（对齐 data_collector 原口径）。"""
+    if value_scale != "score_neg1_pos1":
+        return ""
+    if velocity > 0.05:
+        return "加速流入"
+    if velocity > 0.01:
+        return "温和流入"
+    if velocity > -0.01:
+        return "持平"
+    if velocity > -0.05:
+        return "温和流出"
+    return "加速流出"
+
+
 def generate_signal(
     resistance_3d: Dict[str, Any], metrics: Dict[str, Any], stress: str = "normal"
 ) -> Dict[str, Any]:

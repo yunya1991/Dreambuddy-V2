@@ -1,3 +1,5 @@
+"""NON-PRODUCTION：无调度/服务/测试调用，仅手动 `python tavily_data_generator.py` 运行。"""
+
 import json
 import os
 import random
@@ -8,8 +10,12 @@ import urllib.request
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(BASE_DIR, "core_engine"))
-from least_resistance import compute_resistance_3d, run_module_analysis  # noqa: E402
+sys.path.insert(0, BASE_DIR)
+from engines.least_resistance import (  # noqa: E402
+    compute_resistance_3d,
+    generate_signal,
+    summarize_trend,
+)
 
 STORAGE_DIR = os.path.join(BASE_DIR, "storage")
 SNAPSHOT_FILE = os.path.join(STORAGE_DIR, "latest_snapshot.json")
@@ -219,6 +225,33 @@ def _compute_module_metrics(module_name: str, events: list):
     return raw_score, sentiment_idx, flow_idx, heat, stress
 
 
+def _run_module_analysis(
+    module_name: str,
+    events: list,
+    raw_score: float,
+    sentiment_idx: float,
+    flow_idx: float,
+    heat: float,
+    stress: str,
+) -> dict:
+    """engines 版适配：组合 compute_resistance_3d + generate_signal（本脚本不持久化）。"""
+    r3d = compute_resistance_3d(raw_score, [])
+    signal = generate_signal(r3d, {"sentiment": sentiment_idx}, stress)
+    return {
+        "ts": datetime.utcnow().isoformat() + "Z",
+        "resistance_3d": r3d,
+        "signals": {"recommendation": signal, "signals": [signal]},
+        "metrics": {
+            "sentiment_index": sentiment_idx,
+            "flow_index": flow_idx,
+            "heat": heat,
+            "stress": stress,
+            "summary": summarize_trend(r3d["direction"], r3d["velocity"], r3d["acceleration"]),
+        },
+        "timeline": (events or [])[:10],
+    }
+
+
 def run_full_pipeline(use_tavily: bool = True) -> dict:
     _ensure_storage()
     ts = datetime.utcnow().isoformat() + "Z"
@@ -228,7 +261,7 @@ def run_full_pipeline(use_tavily: bool = True) -> dict:
     for module in ["news", "flow", "sentiment", "macro"]:
         events = _gather_module_events(module, use_tavily)
         raw_score, sentiment_idx, flow_idx, heat, stress = _compute_module_metrics(module, events)
-        result = run_module_analysis(
+        result = _run_module_analysis(
             module, events, raw_score, sentiment_idx, flow_idx, heat, stress
         )
         modules_result[module] = result

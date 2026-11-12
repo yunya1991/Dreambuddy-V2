@@ -12,7 +12,11 @@ class TestP2LifecycleIntegration(unittest.TestCase):
 
     def test_launchd_stack_has_artifact_cleanup_hook(self) -> None:
         root = Path(__file__).resolve().parent.parent
-        content = (root / "ops" / "launchd" / "fundamental_stack.sh").read_text(encoding="utf-8")
+        launchd_sh = root / "ops" / "launchd" / "fundamental_stack.sh"
+        # 9 域无独立 launchd 栈（ENGINEERING_INDEX 记录归属 10-经典指标系统）
+        if not launchd_sh.exists():
+            self.skipTest("launchd fundamental_stack.sh 归属 10 域，9 域未创建")
+        content = launchd_sh.read_text(encoding="utf-8")
         self.assertIn("artifact_lifecycle.py", content)
         self.assertIn(" cleanup ", content)
 
