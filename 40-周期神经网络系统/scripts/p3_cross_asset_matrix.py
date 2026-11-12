@@ -20,7 +20,6 @@ fail-open：
 import json
 import os
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,12 +35,15 @@ for _p in (_40_ROOT, _SCRIPT_DIR):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# G10：价格唯一来源（18 统一价格源，禁止本脚本直连交易所）
+sys.path.insert(0, os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心"))
 from asset_classes import (  # noqa: E402
     EQUITY_ALIGNMENT,
     G1_ANCHORS,
     GOLD_DUAL_TRACK,
     TLT_IN_G1,
 )
+from data_center.market import price_source  # noqa: E402
 from p3_resonance_matrix import (  # noqa: E402
     GRANGER_ALPHA,
     GRANGER_LAGS,
@@ -57,54 +59,17 @@ MA_WINDOW = 200
 
 
 def fetch_daily_series(symbol, total=TOTAL_BARS, max_retries=3, base_delay=1.0, ex=None):
-    """分页拉取 OKX 永续日线，返回 (timestamps, closes)。
+    """日线序列 (timestamps_ms, closes)（G10 统一价格源）。
 
-    网络错误指数退避重试；重试耗尽返回 (None, None) 由调用方 fail-open。
-    ex 可复用同一个 ccxt 实例，避免每标的重复加载 markets。
+    `ex` 参数保留仅为签名兼容：价格口径已收敛到 18 `price_source`（OKX 主源 + Binance fallback），
+    禁止各脚本再自建 ccxt 连接。失败返回 (None, None) 由调用方 fail-open。
     """
-    import ccxt
-
-    if ex is None:
-        ex = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
-    candles = {}
-    since = ex.milliseconds() - (total + 5) * DAY_MS
-    while len(candles) < total:
-        batch = None
-        for attempt in range(max_retries):
-            try:
-                batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
-                break
-            except (ccxt.NetworkError, ccxt.RequestTimeout) as exc:
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2**attempt)
-                    print(
-                        f"  [retry] {symbol} attempt {attempt + 1}/{max_retries}: "
-                        f"{exc}; sleep {delay}s"
-                    )
-                    time.sleep(delay)
-                else:
-                    print(f"  [fail] {symbol}: {exc}")
-                    return None, None
-        if not batch:
-            if not candles:
-                # 上市较晚的标的：带 since 可能返回空，回退为最近 limit 根
-                try:
-                    batch = ex.fetch_ohlcv(symbol, "1d", limit=100)
-                except (ccxt.NetworkError, ccxt.RequestTimeout) as exc:
-                    print(f"  [fail] {symbol} (no-since fallback): {exc}")
-                    return None, None
-                for c in batch or []:
-                    candles[c[0]] = c
-            break
-        for c in batch:
-            candles[c[0]] = c
-        since = batch[-1][0] + DAY_MS
-        if len(batch) < 100:
-            break
-    rows = [candles[k] for k in sorted(candles)][-total:]
-    if not rows:
+    try:
+        result = price_source.fetch_daily(symbol, days=total)
+    except price_source.PriceSourceError as exc:
+        print(f"  [fail] {symbol}: {exc}")
         return None, None
-    return [int(c[0]) for c in rows], [float(c[4]) for c in rows]
+    return [bar["ts_ms"] for bar in result["bars"]], [float(bar["close"]) for bar in result["bars"]]
 
 
 def to_ccxt_swap_symbol(inst_id: str) -> str:
@@ -212,18 +177,11 @@ def main():
     print(f"=== p3_cross_asset_matrix start {now} ===")
 
     series_map = {}
-    exchange = None
-    try:
-        import ccxt
-
-        exchange = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
-    except Exception as exc:  # noqa: BLE001  fail-open：构造失败由单标的兜底
-        print(f"  [warn] exchange init failed: {exc}")
 
     for sym in G1_ANCHORS:
         cfg = G1_ANCHORS[sym]
         try:
-            ts, closes = fetch_daily_series(to_ccxt_swap_symbol(cfg["inst_id"]), ex=exchange)
+            ts, closes = fetch_daily_series(to_ccxt_swap_symbol(cfg["inst_id"]))
         except Exception as exc:  # noqa: BLE001  fail-open：单标的失败不阻塞
             print(f"  {sym}: ERROR {exc}")
             ts, closes = None, None

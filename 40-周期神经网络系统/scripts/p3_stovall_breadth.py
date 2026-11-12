@@ -10,12 +10,17 @@ Stovall 映射：美林象限 → 周期阶段 → 板块偏好（预注册规�
 
 import json
 import os
+import sys
 from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
+
+# G10：价格唯一来源（18 统一价格源，禁止本脚本直连交易所）
+sys.path.insert(0, os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心"))
+from data_center.market import price_source  # noqa: E402
 
 BASE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统")
 ROT = f"{BASE}/asset_rotation.json"
@@ -70,38 +75,12 @@ CHAIN = {
 
 
 def fetch_okx_ma200(symbol, total=400, max_retries=3, base_delay=1.0):
-    """分页拉取 OKX 日线，现算 MA200 位置。网络错误逐批重试。"""
-    import time as _time
-
-    import ccxt
-
-    ex = ccxt.okx({"enableRateLimit": True})
-    day_ms = 86400000
-    candles = {}
-    since = ex.milliseconds() - (total + 5) * day_ms
-    while len(candles) < total:
-        batch = None
-        for attempt in range(max_retries):
-            try:
-                batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
-                break
-            except (ccxt.NetworkError, ccxt.RequestTimeout) as exc:
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2**attempt)
-                    print(
-                        f"  [retry] {symbol} attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
-                    )
-                    _time.sleep(delay)
-                else:
-                    return None  # fail-open：拉取失败视为数据不足
-        if not batch:
-            break
-        for c in batch:
-            candles[c[0]] = c
-        since = batch[-1][0] + day_ms
-        if len(batch) < 100:
-            break
-    closes = [candles[k][4] for k in sorted(candles)][-total:]
+    """日线 MA200 位置（G10 统一价格源：OKX 主源 + Binance 显式 fallback）。"""
+    try:
+        closes = price_source.fetch_closes(symbol, days=total)
+    except price_source.PriceSourceError as exc:
+        print(f"  [fail] {symbol}: {exc}")
+        return None  # fail-open：拉取失败视为数据不足
     if len(closes) < 200:
         return None
     ma200 = sum(closes[-200:]) / 200

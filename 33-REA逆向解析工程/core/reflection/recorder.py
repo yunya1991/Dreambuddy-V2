@@ -35,6 +35,7 @@ from core.reflection.replay_simulator import (  # noqa: E402
     DiscoveryNode,
     DiscoveryTree,
     ReplayPool,
+    is_process_tree,
 )
 
 # 默认回放池目录
@@ -112,6 +113,9 @@ class AnalysisRecorder:
             # 仅根节点（无分析步骤）不落盘
             if len(self._tree.nodes) <= 1:
                 return None
+            # 语料分层（SPEC-33-E T-E1）：流程日志落 _process/，不进做梦语料
+            if is_process_tree(self._tree):
+                self._tree.layer = "process"
             self._pool.save(self._tree)
             return self._tree.tree_id
         except Exception:

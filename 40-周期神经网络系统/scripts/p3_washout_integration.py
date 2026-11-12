@@ -31,6 +31,10 @@ from bcrm2.washout_classifier import EnhancedWashoutClassifier  # noqa: E402
 from bcrm2.washout_detector import WashoutDetector  # noqa: E402
 from bcrm2.washout_features import WashoutFeatureExtractor  # noqa: E402
 
+# G10：价格唯一来源（18 统一价格源，禁止本脚本直连交易所）
+sys.path.insert(0, os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心"))
+from data_center.market import price_source  # noqa: E402
+
 # 传导链资产（与 sector_transmission.json 对齐）
 ASSETS = [
     "BTC/USDT",
@@ -48,37 +52,13 @@ DAY_MS = 86400000
 
 
 def fetch_ohlcv_all(ex, symbol, total=400, max_retries=3, base_delay=1.0):
-    """分页拉取日线 K 线（OKX 单次上限 100 根），凑足 total 根。网络错误逐批重试。"""
-    import time as _time
-
-    candles = {}
-    since = ex.milliseconds() - (total + 5) * DAY_MS
-    while len(candles) < total:
-        batch = None
-        for attempt in range(max_retries):
-            try:
-                batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
-                break
-            except Exception as exc:  # noqa: BLE001  网络错误重试
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2**attempt)
-                    print(
-                        f"  [retry] {symbol} fetch_ohlcv attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
-                    )
-                    _time.sleep(delay)
-                else:
-                    return None
-        if not batch:
-            break
-        for c in batch:
-            candles[c[0]] = c
-        since = batch[-1][0] + DAY_MS
-        if len(batch) < 100:
-            break
-    rows = [candles[k] for k in sorted(candles)][-total:]
-    if not rows:
+    """日线 OHLCV（G10 统一价格源；`ex` 参数保留仅为签名兼容，不再直连交易所）。"""
+    try:
+        result = price_source.fetch_daily(symbol, days=total)
+    except price_source.PriceSourceError as exc:
+        print(f"  [fail] {symbol}: {exc}")
         return None
-    df = pd.DataFrame(rows, columns=["ts", "open", "high", "low", "close", "volume"])
+    df = pd.DataFrame(result["bars"])
     return df[["open", "high", "low", "close", "volume"]].astype(float)
 
 

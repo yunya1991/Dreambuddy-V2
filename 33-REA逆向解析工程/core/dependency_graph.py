@@ -142,7 +142,11 @@ class DependencyGraph:
         evidence.append(
             Evidence(
                 result=f"依赖图: {n_nodes} 节点, {n_edges} 边",
-                provenance={"target": target, "analysis": "dependency_graph"},
+                provenance={
+                    "target": target,
+                    "analysis": "dependency_graph",
+                    "scope": "all_files",
+                },
                 confidence=1.0,
                 known_gaps=[
                     "第三方库依赖未解析（只记录顶层模块名）",

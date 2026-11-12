@@ -24,8 +24,10 @@ TRANS = f"{BASE}/sector_transmission.json"
 ROT = f"{BASE}/asset_rotation.json"
 OUT = f"{BASE}/fund_flow.json"
 # 2026-11-10 修复：数据源跟随 DATA_CENTER_BACKEND（postgres|sqlite），统一走 db_access
+sys.path.insert(0, os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import db_access  # noqa: E402
+from data_center.market import price_source  # noqa: E402
 
 ASSET_LABELS = {
     "crypto_btc": "加密",
@@ -43,41 +45,12 @@ def load_daily(sid):
 
 
 def fetch_okx_daily(symbol, total=400, max_retries=3, base_delay=1.0):
-    """分页拉取 OKX 日线，返回 {日期字符串: 收盘价}。网络错误逐批重试。"""
-    import time as _time
-
-    import ccxt
-
-    ex = ccxt.okx({"enableRateLimit": True})
-    day_ms = 86400000
-    candles = {}
-    since = ex.milliseconds() - (total + 5) * day_ms
-    while len(candles) < total:
-        batch = None
-        for attempt in range(max_retries):
-            try:
-                batch = ex.fetch_ohlcv(symbol, "1d", since=since, limit=100)
-                break
-            except (ccxt.NetworkError, ccxt.RequestTimeout) as exc:
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2**attempt)
-                    print(
-                        f"  [retry] {symbol} fetch_ohlcv attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
-                    )
-                    _time.sleep(delay)
-                else:
-                    raise
-        if not batch:
-            break
-        for c in batch:
-            candles[c[0]] = c
-        since = batch[-1][0] + day_ms
-        if len(batch) < 100:
-            break
+    """日线收盘价 {日期: 收盘}（G10 统一价格源：OKX 主源 + Binance 显式 fallback）。"""
+    result = price_source.fetch_daily(symbol, days=total)
     out = {}
-    for ts in sorted(candles)[-total:]:
-        d = datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
-        out[d] = float(candles[ts][4])
+    for bar in result["bars"]:
+        d = datetime.fromtimestamp(bar["ts_ms"] / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+        out[d] = float(bar["close"])
     return out
 
 

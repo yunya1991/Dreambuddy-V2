@@ -1,19 +1,19 @@
 {
- "generated_at": "2026-11-09T11:04:52.985007+00:00",
+ "generated_at": "2026-11-12T05:54:04.392513+00:00",
  "scopes": [
   "<repo>"
  ],
- "node_count": 7859,
- "edge_count": 53959,
+ "node_count": 8308,
+ "edge_count": 59784,
  "node_type_distribution": {
-  "markdown_doc": 3303,
-  "python_file": 4110,
-  "external": 446
+  "markdown_doc": 3369,
+  "python_file": 4467,
+  "external": 472
  },
  "edge_kind_distribution": {
-  "doc_ref": 1756,
-  "call": 27563,
-  "import": 24640
+  "doc_ref": 1836,
+  "call": 31042,
+  "import": 26906
  },
  "parse_error_count": 97,
  "parse_errors": [
@@ -220,6 +220,6 @@
  ],
  "dangling_edge_count": 0,
  "closed_check": "pass",
- "sha256": "3b95a04a3f9e031ab9fa23ddea27bbb7f6a36257ce92ea95af078ed8a78ab5a9",
- "bytes": 9494459
+ "sha256": "48b02c81de760346d8fb695f0a5d0e76264b49e85c164264c6c504def1002dd4",
+ "bytes": 10427718
 }

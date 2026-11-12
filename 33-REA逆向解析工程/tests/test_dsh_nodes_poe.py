@@ -3,6 +3,7 @@
 依据：TASKS-工程实践复现器.md TR-7.1 / TR-7.2 / TR-7.3
 """
 
+import json
 import os  # noqa: I001
 import sys
 import tempfile
@@ -39,6 +40,8 @@ def test_s33_rea_audit_returns_valid_json():
         # PoE 核心字段
         assert "poe_score" in r
         assert "gate_decision" in r
+        # MCP 边界必须可 JSON 序列化（cognitive_debt 内嵌 Evidence 曾泄漏对象）
+        json.dumps(result, ensure_ascii=False)
 
 
 def test_s33_rea_recover_decisions_returns_valid_json():

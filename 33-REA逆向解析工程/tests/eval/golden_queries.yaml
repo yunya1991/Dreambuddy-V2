@@ -1,0 +1,93 @@
+version: 1
+description: "SPEC-33-F T-F03 golden queries（30 条，基线语料 3.1-FRONTEND）"
+queries:
+  - id: Q01
+    feature: "agent distill outbox"
+    expected: ["src/lib/agent/distill-outbox.ts"]
+  - id: Q02
+    feature: "dynamic node planner"
+    expected: ["src/lib/planner/dynamic-node-planner.ts"]
+  - id: Q03
+    feature: "chain planner"
+    expected: ["src/lib/planner/chain-planner.ts"]
+  - id: Q04
+    feature: "intent router"
+    expected: ["src/lib/intent-router.ts"]
+  - id: Q05
+    feature: "smart router"
+    expected: ["src/lib/intent/smart-router.ts"]
+  - id: Q06
+    feature: "cross validator"
+    expected: ["src/lib/planner/cross-validator.ts"]
+  - id: Q07
+    feature: "voting calculator"
+    expected: ["src/lib/planner/voting-calculator.ts"]
+  - id: Q08
+    feature: "skill selector"
+    expected: ["src/lib/skill-selector.ts"]
+  - id: Q09
+    feature: "confidence evaluator"
+    expected: ["src/lib/planner/confidence-evaluator.ts"]
+  - id: Q10
+    feature: "solution encoder"
+    expected: ["src/lib/solution-encoder.ts"]
+  - id: Q11
+    feature: "eval layer"
+    expected: ["src/lib/eval-layer.ts"]
+  - id: Q12
+    feature: "replay buffer quality level"
+    expected: ["src/lib/replay-buffer.ts"]
+  - id: Q13
+    feature: "drift detector adapter"
+    expected: ["src/lib/drift-detector-adapter.ts"]
+  - id: Q14
+    feature: "market data fetcher"
+    expected: ["src/lib/market-data-fetcher.ts"]
+  - id: Q15
+    feature: "three screens mapper"
+    expected: ["src/lib/three-screens-mapper.ts"]
+  - id: Q16
+    feature: "token monitor hook"
+    expected: ["src/lib/token-monitor.ts"]
+  - id: Q17
+    feature: "auth runtime"
+    expected: ["src/lib/auth-runtime.ts"]
+  - id: Q18
+    feature: "bdsm api"
+    expected: ["src/lib/bdsm-api.ts"]
+  - id: Q19
+    feature: "module api client"
+    expected: ["src/lib/module-api-client.ts"]
+  - id: Q20
+    feature: "knowledge ingest"
+    expected: ["src/lib/knowledge-ingest.ts"]
+  - id: Q21
+    feature: "replay buffer training loop registry"
+    expected: ["src/lib/replay-buffer.ts", "src/lib/training-loop-registry.ts"]
+  - id: Q22
+    feature: "case bank client trae memory bridge"
+    expected: ["src/lib/case-bank-client.ts", "src/lib/trae-memory-bridge.ts"]
+  - id: Q23
+    feature: "cognitive client evolution agent"
+    expected: ["src/lib/cognitive-client.ts", "src/lib/evolution-agent.ts"]
+  - id: Q24
+    feature: "knowledge rag loader"
+    expected: ["src/lib/knowledge-rag.ts", "src/lib/knowledge-loader.ts"]
+  - id: Q25
+    feature: "drift detector case retriever"
+    expected: ["src/lib/drift-detector.ts", "src/lib/case-retriever.ts"]
+  - id: Q26
+    feature: "execution planner task manager"
+    expected: ["src/lib/planner/planner.ts", "src/lib/task-manager.ts"]
+  - id: Q27
+    feature: "case bank client case retriever"
+    expected: ["src/lib/case-bank-client.ts", "src/lib/case-retriever.ts"]
+  - id: Q28
+    feature: "cognitive client context fetcher"
+    expected: ["src/lib/cognitive-client.ts", "src/lib/cognitive-context-fetcher.ts"]
+  - id: Q29
+    feature: "replay buffer reflection training loop"
+    expected: ["src/lib/replay-buffer.ts", "src/lib/c-reflection-training-loop.ts"]
+  - id: Q30
+    feature: "knowledge rag intent training loop"
+    expected: ["src/lib/knowledge-rag.ts", "src/lib/s-intent-training-loop.ts"]

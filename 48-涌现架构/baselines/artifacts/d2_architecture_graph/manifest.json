@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-09T11:04:52.985007+00:00",
- "git_commit": "d8aa6fc2f87889549fe1cf388d7513992d850615",
+ "generated_at": "2026-11-12T05:54:04.392513+00:00",
+ "git_commit": "b27e6c3845a73a0679cc127b74a351c84de2d04e",
  "artifacts": {
   "architecture_graph.json": {
-   "sha256": "3b95a04a3f9e031ab9fa23ddea27bbb7f6a36257ce92ea95af078ed8a78ab5a9",
-   "bytes": 9494459,
+   "sha256": "48b02c81de760346d8fb695f0a5d0e76264b49e85c164264c6c504def1002dd4",
+   "bytes": 10427718,
    "sha_note": "sha256 覆盖剔除 generated_at 的结构内容"
   }
  },

@@ -8,12 +8,17 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import datetime, timezone
 
 # R-42-04/P1-03：DREAMBUDDY_ROOT 环境变量统一模块根路径；未设置时按 __file__ 推导（仓库内模块同级布局）
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
+
+# G10：价格唯一来源（18 统一价格源，禁止本脚本直连交易所）
+sys.path.insert(0, os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心"))
+from data_center.market import price_source  # noqa: E402
 
 STATE_FILE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
 MA_WINDOW = 200
@@ -31,11 +36,9 @@ SPX_SYMBOL = "^GSPC"
 
 
 def fetch_crypto_daily(symbol, limit=400):
-    import ccxt
-
-    ex = ccxt.binance({"enableRateLimit": True})
-    ohlcv = ex.fetch_ohlcv(symbol, "1d", limit=limit)
-    return [(c[0], c[4]) for c in ohlcv if c[4]]
+    """日线收盘序列 (ts_ms, close)（G10 统一价格源：OKX 主源 + Binance 显式 fallback）。"""
+    result = price_source.fetch_daily(symbol, days=limit)
+    return [(bar["ts_ms"], bar["close"]) for bar in result["bars"]]
 
 
 def fetch_spx_daily():

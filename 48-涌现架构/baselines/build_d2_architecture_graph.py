@@ -47,6 +47,8 @@ EXCLUDE_DIRS = {
     ".next",
     "artifacts",
     ".bsk-home",
+    ".arch-map",  # 架构复盘产物（快照 md/json），非架构节点；否则每轮复盘自造 orphan
+    ".runs",  # dreamos-dev run 工作目录（运行产物），非架构节点
 }
 
 MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)#\s]+)(?:#[^)]*)?\)")

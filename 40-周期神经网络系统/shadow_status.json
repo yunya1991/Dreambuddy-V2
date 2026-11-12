@@ -1,0 +1,13 @@
+{
+  "ready": false,
+  "n_predictions": 9,
+  "span_weeks": 0.0,
+  "min_weeks": 4,
+  "weeks_ok": false,
+  "psi": null,
+  "psi_threshold": 0.1,
+  "psi_ok": false,
+  "reason": "weeks",
+  "generated_at": "2026-11-10T19:37:10.703670+00:00",
+  "module": "P6 E3 Shadow 运行状态"
+}

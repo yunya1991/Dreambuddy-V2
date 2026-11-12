@@ -8,7 +8,7 @@
 
 import json
 import os
-import time
+import sys
 from datetime import datetime, timezone
 from statistics import median
 
@@ -16,6 +16,10 @@ from statistics import median
 _DREAMBUDDY_ROOT = os.environ.get("DREAMBUDDY_ROOT") or os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
+
+# G10：价格唯一来源（18 统一价格源，禁止本脚本直连交易所）
+sys.path.insert(0, os.path.join(_DREAMBUDDY_ROOT, "18-数据获取中心"))
+from data_center.market import price_source  # noqa: E402
 
 STATE = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "cycle_state.json")
 OUT = os.path.join(_DREAMBUDDY_ROOT, "40-周期神经网络系统", "sector_transmission.json")
@@ -30,27 +34,11 @@ LAYERS = {
 
 
 def fetch_daily(symbol, max_retries=3, base_delay=1.0):
-    """拉取日线收盘序列，网络错误自动重试（指数退避）。
+    """日线收盘序列（G10 统一价格源：OKX 主源 + Binance 显式 fallback）。
 
-    重试后仍失败则抛出 NetworkError，由调用方决定 fail-open 策略。
+    主源与 fallback 均不可用则抛出 PriceSourceError，由调用方决定 fail-open 策略。
     """
-    import ccxt
-
-    ex = ccxt.okx({"enableRateLimit": True})
-    last_exc = None
-    for attempt in range(max_retries):
-        try:
-            o = ex.fetch_ohlcv(symbol, "1d", limit=120)
-            return [c[4] for c in o if c[4]]
-        except (ccxt.NetworkError, ccxt.RequestTimeout) as exc:
-            last_exc = exc
-            if attempt < max_retries - 1:
-                delay = base_delay * (2**attempt)
-                print(
-                    f"  [retry] {symbol} attempt {attempt+1}/{max_retries} failed: {exc}; sleep {delay}s"
-                )
-                time.sleep(delay)
-    raise last_exc
+    return price_source.fetch_closes(symbol, days=120)
 
 
 def momentum_3m(closes):

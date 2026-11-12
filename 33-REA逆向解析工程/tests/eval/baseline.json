@@ -1,0 +1,1185 @@
+{
+  "summary": {
+    "queries": 30,
+    "k": 10,
+    "budget_bytes": 8192,
+    "recall_at_k": 0.9833,
+    "precision_at_k": 0.1308,
+    "evidence_survival_rate": 0.2625,
+    "evidence_min_ok": true,
+    "budget_hit_rate": 1.0,
+    "thresholds": {
+      "recall_at_k": 0.8,
+      "precision_at_k": "观测值（golden 只标注期望文件，不含上下文邻居，不做门禁）",
+      "budget_hit_rate": 1.0,
+      "evidence_survival_rate": "观测值（不设门禁，但每条 query 至少保留 1 条 evidence）"
+    },
+    "pass": true
+  },
+  "details": [
+    {
+      "id": "Q01",
+      "feature": "agent distill outbox",
+      "expected": [
+        "src/lib/agent/distill-outbox.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/agent/mcp-client.ts",
+        "src/lib/agent/distill-outbox.ts",
+        "src/app/api/agent/brainstorm/route.ts",
+        "src/app/api/agent/chat/route.ts",
+        "src/app/api/agent/plan/route.ts",
+        "src/lib/agent/providers.ts",
+        "src/lib/agent/plan-variant.ts",
+        "src/lib/agent/plancard.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.125,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 4526,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        }
+      }
+    },
+    {
+      "id": "Q02",
+      "feature": "dynamic node planner",
+      "expected": [
+        "src/lib/planner/dynamic-node-planner.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/planner/skill-types.ts",
+        "src/lib/planner/planner-types.ts",
+        "src/lib/planner/step-types.ts",
+        "src/lib/planner/node-gap-supplementer.ts",
+        "src/lib/dynamic-chain/graph-planner.ts",
+        "src/lib/planner/chain-planner.ts",
+        "src/lib/planner/dynamic-node-planner.ts",
+        "src/lib/graph-reflection-bridge.ts",
+        "src/lib/reflection-gates.ts",
+        "src/lib/compressor-adapter/types.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.125,
+      "budget_hit": true,
+      "output_bytes": 7993,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 1,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 42,
+          "total": 58
+        },
+        "edges": {
+          "kept": 0,
+          "total": 96
+        }
+      }
+    },
+    {
+      "id": "Q03",
+      "feature": "chain planner",
+      "expected": [
+        "src/lib/planner/chain-planner.ts"
+      ],
+      "ranked_top_k": [
+        "src/components/index.ts",
+        "src/stores/index.ts",
+        "src/components/features/chain/ChainStepCard.tsx",
+        "src/lib/dynamic-chain/graph-planner.ts",
+        "src/components/features/chain/ChainTracker.tsx",
+        "src/lib/planner/chain-planner.ts",
+        "src/lib/dev-chain/chain-controller.ts",
+        "src/lib/planner/skill-types.ts",
+        "src/lib/graph-reflection-bridge.ts",
+        "src/lib/dev-chain/types.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.125,
+      "budget_hit": true,
+      "output_bytes": 8023,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 1,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 42,
+          "total": 119
+        },
+        "edges": {
+          "kept": 0,
+          "total": 75
+        }
+      }
+    },
+    {
+      "id": "Q04",
+      "feature": "intent router",
+      "expected": [
+        "src/lib/intent-router.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/intent/intent-memory.ts",
+        "src/lib/intent/fallback-engine.ts",
+        "src/lib/monitor-bus.ts",
+        "src/lib/intent-router.ts",
+        "src/app/api/intent/evaluate/route.ts",
+        "src/lib/intent/intent-descriptions.ts",
+        "src/lib/intent/smart-router.ts",
+        "src/lib/bridge-client.ts",
+        "src/lib/strategy/index.ts",
+        "src/lib/task-manager.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 6333,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        }
+      }
+    },
+    {
+      "id": "Q05",
+      "feature": "smart router",
+      "expected": [
+        "src/lib/intent/smart-router.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/intent-router.ts",
+        "src/lib/intent/smart-router.ts",
+        "src/lib/bridge-client.ts",
+        "src/lib/intent/fallback-engine.ts",
+        "src/lib/monitor-bus.ts",
+        "src/lib/intent/intent-memory.ts",
+        "src/lib/strategy/index.ts",
+        "src/lib/task-manager.ts",
+        "src/lib/trading-hook.ts",
+        "src/app/api/monitor/events/route.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.375,
+      "budget_hit": true,
+      "output_bytes": 6499,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 3,
+          "total": 8
+        }
+      }
+    },
+    {
+      "id": "Q06",
+      "feature": "cross validator",
+      "expected": [
+        "src/lib/planner/cross-validator.ts"
+      ],
+      "ranked_top_k": [
+        "src/components/index.ts",
+        "src/stores/index.ts",
+        "src/lib/planner/skill-types.ts",
+        "src/lib/planner/cross-validation-types.ts",
+        "src/lib/cross-validation-gate-spl.ts",
+        "src/components/features/monitor/CrossValidationPanel.tsx",
+        "src/components/features/chain/CrossValidationPanel.tsx",
+        "src/lib/planner/cross-validator.ts",
+        "src/lib/compressor-adapter/types.ts",
+        "src/lib/cognitive-client.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.125,
+      "budget_hit": true,
+      "output_bytes": 7966,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 1,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 42,
+          "total": 119
+        },
+        "edges": {
+          "kept": 0,
+          "total": 71
+        }
+      }
+    },
+    {
+      "id": "Q07",
+      "feature": "voting calculator",
+      "expected": [
+        "src/lib/planner/voting-calculator.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/planner/voting-calculator.ts",
+        "src/lib/planner/skill-types.ts",
+        "src/lib/planner/cross-validation-types.ts",
+        "src/lib/compressor-adapter/types.ts",
+        "src/lib/planner/step-types.ts",
+        "src/lib/planner/planner-types.ts",
+        "src/lib/task-manager.ts",
+        "src/lib/planner/skills-registry.ts",
+        "src/lib/planner/node-gap-supplementer.ts",
+        "src/lib/planner/superpowers-skill-adapter.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.375,
+      "budget_hit": true,
+      "output_bytes": 8042,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 3,
+          "total": 8
+        },
+        "edges": {
+          "kept": 24,
+          "total": 66
+        }
+      }
+    },
+    {
+      "id": "Q08",
+      "feature": "skill selector",
+      "expected": [
+        "src/lib/skill-selector.ts"
+      ],
+      "ranked_top_k": [
+        "src/components/index.ts",
+        "src/components/features/memory/SkillIndexView.tsx",
+        "src/lib/cognitive-client.ts",
+        "src/lib/skill-selector.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/planner/skill-types.ts",
+        "src/lib/planner/skill-selector.ts",
+        "src/app/api/skills/index/route.ts",
+        "src/app/dashboard/memory/skills/page.tsx",
+        "src/components/features/memory/MemoryTabNav.tsx"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7941,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 41,
+          "total": 130
+        },
+        "edges": {
+          "kept": 0,
+          "total": 54
+        }
+      }
+    },
+    {
+      "id": "Q09",
+      "feature": "confidence evaluator",
+      "expected": [
+        "src/lib/planner/confidence-evaluator.ts"
+      ],
+      "ranked_top_k": [
+        "src/components/index.ts",
+        "src/components/features/monitor/SenseConfidenceGauge.tsx",
+        "src/lib/planner/confidence-evaluator.ts",
+        "src/components/features/three-screens/charts/ConfidenceGauge.tsx",
+        "src/lib/planner/skill-types.ts",
+        "src/stores/index.ts",
+        "src/lib/planner/step-types.ts",
+        "src/lib/compressor-adapter/types.ts",
+        "src/lib/planner/planner-types.ts",
+        "src/lib/task-manager.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7953,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 46,
+          "total": 106
+        },
+        "edges": {
+          "kept": 0,
+          "total": 71
+        }
+      }
+    },
+    {
+      "id": "Q10",
+      "feature": "solution encoder",
+      "expected": [
+        "src/lib/solution-encoder.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/solution-encoder.ts",
+        "src/lib/cognitive-client.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/skill-selector.ts",
+        "src/lib/dsh-execution-engine.ts",
+        "src/lib/knowledge-rag.ts",
+        "src/lib/case-bank-client.ts",
+        "src/lib/case-retriever.ts",
+        "src/lib/cross-validation-gate-spl.ts",
+        "src/lib/drift-detector.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.5,
+      "budget_hit": true,
+      "output_bytes": 7671,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 4,
+          "total": 8
+        }
+      }
+    },
+    {
+      "id": "Q11",
+      "feature": "eval layer",
+      "expected": [
+        "src/lib/eval-layer.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/training-loop-registry.ts",
+        "prisma/scripts/acceptance-data-layer.ts",
+        "src/app/api/intent/evaluate/route.ts",
+        "src/app/api/training/[layer]/model/route.ts",
+        "src/app/api/training/[layer]/route.ts",
+        "src/lib/eval-layer.ts",
+        "src/lib/model-checkpoint.ts",
+        "src/lib/replay-buffer.ts",
+        "src/lib/c-reflection-training-loop.ts",
+        "src/lib/dsh-path-training-loop.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.375,
+      "budget_hit": true,
+      "output_bytes": 6943,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 3,
+          "total": 8
+        }
+      }
+    },
+    {
+      "id": "Q12",
+      "feature": "replay buffer quality level",
+      "expected": [
+        "src/lib/replay-buffer.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/replay-buffer.ts",
+        "src/lib/quality-gate.ts",
+        "src/app/api/ops/decision-levels/route.ts",
+        "src/lib/dsh-execution-engine.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/skill-selector.ts",
+        "src/lib/knowledge-rag.ts",
+        "src/lib/planner/planner-types.ts",
+        "src/lib/task-manager.ts",
+        "src/lib/model-checkpoint.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.375,
+      "budget_hit": true,
+      "output_bytes": 7916,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 3,
+          "total": 8
+        },
+        "edges": {
+          "kept": 22,
+          "total": 52
+        }
+      }
+    },
+    {
+      "id": "Q13",
+      "feature": "drift detector adapter",
+      "expected": [
+        "src/lib/drift-detector-adapter.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/compressor-adapter/types.ts",
+        "src/lib/compressor-adapter/external-stub.ts",
+        "src/lib/compressor-adapter/fallback.ts",
+        "src/lib/drift-detector-adapter.ts",
+        "src/lib/compressor-adapter/adapter.ts",
+        "src/lib/drift-detector.ts",
+        "src/lib/compressor-adapter/orchestrate-adapter.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/planner/step-types.ts",
+        "src/lib/model-checkpoint.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 8039,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "edges": {
+          "kept": 20,
+          "total": 47
+        }
+      }
+    },
+    {
+      "id": "Q14",
+      "feature": "market data fetcher",
+      "expected": [
+        "src/lib/market-data-fetcher.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/market-data-adapter.ts",
+        "src/lib/orchestration/market-data-bridge.ts",
+        "src/lib/market-data-fetcher.ts",
+        "prisma/scripts/acceptance-data-layer.ts",
+        "src/app/api/data/market/route.ts",
+        "src/lib/tavily-service.ts",
+        "src/lib/monitor-bus.ts",
+        "src/lib/reflection-gates.ts",
+        "src/lib/graph-reflection-bridge.ts",
+        "src/lib/planner/planner-types.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7935,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "edges": {
+          "kept": 16,
+          "total": 57
+        }
+      }
+    },
+    {
+      "id": "Q15",
+      "feature": "three screens mapper",
+      "expected": [
+        "src/lib/three-screens-mapper.ts"
+      ],
+      "ranked_top_k": [
+        "src/components/index.ts",
+        "src/stores/index.ts",
+        "src/components/features/three-screens/Screen1Panel.tsx",
+        "src/lib/three-screens-mapper.ts",
+        "src/app/dashboard/three-screens/[screen]/page.tsx",
+        "src/app/dashboard/three-screens/page.tsx",
+        "src/app/dashboard/three-screens/pipeline/page.tsx",
+        "src/app/dashboard/three-screens/screen1/page.tsx",
+        "src/components/features/three-screens/PipelineView.tsx",
+        "src/lib/three-screens-api.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7981,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 37,
+          "total": 88
+        },
+        "edges": {
+          "kept": 0,
+          "total": 62
+        }
+      }
+    },
+    {
+      "id": "Q16",
+      "feature": "token monitor hook",
+      "expected": [
+        "src/lib/token-monitor.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/token-monitor.ts",
+        "src/components/features/token-monitor/TokenMonitorBadge.tsx",
+        "src/components/features/token-monitor/TokenMonitorPanel.tsx",
+        "src/lib/use-token-monitor.ts",
+        "src/components/index.ts",
+        "src/components/features/chat/MonitorHooks.tsx",
+        "src/app/dashboard/token-monitor/page.tsx",
+        "src/lib/token-monitor-provider.tsx",
+        "src/stores/index.ts",
+        "src/stores/session-store.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 8043,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "edges": {
+          "kept": 10,
+          "total": 45
+        }
+      }
+    },
+    {
+      "id": "Q17",
+      "feature": "auth runtime",
+      "expected": [
+        "src/lib/auth-runtime.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/auth.ts",
+        "src/lib/auth-runtime.ts",
+        "src/lib/api-client.ts",
+        "src/lib/prisma.ts",
+        "src/app/api/auth/[...nextauth]/route.ts",
+        "src/lib/v3/api/auth.ts",
+        "src/stores/auth-store.ts",
+        "src/lib/development-route-uids.ts",
+        "src/lib/dev-user.ts",
+        "src/lib/v3/api/board.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7987,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 51,
+          "total": 69
+        },
+        "edges": {
+          "kept": 0,
+          "total": 73
+        }
+      }
+    },
+    {
+      "id": "Q18",
+      "feature": "bdsm api",
+      "expected": [
+        "src/lib/bdsm-api.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/prisma.ts",
+        "src/lib/bdsm-api.ts",
+        "src/app/api/agent/brainstorm/route.ts",
+        "src/app/api/agent/chat/route.ts",
+        "src/app/api/config/api-keys/route.ts",
+        "src/app/api/config/api-keys/test/route.ts",
+        "src/lib/development-route-uids.ts",
+        "src/lib/encryption.ts",
+        "src/lib/classic-system-bridge.ts",
+        "src/lib/agent/mcp-client.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 8015,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "edges": {
+          "kept": 3,
+          "total": 69
+        }
+      }
+    },
+    {
+      "id": "Q19",
+      "feature": "module api client",
+      "expected": [
+        "src/lib/module-api-client.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/api-client.ts",
+        "src/components/index.ts",
+        "src/lib/prisma.ts",
+        "src/lib/module-api-client.ts",
+        "src/app/api/config/api-keys/route.ts",
+        "src/app/api/config/api-keys/test/route.ts",
+        "src/lib/v3/api/client.ts",
+        "src/lib/development-route-uids.ts",
+        "src/stores/index.ts",
+        "src/lib/encryption.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7962,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 44,
+          "total": 86
+        },
+        "edges": {
+          "kept": 0,
+          "total": 73
+        }
+      }
+    },
+    {
+      "id": "Q20",
+      "feature": "knowledge ingest",
+      "expected": [
+        "src/lib/knowledge-ingest.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/knowledge-rag.ts",
+        "src/lib/cognitive-client.ts",
+        "src/lib/knowledge-ingest.ts",
+        "src/app/api/cognitive/knowledge/route.ts",
+        "src/lib/knowledge-loader.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/planner/planner-types.ts",
+        "src/lib/task-manager.ts",
+        "src/lib/skill-selector.ts",
+        "src/lib/model-checkpoint.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.1,
+      "evidence_survival": 0.375,
+      "budget_hit": true,
+      "output_bytes": 8006,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 3,
+          "total": 8
+        },
+        "edges": {
+          "kept": 7,
+          "total": 57
+        }
+      }
+    },
+    {
+      "id": "Q21",
+      "feature": "replay buffer training loop registry",
+      "expected": [
+        "src/lib/replay-buffer.ts",
+        "src/lib/training-loop-registry.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/model-checkpoint.ts",
+        "src/lib/replay-buffer.ts",
+        "src/lib/drift-detector-adapter.ts",
+        "src/lib/c-reflection-training-loop.ts",
+        "src/lib/dsh-path-training-loop.ts",
+        "src/lib/g-graph-training-loop.ts",
+        "src/lib/llm-prompt-training-loop.ts",
+        "src/lib/training-loop-registry.ts",
+        "src/lib/s-intent-training-loop.ts",
+        "src/lib/knowledge-rag.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.125,
+      "budget_hit": true,
+      "output_bytes": 7368,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 1,
+          "total": 8
+        }
+      }
+    },
+    {
+      "id": "Q22",
+      "feature": "case bank client trae memory bridge",
+      "expected": [
+        "src/lib/case-bank-client.ts",
+        "src/lib/trae-memory-bridge.ts"
+      ],
+      "ranked_top_k": [
+        "src/components/index.ts",
+        "src/lib/case-bank-client.ts",
+        "src/components/features/memory/MemoryTabNav.tsx",
+        "src/lib/bridge-client.ts",
+        "src/stores/index.ts",
+        "src/components/features/memory/MemoryTimeline.tsx",
+        "src/lib/trae-memory-bridge.ts",
+        "src/lib/solution-encoder.ts",
+        "src/lib/cognitive-client.ts",
+        "src/lib/cognitive-context-builder.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7989,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 44,
+          "total": 104
+        },
+        "edges": {
+          "kept": 0,
+          "total": 62
+        }
+      }
+    },
+    {
+      "id": "Q23",
+      "feature": "cognitive client evolution agent",
+      "expected": [
+        "src/lib/cognitive-client.ts",
+        "src/lib/evolution-agent.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/cognitive-client.ts",
+        "src/lib/agent/mcp-client.ts",
+        "src/lib/evolution-agent.ts",
+        "src/app/api/agent/brainstorm/route.ts",
+        "src/app/api/agent/chat/route.ts",
+        "src/lib/knowledge-ingest.ts",
+        "src/lib/agent/providers.ts",
+        "src/lib/agent/distill-outbox.ts",
+        "src/lib/user-memory-client.ts",
+        "src/lib/cognitive-context-builder.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 8041,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "edges": {
+          "kept": 10,
+          "total": 57
+        }
+      }
+    },
+    {
+      "id": "Q24",
+      "feature": "knowledge rag loader",
+      "expected": [
+        "src/lib/knowledge-rag.ts",
+        "src/lib/knowledge-loader.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/knowledge-rag.ts",
+        "src/lib/cognitive-client.ts",
+        "src/lib/knowledge-ingest.ts",
+        "src/app/api/cognitive/knowledge/route.ts",
+        "src/lib/knowledge-loader.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/planner/planner-types.ts",
+        "src/lib/task-manager.ts",
+        "src/lib/skill-selector.ts",
+        "src/lib/model-checkpoint.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.375,
+      "budget_hit": true,
+      "output_bytes": 8007,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 3,
+          "total": 8
+        },
+        "edges": {
+          "kept": 7,
+          "total": 57
+        }
+      }
+    },
+    {
+      "id": "Q25",
+      "feature": "drift detector case retriever",
+      "expected": [
+        "src/lib/drift-detector.ts",
+        "src/lib/case-retriever.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/case-bank-client.ts",
+        "src/lib/drift-detector.ts",
+        "src/lib/cognitive-client.ts",
+        "src/lib/drift-detector-adapter.ts",
+        "src/lib/case-retriever.ts",
+        "src/lib/case-verify-bridge.ts",
+        "src/lib/solution-encoder.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/auth.ts",
+        "src/lib/skill-selector.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7922,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "edges": {
+          "kept": 10,
+          "total": 69
+        }
+      }
+    },
+    {
+      "id": "Q26",
+      "feature": "execution planner task manager",
+      "expected": [
+        "src/lib/planner/planner.ts",
+        "src/lib/task-manager.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/planner/skill-types.ts",
+        "src/lib/planner/planner-types.ts",
+        "src/lib/planner/step-types.ts",
+        "src/lib/planner/chain-planner.ts",
+        "src/lib/planner/planner.ts",
+        "src/lib/planner/dynamic-node-planner.ts",
+        "src/lib/planner/tdd-execution-wrapper.ts",
+        "src/lib/compressor-adapter/types.ts",
+        "src/lib/planner/skills-registry.ts",
+        "src/lib/planner/cross-validation-types.ts"
+      ],
+      "recall": 0.5,
+      "precision": 0.1,
+      "evidence_survival": 0.125,
+      "budget_hit": true,
+      "output_bytes": 7952,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 1,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 43,
+          "total": 57
+        },
+        "edges": {
+          "kept": 0,
+          "total": 102
+        }
+      }
+    },
+    {
+      "id": "Q27",
+      "feature": "case bank client case retriever",
+      "expected": [
+        "src/lib/case-bank-client.ts",
+        "src/lib/case-retriever.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/api-client.ts",
+        "src/lib/case-bank-client.ts",
+        "src/components/index.ts",
+        "src/lib/cognitive-client.ts",
+        "src/lib/case-retriever.ts",
+        "src/lib/agent/mcp-client.ts",
+        "src/lib/case-verify-bridge.ts",
+        "src/stores/index.ts",
+        "src/types/index.ts",
+        "src/lib/solution-encoder.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7956,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 47,
+          "total": 78
+        },
+        "edges": {
+          "kept": 0,
+          "total": 80
+        }
+      }
+    },
+    {
+      "id": "Q28",
+      "feature": "cognitive client context fetcher",
+      "expected": [
+        "src/lib/cognitive-client.ts",
+        "src/lib/cognitive-context-fetcher.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/cognitive-client.ts",
+        "src/lib/cognitive-context-builder.ts",
+        "src/lib/cognitive-context-fetcher.ts",
+        "src/app/api/cognitive/health/route.ts",
+        "src/app/api/cognitive/knowledge/route.ts",
+        "src/lib/case-bank-client.ts",
+        "src/lib/solution-encoder.ts",
+        "src/lib/skill-selector.ts",
+        "src/lib/knowledge-rag.ts",
+        "src/lib/monitor-bus.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7957,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 3,
+          "total": 5
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        },
+        "ranked_nodes": {
+          "kept": 44,
+          "total": 63
+        },
+        "edges": {
+          "kept": 0,
+          "total": 78
+        }
+      }
+    },
+    {
+      "id": "Q29",
+      "feature": "replay buffer reflection training loop",
+      "expected": [
+        "src/lib/replay-buffer.ts",
+        "src/lib/c-reflection-training-loop.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/replay-buffer.ts",
+        "src/lib/model-checkpoint.ts",
+        "src/lib/drift-detector-adapter.ts",
+        "src/lib/c-reflection-training-loop.ts",
+        "src/lib/dsh-path-training-loop.ts",
+        "src/lib/g-graph-training-loop.ts",
+        "src/lib/llm-prompt-training-loop.ts",
+        "src/lib/knowledge-rag.ts",
+        "src/lib/training-loop-registry.ts",
+        "src/lib/s-intent-training-loop.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7421,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        }
+      }
+    },
+    {
+      "id": "Q30",
+      "feature": "knowledge rag intent training loop",
+      "expected": [
+        "src/lib/knowledge-rag.ts",
+        "src/lib/s-intent-training-loop.ts"
+      ],
+      "ranked_top_k": [
+        "src/lib/model-checkpoint.ts",
+        "src/lib/replay-buffer.ts",
+        "src/lib/drift-detector-adapter.ts",
+        "src/lib/c-reflection-training-loop.ts",
+        "src/lib/dsh-path-training-loop.ts",
+        "src/lib/g-graph-training-loop.ts",
+        "src/lib/s-intent-training-loop.ts",
+        "src/lib/intent/intent-descriptions.ts",
+        "src/lib/knowledge-rag.ts",
+        "src/lib/cognitive-context-builder.ts"
+      ],
+      "recall": 1.0,
+      "precision": 0.2,
+      "evidence_survival": 0.25,
+      "budget_hit": true,
+      "output_bytes": 7703,
+      "trimmed": {
+        "known_gaps": {
+          "kept": 5,
+          "total": 8
+        },
+        "evidence": {
+          "kept": 2,
+          "total": 8
+        }
+      }
+    }
+  ]
+}

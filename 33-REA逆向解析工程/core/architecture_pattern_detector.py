@@ -162,6 +162,21 @@ class ArchitecturePatternDetector:
                 )
                 all_evidence.append(ev)
 
+        # 前端项目（TS/React）：补充项目级前端架构模式
+        existing = {c.pattern for c in conclusions}
+        for p in self._detect_frontend_patterns(target):
+            if p["pattern"] in existing:
+                continue
+            ev = Evidence(
+                result=f"检测到 {p['pattern']} 架构模式（{p.get('reason', '')}）",
+                level=EvidenceLevel.DERIVATION,
+                provenance=p.get("provenance", {}),
+                confidence=float(p.get("confidence", 0.7)),
+                known_gaps=list(p.get("known_gaps", [])),
+            )
+            conclusions.append(PatternConclusion(pattern=p["pattern"], evidence=ev))
+            all_evidence.append(ev)
+
         # 无任何模式命中 → 输出 unknown Evidence
         if not conclusions:
             all_evidence.append(
@@ -222,6 +237,24 @@ class ArchitecturePatternDetector:
                 return []
             matched.append(hit)
         return matched
+
+    @staticmethod
+    def _detect_frontend_patterns(target: str) -> list[dict[str, Any]]:
+        """对 TS/React 项目复用 TSProjectAnalyzer 的前端模式识别。"""
+        if not (
+            os.path.isfile(os.path.join(target, "tsconfig.json"))
+            or os.path.isdir(os.path.join(target, "src", "app"))
+            or os.path.isfile(os.path.join(target, "next.config.ts"))
+            or os.path.isfile(os.path.join(target, "next.config.js"))
+        ):
+            return []
+        try:
+            from .ts_project_analyzer import TSProjectAnalyzer
+
+            result = TSProjectAnalyzer(target).analyze()
+            return list(result.raw.get("patterns", []))
+        except Exception:
+            return []
 
     def _failopen_unknown(
         self,

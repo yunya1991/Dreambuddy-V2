@@ -11,7 +11,12 @@ from core.call_chain_tracer import CallChainTracer
 from core.git_history import trace_git_history
 from core.algorithm_reducer import reduce_algorithm
 from core.dependency_audit import audit_dependencies
-from dsh_nodes import S33_rea_analyze, S33_rea_trace, S33_rea_compare
+from dsh_nodes import (
+    S33_rea_analyze,
+    S33_rea_compare,
+    S33_rea_trace,
+    get_rea_snapshot,
+)
 
 # 用 33-REA 自身做端到端测试目标
 REA_DIR = str(Path(__file__).parent.parent)
@@ -73,13 +78,19 @@ def test_e2e_dependency_audit_on_self():
 
 
 def test_e2e_dsh_analyze_full_pipeline():
-    """RED: S33_rea_analyze 端到端应能分析整个 33-REA 工程。"""
+    """RED: S33_rea_analyze 端到端应能分析整个 33-REA 工程。
+
+    SPEC-33-D §2.3：full 只回 snapshot_id（不内联 raw/evidence），明细经 get_rea_snapshot 分页读取。
+    """
     result = S33_rea_analyze({"target": REA_DIR, "scope": "full"})
     assert result["ok"] is True
     r = result["result"]
     assert "summary" in r
-    assert "evidence" in r
-    assert len(r["evidence"]) > 0
+    assert r["snapshot_id"]
+    assert "evidence" not in r
+    snap = get_rea_snapshot({"snapshot_id": r["snapshot_id"], "section": "evidence", "limit": 5})
+    assert snap["ok"] is True
+    assert snap["result"]["total"] > 0
 
 
 def test_e2e_dsh_trace_on_real_function():

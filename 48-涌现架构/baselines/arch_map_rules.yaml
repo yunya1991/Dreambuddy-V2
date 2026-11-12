@@ -1,0 +1,96 @@
+# 架构工程地图 — 唯一人工维护的规则文件
+# 契约见 1-ARCHITECTURE/specs/ARCH_ENGINEERING_MAP_SPEC.md §3.1
+#
+# 只声明三件事：层归属 / 能力展示名 / 路径前缀（聚合口径）；运行态 phase 映射。
+# 不声明边：边由 project_arch_map.py 从 architecture_graph.json 聚合得出。
+
+layers:
+  - { id: S, label: 认知规划 }
+  - { id: A, label: 节点验收 }
+  - { id: C, label: 执行驱动 }
+  - { id: G, label: 压缩沉淀 }
+  - { id: X, label: 支撑/外部 }
+
+capabilities:
+  - { id: S.intent,        label: 意图识别,   layer: S, paths: ["3.1-FRONTEND/src/lib/intent/", "1-ARCHITECTURE/dreamos/core/sense/"] }
+  - { id: S.recall,        label: 经验召回,   layer: S, paths: ["4-MEMORY/", "35-广义认知系统协作模块/"] }
+  - { id: S.plan,          label: 计划编排,   layer: S, paths: ["1-ARCHITECTURE/dreamos/core/arrange/"] }
+  - { id: S.dreamos,       label: DreamOS 内核, layer: S, paths: ["1-ARCHITECTURE/dreamos/"] }
+  - { id: S.compress,      label: 上下文压缩, layer: S, paths: ["24-图结构上下文压缩/", "6-图结构上下文压缩/"] }
+  - { id: S.debate,        label: 对抗辩论,   layer: S, paths: ["32-对抗性辩论Bot/"] }
+  - { id: S.yijing,        label: 易经推理,   layer: S, paths: ["11-易经推理系统/"] }
+  - { id: S.strategy,      label: 战略推演,   layer: S, paths: ["43-战略承接推演层/"] }
+  - { id: S.devgate,       label: 开发门禁编排, layer: S, paths: [".trae/skills/dreamos-dev/"] }
+  - { id: A.skills,        label: SKILL 注册, layer: A, paths: ["1-ARCHITECTURE/skills/", "1-ARCHITECTURE/工作索引/"] }
+  - { id: A.selector,      label: 技能选择,   layer: A, paths: ["3.1-FRONTEND/src/lib/skill-selector"] }
+  - { id: A.router,        label: 智能路由,   layer: A, paths: ["3.1-FRONTEND/src/lib/router/", "3.1-FRONTEND/src/lib/smart-router.ts"] }
+  - { id: A.gov,           label: 治理审批,   layer: A, paths: ["27-策略治理审批系统/", "2-GOVERNANCE/"] }
+  - { id: A.strategy,      label: 策略生成管理, layer: A, paths: ["25-用户策略生成系统/", "26-策略管理模块/"] }
+  - { id: A.protocol,      label: 协议接入,   layer: A, paths: ["49-交易框架协议/", "52-lobehub协议集成/"] }
+  - { id: C.dsh,           label: DSH 执行,   layer: C, paths: ["1-ARCHITECTURE/dream-harness-bridge/", "46-DSH架构/"] }
+  - { id: C.cdrive,        label: C-Drive,    layer: C, paths: ["3.1-FRONTEND/src/lib/c-drive.ts"] }
+  - { id: C.rea,           label: REA 逆向,   layer: C, paths: ["33-REA逆向解析工程/"] }
+  - { id: C.mcp,           label: MCP 壳,     layer: C, paths: ["47-MCP管理系统/"] }
+  - { id: C.trade,         label: 交易执行,   layer: C, paths: ["6-TRADING/", "10-经典指标系统/", "14-V15经典马丁策略/", "17-v4-wave-strategy/", "22-执行引擎中心/", "29-事件驱动策略系统/"] }
+  - { id: C.data,          label: 数据链路,   layer: C, paths: ["18-数据获取中心/", "19-数据访问层/", "20-数据清洗中心/", "21-特征工程中心/", "38-数据库管理系统/"] }
+  - { id: C.risk,          label: 风控调控,   layer: C, paths: ["13-通用风控模块/", "16-调控系统/", "15-监控告警系统/"] }
+  - { id: C.fundamental,   label: 基本面分析, layer: C, paths: ["9-基本面分析/"] }
+  - { id: C.nn,            label: 神经网络层, layer: C, paths: ["40-周期神经网络系统/", "42-神经网络交易协调层/", "50-NN主矛盾评估器/"] }
+  - { id: C.signal,        label: 信号触发,   layer: C, paths: ["28-策略信号触发模块/", "12-三屏趋势系统/"] }
+  - { id: C.exchange,      label: 真实环境交互, layer: C, paths: ["30-真实环境交互系统/", "51-OKX CLI 系统/"] }
+  - { id: C.l0,            label: L0 数据底座, layer: C, paths: ["dreambuddy_l0/"] }
+  - { id: G.knowledge,     label: 知识库,     layer: G, paths: ["2-KNOWLEDGE/", "39-金融语义蒸馏系统/"] }
+  - { id: G.docs,          label: 文档索引,   layer: G, paths: ["0-系统文档管理/", "41-文件索引系统/", "7-产物中台/"] }
+  - { id: G.emergence,     label: 涌现实验,   layer: G, paths: ["48-涌现架构/"] }
+  - { id: G.eval,          label: 评测进化,   layer: G, paths: ["45-评测系统/", "3-EVOLUTION/", "23-四层闭环自进化交易架构/", "acceptance_bundles/"] }
+  - { id: G.train,         label: 应用训练,   layer: G, paths: ["34-前端应用训练系统/"] }
+  - { id: G.experiments,   label: 实验产物,   layer: G, paths: ["experiments/"] }
+  - { id: G.docroot,       label: 仓库文档,   layer: G, paths: ["docs/"] }
+  - { id: X.frontend,      label: 前端应用,   layer: X, paths: ["3.1-FRONTEND/src/app/", "3.1-FRONTEND/src/components/", "3.1-FRONTEND/src/stores/", "3.1-FRONTEND/src/lib/"] }
+  - { id: X.feishu,        label: 飞书协同,   layer: X, paths: ["8-FEISHU/", "36-通信系统层/"] }
+  - { id: X.infra,         label: 部署运维,   layer: X, paths: ["31-分布式计算部署/", "37-一键启动脚本/", "44-三端协作架构系统/", "deploy/", "scripts/"] }
+  - { id: X.shells,        label: MCP 壳运行时, layer: X, paths: ["mcp_shells/"] }
+  - { id: X.tests,         label: 测试,       layer: X, paths: ["tests/"] }
+  - { id: X.legacy,        label: 历史/旁支,   layer: X, paths: ["3-FRONTEND/", "3-CHAIN-DEVELOPMENT/", "5-BUSINESS/", "AGENT协作工具/"] }
+
+# 未命中任何 paths 的顶层目录 → X.other.<dir>（脚本自动生成，不在此声明）
+# 外部依赖节点（external:*）→ X.external（脚本自动生成）
+
+# 运行时 phase → cap（M1 点亮兜底，按优先级 match）
+phase_map:
+  user_input: [S.intent]
+  intent_recognized: [S.intent]
+  recognized: [S.intent]
+  rule_follow_up: [S.intent]
+  rule_prefilter: [S.intent]
+  fallback_rule: [S.intent]
+  fallback_default: [S.intent]
+  non_financial_skip: [S.intent]
+  clarification_requested: [S.intent]
+  low_confidence_clarification: [S.intent]
+  clarification_sent: [S.intent]
+  chain_started: [S.plan, A.selector]
+  routed: [A.router]
+  task_created: [C.dsh]
+  inline_exec_start: [C.dsh]
+  inline_exec_done: [C.dsh]
+  async_spawned: [C.dsh]
+  wb_received: [C.dsh]
+  wb_processing: [C.dsh]
+  wb_completed: [C.dsh]
+  wb_failed: [C.dsh]
+  trade_pending: [C.trade]
+  artifact_synced: [G.knowledge, G.docs]
+  index_updated: [G.docs]
+  feed_ready: [G.knowledge]
+  result_displayed: [X.frontend]
+  jev_evaluated: [C.cdrive]
+
+# layer 级兜底（phase 未命中时）
+layer_default:
+  frontend: [X.frontend]
+  gateway: [C.dsh]
+  intent: [S.intent]
+  router: [A.router]
+  workbuddy: [C.dsh]
+  artifact_hub: [G.docs]

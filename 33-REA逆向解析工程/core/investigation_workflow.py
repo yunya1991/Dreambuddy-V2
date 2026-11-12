@@ -24,8 +24,10 @@ from .algorithm_reducer import reduce_algorithm
 # TS 分析器（可选导入，TS 扩展时加载）
 try:
     from .ts_analyzer import TSAnalyzer
+    from .ts_project_analyzer import TSProjectAnalyzer
 except ImportError:
     TSAnalyzer = None  # type: ignore
+    TSProjectAnalyzer = None  # type: ignore
 
 
 # 常见入口函数名（按优先级排序）
@@ -57,6 +59,19 @@ class InvestigationWorkflow:
         wf = InvestigationWorkflow()
         result = wf.run("/path/to/project", feature="用户登录", entry="main")
     """
+
+    def __init__(self) -> None:
+        # 同一次调查内复用 TS 项目级解析结果（避免 locate/trace 重复全量扫描）
+        self._ts_cache: dict[str, AnalyzeResult] = {}
+
+    def _analyze_ts_project(self, target: str) -> AnalyzeResult | None:
+        """TS 项目级分析（带缓存）。"""
+        if TSProjectAnalyzer is None:
+            return None
+        key = os.path.abspath(target)
+        if key not in self._ts_cache:
+            self._ts_cache[key] = TSProjectAnalyzer(key).analyze()
+        return self._ts_cache[key]
 
     def run(
         self,
@@ -196,18 +211,38 @@ class InvestigationWorkflow:
             # 检测目录主要语言
             phase["language"] = self._detect_directory_language(target)
 
-            # 依赖图
-            dep_graph = DependencyGraph()
-            dep_result = dep_graph.build(target)
-            phase["modules"] = dep_result.get("nodes", [])
-            phase["evidence"].extend(dep_result.get("evidence", []))
+            if phase["language"] == "typescript":
+                # TS/React 项目级分析：路由 / 依赖图 / 组件 / store / 架构模式
+                ts_result = self._analyze_ts_project(target)
+                if ts_result is not None:
+                    raw = ts_result.raw
+                    graph = raw.get("graph", {})
+                    phase["modules"] = list(graph.get("nodes", []))
+                    phase["evidence"].extend(ts_result.evidence)
+                    phase["entry_points"] = self._detect_ts_entry_points(raw, entry)
+                else:
+                    phase["evidence"].append(
+                        Evidence(
+                            result="TS 项目级分析器不可用",
+                            provenance={"target": target, "phase": "locate"},
+                            confidence=0.5,
+                            known_gaps=["TSProjectAnalyzer 导入失败，仅能降级"],
+                            level="unknown",
+                        )
+                    )
+            else:
+                # 依赖图
+                dep_graph = DependencyGraph()
+                dep_result = dep_graph.build(target)
+                phase["modules"] = dep_result.get("nodes", [])
+                phase["evidence"].extend(dep_result.get("evidence", []))
 
-            # 分析入口文件
-            phase["entry_points"] = self._detect_entry_points_dir(
-                target,
-                phase["language"],
-                entry,
-            )
+                # 分析入口文件
+                phase["entry_points"] = self._detect_entry_points_dir(
+                    target,
+                    phase["language"],
+                    entry,
+                )
         else:
             phase["valid"] = False
             phase["evidence"].append(
@@ -258,21 +293,47 @@ class InvestigationWorkflow:
             "summary": "",
         }
 
-        # TS/JS 目录暂不支持调用链追踪（CallChainTracer 仅支持 Python）
+        # TS/JS：基于项目级 import 图追踪模块依赖（不做函数级调用链）
         if locate.get("language") == "typescript":
-            phase["evidence"].append(
-                Evidence(
-                    result="TS/JS 调用链追踪暂不支持",
-                    provenance={"target": target, "phase": "trace"},
-                    confidence=1.0,
-                    known_gaps=[
-                        "CallChainTracer 当前仅支持 Python AST",
-                        "TS/JS 调用链需集成 babel 或 SWC 解析器",
-                    ],
-                    level="unknown",
+            ts_result = self._analyze_ts_project(target) if os.path.isdir(target) else None
+            if ts_result is None:
+                phase["evidence"].append(
+                    Evidence(
+                        result="TS/JS 单文件调用链追踪暂不支持",
+                        provenance={"target": target, "phase": "trace"},
+                        confidence=1.0,
+                        known_gaps=["单文件 TS 追踪需项目上下文（import 图），请传目录目标"],
+                        level="unknown",
+                    )
                 )
+                phase["summary"] = "追踪: TS 单文件，跳过"
+                return phase
+
+            raw = ts_result.raw
+            graph = raw.get("graph", {})
+            adjacency = graph.get("adjacency", {})
+            callers: dict[str, list[str]] = {}
+            for src, dsts in adjacency.items():
+                for dst in dsts:
+                    callers.setdefault(dst, []).append(src)
+            phase["callers"] = {k: sorted(set(v)) for k, v in callers.items()}
+            phase["callees"] = {k: sorted(set(v)) for k, v in adjacency.items()}
+            phase["all_functions"] = [
+                {"name": c["name"], "file": c.get("file", ""), "kind": "component"}
+                for c in raw.get("components", [])
+            ] + [{"name": h, "file": "", "kind": "hook"} for h in raw.get("hooks", [])]
+            phase["entry_chain"] = self._ts_entry_chain(raw)
+            phase["evidence"].extend(
+                e
+                for e in ts_result.evidence
+                if e.provenance.get("analysis")
+                in {"dependency_graph", "cycle_detection", "orphan_scan"}
             )
-            phase["summary"] = "追踪: TS/JS 调用链暂不支持"
+            phase["summary"] = (
+                f"追踪: TS/React {len(graph.get('nodes', []))} 模块, "
+                f"{len(graph.get('edges', []))} 依赖边, "
+                f"{len(graph.get('cycles', []))} 循环"
+            )
             return phase
 
         tracer = CallChainTracer()
@@ -330,17 +391,33 @@ class InvestigationWorkflow:
             "summary": "",
         }
 
-        # 仅支持 Python 文件
+        # 仅支持 Python 文件的算法伪代码还原
         if locate.get("language") != "python":
-            phase["evidence"].append(
-                Evidence(
-                    result="非 Python 目标，算法还原跳过",
-                    provenance={"target": target, "phase": "reduce"},
-                    confidence=1.0,
-                    known_gaps=["AlgorithmReducer 仅支持 Python AST"],
-                    level="observation",
+            ts_evidence: list[Evidence] = []
+            if locate.get("language") == "typescript":
+                ts_evidence.append(
+                    Evidence(
+                        result="TS/React 目标：算法伪代码还原跳过，已由项目级结构还原替代",
+                        provenance={"target": target, "phase": "reduce"},
+                        confidence=0.9,
+                        known_gaps=[
+                            "AlgorithmReducer 仅支持 Python AST",
+                            "TS 组件/状态流已通过 import 图与组件图还原，函数级伪代码未生成",
+                        ],
+                        level="observation",
+                    )
                 )
-            )
+            else:
+                ts_evidence.append(
+                    Evidence(
+                        result="非 Python 目标，算法还原跳过",
+                        provenance={"target": target, "phase": "reduce"},
+                        confidence=1.0,
+                        known_gaps=["AlgorithmReducer 仅支持 Python AST"],
+                        level="observation",
+                    )
+                )
+            phase["evidence"].extend(ts_evidence)
             phase["summary"] = "还原: 非 Python 目标，跳过"
             return phase
 
@@ -461,15 +538,17 @@ class InvestigationWorkflow:
         """
         evidence: list[Evidence] = []
 
-        # 1. 文件行数（扫描 .py 文件，报告行数最高的文件）
+        # 1. 文件行数（按目标语言扫描源码，报告行数最高的文件）
+        language = phases.get("locate", {}).get("language", "python")
+        scan_exts = _TS_EXTS if language == "typescript" else _PY_EXTS
         try:
             if os.path.isdir(target):
                 max_file, max_lines = "", 0
                 for root, _, files in os.walk(target):
-                    if "__pycache__" in root:
+                    if "__pycache__" in root or "node_modules" in root:
                         continue
                     for f in files:
-                        if not f.endswith(".py") or f == "__init__.py":
+                        if not f.endswith(scan_exts) or f == "__init__.py":
                             continue
                         fp = os.path.join(root, f)
                         try:
@@ -588,6 +667,40 @@ class InvestigationWorkflow:
         if ts_count > 0:
             return "typescript"
         return "unknown"
+
+    @staticmethod
+    def _detect_ts_entry_points(raw: dict[str, Any], entry: str | None) -> list[str]:
+        """TS 项目入口 = API route + 顶层页面 + (可选)指定入口。"""
+        if entry:
+            return [entry]
+        api = [f"{r['path']} [{','.join(r.get('methods', []))}]" for r in raw.get("api_routes", [])]
+        pages = [r["path"] for r in raw.get("routes", [])]
+        points = api[:20] + pages[:20]
+        return points or ["(未自动检测到入口)"]
+
+    @staticmethod
+    def _ts_entry_chain(raw: dict[str, Any]) -> list[dict[str, Any]] | None:
+        """从首个 API route 出发，沿 import 图向下展开 3 层，作为模块级调用链。"""
+        graph = raw.get("graph", {})
+        adjacency = graph.get("adjacency", {})
+        api_routes = raw.get("api_routes", [])
+        if not api_routes:
+            return None
+        start = api_routes[0]["file"]
+        chain: list[dict[str, Any]] = []
+        seen: set[str] = set()
+
+        def walk(node: str, depth: int) -> None:
+            if depth > 3 or node in seen:
+                return
+            seen.add(node)
+            right = adjacency.get(node, [])
+            chain.append({"module": node, "depth": depth, "imports": right})
+            for nb in right:
+                walk(nb, depth + 1)
+
+        walk(start, 0)
+        return chain
 
     @staticmethod
     def _detect_entry_points_single(

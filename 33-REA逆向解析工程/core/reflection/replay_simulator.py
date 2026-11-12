@@ -37,6 +37,9 @@ MIN_TREES_FOR_EVAL = 10
 EXTERNAL_TREE_INIT_WEIGHT = 0.5
 EXTERNAL_TREE_WEIGHT_MIN = 0.1
 EXTERNAL_TREE_WEIGHT_MAX = 1.0
+# 流程日志（SPEC-33-E T-E1 三类分层）：这些树不进做梦/方法论语料
+PROCESS_ANALYZERS = frozenset({"acceptance_gate", "code_commit", "doc_sync", "cognitive_record"})
+PROCESS_TASK_TYPES = frozenset({"l1_loop"})
 
 
 def _now_ms() -> int:
@@ -101,6 +104,8 @@ class DiscoveryTree:
     task: Dict[str, Any]
     nodes: List[DiscoveryNode] = field(default_factory=list)
     provenance: str = "internal"
+    # 语料分层（SPEC-33-E T-E1）：""=internal，process=_process/，external 由 provenance 决定
+    layer: str = ""
     source_label: str = ""
     weight: float = 1.0
     created_at: int = field(default_factory=_now_ms)
@@ -159,6 +164,7 @@ class DiscoveryTree:
             "task": self.task,
             "nodes": [n.to_dict() for n in self.nodes],
             "provenance": self.provenance,
+            "layer": self.layer,
             "source_label": self.source_label,
             "weight": self.weight,
             "created_at": self.created_at,
@@ -176,6 +182,7 @@ class DiscoveryTree:
             task=dict(data.get("task") or {}),
             nodes=[DiscoveryNode.from_dict(n) for n in data.get("nodes") or []],
             provenance=str(data.get("provenance") or "internal"),
+            layer=str(data.get("layer") or ""),
             source_label=str(data.get("source_label") or ""),
             weight=float(data.get("weight") or 1.0),
             created_at=int(data.get("created_at") or _now_ms()),
@@ -211,33 +218,54 @@ class DiscoveryTree:
         return tree
 
 
+def is_process_tree(tree: "DiscoveryTree") -> bool:
+    """流程日志树：L1 循环产物或含验收/提交/文档/认知类分析器。"""
+    task = tree.task or {}
+    if str(task.get("task_type") or "") in PROCESS_TASK_TYPES:
+        return True
+    for node in tree.nodes:
+        analyzer = str((node.action or {}).get("analyzer") or "")
+        if analyzer in PROCESS_ANALYZERS:
+            return True
+    return False
+
+
 class ReplayPool:
     """回放池：发现树的持久化存储与检索。
 
-    目录结构（SPEC §4.1）：
+    目录结构（SPEC §4.1 / SPEC-33-E T-E1）：
         reflection_data/replay_pool/
-        ├── internal/   内部发现树（本系统分析历史）
-        └── external/   外部解析树（成熟项目）
+        ├── internal/   内部发现树（本系统架构分析历史）
+        ├── external/   外部解析树（成熟项目）
+        └── _process/   流程日志（L1 循环/验收/提交/文档同步，不参与做梦）
     """
 
     def __init__(self, base_dir: str):
         self.base_dir = base_dir
         self.internal_dir = os.path.join(base_dir, "internal")
         self.external_dir = os.path.join(base_dir, "external")
+        self.process_dir = os.path.join(base_dir, "_process")
         os.makedirs(self.internal_dir, exist_ok=True)
         os.makedirs(self.external_dir, exist_ok=True)
 
-    def _dir_for(self, provenance: str) -> str:
-        return self.external_dir if provenance == "external" else self.internal_dir
+    def _dir_for(self, provenance: str, tree: Optional[DiscoveryTree] = None) -> str:
+        if provenance == "external":
+            return self.external_dir
+        if tree is not None and tree.layer == "process":
+            return self.process_dir
+        return self.internal_dir
 
     def save(self, tree: DiscoveryTree) -> str:
-        path = os.path.join(self._dir_for(tree.provenance), f"{tree.tree_id}.json")
+        target_dir = self._dir_for(tree.provenance, tree)
+        if target_dir == self.process_dir:
+            os.makedirs(self.process_dir, exist_ok=True)  # 按需创建，避免空目录
+        path = os.path.join(target_dir, f"{tree.tree_id}.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(tree.to_dict(), f, ensure_ascii=False, indent=2)
         return path
 
     def load(self, tree_id: str) -> Optional[DiscoveryTree]:
-        for d in (self.internal_dir, self.external_dir):
+        for d in (self.internal_dir, self.external_dir, self.process_dir):
             path = os.path.join(d, f"{tree_id}.json")
             if os.path.exists(path):
                 with open(path, "r", encoding="utf-8") as f:
