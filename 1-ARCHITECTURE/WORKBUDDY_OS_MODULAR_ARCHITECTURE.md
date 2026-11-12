@@ -900,7 +900,7 @@ Level 3: 本地规则降级
 | 6-TRADING SKILLs (31个) | Layer 4 A_domain / G_domain / T_domain | 低 - 通过SkillAdapter接入 |
 | 10-经典指标系统 | Layer 4 C_domain | 低 - 通过ClassicIndicatorsAPI接入 |
 | 9-基本面分析系统 | Layer 4 F_domain | 低 - 通过FundamentalAPI接入 |
-| 6-图结构上下文压缩 | Layer 2 图编排层 + 记忆系统 | 中 - 新增GraphOrchestrator集成 |
+| 24-图结构上下文压缩 | Layer 2 图编排层 + 记忆系统 | 中 - 新增GraphOrchestrator集成 |
 | 前端网关 (INTENT_ROUTER) | Layer 1 意图识别层 | 中 - 升级为完整IntentRouter |
 | ab-trading 实验代码 | Layer 2/3 原型验证基础 | 高 - 重构为正式架构 |
 | 产物中台 | Layer 4 T_domain | 低 - 作为模块接入 |

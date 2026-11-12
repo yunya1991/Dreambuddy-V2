@@ -17,7 +17,7 @@ WorkBuddy OS 统一类型定义 (Python 侧)
 4. 置信度维度评分
 5. 降级与错误处理
 
-对齐 TS 侧 6-图结构上下文压缩/planner/skill-types.ts
+对齐 TS 侧 24-图结构上下文压缩/planner/skill-types.ts
 """
 
 from dataclasses import dataclass, field

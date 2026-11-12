@@ -1,7 +1,7 @@
 /**
  * 意图澄清引擎 - 借鉴 Claude Code Superpower 的 "多问后做" 模式
  *
- * 位置: 6-图结构上下文压缩/planner/intent-clarification-engine.ts
+ * 位置: 24-图结构上下文压缩/planner/intent-clarification-engine.ts
  *
  * 设计依据: Claude Code Superpower 插件五步流程
  *   1. Brainstorming（探索意图）

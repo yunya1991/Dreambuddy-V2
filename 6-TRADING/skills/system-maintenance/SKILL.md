@@ -123,7 +123,7 @@ DZE开发链
 ```yaml
 check_modules:
   - module: "骨架层（三链）"
-    path: "6-图结构上下文压缩/planner/step-types.ts"
+    path: "24-图结构上下文压缩/planner/step-types.ts"
     checks:
       - file_exists: true
       - s_chain_steps_defined: true
@@ -131,7 +131,7 @@ check_modules:
       - f_chain_steps_defined: true
 
   - module: "SKILL库"
-    path: "6-图结构上下文压缩/planner/skills-registry.ts"
+    path: "24-图结构上下文压缩/planner/skills-registry.ts"
     checks:
       - file_exists: true
       - skill_count: ">30"
@@ -145,7 +145,7 @@ check_modules:
       - rag_implementation: true
 
   - module: "记忆系统"
-    path: "3-FRONTEND/dream-universal-gateway/src/lib/memory/"
+    path: "3.1-FRONTEND/src/lib/memory/"
     checks:
       - intent_memory_exists: true
       - user_preference_memory_exists: true

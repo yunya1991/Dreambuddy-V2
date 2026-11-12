@@ -9,8 +9,8 @@
  *   3. 输出质量（规划完整性）
  */
 
-import { ChainPlanner, DynamicInsertionPlanner } from '../6-图结构上下文压缩/planner/chain-planner.ts';
-import { IntentType, ComplexityLevel, SkillChain } from '../6-图结构上下文压缩/planner/planner-types.ts';
+import { ChainPlanner, DynamicInsertionPlanner } from '../24-图结构上下文压缩/planner/chain-planner.ts';
+import { IntentType, ComplexityLevel, SkillChain } from '../24-图结构上下文压缩/planner/planner-types.ts';
 
 // ============================================================
 // 配置

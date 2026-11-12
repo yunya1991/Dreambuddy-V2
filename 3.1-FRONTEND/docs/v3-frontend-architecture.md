@@ -2,7 +2,7 @@
 
 > 版本: v3.1 | 日期: 2026-10-10 | 状态: 已实现（P0-P3 全部完成）
 > 定位: WorkBuddy OS SACG 四层架构前端实现
-> 约束: 独立端口 3001 运行，与 3.0 前端（3-FRONTEND/dream-universal-gateway）隔离
+> 约束: 独立端口 3001 运行，原 3.0 前端（3-FRONTEND/dream-universal-gateway）已于 2026-11-13 删除
 > **架构口径**: 遵循 SSoT《SYSTEM_ARCHITECTURE_OVERVIEW.md v4.0》——本文档的 SACG 为**新 SACG**（S=认知驱动规划入口 / A=OKR 节点验收 / C=执行驱动 / G=压缩沉淀）。文中遗留的 `S(Sense)/A(Arrange)/C(Compute)/G(Graph)` 括注及组件名（SenseConfidenceGauge / SACGOverview / SACELayerBadge 等）为**前端既有代码命名，兼容保留、不重命名**，其架构语义一律以新 SACG 为准。
 
 ---
@@ -1271,7 +1271,7 @@ G (Graph)   #EF4444  红色  — BAC 压缩、历史回放、Checkpoint
 
 3.1 前端的 UI 设计规范同时参考以下两份 UI_SPEC:
 
-1. [3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md](../../3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md) (v2.3, 3.0 时代)
+1. [UI_SPEC.md](./UI_SPEC.md) (v2.3, 3.0 时代，已迁移至 3.1/docs/)
 2. [1-ARCHITECTURE/前端设计/UI_SPEC.md](../../1-ARCHITECTURE/前端设计/UI_SPEC.md) (v2.3, 3.0 时代)
 
 > **注**: 两份 UI_SPEC 内容相同，描述 3.0 时代的三栏对话式界面。3.1 已远超此设计，但仍保留以下有效规范:

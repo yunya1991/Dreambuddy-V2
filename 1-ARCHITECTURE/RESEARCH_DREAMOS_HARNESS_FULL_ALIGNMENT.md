@@ -34,7 +34,7 @@ DreamOS 不是单一系统，而是围绕"意图驱动 + 图编排 + 双认知�
 |---|--------|---------|------|------|
 | 1 | **DreamOS 操作系统内核** | `dreamos/core/` (S/A/C/G 四层) | 通用 agent 操作系统内核 | OS 内核 |
 | 2 | **交易 Skill 系统** | `dreamos/capabilities/trading/nodes/` + `6-TRADING/` | 交易领域特化能力层（A0-A9/C1-C5/F1-F5/G1-G2） | 专用 ASIC |
-| 3 | **图编排架构** | `6-图结构上下文压缩/` + `dreamos/core/arrange/` | 双维度编排 + 上下文压缩 + 图状态管理 | 调度器 + 文件系统 |
+| 3 | **图编排架构** | `24-图结构上下文压缩/` + `dreamos/core/arrange/` | 双维度编排 + 上下文压缩 + 图状态管理 | 调度器 + 文件系统 |
 | 4 | **认知系统** | `4-MEMORY/9-工具与接口/` + `dreamos/core/memory/` | 开发认知闭环 + 交易认知闭环 | 大脑皮层 |
 | 5 | **知识库** | `2-KNOWLEDGE/` | 跨领域系统知识蒸馏与索引 | 长期记忆（语义） |
 | 6 | **文档管理系统** | `0-系统文档管理/` | 文档导航中枢 + 规范 + 治理 + 自动化 | 元数据管理层 |
@@ -151,7 +151,7 @@ DreamOS 不是单一系统，而是围绕"意图驱动 + 图编排 + 双认知�
 - **L2 AI 推理引擎**：每个思维步骤内动态决策（问题定义→技能选择→执行→置信度评估→分支→写图）
 - **L3 技能库**：A/C/F/G 系列节点，统一契约（输入→处理→输出+置信度）
 
-**图状态管理**（`6-图结构上下文压缩/`）：
+**图状态管理**（`24-图结构上下文压缩/`）：
 - `graph-state.ts`：图状态管理
 - `graph-checkpointer.ts`：图检查点
 - `graph-parallel.ts`：图并行执行
@@ -179,7 +179,7 @@ DreamOS 不是单一系统，而是围绕"意图驱动 + 图编排 + 双认知�
 
 - **DreamOS 图编排的优势**：BAC 三层压缩（Chronicle 细粒度→Architecture 中间层→Blueprint 摘要）比 Harness 单维 Session Log 更有层次结构
 - **可借鉴**：HM-4 的 append-only 事件流作为 Chronicle 层的数据源，BAC 压缩在事件流之上做 projection
-- **注意**：DreamOS 有两套图实现（TS 的 `6-图结构上下文压缩/` + Python 的 `dreamos/core/graph_store/`），需统一，SSoT 应是 Python G 层
+- **注意**：DreamOS 有两套图实现（TS 的 `24-图结构上下文压缩/` + Python 的 `dreamos/core/graph_store/`），需统一，SSoT 应是 Python G 层
 
 ---
 
@@ -713,11 +713,11 @@ const reward = pnlPct;  // 直接用 PnL 当 reward
 - [dream-harness-bridge/PHASE0_REPORT.md](./dream-harness-bridge/PHASE0_REPORT.md) v2.0 — Phase 0 POC 验收
 - [RESEARCH_SACG_HARNESS_MAPPING.md](./RESEARCH_SACG_HARNESS_MAPPING.md) v0.1 — SACG 四层 → Harness 扩展点详细映射设计
 - [6-TRADING/TRADING_SYSTEM.md](../6-TRADING/TRADING_SYSTEM.md) v2.2 — 交易系统
-- [6-图结构上下文压缩/SPEC.md](../6-图结构上下文压缩/SPEC.md) v1.0 — 双维度编排
+- [24-图结构上下文压缩/SPEC.md](../24-图结构上下文压缩/SPEC.md) v1.0 — 双维度编排
 - [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 — 认知系统
 - [2-KNOWLEDGE/INDEX.md](../2-KNOWLEDGE/INDEX.md) — 知识库
 - [0-系统文档管理/INDEX.md](../0-系统文档管理/INDEX.md) v2.2 — 文档管理
-- [3-FRONTEND/FRONTEND_SYSTEM.md](../3-FRONTEND/FRONTEND_SYSTEM.md) v2.0 — 前端
+- [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) v3.1 — 前端
 - [中台设计/README.md](./中台设计/README.md) — 中台
 
 ### DeepSeek Harness 外部

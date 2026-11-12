@@ -209,8 +209,8 @@ const depthSteps = getChainByThinkingDepth(thinkingMode, intentType);
 for (const step of depthSteps) { /* 执行 S 步骤 */ }
 
 // 之后：
-import { ExecutionPlanner } from '../../../../6-图结构上下文压缩/planner/planner';
-import { ensureRegistryInitialized } from '../../../../6-图结构上下文压缩/planner/skills-registry-init';
+import { ExecutionPlanner } from '../../../../24-图结构上下文压缩/planner/planner';
+import { ensureRegistryInitialized } from '../../../../24-图结构上下文压缩/planner/skills-registry-init';
 
 const registry = ensureRegistryInitialized();
 const planner = new ExecutionPlanner(registry);
@@ -432,7 +432,7 @@ const aSkillNodes = trace.nodes.filter(n => n.layer === 'A' && !STAGE_ICONS[n.st
 | 阶段 | 内容 | 改动文件 | 风险 |
 |------|------|---------|------|
 | P1 | 新建 orchestration 桥接层 | `src/lib/orchestration/llm-bridge.ts`<br>`src/lib/orchestration/market-data-bridge.ts`<br>`src/lib/orchestration/node-prompts.ts` | 低 |
-| P2 | 重构所有技能为真实执行（A/C/F全链） | `6-图结构上下文压缩/planner/skills-registry-init.ts` | 中 |
+| P2 | 重构所有技能为真实执行（A/C/F全链） | `24-图结构上下文压缩/planner/skills-registry-init.ts` | 中 |
 | P3 | task-manager 接入 ExecutionPlanner | `src/lib/task-manager.ts` | 高 |
 | P4 | task/route.ts chain_trace 动态构建 | `src/app/api/task/route.ts` | 中 |
 | P5 | 前端组件适配 | `src/types/index.ts`<br>`src/components/chat/ThinkingCard.tsx`<br>`src/components/orchestration/OrchestrationPanel.tsx` | 低 |

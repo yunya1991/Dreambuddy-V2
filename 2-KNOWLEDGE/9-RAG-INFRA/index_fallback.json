@@ -280,15 +280,15 @@
     "domain": "L1 — 顶层架构与治理"
   },
   {
-    "title": "3-FRONTEND/FRONTEND_SYSTEM.md",
-    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/FRONTEND_SYSTEM.md",
+    "title": "3.1-FRONTEND/FRONTEND_SYSTEM.md",
+    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/FRONTEND_SYSTEM.md",
     "category": "doc",
-    "description": "(../3-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构设计 | ⚠️ 待更新 |",
+    "description": "(../3.1-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构设计 | ⚠️ 待更新 |",
     "domain": "L1 — 顶层架构与治理"
   },
   {
     "title": "前端系统",
-    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3-FRONTEND/FRONTEND_SYSTEM.md",
+    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/FRONTEND_SYSTEM.md",
     "category": "doc",
     "description": "前端架构设计",
     "domain": "L1 — 顶层架构与治理"
@@ -938,15 +938,15 @@
     "domain": "L3 — 辅助系统与实验性模块"
   },
   {
-    "title": "6-图结构上下文压缩/README.md",
-    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/README.md",
+    "title": "24-图结构上下文压缩/README.md",
+    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/24-图结构上下文压缩/README.md",
     "category": "doc",
-    "description": "(../6-图结构上下文压缩/README.md) | 🟡 README v0.2 + 4 非标准文档 | 实验性图结构压缩 |",
+    "description": "(../24-图结构上下文压缩/README.md) | 🟡 README v0.2 + 4 非标准文档 | 实验性图结构压缩 |",
     "domain": "L3 — 辅助系统与实验性模块"
   },
   {
-    "title": "6-图结构上下文压缩",
-    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/6-图结构上下文压缩/README.md",
+    "title": "24-图结构上下文压缩",
+    "path": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/24-图结构上下文压缩/README.md",
     "category": "doc",
     "description": "🟡 README v0.2 + 4 非标准文档",
     "domain": "L3 — 辅助系统与实验性模块"

@@ -1,7 +1,7 @@
 /**
  * 交叉验证器
  *
- * 位置: 6-图结构上下文压缩/planner/cross-validator.ts
+ * 位置: 24-图结构上下文压缩/planner/cross-validator.ts
  *
  * 功能:
  * - 在关键节点执行三链交叉验证

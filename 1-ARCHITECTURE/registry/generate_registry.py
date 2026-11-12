@@ -58,7 +58,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "skill_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "factory_function": "createSkill (screen1Skill)",
                             },
                             "fallback": {
@@ -98,7 +98,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "skill_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "factory_function": "createSkill (screen2Skill)",
                             },
                             "fallback": {
@@ -141,7 +141,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "skill_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "skill_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "factory_function": "createSkill (screen3Skill)",
                             },
                             "fallback": {
@@ -187,7 +187,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "both",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/a0_contradiction.py",
                                 "skill_md": "6-TRADING/skills/dream-contradiction-theory/SKILL.md",
                             },
@@ -228,7 +228,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "both",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/a1_research.py",
                                 "skill_md": "6-TRADING/skills/dream-strategy-research/SKILL.md",
                             },
@@ -271,7 +271,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "both",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/a2_analysis.py",
                                 "skill_md": "6-TRADING/skills/dream-first-principles/SKILL.md",
                             },
@@ -316,7 +316,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "both",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/a3_strategy.py",
                                 "skill_md": "6-TRADING/skills/dream-strategy-designer/SKILL.md",
                             },
@@ -353,7 +353,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "both",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/a4_gate.py",
                                 "skill_md": "6-TRADING/skills/dream-tactical-validator/SKILL.md",
                             },
@@ -393,7 +393,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/dream-tactical-executor/SKILL.md",
                             },
                             "fallback": {
@@ -428,7 +428,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/A7-practice-theory/SKILL.md",
                             },
                             "fallback": {
@@ -463,7 +463,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "both",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/a9_exit.py",
                                 "skill_md": "6-TRADING/skills/dream-exit-skill-v2/SKILL.md",
                             },
@@ -506,7 +506,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/dream-intelligence-monitor/SKILL.md",
                             },
                             "fallback": {
@@ -542,7 +542,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/master-seminar/SKILL.md",
                             },
                             "fallback": {
@@ -578,7 +578,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "both",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/oneirology.py",
                                 "skill_md": "6-TRADING/skills/dream-oneirology/SKILL.md",
                             },
@@ -627,7 +627,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/A8-theory-practice-verification/SKILL.md",
                             },
                             "fallback": {
@@ -663,7 +663,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/dream-performance-review/SKILL.md",
                             },
                             "fallback": {
@@ -699,7 +699,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                             },
                             "fallback": {
                                 "enabled": False,
@@ -739,7 +739,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/dream-regime-detector/SKILL.md",
                             },
                             "fallback": {
@@ -779,7 +779,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/dream-signal-scoring-spec/SKILL.md",
                             },
                             "fallback": {
@@ -819,7 +819,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/dream-risk-position-sizing/SKILL.md",
                             },
                             "fallback": {
@@ -855,7 +855,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                             },
                             "fallback": {
                                 "enabled": True,
@@ -890,7 +890,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                                 "skill_md": "6-TRADING/skills/dream-backtest/SKILL.md",
                             },
                             "fallback": {
@@ -926,7 +926,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                             },
                             "fallback": {
                                 "enabled": True,
@@ -967,7 +967,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                             },
                             "fallback": {"enabled": False, "fallback_reason": "门禁模块不允许降级"},
                         },
@@ -1002,7 +1002,7 @@ registry = {
                             "adapter": {
                                 "type": "skill",
                                 "execution_engine": "typescript",
-                                "ts_path": "6-图结构上下文压缩/planner/skills-registry-init.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/skills-registry-init.ts",
                             },
                             "fallback": {
                                 "enabled": False,
@@ -1061,7 +1061,7 @@ registry = {
                                 "execution_engine": "both",
                                 "base_url": "http://127.0.0.1:8092",
                                 "endpoint": "/three_screen/daily/signal",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/c1_tech_scan.py",
                                 "py_module": "core.modules.classic_indicators.ClassicIndicatorsClient",
                             },
@@ -1104,7 +1104,7 @@ registry = {
                                 "execution_engine": "typescript",
                                 "base_url": "http://127.0.0.1:8092",
                                 "endpoint": "/signals/hyperliquid/regime_hybrid",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                             },
                             "fallback": {
                                 "enabled": True,
@@ -1151,7 +1151,7 @@ registry = {
                                 "execution_engine": "typescript",
                                 "base_url": "http://127.0.0.1:8092",
                                 "endpoint": "/strategy/feeder/capabilities",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                             },
                             "fallback": {
                                 "enabled": True,
@@ -1198,7 +1198,7 @@ registry = {
                                 "execution_engine": "typescript",
                                 "base_url": "http://127.0.0.1:8092",
                                 "endpoint": "/three_screen/weekly/status",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                             },
                             "fallback": {
                                 "enabled": True,
@@ -1241,7 +1241,7 @@ registry = {
                                 "execution_engine": "typescript",
                                 "base_url": "http://127.0.0.1:8092",
                                 "endpoint": "/three_screen/daily/signal",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                             },
                             "fallback": {
                                 "enabled": True,
@@ -1291,7 +1291,7 @@ registry = {
                                 "execution_engine": "both",
                                 "base_url": "http://127.0.0.1:9094",
                                 "endpoint": "/fundamental/news/snapshot",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/f1_news.py",
                                 "py_module": "core.modules.fundamental_api.FundamentalAPIClient",
                             },
@@ -1336,7 +1336,7 @@ registry = {
                                 "execution_engine": "both",
                                 "base_url": "http://127.0.0.1:9094",
                                 "endpoint": "/fundamental/flow/snapshot",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/f2_fund_flow.py",
                                 "py_module": "core.modules.fundamental_api.FundamentalAPIClient",
                             },
@@ -1381,7 +1381,7 @@ registry = {
                                 "execution_engine": "both",
                                 "base_url": "http://127.0.0.1:9094",
                                 "endpoint": "/fundamental/sentiment/snapshot",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                                 "py_path": "experiments/ab-trading/core/nodes/f3_sentiment.py",
                                 "py_module": "core.modules.fundamental_api.FundamentalAPIClient",
                             },
@@ -1426,7 +1426,7 @@ registry = {
                                 "execution_engine": "typescript",
                                 "base_url": "http://127.0.0.1:9094",
                                 "endpoint": "/fundamental/onchain/snapshot",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                             },
                             "fallback": {
                                 "enabled": True,
@@ -1469,7 +1469,7 @@ registry = {
                                 "execution_engine": "typescript",
                                 "base_url": "http://127.0.0.1:9094",
                                 "endpoint": "/fundamental/macro/snapshot",
-                                "ts_path": "6-图结构上下文压缩/planner/chains-registry.ts",
+                                "ts_path": "24-图结构上下文压缩/planner/chains-registry.ts",
                             },
                             "fallback": {
                                 "enabled": True,

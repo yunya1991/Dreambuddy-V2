@@ -1,7 +1,7 @@
 /**
  * 交叉验证接口 - 三链投票机制
  *
- * 位置: 6-图结构上下文压缩/planner/cross-validation-types.ts
+ * 位置: 24-图结构上下文压缩/planner/cross-validation-types.ts
  *
  * 核心理念: S/C/F 三链在关键节点做交叉验证
  * 多源印证 → 高置信度 / 链间冲突 → 深入分析

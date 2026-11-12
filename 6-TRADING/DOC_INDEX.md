@@ -199,7 +199,7 @@ sessions/
 |:-----|:-----|:-----|
 | API配置指南 | `API_CONFIG_GUIDE.md` | API Key配置（Tavily/OKX/通知） |
 | 策略库 | `config/strategy_library.yaml` | 策略配置（v2.2） |
-| 前端项目 | `../3-FRONTEND/dream-universal-gateway/` | Next.js前端（端口3000） |
+| 前端项目 | `../3.1-FRONTEND/` | Next.js前端（端口3000） |
 | 产物中台 | `localhost:3456/dashboard` | 交易面板 |
 
 ### 快速启动
@@ -209,7 +209,7 @@ sessions/
 python bridge/run_server.py
 
 # 前端 (端口3000)
-cd ../3-FRONTEND/dream-universal-gateway && pnpm dev
+cd ../3.1-FRONTEND && pnpm dev
 
 # 同步前端
 ./scripts/sync_frontend.sh

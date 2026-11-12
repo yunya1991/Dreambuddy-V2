@@ -3,7 +3,7 @@
  *  WorkBuddy OS Bridge Client (TS 侧)
  * ============================================================
  *
- * 位置: 6-图结构上下文压缩/planner/bridge-client.ts
+ * 位置: 24-图结构上下文压缩/planner/bridge-client.ts
  *
  * 架构说明:
  * - S链: 意图识别层（S链 + 意图识别引擎，解决用户目标 → 图架构B层）

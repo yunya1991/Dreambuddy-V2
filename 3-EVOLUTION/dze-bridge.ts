@@ -185,7 +185,7 @@ export class DZEBridge {
     const desc = proposal.description.toLowerCase();
 
     if (desc.includes('chainplanner') || desc.includes('planner')) {
-      modules.push('6-图结构上下文压缩');
+      modules.push('24-图结构上下文压缩');
     }
     if (desc.includes('evolution') || desc.includes('进化')) {
       modules.push('3-EVOLUTION');

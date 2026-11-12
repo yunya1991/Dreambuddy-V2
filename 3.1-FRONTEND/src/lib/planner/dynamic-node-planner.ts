@@ -1,7 +1,7 @@
 /**
  * 动态节点规划器 - Dreambuddy OS 动态决策核心
  *
- * 位置: 6-图结构上下文压缩/planner/dynamic-node-planner.ts
+ * 位置: 24-图结构上下文压缩/planner/dynamic-node-planner.ts
  *
  * 核心理念:
  *   A 层不是固定 5 维度的流水线，而是由 OS 动态决策的图编排层

@@ -1,7 +1,7 @@
 /**
  * 技能注册表 - 所有可用技能的中心索引
  *
- * 位置: 6-图结构上下文压缩/planner/skills-registry.ts
+ * 位置: 24-图结构上下文压缩/planner/skills-registry.ts
  *
  * 功能:
  * - 注册技能

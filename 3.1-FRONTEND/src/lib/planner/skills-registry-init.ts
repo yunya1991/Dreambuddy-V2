@@ -1,7 +1,7 @@
 /**
  * 技能注册表初始化 - A 系列核心技能注册
  *
- * 位置: 6-图结构上下文压缩/planner/skills-registry-init.ts
+ * 位置: 24-图结构上下文压缩/planner/skills-registry-init.ts
  *
  * 功能:
  * - 将A系列核心技能封装为 SkillCapability 并注册到 SkillsRegistry

@@ -158,7 +158,7 @@
 
 | 路径 | 说明 |
 |:-----|:-----|
-| `../3-FRONTEND/dream-universal-gateway/` | Next.js前端（端口3000） |
+| `../3.1-FRONTEND/` | Next.js前端（端口3000） |
 | `~/.workbuddy/skills/` | 用户级SKILL |
 | `~/.workbuddy/skills/boss-secretary/` | 秘书部（邮箱管理） |
 | `~/.workbuddy/skills/dream-constitution/` | 系统宪法 |

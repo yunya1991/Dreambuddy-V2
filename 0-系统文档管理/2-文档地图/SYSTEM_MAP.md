@@ -18,7 +18,7 @@ DreamBuddy-V2/
 ├── 1-ARCHITECTURE/              🏛️ 架构设计
 ├── 2-GOVERNANCE/                ⚖️ 治理合规
 ├── 2-KNOWLEDGE/                 📖 知识库
-├── 3-FRONTEND/                  🎨 前端系统
+├── 3.1-FRONTEND/                  🎨 前端系统
 ├── 4-MEMORY/                    🧠 记忆系统
 ├── 5-BUSINESS/                  💼 业务管理
 ├── 6-TRADING/                   📈 交易系统
@@ -106,7 +106,7 @@ DreamBuddy-V2/
 
 | 模块 | 入口 | 说明 |
 |------|------|------|
-| [3-FRONTEND](../../3-FRONTEND/) | [FRONTEND_SYSTEM.md](../../3-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构 |
+| [3.1-FRONTEND](../../3.1-FRONTEND/) | [FRONTEND_SYSTEM.md](../../3.1-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构 |
 | [4-MEMORY](../../4-MEMORY/) | [MEMORY_SYSTEM_ARCHITECTURE.md](../../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) | 记忆系统（v5.0 双层架构） |
 | [5-BUSINESS](../../5-BUSINESS/) | [BUSINESS_SYSTEM.md](../../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营 |
 | [6-TRADING](../../6-TRADING/) | [TRADING_SYSTEM.md](../../6-TRADING/TRADING_SYSTEM.md) | A0-A9 流水线 |

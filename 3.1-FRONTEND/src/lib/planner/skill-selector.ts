@@ -1,7 +1,7 @@
 /**
  * 技能选择器
  *
- * 位置: 6-图结构上下文压缩/planner/skill-selector.ts
+ * 位置: 24-图结构上下文压缩/planner/skill-selector.ts
  *
  * 功能:
  * - 基于上下文动态选择最适合的技能

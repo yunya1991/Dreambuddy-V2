@@ -1,7 +1,7 @@
 /**
  * Superpowers SKILL.md 格式适配器
  *
- * 位置: 6-图结构上下文压缩/planner/superpowers-skill-adapter.ts
+ * 位置: 24-图结构上下文压缩/planner/superpowers-skill-adapter.ts
  *
  * 功能:
  *   - 导入 Superpowers SKILL.md 格式为 SkillCapability

@@ -130,7 +130,7 @@ category: orchestration
 | **节点注册表 NodeRegistry** | `experiments/ab-trading/core/node_registry.py` | 35个模块配置 + 11个本地实现，统一节点管理 |
 | **统一节点执行器（C层）** | `experiments/ab-trading/core/unified_node_executor.py` | UnifiedNodeExecutor，整合注册表+适配器+重试+降级 |
 | **动态执行** | `experiments/ab-trading/core/chain_router.py` | 节点执行 + 反思决策 + 动态链 |
-| **图存储压缩（G层）** | `6-图结构上下文压缩/skills/graph-compressor/SKILL.md` | 执行记录持久化 + 上下文压缩 + 历史回溯 |
+| **图存储压缩（G层）** | `24-图结构上下文压缩/skills/graph-compressor/SKILL.md` | 执行记录持久化 + 上下文压缩 + 历史回溯 |
 | **错误码体系** | `experiments/ab-trading/core/error_codes.py` | 6大类错误码，标准化错误处理与恢复 |
 | **压力测试框架** | `experiments/ab-trading/tests/load_test/` | 6种压测场景，性能验证与瓶颈分析 |
 | **Hyperliquid 执行** | `experiments/ab-trading/execution/aster_spot.py` | 交易下单 + 账户查询 |
@@ -152,7 +152,7 @@ category: orchestration
 | **A8 知行合一** | `A8-theory-practice-verification` | 读取 `6-TRADING/skills/A8-theory-practice-verification/SKILL.md` | ✅ |
 | **A9 离场决策** | `dream-exit-skill-v2` | 读取 `6-TRADING/skills/dream-exit-skill-v2/SKILL.md` | ✅ |
 | **三屏交易** | `dream-screen1/2/3` | 读取 `6-TRADING/skills/dream-screen{1,2,3}-{first,second,third}/SKILL.md` | ✅ |
-| **BAC 图压缩** | `graph-compressor` | 读取 `6-图结构上下文压缩/skills/graph-compressor/SKILL.md` | ✅ |
+| **BAC 图压缩** | `graph-compressor` | 读取 `24-图结构上下文压缩/skills/graph-compressor/SKILL.md` | ✅ |
 | **治理闭环** | `dream-constitution` 等 | 读取 `6-TRADING/skills/dream-constitution/SKILL.md` 等 | ✅ |
 | **D-Z-E 开发链** | `chain_guard.py` | subprocess 调用 `python3 chain_guard.py <cmd>` | ✅ |
 
@@ -330,7 +330,7 @@ c_node = {
 **处理**：GraphCompressor 将执行记录写入 G 层，进行压缩存储
 ```python
 # 读取 graph-compressor SKILL
-with open("6-图结构上下文压缩/skills/graph-compressor/SKILL.md") as f:
+with open("24-图结构上下文压缩/skills/graph-compressor/SKILL.md") as f:
     compressor_spec = f.read()
 
 # 调用图压缩存储
@@ -371,7 +371,7 @@ g_record = {
 3. **模式识别**：基于历史执行图识别重复模式
 4. **自我进化**：为 A7/A8 提供数据支撑
 
-**调用文件**：`6-图结构上下文压缩/skills/graph-compressor/SKILL.md`
+**调用文件**：`24-图结构上下文压缩/skills/graph-compressor/SKILL.md`
 
 ---
 
@@ -680,7 +680,7 @@ log = {
 | `experiments/ab-trading/execution/` | 交易执行 |
 | `experiments/ab-trading/data/` | 记忆/图数据 |
 | `6-TRADING/skills/` | A 系列 SKILL |
-| `6-图结构上下文压缩/` | BAC 图架构 |
+| `24-图结构上下文压缩/` | BAC 图架构 |
 | `3-CHAIN-DEVELOPMENT/scripts/` | D-Z-E 开发链 |
 | `10-经典指标系统/` | 经典指标 API |
 | `9-基本面分析/` | 基本面分析 API |

@@ -283,6 +283,8 @@ DreamOS_intermediate.pptx
 
 # 运行期产物：REA 内部回放池数据（运行时生成，不入库）
 33-REA逆向解析工程/reflection_data/replay_pool/internal/
+33-REA逆向解析工程/reflection_data/replay_pool/_process/
+33-REA逆向解析工程/reflection_data/replay_pool/_migration_manifest.json
 # 大体积模型权重与冷数据归档（不入库）
 18-数据获取中心/models/
 38-数据库管理系统/archive/

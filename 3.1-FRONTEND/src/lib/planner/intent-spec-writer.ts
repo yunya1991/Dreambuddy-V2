@@ -1,7 +1,7 @@
 /**
  * 意图 Spec 文档生成器 - 借鉴 Superpowers brainstorming 的 spec 产出模式
  *
- * 位置: 6-图结构上下文压缩/planner/intent-spec-writer.ts
+ * 位置: 24-图结构上下文压缩/planner/intent-spec-writer.ts
  *
  * 功能:
  *   - 澄清完成后生成结构化的意图确认文档 (intent spec)

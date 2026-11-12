@@ -1,7 +1,7 @@
 /**
  * Superpowers SKILL.md 格式文件系统适配器
  *
- * 位置: 6-图结构上下文压缩/planner/superpowers-skill-fs.ts
+ * 位置: 24-图结构上下文压缩/planner/superpowers-skill-fs.ts
  *
  * 功能:
  *   - 从文件/目录导入 Superpowers SKILL.md

@@ -118,7 +118,7 @@ npm run test         # Jest 测试
 | 规划引擎 | `src/lib/planner/` | 21 个文件，含链规划/交叉验证/技能选择 |
 | SACG 架构文档 | `../1-ARCHITECTURE/WORKBUDDY_OS_MODULAR_ARCHITECTURE.md` | 52 模块注册表 |
 | 三屏系统文档 | `../2-KNOWLEDGE/1-TRADING/三屏系统架构.md` | Screen1/2/3 职责 |
-| UI 设计规范 | `../3-FRONTEND/dream-universal-gateway/docs/UI_SPEC.md` | 色彩/布局/组件设计 (v2.3, 参考) |
+| UI 设计规范 | `./docs/UI_SPEC.md` | 色彩/布局/组件设计 (v2.3, 参考) |
 
 ## 代码统计
 
@@ -144,7 +144,7 @@ npm run test         # Jest 测试
 
 | 前端 | 端口 | 项目路径 | 说明 |
 |------|------|----------|------|
-| 3.0 (旧) | 3000 | `3-FRONTEND/dream-universal-gateway/` | v2 三栏对话式界面 |
+| 3.0 (已删除) | 3000 | ~~`3-FRONTEND/dream-universal-gateway/`~~ | v2 三栏对话式界面（2026-11-13 删除，替代为 3.1） |
 | 3.1 (当前) | 3001 | `3.1-FRONTEND/` | SACG 四层架构 + 完整交易系统 |
 
 ## 技术栈

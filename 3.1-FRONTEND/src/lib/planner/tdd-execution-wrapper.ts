@@ -1,7 +1,7 @@
 /**
  * TDD 执行包装器 - 借鉴 Superpowers test-driven-development 方法论
  *
- * 位置: 6-图结构上下文压缩/planner/tdd-execution-wrapper.ts
+ * 位置: 24-图结构上下文压缩/planner/tdd-execution-wrapper.ts
  *
  * 设计依据: Superpowers test-driven-development Skill
  *   - 红-绿-重构循环 (RED-GREEN-REFACTOR)

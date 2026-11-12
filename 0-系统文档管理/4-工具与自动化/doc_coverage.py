@@ -42,7 +42,7 @@ NN_DIR_RE = re.compile(r"^\d+-")
 # L3 辅助模块（相对项目根的路径，与 INDEX.md / DOC_CLASSIFICATION.md 对齐）
 L3_MODULES = [
     "3-EVOLUTION",
-    "6-图结构上下文压缩",
+    "24-图结构上下文压缩",
     "7-产物中台",
     "15-监控告警系统",
     "experiments",
@@ -92,7 +92,7 @@ def collect_modules(root):
 
     层级判定依据 DOC_CLASSIFICATION.md：
       - L2 子系统：NN-* 编号 >= 10 且拥有 docs/ 目录（10-17 为正式交易子系统）
-      - L3 辅助模块：显式列表（3-EVOLUTION / 6-图结构 / 7-产物中台 / 15-监控 / experiments / dreamos）
+      - L3 辅助模块：显式列表（3-EVOLUTION / 24-图结构 / 7-产物中台 / 15-监控 / experiments / dreamos）
       - 编号 1-9 的 NN-* 目录属 L1 顶层架构或其他模块，不计入 L2/L3 覆盖率
     """
     modules = []

@@ -1,7 +1,7 @@
 /**
  * ChainPlanner - 零Token链路规划器
  *
- * 位置: 6-图结构上下文压缩/planner/chain-planner.ts
+ * 位置: 24-图结构上下文压缩/planner/chain-planner.ts
  *
  * 四维规划（全部本地计算，零Token消耗）：
  *   1. Token预算过滤：剪掉超预算的高成本节点

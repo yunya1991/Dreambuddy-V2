@@ -74,7 +74,7 @@
     ├── dream_trade_exec.py
     └── ...
 
-3-FRONTEND/dream-universal-gateway/src/lib/
+3.1-FRONTEND/src/lib/
 ├── bridge-client.ts                # 前端桥接客户端
 ├── intent-router.ts               # 意图路由器
 └── trading-hook.ts                # 交易React Hook

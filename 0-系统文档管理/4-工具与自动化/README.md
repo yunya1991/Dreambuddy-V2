@@ -79,7 +79,7 @@ python 0-系统文档管理/4-工具与自动化/doc_coverage.py --root . --json
 > 覆盖率 = 现存文档数 / 应建文档数 × 100%
 ```
 
-L3 辅助模块范围：`3-EVOLUTION`、`6-图结构上下文压缩`、`7-产物中台`、`15-监控告警系统`、`experiments`、`1-ARCHITECTURE/dreamos`。
+L3 辅助模块范围：`3-EVOLUTION`、`24-图结构上下文压缩`、`7-产物中台`、`15-监控告警系统`、`experiments`、`1-ARCHITECTURE/dreamos`。
 
 ---
 

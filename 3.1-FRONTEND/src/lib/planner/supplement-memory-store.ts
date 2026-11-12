@@ -1,7 +1,7 @@
 /**
  * 补充节点记忆存储 + 进化管理器
  *
- * 位置: 6-图结构上下文压缩/planner/supplement-memory-store.ts
+ * 位置: 24-图结构上下文压缩/planner/supplement-memory-store.ts
  *
  * 设计依据: 用户提出的 "后期存入记忆，后期进化时可以验证，丰富技能，增加节点注册表"
  *
@@ -525,7 +525,7 @@ export class SupplementMemoryStore {
     ];
 
     for (const dir of candidates) {
-      if (fs.existsSync(path.join(dir, 'dreambuddy')) || fs.existsSync(path.join(dir, '3-FRONTEND'))) {
+      if (fs.existsSync(path.join(dir, 'dreambuddy')) || fs.existsSync(path.join(dir, '3.1-FRONTEND'))) {
         return path.join(dir, 'artifacts', 'supplement-memory');
       }
     }

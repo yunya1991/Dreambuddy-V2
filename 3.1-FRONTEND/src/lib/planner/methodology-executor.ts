@@ -1,7 +1,7 @@
 /**
  * MethodologyExecutor - C 层方法论执行器（包装器模式）
  *
- * 位置: 6-图结构上下文压缩/planner/methodology-executor.ts
+ * 位置: 24-图结构上下文压缩/planner/methodology-executor.ts
  *
  * 设计依据: Claude Code Superpowers 7阶段方法论
  *   借鉴其"先验证后完成"的执行理念，作为 C 层节点执行的包装器

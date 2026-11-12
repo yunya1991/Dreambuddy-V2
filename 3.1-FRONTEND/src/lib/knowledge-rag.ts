@@ -16,7 +16,7 @@
  *   - 可配置化（API key、切片大小、top-k、相似度阈值）
  *   - 优雅降级（embedding 失败时用字符 n-gram 作为 fallback，NOT jieba）
  *
- * 文件位置: 3-FRONTEND/dream-universal-gateway/src/lib/knowledge-rag.ts
+ * 文件位置: 3.1-FRONTEND/src/lib/knowledge-rag.ts
  */
 
 import * as fs from 'fs';
@@ -85,7 +85,7 @@ export interface RetrievalResult {
 // ============================================================
 
 // 项目根目录 — knowledge-loader.ts 在 src/lib/，
-// cache 文件在 3-FRONTEND/dream-universal-gateway/data/
+// cache 文件在 3.1-FRONTEND/data/
 const PROJECT_ROOT = path.resolve(__dirname, '../../../../');
 const KNOWLEDGE_ROOT = path.join(PROJECT_ROOT, '2-KNOWLEDGE');
 const CACHE_PATH = path.join(PROJECT_ROOT, RAG_CONFIG.vectorCacheFile);

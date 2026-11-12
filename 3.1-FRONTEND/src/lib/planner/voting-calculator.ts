@@ -1,7 +1,7 @@
 /**
  * 投票计算器
  *
- * 位置: 6-图结构上下文压缩/planner/voting-calculator.ts
+ * 位置: 24-图结构上下文压缩/planner/voting-calculator.ts
  *
  * 功能:
  * - 计算三链加权投票

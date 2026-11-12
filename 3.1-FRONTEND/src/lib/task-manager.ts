@@ -349,7 +349,7 @@ const TASK_TIMEOUT_MS = 30 * 60 * 1000;
 // 最大并发任务数
 const MAX_CONCURRENT_TASKS = 10;
 
-const GATEWAY_DIR = path.join(REPO_ROOT, '3-FRONTEND', 'dream-universal-gateway');
+const GATEWAY_DIR = path.join(REPO_ROOT, '3.1-FRONTEND');
 const POLLER_SCRIPT = path.join(GATEWAY_DIR, 'scripts', 'task_poller.py');
 
 // 对话类意图 - 中台直接内联执行

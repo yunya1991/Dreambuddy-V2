@@ -1,7 +1,7 @@
 /**
  * Superpower 模式 LLM 桥接适配器
  *
- * 位置: 3-FRONTEND/dream-universal-gateway/src/lib/orchestration/superpower-llm-bridge.ts
+ * 位置: 3.1-FRONTEND/src/lib/orchestration/superpower-llm-bridge.ts
  *
  * 职责:
  *   将 callLLM 适配为两个接口：

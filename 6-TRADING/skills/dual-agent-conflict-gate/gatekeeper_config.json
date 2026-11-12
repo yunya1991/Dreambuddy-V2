@@ -13,16 +13,16 @@
     ],
     "claude": [
       "7-ARTIFACT-HUB-V2/src/ops-ui/",
-      "3-FRONTEND/dream-universal-gateway/src/app/",
-      "3-FRONTEND/dream-universal-gateway/src/components/",
-      "3-FRONTEND/dream-universal-gateway/src/stores/"
+      "3.1-FRONTEND/src/app/",
+      "3.1-FRONTEND/src/components/",
+      "3.1-FRONTEND/src/stores/"
     ]
   },
 
   "shared_requires_approval": [
     "7-ARTIFACT-HUB-V2/src/types.ts",
     "7-ARTIFACT-HUB-V2/src/index.ts",
-    "3-FRONTEND/dream-universal-gateway/src/types/index.ts",
+    "3.1-FRONTEND/src/types/index.ts",
     "README.md",
     "7-ARTIFACT-HUB-V2/README.md",
     "docs/superpowers/plans/"

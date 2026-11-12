@@ -1,7 +1,7 @@
 /**
  * 置信度评估器
  *
- * 位置: 6-图结构上下文压缩/planner/confidence-evaluator.ts
+ * 位置: 24-图结构上下文压缩/planner/confidence-evaluator.ts
  *
  * 功能:
  * - 综合多个技能的输出来评估整体置信度

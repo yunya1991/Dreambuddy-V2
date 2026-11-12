@@ -119,7 +119,7 @@
 
 ### 3.1 现状分析
 
-S 层当前通过 [intent-clarification-engine.ts](../6-图结构上下文压缩/planner/intent-clarification-engine.ts) 实现：
+S 层当前通过 [intent-clarification-engine.ts](../24-图结构上下文压缩/planner/intent-clarification-engine.ts) 实现：
 
 - `assessAmbiguity()` - 6 维度模糊度评估
 - `generateClarificationQuestion()` - LLM 驱动生成澄清问题
@@ -183,11 +183,11 @@ docs/intent-specs/YYYY-MM-DD-<topic>-intent.md
 
 ### 4.1 现状分析
 
-A 层 [SkillsRegistry](../6-图结构上下文压缩/planner/skills-registry.ts) 当前：
+A 层 [SkillsRegistry](../24-图结构上下文压缩/planner/skills-registry.ts) 当前：
 
 - 支持内部 SkillCapability 注册
 - 提供 `recommend()` 和 `getAll()` 等查询接口
-- 节点补充通过 [node-gap-supplementer.ts](../6-图结构上下文压缩/planner/node-gap-supplementer.ts) + [supplement-memory-store.ts](../6-图结构上下文压缩/planner/supplement-memory-store.ts) 实现
+- 节点补充通过 [node-gap-supplementer.ts](../24-图结构上下文压缩/planner/node-gap-supplementer.ts) + [supplement-memory-store.ts](../24-图结构上下文压缩/planner/supplement-memory-store.ts) 实现
 - 进化路径：draft → validated → promoted
 
 **不足**：
@@ -269,7 +269,7 @@ Superpowers SKILL.md
 
 ### 5.1 现状分析
 
-C 层当前通过 [graph-executor.ts](../6-图结构上下文压缩/graph-executor.ts) 实现：
+C 层当前通过 [graph-executor.ts](../24-图结构上下文压缩/graph-executor.ts) 实现：
 
 ```
 while (还有节点) {
@@ -504,11 +504,11 @@ while (还有节点) {
 
 ### 9.2 实现文件
 
-- [intent-clarification-engine.ts](../6-图结构上下文压缩/planner/intent-clarification-engine.ts) - 意图澄清引擎（S 层）
-- [node-gap-supplementer.ts](../6-图结构上下文压缩/planner/node-gap-supplementer.ts) - 节点缺失补充器（A 层）
-- [supplement-memory-store.ts](../6-图结构上下文压缩/planner/supplement-memory-store.ts) - 记忆存储进化（A 层）
-- [dynamic-node-planner.ts](../6-图结构上下文压缩/planner/dynamic-node-planner.ts) - 动态节点规划器（A 层）
-- [graph-executor.ts](../6-图结构上下文压缩/graph-executor.ts) - 图执行引擎（C 层）
+- [intent-clarification-engine.ts](../24-图结构上下文压缩/planner/intent-clarification-engine.ts) - 意图澄清引擎（S 层）
+- [node-gap-supplementer.ts](../24-图结构上下文压缩/planner/node-gap-supplementer.ts) - 节点缺失补充器（A 层）
+- [supplement-memory-store.ts](../24-图结构上下文压缩/planner/supplement-memory-store.ts) - 记忆存储进化（A 层）
+- [dynamic-node-planner.ts](../24-图结构上下文压缩/planner/dynamic-node-planner.ts) - 动态节点规划器（A 层）
+- [graph-executor.ts](../24-图结构上下文压缩/graph-executor.ts) - 图执行引擎（C 层）
 - [reflector.py](../1-ARCHITECTURE/dreamos/core/compute/reflector.py) - 反射决策器（C 层）
 
 ### 9.3 外部资料

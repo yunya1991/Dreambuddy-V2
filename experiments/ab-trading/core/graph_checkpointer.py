@@ -10,7 +10,7 @@
 3. 支持列出所有历史检查点
 4. 与 TS 侧 GraphCheckpointer 格式兼容
 
-对齐 TS 侧 6-图结构上下文压缩/graph-checkpointer.ts
+对齐 TS 侧 24-图结构上下文压缩/graph-checkpointer.ts
 """
 
 import json

@@ -1,7 +1,7 @@
 /**
  * 节点缺失检测 + LLM 驱动搜索补充器
  *
- * 位置: 6-图结构上下文压缩/planner/node-gap-supplementer.ts
+ * 位置: 24-图结构上下文压缩/planner/node-gap-supplementer.ts
  *
  * 设计依据: 用户提出的 Superpower 模式核心流程
  *   "形成完整方案时，有节点注册就直接调用，

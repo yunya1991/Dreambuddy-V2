@@ -65,8 +65,8 @@ const CHECK_MODULES: Array<{
     name: '骨架层（三链定义）',
     chapter: '第二章',
     paths: [
-      '6-图结构上下文压缩/planner/step-types.ts',
-      '6-图结构上下文压缩/planner/step-types.ts',
+      '24-图结构上下文压缩/planner/step-types.ts',
+      '24-图结构上下文压缩/planner/step-types.ts',
     ],
     checks: ['s_chain_defined', 'c_chain_defined', 'f_chain_defined'],
     expectedStatus: '90%',
@@ -76,7 +76,7 @@ const CHECK_MODULES: Array<{
     name: '血肉层（SKILL库）',
     chapter: '第五章',
     paths: [
-      '6-图结构上下文压缩/planner/skills-registry.ts',
+      '24-图结构上下文压缩/planner/skills-registry.ts',
       '6-TRADING/skills/',
     ],
     checks: ['skill_registry_exists', 'skill_count', 'chain_mapping'],
@@ -87,8 +87,8 @@ const CHECK_MODULES: Array<{
     name: '灵魂层（动态执行）',
     chapter: '第六章',
     paths: [
-      '6-图结构上下文压缩/planner/reflection-engine.ts',
-      '3-FRONTEND/dream-universal-gateway/src/lib/dynamic-chain/',
+      '24-图结构上下文压缩/planner/reflection-engine.ts',
+      '3.1-FRONTEND/src/lib/dynamic-chain/',
     ],
     checks: ['reflection_engine', 'five_decisions', 'confidence评估'],
     expectedStatus: '60%',
@@ -98,8 +98,8 @@ const CHECK_MODULES: Array<{
     name: 'BAC图结构',
     chapter: '第三章',
     paths: [
-      '6-图结构上下文压缩/models.ts',
-      '6-图结构上下文压缩/compressor.ts',
+      '24-图结构上下文压缩/models.ts',
+      '24-图结构上下文压缩/compressor.ts',
     ],
     checks: ['models_defined', 'compressor_logic'],
     expectedStatus: '85%',
@@ -109,7 +109,7 @@ const CHECK_MODULES: Array<{
     name: 'ChainPlanner',
     chapter: '第四章',
     paths: [
-      '6-图结构上下文压缩/planner/planner.ts',
+      '24-图结构上下文压缩/planner/planner.ts',
       'experiments/ab-trading/core/chain_planner.py',
     ],
     checks: ['planner_exists', 'four_dimensions', 'cost_calculation'],
@@ -120,7 +120,7 @@ const CHECK_MODULES: Array<{
     name: '三链交叉验证',
     chapter: '第四章',
     paths: [
-      '6-图结构上下文压缩/planner/cross-validator.ts',
+      '24-图结构上下文压缩/planner/cross-validator.ts',
     ],
     checks: ['validator_exists', 'voter_logic'],
     expectedStatus: '80%',
@@ -131,8 +131,8 @@ const CHECK_MODULES: Array<{
     chapter: '第七章',
     paths: [
       '2-KNOWLEDGE/',
-      '3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-memory.ts',
-      '3-FRONTEND/dream-universal-gateway/src/lib/memory/user-preference-memory.ts',
+      '3.1-FRONTEND/src/lib/intent/intent-memory.ts',
+      '3.1-FRONTEND/src/lib/memory/user-preference-memory.ts',
     ],
     checks: ['knowledge_base', 'memory_system', 'index_system', 'learning_loop'],
     expectedStatus: '55%',
@@ -243,7 +243,7 @@ function runChecks(): CheckResult[] {
         checkResults[check] = count >= 20;
         if (count < 20) issues.push(`知识库文件不足: ${count}/20`);
       } else if (check === 'memory_system') {
-        checkResults[check] = fileExists('3-FRONTEND/dream-universal-gateway/src/lib/intent/intent-memory.ts');
+        checkResults[check] = fileExists('3.1-FRONTEND/src/lib/intent/intent-memory.ts');
         if (!checkResults[check]) issues.push('意图记忆未实现');
       } else if (check === 'four_roles') {
         const agentDoc = path.join('/Users/zhangjiangtao/WorkBuddy/DREAM-AGENT/docs/02-ARCHITECTURE.md');

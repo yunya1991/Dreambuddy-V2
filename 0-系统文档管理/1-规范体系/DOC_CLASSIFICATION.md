@@ -39,7 +39,7 @@ L3 辅助模块层     — 实验性/辅助模块的文档
 
 **定位**：跨子系统的架构设计、治理合规、知识体系。
 
-**位置**：根目录的 `1-ARCHITECTURE/`、`2-GOVERNANCE/`、`2-KNOWLEDGE/`、`4-MEMORY/`、`5-BUSINESS/`、`6-TRADING/`、`3-FRONTEND/`
+**位置**：根目录的 `1-ARCHITECTURE/`、`2-GOVERNANCE/`、`2-KNOWLEDGE/`、`4-MEMORY/`、`5-BUSINESS/`、`6-TRADING/`、`3.1-FRONTEND/`
 
 | 类型 | 示例 |
 |------|------|

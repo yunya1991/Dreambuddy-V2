@@ -183,7 +183,7 @@ Episode记录 → Lesson蒸馏 → Proposal生成 → 验证门禁 → 实施 �
 ```
 
 > **代码来源**: 44304内部系统 → 6-TRADING对外服务
-> **前端位置**: 前端在 `../3-FRONTEND/dream-universal-gateway/`
+> **前端位置**: 前端在 `../3.1-FRONTEND/`
 
 ---
 

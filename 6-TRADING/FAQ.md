@@ -147,8 +147,8 @@ curl http://127.0.0.1:3847/health
 
 ### Q12: 前端在哪里？如何同步？
 
-- **位置**: `../3-FRONTEND/dream-universal-gateway/`
-- **启动**: `cd ../3-FRONTEND/dream-universal-gateway && pnpm dev`
+- **位置**: `../3.1-FRONTEND/`
+- **启动**: `cd ../3.1-FRONTEND && pnpm dev`
 - **同步**: `./scripts/sync_frontend.sh`
 
 ### Q13: 如何运行回测？

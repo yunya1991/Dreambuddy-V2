@@ -1,13 +1,13 @@
 #!/bin/bash
-# 前端同步脚本 - 6-TRADING 与 3-FRONTEND 同步
+# 前端同步脚本 - 6-TRADING 与 3.1-FRONTEND 同步
 # 用途: 将 dream-universal-gateway 前端同步到 6-TRADING
-# 来源: ../3-FRONTEND/dream-universal-gateway/
+# 来源: ../3.1-FRONTEND/
 # 目标: ./frontend/
 
-SOURCE="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/3-FRONTEND/dream-universal-gateway"
+SOURCE="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND"
 TARGET="/Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/6-TRADING/frontend"
 
-echo "=== 3-FRONTEND → 6-TRADING 前端同步 ==="
+echo "=== 3.1-FRONTEND → 6-TRADING 前端同步 ==="
 echo "来源: $SOURCE"
 echo "目标: $TARGET"
 echo ""
@@ -31,7 +31,7 @@ rsync -av --exclude='node_modules' \
 
 echo ""
 echo "[2/2] 创建符号链接 (可选)..."
-# 可选: 创建符号链接到3-FRONTEND，方便开发时同步
+# 可选: 创建符号链接到3.1-FRONTEND，方便开发时同步
 # ln -sf "$SOURCE" "$TARGET/link_to_3front"
 
 echo ""
@@ -42,4 +42,4 @@ echo "启动前端:"
 echo "  cd $TARGET && pnpm dev"
 echo ""
 echo "或使用完整路径:"
-echo "  cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v1/3-FRONTEND/dream-universal-gateway && pnpm dev"
+echo "  cd /Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND && pnpm dev"

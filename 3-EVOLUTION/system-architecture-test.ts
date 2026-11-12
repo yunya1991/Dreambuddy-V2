@@ -15,8 +15,8 @@ import { DZEBridge, DZEPhase } from './dze-bridge';
 import { DreamAgentBridge } from './dream-agent-bridge';
 import { ApprovalBridge } from './approval-bridge';
 import { EvolutionFinding } from './types';
-import { ChainPlanner, DynamicInsertionPlanner } from '../6-图结构上下文压缩/planner/chain-planner.ts';
-import { IntentType, ComplexityLevel, SkillChain } from '../6-图结构上下文压缩/planner/planner-types.ts';
+import { ChainPlanner, DynamicInsertionPlanner } from '../24-图结构上下文压缩/planner/chain-planner.ts';
+import { IntentType, ComplexityLevel, SkillChain } from '../24-图结构上下文压缩/planner/planner-types.ts';
 
 // ============================================================
 // 测试工具

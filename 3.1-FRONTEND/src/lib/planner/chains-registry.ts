@@ -1,7 +1,7 @@
 /**
  * F链 技能注册表
  *
- * 位置: 6-图结构上下文压缩/planner/chains-registry.ts
+ * 位置: 24-图结构上下文压缩/planner/chains-registry.ts
  *
  * 功能:
  * - F链: 基本面分析框架（接入 9-基本面分析）
