@@ -9,11 +9,12 @@ export type RiskLevel = 'novice' | 'intermediate' | 'expert';
 
 export interface DecisionCardData {
   entry: {
-    price: number;
-    range: [number, number];
+    // 行情未接入时后端返回 null，组件需按"待定"展示
+    price: number | null;
+    range: [number | null, number | null];
     batches: { price: number; ratio: number }[];
   };
-  stopLoss: number;
+  stopLoss: number | null;
   takeProfit: number[];
   events: { date: string; name: string; impact: string }[];
   riskLevel: RiskLevel;

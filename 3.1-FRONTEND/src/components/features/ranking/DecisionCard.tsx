@@ -10,6 +10,12 @@ import React, { useState } from 'react';
 import { V3Card, V3Badge } from '@/components';
 import { DecisionCardData, riskConfig } from './types';
 
+// 后端在行情/ATR 数据缺失时会返回 null，渲染必须空值安全（否则整页崩溃）
+const fmtPrice = (v: number | null | undefined) =>
+  typeof v === 'number' && isFinite(v) ? `$${v.toLocaleString()}` : '待定';
+const hasPrice = (v: number | null | undefined): v is number =>
+  typeof v === 'number' && isFinite(v);
+
 interface DecisionCardProps {
   data: DecisionCardData;
   symbol: string;
@@ -28,7 +34,7 @@ export function DecisionCard({ data, symbol }: DecisionCardProps) {
     { key: 'logic' as const, label: '推演', icon: '∝' },
   ];
 
-  const risk = riskConfig[data.riskLevel];
+  const risk = riskConfig[data.riskLevel] ?? riskConfig.intermediate;
 
   return (
     <div className="mt-2">
@@ -66,28 +72,34 @@ export function DecisionCard({ data, symbol }: DecisionCardProps) {
 // ---- 模块 1: 入场策略 ----
 function EntryModule({ data }: { data: DecisionCardData }) {
   const { entry } = data;
+  const [low, high] = entry?.range ?? [null, null];
+  const batches = entry?.batches ?? [];
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-slate-500">当前价格</span>
-        <span className="text-sm font-semibold text-slate-200">${entry.price.toLocaleString()}</span>
+        <span className="text-sm font-semibold text-slate-200">{fmtPrice(entry?.price)}</span>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-slate-500">入场区间</span>
         <span className="text-xs text-emerald-400">
-          ${entry.range[0].toLocaleString()} ~ ${entry.range[1].toLocaleString()}
+          {hasPrice(low) && hasPrice(high) ? `${fmtPrice(low)} ~ ${fmtPrice(high)}` : '待定'}
         </span>
       </div>
       <div>
         <p className="text-[10px] text-slate-500 mb-1">分批建仓</p>
-        <div className="flex gap-1.5">
-          {entry.batches.map((b, i) => (
-            <div key={i} className="flex-1 bg-slate-800/60 rounded p-1.5 text-center">
-              <p className="text-[10px] text-slate-400">${b.price.toLocaleString()}</p>
-              <p className="text-xs font-medium text-slate-200">{(b.ratio * 100).toFixed(0)}%</p>
-            </div>
-          ))}
-        </div>
+        {batches.length === 0 ? (
+          <p className="text-[10px] text-slate-600">暂无分批方案，等待入场区间模型输出</p>
+        ) : (
+          <div className="flex gap-1.5">
+            {batches.map((b, i) => (
+              <div key={i} className="flex-1 bg-slate-800/60 rounded p-1.5 text-center">
+                <p className="text-[10px] text-slate-400">{fmtPrice(b.price)}</p>
+                <p className="text-xs font-medium text-slate-200">{(b.ratio * 100).toFixed(0)}%</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -95,22 +107,27 @@ function EntryModule({ data }: { data: DecisionCardData }) {
 
 // ---- 模块 2: 止损止盈 ----
 function SlTpModule({ data }: { data: DecisionCardData }) {
+  const targets = data.takeProfit ?? [];
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-slate-500">止损位</span>
-        <V3Badge variant="danger">${data.stopLoss.toLocaleString()}</V3Badge>
+        <V3Badge variant="danger">{fmtPrice(data.stopLoss)}</V3Badge>
       </div>
       <div>
         <p className="text-[10px] text-slate-500 mb-1">止盈目标</p>
-        <div className="flex gap-1.5">
-          {data.takeProfit.map((tp, i) => (
-            <div key={i} className="flex-1 bg-slate-800/60 rounded p-1.5 text-center">
-              <p className="text-[9px] text-slate-500">TP{i + 1}</p>
-              <p className="text-xs font-medium text-emerald-400">${tp.toLocaleString()}</p>
-            </div>
-          ))}
-        </div>
+        {targets.length === 0 ? (
+          <p className="text-[10px] text-slate-600">待定，等待 ATR 波动率模型输出</p>
+        ) : (
+          <div className="flex gap-1.5">
+            {targets.map((tp, i) => (
+              <div key={i} className="flex-1 bg-slate-800/60 rounded p-1.5 text-center">
+                <p className="text-[9px] text-slate-500">TP{i + 1}</p>
+                <p className="text-xs font-medium text-emerald-400">{fmtPrice(tp)}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <p className="text-[10px] text-slate-500 italic">基于 ATR 波动率自适应计算</p>
     </div>
@@ -119,7 +136,7 @@ function SlTpModule({ data }: { data: DecisionCardData }) {
 
 // ---- 模块 3: 事件日历 ----
 function EventsModule({ data }: { data: DecisionCardData }) {
-  if (!data.events.length) {
+  if (!data.events?.length) {
     return <p className="text-[10px] text-slate-500 text-center py-4">近期无重大事件</p>;
   }
   return (
@@ -140,7 +157,18 @@ function EventsModule({ data }: { data: DecisionCardData }) {
 // ---- 模块 4: 可视化 ----
 function ChartModule({ data, symbol }: { data: DecisionCardData; symbol: string }) {
   const { entry, stopLoss, takeProfit } = data;
-  const all = [stopLoss, entry.range[0], entry.price, entry.range[1], ...takeProfit];
+  // 入场价/止损任一缺失时无法定位坐标轴，直接降级为文案，避免 NaN/空指针
+  if (!hasPrice(entry?.price) || !hasPrice(stopLoss)) {
+    return (
+      <p className="text-[10px] text-slate-500 text-center py-6">
+        {symbol} 行情或止损数据不足，暂无可视化
+      </p>
+    );
+  }
+  const low = hasPrice(entry.range?.[0]) ? entry.range[0] : entry.price;
+  const high = hasPrice(entry.range?.[1]) ? entry.range[1] : entry.price;
+  const targets = (takeProfit ?? []).filter(hasPrice);
+  const all = [stopLoss, low, entry.price, high, ...targets];
   const min = Math.min(...all);
   const max = Math.max(...all);
   const range = max - min;
@@ -148,11 +176,14 @@ function ChartModule({ data, symbol }: { data: DecisionCardData; symbol: string 
   const chartMin = min - pad;
   const chartMax = max + pad;
   const chartRange = chartMax - chartMin;
+  if (!isFinite(chartRange) || chartRange <= 0) {
+    return <p className="text-[10px] text-slate-500 text-center py-6">{symbol} 价位数据不足，暂无可视化</p>;
+  }
 
   const pct = (v: number) => ((v - chartMin) / chartRange) * 100;
 
-  const entryLowPct = pct(entry.range[0]);
-  const entryHighPct = pct(entry.range[1]);
+  const entryLowPct = pct(low);
+  const entryHighPct = pct(high);
   const slPct = pct(stopLoss);
 
   return (
@@ -165,12 +196,12 @@ function ChartModule({ data, symbol }: { data: DecisionCardData; symbol: string 
           style={{ bottom: `${entryLowPct}%`, height: `${entryHighPct - entryLowPct}%` }}
         />
         {/* 入场价 */}
-        <PriceLine pct={pct(entry.price)} color="bg-slate-300" label={`入场 $${entry.price.toLocaleString()}`} />
+        <PriceLine pct={pct(entry.price)} color="bg-slate-300" label={`入场 ${fmtPrice(entry.price)}`} />
         {/* 止损 */}
-        <PriceLine pct={slPct} color="bg-red-400" label={`止损 $${stopLoss.toLocaleString()}`} />
+        <PriceLine pct={slPct} color="bg-red-400" label={`止损 ${fmtPrice(stopLoss)}`} />
         {/* 止盈 */}
-        {takeProfit.map((tp, i) => (
-          <PriceLine key={i} pct={pct(tp)} color="bg-emerald-400" label={`TP${i + 1} $${tp.toLocaleString()}`} />
+        {targets.map((tp, i) => (
+          <PriceLine key={i} pct={pct(tp)} color="bg-emerald-400" label={`TP${i + 1} ${fmtPrice(tp)}`} />
         ))}
       </div>
       <div className="flex justify-between mt-1">
@@ -223,7 +254,9 @@ function HistoryModule({ text }: { text: string }) {
 // ---- 模块 7: 逻辑推演 ----
 function LogicModule({ data }: { data: DecisionCardData }) {
   const { logic } = data;
-  const confPct = (Number(logic.confidence) * 100).toFixed(0);
+  const confPct = (Number(logic?.confidence ?? 0) * 100).toFixed(0);
+  const bullish = logic?.bullish ?? [];
+  const bearish = logic?.bearish ?? [];
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -238,7 +271,7 @@ function LogicModule({ data }: { data: DecisionCardData }) {
       <div>
         <p className="text-[10px] text-emerald-400 mb-1">看多逻辑</p>
         <ul className="space-y-0.5">
-          {logic.bullish.map((b, i) => (
+          {bullish.map((b, i) => (
             <li key={i} className="text-[11px] text-slate-300 flex gap-1">
               <span className="text-emerald-500">+</span>{b}
             </li>
@@ -248,7 +281,7 @@ function LogicModule({ data }: { data: DecisionCardData }) {
       <div>
         <p className="text-[10px] text-red-400 mb-1">看空逻辑</p>
         <ul className="space-y-0.5">
-          {logic.bearish.map((b, i) => (
+          {bearish.map((b, i) => (
             <li key={i} className="text-[11px] text-slate-300 flex gap-1">
               <span className="text-red-500">−</span>{b}
             </li>

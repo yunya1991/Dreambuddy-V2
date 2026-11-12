@@ -79,3 +79,33 @@ def test_score_symbol_uptrend_scores_higher_than_downtrend(producer):
 
 def test_score_symbol_requires_enough_history(producer):
     assert producer.score_symbol("XAU", _candles([100] * 10), None, {}) is None
+
+
+def test_crypto_filter_drops_unlisted_low_volume_and_small_cap(ranking):
+    candidates = [
+        {"symbol": "HEMI", "score": 0.9, "category": "crypto"},  # OKX 未上市
+        {"symbol": "LOWVOL", "score": 0.8, "category": "crypto"},  # 成交额不足
+        {"symbol": "SMALLCAP", "score": 0.7, "category": "crypto"},  # 市值不足
+        {"symbol": "BTC", "score": 0.6, "category": "crypto"},
+        {"symbol": "XAU", "score": 0.5, "category": "commodity"},  # 非加密不过滤
+    ]
+    snapshot = {
+        "degraded": False,
+        "markets": {
+            "LOWVOL": {"last": 1.0, "quote_volume_usd": 1e5},
+            "SMALLCAP": {"last": 1.0, "quote_volume_usd": 2e7},
+            "BTC": {"last": 70000.0, "quote_volume_usd": 8e8},
+        },
+        "market_caps": {"SMALLCAP": 1e7},
+    }
+
+    kept = [c["symbol"] for c in ranking._filter_crypto_candidates(candidates, snapshot)]
+
+    assert kept == ["BTC", "XAU"]
+
+
+def test_crypto_filter_fail_open_when_degraded(ranking):
+    candidates = [{"symbol": "HEMI", "score": 0.9, "category": "crypto"}]
+
+    assert ranking._filter_crypto_candidates(candidates, {"degraded": True}) == candidates
+    assert ranking._filter_crypto_candidates(candidates, {"markets": {}}) == candidates

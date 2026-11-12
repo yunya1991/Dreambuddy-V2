@@ -9,6 +9,8 @@ import importlib.util
 import json
 import os
 import sys
+import tempfile
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 
@@ -174,6 +176,124 @@ def _load_ranking_asset_pool() -> list:
         return []
 
 
+# ---- 加密候选流动性 / 市值门槛（过滤 HEMI 这类未上 OKX、成交额或市值过小的标的）----
+_MIN_QUOTE_VOLUME_USD = float(os.environ.get("RANKING_MIN_QUOTE_VOLUME_USD", "5000000"))
+_MIN_MARKET_CAP_USD = float(os.environ.get("RANKING_MIN_MARKET_CAP_USD", "100000000"))
+_LIQUIDITY_CACHE_FILE = os.path.join(tempfile.gettempdir(), "trading_ranking_liquidity.json")
+_LIQUIDITY_CACHE_TTL = timedelta(hours=6)
+_OKX_TICKERS_URL = "https://www.okx.com/api/v5/market/tickers?instType={}"
+_COINGECKO_URL = (
+    "https://api.coingecko.com/api/v3/coins/markets"
+    "?vs_currency=usd&symbols={}&per_page=250&sparkline=false"
+)
+
+
+def _http_json(url: str, timeout: int = 8):
+    req = urllib.request.Request(url, headers={"User-Agent": "trading-ranking/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _fetch_okx_markets() -> dict:
+    """OKX 现货+永续 ticker → {symbol: {last, quote_volume_usd}}，同一 symbol 取成交额较大者。"""
+    markets: dict = {}
+    for inst_type in ("SPOT", "SWAP"):
+        payload = _http_json(_OKX_TICKERS_URL.format(inst_type))
+        for row in payload.get("data", []) or []:
+            inst_id = row.get("instId", "")
+            if not (inst_id.endswith("-USDT") or "-USDT-" in inst_id):
+                continue
+            symbol = _normalize_symbol(inst_id)
+            try:
+                last = float(row.get("last") or 0)
+                # 口径实测：现货 volCcy24h 已是 USDT 成交额；永续为币本位，需乘最新价折算美元
+                if inst_type == "SPOT":
+                    volume = float(row.get("volCcy24h") or 0)
+                else:
+                    volume = float(row.get("volCcy24h") or 0) * last
+            except (TypeError, ValueError):
+                continue
+            if symbol and last > 0 and volume > markets.get(symbol, {}).get("quote_volume_usd", 0):
+                markets[symbol] = {"last": last, "quote_volume_usd": volume}
+    return markets
+
+
+def _fetch_market_caps(symbols: list) -> dict:
+    """CoinGecko 市值（美元）。未收录/失败返回空，由 OKX 成交额门槛兜底。"""
+    if not symbols:
+        return {}
+    query = ",".join(sorted({_normalize_symbol(s).lower() for s in symbols}))
+    payload = _http_json(_COINGECKO_URL.format(query))
+    caps: dict = {}
+    for row in payload if isinstance(payload, list) else []:
+        sym = str(row.get("symbol") or "").upper()
+        cap = row.get("market_cap")
+        if sym and isinstance(cap, (int, float)):
+            caps[sym] = max(float(cap), caps.get(sym, 0))
+    return caps
+
+
+def _load_liquidity(symbols: list) -> dict:
+    """OKX 行情 + CoinGecko 市值（6h 缓存）；OKX 整体不可用时 degraded=True，过滤降级放行。"""
+    try:
+        with open(_LIQUIDITY_CACHE_FILE, encoding="utf-8") as fh:
+            cache = json.load(fh)
+        fetched = datetime.fromisoformat(cache["fetched_at"])
+        if datetime.now(timezone.utc) - fetched < _LIQUIDITY_CACHE_TTL:
+            return cache
+    except Exception:
+        pass
+
+    try:
+        markets = _fetch_okx_markets()
+    except Exception:
+        return {"markets": {}, "market_caps": {}, "degraded": True}
+    try:
+        caps = _fetch_market_caps(symbols)
+    except Exception:
+        caps = {}
+    snapshot = {
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "markets": markets,
+        "market_caps": caps,
+        "degraded": False,
+    }
+    try:
+        with open(_LIQUIDITY_CACHE_FILE, "w", encoding="utf-8") as fh:
+            json.dump(snapshot, fh)
+    except Exception:
+        pass
+    return snapshot
+
+
+def _filter_crypto_candidates(candidates: list, snapshot: dict) -> list:
+    """加密候选须 OKX 可交易 + 24h 成交额达标 +（有数据时）市值达标。
+
+    大宗/美股不过滤；snapshot 降级或无行情时整体放行（FAIL-OPEN）。
+    """
+    if snapshot.get("degraded"):
+        return candidates
+    markets = snapshot.get("markets") or {}
+    caps = snapshot.get("market_caps") or {}
+    if not markets:
+        return candidates
+    kept = []
+    for candidate in candidates:
+        if candidate.get("category") != "crypto":
+            kept.append(candidate)
+            continue
+        market = markets.get(_normalize_symbol(candidate["symbol"]))
+        if not market:
+            continue  # OKX 未上市（如 HEMI），用户无法交易
+        if market.get("quote_volume_usd", 0) < _MIN_QUOTE_VOLUME_USD:
+            continue
+        cap = caps.get(_normalize_symbol(candidate["symbol"]))
+        if cap is not None and cap < _MIN_MARKET_CAP_USD:
+            continue
+        kept.append(candidate)
+    return kept
+
+
 def _select_top10(candidates: list, total: int = _TOP_N) -> list:
     """按 6 crypto + 2 commodity + 2 index 配额选 TopN；品类不足时用剩余最高分补足。"""
     ordered = sorted(candidates, key=lambda c: c["score"], reverse=True)
@@ -315,6 +435,7 @@ def _orchestrator_to_items(orch_data: dict) -> list:
                 "direction": "BUY",
                 "category": entry.get("category") or _symbol_category(symbol),
                 "reasons": entry.get("reasons", []) or ["multi-asset pool"],
+                "price": (entry.get("metrics") or {}).get("last_close"),
             }
         )
 
@@ -367,7 +488,12 @@ def _orchestrator_to_items(orch_data: dict) -> list:
             }
         )
 
-    # 5. 按 6 crypto + 2 commodity + 2 index 配额选 Top10
+    # 5. 加密候选流动性/市值过滤（剔除 HEMI 这类未上 OKX / 成交额或市值过小的标的）
+    crypto_symbols = [c["symbol"] for c in candidates if c.get("category") == "crypto"]
+    liquidity = _load_liquidity(crypto_symbols)
+    candidates = _filter_crypto_candidates(candidates, liquidity)
+
+    # 6. 按 6 crypto + 2 commodity + 2 index 配额选 Top10
     candidates = _select_top10(candidates)
 
     for i, c in enumerate(candidates):
@@ -379,10 +505,15 @@ def _orchestrator_to_items(orch_data: dict) -> list:
             _score_to_signal(score) if direction != "SELL" else _score_to_signal(1 - score)
         )
 
-        # 决策卡 (简化版 — 真实入场价/止损需要实时行情)
+        # 最新价：大宗/美股取池内 last_close，加密取 OKX ticker；都没有则为 None（前端做空值展示）
+        price = c.get("price")
+        if price is None and category == "crypto":
+            price = (liquidity.get("markets", {}).get(_normalize_symbol(symbol)) or {}).get("last")
+
+        # 决策卡 (简化版 — 入场区间/止损止盈需 ATR 模型，暂缺时前端显示"待定")
         decision = {
             "entry": {
-                "price": None,  # 行情驱动, 暂 null
+                "price": price,
                 "range": [None, None],
                 "batches": [],
             },

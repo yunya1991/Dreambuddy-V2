@@ -19,6 +19,9 @@ export function RankingCard({ item }: RankingCardProps) {
   const sig = signalConfig[item.signal];
   const cat = categoryConfig[item.category];
   const confPct = (Number(item.confidence) * 100).toFixed(0);
+  const card = item.decisionCard;
+  const canPrefill =
+    typeof card?.entry?.price === 'number' && typeof card?.stopLoss === 'number';
 
   return (
     <V3Card padding="none" hover>
@@ -62,13 +65,19 @@ export function RankingCard({ item }: RankingCardProps) {
       {expanded && (
         <div className="border-t border-slate-700/30 px-3 pb-3">
           <DecisionCard data={item.decisionCard} symbol={item.symbol} />
-          {/* 一键入场 */}
-          <Link
-            href={`/dashboard/trade?symbol=${encodeURIComponent(item.symbol)}&entry=${item.decisionCard.entry.price}&sl=${item.decisionCard.stopLoss}&tp=${item.decisionCard.takeProfit.join(',')}`}
-            className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-medium transition-colors"
-          >
-            <span>⚡</span> 一键入场
-          </Link>
+          {/* 一键入场：入场价/止损未就绪时禁用，避免 null 参数带进下单页 */}
+          {canPrefill ? (
+            <Link
+              href={`/dashboard/trade?symbol=${encodeURIComponent(item.symbol)}&entry=${card.entry.price}&sl=${card.stopLoss}&tp=${(card.takeProfit ?? []).join(',')}`}
+              className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-medium transition-colors"
+            >
+              <span>⚡</span> 一键入场
+            </Link>
+          ) : (
+            <div className="mt-3 flex items-center justify-center w-full py-2 rounded-lg bg-slate-800/40 border border-slate-700/40 text-slate-500 text-xs">
+              行情待定，暂不可一键入场
+            </div>
+          )}
         </div>
       )}
     </V3Card>
