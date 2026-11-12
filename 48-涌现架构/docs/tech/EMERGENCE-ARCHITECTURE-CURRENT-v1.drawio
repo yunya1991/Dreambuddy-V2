@@ -1,0 +1,294 @@
+<mxfile host="app.diagrams.net" modified="2026-11-12" agent="trae" etag="emergence-v1" version="24.7.17" type="device">
+  <diagram id="emergence-chain" name="交易涌现架构（当前态）">
+    <mxGraphModel dx="2400" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1500" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ============ 层 0：数据源 ============ -->
+        <mxCell id="L0_group" value="数据地基层" style="swimlane;startSize=22;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="30" y="30" width="2140" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="src_18" value="18-数据获取中心" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L0_group">
+          <mxGeometry x="30" y="45" width="280" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="src_19" value="19-数据访问层 (DAL)&#xa;mm_metrics / fear_greed / funding_rate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L0_group">
+          <mxGeometry x="360" y="45" width="310" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="src_39" value="39-金融语义蒸馏系统&#xa;semantic_events.jsonl (FinBERT)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L0_group">
+          <mxGeometry x="730" y="45" width="310" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="src_11" value="11-易经推理系统&#xa;klines / 行情 / 决策链" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L0_group">
+          <mxGeometry x="1100" y="45" width="300" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="src_21" value="21-特征工程中心&#xa;leader_form P层派生" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L0_group">
+          <mxGeometry x="1450" y="45" width="280" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="src_external" value="外部 API (OKX / Binance / yfinance / FRED)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L0_group">
+          <mxGeometry x="1780" y="45" width="300" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 层 1：9域权威历史（P0 + P2 已落地）============ -->
+        <mxCell id="L1_group" value="9域权威历史层（SPEC P0+P2）" style="swimlane;startSize=22;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="30" y="180" width="2140" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_mts" value="ml_trade_service_v2.py&#xa;build_module_snapshot + refresh_module&#xa;→ observed_date + append_observation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="L1_group">
+          <mxGeometry x="30" y="45" width="340" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_dh" value="dimension_history.py（权威统计）&#xa;append_observation(s) 批量幂等&#xa;load_series + compute_dimension_history&#xa;pct_rank_1y/3y | trend_20d | mean_revert_z&#xa;regime_switch_30d | extreme_days" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="L1_group">
+          <mxGeometry x="420" y="45" width="380" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_fg" value="fear_greed_history.py（P2 长历史旁路）&#xa;19-DAL crypto_fear_greed/value&#xa;同日取最晚 UTC 观测&#xa;0-100 原值 → sentiment 模块" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="L1_group">
+          <mxGeometry x="850" y="45" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_storage" value="storage/dimension_history/&#xa;{flow,sentiment,macro,valuation,&#xa;onchain,breadth,intermarket,calendar,&#xa;news,narrative}.jsonl" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="L1_group">
+          <mxGeometry x="1220" y="45" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_services" value="对外端点&#xa;GET /fundamental/history/{module}&#xa;get_dimension_history()&#xa;velocity_label_of() 公共函数" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="L1_group">
+          <mxGeometry x="1550" y="45" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="L1_backfill" value="云端入口（待执行）&#xa;scripts/backfill_dimension_history.py&#xa;--module fear_greed --dry-run&#xa;--start / --end" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L1_group">
+          <mxGeometry x="1860" y="45" width="250" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 层 2：18域维度上下文（P1 已落地）============ -->
+        <mxCell id="L2_group" value="18域维度上下文（SPEC P1，8→13 维）" style="swimlane;startSize=22;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="30" y="390" width="2140" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_dims_old" value="原有 8 维（kline/mm/快讯）&#xa;D1→macro | D2→flow | D3→technical | D4→sentiment&#xa;C6 / C7→onchain | C8→? | NEWS→event" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L2_group">
+          <mxGeometry x="30" y="45" width="340" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_dims_new" value="新增 5 维（消费 9 域 dimension_history）&#xa;D5→breadth | C9→intermarket | C10→valuation&#xa;C11→calendar | C12→narrative&#xa;FAIL-OPEN：9域不可用时回退 kline/mm 探测" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L2_group">
+          <mxGeometry x="420" y="45" width="430" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_api" value="ALL_DIMENSIONS（8→13）&#xa;_load_nine_series() + _context_for() 分派&#xa;availability: long(≥900)/short(≥30)/none&#xa;z window=60 | strength=|tanh(z)|" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L2_group">
+          <mxGeometry x="900" y="45" width="360" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_consumers" value="消费方&#xa;p3a/p3b 脚本&#xa;48域 financial_env_validate（间接）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L2_group">
+          <mxGeometry x="1310" y="45" width="280" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="L2_sys_path" value="sys.path.append(9域根)&#xa;不抢占同名包（SPEC §12.1 修订）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L2_group">
+          <mxGeometry x="1640" y="45" width="250" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 层 3：48域涌现验证（P2 已落地）============ -->
+        <mxCell id="L3_group" value="48域涌现验证层（SPEC P2，冲突 C1-C4 已修）" style="swimlane;startSize=22;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="30" y="570" width="2140" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_fea" value="financial_env_align&#xa;_form_long() → E/S/M/P 层&#xa;P_ 前缀规则 + 市场级按日广播" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="L3_group">
+          <mxGeometry x="30" y="40" width="270" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_fev" value="financial_env_validate（核心）&#xa;L-A 单层 IC · L-B 交叉 IC · L-C 三方增量 · L-D 状态分桶&#xa;import 已统一 sys.path.append（C2 修复）&#xa;form_from_bars 加 ImportError/单标的 try/except（C3 修复）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="L3_group">
+          <mxGeometry x="350" y="40" width="480" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_trend" value="trend_context_from_history（P2 新增）&#xa;20 观测滚动 → 9域权威 Spearman&#xa;market-level → P_trend_20d&#xa;独立时序 IC，不混入截面 P_score" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="L3_group">
+          <mxGeometry x="880" y="40" width="310" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_logger" value="FAIL-OPEN + 可观测（C1 修复）&#xa;logger.warning 4 处：&#xa;18域价格源 / leader_form 不可用&#xa;单标的 compute 失败 / trend 上下文失败" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="L3_group">
+          <mxGeometry x="1240" y="40" width="310" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- Factor Gate + Preregistration -->
+        <mxCell id="L3_gate" value="factor_gate.py（门禁）&#xa;MIN_N_OBS=250 / |t|>3.0 / PBO&lt;0.5 / DSR>0&#xa;assert_gate → verdict vocab 5 档&#xa;register_factor 校验预注册" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L3_group">
+          <mxGeometry x="1600" y="40" width="260" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_prereg" value="factor_preregistration.json&#xa;已注册：E/S/M/P/ALL + 3 交互项&#xa;⚠ P_trend_20d 故意不注册&#xa;→ 独立时序诊断，不写 verdict" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="L3_group">
+          <mxGeometry x="1890" y="40" width="230" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- 四层 + 独立因子 -->
+        <mxCell id="L3_E" value="E_score 事件方向" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L3_group">
+          <mxGeometry x="30" y="170" width="180" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_S" value="S_score 语义情绪" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="L3_group">
+          <mxGeometry x="250" y="170" width="180" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_M" value="M_score 风险偏好" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="L3_group">
+          <mxGeometry x="470" y="170" width="180" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_P" value="P_score 形态均值" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="L3_group">
+          <mxGeometry x="690" y="170" width="180" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_ALL" value="ALL_layers 等权合成" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="L3_group">
+          <mxGeometry x="910" y="170" width="200" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_PT20" value="P_trend_20d 市场级（独立时序）" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" vertex="1" parent="L3_group">
+          <mxGeometry x="1150" y="170" width="240" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_bus" value="emergence_bus&#xa;bus/shadow_subscribers&#xa;runner → verdict_dashboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4c7e7;strokeColor=#4a6fad;" vertex="1" parent="L3_group">
+          <mxGeometry x="1460" y="170" width="280" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="L3_out" value="output: financial_env_report.json&#xa;trials.jsonl / factor_verdicts.jsonl&#xa;e4b_reflection / e4b_cascade" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b4c7e7;strokeColor=#4a6fad;" vertex="1" parent="L3_group">
+          <mxGeometry x="1790" y="170" width="330" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 层 4：自进化闭环 ============ -->
+        <mxCell id="L4_group" value="自进化闭环" style="swimlane;startSize=22;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="30" y="870" width="2140" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_capgap" value="registry/capability_gaps.py&#xa;能力缺口登记&#xa;FAIL-OPEN 降级" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="L4_group">
+          <mxGeometry x="30" y="45" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_accum" value="registry/accumulation_gate.py&#xa;E1/E4b 积累门禁&#xa;跑 → 放行 flag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="L4_group">
+          <mxGeometry x="280" y="45" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_evol" value="dreambuddy_evolution&#xa;4层闭环自进化交易架构&#xa;E4b cascade + E6 需求单" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="L4_group">
+          <mxGeometry x="530" y="45" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_asil" value="asil/&#xa;d3_adapter / drift_detector&#xa;cognitive_writeback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="L4_group">
+          <mxGeometry x="850" y="45" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_cog" value="认知系统（MCP）&#xa;recall → record → verify → 蒸馏&#xa;VM-* 记忆 ID 体系" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="L4_group">
+          <mxGeometry x="1130" y="45" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_env" value="18域 env / 调度 / launchd&#xa;进程守护 → 下次刷新 → 新观测&#xa;闭环回到 L1 ml_trade_service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="L4_group">
+          <mxGeometry x="1450" y="45" width="330" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="L4_loop" value="闭环反馈环" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="L4_group">
+          <mxGeometry x="1830" y="45" width="260" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ============ 跨层连线 ============ -->
+
+        <!-- L0 → L1 -->
+        <mxCell id="e_src_mts" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="src_18" target="L1_mts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_src_fg" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="src_19" target="L1_fg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_src_s39" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="src_39" target="L1_mts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_src_21" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="src_21" target="L3_trend">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L1 内部 -->
+        <mxCell id="e_mts_dh" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;" edge="1" parent="1" source="L1_mts" target="L1_dh">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fg_dh" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;" edge="1" parent="1" source="L1_fg" target="L1_dh">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dh_store" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;" edge="1" parent="1" source="L1_dh" target="L1_storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_backfill" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d79b00;dashed=1;" edge="1" parent="1" source="L1_backfill" target="L1_storage">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="dry-run → 正式（待执行）" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="e_backfill">
+            <mxGeometry x="-0.4" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+
+        <!-- L1 → L2 (18域) -->
+        <mxCell id="e_l1_l2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9673a6;" edge="1" parent="1" source="L1_dh" target="L2_dims_new">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="610" y="385" as="sourcePoint" />
+            <mxPoint x="610" y="390" as="targetPoint" />
+          </mxGeometry>
+          <mxCell value="sys.path.append + load_series()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="e_l1_l2">
+            <mxGeometry x="-0.3" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+
+        <!-- L1 → L3 (48域) -->
+        <mxCell id="e_l1_l3_trend" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;" edge="1" parent="1" source="L1_dh" target="L3_trend">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="trend_context_from_history" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="e_l1_l3_trend">
+            <mxGeometry x="-0.35" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="e_l1_l3_fea" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;" edge="1" parent="1" source="L1_storage" target="L3_fea">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L0 → L3 (39语义 → S层) -->
+        <mxCell id="e_l0_39_l3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;" edge="1" parent="1" source="src_39" target="L3_fev">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="885" y="140" as="sourcePoint" />
+            <mxPoint x="885" y="560" as="targetPoint" />
+          </mxGeometry>
+          <mxCell value="S层语义" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="e_l0_39_l3">
+            <mxGeometry x="-0.4" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <!-- L0 → L3 (11 klines → 价格) -->
+        <mxCell id="e_l0_11_l3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;" edge="1" parent="1" source="src_11" target="L3_fev">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="klines + 标签" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="e_l0_11_l3">
+            <mxGeometry x="-0.4" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+
+        <!-- L3 内部 -->
+        <mxCell id="e_trend_pt20" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="L3_trend" target="L3_PT20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fev_layers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;" edge="1" parent="1" source="L3_fev" target="L3_E">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fev_gate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d79b00;" edge="1" parent="1" source="L3_fev" target="L3_gate">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell value="assert_gate" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="e_fev_gate">
+            <mxGeometry x="-0.3" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="e_fev_prereg" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d79b00;" edge="1" parent="1" source="L3_gate" target="L3_prereg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_fev_bus" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4a6fad;" edge="1" parent="1" source="L3_fev" target="L3_bus">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_bus_out" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4a6fad;" edge="1" parent="1" source="L3_bus" target="L3_out">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L3 → L4 -->
+        <mxCell id="e_l3_capgap" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="L3_out" target="L4_capgap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_l3_accum" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="L3_bus" target="L4_accum">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_l3_evol" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#666666;" edge="1" parent="1" source="L3_out" target="L4_evol">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- L4 闭环回到 L1 -->
+        <mxCell id="e_loop" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9673a6;endArrow=classic;endFill=1;" edge="1" parent="1" source="L4_loop" target="L1_mts">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1960" y="1070" />
+              <mxPoint x="1000" y="1070" />
+              <mxPoint x="1000" y="360" />
+            </Array>
+          </mxGeometry>
+          <mxCell value="新观测 → 下轮刷新" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="e_loop">
+            <mxGeometry x="-0.3" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+
+        <!-- 图例 -->
+        <mxCell id="legend" value="图例：&#xa;🔵 数据地基层 | 🟢 9域权威历史 | 🟣 18域维度上下文 | 🔴 48域涌现验证 | ⚪ 自进化闭环&#xa;─── 主数据流  |  - - - 待执行/旁路  |  ⚫ 已修复冲突(C1-C4)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1040" width="600" height="60" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,63 @@
+{
+  "version": "financial-env-prereg-v1",
+  "spec": "48-涌现架构/docs/tech/SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md §7.2 / §7.6",
+  "registered_at": "2026-11-12",
+  "registry_discipline": "事前假设，事后不得修改（SPEC §7.3 / factor_gate E-1）；新增因子只能追加，禁止改写已有条目",
+  "note": "注册时尚未在真实价格数据上运行过任何一次联合验证（仅跑过合成数据单测与无价格空跑）",
+  "evaluation": {
+    "horizon_days": 5,
+    "ic": "逐日截面 Spearman IC（横截面 ≥3 标的），ICIR = mean/std，t = ICIR·√n_dates",
+    "gate": "registry/factor_gate.py assert_gate：MIN_N_OBS=250 / |t|>3.0 / PBO<0.5 / DSR>0",
+    "verdict_vocab": ["candidate", "candidate_weak", "inconclusive", "falsified", "insufficient_data"]
+  },
+  "factors": {
+    "E_score": {
+      "layer": "E",
+      "hypothesis": "金融事件方向（E_direction，无事件为 0）对龙头次日/5 日收益有正向预测力",
+      "expected_sign": 1,
+      "rationale": "事件按 available_at 落首个可交易时点，信息未提前泄露（§7.1）"
+    },
+    "S_score": {
+      "layer": "S",
+      "hypothesis": "金融语义情绪分值对龙头未来 5 日收益有正向预测力",
+      "expected_sign": 1,
+      "rationale": "39 语义层 + FinBERT 打分，情绪极值反向仅在条件化后成立（SPEC P-3）"
+    },
+    "M_score": {
+      "layer": "M",
+      "hypothesis": "市场风险偏好（-VIX 档位/3，越高越 risk-on）对龙头未来 5 日收益有正向预测力",
+      "expected_sign": 1,
+      "rationale": "VIX 档位是风险偏好状态描述，不作独立 alpha（SPEC P-1/P-2）"
+    },
+    "P_score": {
+      "layer": "P",
+      "hypothesis": "形态数值列截面 z 均值（均线/Pivot/OBV/布林）对龙头未来 5 日收益有正向预测力",
+      "expected_sign": 1,
+      "rationale": "形态层定位为状态描述与确认，预期 IC 很弱（SPEC P-2）"
+    },
+    "ALL_layers": {
+      "layer": "E+S+M+P",
+      "hypothesis": "四层等权合成优于任意单层（联合涌现假设）",
+      "expected_sign": 1,
+      "rationale": "SPEC §7.2 L-A 合成因子，用于 L-C 增量消融的对照基线"
+    },
+    "E_scorexS_score": {
+      "layer": "E×S",
+      "hypothesis": "事件方向在情绪同向时更有效（交互项 IC 显著强于单层）",
+      "expected_sign": 1,
+      "rationale": "SPEC §7.2 L-B 两两交叉"
+    },
+    "E_scorexM_score": {
+      "layer": "E×M",
+      "hypothesis": "事件方向在 risk-on 环境下更有效（交互项 IC 显著强于单层）",
+      "expected_sign": 1,
+      "rationale": "SPEC §7.2 L-B 两两交叉"
+    },
+    "S_scorexP_score": {
+      "layer": "S×P",
+      "hypothesis": "语义情绪与形态共振时更有效（交互项 IC 显著强于单层）",
+      "expected_sign": 1,
+      "rationale": "SPEC §7.2 L-B 两两交叉"
+    }
+  }
+}
