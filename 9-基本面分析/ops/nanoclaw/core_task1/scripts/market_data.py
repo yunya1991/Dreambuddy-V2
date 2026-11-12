@@ -6,6 +6,7 @@
 
 import json
 import os
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +21,12 @@ except ImportError:
     import urllib.error
 
     HAS_REQUESTS = False
+
+# VIX 唯一实现位于 18-数据获取中心（SPEC §5.2.1 P1-B：提取提升，nanoclaw 不保留本地副本）
+_DATA_CENTER = str(Path(__file__).resolve().parents[5] / "18-数据获取中心")
+if _DATA_CENTER not in sys.path:
+    sys.path.insert(0, _DATA_CENTER)
+from data_center.collectors.chain.vix_collector import fetch_vix  # noqa: E402, I001
 
 
 def _http_get_json(url, params=None, timeout=10):
@@ -170,35 +177,6 @@ def fetch_nasdaq_price():
     except Exception:
         pass
     return {"price_usd": 0, "change_24h": 0, "source": "N/A"}
-
-
-def fetch_vix():
-    """获取 VIX 恐慌指数"""
-    try:
-        data = _http_get_json_with_retry(
-            "https://www.alphavantage.co/query",
-            params={
-                "function": "GLOBAL_QUOTE",
-                "symbol": "^VIX",
-                "apikey": os.environ.get("ALPHA_VANTAGE_API_KEY", "demo"),
-            },
-            timeout=10,
-            retries=2,
-            backoff_s=0.8,
-        )
-        quote = data.get("Global Quote", {})
-        value = float(quote.get("05. price", 0))
-        if value > 0:
-            return {"value": value, "source": "CBOE via Alpha Vantage"}
-    except Exception:
-        pass
-    try:
-        yahoo = _fetch_yahoo_chart("^VIX")
-        if yahoo:
-            return {"value": yahoo["value"], "source": yahoo["source"]}
-    except Exception:
-        pass
-    return {"value": 0, "source": "N/A"}
 
 
 def fetch_btc_etf_flows():

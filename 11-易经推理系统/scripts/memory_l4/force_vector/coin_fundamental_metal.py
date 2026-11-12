@@ -98,8 +98,12 @@ def _fetch_fred_series(db_path: str, series_id: str) -> dict:
         return {}
 
 
-def _fetch_vix(db_path: str) -> float:
-    """从 SQLite 读取 yfinance ^VIX 最新值。"""
+def _read_stored_price(db_path: str, symbol: str = "^VIX") -> float:
+    """从 SQLite 读取 yfinance 最新价（默认 ^VIX）。
+
+    注意：这里只读 18 已落库数据，不是 VIX 采集实现（唯一采集实现见
+    `18-数据获取中心/data_center/collectors/chain/vix_collector.py`）。
+    """
     if not os.path.exists(db_path):
         return 0.0
     try:
@@ -107,7 +111,7 @@ def _fetch_vix(db_path: str) -> float:
             db_path,
             "yfinance",
             "finance",
-            "^VIX",
+            symbol,
             switch="METAL",
             columns="metrics",
         )
@@ -232,7 +236,7 @@ def compute_all(coin: str, db_path: str = DEFAULT_DB_PATH) -> Dict[str, float]:
         fed_data = _fetch_fred_series(db_path, "FEDFUNDS")
         m2_data = _fetch_fred_series(db_path, "M2NS")
         cpi_data = _fetch_fred_series(db_path, "CPIAUCSL")
-        vix_val = _fetch_vix(db_path)
+        vix_val = _read_stored_price(db_path)
 
         # 1. Rate Reversion
         fed_rate = float(fed_data.get("value", 0))
