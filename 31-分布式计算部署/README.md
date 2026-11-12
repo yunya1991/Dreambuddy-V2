@@ -1,49 +1,53 @@
 # 31-分布式计算部署
 
-> **定位**：线上（云端）+ 线下（本地）协同部署架构，实现高可用交易 + 算力分担 + 故障降级
-> **版本**：v0.1 | **创建日期**：2026-10-09
-> **状态**：架构定稿（Phase 1-7 已交付）；**实施顺序见 [ROADMAP](./docs/ROADMAP-分布式计算实施路线图.md)**
+> **当前定位**：主云端 `.117` 的单机部署与运维资料。
+> **版本**：v1.0 | **更新日期**：2026-11-13
+> **当前决策**：分布式协同架构**暂时不启用、不继续实施**；本目录名保留仅为兼容既有路径。
 
-## 概述
+## 1. 当前有效口径
 
-DreamOS 交易系统的分布式协同部署方案。核心思想：
+- **主云端**：`43.160.201.117`，SSH 别名 `dreambuddy-remote`。
+- **云端仓库**：`/home/luke/dreambuddy`，仓库属主 `luke`。
+- **运行方式**：一台云主机通过 `systemd + Docker + Nginx` 承载服务。
+- **本地职责**：开发、评审和按需任务；不作为当前云端的热备、Worker 或分布式训练节点。
+- **代码交付**：推送 GitHub 不等于部署；云端是否已接收代码必须单独核对 HEAD 和工作区。
+- **实测基线**：2026-11-13，Ubuntu 24.04.5 LTS，4 vCPU、15GiB 内存、178G 根文件系统（已用 37%）。
 
-- **云端做"实时交易大脑+前端入口"**：部署 V15、BCRM2 推理、BDSM 快照、战略层风控、自进化推理、事件驱动、主前端，保证 7×24 高可用
-- **线下做"训练/优化肌肉"**：利用 Apple M3 的 GPU+统一内存，承担自进化训练、BCRM2 优化、参数搜索、回测等重计算
-- **任务队列+心跳实现协同与降级**：线下故障时云端用简化模型继续交易，不中断运行
+当前**没有启用**以下分布式能力：Scheduler、WorkerAgent、HeartbeatMonitor、Degrader、FallbackLib、多节点训练、跨节点竞赛、联邦学习、弹性调度，以及“云端下发 → 本地训练 → 模型自动回传”链路。旧文档中的相关设计、优先级和路线图均不是当前任务。
 
-## 核心能力
+## 2. 当前文档入口
 
-| 模块 | 职责 |
-|------|------|
-| Scheduler（调度中心） | 任务分发、Worker 管理、能力路由 |
-| HeartbeatMonitor（心跳监控） | 线下节点健康检测、故障判定 |
-| Degrader（降级决策器） | 故障时切换降级算法、恢复时切回 |
-| FallbackLib（降级算法库） | 各子系统的简化版推理模型 |
-| WorkerAgent（线下代理） | 消费任务、执行计算、上报心跳、回传结果 |
+| 文档 | 当前用途 |
+|---|---|
+| [TECHNICAL_DESIGN.md](./docs/TECHNICAL_DESIGN.md) | 当前单机部署结构、进程与网络边界 |
+| [SERVICE_INVENTORY.md](./docs/SERVICE_INVENTORY.md) | 2026-11-13 云端实测服务、端口与异常 |
+| [DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) | 部署前后核对清单与当前阻断项 |
+| [API_SPEC.md](./docs/API_SPEC.md) | 当前脚本和本机服务接口 |
+| [ENGINEERING_INDEX.md](./docs/ENGINEERING_INDEX.md) | 当前资料与历史档案索引 |
+| [CHANGELOG.md](./docs/CHANGELOG.md) | 文档变更记录 |
 
-## 与其他子系统关系
+## 3. 历史方案边界
 
-本模块是**部署编排层**，不修改各子交易系统的业务逻辑，只负责：
-- 决定哪些部分跑在云端、哪些跑在线下
-- 提供任务分发与结果回传的通信通道
-- 提供故障降级的切换机制
+以下文档只用于追溯 2026-10 的设计和实施历史，**不得作为当前架构、运行状态或实施计划执行**：
 
-## 目录结构
+- `SPEC-分布式计算协同部署方案.md`
+- `ROADMAP-分布式计算实施路线图.md`
+- `STATUS-已实现待实现清单.md`
+- `SPEC/PLAN-本地远端双写分叉治理与torch可用性.md`
+- `RESEARCH-*`、`REVIEW-*`、`REPORT-*` 及其他分布式训练协同计划
+- `phase*/` 中的历史安装脚本
 
-```
-31-分布式计算部署/
-├── docs/
-│   ├── SPEC-分布式计算协同部署方案.md   # 核心设计 SPEC
-│   ├── ENGINEERING_INDEX.md            # 工程索引
-│   ├── CHANGELOG.md                    # 变更日志
-│   └── README.md                       # 文档索引
-└── README.md                           # 模块入口
-```
+历史脚本可能包含当时的 PM2、服务清单、硬件规格和交互式操作。未重新评审、实测前，禁止直接重跑全量安装或迁移脚本。
 
-## 关联文档
+## 4. 当前需要注意的云端事实
 
-- [ROADMAP-分布式计算实施路线图.md](./docs/ROADMAP-分布式计算实施路线图.md) — **实施顺序总纲（当前阶段以此为准）**
-- [SPEC-分布式计算协同部署方案.md](./docs/SPEC-分布式计算协同部署方案.md) — 完整设计方案
-- [STATUS-已实现待实现清单.md](./docs/STATUS-已实现待实现清单.md) — 已实现/待实现清单
-- [ENGINEERING_INDEX.md](./docs/ENGINEERING_INDEX.md) — 工程索引（全部文档）
+截至本次只读核查：
+
+1. `yijing-polling-trader.service` 持续 `activating/auto-restart`，退出码为 1，不能标记为正常运行。
+2. `dreambuddy-healthcheck.service` 为 `failed`；其 timer 仍在触发，不能据此认定巡检通过。
+3. `v15-capital-api.service` 虽为 active，但 `/status` 返回空响应，需单独排查。
+4. `dreamos-scheduler.service` 与 `hermes-dashboard.service` 均为 disabled + inactive，不再是旧清单中的 active 服务。
+5. 云端 HEAD 为 `d7f94378e2b40d1b8b0924f19bdb7df5194c4cbd`，当时 `origin/main` 为 `5bfdbb5a1aabacbd3387f663b9555ca5a747c5c2`，且工作区存在运行态及源码修改；部署前必须审查差异，禁止直接 reset/clean。
+6. PG、Redis、MinIO 以及各业务端口均只监听 `127.0.0.1`；公网监听仅见 SSH 22 与 Nginx 80。
+
+异常明细见 [SERVICE_INVENTORY.md](./docs/SERVICE_INVENTORY.md)。本次仅更新文档，未修改或重启任何云端服务。

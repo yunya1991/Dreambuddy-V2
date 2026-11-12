@@ -1,183 +1,91 @@
-# SERVICE_INVENTORY — 本地/云端服务盘点清单
+# 主云端服务与端口清单
 
-> **文档定位**：P0 服务盘点（本地算力"全部转训练"改造的输入依据）
-> **版本**：v0.1 | **创建日期**：2026-10-14
-> **状态**：P0 完成（组 1 ⚠️ 项已对齐云端）
-> **关联**：[SPEC-分布式计算协同部署方案.md](./SPEC-分布式计算协同部署方案.md) · [SPEC-本地远端双写分叉治理与torch可用性.md](./SPEC-本地远端双写分叉治理与torch可用性.md) · 全量远端部署方案.md（未入库）
+> **版本**：v1.0 | **更新日期**：2026-11-13
+> **实测时间**：2026-11-13 02:03-02:05（Asia/Shanghai）
+> **对象**：`dreambuddy-remote` / `43.160.201.117`
+> **性质**：只读实测快照，不是“期望全部 active”的部署目标，也不代表本地服务清单。
 
-## 0. 盘点方法（证据级）
+## 1. 主机与代码
 
-| 侧 | 方法 | 权威性 |
-|---|---|---|
-| 云端 | SSH `dreambuddy-remote`（43.160.201.117，4C8G/120G）：`systemctl list-units/list-unit-files`、`ss -tlnp`、`ps aux`、`docker ps` | **权威**（实测） |
-| 本地 | `~/Library/LaunchAgents/*.plist` 全量解析 + `ps aux` + `lsof -iTCP -sTCP:LISTEN` | 实测 |
-
-> 本次 SSH 复核期间出现 2 次 `banner exchange timeout`（属既有偶发，见 PLAN §风险）；下表云端结论以**本轮成功查询**为准，个别 unit 命名标注"待复核"。
-
----
-
-## 1. 云端权威清单（实测）
-
-### 1.1 常驻服务（systemd，active running）
-
-| 服务 | 端口/职责 |
+| 项 | 实测值 |
 |---|---|
-| `v15-api.service` | 8771 V15 策略 API |
-| `v15-capital-api.service` | 8770 资金管理 API |
-| `yijing-data-server.service` | 8765 易经数据服务 |
-| `yijing-polling-trader.service` | BCRM2 + Strategy + BDSM 轮询交易 |
-| `dreambuddy-frontend.service` | 3001 Next.js 15.5.26（主前端） |
-| `product-hub.service` | 3456 Next.js 14.2.35（产物中台） |
-| `datacenter-scheduler.service` | 18 采集调度（含 18→19 回填） |
-| `cognitive-daemon.service` | 认知库文件变更守护 |
-| `dreamos-scheduler.service` | DreamOS 编排 |
-| `dreamos-dynamic-evaluator.service` | 动态评估（6h） |
-| `fundamental.service` | 9094（`ml_trade_service_v2.py --port 9094 --no-collect`） |
-| `m25-strategy-generation.service` | 8095 M25 用户策略生成 |
-| `m26-strategy-lib.service` | 8093 M26 策略管理 |
+| 系统 | Ubuntu 24.04.5 LTS |
+| CPU / 内存 | 4 vCPU / 15GiB（available 约 10GiB） |
+| 根文件系统 | 178G，已用 63G（37%），可用 108G |
+| Swap | 7.9GiB，已用 2.3GiB |
+| 仓库 | `/home/luke/dreambuddy`，分支 `main` |
+| 云端 HEAD | `d7f94378e2b40d1b8b0924f19bdb7df5194c4cbd` |
+| 当时 origin/main | `5bfdbb5a1aabacbd3387f663b9555ca5a747c5c2` |
+| 工作区 | 非干净；含运行态文件及 `scheduler.py`、`fundamental_snapshot.py`、`sentiment_engine.py` 等源码修改 |
 
-### 1.2 Timer / oneshot
+结论：云端代码与 GitHub 当时不一致，且存在本地修改。更新前必须逐项查明来源，不能直接 reset/clean，也不能把 GitHub HEAD 当作云端实际运行版本。
 
-| 单元 | 周期 | 状态 |
-|---|---|---|
-| `v15-poll-light.timer` | 5min | enabled |
-| `v15-orchestrator.timer` | 15min | enabled |
-| `datacenter-backfill.timer` | 每小时 :15 | enabled |
-| `dreambuddy-snapshot.timer` | **每 10min** | enabled |
-| `dal-integrity.timer` | 6h | enabled |
-| `dal-backup.timer` | 04:00 | enabled |
-| `dal-rotate.timer` | 05:00 | enabled |
-| `ranking-trigger.timer` | (Stage6) | **enabled** |
-| `yijing-monitor.timer` | (Stage6) | **enabled** |
-| `dreambuddy-continual-training.timer` | **每 30min** | **enabled**（34 训练系统已上云） |
-| `screen-cleanup.service` | — | **masked** |
+## 2. 常驻服务实测
 
-### 1.3 数据层（Docker）与端口
+### 2.1 active/running
 
-- Docker：`dreambuddy-pg`(5432) · `dreambuddy-redis`(6379) · `dreambuddy-minio`(9000/9001)
-- `ss -tlnp` 实测监听：**8770 / 8771 / 8765 / 9094 / 8093 / 8094 / 8095 / 8096 / 3001 / 3456**（+ 127.0.0.1 的 5432/6379/9000）
-- Nginx：`/` → 3001、`/api/v15/` → 8771、`/api/capital/` → 8770、`/api/trend/` → 8765、`/api/fundamental/` → 9094
-- **Hermes**：`hermes-gateway` / `group-poller` / `hermes-dashboard` 均 **enabled + active**（:9119 监听；2026-10-14 已启用，G0-2 闭环）
-
----
-
-## 2. 本地清单（LaunchAgents 实测）
-
-### 组 A｜已被云端覆盖（本地冗余）
-
-`v15_light_poll`(300s)、`v15_orchestrator`(900s)、`yijing_data_server`、`dreambuddy.yijing.polling-trader`、`yijing_trading`(3600s)、`yijing_live_300s`、`yijing_monitor`(4h)、`datacenter`(keepalive)、`dc-scheduler`(keepalive)、`dreamos`、`ranking-trigger`(4h)
-
-### 组 B｜云端**部分未部署**（本地独有）— 2026-10-14 更新：`signal_scanner` / `memory_cleanup` 已补云端，`ab_monitor` / `ab_orchestrator` 已复活并上云
-
-`trailing-stop-runner`(`--real`,300s)、`signal_scanner`(12-三屏,300s → ✅ **已补云端** `signal-scanner.service`)、`screen_monitor`/`screen_orchestrator`/`trend_executor`(experiments/ab-trading)、`ab_monitor`/`ab_orchestrator`(4h → ✅ **已复活并上云** `ab-monitor`/`ab-orchestrator` service+timer)、`agent-b-strategy-update`(02:00)、`memory_cleanup`(02:05 → ✅ **已补云端** `memory-cleanup.timer`)、`etl-worker`(7-产物中台 → ⏸ **暂缓**)、`ai.hermes.gateway`/`ai.hermes.dashboard`(→ ✅ **云端已启用**)、`com.l3.commandcenter.*`(5)
-
-### 组 C｜训练/自进化（保留本地）
-
-`continual-training`(34,1800s)、`evolution_scheduler`(02:00)、按需 oneshot：`train_neural_sde` / `shadow_rl_trainer` / `distributed_backtest` / `walk_forward`
-
-### 组 D｜本地治理/同步（保留，需改造）
-
-`dbsync`(**600s**，plist 实测周期，非 3600s)、`cognitive-ttl`(04:00)、`cognitive_mcp_server`
-
----
-
-## 3. 组 1 ⚠️ 待确认项 — 云端对齐结论（本轮核心产出）
-
-| 本地项 | 本地实测 | 云端实测 | 结论 |
-|---|---|---|---|
-| `ft.dashboard.3001`（Vite preview） | 3001 监听（开发预览） | 3001 = `dreambuddy-frontend`(Next.js 15) | **覆盖**（语义不同，本地 3001 仅为开发预览，可停） |
-| `ft.ml_trade_service.explore/8093` | 8093 监听 | 8093 = `m26-strategy-lib.service` | **覆盖**（端口对齐，职责需下轮语义核对） |
-| `ft.ml_trade_service.pilot/8094` | 8094 监听 | 8094 监听（unit 命名按部署文档为 M27，**待复核**） | **覆盖** |
-| `ft.strategy_gen.8095` | 8095 监听 | 8095 = `m25-strategy-generation.service` | **覆盖** |
-| `ft.fundamental_research_sync`(600s) | 9094 监听 | 9094 = `fundamental.service` | **覆盖** |
-| `ft.ml_trade_service.prod/8092` | **8092 未监听**（plist 存在但未起） | **8092 未监听** | **无需迁移**（本地亦无流量，可直接停/清理 plist） |
-| `ft.ml_trade_service.explorer/8092` | **8092 未监听** | 无 | **无需迁移**（同上，与 prod 重复端口） |
-| `ft.explore.ml_trade_service`(Explore) | 8093 监听 | 8093 = m26 | **覆盖**（并入上行 8093 结论） |
-| `etl-worker`(7-产物中台 prisma `etl_worker.py --daemon`) | 运行中 | ✅ `etl-worker.service`（2026-10-14 phase10 补齐，`--daemon --interval 60`） | ✅ **已覆盖** |
-
-**新增发现**：
-1. 云端已有 `dreambuddy-continual-training.service + .timer(30min)` —— **34 训练系统（前端应用训练）云端已在跑**；本地 `continual-training`(1800s) 与之重复。
-2. 云端 `dreambuddy-snapshot.timer` 为**每 10min**（非文档记载的每小时），快照链更密。
-3. 云端无 `8092`；本地 `prod`/`explorer` 两个 8092 plist 均为**空转/未监听**，属历史遗留。
-4. 本地额外多跑 **3002**（第二个 `next dev`）——纯开发用途。
-
----
-
-## 4. 处置分类（汇总）
-
-### 4.1 可停（云端已覆盖，本地冗余）
-
-`v15_light_poll`、`v15_orchestrator`、`yijing_data_server`、`dreambuddy.yijing.polling-trader`、`yijing_trading`、`yijing_live_300s`、`yijing_monitor`、`datacenter`、`dc-scheduler`、`dreamos`、`ranking-trigger`、`continual-training`、`ft.dashboard.3001`、`ft.ml_trade_service.explore`、`ft.ml_trade_service.pilot`、`ft.strategy_gen.8095`、`ft.fundamental_research_sync`、`ft.ml_trade_service.prod`(空转)、`ft.ml_trade_service.explorer`(空转)
-
-> 注意 **本地重复项**：`datacenter` 与 `dc-scheduler` 跑同一脚本两份；云端正本仅 1 份。
-
-### 4.2 需先补齐云端 or 废弃（云端缺失）
-
-| 本地项 | 建议 |
+| 分类 | 服务 |
 |---|---|
-| **`trailing-stop-runner`(`--real`)** | ✅ **已补云端** `trailing-stop-runner.service`（2026-10-14，phase9；与本地 launchd 共用统一入口 `16-调控系统/scripts/run_trailing_stop_runner.sh`，`--real` 常驻 300s） |
-| `signal_scanner`(12-三屏) | ✅ **已补云端** `signal-scanner.service`（2026-10-14，每 300s；pool.json 实测刷新 9/9 币） |
-| `screen_monitor`/`screen_orchestrator`/`trend_executor`(ab-trading) | latent，建议废弃 |
-| `ab_monitor`/`ab_orchestrator` | ✅ **已复活并上云**（2026-10-14 phase10）：`ab-monitor.service` + `.timer` / `ab-orchestrator.service` + `.timer`（4h 周期）；**更新先前"latent，建议废弃"结论**。云端 `AUTO_EXECUTE=false`（`config/.env` 被 .gitignore 忽略 → 天然缺失），禁止实盘 |
-| `agent-b-strategy-update` | latent，建议废弃 |
-| `etl-worker`(7-产物中台) | ✅ **已补云端**（2026-10-14，phase10）：建 `events/{dreamos,dsh,frontend,hub}` + venv 装 `psycopg2-binary 2.9.13` + 幂等建 observability 三表 + `etl-worker.service`（60s 轮询）；product-hub 加 drop-in 对齐 `WORKBUDDY_EVENTS_ROOT` |
-| `memory_cleanup`(02:05) | ✅ **已补云端** `memory-cleanup.timer`（每日 02:05；注：云端暂无 ab-trading 记忆文件，当前空转） |
-| `ai.hermes.gateway`/`ai.hermes.dashboard` | ✅ 云端**已启用**（三单元 enabled+active，:9119 监听） |
-| `com.l3.commandcenter.*`(5) | **独立项目**（L3 Command Center），不属本改造，单独决策 |
+| 入口与数据 | `nginx.service`、`dreambuddy-frontend.service`、`product-hub.service`、`yijing-data-server.service`、`fundamental.service` |
+| 经典模块 | `m25-strategy-generation.service`、`m26-strategy-lib.service`、`m27-governance.service`、`m28-signal-trigger.service` |
+| V15 / 风控 | `v15-api.service`、`v15-capital-api.service`、`trailing-stop-runner.service` |
+| 数据与训练 | `datacenter-scheduler.service`、`dreambuddy-continual-training.service`、`etl-worker.service`、`signal-scanner.service` |
+| 认知与编排 | `cognitive-daemon.service`、`dreamos-dynamic-evaluator.service`、`yijing-emergence-shadow-probe.service` |
+| 消息 | `hermes-gateway.service`、`group-poller.service` |
 
-### 4.3 保留本地（训练目标）
+注意：`active/running` 不等于业务健康。`v15-capital-api.service` 的 `/status` 实测返回空响应；`hermes-gateway.service` 当前 active，但 unit 为 disabled，不能假定重启机器后会自动恢复。
 
-组 C 全部（`continual-training` 若云端已覆盖可停本地、保留 `evolution_scheduler` 与 torch oneshot 训练链）。**储算目标**：`train_neural_sde` / `shadow_rl_trainer` / `distributed_backtest` / `walk_forward`。
+### 2.2 异常或未运行
 
-### 4.4 保留本地（治理/同步，需改造）
+| 服务 | 实测状态 | 当前结论 |
+|---|---|---|
+| `yijing-polling-trader.service` | activating/auto-restart；exit 1；重启计数超过 12300 | **持续崩溃，旧文档“已上线/正常”结论失效** |
+| `dreambuddy-healthcheck.service` | failed；exit 1 | 健康检查未通过，需查具体失败项 |
+| `dreamos-scheduler.service` | disabled + inactive | 不再是旧清单中的 active 服务 |
+| `hermes-dashboard.service` | disabled + inactive | 不再运行，未观察到 9119 监听 |
+| `ab-monitor.service`、`ab-orchestrator.service` | inactive/dead | oneshot 静息态；需结合 timer 和最近结果判断，不按常驻服务计算 |
 
-`dbsync`（本地停写后切纯下行）、`cognitive-ttl`、`cognitive_mcp_server`。
+## 3. Timer 观察
 
----
+实测存在 NEXT 的项目 timer 包括：
 
-## 5. 红线与下一步
+- 交易与监控：`v15-poll-light`、`v15-orchestrator`、`yijing-monitor`、`ranking-trigger`、`dreambuddy-healthcheck`。
+- 数据与维护：`datacenter-backfill`、`datacenter-auto-archive`、`dal-backup`、`dal-rotate`、`dal-integrity`、`dreambuddy-snapshot`、`runtime-data-backup`。
+- 训练/研究：`dreambuddy-windowed-collect`、`dreambuddy-ablation-loop`、`dreambuddy-decision-replay`、`dreambuddy-emergence-metrics`、`dreambuddy-accumulation-gate`。
+- 语义与事件：`dreambuddy-aggregate-events`、`dreambuddy-atomic-events`、`dreambuddy-semantic-events`、`dreambuddy-event-lines`、`dreambuddy-trade-cases`、`dreambuddy-case-stats`、`dreambuddy-complex-semantics`、`dreambuddy-contradiction`、`dreambuddy-newsflash-weights`、`dreambuddy-spacetime`、`dreambuddy-l3-synthesis`。
+- 其他：`ab-monitor`、`ab-orchestrator`、`memory-cleanup`、`dreamos-evaluator-daily-restart`、`dreambuddy-shadow-driver`、`dreambuddy-shadow-rotate`、`docs-sync`、`index-reconcile`、`job-runs-audit`。
 
-**红线（停本地前必须闭环）**：
-1. ✅ `trailing-stop-runner`(`--real`) 云端等价部署 —— **已闭环**（2026-10-14，`trailing-stop-runner.service` active；本地 launchd 与云端 systemd 共用同一可移植入口脚本，行为一致）。
+特别偏差：
 
-**待复核（本轮 SSH 超时未取证）**：
-1. 云端 `8094` / `8096` 的 systemd unit 名（端口已确认监听，命名按部署文档为 M27/M28）。
-2. 云端 ETL 是否以其他形式（cron / 内嵌 product-hub）运行。
+- `dreambuddy-continual-training.timer` 当时无 NEXT，最后触发停留在 2026-10-29；但同名常驻 service 为 active/running。不得再写成“每 30 分钟 timer 正常运行”。
+- `dreambuddy-healthcheck.timer` 有 NEXT 且近期触发，但 service failed，说明“timer active”不等于“检查通过”。
+- 完整 timer 很多且持续变化，本清单不沿用旧文档的固定数量作为健康指标。
 
-**下一步（用户已确认方向）**：
-- 本地服务**全部停掉** → 本地纯训练；
-- 训练编排走**云端下发 → 本地执行 → 模型回传**完整协同（需实现 [SPEC-分布式计算协同部署方案.md](./SPEC-分布式计算协同部署方案.md) Phase 2 编排层）；
-- 待产出：正式 SPEC + 分阶段 PLAN（含红线补齐、编排层、模型回传/热加载、本地瘦身与验收门）。
+## 4. 端口与容器
 
----
+### 4.1 业务及数据端口
 
-## 附录：核对命令（可复现）
+| 端口 | 绑定 | 归属/状态 |
+|---:|---|---|
+| 3001 | 127.0.0.1 | 主前端；`/` HTTP 307 |
+| 3456 | 127.0.0.1 | 产物中台 |
+| 8093 / 8094 / 8095 / 8096 | 127.0.0.1 | M26 / M27 / M25 / M28 |
+| 8765 | 127.0.0.1 | 易经数据服务；`/` HTTP 200 |
+| 8771 | 127.0.0.1 | V15 API；`/health` HTTP 200 |
+| 8770 | 127.0.0.1 | V15 资金 API；`/status` 空响应 |
+| 9094 | 127.0.0.1 | 基本面服务 |
+| 5432 / 6379 / 9000 / 9001 | 127.0.0.1 | PG / Redis / MinIO |
+| 8790 | 127.0.0.1 | 本次未核实归属，不做推断 |
+| 22 / 80 | 0.0.0.0 | SSH / Nginx；本次公网监听仅见这两项 |
 
-```bash
-# 云端
-ssh dreambuddy-remote 'systemctl list-units --all --no-pager --plain | grep -iE "dreambuddy|v15|yijing|cognitive|dreamos|m2[0-9]|fundamental|product"; \
-  systemctl list-timers --all --no-pager --plain; ss -tlnp; ps aux'
-# 本地
-for f in ~/Library/LaunchAgents/*.plist; do python3 -c "import plistlib,sys;d=plistlib.load(open(sys.argv[1],'rb'));print(d.get('Label'),' '.join(map(str,d.get('ProgramArguments',[]))))" "$f"; done
-lsof -nP -iTCP -sTCP:LISTEN
-```
+Docker：`dreambuddy-pg`、`dreambuddy-redis`、`dreambuddy-minio` 均为 healthy，端口只映射到回环地址。
 
----
+## 5. 当前优先核对项
 
-## 6. 本轮进展（2026-10-14 组 B 补齐）
+1. 查明 `yijing-polling-trader` exit 1 的应用日志和依赖，停止把重启计数当作运行成功。
+2. 查明 `dreambuddy-healthcheck` 的失败项，再修复检查或服务本身。
+3. 核对 `v15-capital-api /status` 空响应及日志，不能只看 active。
+4. 审查云端与 GitHub 的版本差和工作区源码修改，明确保留、提交或回退每一项的依据。
+5. 确认 `dreamos-scheduler`、`hermes-dashboard` 的停用是否为当前预期，避免旧文档误导运维。
 
-| 项 | 动作 | 云端产物 | 状态 |
-|---|---|---|---|
-| hermes 三单元 | `enable --now` | hermes-gateway / group-poller / hermes-dashboard（:9119） | ✅ active（11:40 起） |
-| `signal_scanner` | 补云端 | `signal-scanner.service`（12-三屏，300s） | ✅ active，pool.json 实测刷新（9/9 币） |
-| `memory_cleanup` | 补云端 | `memory-cleanup.service` + `.timer`（02:05） | ✅ 部署并实测 exit 0（云端无记忆文件，暂空转） |
-| `etl-worker` | 补云端 | `etl-worker.service`（60s）+ `events/` 数据源 + observability 三表 | ✅ active；全链路实测：临时 fixtures → sessions/spans/dsh_calls 各 1 行落库（验收后已清理，计数归 0） |
-| `ab_monitor`/`ab_orchestrator`(+面板生产者) | 复活并上云（phase10） | `ab-monitor.service`+`.timer` / `ab-orchestrator.service`+`.timer`（4h）；单元内前置 venv PATH | ✅ timer active；首轮 agent_a/agent_b 已产 `logs/agent_a|b/*.json`，云端 `/api/state` `logs_a=logs_b=1` |
-| 云端监控面板(8765) 对齐本地 | 去硬编码 + 云端自产 + 放行 | `data_server_fixed.py`/`polling_trader.py`/`run_agent_a.sh` 去 macOS 硬编码；ufw 放行 8765 | ✅ 外部 `http://43.160.201.117:8765/` 200，页面 MD5 与本地一致；7 端点顶层键结构一致（详见 STATUS 2.11） |
-
-**代码落地**（GitHub 流水线：本地 commit/push → 云端 `git pull`）：
-- `12-三屏趋势系统/signal_pool/scanner.py` 去硬编码（相对推导 `10-经典指标系统`，macOS/Linux 通用）
-- `experiments/ab-trading/scripts/run_memory_cleanup.sh` 去 macOS 硬编码路径/解释器
-- 新增 `31-分布式计算部署/phase8/08-deploy-groupb-units.sh`（安装上述 units）
-- 云端仓库已由 `fix/okx-lsr-rate-limit`（PR #71 来源分支，落后 5 提交）切回 **`main` @ 66133903**
-- 部署命令：`sudo bash /home/luke/dreambuddy/31-分布式计算部署/phase8/08-deploy-groupb-units.sh`
+本次未修改配置、未重启服务、未执行部署脚本。

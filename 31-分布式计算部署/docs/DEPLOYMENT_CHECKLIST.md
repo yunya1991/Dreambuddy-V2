@@ -1,141 +1,73 @@
-# Dreambuddy V2 — 子系统部署待配置清单
+# 主云端部署核对清单
 
-> **状态**：全量已上线（V15 + 易经 + 前端 + 数据层 + 产物中台 + 数据管道 + 认知/编排 + Hermes + M25~M28）
-> **目标**：6大子交易系统 + 全量子系统在云端（43.160.201.117）全量运行，本地并行保留
-> **更新日期**：2026-10-14
+> **版本**：v1.0 | **更新日期**：2026-11-13
+> **对象**：`43.160.201.117`（`dreambuddy-remote`）
+> **当前边界**：单机部署；不执行分布式 Worker、训练下沉或多节点迁移。
 
----
+## 1. 当前部署前阻断项
 
-## 一、6大子交易系统部署状态
+以下问题来自 2026-11-13 只读核查。未明确处置前，不应执行全量更新或宣称“全量健康”：
 
-| # | 子系统 | 代码位置 | 入口命令 | 云端状态 | 优先级 |
-|---|--------|---------|---------|---------|--------|
-| 1 | **V15 经典马丁策略** | `14-V15经典马丁策略/` | `python3 run.py orchestrator/poll_light/api` | ✅ 已上线 | P0 |
-| 2 | **BCRM2.0 推理引擎** | `11-易经推理系统/scripts/memory_l4/` | 集成在 polling_trader | ✅ 已上线 | P0 |
-| 3 | **战略层（五计庙算）** | `11-易经推理系统/scripts/memory_l4/strategy_algo_layer.py` | 集成在 polling_trader | ✅ 已上线 | P0 |
-| 4 | **BDSM 快照** | `11-易经推理系统/scripts/memory_l4/` | 集成在 polling_trader | ✅ 已上线 | P1 |
-| 5 | **事件驱动策略** | `29-事件驱动策略系统/event_driven/` | 集成在 polling_trader | ✅ 已上线 | P1 |
-| 6 | **自进化系统** | `23-四层闭环自进化交易架构/` | `evolution_pipeline.py` | ⏳ 线下运行 | P2 |
+- [ ] `yijing-polling-trader.service` 持续重启失败（exit 1）已定位并处理。
+- [ ] `dreambuddy-healthcheck.service` failed 的具体原因已查明。
+- [ ] `v15-capital-api.service /status` 空响应已查明。
+- [ ] 云端 HEAD 与 `origin/main` 的差异已审查；云端工作区中的源码修改已逐项决定保留、提交或回退。
+- [ ] `dreamos-scheduler`、`hermes-dashboard` 的 disabled + inactive 已确认符合当前预期。
 
-> **关键发现**：BCRM2 + 战略层 + BDSM + 事件驱动 共享 `11-易经推理系统/scripts/memory_l4/polling_trader.py` 入口，300秒轮询一次，是综合交易引擎。已部署为 systemd 服务 `yijing-polling-trader.service`。
+这些是当前运行风险记录，不是本次文档更新已修复的事项。
 
----
+## 2. 部署前检查
 
-## 二、后端 API 服务部署状态
+### 2.1 代码与配置
 
-| # | 服务 | 代码位置 | 端口 | 前端页面 | 云端状态 |
-|---|------|---------|------|---------|---------|
-| 1 | V15 API | `14-V15经典马丁策略/` | 8771/8770 | classic, trade | ✅ 已上线 |
-| 2 | 易经数据服务 | `11-易经推理系统/data_server_fixed.py` | 8765 | three-screens, bdsm | ✅ 已上线 |
-| 3 | 产物中台 | `7-产物中台/系统研究索引体系/` | 3456 | ranking | ✅ 已上线 |
-| 4 | 基本面数据服务 | `9-基本面分析/ml_trade_service_v2.py` | 9094 | fundamental | ✅ 已上线 |
-| 5 | M27 策略治理审批 | `27-策略治理审批系统/app.py` | 8094 | classic (pipeline/approvals/gate) | ✅ 已上线 |
-| 6 | M26 策略管理模块 | `26-策略管理模块/app.py` | 8093 | classic (strategy upsert) | ✅ 已上线 |
-| 7 | M28 信号触发模块 | `28-策略信号触发模块/app.py` | 8096 | signal-trigger | ✅ 已上线 |
-| 8 | M25 用户策略生成 | `25-用户策略生成系统/app.py` | 8095 | classic (strategy generation) | ✅ 已上线 |
+- [ ] 明确本次部署的 commit、变更文件和影响服务。
+- [ ] 本地已完成要求的评审与测试；GitHub 推送不被当作云端部署。
+- [ ] 云端执行 `git status --short` 并保存结果；没有未审查的源码修改。
+- [ ] 不使用 `git reset --hard`、`git clean` 或自动 stash 来掩盖未知差异。
+- [ ] 核对云端仓库操作身份和文件属主，避免 root/ubuntu/luke 混用导致权限问题。
+- [ ] 凭据只通过受控环境文件提供，不写入文档、命令输出或 Git。
 
-> **部署脚本**: `31-分布式计算部署/phase2/deploy.sh`（一键部署 8765 + 3456 + Nginx + 前端重构建）
-> **Hub(3467) 说明**: 网关中台为设计文档服务，无实现。ops/market/feed API routes 已添加 `mock:true` 降级返回 200。
-> **经典系统模块化**: 旧单体 8092 (ml_trade_service.py) 已拆分为 M25/M26/M27/M28。前端通过 Next.js rewrites (`/api/m25`~`/api/m28`) 代理到本机端口，浏览器端不再直连 127.0.0.1。
+### 2.2 运行态与变更窗口
 
----
+- [ ] 保存关键 unit、timer、端口和 Docker 状态作为变更前基线。
+- [ ] 阅读 `phase1/update.sh` 的实际版本，确认其交互、stash、构建和重启范围。
+- [ ] 按当前部署制度完成 G4/评测门禁；不通过参数随意绕过。
+- [ ] 只重启本次变更影响的服务，并明确回滚 commit 和验证方法。
+- [ ] 不重跑历史全量 `deploy/migrate/install` 脚本替代增量部署。
 
-## 三、待配置项清单
+## 3. 部署后验证
 
-### 3.1 云端环境配置
+### 3.1 代码一致性
 
-| 配置项 | 状态 | 说明 |
-|--------|------|------|
-| Python venv | ✅ 已建 | `/home/luke/venv-trading` (Python 3.12) |
-| 依赖包 | ✅ 已装 | requests, pandas, numpy, ccxt, python-dotenv, fredapi, scikit-learn, lightgbm |
-| 代理配置 | ✅ 无需 | 云端新加坡节点直连 OKX/Hyperliquid |
+- [ ] 云端 HEAD 等于本次目标 commit。
+- [ ] 云端工作区状态已解释，目标源码与交付版本一致。
+- [ ] 若前端变更，构建成功；若 Python 依赖变更，目标 unit 使用的 venv 已安装对应依赖。
 
-### 3.2 11-易经推理系统（BCRM2 + 战略层 + BDSM + 事件驱动）
+### 3.2 服务与接口
 
-| 配置项 | 状态 | 当前值 | 说明 |
-|--------|------|-------|------|
-| 运行入口 | ✅ 已确认 | `python3 -m scripts.memory_l4.polling_trader` | systemd 服务 |
-| 轮询间隔 | ✅ 已确认 | `--interval 300` (5min) | |
-| 监控币种 | ✅ 已确认 | 19 tokens | 可裁剪 |
-| 置信度阈值 | ✅ 已确认 | `--confidence 0.7955` | |
-| 最大持仓 | ✅ 已确认 | `--max-positions 5` | |
-| 仓位比例 | ✅ 已确认 | `--position-pct 0.20` | |
-| 交易模式 | ✅ 已确认 | OKXSimulatedClient (paper) | 安全，非实盘 |
-| 飞书通知 | ⚠️ 待迁移 | FEISHU_APP_ID / SECRET | 需填入 |
-| 交易凭据 | ⚠️ 待确认 | OKX API Key | paper 模式可选 |
+- [ ] 变更涉及的常驻 unit 为 active/running，且 `NRestarts` 不持续增长。
+- [ ] oneshot 最近执行 `Result=success`、退出码为 0；不能因 inactive/dead 误判失败。
+- [ ] timer 有 NEXT，且对应 service 最近执行成功。
+- [ ] 核心接口实测：前端 `/` 返回 200/307/308；易经 `/` 200；V15 `/health` 200。
+- [ ] 资金 API `/status` 返回符合契约的内容，而非空响应。
+- [ ] 查看变更服务最近日志，无持续异常或崩溃循环。
 
-### Phase 2: 易经推理系统上云（BCRM2 + 战略层 + BDSM）
-1. 安装 miniconda + 创建环境
-2. 扫描并安装依赖
-3. 创建 systemd service（polling_trader）
-4. 配置飞书通知 + 交易凭据
-5. Nginx 反代易经 API（如有）
-6. 功能验证
+### 3.3 数据与网络
 
-### Phase 3: 事件驱动 + 前端接入
-1. 确认事件驱动部署方式
-2. 前端各页面后端依赖梳理
-3. Nginx 路由配置
-4. 端到端功能验证
+- [ ] `dreambuddy-pg`、`dreambuddy-redis`、`dreambuddy-minio` healthy。
+- [ ] PG/Redis/MinIO 与业务服务仍只绑定 `127.0.0.1`，未因部署暴露公网。
+- [ ] Nginx 路由与目标 unit 端口一致。
+- [ ] 关键数据文件的更新时间和业务语义正常，不能仅以 HTTP 200 验收。
 
-### Phase 4: 自进化协同
-1. 设计线下→云端模型同步机制
-2. MinIO 模型仓库
-3. 云端热加载 + 灰度切换
+## 4. 当前只读核查命令
 
----
+```bash
+ssh dreambuddy-remote 'git -C /home/luke/dreambuddy rev-parse HEAD; git -C /home/luke/dreambuddy status --short'
+ssh dreambuddy-remote 'systemctl list-units --type=service --all --no-pager; systemctl list-timers --all --no-pager'
+ssh dreambuddy-remote 'ss -tln; sudo -n docker ps'
+ssh dreambuddy-remote 'journalctl -u yijing-polling-trader.service -u dreambuddy-healthcheck.service -n 50 --no-pager'
+```
 
-## 四、风险与注意事项
+## 5. 历史记录使用规则
 
-1. **Conda 环境**：易经系统深度依赖 Anaconda，云端用 miniconda 替代，需验证兼容性
-2. **代理问题**：本地用 127.0.0.1:7890，云端新加坡节点应可直连 OKX/Hyperliquid
-3. **多币种监控**：19个币种轮询，云端4C8G需评估性能
-4. **交易凭据安全**：OKX API Key 需加密存储，不能明文
-5. **飞书凭据**：已在本地 plist 中，需安全迁移到云端 .env
-
----
-
-## 五、全量一致性修复记录（2026-10-14）
-
-> 背景：云端存储充足 → 决策「云端全量运行、本地并行保留」。本轮核查发现 5 处缺口（G1~G5），已全部修复并回读远端实况验证。
-
-| 缺口 | 现象 | 根因 | 修复 | 验证 |
-|---|---|---|---|---|
-| G1 | `dreambuddy-frontend` 崩溃循环(:3001) | 手工 `next start`（stray pid）占用 3001 | 停单元→kill stray 进程树→restart | `active`、cgroup=`dreambuddy-frontend.service`、HTTP 307、NRestarts=0 |
-| G2 | `yijing-data-server` 崩溃循环(:8765) | 手工 `nohup python3 data_server_fixed.py` 占用 8765 | 停单元→kill stray→restart | `active`、cgroup=`yijing-data-server.service`、HTTP 200 |
-| G3 | Hermes 三件套无 systemd 单元 | 远端缺 hermes 运行时与 lark-cli | venv 装 `hermes-agent==0.19.0`（镜像最新）+ 同步 config/.env/skills/memories/cron + `@larksuite/cli` + 注册三单元 | `hermes-gateway`/`group-poller`/`hermes-dashboard` 均 `active`，Feishu websocket 已连接，dashboard :9119 |
-| G4 | 远端代码落后 1 提交 | 本地 610fea04 未 pull；远端有未提交改动（内容与提交逐字节相同） | 备份→丢弃冲突路径→`pull --ff-only` | HEAD=`610fea04ba…`，`main...origin/main` 同步，3 文件 md5 与本地一致 |
-| G5 | M25 走 PM2，与 M26~M28 不一致 | PM2 残留 m25 | 新建 `m25-strategy-generation.service`(:8095)→`pm2 delete` | `active`、cgroup=`m25-strategy-generation.service`、`/health`=200、PM2 列表已空 |
-
-### 关键约定（云端）
-- **写操作必须** `sudo -u luke -H`（repo 属主 luke，ubuntu 直连 logs/ 会 PermissionError）；**sqlite 读**也须以 luke 身份。
-- Hermes 单元 `ExecStart` 指向 `/usr/local/bin/hermes`（已建软链 → `~/.hermes/.venv/bin/hermes`）；单元 `StandardOutput` 写 `*.out.log`，应用自身日志写 `gateway.log`，避免 systemd(root) 与 app(luke) 争抢同一日志文件。
-- SSH 偶发 `Permission denied` → 重试 1~2 次即可（认证并发限制）。
-
-### 当前云端运行清单（已核对 active）
-- **systemd 服务**：dreambuddy-frontend(:3001) · yijing-data-server(:8765) · product-hub(:3456) · fundamental(:9094) · m25-strategy-generation(:8095) · m26-strategy-lib(:8093) · m27-governance(:8094) · m28-signal-trigger(:8096) · v15-api(:8771) · v15-capital-api(:8770) · yijing-polling-trader · datacenter-scheduler · cognitive-daemon · dreamos-scheduler · dreamos-dynamic-evaluator · hermes-gateway · group-poller · hermes-dashboard(:9119) · nginx
-- **timers**：v15-orchestrator · v15-poll-light · datacenter-backfill · dal-backup · dal-rotate · dal-integrity · yijing-monitor · ranking-trigger · dreambuddy-snapshot
-- **Docker**：dreambuddy-pg / dreambuddy-redis / dreambuddy-minio（healthy）
-- **PM2**：已清空（M25 迁 systemd）。
-
----
-
-## 六、部署同步记录（2026-10-14 push → 云端落地）
-
-> 把 G1~G5 修复等 3 个本地 commit + `update.sh` 前端段修正推送到 origin/main，并在云端落地。
-
-**代码流**
-- push：`610fea04ba → 85495ce2cb`（G1~G5 修复 + 34 训练系统 + 收尾包）→ `85495ce2cb → ec21ee56e4`（update.sh PM2→systemd）
-- 云端 `git pull --ff-only`：`610fea04ba → ec21ee56e4`；脏文件先备份至 `/home/luke/backups/dirty-20261014_133148` 再丢弃冲突路径
-- 前端 `pnpm build` exit=0 → 重启 `dreambuddy-frontend.service`
-
-**本轮发现并修复**
-
-| 编号 | 现象 | 根因 | 修复 | 验证 |
-|---|---|---|---|---|
-| G1′ | `dreambuddy-frontend` 再次崩溃循环(:3001)，NRestarts≈786 | `:3001` 被 `tat_agent.service` cgroup 内的 stray `npm exec next start -p 3001` 占用（该单元 `KillMode=process` 不回收子进程） | 杀 stray 进程树 → `reset-failed` → rebuild → `start` | `active/running`、NR=0、:3001 属 `dreambuddy-frontend.service` cgroup、HTTP 307 |
-| G6 | `update.sh` 前端段仍用 PM2，与 systemd 化不一致（再运行会重造 stray→回归 G1） | G1/G5 迁移 systemd 时未同步更新脚本 | PM2 → `systemctl restart dreambuddy-frontend.service` | commit `ec21ee56e4` |
-
-**部署方式确认**：仓库未配置 GitHub webhook（`gh api repos/.../hooks` 为空），CI(`ci.yml`) 仅 lint/test 不部署 → 部署只能手动 SSH 执行。
-
-**健康检查（部署后）**：19 systemd 单元全 `active`/NR=0（product-hub 的 NR=1 为历史累计）；9 timers 全 `active`；11 个服务端口 owner 全部落在各自 `*.service` cgroup（无 stray）；Docker 三容器 healthy；PM2 空。
+2026-10-14 的“全量已上线”“19 服务全 active”“PM2 已清空”等记录只代表当时观察，不再作为当前验收证据。当前服务和异常以 [SERVICE_INVENTORY.md](./SERVICE_INVENTORY.md) 及新的只读实测为准；分布式阶段任务全部暂停。
