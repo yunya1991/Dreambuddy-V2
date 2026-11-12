@@ -46,9 +46,20 @@ class TestSwitch:
 class TestLoadRegistry:
     def test_load_worker_roles_real_registry(self):
         roles = load_worker_roles()  # 默认 47 registry 路径
-        assert set(roles.keys()) == {"research", "engineer", "verifier"}
+        # 角色集快照：含 SPEC-33-E 的 data_reader（data_fetch/data_store_read 从 engineer 迁出）
+        # 与 52-LobeHub 的 lobehub_frontend（恒只读）等后续新增角色
+        assert set(roles.keys()) == {
+            "research",
+            "engineer",
+            "data_reader",
+            "verifier",
+            "executor",
+            "l2_analysis",
+            "l2_trading_analysis",
+            "lobehub_frontend",
+        }
         assert "recall" in roles["research"]
-        assert "data_fetch" in roles["engineer"]
+        assert "data_fetch" in roles["data_reader"]
         assert "eval_analyze" in roles["verifier"]
         for tools in roles.values():
             assert len(tools) <= 10  # ADR-4 每角色 ≤10 工具

@@ -21,7 +21,7 @@ import time
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -43,12 +43,11 @@ os.environ["USE_FINBERT"] = "1"
 sys.path.insert(0, str(_REPO / "9-基本面分析"))
 
 from engines.sentiment_engine import (  # noqa: E402
-    SentimentEngine,
-    time_decay_weight,
-    chinese_ratio,
     FINBERT_EN_LABEL_MAP,
+    SentimentEngine,
+    chinese_ratio,
+    time_decay_weight,
 )
-
 from sklearn.ensemble import GradientBoostingClassifier  # noqa: E402
 from sklearn.metrics import accuracy_score, roc_auc_score  # noqa: E402
 from sklearn.preprocessing import StandardScaler  # noqa: E402
@@ -75,7 +74,9 @@ def _safe_json(text: Any) -> dict:
 def score_odaily() -> Tuple[List[Dict], SentimentEngine]:
     conn = sqlite3.connect(str(_DB_PATH))
     cur = conn.cursor()
-    cur.execute("SELECT timestamp, metrics FROM records WHERE source='odaily_newsflash' ORDER BY timestamp")
+    cur.execute(
+        "SELECT timestamp, metrics FROM records WHERE source='odaily_newsflash' ORDER BY timestamp"
+    )
     rows = cur.fetchall()
     conn.close()
 
@@ -99,8 +100,10 @@ def score_odaily() -> Tuple[List[Dict], SentimentEngine]:
     en_pipe = se._en_pipe
     zh_pipe = se._zh_pipe  # 预期 None (FinBERT2 404)
 
-    print(f"[Step 1] Odaily 去重后 {len(news)} 条 | en_pipe={en_pipe is not None} zh_pipe={zh_pipe is not None}")
-    print(f"         ⚠️ zh_pipe=None → 中文新闻走规则引擎, 英文/混合走 ProsusAI/finbert")
+    print(
+        f"[Step 1] Odaily 去重后 {len(news)} 条 | en_pipe={en_pipe is not None} zh_pipe={zh_pipe is not None}"
+    )
+    print("         ⚠️ zh_pipe=None → 中文新闻走规则引擎, 英文/混合走 ProsusAI/finbert")
 
     t0 = time.time()
     scored = []
@@ -132,10 +135,13 @@ def score_odaily() -> Tuple[List[Dict], SentimentEngine]:
     elapsed = time.time() - t0
     scores = [s["score"] for s in scored]
     from collections import Counter
+
     eng_dist = dict(Counter(s["engine"] for s in scored))
     print(f"[Step 1] 打分完成: {len(scored)} 条, {elapsed:.1f}s | engine={eng_dist}")
     print(f"         score: mean={np.mean(scores):.4f} std={np.std(scores):.4f}")
-    print(f"         pos>0.1={sum(1 for s in scores if s>0.1)} neu={sum(1 for s in scores if abs(s)<=0.1)} neg<-0.1={sum(1 for s in scores if s<-0.1)}")
+    print(
+        f"         pos>0.1={sum(1 for s in scores if s>0.1)} neu={sum(1 for s in scores if abs(s)<=0.1)} neg<-0.1={sum(1 for s in scores if s<-0.1)}"
+    )
     return scored, se
 
 
@@ -175,9 +181,13 @@ def build_daily_factors(scored: List[Dict]) -> pd.DataFrame:
             weights = [1.0] * len(items)
             w_sum = len(items)
 
-        f1 = sum(s * w for s, w in zip(scores, weights)) / w_sum
+        f1 = sum(s * w for s, w in zip(scores, weights, strict=False)) / w_sum
         mean = f1
-        f2 = math.sqrt(max(0.0, sum(w * (s - mean) ** 2 for s, w in zip(scores, weights)) / w_sum))
+        f2 = math.sqrt(
+            max(
+                0.0, sum(w * (s - mean) ** 2 for s, w in zip(scores, weights, strict=False)) / w_sum
+            )
+        )
         f3 = sum(1 for s in scores if abs(s) > 0.7) / len(scores)
         f4 = f1 - (prev_f1 if prev_f1 is not None else f1)
         prev_f1 = f1
@@ -187,17 +197,19 @@ def build_daily_factors(scored: List[Dict]) -> pd.DataFrame:
         neg = sum(1 for s in scores if s < -0.1)
         f7 = (pos - neg) / len(scores)
 
-        records.append({
-            "date": date_str,
-            "sent_count": f5,
-            "F1_mean": round(f1, 4),
-            "F2_dispersion": round(f2, 4),
-            "F3_extreme": round(f3, 4),
-            "F4_delta": round(f4, 4),
-            "F5_count": f5,
-            "F6_intensity": round(f6, 4),
-            "F7_asymmetry": round(f7, 4),
-        })
+        records.append(
+            {
+                "date": date_str,
+                "sent_count": f5,
+                "F1_mean": round(f1, 4),
+                "F2_dispersion": round(f2, 4),
+                "F3_extreme": round(f3, 4),
+                "F4_delta": round(f4, 4),
+                "F5_count": f5,
+                "F6_intensity": round(f6, 4),
+                "F7_asymmetry": round(f7, 4),
+            }
+        )
 
     df = pd.DataFrame(records)
     print(f"[Step 2] 日级因子: {len(df)} 天 | {df['date'].iloc[0]} ~ {df['date'].iloc[-1]}")
@@ -209,7 +221,10 @@ def build_daily_factors(scored: List[Dict]) -> pd.DataFrame:
 # ============================================================
 def load_btc() -> pd.DataFrame:
     import yfinance as yf
-    df = yf.download("BTC-USD", start="2026-08-01", end="2026-11-01", progress=False, auto_adjust=True)
+
+    df = yf.download(
+        "BTC-USD", start="2026-08-01", end="2026-11-01", progress=False, auto_adjust=True
+    )
     if df.empty:
         return df
     if isinstance(df.columns, pd.MultiIndex):
@@ -234,7 +249,9 @@ def load_btc() -> pd.DataFrame:
     rs = gain / loss.replace(0, np.nan)
     df["rsi14"] = 100 - 100 / (1 + rs)
 
-    tr = pd.concat([high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1).max(axis=1)
+    tr = pd.concat(
+        [high - low, (high - close.shift(1)).abs(), (low - close.shift(1)).abs()], axis=1
+    ).max(axis=1)
     df["atr_pct"] = tr.rolling(14).mean() / close * 100
     df["vol_ratio"] = volume / volume.rolling(20).mean()
     ret = close.pct_change()
@@ -265,7 +282,9 @@ def run_ablation(btc: pd.DataFrame, sent: pd.DataFrame) -> Dict:
     for c in finbert_cols:
         merged[c] = merged[c].fillna(0.0)
 
-    print(f"\n[Step 4] 合并: {len(merged)} 天 | FinBERT数据天数={sum(merged[finbert_cols[0]] != 0)}")
+    print(
+        f"\n[Step 4] 合并: {len(merged)} 天 | FinBERT数据天数={sum(merged[finbert_cols[0]] != 0)}"
+    )
     print(f"         技术指标: {len(tech_cols)} | FinBERT因子: {len(finbert_cols)}")
 
     results = {}
@@ -312,7 +331,9 @@ def run_ablation(btc: pd.DataFrame, sent: pd.DataFrame) -> Dict:
             }
 
             d_auc_note = "⚠️ AUC=0.5 → 模型等于随机" if abs(m_auc - 0.5) < 0.02 else ""
-            print(f"  [{label:20s}] AUC={m_auc:.4f}±{s_auc:.4f} Acc={m_acc:.4f} Sharpe={m_sharpe:+.2f} MDD={m_mdd:.2%} (folds={len(folds)}, feats={len(cols)}) {d_auc_note}")
+            print(
+                f"  [{label:20s}] AUC={m_auc:.4f}±{s_auc:.4f} Acc={m_acc:.4f} Sharpe={m_sharpe:+.2f} MDD={m_mdd:.2%} (folds={len(folds)}, feats={len(cols)}) {d_auc_note}"
+            )
 
     return results
 
@@ -329,9 +350,9 @@ def _walk_forward(X, y, rets, label: str) -> List[Dict]:
 
     folds = []
     for start in range(train_n, n - test_n + 1, step):
-        X_tr, y_tr = X[start - train_n:start], y[start - train_n:start]
-        X_te, y_te = X[start:start + test_n], y[start:start + test_n]
-        r_te = rets[start:start + test_n]
+        X_tr, y_tr = X[start - train_n : start], y[start - train_n : start]
+        X_te, y_te = X[start : start + test_n], y[start : start + test_n]
+        r_te = rets[start : start + test_n]
         if len(X_tr) < 15 or len(X_te) < 3:
             continue
 
@@ -341,8 +362,11 @@ def _walk_forward(X, y, rets, label: str) -> List[Dict]:
             Xte_s = scaler.transform(X_te)
 
             clf = GradientBoostingClassifier(
-                n_estimators=100, max_depth=3, learning_rate=0.05,
-                random_state=42, subsample=0.8,
+                n_estimators=100,
+                max_depth=3,
+                learning_rate=0.05,
+                random_state=42,
+                subsample=0.8,
             )
             clf.fit(Xtr_s, y_tr)
             prob = clf.predict_proba(Xte_s)[:, 1]
@@ -380,7 +404,7 @@ def _feature_importance(X, y, cols) -> Dict[str, float]:
         X_s = scaler.fit_transform(X)
         clf = GradientBoostingClassifier(n_estimators=50, max_depth=3, random_state=42)
         clf.fit(X_s, y)
-        imp = dict(zip(cols, [round(float(v), 2) for v in clf.feature_importances_]))
+        imp = dict(zip(cols, [round(float(v), 2) for v in clf.feature_importances_], strict=False))
         return dict(sorted(imp.items(), key=lambda x: -x[1]))
     except Exception:
         return {}
@@ -397,7 +421,9 @@ def report(results: Dict, btc: pd.DataFrame, sent: pd.DataFrame) -> str:
             "btc_days": len(btc),
             "btc_range": f"{btc.index[0]} ~ {btc.index[-1]}",
             "finbert_days": len(sent),
-            "finbert_range": f"{sent['date'].iloc[0]} ~ {sent['date'].iloc[-1]}" if not sent.empty else "N/A",
+            "finbert_range": (
+                f"{sent['date'].iloc[0]} ~ {sent['date'].iloc[-1]}" if not sent.empty else "N/A"
+            ),
         },
         "results": results,
     }
@@ -408,8 +434,8 @@ def report(results: Dict, btc: pd.DataFrame, sent: pd.DataFrame) -> str:
         "# FinBERT 情绪信号消融实验报告 (v2)",
         f"\n生成时间: {now_str}\n",
         "## 数据源",
-        f"| 指标 | 值 |",
-        f"|------|------|",
+        "| 指标 | 值 |",
+        "|------|------|",
         f"| BTC-USD 日线 | {len(btc)} 天 |",
         f"| BTC 范围 | {summary['data']['btc_range']} |",
         f"| Odaily 聚合天数 | {len(sent)} 天 |",
@@ -441,7 +467,9 @@ def report(results: Dict, btc: pd.DataFrame, sent: pd.DataFrame) -> str:
             if label == "plus_finbert" and base:
                 d_auc = f"{r['mean_auc'] - base['mean_auc']:+.4f}"
                 d_sh = f"{r['mean_sharpe'] - base['mean_sharpe']:+.2f}"
-            md.append(f"| {label:20s} | {r['mean_auc']:.4f} | {d_auc} | {r['mean_accuracy']:.4f} | {r['mean_sharpe']:.2f} | {d_sh} | {r['mean_mdd']:.2%} | {r['n_features']} |")
+            md.append(
+                f"| {label:20s} | {r['mean_auc']:.4f} | {d_auc} | {r['mean_accuracy']:.4f} | {r['mean_sharpe']:.2f} | {d_sh} | {r['mean_mdd']:.2%} | {r['n_features']} |"
+            )
 
     md.append("\n## 边际贡献分析")
     md.append("| Horizon | ΔAUC | ΔAcc | ΔSharpe | 结论 |")
@@ -475,13 +503,17 @@ def report(results: Dict, btc: pd.DataFrame, sent: pd.DataFrame) -> str:
                 md.append(f"  {tag} {feat:<20s} importance = {imp}")
 
     md.append("\n## 关键发现与局限")
-    md.append(f"1. **中文模型缺失**: valuesimplex/FinBERT2 repo 已 404，导致 64% 中文新闻只能走规则引擎")
-    md.append(f"2. **ProsusAI/finbert 对中文全返回 neutral**: 英文模型处理中文当然不行")
-    md.append(f"3. **样本量**: 有效 FinBERT 日因子仅 {len(sent)} 天（Odaily 数据从 2026-08-28 才开始收录）")
-    md.append(f"4. **建议**: 如需更可靠结论，优先事项：")
-    md.append(f"   - 找可用的中文金融 BERT (如 hfl/chinese-finbert 或自研微调)")
-    md.append(f"   - 回填更长历史的 Odaily/Gdelt/Tavily 新闻")
-    md.append(f"   - 或者就用 ProsusAI/finbert 专注英文金融新闻源（Reuters, CNBC 等）")
+    md.append(
+        "1. **中文模型缺失**: valuesimplex/FinBERT2 repo 已 404，导致 64% 中文新闻只能走规则引擎"
+    )
+    md.append("2. **ProsusAI/finbert 对中文全返回 neutral**: 英文模型处理中文当然不行")
+    md.append(
+        f"3. **样本量**: 有效 FinBERT 日因子仅 {len(sent)} 天（Odaily 数据从 2026-08-28 才开始收录）"
+    )
+    md.append("4. **建议**: 如需更可靠结论，优先事项：")
+    md.append("   - 找可用的中文金融 BERT (如 hfl/chinese-finbert 或自研微调)")
+    md.append("   - 回填更长历史的 Odaily/Gdelt/Tavily 新闻")
+    md.append("   - 或者就用 ProsusAI/finbert 专注英文金融新闻源（Reuters, CNBC 等）")
 
     md_text = "\n".join(md)
     with open(_OUT_MD, "w", encoding="utf-8") as f:

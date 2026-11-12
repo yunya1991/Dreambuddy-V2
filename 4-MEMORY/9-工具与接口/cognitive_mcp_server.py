@@ -42,6 +42,8 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 from cognitive_loop_entry import CognitiveLoopEntry, get_cle, reset_cle  # noqa: E402
+from outcome_ledger import OutcomeLedger, validate_outcome  # noqa: E402
+from section_telemetry import SectionTelemetry  # noqa: E402
 
 # envelope_wrap（L0 统一信封外层包装）
 _ENVELOPE_DIR = Path(__file__).resolve().parents[2] / "mcp_shells" / "_shared"
@@ -314,6 +316,26 @@ TOOL_DEFINITIONS = [
                     "items": {"type": "string"},
                     "description": "验证后更新的已知局限列表（仅 success=True 时生效，验证后局限可能缩小）",
                 },
+                "outcome": {
+                    "type": "object",
+                    "description": (
+                        "SPEC-33-G T-G1 后果回传：verify 只接受带 outcome 的调用。"
+                        "必填 accepted/tests_pass/reverted；"
+                        "change_id/run_id/outcome_seq 用于幂等（要么全给，要么全缺）。"
+                    ),
+                    "properties": {
+                        "accepted": {"type": "boolean"},
+                        "tests_pass": {"type": "boolean"},
+                        "reverted": {"type": "boolean"},
+                        "change_id": {"type": "string"},
+                        "run_id": {"type": "string"},
+                        "outcome_seq": {"type": "integer", "minimum": 0},
+                        "policy_id": {"type": "string"},
+                        "section": {"type": "string"},
+                        "memory_id": {"type": "string"},
+                    },
+                    "required": ["accepted", "tests_pass", "reverted"],
+                },
                 "principal": {
                     "type": "string",
                     "enum": list(PRINCIPAL_ROLES),
@@ -507,6 +529,15 @@ def _handle_recall(args: Dict[str, Any]) -> str:
     include_process = args.get("include_process", True)  # 默认 True（设计节 3.3）
 
     results = _get_cle().recall(context, top_k=top_k, min_quality=min_quality)
+
+    # SPEC-33-G T-G4：按 section 遥测调用量与命中率（FAIL-OPEN，不影响主流程）
+    try:
+        SectionTelemetry().record_call(
+            str(args.get("section") or "recall"),
+            hit=bool(results),
+        )
+    except Exception:
+        pass
 
     response: Dict[str, Any] = {
         "memories": results,
@@ -756,11 +787,63 @@ def _handle_verify(args: Dict[str, Any]) -> str:
     success = args.get("success", True)
     known_gaps_update = args.get("known_gaps_update")
 
+    # SPEC-33-G T-G1：verify 只接受带 outcome 的调用。
+    # COGNITIVE_VERIFY_OUTCOME_MODE=shadow 为回滚开关（仅告警不阻断）。
+    outcome_mode = os.environ.get("COGNITIVE_VERIFY_OUTCOME_MODE", "enforce").strip().lower()
+    outcome = args.get("outcome")
+    outcome_ok, outcome_reason = validate_outcome(outcome)
+    if not outcome_ok and outcome_mode != "shadow":
+        return json.dumps(
+            _wrap(
+                None,
+                "cognition.verify",
+                degraded=True,
+                error_code="outcome_required",
+                meta={
+                    "reason": outcome_reason,
+                    "required_fields": ["accepted", "tests_pass", "reverted"],
+                },
+                trace_id=_trace_id(args),
+            ),
+            ensure_ascii=False,
+        )
+
+    outcome_entry: Optional[Dict[str, Any]] = None
+    if outcome_ok:
+        try:
+            outcome_entry = OutcomeLedger().record(outcome, memory_id=memory_id)
+        except Exception as exc:  # noqa: BLE001 — 账本写入失败即拒绝，避免无证据验证
+            return json.dumps(
+                _wrap(
+                    None,
+                    "cognition.verify",
+                    degraded=True,
+                    error_code="outcome_ledger_error",
+                    meta={"reason": str(exc)},
+                    trace_id=_trace_id(args),
+                ),
+                ensure_ascii=False,
+            )
+
     result = _get_cle().verify(
         memory_id,
         success=success,
         known_gaps_update=known_gaps_update,
     )
+    if outcome_entry is not None:
+        result["outcome_id"] = outcome_entry["event_id"]
+    elif outcome_mode == "shadow":
+        result["outcome_warning"] = "outcome_required"
+
+    # SPEC-33-G T-G4：按 section 遥测调用量/命中率/采纳率（FAIL-OPEN）
+    try:
+        section = str((outcome or {}).get("section") or "evolution")
+        telemetry = SectionTelemetry()
+        telemetry.record_call(section, hit=bool(success))
+        if outcome_ok and outcome.get("accepted"):
+            telemetry.record_adoption(section)
+    except Exception:
+        pass
 
     # P0-1：触发 verify_hook，更新 confidence + shadow→active 升级（FAIL-OPEN）
     # 扫描 SKILL entries，反查 cognitive_links 包含 memory_id 的 SKILL，

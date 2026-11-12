@@ -52,3 +52,8 @@ feature_sets:
     modules:
       - fundamental_ratios
       - fundamental_features
+
+  # 龙头形态集（SPEC-EMERGENCE-FINANCIAL-ENV §6.2 P1-C：多均线栈 / Pivot / OBV 背离 / 布林状态）
+  leader_form_only:
+    modules:
+      - leader_form

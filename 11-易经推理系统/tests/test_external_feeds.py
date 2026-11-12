@@ -98,9 +98,9 @@ class TestMacroFeed:
         from datafeeds.macro_feed import MacroFeed
 
         feed = MacroFeed()
-        vix = feed.fetch_vix()
+        vix = feed.fetch_volatility_index()
         if vix is None:
-            pytest.skip("yfinance VIX 网络不可用")
+            pytest.skip("VIX 数据源网络不可用")
         assert 0 < vix < 100, f"VIX 超出合理范围: {vix}"
 
     def test_fear_greed_index(self):

@@ -25,11 +25,17 @@ def _data(result):
 
 
 @pytest.fixture(autouse=True)
-def _mock_find_skill_dir(monkeypatch):
-    """autouse: 避免 record_hook 写真实 SKILL.md（测试副作用隔离）。
+def _mock_find_skill_dir(tmp_path, monkeypatch):
+    """autouse: 避免 record_hook 写真实 SKILL.md（测试副作用隔离）；
+    同时把 T-G1 outcome 账本指向临时文件，避免污染真实账本。
     测试内部的 with patch 会覆盖此默认 mock。
     """
     monkeypatch.setattr("cognitive_mcp_server._find_skill_dir_by_name", lambda *a, **kw: None)
+    monkeypatch.setenv("COGNITIVE_OUTCOME_LEDGER_PATH", str(tmp_path / "events.jsonl"))
+
+
+# SPEC-33-G T-G1：verify 只接受带 outcome 的调用
+OUTCOME = {"accepted": True, "tests_pass": True, "reverted": False}
 
 
 # ─────────────────────────────── RED: _handle_record ───────────────────────────────
@@ -121,6 +127,7 @@ def test_handle_verify_returns_skill_hooks_field():
                 {
                     "memory_id": "VM-TEST-VERIFY",
                     "success": True,
+                    "outcome": OUTCOME,
                 }
             )
         )
@@ -162,6 +169,7 @@ def test_handle_verify_skill_hooks_populated_when_skill_has_cognitive_link():
                 {
                     "memory_id": "VM-TEST-VERIFY",
                     "success": True,
+                    "outcome": OUTCOME,
                 }
             )
         )
@@ -183,6 +191,7 @@ def test_handle_verify_fail_open_when_skill_indexer_unavailable():
                 {
                     "memory_id": "VM-TEST",
                     "success": True,
+                    "outcome": OUTCOME,
                 }
             )
         )
@@ -206,6 +215,7 @@ def test_handle_verify_fail_open_when_no_skill_linked():
                 {
                     "memory_id": "VM-NO-LINK",
                     "success": True,
+                    "outcome": OUTCOME,
                 }
             )
         )

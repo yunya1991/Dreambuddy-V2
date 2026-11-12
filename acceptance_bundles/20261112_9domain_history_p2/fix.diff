@@ -1,0 +1,22 @@
+# P2 影响面核查（所有实现文件当前均为 untracked，故用 git diff --no-index --stat /dev/null <file>）
+
+ .../engines/dimension_history.py                   | 461 +++++++++++++++++++++
+ .../engines/fear_greed_history.py                  | 136 ++++++
+ .../scripts/backfill_dimension_history.py          |  60 +++
+ .../tests/test_dimension_history.py                | 252 +++++++++++
+ .../tests/test_fear_greed_history.py               | 102 +++++
+ .../metrics/financial_env_validate.py              | 845 +++++++++++++++++++++
+ .../tests/test_financial_env_validate.py           | 434 +++++++++++++
+
+git status --short（P2 范围）：
+?? 48-涌现架构/docs/tech/SPEC-9DOMAIN-HISTORY-CONTEXT-v1.1.md
+?? 48-涌现架构/metrics/financial_env_validate.py
+?? 48-涌现架构/tests/test_financial_env_validate.py
+?? 9-基本面分析/engines/dimension_history.py
+?? 9-基本面分析/engines/fear_greed_history.py
+?? 9-基本面分析/scripts/backfill_dimension_history.py
+?? 9-基本面分析/tests/test_dimension_history.py
+?? 9-基本面分析/tests/test_fear_greed_history.py
+
+git diff --check（已跟踪 diff 范围）exit=0。
+核查结论：改动仅限 9 域历史写入/适配/回填入口、48 域 P 层消费与对应测试/SPEC；无 lockfile、依赖或前端改动。未 stage、未 commit。

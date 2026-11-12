@@ -6,7 +6,9 @@
 """
 
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -102,11 +104,25 @@ print("-" * 50)
 
 from cognitive_mcp_server import _handle_verify  # noqa: E402
 
+# SPEC-33-G T-G1：verify 只接受带 outcome 的调用；验收脚本写临时账本
+os.environ.setdefault(
+    "COGNITIVE_OUTCOME_LEDGER_PATH",
+    os.path.join(tempfile.gettempdir(), "cognitive_outcome_acceptance.jsonl"),
+)
+
 # verify_hook 需要 memory_id 在 cognitive_links 中
 # 使用不存在的 memory_id → skill_hooks 应为空（FAIL-OPEN）
 with patch("cognitive_mcp_server._get_cle") as mock_cle:
     mock_cle.return_value.verify.return_value = {"ok": True, "confidence": 0.5}
-    resp_v = json.loads(_handle_verify({"memory_id": "VM-NONEXISTENT", "success": True}))
+    resp_v = json.loads(
+        _handle_verify(
+            {
+                "memory_id": "VM-NONEXISTENT",
+                "success": True,
+                "outcome": {"accepted": True, "tests_pass": True, "reverted": False},
+            }
+        )
+    )
     print(
         f"[3a] verify 不存在关联 → skill_hooks={resp_v.get('skill_hooks')} "
         f"主流程ok={resp_v.get('ok')} {'✅ FAIL-OPEN' if resp_v.get('skill_hooks') == [] else '❌'}"

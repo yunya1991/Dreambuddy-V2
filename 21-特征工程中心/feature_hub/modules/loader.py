@@ -28,6 +28,7 @@ _MODULE_IMPORTS = {
     "fundamental_ratios": "feature_hub.modules.fundamental_ratios",
     "fundamental_features": "feature_hub.modules.fundamental_features",
     "yijing_cycle": "feature_hub.modules.yijing_cycle",
+    "leader_form": "feature_hub.modules.leader_form",
 }
 
 
@@ -87,4 +88,5 @@ def _default_sets() -> Dict[str, List[str]]:
         "commodity_safe_haven": ["classic_indicators", "five_domain_fc", "elder_ray"],
         "yijing_bagua_cycle": ["yijing_cycle"],
         "fundamental_full": ["fundamental_ratios", "fundamental_features"],
+        "leader_form_only": ["leader_form"],
     }

@@ -28,6 +28,9 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
+import time
+import uuid
 from typing import Any, Callable, Dict, Optional
 
 # ── 进程内 handler 注册表 (非 MCP shell, 直接函数调用) ───────────────
@@ -91,6 +94,12 @@ IN_PROCESS_HANDLERS: Dict[str, Dict[str, Any]] = {
         "module": None,
         "handler": "_handle_orchestrator_v2",
         "tools": ["orchestrator"],
+    },
+    # OrchestratorV2 异步作业查询 (配合 orchestrator 的 async=True 提交)
+    "orchestrator.status": {
+        "module": None,
+        "handler": "_handle_orchestrator_status",
+        "tools": ["status"],
     },
     # Knowledge search (RAG: fts/vector/hybrid)
     "knowledge.search": {
@@ -260,17 +269,26 @@ def _load_inprocess_handler(shell_id: str) -> Optional[Callable[..., Any]]:
         return None
 
 
-def _handle_orchestrator_v2(args: Dict[str, Any]) -> Dict[str, Any]:
-    """内联 handler: OrchestratorV2.run_cycle() (从 dsh_adapter.py 原样迁来)。"""
-    node_output = args.get("node_output", args) if isinstance(args, dict) else {}
+# ── OrchestratorV2 异步作业表 (进程内单例, 与 ShellHandleManager 同生命周期) ──
+
+_ORCH_JOBS: Dict[str, Dict[str, Any]] = {}
+_ORCH_JOBS_LOCK = threading.Lock()
+_ORCH_JOB_TTL_S = 3600.0  # 完成后的作业保留 1 小时，供前端轮询补取
+
+
+def _run_orchestrator_cycle(node_output: Dict[str, Any]) -> Dict[str, Any]:
+    """同步执行一次 OrchestratorV2.run_cycle()（原有实现，未改语义）。"""
+    if not isinstance(node_output, dict):
+        node_output = {}
     symbol = node_output.get("symbol", "BTC")
     market_data = node_output.get("market_data") or {"symbol": symbol}
 
     if _resolve_dreamos_root() is None:
+        # dreamos/ 已归档：这是结构性归档，不是运行时故障，用独立原因码区分
         return {
             "ok": False,
             "error_code": "shell_degraded",
-            "meta": {"reason": "dreamos_root_not_found"},
+            "meta": {"reason": "dreamos_archived"},
         }
 
     try:
@@ -312,6 +330,128 @@ def _handle_orchestrator_v2(args: Dict[str, Any]) -> Dict[str, Any]:
             "error_code": "shell_degraded",
             "meta": {"reason": f"orchestrator_error: {type(e).__name__}: {e}"},
         }
+
+
+def _prune_orchestrator_jobs(now: float) -> None:
+    """清理超过 TTL 的已完成作业（调用方需持锁）。"""
+    expired = [
+        jid
+        for jid, job in _ORCH_JOBS.items()
+        if job.get("status") == "done"
+        and now - float(job.get("finished_at") or now) > _ORCH_JOB_TTL_S
+    ]
+    for jid in expired:
+        _ORCH_JOBS.pop(jid, None)
+
+
+def _to_ipc_envelope(handler_result: Any) -> Dict[str, Any]:
+    """把 handler 级返回 {ok, data|error_code, meta} 归一成 call_handler 的 {ok, output}。"""
+    if not isinstance(handler_result, dict):
+        return {"ok": True, "output": handler_result}
+    if handler_result.get("ok") is False:
+        return {
+            "ok": False,
+            "error": handler_result.get("error_code") or "orchestrator_failed",
+            "meta": handler_result.get("meta", {}),
+        }
+    data = handler_result.get("data")
+    if isinstance(data, dict) and "output" in data:
+        return {"ok": True, "output": data.get("output")}
+    return {"ok": True, "output": data, "meta": handler_result.get("meta", {})}
+
+
+def _orchestrator_job_worker(job_id: str, node_output: Dict[str, Any]) -> None:
+    """后台线程：执行 run_cycle 并把结果写回作业表（异常也落库，避免前端永远 pending）。"""
+    try:
+        result = _to_ipc_envelope(_run_orchestrator_cycle(node_output))
+    except Exception as e:  # noqa: BLE001 FAIL-OPEN
+        result = {
+            "ok": False,
+            "error_code": "shell_degraded",
+            "meta": {"reason": f"orchestrator_worker_error: {type(e).__name__}: {e}"},
+        }
+    with _ORCH_JOBS_LOCK:
+        job = _ORCH_JOBS.get(job_id)
+        if job is not None:
+            job["status"] = "done"
+            job["result"] = result
+            job["finished_at"] = time.time()
+
+
+def _handle_orchestrator_v2(args: Dict[str, Any]) -> Dict[str, Any]:
+    """内联 handler: OrchestratorV2.run_cycle()。
+
+    async=True（或 mode="async"）→ 提交作业立即返回 job_id；
+    默认仍为同步执行（本地 IPC 兼容路径）。
+    """
+    node_output = args.get("node_output", args) if isinstance(args, dict) else {}
+    if not isinstance(node_output, dict):
+        node_output = {}
+
+    if isinstance(args, dict) and (args.get("async") is True or args.get("mode") == "async"):
+        job_id = uuid.uuid4().hex
+        now = time.time()
+        with _ORCH_JOBS_LOCK:
+            _prune_orchestrator_jobs(now)
+            _ORCH_JOBS[job_id] = {
+                "status": "pending",
+                "created_at": now,
+                "finished_at": None,
+                "result": None,
+            }
+        threading.Thread(
+            target=_orchestrator_job_worker,
+            args=(job_id, node_output),
+            daemon=True,
+        ).start()
+        return {
+            "ok": True,
+            "data": {"status": "accepted", "job_id": job_id},
+            "error_code": None,
+            "meta": {"shell_id": "orchestrator", "mode": "async"},
+        }
+
+    return _run_orchestrator_cycle(node_output)
+
+
+def _handle_orchestrator_status(args: Dict[str, Any]) -> Dict[str, Any]:
+    """查询异步 orchestrator 作业：pending → {status:"pending"}；done → 原样回传结果。
+
+    done 分支把结果放进 data.output，使 call_handler 走「透传 output」分支，
+    返回结构与同步调用完全一致（{ok, output}），前端无需区分同步/异步。
+    """
+    job_id = args.get("job_id") if isinstance(args, dict) else None
+    if not isinstance(job_id, str) or not job_id:
+        return {
+            "ok": False,
+            "error_code": "bad_request",
+            "meta": {"reason": "job_id must be a non-empty string"},
+        }
+
+    with _ORCH_JOBS_LOCK:
+        job = _ORCH_JOBS.get(job_id)
+        status = None if job is None else job.get("status")
+        result = None if job is None else job.get("result")
+
+    if status is None:
+        return {
+            "ok": False,
+            "error_code": "job_not_found",
+            "meta": {"job_id": job_id},
+        }
+    if status != "done":
+        return {
+            "ok": True,
+            "data": {"job_id": job_id, "status": "pending"},
+            "error_code": None,
+            "meta": {"shell_id": "orchestrator.status"},
+        }
+    return {
+        "ok": True,
+        "data": {"job_id": job_id, "status": "done", "output": result},
+        "error_code": None,
+        "meta": {"shell_id": "orchestrator.status"},
+    }
 
 
 # ── Knowledge search handler ──────────────────────────────────────────
@@ -766,9 +906,11 @@ _CHAIN_METRICS = [
     ("chains_summary", "total_tvl_bln", "defi_tvl_bln"),  # DeFi 总 TVL(十亿), tvl_bln 键为 0.0 坏值
     # utxo_age_distribution: 持有者分布 (收口 P2: OnchainPanel 需要)
     ("utxo_age_distribution", "long_term_holder_supply_pct", "lth_supply_pct"),
+    ("utxo_age_distribution", "mid_term_holder_supply_pct", "mth_supply_pct"),
     ("utxo_age_distribution", "short_term_holder_supply_pct", "sth_supply_pct"),
     ("utxo_age_distribution", "profit_supply_pct", "profit_supply_pct"),
     ("utxo_age_distribution", "hodl_waves_1y_plus_pct", "hodl_waves_1y_plus_pct"),
+    ("utxo_age_distribution", "utxo_count", "utxo_count"),
 ]
 
 _MACRO_METRICS = [
@@ -798,6 +940,16 @@ _FLOW_METRICS = [
     ("etf_flow", "total_flow", "etf_total_flow"),  # ETF 总净流入
     ("stablecoins_top_10", "usdt_pct_of_total", "stablecoin_dominance_usdt"),  # USDT 占比
     ("stablecoins_top_10", "usdc_pct_of_total", "stablecoin_dominance_usdc"),  # USDC 占比 (收口 P2)
+    # 衍生品/鲸鱼真实指标 (P0 收口: FlowPanel 资金费率/多空比/鲸鱼/清算)
+    # OKX 口径单列输出, 由聚合层优先使用 (Binance/panewslab 作为回退/交叉验证)
+    ("okx_derivatives", "funding_rate_pct", "funding_rate_pct_okx"),
+    ("okx_derivatives", "long_short_ratio", "long_short_ratio_okx"),
+    ("funding_rate", "funding_rate_pct", "funding_rate_pct"),
+    ("long_short_ratio", "long_short_ratio", "long_short_ratio"),
+    ("exchanges_whales", "whale_netflow_to_ex_usd", "whale_netflow_to_ex_usd"),
+    ("derivatives_spot", "fut_liq_total_24h_usd", "liquidations_24h_usd"),
+    ("derivatives_spot", "fut_liq_long_24h_usd", "liquidations_long_24h_usd"),
+    ("derivatives_spot", "fut_liq_short_24h_usd", "liquidations_short_24h_usd"),
     ("tether_current", "usdt_circulating_usd_bln", "usdt_circulating_bln"),  # USDT 流通量
     ("usdc_current", "usdc_circulating_usd_bln", "usdc_circulating_bln"),  # USDC 流通量
     # etf_flow: 分发行商明细 (farside per-issuer, 百万美元)
@@ -1382,6 +1534,7 @@ HANDLER_TO_SHELL_ID: Dict[str, str] = {
     "debate": "c-drive.debate",
     "synthesizer": "synthesizer",
     "orchestrator": "orchestrator",
+    "orchestrator_status": "orchestrator.status",
     "knowledge_search": "knowledge.search",
     "skill_index": "skill.index",
     "user_memory": "user.memory",
@@ -1403,6 +1556,7 @@ HANDLER_TO_ROLE: Dict[str, str] = {
     "debate": "research",
     "synthesizer": "research",
     "orchestrator": "engineer",
+    "orchestrator_status": "research",
     "knowledge_search": "research",
     "skill_index": "research",
     "user_memory": "research",

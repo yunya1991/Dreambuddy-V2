@@ -1,0 +1,8 @@
+{
+  "name": "dsh-plugin-stub-llm",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "description": "A7 探针：确定性 stub LLM provider，用于在同一 DSH 进程内验证多子会话并发（不消耗 LLM 额度）"
+}

@@ -1,0 +1,249 @@
+# 53-DSH插件模块/plugin_whitelist.yaml
+# DSH 插件白名单（P1-2 落地物）— 唯一治理事实源
+#
+# 定位：任何要挂进 dsh profile 的非核心插件（非 @deepseek-ai/* 官方包）都必须在此登记。
+# 校验：python3 53-DSH插件模块/check_whitelist.py --profile <name>
+#
+# 规则（deny-by-default）：
+#   1. 未登记 = 拒绝加载（default_deny: true）
+#   2. 社区插件必须先在 sandbox profile 实测（sandbox_verified: true）才能进生产 profile
+#   3. risk_level=forbidden 任何 profile 都不许加载
+#   4. FAIL-OPEN 未验证的插件不得进生产 profile（fail_open_verified: true）
+version: "v1"
+last_updated: "2026-11-12"
+default_deny: true
+
+policies:
+  production_profiles: ["web", "headless", "superagent"]
+  sandbox_profiles: ["sandbox"]
+  require_sandbox_first: true      # 社区插件先进 sandbox
+  require_fail_open: true          # 进生产必须验证 FAIL-OPEN
+  max_risk_for_production: "medium"
+
+entries:
+  # ── 自有插件（已生产运行，视为 approved） ─────────────────────────
+  - id: "dreambuddy-c1"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["web", "headless", "superagent", "sandbox"]
+    notes: "C1 规划器桥接"
+
+  - id: "dreambuddy-c-chain"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    notes: "C-chain 链路规划"
+
+  - id: "dreambuddy-intent-gateway"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["web", "headless", "superagent", "sandbox"]
+    notes: "agent/pre-step 意图识别与风险评估"
+
+  - id: "dreambuddy-graph-planner"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["web", "headless", "superagent", "sandbox"]
+    notes: "DreamOS graph planner"
+
+  - id: "dreambuddy-indicators"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    notes: "技术指标工具面"
+
+  - id: "dreambuddy-fundamental"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    notes: "基本面工具面"
+
+  - id: "dreambuddy-session-consumer"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    notes: "会话事件消费"
+
+  - id: "dreambuddy-reflector"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    notes: "反思/蒸馏钩子"
+
+  - id: "dreambuddy-jev-judge"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["web", "headless", "superagent", "sandbox"]
+    notes: "JEV 完成度/步骤质量判定"
+
+  - id: "dreambuddy-knowledge-wiki"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    notes: "知识库 wiki 编译/摄取"
+
+  - id: "dreambuddy-superagent-p0"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["headless", "superagent", "sandbox"]
+    notes: "P0 Super-agent 工具面（event_gateway / ticket_router / ticket_bridge / ticket_state）"
+
+  - id: "dreambuddy-dreamos-cognitive"
+    source: "local"
+    version: "*"
+    status: "approved"
+    owner: "dreambuddy"
+    risk_level: "low"
+    security_scanned: true
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["web", "headless", "superagent", "sandbox"]
+    notes: "P1-1 认知能力封装：dreamos_recall/dreamos_search 只读；record/verify 仅 enableWrites=true 且宿主写 scope 时注册"
+
+  # ── 社区候选（2026-11-12 npm/GitHub 实测，仅允许进 sandbox） ────────
+  # 包名核实结论：原候选 document-qa / terminal-ops 在 npm 均 404，
+  # 已替换为下表中实测存在的真实包名；替换前的假名保留为 forbidden 防误装。
+  - id: "@puwenhui/dsh-rag-kb"
+    source: "npm"
+    npm_version: "0.3.1"
+    status: "candidate"
+    risk_level: "medium"
+    security_scanned: false
+    sandbox_verified: true
+    fail_open_verified: true
+    permitted_profiles: ["sandbox"]
+    notes: "R10 实测通过(2026-11-12,DSH 0.1.5-rc.3)：sandbox profile 内注册 knowledge_search/knowledge_status/knowledge_manage 三工具，实调 knowledge_status 返回 {ok:true,...,documents:[]}；其工具异常由 harness registry 兜底为 isError 结果不 crash（P0-1d 实测）。限制：① dsh.client.platform=web，headless 下 SSE 路由因缺 webServer 自动跳过；② onnxruntime-node/sharp 原生构建被 allowBuilds 关闭，向量化/rerank 未验证（仅 status/空库检索可用）；③ 原候选说明：替代假名 dsh-plugin-document-qa（npm 404，2026-11-12 实测）。备选 @kai232/dsh-rag@0.1.2"
+
+  - id: "dsh-plugin-code-review"
+    source: "npm"
+    npm_version: "0.1.1"
+    status: "candidate"
+    risk_level: "medium"
+    security_scanned: false
+    sandbox_verified: false
+    fail_open_verified: false
+    permitted_profiles: ["sandbox"]
+    notes: "R10 实测失败(2026-11-12,DSH 0.1.5-rc.3)：模块加载正常，但它把 systemPrompt.section 的 text 写成 async 函数，而 DSH SystemPrompt.assemble 不 await（dsh-system-prompt/lib/index.js:339），启用即崩溃 `dsh: UNKNOWN: text.indexOf is not a function`。对照组(enableSkill:false)可正常跑到 LLM 请求，证明是 section text 而非加载问题。当前在 sandbox/cordis.patch.yml 中 disabled:true；上游修复前不得提升到 headless/web。另：该插件不注册任何 tool，只注入 prompt，验收标准应为 prompt 注入而非工具调用"
+
+  - id: "dsh-plugin-debugging"
+    source: "npm"
+    npm_version: "0.8.1"
+    status: "candidate"
+    risk_level: "medium"
+    security_scanned: false
+    sandbox_verified: false
+    fail_open_verified: false
+    permitted_profiles: ["sandbox"]
+    notes: "替代假名 dsh-plugin-terminal-ops（npm 404）；运行时诊断 + 就地修复（会写文件，故 medium）；备选 dsh-plugin-ops-bundle@0.20.9（健康面板）"
+
+  - id: "awesome-dsh-plugin"
+    source: "npm"
+    npm_version: "0.1.0"
+    repo: "github.com/awesome-dsh-plugin/awesome-dsh-plugin"
+    status: "candidate"
+    risk_level: "medium"
+    security_scanned: false
+    sandbox_verified: false
+    fail_open_verified: false
+    permitted_profiles: ["sandbox"]
+    notes: "精选列表（npm 0.1.0 存在，★ 数未核实）；真实市场 feed 为 awesome-dsh-plugin-feed@0.20261112.0（repo bruc3van/awesome-dsh-plugin，可走 registry.npmmirror.com）"
+
+  - id: "sandbase-harness"
+    source: "github"
+    stars: 643
+    status: "candidate"
+    risk_level: "medium"
+    security_scanned: false
+    sandbox_verified: false
+    fail_open_verified: false
+    permitted_profiles: ["sandbox"]
+    notes: "⚠️ 非 npm 包（npm 404），仅 GitHub 自托管 runtime 参考；643★（2026-11-12，原记 604 已过期），只读参考为主"
+
+  # 以下为已证伪的假包名：保留 forbidden 防止误登记/误装
+  - id: "dsh-plugin-document-qa"
+    source: "npm"
+    status: "forbidden"
+    risk_level: "forbidden"
+    permitted_profiles: []
+    notes: "npm 404（2026-11-12），包名不存在；真实替代 @puwenhui/dsh-rag-kb"
+
+  - id: "dsh-plugin-terminal-ops"
+    source: "npm"
+    status: "forbidden"
+    risk_level: "forbidden"
+    permitted_profiles: []
+    notes: "npm 404（2026-11-12），包名不存在；真实替代 dsh-plugin-debugging / dsh-plugin-ops-bundle"
+
+  # ── 禁止清单（示例：任何触及交易热路径的社区插件） ─────────────────
+  - id: "*trading*"
+    source: "any"
+    status: "forbidden"
+    risk_level: "forbidden"
+    permitted_profiles: []
+    notes: "交易热路径（polling_trader / trailing_stop / yijing_trading）禁接社区插件，只盘点不接入"

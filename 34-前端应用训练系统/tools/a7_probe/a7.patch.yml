@@ -1,0 +1,11 @@
+# A7 探针 patch：把默认模型切到 stub provider，并挂载 stub 插件。
+# 仅用于 sandbox profile 的多会话并发验证，不进入 headless/web。
+# 注意：新增插件必须走 insert（直接写 name 会被判为「entry not found」）。
+- id: agent-default-model
+  config:
+    provider: stub
+    model: stub-1
+- insert:
+    - id: a7-stub-llm
+      name: dsh-plugin-stub-llm
+      config: {}

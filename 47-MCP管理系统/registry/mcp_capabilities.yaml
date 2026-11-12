@@ -178,6 +178,60 @@ shells:
         read_write: read
         requires_mandate: false
         annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_rea_snapshot
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: rea_audit
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: get_rea_methodology
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: cancel_rea_analyze
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: cancel_rea_trace
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: cancel_rea_compare
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: submit_rea_adapt_plan
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: poll_rea_adapt_plan
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
+      - name: cancel_rea_adapt_plan
+        port: analysis
+        domain: rea
+        read_write: read
+        requires_mandate: false
+        annotations: { readOnlyHint: true, destructiveHint: false }
 
   # 壳 ③-b 存量 consumer 面（npm rea-agents 133 工具，npm 包接入未落地）
   # M3⑦ 起 REA 能力由上方 l0.rea.mcp 承载；本面保留登记（V6 存量面不删）
@@ -489,13 +543,23 @@ worker_roles:
     shells: [l0.cognition.mcp, l0.semantic-39.mcp, l0.rea.mcp]
     tools: [recall, unified_search, stats, health,
             query_entity, semantic_lookup,
-            submit_rea_analyze, poll_rea_analyze]
-  engineer:
-    description: 工程 Worker——数据读取 / REA 分析与对比（只读）
-    shells: [l0.data.mcp, l0.rea.mcp, l0.cognition.mcp]
-    tools: [data_fetch, data_store_read, recall,
             submit_rea_analyze, poll_rea_analyze,
-            submit_rea_compare, poll_rea_compare]
+            get_rea_snapshot]
+  engineer:
+    description: 工程 Worker——REA 分析/追踪/对比/假设门禁/方法论（只读，10 工具满额）
+    shells: [l0.rea.mcp, l0.cognition.mcp]
+    tools: [recall,
+            submit_rea_analyze, poll_rea_analyze,
+            submit_rea_trace, poll_rea_trace,
+            submit_rea_compare, poll_rea_compare,
+            get_rea_snapshot,
+            rea_audit, get_rea_methodology]
+    # 越权验证锚点：eval_analyze（属 verifier）在 engineer 下必须 forbidden
+    # SPEC-33-E §9 Q1：data_fetch/data_store_read 已迁至 data_reader 角色，engineer 保持 10
+  data_reader:
+    description: 数据读取 Worker——行情/库读 + 认知检索（只读，3 工具）
+    shells: [l0.data.mcp, l0.cognition.mcp]
+    tools: [data_fetch, data_store_read, recall]
   verifier:
     description: 验收 Worker——评测 / 库管只读 / 证据检索（只读）
     shells: [l0.eval.mcp, l0.store-admin.mcp, l0.cognition.mcp]
@@ -541,7 +605,10 @@ enums:
   status: [available, degraded, planned, deprecated]
   envelope_version: ["0.1", "0.2"]
   # 每个 shell 的工具数硬上限（SPEC §3.3 B2：Worker 角色→工具集矩阵，每角色 ≤10 工具）
-  max_tools_per_shell: 10
-  # 全局软上限（G1-b，用户 2026-11-08 确认）：主约束是每壳/每角色 ≤10，
+  # 2026-11-12 调整：升到 15，容纳 l0.rea 的 submit/poll/cancel ×
+  # analyze/trace/compare（SPEC-33-F T-F20）+ adapt_plan（SPEC-33-E T-E5）；
+  # 角色白名单仍各自 ≤10，不放宽 Worker 工具集。
+  max_tools_per_shell: 15
+  # 全局软上限（G1-b，用户 2026-11-08 确认）：主约束是每壳/每角色 ≤15，
   # 全局 80 仅作工具面膨胀的兜底护栏（原 40 会阻塞新域接入）
   max_total_tools: 80

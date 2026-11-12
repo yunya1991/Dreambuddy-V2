@@ -2,28 +2,62 @@
 # 依据: SPEC-EVENT-DRIVEN-L1-GATEWAY v0.2 §三.1 任务3 + §七(独立事件注册表)。
 # 定位: 事件类意图唯一事实源。34-core Python(event_gateway.load_event_intents)
 #       与 3.1 前端 TS(l1-intent-registry.ts) 两侧只读本文件对齐,不双写逻辑。
-# 初值 3 个事件意图(评审 m 修订: 由事件源盘点 INVENTORY-EVENT-SOURCES-v1.0 导出)。
+# 事件池来源: 46-DSH架构/docs/tech/INVENTORY-EVENT-SOURCES-v0.1.md §五(T6 校准版)
+#             —— 本地 launchd 27 项 + 远端 18 服务/29 timer + 渠道 4 类。
 # 全部零 token(HC-4): executor 仅允许确定性执行器形态(alert_card/data_reply)。
-schema_version: "0.1"
-last_updated: "2026-11-03"
+schema_version: "0.2"
+last_updated: "2026-11-12"
 intents:
   # 告警确认: 健康/阈值类告警的确定性应答卡(已知模式,无需 L2)
+  # 来源: 监控/信号类源(signal-scanner / ab-monitor)
   - intent_id: alert_confirm
     kinds: [alert_confirm]
     executor: alert_card
     zero_token: true
     desc: "告警确认卡: 已知告警模式的确定性应答与确认留痕"
+    upgrade_l2_when: "连续命中 / 出现新型阈值模式"
 
   # 事件分诊: 定时任务/CI/文件落盘等事件的确定性分类归并
+  # 来源: atomic_events.jsonl 增量(10min)、file-drop、通用 job_done
   - intent_id: event_triage
     kinds: [event_triage, job_done, file_landed]
     executor: data_reply
     zero_token: true
     desc: "事件分诊: 规则化分类、归并与格式化应答"
+    upgrade_l2_when: "出现未知事件类型"
 
   # 健康告警: 云端 healthcheck/服务健康事件的确定性告警卡
+  # 来源: dreambuddy-healthcheck.timer(5min,JSON 输出,11 项检查)
   - intent_id: health_alert
     kinds: [health_alert, service_down, timer_missed]
     executor: alert_card
     zero_token: true
     desc: "健康告警卡: 服务/定时器健康事件的确定性告警与升级建议"
+    upgrade_l2_when: "连续 3 次异常 / 新增 check 项失败"
+
+  # 任务失败: timer 退出码 ≠ 0 的通用兜底(systemd ExecMainStatus,覆盖全部 29 timer)
+  # 来源: 通用判定规则 —— 退出码 + 预期产出校验,无需逐源定制
+  - intent_id: job_failed
+    kinds: [job_failed, timer_failed, exit_nonzero]
+    executor: alert_card
+    zero_token: true
+    desc: "任务失败卡: timer/service 非零退出的重试建议与飞书通知"
+    upgrade_l2_when: "自动重试后仍失败"
+
+  # 任务完成: 长任务(回填/训练/编排)完成事件
+  # 来源: datacenter-backfill(每小时)、continual-training(常驻 daemon)、v15/ab orchestrator
+  - intent_id: job_completed
+    kinds: [job_completed, backfill_done, training_done]
+    executor: data_reply
+    zero_token: true
+    desc: "任务完成卡: 长任务完成的记录与产出摘要"
+    upgrade_l2_when: "产出指标异常(条数/耗时偏离基线)"
+
+  # 完整性告警: dal-integrity 检查异常的确定性告警
+  # 来源: dal-integrity.timer(6h)、job-runs-audit.timer(1h)
+  - intent_id: integrity_alert
+    kinds: [integrity_alert, dal_integrity_failed]
+    executor: alert_card
+    zero_token: true
+    desc: "完整性告警卡: DAL 完整性/审计异常与影响面提示"
+    upgrade_l2_when: "连续异常 / 影响面跨表扩散"

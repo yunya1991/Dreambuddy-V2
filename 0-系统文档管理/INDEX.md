@@ -165,7 +165,7 @@
 | ★ SPEC-33-D REA as L0 MCP | [33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md](../33-REA逆向解析工程/SPEC-33-D-REA作为L0MCP的工程开发协作.md) | v0.1.0（P0+P1 已落地，301 passed） |
 | ★ SPEC-33-E LLM 混合层 | [33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md](../33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md) | v0.1.1（🚧 P0 已落地：假设契约+PoE裁判+cognitive_hint；P1/P2 待开工） |
 | ★ SPEC-33-F REA 能力增强 | [33-REA逆向解析工程/SPEC-33-F-REA能力增强.md](../33-REA逆向解析工程/SPEC-33-F-REA能力增强.md) | v0.2.0（📝 待评审；含上游核实 §0.6，20 任务 P0/P1/P2） |
-| ★ SPEC-33-G 反思进化与分层自更新 | [33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md](../33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md) | v0.4.0（📝 待评审；L1/L2/L3 分级 + 案例入库 + 调研参考 + DreamOS/脑暴/DSH/L0 研发流水线，15 任务；ADR-001 脑暴出关已灰度） |
+| ★ SPEC-33-G 反思进化与分层自更新 | [33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md](../33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md) | v0.4.2（🟡 部分落地；L2-1~L2-12 + §2.11.8 权限切分 + §2.11.9 测量审计；17 任务；ADR-001 灰度） |
 | SKILL dream-rea-architecture-query | [.trae/skills/dream-rea-architecture-query/SKILL.md](../.trae/skills/dream-rea-architecture-query/SKILL.md) | v1.0.0（何时调用/token纪律/认知闭环） |
 
 ### 49-交易框架协议

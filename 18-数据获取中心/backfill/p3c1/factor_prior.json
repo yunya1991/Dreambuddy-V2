@@ -1,11 +1,433 @@
 {
-  "version": "factor-prior-v1",
-  "generated_at": "2026-11-10T05:13:10.326444+00:00",
-  "as_of": null,
-  "source": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/backfill/p3c1/factor_sensitivity.jsonl",
-  "degraded": true,
-  "n_factors": 0,
-  "dims": {},
-  "factors": [],
-  "reason": "newsflash_prior_disabled_by_default"
+  "version": "factor-prior-v2",
+  "generated_at": "2026-11-11T16:53:56.345062+00:00",
+  "as_of": "2026-11-11",
+  "source": {
+    "events": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/data_center/events/events.jsonl",
+    "bodies": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/data_center/events/bodies.jsonl"
+  },
+  "degraded": false,
+  "degraded_reason": null,
+  "n_articles": 228,
+  "n_sources": 4,
+  "n_factors": 10,
+  "dims": {
+    "D1": 15.06,
+    "NEWS": 0.95,
+    "D2": 0.9,
+    "D4": 0.6,
+    "D3": 0.66
+  },
+  "factors": [
+    {
+      "dominant_factor": "macro.rate",
+      "dominant_dimension": "D1",
+      "direction": "bearish",
+      "horizon": "days",
+      "urgency": 0.6,
+      "impact": 1.2,
+      "composite_score": -0.8586,
+      "direction_mix": {
+        "bearish": 8,
+        "bullish": 1
+      },
+      "source_mix": {
+        "wallstreetcn": 4,
+        "sina_finance": 3,
+        "cls": 2
+      },
+      "article_count": 9
+    },
+    {
+      "dominant_factor": "macro.equity",
+      "dominant_dimension": "D1",
+      "direction": "bullish",
+      "horizon": "intraday",
+      "urgency": 0.9,
+      "impact": 1.2,
+      "composite_score": 1.0,
+      "direction_mix": {
+        "bullish": 4
+      },
+      "source_mix": {
+        "sina_finance": 2,
+        "cls": 2
+      },
+      "article_count": 4
+    },
+    {
+      "dominant_factor": "macro.equity",
+      "dominant_dimension": "D1",
+      "direction": "bullish",
+      "horizon": "days",
+      "urgency": 0.6,
+      "impact": 1.2,
+      "composite_score": 0.5,
+      "direction_mix": {
+        "bullish": 3,
+        "bearish": 1
+      },
+      "source_mix": {
+        "cls": 3,
+        "sina_finance": 1
+      },
+      "article_count": 4
+    },
+    {
+      "dominant_factor": "event.regulation",
+      "dominant_dimension": "NEWS",
+      "direction": "bullish",
+      "horizon": "days",
+      "urgency": 0.6,
+      "impact": 1.0,
+      "composite_score": 1.0,
+      "direction_mix": {
+        "bullish": 2
+      },
+      "source_mix": {
+        "wallstreetcn": 2
+      },
+      "article_count": 2
+    },
+    {
+      "dominant_factor": "macro.inflation",
+      "dominant_dimension": "D1",
+      "direction": "bullish",
+      "horizon": "days",
+      "urgency": 0.6,
+      "impact": 1.2,
+      "composite_score": 1.0,
+      "direction_mix": {
+        "bullish": 2
+      },
+      "source_mix": {
+        "wallstreetcn": 2
+      },
+      "article_count": 2
+    },
+    {
+      "dominant_factor": "flow.etf_flow",
+      "dominant_dimension": "D2",
+      "direction": "bullish",
+      "horizon": "days",
+      "urgency": 0.6,
+      "impact": 1.5,
+      "composite_score": 1.0,
+      "direction_mix": {
+        "bullish": 1
+      },
+      "source_mix": {
+        "wallstreetcn": 1
+      },
+      "article_count": 1
+    },
+    {
+      "dominant_factor": "macro.central_bank",
+      "dominant_dimension": "D1",
+      "direction": "bullish",
+      "horizon": "months",
+      "urgency": 0.2,
+      "impact": 1.2,
+      "composite_score": 1.0,
+      "direction_mix": {
+        "bullish": 1
+      },
+      "source_mix": {
+        "cls": 1
+      },
+      "article_count": 1
+    },
+    {
+      "dominant_factor": "macro.dollar",
+      "dominant_dimension": "D1",
+      "direction": "bullish",
+      "horizon": "intraday",
+      "urgency": 0.9,
+      "impact": 1.2,
+      "composite_score": 1.0,
+      "direction_mix": {
+        "bullish": 1
+      },
+      "source_mix": {
+        "wallstreetcn": 1
+      },
+      "article_count": 1
+    },
+    {
+      "dominant_factor": "sentiment.narrative",
+      "dominant_dimension": "D4",
+      "direction": "bullish",
+      "horizon": "days",
+      "urgency": 0.6,
+      "impact": 1.0,
+      "composite_score": 1.0,
+      "direction_mix": {
+        "bullish": 1
+      },
+      "source_mix": {
+        "wallstreetcn": 1
+      },
+      "article_count": 1
+    },
+    {
+      "dominant_factor": "technical.volatility",
+      "dominant_dimension": "D3",
+      "direction": "bearish",
+      "horizon": "days",
+      "urgency": 0.6,
+      "impact": 1.1,
+      "composite_score": -1.0,
+      "direction_mix": {
+        "bearish": 1
+      },
+      "source_mix": {
+        "sina_finance": 1
+      },
+      "article_count": 1
+    }
+  ],
+  "by_source": {
+    "traditional_finance": {
+      "n_articles": 228,
+      "n_sources": 4,
+      "n_factors": 12,
+      "factors": [
+        {
+          "dominant_factor": "macro.rate",
+          "dominant_dimension": "D1",
+          "direction": "bearish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.2,
+          "composite_score": -0.7522,
+          "direction_mix": {
+            "bearish": 9,
+            "bullish": 2
+          },
+          "source_mix": {
+            "wallstreetcn": 4,
+            "sina_finance": 3,
+            "cls": 2,
+            "jin10": 2
+          },
+          "article_count": 11,
+          "_weight": 6.78
+        },
+        {
+          "dominant_factor": "macro.equity",
+          "dominant_dimension": "D1",
+          "direction": "bullish",
+          "horizon": "intraday",
+          "urgency": 0.9,
+          "impact": 1.2,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 6
+          },
+          "source_mix": {
+            "sina_finance": 2,
+            "cls": 2,
+            "jin10": 2
+          },
+          "article_count": 6,
+          "_weight": 4.32
+        },
+        {
+          "dominant_factor": "macro.equity",
+          "dominant_dimension": "D1",
+          "direction": "bullish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.2,
+          "composite_score": 0.5,
+          "direction_mix": {
+            "bullish": 3,
+            "bearish": 1
+          },
+          "source_mix": {
+            "cls": 3,
+            "sina_finance": 1
+          },
+          "article_count": 4,
+          "_weight": 2.88
+        },
+        {
+          "dominant_factor": "event.regulation",
+          "dominant_dimension": "NEWS",
+          "direction": "bullish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.0,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 2
+          },
+          "source_mix": {
+            "wallstreetcn": 2
+          },
+          "article_count": 2,
+          "_weight": 0.95
+        },
+        {
+          "dominant_factor": "macro.inflation",
+          "dominant_dimension": "D1",
+          "direction": "bullish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.2,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 2
+          },
+          "source_mix": {
+            "wallstreetcn": 2
+          },
+          "article_count": 2,
+          "_weight": 1.92
+        },
+        {
+          "dominant_factor": "flow.etf_flow",
+          "dominant_dimension": "D2",
+          "direction": "bullish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.5,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 1
+          },
+          "source_mix": {
+            "wallstreetcn": 1
+          },
+          "article_count": 1,
+          "_weight": 0.9
+        },
+        {
+          "dominant_factor": "macro.central_bank",
+          "dominant_dimension": "D1",
+          "direction": "bullish",
+          "horizon": "months",
+          "urgency": 0.2,
+          "impact": 1.2,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 1
+          },
+          "source_mix": {
+            "cls": 1
+          },
+          "article_count": 1,
+          "_weight": 0.72
+        },
+        {
+          "dominant_factor": "macro.dollar",
+          "dominant_dimension": "D1",
+          "direction": "bullish",
+          "horizon": "intraday",
+          "urgency": 0.9,
+          "impact": 1.2,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 1
+          },
+          "source_mix": {
+            "wallstreetcn": 1
+          },
+          "article_count": 1,
+          "_weight": 0.72
+        },
+        {
+          "dominant_factor": "macro.treasury",
+          "dominant_dimension": "D1",
+          "direction": "bullish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.2,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 1
+          },
+          "source_mix": {
+            "jin10": 1
+          },
+          "article_count": 1,
+          "_weight": 0.72
+        },
+        {
+          "dominant_factor": "sentiment.fear_greed",
+          "dominant_dimension": "D4",
+          "direction": "bearish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.0,
+          "composite_score": -1.0,
+          "direction_mix": {
+            "bearish": 1
+          },
+          "source_mix": {
+            "jin10": 1
+          },
+          "article_count": 1,
+          "_weight": 0.6
+        },
+        {
+          "dominant_factor": "sentiment.narrative",
+          "dominant_dimension": "D4",
+          "direction": "bullish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.0,
+          "composite_score": 1.0,
+          "direction_mix": {
+            "bullish": 1
+          },
+          "source_mix": {
+            "wallstreetcn": 1
+          },
+          "article_count": 1,
+          "_weight": 0.6
+        },
+        {
+          "dominant_factor": "technical.volatility",
+          "dominant_dimension": "D3",
+          "direction": "bearish",
+          "horizon": "days",
+          "urgency": 0.6,
+          "impact": 1.1,
+          "composite_score": -1.0,
+          "direction_mix": {
+            "bearish": 1
+          },
+          "source_mix": {
+            "sina_finance": 1
+          },
+          "article_count": 1,
+          "_weight": 0.66
+        }
+      ],
+      "n_claims": 32,
+      "weak_evidence": false,
+      "sources": {
+        "wallstreetcn": 11,
+        "cls": 8,
+        "sina_finance": 7,
+        "jin10": 6
+      }
+    }
+  },
+  "weak_evidence_sources": [
+    {
+      "source": "jin10",
+      "n_articles": 21,
+      "threshold": 30
+    }
+  ],
+  "newsflash": {
+    "degraded": true,
+    "reason": "newsflash_prior_disabled_by_default",
+    "n_factors": 0
+  },
+  "n_events": 302,
+  "n_claims": 32,
+  "n_without_body": 74
 }

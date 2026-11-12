@@ -34,6 +34,16 @@
         "PYTHONIOENCODING": "utf-8"
       }
     },
+    "rea-engineer": {
+      "description": "P1 engineer 角色 REA 网关（SPEC-33-D §2.7）：10 工具满额白名单（analyze/trace/compare/snapshot + data_fetch/data_store_read/recall）；角色外工具（如 eval_analyze）forbidden",
+      "command": "python3",
+      "args": ["<REPO_ROOT>/mcp_shells/l0_gateway/server.py", "--role", "engineer"],
+      "env": {
+        "PYTHONPATH": "<REPO_ROOT>",
+        "PYTHONUTF8": "1",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    },
     "debate-local": {
       "description": "本地 stdio 对抗辩论壳（32 Bot）：异步 job；LLM 经 ANTHROPIC_* 或 DASHSCOPE_API_KEY",
       "command": "python3",

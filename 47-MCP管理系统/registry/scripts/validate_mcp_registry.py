@@ -6,8 +6,8 @@
   2. shell_id 全局唯一 + 合法枚举 transport/port/domain/read_write/status
   3. tools[].name 在同一 shell 内不重复
   4. 存量壳（status!=planned）shell_path 存在
-  5. 每 shell 工具数 ≤ max_tools_per_shell (10)
-  6. 聚合 available+degraded 壳总工具数 ≤ max_total_tools (40) — R1 工具面膨胀门禁
+  5. 每 shell 工具数 ≤ max_tools_per_shell (默认 15)
+  6. 聚合 available+degraded 壳总工具数 ≤ max_total_tools (默认 80) — R1 工具面膨胀门禁
   7. write 工具 requires_mandate 必须为 true
   8. annotations.readOnlyHint 与 read_write=write 不冲突
   9. worker_roles（若存在）：引用的 shell_id/tool 必须存在；每角色工具数 ≤
