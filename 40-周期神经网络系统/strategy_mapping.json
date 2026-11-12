@@ -1,32 +1,33 @@
 {
-  "generated_at": "2026-11-10T05:25:47.220281+00:00",
+  "generated_at": "2026-11-10T16:03:39.213118+00:00",
   "module": "P4 策略映射（L5）",
   "inputs": {
-    "quadrant": "stagflation",
+    "quadrant": "overheat",
     "quadrant_confidence": "medium",
     "transmission_state": "neutral",
     "breadth_state": "mixed",
-    "breadth_pct": 66.7,
-    "stagflation_correction_active": true,
+    "breadth_pct": 61.5,
+    "stagflation_correction_active": false,
     "effective_confidence": "medium",
     "event_window_frozen": false,
     "clock_degraded": false
   },
   "strategy_suggestion": {
-    "stance": "防御",
+    "stance": "防御性进攻",
     "position_band_pct": [
-      0,
-      25
+      25,
+      55
     ],
     "crypto_layer_focus": [
-      "L1_anchor"
+      "L1_anchor",
+      "L2_major"
     ],
     "equity_sector_preference": [
-      "必需消费",
-      "医疗",
-      "公用事业"
+      "能源",
+      "材料",
+      "工业"
     ],
-    "rationale": "滞胀：增长回落+通胀高企，防御板块与现金为王"
+    "rationale": "过热：增长与通胀同步上行，受益于价格与产能的板块领先"
   },
   "adjustments_applied": {
     "transmission": {
@@ -48,31 +49,31 @@
     "聪明钱张力：CFTC 投机净多 vs 稳定币供应收缩并存，资金面内部矛盾"
   ],
   "risk_guards": {
-    "generated_at": "2026-11-10T05:25:47.217911+00:00",
+    "generated_at": "2026-11-10T16:03:38.911844+00:00",
     "guard_errors": [],
     "freshness": {
       "cycle_state": {
-        "age_hours": 0.1,
+        "age_hours": 0.0,
         "degrade_steps": 0,
         "stale": false
       },
       "asset_rotation": {
-        "age_hours": 0.1,
+        "age_hours": 0.0,
         "degrade_steps": 0,
         "stale": false
       },
       "sector_transmission": {
-        "age_hours": 0.1,
+        "age_hours": 0.0,
         "degrade_steps": 0,
         "stale": false
       },
       "stovall_breadth": {
-        "age_hours": 0.1,
+        "age_hours": 0.0,
         "degrade_steps": 0,
         "stale": false
       },
       "fund_flow": {
-        "age_hours": 0.1,
+        "age_hours": 0.0,
         "degrade_steps": 0,
         "stale": false
       },

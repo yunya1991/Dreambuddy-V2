@@ -1,6 +1,6 @@
 {
   "version": "financial-env-prereg-v1",
-  "spec": "48-涌现架构/docs/tech/SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md §7.2 / §7.6",
+  "spec": "48-涌现架构/docs/tech/SPEC-EMERGENCE-FINANCIAL-ENV-v2.8.md §7.2 / §7.6",
   "registered_at": "2026-11-12",
   "registry_discipline": "事前假设，事后不得修改（SPEC §7.3 / factor_gate E-1）；新增因子只能追加，禁止改写已有条目",
   "note": "注册时尚未在真实价格数据上运行过任何一次联合验证（仅跑过合成数据单测与无价格空跑）",

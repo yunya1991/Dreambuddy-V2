@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-10T05:25:14.706051+00:00",
+  "generated_at": "2026-11-10T16:03:37.795651+00:00",
   "data_source": "GeckoTerminal public API /networks/solana/new_pools",
   "sample": {
     "pages": 5,
@@ -7,36 +7,36 @@
   },
   "pump_platform": {
     "pump_fun_bonding_pools": {
-      "count": 90,
-      "fdv_median_usd": 2480.42,
-      "fdv_max_usd": 28502.11,
-      "vol24_total_usd": 102056.15,
-      "buys_24h": 2935,
-      "sells_24h": 2570,
-      "buy_sell_ratio": 1.142,
-      "chg24_median_pct": 0.0
+      "count": 82,
+      "fdv_median_usd": 2423.67,
+      "fdv_max_usd": 19413.37,
+      "vol24_total_usd": 272489.18,
+      "buys_24h": 3132,
+      "sells_24h": 2999,
+      "buy_sell_ratio": 1.044,
+      "chg24_median_pct": -15.91
     },
     "pumpswap_graduated_pools": {
-      "count": 6,
-      "fdv_median_usd": 64249.12,
-      "fdv_max_usd": 208423.21,
-      "vol24_total_usd": 410498.66,
-      "buys_24h": 2860,
-      "sells_24h": 1384,
-      "buy_sell_ratio": 2.066,
-      "chg24_median_pct": 1.54
+      "count": 2,
+      "fdv_median_usd": 8.59,
+      "fdv_max_usd": 15.61,
+      "vol24_total_usd": 1713.55,
+      "buys_24h": 146,
+      "sells_24h": 118,
+      "buy_sell_ratio": 1.237,
+      "chg24_median_pct": -98.4
     },
-    "graduation_rate_pct": 6.25
+    "graduation_rate_pct": 2.38
   },
   "other_dex_pools": {
-    "count": 4,
-    "fdv_median_usd": 35020.61,
-    "fdv_max_usd": 1001867.84,
-    "vol24_total_usd": 5217.54,
-    "buys_24h": 33,
-    "sells_24h": 11,
-    "buy_sell_ratio": 3.0,
-    "chg24_median_pct": 0.52
+    "count": 16,
+    "fdv_median_usd": 23578.19,
+    "fdv_max_usd": 9951210.74,
+    "vol24_total_usd": 164762.37,
+    "buys_24h": 1963,
+    "sells_24h": 1253,
+    "buy_sell_ratio": 1.567,
+    "chg24_median_pct": 0.0
   },
   "note": "毕业率=新池样本中 pumpswap 池占比（毕业=从 bonding curve 迁移到 AMM）；毕业率上升=meme 热度健康，下降=热度退潮；回购费用指标需链上数据，列为后续扩展"
 }

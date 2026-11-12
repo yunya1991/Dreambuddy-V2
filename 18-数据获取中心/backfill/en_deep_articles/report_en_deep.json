@@ -1,0 +1,13 @@
+{
+  "per_source": 20,
+  "crawled": 68,
+  "content_ok": 68,
+  "c1_drop": 0,
+  "by_source": {
+    "bitcoinmagazine": 10,
+    "cointelegraph": 20,
+    "decrypt": 20,
+    "newsbtc": 10,
+    "bitcoinist": 8
+  }
+}

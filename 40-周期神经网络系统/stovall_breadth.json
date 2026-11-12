@@ -1,36 +1,36 @@
 {
-  "generated_at": "2026-11-10T05:22:01.917550+00:00",
+  "generated_at": "2026-11-10T16:02:53.741762+00:00",
   "stovall_rotation": {
-    "quadrant": "stagflation",
+    "quadrant": "overheat",
     "quadrant_confidence": "medium",
-    "phase": "放缓（Slowdown）",
+    "phase": "扩张（Expansion）",
     "equity_sector_preference": [
-      "必需消费",
-      "医疗",
-      "公用事业"
+      "能源",
+      "材料",
+      "工业"
     ],
-    "crypto_layer_analog": "主流层（BTC 为主，防御性配置）",
-    "rationale": "增长放缓+通胀高企，防御性板块相对抗跌",
+    "crypto_layer_analog": "主流层（BTC/ETH/SOL）+ 增长型层",
+    "rationale": "增长与通胀同步上行，受益于价格与产能的板块领先",
     "note": "预注册先验映射，仅输出板块偏好建议，不产生交易信号；置信度非 high 时建议降权使用"
   },
   "market_breadth": {
-    "assets_above_ma200": 6,
-    "assets_valid": 9,
+    "assets_above_ma200": 8,
+    "assets_valid": 13,
     "assets_total": 13,
-    "breadth_pct": 66.7,
+    "breadth_pct": 61.5,
     "state": "mixed",
     "layer_breadth": {
       "L1_anchor": {
-        "above": 0,
-        "valid": 0,
+        "above": 1,
+        "valid": 1,
         "total": 1,
-        "breadth_pct": null
+        "breadth_pct": 100.0
       },
       "L2_major": {
-        "above": 4,
-        "valid": 4,
+        "above": 5,
+        "valid": 7,
         "total": 7,
-        "breadth_pct": 100.0
+        "breadth_pct": 71.4
       },
       "L3_growth": {
         "above": 1,
@@ -48,50 +48,50 @@
     "detail": {
       "BTC/USDT": {
         "layer": "L1_anchor",
-        "above": null,
-        "distance_pct": null,
+        "above": true,
+        "distance_pct": 0.14,
         "source": "cycle_state_anchor"
       },
       "ETH/USDT": {
         "layer": "L2_major",
-        "above": null,
-        "distance_pct": null,
+        "above": false,
+        "distance_pct": -5.71,
         "source": "cycle_state_anchor"
       },
       "SOL/USDT": {
         "layer": "L2_major",
-        "above": null,
-        "distance_pct": null,
+        "above": false,
+        "distance_pct": -7.42,
         "source": "cycle_state_anchor"
       },
       "UNI/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 42.14,
+        "distance_pct": 39.33,
         "source": "cycle_state_anchor"
       },
       "AAVE/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 15.73,
+        "distance_pct": 12.03,
         "source": "cycle_state_anchor"
       },
       "NEAR/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 36.67,
+        "distance_pct": 34.75,
         "source": "cycle_state_anchor"
       },
       "ARB/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 38.04,
+        "distance_pct": 29.34,
         "source": "cycle_state_anchor"
       },
       "LINK/USDT": {
         "layer": "L2_major",
-        "above": null,
-        "distance_pct": null,
+        "above": true,
+        "distance_pct": 1.59,
         "source": "cycle_state_anchor"
       },
       "AVAX/USDT": {

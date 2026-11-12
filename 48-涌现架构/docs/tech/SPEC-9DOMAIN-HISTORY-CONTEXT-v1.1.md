@@ -1,7 +1,7 @@
 # SPEC-9DOMAIN-HISTORY-CONTEXT（v1.3 P2 本地实施完成）— 9 域各维历史统计与维度上下文
 
 > **状态**：✅ v1.3 P2 本地实现完成（P0 + P1 全绿；云端真实回填待执行），实施落点见 §12.2
-> **父 SPEC**：[SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md](./SPEC-EMERGENCE-FINANCIAL-ENV-v1.0.md) §9（v2.8 已标注「需单独开 SPEC」）
+> **父 SPEC**：[SPEC-EMERGENCE-FINANCIAL-ENV-v2.8.md](./SPEC-EMERGENCE-FINANCIAL-ENV-v2.8.md) §9（v2.8 已标注「需单独开 SPEC」）
 > **负责域**：`9-基本面分析`（权威实现）、`18-数据获取中心`（数据地基 / 消费方）、`48-涌现架构`（消费方）
 > **版本**：v1.3 / 2026-11-12（契约仍以 v1.1 冻结口径为准，v1.2+ 仅补实施结果）
 > **本轮不做**：本地历史回填（交云端）、前端改造、1y/3y 全量长历史补齐

@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-11-10T17:41:02.856227+00:00",
+  "generated_at": "2026-11-11T16:25:01.596000+00:00",
   "stage": "X1-entry",
   "allowed_sources": [
     "40_main"
   ],
   "excluded_proxy_records": 0,
   "direction_distribution": {
-    "UP": 94,
-    "DOWN": 2
+    "UP": 100,
+    "DOWN": 4
   },
   "gate": {
-    "samples": 96,
+    "samples": 104,
     "min_samples": 90,
     "samples_ok": true,
-    "weeks": 1.71,
+    "weeks": 1.86,
     "min_weeks": 1.5,
     "weeks_ok": true,
-    "distinct_days": 12,
+    "distinct_days": 13,
     "x1_ready": true
   },
   "note": "代理信号记录已强制排除；X1 四项指标待门槛满足后启用"

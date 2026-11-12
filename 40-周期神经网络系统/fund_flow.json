@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-10T05:21:26.613773+00:00",
+  "generated_at": "2026-11-10T16:02:38.464187+00:00",
   "intra_sector_flow": {
     "layers": {
       "L1_anchor": {
@@ -8,43 +8,43 @@
       },
       "L2_major": {
         "n": 2,
-        "median_momentum_pct": -14.54,
-        "dispersion_pct": 0.92,
+        "median_momentum_pct": -18.36,
+        "dispersion_pct": 0.78,
         "leader": {
           "symbol": "ETH/USDT",
-          "momentum_pct": -13.89
+          "momentum_pct": -17.81
         },
         "laggard": {
           "symbol": "SOL/USDT",
-          "momentum_pct": -15.19
+          "momentum_pct": -18.91
         },
         "pattern": "同步下跌（资金集中流出）"
       },
       "L3_growth": {
         "n": 3,
-        "median_momentum_pct": -5.27,
-        "dispersion_pct": 13.37,
+        "median_momentum_pct": -8.66,
+        "dispersion_pct": 12.29,
         "leader": {
           "symbol": "AVAX/USDT",
-          "momentum_pct": 9.82
+          "momentum_pct": 5.22
         },
         "laggard": {
           "symbol": "ADA/USDT",
-          "momentum_pct": -15.63
+          "momentum_pct": -18.13
         },
         "pattern": "分化轮动（资金选择性流动）"
       },
       "L4_meme": {
         "n": 3,
-        "median_momentum_pct": 3.34,
-        "dispersion_pct": 42.0,
+        "median_momentum_pct": 1.74,
+        "dispersion_pct": 42.28,
         "leader": {
           "symbol": "PEPE/USDT",
-          "momentum_pct": 51.78
+          "momentum_pct": 50.55
         },
         "laggard": {
           "symbol": "WIF/USDT",
-          "momentum_pct": -22.95
+          "momentum_pct": -23.83
         },
         "pattern": "分化轮动（资金选择性流动）"
       }
@@ -53,138 +53,164 @@
   },
   "cross_asset_flow": {
     "category_momentum_pct": {
-      "加密": 15.48,
-      "treasury_yield": 3.51,
-      "dollar": 1.84,
-      "equity": -2.62,
-      "gold": -6.71
+      "加密": 11.64,
+      "债券(收益率)": 3.85,
+      "美元": 2.32,
+      "股票": -5.09,
+      "黄金": -8.25
     },
     "asset_ranking": [
       {
         "asset": "crypto_btc",
-        "momentum_pct": 17.92
+        "momentum_pct": 15.38
       },
       {
         "asset": "crypto_eth",
-        "momentum_pct": 13.04
+        "momentum_pct": 7.91
       },
       {
-        "asset": "treasury_yield",
-        "momentum_pct": 3.51
+        "asset": "rates_10y",
+        "momentum_pct": 3.85
       },
       {
-        "asset": "dollar",
-        "momentum_pct": 1.84
+        "asset": "usd_dxy",
+        "momentum_pct": 2.32
       },
       {
-        "asset": "equity",
-        "momentum_pct": -2.62
+        "asset": "equity_spx",
+        "momentum_pct": -5.09
       },
       {
-        "asset": "gold",
-        "momentum_pct": -6.71
+        "asset": "gold_xaut",
+        "momentum_pct": -8.25
       }
     ],
     "flow_matrix": [
       {
         "from": "加密",
-        "to": "treasury_yield",
-        "momentum_gap_pct": 11.97,
+        "to": "债券(收益率)",
+        "momentum_gap_pct": 7.79,
         "strength": "中"
       },
       {
         "from": "加密",
-        "to": "dollar",
-        "momentum_gap_pct": 13.64,
+        "to": "美元",
+        "momentum_gap_pct": 9.32,
         "strength": "中"
       },
       {
         "from": "加密",
-        "to": "equity",
-        "momentum_gap_pct": 18.1,
+        "to": "股票",
+        "momentum_gap_pct": 16.73,
         "strength": "强"
       },
       {
         "from": "加密",
-        "to": "gold",
-        "momentum_gap_pct": 22.19,
+        "to": "黄金",
+        "momentum_gap_pct": 19.89,
         "strength": "强"
       },
       {
-        "from": "treasury_yield",
-        "to": "dollar",
-        "momentum_gap_pct": 1.67,
+        "from": "债券(收益率)",
+        "to": "美元",
+        "momentum_gap_pct": 1.53,
         "strength": "弱"
       },
       {
-        "from": "treasury_yield",
-        "to": "equity",
-        "momentum_gap_pct": 6.13,
+        "from": "债券(收益率)",
+        "to": "股票",
+        "momentum_gap_pct": 8.94,
         "strength": "中"
       },
       {
-        "from": "treasury_yield",
-        "to": "gold",
-        "momentum_gap_pct": 10.22,
+        "from": "债券(收益率)",
+        "to": "黄金",
+        "momentum_gap_pct": 12.1,
         "strength": "中"
       },
       {
-        "from": "dollar",
-        "to": "equity",
-        "momentum_gap_pct": 4.46,
-        "strength": "弱"
-      },
-      {
-        "from": "dollar",
-        "to": "gold",
-        "momentum_gap_pct": 8.55,
+        "from": "美元",
+        "to": "股票",
+        "momentum_gap_pct": 7.41,
         "strength": "中"
       },
       {
-        "from": "equity",
-        "to": "gold",
-        "momentum_gap_pct": 4.09,
+        "from": "美元",
+        "to": "黄金",
+        "momentum_gap_pct": 10.57,
+        "strength": "中"
+      },
+      {
+        "from": "股票",
+        "to": "黄金",
+        "momentum_gap_pct": 3.16,
         "strength": "弱"
       }
     ],
     "inflow_leader": [
       "加密",
-      15.48
+      11.64
     ],
     "outflow_leader": [
-      "gold",
-      -6.71
+      "黄金",
+      -8.25
     ],
     "note": "动量差为正=资金从弱类别流向强类别；rates_10y 上行=债券价格走弱"
   },
   "correlation_matrix": {
-    "spx_vs_10y": null,
-    "gold_vs_usd": null,
-    "btc_vs_spx": null,
+    "spx_vs_10y": 0.22,
+    "gold_vs_usd": -0.884,
+    "btc_vs_spx": 0.178,
     "note": "60 日滚动皮尔逊相关系数；股债相关性由负转正为体制切换经典信号"
   },
   "rs_ratio_lines": {
-    "gold_vs_spx": null,
-    "btc_vs_spx": null,
+    "gold_vs_spx": {
+      "last_ratio": 0.553896,
+      "ma20": 0.529611,
+      "above_ma20": true,
+      "ma20_direction": "down"
+    },
+    "btc_vs_spx": {
+      "last_ratio": 10.346776,
+      "ma20": 10.503472,
+      "above_ma20": false,
+      "ma20_direction": "down"
+    },
     "note": "RS 比率线 + 20 日均线方向；above_ma20=true 表示相对强势"
   },
   "spread_indicators": {
-    "t10y2y": null,
-    "hy_oas": null,
+    "t10y2y": {
+      "latest": 0.32,
+      "date": "2026-11-09",
+      "change_20d": -0.12,
+      "direction": "narrowing"
+    },
+    "hy_oas": {
+      "latest": 3.42,
+      "date": "2026-11-06",
+      "change_20d": 0.31,
+      "direction": "widening"
+    },
     "note": "期限利差倒挂=衰退预警；信用利差走阔=风险偏好收缩"
   },
   "smart_money": {
-    "generated_at": "2026-11-10T05:22:01.856192+00:00",
+    "generated_at": "2026-11-10T16:02:43.662073+00:00",
     "cftc_btc": {
-      "date": null,
-      "noncomm_net": null,
-      "noncomm_long": null,
-      "noncomm_short": null,
-      "open_interest": null,
+      "date": "2026-11-03",
+      "noncomm_net": 2230,
+      "noncomm_long": 15644,
+      "noncomm_short": 13414,
+      "open_interest": 17527,
       "note": "非商业净头寸>0=投机资金净多；周更数据"
     },
     "stablecoin_supply": {
-      "usdt": {},
+      "usdt": {
+        "circulating_usd": 176220805707.3642,
+        "change_1d_pct": -0.3224,
+        "change_7d_pct": -1.3076,
+        "change_30d_pct": -4.2217,
+        "date": "2026-11-10"
+      },
       "note": "稳定币供应增长=加密资金流入代理；收缩=流出信号"
     },
     "note": "聪明钱观测：CFTC 投机头寸 + 稳定币供应变化"

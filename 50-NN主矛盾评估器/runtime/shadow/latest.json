@@ -1,12 +1,12 @@
 {
-  "run_ts": "2026-11-10T12:07:01.333977Z",
+  "run_ts": "2026-11-12T15:37:01.452390Z",
   "status": "ok",
   "reason": null,
-  "evidence_count": 45,
+  "evidence_count": 44,
   "decision": {
-    "signal_id": "50-nn|shadow|20261110T120701Z",
+    "signal_id": "50-nn|shadow|20261112T153701Z",
     "source": "50-nn",
-    "ts": "2026-11-10T12:07:01.333977Z",
+    "ts": "2026-11-12T15:37:01.452390Z",
     "symbol": "MULTI",
     "direction": "long",
     "confidence": 1.0,
@@ -16,46 +16,19 @@
     "mode": "shadow",
     "shadow": true,
     "payload": {
-      "path_count": 36,
-      "score": 6.258379,
-      "position_pct": 25.0,
+      "path_count": 37,
+      "score": 4.768566,
+      "position_pct": 55.0,
       "constraint_freeze": false,
       "constraint_degraded": [
         "direction_leak_check"
       ],
       "paths": [
         {
-          "path_id": "ev:11-bcrm-tactical:LINK:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.937221,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:SNDK:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.925354,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:PUMP:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.917443,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
           "path_id": "ev:11-bcrm-tactical:MSTR:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "long",
-          "confidence": 0.895404,
+          "confidence": 0.932782,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
@@ -64,7 +37,25 @@
           "path_id": "ev:11-bcrm-tactical:SKHYNIX:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "long",
-          "confidence": 0.885609,
+          "confidence": 0.931181,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:LINK:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.927414,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:SNDK:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.920728,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
@@ -73,52 +64,7 @@
           "path_id": "ev:11-bcrm-tactical:AMZN:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "short",
-          "confidence": 0.864041,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:BMNR:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.852833,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:ETH:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.842002,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:MU:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.831924,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:COIN:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.828816,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:HYPE:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.822223,
+          "confidence": 0.914795,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
@@ -127,25 +73,7 @@
           "path_id": "ev:11-bcrm-tactical:XAG:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "long",
-          "confidence": 0.820999,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:CRCL:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.819492,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:OKB:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.81158,
+          "confidence": 0.913477,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
@@ -154,79 +82,43 @@
           "path_id": "ev:11-bcrm-tactical:UNI:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "long",
-          "confidence": 0.786716,
+          "confidence": 0.910087,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
         },
         {
-          "path_id": "ev:40-cycle:MACRO:D1:days:trend",
-          "source": "40-cycle",
+          "path_id": "ev:11-bcrm-tactical:HYPE:D3:hours:trend",
+          "source": "11-bcrm-tactical",
           "direction": "long",
-          "confidence": 0.76829,
-          "dimension": "D1",
-          "horizon": "days",
+          "confidence": 0.869027,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:MU:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.834372,
+          "dimension": "D3",
+          "horizon": "hours",
           "intent": "trend"
         },
         {
           "path_id": "ev:11-bcrm-tactical:BNB:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "long",
-          "confidence": 0.764018,
+          "confidence": 0.828721,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
         },
         {
-          "path_id": "ev:11-bcrm-tactical:XAU:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.763641,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:NVDA:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.667762,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bdsm:BTC:C6:days:trend",
-          "source": "11-bdsm",
-          "direction": "neutral",
-          "confidence": 0.621971,
-          "dimension": "C6",
-          "horizon": "days",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bdsm:ETH:C6:days:trend",
-          "source": "11-bdsm",
-          "direction": "neutral",
-          "confidence": 0.621971,
-          "dimension": "C6",
-          "horizon": "days",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bdsm:SOL:C6:days:trend",
-          "source": "11-bdsm",
-          "direction": "neutral",
-          "confidence": 0.621971,
-          "dimension": "C6",
-          "horizon": "days",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:GOOGL:D3:hours:trend",
+          "path_id": "ev:11-bcrm-tactical:SPCX:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "short",
-          "confidence": 0.609557,
+          "confidence": 0.817326,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
@@ -234,80 +126,8 @@
         {
           "path_id": "ev:11-bcrm-tactical:ZEC:D3:hours:trend",
           "source": "11-bcrm-tactical",
-          "direction": "short",
-          "confidence": 0.594958,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm:precious_metal:D3:days:trend",
-          "source": "11-bcrm",
           "direction": "long",
-          "confidence": 0.567536,
-          "dimension": "D3",
-          "horizon": "days",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm:us_stock:D3:days:trend",
-          "source": "11-bcrm",
-          "direction": "long",
-          "confidence": 0.563057,
-          "dimension": "D3",
-          "horizon": "days",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:AAVE:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "short",
-          "confidence": 0.561052,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm:crypto_usdt:D3:days:trend",
-          "source": "11-bcrm",
-          "direction": "long",
-          "confidence": 0.556589,
-          "dimension": "D3",
-          "horizon": "days",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:SPCX:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "short",
-          "confidence": 0.547866,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:BTC:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.538165,
-          "dimension": "D3",
-          "horizon": "hours",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:43-strategic:BTC/USDT:D1:days:trend",
-          "source": "43-strategic",
-          "direction": "neutral",
-          "confidence": 0.513141,
-          "dimension": "D1",
-          "horizon": "days",
-          "intent": "trend"
-        },
-        {
-          "path_id": "ev:11-bcrm-tactical:SOL:D3:hours:trend",
-          "source": "11-bcrm-tactical",
-          "direction": "long",
-          "confidence": 0.510004,
+          "confidence": 0.815537,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
@@ -316,7 +136,196 @@
           "path_id": "ev:11-bcrm-tactical:ARB:D3:hours:trend",
           "source": "11-bcrm-tactical",
           "direction": "short",
-          "confidence": 0.50473,
+          "confidence": 0.812053,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:PUMP:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.810263,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:XAU:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.793312,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:CRCL:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.790675,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:OKB:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.769581,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:BMNR:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "short",
+          "confidence": 0.765249,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:BTC:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "short",
+          "confidence": 0.758092,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:ETH:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.75376,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:GOOGL:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "short",
+          "confidence": 0.694431,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:SMCI:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "short",
+          "confidence": 0.628981,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bdsm:BTC:C6:days:trend",
+          "source": "11-bdsm",
+          "direction": "neutral",
+          "confidence": 0.621965,
+          "dimension": "C6",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bdsm:ETH:C6:days:trend",
+          "source": "11-bdsm",
+          "direction": "neutral",
+          "confidence": 0.621965,
+          "dimension": "C6",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bdsm:SOL:C6:days:trend",
+          "source": "11-bdsm",
+          "direction": "neutral",
+          "confidence": 0.621965,
+          "dimension": "C6",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:40-cycle:MACRO:D1:days:trend",
+          "source": "40-cycle",
+          "direction": "long",
+          "confidence": 0.602675,
+          "dimension": "D1",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:NVDA:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.577562,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:INIT:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.563907,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm:precious_metal:D3:days:trend",
+          "source": "11-bcrm",
+          "direction": "long",
+          "confidence": 0.550414,
+          "dimension": "D3",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm:us_stock:D3:days:trend",
+          "source": "11-bcrm",
+          "direction": "long",
+          "confidence": 0.545936,
+          "dimension": "D3",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm:crypto_usdt:D3:days:trend",
+          "source": "11-bcrm",
+          "direction": "long",
+          "confidence": 0.544443,
+          "dimension": "D3",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:COIN:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "long",
+          "confidence": 0.52831,
+          "dimension": "D3",
+          "horizon": "hours",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:43-strategic:BTC/USDT:D1:days:trend",
+          "source": "43-strategic",
+          "direction": "neutral",
+          "confidence": 0.513137,
+          "dimension": "D1",
+          "horizon": "days",
+          "intent": "trend"
+        },
+        {
+          "path_id": "ev:11-bcrm-tactical:SOL:D3:hours:trend",
+          "source": "11-bcrm-tactical",
+          "direction": "short",
+          "confidence": 0.510511,
           "dimension": "D3",
           "horizon": "hours",
           "intent": "trend"
@@ -325,30 +334,84 @@
           "path_id": "ev:11-bdsm:ZEC:C6:days:trend",
           "source": "11-bdsm",
           "direction": "neutral",
-          "confidence": 0.497576,
+          "confidence": 0.497572,
           "dimension": "C6",
           "horizon": "days",
           "intent": "trend"
         },
         {
-          "path_id": "ev:11-bcrm-tactical:SOXS:D3:hours:trend",
-          "source": "11-bcrm-tactical",
+          "path_id": "ev:40-divergence:MACRO:D1:days:trend",
+          "source": "40-divergence",
           "direction": "long",
-          "confidence": 0.332075,
-          "dimension": "D3",
-          "horizon": "hours",
+          "confidence": 0.361618,
+          "dimension": "D1",
+          "horizon": "days",
           "intent": "trend"
         },
         {
           "path_id": "ev:40-resonance:MACRO:D1:days:trend",
           "source": "40-resonance",
           "direction": "neutral",
-          "confidence": 0.256215,
+          "confidence": 0.200938,
           "dimension": "D1",
           "horizon": "days",
           "intent": "trend"
         }
-      ]
-    }
+      ],
+      "proposed_trigger": "default",
+      "trigger_flap": {
+        "locked": false,
+        "switches_in_window": 0,
+        "reason": "within_limit"
+      },
+      "priors_40": {
+        "source": "40/factor_contradiction_priors.json",
+        "schema_version": "factor_contradiction_priors.v0.1",
+        "generated_at": "2026-11-11T05:47:25.574516+00:00",
+        "n_factor_priors": 34,
+        "top_factors": [
+          {
+            "factor": "event.regulation",
+            "dominant_direction": "bullish",
+            "total_weight": 53.0
+          },
+          {
+            "factor": "event.hack",
+            "dominant_direction": "bullish",
+            "total_weight": 27.0
+          },
+          {
+            "factor": "flow.oi",
+            "dominant_direction": "bullish",
+            "total_weight": 22.8
+          },
+          {
+            "factor": "event.listing",
+            "dominant_direction": "bullish",
+            "total_weight": 19.0
+          },
+          {
+            "factor": "sentiment.narrative",
+            "dominant_direction": "bullish",
+            "total_weight": 17.0
+          }
+        ],
+        "contradiction_n_events": 1376,
+        "contradiction_by_type": {
+          "individual_whole": 1048,
+          "short_long": 170,
+          "macro_micro": 158
+        }
+      }
+    },
+    "execution_rights": "paper",
+    "mandate_id": null,
+    "kill_switch": false,
+    "execution": {
+      "outcome": "paper",
+      "allowed": true,
+      "reason": "paper"
+    },
+    "trigger": "default"
   }
 }

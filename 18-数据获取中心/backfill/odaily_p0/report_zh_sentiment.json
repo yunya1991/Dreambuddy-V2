@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-11-11T01:37:43+08:00",
+  "model": "yiyanghkust/finbert-tone-chinese",
+  "source": "/home/luke/dreambuddy/18-数据获取中心/backfill/odaily_p0/contents_all.jsonl",
+  "total_articles": 500,
+  "scored_total": 500,
+  "newly_scored": 497,
+  "label_distribution": {
+    "Positive": 61,
+    "Neutral": 427,
+    "Negative": 12
+  },
+  "mean_score": 0.1248,
+  "elapsed_sec": 10402.1
+}

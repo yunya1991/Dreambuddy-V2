@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-11-11T20:27:55+08:00",
+  "model": "ProsusAI/finbert (local)",
+  "source": "/home/luke/dreambuddy/18-数据获取中心/backfill/en_deep_articles/contents_all.jsonl",
+  "total_articles": 140,
+  "scored_total": 90,
+  "newly_scored": 88,
+  "label_distribution": {
+    "positive": 5,
+    "neutral": 63,
+    "negative": 22
+  },
+  "mean_score": -0.1343,
+  "elapsed_sec": 1059.1
+}

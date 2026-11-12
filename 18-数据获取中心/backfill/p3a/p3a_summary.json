@@ -1,26 +1,25 @@
 {
   "n_total": 500,
-  "n_measurable": 204,
-  "n_agree": 50,
-  "agreement_rate": 0.24509803921568626,
+  "n_measurable": 115,
+  "n_agree": 15,
+  "agreement_rate": 0.13043478260869565,
   "gate_counts": {
-    "unmeasurable": 296,
-    "no_signal": 154,
-    "consistent": 45,
-    "divergent_but_valid": 5
+    "no_signal": 100,
+    "consistent": 15,
+    "unmeasurable": 385
   },
   "n_articles": 500,
-  "n_with_dominant": 379,
-  "n_no_dominant": 121,
+  "n_with_dominant": 396,
+  "n_no_dominant": 104,
   "dominant_dimension_dist": {
-    "D4": 64,
-    "NEWS": 129,
-    "D1": 85,
-    "D2": 50,
-    "C7": 15,
-    "D3": 36
+    "D1": 92,
+    "D2": 54,
+    "D3": 36,
+    "D4": 67,
+    "NEWS": 132,
+    "C7": 15
   },
-  "n_as_of_after_kline_end": 43,
+  "n_as_of_after_kline_end": 48,
   "kline_last_date": "2026-10-29",
   "gate_weights": {
     "consistent": 1.0,
@@ -28,5 +27,5 @@
     "no_signal": 0.3
   },
   "min_z_valid": 1.0,
-  "source": "/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/backfill/odaily_p0/contents.jsonl"
+  "source": "/home/luke/dreambuddy/18-数据获取中心/backfill/odaily_p0/contents.jsonl"
 }

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-10T05:20:56.032803+00:00",
+  "generated_at": "2026-11-10T16:02:24.204028+00:00",
   "layers": {
     "L1_anchor": [
       "BTC/USDT"
@@ -22,90 +22,90 @@
   "assets": {
     "BTC/USDT": {
       "layer": "L1_anchor",
-      "momentum_3m_pct": -4.39,
+      "momentum_3m_pct": -6.44,
       "samples": 120,
       "relative_strength_vs_btc": 0.0
     },
     "ETH/USDT": {
       "layer": "L2_major",
-      "momentum_3m_pct": -13.89,
+      "momentum_3m_pct": -17.81,
       "samples": 120,
-      "relative_strength_vs_btc": -9.5
+      "relative_strength_vs_btc": -11.37
     },
     "SOL/USDT": {
       "layer": "L2_major",
-      "momentum_3m_pct": -15.19,
+      "momentum_3m_pct": -18.91,
       "samples": 120,
-      "relative_strength_vs_btc": -10.8
+      "relative_strength_vs_btc": -12.47
     },
     "AVAX/USDT": {
       "layer": "L3_growth",
-      "momentum_3m_pct": 9.82,
+      "momentum_3m_pct": 5.22,
       "samples": 120,
-      "relative_strength_vs_btc": 14.21
+      "relative_strength_vs_btc": 11.66
     },
     "LINK/USDT": {
       "layer": "L3_growth",
-      "momentum_3m_pct": -10.01,
+      "momentum_3m_pct": -13.08,
       "samples": 120,
-      "relative_strength_vs_btc": -5.62
+      "relative_strength_vs_btc": -6.64
     },
     "ADA/USDT": {
       "layer": "L3_growth",
-      "momentum_3m_pct": -15.63,
+      "momentum_3m_pct": -18.13,
       "samples": 120,
-      "relative_strength_vs_btc": -11.24
+      "relative_strength_vs_btc": -11.69
     },
     "DOGE/USDT": {
       "layer": "L4_meme",
-      "momentum_3m_pct": -18.8,
+      "momentum_3m_pct": -21.49,
       "samples": 120,
-      "relative_strength_vs_btc": -14.41
+      "relative_strength_vs_btc": -15.05
     },
     "PEPE/USDT": {
       "layer": "L4_meme",
-      "momentum_3m_pct": 51.78,
+      "momentum_3m_pct": 50.55,
       "samples": 120,
-      "relative_strength_vs_btc": 56.17
+      "relative_strength_vs_btc": 56.99
     },
     "WIF/USDT": {
       "layer": "L4_meme",
-      "momentum_3m_pct": -22.95,
+      "momentum_3m_pct": -23.83,
       "samples": 120,
-      "relative_strength_vs_btc": -18.56
+      "relative_strength_vs_btc": -17.39
     }
   },
   "layer_median_momentum_3m_pct": {
-    "L1_anchor": -4.39,
-    "L2_major": -14.54,
-    "L3_growth": -10.01,
-    "L4_meme": -18.8
+    "L1_anchor": -6.44,
+    "L2_major": -18.36,
+    "L3_growth": -13.08,
+    "L4_meme": -21.49
   },
   "transmission": {
     "state": "expanding",
-    "meme_vs_major_gap_pct": -4.26,
-    "btc_above_ma200": null,
-    "regime": "bear_or_transition"
+    "meme_vs_major_gap_pct": -3.13,
+    "btc_above_ma200": true,
+    "regime": "healthy_bull_expansion"
   },
   "note": "expanding=资金沿传导链下沉扩散；contracting=资金收缩回主流层（周期晚期信号）；regime 联动 MA200 牛熊锚点",
   "breadth": {
-    "assets_above_ma200": 6,
-    "assets_valid": 9,
+    "assets_above_ma200": 8,
+    "assets_valid": 13,
     "assets_total": 13,
-    "breadth_pct": 66.7,
+    "breadth_pct": 61.5,
     "state": "mixed",
     "layer_breadth": {
       "L1_anchor": {
-        "above": 0,
-        "valid": 0,
+        "above": 1,
+        "valid": 1,
         "total": 1,
-        "breadth_pct": null
+        "breadth_pct": 100.0
       },
       "L2_major": {
-        "above": 4,
-        "valid": 4,
+        "above": 5,
+        "valid": 7,
         "total": 7,
-        "breadth_pct": 100.0
+        "breadth_pct": 71.4
       },
       "L3_growth": {
         "above": 1,
@@ -123,50 +123,50 @@
     "detail": {
       "BTC/USDT": {
         "layer": "L1_anchor",
-        "above": null,
-        "distance_pct": null,
+        "above": true,
+        "distance_pct": 0.14,
         "source": "cycle_state_anchor"
       },
       "ETH/USDT": {
         "layer": "L2_major",
-        "above": null,
-        "distance_pct": null,
+        "above": false,
+        "distance_pct": -5.71,
         "source": "cycle_state_anchor"
       },
       "SOL/USDT": {
         "layer": "L2_major",
-        "above": null,
-        "distance_pct": null,
+        "above": false,
+        "distance_pct": -7.42,
         "source": "cycle_state_anchor"
       },
       "UNI/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 42.14,
+        "distance_pct": 39.33,
         "source": "cycle_state_anchor"
       },
       "AAVE/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 15.73,
+        "distance_pct": 12.03,
         "source": "cycle_state_anchor"
       },
       "NEAR/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 36.67,
+        "distance_pct": 34.75,
         "source": "cycle_state_anchor"
       },
       "ARB/USDT": {
         "layer": "L2_major",
         "above": true,
-        "distance_pct": 38.04,
+        "distance_pct": 29.34,
         "source": "cycle_state_anchor"
       },
       "LINK/USDT": {
         "layer": "L2_major",
-        "above": null,
-        "distance_pct": null,
+        "above": true,
+        "distance_pct": 1.59,
         "source": "cycle_state_anchor"
       },
       "AVAX/USDT": {
