@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 
 _22_DIR = Path(__file__).resolve().parents[1]
@@ -172,6 +173,60 @@ def test_position_guard_allows_flat_symbol(monkeypatch, tmp_path):
     row = json.loads((tmp_path / "fills.jsonl").read_text(encoding="utf-8").splitlines()[0])
     assert row["request"]["notional_usdt"] == 73.0
     assert row["order_placed"] is True
+
+
+def test_cooldown_blocks_reentry_within_8h(monkeypatch, tmp_path):
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    monkeypatch.setattr(
+        ex, "_bridge_call", lambda payload, timeout=90: {"ok": True, "positions": []}
+    )
+    (tmp_path / "processed.json").write_text(
+        json.dumps({"processed": {}, "last_entry": {"BTC-USDT-SWAP": time.time()}}),
+        encoding="utf-8",
+    )
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(
+        json.dumps(_live_decision(decision_id="50-nn|new-batch"), ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 0
+    assert result["skipped"] == 1
+    assert result["cooldown_rejected"][0]["symbol"] == "BTC-USDT-SWAP"
+    assert result["cooldown_rejected"][0]["remaining_sec"] > 8 * 3600 - 60
+    assert not (tmp_path / "fills.jsonl").exists()
+
+
+def test_cooldown_expires_after_8h_and_records_entry(monkeypatch, tmp_path):
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    monkeypatch.setattr(
+        ex,
+        "_bridge_call",
+        lambda payload, timeout=90: (
+            {"ok": True, "positions": []}
+            if payload.get("action") == "status"
+            else {"ok": True, "order_id": "ord-1", "reference_px": 100.0}
+        ),
+    )
+    (tmp_path / "processed.json").write_text(
+        json.dumps({"processed": {}, "last_entry": {"BTC-USDT-SWAP": time.time() - 9 * 3600}}),
+        encoding="utf-8",
+    )
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    before = time.time()
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 1
+    state = json.loads((tmp_path / "processed.json").read_text(encoding="utf-8"))
+    assert state["last_entry"]["BTC-USDT-SWAP"] >= before
 
 
 def test_risk_bridge_real_gate_contract():

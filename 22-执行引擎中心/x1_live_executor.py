@@ -18,6 +18,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -38,6 +39,7 @@ MAX_NOTIONAL_USDT = 100.0
 MAX_LEVERAGE = 3
 DEFAULT_SL_PCT = 1.5
 DEFAULT_TP_PCT = 3.0
+COOLDOWN_HOURS = float(os.environ.get("22_LIVE_COOLDOWN_HOURS", "8"))
 
 
 def _now() -> str:
@@ -142,6 +144,18 @@ def _bridge_call(payload: dict[str, Any], timeout: int = 90) -> dict[str, Any]:
         }
 
 
+def _cooldown_remaining(symbol: str, last_entry: dict[str, Any]) -> float:
+    """返回该标的冷静期剩余秒数（0 表示可开仓）。"""
+    try:
+        last = float(last_entry.get(symbol) or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    if last <= 0:
+        return 0.0
+    remaining = last + COOLDOWN_HOURS * 3600 - time.time()
+    return max(remaining, 0.0)
+
+
 def _position_guard(decision: dict[str, Any]) -> str | None:
     """真实下单前查 11 持仓：同标的已有仓位则跳过，避免每轮重复开仓。"""
     status = _bridge_call({"action": "status"}, timeout=30)
@@ -164,6 +178,7 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
     decisions = _read_outbox(outbox)
     state = _load_state()
     processed: dict[str, Any] = state.setdefault("processed", {})
+    last_entry: dict[str, Any] = state.setdefault("last_entry", {})
     result: dict[str, Any] = {
         "run_ts": _now(),
         "status": "ok",
@@ -184,6 +199,21 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
         if reason:
             processed[decision_id] = {"status": "skipped", "reason": reason, "ts": _now()}
             result["skipped"] += 1
+            continue
+
+        # 冷静期：同标的距上次成功开仓不足 COOLDOWN_HOURS 则不再建仓
+        symbol = str(decision.get("symbol") or "").upper()
+        remain = _cooldown_remaining(symbol, last_entry)
+        if remain > 0:
+            processed[decision_id] = {
+                "status": "cooldown",
+                "ts": _now(),
+                "remaining_sec": int(remain),
+            }
+            result["skipped"] += 1
+            result.setdefault("cooldown_rejected", []).append(
+                {"decision_id": decision_id, "symbol": symbol, "remaining_sec": int(remain)}
+            )
             continue
 
         # P0-1/2/3：13 事前风控 + 真实权益 + 定容（fail-closed）
@@ -245,6 +275,8 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
                 "ts": _now(),
                 "result": outcome,
             }
+            if outcome.get("ok"):
+                last_entry[symbol] = time.time()
         result["results"].append(record)
         if outcome.get("ok"):
             result["executed"] += 1
