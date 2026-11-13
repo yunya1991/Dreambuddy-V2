@@ -214,46 +214,73 @@ class DimensionForceEvaluator:
     # D1 宏观利率维度
     # ------------------------------------------------------------------
     def evaluate_d1(self) -> dict[str, Any]:
-        """CPI surprise + fedwatch 加息概率 → 风险资产多空力量.
+        """宏观利率/流动性 → 风险资产多空力量.
 
-        逻辑: surprise>0（鹰派超预期）/ hike_prob 高 → 加息预期↑ → 风险资产空头力量↑
-              surprise<0（鸽派）/ hike_prob 低 → 空头力量↓（甚至利多）
+        核心信号: CPI surprise + fedwatch 加息概率（事件驱动）.
+        增强信号:
+          WALCL 联储表 30d 动量 → 扩表=流动性释放=多头; 缩表=空头.
+          PPI 90d z-score → 工业品通胀高=加息压力=空头.
+        各信号按权重合成, 缺失项自动降权.
         """
         try:
+            now = int(time.time())
             surprise = self._query_latest("cpi", "surprise")
             hike = self._query_latest("fedwatch", "hike_prob")
             if surprise is None and hike is None:
                 return self._neutral("no-macro-data")
-            # 陈旧检查（宏观数据允许 35 天陈旧——CPI 月度发布）
-            now = int(time.time())
-            # 方向由 surprise 符号决定（事件驱动）:
-            #   surprise > 0 超预期鹰派 → 加息预期↑ → 风险资产空头力量
-            #   surprise < 0 不及预期鸽派 → 空头力量减弱（利多）
-            # z-score 仅调制强度（相对历史 surprise 分布的异常程度），不决定方向
+
             raw = 0.0
             weight_sum = 0.0
+
+            # ── CPI surprise（主导, 事件驱动）──
             if surprise is not None and now - surprise[1] < 35 * 24 * 3600:
                 hist = [v for v, _ in self._query_history("cpi", "surprise", self.WINDOW_D1)]
-                z_s = abs(self._zscore(surprise[0], hist))  # 异常程度（无符号）
-                # 方向: 符号；强度: |surprise| 归一 + z 异常度加权
+                z_s = abs(self._zscore(surprise[0], hist))
                 sign = 1.0 if surprise[0] > 0 else (-1.0 if surprise[0] < 0 else 0.0)
-                mag = self._clamp01(abs(surprise[0]) / 1.0)  # |surprise|≥1 满强度
+                mag = self._clamp01(abs(surprise[0]) / 1.0)
                 z_mag = self._clamp01(z_s / 2.0)
-                s_force = sign * max(mag, z_mag * 0.8)  # 取幅度与异常度较大者
-                raw += s_force * 0.7  # surprise 主导 70%
-                weight_sum += 0.7
+                s_force = sign * max(mag, z_mag * 0.8)
+                raw += s_force * 0.5
+                weight_sum += 0.5
+
+            # ── fedwatch 加息概率 ──
             if hike is not None and now - hike[1] < _STALE_SEC:
-                # hike_prob 辅助 30%: >0.5 增强空头, <0.5 减弱
-                raw += (float(hike[0]) - 0.5) * 2.0 * 0.3
-                weight_sum += 0.3
+                raw += (float(hike[0]) - 0.5) * 2.0 * 0.2
+                weight_sum += 0.2
+
+            # ── WALCL 联储表 30d 动量（流动性）──
+            walcl = self._query_latest("WALCL", "value")
+            if walcl is not None and now - walcl[1] < _STALE_SEC:
+                cutoff = now - 30 * 24 * 3600
+                hist_w = [
+                    v for v, t in self._query_history("WALCL", "value", 60 * 24 * 3600)
+                    if t <= cutoff
+                ]
+                if hist_w and walcl[0] > 0:
+                    chg = (walcl[0] / hist_w[-1] - 1.0) * 100  # 30d 变化率 %
+                    # 扩表(正) → 流动性释放 → 多头(raw 负); 缩表 → 空头(raw 正)
+                    w_part = max(-1.0, min(1.0, -chg / 1.0))
+                    raw += w_part * 0.2
+                    weight_sum += 0.2
+
+            # ── PPI 通胀 z-score ──
+            ppi = self._query_latest("PPIACO", "value")
+            if ppi is not None and now - ppi[1] < _STALE_SEC:
+                hist_p = [v for v, _ in self._query_history("PPIACO", "value", self.WINDOW_D4)]
+                if len(hist_p) >= 10:
+                    z_p = self._zscore(ppi[0], hist_p)
+                    # PPI 高于均值 → 通胀压力 → 加息 → 空头(raw 正)
+                    p_part = max(-1.0, min(1.0, z_p / 2.0))
+                    raw += p_part * 0.1
+                    weight_sum += 0.1
+
             if weight_sum <= 0:
                 return self._neutral("macro-stale")
-            raw = raw / weight_sum  # 归一 [-1,1]
+            raw = raw / weight_sum
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
-            strength = self._clamp01(abs(raw))
             return {
                 "direction": direction,
-                "strength": round(strength, 3),
+                "strength": round(self._clamp01(abs(raw)), 3),
                 "raw_z": round(raw, 3),
                 "degraded": None,
             }
@@ -506,21 +533,44 @@ class DimensionForceEvaluator:
     # C6 估值维度（第二阶段扩展）
     # ------------------------------------------------------------------
     def evaluate_c6(self) -> dict[str, Any]:
-        """BTC 市值 z-score → 估值维度力量.
+        """估值维度 → 市值估值 + ETF 资金流合成.
 
-        逻辑: 市值处于历史高位（z 高）→ 估值贵 → 回调空头力量;
-              市值处于历史低位（z 低）→ 估值便宜 → 配置多头力量.
+        信号1（市值 z-score）: 市值处于历史高位 → 估值贵 → 空头; 低位 → 多头.
+        信号2（ETF 净流入）: BTC ETF 净流入 → 需求 → 多头; 净流出 → 空头.
+          周末/节假日流量为 0 时取最近非零值.
+        两信号按 0.6/0.4 加权.
         """
         try:
             now = int(time.time())
+            parts: list[float] = []
+            weights: list[float] = []
+
             mc = self._query_latest("bitcoin", "market_cap_usd")
-            if mc is None or now - mc[1] > _STALE_SEC:
-                return self._neutral("valuation-stale-or-missing")
-            hist = [v for v, _ in self._query_history("bitcoin", "market_cap_usd", self.WINDOW_D4)]
-            if len(hist) < 10:
-                return self._neutral("valuation-insufficient-history")
-            z = self._zscore(mc[0], hist)
-            raw = max(-1.0, min(1.0, z / 2.0))  # z 高 → 估值贵 → 空头
+            if mc is not None and now - mc[1] < _STALE_SEC:
+                hist = [v for v, _ in self._query_history("bitcoin", "market_cap_usd", self.WINDOW_D4)]
+                if len(hist) >= 10:
+                    z = self._zscore(mc[0], hist)
+                    mc_raw = max(-1.0, min(1.0, z / 2.0))  # z 高 → 贵 → 空头
+                    parts.append(mc_raw)
+                    weights.append(0.6)
+
+            # ── ETF 净流入（取最近非零值, 规避周末）──
+            etf_hist = [
+                (v, t)
+                for v, t in self._query_history("etf_flow", "latest_total_flow_btc", 30 * 24 * 3600)
+                if v is not None and abs(v) > 1e-9
+            ]
+            if etf_hist:
+                flow_btc = float(etf_hist[-1][0])
+                # 净流入(正) → 需求 → 多头(raw 负); 净流出 → 空头(raw 正)
+                # ±50 BTC 映射到 ±1
+                etf_raw = max(-1.0, min(1.0, -flow_btc / 50.0))
+                parts.append(etf_raw)
+                weights.append(0.4)
+
+            if not parts:
+                return self._neutral("valuation-insufficient-data")
+            raw = sum(p * w for p, w in zip(parts, weights)) / sum(weights)
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
             return {
                 "direction": direction,
@@ -667,25 +717,60 @@ class DimensionForceEvaluator:
         except Exception:
             return None
 
+    def _fred_macro_signal(self) -> tuple[float, dict[str, Any]] | None:
+        """从 FRED 宏观序列计算跨市场风险偏好信号.
+
+        取 90 日 z-score, 映射到 BTC 方向:
+          DGS10 (10Y 收益率): 收益率上行 → 风险厌恶 → 空头(正 raw)
+          DTWEXBGS (美元指数): 美元走强 → 流动性收紧 → 空头(正 raw)
+          SP500: 股指走强 → 风险偏好 → 多头(负 raw)
+        三信号等权平均. 任一缺失则用剩余信号平均.
+        返回 (raw, components) 或 None(全部缺失/陈旧).
+        """
+        now = int(time.time())
+        specs = [
+            ("DGS10", "value", +1.0),       # 收益率上行 → 空头
+            ("DTWEXBGS", "value", +1.0),    # 美元走强 → 空头
+            ("SP500", "value", -1.0),       # 股指走强 → 多头
+        ]
+        parts: list[float] = []
+        comp: dict[str, Any] = {}
+        for sc, mn, sign in specs:
+            latest = self._query_latest(sc, mn)
+            if latest is None or now - latest[1] > _STALE_SEC:
+                continue
+            hist = [v for v, _ in self._query_history(sc, mn, self.WINDOW_D4)]
+            if len(hist) < 10:
+                continue
+            z = self._zscore(latest[0], hist)
+            raw = max(-1.0, min(1.0, sign * z / 2.0))
+            parts.append(raw)
+            comp[sc] = {"z": round(z, 3), "part": round(raw, 3)}
+        if not parts:
+            return None
+        return sum(parts) / len(parts), comp
+
     def evaluate_c8(self) -> dict[str, Any]:
         """宏观交叉 → 跨市场风险偏好力量.
 
-        主信号（40 域 cross_asset_matrix）:
-          取 BTC 之外宏观资产（XAU/CL/US500/JP225/TLT）的 3M 动量，
-          按其与 BTC 的 corr0 加权求和 → 宏观动量信号:
-            正（宏观资产集体走强且与 BTC 同向）→ 风险偏好充裕 → 多头;
-            负（宏观资产集体走弱）→ 风险偏好收缩 → 空头.
-          MA200 上下比例作趋势确认（30% 权重）。
-
-        Fallback: VIX z-score（VIX 高→恐慌→空头）。
+        信号合成（优先级）:
+          1. 40 域 cross_asset_matrix（XAU/CL/US500/JP225/TLT 动量×相关性）
+          2. FRED 直接宏观 z-score（DGS10/DTWEXBGS/SP500）
+          两者均可用时按 0.6/0.4 加权（矩阵偏中期动量, FRED 偏即期定价）.
+          仅一者可用时取该者.
+        Fallback: VIXCLS z-score（VIX 高→恐慌→空头）.
         """
         try:
             now = int(time.time())
+            parts: list[float] = []
+            weights: list[float] = []
+            info: dict[str, Any] = {}
+
             matrix = self._load_40_cross_asset_matrix()
             if matrix is not None:
                 assets = matrix.get("assets", {})
-                weighted_momentum = 0.0
-                weight_sum = 0.0
+                wm = 0.0
+                ws = 0.0
                 above = below = 0
                 for name, a in assets.items():
                     if name == "BTC":
@@ -694,39 +779,52 @@ class DimensionForceEvaluator:
                     corr = a.get("corr0")
                     if mom is None or corr is None:
                         continue
-                    w = abs(corr)
-                    weighted_momentum += mom * corr  # corr 带符号: 正相关同向, 负相关反向
-                    weight_sum += w
+                    wm += mom * corr
+                    ws += abs(corr)
                     ma = a.get("above_ma200")
                     if ma is True:
                         above += 1
                     elif ma is False:
                         below += 1
-
-                if weight_sum > 0:
-                    macro_mom = weighted_momentum / weight_sum
-                    raw = max(-1.0, min(1.0, macro_mom / 10.0))  # ±10% 动量 → ±1
+                if ws > 0:
+                    macro_mom = wm / ws
+                    m_raw = max(-1.0, min(1.0, macro_mom / 10.0))
                     n_ma = above + below
                     if n_ma > 0:
-                        ma_ratio = (above - below) / n_ma  # [-1, 1]
-                        raw = raw * 0.7 + ma_ratio * 0.3  # 动量 70%, 趋势 30%
-                    direction = "short" if raw < -0.1 else ("long" if raw > 0.1 else "neutral")
-                    return {
-                        "direction": direction,
-                        "strength": round(self._clamp01(abs(raw)), 3),
-                        "raw_z": round(raw, 3),
-                        "macro_momentum_pct": round(macro_mom, 2),
-                        "n_macro_assets": round(weight_sum, 3),
-                        "degraded": None,
-                    }
-                # matrix 存在但无有效资产 → 降级到 VIX
-                logger.debug("[DimensionForce] C8 matrix no valid assets, fallback to VIX")
+                        ma_ratio = (above - below) / n_ma
+                        m_raw = m_raw * 0.7 + ma_ratio * 0.3
+                    parts.append(m_raw)
+                    weights.append(0.6)
+                    info["matrix_momentum_pct"] = round(macro_mom, 2)
 
-            # ── Fallback: VIX z-score ──
-            vix = self._query_latest("^VIX", "value")
+            fred = self._fred_macro_signal()
+            if fred is not None:
+                f_raw, f_comp = fred
+                parts.append(f_raw)
+                weights.append(0.4)
+                info["fred_components"] = f_comp
+
+            if parts:
+                raw = sum(p * w for p, w in zip(parts, weights)) / sum(weights)
+                direction = "short" if raw < -0.1 else ("long" if raw > 0.1 else "neutral")
+                return {
+                    "direction": direction,
+                    "strength": round(self._clamp01(abs(raw)), 3),
+                    "raw_z": round(raw, 3),
+                    "degraded": None if matrix is not None else "fred-only",
+                    **info,
+                }
+
+            # ── Fallback: VIXCLS z-score ──
+            vix = self._query_latest("VIXCLS", "value")
+            if vix is None or now - vix[1] > _STALE_SEC:
+                # 回退旧口径
+                vix = self._query_latest("^VIX", "value")
             if vix is None or now - vix[1] > _STALE_SEC:
                 return self._neutral("c8-stale-or-missing")
-            hist = [v for v, _ in self._query_history("^VIX", "value", self.WINDOW_D4)]
+            hist = [v for v, _ in self._query_history("VIXCLS", "value", self.WINDOW_D4)]
+            if len(hist) < 10:
+                hist = [v for v, _ in self._query_history("^VIX", "value", self.WINDOW_D4)]
             if len(hist) < 10:
                 return self._neutral("c8-vix-insufficient-history")
             z = self._zscore(vix[0], hist)
