@@ -118,6 +118,7 @@
 | 技术设计 | [13-通用风控模块/docs/TECHNICAL_DESIGN.md](../13-通用风控模块/docs/TECHNICAL_DESIGN.md) | - |
 | 接口规格 | [13-通用风控模块/docs/API_SPEC.md](../13-通用风控模块/docs/API_SPEC.md) | v1.1.0 |
 | 变更日志 | [13-通用风控模块/docs/CHANGELOG.md](../13-通用风控模块/docs/CHANGELOG.md) | v1.1.0 |
+| 13/16/22 整合 SPEC | [13-通用风控模块/docs/SPEC-20261114-13-16整合与执行器收口.md](../13-通用风控模块/docs/SPEC-20261114-13-16整合与执行器收口.md) | v1.0 |
 
 ### 14-V15经典马丁策略（标杆）
 
