@@ -30,6 +30,7 @@ import json
 import logging
 import math
 import os
+import re
 import sqlite3
 import struct
 import threading
@@ -126,15 +127,19 @@ class FastEmbedVectorizer:
     由 COGNITIVE_EMBED_MODEL 环境变量显式启用，未设置时保持哈希向量（零依赖兼容）。
     """
 
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, threads: int = 0):
         from fastembed import TextEmbedding
 
         self.model_name = model_name
-        self._model = TextEmbedding(model_name=model_name)
+        kwargs = {"model_name": model_name}
+        if threads:
+            kwargs["threads"] = threads
+        self._model = TextEmbedding(**kwargs)
         probe = next(iter(self._model.embed(["dimension probe"])))
         self.dim = len(probe)
 
-    MAX_EMBED_CHARS = 768
+    # 索引仅取前 N 字符：记忆正文常以主题/结论开头，截断可显著提升重建速度
+    MAX_EMBED_CHARS = 256
 
     def encode(self, text: str) -> List[float]:
         if not text:
@@ -264,21 +269,6 @@ class VectorMemoryInterface:
             distill_engine: 动态蒸馏引擎实例（可选）
         """
         self.memory_id = memory_id
-        # 语义向量模型（可选）：设置后使用 fastembed ONNX 模型，未设置保持哈希向量
-        self.embed_model = (os.environ.get("COGNITIVE_EMBED_MODEL") or "").strip()
-        if self.embed_model:
-            try:
-                self.vectorizer = FastEmbedVectorizer(self.embed_model)
-                vector_dim = self.vectorizer.dim
-            except Exception:
-                logger.exception(
-                    "语义向量模型加载失败，回退哈希向量（COGNITIVE_EMBED_MODEL=%s）",
-                    self.embed_model,
-                )
-                self.vectorizer = TextVectorizer(dim=vector_dim)
-        else:
-            self.vectorizer = TextVectorizer(dim=vector_dim)
-        self.vector_dim = vector_dim
         self._distill_engine = distill_engine
 
         # 存储路径
@@ -298,8 +288,88 @@ class VectorMemoryInterface:
         # 事务纪律：busy_timeout + 文件库 WAL（须在 sqlite-vec 连接切换之后应用）
         self._apply_tx_pragmas()
 
+        # 语义向量模型：环境变量优先，其次读取索引自描述（meta.embed_model）。
+        # 索引自描述保证所有进程（MCP server / L1 route / CLI）无需各自配置环境变量即可用同一模型。
+        self.embed_model = (os.environ.get("COGNITIVE_EMBED_MODEL") or "").strip() or self._read_meta(
+            "embed_model"
+        )
+        self.vectorizer = TextVectorizer(dim=vector_dim)
+        self.vector_dim = vector_dim
+        if self.embed_model:
+            try:
+                self.vectorizer = FastEmbedVectorizer(self.embed_model)
+                vector_dim = self.vector_dim = self.vectorizer.dim
+            except Exception:
+                logger.exception(
+                    "语义向量模型加载失败，回退哈希向量（model=%s）",
+                    self.embed_model,
+                )
+        if self._sync_vectorizer_with_index():
+            vector_dim = self.vector_dim
+        self._resync_disabled = False
+
         # 初始化表结构
         self._init_schema()
+
+    # ============================================================
+    # 索引自描述（meta 表）与向量化器一致性
+    # ============================================================
+
+    def _read_meta(self, key: str) -> str:
+        """读取 meta 表键值（表/键不存在时返回空串，FAIL-OPEN）。"""
+        try:
+            row = self.db.execute("SELECT value FROM meta WHERE key=?", [key]).fetchone()
+        except sqlite3.Error:
+            return ""
+        return str(row[0]).strip() if row and row[0] else ""
+
+    def _vec_table_dim(self) -> int:
+        """解析 vec_memories 虚拟表声明的向量维度（0 表示无法确定）。"""
+        try:
+            row = self.db.execute(
+                "SELECT sql FROM sqlite_master WHERE name='vec_memories'"
+            ).fetchone()
+        except sqlite3.Error:
+            return 0
+        if not row or not row[0]:
+            return 0
+        m = re.search(r"float\[(\d+)\]", str(row[0]))
+        return int(m.group(1)) if m else 0
+
+    def _sync_vectorizer_with_index(self) -> bool:
+        """索引维度与当前向量化器不一致时，按 meta.embed_model 重建向量化器（自愈）。
+
+        典型场景：索引被语义模型重建为 512 维后，长驻进程（MCP server）仍持有 256 维
+        哈希向量化器——不重建则 KNN/写入会因维度不匹配报错。
+        """
+        table_dim = self._vec_table_dim()
+        if not table_dim or table_dim == self.vector_dim:
+            return False
+        model = self._read_meta("embed_model")
+        if not model:
+            logger.warning(
+                "索引维度 %s 与当前向量化器维度 %s 不一致，且 meta.embed_model 缺失，保持原向量化器",
+                table_dim,
+                self.vector_dim,
+            )
+            return False
+        try:
+            self.vectorizer = FastEmbedVectorizer(model)
+            self.vector_dim = self.vectorizer.dim
+            logger.info("向量化器已按索引维度重建: model=%s dim=%s", model, self.vector_dim)
+            return True
+        except Exception:
+            logger.exception("按索引维度重建向量化器失败: model=%s", model)
+            return False
+
+    def _maybe_resync(self) -> None:
+        """长驻进程（MCP server / Next route）在索引重建后按需重建向量化器。"""
+        if self._resync_disabled:
+            return
+        if self._vec_table_dim() in (0, self.vector_dim):
+            return
+        if not self._sync_vectorizer_with_index():
+            self._resync_disabled = True
 
     def _apply_tx_pragmas(self) -> None:
         """应用事务纪律 PRAGMA（FAIL-OPEN，设置失败不阻塞初始化）。
@@ -418,6 +488,8 @@ class VectorMemoryInterface:
             # 索引
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_quality ON memories(quality_level)")
             self.db.execute("CREATE INDEX IF NOT EXISTS idx_type ON memories(memory_type)")
+            # 索引自描述（embed_model 等），供多进程共享同一 embedding 模型
+            self.db.execute("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)")
             # G0-8：external_id 幂等唯一索引（部分索引，存量 NULL 不受约束）
             self.db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_external_id ON memories(external_id) WHERE external_id IS NOT NULL")
 
@@ -521,6 +593,8 @@ class VectorMemoryInterface:
             记忆ID
         """
         tags = tags or []
+        # 长驻进程：索引可能已被语义模型重建，按需切换向量化器
+        self._maybe_resync()
         # Evidence-First: level 非法值 FAIL-OPEN 回退到 observation
         valid_levels = {"observation", "derivation", "inference", "unknown"}
         level = level if level in valid_levels else "observation"
@@ -609,6 +683,10 @@ class VectorMemoryInterface:
             搜索结果列表，按相似度降序
         """
         query_vector = self.vectorizer.encode(query)
+        # 长驻进程：索引可能已被语义模型重建，按需切换向量化器
+        self._maybe_resync()
+        if self.vectorizer.dim != len(query_vector):
+            query_vector = self.vectorizer.encode(query)
 
         if self.engine == "sqlite_vec":
             return self._search_sqlite_vec(query_vector, top_k, quality_filter, tags_filter, memory_type_filter)
@@ -724,13 +802,24 @@ class VectorMemoryInterface:
 
         # 计算相似度
         scored: List[Tuple[float, sqlite3.Row]] = []
+        skipped = 0
         for row in rows:
             vec_bytes = row["vector"]
             if not vec_bytes:
                 continue
+            # 维度守卫：索引重建过渡期可能存在旧维度向量，避免 struct.unpack 崩溃
+            if len(vec_bytes) != self.vector_dim * 4:
+                skipped += 1
+                continue
             vec = bytes_to_vector(vec_bytes, self.vector_dim)
             score = cosine_similarity(query_vector, vec)
             scored.append((score, row))
+        if skipped and not scored:
+            logger.warning(
+                "numpy 检索全部跳过：%s 条向量维度与当前向量化器(%s)不一致，请检查 COGNITIVE_EMBED_MODEL/meta.embed_model",
+                skipped,
+                self.vector_dim,
+            )
 
         # 排序
         scored.sort(key=lambda x: x[0], reverse=True)

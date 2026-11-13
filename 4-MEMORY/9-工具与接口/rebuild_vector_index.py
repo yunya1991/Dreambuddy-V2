@@ -51,7 +51,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=str(DEFAULT_DB))
     ap.add_argument("--model", default="BAAI/bge-small-zh-v1.5")
-    ap.add_argument("--batch-size", type=int, default=128)
+    ap.add_argument("--batch-size", type=int, default=64)
+    ap.add_argument("--threads", type=int, default=8, help="fastembed ONNX 线程数")
     ap.add_argument("--limit", type=int, default=0, help="仅处理前 N 条（冒烟）")
     ap.add_argument("--swap", action="store_true", help="替换生产 vec_memories")
     ap.add_argument(
@@ -78,7 +79,7 @@ def main() -> int:
     print(f"[INFO] db={db_path} memories={total} target={target} model={args.model}")
 
     t0 = time.perf_counter()
-    vectorizer = FastEmbedVectorizer(args.model)
+    vectorizer = FastEmbedVectorizer(args.model, threads=args.threads)
     dim = vectorizer.dim
     print(f"[INFO] model loaded in {time.perf_counter() - t0:.1f}s dim={dim}")
 
@@ -146,6 +147,12 @@ def main() -> int:
             f"SELECT rowid, embedding, memory_id, quality FROM {TMP_TABLE}"
         )
         con.execute(f"DROP TABLE {TMP_TABLE}")
+        # 索引自描述：写 embed_model，使所有进程无需各自配置环境变量即可用同一模型
+        con.execute("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)")
+        con.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES('embed_model', ?)", [args.model]
+        )
+        con.execute("INSERT OR REPLACE INTO meta(key, value) VALUES('embed_dim', ?)", [str(dim)])
         con.commit()
         print(f"[DONE] swapped vec_memories rows={written} dim={dim}")
     else:
