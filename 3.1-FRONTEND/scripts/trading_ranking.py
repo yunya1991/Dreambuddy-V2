@@ -35,6 +35,17 @@ _RANKING_POOL_FILE = os.path.join(
 )
 _RANKING_POOL_MAX_AGE_DAYS = 8
 
+# P0 决策卡预计算（BCRM2 / ATR / CBR），由 ranking_decision_card.py 每日产出
+_DECISION_CARD_FILE = os.path.join(
+    _resolve_repo_root(),
+    "1-ARCHITECTURE",
+    "dreamos",
+    "cli",
+    "scheduler_data",
+    "ranking_decision_cards.json",
+)
+_DECISION_CARD_MAX_AGE_HOURS = 36  # 1 天 + 缓冲
+
 # 品类配额（对齐 TOP10_RANKING_RECOMMENDATION_SPEC §3.1 / §4.4：6+2+2）
 _CATEGORY_QUOTA = (("crypto", 6), ("commodity", 2), ("index", 2))
 _TOP_N = 10
@@ -174,6 +185,26 @@ def _load_ranking_asset_pool() -> list:
         return items if isinstance(items, list) else []
     except Exception:
         return []
+
+
+def _load_decision_cards() -> dict:
+    """读取 P0 决策卡预计算；文件缺失/过期/损坏时返回 {}（FAIL-OPEN）。"""
+    try:
+        if not os.path.isfile(_DECISION_CARD_FILE):
+            return {}
+        with open(_DECISION_CARD_FILE, encoding="utf-8") as fh:
+            data = json.load(fh)
+        generated_at = data.get("generated_at")
+        if not generated_at:
+            return {}
+        generated = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00"))
+        age = datetime.now(timezone.utc) - generated
+        if age > timedelta(hours=_DECISION_CARD_MAX_AGE_HOURS):
+            return {}
+        items = data.get("items")
+        return items if isinstance(items, dict) else {}
+    except Exception:
+        return {}
 
 
 # ---- 加密候选流动性 / 市值门槛（过滤 HEMI 这类未上 OKX、成交额或市值过小的标的）----
@@ -366,7 +397,7 @@ _FULL_COIN_POOL = [
 ]
 
 
-def _orchestrator_to_items(orch_data: dict) -> list:
+def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) -> list:
     """orchestrator 输出 → TradingRankingItem[]。
 
     orchestrator 输出结构 (可能两种):
@@ -510,7 +541,7 @@ def _orchestrator_to_items(orch_data: dict) -> list:
         if price is None and category == "crypto":
             price = (liquidity.get("markets", {}).get(_normalize_symbol(symbol)) or {}).get("last")
 
-        # 决策卡 (简化版 — 入场区间/止损止盈需 ATR 模型，暂缺时前端显示"待定")
+        # 决策卡：默认简化版，如 P0 预计算有该标的则用其覆盖（BCRM2 + ATR + CBR）
         decision = {
             "entry": {
                 "price": price,
@@ -522,12 +553,42 @@ def _orchestrator_to_items(orch_data: dict) -> list:
             "events": [],
             "riskLevel": "intermediate",
             "historicalAnalogy": "",
+            "inferred": False,
             "logic": {
                 "bullish": c.get("reasons", [])[:3],
                 "bearish": [],
                 "confidence": round(score, 2),
             },
         }
+
+        # P0 合并预计算决策卡（FAIL-OPEN：无预计算则保留默认值）
+        pre = (decision_cards or {}).get(symbol)
+        if isinstance(pre, dict) and pre.get("inferred"):
+            # 入场
+            if pre.get("entry"):
+                decision["entry"] = pre["entry"]
+            elif price is not None:
+                decision["entry"]["price"] = price
+            # 止损止盈
+            if pre.get("stopLoss") is not None:
+                decision["stopLoss"] = pre["stopLoss"]
+            if pre.get("takeProfit"):
+                decision["takeProfit"] = pre["takeProfit"]
+            # 风险分级
+            decision["riskLevel"] = pre.get("riskLevel", decision["riskLevel"])
+            # 历史类比
+            if pre.get("historicalAnalogy"):
+                decision["historicalAnalogy"] = pre["historicalAnalogy"]
+            # 方向/置信度（BCRM2 推理的）
+            if pre.get("direction"):
+                decision["bcrm2Direction"] = pre["direction"]
+            if pre.get("confidence") is not None:
+                decision["bcrm2Confidence"] = pre["confidence"]
+            if pre.get("positionFactor") is not None:
+                decision["positionFactor"] = pre["positionFactor"]
+            if pre.get("warnings"):
+                decision["warnings"] = pre["warnings"]
+            decision["inferred"] = True
 
         items.append(
             {
@@ -559,11 +620,13 @@ def main():
 
         items = []
         orch_ok = False
+        # P0：加载预计算决策卡（BCRM2 / ATR / CBR），FAIL-OPEN 空 dict
+        decision_cards = _load_decision_cards()
         try:
             r = call_handler("orchestrator", {"node_output": {"symbol": "BTC"}})
             if r.get("ok") and r.get("output"):
                 orch_ok = True
-                items = _orchestrator_to_items(r["output"])
+                items = _orchestrator_to_items(r["output"], decision_cards=decision_cards)
         except Exception:
             pass
     finally:
