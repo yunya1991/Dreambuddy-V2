@@ -12,6 +12,7 @@ import sys
 import tempfile
 import urllib.request
 from datetime import datetime, timedelta, timezone
+from typing import Dict, List
 
 
 def _resolve_34_core_dir() -> str:
@@ -634,9 +635,63 @@ def main():
 
     # 兜底: 如果 orchestrator 没数据, 返回空 items (前端已有 mock 降级)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    # P1: 加载 42 总线 + 子系统融合信号，合并到榜单
+    bus_combined: List[Dict] = []
+    bus_by_subsystem: Dict[str, List[Dict]] = {}
+    try:
+        fusion_path = os.path.join(
+            _resolve_repo_root(),
+            "1-ARCHITECTURE",
+            "dreamos",
+            "cli",
+            "ranking_bus_fusion.py",
+        )
+        if os.path.isfile(fusion_path):
+            # 直接 import 模块（避免 fork 子进程开销）
+            import importlib.util
+
+            spec = importlib.util.spec_from_file_location("ranking_bus_fusion", fusion_path)
+            if spec and spec.loader:
+                fusion_mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(fusion_mod)
+                bus_result = fusion_mod.build_rankings()
+                bus_combined = bus_result.get("combined") or []
+                bus_by_subsystem = bus_result.get("by_subsystem") or {}
+    except Exception:
+        pass
+
+    # 融合子系统信号到 items：给每个 item 加 subsystemTags + busDirection + busConfidence
+    item_map = {i["symbol"]: i for i in items}
+    for fused in bus_combined:
+        sym = fused["symbol"]
+        if sym in item_map:
+            item_map[sym]["subsystemTags"] = fused.get("subsystems", [])
+            item_map[sym]["busDirection"] = fused.get("direction")
+            item_map[sym]["busConsensus"] = fused.get("consensus")
+            item_map[sym]["busConfidence"] = fused.get("confidence")
+            item_map[sym]["fusionScore"] = fused.get("fusion_score")
+
+    # 子系统分榜输出：每条含 subsystem tag
+    subsystem_rankings = {}
+    for sub, sigs in bus_by_subsystem.items():
+        sub_items = []
+        for s in sigs:
+            sub_items.append(
+                {
+                    "symbol": s["symbol"],
+                    "direction": s["direction"],
+                    "confidence": s["confidence"],
+                    "score": s.get("score", s["confidence"]),
+                }
+            )
+        subsystem_rankings[sub] = sub_items
+
     result = {
         "success": orch_ok and len(items) > 0,
         "items": items,
+        "subsystemRankings": subsystem_rankings,
+        "busSignalCount": len(bus_combined),
         "metrics": {
             "date": today,
             "satisfaction": None,
