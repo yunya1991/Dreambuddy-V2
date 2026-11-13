@@ -12831,6 +12831,113 @@ class PollingTrader:
             self._log(f"[TierUpgrade] {symbol} upgrade FAIL-OPEN: {_e}", "WARN")
             return tier
 
+    def _sltp_reconcile_once(self):
+        """存量持仓 SL/TP 补挂巡检（每轮 run_once 调一次，FAIL-OPEN）
+
+        场景：evolution 层直开的仓位可能早期没挂 SL/TP，
+        或挂单触发/失败后未补。巡检所有真实持仓，
+        对缺 SL/TP 的用默认参数补挂 OKX OCO algo 条件单。
+
+        安全约束（经验教训）：
+        - 止损方向必须正确（long 止损 < 当前价, short 止损 > 当前价）
+          否则 OKX 会返回 "Order would immediately trigger"
+        - 补挂前检查是否已有 OCO 单，避免重复挂
+        - 只设止损或止盈其中一个也允许（OKX 支持 sl-only 或 tp-only）
+        """
+        if not (self.okx_client and hasattr(self.okx_client, "get_positions")):
+            return
+        try:
+            pos_resp = self.okx_client.get_positions()
+        except Exception as _e:
+            self._log(f"[SLTP-Reconcile] 持仓拉取失败: {_e}", "DEBUG")
+            return
+        positions = [p for p in (pos_resp.get("data") or []) if float(p.get("pos", "0") or 0) > 0]
+        if not positions:
+            return
+
+        # 拉已挂 algo 单（OKX ordType=sl-tp 或 sl 或 tp）
+        existing_sl_tp = set()
+        try:
+            algo_resp = self.okx_client.get_algo_orders()
+            for a in algo_resp.get("data") or []:
+                # sl-tp OCO 单里有 tpOrdPx 和 slOrdPx
+                inst = a.get("instId")
+                side = a.get("posSide") or a.get("tdMode", "")
+                if inst and side:
+                    existing_sl_tp.add((inst, side))
+        except Exception as _e:
+            self._log(f"[SLTP-Reconcile] algo单拉取失败(跳过巡检): {_e}", "DEBUG")
+            return
+
+        _patched, _skipped, _failed = 0, 0, 0
+        for pos in positions:
+            inst_id = pos.get("instId", "")
+            pos_side = pos.get("posSide")
+            if not inst_id or not pos_side:
+                continue
+            if (inst_id, pos_side) in existing_sl_tp:
+                _skipped += 1
+                continue
+
+            avg_px = float(pos.get("avgPx", 0) or 0)
+            last_px = float(pos.get("last", pos.get("markPx", avg_px)) or 0)
+            if avg_px <= 0 or last_px <= 0:
+                self._log(f"[SLTP-Reconcile] {inst_id}({pos_side}) 无有效均价/现价，跳过", "DEBUG")
+                _skipped += 1
+                continue
+
+            upl_pct = float(pos.get("uplRatio", 0) or 0) * 100
+            if pos_side == "long":
+                # long: 止损在均价下方，止盈在上方
+                sl_px = avg_px * 0.95
+                tp_px = avg_px * 1.08
+                # 安全：止损不能 >= 当前价（会立即触发）
+                if sl_px >= last_px:
+                    sl_px = last_px * 0.995
+                # 浮盈仓位：止损收紧到保本+
+                if upl_pct > 3:
+                    sl_px = max(sl_px, avg_px * 1.005)
+            else:
+                # short: 止损在均价上方，止盈在下方
+                sl_px = avg_px * 1.05
+                tp_px = avg_px * 0.92
+                if sl_px <= last_px:
+                    sl_px = last_px * 1.005
+                if upl_pct > 3:
+                    sl_px = min(sl_px, avg_px * 0.995)
+
+            try:
+                _r = self.okx_client.place_stop_loss_take_profit(
+                    inst_id=inst_id,
+                    pos_side=pos_side,
+                    stop_loss_px=round(sl_px, 6),
+                    take_profit_px=round(tp_px, 6),
+                    reason=f"sltp_reconcile:avg={avg_px:.2f} upl={upl_pct:.1f}%",
+                )
+                if _r.get("ok"):
+                    _patched += 1
+                    self._log(
+                        f"[SLTP-Reconcile] ✅ 补挂 {inst_id}({pos_side}) "
+                        f"SL={sl_px:.4f} TP={tp_px:.4f} upl={upl_pct:.1f}%",
+                        "INFO",
+                    )
+                else:
+                    _failed += 1
+                    self._log(
+                        f"[SLTP-Reconcile] ❌ {inst_id}({pos_side}) "
+                        f"补挂失败: {_r.get('error') or _r}",
+                        "WARN",
+                    )
+            except Exception as _e:
+                _failed += 1
+                self._log(f"[SLTP-Reconcile] ❌ {inst_id}({pos_side}) 异常: {_e}", "WARN")
+
+        if _patched or _failed:
+            self._log(
+                f"[SLTP-Reconcile] 本轮补挂={_patched} 跳过={_skipped} 失败={_failed}",
+                "INFO" if _patched else "WARN",
+            )
+
     def _evolution_check_exit(self):
         """P2-S4b+: 自进化系统独立离场巡检（Phase 2 EvolutionExitEngine）
 
@@ -19580,6 +19687,12 @@ class PollingTrader:
             self._evolution_check_exit()
         except Exception as _evo_exit_e:
             self._log(f"[EvolutionExitEngine] 巡检异常(FAIL-OPEN): {_evo_exit_e}", "WARN")
+
+        # ── SL/TP 补挂巡检（FAIL-OPEN，不阻塞任何逻辑） ──
+        try:
+            self._sltp_reconcile_once()
+        except Exception as _sltp_rec_e:
+            self._log(f"[SLTP-Reconcile] 巡检异常(FAIL-OPEN): {_sltp_rec_e}", "WARN")
 
         # ══ Phase A (S1): MODE 算力重分配入口 ══════════════════════════════
         # 在执行任何昂贵操作（anomaly检测/BCRM2全推理）之前先决定 MODE：
