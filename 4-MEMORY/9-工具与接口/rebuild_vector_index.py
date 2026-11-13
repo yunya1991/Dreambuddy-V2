@@ -94,10 +94,10 @@ def main() -> int:
     processed = 0
     written = 0
     started = time.perf_counter()
-    cur = con.execute(
-        "select id, content, quality_level from memories where content is not null "
-        "and length(content) > 0 order by rowid"
-    )
+    # rowid 键集分页：若用长游标持续读取再穿插写入，读快照会被并发写入方（如云端
+    # data_center_scheduler）失效，触发 SQLITE_BUSY_SNAPSHOT（表现为 database is locked，
+    # busy_timeout 不重试）。每批独立 SELECT 可让读事务及时结束。
+    last_rowid = 0
 
     while True:
         fetch_n = args.batch_size
@@ -105,12 +105,20 @@ def main() -> int:
             fetch_n = min(fetch_n, target - processed)
             if fetch_n <= 0:
                 break
-        batch = cur.fetchmany(fetch_n)
-        if not batch:
+        rows = con.execute(
+            "select rowid, id, content, quality_level from memories "
+            "where rowid > ? order by rowid limit ?",
+            (last_rowid, fetch_n),
+        ).fetchall()
+        if not rows:
             break
-        texts = [row[1] for row in batch]
+        last_rowid = rows[-1][0]
+        batch = [row for row in rows if row[2]]
+        if not batch:
+            continue
+        texts = [row[2] for row in batch]
         vectors = vectorizer.encode_batch(texts)
-        for (mem_id, _content, quality), vec in zip(batch, vectors, strict=False):
+        for (_rowid, mem_id, _content, quality), vec in zip(batch, vectors, strict=False):
             blob = to_bytes(vec)
             con.execute(
                 f"INSERT OR REPLACE INTO {TMP_TABLE}(rowid, embedding, memory_id, quality) "
@@ -121,7 +129,7 @@ def main() -> int:
                 con.execute("UPDATE memories SET vector=? WHERE id=?", (blob, mem_id))
             written += 1
         con.commit()
-        processed += len(batch)
+        processed += len(rows)
         elapsed = time.perf_counter() - started
         speed = processed / elapsed if elapsed else 0
         eta = (target - processed) / speed / 60 if speed else 0
@@ -133,7 +141,6 @@ def main() -> int:
         if args.limit and processed >= args.limit:
             break
 
-    cur.close()
     con.commit()
     do_swap = args.swap or not args.limit
     if do_swap:
