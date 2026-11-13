@@ -15,6 +15,9 @@
   --execution-rights execution_rights.json，按 symbol 统计 active executor
   --trace-records    JSONL，每行至少含：task_id / trace_id / stage / degraded_reason
                      stage ∈ {created, route, execute, accept, settle}
+                     L1 直答行 task_id 为空且 entry=l1，按 trace_id 聚合；
+                     交接 L2 的行 handoff=true，不重复计入执行单元；
+                     降级行须带 degraded=true 或 verdict=fail，且 degraded_reason 非空
   --rollback-evidence 目录，内含回滚演练证据文件
 
 退出码：0 全部 PASS；1 存在 FAIL；2 无 FAIL 但存在 not_evaluated / threshold_unconfirmed。
@@ -205,7 +208,7 @@ def gate_2_emergence() -> dict:
 
 
 def gate_3_trace(args) -> dict:
-    """G-BCL-3：执行链 trace 贯穿率（含同请求唯一性）。"""
+    """G-BCL-3：执行链 trace 贯穿率（同请求唯一性 + 降级原因覆盖率）。"""
     min_sample = args.min_sample
     if not args.trace_records:
         return _result(
@@ -221,43 +224,97 @@ def gate_3_trace(args) -> dict:
         return _result("G-BCL-3", "not_evaluated", None, min_sample, str(path), "文件不存在")
 
     rows = _read_jsonl(path)
-    by_task: dict[str, dict] = {}
+    units: dict[str, dict] = {}
+    trace_tasks: dict[str, set] = {}
+    degraded_rows = 0
+    degraded_missing = 0
+
     for row in rows:
-        tid = row.get("task_id")
-        if not tid:
+        tid = str(row.get("task_id") or "")
+        trace = str(row.get("trace_id") or "")
+        entry = row.get("entry")
+
+        # 降级项必须给出原因：verdict=fail 或显式 degraded 均视为降级项
+        is_degraded = bool(row.get("degraded")) or row.get("verdict") == "fail"
+        if is_degraded:
+            degraded_rows += 1
+            if not str(row.get("degraded_reason") or "").strip():
+                degraded_missing += 1
+
+        if not trace:
             continue
-        item = by_task.setdefault(tid, {"trace_ids": set(), "stages": set(), "missing_reason": 0})
-        if row.get("trace_id"):
-            item["trace_ids"].add(row["trace_id"])
+        if tid:
+            trace_tasks.setdefault(trace, set()).add(tid)
+            key = f"task:{tid}"
+        elif entry == "l1":
+            key = f"trace:{trace}"
+        else:
+            continue
+
+        item = units.setdefault(key, {"trace_ids": set(), "stages": set(), "handoff": False})
+        item["trace_ids"].add(trace)
         if row.get("stage"):
             item["stages"].add(row["stage"])
-        if row.get("degraded_reason"):
-            item["missing_reason"] += 1
+        if row.get("handoff"):
+            item["handoff"] = True
 
-    total = len(by_task)
+    counted = {k: v for k, v in units.items() if not v["handoff"]}
+    total = len(counted)
     full = sum(
         1
-        for v in by_task.values()
+        for v in counted.values()
         if v["trace_ids"]
-        and len(v["trace_ids"]) == 1  # 同一任务只允许一个 trace
+        and len(v["trace_ids"]) == 1  # 同一执行单元只允许一个 trace
         and all(s in v["stages"] for s in REQUIRED_TRACE_STAGES)
     )
-    multi_trace = sum(1 for v in by_task.values() if len(v["trace_ids"]) > 1)
+    multi_trace = sum(1 for v in units.values() if len(v["trace_ids"]) > 1)
+    trace_reuse = {t: sorted(ids) for t, ids in trace_tasks.items() if len(ids) > 1}
     rate = round(full / total, 6) if total else 0.0
-    passed = total >= min_sample and rate == 1.0 and multi_trace == 0
+    reason_coverage = (
+        round((degraded_rows - degraded_missing) / degraded_rows, 6) if degraded_rows else 1.0
+    )
+    passed = (
+        total >= min_sample
+        and rate == 1.0
+        and multi_trace == 0
+        and not trace_reuse
+        and degraded_missing == 0
+    )
+
+    task_units = sum(1 for k in counted if k.startswith("task:"))
+    request_units = total - task_units
+    notes = []
+    if total < min_sample:
+        notes.append(f"样本量 {total} < {min_sample}")
+    if trace_reuse:
+        notes.append(f"trace 被多 task 复用: {len(trace_reuse)}")
+    if degraded_missing:
+        notes.append(f"降级缺原因: {degraded_missing}")
 
     return _result(
         "G-BCL-3",
         "PASS" if passed else "FAIL",
         {
-            "tasks": total,
-            "full_chain_tasks": full,
+            "execution_units": total,
+            "tasks": task_units,
+            "l1_requests": request_units,
+            "full_chain_units": full,
             "throughput_rate": rate,
-            "multi_trace_tasks": multi_trace,
+            "multi_trace_units": multi_trace,
+            "trace_reuse_across_tasks": len(trace_reuse),
+            "degraded_rows": degraded_rows,
+            "degraded_missing_reason": degraded_missing,
+            "degraded_reason_coverage": reason_coverage,
         },
-        {"min_sample": min_sample, "throughput_rate": 1.0, "multi_trace_tasks": 0},
+        {
+            "min_sample": min_sample,
+            "throughput_rate": 1.0,
+            "multi_trace_units": 0,
+            "trace_reuse_across_tasks": 0,
+            "degraded_reason_coverage": 1.0,
+        },
         str(path),
-        "" if total >= min_sample else f"样本量 {total} < {min_sample}",
+        "；".join(notes),
     )
 
 
@@ -355,7 +412,7 @@ def main() -> int:
     ]
 
     payload = {
-        "spec_ref": "1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md@v0.3.2",
+        "spec_ref": "1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md@v0.3.3",
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "thresholds": {
             "join_coverage": args.join_coverage_threshold,

@@ -229,10 +229,14 @@ def route_query(message: str, intent: str = "", trace_id: str = "") -> dict:
     out["degraded"] = bool(signal.degraded or result.get("degraded"))
 
     # settle 沉淀（FAIL-OPEN，不阻塞返回）；trace_id 随案例落盘，供跨链关联
+    settle_attempted = False
     try:
         settle_to_cognitive(intent, message, result, trace_id=trace_id)
+        settle_attempted = True
     except Exception:
         pass
+    # 执行链 trace 台账（G-BCL-3）：L1 直答无 task_id，由调用方按 trace 聚合
+    out["settle_attempted"] = settle_attempted
     return out
 
 

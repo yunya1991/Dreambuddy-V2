@@ -1,6 +1,6 @@
 # SPEC：三大业务闭环链——交易链、涌现链、执行链
 
-> **版本**：v0.3.3  
+> **版本**：v0.3.4  
 > **日期**：2026-11-13  
 > **状态**：待复评（P0 已关闭；P1-03~06 规格已补齐；§12.3 D1 缺口已裁决 B+C 并落地契约；DEC-BCL-07 纠正执行层落位——40 只产意图，成交由 22 产生；G-BCL-1 仍为 FAIL，待纸面成交累积到 n≥100）  
 > **评审意见**：[REVIEW-20261113-THREE-BUSINESS-CLOSED-LOOPS.md](./REVIEW-20261113-THREE-BUSINESS-CLOSED-LOOPS.md) v1.0（4 项 P0 已在 v0.2.0 修订，待复评确认关闭）  
@@ -765,7 +765,7 @@ python3 1-ARCHITECTURE/registry/scripts/bcl_gate_check.py --json-out /tmp/bcl_ga
 | G-BCL-0 语义门禁 | 五种易混链命名在 3+3 / 本 SPEC / SYSTEM_ARCHITECTURE_OVERVIEW 中出现且互不冲突；49 在运行链节点清单中出现次数 = 0 | 文档静态扫描 |
 | G-BCL-1 交易证据门禁 | `join_coverage = count(decision_id ∧ order_id ∧ fill_id ∧ pnl ∧ training_event_id) / count(decision_id) ≥ 0.95`；`execution_rights` 冲突计数 = 0；可回放抽样 `n ≥ 100` 且回放成功率达 100% | TrainingEvent + execution_rights 审计 |
 | G-BCL-2 涌现验证门禁 | 每个 `published` 条目 `evidence_ref` 可解析率 = 100%；`verified` 但缺独立复核的条目数 = 0；被 `falsified` 的结论在后续版本中未被删除 | Registry + 48 verdict 落盘 |
-| G-BCL-3 执行追踪门禁 | 抽样 `n ≥ 100` 个 task，`trace_id` 从任务创建到 settle 贯穿率 = 100%；降级项 `degraded_reason` 非空率 = 100% | task/trace/Worker/验收/settle |
+| G-BCL-3 执行追踪门禁 | 抽样 `n ≥ 100` 个执行单元（L2 task；L1 直答按 `trace_id` 聚合为请求单元），`trace_id` 从创建到 settle 五阶段贯穿率 = 100%；同一 trace 被多个 task 复用数 = 0；降级项（`degraded=true` 或 `verdict=fail`）`degraded_reason` 非空率 = 100% | `events/frontend/execution_chain_trace.jsonl`（task/Worker/验收/settle 台账） |
 | G-BCL-4 对外边界门禁 | 47 registry 校验零违规；`layer=L1 且 exposure=mcp 且含写工具` 的条目数 = 0；`live` 暴露条目数 = 0 | `validate_mcp_registry.py` |
 | G-BCL-5 回滚门禁 | 近 90 天内至少 1 次成功回滚演练，有证据文件；回滚前后历史证据文件删除数 = 0 | Registry 版本与演练记录 |
 
@@ -782,12 +782,14 @@ python3 1-ARCHITECTURE/registry/scripts/bcl_gate_check.py --json-out /tmp/bcl_ga
 - 透传层已存在：`api-client.ts` 生成/接收 `traceId` 并作为 `X-Request-Id` 发出（第 63—64、150 行）；`dsh-execution-engine.ts` 的 `inboundTraceId()` 读取 `x-request-id` / `x-trace-id`（第 199—208 行），并向 orchestrator、HTTP body（`trace_id`）、IPC 三路透传（第 138—277 行）。
 - 真实缺口：`task-manager.ts` 的任务对象只有 `taskId`，没有 `trace_id` 字段；L1（`/api/data/query`）与 L2（`/api/task/stream`）是两个入口，未证明同一用户请求在"L1 未命中转 L2"时复用同一个 trace。
 
+**实施状态（v0.3.4，2026-11-13）**：上述两项缺口已在代码中关闭——`task-manager.ts` 任务结构新增 `trace_id`（入参或生成），`ChatPanel` 入口唯一生成并同时透传 L1/L2，L1 未命中交接时不再生成新 trace；新增执行链台账 `events/frontend/execution_chain_trace.jsonl`（`created/route/execute/accept/settle`），L1 直答行 `task_id` 为空、按 `trace_id` 聚合并由 `entry=l1` 标识，交接行标记 `handoff=true` 不计入执行单元；门禁补降级原因覆盖率与跨 task trace 复用检查。**当前运行时样本 n=1（< 100），G-BCL-3 仍 FAIL，不得据此宣称通过。**
+
 **目标**
 
 - **生成点唯一**：由前端首个请求发起处生成 `tr_<ulid>`，全链只生成一次；
 - L1 未命中转 L2 时**原样透传**，禁止 L2 重新生成（否则同一请求产生两条 trace）；
 - `task_id` 与 `trace_id` 一对一：一个用户请求 = 一个 task = 一个 trace；
-- 落盘点：task 元数据、L1 settle payload、L2 settle payload、DSH span、Worker 事件。
+- 落盘点：task 元数据、L1 settle payload、L2 settle payload、DSH span、Worker 事件、执行链台账（`events/frontend/execution_chain_trace.jsonl`）。
 
 **变更点**
 
@@ -799,7 +801,7 @@ python3 1-ARCHITECTURE/registry/scripts/bcl_gate_check.py --json-out /tmp/bcl_ga
 | `3.1-FRONTEND/src/app/api/task/stream/route.ts` | `settleL2ToCognitive()` 从 task 元数据取 `trace_id`，不新生成 |
 | 46 DSH | 复用既有 `trace_id` 字段，不新增 schema |
 
-**验收**：G-BCL-3 判定式（抽样 `n ≥ 100`，贯穿率 100%，降级项 `degraded_reason` 非空率 100%）。
+**验收**：G-BCL-3 判定式（抽样 `n ≥ 100` 个执行单元，五阶段贯穿率 100%，跨 task trace 复用数 0，降级项 `degraded_reason` 非空率 100%）。
 
 **风险**：L1 与 L2 各自生成 trace 会产生"同请求双 trace"，表现为关联率虚高但实际断裂；判定式必须校验**同一用户请求内 trace 唯一性**，而不只是"字段非空"。
 
@@ -1004,3 +1006,4 @@ generate_from_template(template_id, params, symbol, timeframe)
 | v0.3.1 | 2026-11-13 | 新增 §12.3 实测 D1 结构性缺口：180 条决策全 MULTI、96 条执行记录无 decision_id，严格 join 0/180，G-BCL-1 FAIL；登记 DEC-BCL-06 三路选型；确立"禁模糊匹配、禁用 0 覆盖率数据训练"硬约束 |
 | v0.3.2 | 2026-11-13 | DEC-BCL-06 裁决为 B 短期 + C 中期并落地契约：40 X0 回写 `decision_id`/`decision_ts`（含标的归一与伪符号排除）、新增 `portfolio_executions.jsonl` 组合级执行记录（幂等 + fail-open）；fixture 验证 `join_coverage_strict=1.0`；G-BCL-1 因无成交事实仍保持 FAIL |
 | v0.3.3 | 2026-11-13 | DEC-BCL-07 架构落位纠偏：40 是周期/意图/验证场，**执行层是 22**；新增 `22/x1_paper_executor.py`（13→16→22 纸面成交，落 `22/audit/x1_paper_fills.jsonl`，含 `decision_id/order_id/fill_id/fill_px/exit_px/pnl`）；`FinalDecisionSignal` 增 `decision_id`；D1 证据源切到 22 账本；`40/asset_classes.VALIDATION_UNIVERSE` 扩多板块标的（XAU/XAG/XCU/CL/BZ/NG/US500/SPY/NVDA/JP225/TLT），X2 实盘白名单不变；fixture 验证 `join_coverage_strict=1.0`，G-BCL-1 仍 FAIL（n=2<100） |
+| v0.3.4 | 2026-11-13 | trace 贯穿落地并建立台账：task 元数据/入口/L1 settle/L2 settle 全链带 `trace_id`；新增 `execution_chain_trace.jsonl` 五阶段台账；G-BCL-3 判定改为执行单元口径（L1 直答按 trace 聚合、交接行不计）、新增跨 task trace 复用与降级原因覆盖率检查；运行时样本 n=1，G-BCL-3 仍 FAIL（样本不足） |
