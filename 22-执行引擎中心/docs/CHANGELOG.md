@@ -1,5 +1,28 @@
 # 执行引擎中心 — 变更记录
 
+## v1.2（2026-11-13）— 23 自进化域下单链路隔离
+
+### 背景
+`13→16→22→11` 执行链路仅适用于神经网络系统（50-NN / 11-BCRM / BDSM 等）。
+23-四层闭环自进化系统的实盘单**禁止**经 13 拦截 / 16 定容 / 22 执行，
+需由 11-polling_trader 的 raw 通道直接下单，并携带可区分标签，
+以与神经网络系统订单进行对照。
+
+### 新增
+- `TradeExecutionGateway(shadow_only=True)`：只读影子校验模式。
+  仅运行 13 `PreTradeGate.check()` 并将判定写入 `audit/gateway.jsonl`
+  （`source=23-evolution` / `executed=false` / `shadow_only=true` / `reason_code=SHADOW_*`），
+  **不阻断**订单，也不调用任何交易所接口。
+- 11 `_DomainTaggedOkxClient` / `_DomainRoutedOkxClient`：
+  23 域订单走 raw client + OKX `tag=evo23` + reason 前缀 `[23域]`；
+  神经网络订单仍走 13/16/22 链路，tag 保持 `yijingsim` 不变。
+- `PositionTracker.open_position` / `TradeRecord` 新增 `domain_tag` 字段（`"23域"` 或 `""`）。
+
+### 边界
+- `shadow_only` 网关只承担审计职责，13 判定结果不影响 23 域订单是否成交；
+  23 域订单的真实风控由其自身决策逻辑 + OKX 交易所风控承担。
+- 神经网络链路（13/16/22）行为零变更。
+
 ## v1.1（2026-11-13）— DEC-BCL-07 执行层落位
 
 ### 新增
