@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -104,6 +105,27 @@ def _to_inst_id(symbol: str) -> str | None:
     return _SYMBOL_MAP.get((symbol or "").strip().upper())
 
 
+def _evidence_key(ev: dict[str, Any]) -> str:
+    """证据稳定身份：优先 signal_id，缺失时用来源字段拼接。"""
+    sid = str(ev.get("signal_id") or "").strip()
+    if sid:
+        return sid
+    return "|".join(
+        str(ev.get(k) or "") for k in ("source", "symbol", "ts", "direction", "confidence")
+    )
+
+
+def stable_decision_id(inst_id: str, group: list[dict[str, Any]]) -> str:
+    """按证据批次生成稳定 decision_id。
+
+    同一批证据（42 总线未刷新）重复调度必须得到同一 id，22 的 processed 幂等才生效；
+    证据集变化 → 新 id（视为新信号）。
+    """
+    keys = sorted({_evidence_key(ev) for ev in group})
+    digest = hashlib.sha1("\n".join([inst_id, *keys]).encode("utf-8")).hexdigest()[:16]
+    return f"50-nn|{digest}"
+
+
 def run(
     bus_state: Path,
     out_dir: Path,
@@ -176,7 +198,7 @@ def run(
                 }
             )
             continue
-        decision["decision_id"] = decision["signal_id"]
+        decision["decision_id"] = stable_decision_id(inst_id, group)
         decision["mandate_id"] = mandate
         result["decisions"].append(decision)
 

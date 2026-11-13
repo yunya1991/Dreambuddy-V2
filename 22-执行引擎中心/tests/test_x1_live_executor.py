@@ -98,6 +98,82 @@ def test_risk_blocked_skips_execution(monkeypatch, tmp_path):
     assert not (tmp_path / "fills.jsonl").exists()
 
 
+def _stub_pass_risk():
+    return {
+        "passed": True,
+        "reason_code": "OK",
+        "reason": "stub",
+        "equity": 730.0,
+        "equity_source": "stub",
+        "notional_usdt": 73.0,
+        "leverage": 3,
+        "source": "13-pre-trade-gate",
+    }
+
+
+def test_position_guard_blocks_existing_symbol(monkeypatch, tmp_path):
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    monkeypatch.setattr(
+        ex,
+        "_bridge_call",
+        lambda payload, timeout=90: {
+            "ok": True,
+            "positions": [{"inst_id": "BTC-USDT-SWAP", "pos": 1.0}],
+        },
+    )
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 0
+    assert result["skipped"] == 1
+    assert result["position_guard_rejected"][0]["reason"] == "symbol_already_open"
+    assert not (tmp_path / "fills.jsonl").exists()
+
+
+def test_position_guard_fail_closed_on_query_error(monkeypatch, tmp_path):
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    monkeypatch.setattr(
+        ex, "_bridge_call", lambda payload, timeout=90: {"ok": False, "error": "no creds"}
+    )
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 0
+    assert result["position_guard_rejected"][0]["reason"] == "position_query_failed"
+
+
+def test_position_guard_allows_flat_symbol(monkeypatch, tmp_path):
+    monkeypatch.setattr(ex, "_LEDGER", tmp_path / "fills.jsonl")
+    monkeypatch.setattr(ex, "_LEDGER_DIR", tmp_path)
+    monkeypatch.setattr(ex, "_STATE", tmp_path / "processed.json")
+    monkeypatch.setattr(ex, "precheck", lambda decision, **kw: _stub_pass_risk())
+    monkeypatch.setattr(
+        ex,
+        "_bridge_call",
+        lambda payload, timeout=90: (
+            {"ok": True, "positions": []}
+            if payload.get("action") == "status"
+            else {"ok": True, "order_id": "ord-1", "reference_px": 100.0}
+        ),
+    )
+    outbox = tmp_path / "outbox.jsonl"
+    outbox.write_text(json.dumps(_live_decision(), ensure_ascii=False) + "\n", encoding="utf-8")
+
+    result = ex.run(outbox, dry_run=False, limit=10)
+    assert result["executed"] == 1
+    row = json.loads((tmp_path / "fills.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert row["request"]["notional_usdt"] == 73.0
+    assert row["order_placed"] is True
+
+
 def test_risk_bridge_real_gate_contract():
     """真实加载 13：输入不合规方向必须 fail-closed，合规输入返回稳定契约。"""
     from risk_bridge import precheck

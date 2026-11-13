@@ -142,6 +142,24 @@ def _bridge_call(payload: dict[str, Any], timeout: int = 90) -> dict[str, Any]:
         }
 
 
+def _position_guard(decision: dict[str, Any]) -> str | None:
+    """真实下单前查 11 持仓：同标的已有仓位则跳过，避免每轮重复开仓。"""
+    status = _bridge_call({"action": "status"}, timeout=30)
+    if not status.get("ok"):
+        return "position_query_failed"
+    symbol = str(decision.get("symbol") or "").upper()
+    for pos in status.get("positions") or []:
+        if str(pos.get("inst_id") or "").upper() != symbol:
+            continue
+        try:
+            size = abs(float(pos.get("pos") or 0))
+        except (TypeError, ValueError):
+            return "position_query_failed"
+        if size > 0:
+            return "symbol_already_open"
+    return None
+
+
 def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
     decisions = _read_outbox(outbox)
     state = _load_state()
@@ -178,6 +196,16 @@ def run(outbox: Path, dry_run: bool, limit: int) -> dict[str, Any]:
                 {"decision_id": decision_id, "reason_code": code, "reason": risk.get("reason")}
             )
             continue
+
+        if not dry_run:
+            guard = _position_guard(decision)
+            if guard:
+                processed[decision_id] = {"status": "position_guard", "reason": guard, "ts": _now()}
+                result["skipped"] += 1
+                result.setdefault("position_guard_rejected", []).append(
+                    {"decision_id": decision_id, "reason": guard}
+                )
+                continue
 
         payload = {
             "action": "order",
