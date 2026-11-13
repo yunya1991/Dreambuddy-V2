@@ -61,7 +61,7 @@ export function RankingMonitor({ metrics }: RankingMonitorProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-slate-400">数据监控</h3>
+        <h3 className="text-xs font-semibold text-slate-400">回测数据</h3>
         <span className="text-[10px] text-slate-600">{metrics.date}</span>
       </div>
       <div className="grid grid-cols-4 gap-2">

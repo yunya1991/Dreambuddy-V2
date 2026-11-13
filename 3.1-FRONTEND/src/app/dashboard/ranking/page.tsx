@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================
-// 交易榜单 — 固定专题页
+// 今日热门资产 — 固定专题页
 // Top10 列表 + 决策卡 + 品类筛选 + 一键入场
 // REFACTOR: 通过 /api/trading-ranking/today 获取真实数据，API 不可用时降级到 mock
 // ============================================
@@ -48,9 +48,9 @@ export default function RankingPage() {
     <div className="p-4 max-w-4xl mx-auto">
       {/* 标题 */}
       <div className="mb-4">
-        <h1 className="text-lg font-bold text-slate-200">今日十大交易机会</h1>
+        <h1 className="text-lg font-bold text-slate-200">今日热门资产</h1>
         <p className="text-xs text-slate-500">
-          每日 08:00 更新 · 五维评分（技术 30% + 基本面 25% + 链上 20% + 情绪 15% + 事件 10%）
+          每交易日更新 · 三组信号对比（A 原模式 / B 神经网络 / C 自进化）· 五维评分
           {dataSource === 'mock' && !loading && (
             <span className="ml-2 text-amber-500/70">（演示数据）</span>
           )}

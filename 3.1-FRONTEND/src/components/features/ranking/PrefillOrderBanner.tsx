@@ -24,9 +24,9 @@ export function PrefillOrderBanner() {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-slate-200">{symbol}</span>
-          <V3Badge variant="info" dot>榜单推荐</V3Badge>
+          <V3Badge variant="info" dot>热门资产推荐</V3Badge>
         </div>
-        <span className="text-[10px] text-slate-500">来自交易榜单</span>
+        <span className="text-[10px] text-slate-500">来自今日热门资产</span>
       </div>
       <div className="grid grid-cols-3 gap-2 mb-2">
         <div className="bg-slate-800/40 rounded p-1.5 text-center">
