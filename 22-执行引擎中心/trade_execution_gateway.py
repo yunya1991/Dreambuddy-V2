@@ -109,6 +109,8 @@ class ExecutionResult:
     reason: str
     reason_code: str
     position_modifier: float = 1.0
+    rules_evaluated: int = 0  # 本次门禁实际执行的规则数（0 = 空表，异常信号）
+    rule_name: str = ""  # 触发拒绝/降级的规则名
     order_result: Optional[Dict[str, Any]] = None
     sltp_result: Optional[Dict[str, Any]] = None  # 主单后自动补的 SL/TP 条件单结果
 
@@ -370,6 +372,62 @@ def _load_13_modules() -> Optional[tuple]:
         sys.path[:] = saved_path
 
 
+_13_CREATE_GATE: Any = None
+
+
+def _create_gate() -> Any:
+    """通过 13 层工厂构造「带默认规则」的门禁。
+
+    历史缺陷：直接 ``PreTradeGate()`` 得到空注册表，``check()`` 恒 PASS。
+    本函数走 ``core.factory.create_gate``，规则数与配置由 13 层统一管理。
+    加载失败返回 None（调用方按 fail-closed 处理：开仓拒、平仓放行）。
+    """
+    global _13_CREATE_GATE
+    if _13_CREATE_GATE is not None:
+        try:
+            return _13_CREATE_GATE()
+        except Exception as exc:  # noqa: BLE001
+            logger.error("[gate] 13 create_gate 构造失败: %s", exc)
+            return None
+
+    _13_str = str(_13_DIR)
+    saved_path = list(sys.path)
+    sys.path[:] = [p for p in sys.path if p != _13_str]
+    sys.path.insert(0, _13_str)
+
+    saved = {k: v for k, v in sys.modules.items() if k == "core" or k.startswith("core.")}
+    for k in list(saved):
+        del sys.modules[k]
+    try:
+        from core.factory import create_gate as _factory_create_gate  # noqa: E402
+
+        _13_CREATE_GATE = _factory_create_gate
+    except Exception as exc:  # noqa: BLE001
+        logger.error("[gate] 13 core.factory 加载失败: %s", exc)
+        return None
+    finally:
+        for k in [k for k in sys.modules if k == "core" or k.startswith("core.")]:
+            del sys.modules[k]
+        sys.modules.update(saved)
+        sys.path[:] = saved_path
+
+    try:
+        return _13_CREATE_GATE()
+    except Exception as exc:  # noqa: BLE001
+        logger.error("[gate] 13 create_gate 构造失败: %s", exc)
+        return None
+
+
+def _rule_audit_fields(check: Any) -> tuple:
+    """从 13 RiskCheckResult.details 提取审计字段 (rules_evaluated, rule_name)。"""
+    details = getattr(check, "details", None) or {}
+    try:
+        evaluated = int(details.get("rules_evaluated") or 0)
+    except (TypeError, ValueError):
+        evaluated = 0
+    return evaluated, str(details.get("rule_name") or "")
+
+
 class TradeExecutionGateway:
     """统一交易执行入口。
 
@@ -441,30 +499,35 @@ class TradeExecutionGateway:
 
         # 13 加载失败 → fail-closed：开仓拒，平仓放行
         modules = _load_13_modules()
-        if modules is None:
+        if modules is not None and self._gate is None:
+            # 必须走 13 工厂（带默认规则）；直接 PreTradeGate() 会得到空表 → 风控空转
+            self._gate = _create_gate()
+
+        if modules is None or self._gate is None:
             self._13_load_failed = True
+            reason_prefix = (
+                "risk_module_unavailable" if modules is None else "risk_gate_init_failed"
+            )
             if is_close:
                 order_result = self._place_order(sig)
                 result = ExecutionResult(
                     passed=True,
                     executed=self._order_succeeded(order_result),
-                    reason="risk_module_unavailable_close_allowed",
-                    reason_code="RISK_MODULE_UNAVAILABLE_CLOSE_ALLOWED",
+                    reason=f"{reason_prefix}_close_allowed",
+                    reason_code=f"{reason_prefix.upper()}_CLOSE_ALLOWED",
                     order_result=order_result,
                 )
             else:
                 result = ExecutionResult(
                     passed=False,
                     executed=False,
-                    reason="risk_module_unavailable_open_rejected",
-                    reason_code="RISK_MODULE_UNAVAILABLE_OPEN_REJECTED",
+                    reason=f"{reason_prefix}_open_rejected",
+                    reason_code=f"{reason_prefix.upper()}_OPEN_REJECTED",
                 )
             self._audit(sig, result)
             return result
 
-        PreTradeGate, Signal, RiskContext, Direction = modules
-        if self._gate is None:
-            self._gate = PreTradeGate()
+        _, Signal, RiskContext, Direction = modules
         ctx = (
             self._risk_context
             if self._risk_context is not None
@@ -510,12 +573,15 @@ class TradeExecutionGateway:
             return result
 
         if not check.passed:
+            _evaluated, _rule = _rule_audit_fields(check)
             result = ExecutionResult(
                 passed=False,
                 executed=False,
                 reason=str(getattr(check, "message", "")),
                 reason_code=str(getattr(check.reason_code, "value", check.reason_code)),
                 position_modifier=float(getattr(check, "position_modifier", 1.0) or 1.0),
+                rules_evaluated=_evaluated,
+                rule_name=_rule,
             )
             self._audit(sig, result)
             return result
@@ -566,6 +632,7 @@ class TradeExecutionGateway:
                     sltp_result,
                 )
 
+        _evaluated, _rule = _rule_audit_fields(check)
         result = ExecutionResult(
             passed=True,
             executed=executed,
@@ -578,6 +645,8 @@ class TradeExecutionGateway:
                 str(getattr(check.reason_code, "value", "PASS")) if executed else "ORDER_FAILED"
             ),
             position_modifier=position_modifier,
+            rules_evaluated=_evaluated,
+            rule_name=_rule,
             order_result=order_result,
             sltp_result=sltp_result,
         )
@@ -602,20 +671,30 @@ class TradeExecutionGateway:
             return result
 
         modules = _load_13_modules()
-        if modules is None:
+        if modules is not None and self._gate is None:
+            self._gate = _create_gate()
+
+        if modules is None or self._gate is None:
             self._13_load_failed = True
+            reason = (
+                "shadow_risk_module_unavailable（真实链路会 fail-closed 拒开仓）"
+                if modules is None
+                else "shadow_risk_gate_init_failed（真实链路会 fail-closed 拒开仓）"
+            )
             result = ExecutionResult(
                 passed=False,
                 executed=False,
-                reason="shadow_risk_module_unavailable（真实链路会 fail-closed 拒开仓）",
-                reason_code="SHADOW_RISK_MODULE_UNAVAILABLE",
+                reason=reason,
+                reason_code=(
+                    "SHADOW_RISK_MODULE_UNAVAILABLE"
+                    if modules is None
+                    else "SHADOW_RISK_GATE_INIT_FAILED"
+                ),
             )
             self._audit(sig, result, shadow_only=True)
             return result
 
-        PreTradeGate, Signal, RiskContext, Direction = modules
-        if self._gate is None:
-            self._gate = PreTradeGate()
+        _, Signal, RiskContext, Direction = modules
         ctx = (
             self._risk_context
             if self._risk_context is not None
@@ -648,12 +727,15 @@ class TradeExecutionGateway:
 
         passed = bool(getattr(check, "passed", False))
         _code = str(getattr(check.reason_code, "value", check.reason_code))
+        _evaluated, _rule = _rule_audit_fields(check)
         result = ExecutionResult(
             passed=passed,
             executed=False,
             reason=f"shadow_only:{getattr(check, 'message', '')}",
             reason_code=f"SHADOW_{_code}",
             position_modifier=float(getattr(check, "position_modifier", 1.0) or 1.0),
+            rules_evaluated=_evaluated,
+            rule_name=_rule,
         )
         self._audit(sig, result, shadow_only=True)
         return result
@@ -849,6 +931,9 @@ class TradeExecutionGateway:
             "reason_code": result.reason_code,
             "reason": result.reason,
             "position_modifier": result.position_modifier,
+            # 门禁可追溯性：rules_evaluated=0 表示门禁空表（异常），需重点告警
+            "rules_evaluated": result.rules_evaluated,
+            "rule_name": result.rule_name,
         }
         if shadow_only:
             record["shadow_only"] = True

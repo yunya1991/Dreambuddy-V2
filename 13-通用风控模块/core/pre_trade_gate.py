@@ -68,6 +68,7 @@ class PreTradeGate:
         extra = extra or {}
         position_modifier = 1.0
         last_warn_reason = None
+        rules_evaluated = 0
 
         rules = self.registry.get_enabled_rules(RuleCategory.GATE)
 
@@ -85,6 +86,9 @@ class PreTradeGate:
                     config=rule_config,
                     extra=extra,
                 )
+                rules_evaluated += 1
+                result.details.setdefault("rules_evaluated", rules_evaluated)
+                result.details.setdefault("rule_name", rule_info.name)
 
                 if not result.passed:
                     return result
@@ -96,13 +100,18 @@ class PreTradeGate:
                     last_warn_reason = result
 
             except Exception as e:
-                return RiskCheckResult.fail_result(
+                failed = RiskCheckResult.fail_result(
                     reason_code=ReasonCode.HARD_FAIL_MISSING_CORE_DATA,
                     message=f"门禁规则 '{rule_info.name}' 执行失败: {e}",
                 )
+                failed.details.update(
+                    {"rules_evaluated": rules_evaluated, "rule_name": rule_info.name}
+                )
+                return failed
 
         result = RiskCheckResult.pass_result("所有门禁通过")
         result.position_modifier = position_modifier
+        result.details["rules_evaluated"] = rules_evaluated
 
         if last_warn_reason:
             result.reason_code = last_warn_reason.reason_code

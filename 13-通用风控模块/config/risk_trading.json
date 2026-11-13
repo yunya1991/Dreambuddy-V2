@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-11-14",
+  "description": "13-通用风控模块统一运行时配置（22 Gateway / 16 risk_capital 共用）。gate 段为 {rule_name: params} 两级结构，由 core/factory.py 加载；缺失字段回落 rules/gate_rules.py 代码默认值。",
+  "gate": {
+    "daily_drawdown_circuit_breaker": {
+      "max_daily_drawdown_pct": 0.10
+    },
+    "leverage_cap_check": {
+      "max_leverage": 10.0,
+      "default_leverage": 1.0
+    },
+    "concurrent_position_limit": {
+      "max_concurrent_positions": 5
+    },
+    "consecutive_losses_limit": {
+      "max_consecutive_losses": 5
+    },
+    "blackout_period_check": {
+      "blackout_windows": []
+    },
+    "confidence_minimum": {
+      "confidence_hard_min": 0.2,
+      "confidence_soft_min": 0.4
+    },
+    "drawdown_warning_degrade": {
+      "drawdown_warn_1": 0.05,
+      "drawdown_warn_2": 0.08
+    }
+  }
+}
