@@ -102,6 +102,7 @@ class ExecutionResult:
     reason_code: str
     position_modifier: float = 1.0
     order_result: Optional[Dict[str, Any]] = None
+    sltp_result: Optional[Dict[str, Any]] = None  # 主单后自动补的 SL/TP 条件单结果
 
 
 class RiskGatedOkxClient:
@@ -526,6 +527,28 @@ class TradeExecutionGateway:
 
         order_result = self._place_order(sig_for_exec, position_modifier=position_modifier)
         executed = self._order_succeeded(order_result)
+
+        # 主单成功后自动补 SL/TP（BCRM 风控原逻辑的 Gateway 等价实现）
+        # - take_profit/stop_loss 动作本身就是 SL/TP 类，跳过
+        # - close 类动作（平仓/减仓）执行后已无仓位，跳过
+        # - open 类且 sig 带 sl_px/tp_px → 调 place_stop_loss_take_profit 补条件单
+        sltp_result: Optional[Dict[str, Any]] = None
+        if (
+            executed
+            and sig.action not in ("stop_loss", "take_profit")
+            and sig.action not in ("close", "reduce", "reduce_only")
+            and (sig.sl_px is not None or sig.tp_px is not None)
+        ):
+            sltp_result = self._place_attached_sltp(sig)
+            if not sltp_result.get("ok", True):
+                logger.warning(
+                    "[T13] attached SL/TP failed for %s %s (pos_side=%s): %s",
+                    sig.action,
+                    sig.symbol,
+                    sig.pos_side,
+                    sltp_result,
+                )
+
         result = ExecutionResult(
             passed=True,
             executed=executed,
@@ -539,11 +562,38 @@ class TradeExecutionGateway:
             ),
             position_modifier=position_modifier,
             order_result=order_result,
+            sltp_result=sltp_result,
         )
         self._audit(sig, result)
         return result
 
     # ── internals ─────────────────────────────────────────────────────
+    def _place_attached_sltp(self, sig: FinalDecisionSignal) -> Dict[str, Any]:
+        """主单成功后自动补 SL/TP 条件单。
+
+        等价于原始 okx_client.execute_bcrm_signal 里 "开仓成功 → 补 SL/TP" 的逻辑。
+        用 raw client 的 place_stop_loss_take_profit —— OKX algo 条件单原生接口，
+        不经过 tee execute_market_compat（tee 只管市价主单）。
+        任一参数缺失时 FAIL-OPEN 返回 {"ok": False, ...}，不影响主单 executed 状态。
+        """
+        if sig.sl_px is None and sig.tp_px is None:
+            return {"ok": False, "error": "no_sl_tp_px", "reason": "sl_px and tp_px both None"}
+        fn = getattr(self._okx, "place_stop_loss_take_profit", None)
+        if not callable(fn):
+            return {"ok": False, "error": "place_stop_loss_take_profit_not_found"}
+        pos_side = sig.pos_side or ("long" if sig.direction == "long" else "short")
+        try:
+            return fn(
+                inst_id=sig.symbol,
+                pos_side=pos_side,
+                stop_loss_px=float(sig.sl_px) if sig.sl_px is not None else 0,
+                take_profit_px=float(sig.tp_px) if sig.tp_px is not None else 0,
+                reason=f"auto_sltp_after_{sig.action}:{sig.signal_id}",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("[T13] attached SL/TP exception: %s", exc)
+            return {"ok": False, "error": f"place_sltp_exc:{exc}"}
+
     def _allocator_cap_sz(self, sig: FinalDecisionSignal, equity: float) -> Optional[float]:
         """把 16 的 USDT 建议换算为合约张数上限。
 

@@ -498,3 +498,113 @@ def test_risk_gated_close_and_reduce_stay_on_gateway_chain():
         ("buy", 4),
         ("buy", 2),
     ]
+
+
+def test_attached_sltp_after_open_success():
+    """开仓成功后，sig 带 sl_px/tp_px → 自动补 SL/TP 条件单。
+
+    等价于原始 okx_client.execute_bcrm_signal 的 "开仓→成功→补 SL/TP" 逻辑。
+    """
+    fake_okx = _FakeOkx()
+    gw = TradeExecutionGateway(okx_client=fake_okx)
+
+    sig = FinalDecisionSignal(
+        signal_id="sltp-1",
+        source="test",
+        symbol="BTC-USDT-SWAP",
+        direction="long",
+        action="open",
+        sz=0.01,
+        pos_side="long",
+        sl_px=48000.0,
+        tp_px=55000.0,
+    )
+    with patch.object(gw, "_gate") as gate:
+        gate.check.return_value = _allow()
+        result = gw.submit(sig)
+
+    assert result.executed is True
+    assert len(fake_okx.calls) == 1  # 主市价单
+    assert len(fake_okx.sltp_calls) == 1  # 自动补 SL/TP
+    sltp = fake_okx.sltp_calls[0]
+    assert sltp["inst_id"] == "BTC-USDT-SWAP"
+    assert sltp["pos_side"] == "long"
+    assert sltp["stop_loss_px"] == 48000.0
+    assert sltp["take_profit_px"] == 55000.0
+    assert result.sltp_result is not None
+    assert result.sltp_result["ok"] is True
+
+
+def test_attached_sltp_not_triggered_on_close_or_takeover():
+    """close/reduce/stop_loss/take_profit 动作 → 不自动补 SL/TP。"""
+    fake_okx = _FakeOkx()
+    fake_okx.positions = [{"pos_side": "long", "pos": 10}]
+    gw = TradeExecutionGateway(okx_client=fake_okx)
+
+    with patch.object(gw, "_gate") as gate:
+        gate.check.return_value = _allow()
+        result_close = gw.submit(
+            FinalDecisionSignal(
+                signal_id="close-1",
+                source="test",
+                symbol="BTC-USDT-SWAP",
+                direction="long",
+                action="close",
+                sz=10,
+                pos_side="long",
+                sl_px=48000.0,
+                tp_px=55000.0,
+            )
+        )
+        result_tp = gw.submit(
+            FinalDecisionSignal(
+                signal_id="tp-1",
+                source="test",
+                symbol="BTC-USDT-SWAP",
+                direction="long",
+                action="take_profit",
+                sz=5,
+                pos_side="long",
+                tp_px=55000.0,
+            )
+        )
+
+    assert result_close.executed is True
+    assert result_close.sltp_result is None  # close 不补
+    assert result_tp.executed is True
+    assert result_tp.sltp_result is None  # take_profit 本身就是 SL/TP 类，跳过
+    assert (
+        len(fake_okx.sltp_calls) == 1
+    )  # 只有 take_profit 自己那笔（来自 _place_order 的 SL/TP 分支）
+
+
+def test_attached_sltp_failure_does_not_taint_main_order():
+    """主单成功但 SL/TP 补单失败 → 主单 executed=True 不受影响，仅日志告警。"""
+    fake_okx = _FakeOkx()
+    gw = TradeExecutionGateway(okx_client=fake_okx)
+    fake_okx.sltp_calls = []
+
+    def _bad_sltp(**kwargs):
+        raise RuntimeError("sltp api broken")
+
+    fake_okx.place_stop_loss_take_profit = _bad_sltp
+
+    sig = FinalDecisionSignal(
+        signal_id="sltp-fail-1",
+        source="test",
+        symbol="BTC-USDT-SWAP",
+        direction="long",
+        action="open",
+        sz=0.01,
+        pos_side="long",
+        sl_px=48000.0,
+        tp_px=55000.0,
+    )
+    with patch.object(gw, "_gate") as gate:
+        gate.check.return_value = _allow()
+        result = gw.submit(sig)
+
+    assert result.executed is True  # 主单仍算成功
+    assert result.sltp_result is not None
+    assert result.sltp_result["ok"] is False
+    assert "sltp api broken" in result.sltp_result["error"]
