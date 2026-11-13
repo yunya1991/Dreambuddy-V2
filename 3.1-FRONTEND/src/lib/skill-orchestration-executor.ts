@@ -318,14 +318,21 @@ export async function executeSkillOrchestration(
           };
         }
 
-        // Step 2.3: 调 index_query_service 检索文档（通过 DSH IPC 调 Python 索引服务）
-        // 尝试通过 DSH handler 调用文档检索
+        // Step 2.3: 文档检索（DSH 真实能力名 knowledge_search，参数与返回契约已实测）
         const { callDshHandler } = await import('./dsh-execution-engine');
         let docResults: any[] = [];
         try {
-          const docResult = await callDshHandler('index_query', { query: message, category: 'doc', top_k: 5 });
-          const raw = (docResult as any)?.output || docResult || [];
-          docResults = Array.isArray(raw) ? raw : (raw?.results || raw?.data || []);
+          const docResult = await callDshHandler('knowledge_search', { query: message, category: 'doc', top_k: 5 });
+          // 兼容单层/双层信封：{output:{results}} 或 {output:{output:{results}}}
+          let raw: any = docResult;
+          for (
+            let depth = 0;
+            depth < 3 && raw && typeof raw === 'object' && !Array.isArray(raw) && raw.results === undefined;
+            depth += 1
+          ) {
+            raw = raw.output ?? raw.data;
+          }
+          docResults = Array.isArray(raw) ? raw : (raw?.results || []);
         } catch {
           // 文档检索服务不可达 → 跳转路径 C
           docResults = [];
@@ -428,19 +435,11 @@ export async function executeSkillOrchestration(
         });
 
         try {
-          // Step 3.2: 调 dream-research-workflow 联网调研
-          let researchReport = '';
-          try {
-            const researchResult = await callDshHandler('research', {
-              query: message,
-              sources: ['finance', 'github', 'modular', 'code'],
-            });
-            const rOut: any = (researchResult as any)?.output || researchResult || {};
-            researchReport = (rOut?.report || rOut?.content || (typeof rOut === 'string' ? rOut : '') || '');
-          } catch {
-            // research handler 不可达
-            researchReport = '';
-          }
+          // Step 3.2: dream-research-workflow 联网调研
+          // F4 跨工作区缺口：DSH 未注册 `research` capability（HANDLER_TO_SHELL_ID 无此项），
+          // 此前调用必然 not_found。前端不再发无效请求，保持原有「无结果 → 人工介入」语义；
+          // 待 DSH 侧登记 research 能力后再接线。
+          let researchReport: string = '';
 
           if (researchReport) {
             // Step 3.4-3.5: LLM 转执行计划 + DSH 执行（注入 research report 作为 document_context）

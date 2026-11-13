@@ -6,7 +6,7 @@
  *  2. HTTP 不可用/未配置时回退既有 IPC：child_process.spawn + 行过滤 stdout
  *
  * IPC 模式复刻 dream-harness-bridge P0-5 (VM-1789618914215):
- *  - 10s 超时；FAIL-OPEN: 失败返回 {degraded: true}, 不抛异常
+ *  - 分工具超时；FAIL-OPEN: 失败返回 {degraded: true}, 不抛异常
  */
 
 import { spawn } from 'child_process';
@@ -23,7 +23,19 @@ export interface CognitiveResult<T = unknown> {
 const ADAPTER_PATH = path.join(process.cwd(), 'scripts', 'cognitive_adapter.py');
 // 不写死本机解释器路径：云端用 COGNITIVE_PYTHON / PYTHON 覆盖，缺省回落 python3
 const PYTHON_BIN = process.env.COGNITIVE_PYTHON || process.env.PYTHON || 'python3';
-const TIMEOUT_MS = 10000;
+
+// 超时按工具分级：
+//  - health 用于页面轮询，必须快速失败，避免认知服务异常时页面长时间空白；
+//  - recall/record/verify 是业务调用，云端 30 万+ 记忆的 recall 实测约 14s
+//    （向量检索 + Python 进程冷启动），原 10s 固定超时会把正常慢调用误判为降级。
+function resolveTimeoutMs(toolName: string): number {
+  const isHealth = toolName === 'health';
+  const envValue = Number(
+    isHealth ? process.env.COGNITIVE_HEALTH_TIMEOUT_MS : process.env.COGNITIVE_TIMEOUT_MS,
+  );
+  if (Number.isFinite(envValue) && envValue > 0) return envValue;
+  return isHealth ? 10000 : 35000;
+}
 
 /**
  * HTTP 代理调用（T-C5）。
@@ -33,9 +45,10 @@ async function callCognitiveHttp<T>(
   base: string,
   toolName: string,
   args: Record<string, unknown>,
+  timeoutMs: number,
 ): Promise<CognitiveResult<T> | null> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${base.replace(/\/+$/, '')}/cognitive/${encodeURIComponent(toolName)}`, {
       method: 'POST',
@@ -67,16 +80,21 @@ export async function callCognitive<T = unknown>(
   toolName: string,
   args: Record<string, unknown> = {}
 ): Promise<CognitiveResult<T>> {
+  const timeoutMs = resolveTimeoutMs(toolName);
   const httpBase = process.env.COGNITIVE_API_BASE?.trim();
   if (httpBase) {
-    const viaHttp = await callCognitiveHttp<T>(httpBase, toolName, args);
+    const viaHttp = await callCognitiveHttp<T>(httpBase, toolName, args, timeoutMs);
     if (viaHttp) return viaHttp;
   }
-  return callCognitiveIpc<T>(toolName, args);
+  return callCognitiveIpc<T>(toolName, args, timeoutMs);
 }
 
 /** IPC 回退路径（既有实现，未改动语义） */
-function callCognitiveIpc<T>(toolName: string, args: Record<string, unknown>): Promise<CognitiveResult<T>> {
+function callCognitiveIpc<T>(
+  toolName: string,
+  args: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<CognitiveResult<T>> {
   return new Promise<CognitiveResult<T>>((resolve) => {
     let stdoutBuf = '';
     let stderrBuf = '';
@@ -93,9 +111,9 @@ function callCognitiveIpc<T>(toolName: string, args: Record<string, unknown>): P
       resolve({
         ok: false,
         degraded: true,
-        error: `timeout_${TIMEOUT_MS}ms`,
+        error: `timeout_${timeoutMs}ms`,
       });
-    }, TIMEOUT_MS);
+    }, timeoutMs);
 
     child.stdout.on('data', (chunk: Buffer) => {
       stdoutBuf += chunk.toString();
