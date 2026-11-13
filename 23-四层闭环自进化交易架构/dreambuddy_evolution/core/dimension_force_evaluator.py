@@ -526,30 +526,104 @@ class DimensionForceEvaluator:
             return self._neutral("c7-error")
 
     # ------------------------------------------------------------------
-    # C8 宏观交叉维度（第二阶段扩展）
+    # C8 宏观交叉维度（40 域跨市场信号 + VIX fallback）
     # ------------------------------------------------------------------
-    def evaluate_c8(self) -> dict[str, Any]:
-        """VIX z-score → 跨市场风险偏好力量.
+    def _load_40_cross_asset_matrix(self) -> dict | None:
+        """读取 40 域 cross_asset_matrix.json（跨市场动量/相关性）."""
+        import json
 
-        逻辑: VIX 高（恐慌）→ 风险资产承压 → 空头力量;
-              VIX 低（平静）→ 风险偏好充裕 → 多头力量（但极低=自满可反转）.
+        path = (
+            Path(__file__).resolve().parents[3] / "40-周期神经网络系统" / "cross_asset_matrix.json"
+        )
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            # 新鲜度校验: generated_at 超过 7 天视为陈旧
+            gen_at = data.get("generated_at")
+            if gen_at:
+                from datetime import datetime
+
+                try:
+                    ts = int(datetime.fromisoformat(gen_at.replace("Z", "+00:00")).timestamp())
+                    if int(time.time()) - ts > _STALE_SEC:
+                        return None
+                except Exception:
+                    pass
+            return data
+        except Exception:
+            return None
+
+    def evaluate_c8(self) -> dict[str, Any]:
+        """宏观交叉 → 跨市场风险偏好力量.
+
+        主信号（40 域 cross_asset_matrix）:
+          取 BTC 之外宏观资产（XAU/CL/US500/JP225/TLT）的 3M 动量，
+          按其与 BTC 的 corr0 加权求和 → 宏观动量信号:
+            正（宏观资产集体走强且与 BTC 同向）→ 风险偏好充裕 → 多头;
+            负（宏观资产集体走弱）→ 风险偏好收缩 → 空头.
+          MA200 上下比例作趋势确认（30% 权重）。
+
+        Fallback: VIX z-score（VIX 高→恐慌→空头）。
         """
         try:
             now = int(time.time())
+            matrix = self._load_40_cross_asset_matrix()
+            if matrix is not None:
+                assets = matrix.get("assets", {})
+                weighted_momentum = 0.0
+                weight_sum = 0.0
+                above = below = 0
+                for name, a in assets.items():
+                    if name == "BTC":
+                        continue
+                    mom = a.get("momentum_3m_pct")
+                    corr = a.get("corr0")
+                    if mom is None or corr is None:
+                        continue
+                    w = abs(corr)
+                    weighted_momentum += mom * corr  # corr 带符号: 正相关同向, 负相关反向
+                    weight_sum += w
+                    ma = a.get("above_ma200")
+                    if ma is True:
+                        above += 1
+                    elif ma is False:
+                        below += 1
+
+                if weight_sum > 0:
+                    macro_mom = weighted_momentum / weight_sum
+                    raw = max(-1.0, min(1.0, macro_mom / 10.0))  # ±10% 动量 → ±1
+                    n_ma = above + below
+                    if n_ma > 0:
+                        ma_ratio = (above - below) / n_ma  # [-1, 1]
+                        raw = raw * 0.7 + ma_ratio * 0.3  # 动量 70%, 趋势 30%
+                    direction = "short" if raw < -0.1 else ("long" if raw > 0.1 else "neutral")
+                    return {
+                        "direction": direction,
+                        "strength": round(self._clamp01(abs(raw)), 3),
+                        "raw_z": round(raw, 3),
+                        "macro_momentum_pct": round(macro_mom, 2),
+                        "n_macro_assets": round(weight_sum, 3),
+                        "degraded": None,
+                    }
+                # matrix 存在但无有效资产 → 降级到 VIX
+                logger.debug("[DimensionForce] C8 matrix no valid assets, fallback to VIX")
+
+            # ── Fallback: VIX z-score ──
             vix = self._query_latest("^VIX", "value")
             if vix is None or now - vix[1] > _STALE_SEC:
-                return self._neutral("vix-stale-or-missing")
+                return self._neutral("c8-stale-or-missing")
             hist = [v for v, _ in self._query_history("^VIX", "value", self.WINDOW_D4)]
             if len(hist) < 10:
-                return self._neutral("vix-insufficient-history")
+                return self._neutral("c8-vix-insufficient-history")
             z = self._zscore(vix[0], hist)
-            raw = max(-1.0, min(1.0, z / 2.0))  # VIX z 高 → 恐慌 → 空头
+            raw = max(-1.0, min(1.0, z / 2.0))
             direction = "short" if raw > 0.15 else ("long" if raw < -0.15 else "neutral")
             return {
                 "direction": direction,
                 "strength": round(self._clamp01(abs(raw)), 3),
                 "raw_z": round(raw, 3),
-                "degraded": None,
+                "degraded": "vix-fallback",
             }
         except Exception as e:
             logger.debug("[DimensionForce] C8 fail: %s", e)
@@ -711,7 +785,7 @@ class DimensionForceEvaluator:
             "D4": self.evaluate_d4(),  # C2 情绪面
             "C6": self.evaluate_c6(),  # C6 估值
             "C7": self.evaluate_c7(),  # C7 叙事（稳定币）
-            "C8": self.evaluate_c8(),  # C8 宏观交叉（VIX）
+            "C8": self.evaluate_c8(),  # C8 宏观交叉（40域跨市场信号+VIX fallback）
             "NEWS": self.evaluate_news(),  # news 信息面
         }
         result["D3"] = d3 or self._neutral("d3-not-provided")  # C3 技术面
