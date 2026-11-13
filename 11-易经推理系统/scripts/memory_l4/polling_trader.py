@@ -2109,8 +2109,10 @@ class PollingTrader:
             self._five_domain_feature_computer = FiveDomainFeatureComputer(enable=True)
             self._strategy_algo_layer = StrategyAlgorithmLayer(cfg=cfg)
             # 初始化 state_cache（A3后不再字节等价 default_fail_open，因为Scorer.enable=True）
-            # 日级刷新时会通过 A2 的真实 coin_data/system_state 重算，这里先用 fail-open 作为占位
-            self._five_domain_state_cache = self._five_domain_scorer.score_and_decide(persist=True)
+            # 日级刷新时会通过 A2 的真实 coin_data/system_state 重算，这里先用 fail-open 作为占位。
+            # 注意：占位值不落盘（persist=False）——落盘会覆盖上一次真实日级状态，
+            # 且占位文件无 _meta.updated_date，42 适配器会误判 stale（服务重启窗口期）。
+            self._five_domain_state_cache = self._five_domain_scorer.score_and_decide(persist=False)
 
             from scripts.memory_l4.five_domain_scorer import FiveDomainState
 
