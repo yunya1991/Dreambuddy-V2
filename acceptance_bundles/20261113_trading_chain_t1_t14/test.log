@@ -1,0 +1,9 @@
+........................................................................ [ 52%]
+.................................................................        [100%]
+
+exit=0
+
+$ /opt/anaconda3/bin/python -m pytest 23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_data_pipeline.py 23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_c_d_shadow.py 23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_subsystem_bridge.py 42-神经网络交易协调层/tests/test_param_dispatch.py 42-神经网络交易协调层/tests/test_signal_bus_persist.py -q --tb=short
+...........................................................              [100%]
+
+exit=0

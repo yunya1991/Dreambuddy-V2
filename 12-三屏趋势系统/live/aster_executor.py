@@ -68,6 +68,14 @@ except ImportError as e:
 
 logger = logging.getLogger(__name__)
 
+# P0/T3: 12-Aster DEX 直连路径已关闭（架构决议，2026-11-13）。
+# Aster 不再直接连 DEX 下单；所有交易须经 42 总线 → 23 仲裁 → TradeExecutionGateway → 13 风控。
+# 如需临时调试，设置环境变量 ASTER_DEX_DIRECT_ENABLED=1（仅限 debug/replay）。
+ASTER_DEX_DIRECT_DISABLED = os.environ.get("ASTER_DEX_DIRECT_ENABLED", "").lower() not in (
+    "1",
+    "true",
+)
+
 
 @dataclass
 class AsterConfig:
@@ -241,6 +249,17 @@ class AsterExecutor:
                 "error": str (if failed)
             }
         """
+        if ASTER_DEX_DIRECT_DISABLED:
+            logger.error(
+                "[AsterExecutor] DEX 直连已关闭（ASTER_DEX_DIRECT_DISABLED=True）。"
+                "交易须经 42→23→TradeExecutionGateway→13 风控链路。"
+            )
+            return {
+                "ok": False,
+                "error": "aster_dex_direct_disabled",
+                "symbol": f"{coin}USDT",
+                "side": side,
+            }
         if self.config.dry_run:
             logger.info(f"[AsterExecutor] [DRY_RUN] 市价单 {coin} {side} ${notional_usd:.2f}")
             return {
@@ -296,6 +315,14 @@ class AsterExecutor:
         Returns:
             同 place_market_order
         """
+        if ASTER_DEX_DIRECT_DISABLED:
+            logger.error("[AsterExecutor] DEX 直连已关闭：place_market_order_qty 被拒绝。")
+            return {
+                "ok": False,
+                "error": "aster_dex_direct_disabled",
+                "symbol": f"{coin}USDT",
+                "side": side,
+            }
         if self.config.dry_run:
             logger.info(f"[AsterExecutor] [DRY_RUN] 市价单 {coin} {side} qty={qty}")
             return {

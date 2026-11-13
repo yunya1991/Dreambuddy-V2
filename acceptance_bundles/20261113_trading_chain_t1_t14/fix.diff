@@ -1,0 +1,2693 @@
+diff --git a/11-易经推理系统/scripts/memory_l4/polling_trader.py b/11-易经推理系统/scripts/memory_l4/polling_trader.py
+index 506e6f4083..7d041c3b09 100644
+--- a/11-易经推理系统/scripts/memory_l4/polling_trader.py
++++ b/11-易经推理系统/scripts/memory_l4/polling_trader.py
+@@ -923,16 +923,83 @@ class PollingTrader:
+         self.bagua_engine = BaguaEngine()
+         self.okx_client = OKXSimulatedClient()
+ 
++        # ── P0/T2: 所有下单经 13 风控闸门（TradeExecutionGateway）─────────
++        # 用 RiskGatedOkxClient 代理包装 okx_client：place_order / place_stop_loss_take_profit
++        # 自动路由到 22-执行引擎中心 TradeExecutionGateway → 13 PreTradeGate（fail-closed）。
++        # 11 自有 risk_manager 仍作为前置轻量检查（见 _open_position 等），最终决策权归 13。
++        # FAIL-OPEN：Gateway 加载失败时退化为原始 okx_client，不阻塞交易主循环。
++        self._trade_exec_gateway = None
++        try:
++            import sys as _sys
++            from pathlib import Path as _P
++
++            _22_dir = _P(__file__).resolve().parents[3] / "22-执行引擎中心"
++            if str(_22_dir) not in _sys.path:
++                _sys.path.insert(0, str(_22_dir))
++            from trade_execution_gateway import (  # noqa: E402
++                RiskGatedOkxClient,
++                TradeExecutionGateway,
++            )
++
++            # T13: 保存 raw client。tee_core 必须持有 raw client，
++            # 若持有 RiskGatedOkxClient 会形成 OkxAdapter→代理→Gateway 的递归环。
++            self._okx_client_raw = self.okx_client
++
++            # T13: 加载 16 CapitalAllocatorComponent（建议制，仅作为仓位上限）
++            # 13 与 16 都使用顶层 core 包名，加载时必须临时隔离 sys.modules，
++            # 否则会与 Gateway 内部已加载的 13 core 互相抢占。
++            _allocator = None
++            try:
++                _16_dir = _P(__file__).resolve().parents[3] / "16-调控系统"
++                _saved_core = {
++                    _k: _v
++                    for _k, _v in _sys.modules.items()
++                    if _k == "core" or _k.startswith("core.")
++                }
++                for _k in list(_saved_core):
++                    del _sys.modules[_k]
++                _saved_path = list(_sys.path)
++                _sys.path.insert(0, str(_16_dir))
++                try:
++                    from core.capital_allocator.component import (  # noqa: E402
++                        CapitalAllocatorComponent,
++                    )
++
++                    _allocator = CapitalAllocatorComponent()
++                finally:
++                    for _k in [_k for _k in _sys.modules if _k == "core" or _k.startswith("core.")]:
++                        del _sys.modules[_k]
++                    _sys.modules.update(_saved_core)
++                    _sys.path[:] = _saved_path
++            except Exception as _paca_exc:
++                self._log(
++                    f"[T13] 16 capital_allocator 加载失败，跳过定容（FAIL-OPEN）: {_paca_exc}",
++                    "WARN",
++                )
++
++            self._trade_exec_gateway = TradeExecutionGateway(
++                okx_client=self.okx_client,
++                capital_allocator=_allocator,
++            )
++            self.okx_client = RiskGatedOkxClient(self.okx_client, self._trade_exec_gateway)
++            self._log("[T2] okx_client 已接入 TradeExecutionGateway（13 风控 fail-closed）", "INFO")
++        except Exception as _gw_exc:
++            self._log(
++                f"[T2] TradeExecutionGateway 加载失败，退化为原始 okx_client（FAIL-OPEN）: {_gw_exc}",
++                "WARN",
++            )
++
+         # ── TEE 执行引擎影子模式开关（2026-09-06 全系统统一开启）─────────
+-        # enable_tee=False + shadow_mode=True → TEE 完整决策但只记录不拦截
+-        # 实际下单仍走原始 okx_client.place_order()，TEE 审计日志记录差异
+-        # 引擎构造延迟到 log_file 初始化之后（见 _init_tee_shadow）
++        # T12: 11 执行逻辑剥离到 22（tee_core）。默认 enable_tee=True + shadow_mode=True：
++        #   - TEE 完整决策链运行（22 tee_core 作为执行决策权威）
++        #   - shadow 模式只记录 TEE 决策 vs 实际成交差异，不拦截实盘
++        #   - 实际下单仍走 okx_client（经 22 Gateway → 13 风控 fail-closed）
++        #   - shadow 一致率 ≥90% 后可切 YIJING_TEE_SHADOW_MODE=0 让 tee_core 真实执行
++        # FAIL-OPEN：tee_core 加载失败 → 退化为 okx_client 直传，不阻塞主循环
+         import os as _os
+ 
+-        self._tee_enable = _os.environ.get("YIJING_ENABLE_TEE", "").lower() in ("1", "true")
+-        self._tee_shadow = _os.environ.get("YIJING_TEE_SHADOW_MODE", "").lower() in ("1", "true")
+-        self._tee_engine = None
+-        self._tee_engine_init_lock = __import__("threading").Lock()
++        self._tee_enable = _os.environ.get("YIJING_ENABLE_TEE", "1").lower() in ("1", "true")
++        self._tee_shadow = _os.environ.get("YIJING_TEE_SHADOW_MODE", "1").lower() in ("1", "true")
+ 
+         self.use_bcrm2 = use_bcrm2
+         self.bcrm2_adapters = {}
+@@ -1191,9 +1258,18 @@ class PollingTrader:
+         self.log_dir.mkdir(parents=True, exist_ok=True)
+         self.log_file = self.log_dir / f"trader_{datetime.now().strftime('%Y%m%d')}.jsonl"
+ 
+-        # ── TEE 影子模式引擎构造（log_file 就绪后）─────────────────────
+-        if self._tee_enable or self._tee_shadow:
+-            self._wrap_place_order_with_tee()
++        # ── TEE 引擎由 Gateway 独占持有（log_file 就绪后）─────────────────
++        # T13 决策：tee 不再通过外层 monkeypatch 包装 place_order，
++        # 避免与 Gateway 内层调用形成双执行/递归环。shadow 下 tee 只记录决策差异，
++        # 真实下单仍由 Gateway 走 raw client；非 shadow 时由 tee 接管成交。
++        if (self._tee_enable or self._tee_shadow) and self._trade_exec_gateway is not None:
++            _engine = self._build_yijing_engine_for_gateway()
++            if _engine is not None:
++                self._trade_exec_gateway._tee_engine = _engine
++                self._log(
++                    f"[T13] tee_core 已注入 Gateway（raw client，shadow={self._tee_shadow}）",
++                    "INFO",
++                )
+ 
+         self.incremental_learner = IncrementalLearner(
+             retrain_trade_threshold=100,
+@@ -6910,6 +6986,10 @@ class PollingTrader:
+             with _tmp.open("w", encoding="utf-8") as _f:
+                 json.dump(state, _f, ensure_ascii=False, indent=2)
+             _tmp.replace(_spath)
++
++            # P1/T8 Phase-1 (shadow)：子池信号同步发布到 42 SignalBus，供 23 仲裁消费。
++            # 子池仍直接执行（shadow）；Phase-2 待 23 仲裁一致性 ≥90% 后切为信号-only。
++            self._publish_subpool_to_42_bus(tag, coin, inference, _conf, now_iso)
+         except Exception as _sse:
+             try:
+                 self._log(
+@@ -6919,6 +6999,56 @@ class PollingTrader:
+             except Exception:
+                 pass
+ 
++    def _publish_subpool_to_42_bus(
++        self, source_tag: str, coin: str, inference: dict, confidence: float, ts_iso: str
++    ) -> None:
++        """P1/T8 Phase-1：将子池信号发布到 42 SignalBus（FAIL-OPEN）。
++
++        42 总线多源 merge 后供 23 仲裁消费。子池仍直接执行（shadow 模式）。
++        """
++        try:
++            import sys as _sys
++            from datetime import timedelta
++
++            _22_dir = Path(__file__).resolve().parents[3] / "42-神经网络交易协调层"
++            if str(_22_dir) not in _sys.path:
++                _sys.path.insert(0, str(_22_dir))
++            from signal_bus import SignalBus  # noqa: E402
++
++            bus = SignalBus()
++            direction = str(inference.get("direction") or "neutral").lower()
++            expires = (
++                (datetime.now(timezone.utc) + timedelta(minutes=30))
++                .isoformat()
++                .replace("+00:00", "Z")
++            )
++            signal = {
++                "signal_id": f"11-{source_tag}-{coin}-{ts_iso[:19]}",
++                "source": f"11-{source_tag}",
++                "ts": ts_iso,
++                "symbol": inference.get("inst_id") or coin,
++                "direction": direction,
++                "confidence": float(confidence),
++                "horizon": "M1",  # 子池战术信号默认分钟级 horizon
++                "expires_at": expires,
++                "risk_exposure_hint": 0.0,  # 42 总线要求 float（0=无额外暴露提示）
++                "payload": {
++                    "coin": coin,
++                    "price": inference.get("price"),
++                    "reason": str(inference.get("reason", ""))[:200],
++                },
++            }
++            bus.publish(signal)
++            bus.flush()  # 持久化到 bus_state.json（42 多源 merge + 23 仲裁消费）
++        except Exception as _pub_exc:
++            try:
++                self._log(
++                    f"[T8-SHADOW] 42 总线发布失败（fail-open）: {type(_pub_exc).__name__}",
++                    "DEBUG",
++                )
++            except Exception:
++                pass
++
+     def _count_subpool_positions(self, source_tag: str) -> int:
+         """按 source_tag 统计本地持仓跟踪器里的子池持仓数量。
+ 
+@@ -7271,88 +7401,39 @@ class PollingTrader:
+             return 0.0
+ 
+     # ── TEE 执行引擎集成（影子模式）──────────────────────────────────
+-    def _ensure_yijing_engine(self):
+-        """懒加载 TEE 引擎（NFR-4：构造发生在 tee_core 外部，raw_client 由本方法传入）。"""
+-        if self._tee_engine is not None:
+-            return self._tee_engine
+-        if not self._tee_enable and not self._tee_shadow:
++    def _build_yijing_engine_for_gateway(self):
++        """用 raw client 构造 tee，并立即交由 Gateway 独占持有。"""
++        if self._trade_exec_gateway is None:
+             return None
+-        with self._tee_engine_init_lock:
+-            if self._tee_engine is not None:
+-                return self._tee_engine
+-            try:
+-                import importlib.util as _ilu
+-                import sys as _sys
+-                from pathlib import Path as _P
+-
+-                _tee_root = _P(__file__).resolve().parents[3] / "22-执行引擎中心"
+-                _p = _tee_root / "tee_core/integrations/yijing_integration.py"
+-                if not _p.is_file():
+-                    return None
+-                _name = "_tee_yijing_integration_lazy"
+-                _spec = _ilu.spec_from_file_location(_name, str(_p))
+-                _mod = _ilu.module_from_spec(_spec)
+-                _sys.modules.setdefault(_name, _mod)
+-                _spec.loader.exec_module(_mod)
+-                engine, _info = _mod.build_yijing_engine(
+-                    raw_client=self.okx_client,
+-                    enable_tee=self._tee_enable,
+-                    shadow_mode=self._tee_shadow,
+-                )
+-                self._tee_engine = engine
+-                self._log(
+-                    f"[TEE] 易经推理 TEE 引擎已加载 "
+-                    f"enable_tee={self._tee_enable} shadow={self._tee_shadow}",
+-                    "INFO",
+-                )
+-            except BaseException as exc:
+-                # FAIL-OPEN：集成加载失败 → 完全退化为直传，不抛错阻塞轮询
+-                self._tee_engine = None
+-                self._log(f"[TEE] 引擎加载失败，退化为直传: {exc}", "WARN")
+-        return self._tee_engine
+-
+-    def _wrap_place_order_with_tee(self):
+-        """包装 okx_client.place_order，实现双轨影子模式。
+-
+-        双轨影子模式（enable_tee=True, shadow_mode=True）：
+-          - 调用 TEE execute_market_compat（完整决策链，shadow auditor 只记录不下单）
+-          - 然后继续走原始 place_order（实际成交不变）
+-          - TEE shadow 审计日志记录 TEE 决策 vs 实际成交的差异
+-
+-        真实执行模式（enable_tee=True, shadow_mode=False）：
+-          - 完全由 TEE execute_market_compat 执行下单，不走原始路径
+-        """
+-        engine = self._ensure_yijing_engine()
+-        if engine is None:
+-            return
+-
+-        original_place_order = self.okx_client.place_order
+-
+-        def _tee_wrapped_place_order(**kwargs):
+-            # 限价单/带 px → 始终直传（TEE 暂不托管限价单）
+-            if kwargs.get("px") is not None or kwargs.get("ord_type") not in (None, "market"):
+-                return original_place_order(**kwargs)
+-
+-            try:
+-                tee_result = engine.execute_market_compat(
+-                    inst_id=kwargs.get("inst_id", ""),
+-                    side=kwargs.get("side", ""),
+-                    sz=kwargs.get("sz"),
+-                    td_mode=kwargs.get("td_mode", "isolated"),
+-                    pos_side=kwargs.get("pos_side", "net"),
+-                    leverage=kwargs.get("leverage"),
+-                    tag="yijing_shadow",
+-                    reason=kwargs.get("reason", ""),
+-                )
+-                # 如果 TEE 真实执行（非 shadow），直接返回 TEE 结果
+-                if not self._tee_shadow:
+-                    return tee_result
+-                # shadow 模式：TEE 只记录，实际下单走原始路径
+-            except BaseException:
+-                pass  # FAIL-OPEN：TEE 执行失败不影响实际下单
+-            return original_place_order(**kwargs)
++        try:
++            import importlib.util as _ilu
++            import sys as _sys
++            from pathlib import Path as _P
+ 
+-        self.okx_client.place_order = _tee_wrapped_place_order
++            _tee_root = _P(__file__).resolve().parents[3] / "22-执行引擎中心"
++            _p = _tee_root / "tee_core/integrations/yijing_integration.py"
++            if not _p.is_file():
++                return None
++            _name = "_tee_yijing_integration_lazy"
++            _spec = _ilu.spec_from_file_location(_name, str(_p))
++            _mod = _ilu.module_from_spec(_spec)
++            _sys.modules.setdefault(_name, _mod)
++            _spec.loader.exec_module(_mod)
++            engine, _info = _mod.build_yijing_engine(
++                raw_client=self._okx_client_raw,
++                enable_tee=self._tee_enable,
++                shadow_mode=self._tee_shadow,
++            )
++            self._log(
++                f"[TEE] 易经推理 TEE 引擎已加载 "
++                f"enable_tee={self._tee_enable} shadow={self._tee_shadow}",
++                "INFO",
++            )
++            return engine
++        except BaseException as exc:
++            # FAIL-OPEN：集成加载失败 → Gateway 直接使用 raw client
++            self._log(f"[TEE] 引擎加载失败，退化为直传: {exc}", "WARN")
++            return None
+ 
+     def _execute_evolution_order_via_tee(
+         self,
+@@ -7362,62 +7443,17 @@ class PollingTrader:
+         pos_side: str,
+         reason: str = "",
+     ) -> Dict[str, Any]:
+-        """自进化子池专用：通过 TEE 执行引擎真实下单（独立于 BCRM/BDSM）。
++        """自进化子池开仓：统一经 Gateway 执行（13 风控 → 16 定容 → 22 执行）。
+ 
+-        与全局 place_order 包装隔离：
+-          - BCRM/BDSM 走 okx_client.market_open_*（原始路径，TEE 仅影子审计）
+-          - evolution 子池走此方法（TEE 真实执行，带 kill_switch/slippage/auditor）
++        T13 决策：tee 由 Gateway 独占持有且只持有 raw client，子池不再直接调用
++        engine，否则会用 raw client 绕过 13 风控。
+ 
+         Returns:
+             与 market_open_long/short 兼容的 dict: {ok, ord_id, avg_px, ...}
+         """
+-        engine = self._ensure_yijing_engine()
+-        if engine is None or not self._tee_enable:
+-            # TEE 不可用时 FAIL-OPEN 回退原始路径
+-            if pos_side == "long":
+-                return self.okx_client.market_open_long(
+-                    inst_id, usdt_amount=usdt_amount, reason=reason
+-                )
+-            else:
+-                return self.okx_client.market_open_short(
+-                    inst_id, usdt_amount=usdt_amount, reason=reason
+-                )
+-
+-        try:
+-            sz = self.okx_client._usdt_to_sz(inst_id, usdt_amount)
+-            result = engine.execute_market_compat(
+-                inst_id=inst_id,
+-                side=side,
+-                sz=sz,
+-                td_mode="isolated",
+-                pos_side=pos_side,
+-                tag="evolution_real",
+-                reason=reason or f"evolution_{pos_side}",
+-            )
+-            # 映射回 market_open_* 兼容格式
+-            return {
+-                "ok": result.get("ok", True),
+-                "ord_id": result.get("ord_id", ""),
+-                "avg_px": result.get("avg_px", 0.0),
+-                "price": result.get("avg_px", 0.0),
+-                "filled_sz": result.get("filled_sz", sz),
+-                "state": result.get("state", "filled"),
+-                "data": result.get("data", {}),
+-            }
+-        except BaseException as e:
+-            self._log(
+-                f"[P2-S4b] evolution TEE 执行失败，回退原始路径: {type(e).__name__}: {e}",
+-                "WARN",
+-            )
+-            # FAIL-OPEN：TEE 失败回退原始下单
+-            if pos_side == "long":
+-                return self.okx_client.market_open_long(
+-                    inst_id, usdt_amount=usdt_amount, reason=reason
+-                )
+-            else:
+-                return self.okx_client.market_open_short(
+-                    inst_id, usdt_amount=usdt_amount, reason=reason
+-                )
++        if pos_side == "long":
++            return self.okx_client.market_open_long(inst_id, usdt_amount=usdt_amount, reason=reason)
++        return self.okx_client.market_open_short(inst_id, usdt_amount=usdt_amount, reason=reason)
+ 
+     def _execute_evolution_close_via_tee(
+         self,
+@@ -7426,7 +7462,10 @@ class PollingTrader:
+         reduce_ratio: float = 1.0,
+         reason: str = "",
+     ) -> Dict[str, Any]:
+-        """自进化子池专用：通过 TEE 执行引擎平仓（独立于 BCRM/BDSM）。
++        """自进化子池平仓：统一经 Gateway 执行（13 风控对平仓 fail-open）。
++
++        T13 决策：tee 由 Gateway 独占持有且只持有 raw client，子池不再直接调用
++        engine，否则会用 raw client 绕过 13 风控与审计。
+ 
+         Args:
+             reduce_ratio: 1.0=全部平仓, 0.1~0.9=部分平仓
+@@ -7434,86 +7473,16 @@ class PollingTrader:
+         Returns:
+             与 market_close_* 兼容的 dict
+         """
+-        engine = self._ensure_yijing_engine()
+-        if engine is None or not self._tee_enable:
+-            # TEE 不可用时 FAIL-OPEN 回退原始路径
+-            if reduce_ratio >= 1.0:
+-                if pos_side == "long":
+-                    return self.okx_client.market_close_long(inst_id, reason=reason)
+-                else:
+-                    return self.okx_client.market_close_short(inst_id, reason=reason)
+-            else:
+-                if hasattr(self.okx_client, "reduce_position"):
+-                    return self.okx_client.reduce_position(
+-                        inst_id=inst_id,
+-                        pos_side=pos_side,
+-                        reduce_ratio=reduce_ratio,
+-                        reason=reason,
+-                    )
+-                # 无部分平仓接口时回退全平
+-                if pos_side == "long":
+-                    return self.okx_client.market_close_long(inst_id, reason=reason)
+-                else:
+-                    return self.okx_client.market_close_short(inst_id, reason=reason)
+-
+-        try:
+-            # 查询当前持仓获取 sz
+-            _pos_q = self.okx_client.get_positions(inst_id)
+-            sz = 0
+-            if _pos_q.get("ok"):
+-                for _p in _pos_q.get("positions", []):
+-                    if _p.get("pos_side") == pos_side and float(_p.get("pos", 0)) > 0:
+-                        sz = float(_p.get("pos", 0))
+-                        break
+-            if sz <= 0:
+-                return {"ok": False, "error": "no position to close"}
+-
+-            close_sz = int(sz * reduce_ratio) if reduce_ratio < 1.0 else int(sz)
+-            if close_sz <= 0:
+-                return {"ok": False, "error": "reduce size too small"}
+-
+-            side = "sell" if pos_side == "long" else "buy"
+-            result = engine.execute_market_compat(
++        if reduce_ratio < 1.0 and hasattr(self.okx_client, "reduce_position"):
++            return self.okx_client.reduce_position(
+                 inst_id=inst_id,
+-                side=side,
+-                sz=close_sz,
+-                td_mode="isolated",
+                 pos_side=pos_side,
+-                tag="evolution_close_real",
+-                reason=reason or f"evolution_close_{pos_side}",
++                reduce_ratio=reduce_ratio,
++                reason=reason,
+             )
+-            return {
+-                "ok": result.get("ok", True),
+-                "ord_id": result.get("ord_id", ""),
+-                "avg_px": result.get("avg_px", 0.0),
+-                "price": result.get("avg_px", 0.0),
+-                "filled_sz": result.get("filled_sz", close_sz),
+-                "state": result.get("state", "filled"),
+-                "data": result.get("data", {}),
+-            }
+-        except BaseException as e:
+-            self._log(
+-                f"[EvolutionExitEngine] evolution TEE 平仓失败，回退原始路径: {type(e).__name__}: {e}",
+-                "WARN",
+-            )
+-            # FAIL-OPEN：TEE 失败回退原始平仓
+-            if reduce_ratio >= 1.0:
+-                if pos_side == "long":
+-                    return self.okx_client.market_close_long(inst_id, reason=reason)
+-                else:
+-                    return self.okx_client.market_close_short(inst_id, reason=reason)
+-            else:
+-                if hasattr(self.okx_client, "reduce_position"):
+-                    return self.okx_client.reduce_position(
+-                        inst_id=inst_id,
+-                        pos_side=pos_side,
+-                        reduce_ratio=reduce_ratio,
+-                        reason=reason,
+-                    )
+-                if pos_side == "long":
+-                    return self.okx_client.market_close_long(inst_id, reason=reason)
+-                else:
+-                    return self.okx_client.market_close_short(inst_id, reason=reason)
++        if pos_side == "long":
++            return self.okx_client.market_close_long(inst_id, reason=reason)
++        return self.okx_client.market_close_short(inst_id, reason=reason)
+ 
+     def _apply_bdsm_scaling(
+         self, coin: str, position_usdt: float, current_price: float
+diff --git a/12-三屏趋势系统/live/aster_executor.py b/12-三屏趋势系统/live/aster_executor.py
+index 9512de450a..bc8c1374ff 100644
+--- a/12-三屏趋势系统/live/aster_executor.py
++++ b/12-三屏趋势系统/live/aster_executor.py
+@@ -68,6 +68,14 @@ except ImportError as e:
+ 
+ logger = logging.getLogger(__name__)
+ 
++# P0/T3: 12-Aster DEX 直连路径已关闭（架构决议，2026-11-13）。
++# Aster 不再直接连 DEX 下单；所有交易须经 42 总线 → 23 仲裁 → TradeExecutionGateway → 13 风控。
++# 如需临时调试，设置环境变量 ASTER_DEX_DIRECT_ENABLED=1（仅限 debug/replay）。
++ASTER_DEX_DIRECT_DISABLED = os.environ.get("ASTER_DEX_DIRECT_ENABLED", "").lower() not in (
++    "1",
++    "true",
++)
++
+ 
+ @dataclass
+ class AsterConfig:
+@@ -241,6 +249,17 @@ class AsterExecutor:
+                 "error": str (if failed)
+             }
+         """
++        if ASTER_DEX_DIRECT_DISABLED:
++            logger.error(
++                "[AsterExecutor] DEX 直连已关闭（ASTER_DEX_DIRECT_DISABLED=True）。"
++                "交易须经 42→23→TradeExecutionGateway→13 风控链路。"
++            )
++            return {
++                "ok": False,
++                "error": "aster_dex_direct_disabled",
++                "symbol": f"{coin}USDT",
++                "side": side,
++            }
+         if self.config.dry_run:
+             logger.info(f"[AsterExecutor] [DRY_RUN] 市价单 {coin} {side} ${notional_usd:.2f}")
+             return {
+@@ -296,6 +315,14 @@ class AsterExecutor:
+         Returns:
+             同 place_market_order
+         """
++        if ASTER_DEX_DIRECT_DISABLED:
++            logger.error("[AsterExecutor] DEX 直连已关闭：place_market_order_qty 被拒绝。")
++            return {
++                "ok": False,
++                "error": "aster_dex_direct_disabled",
++                "symbol": f"{coin}USDT",
++                "side": side,
++            }
+         if self.config.dry_run:
+             logger.info(f"[AsterExecutor] [DRY_RUN] 市价单 {coin} {side} qty={qty}")
+             return {
+diff --git a/18-数据获取中心/scripts/sync_events_to_cloud.py b/18-数据获取中心/scripts/sync_events_to_cloud.py
+index c8e53fffe2..8322093692 100644
+--- a/18-数据获取中心/scripts/sync_events_to_cloud.py
++++ b/18-数据获取中心/scripts/sync_events_to_cloud.py
+@@ -98,11 +98,17 @@ def collect() -> None:
+ 
+ 
+ def push(local: Path, remote: str) -> None:
+-    subprocess.run(
+-        ["scp", "-q", "-o", "ConnectTimeout=15", str(local), f"{SSH_HOST}:{remote}"],
+-        check=True,
+-        timeout=180,
+-    )
++    cmd = ["scp", "-q", "-o", "ConnectTimeout=15", str(local), f"{SSH_HOST}:{remote}"]
++    for attempt in range(3):
++        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
++        if proc.returncode == 0:
++            return
++        err = (proc.stderr or "").strip().splitlines()[-1:] or ["unknown"]
++        if attempt == 2:
++            raise RuntimeError(f"scp 失败：{err[0]}")
++        wait = 10 * (attempt + 1)
++        log(f"scp 失败（{err[0]}），{wait}s 后重试 {attempt + 2}/3")
++        time.sleep(wait)
+ 
+ 
+ def main() -> int:
+@@ -115,17 +121,30 @@ def main() -> int:
+         return 0
+ 
+     log(f"上传 events/bodies → {SSH_HOST}")
+-    push(EVENTS_PATH, "/tmp/events_sync.jsonl")
+-    push(BODIES_PATH, "/tmp/bodies_sync.jsonl")
++    try:
++        push(EVENTS_PATH, "/tmp/events_sync.jsonl")
++        push(BODIES_PATH, "/tmp/bodies_sync.jsonl")
++    except Exception as exc:  # noqa: BLE001 — 上传失败本轮放弃，下轮重试
++        log(f"上传失败，跳过本轮：{exc}")
++        return 1
+ 
+     log("云端幂等合并 ...")
+-    proc = subprocess.run(
+-        ["ssh", "-o", "ConnectTimeout=15", SSH_HOST, "sudo -n -u luke -H bash -s"],
+-        input=REMOTE_SCRIPT,
+-        text=True,
+-        capture_output=True,
+-        timeout=300,
+-    )
++    proc = None
++    for attempt in range(3):
++        proc = subprocess.run(
++            ["ssh", "-o", "ConnectTimeout=15", SSH_HOST, "sudo -n -u luke -H bash -s"],
++            input=REMOTE_SCRIPT,
++            text=True,
++            capture_output=True,
++            timeout=300,
++        )
++        if proc.returncode == 0:
++            break
++        if attempt == 2:
++            break
++        wait = 10 * (attempt + 1)
++        log(f"ssh 失败，{wait}s 后重试 {attempt + 2}/3")
++        time.sleep(wait)
+     out = (proc.stdout or "").strip()
+     for line in out.splitlines():
+         log(f"remote: {line}")
+@@ -135,6 +154,26 @@ def main() -> int:
+         return 1
+     if "MERGED_EVENTS=0" in out:
+         log("无新增事件")
++
++    if os.environ.get("EVENTS_SYNC_CLEANUP", "1") == "1":
++        cleanup = PROJECT / "scripts" / "cleanup_news_local.py"
++        if cleanup.is_file():
++            log("本地清理（日志/事件/快讯/db 超期数据）...")
++            try:
++                cp = subprocess.run(
++                    [sys.executable, str(cleanup), "--quiet"],
++                    cwd=str(PROJECT),
++                    capture_output=True,
++                    text=True,
++                    timeout=600,
++                )
++                if cp.returncode != 0:
++                    err = (cp.stderr or "").strip().splitlines()[-3:]
++                    log(f"清理失败 rc={cp.returncode} :: " + " | ".join(err))
++                else:
++                    log("本地清理完成")
++            except Exception as exc:  # noqa: BLE001 — 清理失败不影响同步
++                log(f"清理异常：{type(exc).__name__}: {exc}")
+     return 0
+ 
+ 
+diff --git a/22-执行引擎中心/tests/test_trade_execution_gateway.py b/22-执行引擎中心/tests/test_trade_execution_gateway.py
+new file mode 100644
+index 0000000000..38bd1e7a68
+--- /dev/null
++++ b/22-执行引擎中心/tests/test_trade_execution_gateway.py
+@@ -0,0 +1,500 @@
++"""Tests for TradeExecutionGateway (T1 / AC-1 / AC-6).
++
++TR-1.1: Gateway calls 13 PreTradeGate.check(); 13 returns reject → no order placed.
++TR-1.2: 13 unavailable → open rejected, close allowed (fail-closed).
++TR-1.3: audit log contains decision_id / risk_decision / reason.
++"""
++
++from __future__ import annotations
++
++import json
++import sys
++import tempfile
++from pathlib import Path
++from types import SimpleNamespace
++from unittest.mock import patch
++
++HERE = Path(__file__).resolve().parent.parent  # 22-执行引擎中心
++if str(HERE) not in sys.path:
++    sys.path.insert(0, str(HERE))
++
++from trade_execution_gateway import (  # noqa: E402
++    FinalDecisionSignal,
++    RiskGatedOkxClient,
++    TradeExecutionGateway,
++)
++
++
++class _FakeOkx:
++    def __init__(self) -> None:
++        self.calls = []
++        self.sltp_calls = []
++        self.order_result = None
++        self.last_px = 50000.0
++        self.ct_val = 0.01
++        self.ct_mult = 1.0
++        self.has_instrument = True
++        self.cfg = {
++            "default_inst_id": "BTC-USDT-SWAP",
++            "default_usdt_amount": 500.0,
++            "td_mode": "isolated",
++        }
++        self.positions = []
++
++    def get_ticker(self, inst_id):
++        return {"ok": True, "last": self.last_px, "bid": self.last_px, "ask": self.last_px}
++
++    def get_instrument(self, inst_id):
++        if not self.has_instrument:
++            return {"ok": False}
++        return {
++            "ok": True,
++            "ct_val": self.ct_val,
++            "ct_mult": self.ct_mult,
++            "lot_sz": 0.01,
++        }
++
++    def place_order(self, **kwargs):
++        self.calls.append(kwargs)
++        if self.order_result is not None:
++            return self.order_result
++        return {"ok": True, "order_id": "fake-1", **kwargs}
++
++    def place_stop_loss_take_profit(self, **kwargs):
++        self.sltp_calls.append(kwargs)
++        return {"ok": True, "order_id": "fake-sltp-1", **kwargs}
++
++    def _usdt_to_sz(self, inst_id, usdt_amount):
++        return float(usdt_amount) / (self.last_px * self.ct_val)
++
++    def get_positions(self, inst_id):
++        return {"ok": True, "positions": list(self.positions)}
++
++    def market_open_long(self, inst_id=None, usdt_amount=None, reason=""):
++        inst_id = inst_id or self.cfg["default_inst_id"]
++        usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
++        return self.place_order(
++            inst_id=inst_id,
++            side="buy",
++            ord_type="market",
++            sz=self._usdt_to_sz(inst_id, usdt_amount),
++            pos_side="long",
++            reason=reason or "open_long",
++        )
++
++    def market_open_short(self, inst_id=None, usdt_amount=None, reason=""):
++        inst_id = inst_id or self.cfg["default_inst_id"]
++        usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
++        return self.place_order(
++            inst_id=inst_id,
++            side="sell",
++            ord_type="market",
++            sz=self._usdt_to_sz(inst_id, usdt_amount),
++            pos_side="short",
++            reason=reason or "open_short",
++        )
++
++    def market_close_long(self, inst_id=None, reason=""):
++        inst_id = inst_id or self.cfg["default_inst_id"]
++        pos = next(p for p in self.positions if p["pos_side"] == "long")
++        return self.place_order(
++            inst_id=inst_id,
++            side="sell",
++            ord_type="market",
++            sz=pos["pos"],
++            pos_side="long",
++            reason=reason or "close_long",
++        )
++
++    def market_close_short(self, inst_id=None, reason=""):
++        inst_id = inst_id or self.cfg["default_inst_id"]
++        pos = next(p for p in self.positions if p["pos_side"] == "short")
++        return self.place_order(
++            inst_id=inst_id,
++            side="buy",
++            ord_type="market",
++            sz=pos["pos"],
++            pos_side="short",
++            reason=reason or "close_short",
++        )
++
++    def reduce_position(self, inst_id=None, pos_side="long", reduce_ratio=0.5, reason=""):
++        inst_id = inst_id or self.cfg["default_inst_id"]
++        pos = next(p for p in self.positions if p["pos_side"] == pos_side)
++        reduce_sz = int(pos["pos"] * reduce_ratio)
++        result = self.place_order(
++            inst_id=inst_id,
++            side="sell" if pos_side == "long" else "buy",
++            ord_type="market",
++            sz=reduce_sz,
++            pos_side=pos_side,
++            reason=reason or "reduce",
++        )
++        result["original_pos"] = pos["pos"]
++        result["reduce_sz"] = reduce_sz
++        return result
++
++
++class _FakeAllocator:
++    def __init__(self, advice=None, events=None):
++        self.advice = advice
++        self.events = events if events is not None else []
++
++    def get_allocation_advice(self, **kwargs):
++        self.events.append("16")
++        if isinstance(self.advice, Exception):
++            raise self.advice
++        return self.advice
++
++
++class _FakeTee:
++    def __init__(self, result=None, events=None, shadow_mode=False):
++        self.result = result
++        self.events = events if events is not None else []
++        self.calls = []
++        self.shadow_mode = shadow_mode
++
++    def execute_market_compat(self, **kwargs):
++        self.events.append("22")
++        self.calls.append(kwargs)
++        if isinstance(self.result, Exception):
++            raise self.result
++        return self.result
++
++
++def _allow(position_modifier=1.0):
++    return SimpleNamespace(
++        passed=True,
++        reason_code="PASS",
++        message="all_gates_passed",
++        position_modifier=position_modifier,
++    )
++
++
++def _sig(**kw) -> dict:
++    base = {
++        "signal_id": "sig-001",
++        "source": "11-yijing",
++        "symbol": "BTC-USDT-SWAP",
++        "direction": "long",
++        "confidence": 0.8,
++        "action": "open",
++        "sz": 0.01,
++        "reason": "test",
++    }
++    base.update(kw)
++    return base
++
++
++def test_tr1_1_reject_blocks_order():
++    """13 返回 reject 时不下单。"""
++    fake_okx = _FakeOkx()
++    gw = TradeExecutionGateway(okx_client=fake_okx)
++
++    # mock 13 gate.check to return reject
++    class _RejectResult:
++        passed = False
++        reason_code = "HARD_FAIL_STRATEGY_EXCLUDED"
++        message = "strategy excluded"
++        position_modifier = 1.0
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _RejectResult()
++        result = gw.submit(_sig())
++
++    assert result.passed is False
++    assert result.executed is False
++    assert fake_okx.calls == []  # no order placed
++    assert "STRATEGY_EXCLUDED" in result.reason_code
++
++
++def test_tr1_2_fail_closed_open_rejected_close_allowed():
++    """13 不可用时开仓 reject、平仓 allow。"""
++    fake_okx = _FakeOkx()
++    gw = TradeExecutionGateway(okx_client=fake_okx)
++
++    # force 13 load to fail
++    with patch("trade_execution_gateway._load_13_modules", return_value=None):
++        # open → reject
++        r_open = gw.submit(_sig(action="open"))
++        assert r_open.passed is False
++        assert r_open.executed is False
++        assert "OPEN_REJECTED" in r_open.reason_code
++
++        # close → allow
++        r_close = gw.submit(_sig(action="close"))
++        assert r_close.passed is True
++        assert r_close.executed is True
++        assert "CLOSE_ALLOWED" in r_close.reason_code
++        assert len(fake_okx.calls) == 1
++
++
++def test_tr1_3_audit_log_contains_fields():
++    """审计日志含 decision_id(signal_id) / risk_decision / reason。"""
++    fake_okx = _FakeOkx()
++    with tempfile.TemporaryDirectory() as tmp:
++        audit_path = Path(tmp) / "gateway.jsonl"
++        gw = TradeExecutionGateway(okx_client=fake_okx, audit_path=audit_path)
++        gw.submit(_sig(signal_id="sig-audit-1"))
++
++        lines = [
++            json.loads(line)
++            for line in audit_path.read_text(encoding="utf-8").splitlines()
++            if line.strip()
++        ]
++        assert len(lines) == 1
++        rec = lines[0]
++        assert rec["signal_id"] == "sig-audit-1"
++        assert rec["risk_decision"] in ("allow", "reject")
++        assert "reason_code" in rec and rec["reason_code"]
++
++
++def test_neutral_no_execution():
++    """neutral 方向不进执行链。"""
++    fake_okx = _FakeOkx()
++    gw = TradeExecutionGateway(okx_client=fake_okx)
++    r = gw.submit(_sig(direction="neutral"))
++    assert r.passed is False
++    assert r.executed is False
++    assert r.reason_code == "NEUTRAL_NO_EXECUTION"
++    assert fake_okx.calls == []
++
++
++def test_from_dict_maps_inst_id_to_symbol():
++    """FinalDecisionSignal.from_dict 兼容 inst_id 字段。"""
++    sig = FinalDecisionSignal.from_dict({"inst_id": "ETH-USDT-SWAP", "direction": "short"})
++    assert sig.symbol == "ETH-USDT-SWAP"
++    assert sig.direction == "short"
++
++
++def test_t13_runs_13_16_22_in_order_and_caps_size():
++    """13→16→22 顺序正确；16 只做上限约束，不放大调用方仓位。
++
++    equity=10000, pct=0.2, px=50000, ct_val=0.01 → 合约面值 500 USDT
++    cap = 2000/500 = 4 张。调用方 sz=0.01 张（约 5 USDT）不得被放大到 4 张。
++    """
++    events = []
++    fake_okx = _FakeOkx()
++    allocator = _FakeAllocator({"final_position_pct": 0.2}, events)
++    tee = _FakeTee({"ok": True, "order_id": "tee-1"}, events)
++    gw = TradeExecutionGateway(
++        okx_client=fake_okx,
++        risk_context=SimpleNamespace(total_equity=10000.0),
++        capital_allocator=allocator,
++        tee_engine=tee,
++    )
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.side_effect = lambda *_: events.append("13") or _allow(0.5)
++        result = gw.submit(_sig(sz=0.01))
++
++    assert events == ["13", "16", "22"]
++    # 16 cap=4 张 > 调用方 0.01 张，不放大；13 position_modifier=0.5 再乘
++    assert tee.calls[0]["sz"] == 0.005
++    assert fake_okx.calls == []
++    assert result.executed is True
++    assert result.order_result["order_id"] == "tee-1"
++
++
++def test_t13_allocator_cap_limits_oversized_order():
++    """调用方仓位超过 16 上限时，按合约面值换算成张数后截断。"""
++    fake_okx = _FakeOkx()
++    allocator = _FakeAllocator({"final_position_pct": 0.2})
++    gw = TradeExecutionGateway(
++        okx_client=fake_okx,
++        risk_context=SimpleNamespace(total_equity=10000.0),
++        capital_allocator=allocator,
++    )
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        gw.submit(_sig(sz=10.0))
++
++    # cap = 10000 * 0.2 / (50000 * 0.01) = 4 张
++    assert fake_okx.calls[0]["sz"] == 4.0
++
++
++def test_t13_missing_contract_info_skips_sizing():
++    """无法取得合约面值时不做定容，保持调用方 sz（FAIL-OPEN）。"""
++    fake_okx = _FakeOkx()
++    fake_okx.has_instrument = False
++    allocator = _FakeAllocator({"final_position_pct": 0.2})
++    gw = TradeExecutionGateway(
++        okx_client=fake_okx,
++        risk_context=SimpleNamespace(total_equity=10000.0),
++        capital_allocator=allocator,
++    )
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        gw.submit(_sig(sz=10.0))
++
++    assert fake_okx.calls[0]["sz"] == 10.0
++
++
++def test_t13_allocator_failure_uses_caller_size():
++    fake_okx = _FakeOkx()
++    tee = _FakeTee({"ok": True, "order_id": "tee-1"})
++    gw = TradeExecutionGateway(
++        okx_client=fake_okx,
++        capital_allocator=_FakeAllocator(RuntimeError("16 unavailable")),
++        tee_engine=tee,
++    )
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        result = gw.submit(_sig(sz=0.01))
++
++    assert result.executed is True
++    assert tee.calls[0]["sz"] == 0.01
++
++
++def test_t13_tee_failure_falls_back_to_raw_client():
++    fake_okx = _FakeOkx()
++    tee = _FakeTee({"ok": False, "error": "22 unavailable"})
++    gw = TradeExecutionGateway(okx_client=fake_okx, tee_engine=tee)
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        result = gw.submit(_sig())
++
++    assert result.executed is True
++    assert result.order_result["order_id"] == "fake-1"
++    assert len(fake_okx.calls) == 1
++
++
++def test_raw_order_failure_is_not_executed_or_misreported_as_risk_reject():
++    fake_okx = _FakeOkx()
++    fake_okx.order_result = {"ok": False, "error": "insufficient margin"}
++    gw = TradeExecutionGateway(okx_client=fake_okx)
++    client = RiskGatedOkxClient(fake_okx, gw)
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        result = gw.submit(_sig())
++        proxied = client.place_order(inst_id="BTC-USDT-SWAP", side="buy", pos_side="long", sz=0.01)
++
++    assert result.passed is True
++    assert result.executed is False
++    assert result.reason_code == "ORDER_FAILED"
++    assert result.order_result["error"] == "insufficient margin"
++    assert proxied["ok"] is False
++    assert proxied["error"] == "insufficient margin"
++    assert "rejected" not in proxied
++
++
++def test_t13_shadow_tee_records_but_still_places_raw_order():
++    """shadow 只记录决策差异，真实下单必须仍走 raw client（防吞单）。"""
++    fake_okx = _FakeOkx()
++    tee = _FakeTee({"ok": True, "state": "live", "ord_id": "shadow-abc"}, shadow_mode=True)
++    gw = TradeExecutionGateway(okx_client=fake_okx, tee_engine=tee)
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        result = gw.submit(_sig())
++
++    assert result.executed is True
++    assert len(fake_okx.calls) == 1
++    assert result.order_result["order_id"] == "fake-1"
++
++
++def test_t13_tee_receives_limit_price_and_ord_type():
++    fake_okx = _FakeOkx()
++    tee = _FakeTee({"ok": True, "order_id": "tee-1"})
++    gw = TradeExecutionGateway(okx_client=fake_okx, tee_engine=tee)
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        gw.submit(_sig(px=50000.0))
++
++    req = tee.calls[0]
++    assert req["px"] == 50000.0
++    assert req["ord_type"] == "limit"
++
++
++def test_stop_loss_take_profit_uses_algo_order_and_position_modifier():
++    fake_okx = _FakeOkx()
++    gw = TradeExecutionGateway(okx_client=fake_okx)
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow(0.5)
++        result = gw.submit(_sig(action="stop_loss", sz=2.0, sl_px=90000.0, tp_px=110000.0))
++
++    assert result.executed is True
++    assert fake_okx.calls == []
++    assert len(fake_okx.sltp_calls) == 1
++    assert fake_okx.sltp_calls[0]["sz"] == 1.0
++    assert fake_okx.sltp_calls[0]["stop_loss_px"] == 90000.0
++    assert fake_okx.sltp_calls[0]["take_profit_px"] == 110000.0
++
++
++def test_risk_gated_market_open_cannot_bypass_13():
++    """raw 的高层绑定方法不得绕过代理，否则开仓会跳过 13。"""
++    fake_okx = _FakeOkx()
++    gw = TradeExecutionGateway(okx_client=fake_okx)
++    client = RiskGatedOkxClient(fake_okx, gw)
++    reject = SimpleNamespace(
++        passed=False,
++        reason_code="RISK_REJECT",
++        message="blocked by 13",
++        position_modifier=1.0,
++    )
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = reject
++        result = client.market_open_long(usdt_amount=500.0, reason="high_level_open")
++
++    assert result["ok"] is False
++    assert result["rejected"] is True
++    assert result["reason_code"] == "RISK_REJECT"
++    assert fake_okx.calls == []
++    assert gate.check.call_count == 1
++
++
++def test_risk_gated_high_level_open_runs_13_then_22():
++    events = []
++    fake_okx = _FakeOkx()
++    tee = _FakeTee({"ok": True, "order_id": "tee-high-level"}, events)
++    gw = TradeExecutionGateway(okx_client=fake_okx, tee_engine=tee)
++    client = RiskGatedOkxClient(fake_okx, gw)
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.side_effect = lambda *_: events.append("13") or _allow()
++        result = client.market_open_short(usdt_amount=500.0)
++
++    assert events == ["13", "22"]
++    assert result["order_id"] == "tee-high-level"
++    assert tee.calls[0]["side"] == "sell"
++    assert tee.calls[0]["sz"] == 1.0
++    assert fake_okx.calls == []
++
++
++def test_risk_gated_close_and_reduce_stay_on_gateway_chain():
++    fake_okx = _FakeOkx()
++    fake_okx.positions = [
++        {"pos_side": "long", "pos": 10},
++        {"pos_side": "short", "pos": 4},
++    ]
++    gw = TradeExecutionGateway(okx_client=fake_okx)
++    client = RiskGatedOkxClient(fake_okx, gw)
++
++    with patch.object(gw, "_gate") as gate:
++        gate.check.return_value = _allow()
++        close_long = client.market_close_long(reason="close_via_gateway")
++        close_short = client.market_close_short(reason="close_via_gateway")
++        reduced = client.reduce_position(
++            pos_side="short", reduce_ratio=0.5, reason="reduce_via_gateway"
++        )
++
++    assert close_long["ok"] is True
++    assert close_short["ok"] is True
++    assert reduced["reduce_sz"] == 2
++    assert reduced["original_pos"] == 4
++    assert gate.check.call_count == 3
++    actions = [call.args[0].metadata["action"] for call in gate.check.call_args_list]
++    assert actions == ["close", "close", "reduce"]
++    assert [(c["side"], c["sz"]) for c in fake_okx.calls] == [
++        ("sell", 10),
++        ("buy", 4),
++        ("buy", 2),
++    ]
+diff --git a/22-执行引擎中心/trade_execution_gateway.py b/22-执行引擎中心/trade_execution_gateway.py
+new file mode 100644
+index 0000000000..0d6f6a579b
+--- /dev/null
++++ b/22-执行引擎中心/trade_execution_gateway.py
+@@ -0,0 +1,711 @@
++"""TradeExecutionGateway — 统一交易执行入口（P0 / AC-1 / AC-6）。
++
++收口所有 live/paper 下单路径，强制经 13-通用风控模块 PreTradeGate 校验：
++  decision → 13 PreTradeGate.check() → 16 定容上限 → 22 tee/raw 执行
++                                  └→ reject → 阻断（fail-closed）
++
++fail-closed 语义：
++  - 13 模块加载失败 / check 抛异常 → 开仓请求 reject，平仓/减仓请求 allow
++  - neutral 方向 → 不下单（13 Direction 无 neutral 枚举）
++
++零侵入：不修改 13 层任何文件；通过 sys.path 隔离加载 13 层模块
++（与 50-NN主矛盾评估器/adapters/risk_gate_adapter.py 同构）。
++
++NFR-4 依赖倒置：本模块不 import 任何策略层的 concrete OkxClient；
++调用方负责构造 raw_client（real/paper/mock）并通过构造器注入。
++"""
++
++from __future__ import annotations
++
++import json
++import logging
++import sys
++import uuid
++from dataclasses import dataclass, field
++from datetime import datetime, timezone
++from pathlib import Path
++from typing import Any, Dict, Optional
++
++REPO_ROOT = Path(__file__).resolve().parents[1]
++_13_DIR = REPO_ROOT / "13-通用风控模块"
++
++logger = logging.getLogger("trade_execution_gateway")
++
++# 平仓/减仓动作白名单（13 不可用时仍允许执行，避免持仓裸奔）
++_CLOSE_ACTIONS = {"close", "reduce", "reduce_only", "take_profit", "stop_loss"}
++
++
++@dataclass
++class FinalDecisionSignal:
++    """FinalDecisionSignal v1.1 轻量 Python 表示（核心字段 + 执行扩展）。
++
++    与 49-交易框架协议/contracts/final_decision_signal.v1.1.json 对齐。
++    执行扩展字段（sz/px/pos_side/action）由调用方填充，不进 49 契约。
++    """
++
++    signal_id: str
++    source: str  # 23-evolution / 50-nn / 11-yijing / 6-trading / ...
++    symbol: str  # e.g. BTC-USDT-SWAP
++    direction: str  # long / short / neutral
++    confidence: float = 0.0
++    expires_at: str = ""
++    # ── 执行扩展 ──────────────────────────────────────────────
++    action: str = "open"  # open / close / reduce / stop_loss / take_profit
++    sz: Optional[float] = None
++    px: Optional[float] = None
++    pos_side: Optional[str] = None  # long / short / net
++    sl_px: Optional[float] = None  # 止损价（algo order）
++    tp_px: Optional[float] = None  # 止盈价（algo order）
++    reason: str = ""
++    payload: Dict[str, Any] = field(default_factory=dict)
++
++    @classmethod
++    def from_dict(cls, d: Dict[str, Any]) -> "FinalDecisionSignal":
++        return cls(
++            signal_id=str(d.get("signal_id") or f"sig-{uuid.uuid4().hex[:12]}"),
++            source=str(d.get("source") or "unknown"),
++            symbol=str(d.get("symbol") or d.get("inst_id") or "MULTI"),
++            direction=str(d.get("direction") or "neutral").lower(),
++            confidence=float(d.get("confidence") or 0.0),
++            expires_at=str(d.get("expires_at") or ""),
++            action=str(d.get("action") or "open").lower(),
++            sz=d.get("sz"),
++            px=d.get("px"),
++            pos_side=d.get("pos_side"),
++            sl_px=d.get("sl_px"),
++            tp_px=d.get("tp_px"),
++            reason=str(d.get("reason") or ""),
++            payload=d.get("payload") if isinstance(d.get("payload"), dict) else {},
++        )
++
++    def to_dict(self) -> Dict[str, Any]:
++        return {
++            "signal_id": self.signal_id,
++            "source": self.source,
++            "symbol": self.symbol,
++            "direction": self.direction,
++            "confidence": self.confidence,
++            "expires_at": self.expires_at,
++            "action": self.action,
++            "sz": self.sz,
++            "px": self.px,
++            "pos_side": self.pos_side,
++            "reason": self.reason,
++        }
++
++
++@dataclass
++class ExecutionResult:
++    passed: bool  # 13 风控是否通过
++    executed: bool  # 是否实际下单
++    reason: str
++    reason_code: str
++    position_modifier: float = 1.0
++    order_result: Optional[Dict[str, Any]] = None
++
++
++class RiskGatedOkxClient:
++    """OkxClient 代理：所有下单入口都路由到 Gateway。
++
++    高层开平仓/减仓必须显式拦截；若透传 raw 的绑定方法，其内部
++    ``self.place_order()`` 会绕过代理。只有非交易方法/属性透传 raw_client。
++    Gateway 内部持有 raw_client 引用，因此不会触发递归。
++
++    用法：
++        raw = OKXSimulatedClient(...)
++        gateway = TradeExecutionGateway(okx_client=raw)
++        client = RiskGatedOkxClient(raw, gateway)
++        # client.place_order(...) 自动经 13 风控
++    """
++
++    def __init__(self, raw_client: Any, gateway: TradeExecutionGateway) -> None:
++        object.__setattr__(self, "_raw", raw_client)
++        object.__setattr__(self, "_gateway", gateway)
++
++    # ── 拦截的交易方法 ────────────────────────────────────────────────
++    def place_order(self, **kwargs: Any) -> Dict[str, Any]:
++        return self._route_order(kwargs)
++
++    def place_stop_loss_take_profit(self, **kwargs: Any) -> Dict[str, Any]:
++        return self._submit_decision(self._sltp_kwargs_to_decision(kwargs))
++
++    def market_open_long(
++        self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
++    ) -> Dict[str, Any]:
++        return self._market_open("long", inst_id, usdt_amount, reason)
++
++    def market_open_short(
++        self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
++    ) -> Dict[str, Any]:
++        return self._market_open("short", inst_id, usdt_amount, reason)
++
++    def market_close_long(self, inst_id: str = None, reason: str = "") -> Dict[str, Any]:
++        return self._market_close("long", inst_id, reason)
++
++    def market_close_short(self, inst_id: str = None, reason: str = "") -> Dict[str, Any]:
++        return self._market_close("short", inst_id, reason)
++
++    def reduce_position(
++        self,
++        inst_id: str = None,
++        pos_side: str = "long",
++        reduce_ratio: float = 0.5,
++        reason: str = "",
++    ) -> Dict[str, Any]:
++        inst_id = inst_id or self._raw.cfg["default_inst_id"]
++        reduce_ratio = max(0.01, min(reduce_ratio, 1.0))
++        full_sz, error = self._position_sz(inst_id, pos_side, f"无 {pos_side} 持仓可减仓")
++        if error is not None:
++            return error
++        reduce_sz = int(full_sz * reduce_ratio)
++        if reduce_sz < 1:
++            return {
++                "ok": False,
++                "error": f"减仓数量不足（持仓 {full_sz}，减仓比例 {reduce_ratio}）",
++            }
++        result = self._route_order(
++            {
++                "inst_id": inst_id,
++                "side": "sell" if pos_side == "long" else "buy",
++                "ord_type": "market",
++                "sz": reduce_sz,
++                "pos_side": pos_side,
++                "td_mode": "isolated",
++                "reason": reason or f"bcrm_reduce_{int(reduce_ratio * 100)}pct",
++            },
++            action="reduce",
++        )
++        result["reduce_ratio"] = reduce_ratio
++        result["original_pos"] = full_sz
++        result["reduce_sz"] = reduce_sz
++        result["remaining_pos"] = full_sz - reduce_sz
++        return result
++
++    # ── 高层方法必须显式路由，不能透传 raw 的绑定方法 ─────────────────
++    def _market_open(
++        self, pos_side: str, inst_id: Optional[str], usdt_amount: Optional[float], reason: str
++    ) -> Dict[str, Any]:
++        inst_id = inst_id or self._raw.cfg["default_inst_id"]
++        usdt_amount = usdt_amount or self._raw.cfg["default_usdt_amount"]
++        sz = self._raw._usdt_to_sz(inst_id, usdt_amount)
++        return self._route_order(
++            {
++                "inst_id": inst_id,
++                "side": "buy" if pos_side == "long" else "sell",
++                "ord_type": "market",
++                "sz": sz,
++                "pos_side": pos_side,
++                "td_mode": "isolated",
++                "reason": reason or f"bcrm_reasoning_open_{pos_side}",
++            }
++        )
++
++    def _market_close(self, pos_side: str, inst_id: Optional[str], reason: str) -> Dict[str, Any]:
++        inst_id = inst_id or self._raw.cfg["default_inst_id"]
++        sz, error = self._position_sz(inst_id, pos_side, f"no {pos_side} position to close")
++        if error is not None:
++            return error
++        return self._route_order(
++            {
++                "inst_id": inst_id,
++                "side": "sell" if pos_side == "long" else "buy",
++                "ord_type": "market",
++                "sz": sz,
++                "pos_side": pos_side,
++                "td_mode": "isolated",
++                "reason": reason or f"bcrm_reasoning_close_{pos_side}",
++            }
++        )
++
++    def _position_sz(
++        self, inst_id: str, pos_side: str, not_found_error: str
++    ) -> tuple[Any, Optional[Dict[str, Any]]]:
++        pos_data = self._raw.get_positions(inst_id)
++        if not pos_data.get("ok"):
++            return None, pos_data
++        matched = [p for p in pos_data["positions"] if p["pos_side"] == pos_side and p["pos"] > 0]
++        if not matched:
++            return None, {"ok": False, "error": not_found_error}
++        return matched[0]["pos"], None
++
++    def _route_order(self, kwargs: Dict[str, Any], action: Optional[str] = None) -> Dict[str, Any]:
++        decision = self._order_kwargs_to_decision(kwargs)
++        if action is not None:
++            decision["action"] = action
++        return self._submit_decision(decision)
++
++    def _submit_decision(self, decision: Dict[str, Any]) -> Dict[str, Any]:
++        result = self._gateway.submit(decision)
++        if not result.executed:
++            if result.passed and result.order_result is not None:
++                return result.order_result
++            return {
++                "ok": False,
++                "rejected": True,
++                "reason": result.reason,
++                "reason_code": result.reason_code,
++            }
++        return result.order_result or {"ok": False, "error": "no_order_result"}
++
++    # ── 非交易方法/属性透传 ────────────────────────────────────────────
++    def __getattr__(self, name: str) -> Any:
++        return getattr(self._raw, name)
++
++    def __setattr__(self, name: str, value: Any) -> None:
++        if name in ("_raw", "_gateway", "place_order", "place_stop_loss_take_profit"):
++            object.__setattr__(self, name, value)
++        else:
++            setattr(self._raw, name, value)
++
++    # ── 转换辅助 ──────────────────────────────────────────────────────
++    @staticmethod
++    def _order_kwargs_to_decision(kwargs: Dict[str, Any]) -> Dict[str, Any]:
++        inst_id = kwargs.get("inst_id", "MULTI")
++        side = str(kwargs.get("side", "")).lower()
++        pos_side = str(kwargs.get("pos_side", "")).lower()
++        # 方向判定：pos_side 优先（long/short）；否则从 side 推断
++        if pos_side in ("long", "short"):
++            direction = pos_side
++        else:
++            direction = "long" if side == "buy" else "short"
++        # 动作判定：side 与 pos_side 同向→开仓，反向→平仓
++        if pos_side and side:
++            same = (side == "buy" and pos_side == "long") or (
++                side == "sell" and pos_side == "short"
++            )
++            action = "open" if same else "close"
++        else:
++            action = "open"
++        decision: Dict[str, Any] = {
++            "signal_id": f"11-yijing|{uuid.uuid4().hex[:12]}",
++            "source": "11-yijing",
++            "symbol": inst_id,
++            "direction": direction,
++            "confidence": 0.5,
++            "action": action,
++            "sz": kwargs.get("sz"),
++            "px": kwargs.get("px") if kwargs.get("px") is not None else kwargs.get("price"),
++            "pos_side": pos_side or None,
++            "reason": str(kwargs.get("reason", "")),
++        }
++        return decision
++
++    @staticmethod
++    def _sltp_kwargs_to_decision(kwargs: Dict[str, Any]) -> Dict[str, Any]:
++        pos_side = str(kwargs.get("pos_side", "long")).lower()
++        sl_px = kwargs.get("stop_loss_px")
++        tp_px = kwargs.get("take_profit_px")
++        # 同时设 SL 和 TP 时按 stop_loss 归类（algo order 会一起下）
++        action = "stop_loss" if sl_px is not None else "take_profit"
++        return {
++            "signal_id": f"11-yijing-sltp|{uuid.uuid4().hex[:12]}",
++            "source": "11-yijing",
++            "symbol": kwargs.get("inst_id", "MULTI"),
++            "direction": pos_side if pos_side in ("long", "short") else "long",
++            "confidence": 0.5,
++            "action": action,
++            "sz": kwargs.get("sz"),
++            "sl_px": sl_px,
++            "tp_px": tp_px,
++            "pos_side": pos_side,
++            "reason": str(kwargs.get("reason", "")),
++        }
++
++
++class _PaperOkxClient:
++    """默认 paper 占位客户端：当调用方未注入 okx_client 时使用。
++
++    所有下单返回 dry_run=True，不产生真实成交，保证 Gateway 可独立测试。
++    """
++
++    def place_order(self, **kwargs: Any) -> Dict[str, Any]:
++        return {"ok": True, "dry_run": True, "order_id": f"paper-{uuid.uuid4().hex[:8]}", **kwargs}
++
++
++_13_MODULES: Optional[tuple] = None
++
++
++def _load_13_modules() -> Optional[tuple]:
++    """按需加载 13 层模块（PreTradeGate / Signal / RiskContext / Direction）。
++
++    包名隔离：11/12/13/16/50 层都用顶层 core 包名，加载 13 层前：
++      1. 将 13 目录强制移到 sys.path[0]（避免被其他模块的 core 抢占）
++      2. 临时摘除 sys.modules 中的 core.*，加载后恢复
++    失败返回 None（调用方据此 fail-closed）。
++    """
++    global _13_MODULES
++    if _13_MODULES is not None:
++        return _13_MODULES
++
++    # 强制 13 目录位于 sys.path 最前，确保 core 解析到 13 的 core 包
++    _13_str = str(_13_DIR)
++    saved_path = list(sys.path)
++    sys.path[:] = [p for p in sys.path if p != _13_str]
++    sys.path.insert(0, _13_str)
++
++    saved = {k: v for k, v in sys.modules.items() if k == "core" or k.startswith("core.")}
++    for k in list(saved):
++        del sys.modules[k]
++    try:
++        from core.context import Direction, RiskContext, Signal  # noqa: E402
++        from core.pre_trade_gate import PreTradeGate  # noqa: E402
++
++        _13_MODULES = (PreTradeGate, Signal, RiskContext, Direction)
++        return _13_MODULES
++    except Exception:
++        return None
++    finally:
++        for k in [k for k in sys.modules if k == "core" or k.startswith("core.")]:
++            del sys.modules[k]
++        sys.modules.update(saved)
++        sys.path[:] = saved_path
++
++
++class TradeExecutionGateway:
++    """统一交易执行入口。
++
++    Args:
++        okx_client: 交易所客户端（real/paper/mock），需暴露 place_order(**kwargs)。
++            None 时使用 _PaperOkxClient（仅用于测试/降级）。
++        risk_context: 13 RiskContext 实例；None 时默认 total_equity=10000。
++        audit_path: 审计日志 JSONL 路径；None 时写入 22-执行引擎中心/audit/gateway.jsonl。
++        capital_allocator: 16 CapitalAllocatorComponent 实例（PACA 定容）；
++            None 时跳过 16 定容，使用调用方 sz。FAIL-OPEN。
++        tee_engine: 22 tee_core TradingEngine 实例（OrderPort）；
++            None 时直接调用 okx_client.place_order。FAIL-OPEN。
++    """
++
++    def __init__(
++        self,
++        okx_client: Any = None,
++        risk_context: Any = None,
++        audit_path: Optional[str | Path] = None,
++        capital_allocator: Any = None,
++        tee_engine: Any = None,
++    ) -> None:
++        self._okx = okx_client if okx_client is not None else _PaperOkxClient()
++        self._risk_context = risk_context
++        self._gate: Any = None  # 懒加载 PreTradeGate
++        self._13_load_failed = False
++        self._capital_allocator = capital_allocator  # 16 PACA 定容（可选）
++        self._tee_engine = tee_engine  # 22 tee_core OrderPort（可选）
++
++        if audit_path is None:
++            audit_path = REPO_ROOT / "22-执行引擎中心" / "audit" / "gateway.jsonl"
++        self._audit_path = Path(audit_path)
++        self._audit_path.parent.mkdir(parents=True, exist_ok=True)
++
++    # ── public API ────────────────────────────────────────────────────
++    def submit(self, decision: Dict[str, Any] | FinalDecisionSignal) -> ExecutionResult:
++        """提交决策执行。
++
++        Returns:
++            ExecutionResult: passed=13是否通过, executed=是否实际下单。
++        """
++        sig = (
++            decision
++            if isinstance(decision, FinalDecisionSignal)
++            else FinalDecisionSignal.from_dict(decision)
++        )
++
++        # neutral 不进执行链
++        if sig.direction == "neutral":
++            result = ExecutionResult(
++                passed=False,
++                executed=False,
++                reason="neutral_no_execution",
++                reason_code="NEUTRAL_NO_EXECUTION",
++            )
++            self._audit(sig, result)
++            return result
++
++        is_close = sig.action in _CLOSE_ACTIONS
++
++        # 13 加载失败 → fail-closed：开仓拒，平仓放行
++        modules = _load_13_modules()
++        if modules is None:
++            self._13_load_failed = True
++            if is_close:
++                order_result = self._place_order(sig)
++                result = ExecutionResult(
++                    passed=True,
++                    executed=self._order_succeeded(order_result),
++                    reason="risk_module_unavailable_close_allowed",
++                    reason_code="RISK_MODULE_UNAVAILABLE_CLOSE_ALLOWED",
++                    order_result=order_result,
++                )
++            else:
++                result = ExecutionResult(
++                    passed=False,
++                    executed=False,
++                    reason="risk_module_unavailable_open_rejected",
++                    reason_code="RISK_MODULE_UNAVAILABLE_OPEN_REJECTED",
++                )
++            self._audit(sig, result)
++            return result
++
++        PreTradeGate, Signal, RiskContext, Direction = modules
++        if self._gate is None:
++            self._gate = PreTradeGate()
++        ctx = (
++            self._risk_context
++            if self._risk_context is not None
++            else RiskContext(total_equity=10000.0)
++        )
++
++        # 映射到 13 Signal
++        direction = Direction.LONG if sig.direction == "long" else Direction.SHORT
++        signal = Signal(
++            coin=sig.symbol,
++            direction=direction,
++            confidence=sig.confidence,
++            strategy=sig.source,
++            metadata={
++                "signal_id": sig.signal_id,
++                "action": sig.action,
++                "reason": sig.reason,
++                "expires_at": sig.expires_at,
++            },
++        )
++
++        # 13 风控校验（异常 fail-closed）
++        try:
++            check = self._gate.check(signal, ctx)
++        except Exception as exc:
++            if is_close:
++                order_result = self._place_order(sig)
++                result = ExecutionResult(
++                    passed=True,
++                    executed=self._order_succeeded(order_result),
++                    reason=f"risk_gate_exception_close_allowed:{exc}",
++                    reason_code="RISK_GATE_EXCEPTION_CLOSE_ALLOWED",
++                    order_result=order_result,
++                )
++            else:
++                result = ExecutionResult(
++                    passed=False,
++                    executed=False,
++                    reason=f"risk_gate_exception_open_rejected:{exc}",
++                    reason_code="RISK_GATE_EXCEPTION_OPEN_REJECTED",
++                )
++            self._audit(sig, result)
++            return result
++
++        if not check.passed:
++            result = ExecutionResult(
++                passed=False,
++                executed=False,
++                reason=str(getattr(check, "message", "")),
++                reason_code=str(getattr(check.reason_code, "value", check.reason_code)),
++                position_modifier=float(getattr(check, "position_modifier", 1.0) or 1.0),
++            )
++            self._audit(sig, result)
++            return result
++
++        # 通过 → 执行下单（应用 13 position_modifier + 16 PACA 定容）
++        position_modifier = float(getattr(check, "position_modifier", 1.0) or 1.0)
++        # T13: 16 capital_allocator 定容（13→16→22 管道）
++        # 16 输出的是 USDT 金额建议，必须按合约面值换算成张数，且只做上限约束：
++        # 直接用它覆盖 sz 会把仓位放大 (px × ct_val) 倍。
++        final_sz = sig.sz
++        try:
++            if self._capital_allocator is not None:
++                _equity = float(getattr(ctx, "total_equity", 10000.0) or 10000.0)
++                _cap_sz = self._allocator_cap_sz(sig, _equity)
++                if _cap_sz is not None and _cap_sz > 0:
++                    final_sz = _cap_sz if sig.sz is None else min(float(sig.sz), _cap_sz)
++        except Exception as _paca_exc:  # noqa: BLE001 — 16 定容 FAIL-OPEN
++            logger.debug("[T13] capital_allocator sizing fail, use caller sz: %s", _paca_exc)
++
++        sig_for_exec = sig
++        if final_sz != sig.sz:
++            # 用 16 定容后的 sz 替换（不修改原 sig 对象）
++            import dataclasses as _dc
++
++            sig_for_exec = _dc.replace(sig, sz=final_sz)
++
++        order_result = self._place_order(sig_for_exec, position_modifier=position_modifier)
++        executed = self._order_succeeded(order_result)
++        result = ExecutionResult(
++            passed=True,
++            executed=executed,
++            reason=(
++                str(getattr(check, "message", "all_gates_passed"))
++                if executed
++                else str(order_result.get("error") or "order_failed")
++            ),
++            reason_code=(
++                str(getattr(check.reason_code, "value", "PASS")) if executed else "ORDER_FAILED"
++            ),
++            position_modifier=position_modifier,
++            order_result=order_result,
++        )
++        self._audit(sig, result)
++        return result
++
++    # ── internals ─────────────────────────────────────────────────────
++    def _allocator_cap_sz(self, sig: FinalDecisionSignal, equity: float) -> Optional[float]:
++        """把 16 的 USDT 建议换算为合约张数上限。
++
++        换算: sz = equity × final_position_pct / (px × ct_val × ct_mult)
++        任一环节缺失（无合约面值 / 无价格）返回 None，调用方保持原 sz（FAIL-OPEN）。
++        """
++        advice = self._capital_allocator.get_allocation_advice(
++            coin=sig.symbol,
++            source_tag=sig.source,
++            equity=equity,
++        )
++        if not isinstance(advice, dict) or advice.get("final_position_pct") is None:
++            return None
++        pct = float(advice["final_position_pct"])
++        if not 0.0 < pct <= 1.0:
++            return None
++
++        px = sig.px
++        if px is None:
++            ticker_fn = getattr(self._okx, "get_ticker", None)
++            if not callable(ticker_fn):
++                return None
++            px = float((ticker_fn(sig.symbol) or {}).get("last") or 0.0) or None
++        if not px:
++            return None
++
++        ct_val, ct_mult = 1.0, 1.0
++        instrument_fn = getattr(self._okx, "get_instrument", None)
++        contract_fn = getattr(self._okx, "get_contract_info", None)
++        if callable(instrument_fn):
++            info = instrument_fn(sig.symbol) or {}
++            if not info.get("ok", True):
++                return None
++            ct_val = float(info.get("ct_val") or 1.0)
++            ct_mult = float(info.get("ct_mult") or 1.0)
++        elif callable(contract_fn):
++            _lot_sz, ct_val = contract_fn(sig.symbol)
++            ct_val = float(ct_val or 1.0)
++        # 两个方法都没有时按 1:1 面值处理（现货语义）
++
++        contract_value = float(px) * ct_val * ct_mult
++        if contract_value <= 0:
++            return None
++        return (equity * pct) / contract_value
++
++    @staticmethod
++    def _order_succeeded(order_result: Dict[str, Any]) -> bool:
++        return not (isinstance(order_result, dict) and order_result.get("ok", True) is False)
++
++    def _place_order(
++        self, sig: FinalDecisionSignal, position_modifier: float = 1.0
++    ) -> Dict[str, Any]:
++        """调用底层交易所下单。
++
++        - stop_loss / take_profit 动作且设置了 sl_px/tp_px → place_stop_loss_take_profit
++        - 其他 → place_order（side：long→buy, short→sell；平仓时反向）
++        sz 按 position_modifier 缩放。
++        """
++        sz = sig.sz
++        if sz is not None and position_modifier != 1.0:
++            sz = float(sz) * position_modifier
++
++        # SL/TP algo 单（条件单，属于平仓管理类，13 不可用时仍允许）
++        if sig.action in ("stop_loss", "take_profit") and (
++            sig.sl_px is not None or sig.tp_px is not None
++        ):
++            fn = getattr(self._okx, "place_stop_loss_take_profit", None)
++            if callable(fn):
++                kwargs: Dict[str, Any] = {
++                    "inst_id": sig.symbol,
++                    "pos_side": sig.pos_side or ("long" if sig.direction == "long" else "short"),
++                    "stop_loss_px": sig.sl_px,
++                    "take_profit_px": sig.tp_px,
++                    "reason": sig.reason or f"{sig.source}:{sig.signal_id}",
++                }
++                if sz is not None:
++                    kwargs["sz"] = sz
++                try:
++                    return fn(**kwargs)
++                except Exception as exc:
++                    return {"ok": False, "error": f"place_sltp_exc:{exc}", "dry_run": False}
++
++        side = "buy" if sig.direction == "long" else "sell"
++        if sig.action in _CLOSE_ACTIONS:
++            side = "sell" if sig.direction == "long" else "buy"
++
++        kwargs = {
++            "inst_id": sig.symbol,
++            "side": side,
++            "ord_type": "market" if sig.px is None else "limit",
++            "pos_side": sig.pos_side or ("long" if sig.direction == "long" else "short"),
++            "reason": sig.reason or f"{sig.source}:{sig.signal_id}",
++        }
++        if sz is not None:
++            kwargs["sz"] = sz
++        if sig.px is not None:
++            # 适配不同客户端的价格参数名（OKXSimulatedClient=px, OKXCLI=price）
++            price_key = self._detect_price_key()
++            kwargs[price_key] = sig.px
++
++        # T13: 22 tee_core 由 Gateway 独占持有，其 client 必须是 raw client。
++        # shadow 只记录决策差异、不接管成交，必须继续走 raw 下单，
++        # 否则真实订单会被吞掉（executed=True 但交易所无单）。
++        _tee_compat = getattr(self._tee_engine, "execute_market_compat", None)
++        _tee_shadow = bool(getattr(self._tee_engine, "shadow_mode", False))
++        if callable(_tee_compat) and sz is not None:
++            try:
++                _tee_result = _tee_compat(
++                    inst_id=sig.symbol,
++                    side=side,
++                    sz=sz,
++                    td_mode=kwargs.get("td_mode", "isolated"),
++                    pos_side=kwargs["pos_side"],
++                    leverage=sig.payload.get("leverage"),
++                    tag=sig.source,
++                    reason=sig.reason,
++                    ord_type=kwargs["ord_type"],
++                    px=sig.px,
++                )
++                if (
++                    not _tee_shadow
++                    and isinstance(_tee_result, dict)
++                    and _tee_result.get("ok") is True
++                ):
++                    return _tee_result
++            except Exception as _tee_exc:  # noqa: BLE001 — tee_core FAIL-OPEN → okx_client
++                logger.debug("[T13] tee_engine execute fail, fallback to okx_client: %s", _tee_exc)
++
++        try:
++            return self._okx.place_order(**kwargs)
++        except Exception as exc:
++            return {"ok": False, "error": f"place_order_exc:{exc}", "dry_run": False}
++
++    def _detect_price_key(self) -> str:
++        """检测底层 place_order 接受的价格参数名（px 或 price）。"""
++        import inspect
++
++        try:
++            sig = inspect.signature(self._okx.place_order)
++            if "price" in sig.parameters and "px" not in sig.parameters:
++                return "price"
++        except (TypeError, ValueError):
++            pass
++        return "px"
++
++    def _audit(self, sig: FinalDecisionSignal, result: ExecutionResult) -> None:
++        record = {
++            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
++            "signal_id": sig.signal_id,
++            "source": sig.source,
++            "symbol": sig.symbol,
++            "direction": sig.direction,
++            "action": sig.action,
++            "confidence": sig.confidence,
++            "risk_decision": "allow" if result.passed else "reject",
++            "executed": result.executed,
++            "reason_code": result.reason_code,
++            "reason": result.reason,
++            "position_modifier": result.position_modifier,
++        }
++        try:
++            with open(self._audit_path, "a", encoding="utf-8") as f:
++                f.write(json.dumps(record, ensure_ascii=False) + "\n")
++        except Exception as exc:  # noqa: BLE001
++            logger.warning("audit write failed: %s", exc)
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py
+index b2ad8215bf..14792098b4 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/adapters/subsystem_bridge.py
+@@ -8,11 +8,32 @@ SPEC §2.5
+ 
+ from __future__ import annotations
+ 
++import json
+ import logging
++from pathlib import Path
+ from typing import Any
+ 
+ logger = logging.getLogger(__name__)
+ 
++# 42 神经网络交易协调层 bus_state.json 路径（多源信号汇聚总线）
++_REPO_ROOT = Path(__file__).resolve().parents[3]
++_42_BUS_STATE_PATH = _REPO_ROOT / "42-神经网络交易协调层" / "runtime" / "bus_state.json"
++
++# 43 战略承接推演层 strategic_extension_signal.json 路径（42 bus 不可用时的 fallback）
++_43_STRATEGIC_PATH = (
++    _REPO_ROOT / "43-战略承接推演层" / "runtime" / "strategic_extension_signal.json"
++)
++
++# 43 war_state（ACTIVE/FREEZE）→ 11 五域 war_state（ALLOW/COOLDOWN/RESTRICT/FREEZE）归一映射
++# 43 signal_publisher 用 ACTIVE/FREEZE；strategic_mapper 用 ALLOW/COOLDOWN/FREEZE
++_43_TO_CANONICAL_WAR_STATE: dict[str, str] = {
++    "ACTIVE": "ALLOW",
++    "ALLOW": "ALLOW",
++    "COOLDOWN": "COOLDOWN",
++    "RESTRICT": "RESTRICT",
++    "FREEZE": "FREEZE",
++}
++
+ # war_state → Feynman 温度 T 映射 (蓝图 §1.5.5)
+ _WAR_STATE_TEMP: dict[str, float] = {
+     "ALLOW": 1.0,
+@@ -49,27 +70,111 @@ _BCRM_DIR_MAP: dict[str, str] = {
+ class SubSystemBridge:
+     """从 polling_trader 实例提取子交易系统信号"""
+ 
+-    def __init__(self, trader: Any = None) -> None:
++    def __init__(self, trader: Any = None, bus_state_path: str | Path | None = None) -> None:
+         self._trader = trader
++        self._bus_state_path = Path(bus_state_path) if bus_state_path else _42_BUS_STATE_PATH
++
++    # ---------------------------------------------------------- 42 总线
++    def _load_bus_state(self) -> dict:
++        """读取 42 bus_state.json（多源信号汇聚）。FAIL-OPEN → 空结构。"""
++        try:
++            if not self._bus_state_path.exists():
++                return {"signals": []}
++            with open(self._bus_state_path, "r", encoding="utf-8") as f:
++                data = json.load(f)
++            if isinstance(data, dict):
++                return data
++        except Exception as e:
++            logger.debug("[FO] load 42 bus_state fail: %s", e)
++        return {"signals": []}
++
++    def get_bus_signals(self, source: str | None = None) -> list[dict]:
++        """从 42 总线获取信号列表，可按 source 过滤。"""
++        state = self._load_bus_state()
++        signals = state.get("signals", []) if isinstance(state, dict) else []
++        if source:
++            return [s for s in signals if s.get("source") == source]
++        return signals
++
++    # ---------------------------------------------------------- 43 战略承接
++    def get_strategic_extension(self, cls: str = "crypto_usdt") -> dict:
++        """读取 43 战略承接推演层的 per_asset_class 约束（war_state / tier / position_band 等）。
++
++        优先级：42 bus（source=strategic_extension）→ 43 直读文件 → {}（FAIL-OPEN）。
++        返回 payload.per_asset_class[cls] 字典；缺失/异常返回 {}。
++
++        注：仅当使用默认 42 bus 路径时才回退到 43 直读文件；
++        自定义 bus_state_path（隔离测试环境）不回退，避免读到线上 43 stale 信号。
++        """
++        try:
++            # 1) 42 bus
++            for sig in self.get_bus_signals():
++                if str(sig.get("source", "")) == "strategic_extension":
++                    pac = (sig.get("payload") or {}).get("per_asset_class", {})
++                    if isinstance(pac, dict) and cls in pac:
++                        return dict(pac[cls])
++            # 2) 43 直读文件 fallback（仅默认 bus 路径时）
++            if self._bus_state_path == _42_BUS_STATE_PATH and _43_STRATEGIC_PATH.exists():
++                with open(_43_STRATEGIC_PATH, "r", encoding="utf-8") as f:
++                    data = json.load(f)
++                pac = (data.get("payload") or {}).get("per_asset_class", {})
++                if isinstance(pac, dict) and cls in pac:
++                    return dict(pac[cls])
++        except Exception as e:
++            logger.debug("[FO] get_strategic_extension fail: %s", e)
++        return {}
++
++    def get_position_band_upper_pct(self, cls: str = "crypto_usdt") -> float:
++        """43 position_band 上限（0.0~1.0）。"0-20%"→0.20, "0%"→0.0, "80-100%"→1.0。FAIL-OPEN→1.0。"""
++        try:
++            ext = self.get_strategic_extension(cls)
++            band = str(ext.get("position_band", "") or "")
++            if not band:
++                return 1.0
++            # 取最后一个百分号前的数值作为上限
++            import re as _re
++
++            nums = [float(x) for x in _re.findall(r"(\d+(?:\.\d+)?)", band)]
++            if not nums:
++                return 1.0
++            return max(0.0, min(1.0, nums[-1] / 100.0))
++        except Exception:
++            return 1.0
++
++    def get_macro_mult(self, cls: str = "crypto_usdt") -> float:
++        """宏观仓位乘数 = 43 position_band 上限（0.0~1.0）。
++        乘数链：position_mult = base × regime_mult × macro_mult（13 position_modifier 最终钳位）。
++        FAIL-OPEN → 1.0（不收紧）。
++        """
++        return self.get_position_band_upper_pct(cls)
+ 
+     # ---------------------------------------------------------- war_state
+     def get_war_state(self) -> str:
+-        """获取五计庙算 war_state"""
++        """获取 war_state。
++
++        优先级（T7：11 五域已实质废弃，43 为唯一事实源）：
++        1. 43 strategic_extension.war_state（经 42 bus 或直读文件），归一化为 canonical 值
++        2. 11 五域 _five_domain_state_shadow（仅当 43 不可用时的 fallback）
++        3. FAIL-OPEN → "ALLOW"
++        """
+         try:
+-            if self._trader is None:
+-                return "ALLOW"
+-            # 影子模式优先（真实计算值）
+-            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+-                self._trader, "_five_domain_state_cache", None
+-            )
+-            if _fds is None:
+-                return "ALLOW"
+-            ws = _fds.war_state if hasattr(_fds, "war_state") else _fds.get("war_state", {})
+-            if isinstance(ws, dict):
+-                return ws.get("crypto_usdt", "ALLOW")
+-            return "ALLOW"
++            # 1) 43 战略承接（唯一事实源）
++            ext = self.get_strategic_extension()
++            ws_43 = str(ext.get("war_state", "") or "").upper()
++            if ws_43:
++                return _43_TO_CANONICAL_WAR_STATE.get(ws_43, "ALLOW")
++            # 2) 11 五域 fallback（已废弃，仅兼容）
++            if self._trader is not None:
++                _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
++                    self._trader, "_five_domain_state_cache", None
++                )
++                if _fds is not None:
++                    ws = _fds.war_state if hasattr(_fds, "war_state") else _fds.get("war_state", {})
++                    if isinstance(ws, dict):
++                        return ws.get("crypto_usdt", "ALLOW")
+         except Exception:
+-            return "ALLOW"
++            pass
++        return "ALLOW"
+ 
+     def get_ess_temperature(self) -> float:
+         """war_state → Feynman 温度 T"""
+@@ -77,35 +182,43 @@ class SubSystemBridge:
+ 
+     # ---------------------------------------------------------- BCRM direction
+     def get_bcrm_direction(self) -> str:
+-        """获取 BCRM2 最新推理方向"""
++        """获取 BCRM2 最新推理方向（优先 trader 状态，回退 42 总线）"""
+         try:
+-            if self._trader is None:
+-                return ""
+-            result = getattr(self._trader, "_last_bcrm2_result", None)
+-            if not result:
+-                return ""
+-            next_state = result.get("next_state") if isinstance(result, dict) else None
+-            if not next_state:
+-                return ""
+-            d = next_state.get("direction", "FLAT") if isinstance(next_state, dict) else "FLAT"
+-            return _BCRM_DIR_MAP.get(d, "")
++            if self._trader is not None:
++                result = getattr(self._trader, "_last_bcrm2_result", None)
++                if result:
++                    next_state = result.get("next_state") if isinstance(result, dict) else None
++                    if next_state:
++                        d = (
++                            next_state.get("direction", "FLAT")
++                            if isinstance(next_state, dict)
++                            else "FLAT"
++                        )
++                        return _BCRM_DIR_MAP.get(d, "")
++            # 回退 42 总线（source=bcrm / 11-bcrm）
++            for sig in self.get_bus_signals():
++                src = str(sig.get("source", ""))
++                if "bcrm" in src.lower():
++                    return str(sig.get("direction", "")).lower()
+         except Exception:
+-            return ""
++            pass
++        return ""
+ 
+     def get_bcrm_confidence(self) -> float:
+-        """获取 BCRM2 最新推理置信度"""
++        """获取 BCRM2 最新推理置信度（优先 trader 状态，回退 42 总线）"""
+         try:
+-            if self._trader is None:
+-                return 0.0
+-            result = getattr(self._trader, "_last_bcrm2_result", None)
+-            if not result:
+-                return 0.0
+-            next_state = result.get("next_state") if isinstance(result, dict) else None
+-            if not next_state:
+-                return 0.0
+-            return float(next_state.get("confidence", 0.0))
++            if self._trader is not None:
++                result = getattr(self._trader, "_last_bcrm2_result", None)
++                if result:
++                    next_state = result.get("next_state") if isinstance(result, dict) else None
++                    if next_state:
++                        return float(next_state.get("confidence", 0.0))
++            for sig in self.get_bus_signals():
++                if "bcrm" in str(sig.get("source", "")).lower():
++                    return float(sig.get("confidence", 0.0))
+         except Exception:
+-            return 0.0
++            pass
++        return 0.0
+ 
+     # ---------------------------------------------------------- scale_class
+     @staticmethod
+@@ -120,56 +233,81 @@ class SubSystemBridge:
+ 
+     # ---------------------------------------------------------- BDSM valuation
+     def get_bdsm_valuation(self) -> float:
+-        """获取 BDSM 估值分位（R_capital 代理）"""
++        """获取 BDSM 估值分位（R_capital 代理）（优先 trader，回退 42 总线）"""
+         try:
+-            if self._trader is None:
+-                return 0.5
+-            snapshot = getattr(self._trader, "_last_bdsm_snapshot", None)
+-            if not snapshot:
+-                return 0.5
+-            return float(snapshot.get("valuation_percentile", 0.5))
++            if self._trader is not None:
++                snapshot = getattr(self._trader, "_last_bdsm_snapshot", None)
++                if snapshot:
++                    return float(snapshot.get("valuation_percentile", 0.5))
++            for sig in self.get_bus_signals():
++                if "bdsm" in str(sig.get("source", "")).lower():
++                    return float(sig.get("confidence", 0.5))
+         except Exception:
+-            return 0.5
++            pass
++        return 0.5
+ 
+     # ---------------------------------------------------------- five_scores
+     def get_five_scores(self, cls: str = "crypto_usdt") -> dict:
+-        """获取五计庙算五维原始评分（dao/di/tian/jiang/fa）。FAIL-OPEN → 全50。"""
++        """获取五计庙算五维原始评分（dao/di/tian/jiang/fa）。
++
++        优先级：43 strategic_extension.five_scores → 11 五域 fallback → 全50（FAIL-OPEN）。
++        """
+         try:
+-            if self._trader is None:
+-                return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
+-            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+-                self._trader, "_five_domain_state_cache", None
+-            )
+-            if _fds is None:
+-                return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
+-            fs = _fds.five_scores if hasattr(_fds, "five_scores") else _fds.get("five_scores", {})
+-            if isinstance(fs, dict) and cls in fs:
+-                return dict(fs[cls])
+-            return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
++            # 1) 43 战略承接（唯一事实源）
++            ext = self.get_strategic_extension(cls)
++            fs_43 = ext.get("five_scores")
++            if isinstance(fs_43, dict) and fs_43:
++                return {
++                    "dao": int(fs_43.get("dao", 50)),
++                    "di": int(fs_43.get("di", 50)),
++                    "tian": int(fs_43.get("tian", 50)),
++                    "jiang": int(fs_43.get("jiang", 50)),
++                    "fa": int(fs_43.get("fa", 50)),
++                }
++            # 2) 11 五域 fallback（已废弃，仅兼容）
++            if self._trader is not None:
++                _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
++                    self._trader, "_five_domain_state_cache", None
++                )
++                if _fds is not None:
++                    fs = (
++                        _fds.five_scores
++                        if hasattr(_fds, "five_scores")
++                        else _fds.get("five_scores", {})
++                    )
++                    if isinstance(fs, dict) and cls in fs:
++                        return dict(fs[cls])
+         except Exception:
+-            return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
++            pass
++        return {"dao": 50, "di": 50, "tian": 50, "jiang": 50, "fa": 50}
+ 
+     # ---------------------------------------------------------- position_cap
+     def get_position_cap(self, cls: str = "crypto_usdt") -> float:
+-        """获取战略层仓位上限。FAIL-OPEN → 1.0。"""
++        """获取战略层仓位上限。
++
++        优先级：43 position_band 上限 → 11 五域 aggregate_position_cap_pct → 1.0（FAIL-OPEN）。
++        """
+         try:
+-            if self._trader is None:
+-                return 1.0
+-            _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
+-                self._trader, "_five_domain_state_cache", None
+-            )
+-            if _fds is None:
+-                return 1.0
+-            cap = (
+-                _fds.aggregate_position_cap_pct
+-                if hasattr(_fds, "aggregate_position_cap_pct")
+-                else _fds.get("aggregate_position_cap_pct", {})
+-            )
+-            if isinstance(cap, dict) and cls in cap:
+-                return float(cap[cls])
+-            return 1.0
++            # 1) 43 position_band 上限
++            cap_43 = self.get_position_band_upper_pct(cls)
++            if cap_43 < 1.0:
++                return cap_43
++            # 2) 11 五域 fallback（已废弃，仅兼容）
++            if self._trader is not None:
++                _fds = getattr(self._trader, "_five_domain_state_shadow", None) or getattr(
++                    self._trader, "_five_domain_state_cache", None
++                )
++                if _fds is not None:
++                    cap = (
++                        _fds.aggregate_position_cap_pct
++                        if hasattr(_fds, "aggregate_position_cap_pct")
++                        else _fds.get("aggregate_position_cap_pct", {})
++                    )
++                    if isinstance(cap, dict) and cls in cap:
++                        return float(cap[cls])
+         except Exception:
+-            return 1.0
++            pass
++        return 1.0
+ 
+     # ---------------------------------------------------------- BCRM pattern
+     def get_bcrm_pattern(self) -> dict:
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/entry_signal_governor.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/entry_signal_governor.py
+index 593a90ea62..2fcf2b0062 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/entry_signal_governor.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/entry_signal_governor.py
+@@ -19,7 +19,9 @@ from __future__ import annotations
+ 
+ import logging
+ import time
++import uuid
+ from dataclasses import dataclass
++from datetime import datetime, timedelta, timezone
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -230,11 +232,17 @@ def find_strongest_rotation_signal(
+             if confidence < threshold:
+                 return
+             if strongest is None or confidence > strongest["confidence"]:
++                # P0/T6: 输出对齐 FinalDecisionSignal v1.1（signal_id/source/symbol/direction/confidence/expires_at）
++                # 保留 coin/is_opposite 以兼容既有调用方（exit_engine 等）
++                now = datetime.now(timezone.utc)
+                 strongest = {
+                     "coin": coin,
++                    "symbol": coin,  # FinalDecisionSignal.symbol；调用方按需加 -USDT-SWAP 后缀
+                     "direction": direction,
+                     "confidence": confidence,
+-                    "source": source,
++                    "source": source,  # 原始子源（bcrm/evolution）；signal_id 前缀 23- 标识生产者
++                    "signal_id": f"23-{source}-{coin}-{direction}-{uuid.uuid4().hex[:8]}",
++                    "expires_at": (now + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
+                     "is_opposite": direction != cur_dir,
+                 }
+ 
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py
+index ea197db01b..b5a61a2834 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/engines/kline_event_handler.py
+@@ -460,6 +460,18 @@ class KlineEventHandler:
+ 
+             position_mult = base_position_mult * _regime_position_mult
+ 
++            # ============ T7: 43 宏观仓位带约束（macro_mult = position_band 上限） ============
++            # 乘数链：position_mult = base × regime_mult × macro_mult
++            # 13 position_modifier 在执行层最终钳位（不可放宽）
++            try:
++                _bridge = self._get_subsystem_bridge()
++                if _bridge is not None:
++                    _macro_mult = float(_bridge.get_macro_mult())
++                    if 0.0 <= _macro_mult <= 1.0:
++                        position_mult = position_mult * _macro_mult
++            except Exception as _e:
++                logger.debug("[FO-T7] macro_mult apply fail: %s", _e)
++
+             # ============ AGI 增强点 E: PatternDetector + RegimeClassifier ============
+             agi_pattern = None
+             agi_btc_regime = None
+@@ -527,6 +539,15 @@ class KlineEventHandler:
+                             tier = "standard"
+                             base_position_mult = 0.7
+                         position_mult = base_position_mult * _regime_position_mult
++                        # T7: 重新应用 43 macro_mult（tier 重映射后）
++                        try:
++                            _bridge = self._get_subsystem_bridge()
++                            if _bridge is not None:
++                                _mm = float(_bridge.get_macro_mult())
++                                if 0.0 <= _mm <= 1.0:
++                                    position_mult = position_mult * _mm
++                        except Exception:
++                            pass
+                 except Exception as _e:
+                     logger.debug("[FO-MacroFilter] conviction tier remap fail: %s", _e)
+                 if _macro_info.get("direction") == d_star and d_star in ("long", "short"):
+@@ -644,7 +665,19 @@ class KlineEventHandler:
+                                 )
+                     except Exception as _i:
+                         logger.debug("[FO-AGI-I] counterfactual fail: %s", _i)
+-                    _bellman_r = float(r_vector.get("quality_score", 0.5)) - 0.5
++                    # T14: Bellman reward 使用真实 PnL（tanh(pnl/0.02)），
++                    # actual_pnl 为 0/不可用时 fallback 到 quality_score-0.5
++                    try:
++                        import math as _math_bell
++
++                        _pnl = float(kline_data.get("actual_pnl", 0.0) or 0.0)
++                        _bellman_r = (
++                            _math_bell.tanh(_pnl / 0.02)
++                            if _pnl != 0.0
++                            else float(r_vector.get("quality_score", 0.5)) - 0.5
++                        )
++                    except Exception:
++                        _bellman_r = float(r_vector.get("quality_score", 0.5)) - 0.5
+                     _pipeline.bellman.td_update(symbol, reward=_bellman_r, next_symbol=symbol)
+                     l4_v = _pipeline.bellman.get_v(symbol)
+             except Exception as _e:
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py
+index d0decb3f7a..734b5db208 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/evolution_pipeline.py
+@@ -1625,25 +1625,53 @@ class EvolutionPipeline:
+ 
+             scored.append({**p, "score": round(score, 6)})
+ 
+-        # 按评分降序
++        # 按评分降序（argmax 作为 shadow 回退）
+         scored.sort(key=lambda x: x["score"], reverse=True)
+ 
+-        best = scored[0]
++        argmax_best = scored[0]
+         second = scored[1] if len(scored) > 1 else None
+ 
+-        # B-02: 成对支配 shadow（只记录诊断，不改变 production argmax）
++        # DEC-12 / T11: 成对矛盾对抗选择主导路径；argmax 仅作 shadow 回退。
++        # DominanceResolver 用 Copeland 成对支配（对齐主要矛盾 0.45 + 强度 0.30 +
++        # 延续性 0.15 + 置信度 0.10）选出主导者，避免纯 argmax 被单维度高分劫持。
++        best = argmax_best  # 默认 argmax 回退
+         dominance_shadow = None
+         try:
+-            from dreambuddy_evolution.core.dominance_resolver import resolve_shadow
+-
+-            dominance_shadow = resolve_shadow(
+-                scored,
+-                primary_contradiction=primary_contradiction,
+-                production_path_id=best.get("path_id"),
+-                enabled=get_switch("enable_dominance_shadow", False),
++            from dreambuddy_evolution.agi_config import get_switch as _gs_dom
++            from dreambuddy_evolution.core.dominance_resolver import (
++                resolve as _resolve_dominance,
+             )
+-        except Exception as _dom_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
+-            logger.debug("[FO][DominanceShadow] fail: %s", _dom_e)
++
++            if _gs_dom("enable_pairwise_dominance", True):
++                _dom_result = _resolve_dominance(
++                    scored,
++                    primary_contradiction=primary_contradiction,
++                    production_path_id=argmax_best.get("path_id"),
++                )
++                if _dom_result and _dom_result.get("dominant_path_id"):
++                    _dom_id = str(_dom_result["dominant_path_id"])
++                    _dom_path = next((p for p in scored if str(p.get("path_id")) == _dom_id), None)
++                    if _dom_path is not None:
++                        best = _dom_path
++                        dominance_shadow = {
++                            **_dom_result,
++                            "shadow_only": False,
++                            "applied": True,
++                            "argmax_path_id": argmax_best.get("path_id"),
++                            "agreement": str(argmax_best.get("path_id")) == _dom_id,
++                        }
++            # 若未启用 pairwise 或解析失败，保留 shadow 诊断（不改变 best=argmax）
++            if dominance_shadow is None:
++                from dreambuddy_evolution.core.dominance_resolver import resolve_shadow
++
++                dominance_shadow = resolve_shadow(
++                    scored,
++                    primary_contradiction=primary_contradiction,
++                    production_path_id=argmax_best.get("path_id"),
++                    enabled=get_switch("enable_dominance_shadow", False),
++                )
++        except Exception as _dom_e:  # noqa: BLE001 — 成对支配 FAIL-OPEN → argmax 回退
++            logger.debug("[FO-T11] pairwise dominance fail, fallback to argmax: %s", _dom_e)
+ 
+         # 统计验证
+         # P3 修复（主矛盾→实质交易影响链路）：验证阈值与交叉验证乘数联动。
+@@ -1916,6 +1944,22 @@ class EvolutionPipeline:
+         if stat_val.get("low_conviction") and action in ("long", "short"):
+             action = f"light_{d_star}"
+ 
++        # P0/T10: 降级模式（war_state=FREEZE/RESTRICT 或 13 风控不可用）→ 只允许平仓/减仓，禁止开仓
++        # 开仓类动作（long/short/light_long/light_short）一律降级为 WAIT；
++        # 平仓/减仓动作由调用方经 TradeExecutionGateway 处理（13 fail-closed 允许 close）。
++        try:
++            war_state = self._bridge.get_war_state()
++        except Exception:
++            war_state = "UNKNOWN"
++        _open_actions = {"long", "short", "light_long", "light_short"}
++        if war_state in ("FREEZE", "RESTRICT") and action in _open_actions:
++            logger.info(
++                "[T10 degrade] war_state=%s → 开仓动作 %s 降级为 WAIT（仅允许平仓/减仓）",
++                war_state,
++                action,
++            )
++            action = "WAIT"
++
+         # ============ L2: 基因库 top_combo（保留兼容） ============
+         library = self._load_library()
+         top_combos = sgs.top_combinations_by_ess(library, min_sample=0)
+@@ -2018,10 +2062,19 @@ class EvolutionPipeline:
+             logger.debug("[FO-AGI-I] counterfactual fail: %s", e)
+ 
+         # ============ L4: Bellman V(s) 更新 ============
+-        # Bellman V(s) 跟踪状态价值，quality_score 作为状态质量信号仍合理
+-        # 注意：ShadowRL 的 reward 已改为 0.0 占位（真实 PnL 由平仓事件注入），
+-        # 但 Bellman 的 V(s) 是状态价值函数，与策略反馈不同，保留 quality_score 信号
+-        _bellman_reward = float(r_out.get("quality_score", 0.5)) - 0.5
++        # T14: Bellman reward 使用真实 PnL（trade_settlement_bridge 同构：tanh(pnl/0.02)）；
++        # actual_pnl 为 0/不可用时 fallback 到 quality_score-0.5（状态质量信号）。
++        try:
++            import math as _math_bell
++
++            _pnl = float(actual_pnl or 0.0)
++            _bellman_reward = (
++                _math_bell.tanh(_pnl / 0.02)
++                if _pnl != 0.0
++                else float(r_out.get("quality_score", 0.5)) - 0.5
++            )
++        except Exception:
++            _bellman_reward = float(r_out.get("quality_score", 0.5)) - 0.5
+         self.bellman.td_update(symbol, reward=_bellman_reward, next_symbol=symbol)
+ 
+         return {
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_c_d_shadow.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_c_d_shadow.py
+index c5f50a8590..a0c7808e32 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_c_d_shadow.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_c_d_shadow.py
+@@ -39,7 +39,7 @@ def _paths(confidence=0.8, source="bcrm"):
+ 
+ # ── 1. 映射冻结 ──
+ def test_c_to_d_map_frozen():
+-    from dreambuddy_evolution.core.contradiction_identifier import C_TO_D_MAP
++    from dreambuddy_evolution.core.cd_mapping import C_TO_D_MAP
+ 
+     assert C_TO_D_MAP == {
+         "C1": "D2",
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_data_pipeline.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_data_pipeline.py
+index 05b2281241..dfee502a93 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_data_pipeline.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_data_pipeline.py
+@@ -6,6 +6,7 @@ from __future__ import annotations  # noqa: I001
+ 
+ 
+ from dreambuddy_evolution.adapters.data_pipeline import DataPipelineAdapter
++from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
+ 
+ 
+ class MockOKXClient:
+@@ -57,8 +58,10 @@ class MockTrader:
+ 
+ class TestDataPipelineAdapter:
+ 
+-    def test_assemble_full_fields(self):
++    def test_assemble_full_fields(self, monkeypatch):
+         """全字段装配 — OHLCV + ma_200 + spread + ESS + war_state + ripples"""
++        # T7 后 43 是 war_state 唯一事实源；测试不依赖真实 43 运行时状态
++        monkeypatch.setattr(SubSystemBridge, "get_strategic_extension", lambda self: {})
+         client = MockOKXClient()
+         trader = MockTrader()
+         adapter = DataPipelineAdapter(
+@@ -91,8 +94,9 @@ class TestDataPipelineAdapter:
+         assert "R1" in data["ripples"]
+         assert data["ripples"]["R1"]["hits"] == 0
+ 
+-    def test_assemble_partial_fail(self):
++    def test_assemble_partial_fail(self, monkeypatch):
+         """OKX 失败 → 仍返回部分字段（不 crash）"""
++        monkeypatch.setattr(SubSystemBridge, "get_strategic_extension", lambda self: {})
+ 
+         class CrashClient:
+             def get_kline(self, *a, **kw):
+diff --git a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_subsystem_bridge.py b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_subsystem_bridge.py
+index f54abf5a8a..c03ed2bac5 100644
+--- a/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_subsystem_bridge.py
++++ b/23-四层闭环自进化交易架构/dreambuddy_evolution/tests/test_subsystem_bridge.py
+@@ -7,6 +7,9 @@ from __future__ import annotations  # noqa: I001
+ 
+ from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
+ 
++# 隔离 bus 路径：避免测试读到线上 42 bus（含 43 strategic_extension war_state=FREEZE）
++_ISOLATED_BUS = "/tmp/_nonexistent_42_bus.json"
++
+ 
+ class MockFiveDomainState:
+     """模拟五计庙算状态"""
+@@ -33,41 +36,41 @@ class TestSubSystemBridge:
+     def test_war_state_allow(self):
+         """war_state=ALLOW → 温度 1.0"""
+         trader = MockTrader(war_state={"crypto_usdt": "ALLOW"})
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_war_state() == "ALLOW"
+         assert bridge.get_ess_temperature() == 1.0
+ 
+     def test_war_state_freeze(self):
+         """war_state=FREEZE → 温度 0.1"""
+         trader = MockTrader(war_state={"crypto_usdt": "FREEZE"})
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_war_state() == "FREEZE"
+         assert bridge.get_ess_temperature() == 0.1
+ 
+     def test_war_state_cooldown(self):
+         """war_state=COOLDOWN → 温度 0.5"""
+         trader = MockTrader(war_state={"crypto_usdt": "COOLDOWN"})
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_war_state() == "COOLDOWN"
+         assert bridge.get_ess_temperature() == 0.5
+ 
+     def test_bcrm_direction_up(self):
+         """BCRM direction=UP → 'long'"""
+         trader = MockTrader(bcrm_result={"next_state": {"direction": "UP", "confidence": 0.85}})
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_bcrm_direction() == "long"
+         assert bridge.get_bcrm_confidence() == 0.85
+ 
+     def test_bcrm_direction_down(self):
+         """BCRM direction=DOWN → 'short'"""
+         trader = MockTrader(bcrm_result={"next_state": {"direction": "DOWN", "confidence": 0.7}})
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_bcrm_direction() == "short"
+ 
+     def test_bcrm_direction_flat(self):
+         """BCRM direction=FLAT → ''"""
+         trader = MockTrader(bcrm_result={"next_state": {"direction": "FLAT", "confidence": 0.3}})
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_bcrm_direction() == ""
+ 
+     def test_scale_class_btc(self):
+@@ -85,8 +88,8 @@ class TestSubSystemBridge:
+         assert SubSystemBridge.get_scale_class("PEPE") == "Quantum"
+ 
+     def test_trader_none_fo(self):
+-        """trader=None → 安全默认值"""
+-        bridge = SubSystemBridge(None)
++        """trader=None → 安全默认值（使用隔离 bus 路径避免读到线上 stale 信号）"""
++        bridge = SubSystemBridge(None, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_war_state() == "ALLOW"
+         assert bridge.get_ess_temperature() == 1.0
+         assert bridge.get_bcrm_direction() == ""
+@@ -94,19 +97,19 @@ class TestSubSystemBridge:
+         assert bridge.get_bdsm_valuation() == 0.5
+ 
+     def test_bcrm_result_none(self):
+-        """无 BCRM 结果 → 空方向"""
++        """无 BCRM 结果 → 空方向（隔离 bus 路径）"""
+         trader = MockTrader(bcrm_result=None)
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_bcrm_direction() == ""
+ 
+     def test_bdsm_valuation(self):
+         """BDSM 估值分位"""
+         trader = MockTrader(bdsm_snapshot={"valuation_percentile": 0.72})
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         assert bridge.get_bdsm_valuation() == 0.72
+ 
+     def test_war_state_shadow_priority(self):
+-        """影子模式优先读 _five_domain_state_shadow"""
++        """影子模式优先读 _five_domain_state_shadow（隔离 bus，43 不可用时 fallback 到 11 五域）"""
+ 
+         class DualTrader:
+             def __init__(self):
+@@ -116,7 +119,7 @@ class TestSubSystemBridge:
+                 self._five_domain_state_cache.war_state = {"crypto_usdt": "ALLOW"}
+ 
+         trader = DualTrader()
+-        bridge = SubSystemBridge(trader)
++        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
+         # shadow 优先 → RESTRICT
+         assert bridge.get_war_state() == "RESTRICT"
+         assert bridge.get_ess_temperature() == 0.2
+diff --git a/42-神经网络交易协调层/param_governor.py b/42-神经网络交易协调层/param_governor.py
+index 385d168021..ea974bde39 100644
+--- a/42-神经网络交易协调层/param_governor.py
++++ b/42-神经网络交易协调层/param_governor.py
+@@ -131,8 +131,11 @@ def init_params(
+ 
+ 
+ def dispatch_enabled() -> bool:
+-    """P1-06 开关：ENABLE_PARAM_DISPATCH=1 才允许发布/分发（默认关=回滚路径）。"""
+-    return os.environ.get("ENABLE_PARAM_DISPATCH") == "1"
++    """P1-06 开关：ENABLE_PARAM_DISPATCH=1 才允许发布/分发。
++    P1/T5: 默认开启（"1"），42 将 macro_constraint/war_state/position_band 下发给 23/11。
++    设为 0 可回滚。
++    """
++    return os.environ.get("ENABLE_PARAM_DISPATCH", "1") == "1"
+ 
+ 
+ def _version_bump(version: str) -> str:
+diff --git a/42-神经网络交易协调层/signal_bus.py b/42-神经网络交易协调层/signal_bus.py
+index aa4a2f661e..4ec312d273 100644
+--- a/42-神经网络交易协调层/signal_bus.py
++++ b/42-神经网络交易协调层/signal_bus.py
+@@ -69,7 +69,7 @@ def _is_live(signal: Dict[str, Any], now: datetime) -> bool:
+ class SignalBus:
+     """信号汇聚总线（只读汇聚，链式过滤）。
+ 
+-    P1-01 持久化模式（SIGNAL_BUS_PERSIST=1，默认 0 保持旧整文件覆盖行为）：
++    P1-01 持久化模式（SIGNAL_BUS_PERSIST=1，默认 1 = 多源 merge 持久化；设 0 退化为旧整文件覆盖）：
+     - 实例化时加载既有 bus_state.json（重启不丢，多 adapter 串行共存）
+     - 加载与落盘时按 expires_at 剪除过期信号（TTL 剪枝）
+     - publish 按 signal_id 合并：同 ID 替换，否则追加
+@@ -79,7 +79,7 @@ class SignalBus:
+         self.state_path = state_path or _BUS_STATE_PATH
+         self.signals: List[Dict[str, Any]] = []
+         self.rejected: List[Dict[str, Any]] = []
+-        self._persist = os.environ.get("SIGNAL_BUS_PERSIST") == "1"
++        self._persist = os.environ.get("SIGNAL_BUS_PERSIST", "1") == "1"
+         if self._persist:
+             self._load_persistent_state()
+ 
+diff --git a/42-神经网络交易协调层/tests/test_param_dispatch.py b/42-神经网络交易协调层/tests/test_param_dispatch.py
+index 301138840c..8ec7dd7664 100644
+--- a/42-神经网络交易协调层/tests/test_param_dispatch.py
++++ b/42-神经网络交易协调层/tests/test_param_dispatch.py
+@@ -52,9 +52,9 @@ def _init(paths):
+     return param_governor.init_params(active_path=paths["active"], history_path=paths["history"])
+ 
+ 
+-# ── 1. 回滚路径：开关未设置时 adjust/dispatch 均不生效 ──
++# ── 1. 回滚路径：开关设为 0 时 adjust/dispatch 均不生效 ──
+ def test_adjust_disabled_without_flag(monkeypatch, gov):
+-    monkeypatch.delenv("ENABLE_PARAM_DISPATCH", raising=False)
++    monkeypatch.setenv("ENABLE_PARAM_DISPATCH", "0")
+     _init(gov)
+     result = param_governor.adjust_params(
+         {"position_size_factor": 0.97},
+@@ -68,7 +68,7 @@ def test_adjust_disabled_without_flag(monkeypatch, gov):
+ 
+ 
+ def test_dispatch_disabled_without_flag(monkeypatch, gov):
+-    monkeypatch.delenv("ENABLE_PARAM_DISPATCH", raising=False)
++    monkeypatch.setenv("ENABLE_PARAM_DISPATCH", "0")
+     _init(gov)
+     result = param_governor.dispatch(
+         active_path=gov["active"],
+diff --git a/42-神经网络交易协调层/tests/test_signal_bus_persist.py b/42-神经网络交易协调层/tests/test_signal_bus_persist.py
+index 2b4ec9aba7..5382169c93 100644
+--- a/42-神经网络交易协调层/tests/test_signal_bus_persist.py
++++ b/42-神经网络交易协调层/tests/test_signal_bus_persist.py
+@@ -72,7 +72,7 @@ def persist_on(monkeypatch):
+ 
+ @pytest.fixture
+ def persist_off(monkeypatch):
+-    monkeypatch.delenv("SIGNAL_BUS_PERSIST", raising=False)
++    monkeypatch.setenv("SIGNAL_BUS_PERSIST", "0")
+ 
+ 
+ # ── 1. 重启不丢：实例B加载实例A落盘的信号 ──
+diff --git a/6-TRADING/bridge/api/trade_exec_api.py b/6-TRADING/bridge/api/trade_exec_api.py
+index 558ac607f1..336216cde8 100644
+--- a/6-TRADING/bridge/api/trade_exec_api.py
++++ b/6-TRADING/bridge/api/trade_exec_api.py
+@@ -20,6 +20,33 @@ try:
+ except ImportError:
+     OKX_AVAILABLE = False
+ 
++# ── P0/T3: 6-TRADING 下单经 13 风控闸门（TradeExecutionGateway）─────────
++# OKXCLI 经 RiskGatedOkxClient 代理包装，place_order 自动路由到 22 Gateway → 13 PreTradeGate。
++# FAIL-OPEN：Gateway 加载失败时退化为原始 OKXCLI。
++_TRADE_GATEWAY_READY = False
++try:
++    _22_DIR = Path(__file__).resolve().parents[3] / "22-执行引擎中心"
++    if str(_22_DIR) not in sys.path:
++        sys.path.insert(0, str(_22_DIR))
++    from trade_execution_gateway import RiskGatedOkxClient, TradeExecutionGateway  # noqa: E402
++
++    _TRADE_GATEWAY_READY = True
++except Exception:
++    _TRADE_GATEWAY_READY = False
++
++
++def _make_gated_okx(profile: str = "paper"):
++    """构造经 13 风控包装的 OKXCLI（FAIL-OPEN）。"""
++    raw = OKXCLI(profile=profile)
++    if not _TRADE_GATEWAY_READY:
++        return raw
++    try:
++        gw = TradeExecutionGateway(okx_client=raw)
++        return RiskGatedOkxClient(raw, gw)
++    except Exception:
++        return raw
++
++
+ trade_bp = Blueprint("trade", __name__)
+ 
+ # 模拟订单存储
+@@ -151,10 +178,10 @@ def place_order():
+                 400,
+             )
+ 
+-    # 如果有 OKX CLI，执行真实下单
++    # 如果有 OKX CLI，执行真实下单（经 13 风控闸门）
+     if OKX_AVAILABLE:
+         try:
+-            okx = OKXCLI(profile="paper")
++            okx = _make_gated_okx(profile="paper")
+             result = okx.place_order(
+                 inst_id=data["inst_id"],
+                 side=data["side"],

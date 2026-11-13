@@ -98,11 +98,17 @@ def collect() -> None:
 
 
 def push(local: Path, remote: str) -> None:
-    subprocess.run(
-        ["scp", "-q", "-o", "ConnectTimeout=15", str(local), f"{SSH_HOST}:{remote}"],
-        check=True,
-        timeout=180,
-    )
+    cmd = ["scp", "-q", "-o", "ConnectTimeout=15", str(local), f"{SSH_HOST}:{remote}"]
+    for attempt in range(3):
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        if proc.returncode == 0:
+            return
+        err = (proc.stderr or "").strip().splitlines()[-1:] or ["unknown"]
+        if attempt == 2:
+            raise RuntimeError(f"scp 失败：{err[0]}")
+        wait = 10 * (attempt + 1)
+        log(f"scp 失败（{err[0]}），{wait}s 后重试 {attempt + 2}/3")
+        time.sleep(wait)
 
 
 def main() -> int:
@@ -115,17 +121,30 @@ def main() -> int:
         return 0
 
     log(f"上传 events/bodies → {SSH_HOST}")
-    push(EVENTS_PATH, "/tmp/events_sync.jsonl")
-    push(BODIES_PATH, "/tmp/bodies_sync.jsonl")
+    try:
+        push(EVENTS_PATH, "/tmp/events_sync.jsonl")
+        push(BODIES_PATH, "/tmp/bodies_sync.jsonl")
+    except Exception as exc:  # noqa: BLE001 — 上传失败本轮放弃，下轮重试
+        log(f"上传失败，跳过本轮：{exc}")
+        return 1
 
     log("云端幂等合并 ...")
-    proc = subprocess.run(
-        ["ssh", "-o", "ConnectTimeout=15", SSH_HOST, "sudo -n -u luke -H bash -s"],
-        input=REMOTE_SCRIPT,
-        text=True,
-        capture_output=True,
-        timeout=300,
-    )
+    proc = None
+    for attempt in range(3):
+        proc = subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=15", SSH_HOST, "sudo -n -u luke -H bash -s"],
+            input=REMOTE_SCRIPT,
+            text=True,
+            capture_output=True,
+            timeout=300,
+        )
+        if proc.returncode == 0:
+            break
+        if attempt == 2:
+            break
+        wait = 10 * (attempt + 1)
+        log(f"ssh 失败，{wait}s 后重试 {attempt + 2}/3")
+        time.sleep(wait)
     out = (proc.stdout or "").strip()
     for line in out.splitlines():
         log(f"remote: {line}")
@@ -135,6 +154,26 @@ def main() -> int:
         return 1
     if "MERGED_EVENTS=0" in out:
         log("无新增事件")
+
+    if os.environ.get("EVENTS_SYNC_CLEANUP", "1") == "1":
+        cleanup = PROJECT / "scripts" / "cleanup_news_local.py"
+        if cleanup.is_file():
+            log("本地清理（日志/事件/快讯/db 超期数据）...")
+            try:
+                cp = subprocess.run(
+                    [sys.executable, str(cleanup), "--quiet"],
+                    cwd=str(PROJECT),
+                    capture_output=True,
+                    text=True,
+                    timeout=600,
+                )
+                if cp.returncode != 0:
+                    err = (cp.stderr or "").strip().splitlines()[-3:]
+                    log(f"清理失败 rc={cp.returncode} :: " + " | ".join(err))
+                else:
+                    log("本地清理完成")
+            except Exception as exc:  # noqa: BLE001 — 清理失败不影响同步
+                log(f"清理异常：{type(exc).__name__}: {exc}")
     return 0
 
 

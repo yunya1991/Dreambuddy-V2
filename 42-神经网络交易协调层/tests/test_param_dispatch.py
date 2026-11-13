@@ -52,9 +52,9 @@ def _init(paths):
     return param_governor.init_params(active_path=paths["active"], history_path=paths["history"])
 
 
-# ── 1. 回滚路径：开关未设置时 adjust/dispatch 均不生效 ──
+# ── 1. 回滚路径：开关设为 0 时 adjust/dispatch 均不生效 ──
 def test_adjust_disabled_without_flag(monkeypatch, gov):
-    monkeypatch.delenv("ENABLE_PARAM_DISPATCH", raising=False)
+    monkeypatch.setenv("ENABLE_PARAM_DISPATCH", "0")
     _init(gov)
     result = param_governor.adjust_params(
         {"position_size_factor": 0.97},
@@ -68,7 +68,7 @@ def test_adjust_disabled_without_flag(monkeypatch, gov):
 
 
 def test_dispatch_disabled_without_flag(monkeypatch, gov):
-    monkeypatch.delenv("ENABLE_PARAM_DISPATCH", raising=False)
+    monkeypatch.setenv("ENABLE_PARAM_DISPATCH", "0")
     _init(gov)
     result = param_governor.dispatch(
         active_path=gov["active"],

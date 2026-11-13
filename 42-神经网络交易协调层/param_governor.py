@@ -131,8 +131,11 @@ def init_params(
 
 
 def dispatch_enabled() -> bool:
-    """P1-06 开关：ENABLE_PARAM_DISPATCH=1 才允许发布/分发（默认关=回滚路径）。"""
-    return os.environ.get("ENABLE_PARAM_DISPATCH") == "1"
+    """P1-06 开关：ENABLE_PARAM_DISPATCH=1 才允许发布/分发。
+    P1/T5: 默认开启（"1"），42 将 macro_constraint/war_state/position_band 下发给 23/11。
+    设为 0 可回滚。
+    """
+    return os.environ.get("ENABLE_PARAM_DISPATCH", "1") == "1"
 
 
 def _version_bump(version: str) -> str:

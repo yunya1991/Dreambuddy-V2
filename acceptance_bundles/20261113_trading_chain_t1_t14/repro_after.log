@@ -1,0 +1,79 @@
+$ /opt/anaconda3/bin/python -m pytest 22-执行引擎中心/tests/test_trade_execution_gateway.py -q --tb=short
+.................                                                        [100%]
+
+command_exit=0
+
+$ /opt/anaconda3/bin/python -c import sys; from types import SimpleNamespace; sys.path.insert(0, "11-易经推理系统"); from scripts.memory_l4.polling_trader import PollingTrader; raw=object(); holder=SimpleNamespace(_trade_exec_gateway=object(), _okx_client_raw=raw, _tee_enable=True, _tee_shadow=True, _log=lambda *args: None); engine=PollingTrader._build_yijing_engine_for_gateway(holder); assert engine is not None and engine.client._raw is raw; assert not hasattr(holder, "_tee_engine"); print("observed=TEE_RAW_CLIENT_OK sole_owner=Gateway")
+observed=TEE_RAW_CLIENT_OK sole_owner=Gateway
+
+command_exit=0
+
+$ /opt/anaconda3/bin/python /tmp/paper_chain.py
+{
+  "modules": {
+    "risk_13": "core.pre_trade_gate",
+    "paca_16": "core.capital_allocator.component",
+    "tee_22": "tee_core.core.engine"
+  },
+  "passed": true,
+  "executed": true,
+  "reason_code": "PASS",
+  "position_modifier": 1.0,
+  "paca_final_position_pct": 0.1,
+  "paca_fallback_used": true,
+  "tee_ord_id": "paper-tee-1",
+  "tee_engine": "TEE",
+  "tee_state": "filled",
+  "tee_filled_sz": 0.02,
+  "raw_order_calls": [
+    {
+      "inst_id": "BTC-USDT-SWAP",
+      "side": "buy",
+      "ord_type": "market",
+      "sz": 0.02,
+      "td_mode": "isolated",
+      "pos_side": "long",
+      "tag": "tee_direct",
+      "reason": "tee_direct",
+      "leverage": null
+    }
+  ],
+  "audit": {
+    "ts": "2026-11-13T03:05:48.552989Z",
+    "signal_id": "accept-real-chain",
+    "source": "11-yijing",
+    "symbol": "BTC-USDT-SWAP",
+    "direction": "long",
+    "action": "open",
+    "confidence": 0.8,
+    "risk_decision": "allow",
+    "executed": true,
+    "reason_code": "PASS",
+    "reason": "所有门禁通过",
+    "position_modifier": 1.0
+  },
+  "assertions": {
+    "real_modules_loaded": true,
+    "risk_passed": true,
+    "executed": true,
+    "paca_cap_applied": true,
+    "tee_direct_route": true,
+    "tee_order_recorded": true,
+    "paper_filled": true,
+    "audit_allow_executed": true
+  }
+}
+
+CHAIN_OK
+
+command_exit=0
+
+$ /opt/anaconda3/bin/python /tmp/verify_tee_modes.py
+{"mode": "shadow", "executed": true, "raw_order_count": 1, "raw_sz": 1.0, "order_id": "paper-1", "state": null, "shadow_audit_files": 1, "ok": true}
+{"mode": "active", "executed": true, "raw_order_count": 1, "raw_sz": 1.0, "order_id": "paper-1", "state": "live", "shadow_audit_files": 0, "ok": true}
+TEE_MODES_OK
+
+command_exit=0
+
+observed=HIGH_LEVEL_ROUTE_AND_TEE_MODES_VERIFIED
+exit=0

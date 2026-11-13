@@ -6,6 +6,7 @@ from __future__ import annotations  # noqa: I001
 
 
 from dreambuddy_evolution.adapters.data_pipeline import DataPipelineAdapter
+from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
 
 
 class MockOKXClient:
@@ -57,8 +58,10 @@ class MockTrader:
 
 class TestDataPipelineAdapter:
 
-    def test_assemble_full_fields(self):
+    def test_assemble_full_fields(self, monkeypatch):
         """全字段装配 — OHLCV + ma_200 + spread + ESS + war_state + ripples"""
+        # T7 后 43 是 war_state 唯一事实源；测试不依赖真实 43 运行时状态
+        monkeypatch.setattr(SubSystemBridge, "get_strategic_extension", lambda self: {})
         client = MockOKXClient()
         trader = MockTrader()
         adapter = DataPipelineAdapter(
@@ -91,8 +94,9 @@ class TestDataPipelineAdapter:
         assert "R1" in data["ripples"]
         assert data["ripples"]["R1"]["hits"] == 0
 
-    def test_assemble_partial_fail(self):
+    def test_assemble_partial_fail(self, monkeypatch):
         """OKX 失败 → 仍返回部分字段（不 crash）"""
+        monkeypatch.setattr(SubSystemBridge, "get_strategic_extension", lambda self: {})
 
         class CrashClient:
             def get_kline(self, *a, **kw):

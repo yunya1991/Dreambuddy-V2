@@ -72,7 +72,7 @@ def persist_on(monkeypatch):
 
 @pytest.fixture
 def persist_off(monkeypatch):
-    monkeypatch.delenv("SIGNAL_BUS_PERSIST", raising=False)
+    monkeypatch.setenv("SIGNAL_BUS_PERSIST", "0")
 
 
 # ── 1. 重启不丢：实例B加载实例A落盘的信号 ──

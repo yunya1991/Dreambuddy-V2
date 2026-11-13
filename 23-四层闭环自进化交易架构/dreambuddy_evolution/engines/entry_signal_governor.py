@@ -19,7 +19,9 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -230,11 +232,17 @@ def find_strongest_rotation_signal(
             if confidence < threshold:
                 return
             if strongest is None or confidence > strongest["confidence"]:
+                # P0/T6: 输出对齐 FinalDecisionSignal v1.1（signal_id/source/symbol/direction/confidence/expires_at）
+                # 保留 coin/is_opposite 以兼容既有调用方（exit_engine 等）
+                now = datetime.now(timezone.utc)
                 strongest = {
                     "coin": coin,
+                    "symbol": coin,  # FinalDecisionSignal.symbol；调用方按需加 -USDT-SWAP 后缀
                     "direction": direction,
                     "confidence": confidence,
-                    "source": source,
+                    "source": source,  # 原始子源（bcrm/evolution）；signal_id 前缀 23- 标识生产者
+                    "signal_id": f"23-{source}-{coin}-{direction}-{uuid.uuid4().hex[:8]}",
+                    "expires_at": (now + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
                     "is_opposite": direction != cur_dir,
                 }
 

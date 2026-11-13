@@ -69,7 +69,7 @@ def _is_live(signal: Dict[str, Any], now: datetime) -> bool:
 class SignalBus:
     """信号汇聚总线（只读汇聚，链式过滤）。
 
-    P1-01 持久化模式（SIGNAL_BUS_PERSIST=1，默认 0 保持旧整文件覆盖行为）：
+    P1-01 持久化模式（SIGNAL_BUS_PERSIST=1，默认 1 = 多源 merge 持久化；设 0 退化为旧整文件覆盖）：
     - 实例化时加载既有 bus_state.json（重启不丢，多 adapter 串行共存）
     - 加载与落盘时按 expires_at 剪除过期信号（TTL 剪枝）
     - publish 按 signal_id 合并：同 ID 替换，否则追加
@@ -79,7 +79,7 @@ class SignalBus:
         self.state_path = state_path or _BUS_STATE_PATH
         self.signals: List[Dict[str, Any]] = []
         self.rejected: List[Dict[str, Any]] = []
-        self._persist = os.environ.get("SIGNAL_BUS_PERSIST") == "1"
+        self._persist = os.environ.get("SIGNAL_BUS_PERSIST", "1") == "1"
         if self._persist:
             self._load_persistent_state()
 

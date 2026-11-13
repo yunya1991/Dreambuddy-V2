@@ -39,7 +39,7 @@ def _paths(confidence=0.8, source="bcrm"):
 
 # ── 1. 映射冻结 ──
 def test_c_to_d_map_frozen():
-    from dreambuddy_evolution.core.contradiction_identifier import C_TO_D_MAP
+    from dreambuddy_evolution.core.cd_mapping import C_TO_D_MAP
 
     assert C_TO_D_MAP == {
         "C1": "D2",

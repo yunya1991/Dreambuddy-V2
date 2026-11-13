@@ -20,6 +20,33 @@ try:
 except ImportError:
     OKX_AVAILABLE = False
 
+# ── P0/T3: 6-TRADING 下单经 13 风控闸门（TradeExecutionGateway）─────────
+# OKXCLI 经 RiskGatedOkxClient 代理包装，place_order 自动路由到 22 Gateway → 13 PreTradeGate。
+# FAIL-OPEN：Gateway 加载失败时退化为原始 OKXCLI。
+_TRADE_GATEWAY_READY = False
+try:
+    _22_DIR = Path(__file__).resolve().parents[3] / "22-执行引擎中心"
+    if str(_22_DIR) not in sys.path:
+        sys.path.insert(0, str(_22_DIR))
+    from trade_execution_gateway import RiskGatedOkxClient, TradeExecutionGateway  # noqa: E402
+
+    _TRADE_GATEWAY_READY = True
+except Exception:
+    _TRADE_GATEWAY_READY = False
+
+
+def _make_gated_okx(profile: str = "paper"):
+    """构造经 13 风控包装的 OKXCLI（FAIL-OPEN）。"""
+    raw = OKXCLI(profile=profile)
+    if not _TRADE_GATEWAY_READY:
+        return raw
+    try:
+        gw = TradeExecutionGateway(okx_client=raw)
+        return RiskGatedOkxClient(raw, gw)
+    except Exception:
+        return raw
+
+
 trade_bp = Blueprint("trade", __name__)
 
 # 模拟订单存储
@@ -151,10 +178,10 @@ def place_order():
                 400,
             )
 
-    # 如果有 OKX CLI，执行真实下单
+    # 如果有 OKX CLI，执行真实下单（经 13 风控闸门）
     if OKX_AVAILABLE:
         try:
-            okx = OKXCLI(profile="paper")
+            okx = _make_gated_okx(profile="paper")
             result = okx.place_order(
                 inst_id=data["inst_id"],
                 side=data["side"],

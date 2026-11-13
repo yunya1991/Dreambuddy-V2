@@ -460,6 +460,18 @@ class KlineEventHandler:
 
             position_mult = base_position_mult * _regime_position_mult
 
+            # ============ T7: 43 宏观仓位带约束（macro_mult = position_band 上限） ============
+            # 乘数链：position_mult = base × regime_mult × macro_mult
+            # 13 position_modifier 在执行层最终钳位（不可放宽）
+            try:
+                _bridge = self._get_subsystem_bridge()
+                if _bridge is not None:
+                    _macro_mult = float(_bridge.get_macro_mult())
+                    if 0.0 <= _macro_mult <= 1.0:
+                        position_mult = position_mult * _macro_mult
+            except Exception as _e:
+                logger.debug("[FO-T7] macro_mult apply fail: %s", _e)
+
             # ============ AGI 增强点 E: PatternDetector + RegimeClassifier ============
             agi_pattern = None
             agi_btc_regime = None
@@ -527,6 +539,15 @@ class KlineEventHandler:
                             tier = "standard"
                             base_position_mult = 0.7
                         position_mult = base_position_mult * _regime_position_mult
+                        # T7: 重新应用 43 macro_mult（tier 重映射后）
+                        try:
+                            _bridge = self._get_subsystem_bridge()
+                            if _bridge is not None:
+                                _mm = float(_bridge.get_macro_mult())
+                                if 0.0 <= _mm <= 1.0:
+                                    position_mult = position_mult * _mm
+                        except Exception:
+                            pass
                 except Exception as _e:
                     logger.debug("[FO-MacroFilter] conviction tier remap fail: %s", _e)
                 if _macro_info.get("direction") == d_star and d_star in ("long", "short"):
@@ -644,7 +665,19 @@ class KlineEventHandler:
                                 )
                     except Exception as _i:
                         logger.debug("[FO-AGI-I] counterfactual fail: %s", _i)
-                    _bellman_r = float(r_vector.get("quality_score", 0.5)) - 0.5
+                    # T14: Bellman reward 使用真实 PnL（tanh(pnl/0.02)），
+                    # actual_pnl 为 0/不可用时 fallback 到 quality_score-0.5
+                    try:
+                        import math as _math_bell
+
+                        _pnl = float(kline_data.get("actual_pnl", 0.0) or 0.0)
+                        _bellman_r = (
+                            _math_bell.tanh(_pnl / 0.02)
+                            if _pnl != 0.0
+                            else float(r_vector.get("quality_score", 0.5)) - 0.5
+                        )
+                    except Exception:
+                        _bellman_r = float(r_vector.get("quality_score", 0.5)) - 0.5
                     _pipeline.bellman.td_update(symbol, reward=_bellman_r, next_symbol=symbol)
                     l4_v = _pipeline.bellman.get_v(symbol)
             except Exception as _e:

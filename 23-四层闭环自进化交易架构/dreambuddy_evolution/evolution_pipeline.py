@@ -1625,25 +1625,53 @@ class EvolutionPipeline:
 
             scored.append({**p, "score": round(score, 6)})
 
-        # 按评分降序
+        # 按评分降序（argmax 作为 shadow 回退）
         scored.sort(key=lambda x: x["score"], reverse=True)
 
-        best = scored[0]
+        argmax_best = scored[0]
         second = scored[1] if len(scored) > 1 else None
 
-        # B-02: 成对支配 shadow（只记录诊断，不改变 production argmax）
+        # DEC-12 / T11: 成对矛盾对抗选择主导路径；argmax 仅作 shadow 回退。
+        # DominanceResolver 用 Copeland 成对支配（对齐主要矛盾 0.45 + 强度 0.30 +
+        # 延续性 0.15 + 置信度 0.10）选出主导者，避免纯 argmax 被单维度高分劫持。
+        best = argmax_best  # 默认 argmax 回退
         dominance_shadow = None
         try:
-            from dreambuddy_evolution.core.dominance_resolver import resolve_shadow
-
-            dominance_shadow = resolve_shadow(
-                scored,
-                primary_contradiction=primary_contradiction,
-                production_path_id=best.get("path_id"),
-                enabled=get_switch("enable_dominance_shadow", False),
+            from dreambuddy_evolution.agi_config import get_switch as _gs_dom
+            from dreambuddy_evolution.core.dominance_resolver import (
+                resolve as _resolve_dominance,
             )
-        except Exception as _dom_e:  # noqa: BLE001 — 影子层 FAIL-OPEN
-            logger.debug("[FO][DominanceShadow] fail: %s", _dom_e)
+
+            if _gs_dom("enable_pairwise_dominance", True):
+                _dom_result = _resolve_dominance(
+                    scored,
+                    primary_contradiction=primary_contradiction,
+                    production_path_id=argmax_best.get("path_id"),
+                )
+                if _dom_result and _dom_result.get("dominant_path_id"):
+                    _dom_id = str(_dom_result["dominant_path_id"])
+                    _dom_path = next((p for p in scored if str(p.get("path_id")) == _dom_id), None)
+                    if _dom_path is not None:
+                        best = _dom_path
+                        dominance_shadow = {
+                            **_dom_result,
+                            "shadow_only": False,
+                            "applied": True,
+                            "argmax_path_id": argmax_best.get("path_id"),
+                            "agreement": str(argmax_best.get("path_id")) == _dom_id,
+                        }
+            # 若未启用 pairwise 或解析失败，保留 shadow 诊断（不改变 best=argmax）
+            if dominance_shadow is None:
+                from dreambuddy_evolution.core.dominance_resolver import resolve_shadow
+
+                dominance_shadow = resolve_shadow(
+                    scored,
+                    primary_contradiction=primary_contradiction,
+                    production_path_id=argmax_best.get("path_id"),
+                    enabled=get_switch("enable_dominance_shadow", False),
+                )
+        except Exception as _dom_e:  # noqa: BLE001 — 成对支配 FAIL-OPEN → argmax 回退
+            logger.debug("[FO-T11] pairwise dominance fail, fallback to argmax: %s", _dom_e)
 
         # 统计验证
         # P3 修复（主矛盾→实质交易影响链路）：验证阈值与交叉验证乘数联动。
@@ -1916,6 +1944,22 @@ class EvolutionPipeline:
         if stat_val.get("low_conviction") and action in ("long", "short"):
             action = f"light_{d_star}"
 
+        # P0/T10: 降级模式（war_state=FREEZE/RESTRICT 或 13 风控不可用）→ 只允许平仓/减仓，禁止开仓
+        # 开仓类动作（long/short/light_long/light_short）一律降级为 WAIT；
+        # 平仓/减仓动作由调用方经 TradeExecutionGateway 处理（13 fail-closed 允许 close）。
+        try:
+            war_state = self._bridge.get_war_state()
+        except Exception:
+            war_state = "UNKNOWN"
+        _open_actions = {"long", "short", "light_long", "light_short"}
+        if war_state in ("FREEZE", "RESTRICT") and action in _open_actions:
+            logger.info(
+                "[T10 degrade] war_state=%s → 开仓动作 %s 降级为 WAIT（仅允许平仓/减仓）",
+                war_state,
+                action,
+            )
+            action = "WAIT"
+
         # ============ L2: 基因库 top_combo（保留兼容） ============
         library = self._load_library()
         top_combos = sgs.top_combinations_by_ess(library, min_sample=0)
@@ -2018,10 +2062,19 @@ class EvolutionPipeline:
             logger.debug("[FO-AGI-I] counterfactual fail: %s", e)
 
         # ============ L4: Bellman V(s) 更新 ============
-        # Bellman V(s) 跟踪状态价值，quality_score 作为状态质量信号仍合理
-        # 注意：ShadowRL 的 reward 已改为 0.0 占位（真实 PnL 由平仓事件注入），
-        # 但 Bellman 的 V(s) 是状态价值函数，与策略反馈不同，保留 quality_score 信号
-        _bellman_reward = float(r_out.get("quality_score", 0.5)) - 0.5
+        # T14: Bellman reward 使用真实 PnL（trade_settlement_bridge 同构：tanh(pnl/0.02)）；
+        # actual_pnl 为 0/不可用时 fallback 到 quality_score-0.5（状态质量信号）。
+        try:
+            import math as _math_bell
+
+            _pnl = float(actual_pnl or 0.0)
+            _bellman_reward = (
+                _math_bell.tanh(_pnl / 0.02)
+                if _pnl != 0.0
+                else float(r_out.get("quality_score", 0.5)) - 0.5
+            )
+        except Exception:
+            _bellman_reward = float(r_out.get("quality_score", 0.5)) - 0.5
         self.bellman.td_update(symbol, reward=_bellman_reward, next_symbol=symbol)
 
         return {

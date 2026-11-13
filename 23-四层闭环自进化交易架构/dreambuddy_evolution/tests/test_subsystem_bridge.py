@@ -7,6 +7,9 @@ from __future__ import annotations  # noqa: I001
 
 from dreambuddy_evolution.adapters.subsystem_bridge import SubSystemBridge
 
+# 隔离 bus 路径：避免测试读到线上 42 bus（含 43 strategic_extension war_state=FREEZE）
+_ISOLATED_BUS = "/tmp/_nonexistent_42_bus.json"
+
 
 class MockFiveDomainState:
     """模拟五计庙算状态"""
@@ -33,41 +36,41 @@ class TestSubSystemBridge:
     def test_war_state_allow(self):
         """war_state=ALLOW → 温度 1.0"""
         trader = MockTrader(war_state={"crypto_usdt": "ALLOW"})
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_war_state() == "ALLOW"
         assert bridge.get_ess_temperature() == 1.0
 
     def test_war_state_freeze(self):
         """war_state=FREEZE → 温度 0.1"""
         trader = MockTrader(war_state={"crypto_usdt": "FREEZE"})
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_war_state() == "FREEZE"
         assert bridge.get_ess_temperature() == 0.1
 
     def test_war_state_cooldown(self):
         """war_state=COOLDOWN → 温度 0.5"""
         trader = MockTrader(war_state={"crypto_usdt": "COOLDOWN"})
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_war_state() == "COOLDOWN"
         assert bridge.get_ess_temperature() == 0.5
 
     def test_bcrm_direction_up(self):
         """BCRM direction=UP → 'long'"""
         trader = MockTrader(bcrm_result={"next_state": {"direction": "UP", "confidence": 0.85}})
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_bcrm_direction() == "long"
         assert bridge.get_bcrm_confidence() == 0.85
 
     def test_bcrm_direction_down(self):
         """BCRM direction=DOWN → 'short'"""
         trader = MockTrader(bcrm_result={"next_state": {"direction": "DOWN", "confidence": 0.7}})
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_bcrm_direction() == "short"
 
     def test_bcrm_direction_flat(self):
         """BCRM direction=FLAT → ''"""
         trader = MockTrader(bcrm_result={"next_state": {"direction": "FLAT", "confidence": 0.3}})
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_bcrm_direction() == ""
 
     def test_scale_class_btc(self):
@@ -85,8 +88,8 @@ class TestSubSystemBridge:
         assert SubSystemBridge.get_scale_class("PEPE") == "Quantum"
 
     def test_trader_none_fo(self):
-        """trader=None → 安全默认值"""
-        bridge = SubSystemBridge(None)
+        """trader=None → 安全默认值（使用隔离 bus 路径避免读到线上 stale 信号）"""
+        bridge = SubSystemBridge(None, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_war_state() == "ALLOW"
         assert bridge.get_ess_temperature() == 1.0
         assert bridge.get_bcrm_direction() == ""
@@ -94,19 +97,19 @@ class TestSubSystemBridge:
         assert bridge.get_bdsm_valuation() == 0.5
 
     def test_bcrm_result_none(self):
-        """无 BCRM 结果 → 空方向"""
+        """无 BCRM 结果 → 空方向（隔离 bus 路径）"""
         trader = MockTrader(bcrm_result=None)
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_bcrm_direction() == ""
 
     def test_bdsm_valuation(self):
         """BDSM 估值分位"""
         trader = MockTrader(bdsm_snapshot={"valuation_percentile": 0.72})
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         assert bridge.get_bdsm_valuation() == 0.72
 
     def test_war_state_shadow_priority(self):
-        """影子模式优先读 _five_domain_state_shadow"""
+        """影子模式优先读 _five_domain_state_shadow（隔离 bus，43 不可用时 fallback 到 11 五域）"""
 
         class DualTrader:
             def __init__(self):
@@ -116,7 +119,7 @@ class TestSubSystemBridge:
                 self._five_domain_state_cache.war_state = {"crypto_usdt": "ALLOW"}
 
         trader = DualTrader()
-        bridge = SubSystemBridge(trader)
+        bridge = SubSystemBridge(trader, bus_state_path=_ISOLATED_BUS)
         # shadow 优先 → RESTRICT
         assert bridge.get_war_state() == "RESTRICT"
         assert bridge.get_ess_temperature() == 0.2

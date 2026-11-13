@@ -923,16 +923,83 @@ class PollingTrader:
         self.bagua_engine = BaguaEngine()
         self.okx_client = OKXSimulatedClient()
 
+        # ── P0/T2: 所有下单经 13 风控闸门（TradeExecutionGateway）─────────
+        # 用 RiskGatedOkxClient 代理包装 okx_client：place_order / place_stop_loss_take_profit
+        # 自动路由到 22-执行引擎中心 TradeExecutionGateway → 13 PreTradeGate（fail-closed）。
+        # 11 自有 risk_manager 仍作为前置轻量检查（见 _open_position 等），最终决策权归 13。
+        # FAIL-OPEN：Gateway 加载失败时退化为原始 okx_client，不阻塞交易主循环。
+        self._trade_exec_gateway = None
+        try:
+            import sys as _sys
+            from pathlib import Path as _P
+
+            _22_dir = _P(__file__).resolve().parents[3] / "22-执行引擎中心"
+            if str(_22_dir) not in _sys.path:
+                _sys.path.insert(0, str(_22_dir))
+            from trade_execution_gateway import (  # noqa: E402
+                RiskGatedOkxClient,
+                TradeExecutionGateway,
+            )
+
+            # T13: 保存 raw client。tee_core 必须持有 raw client，
+            # 若持有 RiskGatedOkxClient 会形成 OkxAdapter→代理→Gateway 的递归环。
+            self._okx_client_raw = self.okx_client
+
+            # T13: 加载 16 CapitalAllocatorComponent（建议制，仅作为仓位上限）
+            # 13 与 16 都使用顶层 core 包名，加载时必须临时隔离 sys.modules，
+            # 否则会与 Gateway 内部已加载的 13 core 互相抢占。
+            _allocator = None
+            try:
+                _16_dir = _P(__file__).resolve().parents[3] / "16-调控系统"
+                _saved_core = {
+                    _k: _v
+                    for _k, _v in _sys.modules.items()
+                    if _k == "core" or _k.startswith("core.")
+                }
+                for _k in list(_saved_core):
+                    del _sys.modules[_k]
+                _saved_path = list(_sys.path)
+                _sys.path.insert(0, str(_16_dir))
+                try:
+                    from core.capital_allocator.component import (  # noqa: E402
+                        CapitalAllocatorComponent,
+                    )
+
+                    _allocator = CapitalAllocatorComponent()
+                finally:
+                    for _k in [_k for _k in _sys.modules if _k == "core" or _k.startswith("core.")]:
+                        del _sys.modules[_k]
+                    _sys.modules.update(_saved_core)
+                    _sys.path[:] = _saved_path
+            except Exception as _paca_exc:
+                self._log(
+                    f"[T13] 16 capital_allocator 加载失败，跳过定容（FAIL-OPEN）: {_paca_exc}",
+                    "WARN",
+                )
+
+            self._trade_exec_gateway = TradeExecutionGateway(
+                okx_client=self.okx_client,
+                capital_allocator=_allocator,
+            )
+            self.okx_client = RiskGatedOkxClient(self.okx_client, self._trade_exec_gateway)
+            self._log("[T2] okx_client 已接入 TradeExecutionGateway（13 风控 fail-closed）", "INFO")
+        except Exception as _gw_exc:
+            self._log(
+                f"[T2] TradeExecutionGateway 加载失败，退化为原始 okx_client（FAIL-OPEN）: {_gw_exc}",
+                "WARN",
+            )
+
         # ── TEE 执行引擎影子模式开关（2026-09-06 全系统统一开启）─────────
-        # enable_tee=False + shadow_mode=True → TEE 完整决策但只记录不拦截
-        # 实际下单仍走原始 okx_client.place_order()，TEE 审计日志记录差异
-        # 引擎构造延迟到 log_file 初始化之后（见 _init_tee_shadow）
+        # T12: 11 执行逻辑剥离到 22（tee_core）。默认 enable_tee=True + shadow_mode=True：
+        #   - TEE 完整决策链运行（22 tee_core 作为执行决策权威）
+        #   - shadow 模式只记录 TEE 决策 vs 实际成交差异，不拦截实盘
+        #   - 实际下单仍走 okx_client（经 22 Gateway → 13 风控 fail-closed）
+        #   - shadow 一致率 ≥90% 后可切 YIJING_TEE_SHADOW_MODE=0 让 tee_core 真实执行
+        # FAIL-OPEN：tee_core 加载失败 → 退化为 okx_client 直传，不阻塞主循环
         import os as _os
 
-        self._tee_enable = _os.environ.get("YIJING_ENABLE_TEE", "").lower() in ("1", "true")
-        self._tee_shadow = _os.environ.get("YIJING_TEE_SHADOW_MODE", "").lower() in ("1", "true")
-        self._tee_engine = None
-        self._tee_engine_init_lock = __import__("threading").Lock()
+        self._tee_enable = _os.environ.get("YIJING_ENABLE_TEE", "1").lower() in ("1", "true")
+        self._tee_shadow = _os.environ.get("YIJING_TEE_SHADOW_MODE", "1").lower() in ("1", "true")
 
         self.use_bcrm2 = use_bcrm2
         self.bcrm2_adapters = {}
@@ -1191,9 +1258,18 @@ class PollingTrader:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = self.log_dir / f"trader_{datetime.now().strftime('%Y%m%d')}.jsonl"
 
-        # ── TEE 影子模式引擎构造（log_file 就绪后）─────────────────────
-        if self._tee_enable or self._tee_shadow:
-            self._wrap_place_order_with_tee()
+        # ── TEE 引擎由 Gateway 独占持有（log_file 就绪后）─────────────────
+        # T13 决策：tee 不再通过外层 monkeypatch 包装 place_order，
+        # 避免与 Gateway 内层调用形成双执行/递归环。shadow 下 tee 只记录决策差异，
+        # 真实下单仍由 Gateway 走 raw client；非 shadow 时由 tee 接管成交。
+        if (self._tee_enable or self._tee_shadow) and self._trade_exec_gateway is not None:
+            _engine = self._build_yijing_engine_for_gateway()
+            if _engine is not None:
+                self._trade_exec_gateway._tee_engine = _engine
+                self._log(
+                    f"[T13] tee_core 已注入 Gateway（raw client，shadow={self._tee_shadow}）",
+                    "INFO",
+                )
 
         self.incremental_learner = IncrementalLearner(
             retrain_trade_threshold=100,
@@ -6910,10 +6986,64 @@ class PollingTrader:
             with _tmp.open("w", encoding="utf-8") as _f:
                 json.dump(state, _f, ensure_ascii=False, indent=2)
             _tmp.replace(_spath)
+
+            # P1/T8 Phase-1 (shadow)：子池信号同步发布到 42 SignalBus，供 23 仲裁消费。
+            # 子池仍直接执行（shadow）；Phase-2 待 23 仲裁一致性 ≥90% 后切为信号-only。
+            self._publish_subpool_to_42_bus(tag, coin, inference, _conf, now_iso)
         except Exception as _sse:
             try:
                 self._log(
                     f"[SUBPOOL-STATE] 状态文件写盘失败（fail-open）: {type(_sse).__name__}",
+                    "DEBUG",
+                )
+            except Exception:
+                pass
+
+    def _publish_subpool_to_42_bus(
+        self, source_tag: str, coin: str, inference: dict, confidence: float, ts_iso: str
+    ) -> None:
+        """P1/T8 Phase-1：将子池信号发布到 42 SignalBus（FAIL-OPEN）。
+
+        42 总线多源 merge 后供 23 仲裁消费。子池仍直接执行（shadow 模式）。
+        """
+        try:
+            import sys as _sys
+            from datetime import timedelta
+
+            _22_dir = Path(__file__).resolve().parents[3] / "42-神经网络交易协调层"
+            if str(_22_dir) not in _sys.path:
+                _sys.path.insert(0, str(_22_dir))
+            from signal_bus import SignalBus  # noqa: E402
+
+            bus = SignalBus()
+            direction = str(inference.get("direction") or "neutral").lower()
+            expires = (
+                (datetime.now(timezone.utc) + timedelta(minutes=30))
+                .isoformat()
+                .replace("+00:00", "Z")
+            )
+            signal = {
+                "signal_id": f"11-{source_tag}-{coin}-{ts_iso[:19]}",
+                "source": f"11-{source_tag}",
+                "ts": ts_iso,
+                "symbol": inference.get("inst_id") or coin,
+                "direction": direction,
+                "confidence": float(confidence),
+                "horizon": "M1",  # 子池战术信号默认分钟级 horizon
+                "expires_at": expires,
+                "risk_exposure_hint": 0.0,  # 42 总线要求 float（0=无额外暴露提示）
+                "payload": {
+                    "coin": coin,
+                    "price": inference.get("price"),
+                    "reason": str(inference.get("reason", ""))[:200],
+                },
+            }
+            bus.publish(signal)
+            bus.flush()  # 持久化到 bus_state.json（42 多源 merge + 23 仲裁消费）
+        except Exception as _pub_exc:
+            try:
+                self._log(
+                    f"[T8-SHADOW] 42 总线发布失败（fail-open）: {type(_pub_exc).__name__}",
                     "DEBUG",
                 )
             except Exception:
@@ -7271,88 +7401,39 @@ class PollingTrader:
             return 0.0
 
     # ── TEE 执行引擎集成（影子模式）──────────────────────────────────
-    def _ensure_yijing_engine(self):
-        """懒加载 TEE 引擎（NFR-4：构造发生在 tee_core 外部，raw_client 由本方法传入）。"""
-        if self._tee_engine is not None:
-            return self._tee_engine
-        if not self._tee_enable and not self._tee_shadow:
+    def _build_yijing_engine_for_gateway(self):
+        """用 raw client 构造 tee，并立即交由 Gateway 独占持有。"""
+        if self._trade_exec_gateway is None:
             return None
-        with self._tee_engine_init_lock:
-            if self._tee_engine is not None:
-                return self._tee_engine
-            try:
-                import importlib.util as _ilu
-                import sys as _sys
-                from pathlib import Path as _P
+        try:
+            import importlib.util as _ilu
+            import sys as _sys
+            from pathlib import Path as _P
 
-                _tee_root = _P(__file__).resolve().parents[3] / "22-执行引擎中心"
-                _p = _tee_root / "tee_core/integrations/yijing_integration.py"
-                if not _p.is_file():
-                    return None
-                _name = "_tee_yijing_integration_lazy"
-                _spec = _ilu.spec_from_file_location(_name, str(_p))
-                _mod = _ilu.module_from_spec(_spec)
-                _sys.modules.setdefault(_name, _mod)
-                _spec.loader.exec_module(_mod)
-                engine, _info = _mod.build_yijing_engine(
-                    raw_client=self.okx_client,
-                    enable_tee=self._tee_enable,
-                    shadow_mode=self._tee_shadow,
-                )
-                self._tee_engine = engine
-                self._log(
-                    f"[TEE] 易经推理 TEE 引擎已加载 "
-                    f"enable_tee={self._tee_enable} shadow={self._tee_shadow}",
-                    "INFO",
-                )
-            except BaseException as exc:
-                # FAIL-OPEN：集成加载失败 → 完全退化为直传，不抛错阻塞轮询
-                self._tee_engine = None
-                self._log(f"[TEE] 引擎加载失败，退化为直传: {exc}", "WARN")
-        return self._tee_engine
-
-    def _wrap_place_order_with_tee(self):
-        """包装 okx_client.place_order，实现双轨影子模式。
-
-        双轨影子模式（enable_tee=True, shadow_mode=True）：
-          - 调用 TEE execute_market_compat（完整决策链，shadow auditor 只记录不下单）
-          - 然后继续走原始 place_order（实际成交不变）
-          - TEE shadow 审计日志记录 TEE 决策 vs 实际成交的差异
-
-        真实执行模式（enable_tee=True, shadow_mode=False）：
-          - 完全由 TEE execute_market_compat 执行下单，不走原始路径
-        """
-        engine = self._ensure_yijing_engine()
-        if engine is None:
-            return
-
-        original_place_order = self.okx_client.place_order
-
-        def _tee_wrapped_place_order(**kwargs):
-            # 限价单/带 px → 始终直传（TEE 暂不托管限价单）
-            if kwargs.get("px") is not None or kwargs.get("ord_type") not in (None, "market"):
-                return original_place_order(**kwargs)
-
-            try:
-                tee_result = engine.execute_market_compat(
-                    inst_id=kwargs.get("inst_id", ""),
-                    side=kwargs.get("side", ""),
-                    sz=kwargs.get("sz"),
-                    td_mode=kwargs.get("td_mode", "isolated"),
-                    pos_side=kwargs.get("pos_side", "net"),
-                    leverage=kwargs.get("leverage"),
-                    tag="yijing_shadow",
-                    reason=kwargs.get("reason", ""),
-                )
-                # 如果 TEE 真实执行（非 shadow），直接返回 TEE 结果
-                if not self._tee_shadow:
-                    return tee_result
-                # shadow 模式：TEE 只记录，实际下单走原始路径
-            except BaseException:
-                pass  # FAIL-OPEN：TEE 执行失败不影响实际下单
-            return original_place_order(**kwargs)
-
-        self.okx_client.place_order = _tee_wrapped_place_order
+            _tee_root = _P(__file__).resolve().parents[3] / "22-执行引擎中心"
+            _p = _tee_root / "tee_core/integrations/yijing_integration.py"
+            if not _p.is_file():
+                return None
+            _name = "_tee_yijing_integration_lazy"
+            _spec = _ilu.spec_from_file_location(_name, str(_p))
+            _mod = _ilu.module_from_spec(_spec)
+            _sys.modules.setdefault(_name, _mod)
+            _spec.loader.exec_module(_mod)
+            engine, _info = _mod.build_yijing_engine(
+                raw_client=self._okx_client_raw,
+                enable_tee=self._tee_enable,
+                shadow_mode=self._tee_shadow,
+            )
+            self._log(
+                f"[TEE] 易经推理 TEE 引擎已加载 "
+                f"enable_tee={self._tee_enable} shadow={self._tee_shadow}",
+                "INFO",
+            )
+            return engine
+        except BaseException as exc:
+            # FAIL-OPEN：集成加载失败 → Gateway 直接使用 raw client
+            self._log(f"[TEE] 引擎加载失败，退化为直传: {exc}", "WARN")
+            return None
 
     def _execute_evolution_order_via_tee(
         self,
@@ -7362,62 +7443,17 @@ class PollingTrader:
         pos_side: str,
         reason: str = "",
     ) -> Dict[str, Any]:
-        """自进化子池专用：通过 TEE 执行引擎真实下单（独立于 BCRM/BDSM）。
+        """自进化子池开仓：统一经 Gateway 执行（13 风控 → 16 定容 → 22 执行）。
 
-        与全局 place_order 包装隔离：
-          - BCRM/BDSM 走 okx_client.market_open_*（原始路径，TEE 仅影子审计）
-          - evolution 子池走此方法（TEE 真实执行，带 kill_switch/slippage/auditor）
+        T13 决策：tee 由 Gateway 独占持有且只持有 raw client，子池不再直接调用
+        engine，否则会用 raw client 绕过 13 风控。
 
         Returns:
             与 market_open_long/short 兼容的 dict: {ok, ord_id, avg_px, ...}
         """
-        engine = self._ensure_yijing_engine()
-        if engine is None or not self._tee_enable:
-            # TEE 不可用时 FAIL-OPEN 回退原始路径
-            if pos_side == "long":
-                return self.okx_client.market_open_long(
-                    inst_id, usdt_amount=usdt_amount, reason=reason
-                )
-            else:
-                return self.okx_client.market_open_short(
-                    inst_id, usdt_amount=usdt_amount, reason=reason
-                )
-
-        try:
-            sz = self.okx_client._usdt_to_sz(inst_id, usdt_amount)
-            result = engine.execute_market_compat(
-                inst_id=inst_id,
-                side=side,
-                sz=sz,
-                td_mode="isolated",
-                pos_side=pos_side,
-                tag="evolution_real",
-                reason=reason or f"evolution_{pos_side}",
-            )
-            # 映射回 market_open_* 兼容格式
-            return {
-                "ok": result.get("ok", True),
-                "ord_id": result.get("ord_id", ""),
-                "avg_px": result.get("avg_px", 0.0),
-                "price": result.get("avg_px", 0.0),
-                "filled_sz": result.get("filled_sz", sz),
-                "state": result.get("state", "filled"),
-                "data": result.get("data", {}),
-            }
-        except BaseException as e:
-            self._log(
-                f"[P2-S4b] evolution TEE 执行失败，回退原始路径: {type(e).__name__}: {e}",
-                "WARN",
-            )
-            # FAIL-OPEN：TEE 失败回退原始下单
-            if pos_side == "long":
-                return self.okx_client.market_open_long(
-                    inst_id, usdt_amount=usdt_amount, reason=reason
-                )
-            else:
-                return self.okx_client.market_open_short(
-                    inst_id, usdt_amount=usdt_amount, reason=reason
-                )
+        if pos_side == "long":
+            return self.okx_client.market_open_long(inst_id, usdt_amount=usdt_amount, reason=reason)
+        return self.okx_client.market_open_short(inst_id, usdt_amount=usdt_amount, reason=reason)
 
     def _execute_evolution_close_via_tee(
         self,
@@ -7426,7 +7462,10 @@ class PollingTrader:
         reduce_ratio: float = 1.0,
         reason: str = "",
     ) -> Dict[str, Any]:
-        """自进化子池专用：通过 TEE 执行引擎平仓（独立于 BCRM/BDSM）。
+        """自进化子池平仓：统一经 Gateway 执行（13 风控对平仓 fail-open）。
+
+        T13 决策：tee 由 Gateway 独占持有且只持有 raw client，子池不再直接调用
+        engine，否则会用 raw client 绕过 13 风控与审计。
 
         Args:
             reduce_ratio: 1.0=全部平仓, 0.1~0.9=部分平仓
@@ -7434,86 +7473,16 @@ class PollingTrader:
         Returns:
             与 market_close_* 兼容的 dict
         """
-        engine = self._ensure_yijing_engine()
-        if engine is None or not self._tee_enable:
-            # TEE 不可用时 FAIL-OPEN 回退原始路径
-            if reduce_ratio >= 1.0:
-                if pos_side == "long":
-                    return self.okx_client.market_close_long(inst_id, reason=reason)
-                else:
-                    return self.okx_client.market_close_short(inst_id, reason=reason)
-            else:
-                if hasattr(self.okx_client, "reduce_position"):
-                    return self.okx_client.reduce_position(
-                        inst_id=inst_id,
-                        pos_side=pos_side,
-                        reduce_ratio=reduce_ratio,
-                        reason=reason,
-                    )
-                # 无部分平仓接口时回退全平
-                if pos_side == "long":
-                    return self.okx_client.market_close_long(inst_id, reason=reason)
-                else:
-                    return self.okx_client.market_close_short(inst_id, reason=reason)
-
-        try:
-            # 查询当前持仓获取 sz
-            _pos_q = self.okx_client.get_positions(inst_id)
-            sz = 0
-            if _pos_q.get("ok"):
-                for _p in _pos_q.get("positions", []):
-                    if _p.get("pos_side") == pos_side and float(_p.get("pos", 0)) > 0:
-                        sz = float(_p.get("pos", 0))
-                        break
-            if sz <= 0:
-                return {"ok": False, "error": "no position to close"}
-
-            close_sz = int(sz * reduce_ratio) if reduce_ratio < 1.0 else int(sz)
-            if close_sz <= 0:
-                return {"ok": False, "error": "reduce size too small"}
-
-            side = "sell" if pos_side == "long" else "buy"
-            result = engine.execute_market_compat(
+        if reduce_ratio < 1.0 and hasattr(self.okx_client, "reduce_position"):
+            return self.okx_client.reduce_position(
                 inst_id=inst_id,
-                side=side,
-                sz=close_sz,
-                td_mode="isolated",
                 pos_side=pos_side,
-                tag="evolution_close_real",
-                reason=reason or f"evolution_close_{pos_side}",
+                reduce_ratio=reduce_ratio,
+                reason=reason,
             )
-            return {
-                "ok": result.get("ok", True),
-                "ord_id": result.get("ord_id", ""),
-                "avg_px": result.get("avg_px", 0.0),
-                "price": result.get("avg_px", 0.0),
-                "filled_sz": result.get("filled_sz", close_sz),
-                "state": result.get("state", "filled"),
-                "data": result.get("data", {}),
-            }
-        except BaseException as e:
-            self._log(
-                f"[EvolutionExitEngine] evolution TEE 平仓失败，回退原始路径: {type(e).__name__}: {e}",
-                "WARN",
-            )
-            # FAIL-OPEN：TEE 失败回退原始平仓
-            if reduce_ratio >= 1.0:
-                if pos_side == "long":
-                    return self.okx_client.market_close_long(inst_id, reason=reason)
-                else:
-                    return self.okx_client.market_close_short(inst_id, reason=reason)
-            else:
-                if hasattr(self.okx_client, "reduce_position"):
-                    return self.okx_client.reduce_position(
-                        inst_id=inst_id,
-                        pos_side=pos_side,
-                        reduce_ratio=reduce_ratio,
-                        reason=reason,
-                    )
-                if pos_side == "long":
-                    return self.okx_client.market_close_long(inst_id, reason=reason)
-                else:
-                    return self.okx_client.market_close_short(inst_id, reason=reason)
+        if pos_side == "long":
+            return self.okx_client.market_close_long(inst_id, reason=reason)
+        return self.okx_client.market_close_short(inst_id, reason=reason)
 
     def _apply_bdsm_scaling(
         self, coin: str, position_usdt: float, current_price: float
