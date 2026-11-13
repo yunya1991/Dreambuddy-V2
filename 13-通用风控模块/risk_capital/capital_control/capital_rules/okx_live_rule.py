@@ -12,10 +12,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-# 共享模块所在包的父目录（16-调控系统/core）插入 sys.path
+# 共享模块所在包的父目录（13-通用风控模块/risk_capital）插入 sys.path
 _HERE = Path(__file__).resolve()
-_CORE_DIR = _HERE.parents[1]
-_RISK_DIR = _HERE.parents[3] / "13-通用风控模块"
+_CORE_DIR = _HERE.parents[1]  # capital_control
+_RISK_DIR = _HERE.parents[3]  # 13-通用风控模块
 _RISK_CORE_DIR = _RISK_DIR / "core"
 for _p in (_CORE_DIR, _RISK_DIR, _RISK_CORE_DIR):
     if str(_p) not in sys.path:

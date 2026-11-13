@@ -22,8 +22,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 _HERE = Path(__file__).resolve()
-_CORE_DIR = _HERE.parents[1]
-_RISK_DIR = _HERE.parents[3] / "13-通用风控模块"
+_CORE_DIR = _HERE.parents[1]  # capital_control
+_RISK_DIR = _HERE.parents[3]  # 13-通用风控模块
 _RISK_CORE_DIR = _RISK_DIR / "core"
 for _p in (_CORE_DIR, _RISK_DIR, _RISK_CORE_DIR):
     if str(_p) not in sys.path:

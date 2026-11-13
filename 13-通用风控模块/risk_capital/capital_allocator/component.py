@@ -26,15 +26,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 _ALLOC_DIR = Path(__file__).resolve().parent  # capital_allocator
-_16_CORE_DIR = _ALLOC_DIR.parent  # 16-调控系统/core
-_16_DIR = _16_CORE_DIR.parent  # 16-调控系统
-_PROJECT_DIR = _16_DIR.parent  # dreambuddy-v2
+_RISK_CAPITAL_DIR = _ALLOC_DIR.parent  # 13-通用风控模块/risk_capital
+_PROJECT_DIR = _RISK_CAPITAL_DIR.parents[1]  # dreambuddy-v2
+# 配置文件本轮仍留在 16-调控系统/config（未迁移）
+_16_DIR = _PROJECT_DIR / "16-调控系统"
 _TRADES_FILE = (
     _PROJECT_DIR / "11-易经推理系统" / ".workbuddy" / "memory_l4" / "stats" / "all_trades.jsonl"
 )
 _CACHE_FILE = _PROJECT_DIR / "11-易经推理系统" / "runtime" / "paca_performance_cache.json"
 
-for _p in (_16_CORE_DIR,):
+for _p in (_RISK_CAPITAL_DIR,):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
