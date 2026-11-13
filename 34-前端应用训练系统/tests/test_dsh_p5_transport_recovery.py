@@ -252,3 +252,62 @@ class TestRetryDegrade:
             assert counter[0] == 2
         finally:
             mgr.close_all()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# 同机部署: ssh-stdio 无 host 时降级本地 stdio
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestSameHostStdioFallback:
+    """云端同机部署不应 SSH 自连: 缺 shell_host/DSH_SSH_HOST → 本地 stdio。"""
+
+    def _spec(self):
+        spec = dict(_fake_spec())
+        spec.pop("shell_host", None)
+        return spec
+
+    def test_no_host_falls_back_to_stdio(self, monkeypatch):
+        monkeypatch.delenv("DSH_SSH_HOST", raising=False)
+        from core.dsh_frontend_bridge import launcher_factory
+
+        shell = launcher_factory(self._spec())
+        assert shell is not None, "缺 host 时应降级 stdio, 而非返回 None"
+        try:
+            env = shell.call("echo_tool", {"tool": "t", "args": {"x": 1}})
+            assert env["ok"] is True
+        finally:
+            shell.close()
+
+    def test_env_host_keeps_ssh_path(self, monkeypatch):
+        monkeypatch.setenv("DSH_SSH_HOST", "localhost")
+
+        import importlib
+
+        from core import dsh_frontend_bridge
+
+        calls = {}
+
+        def _fake_ssh_launcher(spec, **kwargs):
+            calls["transport"] = "ssh"
+            return type(
+                "S",
+                (),
+                {
+                    "call": lambda self, t, a=None: {"ok": True},
+                    "is_alive": lambda self: True,
+                    "close": lambda self: None,
+                },
+            )()
+
+        # launcher_factory 走顶层 `from ssh_shell_launcher import ...`,
+        # 因此必须 patch 顶层模块对象, 而非 core.* 别名。
+        core_dir = os.path.join(REPO_ROOT, "34-前端应用训练系统", "core")
+        if core_dir not in sys.path:
+            sys.path.insert(0, core_dir)
+        ssh_mod = importlib.import_module("ssh_shell_launcher")
+        monkeypatch.setattr(ssh_mod, "ssh_launcher", _fake_ssh_launcher)
+
+        shell = dsh_frontend_bridge.launcher_factory(self._spec())
+        assert calls.get("transport") == "ssh"
+        assert shell is not None

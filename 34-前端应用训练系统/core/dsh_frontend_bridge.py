@@ -1393,6 +1393,13 @@ def launcher_factory(spec: Dict[str, Any]) -> Optional[Any]:
 
             return stdio_launcher(spec)
         elif transport == "ssh-stdio":
+            # 同机部署（如云端前端）未配置 shell_host / DSH_SSH_HOST 时降级本地 stdio：
+            # 强制 SSH 自连会因 shell_path 为相对路径在 $HOME 下执行而拉起失败，
+            # 且 launcher 返回 None 后会在 handle.call 处抛 NoneType（HC-1 未覆盖）。
+            if not (spec.get("shell_host") or os.environ.get("DSH_SSH_HOST")):
+                from stdio_shell_launcher import stdio_launcher  # type: ignore
+
+                return stdio_launcher({**spec, "transport": "stdio"})
             from ssh_shell_launcher import ssh_launcher  # type: ignore
 
             return ssh_launcher(spec)
