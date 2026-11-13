@@ -19,7 +19,17 @@ import { convertToModelMessages, stepCountIs, streamText } from 'ai';
 import type { Tool, UIMessage } from 'ai';
 import { resolveAgentModel } from '@/lib/agent/providers';
 import { getCognitionMcpClient } from '@/lib/agent/mcp-client';
+import { filterToolsByProfile, profileSystemPrompt, resolveToolProfile } from '@/lib/agent/tool-profiles';
+import { isEntitled } from '@/lib/product/entitlement';
+import {
+  estimateChatCu,
+  hasCompute,
+  reserveCu,
+  settleReservation,
+  type UsageInput,
+} from '@/lib/billing/meter';
 import { maybeWriteSessionSummary } from '@/lib/agent/distill-outbox';
+import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,7 +45,13 @@ function degraded(reason: string) {
 }
 
 export async function POST(request: NextRequest) {
-  let body: { messages?: UIMessage[]; provider?: string; model?: string };
+  let body: {
+    messages?: UIMessage[];
+    provider?: string;
+    model?: string;
+    /** 对话来源；profile 由服务端按产品开通状态决定，前端不能自选 profile */
+    surface?: 'workbench' | 'trading';
+  };
   try {
     body = await request.json();
   } catch {
@@ -53,22 +69,45 @@ export async function POST(request: NextRequest) {
       return degraded('model_not_configured');
     }
 
+    // SPEC-52 F4：交易产品零余额锁定（平台只读仍可用）
+    if (body.surface === 'trading' && !(await hasCompute())) {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: { code: 'INSUFFICIENT_CU', message: 'CU 余额不足，交易产品已锁定。' },
+        },
+        { status: 403 },
+      );
+    }
+
+    // SPEC-52 F6：服务端注入工具 profile（前端只声明 surface，不自选 profile）
+    const profile = resolveToolProfile({
+      surface: body.surface === 'trading' ? 'trading' : 'workbench',
+      entitled: isEntitled(),
+    });
+
     // MCP tools 获取失败不致命：退化为无工具对话
     let tools: Record<string, Tool> | undefined;
     try {
-      tools = await getCognitionMcpClient().toAiSdkTools();
+      const allTools = await getCognitionMcpClient().toAiSdkTools();
+      tools = filterToolsByProfile(allTools, profile);
     } catch (e) {
       console.warn('[AgentChat] MCP tools 降级:', e instanceof Error ? e.message : e);
       tools = undefined;
     }
 
+    // SPEC-52 F4：预扣 → 结算（账本只追加；未产生 usage 时预扣自动释放）
+    const traceId = request.headers.get('x-request-id')?.trim() || randomUUID();
+    const reservation = reserveCu(traceId, estimateChatCu(0));
+
     const result = streamText({
       model,
-      system: SYSTEM_PROMPT,
+      system: `${SYSTEM_PROMPT}\n${profileSystemPrompt(profile)}`,
       messages: convertToModelMessages(body.messages),
       tools,
       stopWhen: stepCountIs(5),
-      onFinish: (event) => {
+      onFinish: async (event) => {
         // Phase 3 蒸馏桥出口：会话轮数 ≥2 且有实质工具结果时写 session_summary 到 outbox。
         // FAIL-OPEN：maybeWriteSessionSummary 内部已 catch，此处再兜底绝不影响流响应。
         try {
@@ -76,6 +115,20 @@ export async function POST(request: NextRequest) {
           maybeWriteSessionSummary({ messages: body.messages ?? [], hasToolResults });
         } catch (e) {
           console.warn('[AgentChat] distill outbox 失败（FAIL-OPEN）:', e instanceof Error ? e.message : e);
+        }
+
+        // SPEC-52 F4：按实际 token / 工具调用结算
+        try {
+          const inputTokens = event.usage?.inputTokens ?? 0;
+          const outputTokens = event.usage?.outputTokens ?? 0;
+          const toolCalls = event.steps.reduce((count, step) => count + step.toolCalls.length, 0);
+          const inputs: UsageInput[] = [];
+          if (inputTokens > 0) inputs.push({ dimension: 'llm_input', quantity: inputTokens, ref: 'agent_chat' });
+          if (outputTokens > 0) inputs.push({ dimension: 'llm_output', quantity: outputTokens, ref: 'agent_chat' });
+          if (toolCalls > 0) inputs.push({ dimension: 'tool_call', quantity: toolCalls, ref: profile.id });
+          await settleReservation(reservation, inputs);
+        } catch (e) {
+          console.warn('[AgentChat] usage 结算失败（FAIL-OPEN）:', e instanceof Error ? e.message : e);
         }
       },
     });

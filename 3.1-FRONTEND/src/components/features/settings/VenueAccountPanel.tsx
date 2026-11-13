@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import { venue, type VenueHealth } from '@/lib/venue-client';
+import { ProductLockedNotice, useProductEntitlement } from '@/components/features/product/ProductGate';
 import {
   V3Card, V3Button, V3Badge, V3StatusDot, IconRefresh,
 } from '@/components';
@@ -27,6 +28,7 @@ export function VenueAccountPanel() {
   const [ttl, setTtl] = useState(1800);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { entitled } = useProductEntitlement();
 
   const healthQuery = useQuery({
     queryKey: queryKey('settings', 'venue-health'),
@@ -45,6 +47,8 @@ export function VenueAccountPanel() {
     staleTime: queryStaleTime('settings'),
     retry: false,
     refetchInterval: 30000,
+    // 未开通时真实账户数据不加载（SPEC-52 §9.5）
+    enabled: entitled,
   });
 
   const auditQuery = useQuery({
@@ -99,6 +103,19 @@ export function VenueAccountPanel() {
 
   const inputCls =
     'w-full bg-gray-900/60 border border-gray-700/50 rounded-md px-2 py-1.5 text-xs text-gray-200';
+
+  if (!entitled) {
+    return (
+      <V3Card
+        title="交易场所账户"
+        subtitle="51 OKX CLI 用户 venue · 与后端自链路隔离"
+        actions={<V3Badge variant="default">已锁定</V3Badge>}
+        padding="sm"
+      >
+        <ProductLockedNotice />
+      </V3Card>
+    );
+  }
 
   return (
     <V3Card

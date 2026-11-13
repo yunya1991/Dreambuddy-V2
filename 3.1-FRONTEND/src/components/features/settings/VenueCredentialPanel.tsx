@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKey, queryStaleTime } from '@/lib/query-keys';
 import { venue, type VenueCredentialsPublic } from '@/lib/venue-client';
+import { ProductLockedNotice, useProductEntitlement } from '@/components/features/product/ProductGate';
 import { V3Card, V3Button, V3Badge } from '@/components';
 
 // 用户交易 API（前端策略执行路径）
@@ -34,6 +35,7 @@ export function VenueCredentialPanel() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { entitled } = useProductEntitlement();
 
   const credentialsQuery = useQuery({
     queryKey: queryKey('settings', 'venue-credentials'),
@@ -109,6 +111,19 @@ export function VenueCredentialPanel() {
       setBusy(false);
     }
   };
+
+  if (!entitled) {
+    return (
+      <V3Card
+        title="用户交易 API"
+        subtitle="前端策略执行路径 · 与后端 22 执行链路隔离"
+        actions={<V3Badge variant="default">已锁定</V3Badge>}
+        padding="sm"
+      >
+        <ProductLockedNotice />
+      </V3Card>
+    );
+  }
 
   return (
     <V3Card

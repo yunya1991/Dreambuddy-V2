@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { entitlementDeniedPayload, isEntitled } from '@/lib/product/entitlement';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,10 +15,19 @@ const TOKEN_FILE =
 // 前端只允许打到这些前缀，避免把 bridge 当成任意后门。
 const ALLOWED_PREFIXES = ['health', 'account/', 'market/', 'order-intents', 'live/', 'credentials', 'audit'];
 
+// SPEC-52 F2：产品包未开通时锁定的路径（真实账户数据 / 下单 / 实盘解锁 / 凭证写入）。
+const ENTITLED_PREFIXES = ['account/', 'order-intents', 'live/'];
+
 function isAllowed(subPath: string): boolean {
   return ALLOWED_PREFIXES.some((prefix) =>
     prefix.endsWith('/') ? subPath.startsWith(prefix) : subPath === prefix || subPath.startsWith(`${prefix}/`),
   );
+}
+
+function requiresEntitlement(subPath: string, method: 'GET' | 'POST' | 'DELETE'): boolean {
+  if (ENTITLED_PREFIXES.some((prefix) => subPath.startsWith(prefix))) return true;
+  // 凭证读取（掩码）保留，写入/删除属于产品操作，未开通时锁定
+  return subPath === 'credentials' && method !== 'GET';
 }
 
 async function resolveToken(): Promise<string> {
@@ -42,6 +52,10 @@ async function proxy(
       { ok: false, error: { code: 'not_allowed', message: `venue bridge 不暴露该路径: ${subPath}` } },
       { status: 404 },
     );
+  }
+
+  if (requiresEntitlement(subPath, method) && !isEntitled()) {
+    return NextResponse.json(entitlementDeniedPayload(), { status: 403 });
   }
 
   const token = await resolveToken();

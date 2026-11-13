@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { venue, type VenueOrderIntent, type VenueOrderReceipt } from '@/lib/venue-client';
+import { ProductLockedNotice, useProductEntitlement } from '@/components/features/product/ProductGate';
 import { V3Card, V3Button, V3Badge } from '@/components';
 
 // 产品内下单票据（SPEC-52 F2）
@@ -37,6 +38,7 @@ export function OrderTicketPanel() {
   const [receipt, setReceipt] = useState<VenueOrderReceipt | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { entitled } = useProductEntitlement();
 
   const isSwap = form.instId.toUpperCase().endsWith('-SWAP');
   const inputCls =
@@ -95,6 +97,19 @@ export function OrderTicketPanel() {
       setBusy(false);
     }
   };
+
+  if (!entitled) {
+    return (
+      <V3Card
+        title="下单票据"
+        subtitle="order_intent → 人工确认 → 51 用户 venue"
+        actions={<V3Badge variant="default">已锁定</V3Badge>}
+        padding="sm"
+      >
+        <ProductLockedNotice />
+      </V3Card>
+    );
+  }
 
   return (
     <V3Card

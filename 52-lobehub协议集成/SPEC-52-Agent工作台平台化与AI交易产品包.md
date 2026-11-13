@@ -69,7 +69,7 @@ L1 通用金融 Agent 平台
 
 L2 产品包：AI 交易（按算力付费）
 ├─ 保留现有交易页面（图表/持仓/订单/风控/复盘）
-├─ 产品内下单（用户自有 API → 22 → 13 → 27 → 交易所）
+├─ 产品内下单（用户自有 API → 51 用户 venue → OKX CLI；后端自有链路仍走 22 → 13 → 27）
 ├─ AI 辅助：只读解释 / 提案 / 异步回测与推演
 └─ 产品工具 profile（与平台 profile 隔离）
 ```
@@ -103,6 +103,9 @@ L2 产品包：AI 交易（按算力付费）
 - 用户凭证：默认 demo；live 需在设置页人工解锁（短语 `UNLOCK LIVE TRADING`，TTL 60s–8h，重启失效）。
 - AI 只生成 `order_intent`（草稿），用户点击确认后才进入上述 51 路径。
 - 隔离工程：独立凭证目录、独立审计 JSONL、独立 BFF 前缀、独立 bridge token，四条边界互不复用。
+- 实现状态（2026-11-13）：
+  - 门禁：`src/lib/product/entitlement.ts` + `GET /api/product/entitlement`；`/api/venue/*` 对 `account/`、`order-intents`、`live/`、凭证写入返回 403 `PRODUCT_NOT_ENTITLED`；本地 owner 默认开通，`PRODUCT_AI_TRADING_STATUS=inactive` 可验证锁定形态。
+  - 前端锁定：设置页双面板与交易页下单票据在未开通时显示锁定提示，账户数据查询不发起。
 
 ### F3 用户交易 API 配置（P1）
 
@@ -138,6 +141,7 @@ L2 产品包：AI 交易（按算力付费）
 | admin | 治理查询（不写） | 内部 |
 
 - profile 由服务端按产品开关注入，前端不可自选越权。
+- 实现（2026-11-13）：`src/lib/agent/tool-profiles.ts` 定义白名单与边界声明；`/api/agent/chat` 接收 `surface`（workbench/trading），服务端结合 entitlement 解析 profile 后过滤 MCP 工具；未开通时 `trading` 自动降级为 `platform`。
 
 ### F7 用量与审计可视化（P2）
 
@@ -155,27 +159,40 @@ L2 产品包：AI 交易（按算力付费）
 | 脑暴入口 | 工作台 composer | 复用 `/api/agent/brainstorm` |
 | 交易产品 | `src/app/dashboard/trade/*` | 保留 + 门禁 |
 | 设置 | `src/app/dashboard/settings/*` | 新增交易 API 配置 |
-| 协议层 | `src/app/api/agent/chat/route.ts` | profile 注入 + 计量中间件 |
+| 协议层 | `src/app/api/agent/chat/route.ts` + `src/lib/agent/tool-profiles.ts` | profile 注入（已落地）；计量中间件待 P2 |
 | MCP | `src/lib/agent/mcp-client.ts` | P3 多壳（本期不阻塞） |
-| 凭证 | 新增 `src/lib/trading/credential-vault.ts` | 加解密 + 权限校验 |
-| 下单 | `src/app/api/trade/orders/route.ts` → 22 网关 | 禁止绕过 |
-| 计量 | 新增 `src/lib/billing/meter.ts` + `/api/billing/*` | reserve/settle |
-| 插件 | `src/app/dashboard/plugins/*` + `/api/plugins/*` | 官方 + 自有 |
+| 凭证 | `51-OKX CLI 系统/src/okx_venue/credentials.py` + 前端 `src/lib/venue-client.ts` | AES-256-GCM + 权限探测（已落地；不使用 `src/lib/trading/credential-vault.ts`） |
+| 下单（产品通道） | `src/app/api/venue/[...path]/route.ts` → 51 bridge → `okx` CLI | 用户自有 API；不经 22 |
+| 下单（后端通道） | `src/app/api/trade/orders/route.ts` → 22 网关 | 后端自有链路，禁止绕过 13/27 |
+| 计量 | `src/lib/billing/meter.ts` + `/api/billing/balance|usage` | reserve→settle，JSONL 账本（已落地） |
+| 插件 | `src/app/dashboard/plugins/*` + `src/lib/plugins/registry.ts` + `src/lib/dsh/plugins.ts` | 白名单发现/校验/沙箱启停/审计 + 真实安装（`dsh plugin --profile sandbox add/remove`） |
 
 ### 4.1 新增 API
 
 | Method | Path | 用途 |
 |---|---|---|
-| GET/POST/DELETE | `/api/settings/exchange-credentials` | 凭证 CRUD |
-| POST | `/api/settings/exchange-credentials/test` | 连接测试 |
-| GET | `/api/billing/balance` / `/api/billing/usage` | 余额/明细 |
-| POST | `/api/trade/order-intents` | AI 生成草稿 |
-| POST | `/api/trade/order-intents/{id}/confirm` | 人工确认 |
-| POST | `/api/trade/orders` | 产品 UI 下单（内部走网关） |
-| GET/POST/DELETE | `/api/venue/*` | 51 用户 venue BFF（凭证/账户/order-intent/live/audit） |
-| GET/POST | `/api/plugins`、`/api/plugins/{id}/enable` | 插件管理 |
+| GET/POST/DELETE | `/api/venue/credentials` | 用户凭证 CRUD（已落地） |
+| POST | `/api/venue/credentials/test` | 连接测试（已落地） |
+| GET | `/api/product/entitlement` | 产品包开通状态（已落地） |
+| GET | `/api/billing/balance` / `/api/billing/usage` | CU 余额 / 明细聚合（已落地） |
+| POST | `/api/venue/order-intents` | order_intent 草稿（已落地） |
+| POST | `/api/venue/order-intents/{id}/confirm` | 人工确认下单（已落地） |
+| POST | `/api/trade/orders` | 后端链路下单（22 网关，非产品通道） |
+| GET/POST/DELETE | `/api/venue/*` | 51 用户 venue BFF（health/account/market/order-intent/live/audit） |
+| GET/POST | `/api/plugins`、`/api/plugins/{id}/enable`、`/api/plugins/audit` | 插件列表 / 沙箱启停 / 审计（已落地；支持 scoped 包名） |
+| GET | `/api/dsh/plugins?profile=sandbox` | 读取本地 DSH profile 已安装插件（package.json + bundles） |
+| POST | `/api/dsh/plugins/install` / `/uninstall` | 真实安装/卸载：`dsh plugin --profile <p> add|remove`（白名单 + 核心保护） |
 
-### 4.2 数据表（新增）
+### 4.2 数据表（目标 schema；P2/P3 未落库）
+
+> 当前实现（2026-11-13）：
+> - entitlement = 进程内判断（env `PRODUCT_AI_TRADING_STATUS` + 默认开通），未建表；
+> - 用户凭证 = `51-OKX CLI 系统/runtime/user_venue/credentials.enc`（AES-256-GCM，0600）；
+> - order_intent / live gate = 51 bridge 进程内存态（重启失效）；
+> - 审计 = `51-OKX CLI 系统/runtime/audit/user_venue_calls.jsonl` 追加写；
+> - F4 用量账本 = `52-lobehub协议集成/runtime/usage_ledger.jsonl`（`PRODUCT_USAGE_DIR` 可覆盖）；
+> - F5 插件状态/审计 = 同目录 `plugin_state.json` + `plugin_audit.jsonl`。
+> 下表为 P2/P3 引入持久化时的目标 schema。
 
 - `product_entitlement(user_id, product_id, status, balance_cu, updated_at)`
 - `usage_ledger(id, user_id, product_id, dimension, quantity, cu_cost, ref, trace_id, created_at)`
@@ -184,13 +201,26 @@ L2 产品包：AI 交易（按算力付费）
 - `plugin_registry(id, name, version, source, permissions, hash, status, installed_at)`
 - `plugin_audit(id, plugin_id, action, result, trace_id, created_at)`
 
+### 4.3 落地状态（2026-11-13 审计）
+
+| 规格 | 状态 | 落点 / 缺口 |
+|---|---|---|
+| F1 导航换位与统一入口 | ✅ 已落地 | `src/lib/navigation.ts` 三分区；`/dashboard/agent` 双模式吸收 ChatPanel；交易页改为入口跳转 |
+| F2 产品包门禁 | ✅ 已落地（本地 owner 默认开通） | `src/lib/product/entitlement.ts`、`/api/product/entitlement`、`/api/venue/*` 403 门禁、三面板锁定态 |
+| F2 产品内下单双轨 | ✅ 已落地 | 产品：`/api/venue/order-intents` → 51 bridge；后端：`/api/trade/orders` → 22 网关，互不复用凭证 |
+| F3 用户交易 API 配置 | ✅ 已落地 | 51 `credentials.py`/`server.py` + 前端 `VenueCredentialPanel` |
+| F4 按算力计费与 entitlement | ✅ 已落地（文件账本） | `src/lib/billing/meter.ts`（reserve→settle、只追加账本）+ `/api/billing/balance|usage`；chat 按 token/工具调用结算；`PRODUCT_USAGE_DIR` 可覆盖账本目录；零余额锁定交易面（403 INSUFFICIENT_CU） |
+| F5 DSH 插件 tab | ✅ 已落地（含真实安装） | `/dashboard/plugins` 增加「DSH插件」tab：读取 `$DSH_HOME/profiles/sandbox` 安装态；安装走 `dsh plugin --profile sandbox add <pkg>`（仅白名单 npm 包，本地插件不重复安装）；卸载保护 `@deepseek-ai/dsh-base|dsh-headless`；所有动作写 plugin_audit.jsonl |
+| F6 工具 profile | ✅ 已落地（白名单按现有壳） | `src/lib/agent/tool-profiles.ts` + `/api/agent/chat` 服务端注入；交易/提案工具待对应 MCP 壳注册后自动生效 |
+| F7 用量与审计可视化 | ✅ 已落地 | `/dashboard/usage`：CU 余额/预扣/维度聚合/最近账本 + 用户 venue 审计 + 插件启停审计；导航「运营 → 用量与审计」 |
+
 ---
 
 ## §5 安全与治理
 
 | 项 | 规格 |
 |---|---|
-| 凭证加密 | AES-256-GCM；密钥来自环境/KMS；仅 22 网关内存解密 |
+| 凭证加密 | AES-256-GCM；密钥独立文件（0600）；仅在 51 用户 venue 进程内解密注入子进程，后端 22 不读取用户凭证 |
 | LLM 边界 | 凭证与明文密钥永不进入 prompt/工具返回；AI 仅见脱敏账户摘要 |
 | 下单防重 | 幂等键（intent_id + 客户端 nonce）；重复提交拒绝 |
 | 风控 | 13 L1/L2/L3 不绕过；单笔名义上限 + 日亏损上限 |
@@ -217,7 +247,7 @@ L2 产品包：AI 交易（按算力付费）
 - **G0 入口**：全站仅一个聊天渲染入口；工作台为平台默认页。
 - **G1 产品保留**：`/dashboard/trade/*` 全部可达；未开通时只读锁定而非删除。
 - **G2 凭证**：保存后接口不回传明文；提现权限 Key 被拒；连接测试可区分网络/权限/签名错误。
-- **G3 下单**：intent→confirm→22→13→27→交易所全链路 trace；无 intent 的直接调用被拒。
+- **G3 下单**：产品通道 intent→confirm→51 用户 venue→OKX CLI 全链路 trace（无 intent 的直接调用被拒）；后端通道仍为 22→13→27→交易所，两条链路互不复用凭证。
 - **G4 计量**：chat/工具/回测均写 ledger；余额扣减准确；零余额拒绝付费能力。
 - **G5 插件**：官方插件可安装；自有插件置顶；插件无法调用交易写接口。
 

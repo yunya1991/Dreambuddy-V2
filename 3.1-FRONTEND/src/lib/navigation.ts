@@ -27,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'fundamental', label: '基本面', href: '/dashboard/fundamental', icon: '📈', section: 'platform' },
   { id: 'ranking', label: '今日热门资产', href: '/dashboard/ranking', icon: '🔥', section: 'platform' },
   { id: 'three-screens', label: '三屏系统', href: '/dashboard/three-screens', icon: '🖥', section: 'platform' },
+  { id: 'plugins', label: '插件', href: '/dashboard/plugins', icon: '🧩', section: 'platform' },
 
   { id: 'trade', label: 'AI 交易', href: '/dashboard/trade', icon: '⚡', section: 'product' },
   { id: 'classic', label: '策略构建', href: '/dashboard/classic', icon: '📊', section: 'product' },
@@ -37,6 +38,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'memory', label: '记忆管理', href: '/dashboard/memory', icon: '🧠', section: 'operations' },
   { id: 'approval', label: '人工审批', href: '/dashboard/board/approval', icon: '🛡️', section: 'operations', badgeKey: 'approval_pending' },
   { id: 'reports', label: '报告', href: '/dashboard/reports', icon: '📋', section: 'operations' },
+  { id: 'usage', label: '用量与审计', href: '/dashboard/usage', icon: '🧾', section: 'operations' },
 
   { id: 'settings', label: '通用设置', href: '/dashboard/settings', icon: '⚙', section: 'settings' },
 ];
