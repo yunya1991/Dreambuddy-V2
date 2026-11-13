@@ -71,6 +71,11 @@ artifacts/
 # D2-A holdout 运行产物：单次 run 50-120MB（含 kept_nodes 全量快照），仅本地保留
 48-涌现架构/experiments/d2a_holdout/results/
 data/
+# === 放行: 前端架构地图静态数据（构建期 import，缺失会导致 tsc 失败） ===
+!3.1-FRONTEND/src/data/
+!3.1-FRONTEND/src/data/arch-map/
+!3.1-FRONTEND/src/data/arch-map/arch-map.json
+!3.1-FRONTEND/src/data/arch-map/cap-map.json
 # === 放行: Phase B NeuralSDE checkpoint (338KB 模型权重, 非缓存) ===
 !23-四层闭环自进化交易架构/data/
 !23-四层闭环自进化交易架构/data/neural_sde_v1_dim64.pt

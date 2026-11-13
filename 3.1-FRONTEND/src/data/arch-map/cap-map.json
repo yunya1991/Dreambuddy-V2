@@ -1,0 +1,152 @@
+{
+ "schema": "CapMap/v1",
+ "generated_at": "2026-11-12T05:54:05.396073+00:00",
+ "phase_map": {
+  "user_input": [
+   "S.intent"
+  ],
+  "intent_recognized": [
+   "S.intent"
+  ],
+  "recognized": [
+   "S.intent"
+  ],
+  "rule_follow_up": [
+   "S.intent"
+  ],
+  "rule_prefilter": [
+   "S.intent"
+  ],
+  "fallback_rule": [
+   "S.intent"
+  ],
+  "fallback_default": [
+   "S.intent"
+  ],
+  "non_financial_skip": [
+   "S.intent"
+  ],
+  "clarification_requested": [
+   "S.intent"
+  ],
+  "low_confidence_clarification": [
+   "S.intent"
+  ],
+  "clarification_sent": [
+   "S.intent"
+  ],
+  "chain_started": [
+   "S.plan",
+   "A.selector"
+  ],
+  "routed": [
+   "A.router"
+  ],
+  "task_created": [
+   "C.dsh"
+  ],
+  "inline_exec_start": [
+   "C.dsh"
+  ],
+  "inline_exec_done": [
+   "C.dsh"
+  ],
+  "async_spawned": [
+   "C.dsh"
+  ],
+  "wb_received": [
+   "C.dsh"
+  ],
+  "wb_processing": [
+   "C.dsh"
+  ],
+  "wb_completed": [
+   "C.dsh"
+  ],
+  "wb_failed": [
+   "C.dsh"
+  ],
+  "trade_pending": [
+   "C.trade"
+  ],
+  "artifact_synced": [
+   "G.knowledge",
+   "G.docs"
+  ],
+  "index_updated": [
+   "G.docs"
+  ],
+  "feed_ready": [
+   "G.knowledge"
+  ],
+  "result_displayed": [
+   "X.frontend"
+  ],
+  "jev_evaluated": [
+   "C.cdrive"
+  ]
+ },
+ "layer_default": {
+  "frontend": [
+   "X.frontend"
+  ],
+  "gateway": [
+   "C.dsh"
+  ],
+  "intent": [
+   "S.intent"
+  ],
+  "router": [
+   "A.router"
+  ],
+  "workbuddy": [
+   "C.dsh"
+  ],
+  "artifact_hub": [
+   "G.docs"
+  ]
+ },
+ "cap_ids": [
+  "S.intent",
+  "S.recall",
+  "S.plan",
+  "S.dreamos",
+  "S.compress",
+  "S.debate",
+  "S.yijing",
+  "S.strategy",
+  "S.devgate",
+  "A.skills",
+  "A.selector",
+  "A.router",
+  "A.gov",
+  "A.strategy",
+  "A.protocol",
+  "C.dsh",
+  "C.cdrive",
+  "C.rea",
+  "C.mcp",
+  "C.trade",
+  "C.data",
+  "C.risk",
+  "C.fundamental",
+  "C.nn",
+  "C.signal",
+  "C.exchange",
+  "C.l0",
+  "G.knowledge",
+  "G.docs",
+  "G.emergence",
+  "G.eval",
+  "G.train",
+  "G.experiments",
+  "G.docroot",
+  "X.frontend",
+  "X.feishu",
+  "X.infra",
+  "X.shells",
+  "X.tests",
+  "X.legacy",
+  "X.external"
+ ]
+}

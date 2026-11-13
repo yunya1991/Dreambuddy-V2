@@ -1,0 +1,5527 @@
+{
+ "schema": "ArchMap/v1",
+ "generated_at": "2026-11-12T05:54:05.262254+00:00",
+ "source": {
+  "graph_sha256": "48b02c81de760346d8fb695f0a5d0e76264b49e85c164264c6c504def1002dd4",
+  "node_count": 8308,
+  "edge_count": 59784
+ },
+ "layers": [
+  {
+   "id": "S",
+   "label": "认知规划"
+  },
+  {
+   "id": "A",
+   "label": "节点验收"
+  },
+  {
+   "id": "C",
+   "label": "执行驱动"
+  },
+  {
+   "id": "G",
+   "label": "压缩沉淀"
+  },
+  {
+   "id": "X",
+   "label": "支撑/外部"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "A.gov",
+   "label": "治理审批",
+   "layer": "A",
+   "files": 20,
+   "loc": 4550,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "27-策略治理审批系统/",
+    "2-GOVERNANCE/"
+   ]
+  },
+  {
+   "id": "A.protocol",
+   "label": "协议接入",
+   "layer": "A",
+   "files": 45,
+   "loc": 10911,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "49-交易框架协议/",
+    "52-lobehub协议集成/"
+   ]
+  },
+  {
+   "id": "A.router",
+   "label": "智能路由",
+   "layer": "A",
+   "files": 0,
+   "loc": 0,
+   "hit": false,
+   "orphan": false,
+   "owner_paths": [
+    "3.1-FRONTEND/src/lib/router/",
+    "3.1-FRONTEND/src/lib/smart-router.ts"
+   ]
+  },
+  {
+   "id": "A.selector",
+   "label": "技能选择",
+   "layer": "A",
+   "files": 0,
+   "loc": 0,
+   "hit": false,
+   "orphan": false,
+   "owner_paths": [
+    "3.1-FRONTEND/src/lib/skill-selector"
+   ]
+  },
+  {
+   "id": "A.skills",
+   "label": "SKILL 注册",
+   "layer": "A",
+   "files": 103,
+   "loc": 25465,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "1-ARCHITECTURE/skills/",
+    "1-ARCHITECTURE/工作索引/"
+   ]
+  },
+  {
+   "id": "A.strategy",
+   "label": "策略生成管理",
+   "layer": "A",
+   "files": 24,
+   "loc": 4582,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "25-用户策略生成系统/",
+    "26-策略管理模块/"
+   ]
+  },
+  {
+   "id": "C.cdrive",
+   "label": "C-Drive",
+   "layer": "C",
+   "files": 0,
+   "loc": 0,
+   "hit": false,
+   "orphan": false,
+   "owner_paths": [
+    "3.1-FRONTEND/src/lib/c-drive.ts"
+   ]
+  },
+  {
+   "id": "C.data",
+   "label": "数据链路",
+   "layer": "C",
+   "files": 441,
+   "loc": 70595,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "18-数据获取中心/",
+    "19-数据访问层/",
+    "20-数据清洗中心/",
+    "21-特征工程中心/",
+    "38-数据库管理系统/"
+   ]
+  },
+  {
+   "id": "C.dsh",
+   "label": "DSH 执行",
+   "layer": "C",
+   "files": 244,
+   "loc": 62451,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "1-ARCHITECTURE/dream-harness-bridge/",
+    "46-DSH架构/"
+   ]
+  },
+  {
+   "id": "C.exchange",
+   "label": "真实环境交互",
+   "layer": "C",
+   "files": 64,
+   "loc": 13704,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "30-真实环境交互系统/",
+    "51-OKX CLI 系统/"
+   ]
+  },
+  {
+   "id": "C.fundamental",
+   "label": "基本面分析",
+   "layer": "C",
+   "files": 146,
+   "loc": 295339,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "9-基本面分析/"
+   ]
+  },
+  {
+   "id": "C.l0",
+   "label": "L0 数据底座",
+   "layer": "C",
+   "files": 33,
+   "loc": 2682,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "dreambuddy_l0/"
+   ]
+  },
+  {
+   "id": "C.mcp",
+   "label": "MCP 壳",
+   "layer": "C",
+   "files": 37,
+   "loc": 9827,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "47-MCP管理系统/"
+   ]
+  },
+  {
+   "id": "C.nn",
+   "label": "神经网络层",
+   "layer": "C",
+   "files": 136,
+   "loc": 22150,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "40-周期神经网络系统/",
+    "42-神经网络交易协调层/",
+    "50-NN主矛盾评估器/"
+   ]
+  },
+  {
+   "id": "C.rea",
+   "label": "REA 逆向",
+   "layer": "C",
+   "files": 208,
+   "loc": 49430,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "33-REA逆向解析工程/"
+   ]
+  },
+  {
+   "id": "C.risk",
+   "label": "风控调控",
+   "layer": "C",
+   "files": 209,
+   "loc": 54420,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "13-通用风控模块/",
+    "16-调控系统/",
+    "15-监控告警系统/"
+   ]
+  },
+  {
+   "id": "C.signal",
+   "label": "信号触发",
+   "layer": "C",
+   "files": 221,
+   "loc": 87681,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "28-策略信号触发模块/",
+    "12-三屏趋势系统/"
+   ]
+  },
+  {
+   "id": "C.trade",
+   "label": "交易执行",
+   "layer": "C",
+   "files": 766,
+   "loc": 496640,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "6-TRADING/",
+    "10-经典指标系统/",
+    "14-V15经典马丁策略/",
+    "17-v4-wave-strategy/",
+    "22-执行引擎中心/",
+    "29-事件驱动策略系统/"
+   ]
+  },
+  {
+   "id": "G.docroot",
+   "label": "仓库文档",
+   "layer": "G",
+   "files": 55,
+   "loc": 38364,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "docs/"
+   ]
+  },
+  {
+   "id": "G.docs",
+   "label": "文档索引",
+   "layer": "G",
+   "files": 133,
+   "loc": 33719,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "0-系统文档管理/",
+    "41-文件索引系统/",
+    "7-产物中台/"
+   ]
+  },
+  {
+   "id": "G.emergence",
+   "label": "涌现实验",
+   "layer": "G",
+   "files": 183,
+   "loc": 35221,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "48-涌现架构/"
+   ]
+  },
+  {
+   "id": "G.eval",
+   "label": "评测进化",
+   "layer": "G",
+   "files": 586,
+   "loc": 144368,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "45-评测系统/",
+    "3-EVOLUTION/",
+    "23-四层闭环自进化交易架构/",
+    "acceptance_bundles/"
+   ]
+  },
+  {
+   "id": "G.experiments",
+   "label": "实验产物",
+   "layer": "G",
+   "files": 482,
+   "loc": 83882,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "experiments/"
+   ]
+  },
+  {
+   "id": "G.knowledge",
+   "label": "知识库",
+   "layer": "G",
+   "files": 458,
+   "loc": 46192,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "2-KNOWLEDGE/",
+    "39-金融语义蒸馏系统/"
+   ]
+  },
+  {
+   "id": "G.train",
+   "label": "应用训练",
+   "layer": "G",
+   "files": 214,
+   "loc": 48803,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "34-前端应用训练系统/"
+   ]
+  },
+  {
+   "id": "S.compress",
+   "label": "上下文压缩",
+   "layer": "S",
+   "files": 21,
+   "loc": 8657,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "24-图结构上下文压缩/",
+    "6-图结构上下文压缩/"
+   ]
+  },
+  {
+   "id": "S.debate",
+   "label": "对抗辩论",
+   "layer": "S",
+   "files": 62,
+   "loc": 12658,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "32-对抗性辩论Bot/"
+   ]
+  },
+  {
+   "id": "S.devgate",
+   "label": "开发门禁编排",
+   "layer": "S",
+   "files": 6,
+   "loc": 728,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    ".trae/skills/dreamos-dev/"
+   ]
+  },
+  {
+   "id": "S.dreamos",
+   "label": "DreamOS 内核",
+   "layer": "S",
+   "files": 725,
+   "loc": 161503,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "1-ARCHITECTURE/dreamos/"
+   ]
+  },
+  {
+   "id": "S.intent",
+   "label": "意图识别",
+   "layer": "S",
+   "files": 25,
+   "loc": 5241,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "3.1-FRONTEND/src/lib/intent/",
+    "1-ARCHITECTURE/dreamos/core/sense/"
+   ]
+  },
+  {
+   "id": "S.plan",
+   "label": "计划编排",
+   "layer": "S",
+   "files": 9,
+   "loc": 1843,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "1-ARCHITECTURE/dreamos/core/arrange/"
+   ]
+  },
+  {
+   "id": "S.recall",
+   "label": "经验召回",
+   "layer": "S",
+   "files": 360,
+   "loc": 97386,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "4-MEMORY/",
+    "35-广义认知系统协作模块/"
+   ]
+  },
+  {
+   "id": "S.strategy",
+   "label": "战略推演",
+   "layer": "S",
+   "files": 20,
+   "loc": 8200,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "43-战略承接推演层/"
+   ]
+  },
+  {
+   "id": "S.yijing",
+   "label": "易经推理",
+   "layer": "S",
+   "files": 1266,
+   "loc": 418818,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "11-易经推理系统/"
+   ]
+  },
+  {
+   "id": "X.external",
+   "label": "外部依赖",
+   "layer": "X",
+   "files": 472,
+   "loc": 0,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": []
+  },
+  {
+   "id": "X.feishu",
+   "label": "飞书协同",
+   "layer": "X",
+   "files": 6,
+   "loc": 579,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "8-FEISHU/",
+    "36-通信系统层/"
+   ]
+  },
+  {
+   "id": "X.frontend",
+   "label": "前端应用",
+   "layer": "X",
+   "files": 0,
+   "loc": 0,
+   "hit": false,
+   "orphan": false,
+   "owner_paths": [
+    "3.1-FRONTEND/src/app/",
+    "3.1-FRONTEND/src/components/",
+    "3.1-FRONTEND/src/stores/",
+    "3.1-FRONTEND/src/lib/"
+   ]
+  },
+  {
+   "id": "X.infra",
+   "label": "部署运维",
+   "layer": "X",
+   "files": 131,
+   "loc": 20463,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "31-分布式计算部署/",
+    "37-一键启动脚本/",
+    "44-三端协作架构系统/",
+    "deploy/",
+    "scripts/"
+   ]
+  },
+  {
+   "id": "X.legacy",
+   "label": "历史/旁支",
+   "layer": "X",
+   "files": 54,
+   "loc": 16828,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "3-FRONTEND/",
+    "3-CHAIN-DEVELOPMENT/",
+    "5-BUSINESS/",
+    "AGENT协作工具/"
+   ]
+  },
+  {
+   "id": "X.other..github",
+   "label": "other..github",
+   "layer": "X",
+   "files": 2,
+   "loc": 283,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": []
+  },
+  {
+   "id": "X.other..trae",
+   "label": "other..trae",
+   "layer": "X",
+   "files": 192,
+   "loc": 42333,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": []
+  },
+  {
+   "id": "X.other.1-ARCHITECTURE",
+   "label": "other.1-ARCHITECTURE",
+   "layer": "X",
+   "files": 76,
+   "loc": 39888,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": []
+  },
+  {
+   "id": "X.other.3.1-FRONTEND",
+   "label": "other.3.1-FRONTEND",
+   "layer": "X",
+   "files": 28,
+   "loc": 7982,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": []
+  },
+  {
+   "id": "X.other.logs",
+   "label": "other.logs",
+   "layer": "X",
+   "files": 1,
+   "loc": 53,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": []
+  },
+  {
+   "id": "X.other.root",
+   "label": "other.root",
+   "layer": "X",
+   "files": 10,
+   "loc": 2968,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": []
+  },
+  {
+   "id": "X.shells",
+   "label": "MCP 壳运行时",
+   "layer": "X",
+   "files": 30,
+   "loc": 10587,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "mcp_shells/"
+   ]
+  },
+  {
+   "id": "X.tests",
+   "label": "测试",
+   "layer": "X",
+   "files": 4,
+   "loc": 249,
+   "hit": true,
+   "orphan": false,
+   "owner_paths": [
+    "tests/"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "src": "S.yijing",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 3478
+  },
+  {
+   "src": "C.trade",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 2122
+  },
+  {
+   "src": "G.eval",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 2076
+  },
+  {
+   "src": "C.data",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 1570
+  },
+  {
+   "src": "S.yijing",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 1228
+  },
+  {
+   "src": "C.signal",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 1087
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 1079
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 1050
+  },
+  {
+   "src": "C.dsh",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 1009
+  },
+  {
+   "src": "S.recall",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 903
+  },
+  {
+   "src": "C.rea",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 824
+  },
+  {
+   "src": "G.emergence",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 792
+  },
+  {
+   "src": "C.trade",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 776
+  },
+  {
+   "src": "G.train",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 756
+  },
+  {
+   "src": "G.eval",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 735
+  },
+  {
+   "src": "C.risk",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 692
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 663
+  },
+  {
+   "src": "G.experiments",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 645
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 621
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 620
+  },
+  {
+   "src": "C.nn",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 545
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 532
+  },
+  {
+   "src": "C.signal",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 495
+  },
+  {
+   "src": "C.data",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 484
+  },
+  {
+   "src": "C.data",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 439
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 418
+  },
+  {
+   "src": "C.signal",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 377
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 351
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 344
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 333
+  },
+  {
+   "src": "S.recall",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 326
+  },
+  {
+   "src": "C.trade",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 323
+  },
+  {
+   "src": "C.signal",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 311
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 307
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 290
+  },
+  {
+   "src": "G.train",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 289
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 285
+  },
+  {
+   "src": "C.rea",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 251
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 250
+  },
+  {
+   "src": "G.emergence",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 245
+  },
+  {
+   "src": "C.exchange",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 241
+  },
+  {
+   "src": "G.eval",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 233
+  },
+  {
+   "src": "C.risk",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 223
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 222
+  },
+  {
+   "src": "X.shells",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 218
+  },
+  {
+   "src": "X.infra",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 212
+  },
+  {
+   "src": "S.yijing",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 209
+  },
+  {
+   "src": "C.nn",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 202
+  },
+  {
+   "src": "S.yijing",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 201
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 195
+  },
+  {
+   "src": "S.debate",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 195
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 181
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 180
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 166
+  },
+  {
+   "src": "S.yijing",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 162
+  },
+  {
+   "src": "A.protocol",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 158
+  },
+  {
+   "src": "G.train",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 158
+  },
+  {
+   "src": "A.skills",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 148
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 141
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 132
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 128
+  },
+  {
+   "src": "C.data",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 125
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 124
+  },
+  {
+   "src": "S.yijing",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 122
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 117
+  },
+  {
+   "src": "C.data",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 111
+  },
+  {
+   "src": "C.trade",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 110
+  },
+  {
+   "src": "G.eval",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 108
+  },
+  {
+   "src": "S.debate",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 107
+  },
+  {
+   "src": "G.emergence",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 104
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 100
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 98
+  },
+  {
+   "src": "C.trade",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 97
+  },
+  {
+   "src": "X.infra",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 96
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 94
+  },
+  {
+   "src": "C.signal",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 88
+  },
+  {
+   "src": "A.strategy",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 87
+  },
+  {
+   "src": "C.trade",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 86
+  },
+  {
+   "src": "G.eval",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 84
+  },
+  {
+   "src": "C.rea",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 82
+  },
+  {
+   "src": "G.emergence",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 82
+  },
+  {
+   "src": "S.recall",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 81
+  },
+  {
+   "src": "S.strategy",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 81
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 81
+  },
+  {
+   "src": "C.data",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 79
+  },
+  {
+   "src": "C.exchange",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 79
+  },
+  {
+   "src": "C.risk",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 79
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 79
+  },
+  {
+   "src": "C.l0",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 77
+  },
+  {
+   "src": "C.signal",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 77
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 76
+  },
+  {
+   "src": "C.signal",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 74
+  },
+  {
+   "src": "C.data",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 71
+  },
+  {
+   "src": "C.data",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 71
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 71
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 69
+  },
+  {
+   "src": "G.emergence",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 68
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 68
+  },
+  {
+   "src": "C.nn",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 67
+  },
+  {
+   "src": "C.trade",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 67
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 66
+  },
+  {
+   "src": "C.signal",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 66
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 66
+  },
+  {
+   "src": "C.data",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 65
+  },
+  {
+   "src": "C.mcp",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 65
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 65
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 65
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 65
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 64
+  },
+  {
+   "src": "C.rea",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 64
+  },
+  {
+   "src": "S.intent",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 64
+  },
+  {
+   "src": "C.exchange",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 63
+  },
+  {
+   "src": "A.skills",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 62
+  },
+  {
+   "src": "S.recall",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 62
+  },
+  {
+   "src": "C.risk",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 61
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 61
+  },
+  {
+   "src": "C.rea",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 60
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 60
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 60
+  },
+  {
+   "src": "G.train",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 60
+  },
+  {
+   "src": "A.skills",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 58
+  },
+  {
+   "src": "C.nn",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 58
+  },
+  {
+   "src": "G.train",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 58
+  },
+  {
+   "src": "G.eval",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 57
+  },
+  {
+   "src": "G.experiments",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 57
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 57
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 57
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 56
+  },
+  {
+   "src": "X.shells",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 56
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 55
+  },
+  {
+   "src": "C.nn",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 55
+  },
+  {
+   "src": "C.risk",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 55
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 53
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 53
+  },
+  {
+   "src": "C.signal",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 52
+  },
+  {
+   "src": "S.debate",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 52
+  },
+  {
+   "src": "C.data",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 51
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 51
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 51
+  },
+  {
+   "src": "A.protocol",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 50
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 50
+  },
+  {
+   "src": "G.emergence",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 50
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 50
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 49
+  },
+  {
+   "src": "S.recall",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 49
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 48
+  },
+  {
+   "src": "G.train",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 48
+  },
+  {
+   "src": "C.nn",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 47
+  },
+  {
+   "src": "G.emergence",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 47
+  },
+  {
+   "src": "A.gov",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 46
+  },
+  {
+   "src": "C.dsh",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 46
+  },
+  {
+   "src": "C.signal",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 46
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 46
+  },
+  {
+   "src": "C.signal",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 44
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 43
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 42
+  },
+  {
+   "src": "C.signal",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 42
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 42
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.trade",
+   "kind": "doc_ref",
+   "weight": 40
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 40
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 39
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 39
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 39
+  },
+  {
+   "src": "C.l0",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 38
+  },
+  {
+   "src": "A.protocol",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 36
+  },
+  {
+   "src": "C.rea",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 36
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 35
+  },
+  {
+   "src": "G.train",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 35
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.dreamos",
+   "kind": "import",
+   "weight": 35
+  },
+  {
+   "src": "X.shells",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 35
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 34
+  },
+  {
+   "src": "G.eval",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 34
+  },
+  {
+   "src": "A.strategy",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 33
+  },
+  {
+   "src": "X.infra",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 33
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 32
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 32
+  },
+  {
+   "src": "C.nn",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 32
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 32
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 32
+  },
+  {
+   "src": "S.devgate",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 32
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 32
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 31
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 31
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.risk",
+   "kind": "doc_ref",
+   "weight": 31
+  },
+  {
+   "src": "G.experiments",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 31
+  },
+  {
+   "src": "X.legacy",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 31
+  },
+  {
+   "src": "C.data",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 30
+  },
+  {
+   "src": "C.data",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 30
+  },
+  {
+   "src": "C.trade",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 30
+  },
+  {
+   "src": "G.experiments",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 30
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 30
+  },
+  {
+   "src": "S.intent",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 30
+  },
+  {
+   "src": "C.data",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 29
+  },
+  {
+   "src": "C.nn",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 29
+  },
+  {
+   "src": "C.risk",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 29
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 29
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 29
+  },
+  {
+   "src": "S.recall",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 29
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 28
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.l0",
+   "kind": "import",
+   "weight": 28
+  },
+  {
+   "src": "A.gov",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 27
+  },
+  {
+   "src": "G.emergence",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 27
+  },
+  {
+   "src": "G.eval",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 27
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 27
+  },
+  {
+   "src": "C.dsh",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 26
+  },
+  {
+   "src": "C.l0",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 26
+  },
+  {
+   "src": "C.rea",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 26
+  },
+  {
+   "src": "G.eval",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 26
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 26
+  },
+  {
+   "src": "X.legacy",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 26
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 25
+  },
+  {
+   "src": "G.eval",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 25
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 25
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 25
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 25
+  },
+  {
+   "src": "S.intent",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 25
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 25
+  },
+  {
+   "src": "C.data",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 24
+  },
+  {
+   "src": "C.mcp",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 23
+  },
+  {
+   "src": "C.risk",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 23
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 23
+  },
+  {
+   "src": "G.train",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 23
+  },
+  {
+   "src": "S.strategy",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 23
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 22
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 22
+  },
+  {
+   "src": "C.signal",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 22
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 22
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 22
+  },
+  {
+   "src": "S.plan",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 22
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 21
+  },
+  {
+   "src": "C.mcp",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 21
+  },
+  {
+   "src": "C.nn",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 21
+  },
+  {
+   "src": "C.risk",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 21
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.eval",
+   "kind": "doc_ref",
+   "weight": 21
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.intent",
+   "kind": "import",
+   "weight": 21
+  },
+  {
+   "src": "G.train",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 20
+  },
+  {
+   "src": "S.strategy",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 20
+  },
+  {
+   "src": "S.strategy",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 20
+  },
+  {
+   "src": "X.infra",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 20
+  },
+  {
+   "src": "C.data",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 19
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 19
+  },
+  {
+   "src": "S.devgate",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 19
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 19
+  },
+  {
+   "src": "X.infra",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 19
+  },
+  {
+   "src": "X.shells",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 19
+  },
+  {
+   "src": "A.strategy",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "A.strategy",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.dreamos",
+   "kind": "import",
+   "weight": 18
+  },
+  {
+   "src": "C.rea",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 18
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "S.recall",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 18
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 18
+  },
+  {
+   "src": "A.gov",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 17
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 17
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 17
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 17
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 17
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 17
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 17
+  },
+  {
+   "src": "A.skills",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "C.dsh",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 16
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.yijing",
+   "kind": "doc_ref",
+   "weight": 16
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "S.debate",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "S.plan",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "S.recall",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 16
+  },
+  {
+   "src": "X.shells",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 16
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.signal",
+   "kind": "doc_ref",
+   "weight": 15
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 15
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 15
+  },
+  {
+   "src": "X.infra",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 15
+  },
+  {
+   "src": "X.legacy",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 15
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 15
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 15
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 15
+  },
+  {
+   "src": "A.gov",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "A.protocol",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "A.skills",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "A.skills",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 14
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "G.train",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 14
+  },
+  {
+   "src": "X.other.root",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 14
+  },
+  {
+   "src": "G.train",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 13
+  },
+  {
+   "src": "S.recall",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 13
+  },
+  {
+   "src": "S.yijing",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 13
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.trade",
+   "kind": "doc_ref",
+   "weight": 13
+  },
+  {
+   "src": "C.mcp",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 12
+  },
+  {
+   "src": "C.mcp",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 12
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.other.root",
+   "kind": "doc_ref",
+   "weight": 12
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 12
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 12
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.l0",
+   "kind": "call",
+   "weight": 12
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "X.legacy",
+   "kind": "doc_ref",
+   "weight": 12
+  },
+  {
+   "src": "X.tests",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 12
+  },
+  {
+   "src": "A.protocol",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "C.data",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "C.exchange",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "C.exchange",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "C.signal",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.rea",
+   "kind": "doc_ref",
+   "weight": 11
+  },
+  {
+   "src": "S.devgate",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 11
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.intent",
+   "kind": "import",
+   "weight": 11
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 11
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "A.protocol",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "A.skills",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "A.skills",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "C.trade",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "G.docroot",
+   "dst": "C.risk",
+   "kind": "doc_ref",
+   "weight": 10
+  },
+  {
+   "src": "S.debate",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "S.plan",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "S.plan",
+   "dst": "S.dreamos",
+   "kind": "import",
+   "weight": 10
+  },
+  {
+   "src": "S.recall",
+   "dst": "X.other.root",
+   "kind": "doc_ref",
+   "weight": 10
+  },
+  {
+   "src": "S.yijing",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 10
+  },
+  {
+   "src": "C.exchange",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 9
+  },
+  {
+   "src": "G.docs",
+   "dst": "A.gov",
+   "kind": "doc_ref",
+   "weight": 9
+  },
+  {
+   "src": "G.docs",
+   "dst": "A.protocol",
+   "kind": "doc_ref",
+   "weight": 9
+  },
+  {
+   "src": "G.emergence",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 9
+  },
+  {
+   "src": "G.eval",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 9
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 9
+  },
+  {
+   "src": "G.train",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 9
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 9
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.plan",
+   "kind": "import",
+   "weight": 9
+  },
+  {
+   "src": "S.strategy",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 9
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 9
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.plan",
+   "kind": "import",
+   "weight": 9
+  },
+  {
+   "src": "A.strategy",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "C.dsh",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "C.mcp",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "C.rea",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "C.rea",
+   "dst": "G.eval",
+   "kind": "doc_ref",
+   "weight": 8
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 8
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "G.train",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "G.train",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "S.yijing",
+   "dst": "X.other..trae",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "X.shells",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 8
+  },
+  {
+   "src": "A.gov",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "C.dsh",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "C.dsh",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 7
+  },
+  {
+   "src": "C.exchange",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "C.l0",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "C.mcp",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "C.nn",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "C.signal",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "G.docroot",
+   "dst": "S.yijing",
+   "kind": "doc_ref",
+   "weight": 7
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "doc_ref",
+   "weight": 7
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "G.train",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "S.debate",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "S.strategy",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "S.yijing",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.trade",
+   "kind": "doc_ref",
+   "weight": 7
+  },
+  {
+   "src": "X.other.root",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 7
+  },
+  {
+   "src": "A.protocol",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "A.skills",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.dsh",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.intent",
+   "kind": "import",
+   "weight": 6
+  },
+  {
+   "src": "C.exchange",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.exchange",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.mcp",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.rea",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.signal",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 6
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "G.emergence",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "G.eval",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "G.experiments",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "S.debate",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "S.intent",
+   "dst": "S.dreamos",
+   "kind": "import",
+   "weight": 6
+  },
+  {
+   "src": "S.recall",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "S.strategy",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.mcp",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "X.shells",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 6
+  },
+  {
+   "src": "A.gov",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "A.protocol",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "A.skills",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "A.skills",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "A.skills",
+   "dst": "X.other..trae",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "A.strategy",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.data",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.dsh",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.exchange",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.exchange",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.exchange",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.l0",
+   "dst": "C.mcp",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.l0",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "C.risk",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 5
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "G.docroot",
+   "dst": "C.trade",
+   "kind": "doc_ref",
+   "weight": 5
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "G.eval",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 5
+  },
+  {
+   "src": "G.eval",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "S.devgate",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "S.strategy",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "S.strategy",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "X.infra",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 5
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 5
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 5
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.data",
+   "kind": "doc_ref",
+   "weight": 5
+  },
+  {
+   "src": "X.other.root",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 5
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.mcp",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "A.protocol",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "A.strategy",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "A.strategy",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.data",
+   "dst": "C.l0",
+   "kind": "import",
+   "weight": 4
+  },
+  {
+   "src": "C.data",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.dsh",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.dsh",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.plan",
+   "kind": "import",
+   "weight": 4
+  },
+  {
+   "src": "C.exchange",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.mcp",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "C.mcp",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.mcp",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "C.mcp",
+   "dst": "X.infra",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.rea",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.risk",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.signal",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.eval",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "G.docs",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.legacy",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "G.eval",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "G.experiments",
+   "dst": "A.strategy",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "G.train",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.compress",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "S.debate",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.debate",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.debate",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.debate",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.recall",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.rea",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "S.strategy",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.strategy",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.docroot",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "X.legacy",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "X.legacy",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "A.gov",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.fundamental",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.risk",
+   "kind": "doc_ref",
+   "weight": 4
+  },
+  {
+   "src": "X.shells",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "X.tests",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "X.tests",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "X.tests",
+   "dst": "X.legacy",
+   "kind": "call",
+   "weight": 4
+  },
+  {
+   "src": "A.protocol",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "A.strategy",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "A.strategy",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.data",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.data",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.data",
+   "dst": "G.docroot",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.exchange",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.l0",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.mcp",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.nn",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.rea",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.signal",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.docroot",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "G.docroot",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "G.docs",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.infra",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.eval",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.experiments",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.experiments",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "G.train",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "S.intent",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "S.intent",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "S.recall",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "S.strategy",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "S.yijing",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.infra",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.infra",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.legacy",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.legacy",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.legacy",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "A.protocol",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.other.logs",
+   "dst": "X.external",
+   "kind": "import",
+   "weight": 3
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "X.other.root",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 3
+  },
+  {
+   "src": "X.shells",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 3
+  },
+  {
+   "src": "A.gov",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "A.protocol",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "A.skills",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.data",
+   "dst": "C.l0",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.dsh",
+   "dst": "C.mcp",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.dreamos",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "C.exchange",
+   "dst": "C.mcp",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "C.exchange",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.exchange",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.l0",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.l0",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.l0",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.l0",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.l0",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.mcp",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.mcp",
+   "dst": "X.shells",
+   "kind": "import",
+   "weight": 2
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.mcp",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.rea",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.rea",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.rea",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.rea",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.trade",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "C.risk",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.risk",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "C.signal",
+   "dst": "A.strategy",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.signal",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "C.trade",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.docroot",
+   "dst": "C.signal",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.docroot",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.docroot",
+   "dst": "G.experiments",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.docs",
+   "dst": "A.strategy",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.compress",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.dreamos",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.emergence",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.mcp",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.emergence",
+   "dst": "G.eval",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "G.emergence",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.eval",
+   "dst": "A.protocol",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.mcp",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.eval",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.experiments",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.l0",
+   "kind": "import",
+   "weight": 2
+  },
+  {
+   "src": "S.debate",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.debate",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "S.debate",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.devgate",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "S.intent",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.intent",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.plan",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.l0",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.l0",
+   "kind": "import",
+   "weight": 2
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.recall",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.recall",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "S.recall",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.recall",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.strategy",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.strategy",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "S.strategy",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.infra",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.infra",
+   "dst": "G.train",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.legacy",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.legacy",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.legacy",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "C.rea",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "X.infra",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.signal",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.other.root",
+   "dst": "S.dreamos",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.other.root",
+   "dst": "S.yijing",
+   "kind": "doc_ref",
+   "weight": 2
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.shells",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.tests",
+   "dst": "S.dreamos",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "X.tests",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 2
+  },
+  {
+   "src": "A.gov",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "A.gov",
+   "dst": "A.strategy",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.gov",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.protocol",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.mcp",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.protocol",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.protocol",
+   "dst": "G.emergence",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "A.skills",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.skills",
+   "dst": "C.l0",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.skills",
+   "dst": "C.l0",
+   "kind": "import",
+   "weight": 1
+  },
+  {
+   "src": "A.skills",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.skills",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "A.strategy",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.strategy",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.strategy",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.strategy",
+   "dst": "S.debate",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "A.strategy",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.data",
+   "dst": "C.mcp",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.data",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.data",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "C.dsh",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "C.dsh",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.dsh",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.dsh",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.exchange",
+   "dst": "A.protocol",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "C.exchange",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.exchange",
+   "dst": "C.trade",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "A.protocol",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.fundamental",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.l0",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.mcp",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.mcp",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.mcp",
+   "dst": "X.shells",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.nn",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.rea",
+   "dst": "A.strategy",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.rea",
+   "dst": "X.other..trae",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "C.risk",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.risk",
+   "dst": "G.docroot",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "C.risk",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.risk",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.risk",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.risk",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.signal",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.trade",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.mcp",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.trade",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.trade",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.trade",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "C.trade",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.docroot",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.exchange",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.mcp",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.nn",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.docroot",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.emergence",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "G.train",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.debate",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "S.plan",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.feishu",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.docs",
+   "dst": "X.other..trae",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.emergence",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.emergence",
+   "dst": "C.rea",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.emergence",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.emergence",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.eval",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.eval",
+   "dst": "X.infra",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.eval",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.eval",
+   "dst": "X.other.root",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.experiments",
+   "dst": "A.skills",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.experiments",
+   "dst": "C.nn",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.experiments",
+   "dst": "S.strategy",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.experiments",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.l0",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "C.mcp",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "G.eval",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "G.train",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "X.shells",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.knowledge",
+   "dst": "X.shells",
+   "kind": "import",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "C.data",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "C.l0",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "C.l0",
+   "kind": "import",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "G.train",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.debate",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.debate",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.debate",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.devgate",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.devgate",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.dreamos",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.intent",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.intent",
+   "dst": "G.experiments",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.intent",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.plan",
+   "dst": "C.trade",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.plan",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.recall",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.recall",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "S.recall",
+   "dst": "X.shells",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.recall",
+   "dst": "X.shells",
+   "kind": "import",
+   "weight": 1
+  },
+  {
+   "src": "S.strategy",
+   "dst": "G.emergence",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.strategy",
+   "dst": "S.intent",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.docs",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.experiments",
+   "kind": "import",
+   "weight": 1
+  },
+  {
+   "src": "S.yijing",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "S.yijing",
+   "dst": "X.other.root",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.infra",
+   "dst": "C.data",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.infra",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.infra",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.legacy",
+   "dst": "A.gov",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.legacy",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.legacy",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.legacy",
+   "dst": "G.knowledge",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.legacy",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.legacy",
+   "dst": "X.other.3.1-FRONTEND",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other..github",
+   "dst": "X.other.1-ARCHITECTURE",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "C.fundamental",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "C.trade",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "G.train",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "S.recall",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other..trae",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.exchange",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "C.risk",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "G.docs",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.compress",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.dreamos",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "S.yijing",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "X.other..trae",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.1-ARCHITECTURE",
+   "dst": "X.other.root",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "C.data",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "C.dsh",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.3.1-FRONTEND",
+   "dst": "X.legacy",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.logs",
+   "dst": "C.dsh",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.logs",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.logs",
+   "dst": "S.yijing",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.exchange",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "C.rea",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "G.eval",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "G.eval",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "S.compress",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "S.devgate",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "S.recall",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "X.infra",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.other.root",
+   "dst": "X.infra",
+   "kind": "doc_ref",
+   "weight": 1
+  },
+  {
+   "src": "X.shells",
+   "dst": "A.protocol",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.shells",
+   "dst": "A.skills",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.l0",
+   "kind": "import",
+   "weight": 1
+  },
+  {
+   "src": "X.shells",
+   "dst": "C.signal",
+   "kind": "call",
+   "weight": 1
+  },
+  {
+   "src": "X.shells",
+   "dst": "G.knowledge",
+   "kind": "call",
+   "weight": 1
+  }
+ ],
+ "unmapped": {
+  "dirs": [
+   ".github",
+   ".trae",
+   "1-ARCHITECTURE",
+   "3.1-FRONTEND",
+   "logs",
+   "root"
+  ],
+  "files": 309
+ }
+}
