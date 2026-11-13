@@ -178,7 +178,7 @@
 - [15-监控告警系统/docs/TECHNICAL_DESIGN.md](../../15-监控告警系统/docs/TECHNICAL_DESIGN.md) v1.0 — 6 层架构 + 5 段核心算法伪代码
 - [7-产物中台/docs/TECHNICAL_DESIGN.md](../../7-产物中台/docs/TECHNICAL_DESIGN.md) v1.0 — 12 章节/58 接口，修正原文档 5 处与代码不一致
 - [3-EVOLUTION/README.md](../../3-EVOLUTION/README.md) v0.1→v0.2 — 补设计概述（9 阶段流水线+三桥接）
-- [6-图结构上下文压缩/README.md](../../6-图结构上下文压缩/README.md) v0.1→v0.2 — 补设计概述（双维度编排 5 理念）
+- [24-图结构上下文压缩/README.md](../../24-图结构上下文压缩/README.md) v0.1→v0.2 — 补设计概述（双维度编排 5 理念）
 - [10-经典指标系统/README.md](../../10-经典指标系统/README.md) v1.0 — 补建缺失 README，L2 覆盖率 97%→100%
 
 #### 审计机制落地

@@ -2,10 +2,12 @@
 """一次性回填（2026-11-10）：FRED 序列全量历史 → data_center（跟随 DATA_CENTER_BACKEND）。
 复用 FredCollector historical=True + 标准 sink 链路；dedupe_key 幂等，可安全重跑。
 """
+
 import os
 import sys
 import time
 from pathlib import Path
+
 # 2026-11-10 修复：sink_postgres 密码发现不含 luke 私有凭证文件，先从 ~/.dreambuddy-pg.env 提取并注入环境变量
 _cred = Path.home() / ".dreambuddy-pg.env"
 if _cred.exists() and not os.environ.get("DATA_CENTER_PG_PASSWORD"):
@@ -15,18 +17,35 @@ if _cred.exists() and not os.environ.get("DATA_CENTER_PG_PASSWORD"):
             os.environ["DATA_CENTER_PG_PASSWORD"] = _line.split("=", 1)[1].strip()
             break
 sys.path.insert(0, "/home/luke/dreambuddy/18-数据获取中心")
-from data_center.collectors.macro.fred_collector import FredCollector
-from data_center.storage import sink_postgres
+from data_center.collectors.macro.fred_collector import FredCollector  # noqa: E402
+from data_center.storage import sink_postgres  # noqa: E402
 
 SERIES = (
     # postgres 现有 13 序列
-    "CPIAUCSL", "DCOILWTICO", "DGS10", "DTWEXBGS", "FEDFUNDS", "INDPRO",
-    "IR14260", "M2NS", "NASDAQCOM", "PPIACO", "SP500", "VIXCLS", "WALCL",
+    "CPIAUCSL",
+    "DCOILWTICO",
+    "DGS10",
+    "DTWEXBGS",
+    "FEDFUNDS",
+    "INDPRO",
+    "IR14260",
+    "M2NS",
+    "NASDAQCOM",
+    "PPIACO",
+    "SP500",
+    "VIXCLS",
+    "WALCL",
     # 采集器标准序列补充
-    "RRPONTSYD", "DFII10", "T10YIE", "M2SL", "PAYEMS",
+    "RRPONTSYD",
+    "DFII10",
+    "T10YIE",
+    "M2SL",
+    "PAYEMS",
     # 40 系统需要但 postgres 缺失
-    "T10Y2Y", "BAMLH0A0HYM2",
+    "T10Y2Y",
+    "BAMLH0A0HYM2",
 )
+
 
 def main():
     collector = FredCollector()
@@ -45,6 +64,7 @@ def main():
             print(f"[error] {s}: {e}", flush=True)
         time.sleep(1)
     print(f"=== 回填完成，共新增 {total_new} 条 ===", flush=True)
+
 
 if __name__ == "__main__":
     main()

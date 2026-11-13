@@ -7,12 +7,13 @@
 聚合为文章级情感分数，增量写入 sentiment.jsonl，并生成汇总报告。
 标签映射：positive / neutral / negative（模型 config.id2label 为准）。
 """
+
 import argparse
 import json
 import os
 import tempfile
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,7 +70,7 @@ def chunk_article(tokenizer, title, summary, content):
             # 超长段落按字符粗切
             step = max(200, CHUNK_TOKENS)
             for i in range(0, len(p), step):
-                chunks.append(p[i:i + step])
+                chunks.append(p[i : i + step])
             continue
         if buf_tokens + n > CHUNK_TOKENS:
             chunks.append("".join(buf))
@@ -100,11 +101,10 @@ def main():
     done = set() if args.rebuild else {r["id"] for r in load_jsonl(OUT_PATH)}
     # 先过滤有正文的文章，再应用 limit（空正文文章不占 limit 名额）
     todo = [
-        a for a in articles
-        if a.get("id") not in done and (a.get("content_text") or "").strip()
+        a for a in articles if a.get("id") not in done and (a.get("content_text") or "").strip()
     ]
     if args.limit > 0:
-        todo = todo[:args.limit]
+        todo = todo[: args.limit]
 
     t0 = time.time()
     results = []
@@ -129,18 +129,20 @@ def main():
         for k in agg:
             agg[k] = round(agg[k] / total_w, 4)
         label = max(agg, key=agg.get)
-        results.append({
-            "id": a["id"],
-            "source_name": a.get("source_name", ""),
-            "title": a.get("title", ""),
-            "date_published": a.get("date_published", ""),
-            "n_chunks": len(chunks),
-            "sentiment": label,
-            "probs": agg,
-            "score": round(agg["positive"] - agg["negative"], 4),
-            "confidence": agg[label],
-            "scored_at": datetime.now(CST).isoformat(timespec="seconds"),
-        })
+        results.append(
+            {
+                "id": a["id"],
+                "source_name": a.get("source_name", ""),
+                "title": a.get("title", ""),
+                "date_published": a.get("date_published", ""),
+                "n_chunks": len(chunks),
+                "sentiment": label,
+                "probs": agg,
+                "score": round(agg["positive"] - agg["negative"], 4),
+                "confidence": agg[label],
+                "scored_at": datetime.now(CST).isoformat(timespec="seconds"),
+            }
+        )
 
     if results:
         merged = ([] if args.rebuild else load_jsonl(OUT_PATH)) + results

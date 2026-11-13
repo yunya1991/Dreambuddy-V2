@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 from adapters.constraint_loader import clamp_position
+from adapters.execution_writer import load_rights, validate_execution
 
 from core.path_synthesis import synthesize_paths
-from adapters.execution_writer import load_rights, validate_execution
 
 
 def _signed_score(path) -> float:

@@ -321,7 +321,11 @@ def main() -> int:
             signal = build_signal(state)
             if signal is None:
                 results.append(
-                    {"source": "40-cycle", "publish_result": "skipped", "reason": "cycle_state 陈旧超期（陈旧闸门，不发布）"}
+                    {
+                        "source": "40-cycle",
+                        "publish_result": "skipped",
+                        "reason": "cycle_state 陈旧超期（陈旧闸门，不发布）",
+                    }
                 )
             else:
                 result = bus.publish(signal)
@@ -349,7 +353,11 @@ def main() -> int:
     div_signal = build_divergence_signal(rotation)
     if div_signal is None:
         results.append(
-            {"source": "40-divergence", "publish_result": "skipped", "reason": "divergence 陈旧超期（陈旧闸门，不发布）"}
+            {
+                "source": "40-divergence",
+                "publish_result": "skipped",
+                "reason": "divergence 陈旧超期（陈旧闸门，不发布）",
+            }
         )
     else:
         div_result = bus.publish(div_signal)
@@ -378,7 +386,11 @@ def main() -> int:
         )
     elif res_signal is None:
         results.append(
-            {"source": "40-resonance", "publish_result": "skipped", "reason": "resonance_matrix 陈旧超期（陈旧闸门，不发布）"}
+            {
+                "source": "40-resonance",
+                "publish_result": "skipped",
+                "reason": "resonance_matrix 陈旧超期（陈旧闸门，不发布）",
+            }
         )
     else:
         res_result = bus.publish(res_signal)

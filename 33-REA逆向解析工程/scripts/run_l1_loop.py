@@ -12,9 +12,9 @@ if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from core.reflection.dreaming import DreamingLoop  # noqa: E402
-from core.reflection.thought_tree import beam_search_dream  # noqa: E402
 from core.reflection.recorder import AnalysisRecorder  # noqa: E402
 from core.reflection.replay_simulator import ReplayPool  # noqa: E402
+from core.reflection.thought_tree import beam_search_dream  # noqa: E402
 from core.reflection.training_cases import TrainingCaseGenerator, TrainingCaseStore  # noqa: E402
 from dsh_nodes import DSH_NODE_REGISTRY  # noqa: E402
 

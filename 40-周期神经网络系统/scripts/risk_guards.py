@@ -82,7 +82,9 @@ def check_freshness(artifacts, max_age_hours=48):
     return result
 
 
-def check_event_window(db_path=None, window_days=2):  # 2026-11-10 修复：db_path 保留兼容签名，数据走 db_access
+def check_event_window(
+    db_path=None, window_days=2
+):  # 2026-11-10 修复：db_path 保留兼容签名，数据走 db_access
     """机制3：FOMC/CPI 事件 ±2 日窗口检查。
     数据源：cme/fomc_decision 与 econ_calendar/cpi 的最近事件时间戳。
     返回 {in_window, event, event_ts, days_to_event}；数据不足 fail-open 不冻结。
@@ -129,7 +131,9 @@ def check_clock_degradation(rotation, freshness):
     return {"clock_degraded": bool(reasons), "reasons": reasons}
 
 
-def check_tail_confidence(db_path=None, series=("INDPRO", "CPIAUCSL"), tail_n=6):  # 2026-11-10 修复：同上
+def check_tail_confidence(
+    db_path=None, series=("INDPRO", "CPIAUCSL"), tail_n=6
+):  # 2026-11-10 修复：同上
     """机制4：末端 6 期低置信标记（初值/修正期）。
     返回 {series: {tail_points, low_confidence_tail}}
     """

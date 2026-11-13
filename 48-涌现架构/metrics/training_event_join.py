@@ -9,19 +9,22 @@
 落盘：回填后的事件写回 `48-涌现架构/events/training_events/train_50_decisions.jsonl`（幂等：已有 execution 数据的事件跳过）。
 纪律：FAIL-OPEN（IO/解析异常降级返回，不中断主链）；不写 40/23/50。
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import logging
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-_REPO_ROOT = Path(__file__).resolve().parents[2] if len(Path(__file__).resolve().parents) > 2 else Path(".")
+_REPO_ROOT = (
+    Path(__file__).resolve().parents[2] if len(Path(__file__).resolve().parents) > 2 else Path(".")
+)
 EVENTS_PATH = _REPO_ROOT / "48-涌现架构" / "events" / "training_events" / "train_50_decisions.jsonl"
 EXEC_PATH = _REPO_ROOT / "40-周期神经网络系统" / "execution_trades.jsonl"
 
@@ -173,9 +176,7 @@ def join_execution(
         lines_out.append(json.dumps(ev, ensure_ascii=False))
 
     n = max(stats["n_events"], 1)
-    stats["join_coverage"] = round(
-        (stats["n_matched"] + stats["n_already_complete"]) / n, 4
-    )
+    stats["join_coverage"] = round((stats["n_matched"] + stats["n_already_complete"]) / n, 4)
 
     if not dry_run and stats["n_matched"] > 0:
         try:

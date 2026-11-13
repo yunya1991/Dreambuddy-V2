@@ -106,7 +106,7 @@ DreamBuddy-V2/
 
 | 模块 | 入口 | 说明 |
 |------|------|------|
-| [3.1-FRONTEND](../../3.1-FRONTEND/) | [FRONTEND_SYSTEM.md](../../3.1-FRONTEND/FRONTEND_SYSTEM.md) | 前端架构 |
+| [3.1-FRONTEND](../../3.1-FRONTEND/) | [v3-frontend-architecture.md](../../3.1-FRONTEND/docs/v3-frontend-architecture.md) | 前端架构 |
 | [4-MEMORY](../../4-MEMORY/) | [MEMORY_SYSTEM_ARCHITECTURE.md](../../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) | 记忆系统（v5.0 双层架构） |
 | [5-BUSINESS](../../5-BUSINESS/) | [BUSINESS_SYSTEM.md](../../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营 |
 | [6-TRADING](../../6-TRADING/) | [TRADING_SYSTEM.md](../../6-TRADING/TRADING_SYSTEM.md) | A0-A9 流水线 |
@@ -253,7 +253,7 @@ DreamBuddy-V2/
 | 模块 | 路径 | 文档状态 | 说明 |
 |------|------|----------|------|
 | 3-EVOLUTION | [3-EVOLUTION/](../../3-EVOLUTION/) | ⚠️ 无文档 | TypeScript 进化引擎 |
-| 6-图结构压缩 | [6-图结构上下文压缩/](../../6-图结构上下文压缩/) | ⚠️ 有 SPEC/TECHNICAL-DOC | 实验性 |
+| 24-图结构压缩 | [24-图结构上下文压缩/](../../24-图结构上下文压缩/) | ⚠️ 有 SPEC/TECHNICAL-DOC | 实验性 |
 | 7-产物中台 | [7-产物中台/docs/](../../7-产物中台/docs/) | ⚠️ 部分完整 | 产物管理 |
 | 15-监控告警 | [15-监控告警系统/](../../15-监控告警系统/) | ⚠️ 仅 README | 监控告警 |
 | experiments | [experiments/](../../experiments/) | ❌ 无文档 | AB 交易实验 |

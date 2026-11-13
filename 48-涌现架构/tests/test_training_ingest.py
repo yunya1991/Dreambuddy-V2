@@ -1,6 +1,7 @@
 """training_ingest.py 单元测试（G1 补强）。
 覆盖：sample_id 幂等、normalize_sample 字段映射、load_source_rows FAIL-OPEN、ingest 幂等 append-only。
 """
+
 from __future__ import annotations
 
 import json
@@ -91,10 +92,14 @@ class TestIngest(unittest.TestCase):
 
     def test_ingest_idempotent_append_only(self):
         with tempfile.TemporaryDirectory() as td:
-            src = self._make_source(td, "p3a", [
-                {"doc_id": "d1", "as_of": "a", "gate": "g"},
-                {"doc_id": "d2", "as_of": "a", "gate": "g"},
-            ])
+            src = self._make_source(
+                td,
+                "p3a",
+                [
+                    {"doc_id": "d1", "as_of": "a", "gate": "g"},
+                    {"doc_id": "d2", "as_of": "a", "gate": "g"},
+                ],
+            )
             out = Path(td) / "out"
             st1 = ti.ingest(sources={"p3a": src}, out_dir=out)
             self.assertEqual(st1["total"], 2)

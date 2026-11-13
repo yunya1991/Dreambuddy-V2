@@ -57,7 +57,7 @@
 | 记忆系统架构 | [4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md](../4-MEMORY/MEMORY_SYSTEM_ARCHITECTURE.md) v5.0 · [4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md](../4-MEMORY/6-应用记忆索引/MEMORY_INTERFACE_SPEC.md) | 双层架构（总记忆+应用记忆）+ 7+2 接口契约 + 贝叶斯进化 v5 | 🟡 参考 SSoT v4.0 第7章（认知 C1-C4） |
 | 业务管理 | [5-BUSINESS/BUSINESS_SYSTEM.md](../5-BUSINESS/BUSINESS_SYSTEM.md) | 业务运营系统设计 | ⚠️ |
 | 交易中台 | [6-TRADING/TRADING_SYSTEM.md](../6-TRADING/TRADING_SYSTEM.md) | A0-A9 交易流水线与 SKILL 引擎 | 🟡 |
-| 前端系统 (3.0) | ~~[3-FRONTEND/FRONTEND_SYSTEM.md](../3-FRONTEND/FRONTEND_SYSTEM.md)~~ v3.0 | 3.0 旧前端已删除（2026-11-13），替代为 3.1-FRONTEND | ❌ 已删除 |
+| 前端系统 (3.0) | ~~3-FRONTEND/FRONTEND_SYSTEM.md~~ v3.0 | 3.0 旧前端已删除（2026-11-13），替代为 3.1-FRONTEND | ❌ 已删除 |
 | ★ **前端系统 (3.1)** | [3.1-FRONTEND/docs/v3-frontend-architecture.md](../3.1-FRONTEND/docs/v3-frontend-architecture.md) **v3.1** | **3.1 前端技术文档**：L0/L1/L2 意图路由 + 56页面+100+组件+12Store+96+API+P0-P3已全部完成（§3.2 旧 SACG 已更新指向 SSoT v4.0） | ✅ 已实现 |
 | 前端系统 README | [3.1-FRONTEND/README.md](../3.1-FRONTEND/README.md) | 3.1 项目说明、快速开始、目录结构 | ✅ |
 | ★ **3.1 前端改建 SPEC** | [3.1-FRONTEND/docs/SPEC-20261111-前端交互内核与设计系统改建.md](../3.1-FRONTEND/docs/SPEC-20261111-前端交互内核与设计系统改建.md) **v0.1.0** | 交互内核（part/ToolCard/PlanCard）+ 设计 token + 壳层合一，P0/P1/P2 与 A1-A10 验收 | 📝 待评审 |
@@ -166,7 +166,7 @@
 | ★ SPEC-33-E LLM 混合层 | [33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md](../33-REA逆向解析工程/SPEC-33-E-LLM混合层-假设生成与PoE裁判.md) | v0.1.1（🚧 P0 已落地：假设契约+PoE裁判+cognitive_hint；P1/P2 待开工） |
 | ★ SPEC-33-F REA 能力增强 | [33-REA逆向解析工程/SPEC-33-F-REA能力增强.md](../33-REA逆向解析工程/SPEC-33-F-REA能力增强.md) | v0.2.0（📝 待评审；含上游核实 §0.6，20 任务 P0/P1/P2） |
 | ★ SPEC-33-G 反思进化与分层自更新 | [33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md](../33-REA逆向解析工程/SPEC-33-G-反思进化与策略晋级.md) | v0.4.2（🟡 部分落地；L2-1~L2-12 + §2.11.8 权限切分 + §2.11.9 测量审计；17 任务；ADR-001 灰度） |
-| SKILL dream-rea-architecture-query | [.trae/skills/dream-rea-architecture-query/SKILL.md](../.trae/skills/dream-rea-architecture-query/SKILL.md) | v1.0.0（何时调用/token纪律/认知闭环） |
+| SKILL dream-rea-architecture-query | `.trae/skills/dream-rea-architecture-query/SKILL.md` | v1.0.0（何时调用/token纪律/认知闭环） |
 
 ### 49-交易框架协议
 

@@ -7,6 +7,7 @@
 
 用法：python3 scripts/merge_odaily_contents.py
 """
+
 from __future__ import annotations
 
 import json

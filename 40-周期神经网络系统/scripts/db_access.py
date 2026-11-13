@@ -129,9 +129,7 @@ def query_recent_timestamps(source: str, sub_category: str, limit: int = 5):
 
 def count_series(source: str, sub_category: str) -> int:
     """统计某序列记录数。risk_guards 尾部置信度检查用。"""
-    sql = _placeholder(
-        "SELECT COUNT(*) FROM records WHERE source = ? AND sub_category = ?"
-    )
+    sql = _placeholder("SELECT COUNT(*) FROM records WHERE source = ? AND sub_category = ?")
     conn = connect()
     try:
         cur = conn.cursor()

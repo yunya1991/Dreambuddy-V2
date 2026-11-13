@@ -1,6 +1,7 @@
 """thought_tree.py 单元测试（G5 思维树）。
 覆盖：确定性、剪枝 top-K、回溯父链路、不劣化保证、fail-open、签名去重。
 """
+
 from __future__ import annotations
 
 import sys
@@ -97,7 +98,13 @@ class TestBeamSearchDream(unittest.TestCase):
         for mc in (5, 15):
             low_map[(("a", "b", "c"), mc, 1)] = 0.1
             low_map[(("a", "b", "c"), mc, 2)] = 0.1
-        for perm in (("b", "a", "c"), ("c", "b", "a"), ("a", "c", "b"), ("b", "c", "a"), ("c", "a", "b")):
+        for perm in (
+            ("b", "a", "c"),
+            ("c", "b", "a"),
+            ("a", "c", "b"),
+            ("b", "c", "a"),
+            ("c", "a", "b"),
+        ):
             for mc in (5, 10, 15):
                 for par in (1, 2):
                     low_map[(perm, mc, par)] = 0.2
@@ -137,8 +144,16 @@ class TestBeamSearchDream(unittest.TestCase):
     def test_result_fields(self):
         r = beam_search_dream(_FakeLoop(), self._current(), depth=2, beam_width=3)
         for key in (
-            "version", "best_strategy", "best_v", "current_v", "improved",
-            "eval_ready", "nodes_expanded", "nodes_evaluated", "pruned_per_round", "path",
+            "version",
+            "best_strategy",
+            "best_v",
+            "current_v",
+            "improved",
+            "eval_ready",
+            "nodes_expanded",
+            "nodes_evaluated",
+            "pruned_per_round",
+            "path",
         ):
             self.assertIn(key, r)
         self.assertTrue(r["eval_ready"])

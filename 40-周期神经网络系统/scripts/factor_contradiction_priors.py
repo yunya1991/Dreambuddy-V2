@@ -24,9 +24,7 @@ from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
-_BASE = os.environ.get("DREAMBUDDY_ROOT") or str(
-    Path(__file__).resolve().parents[2]
-)
+_BASE = os.environ.get("DREAMBUDDY_ROOT") or str(Path(__file__).resolve().parents[2])
 D39 = os.path.join(_BASE, "39-金融语义蒸馏系统")
 D40 = os.path.join(_BASE, "40-周期神经网络系统")
 D18 = os.path.join(_BASE, "18-数据获取中心")

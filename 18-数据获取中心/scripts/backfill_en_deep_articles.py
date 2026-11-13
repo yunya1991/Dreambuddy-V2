@@ -8,6 +8,7 @@
 FAIL-OPEN：单源失败不影响其余源；正文抓取失败保留标题+摘要。
 用法：python3 scripts/backfill_en_deep_articles.py [--per-source 25]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -137,7 +138,9 @@ def merge_cumulative(rows: list[dict]) -> None:
         encoding="utf-8",
     )
     tmp.replace(dst)
-    logger.info("累积库合并：原有 %d，本轮新增 %d，当前 %d", len(existing) - n_new, n_new, len(existing))
+    logger.info(
+        "累积库合并：原有 %d，本轮新增 %d，当前 %d", len(existing) - n_new, n_new, len(existing)
+    )
 
 
 def main() -> int:
