@@ -94,8 +94,8 @@ AGI_SWITCHES: Dict[str, bool] = {
     "enable_d2_oi_liq": False,  # B-06: D2 叠加 OI/清算（默认 shadow；覆盖率达标后再开）
     "enable_cd_shadow": False,  # B-01: C→D 影子映射（只附加 shadow 字段，不改变裁决）
     "enable_dominance_shadow": False,  # B-02: 成对支配 shadow（不改变 argmax 生产选择）
-    "enable_attention_a_dim": False,  # B-03: CV gate 使用 attention A_dim（默认关闭，先用 shadow）
-    "enable_a_dim_c_to_3": False,  # B-03: 将 identifier C 维度映射到 3 维后再入 gate（修复口径，默认关闭）
+    "enable_attention_a_dim": True,  # B-03: CV gate 使用 attention A_dim（2026-11-14 开启：多维矛盾Transformer 现在力 真实参与交叉识别）
+    "enable_a_dim_c_to_3": True,  # B-03: attention 不可用时降级：将 identifier C 维度映射到 3 维后再入 gate（与 G_dim 同空间）
     "enable_granger_pipeline": True,  # Granger 因果链 (从价格序列派生3维度因子)
     "enable_attention_aggregator": True,  # Attention 聚合 (A_dim从primary_contradiction获取)
     "enable_head_multipliers_adjustment": True,  # head_multipliers 调整 (跨轮传递到NeuralSDE.forecast)

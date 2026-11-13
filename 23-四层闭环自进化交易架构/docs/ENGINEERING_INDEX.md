@@ -154,6 +154,13 @@
 | `exit_sample_generator.py` | `ExitSampleGenerator` | 离场样本生成器 | `generate()` |
 | `exit_rl_policy.py` | `ExitRLPolicy` | 离场RL策略 | `decide()` |
 | `exit_reward_calculator.py` | `ExitRewardCalculator` | 离场奖励计算器 | `calculate()` |
+| `contradiction_identifier.py` | `PrimaryContradictionIdentifier` | 经典矛盾系统主矛盾识别（过去因果链：Granger+结构断裂+弹性约束+矛盾转化检测） | `identify()`, `get_primary_contradiction()` |
+| `granger_pipeline_adapter.py` | `GrangerPipelineAdapter` | G_dim 过去主矛盾：价格序列派生3维因子→Granger因果 | `derive_three_dim_factors()`, `check_causality()` |
+| `attention_aggregator.py` | `AttentionAggregator` | A_dim 现在主矛盾：NeuralSDE cross-attention 权重聚合到3维 | `aggregate()`, `get_primary_dimension()` |
+| `attention_shadow.py` | `compute_a_dim_shadow` | A_dim shadow 诊断（attention 维度 vs identifier 维度一致性） | `compute_a_dim_shadow()` |
+| `cross_validation_gate.py` | `CrossValidationGate` | 过去×现在交叉识别：G_dim(Granger) vs A_dim(attention) → 一致boost/分歧penalty/质变检测/head调整 | `compare()` |
+| `dimension_mapping.py` | `map_dimension` | 矛盾维度↔3维因子空间映射（technical/fundamental/macro） | `map_dimension()` |
+| `contradiction_shift_accumulator.py` | `ContradictionShiftAccumulator` | 矛盾转化累计器（质变检测触发 shift） | `record()`, `should_shift()` |
 
 ### 3.3 适配层（adapters/）
 
@@ -209,8 +216,13 @@ K线收盘 → L1 R向量 → 三修饰子 → Level0 d* → RippleEngine RI
 ### 4.3 四层Pipeline（EvolutionPipeline.run_symbol）
 
 ```
-L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 对齐决策 → L3 Shadow-RL → L4 Bellman V(s)
+L1 状态空间 → Level0 路径代价 → L2 策略匹配 → 【交叉识别：G_dim(过去) × A_dim(现在)】→ 对齐决策 → L3 Shadow-RL → L4 Bellman V(s)
 ```
+
+> **交叉识别环节**（`_run_cross_validation`，在 `_select_optimal_path` 内执行）：
+> - **G_dim（过去）**：`GrangerPipelineAdapter` 从价格序列派生 3 维因子 → Granger 因果检验 → 过去主矛盾维度
+> - **A_dim（现在）**：`AttentionAggregator` 从 `NeuralSDE` cross-attention 权重聚合 → 现在主矛盾维度
+> - **CrossValidationGate**：一致→`confidence_mult × 1.15`；分歧→`× 0.9` + `divergence_count++`；分歧累计+结构断裂→`quality_change.detected`（矛盾转化）→ head_multipliers 调整
 
 ---
 
