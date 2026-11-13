@@ -6,6 +6,8 @@
 #   → p3_stovall_breadth → p3_resonance_matrix → p3_cross_asset_matrix
 #   → p3_washout_integration
 #   → p3_meme_platform_monitor → p4_strategy_mapping
+#   → factor_contradiction_priors → refresh_48_feedback（G13 网关刷新）
+#   → consume_48_feedback（48→40 消费 + 双读校验）
 # 任一步失败：告警接 15 并中止（下游会读到陈旧输入，宁停勿错）。
 set -uo pipefail
 
@@ -35,6 +37,7 @@ STEPS=(
   p3_meme_platform_monitor.py
   p4_strategy_mapping.py
   factor_contradiction_priors.py
+  refresh_48_feedback.py
   consume_48_feedback.py
 )
 

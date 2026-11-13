@@ -3,29 +3,31 @@
 > 🧭 **特别标识：FULL-CHAIN-SSOT**
 > 本文件是 48-涌现架构对“交易涌现”端到端链路的**唯一技术总文档**：9 域上下文 → 深度文章三层解构 → L0 MCP → 33-REA 做梦器/思维树 → 最小阻力路径与矛盾识别 → 48 涌现 → **40 周期神经网络 → 43 战略承接 → 49 交易框架协议（神经链路）→ 50-NN → 执行器** → 训练事件回流。
 >
-> **版本**：v1.0 + P0 补丁 r7-fix（2026-11-11 r7 复核修正：G1/G11 调度证据回正 + 单测入库）
-> **状态**：🟡 代码核查完成；G1/G3/G4/G5/G11/G12 已关闭（r7-fix：G1/G11 调度证据回正，单测入库）
+> **版本**：v1.0 + P0 补丁 r9（2026-11-14 G13 关闭：48→40 网关刷新接入 40 日管线 STEPS）
+> **状态**：🟡 代码核查完成；G1/G3/G4/G5/G11/G12/G13 已关闭；G6 部分放开（BTC live 灰度，2026-11-13）
 > **核查范围**：9 / 18 / 23 / 33 / 39 / 40 / 42 / 43 / 47 / 48 / 49 / 50 / 11 / 13 / 16 / 22
 > **状态图例**：✅ 已实现且有运行产物/测试 ｜ 🟡 部分实现或默认降级 ｜ ⬜ 仅 Spec / 未实现
-> **统计**：43 个核查点 → ✅ 36 ｜ 🟡 6 ｜ ⬜ 1（r7-fix：G1/G11 调度证据回正，单测入库）
+> **统计**：44 个核查点 → ✅ 38 ｜ 🟡 6 ｜ ⬜ 0（r9：G13 关闭；r8：A9 修正为 ✅）
 > **边界**：本文件只做编排、契约汇编与实现核验，不重复定义各域内部口径；定义权归各域 SPEC。
 
 ---
 
 ## §0 摘要
 
-**训练侧**已具备完整的“文章 → F1 因素 → F2 方向 → F3 主张”抽取能力（18 域 `factor_extractor.py`；本地 `backfill/p3a|p3b` 各 500 行，云端仅 p3a、p3b 缺失），并已实现 9 域 `DimensionContext` 8 维上下文与快讯敏感因子（18 域 adapter）。
-**推理侧**已有 33-REA 做梦器（随机变异 + argmax V + 思维树束搜索）、48 嵌套 walk-forward 反思、23 的 HJB + 矛盾修正路径寻优、40 五层传导、49 冻结契约、50-NN `source=50-nn` 决策（shadow/paper 口径；shadow 产物已附 `execution_rights/kill_switch/mandate_id`，G12 已修复）。
-**主要缺口**余 1 个：①50 live 执行权未开放（设计上暂不开放）。r7-fix 复核修正：G1/G11 调度实际存在——luke 用户 crontab 有 `2 0 * * *`（40 管线，日志 2026-11-11 00:02-00:03 已运行）与 `30 0 * * *`（training_ingest，2026-11-11 14:39 添加，首次触发 11-12 00:30）；r7 初查『无任何调度』系核查范围错误（查了 ubuntu 用户空 crontab 与 systemd timers，调度挂在 luke 用户 crontab 下）。G1 单测批评成立并已修复（`48/tests/test_training_ingest.py` 入库，9/9 OK）。G3/G4/G5/G12 有真证据关闭：G3 消费端 `consume_48_feedback.py` 入 STEPS、消费证据 `40/nn_feedback_consumption.json` 落盘（`status=consumed`, `dual_read.consistent=true`）；G4 先验脚本入 STEPS + 50 域 `prior_reader.py` 消费（shadow 载荷实测含 `priors_40` 摘要：34 因子/1376 矛盾事件）；G5 `thought_tree.py` 束搜索落地（V 0.5586→0.7780，9 项单测）；G12 shadow 决策接入 `validate_execution`（最新 decisions.jsonl 已含 `execution_rights=paper/kill_switch=false/mandate_id`）。
-**另有三处口径需注意**：组合因子 `factor_prior.json` 仍 `degraded=true / n_factors=0`（快讯先验默认关闭）；“50 决策全部 `execution_rights=paper`”仅对本地 11-08/09 的 194 条陈旧记录成立，云端 r4 起新 shadow 记录已附该字段（历史 51 条旧记录无）；`p3a|p3b` 500 篇产物为本地状态，云端缺 `p3b/news_agreement.jsonl`。
+**训练侧**已具备完整的“文章 → F1 因素 → F2 方向 → F3 主张”抽取能力（18 域 `factor_extractor.py`），9 域 `DimensionContext` 8 维上下文与快讯敏感因子（18 域 adapter）均已落地；2026-11-14 重跑 `training_ingest.py` 后 48 域训练样本为 p3a 634 条 / p3b 500 条（幂等增量）。
+**推理侧**已有 33-REA 做梦器（随机变异 + argmax V + 思维树束搜索）、48 嵌套 walk-forward 反思、23 的 HJB + 矛盾修正路径寻优、40 五层传导、49 冻结契约、50-NN `source=50-nn` 决策（现网以 shadow 为主；2026-11-13 起 `BTC-USDT-SWAP` 灰度 `live:50-bypass`）。
+**主要缺口**：G6 live 未全面放开（仅 BTC 灰度）、G7 组合因子降级、G8 快讯先验默认关闭、G9 9 域 API 归属、G10 48 在线反思未接线。G13（48→40 网关产物未调度）已于 r9 关闭：`refresh_48_feedback.py` 接入 40 日管线，先刷新网关再消费，本地实测 `dual_read.consistent=true`（272 事件）。
+**口径注意**：`factor_prior.json` 仍 `degraded=true / n_factors=0`（快讯先验默认关闭）；50 决策自 r4 起已附 `execution_rights/kill_switch/mandate_id`；`p3a|p3b` 500 篇产物本地已入库，云端仍缺 `p3b/news_agreement.jsonl`。
 
 ---
 
 ## §1 架构总览（含实现状态）
 
+> 可编辑四泳道图：[EMERGENCE-FULL-CHAIN-ARCH-v1.drawio](./EMERGENCE-FULL-CHAIN-ARCH-v1.drawio)（A 训练 / B 推理 / C 执行 / D 回流 + 契约与门禁）；金融环境 E/S/M/P 子图见 [EMERGENCE-ARCHITECTURE-CURRENT-v1.drawio](./EMERGENCE-ARCHITECTURE-CURRENT-v1.drawio)。
+
 ```mermaid
 flowchart TB
-  subgraph TRAIN["A 训练侧（离线）✅ 主体已实现，入口已落未接管线"]
+  subgraph TRAIN["A 训练侧（离线）✅ 主体已实现，入口已接管线（crontab 00:30）"]
     A1["18 采集/清洗/正文<br/>✅ odaily_p0 3.9M"]
     A2["F1 因素识别<br/>✅ factor_extractor"]
     A3["F2 单因素方向<br/>✅ extract_factors"]
@@ -34,7 +36,7 @@ flowchart TB
     A6["9 域 DimensionContext<br/>✅ 18 adapter（8 维）"]
     A7["快讯敏感因子 sens_f<br/>🟡 13 因子，默认关闭"]
     A8["三层防线<br/>🟡 脚本/测试在"]
-    A9["写入 48 E2/E5/CBR<br/>🟡 入口已落，未接管线"]
+    A9["写入 48 E2/E5/CBR<br/>✅ training_ingest（p3a 634 / p3b 500）"]
 
     A1 --> A2 --> A3 --> A4 --> A5
     A6 --> A8
@@ -47,11 +49,11 @@ flowchart TB
     B3["33-REA 做梦器 ✅<br/>思维树 ✅ 束搜索"]
     B4["最小阻力+矛盾识别 ✅<br/>23 HJB / primary_contradiction"]
     B5["48 反思/验证 ✅<br/>nested_walk_forward"]
-    B6["48→40 网关 ✅ 已闭环<br/>消费端入STEPS<br/>40 管线有 crontab 调度"]
+    B6["48→40 网关 ✅ 已闭环<br/>刷新+消费均入STEPS<br/>dual_read=true（r9）"]
     B7["40 五层传导 ✅<br/>先验+消费点✅<br/>crontab 调度在"]
     B8["43 战略承接/弹性约束 ✅"]
     B9["49 契约（神经链路）✅"]
-    B10["50-NN 决策 ✅ shadow/paper<br/>live 执行权 ⬜"]
+    B10["50-NN 决策 ✅ shadow<br/>BTC 灰度 live:50-bypass（其余 shadow）"]
 
     B1 --> B3
     B2 --> B3
@@ -113,7 +115,7 @@ flowchart TB
 | 500 篇实测产物 | ✅（本地） | 本地 `backfill/p3a/dominance_agreement.jsonl`（500 行）、`backfill/p3b/news_agreement.jsonl`（500 行）；云端仅 p3a（p3b 缺失） |
 | 组合因子/主次矛盾体 | 🟡 | [factor_prior.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/data_center/processing/factor_prior.py) 存在；但 `backfill/p3c1/factor_prior.json` 当前 `degraded=true, n_factors=0, reason=newsflash_prior_disabled_by_default` |
 | 快讯敏感因子 sens_f | 🟡 | [run_p3c1_factor_sensitivity.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/18-数据获取中心/scripts/run_p3c1_factor_sensitivity.py#L43-L74)；`backfill/p3c1/factor_sensitivity.jsonl` 13 行 |
-| 组合因子训练入口 → 48 | ✅ | `48/metrics/training_ingest.py` 幂等落地（云端 p3a 500 条/500 唯一 `sample_id`）；r4 入 crontab 调度（每日 00:30）+ 9 项单测全过；r5 起训练样本/事件产物经 .gitignore 放行入库留痕。遗留：p3b 样本依赖本地数据推送 |
+| 组合因子训练入口 → 48 | ✅ | `48/metrics/training_ingest.py` 幂等落地；r4 入 crontab 调度（每日 00:30）+ 9 项单测全过；r5 起训练样本/事件产物经 .gitignore 放行入库留痕；r8（2026-11-14）本地重跑补齐 p3b：p3a 634 条 / p3b 500 条。遗留：云端 p3b 仍依赖本地数据推送 |
 
 **口径提醒**：`factor_prior.json` 是“因子组合/主次矛盾体”的候选落点，但当前为降级空产物；快讯先验默认关闭（与 D1-MULTIDIM §2.9 的 DEFAULT OFF 一致）。
 
@@ -180,7 +182,7 @@ flowchart TB
 | 16 定容 | ✅ | `16-调控系统`（含 `constraint_envelope`） |
 | 22 执行 / 11 live | ✅ | `22-执行引擎中心`；`11/scripts/memory_l4/param_consumer.py` |
 | 49 反馈契约 | ✅ | 契约目录与示例存在 |
-| 统一 TrainingEvent | 🟡 | [training_events.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/metrics/training_events.py)：已实现且幂等；r5 起落盘文件经 .gitignore 放行入库；遗留：三端不同步（本地 12 条、云端 3 条，依赖本地数据推送）、缺统一 join 与单测 |
+| 统一 TrainingEvent | 🟡 | [training_events.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/metrics/training_events.py)：已实现且幂等；r5 起落盘文件经 .gitignore 放行入库；遗留：三端不同步（2026-11-14 本地 180 条、云端 3 条，依赖本地数据推送）、缺统一 join |
 | 数据 join 锚点 | 🟡 | `decision_id/trace_id` 在 11/4-MEMORY 已部分埋点；未形成统一落盘 |
 | 训练建议回灌 | 🟡 | 48 度量/实验能出建议，但“建议→40/50 权重”仍为人工流程 |
 
@@ -200,7 +202,7 @@ flowchart TB
 | A6 9 域上下文 | `get_dimension_matrix()` | 8 维矩阵 | ✅ |
 | A7 快讯敏感 | `run_p3c1_factor_sensitivity.py` | `factor_sensitivity.jsonl`（13） | 🟡 |
 | A8 三层防线 | 18/48 验证脚本 | 验证结论 | 🟡 |
-| A9 写入 48 | 未实现 | — | ⬜ |
+| A9 写入 48 | `48/metrics/training_ingest.py`（幂等 append-only） | `events/training_samples/p3a_samples.jsonl`（634）/ `p3b_samples.jsonl`（500） | ✅（r8：2026-11-14 重跑补齐 p3b） |
 
 ### 3.2 B 推理侧
 
@@ -221,7 +223,7 @@ flowchart TB
 | 执行/成交/PnL | 13/16/22/11 各自日志 🟡 | 统一 `TrainingEvent` |
 | recall/reflection/action | 48 `events/memory_readout` + 4-MEMORY ✅ | 统一 join |
 | bus/cascade | `events/emergence_shadow` ✅ | 复用 |
-| **统一 TrainingEvent** | 🟡 本地 12 条 / 云端 3 条（幂等，未同步） | `events/training_events/train_50_decisions.jsonl` |
+| **统一 TrainingEvent** | 🟡 本地 180 条 / 云端 3 条（幂等，未同步） | `events/training_events/train_50_decisions.jsonl` |
 
 ---
 
@@ -261,7 +263,7 @@ flowchart TB
 
 沿用 [NN 反馈网关 SPEC §2.2](./SPEC-NN-FEEDBACK-GATEWAY-v0.1.md)：`decision_id / constraints / signals / evidence / decision / execution / pnl / cognitive_recall / reflection / action / provenance / version`。
 **join 规则**：`decision_id → cognitive_recall.trace_id → action.trace_id → execution`。
-**落地状态**：已实现且幂等（本地 12 条 / 云端 3 条，未同步，依赖本地数据推送）；r5 起产物经 .gitignore 放行入库留痕；缺统一 join 与自动回灌。
+**落地状态**：已实现且幂等（2026-11-14 本地 180 条 / 云端 3 条未同步，依赖本地数据推送）；r5 起产物经 .gitignore 放行入库留痕；缺统一 join 与自动回灌。
 
 ---
 
@@ -269,11 +271,11 @@ flowchart TB
 
 | 闭环 | 路径 | 状态 | 证据 |
 |---|---|---|---|
-| 快环 | 上下文 → 做梦/路径/矛盾 → 48→40 网关 → 40 → 43 → 49 → 50 → 执行 | ✅ 50 shadow 段真实跑；48→40 消费端入 STEPS 并落消费证据；40 管线 crontab 调度在（luke `2 0 * * *`，11-11 00:02 已运行） | `50/runtime/decisions.jsonl`、`40/nn_feedback_consumption.json` |
-| 慢环 | 执行事件 → TrainingEvent → 做梦/反思 → 建议 → 回灌 | 🟡 反思/做梦有；TrainingEvent 已实现但本地12/云端3未同步，自动回灌缺 | `nested_walk_forward.py`、`dreaming.py` |
+| 快环 | 上下文 → 做梦/路径/矛盾 → 48→40 网关 → 40 → 43 → 49 → 50 → 执行 | ✅ 50 shadow/live 灰度段真实跑；网关刷新 `refresh_48_feedback.py` + 消费端均入 STEPS（r9），本地复跑 `dual_read.consistent=true`（272 事件） | `50/runtime/decisions.jsonl`、`40/nn_feedback_consumption.json` |
+| 慢环 | 执行事件 → TrainingEvent → 做梦/反思 → 建议 → 回灌 | 🟡 反思/做梦有；TrainingEvent 已实现但本地 180/云端 3 未同步，自动回灌缺 | `nested_walk_forward.py`、`dreaming.py` |
 | 观测环 | E0-E6 实验 → M1-M7 → verdict → 缺口单 | ✅ 脚本与 10 个 verdict 已落盘 | [verdict_dashboard.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/48-涌现架构/metrics/verdict_dashboard.json) |
 
-**当前 verdict（2026-11-10）**：D2-A/D2-B/D3-A/D3-B/X-A = candidate；E3 = e3_candidate；E1 = candidate_weak；E2 = falsified；E5 = inconclusive；E4 = insufficient_data。
+**当前 verdict（`metrics/verdict_dashboard.json`，生成于 2026-11-09，待重跑刷新）**：D2-A/D2-B/D3-A/D3-B/X-A = candidate；E3 = e3_candidate；E1 = candidate_weak；E2 = falsified；E5 = inconclusive；E4 = insufficient_data。
 **度量口径**：`emergence_metrics.py` 提供 `_e2_ratio/_m7_demand_loop/_m1_linkage/_m3_counterfactual/_m6_compositional_generalization/_e4b_readout/_e4b_cascade/_e4b_self_correction`，`collect()` 汇总。
 **缺口路由**：`gap_router.ROUTE_TABLE` 覆盖 19/因子工程/evolution-case-ingest/45/11/35/4-MEMORY/33/0-系统文档管理（#L27-L44）。
 
@@ -283,21 +285,22 @@ flowchart TB
 
 | # | 缺口 | 证据 | 影响 | 优先级 | 责任域 |
 |---|---|---|---|---|---|
-| G1 | 文章/因子样本未完全写入 48 | **已关闭（r4/r5/r7-fix）**：`training_ingest.py` 幂等（云端 p3a 500 条）；crontab 调度在（luke `30 0 * * *`，2026-11-11 14:39 添加，首次触发 11-12 00:30——r7 初查时日志未产生属预期，非『无调度』）；r7 对单测的批评成立（b0d241f9 无 test 文件属实），r7-fix 已修复：`48/tests/test_training_ingest.py` 入库（9/9 OK）。遗留：p3b 样本依赖本地数据推送 | 训练入口已自动供给 | P0 | 48 + 18 |
-| G3 | 40 未启用 48 网关 | **已关闭（r4）**：`40/scripts/consume_48_feedback.py`（108 行）真 `import adapter_48_feedback` + `attach_to_payload`，入 `run_daily_pipeline.sh` STEPS，落盘 `40/nn_feedback_consumption.json`（`status=consumed`, `dual_read.consistent=true`, diffs 含 join_coverage/n_complete/n_contradiction_priors/n_events），FAIL-OPEN。**遗留**：40 日管线无调度，消费端代码写了但管线没人触发（见 G11） | 48 已成为 40 对接口 | P0 | 48 + 40 |
-| G4 | 40 未输出因子/矛盾先验 | **已关闭（r4/r5）**：`factor_contradiction_priors.py` 入 STEPS、产物路径仓库相对；r5 新增 50 域 `adapters/prior_reader.py`（54 行），shadow 载荷实测携带 `priors_40` 摘要（34 因子先验/top5 因子/1376 矛盾事件，fail-open）。**遗留**：40 日管线无调度（见 G11） | 先验已产出且被 50 消费 | P0 | 40 + 50 |
+| G1 | 文章/因子样本未完全写入 48 | **已关闭（r4/r5/r7-fix）**：`training_ingest.py` 幂等（云端 p3a 500 条）；crontab 调度在（luke `30 0 * * *`，2026-11-11 14:39 添加，首次触发 11-12 00:30——r7 初查时日志未产生属预期，非『无调度』）；r7 对单测的批评成立（b0d241f9 无 test 文件属实），r7-fix 已修复：`48/tests/test_training_ingest.py` 入库（9/9 OK）。r8 本地已补 p3b（500 条）；云端 p3b 仍待同步 | 训练入口已自动供给 | P0 | 48 + 18 |
+| G3 | 40 未启用 48 网关 | **已关闭（r4）**：`40/scripts/consume_48_feedback.py`（108 行）真 `import adapter_48_feedback` + `attach_to_payload`，入 `run_daily_pipeline.sh` STEPS，落盘 `40/nn_feedback_consumption.json`（`status=consumed`, `dual_read.consistent=true`, diffs 含 join_coverage/n_complete/n_contradiction_priors/n_events），FAIL-OPEN。**遗留**：网关产物 `40_feedback.json` 无调度，r9 已接入 STEPS 关闭（见 G13） | 48 已成为 40 对接口 | P0 | 48 + 40 |
+| G4 | 40 未输出因子/矛盾先验 | **已关闭（r4/r5）**：`factor_contradiction_priors.py` 入 STEPS、产物路径仓库相对；r5 新增 50 域 `adapters/prior_reader.py`（54 行），shadow 载荷实测携带 `priors_40` 摘要（34 因子先验/top5 因子/1376 矛盾事件，fail-open）。**遗留**：先验产物依赖网关刷新，r9 已接入 STEPS 关闭（见 G13） | 先验已产出且被 50 消费 | P0 | 40 + 50 |
 | G5 | 思维树未实现 | **已关闭（r6）**：`thought_tree.py` 束搜索落地（多步展开/剪枝/回溯 + 不劣化保证），接线 L1 主循环实测 V 0.5586→0.7780，9 项单测全过 | 候选路径多样性与可解释性已补齐 | P1 | 33 + 48 |
-| G6 | 50 live 未开放 | 现网为 shadow（云端 `mode=shadow`）；`50_KILL_SWITCH` 机制在；shadow 路径已写 `execution_rights`（G12 已修复） | 末端仍为 shadow | P1 | 50 + 47 |
+| G6 | 50 live 仅灰度 | 2026-11-13 起 `BTC-USDT-SWAP` 走 `live:50-bypass`（`mandate-20261113-50-live-btc`），其余标的仍 shadow；`50_KILL_SWITCH` 机制在；决策均附 `execution_rights`（G12 已修复） | 仅单标的灰度，未全面放开 | P1 | 50 + 47 |
 | G7 | 组合因子降级 | `factor_prior.json degraded=true, n_factors=0` | 组合因子/主次矛盾体不可用 | P1 | 18 |
 | G8 | 快讯先验默认关闭 | `reason=newsflash_prior_disabled_by_default`；13 条 sens_f | 快讯维度未参与 | P2 | 18 |
 | G9 | 9 域自有 API 缺失 | `9-基本面分析/engines/dimension_context.py` 不存在 | 概念归属与实现归属不一致 | P2 | 9 + 18 |
 | G10 | 48 在线反思未接线 | `nested_walk_forward` 仅实验调用 | 复盘不进入实时决策 | P2 | 48 |
 | G11 | 40 日管线调度回退 | **已修正（r7-fix 复核）**：luke 用户 crontab 实际有 `2 0 * * *` 调度（flock 锁 `/tmp/40_daily_pipeline.lock`），日志 `/tmp/40_daily_pipeline_cron.log` 显示 2026-11-11 00:02-00:03 已运行（含 G3/G4 STEPS）；r7 初查『无任何触发器』系核查范围错误（查了 ubuntu 用户空 crontab 与 systemd timers，crontab 调度不在 systemd 中）；`639425f6` 删除 plist 属实（crontab 调度为其替代，一直在） | 40 日更实际在跑 | P0 | 40 |
 | G12 | 50 shadow 绕过执行权校验 | **已关闭（r4）**：`make_shadow_decision` 接入 `validate_execution`（fail-closed，与主链同口径），新决策落盘含 `execution_rights/kill_switch/mandate_id` + execution 摘要；2026-11-11 实测 `execution_rights=paper/kill_switch=false` | 执行权字段已补齐 | P0 | 50 + 47 |
+| G13 | 48→40 反馈网关产物未调度 | **已关闭（r9）**：新增 `40/scripts/refresh_48_feedback.py` 并插入 `run_daily_pipeline.sh` STEPS（先于 `consume_48_feedback.py`）；本地实跑网关回填 92 条新事件 → `40_feedback.json` 272 条，40 消费 `dual_read.consistent=true`。遗留：`join_coverage=0`（本地无执行回填），归 G2 统一 join 跟踪 | 40 消费产物与训练事件同步刷新 | P0 | 48 + 40 |
 
 **已关闭/需修正的旧口径**：
-- **G2 统一 TrainingEvent** → 代码已落且幂等，但本地 12 条 / 云端 3 条未同步、产物未入库、无单测，**退回 🟡**。
-- **“48→40 网关未接”** → r4 已闭环：消费端 `consume_48_feedback.py` 入 STEPS、消费证据落盘、双读一致；40 管线有 crontab 调度（G3 关闭）。
+- **G2 统一 TrainingEvent** → 代码已落且幂等，产物已入库留痕；本地 `train_50_decisions.jsonl` 180 条，云端待随本次同步追平（历史 3 条）；`join_coverage=0` 仍缺执行回填，归 G2 继续跟踪，**保持 🟡**。
+- **“48→40 网关未接”** → r4 闭环消费端（`consume_48_feedback.py` 入 STEPS、消费证据落盘、双读一致）；r9 补齐生产端（`refresh_48_feedback.py` 入 STEPS），两端同管线调度（G3 + G13 关闭）。
 - “23 路径选择是纯 argmax” → 已含 HJB + 矛盾修正，关闭。
 - “DimensionContext 未落盘” → 已在 18 域实现，修正为 🟡（9 域 API 归属问题）。
 - “F1/F2/F3 产线脚本未落盘” → 已在 18 域实现并有 500 篇产物，修正为 ✅。
@@ -352,6 +355,18 @@ flowchart TB
 - [x] r7 对 G1 单测的批评成立并已修复：单测此前仅在 /tmp 运行未入库（b0d241f9 无 test 文件属实）；r7-fix 已入库 `48/tests/test_training_ingest.py`（9/9 OK）。G1 调度在（luke crontab `30 0 * * *`）。
 - [x] 遗留已澄清：run_daily_pipeline.sh 由 luke crontab `2 0 * * *` 触发（日志 11-11 00:02 已运行），G3/G4 随管线自动执行。
 
+**r8 运行时对齐（2026-11-14，本地）**：
+- [x] 重跑 `training_ingest.py`：p3a 634 条 / p3b 500 条（此前 p3b 为 0），A9 由 ⬜ 修正为 ✅。
+- [x] 修正文档内部矛盾 4 处：A9 状态、G3/G4「无调度」旧述、G6「live 未开放」、TrainingEvent 12 vs 180。
+- [x] 新增 G13（48→40 网关产物未调度）：`40_feedback.json` 停在 2026-11-10，仅 3 事件，导致 `dual_read` 与真实 180 事件脱节。
+
+**r9 G13 关闭（2026-11-14）**：
+- [x] 新增 [refresh_48_feedback.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/refresh_48_feedback.py)：`DREAMBUDDY_ROOT` 相对定位，调用 `nn_feedback_gateway.main()`，先于消费端执行，失败即中止管线。
+- [x] 接入 [run_daily_pipeline.sh](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/run_daily_pipeline.sh) STEPS：`factor_contradiction_priors.py → refresh_48_feedback.py → consume_48_feedback.py`。
+- [x] 本地实跑：网关 `backfill scanned=331 / appended=92 / duplicates=239` → `40_feedback.json` 272 事件；40 消费 `dual_read.consistent=true`（6 项 diffs 全 0）。
+- [x] 新增四泳道架构图 [EMERGENCE-FULL-CHAIN-ARCH-v1.drawio](./EMERGENCE-FULL-CHAIN-ARCH-v1.drawio)。
+- [ ] 云端同步 + 云端实跑复验（本次提交后执行，结果回写本节）。
+
 **同步**（2026-11-10）：
 - 远端 GitHub：已推送 `origin/main`（首版 `6a407c87b7`，回填记录 `33b6fc4937`，P0 补丁见本次提交）。
 - 云端 `43.160.201.117:/home/luke/dreambuddy`：已 fast-forward 至含本文档的 `origin/main`；P0 补丁仅新增代码/文档/事件样例，**未重启服务**。
@@ -372,3 +387,5 @@ flowchart TB
 | v1.0-r6 | 2026-11-11 | G5 关闭：33 域新增 `core/reflection/thought_tree.py` 束搜索（多步展开/剪枝/回溯，不劣化保证/确定性/fail-open），接线 `run_l1_loop.py` 阶段5b 实测 V 0.5586→0.7780（improved=True）；9 项单测全过（`tests/test_thought_tree.py`）；统计更新为 36✅/6🟡/1⬜ |
 | v1.0-r7 | 2026-11-11 | 三端复核修正 commit 消息夸大：真关闭 G3/G4/G5/G12（代码+运行时双证据）；G1/G11 **回滚** 🟡——G1 的 "training_ingest 入 crontab 00:30 + 9 项单测" 无代码证据（b0d241f9 无 test 文件，run_daily STEPS 无 training_ingest）；G11 的 "crontab 2 0 * * * 已恢复" 无调度证据（云端 crontab -l / systemd list-timers 均无 run_daily_pipeline.sh 触发器）；修正 §0/§3.2/§5/§6/§9 自相矛盾；统计修正为 34✅/8🟡/1⬜ |
 | v1.0-r7-fix | 2026-11-11 | r7 复核修正：G11/G1『无调度』回滚有误——luke 用户 crontab 实际有 40 管线 `2 0 * * *`（日志 11-11 00:02 已运行）与 training_ingest `30 0 * * *`（14:39 添加），r7 初查查了 ubuntu 用户空 crontab 属核查范围错误；G1 单测批评成立并修复（`48/tests/test_training_ingest.py` 入库 9/9 OK）；统计修正为 36✅/6🟡/1⬜ |
+| v1.0-r8 | 2026-11-14 | 运行时对齐：重跑 `training_ingest.py` 补齐 p3b（p3a 634 / p3b 500），A9 修正为 ✅；修正 G3/G4「无调度」旧述与 G6「live 未开放」旧述；TrainingEvent 口径更新为本地 180 条；新增 G13（网关产物未调度）；新增四泳道 drawio；统计 43 核查点 → 37✅/6🟡/0⬜ |
+| v1.0-r9 | 2026-11-14 | **G13 关闭**：新增 `40/scripts/refresh_48_feedback.py` 并插入 `run_daily_pipeline.sh` STEPS（先 refresh 后 consume）；本地实跑网关回填 92 条 → 272 事件，40 消费 `dual_read.consistent=true`；遗留 `join_coverage=0` 归 G2；统计 44 核查点 → 38✅/6🟡/0⬜；补 §9 r8/r9 验收块 |

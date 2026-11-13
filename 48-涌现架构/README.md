@@ -29,8 +29,9 @@
 ## 🧭 全链路总索引（特别标识 · FULL-CHAIN-SSOT）
 
 > 端到端“9 域上下文 → 深度文章三层解构 → 33-REA 做梦器（思维树）→ 最小阻力路径/矛盾识别 → 48 涌现 → 40 周期神经网络 → 49 交易框架协议（神经链路）→ 50-NN → 执行层 → 训练事件回流”的唯一索引：
-> **[docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md)**（🟢 v1.0 代码核查完成，2026-11-10）
-> 该文件只做编排与契约汇编，各段定义权仍归 9/33/39/40/47/49/50 各自 SPEC；含 3 项口径冲突（C1-C3）与 8 项 gap，实施前先看 §7/§8。
+> **[docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md)**（🟢 v1.0-r9，2026-11-14：G13 网关刷新接入 40 日管线，`dual_read.consistent=true`）
+> 配图：[EMERGENCE-FULL-CHAIN-ARCH-v1.drawio](./docs/tech/EMERGENCE-FULL-CHAIN-ARCH-v1.drawio)（A 训练 / B 推理 / C 执行 / D 回流四泳道）
+> 该文件只做编排与契约汇编，各段定义权仍归 9/33/39/40/47/49/50 各自 SPEC；含 3 项口径冲突（C1-C3）与 13 项 gap（G1-G13），实施前先看 §7/§8。
 
 ## 🔗 D2/D3 双链路索引（特别标识 · D2-D3-CHAIN-SSOT）
 
@@ -42,7 +43,7 @@
 
 | 文档 | 职责 | 状态 |
 |---|---|---|
-| 🧭 [docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md) | **全链路总架构（FULL-CHAIN-SSOT）**：训练侧/推理侧/执行侧/回流侧四段数据流、六类契约、三闭环、口径冲突 C1-C3、gap 表 | 🟢 v1.0（2026-11-10 代码核查完成：29 核查点 19✅/4🟡/6⬜） |
+| 🧭 [docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md](./docs/tech/SPEC-EMERGENCE-FULL-CHAIN-v1.0.md) | **全链路总架构（FULL-CHAIN-SSOT）**：训练侧/推理侧/执行侧/回流侧四段数据流、六类契约、三闭环、口径冲突 C1-C3、gap 表 G1-G13 | 🟢 v1.0-r9（2026-11-14：44 核查点 38✅/6🟡/0⬜；G13 关闭，网关刷新入 40 日管线） |
 | 🔗 [docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md](./docs/tech/SPEC-EMERGENCE-D2-D3-CHAIN-v0.1.md) | **D2/D3 双链路（D2-D3-CHAIN-SSOT）**：D2 架构复原/生成链路、D3 意图预测/知识组合链路、数据流、契约、度量、D1/D2/D3 三链差异、X-A 代理现状、P0-P2 缺口 | 🟢 v0.1（2026-11-11 代码核查）：D2-A/D2-B/D3-A/D3-B 均 formal `candidate`；X-A 为代理 `candidate`，`XA-REAL` deferred；D2-A 人工盲评、D2-B 需求单回填、D3 在线 A/B 为 P0 缺口 |
 | 🌐 [docs/tech/SPEC-EMERGENCE-FINANCIAL-ENV-v2.8.md](./docs/tech/SPEC-EMERGENCE-FINANCIAL-ENV-v2.8.md) | **金融交易涌现环境（环境层总纲）**：E 金融事件 × S 金融语义情绪（39+FinBERT）× M 市场情绪（F&G+VIX）× P 市场形态（MA/Pivot/OBV/BOLL/RSI/MACD）四层信号 + **龙头宇宙直接投影 40 域 10 大类资产**（含金/银/油/气/铜）+ 三维联合验证（L-A/L-B/L-C/L-D）+ 统计纪律（t>3/DSR/PBO/purged CV，接线 45 评测系统）+ 缺口 G1-G15 与 P0-P3 计划 | 🟢 v2.8（2026-11-12；P0-F 中文模型接线、G10 价格源统一、G14 F&G 接入 records 表、G15 S 层自动加载均已实现；P1-A/B/C/D 形态层落地；P2 真实数据首跑全部 inconclusive，S/E 历史覆盖不足如实记录） |
 | [docs/tech/SPEC-EMERGENCE-FINBERT-SENTIMENT-FACTOR-EVAL-v1.0.md](./docs/tech/SPEC-EMERGENCE-FINBERT-SENTIMENT-FACTOR-EVAL-v1.0.md) | FinBERT 情绪因子五层评估（IC/分层/消融/状态依赖/衰减）+ F1-F7 因子定义 + 状态依赖交互因子 | 🟡 v1.0（2026-11-11；v1.0 环境总纲已将其定位为 S 层子模块） |
