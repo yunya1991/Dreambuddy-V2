@@ -15,8 +15,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-# 让 capital_rules 下的子模块能 import types
-_PKG_ROOT = Path(__file__).resolve().parents[2]  # .../16-调控系统/core
+# 让 capital_rules 下的子模块能 import types（capital_control 现位于 13/risk_capital）
+_PKG_ROOT = Path(__file__).resolve().parents[2]  # .../13-通用风控模块/risk_capital
 if str(_PKG_ROOT) not in sys.path:
     sys.path.insert(0, str(_PKG_ROOT))
 
@@ -27,9 +27,12 @@ from capital_control.types import (  # noqa: E402
     now_iso,
 )
 
-_UNIFIED_DIR = _PKG_ROOT
-if str(_UNIFIED_DIR) not in sys.path:
-    sys.path.insert(0, str(_UNIFIED_DIR))
+# unified_position_query 仍留在 16-调控系统/core（本轮不迁移），显式兜底路径
+_LEGACY_16_CORE = Path(__file__).resolve().parents[4] / "16-调控系统" / "core"
+_UNIFIED_DIR = _LEGACY_16_CORE
+for _p in (_UNIFIED_DIR, _PKG_ROOT):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 
 _ACCOUNT_TYPE_MAP: Dict[str, AccountType] = {

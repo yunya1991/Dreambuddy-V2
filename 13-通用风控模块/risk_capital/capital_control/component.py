@@ -33,11 +33,14 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 _CORE_DIR = Path(__file__).resolve().parent  # capital_control
-_16_CORE_DIR = _CORE_DIR.parent  # 16-调控系统/core
-_PROJECT_DIR = _16_CORE_DIR.parents[1]  # dreambuddy-v2
+_RISK_CAPITAL_DIR = _CORE_DIR.parent  # 13-通用风控模块/risk_capital
+_PROJECT_DIR = _RISK_CAPITAL_DIR.parents[1]  # dreambuddy-v2
 _RISK_DIR = _PROJECT_DIR / "13-通用风控模块"
 _RISK_CORE_DIR = _RISK_DIR / "core"
-for _p in (_16_CORE_DIR, _RISK_DIR, _RISK_CORE_DIR):
+# unified_position_query / 配置文件本轮仍留在 16-调控系统（未迁移），保留只读依赖路径
+_16_DIR = _PROJECT_DIR / "16-调控系统"
+_LEGACY_16_CORE_DIR = _16_DIR / "core"
+for _p in (_RISK_CAPITAL_DIR, _RISK_DIR, _RISK_CORE_DIR, _LEGACY_16_CORE_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
@@ -128,7 +131,7 @@ class CapitalControlComponent:
     ):
         # 1) 定位默认配置路径
         if config_path is None:
-            config_path = _16_CORE_DIR.parent / "config" / "capital_control.json"
+            config_path = _16_DIR / "config" / "capital_control.json"
         self._config_path: Path = Path(config_path)
 
         # 2) 加载配置（文件不存在则用默认）
