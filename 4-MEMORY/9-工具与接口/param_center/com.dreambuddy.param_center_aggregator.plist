@@ -14,7 +14,7 @@
         <string>chop</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/16-调控系统/scripts</string>
+    <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/4-MEMORY/9-工具与接口</string>
     <key>StartInterval</key>
     <integer>3600</integer>
     <key>RunAtLoad</key>

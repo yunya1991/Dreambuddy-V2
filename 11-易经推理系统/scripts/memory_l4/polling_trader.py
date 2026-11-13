@@ -8424,7 +8424,7 @@ class PollingTrader:
                     from pathlib import Path as _Path_strat
 
                     _proj_root_strat = _Path_strat(__file__).resolve().parents[3]
-                    _pc_dir_strat = _proj_root_strat / "16-调控系统" / "scripts"
+                    _pc_dir_strat = _proj_root_strat / "4-MEMORY" / "9-工具与接口"
                     if str(_pc_dir_strat) not in _sys_strat.path:
                         _sys_strat.path.insert(0, str(_pc_dir_strat))
                     from param_center.aggregator import SL_FLOOR, TP_FLOOR
@@ -9847,7 +9847,7 @@ class PollingTrader:
                 from pathlib import Path as _Path_floor
 
                 _proj = _Path_floor(__file__).resolve().parents[3]
-                _pc_dir = _proj / "16-调控系统" / "scripts"
+                _pc_dir = _proj / "4-MEMORY" / "9-工具与接口"
                 if str(_pc_dir) not in _sys_floor.path:
                     _sys_floor.path.insert(0, str(_pc_dir))
                 from param_center.api import get_sltp_params as _pc_floor_get
@@ -11921,7 +11921,7 @@ class PollingTrader:
                     from pathlib import Path as _Path
 
                     _proj_root = _Path(__file__).resolve().parents[3]
-                    _pc_dir = _proj_root / "16-调控系统" / "scripts"
+                    _pc_dir = _proj_root / "4-MEMORY" / "9-工具与接口"
                     if str(_pc_dir) not in _sys.path:
                         _sys.path.insert(0, str(_pc_dir))
                     from param_center.api import get_sltp_params as _pc_get
@@ -12648,7 +12648,7 @@ class PollingTrader:
                 from pathlib import Path as _Path_evo
 
                 _proj_root_evo = _Path_evo(__file__).resolve().parents[3]
-                _pc_dir_evo = _proj_root_evo / "16-调控系统" / "scripts"
+                _pc_dir_evo = _proj_root_evo / "4-MEMORY" / "9-工具与接口"
                 if str(_pc_dir_evo) not in _sys_evo.path:
                     _sys_evo.path.insert(0, str(_pc_dir_evo))
                 from param_center.api import get_sltp_params as _pc_get_evo

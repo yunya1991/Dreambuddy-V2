@@ -26,7 +26,7 @@
 11-易经推理系统/tests/test_gap1_fd7_news_72h.py	sqlite3	2
 11-易经推理系统/tests/test_p1_c14_three_guards.py	sqlite3	1
 12-三屏趋势系统/data_center_adapter.py	sqlite3	1
-16-调控系统/scripts/param_center/shadow_integration.py	sqlite3	3
+4-MEMORY/9-工具与接口/param_center/shadow_integration.py	sqlite3	3
 18-数据获取中心/data_center/collectors/macro/fed_event_collector.py	sqlite3	1
 18-数据获取中心/data_center/storage/sink_postgres.py	psycopg2	1
 18-数据获取中心/data_center/storage/sink_sqlite.py	sqlite3	11
