@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { RankingCard } from '@/components/features/ranking/RankingCard';
 import { PrefillOrderBanner } from '@/components/features/ranking/PrefillOrderBanner';
 import { RankingMonitor } from '@/components/features/ranking/RankingMonitor';
-import { mockRankingItems, mockMonitorMetrics, type CategoryType, type TradingRankingItem, type RankingMonitorMetrics } from '@/components/features/ranking/types';
+import { mockRankingItems, mockBacktestMetrics, type CategoryType, type TradingRankingItem, type RankingBacktestMetrics } from '@/components/features/ranking/types';
 import { fetchTradingRanking } from '@/lib/v3/api/ranking';
 import { queryKey, queryStaleTime } from '@/lib/query-keys';
 
@@ -36,7 +36,7 @@ export default function RankingPage() {
     ? (rankingQuery.data.items as TradingRankingItem[])
     : null;
   const items = apiItems ?? mockRankingItems;
-  const metrics = (rankingQuery.data?.metrics as RankingMonitorMetrics | null) ?? mockMonitorMetrics;
+  const metrics = (rankingQuery.data?.metrics as RankingBacktestMetrics | null) ?? mockBacktestMetrics;
   const loading = rankingQuery.isLoading;
   const dataSource: 'api' | 'mock' = apiItems ? 'api' : 'mock';
 

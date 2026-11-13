@@ -37,15 +37,17 @@ export interface TradingRankingItem {
   date: string;
 }
 
-export interface RankingMonitorMetrics {
+export interface RankingBacktestMetrics {
   date: string;
-  satisfaction: number | null;
-  conversionRate: number | null;
-  abandonRate: number | null;
-  pushReachRate: number | null;
-  unsubscribeRate: number | null;
-  matu: number | null;
-  kFactor: number | null;
+  // 三组信号对比的回测指标（按 overall_A / overall_B / overall_C 分组）
+  nTrades: { A?: number; B?: number; C?: number };
+  winRate: { A?: number; B?: number; C?: number };
+  avgPnl: { A?: number; B?: number; C?: number }; // pct
+  plRatio: { A?: number; B?: number; C?: number };
+  sharpe: { A?: number; B?: number; C?: number };
+  maxDrawdown: { A?: number; B?: number; C?: number }; // pct
+  slHitRate: { A?: number; B?: number; C?: number }; // SL/(SL+TP)
+  avgHoldDays: { A?: number; B?: number; C?: number };
 }
 
 // ---- 信号 / 品类 / 风险 映射表 ----
@@ -172,13 +174,14 @@ export const mockRankingItems: TradingRankingItem[] = [
   },
 ];
 
-export const mockMonitorMetrics: RankingMonitorMetrics = {
-  date: '2026-09-28',
-  satisfaction: 4.2,
-  conversionRate: 0.32,
-  abandonRate: 0.12,
-  pushReachRate: 0.91,
-  unsubscribeRate: 0.03,
-  matu: 1542,
-  kFactor: 1.8,
+export const mockBacktestMetrics: RankingBacktestMetrics = {
+  date: '2026-11-13',
+  nTrades:       { A: 104, B: 177, C: 0 },
+  winRate:       { A: 0.260, B: 0.243, C: 0 },
+  avgPnl:        { A: -1.93, B: -2.12, C: 0 },
+  plRatio:       { A: 1.29, B: 1.09, C: 0 },
+  sharpe:        { A: -5.80, B: -7.15, C: 0 },
+  maxDrawdown:   { A: 96.7, B: 98.9, C: 0 },
+  slHitRate:     { A: 0.82, B: 0.86, C: 0 },
+  avgHoldDays:   { A: 5.0, B: 6.1, C: 0 },
 };
