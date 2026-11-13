@@ -1,19 +1,29 @@
 # -*- coding: utf-8 -*-
-"""DimensionForceEvaluator — 各维度矛盾力量计算（真实市场维度）.
+"""DimensionForceEvaluator — 八维矛盾力量计算（真实市场维度，多信号合成）.
 
-SPEC-各维度矛盾计算重建 v0.3 T3 实现。
+SPEC-各维度矛盾计算重建 v0.4 实现。
 
-维度体系（v2.0）:
-  D1 宏观利率: CPI surprise + fedwatch 加息概率 → 风险资产多空力量
-  D2 资金流:   多空比 + 资金费率 → 拥挤度/外流力量
+维度体系（八维，每维多信号合成，FAIL-OPEN 降级）:
+  D1 宏观利率: CPI surprise(0.5) + fedwatch 加息概率(0.2) + WALCL 联储表30d动量(0.2) + PPIACO 通胀z-score(0.1)
+  D2 资金流:   多空比 + 资金费率(OKX fallback) + OKX 主动买卖比 + 持仓量 + 清算
   D3 技术:     由调用方传入（现有路径共振），本评估器不计算
-  D4 市场情绪: 恐惧贪婪指数 → 极端情绪反转力量
+  D4 市场情绪: 恐惧贪婪指数（极端反转） + 期权 put/call ratio + fear_greed_enhanced.capital_flow
+  C6 估值:     BTC 市值 z-score(0.6) + ETF 净流入 latest_total_flow_btc(0.4)
+  C7 广度:     稳定币流通量7d变化 + 交易所BTC余额30d变化 + LTH长期持有者供给z-score
+  C8 宏观交叉: 40域 cross_asset_matrix(0.6) + FRED宏观z-score DGS10/DTWEXBGS/SP500(0.4); fallback VIXCLS
+  NEWS 信息面: 快讯频率 z-score（事件驱动代理）
+
+数据源: 19 DAL mm_metrics（CPI/fedwatch/WALCL/PPIACO/long_short_ratio/funding_rate/
+        okx_derivatives/options/fear_greed_enhanced/bitcoin/etf_flow/stablecoin_hist_*/
+        exchanges_whales/utxo_age_distribution/DGS10/DTWEXBGS/SP500/VIXCLS/newsflash）
+        + 40 域 cross_asset_matrix.json。
 
 设计要点:
   • 只读 19 DAL 通用指标表 mm_metrics（不写库）
-  • z-score 标准化（窗口: D1 24 个月 / D2 30 天 / D4 90 天）
-  • 数据不足降级链: 缺失/陈旧(>7 天) → neutral/0.0 不参与裁决（FAIL-OPEN）
-  • 输出: {dim: {direction, strength, raw_z, degraded}}
+  • z-score 标准化（窗口: D1 24 个月 / D2 30 天 / D4 90 天；FRED/估值 90 天）
+  • 数据不足降级链: 缺失/陈旧(>7 天) → 该信号跳过，其余信号重新归一（FAIL-OPEN）
+  • 输出: {dim: {direction, strength, raw_z, degraded, components?}}
+  • sign 约定: raw > 0 → 空头; raw < 0 → 多头
 
 硬约束: HC-AGI-02（异常→中性兜底）、FAIL-OPEN 铁律。
 """

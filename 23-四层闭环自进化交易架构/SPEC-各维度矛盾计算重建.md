@@ -1,5 +1,6 @@
 # SPEC · 各维度矛盾计算重建（真实市场维度）
-> **版本**: v0.3 | **日期**: 2026-10-15 | **状态**: 已按评审报告修订 + 18 库数据实测更新，待重审
+> **版本**: v0.4 | **日期**: 2026-11-14 | **状态**: 八维多信号合成架构已落地并云端验证
+> **v0.4 变更**: 维度从 4 维扩展至 8 维（D1/D2/D3/D4/C6/C7/C8/NEWS），每维从单信号升级为多信号等权/加权合成；充分利用 19 域 mm_metrics 与 40 域 cross_asset_matrix 及云端 FRED 宏观序列。所有维度 FAIL-OPEN 降级，已云端部署验证。
 > **v0.3 变更**: 实测确认 18 采集中心已有 macro 484 条（CPI/PPI/FEDFUNDS/T10Y2M/WALCL/FOMC）与 finance 4164 条（BTC/VIX/SPY/GLD）——D1 数据已采集，问题为 18→19 同步链路未打通；T2a 改为同步为主、新采集为辅
 > **模块**: 23-四层闭环自进化交易架构 / `dreambuddy_evolution`，数据依赖 19-数据访问层（DAL）+ 18-数据获取中心（DAC）
 > **关联**: [SPEC评审报告_各维度矛盾计算重建_v0.1.md](./docs/SPEC评审报告_各维度矛盾计算重建_v0.1.md)（v0.1 评审：不通过，本版修复全部问题）、《三维度矛盾论理论框架》§4/§6/§7
@@ -90,3 +91,70 @@
 | m1 编号映射 | ✅ 已修复 | §2 映射表 |
 | m2 T3 验收 | ✅ 已修复 | §3 对拍通过条件 |
 | m3 日志格式 | ✅ 已修复 | §2 [DimensionForce] 格式 |
+
+---
+
+## 7 · v0.4 八维多信号合成架构（2026-11-14 落地）
+
+维度从原 4 维（D1-D4）扩展至 8 维（D1/D2/D3/D4/C6/C7/C8/NEWS），每维从单信号升级为多信号加权合成，单一信号缺失/陈旧时自动降权重归一（FAIL-OPEN）。
+
+### 7.1 维度信号矩阵
+
+| 维度 | 信号源（mm_metrics sub_category） | 合成方式 | 方向约定 |
+|------|-----------------------------------|----------|----------|
+| **D1 宏观利率** | CPI surprise `cpi.surprise`(0.5) + fedwatch 加息概率 `fedwatch.hike_prob`(0.2) + WALCL 联储表30d动量 `WALCL.value`(0.2) + PPIACO 通胀z `PPIACO.value`(0.1) | 加权平均 | raw>0 空头（鹰/通胀/缩表） |
+| **D2 资金流** | 多空比 `long_short_ratio` + 资金费率 `funding_rate`(OKX `okx_derivatives` fallback) + OKX 主动买卖比 `okx_derivatives.taker_buy_sell_ratio` + 持仓量 `open_interest` + 清算 `liquidation` | 加权（ls 0.30/fr 0.20/taker 0.15/oi 0.20/liq 0.15） | 拥挤→空头 |
+| **D3 技术** | 调用方传入（路径共振） | — | — |
+| **D4 市场情绪** | 恐惧贪婪 `crypto_fear_greed.value`（<25 多/>75 空）+ 期权 PCR `options.put_call_ratio` + `fear_greed_enhanced.capital_flow` | 极端区用恐惧贪婪；中性区 PCR+capital_flow 等权 | raw>0 空头 |
+| **C6 估值** | BTC 市值 z `bitcoin.market_cap_usd`(0.6) + ETF 净流入 `etf_flow.latest_total_flow_btc`(0.4，取最近非零值规避周末) | 加权平均 | 高估/流出→空头 |
+| **C7 广度** | 稳定币流通量7d变化 `stablecoin_hist_usdt/usdc` + 交易所BTC余额30d变化 `exchanges_whales.ex_bal_BTC_chg30d_pct` + LTH供给z `utxo_age_distribution.long_term_holder_supply_pct` | 三信号等权 | 囤积→多头 |
+| **C8 宏观交叉** | 40域 `cross_asset_matrix.json` 动量×相关性(0.6) + FRED宏观z `DGS10`/`DTWEXBGS`/`SP500`(0.4) | 加权；fallback `VIXCLS` z-score | raw<0 空头 |
+| **NEWS 信息面** | 快讯频率 `newsflash` z-score | z-score | 高波动→事件驱动 |
+
+### 7.2 数据源与新鲜度（云端实测 2026-11-14）
+
+| 数据源 | 记录数 | 新鲜度 | 用途 |
+|--------|--------|--------|------|
+| `DGS10` (10Y收益率) | 16357 | 1h | C8 FRED |
+| `DTWEXBGS` (美元指数) | 5386 | 1h | C8 FRED |
+| `SP500` | 2672 | 1h | C8 FRED |
+| `VIXCLS` | 9471 | 1h | C8 fallback（替代仅 8 条的 `^VIX`） |
+| `WALCL` (联储表) | 1601 | 1h | D1 流动性 |
+| `PPIACO` (PPI) | 1612 | 1h | D1 通胀 |
+| `etf_flow` | 1974 | 2h | C6 需求 |
+| `long_short_ratio` | 4208 | 0h | D2 |
+| `okx_derivatives` | 1490 | 0h | D2 funding/taker |
+| `options` (PCR) | 2209 | 0h | D4 |
+| `fear_greed_enhanced` | 3492 | 1h | D4 capital_flow |
+| `utxo_age_distribution` | 1344 | 2h | C7 LTH |
+| `exchanges_whales` | 3713 | 2h | C7 交易所余额 |
+| 40域 `cross_asset_matrix.json` | — | generated_at 校验 | C8 主信号 |
+
+### 7.3 sign 约定与降级
+
+- **raw 符号**: raw > 0 → 空头力量; raw < 0 → 多头力量。
+- **降级链**: 单信号缺失/陈旧(>7d) → 跳过该信号，其余信号权重重归一；全部缺失 → `neutral` 且 `degraded` 标注原因。
+- **阈值**: `|raw| > 0.1~0.15` 才输出 long/short，否则 neutral（避免噪声信号参与裁决）。
+
+## 8 · 部署与验证状态
+
+- **实现文件**: `dreambuddy_evolution/core/dimension_force_evaluator.py`
+- **云端 commit**: `5261078e49`（main 分支）
+- **服务**: `yijing-polling-trader` 已重启生效
+- **云端实测输出** (2026-11-14):
+  ```
+  D1=short:0.23 D2=short:0.41 D3=neutral:0.00 D4=neutral:0.05
+  C6=long:0.63  C7=long:0.15  C8=short:0.24   NEWS=short:0.67
+  ```
+- **C8 FRED 组件实测**: DGS10 z=0.577(空头) + DTWEXBGS z=0.529(空头) + SP500 z=0.403(多头)，与 40 域矩阵 0.6/0.4 合成。
+
+## 9 · 后续可增强方向
+
+| 数据源 | 记录数 | 建议纳入维度 | 说明 |
+|--------|--------|--------------|------|
+| `DCOILWTICO` (原油) | 9696, 1h | C8 | 通胀/风险偏好补充 |
+| `NASDAQCOM` | 14217, 1h | C8 | 成长股风险偏好 |
+| `M2NS` (M2) | 976, 1h | D1 | 货币供应流动性 |
+| `social_volume` | 2313, 0h | NEWS/C7 | 社交声量 |
+| `tether_current.change_7d_pct` | 7305, 0h | C6/C7 | 稳定币变化（预计算， fresher） |
+
