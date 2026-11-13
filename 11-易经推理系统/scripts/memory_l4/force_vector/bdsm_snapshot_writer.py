@@ -71,7 +71,11 @@ _RANK_ORDER = {"S": 4, "A": 3, "B": 2, "C": 1}
 _HISTORY_DAYS_FOR_EXIT_TRIGGERS = 4  # B1~B5 需要读取最近 4 天快照对比
 MA_LONG_DEFAULT = 200  # P0-A1: 写回 Phase 0 使用的 MA 周期
 _KLINE_FETCH_LIMIT = 290  # MA200 + 90 日窗口余量
-_SNAPSHOT_PROXY = os.environ.get("HTTP_PROXY", "http://127.0.0.1:7890")
+# 代理仅显式配置时启用：原默认硬编码 http://127.0.0.1:7890 在本机代理未启动时
+# 会让 K 线请求走死代理 → SSL EOF / 长时间重试卡死，导致当日快照无法生成。
+_SNAPSHOT_PROXY = (
+    os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or ""
+).strip() or None
 
 # Phase 0 OKX K线结果缓存（避免 7 币 重复请求）
 _KLINE_CACHE: Dict[str, list] = {}
@@ -362,7 +366,7 @@ def _fetch_snapshot_klines(coin: str) -> list:
         return []
     inst_id = f"{cache_key}-USDT-SWAP"
     url = "https://www.okx.com/api/v5/market/history-candles"
-    proxies = {"http": _SNAPSHOT_PROXY, "https": _SNAPSHOT_PROXY}
+    proxies = {"http": _SNAPSHOT_PROXY, "https": _SNAPSHOT_PROXY} if _SNAPSHOT_PROXY else None
     target = max(_KLINE_FETCH_LIMIT, 200)  # 确保 ≥ MA200 所需
     all_klines: list = []
     before_ts: Optional[int] = None

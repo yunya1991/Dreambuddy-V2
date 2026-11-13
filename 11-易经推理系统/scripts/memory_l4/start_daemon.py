@@ -10,8 +10,8 @@ LOG_FILE = os.path.join(WORK_DIR, "logs", "trading_daemon.log")
 PID_FILE = os.path.join(WORK_DIR, ".workbuddy", "memory_l4", "guardian", "trader_pid.txt")
 
 env = os.environ.copy()
-env["HTTPS_PROXY"] = "http://127.0.0.1:7890"
-env["HTTP_PROXY"] = "http://127.0.0.1:7890"
+# 不再强制注入 http://127.0.0.1:7890：本机代理未启动时会导致 OKX 请求 SSL EOF 卡死。
+# 需要代理时请在外层 shell 显式导出 HTTP_PROXY/HTTPS_PROXY。
 env["FEISHU_APP_ID"] = "cli_aa9442bde4b89be9"
 env["FEISHU_APP_SECRET"] = "dnHO43AQ68jua7Z8XEAQ3gJwNoMeYQ70"
 # 修复日志乱码：强制 UTF-8 输出 + 无缓冲

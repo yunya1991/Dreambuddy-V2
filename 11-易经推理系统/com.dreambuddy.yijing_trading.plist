@@ -33,10 +33,6 @@
     <string>/Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/11-易经推理系统</string>
     <key>EnvironmentVariables</key>
     <dict>
-        <key>HTTPS_PROXY</key>
-        <string>http://127.0.0.1:7890</string>
-        <key>HTTP_PROXY</key>
-        <string>http://127.0.0.1:7890</string>
         <key>FEISHU_APP_ID</key>
         <string>cli_aa9442bde4b89be9</string>
         <key>FEISHU_APP_SECRET</key>
