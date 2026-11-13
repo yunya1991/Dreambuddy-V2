@@ -365,7 +365,7 @@ flowchart TB
 - [x] 接入 [run_daily_pipeline.sh](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/run_daily_pipeline.sh) STEPS：`factor_contradiction_priors.py → refresh_48_feedback.py → consume_48_feedback.py`。
 - [x] 本地实跑：网关 `backfill scanned=331 / appended=92 / duplicates=239` → `40_feedback.json` 272 事件；40 消费 `dual_read.consistent=true`（6 项 diffs 全 0）。
 - [x] 新增四泳道架构图 [EMERGENCE-FULL-CHAIN-ARCH-v1.drawio](./EMERGENCE-FULL-CHAIN-ARCH-v1.drawio)。
-- [ ] 云端同步 + 云端实跑复验（本次提交后执行，结果回写本节）。
+- [x] 云端同步 + 云端实跑复验（2026-11-14）：云端 HEAD `6b558a1d`（含 `87dfb652`），`run_daily_pipeline.sh` 已含该步骤（crontab `2 0 * * *` + flock）；实跑 `refresh_48_feedback.py` → `backfill scanned=461 / appended=281 / duplicates=180`、`40_feedback.json` 553 事件；`consume_48_feedback.py` → `status=consumed`、`dual_read.consistent=true`（n_events 差异 0.0）。
 
 **同步**（2026-11-10）：
 - 远端 GitHub：已推送 `origin/main`（首版 `6a407c87b7`，回填记录 `33b6fc4937`，P0 补丁见本次提交）。
