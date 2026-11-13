@@ -305,6 +305,41 @@ def existing_intent_keys(trades_path):
     return keys
 
 
+def backfill_decision_links(trades_path, decision_index, today):
+    """回填当日已落盘意图的 decision_id（只映射，不推断）。
+
+    X0 以 (intent_date, symbol, source) 去重，已落盘意图不会重写；50 补齐
+    per-symbol 决策后，历史行仍需回填 decision_id 才能形成"决策→意图"审计链。
+    """
+    if not os.path.exists(trades_path) or not decision_index:
+        return 0
+    rows = []
+    changed = 0
+    with open(trades_path, encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                rows.append(line.rstrip("\n"))
+                continue
+            if record.get("intent_date") == today and not record.get("decision_id"):
+                hit = decision_index.get(_base_asset(record.get("symbol"))) or {}
+                if hit.get("decision_id"):
+                    record["decision_id"] = hit["decision_id"]
+                    record["decision_ts"] = hit["ts"].isoformat() if hit.get("ts") else None
+                    changed += 1
+            rows.append(json.dumps(record, ensure_ascii=False))
+    if changed:
+        tmp_path = trades_path + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            for line in rows:
+                f.write(line + "\n")
+        os.replace(tmp_path, trades_path)
+    return changed
+
+
 def main():
     cfg = load_config()
     out_dir = ROOT
@@ -325,6 +360,7 @@ def main():
     decision_index = load_decision_index(cfg)
 
     today = date.today().isoformat()
+    backfilled = backfill_decision_links(trades_path, decision_index, today)
     seen = existing_intent_keys(trades_path)
     written = 0
     for i in intents:
@@ -356,6 +392,7 @@ def main():
         "signal_source": src,
         "intents_today": len(intents),
         "written_today": written,
+        "decision_backfilled_today": backfilled,
         "decision_linked_today": sum(
             1
             for i in intents
