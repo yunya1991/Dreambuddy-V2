@@ -101,8 +101,10 @@ def make_decision(
     kill_switch: bool | None = None,
     reconciliation: dict[str, Any] | None = None,
     now: datetime | None = None,
+    mode: str = "shadow",
 ) -> dict[str, Any]:
     # 50 决策主入口：evidence -> path -> w4 裁决 -> dominance -> 约束钳位 -> 执行权校验。
+    # mode: shadow（默认，仅审计）/ live（需 execution_rights + Mandate + kill-switch 同时放行）
     moment = now or datetime.now(timezone.utc)
     if constraints is None:
         constraints = load_constraints()
@@ -143,8 +145,8 @@ def make_decision(
         "confidence": round(confidence, 6),
         "horizon": "hours",
         "position_pct": round(position_pct, 4),
-        "mode": "shadow",
-        "shadow": True,
+        "mode": mode,
+        "shadow": mode != "live",
         "trigger": trigger,
         "regime_overlay": regime_overlay,
         "weight_profile": weight_profile,

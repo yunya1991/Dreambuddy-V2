@@ -1,16 +1,16 @@
 {
-  "version": "0.1",
-  "updated": "2026-11-08",
+  "version": "0.2",
+  "updated": "2026-11-13",
   "owner": "47-MCP管理系统",
-  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:11-bypass=11-易经推理系统 polling_trader 经 okx_client 旁路网关实盘（不经 MCP）；disabled=两出口均不执行。 fifty_nn_domain 分区：50-NN主矛盾评估器 paper-only（R1c 显式声明），23 live 走 eleven_domain 路径。",
+  "description": "执行权注册表（标的级单出口声明）。同一标的同一时刻只能有一个执行出口：paper=trade-exec MCP 模拟盘；live:11-bypass=11-易经推理系统 polling_trader 经 okx_client 旁路网关实盘（不经 MCP）；live:50-bypass=22 执行层复核后触发 11 域 live bypass；disabled=两出口均不执行。 fifty_nn_domain 分区：2026-11-13 起 BTC-USDT-SWAP 灰度切换 live:50-bypass（Mandate + kill-switch 强制），ETH 保持 paper。",
   "defaults": {
     "outcome": "paper",
     "conflict_policy": "reject_mcp"
   },
   "symbols": {
     "BTC-USDT-SWAP": {
-      "outcome": "paper",
-      "note": "默认模拟盘验证"
+      "outcome": "live:50-bypass",
+      "note": "2026-11-13 灰度实盘：22 复核后触发 11 域 live bypass；Mandate=mandate-20261113-50-live-btc，kill-switch=50_KILL_SWITCH/22_LIVE_KILL_SWITCH/11_LIVE_KILL_SWITCH"
     },
     "ETH-USDT-SWAP": {
       "outcome": "paper",
@@ -33,11 +33,12 @@
     "mandate_required_for_live": true,
     "kill_switch_env": "50_KILL_SWITCH",
     "kill_switch_value": "1",
-    "mapping_note": "50-NN主矛盾评估器初期 paper-only；live 需 execution_rights 授权 + Mandate；同一标的同时刻单出口，不得与 23 live 并存。 23 live 与 50 paper 并行期间，同一标的 50 分区不得声明 live:50-bypass。",
+    "mapping_note": "50 层 paper-only 为默认；2026-11-13 起 BTC-USDT-SWAP 经显式授权 + Mandate 灰度 live:50-bypass（22 复核后触发 11 域 bypass）。同一标的同时刻单出口，不得与 23 live 并存；ETH 仍为 paper。",
     "symbols": {
       "BTC-USDT-SWAP": {
-        "outcome": "paper",
-        "note": "50 层 paper-only（R1c 显式声明，便于后续灰度切换）"
+        "outcome": "live:50-bypass",
+        "mandate_id": "mandate-20261113-50-live-btc",
+        "note": "单标的灰度实盘：大饼 SWAP，单笔 ≤100 USDT，3x，最多 3 仓，SL/TP 必带"
       },
       "ETH-USDT-SWAP": {
         "outcome": "paper",
