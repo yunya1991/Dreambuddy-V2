@@ -1,45 +1,61 @@
 'use client';
 
 import React from 'react';
-import { ChatPanel } from '@/components/features/chat/ChatPanel';
+import Link from 'next/link';
 import { SteerPanel } from '@/components/features/chat/SteerPanel';
 import { ChainTracker } from '@/components/features/chain/ChainTracker';
 import { CrossValidationPanel } from '@/components/features/chain/CrossValidationPanel';
+import { OrderTicketPanel } from '@/components/features/trade/OrderTicketPanel';
 import { V3Card, V3Badge } from '@/components';
-import { useSessionStore, useChainStore, useTradingStore } from '@/stores';
+import { useChainStore, useTradingStore } from '@/stores';
 
+// AI 交易（产品包）页面：保留全部交易面板（干预/链路/交叉验证/余额/持仓/信号）。
+// SPEC-52 F1：聊天渲染唯一入口收敛到 /dashboard/agent，本页不再内嵌 ChatPanel，改为入口跳转。
 export default function TradePage() {
-  const { isStreaming, sLayerIntent } = useSessionStore();
   const { activeChain } = useChainStore();
   const { balance, positions, signals } = useTradingStore();
 
   return (
     <div className="flex h-full gap-4 p-4">
-      {/* 左侧：聊天面板 */}
+      {/* 左侧：AI 对话入口（统一至 Agent 工作台） */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* 聊天头部 */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-slate-200">
               AI Skill 交易
             </h2>
-            <V3Badge variant={isStreaming ? 'info' : 'default'} dot pulse={isStreaming}>
-              {isStreaming ? '执行中' : '就绪'}
-            </V3Badge>
+            <V3Badge variant="info" dot>产品包</V3Badge>
             {activeChain && (
               <V3Badge variant="sacg-s">链路运行中</V3Badge>
             )}
           </div>
-          {sLayerIntent && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">感知层:</span>
-              <V3Badge variant="sacg-s">{sLayerIntent}</V3Badge>
-            </div>
-          )}
         </div>
-        {/* 聊天面板 */}
-        <div className="flex-1 bg-slate-900/30 rounded-xl border border-slate-700/30 overflow-hidden">
-          <ChatPanel />
+
+        <div className="flex-1 bg-slate-900/30 rounded-xl border border-slate-700/30 flex items-center justify-center p-6">
+          <div className="max-w-md text-center">
+            <p className="text-sm text-slate-200">AI 对话已统一至 Agent 工作台</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              交易任务对话与择优脑暴在同一入口内提供，本页保留干预、链路追踪与账户面板。
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <Link
+                href="/dashboard/agent?mode=task"
+                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-500 transition-colors"
+              >
+                打开交易任务对话
+              </Link>
+              <Link
+                href="/dashboard/agent"
+                className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 transition-colors"
+              >
+                Agent 工作台
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <OrderTicketPanel />
         </div>
       </div>
 

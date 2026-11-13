@@ -5,6 +5,8 @@ import { TradingParamsPanel } from '@/components/features/settings/TradingParams
 import { CompletenessWizard } from '@/components/features/settings/CompletenessWizard';
 import { ChannelManager } from '@/components/features/settings/ChannelManager';
 import { StrategyManager } from '@/components/features/settings/StrategyManager';
+import { VenueAccountPanel } from '@/components/features/settings/VenueAccountPanel';
+import { VenueCredentialPanel } from '@/components/features/settings/VenueCredentialPanel';
 
 export default function SettingsPage() {
   return (
@@ -16,6 +18,10 @@ export default function SettingsPage() {
       <div className="grid grid-cols-2 gap-4">
         <ApiKeyManager />
         <TradingParamsPanel />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <VenueAccountPanel />
+        <VenueCredentialPanel />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <ChannelManager />

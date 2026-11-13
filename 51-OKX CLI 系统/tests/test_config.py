@@ -7,7 +7,7 @@ def test_default_is_demo_only(tmp_path):
     assert cfg.mode == "demo"
     assert cfg.read_allowed is True
     assert cfg.write_allowed is True
-    assert cfg.mode_flags() == ["--profile", "demo"]
+    assert cfg.mode_flags() == ["--profile", "demo", "--demo"]
 
 
 def test_live_mode_blocks_reads_by_default(tmp_path):
@@ -18,7 +18,7 @@ def test_live_mode_blocks_reads_by_default(tmp_path):
     )
     assert cfg.read_allowed is False
     assert cfg.write_allowed is False
-    assert cfg.mode_flags() == ["--profile", "okx-live"]
+    assert cfg.mode_flags() == ["--profile", "okx-live", "--live"]
 
 
 def test_live_mode_allows_reads_only_with_flag(tmp_path):
@@ -56,7 +56,7 @@ def test_oauth_mode_flags(tmp_path):
         audit_path=tmp_path / "audit.jsonl",
     )
     assert demo.mode_flags() == ["--demo"]
-    assert live.mode_flags() == []
+    assert live.mode_flags() == ["--live"]
 
 
 def test_invalid_mode_is_rejected(tmp_path):

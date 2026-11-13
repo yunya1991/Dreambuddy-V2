@@ -9,6 +9,7 @@ from okx_venue import (
     CliNotInstalled,
     CliRunner,
     CliTimeout,
+    CredentialsMissing,
     LiveReadForbidden,
     LiveTradingForbidden,
     VenueConfig,
@@ -52,6 +53,7 @@ def test_appends_profile_and_json(tmp_path):
         "okx",
         "--profile",
         "demo",
+        "--demo",
         "market",
         "ticker",
         "BTC-USDT",
@@ -106,6 +108,21 @@ def test_auth_error_is_classified(tmp_path):
     with pytest.raises(CliAuthError) as exc_info:
         runner.run(["account", "balance"], operation="balance")
     assert exc_info.value.code == "cli_auth_error"
+
+
+def test_missing_credentials_is_classified(tmp_path):
+    rec = Recorder(
+        _completed(
+            ["okx"],
+            rc=1,
+            stdout="",
+            stderr="Error: Private endpoint requires API credentials.",
+        )
+    )
+    runner = CliRunner(_cfg(tmp_path), run=rec)
+    with pytest.raises(CredentialsMissing) as exc_info:
+        runner.run(["account", "balance"], operation="balance")
+    assert exc_info.value.code == "venue_credentials_missing"
 
 
 def test_generic_nonzero_exit(tmp_path):

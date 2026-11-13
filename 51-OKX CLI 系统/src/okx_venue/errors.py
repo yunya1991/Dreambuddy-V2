@@ -43,6 +43,14 @@ class LiveReadForbidden(VenueError):
     code = "live_read_forbidden"
 
 
+class LiveUnlockDenied(VenueError):
+    code = "live_unlock_denied"
+
+
+class CredentialsMissing(VenueError):
+    code = "venue_credentials_missing"
+
+
 class CliTimeout(VenueError):
     code = "cli_timeout"
 

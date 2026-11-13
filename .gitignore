@@ -305,3 +305,6 @@ scheduler_data/
 33-REA逆向解析工程/reflection_data/snapshots/
 33-REA逆向解析工程/reflection_data/mcp_cache/
 33-REA逆向解析工程/reflection_data/sarif/
+
+# 51-OKX CLI 敏感 token
+51-OKX CLI 系统/runtime/audit/bridge_token

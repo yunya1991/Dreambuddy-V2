@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import threading
 import time
@@ -20,6 +21,7 @@ from .errors import (
     CliNotInstalled,
     CliRateLimit,
     CliTimeout,
+    CredentialsMissing,
     LiveReadForbidden,
     LiveTradingForbidden,
 )
@@ -48,6 +50,8 @@ def redact_argv(argv: Sequence[str]) -> List[str]:
 
 def _classify_nonzero(returncode: int, stdout: str, stderr: str) -> str:
     text = f"{stdout}\n{stderr}".lower()
+    if "requires api credentials" in text or "configure okx_api_key" in text:
+        return "venue_credentials_missing"
     if "401" in text or "session expired" in text or "auth login" in text:
         return "cli_auth_error"
     if "429" in text or "rate limit" in text or "too many requests" in text:
@@ -115,6 +119,10 @@ class CliRunner:
             full_argv.append("--json")
 
         started = time.perf_counter()
+        run_kwargs: Dict[str, Any] = {}
+        if self.config.env_credentials:
+            # 用户 venue：凭证仅注入本次子进程，绝不写入 ~/.okx 或日志。
+            run_kwargs["env"] = {**os.environ, **self.config.env_credentials}
         try:
             completed = self._run(
                 full_argv,
@@ -123,6 +131,7 @@ class CliRunner:
                 timeout=timeout_s or self.config.timeout_s,
                 shell=False,
                 check=False,
+                **run_kwargs,
             )
         except FileNotFoundError as exc:
             self._audit(
@@ -169,6 +178,7 @@ class CliRunner:
             exc_cls = {
                 "cli_auth_error": CliAuthError,
                 "cli_rate_limit": CliRateLimit,
+                "venue_credentials_missing": CredentialsMissing,
             }.get(error_code, CliNonZeroExit)
             raise exc_cls(
                 f"OKX CLI failed ({error_code}, rc={completed.returncode}): "
