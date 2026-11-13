@@ -567,7 +567,7 @@ class OKXSimulatedClient:
         px: float = None,
         td_mode: str = None,
         pos_side: str = "net",
-        tag: str = "yijing_sim",
+        tag: str = "yijingsim",
         reason: str = "",
     ) -> Dict:
         """
@@ -594,7 +594,7 @@ class OKXSimulatedClient:
             "side": side,
             "ordType": ord_type,
             "posSide": pos_side,
-            "tag": "yijingsim",
+            "tag": tag or "yijingsim",
         }
         if ord_type == "market":
             body["sz"] = str(sz)
@@ -884,7 +884,7 @@ class OKXSimulatedClient:
         }
 
     def market_open_long(
-        self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
+        self, inst_id: str = None, usdt_amount: float = None, reason: str = "", tag: str = ""
     ) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
@@ -895,11 +895,12 @@ class OKXSimulatedClient:
             ord_type="market",
             sz=sz,
             pos_side="long",
+            tag=tag,
             reason=reason or "bcrm_reasoning_open_long",
         )
 
     def market_open_short(
-        self, inst_id: str = None, usdt_amount: float = None, reason: str = ""
+        self, inst_id: str = None, usdt_amount: float = None, reason: str = "", tag: str = ""
     ) -> Dict:
         inst_id = inst_id or self.cfg["default_inst_id"]
         usdt_amount = usdt_amount or self.cfg["default_usdt_amount"]
@@ -910,10 +911,11 @@ class OKXSimulatedClient:
             ord_type="market",
             sz=sz,
             pos_side="short",
+            tag=tag,
             reason=reason or "bcrm_reasoning_open_short",
         )
 
-    def market_close_long(self, inst_id: str = None, reason: str = "") -> Dict:
+    def market_close_long(self, inst_id: str = None, reason: str = "", tag: str = "") -> Dict:
         """市价平多"""
         inst_id = inst_id or self.cfg["default_inst_id"]
         pos = self.get_positions(inst_id)
@@ -929,10 +931,11 @@ class OKXSimulatedClient:
             ord_type="market",
             sz=sz,
             pos_side="long",
+            tag=tag,
             reason=reason or "bcrm_reasoning_close_long",
         )
 
-    def market_close_short(self, inst_id: str = None, reason: str = "") -> Dict:
+    def market_close_short(self, inst_id: str = None, reason: str = "", tag: str = "") -> Dict:
         """市价平空"""
         inst_id = inst_id or self.cfg["default_inst_id"]
         pos = self.get_positions(inst_id)
@@ -948,6 +951,7 @@ class OKXSimulatedClient:
             ord_type="market",
             sz=sz,
             pos_side="short",
+            tag=tag,
             reason=reason or "bcrm_reasoning_close_short",
         )
 
@@ -961,6 +965,7 @@ class OKXSimulatedClient:
         take_profit_px: float = 0,
         sz: float = None,
         reason: str = "",
+        tag: str = "",
     ) -> Dict:
         """
         设置止盈止损单（OKX algo order: OCO 条件单）
@@ -975,6 +980,7 @@ class OKXSimulatedClient:
             take_profit_px: 止盈价
             sz: 数量（None 则用全部持仓）
             reason: 设置原因
+            tag: 订单标签（交易域区分，OKX 只允许字母数字，≤16 字符）
         """
         inst_id = inst_id or self.cfg["default_inst_id"]
 
@@ -1108,7 +1114,7 @@ class OKXSimulatedClient:
                 "slOrdPx": "-1",  # 市价触发
                 "tpTriggerPx": f"{take_profit_px:.12f}",
                 "tpOrdPx": "-1",
-                "tag": "yijingsltp",
+                "tag": tag or "yijingsltp",
             }
             if self.dry_run:
                 result = {
@@ -1151,7 +1157,7 @@ class OKXSimulatedClient:
                         "order_px": "-1",
                         "state": "live",
                         "actual_px": 0,
-                        "tag": "yijingsltp",
+                        "tag": tag or "yijingsltp",
                     }
                 ]
             return {
@@ -1176,7 +1182,7 @@ class OKXSimulatedClient:
                 "slTriggerPx": f"{stop_loss_px:.12f}",
                 "slOrdPx": "-1",
                 "slTriggerPxType": "last",
-                "tag": "yijingsl",
+                "tag": tag or "yijingsl",
             }
             if self.dry_run:
                 sl_result = {
@@ -1230,7 +1236,7 @@ class OKXSimulatedClient:
                         "order_px": "-1",
                         "state": "live",
                         "actual_px": 0,
-                        "tag": "yijingsl",
+                        "tag": tag or "yijingsl",
                     }
                 )
             return {
@@ -1253,7 +1259,7 @@ class OKXSimulatedClient:
             "tpTriggerPx": f"{take_profit_px:.12f}",
             "tpOrdPx": "-1",
             "tpTriggerPxType": "last",
-            "tag": "yijingtp",
+            "tag": tag or "yijingtp",
         }
         if self.dry_run:
             tp_result = {
@@ -1305,7 +1311,7 @@ class OKXSimulatedClient:
                     "order_px": "-1",
                     "state": "live",
                     "actual_px": 0,
-                    "tag": "yijingtp",
+                    "tag": tag or "yijingtp",
                 }
             )
         return {
@@ -1322,6 +1328,7 @@ class OKXSimulatedClient:
         pos_side: str = "long",
         reduce_ratio: float = 0.5,
         reason: str = "",
+        tag: str = "",
     ) -> Dict:
         """
         减仓操作（按比例减少持仓）
@@ -1331,6 +1338,7 @@ class OKXSimulatedClient:
             pos_side: 持仓方向 long / short
             reduce_ratio: 减仓比例 0~1（0.5 = 减仓 50%）
             reason: 减仓原因
+            tag: 订单标签（交易域区分）
         """
         inst_id = inst_id or self.cfg["default_inst_id"]
         reduce_ratio = max(0.01, min(reduce_ratio, 1.0))
@@ -1358,6 +1366,7 @@ class OKXSimulatedClient:
             ord_type="market",
             sz=reduce_sz,
             pos_side=pos_side,
+            tag=tag,
             reason=reason or f"bcrm_reduce_{int(reduce_ratio*100)}pct",
         )
         result["reduce_ratio"] = reduce_ratio

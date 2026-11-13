@@ -382,6 +382,9 @@ class TradeExecutionGateway:
             None 时跳过 16 定容，使用调用方 sz。FAIL-OPEN。
         tee_engine: 22 tee_core TradingEngine 实例（OrderPort）；
             None 时直接调用 okx_client.place_order。FAIL-OPEN。
+        shadow_only: 只读影子校验模式。True 时仅执行 13 PreTradeGate 判定并落审计，
+            永不调用 16 定容 / 22 执行 / 交易所下单。用于 23 自进化域：
+            13→16→22→11 链路只属于神经网络系统，23 域保留 13 只读校验不阻断订单。
     """
 
     def __init__(
@@ -391,6 +394,7 @@ class TradeExecutionGateway:
         audit_path: Optional[str | Path] = None,
         capital_allocator: Any = None,
         tee_engine: Any = None,
+        shadow_only: bool = False,
     ) -> None:
         self._okx = okx_client if okx_client is not None else _PaperOkxClient()
         self._risk_context = risk_context
@@ -398,6 +402,7 @@ class TradeExecutionGateway:
         self._13_load_failed = False
         self._capital_allocator = capital_allocator  # 16 PACA 定容（可选）
         self._tee_engine = tee_engine  # 22 tee_core OrderPort（可选）
+        self._shadow_only = bool(shadow_only)
 
         if audit_path is None:
             audit_path = REPO_ROOT / "22-执行引擎中心" / "audit" / "gateway.jsonl"
@@ -416,6 +421,10 @@ class TradeExecutionGateway:
             if isinstance(decision, FinalDecisionSignal)
             else FinalDecisionSignal.from_dict(decision)
         )
+
+        # 只读影子校验：仅跑 13 判定并落审计，绝不执行（23 自进化域专用）
+        if self._shadow_only:
+            return self._submit_shadow(sig)
 
         # neutral 不进执行链
         if sig.direction == "neutral":
@@ -576,6 +585,79 @@ class TradeExecutionGateway:
         return result
 
     # ── internals ─────────────────────────────────────────────────────
+    def _submit_shadow(self, sig: FinalDecisionSignal) -> ExecutionResult:
+        """只读影子校验：只跑 13 PreTradeGate 判定并落审计，绝不调用 16/22/交易所。
+
+        用于 23 自进化域：13→16→22→11 链路只属于神经网络系统，23 域下单
+        不经过该链路，但保留 13 判定用于审计与对照，不阻断真实订单。
+        """
+        if sig.direction == "neutral":
+            result = ExecutionResult(
+                passed=False,
+                executed=False,
+                reason="neutral_no_execution",
+                reason_code="SHADOW_NEUTRAL_NO_EXECUTION",
+            )
+            self._audit(sig, result, shadow_only=True)
+            return result
+
+        modules = _load_13_modules()
+        if modules is None:
+            self._13_load_failed = True
+            result = ExecutionResult(
+                passed=False,
+                executed=False,
+                reason="shadow_risk_module_unavailable（真实链路会 fail-closed 拒开仓）",
+                reason_code="SHADOW_RISK_MODULE_UNAVAILABLE",
+            )
+            self._audit(sig, result, shadow_only=True)
+            return result
+
+        PreTradeGate, Signal, RiskContext, Direction = modules
+        if self._gate is None:
+            self._gate = PreTradeGate()
+        ctx = (
+            self._risk_context
+            if self._risk_context is not None
+            else RiskContext(total_equity=10000.0)
+        )
+        direction = Direction.LONG if sig.direction == "long" else Direction.SHORT
+        signal = Signal(
+            coin=sig.symbol,
+            direction=direction,
+            confidence=sig.confidence,
+            strategy=sig.source,
+            metadata={
+                "signal_id": sig.signal_id,
+                "action": sig.action,
+                "reason": sig.reason,
+                "expires_at": sig.expires_at,
+            },
+        )
+        try:
+            check = self._gate.check(signal, ctx)
+        except Exception as exc:  # noqa: BLE001 — 只读校验异常不影响真实下单
+            result = ExecutionResult(
+                passed=False,
+                executed=False,
+                reason=f"shadow_check_exception:{exc}",
+                reason_code="SHADOW_CHECK_EXCEPTION",
+            )
+            self._audit(sig, result, shadow_only=True)
+            return result
+
+        passed = bool(getattr(check, "passed", False))
+        _code = str(getattr(check.reason_code, "value", check.reason_code))
+        result = ExecutionResult(
+            passed=passed,
+            executed=False,
+            reason=f"shadow_only:{getattr(check, 'message', '')}",
+            reason_code=f"SHADOW_{_code}",
+            position_modifier=float(getattr(check, "position_modifier", 1.0) or 1.0),
+        )
+        self._audit(sig, result, shadow_only=True)
+        return result
+
     def _place_attached_sltp(self, sig: FinalDecisionSignal) -> Dict[str, Any]:
         """主单成功后自动补 SL/TP 条件单。
 
@@ -747,7 +829,12 @@ class TradeExecutionGateway:
             pass
         return "px"
 
-    def _audit(self, sig: FinalDecisionSignal, result: ExecutionResult) -> None:
+    def _audit(
+        self,
+        sig: FinalDecisionSignal,
+        result: ExecutionResult,
+        shadow_only: bool = False,
+    ) -> None:
         record = {
             "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "signal_id": sig.signal_id,
@@ -763,6 +850,8 @@ class TradeExecutionGateway:
             "reason": result.reason,
             "position_modifier": result.position_modifier,
         }
+        if shadow_only:
+            record["shadow_only"] = True
         try:
             with open(self._audit_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")

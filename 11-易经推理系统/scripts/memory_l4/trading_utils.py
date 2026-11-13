@@ -91,6 +91,10 @@ class TradeRecord:
     #   "bcrm"  : 非 BDSM 池币种（≤5 仓），纯 BCRM 推理
     #   ""      : 未知/外部策略来源（计数时忽略不计入两子池）
     source_tag: str = ""
+    # — 交易域标签（2026-11-13）—
+    #   "23域" : 23 自进化系统下单（raw 执行 + evo23 标签，不经 13/16/22 链路）
+    #   ""     : 神经网络系统（经 13→16→22→11 链路）
+    domain_tag: str = ""
     # — 仓位字段（2026-09-15 OKB PnL Bug 修复）—
     #   position_qty: OKX 实际成交数量（张/币），用于精确 PnL 计算
     #   position_usdt: 名义仓位价值（USDT），upl 计算优先使用
@@ -1349,6 +1353,7 @@ class PositionTracker:
         position_usdt: float = 0.0,
         margin_usdt: float = 0.0,
         leverage: int = 1,
+        domain_tag: str = "",
     ) -> TradeRecord:
         """记录开仓"""
         trade_id = f"{int(time.time())}_{uuid.uuid4().hex[:6]}"
@@ -1376,6 +1381,7 @@ class PositionTracker:
             score_consensus=float(score_consensus),
             gate_base_threshold=float(gate_base_threshold),
             source_tag=source_tag,
+            domain_tag=domain_tag,
             position_qty=float(position_qty),
             position_usdt=float(position_usdt),
             margin_usdt=float(margin_usdt),
