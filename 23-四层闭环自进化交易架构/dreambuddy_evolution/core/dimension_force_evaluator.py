@@ -98,6 +98,29 @@ class DimensionForceEvaluator:
         except Exception:
             return []
 
+    def _query_funding_rate_annualized(self) -> tuple[float | None, int | None]:
+        """读取资金费率年化(%)，兼容多种 DB 口径（按优先级 fallback）.
+
+        已知写入口径：
+          1. metric_name='funding_rate'             → 小数费率(如 0.0001=0.01%/8h)
+          2. metric_name='funding_rate_annualized_pct' → 已年化百分比(如 10.95)
+          3. metric_name='funding_rate_pct'         → 每 8h 百分比(如 0.01=0.01%)
+        返回 (annualized_pct, unix_ts)；均不可用返回 (None, None)。
+        """
+        # 1) 原始小数费率口径
+        fr = self._query_latest("funding_rate", "funding_rate")
+        if fr is not None:
+            return fr[0] * 3 * 365 * 100, fr[1]
+        # 2) 已年化百分比口径
+        fr = self._query_latest("funding_rate", "funding_rate_annualized_pct")
+        if fr is not None:
+            return fr[0], fr[1]
+        # 3) 每 8h 百分比口径
+        fr = self._query_latest("funding_rate", "funding_rate_pct")
+        if fr is not None:
+            return fr[0] * 3 * 365, fr[1]
+        return None, None
+
     @staticmethod
     def _zscore(value: float, history: list[float]) -> float:
         """z-score; 样本<30 降级 percentile 排名映射到 [-2,2]."""
@@ -268,10 +291,9 @@ class DimensionForceEvaluator:
                     "part": round(ls_part, 3),
                 }
 
-            fr = self._query_latest("funding_rate", "funding_rate")
-            if fr is not None and now - fr[1] < _STALE_SEC:
-                # 资金费率年化: 0.01%/8h ≈ 10.95%/年; 正高拥挤 → 空头
-                fr_annual = fr[0] * 3 * 365 * 100
+            fr_annual, fr_ts = self._query_funding_rate_annualized()
+            if fr_annual is not None and fr_ts is not None and now - fr_ts < _STALE_SEC:
+                # 资金费率年化(%); 正高拥挤 → 空头力量
                 fr_part = max(-1.0, min(1.0, fr_annual / 30.0))
                 components["funding_rate"] = {
                     "annual_pct": round(fr_annual, 3),
