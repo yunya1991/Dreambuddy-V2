@@ -130,6 +130,19 @@ get_order(inst_id, ord_id=None, cl_ord_id=None) -> {ok, order, raw}
 | `mode=live` + `ALLOW_LIVE_READ=0` | ❌ `LiveReadForbidden` | ❌ `LiveTradingForbidden` |
 | `mode=live` + `ALLOW_LIVE_READ=1` | ✅ | ❌ `LiveTradingForbidden` |
 
+**ADR 修订（2026-11-13，SPEC-52 F2/F3）— 用户 venue 的受限 live 写**
+
+- 新增 `credential_source=env`：前端配置的用户 API 以环境变量**仅注入本次子进程**，
+  不写 `~/.okx/config.toml`，不进入后端 22 配置。
+- 新增 `allow_live_write`（默认 `False`，D2 不变）。仅用户 venue 的 `LiveGate`
+  解锁窗口内为 `True`；解锁需人工短语 `UNLOCK LIVE TRADING`，TTL 60s–8h，进程重启即失效。
+- 范围仅限「51 用户 venue HTTP Bridge」；trade-exec MCP 选择器仍无 live 分支，
+  11 旁路（后端自有链路）完全不变。
+- 隔离边界：独立凭证目录 `runtime/user_venue/`、独立审计 `user_venue_calls.jsonl`、
+  独立 BFF `/api/venue/*`；后端 22 不读取上述任何内容。
+
+> `mode_flags()` 现在显式下传 `--demo` / `--live`，避免「以为在 demo、实际打到 live」的反向风险。
+
 ### 3.3 Profile 自洽校验
 
 - `mode=demo` 但 profile 名含 `live/prod/real/main` → 配置错误（fail-closed）。

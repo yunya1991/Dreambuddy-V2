@@ -19,8 +19,8 @@ const EMPTY_FORM = {
 
 function friendlyError(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
-  if (/requires api credentials|configure okx_api_key/i.test(message)) {
-    return '凭证未配置：请先在终端 `okx config init` 创建用户 venue profile（密钥不经过本系统）。';
+  if (/requires api credentials|configure okx_api_key|venue_credentials_missing/i.test(message)) {
+    return '用户交易 API 未配置：请到「通用设置 → 用户交易 API」填写并验证后重试。';
   }
   if (/bridge_unreachable|bridge_token_missing/i.test(message)) {
     return '本地 51 venue bridge 未启动，请在 51-OKX CLI 系统 下执行 `python3 -m okx_venue.server`。';

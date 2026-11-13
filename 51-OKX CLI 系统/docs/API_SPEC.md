@@ -297,3 +297,45 @@ if balance["balance"] > 100:
 venue = OkxCliVenue(VenueConfig(profile="okx-live", mode="live"))
 venue.place_order(...)  # LiveTradingForbidden
 ```
+
+---
+
+## 8. 用户 venue HTTP Bridge（v0.2）
+
+前端 / 产品专用通道。后端 22 执行链路完全不经此服务；两者仅共享本机 `okx` CLI 可执行文件。
+
+```bash
+PYTHONPATH="51-OKX CLI 系统/src" python3 -m okx_venue.server   # 127.0.0.1:8097
+```
+
+鉴权：`X-Venue-Token`，取自 `runtime/audit/bridge_token`（0600）或 `OKX_VENUE_BRIDGE_TOKEN`。
+响应统一 `{ok, data}` / `{ok:false, error:{code,message}}`。
+
+| Method | Path | 说明 |
+|---|---|---|
+| GET | `/health` | bridge 状态、凭证状态（脱敏）、有效环境、live 闸门 |
+| GET | `/credentials` | 脱敏凭证信息（仅后 4 位），永不回传明文 |
+| POST | `/credentials` | `{api_key, secret_key, passphrase, demo, label}`；先探测 `perm`，含 `withdraw` 直接拒绝 |
+| DELETE | `/credentials` | 删除本地凭证 |
+| POST | `/credentials/test` | 用已存凭证读余额，验证连通性 |
+| GET | `/account/balance?ccy=USDT` | 余额 |
+| GET | `/account/positions` | 持仓 |
+| GET | `/market/ticker?inst_id=` | 行情（只读，demo 通道） |
+| POST | `/order-intents` | 下单草稿（`inst_id/side/size/order_type/price`），5 分钟过期 |
+| GET | `/order-intents/{id}` | 草稿状态 |
+| POST | `/order-intents/{id}/confirm` | 人工确认后真正调用 OrderPort |
+| GET | `/live/status` · POST `/live/unlock` · POST `/live/lock` | 实盘写解锁（短语 `UNLOCK LIVE TRADING`，TTL 60s–8h） |
+| GET | `/audit?limit=N` | 最近审计（脱敏） |
+
+**凭证隔离**
+
+- 凭证以 AES-256-GCM 存放在 `runtime/user_venue/credentials.enc`（密钥 `runtime/user_venue/key`，均 0600）。
+- 调用时以 `OKX_API_KEY` / `OKX_SECRET_KEY` / `OKX_PASSPHRASE` **仅注入本次子进程**；
+  不写 `~/.okx/config.toml`，不进入后端 22 配置，也不出现在审计/日志。
+- 未配置凭证时任何账户/下单调用 fail-closed（`venue_credentials_missing`），不隐式回落 profile。
+
+**下单语义**
+
+- 草稿（intent）不等于下单；`confirm` 才调用 `place_order`，同一 intent 只能确认一次。
+- 实盘凭证：`confirm` 前必须处于 LiveGate 解锁窗口；窗口关闭即 `live_trading_forbidden`。
+- 单笔数量上限 `OKX_VENUE_MAX_ORDER_SIZE`（默认 1000）；报价币仅 `USDT` / `USDC`。

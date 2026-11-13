@@ -97,18 +97,21 @@ L2 产品包：AI 交易（按算力付费）
 ### F2 交易产品包（P1）
 
 - 保留现有交易页面与功能；新增产品包门禁：未开通时页面可见但操作锁定（只读演示）。
-- 产品内下单：订单票据（symbol/side/qty/type/价格/风控摘要）→ 二次确认 → `POST /api/trade/orders`。
-- 下单链路：API 校验 entitlement → 22 网关 → 13 PreTradeGate → 27 策略/权限校验 → 交易所。
-- 默认 paper；live 需显式「解锁实盘」开关 + 输入确认短语。
-- AI 只生成 `order_intent`（草稿），用户点击确认后才进入上述链路。
+- **执行路径双轨（强制隔离）**：
+  - **前端 / 产品用户路径**：订单票据 → `POST /api/venue/order-intents`（草稿）→ 人工确认 → `POST /api/venue/order-intents/{id}/confirm` → 51 用户 venue HTTP Bridge → `okx` CLI。**不经过 22 网关**。
+  - **后端自有链路**：22 网关 → 13 PreTradeGate → 27 策略/权限校验 → 交易所。凭证与配置全部来自后端，**不读取 51 用户 venue 的任何凭证/状态**。
+- 用户凭证：默认 demo；live 需在设置页人工解锁（短语 `UNLOCK LIVE TRADING`，TTL 60s–8h，重启失效）。
+- AI 只生成 `order_intent`（草稿），用户点击确认后才进入上述 51 路径。
+- 隔离工程：独立凭证目录、独立审计 JSONL、独立 BFF 前缀、独立 bridge token，四条边界互不复用。
 
 ### F3 用户交易 API 配置（P1）
 
-- 通用设置新增「交易 API」：交易所选择、label、API Key/Secret/Passphrase、权限检测、连接测试。
-- 存储：AES-256-GCM 落库；响应永不回传明文；日志掩码。
-- 权限：只接受「读取 + 交易」，检测到提现权限则拒绝保存。
+- 通用设置新增「用户交易 API」：交易所固定 OKX、label、API Key / Secret Key / Passphrase、环境（模拟/实盘）、连接测试。
+- 存储：AES-256-GCM 落 `51-OKX CLI 系统/runtime/user_venue/credentials.enc`（0600，独立密钥文件）；响应永不回传明文，仅返回后 4 位掩码。
+- 权限：保存前用该 Key 探测 `account config.perm`；含 `withdraw` 直接拒绝保存。
+- 注入：调用时以 `OKX_API_KEY` / `OKX_SECRET_KEY` / `OKX_PASSPHRASE` 仅注入本次子进程，**不写 `~/.okx/config.toml`**。
+- 未配置凭证时账户/下单接口 fail-closed（`venue_credentials_missing`），不隐式回落到任何 profile。
 - 多账户：首发单交易所单账户，schema 预留多账户。
-- 迁移：现有后端账户保留为「系统账户」，与用户账户隔离标识，不混用。
 
 ### F4 按算力计费与 entitlement（P2）
 
@@ -169,6 +172,7 @@ L2 产品包：AI 交易（按算力付费）
 | POST | `/api/trade/order-intents` | AI 生成草稿 |
 | POST | `/api/trade/order-intents/{id}/confirm` | 人工确认 |
 | POST | `/api/trade/orders` | 产品 UI 下单（内部走网关） |
+| GET/POST/DELETE | `/api/venue/*` | 51 用户 venue BFF（凭证/账户/order-intent/live/audit） |
 | GET/POST | `/api/plugins`、`/api/plugins/{id}/enable` | 插件管理 |
 
 ### 4.2 数据表（新增）
