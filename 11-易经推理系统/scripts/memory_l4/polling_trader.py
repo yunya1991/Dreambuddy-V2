@@ -12846,6 +12846,7 @@ class PollingTrader:
         """
         if not (self.okx_client and hasattr(self.okx_client, "get_positions")):
             return
+        _t0 = __import__("time").time()
         try:
             pos_resp = self.okx_client.get_positions()
         except Exception as _e:
@@ -12932,11 +12933,13 @@ class PollingTrader:
                 _failed += 1
                 self._log(f"[SLTP-Reconcile] ❌ {inst_id}({pos_side}) 异常: {_e}", "WARN")
 
-        if _patched or _failed:
-            self._log(
-                f"[SLTP-Reconcile] 本轮补挂={_patched} 跳过={_skipped} 失败={_failed}",
-                "INFO" if _patched else "WARN",
-            )
+        _elapsed = __import__("time").time() - _t0
+        _log_lvl = "INFO" if _patched else ("WARN" if _failed else "DEBUG")
+        self._log(
+            f"[SLTP-Reconcile] 补挂={_patched} 跳过={_skipped} 失败={_failed} "
+            f"耗时={_elapsed:.1f}s",
+            _log_lvl,
+        )
 
     def _evolution_check_exit(self):
         """P2-S4b+: 自进化系统独立离场巡检（Phase 2 EvolutionExitEngine）
