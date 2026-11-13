@@ -99,26 +99,35 @@ class DimensionForceEvaluator:
             return []
 
     def _query_funding_rate_annualized(self) -> tuple[float | None, int | None]:
-        """读取资金费率年化(%)，兼容多种 DB 口径（按优先级 fallback）.
+        """读取资金费率年化(%)，兼容多数据源多口径（按优先级 fallback）.
 
-        已知写入口径：
-          1. metric_name='funding_rate'             → 小数费率(如 0.0001=0.01%/8h)
-          2. metric_name='funding_rate_annualized_pct' → 已年化百分比(如 10.95)
-          3. metric_name='funding_rate_pct'         → 每 8h 百分比(如 0.01=0.01%)
+        数据源口径（按优先级）:
+          1. sub_category='funding_rate'      (Binance Futures)
+          2. sub_category='okx_derivatives'   (OKX 衍生品，免 Key 公开 API)
+        metric_name 口径:
+          - funding_rate               → 小数费率(如 0.0001=0.01%/8h)
+          - funding_rate_annualized_pct → 已年化百分比(如 10.95)
+          - funding_rate_pct           → 每 8h 百分比(如 0.01=0.01%)
+        陈旧(>7天)数据自动跳过，尝试下一候选。
         返回 (annualized_pct, unix_ts)；均不可用返回 (None, None)。
         """
-        # 1) 原始小数费率口径
-        fr = self._query_latest("funding_rate", "funding_rate")
-        if fr is not None:
-            return fr[0] * 3 * 365 * 100, fr[1]
-        # 2) 已年化百分比口径
-        fr = self._query_latest("funding_rate", "funding_rate_annualized_pct")
-        if fr is not None:
-            return fr[0], fr[1]
-        # 3) 每 8h 百分比口径
-        fr = self._query_latest("funding_rate", "funding_rate_pct")
-        if fr is not None:
-            return fr[0] * 3 * 365, fr[1]
+        now = int(time.time())
+        # (sub_category, metric_name, to_annualized_pct)
+        candidates = [
+            ("funding_rate", "funding_rate", lambda v: v * 3 * 365 * 100),
+            ("funding_rate", "funding_rate_annualized_pct", lambda v: v),
+            ("funding_rate", "funding_rate_pct", lambda v: v * 3 * 365),
+            ("okx_derivatives", "funding_rate_annualized_pct", lambda v: v),
+            ("okx_derivatives", "funding_rate_pct", lambda v: v * 3 * 365),
+        ]
+        for sub_cat, metric, conv in candidates:
+            fr = self._query_latest(sub_cat, metric)
+            if fr is None:
+                continue
+            val, ts = fr
+            if now - ts > _STALE_SEC:
+                continue  # 陈旧 → 跳过，尝试下一候选
+            return conv(val), ts
         return None, None
 
     @staticmethod
