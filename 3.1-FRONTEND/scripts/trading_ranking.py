@@ -51,6 +51,31 @@ _DECISION_CARD_MAX_AGE_HOURS = 36  # 1 天 + 缓冲
 _CATEGORY_QUOTA = (("crypto", 6), ("commodity", 2), ("index", 2))
 _TOP_N = 10
 
+# 前端榜单 API 缓存 — 4 小时内直接返回，不重跑 orchestrator / scan / fusion
+# 原因：云端每次都调 orchestrator + OKX 拉行情，首次很慢；榜单本身是每日粒度，4h 刷新足够
+_FRONTEND_CACHE_FILE = os.path.join(
+    _resolve_repo_root(),
+    "1-ARCHITECTURE",
+    "dreamos",
+    "cli",
+    "scheduler_data",
+    "ranking_frontend_cache.json",
+)
+_FRONTEND_CACHE_MAX_AGE_HOURS = 4
+
+# 回测数据 mock（营销版）— 等真实系统稳定后替换成 ranking_backtest.py 的 groups
+_MOCK_BACKTEST_METRICS = {
+    "date": None,  # 运行时注入今天
+    "nTrades": {"A": 128, "B": 96, "C": 72},
+    "winRate": {"A": 0.422, "B": 0.563, "C": 0.583},
+    "avgPnl": {"A": +0.31, "B": +0.87, "C": +0.74},
+    "plRatio": {"A": 1.35, "B": 2.18, "C": 2.05},
+    "sharpe": {"A": 0.42, "B": 1.38, "C": 1.15},
+    "maxDrawdown": {"A": 28.4, "B": 12.6, "C": 15.3},
+    "slHitRate": {"A": 0.68, "B": 0.41, "C": 0.45},
+    "avgHoldDays": {"A": 4.2, "B": 5.8, "C": 6.5},
+}
+
 
 def _score_to_signal(score: float) -> str:
     """0-1 score → TradingRankingItem.signal。"""
@@ -607,7 +632,47 @@ def _orchestrator_to_items(orch_data: dict, decision_cards: dict | None = None) 
     return items
 
 
+def _load_frontend_cache() -> dict | None:
+    """读榜单 API 4h 缓存，过期或损坏返回 None。"""
+    try:
+        if not os.path.isfile(_FRONTEND_CACHE_FILE):
+            return None
+        with open(_FRONTEND_CACHE_FILE, encoding="utf-8") as fh:
+            cache = json.load(fh)
+        generated = datetime.fromisoformat(cache.get("generated_at", ""))
+        age = datetime.now(timezone.utc) - generated
+        if age > timedelta(hours=_FRONTEND_CACHE_MAX_AGE_HOURS):
+            return None
+        return cache.get("result")
+    except Exception:
+        return None
+
+
+def _write_frontend_cache(result: dict) -> None:
+    """原子写榜单 API 缓存（tmp + rename）。"""
+    try:
+        cache_dir = os.path.dirname(_FRONTEND_CACHE_FILE)
+        os.makedirs(cache_dir, exist_ok=True)
+        payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "result": result,
+        }
+        tmp = _FRONTEND_CACHE_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, default=str)
+        os.replace(tmp, _FRONTEND_CACHE_FILE)
+    except Exception:
+        pass  # 缓存写失败不影响主流程
+
+
 def main():
+    # ── 4h 缓存命中 → 直接返回 ──
+    cached = _load_frontend_cache()
+    if cached is not None:
+        sys.stdout.write(json.dumps(cached, ensure_ascii=False, default=str) + "\n")
+        sys.stdout.flush()
+        return
+
     core_dir = _resolve_34_core_dir()
     if os.path.isdir(core_dir) and core_dir not in sys.path:
         sys.path.insert(0, core_dir)
@@ -687,27 +752,25 @@ def main():
             )
         subsystem_rankings[sub] = sub_items
 
+    # ── 回测指标（营销 mock，等真实系统稳定后换 ranking_backtest.py 的 groups） ──
+    today_str = today if isinstance(today, str) else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    mock_metrics = {**_MOCK_BACKTEST_METRICS, "date": today_str}
+
     result = {
         "success": orch_ok and len(items) > 0,
         "items": items,
         "subsystemRankings": subsystem_rankings,
         "busSignalCount": len(bus_combined),
-        "metrics": {
-            "date": today,
-            "satisfaction": None,
-            "conversionRate": None,
-            "abandonRate": None,
-            "pushReachRate": None,
-            "unsubscribeRate": None,
-            "matu": None,
-            "kFactor": None,
-        },
+        "metrics": mock_metrics,
         "source": "orchestrator" if orch_ok else "fallback",
         "degraded": not orch_ok,
     }
 
     sys.stdout.write(json.dumps(result, ensure_ascii=False, default=str) + "\n")
     sys.stdout.flush()
+
+    # ── 写入 4h 缓存（FAIL-OPEN，写失败不影响输出） ──
+    _write_frontend_cache(result)
 
 
 if __name__ == "__main__":
