@@ -2,7 +2,41 @@
 
 > **定位**：记录每次变更的原因、内容、影响范围、验证方式与回滚策略
 > **格式**：[版本] - 日期 → 变更类型（新增/修改/修复/删除）
-> **版本：** v2.1 | **更新：** 2026-10-09
+> **版本：** v2.3 | **更新：** 2026-11-14
+
+---
+
+## v2.3（2026-11-14）— 资金双轨迁出至 13，param_center 迁出至 4-MEMORY
+
+### 迁出
+
+- **资金双轨** `core/capital_control/` + `core/capital_allocator/` → `13-通用风控模块/risk_capital/`
+  - 旧路径保留 MetaPathFinder 别名 shim，全进程同一模块对象（`isinstance` 不会失效）
+  - 4 条资金规则（okx_live / okx_simulated / hyperliquid / aster）注册进 13 `RuleCategory.CAPITAL`
+  - 本域不再持有资金规则实现，改为依赖 13（`16(残余) → 13`）
+- **参数中心** `scripts/param_center/` → `4-MEMORY/9-工具与接口/param_center/`
+  - 旧路径保留 `__path__` 重定向 shim（`16/scripts/param_center/__init__.py`）
+  - 11 的 4 处 sys.path 已同步指向 `4-MEMORY/9-工具与接口`
+  - plist `WorkingDirectory` 改为 `4-MEMORY/9-工具与接口`，日志仍留 `16/logs`
+
+### 保留（不动）
+
+- `core/trailing_stop/`、`core/exit_executor/`、`core/unified_position_query.py`、`config/capital_control.json`
+  - 因 14 域独立运行 + 16 trailing 是 11 主力离场组件，本轮零改动
+  - `16/scripts/run_trailing_stop_runner.sh` 路径不变（与云端 systemd 共用）
+- 科研/AI 面（`a9_exit_decision` + adapters + `auto_exit_system`）继续留在 16，不进统一执行链
+
+### 验证
+
+- `tests/trailing_stop/test_param_center_integration.py` 4 项通过（shim 走通）
+- `tests/capital_control/` 68 项通过 + 3 项既有失败（与本轮无关）
+- 云端 `trailing-stop-runner.service` 启动于 2026-11-14 01:14:35，已加载新 shim
+
+### 影响面
+
+- 11 `polling_trader` 通过 16 shim 仍能 `import capital_control`，无需改代码
+- 16 trailing_stop 继续读 `config/capital_control.json`（位置不变）
+- launchd plist `com.dreambuddy.param_center_aggregator` WorkingDirectory 已更新（未安装，无需 launchctl 操作）
 
 ---
 

@@ -1,7 +1,9 @@
 # 执行引擎中心 — 工程索引
 
-> **版本**：v1.2 | **更新日期**：2026-11-14
+> **版本**：v1.3 | **更新日期**：2026-11-14
 > **模块定位**：Dreambuddy 交易执行引擎（TEE）— 订单路由、执行算法、滑点估计、熔断与审计
+>
+> **v1.3 变更**：新增 `executors/domain_clients.py`（自 11 迁入的 `DomainTaggedOkxClient` / `DomainRoutedOkxClient` 唯一实现）；`trade_execution_gateway.py` 改用 `13-通用风控模块/core/factory.create_gate()` 替代裸 `PreTradeGate()`，13 门禁真正生效（fail-closed + 7 条规则全量加载 + `rules_evaluated` / `rule_name` 审计字段）。
 
 ## 1. 模块概览
 

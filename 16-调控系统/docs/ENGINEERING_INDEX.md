@@ -1,7 +1,9 @@
 # 工程索引 — 16-调控系统
 
 > **定位：** 模块级工程索引（L2），对齐系统 `2-KNOWLEDGE/4-OPERATIONS/索引体系.md` 的 Z 轴三层规范
-> **版本：** v2.2 | **更新：** 2026-10-07 | **维护者：** DreamBuddy v2
+> **版本：** v2.3 | **更新：** 2026-11-14 | **维护者：** DreamBuddy v2
+>
+> **v2.3 变更：** 资金双轨（`core/capital_control/` + `core/capital_allocator/`）迁出至 `13-通用风控模块/risk_capital/`，旧路径保留 MetaPathFinder 别名 shim；参数中心（`scripts/param_center/`）迁出至 `4-MEMORY/9-工具与接口/param_center/`，旧路径保留 `__path__` 重定向 shim。本域保留 `core/trailing_stop/`、`core/exit_executor/`、`core/unified_position_query.py`、科研/AI 面（a9_exit_decision + auto_exit_system）。
 >
 > **v2.2 变更：** 新增 §11 参数中心（Param Center）子模块（`scripts/param_center/`），含对外 API `get_sltp_params` + BMA/KL散度聚合 + Bayesian 四条件门禁 + Ray Tune 大规模并行优化 + 影子校准，45/45 测试 GREEN，trailing_stop 与 polling_trader 已接入。详见 [scripts/param_center/README.md](../scripts/param_center/README.md)。
 >

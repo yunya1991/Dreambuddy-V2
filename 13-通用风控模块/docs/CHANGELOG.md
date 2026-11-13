@@ -2,7 +2,50 @@
 
 > **定位**：记录每次变更的原因、内容、影响范围、验证方式与回滚策略
 > **格式**：[版本] - 日期 → 变更类型（新增/修改/修复/删除）
-> **当前版本**：v1.1.0 | **更新日期**：2026-07-25
+> **当前版本**：v1.2.0 | **更新日期**：2026-11-14
+
+---
+
+## [v1.2.0] - 2026-11-14
+
+### 13/16/22 三域整合（风控/资金/执行收口）
+
+#### 新增
+
+- **新增**: `core/factory.py` — 门禁唯一构造入口（fail-closed）
+  - `create_gate()` 加载 7 条规则（daily_drawdown / leverage / concurrent_position / consecutive_losses / blackout / confidence_minimum / drawdown_warning）
+  - 规则数 = 0 直接抛 `RuntimeError`，禁止静默放行
+  - 配置源 `13/config/risk_trading.json`（两级结构 `{gate: {rule_name: params}}`）
+- **新增**: `risk_capital/` 子包（自 16 迁入）
+  - `capital_control/`：`CapitalControlComponent` + 4 条规则（okx_live / okx_simulated / hyperliquid / aster）
+  - `capital_allocator/`：`CapitalAllocatorComponent`
+  - 4 条资金规则注册进 `RuleCategory.CAPITAL`，与 GATE/POSITION/EXIT 同 registry，统一优先级/启停/审计
+
+#### 修改
+
+- **修改**: `core/pre_trade_gate.py` 审计字段回填
+  - `RiskCheckResult.details` 新增 `rules_evaluated` / `rule_name`，可追溯每条命中规则
+- **修改**: `RuleRegistry` 支持 `RuleCategory.CAPITAL`，load_defaults 一次性加载 GATE+CAPITAL
+
+#### 兼容
+
+- **shim**: `16-调控系统/core/capital_control/`、`16-调控系统/core/capital_allocator/` 保留 MetaPathFinder 别名 shim
+  - 旧 `import capital_control` 解析到 `13/risk_capital/capital_control` 同一模块对象
+  - 11 的 `polling_trader`、16 的 trailing_stop 等旧路径零改动可用
+
+#### 验证
+
+- `tests/test_gate_factory.py` 11 项全绿
+- `tests/test_risk_capital_import.py` 4 项全绿（新旧路径同一对象、无 11 反向依赖）
+- 22 全量 160 项测试通过
+- 离线回放 500 条网关审计：370 条开仓中仅 20 条测试信号被拒，生产信号零误拒
+- 云端 43.160.201.117 HEAD `c6f9c773f1` 部署后 `create_gate()` 加载 7 条规则，`tag_reason('x')` → `[23域]x`
+
+#### 影响面
+
+- 22 `trade_execution_gateway.py` 改用 `from core.factory import create_gate`，裸 `PreTradeGate()` 已被替换
+- 11 `polling_trader` 域路由执行器（`DomainTaggedOkxClient` / `DomainRoutedOkxClient`）迁出到 `22/executors/domain_clients.py`，11 保留同名别名（同一对象）
+- 16 `param_center` 迁出到 `4-MEMORY/9-工具与接口/param_center`，旧 `16/scripts/param_center` 保留 `__path__` 重定向 shim
 
 ---
 

@@ -1,5 +1,29 @@
 # 执行引擎中心 — 变更记录
 
+## v1.4（2026-11-14）— 13/16/22 整合：域路由执行器迁入 + 13 门禁 fail-closed
+
+### 新增
+- `executors/domain_clients.py`：自 11 迁入的域路由执行器唯一实现
+  - `DomainTaggedOkxClient`：raw client + evo23 标签 + 13 只读影子校验
+  - `DomainRoutedOkxClient`：23 自进化域 → evo client，其余 → 22 RiskGatedOkxClient
+  - `tag_reason()` / `shadow_decision()` / `EVOLUTION_DOMAIN_TAG` / `EVOLUTION_OKX_TAG` / `NN_OKX_TAG`
+  - 仅依赖传入 client/gateway，不 import 11
+- `tests/test_domain_clients_moved.py` 9 项：独立 import / 无 11 引用 / 行为等价 / 11 与 22 同一对象断言
+
+### 修改
+- `trade_execution_gateway.py`：裸 `PreTradeGate()` → `core.factory.create_gate()`
+  - 13 门禁真正生效（7 条规则全量加载，规则数=0 fail-closed）
+  - `ExecutionResult` 新增 `rules_evaluated` / `rule_name` 审计字段
+  - `_create_gate()` 用 sys.path 隔离 + sys.modules 保存/恢复避免顶层包冲突
+
+### 兼容
+- 11 `polling_trader.py` 改为同对象别名导入（`_DomainTaggedOkxClient` 等旧符号保留）
+- `live_order_bridge.py` 因 11 独占真实密钥，长期留在 11（22 通过子进程调用）
+
+### 验证
+- 22 全量 160 项测试通过
+- 云端 `tag_reason('x')` → `[23域]x`，`create_gate()` 加载 7 条规则
+
 ## v1.3（2026-11-14）— NN live 链路接入 13 风控、去重、持仓守卫与冷静期
 
 ### 新增
