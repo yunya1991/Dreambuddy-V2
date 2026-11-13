@@ -20,7 +20,7 @@
 | ADR-1 | **两层定位**：L1 平台（工作台/门户/共享内核）+ L2 产品包（AI 交易） | 用户 2026-11-13 定调 |
 | ADR-2 | **唯一聊天入口**：`/dashboard/agent` 吸收 ChatPanel；脑暴引擎与 API 不改，仅入口迁移 | 用户拍板 + 现状两入口 |
 | ADR-3 | **不部署独立 LobeHub**：只继承协议语义 | D1/D2 维持 |
-| ADR-4 | **写路径唯一**：产品 UI 可直接下单，但必经 22 网关 → 13 PreTradeGate → 27 治理；LLM 只能生成提案，不能直下 | 22/13/27 源码事实 |
+| ADR-4 | **写路径边界**：3.1 前端只调 51 OKX CLI（`/api/venue/*` → 51 bridge → `okx` CLI），**不接 22 执行模块**；22 网关是后端自有链路（13 PreTradeGate → 27 治理），不对 3.1 暴露；LLM 只能生成提案，不能直下 | 用户 2026-11-13 定调 |
 | ADR-5 | **用户自带交易 API**：通用设置内配置，加密存储；当前仅后端配置，需新增用户级凭证 | 用户口径 |
 | ADR-6 | **按算力计费**：计量 token / 工具调用 / 回测算力秒 / 数据查询 / 插件运行秒 | 用户口径 |
 | ADR-7 | **DSH 插件双源**：DeepSeek Harness 官方市场 + 我方自封装插件；自有优先推荐，白名单 + 沙箱 | 53 SPEC + 用户口径 |
@@ -50,7 +50,7 @@
 | MCP 客户端 | 单例单壳 | [mcp-client.ts](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/3.1-FRONTEND/src/lib/agent/mcp-client.ts) |
 | 会话 | localStorage（50 会话 / 500 条） | `agent-session-store` |
 | 交易凭证 | 仅后端配置，无用户级配置/连接 | 用户口径 + 22 配置 |
-| 下单链路 | 全部收口 22 网关，强制 `PreTradeGate.check()` | [trade_execution_gateway.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/22-执行引擎中心/trade_execution_gateway.py) |
+| 下单链路 | 3.1 前端只调 51 OKX CLI（`/api/venue/*` → 51 bridge）；22 网关仅后端自有链路，不对前端暴露 | 用户 2026-11-13 定调 |
 | 治理 | 流水线/变更包/审批/审计哈希链 | [27 app.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/27-策略治理审批系统/app.py) |
 | 插件 | 53 已有 Cordis 规范、白名单、市场索引 | [53 SPEC](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/53-DSH插件模块/SPEC-53-DSH插件生态接入总规范.md) |
 
@@ -97,9 +97,9 @@ L2 产品包：AI 交易（按算力付费）
 ### F2 交易产品包（P1）
 
 - 保留现有交易页面与功能；新增产品包门禁：未开通时页面可见但操作锁定（只读演示）。
-- **执行路径双轨（强制隔离）**：
-  - **前端 / 产品用户路径**：订单票据 → `POST /api/venue/order-intents`（草稿）→ 人工确认 → `POST /api/venue/order-intents/{id}/confirm` → 51 用户 venue HTTP Bridge → `okx` CLI。**不经过 22 网关**。
-  - **后端自有链路**：22 网关 → 13 PreTradeGate → 27 策略/权限校验 → 交易所。凭证与配置全部来自后端，**不读取 51 用户 venue 的任何凭证/状态**。
+- **执行路径（3.1 只走 51）**：
+  - **3.1 前端 / 产品用户路径（唯一）**：订单票据 → `POST /api/venue/order-intents`（草稿）→ 人工确认 → `POST /api/venue/order-intents/{id}/confirm` → 51 用户 venue HTTP Bridge → `okx` CLI；**不接触 22 执行模块**。
+  - **后端自有链路（不对 3.1 暴露）**：22 网关 → 13 PreTradeGate → 27 策略/权限校验 → 交易所，由后端独立运行。3.1 不引用其代码、不配置其地址、不暴露其 API。
 - 用户凭证：默认 demo；live 需在设置页人工解锁（短语 `UNLOCK LIVE TRADING`，TTL 60s–8h，重启失效）。
 - AI 只生成 `order_intent`（草稿），用户点击确认后才进入上述 51 路径。
 - 隔离工程：独立凭证目录、独立审计 JSONL、独立 BFF 前缀、独立 bridge token，四条边界互不复用。
@@ -162,8 +162,7 @@ L2 产品包：AI 交易（按算力付费）
 | 协议层 | `src/app/api/agent/chat/route.ts` + `src/lib/agent/tool-profiles.ts` | profile 注入（已落地）；计量中间件待 P2 |
 | MCP | `src/lib/agent/mcp-client.ts` | P3 多壳（本期不阻塞） |
 | 凭证 | `51-OKX CLI 系统/src/okx_venue/credentials.py` + 前端 `src/lib/venue-client.ts` | AES-256-GCM + 权限探测（已落地；不使用 `src/lib/trading/credential-vault.ts`） |
-| 下单（产品通道） | `src/app/api/venue/[...path]/route.ts` → 51 bridge → `okx` CLI | 用户自有 API；不经 22 |
-| 下单（后端通道） | `src/app/api/trade/orders/route.ts` → 22 网关 | 后端自有链路，禁止绕过 13/27 |
+| 下单（3.1 唯一通道） | `src/app/api/venue/[...path]/route.ts` → 51 bridge → `okx` CLI | 用户自有 API；**不接 22** |
 | 计量 | `src/lib/billing/meter.ts` + `/api/billing/balance|usage` | reserve→settle，JSONL 账本（已落地） |
 | 插件 | `src/app/dashboard/plugins/*` + `src/lib/plugins/registry.ts` + `src/lib/dsh/plugins.ts` | 白名单发现/校验/沙箱启停/审计 + 真实安装（`dsh plugin --profile sandbox add/remove`） |
 
@@ -177,7 +176,6 @@ L2 产品包：AI 交易（按算力付费）
 | GET | `/api/billing/balance` / `/api/billing/usage` | CU 余额 / 明细聚合（已落地） |
 | POST | `/api/venue/order-intents` | order_intent 草稿（已落地） |
 | POST | `/api/venue/order-intents/{id}/confirm` | 人工确认下单（已落地） |
-| POST | `/api/trade/orders` | 后端链路下单（22 网关，非产品通道） |
 | GET/POST/DELETE | `/api/venue/*` | 51 用户 venue BFF（health/account/market/order-intent/live/audit） |
 | GET/POST | `/api/plugins`、`/api/plugins/{id}/enable`、`/api/plugins/audit` | 插件列表 / 沙箱启停 / 审计（已落地；支持 scoped 包名） |
 | GET | `/api/dsh/plugins?profile=sandbox` | 读取本地 DSH profile 已安装插件（package.json + bundles） |
@@ -207,7 +205,7 @@ L2 产品包：AI 交易（按算力付费）
 |---|---|---|
 | F1 导航换位与统一入口 | ✅ 已落地 | `src/lib/navigation.ts` 三分区；`/dashboard/agent` 双模式吸收 ChatPanel；交易页改为入口跳转 |
 | F2 产品包门禁 | ✅ 已落地（本地 owner 默认开通） | `src/lib/product/entitlement.ts`、`/api/product/entitlement`、`/api/venue/*` 403 门禁、三面板锁定态 |
-| F2 产品内下单双轨 | ✅ 已落地 | 产品：`/api/venue/order-intents` → 51 bridge；后端：`/api/trade/orders` → 22 网关，互不复用凭证 |
+| F2 产品内下单（单轨） | ✅ 已落地 | 仅 `/api/venue/order-intents` → 51 bridge → `okx` CLI；3.1 不接 22，故不提供 `/api/trade/orders` |
 | F3 用户交易 API 配置 | ✅ 已落地 | 51 `credentials.py`/`server.py` + 前端 `VenueCredentialPanel` |
 | F4 按算力计费与 entitlement | ✅ 已落地（文件账本） | `src/lib/billing/meter.ts`（reserve→settle、只追加账本）+ `/api/billing/balance|usage`；chat 按 token/工具调用结算；`PRODUCT_USAGE_DIR` 可覆盖账本目录；零余额锁定交易面（403 INSUFFICIENT_CU） |
 | F5 DSH 插件 tab | ✅ 已落地（含真实安装） | `/dashboard/plugins` 增加「DSH插件」tab：读取 `$DSH_HOME/profiles/sandbox` 安装态；安装走 `dsh plugin --profile sandbox add <pkg>`（仅白名单 npm 包，本地插件不重复安装）；卸载保护 `@deepseek-ai/dsh-base|dsh-headless`；所有动作写 plugin_audit.jsonl |

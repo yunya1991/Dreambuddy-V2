@@ -1,614 +1,1216 @@
-# MCP 契约注册表 — L0 对外协议面唯一事实源（SPEC §3.7 / PLAN M1①）
-# 硬约束：文件 + CI 校验为唯一门禁；不加载运行时注册表（跨进程不可行）。
-#
-# Schema v1.0-mcp（原始）+ v1.1-mcp（B4 外部调研增量）
-# =====================================================
-# v1.0 字段：
-#   shell_id / transport / shell_cmd / shell_path / envelope_version /
-#   tools[].{domain, read_write, annotations, requires_mandate, port}
-#
-# v1.1 增量（B4，Google A2A Agent Card 自描述概念采纳）：
-#   shell.capabilities.{shadow_capable, training_hooks, oracle_verifiable}
-#   — 每个壳自描述是否支持影子旁路观察 / 训练基座 TB1-TB5 钩挂点 / Oracle 验证层 cross-check
-#   — 壳运行时自动注入 envelope.meta.{shadow_capable, oracle_verifiable, config_version}
-#   — COMM-SHADOW 影子观察器消费这些元字段做版本对账 + 旁路判断
-#
-# 字段词典（v1.1 完整）：
-#   shell_id       全局唯一（kebab-case），C6 capabilities.yaml capability_id 加 .mcp 后缀对齐
-#   transport      stdio / ssh-stdio / http / in-process（枚举）
-#   shell_cmd      拉起命令（stdio）；http 则填 base_url；in-process 填 module::class
-#   envelope_version 统一信封语义版本（本 v1=0.1，M1③ 信封映射层落地后迭代）
-#   tools[].port   隶属 L0-P port（memory/collector/search/store/analysis/event）
-#   tools[].domain L0 域语义（cognition/search/semantic/data/eval/rea/store-admin）
-#   tools[].read_write 读/写/读写（枚举）
-#   tools[].requires_mandate 写工具是否需要宿主 Mandate 授权（SPEC §3.3）
-#   tools[].annotations MCP tool annotations：readOnlyHint=true/false
-#   capabilities.shadow_capable  此壳是否支持 COMM-SHADOW 影子旁路观察（B4 v1.1 新增）
-#   capabilities.training_hooks  TB1-TB5 训练基座可钩挂点列表（on_verify / on_recall / on_drift_alert）
-#   capabilities.oracle_verifiable 此壳产出是否可被 Oracle 验证层 cross-check（B5）
-schema_version: "1.1-mcp"
-registry_version: "0.5"
-last_updated: "2026-11-08"
-# 单一载体声明（B4）：本文件为 MCP 壳/工具面唯一事实源
-# 46-DSH 消费方（Worker capability set）应引用本文件字段，不重复定义
+schema_version: 1.2-mcp
+registry_version: '0.5'
+last_updated: '2026-11-08'
 single_source_of_truth: true
-
-# ── 存量三壳（已在线运行）─────────────────────────────────────────
-# 壳不计入 SPEC-L0 §3.1 port 上限 6（壳是协议转换层，非 port 实现）
 shells:
-  # 壳 ① 认知+检索（含 unified_search，C7 已挂入）
-  # 跨 domain 说明：此壳含 cognition + search 两类工具——recall 是认知域
-  # 内部向量检索（Memory port），unified_search 是 Search 域跨源统一门面
-  # （三后端：41 文档索引 + Chroma RAG + recall）；因 unified_search 第三
-  # 后端必须同进程调 recall，C7 决策同 server 承载，零 IPC 开销
-  - shell_id: l0.cognition.mcp
-    capability_id: l0.cognition     # 对齐 C6
-    transport: ssh-stdio             # D5 双模：默认 ssh 云端；本地 profile 切 stdio
-    shell_path: "4-MEMORY/9-工具与接口/cognitive_mcp_server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"          # M1③ 信封映射层落地后迭代
-    status: available
-    capabilities:                    # B4 v1.1-mcp 增量（Google A2A Agent Card 概念采纳）
-      shadow_capable: true           # COMM-SHADOW 影子可旁路观察
-      training_hooks: [on_verify, on_recall, on_record, on_drift_alert]  # TB1-TB5 可钩挂点
-      oracle_verifiable: true        # Oracle 验证层可 cross-check
-    tools:
-      - name: recall
-        port: memory
-        domain: cognition
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: unified_search         # 检索域工具并入认知壳（§3.1 注②）
-        port: search
-        domain: search
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: record
-        port: memory
-        domain: cognition
-        read_write: write
-        requires_mandate: true       # 写工具需宿主 Mandate 授权
-        annotations: { readOnlyHint: false, destructiveHint: true }
-      - name: verify
-        port: memory
-        domain: cognition
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: true }
-      - name: stats
-        port: memory
-        domain: cognition
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: health
-        port: memory
-        domain: cognition
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: l4_status              # L4 元认知层状态（P0 漂移门禁实测补登）
-        port: memory
-        domain: cognition
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-
-  # 壳 ② 金融语义蒸馏系统（39）——Search 域独立第三面；不新增 port
-  # 与 unified_search 边界：unified_search 面向"找文档/找记忆"，39 面向
-  # "实体解析/别名蒸馏/金融语义字典"——质不同源，独立 server 承载避免污染
-  - shell_id: l0.semantic-39.mcp
-    capability_id: l0.search.semantic39   # C6 无此 capability_id（39 纳入 L0 但不新增 port）
-    transport: stdio
-    shell_path: "39-金融语义蒸馏系统/scripts/mcp_server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"
-    status: available
-    tools:
-      - name: query_entity
-        port: search
-        domain: semantic
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: semantic_lookup
-        port: search
-        domain: semantic
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: distill_aliases
-        port: search
-        domain: semantic
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: true }
-      - name: training_feed
-        port: search
-        domain: semantic
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: true }
-
-  # 壳 ③ REA 壳（M3⑦ 落地）：两段式异步 submit/poll × analyze/trace/compare 共 6 工具
-  # 异步工具强制配持久层（JSONL job store），无持久层不得暴露（SPEC-L0 §3.2）
-  - shell_id: l0.rea.mcp
-    capability_id: l0.rea
-    transport: stdio
-    shell_path: "mcp_shells/l0_rea/server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"
-    status: available                  # M3⑦
-    tools:
-      - name: submit_rea_analyze
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: poll_rea_analyze
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: submit_rea_trace
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: poll_rea_trace
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: submit_rea_compare
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: poll_rea_compare
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_rea_snapshot
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: rea_audit
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_rea_methodology
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: cancel_rea_analyze
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: cancel_rea_trace
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: cancel_rea_compare
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: submit_rea_adapt_plan
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: poll_rea_adapt_plan
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: cancel_rea_adapt_plan
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-
-  # 壳 ③-b 存量 consumer 面（npm rea-agents 133 工具，npm 包接入未落地）
-  # M3⑦ 起 REA 能力由上方 l0.rea.mcp 承载；本面保留登记（V6 存量面不删）
-  - shell_id: l0.rea-client.mcp
-    capability_id: l0.rea
-    transport: http                    # 实际调 npm rea-agents HTTP 端点
-    shell_path: ""                     # client 壳薄，无独立脚本
-    shell_cmd: "rea-agents"            # 占位；落地时以 npm 包/IPC 接入
-    envelope_version: "0.1"
-    status: deprecated                 # 被 l0.rea.mcp 取代（M3⑦）
-    tools:
-      - name: rea_analyze
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: rea_trace
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: rea_compare
-        port: analysis
-        domain: rea
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-
-# ── 新增三壳（M2⑤/M4⑩ 已落地，v0.2 起并入 shells 序列）──────────────
-# data / eval / store-admin 三壳代码已建成（mcp_shells/l0_{data,eval,store_admin}），
-# v0.2 由 planned_shells 迁入正式 shells 列表，status 统一 available。
-# 新壳未经本注册表登记不得上线（R6 漂移门禁）。
-  - shell_id: l0.data.mcp
-    capability_id: l0.data
-    transport: stdio
-    shell_path: "mcp_shells/l0_data/server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"            # 与 envelope_wrap 实现一致
-    status: available                  # M2⑤
-    tools:
-      - name: data_fetch
-        port: collector
-        domain: data
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: data_collect_once
-        port: collector
-        domain: data
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: data_store_read
-        port: store
-        domain: data
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      # 写面 Ban 默认禁，Mandate 授权后开放（SPEC §3.3）
-      - name: data_store_write
-        port: store
-        domain: data
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: true }
-
-  - shell_id: l0.eval.mcp
-    capability_id: l0.rea               # 评测属 analysis 域，复用 l0.rea（C6 仅 5 个 capability_id，不新增）
-    transport: stdio
-    shell_path: "mcp_shells/l0_eval/server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"            # 与 envelope_wrap 实现一致
-    status: available                  # M2⑥
-    tools:
-      - name: eval_analyze
-        port: analysis
-        domain: eval
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: eval_report
-        port: analysis
-        domain: eval
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-
-  - shell_id: l0.store-admin.mcp
-    capability_id: l0.store             # 库管属 store 管理面
-    transport: stdio
-    shell_path: "mcp_shells/l0_store_admin/server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"            # 与 envelope_wrap 实现一致
-    status: available                  # M4⑩
-    tools:
-      - name: store_admin_status
-        port: store
-        domain: store-admin
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: store_admin_query
-        port: store
-        domain: store-admin
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-
-  # 壳 ⑦ 交易执行 MCP（SPEC-L0-TRADE-EXEC-MCP v0.2 落地）
-  # 硬约束：仅承载 paper 模拟盘模式，绝不触真实交易所；
-  # 实盘 live 由 11 域 okx_client 旁路网关直连，不经过本壳。
-  # 壳内无 OKX API credentials、无签名逻辑、仅 HTTP GET 公开 ticker。
-  - shell_id: l0.trade-exec.mcp
-    capability_id: l0.trade-exec
-    transport: stdio
-    shell_path: "mcp_shells/l0_trade_exec/server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"
-    status: available
-    capabilities:
-      shadow_capable: true
-      training_hooks: [on_order_filled, on_risk_rejected, on_signal_skipped]  # 执行样本 → ml_data/samples.jsonl，供 23/42 域进化
-      oracle_verifiable: true
-    tools:
-      - name: place_order
-        port: event
-        domain: trade-exec
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: true }
-      - name: cancel_order
-        port: event
-        domain: trade-exec
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: true }
-      - name: get_positions
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_balance
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      # ── 阶段二新增：RiskCheckPort + AccountPort + PositionPort.reconcile ──
-      - name: pre_trade_check
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      # ── 阶段七新增：ExitCheckPort（13 域 ExitEngine，只读建议）──
-      - name: check_exit
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_account_mode
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: reconcile
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      # ── 阶段三新增：23/42 信号接入 ──
-      - name: read_signals
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: ingest_signal
-        port: event
-        domain: trade-exec
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: true }
-
-  # 壳 ⑨ 对抗性辩论 Bot（32）——评审/红队计算，只读；异步 job 模式
-  # start_debate 立即返回 debate_id，get_debate_result 轮询；不阻塞 MCP 调用。
-  - shell_id: agent.debate.mcp
-    capability_id: l0.rea        # analysis 域，复用 l0.rea（不新增 capability_id）
-    transport: stdio
-    shell_path: "mcp_shells/debate_adversarial/server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"
-    status: available
-    capabilities:
-      shadow_capable: false
-      training_hooks: []
-      oracle_verifiable: false
-    tools:
-      - name: start_debate
-        port: analysis
-        domain: eval
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_debate_result
-        port: analysis
-        domain: eval
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: debate_health
-        port: analysis
-        domain: eval
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-
-  # 壳 ⑩ L1 交易层 MCP（49 §3.8，10 工具）——L2 只读观察 + L1 内部 forward
-  # 读工具聚合 23/40/42/43 状态与执行层持仓/余额；forward_signal 需 Mandate。
-  - shell_id: l1.trading.mcp
-    capability_id: l1.trading
-    transport: stdio
-    shell_path: "mcp_shells/l1_trading/server.py"
-    shell_cmd: "python3 {path}"
-    envelope_version: "0.1"
-    status: available
-    capabilities:
-      shadow_capable: false
-      training_hooks: []
-      oracle_verifiable: false
-    tools:
-      - name: get_signal_state
-        port: analysis
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_bus_state
-        port: analysis
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_constraint_state
-        port: analysis
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_cycle_state
-        port: analysis
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_strategic_extension
-        port: analysis
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_decision_diagnostics
-        port: analysis
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_training_status
-        port: analysis
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_positions
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: get_balance
-        port: event
-        domain: trade-exec
-        read_write: read
-        requires_mandate: false
-        annotations: { readOnlyHint: true, destructiveHint: false }
-      - name: forward_signal
-        port: event
-        domain: trade-exec
-        read_write: write
-        requires_mandate: true
-        annotations: { readOnlyHint: false, destructiveHint: false }
-
-# ── Worker 角色→能力标签（46-DSH ADR-4 / DD2 定稿，A3 落地）────────────
-# 分工：「角色→能力标签」在此登记（唯一载体）；「能力标签→工具集」由上方
-# shells 段推导，不重复定义工具 schema。Router 只感知角色/标签，不感知全量
-# 工具面。每角色 ≤10 工具（SPEC §3.3 B2）。
-# 硬约束（ADR-9/H7）：Worker 默认只读——requires_mandate=true 的写工具
-# 禁止出现在任何 Worker 角色工具集中；写操作仅由编排侧/Verifier 持 Mandate 执行。
-# 首批三类起步（DD2）：研究 / 工程 / 验收；交易分析后置（避交易热路径 H5）。
+- shell_id: l0.cognition.mcp
+  capability_id: l0.cognition
+  transport: ssh-stdio
+  shell_path: 4-MEMORY/9-工具与接口/cognitive_mcp_server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  capabilities:
+    shadow_capable: true
+    training_hooks:
+    - on_verify
+    - on_recall
+    - on_record
+    - on_drift_alert
+    oracle_verifiable: true
+  tools:
+  - name: recall
+    port: memory
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: unified_search
+    port: search
+    domain: search
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: record
+    port: memory
+    domain: cognition
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: verify
+    port: memory
+    domain: cognition
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: stats
+    port: memory
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: health
+    port: memory
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: l4_status
+    port: memory
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  layer: L0
+  capability_domain: cognition
+  exposure: control
+  source_modules:
+  - 4-MEMORY
+  plugin_ready: true
+  llm_dependency: none
+- shell_id: l0.semantic-39.mcp
+  capability_id: l0.search.semantic39
+  transport: stdio
+  shell_path: 39-金融语义蒸馏系统/scripts/mcp_server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  tools:
+  - name: query_entity
+    port: search
+    domain: semantic
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: semantic_lookup
+    port: search
+    domain: semantic
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: distill_aliases
+    port: search
+    domain: semantic
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: training_feed
+    port: search
+    domain: semantic
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  layer: L0
+  capability_domain: semantic-39
+  exposure: control
+  source_modules:
+  - 39-金融语义蒸馏系统
+  plugin_ready: true
+  llm_dependency: none
+- shell_id: l0.rea.mcp
+  capability_id: l0.rea
+  transport: stdio
+  shell_path: mcp_shells/l0_rea/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  tools:
+  - name: submit_rea_analyze
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: poll_rea_analyze
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: submit_rea_trace
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: poll_rea_trace
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: submit_rea_compare
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: poll_rea_compare
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_rea_snapshot
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: rea_audit
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_rea_methodology
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: cancel_rea_analyze
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: cancel_rea_trace
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: cancel_rea_compare
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: submit_rea_adapt_plan
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: poll_rea_adapt_plan
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: cancel_rea_adapt_plan
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  layer: L0
+  capability_domain: rea
+  exposure: readonly-observe
+  source_modules:
+  - 33-REA逆向解析工程
+  plugin_ready: true
+  llm_dependency: none
+- shell_id: l0.rea-client.mcp
+  capability_id: l0.rea
+  transport: http
+  shell_path: ''
+  shell_cmd: rea-agents
+  envelope_version: '0.1'
+  status: deprecated
+  tools:
+  - name: rea_analyze
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: rea_trace
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: rea_compare
+    port: analysis
+    domain: rea
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  layer: L0
+  capability_domain: rea
+  exposure: readonly-observe
+  source_modules:
+  - 33-REA逆向解析工程
+  plugin_ready: false
+  llm_dependency: none
+- shell_id: l0.data.mcp
+  capability_id: l0.data
+  transport: stdio
+  shell_path: mcp_shells/l0_data/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  tools:
+  - name: data_fetch
+    port: collector
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: data_collect_once
+    port: collector
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: data_store_read
+    port: store
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: data_store_write
+    port: store
+    domain: data
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  layer: L0
+  capability_domain: data
+  exposure: control
+  source_modules:
+  - 18-数据获取中心
+  - 19-数据访问层
+  - 20-数据清洗中心
+  plugin_ready: true
+  llm_dependency: none
+- shell_id: l0.eval.mcp
+  capability_id: l0.rea
+  transport: stdio
+  shell_path: mcp_shells/l0_eval/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  tools:
+  - name: eval_analyze
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: eval_report
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  layer: L0
+  capability_domain: eval
+  exposure: readonly-observe
+  source_modules:
+  - 45-评测系统
+  plugin_ready: true
+  llm_dependency: none
+- shell_id: l0.store-admin.mcp
+  capability_id: l0.store
+  transport: stdio
+  shell_path: mcp_shells/l0_store_admin/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  tools:
+  - name: store_admin_status
+    port: store
+    domain: store-admin
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: store_admin_query
+    port: store
+    domain: store-admin
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  layer: L0
+  capability_domain: store-admin
+  exposure: control
+  source_modules:
+  - 38-数据库管理系统
+  plugin_ready: true
+  llm_dependency: none
+- shell_id: l0.trade-exec.mcp
+  capability_id: l0.trade-exec
+  transport: stdio
+  shell_path: mcp_shells/l0_trade_exec/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  capabilities:
+    shadow_capable: true
+    training_hooks:
+    - on_order_filled
+    - on_risk_rejected
+    - on_signal_skipped
+    oracle_verifiable: true
+  tools:
+  - name: place_order
+    port: event
+    domain: trade-exec
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: cancel_order
+    port: event
+    domain: trade-exec
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: get_positions
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_balance
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: pre_trade_check
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: check_exit
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_account_mode
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: reconcile
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: read_signals
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: ingest_signal
+    port: event
+    domain: trade-exec
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  layer: L0
+  capability_domain: trade-exec
+  exposure: control
+  source_modules:
+  - 22-执行引擎中心
+  - 51-OKX CLI 系统
+  plugin_ready: false
+  llm_dependency: none
+- shell_id: agent.debate.mcp
+  capability_id: l0.rea
+  transport: stdio
+  shell_path: mcp_shells/debate_adversarial/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: deprecated
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: start_debate
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_debate_result
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: debate_health
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  layer: L2
+  capability_domain: debate
+  exposure: control
+  source_modules:
+  - 32-对抗性辩论Bot
+  plugin_ready: true
+  llm_dependency: required
+- shell_id: l2.debate.mcp
+  capability_id: l2.debate
+  transport: stdio
+  shell_path: mcp_shells/debate_adversarial/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L2
+  capability_domain: debate
+  exposure: control
+  source_modules:
+  - 32-对抗性辩论Bot
+  plugin_ready: true
+  llm_dependency: required
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: start_debate
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_debate_result
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: debate_health
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+- shell_id: l1.trading.mcp
+  capability_id: l1.trading
+  transport: stdio
+  shell_path: mcp_shells/l1_trading/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: get_signal_state
+    port: analysis
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_bus_state
+    port: analysis
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_constraint_state
+    port: analysis
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_cycle_state
+    port: analysis
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_strategic_extension
+    port: analysis
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_decision_diagnostics
+    port: analysis
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_training_status
+    port: analysis
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_positions
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_balance
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: forward_signal
+    port: event
+    domain: trade-exec
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: false
+  layer: L1
+  capability_domain: trading
+  exposure: readonly-observe
+  source_modules:
+  - 11-易经推理系统
+  - 40-周期神经网络系统
+  - 42-神经网络交易协调层
+  - 43-战略承接推演层
+  - 50-NN主矛盾评估器
+  plugin_ready: false
+  llm_dependency: none
+- shell_id: l1.intent.mcp
+  capability_id: l1.intent
+  transport: stdio
+  shell_path: mcp_shells/l1_intent/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L1
+  capability_domain: intent
+  exposure: readonly-observe
+  source_modules:
+  - 3.1-FRONTEND
+  plugin_ready: true
+  llm_dependency: none
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: list_intents
+    port: search
+    domain: semantic
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: classify_intent
+    port: search
+    domain: semantic
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: execute_intent
+    port: event
+    domain: trade-exec
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+- shell_id: l1.strategy.mcp
+  capability_id: l1.strategy
+  transport: stdio
+  shell_path: mcp_shells/l1_strategy/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L1
+  capability_domain: strategy
+  exposure: readonly-observe
+  source_modules:
+  - 26-策略管理模块
+  - 27-策略治理审批系统
+  - 28-策略信号触发模块
+  plugin_ready: true
+  llm_dependency: none
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: list_strategies
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_strategy_version
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_approval_state
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: list_signal_triggers
+    port: event
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+- shell_id: l2.dreamos.mcp
+  capability_id: l2.dreamos
+  transport: stdio
+  shell_path: mcp_shells/l2_dreamos/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L2
+  capability_domain: dreamos
+  exposure: control
+  source_modules:
+  - 1-ARCHITECTURE/dreamos
+  - 23-四层闭环自进化交易架构
+  plugin_ready: true
+  llm_dependency: optional
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: submit_run
+    port: event
+    domain: cognition
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: poll_run
+    port: analysis
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_result
+    port: analysis
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_intent
+    port: analysis
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_budget
+    port: analysis
+    domain: cognition
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+- shell_id: l1.ops.mcp
+  capability_id: l1.ops
+  transport: stdio
+  shell_path: mcp_shells/l1_ops/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L1
+  capability_domain: ops
+  exposure: readonly-observe
+  source_modules:
+  - 16-调控系统
+  - 36-通信系统层
+  plugin_ready: true
+  llm_dependency: none
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: list_alerts
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_health
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_bus_state
+    port: event
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+- shell_id: l2.train.mcp
+  capability_id: l2.train
+  transport: stdio
+  shell_path: mcp_shells/l2_train/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L2
+  capability_domain: train
+  exposure: control
+  source_modules:
+  - 16-调控系统/scripts/param_center
+  - 23-四层闭环自进化交易架构
+  plugin_ready: true
+  llm_dependency: none
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: trigger_training
+    port: event
+    domain: eval
+    read_write: write
+    requires_mandate: true
+    annotations:
+      readOnlyHint: false
+      destructiveHint: true
+  - name: get_training_status
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: list_runs
+    port: analysis
+    domain: eval
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+- shell_id: l2.emergence.mcp
+  capability_id: l2.emergence
+  transport: stdio
+  shell_path: mcp_shells/l2_emergence/server.py
+  shell_cmd: python3 {path}
+  envelope_version: '0.1'
+  status: available
+  layer: L2
+  capability_domain: emergence
+  exposure: readonly-observe
+  source_modules:
+  - 48-涌现架构
+  plugin_ready: true
+  llm_dependency: optional
+  capabilities:
+    shadow_capable: false
+    training_hooks: []
+    oracle_verifiable: false
+  tools:
+  - name: get_emergence_metrics
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: list_experiments
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
+  - name: get_experiment_report
+    port: analysis
+    domain: data
+    read_write: read
+    requires_mandate: false
+    annotations:
+      readOnlyHint: true
+      destructiveHint: false
 worker_roles:
   research:
     description: 研究 Worker——认知检索 / 金融语义 / REA 分析（只读）
-    shells: [l0.cognition.mcp, l0.semantic-39.mcp, l0.rea.mcp]
-    tools: [recall, unified_search, stats, health,
-            query_entity, semantic_lookup,
-            submit_rea_analyze, poll_rea_analyze,
-            get_rea_snapshot]
+    shells:
+    - l0.cognition.mcp
+    - l0.semantic-39.mcp
+    - l0.rea.mcp
+    tools:
+    - recall
+    - unified_search
+    - stats
+    - health
+    - query_entity
+    - semantic_lookup
+    - submit_rea_analyze
+    - poll_rea_analyze
+    - get_rea_snapshot
   engineer:
     description: 工程 Worker——REA 分析/追踪/对比/假设门禁/方法论（只读，10 工具满额）
-    shells: [l0.rea.mcp, l0.cognition.mcp]
-    tools: [recall,
-            submit_rea_analyze, poll_rea_analyze,
-            submit_rea_trace, poll_rea_trace,
-            submit_rea_compare, poll_rea_compare,
-            get_rea_snapshot,
-            rea_audit, get_rea_methodology]
-    # 越权验证锚点：eval_analyze（属 verifier）在 engineer 下必须 forbidden
-    # SPEC-33-E §9 Q1：data_fetch/data_store_read 已迁至 data_reader 角色，engineer 保持 10
+    shells:
+    - l0.rea.mcp
+    - l0.cognition.mcp
+    tools:
+    - recall
+    - submit_rea_analyze
+    - poll_rea_analyze
+    - submit_rea_trace
+    - poll_rea_trace
+    - submit_rea_compare
+    - poll_rea_compare
+    - get_rea_snapshot
+    - rea_audit
+    - get_rea_methodology
   data_reader:
     description: 数据读取 Worker——行情/库读 + 认知检索（只读，3 工具）
-    shells: [l0.data.mcp, l0.cognition.mcp]
-    tools: [data_fetch, data_store_read, recall]
+    shells:
+    - l0.data.mcp
+    - l0.cognition.mcp
+    tools:
+    - data_fetch
+    - data_store_read
+    - recall
   verifier:
     description: 验收 Worker——评测 / 库管只读 / 证据检索（只读）
-    shells: [l0.eval.mcp, l0.store-admin.mcp, l0.cognition.mcp]
-    tools: [eval_analyze, eval_report,
-            store_admin_status, store_admin_query,
-            recall]
+    shells:
+    - l0.eval.mcp
+    - l0.store-admin.mcp
+    - l0.cognition.mcp
+    tools:
+    - eval_analyze
+    - eval_report
+    - store_admin_status
+    - store_admin_query
+    - recall
   executor:
     description: 执行 Worker——交易执行观测（trade-exec 壳，只读）
-    shells: [l0.trade-exec.mcp]
-    tools: [get_positions, get_balance, pre_trade_check, check_exit,
-            get_account_mode, reconcile, read_signals]
-    # 硬约束（ADR-9/H7）：Worker 角色只读，禁止纳入 requires_mandate=true 的写工具。
-    # place_order / cancel_order / ingest_signal 仅由编排侧（持 Mandate）调用。
+    shells:
+    - l0.trade-exec.mcp
+    tools:
+    - get_positions
+    - get_balance
+    - pre_trade_check
+    - check_exit
+    - get_account_mode
+    - reconcile
+    - read_signals
   l2_analysis:
     description: L2 分析 Worker——只读辩论/调研 + 认知检索（不触发信号/执行/训练）
-    shells: [agent.debate.mcp, l0.cognition.mcp]
-    tools: [start_debate, get_debate_result, debate_health,
-            recall, unified_search, stats, health]
-    # start_debate 仅创建本地 job（readOnlyHint=true），不产生交易/外部写。
-
+    shells:
+    - l2.debate.mcp
+    - l0.cognition.mcp
+    tools:
+    - start_debate
+    - get_debate_result
+    - debate_health
+    - recall
+    - unified_search
+    - stats
+    - health
   l2_trading_analysis:
     description: L2 交易观察 Worker——只读 L1 状态（信号/总线/周期/战略/持仓/余额）
-    shells: [l1.trading.mcp]
-    tools: [get_signal_state, get_bus_state, get_constraint_state,
-            get_cycle_state, get_strategic_extension,
-            get_decision_diagnostics, get_training_status,
-            get_positions, get_balance]
-    # 只读 9 工具；forward_signal 是写工具（requires_mandate=true），不进入 Worker 角色。
-
+    shells:
+    - l1.trading.mcp
+    tools:
+    - get_signal_state
+    - get_bus_state
+    - get_constraint_state
+    - get_cycle_state
+    - get_strategic_extension
+    - get_decision_diagnostics
+    - get_training_status
+    - get_positions
+    - get_balance
   lobehub_frontend:
     description: 52-LobeHub 前台叠加层——认知检索（恒只读，SPEC v0.4.0 R1/R3）
-    shells: [l0.cognition.mcp]
-    tools: [recall]
-    # 硬约束（52-SPEC D3/R3）：该角色恒只读，禁止纳入任何写工具（record/verify 仅蒸馏桥
-    # orchestrator 主体 Phase 3 放行，trade-exec 类交易写工具永不开放）。
-
-# ── 枚举词典（校验器参照）───────────────────────────────────────
+    shells:
+    - l0.cognition.mcp
+    tools:
+    - recall
+  l1_observer:
+    description: L1 只读观察者——Trae/Claude Code 用，零 token 意图路由 + L1 交易状态
+    shells:
+    - l1.intent.mcp
+    - l1.trading.mcp
+    tools:
+    - list_intents
+    - classify_intent
+    - execute_intent
+    - get_signal_state
+    - get_constraint_state
+    - get_cycle_state
+    - get_strategic_extension
+  l2_researcher:
+    description: L2 研究与辩论——跨层取 L0 认知 + L2 辩论
+    shells:
+    - l2.debate.mcp
+    - l0.cognition.mcp
+    tools:
+    - start_debate
+    - get_debate_result
+    - debate_health
+    - recall
+    - unified_search
+    - stats
+  l2_planner:
+    description: L2 规划编排 Worker——DreamOS 异步轮询 + 预算审计（只读观察，submit_run 由宿主直接调用）
+    shells:
+    - l2.dreamos.mcp
+    tools:
+    - poll_run
+    - get_result
+    - get_intent
+    - get_budget
+  l1_ops:
+    description: L1 运维审计 Worker——策略只读 + 交易只读
+    shells:
+    - l1.strategy.mcp
+    - l1.trading.mcp
+    tools:
+    - list_strategies
+    - get_strategy_version
+    - get_approval_state
+    - list_signal_triggers
+    - get_signal_state
+    - get_constraint_state
+    - get_cycle_state
+    - get_strategic_extension
 enums:
-  transport: [stdio, ssh-stdio, http, in-process]
-  port: [memory, collector, search, store, analysis, event]
-  domain: [cognition, search, semantic, data, eval, rea, store-admin, trade-exec]
-  read_write: [read, write, read-write]
-  status: [available, degraded, planned, deprecated]
-  envelope_version: ["0.1", "0.2"]
-  # 每个 shell 的工具数硬上限（SPEC §3.3 B2：Worker 角色→工具集矩阵，每角色 ≤10 工具）
-  # 2026-11-12 调整：升到 15，容纳 l0.rea 的 submit/poll/cancel ×
-  # analyze/trace/compare（SPEC-33-F T-F20）+ adapt_plan（SPEC-33-E T-E5）；
-  # 角色白名单仍各自 ≤10，不放宽 Worker 工具集。
+  transport:
+  - stdio
+  - ssh-stdio
+  - http
+  - in-process
+  port:
+  - memory
+  - collector
+  - search
+  - store
+  - analysis
+  - event
+  domain:
+  - cognition
+  - search
+  - semantic
+  - data
+  - eval
+  - rea
+  - store-admin
+  - trade-exec
+  read_write:
+  - read
+  - write
+  - read-write
+  status:
+  - available
+  - degraded
+  - planned
+  - deprecated
+  envelope_version:
+  - '0.1'
+  - '0.2'
   max_tools_per_shell: 15
-  # 全局软上限（G1-b，用户 2026-11-08 确认）：主约束是每壳/每角色 ≤15，
-  # 全局 80 仅作工具面膨胀的兜底护栏（原 40 会阻塞新域接入）
   max_total_tools: 80
+  layer:
+  - L0
+  - L1
+  - L2
+  exposure:
+  - in-process-only
+  - readonly-observe
+  - control
+  - not-exposed
+  capability_domain:
+    L0:
+    - cognition
+    - semantic-39
+    - rea
+    - data
+    - eval
+    - store-admin
+    - trade-exec
+    L1:
+    - intent
+    - trading
+    - strategy
+    - ops
+    L2:
+    - debate
+    - dreamos
+    - dsh
+    - train
+    - emergence
+  llm_dependency:
+  - none
+  - optional
+  - required
+  layer_quota:
+    L0: 60
+    L1: 30
+    L2: 30
+    total: 120

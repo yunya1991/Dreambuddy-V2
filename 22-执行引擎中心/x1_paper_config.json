@@ -1,0 +1,14 @@
+{
+  "version": "x1-v0.1",
+  "venue": "paper",
+  "intent_source": "40-周期神经网络系统/execution_trades.jsonl",
+  "ledger": "22-执行引擎中心/audit/x1_paper_fills.jsonl",
+  "state": "22-执行引擎中心/audit/x1_paper_state.json",
+  "notional_usdt": 100,
+  "leverage": "1x",
+  "holding_period_days": 7,
+  "max_positions": 3,
+  "slippage_bps": 5,
+  "fee_bps": 5,
+  "note": "X1 纸面成交由一个执行层（22）产生：40 只写意图（X0），22 经 13→16→22 落 fill/pnl。venue 恒为 paper，价格只取 18 统一价格源，禁止调用任何交易所下单接口；本配置与 40 的 X2 实盘门禁无关，纸面扩标不放松实盘白名单。"
+}

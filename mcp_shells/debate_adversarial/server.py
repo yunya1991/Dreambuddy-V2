@@ -40,7 +40,7 @@ if str(_BOT_ROOT) not in sys.path:
 from mcp_shells._shared.envelope_wrap import wrap  # noqa: E402
 from mcp_shells._shared.shell_runtime import run_stdio  # noqa: E402
 
-SHELL_SOURCE = "agent.debate.mcp"
+SHELL_SOURCE = "l2.debate.mcp"  # DEC-03：Phase 1 重命名，保留 agent.debate.mcp 别名 1 迭代
 _JOB_DIR = Path(__file__).resolve().parent / "runtime" / "jobs"
 _JOB_DIR.mkdir(parents=True, exist_ok=True)
 

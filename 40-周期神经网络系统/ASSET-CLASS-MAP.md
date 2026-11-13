@@ -155,10 +155,10 @@ G2 类内层级（类内轮动/广度）
 |---|---|---|---|
 | [p3_sector_transmission.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/p3_sector_transmission.py#L24-L29) | 加密 4 层共 9 标的 | OKX | 仅加密，无跨类 |
 | [p3_resonance_matrix.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/p3_resonance_matrix.py#L39-L45) | 同上 9 标的，锚=BTC | OKX | 仅 BTC vs 加密，缺跨类 R |
-| [p1_ma200_anchor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/p1_ma200_anchor.py#L20-L30) | BTC/ETH/SOL/UNI/AAVE/NEAR/ARB/LINK + SPX | **Binance + yfinance** | 与 40 其余脚本的 OKX 源不一致 |
+| [p1_ma200_anchor.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/p1_ma200_anchor.py#L20-L30) | 由 `asset_classes.VALIDATION_UNIVERSE` 派生（多板块 14 标的）+ 8 币白名单历史成员 + SPX | **18 统一价格源（OKX 主源）** + yfinance(SPX) | 已收口（DEC-BCL-07）：标的域与数据源统一，新增 XAU/XAG/XCU/CL/BZ/NG/US500/SPY/NVDA/JP225/TLT |
 | [p3_fund_flow.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/p3_fund_flow.py#L233-L250) | SP500/DGS10/DTWEXBGS + BTC/XAUT | FRED + OKX spot | 黄金用 spot `XAUT/USDT`，非永续 `XAU-USDT-SWAP` |
 | [p2_asset_rotation.py](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/scripts/p2_asset_rotation.py#L77-L82) | 黄金 GC=F / 美元 DX-Y.NYB / 10Y ^TNX / 标普 ^GSPC | yfinance | 全是 yfinance，未用 OKX 可交易合约 |
-| [cycle_state.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/cycle_state.json) | technical_anchor 仅加密 + SPX | — | 大类龙头（XAU/CL/US500）无 MA200 锚 |
+| [cycle_state.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/cycle_state.json) | technical_anchor 现为 8 加密 + SPX；代码侧已扩至 VALIDATION_UNIVERSE（待下次 p1 运行落数据） | — | 数据补齐依赖 p1 定时任务跑一轮 |
 | [asset_rotation.json](file:///Users/zhangjiangtao/WorkBuddy/dreambuddy-v2/40-周期神经网络系统/asset_rotation.json) | 6 项（crypto_btc/eth, gold, dollar, treasury_yield, equity） | — | 有 gold/equity 但数据常为 null（yfinance 失败） |
 
 ### 已识别的 5 个结构性缺口

@@ -45,8 +45,8 @@ def test_health_without_deep_check():
     text = server.debate_health({"deep": False})
     payload = json.loads(text)
     assert payload["ok"] is True
-    assert payload["source"] == "agent.debate.mcp"
-    assert payload["data"]["shell"] == "agent.debate.mcp"
+    assert payload["source"] == "l2.debate.mcp"
+    assert payload["data"]["shell"] == "l2.debate.mcp"
 
 
 def test_start_debate_and_poll(monkeypatch):

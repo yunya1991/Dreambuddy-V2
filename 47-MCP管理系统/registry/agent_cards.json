@@ -2,12 +2,12 @@
   "schema_version": "1.0-agent-card-index",
   "generated_by": "mcpctl cards",
   "registry": {
-    "schema_version": "1.1-mcp",
+    "schema_version": "1.2-mcp",
     "registry_version": "0.5"
   },
   "cards": {
     "research": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-research",
       "display_name": "L0 research capability gateway",
       "description": "研究 Worker——认知检索 / 金融语义 / REA 分析（只读）",
@@ -38,46 +38,130 @@
         "tools": [
           {
             "name": "recall",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "unified_search",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "stats",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "health",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "query_entity",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.semantic-39.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "39-金融语义蒸馏系统"
+            ]
           },
           {
             "name": "semantic_lookup",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.semantic-39.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "39-金融语义蒸馏系统"
+            ]
           },
           {
             "name": "submit_rea_analyze",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "poll_rea_analyze",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "get_rea_snapshot",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           }
         ],
         "tool_count": 9,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L0"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {
@@ -86,7 +170,7 @@
       }
     },
     "engineer": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-engineer",
       "display_name": "L0 engineer capability gateway",
       "description": "工程 Worker——REA 分析/追踪/对比/假设门禁/方法论（只读，10 工具满额）",
@@ -117,50 +201,143 @@
         "tools": [
           {
             "name": "recall",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "submit_rea_analyze",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "poll_rea_analyze",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "submit_rea_trace",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "poll_rea_trace",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "submit_rea_compare",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "poll_rea_compare",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "get_rea_snapshot",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "rea_audit",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           },
           {
             "name": "get_rea_methodology",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.rea.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "33-REA逆向解析工程"
+            ]
           }
         ],
         "tool_count": 10,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L0"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {
@@ -169,7 +346,7 @@
       }
     },
     "data_reader": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-data_reader",
       "display_name": "L0 data_reader capability gateway",
       "description": "数据读取 Worker——行情/库读 + 认知检索（只读，3 工具）",
@@ -200,22 +377,56 @@
         "tools": [
           {
             "name": "data_fetch",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.data.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "18-数据获取中心",
+              "19-数据访问层",
+              "20-数据清洗中心"
+            ]
           },
           {
             "name": "data_store_read",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.data.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "18-数据获取中心",
+              "19-数据访问层",
+              "20-数据清洗中心"
+            ]
           },
           {
             "name": "recall",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           }
         ],
         "tool_count": 3,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L0"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {
@@ -224,7 +435,7 @@
       }
     },
     "verifier": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-verifier",
       "display_name": "L0 verifier capability gateway",
       "description": "验收 Worker——评测 / 库管只读 / 证据检索（只读）",
@@ -255,30 +466,78 @@
         "tools": [
           {
             "name": "eval_analyze",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.eval.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "45-评测系统"
+            ]
           },
           {
             "name": "eval_report",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.eval.mcp",
+            "layer": "L0",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "45-评测系统"
+            ]
           },
           {
             "name": "store_admin_status",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.store-admin.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "38-数据库管理系统"
+            ]
           },
           {
             "name": "store_admin_query",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.store-admin.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "38-数据库管理系统"
+            ]
           },
           {
             "name": "recall",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           }
         ],
         "tool_count": 5,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L0"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {
@@ -287,7 +546,7 @@
       }
     },
     "executor": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-executor",
       "display_name": "L0 executor capability gateway",
       "description": "执行 Worker——交易执行观测（trade-exec 壳，只读）",
@@ -318,38 +577,111 @@
         "tools": [
           {
             "name": "get_positions",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.trade-exec.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "22-执行引擎中心",
+              "51-OKX CLI 系统"
+            ]
           },
           {
             "name": "get_balance",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.trade-exec.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "22-执行引擎中心",
+              "51-OKX CLI 系统"
+            ]
           },
           {
             "name": "pre_trade_check",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.trade-exec.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "22-执行引擎中心",
+              "51-OKX CLI 系统"
+            ]
           },
           {
             "name": "check_exit",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.trade-exec.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "22-执行引擎中心",
+              "51-OKX CLI 系统"
+            ]
           },
           {
             "name": "get_account_mode",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.trade-exec.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "22-执行引擎中心",
+              "51-OKX CLI 系统"
+            ]
           },
           {
             "name": "reconcile",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.trade-exec.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "22-执行引擎中心",
+              "51-OKX CLI 系统"
+            ]
           },
           {
             "name": "read_signals",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.trade-exec.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "22-执行引擎中心",
+              "51-OKX CLI 系统"
+            ]
           }
         ],
         "tool_count": 7,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L0"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {
@@ -358,7 +690,7 @@
       }
     },
     "l2_analysis": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-l2_analysis",
       "display_name": "L0 l2_analysis capability gateway",
       "description": "L2 分析 Worker——只读辩论/调研 + 认知检索（不触发信号/执行/训练）",
@@ -389,38 +721,105 @@
         "tools": [
           {
             "name": "start_debate",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.debate.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "required",
+            "plugin_ready": true,
+            "source_modules": [
+              "32-对抗性辩论Bot"
+            ]
           },
           {
             "name": "get_debate_result",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.debate.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "required",
+            "plugin_ready": true,
+            "source_modules": [
+              "32-对抗性辩论Bot"
+            ]
           },
           {
             "name": "debate_health",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.debate.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "required",
+            "plugin_ready": true,
+            "source_modules": [
+              "32-对抗性辩论Bot"
+            ]
           },
           {
             "name": "recall",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "unified_search",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "stats",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           },
           {
             "name": "health",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           }
         ],
         "tool_count": 7,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L0",
+          "L2"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {
@@ -429,7 +828,7 @@
       }
     },
     "l2_trading_analysis": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-l2_trading_analysis",
       "display_name": "L0 l2_trading_analysis capability gateway",
       "description": "L2 交易观察 Worker——只读 L1 状态（信号/总线/周期/战略/持仓/余额）",
@@ -460,46 +859,166 @@
         "tools": [
           {
             "name": "get_signal_state",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_bus_state",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_constraint_state",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_cycle_state",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_strategic_extension",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_decision_diagnostics",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_training_status",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_positions",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           },
           {
             "name": "get_balance",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
           }
         ],
         "tool_count": 9,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L1"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {
@@ -508,7 +1027,7 @@
       }
     },
     "lobehub_frontend": {
-      "schema_version": "1.0-agent-card",
+      "schema_version": "1.1-agent-card",
       "name": "l0-lobehub_frontend",
       "display_name": "L0 lobehub_frontend capability gateway",
       "description": "52-LobeHub 前台叠加层——认知检索（恒只读，SPEC v0.4.0 R1/R3）",
@@ -539,14 +1058,580 @@
         "tools": [
           {
             "name": "recall",
-            "read_only": true
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
           }
         ],
         "tool_count": 1,
-        "read_only": true
+        "read_only": true,
+        "covered_layers": [
+          "L0"
+        ]
       },
       "registry": {
-        "schema_version": "1.1-mcp",
+        "schema_version": "1.2-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "l1_observer": {
+      "schema_version": "1.1-agent-card",
+      "name": "l0-l1_observer",
+      "display_name": "L0 l1_observer capability gateway",
+      "description": "L1 只读观察者——Trae/Claude Code 用，零 token 意图路由 + L1 交易状态",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "l1_observer"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "list_intents",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.intent.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "3.1-FRONTEND"
+            ]
+          },
+          {
+            "name": "classify_intent",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.intent.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "3.1-FRONTEND"
+            ]
+          },
+          {
+            "name": "execute_intent",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.intent.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "3.1-FRONTEND"
+            ]
+          },
+          {
+            "name": "get_signal_state",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          },
+          {
+            "name": "get_constraint_state",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          },
+          {
+            "name": "get_cycle_state",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          },
+          {
+            "name": "get_strategic_extension",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          }
+        ],
+        "tool_count": 7,
+        "read_only": true,
+        "covered_layers": [
+          "L1"
+        ]
+      },
+      "registry": {
+        "schema_version": "1.2-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "l2_researcher": {
+      "schema_version": "1.1-agent-card",
+      "name": "l0-l2_researcher",
+      "display_name": "L0 l2_researcher capability gateway",
+      "description": "L2 研究与辩论——跨层取 L0 认知 + L2 辩论",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "l2_researcher"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "start_debate",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.debate.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "required",
+            "plugin_ready": true,
+            "source_modules": [
+              "32-对抗性辩论Bot"
+            ]
+          },
+          {
+            "name": "get_debate_result",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.debate.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "required",
+            "plugin_ready": true,
+            "source_modules": [
+              "32-对抗性辩论Bot"
+            ]
+          },
+          {
+            "name": "debate_health",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.debate.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "required",
+            "plugin_ready": true,
+            "source_modules": [
+              "32-对抗性辩论Bot"
+            ]
+          },
+          {
+            "name": "recall",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
+          },
+          {
+            "name": "unified_search",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
+          },
+          {
+            "name": "stats",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l0.cognition.mcp",
+            "layer": "L0",
+            "exposure": "control",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "4-MEMORY"
+            ]
+          }
+        ],
+        "tool_count": 6,
+        "read_only": true,
+        "covered_layers": [
+          "L0",
+          "L2"
+        ]
+      },
+      "registry": {
+        "schema_version": "1.2-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "l2_planner": {
+      "schema_version": "1.1-agent-card",
+      "name": "l0-l2_planner",
+      "display_name": "L0 l2_planner capability gateway",
+      "description": "L2 规划编排 Worker——DreamOS 异步轮询 + 预算审计（只读观察，submit_run 由宿主直接调用）",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "l2_planner"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "poll_run",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.dreamos.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "optional",
+            "plugin_ready": true,
+            "source_modules": [
+              "1-ARCHITECTURE/dreamos",
+              "23-四层闭环自进化交易架构"
+            ]
+          },
+          {
+            "name": "get_result",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.dreamos.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "optional",
+            "plugin_ready": true,
+            "source_modules": [
+              "1-ARCHITECTURE/dreamos",
+              "23-四层闭环自进化交易架构"
+            ]
+          },
+          {
+            "name": "get_intent",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.dreamos.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "optional",
+            "plugin_ready": true,
+            "source_modules": [
+              "1-ARCHITECTURE/dreamos",
+              "23-四层闭环自进化交易架构"
+            ]
+          },
+          {
+            "name": "get_budget",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l2.dreamos.mcp",
+            "layer": "L2",
+            "exposure": "control",
+            "llm_dependency": "optional",
+            "plugin_ready": true,
+            "source_modules": [
+              "1-ARCHITECTURE/dreamos",
+              "23-四层闭环自进化交易架构"
+            ]
+          }
+        ],
+        "tool_count": 4,
+        "read_only": true,
+        "covered_layers": [
+          "L2"
+        ]
+      },
+      "registry": {
+        "schema_version": "1.2-mcp",
+        "registry_version": "0.5"
+      },
+      "security": {
+        "worker_read_only": true,
+        "write_tools_require_mandate": true
+      }
+    },
+    "l1_ops": {
+      "schema_version": "1.1-agent-card",
+      "name": "l0-l1_ops",
+      "display_name": "L0 l1_ops capability gateway",
+      "description": "L1 运维审计 Worker——策略只读 + 交易只读",
+      "version": "0.1",
+      "protocol": {
+        "name": "mcp",
+        "versions": [
+          "2024-11-05",
+          "2025-03-26",
+          "2025-06-18",
+          "2025-11-25"
+        ],
+        "transport": "stdio"
+      },
+      "server": {
+        "command": "<PYTHON>",
+        "args": [
+          "<REPO_ROOT>/mcp_shells/l0_gateway/server.py",
+          "--role",
+          "l1_ops"
+        ],
+        "env": {
+          "PYTHONPATH": "<REPO_ROOT>",
+          "PYTHONIOENCODING": "utf-8"
+        }
+      },
+      "capabilities": {
+        "tools": [
+          {
+            "name": "list_strategies",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.strategy.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "26-策略管理模块",
+              "27-策略治理审批系统",
+              "28-策略信号触发模块"
+            ]
+          },
+          {
+            "name": "get_strategy_version",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.strategy.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "26-策略管理模块",
+              "27-策略治理审批系统",
+              "28-策略信号触发模块"
+            ]
+          },
+          {
+            "name": "get_approval_state",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.strategy.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "26-策略管理模块",
+              "27-策略治理审批系统",
+              "28-策略信号触发模块"
+            ]
+          },
+          {
+            "name": "list_signal_triggers",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.strategy.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": true,
+            "source_modules": [
+              "26-策略管理模块",
+              "27-策略治理审批系统",
+              "28-策略信号触发模块"
+            ]
+          },
+          {
+            "name": "get_signal_state",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          },
+          {
+            "name": "get_constraint_state",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          },
+          {
+            "name": "get_cycle_state",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          },
+          {
+            "name": "get_strategic_extension",
+            "read_only": true,
+            "requires_mandate": false,
+            "source_shell": "l1.trading.mcp",
+            "layer": "L1",
+            "exposure": "readonly-observe",
+            "llm_dependency": "none",
+            "plugin_ready": false,
+            "source_modules": [
+              "11-易经推理系统",
+              "40-周期神经网络系统",
+              "42-神经网络交易协调层",
+              "43-战略承接推演层",
+              "50-NN主矛盾评估器"
+            ]
+          }
+        ],
+        "tool_count": 8,
+        "read_only": true,
+        "covered_layers": [
+          "L1"
+        ]
+      },
+      "registry": {
+        "schema_version": "1.2-mcp",
         "registry_version": "0.5"
       },
       "security": {

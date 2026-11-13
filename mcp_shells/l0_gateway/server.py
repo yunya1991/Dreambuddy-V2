@@ -504,11 +504,19 @@ def run(gateway: L0Gateway) -> None:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="L0 角色能力网关（P1）")
+    parser = argparse.ArgumentParser(
+        description="L0/L1/L2 角色能力网关（DEC-05：单一网关 + --layer 参数）"
+    )
     parser.add_argument("--role", required=True)
     parser.add_argument("--registry", default=str(REGISTRY_DEFAULT))
     parser.add_argument("--ssh-host", default=None)
     parser.add_argument("--call-timeout", type=float, default=30.0)
+    parser.add_argument(
+        "--layer",
+        default=None,
+        choices=["L0", "L1", "L2"],
+        help="角色所在层级（用于 Agent Card 标注 / 跨层角色投影诊断，DEC-05 不改变 role 路由逻辑）",
+    )
     args = parser.parse_args(argv)
 
     # 子壳统一 UTF-8 stdio（MCP 协议面），Windows 默认 GBK 会破坏中文信封
@@ -525,6 +533,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     except Exception as exc:
         print(f"ERR: {exc}", file=sys.stderr)
         return 2
+
+    # DEC-05：stderr 打印 layer/role 诊断（agent card 生成脚本 grep 这行做标注）
+    if args.layer:
+        print(f"[gateway] layer={args.layer} role={args.role}", file=sys.stderr)
 
     try:
         run(gateway)

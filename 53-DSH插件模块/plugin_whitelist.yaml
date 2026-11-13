@@ -1,5 +1,5 @@
 # 53-DSH插件模块/plugin_whitelist.yaml
-# DSH 插件白名单（P1-2 落地物）— 唯一治理事实源
+# DSH 插件白名单（P1-2 落地 + P3 消费侧强制经壳）— 唯一治理事实源
 #
 # 定位：任何要挂进 dsh profile 的非核心插件（非 @deepseek-ai/* 官方包）都必须在此登记。
 # 校验：python3 53-DSH插件模块/check_whitelist.py --profile <name>
@@ -9,8 +9,10 @@
 #   2. 社区插件必须先在 sandbox profile 实测（sandbox_verified: true）才能进生产 profile
 #   3. risk_level=forbidden 任何 profile 都不许加载
 #   4. FAIL-OPEN 未验证的插件不得进生产 profile（fail_open_verified: true）
+#   5. 自有插件（status=approved）必须标记 mcp_shell_required: true——消费侧不得直连
+#      插件 tool，必须经对应 MCP 壳的 control port 路由（DEC-06 壳化硬约束）
 version: "v1"
-last_updated: "2026-11-12"
+last_updated: "2026-11-13"
 default_deny: true
 
 policies:
@@ -19,6 +21,7 @@ policies:
   require_sandbox_first: true      # 社区插件先进 sandbox
   require_fail_open: true          # 进生产必须验证 FAIL-OPEN
   max_risk_for_production: "medium"
+  require_mcp_shell_for_approved: true  # P3: 自有 approved 插件消费侧强制经 MCP 壳
 
 entries:
   # ── 自有插件（已生产运行，视为 approved） ─────────────────────────
@@ -32,7 +35,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["web", "headless", "superagent", "sandbox"]
-    notes: "C1 规划器桥接"
+    mcp_shell_required: true
+    plugin_shell: "l2.dreamos.mcp"
+    notes: "C1 规划器桥接 → 消费侧经 l2.dreamos.mcp 的 submit_run / poll_run / get_result"
 
   - id: "dreambuddy-c-chain"
     source: "local"
@@ -44,7 +49,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["headless", "superagent", "sandbox"]
-    notes: "C-chain 链路规划"
+    mcp_shell_required: true
+    plugin_shell: "l2.dreamos.mcp"
+    notes: "C-chain 链路规划 → 消费侧经 l2.dreamos.mcp"
 
   - id: "dreambuddy-intent-gateway"
     source: "local"
@@ -56,7 +63,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["web", "headless", "superagent", "sandbox"]
-    notes: "agent/pre-step 意图识别与风险评估"
+    mcp_shell_required: true
+    plugin_shell: "l1.intent.mcp"
+    notes: "agent/pre-step 意图识别与风险评估 → 消费侧经 l1.intent.mcp"
 
   - id: "dreambuddy-graph-planner"
     source: "local"
@@ -68,7 +77,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["web", "headless", "superagent", "sandbox"]
-    notes: "DreamOS graph planner"
+    mcp_shell_required: true
+    plugin_shell: "l2.dreamos.mcp"
+    notes: "DreamOS graph planner → 消费侧经 l2.dreamos.mcp"
 
   - id: "dreambuddy-indicators"
     source: "local"
@@ -80,7 +91,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["headless", "superagent", "sandbox"]
-    notes: "技术指标工具面"
+    mcp_shell_required: true
+    plugin_shell: "l1.trading.mcp"
+    notes: "技术指标工具面 → 消费侧经 l1.trading.mcp"
 
   - id: "dreambuddy-fundamental"
     source: "local"
@@ -92,7 +105,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["headless", "superagent", "sandbox"]
-    notes: "基本面工具面"
+    mcp_shell_required: true
+    plugin_shell: "l0.data.mcp"
+    notes: "基本面工具面 → 消费侧经 l0.data.mcp"
 
   - id: "dreambuddy-session-consumer"
     source: "local"
@@ -104,7 +119,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["headless", "superagent", "sandbox"]
-    notes: "会话事件消费"
+    mcp_shell_required: true
+    plugin_shell: "l1.ops.mcp"
+    notes: "会话事件消费 → 消费侧经 l1.ops.mcp 的 get_bus_state"
 
   - id: "dreambuddy-reflector"
     source: "local"
@@ -116,7 +133,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["headless", "superagent", "sandbox"]
-    notes: "反思/蒸馏钩子"
+    mcp_shell_required: true
+    plugin_shell: "l0.cognition.mcp"
+    notes: "反思/蒸馏钩子 → 消费侧经 l0.cognition.mcp（readOnly）"
 
   - id: "dreambuddy-jev-judge"
     source: "local"
@@ -128,7 +147,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["web", "headless", "superagent", "sandbox"]
-    notes: "JEV 完成度/步骤质量判定"
+    mcp_shell_required: true
+    plugin_shell: "l0.eval.mcp"
+    notes: "JEV 完成度/步骤质量判定 → 消费侧经 l0.eval.mcp"
 
   - id: "dreambuddy-knowledge-wiki"
     source: "local"
@@ -140,7 +161,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["headless", "superagent", "sandbox"]
-    notes: "知识库 wiki 编译/摄取"
+    mcp_shell_required: true
+    plugin_shell: "l0.semantic-39.mcp"
+    notes: "知识库 wiki 编译/摄取 → 消费侧经 l0.semantic-39.mcp"
 
   - id: "dreambuddy-superagent-p0"
     source: "local"
@@ -152,7 +175,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["headless", "superagent", "sandbox"]
-    notes: "P0 Super-agent 工具面（event_gateway / ticket_router / ticket_bridge / ticket_state）"
+    mcp_shell_required: true
+    plugin_shell: "l0.store-admin.mcp"
+    notes: "P0 Super-agent 工具面 → 消费侧经 l0.store-admin.mcp"
 
   - id: "dreambuddy-dreamos-cognitive"
     source: "local"
@@ -164,7 +189,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["web", "headless", "superagent", "sandbox"]
-    notes: "P1-1 认知能力封装：dreamos_recall/dreamos_search 只读；record/verify 仅 enableWrites=true 且宿主写 scope 时注册"
+    mcp_shell_required: true
+    plugin_shell: "l0.cognition.mcp"
+    notes: "P1-1 认知能力封装 → 消费侧经 l0.cognition.mcp（record/verify 仅宿主 enableWrites=true）"
 
   # ── 社区候选（2026-11-12 npm/GitHub 实测，仅允许进 sandbox） ────────
   # 包名核实结论：原候选 document-qa / terminal-ops 在 npm 均 404，
@@ -178,7 +205,9 @@ entries:
     sandbox_verified: true
     fail_open_verified: true
     permitted_profiles: ["sandbox"]
-    notes: "R10 实测通过(2026-11-12,DSH 0.1.5-rc.3)：sandbox profile 内注册 knowledge_search/knowledge_status/knowledge_manage 三工具，实调 knowledge_status 返回 {ok:true,...,documents:[]}；其工具异常由 harness registry 兜底为 isError 结果不 crash（P0-1d 实测）。限制：① dsh.client.platform=web，headless 下 SSE 路由因缺 webServer 自动跳过；② onnxruntime-node/sharp 原生构建被 allowBuilds 关闭，向量化/rerank 未验证（仅 status/空库检索可用）；③ 原候选说明：替代假名 dsh-plugin-document-qa（npm 404，2026-11-12 实测）。备选 @kai232/dsh-rag@0.1.2"
+    mcp_shell_required: true
+    plugin_shell: "l0.semantic-39.mcp"
+    notes: "R10 实测通过(2026-11-12,DSH 0.1.5-rc.3)：sandbox profile 内注册 knowledge_search/knowledge_status/knowledge_manage 三工具，实调 knowledge_status 返回 {ok:true,...,documents:[]}；其工具异常由 harness registry 兜底为 isError 结果不 crash（P0-1d 实测）。限制：① dsh.client.platform=web，headless 下 SSE 路由因缺 webServer 自动跳过；② onnxruntime-node/sharp 原生构建被 allowBuilds 关闭，向量化/rerank 未验证（仅 status/空库检索可用）；③ 原候选说明：替代假名 dsh-plugin-document-qa（npm 404，2026-11-12 实测）。备选 @kai232/dsh-rag@0.1.2 → 消费侧经 l0.semantic-39.mcp"
 
   - id: "dsh-plugin-code-review"
     source: "npm"
@@ -189,7 +218,8 @@ entries:
     sandbox_verified: false
     fail_open_verified: false
     permitted_profiles: ["sandbox"]
-    notes: "R10 实测失败(2026-11-12,DSH 0.1.5-rc.3)：模块加载正常，但它把 systemPrompt.section 的 text 写成 async 函数，而 DSH SystemPrompt.assemble 不 await（dsh-system-prompt/lib/index.js:339），启用即崩溃 `dsh: UNKNOWN: text.indexOf is not a function`。对照组(enableSkill:false)可正常跑到 LLM 请求，证明是 section text 而非加载问题。当前在 sandbox/cordis.patch.yml 中 disabled:true；上游修复前不得提升到 headless/web。另：该插件不注册任何 tool，只注入 prompt，验收标准应为 prompt 注入而非工具调用"
+    mcp_shell_required: false
+    notes: "R10 实测失败(2026-11-12,DSH 0.1.5-rc.3)：模块加载正常，但它把 systemPrompt.section 的 text 写成 async 函数，而 DSH SystemPrompt.assemble 不 await（dsh-system-prompt/lib/index.js:339），启用即崩溃 `dsh: UNKNOWN: text.indexOf is not a function`。对照组(enableSkill:false)可正常跑到 LLM 请求，证明是 section text 而非加载问题。当前在 sandbox/cordis.patch.yml 中 disabled:true；上游修复前不得提升到 headless/web。另：该插件不注册任何 tool，只注入 prompt，验收标准应为 prompt 注入而非工具调用 → 无 MCP 壳可映射（仅 prompt patch，非工具消费）"
 
   - id: "dsh-plugin-debugging"
     source: "npm"
@@ -200,7 +230,9 @@ entries:
     sandbox_verified: false
     fail_open_verified: false
     permitted_profiles: ["sandbox"]
-    notes: "替代假名 dsh-plugin-terminal-ops（npm 404）；运行时诊断 + 就地修复（会写文件，故 medium）；备选 dsh-plugin-ops-bundle@0.20.9（健康面板）"
+    mcp_shell_required: true
+    plugin_shell: "l1.ops.mcp"
+    notes: "替代假名 dsh-plugin-terminal-ops（npm 404）；运行时诊断 + 就地修复（会写文件，故 medium）；备选 dsh-plugin-ops-bundle@0.20.9（健康面板）→ 消费侧经 l1.ops.mcp"
 
   - id: "awesome-dsh-plugin"
     source: "npm"
@@ -212,7 +244,8 @@ entries:
     sandbox_verified: false
     fail_open_verified: false
     permitted_profiles: ["sandbox"]
-    notes: "精选列表（npm 0.1.0 存在，★ 数未核实）；真实市场 feed 为 awesome-dsh-plugin-feed@0.20261112.0（repo bruc3van/awesome-dsh-plugin，可走 registry.npmmirror.com）"
+    mcp_shell_required: false
+    notes: "精选列表（npm 0.1.0 存在，★ 数未核实）；真实市场 feed 为 awesome-dsh-plugin-feed@0.20261112.0（repo bruc3van/awesome-dsh-plugin，可走 registry.npmmirror.com）→ 非工具消费类，暂不壳化"
 
   - id: "sandbase-harness"
     source: "github"
@@ -223,7 +256,8 @@ entries:
     sandbox_verified: false
     fail_open_verified: false
     permitted_profiles: ["sandbox"]
-    notes: "⚠️ 非 npm 包（npm 404），仅 GitHub 自托管 runtime 参考；643★（2026-11-12，原记 604 已过期），只读参考为主"
+    mcp_shell_required: false
+    notes: "⚠️ 非 npm 包（npm 404），仅 GitHub 自托管 runtime 参考；643★（2026-11-12，原记 604 已过期），只读参考为主 → 非工具消费类，暂不壳化"
 
   # 以下为已证伪的假包名：保留 forbidden 防止误登记/误装
   - id: "dsh-plugin-document-qa"

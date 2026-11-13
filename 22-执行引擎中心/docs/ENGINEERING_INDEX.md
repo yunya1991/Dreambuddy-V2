@@ -46,6 +46,9 @@ TEE（Trading Execution Engine）是 Dreambuddy 的交易执行核心，负责�
 │   ├── docs_consistency.py      # 文档一致性检查
 │   ├── shadow_compare.py        # 影子对比
 │   └── slip_compare_report.py   # 滑点对比报告
+├── trade_execution_gateway.py   # 统一执行入口（13 风控 → 22 下单，fail-closed）
+├── x1_paper_executor.py         # X1 纸面成交记录器（意图 → 13→16→22 → 18 价格源撮合）
+├── x1_paper_config.json         # 纸面成交配置（venue=paper，持仓周期/滑点/手续费）
 └── tests/                       # TDD 测试（Task 1-12）
 ```
 

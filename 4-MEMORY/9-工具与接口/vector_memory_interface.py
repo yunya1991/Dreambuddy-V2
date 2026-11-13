@@ -118,6 +118,37 @@ class TextVectorizer:
         return [self.encode(t) for t in texts]
 
 
+class FastEmbedVectorizer:
+    """基于 fastembed（ONNX）的语义向量化器。
+
+    中文检索默认模型 BAAI/bge-small-zh-v1.5（512 维，归一化）。
+    相比 TextVectorizer 的字符 n-gram 哈希，具备真正的语义相似度能力。
+    由 COGNITIVE_EMBED_MODEL 环境变量显式启用，未设置时保持哈希向量（零依赖兼容）。
+    """
+
+    def __init__(self, model_name: str):
+        from fastembed import TextEmbedding
+
+        self.model_name = model_name
+        self._model = TextEmbedding(model_name=model_name)
+        probe = next(iter(self._model.embed(["dimension probe"])))
+        self.dim = len(probe)
+
+    MAX_EMBED_CHARS = 768
+
+    def encode(self, text: str) -> List[float]:
+        if not text:
+            return [0.0] * self.dim
+        vec = next(iter(self._model.embed([text[: self.MAX_EMBED_CHARS]])))
+        return [float(x) for x in vec]
+
+    def encode_batch(self, texts: List[str]) -> List[List[float]]:
+        if not texts:
+            return []
+        trimmed = [t[: self.MAX_EMBED_CHARS] for t in texts]
+        return [[float(x) for x in v] for v in self._model.embed(trimmed, batch_size=64)]
+
+
 # ============================================================
 # 相似度计算
 # ============================================================
@@ -232,9 +263,22 @@ class VectorMemoryInterface:
             memory_id: 应用记忆ID（如 "AM-TRD-001"）
             distill_engine: 动态蒸馏引擎实例（可选）
         """
-        self.vector_dim = vector_dim
         self.memory_id = memory_id
-        self.vectorizer = TextVectorizer(dim=vector_dim)
+        # 语义向量模型（可选）：设置后使用 fastembed ONNX 模型，未设置保持哈希向量
+        self.embed_model = (os.environ.get("COGNITIVE_EMBED_MODEL") or "").strip()
+        if self.embed_model:
+            try:
+                self.vectorizer = FastEmbedVectorizer(self.embed_model)
+                vector_dim = self.vectorizer.dim
+            except Exception:
+                logger.exception(
+                    "语义向量模型加载失败，回退哈希向量（COGNITIVE_EMBED_MODEL=%s）",
+                    self.embed_model,
+                )
+                self.vectorizer = TextVectorizer(dim=vector_dim)
+        else:
+            self.vectorizer = TextVectorizer(dim=vector_dim)
+        self.vector_dim = vector_dim
         self._distill_engine = distill_engine
 
         # 存储路径

@@ -17,8 +17,14 @@
       "note": "仅验证管道，不得据代理信号出具任何验证指标或报告（SPEC 边界红线 6）"
     }
   },
+  "decision_source": {
+    "path": "50-NN主矛盾评估器/runtime/decisions.jsonl",
+    "max_age_hours": 24,
+    "note": "DEC-BCL-06 路径 B：执行记录回写来源决策 decision_id；只映射不推断，过期或无法解析即写 null，禁止伪造"
+  },
   "whitelist": ["BTC/USDT", "ETH/USDT", "SOL/USDT", "UNI/USDT", "AAVE/USDT", "NEAR/USDT", "ARB/USDT", "LINK/USDT"],
-  "whitelist_note": "V1.2 龙头资产 8 币：BTC/ETH/SOL + 赛道龙头 UNI/AAVE/NEAR/ARB/LINK（均历经完整牛熊、MA200 锚点数据达标，归 L2_major 梯队）；meme/增长型代币永不进入验证白名单（SPEC 第二章红线，PUMP 已按 meme 红线排除、HYPE 缓议）；代币化美股/商品独立池待立项（永续合约数据已达标）",
+  "whitelist_note": "V1.2 龙头资产 8 币：BTC/ETH/SOL + 赛道龙头 UNI/AAVE/NEAR/ARB/LINK（均历经完整牛熊、MA200 锚点数据达标，归 L2_major 梯队）；meme/增长型代币永不进入验证白名单（SPEC 第二章红线，PUMP 已按 meme 红线排除、HYPE 缓议）；代币化美股/商品独立池见 paper_universe_note",
+  "paper_universe_note": "DEC-BCL-07：40 是意图/验证场，执行层是 22。纸面验证场的标的域由 40/asset_classes.py 的 VALIDATION_UNIVERSE 派生（加密/贵金属/能源/工业金属/美股指数与 ETF/美股龙头/亚太/利率），展开为 execution_scope=paper_only 意图；成交由 22-执行引擎中心/x1_paper_executor.py 经 13→16→22 产生。纸面扩标不放松 X2 实盘白名单与冻结风控红线。",
   "intent_notional_usdt": 100,
   "leverage": "1x",
   "risk_limits": {
@@ -40,6 +46,7 @@
   "output": {
     "trades": "execution_trades.jsonl",
     "violations": "risk_violations.jsonl",
-    "state": "execution_state.json"
+    "state": "execution_state.json",
+    "portfolio_executions": "portfolio_executions.jsonl"
   }
 }

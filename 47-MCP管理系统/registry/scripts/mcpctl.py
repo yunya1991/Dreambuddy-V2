@@ -306,6 +306,9 @@ def build_agent_card(
 
     portable=True 时 server/env 使用 <PYTHON> / <REPO_ROOT> 占位符，
     使静态索引可跨机器/CI 校验；单角色输出默认给真实绝对路径。
+
+    P3 升级：cards 包含每个工具的源壳层信息（layer / exposure / llm_dependency / plugin_ready / source_modules），
+    方便消费侧路由 + 静态权限校验。
     """
     roles = doc.get("worker_roles") or {}
     spec = roles.get(role)
@@ -319,6 +322,11 @@ def build_agent_card(
     tools: List[Dict[str, Any]] = []
     for sid in spec.get("shells") or []:
         shell = shells.get(str(sid)) or {}
+        shell_layer = shell.get("layer", "L0")
+        shell_exposure = shell.get("exposure", "internal")
+        shell_llm = shell.get("llm_dependency", "none")
+        shell_plugin_ready = bool(shell.get("plugin_ready", False))
+        shell_sources = list(shell.get("source_modules") or [])
         for tool in shell.get("tools") or []:
             if isinstance(tool, dict) and tool.get("name") in order:
                 tools.append(
@@ -327,12 +335,22 @@ def build_agent_card(
                         "read_only": bool(
                             (tool.get("annotations") or {}).get("readOnlyHint", True)
                         ),
+                        "requires_mandate": bool(tool.get("requires_mandate", False)),
+                        "source_shell": sid,
+                        "layer": shell_layer,
+                        "exposure": shell_exposure,
+                        "llm_dependency": shell_llm,
+                        "plugin_ready": shell_plugin_ready,
+                        "source_modules": shell_sources,
                     }
                 )
     tools.sort(key=lambda item: order[item["name"]])
     missing = sorted(set(role_tools) - {t["name"] for t in tools})
     if missing:
         raise ValueError(f"角色 {role!r} 的工具未映射到壳: {missing}")
+
+    # 聚合角色覆盖的层
+    covered_layers = sorted({t["layer"] for t in tools})
 
     gateway_path = repo_root / "mcp_shells" / "l0_gateway" / "server.py"
     if portable:
@@ -347,7 +365,7 @@ def build_agent_card(
         args += ["--ssh-host", ssh_host]
 
     return {
-        "schema_version": "1.0-agent-card",
+        "schema_version": "1.1-agent-card",
         "name": f"l0-{role}",
         "display_name": f"L0 {role} capability gateway",
         "description": str(spec.get("description", "")),
@@ -366,6 +384,7 @@ def build_agent_card(
             "tools": tools,
             "tool_count": len(tools),
             "read_only": True,
+            "covered_layers": covered_layers,
         },
         "registry": {
             "schema_version": doc.get("schema_version"),

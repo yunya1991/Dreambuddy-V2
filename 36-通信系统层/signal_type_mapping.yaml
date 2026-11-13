@@ -1,0 +1,88 @@
+# 36-通信系统层 · 跨链 event_type ↔ SignalType 映射表
+# 归属：36 域（Signal Bus）。本表只增不删；删除需 36 域评审。
+# 依据：1-ARCHITECTURE/SPEC-20261113-THREE-BUSINESS-CLOSED-LOOPS.md §7.2.1
+# 状态：proposed（待 36 域评审后生效）
+# 说明：SignalType 是 36 的封闭枚举（src/types.ts）。本表诚实登记无法映射的跨链事件，
+#       标记为需新增，不得用近似类型冒充语义。
+
+version: "0.1.0"
+status: proposed
+updated_at: "2026-11-13"
+owner: "36-通信系统层"
+signal_type_source: "36-通信系统层/src/types.ts"
+
+mappings:
+  # ── D1 交易链 ──────────────────────────────────────────────
+  - event_type: trading.decision
+    signal_type: null
+    required_action: add_signal_type
+    note: 决策事件不对外分发，仅用于 join；若需观察走 l2.emergence 只读查询
+  - event_type: trading.order
+    signal_type: trade_signal.open
+    required_action: none
+    note: 开仓委托；order 取消/拒单需另定
+  - event_type: trading.fill
+    signal_type: null
+    required_action: add_signal_type
+    note: 成交语义与 close 不同，禁止映射为 trade_signal.close
+  - event_type: trading.reject
+    signal_type: risk_alert
+    required_action: none
+  - event_type: trading.pnl
+    signal_type: null
+    required_action: add_signal_type
+    note: PnL 属度量，不对外分发
+  - event_type: training.event
+    signal_type: null
+    required_action: add_signal_type
+    note: 训练事件仅内部回灌，不进入对外通道
+
+  # ── D2 技术架构涌现 ────────────────────────────────────────
+  - event_type: gap.opened
+    signal_type: system_notice
+    required_action: none
+  - event_type: candidate.generated
+    signal_type: null
+    required_action: add_signal_type
+  - event_type: gate.evaluated
+    signal_type: null
+    required_action: add_signal_type
+  - event_type: requirement.resolved
+    signal_type: strategy_update
+    required_action: none
+    note: 复用现有 update 通知语义，待 36 域确认可接受
+
+  # ── D3 意图涌现 ────────────────────────────────────────────
+  - event_type: intent.predicted
+    signal_type: null
+    required_action: add_signal_type
+    note: 只影响召回，不分发
+  - event_type: user.feedback
+    signal_type: null
+    required_action: add_signal_type
+    note: 隐私敏感，仅落标签不对外分发
+
+  # ── 执行链 ─────────────────────────────────────────────────
+  - event_type: task.completed
+    signal_type: system_notice
+    required_action: none
+  - event_type: task.failed
+    signal_type: system_notice
+    required_action: none
+  - event_type: acceptance.verdict
+    signal_type: null
+    required_action: add_signal_type
+
+missing_signal_types:
+  - trade_signal.fill
+  - training_event
+  - emergence_candidate
+  - emergence_gate
+  - intent_prediction
+  - user_feedback
+  - acceptance_verdict
+
+notes:
+  - 本表不含 severity / dispatch_channel；二者仍由 36 原生字段决定
+  - dedupKey 直接取跨链 event_id，不在此表重复定义
+  - 新增 SignalType 需同步更新 src/types.ts 与订阅校验

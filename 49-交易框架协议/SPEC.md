@@ -556,7 +556,7 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 | 9 | `get_balance` | read | L2 Worker / 编排侧 | 否 | 代理执行层 `get_balance` |
 | 10 | `forward_signal` | write | **L1 闭环内部（非 L2）** | ✅ | 23 信号 → 执行层 `ingest_signal`（paper） |
 
-> **设计态**：`mcp_shells/l1_trading/` 当前不存在；本表是评审通过后落地的工具契约，不是已实现接口。
+> **已落地（Phase 0 2026-11-13）**：`mcp_shells/l1_trading/server.py` 已存在（685 行），10 工具全部跑通；本表为契约文档。壳 registry v1.2-mcp 已登记（layer=L1, exposure=readonly-observe）。
 >
 > **调用方枚举**：`L2 Worker`（只读）、`L2 编排`（只读 + 受 Mandate 写）、`L1 内部编排`（写）。读工具三类均可；写工具仅 `L1 内部编排`。
 >
@@ -797,7 +797,7 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 | 23 全标的调度未实现 | 当前约 50 币/小时；无高风险 300s 分层 | 与“全标的唯一权威”不匹配 | P2 |
 | 11→42 状态文件适配未实现 | 11 子池状态未落文件；42 适配器仍直读各自源 | DEC-08 未落地 | P1 |
 | L1 诊断脱敏未实现 | `get_decision_diagnostics` 仅设计 | 原始权重可能外泄 | P3 |
-| L1 交易层 MCP 仅设计态 | `mcp_shells/l1_trading/` 不存在；49 目录仅 SPEC | 尚未实现 | P0/P1 |
+| L1 交易层 MCP 已落地 | `mcp_shells/l1_trading/server.py` 已存在；registry v1.2-mcp 已登记 | 已实现（10 工具） | Phase 0 |
 | `source` 命名口径漂移 | 代码用 `strategic_extension`；文档用 `43-strategic-extension` | 文档/代码不一致 | P1 |
 | `dimension_force_v2` 注释过时 | 实际经 T5 参与裁决；注释仍称“只记录日志” | 文档落后 | P2 |
 | 29 Phase3 未完成 | Phase1/2 已接，共享事件层未做 | 事件驱动仍影子 | P3 |
@@ -890,7 +890,7 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 | `mcp_shells/l0_trade_exec/server.py` | 封装执行层 paper MCP（历史名 `l0.trade-exec`；origin/main `1eb0076`，本地未同步） |
 | `47-MCP管理系统/docs/tech/SPEC-L0-TRADE-EXEC-MCP-v0.1.md` | 执行层 paper MCP SPEC（历史名；origin/main `1eb0076`，本地未同步） |
 | `47-MCP管理系统/registry/execution_rights.json` | 标的级执行权注册表（origin/main `1eb0076`，本地未同步） |
-| `mcp_shells/l1_trading/` | L1 交易层 MCP（**设计态，未创建**；评审后落地） |
+| `mcp_shells/l1_trading/` | L1 交易层 MCP（**已落地 Phase 0 2026-11-13**；registry v1.2-mcp 已登记） |
 | `50-NN主矛盾评估器/SPEC.md` | 50 NN 主矛盾评估器（v0.14 新增，独立实现） |
 | `49-交易框架协议/docs/adr/ADR-0002-dual-decision-chain.md` | 双决策链 / source=50-nn / 执行权分区 ADR |
 | `42-神经网络交易协调层/docs/INTEGRATION-50-v0.1.md` | 42 总线 × 50 消费集成说明 |
@@ -921,7 +921,7 @@ L2 ──只读 tools/call──▶ agent.debate.mcp ──读──▶ 对抗�
 | 15 | 43 `shadow=True` 硬编码；档位 `light_defense`；不读 strategy_mapping | `signal_publisher.py:145-156,153,176`；`cycle_state_adapter.py:29-31` |
 | 16 | 硬编码路径：42=6 适配器、23=2、43=3、40=22 | 全树 grep `/home/luke/dreambuddy` |
 | 17 | 封装执行层 paper MCP 9 工具、paper-only、execution_rights 三态；16/22 未接线 | `server.py:1476-1488`；`execution_rights.json`；SPEC-L0 §4 |
-| 18 | L1 交易层 MCP 未实现；49 仅 SPEC | `mcp_shells/l1_trading/` 不存在；`49-交易框架协议/` 仅 SPEC.md |
+| 18 | ~~L1 交易层 MCP 未实现~~ **已落地** | `mcp_shells/l1_trading/server.py` 存在；registry v1.2-mcp 已登记（10 工具） |
 
 ---
 

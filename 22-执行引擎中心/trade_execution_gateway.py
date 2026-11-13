@@ -47,6 +47,9 @@ class FinalDecisionSignal:
     source: str  # 23-evolution / 50-nn / 11-yijing / 6-trading / ...
     symbol: str  # e.g. BTC-USDT-SWAP
     direction: str  # long / short / neutral
+    # 来源决策主键（DEC-BCL-07）：执行层落成交时必须回带，供 D1 证据链严格 join。
+    # 顶层 decision_id 优先，其次 payload.decision_id；缺失保持 None，禁止伪造。
+    decision_id: Optional[str] = None
     confidence: float = 0.0
     expires_at: str = ""
     # ── 执行扩展 ──────────────────────────────────────────────
@@ -66,6 +69,10 @@ class FinalDecisionSignal:
             source=str(d.get("source") or "unknown"),
             symbol=str(d.get("symbol") or d.get("inst_id") or "MULTI"),
             direction=str(d.get("direction") or "neutral").lower(),
+            decision_id=(
+                str(d.get("decision_id") or (d.get("payload") or {}).get("decision_id") or "")
+                or None
+            ),
             confidence=float(d.get("confidence") or 0.0),
             expires_at=str(d.get("expires_at") or ""),
             action=str(d.get("action") or "open").lower(),
@@ -81,6 +88,7 @@ class FinalDecisionSignal:
     def to_dict(self) -> Dict[str, Any]:
         return {
             "signal_id": self.signal_id,
+            "decision_id": self.decision_id,
             "source": self.source,
             "symbol": self.symbol,
             "direction": self.direction,
@@ -743,6 +751,7 @@ class TradeExecutionGateway:
         record = {
             "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "signal_id": sig.signal_id,
+            "decision_id": sig.decision_id,
             "source": sig.source,
             "symbol": sig.symbol,
             "direction": sig.direction,

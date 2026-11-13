@@ -174,6 +174,29 @@ for _sym, _g1_cfg in G1_ANCHORS.items():
 # G1 龙头符号（按配置顺序）
 G1_ANCHOR_SYMBOLS: tuple[str, ...] = tuple(G1_ANCHORS)
 
+# ── 纸面/验证场覆盖标的（多板块龙头，DEC-BCL-07）───────────────────
+# 用途：p1 MA200 锚点与 X0 意图流的标的域，覆盖加密/贵金属/能源/
+# 工业金属/美股指数/美股 ETF/美股龙头/亚太/利率。外汇（fx）只有宏观序列，
+# 无 USDT 永续，不在此列。加密标的在 cycle_state 中沿用 "X/USDT" 键以兼容
+# p3/p5/23/43/l1_trading 等既有消费者，其余标的使用基础符号键。
+# 注意：本清单只扩大"纸面验证场"，不改变 X2 实盘白名单（40/execution/config.json）。
+VALIDATION_UNIVERSE: tuple[str, ...] = (
+    "BTC",  # crypto L1 锚
+    "ETH",  # crypto L2
+    "SOL",  # crypto L2
+    "XAU",  # 贵金属/避险（金）
+    "XAG",  # 贵金属/避险（银）
+    "XCU",  # 工业金属（铜）
+    "CL",  # 能源（WTI）
+    "BZ",  # 能源（Brent）
+    "NG",  # 能源（天然气）
+    "US500",  # 美股指数
+    "SPY",  # 美股 ETF
+    "NVDA",  # 美股龙头
+    "JP225",  # 亚太指数
+    "TLT",  # 利率/信用
+)
+
 
 def normalize_symbol(symbol: str) -> str:
     """统一标的符号：XAU-USDT-SWAP / XAU/USDT:USDT → XAU。"""
