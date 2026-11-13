@@ -12852,42 +12852,74 @@ class PollingTrader:
         except Exception as _e:
             self._log(f"[SLTP-Reconcile] 持仓拉取失败: {_e}", "DEBUG")
             return
-        positions = [p for p in (pos_resp.get("data") or []) if float(p.get("pos", "0") or 0) > 0]
-        if not positions:
+        if not pos_resp.get("ok", True):
+            self._log(
+                f"[SLTP-Reconcile] 持仓拉取失败: {pos_resp.get('error') or pos_resp}", "DEBUG"
+            )
             return
+        # OKXSimulatedClient 返回 {"positions": [...]}（snake_case）；
+        # 兼容直接透传 OKX 原始 {"data": [...]}（驼峰）的客户端。
+        _raw_positions = pos_resp.get("positions")
+        if _raw_positions is None:
+            _raw_positions = pos_resp.get("data") or []
 
-        # 拉已挂 algo 单（OKX ordType=sl-tp 或 sl 或 tp）
-        existing_sl_tp = set()
-        try:
-            algo_resp = self.okx_client.get_algo_orders()
-            for a in algo_resp.get("data") or []:
-                # sl-tp OCO 单里有 tpOrdPx 和 slOrdPx
-                inst = a.get("instId")
-                side = a.get("posSide") or a.get("tdMode", "")
-                if inst and side:
-                    existing_sl_tp.add((inst, side))
-        except Exception as _e:
-            self._log(f"[SLTP-Reconcile] algo单拉取失败(跳过巡检): {_e}", "DEBUG")
+        positions = []
+        for p in _raw_positions:
+            inst_id = p.get("inst_id") or p.get("instId") or ""
+            pos_side = p.get("pos_side") or p.get("posSide") or ""
+            pos_sz = float(p.get("pos", 0) or 0)
+            if not inst_id or pos_sz == 0:
+                continue
+            if pos_side not in ("long", "short"):
+                # net 模式：按持仓正负推断方向
+                pos_side = "long" if pos_sz > 0 else "short"
+            positions.append(
+                {
+                    "inst_id": inst_id,
+                    "pos_side": pos_side,
+                    "avg_px": float(p.get("avg_px") or p.get("avgPx") or 0),
+                    "mark_px": float(p.get("mark_px") or p.get("markPx") or 0),
+                    "upl_ratio": float(p.get("upl_ratio") or p.get("uplRatio") or 0),
+                }
+            )
+        if not positions:
+            _elapsed = __import__("time").time() - _t0
+            self._log(f"[SLTP-Reconcile] 无持仓，跳过 耗时={_elapsed:.1f}s", "DEBUG")
             return
 
         _patched, _skipped, _failed = 0, 0, 0
         for pos in positions:
-            inst_id = pos.get("instId", "")
-            pos_side = pos.get("posSide")
-            if not inst_id or not pos_side:
+            inst_id = pos["inst_id"]
+            pos_side = pos["pos_side"]
+            avg_px = pos["avg_px"]
+            last_px = pos["mark_px"] or avg_px
+            upl_pct = pos["upl_ratio"] * 100
+
+            # 逐 inst 查询已挂 algo 单：get_algo_orders 不传 inst_id 时只查 default_inst_id，
+            # 全局查询会误判"未挂"而反复重置既定 SL/TP。
+            _has_sl, _has_tp = False, False
+            try:
+                _algo = self.okx_client.get_algo_orders(inst_id=inst_id)
+                for _o in _algo.get("orders") or _algo.get("data") or []:
+                    _o_side = _o.get("pos_side") or _o.get("posSide") or ""
+                    if _o_side and _o_side != pos_side:
+                        continue
+                    if float(_o.get("sl_trigger_px") or _o.get("slTriggerPx") or 0) > 0:
+                        _has_sl = True
+                    if float(_o.get("tp_trigger_px") or _o.get("tpTriggerPx") or 0) > 0:
+                        _has_tp = True
+            except Exception as _e:
+                self._log(f"[SLTP-Reconcile] {inst_id}({pos_side}) algo查询异常: {_e}", "DEBUG")
+                _failed += 1
                 continue
-            if (inst_id, pos_side) in existing_sl_tp:
+            if _has_sl and _has_tp:
                 _skipped += 1
                 continue
-
-            avg_px = float(pos.get("avgPx", 0) or 0)
-            last_px = float(pos.get("last", pos.get("markPx", avg_px)) or 0)
             if avg_px <= 0 or last_px <= 0:
                 self._log(f"[SLTP-Reconcile] {inst_id}({pos_side}) 无有效均价/现价，跳过", "DEBUG")
                 _skipped += 1
                 continue
 
-            upl_pct = float(pos.get("uplRatio", 0) or 0) * 100
             if pos_side == "long":
                 # long: 止损在均价下方，止盈在上方
                 sl_px = avg_px * 0.95
@@ -12908,11 +12940,12 @@ class PollingTrader:
                     sl_px = min(sl_px, avg_px * 0.995)
 
             try:
+                # 只补缺失的一侧：已存在的一侧传 0，raw client 会保留原触发价
                 _r = self.okx_client.place_stop_loss_take_profit(
                     inst_id=inst_id,
                     pos_side=pos_side,
-                    stop_loss_px=round(sl_px, 6),
-                    take_profit_px=round(tp_px, 6),
+                    stop_loss_px=0 if _has_sl else round(sl_px, 6),
+                    take_profit_px=0 if _has_tp else round(tp_px, 6),
                     reason=f"sltp_reconcile:avg={avg_px:.2f} upl={upl_pct:.1f}%",
                 )
                 if _r.get("ok"):
