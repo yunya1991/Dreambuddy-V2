@@ -162,7 +162,7 @@
 |--------|------------|---------|---------|
 | **自进化系统** | shadow_rl_trainer / neural_sde / cross_attention 训练 | `23-.../core/` | GPU密集（M3 MPS） |
 | **BCRM2.0** | bayesian_optimize / walk_forward / LGBM 训练 | `11-.../bcrm2/` | CPU密集，耗时长 |
-| **战略层** | ray_optimizer 参数优化 / LLM 推理 | `16-调控系统/scripts/param_center/` | CPU+可能GPU |
+| **战略层** | ray_optimizer 参数优化 / LLM 推理 | `4-MEMORY/9-工具与接口/param_center/` | CPU+可能GPU |
 | **BDSM** | 全板块估值扫描 / 回测 | `11-.../force_vector/` | 内存密集 |
 | **自进化系统** | 回测引擎 / evolution_pipeline | `23-.../` | CPU+IO密集 |
 | **通用** | 数据清洗 / 特征工程 / RAG索引 | `20-/21-/2-KNOWLEDGE/` | 内存+IO |

@@ -917,7 +917,7 @@ shells:
   capability_domain: train
   exposure: control
   source_modules:
-  - 16-调控系统/scripts/param_center
+  - 4-MEMORY/9-工具与接口/param_center
   - 23-四层闭环自进化交易架构
   plugin_ready: true
   llm_dependency: none
